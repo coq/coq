@@ -59,6 +59,8 @@ let wit_open_constr = make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
 
 let wit_constr_with_bindings = make0 "constr_with_bindings"
 
+let wit_open_constr_with_bindings = make0 "open_constr_with_bindings"
+
 let wit_bindings = make0 "bindings"
 
 let wit_red_expr = make0 "redexpr"

@@ -996,7 +996,7 @@ let interp_bindings ist env sigma = function
 
 let interp_constr_with_bindings ist env sigma (c,bl) =
   let sigma, bl = interp_bindings ist env sigma bl in
-  let sigma, c = interp_open_constr ist env sigma c in
+  let sigma, c = interp_constr ist env sigma c in
   sigma, (c,bl)
 
 let interp_open_constr_with_bindings ist env sigma (c,bl) =
@@ -1025,7 +1025,7 @@ let interp_destruction_arg ist gl arg =
   | keep,ElimOnConstr c ->
       keep,ElimOnConstr { delayed = fun env sigma ->
         let sigma = Sigma.to_evar_map sigma in
-        let (sigma, c) = interp_constr_with_bindings ist env sigma c in
+        let (sigma, c) = interp_open_constr_with_bindings ist env sigma c in
         Sigma.Unsafe.of_pair (c, sigma)
       }
   | keep,ElimOnAnonHyp n as x -> x
@@ -1678,8 +1678,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in 
-        let sigma, cb = interp_constr_with_bindings ist env sigma cb in
-        let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
+        let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
+        let sigma, cbo = Option.fold_map (interp_open_constr_with_bindings ist env) sigma cbo in
         let named_tac =
           let tac = Tactics.elim ev keep cb cbo in
           name_atomic ~env (TacElim (ev,(keep,cb),cbo)) tac
@@ -1690,7 +1690,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter { enter = begin fun gl ->
         let sigma = project gl in
         let env = Proofview.Goal.env gl in
-        let sigma, cb = interp_constr_with_bindings ist env sigma cb in
+        let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
         let named_tac =
           let tac = Tactics.general_case_analysis ev keep cb in
           name_atomic ~env (TacCase(ev,(keep,cb))) tac
@@ -1807,7 +1807,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let l,lp = List.split l in
         let sigma,el =
-          Option.fold_map (interp_constr_with_bindings ist env) sigma el in
+          Option.fold_map (interp_open_constr_with_bindings ist env) sigma el in
         let tac = name_atomic ~env
           (TacInductionDestruct(isrec,ev,(lp,el)))
             (Tactics.induction_destruct isrec ev (l,el))
@@ -2045,6 +2045,11 @@ let interp_constr_with_bindings' ist c = Ftactic.return { delayed = fun env sigm
   Sigma.Unsafe.of_pair (c, sigma)
   }
 
+let interp_open_constr_with_bindings' ist c = Ftactic.return { delayed = fun env sigma ->
+  let (sigma, c) = interp_open_constr_with_bindings ist env (Sigma.to_evar_map sigma) c in
+  Sigma.Unsafe.of_pair (c, sigma)
+  }
+
 let interp_destruction_arg' ist c = Ftactic.enter { enter = begin fun gl ->
   Ftactic.return (interp_destruction_arg ist gl c)
 end }
@@ -2067,6 +2072,7 @@ let () =
   register_interp0 wit_open_constr (lifts interp_open_constr);
   register_interp0 wit_bindings interp_bindings';
   register_interp0 wit_constr_with_bindings interp_constr_with_bindings';
+  register_interp0 wit_open_constr_with_bindings interp_open_constr_with_bindings';
   register_interp0 wit_destruction_arg interp_destruction_arg';
   ()
 

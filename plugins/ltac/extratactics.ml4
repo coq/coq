@@ -190,7 +190,7 @@ let onSomeWithHoles tac = function
   | Some c -> Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> tac (Some c))
 
 TACTIC EXTEND contradiction
- [ "contradiction" constr_with_bindings_opt(c) ] ->
+ [ "contradiction" open_constr_with_bindings_opt(c) ] ->
     [ onSomeWithHoles contradiction c ]
 END
 

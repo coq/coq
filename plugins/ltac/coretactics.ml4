@@ -141,10 +141,10 @@ END
 (** Specialize *)
 
 TACTIC EXTEND specialize
-  [ "specialize" constr_with_bindings(c) ] -> [
+  [ "specialize" open_constr_with_bindings(c) ] -> [
     Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> Tactics.specialize c None)
   ]
-| [ "specialize" constr_with_bindings(c) "as" intropattern(ipat) ] -> [
+| [ "specialize" open_constr_with_bindings(c) "as" intropattern(ipat) ] -> [
     Tacticals.New.tclDELAYEDWITHHOLES false c (fun c -> Tactics.specialize c (Some ipat))
   ]
 END
