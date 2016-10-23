@@ -1,20 +1,12 @@
-File "stdin", line 1, characters 0-36:
-Warning: Ignoring rename of x into y. Only implicit arguments can be renamed.
-[arguments-ignore-rename-nonimpl,vernacular]
 The command has indeed failed with message:
-Error: To rename arguments the "rename" flag must be specified.
+Error: To rename arguments the "rename" flag must be
+specified.
 Argument A renamed to B.
 File "stdin", line 2, characters 0-25:
-Warning: Ignoring rename of A into T. Only implicit arguments can be renamed.
-[arguments-ignore-rename-nonimpl,vernacular]
-File "stdin", line 2, characters 0-25:
-Warning: This command is just asserting the number and names of arguments of
-identity. If this is what you want add ': assert' to silence the warning. If
-you want to clear implicit arguments add ': clear implicits'. If you want to
-clear notation scopes add ': clear scopes' [arguments-assert,vernacular]
-File "stdin", line 4, characters 0-40:
-Warning: Ignoring rename of x into y. Only implicit arguments can be renamed.
-[arguments-ignore-rename-nonimpl,vernacular]
+Warning: This command is just asserting the names of arguments of identity.
+If this is what you want add ': assert' to silence the warning. If you want
+to clear implicit arguments add ': clear implicits'. If you want to clear
+notation scopes add ': clear scopes' [arguments-assert,vernacular]
 @eq_refl
      : forall (B : Type) (y : B), y = y
 eq_refl
@@ -112,18 +104,16 @@ Expands to: Constant Top.myplus
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 The command has indeed failed with message:
-Error: All arguments lists must declare the same names.
+Error: Arguments lists should agree on names they provide.
 The command has indeed failed with message:
-Error: The following arguments are not declared: x.
+Error: Sequences of implicit arguments must be of different lengths
 The command has indeed failed with message:
 Error: Arguments names must be distinct.
 The command has indeed failed with message:
 Error: Argument z cannot be declared implicit.
 The command has indeed failed with message:
-Error: Extra argument y.
-File "stdin", line 53, characters 0-26:
-Warning: Ignoring rename of x into s. Only implicit arguments can be renamed.
-[arguments-ignore-rename-nonimpl,vernacular]
+Error: Extra arguments: y.
 The command has indeed failed with message:
-Error: To rename arguments the "rename" flag must be specified.
+Error: To rename arguments the "rename" flag must be
+specified.
 Argument A renamed to R.

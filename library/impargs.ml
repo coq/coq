@@ -494,7 +494,7 @@ let implicits_of_global ref =
       let rename imp name = match imp, name with
        | Some (_, x,y), Name id -> Some (id, x,y)
        | _ -> imp in
-      List.map2 (fun (t, il) rl -> t, List.map2 rename il rl) l rename_l
+      List.map (fun (t, il) -> t, List.map2 rename il rename_l) l
     with Not_found -> l
     | Invalid_argument _ ->
         anomaly (Pp.str "renamings list and implicits list have different lenghts")
