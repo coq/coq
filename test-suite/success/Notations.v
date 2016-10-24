@@ -110,3 +110,9 @@ Goal True -> True. intros H. exact H. Qed.
 
 (* Check absence of collision on ".." in nested notations with ".." *)
 Notation "[ a , .. , b ]" := (a, (.. (b,tt) ..)).
+
+(* Check parsing of { and } is not affected by notations #3479 *)
+Notation " |- {{ a }} b" := (a=b) (no associativity, at level 10).
+Goal True.
+{{ exact I. }}
+Qed.

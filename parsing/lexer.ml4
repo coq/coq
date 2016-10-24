@@ -535,6 +535,12 @@ let rec next_token = parser bp
             next_token s
         | [< t = process_chars bp c >] -> comment_stop bp; t >] ->
       t
+  | [< ' ('{' | '}' as c); s >] ep ->
+      let t,new_between_com =
+        if !between_com then (KEYWORD (String.make 1 c), (bp, ep)), true
+        else process_chars bp c s,false
+      in
+      comment_stop bp; between_com := new_between_com; t
   | [< s >] ->
       match lookup_utf8 s with
         | Utf8Token (Unicode.Letter, n) ->
