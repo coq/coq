@@ -27,3 +27,7 @@ In nested Ltac calls to "h" and "injection (destruction_arg)", last call
 failed.
 Error: No primitive equality found.
 Hx
+nat
+nat
+0
+0
