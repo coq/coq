@@ -495,7 +495,7 @@ let rec next_token = parser bp
   | [< '' ' | '\t' | '\n' |'\r' as c; s >] ->
       comm_loc bp; push_char c; next_token s
   | [< ''$' as c; t = parse_after_special c bp >] ep ->
-      comment_stop bp; (t, (ep, bp))
+      comment_stop bp; (t, (bp, ep))
   | [< ''.' as c; t = parse_after_special c bp; s >] ep ->
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,
@@ -514,7 +514,7 @@ let rec next_token = parser bp
       in
       comment_stop bp; between_com := new_between_com; t
   | [< ''?'; s >] ep ->
-      let t = parse_after_qmark bp s in comment_stop bp; (t, (ep, bp))
+      let t = parse_after_qmark bp s in comment_stop bp; (t, (bp, ep))
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
        len = ident_tail (store 0 c); s >] ep ->
       let id = get_buff len in
