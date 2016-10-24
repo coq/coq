@@ -908,9 +908,47 @@ let glob_ssrterm gs = function
       fst x, Some c
   | ct -> ct
 
+(* This piece of code asserts the following notations are reserved *)
+(* Reserved Notation "( a 'in' b )"        (at level 0).           *)
+(* Reserved Notation "( a 'as' b )"        (at level 0).           *)
+(* Reserved Notation "( a 'in' b 'in' c )" (at level 0).           *)
+(* Reserved Notation "( a 'as' b 'in' c )" (at level 0).           *)
+let glob_cpattern gs p =
+  pp(lazy(str"globbing pattern: " ++ pr_term p));
+  let glob x = snd (glob_ssrterm gs (mk_lterm x)) in
+  let encode k s l =
+    let name = Name (id_of_string ("_ssrpat_" ^ s)) in
+    k, (mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None) in
+  let bind_in t1 t2 =
+    let d = dummy_loc in let n = Name (destCVar t1) in
+    fst (glob (mkCCast d (mkCHole d) (mkCLambda d n (mkCHole d) t2))) in
+  let check_var t2 = if not (isCVar t2) then
+    loc_error (constr_loc t2) "Only identifiers are allowed here" in
+  match p with
+  | _, (_, None) as x -> x
+  | k, (v, Some t) as orig ->
+     if k = 'x' then glob_ssrterm gs ('(', (v, Some t)) else
+     match t with
+     | CNotation(_, "( _ in _ )", ([t1; t2], [], [])) ->
+         (try match glob t1, glob t2 with
+         | (r1, None), (r2, None) -> encode k "In" [r1;r2]
+         | (r1, Some _), (r2, Some _) when isCVar t1 ->
+             encode k "In" [r1; r2; bind_in t1 t2]
+         | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
+         | _ -> CErrors.anomaly (str"where are we?")
+         with _ when isCVar t1 -> encode k "In" [bind_in t1 t2])
+     | CNotation(_, "( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
+         check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
+     | CNotation(_, "( _ as _ )", ([t1; t2], [], [])) ->
+         encode k "As" [fst (glob t1); fst (glob t2)]
+     | CNotation(_, "( _ as _ in _ )", ([t1; t2; t3], [], [])) ->
+         check_var t2; encode k "As" [fst (glob t1); bind_in t2 t3]
+     | _ -> glob_ssrterm gs orig
+;;
+
 let glob_rpattern s p =
   match p with
-  | T t -> T (glob_ssrterm s t)
+  | T t -> T (glob_cpattern s t)
   | In_T t -> In_T (glob_ssrterm s t)
   | X_In_T(x,t) -> X_In_T (x,glob_ssrterm s t)
   | In_X_In_T(x,t) -> In_X_In_T (x,glob_ssrterm s t)
@@ -994,44 +1032,6 @@ let input_ssrtermkind strm = match Compat.get_tok (stream_nth 0 strm) with
   | Tok.KEYWORD "@" -> '@'
   | _ -> ' '
 let ssrtermkind = Gram.Entry.of_parser "ssrtermkind" input_ssrtermkind
-
-(* This piece of code asserts the following notations are reserved *)
-(* Reserved Notation "( a 'in' b )"        (at level 0).           *)
-(* Reserved Notation "( a 'as' b )"        (at level 0).           *)
-(* Reserved Notation "( a 'in' b 'in' c )" (at level 0).           *)
-(* Reserved Notation "( a 'as' b 'in' c )" (at level 0).           *)
-let glob_cpattern gs p =
-  pp(lazy(str"globbing pattern: " ++ pr_term p));
-  let glob x = snd (glob_ssrterm gs (mk_lterm x)) in
-  let encode k s l =
-    let name = Name (id_of_string ("_ssrpat_" ^ s)) in
-    k, (mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None) in
-  let bind_in t1 t2 =
-    let d = dummy_loc in let n = Name (destCVar t1) in
-    fst (glob (mkCCast d (mkCHole d) (mkCLambda d n (mkCHole d) t2))) in
-  let check_var t2 = if not (isCVar t2) then
-    loc_error (constr_loc t2) "Only identifiers are allowed here" in
-  match p with
-  | _, (_, None) as x -> x
-  | k, (v, Some t) as orig ->
-     if k = 'x' then glob_ssrterm gs ('(', (v, Some t)) else
-     match t with
-     | CNotation(_, "( _ in _ )", ([t1; t2], [], [])) ->
-         (try match glob t1, glob t2 with
-         | (r1, None), (r2, None) -> encode k "In" [r1;r2]
-         | (r1, Some _), (r2, Some _) when isCVar t1 ->
-             encode k "In" [r1; r2; bind_in t1 t2]
-         | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
-         | _ -> CErrors.anomaly (str"where are we?")
-         with _ when isCVar t1 -> encode k "In" [bind_in t1 t2])
-     | CNotation(_, "( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
-         check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
-     | CNotation(_, "( _ as _ )", ([t1; t2], [], [])) ->
-         encode k "As" [fst (glob t1); fst (glob t2)]
-     | CNotation(_, "( _ as _ in _ )", ([t1; t2; t3], [], [])) ->
-         check_var t2; encode k "As" [fst (glob t1); bind_in t2 t3]
-     | _ -> glob_ssrterm gs orig
-;;
 
 let interp_ssrterm _ gl t = Tacmach.project gl, t
 
