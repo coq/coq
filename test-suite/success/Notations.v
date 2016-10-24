@@ -122,3 +122,9 @@ Goal True.
 {{ exact I. }}
 Qed.
 Check |- {{ 0 }} 0.
+
+(* Check parsing of { and } is not affected by notations #3479 *)
+Notation " |- {{ a }} b" := (a=b) (no associativity, at level 10).
+Goal True.
+{{ exact I. }}
+Qed.
