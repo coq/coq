@@ -1538,7 +1538,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
 	begin
 	  if do_observe ()
 	  then Feedback.msg_debug (str "Cannot create equation Lemma " ++ CErrors.print e)
-	  else anomaly (Pp.str "Cannot create equation Lemma")
+	  else error "Cannot create equation Lemma"
 	  ;
 	  true
 	end
