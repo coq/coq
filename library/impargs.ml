@@ -491,13 +491,15 @@ let implicits_of_global ref =
     let l = Refmap.find ref !implicits_table in
     try
       let rename_l = Arguments_renaming.arguments_names ref in
-      let rename imp name = match imp, name with
-       | Some (_, x,y), Name id -> Some (id, x,y)
-       | _ -> imp in
-      List.map (fun (t, il) -> t, List.map2 rename il rename_l) l
+      let rec rename implicits names = match implicits, names with
+        | [], _ -> []
+        | _, [] -> implicits
+        | Some (_, x,y) :: implicits, Name id :: names ->
+           Some (id, x,y) :: rename implicits names
+        | imp :: implicits, _ :: names -> imp :: rename implicits names
+      in
+      List.map (fun (t, il) -> t, rename il rename_l) l
     with Not_found -> l
-    | Invalid_argument _ ->
-        anomaly (Pp.str "renamings list and implicits list have different lenghts")
   with Not_found -> [DefaultImpArgs,[]]
 
 let cache_implicits_decl (ref,imps) =
