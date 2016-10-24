@@ -8,6 +8,10 @@ Hint Unfold eq_sym: core.
 Hint Constructors eq: foo bar.
 Hint Extern 3 (_ = _) => apply eq_refl: foo bar.
 
+Hint Resolve eq_refl | 4 (_ = _) : baz.
+Hint Resolve eq_sym eq_trans : baz.
+Hint Extern 3 (_ = _) => apply eq_sym : baz.
+
 (* Old-style syntax *)
 Hint Resolve eq_refl eq_sym.
 Hint Resolve eq_refl eq_sym: foo.

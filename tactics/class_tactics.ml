@@ -539,10 +539,16 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
       let name = PathHints [VarRef id] in
       let hints =
         if is_class then
-          let hints = build_subclasses ~check:false env sigma (VarRef id) None in
+          let hints = build_subclasses ~check:false env sigma (VarRef id) empty_hint_info in
             (List.map_append
-               (fun (path,pri, c) -> make_resolves env sigma ~name:(PathHints path)
-                  (true,false,Flags.is_verbose()) pri false
+             (fun (path,info,c) ->
+	      let info =
+		{ info with Vernacexpr.hint_pattern =
+			    Option.map (Constrintern.intern_constr_pattern env)
+				       info.Vernacexpr.hint_pattern }
+	      in
+	      make_resolves env sigma ~name:(PathHints path)
+                  (true,false,Flags.is_verbose()) info false
                  (IsConstr (c,Univ.ContextSet.empty)))
                hints)
         else []
@@ -567,7 +573,7 @@ let make_hints g st only_classes sign =
         in
         if consider then
           let hint =
-            pf_apply make_resolve_hyp g st (true,false,false) only_classes None hyp
+            pf_apply make_resolve_hyp g st (true,false,false) only_classes empty_hint_info hyp
           in hint @ hints
         else hints)
       ([]) sign
@@ -636,7 +642,7 @@ module V85 = struct
             let env = Goal.V82.env s g' in
             let context = Environ.named_context_of_val (Goal.V82.hyps s g') in
             let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints)
-              (true,false,false) info.only_classes None (List.hd context) in
+              (true,false,false) info.only_classes empty_hint_info (List.hd context) in
             let ldb = Hint_db.add_list env s hint info.hints in
             (g', { info with is_evar = None; hints = ldb;
                              auto_last_tac = lazy (str"intro") })) gls
@@ -1140,7 +1146,7 @@ module Search = struct
     let decl = Tacmach.New.pf_last_hyp gl in
     let hint =
       make_resolve_hyp env s (Hint_db.transparent_state info.search_hints)
-                       (true,false,false) info.search_only_classes None decl in
+                       (true,false,false) info.search_only_classes empty_hint_info decl in
     let ldb = Hint_db.add_list env s hint info.search_hints in
     let info' =
       { info with search_hints = ldb; last_tac = lazy (str"intro") }

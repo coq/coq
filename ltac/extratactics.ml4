@@ -316,7 +316,8 @@ let project_hint pri l2r r =
   in
   let ctx = Evd.universe_context_set sigma in
   let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id (c,ctx) in
-    (pri,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
+  let info = Vernacexpr.({hint_priority = pri; hint_pattern = None}) in
+    (info,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
 
 let add_hints_iff l2r lc n bl =
   Hints.add_hints true bl
