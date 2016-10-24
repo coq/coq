@@ -72,3 +72,11 @@ intros.
 specialize (H 1) as ->.
 reflexivity.
 Qed.
+
+(* A test from corn *)
+
+Goal (forall x y, x=0 -> y=0 -> True) -> True.
+intros.
+specialize (fun z => H 0 z eq_refl).
+exact (H 0 eq_refl).
+Qed.
