@@ -55,6 +55,8 @@ coqdoc.sty
 csdp.cache
 test-suite/lia.cache
 test-suite/nra.cache
+test-suite/.lia.cache
+test-suite/.nra.cache
 test-suite/trace
 test-suite/misc/universes/all_stdlib.v
 test-suite/misc/universes/universes.txt
