@@ -48,17 +48,15 @@ val new_auto : ?debug:Tacexpr.debug ->
 (** auto with default search depth and with the hint database "core" *)
 val default_auto : unit Proofview.tactic
 
-(** auto with all hint databases except the "v62" compatibility database *)
+(** auto with all hint databases *)
 val full_auto : ?debug:Tacexpr.debug ->
   int -> Tacexpr.delayed_open_constr list -> unit Proofview.tactic
 
-(** auto with all hint databases except the "v62" compatibility database
-   and doing delta *)
+(** auto with all hint databases and doing delta *)
 val new_full_auto : ?debug:Tacexpr.debug ->
   int -> Tacexpr.delayed_open_constr list -> unit Proofview.tactic
 
-(** auto with default search depth and with all hint databases
-   except the "v62" compatibility database *)
+(** auto with default search depth and with all hint databases *)
 val default_full_auto : unit Proofview.tactic
 
 (** The generic form of auto (second arg [None] means all bases) *)

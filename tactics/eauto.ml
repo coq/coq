@@ -410,9 +410,7 @@ let eauto ?(debug=Off) np lems dbnames =
   tclTRY (e_search_auto debug np lems db_list)
 
 let full_eauto ?(debug=Off) n lems gl =
-  let dbnames = current_db_names () in
-  let dbnames =  String.Set.remove "v62" dbnames in
-  let db_list = List.map searchtable_map (String.Set.elements dbnames) in
+  let db_list = current_pure_db () in
   tclTRY (e_search_auto debug n lems db_list) gl
 
 let gen_eauto ?(debug=Off) np lems = function
