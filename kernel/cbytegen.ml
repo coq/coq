@@ -506,6 +506,7 @@ let comp_args comp_expr reloc args sz cont =
   done;
   !c
 
+(* Precondition: args not empty *)
 let comp_app comp_fun comp_arg reloc f args sz cont =
   let nargs = Array.length args in
   match is_tailcall cont with

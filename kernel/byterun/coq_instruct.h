@@ -14,6 +14,8 @@
 /* Nota: this list of instructions is parsed to produce derived files */
 /* coq_jumptbl.h and copcodes.ml. Instructions should be uppercase    */
 /* and alone on lines starting by two spaces.                         */
+/* If adding an instruction, DON'T FORGET TO UPDATE coq_fix_code.c    */
+/* with the arity of the instruction and maybe coq_tcode_of_code.     */
 
 enum instructions {
   ACC0, ACC1, ACC2, ACC3, ACC4, ACC5, ACC6, ACC7, ACC,

@@ -491,8 +491,10 @@ let do_universe poly l =
 type constraint_decl = polymorphic * Univ.constraints
 
 let cache_constraints (na, (p, c)) =
-  let ctx = Univ.ContextSet.add_constraints c Univ.ContextSet.empty in
-  cache_universe_context (p,ctx)
+  let ctx =
+    Univ.ContextSet.add_constraints c
+      Univ.ContextSet.empty (* No declared universes here, just constraints *)
+  in cache_universe_context (p,ctx)
 
 let discharge_constraints (_, (p, c as a)) =
   if p then None else Some a

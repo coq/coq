@@ -262,8 +262,10 @@ let add_rewrite_hint bases ort t lcsr =
     let ctx =
       let ctx = UState.context_set ctx in
         if poly then ctx
-	else (Declare.declare_universe_context false ctx;
-              Univ.ContextSet.empty)
+	else (** This is a global universe context that shouldn't be
+	       refreshed at every use of the hint, declare it globally. *)
+	  (Declare.declare_universe_context false ctx;
+           Univ.ContextSet.empty)
     in
       Constrexpr_ops.constr_loc ce, (c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t in
   let eqs = List.map f lcsr in
@@ -352,7 +354,7 @@ let refine_tac ist simple c =
     let expected_type = Pretyping.OfType concl in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma -> c.delayed env sigma } in
-    let refine = Refine.refine ~unsafe:false update in
+    let refine = Refine.refine ~unsafe:true update in
     if simple then refine
     else refine <*>
            Tactics.New.reduce_after_refine <*>

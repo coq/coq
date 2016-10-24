@@ -69,6 +69,15 @@ let ttree_remove ttree str =
   in
   remove ttree 0
 
+let ttree_elements ttree =
+  let rec elts tt accu =
+    let accu = match tt.node with
+    | None -> accu
+    | Some s -> CString.Set.add s accu
+    in
+    CharMap.fold (fun _ tt accu -> elts tt accu) tt.branch accu
+  in
+  elts ttree CString.Set.empty
 
 (* Errors occurring while lexing (explained as "Lexer error: ...") *)
 
@@ -220,6 +229,8 @@ let add_keyword str =
 
 let remove_keyword str =
   token_tree := ttree_remove !token_tree str
+
+let keywords () = ttree_elements !token_tree
 
 (* Freeze and unfreeze the state of the lexer *)
 type frozen_t = ttree
@@ -562,7 +573,7 @@ let rec next_token loc = parser bp
       comment_stop bp; between_commands := new_between_commands; t
   | [< ''?'; s >] ep ->
       let t = parse_after_qmark loc bp s in
-      comment_stop bp; (t, set_loc_pos loc ep bp)
+      comment_stop bp; (t, set_loc_pos loc bp ep)
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
        len = ident_tail loc (store 0 c); s >] ep ->
       let id = get_buff len in
@@ -582,6 +593,12 @@ let rec next_token loc = parser bp
             let loc = comment loc bp s in next_token loc s
         | [< t = process_chars loc bp c >] -> comment_stop bp; t >] ->
       t
+  | [< ' ('{' | '}' as c); s >] ep ->
+      let t,new_between_commands =
+        if !between_commands then (KEYWORD (String.make 1 c), set_loc_pos loc bp ep), true
+        else process_chars loc bp c s, false
+      in
+      comment_stop bp; between_commands := new_between_commands; t
   | [< s >] ->
       match lookup_utf8 loc s with
         | Utf8Token (Unicode.Letter, n) ->
@@ -592,9 +609,7 @@ let rec next_token loc = parser bp
             (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
         | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart | Unicode.Unknown), _) ->
             let t = process_chars loc bp (Stream.next s) s in
-            let new_between_commands = match t with
-              (KEYWORD ("{"|"}"),_) -> !between_commands | _ -> false in
-            comment_stop bp; between_commands := new_between_commands; t
+            comment_stop bp; t
         | EmptyStream ->
             comment_stop bp; (EOI, set_loc_pos loc bp (bp+1))
 

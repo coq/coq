@@ -43,3 +43,17 @@ Goal True -> False.
 Fail h I.
 intro H.
 Fail h H.
+
+(* Check printing of the "var" argument "Hx" *)
+Ltac m H := idtac H; exact H.
+Goal True.
+let a:=constr:(let Hx := 0 in ltac:(m Hx)) in idtac.
+
+(* Check consistency of interpretation scopes (#4398) *)
+
+Goal nat*(0*0=0) -> nat*(0*0=0). intro.
+match goal with H: ?x*?y |- _ => idtac x end.
+match goal with |- ?x*?y => idtac x end.
+match goal with H: context [?x*?y] |- _ => idtac x end.
+match goal with |- context [?x*?y] => idtac x end.
+Abort.

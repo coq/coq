@@ -249,10 +249,10 @@ Section Reflective_Subuniverse.
  exact H.
     Defined.
 
-    Definition inO_paths@{i j} (S : Type@{i}) {S_inO : In@{Ou Oa i} O S} (x y : 
+    Definition inO_paths@{i} (S : Type@{i}) {S_inO : In@{Ou Oa i} O S} (x y : 
 S)    : In@{Ou Oa i} O (x=y).
     Proof.
-      simple refine (inO_to_O_retract@{i j} _ _ _); intro u.
+      simple refine (inO_to_O_retract@{i} _ _ _); intro u.
       -
  assert (p : (fun _ : O (x=y) => x) == (fun _=> y)).
         {
@@ -264,4 +264,4 @@ S)    : In@{Ou Oa i} O (x=y).
  hnf.
         rewrite O_indpaths_beta; reflexivity.
     Qed.
-    Check inO_paths@{Type Type}.
+    Check inO_paths@{Type}.

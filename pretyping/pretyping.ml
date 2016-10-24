@@ -249,17 +249,24 @@ type inference_flags = {
   expand_evars : bool
 }
 
-let frozen_holes (sigma, sigma') =
-  (); fun ev -> Evar.Map.mem ev (Evd.undefined_map sigma)
+(* Compute the set of still-undefined initial evars up to restriction
+   (e.g. clearing) and the set of yet-unsolved evars freshly created
+   in the extension [sigma'] of [sigma] (excluding the restrictions of
+   the undefined evars of [sigma] to be freshly created evars of
+   [sigma']). Otherwise said, we partition the undefined evars of
+   [sigma'] into those already in [sigma] or deriving from an evar in
+   [sigma] by restriction, and the evars properly created in [sigma'] *)
 
-let pending_holes (sigma, sigma') =
-  let fold evk _ accu =
-    if not (Evd.mem sigma evk) then Evar.Set.add evk accu else accu
-  in
-  Evd.fold_undefined fold sigma' Evar.Set.empty
+let frozen_and_pending_holes (sigma, sigma') =
+  let add_derivative_of evk evi acc =
+    match advance sigma' evk with None -> acc | Some evk' -> Evar.Set.add evk' acc in
+  let frozen = Evd.fold_undefined add_derivative_of sigma Evar.Set.empty in
+  let fold evk _ accu = if not (Evar.Set.mem evk frozen) then Evar.Set.add evk accu else accu in
+  let pending = Evd.fold_undefined fold sigma' Evar.Set.empty in
+  (frozen,pending)
 
 let apply_typeclasses env evdref frozen fail_evar =
-  let filter_frozen = frozen in
+  let filter_frozen evk = Evar.Set.mem evk frozen in
   evdref := Typeclasses.resolve_typeclasses
      ~filter:(if Flags.is_program_mode () 
 	      then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && not (filter_frozen evk))
@@ -327,8 +334,7 @@ let check_evars_are_solved env current_sigma frozen pending =
 (* Try typeclasses, hooks, unification heuristics ... *)
 
 let solve_remaining_evars flags env current_sigma pending =
-  let frozen = frozen_holes pending in
-  let pending = pending_holes pending in
+  let frozen,pending = frozen_and_pending_holes pending in
   let evdref = ref current_sigma in
   if flags.use_typeclasses then apply_typeclasses env evdref frozen false;
   if Option.has_some flags.use_hook then
@@ -338,8 +344,7 @@ let solve_remaining_evars flags env current_sigma pending =
   !evdref
 
 let check_evars_are_solved env current_sigma pending =
-  let frozen = frozen_holes pending in
-  let pending = pending_holes pending in
+  let frozen,pending = frozen_and_pending_holes pending in
   check_evars_are_solved env current_sigma frozen pending
 
 let process_inference_flags flags env initial_sigma (sigma,c) =

@@ -308,6 +308,12 @@ define_evar_* mostly used internally in the unification engine.
   
 - `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)` --> `Tacinterp.Value.of_constr c`
 
+** Search API **
+
+The main search functions now take a function iterating over the
+results. This allows for clients to use streaming or more economic
+printing.
+
 =========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =
 =========================================

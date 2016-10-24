@@ -1666,6 +1666,28 @@ let interp_search_about_item env =
 	user_err ~hdr:"interp_search_about_item"
           (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component")
 
+(* 05f22a5d6d5b8e3e80f1a37321708ce401834430 introduced the
+   `search_output_name_only` option to avoid excessive printing when
+   searching.
+
+   The motivation was to make search usable for IDE completion,
+   however, it is still too slow due to the non-indexed nature of the
+   underlying search mechanism.
+
+   In the future we should deprecate the option and provide a fast,
+   indexed name-searching interface.
+*)
+let search_output_name_only = ref false
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "output-name-only search";
+      optkey   = ["Search";"Output";"Name";"Only"];
+      optread  = (fun () -> !search_output_name_only);
+      optwrite = (:=) search_output_name_only }
+
 let vernac_search s gopt r =
   let r = interp_search_restriction r in
   let env,gopt =
@@ -1677,16 +1699,25 @@ let vernac_search s gopt r =
     | Some g -> snd (Pfedit.get_goal_context g) , Some g
   in
   let get_pattern c = snd (intern_constr_pattern env c) in
-  let open Feedback in
+  let pr_search ref env c =
+    let pr = pr_global ref in
+    let pp = if !search_output_name_only
+      then pr
+      else begin
+        let pc = pr_lconstr_env env Evd.empty c in
+        hov 2 (pr ++ str":" ++ spc () ++ pc)
+      end
+    in Feedback.msg_notice pp
+  in
   match s with
   | SearchPattern c ->
-      msg_notice (Search.search_pattern gopt (get_pattern c) r)
+      Search.search_pattern gopt (get_pattern c) r pr_search
   | SearchRewrite c ->
-      msg_notice (Search.search_rewrite gopt (get_pattern c) r)
+      Search.search_rewrite gopt (get_pattern c) r pr_search
   | SearchHead c ->
-      msg_notice (Search.search_by_head gopt (get_pattern c) r)
+      Search.search_by_head gopt (get_pattern c) r pr_search
   | SearchAbout sl ->
-     msg_notice (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r)
+      Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r pr_search
 
 let vernac_locate = let open Feedback in function
   | LocateAny (AN qid)  -> msg_notice (print_located_qualid qid)

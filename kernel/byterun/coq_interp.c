@@ -539,6 +539,7 @@ value coq_interprete
 	  pc++;/* On saute le Restart */
 	} else {
 	  if (coq_extra_args < rec_pos) {
+            /* Partial application */
 	    mlsize_t num_args, i;
 	    num_args = 1 + coq_extra_args; /* arg1 + extra args */
 	    Alloc_small(accu, num_args + 2, Closure_tag); 
@@ -553,10 +554,10 @@ value coq_interprete
 	  } else {
 	    /* The recursif argument is an accumulator */
 	    mlsize_t num_args, i;
-	    /* Construction of partially applied PF */
+	    /* Construction of fixpoint applied to its [rec_pos-1] first arguments */
 	    Alloc_small(accu, rec_pos + 2, Closure_tag); 
-	    Field(accu, 1) = coq_env;
-	    for (i = 0; i < rec_pos; i++) Field(accu, i + 2) = sp[i];
+	    Field(accu, 1) = coq_env; // We store the fixpoint in the first field
+	    for (i = 0; i < rec_pos; i++) Field(accu, i + 2) = sp[i]; // Storing args
 	    Code_val(accu) = pc;
 	    sp += rec_pos;
 	    *--sp = accu;
@@ -1024,7 +1025,7 @@ value coq_interprete
 	    annot = *pc++;
 	    sz = *pc++;
 	    *--sp=Field(coq_global_data, annot);
-	    /* On sauve la pile */
+	    /* We save the stack */
 	    if (sz == 0) accu = Atom(0);
 	    else {
 	      Alloc_small(accu, sz, Default_tag);
@@ -1035,17 +1036,17 @@ value coq_interprete
 	      }
 	    }
 	    *--sp = accu;
-	    /* On cree le zipper switch */
+	    /* We create the switch zipper */
 	    Alloc_small(accu, 5, Default_tag);
 	    Field(accu, 0) =  (value)typlbl; Field(accu, 1) = (value)swlbl; 
 	    Field(accu, 2) = sp[1]; Field(accu, 3) = sp[0]; 
 	    Field(accu, 4) = coq_env;
 	    sp++;sp[0] = accu;
-	    /* On cree l'atome */
+	    /* We create the atom */
 	    Alloc_small(accu, 2, ATOM_SWITCH_TAG);
 	    Field(accu, 0) = sp[1]; Field(accu, 1) = sp[0];
 	    sp++;sp[0] = accu;
-	    /* On cree l'accumulateur */
+	    /* We create the accumulator */
 	    Alloc_small(accu, 2, Accu_tag);
 	    Code_val(accu) = accumulate; 
 	    Field(accu,1) = *sp++;

@@ -652,7 +652,7 @@ Defined.
 
   Definition ReflectiveSubuniverse := Modality.
 
-  Definition O_reflector := O_reflector.
+  Definition O_reflector@{u a i} := O_reflector@{u a i}.
 
   Definition In@{u a i} : forall (O : ReflectiveSubuniverse@{u a}),
                    Type2le@{i a} -> Type2le@{i a}
@@ -660,7 +660,7 @@ Defined.
   Definition O_inO@{u a i} : forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}),
                                In@{u a i} O (O_reflector@{u a i} O T)
     := O_inO@{u a i}.
-  Definition to := to.
+  Definition to@{u a i} := to@{u a i}.
   Definition inO_equiv_inO@{u a i j k} :
       forall (O : ReflectiveSubuniverse@{u a}) (T : Type@{i}) (U : Type@{j})
              (T_inO : In@{u a i} O T) (f : T -> U) (feq : IsEquiv f),

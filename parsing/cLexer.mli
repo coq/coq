@@ -9,6 +9,7 @@
 val add_keyword : string -> unit
 val remove_keyword : string -> unit
 val is_keyword : string -> bool
+val keywords : unit -> CString.Set.t
 
 val check_ident : string -> unit
 val is_ident : string -> bool
