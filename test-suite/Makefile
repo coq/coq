@@ -105,7 +105,7 @@ run: $(SUBSYSTEMS)
 bugs: $(BUGS)
 
 clean:
-	rm -f trace lia.cache
+	rm -f trace .lia.cache
 	$(SHOW) "RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log>"
 	$(HIDE)find . \( \
 	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.log' \
