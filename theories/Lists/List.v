@@ -340,11 +340,11 @@ Section Facts.
 
 End Facts.
 
-Hint Resolve app_assoc app_assoc_reverse: datatypes v62.
-Hint Resolve app_comm_cons app_cons_not_nil: datatypes v62.
-Hint Immediate app_eq_nil: datatypes v62.
-Hint Resolve app_eq_unit app_inj_tail: datatypes v62.
-Hint Resolve in_eq in_cons in_inv in_nil in_app_or in_or_app: datatypes v62.
+Hint Resolve app_assoc app_assoc_reverse: datatypes.
+Hint Resolve app_comm_cons app_cons_not_nil: datatypes.
+Hint Immediate app_eq_nil: datatypes.
+Hint Resolve app_eq_unit app_inj_tail: datatypes.
+Hint Resolve in_eq in_cons in_inv in_nil in_app_or in_or_app: datatypes.
 
 
 
@@ -1544,7 +1544,7 @@ Section length_order.
 End length_order.
 
 Hint Resolve lel_refl lel_cons_cons lel_cons lel_nil lel_nil nil_cons:
-  datatypes v62.
+  datatypes.
 
 
 (******************************)
@@ -1613,7 +1613,7 @@ Section SetIncl.
 End SetIncl.
 
 Hint Resolve incl_refl incl_tl incl_tran incl_appl incl_appr incl_cons
-  incl_app: datatypes v62.
+  incl_app: datatypes.
 
 
 (**************************************)
@@ -2365,7 +2365,7 @@ Notation rev_acc := rev_append (only parsing).
 Notation rev_acc_rev := rev_append_rev (only parsing).
 Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 
-Hint Resolve app_nil_end : datatypes v62.
+Hint Resolve app_nil_end : datatypes.
 (* end hide *)
 
 Section Repeat.

@@ -39,13 +39,13 @@ Lemma diff_true_false : true <> false.
 Proof.
   discriminate.
 Qed.
-Hint Resolve diff_true_false : bool v62.
+Hint Resolve diff_true_false : bool.
 
 Lemma diff_false_true : false <> true.
 Proof.
   discriminate.
 Qed.
-Hint Resolve diff_false_true : bool v62.
+Hint Resolve diff_false_true : bool.
 Hint Extern 1 (false <> true) => exact diff_false_true.
 
 Lemma eq_true_false_abs : forall b:bool, b = true -> b = false -> False.
@@ -82,7 +82,7 @@ Definition leb (b1 b2:bool) :=
     | true => b2 = true
     | false => True
   end.
-Hint Unfold leb: bool v62.
+Hint Unfold leb: bool.
 
 Lemma leb_implb : forall b1 b2, leb b1 b2 <-> implb b1 b2 = true.
 Proof.
@@ -242,14 +242,14 @@ Lemma orb_true_intro :
 Proof.
  intros; apply orb_true_iff; trivial.
 Qed.
-Hint Resolve orb_true_intro: bool v62.
+Hint Resolve orb_true_intro: bool.
 
 Lemma orb_false_intro :
   forall b1 b2:bool, b1 = false -> b2 = false -> b1 || b2 = false.
 Proof.
  intros. subst. reflexivity.
 Qed.
-Hint Resolve orb_false_intro: bool v62.
+Hint Resolve orb_false_intro: bool.
 
 Lemma orb_false_elim :
   forall b1 b2:bool, b1 || b2 = false -> b1 = false /\ b2 = false.
@@ -268,7 +268,7 @@ Lemma orb_true_r : forall b:bool, b || true = true.
 Proof.
   destr_bool.
 Qed.
-Hint Resolve orb_true_r: bool v62.
+Hint Resolve orb_true_r: bool.
 
 Lemma orb_true_l : forall b:bool, true || b = true.
 Proof.
@@ -284,13 +284,13 @@ Lemma orb_false_r : forall b:bool, b || false = b.
 Proof.
   destr_bool.
 Qed.
-Hint Resolve orb_false_r: bool v62.
+Hint Resolve orb_false_r: bool.
 
 Lemma orb_false_l : forall b:bool, false || b = b.
 Proof.
   destr_bool.
 Qed.
-Hint Resolve orb_false_l: bool v62.
+Hint Resolve orb_false_l: bool.
 
 Notation orb_b_false := orb_false_r (only parsing).
 Notation orb_false_b := orb_false_l (only parsing).
@@ -301,7 +301,7 @@ Lemma orb_negb_r : forall b:bool, b || negb b = true.
 Proof.
   destr_bool.
 Qed.
-Hint Resolve orb_negb_r: bool v62.
+Hint Resolve orb_negb_r: bool.
 
 Notation orb_neg_b := orb_negb_r (only parsing).
 
@@ -318,7 +318,7 @@ Lemma orb_assoc : forall b1 b2 b3:bool, b1 || (b2 || b3) = b1 || b2 || b3.
 Proof.
   destr_bool.
 Qed.
-Hint Resolve orb_comm orb_assoc: bool v62.
+Hint Resolve orb_comm orb_assoc: bool.
 
 (*******************************)
 (** * Properties of [andb]     *)
@@ -392,7 +392,7 @@ Lemma andb_false_elim :
 Proof.
   destruct b1; simpl; auto.
 Defined.
-Hint Resolve andb_false_elim: bool v62.
+Hint Resolve andb_false_elim: bool.
 
 (** Complementation *)
 
@@ -400,7 +400,7 @@ Lemma andb_negb_r : forall b:bool, b && negb b = false.
 Proof.
   destr_bool.
 Qed.
-Hint Resolve andb_negb_r: bool v62.
+Hint Resolve andb_negb_r: bool.
 
 Notation andb_neg_b := andb_negb_r (only parsing).
 
@@ -418,7 +418,7 @@ Proof.
   destr_bool.
 Qed.
 
-Hint Resolve andb_comm andb_assoc: bool v62.
+Hint Resolve andb_comm andb_assoc: bool.
 
 (*******************************************)
 (** * Properties mixing [andb] and [orb] *)
@@ -688,7 +688,7 @@ Lemma andb_prop_intro :
 Proof.
   destr_bool; tauto.
 Qed.
-Hint Resolve andb_prop_intro: bool v62.
+Hint Resolve andb_prop_intro: bool.
 
 Notation andb_true_intro2 :=
   (fun b1 b2 H1 H2 => andb_prop_intro b1 b2 (conj H1 H2))
@@ -699,7 +699,7 @@ Lemma andb_prop_elim :
 Proof.
   destr_bool; auto.
 Qed.
-Hint Resolve andb_prop_elim: bool v62.
+Hint Resolve andb_prop_elim: bool.
 
 Notation andb_prop2 := andb_prop_elim (only parsing).
 

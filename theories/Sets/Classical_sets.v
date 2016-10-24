@@ -122,4 +122,4 @@ Section Ensembles_classical.
 End Ensembles_classical.
 
  Hint Resolve Strict_super_set_contains_new_element Subtract_intro
-  not_SIncl_empty: sets v62.
+  not_SIncl_empty: sets.

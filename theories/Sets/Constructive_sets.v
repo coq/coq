@@ -141,4 +141,4 @@ End Ensembles_facts.
 Hint Resolve Singleton_inv Singleton_intro Add_intro1 Add_intro2
   Intersection_inv Couple_inv Setminus_intro Strict_Included_intro
   Strict_Included_strict Noone_in_empty Inhabited_not_empty Add_not_Empty
-  not_Empty_Add Inhabited_add Included_Empty: sets v62.
+  not_Empty_Add Inhabited_add Included_Empty: sets.

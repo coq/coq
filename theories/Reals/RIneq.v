@@ -389,7 +389,7 @@ Lemma Rplus_ne : forall r, r + 0 = r /\ 0 + r = r.
 Proof.
   split; ring.
 Qed.
-Hint Resolve Rplus_ne: real v62.
+Hint Resolve Rplus_ne: real.
 
 (**********)
 
@@ -425,7 +425,6 @@ Proof.
   apply (f_equal (fun v => v + r)).
 Qed.
 
-(*i Old i*)Hint Resolve Rplus_eq_compat_l: v62.
 
 (**********)
 Lemma Rplus_eq_reg_l : forall r r1 r2, r + r1 = r + r2 -> r1 = r2.
@@ -501,21 +500,21 @@ Lemma Rmult_0_r : forall r, r * 0 = 0.
 Proof.
   intro; ring.
 Qed.
-Hint Resolve Rmult_0_r: real v62.
+Hint Resolve Rmult_0_r: real.
 
 (**********)
 Lemma Rmult_0_l : forall r, 0 * r = 0.
 Proof.
   intro; ring.
 Qed.
-Hint Resolve Rmult_0_l: real v62.
+Hint Resolve Rmult_0_l: real.
 
 (**********)
 Lemma Rmult_ne : forall r, r * 1 = r /\ 1 * r = r.
 Proof.
   intro; split; ring.
 Qed.
-Hint Resolve Rmult_ne: real v62.
+Hint Resolve Rmult_ne: real.
 
 (**********)
 Lemma Rmult_1_r : forall r, r * 1 = r.
@@ -530,7 +529,6 @@ Proof.
   auto with real.
 Qed.
 
-(*i Old i*)Hint Resolve Rmult_eq_compat_l: v62.
 
 Lemma Rmult_eq_compat_r : forall r r1 r2, r1 = r2 -> r1 * r = r2 * r.
 Proof.
@@ -646,7 +644,7 @@ Lemma Ropp_0 : -0 = 0.
 Proof.
   ring.
 Qed.
-Hint Resolve Ropp_0: real v62.
+Hint Resolve Ropp_0: real.
 
 (**********)
 Lemma Ropp_eq_0_compat : forall r, r = 0 -> - r = 0.
