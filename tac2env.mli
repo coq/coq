@@ -56,3 +56,13 @@ val locate_extended_all_type : qualid -> type_constant list
 
 val define_primitive : ml_tactic_name -> ml_tactic -> unit
 val interp_primitive : ml_tactic_name -> ml_tactic
+
+(** {5 ML primitive types} *)
+
+type 'a ml_object = {
+  ml_type : type_constant;
+  ml_interp : environment -> 'a -> Geninterp.Val.t Proofview.tactic;
+}
+
+val define_ml_object : ('a, 'b, 'c) genarg_type -> 'b ml_object -> unit
+val interp_ml_object : ('a, 'b, 'c) genarg_type -> 'b ml_object

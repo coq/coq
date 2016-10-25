@@ -52,7 +52,7 @@ let rec eval_pure = function
 | GTacCst (_, n, []) -> ValInt n
 | GTacCst (_, n, el) -> ValBlk (n, Array.map_of_list eval_pure el)
 | GTacAtm (AtmStr _) | GTacArr _ | GTacLet _ | GTacVar _
-| GTacApp _ | GTacCse _ | GTacPrm _ ->
+| GTacApp _ | GTacCse _ | GTacPrm _ | GTacExt _ ->
   anomaly (Pp.str "Term is not a syntactical value")
 
 let define_global kn e =
@@ -137,3 +137,20 @@ let locate_type qid =
 let locate_extended_all_type qid =
   let tab = !nametab in
   KnTab.find_prefixes qid tab.tab_type
+
+type 'a ml_object = {
+  ml_type : type_constant;
+  ml_interp : environment -> 'a -> Geninterp.Val.t Proofview.tactic;
+}
+
+module MLTypeObj =
+struct
+  type ('a, 'b, 'c) obj = 'b ml_object
+  let name = "ltac2_ml_type"
+  let default _ = None
+end
+
+module MLType = Genarg.Register(MLTypeObj)
+
+let define_ml_object t tpe = MLType.register0 t tpe
+let interp_ml_object t = MLType.obj t

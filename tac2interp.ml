@@ -83,6 +83,10 @@ let rec interp ist = function
 | GTacPrm (ml, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   Tac2env.interp_primitive ml el
+| GTacExt e ->
+  let GenArg (Glbwit tag, e) = e in
+  let tpe = Tac2env.interp_ml_object tag in
+  tpe.Tac2env.ml_interp ist e >>= fun e -> return (ValExt e)
 
 and interp_app ist f args = match f with
 | ValCls { clos_env = ist; clos_var = ids; clos_exp = e } ->

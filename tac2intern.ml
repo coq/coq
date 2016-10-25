@@ -144,6 +144,9 @@ let empty_env () = {
   env_rec = Id.Map.empty;
 }
 
+let ltac2_env : environment Genintern.Store.field =
+  Genintern.Store.field ()
+
 let fresh_id env = UF.fresh env.env_cst
 
 let get_alias (loc, id) env =
@@ -171,6 +174,7 @@ let loc_of_tacexpr = function
 | CTacCnv (loc, _, _) -> loc
 | CTacSeq (loc, _, _) -> loc
 | CTacCse (loc, _, _) -> loc
+| CTacExt (loc, _) -> loc
 
 let loc_of_patexpr = function
 | CPatAny loc -> loc
@@ -324,12 +328,12 @@ let rec is_value = function
 | GTacCst (kn, n, el) ->
   (** To be a value, a constructor must be immutable *)
   assert false (** TODO *)
-| GTacArr _ | GTacCse _ | GTacPrm _ -> false
+| GTacArr _ | GTacCse _ | GTacExt _ | GTacPrm _ -> false
 
 let is_rec_rhs = function
 | GTacFun _ -> true
 | GTacAtm _ | GTacVar _ | GTacRef _ | GTacApp _ | GTacLet _ -> false
-| GTacTup _ | GTacArr _ | GTacPrm _ | GTacCst _ | GTacCse _ -> false
+| GTacTup _ | GTacArr _ | GTacExt _ | GTacPrm _ | GTacCst _ | GTacCse _ -> false
 
 let rec fv_type f t accu = match t with
 | GTypVar id -> f id accu
@@ -600,6 +604,17 @@ let rec intern_rec env = function
   (GTacLet (false, [Anonymous, e1], e2), t2)
 | CTacCse (loc, e, pl) ->
   intern_case env loc e pl
+| CTacExt (loc, ext) ->
+  let open Genintern in
+  let GenArg (Rawwit tag, _) = ext in
+  let tpe = interp_ml_object tag in
+  (** External objects do not have access to the named context because this is
+      not stable by dynamic semantics. *)
+  let genv = Global.env_of_context Environ.empty_named_context_val in
+  let ist = empty_glob_sign genv in
+  let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
+  let (_, ext) = generic_intern ist ext in
+  (GTacExt ext, GTypRef (tpe.ml_type, []))
 
 and intern_let_rec env loc el e =
   let fold accu ((loc, na), _, _) = match na with
@@ -892,6 +907,9 @@ let rec subst_expr subst e = match e with
   let cse1' = Array.map (fun (ids, e) -> (ids, subst_expr subst e)) cse1 in
   let ci' = subst_case_info subst ci in
   GTacCse (subst_expr subst e, ci', cse0', cse1')
+| GTacExt ext ->
+  let ext' = Genintern.generic_substitute subst ext in
+  if ext' == ext then e else GTacExt ext'
 
 let subst_typedef subst e = match e with
 | GTydDef t ->

@@ -76,6 +76,7 @@ type raw_tacexpr =
 | CTacCnv of Loc.t * raw_tacexpr * raw_typexpr
 | CTacSeq of Loc.t * raw_tacexpr * raw_tacexpr
 | CTacCse of Loc.t * raw_tacexpr * raw_taccase list
+| CTacExt of Loc.t * raw_generic_argument
 
 and raw_taccase = raw_patexpr * raw_tacexpr
 
@@ -94,6 +95,7 @@ type glb_tacexpr =
 | GTacArr of glb_tacexpr list
 | GTacCst of KerName.t * int * glb_tacexpr list
 | GTacCse of glb_tacexpr * case_info * glb_tacexpr array * (Name.t array * glb_tacexpr) array
+| GTacExt of glob_generic_argument
 | GTacPrm of ml_tactic_name * glb_tacexpr list
 
 (** Toplevel statements *)
@@ -134,3 +136,5 @@ and closure = {
 }
 
 type ml_tactic = valexpr list -> valexpr Proofview.tactic
+
+type environment = valexpr Id.Map.t
