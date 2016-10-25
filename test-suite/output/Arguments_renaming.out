@@ -106,7 +106,7 @@ Expands to: Constant Top.myplus
 The command has indeed failed with message:
 Error: Arguments lists should agree on names they provide.
 The command has indeed failed with message:
-Error: Sequences of implicit arguments must be of different lengths
+Error: Sequences of implicit arguments must be of different lengths.
 The command has indeed failed with message:
 Error: Arguments names must be distinct.
 The command has indeed failed with message:

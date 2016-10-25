@@ -659,7 +659,7 @@ let check_inclusion l =
   let rec aux = function
     | n1::(n2::_ as nl) ->
 	if n1 <= n2 then
-	  error "Sequences of implicit arguments must be of different lengths";
+	  error "Sequences of implicit arguments must be of different lengths.";
 	aux nl
     | _ -> () in
   aux (List.map (fun (imps,_) -> List.length imps) l)
