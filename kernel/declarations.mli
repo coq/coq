@@ -58,10 +58,11 @@ type projection_body = {
   proj_body : constr; (* For compatibility with VMs only, the match version *)
 }
 
+(* Global declarations (i.e. constants) can be either: *)
 type constant_def =
-  | Undef of inline
-  | Def of constr Mod_subst.substituted
-  | OpaqueDef of Opaqueproof.opaque
+  | Undef of inline                       (** a global assumption *)
+  | Def of constr Mod_subst.substituted   (** or a transparent global definition *)
+  | OpaqueDef of Opaqueproof.opaque       (** or an opaque global definition *)
 
 type constant_universes = Univ.universe_context
 
