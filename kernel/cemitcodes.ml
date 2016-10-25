@@ -226,6 +226,7 @@ let emit_instr = function
       else (out opSETFIELD;out_int n)
   | Ksequence _ -> invalid_arg "Cemitcodes.emit_instr"
   | Kproj (n,p) -> out opPROJ; out_int n; slot_for_const (Const_proj p)
+  | Kensurestackcapacity size -> out opENSURESTACKCAPACITY; out_int size
   (* spiwack *)
   | Kbranch lbl -> out opBRANCH; out_label lbl
   | Kaddint31 -> out opADDINT31
