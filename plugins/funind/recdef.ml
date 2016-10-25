@@ -1538,7 +1538,9 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
 	begin
 	  if do_observe ()
 	  then Feedback.msg_debug (str "Cannot create equation Lemma " ++ CErrors.print e)
-	  else error "Cannot create equation Lemma"
+	  else CErrors.errorlabstrm "Cannot create equation Lemma"
+               (str "Cannot create equation lemma." ++ spc () ++ 
+                str "This may be because the function is nested-recursive.")
 	  ;
 	  true
 	end
