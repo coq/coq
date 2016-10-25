@@ -24,7 +24,6 @@ Other bugfixes
 - #4156: micromega cache files are now hidden files.
 - #4871: interrupting par:abstract kills coqtop.
 - #5043: [Admitted] lemmas pick up section variables.
-- Fix call to "lazy beta iota" in "refine" (restoring v8.4 behavior).
 - Fix name of internal refine ("simple refine").
 - #5062: probably a typo in Strict Proofs mode.
 - #5065: Anomaly: Not a proof by induction.

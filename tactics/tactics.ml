@@ -4589,7 +4589,7 @@ module New = struct
   let reduce_after_refine =
     Proofview.V82.tactic (reduce
       (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
-      {onhyps=Some []; concl_occs=AllOccurrences })
+      {onhyps=None; concl_occs=AllOccurrences })
 
   let refine ?unsafe c =
     Proofview.Refine.refine ?unsafe c <*>
