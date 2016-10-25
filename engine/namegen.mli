@@ -54,7 +54,22 @@ val it_mkLambda_or_LetIn_name : env -> constr -> Context.Rel.t -> constr
 (** Avoid clashing with a name satisfying some predicate *)
 val next_ident_away_from : Id.t -> (Id.t -> bool) -> Id.t
 
-(** Avoid clashing with a name of the given list *)
+(** [next_ident_away original_id unwanted_ids] returns a new identifier as close as possible
+    to the [original_id] while avoiding all [unwanted_ids].
+
+    In particular:
+    {ul {- if [original_id] does not appear in the list of [unwanted_ids], then [original_id] is returned.}
+        {- if [original_id] appears in the list of [unwanted_ids],
+           then this function returns a new id that:
+           {ul {- has the same {i root} as the [original_id],}
+               {- does not occur in the list of [unwanted_ids],}
+               {- has the smallest possible {i subscript}.}}}}
+
+    where by {i subscript} of some identifier we mean last part of it that is composed
+    only from (decimal) digits and by {i root} of some identifier we mean
+    the whole identifier except for the {i subscript}.
+
+    E.g. if we take [foo42], then [42] is the {i subscript}, and [foo] is the root. *)
 val next_ident_away : Id.t -> Id.t list -> Id.t
 
 (** Avoid clashing with a name already used in current module *)
