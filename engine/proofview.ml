@@ -22,6 +22,8 @@ open Context.Named.Declaration
 (** Main state of tactics *)
 type proofview = Proofview_monad.proofview
 
+(* The first items in pairs below are proofs (under construction).
+   The second items in the pairs below are statements that are being proved. *)
 type entry = (Term.constr * Term.types) list
 
 (** Returns a stylised view of a proofview for use by, for instance,
