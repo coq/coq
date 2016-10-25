@@ -1158,9 +1158,14 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       (* Some head evar have been instantiated, or unknown kind of problem *)
       evar_conv_x ts env evd pbty t1 t2
 
+let error_cannot_unify env evd pb ?reason t1 t2 =
+  Pretype_errors.error_cannot_unify_loc
+    (loc_of_conv_pb evd pb) env
+    evd ?reason (t1, t2)
+
 let check_problems_are_solved env evd =
   match snd (extract_all_conv_pbs evd) with
-  | (pbty,env,t1,t2)::_ -> Pretype_errors.error_cannot_unify env evd (t1, t2)
+  | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb t1 t2
   | _ -> ()
 
 let max_undefined_with_candidates evd =
@@ -1229,17 +1234,15 @@ let consider_remaining_unif_problems env
 	      aux evd pbs progress (pb :: stuck)
             end
         | UnifFailure (evd,reason) ->
-	    Pretype_errors.error_cannot_unify_loc (loc_of_conv_pb evd pb)
-              env evd ~reason (t1, t2))
+           error_cannot_unify env evd pb ~reason t1 t2)
     | _ -> 
 	if progress then aux evd stuck false []
 	else 
 	  match stuck with
 	  | [] -> (* We're finished *) evd
 	  | (pbty,env,t1,t2 as pb) :: _ ->
-	      (* There remains stuck problems *)
-	      Pretype_errors.error_cannot_unify_loc (loc_of_conv_pb evd pb)
-                env evd (t1, t2)
+	     (* There remains stuck problems *)
+             error_cannot_unify env evd pb t1 t2
   in
   let (evd,pbs) = extract_all_conv_pbs evd in
   let heuristic_solved_evd = aux evd pbs false [] in
