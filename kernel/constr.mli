@@ -189,8 +189,12 @@ type ('constr, 'types) pcofixpoint =
     int * ('constr, 'types) prec_declaration
 
 type ('constr, 'types) kind_of_term =
-  | Rel       of int
-  | Var       of Id.t
+  | Rel       of int                                  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
+
+  | Var       of Id.t                                 (** Gallina-variable that was introduced by Vernacular-command that extends
+                                                          the local context of the currently open section
+                                                          (i.e. [Variable] or [Let]). *)
+
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of Sorts.t
@@ -199,12 +203,16 @@ type ('constr, 'types) kind_of_term =
   | Lambda    of Name.t * 'types * 'constr            (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
   | LetIn     of Name.t * 'constr * 'types * 'constr  (** Concrete syntax ["let A:B := C in D"] is represented as [LetIn (A,B,C,D)]. *)
   | App       of 'constr * 'constr array              (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])].
+
                                                           The {!mkApp} constructor also enforces the following invariant:
                                                           - [F] itself is not {!App}
                                                           - and [[|P1;..;Pn|]] is not empty. *)
-  | Const     of constant puniverses
-  | Ind       of inductive puniverses
-  | Construct of constructor puniverses
+
+  | Const     of constant puniverses                  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
+                                                          (i.e. [Parameter], or [Axiom], or [Definition], or [Theorem] etc.) *)
+
+  | Ind       of inductive puniverses                 (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
+  | Construct of constructor puniverses               (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
