@@ -246,12 +246,11 @@ let unify_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
   end }
 
 (** Application of a lemma using [refine] instead of the old [w_unify] *)
-let unify_resolve_refine poly flags =
+let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
   let open Clenv in
-  { enter = begin fun gls ((c, t, ctx),n,clenv) ->
-    let env = Proofview.Goal.env gls in
-    let concl = Proofview.Goal.concl gls in
-    Refine.refine ~unsafe:true { Sigma.run = fun sigma ->
+  let env = Proofview.Goal.env gls in
+  let concl = Proofview.Goal.concl gls in
+  Refine.refine ~unsafe:true { Sigma.run = fun sigma ->
       let sigma = Sigma.to_evar_map sigma in
       let sigma, term, ty =
         if poly then
@@ -266,15 +265,20 @@ let unify_resolve_refine poly flags =
       let sigma', cl = Clenv.make_evar_clause env sigma ?len:n ty in
       let term = applistc term (List.map (fun x -> x.hole_evar) cl.cl_holes) in
       let sigma' =
-        let evdref = ref sigma' in
-        if not (Evarconv.e_cumul env ~ts:flags.core_unify_flags.modulo_delta
-                                      evdref cl.cl_concl concl) then
-          Type_errors.error_actual_type env
-            {Environ.uj_val = term; Environ.uj_type = cl.cl_concl}
-            concl;
-        !evdref
+        Evarconv.the_conv_x_leq env ~ts:flags.core_unify_flags.modulo_delta
+                                cl.cl_concl concl sigma'
       in Sigma.here term (Sigma.Unsafe.of_evar_map sigma') }
-  end }
+
+let unify_resolve_refine poly flags gl clenv =
+  Proofview.tclORELSE
+    (unify_resolve_refine poly flags gl clenv)
+    (fun ie ->
+      match fst ie with
+      | Evarconv.UnableToUnify _ ->
+         Tacticals.New.tclZEROMSG (str "Unable to unify")
+      | e when CErrors.noncritical e ->
+         Tacticals.New.tclZEROMSG (str "Unexpected error")
+      | _ -> iraise ie)
 
 (** Dealing with goals of the form A -> B and hints of the form
   C -> A -> B.
@@ -295,9 +299,11 @@ let clenv_of_prods poly nprods (c, clenv) gl =
 let with_prods nprods poly (c, clenv) f =
   if get_typeclasses_limit_intros () then
     Proofview.Goal.nf_enter { enter = begin fun gl ->
-     match clenv_of_prods poly nprods (c, clenv) gl with
-     | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
-     | Some (diff, clenv') -> f.enter gl (c, diff, clenv') end }
+      try match clenv_of_prods poly nprods (c, clenv) gl with
+          | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
+          | Some (diff, clenv') -> f.enter gl (c, diff, clenv')
+      with e when CErrors.noncritical e ->
+        Tacticals.New.tclFAIL 0 (CErrors.print e) end }
   else Proofview.Goal.nf_enter
          { enter = begin fun gl ->
                    if Int.equal nprods 0 then f.enter gl (c, None, clenv)
@@ -312,7 +318,7 @@ let matches_pattern concl pat =
        if Constr_matching.is_matching env sigma pat concl then
          Proofview.tclUNIT ()
        else
-         Tacticals.New.tclZEROMSG (str "conclPattern")
+         Tacticals.New.tclZEROMSG (str "pattern does not match")
   in
    Proofview.Goal.enter { enter = fun gl ->
      let env = Proofview.Goal.env gl in
@@ -405,8 +411,8 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
              let tac =
                with_prods nprods poly (term,cl)
                           ({ enter = fun gl clenv ->
-                             (matches_pattern concl p) <*>
-                               ((unify_resolve_refine poly flags).enter gl clenv)})
+                             matches_pattern concl p <*>
+                               unify_resolve_refine poly flags gl clenv})
              in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
@@ -420,8 +426,8 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
            if get_typeclasses_filtered_unification () then
              let tac = (with_prods nprods poly (term,cl)
                   ({ enter = fun gl clenv ->
-                             (matches_pattern concl p) <*>
-                               ((unify_resolve_refine poly flags).enter gl clenv)})) in
+                             matches_pattern concl p <*>
+                             unify_resolve_refine poly flags gl clenv})) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              let tac =
@@ -431,7 +437,15 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
              else
                Proofview.tclBIND (Proofview.with_shelf tac)
                   (fun (gls, ()) -> shelve_dependencies gls)
-      | Give_exact c -> Proofview.V82.tactic (e_give_exact flags poly c)
+        | Give_exact (c,clenv) ->
+           if get_typeclasses_filtered_unification () then
+             let tac =
+               matches_pattern concl p <*>
+                 Proofview.Goal.nf_enter
+                   { enter = fun gl -> unify_resolve_refine poly flags gl (c,None,clenv) } in
+             Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
+           else
+             Proofview.V82.tactic (e_give_exact flags poly (c,clenv))
       | Res_pf_THEN_trivial_fail (term,cl) ->
          let fst = with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
          let snd = if complete then Tacticals.New.tclIDTAC
