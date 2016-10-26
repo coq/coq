@@ -20,6 +20,10 @@ val get_typeclasses_debug : unit -> bool
 val set_typeclasses_depth : int option -> unit
 val get_typeclasses_depth : unit -> int option
 
+type search_strategy = Dfs | Bfs
+
+val set_typeclasses_strategy : search_strategy -> unit
+
 val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state ->
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic

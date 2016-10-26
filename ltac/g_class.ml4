@@ -44,11 +44,22 @@ ARGUMENT EXTEND debug TYPED AS bool PRINTED BY pr_debug
 | [ ] -> [ false ]
 END
 
+let pr_search_strategy _prc _prlc _prt = function
+  | Dfs -> Pp.str "dfs"
+  | Bfs -> Pp.str "bfs"
+
+ARGUMENT EXTEND eauto_search_strategy PRINTED BY pr_search_strategy
+| [ "bfs" ] -> [ Bfs ]
+| [ "dfs" ] -> [ Dfs ]
+| [ ] -> [ Dfs ]
+END
+
 (* true = All transparent, false = Opaque if possible *)
 
 VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
- | [ "Typeclasses" "eauto" ":=" debug(d) int_opt(depth) ] -> [
+ | [ "Typeclasses" "eauto" ":=" debug(d) eauto_search_strategy(s) int_opt(depth) ] -> [
      set_typeclasses_debug d;
+     set_typeclasses_strategy s;
      set_typeclasses_depth depth
    ]
 END

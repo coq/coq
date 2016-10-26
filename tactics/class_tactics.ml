@@ -181,6 +181,12 @@ let set_typeclasses_depth =
       optread  = get_typeclasses_depth;
       optwrite = set_typeclasses_depth; }
 
+type search_strategy = Dfs | Bfs
+
+let set_typeclasses_strategy = function
+  | Dfs -> set_typeclasses_iterative_deepening true
+  | Bfs -> set_typeclasses_iterative_deepening false
+
 let pr_ev evs ev =
   Printer.pr_constr_env (Goal.V82.env evs ev) evs
                         (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
