@@ -5,11 +5,39 @@ Module onlyclasses.
   Hint Extern 0 Foo => exact foo : typeclass_instances.
   Goal Foo * Foo.
     split. shelve.
-    Fail typeclasses eauto.
+    Set Typeclasses Debug.
+    typeclasses eauto.
     typeclasses eauto with typeclass_instances.
     Unshelve. typeclasses eauto with typeclass_instances.
   Abort.
 End onlyclasses.
+
+Module shelve_non_class_subgoals.
+  Variable Foo : Type.
+  Variable foo : Foo.
+  Hint Extern 0 Foo => exact foo : typeclass_instances.
+  Class Bar := {}.
+  Instance bar1 (f:Foo) : Bar.
+
+  Typeclasses eauto := debug.
+  Set Typeclasses Debug Verbosity 2.
+  Goal Bar.
+    (* Solution has shelved subgoals *)
+    Fail typeclasses eauto.
+  Abort.
+End shelve_non_class_subgoals.
+
+Module shelve_non_class_subgoals2.
+  Class Bar := {}.
+
+  Instance bar1 (t:Type) : Bar.
+  Hint Extern 0 => exact True : typeclass_instances.
+  Typeclasses eauto := debug.
+  Goal Bar.
+    Fail typeclasses eauto.
+    debug eauto with typeclass_instances.
+  Qed.  
+End shelve_non_class_subgoals2.
 
 Module bt.
 Require Import Equivalence.

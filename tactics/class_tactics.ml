@@ -92,7 +92,7 @@ open Goptions
 let _ =
   declare_bool_option
     { optsync  = true;
-      optdepr  = false;
+      optdepr  = true;
       optname  = "do typeclass search modulo eta conversion";
       optkey   = ["Typeclasses";"Modulo";"Eta"];
       optread  = get_typeclasses_modulo_eta;
@@ -183,8 +183,8 @@ let set_typeclasses_depth =
 type search_strategy = Dfs | Bfs
 
 let set_typeclasses_strategy = function
-  | Dfs -> set_typeclasses_iterative_deepening true
-  | Bfs -> set_typeclasses_iterative_deepening false
+  | Dfs -> set_typeclasses_iterative_deepening false
+  | Bfs -> set_typeclasses_iterative_deepening true
 
 let pr_ev evs ev =
   Printer.pr_constr_env (Goal.V82.env evs ev) evs
@@ -302,7 +302,7 @@ let with_prods nprods poly (c, clenv) f =
           | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
           | Some (diff, clenv') -> f.enter gl (c, diff, clenv')
       with e when CErrors.noncritical e ->
-        Tacticals.New.tclFAIL 0 (CErrors.print e) end }
+        Tacticals.New.tclZEROMSG (CErrors.print e) end }
   else Proofview.Goal.nf_enter
          { enter = begin fun gl ->
                    if Int.equal nprods 0 then f.enter gl (c, None, clenv)
@@ -345,8 +345,8 @@ let pr_gls sigma gls =
 let shelve_dependencies gls =
   let open Proofview in
   tclEVARMAP >>= fun sigma ->
-  (if !typeclasses_debug > 1 then
-     Feedback.msg_debug (str" shelving goals: " ++ pr_gls sigma gls);
+  (if !typeclasses_debug > 1 && List.length gls > 0 then
+     Feedback.msg_debug (str" shelving dependent subgoals: " ++ pr_gls sigma gls);
    shelve_goals gls)
 
 (** Hack to properly solve dependent evars that are typeclasses *)
@@ -1011,6 +1011,17 @@ module Search = struct
 	Evd.add sigma gl evi')
       sigma goals
 
+  let shelve_nonclass info =
+    Proofview.Goal.enter { enter = fun gl ->
+      let gl = Proofview.Goal.assume gl in
+      let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
+      if is_class_type sigma (Proofview.Goal.concl gl) then
+        Proofview.tclUNIT ()
+      else (if !typeclasses_debug > 1 then
+              Feedback.msg_debug (pr_depth info.search_depth ++ str": shelving non-class subgoal " ++
+                                    pr_ev sigma (Proofview.Goal.goal gl));
+            Proofview.shelve) }
+
   (** The general hint application tactic.
       tac1 + tac2 .... The choice of OR or ORELSE is determined
       depending on the dependencies of the goal and the unique/Prop
@@ -1121,7 +1132,7 @@ module Search = struct
                in the subgoals, turn them into subgoals now. *)
             let shelved, goals = List.split_when (fun (ev, s) -> s) remaining in
             let shelved = List.map fst shelved and goals = List.map fst goals in
-            if !typeclasses_debug > 1 then
+            if !typeclasses_debug > 1 && not (List.is_empty goals) then
               Feedback.msg_debug
                 (str"Adding shelved subgoals to the search: " ++
                  prlist_with_sep spc (pr_ev sigma) goals ++
@@ -1137,12 +1148,18 @@ module Search = struct
         in res <*> tclEVARMAP >>= finish
       in
       if path_matches derivs [] then aux e tl
-      else ortac
-             (with_shelf tac >>= fun s ->
+      else
+        let filter =
+          if info.search_only_classes then shelve_nonclass info
+          else Proofview.tclUNIT ()
+        in
+        ortac
+             (with_shelf (tac <*> filter) >>= fun s ->
               let i = !idx in incr idx; result s i None)
-             (fun e' -> if CErrors.noncritical (fst e') then
-                       (pr_error e'; aux (merge_exceptions e e') tl)
-                     else iraise e')
+             (fun e' ->
+	      if CErrors.noncritical (fst e') then
+                (pr_error e'; aux (merge_exceptions e e') tl)
+              else (Printf.printf "raising again\n%!"; iraise e'))
     and aux e = function
       | x :: xs -> onetac e x xs
       | [] ->
@@ -1203,9 +1220,12 @@ module Search = struct
         unit Proofview.tactic =
     let open Proofview in
     let open Proofview.Notations in
-    let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
-    let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
-    search_tac hints depth 1 info
+    if only_classes && not (is_class_type sigma (Goal.concl gl)) then
+      Proofview.shelve
+    else
+      let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
+      let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
+      search_tac hints depth 1 info
 
   let search_tac ?(st=full_transparent_state) only_classes dep hints depth =
     let open Proofview in
@@ -1236,7 +1256,22 @@ module Search = struct
                                    | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
 
-  let eauto_tac ?(st=full_transparent_state) ~only_classes ~depth ~dep hints =
+  let disallow_shelved tac =
+    let open Proofview in
+    with_shelf (tclONCE tac) >>= fun (shelved,result) ->
+    (if not (List.is_empty shelved) then
+       begin
+         Proofview.tclEVARMAP >>= fun sigma ->
+	 let gls = prlist_with_sep spc (pr_ev sigma) shelved in
+	 (if !typeclasses_debug > 0 then
+	  Feedback.msg_debug (str"Non-empty shelf at end of resolution:" ++ gls));
+	 Tacticals.New.tclFAIL 1 (str"Proof search failed: " ++
+				  str"shelved goals remain: " ++ gls)
+       end
+     else tclUNIT result)
+
+  let eauto_tac ?(st=full_transparent_state) ?(unique=false) ~only_classes ~depth ~dep hints =
+    let open Proofview in
     let tac =
       let search = search_tac ~st only_classes dep hints in
       if get_typeclasses_iterative_deepening () then
@@ -1257,11 +1292,19 @@ module Search = struct
                                      else str" without reaching its limit"))
       | Proofview.MoreThanOneSuccess ->
          Tacticals.New.tclFAIL 0 (str"Proof search failed: " ++
-                                  str"more than one success found.")
+                                  str"more than one success found")
       | e -> Proofview.tclZERO ~info:ie e
-    in Proofview.tclOR tac error
+    in
+    let tac = Proofview.tclOR tac error in
+    let tac =
+      if unique then
+        Proofview.tclEXACTLY_ONCE Proofview.MoreThanOneSuccess tac
+      else tac
+    in
+    let tac = if only_classes then disallow_shelved tac else tac in
+    tac
 
-  let run_on_evars ?(unique=false) p evm tac =
+  let run_on_evars p evm tac =
     match evars_to_goals p evm with
     | None -> None (* This happens only because there's no evar having p *)
     | Some (goals, evm') ->
@@ -1275,11 +1318,6 @@ module Search = struct
        let _, pv = Proofview.init evm' [] in
        let pv = Proofview.unshelve goals pv in
        try
-         let tac =
-           if unique then
-             Proofview.tclEXACTLY_ONCE Proofview.MoreThanOneSuccess tac
-           else tac
-         in
          let (), pv', (unsafe, shelved, gaveup), _ =
            Proofview.apply (Global.env ()) tac pv
          in
@@ -1298,16 +1336,15 @@ module Search = struct
          else raise Not_found
        with Logic_monad.TacticFailure _ -> raise Not_found
 
-  let eauto depth only_classes unique dep st hints p evd =
-    let eauto_tac = eauto_tac ~st ~only_classes ~depth ~dep:(unique || dep) hints in
-    let res = run_on_evars ~unique p evd eauto_tac in
+  let evars_eauto depth only_classes unique dep st hints p evd =
+    let eauto_tac = eauto_tac ~st ~unique ~only_classes ~depth ~dep:(unique || dep) hints in
+    let res = run_on_evars p evd eauto_tac in
     match res with
     | None -> evd
     | Some evd' -> evd'
-  (* TODO treat unique solutions *)
 
   let typeclasses_eauto ?depth unique st hints p evd =
-    eauto depth true unique false st hints p evd
+    evars_eauto depth true unique false st hints p evd
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
@@ -1318,8 +1355,6 @@ module Search = struct
 end
 
 (** Binding to either V85 or Search implementations. *)
-let eauto depth ~only_classes ~st ~dep dbs =
-  Search.eauto_tac ~st ~only_classes ~depth ~dep dbs
 
 let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
                       ~depth dbs =
@@ -1336,7 +1371,7 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
       try V85.eauto85 depth ~only_classes ~st dbs gl
       with Not_found ->
 	Refiner.tclFAIL 0 (str"Proof search failed") gl)
-  else eauto depth ~only_classes ~st ~dep:true dbs
+  else Search.eauto_tac ~st ~only_classes ~depth ~dep:true dbs
 
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,

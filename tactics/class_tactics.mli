@@ -40,6 +40,8 @@ module Search : sig
   val eauto_tac :
     ?st:Names.transparent_state ->
     (** The transparent_state used when working with local hypotheses  *)
+    ?unique:bool ->
+    (** Should we force a unique solution *)
     only_classes:bool ->
     (** Should non-class goals be shelved and resolved at the end *)
     depth:Int.t option ->

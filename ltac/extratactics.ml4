@@ -348,11 +348,12 @@ let constr_flags = {
   Pretyping.fail_evar = false;
   Pretyping.expand_evars = true }
 
-let refine_tac ist simple c =
+let refine_tac ist simple with_classes c =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let flags = constr_flags in
+    let flags =
+      { constr_flags with Pretyping.use_typeclasses = with_classes } in
     let expected_type = Pretyping.OfType concl in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma -> c.delayed env sigma } in
@@ -364,11 +365,23 @@ let refine_tac ist simple c =
   end }
 
 TACTIC EXTEND refine
-| [ "refine" uconstr(c) ] -> [ refine_tac ist false c ]
+| [ "refine" uconstr(c) ] ->
+   [ refine_tac ist false true c ]
 END
 
 TACTIC EXTEND simple_refine
-| [ "simple" "refine" uconstr(c) ] -> [ refine_tac ist true c ]
+| [ "simple" "refine" uconstr(c) ] ->
+   [ refine_tac ist true true c ]
+END
+
+TACTIC EXTEND notcs_refine
+| [ "notypeclasses" "refine" uconstr(c) ] ->
+   [ refine_tac ist false false c ]
+END
+
+TACTIC EXTEND notcs_simple_refine
+| [ "simple" "notypeclasses" "refine" uconstr(c) ] ->
+   [ refine_tac ist true false c ]
 END
 
 (**********************************************************************)
