@@ -1,4 +1,12 @@
 (* Checks syntax of Hints commands *)
+(* Old-style syntax *)
+Hint Resolve eq_refl eq_sym.
+Hint Resolve eq_refl eq_sym: foo.
+Hint Immediate eq_refl eq_sym.
+Hint Immediate eq_refl eq_sym: foo.
+Hint Unfold fst eq_sym.
+Hint Unfold fst eq_sym: foo.
+
 (* Checks that qualified names are accepted *)
 
 (* New-style syntax *)
@@ -8,17 +16,76 @@ Hint Unfold eq_sym: core.
 Hint Constructors eq: foo bar.
 Hint Extern 3 (_ = _) => apply eq_refl: foo bar.
 
+(* Extended new syntax with patterns *)
 Hint Resolve eq_refl | 4 (_ = _) : baz.
 Hint Resolve eq_sym eq_trans : baz.
 Hint Extern 3 (_ = _) => apply eq_sym : baz.
 
-(* Old-style syntax *)
-Hint Resolve eq_refl eq_sym.
-Hint Resolve eq_refl eq_sym: foo.
-Hint Immediate eq_refl eq_sym.
-Hint Immediate eq_refl eq_sym: foo.
-Hint Unfold fst eq_sym.
-Hint Unfold fst eq_sym: foo.
+Parameter pred : nat -> Prop.
+Parameter pred0 : pred 0.
+Parameter f : nat -> nat.
+Parameter predf : forall n, pred n -> pred (f n).
+
+(* No conversion on let-bound variables and constants in pred (the default) *)
+Hint Resolve pred0 | 1 (pred _) : pred.
+Hint Resolve predf | 0 : pred.
+
+(* Allow full conversion on let-bound variables and constants *)
+Create HintDb predconv discriminated.
+Hint Resolve pred0 | 1 (pred _) : predconv.
+Hint Resolve predf | 0 : predconv.
+
+Goal exists n, pred n.
+  eexists.
+  Fail Timeout 1 typeclasses eauto with pred.
+  Set Typeclasses Filtered Unification.
+  Set Typeclasses Debug Verbosity 2.
+  (* predf is not tried as it doesn't match the goal *)
+  typeclasses eauto with pred.
+Qed.
+
+Parameter predconv : forall n, pred n -> pred (0 + S n).
+
+(* The inferred pattern contains 0 + ?n, syntactic match will fail to see convertible
+ terms *)
+Hint Resolve pred0 : pred2.
+Hint Resolve predconv : pred2.
+
+(** In this database we allow predconv to apply to pred (S _) goals, more generally
+  than the inferred pattern (pred (0 + S _)). *)
+Create HintDb pred2conv discriminated.
+Hint Resolve pred0 : pred2conv.
+Hint Resolve predconv | 1 (pred (S _)) : pred2conv.
+
+Goal pred 3.
+  Fail typeclasses eauto with pred2.
+  typeclasses eauto with pred2conv.
+Abort.
+
+Set Typeclasses Filtered Unification.
+Set Typeclasses Debug Verbosity 2.
+Hint Resolve predconv | 1 (pred _) : pred.
+Hint Resolve predconv | 1 (pred (S _)) : predconv.
+Test Typeclasses Limit Intros.
+Goal pred 3.
+  (* predf is not tried as it doesn't match the goal *)
+  (* predconv is tried but fails as the transparent state doesn't allow
+     unfolding + *)
+  Fail typeclasses eauto with pred.
+  (* Here predconv succeeds as it matches (pred (S _)) and then
+     full unification is allowed *)
+  typeclasses eauto with predconv.
+Qed.
+
+(** The other way around: goal contains redexes instead of instances *)
+Goal exists n, pred (0 + n).
+  eexists.
+  (* predf is applied indefinitely *)
+  Fail Timeout 1 typeclasses eauto with pred.
+  (* pred0 (pred _) matches the goal *)
+  typeclasses eauto with predconv.
+Qed.
+
 
 (* Checks that local names are accepted *)
 Section A.

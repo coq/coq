@@ -1,3 +1,16 @@
+Module onlyclasses.
+
+  Variable Foo : Type.
+  Variable foo : Foo.
+  Hint Extern 0 Foo => exact foo : typeclass_instances.
+  Goal Foo * Foo.
+    split. shelve.
+    Fail typeclasses eauto.
+    typeclasses eauto with typeclass_instances.
+    Unshelve. typeclasses eauto with typeclass_instances.
+  Abort.
+End onlyclasses.
+
 Module bt.
 Require Import Equivalence.
 
@@ -103,6 +116,40 @@ Section sec.
  Surely we can just expand it inline, right? Wrong!: *)
  Check U (fun x => e x) _.
 End sec.
+
+Module UniqueSolutions.
+  Set Typeclasses Unique Solutions.
+  Class Eq (A : Type) : Set.
+    Instance eqa : Eq nat := {}.
+    Instance eqb : Eq nat := {}.
+
+    Goal Eq nat.
+      try apply _.
+      Fail exactly_once typeclasses eauto.
+    Abort.
+End UniqueSolutions.
+
+
+Module UniqueInstances.
+  (** Optimize proof search on this class by never backtracking on (closed) goals
+      for it. *)
+  Set Typeclasses Unique Instances.
+  Class Eq (A : Type) : Set.
+    Instance eqa : Eq nat := _. constructor. Qed.
+    Instance eqb : Eq nat := {}.
+    Class Foo (A : Type) (e : Eq A) : Set.
+    Instance fooa : Foo _ eqa := {}.
+
+    Tactic Notation "refineu" open_constr(c) := unshelve refine c.
+
+    Set Typeclasses Debug.
+    Goal { e : Eq nat & Foo nat e }.
+      unshelve refineu (existT _ _ _).
+      all:simpl.
+      (** Does not backtrack on the (wrong) solution eqb *)
+      Fail all:typeclasses eauto.
+    Abort.
+End UniqueInstances.
 
 Module IterativeDeepening.
 
