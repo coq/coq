@@ -1044,13 +1044,18 @@ module Search = struct
     let foundone = ref false in
     let rec onetac e (tac, pat, b, name, pp) tl =
       let derivs = path_derivate info.search_cut name in
-      (if !typeclasses_debug > 1 then
-         Feedback.msg_debug
-           (pr_depth (!idx :: info.search_depth) ++ str": trying " ++
+      let pr_error ie =
+        if !typeclasses_debug > 1 then
+          let msg =
+            pr_depth (!idx :: info.search_depth) ++ str": " ++
               Lazy.force pp ++
               (if !foundone != true then
                  str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)
-               else mt ())));
+               else mt ())
+          in
+          Feedback.msg_debug (msg ++ str " failed with " ++ CErrors.iprint ie)
+        else ()
+      in
       let tac_of gls i j = Goal.nf_enter { enter = fun gl' ->
         let sigma' = Goal.sigma gl' in
         let s' = Sigma.to_evar_map sigma' in
@@ -1136,7 +1141,9 @@ module Search = struct
       else ortac
              (with_shelf tac >>= fun s ->
               let i = !idx in incr idx; result s i None)
-             (fun e' -> aux (merge_exceptions e e') tl)
+             (fun e' -> if CErrors.noncritical (fst e') then
+                       (pr_error e'; aux (merge_exceptions e e') tl)
+                     else iraise e')
     and aux e = function
       | x :: xs -> onetac e x xs
       | [] ->
