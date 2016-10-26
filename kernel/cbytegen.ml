@@ -91,6 +91,11 @@ open Pre_env
 (* In Cfxe_t accumulators, we need to store [fcofixi] for testing         *)
 (* conversion of cofixpoints (which is intentional).                      *)
 
+module Config = struct
+  let stack_threshold = 256 (* see byterun/coq_memory.h *)
+  let stack_safety_margin = 15
+end
+
 type argument = ArgConstr of Constr.t | ArgUniv of Univ.Level.t
 
 let empty_fv = { size= 0;  fv_rev = []; fv_fwd = FvMap.empty }
@@ -111,6 +116,26 @@ let empty_comp_env ?(univs=0) ()=
     offset = 0;
     in_env = ref empty_fv
   }
+
+(* Maximal stack size reached during the current function body. Used to
+   reallocate the stack if we lack space. *)
+let max_stack_size = ref 0
+
+let set_max_stack_size stack_size =
+  if stack_size > !max_stack_size then
+    max_stack_size := stack_size
+
+let ensure_stack_capacity f x =
+  let old = !max_stack_size in
+  max_stack_size := 0;
+  let code = f x in
+  let used_safe =
+    !max_stack_size + Config.stack_safety_margin
+  in
+  max_stack_size := old;
+  if used_safe > Config.stack_threshold then
+    Kensurestackcapacity used_safe :: code
+  else code
 
 (*i Creation functions for comp_env *)
 
@@ -370,14 +395,28 @@ let const_bn tag args =
   else
     Const_bn(last_variant_tag, Array.append [|Const_b0 (tag - last_variant_tag) |] args)
 
-  
-let code_makeblock arity tag cont = 
-  if tag < last_variant_tag then
-    Kmakeblock(arity, tag) :: cont
-  else
-    Kpush :: Kconst (Const_b0 (tag - last_variant_tag)) ::
+(*
+If [tag] hits the OCaml limitation for non constant constructors, we switch to
+another representation for the remaining constructors:
+[last_variant_tag|tag - last_variant_tag|args]
+
+We subtract last_variant_tag for efficiency of match interpretation.
+ *)
+
+let nest_block tag arity cont =
+  Kconst (Const_b0 (tag - last_variant_tag)) ::
     Kmakeblock(arity+1, last_variant_tag) :: cont
 
+let code_makeblock ~stack_size ~arity ~tag cont = 
+  if tag < last_variant_tag then
+    Kmakeblock(arity, tag) :: cont
+  else begin
+    set_max_stack_size (stack_size + 1);
+    Kpush :: nest_block tag arity cont
+  end
+
+(* [code_construct] compiles an abstracted constructor dropping parameters and
+   updates [fun_code] *)
 (* Inv : nparam + arity > 0 *)
 let code_construct tag nparams arity cont =
   let f_cont =
@@ -386,11 +425,11 @@ let code_construct tag nparams arity cont =
 	[Kconst (Const_b0 tag); Kreturn 0]
        else if tag < last_variant_tag then
          [Kacc 0; Kpop 1; Kmakeblock(arity, tag); Kreturn 0]
-       else 
-         [Kconst (Const_b0 (tag - last_variant_tag)); 
-          Kmakeblock(arity+1, last_variant_tag); Kreturn 0])
+       else
+         nest_block tag arity [Kreturn 0])
     in
     let lbl = Label.create() in
+    (* No need to grow the stack here, as the function does not push stuff. *)
     fun_code := [Ksequence (add_grab (nparams+arity) lbl f_cont,!fun_code)];
     Kclosure(lbl,0) :: cont
 
@@ -536,10 +575,11 @@ let compile_fv_elem reloc fv sz cont =
 let rec compile_fv reloc l sz cont =
   match l with
   | [] -> cont
-  | [fvn] -> compile_fv_elem reloc fvn sz cont
+  | [fvn] -> set_max_stack_size (sz + 1); compile_fv_elem reloc fvn sz cont
   | fvn :: tl ->
       compile_fv_elem reloc fvn sz
 	(Kpush :: compile_fv reloc tl (sz + 1) cont)
+
 
 (* Compiling constants *)
 
@@ -555,6 +595,7 @@ let rec get_alias env kn =
 
 (* sz is the size of the local stack *)
 let rec compile_constr reloc c sz cont =
+  set_max_stack_size sz;
   match kind_of_term c with
   | Meta _ -> invalid_arg "Cbytegen.compile_constr : Meta"
   | Evar _ -> invalid_arg "Cbytegen.compile_constr : Evar"
@@ -603,6 +644,7 @@ let rec compile_constr reloc c sz cont =
 	compile_str_cst reloc (Bstrconst (Const_sorts (Type uglob))) sz cont
       else
 	let compile_get_univ reloc idx sz cont =
+          set_max_stack_size sz;
 	  compile_fv_elem reloc (FVuniv_var idx) sz cont
 	in
         comp_app compile_str_cst compile_get_univ reloc
@@ -622,7 +664,8 @@ let rec compile_constr reloc c sz cont =
       let r_fun = comp_env_fun arity in
       let lbl_fun = Label.create() in
       let cont_fun =
-	compile_constr r_fun body arity [Kreturn arity] in
+        ensure_stack_capacity (compile_constr r_fun body arity) [Kreturn arity]
+      in
       fun_code := [Ksequence(add_grab arity lbl_fun cont_fun,!fun_code)];
       let fv = fv r_fun in
       compile_fv reloc fv.fv_rev sz (Kclosure(lbl_fun,fv.size) :: cont)
@@ -642,9 +685,10 @@ let rec compile_constr reloc c sz cont =
       (* Compilation des types *)
       let env_type = comp_env_fix_type rfv in
       for i = 0 to ndef - 1 do
-	let lbl,fcode =
-	  label_code
-	    (compile_constr env_type type_bodies.(i) 0 [Kstop]) in
+        let fcode =
+          ensure_stack_capacity (compile_constr env_type type_bodies.(i) 0) [Kstop]
+        in
+	let lbl,fcode = label_code fcode in
 	lbl_types.(i) <- lbl;
 	fun_code := [Ksequence(fcode,!fun_code)]
       done;
@@ -654,7 +698,8 @@ let rec compile_constr reloc c sz cont =
 	let arity = List.length params in
 	let env_body = comp_env_fix ndef i arity rfv in
 	let cont1 =
-	  compile_constr env_body body arity [Kreturn arity] in
+	  ensure_stack_capacity (compile_constr env_body body arity) [Kreturn arity]
+        in
 	let lbl = Label.create () in
 	lbl_bodies.(i) <- lbl;
 	let fcode =  add_grabrec rec_args.(i) arity lbl cont1 in
@@ -672,9 +717,10 @@ let rec compile_constr reloc c sz cont =
       let rfv = ref empty_fv in
       let env_type = comp_env_cofix_type ndef rfv in
       for i = 0 to ndef - 1 do
-	let lbl,fcode =
-	  label_code
-	    (compile_constr env_type type_bodies.(i) 0 [Kstop]) in
+        let fcode =
+          ensure_stack_capacity (compile_constr env_type type_bodies.(i) 0) [Kstop]
+        in
+	let lbl,fcode = label_code fcode in
 	lbl_types.(i) <- lbl;
 	fun_code := [Ksequence(fcode,!fun_code)]
       done;
@@ -684,14 +730,17 @@ let rec compile_constr reloc c sz cont =
 	let arity = List.length params in
 	let env_body = comp_env_cofix ndef arity rfv in
 	let lbl = Label.create () in
-	let cont1 =
-	  compile_constr env_body body (arity+1) (cont_cofix arity) in
-	let cont2 =
-	  add_grab (arity+1) lbl cont1 in
+        let comp arity =
+          (* 4 stack slots are needed to update the cofix when forced *)
+          set_max_stack_size (arity + 4);
+          compile_constr env_body body (arity+1) (cont_cofix arity)
+        in
+	let cont = ensure_stack_capacity comp arity in
 	lbl_bodies.(i) <- lbl;
-	fun_code := [Ksequence(cont2,!fun_code)];
+	fun_code := [Ksequence(add_grab (arity+1) lbl cont,!fun_code)];
       done;
       let fv = !rfv in
+      set_max_stack_size (sz + fv.size + ndef + 2);
       compile_fv reloc fv.fv_rev sz
 	(Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
 
@@ -709,9 +758,11 @@ let rec compile_constr reloc c sz cont =
       let lbl_eblocks = Array.make neblock Label.no in 
       let branch1,cont = make_branch cont in
       (* Compiling return type *)
-      let lbl_typ,fcode =
-	label_code (compile_constr reloc t sz [Kpop sz; Kstop])
-      in fun_code := [Ksequence(fcode,!fun_code)];
+      let fcode =
+        ensure_stack_capacity (compile_constr reloc t sz) [Kpop sz; Kstop]
+      in
+      let lbl_typ,fcode = label_code fcode in
+      fun_code := [Ksequence(fcode,!fun_code)];
       (* Compiling branches *)
       let lbl_sw = Label.create () in
       let sz_b,branch,is_tailcall =
@@ -721,14 +772,9 @@ let rec compile_constr reloc c sz cont =
 	  sz, branch1, true
 	| _ -> sz+3, Kjump, false
       in
-      let annot = {ci = ci; rtbl = tbl; tailcall = is_tailcall} in
-     (* Compiling branch for accumulators *)
-      let lbl_accu, code_accu =
-	label_code(Kmakeswitchblock(lbl_typ,lbl_sw,annot,sz) :: branch::cont)
-      in
-      lbl_blocks.(0) <- lbl_accu;
-      let c = ref code_accu in
-      (* perform the extra match if needed (to many block constructors) *)
+
+      let c = ref cont in
+      (* Perform the extra match if needed (too many block constructors) *)
       if neblock <> 0 then begin
         let lbl_b, code_b = 
           label_code (
@@ -758,14 +804,34 @@ let rec compile_constr reloc c sz cont =
 	      compile_constr reloc branchs.(i) (sz_b+arity)
 		(Kappterm(arity,sz_appterm) :: !c) in
           let code_b = 
-            if tag < last_variant_tag then Kpushfields arity :: code_b
-            else Kacc 0::Kpop 1::Kpushfields(arity+1)::Kpop 1::code_b in
+            if tag < last_variant_tag then begin
+                set_max_stack_size (sz_b + arity);
+                Kpushfields arity :: code_b
+              end
+            else begin
+                set_max_stack_size (sz_b + arity + 1);
+                Kacc 0::Kpop 1::Kpushfields(arity+1)::Kpop 1::code_b
+              end
+          in
           let lbl_b,code_b = label_code code_b in
           if tag < last_variant_tag then lbl_blocks.(tag) <- lbl_b
           else lbl_eblocks.(tag - last_variant_tag) <- lbl_b;
 	  c := code_b
       done;
-      c := Klabel lbl_sw :: Kswitch(lbl_consts,lbl_blocks) :: !c;
+
+      let annot =
+        {ci = ci; rtbl = tbl; tailcall = is_tailcall;
+         max_stack_size = !max_stack_size - sz}
+      in
+
+     (* Compiling branch for accumulators *)
+      let lbl_accu, code_accu =
+        set_max_stack_size (sz+3);
+	label_code(Kmakeswitchblock(lbl_typ,lbl_sw,annot,sz) :: branch :: !c)
+      in
+      lbl_blocks.(0) <- lbl_accu;
+
+      c := Klabel lbl_sw :: Kswitch(lbl_consts,lbl_blocks) :: code_accu;
       let code_sw =
  	match branch1 with
         (* spiwack : branch1 can't be a lbl anymore it's a Branch instead
@@ -782,12 +848,14 @@ let rec compile_constr reloc c sz cont =
 	code_sw)
 
 and compile_str_cst reloc sc sz cont =
+  set_max_stack_size sz;
   match sc with
   | Bconstr c -> compile_constr reloc c sz cont
   | Bstrconst sc -> Kconst sc :: cont
   | Bmakeblock(tag,args) ->
-      let nargs = Array.length args in
-      comp_args compile_str_cst reloc args sz (code_makeblock nargs tag cont)
+      let arity = Array.length args in
+      let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
+      comp_args compile_str_cst reloc args sz cont
   | Bconstruct_app(tag,nparams,arity,args) ->
       if Int.equal (Array.length args) 0 then
         code_construct tag nparams arity cont
@@ -801,6 +869,7 @@ and compile_str_cst reloc sc sz cont =
 (* spiwack : compilation of constants with their arguments.
    Makes a special treatment with 31-bit integer addition *)
 and compile_get_global reloc (kn,u) sz cont =
+  set_max_stack_size sz;
   let kn = get_alias !global_env kn in
   if Univ.Instance.is_empty u then
     Kgetglobal kn :: cont
@@ -809,11 +878,13 @@ and compile_get_global reloc (kn,u) sz cont =
       compile_universe reloc () (Univ.Instance.to_array u) sz cont
 
 and compile_universe reloc uni sz cont =
+  set_max_stack_size sz;
   match Univ.Level.var_index uni with
   | None -> Kconst (Const_univ_level uni) :: cont
   | Some idx -> pos_universe_var idx reloc sz :: cont
 
 and compile_const reloc kn u args sz cont =
+  set_max_stack_size sz;
   let nargs = Array.length args in
   (* spiwack: checks if there is a specific way to compile the constant
               if there is not, Not_found is raised, and the function
@@ -875,7 +946,7 @@ let compile fail_on_error ?universes:(universes=0) env c =
     let reloc, init_code =
       if Int.equal universes 0 then
         let reloc = empty_comp_env () in
-        reloc, compile_constr reloc c 0 cont
+        reloc, ensure_stack_capacity (compile_constr reloc c 0) cont
       else
         (* We are going to generate a lambda, but merge the universe closure
          * with the function closure if it exists.
@@ -892,11 +963,16 @@ let compile fail_on_error ?universes:(universes=0) env c =
         let r_fun = comp_env_fun ~univs:universes arity in
         let lbl_fun = Label.create () in
         let cont_fun =
-          compile_constr r_fun body full_arity [Kreturn full_arity]
+          ensure_stack_capacity (compile_constr r_fun body full_arity)
+                         [Kreturn full_arity]
         in
         fun_code := [Ksequence(add_grab full_arity lbl_fun cont_fun,!fun_code)];
         let fv = fv r_fun in
-        reloc, compile_fv reloc fv.fv_rev 0 (Kclosure(lbl_fun,fv.size) :: cont)
+        let init_code =
+          ensure_stack_capacity (compile_fv reloc fv.fv_rev 0)
+                         (Kclosure(lbl_fun,fv.size) :: cont)
+        in
+        reloc, init_code
     in
     let fv = List.rev (!(reloc.in_env).fv_rev) in
     (if !Flags.dump_bytecode then

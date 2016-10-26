@@ -111,6 +111,7 @@ Changes from V8.5pl2 to V8.5pl3
 ===============================
 
 Critical bugfix
+
 - #4876: Guard checker incompleteness when using primitive projections
 
 Other bugfixes
@@ -119,7 +120,50 @@ Other bugfixes
 - #4673: regression in setoid_rewrite, unfolding let-ins for type unification.
 - #4754: Regression in setoid_rewrite, allow postponed unification problems to remain.
 - #4769: Anomaly with universe polymorphic schemes defined inside sections.
-- #3886: Program: duplicate obligations of mutual fixpoints
+- #3886: Program: duplicate obligations of mutual fixpoints.
+- #4994: Documentation typo.
+- #5008: Use the "md5" command on OpenBSD.
+- #5007: Do not assume the "TERM" environment variable is always set.
+- #4606: Output a break before a list only if there was an empty line.
+- #5001: metas not cleaned properly in clenv_refine_in.
+- #2336: incorrect glob data for module symbols (bug #2336).
+- #4832: Remove extraneous dot in error message.
+- Anomaly in printing a unification error message.
+- #4947: Options which take string arguments are not backwards compatible.
+- #4156: micromega cache files are now hidden files.
+- #4871: interrupting par:abstract kills coqtop.
+- #5043: [Admitted] lemmas pick up section variables.
+- Fix name of internal refine ("simple refine").
+- #5062: probably a typo in Strict Proofs mode.
+- #5065: Anomaly: Not a proof by induction.
+- Restore native compiler optimizations, they were disabled since 8.5!
+- #5077: failure on typing a fixpoint with evars in its type.
+- Fix recursive notation bug.
+- #5095: non relevant too strict test in let-in abstraction.
+- Ensuring that the evar name is preserved by "rename".
+- #4887: confusion between using and with in documentation of firstorder.
+- Bug in subst with let-ins.
+- #4762: eauto weaker than auto.
+- Remove if_then_else (was buggy). Use tryif instead.
+- #4970: confusion between special "{" and non special "{{" in notations.
+- #4529: primitive projections unfolding.
+- #4416: Incorrect "Error: Incorrect number of goals".
+- #4863: abstract in typeclass hint fails.
+- #5123: unshelve can impact typeclass resolution
+- Fix a collision about the meta-variable ".." in recursive notations.
+- Fix printing of info_auto.
+- #3209: Not_found due to an occur-check cycle.
+- #5097: status of evars refined by "clear" in ltac: closed wrt evars.
+- #5150: Missing dependency of the test-suite subsystems in prerequisite.
+- Fix a bug in error printing of unif constraints
+- #3941: Do not stop propagation of signals when Coq is busy.
+- #4822: Incorrect assertion in cbn.
+- #3479 parsing of "{" and "}" when a keyword starts with "{" or "}".
+- #5127: Memory corruption with the VM.
+- #5102: bullets parsing broken by calls to parse_entry.
+
+Various documentation improvements
+
 
 Changes from V8.5pl1 to V8.5pl2
 ===============================

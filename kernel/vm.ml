@@ -170,7 +170,7 @@ type whd =
 external push_ra : tcode -> unit = "coq_push_ra"
 external push_val : values -> unit = "coq_push_val"
 external push_arguments : arguments -> unit = "coq_push_arguments"
-external push_vstack : vstack -> unit = "coq_push_vstack"
+external push_vstack : vstack -> int -> unit = "coq_push_vstack"
 
 
 (* interpreteur *)
@@ -206,7 +206,9 @@ let apply_varray vf varray =
   else
     begin
       push_ra stop;
-      push_vstack varray;
+      (* The fun code of [vf] will make sure we have enough stack, so we put 0
+         here. *)
+      push_vstack varray 0;
       interprete (fun_code vf) vf (Obj.magic vf) (n - 1)
     end
 
@@ -560,7 +562,9 @@ let check_switch sw1 sw2 = sw1.sw_annot.rtbl = sw2.sw_annot.rtbl
 let case_info sw = sw.sw_annot.ci
 
 let type_of_switch sw =
-  push_vstack sw.sw_stk;
+  (* The fun code of types will make sure we have enough stack, so we put 0
+  here. *)
+  push_vstack sw.sw_stk 0;
   interprete sw.sw_type_code crazy_val sw.sw_env 0
 
 let branch_arg k (tag,arity) =
@@ -580,9 +584,10 @@ let branch_arg k (tag,arity) =
 let apply_switch sw arg =
   let tc = sw.sw_annot.tailcall in
   if tc then
-    (push_ra stop;push_vstack sw.sw_stk)
+    (push_ra stop;push_vstack sw.sw_stk sw.sw_annot.max_stack_size)
   else
-    (push_vstack sw.sw_stk; push_ra (popstop_code (Array.length sw.sw_stk)));
+    (push_vstack sw.sw_stk sw.sw_annot.max_stack_size;
+     push_ra (popstop_code (Array.length sw.sw_stk)));
   interprete sw.sw_code arg sw.sw_env 0
 
 let branch_of_switch k sw =
