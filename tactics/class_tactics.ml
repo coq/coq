@@ -9,7 +9,6 @@
 (* TODO:
   - Find an interface allowing eauto to backtrack when shelved goals remain,
    e.g. to force instantiations.
-  - unique solutions
  *)
 
 open Pp
@@ -1256,6 +1255,9 @@ module Search = struct
          Tacticals.New.tclFAIL 0 (str"Proof search failed" ++
                                     (if Option.is_empty depth then mt()
                                      else str" without reaching its limit"))
+      | Proofview.MoreThanOneSuccess ->
+         Tacticals.New.tclFAIL 0 (str"Proof search failed: " ++
+                                  str"more than one success found.")
       | e -> Proofview.tclZERO ~info:ie e
     in Proofview.tclOR tac error
 
@@ -1273,6 +1275,11 @@ module Search = struct
        let _, pv = Proofview.init evm' [] in
        let pv = Proofview.unshelve goals pv in
        try
+         let tac =
+           if unique then
+             Proofview.tclEXACTLY_ONCE Proofview.MoreThanOneSuccess tac
+           else tac
+         in
          let (), pv', (unsafe, shelved, gaveup), _ =
            Proofview.apply (Global.env ()) tac pv
          in
@@ -1292,7 +1299,7 @@ module Search = struct
        with Logic_monad.TacticFailure _ -> raise Not_found
 
   let eauto depth only_classes unique dep st hints p evd =
-    let eauto_tac = eauto_tac ~st ~only_classes ~depth ~dep hints in
+    let eauto_tac = eauto_tac ~st ~only_classes ~depth ~dep:(unique || dep) hints in
     let res = run_on_evars ~unique p evd eauto_tac in
     match res with
     | None -> evd
