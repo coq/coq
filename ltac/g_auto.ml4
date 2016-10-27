@@ -116,7 +116,7 @@ END
 
 (** Typeclasses eauto based tactics *)
 
-let typeclasses_eauto depth dbnames =
+let typeclasses_eauto ~dfs depth dbnames =
   let db_list =
     match dbnames with
     | None -> Hints.current_pure_db ()
@@ -130,13 +130,19 @@ let typeclasses_eauto depth dbnames =
   Tacticals.New.tclTRY
     (Class_tactics.Search.eauto_tac
        ~only_classes:false
+       ~dfs
        ~depth:(Some depth)
        ~dep:true
        db_list)
 
 TACTIC EXTEND dfs_eauto
 | [ "dfs" "eauto" int_or_var_opt(depth) hintbases(db) ] ->
-   [ typeclasses_eauto depth db ]
+   [ typeclasses_eauto ~dfs:true depth db ]
+END
+
+TACTIC EXTEND bfs_eauto
+| [ "bfs" "eauto" int_or_var_opt(depth) hintbases(db) ] ->
+   [ typeclasses_eauto ~dfs:false depth db ]
 END
 
 TACTIC EXTEND autounfold
