@@ -1288,11 +1288,16 @@ module Search = struct
     tclCASE (with_shelf tac) >>= casefn
 
   let eauto_tac ?(st=full_transparent_state) ?(unique=false)
-                ~only_classes ~depth ~dep hints =
+                ~only_classes ?dfs ~depth ~dep hints =
     let open Proofview in
     let tac =
       let search = search_tac ~st only_classes dep hints in
-      if get_typeclasses_iterative_deepening () then
+      let bfs =
+        match dfs with
+        | None -> get_typeclasses_iterative_deepening ()
+        | Some v -> v
+      in
+      if bfs then
         match depth with
         | None -> fix_iterative search
         | Some l -> fix_iterative_limit l search
