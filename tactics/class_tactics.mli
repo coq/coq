@@ -38,6 +38,9 @@ module Search : sig
     (** The transparent_state used when working with local hypotheses  *)
     only_classes:bool ->
     (** Should non-class goals be shelved and resolved at the end *)
+    ?dfs:bool ->
+    (** Is a traversing-strategy specified?
+        If yes, true means dfs, false means bfs, i.e iterative deepening *)
     depth:Int.t option ->
     (** Bounded or unbounded search *)
     dep:bool ->
