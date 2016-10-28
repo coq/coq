@@ -121,6 +121,7 @@ val dependent_in_decl : constr -> Context.Named.Declaration.t -> bool
 val count_occurrences : constr -> constr -> int
 val collect_metas : constr -> int list
 val collect_vars : constr -> Id.Set.t (** for visible vars only *)
+val vars_of_global_reference : env -> Globnames.global_reference -> Id.Set.t
 val occur_term : constr -> constr -> bool (** Synonymous
  of dependent 
    Substitution of metavariables *)
