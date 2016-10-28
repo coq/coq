@@ -16,12 +16,12 @@ open Libobject
 (*i*)
 
 let name_table =
-  Summary.ref (Refmap.empty : Name.t list list Refmap.t)
+  Summary.ref (Refmap.empty : Name.t list Refmap.t)
     ~name:"rename-arguments"
 
 type req =
   | ReqLocal
-  | ReqGlobal of global_reference * Name.t list list
+  | ReqGlobal of global_reference * Name.t list
 
 let load_rename_args _ (_, (_, (r, names))) =
   name_table := Refmap.add r names !name_table
@@ -49,7 +49,7 @@ let discharge_rename_args = function
        let vars,_,_ = section_segment_of_reference c in
        let c' = pop_global_reference c in
        let var_names = List.map (fun (id, _,_,_) -> Name id) vars in
-       let names' = List.map (fun l -> var_names @ l) names in
+       let names' = var_names @ names in
        Some (ReqGlobal (c', names), (c', names'))
      with Not_found -> Some req)
   | _ -> None
@@ -83,7 +83,7 @@ let rec rename_prod c = function
       | _ -> c
         
 let rename_type ty ref =
-  try rename_prod ty (List.hd (arguments_names ref))
+  try rename_prod ty (arguments_names ref)
   with Not_found -> ty
 
 let rename_type_of_constant env c =

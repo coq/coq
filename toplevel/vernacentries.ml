@@ -973,182 +973,255 @@ let vernac_declare_implicits locality r l =
 let warn_arguments_assert =
   CWarnings.create ~name:"arguments-assert" ~category:"vernacular"
          (fun sr ->
-          strbrk "This command is just asserting the number and names of arguments of " ++
+          strbrk "This command is just asserting the names of arguments of " ++
             pr_global sr ++ strbrk". If this is what you want add " ++
             strbrk "': assert' to silence the warning. If you want " ++
             strbrk "to clear implicit arguments add ': clear implicits'. " ++
             strbrk "If you want to clear notation scopes add ': clear scopes'")
-         
-let warn_renaming_nonimplicit =
-  CWarnings.create ~name:"arguments-ignore-rename-nonimpl"
-                   ~category:"vernacular"
-         (fun (oldn, newn) ->
-          strbrk "Ignoring rename of "++pr_id oldn++str" into "++pr_id newn++
-          strbrk ". Only implicit arguments can be renamed.")
 
-let vernac_declare_arguments locality r l nargs flags =
-  let extra_scope_flag = List.mem `ExtraScopes flags in
-  let names = List.map (List.map (fun { name } -> name)) l in
-  let names, rest = List.hd names, List.tl names in
-  let scopes = List.map (List.map (fun { notation_scope = s } -> s)) l in
-  if List.exists (fun na -> not (List.equal Name.equal na names)) rest then
-    error "All arguments lists must declare the same names.";
-  if not (List.distinct_f Name.compare (List.filter ((!=) Anonymous) names))
-  then error "Arguments names must be distinct.";
-  let sr = smart_global r in
+(* [nargs_for_red] is the number of arguments required to trigger reduction,
+   [args] is the main list of arguments statuses,
+   [more_implicits] is a list of extra lists of implicit statuses  *)
+let vernac_arguments locality reference args more_implicits nargs_for_red flags =
+  let assert_flag = List.mem `Assert flags in
+  let rename_flag = List.mem `Rename flags in
+  let clear_scopes_flag = List.mem `ClearScopes flags in
+  let extra_scopes_flag = List.mem `ExtraScopes flags in
+  let clear_implicits_flag = List.mem `ClearImplicits flags in
+  let default_implicits_flag = List.mem `DefaultImplicits flags in
+  let never_unfold_flag = List.mem `ReductionNeverUnfold flags in
+
+  let err_incompat x y =
+    error ("Options \""^x^"\" and \""^y^"\" are incompatible.") in
+
+  if assert_flag && rename_flag then
+    err_incompat "assert" "rename";
+  if Option.has_some nargs_for_red && never_unfold_flag then
+    err_incompat "simpl never" "/";
+  if never_unfold_flag && List.mem `ReductionDontExposeCase flags then
+    err_incompat "simpl never" "simpl nomatch";
+  if clear_scopes_flag && extra_scopes_flag then
+    err_incompat "clear scopes" "extra scopes";
+  if clear_implicits_flag && default_implicits_flag then
+    err_incompat "clear implicits" "default implicits";
+
+  let sr = smart_global reference in
   let inf_names =
     let ty = Global.type_of_global_unsafe sr in
-      Impargs.compute_implicits_names (Global.env ()) ty in
-  let rec check li ld ls = match li, ld, ls with
-    | [], [], [] -> ()
-    | [], Anonymous::ld, (Some _)::ls when extra_scope_flag -> check li ld ls
-    | [], _::_, (Some _)::ls when extra_scope_flag ->
-       error "Extra notation scopes can be set on anonymous arguments only"
-    | [], x::_, _ -> errorlabstrm "vernac_declare_arguments"
-                       (str "Extra argument " ++ pr_name x ++ str ".")
-    | l, [], _ -> errorlabstrm "vernac_declare_arguments"
-                    (str "The following arguments are not declared: " ++
-                       prlist_with_sep pr_comma pr_name l ++ str ".")
-    | _::li, _::ld, _::ls -> check li ld ls 
-    | _ -> assert false in
-  let () = match l with
-  | [[]] when List.exists ((<>) `Assert) flags ||
-              (* Arguments f /. used to be allowed by mistake *)
-              (Flags.version_less_or_equal Flags.V8_5 && nargs >= 0) -> ()
-  | _ ->
-    List.iter2 (check inf_names) (names :: rest) scopes
+    Impargs.compute_implicits_names (Global.env ()) ty
   in
-  (* we take extra scopes apart, and we check they are consistent *)
-  let l, scopes = 
-    let scopes, rest = List.hd scopes, List.tl scopes in
-    if List.exists (List.exists ((!=) None)) rest then
-      error "Notation scopes can be given only once";
-    if not extra_scope_flag then l, scopes else
-    let l, _ = List.split (List.map (List.chop (List.length inf_names)) l) in
-    l, scopes in
-  (* we interpret _ as the inferred names *)
-  let l = match l with
-  | [[]] -> l
-  | _ ->
-    let name_anons = function
-      | { name = Anonymous } as x, Name id -> { x with name = Name id }
-      | x, _ -> x in
-    List.map (fun ns -> List.map name_anons (List.combine ns inf_names)) l in
-  let names_decl = List.map (List.map (fun { name } -> name)) l in
-  let renamed_arg = ref None in
-  let set_renamed a b =
-    if Option.is_empty !renamed_arg && not (Id.equal a b) then
-      renamed_arg := Some(b,a)
+  let prev_names =
+    try Arguments_renaming.arguments_names sr with Not_found -> inf_names
   in
-  let some_renaming_specified =
-    try
-      let names = Arguments_renaming.arguments_names sr in
-      not (List.equal (List.equal Name.equal) names names_decl)
-    with Not_found -> false in
-  let some_renaming_specified, implicits =
-    match l with
-    | [[]] -> false, [[]]
+  let num_args = List.length inf_names in
+  assert (Int.equal num_args (List.length prev_names));
+
+  let names_of args = List.map (fun a -> a.name) args in
+
+  (* Checks *)
+
+  let err_extra_args names =
+    errorlabstrm "vernac_declare_arguments"
+                 (strbrk "Extra arguments: " ++
+                    prlist_with_sep pr_comma pr_name names ++ str ".")
+  in
+  let err_missing_args names =
+    errorlabstrm "vernac_declare_arguments"
+                 (strbrk "The following arguments are not declared: " ++
+                    prlist_with_sep pr_comma pr_name names ++ str ".")
+  in
+
+  let rec check_extra_args extra_args =
+    match extra_args with
+    | [] -> ()
+    | { notation_scope = None } :: _ -> err_extra_args (names_of extra_args)
+    | { name = Anonymous; notation_scope = Some _ } :: args ->
+       check_extra_args args
     | _ ->
-       let some_renaming = ref some_renaming_specified in
-       let rec aux il =
-         match il with
-         | [] -> []
-         | il :: ils -> aux_single il inf_names :: aux ils
-       and aux_single impl inf_names =
-         match impl, inf_names with
-         | [], _ -> []
-         | { name = Anonymous;
-             implicit_status = (`Implicit|`MaximallyImplicit)} :: _,
-           Name id :: _ ->
-             assert false
-         | { name = Name x;
-             implicit_status = (`Implicit|`MaximallyImplicit)} :: _,
-           Anonymous :: _ ->
-             errorlabstrm "vernac_declare_arguments"
-               (str"Argument "++ pr_id x ++str " cannot be declared implicit.")
-         | { name = Name iid;
-             implicit_status = (`Implicit|`MaximallyImplicit as i)} :: impl,
-           Name id :: inf_names ->
-            let max = i = `MaximallyImplicit in
-            set_renamed iid id;
-            some_renaming := !some_renaming || not (Id.equal iid id);
-            (ExplByName id,max,false) :: aux_single impl inf_names
-         | { name = Name iid } :: impl,
-           Name id :: inf_names when not (Id.equal iid id) ->
-            warn_renaming_nonimplicit (id, iid);
-            aux_single impl inf_names
-         | { name = Name iid } :: impl, Name id :: inf_names
-           when not (Id.equal iid id) ->
-            aux_single impl inf_names
-         | { name = Name iid } :: impl, Name id :: inf_names ->
-            set_renamed iid id;
-            some_renaming := !some_renaming || not (Id.equal iid id);
-            aux_single impl inf_names
-         | _ :: impl, _ :: inf_names ->
-            (* no rename, no implicit status *) aux_single impl inf_names
-         | _ :: _, [] -> assert false (* checked before in check() *)
-       in
-       !some_renaming, aux l in
-  (* We check if renamed arguments do match previously declared imp args,
-   * since the system has this invariant *)
-  let some_implicits_specified =
-    match implicits with [[]] -> false | _ -> true in
-  if some_renaming_specified then
-    if not (List.mem `Rename flags) then
-      errorlabstrm "vernac_declare_arguments"
-        (str "To rename arguments the \"rename\" flag must be specified." ++
-           match !renamed_arg with
-           | None -> mt ()
-           | Some (o,n) ->
-              str "\nArgument " ++ pr_id o ++
-              str " renamed to " ++ pr_id n ++ str ".")
-    else
-      Arguments_renaming.rename_arguments
-         (make_section_locality locality) sr names_decl;
-  (* All other infos are in the first item of l *)
-  let l = List.hd l in
-  let scopes = List.map (function
-    | None -> None
-    | Some (o, k) ->
-        try ignore (Notation.find_scope k); Some k
-        with UserError _ ->
-          Some (Notation.find_delimiters_scope o k)) scopes
+       error "Extra notation scopes can be set on anonymous and explicit arguments only."
   in
-  let some_scopes_specified = List.exists ((!=) None) scopes in
+
+  let args, scopes =
+    let scopes = List.map (fun { notation_scope = s } -> s) args in
+    if List.length args > num_args then
+      let args, extra_args = List.chop num_args args in
+      if extra_scopes_flag then
+        (check_extra_args extra_args; (args, scopes))
+      else err_extra_args (names_of extra_args)
+    else args, scopes
+  in
+
+  if Option.cata (fun n -> n > num_args) false nargs_for_red then
+    error "The \"/\" modifier should be put before any extra scope.";
+
+  let scopes_specified = List.exists Option.has_some scopes in
+  
+  if scopes_specified && clear_scopes_flag then
+    error "The \"clear scopes\" flag is incompatible with scope annotations.";
+
+  let names = List.map (fun { name } -> name) args in
+  let names = names :: List.map (List.map fst) more_implicits in
+
+  let rename_flag_required = ref false in
+  let example_renaming = ref None in
+  let save_example_renaming renaming =
+    rename_flag_required := !rename_flag_required
+                            || not (Name.equal (fst renaming) Anonymous);
+    if Option.is_empty !example_renaming then
+      example_renaming := Some renaming
+  in
+
+  let rec names_union names1 names2 =
+    match names1, names2 with
+    | [], [] -> []
+    | _ :: _, [] -> names1
+    | [], _ :: _ -> names2
+    | (Name _ as name) :: names1, Anonymous :: names2
+    | Anonymous :: names1, (Name _ as name) :: names2 ->
+       name :: names_union names1 names2
+    | name1 :: names1, name2 :: names2 ->
+       if Name.equal name1 name2 then
+         name1 :: names_union names1 names2
+       else error "Arguments lists should agree on names they provide."
+  in
+
+  let initial = List.make num_args Anonymous in
+  let names = List.fold_left names_union initial names in
+
+  let rec rename prev_names names =
+    match prev_names, names with
+    | [], [] -> []
+    | [], _ :: _ -> err_extra_args names
+    | _ :: _, [] when assert_flag ->
+       (* Error messages are expressed in terms of original names, not
+            renamed ones. *)
+       err_missing_args (List.lastn (List.length prev_names) inf_names)
+    | _ :: _, [] -> prev_names
+    | prev :: prev_names, Anonymous :: names ->
+       prev :: rename prev_names names
+    | prev :: prev_names, (Name id as name) :: names ->
+       if not (Name.equal prev name) then save_example_renaming (prev,name);
+       name :: rename prev_names names
+  in
+  
+  let names = rename prev_names names in
+  let renaming_specified = Option.has_some !example_renaming in
+
+  if not (List.distinct_f Name.compare (List.filter ((!=) Anonymous) names)) then
+    error "Arguments names must be distinct.";
+
+  if !rename_flag_required && not rename_flag then
+    errorlabstrm "vernac_declare_arguments"
+      (strbrk "To rename arguments the \"rename\" flag must be specified."
+    ++
+       match !example_renaming with
+       | None -> mt ()
+       | Some (o,n) ->
+          str "\nArgument " ++ pr_name o ++
+            str " renamed to " ++ pr_name n ++ str ".");
+
+
+  (* Parts of this code are overly complicated because the implicit arguments
+     API is completely crazy: positions (ExplByPos) are elaborated to
+     names. This is broken by design, since not all arguments have names. So
+     eventhough we eventually want to map only positions to implicit statuses,
+     we have to check whether the corresponding arguments have names, not to
+     trigger an error in the impargs code. Even better, the names we have to
+     check are not the current ones (after previous renamings), but the original
+     ones (inferred from the type). *)
+
+  let implicits =
+    List.map (fun { name; implicit_status = i } -> (name,i)) args
+  in
+  let implicits = implicits :: more_implicits in
+
+  let open Vernacexpr in
+  let rec build_implicits inf_names implicits =
+    match inf_names, implicits with
+    | _, [] -> []
+    | _ :: inf_names, (_, NotImplicit) :: implicits ->
+       build_implicits inf_names implicits
+
+    (* With the current impargs API, it is impossible to make an originally
+       anonymous argument implicit *)
+    | Anonymous :: _, (name, _) :: _ ->
+       errorlabstrm "vernac_declare_arguments"
+                    (strbrk"Argument "++ pr_name name ++ 
+                       strbrk " cannot be declared implicit.")
+
+    | Name id :: inf_names, (name, impl) :: implicits ->
+       let max = impl = MaximallyImplicit in
+       (ExplByName id,max,false) :: build_implicits inf_names implicits
+    
+    | _ -> assert false (* already checked in [names_union] *)
+  in
+  
+  let implicits = List.map (build_implicits inf_names) implicits in
+  let implicits_specified = match implicits with [[]] -> false | _ -> true in
+
+  if implicits_specified && clear_implicits_flag then
+    error "The \"clear implicits\" flag is incompatible with implicit annotations";
+
+  if implicits_specified && default_implicits_flag then
+    error "The \"default implicits\" flag is incompatible with implicit annotations";
+
   let rargs =
     Util.List.map_filter (function (n, true) -> Some n | _ -> None)
-      (Util.List.map_i (fun i { recarg_like = b } -> i, b) 0 l) in
-  if some_scopes_specified || List.mem `ClearScopes flags then
-    vernac_arguments_scope locality r scopes;
-  if not some_implicits_specified && List.mem `DefaultImplicits flags then
-    vernac_declare_implicits locality r []
-  else if some_implicits_specified || List.mem `ClearImplicits flags then
-    vernac_declare_implicits locality r implicits;
-  if nargs >= 0 && nargs <= List.fold_left max ~-1 rargs then
-    error "The \"/\" option must be placed after the last \"!\".";
-  let no_flags = List.is_empty flags in
+      (Util.List.map_i (fun i { recarg_like = b } -> i, b) 0 args)
+  in
+
   let rec narrow = function
     | #Reductionops.ReductionBehaviour.flag as x :: tl -> x :: narrow tl
-    | [] -> [] | _ :: tl -> narrow tl in
-  let flags = narrow flags in
-  let some_simpl_flags_specified =
-    not (List.is_empty rargs) || nargs >= 0 || not (List.is_empty flags) in
-  if some_simpl_flags_specified then begin
+    | [] -> [] | _ :: tl -> narrow tl
+  in
+  let red_flags = narrow flags in
+  let red_modifiers_specified =
+    not (List.is_empty rargs) || Option.has_some nargs_for_red
+    || not (List.is_empty red_flags)
+  in
+
+  if not (List.is_empty rargs) && never_unfold_flag then
+    err_incompat "simpl never" "!";
+
+
+  (* Actions *)
+
+  if renaming_specified then begin
+    let local = make_section_locality locality in
+    Arguments_renaming.rename_arguments local sr names
+  end;
+
+  if scopes_specified || clear_scopes_flag then begin
+      let scopes = List.map (Option.map (fun (o,k) -> 
+        try ignore (Notation.find_scope k); k
+        with UserError _ ->
+          Notation.find_delimiters_scope o k)) scopes
+      in
+      vernac_arguments_scope locality reference scopes
+    end;
+
+  if implicits_specified || clear_implicits_flag then
+    vernac_declare_implicits locality reference implicits;
+
+  if default_implicits_flag then
+    vernac_declare_implicits locality reference [];
+
+  if red_modifiers_specified then begin
     match sr with
     | ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
-         (make_section_locality locality) c (rargs, nargs, flags)
+         (make_section_locality locality) c
+         (rargs, Option.default ~-1 nargs_for_red, red_flags)
     | _ -> errorlabstrm ""
              (strbrk "Modifiers of the behavior of the simpl tactic "++
               strbrk "are relevant for constants only.")
   end;
-  if not (some_renaming_specified ||
-          some_implicits_specified ||
-          some_scopes_specified ||
-          some_simpl_flags_specified) &&
-     no_flags then
-    warn_arguments_assert sr
 
+ if not (renaming_specified ||
+         implicits_specified ||
+         scopes_specified ||
+         red_modifiers_specified) && (List.is_empty flags) then
+    warn_arguments_assert sr
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;
@@ -1951,8 +2024,8 @@ let interp ?proof ~loc locality poly c =
       vernac_syntactic_definition locality  id c local b
   | VernacDeclareImplicits (qid,l) ->
       vernac_declare_implicits locality qid l
-  | VernacArguments (qid, l, narg, flags) ->
-      vernac_declare_arguments locality qid l narg flags 
+  | VernacArguments (qid, args, more_implicits, nargs, flags) ->
+      vernac_arguments locality qid args more_implicits nargs flags
   | VernacReserve bl -> vernac_reserve bl
   | VernacGeneralizable gen -> vernac_generalizable locality gen
   | VernacSetOpacity qidl -> vernac_set_opacity locality qidl
