@@ -18,7 +18,7 @@ ifeq ($(LOCAL),true)
 install:
 	@echo "Nothing to install in a local build!"
 else
-install: install-coq install-coqide install-doc-$(WITHDOC)
+install: install-coq install-coqide install-doc-$(WITHDOC) install-meta
 endif
 
 # NOTA: for install-coqide, see Makefile.ide
@@ -58,6 +58,7 @@ endif
 .PHONY: install-coq install-binaries install-byte install-opt
 .PHONY: install-tools install-library install-devfiles
 .PHONY: install-coq-info install-coq-manpages install-emacs install-latex
+.PHONY: install-meta
 
 install-coq: install-binaries install-library install-coq-info install-devfiles
 
@@ -139,6 +140,9 @@ install-latex:
 	$(MKDIR) $(FULLCOQDOCDIR)
 	$(INSTALLLIB) tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)
 #	-$(UPDATETEX)
+
+install-meta: META.coq
+	$(INSTALLLIB) META.coq $(FULLCOQLIB)/META
 
 # For emacs:
 # Local Variables:
