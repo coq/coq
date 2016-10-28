@@ -1,5 +1,6 @@
 The command has indeed failed with message:
-Error: Ltac variable y depends on pattern variable name z which is not bound in current context.
+Error:
+Ltac variable y depends on pattern variable name z which is not bound in current context.
 Ltac f x y z :=
   symmetry in x, y; auto with z; auto; intros **; clearbody x; generalize
    dependent z
