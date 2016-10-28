@@ -1,5 +1,7 @@
 FLG -rectypes -thread
 
+S ltac
+B ltac
 S config
 B config
 S lib
