@@ -64,10 +64,11 @@ let error_wrong_numarg_inductive_loc loc env c n =
 
 let list_try_compile f l =
   let rec aux errors = function
-  | [] -> if errors = [] then anomaly (str "try_find_f") else raise (List.last errors)
+  | [] -> if errors = [] then anomaly (str "try_find_f") else iraise (List.last errors)
   | h::t ->
       try f h
       with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _ as e ->
+	    let e = CErrors.push e in
 	    aux (e::errors) t in
   aux [] l
 
