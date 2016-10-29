@@ -1020,16 +1020,17 @@ module Search = struct
 	Evd.add sigma gl evi')
       sigma goals
 
-  let shelve_nonclass info =
+  let fail_if_nonclass info =
     Proofview.Goal.enter { enter = fun gl ->
       let gl = Proofview.Goal.assume gl in
       let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
       if is_class_type sigma (Proofview.Goal.concl gl) then
         Proofview.tclUNIT ()
       else (if !typeclasses_debug > 1 then
-              Feedback.msg_debug (pr_depth info.search_depth ++ str": shelving non-class subgoal " ++
+              Feedback.msg_debug (pr_depth info.search_depth ++
+                                    str": failure due to non-class subgoal " ++
                                     pr_ev sigma (Proofview.Goal.goal gl));
-            Proofview.shelve) }
+            Proofview.tclZERO NotApplicableEx) }
 
   (** The general hint application tactic.
       tac1 + tac2 .... The choice of OR or ORELSE is determined
@@ -1159,7 +1160,7 @@ module Search = struct
       if path_matches derivs [] then aux e tl
       else
         let filter =
-          if info.search_only_classes then shelve_nonclass info
+          if info.search_only_classes then fail_if_nonclass info
           else Proofview.tclUNIT ()
         in
         ortac

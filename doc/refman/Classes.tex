@@ -392,11 +392,13 @@ than {\tt eauto} and {\tt auto}. The main differences are the following:
   backtracking on subgoals that are entirely independent.
 \item When called with no arguments, {\tt typeclasses eauto} uses the
   {\tt typeclass\_instances} database by default (instead of {\tt core})
-  and will try to solve \emph{only} typeclass goals. Other subgoals are
-  automatically shelved and \emph{must be} resolved entirely when the
-  other typeclass subgoals are resolved or the proof search will fail
-  \emph{globally}, \emph{without} the possibility to find another
-  complete solution with no shelved subgoals.
+  and will try to solve \emph{only} typeclass goals. If some subgoal of
+  a hint/instance is non-dependent and not of class type, that hint
+  application will fail. Dependent subgoals are automatically shelved
+  and \emph{must be} resolved entirely when the other typeclass subgoals
+  are resolved or the proof search will fail \emph{globally},
+  \emph{without} the possibility to find another complete solution with
+  no shelved subgoals.
 
   \emph{Note: } As of Coq 8.6, {\tt all:once (typeclasses eauto)}
   faithfully mimicks what happens during typeclass resolution when it is
