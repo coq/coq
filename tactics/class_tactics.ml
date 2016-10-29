@@ -349,6 +349,15 @@ let shelve_dependencies gls =
      Feedback.msg_debug (str" shelving dependent subgoals: " ++ pr_gls sigma gls);
    shelve_goals gls)
 
+let hintmap_of hdc secvars concl =
+  match hdc with
+  | None -> fun db -> Hint_db.map_none secvars db
+  | Some hdc ->
+     fun db ->
+     if Hint_db.use_dn db then (* Using dnet *)
+       Hint_db.map_eauto secvars hdc concl db
+     else Hint_db.map_existential secvars hdc concl db
+
 (** Hack to properly solve dependent evars that are typeclasses *)
 let rec e_trivial_fail_db only_classes db_list local_db secvars =
   let open Tacticals.New in
@@ -384,20 +393,20 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
   let nprods = List.length prods in
   let freeze =
     try
-      let cl = Typeclasses.class_info (fst hdc) in
-        if cl.cl_strict then
-          Evd.evars_of_term concl
-        else Evar.Set.empty
+      match hdc with
+      | Some (hd,_) when only_classes ->
+         let cl = Typeclasses.class_info hd in
+         if cl.cl_strict then
+           Evd.evars_of_term concl
+         else Evar.Set.empty
+      | _ -> Evar.Set.empty
     with e when CErrors.noncritical e -> Evar.Set.empty
   in
+  let hint_of_db = hintmap_of hdc secvars concl in
   let hintl =
     List.map_append
       (fun db ->
-        let tacs =
-          if Hint_db.use_dn db then (* Using dnet *)
-            Hint_db.map_eauto secvars hdc concl db
-          else Hint_db.map_existential secvars hdc concl db
-        in
+        let tacs = hint_of_db db in
         let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
           List.map (fun x -> (flags, x)) tacs)
       (local_db::db_list)
@@ -469,16 +478,16 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
   in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db secvars only_classes sigma concl =
+  let hd = try Some (decompose_app_bound concl) with Bound -> None in
   try
-    e_my_find_search db_list local_db secvars
-     (decompose_app_bound concl) true only_classes sigma concl
-  with Bound | Not_found -> []
+    e_my_find_search db_list local_db secvars hd true only_classes sigma concl
+  with Not_found -> []
 
 let e_possible_resolve db_list local_db secvars only_classes sigma concl =
+  let hd = try Some (decompose_app_bound concl) with Bound -> None in
   try
-    e_my_find_search db_list local_db secvars
-      (decompose_app_bound concl) false only_classes sigma concl
-  with Bound | Not_found -> []
+    e_my_find_search db_list local_db secvars hd false only_classes sigma concl
+  with Not_found -> []
 
 let cut_of_hints h =
   List.fold_left (fun cut db -> PathOr (Hint_db.cut db, cut)) PathEmpty h
