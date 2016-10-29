@@ -57,7 +57,7 @@ void init_arity () {
     arity[MAKEBLOCK1]=arity[MAKEBLOCK2]=arity[MAKEBLOCK3]=arity[MAKEBLOCK4]=
     arity[MAKEACCU]=arity[CONSTINT]=arity[PUSHCONSTINT]=arity[GRABREC]=
     arity[PUSHFIELDS]=arity[GETFIELD]=arity[SETFIELD]=
-    arity[BRANCH]=arity[ISCONST]= 1;
+    arity[BRANCH]=arity[ISCONST]=arity[ENSURESTACKCAPACITY]=1;
   /* instruction with two operands */
   arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=
   arity[ARECONST]=arity[PROJ]=2;
@@ -79,7 +79,7 @@ void * coq_stat_alloc (asize_t sz)
 
 value coq_makeaccu (value i) {
   code_t q;
-  code_t res = coq_stat_alloc(8);
+  code_t res = coq_stat_alloc(2 * sizeof(opcode_t));
   q = res;
   *q++ = VALINSTR(MAKEACCU);
   *q = (opcode_t)Int_val(i);
@@ -91,13 +91,13 @@ value coq_pushpop (value i) {
   int n;
   n = Int_val(i);
   if (n == 0) {
-    res = coq_stat_alloc(4);
+    res = coq_stat_alloc(sizeof(opcode_t));
     *res = VALINSTR(STOP);
     return (value)res;
   }
   else {
     code_t q;
-    res = coq_stat_alloc(12);
+    res = coq_stat_alloc(3 * sizeof(opcode_t));
     q = res;
     *q++ = VALINSTR(POP);
     *q++ = (opcode_t)n;

@@ -39,7 +39,7 @@ val pp_struct_const : structured_constant -> Pp.std_ppcmds
 type reloc_table = (tag * int) array
 
 type annot_switch =
-   {ci : case_info; rtbl : reloc_table; tailcall : bool}
+   {ci : case_info; rtbl : reloc_table; tailcall : bool; max_stack_size : int}
 
 module Label :
   sig
@@ -84,6 +84,7 @@ type instruction =
   | Ksequence of bytecodes * bytecodes
   | Kproj of int * Constant.t  (** index of the projected argument,
                                             name of projection *)
+  | Kensurestackcapacity of int
 
 (** spiwack: instructions concerning integers *)
   | Kbranch of Label.t                  (** jump to label, is it needed ? *)

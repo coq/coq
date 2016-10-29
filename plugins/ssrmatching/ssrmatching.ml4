@@ -113,8 +113,7 @@ let guard_term ch1 s i = match s.[i] with
 (* The call 'guard s i' should return true if the contents of s *)
 (* starting at i need bracketing to avoid ambiguities.          *)
 let pr_guarded guard prc c =
-  msg_with Format.str_formatter (prc c);
-  let s = Format.flush_str_formatter () ^ "$" in
+  let s = Pp.string_of_ppcmds (prc c) ^ "$" in
   if guard s (skip_wschars s 0) then pr_paren prc c else prc c
 (* More sensible names for constr printers *)
 let pr_constr = pr_constr

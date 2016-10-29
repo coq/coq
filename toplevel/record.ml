@@ -519,10 +519,6 @@ let add_inductive_class ind =
   let k =
     let ctx = oneind.mind_arity_ctxt in
     let inst = Univ.UContext.instance mind.mind_universes in
-    let map = function
-    | LocalDef _ -> None
-    | LocalAssum (_, t) -> Some (lazy t)
-    in
     let ty = Inductive.type_of_inductive
       (push_rel_context ctx (Global.env ()))
       ((mind,oneind),inst)

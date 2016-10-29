@@ -600,6 +600,10 @@ let collect_vars c =
   | _ -> fold_constr aux vars c in
   aux Id.Set.empty c
 
+let vars_of_global_reference env gr =
+  let c, _ = Universes.unsafe_constr_of_global gr in
+  vars_of_global (Global.env ()) c
+
 (* Tests whether [m] is a subterm of [t]:
    [m] is appropriately lifted through abstractions of [t] *)
 

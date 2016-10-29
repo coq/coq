@@ -651,58 +651,29 @@ GEXTEND Gram
 
       (* Arguments *)
       | IDENT "Arguments"; qid = smart_global; 
-        impl = LIST1 [ l = LIST0
-        [ item = argument_spec ->
-            let name, recarg_like, notation_scope = item in
-            [`Id { name=name; recarg_like=recarg_like;
-                   notation_scope=notation_scope;
-                   implicit_status = `NotImplicit}]
-        | "/" -> [`Slash]
-        | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
-            let f x = match sc, x with
-            | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
-            | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (name,recarg_like,notation_scope) ->
-              `Id { name=name; recarg_like=recarg_like;
-                    notation_scope=f notation_scope;
-                    implicit_status = `NotImplicit}) items
-        | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
-            let f x = match sc, x with
-            | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
-            | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (name,recarg_like,notation_scope) ->
-              `Id { name=name; recarg_like=recarg_like;
-                    notation_scope=f notation_scope;
-                    implicit_status = `Implicit}) items
-        | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
-            let f x = match sc, x with
-            | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
-            | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (name,recarg_like,notation_scope) ->
-              `Id { name=name; recarg_like=recarg_like;
-                    notation_scope=f notation_scope;
-                    implicit_status = `MaximallyImplicit}) items
-        ] -> l ] SEP ",";
+        args = LIST0 argument_spec_block;
+        more_implicits = OPT
+          [ ","; impl = LIST1
+            [ impl = LIST0 more_implicits_block -> List.flatten impl]
+            SEP "," -> impl
+          ];
         mods = OPT [ ":"; l = LIST1 arguments_modifier SEP "," -> l ] ->
          let mods = match mods with None -> [] | Some l -> List.flatten l in
-         let impl = List.map List.flatten impl in
-         let rec aux n (narg, impl) = function
-           | `Id x :: tl -> aux (n+1) (narg, impl@[x]) tl
-           | `Slash :: tl -> aux (n+1) (n, impl) tl
-           | [] -> narg, impl in
-         let nargs, impl = List.split (List.map (aux 0 (-1, [])) impl) in
-         let nargs, rest = List.hd nargs, List.tl nargs in
-         if List.exists (fun arg -> not (Int.equal arg nargs)) rest then
-           error "All arguments lists must have the same length";
-         let err_incompat x y =
-           error ("Options \""^x^"\" and \""^y^"\" are incompatible") in
-         if nargs > 0 && List.mem `ReductionNeverUnfold mods then
-           err_incompat "simpl never" "/";
-         if List.mem `ReductionNeverUnfold mods &&
-            List.mem `ReductionDontExposeCase mods then
-           err_incompat "simpl never" "simpl nomatch";
-         VernacArguments (qid, impl, nargs, mods)
+         let slash_position = ref None in
+         let rec parse_args i = function
+           | [] -> []
+           | `Id x :: args -> x :: parse_args (i+1) args
+           | `Slash :: args ->
+              if Option.is_empty !slash_position then
+                (slash_position := Some i; parse_args i args)
+              else
+                error "The \"/\" modifier can occur only once"
+         in
+         let args = parse_args 0 (List.flatten args) in
+         let more_implicits = Option.default [] more_implicits in
+         VernacArguments (qid, args, more_implicits, !slash_position, mods)
 
+ 
      (* moved there so that camlp5 factors it with the previous rule *)
      | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
        "["; scl = LIST0 [ "_" -> None | sc = IDENT -> Some sc ]; "]" ->
@@ -757,6 +728,49 @@ GEXTEND Gram
   argument_spec: [
        [ b = OPT "!"; id = name ; s = OPT scope ->
        snd id, not (Option.is_empty b), Option.map (fun x -> !@loc, x) s
+    ]
+  ];
+  (* List of arguments implicit status, scope, modifiers *)
+  argument_spec_block: [
+    [ item = argument_spec ->
+      let name, recarg_like, notation_scope = item in
+      [`Id { name=name; recarg_like=recarg_like;
+             notation_scope=notation_scope;
+             implicit_status = NotImplicit}]
+    | "/" -> [`Slash]
+    | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
+       let f x = match sc, x with
+         | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
+         | Some _, Some _ -> error "scope declared twice" in
+       List.map (fun (name,recarg_like,notation_scope) ->
+           `Id { name=name; recarg_like=recarg_like;
+                 notation_scope=f notation_scope;
+                 implicit_status = NotImplicit}) items
+    | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
+       let f x = match sc, x with
+         | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
+         | Some _, Some _ -> error "scope declared twice" in
+       List.map (fun (name,recarg_like,notation_scope) ->
+           `Id { name=name; recarg_like=recarg_like;
+                 notation_scope=f notation_scope;
+                 implicit_status = Implicit}) items
+    | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
+       let f x = match sc, x with
+         | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
+         | Some _, Some _ -> error "scope declared twice" in
+       List.map (fun (name,recarg_like,notation_scope) ->
+           `Id { name=name; recarg_like=recarg_like;
+                 notation_scope=f notation_scope;
+                 implicit_status = MaximallyImplicit}) items
+    ]
+  ];
+  (* Same as [argument_spec_block], but with only implicit status and names *)
+  more_implicits_block: [
+    [ name = name -> [(snd name, Vernacexpr.NotImplicit)]
+    | "["; items = LIST1 name; "]" ->
+       List.map (fun name -> (snd name, Vernacexpr.Implicit)) items
+    | "{"; items = LIST1 name; "}" ->
+       List.map (fun name -> (snd name, Vernacexpr.MaximallyImplicit)) items
     ]
   ];
   strategy_level:

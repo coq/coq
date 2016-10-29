@@ -26,9 +26,8 @@ val newer_than : t -> t -> bool
 
 (* Attaches to an exception the concerned state id, plus an optional
  * state id that is a valid state id before the error.
- * Backtracking to the valid id is safe.
- * The initial_state_id is assumed to be safe. *)
-val add : Exninfo.info -> ?valid:t -> t -> Exninfo.info
+ * Backtracking to the valid id is safe. *)
+val add : Exninfo.info -> valid:t -> t -> Exninfo.info
 val get : Exninfo.info -> (t * t) option
 
 type ('a,'b) request = {

@@ -76,6 +76,14 @@ sp is a local copy of the global variable extern_sp. */
 #   define print_lint(i)
 #endif
 
+#define CHECK_STACK(num_args) {                                                \
+if (sp - num_args < coq_stack_threshold) {                                     \
+  coq_sp = sp;                                                                 \
+  realloc_coq_stack(num_args + Coq_stack_threshold / sizeof(value));           \
+  sp = coq_sp;                                                                 \
+ }                                                                             \
+}
+
 /* GC interface */
 #define Setup_for_gc { sp -= 2; sp[0] = accu; sp[1] = coq_env; coq_sp = sp; }
 #define Restore_after_gc { accu = sp[0]; coq_env = sp[1]; sp += 2; }
@@ -198,6 +206,9 @@ value coq_interprete
   sp = coq_sp;
   pc = coq_pc;
   accu = coq_accu;
+
+  CHECK_STACK(0);
+
 #ifdef THREADED_CODE
   goto *(void *)(coq_jumptbl_base + *pc++); /* Jump to the first instruction */
 #else
@@ -354,7 +365,7 @@ value coq_interprete
 	coq_extra_args = *pc - 1;
 	pc = Code_val(accu);
 	coq_env = accu;
-	goto check_stacks;
+	goto check_stack;
       }
       Instruct(APPLY1) {
 	value arg1 = sp[0];
@@ -371,7 +382,7 @@ value coq_interprete
 	pc = Code_val(accu);
 	coq_env = accu;
 	coq_extra_args = 0;
-	goto check_stacks;
+	goto check_stack;
       }
       Instruct(APPLY2) {
 	value arg1 = sp[0];
@@ -386,7 +397,7 @@ value coq_interprete
 	pc = Code_val(accu);
 	coq_env = accu;
 	coq_extra_args = 1;
-	goto check_stacks;
+	goto check_stack;
       }
       Instruct(APPLY3) {
 	value arg1 = sp[0];
@@ -403,17 +414,13 @@ value coq_interprete
 	pc = Code_val(accu);
 	coq_env = accu;
 	coq_extra_args = 2;
-	goto check_stacks;
+	goto check_stack;
       }
       /* Stack checks */
       
-    check_stacks:
-      print_instr("check_stacks");
-      if (sp < coq_stack_threshold) {
-	coq_sp = sp;
-	realloc_coq_stack(Coq_stack_threshold);
-	sp = coq_sp;
-      }
+    check_stack:
+      print_instr("check_stack");
+      CHECK_STACK(0);
       /* We also check for signals */
       if (caml_signals_are_pending) {
 	/* If there's a Ctrl-C, we reset the vm */
@@ -421,6 +428,16 @@ value coq_interprete
 	caml_process_pending_signals();
       }
       Next;
+
+      Instruct(ENSURESTACKCAPACITY) {
+        print_instr("ENSURESTACKCAPACITY");
+        int size = *pc++;
+        /* CHECK_STACK may trigger here a useless allocation because of the
+        threshold, but check_stack: often does it anyway, so we prefer to
+        factorize the code. */
+        CHECK_STACK(size);
+        Next;
+      }
 
       Instruct(APPTERM) {
 	int nargs = *pc++;
@@ -436,7 +453,7 @@ value coq_interprete
 	pc = Code_val(accu);
 	coq_env = accu;
 	coq_extra_args += nargs - 1;
-	goto check_stacks;
+	goto check_stack;
       }
       Instruct(APPTERM1) {
 	value arg1 = sp[0];
@@ -445,7 +462,7 @@ value coq_interprete
 	sp[0] = arg1;
 	pc = Code_val(accu);
 	coq_env = accu;
-	goto check_stacks;
+	goto check_stack;
       }
       Instruct(APPTERM2) {
 	value arg1 = sp[0];
@@ -458,7 +475,7 @@ value coq_interprete
 	print_lint(accu);
 	coq_env = accu;
 	coq_extra_args += 1;
-	goto check_stacks;
+	goto check_stack;
       }
       Instruct(APPTERM3) {
 	value arg1 = sp[0];
@@ -472,7 +489,7 @@ value coq_interprete
 	pc = Code_val(accu);
 	coq_env = accu;
 	coq_extra_args += 2;
-	goto check_stacks;
+	goto check_stack;
       }
       
       Instruct(RETURN) {
@@ -503,6 +520,7 @@ value coq_interprete
 	int num_args = Wosize_val(coq_env) - 2;
 	int i;
 	print_instr("RESTART");
+        CHECK_STACK(num_args);
 	sp -= num_args;
 	for (i = 0; i < num_args; i++) sp[i] = Field(coq_env, i + 2);
 	coq_env = Field(coq_env, 1);
@@ -863,29 +881,7 @@ value coq_interprete
        	sp++;
 	Next; 
       }
-  
-      /* *sp = accu;
-	* Netoyage des cofix *
-        size = Wosize_val(accu);
-        for (i = 2; i < size; i++) {
- 	  accu = Field(*sp, i);
-          if (IS_EVALUATED_COFIX(accu)) {
-            size_aux = Wosize_val(accu);
-            *--sp = accu;
-	    Alloc_small(accu, size_aux, Accu_tag);
-	    for(j = 0; j < size_aux; j++) Field(accu, j) = Field(*sp, j);
-	    *sp = accu;
-	    Alloc_small(accu, 1, ATOM_COFIX_TAG);
-	    Field(accu, 0) = Field(Field(*sp, 1), 0);
-	    caml_modify(&Field(*sp, 1), accu);
-	    accu = *sp; sp++;
-            caml_modify(&Field(*sp, i), accu);
-	  }
-	}
-	sp++;
-	Next; 
-	} */
-      
+       
       Instruct(SETFIELD){
 	print_instr("SETFIELD");
 	caml_modify(&Field(accu, *pc),*sp);
@@ -979,28 +975,31 @@ value coq_interprete
       }  
       Instruct(MAKESWITCHBLOCK) {
 	print_instr("MAKESWITCHBLOCK");
-	*--sp = accu;
-	accu = Field(accu,1);
+	*--sp = accu; // Save matched block on stack
+	accu = Field(accu,1); // Save atom to accu register
 	switch (Tag_val(accu)) {
-	case ATOM_COFIX_TAG: 
+	case ATOM_COFIX_TAG: // We are forcing a cofix
 	  {
 	    mlsize_t i, nargs;
 	    print_instr("COFIX_TAG");
 	    sp-=2;
 	    pc++;
+            // Push the return address
 	    sp[0] = (value) (pc + *pc);
 	    sp[1] = coq_env;
-	    coq_env = Field(accu,0);
-	    accu = sp[2];
-	    sp[2] = Val_long(coq_extra_args);
-	    nargs = Wosize_val(accu) - 2;
+	    coq_env = Field(accu,0); // Pointer to suspension
+	    accu = sp[2]; // Save accumulator to accu register
+	    sp[2] = Val_long(coq_extra_args); // Push number of args for return
+	    nargs = Wosize_val(accu) - 2; // Number of args = size of accumulator - 1 (accumulator code) - 1 (atom)
+            // Push arguments to stack
+            CHECK_STACK(nargs+1);
 	    sp -= nargs;
-	    for (i = 0; i < nargs; i++) sp[i] = Field(accu, i + 2);
-	    *--sp = accu;
+	    for (i = 0; i < nargs; i++) sp[i] = Field(accu, i + 2); 
+	    *--sp = accu; // Last argument is the pointer to the suspension
 	    print_lint(nargs);
 	    coq_extra_args = nargs;
-	    pc = Code_val(coq_env);
-	    goto check_stacks;
+	    pc = Code_val(coq_env); // Trigger evaluation
+	    goto check_stack;
 	  }
 	case ATOM_COFIXEVALUATED_TAG: 
 	  {
@@ -1458,26 +1457,32 @@ value coq_push_val(value v) {
 
 value coq_push_arguments(value args) {
   int nargs,i;
+  value * sp = coq_sp;
   nargs = Wosize_val(args) - 2;
+  CHECK_STACK(nargs);
   coq_sp -= nargs;
   print_instr("push_args");print_int(nargs);
   for(i = 0; i < nargs; i++) coq_sp[i] = Field(args, i+2);
   return Val_unit;
 }
 
-value coq_push_vstack(value stk) {
+value coq_push_vstack(value stk, value max_stack_size) {
   int len,i;
+  value * sp = coq_sp;
   len = Wosize_val(stk);
+  CHECK_STACK(len);
   coq_sp -= len;
   print_instr("push_vstack");print_int(len);
    for(i = 0; i < len; i++) coq_sp[i] = Field(stk,i);
+  sp = coq_sp;
+  CHECK_STACK(uint32_of_value(max_stack_size));
   return Val_unit;
 }
 
 value  coq_interprete_ml(value tcode, value a, value e, value ea) {
   print_instr("coq_interprete");
   return coq_interprete((code_t)tcode, a, e, Long_val(ea));
-   print_instr("end coq_interprete");
+  print_instr("end coq_interprete");
 }
 
 value coq_eval_tcode (value tcode, value e) {

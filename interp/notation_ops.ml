@@ -248,6 +248,10 @@ let check_is_hole id = function GHole _ -> () | t ->
 
 let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
 
+type recursive_pattern_kind =
+| RecursiveTerms of bool (* associativity *)
+| RecursiveBinders of glob_constr * glob_constr
+
 let compare_recursive_parts found f f' (iterator,subc) =
   let diff = ref None in
   let terminator = ref None in
@@ -269,18 +273,16 @@ let compare_recursive_parts found f f' (iterator,subc) =
       let x,y = if lassoc then y,x else x,y in
       begin match !diff with
       | None ->
-        let () = diff := Some (x, y, Some lassoc) in
+        let () = diff := Some (x, y, RecursiveTerms lassoc) in
         true
       | Some _ -> false
       end
   | GLambda (_,Name x,_,t_x,c), GLambda (_,Name y,_,t_y,term)
   | GProd (_,Name x,_,t_x,c), GProd (_,Name y,_,t_y,term) ->
       (* We found a binding position where it differs *)
-      check_is_hole x t_x;
-      check_is_hole y t_y;
       begin match !diff with
       | None ->
-        let () = diff := Some (x, y, None) in
+        let () = diff := Some (x, y, RecursiveBinders (t_x,t_y)) in
         aux c term
       | Some _ -> false
       end
@@ -294,7 +296,7 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	(* Here, we would need a loc made of several parts ... *)
 	user_err ~loc:(subtract_loc loc1 loc2)
           (str "Both ends of the recursive pattern are the same.")
-    | Some (x,y,Some lassoc) ->
+    | Some (x,y,RecursiveTerms lassoc) ->
         let newfound,x,y,lassoc =
           if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) ||
              List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi3 !found)
@@ -312,11 +314,13 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	(* found have been collected by compare_constr *)
 	found := newfound;
 	NList (x,y,iterator,f (Option.get !terminator),lassoc)
-    | Some (x,y,None) ->
+    | Some (x,y,RecursiveBinders (t_x,t_y)) ->
 	let newfound = (pi1 !found, pi2 !found, (x,y) :: pi3 !found) in
 	let iterator = f' (subst_glob_vars [x,GVar(Loc.ghost,y)] iterator) in
 	(* found have been collected by compare_constr *)
 	found := newfound;
+	check_is_hole x t_x;
+	check_is_hole y t_y;
 	NBinderList (x,y,iterator,f (Option.get !terminator))
   else
     raise Not_found

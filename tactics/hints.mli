@@ -28,6 +28,8 @@ val decompose_app_bound : constr -> global_reference * constr array
 
 type debug = Debug | Info | Off
 
+val secvars_of_hyps : Context.Named.t -> Id.Pred.t
+
 (** Pre-created hint databases *)
 
 type 'a hint_ast =
@@ -54,7 +56,8 @@ type 'a with_metadata = private {
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
   name  : hints_path_atom; (** A potential name to refer to the hint *) 
   db    : hint_db_name option;
-  code  : 'a; (** the tactic to apply when the concl matches pat *)
+  secvars : Id.Pred.t; (** The section variables this hint depends on, as a predicate *)
+  code    : 'a; (** the tactic to apply when the concl matches pat *)
 }
 
 type full_hint = hint with_metadata
@@ -85,22 +88,28 @@ module Hint_db :
     type t
     val empty : ?name:hint_db_name -> transparent_state -> bool -> t
     val find : global_reference -> t -> search_entry
-    val map_none : t -> full_hint list
+
+    (** All hints which have no pattern.
+     * [secvars] represent the set of section variables that
+     * can be used in the hint. *)
+    val map_none : secvars:Id.Pred.t -> t -> full_hint list
 
     (** All hints associated to the reference *)
-    val map_all : global_reference -> t -> full_hint list
+    val map_all : secvars:Id.Pred.t -> global_reference -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments, _not_ using the discrimination net. *)
-    val map_existential : (global_reference * constr array) -> constr -> t -> full_hint list
+    val map_existential : secvars:Id.Pred.t ->
+      (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments and using the discrimination net. *)
-    val map_eauto : (global_reference * constr array) -> constr -> t -> full_hint list
+    val map_eauto : secvars:Id.Pred.t -> (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments. *)
-    val map_auto : (global_reference * constr array) -> constr -> t -> full_hint list
+    val map_auto : secvars:Id.Pred.t ->
+       (global_reference * constr array) -> constr -> t -> full_hint list
 
     val add_one : env -> evar_map -> hint_entry -> t -> t
     val add_list : env -> evar_map -> hint_entry list -> t -> t
@@ -163,19 +172,20 @@ val prepare_hint : bool (* Check no remaining evars *) ->
   (bool * bool) (* polymorphic or monomorphic, local or global *) ->
   env -> evar_map -> open_constr -> hint_term
 
-(** [make_exact_entry pri (c, ctyp)].
+(** [make_exact_entry pri (c, ctyp, ctx, secvars)].
    [c] is the term given as an exact proof to solve the goal;
-   [ctyp] is the type of [c]. *)
-
+   [ctyp] is the type of [c].
+   [ctx] is its (refreshable) universe context. *)
 val make_exact_entry : env -> evar_map -> int option -> polymorphic -> ?name:hints_path_atom -> 
   (constr * types * Univ.universe_context_set) -> hint_entry
 
-(** [make_apply_entry (eapply,hnf,verbose) pri (c,cty)].
+(** [make_apply_entry (eapply,hnf,verbose) pri (c,cty,ctx,secvars)].
    [eapply] is true if this hint will be used only with EApply;
    [hnf] should be true if we should expand the head of cty before searching for
    products;
    [c] is the term given as an exact proof to solve the goal;
-   [cty] is the type of [c]. *)
+   [cty] is the type of [c].
+   [ctx] is its (refreshable) universe context. *)
 
 val make_apply_entry :
   env -> evar_map -> bool * bool * bool -> int option -> polymorphic -> ?name:hints_path_atom -> 

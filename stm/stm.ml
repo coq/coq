@@ -746,7 +746,7 @@ module State : sig
   val is_cached_and_valid : ?cache:Summary.marshallable -> Stateid.t -> bool
 
 
-  val exn_on : Stateid.t -> ?valid:Stateid.t -> iexn -> iexn
+  val exn_on : Stateid.t -> valid:Stateid.t -> iexn -> iexn
   (* to send states across worker/master *)
   type frozen_state
   val get_cached : Stateid.t -> frozen_state
@@ -854,14 +854,14 @@ end = struct (* {{{ *)
            VCS.set_state id (Valid s)
     with VCS.Expired -> ()
 
-  let exn_on id ?valid (e, info) =
+  let exn_on id ~valid (e, info) =
     match Stateid.get info with
     | Some _ -> (e, info)
     | None ->
         let loc = Option.default Loc.ghost (Loc.get_loc info) in
         let (e, info) = Hooks.(call_process_error_once (e, info)) in
         Hooks.(call execution_error id loc (iprint (e, info)));
-        (e, Stateid.add info ?valid id)
+        (e, Stateid.add info ~valid id)
 
   let same_env { system = s1 } { system = s2 } =
     let s1 = States.summary_of_state s1 in
@@ -2354,7 +2354,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     msg_error (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
-let merge_proof_branch ?valid ?id qast keep brname =
+let merge_proof_branch ~valid ?id qast keep brname =
   let brinfo = VCS.get_branch brname in
   let qed fproof = { qast; keep; brname; brinfo; fproof } in
   match brinfo with
@@ -2377,7 +2377,7 @@ let merge_proof_branch ?valid ?id qast keep brname =
       VCS.checkout VCS.Branch.master;
       `Unfocus qed_id
   | { VCS.kind = `Master } ->
-       iraise (State.exn_on ?valid Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
+       iraise (State.exn_on ~valid Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
 
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
@@ -2446,9 +2446,10 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
       | VtStm (VtBack oid, true), w ->
           let id = VCS.new_node ~id:newtip () in
           let { mine; others } = Backtrack.branches_of oid in
+          let valid = VCS.get_branch_pos head in
           List.iter (fun branch ->
             if not (List.mem_assoc branch (mine::others)) then
-              ignore(merge_proof_branch x VtDrop branch))
+              ignore(merge_proof_branch ~valid x VtDrop branch))
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           let head = VCS.current_branch () in
@@ -2543,8 +2544,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           detect_proof_block id cblock; *)
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
-          let valid = if tty then Some(VCS.get_branch_pos head) else None in
-          let rc = merge_proof_branch ?valid ~id:newtip x keep head in
+          let valid = VCS.get_branch_pos head in
+          let rc = merge_proof_branch ~valid ~id:newtip x keep head in
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish ();
           rc

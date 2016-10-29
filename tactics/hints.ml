@@ -69,6 +69,25 @@ let decompose_app_bound t =
     | Proj (p, c) -> ConstRef (Projection.constant p), Array.cons c args
     | _ -> raise Bound
 
+(** Compute the set of section variables that remain in the named context.
+    Starts from the top to the bottom of the context, stops at the first
+    different declaration between the named hyps and the section context. *)
+let secvars_of_hyps hyps =
+  let secctx = Global.named_context () in
+  let open Context.Named.Declaration in
+  let pred, all =
+    List.fold_left (fun (pred,all) decl ->
+        try let _ = Context.Named.lookup (get_id decl) hyps in
+          (* Approximation, it might be an hypothesis reintroduced with same name and unconvertible types,
+             we must allow it currently, as comparing the declarations for syntactic equality is too
+             strong a check (e.g. an unfold in a section variable would make it unusable). *)
+          (Id.Pred.add (get_id decl) pred, all)
+        with Not_found -> (pred, false))
+      (Id.Pred.empty,true) secctx
+  in
+  if all then Id.Pred.full (* If the whole section context is available *)
+  else pred
+
 (************************************************************************)
 (*           The Type of Constructions Autotactic Hints                 *)
 (************************************************************************)
@@ -107,12 +126,13 @@ type raw_hint = constr * types * Univ.universe_context_set
 type hint = (raw_hint * clausenv) hint_ast with_uid
 
 type 'a with_metadata = {
-  pri  : int;            (* A number lower is higher priority *)
-  poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
-  pat  : constr_pattern option; (* A pattern for the concl of the Goal *)
-  name  : hints_path_atom; (* A potential name to refer to the hint *) 
+  pri     : int;            (* A number lower is higher priority *)
+  poly    : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
+  pat     : constr_pattern option; (* A pattern for the concl of the Goal *)
+  name    : hints_path_atom; (* A potential name to refer to the hint *)
   db : string option; (** The database from which the hint comes *)
-  code : 'a;     (* the tactic to apply when the concl matches pat *)
+  secvars : Id.Pred.t; (* The set of section variables the hint depends on *)
+  code    : 'a;     (* the tactic to apply when the concl matches pat *)
 }
 
 type full_hint = hint with_metadata
@@ -421,11 +441,14 @@ sig
 type t
 val empty : ?name:hint_db_name -> transparent_state -> bool -> t
 val find : global_reference -> t -> search_entry
-val map_none : t -> full_hint list
-val map_all : global_reference -> t -> full_hint list
-val map_existential : (global_reference * constr array) -> constr -> t -> full_hint list
-val map_eauto : (global_reference * constr array) -> constr -> t -> full_hint list
-val map_auto : (global_reference * constr array) -> constr -> t -> full_hint list
+val map_none : secvars:Id.Pred.t -> t -> full_hint list
+val map_all : secvars:Id.Pred.t -> global_reference -> t -> full_hint list
+val map_existential : secvars:Id.Pred.t ->
+		      (global_reference * constr array) -> constr -> t -> full_hint list
+val map_eauto : secvars:Id.Pred.t ->
+		(global_reference * constr array) -> constr -> t -> full_hint list
+val map_auto : secvars:Id.Pred.t ->
+	       (global_reference * constr array) -> constr -> t -> full_hint list
 val add_one : env -> evar_map -> hint_entry -> t -> t
 val add_list : env -> evar_map -> hint_entry list -> t -> t
 val remove_one : global_reference -> t -> t
@@ -474,7 +497,11 @@ struct
     try Constr_map.find key db.hintdb_map
     with Not_found -> empty_se
  
-  let realize_tac (id,tac) = tac
+  let realize_tac secvars (id,tac) =
+    if Id.Pred.subset tac.secvars secvars then Some tac
+    else
+      (** Warn about no longer typable hint? *)
+      None
 
   let match_mode m arg =
     match m with
@@ -492,40 +519,40 @@ struct
     if List.is_empty modes then true
     else List.exists (matches_mode args) modes
 
-  let merge_entry db nopat pat =
+  let merge_entry secvars db nopat pat =
     let h = List.sort pri_order_int (List.map snd db.hintdb_nopat) in
     let h = List.merge pri_order_int h nopat in
     let h = List.merge pri_order_int h pat in
-    List.map realize_tac h
+    List.map_filter (realize_tac secvars) h
 
-  let map_none db =
-    merge_entry db [] []
+  let map_none ~secvars db =
+    merge_entry secvars db [] []
 
-  let map_all k db =
+  let map_all ~secvars k db =
     let se = find k db in
-    merge_entry db se.sentry_nopat se.sentry_pat
+    merge_entry secvars db se.sentry_nopat se.sentry_pat
 	
   (** Precondition: concl has no existentials *)
-  let map_auto (k,args) concl db =
+  let map_auto ~secvars (k,args) concl db =
     let se = find k db in
     let st = if db.use_dn then  (Some db.hintdb_state) else None in
     let pat = lookup_tacs concl st se in
-    merge_entry db [] pat
+    merge_entry secvars db [] pat
 
-  let map_existential (k,args) concl db =
+  let map_existential ~secvars (k,args) concl db =
     let se = find k db in
       if matches_modes args se.sentry_mode then
-        merge_entry db se.sentry_nopat se.sentry_pat
-      else merge_entry db [] []
+        merge_entry secvars db se.sentry_nopat se.sentry_pat
+      else merge_entry secvars db [] []
 
   (* [c] contains an existential *)
-  let map_eauto (k,args) concl db =
+  let map_eauto ~secvars (k,args) concl db =
     let se = find k db in
       if matches_modes args se.sentry_mode then
         let st = if db.use_dn then Some db.hintdb_state else None in
         let pat = lookup_tacs concl st se in
-        merge_entry db [] pat
-      else merge_entry db [] []
+        merge_entry secvars db [] pat
+      else merge_entry secvars db [] []
 
   let is_exact = function
     | Give_exact _ -> true
@@ -601,11 +628,11 @@ struct
 
   let get_entry se =
     let h = List.merge pri_order_int se.sentry_nopat se.sentry_pat in
-    List.map realize_tac h
+    List.map snd h
 
   let iter f db =
     let iter_se k se = f (Some k) se.sentry_mode (get_entry se) in
-    f None [] (List.map (fun x -> realize_tac (snd x)) db.hintdb_nopat);
+    f None [] (List.map (fun x -> snd (snd x)) db.hintdb_nopat);
     Constr_map.iter iter_se db.hintdb_map
 
   let fold f db accu =
@@ -701,7 +728,20 @@ let try_head_pattern c =
 
 let with_uid c = { obj = c; uid = fresh_key () }
 
+let secvars_of_idset s =
+  Id.Set.fold (fun id p ->
+      if is_section_variable id then
+        Id.Pred.add id p
+      else p) s Id.Pred.empty
+
+let secvars_of_constr env c =
+  secvars_of_idset (global_vars_set env c)
+
+let secvars_of_global env gr =
+  secvars_of_idset (vars_of_global_reference env gr)
+
 let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
+  let secvars = secvars_of_constr env c in
   let cty = strip_outer_cast cty in
     match kind_of_term cty with
     | Prod _ -> failwith "make_exact_entry"
@@ -717,6 +757,7 @@ let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
 	    pat = Some pat;
 	    name = name;
             db = None;
+            secvars;
 	    code = with_uid (Give_exact (c, cty, ctx)); })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c, cty, ctx) =
@@ -731,6 +772,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
 	  try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry" in
         let nmiss = List.length (clenv_missing ce) in
+        let secvars = secvars_of_constr env c in
 	if Int.equal nmiss 0 then
 	  (Some hd,
           { pri = (match pri with None -> nb_hyp cty | Some p -> p);
@@ -738,6 +780,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
             pat = Some pat;
 	    name = name;
             db = None;
+            secvars;
             code = with_uid (Res_pf(c,cty,ctx)); })
 	else begin
 	  if not eapply then failwith "make_apply_entry";
@@ -750,6 +793,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
              pat = Some pat;
 	     name = name;
              db = None;
+             secvars;
              code = with_uid (ERes_pf(c,cty,ctx)); })
         end
     | _ -> failwith "make_apply_entry"
@@ -806,7 +850,8 @@ let make_resolves env sigma flags pri poly ?name cr =
   let try_apply f =
     try Some (f (c, cty, ctx)) with Failure _ -> None in
   let ents = List.map_filter try_apply
-    [make_exact_entry env sigma pri poly ?name; make_apply_entry env sigma flags pri poly ?name]
+                             [make_exact_entry env sigma pri poly ?name;
+                              make_apply_entry env sigma flags pri poly ?name]
   in
   if List.is_empty ents then
     user_err ~hdr:"Hint"
@@ -818,15 +863,17 @@ let make_resolves env sigma flags pri poly ?name cr =
 (* used to add an hypothesis to the local hint database *)
 let make_resolve_hyp env sigma decl =
   let hname = NamedDecl.get_id decl in
+  let c = mkVar hname in
   try
     [make_apply_entry env sigma (true, true, false) None false
        ~name:(PathHints [VarRef hname])
-       (mkVar hname, NamedDecl.get_type decl, Univ.ContextSet.empty)]
+       (c, NamedDecl.get_type decl, Univ.ContextSet.empty)]
   with
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly (Pp.str "make_resolve_hyp")
 
 (* REM : in most cases hintname = id *)
+
 let make_unfold eref =
   let g = global_of_evaluable_reference eref in
   (Some g,
@@ -835,6 +882,7 @@ let make_unfold eref =
      pat = None;
      name = PathHints [g];
      db = None;
+     secvars = secvars_of_global (Global.env ()) g;
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
@@ -845,6 +893,7 @@ let make_extern pri pat tacast =
      pat = pat;
      name = PathAny;
      db = None;
+     secvars = Id.Pred.empty; (* Approximation *)
      code = with_uid (Extern tacast) })  
 
 let make_mode ref m = 
@@ -869,6 +918,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
               pat = Some (Patternops.pattern_of_constr env ce.evd (clenv_type ce));
 	      name = name;
               db = None;
+              secvars = secvars_of_constr env c;
               code= with_uid (Res_pf_THEN_trivial_fail(c,t,ctx)) })
 
 
@@ -1329,7 +1379,7 @@ let pr_hints_db (name,db,hintlist) =
 let pr_hint_list_for_head c =
   let dbs = current_db () in
   let validate (name, db) =
-    let hints = List.map (fun v -> 0, v) (Hint_db.map_all c db) in
+    let hints = List.map (fun v -> 0, v) (Hint_db.map_all Id.Pred.full c db) in
     (name, db, hints)
   in
   let valid_dbs = List.map validate dbs in
@@ -1351,9 +1401,9 @@ let pr_hint_term cl =
       let fn = try
 	  let hdc = decompose_app_bound cl in
 	    if occur_existential cl then
-	      Hint_db.map_existential hdc cl
-	    else Hint_db.map_auto hdc cl
-	with Bound -> Hint_db.map_none
+	      Hint_db.map_existential ~secvars:Id.Pred.full hdc cl
+	    else Hint_db.map_auto ~secvars:Id.Pred.full hdc cl
+	with Bound -> Hint_db.map_none ~secvars:Id.Pred.full
       in
       let fn db = List.map (fun x -> 0, x) (fn db) in
       List.map (fun (name, db) -> (name, db, fn db)) dbs

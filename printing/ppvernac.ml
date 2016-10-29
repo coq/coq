@@ -1021,7 +1021,7 @@ module Make
                      str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
                    impls)
         )
-      | VernacArguments (q, impl, nargs, mods) ->
+      | VernacArguments (q, args, more_implicits, nargs, mods) ->
         return (
           hov 2 (
             keyword "Arguments" ++ spc() ++
@@ -1029,19 +1029,28 @@ module Make
               let pr_s = function None -> str"" | Some (_,s) -> str "%" ++ str s in
               let pr_if b x = if b then x else str "" in
               let pr_br imp x = match imp with
-                | `Implicit -> str "[" ++ x ++ str "]"
-                | `MaximallyImplicit -> str "{" ++ x ++ str "}"
-                | `NotImplicit -> x in
-              let rec aux n l =
+                | Vernacexpr.Implicit -> str "[" ++ x ++ str "]"
+                | Vernacexpr.MaximallyImplicit -> str "{" ++ x ++ str "}"
+                | Vernacexpr.NotImplicit -> x in
+              let rec print_arguments n l =
                 match n, l with
-                  | 0, l -> spc () ++ str"/" ++ aux ~-1 l
+                  | Some 0, l -> spc () ++ str"/" ++ print_arguments None l
                   | _, [] -> mt()
                   | n, { name = id; recarg_like = k;
                          notation_scope = s;
                          implicit_status = imp } :: tl ->
                     spc() ++ pr_br imp (pr_if k (str"!") ++ pr_name id ++ pr_s s) ++
-                      aux (n-1) tl in
-              prlist_with_sep (fun () -> str", ") (aux nargs) impl ++
+                      print_arguments (Option.map pred n) tl
+              in
+              let rec print_implicits = function
+                | [] -> mt ()
+                | (name, impl) :: rest ->
+                   spc() ++ pr_br impl (pr_name name) ++ print_implicits rest
+              in
+              print_arguments nargs args ++
+                if not (List.is_empty more_implicits) then
+                  str ", " ++ prlist_with_sep (fun () -> str", ") print_implicits more_implicits
+                else (mt ()) ++
                 (if not (List.is_empty mods) then str" : " else str"") ++
                   prlist_with_sep (fun () -> str", " ++ spc()) (function
                     | `ReductionDontExposeCase -> keyword "simpl nomatch"

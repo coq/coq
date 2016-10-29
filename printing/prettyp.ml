@@ -243,7 +243,7 @@ let print_name_infos ref =
   let impls = implicits_of_global ref in
   let scopes = Notation.find_arguments_scope ref in
   let renames =
-    try List.hd (Arguments_renaming.arguments_names ref) with Not_found -> [] in
+    try Arguments_renaming.arguments_names ref with Not_found -> [] in
   let type_info_for_implicit =
     if need_expansion (select_impargs_size 0 impls) ref then
       (* Need to reduce since implicits are computed with products flattened *)
@@ -283,7 +283,7 @@ let print_inductive_implicit_args =
 let print_inductive_renames =
   print_args_data_of_inductive_ids
     (fun r ->
-      try List.hd (Arguments_renaming.arguments_names r) with Not_found -> [])
+      try Arguments_renaming.arguments_names r with Not_found -> [])
     ((!=) Anonymous)
     print_renames_list
 

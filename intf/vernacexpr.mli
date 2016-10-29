@@ -415,10 +415,12 @@ type vernac_expr =
   | VernacDeclareImplicits of reference or_by_notation *
       (explicitation * bool * bool) list list
   | VernacArguments of reference or_by_notation *
-      (vernac_argument_status list) list *
-      int * [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
-              `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
-              `DefaultImplicits ] list
+      vernac_argument_status list (* Main arguments status list *) *
+        (Name.t * vernac_implicit_status) list list (* Extra implicit status lists *) *
+      int option (* Number of args to trigger reduction *) *
+        [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
+          `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
+          `DefaultImplicits ] list
   | VernacArgumentsScope of reference or_by_notation *
       scope_name option list
   | VernacReserve of simple_binder list
@@ -474,11 +476,13 @@ type vernac_expr =
   | VernacPolymorphic of bool * vernac_expr
   | VernacLocal of bool * vernac_expr
 
+and vernac_implicit_status = Implicit | MaximallyImplicit | NotImplicit
+
 and vernac_argument_status = {
   name : Name.t;
   recarg_like : bool;
   notation_scope : (Loc.t * string) option;
-  implicit_status : [ `Implicit | `MaximallyImplicit | `NotImplicit];
+  implicit_status : vernac_implicit_status;
 }
 
 (* A vernac classifier has to tell if a command:
