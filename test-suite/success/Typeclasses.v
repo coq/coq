@@ -6,10 +6,10 @@ Module onlyclasses.
   Goal Foo * Foo.
     split. shelve.
     Set Typeclasses Debug.
-    typeclasses eauto.
+    Fail typeclasses eauto.
     typeclasses eauto with typeclass_instances.
     Unshelve. typeclasses eauto with typeclass_instances.
-  Abort.
+  Qed.
 End onlyclasses.
 
 Module shelve_non_class_subgoals.
@@ -22,22 +22,23 @@ Module shelve_non_class_subgoals.
   Typeclasses eauto := debug.
   Set Typeclasses Debug Verbosity 2.
   Goal Bar.
-    (* Solution has shelved subgoals *)
+    (* Solution has shelved subgoals (of non typeclass type) *)
     Fail typeclasses eauto.
   Abort.
 End shelve_non_class_subgoals.
 
-Module shelve_non_class_subgoals2.
+Module Leivantex2PR339.
+  (** Was a bug preventing to find hints associated with no pattern *)
   Class Bar := {}.
-
   Instance bar1 (t:Type) : Bar.
   Hint Extern 0 => exact True : typeclass_instances.
   Typeclasses eauto := debug.
   Goal Bar.
     Fail typeclasses eauto.
-    debug eauto with typeclass_instances.
-  Qed.  
-End shelve_non_class_subgoals2.
+    Set Typeclasses Debug Verbosity 2.
+    typeclasses eauto with typeclass_instances.
+  Qed.
+End Leivantex2PR339.
 
 Module bt.
 Require Import Equivalence.

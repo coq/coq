@@ -394,7 +394,18 @@ than {\tt eauto} and {\tt auto}. The main differences are the following:
   {\tt typeclass\_instances} database by default (instead of {\tt core})
   and will try to solve \emph{only} typeclass goals. Other subgoals are
   automatically shelved and \emph{must be} resolved entirely when the
-  other typeclass subgoals are resolved or the proof search will fail.
+  other typeclass subgoals are resolved or the proof search will fail
+  \emph{globally}, \emph{without} the possibility to find another
+  complete solution with no shelved subgoals.
+
+  \emph{Note: } As of Coq 8.6, {\tt all:once (typeclasses eauto)}
+  faithfully mimicks what happens during typeclass resolution when it is
+  called during refinement/type-inference. It might move to {\tt
+    all:typeclasses eauto} in future versions when the refinement engine
+  will be able to backtrack.
+\item When called with specific databases (e.g. {\tt with}), {\tt
+    typeclasses eauto} allows shelved goals to remain at any point
+  during search and treat typeclasses goals like any other.
 \item The transparency information of databases is used consistently for
   all hints declared in them. It is always used when calling the unifier.
   When considering the local hypotheses, we use the transparent

@@ -1265,21 +1265,29 @@ module Search = struct
                                    | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
 
-  let disallow_shelved tac =
+  let disallow_shelved initshelf tac =
     let open Proofview in
-    with_shelf (tclONCE tac) >>= fun (shelved,result) ->
-    (if not (List.is_empty shelved) then
-       begin
-         Proofview.tclEVARMAP >>= fun sigma ->
-	 let gls = prlist_with_sep spc (pr_ev sigma) shelved in
-	 (if !typeclasses_debug > 0 then
-	  Feedback.msg_debug (str"Non-empty shelf at end of resolution:" ++ gls));
-	 Tacticals.New.tclFAIL 1 (str"Proof search failed: " ++
-				  str"shelved goals remain: " ++ gls)
-       end
-     else tclUNIT result)
+    let casefn = function
+    | Fail (e,info) -> tclZERO ~info e
+    | Next ((shelved, result), k) ->
+       if not (List.is_empty shelved) then
+         begin
+           Proofview.tclEVARMAP >>= fun sigma ->
+	   let gls = prlist_with_sep spc (pr_ev sigma) shelved in
+	   (if !typeclasses_debug > 0 then
+	      let initgls = prlist_with_sep spc (pr_ev sigma) initshelf in
+	      Feedback.msg_debug (str"Non-empty shelf at end of resolution:" ++ gls
+                                  ++ str" initially: " ++ initgls ++ str"."));
+	   Tacticals.New.tclZEROMSG (str"Proof search failed: " ++
+				      str"shelved goals remain: " ++ gls)
+         end
+       else
+         tclOR (tclUNIT result) (fun e -> k e >>= fun (gls, result) -> tclUNIT result)
+    in
+    tclCASE (with_shelf tac) >>= casefn
 
-  let eauto_tac ?(st=full_transparent_state) ?(unique=false) ~only_classes ~depth ~dep hints =
+  let eauto_tac ?(st=full_transparent_state) ?(unique=false)
+                ~only_classes ~depth ~dep hints =
     let open Proofview in
     let tac =
       let search = search_tac ~st only_classes dep hints in
@@ -1310,7 +1318,16 @@ module Search = struct
         Proofview.tclEXACTLY_ONCE Proofview.MoreThanOneSuccess tac
       else tac
     in
-    let tac = if only_classes then disallow_shelved tac else tac in
+    with_shelf numgoals >>= fun (initshelf, i) ->
+    (if !typeclasses_debug > 1 then
+       Feedback.msg_debug (str"Starting resolution with " ++ int i ++
+                             str" goal(s) under focus and " ++
+                             int (List.length initshelf) ++ str " shelved goal(s)" ++
+                             if only_classes then str " in only_classes mode" else
+                               str " in regular mode" ++
+                                 match depth with None -> str ", unbounded"
+                                                | Some i -> str ", with depth limit " ++ int i));
+    let tac = if only_classes then disallow_shelved initshelf tac else tac in
     tac
 
   let run_on_evars p evm tac =

@@ -176,6 +176,7 @@ Definition trivial a (H : Foo a) : {b : myType & Qux b}.
 Proof.
   Time typeclasses eauto 10 with typeclass_instances.
   Undo. Set Typeclasses Iterative Deepening.
+  (* Much faster in iteratove deepening mode *)
   Time typeclasses eauto with typeclass_instances.
 Defined.
 
