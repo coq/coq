@@ -445,7 +445,7 @@ let concl_refiner metas body gls =
 	    let bsort,_B,nbody =
 	      aux nenv (_x::avoid) ((n,mkVar _x)::subst) rest in
 	    let body = mkNamedLambda _x _A nbody in
-	      if occur_term (mkVar _x) _B then
+	      if local_occur_var evd _x (EConstr.of_constr _B) then
 	        begin
 		  let _P = mkNamedLambda _x _A _B in
 		    match bsort,sort with
@@ -672,14 +672,14 @@ let rec metas_from n hyps =
       _ :: q -> n :: metas_from (succ n) q
     | [] -> []
 
-let rec build_product args body =
+let rec build_product sigma args body =
   match args with
       (Hprop st| Hvar st )::rest ->
-	let pprod= lift 1 (build_product rest body) in
+	let pprod= lift 1 (build_product sigma rest body) in
 	let lbody =
 	  match st.st_label with
 	      Anonymous -> pprod
-	    | Name id -> subst_term (mkVar id) pprod in
+	    | Name id -> subst_var id pprod in
 	  mkProd (st.st_label, st.st_it, lbody)
     | [] -> body
 
@@ -694,7 +694,7 @@ let instr_suffices _then cut gls0 =
   let info = get_its_info gls0 in
   let c_id = pf_get_new_id (Id.of_string "_cofact") gls0 in
   let ctx,hd = cut.cut_stat in
-  let c_stat = build_product ctx (mk_stat_or_thesis info gls0 hd) in
+  let c_stat = build_product (project gls0) ctx (mk_stat_or_thesis info gls0 hd) in
   let metas = metas_from 1 ctx in
   let c_ctx,c_head = build_applist c_stat metas in
   let c_term = applist (mkVar c_id,List.map mkMeta metas) in
@@ -780,7 +780,7 @@ let rec consider_match may_intro introduced available expected gls =
 	  gls
 
 let consider_tac c hyps gls =
-  match kind_of_term (strip_outer_cast c) with
+  match kind_of_term (strip_outer_cast (project gls) (EConstr.of_constr c)) with
       Var id ->
 	consider_match false [] [id] hyps gls
     | _ ->
@@ -805,18 +805,18 @@ let rec take_tac wits gls =
 
 (* tactics for define *)
 
-let rec build_function args body =
+let rec build_function sigma args body =
   match args with
       st::rest ->
-	let pfun= lift 1 (build_function rest body) in
+	let pfun= lift 1 (build_function sigma rest body) in
 	let id = match st.st_label with
 	    Anonymous -> assert false
 	  | Name id -> id in
-	  mkLambda (Name id, st.st_it, subst_term (mkVar id) pfun)
+	  mkLambda (Name id, st.st_it, subst_term sigma (EConstr.mkVar id) (EConstr.of_constr pfun))
     | [] -> body
 
 let define_tac id args body gls =
-  let t = build_function args body in
+  let t = build_function (project gls) args body in
     Proofview.V82.of_tactic (letin_tac None (Name id) t None Locusops.nowhere) gls
 
 (* tactics for reconsider *)
@@ -880,7 +880,7 @@ let build_per_info etype casee gls =
   let concl=pf_concl gls in
   let env=pf_env gls in
   let ctyp=pf_unsafe_type_of gls casee in
-  let is_dep = dependent casee concl in
+  let is_dep = dependent (project gls) (EConstr.of_constr casee) (EConstr.of_constr concl) in
   let hd,args = decompose_app (special_whd gls ctyp) in
   let (ind,u) =
     try
@@ -895,9 +895,9 @@ let build_per_info etype casee gls =
   let params,real_args = List.chop nparams args in
   let abstract_obj c body =
     let typ=pf_unsafe_type_of gls c in
-      lambda_create env (typ,subst_term c body) in
+      lambda_create env (typ,subst_term (project gls) (EConstr.of_constr c) (EConstr.of_constr body)) in
   let pred= List.fold_right abstract_obj
-    real_args (lambda_create env (ctyp,subst_term casee concl)) in
+    real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) (EConstr.of_constr concl))) in
     is_dep,
   {per_casee=casee;
    per_ctype=ctyp;
@@ -953,7 +953,7 @@ let suppose_tac hyps gls0 =
   let info = get_its_info gls0 in
   let thesis = pf_concl gls0 in
   let id = pf_get_new_id (Id.of_string "subcase_") gls0 in
-  let clause = build_product hyps thesis in
+  let clause = build_product (project gls0) hyps thesis in
   let ninfo1 = {pm_stack=Suppose_case::info.pm_stack} in
   let old_clauses,stack = register_nodep_subcase id info.pm_stack in
   let ninfo2 = {pm_stack=stack} in
@@ -1263,9 +1263,9 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let params,real_args = List.chop nparams all_args in
 	let abstract_obj c body =
 	  let typ=pf_unsafe_type_of gls c in
-	    lambda_create env (typ,subst_term c body) in
+	    lambda_create env (typ,subst_term (project gls) (EConstr.of_constr c) (EConstr.of_constr body)) in
 	let elim_pred = List.fold_right abstract_obj
-	  real_args (lambda_create env (ctyp,subst_term casee concl)) in
+	  real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) (EConstr.of_constr concl))) in
 	let case_info = Inductiveops.make_case_info env ind RegularStyle in
 	let gen_arities = Inductive.arities_of_constructors (ind,u) spec in
 	let f_ids typ =

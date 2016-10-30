@@ -630,7 +630,7 @@ module New = struct
     (* applying elimination_scheme just a little modified *)
     let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_unsafe_type_of gl elim)) gl in
     let indmv =
-      match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
+      match kind_of_term (last_arg elimclause.evd (EConstr.of_constr elimclause.templval.Evd.rebus)) with
       | Meta mv -> mv
       | _         -> anomaly (str"elimination")
     in

@@ -14,20 +14,21 @@ open Sigma.Notations
 
 module RelDecl = Context.Rel.Declaration
 
-let is_rec_info scheme_info =
+let is_rec_info sigma scheme_info =
   let test_branche min acc decl =
     acc || (
       let new_branche =
 	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum (RelDecl.get_type decl))) in
-      let free_rels_in_br = Termops.free_rels new_branche in
+      let free_rels_in_br = Termops.free_rels sigma (EConstr.of_constr new_branche) in
       let max = min + scheme_info.Tactics.npredicates in
       Int.Set.exists (fun i -> i >= min && i< max) free_rels_in_br
     )
   in
   List.fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
 
-let choose_dest_or_ind scheme_info =
-  Tactics.induction_destruct (is_rec_info scheme_info) false
+let choose_dest_or_ind scheme_info args =
+  Proofview.tclBIND Proofview.tclEVARMAP (fun sigma ->
+  Tactics.induction_destruct (is_rec_info sigma scheme_info) false args)
 
 let functional_induction with_clean c princl pat =
   let res =

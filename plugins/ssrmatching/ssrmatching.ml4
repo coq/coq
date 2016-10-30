@@ -702,7 +702,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
 
 let fixed_upat = function
 | {up_k = KpatFlex | KpatEvar _ | KpatProj _} -> false 
-| {up_t = t} -> not (occur_existential t)
+| {up_t = t} -> not (occur_existential Evd.empty (EConstr.of_constr t)) (** FIXME *)
 
 let do_once r f = match !r with Some _ -> () | None -> r := Some (f ())
 

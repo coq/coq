@@ -215,11 +215,11 @@ let lookup_name_as_displayed env t s =
     | Prod (name,_,c') ->
 	(match compute_displayed_name_in RenamingForGoal avoid name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
-	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
+	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop (EConstr.of_constr c')))
     | LetIn (name,_,_,c') ->
 	(match compute_displayed_name_in RenamingForGoal avoid name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
-	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
+	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop (EConstr.of_constr c')))
     | Cast (c,_,_) -> lookup avoid n c
     | _ -> None
   in lookup (ids_of_named_context (named_context env)) 1 t
@@ -261,13 +261,13 @@ let update_name na ((_,(e,_)),c) =
   | _ ->
       na
 
-let rec decomp_branch tags nal b (avoid,env as e) c =
+let rec decomp_branch tags nal b (avoid,env as e) sigma c =
   let flag = if b then RenamingForGoal else RenamingForCasesPattern (fst env,c) in
   match tags with
   | [] -> (List.rev nal,(e,c))
   | b::tags ->
       let na,c,f,body,t =
-        match kind_of_term (strip_outer_cast c), b with
+        match kind_of_term (strip_outer_cast sigma (EConstr.of_constr c)), b with
 	| Lambda (na,t,c),false -> na,c,compute_displayed_let_name_in,None,Some t
 	| LetIn (na,b,t,c),true ->
             na,c,compute_displayed_name_in,Some b,Some t
@@ -279,17 +279,17 @@ let rec decomp_branch tags nal b (avoid,env as e) c =
     in
     let na',avoid' = f flag avoid na c in
     decomp_branch tags (na'::nal) b
-      (avoid', add_name_opt na' body t env) c
+      (avoid', add_name_opt na' body t env) sigma c
 
-let rec build_tree na isgoal e ci cl =
+let rec build_tree na isgoal e sigma ci cl =
   let mkpat n rhs pl = PatCstr(dl,(ci.ci_ind,n+1),pl,update_name na rhs) in
   let cnl = ci.ci_pp_info.cstr_tags in
   let cna = ci.ci_cstr_nargs in
   List.flatten
     (List.init (Array.length cl)
-      (fun i -> contract_branch isgoal e (cnl.(i),cna.(i),mkpat i,cl.(i))))
+      (fun i -> contract_branch isgoal e sigma (cnl.(i),cna.(i),mkpat i,cl.(i))))
 
-and align_tree nal isgoal (e,c as rhs) = match nal with
+and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | [] -> [[],rhs]
   | na::nal ->
     match kind_of_term c with
@@ -298,20 +298,20 @@ and align_tree nal isgoal (e,c as rhs) = match nal with
         && not (Int.equal (Array.length cl) 0)
 	&& (* don't contract if p dependent *)
 	computable p (List.length ci.ci_pp_info.ind_tags) (* FIXME: can do better *) ->
-	let clauses = build_tree na isgoal e ci cl in
+	let clauses = build_tree na isgoal e sigma ci cl in
 	List.flatten
           (List.map (fun (pat,rhs) ->
-	      let lines = align_tree nal isgoal rhs in
+	      let lines = align_tree nal isgoal rhs sigma in
 	      List.map (fun (hd,rest) -> pat::hd,rest) lines)
 	    clauses)
     | _ ->
 	let pat = PatVar(dl,update_name na rhs) in
-	let mat = align_tree nal isgoal rhs in
+	let mat = align_tree nal isgoal rhs sigma in
 	List.map (fun (hd,rest) -> pat::hd,rest) mat
 
-and contract_branch isgoal e (cdn,can,mkpat,b) =
-  let nal,rhs = decomp_branch cdn [] isgoal e b in
-  let mat = align_tree nal isgoal rhs in
+and contract_branch isgoal e sigma (cdn,can,mkpat,b) =
+  let nal,rhs = decomp_branch cdn [] isgoal e sigma b in
+  let mat = align_tree nal isgoal rhs sigma in
   List.map (fun (hd,rhs) -> (mkpat rhs hd,rhs)) mat
 
 (**********************************************************************)
@@ -439,7 +439,7 @@ let detype_instance sigma l =
   else Some (List.map (detype_level sigma) (Array.to_list (Univ.Instance.to_array l)))
 
 let rec detype flags avoid env sigma t =
-  match kind_of_term (collapse_appl t) with
+  match kind_of_term (collapse_appl sigma (EConstr.of_constr t)) with
     | Rel n ->
       (try match lookup_name_of_rel n (fst env) with
 	 | Name id   -> GVar (dl, id)
@@ -628,7 +628,7 @@ and share_names flags n l avoid env sigma c t =
 and detype_eqns flags avoid env sigma ci computable constructs consnargsl bl =
   try
     if !Flags.raw_print || not (reverse_matching ()) then raise Exit;
-    let mat = build_tree Anonymous (snd flags) (avoid,env) ci bl in
+    let mat = build_tree Anonymous (snd flags) (avoid,env) sigma ci bl in
     List.map (fun (pat,((avoid,env),c)) -> (dl,[],[pat],detype flags avoid env sigma c))
       mat
   with e when CErrors.noncritical e ->

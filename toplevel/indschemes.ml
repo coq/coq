@@ -313,7 +313,7 @@ let warn_cannot_build_congruence =
           strbrk "Cannot build congruence scheme because eq is not found")
 
 let declare_congr_scheme ind =
-  if Hipattern.is_equality_type (mkInd ind) then begin
+  if Hipattern.is_equality_type Evd.empty (mkInd ind) (** FIXME *) then begin
     if
       try Coqlib.check_required_library Coqlib.logic_module_name; true
       with e when CErrors.noncritical e -> false
@@ -472,7 +472,7 @@ let build_combined_scheme env schemes =
   let (c, t) = List.hd defs in
   let ctx, ind, nargs = find_inductive t in
   (* Number of clauses, including the predicates quantification *)
-  let prods = nb_prod t - (nargs + 1) in
+  let prods = nb_prod Evd.empty (EConstr.of_constr t) - (nargs + 1) (** FIXME *) in
   let coqand = Coqlib.build_coq_and () and coqconj = Coqlib.build_coq_conj () in
   let relargs = rel_vect 0 prods in
   let concls = List.rev_map

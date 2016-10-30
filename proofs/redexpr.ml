@@ -25,7 +25,7 @@ open Misctypes
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env sigma c =
   let ctyp = Retyping.get_type_of env sigma c in
-  if Termops.occur_meta_or_existential c then
+  if Termops.occur_meta_or_existential sigma (EConstr.of_constr c) then
     error "vm_compute does not support existential variables.";
   Vnorm.cbv_vm env c ctyp
 

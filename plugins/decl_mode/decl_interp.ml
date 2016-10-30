@@ -374,7 +374,7 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
     match st'.st_it with
 	Thesis nam -> {st_it=Thesis nam;st_label=st'.st_label}
       | This _ -> {st_it = This st.st_it;st_label=st.st_label} in
-  let thyps = fst (match_hyps blend nam2 (Termops.pop rest1) hyps) in
+  let thyps = fst (match_hyps blend nam2 (Termops.pop (EConstr.of_constr rest1)) hyps) in
     tparams,{pat_vars=tpatvars;
 	     pat_aliases=taliases;
 	     pat_constr=pat_pat;

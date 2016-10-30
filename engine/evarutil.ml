@@ -540,12 +540,12 @@ let rec check_and_clear_in_constr env evdref err ids global c =
                   (* Check if some id to clear occurs in the instance
                      a of rid in ev and remember the dependency *)
                     let check id = if Id.Set.mem id ids then raise (Depends id) in
-                    let () = Id.Set.iter check (collect_vars a) in
+                    let () = Id.Set.iter check (collect_vars !evdref (EConstr.of_constr a)) in
                   (* Check if some rid to clear in the context of ev
                      has dependencies in another hyp of the context of ev
                      and transitively remember the dependency *)
                     let check id _ =
-                      if occur_var_in_decl (Global.env ()) id h
+                      if occur_var_in_decl (Global.env ()) !evdref id h
                       then raise (Depends id)
                     in
                     let () = Id.Map.iter check ri in

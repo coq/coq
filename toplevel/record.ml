@@ -374,7 +374,7 @@ let structure_signature ctx =
           let evm = Sigma.to_evar_map evm in
 	  let new_tl = Util.List.map_i
 	    (fun pos decl ->
-	       RelDecl.map_type (fun t -> Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) decl) 1 tl in
+	       RelDecl.map_type (fun t -> Termops.replace_term evm (EConstr.mkRel pos) (EConstr.mkEvar(ev,[||])) (EConstr.of_constr t)) decl) 1 tl in
 	  deps_to_evar evm new_tl in
   deps_to_evar Evd.empty (List.rev ctx)
 

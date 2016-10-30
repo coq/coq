@@ -40,8 +40,8 @@ open Coqlib
    also work on ad-hoc disjunctions introduced by the user.
    (Eduardo, 6/8/97). *)
 
-type 'a matching_function = constr -> 'a option
-type testing_function = constr -> bool
+type 'a matching_function = Evd.evar_map -> constr -> 'a option
+type testing_function = Evd.evar_map -> constr -> bool
 
 val match_with_non_recursive_type : (constr * constr list) matching_function
 val is_non_recursive_type         : testing_function

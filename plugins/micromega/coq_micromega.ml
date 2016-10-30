@@ -1221,7 +1221,7 @@ struct
           let g,env,tg = xparse_formula env tg b in
           mkformula_binary mkIff term f g,env,tg
         | _ -> parse_atom env tg term)
-      | Prod(typ,a,b) when not (Termops.dependent (mkRel 1) b)->
+      | Prod(typ,a,b) when EConstr.Vars.noccurn Evd.empty 1 (EConstr.of_constr b) (** FIXME *) ->
         let f,env,tg = xparse_formula env tg a in
         let g,env,tg = xparse_formula env tg b in
         mkformula_binary mkI term f g,env,tg
@@ -1687,7 +1687,8 @@ let rec mk_topo_order le l =
   | (Some v,l') -> v ::  (mk_topo_order le l')
 
     
-let topo_sort_constr l = mk_topo_order Termops.dependent l
+let topo_sort_constr l =
+  mk_topo_order (fun c t -> Termops.dependent Evd.empty (** FIXME *) (EConstr.of_constr c) (EConstr.of_constr t)) l
 
 
 (**

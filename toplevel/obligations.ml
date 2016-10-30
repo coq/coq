@@ -145,7 +145,7 @@ let rec chop_product n t =
   if Int.equal n 0 then Some t
   else
     match kind_of_term t with
-      | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop b) else None
+      | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop (EConstr.of_constr b)) else None
       | _ -> None
 
 let evar_dependencies evm oev =
@@ -396,7 +396,7 @@ let subst_deps expand obls deps t =
     (Vars.replace_vars (List.map (fun (n, (_, b)) -> n, b) osubst) t)
 
 let rec prod_app t n =
-  match kind_of_term (Termops.strip_outer_cast t) with
+  match kind_of_term (Termops.strip_outer_cast Evd.empty (EConstr.of_constr t)) (** FIXME *) with
     | Prod (_,_,b) -> subst1 n b
     | LetIn (_, b, t, b') -> prod_app (subst1 b b') n
     | _ ->
@@ -521,7 +521,7 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
 	 but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
-      let m = Termops.nb_prod fixtype in
+      let m = Termops.nb_prod Evd.empty (EConstr.of_constr fixtype) (** FIXME *) in
       let ctx = fst (decompose_prod_n_assum m fixtype) in
 	List.map_i (fun i _ -> i) 0 ctx
 

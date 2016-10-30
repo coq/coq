@@ -279,9 +279,9 @@ let clenv_of_prods poly nprods (c, clenv) gl =
   let (c, _, _) = c in
   if poly || Int.equal nprods 0 then Some (None, clenv)
   else
-    let ty = Retyping.get_type_of (Proofview.Goal.env gl)
-                                  (Sigma.to_evar_map (Proofview.Goal.sigma gl)) c in
-    let diff = nb_prod ty - nprods in
+    let sigma = Tacmach.New.project gl in
+    let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
+    let diff = nb_prod sigma (EConstr.of_constr ty) - nprods in
     if Pervasives.(>=) diff 0 then
       (* Was Some clenv... *)
       Some (Some diff,
@@ -454,13 +454,13 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
 and e_trivial_resolve db_list local_db secvars only_classes sigma concl =
   try
     e_my_find_search db_list local_db secvars
-     (decompose_app_bound concl) true only_classes sigma concl
+     (decompose_app_bound sigma concl) true only_classes sigma concl
   with Bound | Not_found -> []
 
 let e_possible_resolve db_list local_db secvars only_classes sigma concl =
   try
     e_my_find_search db_list local_db secvars
-      (decompose_app_bound concl) false only_classes sigma concl
+      (decompose_app_bound sigma concl) false only_classes sigma concl
   with Bound | Not_found -> []
 
 let cut_of_hints h =
@@ -666,7 +666,7 @@ module V85 = struct
 
   let needs_backtrack env evd oev concl =
     if Option.is_empty oev || is_Prop env evd concl then
-      occur_existential concl
+      occur_existential evd (EConstr.of_constr concl)
     else true
 
   let hints_tac hints sk fk {it = gl,info; sigma = s} =
@@ -740,7 +740,7 @@ module V85 = struct
              let fk' =
                (fun e ->
                  let do_backtrack =
-                   if unique then occur_existential concl
+                   if unique then occur_existential s' (EConstr.of_constr concl)
                    else if info.unique then true
                    else if List.is_empty gls' then
                      needs_backtrack env s' info.is_evar concl
@@ -975,7 +975,7 @@ module Search = struct
       NOT backtrack. *)
   let needs_backtrack env evd unique concl =
     if unique || is_Prop env evd concl then
-      occur_existential concl
+      occur_existential evd (EConstr.of_constr concl)
     else true
 
   let mark_unresolvables sigma goals =
@@ -1486,16 +1486,17 @@ let _ =
 (** Take the head of the arity of a constr.
     Used in the partial application tactic. *)
 
-let rec head_of_constr t =
-  let t = strip_outer_cast(collapse_appl t) in
+let rec head_of_constr sigma t =
+  let t = strip_outer_cast sigma (EConstr.of_constr (collapse_appl sigma (EConstr.of_constr t))) in
     match kind_of_term t with
-    | Prod (_,_,c2)  -> head_of_constr c2
-    | LetIn (_,_,_,c2) -> head_of_constr c2
-    | App (f,args)  -> head_of_constr f
+    | Prod (_,_,c2)  -> head_of_constr sigma c2
+    | LetIn (_,_,_,c2) -> head_of_constr sigma c2
+    | App (f,args)  -> head_of_constr sigma f
     | _      -> t
 
 let head_of_constr h c =
-  let c = head_of_constr c in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let c = head_of_constr sigma c in
   letin_tac None (Name h) c None Locusops.allHyps
 
 let not_evar c =

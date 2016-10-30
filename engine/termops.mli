@@ -69,8 +69,9 @@ val map_constr_with_binders_left_to_right :
   ('a -> constr -> constr) ->
     'a -> constr -> constr
 val map_constr_with_full_binders :
+  Evd.evar_map ->
   (Context.Rel.Declaration.t -> 'a -> 'a) ->
-  ('a -> constr -> constr) -> 'a -> constr -> constr
+  ('a -> EConstr.t -> EConstr.t) -> 'a -> EConstr.t -> EConstr.t
 
 (** [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to
@@ -80,11 +81,12 @@ val map_constr_with_full_binders :
    each binder traversal; it is not recursive *)
 
 val fold_constr_with_binders :
-  ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
+  Evd.evar_map -> ('a -> 'a) ->
+    ('a -> 'b -> EConstr.t -> 'b) -> 'a -> 'b -> EConstr.t -> 'b
 
 val fold_constr_with_full_binders :
-  (Context.Rel.Declaration.t -> 'a -> 'a) -> ('a -> 'b -> constr -> 'b) ->
-    'a -> 'b -> constr -> 'b
+  Evd.evar_map -> (Context.Rel.Declaration.t -> 'a -> 'a) ->
+    ('a -> 'b -> EConstr.t -> 'b) -> 'a -> 'b -> EConstr.t -> 'b
 
 val iter_constr_with_full_binders :
   (Context.Rel.Declaration.t -> 'a -> 'a) -> ('a -> constr -> unit) -> 'a ->
@@ -92,39 +94,39 @@ val iter_constr_with_full_binders :
 
 (**********************************************************************)
 
-val strip_head_cast : constr -> constr
-val drop_extra_implicit_args : constr -> constr
+val strip_head_cast : Evd.evar_map -> EConstr.t -> EConstr.t
+val drop_extra_implicit_args : Evd.evar_map -> EConstr.t -> constr
 
 (** occur checks *)
 
 exception Occur
-val occur_meta : types -> bool
-val occur_existential : types -> bool
-val occur_meta_or_existential : types -> bool
-val occur_evar : existential_key -> types -> bool
-val occur_var : env -> Id.t -> types -> bool
+val occur_meta : Evd.evar_map -> EConstr.t -> bool
+val occur_existential : Evd.evar_map -> EConstr.t -> bool
+val occur_meta_or_existential : Evd.evar_map -> EConstr.t -> bool
+val occur_evar : Evd.evar_map -> existential_key -> EConstr.t -> bool
+val occur_var : env -> Evd.evar_map -> Id.t -> EConstr.t -> bool
 val occur_var_in_decl :
-  env ->
+  env -> Evd.evar_map ->
   Id.t -> Context.Named.Declaration.t -> bool
 
 (** As {!occur_var} but assume the identifier not to be a section variable *)
-val local_occur_var : Id.t -> types -> bool
+val local_occur_var : Evd.evar_map -> Id.t -> EConstr.t -> bool
 
-val free_rels : constr -> Int.Set.t
+val free_rels : Evd.evar_map -> EConstr.t -> Int.Set.t
 
 (** [dependent m t] tests whether [m] is a subterm of [t] *)
-val dependent : constr -> constr -> bool
-val dependent_no_evar : constr -> constr -> bool
-val dependent_univs : constr -> constr -> bool
-val dependent_univs_no_evar : constr -> constr -> bool
-val dependent_in_decl : constr -> Context.Named.Declaration.t -> bool
-val count_occurrences : constr -> constr -> int
-val collect_metas : constr -> int list
-val collect_vars : constr -> Id.Set.t (** for visible vars only *)
+val dependent : Evd.evar_map -> EConstr.t -> EConstr.t -> bool
+val dependent_no_evar : Evd.evar_map -> EConstr.t -> EConstr.t -> bool
+val dependent_univs : Evd.evar_map -> EConstr.t -> EConstr.t -> bool
+val dependent_univs_no_evar : Evd.evar_map -> EConstr.t -> EConstr.t -> bool
+val dependent_in_decl : Evd.evar_map -> EConstr.t -> Context.Named.Declaration.t -> bool
+val count_occurrences : Evd.evar_map -> EConstr.t -> EConstr.t -> int
+val collect_metas : Evd.evar_map -> EConstr.t -> int list
+val collect_vars : Evd.evar_map -> EConstr.t -> Id.Set.t (** for visible vars only *)
 val vars_of_global_reference : env -> Globnames.global_reference -> Id.Set.t
-val occur_term : constr -> constr -> bool (** Synonymous
- of dependent 
-   Substitution of metavariables *)
+val occur_term : Evd.evar_map -> EConstr.t -> EConstr.t -> bool (** Synonymous of dependent *)
+
+(* Substitution of metavariables *)
 type meta_value_map = (metavariable * constr) list
 val subst_meta : meta_value_map -> constr -> constr
 
@@ -132,7 +134,7 @@ val subst_meta : meta_value_map -> constr -> constr
 type meta_type_map = (metavariable * types) list
 
 (** [pop c] lifts by -1 the positive indexes in [c] *)
-val pop : constr -> constr
+val pop : EConstr.t -> constr
 
 (** {6 ... } *)
 (** Substitution of an arbitrary large term. Uses equality modulo
@@ -140,20 +142,20 @@ val pop : constr -> constr
 
 (** [subst_term_gen eq d c] replaces [d] by [Rel 1] in [c] using [eq]
    as equality *)
-val subst_term_gen :
-  (constr -> constr -> bool) -> constr -> constr -> constr
+val subst_term_gen : Evd.evar_map ->
+  (Evd.evar_map -> EConstr.t -> EConstr.t -> bool) -> EConstr.t -> EConstr.t -> constr
 
 (** [replace_term_gen eq d e c] replaces [d] by [e] in [c] using [eq]
    as equality *)
 val replace_term_gen :
-  (constr -> constr -> bool) ->
-    constr -> constr -> constr -> constr
+  Evd.evar_map -> (Evd.evar_map -> EConstr.t -> EConstr.t -> bool) ->
+    EConstr.t -> EConstr.t -> EConstr.t -> constr
 
 (** [subst_term d c] replaces [d] by [Rel 1] in [c] *)
-val subst_term : constr -> constr -> constr
+val subst_term : Evd.evar_map -> EConstr.t -> EConstr.t -> constr
 
 (** [replace_term d e c] replaces [d] by [e] in [c] *)
-val replace_term : constr -> constr -> constr -> constr
+val replace_term : Evd.evar_map -> EConstr.t -> EConstr.t -> EConstr.t -> constr
 
 (** Alternative term equalities *)
 val base_sort_cmp : Reduction.conv_pb -> sorts -> sorts -> bool
@@ -165,11 +167,11 @@ val eq_constr : constr -> constr -> bool (* FIXME rename: erases universes*)
 val eta_reduce_head : constr -> constr
 
 (** Flattens application lists *)
-val collapse_appl : constr -> constr
+val collapse_appl : Evd.evar_map -> EConstr.t -> constr
 
 (** Remove recursively the casts around a term i.e.
    [strip_outer_cast (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
-val strip_outer_cast : constr -> constr
+val strip_outer_cast : Evd.evar_map -> EConstr.t -> constr
 
 exception CannotFilter
 
@@ -182,24 +184,24 @@ exception CannotFilter
 type subst = (Context.Rel.t * constr) Evar.Map.t
 val filtering : Context.Rel.t -> Reduction.conv_pb -> constr -> constr -> subst
 
-val decompose_prod_letin : constr -> int * Context.Rel.t * constr
-val align_prod_letin : constr -> constr -> Context.Rel.t * constr
+val decompose_prod_letin : Evd.evar_map -> EConstr.t -> int * Context.Rel.t * constr
+val align_prod_letin : Evd.evar_map -> EConstr.t -> EConstr.t -> Context.Rel.t * constr
 
 (** [nb_lam] {% $ %}[x_1:T_1]...[x_n:T_n]c{% $ %} where {% $ %}c{% $ %} is not an abstraction
    gives {% $ %}n{% $ %} (casts are ignored) *)
-val nb_lam : constr -> int
+val nb_lam : Evd.evar_map -> EConstr.t -> int
 
 (** Similar to [nb_lam], but gives the number of products instead *)
-val nb_prod : constr -> int
+val nb_prod : Evd.evar_map -> EConstr.t -> int
 
 (** Similar to [nb_prod], but zeta-contracts let-in on the way *)
-val nb_prod_modulo_zeta : constr -> int
+val nb_prod_modulo_zeta : Evd.evar_map -> EConstr.t -> int
 
 (** Get the last arg of a constr intended to be an application *)
-val last_arg : constr -> constr
+val last_arg : Evd.evar_map -> EConstr.t -> constr
 
 (** Force the decomposition of a term as an applicative one *)
-val decompose_app_vect : constr -> constr * constr array
+val decompose_app_vect : Evd.evar_map -> EConstr.t -> constr * constr array
 
 val adjust_app_list_size : constr -> constr list -> constr -> constr list ->
   (constr * constr list * constr * constr list)
@@ -250,19 +252,19 @@ val compact_named_context : Context.Named.t -> Context.Compacted.t
 
 val clear_named_body : Id.t -> env -> env
 
-val global_vars : env -> constr -> Id.t list
-val global_vars_set_of_decl : env -> Context.Named.Declaration.t -> Id.Set.t
+val global_vars : env -> Evd.evar_map -> EConstr.t -> Id.t list
+val global_vars_set_of_decl : env -> Evd.evar_map -> Context.Named.Declaration.t -> Id.Set.t
 
 (** Gives an ordered list of hypotheses, closed by dependencies,
    containing a given set *)
-val dependency_closure : env -> Context.Named.t -> Id.Set.t -> Id.t list
+val dependency_closure : env -> Evd.evar_map -> Context.Named.t -> Id.Set.t -> Id.t list
 
 (** Test if an identifier is the basename of a global reference *)
 val is_section_variable : Id.t -> bool
 
-val isGlobalRef : constr -> bool
+val isGlobalRef : Evd.evar_map -> EConstr.t -> bool
 
-val is_template_polymorphic : env -> constr -> bool
+val is_template_polymorphic : env -> Evd.evar_map -> EConstr.t -> bool
 
 (** Combinators on judgments *)
 

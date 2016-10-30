@@ -751,7 +751,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       match evar_kind_of_term !evdref resj.uj_val with
       | App (f,args) ->
         let f = whd_evar !evdref f in
-          if is_template_polymorphic env.ExtraEnv.env f then
+          if is_template_polymorphic env.ExtraEnv.env !evdref (EConstr.of_constr f) then
 	    (* Special case for inductive type applications that must be 
 	       refreshed right away. *)
 	    let sigma = !evdref in
@@ -1009,7 +1009,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  | VMcast ->
  	    let cj = pretype empty_tycon env evdref lvar c in
 	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tval in
-	      if not (occur_existential cty || occur_existential tval) then
+	      if not (occur_existential !evdref (EConstr.of_constr cty) || occur_existential !evdref (EConstr.of_constr tval)) then
 		let (evd,b) = Reductionops.vm_infer_conv env.ExtraEnv.env !evdref cty tval in
 		if b then (evdref := evd; cj, tval)
 		else

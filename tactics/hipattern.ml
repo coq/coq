@@ -31,9 +31,9 @@ module RelDecl = Context.Rel.Declaration
 
   -- Eduardo (6/8/97). *)
 
-type 'a matching_function = constr -> 'a option
+type 'a matching_function = Evd.evar_map -> constr -> 'a option
 
-type testing_function  = constr -> bool
+type testing_function  = Evd.evar_map -> constr -> bool
 
 let mkmeta n = Nameops.make_ident "X" (Some n)
 let meta1 = mkmeta 1
@@ -43,7 +43,7 @@ let meta4 = mkmeta 4
 
 let op2bool = function Some _ -> true | None -> false
 
-let match_with_non_recursive_type t =
+let match_with_non_recursive_type sigma t =
   match kind_of_term t with
     | App _ ->
         let (hdapp,args) = decompose_app t in
@@ -56,21 +56,21 @@ let match_with_non_recursive_type t =
            | _ -> None)
     | _ -> None
 
-let is_non_recursive_type t = op2bool (match_with_non_recursive_type t)
+let is_non_recursive_type sigma t = op2bool (match_with_non_recursive_type sigma t)
 
 (* Test dependencies *)
 
 (* NB: we consider also the let-in case in the following function,
    since they may appear in types of inductive constructors (see #2629) *)
 
-let rec has_nodep_prod_after n c =
+let rec has_nodep_prod_after n sigma c =
   match kind_of_term c with
     | Prod (_,_,b) | LetIn (_,_,_,b) ->
-	( n>0 || not (dependent (mkRel 1) b))
-	&& (has_nodep_prod_after (n-1) b)
+	( n>0 || EConstr.Vars.noccurn sigma 1 (EConstr.of_constr b))
+	&& (has_nodep_prod_after (n-1) sigma b)
     | _            -> true
 
-let has_nodep_prod = has_nodep_prod_after 0
+let has_nodep_prod sigma c = has_nodep_prod_after 0 sigma c
 
 (* A general conjunctive type is a non-recursive with-no-indices inductive
    type with only one constructor and no dependencies between argument;
@@ -87,7 +87,7 @@ let is_lax_conjunction = function
 | Some false -> true
 | _ -> false
 
-let match_with_one_constructor style onlybinary allow_rec t =
+let match_with_one_constructor sigma style onlybinary allow_rec t =
   let (hdapp,args) = decompose_app t in
   let res = match kind_of_term hdapp with
   | Ind ind ->
@@ -112,7 +112,7 @@ let match_with_one_constructor style onlybinary allow_rec t =
 	else
 	  let ctyp = prod_applist mip.mind_nf_lc.(0) args in
 	  let cargs = List.map RelDecl.get_type (prod_assum ctyp) in
-	  if not (is_lax_conjunction style) || has_nodep_prod ctyp then
+	  if not (is_lax_conjunction style) || has_nodep_prod sigma ctyp then
 	    (* Record or non strict conjunction *)
 	    Some (hdapp,List.rev cargs)
 	  else
@@ -125,28 +125,28 @@ let match_with_one_constructor style onlybinary allow_rec t =
   | Some (hdapp, [_; _]) -> res
   | _ -> None
 
-let match_with_conjunction ?(strict=false) ?(onlybinary=false) t =
-  match_with_one_constructor (Some strict) onlybinary false t
+let match_with_conjunction ?(strict=false) ?(onlybinary=false) sigma t =
+  match_with_one_constructor sigma (Some strict) onlybinary false t
 
-let match_with_record t =
-  match_with_one_constructor None false false t
+let match_with_record sigma t =
+  match_with_one_constructor sigma None false false t
 
-let is_conjunction ?(strict=false) ?(onlybinary=false) t =
-  op2bool (match_with_conjunction ~strict ~onlybinary t)
+let is_conjunction ?(strict=false) ?(onlybinary=false) sigma t =
+  op2bool (match_with_conjunction sigma ~strict ~onlybinary t)
 
-let is_record t =
-  op2bool (match_with_record t)
+let is_record sigma t =
+  op2bool (match_with_record sigma t)
 
-let match_with_tuple t =
-  let t = match_with_one_constructor None false true t in
+let match_with_tuple sigma t =
+  let t = match_with_one_constructor sigma None false true t in
   Option.map (fun (hd,l) ->
     let ind = destInd hd in
     let (mib,mip) = Global.lookup_pinductive ind in
     let isrec = mis_is_recursive (fst ind,mib,mip) in
     (hd,l,isrec)) t
 
-let is_tuple t =
-  op2bool (match_with_tuple t)
+let is_tuple sigma t =
+  op2bool (match_with_tuple sigma t)
 
 (* A general disjunction type is a non-recursive with-no-indices inductive
    type with of which all constructors have a single argument;
@@ -159,7 +159,7 @@ let test_strict_disjunction n lc =
     | [LocalAssum (_,c)] -> isRel c && Int.equal (destRel c) (n - i)
     | _ -> false) 0 lc
 
-let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
+let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
   let (hdapp,args) = decompose_app t in
   let res = match kind_of_term hdapp with
   | Ind (ind,u)  ->
@@ -187,13 +187,13 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
   | Some (hdapp,[_; _]) -> res
   | _ -> None
 
-let is_disjunction ?(strict=false) ?(onlybinary=false) t =
-  op2bool (match_with_disjunction ~strict ~onlybinary t)
+let is_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
+  op2bool (match_with_disjunction ~strict ~onlybinary sigma t)
 
 (* An empty type is an inductive type, possible with indices, that has no
    constructors *)
 
-let match_with_empty_type t =
+let match_with_empty_type sigma t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
     | Ind ind ->
@@ -202,33 +202,33 @@ let match_with_empty_type t =
 	if Int.equal nconstr 0 then Some hdapp else None
     | _ ->  None
 
-let is_empty_type t = op2bool (match_with_empty_type t)
+let is_empty_type sigma t = op2bool (match_with_empty_type sigma t)
 
 (* This filters inductive types with one constructor with no arguments;
    Parameters and indices are allowed *)
 
-let match_with_unit_or_eq_type t =
+let match_with_unit_or_eq_type sigma t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
     | Ind ind  ->
         let (mib,mip) = Global.lookup_pinductive ind in
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
-        let zero_args c = Int.equal (nb_prod c) mib.mind_nparams in
+        let zero_args c = Int.equal (nb_prod sigma (EConstr.of_constr c)) mib.mind_nparams in
 	if Int.equal nconstr 1 && zero_args constr_types.(0) then
 	  Some hdapp
 	else
 	  None
     | _ -> None
 
-let is_unit_or_eq_type t = op2bool (match_with_unit_or_eq_type t)
+let is_unit_or_eq_type sigma t = op2bool (match_with_unit_or_eq_type sigma t)
 
 (* A unit type is an inductive type with no indices but possibly
    (useless) parameters, and that has no arguments in its unique
    constructor *)
 
-let is_unit_type t =
-  match match_with_conjunction t with
+let is_unit_type sigma t =
+  match match_with_conjunction sigma t with
   | Some (_,[]) -> true
   | _ -> false
 
@@ -318,13 +318,13 @@ let is_inductive_equality ind =
   let nconstr = Array.length mip.mind_consnames in
   Int.equal nconstr 1 && Int.equal (constructor_nrealargs (ind,1)) 0
 
-let match_with_equality_type t =
+let match_with_equality_type sigma t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
   | Ind (ind,_) when is_inductive_equality ind -> Some (hdapp,args)
   | _ -> None
 
-let is_equality_type t = op2bool (match_with_equality_type t)
+let is_equality_type sigma t = op2bool (match_with_equality_type sigma t)
 
 (* Arrows/Implication/Negation *)
 
@@ -338,37 +338,37 @@ let match_arrow_pattern t =
       assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
     | _ -> anomaly (Pp.str "Incorrect pattern matching")
 
-let match_with_imp_term c=
+let match_with_imp_term sigma c =
   match kind_of_term c with
-    | Prod (_,a,b) when not (dependent (mkRel 1) b) ->Some (a,b)
+    | Prod (_,a,b) when EConstr.Vars.noccurn sigma 1 (EConstr.of_constr b) -> Some (a,b)
     | _              -> None
 
-let is_imp_term c = op2bool (match_with_imp_term c)
+let is_imp_term sigma c = op2bool (match_with_imp_term sigma c)
 
-let match_with_nottype t =
+let match_with_nottype sigma t =
   try
     let (arg,mind) = match_arrow_pattern t in
-    if is_empty_type mind then Some (mind,arg) else None
+    if is_empty_type sigma mind then Some (mind,arg) else None
   with PatternMatchingFailure -> None
 
-let is_nottype t = op2bool (match_with_nottype t)
+let is_nottype sigma t = op2bool (match_with_nottype sigma t)
 
 (* Forall *)
 
-let match_with_forall_term c=
+let match_with_forall_term sigma c=
   match kind_of_term c with
     | Prod (nam,a,b) -> Some (nam,a,b)
     | _            -> None
 
-let is_forall_term c = op2bool (match_with_forall_term c)
+let is_forall_term sigma c = op2bool (match_with_forall_term sigma c)
 
-let match_with_nodep_ind t =
+let match_with_nodep_ind sigma t =
   let (hdapp,args) = decompose_app t in
     match (kind_of_term hdapp) with
       | Ind ind  ->
           let (mib,mip) = Global.lookup_pinductive ind in
 	    if Array.length (mib.mind_packets)>1 then None else
-	      let nodep_constr = has_nodep_prod_after mib.mind_nparams in
+	      let nodep_constr = has_nodep_prod_after mib.mind_nparams sigma in
 		if Array.for_all nodep_constr mip.mind_nf_lc then
 		  let params=
 		    if Int.equal mip.mind_nrealargs 0 then args else
@@ -378,9 +378,9 @@ let match_with_nodep_ind t =
 		  None
       | _ -> None
 
-let is_nodep_ind t=op2bool (match_with_nodep_ind t)
+let is_nodep_ind sigma t = op2bool (match_with_nodep_ind sigma t)
 
-let match_with_sigma_type t=
+let match_with_sigma_type sigma t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
     | Ind ind  ->
@@ -388,14 +388,14 @@ let match_with_sigma_type t=
           if Int.equal (Array.length (mib.mind_packets)) 1 &&
 	    (Int.equal mip.mind_nrealargs 0) &&
 	    (Int.equal (Array.length mip.mind_consnames)1) &&
-	    has_nodep_prod_after (mib.mind_nparams+1) mip.mind_nf_lc.(0) then
+	    has_nodep_prod_after (mib.mind_nparams+1) sigma mip.mind_nf_lc.(0) then
 	      (*allowing only 1 existential*)
 	      Some (hdapp,args)
 	  else
 	    None
     | _ -> None
 
-let is_sigma_type t=op2bool (match_with_sigma_type t)
+let is_sigma_type sigma t = op2bool (match_with_sigma_type sigma t)
 
 (***** Destructing patterns bound to some theory *)
 

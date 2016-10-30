@@ -254,7 +254,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
     let princ_type =  nf_zeta princ_type in
     let princ_infos = Tactics.compute_elim_sig princ_type in
     (* The number of args of the function is then easily computable *)
-    let nb_fun_args = nb_prod (pf_concl g)  - 2  in
+    let nb_fun_args = nb_prod (project g) (EConstr.of_constr (pf_concl g)) - 2 in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
     (* Since we cannot ensure that the functional principle is defined in the
@@ -467,7 +467,7 @@ let generalize_dependent_of x hyp g =
   tclMAP
     (function
        | LocalAssum (id,t) when not (Id.equal id hyp) &&
-	   (Termops.occur_var (pf_env g) x t) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (thin [id])
+	   (Termops.occur_var (pf_env g) (project g) x (EConstr.of_constr t)) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (thin [id])
        | _ -> tclIDTAC
     )
     (pf_hyps g)
@@ -666,7 +666,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     (* Then we get the number of argument of the function
        and compute a fresh name for each of them
     *)
-    let nb_fun_args = nb_prod (pf_concl g)  - 2  in
+    let nb_fun_args = nb_prod (project g) (EConstr.of_constr (pf_concl g)) - 2 in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
     (* and fresh names for res H and the principle (cf bug bug #1174) *)
@@ -684,7 +684,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(fun decl ->
 	   List.map
 	     (fun id -> id)
-	     (generate_fresh_id (Id.of_string "y") ids (nb_prod (RelDecl.get_type decl)))
+	     (generate_fresh_id (Id.of_string "y") ids (nb_prod (project g) (EConstr.of_constr (RelDecl.get_type decl))))
 	)
 	branches
     in

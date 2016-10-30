@@ -85,7 +85,7 @@ let uniform_cond nargs lt =
   let rec aux = function
     | (0,[]) -> true
     | (n,t::l) ->
-      let t = strip_outer_cast t in
+      let t = strip_outer_cast Evd.empty (EConstr.of_constr t) (** FIXME *) in
       isRel t && Int.equal (destRel t) n && aux ((n-1),l)
     | _ -> false
   in

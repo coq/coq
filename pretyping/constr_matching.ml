@@ -79,7 +79,7 @@ let add_binders na1 na2 binding_vars (names, terms as subst) =
       (names, terms)
   | _ -> subst
 
-let rec build_lambda vars ctx m = match vars with
+let rec build_lambda sigma vars ctx m = match vars with
 | [] ->
   let len = List.length ctx in
   lift (-1 * len) m
@@ -100,12 +100,12 @@ let rec build_lambda vars ctx m = match vars with
     let map i = if i > n then pred i else i in
     let vars = List.map map vars in
     (** Check that the abstraction is legal *)
-    let frels = free_rels t in
+    let frels = free_rels sigma (EConstr.of_constr t) in
     let brels = List.fold_right Int.Set.add vars Int.Set.empty in
     let () = if not (Int.Set.subset frels brels) then raise PatternMatchingFailure in
     (** Create the abstraction *)
     let m = mkLambda (na, t, m) in
-    build_lambda vars (pre @ suf) m
+    build_lambda sigma vars (pre @ suf) m
 
 let rec extract_bound_aux k accu frels ctx = match ctx with
 | [] -> accu
@@ -133,12 +133,12 @@ let make_renaming ids = function
   end
 | _ -> dummy_constr
 
-let merge_binding allow_bound_rels ctx n cT subst =
+let merge_binding sigma allow_bound_rels ctx n cT subst =
   let c = match ctx with
   | [] -> (* Optimization *)
     ([], cT)
   | _ ->
-    let frels = free_rels cT in
+    let frels = free_rels sigma (EConstr.of_constr cT) in
     if allow_bound_rels then
       let vars = extract_bound_vars frels ctx in
       let ordered_vars = Id.Set.elements vars in
@@ -169,7 +169,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
        else false)
   in
   let rec sorec ctx env subst p t =
-    let cT = strip_outer_cast t in
+    let cT = strip_outer_cast sigma (EConstr.of_constr t) in
     match p,kind_of_term cT with
       | PSoApp (n,args),m ->
         let fold (ans, seen) = function
@@ -179,13 +179,13 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
         | _ -> error "Only bound indices allowed in second order pattern matching."
         in
         let relargs, relset = List.fold_left fold ([], Int.Set.empty) args in
-        let frels = free_rels cT in
+        let frels = free_rels sigma (EConstr.of_constr cT) in
         if Int.Set.subset frels relset then
-          constrain n ([], build_lambda relargs ctx cT) subst
+          constrain n ([], build_lambda sigma relargs ctx cT) subst
         else
           raise PatternMatchingFailure
 
-      | PMeta (Some n), m -> merge_binding allow_bound_rels ctx n cT subst
+      | PMeta (Some n), m -> merge_binding sigma allow_bound_rels ctx n cT subst
 
       | PMeta None, m -> subst
 
@@ -216,7 +216,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
             let subst =
               match meta with
               | None -> subst
-              | Some n -> merge_binding allow_bound_rels ctx n c subst in
+              | Some n -> merge_binding sigma allow_bound_rels ctx n c subst in
             Array.fold_left2 (sorec ctx env) subst args1 args22
           else (* Might be a projection on the right *)
 	    match kind_of_term c2 with

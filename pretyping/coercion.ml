@@ -487,7 +487,7 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
           let v1 = Option.get v1 in
 	  let v2 = Option.map (fun v -> beta_applist (lift 1 v,[v1])) v in
 	  let t2 = match v2 with
-	    | None -> subst_term v1 t2
+	    | None -> subst_term evd' (EConstr.of_constr v1) (EConstr.of_constr t2)
 	    | Some v2 -> Retyping.get_type_of env1 evd' v2 in
 	  let (evd'',v2') = inh_conv_coerce_to_fail loc env1 evd' rigidonly v2 t2 u2 in
 	    (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')

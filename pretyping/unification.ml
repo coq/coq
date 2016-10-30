@@ -87,7 +87,7 @@ let abstract_scheme env evd c l lname_typ =
    are unclear...
        if occur_meta ta then error "cannot find a type for the generalisation"
        else *) 
-       if occur_meta a then mkLambda_name env (na,ta,t), evd
+       if occur_meta evd (EConstr.of_constr a) then mkLambda_name env (na,ta,t), evd
        else
 	 let t', evd' = Find_subterm.subst_closed_term_occ env evd locc a t in
 	   mkLambda_name env (na,ta,t'), evd')
@@ -182,7 +182,7 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
 	   extra assumptions added by unification to the context *)
         let env' = pop_rel_context nb env in
 	let sigma,c = pose_all_metas_as_evars env' sigma c in
-	let c = solve_pattern_eqn env l c in
+	let c = solve_pattern_eqn env sigma l c in
 	let pb = (Conv,TypeNotProcessed) in
 	  if noccur_between 1 nb c then
             sigma,(k,lift (-nb) c,pb)::metasubst,evarsubst
@@ -190,7 +190,7 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
     | Evar ev ->
         let env' = pop_rel_context nb env in
 	let sigma,c = pose_all_metas_as_evars env' sigma c in
-	sigma,metasubst,(env,ev,solve_pattern_eqn env l c)::evarsubst
+	sigma,metasubst,(env,ev,solve_pattern_eqn env sigma l c)::evarsubst
     | _ -> assert false
 
 let push d (env,n) = (push_rel_assum d env,n+1)
@@ -679,7 +679,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	    if k2 < k1 then sigma,(k1,cN,stN)::metasubst,evarsubst
 	    else sigma,(k2,cM,stM)::metasubst,evarsubst
 	| Meta k, _
-            when not (dependent cM cN) (* helps early trying alternatives *) ->
+            when not (dependent sigma (EConstr.of_constr cM) (EConstr.of_constr cN)) (* helps early trying alternatives *) ->
             let sigma = 
 	      if opt.with_types && flags.check_applied_meta_types then
 		(try
@@ -699,7 +699,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
               evarsubst)
 	    else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Meta k
-            when not (dependent cN cM) (* helps early trying alternatives *) ->
+            when not (dependent sigma (EConstr.of_constr cN) (EConstr.of_constr cM)) (* helps early trying alternatives *) ->
           let sigma = 
 	    if opt.with_types && flags.check_applied_meta_types then
               (try
@@ -728,15 +728,15 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	      sigma,metasubst,((curenv,ev,cN)::evarsubst)
 	| Evar (evk,_ as ev), _
             when not (Evar.Set.mem evk flags.frozen_evars) 
-	      && not (occur_evar evk cN) ->
-	    let cmvars = free_rels cM and cnvars = free_rels cN in
+	      && not (occur_evar sigma evk (EConstr.of_constr cN)) ->
+	    let cmvars = free_rels sigma (EConstr.of_constr cM) and cnvars = free_rels sigma (EConstr.of_constr cN) in
 	      if Int.Set.subset cnvars cmvars then
 		sigma,metasubst,((curenv,ev,cN)::evarsubst)
 	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Evar (evk,_ as ev)
             when not (Evar.Set.mem evk flags.frozen_evars)
-	      && not (occur_evar evk cM) ->
-	    let cmvars = free_rels cM and cnvars = free_rels cN in
+	      && not (occur_evar sigma evk (EConstr.of_constr cM)) ->
+	    let cmvars = free_rels sigma (EConstr.of_constr cM) and cnvars = free_rels sigma (EConstr.of_constr cN) in
 	      if Int.Set.subset cmvars cnvars then
 		sigma,metasubst,((curenv,ev,cM)::evarsubst)
 	      else error_cannot_unify_local curenv sigma (m,n,cN)
@@ -1295,8 +1295,8 @@ let w_merge env with_types flags (evd,metas,evars) =
 	  (* This can make rhs' ill-typed if metas are *)
           let rhs' = subst_meta_instances metas rhs in
           match kind_of_term rhs with
-	  | App (f,cl) when occur_meta rhs' ->
-	      if occur_evar evk rhs' then
+	  | App (f,cl) when occur_meta evd (EConstr.of_constr rhs') ->
+	      if occur_evar evd evk (EConstr.of_constr rhs') then
                 error_occur_check curenv evd evk rhs';
 	      if is_mimick_head flags.modulo_delta f then
 		let evd' =
@@ -1474,16 +1474,16 @@ let iter_fail f a =
 (* make_abstraction: a variant of w_unify_to_subterm which works on
    contexts, with evars, and possibly with occurrences *)
 
-let indirectly_dependent c d decls =
+let indirectly_dependent sigma c d decls =
   not (isVar c) &&
     (* This test is not needed if the original term is a variable, but
        it is needed otherwise, as e.g. when abstracting over "2" in
        "forall H:0=2, H=H:>(0=1+1) -> 0=2." where there is now obvious
        way to see that the second hypothesis depends indirectly over 2 *)
-    List.exists (fun d' -> dependent_in_decl (mkVar (NamedDecl.get_id d')) d) decls
+    List.exists (fun d' -> dependent_in_decl sigma (EConstr.mkVar (NamedDecl.get_id d')) d) decls
 
-let indirect_dependency d decls =
-  decls  |>  List.filter (fun d' -> dependent_in_decl (mkVar (NamedDecl.get_id d')) d)  |>  List.hd  |>  NamedDecl.get_id
+let indirect_dependency sigma d decls =
+  decls  |>  List.filter (fun d' -> dependent_in_decl sigma (EConstr.mkVar (NamedDecl.get_id d')) d)  |>  List.hd  |>  NamedDecl.get_id
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
   let current_sigma = Sigma.to_evar_map current_sigma in
@@ -1610,7 +1610,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
         if Context.Named.Declaration.equal d newdecl
-           && not (indirectly_dependent c d depdecls)
+           && not (indirectly_dependent sigma c d depdecls)
         then
           if check_occs && not (in_every_hyp occs)
           then raise (PretypeError (env,sigma,NoOccurrenceFound (c,Some hyp)))
@@ -1695,13 +1695,13 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   let bestexn = ref None in
   let kop = Keys.constr_key op in
   let rec matchrec cl =
-    let cl = strip_outer_cast cl in
+    let cl = strip_outer_cast evd (EConstr.of_constr cl) in
     (try
        if closed0 cl && not (isEvar cl) && keyed_unify env evd kop cl then
        (try
          if !keyed_unification then
-           let f1, l1 = decompose_app_vect op in
-	   let f2, l2 = decompose_app_vect cl in
+           let f1, l1 = decompose_app_vect evd (EConstr.of_constr op) in
+	   let f2, l2 = decompose_app_vect evd (EConstr.of_constr cl) in
 	   w_typed_unify_array env evd flags f1 l1 f2 l2,cl
 	 else w_typed_unify env evd CONV flags op cl,cl
        with ex when Pretype_errors.unsatisfiable_exception ex ->
@@ -1788,7 +1788,7 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
     in ffail 0
   in
   let rec matchrec cl =
-    let cl = strip_outer_cast cl in
+    let cl = strip_outer_cast evd (EConstr.of_constr cl) in
       (bind
 	  (if closed0 cl
 	  then return (fun () -> w_typed_unify env evd CONV flags op cl,cl)
@@ -1839,7 +1839,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
       else
         let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
         let flags =
-          if occur_meta_or_existential op || !keyed_unification then
+          if occur_meta_or_existential evd (EConstr.of_constr op) || !keyed_unification then
 	    (* This is up to delta for subterms w/o metas ... *)
             flags
           else
@@ -1848,7 +1848,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
                unify pre-existing non frozen evars of the goal or of the
                pattern *)
           set_no_delta_flags flags in
-	let t' = (strip_outer_cast op,t) in
+	let t' = (strip_outer_cast evd (EConstr.of_constr op),t) in
         let (evd',cl) =
           try
   	    if is_keyed_unification () then
@@ -1864,7 +1864,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
                 (* w_unify_to_subterm does not go through evars, so
                    the next step, which was already in <= 8.4, is
                    needed at least for compatibility of rewrite *)
-                dependent op t -> (evd,op)
+                dependent evd (EConstr.of_constr op) (EConstr.of_constr t) -> (evd,op)
         in
 	  if not allow_K &&
             (* ensure we found a different instance *)

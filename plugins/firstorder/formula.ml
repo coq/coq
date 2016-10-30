@@ -79,13 +79,13 @@ type kind_of_formula=
 let kind_of_formula gl term =
   let normalize=special_nf gl in
   let cciterm=special_whd gl term in
-    match match_with_imp_term cciterm with
-	Some (a,b)-> Arrow(a,(pop b))
+    match match_with_imp_term (project gl) cciterm with
+	Some (a,b)-> Arrow(a,(pop (EConstr.of_constr b)))
       |_->
-	 match match_with_forall_term cciterm with
+	 match match_with_forall_term (project gl) cciterm with
 	     Some (_,a,b)-> Forall(a,b)
 	   |_->
-	      match match_with_nodep_ind cciterm with
+	      match match_with_nodep_ind (project gl) cciterm with
 		  Some (i,l,n)->
 		    let ind,u=destInd i in
 		    let (mib,mip) = Global.lookup_inductive ind in
@@ -96,7 +96,7 @@ let kind_of_formula gl term =
 			let has_realargs=(n>0) in
 			let is_trivial=
 			  let is_constant c =
-			    Int.equal (nb_prod c) mib.mind_nparams in
+			    Int.equal (nb_prod (project gl) (EConstr.of_constr c)) mib.mind_nparams in
 			    Array.exists is_constant mip.mind_nf_lc in
 			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
 			    (has_realargs && not is_trivial)
@@ -108,7 +108,7 @@ let kind_of_formula gl term =
 			    else
 			      Or((ind,u),l,is_trivial)
 		| _ ->
-		    match match_with_sigma_type cciterm with
+		    match match_with_sigma_type (project gl) cciterm with
 			Some (i,l)-> Exists((destInd i),l)
 		      |_-> Atom (normalize cciterm)
 

@@ -154,7 +154,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       pty,goal
     else
       let i = mkAppliedInd ind in
-      let ivars = global_vars env i in
+      let ivars = global_vars env sigma (EConstr.of_constr i) in
       let revargs,ownsign =
 	fold_named_context
 	  (fun env d (revargs,hyps) ->
@@ -192,7 +192,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   in
   assert
     (List.subset
-       (global_vars env invGoal)
+       (global_vars env sigma (EConstr.of_constr invGoal))
        (ids_of_named_context (named_context invEnv)));
   (*
     user_err ~hdr:"lemma_inversion"
@@ -277,7 +277,8 @@ let lemInvIn id c ids =
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in
-      let nb_of_new_hyp  = nb_prod concl - List.length ids in
+      let sigma = project gl in
+      let nb_of_new_hyp = nb_prod sigma (EConstr.of_constr concl) - List.length ids in
       if nb_of_new_hyp < 1  then
         intros_replacing ids
       else

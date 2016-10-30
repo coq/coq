@@ -32,7 +32,8 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   Proofview.Goal.enter { enter = begin fun gl ->
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t2 = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
-  if occur_existential t1 || occur_existential t2 then
+  let sigma = Tacmach.New.project gl in
+  if occur_existential sigma (EConstr.of_constr t1) || occur_existential sigma (EConstr.of_constr t2) then
      Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
   else exact_check c
   end }
@@ -123,7 +124,7 @@ let hintmap_of secvars hdc concl =
   match hdc with
   | None -> fun db -> Hint_db.map_none ~secvars db
   | Some hdc ->
-     if occur_existential concl then
+     if occur_existential Evd.empty (EConstr.of_constr concl) then (** FIXME *)
        (fun db -> Hint_db.map_existential ~secvars hdc concl db)
      else (fun db -> Hint_db.map_auto ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
@@ -147,7 +148,7 @@ let rec e_trivial_fail_db db_list local_db =
   let tacl =
     registered_e_assumption ::
     (Tacticals.New.tclTHEN Tactics.intro next) ::
-    (List.map fst (e_trivial_resolve db_list local_db secvars (Tacmach.New.pf_nf_concl gl)))
+    (List.map fst (e_trivial_resolve (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_nf_concl gl)))
   in
   Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
   end }
@@ -181,13 +182,13 @@ and e_my_find_search db_list local_db secvars hdc concl =
   in
   List.map tac_of_hint hintl
 
-and e_trivial_resolve db_list local_db secvars gl =
-  let hd = try Some (decompose_app_bound gl) with Bound -> None in
+and e_trivial_resolve sigma db_list local_db secvars gl =
+  let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
   try priority (e_my_find_search db_list local_db secvars hd gl)
   with Not_found -> []
 
-let e_possible_resolve db_list local_db secvars gl =
-  let hd = try Some (decompose_app_bound gl) with Bound -> None in
+let e_possible_resolve sigma db_list local_db secvars gl =
+  let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
   try List.map (fun (b, (tac, pp)) -> (tac, b, pp))
                (e_my_find_search db_list local_db secvars hd gl)
   with Not_found -> []
@@ -289,7 +290,7 @@ module SearchProblem = struct
 	let l =
           let concl = Reductionops.nf_evar (project g)(pf_concl g) in
 	  filter_tactics s.tacres
-                         (e_possible_resolve s.dblist (List.hd s.localdb) secvars concl)
+                         (e_possible_resolve (project g) s.dblist (List.hd s.localdb) secvars concl)
 	in
 	List.map
 	  (fun (lgls, cost, pp) ->

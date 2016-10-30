@@ -94,7 +94,7 @@ let rec make_form atom_env gls term =
   let cciterm=special_whd gls term  in
     match kind_of_term cciterm with
 	Prod(_,a,b) ->
-	  if not (Termops.dependent (mkRel 1) b) &&
+	  if EConstr.Vars.noccurn Evd.empty (** FIXME *) 1 (EConstr.of_constr b) &&
 	    Retyping.get_sort_family_of
 	    (pf_env gls) (Tacmach.project gls) a == InProp
 	  then
@@ -134,7 +134,7 @@ let rec make_hyps atom_env gls lenv = function
   | LocalAssum (id,typ)::rest ->
       let hrec=
 	make_hyps atom_env gls (typ::lenv) rest in
-	if List.exists (Termops.dependent (mkVar id)) lenv ||
+	if List.exists (fun c -> Termops.local_occur_var Evd.empty (** FIXME *) id (EConstr.of_constr c)) lenv ||
 	  (Retyping.get_sort_family_of
 	     (pf_env gls) (Tacmach.project gls) typ != InProp)
 	then

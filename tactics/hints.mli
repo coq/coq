@@ -24,7 +24,7 @@ open Vernacexpr
 
 exception Bound
 
-val decompose_app_bound : constr -> global_reference * constr array
+val decompose_app_bound : evar_map -> constr -> global_reference * constr array
 
 type debug = Debug | Info | Off
 

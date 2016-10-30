@@ -58,8 +58,8 @@ let rec decompose_term env sigma t=
 	let tf=decompose_term env sigma f in
 	let targs=Array.map (decompose_term env sigma) args in
 	  Array.fold_left (fun s t->Appli (s,t)) tf targs
-    | Prod (_,a,_b) when not (Termops.dependent (mkRel 1) _b) ->
-	let b = Termops.pop _b in
+    | Prod (_,a,_b) when EConstr.Vars.noccurn sigma 1 (EConstr.of_constr _b) ->
+	let b = Termops.pop (EConstr.of_constr _b) in
 	let sort_b = sf_of env sigma b in
 	let sort_a = sf_of env sigma a in
 	Appli(Appli(Product (sort_a,sort_b) ,
@@ -86,7 +86,7 @@ let rec decompose_term env sigma t=
 	let p' = Projection.map canon_const p in
 	(Appli (Symb (mkConst (Projection.constant p')), decompose_term env sigma c))
     | _ ->
-       let t = Termops.strip_outer_cast t in
+       let t = Termops.strip_outer_cast sigma (EConstr.of_constr t) in
        if closed0 t then Symb t else raise Not_found
 
 (* decompose equality in members and type *)
@@ -112,8 +112,8 @@ let rec pattern_of_constr env sigma c =
 	  (Array.map_to_list (pattern_of_constr env sigma) args) in
 	  PApp (pf,List.rev pargs),
 	List.fold_left Int.Set.union Int.Set.empty lrels
-    | Prod (_,a,_b) when not (Termops.dependent (mkRel 1) _b) ->
-	let b = Termops.pop _b in
+    | Prod (_,a,_b) when EConstr.Vars.noccurn sigma 1 (EConstr.of_constr _b) ->
+	let b = Termops.pop (EConstr.of_constr _b) in
 	let pa,sa = pattern_of_constr env sigma a in
 	let pb,sb = pattern_of_constr env sigma b in
 	let sort_b = sf_of env sigma b in

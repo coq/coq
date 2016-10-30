@@ -760,7 +760,8 @@ let pr_prim_rule = function
         str ";[" ++ cl ++ str"intro " ++ pr_id id ++ str"|idtac]")
 
   | Refine c ->
-      str(if Termops.occur_meta c then "refine " else "exact ") ++
+      (** FIXME *)
+      str(if Termops.occur_meta Evd.empty (EConstr.of_constr c) then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole pr_constr c
 
 (* Backwards compatibility *)

@@ -32,7 +32,7 @@ module RelDecl = Context.Rel.Declaration
 
 (** {2 Useful operations on constr and glob_constr} *)
 
-let rec popn i c = if i<=0 then c else pop (popn (i-1) c)
+let rec popn i c = if i<=0 then c else pop (EConstr.of_constr (popn (i-1) c))
 
 (** Substitutions in constr *)
 let compare_constr_nosub t1 t2 =
@@ -985,7 +985,7 @@ let relprinctype_to_funprinctype relprinctype nfuns =
   (* first remove indarg and indarg_in_concl *)
   let relinfo_noindarg = { relinfo with
     indarg_in_concl = false; indarg = None;
-    concl = remove_last_arg (pop relinfo.concl); } in
+    concl = remove_last_arg (pop (EConstr.of_constr relinfo.concl)); } in
   (* the nfuns last induction arguments are functional ones: remove them *)
   let relinfo_argsok = { relinfo_noindarg with
     nargs = relinfo_noindarg.nargs - nfuns;

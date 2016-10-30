@@ -302,7 +302,7 @@ let hintmap_of secvars hdc concl =
   match hdc with
   | None -> Hint_db.map_none ~secvars
   | Some hdc ->
-     if occur_existential concl then
+     if occur_existential Evd.empty (EConstr.of_constr concl) then (** FIXME *)
        Hint_db.map_existential ~secvars hdc concl
      else Hint_db.map_auto ~secvars hdc concl
 
@@ -329,11 +329,12 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
   in
   Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Tacmach.New.pf_nf_concl gl in
+    let sigma = Tacmach.New.project gl in
     let secvars = compute_secvars gl in
     Tacticals.New.tclFIRST
       ((dbg_assumption dbg)::intro_tac::
           (List.map Tacticals.New.tclCOMPLETE
-             (trivial_resolve dbg mod_delta db_list local_db secvars concl)))
+             (trivial_resolve sigma dbg mod_delta db_list local_db secvars concl)))
   end }
 
 and my_find_search_nodelta db_list local_db secvars hdc concl =
@@ -346,7 +347,7 @@ and my_find_search mod_delta =
 
 and my_find_search_delta db_list local_db secvars hdc concl =
   let f = hintmap_of secvars hdc concl in
-    if occur_existential concl then
+    if occur_existential Evd.empty (EConstr.of_constr concl) (** FIXME *) then
       List.map_append
 	(fun db ->
 	  if Hint_db.use_dn db then
@@ -402,10 +403,10 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
   in
   tclLOG dbg pr_hint (run_hint t tactic)
 
-and trivial_resolve dbg mod_delta db_list local_db secvars cl =
+and trivial_resolve sigma dbg mod_delta db_list local_db secvars cl =
   try
     let head =
-      try let hdconstr = decompose_app_bound cl in
+      try let hdconstr = decompose_app_bound sigma cl in
 	    Some hdconstr
       with Bound -> None
     in
@@ -449,10 +450,10 @@ let h_trivial ?(debug=Off) lems l = gen_trivial ~debug lems l
 (*                       The classical Auto tactic                        *)
 (**************************************************************************)
 
-let possible_resolve dbg mod_delta db_list local_db secvars cl =
+let possible_resolve sigma dbg mod_delta db_list local_db secvars cl =
   try
     let head =
-      try let hdconstr = decompose_app_bound cl in
+      try let hdconstr = decompose_app_bound sigma cl in
 	    Some hdconstr
       with Bound -> None
     in
@@ -488,12 +489,13 @@ let search d n mod_delta db_list local_db =
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
 	     ( Proofview.Goal.enter { enter = begin fun gl ->
                let concl = Tacmach.New.pf_nf_concl gl in
+               let sigma = Tacmach.New.project gl in
                let secvars = compute_secvars gl in
 	       let d' = incr_dbg d in
 	       Tacticals.New.tclFIRST
 	         (List.map
 		    (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
-		    (possible_resolve d mod_delta db_list local_db secvars concl))
+		    (possible_resolve sigma d mod_delta db_list local_db secvars concl))
              end }))
     end []
   in

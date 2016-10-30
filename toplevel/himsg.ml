@@ -1090,7 +1090,7 @@ let error_ill_formed_inductive env c v =
 
 let error_ill_formed_constructor env id c v nparams nargs =
   let pv = pr_lconstr_env env Evd.empty v in
-  let atomic = Int.equal (nb_prod c) 0 in
+  let atomic = Int.equal (nb_prod Evd.empty (EConstr.of_constr c)) (** FIXME *) 0 in
   str "The type of constructor" ++ brk(1,1) ++ pr_id id ++ brk(1,1) ++
   str "is not valid;" ++ brk(1,1) ++
   strbrk (if atomic then "it must be " else "its conclusion must be ") ++

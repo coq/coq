@@ -14,8 +14,8 @@ let get_inductive dir s =
   let glob_ref () = Coqlib.find_reference contrib_name ("Coq" :: dir) s in
   Lazy.from_fun (fun () -> Globnames.destIndRef (glob_ref ()))
 
-let decomp_term (c : Term.constr) =
-  Term.kind_of_term (Termops.strip_outer_cast c)
+let decomp_term sigma (c : Term.constr) =
+  Term.kind_of_term (Termops.strip_outer_cast sigma (EConstr.of_constr c))
 
 let lapp c v  = Term.mkApp (Lazy.force c, v)
 
@@ -105,7 +105,7 @@ module Bool = struct
   | Negb of t
   | Ifb of t * t * t
 
-  let quote (env : Env.t) (c : Term.constr) : t =
+  let quote (env : Env.t) sigma (c : Term.constr) : t =
     let trueb = Lazy.force trueb in
     let falseb = Lazy.force falseb in
     let andb = Lazy.force andb in
@@ -113,7 +113,7 @@ module Bool = struct
     let xorb = Lazy.force xorb in
     let negb = Lazy.force negb in
 
-    let rec aux c = match decomp_term c with
+    let rec aux c = match decomp_term sigma c with
     | Term.App (head, args) ->
       if head === andb && Array.length args = 2 then
         Andb (aux args.(0), aux args.(1))
@@ -181,7 +181,7 @@ module Btauto = struct
     let var = lapp witness [|p|] in
     (* Compute an assignment that dissatisfies the goal *)
     let _, var = Tacmach.pf_reduction_of_red_expr gl (Genredexpr.CbvVm None) var in
-    let rec to_list l = match decomp_term l with
+    let rec to_list l = match decomp_term (Tacmach.project gl) l with
     | Term.App (c, _)
       when c === (Lazy.force CoqList._nil) -> []
     | Term.App (c, [|_; h; t|])
@@ -220,7 +220,7 @@ module Btauto = struct
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let eq = Lazy.force eq in
-      let t = decomp_term concl in
+      let t = decomp_term (Tacmach.New.project gl) concl in
       match t with
       | Term.App (c, [|typ; p; _|]) when c === eq ->
       (* should be an equality [@eq poly ?p (Cst false)] *)
@@ -234,15 +234,16 @@ module Btauto = struct
   let tac =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
+      let sigma = Tacmach.New.project gl in
       let eq = Lazy.force eq in
       let bool = Lazy.force Bool.typ in
-      let t = decomp_term concl in
+      let t = decomp_term sigma concl in
       match t with
       | Term.App (c, [|typ; tl; tr|])
           when typ === bool && c === eq ->
           let env = Env.empty () in
-          let fl = Bool.quote env tl in
-          let fr = Bool.quote env tr in
+          let fl = Bool.quote env sigma tl in
+          let fr = Bool.quote env sigma tr in
           let env = Env.to_list env in
           let fl = reify env fl in
           let fr = reify env fr in

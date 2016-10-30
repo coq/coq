@@ -407,7 +407,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
 		let _,args = try destApp ty_teq with DestKO -> assert false in
 		args.(1),args.(2)
 	      in
-	      let new_b' = Termops.replace_term teq_lhs teq_rhs new_b in 
+	      let new_b' = Termops.replace_term (project g') (EConstr.of_constr teq_lhs) (EConstr.of_constr teq_rhs) (EConstr.of_constr new_b) in 
 	      let new_infos = {
 		infos with 
 		  info = new_b';
@@ -681,7 +681,7 @@ let mkDestructEq :
       (fun decl ->
         let open Context.Named.Declaration in
         let id = get_id decl in
-        if Id.List.mem id not_on_hyp || not (Termops.occur_term expr (get_type decl))
+        if Id.List.mem id not_on_hyp || not (Termops.occur_term (project g) (EConstr.of_constr expr) (EConstr.of_constr (get_type decl)))
         then None else Some id) hyps in
   let to_revert_constr = List.rev_map mkVar to_revert in
   let type_of_expr = pf_unsafe_type_of g expr in
@@ -1251,7 +1251,7 @@ let clear_goals =
       | Prod(Name id as na,t',b) ->
 	  let b' = clear_goal b in
 	  if noccurn 1 b' && (is_rec_res id)
-	  then Termops.pop b'
+	  then Termops.pop (EConstr.of_constr b')
 	  else if b' == b then t
 	  else mkProd(na,t',b')
       | _ -> Term.map_constr clear_goal t
@@ -1285,7 +1285,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
           anomaly (Pp.str "open_new_goal with an unamed theorem")
   in
   let na = next_global_ident_away name [] in
-  if Termops.occur_existential gls_type then
+  if Termops.occur_existential sigma (EConstr.of_constr gls_type) then
     CErrors.error "\"abstract\" cannot handle existentials";
   let hook _ _ =
     let opacity =
@@ -1422,7 +1422,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
   (cont_tactic:Id.t list -> tactic) g =
   let ids = pf_ids_of_hyps g in
   let terminate_constr = constr_of_global term_f in
-  let nargs = nb_prod (fst (type_of_const terminate_constr)) (*FIXME*) in
+  let nargs = nb_prod (project g) (EConstr.of_constr (fst (type_of_const terminate_constr))) (*FIXME*) in
   let x = n_x_id ids nargs in
   observe_tac (str "start_equation") (observe_tclTHENLIST (str "start_equation") [
     h_intros x;
@@ -1552,7 +1552,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       and functional_ref = destConst (constr_of_global functional_ref)
       and eq_ref = destConst (constr_of_global eq_ref) in
       generate_induction_principle f_ref tcc_lemma_constr
-	functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod res) relation;
+	functional_ref eq_ref rec_arg_num rec_arg_type (nb_prod evm (EConstr.of_constr res)) relation;
       if Flags.is_verbose ()
       then msgnl (h 1 (Ppconstr.pr_id function_name ++
 			 spc () ++ str"is defined" )++ fnl () ++

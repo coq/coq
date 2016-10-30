@@ -747,14 +747,14 @@ let  mkCaseEq a  : unit Proofview.tactic =
 
 let case_eq_intros_rewrite x =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let n = nb_prod (Proofview.Goal.concl gl) in
+  let n = nb_prod (Tacmach.New.project gl) (EConstr.of_constr (Proofview.Goal.concl gl)) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let hyps = Tacmach.New.pf_ids_of_hyps gl in
-      let n' = nb_prod concl in
+      let n' = nb_prod (Tacmach.New.project gl) (EConstr.of_constr concl) in
       let h = Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) gl in
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;

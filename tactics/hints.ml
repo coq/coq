@@ -45,8 +45,8 @@ type debug = Debug | Info | Off
 
 exception Bound
 
-let head_constr_bound t =
-  let t = strip_outer_cast t in
+let head_constr_bound sigma t =
+  let t = strip_outer_cast sigma (EConstr.of_constr t) in
   let _,ccl = decompose_prod_assum t in
   let hd,args = decompose_app ccl in
   match kind_of_term hd with
@@ -54,13 +54,13 @@ let head_constr_bound t =
     | Proj (p, _) -> mkConst (Projection.constant p)
     | _ -> raise Bound
 
-let head_constr c =
-  try head_constr_bound c with Bound -> error "Bound head variable."
+let head_constr sigma c =
+  try head_constr_bound sigma c with Bound -> error "Bound head variable."
 
-let decompose_app_bound t =
-  let t = strip_outer_cast t in
+let decompose_app_bound sigma t =
+  let t = strip_outer_cast sigma (EConstr.of_constr t) in
   let _,ccl = decompose_prod_assum t in
-  let hd,args = decompose_app_vect ccl in
+  let hd,args = decompose_app_vect sigma (EConstr.of_constr ccl) in
   match kind_of_term hd with
     | Const (c,u) -> ConstRef c, args
     | Ind (i,u) -> IndRef i, args
@@ -505,7 +505,7 @@ struct
 
   let match_mode m arg =
     match m with
-    | ModeInput -> not (occur_existential arg)
+    | ModeInput -> not (occur_existential Evd.empty (EConstr.of_constr arg)) (** FIXME *)
     | ModeNoHeadEvar ->
        Evarutil.(try ignore(head_evar arg); false
                  with NoHeadEvar -> true)
@@ -742,7 +742,7 @@ let secvars_of_global env gr =
 
 let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
   let secvars = secvars_of_constr env c in
-  let cty = strip_outer_cast cty in
+  let cty = strip_outer_cast sigma (EConstr.of_constr cty) in
     match kind_of_term cty with
     | Prod _ -> failwith "make_exact_entry"
     | _ ->
@@ -911,7 +911,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
   let c,ctx = fresh_global_or_constr env sigma poly r in
   let sigma = Evd.merge_context_set univ_flexible sigma ctx in
   let t = hnf_constr env sigma (unsafe_type_of env sigma c) in
-  let hd = head_of_constr_reference (head_constr t) in
+  let hd = head_of_constr_reference (head_constr sigma t) in
   let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd, { pri=1;
 	      poly = poly;
@@ -1013,7 +1013,7 @@ let subst_autohint (subst, obj) =
   let subst_key gr =
     let (lab'', elab') = subst_global subst gr in
     let gr' =
-      (try head_of_constr_reference (head_constr_bound elab')
+      (try head_of_constr_reference (head_constr_bound Evd.empty (** FIXME *) elab')
        with Bound -> lab'')
     in if gr' == gr then gr else gr'
   in
@@ -1190,17 +1190,17 @@ let prepare_hint check (poly,local) env init (sigma,c) =
      thing make_resolves will do is to re-instantiate the products *)
   let sigma, subst = Evd.nf_univ_variables sigma in
   let c = Vars.subst_univs_constr subst (Evarutil.nf_evar sigma c) in
-  let c = drop_extra_implicit_args c in
-  let vars = ref (collect_vars c) in
+  let c = drop_extra_implicit_args sigma (EConstr.of_constr c) in
+  let vars = ref (collect_vars sigma (EConstr.of_constr c)) in
   let subst = ref [] in
   let rec find_next_evar c = match kind_of_term c with
     | Evar (evk,args as ev) ->
       (* We skip the test whether args is the identity or not *)
       let t = Evarutil.nf_evar sigma (existential_type sigma ev) in
-      let t = List.fold_right (fun (e,id) c -> replace_term e id c) !subst t in
+      let t = List.fold_right (fun (e,id) c -> replace_term sigma (EConstr.of_constr e) (EConstr.of_constr id) (EConstr.of_constr c)) !subst t in
       if not (closed0 c) then
 	error "Hints with holes dependent on a bound variable not supported.";
-      if occur_existential t then
+      if occur_existential sigma (EConstr.of_constr t) then
 	(* Not clever enough to construct dependency graph of evars *)
 	error "Not clever enough to deal with evars dependent in other evars.";
       raise (Found (c,t))
@@ -1211,7 +1211,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
       let id = next_ident_away_from default_prepare_hint_ident (fun id -> Id.Set.mem id !vars) in
       vars := Id.Set.add id !vars;
       subst := (evar,mkVar id)::!subst;
-      mkNamedLambda id t (iter (replace_term evar (mkVar id) c)) in
+      mkNamedLambda id t (iter (replace_term sigma (EConstr.of_constr evar) (EConstr.mkVar id) (EConstr.of_constr c))) in
   let c' = iter c in
     if check then Pretyping.check_evars (Global.env()) Evd.empty sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
@@ -1394,13 +1394,13 @@ let pr_hint_ref ref = pr_hint_list_for_head ref
 
 (* Print all hints associated to head id in any database *)
 
-let pr_hint_term cl =
+let pr_hint_term sigma cl =
   try
     let dbs = current_db () in
     let valid_dbs =
       let fn = try
-	  let hdc = decompose_app_bound cl in
-	    if occur_existential cl then
+	  let hdc = decompose_app_bound sigma cl in
+	    if occur_existential sigma (EConstr.of_constr cl) then
 	      Hint_db.map_existential ~secvars:Id.Pred.full hdc cl
 	    else Hint_db.map_auto ~secvars:Id.Pred.full hdc cl
 	with Bound -> Hint_db.map_none ~secvars:Id.Pred.full
@@ -1423,7 +1423,7 @@ let pr_applicable_hint () =
   match glss.Evd.it with
   | [] -> CErrors.error "No focused goal."
   | g::_ ->
-    pr_hint_term (Goal.V82.concl glss.Evd.sigma g)
+    pr_hint_term glss.Evd.sigma (Goal.V82.concl glss.Evd.sigma g)
 
 let pp_hint_mode = function
   | ModeInput -> str"+"

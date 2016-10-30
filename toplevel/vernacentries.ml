@@ -107,7 +107,7 @@ let show_intro all =
   let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
   if not (List.is_empty gls) then begin
     let gl = {Evd.it=List.hd gls ; sigma = sigma; } in
-    let l,_= decompose_prod_assum (Termops.strip_outer_cast (pf_concl gl)) in
+    let l,_= decompose_prod_assum (Termops.strip_outer_cast (project gl) (EConstr.of_constr (pf_concl gl))) in
     if all then
       let lid = Tactics.find_intro_names l gl in
       Feedback.msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))

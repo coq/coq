@@ -1527,23 +1527,24 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       in Some (Some (evars, res, newt))
 
 (** Insert a declaration after the last declaration it depends on *)
-let rec insert_dependent env decl accu hyps = match hyps with
+let rec insert_dependent env sigma decl accu hyps = match hyps with
 | [] -> List.rev_append accu [decl]
 | ndecl :: rem ->
-  if occur_var_in_decl env (NamedDecl.get_id ndecl) decl then
+  if occur_var_in_decl env sigma (NamedDecl.get_id ndecl) decl then
     List.rev_append accu (decl :: hyps)
   else
-    insert_dependent env decl (ndecl :: accu) rem
+    insert_dependent env sigma decl (ndecl :: accu) rem
 
 let assert_replacing id newt tac = 
   let prf = Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
+    let sigma = Tacmach.New.project gl in
     let ctx = Environ.named_context env in
     let after, before = List.split_when (NamedDecl.get_id %> Id.equal id) ctx in
     let nc = match before with
     | [] -> assert false
-    | d :: rem -> insert_dependent env (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem
+    | d :: rem -> insert_dependent env sigma (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Refine.refine ~unsafe:false { run = begin fun sigma ->
@@ -1616,7 +1617,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
     | Some id ->
       (** Only consider variables not depending on [id] *)
       let ctx = Environ.named_context env in
-      let filter decl = not (occur_var_in_decl env id decl) in
+      let filter decl = not (occur_var_in_decl env sigma id decl) in
       let nctx = List.filter filter ctx in
       Environ.reset_with_named_context (Environ.val_of_named_context nctx) env
     in

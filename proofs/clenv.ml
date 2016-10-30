@@ -77,7 +77,7 @@ let clenv_push_prod cl =
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->
 	let mv = new_meta () in
-	let dep = dependent (mkRel 1) u in
+	let dep = not (EConstr.Vars.noccurn (cl_sigma cl) 1 (EConstr.of_constr u)) in
 	let na' = if dep then na else Anonymous in
 	let e' = meta_declare mv t ~name:na' cl.evd in
 	let concl = if dep then subst1 (mkMeta mv) u else u in
@@ -332,7 +332,7 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
       let ty = clenv_meta_type clenv mv in
       (* Postpone the evar-ization if dependent on another meta *)
       (* This assumes no cycle in the dependencies - is it correct ? *)
-      if occur_meta ty then fold clenv (mvs@[mv])
+      if occur_meta clenv.evd (EConstr.of_constr ty) then fold clenv (mvs@[mv])
       else
         let src = evar_source_of_meta mv clenv.evd in
         let src = adjust_meta_source clenv.evd mv src in
@@ -404,7 +404,7 @@ type arg_bindings = constr explicit_bindings
  * of cval, ctyp. *)
 
 let clenv_independent clenv =
-  let mvs = collect_metas (clenv_value clenv) in
+  let mvs = collect_metas clenv.evd (EConstr.of_constr (clenv_value clenv)) in
   let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
   let deps = Metaset.union (dependent_in_type_of_metas clenv mvs) ctyp_mvs in
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
@@ -522,7 +522,7 @@ let clenv_match_args bl clenv =
 exception NoSuchBinding
 
 let clenv_constrain_last_binding c clenv =
-  let all_mvs = collect_metas clenv.templval.rebus in
+  let all_mvs = collect_metas clenv.evd (EConstr.of_constr clenv.templval.rebus) in
   let k = try List.last all_mvs with Failure _ -> raise NoSuchBinding in
   clenv_assign_binding clenv k c
 
@@ -612,7 +612,7 @@ let make_evar_clause env sigma ?len t =
       let sigma = Sigma.Unsafe.of_evar_map sigma in
       let Sigma (ev, sigma, _) = new_evar ~store env sigma t1 in
       let sigma = Sigma.to_evar_map sigma in
-      let dep = dependent (mkRel 1) t2 in
+      let dep = not (EConstr.Vars.noccurn sigma 1 (EConstr.of_constr t2)) in
       let hole = {
         hole_evar = ev;
         hole_type = t1;
@@ -682,9 +682,9 @@ let solve_evar_clause env sigma hyp_only clause = function
     if h.hole_deps then
       (** Some subsequent term uses the hole *)
       let (ev, _) = destEvar h.hole_evar in
-      let is_dep hole = occur_evar ev hole.hole_type in
+      let is_dep hole = occur_evar sigma ev (EConstr.of_constr hole.hole_type) in
       let in_hyp = List.exists is_dep holes in
-      let in_ccl = occur_evar ev clause.cl_concl in
+      let in_ccl = occur_evar sigma ev (EConstr.of_constr clause.cl_concl) in
       let dep = if hyp_only then in_hyp && not in_ccl else in_hyp || in_ccl in
       let h = { h with hole_deps = dep } in
       h :: holes

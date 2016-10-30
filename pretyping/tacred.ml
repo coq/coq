@@ -177,7 +177,7 @@ let eval_table = Summary.ref (Cmap.empty : frozen) ~name:"evaluation"
    the xp..x1.
 *)
 
-let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
+let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
   let n = List.length labs in
   let nargs = List.length args in
   if nargs > n then raise Elimconst;
@@ -202,7 +202,7 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
     raise Elimconst;
   List.iteri (fun i t_i ->
     if not (Int.List.mem_assoc (i+1) li) then
-      let fvs = List.map ((+) (i+1)) (Int.Set.elements (free_rels t_i)) in
+      let fvs = List.map ((+) (i+1)) (Int.Set.elements (free_rels sigma (EConstr.of_constr t_i))) in
       match List.intersect Int.equal fvs reversible_rels with
       | [] -> ()
       | _ -> raise Elimconst)
@@ -261,7 +261,7 @@ let compute_consteval_direct env sigma ref =
           let open Context.Rel.Declaration in
 	  srec (push_rel (LocalAssum (id,t)) env) (n+1) (t::labs) onlyproj g
       | Fix fix when not onlyproj ->
-	  (try check_fix_reversibility labs l fix
+	  (try check_fix_reversibility sigma labs l fix
 	  with Elimconst -> NotAnElimination)
       | Case (_,_,d,_) when isRel d && not onlyproj -> EliminationCases n
       | Case (_,_,d,_) -> srec env n labs true d
@@ -1102,13 +1102,13 @@ let fold_one_com com env sigma c =
   (* Reason first on the beta-iota-zeta normal form of the constant as
      unfold produces it, so that the "unfold f; fold f" configuration works
      to refold fix expressions *)
-  let a = subst_term (clos_norm_flags unfold_side_red env sigma rcom) c in
+  let a = subst_term sigma (EConstr.of_constr (clos_norm_flags unfold_side_red env sigma rcom)) (EConstr.of_constr c) in
   if not (eq_constr a c) then
     subst1 com a
   else
     (* Then reason on the non beta-iota-zeta form for compatibility -
        even if it is probably a useless configuration *)
-    let a = subst_term rcom c in
+    let a = subst_term sigma (EConstr.of_constr rcom) (EConstr.of_constr c) in
     subst1 com a
 
 let fold_commands cl env sigma c =
@@ -1133,8 +1133,8 @@ let compute = cbv_betadeltaiota
 let abstract_scheme env (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
   let na = named_hd env ta Anonymous in
-  if occur_meta ta then error "Cannot find a type for the generalisation.";
-  if occur_meta a then
+  if occur_meta sigma (EConstr.of_constr ta) then error "Cannot find a type for the generalisation.";
+  if occur_meta sigma (EConstr.of_constr a) then
     mkLambda (na,ta,c), sigma
   else
     let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a c in

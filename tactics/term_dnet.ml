@@ -351,7 +351,7 @@ struct
       (fun id acc ->
 	 let c_id = Opt.reduce (Ident.constr_of id) in
 	 let (ctx,wc) =
-	   try Termops.align_prod_letin whole_c c_id
+	   try Termops.align_prod_letin Evd.empty (EConstr.of_constr whole_c) (EConstr.of_constr c_id) (** FIXME *)
 	   with Invalid_argument _ -> [],c_id in
 	 let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
 	 try

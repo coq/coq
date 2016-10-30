@@ -18,7 +18,7 @@ val is_success : unification_result -> bool
 
 (** Replace the vars and rels that are aliases to other vars and rels by 
    their representative that is most ancient in the context *)
-val expand_vars_in_term : env -> constr -> constr
+val expand_vars_in_term : env -> evar_map -> constr -> constr
 
 (** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
    possibly solving related unification problems, possibly leaving open
@@ -62,7 +62,7 @@ val is_unification_pattern_evar : env -> evar_map -> existential -> constr list 
 val is_unification_pattern : env * int -> evar_map -> constr -> constr list ->
   constr -> constr list option
 
-val solve_pattern_eqn : env -> constr list -> constr -> constr
+val solve_pattern_eqn : env -> evar_map -> constr list -> constr -> constr
 
 val noccur_evar : env -> evar_map -> Evar.t -> constr -> bool
 

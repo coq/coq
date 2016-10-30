@@ -685,7 +685,7 @@ let is_recursive mie =
   let rec is_recursive_constructor lift typ =
     match Term.kind_of_term typ with
     | Prod (_,arg,rest) ->
-        Termops.dependent (mkRel lift) arg ||
+        not (EConstr.Vars.noccurn Evd.empty (** FIXME *) lift (EConstr.of_constr arg)) ||
         is_recursive_constructor (lift+1) rest
     | LetIn (na,b,t,rest) -> is_recursive_constructor (lift+1) rest
     | _ -> false
@@ -813,11 +813,11 @@ let warn_non_full_mutual =
          (fun (x,xge,y,yge,isfix,rest) ->
           non_full_mutual_message x xge y yge isfix rest)
 
-let check_mutuality env isfix fixl =
+let check_mutuality env evd isfix fixl =
   let names = List.map fst fixl in
   let preorder =
     List.map (fun (id,def) ->
-      (id, List.filter (fun id' -> not (Id.equal id id') && occur_var env id' def) names))
+      (id, List.filter (fun id' -> not (Id.equal id id') && occur_var env evd id' (EConstr.of_constr def)) names))
       fixl in
   let po = partial_order Id.equal preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
@@ -1144,7 +1144,7 @@ let check_recursive isfix env evd (fixnames,fixdefs,_) =
   check_evars_are_solved env evd (Evd.empty,evd);
   if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
-    check_mutuality env isfix (List.combine fixnames fixdefs)
+    check_mutuality env evd isfix (List.combine fixnames fixdefs)
   end
 
 let interp_fixpoint l ntns =

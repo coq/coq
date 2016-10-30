@@ -183,7 +183,7 @@ type inversion_scheme = {
 
 let i_can't_do_that () = error "Quote: not a simple fixpoint"
 
-let decomp_term c = kind_of_term (Termops.strip_outer_cast c)
+let decomp_term gl c = kind_of_term (Termops.strip_outer_cast (Tacmach.New.project gl) (EConstr.of_constr c))
 
 (*s [compute_lhs typ i nargsi] builds the term \texttt{(C ?nargsi ...
   ?2 ?1)}, where \texttt{C} is the [i]-th constructor of inductive
@@ -223,14 +223,14 @@ let compute_rhs bodyi index_of_f =
 let compute_ivs f cs gl =
   let cst = try destConst f with DestKO -> i_can't_do_that () in
   let body = Environ.constant_value_in (Global.env()) cst in
-  match decomp_term body with
+  match decomp_term gl body with
     | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
         let (args3, body3) = decompose_lam body2 in
         let nargs3 = List.length args3 in
         let env = Proofview.Goal.env gl in
         let sigma = Tacmach.New.project gl in
         let is_conv = Reductionops.is_conv env sigma in
-          begin match decomp_term body3 with
+          begin match decomp_term gl body3 with
           | Case(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)
               let n_lhs_rhs = ref []
               and v_lhs = ref (None : constr option)
@@ -267,7 +267,7 @@ let compute_ivs f cs gl =
 
 	      (* The Cases predicate is a lambda; we assume no dependency *)
 	      let p = match kind_of_term p with
-		| Lambda (_,_,p) -> Termops.pop p
+		| Lambda (_,_,p) -> Termops.pop (EConstr.of_constr p)
 		| _ -> p
 	      in
 

@@ -287,7 +287,7 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
     in
     let sub = compute_substitution Int.Map.empty (snd t1) (snd t2) in
     let sub = compute_substitution sub (fst t1) (fst t2) in
-    let end_of_type_with_pop = Termops.pop end_of_type in (*the equation will be removed *)
+    let end_of_type_with_pop = Termops.pop (EConstr.of_constr end_of_type) in (*the equation will be removed *)
     let new_end_of_type =
       (* Ugly hack to prevent Map.fold order change between ocaml-3.08.3 and ocaml-3.08.4
 	 Can be safely replaced by the next comment for Ocaml >= 3.08.4
@@ -309,7 +309,7 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
 	   try
 	     let witness = Int.Map.find i sub in
 	     if is_local_def decl then anomaly (Pp.str "can not redefine a rel!");
-	     (Termops.pop end_of_type,ctxt_size,mkLetIn (RelDecl.get_name decl, witness, RelDecl.get_type decl, witness_fun))
+	     (Termops.pop (EConstr.of_constr end_of_type),ctxt_size,mkLetIn (RelDecl.get_name decl, witness, RelDecl.get_type decl, witness_fun))
 	   with Not_found  ->
 	     (mkProd_or_LetIn decl end_of_type, ctxt_size + 1, mkLambda_or_LetIn decl witness_fun)
 	)
@@ -430,7 +430,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	  begin
 	    let pte,pte_args =  (destApp t_x) in
 	    let (* fix_info *) prove_rec_hyp = (Id.Map.find (destVar pte) ptes_infos).proving_tac in
-	    let popped_t' = Termops.pop t' in
+	    let popped_t' = Termops.pop (EConstr.of_constr t') in
 	    let real_type_of_hyp = it_mkProd_or_LetIn popped_t' context in
 	    let prove_new_type_of_hyp =
 	      let context_length = List.length context in
@@ -480,7 +480,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 (* 	    observe (str "In "++Ppconstr.pr_id hyp_id++  *)
 (* 		       str " removing useless precond True" *)
 (* 		    );  *)
-	  let popped_t' = Termops.pop t' in
+	  let popped_t' = Termops.pop (EConstr.of_constr t') in
 	  let real_type_of_hyp =
 	    it_mkProd_or_LetIn popped_t' context
 	  in
@@ -508,7 +508,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	  ]
 	else if is_trivial_eq t_x
 	then (*  t_x :=  t = t   => we remove this precond *)
-	  let popped_t' = Termops.pop t' in
+	  let popped_t' = Termops.pop (EConstr.of_constr t') in
 	  let real_type_of_hyp =
 	    it_mkProd_or_LetIn popped_t' context
 	  in
@@ -608,7 +608,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	 let fun_body =
 	   mkLambda(Anonymous,
 		    pf_unsafe_type_of g' term,
-		    Termops.replace_term term (mkRel 1) dyn_infos.info
+		    Termops.replace_term (project g') (EConstr.of_constr term) (EConstr.mkRel 1) (EConstr.of_constr dyn_infos.info)
 		   )
 	 in
 	 let new_body = pf_nf_betaiota g' (mkApp(fun_body,[| new_term_value |])) in
@@ -699,7 +699,7 @@ let build_proof
 		  let t = dyn_info'.info in
 		  let dyn_infos = {dyn_info' with info =
 		      mkCase(ci,ct,t,cb)} in
-		  let g_nb_prod = nb_prod (pf_concl g) in
+		  let g_nb_prod = nb_prod (project g) (EConstr.of_constr (pf_concl g)) in
 		  let type_of_term = pf_unsafe_type_of g t in
 		  let term_eq =
 		    make_refl_eq (Lazy.force refl_equal) type_of_term t
@@ -712,7 +712,7 @@ let build_proof
 		      (fun g -> observe_tac "toto" (
 			 tclTHENSEQ [Proofview.V82.of_tactic (Simple.case t);
 				     (fun g' ->
-					let g'_nb_prod = nb_prod (pf_concl g') in
+					let g'_nb_prod = nb_prod (project g') (EConstr.of_constr (pf_concl g')) in
 					let nb_instanciate_partial = g'_nb_prod - g_nb_prod in
 			 		observe_tac "treat_new_case"
 					  (treat_new_case
@@ -927,8 +927,8 @@ let generalize_non_dep hyp g =
     Environ.fold_named_context_reverse (fun (clear,keep) decl ->
       let hyp = get_id decl in
       if Id.List.mem hyp hyps
-        || List.exists (Termops.occur_var_in_decl env hyp) keep
-	|| Termops.occur_var env hyp hyp_typ
+        || List.exists (Termops.occur_var_in_decl env (project g) hyp) keep
+	|| Termops.occur_var env (project g) hyp (EConstr.of_constr hyp_typ)
 	|| Termops.is_section_variable hyp (* should be dangerous *)
       then (clear,decl::keep)
       else (hyp::clear,keep))
@@ -1042,7 +1042,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
       let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd res in 
       res
   in
-  let nb_intro_to_do = nb_prod (pf_concl g) in
+  let nb_intro_to_do = nb_prod (project g) (EConstr.of_constr (pf_concl g)) in
     tclTHEN
       (tclDO nb_intro_to_do (Proofview.V82.of_tactic intro))
       (

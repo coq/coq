@@ -141,9 +141,10 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       match kind_of_term t2 with
 	Prod (_,a,b) -> (* assert (l2=[]); *)
 	  let _, a, b = destProd (Evarutil.nf_evar sigma t2) in
-      	  if dependent (mkRel 1) b then raise Not_found
-	  else lookup_canonical_conversion (proji, Prod_cs),
-	    (Stack.append_app [|a;pop b|] Stack.empty)
+          if EConstr.Vars.noccurn sigma 1 (EConstr.of_constr b) then
+            lookup_canonical_conversion (proji, Prod_cs),
+	    (Stack.append_app [|a;pop (EConstr.of_constr b)|] Stack.empty)
+          else raise Not_found
       | Sort s ->
 	lookup_canonical_conversion
 	  (proji, Sort_cs (family_of_sort s)),[]
@@ -178,7 +179,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let c' = subst_univs_level_constr subst c in
   let t' = subst_univs_level_constr subst t' in
   let bs' = List.map (subst_univs_level_constr subst) bs in
-  let h, _ = decompose_app_vect t' in
+  let h, _ = decompose_app_vect sigma (EConstr.of_constr t') in
     ctx',(h, t2),c',bs',(Stack.append_app_list params Stack.empty,params1),
     (Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
     (n,Stack.zip(t2,sk2))
@@ -372,7 +373,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       | None -> fallback ()
       | Some l1' -> (* Miller-Pfenning's patterns unification *)
 	let t2 = nf_evar evd tM in
-	let t2 = solve_pattern_eqn env l1' t2 in
+	let t2 = solve_pattern_eqn env evd l1' t2 in
 	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem on_left pbty,ev,t2) 
   in
@@ -893,7 +894,7 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
        (fun i -> exact_ise_stack2 env i (evar_conv_x trs) sk1 sk2);
        test;
        (fun i -> evar_conv_x trs env i CONV h2
-	 (fst (decompose_app_vect (substl ks h))))]
+	 (fst (decompose_app_vect i (EConstr.of_constr (substl ks h)))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
@@ -973,14 +974,14 @@ let apply_on_subterm env evdref f c t =
   in
   applyrec (env,(0,c)) t
 
-let filter_possible_projections c ty ctxt args =
+let filter_possible_projections evd c ty ctxt args =
   (* Since args in the types will be replaced by holes, we count the
      fv of args to have a well-typed filter; don't know how necessary
      it is however to have a well-typed filter here *)
-  let fv1 = free_rels (mkApp (c,args)) (* Hack: locally untyped *) in
-  let fv2 = collect_vars (mkApp (c,args)) in
+  let fv1 = free_rels evd (EConstr.of_constr (mkApp (c,args))) (* Hack: locally untyped *) in
+  let fv2 = collect_vars evd (EConstr.of_constr (mkApp (c,args))) in
   let len = Array.length args in
-  let tyvars = collect_vars ty in
+  let tyvars = collect_vars evd (EConstr.of_constr ty) in
   List.map_i (fun i decl ->
     let () = assert (i < len) in
     let a = Array.unsafe_get args i in
@@ -1039,7 +1040,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let t = NamedDecl.get_type decl' in
       let evs = ref [] in
       let ty = Retyping.get_type_of env_rhs evd c in
-      let filter' = filter_possible_projections c ty ctxt args in
+      let filter' = filter_possible_projections evd c ty ctxt args in
       (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
   | _, _, [] -> []
   | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list") in
