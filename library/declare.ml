@@ -455,7 +455,7 @@ let declare_universe_context poly ctx =
 type universe_decl = polymorphic * (Id.t * Univ.universe_level) list
 
 let cache_universes (p, l) =
-  let glob = Universes.global_universe_names () in
+  let glob = Global.global_universe_names () in
   let glob', ctx =
     List.fold_left (fun ((idl,lid),ctx) (id, lev) ->
         ((Idmap.add id (p, lev) idl,
@@ -464,7 +464,7 @@ let cache_universes (p, l) =
       (glob, Univ.ContextSet.empty) l
   in
   cache_universe_context (p, ctx);
-  Universes.set_global_universe_names glob'
+  Global.set_global_universe_names glob'
 
 let input_universes : universe_decl -> Libobject.obj =
   declare_object
@@ -519,7 +519,7 @@ let do_constraint poly l =
                      (str "Cannot declare constraints on anonymous universes")
     | GType (Some (loc, id)) ->
        let id = Id.of_string id in
-       let names, _ = Universes.global_universe_names () in
+       let names, _ = Global.global_universe_names () in
        try loc, Idmap.find id names
        with Not_found ->
          user_err ~loc ~hdr:"Constraint" (str "Undeclared universe " ++ pr_id id)

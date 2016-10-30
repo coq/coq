@@ -15,19 +15,8 @@ open Univ
 open Globnames
 open Decl_kinds
 
-(** Global universe names *)
-type universe_names = 
-  (polymorphic * Univ.universe_level) Idmap.t * Id.t Univ.LMap.t
-
-let global_universes =
-  Summary.ref ~name:"Global universe names"
-  ((Idmap.empty, Univ.LMap.empty) : universe_names)
-
-let global_universe_names () = !global_universes
-let set_global_universe_names s = global_universes := s
-
 let pr_with_global_universes l = 
-  try Nameops.pr_id (LMap.find l (snd !global_universes))
+  try Nameops.pr_id (LMap.find l (snd (Global.global_universe_names ())))
   with Not_found -> Level.pr l
 
 (** Local universe names of polymorphic references *)
