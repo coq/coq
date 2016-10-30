@@ -101,6 +101,7 @@ let term_printer = ref (fun _ -> pr_constr)
 let print_constr_env t = !term_printer t
 let print_constr t = !term_printer (Global.env()) t
 let set_print_constr f = term_printer := f
+let () = Hook.set Evd.print_constr_hook (fun env c -> !term_printer env c)
 
 let pr_var_decl env decl =
   let open NamedDecl in

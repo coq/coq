@@ -21,7 +21,6 @@ open Nameops
 open Libnames
 open Globnames
 open Environ
-open Termops
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -77,6 +76,10 @@ let is_constructor id =
       | _ -> false
   with Not_found ->
     false
+
+let is_section_variable id =
+  try let _ = Global.lookup_named id in true
+  with Not_found -> false
 
 (**********************************************************************)
 (* Generating "intuitive" names from its type *)
@@ -203,8 +206,8 @@ let visible_ids (nenv, c) =
     if p > n && not (Int.Set.mem p vseen) then
       let vseen = Int.Set.add p vseen in
       let name =
-        try Some (lookup_name_of_rel (p - n) nenv)
-        with Not_found ->
+        try Some (List.nth nenv (p - n - 1))
+        with Invalid_argument _ | Failure _ ->
           (* Unbound index: may happen in debug and actually also
              while computing temporary implicit arguments of an
              inductive type *)
@@ -290,14 +293,18 @@ let next_name_away_with_default_using_types default na avoid t =
 let next_name_away = next_name_away_with_default default_non_dependent_string
 
 let make_all_name_different env =
-  let avoid = ref (ids_of_named_context (named_context env)) in
-  process_rel_context
+  (** FIXME: this is inefficient, but only used in printing *)
+  let avoid = ref (Id.Set.elements (Context.Named.to_vars (named_context env))) in
+  let sign = named_context_val env in
+  let rels = rel_context env in
+  let env0 = reset_with_named_context sign env in
+  Context.Rel.fold_outside
     (fun decl newenv ->
        let na = named_hd newenv (RelDecl.get_type decl) (RelDecl.get_name decl) in
        let id = next_name_away na !avoid in
        avoid := id::!avoid;
        push_rel (RelDecl.set_name (Name id) decl) newenv)
-    env
+    rels ~init:env0
 
 (* 5- Looks for next fresh name outside a list; avoids also to use names that
    would clash with short name of global references; if name is already used,
@@ -377,12 +384,12 @@ let rename_bound_vars_as_displayed avoid env c =
 	let na',avoid' =
           compute_displayed_name_in
             (RenamingElsewhereFor (env,c2)) avoid na c2 in
-	mkProd (na', c1, rename avoid' (add_name na' env) c2)
+	mkProd (na', c1, rename avoid' (na' :: env) c2)
     | LetIn (na,c1,t,c2) ->
 	let na',avoid' =
           compute_displayed_let_name_in
             (RenamingElsewhereFor (env,c2)) avoid na c2 in
-	mkLetIn (na',c1,t, rename avoid' (add_name na' env) c2)
+	mkLetIn (na',c1,t, rename avoid' (na' :: env) c2)
     | Cast (c,k,t) -> mkCast (rename avoid env c, k,t)
     | _ -> c
   in

@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Term
 open Vars
-open Termops
 open Environ
 open Globnames
 open Context.Named.Declaration
@@ -1264,7 +1263,9 @@ let protect f x =
   try f x
   with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
 
-let print_constr a = protect print_constr a
+let (f_print_constr, print_constr_hook) = Hook.make ()
+
+let print_constr a = protect (fun c -> Hook.get f_print_constr (Global.env ()) c) a
 
 let pr_meta_map mmap =
   let pr_name = function
@@ -1422,11 +1423,11 @@ let pr_evar_constraints pbs =
       Namegen.make_all_name_different env
     in
     print_env_short env ++ spc () ++ str "|-" ++ spc () ++
-      print_constr_env env t1 ++ spc () ++
+      Hook.get f_print_constr env t1 ++ spc () ++
       str (match pbty with
             | Reduction.CONV -> "=="
             | Reduction.CUMUL -> "<=") ++
-      spc () ++ print_constr_env env t2
+      spc () ++ Hook.get f_print_constr env t2
   in
   prlist_with_sep fnl pr_evconstr pbs
 
