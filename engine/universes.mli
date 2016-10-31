@@ -88,11 +88,11 @@ val leq_constr_univs_infer : UGraph.t -> 'a constraint_accumulator ->
 
 (** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
     application grouping and the universe constraints in [c]. *)
-val eq_constr_universes : constr -> constr -> bool universe_constrained
+val eq_constr_universes : constr -> constr -> universe_constraints option
 
 (** [leq_constr_universes a b] [true, c] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe constraints in [c]. *)
-val leq_constr_universes : constr -> constr -> bool universe_constrained
+val leq_constr_universes : constr -> constr -> universe_constraints option
 
 (** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
     application grouping and the universe constraints in [c]. *)

@@ -401,14 +401,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     else evar_eqappr_x ts env' evd CONV out2 out1
   in
   let rigids env evd sk term sk' term' =
-    let b,univs = Universes.eq_constr_universes term term' in
-      if b then
+    let univs = Universes.eq_constr_universes term term' in
+    match univs with
+    | Some univs ->
        ise_and evd [(fun i ->
          let cstrs = Universes.to_constraints (Evd.universes i) univs in
            try Success (Evd.add_constraints i cstrs)
            with Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
                   (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk sk')]
-      else UnifFailure (evd,NotSameHead)
+    | None ->
+      UnifFailure (evd,NotSameHead)
   in
   let flex_maybeflex on_left ev ((termF,skF as apprF),cstsF) ((termM, skM as apprM),cstsM) vM =
     let switch f a b = if on_left then f a b else f b a in
@@ -650,14 +652,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     allow this identification (first-order unification of universes). Otherwise
 	     fallback to unfolding.
 	  *)
-	  let b,univs = Universes.eq_constr_universes term1 term2 in
-	    if b then
+	  let univs = Universes.eq_constr_universes term1 term2 in
+          match univs with
+          | Some univs ->
 	      ise_and i [(fun i -> 
 		try Success (Evd.add_universe_constraints i univs)
 		with UniversesDiffer -> UnifFailure (i,NotSameHead)
 		| Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
 			 (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
-	    else UnifFailure (i,NotSameHead)
+          | None ->
+            UnifFailure (i,NotSameHead)
 	and f2 i =
 	  (try 
 	     if not (snd ts) then raise Not_found

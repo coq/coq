@@ -199,7 +199,7 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
   if res then Some !cstrs else None
 
 let test_constr_universes leq m n =
-  if m == n then true, Constraints.empty
+  if m == n then Some Constraints.empty
   else 
     let cstrs = ref Constraints.empty in
     let eq_universes strict l l' = 
@@ -229,7 +229,7 @@ let test_constr_universes leq m n =
       else
         Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
-    res, !cstrs
+    if res then Some !cstrs else None
 
 let eq_constr_universes m n = test_constr_universes false m n
 let leq_constr_universes m n = test_constr_universes true m n

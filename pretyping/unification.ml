@@ -558,19 +558,22 @@ let force_eqs c =
     c Universes.Constraints.empty
 
 let constr_cmp pb sigma flags t u =
-  let b, cstrs = 
+  let cstrs =
     if pb == Reduction.CONV then Universes.eq_constr_universes t u
     else Universes.leq_constr_universes t u
   in 
-    if b then 
-      try Evd.add_universe_constraints sigma cstrs, b
+  match cstrs with
+  | Some cstrs ->
+      begin try Evd.add_universe_constraints sigma cstrs, true
       with Univ.UniverseInconsistency _ -> sigma, false
       | Evd.UniversesDiffer -> 
 	if is_rigid_head flags t then 
-	  try Evd.add_universe_constraints sigma (force_eqs cstrs), b
+	  try Evd.add_universe_constraints sigma (force_eqs cstrs), true
 	  with Univ.UniverseInconsistency _ -> sigma, false
 	else sigma, false
-    else sigma, b
+      end
+  | None ->
+    sigma, false
     
 let do_reduce ts (env, nb) sigma c =
   Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state

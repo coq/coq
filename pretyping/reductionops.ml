@@ -681,13 +681,17 @@ let magicaly_constant_of_fixbody env reference bd = function
       match constant_opt_value_in env (cst,u) with
       | None -> bd
       | Some t ->
-        let b, csts = Universes.eq_constr_universes t bd in
-    	let subst = Universes.Constraints.fold (fun (l,d,r) acc ->
-    	  Univ.LMap.add (Option.get (Universe.level l)) (Option.get (Universe.level r)) acc)
-    	  csts Univ.LMap.empty
-    	in
-    	let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
-          if b then mkConstU (cst,inst) else bd
+        let csts = Universes.eq_constr_universes t bd in
+        begin match csts with
+        | Some csts ->
+          let subst = Universes.Constraints.fold (fun (l,d,r) acc ->
+            Univ.LMap.add (Option.get (Universe.level l)) (Option.get (Universe.level r)) acc)
+            csts Univ.LMap.empty
+          in
+          let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
+          mkConstU (cst,inst)
+        | None -> bd
+        end
     with
     | Not_found -> bd
 

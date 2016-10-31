@@ -609,7 +609,10 @@ let vars_of_global_reference env gr =
    [m] is appropriately lifted through abstractions of [t] *)
 
 let dependent_main noevar univs m t =
-  let eqc x y = if univs then fst (Universes.eq_constr_universes x y) else eq_constr_nounivs x y in
+  let eqc x y =
+    if univs then not (Option.is_empty (Universes.eq_constr_universes x y))
+    else eq_constr_nounivs x y
+  in
   let rec deprec m t =
     if eqc m t then
       raise Occur
