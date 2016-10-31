@@ -349,20 +349,6 @@ val strip_lam_n : int -> constr -> constr
 val strip_prod_assum : types -> types
 val strip_lam_assum : constr -> constr
 
-(** Flattens application lists *)
-val collapse_appl : constr -> constr
-
-
-(** Remove recursively the casts around a term i.e.
-   [strip_outer_cast (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
-val strip_outer_cast : constr -> constr
-
-(** Apply a function letting Casted types in place *)
-val under_casts : (constr -> constr) -> constr -> constr
-
-(** Apply a function under components of Cast if any *)
-val under_outer_cast : (constr -> constr) -> constr -> constr
-
 (** {5 ... } *)
 (** An "arity" is a term of the form [[x1:T1]...[xn:Tn]s] with [s] a sort.
     Such a term can canonically be seen as the pair of a context of types

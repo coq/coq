@@ -112,7 +112,7 @@ let generic_search glnumopt fn =
 (** This function tries to see whether the conclusion matches a pattern. *)
 (** FIXME: this is quite dummy, we may find a more efficient algorithm. *)
 let rec pattern_filter pat ref env typ =
-  let typ = strip_outer_cast typ in
+  let typ = Termops.strip_outer_cast typ in
   if Constr_matching.is_matching env Evd.empty pat typ then true
   else match kind_of_term typ with
   | Prod (_, _, typ)
@@ -120,7 +120,7 @@ let rec pattern_filter pat ref env typ =
   | _ -> false
 
 let rec head_filter pat ref env typ =
-  let typ = strip_outer_cast typ in
+  let typ = Termops.strip_outer_cast typ in
   if Constr_matching.is_matching_head env Evd.empty pat typ then true
   else match kind_of_term typ with
   | Prod (_, _, typ)

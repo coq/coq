@@ -164,6 +164,13 @@ val eq_constr : constr -> constr -> bool (* FIXME rename: erases universes*)
 
 val eta_reduce_head : constr -> constr
 
+(** Flattens application lists *)
+val collapse_appl : constr -> constr
+
+(** Remove recursively the casts around a term i.e.
+   [strip_outer_cast (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
+val strip_outer_cast : constr -> constr
+
 exception CannotFilter
 
 (** Lightweight first-order filtering procedure. Unification

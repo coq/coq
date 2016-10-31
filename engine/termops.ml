@@ -678,6 +678,21 @@ let rec subst_meta bl c =
     | Meta i -> (try Int.List.assoc i bl with Not_found -> c)
     | _ -> map_constr (subst_meta bl) c
 
+let rec strip_outer_cast c = match kind_of_term c with
+  | Cast (c,_,_) -> strip_outer_cast c
+  | _ -> c
+
+(* flattens application lists throwing casts in-between *)
+let collapse_appl c = match kind_of_term c with
+  | App (f,cl) ->
+      let rec collapse_rec f cl2 =
+        match kind_of_term (strip_outer_cast f) with
+        | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
+        | _ -> mkApp (f,cl2)
+      in
+      collapse_rec f cl
+  | _ -> c
+
 (* First utilities for avoiding telescope computation for subst_term *)
 
 let prefix_application eq_fun (k,c) (t : constr) =
