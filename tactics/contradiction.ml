@@ -65,7 +65,7 @@ let contradiction_context =
       | d :: rest ->
           let id = NamedDecl.get_id d in
           let typ = nf_evar sigma (NamedDecl.get_type d) in
-	  let typ = whd_all env sigma typ in
+	  let typ = whd_all env sigma (EConstr.of_constr typ) in
 	  if is_empty_type sigma typ then
 	    simplest_elim (mkVar id)
 	  else match kind_of_term typ with
@@ -88,7 +88,7 @@ let contradiction_context =
 	      (Proofview.tclORELSE
                  (Proofview.Goal.enter { enter = begin fun gl ->
                    let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
-	           filter_hyp (fun typ -> is_conv_leq typ t)
+	           filter_hyp (fun typ -> is_conv_leq (EConstr.of_constr typ) (EConstr.of_constr t))
 		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
                  end })
                  begin function (e, info) -> match e with
@@ -105,7 +105,7 @@ let is_negation_of env sigma typ t =
   match kind_of_term (whd_all env sigma t) with
     | Prod (na,t,u) ->
       let u = nf_evar sigma u in
-      is_empty_type sigma u && is_conv_leq env sigma typ t
+      is_empty_type sigma u && is_conv_leq env sigma (EConstr.of_constr typ) (EConstr.of_constr t)
     | _ -> false
 
 let contradiction_term (c,lbind as cl) =
@@ -114,7 +114,7 @@ let contradiction_term (c,lbind as cl) =
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let typ = type_of c in
-    let _, ccl = splay_prod env sigma typ in
+    let _, ccl = splay_prod env sigma (EConstr.of_constr typ) in
     if is_empty_type sigma ccl then
       Tacticals.New.tclTHEN
         (elim false None cl None)
@@ -123,7 +123,7 @@ let contradiction_term (c,lbind as cl) =
       Proofview.tclORELSE
         begin
           if lbind = NoBindings then
-            filter_hyp (is_negation_of env sigma typ)
+            filter_hyp (fun c -> is_negation_of env sigma typ (EConstr.of_constr c))
               (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
           else
             Proofview.tclZERO Not_found

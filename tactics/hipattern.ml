@@ -440,7 +440,7 @@ let extract_eq_args gl = function
       let t = pf_unsafe_type_of gl e1 in (t,e1,e2)
   | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
   | HeterogenousEq (t1,e1,t2,e2) ->
-      if pf_conv_x gl t1 t2 then (t1,e1,e2)
+      if pf_conv_x gl (EConstr.of_constr t1) (EConstr.of_constr t2) then (t1,e1,e2)
       else raise PatternMatchingFailure
 
 let find_eq_data_decompose gl eqn =
@@ -466,7 +466,7 @@ let match_eq_nf gls eqn (ref, hetero) =
   match Id.Map.bindings (pf_matches gls pat eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
-	(t,pf_whd_all gls x,pf_whd_all gls y)
+	(t,pf_whd_all gls (EConstr.of_constr x),pf_whd_all gls (EConstr.of_constr y))
     | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 terms")
 
 let dest_nf_eq gls eqn =

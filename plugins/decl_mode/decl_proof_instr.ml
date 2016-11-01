@@ -1092,7 +1092,7 @@ let thesis_for obj typ per_info env=
       ((Printer.pr_constr_env env Evd.empty obj) ++ spc () ++
 	 str "cannot give an induction hypothesis (wrong parameters).") in
   let hd2 = (applist ((lift (List.length rc) per_info.per_pred),args@[obj])) in
-    compose_prod rc (Reductionops.whd_beta Evd.empty hd2)
+    compose_prod rc (Reductionops.whd_beta Evd.empty (EConstr.of_constr hd2))
 
 let rec build_product_dep pat_info per_info args body gls =
   match args with
@@ -1222,7 +1222,7 @@ let hrec_for fix_id per_info gls obj_id =
     try List.for_all2 eq_constr params per_info.per_params with
         Invalid_argument _ -> false end;
   let hd2 = applist (mkVar fix_id,args@[obj]) in
-    compose_lam rc (Reductionops.whd_beta gls.sigma hd2)
+    compose_lam rc (Reductionops.whd_beta gls.sigma (EConstr.of_constr hd2))
 
 let warn_missing_case =
   CWarnings.create ~name:"declmode-missing-case" ~category:"declmode"

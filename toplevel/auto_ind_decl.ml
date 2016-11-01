@@ -180,7 +180,7 @@ let build_beq_scheme mode kn =
       let lifti = ndx in
       let rec aux c =
 	let (c,a) = Reductionops.whd_betaiota_stack Evd.empty c in
-	match kind_of_term c with
+	match EConstr.kind Evd.empty (** FIXME *) c with
         | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
         | Var x ->
           let eid = id_of_string ("eq_"^(string_of_id x)) in
@@ -189,7 +189,7 @@ let build_beq_scheme mode kn =
             with Not_found -> raise (ParameterWithoutEquality (VarRef x))
           in
           mkVar eid, Safe_typing.empty_private_constants
-        | Cast (x,_,_) -> aux (applist (x,a))
+        | Cast (x,_,_) -> aux (EConstr.applist (x,a))
         | App _ -> assert false
         | Ind ((kn',i as ind'),u) (*FIXME: universes *) -> 
             if eq_mind kn kn' then mkRel(eqA-nlist-i+nb_ind-1), Safe_typing.empty_private_constants
@@ -205,7 +205,7 @@ let build_beq_scheme mode kn =
                   in
                 let args =
                   Array.append 
-                    (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
+                    (Array.of_list (List.map (fun x -> lift lifti (EConstr.Unsafe.to_constr x)) a)) eqa in
                 if Int.equal (Array.length args) 0 then eq, eff
                 else mkApp (eq, args), eff
               with Not_found -> raise(EqNotFound (ind', fst ind))
@@ -217,7 +217,7 @@ let build_beq_scheme mode kn =
         | Const kn ->
 	    (match Environ.constant_opt_value_in env kn with
 	      | None -> raise (ParameterWithoutEquality (ConstRef (fst kn)))
-	      | Some c -> aux (applist (c,a)))
+	      | Some c -> aux (EConstr.applist (EConstr.of_constr c,a)))
         | Proj _ -> raise (EqUnknown "Proj")
         | Construct _ -> raise (EqUnknown "Construct")
         | Case _ -> raise (EqUnknown "Case")
@@ -261,7 +261,7 @@ let build_beq_scheme mode kn =
                                           nparrec
                                           (nparrec+3+2*nb_cstr_args)
                                           (nb_cstr_args+ndx+1)
-                                          cc
+                                          (EConstr.of_constr cc)
                           in
                           eff := Safe_typing.concat_private eff' !eff;
                           Array.set eqs ndx

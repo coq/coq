@@ -345,7 +345,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     else
       match kind_of_term trm with
       | Meta _ ->
-	let conclty = nf_betaiota sigma conclty in
+	let conclty = nf_betaiota sigma (EConstr.of_constr conclty) in
 	  if !check && occur_meta sigma (EConstr.of_constr conclty) then
 	    raise (RefinerError (MetaInType conclty));
 	  let (gl,ev,sigma) = mk_goal hyps conclty in
@@ -423,7 +423,7 @@ and mk_hdgoals sigma goal goalacc trm =
   match kind_of_term trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
-	let (gl,ev,sigma) = mk_goal hyps (nf_betaiota sigma ty) in
+	let (gl,ev,sigma) = mk_goal hyps (nf_betaiota sigma (EConstr.of_constr ty)) in
 	gl::goalacc,ty,sigma,ev
 
     | Cast (t,_, ty) ->
@@ -470,7 +470,7 @@ and mk_hdgoals sigma goal goalacc trm =
 
 and mk_arggoals sigma goal goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
-    let t = whd_all (Goal.V82.env sigma goal) sigma funty in
+    let t = whd_all (Goal.V82.env sigma goal) sigma (EConstr.of_constr funty) in
     let rec collapse t = match kind_of_term t with
     | LetIn (_, c1, _, b) -> collapse (subst1 c1 b)
     | _ -> t
@@ -491,21 +491,21 @@ and mk_casegoals sigma goal goalacc p c =
   let indspec =
     try Tacred.find_hnf_rectype env sigma ct
     with Not_found -> anomaly (Pp.str "mk_casegoals") in
-  let (lbrty,conclty) = type_case_branches_with_names env indspec p c in
+  let (lbrty,conclty) = type_case_branches_with_names env sigma indspec p c in
   (acc'',lbrty,conclty,sigma,p',c')
 
 
 let convert_hyp check sign sigma d =
   let id = NamedDecl.get_id d in
-  let b = NamedDecl.get_value d in
+  let b = Option.map EConstr.of_constr (NamedDecl.get_value d) in
   let env = Global.env() in
   let reorder = ref [] in
   let sign' =
     apply_to_hyp check sign id
       (fun _ d' _ ->
-        let c = NamedDecl.get_value d' in
+        let c = Option.map EConstr.of_constr (NamedDecl.get_value d') in
         let env = Global.env_of_context sign in
-        if check && not (is_conv env sigma (NamedDecl.get_type d) (NamedDecl.get_type d')) then
+        if check && not (is_conv env sigma (EConstr.of_constr (NamedDecl.get_type d)) (EConstr.of_constr (NamedDecl.get_type d'))) then
 	  user_err ~hdr:"Logic.convert_hyp"
             (str "Incorrect change of the type of " ++ pr_id id ++ str ".");
         if check && not (Option.equal (is_conv env sigma) b c) then
@@ -532,7 +532,7 @@ let prim_refiner r sigma goal =
     (* Logical rules *)
     | Cut (b,replace,id,t) ->
 (*        if !check && not (Retyping.get_sort_of env sigma t) then*)
-        let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma t) in
+        let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma (EConstr.of_constr t)) in
 	let sign,t,cl,sigma =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in

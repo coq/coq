@@ -62,7 +62,7 @@ let explain_coercion_error g = function
 (* Verifications pour l'ajout d'une classe *)
 
 let check_reference_arity ref =
-  if not (Reductionops.is_arity (Global.env()) Evd.empty (Global.type_of_global_unsafe ref)) then
+  if not (Reductionops.is_arity (Global.env()) Evd.empty (EConstr.of_constr (Global.type_of_global_unsafe ref))) (** FIXME *) then
     raise (CoercionError (NotAClass ref))
 
 let check_arity = function
@@ -206,7 +206,7 @@ let build_id_coercion idf_opt source poly =
   let _ =
     if not
       (Reductionops.is_conv_leq env sigma
-	(Typing.unsafe_type_of env sigma val_f) typ_f)
+	(EConstr.of_constr (Typing.unsafe_type_of env sigma val_f)) (EConstr.of_constr typ_f))
     then
       user_err  (strbrk
 	"Cannot be defined as coercion (maybe a bad number of arguments).")

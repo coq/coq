@@ -352,7 +352,7 @@ let add_pat_variables pat typ env : Environ.env =
       | PatVar(_,na) -> Environ.push_rel (RelDecl.LocalAssum (na,typ)) env
       | PatCstr(_,c,patl,na) ->
 	  let Inductiveops.IndType(indf,indargs) =
-	    try Inductiveops.find_rectype env (Evd.from_env env) typ
+	    try Inductiveops.find_rectype env (Evd.from_env env) (EConstr.of_constr typ)
 	    with Not_found -> assert false
 	  in
 	  let constructors = Inductiveops.get_constructors env indf in
@@ -409,7 +409,7 @@ let rec pattern_to_term_and_type env typ  = function
 	  constr
       in
       let Inductiveops.IndType(indf,indargs) =
-	try Inductiveops.find_rectype env (Evd.from_env env) typ
+	try Inductiveops.find_rectype env (Evd.from_env env) (EConstr.of_constr typ)
 	with Not_found -> assert false
       in
       let constructors = Inductiveops.get_constructors env indf in
@@ -629,7 +629,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let b_as_constr,ctx = Pretyping.understand env (Evd.from_env env) b in
 	let b_typ = Typing.unsafe_type_of env (Evd.from_env env) b_as_constr in
 	let (ind,_) =
-	  try Inductiveops.find_inductive env (Evd.from_env env) b_typ
+	  try Inductiveops.find_inductive env (Evd.from_env env) (EConstr.of_constr b_typ)
 	  with Not_found ->
 	    user_err  (str "Cannot find the inductive associated to " ++
 			       Printer.pr_glob_constr b ++ str " in " ++
@@ -661,7 +661,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	  let b_as_constr,ctx = Pretyping.understand env (Evd.from_env env) b in
 	  let b_typ = Typing.unsafe_type_of env (Evd.from_env env) b_as_constr in
 	  let (ind,_) =
-	    try Inductiveops.find_inductive env (Evd.from_env env) b_typ
+	    try Inductiveops.find_inductive env (Evd.from_env env) (EConstr.of_constr b_typ)
 	    with Not_found ->
 	      user_err  (str "Cannot find the inductive associated to " ++
 				 Printer.pr_glob_constr b ++ str " in " ++

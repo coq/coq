@@ -52,7 +52,7 @@ val solve_evar_evar : ?force:bool ->
   env ->  evar_map -> bool option -> existential -> existential -> evar_map
 
 val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
-  bool option * existential * constr -> unification_result
+  bool option * existential * EConstr.t -> unification_result
 
 val reconsider_conv_pbs : conv_fun -> evar_map -> unification_result
 

@@ -192,13 +192,14 @@ let coercion_exists coe = CoeTypMap.mem coe !coercion_tab
 (* find_class_type : evar_map -> constr -> cl_typ * universe_list * constr list *)
 
 let find_class_type sigma t =
-  let t', args = Reductionops.whd_betaiotazeta_stack sigma t in
-  match kind_of_term t' with
-    | Var id -> CL_SECVAR id, Univ.Instance.empty, args
-    | Const (sp,u) -> CL_CONST sp, u, args
+  let inj = EConstr.Unsafe.to_constr in
+  let t', args = Reductionops.whd_betaiotazeta_stack sigma (EConstr.of_constr t) in
+  match EConstr.kind sigma t' with
+    | Var id -> CL_SECVAR id, Univ.Instance.empty, List.map inj args
+    | Const (sp,u) -> CL_CONST sp, u, List.map inj args
     | Proj (p, c) when not (Projection.unfolded p) ->
-      CL_PROJ (Projection.constant p), Univ.Instance.empty, c :: args
-    | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
+      CL_PROJ (Projection.constant p), Univ.Instance.empty, List.map inj (c :: args)
+    | Ind (ind_sp,u) -> CL_IND ind_sp, u, List.map inj args
     | Prod (_,_,_) -> CL_FUN, Univ.Instance.empty, []
     | Sort _ -> CL_SORT, Univ.Instance.empty, []
     |  _ -> raise Not_found
@@ -232,7 +233,7 @@ let class_of env sigma t =
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, u, args)
     with Not_found ->
-      let t = Tacred.hnf_constr env sigma t in
+      let t = Tacred.hnf_constr env sigma (EConstr.of_constr t) in
       let (cl, u, args) = find_class_type sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, u, args)
@@ -276,7 +277,7 @@ let apply_on_class_of env sigma t cont =
     t, cont i
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
-    let t = Tacred.hnf_constr env sigma t in
+    let t = Tacred.hnf_constr env sigma (EConstr.of_constr t) in
     let (cl, u, args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
@@ -297,9 +298,9 @@ let lookup_path_to_sort_from env sigma s =
 
 let get_coercion_constructor env coe =
   let c, _ =
-    Reductionops.whd_all_stack env Evd.empty coe.coe_value
+    Reductionops.whd_all_stack env Evd.empty (EConstr.of_constr coe.coe_value)
   in
-  match kind_of_term c with
+  match EConstr.kind Evd.empty (** FIXME *) c with
   | Construct (cstr,u) ->
       (cstr, Inductiveops.constructor_nrealargs cstr -1)
   | _ ->
@@ -403,7 +404,7 @@ type coercion = {
 
 let reference_arity_length ref =
   let t = Universes.unsafe_type_of_global ref in
-  List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty t))
+  List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty (EConstr.of_constr t))) (** FIXME *)
 
 let projection_arity_length p =
   let len = reference_arity_length (ConstRef p) in

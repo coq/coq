@@ -36,7 +36,7 @@ let inductive_type_knowing_parameters env (ind,u) jl =
   Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp
 
 let e_type_judgment env evdref j =
-  match kind_of_term (whd_all env !evdref j.uj_type) with
+  match kind_of_term (whd_all env !evdref (EConstr.of_constr j.uj_type)) with
     | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | Evar ev ->
         let (evd,s) = Evardefine.define_evar_as_sort env !evdref ev in
@@ -54,7 +54,7 @@ let e_judge_of_apply env evdref funj argjv =
       { uj_val  = mkApp (j_val funj, Array.map j_val argjv);
         uj_type = typ }
   | hj::restjl ->
-      match kind_of_term (whd_all env !evdref typ) with
+      match kind_of_term (whd_all env !evdref (EConstr.of_constr typ)) with
       | Prod (_,c1,c2) ->
 	 if Evarconv.e_cumul env evdref hj.uj_type c1 then
 	   apply_rec (n+1) (subst1 hj.uj_val c2) restjl
@@ -87,7 +87,7 @@ let e_is_correct_arity env evdref c pj ind specif params =
   let allowed_sorts = elim_sorts specif in
   let error () = error_elim_arity env ind allowed_sorts c pj None in
   let rec srec env pt ar =
-    let pt' = whd_all env !evdref pt in
+    let pt' = whd_all env !evdref (EConstr.of_constr pt) in
     match kind_of_term pt', ar with
     | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
         if not (Evarconv.e_cumul env evdref a1 a1') then error ();
@@ -113,12 +113,12 @@ let e_type_case_branches env evdref (ind,largs) pj c =
   let () = e_is_correct_arity env evdref c pj ind specif params in
   let lc = build_branches_type ind specif params p in
   let n = (snd specif).Declarations.mind_nrealdecls in
-  let ty = whd_betaiota !evdref (lambda_applist_assum (n+1) p (realargs@[c])) in
+  let ty = whd_betaiota !evdref (EConstr.of_constr (lambda_applist_assum (n+1) p (realargs@[c]))) in
   (lc, ty)
 
 let e_judge_of_case env evdref ci pj cj lfj =
   let indspec =
-    try find_mrectype env !evdref cj.uj_type
+    try find_mrectype env !evdref (EConstr.of_constr cj.uj_type)
     with Not_found -> error_case_not_inductive env cj in
   let _ = check_case_info env (fst indspec) ci in
   let (bty,rslty) = e_type_case_branches env evdref indspec pj cj.uj_val in
@@ -139,7 +139,7 @@ let check_type_fixpoint loc env evdref lna lar vdefj =
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
   let pj = Retyping.get_judgment_of env sigma p in
-  let ksort = family_of_sort (sort_of_arity env sigma pj.uj_type) in
+  let ksort = family_of_sort (sort_of_arity env sigma (EConstr.of_constr pj.uj_type)) in
   let specif = Global.lookup_inductive (fst ind) in
   let sorts = elim_sorts specif in
   if not (List.exists ((==) ksort) sorts) then

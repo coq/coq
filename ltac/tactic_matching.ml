@@ -84,7 +84,7 @@ let equal_instances env sigma (ctx',c') (ctx,c) =
   (* How to compare instances? Do we want the terms to be convertible?
      unifiable? Do we want the universe levels to be relevant? 
      (historically, conv_x is used) *)
-  CList.equal Id.equal ctx ctx' && Reductionops.is_conv env sigma c' c
+  CList.equal Id.equal ctx ctx' && Reductionops.is_conv env sigma (EConstr.of_constr c') (EConstr.of_constr c)
 
 
 (** Merges two substitutions. Raises [Not_coherent_metas] when

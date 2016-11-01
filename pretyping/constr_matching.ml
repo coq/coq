@@ -165,7 +165,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
     | _, _ -> 
       (if convert then 
 	  let sigma,c' = Evd.fresh_global env sigma ref in
-	    is_conv env sigma c' c
+	    is_conv env sigma (EConstr.of_constr c') (EConstr.of_constr c)
        else false)
   in
   let rec sorec ctx env subst p t =

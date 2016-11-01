@@ -502,7 +502,7 @@ let rec check_mutind env sigma k cl = match kind_of_term (strip_outer_cast sigma
 | Prod (na, c1, b) ->
   if Int.equal k 1 then
     try
-      let ((sp, _), u), _ = find_inductive env sigma c1 in
+      let ((sp, _), u), _ = find_inductive env sigma (EConstr.of_constr c1) in
       (sp, u)
     with Not_found -> error "Cannot do a fixpoint on a non inductive type."
   else
@@ -555,14 +555,14 @@ let fix ido n = match ido with
     mutual_fix id n [] 0
 
 let rec check_is_mutcoind env sigma cl =
-  let b = whd_all env sigma cl in
+  let b = whd_all env sigma (EConstr.of_constr cl) in
   match kind_of_term b with
   | Prod (na, c1, b) ->
     let open Context.Rel.Declaration in
     check_is_mutcoind (push_rel (LocalAssum (na,c1)) env) sigma b
   | _ ->
     try
-      let _ = find_coinductive env sigma b in ()
+      let _ = find_coinductive env sigma (EConstr.of_constr b) in ()
     with Not_found ->
       error "All methods must construct elements in coinductive types."
 
@@ -609,11 +609,11 @@ let cofix ido = match ido with
 (*          Reduction and conversion tactics                  *)
 (**************************************************************)
 
-type tactic_reduction = env -> evar_map -> constr -> constr
+type tactic_reduction = env -> evar_map -> EConstr.t -> constr
 
 let pf_reduce_decl redfun where decl gl =
   let open Context.Named.Declaration in
-  let redfun' = Tacmach.New.pf_apply redfun gl in
+  let redfun' c = Tacmach.New.pf_apply redfun gl (EConstr.of_constr c) in
   match decl with
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
@@ -694,7 +694,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
 
 let reduct_in_concl (redfun,sty) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-    convert_concl_no_check (Tacmach.New.pf_apply redfun gl (Tacmach.New.pf_concl gl)) sty
+    convert_concl_no_check (Tacmach.New.pf_apply redfun gl (EConstr.of_constr (Tacmach.New.pf_concl gl))) sty
   end }
 
 let reduct_in_hyp ?(check=false) redfun (id,where) =
@@ -714,7 +714,7 @@ let reduct_option ?(check=false) redfun = function
 let pf_e_reduce_decl redfun where decl gl =
   let open Context.Named.Declaration in
   let sigma = Proofview.Goal.sigma gl in
-  let redfun sigma c = redfun.e_redfun (Tacmach.New.pf_env gl) sigma c in
+  let redfun sigma c = redfun.e_redfun (Tacmach.New.pf_env gl) sigma (EConstr.of_constr c) in
   match decl with
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
@@ -729,7 +729,7 @@ let pf_e_reduce_decl redfun where decl gl =
 let e_reduct_in_concl ~check (redfun, sty) =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let Sigma (c', sigma, p) = redfun.e_redfun (Tacmach.New.pf_env gl) sigma (Tacmach.New.pf_concl gl) in
+    let Sigma (c', sigma, p) = redfun.e_redfun (Tacmach.New.pf_env gl) sigma (EConstr.of_constr (Tacmach.New.pf_concl gl)) in
     Sigma (convert_concl ~check c' sty, sigma, p)
   end }
 
@@ -749,7 +749,7 @@ let e_reduct_option ?(check=false) redfun = function
 let e_change_in_concl (redfun,sty) =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let Sigma (c, sigma, p) = redfun.e_redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.raw_concl gl) in
+    let Sigma (c, sigma, p) = redfun.e_redfun (Proofview.Goal.env gl) sigma (EConstr.of_constr (Proofview.Goal.raw_concl gl)) in
     Sigma (convert_concl_no_check c sty, sigma, p)
   end }
 
@@ -759,14 +759,14 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where decl env sigm
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
 	user_err  (pr_id id ++ str " has no value.");
-    let Sigma (ty', sigma, p) = (redfun false).e_redfun env sigma ty in
+    let Sigma (ty', sigma, p) = (redfun false).e_redfun env sigma (EConstr.of_constr ty) in
     Sigma (LocalAssum (id, ty'), sigma, p)
   | LocalDef (id,b,ty) ->
       let Sigma (b', sigma, p) =
-	if where != InHypTypeOnly then (redfun true).e_redfun env sigma b else Sigma.here b sigma
+	if where != InHypTypeOnly then (redfun true).e_redfun env sigma (EConstr.of_constr b) else Sigma.here b sigma
       in
       let Sigma (ty', sigma, q) =
-	if where != InHypValueOnly then (redfun false).e_redfun env sigma ty else Sigma.here ty sigma
+	if where != InHypValueOnly then (redfun false).e_redfun env sigma (EConstr.of_constr ty) else Sigma.here ty sigma
       in
       Sigma (LocalDef (id,b',ty'), sigma, p +> q)
 
@@ -792,20 +792,21 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
     let sigma, b = infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 in
     if not b then
       if
-        isSort (whd_all env sigma t1) &&
-        isSort (whd_all env sigma t2)
+        isSort (whd_all env sigma (EConstr.of_constr t1)) &&
+        isSort (whd_all env sigma (EConstr.of_constr t2))
       then (mayneedglobalcheck := true; sigma)
       else
         user_err ~hdr:"convert-check-hyp" (str "Types are incompatible.")
     else sigma
   end
   else
-    if not (isSort (whd_all env sigma t1)) then
+    if not (isSort (whd_all env sigma (EConstr.of_constr t1))) then
       user_err ~hdr:"convert-check-hyp" (str "Not a type.")
     else sigma
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb mayneedglobalcheck deep t = { e_redfun = begin fun env sigma c ->
+  let c = EConstr.Unsafe.to_constr c in
   let Sigma (t', sigma, p) = t.run sigma in
   let sigma = Sigma.to_evar_map sigma in
   let sigma = check_types env sigma mayneedglobalcheck deep t' c in
@@ -1079,7 +1080,7 @@ let lookup_hypothesis_as_renamed_gen red h gl =
     match lookup_hypothesis_as_renamed env ccl h with
       | None when red ->
         let (redfun, _) = Redexpr.reduction_of_red_expr env (Red true) in
-        let Sigma (c, _, _) = redfun.e_redfun env (Proofview.Goal.sigma gl) ccl in
+        let Sigma (c, _, _) = redfun.e_redfun env (Proofview.Goal.sigma gl) (EConstr.of_constr ccl) in
         aux c
       | x -> x
   in
@@ -1228,7 +1229,7 @@ let cut c =
       try
         (** Backward compat: ensure that [c] is well-typed. *)
         let typ = Typing.unsafe_type_of env sigma c in
-        let typ = whd_all env sigma typ in
+        let typ = whd_all env sigma (EConstr.of_constr typ) in
         match kind_of_term typ with
         | Sort _ -> true
         | _ -> false
@@ -1237,7 +1238,7 @@ let cut c =
     if is_sort then
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_of_hyps gl) in
       (** Backward compat: normalize [c]. *)
-      let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
+      let c = if normalize_cut then local_strong whd_betaiota sigma (EConstr.of_constr c) else c in
       Refine.refine ~unsafe:true { run = begin fun h ->
         let Sigma (f, h, p) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
         let Sigma (x, h, q) = Evarutil.new_evar env h c in
@@ -1591,12 +1592,12 @@ let make_projection env sigma params cstr sign elim i n c u =
 	noccur_between 1 (n-i-1) t
 	(* to avoid surprising unifications, excludes flexible
 	projection types or lambda which will be instantiated by Meta/Evar *)
-	&& not (isEvar (fst (whd_betaiota_stack sigma t)))
+	&& not (EConstr.isEvar sigma (fst (whd_betaiota_stack sigma (EConstr.of_constr t))))
 	&& (accept_universal_lemma_under_conjunctions () || not (isRel t))
       then
         let t = lift (i+1-n) t in
-	let abselim = beta_applist (elim,params@[t;branch]) in
-	let c = beta_applist (abselim, [mkApp (c, Context.Rel.to_extended_vect 0 sign)]) in
+	let abselim = beta_applist sigma (EConstr.of_constr elim, List.map EConstr.of_constr (params@[t;branch])) in
+	let c = beta_applist sigma (EConstr.of_constr abselim, [EConstr.of_constr (mkApp (c, Context.Rel.to_extended_vect 0 sign))]) in
 	  Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
       else
 	None
@@ -1630,7 +1631,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
     | Some (_,_,isrec) ->
 	let n = (constructors_nrealargs ind).(0) in
 	let sort = Tacticals.New.elimination_sort_of_goal gl in
-	let IndType (indf,_) = find_rectype env sigma ccl in
+	let IndType (indf,_) = find_rectype env sigma (EConstr.of_constr ccl) in
 	let (_,inst), params = dest_ind_family indf in
 	let cstr = (get_constructors env indf).(0) in
 	let elim =
@@ -1703,7 +1704,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
 
-    let thm_ty0 = nf_betaiota sigma (Retyping.get_type_of env sigma c) in
+    let thm_ty0 = nf_betaiota sigma (EConstr.of_constr (Retyping.get_type_of env sigma c)) in
     let try_apply thm_ty nprod =
       try
         let n = nb_prod_modulo_zeta sigma (EConstr.of_constr thm_ty) - nprod in
@@ -1716,7 +1717,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
     let rec try_red_apply thm_ty (exn0, info) =
       try
         (* Try to head-reduce the conclusion of the theorem *)
-        let red_thm = try_red_product env sigma thm_ty in
+        let red_thm = try_red_product env sigma (EConstr.of_constr thm_ty) in
         tclORELSEOPT
           (try_apply red_thm concl_nprod)
           (function (e, info) -> match e with
@@ -1829,7 +1830,7 @@ let progress_with_clause flags innerclause clause =
   with Not_found -> error "Unable to unify."
 
 let apply_in_once_main flags innerclause env sigma (d,lbind) =
-  let thm = nf_betaiota sigma (Retyping.get_type_of env sigma d) in
+  let thm = nf_betaiota sigma (EConstr.of_constr (Retyping.get_type_of env sigma d)) in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with e when CErrors.noncritical e ->
@@ -2127,7 +2128,7 @@ let apply_type newcl args =
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
     Refine.refine { run = begin fun sigma ->
-      let newcl = nf_betaiota (Sigma.to_evar_map sigma) newcl (* As in former Logic.refine *) in
+      let newcl = nf_betaiota (Sigma.to_evar_map sigma) (EConstr.of_constr newcl) (* As in former Logic.refine *) in
       let Sigma (ev, sigma, p) =
         Evarutil.new_evar env sigma ~principal:true ~store newcl in
       Sigma (applist (ev, args), sigma, p)
@@ -2318,7 +2319,7 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
     let sigma = Tacmach.New.project gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let whd_all = Tacmach.New.pf_apply whd_all gl in
-    let t = whd_all (type_of (mkVar id)) in
+    let t = whd_all (EConstr.of_constr (type_of (mkVar id))) in
     let eqtac, thin = match match_with_equality_type sigma t with
     | Some (hdcncl,[_;lhs;rhs]) ->
         if l2r && isVar lhs && not (occur_var env sigma (destVar lhs) (EConstr.of_constr rhs)) then
@@ -2905,13 +2906,13 @@ let specialize (c,lbind) ipat =
       let clause = make_clenv_binding env sigma (c,Retyping.get_type_of env sigma c) lbind in
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
-      let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
+      let (thd,tstack) = whd_nored_stack clause.evd (EConstr.of_constr (clenv_value clause)) in
       let rec chk = function
       | [] -> []
-      | t::l -> if occur_meta clause.evd (EConstr.of_constr t) then [] else t :: chk l
+      | t::l -> if occur_meta clause.evd t then [] else EConstr.Unsafe.to_constr t :: chk l
       in
       let tstack = chk tstack in
-      let term = applist(thd,List.map (nf_evar clause.evd) tstack) in
+      let term = applist(EConstr.Unsafe.to_constr thd,List.map (nf_evar clause.evd) tstack) in
       if occur_meta clause.evd (EConstr.of_constr term) then
 	user_err  (str "Cannot infer an instance for " ++
 
@@ -2964,7 +2965,7 @@ let unfold_body x =
   in
   Tacticals.New.afterHyp x begin fun aft ->
   let hl = List.fold_right (fun decl cl -> (NamedDecl.get_id decl, InHyp) :: cl) aft [] in
-  let rfun _ _ c = replace_vars [x, xval] c in
+  let rfun _ _ c = replace_vars [x, xval] (EConstr.Unsafe.to_constr c) in
   let reducth h = reduct_in_hyp rfun h in
   let reductc = reduct_in_concl (rfun, DEFAULTcast) in
   Tacticals.New.tclTHENLIST [Tacticals.New.tclMAP reducth hl; reductc]
@@ -3519,7 +3520,7 @@ let decompose_indapp f args =
 
 let mk_term_eq env sigma ty t ty' t' =
   let sigma = Sigma.to_evar_map sigma in
-  if Reductionops.is_conv env sigma ty ty' then
+  if Reductionops.is_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr ty') then
     mkEq ty t t', mkRefl ty' t'
   else
     mkHEq ty t ty' t', mkHRefl ty' t'
@@ -3615,7 +3616,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     *)
   let aux (prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars, env) arg =
     let name, ty, arity =
-      let rel, c = Reductionops.splay_prod_n env !sigma 1 prod in
+      let rel, c = Reductionops.splay_prod_n env !sigma 1 (EConstr.of_constr prod) in
       let decl = List.hd rel in
       RelDecl.get_name decl, RelDecl.get_type decl, c
     in
@@ -3765,8 +3766,8 @@ let specialize_eqs id gl =
   in
   let ty' = it_mkProd_or_LetIn ty ctx'' in
   let acc' = it_mkLambda_or_LetIn acc ctx'' in
-  let ty' = Tacred.whd_simpl env !evars ty'
-  and acc' = Tacred.whd_simpl env !evars acc' in
+  let ty' = Tacred.whd_simpl env !evars (EConstr.of_constr ty')
+  and acc' = Tacred.whd_simpl env !evars (EConstr.of_constr acc') in
   let ty' = Evarutil.nf_evar !evars ty' in
     if worked then
       tclTHENFIRST (Tacmach.internal_cut true id ty')
@@ -4244,7 +4245,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
          known only by pattern-matching, as in the case of a term of
          the form "nat_rect ?A ?o ?s n", with ?A to be inferred by
          matching. *)
-      let sign,t = splay_prod env sigma typ in it_mkProd t sign
+      let sign,t = splay_prod env sigma (EConstr.of_constr typ) in it_mkProd t sign
     else
       (* Otherwise, we exclude the case of an induction argument in an
          explicitly functional type. Henceforth, we can complete the
@@ -4261,14 +4262,14 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       let (sigma, c) = pose_all_metas_as_evars env indclause.evd (clenv_value indclause) in
       Sigma.Unsafe.of_pair (c, sigma)
     with e when catchable_exception e ->
-    try find_clause (try_red_product env sigma typ)
+    try find_clause (try_red_product env sigma (EConstr.of_constr typ))
     with Redelimination -> raise e in
   find_clause typ
 
 let check_expected_type env sigma (elimc,bl) elimt =
   (* Compute the expected template type of the term in case a using
      clause is given *)
-  let sign,_ = splay_prod env sigma elimt in
+  let sign,_ = splay_prod env sigma (EConstr.of_constr elimt) in
   let n = List.length sign in
   if n == 0 then error "Scheme cannot be applied.";
   let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
@@ -4283,7 +4284,7 @@ let check_enough_applied env sigma elim =
   | None ->
       (* No eliminator given *)
       fun u ->
-      let t,_ = decompose_app (whd_all env sigma u) in isInd t
+      let t,_ = decompose_app (whd_all env sigma (EConstr.of_constr u)) in isInd t
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (fst elimc) in
       let scheme = compute_elim_sig ~elimc elimt in
@@ -4604,7 +4605,7 @@ let maybe_betadeltaiota_concl allowred gl =
   if not allowred then concl
   else
     let env = Proofview.Goal.env gl in
-    whd_all env sigma concl
+    whd_all env sigma (EConstr.of_constr concl)
 
 let reflexivity_red allowred =
   Proofview.Goal.enter { enter = begin fun gl ->

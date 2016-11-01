@@ -478,7 +478,7 @@ let unfold_head env (ids, csts) c =
 	true, Environ.constant_value_in env c
     | App (f, args) ->
 	(match aux f with
-	| true, f' -> true, Reductionops.whd_betaiota Evd.empty (mkApp (f', args))
+	| true, f' -> true, Reductionops.whd_betaiota Evd.empty (EConstr.of_constr (mkApp (f', args)))
 	| false, _ -> 
 	    let done_, args' = 
 	      Array.fold_left_i (fun i (done_, acc) arg -> 

@@ -120,7 +120,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
          match t with
          | CSort (_, Misctypes.GType []) -> true | _ -> false in
        let s = interp_type_evars env evars ~impls:empty_internalization_env t in
-       let sred = Reductionops.whd_all env !evars s in
+       let sred = Reductionops.whd_all env !evars (EConstr.of_constr s) in
 	 (match kind_of_term sred with
 	 | Sort s' -> 
 	    (if poly then

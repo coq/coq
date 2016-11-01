@@ -92,13 +92,13 @@ let construct_of_constr_const env tag typ =
 
 let construct_of_constr_block = construct_of_constr false
 
-let build_branches_type env (mind,_ as _ind) mib mip u params dep p =
+let build_branches_type env sigma (mind,_ as _ind) mib mip u params dep p =
   let rtbl = mip.mind_reloc_tbl in
   (* [build_one_branch i cty] construit le type de la ieme branche (commence
      a 0) et les lambda correspondant aux realargs *)
   let build_one_branch i cty =
     let typi = type_constructor mind mib u cty params in
-    let decl,indapp = Reductionops.splay_prod env Evd.empty typi in
+    let decl,indapp = Reductionops.splay_prod env sigma (EConstr.of_constr typi) in
     let decl_with_letin,_ = decompose_prod_assum typi in
     let ind,cargs = find_rectype_a env indapp in
     let nparams = Array.length params in
@@ -172,9 +172,9 @@ let branch_of_switch lvl ans bs =
     bs ci in
   Array.init (Array.length tbl) branch
 
-let rec nf_val env v typ =
+let rec nf_val env sigma v typ =
   match kind_of_value v with
-  | Vaccu accu -> nf_accu env accu
+  | Vaccu accu -> nf_accu env sigma accu
   | Vfun f -> 
       let lvl = nb_rel env in
       let name,dom,codom = 
@@ -184,44 +184,44 @@ let rec nf_val env v typ =
             (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let env = push_rel (LocalAssum (name,dom)) env in
-      let body = nf_val env (f (mk_rel_accu lvl)) codom in
+      let body = nf_val env sigma (f (mk_rel_accu lvl)) codom in
       mkLambda(name,dom,body)
   | Vconst n -> construct_of_constr_const env n typ
   | Vblock b ->
       let capp,ctyp = construct_of_constr_block env (block_tag b) typ in
-      let args = nf_bargs env b ctyp in
+      let args = nf_bargs env sigma b ctyp in
       mkApp(capp,args)
 
-and nf_type env v =
+and nf_type env sigma v =
   match kind_of_value v with
-  | Vaccu accu -> nf_accu env accu
+  | Vaccu accu -> nf_accu env sigma accu
   | _ -> assert false
 
-and nf_type_sort env v =
+and nf_type_sort env sigma v =
   match kind_of_value v with
   | Vaccu accu -> 
-      let t,s = nf_accu_type env accu in
+      let t,s = nf_accu_type env sigma accu in
       let s = try destSort s with DestKO -> assert false in
       t, s
   | _ -> assert false
 
-and nf_accu env accu =
+and nf_accu env sigma accu =
   let atom = atom_of_accu accu in
-  if Int.equal (accu_nargs accu) 0 then nf_atom env atom
+  if Int.equal (accu_nargs accu) 0 then nf_atom env sigma atom
   else
-    let a,typ = nf_atom_type env atom in
-    let _, args = nf_args env accu typ in
+    let a,typ = nf_atom_type env sigma atom in
+    let _, args = nf_args env sigma accu typ in
     mkApp(a,Array.of_list args)
 
-and nf_accu_type env accu =
+and nf_accu_type env sigma accu =
   let atom = atom_of_accu accu in
-  if Int.equal (accu_nargs accu) 0 then nf_atom_type env atom
+  if Int.equal (accu_nargs accu) 0 then nf_atom_type env sigma atom
   else
-    let a,typ = nf_atom_type env atom in
-    let t, args = nf_args env accu typ in
+    let a,typ = nf_atom_type env sigma atom in
+    let t, args = nf_args env sigma accu typ in
     mkApp(a,Array.of_list args), t
 
-and nf_args env accu t =
+and nf_args env sigma accu t =
   let aux arg (t,l) = 
     let _,dom,codom =
       try decompose_prod env t with
@@ -229,13 +229,13 @@ and nf_args env accu t =
 	CErrors.anomaly
 	  (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
     in
-    let c = nf_val env arg dom in
+    let c = nf_val env sigma arg dom in
     (subst1 c codom, c::l)
   in
   let t,l = List.fold_right aux (args_of_accu accu) (t,[]) in
   t, List.rev l
 
-and nf_bargs env b t =
+and nf_bargs env sigma b t =
   let t = ref t in
   let len = block_size b in
   Array.init len
@@ -246,10 +246,10 @@ and nf_bargs env b t =
 	  CErrors.anomaly
 	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
-      let c = nf_val env (block_field b i) dom in
+      let c = nf_val env sigma (block_field b i) dom in
       t := subst1 c codom; c)
 
-and nf_atom env atom =
+and nf_atom env sigma atom =
   match atom with
   | Arel i -> mkRel (nb_rel env - i)
   | Aconstant cst -> mkConstU cst
@@ -257,19 +257,19 @@ and nf_atom env atom =
   | Asort s -> mkSort s
   | Avar id -> mkVar id
   | Aprod(n,dom,codom) ->
-      let dom = nf_type env dom in
+      let dom = nf_type env sigma dom in
       let vn = mk_rel_accu (nb_rel env) in
       let env = push_rel (LocalAssum (n,dom)) env in
-      let codom = nf_type env (codom vn) in
+      let codom = nf_type env sigma (codom vn) in
       mkProd(n,dom,codom)
   | Ameta (mv,_) -> mkMeta mv
   | Aevar (ev,_) -> mkEvar ev
   | Aproj(p,c) ->
-      let c = nf_accu env c in
+      let c = nf_accu env sigma c in
 	mkProj(Projection.make p true,c)
-  | _ -> fst (nf_atom_type env atom)
+  | _ -> fst (nf_atom_type env sigma atom)
 
-and nf_atom_type env atom =
+and nf_atom_type env sigma atom =
   match atom with
   | Arel i ->
       let n = (nb_rel env - i) in
@@ -283,7 +283,7 @@ and nf_atom_type env atom =
   | Avar id ->
       mkVar id, type_of_var env id
   | Acase(ans,accu,p,bs) ->
-      let a,ta = nf_accu_type env accu in
+      let a,ta = nf_accu_type env sigma accu in
       let ((mind,_),u as ind),allargs = find_rectype_a env ta in
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
       let nparams = mib.mind_nparams in
@@ -292,14 +292,14 @@ and nf_atom_type env atom =
 	hnf_prod_applist env 
 	  (Inductiveops.type_of_inductive env ind) (Array.to_list params) in
       let pT = whd_all env pT in
-      let dep, p = nf_predicate env ind mip params p pT in
+      let dep, p = nf_predicate env sigma ind mip params p pT in
       (* Calcul du type des branches *)
-      let btypes = build_branches_type env (fst ind) mib mip u params dep p in
+      let btypes = build_branches_type env sigma (fst ind) mib mip u params dep p in
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) ans bs in
       let mkbranch i v =
        let decl,decl_with_letin,codom = btypes.(i) in
-       let b = nf_val (Termops.push_rels_assum decl env) v codom in
+       let b = nf_val (Termops.push_rels_assum decl env) sigma v codom in
         Termops.it_mkLambda_or_LetIn_from_no_LetIn b decl_with_letin
       in 
       let branchs = Array.mapi mkbranch bsw in
@@ -307,7 +307,7 @@ and nf_atom_type env atom =
       let ci = ans.asw_ci in
       mkCase(ci, p, a, branchs), tcase 
   | Afix(tt,ft,rp,s) ->
-      let tt = Array.map (fun t -> nf_type env t) tt in
+      let tt = Array.map (fun t -> nf_type env sigma t) tt in
       let name = Array.map (fun _ -> (Name (id_of_string "Ffix"))) tt in
       let lvl = nb_rel env in
       let nbfix = Array.length ft in
@@ -316,37 +316,37 @@ and nf_atom_type env atom =
       let env = push_rec_types (name,tt,[||]) env in
       (* We lift here because the types of arguments (in tt) will be evaluated
          in an environment where the fixpoints have been pushed *)
-      let norm_body i v = nf_val env (napply v fargs) (lift nbfix tt.(i)) in
+      let norm_body i v = nf_val env sigma (napply v fargs) (lift nbfix tt.(i)) in
       let ft = Array.mapi norm_body ft in
       mkFix((rp,s),(name,tt,ft)), tt.(s)
   | Acofix(tt,ft,s,_) | Acofixe(tt,ft,s,_) ->
-      let tt = Array.map (nf_type env) tt in
+      let tt = Array.map (nf_type env sigma) tt in
       let name = Array.map (fun _ -> (Name (id_of_string "Fcofix"))) tt in
       let lvl = nb_rel env in
       let fargs = mk_rels_accu lvl (Array.length ft) in
       let env = push_rec_types (name,tt,[||]) env in
-      let ft = Array.mapi (fun i v -> nf_val env (napply v fargs) tt.(i)) ft in
+      let ft = Array.mapi (fun i v -> nf_val env sigma (napply v fargs) tt.(i)) ft in
       mkCoFix(s,(name,tt,ft)), tt.(s)
   | Aprod(n,dom,codom) ->
-      let dom,s1 = nf_type_sort env dom in
+      let dom,s1 = nf_type_sort env sigma dom in
       let vn = mk_rel_accu (nb_rel env) in
       let env = push_rel (LocalAssum (n,dom)) env in
-      let codom,s2 = nf_type_sort env (codom vn) in
+      let codom,s2 = nf_type_sort env sigma (codom vn) in
       mkProd(n,dom,codom), mkSort (sort_of_product env s1 s2)
   | Aevar(ev,ty) ->
-     let ty = nf_type env ty in
+     let ty = nf_type env sigma ty in
      mkEvar ev, ty
   | Ameta(mv,ty) ->
-     let ty = nf_type env ty in
+     let ty = nf_type env sigma ty in
      mkMeta mv, ty
   | Aproj(p,c) ->
-      let c,tc = nf_accu_type env c in
+      let c,tc = nf_accu_type env sigma c in
       let cj = make_judge c tc in
       let uj = Typeops.judge_of_projection env (Projection.make p true) cj in
       uj.uj_val, uj.uj_type
 
 
-and  nf_predicate env ind mip params v pT =
+and  nf_predicate env sigma ind mip params v pT =
   match kind_of_value v, kind_of_term pT with
   | Vfun f, Prod _ ->
       let k = nb_rel env in
@@ -358,7 +358,7 @@ and  nf_predicate env ind mip params v pT =
 	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let dep,body = 
-	nf_predicate (push_rel (LocalAssum (name,dom)) env) ind mip params vb codom in
+	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
       dep, mkLambda(name,dom,body)
   | Vfun f, _ -> 
       let k = nb_rel env in
@@ -368,9 +368,9 @@ and  nf_predicate env ind mip params v pT =
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if Int.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
-      let body = nf_type (push_rel (LocalAssum (name,dom)) env) vb in
+      let body = nf_type (push_rel (LocalAssum (name,dom)) env) sigma vb in
       true, mkLambda(name,dom,body)
-  | _, _ -> false, nf_type env v
+  | _, _ -> false, nf_type env sigma v
 
 let evars_of_evar_map sigma =
   { Nativelambda.evars_val = Evd.existential_opt_value sigma;
@@ -382,13 +382,12 @@ let native_norm env sigma c ty =
     error "Native_compute reduction has been disabled at configure time."
   else
   let penv = Environ.pre_env env in
-  let sigma = evars_of_evar_map sigma in
   (*
   Format.eprintf "Numbers of free variables (named): %i\n" (List.length vl1);
   Format.eprintf "Numbers of free variables (rel): %i\n" (List.length vl2);
   *)
   let ml_filename, prefix = Nativelib.get_ml_filename () in
-  let code, upd = mk_norm_code penv sigma prefix c in
+  let code, upd = mk_norm_code penv (evars_of_evar_map sigma) prefix c in
   match Nativelib.compile ml_filename code with
     | true, fn ->
         if !Flags.debug then Feedback.msg_debug (Pp.str "Running norm ...");
@@ -397,7 +396,7 @@ let native_norm env sigma c ty =
         let t1 = Sys.time () in
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
-        let res = nf_val env !Nativelib.rt1 ty in
+        let res = nf_val env sigma !Nativelib.rt1 ty in
         let t2 = Sys.time () in
         let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);

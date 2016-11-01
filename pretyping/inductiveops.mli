@@ -130,7 +130,7 @@ val has_dependent_elim : mutual_inductive_body -> bool
 val projection_nparams : projection -> int
 val projection_nparams_env : env -> projection -> int
 val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
-				     constr -> types -> types
+				     EConstr.t -> EConstr.types -> types
 
 
 (** Extract information from an inductive family *)
@@ -161,12 +161,12 @@ val make_arity : env -> bool -> inductive_family -> sorts -> types
 val build_branch_type : env -> bool -> constr -> constructor_summary -> types
 
 (** Raise [Not_found] if not given a valid inductive type *)
-val extract_mrectype : constr -> pinductive * constr list
-val find_mrectype    : env -> evar_map -> types -> pinductive * constr list
-val find_mrectype_vect : env -> evar_map -> types -> pinductive * constr array
-val find_rectype     : env -> evar_map -> types -> inductive_type
-val find_inductive   : env -> evar_map -> types -> pinductive * constr list
-val find_coinductive : env -> evar_map -> types -> pinductive * constr list
+val extract_mrectype : evar_map -> EConstr.t -> pinductive * constr list
+val find_mrectype    : env -> evar_map -> EConstr.types -> pinductive * constr list
+val find_mrectype_vect : env -> evar_map -> EConstr.types -> pinductive * constr array
+val find_rectype     : env -> evar_map -> EConstr.types -> inductive_type
+val find_inductive   : env -> evar_map -> EConstr.types -> pinductive * constr list
+val find_coinductive : env -> evar_map -> EConstr.types -> pinductive * constr list
 
 (********************)
 
@@ -175,7 +175,7 @@ val arity_of_case_predicate :
   env -> inductive_family -> bool -> sorts -> types
 
 val type_case_branches_with_names :
-  env -> pinductive * constr list -> constr -> constr -> types array * types
+  env -> evar_map -> pinductive * constr list -> constr -> constr -> types array * types
 
 (** Annotation for cases *)
 val make_case_info : env -> inductive -> case_style -> case_info
@@ -195,7 +195,7 @@ i*)
 (********************)
 
 val type_of_inductive_knowing_conclusion :
-  env -> evar_map -> Inductive.mind_specif puniverses -> types -> evar_map * types
+  env -> evar_map -> Inductive.mind_specif puniverses -> EConstr.types -> evar_map * types
 
 (********************)
 val control_only_guard : env -> types -> unit

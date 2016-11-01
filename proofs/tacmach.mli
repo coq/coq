@@ -110,7 +110,7 @@ module New : sig
 
   val pf_unsafe_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.types
   val pf_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> evar_map * Term.types
-  val pf_conv_x : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.constr -> bool
+  val pf_conv_x : ('a, 'r) Proofview.Goal.t -> EConstr.t -> EConstr.t -> bool
 
   val pf_get_new_id  : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> identifier
   val pf_ids_of_hyps : ('a, 'r) Proofview.Goal.t -> identifier list
@@ -126,8 +126,8 @@ module New : sig
   val pf_hnf_constr : ('a, 'r) Proofview.Goal.t -> constr -> types
   val pf_hnf_type_of : ('a, 'r) Proofview.Goal.t -> constr -> types
 
-  val pf_whd_all : ('a, 'r) Proofview.Goal.t -> constr -> constr
-  val pf_compute : ('a, 'r) Proofview.Goal.t -> constr -> constr
+  val pf_whd_all : ('a, 'r) Proofview.Goal.t -> EConstr.t -> constr
+  val pf_compute : ('a, 'r) Proofview.Goal.t -> EConstr.t -> constr
 
   val pf_matches : ('a, 'r) Proofview.Goal.t -> constr_pattern -> constr -> patvar_map
 

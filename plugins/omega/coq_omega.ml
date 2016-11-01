@@ -1591,7 +1591,7 @@ let nat_inject =
 		  (loop lit)
                 ]
             | Kapp(Eq,[typ;t1;t2]) ->
-		if is_conv typ (Lazy.force coq_nat) then
+		if is_conv (EConstr.of_constr typ) (EConstr.of_constr (Lazy.force coq_nat)) then
                   Tacticals.New.tclTHENLIST [
 		    (generalize_tac
 		      [mkApp (Lazy.force coq_inj_eq, [| t1;t2;mkVar i |]) ]);

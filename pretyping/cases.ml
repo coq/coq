@@ -292,7 +292,7 @@ let inductive_template evdref env tmloc ind =
    applist (mkIndU indu,List.rev evarl)
 
 let try_find_ind env sigma typ realnames =
-  let (IndType(indf,realargs) as ind) = find_rectype env sigma typ in
+  let (IndType(indf,realargs) as ind) = find_rectype env sigma (EConstr.of_constr typ) in
   let names =
     match realnames with
       | Some names -> names
@@ -1035,7 +1035,7 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
   (* We need _parallel_ bindings to get gamma, x1...xn |- PI tms. ccl'' *)
   (* Note: applying the substitution in tms is not important (is it sure?) *)
   let ccl'' =
-    whd_betaiota Evd.empty (subst_predicate (realargsi, copti) ccl' tms) in
+    whd_betaiota Evd.empty (EConstr.of_constr (subst_predicate (realargsi, copti) ccl' tms)) in
   (* We adjust ccl st: gamma, x'1..x'n, x1..xn, tms |- ccl'' *)
   let ccl''' = liftn_predicate n (n+1) ccl'' tms in
   (* We finally get gamma,x'1..x'n,x |- [X1;x1:I(X1)]..[Xn;xn:I(Xn)]pred'''*)
@@ -1044,7 +1044,7 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
   let pred = abstract_predicate env !evdref indf current realargs dep tms p in
   (pred, whd_betaiota !evdref
-           (applist (pred, realargs@[current])))
+           (EConstr.of_constr (applist (pred, realargs@[current]))))
 
 (* Take into account that a type has been discovered to be inductive, leading
    to more dependencies in the predicate if the type has indices *)
@@ -1199,7 +1199,7 @@ let rec generalize_problem names pb = function
       | LocalDef (Anonymous,_,_) -> pb', deps
       | _ ->
 	 (* for better rendering *)
-	let d = RelDecl.map_type (whd_betaiota !(pb.evdref)) d in
+	let d = RelDecl.map_type (fun c -> whd_betaiota !(pb.evdref) (EConstr.of_constr c)) d in
         let tomatch = lift_tomatch_stack 1 pb'.tomatch in
         let tomatch = relocate_index_tomatch (i+1) 1 tomatch in
         { pb' with
@@ -1377,7 +1377,7 @@ and match_current pb (initial,tomatch) =
 	    find_predicate pb.caseloc pb.env pb.evdref
 	      pred current indt (names,dep) tomatch in
 	  let ci = make_case_info pb.env (fst mind) pb.casestyle in
-	  let pred = nf_betaiota !(pb.evdref) pred in
+	  let pred = nf_betaiota !(pb.evdref) (EConstr.of_constr pred) in
 	  let case =
 	    make_case_or_project pb.env indf ci pred current brvals
 	  in
@@ -1613,7 +1613,7 @@ let rec list_assoc_in_triple x = function
 *)
 
 let abstract_tycon loc env evdref subst tycon extenv t =
-  let t = nf_betaiota !evdref t in (* it helps in some cases to remove K-redex*)
+  let t = nf_betaiota !evdref (EConstr.of_constr t) in (* it helps in some cases to remove K-redex*)
   let src = match kind_of_term t with
     | Evar (evk,_) -> (loc,Evar_kinds.SubEvar evk)
     | _ -> (loc,Evar_kinds.CasesType true) in
@@ -1635,13 +1635,13 @@ let abstract_tycon loc env evdref subst tycon extenv t =
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
         let ev' = e_new_evar env evdref ~src ty in
-        begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,substl inst ev') with
+        begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,EConstr.of_constr (substl inst ev')) with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
         end;
         ev'
     | _ ->
-    let good = List.filter (fun (_,u,_) -> is_conv_leq env !evdref t u) subst in
+    let good = List.filter (fun (_,u,_) -> is_conv_leq env !evdref (EConstr.of_constr t) (EConstr.of_constr u)) subst in
     match good with
     | [] ->
       let self env c = EConstr.of_constr (aux env (EConstr.Unsafe.to_constr c)) in
@@ -1705,7 +1705,7 @@ let build_inversion_problem loc env sigma tms t =
     let id = next_name_away (named_hd env t Anonymous) avoid in
     PatVar (Loc.ghost,Name id), ((id,t)::subst, id::avoid) in
   let rec reveal_pattern t (subst,avoid as acc) =
-    match kind_of_term (whd_all env sigma t) with
+    match kind_of_term (whd_all env sigma (EConstr.of_constr t)) with
     | Construct (cstr,u) -> PatCstr (Loc.ghost,cstr,[],Anonymous), acc
     | App (f,v) when isConstruct f ->
 	let cstr,u = destConstruct f in
@@ -2038,7 +2038,7 @@ let constr_of_pat env evdref arsign pat avoid =
     | PatCstr (l,((_, i) as cstr),args,alias) ->
 	let cind = inductive_of_constructor cstr in
 	let IndType (indf, _) = 
-	  try find_rectype env ( !evdref) (lift (-(List.length realargs)) ty)
+	  try find_rectype env ( !evdref) (EConstr.of_constr (lift (-(List.length realargs)) ty))
 	  with Not_found -> error_case_not_inductive env !evdref
 	    {uj_val = ty; uj_type = Typing.unsafe_type_of env !evdref ty}
 	in
@@ -2068,7 +2068,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	let app = applistc cstr (List.map (lift (List.length sign)) params) in
 	let app = applistc app args in
 	let apptype = Retyping.get_type_of env ( !evdref) app in
-	let IndType (indf, realargs) = find_rectype env ( !evdref) apptype in
+	let IndType (indf, realargs) = find_rectype env (!evdref) (EConstr.of_constr apptype) in
 	  match alias with
 	      Anonymous ->
 		pat', sign, app, apptype, realargs, n, avoid
@@ -2327,7 +2327,7 @@ let build_dependent_signature env evdref avoid tomatchs arsign =
 		    let t = RelDecl.get_type decl in
 		    let argt = Retyping.get_type_of env !evdref arg in
 		    let eq, refl_arg =
-		      if Reductionops.is_conv env !evdref argt t then
+		      if Reductionops.is_conv env !evdref (EConstr.of_constr argt) (EConstr.of_constr t) then
 			(mk_eq evdref (lift (nargeqs + slift) argt)
 			   (mkRel (nargeqs + slift))
 			   (lift (nargeqs + nar) arg),

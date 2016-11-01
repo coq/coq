@@ -17,7 +17,7 @@ open Environ
 (** printers *)
 val print_sort : sorts -> std_ppcmds
 val pr_sort_family : sorts_family -> std_ppcmds
-val pr_fix : (constr -> std_ppcmds) -> fixpoint -> std_ppcmds
+val pr_fix : ('a -> std_ppcmds) -> ('a, 'a) pfixpoint -> std_ppcmds
 
 (** debug printer: do not use to display terms to the casual user... *)
 val set_print_constr : (env -> constr -> std_ppcmds) -> unit

@@ -10,4 +10,4 @@ open Term
 open Environ
 
 (** {6 Reduction functions } *)
-val cbv_vm : env -> constr -> types -> constr
+val cbv_vm : env -> Evd.evar_map -> constr -> types -> constr

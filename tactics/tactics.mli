@@ -128,7 +128,7 @@ val exact_proof      : Constrexpr.constr_expr -> unit Proofview.tactic
 
 (** {6 Reduction tactics. } *)
 
-type tactic_reduction = env -> evar_map -> constr -> constr
+type tactic_reduction = env -> evar_map -> EConstr.t -> constr
 
 type change_arg = patvar_map -> constr Sigma.run
 

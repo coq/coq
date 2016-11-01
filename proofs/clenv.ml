@@ -72,7 +72,7 @@ let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
 exception NotExtensibleClause
 
 let clenv_push_prod cl =
-  let typ = whd_all (cl_env cl) (cl_sigma cl) (clenv_type cl) in
+  let typ = whd_all (cl_env cl) (cl_sigma cl) (EConstr.of_constr (clenv_type cl)) in
   let rec clrec typ = match kind_of_term typ with
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->
@@ -264,7 +264,7 @@ let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
 
 let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv gl =
   let concl = Goal.V82.concl clenv.evd (sig_it gl) in
-  if isMeta (fst (decompose_appvect (whd_nored clenv.evd clenv.templtyp.rebus))) then
+  if isMeta (fst (decompose_appvect (whd_nored clenv.evd (EConstr.of_constr clenv.templtyp.rebus)))) then
     clenv_unify CUMUL ~flags (clenv_type clenv) concl
       (clenv_unify_meta_types ~flags clenv)
   else
@@ -482,7 +482,7 @@ let error_already_defined b =
           (str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type clenv c t u =
-  if isMeta (fst (decompose_appvect (whd_nored clenv.evd u))) then
+  if isMeta (fst (decompose_appvect (whd_nored clenv.evd (EConstr.of_constr u)))) then
     (* Not enough information to know if some subtyping is needed *)
     CoerceToType, clenv, c
   else
@@ -498,8 +498,8 @@ let clenv_unify_binding_type clenv c t u =
 	  TypeNotProcessed, clenv, c
 
 let clenv_assign_binding clenv k c =
-  let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
-  let c_typ = nf_betaiota clenv.evd (clenv_get_type_of clenv c) in
+  let k_typ = clenv_hnf_constr clenv (EConstr.of_constr (clenv_meta_type clenv k)) in
+  let c_typ = nf_betaiota clenv.evd (EConstr.of_constr (clenv_get_type_of clenv c)) in
   let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
   { clenv' with evd = meta_assign k (c,(Conv,status)) clenv'.evd }
 

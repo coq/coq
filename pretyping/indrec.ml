@@ -153,7 +153,9 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
   let nparams = List.length vargs in
   let process_pos env depK pk =
     let rec prec env i sign p =
-      let p',largs = whd_allnolet_stack env sigma p in
+      let p',largs = whd_allnolet_stack env sigma (EConstr.of_constr p) in
+      let p' = EConstr.Unsafe.to_constr p' in
+      let largs = List.map EConstr.Unsafe.to_constr largs in
       match kind_of_term p' with
 	| Prod (n,t,c) ->
 	    let d = LocalAssum (n,t) in
@@ -170,7 +172,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
             else
 	      base
       	| _ ->
-	   let t' = whd_all env sigma p in
+	   let t' = whd_all env sigma (EConstr.of_constr p) in
 	   if Term.eq_constr p' t' then assert false
 	   else prec env i sign t'
     in
@@ -229,7 +231,9 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
   let process_pos env fk  =
     let rec prec env i hyps p =
-      let p',largs = whd_allnolet_stack env sigma p in
+      let p',largs = whd_allnolet_stack env sigma (EConstr.of_constr p) in
+      let p' = EConstr.Unsafe.to_constr p' in
+      let largs = List.map EConstr.Unsafe.to_constr largs in
       match kind_of_term p' with
 	| Prod (n,t,c) ->
 	    let d = LocalAssum (n,t) in
@@ -242,7 +246,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
             and arg = appvect (mkRel (i+1), Context.Rel.to_extended_vect 0 hyps) in
             applist(lift i fk,realargs@[arg])
      	| _ ->
-	   let t' = whd_all env sigma p in
+	   let t' = whd_all env sigma (EConstr.of_constr p) in
 	     if Term.eq_constr t' p' then assert false
 	     else prec env i hyps t'
     in
@@ -261,7 +265,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
            | None ->
 	       mkLambda_name env
 		 (n,t,process_constr (push_rel d env) (i+1)
-		    (whd_beta Evd.empty (applist (lift 1 f, [(mkRel 1)])))
+		    (whd_beta Evd.empty (EConstr.of_constr (applist (lift 1 f, [(mkRel 1)]))))
 		    (cprest,rest))
            | Some(_,f_0) ->
 	       let nF = lift (i+1+decF) f_0 in
@@ -269,7 +273,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 	       let arg = process_pos env' nF (lift 1 t) in
                mkLambda_name env
 		 (n,t,process_constr env' (i+1)
-		    (whd_beta Evd.empty (applist (lift 1 f, [(mkRel 1); arg])))
+		    (whd_beta Evd.empty (EConstr.of_constr (applist (lift 1 f, [(mkRel 1); arg]))))
 		    (cprest,rest)))
     | (LocalDef (n,c,t) as d)::cprest, rest ->
 	mkLetIn

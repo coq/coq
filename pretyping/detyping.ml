@@ -502,7 +502,7 @@ let rec detype flags avoid env sigma t =
 	      let pb = Environ.lookup_projection p (snd env) in
 	      let body = pb.Declarations.proj_body in
 	      let ty = Retyping.get_type_of (snd env) sigma c in
-	      let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma ty in
+	      let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma (EConstr.of_constr ty) in
 	      let body' = strip_lam_assum body in
 	      let body' = subst_instance_constr u body' in
 		substl (c :: List.rev args) body'

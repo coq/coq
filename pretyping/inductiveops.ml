@@ -444,15 +444,17 @@ let build_branch_type env dep p cs =
 
 (**************************************************)
 
-let extract_mrectype t =
-  let (t, l) = decompose_app t in
-  match kind_of_term t with
-    | Ind ind -> (ind, l)
+let extract_mrectype sigma t =
+  let open EConstr in
+  let (t, l) = decompose_app sigma t in
+  match EConstr.kind sigma t with
+    | Ind ind -> (ind, List.map EConstr.Unsafe.to_constr l)
     | _ -> raise Not_found
 
 let find_mrectype_vect env sigma c =
-  let (t, l) = decompose_appvect (whd_all env sigma c) in
-  match kind_of_term t with
+  let open EConstr in
+  let (t, l) = Termops.decompose_app_vect sigma (EConstr.of_constr (whd_all env sigma c)) in
+  match EConstr.kind sigma (EConstr.of_constr t) with
     | Ind ind -> (ind, l)
     | _ -> raise Not_found
 
@@ -460,28 +462,34 @@ let find_mrectype env sigma c =
   let (ind, v) = find_mrectype_vect env sigma c in (ind, Array.to_list v)
 
 let find_rectype env sigma c =
-  let (t, l) = decompose_app (whd_all env sigma c) in
-  match kind_of_term t with
+  let open EConstr in
+  let (t, l) = decompose_app sigma (EConstr.of_constr (whd_all env sigma c)) in
+  match EConstr.kind sigma t with
     | Ind (ind,u as indu) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
         if mib.mind_nparams > List.length l then raise Not_found;
+        let l = List.map EConstr.Unsafe.to_constr l in
         let (par,rargs) = List.chop mib.mind_nparams l in
         IndType((indu, par),rargs)
     | _ -> raise Not_found
 
 let find_inductive env sigma c =
-  let (t, l) = decompose_app (whd_all env sigma c) in
-  match kind_of_term t with
+  let open EConstr in
+  let (t, l) = decompose_app sigma (EConstr.of_constr (whd_all env sigma c)) in
+  match EConstr.kind sigma t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> Decl_kinds.CoFinite ->
+        let l = List.map EConstr.Unsafe.to_constr l in
         (ind, l)
     | _ -> raise Not_found
 
 let find_coinductive env sigma c =
-  let (t, l) = decompose_app (whd_all env sigma c) in
-  match kind_of_term t with
+  let open EConstr in
+  let (t, l) = decompose_app sigma (EConstr.of_constr (whd_all env sigma c)) in
+  match EConstr.kind sigma t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == Decl_kinds.CoFinite ->
+        let l = List.map EConstr.Unsafe.to_constr l in
         (ind, l)
     | _ -> raise Not_found
 
@@ -490,12 +498,12 @@ let find_coinductive env sigma c =
 (* find appropriate names for pattern variables. Useful in the Case
    and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
-let is_predicate_explicitly_dep env pred arsign =
+let is_predicate_explicitly_dep env sigma pred arsign =
   let rec srec env pval arsign =
-    let pv' = whd_all env Evd.empty pval in
-    match kind_of_term pv', arsign with
+    let pv' = EConstr.of_constr (whd_all env sigma pval) in
+    match EConstr.kind sigma pv', arsign with
       | Lambda (na,t,b), (LocalAssum _)::arsign ->
-	  srec (push_rel_assum (na,t) env) b arsign
+	  srec (push_rel_assum (na, EConstr.Unsafe.to_constr t) env) b arsign
       | Lambda (na,_,t), _ ->
 
        (* The following code has an impact on the introduction names
@@ -525,11 +533,11 @@ let is_predicate_explicitly_dep env pred arsign =
 
       | _ -> anomaly (Pp.str "Non eta-expanded dep-expanded \"match\" predicate")
   in
-  srec env pred arsign
+  srec env (EConstr.of_constr pred) arsign
 
-let is_elim_predicate_explicitly_dependent env pred indf =
+let is_elim_predicate_explicitly_dependent env sigma pred indf =
   let arsign,_ = get_arity env indf in
-  is_predicate_explicitly_dep env pred arsign
+  is_predicate_explicitly_dep env sigma pred arsign
 
 let set_names env n brty =
   let (ctxt,cl) = decompose_prod_n_assum n brty in
@@ -545,7 +553,7 @@ let set_pattern_names env ind brv =
       mip.mind_nf_lc in
   Array.map2 (set_names env) arities brv
 
-let type_case_branches_with_names env indspec p c =
+let type_case_branches_with_names env sigma indspec p c =
   let (ind,args) = indspec in
   let (mib,mip as specif) = Inductive.lookup_mind_specif env (fst ind) in
   let nparams = mib.mind_nparams in
@@ -554,7 +562,7 @@ let type_case_branches_with_names env indspec p c =
   (* Build case type *)
   let conclty = lambda_appvect_assum (mip.mind_nrealdecls+1) p (Array.of_list (realargs@[c])) in
   (* Adjust names *)
-  if is_elim_predicate_explicitly_dependent env p (ind,params) then
+  if is_elim_predicate_explicitly_dependent env sigma p (ind,params) then
     (set_pattern_names env (fst ind) lbrty, conclty)
   else (lbrty, conclty)
 
@@ -600,7 +608,7 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
   match mip.mind_arity with
   | RegularArity s -> sigma, subst_instance_constr u s.mind_user_arity
   | TemplateArity ar ->
-    let _,scl = Reduction.dest_arity env conclty in
+    let _,scl = splay_arity env sigma conclty in
     let ctx = List.rev mip.mind_arity_ctxt in
     let evdref = ref sigma in
     let ctx =
@@ -609,6 +617,7 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
       !evdref, mkArity (List.rev ctx,scl)
 
 let type_of_projection_knowing_arg env sigma p c ty =
+  let c = EConstr.Unsafe.to_constr c in
   let IndType(pars,realargs) =
     try find_rectype env sigma ty
     with Not_found ->

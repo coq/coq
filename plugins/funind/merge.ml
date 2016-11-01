@@ -135,7 +135,7 @@ let prNamedRLDecl s lc =
 
 let showind (id:Id.t) =
   let cstrid = Constrintern.global_reference id in
-  let ind1,cstrlist = Inductiveops.find_inductive (Global.env()) Evd.empty cstrid in
+  let ind1,cstrlist = Inductiveops.find_inductive (Global.env()) Evd.empty (EConstr.of_constr cstrid) in
   let mib1,ib1 = Inductive.lookup_mind_specif (Global.env()) (fst ind1) in
   List.iter (fun decl ->
     print_string (string_of_name (Context.Rel.Declaration.get_name decl) ^ ":");

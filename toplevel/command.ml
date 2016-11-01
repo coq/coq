@@ -45,7 +45,7 @@ let do_universe poly l = Declare.do_universe poly l
 let do_constraint poly l = Declare.do_constraint poly l
 
 let rec under_binders env sigma f n c =
-  if Int.equal n 0 then f env sigma c else
+  if Int.equal n 0 then f env sigma (EConstr.of_constr c) else
     match kind_of_term c with
       | Lambda (x,t,c) ->
 	  mkLambda (x,t,under_binders (push_rel (LocalAssum (x,t)) env) sigma f (n-1) c)
@@ -395,7 +395,7 @@ let check_all_names_different indl =
   | _ -> raise (InductiveError (SameNamesOverlap l))
 
 let mk_mltype_data evdref env assums arity indname =
-  let is_ml_type = is_sort env !evdref arity in
+  let is_ml_type = is_sort env !evdref (EConstr.of_constr arity) in
   (is_ml_type,indname,assums)
 
 let prepare_param = function
@@ -961,10 +961,10 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
 		    (Printer.pr_constr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
     in
       try
-	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in
+	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 (EConstr.of_constr relty) in
 	  match ctx, kind_of_term ar with
 	  | [LocalAssum (_,t); LocalAssum (_,u)], Sort (Prop Null)
-	      when Reductionops.is_conv env !evdref t u -> t
+	      when Reductionops.is_conv env !evdref (EConstr.of_constr t) (EConstr.of_constr u) -> t
 	  | _, _ -> error ()
       with e when CErrors.noncritical e -> error ()
   in

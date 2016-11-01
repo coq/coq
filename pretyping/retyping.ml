@@ -53,8 +53,8 @@ let get_type_from_constraints env sigma t =
   if isEvar (fst (decompose_app t)) then
     match
       List.map_filter (fun (pbty,env,t1,t2) ->
-        if is_fconv Reduction.CONV env sigma t t1 then Some t2
-        else if is_fconv Reduction.CONV env sigma t t2 then Some t1
+        if is_fconv Reduction.CONV env sigma (EConstr.of_constr t) (EConstr.of_constr t1) then Some t2
+        else if is_fconv Reduction.CONV env sigma (EConstr.of_constr t) (EConstr.of_constr t2) then Some t1
         else None)
         (snd (Evd.extract_all_conv_pbs sigma))
     with
@@ -65,7 +65,7 @@ let get_type_from_constraints env sigma t =
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
-      match kind_of_term (whd_all env sigma typ) with
+      match kind_of_term (whd_all env sigma (EConstr.of_constr typ)) with
         | Prod (na,c1,c2) -> subst_type env sigma (subst1 h c2) rest
         | _ -> retype_error NonFunctionalConstruction
 
@@ -74,7 +74,7 @@ let rec subst_type env sigma typ = function
 
 let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env n ar args =
-    match kind_of_term (whd_all env sigma ar), args with
+    match kind_of_term (whd_all env sigma (EConstr.of_constr ar)), args with
     | Prod (na, t, b), h::l -> concl_of_arity (push_rel (LocalDef (na, lift n h, t)) env) (n + 1) b l
     | Sort s, [] -> s
     | _ -> retype_error NotASort
@@ -106,17 +106,17 @@ let retype ?(polyprop=true) sigma =
     | Case (_,p,c,lf) ->
         let Inductiveops.IndType(indf,realargs) =
           let t = type_of env c in
-          try Inductiveops.find_rectype env sigma t
+          try Inductiveops.find_rectype env sigma (EConstr.of_constr t)
           with Not_found ->
           try
             let t = get_type_from_constraints env sigma t in
-            Inductiveops.find_rectype env sigma t
+            Inductiveops.find_rectype env sigma (EConstr.of_constr t)
           with Not_found -> retype_error BadRecursiveType
         in
         let n = inductive_nrealdecls_env env (fst (fst (dest_ind_family indf))) in
-        let t = betazetaevar_applist sigma n p realargs in
-        (match kind_of_term (whd_all env sigma (type_of env t)) with
-          | Prod _ -> whd_beta sigma (applist (t, [c]))
+        let t = betazetaevar_applist sigma n (EConstr.of_constr p) (List.map EConstr.of_constr realargs) in
+        (match kind_of_term (whd_all env sigma (EConstr.of_constr (type_of env t))) with
+          | Prod _ -> whd_beta sigma (EConstr.of_constr (applist (t, [c])))
           | _ -> t)
     | Lambda (name,c1,c2) ->
           mkProd (name, c1, type_of (push_rel (LocalAssum (name,c1)) env) c2)
@@ -134,7 +134,7 @@ let retype ?(polyprop=true) sigma =
     | Proj (p,c) ->
        let ty = type_of env c in
        (try
-	   Inductiveops.type_of_projection_knowing_arg env sigma p c ty
+	   Inductiveops.type_of_projection_knowing_arg env sigma p (EConstr.of_constr c) (EConstr.of_constr ty)
 	 with Invalid_argument _ -> retype_error BadRecursiveType)
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
@@ -159,7 +159,7 @@ let retype ?(polyprop=true) sigma =
         sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
-    | _ -> decomp_sort env sigma (type_of env t)
+    | _ -> decomp_sort env sigma (EConstr.of_constr (type_of env t))
 
   and sort_family_of env t =
     match kind_of_term t with
@@ -178,7 +178,7 @@ let retype ?(polyprop=true) sigma =
 	family_of_sort (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ -> 
-      family_of_sort (decomp_sort env sigma (type_of env t))
+      family_of_sort (decomp_sort env sigma (EConstr.of_constr (type_of env t)))
 
   and type_of_global_reference_knowing_parameters env c args =
     let argtyps =
@@ -207,11 +207,10 @@ let type_of_global_reference_knowing_parameters env sigma c args =
   let _,_,_,f = retype sigma in anomaly_on_error (f env c) args
 
 let type_of_global_reference_knowing_conclusion env sigma c conclty =
-  let conclty = nf_evar sigma conclty in
   match kind_of_term c with
     | Ind (ind,u) ->
         let spec = Inductive.lookup_mind_specif env ind in
-          type_of_inductive_knowing_conclusion env sigma (spec,u) conclty
+          type_of_inductive_knowing_conclusion env sigma (spec,u) (EConstr.of_constr conclty)
     | Const cst ->
         let t = constant_type_in env cst in
         (* TODO *)
@@ -251,7 +250,7 @@ let sorts_of_context env evc ctxt =
 let expand_projection env sigma pr c args =
   let ty = get_type_of ~lax:true env sigma c in
   let (i,u), ind_args = 
-    try Inductiveops.find_mrectype env sigma ty 
+    try Inductiveops.find_mrectype env sigma (EConstr.of_constr ty) 
     with Not_found -> retype_error BadRecursiveType
   in
     mkApp (mkConstU (Projection.constant pr,u), 

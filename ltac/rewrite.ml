@@ -221,12 +221,12 @@ end) = struct
       | Some (x, Some rel) -> evars, rel
     in
     let rec aux env evars ty l =
-      let t = Reductionops.whd_all env (goalevars evars) ty in
+      let t = Reductionops.whd_all env (goalevars evars) (EConstr.of_constr ty) in
 	match kind_of_term t, l with
 	| Prod (na, ty, b), obj :: cstrs ->
-          let b = Reductionops.nf_betaiota (goalevars evars) b in
+          let b = Reductionops.nf_betaiota (goalevars evars) (EConstr.of_constr b) in
 	  if noccurn 1 b (* non-dependent product *) then
-	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
+	    let ty = Reductionops.nf_betaiota (goalevars evars) (EConstr.of_constr ty) in
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let evars, relty = mk_relty evars env ty obj in
 	    let evars, newarg = app_poly env evars respectful [| ty ; b' ; relty ; arg |] in
@@ -235,7 +235,7 @@ end) = struct
 	    let (evars, b, arg, cstrs) =
 	      aux (Environ.push_rel (LocalAssum (na, ty)) env) evars b cstrs
 	    in
-	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
+	    let ty = Reductionops.nf_betaiota (goalevars evars) (EConstr.of_constr ty) in
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
@@ -245,7 +245,7 @@ end) = struct
 	| _, [] ->
 	  (match finalcstr with
 	  | None | Some (_, None) ->
-	    let t = Reductionops.nf_betaiota (fst evars) ty in
+	    let t = Reductionops.nf_betaiota (fst evars) (EConstr.of_constr ty) in
 	    let evars, rel = mk_relty evars env t None in
 	      evars, t, rel, [t, Some rel]
 	  | Some (t, Some rel) -> evars, t, rel, [t, Some rel])
@@ -286,23 +286,24 @@ end) = struct
       else (* None in Prop, use arrow *)
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 
-  let rec decomp_pointwise n c =
+  let rec decomp_pointwise sigma n c =
     if Int.equal n 0 then c
     else
+      let open EConstr in
       match kind_of_term c with
       | App (f, [| a; b; relb |]) when Globnames.is_global (pointwise_relation_ref ()) f ->
-	decomp_pointwise (pred n) relb
+	decomp_pointwise sigma (pred n) relb
       | App (f, [| a; b; arelb |]) when Globnames.is_global (forall_relation_ref ()) f ->
-	decomp_pointwise (pred n) (Reductionops.beta_applist (arelb, [mkRel 1]))
+	decomp_pointwise sigma (pred n) (Reductionops.beta_applist sigma (EConstr.of_constr arelb, [mkRel 1]))
       | _ -> invalid_arg "decomp_pointwise"
 
-  let rec apply_pointwise rel = function
+  let rec apply_pointwise sigma rel = function
     | arg :: args ->
       (match kind_of_term rel with
       | App (f, [| a; b; relb |]) when Globnames.is_global (pointwise_relation_ref ()) f ->
-	apply_pointwise relb args
+	apply_pointwise sigma relb args
       | App (f, [| a; b; arelb |]) when Globnames.is_global (forall_relation_ref ()) f ->
-	apply_pointwise (Reductionops.beta_applist (arelb, [arg])) args
+	apply_pointwise sigma (Reductionops.beta_applist sigma (EConstr.of_constr arelb, [EConstr.of_constr arg])) args
       | _ -> invalid_arg "apply_pointwise")
     | [] -> rel
 
@@ -348,7 +349,7 @@ end) = struct
 
   let unlift_cstr env sigma = function
     | None -> None
-    | Some codom -> Some (decomp_pointwise 1 codom)
+    | Some codom -> Some (decomp_pointwise (goalevars sigma) 1 codom)
 
   (** Looking up declared rewrite relations (instances of [RewriteRelation]) *)
   let is_applied_rewrite_relation env sigma rels t =
@@ -430,7 +431,7 @@ module TypeGlobal = struct
 end
 
 let sort_of_rel env evm rel =
-  Reductionops.sort_of_arity env evm (Retyping.get_type_of env evm rel)
+  Reductionops.sort_of_arity env evm (EConstr.of_constr (Retyping.get_type_of env evm rel))
 
 let is_applied_rewrite_relation = PropGlobal.is_applied_rewrite_relation
 
@@ -460,7 +461,7 @@ let evd_convertible env evd x y =
   with e when CErrors.noncritical e -> None
 
 let convertible env evd x y =
-  Reductionops.is_conv_leq env evd x y
+  Reductionops.is_conv_leq env evd (EConstr.of_constr x) (EConstr.of_constr y)
 
 type hypinfo = {
   prf : constr;
@@ -479,7 +480,7 @@ let error_no_relation () = error "Cannot find a relation to rewrite."
 
 let rec decompose_app_rel env evd t = 
   (** Head normalize for compatibility with the old meta mechanism *)
-  let t = Reductionops.whd_betaiota evd t in
+  let t = Reductionops.whd_betaiota evd (EConstr.of_constr t) in
   match kind_of_term t with
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
@@ -525,7 +526,7 @@ let decompose_applied_relation env sigma (c,l) =
     match find_rel ctype with
     | Some c -> c
     | None ->
-	let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
+	let ctx,t' = Reductionops.splay_prod env sigma (EConstr.of_constr ctype) in (* Search for underlying eq *)
 	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx)) with
 	| Some c -> c
 	| None -> error "Cannot find an homogeneous relation to rewrite."
@@ -966,7 +967,7 @@ let unfold_match env sigma sk app =
   match kind_of_term app with
   | App (f', args) when eq_constant (fst (destConst f')) sk ->
       let v = Environ.constant_value_in (Global.env ()) (sk,Univ.Instance.empty)(*FIXME*) in
-	Reductionops.whd_beta sigma (mkApp (v, args))
+	Reductionops.whd_beta sigma (EConstr.of_constr (mkApp (v, args)))
   | _ -> app
 
 let is_rew_cast = function RewCast _ -> true | _ -> false
@@ -1055,11 +1056,11 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 			let app = if prop then PropGlobal.apply_pointwise 
 			  else TypeGlobal.apply_pointwise 
 			in
-			  RewPrf (app rel argsl, mkApp (prf, args))
+			  RewPrf (app (goalevars evars) rel argsl, mkApp (prf, args))
 		      | x -> x
 		    in
 		    let res =
-		      { rew_car = Reductionops.hnf_prod_appvect env (goalevars evars) r.rew_car args;
+		      { rew_car = Reductionops.hnf_prod_appvect env (goalevars evars) (EConstr.of_constr r.rew_car) (Array.map EConstr.of_constr args);
 			rew_from = mkApp(r.rew_from, args); rew_to = mkApp(r.rew_to, args);
 			rew_prf = prf; rew_evars = r.rew_evars }
 		    in 
@@ -1402,7 +1403,7 @@ module Strategies =
 	fun { state = state ; env = env ; term1 = t ; ty1 = ty ; cstr = cstr ; evars = evars } ->
           let rfn, ckind = Redexpr.reduction_of_red_expr env r in
           let sigma = Sigma.Unsafe.of_evar_map (goalevars evars) in
-	  let Sigma (t', sigma, _) = rfn.Reductionops.e_redfun env sigma t in
+	  let Sigma (t', sigma, _) = rfn.Reductionops.e_redfun env sigma (EConstr.of_constr t) in
 	  let evars' = Sigma.to_evar_map sigma in
 	    if eq_constr t' t then
 	      state, Identity
@@ -1417,7 +1418,7 @@ module Strategies =
 (* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
 	let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
 	let unfolded =
-	  try Tacred.try_red_product env sigma c
+	  try Tacred.try_red_product env sigma (EConstr.of_constr c)
 	  with e when CErrors.noncritical e ->
             error "fold: the term is not unfoldable !"
 	in
@@ -1511,7 +1512,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       let res = match res.rew_prf with
 	| RewCast c -> None
 	| RewPrf (rel, p) ->
-	  let p = nf_zeta env evars' (Evarutil.nf_evar evars' p) in
+	  let p = nf_zeta env evars' (EConstr.of_constr (Evarutil.nf_evar evars' p)) in
 	  let term =
 	    match abs with
 	    | None -> p
@@ -1887,7 +1888,7 @@ let declare_projection n instance_id r =
 	  | _ -> typ
       in aux init
     in
-    let ctx,ccl = Reductionops.splay_prod_n (Global.env()) Evd.empty (3 * n) typ
+    let ctx,ccl = Reductionops.splay_prod_n env sigma (3 * n) (EConstr.of_constr typ)
     in it_mkProd_or_LetIn ccl ctx
   in
   let typ = it_mkProd_or_LetIn typ ctx in

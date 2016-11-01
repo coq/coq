@@ -443,7 +443,7 @@ let raw_inversion inv_kind id status names =
         let msg = str "The type of " ++ pr_id id ++ str " is not inductive." in
         CErrors.user_err  msg
     in
-    let IndType (indf,realargs) = find_rectype env sigma t in
+    let IndType (indf,realargs) = find_rectype env sigma (EConstr.of_constr t) in
     let evdref = ref sigma in
     let (elim_predicate, args) =
       make_inv_predicate env evdref indf realargs id status concl in

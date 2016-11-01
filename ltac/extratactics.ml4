@@ -307,7 +307,7 @@ let project_hint pri l2r r =
     | _ -> assert false in
   let p =
     if l2r then build_coq_iff_left_proj () else build_coq_iff_right_proj () in
-  let c = Reductionops.whd_beta Evd.empty (mkApp (c, Context.Rel.to_extended_vect 0 sign)) in
+  let c = Reductionops.whd_beta Evd.empty (EConstr.of_constr (mkApp (c, Context.Rel.to_extended_vect 0 sign))) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
   let id =
@@ -738,7 +738,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
             (** FIXME: this looks really wrong. Does anybody really use this tactic? *)
-            let Sigma (c, _, _) = (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a]).Reductionops.e_redfun env (Sigma.Unsafe.of_evar_map Evd.empty) concl in
+            let Sigma (c, _, _) = (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a]).Reductionops.e_redfun env (Sigma.Unsafe.of_evar_map Evd.empty) (EConstr.of_constr concl) in
 	    change_concl c
           end };
 	  simplest_case a]

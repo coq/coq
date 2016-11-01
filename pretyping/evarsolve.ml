@@ -145,7 +145,7 @@ let recheck_applications conv_algo env evdref t =
        let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref x) args in
        let rec aux i ty =
 	 if i < Array.length argsty then
-	 match kind_of_term (whd_all env !evdref ty) with
+	 match kind_of_term (whd_all env !evdref (EConstr.of_constr ty)) with
 	 | Prod (na, dom, codom) ->
 	    (match conv_algo env !evdref Reduction.CUMUL argsty.(i) dom with
 	     | Success evd -> evdref := evd;
@@ -525,7 +525,7 @@ let solve_pattern_eqn env sigma l c =
     l c in
   (* Warning: we may miss some opportunity to eta-reduce more since c'
      is not in normal form *)
-  shrink_eta c'
+  shrink_eta (EConstr.of_constr c')
 
 (*****************************************)
 (* Refining/solving unification problems *)
@@ -683,7 +683,7 @@ let find_projectable_constructor env evd cstr k args cstr_subst =
       List.filter (fun (args',id) ->
         (* is_conv is maybe too strong (and source of useless computation) *)
         (* (at least expansion of aliases is needed) *)
-        Array.for_all2 (is_conv env evd) args args') l in
+        Array.for_all2 (fun c1 c2 -> is_conv env evd (EConstr.of_constr c1) (EConstr.of_constr c2)) args args') l in
     List.map snd l
   with Not_found ->
     []
@@ -808,7 +808,7 @@ let rec do_projection_effects define_fun env ty evd = function
       let evd = Evd.define evk (mkVar id) evd in
       (* TODO: simplify constraints involving evk *)
       let evd = do_projection_effects define_fun env ty evd p in
-      let ty = whd_all env evd (Lazy.force ty) in
+      let ty = whd_all env evd (EConstr.of_constr (Lazy.force ty)) in
       if not (isSort ty) then
         (* Don't try to instantiate if a sort because if evar_concl is an
            evar it may commit to a univ level which is not the right
@@ -1484,7 +1484,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
           EConstr.Unsafe.to_constr (map_constr_with_full_binders !evdref (fun d (env,k) -> push_rel d env, k+1)
 					self envk (EConstr.of_constr t))
   in
-  let rhs = whd_beta evd rhs (* heuristic *) in
+  let rhs = whd_beta evd (EConstr.of_constr rhs) (* heuristic *) in
   let fast rhs = 
     let filter_ctxt = evar_filtered_context evi in
     let names = ref Idset.empty in
@@ -1566,10 +1566,10 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
         raise e
     | OccurCheckIn (evd,rhs) ->
         (* last chance: rhs actually reduces to ev *)
-        let c = whd_all env evd rhs in
+        let c = whd_all env evd (EConstr.of_constr rhs) in
         match kind_of_term c with
         | Evar (evk',argsv2) when Evar.equal evk evk' ->
-	    solve_refl (fun env sigma pb c c' -> is_fconv pb env sigma c c')
+	    solve_refl (fun env sigma pb c c' -> is_fconv pb env sigma (EConstr.of_constr c) (EConstr.of_constr c'))
               env evd pbty evk argsv argsv2
         | _ ->
 	    raise (OccurCheckIn (evd,rhs))
@@ -1638,5 +1638,5 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
     | IllTypedInstance (env,t,u) ->
         UnifFailure (evd,InstanceNotSameType (evk1,env,t,u))
     | IncompatibleCandidates ->
-        UnifFailure (evd,ConversionFailed (env,mkEvar ev1,t2))
+        UnifFailure (evd,ConversionFailed (env,mkEvar ev1, EConstr.Unsafe.to_constr t2))
 

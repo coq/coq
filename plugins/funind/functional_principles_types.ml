@@ -405,7 +405,7 @@ let get_funs_constant mp dp =
 	      (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 	      (Global.env ())
 	      (Evd.from_env (Global.env ()))
-	      body
+	      (EConstr.of_constr body)
 	    in
 	    body
 	| None -> error ( "Cannot define a principle over an axiom ")

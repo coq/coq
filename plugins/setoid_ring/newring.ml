@@ -82,6 +82,7 @@ let lookup_map map =
     user_err ~hdr:"lookup_map" (str"map "++qs map++str"not found")
 
 let protect_red map env sigma c =
+  let c = EConstr.Unsafe.to_constr c in
   kl (create_clos_infos all env)
     (mk_clos_but (lookup_map map c) (Esubst.subs_id 0) c);;
 
@@ -347,7 +348,7 @@ let find_ring_structure env sigma l =
         let ty = Retyping.get_type_of env sigma t in
         let check c =
           let ty' = Retyping.get_type_of env sigma c in
-          if not (Reductionops.is_conv env sigma ty ty') then
+          if not (Reductionops.is_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr ty')) then
             user_err ~hdr:"ring"
               (str"arguments of ring_simplify do not have all the same type")
         in
@@ -827,7 +828,7 @@ let find_field_structure env sigma l =
         let ty = Retyping.get_type_of env sigma t in
         let check c =
           let ty' = Retyping.get_type_of env sigma c in
-          if not (Reductionops.is_conv env sigma ty ty') then
+          if not (Reductionops.is_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr ty')) then
             user_err ~hdr:"field"
               (str"arguments of field_simplify do not have all the same type")
         in

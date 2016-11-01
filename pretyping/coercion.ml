@@ -63,7 +63,7 @@ let apply_coercion_args env evd check isproj argl funj =
 	{ uj_val = applist (j_val funj,argl);
 	  uj_type = typ }
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
-      match kind_of_term (whd_all env evd typ) with
+      match kind_of_term (whd_all env evd (EConstr.of_constr typ)) with
       | Prod (_,c1,c2) ->
         if check && not (e_cumul env evdref (Retyping.get_type_of env evd h) c1) then
 	  raise NoCoercion;
@@ -95,7 +95,7 @@ let make_existential loc ?(opaque = not (get_proofs_transparency ()))  env evdre
   Evarutil.e_new_evar env evdref ~src c
 
 let app_opt env evdref f t =
-  whd_betaiota !evdref (app_opt f t)
+  whd_betaiota !evdref (EConstr.of_constr (app_opt f t))
 
 let pair_of_array a = (a.(0), a.(1))
 
@@ -128,11 +128,11 @@ let lift_args n sign =
 
 let mu env evdref t =
   let rec aux v =
-    let v' = hnf env !evdref v in
+    let v' = hnf env !evdref (EConstr.of_constr v) in
       match disc_subset v' with
       | Some (u, p) ->
 	let f, ct = aux u in
-	let p = hnf_nodelta env !evdref p in
+	let p = hnf_nodelta env !evdref (EConstr.of_constr p) in
 	  (Some (fun x ->
 		   app_opt env evdref 
 		     f (papp evdref sig_proj1 [| u; p; x |])),
@@ -145,7 +145,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
     =
   let open Context.Rel.Declaration in
   let rec coerce_unify env x y =
-    let x = hnf env !evdref x and y = hnf env !evdref y in
+    let x = hnf env !evdref (EConstr.of_constr x) and y = hnf env !evdref (EConstr.of_constr y) in
       try
 	evdref := the_conv_x_leq env x y !evdref;
 	None
@@ -153,7 +153,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
   and coerce' env x y : (Term.constr -> Term.constr) option =
     let subco () = subset_coerce env evdref x y in
     let dest_prod c =
-      match Reductionops.splay_prod_n env ( !evdref) 1 c with
+      match Reductionops.splay_prod_n env (!evdref) 1 (EConstr.of_constr c) with
       | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na,t), c
       | _ -> raise NoSubtacCoercion
     in
@@ -337,7 +337,7 @@ let app_coercion env evdref coercion v =
   | None -> v
   | Some f ->
      let v' = Typing.e_solve_evars env evdref (f v) in
-     whd_betaiota !evdref v'
+     whd_betaiota !evdref (EConstr.of_constr v')
 
 let coerce_itf loc env evd v t c1 =
   let evdref = ref evd in
@@ -373,7 +373,7 @@ let apply_coercion env sigma p hj typ_cl =
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core env evd j =
-  let t = whd_all env evd j.uj_type in
+  let t = whd_all env evd (EConstr.of_constr j.uj_type) in
     match kind_of_term t with
     | Prod (_,_,_) -> (evd,j)
     | Evar ev ->
@@ -414,7 +414,7 @@ let inh_tosort_force loc env evd j =
     error_not_a_type ~loc env evd j
 
 let inh_coerce_to_sort loc env evd j =
-  let typ = whd_all env evd j.uj_type in
+  let typ = whd_all env evd (EConstr.of_constr j.uj_type) in
     match kind_of_term typ with
     | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
     | Evar ev when not (is_defined evd (fst ev)) ->
@@ -466,8 +466,8 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
       match
-      kind_of_term (whd_all env evd t),
-      kind_of_term (whd_all env evd c1)
+      kind_of_term (whd_all env evd (EConstr.of_constr t)),
+      kind_of_term (whd_all env evd (EConstr.of_constr c1))
       with
       | Prod (name,t1,t2), Prod (_,u1,u2) ->
           (* Conversion did not work, we may succeed with a coercion. *)
@@ -485,7 +485,7 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
 	    inh_conv_coerce_to_fail loc env1 evd rigidonly
               (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in
           let v1 = Option.get v1 in
-	  let v2 = Option.map (fun v -> beta_applist (lift 1 v,[v1])) v in
+	  let v2 = Option.map (fun v -> beta_applist evd' (EConstr.of_constr (lift 1 v),[EConstr.of_constr v1])) v in
 	  let t2 = match v2 with
 	    | None -> subst_term evd' (EConstr.of_constr v1) (EConstr.of_constr t2)
 	    | Some v2 -> Retyping.get_type_of env1 evd' v2 in

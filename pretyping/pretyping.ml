@@ -700,7 +700,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	    if Int.equal npars 0 then []
 	    else
 	      try
-	  	let IndType (indf, args) = find_rectype env.ExtraEnv.env !evdref ty in
+	  	let IndType (indf, args) = find_rectype env.ExtraEnv.env !evdref (EConstr.of_constr ty) in
 	  	let ((ind',u'),pars) = dest_ind_family indf in
 	  	  if eq_ind ind ind' then pars
 	  	  else (* Let the usual code throw an error *) []
@@ -723,7 +723,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       | c::rest ->
 	let argloc = loc_of_glob_constr c in
 	let resj = evd_comb1 (Coercion.inh_app_fun resolve_tc env.ExtraEnv.env) evdref resj in
-        let resty = whd_all env.ExtraEnv.env !evdref resj.uj_type in
+        let resty = whd_all env.ExtraEnv.env !evdref (EConstr.of_constr resj.uj_type) in
       	  match kind_of_term resty with
 	  | Prod (na,c1,c2) ->
 	    let tycon = Some c1 in
@@ -834,7 +834,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
   | GLetTuple (loc,nal,(na,po),c,d) ->
     let cj = pretype empty_tycon env evdref lvar c in
     let (IndType (indf,realargs)) =
-      try find_rectype env.ExtraEnv.env !evdref cj.uj_type
+      try find_rectype env.ExtraEnv.env !evdref (EConstr.of_constr cj.uj_type)
       with Not_found ->
 	let cloc = loc_of_glob_constr c in
 	  error_case_not_inductive ~loc:cloc env.ExtraEnv.env !evdref cj
@@ -894,7 +894,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	      (Array.to_list cs.cs_concl_realargs)
 	      @[build_dependent_constructor cs] in
 	    let lp = lift cs.cs_nargs p in
-	    let fty = hnf_lam_applist env.ExtraEnv.env !evdref lp inst in
+	    let fty = hnf_lam_applist env.ExtraEnv.env !evdref (EConstr.of_constr lp) (List.map EConstr.of_constr inst) in
 	    let fj = pretype (mk_tycon fty) env_f evdref lvar d in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
@@ -924,7 +924,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
   | GIf (loc,c,(na,po),b1,b2) ->
     let cj = pretype empty_tycon env evdref lvar c in
     let (IndType (indf,realargs)) =
-      try find_rectype env.ExtraEnv.env !evdref cj.uj_type
+      try find_rectype env.ExtraEnv.env !evdref (EConstr.of_constr cj.uj_type)
       with Not_found ->
 	let cloc = loc_of_glob_constr c in
 	  error_case_not_inductive ~loc:cloc env.ExtraEnv.env !evdref cj in
@@ -948,7 +948,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  let pj = pretype_type empty_valcon env_p evdref lvar p in
 	  let ccl = nf_evar !evdref pj.utj_val in
 	  let pred = it_mkLambda_or_LetIn ccl psign in
-	  let typ = lift (- nar) (beta_applist (pred,[cj.uj_val])) in
+	  let typ = lift (- nar) (beta_applist !evdref (EConstr.of_constr pred,[EConstr.of_constr cj.uj_val])) in
 	    pred, typ
 	| None ->
 	  let p = match tycon with
@@ -963,7 +963,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let f cs b =
 	let n = Context.Rel.length cs.cs_args in
 	let pi = lift n pred in (* liftn n 2 pred ? *)
-	let pi = beta_applist (pi, [build_dependent_constructor cs]) in
+	let pi = beta_applist !evdref (EConstr.of_constr pi, [EConstr.of_constr (build_dependent_constructor cs)]) in
 	let csgn =
 	  if not !allow_anonymous_refs then
 	    List.map (set_name Anonymous) cs.cs_args
@@ -1046,11 +1046,11 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
       with Not_found ->
       try
         let (n,_,t') = lookup_rel_id id (rel_context env) in
-        if is_conv env.ExtraEnv.env !evdref t t' then mkRel n, update else raise Not_found
+        if is_conv env.ExtraEnv.env !evdref (EConstr.of_constr t) (EConstr.of_constr t') then mkRel n, update else raise Not_found
       with Not_found ->
       try
         let t' = env |> lookup_named id |> NamedDecl.get_type in
-        if is_conv env.ExtraEnv.env !evdref t t' then mkVar id, update else raise Not_found
+        if is_conv env.ExtraEnv.env !evdref (EConstr.of_constr t) (EConstr.of_constr t') then mkVar id, update else raise Not_found
       with Not_found ->
         user_err ~loc  (str "Cannot interpret " ++
           pr_existential_key !evdref evk ++
@@ -1068,7 +1068,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
            let s =
 	     let sigma =  !evdref in
 	     let t = Retyping.get_type_of env.ExtraEnv.env sigma v in
-	       match kind_of_term (whd_all env.ExtraEnv.env sigma t) with
+	       match kind_of_term (whd_all env.ExtraEnv.env sigma (EConstr.of_constr t)) with
                | Sort s -> s
                | Evar ev when is_Type (existential_type sigma ev) ->
 		   evd_comb1 (define_evar_as_sort env.ExtraEnv.env) evdref ev

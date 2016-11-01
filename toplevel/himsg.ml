@@ -79,7 +79,7 @@ let rec contract3' env a b c = function
 
 let j_nf_betaiotaevar sigma j =
   { uj_val = Evarutil.nf_evar sigma j.uj_val;
-    uj_type = Reductionops.nf_betaiota sigma j.uj_type }
+    uj_type = Reductionops.nf_betaiota sigma (EConstr.of_constr j.uj_type) }
 
 let jv_nf_betaiotaevar sigma jl =
   Array.map (j_nf_betaiotaevar sigma) jl
@@ -335,7 +335,7 @@ let explain_unification_error env sigma p1 p2 = function
 let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env in
   let j = j_nf_betaiotaevar sigma j in
-  let t = Reductionops.nf_betaiota sigma t in
+  let t = Reductionops.nf_betaiota sigma (EConstr.of_constr t) in
   (** Actually print *)
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc = pr_lconstr_env env sigma (Environ.j_val j) in
@@ -351,7 +351,7 @@ let explain_actual_type env sigma j t reason =
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   let randl = jv_nf_betaiotaevar sigma randl in
   let exptyp = Evarutil.nf_evar sigma exptyp in
-  let actualtyp = Reductionops.nf_betaiota sigma actualtyp in
+  let actualtyp = Reductionops.nf_betaiota sigma (EConstr.of_constr actualtyp) in
   let rator = Evarutil.j_nf_evar sigma rator in
   let env = make_all_name_different env in
   let actualtyp, exptyp = pr_explicit env sigma actualtyp exptyp in

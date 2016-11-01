@@ -202,7 +202,7 @@ let compute_canonical_projections warn (con,ind) =
   let v = (mkConstU (con,u)) in
   let ctx = Univ.ContextSet.of_context ctx in
   let c = Environ.constant_value_in env (con,u) in
-  let lt,t = Reductionops.splay_lam env Evd.empty c in
+  let lt,t = Reductionops.splay_lam env Evd.empty (EConstr.of_constr c) in
   let lt = List.rev_map snd lt in
   let args = snd (decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
@@ -302,7 +302,7 @@ let check_and_decompose_canonical_structure ref =
   let vc = match Environ.constant_opt_value_in env (sp, u) with
     | Some vc -> vc
     | None -> error_not_structure ref in
-  let body = snd (splay_lam (Global.env()) Evd.empty vc) in
+  let body = snd (splay_lam (Global.env()) Evd.empty (EConstr.of_constr vc)) (** FIXME *) in
   let f,args = match kind_of_term body with
     | App (f,args) -> f,args
     | _ -> error_not_structure ref in
@@ -323,6 +323,7 @@ let lookup_canonical_conversion (proj,pat) =
 
 let is_open_canonical_projection env sigma (c,args) =
   try
+    let c = EConstr.Unsafe.to_constr c in
     let ref = global_of_constr c in
     let n = find_projection_nparams ref in
     (** Check if there is some canonical projection attached to this structure *)

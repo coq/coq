@@ -902,7 +902,7 @@ struct
 
 
   let is_convertible gl t1 t2 = 
-   Reductionops.is_conv (Tacmach.pf_env gl) (Tacmach.project gl) t1 t2
+   Reductionops.is_conv (Tacmach.pf_env gl) (Tacmach.project gl) (EConstr.of_constr t1) (EConstr.of_constr t2)
 
   let parse_zop gl (op,args) =
    match kind_of_term op with

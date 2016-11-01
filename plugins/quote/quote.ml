@@ -249,8 +249,8 @@ let compute_ivs f cs gl =
            (* Then we test if the RHS is the RHS for variables *)
                    else begin match decompose_app bodyi with
                      | vmf, [_; _; a3; a4 ]
-                         when isRel a3 && isRel a4 && is_conv vmf
-                           (Lazy.force coq_varmap_find)->
+                         when isRel a3 && isRel a4 && is_conv (EConstr.of_constr vmf)
+                           (EConstr.of_constr (Lazy.force coq_varmap_find)) ->
                              v_lhs := Some (compute_lhs
                                               (snd (List.hd args3))
                                               i nargsi)

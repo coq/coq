@@ -783,7 +783,7 @@ let interp_may_eval f ist env sigma = function
       let (sigma,c_interp) = f ist env sigma c in
       let (redfun, _) = Redexpr.reduction_of_red_expr env redexp in
       let sigma = Sigma.Unsafe.of_evar_map sigma in
-      let Sigma (c, sigma, _) = redfun.Reductionops.e_redfun env sigma c_interp in
+      let Sigma (c, sigma, _) = redfun.Reductionops.e_redfun env sigma (EConstr.of_constr c_interp) in
       (Sigma.to_evar_map sigma, c)
   | ConstrContext ((loc,s),c) ->
       (try
