@@ -107,8 +107,13 @@ let parse_flags s =
       Flags.make_warn false;
       set_all_warnings_status Disabled
     end
+  else if CString.equal s "default" then begin
+      Flags.make_warn true;
+      reset_default_warnings ()
+    end
   else begin
       Flags.make_warn true;
+      reset_default_warnings ();
       let reg = Str.regexp "[ ,]+" in
       let items = List.map parse_flag (Str.split reg s) in
       let items = do_all_keyword items in
@@ -117,4 +122,4 @@ let parse_flags s =
     end
 
 let set_flags s =
-  flags := s; reset_default_warnings (); parse_flags s
+  flags := s; parse_flags s
