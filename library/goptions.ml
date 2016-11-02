@@ -247,7 +247,7 @@ let get_locality = function
   | Some false -> OptGlobal
   | None -> OptDefault
 
-let declare_option cast uncast append
+let declare_option cast uncast append ?(preprocess = fun x -> x)
   { optsync=sync; optdepr=depr; optname=name; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
@@ -275,10 +275,11 @@ let declare_option cast uncast append
             subst_function = subst_options;
             discharge_function = discharge_options;
             classify_function = classify_options } in
-      (fun l m v -> Lib.add_anonymous_leaf (options (l, m, v)))
+      (fun l m v -> let v = preprocess v in Lib.add_anonymous_leaf (options (l, m, v)))
     else
       (fun _ m v ->
-       match m with
+        let v = preprocess v in
+        match m with
        | OptSet -> write v
        | OptAppend -> write (append (read ()) v))
   in

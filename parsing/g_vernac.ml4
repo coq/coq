@@ -866,11 +866,16 @@ GEXTEND Gram
       | "Set"; table = option_table; v = option_value ->
         begin match v with
         | StringValue s ->
-          let (last, prefix) = List.sep_last table in
-          if String.equal last "Append" && not (List.is_empty prefix) then
-            VernacSetAppendOption (prefix, s)
+          (* We make a special case for warnings because appending is their
+          natural semantics *)
+          if CString.List.equal table ["Warnings"] then
+            VernacSetAppendOption (table, s)
           else
-            VernacSetOption (table, v)
+            let (last, prefix) = List.sep_last table in
+            if String.equal last "Append" && not (List.is_empty prefix) then
+              VernacSetAppendOption (prefix, s)
+            else
+              VernacSetOption (table, v)
         | _ -> VernacSetOption (table, v)
         end
       | "Set"; table = option_table ->

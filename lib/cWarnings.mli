@@ -6,29 +6,16 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type status =
-  Disabled | Enabled | AsError
-
-(*
-type 'a repr = {
-  print : 'a -> Pp.std_ppcmds;
-  kind : string;
-  enabled : bool;
-}
- *)
+type status = Disabled | Enabled | AsError
 
 val set_current_loc : Loc.t -> unit
 
 val create : name:string -> category:string -> ?default:status ->
              ('a -> Pp.std_ppcmds) -> ?loc:Loc.t -> 'a -> unit
 
-(*
-val emit : 'a t -> 'a -> unit
-
-type any = Any : string * string * 'a repr -> any
-
-val dump : unit -> any list
- *)
-
 val get_flags : unit -> string
 val set_flags : string -> unit
+
+(** Cleans up a user provided warnings status string, e.g. removing unknown
+    warnings (in which case a warning is emitted) or subsumed warnings . *)
+val normalize_flags_string : string -> string
