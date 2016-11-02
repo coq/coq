@@ -94,10 +94,6 @@ val is_universe_polymorphism : unit -> bool
 val make_polymorphic_flag : bool -> unit
 val use_polymorphic_flag : unit -> bool
 
-val warn : bool ref
-val make_warn : bool -> unit
-val if_warn : ('a -> unit) -> 'a -> unit
-
 (** Temporarily activate an option (to activate option [o] on [f x y z],
    use [with_option o (f x y) z]) *)
 val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b

@@ -87,8 +87,7 @@ let gen_logger dbg err ?pp_tag ?loc level msg = match level with
   | Debug   -> msgnl_with ?pp_tag !std_ft (make_body dbg  dbg_str ?loc msg)
   | Info    -> msgnl_with ?pp_tag !std_ft (make_body dbg info_str ?loc msg)
   | Notice  -> msgnl_with ?pp_tag !std_ft msg
-  | Warning -> Flags.if_warn (fun () ->
-               msgnl_with ?pp_tag !err_ft (make_body err warn_str ?loc msg)) ()
+  | Warning -> msgnl_with ?pp_tag !err_ft (make_body err warn_str ?loc msg)
   | Error   -> msgnl_with ?pp_tag !err_ft (make_body err  err_str ?loc msg)
 
 (* We provide a generic clear_log_backend callback for backends

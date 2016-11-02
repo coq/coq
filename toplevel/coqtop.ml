@@ -34,7 +34,7 @@ let print_header () =
   Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   flush_all ()
 
-let warning s = with_option Flags.warn Feedback.msg_warning (strbrk s)
+let warning s = Feedback.msg_warning (strbrk s)
 
 let toploop = ref None
 
@@ -560,7 +560,7 @@ let parse_args arglist =
     |"-output-context" -> output_context := true
     |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> no_load_rc ()
-    |"-quiet"|"-silent" -> Flags.make_silent true; Flags.make_warn false
+    |"-quiet"|"-silent" -> Flags.make_silent true; CWarnings.set_flags "none"
     |"-quick" -> Flags.compilation_mode := BuildVio
     |"-list-tags" -> print_tags := true
     |"-time" -> Flags.time := true
