@@ -447,6 +447,8 @@ let usage () =
   eprintf "  -dumpgraphbox f : print a dot dependency graph box in file 'f'\n";
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
+  eprintf "  -module-dep mod : only print dependency of module mod\n";
+  eprintf "  -from path : provide a ``From path'' for -module-dep\n";
   eprintf "  -suffix s : \n";
   eprintf "  -slash : deprecated, no effect\n";
   exit 1
@@ -473,6 +475,10 @@ let rec parse = function
   | "-coqlib" :: [] -> usage ()
   | "-suffix" :: s :: ll -> suffixe := s ; parse ll
   | "-suffix" :: [] -> usage ()
+  | "-module-dep" :: m :: ll -> option_mod_dep := Some m; parse ll
+  | "-module-dep" :: [] -> usage ()
+  | "-from" :: f :: ll -> option_from := Some f; parse ll
+  | "-from" :: [] -> usage ()
   | "-slash" :: ll ->
     Printf.eprintf "warning: option -slash has no effect and is deprecated.\n";
     parse ll
@@ -511,6 +517,7 @@ let coqdep () =
   warning_mult ".mli" iter_mli_known;
   warning_mult ".ml" iter_ml_known;
   if !option_sort then begin sort (); exit 0 end;
+  if !option_mod_dep <> None then begin one_module_dependency (); exit 0 end;
   if !option_c && not !option_D then mL_dependencies ();
   if not !option_D then coq_dependencies ();
   if !option_w || !option_D then declare_dependencies ();

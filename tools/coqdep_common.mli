@@ -21,6 +21,8 @@ val option_noglob : bool ref
 val option_boot : bool ref
 val option_natdynlk : bool ref
 val option_mldep : string option ref
+val option_mod_dep : string option ref
+val option_from : string option ref
 val norec_dirs : StrSet.t ref
 val suffixe : string ref
 type dir = string option
@@ -44,6 +46,7 @@ val file_name : string -> string option -> string
 val escape : string -> string
 val canonize : string -> string
 val mL_dependencies : unit -> unit
+val one_module_dependency : unit -> unit
 val coq_dependencies : unit -> unit
 val suffixes : 'a list -> 'a list list
 val add_known : bool -> string -> string list -> string -> unit
