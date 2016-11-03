@@ -45,13 +45,14 @@ ARGUMENT EXTEND debug TYPED AS bool PRINTED BY pr_debug
 END
 
 let pr_search_strategy _prc _prlc _prt = function
-  | Dfs -> Pp.str "dfs"
-  | Bfs -> Pp.str "bfs"
+  | Some Dfs -> Pp.str "dfs"
+  | Some Bfs -> Pp.str "bfs"
+  | None -> Pp.mt ()
 
 ARGUMENT EXTEND eauto_search_strategy PRINTED BY pr_search_strategy
-| [ "bfs" ] -> [ Bfs ]
-| [ "dfs" ] -> [ Dfs ]
-| [ ] -> [ Dfs ]
+| [ "(bfs)" ] -> [ Some Bfs ]
+| [ "(dfs)" ] -> [ Some Dfs ]
+| [ ] -> [ None ] 
 END
 
 (* true = All transparent, false = Opaque if possible *)
@@ -59,15 +60,17 @@ END
 VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
  | [ "Typeclasses" "eauto" ":=" debug(d) eauto_search_strategy(s) int_opt(depth) ] -> [
      set_typeclasses_debug d;
-     set_typeclasses_strategy s;
+     Option.iter set_typeclasses_strategy s;
      set_typeclasses_depth depth
    ]
 END
 
 (** Compatibility: typeclasses eauto has 8.5 and 8.6 modes *)
 TACTIC EXTEND typeclasses_eauto
+ | [ "typeclasses" "eauto" "bfs" int_or_var_opt(d) "with" ne_preident_list(l) ] ->
+    [ typeclasses_eauto ~strategy:Bfs ~depth:d l ]
  | [ "typeclasses" "eauto" int_or_var_opt(d) "with" ne_preident_list(l) ] ->
-    [ typeclasses_eauto d l ]
+    [ typeclasses_eauto ~depth:d l ]
  | [ "typeclasses" "eauto" int_or_var_opt(d) ] -> [
      typeclasses_eauto ~only_classes:true ~depth:d [Hints.typeclasses_db] ]
 END

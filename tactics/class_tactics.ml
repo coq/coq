@@ -914,19 +914,20 @@ module V85 = struct
   let eauto_tac hints =
     then_tac normevars_tac (or_tac (hints_tac hints) intro_tac)
 
-  let eauto_tac depth hints =
-    if get_typeclasses_iterative_deepening () then
-      match depth with
-      | None -> fix_iterative (eauto_tac hints)
-      | Some depth -> fix_iterative_limit depth (eauto_tac hints)
-    else
-      match depth with
-      | None -> fix (eauto_tac hints)
-      | Some depth -> fix_limit depth (eauto_tac hints)
-
-  let real_eauto ?depth unique st hints p evd =
+  let eauto_tac strategy depth hints =
+    match strategy with
+    | Bfs -> 
+       begin match depth with
+       | None -> fix_iterative (eauto_tac hints)
+       | Some depth -> fix_iterative_limit depth (eauto_tac hints) end
+    | Dfs ->
+       match depth with
+       | None -> fix (eauto_tac hints)
+       | Some depth -> fix_limit depth (eauto_tac hints)
+                                
+  let real_eauto ?depth strategy unique st hints p evd =
     let res =
-      run_on_evars ~st ~unique p evd hints (eauto_tac depth hints)
+      run_on_evars ~st ~unique p evd hints (eauto_tac strategy depth hints)
     in
     match res with
     | None -> evd
@@ -939,12 +940,18 @@ module V85 = struct
 
   let resolve_all_evars_once debug depth unique p evd =
     let db = searchtable_map typeclasses_db in
-    real_eauto ?depth unique (Hint_db.transparent_state db) [db] p evd
+    let strategy = if get_typeclasses_iterative_deepening () then Bfs else Dfs in
+    real_eauto ?depth strategy unique (Hint_db.transparent_state db) [db] p evd
 
-  let eauto85 ?(only_classes=true) ?st depth hints g =
+  let eauto85 ?(only_classes=true) ?st ?strategy depth hints g =
+    let strategy =
+      match strategy with
+      | None -> if get_typeclasses_iterative_deepening () then Bfs else Dfs
+      | Some s -> s
+    in
     let gl = { it = make_autogoal ~only_classes ?st
                                   (cut_of_hints hints) None g; sigma = project g; } in
-    match run_tac (eauto_tac depth hints) gl with
+    match run_tac (eauto_tac strategy depth hints) gl with
     | None -> raise Not_found
     | Some {it = goals; sigma = s; } ->
        {it = List.map fst goals; sigma = s;}
@@ -1288,22 +1295,23 @@ module Search = struct
     tclCASE (with_shelf tac) >>= casefn
 
   let eauto_tac ?(st=full_transparent_state) ?(unique=false)
-                ~only_classes ?dfs ~depth ~dep hints =
+                ~only_classes ?strategy ~depth ~dep hints =
     let open Proofview in
     let tac =
       let search = search_tac ~st only_classes dep hints in
-      let bfs =
-        match dfs with
-        | None -> get_typeclasses_iterative_deepening ()
-        | Some v -> v
+      let dfs =
+        match strategy with
+        | None -> not (get_typeclasses_iterative_deepening ())
+        | Some Dfs -> true
+        | Some Bfs -> false
       in
-      if bfs then
+      if dfs then
+        let depth = match depth with None -> -1 | Some d -> d in
+        search depth
+      else
         match depth with
         | None -> fix_iterative search
         | Some l -> fix_iterative_limit l search
-      else
-        let depth = match depth with None -> -1 | Some d -> d in
-        search depth
     in
     let error (e, ie) =
       match e with
@@ -1389,7 +1397,7 @@ end
 (** Binding to either V85 or Search implementations. *)
 
 let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
-                      ~depth dbs =
+                      ?strategy ~depth dbs =
   let dbs = List.map_filter
               (fun db -> try Some (searchtable_map db)
                       with e when CErrors.noncritical e -> None)
@@ -1400,10 +1408,10 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
   if get_typeclasses_legacy_resolution () then
     Proofview.V82.tactic
     (fun gl ->
-      try V85.eauto85 depth ~only_classes ~st dbs gl
+      try V85.eauto85 depth ~only_classes ~st ?strategy dbs gl
       with Not_found ->
 	Refiner.tclFAIL 0 (str"Proof search failed") gl)
-  else Search.eauto_tac ~st ~only_classes ~depth ~dep:true dbs
+  else Search.eauto_tac ~st ~only_classes ?strategy ~depth ~dep:true dbs
 
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,

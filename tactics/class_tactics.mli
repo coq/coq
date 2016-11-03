@@ -24,7 +24,7 @@ type search_strategy = Dfs | Bfs
 
 val set_typeclasses_strategy : search_strategy -> unit
 
-val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state ->
+val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state -> ?strategy:search_strategy ->
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic
 
@@ -44,9 +44,8 @@ module Search : sig
     (** Should we force a unique solution *)
     only_classes:bool ->
     (** Should non-class goals be shelved and resolved at the end *)
-    ?dfs:bool ->
-    (** Is a traversing-strategy specified?
-        If yes, true means dfs, false means bfs, i.e iterative deepening *)
+    ?strategy:search_strategy ->
+    (** Is a traversing-strategy specified? *)
     depth:Int.t option ->
     (** Bounded or unbounded search *)
     dep:bool ->
