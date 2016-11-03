@@ -387,14 +387,16 @@ than {\tt eauto} and {\tt auto}. The main differences are the following:
 \item Contrary to {\tt eauto} and {\tt auto}, the resolution is done
   entirely in the new proof engine (as of Coq v8.6), meaning that
   backtracking is available among dependent subgoals, and shelving goals
-  is supported.  It analyses the dependencies between subgoals to avoid
+  is supported. {\tt typeclasses eauto} is a multi-goal tactic.
+  It analyses the dependencies between subgoals to avoid
   backtracking on subgoals that are entirely independent.
 \item When called with no arguments, {\tt typeclasses eauto} uses the
   {\tt typeclass\_instances} database by default (instead of {\tt core})
   and will try to solve \emph{only} typeclass goals. Other subgoals are
   automatically shelved and \emph{must be} resolved entirely when the
-  other typeclass subgoals are resolved.
-\item The transparency information of databases is used consistently.
+  other typeclass subgoals are resolved or the proof search will fail.
+\item The transparency information of databases is used consistently for
+  all hints declared in them. It is always used when calling the unifier.
   When considering the local hypotheses, we use the transparent
   state of the first hint database given. Using an empty database
   (created with {\tt Create HintDb} for example) with 
@@ -412,8 +414,9 @@ than {\tt eauto} and {\tt auto}. The main differences are the following:
   when searching with {\tt typeclasses eauto} than {\tt auto}.
   
 \item \label{with} {\tt typeclasses eauto with {\ident}$_1$ \ldots {\ident}$_n$}.
-  This variant runs resolution with the given hint databases. It does
-  not treat typeclass subgoals differently than others.
+  This variant runs resolution with the given hint databases. It treats
+  typeclass subgoals the same as other subgoals (no shelving of
+  non-typeclass goals in particular).
 \end{Variants}
 
 \asubsection{\tt autoapply {\term} with {\ident}}
@@ -421,7 +424,7 @@ than {\tt eauto} and {\tt auto}. The main differences are the following:
 
 The tactic {\tt autoapply} applies a term using the transparency
 information of the hint database {\ident}, and does \emph{no} typeclass
-resolution. This can be used in {\tt Hint Extern}'s for typeclasse
+resolution. This can be used in {\tt Hint Extern}'s for typeclass
 instances (in hint db {\tt typeclass\_instances}) to
 allow backtracking on the typeclass subgoals created by the lemma
 application, rather than doing type class resolution locally at the hint
@@ -445,19 +448,28 @@ abbreviate a type, like {\tt relation A := A -> A -> Prop}.
 
 This is equivalent to {\tt Hint Transparent,Opaque} {\ident} {\tt: typeclass\_instances}.
 
-\subsection{\tt Set Typeclasses Module Eta}
-\optindex{Typeclasses Modulo Eta}
-
-This allows eta-conversion during unification of type-classes.
-
 \subsection{\tt Set Typeclasses Dependency Order}
 \optindex{Typeclasses Dependency Order}
 
-This option (now on by default) respects the dependency order between
+This option (on by default since 8.6) respects the dependency order between
 subgoals, meaning that subgoals which are depended on by other subgoals 
 come first, while the non-dependent subgoals were put before the
 dependent ones previously (Coq v8.5 and below). This can result in quite
 different performance behaviors of proof search.
+
+\subsection{\tt Set Typeclasses Filtered Unification}
+\optindex{Typeclasses Filtered Unification}
+
+This option, available since Coq 8.6 and off by default, switches the
+hint application procedure to a filter-then-unify strategy. To apply a
+hint, we first check that the goal \emph{matches} syntactically the
+inferred or specified pattern of the hint, and only then try to
+\emph{unify} the goal with the conclusion of the hint. This can
+drastically improve performance by calling unification less often,
+matching syntactic patterns being very quick. This also provides more
+control on the triggering of instances.  For example, forcing a constant
+to explicitely appear in the pattern will make it never apply on a goal
+where there is a hole in that place.
 
 \subsection{\tt Set Typeclasses Legacy Resolution}
 \optindex{Typeclasses Legacy Resolution}
@@ -465,30 +477,30 @@ different performance behaviors of proof search.
 This option (off by default) uses the 8.5 implementation of resolution.
 Use for compatibility purposes only (porting and debugging).
 
+\subsection{\tt Set Typeclasses Module Eta}
+\optindex{Typeclasses Modulo Eta}
+
+This option allows eta-conversion for functions and records during
+unification of type-classes. This option is now unsupported in 8.6 with
+{\tt Typeclasses Filtered Unification} set, but still affects the
+default unification strategy, and the one used in {\tt Legacy
+  Resolution} mode. It is \emph{unset} by default. If {\tt Typeclasses
+  Filtered Unification} is set, this has no effect and unification will
+find solutions up-to eta conversion. Note however that syntactic
+pattern-matching is not up-to eta.
+
 \subsection{\tt Set Typeclasses Limit Intros}
 \optindex{Typeclasses Limit Intros}
 
-This option (on by default in Coq 8.6 and below), controls the ability
-to apply hints while avoiding eta-expansions in the proof term
-generated. It does so by allowing hints that conclude in an product to
+This option (on by default in Coq 8.6 and below) controls the ability to
+apply hints while avoiding (functional) eta-expansions in the generated
+proof term. It does so by allowing hints that conclude in a product to
 apply to a goal with a matching product directly, avoiding an
-introduction. \emph{Warning:} can be expensive as it requires rebuilding
-hint clauses dynamically, and does not benefit from the invertibility
-status of the product introduction rule, resulting in more expensive
-proof-search (i.e. more useless backtracking).
-
-\subsection{\tt Set Typeclasses Filtered Unification}
-\optindex{Typeclasses Filtered Unification}
-
-This option, available since Coq 8.6, switches the hint application
-procedure to a filter-then-unify strategy. To apply a hint, we first
-check that it \emph{matches} syntactically the inferred pattern of the
-hint, and only then try to \emph{unify} the goal with the conclusion of
-the hint. This can drastically improve performance by calling
-unification less often, matching syntactic patterns being very
-quick. This also provides more control on the triggering of instances.
-For example, forcing a constant to explicitely appear in the pattern
-will make it never apply on a goal where there is a hole in that place.
+introduction. \emph{Warning:} this can be expensive as it requires
+rebuilding hint clauses dynamically, and does not benefit from the
+invertibility status of the product introduction rule, resulting in
+potentially more expensive proof-search (i.e. more useless
+backtracking).
 
 \subsection{\tt Set Typeclass Resolution After Apply}
 \optindex{Typeclasses Resolution After Apply}
@@ -543,6 +555,15 @@ The semantics of the options are:
   (the default) or breadth-first search.
 \item {\emph{depth}} This sets the depth limit of the search.
 \end{itemize}
+
+\subsection{\tt Set Typeclasses Debug [Verbosity {\num}]}
+\optindex{Typeclasses Debug}
+\optindex{Typeclasses Debug Verbosity}
+
+These options allow to see the resolution steps of typeclasses that are
+performed during search. The {\tt Debug} option is synonymous to 
+{\tt Debug Verbosity 1}, and {\tt Debug Verbosity 2} provides more
+information (tried tactics, shelving of goals, etc\ldots).
 
 \subsection{\tt Set Refine Instance Mode}
 \optindex{Refine Instance Mode}
