@@ -580,12 +580,6 @@ let warn_deprecated_implicit_arguments =
   CWarnings.create ~name:"deprecated-implicit-arguments" ~category:"deprecated"
          (fun () -> strbrk "Implicit Arguments is deprecated; use Arguments instead")
 
-let warn_deprecated_arguments_syntax =
-  CWarnings.create ~name:"deprecated-arguments-syntax" ~category:"deprecated"
-         (fun () -> strbrk "The \"/\" modifier has an effect only in the first "
-                    ++ strbrk "arguments list. The syntax allowing it to appear"
-                    ++ strbrk " in other lists is deprecated.")
-
 (* Extensions: implicits, coercions, etc. *)
 GEXTEND Gram
   GLOBAL: gallina_ext instance_name;
@@ -660,10 +654,7 @@ GEXTEND Gram
         args = LIST0 argument_spec_block;
         more_implicits = OPT
           [ ","; impl = LIST1
-            [ impl = LIST0 more_implicits_block ->
-              let warn_slash = List.exists fst impl in
-              if warn_slash then warn_deprecated_arguments_syntax ~loc:!@loc ();
-              List.flatten (List.map snd impl)]
+            [ impl = LIST0 more_implicits_block -> List.flatten impl]
             SEP "," -> impl
           ];
         mods = OPT [ ":"; l = LIST1 arguments_modifier SEP "," -> l ] ->
@@ -775,12 +766,11 @@ GEXTEND Gram
   ];
   (* Same as [argument_spec_block], but with only implicit status and names *)
   more_implicits_block: [
-    [ name = name -> (false, [(snd name, Vernacexpr.NotImplicit)])
-    | "/" -> (true (* Should warn about deprecated syntax *), [])
+    [ name = name -> [(snd name, Vernacexpr.NotImplicit)]
     | "["; items = LIST1 name; "]" ->
-       (false, List.map (fun name -> (snd name, Vernacexpr.Implicit)) items)
+       List.map (fun name -> (snd name, Vernacexpr.Implicit)) items
     | "{"; items = LIST1 name; "}" ->
-       (false, List.map (fun name -> (snd name, Vernacexpr.MaximallyImplicit)) items)
+       List.map (fun name -> (snd name, Vernacexpr.MaximallyImplicit)) items
     ]
   ];
   strategy_level:
