@@ -1491,7 +1491,7 @@ let _ =
       optwrite = (fun b ->  Constrintern.parsing_explicit := b) }
 
 let _ =
-  declare_string_option
+  declare_string_option ~preprocess:CWarnings.normalize_flags_string
     { optsync  = true;
       optdepr  = false;
       optname  = "warnings display";
