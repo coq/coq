@@ -136,7 +136,7 @@ let uniquize_flags_rev flags =
          let visited =
            try
              let warnings = Hashtbl.find categories name in
-             CString.Set.union visited (CString.Set.of_list warnings)
+             List.fold_left (fun v w -> CString.Set.add w v) visited warnings
            with Not_found ->
              visited
          in
