@@ -18,7 +18,8 @@ val e_give_exact : ?flags:Unification.unify_flags -> constr -> unit Proofview.ta
 
 val prolog_tac : Tacexpr.delayed_open_constr list -> int -> unit Proofview.tactic
 
-val gen_eauto : ?debug:Tacexpr.debug -> bool * int -> Tacexpr.delayed_open_constr list ->
+val gen_eauto :
+  ?debug:Tacexpr.debug -> ?dfs:bool -> ?depth:int -> Tacexpr.delayed_open_constr list ->
   hint_db_name list option -> unit Proofview.tactic
 
 val eauto_with_bases :
@@ -30,4 +31,3 @@ val autounfold : hint_db_name list -> Locus.clause -> unit Proofview.tactic
 val autounfold_tac : hint_db_name list option -> Locus.clause -> unit Proofview.tactic
 val autounfold_one : hint_db_name list -> Locus.hyp_location option -> unit Proofview.tactic
 
-val make_dimension : int option -> int option -> bool * int

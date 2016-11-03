@@ -75,6 +75,14 @@ Tactics
 - Option "Injection On Proofs" was renamed "Keep Proof Equalities". When
   enabled, injection and inversion do not drop equalities between objects
   in Prop. Still disabled by default.
+- Removal of the ancient tactic "new auto".
+- "dfs eauto" and the new tactic "bfs eauto" now rely on the same
+  implemenation as "typeclasses eauto" (and can be used instead of "eauto").
+  "dfs" means depth-first search and "bfs" means breadth-first search
+  (implemented as iterative-deepening). A search-depth and a set of hint
+  bases to use can be specified as with eauto (but the semantics of the
+  search-depth is the one of typeclasses eauto -- intro steps count).
+  These two tactics should be considered experimental until 8.7!
 
 Hints
 

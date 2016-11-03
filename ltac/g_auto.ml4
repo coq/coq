@@ -16,6 +16,7 @@ open Pcoq.Prim
 open Pcoq.Constr
 open Pcoq.Tactic
 open Tacexpr
+open Util
 
 DECLARE PLUGIN "g_auto"
 
@@ -98,38 +99,50 @@ TACTIC EXTEND prolog
     [ Eauto.prolog_tac (eval_uconstrs ist l) n ]
 END
 
-let make_depth n = snd (Eauto.make_dimension n None)
-
 TACTIC EXTEND eauto
-| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
-    hintbases(db) ] ->
-    [ Eauto.gen_eauto (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
-END
-
-TACTIC EXTEND new_eauto
-| [ "new" "auto" int_or_var_opt(n) auto_using(lems)
-    hintbases(db) ] ->
-    [ match db with
-      | None -> Auto.new_full_auto (make_depth n) (eval_uconstrs ist lems)
-      | Some l -> Auto.new_auto (make_depth n) (eval_uconstrs ist lems) l ]
+| [ "eauto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
+    [ Eauto.gen_eauto ?depth:n (eval_uconstrs ist lems) db ]
 END
 
 TACTIC EXTEND debug_eauto
-| [ "debug" "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
-    hintbases(db) ] ->
-    [ Eauto.gen_eauto ~debug:Debug (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
+| [ "debug" "eauto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
+    [ Eauto.gen_eauto ~debug:Debug ?depth:n (eval_uconstrs ist lems) db ]
 END
 
 TACTIC EXTEND info_eauto
-| [ "info_eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
-    hintbases(db) ] ->
-    [ Eauto.gen_eauto ~debug:Info (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
+| [ "info_eauto" int_or_var_opt(n) auto_using(lems) hintbases(db) ] ->
+    [ Eauto.gen_eauto ~debug:Info ?depth:n (eval_uconstrs ist lems) db ]
 END
 
+(** Typeclasses eauto based tactics *)
+
+let typeclasses_eauto ~dfs depth dbnames =
+  let db_list =
+    match dbnames with
+    | None -> Hints.current_pure_db ()
+    | Some dbnames -> Hints.make_db_list dbnames
+  in
+  let depth =
+    match depth with
+    | None -> !Auto.default_search_depth
+    | Some d -> d
+  in
+  Tacticals.New.tclTRY
+    (Class_tactics.Search.eauto_tac
+       ~only_classes:false
+       ~dfs
+       ~depth:(Some depth)
+       ~dep:true
+       db_list)
+
 TACTIC EXTEND dfs_eauto
-| [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems)
-      hintbases(db) ] ->
-    [ Eauto.gen_eauto (Eauto.make_dimension p None) (eval_uconstrs ist lems) db ]
+| [ "dfs" "eauto" int_or_var_opt(depth) hintbases(db) ] ->
+   [ typeclasses_eauto ~dfs:true depth db ]
+END
+
+TACTIC EXTEND bfs_eauto
+| [ "bfs" "eauto" int_or_var_opt(depth) hintbases(db) ] ->
+   [ typeclasses_eauto ~dfs:false depth db ]
 END
 
 TACTIC EXTEND autounfold
