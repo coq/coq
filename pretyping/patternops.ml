@@ -153,7 +153,7 @@ let pattern_of_constr env sigma t =
     | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
     | Proj (p, c) -> 
-      pattern_of_constr env (Retyping.expand_projection env sigma p c [])
+      pattern_of_constr env (Retyping.expand_projection env sigma p (EConstr.of_constr c) [])
     | Evar (evk,ctxt as ev) ->
       (match snd (Evd.evar_source evk sigma) with
       | Evar_kinds.MatchingVar (b,id) ->

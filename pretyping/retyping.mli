@@ -26,25 +26,25 @@ type retype_error
 exception RetypeError of retype_error
 
 val get_type_of :
-  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> types
+  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> EConstr.constr -> types
 
 val get_sort_of :
-  ?polyprop:bool -> env -> evar_map -> types -> sorts
+  ?polyprop:bool -> env -> evar_map -> EConstr.types -> sorts
 
 val get_sort_family_of :
-  ?polyprop:bool -> env -> evar_map -> types -> sorts_family
+  ?polyprop:bool -> env -> evar_map -> EConstr.types -> sorts_family
 
 (** Makes an unsafe judgment from a constr *)
-val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment
+val get_judgment_of : env -> evar_map -> EConstr.constr -> unsafe_judgment
 
-val type_of_global_reference_knowing_parameters : env -> evar_map -> constr ->
-  constr array -> types
+val type_of_global_reference_knowing_parameters : env -> evar_map -> EConstr.constr ->
+  EConstr.constr array -> types
 
 val type_of_global_reference_knowing_conclusion :
-  env -> evar_map -> constr -> types -> evar_map * types
+  env -> evar_map -> EConstr.constr -> EConstr.types -> evar_map * EConstr.types
 
 val sorts_of_context : env -> evar_map -> Context.Rel.t -> sorts list
 
-val expand_projection : env -> evar_map -> Names.projection -> constr -> constr list -> constr
+val expand_projection : env -> evar_map -> Names.projection -> EConstr.constr -> EConstr.constr list -> constr
 
 val print_retype_error : retype_error -> Pp.std_ppcmds

@@ -319,18 +319,19 @@ let check_conv_leq_goal env sigma arg ty conclty =
       else raise (RefinerError (BadType (arg,ty,conclty)))
   else sigma
 
-exception Stop of constr list
+exception Stop of EConstr.t list
 let meta_free_prefix sigma a =
   try
+    let a = Array.map EConstr.of_constr a in
     let _ = Array.fold_left (fun acc a -> 
-      if occur_meta sigma (EConstr.of_constr a) then raise (Stop acc)
+      if occur_meta sigma a then raise (Stop acc)
       else a :: acc) [] a
     in a
   with Stop acc -> Array.rev_of_list acc
 
 let goal_type_of env sigma c =
   if !check then unsafe_type_of env sigma c
-  else Retyping.get_type_of env sigma c
+  else Retyping.get_type_of env sigma (EConstr.of_constr c)
 
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = Goal.V82.env sigma goal in
@@ -339,7 +340,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal)
   in
     if (not !check) && not (occur_meta sigma (EConstr.of_constr trm)) then
-      let t'ty = Retyping.get_type_of env sigma trm in
+      let t'ty = Retyping.get_type_of env sigma (EConstr.of_constr trm) in
       let sigma = check_conv_leq_goal env sigma trm t'ty conclty in
         (goalacc,t'ty,sigma,trm)
     else
@@ -372,7 +373,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	      (* Template sort-polymorphism of definition and inductive types *)
 	      let firstmeta = Array.findi (fun i x -> occur_meta sigma (EConstr.of_constr x)) l in
 	      let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
-	        type_of_global_reference_knowing_parameters env sigma f args
+	        type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) (Array.map EConstr.of_constr args)
 	    in
 	      goalacc, ty, sigma, f
 	  else
@@ -386,7 +387,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
       | Proj (p,c) ->
 	let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
 	let c = mkProj (p, c') in
-	let ty = get_type_of env sigma c in
+	let ty = get_type_of env sigma (EConstr.of_constr c) in
 	  (acc',ty,sigma,c)
 
       | Case (ci,p,c,lf) ->
@@ -435,7 +436,7 @@ and mk_hdgoals sigma goal goalacc trm =
 	  if is_template_polymorphic env sigma (EConstr.of_constr f)
 	  then
 	    let l' = meta_free_prefix sigma l in
-	   (goalacc,type_of_global_reference_knowing_parameters env sigma f l',sigma,f)
+	   (goalacc,type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) l',sigma,f)
 	  else mk_hdgoals sigma goal goalacc f
 	in
 	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
@@ -460,7 +461,7 @@ and mk_hdgoals sigma goal goalacc trm =
     | Proj (p,c) ->
          let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
 	 let c = mkProj (p, c') in
-         let ty = get_type_of env sigma c in
+         let ty = get_type_of env sigma (EConstr.of_constr c) in
 	   (acc',ty,sigma,c)
 
     | _ ->

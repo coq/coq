@@ -195,7 +195,7 @@ i*)
 (********************)
 
 val type_of_inductive_knowing_conclusion :
-  env -> evar_map -> Inductive.mind_specif puniverses -> EConstr.types -> evar_map * types
+  env -> evar_map -> Inductive.mind_specif puniverses -> EConstr.types -> evar_map * EConstr.types
 
 (********************)
 val control_only_guard : env -> types -> unit

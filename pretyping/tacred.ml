@@ -974,7 +974,7 @@ let matches_head env sigma c t =
 let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c = 
   match kind_of_term c with
   | Proj (p, r) -> (* Treat specially for partial applications *)
-    let t = Retyping.expand_projection env sigma p r [] in
+    let t = Retyping.expand_projection env sigma p (EConstr.of_constr r) [] in
     let hdf, al = destApp t in
     let a = al.(Array.length al - 1) in
     let app = (mkApp (hdf, Array.sub al 0 (Array.length al - 1))) in
@@ -1150,7 +1150,7 @@ let compute = cbv_betadeltaiota
  * the specified occurrences. *)
 
 let abstract_scheme env (locc,a) (c, sigma) =
-  let ta = Retyping.get_type_of env sigma a in
+  let ta = Retyping.get_type_of env sigma (EConstr.of_constr a) in
   let na = named_hd env ta Anonymous in
   if occur_meta sigma (EConstr.of_constr ta) then error "Cannot find a type for the generalisation.";
   if occur_meta sigma (EConstr.of_constr a) then

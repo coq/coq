@@ -300,7 +300,7 @@ let build_subclasses ~check env sigma glob pri =
 	   | Some (Forward, pri') ->
 	     let proj = Option.get proj in
 	     let body = it_mkLambda_or_LetIn (mkApp (mkConstU (proj,u), projargs)) rels in
-	       if check && check_instance env sigma body then None
+	       if check && check_instance env sigma (EConstr.of_constr body) then None
 	       else 
 		 let pri = 
 		   match pri, pri' with
@@ -312,7 +312,7 @@ let build_subclasses ~check env sigma glob pri =
 	in
 	let declare_proj hints (cref, pri, body) =
 	  let path' = cref :: path in
-	  let ty = Retyping.get_type_of env sigma body in
+	  let ty = Retyping.get_type_of env sigma (EConstr.of_constr body) in
 	  let rest = aux pri body ty path' in
 	    hints @ (path', pri, body) :: rest
 	in List.fold_left declare_proj [] projs 

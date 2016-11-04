@@ -65,7 +65,7 @@ let apply_coercion_args env evd check isproj argl funj =
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
       match kind_of_term (whd_all env evd (EConstr.of_constr typ)) with
       | Prod (_,c1,c2) ->
-        if check && not (e_cumul env evdref (Retyping.get_type_of env evd h) c1) then
+        if check && not (e_cumul env evdref (Retyping.get_type_of env evd (EConstr.of_constr h)) c1) then
 	  raise NoCoercion;
         apply_rec (h::acc) (subst1 h c2) restl
       | _ -> anomaly (Pp.str "apply_coercion_args")
@@ -488,7 +488,7 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
 	  let v2 = Option.map (fun v -> beta_applist evd' (EConstr.of_constr (lift 1 v),[EConstr.of_constr v1])) v in
 	  let t2 = match v2 with
 	    | None -> subst_term evd' (EConstr.of_constr v1) (EConstr.of_constr t2)
-	    | Some v2 -> Retyping.get_type_of env1 evd' v2 in
+	    | Some v2 -> Retyping.get_type_of env1 evd' (EConstr.of_constr v2) in
 	  let (evd'',v2') = inh_conv_coerce_to_fail loc env1 evd' rigidonly v2 t2 u2 in
 	    (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
       | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))

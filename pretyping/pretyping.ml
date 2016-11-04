@@ -409,7 +409,7 @@ let invert_ltac_bound_name lvar env id0 id =
 		       str " which is not bound in current context.")
 
 let protected_get_type_of env sigma c =
-  try Retyping.get_type_of ~lax:true env.ExtraEnv.env sigma c
+  try Retyping.get_type_of ~lax:true env.ExtraEnv.env sigma (EConstr.of_constr c)
   with Retyping.RetypeError _ ->
     user_err 
       (str "Cannot reinterpret " ++ quote (print_constr c) ++
@@ -563,7 +563,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let hyps = evar_filtered_context (Evd.find !evdref evk) in
       let args = pretype_instance k0 resolve_tc env evdref lvar loc hyps evk inst in
       let c = mkEvar (evk, args) in
-      let j = (Retyping.get_judgment_of env.ExtraEnv.env !evdref c) in
+      let j = (Retyping.get_judgment_of env.ExtraEnv.env !evdref (EConstr.of_constr c)) in
 	inh_conv_coerce_to_tycon loc env evdref j tycon
 
   | GPatVar (loc,(someta,n)) ->
@@ -757,7 +757,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	    let sigma = !evdref in
 	    let c = mkApp (f,Array.map (whd_evar sigma) args) in
 	    let c = evd_comb1 (Evarsolve.refresh_universes (Some true) env.ExtraEnv.env) evdref c in
-	    let t = Retyping.get_type_of env.ExtraEnv.env !evdref c in
+	    let t = Retyping.get_type_of env.ExtraEnv.env !evdref (EConstr.of_constr c) in
 	      make_judge c (* use this for keeping evars: resj.uj_val *) t
 	  else resj
       | _ -> resj 
@@ -1067,7 +1067,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
        | Some v ->
            let s =
 	     let sigma =  !evdref in
-	     let t = Retyping.get_type_of env.ExtraEnv.env sigma v in
+	     let t = Retyping.get_type_of env.ExtraEnv.env sigma (EConstr.of_constr v) in
 	       match kind_of_term (whd_all env.ExtraEnv.env sigma (EConstr.of_constr t)) with
                | Sort s -> s
                | Evar ev when is_Type (existential_type sigma ev) ->

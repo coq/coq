@@ -138,7 +138,7 @@ let check_type_fixpoint loc env evdref lna lar vdefj =
 
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
-  let pj = Retyping.get_judgment_of env sigma p in
+  let pj = Retyping.get_judgment_of env sigma (EConstr.of_constr p) in
   let ksort = family_of_sort (sort_of_arity env sigma (EConstr.of_constr pj.uj_type)) in
   let specif = Global.lookup_inductive (fst ind) in
   let sorts = elim_sorts specif in

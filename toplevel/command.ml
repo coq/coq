@@ -206,7 +206,7 @@ let do_definition ident k pl bl red_option c ctypopt hook =
       assert(Univ.ContextSet.is_empty ctx);
       let typ = match ce.const_entry_type with 
 	| Some t -> t
-	| None -> Retyping.get_type_of env evd c
+	| None -> Retyping.get_type_of env evd (EConstr.of_constr c)
       in 
       Obligations.check_evars env evd;
       let obls, _, c, cty = 
@@ -459,7 +459,7 @@ let sign_level env evd sign =
       | LocalDef _ -> lev, push_rel d env
       | LocalAssum _ ->
 	let s = destSort (Reduction.whd_all env 
-			    (nf_evar evd (Retyping.get_type_of env evd (RelDecl.get_type d))))
+			    (nf_evar evd (Retyping.get_type_of env evd (EConstr.of_constr (RelDecl.get_type d)))))
 	in
 	let u = univ_of_sort s in
 	  (Univ.sup u lev, push_rel d env))

@@ -165,7 +165,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let params1, c1, extra_args1 =
     match arg with
     | Some c -> (* A primitive projection applied to c *)
-      let ty = Retyping.get_type_of ~lax:true env sigma c in
+      let ty = Retyping.get_type_of ~lax:true env sigma (EConstr.of_constr c) in
       let (i,u), ind_args = 
 	try Inductiveops.find_mrectype env sigma (EConstr.of_constr ty)
 	with _ -> raise Not_found
@@ -464,7 +464,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    else 
 	      let f =
 		try 
-		  let termM' = Retyping.expand_projection env evd p (EConstr.Unsafe.to_constr c) [] in
+		  let termM' = Retyping.expand_projection env evd p c [] in
 		  let apprM', cstsM' = 
 		    whd_betaiota_deltazeta_for_iota_state
 		      (fst ts) env evd cstsM (EConstr.of_constr termM',skM)
@@ -643,7 +643,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	(* Catch the p.c ~= p c' cases *)
 	| Proj (p,c), Const (p',u) when eq_constant (Projection.constant p) p' ->
 	  let res = 
-	    try Some (EConstr.destApp evd (EConstr.of_constr (Retyping.expand_projection env evd p c [])))
+	    try Some (EConstr.destApp evd (EConstr.of_constr (Retyping.expand_projection env evd p (EConstr.of_constr c) [])))
 	    with Retyping.RetypeError _ -> None
 	  in
 	    (match res with 
@@ -654,7 +654,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	      
 	| Const (p,u), Proj (p',c') when eq_constant p (Projection.constant p') ->
 	  let res = 
-	    try Some (EConstr.destApp evd (EConstr.of_constr (Retyping.expand_projection env evd p' c' [])))
+	    try Some (EConstr.destApp evd (EConstr.of_constr (Retyping.expand_projection env evd p' (EConstr.of_constr c') [])))
 	    with Retyping.RetypeError _ -> None
 	  in 
 	    (match res with
@@ -888,7 +888,7 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
       List.fold_left
 	(fun (i,ks,m,test) b ->
 	  if match n with Some n -> Int.equal m n | None -> false then
-	    let ty = Retyping.get_type_of env i t2 in
+	    let ty = Retyping.get_type_of env i (EConstr.of_constr t2) in
 	    let test i = evar_conv_x trs env i CUMUL ty (substl ks b) in
 	      (i,t2::ks, m-1, test)
 	  else
@@ -1058,7 +1058,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let id = NamedDecl.get_id decl' in
       let t = NamedDecl.get_type decl' in
       let evs = ref [] in
-      let ty = Retyping.get_type_of env_rhs evd c in
+      let ty = Retyping.get_type_of env_rhs evd (EConstr.of_constr c) in
       let filter' = filter_possible_projections evd c ty ctxt args in
       (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
   | _, _, [] -> []

@@ -221,7 +221,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
           else (* Might be a projection on the right *)
 	    match kind_of_term c2 with
 	    | Proj (pr, c) when not (Projection.unfolded pr) ->
-	      (try let term = Retyping.expand_projection env sigma pr c (Array.to_list args2) in
+	      (try let term = Retyping.expand_projection env sigma pr (EConstr.of_constr c) (Array.map_to_list EConstr.of_constr args2) in
 		     sorec ctx env subst p term
 	       with Retyping.RetypeError _ -> raise PatternMatchingFailure)
 	    | _ -> raise PatternMatchingFailure)
@@ -237,7 +237,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 	    with Invalid_argument _ -> raise PatternMatchingFailure
 	  else raise PatternMatchingFailure
 	| _, Proj (pr,c) when not (Projection.unfolded pr) ->
-	  (try let term = Retyping.expand_projection env sigma pr c (Array.to_list arg2) in
+	  (try let term = Retyping.expand_projection env sigma pr (EConstr.of_constr c) (Array.map_to_list EConstr.of_constr arg2) in
 		 sorec ctx env subst p term
 	   with Retyping.RetypeError _ -> raise PatternMatchingFailure)	    
 	| _, _ ->
@@ -249,7 +249,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 	raise PatternMatchingFailure
 	
       | PApp (c, args), Proj (pr, c2) ->
-	(try let term = Retyping.expand_projection env sigma pr c2 [] in
+	(try let term = Retyping.expand_projection env sigma pr (EConstr.of_constr c2) [] in
 	       sorec ctx env subst p term
 	 with Retyping.RetypeError _ -> raise PatternMatchingFailure)
 
@@ -440,7 +440,7 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
     let next_mk_ctx le = mk_ctx (mkProj (p,List.hd le)) in
       if partial_app then
 	try 
-	  let term = Retyping.expand_projection env sigma p c' [] in
+	  let term = Retyping.expand_projection env sigma p (EConstr.of_constr c') [] in
 	    aux env term mk_ctx next
 	with Retyping.RetypeError _ -> next ()
       else

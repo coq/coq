@@ -141,8 +141,8 @@ let recheck_applications conv_algo env evdref t =
     match kind_of_term t with
     | App (f, args) ->
        let () = aux env f in
-       let fty = Retyping.get_type_of env !evdref f in
-       let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref x) args in
+       let fty = Retyping.get_type_of env !evdref (EConstr.of_constr f) in
+       let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref (EConstr.of_constr x)) args in
        let rec aux i ty =
 	 if i < Array.length argsty then
 	 match kind_of_term (whd_all env !evdref (EConstr.of_constr ty)) with
@@ -634,7 +634,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       let LocalAssum (na,t_in_env) | LocalDef (na,_,t_in_env) = d in
       let id = next_name_away na avoid in
       let evd,t_in_sign =
-        let s = Retyping.get_sort_of env evd t_in_env in
+        let s = Retyping.get_sort_of env evd (EConstr.of_constr t_in_env) in
         let evd,ty_t_in_sign = refresh_universes
 	 ~status:univ_flexible (Some false) env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd src t_in_env
@@ -653,7 +653,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       (sign1,filter1,Array.to_list args1,inst_in_sign,env1,evd,ids1)
   in
   let evd,ev2ty_in_sign =
-    let s = Retyping.get_sort_of env evd ty_in_env in
+    let s = Retyping.get_sort_of env evd (EConstr.of_constr ty_in_env) in
     let evd,ty_t_in_sign = refresh_universes
      ~status:univ_flexible (Some false) env evd (mkSort s) in
     define_evar_from_virtual_equation define_fun env evd src ty_in_env
@@ -1161,7 +1161,7 @@ let check_evar_instance evd evk1 body conv_algo =
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
   let ty =
-    try Retyping.get_type_of ~lax:true evenv evd body
+    try Retyping.get_type_of ~lax:true evenv evd (EConstr.of_constr body)
     with Retyping.RetypeError _ -> error "Ill-typed evar instance"
   in
   match conv_algo evenv evd Reduction.CUMUL ty evi.evar_concl with
@@ -1365,7 +1365,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
         | (id,p)::_::_ ->
             if choose then (mkVar id, p) else raise (NotUniqueInType sols)
       in
-      let ty = lazy (Retyping.get_type_of env !evdref t) in
+      let ty = lazy (Retyping.get_type_of env !evdref (EConstr.of_constr t)) in
       let evd = do_projection_effects (evar_define conv_algo ~choose) env ty !evdref p in
       evdref := evd;
       c
@@ -1428,7 +1428,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
           if not !progress then
             raise (NotEnoughInformationEvarEvar t);
           (* Make the virtual left evar real *)
-          let ty = get_type_of env' evd t in
+          let ty = get_type_of env' evd (EConstr.of_constr t) in
           let (evd,evar'',ev'') =
              materialize_evar (evar_define conv_algo ~choose) env' evd k ev ty in
           (* materialize_evar may instantiate ev' by another evar; adjust it *)
@@ -1462,7 +1462,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
           | _ -> None
         with
         | Some l ->
-            let ty = get_type_of env' !evdref t in
+            let ty = get_type_of env' !evdref (EConstr.of_constr t) in
             let candidates =
               try
                 let self env c = EConstr.of_constr (imitate env (EConstr.Unsafe.to_constr c)) in

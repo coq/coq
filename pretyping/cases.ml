@@ -1480,7 +1480,7 @@ and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
   if not (Flags.is_program_mode ()) && (isRel orig || isVar orig) then
     (* Try to compile first using non expanded alias *)
     try
-      if initial then f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
+      if initial then f orig (Retyping.get_type_of pb.env !(pb.evdref) (EConstr.of_constr orig))
       else just_pop ()
     with e when precatchable_exception e ->
     (* Try then to compile using expanded alias *)
@@ -1495,7 +1495,7 @@ and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
     (* Could be needed in case of a recursive call which requires to
        be on a variable for size reasons *)
     pb.evdref := sigma;
-    if initial then f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
+    if initial then f orig (Retyping.get_type_of pb.env !(pb.evdref) (EConstr.of_constr orig))
     else just_pop ()
 
 
@@ -1627,7 +1627,7 @@ let abstract_tycon loc env evdref subst tycon extenv t =
     let t = whd_evar !evdref t in match kind_of_term t with
     | Rel n when is_local_def (lookup_rel n env) -> t
     | Evar ev ->
-        let ty = get_type_of env !evdref t in
+        let ty = get_type_of env !evdref (EConstr.of_constr t) in
 	let ty = Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty in
         let inst =
 	  List.map_i
@@ -1649,7 +1649,7 @@ let abstract_tycon loc env evdref subst tycon extenv t =
     | (_, _, u) :: _ -> (* u is in extenv *)
       let vl = List.map pi1 good in
       let ty = 
-	let ty = get_type_of env !evdref t in
+	let ty = get_type_of env !evdref (EConstr.of_constr t) in
 	  Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty
       in
       let ty = lift (-k) (aux x ty) in
@@ -1798,7 +1798,7 @@ let build_inversion_problem loc env sigma tms t =
 	          it = None } } ] in
   (* [pb] is the auxiliary pattern-matching serving as skeleton for the
       return type of the original problem Xi *)
-  let s' = Retyping.get_sort_of env sigma t in
+  let s' = Retyping.get_sort_of env sigma (EConstr.of_constr t) in
   let sigma, s = Evd.new_sort_variable univ_flexible_alg sigma in
   let sigma = Evd.set_leq_sort env sigma s' s in
   let evdref = ref sigma in
@@ -2067,7 +2067,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	let cstr = mkConstructU ci.cs_cstr in
 	let app = applistc cstr (List.map (lift (List.length sign)) params) in
 	let app = applistc app args in
-	let apptype = Retyping.get_type_of env ( !evdref) app in
+	let apptype = Retyping.get_type_of env ( !evdref) (EConstr.of_constr app) in
 	let IndType (indf, realargs) = find_rectype env (!evdref) (EConstr.of_constr apptype) in
 	  match alias with
 	      Anonymous ->
@@ -2325,7 +2325,7 @@ let build_dependent_signature env evdref avoid tomatchs arsign =
 		 (fun (env, nargeqs, argeqs, refl_args, slift, argsign') arg decl ->
 		    let name = RelDecl.get_name decl in
 		    let t = RelDecl.get_type decl in
-		    let argt = Retyping.get_type_of env !evdref arg in
+		    let argt = Retyping.get_type_of env !evdref (EConstr.of_constr arg) in
 		    let eq, refl_arg =
 		      if Reductionops.is_conv env !evdref (EConstr.of_constr argt) (EConstr.of_constr t) then
 			(mk_eq evdref (lift (nargeqs + slift) argt)

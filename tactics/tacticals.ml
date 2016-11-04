@@ -248,10 +248,10 @@ let compute_constructor_signatures isrec ((_,k as ity),u) =
   Array.map2 analrec lc lrecargs
 
 let elimination_sort_of_goal gl =
-  pf_apply Retyping.get_sort_family_of gl (pf_concl gl)
+  pf_apply Retyping.get_sort_family_of gl (EConstr.of_constr (pf_concl gl))
 
 let elimination_sort_of_hyp id gl =
-  pf_apply Retyping.get_sort_family_of gl (pf_get_hyp_typ gl id)
+  pf_apply Retyping.get_sort_family_of gl (EConstr.of_constr (pf_get_hyp_typ gl id))
 
 let elimination_sort_of_clause = function
   | None -> elimination_sort_of_goal
@@ -708,12 +708,12 @@ module New = struct
   let elimination_sort_of_goal gl =
     (** Retyping will expand evars anyway. *)
     let c = Proofview.Goal.concl (Goal.assume gl) in
-    pf_apply Retyping.get_sort_family_of gl c
+    pf_apply Retyping.get_sort_family_of gl (EConstr.of_constr c)
 
   let elimination_sort_of_hyp id gl =
     (** Retyping will expand evars anyway. *)
     let c = pf_get_hyp_typ id (Goal.assume gl) in
-    pf_apply Retyping.get_sort_family_of gl c
+    pf_apply Retyping.get_sort_family_of gl (EConstr.of_constr c)
 
   let elimination_sort_of_clause id gl = match id with
   | None -> elimination_sort_of_goal gl

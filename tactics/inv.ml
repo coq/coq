@@ -65,7 +65,7 @@ let var_occurs_in_pf gl id =
 type inversion_status = Dep of constr option | NoDep
 
 let compute_eqn env sigma n i ai =
-  (mkRel (n-i),get_type_of env sigma (mkRel (n-i)))
+  (mkRel (n-i),get_type_of env sigma (EConstr.of_constr (mkRel (n-i))))
 
 let make_inv_predicate env evd indf realargs id status concl =
   let nrealargs = List.length realargs in
@@ -86,7 +86,7 @@ let make_inv_predicate env evd indf realargs id status concl =
             match dflt_concl with
               | Some concl -> concl (*assumed it's some [x1..xn,H:I(x1..xn)]C*)
               | None ->
-		let sort = get_sort_family_of env !evd concl in
+		let sort = get_sort_family_of env !evd (EConstr.of_constr concl) in
 		let sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd sort in
 		let p = make_arity env true indf sort in
 		let evd',(p,ptyp) = Unification.abstract_list_all env

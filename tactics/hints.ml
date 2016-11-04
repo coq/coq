@@ -846,7 +846,7 @@ let fresh_global_or_constr env sigma poly cr =
 
 let make_resolves env sigma flags pri poly ?name cr =
   let c, ctx = fresh_global_or_constr env sigma poly cr in
-  let cty = Retyping.get_type_of env sigma c in
+  let cty = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let try_apply f =
     try Some (f (c, cty, ctx)) with Failure _ -> None in
   let ents = List.map_filter try_apply

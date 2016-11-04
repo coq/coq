@@ -84,7 +84,7 @@ let compute_constructor_level evars env l =
   List.fold_right (fun d (env, univ) ->
     let univ = 
       if is_local_assum d then
-	let s = Retyping.get_sort_of env evars (RelDecl.get_type d) in
+	let s = Retyping.get_sort_of env evars (EConstr.of_constr (RelDecl.get_type d)) in
 	  Univ.sup (univ_of_sort s) univ 
       else univ
     in (push_rel d env, univ)) 

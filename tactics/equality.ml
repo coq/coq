@@ -440,7 +440,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
     Proofview.Goal.enter { enter = begin fun gl ->
       let sigma = Tacmach.New.project gl in
       let env = Proofview.Goal.env gl in
-    let ctype = get_type_of env sigma c in
+    let ctype = get_type_of env sigma (EConstr.of_constr c) in
     let rels, t = decompose_prod_assum (whd_betaiotazeta sigma (EConstr.of_constr ctype)) in
       match match_with_equality_type sigma t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
@@ -621,8 +621,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   in
   Proofview.Goal.enter { enter = begin fun gl ->
   let get_type_of = pf_apply get_type_of gl in
-  let t1 = get_type_of c1
-  and t2 = get_type_of c2 in
+  let t1 = get_type_of (EConstr.of_constr c1)
+  and t2 = get_type_of (EConstr.of_constr c2) in
   let evd = 
     if unsafe then Some (Tacmach.New.project gl)
     else
@@ -719,8 +719,8 @@ let find_positions env sigma t1 t2 =
   let project env sorts posn t1 t2 =
     let t1 = EConstr.Unsafe.to_constr t1 in
     let t2 = EConstr.Unsafe.to_constr t2 in
-    let ty1 = get_type_of env sigma t1 in
-    let s = get_sort_family_of env sigma ty1 in
+    let ty1 = get_type_of env sigma (EConstr.of_constr t1) in
+    let s = get_sort_family_of env sigma (EConstr.of_constr ty1) in
     if Sorts.List.mem s sorts
     then [(List.rev posn,t1,t2)] else []
   in
@@ -842,7 +842,7 @@ let injectable env sigma t1 t2 =
 
 let descend_then env sigma head dirn =
   let IndType (indf,_) =
-    try find_rectype env sigma (EConstr.of_constr (get_type_of env sigma head))
+    try find_rectype env sigma (EConstr.of_constr (get_type_of env sigma (EConstr.of_constr head)))
     with Not_found ->
       error "Cannot project on an inductive type derived from a dependency." in
   let indp,_ = (dest_ind_family indf) in
@@ -897,7 +897,7 @@ let build_selector env sigma dirn c ind special default =
 		 dependent types.") in
   let (indp,_) = dest_ind_family indf in
   let ind, _ = check_privacy env indp in
-  let typ = Retyping.get_type_of env sigma default in
+  let typ = Retyping.get_type_of env sigma (EConstr.of_constr default) in
   let (mib,mip) = lookup_mind_specif env ind in
   let deparsign = make_arity_signature env true indf in
   let p = it_mkLambda_or_LetIn typ deparsign in
@@ -912,7 +912,7 @@ let build_selector env sigma dirn c ind special default =
 
 let rec build_discriminator env sigma dirn c = function
   | [] ->
-      let ind = get_type_of env sigma c in
+      let ind = get_type_of env sigma (EConstr.of_constr c) in
       let true_0,false_0 =
         build_coq_True(),build_coq_False() in
       build_selector env sigma dirn c ind true_0 false_0
@@ -1084,7 +1084,7 @@ let find_sigma_data env s = build_sigma_type ()
 
 let make_tuple env sigma (rterm,rty) lind =
   assert (not (EConstr.Vars.noccurn sigma lind (EConstr.of_constr rty)));
-  let sigdata = find_sigma_data env (get_sort_of env sigma rty) in
+  let sigdata = find_sigma_data env (get_sort_of env sigma (EConstr.of_constr rty)) in
   let sigma, a = type_of ~refresh:true env sigma (mkRel lind) in
   let na = Context.Rel.Declaration.get_name (lookup_rel lind env) in
   (* We move [lind] to [1] and lift other rels > [lind] by 1 *)
@@ -1262,7 +1262,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 
 let make_iterated_tuple env sigma dflt (z,zty) =
   let (zty,rels) = minimal_free_rels_rec env sigma (z,zty) in
-  let sort_of_zty = get_sort_of env sigma zty in
+  let sort_of_zty = get_sort_of env sigma (EConstr.of_constr zty) in
   let sorted_rels = Int.Set.elements rels in
   let sigma, (tuple,tuplety) =
     List.fold_left (fun (sigma, t) -> make_tuple env sigma t) (sigma, (z,zty)) sorted_rels
@@ -1533,7 +1533,7 @@ let decomp_tuple_term env sigma c t =
 
 let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   let sigma = Sigma.to_evar_map sigma in
-  let typ = get_type_of env sigma dep_pair1 in
+  let typ = get_type_of env sigma (EConstr.of_constr dep_pair1) in
   (* We find all possible decompositions *)
   let decomps1 = decomp_tuple_term env sigma dep_pair1 typ in
   let decomps2 = decomp_tuple_term env sigma dep_pair2 typ in
@@ -1623,7 +1623,7 @@ let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
 
 let substClause l2r c cls =
   Proofview.Goal.enter { enter = begin fun gl ->
-  let eq = pf_apply get_type_of gl c in
+  let eq = pf_apply get_type_of gl (EConstr.of_constr c) in
   tclTHENS (cutSubstClause l2r eq cls)
     [Proofview.tclUNIT (); exact_no_check c]
   end }

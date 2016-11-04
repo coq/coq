@@ -1199,7 +1199,7 @@ struct
       with e when CErrors.noncritical e -> (X(t),env,tg) in
 
     let is_prop term =
-      let sort  = Retyping.get_sort_of (Tacmach.pf_env gl)  (Tacmach.project gl) term in 
+      let sort  = Retyping.get_sort_of (Tacmach.pf_env gl)  (Tacmach.project gl) (EConstr.of_constr term) in 
      Term.is_prop_sort sort in
      
     let rec xparse_formula env tg term =

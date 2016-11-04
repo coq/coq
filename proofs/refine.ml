@@ -133,7 +133,7 @@ let refine ?(unsafe = true) f =
 (** Useful definitions *)
 
 let with_type env evd c t =
-  let my_type = Retyping.get_type_of env evd c in
+  let my_type = Retyping.get_type_of env evd (EConstr.of_constr c) in
   let j = Environ.make_judge c my_type in
   let (evd,j') =
     Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t

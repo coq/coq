@@ -501,7 +501,7 @@ let rec detype flags avoid env sigma t =
 	    try 
 	      let pb = Environ.lookup_projection p (snd env) in
 	      let body = pb.Declarations.proj_body in
-	      let ty = Retyping.get_type_of (snd env) sigma c in
+	      let ty = Retyping.get_type_of (snd env) sigma (EConstr.of_constr c) in
 	      let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma (EConstr.of_constr ty) in
 	      let body' = strip_lam_assum body in
 	      let body' = subst_instance_constr u body' in
@@ -512,7 +512,7 @@ let rec detype flags avoid env sigma t =
 	else
 	  if print_primproj_params () then
 	    try
-	      let c = Retyping.expand_projection (snd env) sigma p c [] in
+	      let c = Retyping.expand_projection (snd env) sigma p (EConstr.of_constr c) [] in
 		detype flags avoid env sigma c
 	    with Retyping.RetypeError _ -> noparams ()
 	  else noparams ()
@@ -689,7 +689,7 @@ and detype_binder (lax,isgoal as flags) bk avoid env sigma na body ty c =
   | BLetIn ->
       let c = detype (lax,false) avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
-      let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
+      let s = try Retyping.get_sort_family_of (snd env) sigma (EConstr.of_constr ty) with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
       let c = if s != InProp then c else
           GCast (dl, c, CastConv (detype (lax,false) avoid env sigma ty)) in
       GLetIn (dl, na', c, r)

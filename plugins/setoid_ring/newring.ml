@@ -345,9 +345,9 @@ let ring_for_carrier r = Cmap.find r !from_carrier
 let find_ring_structure env sigma l =
   match l with
     | t::cl' ->
-        let ty = Retyping.get_type_of env sigma t in
+        let ty = Retyping.get_type_of env sigma (EConstr.of_constr t) in
         let check c =
-          let ty' = Retyping.get_type_of env sigma c in
+          let ty' = Retyping.get_type_of env sigma (EConstr.of_constr c) in
           if not (Reductionops.is_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr ty')) then
             user_err ~hdr:"ring"
               (str"arguments of ring_simplify do not have all the same type")
@@ -540,7 +540,7 @@ let build_setoid_params env evd r add mul opp req eqth =
     | None -> ring_equality env evd (r,add,mul,opp,req)
 
 let dest_ring env sigma th_spec =
-  let th_typ = Retyping.get_type_of env sigma th_spec in
+  let th_typ = Retyping.get_type_of env sigma (EConstr.of_constr th_spec) in
   match kind_of_term th_typ with
       App(f,[|r;zero;one;add;mul;sub;opp;req|])
         when eq_constr_nounivs f (Lazy.force coq_almost_ring_theory) ->
@@ -571,7 +571,7 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
               TacArg(Loc.ghost,TacCall(Loc.ghost,t,[]))
 
 let make_hyp env evd c =
-  let t = Retyping.get_type_of env !evd c in
+  let t = Retyping.get_type_of env !evd (EConstr.of_constr c) in
    plapp evd coq_mkhypo [|t;c|]
 
 let make_hyp_list env evd lH =
@@ -796,7 +796,7 @@ let af_ar = my_reference"AF_AR"
 let f_r = my_reference"F_R"
 let sf_sr = my_reference"SF_SR"
 let dest_field env evd th_spec =
-  let th_typ = Retyping.get_type_of env !evd th_spec in
+  let th_typ = Retyping.get_type_of env !evd (EConstr.of_constr th_spec) in
   match kind_of_term th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
         when is_global (Lazy.force afield_theory) f ->
@@ -825,9 +825,9 @@ let find_field_structure env sigma l =
   check_required_library (cdir@["Field_tac"]);
   match l with
     | t::cl' ->
-        let ty = Retyping.get_type_of env sigma t in
+        let ty = Retyping.get_type_of env sigma (EConstr.of_constr t) in
         let check c =
-          let ty' = Retyping.get_type_of env sigma c in
+          let ty' = Retyping.get_type_of env sigma (EConstr.of_constr c) in
           if not (Reductionops.is_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr ty')) then
             user_err ~hdr:"field"
               (str"arguments of field_simplify do not have all the same type")

@@ -606,7 +606,7 @@ let rec instantiate_universes env evdref scl is = function
 
 let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
   match mip.mind_arity with
-  | RegularArity s -> sigma, subst_instance_constr u s.mind_user_arity
+  | RegularArity s -> sigma, EConstr.of_constr (subst_instance_constr u s.mind_user_arity)
   | TemplateArity ar ->
     let _,scl = splay_arity env sigma conclty in
     let ctx = List.rev mip.mind_arity_ctxt in
@@ -614,7 +614,7 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
     let ctx =
       instantiate_universes
         env evdref scl ar.template_level (ctx,ar.template_param_levels) in
-      !evdref, mkArity (List.rev ctx,scl)
+      !evdref, EConstr.of_constr (mkArity (List.rev ctx,scl))
 
 let type_of_projection_knowing_arg env sigma p c ty =
   let c = EConstr.Unsafe.to_constr c in

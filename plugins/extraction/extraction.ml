@@ -42,11 +42,11 @@ let none = Evd.empty
 
 let type_of env c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_type_of ~polyprop env none (strip_outer_cast none (EConstr.of_constr c))
+  Retyping.get_type_of ~polyprop env none (EConstr.of_constr (strip_outer_cast none (EConstr.of_constr c)))
 
 let sort_of env c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_sort_family_of ~polyprop env none (strip_outer_cast none (EConstr.of_constr c))
+  Retyping.get_sort_family_of ~polyprop env none (EConstr.of_constr (strip_outer_cast none (EConstr.of_constr c)))
 
 (*S Generation of flags and signatures. *)
 
@@ -595,7 +595,7 @@ let rec extract_term env mle mlt c args =
     | Construct (cp,_) ->
 	extract_cons_app env mle mlt cp args
     | Proj (p, c) ->
-        let term = Retyping.expand_projection env (Evd.from_env env) p c [] in
+        let term = Retyping.expand_projection env (Evd.from_env env) p (EConstr.of_constr c) [] in
 	  extract_term env mle mlt term args
     | Rel n ->
 	(* As soon as the expected [mlt] for the head is known, *)
