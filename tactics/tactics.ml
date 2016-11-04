@@ -4975,7 +4975,8 @@ module New = struct
   let reduce_after_refine =
     let onhyps =
       (** We reduced everywhere in the hyps before 8.6 *)
-      if Flags.version_less_or_equal Flags.V8_5 then None
+      if Flags.version_compare !Flags.compat_version Flags.V8_5 == 0
+      then None
       else Some []
     in
     reduce
