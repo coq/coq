@@ -1906,6 +1906,10 @@ let vernac_check_guard () =
 exception End_of_input
 
 let vernac_load interp fname =
+  let interp x =
+    let proof_mode = Proof_global.get_default_proof_mode_name () in
+    Proof_global.activate_proof_mode proof_mode;
+    interp x in
   let parse_sentence = Flags.with_option Flags.we_are_parsing
     (fun po ->
     match Pcoq.Gram.entry_parse Pcoq.main_entry po with
