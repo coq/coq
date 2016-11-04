@@ -4973,9 +4973,15 @@ module New = struct
   open Locus
 
   let reduce_after_refine =
+    let onhyps =
+      (** We reduced everywhere in the hyps before 8.6 *)
+      if Flags.version_less_or_equal Flags.V8_5 then None
+      else Some []
+    in
     reduce
-      (Lazy {rBeta=true;rMatch=true;rFix=true;rCofix=true;rZeta=false;rDelta=false;rConst=[]})
-      {onhyps=None; concl_occs=AllOccurrences }
+      (Lazy {rBeta=true;rMatch=true;rFix=true;rCofix=true;
+	     rZeta=false;rDelta=false;rConst=[]})
+      {onhyps; concl_occs=AllOccurrences }
 
   let refine ?unsafe c =
     Refine.refine ?unsafe c <*>
