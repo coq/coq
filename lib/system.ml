@@ -33,7 +33,6 @@ let all_subdirs ~unix_path:root =
       | _ -> ()
     in process_directory f path
   in
-  check_unix_dir (fun s -> Feedback.msg_warning (str s)) root;
   if exists_dir root then traverse root []
   else warn_cannot_open_dir root;
   List.rev !l
