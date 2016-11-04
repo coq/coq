@@ -64,7 +64,7 @@ Definition identity_rect_r :
  intros A x P H y H0; case identity_sym with (1 := H0); trivial.
 Defined.
 
-Hint Immediate identity_sym not_identity_sym: core v62.
+Hint Immediate identity_sym not_identity_sym: core.
 
 Notation refl_id := identity_refl (compat "8.3").
 Notation sym_id := identity_sym (compat "8.3").

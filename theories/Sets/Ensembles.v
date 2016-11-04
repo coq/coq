@@ -90,9 +90,8 @@ Section Ensembles.
 
 End Ensembles.
 
-Hint Unfold In Included Same_set Strict_Included Add Setminus Subtract: sets
-  v62.
+Hint Unfold In Included Same_set Strict_Included Add Setminus Subtract: sets.
 
 Hint Resolve Union_introl Union_intror Intersection_intro In_singleton
   Couple_l Couple_r Triple_l Triple_m Triple_r Disjoint_intro
-  Extensionality_Ensembles: sets v62.
+  Extensionality_Ensembles: sets.

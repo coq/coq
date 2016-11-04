@@ -3493,8 +3493,7 @@ hints of the database named {\tt core}.
 
 \item {\tt auto with *}
 
-  Uses all existing hint databases, minus the special database
-  {\tt v62}. See Section~\ref{Hints-databases}
+  Uses all existing hint databases. See Section~\ref{Hints-databases}
 
 \item \texttt{auto using} \nterm{lemma}$_1$ {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$
 
@@ -3999,8 +3998,8 @@ Several hint databases are defined in the \Coq\ standard library.  The
 actual content of a database is the collection of the hints declared
 to belong to this database in each of the various modules currently
 loaded.  Especially, requiring new modules potentially extend a
-database. At {\Coq} startup, only the {\tt core} and {\tt v62}
-databases are non empty and can be used.
+database. At {\Coq} startup, only the {\tt core} database is non empty
+and can be used.
 
 \begin{description}
 
@@ -4035,18 +4034,8 @@ databases are non empty and can be used.
   from the \texttt{Classes} directory.
 \end{description}
 
-There is also a special database called {\tt v62}. It collects all
-hints that were declared in the versions of {\Coq} prior to version
-6.2.4 when the databases {\tt core}, {\tt arith}, and so on were
-introduced.  The purpose of the database {\tt v62} is to ensure
-compatibility with further versions of {\Coq} for developments done in
-versions prior to 6.2.4 ({\tt auto} being replaced by {\tt auto with v62}).
-The database {\tt v62} is intended not to be extended (!). It is not
-included in the hint databases list used in the {\tt auto with *} tactic.
-
-Furthermore, you are advised not to put your own hints in the
-{\tt core} database, but use one or several databases specific to your
-development.
+You are advised not to put your own hints in the {\tt core} database,
+but use one or several databases specific to your development.
 
 \subsection{\tt Remove Hints \term$_1$ \mbox{\dots} \term$_n$ :~ \ident$_1$
   \mbox{\dots} \ident$_m$}

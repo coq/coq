@@ -33,7 +33,6 @@ Open Scope nat_scope.
 Definition eq_S := f_equal S.
 Definition f_equal_nat := f_equal (A:=nat).
 
-Hint Resolve eq_S: v62.
 Hint Resolve f_equal_nat: core.
 
 (** The predecessor function *)
@@ -41,7 +40,6 @@ Hint Resolve f_equal_nat: core.
 Notation pred := Nat.pred (compat "8.4").
 
 Definition f_equal_pred := f_equal pred.
-Hint Resolve f_equal_pred: v62.
 
 Theorem pred_Sn : forall n:nat, n = pred (S n).
 Proof.
@@ -85,7 +83,6 @@ Notation plus := Nat.add (compat "8.4").
 Infix "+" := Nat.add : nat_scope.
 
 Definition f_equal2_plus := f_equal2 plus.
-Hint Resolve f_equal2_plus: v62.
 Definition f_equal2_nat := f_equal2 (A1:=nat) (A2:=nat). 
 Hint Resolve f_equal2_nat: core.
 

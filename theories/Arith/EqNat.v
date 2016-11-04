@@ -25,7 +25,7 @@ Theorem eq_nat_refl n : eq_nat n n.
 Proof.
   induction n; simpl; auto.
 Qed.
-Hint Resolve eq_nat_refl: arith v62.
+Hint Resolve eq_nat_refl: arith.
 
 (** [eq] restricted to [nat] and [eq_nat] are equivalent *)
 
@@ -46,7 +46,7 @@ Proof.
  apply eq_nat_is_eq.
 Qed.
 
-Hint Immediate eq_eq_nat eq_nat_eq: arith v62.
+Hint Immediate eq_eq_nat eq_nat_eq: arith.
 
 Theorem eq_nat_elim :
   forall n (P:nat -> Prop), P n -> forall m, eq_nat n m -> P m.
