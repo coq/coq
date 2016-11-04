@@ -108,8 +108,18 @@ module New : sig
   val pf_env : ('a, 'r) Proofview.Goal.t -> Environ.env
   val pf_concl : ([ `NF ], 'r) Proofview.Goal.t -> types
 
+  (** WRONG: To be avoided at all costs, it typechecks the term entirely but
+     forgets the universe constraints necessary to retypecheck it *)
   val pf_unsafe_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.types
+
+  (** This function does no type inference and expects an already well-typed term.
+      It recomputes its type in the fastest way possible (no conversion is ever involved) *)
   val pf_get_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.types
+
+  (** This function entirely type-checks the term and computes its type
+      and the implied universe constraints. It can be used to ensure a
+      term is typable in the current goal, the evar_map should be given
+      to tclEVARS or a similar function to pass along the universe constraints.  *)
   val pf_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> evar_map * Term.types
   val pf_conv_x : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.constr -> bool
 
