@@ -24,11 +24,8 @@ open Misctypes
 
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env sigma c =
-  let c = EConstr.Unsafe.to_constr c in
-  let ctyp = Retyping.get_type_of env sigma c in
-  if Termops.occur_meta_or_existential sigma (EConstr.of_constr c) then
-    error "vm_compute does not support existential variables.";
-  Vnorm.cbv_vm env sigma c ctyp
+  let ctyp = Retyping.get_type_of env sigma (EConstr.Unsafe.to_constr c) in
+  Vnorm.cbv_vm env sigma c (EConstr.of_constr ctyp)
 
 let warn_native_compute_disabled =
   CWarnings.create ~name:"native-compute-disabled" ~category:"native-compiler"

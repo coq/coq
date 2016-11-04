@@ -352,6 +352,11 @@ and nf_cofix env sigma cf =
   mkCoFix (init,(name,cft,cfb))
 
 let cbv_vm env sigma c t  =
+  if Termops.occur_meta_or_existential sigma c then
+    CErrors.error "vm_compute does not support existential variables.";
+  (** This evar-normalizes terms beforehand *)
+  let c = EConstr.to_constr sigma c in
+  let t = EConstr.to_constr sigma t in
   let v = Vconv.val_of_constr env c in
   nf_val env sigma v t
 

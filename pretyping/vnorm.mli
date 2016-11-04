@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
+open EConstr
 open Environ
 
 (** {6 Reduction functions } *)
-val cbv_vm : env -> Evd.evar_map -> constr -> types -> constr
+val cbv_vm : env -> Evd.evar_map -> constr -> types -> Constr.t
