@@ -62,7 +62,7 @@ let print_usage_channel co command =
 \n  -list-tags             print highlight color tags known by Coq and exit\
 \n\
 \n  -quiet                 unset display of extra information (implies -w none)\
-\n  -w (all|none)          configure display of warnings\
+\n  -w (all|none|w1,..,wn) configure display of warnings\
 \n  -color (yes|no|auto)   configure color output\
 \n\
 \n  -q                     skip loading of rcfile\

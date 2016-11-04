@@ -914,6 +914,15 @@ This command turns off the normal displaying.
 \subsection[\tt Unset Silent.]{\tt Unset Silent.\optindex{Silent}}
 This command turns the normal display on.
 
+\subsection[{\tt Set Warnings} (all|none|{\em w1,..,wn}).]{{\tt Set Warnings} (all|none|{\em w1,..,wn}).\optindex{Set Warnings}}
+\label{SetWarnings}
+This command configures the display of warnings. It expects "none" or a
+comma-separated list of warning names or categories.
+Adding "-" in front of a warning disables it, adding "+" makes it an error.
+It is possible to use the special categories "all" and "default",
+which contains the warnings enabled by default.
+In case of an overlap, the more precise configuration takes precedence.
+
 \subsection[\tt Set Search Output Name Only.]{\tt Set Search Output Name Only.\optindex{Search Output Name Only}
 \label{Search-Output-Name-Only}
 \index{Search Output Name Only mode}}
