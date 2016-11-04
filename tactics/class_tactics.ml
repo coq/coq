@@ -1143,7 +1143,8 @@ module Search = struct
                        (true,false,false) info.search_only_classes None decl in
     let ldb = Hint_db.add_list env s hint info.search_hints in
     let info' =
-      { info with search_hints = ldb; last_tac = lazy (str"intro") }
+      { info with search_hints = ldb; last_tac = lazy (str"intro");
+        search_depth = 1 :: 1 :: info.search_depth }
     in kont info'
 
   let intro info kont =
