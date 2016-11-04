@@ -109,6 +109,7 @@ module New : sig
   val pf_concl : ([ `NF ], 'r) Proofview.Goal.t -> types
 
   val pf_unsafe_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.types
+  val pf_get_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.types
   val pf_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> evar_map * Term.types
   val pf_conv_x : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.constr -> bool
 
