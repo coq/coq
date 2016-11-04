@@ -37,9 +37,8 @@ let cbv_native env sigma c =
     (warn_native_compute_disabled ();
      cbv_vm env sigma c)
   else
-    let c = EConstr.Unsafe.to_constr c in
-    let ctyp = Retyping.get_type_of env sigma c in
-    Nativenorm.native_norm env sigma c ctyp
+    let ctyp = Retyping.get_type_of env sigma (EConstr.Unsafe.to_constr c) in
+    Nativenorm.native_norm env sigma c (EConstr.of_constr ctyp)
 
 let whd_cbn flags env sigma t =
   let (state,_) =

@@ -1021,7 +1021,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
  	    let cj = pretype empty_tycon env evdref lvar c in
 	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tval in
             begin
-	      let (evd,b) = Nativenorm.native_infer_conv env.ExtraEnv.env !evdref cty tval in
+	      let (evd,b) = Nativenorm.native_infer_conv env.ExtraEnv.env !evdref (EConstr.of_constr cty) (EConstr.of_constr tval) in
 	      if b then (evdref := evd; cj, tval)
 	      else
                 error_actual_type ~loc env.ExtraEnv.env !evdref cj tval
