@@ -376,6 +376,7 @@ and cbv_norm_value info = function (* reduction under binders *)
 
 (* with profiling *)
 let cbv_norm infos constr =
+  let constr = EConstr.Unsafe.to_constr constr in
   with_stats (lazy (cbv_norm_term infos (subs_id 0) constr))
 
 type cbv_infos = cbv_value infos

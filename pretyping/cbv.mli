@@ -19,7 +19,7 @@ open Esubst
 type cbv_infos
 
 val create_cbv_infos : RedFlags.reds -> env -> Evd.evar_map -> cbv_infos
-val cbv_norm         : cbv_infos -> constr -> constr
+val cbv_norm         : cbv_infos -> EConstr.constr -> constr
 
 (***********************************************************************
   i This is for cbv debug *)
