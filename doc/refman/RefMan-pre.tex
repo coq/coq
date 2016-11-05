@@ -1087,6 +1087,135 @@ Paris, January 2015, revised December 2015,\\
 Hugo Herbelin, Matthieu Sozeau and the {\Coq} development team\\
 \end{flushright}
 
+\section*{Credits: version 8.6 (Stronger, Better, Faster Rooster)}
+
+{\Coq} version 8.6 contains the result of refinements, stabilization of
+8.5's features and cleanups of the internals of the system. Over the
+year of (now time-based) development, about 450 bugs were resolved and
+over 100 contributions integrated. The main user visible changes are:
+\begin{itemize}
+\item A new, state-of-the-art universe constraint checker that
+  can outperform the previous version by an order of magnitude, by
+  Jacques-Henri Jourdan.
+\item In CoqIDE and other asynchronous interfaces, more fine-grained
+  asynchronous processing and error reporting by Enrico Tassi.
+\item More access to the proof engine features from Ltac: goal
+  management primitives, range selectors and a {\tt typeclasses
+    eauto} engine handling multiple goals and multiple successes, by
+  Cyprien Mangin, Matthieu Sozeau and Arnaud Spiwack.
+\item Tactic behavior uniformization and specification, generalization
+  of intro-patterns by Hugo Herbelin and others.
+\item Update of the beautifier by Hugo Herbelin, useful for switching
+  between versions.
+\item A brand new warning system allowing to control warnings, turn them
+  into errors or ignore them selectively by Maxime Dénès, Guillaume
+  Melquiond and others.
+\item Irrefutable patterns in abstractions, by Daniel de Rauglaudre.
+\item Integration of {\tt ssreflect}'s subterm selection algorithm by
+  Enrico Tassi.
+\item Integration of {\tt LtacProf}, a profiler for {\tt Ltac} by Tobias
+  Tebbi, Jason Gross and Paul Steckler.
+\end{itemize}
+
+{\Coq} 8.6 also comes with a bunch of smaller-scale changes and
+improvements regarding the different components of the system. We shall
+only list a few of them.
+
+The {\tt iota} reduction flag is now a shorthand for {\tt match}, {\tt
+  fix} and {\tt cofix} flags controlling the corresponding reduction
+rules (by Hugo Herbelin and Maxime Dénès).
+
+Maxime Dénès maintained the native compilation machinery.
+
+Pierre-Marie Pédrot separated the Ltac code from general purpose
+tactics, and generalized and rationalized the handling of generic
+arguments, allowing to create new versions of Ltac more easily in the
+future.
+
+Many tactics have now more uniform behavior w.r.t. intro-patterns thanks
+to Hugo Herbelin who also improved the basic tactics here and there.
+
+In patterns and terms, {\tt @}, abbreviations and notations are now
+interpreted the same way, by Hugo Herbelin.
+
+Name handling for universes has been improved by Pierre-Marie Pédrot and
+Matthieu Sozeau. The minimization algorithm has been improved by
+Matthieu Sozeau.
+
+The unifier has been improved by Hugo Herbelin and Matthieu Sozeau,
+fixing some incompatibilities introduced in Coq 8.5. Unification
+constraints can now be left floating around and be seen by the user
+thanks to a new option. The {\tt Keyed Unification} mode has been
+improved by Matthieu Sozeau. 
+
+The typeclass resolution engine and associated proof-search tactic have
+been reimplemented on top of the proof-engine monad, providing better
+integration in tactics, and new options have been introduced to control
+it, by Matthieu Sozeau with help from Théo Zimmermann.
+
+The efficiency of the whole system has been significantly improved
+thanks to contributions from Pierre-Marie Pédrot, Maxime Dénès and
+Matthieu Sozeau and performance issue tracking by Jason Gross and Paul
+Steckler.
+
+Standard library improvements by Jason Gross, Sébastien Hinderer, Pierre
+Letouzey and others.
+
+Emilio Jesús Gallego Arias contributed many cleanups and refactorings of
+the pretty-printing and user interface communication components.
+
+Frédéric Besson maintained the micromega tactic.
+
+The OPAM repository for {\Coq} packages has been maintained by Guillaume
+Claret, Guillaume Melquiond, Matthieu Sozeau, Enrico Tassi and others. A
+list of packages is now available at \url{https://coq.inria.fr/opam/www/}.
+
+Packaging tools were provided by Michael Soegtrop and Enrico Tassi
+(Windows), Maxime Dénès and Matthieu Sozeau (MacOS X). Packages are now
+regularly built on the continuous integration server.
+
+Matej Košík maintained and greatly improved the continuous integration
+setup and the testing of {\Coq} contributions. He also contributed many
+API improvement and code cleanups throughout the system.
+
+Many power users helped to improve the design of the new features via
+the bug tracker, the pull request system, the {\Coq} development mailing
+list or the coq-club mailing list. Special thanks to the users who
+contributed patches and intensive brain-storming and code reviews,
+starting with Cyril Cohen, Jason Gross, Robbert Krebbers, Jonathan
+Leivent, Xavier Leroy, Gregory Malecha, Clément Pit-Claudel, Gabriel
+Sherer and Beta Ziliani. It would however be impossible to mention with
+precision all the names of people who to some extent influenced the
+development.
+
+Version 8.6 is the first release of {\Coq} developed on a time-based
+development cycle. Its development spanned 10 months from the release of
+{\Coq} 8.5 and was based on a public roadmap. To date, it contains more
+external contributions than any previous {\Coq} system. Code reviews
+were systematically done before integration of new features, with an
+important focus given to compatibility and performance issues, resulting
+in a much more robust release than previous ones.
+
+General maintenance during part or whole of this period has been done by
+Pierre Boutillier, Pierre Courtieu, Maxime Dénès, Hugo Herbelin, Pierre
+Letouzey, Guillaume Melquiond, Pierre-Marie Pédrot, Matthieu Sozeau,
+Arnaud Spiwack, Enrico Tassi as well as Bruno Barras, Yves Bertot,
+Frédéric Besson, Assia Mahboubi, Yann Régis-Gianas. The development
+process was coordinated by Matthieu Sozeau with the help of Maxime
+Dénès, who was also in charge of the release process.
+
+Coq Enhancement Proposals (CEPs for short) were introduced by Enrico
+Tassi to provide more visibility and a discussion period on new
+features, they are publicly available \url{https://github.com/coq/ceps}.
+
+Started during this period, an effort is led by Yves Bertot and Maxime
+Dénès to put together a {\Coq} consortium.
+
+\begin{flushright}
+Paris, November 2016,\\
+Matthieu Sozeau and the {\Coq} development team\\
+\end{flushright}
+
 
 %new Makefile
 
