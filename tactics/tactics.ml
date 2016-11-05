@@ -2772,7 +2772,7 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let decls,cl = decompose_prod_n_assum i cl in
   let dummy_prod = EConstr.of_constr (it_mkProd_or_LetIn mkProp decls) in
   let newdecls,_ = decompose_prod_n_assum i (subst_term_gen sigma EConstr.eq_constr_nounivs (EConstr.of_constr c) dummy_prod) in
-  let cl',sigma' = subst_closed_term_occ env sigma (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
+  let cl',sigma' = subst_closed_term_occ env sigma (AtOccs occs) (EConstr.of_constr c) (EConstr.of_constr (it_mkProd_or_LetIn cl newdecls)) in
   let na = generalized_name c t ids cl' na in
   let decl = match b with
     | None -> LocalAssum (na,t)

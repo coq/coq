@@ -26,7 +26,7 @@ exception SubtermUnificationError of subterm_unification_error
     with None. *)
 
 type 'a testing_function = {
-  match_fun : 'a -> constr -> 'a;
+  match_fun : 'a -> EConstr.constr -> 'a;
   merge_fun : 'a -> 'a -> 'a;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
@@ -34,7 +34,7 @@ type 'a testing_function = {
 
 (** This is the basic testing function, looking for exact matches of a
     closed term *)
-val make_eq_univs_test : env -> evar_map -> constr -> evar_map testing_function
+val make_eq_univs_test : env -> evar_map -> EConstr.constr -> evar_map testing_function
 
 (** [replace_term_occ_modulo occl test mk c] looks in [c] for subterm
     modulo a testing function [test] and replaces successfully
@@ -42,26 +42,26 @@ val make_eq_univs_test : env -> evar_map -> constr -> evar_map testing_function
     ()]; it turns a NotUnifiable exception raised by the testing
     function into a SubtermUnificationError. *)
 val replace_term_occ_modulo : occurrences or_like_first ->
-  'a testing_function -> (unit -> constr) -> constr -> constr
+  'a testing_function -> (unit -> EConstr.constr) -> EConstr.constr -> constr
 
 (** [replace_term_occ_decl_modulo] is similar to
     [replace_term_occ_modulo] but for a named_declaration. *)
 val replace_term_occ_decl_modulo :
   (occurrences * hyp_location_flag) or_like_first ->
-  'a testing_function -> (unit -> constr) ->
+  'a testing_function -> (unit -> EConstr.constr) ->
   Context.Named.Declaration.t -> Context.Named.Declaration.t
 
 (** [subst_closed_term_occ occl c d] replaces occurrences of
     closed [c] at positions [occl] by [Rel 1] in [d] (see also Note OCC),
     unifying universes which results in a set of constraints. *)
 val subst_closed_term_occ : env -> evar_map -> occurrences or_like_first ->
-  constr -> constr -> constr * evar_map
+  EConstr.constr -> EConstr.constr -> constr * evar_map
 
 (** [subst_closed_term_occ_decl evd occl c decl] replaces occurrences of 
     closed [c] at positions [occl] by [Rel 1] in [decl]. *)
 val subst_closed_term_occ_decl : env -> evar_map ->
   (occurrences * hyp_location_flag) or_like_first ->
-  constr -> Context.Named.Declaration.t -> Context.Named.Declaration.t * evar_map
+  EConstr.constr -> Context.Named.Declaration.t -> Context.Named.Declaration.t * evar_map
 
 (** Miscellaneous *)
 val error_invalid_occurrence : int list -> 'a

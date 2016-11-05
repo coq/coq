@@ -11,7 +11,7 @@ open Util
 open CErrors
 open Names
 open Locus
-open Term
+open EConstr
 open Nameops
 open Termops
 open Pretype_errors
@@ -63,7 +63,10 @@ let proceed_with_occurrences f occs x =
 
 let map_named_declaration_with_hyploc f hyploc acc decl =
   let open Context.Named.Declaration in
-  let f = f (Some (NamedDecl.get_id decl, hyploc)) in
+  let f acc typ =
+    let acc, typ = f (Some (NamedDecl.get_id decl, hyploc)) acc (EConstr.of_constr typ) in
+    acc, EConstr.Unsafe.to_constr typ
+  in
   match decl,hyploc with
   | LocalAssum (id,_), InHypValueOnly ->
       error_occurrences_error (IncorrectInValueOccurrence id)
@@ -82,10 +85,10 @@ let map_named_declaration_with_hyploc f hyploc acc decl =
 
 exception SubtermUnificationError of subterm_unification_error
 
-exception NotUnifiable of (constr * constr * unification_error) option
+exception NotUnifiable of (Constr.t * Constr.t * unification_error) option
 
 type 'a testing_function = {
-  match_fun : 'a -> constr -> 'a;
+  match_fun : 'a -> EConstr.constr -> 'a;
   merge_fun : 'a -> 'a -> 'a;
   mutable testing_state : 'a;
   mutable last_found : position_reporting option
@@ -130,7 +133,8 @@ let replace_term_occ_gen_modulo occs like_first test bywhat cl occ t =
     with NotUnifiable _ ->
       subst_below k t
   and subst_below k t =
-    map_constr_with_binders_left_to_right (fun d k -> k+1) substrec k t
+    let substrec i c = EConstr.Unsafe.to_constr (substrec i (EConstr.of_constr c)) in
+    EConstr.of_constr (map_constr_with_binders_left_to_right (fun d k -> k+1) substrec k (EConstr.Unsafe.to_constr t))
   in
   let t' = substrec 0 t in
   (!pos, t')
@@ -138,8 +142,8 @@ let replace_term_occ_gen_modulo occs like_first test bywhat cl occ t =
 let replace_term_occ_modulo occs test bywhat t =
   let occs',like_first =
     match occs with AtOccs occs -> occs,false | LikeFirst -> AllOccurrences,true in
-  proceed_with_occurrences
-    (replace_term_occ_gen_modulo occs' like_first test bywhat None) occs' t
+  EConstr.Unsafe.to_constr (proceed_with_occurrences
+    (replace_term_occ_gen_modulo occs' like_first test bywhat None) occs' t)
 
 let replace_term_occ_decl_modulo occs test bywhat d =
   let (plocs,hyploc),like_first =
@@ -154,11 +158,12 @@ let replace_term_occ_decl_modulo occs test bywhat d =
 
 let make_eq_univs_test env evd c =
   { match_fun = (fun evd c' ->
-    let b, cst = Universes.eq_constr_universes_proj env c c' in
-      if b then
+    match EConstr.eq_constr_universes_proj env evd c c' with
+    | None -> raise (NotUnifiable None)
+    | Some cst ->
 	try Evd.add_universe_constraints evd cst
 	with Evd.UniversesDiffer -> raise (NotUnifiable None)
-      else raise (NotUnifiable None));
+    );
   merge_fun = (fun evd _ -> evd);
   testing_state = evd;
   last_found = None

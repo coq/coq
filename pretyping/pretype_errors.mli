@@ -28,7 +28,7 @@ type unification_error =
 
 type position = (Id.t * Locus.hyp_location_flag) option
 
-type position_reporting = (position * int) * constr
+type position_reporting = (position * int) * EConstr.t
 
 type subterm_unification_error = bool * position_reporting * position_reporting * (constr * constr * unification_error) option
 

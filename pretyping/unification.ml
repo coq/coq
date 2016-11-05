@@ -89,7 +89,7 @@ let abstract_scheme env evd c l lname_typ =
        else *) 
        if occur_meta evd (EConstr.of_constr a) then mkLambda_name env (na,ta,t), evd
        else
-	 let t', evd' = Find_subterm.subst_closed_term_occ env evd locc a t in
+	 let t', evd' = Find_subterm.subst_closed_term_occ env evd locc (EConstr.of_constr a) (EConstr.of_constr t) in
 	   mkLambda_name env (na,ta,t'), evd')
     (c,evd)
     (List.rev l)
@@ -1544,20 +1544,21 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     else default_matching_flags pending in
   let n = List.length (snd (decompose_app c)) in
   let matching_fun _ t =
+    let open EConstr in
     try
       let t',l2 =
         if from_prefix_of_ind then
           (* We check for fully applied subterms of the form "u u1 .. un" *)
           (* of inductive type knowing only a prefix "u u1 .. ui" *)
-          let t,l = decompose_app t in
+          let t,l = decompose_app sigma t in
           let l1,l2 =
             try List.chop n l with Failure _ -> raise (NotUnifiable None) in
-          if not (List.for_all closed0 l2) then raise (NotUnifiable None)
+          if not (List.for_all (fun c -> Vars.closed0 sigma c) l2) then raise (NotUnifiable None)
           else
             applist (t,l1), l2
         else t, [] in
-      let sigma = w_typed_unify env sigma Reduction.CONV flags c t' in
-      let ty = Retyping.get_type_of env sigma (EConstr.of_constr t) in
+      let sigma = w_typed_unify env sigma Reduction.CONV flags c (EConstr.Unsafe.to_constr t') in
+      let ty = Retyping.get_type_of env sigma t in
       if not (is_correct_type ty) then raise (NotUnifiable None);
       Some(sigma, t, l2)
     with
@@ -1568,7 +1569,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   let merge_fun c1 c2 =
     match c1, c2 with
     | Some (evd,c1,x), Some (_,c2,_) ->
-      let (evd,b) = infer_conv ~pb:CONV env evd c1 c2 in
+      let (evd,b) = infer_conv ~pb:CONV env evd (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
       if b then Some (evd, c1, x) else raise (NotUnifiable None)
     | Some _, None -> c1
     | None, Some _ -> c2
@@ -1578,13 +1579,13 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   (fun test -> match test.testing_state with
   | None -> None
   | Some (sigma,_,l) ->
-     let c = applist (nf_evar sigma (local_strong whd_meta sigma (EConstr.of_constr c)),l) in
+     let c = applist (nf_evar sigma (local_strong whd_meta sigma (EConstr.of_constr c)), List.map (EConstr.to_constr sigma) l) in
      let univs, subst = nf_univ_variables sigma in
      Some (sigma,subst_univs_constr subst c))
 
 let make_eq_test env evd c =
   let out cstr =
-    match cstr.last_found with None -> None | _ -> Some (cstr.testing_state, c)
+    match cstr.last_found with None -> None | _ -> Some (cstr.testing_state, EConstr.Unsafe.to_constr c)
   in
   (make_eq_univs_test env evd c, out)
 
@@ -1601,7 +1602,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
       x
   in
   let likefirst = clause_with_generic_occurrences occs in
-  let mkvarid () = mkVar id in
+  let mkvarid () = EConstr.mkVar id in
   let compute_dependency _ d (sign,depdecls) =
     let hyp = NamedDecl.get_id d in
     match occurrences_of_hyp hyp occs with
@@ -1630,7 +1631,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
       | NoOccurrences -> concl
       | occ ->
           let occ = if likefirst then LikeFirst else AtOccs occ in
-          replace_term_occ_modulo occ test mkvarid concl
+          replace_term_occ_modulo occ test mkvarid (EConstr.of_constr concl)
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (NamedDecl.get_id (List.last depdecls)) in
@@ -1674,7 +1675,7 @@ let make_abstraction env evd ccl abs =
         env evd (snd c) None occs check_occs ccl
   | AbstractExact (name,c,ty,occs,check_occs) ->
       make_abstraction_core name
-        (make_eq_test env evd c)
+        (make_eq_test env evd (EConstr.of_constr c))
         env evd c ty occs check_occs ccl
 
 let keyed_unify env evd kop = 

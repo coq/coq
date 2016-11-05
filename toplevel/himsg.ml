@@ -734,10 +734,10 @@ let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1
   else
     let ppreason = match e with None -> mt() | Some (c1,c2,e) -> explain_unification_error env sigma c1 c2 (Some e) in
     str "Found incompatible occurrences of the pattern" ++ str ":" ++
-    spc () ++ str "Matched term " ++ pr_lconstr_env env sigma t2 ++
+    spc () ++ str "Matched term " ++ pr_lconstr_env env sigma (EConstr.to_constr sigma t2) ++
     strbrk " at position " ++ pr_position (cl2,pos2) ++
     strbrk " is not compatible with matched term " ++
-    pr_lconstr_env env sigma t1 ++ strbrk " at position " ++
+    pr_lconstr_env env sigma (EConstr.to_constr sigma t1) ++ strbrk " at position " ++
     pr_position (cl1,pos1) ++ ppreason ++ str "."
 
 let pr_constraints printenv env sigma evars cstrs =

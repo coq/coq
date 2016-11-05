@@ -1150,13 +1150,14 @@ let compute = cbv_betadeltaiota
  * the specified occurrences. *)
 
 let abstract_scheme env (locc,a) (c, sigma) =
-  let ta = Retyping.get_type_of env sigma (EConstr.of_constr a) in
+  let a = EConstr.of_constr a in
+  let ta = Retyping.get_type_of env sigma a in
   let na = named_hd env ta Anonymous in
   if occur_meta sigma (EConstr.of_constr ta) then error "Cannot find a type for the generalisation.";
-  if occur_meta sigma (EConstr.of_constr a) then
+  if occur_meta sigma a then
     mkLambda (na,ta,c), sigma
   else
-    let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a c in
+    let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a (EConstr.of_constr c) in
       mkLambda (na,ta,c'), sigma'
 
 let pattern_occs loccs_trm = { e_redfun = begin fun env sigma c ->
