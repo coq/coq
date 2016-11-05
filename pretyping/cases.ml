@@ -336,7 +336,7 @@ let unify_tomatch_with_patterns evdref env loc typ pats realnames =
 let find_tomatch_tycon evdref env loc = function
   (* Try if some 'in I ...' is present and can be used as a constraint *)
   | Some (_,ind,realnal) ->
-      mk_tycon (inductive_template evdref env loc ind),Some (List.rev realnal)
+      mk_tycon (EConstr.of_constr (inductive_template evdref env loc ind)),Some (List.rev realnal)
   | None ->
       empty_tycon,None
 
@@ -1211,7 +1211,7 @@ let rec generalize_problem names pb = function
 (* No more patterns: typing the right-hand side of equations *)
 let build_leaf pb =
   let rhs = extract_rhs pb in
-  let j = pb.typing_function (mk_tycon pb.pred) rhs.rhs_env pb.evdref rhs.it in
+  let j = pb.typing_function (mk_tycon (EConstr.of_constr pb.pred)) rhs.rhs_env pb.evdref rhs.it in
   j_nf_evar !(pb.evdref) j
 
 (* Build the sub-pattern-matching problem for a given branch "C x1..xn as x" *)
@@ -1972,7 +1972,7 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
       let envar = List.fold_right push_rel_context arsign env in
       let sigma, newt = new_sort_variable univ_flexible_alg sigma in
       let evdref = ref sigma in
-      let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref rtntyp in
+      let predcclj = typing_fun (mk_tycon (EConstr.mkSort newt)) envar evdref rtntyp in
       let sigma = !evdref in
       let predccl = (j_nf_evar sigma predcclj).uj_val in
       [sigma, predccl]
@@ -2238,7 +2238,7 @@ let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
 	     eqs_rels @ neqs_rels @ rhs_rels', arity
 	 in
 	 let rhs_env = push_rel_context rhs_rels' env in
-	 let j = typing_fun (mk_tycon tycon) rhs_env eqn.rhs.it in
+	 let j = typing_fun (mk_tycon (EConstr.of_constr tycon)) rhs_env eqn.rhs.it in
 	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
 	 let _btype = evd_comb1 (Typing.type_of env) evdref bbody in

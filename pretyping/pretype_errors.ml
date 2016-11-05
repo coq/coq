@@ -44,14 +44,14 @@ type pretype_error =
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr * Id.t option
-  | CannotFindWellTypedAbstraction of constr * constr list * (env * type_error) option
+  | CannotFindWellTypedAbstraction of constr * EConstr.constr list * (env * type_error) option
   | WrongAbstractionType of Name.t * constr * types * types
   | AbstractionOverMeta of Name.t * Name.t
   | NonLinearUnification of Name.t * constr
   (* Pretyping *)
   | VarNotFound of Id.t
   | UnexpectedType of constr * constr
-  | NotProduct of constr
+  | NotProduct of EConstr.constr
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of

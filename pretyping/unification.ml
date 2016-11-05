@@ -105,26 +105,27 @@ let abstract_list_all env evd typ c l =
     try Typing.type_of env evd p
     with
     | UserError _ ->
-        error_cannot_find_well_typed_abstraction env evd p l None
+        error_cannot_find_well_typed_abstraction env evd p (List.map EConstr.of_constr l) None
     | Type_errors.TypeError (env',x) ->
-        error_cannot_find_well_typed_abstraction env evd p l (Some (env',x)) in
+        error_cannot_find_well_typed_abstraction env evd p (List.map EConstr.of_constr l) (Some (env',x)) in
   evd,(p,typp)
 
 let set_occurrences_of_last_arg args =
   Some AllOccurrences :: List.tl (Array.map_to_list (fun _ -> None) args)
 
 let abstract_list_all_with_dependencies env evd typ c l =
+  let open EConstr in
   let evd = Sigma.Unsafe.of_evar_map evd in
   let Sigma (ev, evd, _) = new_evar env evd typ in
   let evd = Sigma.to_evar_map evd in
-  let evd,ev' = evar_absorb_arguments env evd (destEvar ev) l in
+  let evd,ev' = evar_absorb_arguments env evd (destEvar evd (EConstr.of_constr ev)) l in
   let n = List.length l in
   let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
   let evd,b =
     Evarconv.second_order_matching empty_transparent_state
       env evd ev' argoccs c in
   if b then
-    let p = nf_evar evd (existential_value evd (destEvar ev)) in
+    let p = nf_evar evd ev in
       evd, p
   else error_cannot_find_well_typed_abstraction env evd 
     (nf_evar evd c) l None
@@ -1899,7 +1900,7 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
 
 let secondOrderDependentAbstraction env evd flags typ (p, oplist) =
   let typp = Typing.meta_type evd p in
-  let evd, pred = abstract_list_all_with_dependencies env evd typp typ oplist in
+  let evd, pred = abstract_list_all_with_dependencies env evd typp typ (List.map EConstr.of_constr oplist) in
   w_merge env false flags.merge_unify_flags
     (evd,[p,pred,(Conv,TypeProcessed)],[])
 

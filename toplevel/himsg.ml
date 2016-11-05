@@ -405,7 +405,7 @@ let explain_unexpected_type env sigma actual_type expected_type =
   str "where" ++ spc () ++ prexp ++ str " was expected."
 
 let explain_not_product env sigma c =
-  let c = Evarutil.nf_evar sigma c in
+  let c = EConstr.to_constr sigma c in
   let pr = pr_lconstr_env env sigma c in
   str "The type of this term is a product" ++ spc () ++
   str "while it is expected to be" ++
@@ -654,7 +654,7 @@ let explain_cannot_unify_binding_type env sigma m n =
 let explain_cannot_find_well_typed_abstraction env sigma p l e =
   str "Abstracting over the " ++
   str (String.plural (List.length l) "term") ++ spc () ++
-  hov 0 (pr_enum (pr_lconstr_env env sigma) l) ++ spc () ++
+  hov 0 (pr_enum (fun c -> pr_lconstr_env env sigma (EConstr.to_constr sigma c)) l) ++ spc () ++
   str "leads to a term" ++ spc () ++ pr_lconstr_goal_style_env env sigma p ++
   spc () ++ str "which is ill-typed." ++
   (match e with None -> mt () | Some e -> fnl () ++ str "Reason is: " ++ e)

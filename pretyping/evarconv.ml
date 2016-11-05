@@ -503,7 +503,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                      let i,tF =
                        if isRel tR || isVar tR then
                          (* Optimization so as to generate candidates *)
-                         let i,ev = evar_absorb_arguments env i ev (List.map EConstr.Unsafe.to_constr lF) in
+                         let i,ev = evar_absorb_arguments env i (fst ev, Array.map EConstr.of_constr (snd ev)) lF in
                          i,mkEvar ev
                        else
                          i,zip evd apprF in

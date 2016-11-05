@@ -45,14 +45,14 @@ type pretype_error =
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr * Id.t option
-  | CannotFindWellTypedAbstraction of constr * constr list * (env * type_error) option
+  | CannotFindWellTypedAbstraction of constr * EConstr.constr list * (env * type_error) option
   | WrongAbstractionType of Name.t * constr * types * types
   | AbstractionOverMeta of Name.t * Name.t
   | NonLinearUnification of Name.t * constr
   (** Pretyping *)
   | VarNotFound of Id.t
   | UnexpectedType of constr * constr
-  | NotProduct of constr
+  | NotProduct of EConstr.constr
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of
@@ -110,7 +110,7 @@ val error_cannot_unify : ?loc:Loc.t -> env -> Evd.evar_map ->
 val error_cannot_unify_local : env -> Evd.evar_map -> constr * constr * constr -> 'b
 
 val error_cannot_find_well_typed_abstraction : env -> Evd.evar_map ->
-      constr -> constr list -> (env * type_error) option -> 'b
+      constr -> EConstr.constr list -> (env * type_error) option -> 'b
 
 val error_wrong_abstraction_type :  env -> Evd.evar_map ->
       Name.t -> constr -> types -> types -> 'b
@@ -132,7 +132,7 @@ val error_unexpected_type :
   ?loc:Loc.t -> env -> Evd.evar_map -> constr -> constr -> 'b
 
 val error_not_product :
-  ?loc:Loc.t -> env -> Evd.evar_map -> constr -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> EConstr.constr -> 'b
 
 (** {6 Error in conversion from AST to glob_constr } *)
 

@@ -36,7 +36,7 @@ let inductive_type_knowing_parameters env (ind,u) jl =
   Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp
 
 let e_type_judgment env evdref j =
-  match kind_of_term (whd_all env !evdref (EConstr.of_constr j.uj_type)) with
+  match EConstr.kind !evdref (EConstr.of_constr (whd_all env !evdref (EConstr.of_constr j.uj_type))) with
     | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | Evar ev ->
         let (evd,s) = Evardefine.define_evar_as_sort env !evdref ev in
@@ -49,26 +49,27 @@ let e_assumption_of_judgment env evdref j =
     error_assumption env j
 
 let e_judge_of_apply env evdref funj argjv =
+  let open EConstr in
   let rec apply_rec n typ = function
   | [] ->
-      { uj_val  = mkApp (j_val funj, Array.map j_val argjv);
-        uj_type = typ }
+      { uj_val  = Constr.mkApp (j_val funj, Array.map j_val argjv);
+        uj_type = EConstr.Unsafe.to_constr typ }
   | hj::restjl ->
-      match kind_of_term (whd_all env !evdref (EConstr.of_constr typ)) with
+      match EConstr.kind !evdref (EConstr.of_constr (whd_all env !evdref typ)) with
       | Prod (_,c1,c2) ->
-	 if Evarconv.e_cumul env evdref hj.uj_type c1 then
-	   apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+	 if Evarconv.e_cumul env evdref hj.uj_type (EConstr.Unsafe.to_constr c1) then
+	   apply_rec (n+1) (Vars.subst1 (EConstr.of_constr hj.uj_val) c2) restjl
 	 else
-	   error_cant_apply_bad_type env (n,c1, hj.uj_type) funj argjv
+	   error_cant_apply_bad_type env (n, EConstr.Unsafe.to_constr c1, hj.uj_type) funj argjv
       | Evar ev ->
 	  let (evd',t) = Evardefine.define_evar_as_product !evdref ev in
           evdref := evd';
-          let (_,_,c2) = destProd t in
-	  apply_rec (n+1) (subst1 hj.uj_val c2) restjl
+          let (_,_,c2) = destProd evd' t in
+	  apply_rec (n+1) (Vars.subst1 (EConstr.of_constr hj.uj_val) c2) restjl
       | _ ->
 	  error_cant_apply_not_functional env funj argjv
   in
-  apply_rec 1 funj.uj_type (Array.to_list argjv)
+  apply_rec 1 (EConstr.of_constr funj.uj_type) (Array.to_list argjv)
 
 let e_check_branch_types env evdref (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then

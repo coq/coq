@@ -606,7 +606,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  type_bl (push_rel dcl env) (Context.Rel.add dcl' ctxt) bl
       | (na,bk,Some bd,ty)::bl ->
         let ty' = pretype_type empty_valcon env evdref lvar ty in
-        let bd' = pretype (mk_tycon ty'.utj_val) env evdref lvar bd in
+        let bd' = pretype (mk_tycon (EConstr.of_constr ty'.utj_val)) env evdref lvar bd in
         let dcl = LocalDef (na, bd'.uj_val, ty'.utj_val) in
         let dcl' = LocalDef (ltac_interp_name lvar na, bd'.uj_val, ty'.utj_val) in
 	  type_bl (push_rel dcl env) (Context.Rel.add dcl' ctxt) bl in
@@ -640,7 +640,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	    decompose_prod_n_assum (Context.Rel.length ctxt)
               (lift nbfix ftys.(i)) in
           let nenv = push_rel_context ctxt newenv in
-          let j = pretype (mk_tycon ty) nenv evdref lvar def in
+          let j = pretype (mk_tycon (EConstr.of_constr ty)) nenv evdref lvar def in
 	    { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
 	      uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
         ctxtv vdef in
@@ -815,7 +815,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       match c1 with
       | GCast (loc, c, CastConv t) ->
 	let tj = pretype_type empty_valcon env evdref lvar t in
-	  pretype (mk_tycon tj.utj_val) env evdref lvar c
+	  pretype (mk_tycon (EConstr.of_constr tj.utj_val)) env evdref lvar c
       | _ -> pretype empty_tycon env evdref lvar c1
     in
     let t = evd_comb1 (Evarsolve.refresh_universes
@@ -895,7 +895,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	      @[build_dependent_constructor cs] in
 	    let lp = lift cs.cs_nargs p in
 	    let fty = hnf_lam_applist env.ExtraEnv.env !evdref (EConstr.of_constr lp) (List.map EConstr.of_constr inst) in
-	    let fj = pretype (mk_tycon fty) env_f evdref lvar d in
+	    let fj = pretype (mk_tycon (EConstr.of_constr fty)) env_f evdref lvar d in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
 		Typing.check_allowed_sort env.ExtraEnv.env !evdref ind cj.uj_val p;
@@ -973,7 +973,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 		     cs.cs_args
 	in
 	let env_c = push_rel_context csgn env in
-	let bj = pretype (mk_tycon pi) env_c evdref lvar b in
+	let bj = pretype (mk_tycon (EConstr.of_constr pi)) env_c evdref lvar b in
 	  it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
       let b1 = f cstrs.(0) b1 in
       let b2 = f cstrs.(1) b2 in
@@ -1028,7 +1028,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
                   (ConversionFailed (env.ExtraEnv.env,cty,tval))
             end
 	  | _ -> 
- 	    pretype (mk_tycon tval) env evdref lvar c, tval
+ 	    pretype (mk_tycon (EConstr.of_constr tval)) env evdref lvar c, tval
 	in
 	let v = mkCast (cj.uj_val, k, tval) in
 	  { uj_val = v; uj_type = tval }
@@ -1041,7 +1041,7 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
     let c, update =
       try
         let c = List.assoc id update in
-        let c = pretype k0 resolve_tc (mk_tycon t) env evdref lvar c in
+        let c = pretype k0 resolve_tc (mk_tycon (EConstr.of_constr t)) env evdref lvar c in
         c.uj_val, List.remove_assoc id update
       with Not_found ->
       try
@@ -1068,9 +1068,9 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
            let s =
 	     let sigma =  !evdref in
 	     let t = Retyping.get_type_of env.ExtraEnv.env sigma (EConstr.of_constr v) in
-	       match kind_of_term (whd_all env.ExtraEnv.env sigma (EConstr.of_constr t)) with
+	       match EConstr.kind sigma (EConstr.of_constr (whd_all env.ExtraEnv.env sigma (EConstr.of_constr t))) with
                | Sort s -> s
-               | Evar ev when is_Type (existential_type sigma ev) ->
+               | Evar ev when is_Type (existential_type sigma (fst ev, Array.map EConstr.Unsafe.to_constr (snd ev))) ->
 		   evd_comb1 (define_evar_as_sort env.ExtraEnv.env) evdref ev
                | _ -> anomaly (Pp.str "Found a type constraint which is not a type")
            in
@@ -1101,7 +1101,7 @@ let ise_pretype_gen flags env sigma lvar kind c =
     | WithoutTypeConstraint ->
         (pretype k0 flags.use_typeclasses empty_tycon env evdref lvar c).uj_val
     | OfType exptyp ->
-	(pretype k0 flags.use_typeclasses (mk_tycon exptyp) env evdref lvar c).uj_val
+	(pretype k0 flags.use_typeclasses (mk_tycon (EConstr.of_constr exptyp)) env evdref lvar c).uj_val
     | IsType ->
 	(pretype_type k0 flags.use_typeclasses empty_valcon env evdref lvar c).utj_val 
   in

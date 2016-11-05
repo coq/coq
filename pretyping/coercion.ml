@@ -244,8 +244,9 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		       match kind_of_term c with
 		       | Lambda (n, t, t') -> c, t'
 		       | Evar (k, args) ->
-			   let (evs, t) = Evardefine.define_evar_as_lambda env !evdref (k,args) in
+			   let (evs, t) = Evardefine.define_evar_as_lambda env !evdref (k, Array.map EConstr.of_constr args) in
 			     evdref := evs;
+			     let t = EConstr.Unsafe.to_constr t in
 			     let (n, dom, rng) = destLambda t in
 			     let dom = whd_evar !evdref dom in
 			       if isEvar dom then
@@ -374,11 +375,11 @@ let apply_coercion env sigma p hj typ_cl =
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core env evd j =
   let t = whd_all env evd (EConstr.of_constr j.uj_type) in
-    match kind_of_term t with
+    match EConstr.kind evd (EConstr.of_constr t) with
     | Prod (_,_,_) -> (evd,j)
     | Evar ev ->
 	let (evd',t) = Evardefine.define_evar_as_product evd ev in
-	  (evd',{ uj_val = j.uj_val; uj_type = t })
+	  (evd',{ uj_val = j.uj_val; uj_type = EConstr.Unsafe.to_constr t })
     | _ ->
       	try let t,p =
 	  lookup_path_to_fun_from env evd j.uj_type in
@@ -415,9 +416,9 @@ let inh_tosort_force loc env evd j =
 
 let inh_coerce_to_sort loc env evd j =
   let typ = whd_all env evd (EConstr.of_constr j.uj_type) in
-    match kind_of_term typ with
+    match EConstr.kind evd (EConstr.of_constr typ) with
     | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
-    | Evar ev when not (is_defined evd (fst ev)) ->
+    | Evar ev ->
 	let (evd',s) = Evardefine.define_evar_as_sort env evd ev in
 	  (evd',{ utj_val = j.uj_val; utj_type = s })
     | _ ->
