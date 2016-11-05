@@ -756,7 +756,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	       refreshed right away. *)
 	    let sigma = !evdref in
 	    let c = mkApp (f,Array.map (whd_evar sigma) args) in
-	    let c = evd_comb1 (Evarsolve.refresh_universes (Some true) env.ExtraEnv.env) evdref c in
+	    let c = evd_comb1 (Evarsolve.refresh_universes (Some true) env.ExtraEnv.env) evdref (EConstr.of_constr c) in
 	    let t = Retyping.get_type_of env.ExtraEnv.env !evdref (EConstr.of_constr c) in
 	      make_judge c (* use this for keeping evars: resj.uj_val *) t
 	  else resj
@@ -820,7 +820,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     in
     let t = evd_comb1 (Evarsolve.refresh_universes
       ~onlyalg:true ~status:Evd.univ_flexible (Some false) env.ExtraEnv.env)
-      evdref j.uj_type in
+      evdref (EConstr.of_constr j.uj_type) in
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
        looked up in the rel context. *)
@@ -1003,7 +1003,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	let tj = pretype_type empty_valcon env evdref lvar t in
         let tval = evd_comb1 (Evarsolve.refresh_universes
                              ~onlyalg:true ~status:Evd.univ_flexible (Some false) env.ExtraEnv.env)
-                          evdref tj.utj_val in
+                          evdref (EConstr.of_constr tj.utj_val) in
 	let tval = nf_evar !evdref tval in
 	let cj, tval = match k with
 	  | VMcast ->
@@ -1014,7 +1014,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 		if b then (evdref := evd; cj, tval)
 		else
 		  error_actual_type ~loc env.ExtraEnv.env !evdref cj tval 
-                      (ConversionFailed (env.ExtraEnv.env,cty,tval))
+                      (ConversionFailed (env.ExtraEnv.env,EConstr.of_constr cty,EConstr.of_constr tval))
 	      else user_err ~loc  (str "Cannot check cast with vm: " ++
 		str "unresolved arguments remain.")
 	  | NATIVEcast ->
@@ -1025,7 +1025,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	      if b then (evdref := evd; cj, tval)
 	      else
                 error_actual_type ~loc env.ExtraEnv.env !evdref cj tval
-                  (ConversionFailed (env.ExtraEnv.env,cty,tval))
+                  (ConversionFailed (env.ExtraEnv.env,EConstr.of_constr cty,EConstr.of_constr tval))
             end
 	  | _ -> 
  	    pretype (mk_tycon (EConstr.of_constr tval)) env evdref lvar c, tval

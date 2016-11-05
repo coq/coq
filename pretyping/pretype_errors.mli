@@ -14,14 +14,14 @@ open Type_errors
 (** {6 The type of errors raised by the pretyper } *)
 
 type unification_error =
-  | OccurCheck of existential_key * constr
-  | NotClean of existential * env * constr
+  | OccurCheck of existential_key * EConstr.constr
+  | NotClean of EConstr.existential * env * EConstr.constr
   | NotSameArgSize
   | NotSameHead
   | NoCanonicalStructure
-  | ConversionFailed of env * constr * constr
+  | ConversionFailed of env * EConstr.constr * EConstr.constr
   | MetaOccurInBody of existential_key
-  | InstanceNotSameType of existential_key * env * types * types
+  | InstanceNotSameType of existential_key * env * EConstr.types * EConstr.types
   | UnifUnivInconsistency of Univ.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
   | ProblemBeyondCapabilities

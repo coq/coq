@@ -60,13 +60,19 @@ let contract1_vect env a v =
   | _ -> assert false
 
 let rec contract3' env a b c = function
-  | OccurCheck (evk,d) -> let x,d = contract4 env a b c d in x,OccurCheck(evk,d)
+  | OccurCheck (evk,d) ->
+    let d = EConstr.Unsafe.to_constr d in
+    let x,d = contract4 env a b c d in x,OccurCheck(evk, EConstr.of_constr d)
   | NotClean ((evk,args),env',d) ->
+      let d = EConstr.Unsafe.to_constr d in
+      let args = Array.map EConstr.Unsafe.to_constr args in
       let env',d,args = contract1_vect env' d args in
-      contract3 env a b c,NotClean((evk,args),env',d)
+      contract3 env a b c,NotClean((evk,Array.map EConstr.of_constr args),env',EConstr.of_constr d)
   | ConversionFailed (env',t1,t2) ->
+      let t1 = EConstr.Unsafe.to_constr t1 in
+      let t2 = EConstr.Unsafe.to_constr t2 in
       let (env',t1,t2) = contract2 env' t1 t2 in
-      contract3 env a b c, ConversionFailed (env',t1,t2)
+      contract3 env a b c, ConversionFailed (env',EConstr.of_constr t1,EConstr.of_constr t2)
   | NotSameArgSize | NotSameHead | NoCanonicalStructure
   | MetaOccurInBody _ | InstanceNotSameType _ | ProblemBeyondCapabilities
   | UnifUnivInconsistency _ as x -> contract3 env a b c, x
@@ -277,13 +283,13 @@ let explain_unification_error env sigma p1 p2 = function
   | Some e ->
      let rec aux p1 p2 = function
      | OccurCheck (evk,rhs) ->
-        let rhs = Evarutil.nf_evar sigma rhs in
+        let rhs = EConstr.to_constr sigma rhs in
         [str "cannot define " ++ quote (pr_existential_key sigma evk) ++
 	strbrk " with term " ++ pr_lconstr_env env sigma rhs ++
         strbrk " that would depend on itself"]
      | NotClean ((evk,args),env,c) ->
-        let c = Evarutil.nf_evar sigma c in
-        let args = Array.map (Evarutil.nf_evar sigma) args in
+        let c = EConstr.to_constr sigma c in
+        let args = Array.map (EConstr.to_constr sigma) args in
         [str "cannot instantiate " ++ quote (pr_existential_key sigma evk)
         ++ strbrk " because " ++ pr_lconstr_env env sigma c ++
 	strbrk " is not in its scope" ++
@@ -293,6 +299,8 @@ let explain_unification_error env sigma p1 p2 = function
      | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
         (* Error speaks from itself *) []
      | ConversionFailed (env,t1,t2) ->
+        let t1 = EConstr.to_constr sigma t1 in
+        let t2 = EConstr.to_constr sigma t2 in
         if Term.eq_constr t1 p1 && Term.eq_constr t2 p2 then [] else
         let env = make_all_name_different env in
         let t1 = Evarutil.nf_evar sigma t1 in
@@ -306,6 +314,8 @@ let explain_unification_error env sigma p1 p2 = function
 	strbrk " refers to a metavariable - please report your example" ++
         strbrk "at " ++ str Coq_config.wwwbugtracker ++ str "."]
      | InstanceNotSameType (evk,env,t,u) ->
+        let t = EConstr.to_constr sigma t in
+        let u = EConstr.to_constr sigma u in
         let t, u = pr_explicit env sigma t u in
         [str "unable to find a well-typed instantiation for " ++
         quote (pr_existential_key sigma evk) ++

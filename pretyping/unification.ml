@@ -183,7 +183,7 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
 	   extra assumptions added by unification to the context *)
         let env' = pop_rel_context nb env in
 	let sigma,c = pose_all_metas_as_evars env' sigma c in
-	let c = solve_pattern_eqn env sigma l c in
+	let c = solve_pattern_eqn env sigma (List.map EConstr.of_constr l) (EConstr.of_constr c) in
 	let pb = (Conv,TypeNotProcessed) in
 	  if noccur_between 1 nb c then
             sigma,(k,lift (-nb) c,pb)::metasubst,evarsubst
@@ -191,7 +191,7 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
     | Evar ev ->
         let env' = pop_rel_context nb env in
 	let sigma,c = pose_all_metas_as_evars env' sigma c in
-	sigma,metasubst,(env,ev,solve_pattern_eqn env sigma l c)::evarsubst
+	sigma,metasubst,(env,ev,solve_pattern_eqn env sigma (List.map EConstr.of_constr l) (EConstr.of_constr c))::evarsubst
     | _ -> assert false
 
 let push d (env,n) = (push_rel_assum d env,n+1)
@@ -841,7 +841,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 
   and unify_app_pattern dir curenvnb pb opt substn cM f1 l1 cN f2 l2 =
     let f, l, t = if dir then f1, l1, cN else f2, l2, cM in
-      match is_unification_pattern curenvnb sigma f (Array.to_list l) t with
+      match is_unification_pattern curenvnb sigma (EConstr.of_constr f) (Array.map_to_list EConstr.of_constr l) (EConstr.of_constr t) with
       | None ->
 	(match kind_of_term t with
 	| App (f',l') -> 
@@ -850,7 +850,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	| Proj _ -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
 	| _ -> unify_not_same_head curenvnb pb opt substn cM cN)
       | Some l ->
-	solve_pattern_eqn_array curenvnb f l t substn
+	solve_pattern_eqn_array curenvnb f (List.map EConstr.Unsafe.to_constr l) t substn
 
   and unify_app (curenv, nb as curenvnb) pb opt (sigma, metas, evars as substn) cM f1 l1 cN f2 l2 =
     try
@@ -1246,7 +1246,7 @@ let w_coerce env evd mv c =
   w_coerce_to_type env evd c cty mvty
 
 let unify_to_type env sigma flags c status u =
-  let sigma, c = refresh_universes (Some false) env sigma c in
+  let sigma, c = refresh_universes (Some false) env sigma (EConstr.of_constr c) in
   let t = get_type_of env sigma (EConstr.of_constr (nf_meta sigma c)) in
   let t = nf_betaiota sigma (EConstr.of_constr (nf_meta sigma t)) in
     unify_0 env sigma CUMUL flags t u
@@ -1271,10 +1271,13 @@ let order_metas metas =
 
 (* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
 
+let to_conv_fun f = (); fun env sigma pb c1 c2 ->
+  f env sigma pb (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2)
+
 let solve_simple_evar_eqn ts env evd ev rhs =
-  match solve_simple_eqn (Evarconv.evar_conv_x ts) env evd (None,ev,EConstr.of_constr rhs) with
+  match solve_simple_eqn (to_conv_fun (Evarconv.evar_conv_x ts)) env evd (None,ev,EConstr.of_constr rhs) with
   | UnifFailure (evd,reason) ->
-      error_cannot_unify env evd ~reason (mkEvar ev,rhs);
+      error_cannot_unify env evd ~reason (EConstr.Unsafe.to_constr (EConstr.mkEvar ev),rhs);
   | Success evd ->
       Evarconv.consider_remaining_unif_problems env evd
 
@@ -1308,14 +1311,14 @@ let w_merge env with_types flags (evd,metas,evars) =
 	      else
 		let evd' = 
 		  let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
-		    try solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs''
+		    try solve_simple_evar_eqn flags.modulo_delta_types curenv evd' (fst ev, Array.map EConstr.of_constr (snd ev)) rhs''
 		    with Retyping.RetypeError _ ->
 		      error_cannot_unify curenv evd' (mkEvar ev,rhs'')
 		in w_merge_rec evd' metas evars' eqns
           | _ ->
 	      let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
 	      let evd' = 
-		try solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs''
+		try solve_simple_evar_eqn flags.modulo_delta_types curenv evd' (fst ev, Array.map EConstr.of_constr (snd ev)) rhs''
 		with Retyping.RetypeError _ -> error_cannot_unify curenv evd' (mkEvar ev, rhs'')
 	      in
 		w_merge_rec evd' metas evars' eqns

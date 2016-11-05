@@ -76,7 +76,7 @@ val new_evar_instance :
   ?principal:bool ->
   constr list -> (constr, 'r) Sigma.sigma
 
-val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
+val make_pure_subst : evar_info -> 'a array -> (Id.t * 'a) list
 
 val safe_evar_value : evar_map -> existential -> constr option
 

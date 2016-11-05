@@ -788,7 +788,7 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
   if deep then begin
     let t2 = Retyping.get_type_of env sigma (EConstr.of_constr origc) in
     let sigma, t2 = Evarsolve.refresh_universes
-		      ~onlyalg:true (Some false) env sigma t2 in
+		      ~onlyalg:true (Some false) env sigma (EConstr.of_constr t2) in
     let sigma, b = infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 in
     if not b then
       if
@@ -2604,7 +2604,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
     let Sigma (t, sigma, p) = match ty with
     | Some t -> Sigma.here t sigma
     | None ->
-      let t = typ_of env sigma (EConstr.of_constr c) in
+      let t = EConstr.of_constr (typ_of env sigma (EConstr.of_constr c)) in
       let sigma, c = Evarsolve.refresh_universes ~onlyalg:true (Some false) env (Sigma.to_evar_map sigma) t in
       Sigma.Unsafe.of_pair (c, sigma)
     in
@@ -3621,7 +3621,7 @@ let abstract_args gl generalize_vars dep id defined f args =
       RelDecl.get_name decl, RelDecl.get_type decl, c
     in
     let argty = Tacmach.pf_unsafe_type_of gl arg in
-    let sigma', ty = Evarsolve.refresh_universes (Some true) env !sigma ty in
+    let sigma', ty = Evarsolve.refresh_universes (Some true) env !sigma (EConstr.of_constr ty) in
     let () = sigma := sigma' in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in

@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open Evd
 open Environ
 
@@ -41,7 +42,7 @@ val refresh_universes :
   (* Also refresh Prop and Set universes, so that the returned type can be any supertype
      of the original type *)
   bool option (* direction: true for levels lower than the existing levels *) ->
-  env -> evar_map -> types -> evar_map * types
+  env -> evar_map -> types -> evar_map * Constr.types
 
 val solve_refl : ?can_drop:bool -> conv_fun_bool -> env ->  evar_map ->
   bool option -> existential_key -> constr array -> constr array -> evar_map
@@ -52,7 +53,7 @@ val solve_evar_evar : ?force:bool ->
   env ->  evar_map -> bool option -> existential -> existential -> evar_map
 
 val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
-  bool option * existential * EConstr.t -> unification_result
+  bool option * existential * constr -> unification_result
 
 val reconsider_conv_pbs : conv_fun -> evar_map -> unification_result
 
@@ -62,7 +63,7 @@ val is_unification_pattern_evar : env -> evar_map -> existential -> constr list 
 val is_unification_pattern : env * int -> evar_map -> constr -> constr list ->
   constr -> constr list option
 
-val solve_pattern_eqn : env -> evar_map -> constr list -> constr -> constr
+val solve_pattern_eqn : env -> evar_map -> constr list -> constr -> Constr.t
 
 val noccur_evar : env -> evar_map -> Evar.t -> constr -> bool
 
@@ -73,7 +74,7 @@ val check_evar_instance :
   evar_map -> existential_key -> constr -> conv_fun -> evar_map
 
 val remove_instance_local_defs :
-  evar_map -> existential_key -> constr array -> constr list
+  evar_map -> existential_key -> 'a array -> 'a list
 
 val get_type_of_refresh : 
-  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> EConstr.constr -> evar_map * types
+  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * Constr.types

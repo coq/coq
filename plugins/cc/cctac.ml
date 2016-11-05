@@ -259,7 +259,7 @@ let refresh_universes ty k =
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let evm = Tacmach.New.project gl in
-    let evm, ty = refresh_type env evm ty in
+    let evm, ty = refresh_type env evm (EConstr.of_constr ty) in
     Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm)) (k ty)
   end }
 
@@ -376,7 +376,7 @@ let discriminate_tac (cstr,u as cstru) p =
     let identity = Universes.constr_of_global (Lazy.force _I) in
     let trivial = Universes.constr_of_global (Lazy.force _True) in
     let evm = Tacmach.New.project gl in
-    let evm, intype = refresh_type env evm (Tacmach.New.pf_unsafe_type_of gl t1) in
+    let evm, intype = refresh_type env evm (EConstr.of_constr (Tacmach.New.pf_unsafe_type_of gl t1)) in
     let evm, outtype = Evd.new_sort_variable Evd.univ_flexible evm in
     let outtype = mkSort outtype in
     let pred = mkLambda(Name xid,outtype,mkRel 1) in
@@ -481,7 +481,7 @@ let mk_eq f c1 c2 k =
   Proofview.Goal.enter { enter = begin fun gl ->
     let open Tacmach.New in
     let evm, ty = pf_apply type_of gl c1 in
-    let evm, ty = Evarsolve.refresh_universes (Some false) (pf_env gl) evm ty in
+    let evm, ty = Evarsolve.refresh_universes (Some false) (pf_env gl) evm (EConstr.of_constr ty) in
     let term = mkApp (fc, [| ty; c1; c2 |]) in
     let evm, _ =  type_of (pf_env gl) evm term in
     Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm))

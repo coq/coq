@@ -78,6 +78,9 @@ let list_try_compile f l =
 let force_name =
   let nx = Name default_dependent_ident in function Anonymous -> nx | na -> na
 
+let to_conv_fun f = (); fun env sigma pb c1 c2 ->
+  f env sigma pb (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2)
+
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
 (************************************************************************)
@@ -1583,7 +1586,7 @@ let adjust_to_extended_env_and_remove_deps env extenv sigma subst t =
       | LocalAssum _ -> p in
     let p = traverse_local_defs p in
     let u = lift (n' - n) u in
-    try Some (p, u, expand_vars_in_term extenv sigma u)
+    try Some (p, u, EConstr.Unsafe.to_constr (expand_vars_in_term extenv sigma (EConstr.of_constr u)))
       (* pedrot: does this really happen to raise [Failure _]? *)
     with Failure _ -> None in
   let subst0 = List.map_filter map subst in
@@ -1628,14 +1631,15 @@ let abstract_tycon loc env evdref subst tycon extenv t =
     | Rel n when is_local_def (lookup_rel n env) -> t
     | Evar ev ->
         let ty = get_type_of env !evdref (EConstr.of_constr t) in
-	let ty = Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty in
+	let ty = Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref (EConstr.of_constr ty) in
         let inst =
 	  List.map_i
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
         let ev' = e_new_evar env evdref ~src ty in
-        begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,EConstr.of_constr (substl inst ev')) with
+        let ev = (fst ev, Array.map EConstr.of_constr (snd ev)) in
+        begin match solve_simple_eqn (to_conv_fun (evar_conv_x full_transparent_state)) env !evdref (None,ev,EConstr.of_constr (substl inst ev')) with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
         end;
@@ -1650,7 +1654,7 @@ let abstract_tycon loc env evdref subst tycon extenv t =
       let vl = List.map pi1 good in
       let ty = 
 	let ty = get_type_of env !evdref (EConstr.of_constr t) in
-	  Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty
+	  Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref (EConstr.of_constr ty)
       in
       let ty = lift (-k) (aux x ty) in
       let depvl = free_rels !evdref (EConstr.of_constr ty) in

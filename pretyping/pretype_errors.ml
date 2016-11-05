@@ -13,14 +13,14 @@ open Environ
 open Type_errors
 
 type unification_error =
-  | OccurCheck of existential_key * constr
-  | NotClean of existential * env * constr (* Constr is a variable not in scope *)
+  | OccurCheck of existential_key * EConstr.constr
+  | NotClean of EConstr.existential * env * EConstr.constr (* Constr is a variable not in scope *)
   | NotSameArgSize
   | NotSameHead
   | NoCanonicalStructure
-  | ConversionFailed of env * constr * constr (* Non convertible closed terms *)
+  | ConversionFailed of env * EConstr.constr * EConstr.constr (* Non convertible closed terms *)
   | MetaOccurInBody of existential_key
-  | InstanceNotSameType of existential_key * env * types * types
+  | InstanceNotSameType of existential_key * env * EConstr.types * EConstr.types
   | UnifUnivInconsistency of Univ.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
   | ProblemBeyondCapabilities
