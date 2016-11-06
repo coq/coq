@@ -10,6 +10,7 @@
 
 open Names
 open Term
+open EConstr
 open Environ
 open Pattern
 
@@ -63,7 +64,7 @@ val matches_conv : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
    (whose hole is denoted here with [special_meta]) *)
 type matching_result =
     { m_sub : bound_ident_map * patvar_map;
-      m_ctx : constr }
+      m_ctx : Constr.t }
 
 (** [match_subterm n pat c] returns the substitution and the context
    corresponding to each **closed** subterm of [c] matching [pat]. *)

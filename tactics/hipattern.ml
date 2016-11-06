@@ -276,8 +276,8 @@ let coq_refl_jm_pattern       =
 
 open Globnames
 
-let is_matching x y = is_matching (Global.env ()) Evd.empty x y
-let matches x y = matches (Global.env ()) Evd.empty x y
+let is_matching x y = is_matching (Global.env ()) Evd.empty x (EConstr.of_constr y)
+let matches x y = matches (Global.env ()) Evd.empty x (EConstr.of_constr y)
 
 let match_with_equation t =
   if not (isApp t) then raise NoEquationFound;

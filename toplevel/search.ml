@@ -113,7 +113,7 @@ let generic_search glnumopt fn =
 (** FIXME: this is quite dummy, we may find a more efficient algorithm. *)
 let rec pattern_filter pat ref env typ =
   let typ = Termops.strip_outer_cast Evd.empty (EConstr.of_constr typ) (** FIXME *) in
-  if Constr_matching.is_matching env Evd.empty pat typ then true
+  if Constr_matching.is_matching env Evd.empty pat (EConstr.of_constr typ) then true
   else match kind_of_term typ with
   | Prod (_, _, typ)
   | LetIn (_, _, _, typ) -> pattern_filter pat ref env typ
@@ -121,7 +121,7 @@ let rec pattern_filter pat ref env typ =
 
 let rec head_filter pat ref env typ =
   let typ = Termops.strip_outer_cast Evd.empty (EConstr.of_constr typ) (** FIXME *) in
-  if Constr_matching.is_matching_head env Evd.empty pat typ then true
+  if Constr_matching.is_matching_head env Evd.empty pat (EConstr.of_constr typ) then true
   else match kind_of_term typ with
   | Prod (_, _, typ)
   | LetIn (_, _, _, typ) -> head_filter pat ref env typ
@@ -151,7 +151,7 @@ let name_of_reference ref = Id.to_string (basename_of_global ref)
 
 let search_about_filter query gr env typ = match query with
 | GlobSearchSubPattern pat ->
-  Constr_matching.is_matching_appsubterm ~closed:false env Evd.empty pat typ
+  Constr_matching.is_matching_appsubterm ~closed:false env Evd.empty pat (EConstr.of_constr typ)
 | GlobSearchString s ->
   String.string_contains ~where:(name_of_reference gr) ~what:s
 
@@ -265,12 +265,12 @@ let interface_search =
       toggle (Str.string_match regexp id 0) flag
     in
     let match_type (pat, flag) =
-      toggle (Constr_matching.is_matching env Evd.empty pat constr) flag
+      toggle (Constr_matching.is_matching env Evd.empty pat (EConstr.of_constr constr)) flag
     in
     let match_subtype (pat, flag) =
       toggle
         (Constr_matching.is_matching_appsubterm ~closed:false 
-	   env Evd.empty pat constr) flag
+	   env Evd.empty pat (EConstr.of_constr constr)) flag
     in
     let match_module (mdl, flag) =
       toggle (Libnames.is_dirpath_prefix_of mdl path) flag

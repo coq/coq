@@ -139,7 +139,7 @@ let conclPattern concl pat tac =
     | None -> Proofview.tclUNIT Id.Map.empty
     | Some pat ->
 	try
-	  Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
+	  Proofview.tclUNIT (Constr_matching.matches env sigma pat (EConstr.of_constr concl))
 	with Constr_matching.PatternMatchingFailure ->
           Tacticals.New.tclZEROMSG (str "conclPattern")
   in

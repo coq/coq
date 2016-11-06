@@ -305,7 +305,7 @@ let matches_pattern concl pat =
     | None -> Proofview.tclUNIT ()
     | Some pat ->
        let sigma = Sigma.to_evar_map sigma in
-       if Constr_matching.is_matching env sigma pat concl then
+       if Constr_matching.is_matching env sigma pat (EConstr.of_constr concl) then
          Proofview.tclUNIT ()
        else
          Tacticals.New.tclZEROMSG (str "conclPattern")

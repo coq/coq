@@ -962,9 +962,10 @@ let simpl env sigma c = strong whd_simpl env sigma c
 (* Reduction at specific subterms *)
 
 let matches_head env sigma c t =
-  match kind_of_term t with
+  let open EConstr in
+  match EConstr.kind sigma t with
     | App (f,_) -> Constr_matching.matches env sigma c f
-    | Proj (p, _) -> Constr_matching.matches env sigma c (mkConst (Projection.constant p))
+    | Proj (p, _) -> Constr_matching.matches env sigma c (mkConstU (Projection.constant p, Univ.Instance.empty))
     | _ -> raise Constr_matching.PatternMatchingFailure
 
 (** FIXME: Specific function to handle projections: it ignores what happens on the
@@ -999,8 +1000,8 @@ let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
     else
     try
       let subst =
-        if byhead then matches_head env sigma c t 
-	else Constr_matching.matches env sigma c t in
+        if byhead then matches_head env sigma c (EConstr.of_constr t) 
+	else Constr_matching.matches env sigma c (EConstr.of_constr t) in
       let ok =
 	if nowhere_except_in then Int.List.mem !pos locs
 	else not (Int.List.mem !pos locs) in
