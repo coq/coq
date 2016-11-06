@@ -1611,7 +1611,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
         (push_named_context_val d sign,depdecls)
     | AllOccurrences, InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
-        let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
+        let newdecl = replace_term_occ_decl_modulo sigma occ test mkvarid d in
         if Context.Named.Declaration.equal d newdecl
            && not (indirectly_dependent sigma c d depdecls)
         then
@@ -1622,7 +1622,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
           (push_named_context_val newdecl sign, newdecl :: depdecls)
     | occ ->
         (* There are specific occurrences, hence not like first *)
-        let newdecl = replace_term_occ_decl_modulo (AtOccs occ) test mkvarid d in
+        let newdecl = replace_term_occ_decl_modulo sigma (AtOccs occ) test mkvarid d in
         (push_named_context_val newdecl sign, newdecl :: depdecls) in
   try
     let sign,depdecls =
@@ -1632,7 +1632,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
       | NoOccurrences -> concl
       | occ ->
           let occ = if likefirst then LikeFirst else AtOccs occ in
-          replace_term_occ_modulo occ test mkvarid (EConstr.of_constr concl)
+          replace_term_occ_modulo sigma occ test mkvarid (EConstr.of_constr concl)
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (NamedDecl.get_id (List.last depdecls)) in

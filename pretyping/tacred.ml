@@ -31,7 +31,7 @@ module NamedDecl = Context.Named.Declaration
 (* Errors *)
 
 type reduction_tactic_error =
-    InvalidAbstraction of env * Evd.evar_map * constr * (env * Type_errors.type_error)
+    InvalidAbstraction of env * Evd.evar_map * EConstr.constr * (env * Type_errors.type_error)
 
 exception ReductionTacticError of reduction_tactic_error
 
@@ -77,14 +77,14 @@ type evaluable_reference =
   | EvalConst of constant
   | EvalVar of Id.t
   | EvalRel of int
-  | EvalEvar of existential
+  | EvalEvar of EConstr.existential
 
-let evaluable_reference_eq r1 r2 = match r1, r2 with
+let evaluable_reference_eq sigma r1 r2 = match r1, r2 with
 | EvalConst c1, EvalConst c2 -> eq_constant c1 c2
 | EvalVar id1, EvalVar id2 -> Id.equal id1 id2
 | EvalRel i1, EvalRel i2 -> Int.equal i1 i2
 | EvalEvar (e1, ctx1), EvalEvar (e2, ctx2) ->
-  Evar.equal e1 e2 && Array.equal eq_constr ctx1 ctx2
+  Evar.equal e1 e2 && Array.equal (EConstr.eq_constr sigma) ctx1 ctx2
 | _ -> false
 
 let mkEvalRef ref u =
@@ -93,15 +93,15 @@ let mkEvalRef ref u =
   | EvalConst cst -> mkConstU (cst,u)
   | EvalVar id -> mkVar id
   | EvalRel n -> mkRel n
-  | EvalEvar ev -> EConstr.of_constr (Constr.mkEvar ev)
+  | EvalEvar ev -> EConstr.mkEvar ev
 
-let isEvalRef env c = match kind_of_term c with
+let isEvalRef env sigma c = match EConstr.kind sigma c with
   | Const (sp,_) -> is_evaluable env (EvalConstRef sp)
   | Var id -> is_evaluable env (EvalVarRef id)
   | Rel _ | Evar _ -> true
   | _ -> false
 
-let destEvalRefU c = match kind_of_term c with
+let destEvalRefU sigma c = match EConstr.kind sigma c with
   | Const (cst,u) ->  EvalConst cst, u
   | Var id  -> (EvalVar id, Univ.Instance.empty)
   | Rel n -> (EvalRel n, Univ.Instance.empty)
@@ -109,31 +109,39 @@ let destEvalRefU c = match kind_of_term c with
   | _ -> anomaly (Pp.str "Not an unfoldable reference")
 
 let unsafe_reference_opt_value env sigma eval =
+  let open EConstr in
   match eval with
   | EvalConst cst ->
     (match (lookup_constant cst env).Declarations.const_body with 
-    | Declarations.Def c -> Some (Mod_subst.force_constr c)
+    | Declarations.Def c -> Some (EConstr.of_constr (Mod_subst.force_constr c))
     | _ -> None)
   | EvalVar id ->
-      env |> lookup_named id |> NamedDecl.get_value
+      env |> lookup_named id |> NamedDecl.get_value |> Option.map EConstr.of_constr
   | EvalRel n ->
-      env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value
-  | EvalEvar ev -> Evd.existential_opt_value sigma ev
+      env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value |> Option.map EConstr.of_constr
+  | EvalEvar ev ->
+    match EConstr.kind sigma (mkEvar ev) with
+    | Evar _ -> None
+    | c -> Some (EConstr.of_kind c)
 
 let reference_opt_value env sigma eval u = 
+  let open EConstr in
   match eval with
-  | EvalConst cst -> constant_opt_value_in env (cst,u)
+  | EvalConst cst -> Option.map EConstr.of_constr (constant_opt_value_in env (cst,u))
   | EvalVar id ->
-      env |> lookup_named id |> NamedDecl.get_value
+      env |> lookup_named id |> NamedDecl.get_value |> Option.map EConstr.of_constr
   | EvalRel n ->
-      env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value
-  | EvalEvar ev -> Evd.existential_opt_value sigma ev
+      env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value |> Option.map EConstr.of_constr
+  | EvalEvar ev ->
+    match EConstr.kind sigma (mkEvar ev) with
+    | Evar _ -> None
+    | c -> Some (EConstr.of_kind c)
 
 exception NotEvaluable
 let reference_value env sigma c u =
   match reference_opt_value env sigma c u with
     | None -> raise NotEvaluable
-    | Some d -> EConstr.of_constr d
+    | Some d -> d
 
 (************************************************************************)
 (* Reduction of constants hiding a fixpoint (e.g. for "simpl" tactic).  *)
@@ -179,6 +187,7 @@ let eval_table = Summary.ref (Cmap.empty : frozen) ~name:"evaluation"
 *)
 
 let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
+  let open EConstr in
   let n = List.length labs in
   let nargs = List.length args in
   if nargs > n then raise Elimconst;
@@ -188,8 +197,8 @@ let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
       (function d -> match EConstr.kind sigma d with
          | Rel k ->
              if
-	       Array.for_all (noccurn k) tys
-	       && Array.for_all (noccurn (k+nbfix)) bds
+	       Array.for_all (Vars.noccurn sigma k) tys
+	       && Array.for_all (Vars.noccurn sigma (k+nbfix)) bds
 	       && k <= n
 	     then
 	       (k, List.nth labs (k-1))
@@ -223,6 +232,7 @@ let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
 
 let invert_name labs l na0 env sigma ref = function
   | Name id ->
+      let open EConstr in
       let minfxargs = List.length l in
       begin match na0 with
       | Name id' when Id.equal id' id ->
@@ -239,12 +249,13 @@ let invert_name labs l na0 env sigma ref = function
 	      try match unsafe_reference_opt_value env sigma ref with
 		| None -> None
 		| Some c ->
-		    let labs',ccl = decompose_lam c in
-		    let _, l' = whd_betalet_stack sigma (EConstr.of_constr ccl) in
+		    let labs',ccl = decompose_lam sigma c in
+		    let _, l' = whd_betalet_stack sigma ccl in
 		    let labs' = List.map snd labs' in
 		    (** ppedrot: there used to be generic equality on terms here *)
+                    let eq_constr c1 c2 = EConstr.eq_constr sigma c1 c2 in
 		    if List.equal eq_constr labs' labs &&
-                       List.equal (fun c1 c2 -> EConstr.eq_constr sigma c1 c2) l l' then Some (minfxargs,ref)
+                       List.equal eq_constr l l' then Some (minfxargs,ref)
                     else None
 	      with Not_found (* Undefined ref *) -> None
       end
@@ -254,20 +265,29 @@ let invert_name labs l na0 env sigma ref = function
    [compute_consteval_mutual_fix] only one by one, until finding the
    last one before the Fix if the latter is mutually defined *)
 
+let local_assum (na, t) =
+  let open Context.Rel.Declaration in
+  let inj = EConstr.Unsafe.to_constr in
+  LocalAssum (na, inj t)
+
+let local_def (na, b, t) =
+  let open Context.Rel.Declaration in
+  let inj = EConstr.Unsafe.to_constr in
+  LocalDef (na, inj b, inj t)
+
 let compute_consteval_direct env sigma ref =
+  let open EConstr in
   let rec srec env n labs onlyproj c =
-    let c',l = whd_betadeltazeta_stack env sigma (EConstr.of_constr c) in
-    let c' = EConstr.Unsafe.to_constr c' in
-    match kind_of_term c' with
+    let c',l = whd_betadeltazeta_stack env sigma c in
+    match EConstr.kind sigma c' with
       | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
-          let open Context.Rel.Declaration in
-	  srec (push_rel (LocalAssum (id,t)) env) (n+1) (EConstr.of_constr t::labs) onlyproj g
+	  srec (push_rel (local_assum (id,t)) env) (n+1) (t::labs) onlyproj g
       | Fix fix when not onlyproj ->
 	  (try check_fix_reversibility sigma labs l fix
 	  with Elimconst -> NotAnElimination)
-      | Case (_,_,d,_) when isRel d && not onlyproj -> EliminationCases n
+      | Case (_,_,d,_) when isRel sigma d && not onlyproj -> EliminationCases n
       | Case (_,_,d,_) -> srec env n labs true d
-      | Proj (p, d) when isRel d -> EliminationProj n
+      | Proj (p, d) when isRel sigma d -> EliminationProj n
       | _ -> NotAnElimination
   in
   match unsafe_reference_opt_value env sigma ref with
@@ -275,14 +295,13 @@ let compute_consteval_direct env sigma ref =
     | Some c -> srec env 0 [] false c
 
 let compute_consteval_mutual_fix env sigma ref =
+  let open EConstr in
   let rec srec env minarg labs ref c =
-    let c',l = whd_betalet_stack sigma (EConstr.of_constr c) in
+    let c',l = whd_betalet_stack sigma c in
     let nargs = List.length l in
-    let c' = EConstr.Unsafe.to_constr c' in
-    match kind_of_term c' with
+    match EConstr.kind sigma c' with
       | Lambda (na,t,g) when List.is_empty l ->
-          let open Context.Rel.Declaration in
-	  srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref g
+	  srec (push_rel (local_assum (na,t)) env) (minarg+1) (t::labs) ref g
       | Fix ((lv,i),(names,_,_)) ->
 	  (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
 	  (match compute_consteval_direct env sigma ref with
@@ -295,9 +314,9 @@ let compute_consteval_mutual_fix env sigma ref =
 		 let new_minarg = max (minarg'+minarg-nargs) minarg' in
 		 EliminationMutualFix (new_minarg,ref,(refs,infos))
 	     | _ -> assert false)
-      | _ when isEvalRef env c' ->
+      | _ when isEvalRef env sigma c' ->
 	  (* Forget all \'s and args and do as if we had started with c' *)
-	  let ref,_ = destEvalRefU c' in
+	  let ref,_ = destEvalRefU sigma c' in
 	  (match unsafe_reference_opt_value env sigma ref with
 	    | None -> anomaly (Pp.str "Should have been trapped by compute_direct")
 	    | Some c -> srec env (minarg-nargs) [] ref c)
@@ -417,23 +436,25 @@ let solve_arity_problem env sigma fxminargs c =
   let rec check strict c =
     let c' = EConstr.of_constr (whd_betaiotazeta sigma c) in
     let (h,rcargs) = decompose_app_vect sigma c' in
-    match kind_of_term h with
+    let rcargs = Array.map EConstr.of_constr rcargs in
+    let h = EConstr.of_constr h in
+    match EConstr.kind sigma h with
         Evar(i,_) when Evar.Map.mem i fxminargs && not (Evd.is_defined !evm i) ->
           let minargs = Evar.Map.find i fxminargs in
           if Array.length rcargs < minargs then
             if strict then set_fix i
             else raise Partial;
-          Array.iter (EConstr.of_constr %> check strict) rcargs
-      | (Var _|Const _) when isEvalRef env h ->
-          (let ev, u = destEvalRefU h in
+          Array.iter (check strict) rcargs
+      | (Var _|Const _) when isEvalRef env sigma h ->
+          (let ev, u = destEvalRefU sigma h in
 	     match reference_opt_value env sigma ev u with
              | Some h' ->
                 let bak = !evm in
-                (try Array.iter (EConstr.of_constr %> check false) rcargs
+                (try Array.iter (check false) rcargs
                 with Partial ->
                   evm := bak;
-                  check strict (EConstr.of_constr (Constr.mkApp(h',rcargs))))
-            | None -> Array.iter (EConstr.of_constr %> check strict) rcargs)
+                  check strict (mkApp(h',rcargs)))
+            | None -> Array.iter (check strict) rcargs)
       | _ -> EConstr.iter sigma (check strict) c' in
   check true c;
   !evm
@@ -445,14 +466,16 @@ let substl_checking_arity env subst sigma c =
   let sigma' = solve_arity_problem env sigma minargs body in
   (* we propagate the constraints: solved problems are substituted;
      the other ones are replaced by the function symbol *)
-  let rec nf_fix c =
-    match kind_of_term c with
-        Evar(i,[|fx;f|] as ev) when Evar.Map.mem i minargs ->
-          (match Evd.existential_opt_value sigma' ev with
-              Some c' -> c'
-            | None -> f)
-      | _ -> map_constr nf_fix c in
-  EConstr.of_constr (nf_fix (EConstr.Unsafe.to_constr body))
+  let rec nf_fix c = match EConstr.kind sigma c with
+  | Evar (i,[|fx;f|]) when Evar.Map.mem i minargs ->
+    (** FIXME: find a less hackish way of doing this *)
+    begin match EConstr.kind sigma' c with
+    | Evar _ -> f
+    | c -> EConstr.of_kind c
+    end
+  | _ -> EConstr.map sigma nf_fix c
+  in
+  nf_fix body
 
 type fix_reduction_result = NotReducible | Reduced of (EConstr.t * EConstr.t list)
 
@@ -540,21 +563,21 @@ let match_eval_ref env sigma constr =
       Some (EvalConst sp, u)
   | Var id when is_evaluable env (EvalVarRef id) -> Some (EvalVar id, Univ.Instance.empty)
   | Rel i -> Some (EvalRel i, Univ.Instance.empty)
-  | Evar (evk, args) -> Some (EvalEvar (evk, Array.map EConstr.Unsafe.to_constr args), Univ.Instance.empty)
+  | Evar ev -> Some (EvalEvar ev, Univ.Instance.empty)
   | _ -> None
 
 let match_eval_ref_value env sigma constr = 
-  match kind_of_term constr with
+  match EConstr.kind sigma constr with
   | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
-    Some (constant_value_in env (sp, u))
+    Some (EConstr.of_constr (constant_value_in env (sp, u)))
   | Var id when is_evaluable env (EvalVarRef id) -> 
-     env |> lookup_named id |> NamedDecl.get_value
+     env |> lookup_named id |> NamedDecl.get_value |> Option.map EConstr.of_constr
   | Rel n ->
-     env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value
-  | Evar ev -> Evd.existential_opt_value sigma ev
+     env |> lookup_rel n |> RelDecl.map_value (lift n) |> RelDecl.get_value |> Option.map EConstr.of_constr
   | _ -> None
 
 let special_red_case env sigma whfun (ci, p, c, lf) =
+  let open EConstr in
   let rec redrec s =
     let (constr, cargs) = whfun s in
     match match_eval_ref env sigma constr with
@@ -562,13 +585,12 @@ let special_red_case env sigma whfun (ci, p, c, lf) =
       (match reference_opt_value env sigma ref u with
       | None -> raise Redelimination
       | Some gvalue ->
-        let gvalue = EConstr.of_constr gvalue in
         if reducible_mind_case sigma gvalue then
 	  reduce_mind_case_use_function constr env sigma
 	  {mP=p; mconstr=gvalue; mcargs=cargs;
            mci=ci; mlf=lf}
 	else
-	  redrec (EConstr.applist(gvalue, cargs)))
+	  redrec (applist(gvalue, cargs)))
     | None ->
       if reducible_mind_case sigma constr then
         reduce_mind_case sigma
@@ -688,11 +710,11 @@ let rec red_elim_const env sigma ref u largs =
     | EliminationMutualFix (min,refgoal,refinfos) when nargs >= min ->
 	let rec descend (ref,u) args =
 	  let c = reference_value env sigma ref u in
-	  if evaluable_reference_eq ref refgoal then
+	  if evaluable_reference_eq sigma ref refgoal then
 	    (c,args)
 	  else
 	    let c', lrest = whd_betalet_stack sigma (applist(c,args)) in
-	    descend (destEvalRefU (EConstr.Unsafe.to_constr c')) lrest in
+	    descend (destEvalRefU sigma c') lrest in
 	let (_, midargs as s) = descend (ref,u) largs in
 	let d, lrest = whd_nothing_for_iota env sigma (applist s) in
 	let f = make_elim_fun refinfos u midargs in
@@ -803,7 +825,7 @@ and whd_construct_stack env sigma s =
   | Some (ref, u) ->
     (match reference_opt_value env sigma ref u with
     | None -> raise Redelimination
-    | Some gvalue -> whd_construct_stack env sigma (applist(EConstr.of_constr gvalue, cargs)))
+    | Some gvalue -> whd_construct_stack env sigma (applist(gvalue, cargs)))
   | _ -> raise Redelimination
 
 (************************************************************************)
@@ -816,7 +838,6 @@ and whd_construct_stack env sigma s =
 
 let try_red_product env sigma c =
   let simpfun c = EConstr.of_constr (clos_norm_flags betaiotazeta env sigma c) in
-  let inj = EConstr.Unsafe.to_constr in
   let open EConstr in
   let rec redrec env x =
     let x = EConstr.of_constr (whd_betaiota sigma x) in
@@ -834,8 +855,7 @@ let try_red_product env sigma c =
              | _ -> simpfun (mkApp (redrec env f, l)))
       | Cast (c,_,_) -> redrec env c
       | Prod (x,a,b) ->
-          let open Context.Rel.Declaration in
-	  mkProd (x, a, redrec (push_rel (LocalAssum (x, inj a)) env) b)
+	  mkProd (x, a, redrec (push_rel (local_assum (x, a)) env) b)
       | LetIn (x,a,b,t) -> redrec env (Vars.subst1 a t)
       | Case (ci,p,d,lf) -> simpfun (mkCase (ci,p,redrec env d,lf))
       | Proj (p, c) -> 
@@ -855,7 +875,7 @@ let try_red_product env sigma c =
           (* to get true one-step reductions *)
 	  (match reference_opt_value env sigma ref u with
 	     | None -> raise Redelimination
-	     | Some c -> EConstr.of_constr c)
+	     | Some c -> c)
 	| _ -> raise Redelimination)
   in EConstr.Unsafe.to_constr (redrec env c)
 
@@ -931,9 +951,9 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
   let open EConstr in
   let rec redrec s =
     let (constr, stack as s') = whd_simpl_stack env sigma s in
-    match match_eval_ref_value env sigma (EConstr.Unsafe.to_constr constr) with
+    match match_eval_ref_value env sigma constr with
     | Some c ->
-      (match kind_of_term (strip_lam c) with
+      (match EConstr.kind sigma (snd (decompose_lam sigma c)) with
       | CoFix _ | Fix _ -> s'
       | Proj (p,t) when
 	  (match EConstr.kind sigma constr with
@@ -943,8 +963,8 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
 	  if List.length stack <= pb.Declarations.proj_npars then
 	    (** Do not show the eta-expanded form *)
 	    s'
-	  else redrec (applist (EConstr.of_constr c, stack))
-      | _ -> redrec (applist(EConstr.of_constr c, stack)))
+	  else redrec (applist (c, stack))
+      | _ -> redrec (applist(c, stack)))
     | None -> s'
   in
   let simpfun = clos_norm_flags betaiota env sigma in
@@ -973,22 +993,25 @@ let matches_head env sigma c t =
     of the projection and its eta expanded form.
 *)
 let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c = 
-  match kind_of_term c with
+  let open EConstr in
+  match EConstr.kind sigma c with
   | Proj (p, r) -> (* Treat specially for partial applications *)
-    let t = Retyping.expand_projection env sigma p (EConstr.of_constr r) [] in
-    let hdf, al = destApp t in
+    let t = Retyping.expand_projection env sigma p r [] in
+    let t = EConstr.of_constr t in
+    let hdf, al = destApp sigma t in
     let a = al.(Array.length al - 1) in
     let app = (mkApp (hdf, Array.sub al 0 (Array.length al - 1))) in
     let app' = f acc app in
     let a' = f acc a in
-      (match kind_of_term app' with
+      (match EConstr.kind sigma app' with
       | App (hdf', al') when hdf' == hdf ->
         (* Still the same projection, we ignore the change in parameters *)
 	mkProj (p, a')
       | _ -> mkApp (app', [| a' |]))
-  | _ -> map_constr_with_binders_left_to_right g f acc c
+  | _ -> map_constr_with_binders_left_to_right sigma g f acc c
 
 let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
+  let open EConstr in
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
@@ -1000,8 +1023,8 @@ let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
     else
     try
       let subst =
-        if byhead then matches_head env sigma c (EConstr.of_constr t) 
-	else Constr_matching.matches env sigma c (EConstr.of_constr t) in
+        if byhead then matches_head env sigma c t 
+	else Constr_matching.matches env sigma c t in
       let ok =
 	if nowhere_except_in then Int.List.mem !pos locs
 	else not (Int.List.mem !pos locs) in
@@ -1012,8 +1035,8 @@ let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
         (* Skip inner occurrences for stable counting of occurrences *)
         if locs != [] then
           ignore (traverse_below (Some (!pos-1)) envc t);
-	let Sigma (t, evm, _) = (f subst).e_redfun env (Sigma.Unsafe.of_evar_map !evd) (EConstr.of_constr t) in
-	(evd := Sigma.to_evar_map evm; t)
+	let Sigma (t, evm, _) = (f subst).e_redfun env (Sigma.Unsafe.of_evar_map !evd) t in
+	(evd := Sigma.to_evar_map evm; EConstr.of_constr t)
       end
       else
 	traverse_below nested envc t
@@ -1022,7 +1045,7 @@ let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
   and traverse_below nested envc t =
     (* when byhead, find other occurrences without matching again partial
        application with same head *)
-    match kind_of_term t with
+    match EConstr.kind !evd t with
     | App (f,l) when byhead -> mkApp (f, Array.map_left (traverse nested envc) l)
     | Proj (p,c) when byhead -> mkProj (p,traverse nested envc c)
     | _ ->
@@ -1030,9 +1053,9 @@ let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
           (fun d (env,c) -> (push_rel d env,lift_pattern 1 c))
           (traverse nested) envc sigma t
   in
-  let t' = traverse None (env,c) (EConstr.Unsafe.to_constr t) in
+  let t' = traverse None (env,c) t in
   if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;
-  Sigma.Unsafe.of_pair (t', !evd)
+  Sigma.Unsafe.of_pair (EConstr.Unsafe.to_constr t', !evd)
   end }
 
 let contextually byhead occs f env sigma t =
@@ -1068,10 +1091,9 @@ let substlin env sigma evalref n (nowhere_except_in,locs) c =
 	  incr pos;
 	  if ok then value u else c
       | None -> 
-        let self () c = EConstr.Unsafe.to_constr (substrec () (EConstr.of_constr c)) in
-        EConstr.of_constr (map_constr_with_binders_left_to_right
+        map_constr_with_binders_left_to_right sigma
 	  (fun _ () -> ())
-          self () (EConstr.Unsafe.to_constr c))
+          substrec () c
   in
   let t' = substrec () c in
   (!pos, t')
@@ -1082,9 +1104,9 @@ let string_of_evaluable_ref env = function
       string_of_qualid
         (Nametab.shortest_qualid_of_global (vars_of_env env) (ConstRef kn))
 
-let unfold env sigma name =
+let unfold env sigma name c =
   if is_evaluable env name then
-    clos_norm_flags (unfold_red name) env sigma
+    EConstr.of_constr (clos_norm_flags (unfold_red name) env sigma c)
   else
     error (string_of_evaluable_ref env name^" is opaque.")
 
@@ -1102,37 +1124,40 @@ let unfoldoccs env sigma (occs,name) c =
     | [] -> ()
     | _ -> error_invalid_occurrence rest
     in
-    nf_betaiotazeta sigma uc
+    EConstr.of_constr (nf_betaiotazeta sigma uc)
   in
   match occs with
-    | NoOccurrences -> EConstr.Unsafe.to_constr c
+    | NoOccurrences -> c
     | AllOccurrences -> unfold env sigma name c
     | OnlyOccurrences l -> unfo true l
     | AllOccurrencesBut l -> unfo false l
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c =
-  EConstr.Unsafe.to_constr (List.fold_left (fun c occname -> EConstr.of_constr (unfoldoccs env sigma occname c)) c loccname)
+  EConstr.Unsafe.to_constr (List.fold_left (fun c occname -> unfoldoccs env sigma occname c) c loccname)
 
 (* Re-folding constants tactics: refold com in term c *)
 let fold_one_com com env sigma c =
+  let open EConstr in
   let rcom =
-    try red_product env sigma (EConstr.of_constr com)
+    try EConstr.of_constr (red_product env sigma com)
     with Redelimination -> error "Not reducible." in
   (* Reason first on the beta-iota-zeta normal form of the constant as
      unfold produces it, so that the "unfold f; fold f" configuration works
      to refold fix expressions *)
-  let a = subst_term sigma (EConstr.of_constr (clos_norm_flags unfold_side_red env sigma (EConstr.of_constr rcom))) c in
-  if not (eq_constr a (EConstr.Unsafe.to_constr c)) then
-    subst1 com a
+  let a = subst_term sigma (EConstr.of_constr (clos_norm_flags unfold_side_red env sigma rcom)) c in
+  let a = EConstr.of_constr a in
+  if not (EConstr.eq_constr sigma a c) then
+    Vars.subst1 com a
   else
     (* Then reason on the non beta-iota-zeta form for compatibility -
        even if it is probably a useless configuration *)
-    let a = subst_term sigma (EConstr.of_constr rcom) c in
-    subst1 com a
+    let a = subst_term sigma rcom c in
+    let a = EConstr.of_constr a in
+    Vars.subst1 com a
 
 let fold_commands cl env sigma c =
-  EConstr.Unsafe.to_constr (List.fold_right (fun com c -> EConstr.of_constr (fold_one_com com env sigma c)) (List.rev cl) c)
+  EConstr.Unsafe.to_constr (List.fold_right (fun com c -> fold_one_com com env sigma c) (List.rev cl) c)
 
 
 (* call by value reduction functions *)
@@ -1150,23 +1175,26 @@ let compute = cbv_betadeltaiota
 (* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
  * the specified occurrences. *)
 
-let abstract_scheme env (locc,a) (c, sigma) =
-  let a = EConstr.of_constr a in
+let abstract_scheme env sigma (locc,a) (c, sigma) =
+  let open EConstr in
   let ta = Retyping.get_type_of env sigma a in
-  let na = named_hd env ta Anonymous in
-  if occur_meta sigma (EConstr.of_constr ta) then error "Cannot find a type for the generalisation.";
+  let ta = EConstr.of_constr ta in
+  let na = named_hd env (EConstr.to_constr sigma ta) Anonymous in
+  if occur_meta sigma ta then error "Cannot find a type for the generalisation.";
   if occur_meta sigma a then
     mkLambda (na,ta,c), sigma
   else
-    let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a (EConstr.of_constr c) in
+    let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a c in
+    let c' = EConstr.of_constr c' in
       mkLambda (na,ta,c'), sigma'
 
 let pattern_occs loccs_trm = { e_redfun = begin fun env sigma c ->
+  let open EConstr in
   let sigma = Sigma.to_evar_map sigma in
-  let abstr_trm, sigma = List.fold_right (abstract_scheme env) loccs_trm (EConstr.Unsafe.to_constr c,sigma) in
+  let abstr_trm, sigma = List.fold_right (abstract_scheme env sigma) loccs_trm (c,sigma) in
   try
-    let _ = Typing.unsafe_type_of env sigma (EConstr.of_constr abstr_trm) in
-    Sigma.Unsafe.of_pair (applist(abstr_trm, List.map snd loccs_trm), sigma)
+    let _ = Typing.unsafe_type_of env sigma abstr_trm in
+    Sigma.Unsafe.of_pair (EConstr.Unsafe.to_constr (applist(abstr_trm, List.map snd loccs_trm)), sigma)
   with Type_errors.TypeError (env',t) ->
     raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
   end }
@@ -1190,28 +1218,31 @@ let check_not_primitive_record env ind =
    return name, B and t' *)
 
 let reduce_to_ind_gen allow_product env sigma t =
+  let open EConstr in
   let rec elimrec env t l =
-    let t = hnf_constr env sigma (EConstr.of_constr t) in
-    match kind_of_term (fst (decompose_app t)) with
-      | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t l)
+    let t = hnf_constr env sigma t in
+    let t = EConstr.of_constr t in
+    match EConstr.kind sigma (EConstr.of_constr (fst (decompose_app_vect sigma t))) with
+      | Ind ind-> (check_privacy env ind, EConstr.Unsafe.to_constr (it_mkProd_or_LetIn t l))
       | Prod (n,ty,t') ->
 	  let open Context.Rel.Declaration in
 	  if allow_product then
-	    elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
+	    elimrec (push_rel (local_assum (n,ty)) env) t' ((local_assum (n,ty))::l)
 	  else
 	    user_err  (str"Not an inductive definition.")
       | _ ->
 	  (* Last chance: we allow to bypass the Opaque flag (as it
 	     was partially the case between V5.10 and V8.1 *)
-	  let t' = whd_all env sigma (EConstr.of_constr t) in
-	  match kind_of_term (fst (decompose_app t')) with
-	    | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
+	  let t' = whd_all env sigma t in
+	  let t' = EConstr.of_constr t' in
+	  match EConstr.kind sigma (EConstr.of_constr (fst (decompose_app_vect sigma t'))) with
+	    | Ind ind-> (check_privacy env ind, EConstr.Unsafe.to_constr (it_mkProd_or_LetIn t' l))
 	    | _ -> user_err  (str"Not an inductive product.")
   in
   elimrec env t []
 
-let reduce_to_quantified_ind x = reduce_to_ind_gen true x
-let reduce_to_atomic_ind x = reduce_to_ind_gen false x
+let reduce_to_quantified_ind env sigma c = reduce_to_ind_gen true env sigma (EConstr.of_constr c)
+let reduce_to_atomic_ind env sigma c = reduce_to_ind_gen false env sigma (EConstr.of_constr c)
 
 let find_hnf_rectype env sigma t =
   let ind,t = reduce_to_atomic_ind env sigma t in
@@ -1243,13 +1274,13 @@ let one_step_reduce env sigma c =
              | Reduced s' -> s'
 	     | NotReducible -> raise NotStepReducible
            with Redelimination -> raise NotStepReducible)
-      | _ when isEvalRef env (EConstr.Unsafe.to_constr x) ->
-	  let ref,u = destEvalRefU (EConstr.Unsafe.to_constr x) in
+      | _ when isEvalRef env sigma x ->
+	  let ref,u = destEvalRefU sigma x in
           (try
              fst (red_elim_const env sigma ref u stack)
            with Redelimination ->
 	     match reference_opt_value env sigma ref u with
-	       | Some d -> (EConstr.of_constr d, stack)
+	       | Some d -> (d, stack)
 	       | None -> raise NotStepReducible)
 
       | _ -> raise NotStepReducible
@@ -1271,26 +1302,29 @@ let reduce_to_ref_gen allow_product env sigma ref t =
   else
   (* lazily reduces to match the head of [t] with the expected [ref] *)
   let rec elimrec env t l =
-    let c, _ = decompose_app_vect sigma (EConstr.of_constr t) in
-    match kind_of_term c with
+    let open EConstr in
+    let c, _ = decompose_app_vect sigma t in
+    let c = EConstr.of_constr c in
+    match EConstr.kind sigma c with
       | Prod (n,ty,t') ->
           if allow_product then
 	    let open Context.Rel.Declaration in
-	    elimrec (push_rel (LocalAssum (n,t)) env) t' ((LocalAssum (n,ty))::l)
+	    elimrec (push_rel (local_assum (n,t)) env) t' ((local_assum (n,ty))::l)
           else
             error_cannot_recognize ref
       | _ ->
 	  try
-	    if eq_gr (global_of_constr c) ref
+	    if eq_gr (global_of_constr (EConstr.to_constr sigma c)) ref
 	    then it_mkProd_or_LetIn t l
 	    else raise Not_found
 	  with Not_found ->
           try
-	    let t' = nf_betaiota sigma (one_step_reduce env sigma (EConstr.of_constr t)) in
+	    let t' = nf_betaiota sigma (one_step_reduce env sigma t) in
+	    let t' = EConstr.of_constr t' in
             elimrec env t' l
           with NotStepReducible -> error_cannot_recognize ref
   in
-  elimrec env t []
+  EConstr.Unsafe.to_constr (elimrec env t [])
 
 let reduce_to_quantified_ref = reduce_to_ref_gen true
 let reduce_to_atomic_ref = reduce_to_ref_gen false

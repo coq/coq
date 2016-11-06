@@ -836,7 +836,10 @@ let rec uniquize = function
           | Context.Rel.Declaration.LocalDef (x,_,y) ->
               Context.Rel.Declaration.LocalAssum(x,y) in
         Environ.push_rel ctx_item env, h' + 1 in
-      let f' = map_constr_with_binders_left_to_right inc_h subst_loop acc f in
+      let self acc c = EConstr.of_constr (subst_loop acc (EConstr.Unsafe.to_constr c)) in
+      let f = EConstr.of_constr f in
+      let f' = map_constr_with_binders_left_to_right sigma inc_h self acc f in
+      let f' = EConstr.Unsafe.to_constr f' in
       mkApp (f', Array.map_left (subst_loop acc) a) in
   subst_loop (env,h) c) : find_P),
 ((fun () ->

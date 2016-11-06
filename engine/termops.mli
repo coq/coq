@@ -65,9 +65,10 @@ val map_constr_with_named_binders :
   (Name.t -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
 val map_constr_with_binders_left_to_right :
+  Evd.evar_map ->
   (Context.Rel.Declaration.t -> 'a -> 'a) ->
-  ('a -> constr -> constr) ->
-    'a -> constr -> constr
+  ('a -> EConstr.constr -> EConstr.constr) ->
+    'a -> EConstr.constr -> EConstr.constr
 val map_constr_with_full_binders :
   Evd.evar_map ->
   (Context.Rel.Declaration.t -> 'a -> 'a) ->

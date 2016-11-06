@@ -875,7 +875,7 @@ let normalise_vm_in_concl = reduct_in_concl (Redexpr.cbv_vm,VMcast)
 let unfold_in_concl loccname = reduct_in_concl (unfoldn loccname,REVERTcast)
 let unfold_in_hyp   loccname = reduct_in_hyp   (unfoldn loccname)
 let unfold_option   loccname = reduct_option (unfoldn loccname,DEFAULTcast)
-let pattern_option l = e_reduct_option (pattern_occs l,DEFAULTcast)
+let pattern_option l = e_reduct_option (pattern_occs (List.map (on_snd EConstr.of_constr) l),DEFAULTcast)
 
 (* The main reduction function *)
 
@@ -3165,7 +3165,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   let env = Proofview.Goal.env gl in
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
   let reduce_to_quantified_ref = Tacmach.New.pf_apply reduce_to_quantified_ref gl in
-  let typ0 = reduce_to_quantified_ref indref tmptyp0 in
+  let typ0 = reduce_to_quantified_ref indref (EConstr.of_constr tmptyp0) in
   let prods, indtyp = decompose_prod_assum typ0 in
   let hd,argl = decompose_app indtyp in
   let env' = push_rel_context prods env in

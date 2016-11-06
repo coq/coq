@@ -1270,6 +1270,7 @@ let explain_pattern_matching_error env sigma = function
 
 let explain_reduction_tactic_error = function
   | Tacred.InvalidAbstraction (env,sigma,c,(env',e)) ->
+      let c = EConstr.to_constr sigma c in
       str "The abstracted term" ++ spc () ++
       quote (pr_goal_concl_style_env env sigma c) ++
       spc () ++ str "is not well typed." ++ fnl () ++

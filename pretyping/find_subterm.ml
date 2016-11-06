@@ -99,7 +99,7 @@ type 'a testing_function = {
    (b,l), b=true means no occurrence except the ones in l and b=false,
    means all occurrences except the ones in l *)
 
-let replace_term_occ_gen_modulo occs like_first test bywhat cl occ t =
+let replace_term_occ_gen_modulo sigma occs like_first test bywhat cl occ t =
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
@@ -133,24 +133,23 @@ let replace_term_occ_gen_modulo occs like_first test bywhat cl occ t =
     with NotUnifiable _ ->
       subst_below k t
   and subst_below k t =
-    let substrec i c = EConstr.Unsafe.to_constr (substrec i (EConstr.of_constr c)) in
-    EConstr.of_constr (map_constr_with_binders_left_to_right (fun d k -> k+1) substrec k (EConstr.Unsafe.to_constr t))
+    map_constr_with_binders_left_to_right sigma (fun d k -> k+1) substrec k t
   in
   let t' = substrec 0 t in
   (!pos, t')
 
-let replace_term_occ_modulo occs test bywhat t =
+let replace_term_occ_modulo evd occs test bywhat t =
   let occs',like_first =
     match occs with AtOccs occs -> occs,false | LikeFirst -> AllOccurrences,true in
   EConstr.Unsafe.to_constr (proceed_with_occurrences
-    (replace_term_occ_gen_modulo occs' like_first test bywhat None) occs' t)
+    (replace_term_occ_gen_modulo evd occs' like_first test bywhat None) occs' t)
 
-let replace_term_occ_decl_modulo occs test bywhat d =
+let replace_term_occ_decl_modulo evd occs test bywhat d =
   let (plocs,hyploc),like_first =
     match occs with AtOccs occs -> occs,false | LikeFirst -> (AllOccurrences,InHyp),true in
   proceed_with_occurrences
     (map_named_declaration_with_hyploc
-       (replace_term_occ_gen_modulo plocs like_first test bywhat)
+       (replace_term_occ_gen_modulo evd plocs like_first test bywhat)
        hyploc)
     plocs d
 
@@ -172,7 +171,7 @@ let make_eq_univs_test env evd c =
 let subst_closed_term_occ env evd occs c t =
   let test = make_eq_univs_test env evd c in
   let bywhat () = mkRel 1 in
-  let t' = replace_term_occ_modulo occs test bywhat t in
+  let t' = replace_term_occ_modulo evd occs test bywhat t in
     t', test.testing_state
 
 let subst_closed_term_occ_decl env evd occs c d =
@@ -182,6 +181,6 @@ let subst_closed_term_occ_decl env evd occs c d =
   let bywhat () = mkRel 1 in
   proceed_with_occurrences
     (map_named_declaration_with_hyploc
-       (fun _ -> replace_term_occ_gen_modulo plocs like_first test bywhat None)
+       (fun _ -> replace_term_occ_gen_modulo evd plocs like_first test bywhat None)
        hyploc) plocs d,
   test.testing_state

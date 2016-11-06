@@ -986,10 +986,9 @@ let apply_on_subterm env evdref f c t =
           let g decl a = if is_local_assum decl then applyrec acc a else a in
           mkEvar (evk, Array.of_list (List.map2 g ctx (Array.to_list args)))
       | _ ->
-        let self acc c = EConstr.Unsafe.to_constr (applyrec acc (EConstr.of_constr c)) in
-        EConstr.of_constr (map_constr_with_binders_left_to_right
+        map_constr_with_binders_left_to_right !evdref
 	  (fun d (env,(k,c)) -> (push_rel d env, (k+1,Vars.lift 1 c)))
-	  self acc (EConstr.Unsafe.to_constr t))
+	  applyrec acc t
   in
   applyrec (env,(0,c)) t
 

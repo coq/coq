@@ -41,12 +41,13 @@ val make_eq_univs_test : env -> evar_map -> EConstr.constr -> evar_map testing_f
     matching subterms at the indicated occurrences [occl] with [mk
     ()]; it turns a NotUnifiable exception raised by the testing
     function into a SubtermUnificationError. *)
-val replace_term_occ_modulo : occurrences or_like_first ->
+val replace_term_occ_modulo : evar_map -> occurrences or_like_first ->
   'a testing_function -> (unit -> EConstr.constr) -> EConstr.constr -> constr
 
 (** [replace_term_occ_decl_modulo] is similar to
     [replace_term_occ_modulo] but for a named_declaration. *)
 val replace_term_occ_decl_modulo :
+  evar_map ->
   (occurrences * hyp_location_flag) or_like_first ->
   'a testing_function -> (unit -> EConstr.constr) ->
   Context.Named.Declaration.t -> Context.Named.Declaration.t

@@ -320,8 +320,19 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
    time being almost those of the ML representation (except for
    (co-)fixpoint) *)
 
+let local_assum (na, t) =
+  let open RelDecl in
+  let inj = EConstr.Unsafe.to_constr in
+  LocalAssum (na, inj t)
+
+let local_def (na, b, t) =
+  let open RelDecl in
+  let inj = EConstr.Unsafe.to_constr in
+  LocalDef (na, inj b, inj t)
+
 let fold_rec_types g (lna,typarray,_) e =
-  let ctxt = Array.map2_i (fun i na t -> RelDecl.LocalAssum (na, lift i t)) lna typarray in
+  let open EConstr in
+  let ctxt = Array.map2_i (fun i na t -> local_assum (na, Vars.lift i t)) lna typarray in
   Array.fold_left (fun e assum -> g assum e) e ctxt
 
 let map_left2 f a g b =
@@ -336,9 +347,9 @@ let map_left2 f a g b =
     r, s
   end
 
-let map_constr_with_binders_left_to_right g f l c =
-  let open RelDecl in
-  match kind_of_term c with
+let map_constr_with_binders_left_to_right sigma g f l c =
+  let open EConstr in
+  match EConstr.kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> c
   | Cast (b,k,t) -> 
@@ -348,18 +359,18 @@ let map_constr_with_binders_left_to_right g f l c =
       else mkCast (b',k,t')
   | Prod (na,t,b) ->
       let t' = f l t in
-      let b' = f (g (LocalAssum (na,t)) l) b in
+      let b' = f (g (local_assum (na,t)) l) b in
 	if t' == t && b' == b then c
 	else mkProd (na, t', b')
   | Lambda (na,t,b) ->
       let t' = f l t in
-      let b' = f (g (LocalAssum (na,t)) l) b in
+      let b' = f (g (local_assum (na,t)) l) b in
 	if t' == t && b' == b then c
 	else mkLambda (na, t', b')
   | LetIn (na,bo,t,b) ->
       let bo' = f l bo in
       let t' = f l t in
-      let b' = f (g (LocalDef (na,bo,t)) l) b in
+      let b' = f (g (local_def (na,bo,t)) l) b in
 	if bo' == bo && t' == t && b' == b then c
 	else mkLetIn (na, bo', t', b')	    
   | App (c,[||]) -> assert false
