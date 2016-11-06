@@ -1085,8 +1085,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
        else error "Argument lists should agree on the names they provide."
   in
 
-  let initial = List.make num_args Anonymous in
-  let names = List.fold_left names_union initial names in
+  let names = List.fold_left names_union [] names in
 
   let rec rename prev_names names =
     match prev_names, names with
