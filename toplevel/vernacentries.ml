@@ -1109,11 +1109,11 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   if !rename_flag_required && not rename_flag then
     errorlabstrm "vernac_declare_arguments"
       (strbrk "To rename arguments the \"rename\" flag must be specified."
-    ++
+    ++ spc () ++
        match !example_renaming with
        | None -> mt ()
        | Some (o,n) ->
-          str "\nArgument " ++ pr_name o ++
+          str "Argument " ++ pr_name o ++
             str " renamed to " ++ pr_name n ++ str ".");
 
   let duplicate_names =
