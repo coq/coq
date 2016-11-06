@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open Globnames
 open Glob_term
 open Mod_subst
@@ -32,7 +33,7 @@ val head_pattern_bound : constr_pattern -> global_reference
 (** [head_of_constr_reference c] assumes [r] denotes a reference and
    returns its label; raises an anomaly otherwise *)
 
-val head_of_constr_reference : Term.constr -> global_reference
+val head_of_constr_reference : Evd.evar_map -> constr -> global_reference
 
 (** [pattern_of_constr c] translates a term [c] with metavariables into
    a pattern; currently, no destructor (Cases, Fix, Cofix) and no

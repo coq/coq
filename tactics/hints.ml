@@ -746,7 +746,7 @@ let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
     match kind_of_term cty with
     | Prod _ -> failwith "make_exact_entry"
     | _ ->
-	let pat = Patternops.pattern_of_constr env sigma cty in
+	let pat = Patternops.pattern_of_constr env sigma (EConstr.of_constr cty) in
 	let hd =
 	  try head_pattern_bound pat
 	  with BoundPattern -> failwith "make_exact_entry"
@@ -767,7 +767,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
         let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
         let ce = mk_clenv_from_env env sigma' None (c,cty) in
 	let c' = clenv_type (* ~reduce:false *) ce in
-	let pat = Patternops.pattern_of_constr env ce.evd c' in
+	let pat = Patternops.pattern_of_constr env ce.evd (EConstr.of_constr c') in
         let hd =
 	  try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry" in
@@ -911,11 +911,11 @@ let make_trivial env sigma poly ?(name=PathAny) r =
   let c,ctx = fresh_global_or_constr env sigma poly r in
   let sigma = Evd.merge_context_set univ_flexible sigma ctx in
   let t = hnf_constr env sigma (EConstr.of_constr (unsafe_type_of env sigma (EConstr.of_constr c))) in
-  let hd = head_of_constr_reference (head_constr sigma t) in
+  let hd = head_of_constr_reference sigma (EConstr.of_constr (head_constr sigma t)) in
   let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd, { pri=1;
 	      poly = poly;
-              pat = Some (Patternops.pattern_of_constr env ce.evd (clenv_type ce));
+              pat = Some (Patternops.pattern_of_constr env ce.evd (EConstr.of_constr (clenv_type ce)));
 	      name = name;
               db = None;
               secvars = secvars_of_constr env c;
@@ -1013,7 +1013,7 @@ let subst_autohint (subst, obj) =
   let subst_key gr =
     let (lab'', elab') = subst_global subst gr in
     let gr' =
-      (try head_of_constr_reference (head_constr_bound Evd.empty (** FIXME *) elab')
+      (try head_of_constr_reference Evd.empty (EConstr.of_constr (head_constr_bound Evd.empty (** FIXME *) elab'))
        with Bound -> lab'')
     in if gr' == gr then gr else gr'
   in

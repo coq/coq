@@ -691,7 +691,7 @@ let interp_pure_open_constr ist =
 let interp_typed_pattern ist env sigma (_,c,_) =
   let sigma, c =
     interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
-  pattern_of_constr env sigma c
+  pattern_of_constr env sigma (EConstr.of_constr c)
 
 (* Interprets a constr expression *)
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
@@ -736,7 +736,7 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
       try Inl (coerce_to_evaluable_ref env x)
       with CannotCoerceTo _ ->
         let c = coerce_to_closed_constr env x in
-        Inr (pattern_of_constr env sigma c) in
+        Inr (pattern_of_constr env sigma (EConstr.of_constr c)) in
     (try try_interp_ltac_var coerce_eval_ref_or_constr ist (Some (env,sigma)) (loc,id)
      with Not_found ->
        error_global_not_found ~loc (qualid_of_ident id))

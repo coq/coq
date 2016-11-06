@@ -114,17 +114,27 @@ let rec head_pattern_bound t =
     | PLambda _ -> raise BoundPattern
     | PCoFix _ -> anomaly ~label:"head_pattern_bound" (Pp.str "not a type")
 
-let head_of_constr_reference c = match kind_of_term c with
+let head_of_constr_reference sigma c = match EConstr.kind sigma c with
   | Const (sp,_) -> ConstRef sp
   | Construct (sp,_) -> ConstructRef sp
   | Ind (sp,_) -> IndRef sp
   | Var id -> VarRef id
   | _ -> anomaly (Pp.str "Not a rigid reference")
 
-let pattern_of_constr env sigma t =
-  let rec pattern_of_constr env t =
+let local_assum (na, t) =
   let open Context.Rel.Declaration in
-  match kind_of_term t with
+  let inj = EConstr.Unsafe.to_constr in
+  LocalAssum (na, inj t)
+
+let local_def (na, b, t) =
+  let open Context.Rel.Declaration in
+  let inj = EConstr.Unsafe.to_constr in
+  LocalDef (na, inj b, inj t)
+
+let pattern_of_constr env sigma t =
+  let open EConstr in
+  let rec pattern_of_constr env t =
+  match EConstr.kind sigma t with
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
@@ -133,14 +143,14 @@ let pattern_of_constr env sigma t =
     | Sort (Type _) -> PSort (GType [])
     | Cast (c,_,_)      -> pattern_of_constr env c
     | LetIn (na,c,t,b) -> PLetIn (na,pattern_of_constr env c,
-				  pattern_of_constr (push_rel (LocalDef (na,c,t)) env) b)
+				  pattern_of_constr (push_rel (local_def (na,c,t)) env) b)
     | Prod (na,c,b)   -> PProd (na,pattern_of_constr env c,
-				pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
+				pattern_of_constr (push_rel (local_assum (na, c)) env) b)
     | Lambda (na,c,b) -> PLambda (na,pattern_of_constr env c,
-				  pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
+				  pattern_of_constr (push_rel (local_assum (na, c)) env) b)
     | App (f,a) ->
         (match
-          match kind_of_term f with
+          match EConstr.kind sigma f with
           | Evar (evk,args) ->
             (match snd (Evd.evar_source evk sigma) with
               Evar_kinds.MatchingVar (true,id) -> Some id
@@ -153,17 +163,17 @@ let pattern_of_constr env sigma t =
     | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
     | Proj (p, c) -> 
-      pattern_of_constr env (Retyping.expand_projection env sigma p (EConstr.of_constr c) [])
+      pattern_of_constr env (EConstr.of_constr (Retyping.expand_projection env sigma p c []))
     | Evar (evk,ctxt as ev) ->
       (match snd (Evd.evar_source evk sigma) with
       | Evar_kinds.MatchingVar (b,id) ->
-	let ty = Evarutil.nf_evar sigma (existential_type sigma ev) in
+	let ty = existential_type sigma ev in
 	let () = ignore (pattern_of_constr env ty) in
         assert (not b); PMeta (Some id)
       | Evar_kinds.GoalEvar -> 
 	PEvar (evk,Array.map (pattern_of_constr env) ctxt)
       | _ -> 
-	let ty = Evarutil.nf_evar sigma (existential_type sigma ev) in
+	let ty = existential_type sigma ev in
 	let () = ignore (pattern_of_constr env ty) in
 	 PMeta None)
     | Case (ci,p,a,br) ->
@@ -178,8 +188,13 @@ let pattern_of_constr env sigma t =
 	in
 	PCase (cip, pattern_of_constr env p, pattern_of_constr env a,
 	       Array.to_list (Array.mapi branch_of_constr br))
-    | Fix f -> PFix f
-    | CoFix f -> PCoFix f in
+    | Fix (idx, (nas, cs, ts)) ->
+      let inj c = EConstr.to_constr sigma c in
+      PFix (idx, (nas, Array.map inj cs, Array.map inj ts))
+    | CoFix (idx, (nas, cs, ts)) ->
+      let inj c = EConstr.to_constr sigma c in
+      PCoFix (idx, (nas, Array.map inj cs, Array.map inj ts))
+  in
   pattern_of_constr env t
 
 (* To process patterns, we need a translation without typing at all. *)
@@ -220,7 +235,7 @@ let instantiate_pattern env sigma lvar c =
               ctx
           in
 	  let c = substl inst c in
-	  pattern_of_constr env sigma c
+	  pattern_of_constr env sigma (EConstr.of_constr c)
 	with Not_found (* List.index failed *) ->
 	  let vars =
 	    List.map_filter (function Name id -> Some id | _ -> None) vars in
@@ -245,7 +260,7 @@ let rec subst_pattern subst pat =
   | PRef ref ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then pat else
-	 pattern_of_constr (Global.env()) Evd.empty t
+	 pattern_of_constr (Global.env()) Evd.empty (EConstr.of_constr t)
   | PVar _
   | PEvar _
   | PRel _ -> pat
