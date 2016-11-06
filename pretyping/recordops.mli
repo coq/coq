@@ -65,7 +65,7 @@ type obj_typ = {
   o_TCOMPS : constr list } (** ordered *)
 
 (** Return the form of the component of a canonical structure *)
-val cs_pattern_of_constr : Evd.evar_map -> constr -> cs_pattern * int option * constr list
+val cs_pattern_of_constr : constr -> cs_pattern * int option * constr list
 
 val pr_cs_pattern : cs_pattern -> Pp.std_ppcmds
 

@@ -171,7 +171,7 @@ let keep_true_projections projs kinds =
   let filter (p, (_, b)) = if b then Some p else None in
   List.map_filter filter (List.combine projs kinds)
 
-let cs_pattern_of_constr sigma t =
+let cs_pattern_of_constr t =
   match kind_of_term t with
       App (f,vargs) ->
 	begin
@@ -179,7 +179,7 @@ let cs_pattern_of_constr sigma t =
           with e when CErrors.noncritical e -> raise Not_found
 	end
     | Rel n -> Default_cs, Some n, []
-    | Prod (_,a,b) when EConstr.Vars.noccurn sigma 1 (EConstr.of_constr b) -> Prod_cs, None, [a; Termops.pop (EConstr.of_constr b)]
+    | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
     | Sort s -> Sort_cs (family_of_sort s), None, []
     | _ ->
 	begin
@@ -217,7 +217,7 @@ let compute_canonical_projections warn (con,ind) =
            | Some proji_sp ->
 	       begin
 		 try
-		   let patt, n , args = cs_pattern_of_constr Evd.empty t (** FIXME *) in
+		   let patt, n , args = cs_pattern_of_constr t in
 		     ((ConstRef proji_sp, patt, t, n, args) :: l)
 		 with Not_found ->
                      let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con)
