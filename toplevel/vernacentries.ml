@@ -1082,7 +1082,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
     | name1 :: names1, name2 :: names2 ->
        if Name.equal name1 name2 then
          name1 :: names_union names1 names2
-       else error "Arguments lists should agree on names they provide."
+       else error "Argument lists should agree on the names they provide."
   in
 
   let initial = List.make num_args Anonymous in
@@ -1107,9 +1107,6 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   let names = rename prev_names names in
   let renaming_specified = Option.has_some !example_renaming in
 
-  if not (List.distinct_f Name.compare (List.filter ((!=) Anonymous) names)) then
-    error "Arguments names must be distinct.";
-
   if !rename_flag_required && not rename_flag then
     errorlabstrm "vernac_declare_arguments"
       (strbrk "To rename arguments the \"rename\" flag must be specified."
@@ -1120,6 +1117,13 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
           str "\nArgument " ++ pr_name o ++
             str " renamed to " ++ pr_name n ++ str ".");
 
+  let duplicate_names =
+    List.duplicates Name.equal (List.filter ((!=) Anonymous) names)
+  in
+  if not (List.is_empty duplicate_names) then begin
+    let duplicates = prlist_with_sep pr_comma pr_name duplicate_names in
+    errorlabstrm "_" (strbrk "Some argument names are duplicated: " ++ duplicates)
+  end;
 
   (* Parts of this code are overly complicated because the implicit arguments
      API is completely crazy: positions (ExplByPos) are elaborated to
