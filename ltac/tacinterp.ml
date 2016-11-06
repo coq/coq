@@ -791,7 +791,7 @@ let interp_may_eval f ist env sigma = function
 	let ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
 	let evdref = ref sigma in
 	let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
-	let c = Typing.e_solve_evars env evdref c in
+	let c = Typing.e_solve_evars env evdref (EConstr.of_constr c) in
 	!evdref , c
       with
 	| Not_found ->
@@ -799,7 +799,7 @@ let interp_may_eval f ist env sigma = function
 	    (str "Unbound context identifier" ++ pr_id s ++ str"."))
   | ConstrTypeOf c ->
       let (sigma,c_interp) = f ist env sigma c in
-      Typing.type_of ~refresh:true env sigma c_interp
+      Typing.type_of ~refresh:true env sigma (EConstr.of_constr c_interp)
   | ConstrTerm c ->
      try
 	f ist env sigma c

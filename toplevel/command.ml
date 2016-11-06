@@ -953,7 +953,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let rel, _ = interp_constr_evars_impls env evdref r in
-  let relty = Typing.unsafe_type_of env !evdref rel in
+  let relty = Typing.unsafe_type_of env !evdref (EConstr.of_constr rel) in
   let relargty =
     let error () =
       user_err ~loc:(constr_loc r)
@@ -1034,7 +1034,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
 	       ~src:(Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
 	     prop |])
   in
-  let def = Typing.e_solve_evars env evdref def in
+  let def = Typing.e_solve_evars env evdref (EConstr.of_constr def) in
   let _ = evdref := Evarutil.nf_evar_map !evdref in
   let def = mkApp (def, [|intern_body_lam|]) in
   let binders_rel = nf_evar_context !evdref binders_rel in
@@ -1105,11 +1105,11 @@ let interp_recursive isfix fixl notations =
     List.fold_left2
       (fun env' id t ->
 	 if Flags.is_program_mode () then
-	   let sort = Evarutil.evd_comb1 (Typing.type_of ~refresh:true env) evdref t in
+	   let sort = Evarutil.evd_comb1 (Typing.type_of ~refresh:true env) evdref (EConstr.of_constr t) in
 	   let fixprot =
 	     try 
 	       let app = mkApp (delayed_force fix_proto, [|sort; t|]) in
-		 Typing.e_solve_evars env evdref app
+		 Typing.e_solve_evars env evdref (EConstr.of_constr app)
 	     with e  when CErrors.noncritical e -> t
 	   in
 	     LocalAssum (id,fixprot) :: env'

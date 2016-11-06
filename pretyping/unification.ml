@@ -102,7 +102,7 @@ let abstract_list_all env evd typ c l =
   let l_with_all_occs = List.map (function a -> (LikeFirst,a)) l in
   let p,evd = abstract_scheme env evd c l_with_all_occs ctxt in
   let evd,typp =
-    try Typing.type_of env evd p
+    try Typing.type_of env evd (EConstr.of_constr p)
     with
     | UserError _ ->
         error_cannot_find_well_typed_abstraction env evd p (List.map EConstr.of_constr l) None
@@ -1214,7 +1214,7 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
 	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
       | _ -> error "Apply_Head_Then"
   in
-    apprec n c (Typing.unsafe_type_of env (Sigma.to_evar_map evd) c) Sigma.refl evd
+    apprec n c (Typing.unsafe_type_of env (Sigma.to_evar_map evd) (EConstr.of_constr c)) Sigma.refl evd
 
 let is_mimick_head ts f =
   match kind_of_term f with

@@ -86,7 +86,7 @@ let apply_to_hyp check sign id f =
     else sign
 
 let check_typability env sigma c =
-  if !check then let _ = unsafe_type_of env sigma c in ()
+  if !check then let _ = unsafe_type_of env sigma (EConstr.of_constr c) in ()
 
 (************************************************************************)
 (************************************************************************)
@@ -330,7 +330,7 @@ let meta_free_prefix sigma a =
   with Stop acc -> Array.rev_of_list acc
 
 let goal_type_of env sigma c =
-  if !check then unsafe_type_of env sigma c
+  if !check then unsafe_type_of env sigma (EConstr.of_constr c)
   else Retyping.get_type_of env sigma (EConstr.of_constr c)
 
 let rec mk_refgoals sigma goal goalacc conclty trm =

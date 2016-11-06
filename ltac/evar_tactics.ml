@@ -77,7 +77,7 @@ let let_evar name typ =
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let sigma = ref sigma in
-    let _ = Typing.e_sort_of env sigma typ in
+    let _ = Typing.e_sort_of env sigma (EConstr.of_constr typ) in
     let sigma = Sigma.Unsafe.of_evar_map !sigma in
     let id = match name with
     | Names.Anonymous -> 

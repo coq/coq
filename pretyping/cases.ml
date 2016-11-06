@@ -1381,7 +1381,7 @@ and match_current pb (initial,tomatch) =
 	  let case =
 	    make_case_or_project pb.env indf ci pred current brvals
 	  in
-	  Typing.check_allowed_sort pb.env !(pb.evdref) mind current pred;
+	  Typing.check_allowed_sort pb.env !(pb.evdref) mind (EConstr.of_constr current) (EConstr.of_constr pred);
 	  { uj_val = applist (case, inst);
 	    uj_type = prod_applist typ inst }
 
@@ -1684,7 +1684,7 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
 	(lift (n'-n) impossible_case_type, mkSort u)
     | Some t ->
         let t = abstract_tycon loc tycon_env evdref subst tycon extenv t in
-        let evd,tt = Typing.type_of extenv !evdref t in
+        let evd,tt = Typing.type_of extenv !evdref (EConstr.of_constr t) in
         evdref := evd;
         (t,tt) in
   let b = e_cumul env evdref (EConstr.of_constr tt) (EConstr.mkSort s) (* side effect *) in
@@ -1920,7 +1920,7 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
   assert (len == 0);
   let p = predicate 0 c in
   let env' = List.fold_right push_rel_context arsign env in
-  try let sigma' = fst (Typing.type_of env' sigma p) in
+  try let sigma' = fst (Typing.type_of env' sigma (EConstr.of_constr p)) in
         Some (sigma', p)
   with e when precatchable_exception e -> None
 
@@ -2041,7 +2041,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	let IndType (indf, _) = 
 	  try find_rectype env ( !evdref) (EConstr.of_constr (lift (-(List.length realargs)) ty))
 	  with Not_found -> error_case_not_inductive env !evdref
-	    {uj_val = ty; uj_type = Typing.unsafe_type_of env !evdref ty}
+	    {uj_val = ty; uj_type = Typing.unsafe_type_of env !evdref (EConstr.of_constr ty)}
 	in
 	let (ind,u), params = dest_ind_family indf in
 	if not (eq_ind ind cind) then error_bad_constructor ~loc:l env cstr ind;
@@ -2242,7 +2242,7 @@ let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
 	 let j = typing_fun (mk_tycon (EConstr.of_constr tycon)) rhs_env eqn.rhs.it in
 	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
-	 let _btype = evd_comb1 (Typing.type_of env) evdref bbody in
+	 let _btype = evd_comb1 (Typing.type_of env) evdref (EConstr.of_constr bbody) in
 	 let branch_name = Id.of_string ("program_branch_" ^ (string_of_int !i)) in
 	 let branch_decl = LocalDef (Name branch_name, lift !i bbody, lift !i btype) in
 	 let branch =

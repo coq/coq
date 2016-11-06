@@ -20,6 +20,11 @@ open Typeops
 open Arguments_renaming
 open Context.Rel.Declaration
 
+let push_rec_types pfix env =
+  let (i, c, t) = pfix in
+  let inj c = EConstr.Unsafe.to_constr c in
+  push_rec_types (i, Array.map inj c, Array.map inj t) env
+
 let meta_type evd mv =
   let ty =
     try Evd.meta_ftype evd mv
@@ -28,12 +33,12 @@ let meta_type evd mv =
 
 let constant_type_knowing_parameters env cst jl =
   let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
-  type_of_constant_knowing_parameters_in env cst paramstyp
+  EConstr.of_constr (type_of_constant_knowing_parameters_in env cst paramstyp)
 
 let inductive_type_knowing_parameters env (ind,u) jl =
   let mspec = lookup_mind_specif env ind in
   let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
-  Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp
+  EConstr.of_constr (Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp)
 
 let e_type_judgment env evdref j =
   match EConstr.kind !evdref (EConstr.of_constr (whd_all env !evdref (EConstr.of_constr j.uj_type))) with
@@ -44,7 +49,7 @@ let e_type_judgment env evdref j =
     | _ -> error_not_type env j
 
 let e_assumption_of_judgment env evdref j =
-  try (e_type_judgment env evdref j).utj_val
+  try EConstr.of_constr (e_type_judgment env evdref j).utj_val
   with TypeError _ ->
     error_assumption env j
 
@@ -84,27 +89,28 @@ let max_sort l =
   if Sorts.List.mem InSet l then InSet else InProp
 
 let e_is_correct_arity env evdref c pj ind specif params =
+  let open EConstr in
   let arsign = make_arity_signature env true (make_ind_family (ind,params)) in
   let allowed_sorts = elim_sorts specif in
   let error () = error_elim_arity env ind allowed_sorts c pj None in
   let rec srec env pt ar =
-    let pt' = whd_all env !evdref (EConstr.of_constr pt) in
-    match kind_of_term pt', ar with
+    let pt' = EConstr.of_constr (whd_all env !evdref pt) in
+    match EConstr.kind !evdref pt', ar with
     | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
-        if not (Evarconv.e_cumul env evdref (EConstr.of_constr a1) (EConstr.of_constr a1')) then error ();
-        srec (push_rel (LocalAssum (na1,a1)) env) t ar'
+        if not (Evarconv.e_cumul env evdref a1 (EConstr.of_constr a1')) then error ();
+        srec (push_rel (LocalAssum (na1,EConstr.Unsafe.to_constr a1)) env) t ar'
     | Sort s, [] ->
         if not (Sorts.List.mem (Sorts.family s) allowed_sorts)
         then error ()
     | Evar (ev,_), [] ->
         let evd, s = Evd.fresh_sort_in_family env !evdref (max_sort allowed_sorts) in
-        evdref := Evd.define ev (mkSort s) evd
+        evdref := Evd.define ev (Constr.mkSort s) evd
     | _, (LocalDef _ as d)::ar' ->
-        srec (push_rel d env) (lift 1 pt') ar'
+        srec (push_rel d env) (Vars.lift 1 pt') ar'
     | _ ->
         error ()
   in
-  srec env pj.uj_type (List.rev arsign)
+  srec env (EConstr.of_constr pj.uj_type) (List.rev arsign)
 
 let e_type_case_branches env evdref (ind,largs) pj c =
   let specif = lookup_mind_specif env (fst ind) in
@@ -128,24 +134,25 @@ let e_judge_of_case env evdref ci pj cj lfj =
     uj_type = rslty }
 
 let check_type_fixpoint loc env evdref lna lar vdefj =
+  let open EConstr in
   let lt = Array.length vdefj in
     if Int.equal (Array.length lar) lt then
       for i = 0 to lt-1 do
         if not (Evarconv.e_cumul env evdref (EConstr.of_constr (vdefj.(i)).uj_type)
-		  (EConstr.of_constr (lift lt lar.(i)))) then
+		  (Vars.lift lt lar.(i))) then
           Pretype_errors.error_ill_typed_rec_body ~loc env !evdref
-            i lna vdefj lar
+            i lna vdefj (Array.map EConstr.Unsafe.to_constr lar)
       done
 
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
-  let pj = Retyping.get_judgment_of env sigma (EConstr.of_constr p) in
+  let pj = Retyping.get_judgment_of env sigma p in
   let ksort = family_of_sort (sort_of_arity env sigma (EConstr.of_constr pj.uj_type)) in
   let specif = Global.lookup_inductive (fst ind) in
   let sorts = elim_sorts specif in
   if not (List.exists ((==) ksort) sorts) then
     let s = inductive_sort_family (snd specif) in
-    error_elim_arity env ind sorts c pj
+    error_elim_arity env ind sorts (EConstr.Unsafe.to_constr c) pj
       (Some(ksort,s,error_elim_explain ksort s))
 
 let e_judge_of_cast env evdref cj k tj =
@@ -160,21 +167,36 @@ let enrich_env env evdref =
   let penv' = Pre_env.({ penv with env_stratification =
     { penv.env_stratification with env_universes = Evd.universes !evdref } }) in
   Environ.env_of_pre_env penv'
+
+let check_fix env sigma pfix =
+  let inj c = EConstr.to_constr sigma c in
+  let (idx, (ids, cs, ts)) = pfix in
+  check_fix env (idx, (ids, Array.map inj cs, Array.map inj ts))
+
+let check_cofix env sigma pcofix =
+  let inj c = EConstr.to_constr sigma c in
+  let (idx, (ids, cs, ts)) = pcofix in
+  check_cofix env (idx, (ids, Array.map inj cs, Array.map inj ts))
+
+let make_judge c ty =
+  make_judge (EConstr.Unsafe.to_constr c) (EConstr.Unsafe.to_constr ty)
 			  
 (* The typing machine with universes and existential variables. *)
 
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)
 let rec execute env evdref cstr =
-  match kind_of_term cstr with
+  let open EConstr in
+  let cstr = EConstr.of_constr (whd_evar !evdref (EConstr.Unsafe.to_constr cstr)) in
+  match EConstr.kind !evdref cstr with
     | Meta n ->
-        { uj_val = cstr; uj_type = meta_type !evdref n }
+        { uj_val = EConstr.Unsafe.to_constr cstr; uj_type = meta_type !evdref n }
 
     | Evar ev ->
-	let ty = Evd.existential_type !evdref ev in
-	let jty = execute env evdref (whd_evar !evdref ty) in
+	let ty = EConstr.existential_type !evdref ev in
+	let jty = execute env evdref ty in
 	let jty = e_assumption_of_judgment env evdref jty in
-	{ uj_val = cstr; uj_type = jty }
+	{ uj_val = EConstr.Unsafe.to_constr cstr; uj_type = EConstr.Unsafe.to_constr jty }
 
     | Rel n ->
 	judge_of_relative env n
@@ -183,13 +205,13 @@ let rec execute env evdref cstr =
         judge_of_variable env id
 
     | Const c ->
-        make_judge cstr (rename_type_of_constant env c)
+        make_judge cstr (EConstr.of_constr (rename_type_of_constant env c))
 
     | Ind ind ->
-	make_judge cstr (rename_type_of_inductive env ind)
+	make_judge cstr (EConstr.of_constr (rename_type_of_inductive env ind))
 
     | Construct cstruct ->
-	make_judge cstr (rename_type_of_constructor env cstruct)
+	make_judge cstr (EConstr.of_constr (rename_type_of_constructor env cstruct))
 
     | Case (ci,p,c,lf) ->
         let cj = execute env evdref c in
@@ -200,13 +222,13 @@ let rec execute env evdref cstr =
     | Fix ((vn,i as vni),recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env evdref recdef in
 	let fix = (vni,recdef') in
-        check_fix env fix;
+        check_fix env !evdref fix;
 	make_judge (mkFix fix) tys.(i)
 
     | CoFix (i,recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env evdref recdef in
         let cofix = (i,recdef') in
-        check_cofix env cofix;
+        check_cofix env !evdref cofix;
 	make_judge (mkCoFix cofix) tys.(i)
 
     | Sort (Prop c) ->
@@ -222,7 +244,7 @@ let rec execute env evdref cstr =
     | App (f,args) ->
         let jl = execute_array env evdref args in
 	let j =
-	  match kind_of_term f with
+	  match EConstr.kind !evdref f with
 	    | Ind ind when Environ.template_polymorphic_pind ind env ->
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
@@ -273,7 +295,7 @@ and execute_recdef env evdref (names,lar,vdef) =
   let lara = Array.map (e_assumption_of_judgment env evdref) larj in
   let env1 = push_rec_types (names,lara,vdef) env in
   let vdefj = execute_array env1 evdref vdef in
-  let vdefv = Array.map j_val vdefj in
+  let vdefv = Array.map (j_val %> EConstr.of_constr) vdefj in
   let _ = check_type_fixpoint Loc.ghost env1 evdref names lara vdefj in
   (names,lara,vdefv)
 
@@ -282,8 +304,8 @@ and execute_array env evdref = Array.map (execute env evdref)
 let e_check env evdref c t =
   let env = enrich_env env evdref in
   let j = execute env evdref c in
-  if not (Evarconv.e_cumul env evdref (EConstr.of_constr j.uj_type) (EConstr.of_constr t)) then
-    error_actual_type env j (nf_evar !evdref t)
+  if not (Evarconv.e_cumul env evdref (EConstr.of_constr j.uj_type) t) then
+    error_actual_type env j (EConstr.to_constr !evdref t)
 
 (* Type of a constr *)
 
@@ -328,4 +350,4 @@ let e_solve_evars env evdref c =
   (* side-effect on evdref *)
   nf_evar !evdref c
 
-let _ = Evarconv.set_solve_evars (fun env evdref c -> EConstr.of_constr (e_solve_evars env evdref (EConstr.Unsafe.to_constr c)))
+let _ = Evarconv.set_solve_evars (fun env evdref c -> EConstr.of_constr (e_solve_evars env evdref c))

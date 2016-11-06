@@ -28,12 +28,12 @@ let typecheck_evar ev env sigma =
   let info = Evd.find sigma ev in
   (** Typecheck the hypotheses. *)
   let type_hyp (sigma, env) decl =
-    let t = NamedDecl.get_type decl in
+    let t = EConstr.of_constr (NamedDecl.get_type decl) in
     let evdref = ref sigma in
     let _ = Typing.e_sort_of env evdref t in
     let () = match decl with
     | LocalAssum _ -> ()
-    | LocalDef (_,body,_) -> Typing.e_check env evdref body t
+    | LocalDef (_,body,_) -> Typing.e_check env evdref (EConstr.of_constr body) t
     in
     (!evdref, Environ.push_named decl env)
   in
@@ -42,12 +42,12 @@ let typecheck_evar ev env sigma =
   let (sigma, env) = List.fold_left type_hyp (sigma, env) changed in
   (** Typecheck the conclusion *)
   let evdref = ref sigma in
-  let _ = Typing.e_sort_of env evdref (Evd.evar_concl info) in
+  let _ = Typing.e_sort_of env evdref (EConstr.of_constr (Evd.evar_concl info)) in
   !evdref
 
 let typecheck_proof c concl env sigma =
   let evdref = ref sigma in
-  let () = Typing.e_check env evdref c concl in
+  let () = Typing.e_check env evdref (EConstr.of_constr c) (EConstr.of_constr concl) in
   !evdref
 
 let (pr_constrv,pr_constr) =

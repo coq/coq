@@ -910,7 +910,7 @@ let make_mode ref m =
 let make_trivial env sigma poly ?(name=PathAny) r =
   let c,ctx = fresh_global_or_constr env sigma poly r in
   let sigma = Evd.merge_context_set univ_flexible sigma ctx in
-  let t = hnf_constr env sigma (EConstr.of_constr (unsafe_type_of env sigma c)) in
+  let t = hnf_constr env sigma (EConstr.of_constr (unsafe_type_of env sigma (EConstr.of_constr c))) in
   let hd = head_of_constr_reference (head_constr sigma t) in
   let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd, { pri=1;

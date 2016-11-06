@@ -134,7 +134,7 @@ let generate_type evd g_to_f f graph i =
     Evd.fresh_global  (Global.env ()) !evd  (Globnames.IndRef (fst (destInd graph)))
   in
   evd:=evd';
-  let graph_arity = Typing.e_type_of (Global.env ()) evd graph in
+  let graph_arity = Typing.e_type_of (Global.env ()) evd (EConstr.of_constr graph) in
   let ctxt,_ = decompose_prod_assum graph_arity in
   let fun_ctxt,res_type =
     match ctxt with
@@ -202,7 +202,7 @@ let find_induction_principle evd f =
     | None -> raise Not_found
     | Some rect_lemma ->
        let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (Globnames.ConstRef rect_lemma) in
-       let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' rect_lemma in
+       let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr rect_lemma) in
        evd:=evd';
        rect_lemma,typ
 
@@ -449,7 +449,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	     "functional_induction" (
 	       (fun gl ->
 		let term = mkApp (mkVar principle_id,Array.of_list bindings) in
-		let gl', _ty = pf_eapply (Typing.type_of ~refresh:true)  gl term in
+		let gl', _ty = pf_eapply (Typing.type_of ~refresh:true)  gl (EConstr.of_constr term) in
 		Proofview.V82.of_tactic (apply term) gl')
 	   ))
 	  (fun i g -> observe_tac ("proving branche "^string_of_int i) (prove_branche i) g )
@@ -792,7 +792,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
 	 graphs_constr.(i) <- graph;
 	 let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
-	 let _ = Typing.e_type_of (Global.env ()) evd type_of_lemma in 
+	 let _ = Typing.e_type_of (Global.env ()) evd (EConstr.of_constr type_of_lemma) in 
 	   let type_of_lemma = nf_zeta (EConstr.of_constr type_of_lemma) in
 	   observe (str "type_of_lemma := " ++ Printer.pr_lconstr_env (Global.env ()) !evd type_of_lemma);
 	   type_of_lemma,type_info

@@ -210,7 +210,7 @@ let convert_concl ?(check=true) ty k =
       let Sigma ((), sigma, p) =
         if check then begin
           let sigma = Sigma.to_evar_map sigma in
-          ignore (Typing.unsafe_type_of env sigma ty);
+          ignore (Typing.unsafe_type_of env sigma (EConstr.of_constr ty));
           let sigma,b = Reductionops.infer_conv env sigma ty conclty in
           if not b then error "Not convertible.";
           Sigma.Unsafe.of_pair ((), sigma)
@@ -827,7 +827,7 @@ let change_on_subterm cv_pb deep t where = { e_redfun = begin fun env sigma c ->
         env sigma c in
   if !mayneedglobalcheck then
     begin
-      try ignore (Typing.unsafe_type_of env (Sigma.to_evar_map sigma) c)
+      try ignore (Typing.unsafe_type_of env (Sigma.to_evar_map sigma) (EConstr.of_constr c))
       with e when catchable_exception e ->
         error "Replacement would lead to an ill-typed term."
     end;
@@ -1228,7 +1228,7 @@ let cut c =
     let is_sort =
       try
         (** Backward compat: ensure that [c] is well-typed. *)
-        let typ = Typing.unsafe_type_of env sigma c in
+        let typ = Typing.unsafe_type_of env sigma (EConstr.of_constr c) in
         let typ = whd_all env sigma (EConstr.of_constr typ) in
         match kind_of_term typ with
         | Sort _ -> true
@@ -1940,7 +1940,7 @@ let exact_check c =
   let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map sigma in
-  let sigma, ct = Typing.type_of env sigma c in
+  let sigma, ct = Typing.type_of env sigma (EConstr.of_constr c) in
   let tac =
       Tacticals.New.tclTHEN (convert_leq ct concl) (exact_no_check c)
   in
@@ -2009,20 +2009,20 @@ exception DependsOnBody of Id.t option
 let check_is_type env sigma ty =
   let evdref = ref sigma in
   try
-    let _ = Typing.e_sort_of env evdref ty in
+    let _ = Typing.e_sort_of env evdref (EConstr.of_constr ty) in
     !evdref
   with e when CErrors.noncritical e ->
     raise (DependsOnBody None)
 
 let check_decl env sigma decl =
   let open Context.Named.Declaration in
-  let ty = NamedDecl.get_type decl in
+  let ty = EConstr.of_constr (NamedDecl.get_type decl) in
   let evdref = ref sigma in
   try
     let _ = Typing.e_sort_of env evdref ty in
     let _ = match decl with
     | LocalAssum _ -> ()
-    | LocalDef (_,c,_) -> Typing.e_check env evdref c ty
+    | LocalDef (_,c,_) -> Typing.e_check env evdref (EConstr.of_constr c) ty
     in
     !evdref
   with e when CErrors.noncritical e ->
@@ -2622,7 +2622,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let refl = applist (refl, [t;mkVar id]) in
 	  let term = mkNamedLetIn id c t (mkLetIn (Name heq, refl, eq, ccl)) in
 	  let sigma = Sigma.to_evar_map sigma in
-	  let sigma, _ = Typing.type_of env sigma term in
+	  let sigma, _ = Typing.type_of env sigma (EConstr.of_constr term) in
           let ans = term,
             Tacticals.New.tclTHEN
 	      (intro_gen (NamingMustBe (loc,heq)) (decode_hyp lastlhyp) true false)
@@ -2783,7 +2783,7 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
 let generalize_goal gl i ((occs,c,b),na as o) (cl,sigma) =
   let env = Tacmach.pf_env gl in
   let ids = Tacmach.pf_ids_of_hyps gl in
-  let sigma, t = Typing.type_of env sigma c in
+  let sigma, t = Typing.type_of env sigma (EConstr.of_constr c) in
   generalize_goal_gen env sigma ids i o t cl
 
 let old_generalize_dep ?(with_let=false) c gl =
@@ -2818,7 +2818,7 @@ let old_generalize_dep ?(with_let=false) c gl =
   let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous)
     (cl',project gl) in
   (** Check that the generalization is indeed well-typed *)
-  let (evd, _) = Typing.type_of env evd cl'' in
+  let (evd, _) = Typing.type_of env evd (EConstr.of_constr cl'') in
   let args = Context.Named.to_instance to_quantify_rev in
   tclTHENLIST
     [tclEVARS evd;
@@ -2836,7 +2836,7 @@ let generalize_gen_let lconstr = Proofview.Goal.nf_s_enter { s_enter = begin fun
     List.fold_right_i (Tacmach.New.of_old generalize_goal gl) 0 lconstr
       (Tacmach.New.pf_concl gl,Tacmach.New.project gl)
   in
-  let (evd, _) = Typing.type_of env evd newcl in
+  let (evd, _) = Typing.type_of env evd (EConstr.of_constr newcl) in
   let map ((_, c, b),_) = if Option.is_empty b then Some c else None in
   let tac = apply_type newcl (List.map_filter map lconstr) in
   Sigma.Unsafe.of_pair (tac, evd)
@@ -2853,7 +2853,7 @@ let new_generalize_gen_let lconstr =
     let newcl, sigma, args =
       List.fold_right_i 
 	(fun i ((_,c,b),_ as o) (cl, sigma, args) ->
-	  let sigma, t = Typing.type_of env sigma c in
+	  let sigma, t = Typing.type_of env sigma (EConstr.of_constr c) in
 	  let args = if Option.is_empty b then c :: args else args in
           let cl, sigma = generalize_goal_gen env sigma ids i o t cl in
           (cl, sigma, args))
@@ -4738,7 +4738,7 @@ let prove_transitivity hdcncl eq_kind t =
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
       let type_of = Typing.unsafe_type_of env sigma in
-      let typt = type_of t in
+      let typt = type_of (EConstr.of_constr t) in
         (mkApp(hdcncl, [| typ1; c1; typt ;t |]),
          mkApp(hdcncl, [| typt; t; typ2; c2 |]))
   in

@@ -507,7 +507,7 @@ let pretype_ref loc evdref env ref us =
   | ref ->
     let evd, c = pretype_global loc univ_flexible env !evdref ref us in
     let () = evdref := evd in
-    let ty = Typing.unsafe_type_of env.ExtraEnv.env evd c in
+    let ty = Typing.unsafe_type_of env.ExtraEnv.env evd (EConstr.of_constr c) in
       make_judge c ty
 
 let judge_of_Type loc evd s =
@@ -644,7 +644,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	    { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
 	      uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
         ctxtv vdef in
-      Typing.check_type_fixpoint loc env.ExtraEnv.env evdref names ftys vdefj;
+      Typing.check_type_fixpoint loc env.ExtraEnv.env evdref names (Array.map EConstr.of_constr ftys) vdefj;
       let ftys = Array.map (nf_evar !evdref) ftys in
       let fdefs = Array.map (fun x -> nf_evar !evdref (j_val x)) vdefj in
       let fixj = match fixkind with
@@ -898,7 +898,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	    let fj = pretype (mk_tycon (EConstr.of_constr fty)) env_f evdref lvar d in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
-		Typing.check_allowed_sort env.ExtraEnv.env !evdref ind cj.uj_val p;
+		Typing.check_allowed_sort env.ExtraEnv.env !evdref ind (EConstr.of_constr cj.uj_val) (EConstr.of_constr p);
 		obj ind p cj.uj_val fj.uj_val
 	    in
 	      { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
@@ -917,7 +917,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	    let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
-		Typing.check_allowed_sort env.ExtraEnv.env !evdref ind cj.uj_val p;
+		Typing.check_allowed_sort env.ExtraEnv.env !evdref ind (EConstr.of_constr cj.uj_val) (EConstr.of_constr p);
 		obj ind p cj.uj_val fj.uj_val
 	    in { uj_val = v; uj_type = ccl })
 
@@ -981,7 +981,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	let ind,_ = dest_ind_family indf in
 	let ci = make_case_info env.ExtraEnv.env (fst ind) IfStyle in
 	let pred = nf_evar !evdref pred in
-	  Typing.check_allowed_sort env.ExtraEnv.env !evdref ind cj.uj_val pred;
+	  Typing.check_allowed_sort env.ExtraEnv.env !evdref ind (EConstr.of_constr cj.uj_val) (EConstr.of_constr pred);
 	  mkCase (ci, pred, cj.uj_val, [|b1;b2|])
       in
       let cj = { uj_val = v; uj_type = p } in

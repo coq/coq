@@ -50,7 +50,7 @@ let whd_delta env=
 (* decompose member of equality in an applicative format *)
 
 (** FIXME: evar leak *)
-let sf_of env sigma c = e_sort_of env (ref sigma) c
+let sf_of env sigma c = e_sort_of env (ref sigma) (EConstr.of_constr c)
 
 let rec decompose_term env sigma t=
     match kind_of_term (whd env t) with
@@ -247,7 +247,7 @@ let new_refine c = Proofview.V82.tactic (refine c)
 
 let assert_before n c =
   Proofview.Goal.enter { enter = begin fun gl ->
-    let evm, _ = Tacmach.New.pf_apply type_of gl c in
+    let evm, _ = Tacmach.New.pf_apply type_of gl (EConstr.of_constr c) in
       Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm)) (assert_before n c)
   end }
 
@@ -340,7 +340,7 @@ let refute_tac c t1 t2 p =
   end }
 
 let refine_exact_check c gl =
-  let evm, _ = pf_apply type_of gl c in
+  let evm, _ = pf_apply type_of gl (EConstr.of_constr c) in
     Tacticals.tclTHEN (Refiner.tclEVARS evm) (Proofview.V82.of_tactic (exact_check c)) gl
 
 let convert_to_goal_tac c t1 t2 p = 
@@ -480,10 +480,10 @@ let mk_eq f c1 c2 k =
   Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc ->
   Proofview.Goal.enter { enter = begin fun gl ->
     let open Tacmach.New in
-    let evm, ty = pf_apply type_of gl c1 in
+    let evm, ty = pf_apply type_of gl (EConstr.of_constr c1) in
     let evm, ty = Evarsolve.refresh_universes (Some false) (pf_env gl) evm (EConstr.of_constr ty) in
     let term = mkApp (fc, [| ty; c1; c2 |]) in
-    let evm, _ =  type_of (pf_env gl) evm term in
+    let evm, _ =  type_of (pf_env gl) evm (EConstr.of_constr term) in
     Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm))
 			  (k term)
     end })

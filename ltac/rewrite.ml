@@ -113,7 +113,7 @@ let extends_undefined evars evars' =
 let app_poly_check env evars f args =
   let (evars, cstrs), fc = f evars in
   let evdref = ref evars in 
-  let t = Typing.e_solve_evars env evdref (mkApp (fc, args)) in
+  let t = Typing.e_solve_evars env evdref (EConstr.of_constr (mkApp (fc, args))) in
     (!evdref, cstrs), t
 
 let app_poly_nocheck env evars f args =
@@ -382,7 +382,7 @@ end
 
 let type_app_poly env env evd f args =
   let evars, c = app_poly_nocheck env evd f args in
-  let evd', t = Typing.type_of env (goalevars evars) c in
+  let evd', t = Typing.type_of env (goalevars evars) (EConstr.of_constr c) in
     (evd', cstrevars evars), c
 
 module PropGlobal = struct
@@ -485,7 +485,7 @@ let rec decompose_app_rel env evd t =
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
     let (f', argl, argr) = decompose_app_rel env evd arg in
-    let ty = Typing.unsafe_type_of env evd argl in
+    let ty = Typing.unsafe_type_of env evd (EConstr.of_constr argl) in
     let f'' = mkLambda (Name default_dependent_ident, ty,
       mkLambda (Name (Id.of_string "y"), lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
@@ -787,7 +787,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     let morphargs, morphobjs = Array.chop first args in
     let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in
-    let appmtype = Typing.unsafe_type_of env (goalevars evars) appm in
+    let appmtype = Typing.unsafe_type_of env (goalevars evars) (EConstr.of_constr appm) in
     let cstrs = List.map 
       (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf)) 
       (Array.to_list morphobjs') 
@@ -1477,7 +1477,7 @@ type result = (evar_map * constr option * types) option option
 
 let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
   let evdref = ref sigma in
-  let sort = Typing.e_sort_of env evdref concl in
+  let sort = Typing.e_sort_of env evdref (EConstr.of_constr concl) in
   let evars = (!evdref, Evar.Set.empty) in
   let evars, cstr =
     let prop, (evars, arrow) = 
@@ -1870,7 +1870,7 @@ let declare_projection n instance_id r =
   let sigma,c = Evd.fresh_global env sigma r in
   let ty = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let term = proper_projection c ty in
-  let sigma, typ = Typing.type_of env sigma term in
+  let sigma, typ = Typing.type_of env sigma (EConstr.of_constr term) in
   let ctx, typ = decompose_prod_assum typ in
   let typ =
     let n =
@@ -1902,7 +1902,7 @@ let declare_projection n instance_id r =
 let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
   let sigma = Evd.from_ctx ctx in
-  let t = Typing.unsafe_type_of env sigma m in
+  let t = Typing.unsafe_type_of env sigma (EConstr.of_constr m) in
   let cstrs =
     let rec aux t =
       match kind_of_term t with
@@ -1932,7 +1932,7 @@ let build_morphism_signature env sigma m =
 let default_morphism sign m =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let t = Typing.unsafe_type_of env sigma m in
+  let t = Typing.unsafe_type_of env sigma (EConstr.of_constr m) in
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
@@ -2126,7 +2126,7 @@ let setoid_proof ty fn fallback =
       begin
         try
           let rel, _, _ = decompose_app_rel env sigma concl in
-          let (sigma, t) = Typing.type_of env sigma rel in
+          let (sigma, t) = Typing.type_of env sigma (EConstr.of_constr rel) in
           let car = RelDecl.get_type (List.hd (fst (Reduction.dest_prod env t))) in
 	    (try init_relation_classes () with _ -> raise Not_found);
             fn env sigma car rel

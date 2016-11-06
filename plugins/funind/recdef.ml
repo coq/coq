@@ -657,7 +657,7 @@ let terminate_letin (na,b,t,e) expr_info continuation_tac info =
   continuation_tac {info with info = new_e; forbidden_ids = new_forbidden} 
 
 let pf_type c tac gl = 
-  let evars, ty = Typing.type_of (pf_env gl) (project gl) c in
+  let evars, ty = Typing.type_of (pf_env gl) (project gl) (EConstr.of_constr c) in
     tclTHEN (Refiner.tclEVARS evars) (tac ty) gl
 
 let pf_typel l tac =

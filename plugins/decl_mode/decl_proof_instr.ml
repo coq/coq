@@ -429,7 +429,7 @@ let concl_refiner metas body gls =
   let concl = pf_concl gls in
   let evd = sig_sig gls in
   let env = pf_env gls in
-  let sort = family_of_sort (Typing.e_sort_of env (ref evd) concl) in
+  let sort = family_of_sort (Typing.e_sort_of env (ref evd) (EConstr.of_constr concl)) in
   let rec aux env avoid subst = function
       [] -> anomaly ~label:"concl_refiner" (Pp.str "cannot happen")
     | (n,typ)::rest ->
@@ -437,7 +437,7 @@ let concl_refiner metas body gls =
 	let x = id_of_name_using_hdchar env _A Anonymous in
 	let _x = fresh_id avoid x gls in
 	let nenv = Environ.push_named (LocalAssum (_x,_A)) env in
-	let asort = family_of_sort (Typing.e_sort_of nenv (ref evd) _A) in
+	let asort = family_of_sort (Typing.e_sort_of nenv (ref evd) (EConstr.of_constr _A)) in
 	let nsubst = (n,mkVar _x)::subst in
 	  if List.is_empty rest then
 	    asort,_A,mkNamedLambda _x _A (subst_meta nsubst body)

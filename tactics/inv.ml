@@ -123,13 +123,13 @@ let make_inv_predicate env evd indf realargs id status concl =
         let refl_term = eqdata.Coqlib.refl in
 	let refl_term = Evarutil.evd_comb1 (Evd.fresh_global env) evd refl_term in
         let refl = mkApp (refl_term, [|eqnty; rhs|]) in
-	let _ = Evarutil.evd_comb1 (Typing.type_of env) evd refl in
+	let _ = Evarutil.evd_comb1 (Typing.type_of env) evd (EConstr.of_constr refl) in
         let args = refl :: args in
         build_concl eqns args (succ n) restlist
   in
   let (newconcl, args) = build_concl [] [] 0 realargs in
   let predicate = it_mkLambda_or_LetIn_name env newconcl hyps in
-  let _ = Evarutil.evd_comb1 (Typing.type_of env) evd predicate in
+  let _ = Evarutil.evd_comb1 (Typing.type_of env) evd (EConstr.of_constr predicate) in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)
   predicate, args

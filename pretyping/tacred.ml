@@ -1164,7 +1164,7 @@ let pattern_occs loccs_trm = { e_redfun = begin fun env sigma c ->
   let sigma = Sigma.to_evar_map sigma in
   let abstr_trm, sigma = List.fold_right (abstract_scheme env) loccs_trm (EConstr.Unsafe.to_constr c,sigma) in
   try
-    let _ = Typing.unsafe_type_of env sigma abstr_trm in
+    let _ = Typing.unsafe_type_of env sigma (EConstr.of_constr abstr_trm) in
     Sigma.Unsafe.of_pair (applist(abstr_trm, List.map snd loccs_trm), sigma)
   with Type_errors.TypeError (env',t) ->
     raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))

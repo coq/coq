@@ -93,8 +93,8 @@ let pf_nf                        = pf_reduce' simpl
 let pf_nf_betaiota               = pf_reduce' (fun _ -> nf_betaiota)
 let pf_compute                   = pf_reduce' compute
 let pf_unfoldn ubinds            = pf_reduce' (unfoldn ubinds)
-let pf_unsafe_type_of            = pf_reduce unsafe_type_of
-let pf_type_of                   = pf_reduce type_of
+let pf_unsafe_type_of            = pf_reduce' unsafe_type_of
+let pf_type_of                   = pf_reduce' type_of
 let pf_get_type_of               = pf_reduce Retyping.get_type_of
 
 let pf_conv_x gl                = pf_apply test_conversion gl Reduction.CONV
@@ -175,10 +175,10 @@ module New = struct
   let pf_concl = Proofview.Goal.concl
 
   let pf_unsafe_type_of gl t =
-    pf_apply unsafe_type_of gl t
+    pf_apply unsafe_type_of gl (EConstr.of_constr t)
 
   let pf_type_of gl t =
-    pf_apply type_of gl t
+    pf_apply type_of gl (EConstr.of_constr t)
 
   let pf_conv_x gl t1 t2 = pf_apply is_conv gl t1 t2
 

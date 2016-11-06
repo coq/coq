@@ -155,7 +155,7 @@ let left_instance_tac (inst,id) continue seq=
 		    it_mkLambda_or_LetIn
 		      (mkApp(idc,[|ot|])) rc in
 		  let evmap, _ =
-		    try Typing.type_of (pf_env gl) evmap gt
+		    try Typing.type_of (pf_env gl) evmap (EConstr.of_constr gt)
 		    with e when CErrors.noncritical e ->
 		      error "Untypable instance, maybe higher-order non-prenex quantification" in
 		    tclTHEN (Refiner.tclEVARS evmap) (Proofview.V82.of_tactic (generalize [gt])) gl)

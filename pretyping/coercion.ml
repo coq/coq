@@ -188,7 +188,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		  aux (hdy :: tele) (subst1 hdx restT) 
 		    (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
 	else Some (fun x -> 
-	  let term = co x in
+	  let term = EConstr.of_constr (co x) in
 	    Typing.e_solve_evars env evdref term)
       in
 	if isEvar c || isEvar c' || not (Program.is_program_generalized_coercion ()) then
@@ -297,16 +297,16 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		   let evm = !evdref in
 		     (try subco ()
 		      with NoSubtacCoercion ->
-			let typ = Typing.unsafe_type_of env evm c in
-			let typ' = Typing.unsafe_type_of env evm c' in
+			let typ = Typing.unsafe_type_of env evm (EConstr.of_constr c) in
+			let typ' = Typing.unsafe_type_of env evm (EConstr.of_constr c') in
 			  coerce_application typ typ' c c' l l')
 		 else
 		   subco ()
 	   | x, y when Constr.equal c c' ->
 	       if Int.equal (Array.length l) (Array.length l') then
 		 let evm =  !evdref in
-		 let lam_type = Typing.unsafe_type_of env evm c in
-		 let lam_type' = Typing.unsafe_type_of env evm c' in
+		 let lam_type = Typing.unsafe_type_of env evm (EConstr.of_constr c) in
+		 let lam_type' = Typing.unsafe_type_of env evm (EConstr.of_constr c') in
 		   coerce_application lam_type lam_type' c c' l l'
 	       else subco ()
 	   | _ -> subco ())
@@ -337,7 +337,7 @@ let app_coercion env evdref coercion v =
   match coercion with
   | None -> v
   | Some f ->
-     let v' = Typing.e_solve_evars env evdref (f v) in
+     let v' = Typing.e_solve_evars env evdref (EConstr.of_constr (f v)) in
      whd_betaiota !evdref (EConstr.of_constr v')
 
 let coerce_itf loc env evd v t c1 =

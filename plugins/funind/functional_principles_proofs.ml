@@ -329,7 +329,7 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
 	   let all_ids = pf_ids_of_hyps g in
 	   let new_ids,_  = list_chop ctxt_size all_ids in
 	   let to_refine = applist(witness_fun,List.rev_map mkVar new_ids) in
-	   let evm, _ = pf_apply Typing.type_of g to_refine in
+	   let evm, _ = pf_apply Typing.type_of g (EConstr.of_constr to_refine) in
 	     tclTHEN (Refiner.tclEVARS evm) (refine to_refine) g
 	)
     in
@@ -544,7 +544,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
       tclIDTAC
   in
   try
-    scan_type [] (Typing.unsafe_type_of env sigma (mkVar hyp_id)), [hyp_id]
+    scan_type [] (Typing.unsafe_type_of env sigma (EConstr.mkVar hyp_id)), [hyp_id]
   with TOREMOVE ->
     thin [hyp_id],[]
 
@@ -639,7 +639,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 	fun g ->
 	  let prov_hid = pf_get_new_id hid g in
 	  let c = mkApp(mkVar hid,args) in
-	  let evm, _ = pf_apply Typing.type_of g c in
+	  let evm, _ = pf_apply Typing.type_of g (EConstr.of_constr c) in
 	  tclTHENLIST[
             Refiner.tclEVARS evm;
 	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) c);
@@ -968,7 +968,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
   let eq_rhs = nf_betaiotazeta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
   (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
   let (type_ctxt,type_of_f),evd =
-    let evd,t = Typing.type_of ~refresh:true (Global.env ()) evd f
+    let evd,t = Typing.type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr f)
     in 
     decompose_prod_n_assum
       (nb_params + nb_args) t,evd
@@ -1039,7 +1039,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 	  (Constrintern.locate_reference (qualid_of_ident equation_lemma_id))
       in
       evd:=evd';                       
-      let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd res in 
+      let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr res) in 
       res
   in
   let nb_intro_to_do = nb_prod (project g) (EConstr.of_constr (pf_concl g)) in
