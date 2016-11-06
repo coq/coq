@@ -130,8 +130,6 @@ val fresh_universe_context_set_instance : universe_context_set ->
 (** Raises [Not_found] if not a global reference. *)
 val global_of_constr : constr -> Globnames.global_reference puniverses
 
-val global_app_of_constr : constr -> Globnames.global_reference puniverses * constr option
-
 val constr_of_global_univ : Globnames.global_reference puniverses -> constr
 
 val extend_context : 'a in_universe_context_set -> universe_context_set -> 

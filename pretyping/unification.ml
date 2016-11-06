@@ -123,7 +123,7 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
   let evd,b =
     Evarconv.second_order_matching empty_transparent_state
-      env evd ev' argoccs c in
+      env evd ev' argoccs (EConstr.of_constr c) in
   if b then
     let p = nf_evar evd ev in
       evd, p
@@ -607,7 +607,7 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst) tyM tyN =
   match subst_defined_metas_evars (metasubst,[]) tyN with
   | None -> sigma
   | Some n ->
-    if is_ground_term sigma m && is_ground_term sigma n then
+    if is_ground_term sigma (EConstr.of_constr m) && is_ground_term sigma (EConstr.of_constr n) then
       let sigma, b = infer_conv ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n in
 	if b then sigma
 	else error_cannot_unify env sigma (m,n)
@@ -659,8 +659,8 @@ let eta_constructor_app env f l1 term =
 
 let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb opt ((sigma,metasubst,evarsubst) as substn) curm curn =
-    let cM = Evarutil.whd_head_evar sigma curm
-    and cN = Evarutil.whd_head_evar sigma curn in
+    let cM = EConstr.Unsafe.to_constr (Evarutil.whd_head_evar sigma (EConstr.of_constr curm))
+    and cN = EConstr.Unsafe.to_constr (Evarutil.whd_head_evar sigma (EConstr.of_constr curn)) in
     let () = 
       if !debug_unification then
 	Feedback.msg_debug (Termops.print_constr_env curenv cM ++ str" ~= " ++ Termops.print_constr_env curenv cN)
@@ -964,7 +964,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	 let sigma, b = infer_conv ~pb ~ts:convflags curenv sigma m1 n1 in
 	    if b then Some (sigma, metasubst, evarsubst)
 	    else 
-	      if is_ground_term sigma m1 && is_ground_term sigma n1 then
+	      if is_ground_term sigma (EConstr.of_constr m1) && is_ground_term sigma (EConstr.of_constr n1) then
 		error_cannot_unify curenv sigma (cM,cN)
 	      else None
     in
@@ -1036,12 +1036,12 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	List.fold_left
 	  (fun (evd,ks,m) b ->
 	    if match n with Some n -> Int.equal m n | None -> false then
-                (evd,t2::ks, m-1)
+                (evd,EConstr.Unsafe.to_constr t2::ks, m-1)
             else
               let mv = new_meta () in
 	      let evd' = meta_declare mv (substl ks b) evd in
 	      (evd', mkMeta mv :: ks, m - 1))
-	  (sigma,[],List.length bs) bs
+	  (sigma,[],List.length bs) (List.map EConstr.Unsafe.to_constr bs)
       in
       try
       let opt' = {opt with with_types = false} in
@@ -1053,9 +1053,9 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 			   (fun s u1 u -> unirec_rec curenvnb pb opt' s (inj u1) (substl ks (inj u)))
 			   substn params1 params in
       let (substn,_,_) = Reductionops.Stack.fold2 (fun s u1 u2 -> unirec_rec curenvnb pb opt' s (inj u1) (inj u2)) substn ts ts1 in
-      let app = mkApp (c, Array.rev_of_list ks) in
+      let app = mkApp (EConstr.Unsafe.to_constr c, Array.rev_of_list ks) in
       (* let substn = unirec_rec curenvnb pb b false substn t cN in *)
-	unirec_rec curenvnb pb opt' substn c1 app
+	unirec_rec curenvnb pb opt' substn (EConstr.Unsafe.to_constr c1) app
       with Invalid_argument "Reductionops.Stack.fold2" ->
 	error_cannot_unify (fst curenvnb) sigma (cM,cN)
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -1271,11 +1271,8 @@ let order_metas metas =
 
 (* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
 
-let to_conv_fun f = (); fun env sigma pb c1 c2 ->
-  f env sigma pb (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2)
-
 let solve_simple_evar_eqn ts env evd ev rhs =
-  match solve_simple_eqn (to_conv_fun (Evarconv.evar_conv_x ts)) env evd (None,ev,EConstr.of_constr rhs) with
+  match solve_simple_eqn (Evarconv.evar_conv_x ts) env evd (None,ev,EConstr.of_constr rhs) with
   | UnifFailure (evd,reason) ->
       error_cannot_unify env evd ~reason (EConstr.Unsafe.to_constr (EConstr.mkEvar ev),rhs);
   | Success evd ->

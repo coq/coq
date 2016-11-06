@@ -27,7 +27,7 @@ val mk_valcon : EConstr.constr -> val_constraint
     [?y[vars1:=args1,vars:=args]] with
     [vars1 |- ?x:=\vars.?y[vars1:=vars1,vars:=vars]] *)
 val evar_absorb_arguments : env -> evar_map -> EConstr.existential -> EConstr.constr list ->
-  evar_map * existential
+  evar_map * EConstr.existential
 
 val split_tycon :
   Loc.t -> env ->  evar_map -> type_constraint ->

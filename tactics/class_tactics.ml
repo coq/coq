@@ -264,7 +264,7 @@ let unify_resolve_refine poly flags =
       let sigma' =
         let evdref = ref sigma' in
         if not (Evarconv.e_cumul env ~ts:flags.core_unify_flags.modulo_delta
-                                      evdref cl.cl_concl concl) then
+                                      evdref (EConstr.of_constr cl.cl_concl) (EConstr.of_constr concl)) then
           Type_errors.error_actual_type env
             {Environ.uj_val = term; Environ.uj_type = cl.cl_concl}
             concl;
@@ -1506,7 +1506,7 @@ let not_evar c =
   | _ -> Proofview.tclUNIT ()
 
 let is_ground c gl =
-  if Evarutil.is_ground_term (project gl) c then tclIDTAC gl
+  if Evarutil.is_ground_term (project gl) (EConstr.of_constr c) then tclIDTAC gl
   else tclFAIL 0 (str"Not ground") gl
 
 let autoapply c i gl =

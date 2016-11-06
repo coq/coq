@@ -446,15 +446,6 @@ let global_of_constr c =
   | Var id -> VarRef id, Instance.empty
   | _ -> raise Not_found
 
-let global_app_of_constr c =
-  match kind_of_term c with
-  | Const (c, u) -> (ConstRef c, u), None
-  | Ind (i, u) -> (IndRef i, u), None
-  | Construct (c, u) -> (ConstructRef c, u), None
-  | Var id -> (VarRef id, Instance.empty), None
-  | Proj (p, c) -> (ConstRef (Projection.constant p), Instance.empty), Some c
-  | _ -> raise Not_found
-
 open Declarations
 
 let type_of_reference env r =

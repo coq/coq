@@ -91,12 +91,12 @@ exception NoHeadEvar
 val head_evar : constr -> existential_key (** may raise NoHeadEvar *)
 
 (* Expand head evar if any *)
-val whd_head_evar :  evar_map -> constr -> constr
+val whd_head_evar :  evar_map -> EConstr.constr -> EConstr.constr
 
 (* An over-approximation of [has_undefined (nf_evars evd c)] *)
-val has_undefined_evars : evar_map -> constr -> bool
+val has_undefined_evars : evar_map -> EConstr.constr -> bool
 
-val is_ground_term :  evar_map -> constr -> bool
+val is_ground_term :  evar_map -> EConstr.constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
 
 (** [gather_dependent_evars evm seeds] classifies the evars in [evm]

@@ -65,7 +65,7 @@ let apply_coercion_args env evd check isproj argl funj =
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
       match kind_of_term (whd_all env evd (EConstr.of_constr typ)) with
       | Prod (_,c1,c2) ->
-        if check && not (e_cumul env evdref (Retyping.get_type_of env evd (EConstr.of_constr h)) c1) then
+        if check && not (e_cumul env evdref (EConstr.of_constr (Retyping.get_type_of env evd (EConstr.of_constr h))) (EConstr.of_constr c1)) then
 	  raise NoCoercion;
         apply_rec (h::acc) (subst1 h c2) restl
       | _ -> anomaly (Pp.str "apply_coercion_args")
@@ -147,7 +147,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
   let rec coerce_unify env x y =
     let x = hnf env !evdref (EConstr.of_constr x) and y = hnf env !evdref (EConstr.of_constr y) in
       try
-	evdref := the_conv_x_leq env x y !evdref;
+	evdref := the_conv_x_leq env (EConstr.of_constr x) (EConstr.of_constr y) !evdref;
 	None
       with UnableToUnify _ -> coerce' env x y
   and coerce' env x y : (Term.constr -> Term.constr) option =
@@ -162,7 +162,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
       let rec aux tele typ typ' i co =
 	if i < len then
 	  let hdx = l.(i) and hdy = l'.(i) in
-	    try evdref := the_conv_x_leq env hdx hdy !evdref;
+	    try evdref := the_conv_x_leq env (EConstr.of_constr hdx) (EConstr.of_constr hdy) !evdref;
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
 		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
@@ -170,7 +170,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
 	      let _ =
-		try evdref := the_conv_x_leq env eqT eqT' !evdref
+		try evdref := the_conv_x_leq env (EConstr.of_constr eqT) (EConstr.of_constr eqT') !evdref
 		with UnableToUnify _ -> raise NoSubtacCoercion
 	      in
 		(* Disallow equalities on arities *)
@@ -458,11 +458,11 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
 	  | None -> evd, None, t
       with Not_found -> raise NoCoercion
     in
-      try (the_conv_x_leq env t' c1 evd, v')
+      try (the_conv_x_leq env (EConstr.of_constr t') (EConstr.of_constr c1) evd, v')
       with UnableToUnify _ -> raise NoCoercion
 
 let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
-  try (the_conv_x_leq env t c1 evd, v)
+  try (the_conv_x_leq env (EConstr.of_constr t) (EConstr.of_constr c1) evd, v)
   with UnableToUnify (best_failed_evd,e) ->
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->

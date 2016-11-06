@@ -454,7 +454,7 @@ let evd_convertible env evd x y =
        unsolvable constraints remain, so we check that this unification
        does not introduce any new problem. *)
     let _, pbs = Evd.extract_all_conv_pbs evd in
-    let evd' = Evarconv.the_conv_x env x y evd in
+    let evd' = Evarconv.the_conv_x env (EConstr.of_constr x) (EConstr.of_constr y) evd in
     let _, pbs' = Evd.extract_all_conv_pbs evd' in
     if evd' == evd || problem_inclusion pbs' pbs then Some evd'
     else None

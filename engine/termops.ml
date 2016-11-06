@@ -1068,6 +1068,17 @@ let dependency_closure env sigma sign hyps =
         sign in
     List.rev lh
 
+let global_app_of_constr sigma c =
+  let open Univ in
+  let open Globnames in
+  match EConstr.kind sigma c with
+  | Const (c, u) -> (ConstRef c, u), None
+  | Ind (i, u) -> (IndRef i, u), None
+  | Construct (c, u) -> (ConstructRef c, u), None
+  | Var id -> (VarRef id, Instance.empty), None
+  | Proj (p, c) -> (ConstRef (Projection.constant p), Instance.empty), Some c
+  | _ -> raise Not_found
+
 (* Combinators on judgments *)
 
 let on_judgment f j = { uj_val = f j.uj_val; uj_type = f j.uj_type }

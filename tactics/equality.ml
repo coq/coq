@@ -626,7 +626,7 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   let evd = 
     if unsafe then Some (Tacmach.New.project gl)
     else
-      try Some (Evarconv.the_conv_x (Proofview.Goal.env gl) t1 t2 (Tacmach.New.project gl))
+      try Some (Evarconv.the_conv_x (Proofview.Goal.env gl) (EConstr.of_constr t1) (EConstr.of_constr t2) (Tacmach.New.project gl))
       with Evarconv.UnableToUnify _ -> None
   in
   match evd with
@@ -1167,7 +1167,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       (* is the default value typable with the expected type *)
       let dflt_typ = unsafe_type_of env sigma dflt in
       try
-	let () = evdref := Evarconv.the_conv_x_leq env dflt_typ p_i !evdref in
+	let () = evdref := Evarconv.the_conv_x_leq env (EConstr.of_constr dflt_typ) (EConstr.of_constr p_i) !evdref in
 	let () = evdref := Evarconv.consider_remaining_unif_problems env !evdref in
 	dflt
       with Evarconv.UnableToUnify _ ->
@@ -1185,7 +1185,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       with
 	| Some w ->
             let w_type = unsafe_type_of env sigma w in
-            if Evarconv.e_cumul env evdref w_type a then
+            if Evarconv.e_cumul env evdref (EConstr.of_constr w_type) (EConstr.of_constr a) then
 	      let exist_term = Evarutil.evd_comb1 (Evd.fresh_global env) evdref sigdata.intro in
               applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
             else

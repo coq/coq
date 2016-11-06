@@ -165,7 +165,7 @@ let rec is_class_type evd c =
     match kind_of_term c with
     | Prod (_, _, t) -> is_class_type evd t
     | Evar (e, _) when Evd.is_defined evd e ->
-      is_class_type evd (Evarutil.whd_head_evar evd c)
+      is_class_type evd (EConstr.Unsafe.to_constr (Evarutil.whd_head_evar evd (EConstr.of_constr c)))
     | _ -> is_class_constr c
       
 let is_class_evar evd evi =

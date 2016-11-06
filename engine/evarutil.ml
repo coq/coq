@@ -148,21 +148,11 @@ let nf_evar_map_undefined evm =
 (* Auxiliary functions for the conversion algorithms modulo evars
  *)
 
-(* A probably faster though more approximative variant of
-   [has_undefined (nf_evar c)]: instances are not substituted and
-   maybe an evar occurs in an instance and it would disappear by
-   instantiation *)
-
 let has_undefined_evars evd t =
   let rec has_ev t =
-    match kind_of_term t with
-    | Evar (ev,args) ->
-        (match evar_body (Evd.find evd ev) with
-        | Evar_defined c ->
-            has_ev c; Array.iter has_ev args
-        | Evar_empty ->
-	    raise NotInstantiatedEvar)
-    | _ -> iter_constr has_ev t in
+    match EConstr.kind evd t with
+    | Evar _ -> raise NotInstantiatedEvar
+    | _ -> EConstr.iter evd has_ev t in
   try let _ = has_ev t in false
   with (Not_found | NotInstantiatedEvar) -> true
 
@@ -171,10 +161,10 @@ let is_ground_term evd t =
 
 let is_ground_env evd env =
   let is_ground_rel_decl = function
-    | RelDecl.LocalDef (_,b,_) -> is_ground_term evd b
+    | RelDecl.LocalDef (_,b,_) -> is_ground_term evd (EConstr.of_constr b)
     | _ -> true in
   let is_ground_named_decl = function
-    | NamedDecl.LocalDef (_,b,_) -> is_ground_term evd b
+    | NamedDecl.LocalDef (_,b,_) -> is_ground_term evd (EConstr.of_constr b)
     | _ -> true in
   List.for_all is_ground_rel_decl (rel_context env) &&
   List.for_all is_ground_named_decl (named_context env)
@@ -208,27 +198,18 @@ let head_evar =
    guess it should consider Case too) *)
 
 let whd_head_evar_stack sigma c =
-  let rec whrec (c, l as s) =
-    match kind_of_term c with
-      | Evar (evk,args as ev) ->
-        let v =
-          try Some (existential_value sigma ev)
-          with NotInstantiatedEvar | Not_found  -> None in
-        begin match v with
-        | None -> s
-        | Some c -> whrec (c, l)
-        end
+  let rec whrec (c, l) =
+    match EConstr.kind sigma c with
       | Cast (c,_,_) -> whrec (c, l)
       | App (f,args) -> whrec (f, args :: l)
-      | _ -> s
+      | c -> (EConstr.of_kind c, l)
   in
   whrec (c, [])
 
 let whd_head_evar sigma c =
+  let open EConstr in
   let (f, args) = whd_head_evar_stack sigma c in
-  (** optim: don't reallocate if empty/singleton *)
   match args with
-  | [] -> f
   | [arg] -> mkApp (f, arg)
   | _ -> mkApp (f, Array.concat args)
 

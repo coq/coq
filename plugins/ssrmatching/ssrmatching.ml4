@@ -298,9 +298,9 @@ let unif_EQ_args env sigma pa a =
   prof_unif_eq_args.profile (unif_EQ_args env sigma pa) a 
 ;;
 
-let unif_HO env ise p c = Evarconv.the_conv_x env p c ise
+let unif_HO env ise p c = Evarconv.the_conv_x env (EConstr.of_constr p) (EConstr.of_constr c) ise
 
-let unif_HOtype env ise p c = Evarconv.the_conv_x_leq env p c ise
+let unif_HOtype env ise p c = Evarconv.the_conv_x_leq env (EConstr.of_constr p) (EConstr.of_constr c) ise
 
 let unif_HO_args env ise0 pa i ca =
   let n = Array.length pa in

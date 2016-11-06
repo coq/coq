@@ -1703,9 +1703,10 @@ end = struct (* {{{ *)
       Future.purify (fun () ->
        let _,_,_,_,sigma0 = Proof.proof (Proof_global.give_me_the_proof ()) in
        let g = Evd.find sigma0 r_goal in
+       let is_ground c = Evarutil.is_ground_term sigma0 (EConstr.of_constr c) in
        if not (
-         Evarutil.is_ground_term sigma0 Evd.(evar_concl g) &&
-         List.for_all (Context.Named.Declaration.for_all (Evarutil.is_ground_term sigma0))
+         is_ground Evd.(evar_concl g) &&
+         List.for_all (Context.Named.Declaration.for_all is_ground)
                       Evd.(evar_context g))
        then
          CErrors.user_err ~hdr:"STM" (strbrk("the par: goal selector supports ground "^
@@ -1719,7 +1720,7 @@ end = struct (* {{{ *)
         | Evd.Evar_empty -> RespNoProgress
         | Evd.Evar_defined t ->
             let t = Evarutil.nf_evar sigma t in
-            if Evarutil.is_ground_term sigma t then
+            if Evarutil.is_ground_term sigma (EConstr.of_constr t) then
               RespBuiltSubProof (t, Evd.evar_universe_context sigma)
             else CErrors.user_err ~hdr:"STM" (str"The solution is not ground")
        end) ()

@@ -160,7 +160,7 @@ let define_evar_as_lambda env evd (evk,args) =
   evd, mkLambda (na, dom, evbody)
 
 let rec evar_absorb_arguments env evd (evk,args as ev) = function
-  | [] -> evd, (evk, Array.map EConstr.Unsafe.to_constr args)
+  | [] -> evd,ev
   | a::l ->
       let open EConstr in
       (* TODO: optimize and avoid introducing intermediate evars *)

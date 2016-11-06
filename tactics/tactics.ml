@@ -3731,7 +3731,7 @@ let specialize_eqs id gl =
   let ty = Tacmach.pf_get_hyp_typ gl id in
   let evars = ref (project gl) in
   let unif env evars c1 c2 =
-    compare_upto_variables c1 c2 && Evarconv.e_conv env evars c1 c2
+    compare_upto_variables c1 c2 && Evarconv.e_conv env evars (EConstr.of_constr c1) (EConstr.of_constr c2)
   in
   let rec aux in_eqs ctx acc ty =
     match kind_of_term ty with
@@ -4275,7 +4275,7 @@ let check_expected_type env sigma (elimc,bl) elimt =
   let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
   let sigma = solve_evar_clause env sigma true cl bl in
   let (_,u,_) = destProd cl.cl_concl in
-  fun t -> Evarconv.e_cumul env (ref sigma) t u
+  fun t -> Evarconv.e_cumul env (ref sigma) (EConstr.of_constr t) (EConstr.of_constr u)
 
 let check_enough_applied env sigma elim =
   let sigma = Sigma.to_evar_map sigma in

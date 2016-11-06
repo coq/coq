@@ -458,7 +458,7 @@ let start_proof_and_print k l hook =
         let env = Evd.evar_filtered_env evi in
         try
           let concl = Evarutil.nf_evars_universes sigma evi.Evd.evar_concl in
-          if Evarutil.has_undefined_evars sigma concl then raise Exit;
+          if Evarutil.has_undefined_evars sigma (EConstr.of_constr concl) then raise Exit;
           let c, _, ctx =
             Pfedit.build_by_tactic env (Evd.evar_universe_context sigma)
                                    concl (Tacticals.New.tclCOMPLETE tac)
@@ -1578,7 +1578,7 @@ let vernac_check_may_eval redexp glopt rc =
   let env = Environ.push_context uctx (Evarutil.nf_env_evar sigma' env) in
   let c = nf c in
   let j =
-    if Evarutil.has_undefined_evars sigma' c then
+    if Evarutil.has_undefined_evars sigma' (EConstr.of_constr c) then
       Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' (EConstr.of_constr c))
     else
       (* OK to call kernel which does not support evars *)

@@ -237,7 +237,7 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
       failwith "NoChange";
     end
   in
-  let eq_constr = Evarconv.e_conv env (ref sigma) in
+  let eq_constr c1 c2 = Evarconv.e_conv env (ref sigma) (EConstr.of_constr c1) (EConstr.of_constr c2) in
   if not (noccurn 1 end_of_type)
   then nochange "dependent"; (* if end_of_type depends on this term we don't touch it  *)
     if not (isApp t) then nochange "not an equality";

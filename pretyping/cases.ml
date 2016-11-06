@@ -78,9 +78,6 @@ let list_try_compile f l =
 let force_name =
   let nx = Name default_dependent_ident in function Anonymous -> nx | na -> na
 
-let to_conv_fun f = (); fun env sigma pb c1 c2 ->
-  f env sigma pb (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2)
-
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
 (************************************************************************)
@@ -311,7 +308,7 @@ let inh_coerce_to_ind evdref env loc ty tyi =
      constructor and renounce if not able to give more information *)
   (* devrait être indifférent d'exiger leq ou pas puisque pour
      un inductif cela doit être égal *)
-  if not (e_cumul env evdref expected_typ ty) then evdref := sigma
+  if not (e_cumul env evdref (EConstr.of_constr expected_typ) (EConstr.of_constr ty)) then evdref := sigma
 
 let binding_vars_of_inductive = function
   | NotInd _ -> []
@@ -395,7 +392,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 	    let current =
 	      if List.is_empty deps && isEvar typ then
 	      (* Don't insert coercions if dependent; only solve evars *)
-		let _ = e_cumul pb.env pb.evdref indt typ in
+		let _ = e_cumul pb.env pb.evdref (EConstr.of_constr indt) (EConstr.of_constr typ) in
 		current
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to true Loc.ghost pb.env)
@@ -1639,7 +1636,7 @@ let abstract_tycon loc env evdref subst tycon extenv t =
               1 (rel_context env) in
         let ev' = e_new_evar env evdref ~src ty in
         let ev = (fst ev, Array.map EConstr.of_constr (snd ev)) in
-        begin match solve_simple_eqn (to_conv_fun (evar_conv_x full_transparent_state)) env !evdref (None,ev,EConstr.of_constr (substl inst ev')) with
+        begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,EConstr.of_constr (substl inst ev')) with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
         end;
@@ -1690,7 +1687,7 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
         let evd,tt = Typing.type_of extenv !evdref t in
         evdref := evd;
         (t,tt) in
-  let b = e_cumul env evdref tt (mkSort s) (* side effect *) in
+  let b = e_cumul env evdref (EConstr.of_constr tt) (EConstr.mkSort s) (* side effect *) in
   if not b then anomaly (Pp.str "Build_tycon: should be a type");
   { uj_val = t; uj_type = tt }
 
@@ -2083,7 +2080,7 @@ let constr_of_pat env evdref arsign pat avoid =
 		  try
 		    let env = push_rel_context sign env in
 		    evdref := the_conv_x_leq (push_rel_context sign env)
-		      (lift (succ m) ty) (lift 1 apptype) !evdref;
+		      (EConstr.of_constr (lift (succ m) ty)) (EConstr.of_constr (lift 1 apptype)) !evdref;
 		    let eq_t = mk_eq evdref (lift (succ m) ty)
 		      (mkRel 1) (* alias *)
 		      (lift 1 app) (* aliased term *)

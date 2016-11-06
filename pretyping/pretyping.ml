@@ -626,7 +626,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
  	let fixi = match fixkind with
 	  | GFix (vn,i) -> i
 	  | GCoFix i -> i
-	in e_conv env.ExtraEnv.env evdref ftys.(fixi) t
+	in e_conv env.ExtraEnv.env evdref (EConstr.of_constr ftys.(fixi)) (EConstr.of_constr t)
       | None -> true
     in
       (* Note: bodies are not used by push_rec_types, so [||] is safe *)
@@ -732,7 +732,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	      match candargs with
 	      | [] -> [], j_val hj
 	      | arg :: args -> 
-		if e_conv env.ExtraEnv.env evdref (j_val hj) arg then
+		if e_conv env.ExtraEnv.env evdref (EConstr.of_constr (j_val hj)) (EConstr.of_constr arg) then
 		  args, nf_evar !evdref (j_val hj)
 		else [], j_val hj
 	    in
@@ -1088,7 +1088,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
 	match valcon with
 	| None -> tj
 	| Some v ->
-	    if e_cumul env.ExtraEnv.env evdref v tj.utj_val then tj
+	    if e_cumul env.ExtraEnv.env evdref (EConstr.of_constr v) (EConstr.of_constr tj.utj_val) then tj
 	    else
 	      error_unexpected_type
                 ~loc:(loc_of_glob_constr c) env.ExtraEnv.env !evdref tj.utj_val v

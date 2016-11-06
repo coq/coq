@@ -57,7 +57,7 @@ let e_judge_of_apply env evdref funj argjv =
   | hj::restjl ->
       match EConstr.kind !evdref (EConstr.of_constr (whd_all env !evdref typ)) with
       | Prod (_,c1,c2) ->
-	 if Evarconv.e_cumul env evdref hj.uj_type (EConstr.Unsafe.to_constr c1) then
+	 if Evarconv.e_cumul env evdref (EConstr.of_constr hj.uj_type) c1 then
 	   apply_rec (n+1) (Vars.subst1 (EConstr.of_constr hj.uj_val) c2) restjl
 	 else
 	   error_cant_apply_bad_type env (n, EConstr.Unsafe.to_constr c1, hj.uj_type) funj argjv
@@ -75,7 +75,7 @@ let e_check_branch_types env evdref (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then
     error_number_branches env cj (Array.length explft);
   for i = 0 to Array.length explft - 1 do
-    if not (Evarconv.e_cumul env evdref lfj.(i).uj_type explft.(i)) then
+    if not (Evarconv.e_cumul env evdref (EConstr.of_constr lfj.(i).uj_type) (EConstr.of_constr explft.(i))) then
       error_ill_formed_branch env cj.uj_val ((ind,i+1),u) lfj.(i).uj_type explft.(i)
   done
 
@@ -91,7 +91,7 @@ let e_is_correct_arity env evdref c pj ind specif params =
     let pt' = whd_all env !evdref (EConstr.of_constr pt) in
     match kind_of_term pt', ar with
     | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
-        if not (Evarconv.e_cumul env evdref a1 a1') then error ();
+        if not (Evarconv.e_cumul env evdref (EConstr.of_constr a1) (EConstr.of_constr a1')) then error ();
         srec (push_rel (LocalAssum (na1,a1)) env) t ar'
     | Sort s, [] ->
         if not (Sorts.List.mem (Sorts.family s) allowed_sorts)
@@ -131,8 +131,8 @@ let check_type_fixpoint loc env evdref lna lar vdefj =
   let lt = Array.length vdefj in
     if Int.equal (Array.length lar) lt then
       for i = 0 to lt-1 do
-        if not (Evarconv.e_cumul env evdref (vdefj.(i)).uj_type
-		  (lift lt lar.(i))) then
+        if not (Evarconv.e_cumul env evdref (EConstr.of_constr (vdefj.(i)).uj_type)
+		  (EConstr.of_constr (lift lt lar.(i)))) then
           Pretype_errors.error_ill_typed_rec_body ~loc env !evdref
             i lna vdefj lar
       done
@@ -150,7 +150,7 @@ let check_allowed_sort env sigma ind c p =
 
 let e_judge_of_cast env evdref cj k tj =
   let expected_type = tj.utj_val in
-  if not (Evarconv.e_cumul env evdref cj.uj_type expected_type) then
+  if not (Evarconv.e_cumul env evdref (EConstr.of_constr cj.uj_type) (EConstr.of_constr expected_type)) then
     error_actual_type env cj expected_type;
   { uj_val = mkCast (cj.uj_val, k, expected_type);
     uj_type = expected_type }
@@ -282,7 +282,7 @@ and execute_array env evdref = Array.map (execute env evdref)
 let e_check env evdref c t =
   let env = enrich_env env evdref in
   let j = execute env evdref c in
-  if not (Evarconv.e_cumul env evdref j.uj_type t) then
+  if not (Evarconv.e_cumul env evdref (EConstr.of_constr j.uj_type) (EConstr.of_constr t)) then
     error_actual_type env j (nf_evar !evdref t)
 
 (* Type of a constr *)
@@ -328,4 +328,4 @@ let e_solve_evars env evdref c =
   (* side-effect on evdref *)
   nf_evar !evdref c
 
-let _ = Evarconv.set_solve_evars e_solve_evars
+let _ = Evarconv.set_solve_evars (fun env evdref c -> EConstr.of_constr (e_solve_evars env evdref (EConstr.Unsafe.to_constr c)))
