@@ -75,7 +75,10 @@ Tactics
 - Option "Injection On Proofs" was renamed "Keep Proof Equalities". When
   enabled, injection and inversion do not drop equalities between objects
   in Prop. Still disabled by default.
-
+- New tactics "notypeclasses refine" and "simple notypeclasses refine" that
+  disallow typeclass resolution when typechecking their argument, for use
+  in typeclass hints.
+  
 Hints
 
 - Revised the syntax of [Hint Cut] to follow standard notation for regexps.
