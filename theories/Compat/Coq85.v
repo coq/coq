@@ -29,4 +29,4 @@ Global Set Typeclasses Limit Intros.
 Global Unset Typeclasses Filtered Unification.
 
 (** Allow silently letting unification constraints float after a "." *)
-Global Unset Use Unification Heuristics.
+Global Unset Solve Unification Constraints.

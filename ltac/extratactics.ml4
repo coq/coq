@@ -38,7 +38,7 @@ DECLARE PLUGIN "extratactics"
 let with_delayed_uconstr ist c tac =
   let flags = {
     Pretyping.use_typeclasses = false;
-    use_unif_heuristics = true;
+    solve_unification_constraints = true;
     use_hook = Some Pfedit.solve_by_implicit_tactic;
     fail_evar = false;
     expand_evars = true
@@ -342,7 +342,7 @@ END
 
 let constr_flags = {
   Pretyping.use_typeclasses = true;
-  Pretyping.use_unif_heuristics = true;
+  Pretyping.solve_unification_constraints = true;
   Pretyping.use_hook = Some Pfedit.solve_by_implicit_tactic;
   Pretyping.fail_evar = false;
   Pretyping.expand_evars = true }

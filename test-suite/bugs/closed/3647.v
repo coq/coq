@@ -651,4 +651,4 @@ Goal    forall (ptest : program) (cond : Condition) (value : bool)
   Grab Existential Variables.
   subst_body; simpl.
   Fail refine (all_behead (projT2 _)).
-  Unset Use Unification Heuristics. refine (all_behead (projT2 _)).
+  Unset Solve Unification Constraints. refine (all_behead (projT2 _)).

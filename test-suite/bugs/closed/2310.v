@@ -15,7 +15,7 @@ Definition replace a (y:Nest (prod a a)) : a = a -> Nest a.
    leave P as subgoal or choose itself one solution *)
 
   intros. Fail refine (Cons (cast H _ y)).
-  Unset Use Unification Heuristics. (* Keep the unification constraint around *)
+  Unset Solve Unification Constraints. (* Keep the unification constraint around *)
   refine (Cons (cast H _ y)).
   intros.
   refine (Nest (prod X X)). Qed.

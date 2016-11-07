@@ -40,7 +40,7 @@ Proof.
   Fail solve [ unshelve (eapply interpf_SmartVarVar; subst; eassumption) ].
   solve [eapply interpf_SmartVarVar; subst; eassumption].
   Undo.
-  Unset Use Unification Heuristics.
+  Unset Solve Unification Constraints.
   (* User control of when constraints are solved *)
   solve [ unshelve (eapply interpf_SmartVarVar; subst; eassumption); solve_constraints ].
 Qed.

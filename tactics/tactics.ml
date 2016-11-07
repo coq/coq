@@ -1141,7 +1141,7 @@ let run_delayed env sigma c =
 
 let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
-  Pretyping.use_unif_heuristics = true;
+  Pretyping.solve_unification_constraints = true;
   Pretyping.use_hook = Some solve_by_implicit_tactic;
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
