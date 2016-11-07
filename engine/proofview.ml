@@ -453,6 +453,25 @@ let iter_goal i =
   Solution.get >>= fun evd ->
   Comb.set CList.(undefined evd (flatten (rev subgoals)))
 
+(** List iter but allocates a list of results *)
+let map_goal i =
+  let rev = List.rev in (* hem... Proof masks List... *)
+  let open Proof in
+  Comb.get >>= fun initial ->
+  Proof.List.fold_left begin fun (acc, subgoals as cur) goal ->
+    Solution.get >>= fun step ->
+    match Evarutil.advance step goal with
+    | None -> return cur
+    | Some goal ->
+        Comb.set [goal] >>
+        i goal >>= fun res ->
+        Proof.map (fun comb -> comb :: subgoals) Comb.get >>= fun x ->
+        return (res :: acc, x)
+  end ([],[]) initial >>= fun (results_rev, subgoals) ->
+  Solution.get >>= fun evd ->
+  Comb.set CList.(undefined evd (flatten (rev subgoals))) >>
+  return (rev results_rev)
+
 (** A variant of [Monad.List.fold_left2] where the first list is the
     list of focused goals. The argument tactic is executed in a focus
     comprising only of the current goal, a goal which has been solved
@@ -585,7 +604,15 @@ let tclINDEPENDENT tac =
       let tac = InfoL.tag (Info.DBranch) tac in
       InfoL.tag (Info.Dispatch) (iter_goal (fun _ -> tac))
 
-
+let tclINDEPENDENTL tac =
+  let open Proof in
+  Pv.get >>= fun initial ->
+  match initial.comb with
+  | [] -> tclUNIT []
+  | [_] -> tac >>= fun x -> return [x]
+  | _ ->
+      let tac = InfoL.tag (Info.DBranch) tac in
+      InfoL.tag (Info.Dispatch) (map_goal (fun _ -> tac))
 
 (** {7 Goal manipulation} *)
 
