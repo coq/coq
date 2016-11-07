@@ -136,7 +136,7 @@ let with_type env evd c t =
   let my_type = Retyping.get_type_of env evd (EConstr.of_constr c) in
   let j = Environ.make_judge c my_type in
   let (evd,j') =
-    Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t
+    Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j (EConstr.of_constr t)
   in
   evd , j'.Environ.uj_val
 

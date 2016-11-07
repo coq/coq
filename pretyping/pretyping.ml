@@ -359,7 +359,7 @@ let allow_anonymous_refs = ref false
 let inh_conv_coerce_to_tycon resolve_tc loc env evdref j = function
   | None -> j
   | Some t ->
-      evd_comb2 (Coercion.inh_conv_coerce_to resolve_tc loc env.ExtraEnv.env) evdref j t
+      evd_comb2 (Coercion.inh_conv_coerce_to resolve_tc loc env.ExtraEnv.env) evdref j (EConstr.of_constr t)
 
 let check_instance loc subst = function
   | [] -> ()
@@ -770,8 +770,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	match tycon with
 	| None -> evd, tycon
 	| Some ty ->
-	  let evd, ty' = Coercion.inh_coerce_to_prod loc env.ExtraEnv.env evd ty in
-	    evd, Some ty')
+	  let evd, ty' = Coercion.inh_coerce_to_prod loc env.ExtraEnv.env evd (EConstr.of_constr ty) in
+	    evd, Some (EConstr.Unsafe.to_constr ty'))
       evdref tycon
     in
     let (name',dom,rng) = evd_comb1 (split_tycon loc env.ExtraEnv.env) evdref tycon' in

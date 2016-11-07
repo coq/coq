@@ -1225,7 +1225,7 @@ let is_mimick_head ts f =
 
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
-  let (evd',j') = inh_conv_coerce_rigid_to true Loc.ghost env evd j tycon in
+  let (evd',j') = inh_conv_coerce_rigid_to true Loc.ghost env evd j (EConstr.of_constr tycon) in
   let evd' = Evarconv.consider_remaining_unif_problems env evd' in
   let evd' = Evd.map_metas_fvalue (nf_evar evd') evd' in
     (evd',j'.uj_val)

@@ -396,7 +396,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 		current
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to true Loc.ghost pb.env)
-		  pb.evdref (make_judge current typ) indt).uj_val in
+		  pb.evdref (make_judge current typ) (EConstr.of_constr indt)).uj_val in
 	    let sigma =  !(pb.evdref) in
 	    (current,try_find_ind pb.env sigma indt names))
   | _ -> (current,tmtyp)
@@ -1867,7 +1867,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 let inh_conv_coerce_to_tycon loc env evdref j tycon =
   match tycon with
     | Some p ->
-	let (evd',j) = Coercion.inh_conv_coerce_to true loc env !evdref j p in
+	let (evd',j) = Coercion.inh_conv_coerce_to true loc env !evdref j (EConstr.of_constr p) in
           evdref := evd';
           j
     | None -> j
@@ -2013,6 +2013,7 @@ let eq_id avoid id =
   let hid' = next_ident_away hid avoid in
     hid'
 
+let papp evdref gr args = EConstr.Unsafe.to_constr (papp evdref gr (Array.map EConstr.of_constr args))
 let mk_eq evdref typ x y = papp evdref coq_eq_ind [| typ; x ; y |]
 let mk_eq_refl evdref typ x = papp evdref coq_eq_refl [| typ; x |]
 let mk_JMeq evdref typ x typ' y =

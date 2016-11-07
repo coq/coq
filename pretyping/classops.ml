@@ -192,14 +192,13 @@ let coercion_exists coe = CoeTypMap.mem coe !coercion_tab
 (* find_class_type : evar_map -> constr -> cl_typ * universe_list * constr list *)
 
 let find_class_type sigma t =
-  let inj = EConstr.Unsafe.to_constr in
   let t', args = Reductionops.whd_betaiotazeta_stack sigma t in
   match EConstr.kind sigma t' with
-    | Var id -> CL_SECVAR id, Univ.Instance.empty, List.map inj args
-    | Const (sp,u) -> CL_CONST sp, u, List.map inj args
+    | Var id -> CL_SECVAR id, Univ.Instance.empty, args
+    | Const (sp,u) -> CL_CONST sp, u, args
     | Proj (p, c) when not (Projection.unfolded p) ->
-      CL_PROJ (Projection.constant p), Univ.Instance.empty, List.map inj (c :: args)
-    | Ind (ind_sp,u) -> CL_IND ind_sp, u, List.map inj args
+      CL_PROJ (Projection.constant p), Univ.Instance.empty, (c :: args)
+    | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
     | Prod (_,_,_) -> CL_FUN, Univ.Instance.empty, []
     | Sort _ -> CL_SORT, Univ.Instance.empty, []
     |  _ -> raise Not_found
@@ -231,10 +230,11 @@ let class_of env sigma t =
     try
       let (cl, u, args) = find_class_type sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
-      (EConstr.Unsafe.to_constr t, n1, i, u, args)
+      (t, n1, i, u, args)
     with Not_found ->
       let t = Tacred.hnf_constr env sigma t in
-      let (cl, u, args) = find_class_type sigma (EConstr.of_constr t) in
+      let t = EConstr.of_constr t in
+      let (cl, u, args) = find_class_type sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, u, args)
   in
@@ -274,11 +274,12 @@ let apply_on_class_of env sigma t cont =
     let (cl,u,args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
-    EConstr.Unsafe.to_constr t, cont i
+    t, cont i
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
     let t = Tacred.hnf_constr env sigma t in
-    let (cl, u, args) = find_class_type sigma (EConstr.of_constr t) in
+    let t = EConstr.of_constr t in
+    let (cl, u, args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
     t, cont i

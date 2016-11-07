@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open EConstr
 open Evd
 open Environ
 open Mod_subst
@@ -59,15 +60,15 @@ val class_info_from_index : cl_index -> cl_typ * cl_info_typ
 
 (** [find_class_type env sigma c] returns the head reference of [c],
     its universe instance and its arguments *)
-val find_class_type : evar_map -> EConstr.types -> cl_typ * Univ.universe_instance * constr list
+val find_class_type : evar_map -> types -> cl_typ * Univ.universe_instance * constr list
 
 (** raises [Not_found] if not convertible to a class *)
-val class_of : env -> evar_map -> EConstr.types -> types * cl_index
+val class_of : env -> evar_map -> types -> types * cl_index
 
 (** raises [Not_found] if not mapped to a class *)
 val inductive_class_of : inductive -> cl_index
 
-val class_args_of : env -> evar_map -> EConstr.types -> constr list
+val class_args_of : env -> evar_map -> types -> constr list
 
 (** {6 [declare_coercion] adds a coercion in the graph of coercion paths } *)
 val declare_coercion :
@@ -84,11 +85,11 @@ val coercion_value : coe_index -> (unsafe_judgment * bool * bool) Univ.in_univer
 (** @raise Not_found in the following functions when no path exists *)
 
 val lookup_path_between_class : cl_index * cl_index -> inheritance_path
-val lookup_path_between : env -> evar_map -> EConstr.types * EConstr.types ->
+val lookup_path_between : env -> evar_map -> types * types ->
       types * types * inheritance_path
-val lookup_path_to_fun_from : env -> evar_map -> EConstr.types ->
+val lookup_path_to_fun_from : env -> evar_map -> types ->
       types * inheritance_path
-val lookup_path_to_sort_from : env -> evar_map -> EConstr.types ->
+val lookup_path_to_sort_from : env -> evar_map -> types ->
       types * inheritance_path
 val lookup_pattern_path_between :
   env -> inductive * inductive -> (constructor * int) list
@@ -104,7 +105,7 @@ val install_path_printer :
 val string_of_class : cl_typ -> string
 val pr_class : cl_typ -> std_ppcmds
 val pr_cl_index : cl_index -> std_ppcmds
-val get_coercion_value : coe_index -> constr
+val get_coercion_value : coe_index -> Constr.t
 val inheritance_graph : unit -> ((cl_index * cl_index) * inheritance_path) list
 val classes : unit -> cl_typ list
 val coercions : unit -> coe_index list

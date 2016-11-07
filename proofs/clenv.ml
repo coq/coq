@@ -670,7 +670,7 @@ let define_with_type sigma env ev c =
   let t = Retyping.get_type_of env sigma (EConstr.of_constr ev) in
   let ty = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let j = Environ.make_judge c ty in
-  let (sigma, j) = Coercion.inh_conv_coerce_to true (Loc.ghost) env sigma j t in
+  let (sigma, j) = Coercion.inh_conv_coerce_to true (Loc.ghost) env sigma j (EConstr.of_constr t) in
   let (ev, _) = destEvar ev in
   let sigma = Evd.define ev j.Environ.uj_val sigma in
   sigma
