@@ -68,8 +68,8 @@ type named_context_val = {
 }
 
 type env = {
-  env_globals       : globals;
-  env_named_context : named_context_val;
+  env_globals       : globals;           (* globals = constants + inductive types + modules + module-types *)
+  env_named_context : named_context_val; (* section variables *)
   env_rel_context   : Context.Rel.t;
   env_rel_val       : lazy_val list;
   env_nb_rel        : int;
