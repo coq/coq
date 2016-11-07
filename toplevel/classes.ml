@@ -51,9 +51,11 @@ let _ =
        | IsGlobal gr -> Hints.IsGlobRef gr
      in
      let info =
-       Vernacexpr.{ info with hint_pattern =
+       let open Vernacexpr in
+       { info with hint_pattern =
 		   Option.map
-		   (Constrintern.intern_constr_pattern (Global.env())) info.hint_pattern } in
+		     (Constrintern.intern_constr_pattern (Global.env()))
+		     info.hint_pattern } in
      Flags.silently (fun () ->
 	Hints.add_hints local [typeclasses_db]
 	  (Hints.HintsResolveEntry

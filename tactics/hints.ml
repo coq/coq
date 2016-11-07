@@ -84,7 +84,9 @@ let secvars_of_hyps hyps =
   if all then Id.Pred.full (* If the whole section context is available *)
   else pred
 
-let empty_hint_info = Vernacexpr.{ hint_priority = None; hint_pattern = None }
+let empty_hint_info =
+  let open Vernacexpr in
+  { hint_priority = None; hint_pattern = None }
 
 (************************************************************************)
 (*           The Type of Constructions Autotactic Hints                 *)
