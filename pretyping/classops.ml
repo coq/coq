@@ -193,7 +193,7 @@ let coercion_exists coe = CoeTypMap.mem coe !coercion_tab
 
 let find_class_type sigma t =
   let inj = EConstr.Unsafe.to_constr in
-  let t', args = Reductionops.whd_betaiotazeta_stack sigma (EConstr.of_constr t) in
+  let t', args = Reductionops.whd_betaiotazeta_stack sigma t in
   match EConstr.kind sigma t' with
     | Var id -> CL_SECVAR id, Univ.Instance.empty, List.map inj args
     | Const (sp,u) -> CL_CONST sp, u, List.map inj args
@@ -215,7 +215,7 @@ let subst_cl_typ subst ct = match ct with
   | CL_CONST c ->
       let c',t = subst_con_kn subst c in
 	if c' == c then ct else
-         pi1 (find_class_type Evd.empty t)
+         pi1 (find_class_type Evd.empty (EConstr.of_constr t))
   | CL_IND i ->
       let i' = subst_ind subst i in
 	if i' == i then ct else CL_IND i'
@@ -231,10 +231,10 @@ let class_of env sigma t =
     try
       let (cl, u, args) = find_class_type sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
-      (t, n1, i, u, args)
+      (EConstr.Unsafe.to_constr t, n1, i, u, args)
     with Not_found ->
-      let t = Tacred.hnf_constr env sigma (EConstr.of_constr t) in
-      let (cl, u, args) = find_class_type sigma t in
+      let t = Tacred.hnf_constr env sigma t in
+      let (cl, u, args) = find_class_type sigma (EConstr.of_constr t) in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, u, args)
   in
@@ -274,11 +274,11 @@ let apply_on_class_of env sigma t cont =
     let (cl,u,args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
-    t, cont i
+    EConstr.Unsafe.to_constr t, cont i
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
-    let t = Tacred.hnf_constr env sigma (EConstr.of_constr t) in
-    let (cl, u, args) = find_class_type sigma t in
+    let t = Tacred.hnf_constr env sigma t in
+    let (cl, u, args) = find_class_type sigma (EConstr.of_constr t) in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
     t, cont i

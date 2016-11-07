@@ -585,7 +585,7 @@ let scope_class_compare : scope_class -> scope_class -> int =
   cl_typ_ord
 
 let compute_scope_class t =
-  let (cl,_,_) = find_class_type Evd.empty t in
+  let (cl,_,_) = find_class_type Evd.empty (EConstr.of_constr t) in
   cl
 
 module ScopeClassOrd =

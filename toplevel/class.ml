@@ -120,7 +120,7 @@ let get_source lp source =
 	let (cl1,u1,lv1) =
           match lp with
 	    | [] -> raise Not_found
-            | t1::_ -> find_class_type Evd.empty t1
+            | t1::_ -> find_class_type Evd.empty (EConstr.of_constr t1)
         in
 	(cl1,u1,lv1,1)
     | Some cl ->
@@ -128,7 +128,7 @@ let get_source lp source =
 	  | [] -> raise Not_found
 	  | t1::lt ->
 	      try
-		let cl1,u1,lv1 = find_class_type Evd.empty t1 in
+		let cl1,u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
 		if cl_typ_eq cl cl1 then cl1,u1,lv1,(List.length lt+1)
 		else raise Not_found
               with Not_found -> aux lt
@@ -138,7 +138,7 @@ let get_target t ind =
   if (ind > 1) then
     CL_FUN
   else
-    match pi1 (find_class_type Evd.empty t) with
+    match pi1 (find_class_type Evd.empty (EConstr.of_constr t)) with
     | CL_CONST p when Environ.is_projection p (Global.env ()) -> 
       CL_PROJ p
     | x -> x
@@ -215,7 +215,7 @@ let build_id_coercion idf_opt source poly =
     match idf_opt with
       | Some idf -> idf
       | None ->
-	  let cl,u,_ = find_class_type sigma t in
+	  let cl,u,_ = find_class_type sigma (EConstr.of_constr t) in
 	  Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
                         (ident_key_of_class cl))
   in

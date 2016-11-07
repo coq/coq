@@ -358,7 +358,7 @@ let apply_coercion env sigma p hj typ_cl =
         (fun (ja,typ_cl,sigma) i ->
 	  let ((fv,isid,isproj),ctx) = coercion_value i in
 	  let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-	  let argl = (class_args_of env sigma typ_cl)@[ja.uj_val] in
+	  let argl = (class_args_of env sigma (EConstr.of_constr typ_cl))@[ja.uj_val] in
 	  let sigma, jres = 
 	    apply_coercion_args env sigma true isproj argl fv 
 	  in
@@ -382,7 +382,7 @@ let inh_app_fun_core env evd j =
 	  (evd',{ uj_val = j.uj_val; uj_type = EConstr.Unsafe.to_constr t })
     | _ ->
       	try let t,p =
-	  lookup_path_to_fun_from env evd j.uj_type in
+	  lookup_path_to_fun_from env evd (EConstr.of_constr j.uj_type) in
 	    apply_coercion env evd p j t
 	with Not_found | NoCoercion ->
           if Flags.is_program_mode () then
@@ -407,7 +407,7 @@ let inh_app_fun resolve_tc env evd j =
 
 let inh_tosort_force loc env evd j =
   try
-    let t,p = lookup_path_to_sort_from env evd j.uj_type in
+    let t,p = lookup_path_to_sort_from env evd (EConstr.of_constr j.uj_type) in
     let evd,j1 = apply_coercion env evd p j t in
     let j2 = on_judgment_type (whd_evar evd) j1 in
       (evd,type_judgment env j2)
@@ -448,7 +448,7 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
   else
     let evd, v', t' =
       try
-	let t2,t1,p = lookup_path_between env evd (t,c1) in
+	let t2,t1,p = lookup_path_between env evd (EConstr.of_constr t,EConstr.of_constr c1) in
 	  match v with
 	  | Some v ->
 	    let evd,j =
