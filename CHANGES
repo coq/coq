@@ -75,13 +75,26 @@ Tactics
 - Option "Injection On Proofs" was renamed "Keep Proof Equalities". When
   enabled, injection and inversion do not drop equalities between objects
   in Prop. Still disabled by default.
-
+- New tactics "notypeclasses refine" and "simple notypeclasses refine" that
+  disallow typeclass resolution when typechecking their argument, for use
+  in typeclass hints.
+  
 Hints
 
 - Revised the syntax of [Hint Cut] to follow standard notation for regexps.
 - Hint Mode now accepts "!" which means that the mode matches only if the
   argument's head is not an evar (it goes under applications, casts, and
   scrutinees of matches and projections).
+- Hints can now take an optional user-given pattern, used only by
+  [typeclasses eauto] with the [Filtered Unification] option on.
+
+Typeclasses
+
+- Many new options and new engine based on the proof monad. The
+  [typeclasses eauto] tactic is now a multi-goal, multi-success tactic.
+  See reference manual for more information. It is planned to
+  replace auto and eauto in the following version. The 8.5 resolution
+  engine is still available to help solve compatibility issues.
 
 Program
 

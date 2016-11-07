@@ -166,14 +166,17 @@ module Make
     | ModeNoHeadEvar -> str"!"
     | ModeOutput -> str"-"
 
+  let pr_hint_info pr_pat { hint_priority = pri; hint_pattern = pat } =
+    pr_opt (fun x -> str"|" ++ int x) pri ++
+    pr_opt (fun y -> (if Option.is_empty pri then str"| " else mt()) ++ pr_pat y) pat
+
   let pr_hints db h pr_c pr_pat =
     let opth = pr_opt_hintbases db  in
     let pph =
       match h with
         | HintsResolve l ->
           keyword "Resolve " ++ prlist_with_sep sep
-            (fun (pri, _, c) -> pr_reference_or_constr pr_c c ++
-              match pri with Some x -> spc () ++ str"(" ++ int x ++ str")" | None -> mt ())
+            (fun (info, _, c) -> pr_reference_or_constr pr_c c ++ pr_hint_info pr_pat info)
             l
         | HintsImmediate l ->
           keyword "Immediate" ++ spc() ++
@@ -888,7 +891,7 @@ module Make
               spc() ++ pr_class_rawexpr c2)
         )
 
-      | VernacInstance (abst, sup, (instid, bk, cl), props, pri) ->
+      | VernacInstance (abst, sup, (instid, bk, cl), props, info) ->
         return (
           hov 1 (
             (if abst then keyword "Declare" ++ spc () else mt ()) ++
@@ -899,7 +902,7 @@ module Make
               pr_and_type_binders_arg sup ++
               str":" ++ spc () ++
               (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
-              pr_constr cl ++ pr_priority pri ++
+              pr_constr cl ++ pr_hint_info pr_constr_pattern_expr info ++
               (match props with
                 | Some (true,CRecord (_,l)) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
                 | Some (true,_) -> assert false
@@ -913,11 +916,14 @@ module Make
             keyword "Context" ++ spc () ++ pr_and_type_binders_arg l)
         )
 
-      | VernacDeclareInstances (ids, pri) ->
-        return (
+      | VernacDeclareInstances insts ->
+         let pr_inst (id, info) =
+           pr_reference id ++ pr_hint_info pr_constr_pattern_expr info
+         in
+         return (
           hov 1 (keyword "Existing" ++ spc () ++
-                   keyword(String.plural (List.length ids) "Instance") ++
-                   spc () ++ prlist_with_sep spc pr_reference ids ++ pr_priority pri)
+                   keyword(String.plural (List.length insts) "Instance") ++
+                 spc () ++ prlist_with_sep (fun () -> str", ") pr_inst insts)
         )
 
       | VernacDeclareClass id ->

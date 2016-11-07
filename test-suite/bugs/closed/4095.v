@@ -1,6 +1,8 @@
-(* File reduced by coq-bug-finder from original input, then from 5752 lines to 3828 lines, then from 2707 lines to 558 lines, then from 472 lines to 168 lines, then from 110 lines to 101 lines, then from 96 lines to 77 lines, then from 80 lines to 64 lines *)
-Require Coq.Setoids.Setoid.
-Import Coq.Setoids.Setoid.
+(* File reduced by coq-bug-finder from original input, then from 5752 lines to 3828 lines, then from 2707 lines to 558 lines, then from 472 lines to 168 lines, then from 110 lines to 101 lines, then from 96 lines to 77 lines, then from 80 lines to 64 lines, then from 92 lines to 79 lines *)
+(* coqc version 8.5beta1 (February 2015) compiled on Feb 23 2015 18:32:3 with OCaml 4.01.0
+   coqtop version cagnode15:/afs/csail.mit.edu/u/j/jgross/coq-8.5,v8.5 (ebfc19d792492417b129063fb511aa423e9d9e08) *)
+Require Import TestSuite.admit.
+Require Import Coq.Setoids.Setoid.
 Generalizable All Variables.
 Axiom admit : forall {T}, T.
 Class Equiv (A : Type) := equiv : relation A.
@@ -34,7 +36,7 @@ Local Existing Instance ILFun_Ops.
 Local Existing Instance ILFun_ILogic.
 Definition catOP (P Q: OPred) : OPred := admit.
 Add Parametric Morphism : catOP with signature lentails ==> lentails ==> lentails as catOP_entails_m.
-apply admit.
+admit.
 Defined.
 Definition catOPA (P Q R : OPred) : catOP (catOP P Q) R -|- catOP P (catOP Q R) := admit.
 Class IsPointed (T : Type) := point : T.
@@ -67,27 +69,19 @@ Goal forall (T : Type) (O0 : T -> OPred) (O1 : T -> PointedOPred)
          catOP_entails_m_Proper a a' H b b' H') in
     pose P;
     refine (P _ _)
-  end; unfold Basics.flip.
-  Focus 2.
-  Set Typeclasses Debug.
-  Set Typeclasses Legacy Resolution.
-  apply reflexivity.
-  (* Debug: 1.1: apply @IsPointed_catOP on
-(IsPointed (exists x0 : Actions, (catOP ?Goal O2 : OPred) x0))
-Debug: 1.1.1.1: apply OPred_inhabited on (IsPointed (exists x0 : Actions, ?Goal x0))
-Debug: 1.1.2.1: apply OPred_inhabited on (IsPointed (exists x : Actions, O2 x))
-Debug: 2.1: apply @Equivalence_Reflexive on (Reflexive lentails)
-Debug: 2.1.1: no match for (Equivalence lentails) , 5 possibilities
-Debug: Backtracking after apply @Equivalence_Reflexive
-Debug: 2.2: apply @PreOrder_Reflexive on (Reflexive lentails)
-Debug: 2.2.1.1: apply @lentailsPre on (PreOrder lentails)
-Debug: 2.2.1.1.1.1: apply ILFun_ILogic on (ILogic OPred)
-*)
-  Undo. Unset Typeclasses Legacy Resolution.
-  Test Typeclasses Unique Solutions.
-  Test Typeclasses Unique Instances.
-  Show Existentials.
-  Set Typeclasses Debug Verbosity 2.
-  Set Printing All.
-  Fail apply reflexivity.
-  
+  end.
+  Undo.
+  lazymatch goal with
+  | |- ?R (?f ?a ?b) (?f ?a' ?b') =>
+    let P := constr:(fun H H' => Morphisms.proper_prf a a' H b b' H') in
+    set(p:=P)
+  end. (* Toplevel input, characters 15-182:
+Error: Cannot infer an instance of type
+"PointedOPred" for the variable p in environment:
+T : Type
+O0 : T -> OPred
+O1 : T -> PointedOPred
+tr : T -> T
+O2 : PointedOPred
+x0 : T
+H : forall x0 : T, catOP (O0 x0) (O1 (tr x0)) |-- O1 x0 *)

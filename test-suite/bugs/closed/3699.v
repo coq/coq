@@ -34,8 +34,7 @@ Module NonPrim.
   : forall b:B, P b.
   Proof.
     intros b.
-    unshelve (refine (pr1 (isconnected_elim _ _))).
-    exact b.
+    unshelve (refine (pr1 (isconnected_elim (A:=hfiber f b) _ _))).
     intro x.
     exact (transport P x.2 (d x.1)).
   Defined.
@@ -47,8 +46,7 @@ Module NonPrim.
   : forall b:B, P b.
   Proof.
     intros b.
-    unshelve (refine (pr1 (isconnected_elim _ _))).
-    exact b.
+    unshelve (refine (pr1 (isconnected_elim (A:=hfiber f b) _ _))).
     intros [a p].
     exact (transport P p (d a)).
   Defined.
@@ -111,8 +109,7 @@ Module Prim.
   : forall b:B, P b.
   Proof.
     intros b.
-    unshelve (refine (pr1 (isconnected_elim _ _))).
-    exact b.
+    unshelve (refine (pr1 (isconnected_elim (A:=hfiber f b) _ _))).
     intro x.
     exact (transport P x.2 (d x.1)).
   Defined.
@@ -124,8 +121,7 @@ Module Prim.
   : forall b:B, P b.
   Proof.
     intros b.
-    unshelve (refine (pr1 (isconnected_elim _ _))).
-    exact b.
+    unshelve (refine (pr1 (isconnected_elim (A:=hfiber f b) _ _))).
     intros [a p].
     exact (transport P p (d a)).
   Defined.

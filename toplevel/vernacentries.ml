@@ -841,9 +841,9 @@ let vernac_instance abst locality poly sup inst props pri =
 let vernac_context poly l =
   if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_declare_instances locality ids pri =
+let vernac_declare_instances locality insts =
   let glob = not (make_section_locality locality) in
-  List.iter (fun id -> Classes.existing_instance glob id pri) ids
+  List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
 let vernac_declare_class id =
   Record.declare_existing_class (Nametab.global id)
@@ -1996,10 +1996,10 @@ let interp ?proof ~loc locality poly c =
       vernac_identity_coercion locality poly local id s t
 
   (* Type classes *)
-  | VernacInstance (abst, sup, inst, props, pri) ->
-      vernac_instance abst locality poly sup inst props pri
+  | VernacInstance (abst, sup, inst, props, info) ->
+      vernac_instance abst locality poly sup inst props info
   | VernacContext sup -> vernac_context poly sup
-  | VernacDeclareInstances (ids, pri) -> vernac_declare_instances locality ids pri
+  | VernacDeclareInstances insts -> vernac_declare_instances locality insts
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)

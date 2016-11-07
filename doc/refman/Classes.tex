@@ -9,10 +9,6 @@
 \aauthor{Matthieu Sozeau}
 \label{typeclasses}
 
-\begin{flushleft}
-  \em The status of Type Classes is experimental.
-\end{flushleft}
-
 This chapter presents a quick reference of the commands related to type
 classes. For an actual introduction to type classes, there is a
 description of the system \cite{sozeau08} and the literature on type
@@ -382,6 +378,71 @@ projections as instances. This is almost equivalent to {\tt Hint Resolve
 Declares variables according to the given binding context, which might
 use implicit generalization (see \ref{SectionContext}).
 
+\asubsection{\tt typeclasses eauto}
+\tacindex{typeclasses eauto}
+
+The {\tt typeclasses eauto} tactic uses a different resolution engine
+than {\tt eauto} and {\tt auto}. The main differences are the following:
+\begin{itemize}
+\item Contrary to {\tt eauto} and {\tt auto}, the resolution is done
+  entirely in the new proof engine (as of Coq v8.6), meaning that
+  backtracking is available among dependent subgoals, and shelving goals
+  is supported. {\tt typeclasses eauto} is a multi-goal tactic.
+  It analyses the dependencies between subgoals to avoid
+  backtracking on subgoals that are entirely independent.
+\item When called with no arguments, {\tt typeclasses eauto} uses the
+  {\tt typeclass\_instances} database by default (instead of {\tt core})
+  and will try to solve \emph{only} typeclass goals. If some subgoal of
+  a hint/instance is non-dependent and not of class type, that hint
+  application will fail. Dependent subgoals are automatically shelved
+  and \emph{must be} resolved entirely when the other typeclass subgoals
+  are resolved or the proof search will fail \emph{globally},
+  \emph{without} the possibility to find another complete solution with
+  no shelved subgoals.
+
+  \emph{Note: } As of Coq 8.6, {\tt all:once (typeclasses eauto)}
+  faithfully mimicks what happens during typeclass resolution when it is
+  called during refinement/type-inference. It might move to {\tt
+    all:typeclasses eauto} in future versions when the refinement engine
+  will be able to backtrack.
+\item When called with specific databases (e.g. {\tt with}), {\tt
+    typeclasses eauto} allows shelved goals to remain at any point
+  during search and treat typeclasses goals like any other.
+\item The transparency information of databases is used consistently for
+  all hints declared in them. It is always used when calling the unifier.
+  When considering the local hypotheses, we use the transparent
+  state of the first hint database given. Using an empty database
+  (created with {\tt Create HintDb} for example) with 
+  unfoldable variables and constants as the first argument of
+  typeclasses eauto hence makes resolution with the local hypotheses use
+  full conversion during unification.
+\end{itemize}
+
+\begin{Variants}
+\item \label{depth} {\tt typeclasses eauto \zeroone{\num}}
+  \emph{Warning:} The semantics for the limit {\num} is different than
+  for {\tt auto}. By default, if no limit is given the search is
+  unbounded. Contrary to {\tt auto}, introduction steps ({\tt intro})
+  are counted, which might result in larger limits being necessary
+  when searching with {\tt typeclasses eauto} than {\tt auto}.
+  
+\item \label{with} {\tt typeclasses eauto with {\ident}$_1$ \ldots {\ident}$_n$}.
+  This variant runs resolution with the given hint databases. It treats
+  typeclass subgoals the same as other subgoals (no shelving of
+  non-typeclass goals in particular).
+\end{Variants}
+
+\asubsection{\tt autoapply {\term} with {\ident}}
+\tacindex{autoapply}
+
+The tactic {\tt autoapply} applies a term using the transparency
+information of the hint database {\ident}, and does \emph{no} typeclass
+resolution. This can be used in {\tt Hint Extern}'s for typeclass
+instances (in hint db {\tt typeclass\_instances}) to
+allow backtracking on the typeclass subgoals created by the lemma
+application, rather than doing type class resolution locally at the hint
+application time.
+
 \subsection{\tt Typeclasses Transparent, Opaque {\ident$_1$ \ldots \ident$_n$}}
 \comindex{Typeclasses Transparent}
 \comindex{Typeclasses Opaque}
@@ -400,19 +461,122 @@ abbreviate a type, like {\tt relation A := A -> A -> Prop}.
 
 This is equivalent to {\tt Hint Transparent,Opaque} {\ident} {\tt: typeclass\_instances}.
 
+\subsection{\tt Set Typeclasses Dependency Order}
+\optindex{Typeclasses Dependency Order}
+
+This option (on by default since 8.6) respects the dependency order between
+subgoals, meaning that subgoals which are depended on by other subgoals 
+come first, while the non-dependent subgoals were put before the
+dependent ones previously (Coq v8.5 and below). This can result in quite
+different performance behaviors of proof search.
+
+\subsection{\tt Set Typeclasses Filtered Unification}
+\optindex{Typeclasses Filtered Unification}
+
+This option, available since Coq 8.6 and off by default, switches the
+hint application procedure to a filter-then-unify strategy. To apply a
+hint, we first check that the goal \emph{matches} syntactically the
+inferred or specified pattern of the hint, and only then try to
+\emph{unify} the goal with the conclusion of the hint. This can
+drastically improve performance by calling unification less often,
+matching syntactic patterns being very quick. This also provides more
+control on the triggering of instances.  For example, forcing a constant
+to explicitely appear in the pattern will make it never apply on a goal
+where there is a hole in that place.
+
+\subsection{\tt Set Typeclasses Legacy Resolution}
+\optindex{Typeclasses Legacy Resolution}
+
+This option (off by default) uses the 8.5 implementation of resolution.
+Use for compatibility purposes only (porting and debugging).
+
+\subsection{\tt Set Typeclasses Module Eta}
+\optindex{Typeclasses Modulo Eta}
+
+This option allows eta-conversion for functions and records during
+unification of type-classes. This option is now unsupported in 8.6 with
+{\tt Typeclasses Filtered Unification} set, but still affects the
+default unification strategy, and the one used in {\tt Legacy
+  Resolution} mode. It is \emph{unset} by default. If {\tt Typeclasses
+  Filtered Unification} is set, this has no effect and unification will
+find solutions up-to eta conversion. Note however that syntactic
+pattern-matching is not up-to eta.
+
+\subsection{\tt Set Typeclasses Limit Intros}
+\optindex{Typeclasses Limit Intros}
+
+This option (on by default in Coq 8.6 and below) controls the ability to
+apply hints while avoiding (functional) eta-expansions in the generated
+proof term. It does so by allowing hints that conclude in a product to
+apply to a goal with a matching product directly, avoiding an
+introduction. \emph{Warning:} this can be expensive as it requires
+rebuilding hint clauses dynamically, and does not benefit from the
+invertibility status of the product introduction rule, resulting in
+potentially more expensive proof-search (i.e. more useless
+backtracking).
+
+\subsection{\tt Set Typeclass Resolution After Apply}
+\optindex{Typeclasses Resolution After Apply}
+\emph{Deprecated since 8.6}
+
+This option (off by default in Coq 8.6 and 8.5) controls the resolution
+of typeclass subgoals generated by the {\tt apply} tactic.
+
+\subsection{\tt Set Typeclass Resolution For Conversion}
+\optindex{Typeclasses Resolution For Conversion}
+
+This option (on by default) controls the use of typeclass resolution
+when a unification problem cannot be solved during
+elaboration/type-inference. With this option on, when a unification
+fails, typeclass resolution is tried before launching unification once again.
+
+\subsection{\tt Set Typeclasses Strict Resolution}
+\optindex{Typeclasses Strict Resolution}
+
+Typeclass declarations introduced when this option is set have a
+stricter resolution behavior (the option is off by default). When
+looking for unifications of a goal with an instance of this class, we
+``freeze'' all the existentials appearing in the goals, meaning that
+they are considered rigid during unification and cannot be instantiated.
+
+\subsection{\tt Set Typeclasses Unique Solutions}
+\optindex{Typeclasses Unique Solutions}
+
+When a typeclass resolution is launched we ensure that it has a single
+solution or fail. This ensures that the resolution is canonical, but can
+make proof search much more expensive.
+
+\subsection{\tt Set Typeclasses Unique Instances}
+\optindex{Typeclasses Unique Instances}
+
+Typeclass declarations introduced when this option is set have a
+more efficient resolution behavior (the option is off by default). When
+a solution to the typeclass goal of this class is found, we never
+backtrack on it, assuming that it is canonical.
+
 \subsection{\tt Typeclasses eauto := [debug] [dfs | bfs] [\emph{depth}]}
 \comindex{Typeclasses eauto}
 \label{TypeclassesEauto}
 
-This command allows customization of the type class resolution tactic,
-based on a variant of eauto. The flags semantics are:
+This command allows more global customization of the type class
+resolution tactic.
+The semantics of the options are:
 \begin{itemize}
 \item {\tt debug} In debug mode, the trace of successfully applied
   tactics is printed.
 \item {\tt dfs, bfs} This sets the search strategy to depth-first search
   (the default) or breadth-first search.
-\item {\emph{depth}} This sets the depth of the search (the default is 100).
+\item {\emph{depth}} This sets the depth limit of the search.
 \end{itemize}
+
+\subsection{\tt Set Typeclasses Debug [Verbosity {\num}]}
+\optindex{Typeclasses Debug}
+\optindex{Typeclasses Debug Verbosity}
+
+These options allow to see the resolution steps of typeclasses that are
+performed during search. The {\tt Debug} option is synonymous to 
+{\tt Debug Verbosity 1}, and {\tt Debug Verbosity 2} provides more
+information (tried tactics, shelving of goals, etc\ldots).
 
 \subsection{\tt Set Refine Instance Mode}
 \optindex{Refine Instance Mode}

@@ -588,7 +588,7 @@ let warn_deprecated_arguments_syntax =
 
 (* Extensions: implicits, coercions, etc. *)
 GEXTEND Gram
-  GLOBAL: gallina_ext instance_name;
+  GLOBAL: gallina_ext instance_name hint_info;
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
@@ -641,17 +641,20 @@ GEXTEND Gram
 
       | IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
-	 pri = OPT [ "|"; i = natural -> i ] ;
+	 info = hint_info ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> Some (true,r) |
 	     ":="; c = lconstr -> Some (false,c) | -> None ] ->
-	   VernacInstance (false,snd namesup,(fst namesup,expl,t),props,pri)
+	   VernacInstance (false,snd namesup,(fst namesup,expl,t),props,info)
 
       | IDENT "Existing"; IDENT "Instance"; id = global;
-          pri = OPT [ "|"; i = natural -> i ] ->
-	  VernacDeclareInstances ([id], pri)
+          info = hint_info ->
+	  VernacDeclareInstances [id, info]
+
       | IDENT "Existing"; IDENT "Instances"; ids = LIST1 global;
-          pri = OPT [ "|"; i = natural -> i ] ->
-	  VernacDeclareInstances (ids, pri)
+        pri = OPT [ "|"; i = natural -> i ] ->
+         let info = { hint_priority = pri; hint_pattern = None } in
+         let insts = List.map (fun i -> (i, info)) ids in
+	  VernacDeclareInstances insts
 
       | IDENT "Existing"; IDENT "Class"; is = global -> VernacDeclareClass is
 
@@ -796,6 +799,11 @@ GEXTEND Gram
           (Option.default [] sup)
       | -> ((!@loc, Anonymous), None), []  ] ]
   ;
+  hint_info:
+    [ [ "|"; i = OPT natural; pat = OPT constr_pattern ->
+         { hint_priority = i; hint_pattern = pat }
+      | -> { hint_priority = None; hint_pattern = None } ] ]
+  ;
   reserv_list:
     [ [ bl = LIST1 reserv_tuple -> bl | b = simple_reserv -> [b] ] ]
   ;
@@ -817,8 +825,8 @@ GEXTEND Gram
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
-	 pri = OPT [ "|"; i = natural -> i ] ->
-	   VernacInstance (true, snd namesup, (fst namesup, expl, t), None, pri)
+	 info = hint_info ->
+	   VernacInstance (true, snd namesup, (fst namesup, expl, t), None, info)
 
       (* System directory *)
       | IDENT "Pwd" -> VernacChdir None

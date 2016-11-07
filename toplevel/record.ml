@@ -561,8 +561,9 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
       typecheck_params_and_fields (kind = Class true) idstruc pl s ps notations fs) () in
   let sign = structure_signature (fields@params) in
   let gr = match kind with
-    | Class def ->
-	let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
+  | Class def ->
+     let priorities = List.map (fun id -> {hint_priority = id; hint_pattern = None}) priorities in
+     let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
 	  implpars params arity template implfs fields is_coe coers priorities sign in
 	gr
     | _ ->
