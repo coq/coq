@@ -263,6 +263,16 @@ Defined.
 
   This tactic behaves like {\tt refine}, but it does not shelve any
   subgoal. It does not perform any beta-reduction either.
+\item {\tt notypeclasses refine \term}\tacindex{notypeclasses refine}
+
+  This tactic behaves like {\tt refine} except it performs typechecking
+  without resolution of typeclasses.
+
+\item {\tt simple notypeclasses refine \term}\tacindex{simple
+    notypeclasses refine}
+
+  This tactic behaves like {\tt simple refine} except it performs typechecking
+  without resolution of typeclasses.
 \end{Variants}
 
 \subsection{\tt apply \term}
