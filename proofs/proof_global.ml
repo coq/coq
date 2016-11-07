@@ -88,7 +88,7 @@ type proof_terminator = proof_ending -> unit
 type closed_proof = proof_object * proof_terminator
 
 type pstate = {
-  pid : Id.t;
+  pid : Id.t;  (* the name of the theorem whose proof is being constructed *)
   terminator : proof_terminator CEphemeron.key;
   endline_tactic : Genarg.glob_generic_argument option;
   section_vars : Context.Named.t option;
