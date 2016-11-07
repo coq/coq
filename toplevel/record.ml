@@ -484,7 +484,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
   in
   let ctx_context =
     List.map (fun decl ->
-      match Typeclasses.class_of_constr (RelDecl.get_type decl) with
+      match Typeclasses.class_of_constr Evd.empty (EConstr.of_constr (RelDecl.get_type decl)) with
       | Some (_, ((cl,_), _)) -> Some (cl.cl_impl, true)
       | None -> None)
       params, params

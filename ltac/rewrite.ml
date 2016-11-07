@@ -127,7 +127,7 @@ let app_poly_sort b =
 let find_class_proof proof_type proof_method env evars carrier relation =
   try
     let evars, goal = app_poly_check env evars proof_type [| carrier ; relation |] in
-    let evars', c = Typeclasses.resolve_one_typeclass env (goalevars evars) goal in
+    let evars', c = Typeclasses.resolve_one_typeclass env (goalevars evars) (EConstr.of_constr goal) in
       if extends_undefined (goalevars evars) evars' then raise Not_found
       else app_poly_check env (evars',cstrevars evars) proof_method [| carrier; relation; c |]
   with e when Logic.catchable_exception e -> raise Not_found
@@ -367,7 +367,7 @@ end) = struct
 	   let evars, inst = 
 	     app_poly env (evars,Evar.Set.empty)
 	       rewrite_relation_class [| evar; mkApp (c, params) |] in
-	   let _ = Typeclasses.resolve_one_typeclass env' (goalevars evars) inst in
+	   let _ = Typeclasses.resolve_one_typeclass env' (goalevars evars) (EConstr.of_constr inst) in
 	     Some (it_mkProd_or_LetIn t rels)
 	   with e when CErrors.noncritical e -> None)
   | _ -> None
@@ -1937,7 +1937,7 @@ let default_morphism sign m =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
   let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
-  let evars, mor = resolve_one_typeclass env (goalevars evars) morph in
+  let evars, mor = resolve_one_typeclass env (goalevars evars) (EConstr.of_constr morph) in
     mor, proper_projection mor morph
 
 let add_setoid global binders a aeq t n =

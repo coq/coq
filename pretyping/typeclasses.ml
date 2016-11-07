@@ -136,23 +136,24 @@ let typeclass_univ_instance (cl,u') =
 
 let class_info c =
   try Refmap.find c !classes
-  with Not_found -> not_a_class (Global.env()) (printable_constr_of_global c)
+  with Not_found -> not_a_class (Global.env()) (EConstr.of_constr (printable_constr_of_global c))
 
-let global_class_of_constr env c =
-  try let gr, u = Universes.global_of_constr c in
+let global_class_of_constr env sigma c =
+  try let gr, u = Termops.global_of_constr sigma c in
 	class_info gr, u
   with Not_found -> not_a_class env c
 
-let dest_class_app env c =
-  let cl, args = decompose_app c in
-    global_class_of_constr env cl, args
+let dest_class_app env sigma c =
+  let cl, args = EConstr.decompose_app sigma c in
+    global_class_of_constr env sigma cl, (List.map EConstr.Unsafe.to_constr args)
 
-let dest_class_arity env c =
-  let rels, c = decompose_prod_assum c in
-    rels, dest_class_app env c
+let dest_class_arity env sigma c =
+  let open EConstr in
+  let rels, c = decompose_prod_assum sigma c in
+    rels, dest_class_app env sigma c
 
-let class_of_constr c =
-  try Some (dest_class_arity (Global.env ()) c)
+let class_of_constr sigma c =
+  try Some (dest_class_arity (Global.env ()) sigma c)
   with e when CErrors.noncritical e -> None
 
 let is_class_constr c = 
@@ -161,15 +162,14 @@ let is_class_constr c =
   with Not_found -> false
 
 let rec is_class_type evd c =
-  let c, args = decompose_app c in
-    match kind_of_term c with
+  let c, _ = Termops.decompose_app_vect evd c in
+    match EConstr.kind evd (EConstr.of_constr c) with
     | Prod (_, _, t) -> is_class_type evd t
-    | Evar (e, _) when Evd.is_defined evd e ->
-      is_class_type evd (EConstr.Unsafe.to_constr (Evarutil.whd_head_evar evd (EConstr.of_constr c)))
+    | Cast (t, _, _) -> is_class_type evd t
     | _ -> is_class_constr c
       
 let is_class_evar evd evi =
-  is_class_type evd evi.Evd.evar_concl
+  is_class_type evd (EConstr.of_constr evi.Evd.evar_concl)
 
 (*
  * classes persistent object
@@ -222,7 +222,7 @@ let discharge_class (_,cl) =
   let discharge_context ctx' subst (grs, ctx) =
     let grs' =
       let newgrs = List.map (fun decl ->
-			     match decl |> RelDecl.get_type |> class_of_constr with
+			     match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr Evd.empty with
 			     | None -> None
 			     | Some (_, ((tc,_), _)) -> Some (tc.cl_impl, true))
 			    ctx'
@@ -270,7 +270,7 @@ let add_class cl =
 let check_instance env sigma c =
   try 
     let (evd, c) = resolve_one_typeclass env sigma
-      (Retyping.get_type_of env sigma c) in
+      (EConstr.of_constr (Retyping.get_type_of env sigma c)) in
       not (Evd.has_undefined evd)
   with e when CErrors.noncritical e -> false
 
@@ -282,10 +282,10 @@ let build_subclasses ~check env sigma glob pri =
         Nameops.add_suffix _id ("_subinstance_" ^ string_of_int !i))
   in
   let ty, ctx = Global.type_of_global_in_context env glob in
+  let ty = EConstr.of_constr ty in
   let sigma = Evd.merge_context_set Evd.univ_rigid sigma (Univ.ContextSet.of_context ctx) in
   let rec aux pri c ty path =
-    let ty = Evarutil.nf_evar sigma ty in
-      match class_of_constr ty with
+      match class_of_constr sigma ty with
       | None -> []
       | Some (rels, ((tc,u), args)) ->
 	let instapp = 
@@ -313,7 +313,7 @@ let build_subclasses ~check env sigma glob pri =
 	let declare_proj hints (cref, pri, body) =
 	  let path' = cref :: path in
 	  let ty = Retyping.get_type_of env sigma (EConstr.of_constr body) in
-	  let rest = aux pri body ty path' in
+	  let rest = aux pri body (EConstr.of_constr ty) path' in
 	    hints @ (path', pri, body) :: rest
 	in List.fold_left declare_proj [] projs 
   in
@@ -406,7 +406,7 @@ let remove_instance i =
 
 let declare_instance pri local glob =
   let ty = Global.type_of_global_unsafe glob in
-    match class_of_constr ty with
+    match class_of_constr Evd.empty (EConstr.of_constr ty) with
     | Some (rels, ((tc,_), args) as _cl) ->
       add_instance (new_instance tc pri (not local) (Flags.use_polymorphic_flag ()) glob)
 (*       let path, hints = build_subclasses (not local) (Global.env ()) Evd.empty glob in *)

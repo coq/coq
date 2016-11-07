@@ -65,7 +65,7 @@ let existing_instance glob g pri =
   let c = global g in
   let instance = Global.type_of_global_unsafe c in
   let _, r = decompose_prod_assum instance in
-    match class_of_constr r with
+    match class_of_constr Evd.empty (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc pri glob 
   (*FIXME*) (Flags.use_polymorphic_flag ()) c)
       | None -> user_err ~loc:(loc_of_reference g)
@@ -155,7 +155,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     let imps = imps @ Impargs.lift_implicits len imps' in
     let ctx', c = decompose_prod_assum c' in
     let ctx'' = ctx' @ ctx in
-    let k, args = Typeclasses.dest_class_app (push_rel_context ctx'' env) c in
+    let k, args = Typeclasses.dest_class_app (push_rel_context ctx'' env) !evars (EConstr.of_constr c) in
     let cl, u = Typeclasses.typeclass_univ_instance k in
     let _, args = 
       List.fold_right (fun decl (args, args') ->
@@ -378,7 +378,7 @@ let context poly l =
       let () = uctx := Univ.ContextSet.empty in
       let decl = (ParameterEntry (None,poly,(t,ctx),None), IsAssumption Logical) in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
-	match class_of_constr t with
+	match class_of_constr !evars (EConstr.of_constr t) with
 	| Some (rels, ((tc,_), args) as _cl) ->
 	    add_instance (Typeclasses.new_instance tc None false (*FIXME*)
 			    poly (ConstRef cst));

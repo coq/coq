@@ -478,9 +478,9 @@ let is_Prop env sigma concl =
   | Sort (Prop Null) -> true
   | _ -> false
 
-let is_unique env concl =
+let is_unique env sigma concl =
   try
-    let (cl,u), args = dest_class_app env concl in
+    let (cl,u), args = dest_class_app env sigma concl in
     cl.cl_unique
   with e when CErrors.noncritical e -> false
 
@@ -675,7 +675,7 @@ module V85 = struct
     let tacgl = {it = gl; sigma = s;} in
     let secvars = secvars_of_hyps (Environ.named_context_of_val (Goal.V82.hyps s gl)) in
     let poss = e_possible_resolve hints info.hints secvars info.only_classes s concl in
-    let unique = is_unique env concl in
+    let unique = is_unique env s (EConstr.of_constr concl) in
     let rec aux i foundone = function
       | (tac, _, extern, name, pp) :: tl ->
          let derivs = path_derivate info.auto_cut name in
@@ -997,7 +997,7 @@ module Search = struct
     let concl = Goal.concl gl in
     let sigma = Goal.sigma gl in
     let s = Sigma.to_evar_map sigma in
-    let unique = not info.search_dep || is_unique env concl in
+    let unique = not info.search_dep || is_unique env s (EConstr.of_constr concl) in
     let backtrack = needs_backtrack env s unique concl in
     if !typeclasses_debug > 0 then
       Feedback.msg_debug
@@ -1071,7 +1071,7 @@ module Search = struct
             try
               let evi = Evd.find_undefined sigma ev in
               if info.search_only_classes then
-                Some (ev, is_class_type sigma (Evd.evar_concl evi))
+                Some (ev, is_class_evar sigma evi)
               else Some (ev, true)
             with Not_found -> None
           in
@@ -1351,7 +1351,7 @@ let error_unresolvable env comp evd =
   | Some s -> Evar.Set.mem ev s
   in
   let fold ev evi (found, accu) =
-    let ev_class = class_of_constr evi.evar_concl in
+    let ev_class = class_of_constr evd (EConstr.of_constr evi.evar_concl) in
     if not (Option.is_empty ev_class) && is_part ev then
       (* focus on one instance if only one was searched for *)
       if not found then (true, Some ev)
@@ -1481,7 +1481,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
 
 let _ =
   Hook.set Typeclasses.solve_one_instance_hook
-    (fun x y z w -> resolve_one_typeclass x ~sigma:y z w)
+    (fun x y z w -> resolve_one_typeclass x ~sigma:y (EConstr.Unsafe.to_constr z) w)
 
 (** Take the head of the arity of a constr.
     Used in the partial application tactic. *)

@@ -584,7 +584,7 @@ let rec explain_evar_kind env sigma evk ty = function
       (pr_lconstr_env env sigma ty') (snd evi.evar_source)
 
 let explain_typeclass_resolution env sigma evi k =
-  match Typeclasses.class_of_constr evi.evar_concl with
+  match Typeclasses.class_of_constr sigma (EConstr.of_constr evi.evar_concl) with
   | Some _ ->
     let env = Evd.evar_filtered_env evi in
       fnl () ++ str "Could not find an instance for " ++
@@ -597,7 +597,7 @@ let explain_placeholder_kind env sigma c e =
   | Some (SeveralInstancesFound n) ->
       strbrk " (several distinct possible type class instances found)"
   | None ->
-      match Typeclasses.class_of_constr c with
+      match Typeclasses.class_of_constr sigma (EConstr.of_constr c) with
       | Some _ -> strbrk " (no type class instance found)"
       | _ -> mt ()
 
@@ -1012,6 +1012,7 @@ let explain_module_internalization_error = function
 (* Typeclass errors *)
 
 let explain_not_a_class env c =
+  let c = EConstr.to_constr Evd.empty c in
   pr_constr_env env Evd.empty c ++ str" is not a declared type class."
 
 let explain_unbound_method env cid id =

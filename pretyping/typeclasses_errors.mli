@@ -9,6 +9,7 @@
 open Loc
 open Names
 open Term
+open EConstr
 open Environ
 open Constrexpr
 open Globnames

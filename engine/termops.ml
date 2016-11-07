@@ -818,6 +818,15 @@ let is_section_variable id =
   try let _ = Global.lookup_named id in true
   with Not_found -> false
 
+let global_of_constr sigma c =
+  let open Globnames in
+  match EConstr.kind sigma c with
+  | Const (c, u) -> ConstRef c, u
+  | Ind (i, u) -> IndRef i, u
+  | Construct (c, u) -> ConstructRef c, u
+  | Var id -> VarRef id, Univ.Instance.empty
+  | _ -> raise Not_found
+
 let isGlobalRef sigma c =
   match EConstr.kind sigma c with
   | Const _ | Ind _ | Construct _ | Var _ -> true
