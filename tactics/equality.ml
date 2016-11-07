@@ -1163,7 +1163,8 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       let dflt_typ = unsafe_type_of env sigma dflt in
       try
 	let () = evdref := Evarconv.the_conv_x_leq env dflt_typ p_i !evdref in
-	let () = evdref := Evarconv.consider_remaining_unif_problems env !evdref in
+	let () =
+          evdref := Evarconv.solve_unif_constraints_with_heuristics env !evdref in
 	dflt
       with Evarconv.UnableToUnify _ ->
 	error "Cannot solve a unification problem."

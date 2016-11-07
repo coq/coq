@@ -1573,7 +1573,7 @@ let get_current_context_of_args = function
 let vernac_check_may_eval redexp glopt rc =
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr env sigma rc in
-  let sigma' = Evarconv.consider_remaining_unif_problems env sigma' in
+  let sigma' = Evarconv.solve_unif_constraints_with_heuristics env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
   let pl, uctx = Evd.universe_context sigma' in

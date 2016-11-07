@@ -1,4 +1,5 @@
 (* Set Printing Existential Instances. *)
+Unset Solve Unification Constraints.
 Axiom veeryyyyyyyyyyyyloooooooooooooonggidentifier : nat.
 Goal True /\ True /\ True \/
              veeryyyyyyyyyyyyloooooooooooooonggidentifier =

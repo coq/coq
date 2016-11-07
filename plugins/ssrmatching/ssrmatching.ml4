@@ -354,7 +354,7 @@ let nf_open_term sigma0 ise c =
   !s', Evd.evar_universe_context s, c'
 
 let unif_end env sigma0 ise0 pt ok =
-  let ise = Evarconv.consider_remaining_unif_problems env ise0 in
+  let ise = Evarconv.solve_unif_constraints_with_heuristics env ise0 in
   let s, uc, t = nf_open_term sigma0 ise pt in
   let ise1 = create_evar_defs s in
   let ise1 = Evd.set_universe_context ise1 uc in

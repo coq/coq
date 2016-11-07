@@ -13,6 +13,17 @@ open Entries
 open Environ
 open Evd
 
+let use_unification_heuristics_ref = ref true
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname = "Solve unification constraints at every \".\"";
+  Goptions.optkey = ["Solve";"Unification";"Constraints"];
+  Goptions.optread = (fun () -> !use_unification_heuristics_ref);
+  Goptions.optwrite = (fun a -> use_unification_heuristics_ref:=a);
+}
+
+let use_unification_heuristics () = !use_unification_heuristics_ref
+
 let refining = Proof_global.there_are_pending_proofs
 let check_no_pending_proofs = Proof_global.check_no_pending_proof
 
@@ -118,6 +129,11 @@ let solve ?with_end_tac gi info_lvl tac pr =
       | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l tac
       | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
       | Vernacexpr.SelectAll -> tac
+    in
+    let tac =
+      if use_unification_heuristics () then
+        Proofview.tclTHEN tac Refine.solve_constraints
+      else tac
     in
     let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac pr in
     let () =
