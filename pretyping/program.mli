@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
+open EConstr
 open Globnames
 
 (** A bunch of Coq constants used by Progam *)
@@ -36,7 +36,7 @@ val mk_coq_and : constr list -> constr
 val mk_coq_not : constr -> constr
 
 (** Polymorphic application of delayed references *)
-val papp : Evd.evar_map ref -> (unit -> global_reference) -> EConstr.constr array -> EConstr.constr
+val papp : Evd.evar_map ref -> (unit -> global_reference) -> constr array -> constr
 
 val get_proofs_transparency : unit -> bool
 val is_program_cases : unit -> bool

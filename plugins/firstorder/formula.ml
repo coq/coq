@@ -54,7 +54,7 @@ let construct_nhyps ind gls =
 let ind_hyps nevar ind largs gls=
   let types= Inductiveops.arities_of_constructors (pf_env gls) ind in
   let myhyps t =
-    let t1=prod_applist t largs in
+    let t1=Term.prod_applist t largs in
     let t2=snd (decompose_prod_n_assum nevar t1) in
       fst (decompose_prod_assum t2) in
     Array.map myhyps types

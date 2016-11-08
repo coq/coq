@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open EConstr
 open Evd
 open Environ
 open Inductiveops
@@ -50,8 +51,8 @@ val constr_of_pat :
            Glob_term.cases_pattern ->
            Names.Id.t list ->
            Glob_term.cases_pattern *
-           (Context.Rel.Declaration.t list * Term.constr *
-            (Term.types * Term.constr list) * Glob_term.cases_pattern) *
+           (Context.Rel.Declaration.t list * constr *
+            (types * constr list) * Glob_term.cases_pattern) *
            Names.Id.t list
 
 type 'a rhs =
@@ -117,7 +118,7 @@ val prepare_predicate :            Loc.t ->
             Environ.env -> Evd.evar_map ref -> 'a -> Environ.unsafe_judgment) ->
            Environ.env ->
            Evd.evar_map ->
-           (Term.types * tomatch_type) list ->
+           (types * tomatch_type) list ->
            Context.Rel.t list ->
-           Constr.constr option ->
-           'a option -> (Evd.evar_map * Names.name list * Term.constr) list
+           constr option ->
+           'a option -> (Evd.evar_map * Names.name list * constr) list

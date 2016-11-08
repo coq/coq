@@ -198,7 +198,7 @@ let build_id_coercion idf_opt source poly =
        lams
   in
   let typ_f =
-    it_mkProd_wo_LetIn
+    List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d)
       (mkProd (Anonymous, applistc vs (Context.Rel.to_extended_list 0 lams), lift 1 t))
       lams
   in

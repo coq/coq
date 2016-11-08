@@ -110,7 +110,7 @@ let match_with_one_constructor sigma style onlybinary allow_rec t =
 	    Some (hdapp,args)
 	  else None
 	else
-	  let ctyp = prod_applist mip.mind_nf_lc.(0) args in
+	  let ctyp = Term.prod_applist mip.mind_nf_lc.(0) args in
 	  let cargs = List.map RelDecl.get_type (prod_assum ctyp) in
 	  if not (is_lax_conjunction style) || has_nodep_prod sigma ctyp then
 	    (* Record or non strict conjunction *)
@@ -176,7 +176,7 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
 	    None
 	else
 	  let cargs =
-	    Array.map (fun ar -> pi2 (destProd (prod_applist ar args)))
+	    Array.map (fun ar -> pi2 (destProd (Term.prod_applist ar args)))
 	      mip.mind_nf_lc in
 	  Some (hdapp,Array.to_list cargs)
       else

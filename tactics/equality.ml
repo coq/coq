@@ -864,7 +864,7 @@ let descend_then env sigma head dirn =
         List.map build_branch
           (List.interval 1 (Array.length mip.mind_consnames)) in
       let ci = make_case_info env ind RegularStyle in
-      Inductiveops.make_case_or_project env indf ci p head (Array.of_list brl)))
+      EConstr.Unsafe.to_constr (Inductiveops.make_case_or_project env sigma indf ci (EConstr.of_constr p) (EConstr.of_constr head) (Array.map_of_list EConstr.of_constr brl))))
 
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:

@@ -1150,7 +1150,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	    let info_array =
 	      Array.mapi
 		(fun i types ->
-		   let types = prod_applist types (List.rev_map var_of_decl princ_params) in
+		   let types = Term.prod_applist types (List.rev_map var_of_decl princ_params) in
 		   { idx = idxs.(i)  - fix_offset;
 		     name = Nameops.out_name (fresh_id names.(i));
 		     types = types;

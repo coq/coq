@@ -382,9 +382,10 @@ let mis_make_indrec env sigma listdepkind mib u =
 		  arsign'
 	      in
 	      let obj =
-		Inductiveops.make_case_or_project env indf ci pred
-						  (mkRel 1) branches
+		Inductiveops.make_case_or_project env !evdref indf ci (EConstr.of_constr pred)
+						  (EConstr.mkRel 1) (Array.map EConstr.of_constr branches)
 	      in
+	      let obj = EConstr.to_constr !evdref obj in
 		it_mkLambda_or_LetIn_name env obj
 		  (Termops.lift_rel_context nrec deparsign)
 	    in

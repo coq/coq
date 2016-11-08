@@ -488,7 +488,7 @@ let build_combined_scheme env schemes =
   let ctx, _ =
     list_split_rev_at prods
       (List.rev_map (fun (x, y) -> LocalAssum (x, y)) ctx) in
-  let typ = it_mkProd_wo_LetIn concl_typ ctx in
+  let typ = List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d) concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
   (body, typ)
 

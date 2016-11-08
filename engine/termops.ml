@@ -207,10 +207,11 @@ let mkProd_or_LetIn decl c =
 
 (* Constructs either [forall x:t, c] or [c] in which [x] is replaced by [b] *)
 let mkProd_wo_LetIn decl c =
+  let open EConstr in
   let open RelDecl in
   match decl with
-    | LocalAssum (na,t) -> mkProd (na, t, c)
-    | LocalDef (_,b,_) -> subst1 b c
+    | LocalAssum (na,t) -> mkProd (na, EConstr.of_constr t, c)
+    | LocalDef (_,b,_) -> Vars.subst1 (EConstr.of_constr b) c
 
 let it_mkProd init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
 let it_mkLambda init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
@@ -1098,6 +1099,15 @@ let global_app_of_constr sigma c =
   | Var id -> (VarRef id, Instance.empty), None
   | Proj (p, c) -> (ConstRef (Projection.constant p), Instance.empty), Some c
   | _ -> raise Not_found
+
+let prod_applist sigma c l =
+  let open EConstr in
+  let rec app subst c l =
+    match EConstr.kind sigma c, l with
+    | Prod(_,_,c), arg::l -> app (arg::subst) c l
+    | _, [] -> Vars.substl subst c
+    | _ -> anomaly (Pp.str "Not enough prod's") in
+  app [] c l
 
 (* Combinators on judgments *)
 

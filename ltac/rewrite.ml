@@ -344,7 +344,7 @@ end) = struct
 	      Some (evars, found, c, ty, arg :: args)
 	with Not_found ->
 	  let ty = whd_all env ty in
-	  find env (mkApp (c, [| arg |])) (prod_applist ty [arg]) args
+	  find env (mkApp (c, [| arg |])) (Term.prod_applist ty [arg]) args
     in find env c ty args
 
   let unlift_cstr env sigma = function

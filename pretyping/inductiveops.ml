@@ -343,24 +343,25 @@ let get_projections env (ind,params) =
     | Some (Some (id, projs, pbs)) -> Some projs
     | _ -> None
 
-let make_case_or_project env indf ci pred c branches =
+let make_case_or_project env sigma indf ci pred c branches =
+  let open EConstr in
   let projs = get_projections env indf in
   match projs with
   | None -> (mkCase (ci, pred, c, branches))
   | Some ps ->
      assert(Array.length branches == 1);
      let () =
-       let _, _, t = destLambda pred in
+       let _, _, t = destLambda sigma pred in
        let (ind, _), _ = dest_ind_family indf in
        let mib, _ = Inductive.lookup_mind_specif env ind in
-       if (* dependent *) not (noccurn 1 t) &&
+       if (* dependent *) not (Vars.noccurn sigma 1 t) &&
           not (has_dependent_elim mib) then
        user_err ~hdr:"make_case_or_project"
 		    Pp.(str"Dependent case analysis not allowed" ++
 		     str" on inductive type " ++ Names.MutInd.print (fst ind))
      in
      let branch = branches.(0) in
-     let ctx, br = decompose_lam_n_assum (Array.length ps) branch in
+     let ctx, br = decompose_lam_n_assum sigma (Array.length ps) branch in
      let n, subst =
        List.fold_right
          (fun decl (i, subst) ->
@@ -368,9 +369,9 @@ let make_case_or_project env indf ci pred c branches =
 	  | LocalAssum (na, t) ->
 	     let t = mkProj (Projection.make ps.(i) true, c) in
 	     (i + 1, t :: subst)
-	  | LocalDef (na, b, t) -> (i, substl subst b :: subst))
+	  | LocalDef (na, b, t) -> (i, Vars.substl subst (EConstr.of_constr b) :: subst))
 	 ctx (0, [])
-     in substl subst br
+     in Vars.substl subst br
 
 (* substitution in a signature *)
 

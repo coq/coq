@@ -1202,6 +1202,7 @@ let explain_recursion_scheme_error = function
 (* Pattern-matching errors *)
 
 let explain_bad_pattern env sigma cstr ty =
+  let ty = EConstr.to_constr sigma ty in
   let env = make_all_name_different env in
   let pt = pr_lconstr_env env sigma ty in
   let pc = pr_constructor env cstr in
@@ -1245,13 +1246,15 @@ let explain_non_exhaustive env pats =
   spc () ++ hov 0 (prlist_with_sep pr_comma pr_cases_pattern pats)
 
 let explain_cannot_infer_predicate env sigma typs =
+  let inj c = EConstr.to_constr sigma c in
+  let typs = Array.map_to_list (fun (c1, c2) -> (inj c1, inj c2)) typs in
   let env = make_all_name_different env in
   let pr_branch (cstr,typ) =
     let cstr,_ = decompose_app cstr in
     str "For " ++ pr_lconstr_env env sigma cstr ++ str ": " ++ pr_lconstr_env env sigma typ
   in
   str "Unable to unify the types found in the branches:" ++
-  spc () ++ hov 0 (prlist_with_sep fnl pr_branch (Array.to_list typs))
+  spc () ++ hov 0 (prlist_with_sep fnl pr_branch typs)
 
 let explain_pattern_matching_error env sigma = function
   | BadPattern (c,t) ->

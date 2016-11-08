@@ -45,11 +45,11 @@ val rel_list : int -> int -> constr list
 
 (** iterators/destructors on terms *)
 val mkProd_or_LetIn : Context.Rel.Declaration.t -> types -> types
-val mkProd_wo_LetIn : Context.Rel.Declaration.t -> types -> types
+val mkProd_wo_LetIn : Context.Rel.Declaration.t -> EConstr.types -> EConstr.types
 val it_mkProd : types -> (Name.t * types) list -> types
 val it_mkLambda : constr -> (Name.t * types) list -> constr
 val it_mkProd_or_LetIn : types -> Context.Rel.t -> types
-val it_mkProd_wo_LetIn : types -> Context.Rel.t -> types
+val it_mkProd_wo_LetIn : EConstr.types -> Context.Rel.t -> EConstr.types
 val it_mkLambda_or_LetIn : constr -> Context.Rel.t -> constr
 val it_mkNamedProd_or_LetIn : types -> Context.Named.t -> types
 val it_mkNamedProd_wo_LetIn : types -> Context.Named.t -> types
@@ -169,6 +169,8 @@ val eta_reduce_head : constr -> constr
 
 (** Flattens application lists *)
 val collapse_appl : Evd.evar_map -> EConstr.t -> constr
+
+val prod_applist : Evd.evar_map -> EConstr.t -> EConstr.t list -> EConstr.t
 
 (** Remove recursively the casts around a term i.e.
    [strip_outer_cast (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
