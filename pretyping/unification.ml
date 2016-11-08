@@ -167,6 +167,7 @@ let pose_all_metas_as_evars env evd t =
         let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
         let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
         let src = Evd.evar_source_of_meta mv !evdref in
+        let ty = EConstr.of_constr ty in
         let ev = Evarutil.e_new_evar env evdref ~src ty in
         evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
         ev)
@@ -608,7 +609,7 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst) tyM tyN =
   | None -> sigma
   | Some n ->
     if is_ground_term sigma (EConstr.of_constr m) && is_ground_term sigma (EConstr.of_constr n) then
-      let sigma, b = infer_conv ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n in
+      let sigma, b = infer_conv ~pb:pbty ~ts:flags.modulo_delta_types env sigma (EConstr.of_constr m) (EConstr.of_constr n) in
 	if b then sigma
 	else error_cannot_unify env sigma (m,n)
     else sigma
@@ -961,10 +962,11 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	       (* Renounce, maybe metas/evars prevents typing *) sigma
 	   else sigma
 	 in 
+	 let m1 = EConstr.of_constr m1 and n1 = EConstr.of_constr n1 in
 	 let sigma, b = infer_conv ~pb ~ts:convflags curenv sigma m1 n1 in
 	    if b then Some (sigma, metasubst, evarsubst)
 	    else 
-	      if is_ground_term sigma (EConstr.of_constr m1) && is_ground_term sigma (EConstr.of_constr n1) then
+	      if is_ground_term sigma m1 && is_ground_term sigma n1 then
 		error_cannot_unify curenv sigma (cM,cN)
 	      else None
     in
@@ -1071,7 +1073,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
       None
     else 
       let sigma, b = match flags.modulo_conv_on_closed_terms with
-	| Some convflags -> infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
+	| Some convflags -> infer_conv ~pb:cv_pb ~ts:convflags env sigma (EConstr.of_constr m) (EConstr.of_constr n)
 	| _ -> constr_cmp cv_pb sigma flags m n in
 	if b then Some sigma
 	else if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
@@ -1210,7 +1212,7 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
     else
       match kind_of_term (whd_all env (Sigma.to_evar_map evd) (EConstr.of_constr cty)) with
       | Prod (_,c1,c2) ->
-        let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) c1 in
+        let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) (EConstr.of_constr c1) in
 	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
       | _ -> error "Apply_Head_Then"
   in
@@ -1570,7 +1572,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   let merge_fun c1 c2 =
     match c1, c2 with
     | Some (evd,c1,x), Some (_,c2,_) ->
-      let (evd,b) = infer_conv ~pb:CONV env evd (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
+      let (evd,b) = infer_conv ~pb:CONV env evd c1 c2 in
       if b then Some (evd, c1, x) else raise (NotUnifiable None)
     | Some _, None -> c1
     | None, Some _ -> c2
@@ -1883,7 +1885,7 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
   let (evd',cllist) = w_unify_to_subterm_list env evd flags p oplist typ in
   let typp = Typing.meta_type evd' p in
   let evd',(pred,predtyp) = abstract_list_all env evd' typp typ cllist in
-  let evd', b = infer_conv ~pb:CUMUL env evd' predtyp typp in
+  let evd', b = infer_conv ~pb:CUMUL env evd' (EConstr.of_constr predtyp) (EConstr.of_constr typp) in
   if not b then
     error_wrong_abstraction_type env evd'
       (Evd.meta_name evd p) pred typp predtyp;
@@ -1900,7 +1902,7 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
 
 let secondOrderDependentAbstraction env evd flags typ (p, oplist) =
   let typp = Typing.meta_type evd p in
-  let evd, pred = abstract_list_all_with_dependencies env evd typp typ (List.map EConstr.of_constr oplist) in
+  let evd, pred = abstract_list_all_with_dependencies env evd (EConstr.of_constr typp) typ (List.map EConstr.of_constr oplist) in
   w_merge env false flags.merge_unify_flags
     (evd,[p,pred,(Conv,TypeProcessed)],[])
 

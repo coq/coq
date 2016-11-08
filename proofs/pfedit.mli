@@ -190,4 +190,4 @@ val declare_implicit_tactic : unit Proofview.tactic -> unit
 val clear_implicit_tactic : unit -> unit
 
 (* Raise Exit if cannot solve *)
-val solve_by_implicit_tactic : env -> Evd.evar_map -> Evd.evar -> Evd.evar_map * constr
+val solve_by_implicit_tactic : env -> Evd.evar_map -> Evd.evar -> Evd.evar_map * EConstr.constr

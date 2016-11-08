@@ -193,7 +193,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
 	    nf t
 	in
-	Pretyping.check_evars env Evd.empty !evars termtype;
+	Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
 	let pl, ctx = Evd.universe_context ?names:pl !evars in
 	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
 	  (ParameterEntry 
@@ -289,7 +289,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
       let evm, nf = Evarutil.nf_evar_map_universes !evars in
       let termtype = nf termtype in
       let _ = (* Check that the type is free of evars now. *)
-	Pretyping.check_evars env Evd.empty evm termtype
+	Pretyping.check_evars env Evd.empty evm (EConstr.of_constr termtype)
       in
       let term = Option.map nf term in
 	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
@@ -363,7 +363,7 @@ let context poly l =
   let _, ((env', fullctx), impls) = interp_context_evars env evars l in
   let subst = Evarutil.evd_comb0 Evarutil.nf_evars_and_universes evars in
   let fullctx = Context.Rel.map subst fullctx in
-  let ce t = Pretyping.check_evars env Evd.empty !evars t in
+  let ce t = Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr t) in
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) fullctx in
   let ctx =
     try named_of_rel_context fullctx

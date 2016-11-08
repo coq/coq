@@ -1176,7 +1176,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       let (a,p_i_minus_1) = match whd_beta_stack !evdref (EConstr.of_constr p_i) with
 	| (_sigS,[a;p]) -> (EConstr.Unsafe.to_constr a, EConstr.Unsafe.to_constr p)
  	| _ -> anomaly ~label:"sig_clausal_form" (Pp.str "should be a sigma type") in
-      let ev = Evarutil.e_new_evar env evdref a in
+      let ev = Evarutil.e_new_evar env evdref (EConstr.of_constr a) in
       let rty = beta_applist sigma (EConstr.of_constr p_i_minus_1,[EConstr.of_constr ev]) in
       let tuple_tail = sigrec_clausal_form (siglen-1) rty in
       match

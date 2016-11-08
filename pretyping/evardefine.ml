@@ -39,9 +39,9 @@ let env_nf_betaiotaevar sigma env =
 (* Operations on value/type constraints *)
 (****************************************)
 
-type type_constraint = types option
+type type_constraint = EConstr.types option
 
-type val_constraint = constr option
+type val_constraint = EConstr.constr option
 
 (* Old comment...
  * Basically, we have the following kind of constraints (in increasing
@@ -61,13 +61,13 @@ type val_constraint = constr option
 let empty_tycon = None
 
 (* Builds a type constraint *)
-let mk_tycon ty = Some (EConstr.Unsafe.to_constr ty)
+let mk_tycon ty = Some ty
 
 (* Constrains the value of a type *)
 let empty_valcon = None
 
 (* Builds a value constraint *)
-let mk_valcon c = Some (EConstr.Unsafe.to_constr c)
+let mk_valcon c = Some c
 
 let idx = Namegen.default_dependent_ident
 
@@ -80,7 +80,8 @@ let define_pure_evar_as_product evd evk =
   let evenv = evar_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
   let concl = Reductionops.whd_all evenv evd (EConstr.of_constr evi.evar_concl) in
-  let s = destSort evd (EConstr.of_constr concl) in
+  let concl = EConstr.of_constr concl in
+  let s = destSort evd concl in
   let evd1,(dom,u1) =
     let evd = Sigma.Unsafe.of_evar_map evd in
     let Sigma (e, evd1, _) = new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi) in
@@ -146,7 +147,7 @@ let define_pure_evar_as_lambda env evd evk =
   let newenv = push_named (LocalAssum (id, dom)) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
-  let evd2,body = new_evar_unsafe newenv evd1 ~src (EConstr.Unsafe.to_constr (Vars.subst1 (mkVar id) rng)) ~filter in
+  let evd2,body = new_evar_unsafe newenv evd1 ~src (Vars.subst1 (mkVar id) rng) ~filter in
   let lam = mkLambda (Name id, EConstr.of_constr dom, Vars.subst_var id (EConstr.of_constr body)) in
   Evd.define evk (EConstr.Unsafe.to_constr lam) evd2, lam
 
@@ -203,12 +204,12 @@ let split_tycon loc env evd tycon =
     match tycon with
       | None -> evd,(Anonymous,None,None)
       | Some c ->
-	  let evd', (n, dom, rng) = real_split evd (EConstr.of_constr c) in
+	  let evd', (n, dom, rng) = real_split evd c in
 	    evd', (n, mk_tycon dom, mk_tycon rng)
 
 let valcon_of_tycon x = x
-let lift_tycon n = Option.map (lift n)
+let lift_tycon n = Option.map (EConstr.Vars.lift n)
 
 let pr_tycon env = function
     None -> str "None"
-  | Some t -> Termops.print_constr_env env t
+  | Some t -> Termops.print_constr_env env (EConstr.Unsafe.to_constr t)

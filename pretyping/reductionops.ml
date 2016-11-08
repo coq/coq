@@ -1317,6 +1317,8 @@ let sigma_univ_state =
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =
+  let x = EConstr.Unsafe.to_constr x in
+  let y = EConstr.Unsafe.to_constr y in
   try
     let fold cstr sigma =
       try Some (Evd.add_universe_constraints sigma cstr)

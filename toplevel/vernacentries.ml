@@ -462,7 +462,7 @@ let start_proof_and_print k l hook =
           let c, _, ctx =
             Pfedit.build_by_tactic env (Evd.evar_universe_context sigma)
                                    concl (Tacticals.New.tclCOMPLETE tac)
-          in Evd.set_universe_context sigma ctx, c
+          in Evd.set_universe_context sigma ctx, EConstr.of_constr c
         with Logic_monad.TacticFailure e when Logic.catchable_exception e ->
           error "The statement obligations could not be resolved \
                  automatically, write a statement definition first."

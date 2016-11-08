@@ -85,7 +85,7 @@ let let_evar name typ =
       Namegen.next_ident_away_in_goal id (Termops.ids_of_named_context (Environ.named_context env))
     | Names.Name id -> id
     in
-    let Sigma (evar, sigma, p) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
+    let Sigma (evar, sigma, p) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) (EConstr.of_constr typ) in
     let tac =
       (Tactics.letin_tac None (Names.Name id) evar None Locusops.nowhere)
     in

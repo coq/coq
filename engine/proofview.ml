@@ -71,7 +71,7 @@ let dependent_init =
   | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }
   | TCons (env, sigma, typ, t) ->
     let sigma = Sigma.Unsafe.of_evar_map sigma in
-    let Sigma (econstr, sigma, _) = Evarutil.new_evar env sigma ~src ~store typ in
+    let Sigma (econstr, sigma, _) = Evarutil.new_evar env sigma ~src ~store (EConstr.of_constr typ) in
     let sigma = Sigma.to_evar_map sigma in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let (gl, _) = Term.destEvar econstr in

@@ -338,7 +338,7 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
       let e =
 	try
 	  let evd, b = infer_conv ~catch_incon:false ~pb:pbty ~ts:(fst ts)
-	    env evd (EConstr.Unsafe.to_constr term1) (EConstr.Unsafe.to_constr term2)
+	    env evd term1 term2
 	  in
 	    if b then Success evd
 	    else UnifFailure (evd, ConversionFailed (env,term1,term2))
@@ -891,7 +891,7 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
 	  else
 	    let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
 	    let i = Sigma.Unsafe.of_evar_map i in
-            let Sigma (ev, i', _) = Evarutil.new_evar env i ~src:dloc (EConstr.Unsafe.to_constr (Vars.substl ks b)) in
+            let Sigma (ev, i', _) = Evarutil.new_evar env i ~src:dloc (Vars.substl ks b) in
             let i' = Sigma.to_evar_map i' in
 	    (i', EConstr.of_constr ev :: ks, m - 1,test))
 	(evd,[],List.length bs,fun i -> Success i) bs
@@ -1075,7 +1075,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
         let evty = set_holes evdref cty subst in
         let instance = List.map EConstr.Unsafe.to_constr (Filter.filter_list filter instance) in
         let evd = Sigma.Unsafe.of_evar_map !evdref in
-        let Sigma (ev, evd, _) = new_evar_instance sign evd (EConstr.Unsafe.to_constr evty) ~filter instance in
+        let Sigma (ev, evd, _) = new_evar_instance sign evd evty ~filter instance in
         let evd = Sigma.to_evar_map evd in
         evdref := evd;
         evsref := (fst (destEvar !evdref (EConstr.of_constr ev)),evty)::!evsref;

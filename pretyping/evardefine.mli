@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open EConstr
 open Evd
 open Environ
 
@@ -18,16 +19,16 @@ type type_constraint = types option
 type val_constraint = constr option
 
 val empty_tycon : type_constraint
-val mk_tycon : EConstr.constr -> type_constraint
+val mk_tycon : constr -> type_constraint
 val empty_valcon : val_constraint
-val mk_valcon : EConstr.constr -> val_constraint
+val mk_valcon : constr -> val_constraint
 
 (** Instantiate an evar by as many lambda's as needed so that its arguments
     are moved to the evar substitution (i.e. turn [?x[vars1:=args1] args] into
     [?y[vars1:=args1,vars:=args]] with
     [vars1 |- ?x:=\vars.?y[vars1:=vars1,vars:=vars]] *)
-val evar_absorb_arguments : env -> evar_map -> EConstr.existential -> EConstr.constr list ->
-  evar_map * EConstr.existential
+val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
+  evar_map * existential
 
 val split_tycon :
   Loc.t -> env ->  evar_map -> type_constraint ->
@@ -36,9 +37,9 @@ val split_tycon :
 val valcon_of_tycon : type_constraint -> val_constraint
 val lift_tycon : int -> type_constraint -> type_constraint
 
-val define_evar_as_product : evar_map -> EConstr.existential -> evar_map * EConstr.types
-val define_evar_as_lambda : env -> evar_map -> EConstr.existential -> evar_map * EConstr.types
-val define_evar_as_sort : env -> evar_map -> EConstr.existential -> evar_map * sorts
+val define_evar_as_product : evar_map -> existential -> evar_map * types
+val define_evar_as_lambda : env -> evar_map -> existential -> evar_map * types
+val define_evar_as_sort : env -> evar_map -> existential -> evar_map * sorts
 
 (** {6 debug pretty-printer:} *)
 

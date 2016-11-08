@@ -163,7 +163,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
   let evars, nf = Evarutil.nf_evars_and_universes evars in
   let newps = Context.Rel.map nf newps in
   let newfs = Context.Rel.map nf newfs in
-  let ce t = Pretyping.check_evars env0 Evd.empty evars t in
+  let ce t = Pretyping.check_evars env0 Evd.empty evars (EConstr.of_constr t) in
     List.iter (iter_constr ce) (List.rev newps);
     List.iter (iter_constr ce) (List.rev newfs);
     Evd.universe_context ?names:pl evars, nf arity, template, imps, newps, impls, newfs
@@ -364,13 +364,13 @@ let structure_signature ctx =
       | [decl] ->
         let env = Environ.empty_named_context_val in
         let evm = Sigma.Unsafe.of_evar_map evm in
-        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm (RelDecl.get_type decl) in
+        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm (EConstr.of_constr (RelDecl.get_type decl)) in
         let evm = Sigma.to_evar_map evm in
         evm
       | decl::tl ->
           let env = Environ.empty_named_context_val in
           let evm = Sigma.Unsafe.of_evar_map evm in
-          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm (RelDecl.get_type decl) in
+          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm (EConstr.of_constr (RelDecl.get_type decl)) in
           let evm = Sigma.to_evar_map evm in
 	  let new_tl = Util.List.map_i
 	    (fun pos decl ->

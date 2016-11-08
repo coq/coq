@@ -1458,7 +1458,7 @@ let _ =
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
   let nc, gl, subst, _, _ = Evarutil.push_rel_context_to_named_context env gl in
   let (gl,t,sigma) =
-    Goal.V82.mk_goal sigma nc gl Store.empty in
+    Goal.V82.mk_goal sigma nc (EConstr.Unsafe.to_constr gl) Store.empty in
   let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in
   let st = Hint_db.transparent_state hints in
@@ -1481,7 +1481,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
 
 let _ =
   Hook.set Typeclasses.solve_one_instance_hook
-    (fun x y z w -> resolve_one_typeclass x ~sigma:y (EConstr.Unsafe.to_constr z) w)
+    (fun x y z w -> resolve_one_typeclass x ~sigma:y z w)
 
 (** Take the head of the arity of a constr.
     Used in the partial application tactic. *)

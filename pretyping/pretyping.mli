@@ -25,7 +25,7 @@ open Misctypes
 val search_guard :
   Loc.t -> env -> int list list -> rec_declaration -> int array
 
-type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
+type typing_constraint = OfType of EConstr.types | IsType | WithoutTypeConstraint
 
 type var_map = Pattern.constr_under_binders Id.Map.t
 type uconstr_var_map = Glob_term.closed_glob_constr Id.Map.t
@@ -47,7 +47,7 @@ val empty_lvar : ltac_var_map
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
 
-type inference_hook = env -> evar_map -> evar -> evar_map * constr
+type inference_hook = env -> evar_map -> evar -> evar_map * EConstr.constr
 
 type inference_flags = {
   use_typeclasses : bool;
@@ -139,7 +139,7 @@ val check_evars_are_solved :
 
 (** [check_evars env initial_sigma extended_sigma c] fails if some
    new unresolved evar remains in [c] *)
-val check_evars : env -> evar_map -> evar_map -> constr -> unit
+val check_evars : env -> evar_map -> evar_map -> EConstr.constr -> unit
 
 (**/**)
 (** Internal of Pretyping... *)
@@ -153,7 +153,7 @@ val pretype_type :
 
 val ise_pretype_gen :
   inference_flags -> env -> evar_map ->
-  ltac_var_map -> typing_constraint -> glob_constr -> evar_map * constr
+  ltac_var_map -> typing_constraint -> glob_constr -> evar_map * EConstr.constr
 
 (**/**)
 

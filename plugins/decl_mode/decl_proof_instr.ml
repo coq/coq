@@ -1330,7 +1330,7 @@ let understand_my_constr env sigma c concl =
     | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand,Misctypes.IntroAnonymous,None)
     | rc ->  map_glob_constr frob rc
   in
-  Pretyping.understand_tcc env sigma ~expected_type:(Pretyping.OfType concl) (frob rawc)
+  Pretyping.understand_tcc env sigma ~expected_type:(Pretyping.OfType (EConstr.of_constr concl)) (frob rawc)
 
 let my_refine c gls =
   let oc = { run = begin fun sigma ->

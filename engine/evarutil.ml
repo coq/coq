@@ -278,17 +278,20 @@ let make_pure_subst evi args =
  *)
 
 let csubst_subst (k, s) c =
+  (** Safe because this is a substitution *)
+  let c = EConstr.Unsafe.to_constr c in
   let rec subst n c = match Constr.kind c with
   | Rel m ->
     if m <= n then c
-    else if m - n <= k then Int.Map.find (k - m + n) s
+    else if m - n <= k then EConstr.Unsafe.to_constr (Int.Map.find (k - m + n) s)
     else mkRel (m - k)
   | _ -> Constr.map_with_binders succ subst n c
   in
-  if k = 0 then c else subst 0 c
+  let c = if k = 0 then c else subst 0 c in
+  EConstr.of_constr c
 
 let subst2 subst vsubst c =
-  csubst_subst subst (replace_vars vsubst c)
+  csubst_subst subst (EConstr.Vars.replace_vars vsubst c)
 
 let next_ident_away id avoid =
   let avoid id = Id.Set.mem id avoid in
@@ -299,24 +302,29 @@ let next_name_away na avoid =
   let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
   next_ident_away_from id avoid
 
-type csubst = int * Constr.t Int.Map.t
+type csubst = int * EConstr.t Int.Map.t
 
 let empty_csubst = (0, Int.Map.empty)
 
 type ext_named_context =
-  csubst * (Id.t * Constr.constr) list *
+  csubst * (Id.t * EConstr.constr) list *
   Id.Set.t * Context.Named.t
 
 let push_var id (n, s) =
-  let s = Int.Map.add n (mkVar id) s in
+  let s = Int.Map.add n (EConstr.mkVar id) s in
   (succ n, s)
 
 let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
+  let open EConstr in
+  let open Vars in
+  let map_decl f d =
+    NamedDecl.map_constr (fun c -> EConstr.Unsafe.to_constr (f (EConstr.of_constr c))) d
+  in
   let replace_var_named_declaration id0 id decl =
     let id' = NamedDecl.get_id decl in
     let id' = if Id.equal id0 id' then id else id' in
     let vsubst = [id0 , mkVar id] in
-    decl |> NamedDecl.set_id id' |> NamedDecl.map_constr (replace_vars vsubst)
+    decl |> NamedDecl.set_id id' |> map_decl (replace_vars vsubst)
   in
   let extract_if_neq id = function
     | Anonymous -> None
@@ -344,7 +352,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
           context. Unless [id] is a section variable. *)
       let subst = (fst subst, Int.Map.map (replace_vars [id0,mkVar id]) (snd subst)) in
       let vsubst = (id0,mkVar id)::vsubst in
-      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> NamedDecl.map_constr (subst2 subst vsubst) in
+      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (subst2 subst vsubst) in
       let nc = List.map (replace_var_named_declaration id0 id) nc in
       (push_var id0 subst, vsubst, Id.Set.add id avoid, d :: nc)
   | _ ->
@@ -352,7 +360,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
           incorrect. We revert to a less robust behaviour where
           the new binder has name [id]. Which amounts to the same
           behaviour than when [id=id0]. *)
-      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> NamedDecl.map_constr (subst2 subst vsubst) in
+      let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (subst2 subst vsubst) in
       (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc)
 
 let push_rel_context_to_named_context env typ =
@@ -391,6 +399,7 @@ let new_pure_evar_full evd evi =
   Sigma.Unsafe.of_pair (evk, evd)
 
 let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) typ =
+  let typ = EConstr.Unsafe.to_constr typ in
   let evd = Sigma.to_evar_map evd in
   let default_naming = Misctypes.IntroAnonymous in
   let naming = Option.default default_naming naming in
@@ -420,7 +429,8 @@ let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?prin
 (* Converting the env into the sign of the evar to define *)
 let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
   let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env typ in
-  let candidates = Option.map (List.map (subst2 subst vsubst)) candidates in
+  let map c = EConstr.Unsafe.to_constr (subst2 subst vsubst (EConstr.of_constr c)) in
+  let candidates = Option.map (fun l -> List.map map l) candidates in
   let instance =
     match filter with
     | None -> instance
@@ -434,7 +444,7 @@ let new_evar_unsafe env evd ?src ?filter ?candidates ?store ?naming ?principal t
 
 let new_type_evar env evd ?src ?filter ?naming ?principal rigid =
   let Sigma (s, evd', p) = Sigma.new_sort_variable rigid evd in
-  let Sigma (e, evd', q) = new_evar env evd' ?src ?filter ?naming ?principal (mkSort s) in
+  let Sigma (e, evd', q) = new_evar env evd' ?src ?filter ?naming ?principal (EConstr.mkSort s) in
   Sigma ((e, s), evd', p +> q)
 
 let e_new_type_evar env evdref ?src ?filter ?naming ?principal rigid =
@@ -753,5 +763,5 @@ let eq_constr_univs_test sigma1 sigma2 t u =
   in
   match ans with None -> false | Some _ -> true
 
-type type_constraint = types option
-type val_constraint = constr option
+type type_constraint = EConstr.types option
+type val_constraint = EConstr.constr option

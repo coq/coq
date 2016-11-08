@@ -236,6 +236,6 @@ let solve_by_implicit_tactic env sigma evk =
         let (ans, _, ctx) =
 	  build_by_tactic env (Evd.evar_universe_context sigma) c tac in
         let sigma = Evd.set_universe_context sigma ctx in
-        sigma, ans
+        sigma, EConstr.of_constr ans
        with e when Logic.catchable_exception e -> raise Exit)
   | _ -> raise Exit

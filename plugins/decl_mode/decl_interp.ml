@@ -173,7 +173,7 @@ let get_eq_typ info env =
     typ
 
 let interp_constr_in_type typ env sigma c =
-  fst (understand env sigma (fst c) ~expected_type:(OfType typ))(*FIXME*)
+  fst (understand env sigma (fst c) ~expected_type:(OfType (EConstr.of_constr typ)))(*FIXME*)
 
 let interp_statement interp_it env sigma st =
   {st_label=st.st_label;

@@ -606,7 +606,7 @@ let make_projectable_subst aliases sigma evi args =
 let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_sign sign filter inst_in_env =
   let open EConstr in
   let evd = Sigma.Unsafe.of_evar_map evd in
-  let Sigma (evar_in_env, evd, _) = new_evar_instance sign evd ty_t_in_sign ~filter ~src (List.map EConstr.Unsafe.to_constr inst_in_env) in
+  let Sigma (evar_in_env, evd, _) = new_evar_instance sign evd (EConstr.of_constr ty_t_in_sign) ~filter ~src (List.map EConstr.Unsafe.to_constr inst_in_env) in
   let evd = Sigma.to_evar_map evd in
   let t_in_env = EConstr.of_constr (whd_evar evd (EConstr.Unsafe.to_constr t_in_env)) in
   let evar_in_env = EConstr.of_constr evar_in_env in
@@ -682,6 +682,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
     define_evar_from_virtual_equation define_fun env evd src ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
   let evd = Sigma.Unsafe.of_evar_map evd in
+  let ev2ty_in_sign = EConstr.of_constr ev2ty_in_sign in
   let Sigma (ev2_in_sign, evd, _) =
     new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 ~src (List.map EConstr.Unsafe.to_constr inst2_in_sign) in
   let evd = Sigma.to_evar_map evd in

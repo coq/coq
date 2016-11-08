@@ -51,7 +51,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
       Pretyping.fail_evar = false;
       Pretyping.expand_evars = true } in
     try Pretyping.understand_ltac flags
-      env sigma ltac_var (Pretyping.OfType evi.evar_concl) rawc
+      env sigma ltac_var (Pretyping.OfType (EConstr.of_constr evi.evar_concl)) rawc
     with e when CErrors.noncritical e ->
       let loc = Glob_ops.loc_of_glob_constr rawc in
       user_err ~loc 

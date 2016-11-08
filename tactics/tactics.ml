@@ -176,7 +176,7 @@ let unsafe_intro env store decl b =
     let inst = List.map (NamedDecl.get_id %> mkVar) (named_context env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
-    let Sigma (ev, sigma, p) = new_evar_instance nctx sigma nb ~principal:true ~store ninst in
+    let Sigma (ev, sigma, p) = new_evar_instance nctx sigma (EConstr.of_constr nb) ~principal:true ~store ninst in
     Sigma (mkNamedLambda_or_LetIn decl ev, sigma, p)
   end }
 
@@ -206,12 +206,13 @@ let convert_concl ?(check=true) ty k =
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
     let conclty = Proofview.Goal.raw_concl gl in
+    let ty = EConstr.of_constr ty in
     Refine.refine ~unsafe:true { run = begin fun sigma ->
       let Sigma ((), sigma, p) =
         if check then begin
           let sigma = Sigma.to_evar_map sigma in
-          ignore (Typing.unsafe_type_of env sigma (EConstr.of_constr ty));
-          let sigma,b = Reductionops.infer_conv env sigma ty conclty in
+          ignore (Typing.unsafe_type_of env sigma ty);
+          let sigma,b = Reductionops.infer_conv env sigma ty (EConstr.of_constr conclty) in
           if not b then error "Not convertible.";
           Sigma.Unsafe.of_pair ((), sigma)
         end else Sigma.here () sigma in
@@ -230,7 +231,7 @@ let convert_hyp ?(check=true) d =
     let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
     Refine.refine ~unsafe:true { run = begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true ~store ty
+      Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr ty)
     end }
   end }
 
@@ -248,8 +249,8 @@ let convert_gen pb x y =
       Tacticals.New.tclFAIL 0 (str "Not convertible")
 end }
 
-let convert x y = convert_gen Reduction.CONV x y
-let convert_leq x y = convert_gen Reduction.CUMUL x y
+let convert x y = convert_gen Reduction.CONV (EConstr.of_constr x) (EConstr.of_constr y)
+let convert_leq x y = convert_gen Reduction.CUMUL (EConstr.of_constr x) (EConstr.of_constr y)
 
 let clear_dependency_msg env sigma id = function
   | Evarutil.OccurHypInSimpleClause None ->
@@ -300,7 +301,7 @@ let clear_gen fail = function
     in
     let env = reset_with_named_context hyps env in
     let tac = Refine.refine ~unsafe:true { run = fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true concl
+      Evarutil.new_evar env sigma ~principal:true (EConstr.of_constr concl)
     } in
     Sigma.Unsafe.of_pair (tac, !evdref)
   end }
@@ -330,7 +331,7 @@ let move_hyp id dest =
     let sign' = move_hyp_in_named_context sigma id dest sign in
     let env = reset_with_named_context sign' env in
     Refine.refine ~unsafe:true { run = begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true ~store ty
+      Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr ty)
     end }
   end }
 
@@ -384,7 +385,7 @@ let rename_hyp repl =
       let nctx = Environ.val_of_named_context nhyps in
       let instance = List.map (NamedDecl.get_id %> mkVar) hyps in
       Refine.refine ~unsafe:true { run = begin fun sigma ->
-        Evarutil.new_evar_instance nctx sigma nconcl ~principal:true ~store instance
+        Evarutil.new_evar_instance nctx sigma (EConstr.of_constr nconcl) ~principal:true ~store instance
       end }
     end }
 
@@ -494,7 +495,7 @@ let rec mk_holes : type r s. _ -> r Sigma.t -> (s, r) Sigma.le -> _ -> (_, s) Si
 fun env sigma p -> function
 | [] -> Sigma ([], sigma, p)
 | arg :: rem ->
-  let Sigma (arg, sigma, q) = Evarutil.new_evar env sigma arg in
+  let Sigma (arg, sigma, q) = Evarutil.new_evar env sigma (EConstr.of_constr arg) in
   let Sigma (rem, sigma, r) = mk_holes env sigma (p +> q) rem in
   Sigma (arg :: rem, sigma, r)
 
@@ -784,35 +785,37 @@ let make_change_arg c pats =
   { run = fun sigma -> Sigma.here (replace_vars (Id.Map.bindings pats) c) sigma }
 
 let check_types env sigma mayneedglobalcheck deep newc origc =
-  let t1 = Retyping.get_type_of env sigma (EConstr.of_constr newc) in
+  let t1 = Retyping.get_type_of env sigma newc in
+  let t1 = EConstr.of_constr t1 in
   if deep then begin
-    let t2 = Retyping.get_type_of env sigma (EConstr.of_constr origc) in
+    let t2 = Retyping.get_type_of env sigma origc in
     let sigma, t2 = Evarsolve.refresh_universes
 		      ~onlyalg:true (Some false) env sigma (EConstr.of_constr t2) in
+    let t2 = EConstr.of_constr t2 in
     let sigma, b = infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 in
     if not b then
       if
-        isSort (whd_all env sigma (EConstr.of_constr t1)) &&
-        isSort (whd_all env sigma (EConstr.of_constr t2))
+        isSort (whd_all env sigma t1) &&
+        isSort (whd_all env sigma t2)
       then (mayneedglobalcheck := true; sigma)
       else
         user_err ~hdr:"convert-check-hyp" (str "Types are incompatible.")
     else sigma
   end
   else
-    if not (isSort (whd_all env sigma (EConstr.of_constr t1))) then
+    if not (isSort (whd_all env sigma t1)) then
       user_err ~hdr:"convert-check-hyp" (str "Not a type.")
     else sigma
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb mayneedglobalcheck deep t = { e_redfun = begin fun env sigma c ->
-  let c = EConstr.Unsafe.to_constr c in
   let Sigma (t', sigma, p) = t.run sigma in
   let sigma = Sigma.to_evar_map sigma in
+  let t' = EConstr.of_constr t' in
   let sigma = check_types env sigma mayneedglobalcheck deep t' c in
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
   if not b then user_err ~hdr:"convert-check-hyp" (str "Not convertible.");
-  Sigma.Unsafe.of_pair (t', sigma)
+  Sigma.Unsafe.of_pair (EConstr.Unsafe.to_constr t', sigma)
 end }
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
@@ -1240,8 +1243,8 @@ let cut c =
       (** Backward compat: normalize [c]. *)
       let c = if normalize_cut then local_strong whd_betaiota sigma (EConstr.of_constr c) else c in
       Refine.refine ~unsafe:true { run = begin fun h ->
-        let Sigma (f, h, p) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
-        let Sigma (x, h, q) = Evarutil.new_evar env h c in
+        let Sigma (f, h, p) = Evarutil.new_evar ~principal:true env h (EConstr.of_constr (mkArrow c (Vars.lift 1 concl))) in
+        let Sigma (x, h, q) = Evarutil.new_evar env h (EConstr.of_constr c) in
         let f = mkLetIn (Name id, x, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
         Sigma (f, h, p +> q)
       end }
@@ -1913,8 +1916,8 @@ let cut_and_apply c =
         let env = Tacmach.New.pf_env gl in
         Refine.refine { run = begin fun sigma ->
           let typ = mkProd (Anonymous, c2, concl) in
-          let Sigma (f, sigma, p) = Evarutil.new_evar env sigma typ in
-          let Sigma (x, sigma, q) = Evarutil.new_evar env sigma c1 in
+          let Sigma (f, sigma, p) = Evarutil.new_evar env sigma (EConstr.of_constr typ) in
+          let Sigma (x, sigma, q) = Evarutil.new_evar env sigma (EConstr.of_constr c1) in
           let ans = mkApp (f, [|mkApp (c, [|x|])|]) in
           Sigma (ans, sigma, p +> q)
         end }
@@ -1983,7 +1986,7 @@ let assumption =
       if only_eq then (sigma, Constr.equal t concl)
       else
         let env = Proofview.Goal.env gl in
-        infer_conv env sigma t concl
+        infer_conv env sigma (EConstr.of_constr t) (EConstr.of_constr concl)
     in
     if is_same_type then
       (Proofview.Unsafe.tclEVARS sigma) <*>
@@ -2078,7 +2081,7 @@ let clear_body ids =
     in
     check <*>
     Refine.refine ~unsafe:true { run = begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true concl
+      Evarutil.new_evar env sigma ~principal:true (EConstr.of_constr concl)
     end }
   end }
 
@@ -2131,7 +2134,7 @@ let apply_type newcl args =
     Refine.refine { run = begin fun sigma ->
       let newcl = nf_betaiota (Sigma.to_evar_map sigma) (EConstr.of_constr newcl) (* As in former Logic.refine *) in
       let Sigma (ev, sigma, p) =
-        Evarutil.new_evar env sigma ~principal:true ~store newcl in
+        Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr newcl) in
       Sigma (applist (ev, args), sigma, p)
     end }
   end }
@@ -2151,7 +2154,7 @@ let bring_hyps hyps =
       let args = Array.of_list (Context.Named.to_instance hyps) in
       Refine.refine { run = begin fun sigma ->
         let Sigma (ev, sigma, p) =
-          Evarutil.new_evar env sigma ~principal:true ~store newcl in
+          Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr newcl) in
         Sigma (mkApp (ev, args), sigma, p)
       end }
     end }
@@ -2677,11 +2680,11 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [LocalAssum (heq,eq); decl] lastlhyp env in
-      let Sigma (x, sigma, r) = new_evar newenv sigma ~principal:true ~store ccl in
+      let Sigma (x, sigma, r) = new_evar newenv sigma ~principal:true ~store (EConstr.of_constr ccl) in
       Sigma (mkNamedLetIn id c t (mkNamedLetIn heq refl eq x), sigma, p +> q +> r)
   | None ->
       let newenv = insert_before [decl] lastlhyp env in
-      let Sigma (x, sigma, p) = new_evar newenv sigma ~principal:true ~store ccl in
+      let Sigma (x, sigma, p) = new_evar newenv sigma ~principal:true ~store (EConstr.of_constr ccl) in
       Sigma (mkNamedLetIn id c t x, sigma, p)
 
 let letin_tac with_eq id c ty occs =
@@ -2862,7 +2865,7 @@ let new_generalize_gen_let lconstr =
     in
     let tac =
 	Refine.refine { run = begin fun sigma ->
-          let Sigma (ev, sigma, p) = Evarutil.new_evar env sigma ~principal:true newcl in
+          let Sigma (ev, sigma, p) = Evarutil.new_evar env sigma ~principal:true (EConstr.of_constr newcl) in
           Sigma ((applist (ev, args)), sigma, p)
 	end }
     in
@@ -3549,7 +3552,7 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
     (* Abstract by the extension of the context *)
   let genctyp = it_mkProd_or_LetIn genarg ctx in
     (* The goal will become this product. *)
-  let Sigma (genc, sigma, p) = Evarutil.new_evar env sigma ~principal:true genctyp in
+  let Sigma (genc, sigma, p) = Evarutil.new_evar env sigma ~principal:true (EConstr.of_constr genctyp) in
     (* Apply the old arguments giving the proper instantiation of the hyp *)
   let instc = mkApp (genc, Array.of_list args) in
     (* Then apply to the original instantiated hyp. *)
@@ -3755,7 +3758,7 @@ let specialize_eqs id gl =
 	| _ ->
 	    if in_eqs then acc, in_eqs, ctx, ty
 	    else
-	      let e = e_new_evar (push_rel_context ctx env) evars t in
+	      let e = e_new_evar (push_rel_context ctx env) evars (EConstr.of_constr t) in
 		aux false (LocalDef (na,e,t) :: ctx) (mkApp (lift 1 acc, [| mkRel 1 |])) b)
     | t -> acc, in_eqs, ctx, ty
   in

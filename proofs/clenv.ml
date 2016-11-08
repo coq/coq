@@ -337,7 +337,7 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
         let src = evar_source_of_meta mv clenv.evd in
         let src = adjust_meta_source clenv.evd mv src in
         let evd = Sigma.Unsafe.of_evar_map clenv.evd in
-	let Sigma (evar, evd, _) = new_evar (cl_env clenv) evd ~src ty in
+	let Sigma (evar, evd, _) = new_evar (cl_env clenv) evd ~src (EConstr.of_constr ty) in
 	let evd = Sigma.to_evar_map evd in
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
 	fold clenv mvs in
@@ -610,7 +610,7 @@ let make_evar_clause env sigma ?len t =
     | Prod (na, t1, t2) ->
       let store = Typeclasses.set_resolvable Evd.Store.empty false in
       let sigma = Sigma.Unsafe.of_evar_map sigma in
-      let Sigma (ev, sigma, _) = new_evar ~store env sigma t1 in
+      let Sigma (ev, sigma, _) = new_evar ~store env sigma (EConstr.of_constr t1) in
       let sigma = Sigma.to_evar_map sigma in
       let dep = not (EConstr.Vars.noccurn sigma 1 (EConstr.of_constr t2)) in
       let hole = {

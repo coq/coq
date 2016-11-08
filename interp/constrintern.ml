@@ -1937,7 +1937,7 @@ let extract_ids env =
 
 let scope_of_type_kind = function
   | IsType -> Notation.current_type_scope_name ()
-  | OfType typ -> compute_type_scope typ
+  | OfType typ -> compute_type_scope (EConstr.Unsafe.to_constr typ)
   | WithoutTypeConstraint -> None
 
 let empty_ltac_sign = {
@@ -1982,7 +1982,7 @@ let interp_type env sigma ?(impls=empty_internalization_env) c =
   interp_gen IsType env sigma ~impls c
 
 let interp_casted_constr env sigma ?(impls=empty_internalization_env) c typ =
-  interp_gen (OfType typ) env sigma ~impls c
+  interp_gen (OfType (EConstr.of_constr typ)) env sigma ~impls c
 
 (* Not all evars expected to be resolved *)
 
@@ -2001,7 +2001,7 @@ let interp_constr_evars_impls env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen_impls env evdref ~impls WithoutTypeConstraint c
 
 let interp_casted_constr_evars_impls env evdref ?(impls=empty_internalization_env) c typ =
-  interp_constr_evars_gen_impls env evdref ~impls (OfType typ) c
+  interp_constr_evars_gen_impls env evdref ~impls (OfType (EConstr.of_constr typ)) c
 
 let interp_type_evars_impls env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen_impls env evdref ~impls IsType c
@@ -2016,7 +2016,7 @@ let interp_constr_evars env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen env evdref WithoutTypeConstraint ~impls c
 
 let interp_casted_constr_evars env evdref ?(impls=empty_internalization_env) c typ =
-  interp_constr_evars_gen env evdref ~impls (OfType typ) c
+  interp_constr_evars_gen env evdref ~impls (OfType (EConstr.of_constr typ)) c
 
 let interp_type_evars env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen env evdref IsType ~impls c
@@ -2102,7 +2102,7 @@ let interp_rawcontext_evars env evdref k bl =
 	      in
 		(push_rel d env, d::params, succ n, impls)
 	  | Some b ->
-	      let c = understand_tcc_evars env evdref ~expected_type:(OfType t) b in
+	      let c = understand_tcc_evars env evdref ~expected_type:(OfType (EConstr.of_constr t)) b in
 	      let d = LocalDef (na, c, t) in
 		(push_rel d env, d::params, n, impls))
       (env,[],k+1,[]) (List.rev bl)

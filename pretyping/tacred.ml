@@ -413,7 +413,7 @@ let substl_with_function subst sigma constr =
       match v.(i-k-1) with
       | (fx, Some (min, ref)) ->
         let sigma = Sigma.Unsafe.of_evar_map !evd in
-        let Sigma (evk, sigma, _) = Evarutil.new_pure_evar venv sigma dummy in
+        let Sigma (evk, sigma, _) = Evarutil.new_pure_evar venv sigma (EConstr.of_constr dummy) in
         let sigma = Sigma.to_evar_map sigma in
         evd := sigma;
         minargs := Evar.Map.add evk min !minargs;

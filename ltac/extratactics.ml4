@@ -351,7 +351,7 @@ let refine_tac ist simple c =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags = constr_flags in
-    let expected_type = Pretyping.OfType concl in
+    let expected_type = Pretyping.OfType (EConstr.of_constr concl) in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma -> c.delayed env sigma } in
     let refine = Refine.refine ~unsafe:true update in
