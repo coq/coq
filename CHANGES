@@ -1,22 +1,9 @@
 Changes from V8.5 to V8.6beta1
 ==============================
 
-Bugfixes
+Kernel
 
-- #4527: when typechecking the statement of a lemma using universe polymorphic
-  definitions with explicit universe binders, check that the type can indeed be
-  typechecked using only those universes (after minimization of the other,
-  flexible universes), or raise an error (fixed scripts can be made forward
-  compatible).
-- #4726: treat user-provided sorts of universe polymorphic records as rigid
-  (i.e. non-minimizable).
-- #4592, #4932: notations sharing recursive patterns or sharing
-  binders made more robust.
-- #4780: Induction with universe polymorphism on was creating ill-typed terms.
-- #3070: fixing "subst" in the presence of a chain of dependencies.
-- When used as an argument of an ltac function, "auto" without "with"
-  nor "using" clause now correctly uses only the core hint database by
-  default.
+- A new, faster state-of-the-art universe constraint checker.
 
 Specification language
 
@@ -60,9 +47,9 @@ Tactics
   given a free identifier, it is not bound in subsequent tactics anymore.
   In order to introduce a binding, use e.g. the "fresh" primitive instead
   (potential source of incompatibilities).
-- New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac (DOC TODO).
-- New goal selectors.  Sets of goals can be selected by select by listing
-  integers ranges. Example: "1,4-7,24: tac" focuses "tac" on goals 1,4,5,6,7,24.
+- New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac.
+- New goal selectors.  Sets of goals can be selected by listing integers
+  ranges. Example: "1,4-7,24: tac" focuses "tac" on goals 1,4,5,6,7,24.
 - For uniformity with "destruct"/"induction" and for a more natural
   behavior, "injection" can now work in place by activating option
   "Structural Injection". In this case, hypotheses are also put in the
@@ -78,6 +65,9 @@ Tactics
 - New tactics "notypeclasses refine" and "simple notypeclasses refine" that
   disallow typeclass resolution when typechecking their argument, for use
   in typeclass hints.
+- Integration of LtacProf, a profiler for Ltac.
+- Reduction tactics now accept more fine-grained flags: iota is now a shorthand
+  for the new flags match, fix and cofix.
   
 Hints
 
@@ -110,6 +100,11 @@ Notations
 
 Tools
 
+- New warnings system for coqtop/coqc. Can be configured with the flag "-w" or
+  with the Vernacular command "Set Warnings".
+- Warnings are now printed by coqc.
+- In asynchronous mode, Coq is now capable of recovering from errors and
+  continue processing the document.
 - coqc accepts a -o option to specify the output file name
 - coqtop accepts --print-version to print Coq and OCaml versions in
   easy to parse format
@@ -119,6 +114,123 @@ Tools
 - Removed the -verbose-compat-notations flag and the corresponding Set
   Verbose Compat vernacular, since these warnings can now be silenced or
   turned into errors using "-w".
+
+Bugfixes
+
+- #2498: Coqide navigation preferences delayed effect
+- #3035: Avoiding trailing arguments in the Arguments command
+- #3070: fixing "subst" in the presence of a chain of dependencies.
+- #3317: spurious type error with primitive projections.
+- #3441: Use pf_get_type_of to avoid blowup
+- #3450: [End foo.] is slower in trunk in some cases.
+- #3683: add references to the web site for the bug tracker
+- #3753: anomaly with implicit arguments and renamings
+- #3849: hyp_list passing isn't transitive
+- #3920: eapply masks an hypothesis name.
+- #3957: ML Tactic Extension failure
+- #4058: STM: if_verbose on "Checking task ..."
+- #4095: constr forces typeclass resolution that it did not previously force
+- #4368: CoqIDE: Errors are sticky
+- #4421: Messages dialog in Coqide resets.
+- #4437: CoqIDE doesn't preserve unix encoding under windows
+- #4464: "Anomaly: variable H' unbound. Please report.".
+- #4471: [generalize dependent] permits ill-typed terms in trunk.
+- #4479: "Error: Rewriting base foo does not exist." should be catchable.
+- #4527: when typechecking the statement of a lemma using universe polymorphic
+  definitions with explicit universe binders, check that the type can indeed be
+  typechecked using only those universes (after minimization of the other,
+  flexible universes), or raise an error (fixed scripts can be made forward
+  compatible).
+- #4553: CoqIDE gives warnings about deprecated GTK features.
+- #4592, #4932: notations sharing recursive patterns or sharing
+- #4592, #4932: notations sharing recursive patterns or sharing
+  binders made more robust.
+- #4595: making notations containing "ltac:" unused for printing.
+- #4609: document an option governing the generation of equalities
+- #4610: Fails to build with camlp4 since the TACTIC EXTEND move.
+- #4622: [injection] on an equality between records with primitive projections
+  generates a match with invalid information
+- #4661: Cannot mask the absolute name.
+- #4679: weakened setoid_rewrite unification
+- #4723: "Obligations: Cannot infer this placeholder of type"
+- #4724: get_host_port error message
+- #4726: treat user-provided sorts of universe polymorphic records as rigid
+  (i.e. non-minimizable).
+- #4750: Change format of inconsistent assumptions message.
+- #4756: STM: nested Abort is like nested Qed
+- #4763, #4955: regressions in unification
+- #4764: Syntactic notation externalization breaks.
+- #4768: CoqIDE much slower than coqc -quick
+- #4780: Induction with universe polymorphism on was creating ill-typed terms.
+- #4784: [Set Printing Width] to >= 114 causes (some?) syntax errors to print in
+         the wrong location, confusing emacs mode
+- #4785: use [ ] for vector nil
+- #4787: Unset Bracketing Last Introduction Pattern not working.
+- #4793: Coq 8.6 should accept -compat 8.6
+- #4798: compat notations should not modify the parser.
+- #4816: Global universes and constraints should not depend on local ones
+- #4825: [clear] should not dependency-check hypotheses that come above it.
+- #4828: "make" broken on Widows
+- #4836: Anomaly: Uncaught exception Invalid_argument.
+- #4842: Time prints in multiple lines
+- #4854: Notations with binders
+- #4864: Argument : assert does fail if no arg is given
+- #4865: deciding on which arguments to recompute scopes was not robust.
+- #4869, allow Prop, Set, and level names in constraints.
+- #4873: transparency option not used.
+- #4893: not_evar: unexpected failure.
+- #4904: [Import] does not load intermediately unqualified names of aliases.
+- #4906: regression in printing an error message.
+- #4914: LtacProf printout has too many newlines.
+- #4919: Warning: Unused local entry "move_location"
+- #4923: Warning: appcontext is deprecated.
+- #4924: CoqIDE should have an option to use Unix-style newlines on Windows
+- #4932: anomaly when using binders as terms in recursive notations.
+- #4939: LtacProf prints tactic notations weirdly.
+- #4940: Tactic notation printing could be more informative.
+- #4941: ~/.coqrc file confusing locations
+- #4958: [debug auto] should specify hint databases.
+- #4964: Severe inefficiency with evars
+- #4968: STM: sideff: report safe_id correctly
+- #4978: priorities of Equivalence instances
+- #5003: more careful generalisation of dependent terms.
+- #5005: micromega tactics is now robust to failure of 'abstract'.
+- #5011: Anomaly on [Existing Class].
+- #5023: JSON extraction doesn't generate "for xxx".
+- #5029: anomaly on user-inputted projection name.
+- #5036: autorewrite, sections and universes
+- #5045: [generalize] creates ill-typed terms in 8.6.
+- #5048: Casts in pattern raise an anomaly in Constrintern.
+- #5051: Large outputs are garbled.
+- #5061: Warnings flag has no discernible value
+- #5066: Anomaly: cannot find Coq.Logic.JMeq.JMeq.
+- #5069: Scheme Equality gives anomalies in sections.
+- #5073: regression of micromega plugin
+- #5078: wrong detection of evaluable local hypotheses.
+- #5079: LtacProf: fix reset_profile
+- #5080: LtacProf: "Show Ltac Profile CutOff $N"
+- #5087: Improve the error message on record with duplicated fields.
+- #5090: Effect of -Q depends on coqtop's current directory.
+- #5093: typeclasses eauto depth arg does not accept a var.
+- #5096: [vm_compute] is exponentially slower than [native_compute].
+- #5098: Symmetry broken in HoTT.
+- #5102: "Illegal begin of vernac" on bullets
+- #5116: [Print Ltac] should be able to print strategies.
+- #5125: Bad error message when attempting to use where with Class.
+- #5133: error reporting delayed.
+- #5136: Stopping warning on unrecognized unicode character in notation.
+- #5139: Anomalies should not be caught by || / try.
+- #5141: Bogus message "Error: Cannot infer type of pattern-matching".
+- #5145: Anomaly: index to an anonymous variable.
+- #5149: [subst] breaks evars
+- #5161: case of a notation with unability to detect a recursive binder.
+- #5164: regression in locating error in argument of "refine".
+- #5181: [Arguments] no longer correctly checks the length of arguments lists
+- #5182: "Arguments names must be distinct." is bogus and underinformative
+- Qcanon : fix names of lemmas Qcle_alt & Qcge_alt (were Qle_alt & Qge_alt)
+- When used as an argument of an ltac function, "auto" without "with"
+  nor "using" clause now correctly uses only the core hint database by
+  default.
 
 Changes from V8.5pl2 to V8.5pl3
 ===============================
