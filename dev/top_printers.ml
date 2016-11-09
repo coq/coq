@@ -182,7 +182,7 @@ let pphintdb db = pp(Hints.pr_hint_db db)
 let ppproofview p =
   let gls,sigma = Proofview.proofview p in
   pp(pr_enum Goal.pr_goal gls ++ fnl () ++ pr_evar_map (Some 1) sigma)
-
+let ppkey k = pp(Keys.pr_key pr_global k)
 let ppopenconstr (x : Evd.open_constr) =
   let (evd,c) = x in pp (pr_evar_map (Some 2) evd ++ pr_constr c)
 (* spiwack: deactivated until a replacement is found
