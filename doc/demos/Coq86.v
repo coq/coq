@@ -2,7 +2,20 @@
 
 From Coq Require Import Arith List Omega Bool Program.Tactics.
   
-(** Fine grained error-reporting and error processing, in structured scripts *)
+(** * Fine grained error-reporting and error processing, in structured scripts *)
+
+(* In CoqIDE, Coqoon, PG-XML proof blocks confine errors hence Coq can continue to
+   process the structured proof *)
+(*
+Lemma failing_branch : False /\ True.
+Proof.
+split.
+  { exact I. }  (* This branch fails, but Coq does not give up *)
+  { exact I. }  (* This branch is executed, can be edited, etc... *)
+Qed.
+ *)
+
+(* This behavior can be disabled, see "error resiliency" command line flags *)
 
 (** Multi-goal, multi-success typeclasses eauto engine *)
 
@@ -172,17 +185,79 @@ Module Typeclasses.
       (** This diverges in depth-first search *)
       Fail Timeout 1 typeclasses eauto.
       (** In breadth-first search (implemented by iterative deepening) *)
-      Set Typeclasses Iterative Deepening.
       (** It fails at depth 1 *)
-      Fail typeclasses eauto 1.
+      Fail typeclasses eauto bfs 1 with typeclass_instances.
       (** Succeeds at depth 2 *)
-      typeclasses eauto 2.
+      typeclasses eauto bfs 2 with typeclass_instances.
       Undo.
       (** Or any other depth *)
-      typeclasses eauto.
+      typeclasses eauto bfs with typeclass_instances.
     Qed.
 
   End IterativeDeepening.
+
+
+(* No conversion on let-bound variables and constants in pred (the default) *)
+
+Hint Resolve pred0 | 1 (pred _) : pred.
+Hint Resolve predf | 0 : pred.
+
+(* Allow full conversion on let-bound variables and constants *)
+Create HintDb predconv discriminated.
+Hint Resolve pred0 | 1 (pred _) : predconv.
+Hint Resolve predf | 0 : predconv.
+
+Goal exists n, pred n.
+  eexists.
+  Fail Timeout 1 typeclasses eauto with pred.
+  Set Typeclasses Filtered Unification.
+  Set Typeclasses Debug Verbosity 2.
+  (* predf is not tried as it doesn't match the goal *)
+  typeclasses eauto with pred.
+Qed.
+
+Parameter predconv : forall n, pred n -> pred (0 + S n).
+
+(* The inferred pattern contains 0 + ?n, syntactic match will fail to see convertible
+ terms *)
+Hint Resolve pred0 : pred2.
+Hint Resolve predconv : pred2.
+
+(** In this database we allow predconv to apply to pred (S _) goals, more generally
+  than the inferred pattern (pred (0 + S _)). *)
+Create HintDb pred2conv discriminated.
+Hint Resolve pred0 : pred2conv.
+Hint Resolve predconv | 1 (pred (S _)) : pred2conv.
+
+Goal pred 3.
+  Fail typeclasses eauto with pred2.
+  typeclasses eauto with pred2conv.
+Abort.
+
+Set Typeclasses Filtered Unification.
+Set Typeclasses Debug Verbosity 2.
+Hint Resolve predconv | 1 (pred _) : pred.
+Hint Resolve predconv | 1 (pred (S _)) : predconv.
+Test Typeclasses Limit Intros.
+Goal pred 3.
+  (* predf is not tried as it doesn't match the goal *)
+  (* predconv is tried but fails as the transparent state doesn't allow
+     unfolding + *)
+  Fail typeclasses eauto with pred.
+  (* Here predconv succeeds as it matches (pred (S _)) and then
+     full unification is allowed *)
+  typeclasses eauto with predconv.
+Qed.
+
+(** The other way around: goal contains redexes instead of instances *)
+Goal exists n, pred (0 + n).
+  eexists.
+  (* predf is applied indefinitely *)
+  Fail Timeout 1 typeclasses eauto with pred.
+  (* pred0 (pred _) matches the goal *)
+  typeclasses eauto with predconv.
+Qed.
+
 End Typeclasses.
 
 (** Goal selectors *)
@@ -257,6 +332,13 @@ Module KeyedUnification.
     reflexivity.
   Qed.
 
+  Context (test3 : forall A (l : list A), op l nil = app l nil).
+  
+  Lemma test3' A (l : list A) : op l nil = l.
+  Proof.
+    Declare Equivalent Keys (@op _) (@app _). 
+    Fail rewrite <- test3.
+  Abort.
 End KeyedUnification.
   
 (** Unification constraint handling *)
@@ -278,56 +360,10 @@ Module UnifConstraints.
     (** If we remove the spurious dependency of the predicate on [n]: *)
     Undo 2.
     simple refine (nat_rect _ _ _ n). (* simple refine does not shelve dependent subgoals *)
+    Set Printing Existential Instances.
     clear n. intros n. (* We must use an intro here to let the unifier solve 
                           the higher-order problem *)
     solve_constraints.
     all:simpl.
   Admitted.
 End UnifConstraints.
-
-(** Compatibility options *)
-
-(** The options to make code compatible with Coq 8.5 are the following 
-  (loaded by -compat 8.5).
-*)
-
-(** We use some deprecated options in this file, so we disable the
-    corresponding warning, to silence the build of this file. *)
-Local Set Warnings "-deprecated-option".
-
-(* In 8.5, "intros [|]", taken e.g. on a goal "A\/B->C", does not
-   behave as "intros [H|H]" but leave instead hypotheses quantified in
-   the goal, here producing subgoals A->C and B->C. *)
-
-Global Unset Bracketing Last Introduction Pattern.
-
-(** Subst has some irregularities *)
-
-Global Unset Regular Subst Tactic.
-
-(** Injection does not ?? *)
-Global Unset Structural Injection.
-
-(** [abstract]ed proofs and Program obligations were not shrinked.
-  Shrinking removes abstractions by unused variables in these cases *)
-Global Unset Shrink Abstract.
-Global Unset Shrink Obligations.
-
-(** Refolding was used not only by [cbn] but also during unification,
-  resulting in blowups sometimes. *)
-Global Set Refolding Reduction.
-
-(** The resolution algorithm for type classes has changed. *)
-Global Set Typeclasses Legacy Resolution.
-
-(** The resolution algorithm tried to limit introductions (and hence
-  eta-expansions). Can be very expensive as well *)
-Global Set Typeclasses Limit Intros.
-
-(** The unification strategy for typeclasses eauto has changed, 
-  Filtered Unification is not on by default in 8.6 though. *)
-Global Unset Typeclasses Filtered Unification.
-
-(** Allow silently letting unification constraints float after a ".", now
-  disallowed by default (one gets unification errors instead) *)
-Global Unset Solve Unification Constraints.
