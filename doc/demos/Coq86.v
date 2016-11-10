@@ -6,14 +6,13 @@ From Coq Require Import Arith List Omega Bool Program.Tactics.
 
 (* In CoqIDE, Coqoon, PG-XML proof blocks confine errors hence Coq can continue to
    process the structured proof *)
-(*
-Lemma failing_branch : False /\ True.
-Proof.
-split.
-  { exact I. }  (* This branch fails, but Coq does not give up *)
-  { exact I. }  (* This branch is executed, can be edited, etc... *)
-Qed.
- *)
+
+(* Lemma failing_branch : False /\ True. *)
+(* Proof. *)
+(* split. *)
+(*   { exact I. }  (* This branch fails, but Coq does not give up *) *)
+(*   { exact I. }  (* This branch is executed, can be edited, etc... *) *)
+(* Qed. *)
 
 (* This behavior can be disabled, see "error resiliency" command line flags *)
 
@@ -26,7 +25,7 @@ Instance pred0 : pred 0 := {}.
 Instance pred1 : pred 1 := {}.
 Class pred2 (n : nat) : Prop := {}.
 (** There is not [pred2 1] instance *)
-Instance pred20 : pred2 0. 
+Instance pred20 : pred2 0 := {}.
 
 Goal exists x : nat, pred x /\ pred2 x.
   eexists. split.
@@ -44,13 +43,71 @@ Qed.
 
 (** Goal selectors *)
 
+Goal exists n : nat, pred n /\ pred2 n /\ True.
+  eexists.
+  split; [|split].
+  (** Applies the multi-goal tactic to the list of goals *)
+  1-2:typeclasses eauto.
+  exact I.
+  Undo 2.
+  2-3:cycle 1.
+  1,3:typeclasses eauto.
+  (* Same result, selection of non-contiguous range *)
+  exact I.
+Qed.
+
 (** Warnings *)
 
+Set Warnings "all". 
+Test Warnings.
+
+(** Turns unknown warning into an error *)
+Set Warnings "+unknown-warning". 
+Test Warnings.
+
+Fail Set Warnings "bla".
+
+(** Turns it back into a warning *)
+Set Warnings "unknown-warning". 
+Test Warnings.
+
+Set Warnings "bla".
+
+(** What is the semantics of all,default? *)
+Set Warnings "default".
+Test Warnings.
+
+Print Warnings.
+Print Warnings "numbers".
+Print Warnings "numbers":"large-nat".
+Set Warnings "+large-nat".
+Print Warnings "numbers":"large-nat".
+
 (** Irrefutable patterns *)
+
+Module IrrefutablePatterns.
+  
+  Definition fst {A B} '((a, b) : _ * B) : A := a.
+  Definition snd {A B} '((a, b) : A * B) := b.
+  
+  Record myrec := makemy { somebool : bool; somenat : nat }.
+         
+  Lemma eta_my : forall '(makemy b n), b = true \/ b = false.
+    intros [[|] n]; auto.
+  Qed.
+
+  Definition map_pair (l : list (nat * nat)) : list nat :=
+    map (fun '(pair x _) => x) l.
+  
+End IrrefutablePatterns.
 
 (** Ltacprof *)
 
 (** Cleaner generic arguments *)
+
+Module GenericArguments.
+
+End GenericArguments.
 
 (** Keyed Unification *)
 
