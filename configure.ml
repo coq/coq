@@ -425,11 +425,11 @@ let arch = match !Prefs.arch with
     else if arch <> "" then arch
     else try_archs arch_progs
 
-(** NB: [arch_win32] is broader than [os_type_win32], cf. cygwin *)
+(** NB: [arch_is_win32] is broader than [os_type_win32], cf. cygwin *)
 
-let arch_win32 = (arch = "win32")
+let arch_is_win32 = (arch = "win32")
 
-let exe = exe := if arch_win32 then ".exe" else ""; !exe
+let exe = exe := if arch_is_win32 then ".exe" else ""; !exe
 let dll = if os_type_win32 then ".dll" else ".so"
 
 (** * VCS
@@ -449,7 +449,7 @@ let vcs =
 let browser =
   match !Prefs.browser with
   | Some b -> b
-  | None when arch_win32 -> "start %s"
+  | None when arch_is_win32 -> "start %s"
   | None when arch = "Darwin" -> "open %s"
   | _ -> "firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s &"
 
@@ -854,7 +854,7 @@ let withdoc = check_doc ()
 
 let coqtop = Sys.getcwd ()
 
-let unix = os_type_cygwin || not arch_win32
+let unix = os_type_cygwin || not arch_is_win32
 
 (** Variable name, description, ref in Prefs, default dir, prefix-relative *)
 
@@ -864,10 +864,10 @@ let install = [
     "/bin";
   "COQLIBINSTALL", "the Coq library", Prefs.libdir,
     (if unix then "/usr/local/lib/coq" else "C:/coq/lib"),
-    (if arch_win32 then "" else "/lib/coq");
+    (if arch_is_win32 then "" else "/lib/coq");
   "CONFIGDIR", "the Coqide configuration files", Prefs.configdir,
     (if unix then "/etc/xdg/coq" else "C:/coq/config"),
-    (if arch_win32 then "/config" else "/etc/xdg/coq");
+    (if arch_is_win32 then "/config" else "/etc/xdg/coq");
   "DATADIR", "the Coqide data files", Prefs.datadir,
     (if unix then "/usr/local/share/coq" else "C:/coq/share"),
     "/share/coq";
@@ -879,10 +879,10 @@ let install = [
     "/share/doc/coq";
   "EMACSLIB", "the Coq Emacs mode", Prefs.emacslib,
     (if unix then "/usr/local/share/emacs/site-lisp" else "C:/coq/emacs"),
-    (if arch_win32 then "/emacs" else "/share/emacs/site-lisp");
+    (if arch_is_win32 then "/emacs" else "/share/emacs/site-lisp");
   "COQDOCDIR", "the Coqdoc LaTeX files", Prefs.coqdocdir,
     (if unix then "/usr/local/share/texmf/tex/latex/misc" else "C:/coq/latex"),
-    (if arch_win32 then "/latex" else "/share/emacs/site-lisp");
+    (if arch_is_win32 then "/latex" else "/share/emacs/site-lisp");
  ]
 
 let do_one_instdir (var,msg,r,dflt,suff) =
@@ -920,7 +920,7 @@ let datadir =
 
 (** Do we use -custom (yes by default on Windows and MacOS) *)
 
-let custom_os = arch_win32 || arch = "Darwin"
+let custom_os = arch_is_win32 || arch = "Darwin"
 
 let use_custom = match !Prefs.custom with
   | Some b -> b
@@ -1048,7 +1048,7 @@ let write_configml f =
   pr_s "date" short_date;
   pr_s "compile_date" full_date;
   pr_s "arch" arch;
-  pr_b "arch_is_win32" arch_win32;
+  pr_b "arch_is_win32" arch_is_win32;
   pr_s "exec_extension" exe;
   pr_s "coqideincl" !lablgtkincludes;
   pr_s "has_coqide" coqide;
