@@ -35,6 +35,10 @@ let add_warning_in_category ~name ~category =
   in
   Hashtbl.replace categories category (name::ws)
 
+let refine_loc = function
+  | None when not (Loc.is_ghost !current_loc) -> Some !current_loc
+  | loc -> loc
+
 let create ~name ~category ?(default=Enabled) pp =
   Hashtbl.add warnings name { default; category; status = default };
   add_warning_in_category ~name ~category;
@@ -44,15 +48,17 @@ let create ~name ~category ?(default=Enabled) pp =
            match w.status with
            | Disabled -> ()
            | AsError ->
-              let loc = Option.default !current_loc loc in
-              CErrors.user_err_loc (loc,"_",pp x)
+              begin match refine_loc loc with
+              | Some loc -> CErrors.user_err_loc (loc,"_",pp x)
+              | None -> CErrors.errorlabstrm "_" (pp x)
+              end
            | Enabled ->
               let msg =
                 pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
                   str category ++ str "]"
               in
-              let loc = Option.default !current_loc loc in
-              Feedback.msg_warning ~loc msg
+              let loc = refine_loc loc in
+              Feedback.msg_warning ?loc msg
 
 let warn_unknown_warning =
   create ~name:"unknown-warning" ~category:"toplevel"
