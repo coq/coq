@@ -864,25 +864,25 @@ let install = [
     "/bin";
   "COQLIBINSTALL", "the Coq library", Prefs.libdir,
     (if unix then "/usr/local/lib/coq" else "C:/coq/lib"),
-    (if arch_is_win32 then "" else "/lib/coq");
+    (if arch_is_win32 then "/lib" else "/lib/coq");
   "CONFIGDIR", "the Coqide configuration files", Prefs.configdir,
     (if unix then "/etc/xdg/coq" else "C:/coq/config"),
     (if arch_is_win32 then "/config" else "/etc/xdg/coq");
   "DATADIR", "the Coqide data files", Prefs.datadir,
     (if unix then "/usr/local/share/coq" else "C:/coq/share"),
-    "/share/coq";
+    (if arch_is_win32 then "/share" else "/share/coq");
   "MANDIR", "the Coq man pages", Prefs.mandir,
     (if unix then "/usr/local/share/man" else "C:/coq/man"),
-    "/share/man";
+    (if arch_is_win32 then "/man" else "/share/man");
   "DOCDIR", "the Coq documentation", Prefs.docdir,
     (if unix then "/usr/local/share/doc/coq" else "C:/coq/doc"),
-    "/share/doc/coq";
+    (if arch_is_win32 then "/doc" else "/share/doc/coq");
   "EMACSLIB", "the Coq Emacs mode", Prefs.emacslib,
     (if unix then "/usr/local/share/emacs/site-lisp" else "C:/coq/emacs"),
     (if arch_is_win32 then "/emacs" else "/share/emacs/site-lisp");
   "COQDOCDIR", "the Coqdoc LaTeX files", Prefs.coqdocdir,
     (if unix then "/usr/local/share/texmf/tex/latex/misc" else "C:/coq/latex"),
-    (if arch_is_win32 then "/latex" else "/share/emacs/site-lisp");
+    (if arch_is_win32 then "/latex" else "/share/texmf/tex/latex/misc");
  ]
 
 let do_one_instdir (var,msg,r,dflt,suff) =
