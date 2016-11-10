@@ -914,18 +914,18 @@ This command turns off the normal displaying.
 \subsection[\tt Unset Silent.]{\tt Unset Silent.\optindex{Silent}}
 This command turns the normal display on.
 
-\subsection[\tt Set Warnings (\nterm{all}|\nterm{none}|\nterm{w}$_1$,\ldots,%
-  \nterm{w}$_n$).]{{\tt Set Warnings (\nterm{all}|\nterm{none}|\nterm{w}$_1$,\ldots,%
-  \nterm{w}$_n$)}.\optindex{Warnings}}
+\subsection[\tt Set Warnings ``(\nterm{w}$_1$,\ldots,%
+  \nterm{w}$_n$)''.]{{\tt Set Warnings ``(\nterm{w}$_1$,\ldots,%
+  \nterm{w}$_n$)''}.\optindex{Warnings}}
 \label{SetWarnings}
-This command configures the display of warnings. It is experimental, and expects
-\texttt{all}, \texttt{none} or a comma-separated list of warning names or
-categories. Adding~\texttt{-} in front of a warning disables it,
-adding~\texttt{+} makes it an error. It is possible to use the special categories
-\texttt{all} and \texttt{default}, the latter containing the warnings enabled by
-default. The flags are interpreted from left to right, so in case of an overlap,
-the flags on the right have higher priority, meaning that \texttt{A,-A} is
-equivalent to \texttt{-A}.
+This command configures the display of warnings. It is experimental, and
+expects, between quotes, a comma-separated list of warning names or
+categories. Adding~\texttt{-} in front of a warning or category disables it,
+adding~\texttt{+} makes it an error. It is possible to use the special
+categories \texttt{all} and \texttt{default}, the latter containing the warnings
+enabled by default. The flags are interpreted from left to right, so in case of
+an overlap, the flags on the right have higher priority, meaning that
+\texttt{A,-A} is equivalent to \texttt{-A}.
 
 \subsection[\tt Set Search Output Name Only.]{\tt Set Search Output Name Only.\optindex{Search Output Name Only}
 \label{Search-Output-Name-Only}
