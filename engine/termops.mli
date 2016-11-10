@@ -29,7 +29,7 @@ val print_rel_context : env -> std_ppcmds
 val print_env : env -> std_ppcmds
 
 (** about contexts *)
-val push_rel_assum : Name.t * types -> env -> env
+val push_rel_assum : Name.t * EConstr.types -> env -> env
 val push_rels_assum : (Name.t * types) list -> env -> env
 val push_named_rec_types : Name.t array * types array * 'a -> env -> env
 
@@ -208,8 +208,8 @@ val decompose_app_vect : Evd.evar_map -> EConstr.t -> constr * constr array
 
 val adjust_app_list_size : constr -> constr list -> constr -> constr list ->
   (constr * constr list * constr * constr list)
-val adjust_app_array_size : constr -> constr array -> constr -> constr array ->
-  (constr * constr array * constr * constr array)
+val adjust_app_array_size : EConstr.constr -> EConstr.constr array -> EConstr.constr -> EConstr.constr array ->
+  (EConstr.constr * EConstr.constr array * EConstr.constr * EConstr.constr array)
 
 (** name contexts *)
 type names_context = Name.t list

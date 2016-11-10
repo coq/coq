@@ -90,8 +90,8 @@ let make_inv_predicate env evd indf realargs id status concl =
 		let sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd sort in
 		let p = make_arity env true indf sort in
 		let evd',(p,ptyp) = Unification.abstract_list_all env
-                  !evd p concl (realargs@[mkVar id])
-		in evd := evd'; p in
+                  !evd (EConstr.of_constr p) (EConstr.of_constr concl) (List.map EConstr.of_constr realargs@[EConstr.mkVar id])
+		in evd := evd'; EConstr.Unsafe.to_constr p in
 	  let hyps,bodypred = decompose_lam_n_assum (nrealargs+1) pred in
 	  (* We lift to make room for the equations *)
 	  (hyps,lift nrealargs bodypred)

@@ -177,7 +177,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let flags = make_flags frzevars (Tacmach.New.project gl) rewrite_unif_flags eqclause in
   let occs =
     w_unify_to_subterm_all ~flags env eqclause.evd
-      ((if l2r then c1 else c2),concl)
+      (EConstr.of_constr (if l2r then c1 else c2),EConstr.of_constr concl)
   in List.map try_occ occs
 
 let instantiate_lemma gl c ty l l2r concl =

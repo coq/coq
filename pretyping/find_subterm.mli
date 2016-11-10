@@ -15,7 +15,7 @@ open Environ
 (** Finding subterms, possibly up to some unification function,
     possibly at some given occurrences *)
 
-exception NotUnifiable of (constr * constr * unification_error) option
+exception NotUnifiable of (EConstr.constr * EConstr.constr * unification_error) option
 
 exception SubtermUnificationError of subterm_unification_error
 

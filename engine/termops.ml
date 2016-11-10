@@ -164,9 +164,19 @@ let rel_list n m =
   in
   reln [] 1
 
+let local_assum (na, t) =
+  let open RelDecl in
+  let inj = EConstr.Unsafe.to_constr in
+  LocalAssum (na, inj t)
+
+let local_def (na, b, t) =
+  let open RelDecl in
+  let inj = EConstr.Unsafe.to_constr in
+  LocalDef (na, inj b, inj t)
+
 let push_rel_assum (x,t) env =
   let open RelDecl in
-  push_rel (LocalAssum (x,t)) env
+  push_rel (local_assum (x,t)) env
 
 let push_rels_assum assums =
   let open RelDecl in
@@ -278,14 +288,15 @@ let adjust_app_list_size f1 l1 f2 l2 =
     (applist (f1,extras), restl1, f2, l2)
 
 let adjust_app_array_size f1 l1 f2 l2 =
+  let open EConstr in
   let len1 = Array.length l1 and len2 = Array.length l2 in
   if Int.equal len1 len2 then (f1,l1,f2,l2)
   else if len1 < len2 then
     let extras,restl2 = Array.chop (len2-len1) l2 in
-    (f1, l1, appvect (f2,extras), restl2)
+    (f1, l1, mkApp (f2,extras), restl2)
   else
     let extras,restl1 = Array.chop (len1-len2) l1 in
-    (appvect (f1,extras), restl1, f2, l2)
+    (mkApp (f1,extras), restl1, f2, l2)
 
 (* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
    subterms of [c]; it carries an extra data [l] (typically a name
@@ -320,16 +331,6 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
    in fact, the usual representation of the constructions is at the
    time being almost those of the ML representation (except for
    (co-)fixpoint) *)
-
-let local_assum (na, t) =
-  let open RelDecl in
-  let inj = EConstr.Unsafe.to_constr in
-  LocalAssum (na, inj t)
-
-let local_def (na, b, t) =
-  let open RelDecl in
-  let inj = EConstr.Unsafe.to_constr in
-  LocalDef (na, inj b, inj t)
 
 let fold_rec_types g (lna,typarray,_) e =
   let open EConstr in

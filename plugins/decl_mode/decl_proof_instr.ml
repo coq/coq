@@ -408,7 +408,7 @@ let find_subsubgoal c ctyp skip submetas gls =
       try
 	let unifier =
 	  Unification.w_unify env se.se_evd Reduction.CUMUL
-	    ~flags:(Unification.elim_flags ()) ctyp se.se_type in
+	    ~flags:(Unification.elim_flags ()) (EConstr.of_constr ctyp) (EConstr.of_constr se.se_type) in
 	  if n <= 0 then
 	      {se with
 		 se_evd=meta_assign se.se_meta

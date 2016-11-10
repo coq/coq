@@ -1203,7 +1203,7 @@ let whd_allnolet env =
 
 (* 4. Ad-hoc eta reduction, does not subsitute evars *)
 
-let shrink_eta c = EConstr.Unsafe.to_constr (Stack.zip Evd.empty (local_whd_state_gen eta Evd.empty (c,Stack.empty)))
+let shrink_eta c = Stack.zip Evd.empty (local_whd_state_gen eta Evd.empty (c,Stack.empty))
 
 (* 5. Zeta Reduction Functions *)
 

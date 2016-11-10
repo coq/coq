@@ -85,7 +85,7 @@ let map_named_declaration_with_hyploc f hyploc acc decl =
 
 exception SubtermUnificationError of subterm_unification_error
 
-exception NotUnifiable of (Constr.t * Constr.t * unification_error) option
+exception NotUnifiable of (EConstr.t * EConstr.t * unification_error) option
 
 type 'a testing_function = {
   match_fun : 'a -> EConstr.constr -> 'a;

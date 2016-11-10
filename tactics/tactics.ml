@@ -1204,10 +1204,12 @@ let map_destruction_arg f sigma = function
 
 let finish_delayed_evar_resolution with_evars env sigma f =
   let ((c, lbind), sigma') = run_delayed env sigma f in
+  let c = EConstr.of_constr c in
   let pending = (sigma,sigma') in
   let sigma' = Sigma.Unsafe.of_evar_map sigma' in
   let flags = tactic_infer_flags with_evars in
   let Sigma (c, sigma', _) = finish_evar_resolution ~flags env sigma' (pending,c) in
+  let c = EConstr.Unsafe.to_constr c in
   (Sigma.to_evar_map sigma', (c, lbind))
 
 let with_no_bindings (c, lbind) =
@@ -2692,14 +2694,18 @@ let letin_tac with_eq id c ty occs =
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let ccl = Proofview.Goal.concl gl in
-    let abs = AbstractExact (id,c,ty,occs,true) in
+    let c = EConstr.of_constr c in
+    let abs = AbstractExact (id,c,Option.map EConstr.of_constr ty,occs,true) in
+    let ccl = EConstr.of_constr ccl in
     let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
+    let ccl = EConstr.Unsafe.to_constr ccl in
     (* We keep the original term to match but record the potential side-effects
        of unifying universes. *)
     let Sigma (c, sigma, p) = match res with
       | None -> Sigma.here c sigma
       | Some (Sigma (_, sigma, p)) -> Sigma (c, sigma, p)
     in
+    let c = EConstr.Unsafe.to_constr c in
     let tac = letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty in
     Sigma (tac, sigma, p)
   end }
@@ -2711,10 +2717,13 @@ let letin_pat_tac with_eq id c occs =
     let ccl = Proofview.Goal.concl gl in
     let check t = true in
     let abs = AbstractPattern (false,check,id,c,occs,false) in
+    let ccl = EConstr.of_constr ccl in
     let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
+    let ccl = EConstr.Unsafe.to_constr ccl in
     let Sigma (c, sigma, p) = match res with
     | None -> finish_evar_resolution ~flags:(tactic_infer_flags false) env sigma c
     | Some res -> res in
+    let c = EConstr.Unsafe.to_constr c in
     let tac =
       (letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) None)
     in
@@ -4263,8 +4272,8 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       if must_be_closed && occur_meta indclause.evd (EConstr.of_constr (clenv_value indclause)) then
         error "Need a fully applied argument.";
       (* We lose the possibility of coercions in with-bindings *)
-      let (sigma, c) = pose_all_metas_as_evars env indclause.evd (clenv_value indclause) in
-      Sigma.Unsafe.of_pair (c, sigma)
+      let (sigma, c) = pose_all_metas_as_evars env indclause.evd (EConstr.of_constr (clenv_value indclause)) in
+      Sigma.Unsafe.of_pair (EConstr.Unsafe.to_constr c, sigma)
     with e when catchable_exception e ->
     try find_clause (try_red_product env sigma (EConstr.of_constr typ))
     with Redelimination -> raise e in
@@ -4279,7 +4288,7 @@ let check_expected_type env sigma (elimc,bl) elimt =
   let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
   let sigma = solve_evar_clause env sigma true cl bl in
   let (_,u,_) = destProd cl.cl_concl in
-  fun t -> Evarconv.e_cumul env (ref sigma) (EConstr.of_constr t) (EConstr.of_constr u)
+  fun t -> Evarconv.e_cumul env (ref sigma) t (EConstr.of_constr u)
 
 let check_enough_applied env sigma elim =
   let sigma = Sigma.to_evar_map sigma in
@@ -4288,7 +4297,7 @@ let check_enough_applied env sigma elim =
   | None ->
       (* No eliminator given *)
       fun u ->
-      let t,_ = decompose_app (whd_all env sigma (EConstr.of_constr u)) in isInd t
+      let t,_ = decompose_app (whd_all env sigma u) in isInd t
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (EConstr.of_constr (fst elimc)) in
       let scheme = compute_elim_sig ~elimc elimt in
@@ -4314,8 +4323,11 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   let store = Proofview.Goal.extra gl in
   let check = check_enough_applied env sigma elim in
   let Sigma (c, sigma', p) = use_bindings env sigma elim false (c0,lbind) t0 in
+  let c = EConstr.of_constr c in
   let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
+  let ccl = EConstr.of_constr ccl in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
+  let ccl = EConstr.Unsafe.to_constr ccl in
   match res with
   | None ->
       (* pattern not found *)
@@ -4323,7 +4335,9 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       (* we restart using bindings after having tried type-class
          resolution etc. on the term given by the user *)
       let flags = tactic_infer_flags (with_evars && (* do not give a success semantics to edestruct on an open term yet *) false) in
+      let c0 = EConstr.of_constr c0 in
       let Sigma (c0, sigma, q) = finish_evar_resolution ~flags env sigma (pending,c0) in
+      let c0 = EConstr.Unsafe.to_constr c0 in
       let tac =
       (if isrec then
           (* Historically, induction has side conditions last *)
@@ -4350,6 +4364,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       Sigma (tac, sigma, q)
 
   | Some (Sigma (c, sigma', q)) ->
+      let c = EConstr.Unsafe.to_constr c in
       (* pattern found *)
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
       (* TODO: if ind has predicate parameters, use JMeq instead of eq *)
@@ -4386,7 +4401,7 @@ let induction_gen clear_flag isrec with_evars elim
     && lbind == NoBindings && not with_evars && Option.is_empty eqname
     && clear_flag == None
     && has_generic_occurrences_but_goal cls (destVar c) env (Sigma.to_evar_map sigma) ccl in
-  let enough_applied = check_enough_applied env sigma elim t in
+  let enough_applied = check_enough_applied env sigma elim (EConstr.of_constr t) in
   if is_arg_pure_hyp && enough_applied then
     (* First case: induction on a variable already in an inductive type and
        with maximal abstraction over the variable.
@@ -4935,6 +4950,8 @@ let tclABSTRACT name_op tac =
   abstract_subproof s gk tac
 
 let unify ?(state=full_transparent_state) x y =
+  let x = EConstr.of_constr x in
+  let y = EConstr.of_constr y in
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   try

@@ -390,7 +390,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	let t2 = EConstr.of_constr (nf_evar evd (EConstr.Unsafe.to_constr tM)) (** FIXME *) in
 	let t2 = solve_pattern_eqn env evd l1' t2 in
 	  solve_simple_eqn (evar_conv_x ts) env evd
-	    (position_problem on_left pbty,ev,EConstr.of_constr t2) 
+	    (position_problem on_left pbty,ev,t2) 
   in
   let consume_stack on_left (termF,skF) (termO,skO) evd =
     let switch f a b = if on_left then f a b else f b a in
@@ -1216,7 +1216,7 @@ let error_cannot_unify env evd pb ?reason t1 t2 =
 
 let check_problems_are_solved env evd =
   match snd (extract_all_conv_pbs evd) with
-  | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb t1 t2
+  | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb (EConstr.of_constr t1) (EConstr.of_constr t2)
   | _ -> ()
 
 let max_undefined_with_candidates evd =
@@ -1276,7 +1276,9 @@ let consider_remaining_unif_problems env
   let rec aux evd pbs progress stuck =
     match pbs with
     | (pbty,env,t1,t2 as pb) :: pbs ->
-        (match apply_conversion_problem_heuristic ts env evd pbty (EConstr.of_constr t1) (EConstr.of_constr t2) with
+        let t1 = EConstr.of_constr t1 in
+        let t2 = EConstr.of_constr t2 in
+        (match apply_conversion_problem_heuristic ts env evd pbty t1 t2 with
 	| Success evd' ->
 	    let (evd', rest) = extract_all_conv_pbs evd' in
             begin match rest with
@@ -1292,6 +1294,8 @@ let consider_remaining_unif_problems env
 	  match stuck with
 	  | [] -> (* We're finished *) evd
 	  | (pbty,env,t1,t2 as pb) :: _ ->
+            let t1 = EConstr.of_constr t1 in
+            let t2 = EConstr.of_constr t2 in
 	     (* There remains stuck problems *)
              error_cannot_unify env evd pb t1 t2
   in

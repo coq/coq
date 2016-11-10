@@ -29,7 +29,7 @@ type position = (Id.t * Locus.hyp_location_flag) option
 
 type position_reporting = (position * int) * EConstr.t
 
-type subterm_unification_error = bool * position_reporting * position_reporting * (constr * constr * unification_error) option
+type subterm_unification_error = bool * position_reporting * position_reporting * (EConstr.constr * EConstr.constr * unification_error) option
 
 type pretype_error =
   (* Old Case *)
@@ -37,17 +37,17 @@ type pretype_error =
   (* Type inference unification *)
   | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
   (* Tactic unification *)
-  | UnifOccurCheck of existential_key * constr
+  | UnifOccurCheck of existential_key * EConstr.constr
   | UnsolvableImplicit of existential_key * Evd.unsolvability_explanation option
-  | CannotUnify of constr * constr * unification_error option
-  | CannotUnifyLocal of constr * constr * constr
+  | CannotUnify of EConstr.constr * EConstr.constr * unification_error option
+  | CannotUnifyLocal of EConstr.constr * EConstr.constr * EConstr.constr
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
-  | NoOccurrenceFound of constr * Id.t option
-  | CannotFindWellTypedAbstraction of constr * EConstr.constr list * (env * type_error) option
-  | WrongAbstractionType of Name.t * constr * types * types
+  | NoOccurrenceFound of EConstr.constr * Id.t option
+  | CannotFindWellTypedAbstraction of EConstr.constr * EConstr.constr list * (env * type_error) option
+  | WrongAbstractionType of Name.t * EConstr.constr * EConstr.types * EConstr.types
   | AbstractionOverMeta of Name.t * Name.t
-  | NonLinearUnification of Name.t * constr
+  | NonLinearUnification of Name.t * EConstr.constr
   (* Pretyping *)
   | VarNotFound of Id.t
   | UnexpectedType of constr * constr

@@ -198,7 +198,7 @@ val whd_zeta_stack : local_stack_reduction_function
 val whd_zeta_state : local_state_reduction_function
 val whd_zeta : local_reduction_function
 
-val shrink_eta : EConstr.t -> constr
+val shrink_eta : EConstr.constr -> EConstr.constr
 
 (** Various reduction functions *)
 

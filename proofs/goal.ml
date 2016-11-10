@@ -87,7 +87,7 @@ module V82 = struct
     (* Check that the goal itself does not appear in the refined term *)
     let _ =
       if not (Evarutil.occur_evar_upto sigma evk c) then ()
-      else Pretype_errors.error_occur_check Environ.empty_env sigma evk c
+      else Pretype_errors.error_occur_check Environ.empty_env sigma evk (EConstr.of_constr c)
     in
     Evd.define evk c sigma
 

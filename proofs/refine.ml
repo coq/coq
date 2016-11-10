@@ -98,7 +98,7 @@ let make_refine_enter ?(unsafe = true) f =
   let self = Proofview.Goal.goal gl in
   let _ =
     if not (Evarutil.occur_evar_upto sigma self c) then ()
-    else Pretype_errors.error_occur_check env sigma self c
+    else Pretype_errors.error_occur_check env sigma self (EConstr.of_constr c)
   in
   (** Proceed to the refinement *)
   let sigma = match evkmain with

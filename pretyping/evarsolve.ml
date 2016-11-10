@@ -147,17 +147,17 @@ let recheck_applications conv_algo env evdref t =
     | App (f, args) ->
        let () = aux env f in
        let fty = Retyping.get_type_of env !evdref f in
-       let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref x) args in
+       let argsty = Array.map (fun x -> aux env x; EConstr.of_constr (Retyping.get_type_of env !evdref x)) args in
        let rec aux i ty =
 	 if i < Array.length argsty then
 	 match EConstr.kind !evdref (EConstr.of_constr (whd_all env !evdref ty)) with
 	 | Prod (na, dom, codom) ->
-	    (match conv_algo env !evdref Reduction.CUMUL (EConstr.of_constr argsty.(i)) dom with
+	    (match conv_algo env !evdref Reduction.CUMUL argsty.(i) dom with
 	     | Success evd -> evdref := evd;
 			     aux (succ i) (Vars.subst1 args.(i) codom)
 	     | UnifFailure (evd, reason) ->
-		Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), EConstr.Unsafe.to_constr dom))
-	 | _ -> raise (IllTypedInstance (env, ty, EConstr.of_constr argsty.(i)))
+		Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), dom))
+	 | _ -> raise (IllTypedInstance (env, ty, argsty.(i)))
        else ()
      in aux 0 (EConstr.of_constr fty)
     | _ ->

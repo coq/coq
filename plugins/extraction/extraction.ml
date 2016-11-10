@@ -99,6 +99,9 @@ let is_info_scheme env t = match flag_of_type env t with
 | (Info, TypeScheme) -> true
 | _ -> false
 
+let push_rel_assum (n, t) env =
+  Environ.push_rel (LocalAssum (n, t)) env
+
 (*s [type_sign] gernerates a signature aimed at treating a type application. *)
 
 let rec type_sign env c =

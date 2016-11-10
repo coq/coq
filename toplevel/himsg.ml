@@ -272,7 +272,7 @@ let explain_ill_formed_branch env sigma c ci actty expty =
 let explain_generalization env sigma (name,var) j =
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pv = pr_ltype_env env sigma var in
-  let (pc,pt) = pr_ljudge_env (push_rel_assum (name,var) env) sigma j in
+  let (pc,pt) = pr_ljudge_env (push_rel_assum (name,EConstr.of_constr var) env) sigma j in
   pe ++ str "Cannot generalize" ++ brk(1,1) ++ pv ++ spc () ++
   str "over" ++ brk(1,1) ++ pc ++ str "," ++ spc () ++
   str "it has type" ++ spc () ++ pt ++
@@ -529,7 +529,7 @@ let explain_cant_find_case_type env sigma c =
     pe ++ str "."
 
 let explain_occur_check env sigma ev rhs =
-  let rhs = Evarutil.nf_evar sigma rhs in
+  let rhs = EConstr.to_constr sigma rhs in
   let env = make_all_name_different env in
   let pt = pr_lconstr_env env sigma rhs in
   str "Cannot define " ++ pr_existential_key sigma ev ++ str " with term" ++
@@ -637,6 +637,9 @@ let explain_cannot_unify env sigma m n e =
   str "with" ++ brk(1,1) ++ pn ++ ppreason ++ str "."
 
 let explain_cannot_unify_local env sigma m n subn =
+  let m = EConstr.to_constr sigma m in
+  let n = EConstr.to_constr sigma n in
+  let subn = EConstr.to_constr sigma subn in
   let pm = pr_lconstr_env env sigma m in
   let pn = pr_lconstr_env env sigma n in
   let psubn = pr_lconstr_env env sigma subn in
@@ -649,6 +652,7 @@ let explain_refiner_cannot_generalize env sigma ty =
   pr_lconstr_env env sigma ty ++ str "."
 
 let explain_no_occurrence_found env sigma c id =
+  let c = EConstr.to_constr sigma c in
   str "Found no subterm matching " ++ pr_lconstr_env env sigma c ++
   str " in " ++
     (match id with
@@ -662,6 +666,7 @@ let explain_cannot_unify_binding_type env sigma m n =
   str "which should be unifiable with" ++ brk(1,1) ++ pn ++ str "."
 
 let explain_cannot_find_well_typed_abstraction env sigma p l e =
+  let p = EConstr.to_constr sigma p in
   str "Abstracting over the " ++
   str (String.plural (List.length l) "term") ++ spc () ++
   hov 0 (pr_enum (fun c -> pr_lconstr_env env sigma (EConstr.to_constr sigma c)) l) ++ spc () ++
@@ -670,6 +675,9 @@ let explain_cannot_find_well_typed_abstraction env sigma p l e =
   (match e with None -> mt () | Some e -> fnl () ++ str "Reason is: " ++ e)
 
 let explain_wrong_abstraction_type env sigma na abs expected result =
+  let abs = EConstr.to_constr sigma abs in
+  let expected = EConstr.to_constr sigma expected in
+  let result = EConstr.to_constr sigma result in
   let ppname = match na with Name id -> pr_id id ++ spc () | _ -> mt () in
   str "Cannot instantiate metavariable " ++ ppname ++ strbrk "of type " ++
   pr_lconstr_env env sigma expected ++ strbrk " with abstraction " ++
@@ -681,6 +689,7 @@ let explain_abstraction_over_meta _ m n =
   pr_name m ++ spc () ++ str "and " ++ pr_name n ++ str "."
 
 let explain_non_linear_unification env sigma m t =
+  let t = EConstr.to_constr sigma t in
   strbrk "Cannot unambiguously instantiate " ++
   pr_name m ++ str ":" ++
   strbrk " which would require to abstract twice on " ++
@@ -742,7 +751,13 @@ let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1
     str "Found nested occurrences of the pattern at positions " ++
     int pos1 ++ strbrk " and " ++ pr_position (cl2,pos2) ++ str "."
   else
-    let ppreason = match e with None -> mt() | Some (c1,c2,e) -> explain_unification_error env sigma c1 c2 (Some e) in
+    let ppreason = match e with
+    | None -> mt()
+    | Some (c1,c2,e) ->
+      let c1 = EConstr.to_constr sigma c1 in
+      let c2 = EConstr.to_constr sigma c2 in
+      explain_unification_error env sigma c1 c2 (Some e)
+    in
     str "Found incompatible occurrences of the pattern" ++ str ":" ++
     spc () ++ str "Matched term " ++ pr_lconstr_env env sigma (EConstr.to_constr sigma t2) ++
     strbrk " at position " ++ pr_position (cl2,pos2) ++
@@ -819,6 +834,8 @@ let explain_pretype_error env sigma err =
     explain_unexpected_type env sigma actual expect
   | NotProduct c -> explain_not_product env sigma c
   | CannotUnify (m,n,e) ->
+    let m = EConstr.Unsafe.to_constr m in
+    let n = EConstr.Unsafe.to_constr n in
     let env, m, n = contract2 env m n in
     explain_cannot_unify env sigma m n e
   | CannotUnifyLocal (m,n,sn) -> explain_cannot_unify_local env sigma m n sn

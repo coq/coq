@@ -143,7 +143,7 @@ let unify ?(flags=fail_quick_unif_flags) m =
     let n = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
     let evd = clear_metas (Tacmach.New.project gl) in
     try
-      let evd' = w_unify env evd CONV ~flags m n in
+      let evd' = w_unify env evd CONV ~flags (EConstr.of_constr m) (EConstr.of_constr n) in
 	Proofview.Unsafe.tclEVARSADVANCE evd'
     with e when CErrors.noncritical e -> Proofview.tclZERO e
   end }

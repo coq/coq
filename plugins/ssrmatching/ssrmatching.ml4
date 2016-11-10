@@ -332,7 +332,7 @@ let flags_FO =
       (Unification.default_no_delta_unify_flags ()).Unification.resolve_evars
   }
 let unif_FO env ise p c =
-  Unification.w_unify env ise Reduction.CONV ~flags:flags_FO p c
+  Unification.w_unify env ise Reduction.CONV ~flags:flags_FO (EConstr.of_constr p) (EConstr.of_constr c)
 
 (* Perform evar substitution in main term and prune substitution. *)
 let nf_open_term sigma0 ise c =

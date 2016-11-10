@@ -504,7 +504,7 @@ let is_predicate_explicitly_dep env sigma pred arsign =
     let pv' = EConstr.of_constr (whd_all env sigma pval) in
     match EConstr.kind sigma pv', arsign with
       | Lambda (na,t,b), (LocalAssum _)::arsign ->
-	  srec (push_rel_assum (na, EConstr.Unsafe.to_constr t) env) b arsign
+	  srec (push_rel_assum (na, t) env) b arsign
       | Lambda (na,_,t), _ ->
 
        (* The following code has an impact on the introduction names

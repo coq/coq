@@ -711,7 +711,7 @@ let symmetry env sort rew =
 let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) by t =
   try
     let left = if l2r then c1 else c2 in
-    let sigma = Unification.w_unify ~flags env sigma CONV left t in
+    let sigma = Unification.w_unify ~flags env sigma CONV (EConstr.of_constr left) (EConstr.of_constr t) in
     let sigma = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
     let evd = solve_remaining_by env sigma holes by in
@@ -738,7 +738,7 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
        basically an eq_constr, except when preexisting evars occur in
        either the lemma or the goal, in which case the eq_constr also
        solved this evars *)
-    let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV left t in
+    let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV (EConstr.of_constr left) (EConstr.of_constr t) in
     let rew_evars = sigma, cstrs in
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_car = car; rew_from = c1; rew_to = c2; rew_prf; rew_evars; } in
@@ -1423,7 +1423,7 @@ module Strategies =
             error "fold: the term is not unfoldable !"
 	in
 	  try
-	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
+	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) (EConstr.of_constr unfolded) (EConstr.of_constr t) in
 	    let c' = Evarutil.nf_evar sigma c in
 	      state, Success { rew_car = ty; rew_from = t; rew_to = c';
 				  rew_prf = RewCast DEFAULTcast;
@@ -2045,15 +2045,16 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
          in the context *)
       Unification.w_unify_to_subterm 
        ~flags:rewrite_unif_flags
-        env sigma ((if l2r then c1 else c2),but)
+        env sigma (EConstr.of_constr (if l2r then c1 else c2),EConstr.of_constr but)
     with
     | ex when Pretype_errors.precatchable_exception ex ->
 	(* ~flags:(true,true) to make Ring work (since it really
            exploits conversion) *)
       Unification.w_unify_to_subterm 
         ~flags:rewrite_conv_unif_flags
-        env sigma ((if l2r then c1 else c2),but)
+        env sigma (EConstr.of_constr (if l2r then c1 else c2),EConstr.of_constr but)
   in
+  let c' = EConstr.Unsafe.to_constr c' in
   let nf c = Evarutil.nf_evar sigma c in
   let c1 = if l2r then nf c' else nf c1
   and c2 = if l2r then nf c2 else nf c'
