@@ -191,16 +191,6 @@ let xdg_data_dirs warn =
   in
   xdg_data_home warn :: sys_dirs @ opt2list Coq_config.datadir
 
-let xdg_config_dirs warn =
-  let sys_dirs =
-    try
-      List.map coqify (path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
-    with
-      | Not_found when String.equal Sys.os_type "Win32" -> [relative_base / "config"]
-      | Not_found -> ["/etc/xdg/coq"]
-  in
-  xdg_config_home warn :: sys_dirs @ opt2list Coq_config.configdir
-
 let xdg_dirs ~warn =
   List.filter Sys.file_exists (xdg_data_dirs warn)
 

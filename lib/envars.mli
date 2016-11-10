@@ -66,7 +66,6 @@ val camlp4 : unit -> string
 *)
 val xdg_config_home : (string -> unit) -> string
 val xdg_data_home   : (string -> unit) -> string
-val xdg_config_dirs : (string -> unit) -> string list
 val xdg_data_dirs   : (string -> unit) -> string list
 val xdg_dirs : warn : (string -> unit) -> string list
 
