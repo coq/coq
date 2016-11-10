@@ -76,6 +76,7 @@ type printable =
   | PrintImplicit of reference or_by_notation
   | PrintAssumptions of bool * bool * reference or_by_notation
   | PrintStrategy of reference or_by_notation option
+  | PrintWarnings of (string * string option) option
 
 type search_about_item =
   | SearchSubPattern of constr_pattern_expr

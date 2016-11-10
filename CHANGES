@@ -1,6 +1,9 @@
 Changes from V8.5 to V8.6beta1
 ==============================
 
+The main changes are demonstrated in doc/demos/Coq86.v, see also the
+credits section of the reference manual for an overview.
+
 Bugfixes
 
 - #4527: when typechecking the statement of a lemma using universe polymorphic
