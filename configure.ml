@@ -905,7 +905,7 @@ let install_dirs =
 
 let select var = List.find (fun (v,_,_,_) -> v=var) install_dirs
 
-let libdir = let (_,_,d,_) = select "COQLIBINSTALL" in d
+let coqlib = let (_,_,d,_) = select "COQLIBINSTALL" in d
 
 let docdir = let (_,_,d,_) = select "DOCDIR" in d
 
@@ -940,7 +940,7 @@ let config_runtime () =
   | _ ->
     let ld="CAML_LD_LIBRARY_PATH" in
     build_loadpath := sprintf "export %s:='%s/kernel/byterun':$(%s)" ld coqtop ld;
-    ["-dllib";"-lcoqrun";"-dllpath";libdir/"kernel/byterun"]
+    ["-dllib";"-lcoqrun";"-dllpath";coqlib/"kernel/byterun"]
 
 let vmbyteflags = config_runtime ()
 
@@ -1026,7 +1026,7 @@ let write_configml f =
   pr "(* %s *)\n\n" (String.concat " " (Array.to_list Sys.argv));
   pr_b "local" !Prefs.local;
   pr "let vmbyteflags = ["; List.iter (pr "%S;") vmbyteflags; pr "]\n";
-  pr_o "coqlib" (if !Prefs.local then None else Some libdir);
+  pr_o "coqlib" (if !Prefs.local then None else Some coqlib);
   pr_o "configdir" configdir;
   pr_o "datadir" datadir;
   pr_s "docdir" docdir;
