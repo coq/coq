@@ -36,7 +36,7 @@ val refine_one : ?unsafe:bool -> ('a * Constr.t) Sigma.run -> 'a tactic
 (** {7 Helper functions} *)
 
 val with_type : Environ.env -> Evd.evar_map ->
-  Term.constr -> Term.types -> Evd.evar_map * Term.constr
+  Term.constr -> Term.types -> Evd.evar_map * EConstr.constr
 (** [with_type env sigma c t] ensures that [c] is of type [t]
     inserting a coercion if needed. *)
 

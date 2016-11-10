@@ -120,6 +120,9 @@ let abstract_list_all env evd typ c l =
     | UserError _ ->
         error_cannot_find_well_typed_abstraction env evd p l None
     | Type_errors.TypeError (env',x) ->
+        (** FIXME: plug back the typing information *)
+        error_cannot_find_well_typed_abstraction env evd p l None
+    | Pretype_errors.PretypeError (env',evd,TypingError x) ->
         error_cannot_find_well_typed_abstraction env evd p l (Some (env',x)) in
   let typp = EConstr.of_constr typp in
   evd,(p,typp)
@@ -1255,15 +1258,12 @@ let is_mimick_head sigma ts f =
   | (Rel _|Construct _|Ind _) -> true
   | _ -> false
 
-let make_judge c t =
-  make_judge (EConstr.Unsafe.to_constr c) (EConstr.Unsafe.to_constr t)
-
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
   let (evd',j') = inh_conv_coerce_rigid_to true Loc.ghost env evd j tycon in
   let evd' = Evarconv.consider_remaining_unif_problems env evd' in
   let evd' = Evd.map_metas_fvalue (nf_evar evd') evd' in
-    (evd',EConstr.of_constr j'.uj_val)
+    (evd',j'.uj_val)
 
 let w_coerce_to_type env evd c cty mvty =
   let evd,tycon = pose_all_metas_as_evars env evd mvty in

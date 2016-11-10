@@ -2100,11 +2100,13 @@ let interp_redexp env sigma r =
 
 let _ =
   let eval ty env sigma lfun arg =
+    let ty = EConstr.Unsafe.to_constr ty in
     let ist = { lfun = lfun; extra = TacStore.empty; } in
     if Genarg.has_type arg (glbwit wit_tactic) then
       let tac = Genarg.out_gen (glbwit wit_tactic) arg in
       let tac = interp_tactic ist tac in
-      Pfedit.refine_by_tactic env sigma ty tac
+      let (c, sigma) = Pfedit.refine_by_tactic env sigma ty tac in
+      (EConstr.of_constr c, sigma)
     else
       failwith "not a tactic"
   in

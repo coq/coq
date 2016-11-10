@@ -274,10 +274,10 @@ val is_template_polymorphic : env -> Evd.evar_map -> EConstr.t -> bool
 
 (** Combinators on judgments *)
 
-val on_judgment       : (types -> types) -> unsafe_judgment -> unsafe_judgment
-val on_judgment_value : (types -> types) -> unsafe_judgment -> unsafe_judgment
-val on_judgment_type  : (types -> types) -> unsafe_judgment -> unsafe_judgment
+val on_judgment       : ('a -> 'b) -> ('a, 'a) punsafe_judgment -> ('b, 'b) punsafe_judgment
+val on_judgment_value : ('c -> 'c) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
+val on_judgment_type  : ('t -> 't) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
 
 (** {6 Functions to deal with impossible cases } *)
 val set_impossible_default_clause : (unit -> (constr * types) Univ.in_universe_context_set) -> unit
-val coq_unit_judge : unit -> unsafe_judgment Univ.in_universe_context_set
+val coq_unit_judge : unit -> EConstr.unsafe_judgment Univ.in_universe_context_set

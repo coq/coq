@@ -53,16 +53,16 @@ let apply_coercion_args env evd check isproj argl funj =
   let rec apply_rec acc typ = function
     | [] ->
       if isproj then
-	let cst = fst (destConst !evdref (EConstr.of_constr (j_val funj))) in
+	let cst = fst (destConst !evdref (j_val funj)) in
 	let p = Projection.make cst false in
 	let pb = lookup_projection p env in
 	let args = List.skipn pb.Declarations.proj_npars argl in
 	let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
-	  { uj_val = EConstr.Unsafe.to_constr (applist (mkProj (p, hd), tl));
-	    uj_type = EConstr.Unsafe.to_constr typ }
+	  { uj_val = applist (mkProj (p, hd), tl);
+	    uj_type = typ }
       else
-	{ uj_val = EConstr.Unsafe.to_constr (applist (EConstr.of_constr (j_val funj),argl));
-	  uj_type = EConstr.Unsafe.to_constr typ }
+	{ uj_val = applist (j_val funj,argl);
+	  uj_type = typ }
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
       match EConstr.kind !evdref (EConstr.of_constr (whd_all env !evdref typ)) with
       | Prod (_,c1,c2) ->
@@ -71,7 +71,7 @@ let apply_coercion_args env evd check isproj argl funj =
         apply_rec (h::acc) (Vars.subst1 h c2) restl
       | _ -> anomaly (Pp.str "apply_coercion_args")
   in
-  let res = apply_rec [] (EConstr.of_constr funj.uj_type) argl in
+  let res = apply_rec [] funj.uj_type argl in
     !evdref, res
 
 (* appliquer le chemin de coercions de patterns p *)
@@ -367,7 +367,7 @@ let apply_coercion env sigma p hj typ_cl =
         (fun (ja,typ_cl,sigma) i ->
 	  let ((fv,isid,isproj),ctx) = coercion_value i in
 	  let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-	  let argl = (class_args_of env sigma typ_cl)@[EConstr.of_constr ja.uj_val] in
+	  let argl = (class_args_of env sigma typ_cl)@[ja.uj_val] in
 	  let sigma, jres = 
 	    apply_coercion_args env sigma true isproj argl fv 
 	  in
@@ -375,7 +375,7 @@ let apply_coercion env sigma p hj typ_cl =
 	      { uj_val = ja.uj_val; uj_type = jres.uj_type }
 	     else
 	      jres),
-	    EConstr.of_constr jres.uj_type,sigma)
+	    jres.uj_type,sigma)
       (hj,typ_cl,sigma) p
     in evd, j
   with NoCoercion as e -> raise e
@@ -383,23 +383,23 @@ let apply_coercion env sigma p hj typ_cl =
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core env evd j =
-  let t = whd_all env evd (EConstr.of_constr j.uj_type) in
+  let t = whd_all env evd j.uj_type in
   let t = EConstr.of_constr t in
     match EConstr.kind evd t with
     | Prod (_,_,_) -> (evd,j)
     | Evar ev ->
 	let (evd',t) = Evardefine.define_evar_as_product evd ev in
-	  (evd',{ uj_val = j.uj_val; uj_type = EConstr.Unsafe.to_constr t })
+	  (evd',{ uj_val = j.uj_val; uj_type = t })
     | _ ->
       	try let t,p =
-	  lookup_path_to_fun_from env evd (EConstr.of_constr j.uj_type) in
+	  lookup_path_to_fun_from env evd j.uj_type in
 	    apply_coercion env evd p j t
 	with Not_found | NoCoercion ->
           if Flags.is_program_mode () then
 	  try
 	    let evdref = ref evd in
 	    let coercef, t = mu env evdref t in
-	    let res = { uj_val = EConstr.Unsafe.to_constr (app_opt env evdref coercef (EConstr.of_constr j.uj_val)); uj_type = EConstr.Unsafe.to_constr t } in
+	    let res = { uj_val = app_opt env evdref coercef j.uj_val; uj_type = t } in
 	      (!evdref, res)
 	  with NoSubtacCoercion | NoCoercion ->
 	    (evd,j)
@@ -415,17 +415,23 @@ let inh_app_fun resolve_tc env evd j =
     try inh_app_fun_core env (saturate_evd env evd) j
     with NoCoercion -> (evd, j)
 
+let type_judgment env sigma j =
+  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma j.uj_type)) with
+    | Sort s -> {utj_val = j.uj_val; utj_type = s }
+    | _ -> error_not_a_type env sigma j
+
 let inh_tosort_force loc env evd j =
   try
-    let t,p = lookup_path_to_sort_from env evd (EConstr.of_constr j.uj_type) in
+    let t,p = lookup_path_to_sort_from env evd j.uj_type in
     let evd,j1 = apply_coercion env evd p j t in
+    let whd_evar evd c = EConstr.of_constr (whd_evar evd (EConstr.Unsafe.to_constr c)) in
     let j2 = on_judgment_type (whd_evar evd) j1 in
-      (evd,type_judgment env j2)
+      (evd,type_judgment env evd j2)
   with Not_found | NoCoercion ->
     error_not_a_type ~loc env evd j
 
 let inh_coerce_to_sort loc env evd j =
-  let typ = whd_all env evd (EConstr.of_constr j.uj_type) in
+  let typ = whd_all env evd j.uj_type in
     match EConstr.kind evd (EConstr.of_constr typ) with
     | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
     | Evar ev ->
@@ -437,10 +443,10 @@ let inh_coerce_to_sort loc env evd j =
 let inh_coerce_to_base loc env evd j =
   if Flags.is_program_mode () then
     let evdref = ref evd in
-    let ct, typ' = mu env evdref (EConstr.of_constr j.uj_type) in
+    let ct, typ' = mu env evdref j.uj_type in
     let res =
-      { uj_val = EConstr.Unsafe.to_constr (app_coercion env evdref ct (EConstr.of_constr j.uj_val));
-	uj_type = EConstr.Unsafe.to_constr typ' }
+      { uj_val = (app_coercion env evdref ct j.uj_val);
+	uj_type = typ' }
     in !evdref, res
   else (evd, j)
 
@@ -463,8 +469,8 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
 	  | Some v ->
 	    let evd,j =
 	      apply_coercion env evd p
-		{uj_val = EConstr.Unsafe.to_constr v; uj_type = EConstr.Unsafe.to_constr t} t2 in
-	      evd, Some (EConstr.of_constr j.uj_val), (EConstr.of_constr j.uj_type)
+		{uj_val = v; uj_type = t} t2 in
+	      evd, Some j.uj_val, j.uj_type
 	  | None -> evd, None, t
       with Not_found -> raise NoCoercion
     in
@@ -510,27 +516,27 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
 let inh_conv_coerce_to_gen resolve_tc rigidonly loc env evd cj t =
   let (evd', val') =
     try
-      inh_conv_coerce_to_fail loc env evd rigidonly (Some (EConstr.of_constr cj.uj_val)) (EConstr.of_constr cj.uj_type) t
+      inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
     with NoCoercionNoUnifier (best_failed_evd,e) ->
       try
 	if Flags.is_program_mode () then
-	  coerce_itf loc env evd (Some (EConstr.of_constr cj.uj_val)) (EConstr.of_constr cj.uj_type) t
+	  coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
 	else raise NoSubtacCoercion
       with
       | NoSubtacCoercion when not resolve_tc || not !use_typeclasses_for_conversion ->
-	  error_actual_type ~loc env best_failed_evd cj (EConstr.Unsafe.to_constr t) e
+	  error_actual_type ~loc env best_failed_evd cj t e
       | NoSubtacCoercion ->
 	let evd' = saturate_evd env evd in
       	  try
 	    if evd' == evd then 
-	      error_actual_type ~loc env best_failed_evd cj (EConstr.Unsafe.to_constr t) e
+	      error_actual_type ~loc env best_failed_evd cj t e
 	    else 
-      	      inh_conv_coerce_to_fail loc env evd' rigidonly (Some (EConstr.of_constr cj.uj_val)) (EConstr.of_constr cj.uj_type) t
+      	      inh_conv_coerce_to_fail loc env evd' rigidonly (Some cj.uj_val) cj.uj_type t
 	  with NoCoercionNoUnifier (_evd,_error) ->
-	    error_actual_type ~loc env best_failed_evd cj (EConstr.Unsafe.to_constr t) e
+	    error_actual_type ~loc env best_failed_evd cj t e
   in
   let val' = match val' with Some v -> v | None -> assert(false) in
-    (evd',{ uj_val = EConstr.Unsafe.to_constr val'; uj_type = EConstr.Unsafe.to_constr t })
+    (evd',{ uj_val = val'; uj_type = t })
 
 let inh_conv_coerce_to resolve_tc = inh_conv_coerce_to_gen resolve_tc false
 let inh_conv_coerce_rigid_to resolve_tc = inh_conv_coerce_to_gen resolve_tc true

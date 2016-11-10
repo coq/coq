@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Names
 open Term
 open Environ
 open Evd
@@ -43,4 +44,11 @@ val check_allowed_sort : env -> evar_map -> pinductive -> EConstr.constr -> ECon
 (** Raise an error message if bodies have types not unifiable with the
     expected ones *)
 val check_type_fixpoint : Loc.t -> env -> evar_map ref ->
-  Names.Name.t array -> EConstr.types array -> unsafe_judgment array -> unit
+  Names.Name.t array -> EConstr.types array -> EConstr.unsafe_judgment array -> unit
+
+val judge_of_prop : EConstr.unsafe_judgment
+val judge_of_set : EConstr.unsafe_judgment
+val judge_of_abstraction : Environ.env -> Name.t ->
+  EConstr.unsafe_type_judgment -> EConstr.unsafe_judgment -> EConstr.unsafe_judgment
+val judge_of_product : Environ.env -> Name.t ->
+  EConstr.unsafe_type_judgment -> EConstr.unsafe_type_judgment -> EConstr.unsafe_judgment

@@ -141,13 +141,13 @@ val judge_of_new_Type : 'r Sigma.t -> (unsafe_judgment, 'r) Sigma.sigma
 
 val whd_evar :  evar_map -> constr -> constr
 val nf_evar :  evar_map -> constr -> constr
-val j_nf_evar :  evar_map -> unsafe_judgment -> unsafe_judgment
+val j_nf_evar :  evar_map -> EConstr.unsafe_judgment -> EConstr.unsafe_judgment
 val jl_nf_evar :
-   evar_map -> unsafe_judgment list -> unsafe_judgment list
+   evar_map -> EConstr.unsafe_judgment list -> EConstr.unsafe_judgment list
 val jv_nf_evar :
-   evar_map -> unsafe_judgment array -> unsafe_judgment array
+   evar_map -> EConstr.unsafe_judgment array -> EConstr.unsafe_judgment array
 val tj_nf_evar :
-   evar_map -> unsafe_type_judgment -> unsafe_type_judgment
+   evar_map -> EConstr.unsafe_type_judgment -> EConstr.unsafe_type_judgment
 
 val nf_named_context_evar : evar_map -> Context.Named.t -> Context.Named.t
 val nf_rel_context_evar : evar_map -> Context.Rel.t -> Context.Rel.t

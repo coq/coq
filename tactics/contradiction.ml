@@ -30,7 +30,7 @@ let absurd c =
     let sigma = Sigma.to_evar_map sigma in
     let j = Retyping.get_judgment_of env sigma (EConstr.of_constr c) in
     let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
-    let t = j.Environ.utj_val in
+    let t = EConstr.Unsafe.to_constr j.Environ.utj_val in
     let tac =
     Tacticals.New.tclTHENLIST [
       elim_type (build_coq_False ());

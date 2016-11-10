@@ -31,11 +31,13 @@ type position_reporting = (position * int) * EConstr.t
 
 type subterm_unification_error = bool * position_reporting * position_reporting * (EConstr.constr * EConstr.constr * unification_error) option
 
+type type_error = (EConstr.constr, EConstr.types) ptype_error
+
 type pretype_error =
   (* Old Case *)
-  | CantFindCaseType of constr
+  | CantFindCaseType of EConstr.constr
   (* Type inference unification *)
-  | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
+  | ActualTypeNotCoercible of EConstr.unsafe_judgment * EConstr.types * unification_error
   (* Tactic unification *)
   | UnifOccurCheck of existential_key * EConstr.constr
   | UnsolvableImplicit of existential_key * Evd.unsolvability_explanation option
@@ -50,7 +52,7 @@ type pretype_error =
   | NonLinearUnification of Name.t * EConstr.constr
   (* Pretyping *)
   | VarNotFound of Id.t
-  | UnexpectedType of constr * constr
+  | UnexpectedType of EConstr.constr * EConstr.constr
   | NotProduct of EConstr.constr
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
@@ -75,14 +77,19 @@ let error_actual_type ?loc env sigma {uj_val=c;uj_type=actty} expty reason =
   raise_pretype_error ?loc
     (env, sigma, ActualTypeNotCoercible (j, expty, reason))
 
+let error_actual_type_core ?loc env sigma {uj_val=c;uj_type=actty} expty =
+  let j = {uj_val=c;uj_type=actty} in
+  raise_type_error ?loc
+    (env, sigma, ActualType (j, expty))
+
 let error_cant_apply_not_functional ?loc env sigma rator randl =
   raise_type_error ?loc
-    (env, sigma, CantApplyNonFunctional (rator, Array.of_list randl))
+    (env, sigma, CantApplyNonFunctional (rator, randl))
 
 let error_cant_apply_bad_type ?loc env sigma (n,c,t) rator randl =
   raise_type_error ?loc
     (env, sigma,
-       CantApplyBadType ((n,c,t), rator, Array.of_list randl))
+       CantApplyBadType ((n,c,t), rator, randl))
 
 let error_ill_formed_branch ?loc env sigma c i actty expty =
   raise_type_error
@@ -98,8 +105,15 @@ let error_ill_typed_rec_body ?loc env sigma i na jl tys =
   raise_type_error ?loc
     (env, sigma, IllTypedRecBody (i, na, jl, tys))
 
+let error_elim_arity ?loc env sigma pi s c j a =
+  raise_type_error ?loc
+    (env, sigma, ElimArity (pi, s, c, j, a))
+
 let error_not_a_type ?loc env sigma j =
   raise_type_error ?loc (env, sigma, NotAType j)
+
+let error_assumption ?loc env sigma j =
+  raise_type_error ?loc (env, sigma, BadAssumption j)
 
 (*s Implicit arguments synthesis errors. It is hard to find
     a precise location. *)

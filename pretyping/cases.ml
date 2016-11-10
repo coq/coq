@@ -89,9 +89,6 @@ let list_try_compile f l =
 let force_name =
   let nx = Name default_dependent_ident in function Anonymous -> nx | na -> na
 
-let make_judge c ty =
-  make_judge (EConstr.Unsafe.to_constr c) (EConstr.Unsafe.to_constr ty)
-
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
 (************************************************************************)
@@ -265,7 +262,7 @@ type 'a pattern_matching_problem =
       mat       : 'a matrix;
       caseloc   : Loc.t;
       casestyle : case_style;
-      typing_function: type_constraint -> env -> evar_map ref -> 'a option -> unsafe_judgment }
+      typing_function: type_constraint -> env -> evar_map ref -> 'a option -> EConstr.unsafe_judgment }
 
 (*--------------------------------------------------------------------------*
  * A few functions to infer the inductive type from the patterns instead of *
@@ -366,12 +363,12 @@ let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
   let j = typing_fun tycon env evdref tomatch in
   let evd, j = Coercion.inh_coerce_to_base (loc_of_glob_constr tomatch) env !evdref j in
   evdref := evd;
-  let typ = EConstr.of_constr (nf_evar !evdref j.uj_type) in
+  let typ = EConstr.of_constr (nf_evar !evdref (EConstr.Unsafe.to_constr j.uj_type)) in
   let t =
     try try_find_ind env !evdref typ realnames
     with Not_found ->
       unify_tomatch_with_patterns evdref env loc typ pats realnames in
-  (EConstr.of_constr j.uj_val,t)
+  (j.uj_val,t)
 
 let coerce_to_indtype typing_fun evdref env matx tomatchl =
   let pats = List.map (fun r ->  r.patterns) matx in
@@ -415,7 +412,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 		let _ = e_cumul pb.env pb.evdref indt typ in
 		current
 	      else
-		EConstr.of_constr (evd_comb2 (Coercion.inh_conv_coerce_to true Loc.ghost pb.env)
+		(evd_comb2 (Coercion.inh_conv_coerce_to true Loc.ghost pb.env)
 		  pb.evdref (make_judge current typ) indt).uj_val in
 	    let sigma =  !(pb.evdref) in
 	    (current,try_find_ind pb.env sigma indt names))
@@ -1002,7 +999,7 @@ let adjust_impossible_cases pb pred tomatch submat =
     | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) == Evar_kinds.ImpossibleCase ->
         if not (Evd.is_defined !(pb.evdref) evk) then begin
 	  let evd, default = use_unit_judge !(pb.evdref) in
-	  pb.evdref := Evd.define evk default.uj_type evd
+	  pb.evdref := Evd.define evk (EConstr.Unsafe.to_constr default.uj_type) evd
         end;
         add_assert_false_case pb tomatch
     | _ ->
@@ -1411,8 +1408,8 @@ and match_current pb (initial,tomatch) =
 	    make_case_or_project pb.env !(pb.evdref) indf ci pred current brvals
 	  in
 	  Typing.check_allowed_sort pb.env !(pb.evdref) mind current pred;
-	  { uj_val = EConstr.Unsafe.to_constr (applist (case, inst));
-	    uj_type = EConstr.Unsafe.to_constr (prod_applist !(pb.evdref) typ inst) }
+	  { uj_val = applist (case, inst);
+	    uj_type = prod_applist !(pb.evdref) typ inst }
 
 
 (* Building the sub-problem when all patterns are variables. Case
@@ -1429,8 +1426,8 @@ and shift_problem ((current,t),_,na) pb =
        history = pop_history pb.history;
        mat = List.map (push_current_pattern (current,ty)) pb.mat } in
   let j = compile pb in
-  { uj_val = EConstr.Unsafe.to_constr (subst1 current (EConstr.of_constr j.uj_val));
-    uj_type = EConstr.Unsafe.to_constr (subst1 current (EConstr.of_constr j.uj_type)) }
+  { uj_val = subst1 current j.uj_val;
+    uj_type = subst1 current j.uj_type }
 
 (* Building the sub-problem when all patterns are variables,
    non-initial case. Variables which appear as subterms of constructor
@@ -1453,7 +1450,7 @@ and compile_all_variables initial cur pb =
 (* Building the sub-problem when all patterns are variables *)
 and compile_branch initial current realargs names deps pb arsign eqns cstr =
   let sign, pb = build_branch initial current realargs deps names pb arsign eqns cstr in
-  sign, EConstr.of_constr (compile pb).uj_val
+  sign, (compile pb).uj_val
 
 (* Abstract over a declaration before continuing splitting *)
 and compile_generalization pb i d rest =
@@ -1463,8 +1460,8 @@ and compile_generalization pb i d rest =
        tomatch = rest;
        mat = List.map (push_generalized_decl_eqn pb.env i d) pb.mat } in
   let j = compile pb in
-  { uj_val = Term.mkLambda_or_LetIn d j.uj_val;
-    uj_type = Term.mkProd_wo_LetIn d j.uj_type }
+  { uj_val = mkLambda_or_LetIn d j.uj_val;
+    uj_type = mkProd_wo_LetIn d j.uj_type }
 
 (* spiwack: the [initial] argument keeps track whether the alias has
    been introduced by a toplevel branch ([true]) or a deep one
@@ -1482,11 +1479,11 @@ and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
     let j = compile pb in
     let sigma = !(pb.evdref) in
     { uj_val =
-        if isRel sigma c || isVar sigma c || count_occurrences sigma (mkRel 1) (EConstr.of_constr j.uj_val) <= 1 then
-          EConstr.Unsafe.to_constr (subst1 c (EConstr.of_constr j.uj_val))
+        if isRel sigma c || isVar sigma c || count_occurrences sigma (mkRel 1) j.uj_val <= 1 then
+          subst1 c j.uj_val
         else
-          EConstr.Unsafe.to_constr (mkLetIn (na,c,t,EConstr.of_constr j.uj_val));
-      uj_type = EConstr.Unsafe.to_constr (subst1 c (EConstr.of_constr j.uj_type)) } in
+          mkLetIn (na,c,t,j.uj_val);
+      uj_type = subst1 c j.uj_type } in
   (* spiwack: when an alias appears on a deep branch, its non-expanded
      form is automatically a variable of the same name. We avoid
      introducing such superfluous aliases so that refines are elegant. *)
@@ -1726,7 +1723,7 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
         (t,tt) in
   let b = e_cumul env evdref tt (mkSort s) (* side effect *) in
   if not b then anomaly (Pp.str "Build_tycon: should be a type");
-  { uj_val = EConstr.Unsafe.to_constr t; uj_type = EConstr.Unsafe.to_constr tt }
+  { uj_val = t; uj_type = tt }
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
  * type T, [build_inversion_problem Gamma Sigma (t1..tn) T] builds a return
@@ -1851,7 +1848,7 @@ let build_inversion_problem loc env sigma tms t =
       caseloc   = loc;
       casestyle = RegularStyle;
       typing_function = build_tycon loc env pb_env s subst} in
-  let pred = EConstr.of_constr (compile pb).uj_val in
+  let pred = (compile pb).uj_val in
   (!evdref,pred)
 
 (* Here, [pred] is assumed to be in the context built from all *)
@@ -1905,7 +1902,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 let inh_conv_coerce_to_tycon loc env evdref j tycon =
   match tycon with
     | Some p ->
-	let (evd',j) = Coercion.inh_conv_coerce_to true loc env !evdref j (EConstr.of_constr p) in
+	let (evd',j) = Coercion.inh_conv_coerce_to true loc env !evdref j p in
           evdref := evd';
           j
     | None -> j
@@ -2029,7 +2026,7 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
       let evdref = ref sigma in
       let predcclj = typing_fun (mk_tycon (EConstr.mkSort newt)) envar evdref rtntyp in
       let sigma = !evdref in
-      let predccl = EConstr.of_constr (j_nf_evar sigma predcclj).uj_val in
+      let predccl = EConstr.of_constr (nf_evar sigma (EConstr.Unsafe.to_constr predcclj.uj_val)) in
       [sigma, predccl]
   in
   List.map
@@ -2095,7 +2092,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	let IndType (indf, _) = 
 	  try find_rectype env ( !evdref) (lift (-(List.length realargs)) ty)
 	  with Not_found -> error_case_not_inductive env !evdref
-	    {uj_val = EConstr.Unsafe.to_constr ty; uj_type = Typing.unsafe_type_of env !evdref ty}
+	    {uj_val = ty; uj_type = EConstr.of_constr (Typing.unsafe_type_of env !evdref ty)}
 	in
 	let (ind,u), params = dest_ind_family indf in
 	let params = List.map EConstr.of_constr params in
@@ -2297,8 +2294,8 @@ let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
 	 in
 	 let rhs_env = push_rel_context rhs_rels' env in
 	 let j = typing_fun (mk_tycon tycon) rhs_env eqn.rhs.it in
-	 let bbody = it_mkLambda_or_LetIn (EConstr.of_constr j.uj_val) rhs_rels'
-	 and btype = it_mkProd_or_LetIn (EConstr.of_constr j.uj_type) rhs_rels' in
+	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
+	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
 	 let _btype = evd_comb1 (Typing.type_of env) evdref bbody in
 	 let branch_name = Id.of_string ("program_branch_" ^ (string_of_int !i)) in
 	 let branch_decl = local_def (Name branch_name, lift !i bbody, lift !i btype) in
@@ -2554,10 +2551,10 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
   let j = compile pb in
     (* We check for unused patterns *)
     List.iter (check_unused_pattern env) matx;
-    let body = it_mkLambda_or_LetIn (applist (EConstr.of_constr j.uj_val, args)) lets in
+    let body = it_mkLambda_or_LetIn (applist (j.uj_val, args)) lets in
     let j =
-      { uj_val = EConstr.Unsafe.to_constr (it_mkLambda_or_LetIn body tomatchs_lets);
-	uj_type = EConstr.to_constr !evdref tycon; }
+      { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
+	uj_type = EConstr.of_constr (EConstr.to_constr !evdref tycon); }
     in j
 
 (**************************************************************************)
@@ -2632,7 +2629,7 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
     let j = compile pb in
 
     (* We coerce to the tycon (if an elim predicate was provided) *)
-    let j = inh_conv_coerce_to_tycon loc env myevdref j (Option.map EConstr.Unsafe.to_constr tycon) in
+    let j = inh_conv_coerce_to_tycon loc env myevdref j tycon in
     evdref := !myevdref;
     j in
 

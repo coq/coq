@@ -8,9 +8,9 @@
 
 open Names
 open Term
+open Environ
 open EConstr
 open Evd
-open Environ
 open Mod_subst
 
 (** {6 This is the type of class kinds } *)

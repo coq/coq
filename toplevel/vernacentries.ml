@@ -1579,7 +1579,8 @@ let vernac_check_may_eval redexp glopt rc =
   let c = nf c in
   let j =
     if Evarutil.has_undefined_evars sigma' (EConstr.of_constr c) then
-      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' (EConstr.of_constr c))
+      let j = Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' (EConstr.of_constr c)) in
+      Termops.on_judgment EConstr.Unsafe.to_constr j
     else
       (* OK to call kernel which does not support evars *)
       Arguments_renaming.rename_typing env c in

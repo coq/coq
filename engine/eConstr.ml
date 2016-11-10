@@ -75,6 +75,8 @@ type constr = t
 type existential = t pexistential
 type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
+type unsafe_judgment = (constr, types) Environ.punsafe_judgment
+type unsafe_type_judgment = types Environ.punsafe_type_judgment
 
 let mkProp = of_kind (Sort Sorts.prop)
 let mkSet = of_kind (Sort Sorts.set)

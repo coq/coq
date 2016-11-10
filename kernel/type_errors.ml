@@ -13,51 +13,55 @@ open Reduction
 
 (* Type errors. *)
 
-type guard_error =
+type 'constr pguard_error =
   (* Fixpoints *)
   | NotEnoughAbstractionInFixBody
-  | RecursionNotOnInductiveType of constr
-  | RecursionOnIllegalTerm of int * (env * constr) * int list * int list
+  | RecursionNotOnInductiveType of 'constr
+  | RecursionOnIllegalTerm of int * (env * 'constr) * int list * int list
   | NotEnoughArgumentsForFixCall of int
   (* CoFixpoints *)
-  | CodomainNotInductiveType of constr
+  | CodomainNotInductiveType of 'constr
   | NestedRecursiveOccurrences
-  | UnguardedRecursiveCall of constr
-  | RecCallInTypeOfAbstraction of constr
-  | RecCallInNonRecArgOfConstructor of constr
-  | RecCallInTypeOfDef of constr
-  | RecCallInCaseFun of constr
-  | RecCallInCaseArg of constr
-  | RecCallInCasePred of constr
-  | NotGuardedForm of constr
-  | ReturnPredicateNotCoInductive of constr
+  | UnguardedRecursiveCall of 'constr
+  | RecCallInTypeOfAbstraction of 'constr
+  | RecCallInNonRecArgOfConstructor of 'constr
+  | RecCallInTypeOfDef of 'constr
+  | RecCallInCaseFun of 'constr
+  | RecCallInCaseArg of 'constr
+  | RecCallInCasePred of 'constr
+  | NotGuardedForm of 'constr
+  | ReturnPredicateNotCoInductive of 'constr
+
+type guard_error = constr pguard_error
 
 type arity_error =
   | NonInformativeToInformative
   | StrongEliminationOnNonSmallType
   | WrongArity
 
-type type_error =
+type ('constr, 'types) ptype_error =
   | UnboundRel of int
   | UnboundVar of variable
-  | NotAType of unsafe_judgment
-  | BadAssumption of unsafe_judgment
-  | ReferenceVariables of identifier * constr
-  | ElimArity of pinductive * sorts_family list * constr * unsafe_judgment
+  | NotAType of ('constr, 'types) punsafe_judgment
+  | BadAssumption of ('constr, 'types) punsafe_judgment
+  | ReferenceVariables of identifier * 'constr
+  | ElimArity of pinductive * sorts_family list * 'constr * ('constr, 'types) punsafe_judgment
       * (sorts_family * sorts_family * arity_error) option
-  | CaseNotInductive of unsafe_judgment
+  | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | WrongCaseInfo of pinductive * case_info
-  | NumberBranches of unsafe_judgment * int
-  | IllFormedBranch of constr * pconstructor * constr * constr
-  | Generalization of (Name.t * types) * unsafe_judgment
-  | ActualType of unsafe_judgment * types
+  | NumberBranches of ('constr, 'types) punsafe_judgment * int
+  | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
+  | Generalization of (Name.t * 'types) * ('constr, 'types) punsafe_judgment
+  | ActualType of ('constr, 'types) punsafe_judgment * 'types
   | CantApplyBadType of
-      (int * constr * constr) * unsafe_judgment * unsafe_judgment array
-  | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment array
-  | IllFormedRecBody of guard_error * Name.t array * int * env * unsafe_judgment array
+      (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+  | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+  | IllFormedRecBody of 'constr pguard_error * Name.t array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
-      int * Name.t array * unsafe_judgment array * types array
+      int * Name.t array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedConstraints of Univ.constraints
+
+type type_error = (constr, types) ptype_error
 
 exception TypeError of env * type_error
 

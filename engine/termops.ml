@@ -1141,6 +1141,7 @@ let impossible_default_case = ref None
 let set_impossible_default_clause c = impossible_default_case := Some c
 
 let coq_unit_judge =
+  let make_judge c t = make_judge (EConstr.of_constr c) (EConstr.of_constr t) in
   let na1 = Name (Id.of_string "A") in
   let na2 = Name (Id.of_string "H") in
   fun () ->

@@ -133,7 +133,9 @@ let refine ?(unsafe = true) f =
 (** Useful definitions *)
 
 let with_type env evd c t =
-  let my_type = Retyping.get_type_of env evd (EConstr.of_constr c) in
+  let c = EConstr.of_constr c in
+  let my_type = Retyping.get_type_of env evd c in
+  let my_type = EConstr.of_constr my_type in
   let j = Environ.make_judge c my_type in
   let (evd,j') =
     Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j (EConstr.of_constr t)
@@ -147,6 +149,7 @@ let refine_casted ?unsafe f = Proofview.Goal.enter { enter = begin fun gl ->
   let f = { run = fun h ->
     let Sigma (c, h, p) = f.run h in
     let sigma, c = with_type env (Sigma.to_evar_map h) c concl in
+    let c = EConstr.Unsafe.to_constr c in
     Sigma (c, Sigma.Unsafe.of_evar_map sigma, p)
   } in
   refine ?unsafe f

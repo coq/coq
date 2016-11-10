@@ -244,7 +244,7 @@ let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
     if lax then EConstr.Unsafe.to_constr (f env c) else EConstr.Unsafe.to_constr (anomaly_on_error (f env) c)
 
 (* Makes an unsafe judgment from a constr *)
-let get_judgment_of env evc c = { uj_val = EConstr.Unsafe.to_constr c; uj_type = get_type_of env evc c }
+let get_judgment_of env evc c = { uj_val = c; uj_type = EConstr.of_constr (get_type_of env evc c) }
 
 (* Returns sorts of a context *)
 let sorts_of_context env evc ctxt =

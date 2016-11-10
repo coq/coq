@@ -96,14 +96,15 @@ let rec whd_evar sigma c =
     | _ -> c
 
 let rec nf_evar sigma t = Constr.map (fun t -> nf_evar sigma t) (whd_evar sigma t)
+let e_nf_evar sigma t = EConstr.of_constr (nf_evar sigma (EConstr.Unsafe.to_constr t))
 
 let j_nf_evar sigma j =
-  { uj_val = nf_evar sigma j.uj_val;
-    uj_type = nf_evar sigma j.uj_type }
+  { uj_val = e_nf_evar sigma j.uj_val;
+    uj_type = e_nf_evar sigma j.uj_type }
 let jl_nf_evar sigma jl = List.map (j_nf_evar sigma) jl
 let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
 let tj_nf_evar sigma {utj_val=v;utj_type=t} =
-  {utj_val=nf_evar sigma v;utj_type=t}
+  {utj_val=e_nf_evar sigma v;utj_type=t}
 
 let nf_evars_universes evm =
   Universes.nf_evars_and_universes_opt_subst (safe_evar_value evm) 

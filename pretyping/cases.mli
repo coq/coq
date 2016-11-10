@@ -8,9 +8,9 @@
 
 open Names
 open Term
-open EConstr
 open Evd
 open Environ
+open EConstr
 open Inductiveops
 open Glob_term
 open Evarutil
@@ -111,11 +111,11 @@ type 'a pattern_matching_problem =
       typing_function: type_constraint -> env -> evar_map ref -> 'a option -> unsafe_judgment }
 
 
-val compile : 'a pattern_matching_problem -> Environ.unsafe_judgment
+val compile : 'a pattern_matching_problem -> unsafe_judgment
 
 val prepare_predicate :            Loc.t ->
            (Evarutil.type_constraint ->
-            Environ.env -> Evd.evar_map ref -> 'a -> Environ.unsafe_judgment) ->
+            Environ.env -> Evd.evar_map ref -> 'a -> unsafe_judgment) ->
            Environ.env ->
            Evd.evar_map ->
            (types * tomatch_type) list ->

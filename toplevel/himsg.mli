@@ -40,3 +40,6 @@ val explain_module_error : Modops.module_typing_error -> std_ppcmds
 
 val explain_module_internalization_error :
   Modintern.module_internalization_error -> std_ppcmds
+
+val map_pguard_error : ('c -> 'd) -> 'c pguard_error -> 'd pguard_error
+val map_ptype_error : ('c -> 'd) -> ('c, 'c) ptype_error -> ('d, 'd) ptype_error

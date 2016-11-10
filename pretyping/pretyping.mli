@@ -110,11 +110,11 @@ val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
 (** Idem but returns the judgment of the understood term *)
 
 val understand_judgment : env -> evar_map -> 
-  glob_constr -> unsafe_judgment Evd.in_evar_universe_context
+  glob_constr -> EConstr.unsafe_judgment Evd.in_evar_universe_context
 
 (** Idem but do not fail on unresolved evars (type cl*)
 val understand_judgment_tcc : env -> evar_map ref ->
-  glob_constr -> unsafe_judgment
+  glob_constr -> EConstr.unsafe_judgment
 
 val type_uconstr :
   ?flags:inference_flags ->
@@ -145,11 +145,11 @@ val check_evars : env -> evar_map -> evar_map -> EConstr.constr -> unit
 (** Internal of Pretyping... *)
 val pretype :
   int -> bool -> type_constraint -> env -> evar_map ref ->
-  ltac_var_map -> glob_constr -> unsafe_judgment
+  ltac_var_map -> glob_constr -> EConstr.unsafe_judgment
 
 val pretype_type :
   int -> bool -> val_constraint -> env -> evar_map ref ->
-  ltac_var_map -> glob_constr -> unsafe_type_judgment
+  ltac_var_map -> glob_constr -> EConstr.unsafe_type_judgment
 
 val ise_pretype_gen :
   inference_flags -> env -> evar_map ->
@@ -163,5 +163,5 @@ val interp_sort : ?loc:Loc.t -> evar_map -> glob_sort -> evar_map * sorts
 val interp_elimination_sort : glob_sort -> sorts_family
 
 val genarg_interp_hook :
-  (types -> env -> evar_map -> unbound_ltac_var_map ->
-    Genarg.glob_generic_argument -> constr * evar_map) Hook.t
+  (EConstr.types -> env -> evar_map -> unbound_ltac_var_map ->
+    Genarg.glob_generic_argument -> EConstr.constr * evar_map) Hook.t

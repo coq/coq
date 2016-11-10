@@ -319,7 +319,7 @@ let coercion_value { coe_value = c; coe_type = t; coe_context = ctx;
   let subst, ctx = Universes.fresh_universe_context_set_instance ctx in
   let c' = Vars.subst_univs_level_constr subst c 
   and t' = Vars.subst_univs_level_constr subst t in
-    (make_judge c' t', b, b'), ctx
+    (make_judge (EConstr.of_constr c') (EConstr.of_constr t'), b, b'), ctx
 
 (* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)

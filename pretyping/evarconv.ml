@@ -1266,8 +1266,8 @@ let solve_unconstrained_impossible_cases env evd =
       let evd' = Evd.merge_context_set Evd.univ_flexible_alg ~loc evd' ctx in
       let ty = j_type j in
       let conv_algo = evar_conv_x full_transparent_state in
-      let evd' = check_evar_instance evd' evk (EConstr.of_constr ty) conv_algo in
-	Evd.define evk ty evd' 
+      let evd' = check_evar_instance evd' evk ty conv_algo in
+	Evd.define evk (EConstr.Unsafe.to_constr ty) evd' 
     | _ -> evd') evd evd
 
 let consider_remaining_unif_problems env

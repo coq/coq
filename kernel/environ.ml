@@ -469,9 +469,11 @@ let lookup_modtype mp env =
 
 (*s Judgments. *)
 
-type unsafe_judgment = {
-  uj_val : constr;
-  uj_type : types }
+type ('constr, 'types) punsafe_judgment = {
+  uj_val : 'constr;
+  uj_type : 'types }
+
+type unsafe_judgment = (constr, types) punsafe_judgment
 
 let make_judge v tj =
   { uj_val = v;
@@ -480,9 +482,11 @@ let make_judge v tj =
 let j_val j = j.uj_val
 let j_type j = j.uj_type
 
-type unsafe_type_judgment = {
-  utj_val : constr;
+type 'types punsafe_type_judgment = {
+  utj_val : 'types;
   utj_type : sorts }
+
+type unsafe_type_judgment = types punsafe_type_judgment
 
 (*s Compilation of global declaration *)
 

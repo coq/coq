@@ -83,6 +83,8 @@ let rec contract3' env a b c = function
 
 (** Ad-hoc reductions *)
 
+let to_unsafe_judgment j = on_judgment EConstr.Unsafe.to_constr j
+
 let j_nf_betaiotaevar sigma j =
   { uj_val = Evarutil.nf_evar sigma j.uj_val;
     uj_type = Reductionops.nf_betaiota sigma (EConstr.of_constr j.uj_type) }
@@ -170,6 +172,7 @@ let explain_unbound_var env v =
 
 let explain_not_type env sigma j =
   let j = Evarutil.j_nf_evar sigma j in
+  let j = to_unsafe_judgment j in
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc,pt = pr_ljudge_env env sigma j in
   pe ++ str "The term" ++ brk(1,1) ++ pc ++ spc () ++
@@ -177,6 +180,7 @@ let explain_not_type env sigma j =
   str "which should be Set, Prop or Type."
 
 let explain_bad_assumption env sigma j =
+  let j = to_unsafe_judgment j in
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc,pt = pr_ljudge_env env sigma j in
   pe ++ str "Cannot declare a variable or hypothesis over the term" ++
@@ -184,6 +188,7 @@ let explain_bad_assumption env sigma j =
   str "because this term is not a type."
 
 let explain_reference_variables id c =
+  let c = EConstr.Unsafe.to_constr c in
   (* c is intended to be a global reference *)
   let pc = pr_global (Globnames.global_of_constr c) in
   pc ++ strbrk " depends on the variable " ++ pr_id id ++
@@ -202,6 +207,8 @@ let pr_puniverses f env (c,u) =
   else mt())
 
 let explain_elim_arity env sigma ind sorts c pj okinds =
+  let c = EConstr.Unsafe.to_constr c in
+  let pj = to_unsafe_judgment pj in
   let env = make_all_name_different env in
   let pi = pr_inductive env (fst ind) in
   let pc = pr_lconstr_env env sigma c in
@@ -237,6 +244,7 @@ let explain_elim_arity env sigma ind sorts c pj okinds =
 
 let explain_case_not_inductive env sigma cj =
   let cj = Evarutil.j_nf_evar sigma cj in
+  let cj = to_unsafe_judgment cj in
   let env = make_all_name_different env in
   let pc = pr_lconstr_env env sigma cj.uj_val in
   let pct = pr_lconstr_env env sigma cj.uj_type in
@@ -250,6 +258,7 @@ let explain_case_not_inductive env sigma cj =
 
 let explain_number_branches env sigma cj expn =
   let cj = Evarutil.j_nf_evar sigma cj in
+  let cj = to_unsafe_judgment cj in
   let env = make_all_name_different env in
   let pc = pr_lconstr_env env sigma cj.uj_val in
   let pct = pr_lconstr_env env sigma cj.uj_type in
@@ -258,6 +267,9 @@ let explain_number_branches env sigma cj expn =
   str "expects " ++  int expn ++ str " branches."
 
 let explain_ill_formed_branch env sigma c ci actty expty =
+  let c = EConstr.Unsafe.to_constr c in
+  let actty = EConstr.Unsafe.to_constr actty in
+  let expty = EConstr.Unsafe.to_constr expty in
   let simp t = Reduction.nf_betaiota env (Evarutil.nf_evar sigma t) in
   let c = Evarutil.nf_evar sigma c in
   let env = make_all_name_different env in
@@ -270,6 +282,8 @@ let explain_ill_formed_branch env sigma c ci actty expty =
   str "which should be" ++ brk(1,1) ++ pe ++ str "."
 
 let explain_generalization env sigma (name,var) j =
+  let var = EConstr.Unsafe.to_constr var in
+  let j = to_unsafe_judgment j in
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pv = pr_ltype_env env sigma var in
   let (pc,pt) = pr_ljudge_env (push_rel_assum (name,EConstr.of_constr var) env) sigma j in
@@ -343,6 +357,8 @@ let explain_unification_error env sigma p1 p2 = function
             prlist_with_sep pr_semicolon (fun x -> x) l ++ str ")"
 
 let explain_actual_type env sigma j t reason =
+  let j = to_unsafe_judgment j in
+  let t = EConstr.Unsafe.to_constr t in
   let env = make_all_name_different env in
   let j = j_nf_betaiotaevar sigma j in
   let t = Reductionops.nf_betaiota sigma (EConstr.of_constr t) in
@@ -359,10 +375,14 @@ let explain_actual_type env sigma j t reason =
   ppreason ++ str ".")
 
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
+  let exptyp = EConstr.Unsafe.to_constr exptyp in
+  let actualtyp = EConstr.Unsafe.to_constr actualtyp in
+  let randl = Array.map to_unsafe_judgment randl in
   let randl = jv_nf_betaiotaevar sigma randl in
   let exptyp = Evarutil.nf_evar sigma exptyp in
   let actualtyp = Reductionops.nf_betaiota sigma (EConstr.of_constr actualtyp) in
   let rator = Evarutil.j_nf_evar sigma rator in
+  let rator = to_unsafe_judgment rator in
   let env = make_all_name_different env in
   let actualtyp, exptyp = pr_explicit env sigma actualtyp exptyp in
   let nargs = Array.length randl in
@@ -388,7 +408,9 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
 
 let explain_cant_apply_not_functional env sigma rator randl =
   let randl = Evarutil.jv_nf_evar sigma randl in
+  let randl = Array.map to_unsafe_judgment randl in
   let rator = Evarutil.j_nf_evar sigma rator in
+  let rator = to_unsafe_judgment rator in
   let env = make_all_name_different env in
   let nargs = Array.length randl in
 (*  let pe = pr_ne_context_of (str "in environment") env sigma in*)
@@ -424,6 +446,7 @@ let explain_not_product env sigma c =
 (* TODO: use the names *)
 (* (co)fixpoints *)
 let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
+  let pr_lconstr_env env sigma c = pr_lconstr_env env sigma (EConstr.Unsafe.to_constr c) in
   let prt_name i =
     match names.(i) with
         Name id -> str "Recursive definition of " ++ pr_id id
@@ -511,6 +534,8 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
 
 let explain_ill_typed_rec_body env sigma i names vdefj vargs =
   let vdefj = Evarutil.jv_nf_evar sigma vdefj in
+  let vargs = Array.map EConstr.Unsafe.to_constr vargs in
+  let vdefj = Array.map to_unsafe_judgment vdefj in
   let vargs = Array.map (Evarutil.nf_evar sigma) vargs in
   let env = make_all_name_different env in
   let pvd = pr_lconstr_env env sigma vdefj.(i).uj_val in
@@ -522,6 +547,7 @@ let explain_ill_typed_rec_body env sigma i names vdefj vargs =
   str "while it should be" ++ spc () ++ pv ++ str "."
 
 let explain_cant_find_case_type env sigma c =
+  let c = EConstr.Unsafe.to_constr c in
   let c = Evarutil.nf_evar sigma c in
   let env = make_all_name_different env in
   let pe = pr_lconstr_env env sigma c in
@@ -822,14 +848,18 @@ let explain_pretype_error env sigma err =
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c
   | ActualTypeNotCoercible (j,t,e) ->
+    let j = to_unsafe_judgment j in
+    let t = EConstr.Unsafe.to_constr t in
     let {uj_val = c; uj_type = actty} = j in
     let (env, c, actty, expty), e = contract3' env c actty t e in
     let j = {uj_val = c; uj_type = actty} in
-    explain_actual_type env sigma j expty (Some e)
+    explain_actual_type env sigma (on_judgment EConstr.of_constr j) (EConstr.of_constr expty) (Some e)
   | UnifOccurCheck (ev,rhs) -> explain_occur_check env sigma ev rhs
   | UnsolvableImplicit (evk,exp) -> explain_unsolvable_implicit env sigma evk exp
   | VarNotFound id -> explain_var_not_found env id
   | UnexpectedType (actual,expect) ->
+    let actual = EConstr.Unsafe.to_constr actual in
+    let expect = EConstr.Unsafe.to_constr expect in
     let env, actual, expect = contract2 env actual expect in
     explain_unexpected_type env sigma actual expect
   | NotProduct c -> explain_not_product env sigma c
@@ -1289,8 +1319,48 @@ let explain_pattern_matching_error env sigma = function
   | CannotInferPredicate typs ->
       explain_cannot_infer_predicate env sigma typs
 
+let map_pguard_error f = function
+| NotEnoughAbstractionInFixBody -> NotEnoughAbstractionInFixBody
+| RecursionNotOnInductiveType c -> RecursionNotOnInductiveType (f c)
+| RecursionOnIllegalTerm (n, (env, c), l1, l2) -> RecursionOnIllegalTerm (n, (env, f c), l1, l2)
+| NotEnoughArgumentsForFixCall n -> NotEnoughArgumentsForFixCall n
+| CodomainNotInductiveType c -> CodomainNotInductiveType (f c)
+| NestedRecursiveOccurrences -> NestedRecursiveOccurrences
+| UnguardedRecursiveCall c -> UnguardedRecursiveCall (f c)
+| RecCallInTypeOfAbstraction c -> RecCallInTypeOfAbstraction (f c)
+| RecCallInNonRecArgOfConstructor c -> RecCallInNonRecArgOfConstructor (f c)
+| RecCallInTypeOfDef c -> RecCallInTypeOfDef (f c)
+| RecCallInCaseFun c -> RecCallInCaseFun (f c)
+| RecCallInCaseArg c -> RecCallInCaseArg (f c)
+| RecCallInCasePred c -> RecCallInCasePred (f c)
+| NotGuardedForm c -> NotGuardedForm (f c)
+| ReturnPredicateNotCoInductive c -> ReturnPredicateNotCoInductive (f c)
+
+let map_ptype_error f = function
+| UnboundRel n -> UnboundRel n
+| UnboundVar id -> UnboundVar id
+| NotAType j -> NotAType (on_judgment f j)
+| BadAssumption j -> BadAssumption (on_judgment f j)
+| ReferenceVariables (id, c) -> ReferenceVariables (id, f c)
+| ElimArity (pi, dl, c, j, ar) -> ElimArity (pi, dl, f c, on_judgment f j, ar)
+| CaseNotInductive j -> CaseNotInductive (on_judgment f j)
+| WrongCaseInfo (pi, ci) -> WrongCaseInfo (pi, ci)
+| NumberBranches (j, n) -> NumberBranches (on_judgment f j, n)
+| IllFormedBranch (c, pc, t1, t2) -> IllFormedBranch (f c, pc, f t1, f t2)
+| Generalization ((na, t), j) -> Generalization ((na, f t), on_judgment f j)
+| ActualType (j, t) -> ActualType (on_judgment f j, f t)
+| CantApplyBadType ((n, c1, c2), j, vj) ->
+  CantApplyBadType ((n, f c1, f c2), on_judgment f j, Array.map (on_judgment f) vj)
+| CantApplyNonFunctional (j, jv) -> CantApplyNonFunctional (on_judgment f j, Array.map (on_judgment f) jv)
+| IllFormedRecBody (ge, na, n, env, jv) ->
+  IllFormedRecBody (map_pguard_error f ge, na, n, env, Array.map (on_judgment f) jv)
+| IllTypedRecBody (n, na, jv, t) ->
+  IllTypedRecBody (n, na, Array.map (on_judgment f) jv, Array.map f t)
+| UnsatisfiedConstraints g -> UnsatisfiedConstraints g
+
 let explain_reduction_tactic_error = function
   | Tacred.InvalidAbstraction (env,sigma,c,(env',e)) ->
+      let e = map_ptype_error EConstr.of_constr e in
       let c = EConstr.to_constr sigma c in
       str "The abstracted term" ++ spc () ++
       quote (pr_goal_concl_style_env env sigma c) ++

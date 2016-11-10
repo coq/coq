@@ -35,7 +35,7 @@ val get_sort_family_of :
   ?polyprop:bool -> env -> evar_map -> EConstr.types -> sorts_family
 
 (** Makes an unsafe judgment from a constr *)
-val get_judgment_of : env -> evar_map -> EConstr.constr -> unsafe_judgment
+val get_judgment_of : env -> evar_map -> EConstr.constr -> EConstr.unsafe_judgment
 
 val type_of_global_reference_knowing_parameters : env -> evar_map -> EConstr.constr ->
   EConstr.constr array -> types
