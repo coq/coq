@@ -19,3 +19,5 @@ val set_flags : string -> unit
 (** Cleans up a user provided warnings status string, e.g. removing unknown
     warnings (in which case a warning is emitted) or subsumed warnings . *)
 val normalize_flags_string : string -> string
+
+val pr_warnings : category_name:(string * string option) option -> Pp.std_ppcmds

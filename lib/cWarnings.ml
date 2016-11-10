@@ -180,3 +180,35 @@ let parse_flags s =
 
 let set_flags s =
   reset_default_warnings (); let s = parse_flags s in flags := s
+
+let pr_status = function
+  | Enabled -> str"enabled"
+  | Disabled -> str"disabled"
+  | AsError -> str"error"
+
+let pr_warnings ~category_name =
+  let pr_warning w info =
+    str (string_of_flag (info.status,w)) ++
+      str " (default " ++ pr_status info.default ++ str ")"
+  in
+  let pr_category c ws =
+    let warnings =
+      prlist_with_sep fnl (fun w -> pr_warning w (Hashtbl.find warnings w)) ws
+    in
+    hv 2 (str c ++ str":" ++ fnl () ++ warnings) ++ fnl ()
+  in
+  match category_name with
+  | None -> Hashtbl.fold (fun c ws acc -> acc ++ pr_category c ws) categories (mt ())
+  | Some (cat, None) ->
+     (try let catws = Hashtbl.find categories cat in
+          pr_category cat catws
+      with Not_found ->
+        str"Warning category " ++ str cat ++ str" does not exist")
+  | Some (cat, Some w) ->
+     (try let warning = Hashtbl.find warnings w in
+          if not (CString.equal warning.category cat) then
+            str"Warning " ++ str w ++ str" does not belong to category " ++ str cat ++
+              str "but to category " ++ str warning.category
+          else pr_warning w warning
+      with Not_found ->
+        str"Warning " ++ str w ++ str" does not exist")

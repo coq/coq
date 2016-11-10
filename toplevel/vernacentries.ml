@@ -1710,6 +1710,7 @@ let vernac_print = let open Feedback in function
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
       msg_notice (Printer.pr_assumptionset (Global.env ()) nassums)
   | PrintStrategy r -> print_strategy r
+  | PrintWarnings c -> msg_notice (CWarnings.pr_warnings ~category_name:c)
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
