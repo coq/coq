@@ -568,7 +568,7 @@ let abstract_path typ path t =
   mkLambda (Name (Id.of_string "x"), typ, abstract), !term_occur
 
 let focused_simpl path gl =
-  let newc = context (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
+  let newc = context (fun i t -> pf_nf gl (EConstr.of_constr t)) (List.rev path) (pf_concl gl) in
   Proofview.V82.of_tactic (convert_concl_no_check newc DEFAULTcast) gl
 
 let focused_simpl path = focused_simpl path
@@ -644,7 +644,7 @@ let clever_rewrite_base_poly typ p result theorem gl =
 		       [| typ; result; mkRel 2; mkRel 1; occ; theorem |]))),
        [abstracted])
   in
-  exact (applist(t,[mkNewMeta()])) gl
+  exact (EConstr.of_constr (applist(t,[mkNewMeta()]))) gl
 
 let clever_rewrite_base p result theorem gl =
   clever_rewrite_base_poly (Lazy.force coq_Z) p result theorem gl
@@ -665,7 +665,7 @@ let clever_rewrite p vpath t gl =
   let (abstracted,occ) = abstract_path (Lazy.force coq_Z) (List.rev p) full in
   let vargs = List.map (fun p -> occurrence p occ) vpath in
   let t' = applist(t, (vargs @ [abstracted])) in
-  exact (applist(t',[mkNewMeta()])) gl
+  exact (EConstr.of_constr (applist(t',[mkNewMeta()]))) gl
 
 let rec shuffle p (t1,t2) =
   match t1,t2 with
@@ -1384,7 +1384,7 @@ let destructure_omega gl tac_def (id,c) =
   else
     try match destructurate_prop c with
       | Kapp(Eq,[typ;t1;t2])
-	when begin match destructurate_type (pf_nf gl typ) with Kapp(Z,[]) -> true | _ -> false end ->
+	when begin match destructurate_type (pf_nf gl (EConstr.of_constr typ)) with Kapp(Z,[]) -> true | _ -> false end ->
 	  let t = mk_plus t1 (mk_inv t2) in
 	  normalize_equation
 	    id EQUA (Lazy.force coq_Zegal_left) 2 t t1 t2 tac_def
@@ -1659,7 +1659,7 @@ let rec decidability gl t =
     | Kapp(Not,[t1]) ->
         mkApp (Lazy.force coq_dec_not, [| t1; decidability gl t1 |])
     | Kapp(Eq,[typ;t1;t2]) ->
-	begin match destructurate_type (pf_nf gl typ) with
+	begin match destructurate_type (pf_nf gl (EConstr.of_constr typ)) with
           | Kapp(Z,[]) ->  mkApp (Lazy.force coq_dec_eq, [| t1;t2 |])
           | Kapp(Nat,[]) ->  mkApp (Lazy.force coq_dec_eq_nat, [| t1;t2 |])
           | _ -> raise Undecidable
@@ -1720,7 +1720,7 @@ let destructure_hyps =
           | Kimp(t1,t2) ->
 	      (* t1 and t2 might be in Type rather than Prop.
 		 For t1, the decidability check will ensure being Prop. *)
-              if is_Prop (type_of t2)
+              if is_Prop (type_of (EConstr.of_constr t2))
               then
 		let d1 = decidability t1 in
 		Tacticals.New.tclTHENLIST [
@@ -1789,7 +1789,7 @@ let destructure_hyps =
 		   with Not_found -> loop lit)
 	      | Kapp(Eq,[typ;t1;t2]) ->
                   if !old_style_flag then begin
-		    match destructurate_type (pf_nf typ) with
+		    match destructurate_type (pf_nf (EConstr.of_constr typ)) with
 		    | Kapp(Nat,_) ->
                         Tacticals.New.tclTHENLIST [
 			  (simplest_elim
@@ -1806,7 +1806,7 @@ let destructure_hyps =
                         ]
 		    | _ -> loop lit
                   end else begin
-		    match destructurate_type (pf_nf typ) with
+		    match destructurate_type (pf_nf (EConstr.of_constr typ)) with
 		    | Kapp(Nat,_) ->
                         (Tacticals.New.tclTHEN
 			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
@@ -1849,7 +1849,7 @@ let destructure_goal =
 	      let dec = decidability t in
 	      Tacticals.New.tclTHEN
                 (Proofview.V82.tactic (Tacmach.refine
-		                         (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |]))))
+		                         (EConstr.of_constr (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |])))))
 	        intro
 	    with Undecidable -> Tactics.elim_type (build_coq_False ())
 	  in

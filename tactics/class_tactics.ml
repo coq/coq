@@ -226,7 +226,7 @@ let e_give_exact flags poly (c,clenv) gl =
         c, {gl with sigma = evd}
     else c, gl
   in
-  let t1 = pf_unsafe_type_of gl c in
+  let t1 = pf_unsafe_type_of gl (EConstr.of_constr c) in
   Proofview.V82.of_tactic (Clenvtac.unify ~flags t1 <*> exact_no_check c) gl
 
 let unify_e_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
@@ -1514,7 +1514,7 @@ let is_ground c gl =
 let autoapply c i gl =
   let flags = auto_unif_flags Evar.Set.empty
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
-  let cty = pf_unsafe_type_of gl c in
+  let cty = pf_unsafe_type_of gl (EConstr.of_constr c) in
   let ce = mk_clenv_from gl (c,cty) in
   let tac = { enter = fun gl -> (unify_e_resolve false flags).enter gl
     ((c,cty,Univ.ContextSet.empty),0,ce) } in

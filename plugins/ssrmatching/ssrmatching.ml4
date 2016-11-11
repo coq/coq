@@ -1390,7 +1390,7 @@ let ssrpatterntac _ist (arg_ist,arg) gl =
   let concl0 = pf_concl gl in
   let (t, uc), concl_x =
     fill_occ_pattern (Global.env()) sigma0 concl0 pat noindex 1 in
-  let gl, tty = pf_type_of gl t in
+  let gl, tty = pf_type_of gl (EConstr.of_constr t) in
   let concl = mkLetIn (Name (id_of_string "selected"), t, tty, concl_x) in
   Proofview.V82.of_tactic (convert_concl concl DEFAULTcast) gl
 

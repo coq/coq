@@ -113,7 +113,7 @@ let contradiction_term (c,lbind as cl) =
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
-    let typ = type_of c in
+    let typ = type_of (EConstr.of_constr c) in
     let _, ccl = splay_prod env sigma (EConstr.of_constr typ) in
     if is_empty_type sigma ccl then
       Tacticals.New.tclTHEN

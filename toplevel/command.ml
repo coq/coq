@@ -1164,7 +1164,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
       List.map3 (fun id t (len,imps,_) -> ((id,pl),(t,(len,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
-      Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
+      Some (List.map (Option.cata (EConstr.of_constr %> Tacmach.refine_no_check) Tacticals.tclIDTAC)
         fixdefs) in
     let init_tac =
       Option.map (List.map Proofview.V82.tactic) init_tac
@@ -1201,7 +1201,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
       List.map3 (fun id t (len,imps,_) -> ((id,pl),(t,(len,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
-      Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
+      Some (List.map (Option.cata (EConstr.of_constr %> Tacmach.refine_no_check) Tacticals.tclIDTAC)
         fixdefs) in
     let init_tac =
       Option.map (List.map Proofview.V82.tactic) init_tac

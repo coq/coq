@@ -117,7 +117,7 @@ let pf_get_new_ids idl g =
 
 let compute_renamed_type gls c =
   rename_bound_vars_as_displayed (*no avoid*) [] (*no rels*) []
-    (pf_unsafe_type_of gls c)
+    (pf_unsafe_type_of gls (EConstr.of_constr c))
 let h'_id = Id.of_string "h'"
 let teq_id = Id.of_string "teq"
 let ano_id = Id.of_string "anonymous"
@@ -402,7 +402,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
 	    Proofview.V82.of_tactic (clear to_intros);
 	    h_intros to_intros;
 	    (fun g' -> 
-	      let ty_teq = pf_unsafe_type_of g' (mkVar heq) in
+	      let ty_teq = pf_unsafe_type_of g' (EConstr.mkVar heq) in
 	      let teq_lhs,teq_rhs =
 		let _,args = try destApp ty_teq with DestKO -> assert false in
 		args.(1),args.(2)
@@ -516,13 +516,13 @@ let rec prove_lt hyple g =
       in
       let h =
 	List.find (fun id ->
-          match decompose_app (pf_unsafe_type_of g (mkVar id)) with
+          match decompose_app (pf_unsafe_type_of g (EConstr.mkVar id)) with
             | _, t::_ -> eq_constr t varx
             | _ -> false
 	) hyple
       in
       let y =
-	List.hd (List.tl (snd (decompose_app (pf_unsafe_type_of g (mkVar h))))) in
+	List.hd (List.tl (snd (decompose_app (pf_unsafe_type_of g (EConstr.mkVar h))))) in
       observe_tclTHENLIST (str "prove_lt1")[
 	Proofview.V82.of_tactic (apply (mkApp(le_lt_trans (),[|varx;y;varz;mkVar h|])));
 	observe_tac (str "prove_lt") (prove_lt hyple)
@@ -684,7 +684,7 @@ let mkDestructEq :
         if Id.List.mem id not_on_hyp || not (Termops.occur_term (project g) (EConstr.of_constr expr) (EConstr.of_constr (get_type decl)))
         then None else Some id) hyps in
   let to_revert_constr = List.rev_map mkVar to_revert in
-  let type_of_expr = pf_unsafe_type_of g expr in
+  let type_of_expr = pf_unsafe_type_of g (EConstr.of_constr expr) in
   let new_hyps = mkApp(Lazy.force refl_equal, [|type_of_expr; expr|])::
            to_revert_constr in
     pf_typel new_hyps (fun _ ->
@@ -839,7 +839,7 @@ let rec prove_le g =
 	let matching_fun = 
 	  pf_is_matching g
 	    (Pattern.PApp(Pattern.PRef (reference_of_constr (le ())),[|Pattern.PVar (destVar x);Pattern.PMeta None|])) in 
-	let (h,t) = List.find (fun (_,t) -> matching_fun t) (pf_hyps_types g)
+	let (h,t) = List.find (fun (_,t) -> matching_fun (EConstr.of_constr t)) (pf_hyps_types g)
 	in 
 	let y = 
 	  let _,args = decompose_app t in 

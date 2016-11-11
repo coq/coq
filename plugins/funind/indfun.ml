@@ -75,11 +75,11 @@ let functional_induction with_clean c princl pat =
 		    user_err  (str "Cannot find induction principle for "
 				     ++Printer.pr_lconstr (mkConst c') )
 	      in
-	      (princ,NoBindings, Tacmach.pf_unsafe_type_of g' princ,g')
+	      (princ,NoBindings, Tacmach.pf_unsafe_type_of g' (EConstr.of_constr princ),g')
 	   | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
 	 end
       | Some ((princ,binding)) ->
-	 princ,binding,Tacmach.pf_unsafe_type_of g princ,g
+	 princ,binding,Tacmach.pf_unsafe_type_of g (EConstr.of_constr princ),g
     in
     let princ_infos = Tactics.compute_elim_sig princ_type in
     let args_as_induction_constr =

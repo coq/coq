@@ -437,7 +437,7 @@ let find_eq_data eqn = (* fails with PatternMatchingFailure *)
 
 let extract_eq_args gl = function
   | MonomorphicLeibnizEq (e1,e2) ->
-      let t = pf_unsafe_type_of gl e1 in (t,e1,e2)
+      let t = pf_unsafe_type_of gl (EConstr.of_constr e1) in (t,e1,e2)
   | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
   | HeterogenousEq (t1,e1,t2,e2) ->
       if pf_conv_x gl (EConstr.of_constr t1) (EConstr.of_constr t2) then (t1,e1,e2)
@@ -463,6 +463,7 @@ let match_eq_nf gls eqn (ref, hetero) =
   let n = if hetero then 4 else 3 in
   let args = List.init n (fun i -> mkGPatVar ("X" ^ string_of_int (i + 1))) in
   let pat = mkPattern (mkGAppRef ref args) in
+  let eqn = EConstr.of_constr eqn in
   match Id.Map.bindings (pf_matches gls pat eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);

@@ -179,6 +179,7 @@ module Btauto = struct
 
   let print_counterexample p env gl =
     let var = lapp witness [|p|] in
+    let var = EConstr.of_constr var in
     (* Compute an assignment that dissatisfies the goal *)
     let _, var = Tacmach.pf_reduction_of_red_expr gl (Genredexpr.CbvVm None) var in
     let rec to_list l = match decomp_term (Tacmach.project gl) l with

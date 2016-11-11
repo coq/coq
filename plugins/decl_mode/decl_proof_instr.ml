@@ -491,7 +491,7 @@ let thus_tac c ctyp submetas gls =
     Proofview.V82.of_tactic (exact_check proof) gls
   else
     let refiner = concl_refiner list proof gls in
-      Tacmach.refine refiner gls
+      Tacmach.refine (EConstr.of_constr refiner) gls
 
 (* general forward step *)
 
@@ -799,7 +799,7 @@ let rec take_tac wits gls =
   match wits with
       [] -> tclIDTAC gls
     | wit::rest ->
-	let typ = pf_unsafe_type_of gls wit in
+	let typ = pf_unsafe_type_of gls (EConstr.of_constr wit) in
 	  tclTHEN (thus_tac wit typ []) (take_tac rest)  gls
 
 
@@ -879,7 +879,7 @@ let start_tree env ind rp =
 let build_per_info etype casee gls =
   let concl=pf_concl gls in
   let env=pf_env gls in
-  let ctyp=pf_unsafe_type_of gls casee in
+  let ctyp=pf_unsafe_type_of gls (EConstr.of_constr casee) in
   let is_dep = dependent (project gls) (EConstr.of_constr casee) (EConstr.of_constr concl) in
   let hd,args = decompose_app (special_whd gls ctyp) in
   let (ind,u) =
@@ -894,7 +894,7 @@ let build_per_info etype casee gls =
       | _ -> mind.mind_nparams,None in
   let params,real_args = List.chop nparams args in
   let abstract_obj c body =
-    let typ=pf_unsafe_type_of gls c in
+    let typ=pf_unsafe_type_of gls (EConstr.of_constr c) in
       lambda_create env (typ,subst_term (project gls) (EConstr.of_constr c) (EConstr.of_constr body)) in
   let pred= List.fold_right abstract_obj
     real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) (EConstr.of_constr concl))) in
@@ -1256,13 +1256,13 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let nparams = mind.mind_nparams in
 	let concl=pf_concl gls in
 	let env=pf_env gls in
-	let ctyp=pf_unsafe_type_of gls casee in
+	let ctyp=pf_unsafe_type_of gls (EConstr.of_constr casee) in
 	let hd,all_args = decompose_app (special_whd gls ctyp) in
 	let ind', u = destInd hd in
 	let _ = assert (eq_ind ind' ind) in (* just in case *)
 	let params,real_args = List.chop nparams all_args in
 	let abstract_obj c body =
-	  let typ=pf_unsafe_type_of gls c in
+	  let typ=pf_unsafe_type_of gls (EConstr.of_constr c) in
 	    lambda_create env (typ,subst_term (project gls) (EConstr.of_constr c) (EConstr.of_constr body)) in
 	let elim_pred = List.fold_right abstract_obj
 	  real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) (EConstr.of_constr concl))) in
@@ -1314,7 +1314,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 		       execute_cases fix_name per_info tacnext
 			 p_args objs nhrec tree] gls0 in
 	  tclTHENSV
-	    (refine case_term)
+	    (refine (EConstr.of_constr case_term))
 	    (Array.mapi branch_tac br) gls
     | Split_patt (_, _, _) , [] ->
 	anomaly ~label:"execute_cases " (Pp.str "Nothing to split")

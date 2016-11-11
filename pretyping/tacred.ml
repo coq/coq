@@ -1214,8 +1214,8 @@ let reduce_to_ind_gen allow_product env sigma t =
   in
   elimrec env t []
 
-let reduce_to_quantified_ind env sigma c = reduce_to_ind_gen true env sigma (EConstr.of_constr c)
-let reduce_to_atomic_ind env sigma c = reduce_to_ind_gen false env sigma (EConstr.of_constr c)
+let reduce_to_quantified_ind env sigma c = reduce_to_ind_gen true env sigma c
+let reduce_to_atomic_ind env sigma c = reduce_to_ind_gen false env sigma c
 
 let find_hnf_rectype env sigma t =
   let ind,t = reduce_to_atomic_ind env sigma t in

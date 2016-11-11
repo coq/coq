@@ -77,37 +77,36 @@ let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
 let pf_reduction_of_red_expr gls re c =
   let (redfun, _) = reduction_of_red_expr (pf_env gls) re in
   let sigma = Sigma.Unsafe.of_evar_map (project gls) in
-  let Sigma (c, sigma, _) = redfun.e_redfun (pf_env gls) sigma (EConstr.of_constr c) in
+  let Sigma (c, sigma, _) = redfun.e_redfun (pf_env gls) sigma c in
   (Sigma.to_evar_map sigma, c)
 
 let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_eapply f gls x = 
   on_sig gls (fun evm -> f (pf_env gls) evm x)
 let pf_reduce = pf_apply
-let pf_reduce' f gl c = pf_apply f gl (EConstr.of_constr c)
 let pf_e_reduce = pf_apply
 
-let pf_whd_all         = pf_reduce' whd_all
-let pf_hnf_constr                = pf_reduce' hnf_constr
-let pf_nf                        = pf_reduce' simpl
-let pf_nf_betaiota               = pf_reduce' (fun _ -> nf_betaiota)
-let pf_compute                   = pf_reduce' compute
-let pf_unfoldn ubinds            = pf_reduce' (unfoldn ubinds)
-let pf_unsafe_type_of            = pf_reduce' unsafe_type_of
-let pf_type_of                   = pf_reduce' type_of
+let pf_whd_all         = pf_reduce whd_all
+let pf_hnf_constr                = pf_reduce hnf_constr
+let pf_nf                        = pf_reduce simpl
+let pf_nf_betaiota               = pf_reduce (fun _ -> nf_betaiota)
+let pf_compute                   = pf_reduce compute
+let pf_unfoldn ubinds            = pf_reduce (unfoldn ubinds)
+let pf_unsafe_type_of            = pf_reduce unsafe_type_of
+let pf_type_of                   = pf_reduce type_of
 let pf_get_type_of               = pf_reduce Retyping.get_type_of
 
-let pf_conv_x gl                = pf_apply test_conversion gl Reduction.CONV
+let pf_conv_x gl                = pf_reduce test_conversion gl Reduction.CONV
 let pf_conv_x_leq gl            = pf_reduce test_conversion gl Reduction.CUMUL
 let pf_const_value              = pf_reduce (fun env _ -> constant_value_in env)
 
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
-let pf_hnf_type_of gls          = EConstr.of_constr %> pf_get_type_of gls %> pf_whd_all gls
+let pf_hnf_type_of gls          = pf_get_type_of gls %> EConstr.of_constr %> pf_whd_all gls
 
-let pf_is_matching gl p c       = pf_apply Constr_matching.is_matching_conv gl p (EConstr.of_constr c)
-let pf_matches gl p c           = pf_apply Constr_matching.matches_conv gl p (EConstr.of_constr c)
+let pf_is_matching gl p c       = pf_apply Constr_matching.is_matching_conv gl p c
+let pf_matches gl p c           = pf_apply Constr_matching.matches_conv gl p c
 
 (********************************************)
 (* Definition of the most primitive tactics *)
@@ -116,12 +115,15 @@ let pf_matches gl p c           = pf_apply Constr_matching.matches_conv gl p (EC
 let refiner = refiner
 
 let internal_cut_no_check replace id t gl =
+  let t = EConstr.Unsafe.to_constr t in
   refiner (Cut (true,replace,id,t)) gl
 
 let internal_cut_rev_no_check replace id t gl =
+  let t = EConstr.Unsafe.to_constr t in
   refiner (Cut (false,replace,id,t)) gl
 
 let refine_no_check c gl =
+  let c = EConstr.Unsafe.to_constr c in
   refiner (Refine c) gl
 
 (* Versions with consistency checks *)
@@ -159,9 +161,6 @@ module New = struct
   let pf_apply f gl =
     f (Proofview.Goal.env gl) (project gl)
 
-  let pf_reduce f gl c =
-    f (Proofview.Goal.env gl) (project gl) (EConstr.of_constr c)
-
   let of_old f gl =
     f { Evd.it = Proofview.Goal.goal gl ; sigma = project gl; }
 
@@ -175,10 +174,10 @@ module New = struct
   let pf_concl = Proofview.Goal.concl
 
   let pf_unsafe_type_of gl t =
-    pf_apply unsafe_type_of gl (EConstr.of_constr t)
+    pf_apply unsafe_type_of gl t
 
   let pf_type_of gl t =
-    pf_apply type_of gl (EConstr.of_constr t)
+    pf_apply type_of gl t
 
   let pf_conv_x gl t1 t2 = pf_apply is_conv gl t1 t2
 
@@ -221,18 +220,18 @@ module New = struct
     let sigma = project gl in
     nf_evar sigma concl
 
-  let pf_whd_all gl t = pf_reduce whd_all gl t
+  let pf_whd_all gl t = pf_apply whd_all gl t
 
   let pf_get_type_of gl t = pf_apply Retyping.get_type_of gl t
 
   let pf_reduce_to_quantified_ind gl t =
     pf_apply reduce_to_quantified_ind gl t
 
-  let pf_hnf_constr gl t = pf_reduce hnf_constr gl t
+  let pf_hnf_constr gl t = pf_apply hnf_constr gl t
   let pf_hnf_type_of gl t =
-    pf_whd_all gl (pf_get_type_of gl (EConstr.of_constr t))
+    pf_whd_all gl (EConstr.of_constr (pf_get_type_of gl t))
 
-  let pf_matches gl pat t = pf_apply Constr_matching.matches_conv gl pat (EConstr.of_constr t)
+  let pf_matches gl pat t = pf_apply Constr_matching.matches_conv gl pat t
 
   let pf_whd_all gl t = pf_apply whd_all gl t
   let pf_compute gl t = pf_apply compute gl t

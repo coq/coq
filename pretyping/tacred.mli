@@ -75,12 +75,12 @@ val cbv_norm_flags : CClosure.RedFlags.reds ->  reduction_function
 (** [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]
    with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
-val reduce_to_atomic_ind : env ->  evar_map -> types -> pinductive * types
+val reduce_to_atomic_ind : env ->  evar_map -> EConstr.types -> pinductive * types
 
 (** [reduce_to_quantified_ind env sigma t] puts [t] in the form
    [t'=(x1:A1)..(xn:An)(I args)] with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
-val reduce_to_quantified_ind : env ->  evar_map -> types -> pinductive * types
+val reduce_to_quantified_ind : env ->  evar_map -> EConstr.types -> pinductive * types
 
 (** [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
    [t'=(x1:A1)..(xn:An)(ref args)] and fails with user error if not possible *)
@@ -91,7 +91,7 @@ val reduce_to_atomic_ref :
   env ->  evar_map -> global_reference -> EConstr.types -> types
 
 val find_hnf_rectype : 
-  env ->  evar_map -> types -> pinductive * constr list
+  env ->  evar_map -> EConstr.types -> pinductive * constr list
 
 val contextually : bool -> occurrences * constr_pattern ->
   (patvar_map -> reduction_function) -> reduction_function

@@ -95,7 +95,7 @@ let clenv_refine with_evars ?(with_classes=true) clenv =
   let clenv = { clenv with evd = evd' } in
   tclTHEN
     (tclEVARS (Evd.clear_metas evd'))
-    (refine_no_check (clenv_cast_meta clenv (clenv_value clenv))) gl
+    (refine_no_check (EConstr.of_constr (clenv_cast_meta clenv (clenv_value clenv)))) gl
   end
 
 open Unification

@@ -202,6 +202,7 @@ let prove_trivial_eq h_id context (constructor,type_of_term,term) =
 	     (List.map mkVar context_hyps)
 	 in
 	 let to_refine = applist(mkVar h_id,List.rev context_hyps') in
+	 let to_refine = EConstr.of_constr to_refine in
 	 refine to_refine g
       )
     ]
@@ -329,7 +330,8 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
 	   let all_ids = pf_ids_of_hyps g in
 	   let new_ids,_  = list_chop ctxt_size all_ids in
 	   let to_refine = applist(witness_fun,List.rev_map mkVar new_ids) in
-	   let evm, _ = pf_apply Typing.type_of g (EConstr.of_constr to_refine) in
+	   let to_refine = EConstr.of_constr to_refine in
+	   let evm, _ = pf_apply Typing.type_of g to_refine in
 	     tclTHEN (Refiner.tclEVARS evm) (refine to_refine) g
 	)
     in
@@ -448,6 +450,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 			       List.rev_map mkVar (rec_pte_id::context_hyps_ids)
 			      )
 		     in
+		     let to_refine = EConstr.of_constr to_refine in
 (* 		     observe_tac "rec hyp " *)
 		       (tclTHENS
 		       (Proofview.V82.of_tactic (assert_before (Name rec_pte_id) t_x))
@@ -497,6 +500,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 			    List.rev (coq_I::List.map mkVar context_hyps)
 			   )
 		 in
+		 let to_refine = (EConstr.of_constr to_refine) in
 		 refine to_refine g
 	      )
 	    ]
@@ -594,7 +598,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	tclMAP (fun id -> Proofview.V82.of_tactic (introduction ~check:false id)) dyn_infos.rec_hyps;
 	observe_tac "after_introduction" (fun g' ->
 	   (* We get infos on the equations introduced*)
-	   let new_term_value_eq = pf_unsafe_type_of g' (mkVar heq_id) in
+	   let new_term_value_eq = pf_unsafe_type_of g' (EConstr.mkVar heq_id) in
 	   (* compute the new value of the body *)
 	   let new_term_value =
 	     match kind_of_term new_term_value_eq with
@@ -605,13 +609,14 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 			   );
 		   anomaly (Pp.str "cannot compute new term value")
 	   in
+          let term = EConstr.of_constr term in
 	 let fun_body =
 	   mkLambda(Anonymous,
 		    pf_unsafe_type_of g' term,
-		    Termops.replace_term (project g') (EConstr.of_constr term) (EConstr.mkRel 1) (EConstr.of_constr dyn_infos.info)
+		    Termops.replace_term (project g') term (EConstr.mkRel 1) (EConstr.of_constr dyn_infos.info)
 		   )
 	 in
-	 let new_body = pf_nf_betaiota g' (mkApp(fun_body,[| new_term_value |])) in
+	 let new_body = pf_nf_betaiota g' (EConstr.of_constr (mkApp(fun_body,[| new_term_value |]))) in
 	 let new_infos =
 	   {dyn_infos with
 	      info = new_body;
@@ -700,7 +705,7 @@ let build_proof
 		  let dyn_infos = {dyn_info' with info =
 		      mkCase(ci,ct,t,cb)} in
 		  let g_nb_prod = nb_prod (project g) (EConstr.of_constr (pf_concl g)) in
-		  let type_of_term = pf_unsafe_type_of g t in
+		  let type_of_term = pf_unsafe_type_of g (EConstr.of_constr t) in
 		  let term_eq =
 		    make_refl_eq (Lazy.force refl_equal) type_of_term t
 		  in
@@ -741,7 +746,7 @@ let build_proof
 			   let id = pf_last_hyp g' |> get_id in
 			   let new_term =
 			     pf_nf_betaiota g'
-			       (mkApp(dyn_infos.info,[|mkVar id|]))
+			       (EConstr.of_constr (mkApp(dyn_infos.info,[|mkVar id|])))
 			   in
 			   let new_infos = {dyn_infos with info = new_term} in
 			   let do_prove new_hyps =
@@ -908,6 +913,7 @@ let prove_rec_hyp_for_struct fix_info =
 	   let rec_hyp_proof =
 	     mkApp(mkVar fix_info.name,array_get_start pte_args)
 	   in
+	   let rec_hyp_proof = EConstr.of_constr rec_hyp_proof in
 	   refine rec_hyp_proof g
 	))
 
@@ -921,7 +927,7 @@ let generalize_non_dep hyp g =
 (*   observe (str "rec id := " ++ Ppconstr.pr_id hyp); *)
   let hyps = [hyp] in
   let env = Global.env () in
-  let hyp_typ = pf_unsafe_type_of g (mkVar hyp) in
+  let hyp_typ = pf_unsafe_type_of g (EConstr.mkVar hyp) in
   let to_revert,_ =
     let open Context.Named.Declaration in
     Environ.fold_named_context_reverse (fun (clear,keep) decl ->
@@ -1418,7 +1424,7 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
     let rewrite =
       tclFIRST (List.map (fun x -> Proofview.V82.of_tactic (Equality.rewriteRL x)) eqs )
     in
-    let _,hrec_concl  = decompose_prod (pf_unsafe_type_of gls (mkVar hrec)) in
+    let _,hrec_concl  = decompose_prod (pf_unsafe_type_of gls (EConstr.mkVar hrec)) in
     let f_app = Array.last (snd (destApp hrec_concl)) in
     let f =  (fst (destApp f_app)) in
     let rec backtrack : tactic =

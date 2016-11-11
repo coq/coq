@@ -181,8 +181,8 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   in List.map try_occ occs
 
 let instantiate_lemma gl c ty l l2r concl =
-  let sigma, ct = pf_type_of gl c in
-  let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma ct) with UserError _ -> ct in
+  let sigma, ct = pf_type_of gl (EConstr.of_constr c) in
+  let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma (EConstr.of_constr ct)) with UserError _ -> ct in
   let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
   [eqclause]
 
@@ -992,6 +992,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
   let pf_ty = mkArrow eqn absurd_term in
   let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
   let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
+  let pf = EConstr.of_constr pf in
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.tclEFFECTS eff <*>
   tclTHENS (assert_after Anonymous absurd_term)
@@ -1012,8 +1013,8 @@ let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let type_of = pf_unsafe_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
-  let t = type_of c in
-  let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
+  let t = type_of (EConstr.of_constr c) in
+  let t' = try snd (reduce_to_quantified_ind (EConstr.of_constr t)) with UserError _ -> t in
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
   let eq_clause' = Clenvtac.clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
@@ -1327,7 +1328,7 @@ let inject_if_homogenous_dependent_pair ty =
     if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) (fst ind) &&
       pf_apply is_conv gl (EConstr.of_constr ar1.(2)) (EConstr.of_constr ar2.(2))) then raise Exit;
     Coqlib.check_required_library ["Coq";"Logic";"Eqdep_dec"];
-    let new_eq_args = [|pf_unsafe_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
+    let new_eq_args = [|pf_unsafe_type_of gl (EConstr.of_constr ar1.(3));ar1.(3);ar2.(3)|] in
     let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
       ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) (Univ.out_punivs ind) in
@@ -1339,7 +1340,7 @@ let inject_if_homogenous_dependent_pair ty =
         tclTHENS (cut (mkApp (ceq,new_eq_args)))
           [clear [destVar hyp];
            Proofview.V82.tactic (Tacmach.refine
-             (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|])))
+             (EConstr.of_constr (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|]))))
           ])]
   with Exit ->
     Proofview.tclUNIT ()
@@ -1384,7 +1385,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
       (Proofview.tclIGNORE (Proofview.Monad.List.map
          (fun (pf,ty) -> tclTHENS (cut ty)
            [inject_if_homogenous_dependent_pair ty;
-            Proofview.V82.tactic (Tacmach.refine pf)])
+            Proofview.V82.tactic (Tacmach.refine (EConstr.of_constr pf))])
          (if l2r then List.rev injectors else injectors)))
       (tac (List.length injectors)))
 

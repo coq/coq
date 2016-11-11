@@ -2188,7 +2188,7 @@ let setoid_transitivity c =
     
 let setoid_symmetry_in id =
   Proofview.V82.tactic (fun gl ->
-  let ctype = pf_unsafe_type_of gl (mkVar id) in
+  let ctype = pf_unsafe_type_of gl (EConstr.mkVar id) in
   let binders,concl = decompose_prod_assum ctype in
   let (equiv, args) = decompose_app concl in
   let rec split_last_two = function

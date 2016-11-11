@@ -490,6 +490,7 @@ and mk_arggoals sigma goal goalacc funty allargs =
 and mk_casegoals sigma goal goalacc p c =
   let env = Goal.V82.env sigma goal in
   let (acc',ct,sigma,c') = mk_hdgoals sigma goal goalacc c in
+  let ct = EConstr.of_constr ct in
   let (acc'',pt,sigma,p') = mk_hdgoals sigma goal acc' p in
   let indspec =
     try Tacred.find_hnf_rectype env sigma ct

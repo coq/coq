@@ -156,7 +156,7 @@ let rec solveArg hyps eqonleft op largs rargs = match largs, rargs with
   ]
 | a1 :: largs, a2 :: rargs ->
   Proofview.Goal.enter { enter = begin fun gl ->
-  let rectype = pf_unsafe_type_of gl a1 in
+  let rectype = pf_unsafe_type_of gl (EConstr.of_constr a1) in
   let decide = mkDecideEqGoal eqonleft op rectype a1 a2 in
   let tac hyp = solveArg (hyp :: hyps) eqonleft op largs rargs in
   let subtacs =
@@ -226,7 +226,7 @@ let decideEquality rectype =
 
 let compare c1 c2 =
   Proofview.Goal.enter { enter = begin fun gl ->
-  let rectype = pf_unsafe_type_of gl c1 in
+  let rectype = pf_unsafe_type_of gl (EConstr.of_constr c1) in
   let decide = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 in
   (tclTHENS (cut decide)
             [(tclTHEN  intro

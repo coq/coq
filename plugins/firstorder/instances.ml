@@ -104,7 +104,7 @@ let mk_open_instance id idc gl m t=
   let evmap=Refiner.project gl in
   let var_id=
     if id==dummy_id then dummy_bvid else
-      let typ=pf_unsafe_type_of gl idc in
+      let typ=pf_unsafe_type_of gl (EConstr.of_constr idc) in
 	(* since we know we will get a product,
 	   reduction is not too expensive *)
       let (nam,_,_)=destProd (whd_all env evmap (EConstr.of_constr typ)) in
