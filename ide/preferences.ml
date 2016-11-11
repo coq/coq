@@ -468,7 +468,7 @@ let create_tag name default =
   let iter table =
     let tag = GText.tag ~name () in
     table#add tag#as_tag;
-    pref#connect#changed (fun _ -> set_tag tag);
+    ignore (pref#connect#changed (fun _ -> set_tag tag));
     set_tag tag;
   in
   List.iter iter [Tags.Script.table; Tags.Proof.table; Tags.Message.table];
