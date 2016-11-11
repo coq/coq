@@ -513,6 +513,7 @@ let rec detype flags avoid env sigma t =
 	  if print_primproj_params () then
 	    try
 	      let c = Retyping.expand_projection (snd env) sigma p (EConstr.of_constr c) [] in
+	      let c = EConstr.Unsafe.to_constr c in
 		detype flags avoid env sigma c
 	    with Retyping.RetypeError _ -> noparams ()
 	  else noparams ()

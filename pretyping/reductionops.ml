@@ -10,10 +10,11 @@ open CErrors
 open Util
 open Names
 open Term
-open Vars
 open Termops
 open Univ
 open Evd
+open EConstr
+open Vars
 open Environ
 open Context.Rel.Declaration
 
@@ -574,7 +575,7 @@ struct
     zip (best_state sigma (constr_of_cst_member cst (params @ (append_app [|f|] s))) cst_l)
   | f, (Cst (cst,_,_,params,_)::s) ->
     zip (constr_of_cst_member cst (params @ (append_app [|f|] s)))
-  | f, (Shift n::s) -> zip (Vars.lift n f, s)
+  | f, (Shift n::s) -> zip (lift n f, s)
   | f, (Proj (n,m,p,cst_l)::s) when refold ->
     zip (best_state sigma (mkProj (p,f),s) cst_l)
   | f, (Proj (n,m,p,_)::s) -> zip (mkProj (p,f),s)
@@ -585,18 +586,18 @@ struct
 end
 
 (** The type of (machine) states (= lambda-bar-calculus' cuts) *)
-type state = EConstr.t * EConstr.t Stack.t
+type state = constr * constr Stack.t
 
-type contextual_reduction_function = env -> evar_map -> EConstr.t -> constr
+type contextual_reduction_function = env -> evar_map -> constr -> Constr.constr
 type reduction_function = contextual_reduction_function
-type local_reduction_function = evar_map -> EConstr.t -> constr
-type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> EConstr.t -> (constr, 'r) Sigma.sigma }
+type local_reduction_function = evar_map -> constr -> Constr.constr
+type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> constr -> (Constr.constr, 'r) Sigma.sigma }
 
 type contextual_stack_reduction_function =
-    env -> evar_map -> EConstr.t -> EConstr.t * EConstr.t list
+    env -> evar_map -> constr -> constr * constr list
 type stack_reduction_function = contextual_stack_reduction_function
 type local_stack_reduction_function =
-    evar_map -> EConstr.t -> EConstr.t * EConstr.t list
+    evar_map -> constr -> constr * constr list
 
 type contextual_state_reduction_function =
     env -> evar_map -> state -> state
@@ -639,7 +640,7 @@ let local_strong whdfun sigma =
 let rec strong_prodspine redfun sigma c =
   let x = EConstr.of_constr (redfun sigma c) in
   match EConstr.kind sigma x with
-    | Prod (na,a,b) -> mkProd (na, EConstr.Unsafe.to_constr a,strong_prodspine redfun sigma b)
+    | Prod (na,a,b) -> EConstr.Unsafe.to_constr (mkProd (na,a,EConstr.of_constr (strong_prodspine redfun sigma b)))
     | _ -> EConstr.Unsafe.to_constr x
 
 (*************************************)
@@ -656,7 +657,7 @@ let apply_subst recfun env sigma refold cst_l t stack =
     | Some (h,stacktl), Lambda (_,_,c) ->
        let cst_l' = if refold then Cst_stack.add_param h cst_l else cst_l in
        aux (h::env) cst_l' c stacktl
-    | _ -> recfun sigma cst_l (EConstr.Vars.substl env t, stack)
+    | _ -> recfun sigma cst_l (substl env t, stack)
   in aux env cst_l t stack
 
 let stacklam recfun env sigma t stack =
@@ -673,8 +674,8 @@ let beta_applist sigma (c,l) =
 (* Iota reduction tools *)
 
 type 'a miota_args = {
-  mP      : EConstr.t;     (* the result type *)
-  mconstr : EConstr.t;     (* the constructor *)
+  mP      : constr;     (* the result type *)
+  mconstr : constr;     (* the constructor *)
   mci     : case_info;  (* special info to re-build pattern *)
   mcargs  : 'a list;    (* the constructor's arguments *)
   mlf     : 'a array }  (* the branch code vector *)
@@ -696,7 +697,6 @@ let reducible_mind_case sigma c = match EConstr.kind sigma c with
 let magicaly_constant_of_fixbody env sigma reference bd = function
   | Name.Anonymous -> bd
   | Name.Name id ->
-    let open EConstr in
     try
       let (cst_mod,cst_sect,_) = Constant.repr3 reference in
       let cst = Constant.make3 cst_mod cst_sect (Label.of_id id) in
@@ -719,7 +719,6 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
     | Not_found -> bd
 
 let contract_cofix ?env sigma ?reference (bodynum,(names,types,bodies as typedbodies)) =
-  let open EConstr in
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
@@ -733,11 +732,10 @@ let contract_cofix ?env sigma ?reference (bodynum,(names,types,bodies as typedbo
         | None -> bd
         | Some r -> magicaly_constant_of_fixbody e sigma r bd names.(ind) in
   let closure = List.init nbodies make_Fi in
-  Vars.substl closure bodies.(bodynum)
+  substl closure bodies.(bodynum)
 
 (** Similar to the "fix" case below *)
 let reduce_and_refold_cofix recfun env sigma refold cst_l cofix sk =
-  let open EConstr in
   let raw_answer =
     let env = if refold then Some env else None in
     contract_cofix ?env sigma ?reference:(Cst_stack.reference sigma cst_l) cofix in
@@ -749,7 +747,6 @@ let reduce_and_refold_cofix recfun env sigma refold cst_l cofix sk =
     [] sigma refold Cst_stack.empty raw_answer sk
 
 let reduce_mind_case sigma mia =
-  let open EConstr in
   match EConstr.kind sigma mia.mconstr with
     | Construct ((ind_sp,i),u) ->
 (*	let ncargs = (fst mia.mci).(i-1) in*)
@@ -764,7 +761,6 @@ let reduce_mind_case sigma mia =
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
 let contract_fix ?env sigma ?reference ((recindices,bodynum),(names,types,bodies as typedbodies)) =
-    let open EConstr in
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
@@ -778,14 +774,13 @@ let contract_fix ?env sigma ?reference ((recindices,bodynum),(names,types,bodies
           | None -> bd
           | Some r -> magicaly_constant_of_fixbody e sigma r bd names.(ind) in
     let closure = List.init nbodies make_Fi in
-    Vars.substl closure bodies.(bodynum)
+    substl closure bodies.(bodynum)
 
 (** First we substitute the Rel bodynum by the fixpoint and then we try to
     replace the fixpoint by the best constant from [cst_l]
     Other rels are directly substituted by constants "magically found from the
     context" in contract_fix *)
 let reduce_and_refold_fix recfun env sigma refold cst_l fix sk =
-  let open EConstr in
   let raw_answer =
     let env = if refold then None else Some env in
     contract_fix ?env sigma ?reference:(Cst_stack.reference sigma cst_l) fix in
@@ -830,7 +825,6 @@ let _ = Goptions.declare_bool_option {
 }
 
 let equal_stacks sigma (x, l) (y, l') =
-  let open EConstr in
   let f_equal (x,lft1) (y,lft2) = eq_constr sigma (Vars.lift lft1 x) (Vars.lift lft2 y) in
   let eq_fix (a,b) (c,d) = f_equal (mkFix a, b) (mkFix c, d) in
     match Stack.equal f_equal eq_fix l l' with
@@ -838,7 +832,6 @@ let equal_stacks sigma (x, l) (y, l') =
     | Some (lft1,lft2) -> f_equal (x, lft1) (y, lft2) 
 
 let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
-  let open EConstr in
   let open Context.Named.Declaration in
   let rec whrec cst_l (x, stack) =
     let () = if !debug_RAKAM then
@@ -859,7 +852,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
     match c0 with
     | Rel n when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
       (match lookup_rel n env with
-      | LocalDef (_,body,_) -> whrec Cst_stack.empty (EConstr.of_constr (lift n body), stack)
+      | LocalDef (_,body,_) -> whrec Cst_stack.empty (lift n (EConstr.of_constr body), stack)
       | _ -> fold ())
     | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
       (match lookup_named id env with
@@ -977,7 +970,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
             | Rel 1, [] ->
 	      let lc = Array.sub cl 0 (napp-1) in
 	      let u = if Int.equal napp 1 then f else mkApp (f,lc) in
-	      if Vars.noccurn sigma 1 u then (EConstr.of_constr (pop u),Stack.empty),Cst_stack.empty else fold ()
+	      if noccurn sigma 1 u then (EConstr.of_constr (pop u),Stack.empty),Cst_stack.empty else fold ()
             | _ -> fold ()
 	  else fold ()
 	| _ -> fold ())
@@ -1054,7 +1047,6 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 
 (** reduction machine without global env and refold machinery *)
 let local_whd_state_gen flags sigma =
-  let open EConstr in
   let rec whrec (x, stack) =
     let c0 = EConstr.kind sigma x in
     let s = (EConstr.of_kind c0, stack) in
@@ -1077,7 +1069,7 @@ let local_whd_state_gen flags sigma =
             | Rel 1, [] ->
 	      let lc = Array.sub cl 0 (napp-1) in
 	      let u = if Int.equal napp 1 then f else mkApp (f,lc) in
-	      if Vars.noccurn sigma 1 u then (EConstr.of_constr (pop u),Stack.empty) else s
+	      if noccurn sigma 1 u then (EConstr.of_constr (pop u),Stack.empty) else s
             | _ -> s
 	  else s
 	| _ -> s)
@@ -1276,7 +1268,7 @@ let f_conv_leq ?l2r ?reds env ?evars x y =
   let inj = EConstr.Unsafe.to_constr in
   Reduction.conv_leq ?l2r ?reds env ?evars (inj x) (inj y)
 
-let test_trans_conversion (f: EConstr.t Reduction.extended_conversion_function) reds env sigma x y =
+let test_trans_conversion (f: constr Reduction.extended_conversion_function) reds env sigma x y =
   try
     let evars ev = safe_evar_value sigma ev in
     let _ = f ~reds env ~evars:(evars, Evd.universes sigma) x y in
@@ -1368,9 +1360,8 @@ let default_plain_instance_ident = Id.of_string "H"
 (* Try to replace all metas. Does not replace metas in the metas' values
  * Differs from (strong whd_meta). *)
 let plain_instance sigma s c =
-  let open EConstr in
   let rec irec n u = match EConstr.kind sigma u with
-    | Meta p -> (try Vars.lift n (Metamap.find p s) with Not_found -> u)
+    | Meta p -> (try lift n (Metamap.find p s) with Not_found -> u)
     | App (f,l) when isCast sigma f ->
         let (f,_,t) = destCast sigma f in
         let l' = CArray.Fun1.smartmap irec n l in
@@ -1382,13 +1373,13 @@ let plain_instance sigma s c =
 	    (try let g = Metamap.find p s in
 	    match EConstr.kind sigma g with
             | App _ ->
-                let l' = CArray.Fun1.smartmap Vars.lift 1 l' in
+                let l' = CArray.Fun1.smartmap lift 1 l' in
                 mkLetIn (Name default_plain_instance_ident,g,t,mkApp(mkRel 1, l'))
             | _ -> mkApp (g,l')
 	    with Not_found -> mkApp (f,l'))
         | _ -> mkApp (irec n f,l'))
     | Cast (m,_,_) when isMeta sigma m ->
-	(try Vars.lift n (Metamap.find (destMeta sigma m) s) with Not_found -> u)
+	(try lift n (Metamap.find (destMeta sigma m) s) with Not_found -> u)
     | _ ->
 	map_with_binders sigma succ irec n u
   in
@@ -1440,9 +1431,8 @@ let instance sigma s c =
  * error message. *)
 
 let hnf_prod_app env sigma t n =
-  let open EConstr in
   match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
-    | Prod (_,_,b) -> EConstr.Unsafe.to_constr (Vars.subst1 n b)
+    | Prod (_,_,b) -> EConstr.Unsafe.to_constr (subst1 n b)
     | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product")
 
 let hnf_prod_appvect env sigma t nl =
@@ -1452,9 +1442,8 @@ let hnf_prod_applist env sigma t nl =
   List.fold_left (fun acc t -> hnf_prod_app env sigma (EConstr.of_constr acc) t) (EConstr.Unsafe.to_constr t) nl
 
 let hnf_lam_app env sigma t n =
-  let open EConstr in
   match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
-    | Lambda (_,_,b) -> EConstr.Unsafe.to_constr (Vars.subst1 n b)
+    | Lambda (_,_,b) -> EConstr.Unsafe.to_constr (subst1 n b)
     | _ -> anomaly ~label:"hnf_lam_app" (Pp.str "Need an abstraction")
 
 let hnf_lam_appvect env sigma t nl =
@@ -1544,7 +1533,6 @@ let is_sort env sigma t =
    of case/fix (heuristic used by evar_conv) *)
 
 let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
-  let open EConstr in
   let refold = get_refolding_in_reduction () in
   let tactic_mode = false in
   let rec whrec csts s =
@@ -1586,7 +1574,6 @@ let is_arity env sigma c =
 (* Metas *)
 
 let meta_value evd mv =
-  let open EConstr in
   let rec valrec mv =
     match meta_opt_fvalue evd mv with
     | Some (b,_) ->
@@ -1617,54 +1604,58 @@ let meta_reducible_instance evd b =
   in
   let metas = Metaset.fold fold fm Metamap.empty in
   let rec irec u =
-    let u = whd_betaiota Evd.empty (EConstr.of_constr u) (** FIXME *) in
-    match kind_of_term u with
-    | Case (ci,p,c,bl) when EConstr.isMeta evd (EConstr.of_constr (strip_outer_cast evd (EConstr.of_constr c))) ->
-	let m = destMeta (strip_outer_cast evd (EConstr.of_constr c)) in
+    let u = whd_betaiota Evd.empty u (** FIXME *) in
+    let u = EConstr.of_constr u in
+    match EConstr.kind evd u with
+    | Case (ci,p,c,bl) when EConstr.isMeta evd (EConstr.of_constr (strip_outer_cast evd c)) ->
+	let m = destMeta evd (EConstr.of_constr (strip_outer_cast evd c)) in
 	(match
 	  try
 	    let g, s = Metamap.find m metas in
+	    let g = EConstr.of_constr g in
             let is_coerce = match s with CoerceToType -> true | _ -> false in
-	    if isConstruct g || not is_coerce then Some g else None
+	    if isConstruct evd g || not is_coerce then Some g else None
 	  with Not_found -> None
 	  with
 	    | Some g -> irec (mkCase (ci,p,g,bl))
 	    | None -> mkCase (ci,irec p,c,Array.map irec bl))
-    | App (f,l) when EConstr.isMeta evd (EConstr.of_constr (strip_outer_cast evd (EConstr.of_constr f))) ->
-	let m = destMeta (strip_outer_cast evd (EConstr.of_constr f)) in
+    | App (f,l) when EConstr.isMeta evd (EConstr.of_constr (strip_outer_cast evd f)) ->
+	let m = destMeta evd (EConstr.of_constr (strip_outer_cast evd f)) in
 	(match
 	  try
 	    let g, s = Metamap.find m metas in
+	    let g = EConstr.of_constr g in
             let is_coerce = match s with CoerceToType -> true | _ -> false in
-	    if isLambda g || not is_coerce then Some g else None
+	    if isLambda evd g || not is_coerce then Some g else None
 	  with Not_found -> None
 	 with
 	   | Some g -> irec (mkApp (g,l))
 	   | None -> mkApp (f,Array.map irec l))
     | Meta m ->
 	(try let g, s = Metamap.find m metas in
+          let g = EConstr.of_constr g in
           let is_coerce = match s with CoerceToType -> true | _ -> false in
           if not is_coerce then irec g else u
 	 with Not_found -> u)
-    | Proj (p,c) when isMeta c || isCast c && isMeta (pi1 (destCast c)) ->
-	let m = try destMeta c with _ -> destMeta (pi1 (destCast c)) in
+    | Proj (p,c) when isMeta evd c || isCast evd c && isMeta evd (pi1 (destCast evd c)) ->
+	let m = try destMeta evd c with _ -> destMeta evd (pi1 (destCast evd c)) in
 	  (match
 	  try
 	    let g, s = Metamap.find m metas in
+            let g = EConstr.of_constr g in
             let is_coerce = match s with CoerceToType -> true | _ -> false in
-	    if isConstruct g || not is_coerce then Some g else None
+	    if isConstruct evd g || not is_coerce then Some g else None
 	  with Not_found -> None
 	  with
 	    | Some g -> irec (mkProj (p,g))
 	    | None -> mkProj (p,c))
-    | _ -> Constr.map irec u
+    | _ -> EConstr.map evd irec u
   in
   if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
-  else irec b.rebus
+  else EConstr.Unsafe.to_constr (irec (EConstr.of_constr b.rebus))
 
 
 let head_unfold_under_prod ts env sigma c =
-  let open EConstr in
   let unfold (cst,u as cstu) =
     if Cpred.mem cst (snd ts) then
       match constant_opt_value_in env cstu with
@@ -1682,12 +1673,11 @@ let head_unfold_under_prod ts env sigma c =
   EConstr.Unsafe.to_constr (aux c)
 
 let betazetaevar_applist sigma n c l =
-  let open EConstr in
   let rec stacklam n env t stack =
-    if Int.equal n 0 then applist (Vars.substl env t, stack) else
+    if Int.equal n 0 then applist (substl env t, stack) else
     match EConstr.kind sigma t, stack with
     | Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
-    | LetIn(_,b,_,c), _ -> stacklam (n-1) (Vars.substl env b::env) c stack
-    | Evar _, _ -> applist (Vars.substl env t, stack)
+    | LetIn(_,b,_,c), _ -> stacklam (n-1) (substl env b::env) c stack
+    | Evar _, _ -> applist (substl env t, stack)
     | _ -> anomaly (Pp.str "Not enough lambda/let's") in
   EConstr.Unsafe.to_constr (stacklam n [] c l)

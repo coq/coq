@@ -65,7 +65,6 @@ let e_assumption_of_judgment env evdref j =
     error_assumption env !evdref j
 
 let e_judge_of_apply env evdref funj argjv =
-  let open EConstr in
   let rec apply_rec n typ = function
   | [] ->
       { uj_val  = mkApp (j_val funj, Array.map j_val argjv);
@@ -100,7 +99,6 @@ let max_sort l =
   if Sorts.List.mem InSet l then InSet else InProp
 
 let e_is_correct_arity env evdref c pj ind specif params =
-  let open EConstr in
   let arsign = make_arity_signature env true (make_ind_family (ind,params)) in
   let allowed_sorts = elim_sorts specif in
   let error () = Pretype_errors.error_elim_arity env !evdref ind allowed_sorts c pj None in
@@ -124,7 +122,6 @@ let e_is_correct_arity env evdref c pj ind specif params =
   srec env pj.uj_type (List.rev arsign)
 
 let lambda_applist_assum sigma n c l =
-  let open EConstr in
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
@@ -150,7 +147,6 @@ let e_type_case_branches env evdref (ind,largs) pj c =
   (lc, ty)
 
 let e_judge_of_case env evdref ci pj cj lfj =
-  let open EConstr in
   let indspec =
     try find_mrectype env !evdref cj.uj_type
     with Not_found -> error_case_not_inductive env !evdref cj in
@@ -161,7 +157,6 @@ let e_judge_of_case env evdref ci pj cj lfj =
     uj_type = rslty }
 
 let check_type_fixpoint loc env evdref lna lar vdefj =
-  let open EConstr in
   let lt = Array.length vdefj in
     if Int.equal (Array.length lar) lt then
       for i = 0 to lt-1 do
@@ -183,7 +178,6 @@ let check_allowed_sort env sigma ind c p =
       (Some(ksort,s,Type_errors.error_elim_explain ksort s))
 
 let e_judge_of_cast env evdref cj k tj =
-  let open EConstr in
   let expected_type = tj.utj_val in
   if not (Evarconv.e_cumul env evdref cj.uj_type expected_type) then
     error_actual_type_core env !evdref cj expected_type;
@@ -259,7 +253,6 @@ let judge_of_letin env name defj typj j =
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)
 let rec execute env evdref cstr =
-  let open EConstr in
   let cstr = EConstr.of_constr (whd_evar !evdref (EConstr.Unsafe.to_constr cstr)) in
   match EConstr.kind !evdref cstr with
     | Meta n ->

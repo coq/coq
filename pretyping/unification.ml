@@ -85,7 +85,6 @@ let occur_meta_evd sigma mv c =
    gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
 
 let abstract_scheme env evd c l lname_typ =
-  let open EConstr in
   let mkLambda_name env (n,a,b) =
     mkLambda (named_hd env (EConstr.Unsafe.to_constr a) n, a, b)
   in
@@ -131,7 +130,6 @@ let set_occurrences_of_last_arg args =
   Some AllOccurrences :: List.tl (Array.map_to_list (fun _ -> None) args)
 
 let abstract_list_all_with_dependencies env evd typ c l =
-  let open EConstr in
   let evd = Sigma.Unsafe.of_evar_map evd in
   let Sigma (ev, evd, _) = new_evar env evd typ in
   let evd = Sigma.to_evar_map evd in
@@ -195,8 +193,6 @@ let pose_all_metas_as_evars env evd t =
   (!evdref, c)
 
 let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst : subst0) =
-  let open EConstr in
-  let open Vars in
   match EConstr.kind sigma f with
     | Meta k ->
 	(* We enforce that the Meta does not depend on the [nb]
@@ -476,7 +472,6 @@ let use_evars_pattern_unification flags =
   && Flags.version_strictly_greater Flags.V8_2
 
 let use_metas_pattern_unification sigma flags nb l =
-  let open EConstr in
   !global_pattern_unification_flag && flags.use_pattern_unification
   || (Flags.version_less_or_equal Flags.V8_3 || 
       flags.use_meta_bound_pattern_unification) &&
@@ -636,7 +631,6 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM 
 
 
 let rec is_neutral env sigma ts t =
-  let open EConstr in
   let (f, l) = decompose_app_vect sigma t in
     match EConstr.kind sigma (EConstr.of_constr f) with
     | Const (c, u) ->
@@ -666,7 +660,6 @@ let is_eta_constructor_app env sigma ts f l1 term =
   | _ -> false
 
 let eta_constructor_app env sigma f l1 term =
-  let open EConstr in
   match EConstr.kind sigma f with
   | Construct (((_, i as ind), j), u) ->
     let mib = lookup_mind (fst ind) env in
@@ -684,8 +677,6 @@ let print_constr_env env c =
   print_constr_env env (EConstr.Unsafe.to_constr c)
 
 let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top env cv_pb flags m n =
-  let open EConstr in
-  let open Vars in
   let rec unirec_rec (curenv,nb as curenvnb) pb opt ((sigma,metasubst,evarsubst) as substn : subst0) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
     and cN = Evarutil.whd_head_evar sigma curn in
@@ -892,7 +883,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       let expand_proj c c' l = 
       	match EConstr.kind sigma c with
       	| Proj (p, t) when not (Projection.unfolded p) && needs_expansion p c' ->
-      	  (try destApp sigma (EConstr.of_constr (Retyping.expand_projection curenv sigma p t (Array.to_list l)))
+      	  (try destApp sigma (Retyping.expand_projection curenv sigma p t (Array.to_list l))
       	   with RetypeError _ -> (** Unification can be called on ill-typed terms, due
       				     to FO and eta in particular, fail gracefully in that case *)
       	     (c, l))
@@ -1128,8 +1119,6 @@ let right = false
 
 let rec unify_with_eta keptside flags env sigma c1 c2 =
 (* Question: try whd_all on ci if not two lambdas? *)
-  let open EConstr in
-  let open Vars in
   match EConstr.kind sigma c1, EConstr.kind sigma c2 with
   | (Lambda (na,t1,c1'), Lambda (_,t2,c2')) ->
     let env' = push_rel_assum (na,t1) env in
@@ -1234,8 +1223,6 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
  * since other metavars might also need to be resolved. *)
 
 let applyHead env (type r) (evd : r Sigma.t) n c =
-  let open EConstr in
-  let open Vars in
   let rec apprec : type s. _ -> _ -> _ -> (r, s) Sigma.le -> s Sigma.t -> (constr, r) Sigma.sigma =
     fun n c cty p evd ->
     if Int.equal n 0 then
@@ -1307,7 +1294,6 @@ let order_metas metas =
 (* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
 
 let solve_simple_evar_eqn ts env evd ev rhs =
-  let open EConstr in
   match solve_simple_eqn (Evarconv.evar_conv_x ts) env evd (None,ev,rhs) with
   | UnifFailure (evd,reason) ->
       error_cannot_unify env evd ~reason (mkEvar ev,rhs);
@@ -1319,8 +1305,6 @@ let solve_simple_evar_eqn ts env evd ev rhs =
    is true, unification of types of metas is required *)
 
 let w_merge env with_types flags (evd,metas,evars : subst0) =
-  let open EConstr in
-  let open Vars in
   let rec w_merge_rec evd metas evars eqns =
 
     (* Process evars *)
@@ -1498,7 +1482,6 @@ let w_unify_core_0 env evd with_types cv_pb flags m n =
 let w_typed_unify env evd = w_unify_core_0 env evd true
 
 let w_typed_unify_array env evd flags f1 l1 f2 l2 =
-  let open EConstr in
   let f1 = EConstr.of_constr f1 in
   let f2 = EConstr.of_constr f2 in
   let l1 = Array.map EConstr.of_constr l1 in
@@ -1529,7 +1512,6 @@ let iter_fail f a =
    contexts, with evars, and possibly with occurrences *)
 
 let indirectly_dependent sigma c d decls =
-  let open EConstr in
   not (isVar sigma c) &&
     (* This test is not needed if the original term is a variable, but
        it is needed otherwise, as e.g. when abstracting over "2" in
@@ -1590,7 +1572,6 @@ let default_matching_flags (sigma,_) =
 exception PatternNotFound
 
 let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
-  let open EConstr in
   let flags =
     if from_prefix_of_ind then
       let flags = default_matching_flags pending in
@@ -1600,7 +1581,6 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     else default_matching_flags pending in
   let n = Array.length (snd (decompose_app_vect sigma c)) in
   let matching_fun _ t =
-    let open EConstr in
     try
       let t',l2 =
         if from_prefix_of_ind then
@@ -1754,8 +1734,6 @@ let keyed_unify env evd kop =
    Unifies [cl] to every subterm of [op] until it finds a match.
    Fails if no match is found *)
 let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
-  let open EConstr in
-  let open Vars in
   let bestexn = ref None in
   let kop = Keys.constr_key (EConstr.to_constr evd op) in
   let rec matchrec cl =
@@ -1831,8 +1809,6 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
    Unifies [cl] to every subterm of [op] and return all the matches.
    Fails if no match is found *)
 let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
-  let open EConstr in
-  let open Vars in
   let return a b =
     let (evd,c as a) = a () in
       if List.exists (fun (evd',c') -> EConstr.eq_constr evd' c c') b then b else a :: b
@@ -1897,7 +1873,6 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
   | _ -> res
 
 let w_unify_to_subterm_list env evd flags hdmeta oplist t =
-  let open EConstr in
   List.fold_right
     (fun op (evd,l) ->
       let op = whd_meta evd op in
@@ -2008,7 +1983,6 @@ let w_unify2 env evd flags dep cv_pb ty1 ty2 =
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
 let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
-  let open EConstr in
   let hd1,l1 = decompose_app_vect evd (EConstr.of_constr (whd_nored evd ty1)) in
   let hd2,l2 = decompose_app_vect evd (EConstr.of_constr (whd_nored evd ty2)) in
   let is_empty1 = Array.is_empty l1 in

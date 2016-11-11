@@ -10,13 +10,14 @@ open Pp
 open CErrors
 open Util
 open Term
-open Vars
 open Inductive
 open Inductiveops
 open Names
 open Reductionops
 open Environ
 open Termops
+open EConstr
+open Vars
 open Arguments_renaming
 open Context.Rel.Declaration
 
@@ -58,7 +59,6 @@ let local_def (na, b, t) =
   LocalDef (na, inj b, inj t)
 
 let get_type_from_constraints env sigma t =
-  let open EConstr in
   if isEvar sigma (EConstr.of_constr (fst (decompose_app_vect sigma t))) then
     match
       List.map_filter (fun (pbty,env,t1,t2) ->
@@ -74,19 +74,17 @@ let get_type_from_constraints env sigma t =
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
-      let open EConstr in
       match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma typ)) with
-        | Prod (na,c1,c2) -> subst_type env sigma (Vars.subst1 h c2) rest
+        | Prod (na,c1,c2) -> subst_type env sigma (subst1 h c2) rest
         | _ -> retype_error NonFunctionalConstruction
 
 (* If ft is the type of f which itself is applied to args, *)
 (* [sort_of_atomic_type] computes ft[args] which has to be a sort *)
 
 let sort_of_atomic_type env sigma ft args =
-  let open EConstr in
   let rec concl_of_arity env n ar args =
     match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma ar)), args with
-    | Prod (na, t, b), h::l -> concl_of_arity (push_rel (local_def (na, Vars.lift n h, t)) env) (n + 1) b l
+    | Prod (na, t, b), h::l -> concl_of_arity (push_rel (local_def (na, lift n h, t)) env) (n + 1) b l
     | Sort s, [] -> s
     | _ -> retype_error NotASort
   in concl_of_arity env 0 ft (Array.to_list args)
@@ -101,7 +99,6 @@ let decomp_sort env sigma t =
   | _ -> retype_error NotASort
 
 let retype ?(polyprop=true) sigma =
-  let open EConstr in
   let rec type_of env cstr =
     match EConstr.kind sigma cstr with
     | Meta n ->
@@ -109,7 +106,7 @@ let retype ?(polyprop=true) sigma =
        with Not_found -> retype_error (BadMeta n))
     | Rel n ->
 	let ty = EConstr.of_constr (RelDecl.get_type (lookup_rel n env)) in
-        Vars.lift n ty
+        lift n ty
     | Var id -> type_of_var env id
     | Const cst -> EConstr.of_constr (rename_type_of_constant env cst)
     | Evar (evk, args) -> EConstr.of_constr (Evd.existential_type sigma (evk, Array.map EConstr.Unsafe.to_constr args))
@@ -133,7 +130,7 @@ let retype ?(polyprop=true) sigma =
     | Lambda (name,c1,c2) ->
           mkProd (name, c1, type_of (push_rel (local_assum (name,c1)) env) c2)
     | LetIn (name,b,c1,c2) ->
-         Vars.subst1 b (type_of (push_rel (local_def (name,b,c1)) env) c2)
+         subst1 b (type_of (push_rel (local_def (name,b,c1)) env) c2)
     | Fix ((_,i),(_,tys,_)) -> tys.(i)
     | CoFix (i,(_,tys,_)) -> tys.(i)
     | App(f,args) when is_template_polymorphic env sigma f ->
@@ -257,11 +254,11 @@ let sorts_of_context env evc ctxt =
   snd (aux ctxt)
 
 let expand_projection env sigma pr c args =
-  let inj = EConstr.Unsafe.to_constr in
   let ty = get_type_of ~lax:true env sigma c in
   let (i,u), ind_args = 
     try Inductiveops.find_mrectype env sigma (EConstr.of_constr ty) 
     with Not_found -> retype_error BadRecursiveType
   in
+  let ind_args = List.map EConstr.of_constr ind_args in
     mkApp (mkConstU (Projection.constant pr,u), 
-	   Array.of_list (ind_args @ (inj c :: List.map inj args)))
+	   Array.of_list (ind_args @ (c :: args)))

@@ -18,6 +18,7 @@ open CErrors
 open Util
 open Names
 open Term
+open EConstr
 open Vars
 open Reductionops
 open Environ
@@ -48,7 +49,6 @@ exception NoCoercionNoUnifier of evar_map * unification_error
 
 (* Here, funj is a coercion therefore already typed in global context *)
 let apply_coercion_args env evd check isproj argl funj =
-  let open EConstr in
   let evdref = ref evd in
   let rec apply_rec acc typ = function
     | [] ->
@@ -68,7 +68,7 @@ let apply_coercion_args env evd check isproj argl funj =
       | Prod (_,c1,c2) ->
         if check && not (e_cumul env evdref (EConstr.of_constr (Retyping.get_type_of env !evdref h)) c1) then
 	  raise NoCoercion;
-        apply_rec (h::acc) (Vars.subst1 h c2) restl
+        apply_rec (h::acc) (subst1 h c2) restl
       | _ -> anomaly (Pp.str "apply_coercion_args")
   in
   let res = apply_rec [] funj.uj_type argl in
@@ -121,9 +121,8 @@ let hnf env evd c = whd_all env evd c
 let hnf_nodelta env evd c = whd_betaiota evd c
 
 let lift_args n sign =
-  let open EConstr in
   let rec liftrec k = function
-    | t::sign -> Vars.liftn n k t :: (liftrec (k-1) sign)
+    | t::sign -> liftn n k t :: (liftrec (k-1) sign)
     | [] -> []
   in
     liftrec (List.length sign) sign
@@ -150,8 +149,6 @@ let mu env evdref t =
 and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
     : (EConstr.constr -> EConstr.constr) option
     =
-  let open EConstr in
-  let open Vars in
   let open Context.Rel.Declaration in
   let rec coerce_unify env x y =
     let x = hnf env !evdref x and y = hnf env !evdref y in
@@ -478,8 +475,6 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
       with UnableToUnify _ -> raise NoCoercion
 
 let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
-  let open EConstr in
-  let open Vars in
   try (the_conv_x_leq env t c1 evd, v)
   with UnableToUnify (best_failed_evd,e) ->
     try inh_coerce_to_fail env evd rigidonly v t c1

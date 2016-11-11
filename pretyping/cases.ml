@@ -111,7 +111,6 @@ let make_anonymous_patvars n =
 let relocate_rel n1 n2 k j = if Int.equal j (n1 + k) then n2+k else j
 
 let rec relocate_index sigma n1 n2 k t =
-  let open EConstr in
   match EConstr.kind sigma t with
   | Rel j when Int.equal j (n1 + k) -> mkRel (n2+k)
   | Rel j when j < n1+k -> t

@@ -599,6 +599,7 @@ let rec extract_term env mle mlt c args =
 	extract_cons_app env mle mlt cp args
     | Proj (p, c) ->
         let term = Retyping.expand_projection env (Evd.from_env env) p (EConstr.of_constr c) [] in
+        let term = EConstr.Unsafe.to_constr term in
 	  extract_term env mle mlt term args
     | Rel n ->
 	(* As soon as the expected [mlt] for the head is known, *)

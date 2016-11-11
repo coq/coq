@@ -10,8 +10,9 @@ open Util
 open Pp
 open Names
 open Term
-open Vars
 open Termops
+open EConstr
+open Vars
 open Namegen
 open Environ
 open Evd
@@ -75,7 +76,6 @@ let idx = Namegen.default_dependent_ident
 
 let define_pure_evar_as_product evd evk =
   let open Context.Named.Declaration in
-  let open EConstr in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
@@ -105,19 +105,19 @@ let define_pure_evar_as_product evd evk =
 	let evd3 = Evd.set_leq_sort evenv evd3 (Type prods) s in
 	  evd3, rng
   in
-  let prod = mkProd (Name id, EConstr.of_constr dom, EConstr.of_constr (subst_var id rng)) in
+  let rng = EConstr.of_constr rng in
+  let prod = mkProd (Name id, EConstr.of_constr dom, subst_var id rng) in
   let evd3 = Evd.define evk (EConstr.Unsafe.to_constr prod) evd2 in
     evd3,prod
 
 (* Refine an applied evar to a product and returns its instantiation *)
 
 let define_evar_as_product evd (evk,args) =
-  let open EConstr in
   let evd,prod = define_pure_evar_as_product evd evk in
   (* Quick way to compute the instantiation of evk with args *)
   let na,dom,rng = destProd evd prod in
   let evdom = mkEvar (fst (destEvar evd dom), args) in
-  let evrngargs = Array.cons (mkRel 1) (Array.map (Vars.lift 1) args) in
+  let evrngargs = Array.cons (mkRel 1) (Array.map (lift 1) args) in
   let evrng =  mkEvar (fst (destEvar evd rng), evrngargs) in
   evd, mkProd (na, evdom, evrng)
 
@@ -132,7 +132,6 @@ let define_evar_as_product evd (evk,args) =
 
 let define_pure_evar_as_lambda env evd evk =
   let open Context.Named.Declaration in
-  let open EConstr in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
   let typ = EConstr.of_constr (Reductionops.whd_all evenv evd (EConstr.of_constr (evar_concl evi))) in
@@ -147,23 +146,21 @@ let define_pure_evar_as_lambda env evd evk =
   let newenv = push_named (LocalAssum (id, dom)) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
-  let evd2,body = new_evar_unsafe newenv evd1 ~src (Vars.subst1 (mkVar id) rng) ~filter in
-  let lam = mkLambda (Name id, EConstr.of_constr dom, Vars.subst_var id (EConstr.of_constr body)) in
+  let evd2,body = new_evar_unsafe newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
+  let lam = mkLambda (Name id, EConstr.of_constr dom, subst_var id (EConstr.of_constr body)) in
   Evd.define evk (EConstr.Unsafe.to_constr lam) evd2, lam
 
 let define_evar_as_lambda env evd (evk,args) =
-  let open EConstr in
   let evd,lam = define_pure_evar_as_lambda env evd evk in
   (* Quick way to compute the instantiation of evk with args *)
   let na,dom,body = destLambda evd lam in
-  let evbodyargs = Array.cons (mkRel 1) (Array.map (Vars.lift 1) args) in
+  let evbodyargs = Array.cons (mkRel 1) (Array.map (lift 1) args) in
   let evbody = mkEvar (fst (destEvar evd body), evbodyargs) in
   evd, mkLambda (na, dom, evbody)
 
 let rec evar_absorb_arguments env evd (evk,args as ev) = function
   | [] -> evd,ev
   | a::l ->
-      let open EConstr in
       (* TODO: optimize and avoid introducing intermediate evars *)
       let evd,lam = define_pure_evar_as_lambda env evd evk in
       let _,_,body = destLambda evd lam in
@@ -177,8 +174,9 @@ let define_evar_as_sort env evd (ev,args) =
   let evi = Evd.find_undefined evd ev in 
   let s = Type u in
   let concl = Reductionops.whd_all (evar_env evi) evd (EConstr.of_constr evi.evar_concl) in
-  let sort = destSort concl in
-  let evd' = Evd.define ev (mkSort s) evd in
+  let concl = EConstr.of_constr concl in
+  let sort = destSort evd concl in
+  let evd' = Evd.define ev (Constr.mkSort s) evd in
   Evd.set_leq_sort env evd' (Type (Univ.super u)) sort, s
 
 (* Propagation of constraints through application and abstraction:
@@ -187,7 +185,6 @@ let define_evar_as_sort env evd (ev,args) =
    an evar instantiate it with the product of 2 new evars. *)
 
 let split_tycon loc env evd tycon =
-  let open EConstr in
   let rec real_split evd c =
     let t = Reductionops.whd_all env evd c in
       match EConstr.kind evd (EConstr.of_constr t) with
@@ -208,7 +205,7 @@ let split_tycon loc env evd tycon =
 	    evd', (n, mk_tycon dom, mk_tycon rng)
 
 let valcon_of_tycon x = x
-let lift_tycon n = Option.map (EConstr.Vars.lift n)
+let lift_tycon n = Option.map (lift n)
 
 let pr_tycon env = function
     None -> str "None"

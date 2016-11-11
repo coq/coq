@@ -6,15 +6,18 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module CVars = Vars
+
 open CErrors
 open Util
 open Names
 open Term
+open Termops
+open EConstr
 open Vars
 open CClosure
 open Reduction
 open Reductionops
-open Termops
 open Environ
 open Recordops
 open Evarutil
@@ -43,14 +46,12 @@ let _ = Goptions.declare_bool_option {
 }
 
 let unfold_projection env evd ts p c =
-  let open EConstr in
   let cst = Projection.constant p in
     if is_transparent_constant ts cst then
       Some (mkProj (Projection.make cst true, c))
     else None
       
 let eval_flexible_term ts env evd c =
-  let open EConstr in
   match EConstr.kind evd c with
   | Const (c,u as cu) ->
       if is_transparent_constant ts c
@@ -59,7 +60,7 @@ let eval_flexible_term ts env evd c =
   | Rel n ->
       (try match lookup_rel n env with
            | RelDecl.LocalAssum _ -> None
-           | RelDecl.LocalDef (_,v,_) -> Some (Vars.lift n (EConstr.of_constr v))
+           | RelDecl.LocalDef (_,v,_) -> Some (lift n (EConstr.of_constr v))
        with Not_found -> None)
   | Var id ->
       (try
@@ -67,7 +68,7 @@ let eval_flexible_term ts env evd c =
 	   Option.map EConstr.of_constr (env |> lookup_named id |> NamedDecl.get_value)
 	 else None
        with Not_found -> None)
-  | LetIn (_,b,_,c) -> Some (Vars.subst1 b c)
+  | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
   | Proj (p, c) -> 
     if Projection.unfolded p then assert false
@@ -105,7 +106,6 @@ let position_problem l2r = function
   | CUMUL -> Some l2r
 
 let occur_rigidly (evk,_ as ev) evd t =
-  let open EConstr in
   let rec aux t =
     match EConstr.kind evd t with
     | App (f, c) -> if aux f then Array.exists aux c else false
@@ -141,14 +141,13 @@ let occur_rigidly (evk,_ as ev) evd t =
    projection would have been reduced) *)
 
 let check_conv_record env sigma (t1,sk1) (t2,sk2) =
-  let open EConstr in
   let (proji, u), arg = Termops.global_app_of_constr sigma t1 in
   let canon_s,sk2_effective =
     try
       match EConstr.kind sigma t2 with
 	Prod (_,a,b) -> (* assert (l2=[]); *)
 	  let _, a, b = destProd sigma t2 in
-          if Vars.noccurn sigma 1 b then
+          if noccurn sigma 1 b then
             lookup_canonical_conversion (proji, Prod_cs),
 	    (Stack.append_app [|a;EConstr.of_constr (pop b)|] Stack.empty)
           else raise Not_found
@@ -185,9 +184,9 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       | None -> raise Not_found
       | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
   let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
-  let c' = EConstr.of_constr (subst_univs_level_constr subst c) in
-  let t' = subst_univs_level_constr subst t' in
-  let bs' = List.map (subst_univs_level_constr subst %> EConstr.of_constr) bs in
+  let c' = EConstr.of_constr (CVars.subst_univs_level_constr subst c) in
+  let t' = CVars.subst_univs_level_constr subst t' in
+  let bs' = List.map (CVars.subst_univs_level_constr subst %> EConstr.of_constr) bs in
   let h, _ = decompose_app_vect sigma (EConstr.of_constr t') in
     ctx',(EConstr.of_constr h, t2),c',bs',(Stack.append_app_list params Stack.empty,params1),
     (Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
@@ -379,7 +378,6 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     ((term1,sk1 as appr1),csts1) ((term2,sk2 as appr2),csts2) =
-  let open EConstr in
   let quick_fail i = (* not costly, loses info *)
     UnifFailure (i, NotSameHead)
   in
@@ -466,7 +464,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		  let termM' = Retyping.expand_projection env evd p c [] in
 		  let apprM', cstsM' = 
 		    whd_betaiota_deltazeta_for_iota_state
-		      (fst ts) env evd cstsM (EConstr.of_constr termM',skM)
+		      (fst ts) env evd cstsM (termM',skM)
 		  in
 		  let delta' i = 
 		    switch (evar_eqappr_x ts env i pbty) (apprF,cstsF) (apprM',cstsM') 
@@ -642,7 +640,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	(* Catch the p.c ~= p c' cases *)
 	| Proj (p,c), Const (p',u) when eq_constant (Projection.constant p) p' ->
 	  let res = 
-	    try Some (destApp evd (EConstr.of_constr (Retyping.expand_projection env evd p c [])))
+	    try Some (destApp evd (Retyping.expand_projection env evd p c []))
 	    with Retyping.RetypeError _ -> None
 	  in
 	    (match res with 
@@ -653,7 +651,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	      
 	| Const (p,u), Proj (p',c') when eq_constant p (Projection.constant p') ->
 	  let res = 
-	    try Some (destApp evd (EConstr.of_constr (Retyping.expand_projection env evd p' c' [])))
+	    try Some (destApp evd (Retyping.expand_projection env evd p' c' []))
 	    with Retyping.RetypeError _ -> None
 	  in 
 	    (match res with
@@ -699,7 +697,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
             | Lambda _ -> assert (match args with [] -> true | _ -> false); true
             | LetIn (_,b,_,c) -> is_unnamed
 	     (fst (whd_betaiota_deltazeta_for_iota_state
-		      (fst ts) env i Cst_stack.empty (EConstr.Vars.subst1 b c, args)))
+		      (fst ts) env i Cst_stack.empty (subst1 b c, args)))
 	    | Fix _ -> true (* Partially applied fix can be the result of a whd call *)
 	    | Proj (p, _) -> Projection.unfolded p || Stack.not_purely_applicative args
             | Case _ | App _| Cast _ -> assert false in
@@ -878,7 +876,6 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
 
      had to be initially resolved
   *)
-  let open EConstr in
   let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
   if Reductionops.Stack.compare_shape sk1 sk2 then
     let (evd',ks,_,test) =
@@ -886,12 +883,12 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
 	(fun (i,ks,m,test) b ->
 	  if match n with Some n -> Int.equal m n | None -> false then
 	    let ty = EConstr.of_constr (Retyping.get_type_of env i t2) in
-	    let test i = evar_conv_x trs env i CUMUL ty (Vars.substl ks b) in
+	    let test i = evar_conv_x trs env i CUMUL ty (substl ks b) in
 	      (i,t2::ks, m-1, test)
 	  else
 	    let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
 	    let i = Sigma.Unsafe.of_evar_map i in
-            let Sigma (ev, i', _) = Evarutil.new_evar env i ~src:dloc (Vars.substl ks b) in
+            let Sigma (ev, i', _) = Evarutil.new_evar env i ~src:dloc (substl ks b) in
             let i' = Sigma.to_evar_map i' in
 	    (i', EConstr.of_constr ev :: ks, m - 1,test))
 	(evd,[],List.length bs,fun i -> Success i) bs
@@ -900,17 +897,17 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
     ise_and evd'
       [(fun i ->
 	exact_ise_stack2 env i
-          (fun env' i' cpb x1 x -> evar_conv_x trs env' i' cpb x1 (Vars.substl ks x))
+          (fun env' i' cpb x1 x -> evar_conv_x trs env' i' cpb x1 (substl ks x))
           params1 params);
        (fun i ->
 	 exact_ise_stack2 env i
-           (fun env' i' cpb u1 u -> evar_conv_x trs env' i' cpb u1 (Vars.substl ks u))
+           (fun env' i' cpb u1 u -> evar_conv_x trs env' i' cpb u1 (substl ks u))
            us2 us);
        (fun i -> evar_conv_x trs env i CONV c1 app);
        (fun i -> exact_ise_stack2 env i (evar_conv_x trs) sk1 sk2);
        test;
        (fun i -> evar_conv_x trs env i CONV h2
-	 (EConstr.of_constr (fst (decompose_app_vect i (Vars.substl ks h)))))]
+	 (EConstr.of_constr (fst (decompose_app_vect i (substl ks h)))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
@@ -951,7 +948,6 @@ let set_evar_conv f = Hook.set evar_conv_hook_set f
 (* We assume here |l1| <= |l2| *)
 
 let first_order_unification ts env evd (ev1,l1) (term2,l2) =
-  let open EConstr in
   let (deb2,rest2) = Array.chop (Array.length l2-Array.length l1) l2 in
   ise_and evd
     (* First compare extra args for better failure message *)
@@ -973,7 +969,6 @@ let choose_less_dependent_instance evk evd term args =
   | (id, _) :: _ -> Some (Evd.define evk (Constr.mkVar id) evd)
 
 let apply_on_subterm env evdref f c t =
-  let open EConstr in
   let rec applyrec (env,(k,c) as acc) t =
     (* By using eq_constr, we make an approximation, for instance, we *)
     (* could also be interested in finding a term u convertible to t *)
@@ -987,7 +982,7 @@ let apply_on_subterm env evdref f c t =
           mkEvar (evk, Array.of_list (List.map2 g ctx (Array.to_list args)))
       | _ ->
         map_constr_with_binders_left_to_right !evdref
-	  (fun d (env,(k,c)) -> (push_rel d env, (k+1,Vars.lift 1 c)))
+	  (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
 	  applyrec acc t
   in
   applyrec (env,(0,c)) t
@@ -996,7 +991,6 @@ let filter_possible_projections evd c ty ctxt args =
   (* Since args in the types will be replaced by holes, we count the
      fv of args to have a well-typed filter; don't know how necessary
     it is however to have a well-typed filter here *)
-  let open EConstr in
   let fv1 = free_rels evd (mkApp (c,args)) (* Hack: locally untyped *) in
   let fv2 = collect_vars evd (mkApp (c,args)) in
   let len = Array.length args in
@@ -1039,7 +1033,6 @@ let set_solve_evars f = solve_evars := f
 exception TypingFailed of evar_map
 
 let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
-  let open EConstr in
   try
   let evi = Evd.find_undefined evd evk in
   let env_evar = evar_filtered_env evi in
@@ -1137,7 +1130,6 @@ let to_pb (pb, env, t1, t2) =
   (pb, env, EConstr.Unsafe.to_constr t1, EConstr.Unsafe.to_constr t2)
 
 let second_order_matching_with_args ts env evd pbty ev l t =
-  let open EConstr in
 (*
   let evd,ev = evar_absorb_arguments env evd ev l in
   let argoccs = Array.map_to_list (fun _ -> None) (snd ev) in
@@ -1150,7 +1142,6 @@ let second_order_matching_with_args ts env evd pbty ev l t =
   UnifFailure (evd, CannotSolveConstraint (pb,ProblemBeyondCapabilities))
 
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
-  let open EConstr in
   let t1 = apprec_nohdbeta ts env evd (whd_head_evar evd t1) in
   let t2 = apprec_nohdbeta ts env evd (whd_head_evar evd t2) in
   let (term1,l1 as appr1) = try destApp evd t1 with DestKO -> (t1, [||]) in

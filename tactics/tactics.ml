@@ -3165,7 +3165,7 @@ let expand_projections env sigma c =
   let sigma = Sigma.to_evar_map sigma in
   let rec aux env c =
     match EConstr.kind sigma c with
-    | Proj (p, c) -> EConstr.of_constr (Retyping.expand_projection env sigma p (aux env c) [])
+    | Proj (p, c) -> Retyping.expand_projection env sigma p (aux env c) []
     | _ -> map_constr_with_full_binders sigma push_rel aux env c
   in
   EConstr.Unsafe.to_constr (aux env (EConstr.of_constr c))
