@@ -891,35 +891,33 @@ let relativize = function
   | Absolute path -> Relative (String.sub path 1 (String.length path - 1))
 
 let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout) =
-  let dflt = if unix then use_suffix "/usr/local" unixlayout else use_suffix "C:/coq" selfcontainedlayout in
   let dir = match !uservalue, !Prefs.prefix with
     | Some d, _ -> d
     | _, Some p -> use_suffix p (if arch_is_win32 then selfcontainedlayout else relativize unixlayout)
     | _ ->
+      let dflt = if unix then use_suffix "/usr/local" unixlayout else use_suffix "C:/coq" selfcontainedlayout in
       let () = printf "Where should I install %s [%s]? " msg dflt in
       let line = read_line () in
       if line = "" then dflt else line
-  in (var,msg,dir,dir<>dflt)
+  in (var,msg,dir)
 
 let do_one_noinst (var,msg,_,_,_) =
-  if var="CONFIGDIR" || var="DATADIR" then (var,msg,coqtop^"/ide",true)
-  else (var,msg,coqtop^"/doc",false)
+  if var="CONFIGDIR" || var="DATADIR" then (var,msg,coqtop^"/ide")
+  else (var,msg,coqtop^"/doc")
 
 let install_dirs =
   let f = if !Prefs.local then do_one_noinst else do_one_instdir in
   List.map f install
 
-let select var = List.find (fun (v,_,_,_) -> v=var) install_dirs
+let select var = List.find (fun (v,_,_) -> v=var) install_dirs
 
-let coqlib = let (_,_,d,_) = select "COQLIBINSTALL" in d
+let coqlib = let (_,_,d) = select "COQLIBINSTALL" in d
 
-let docdir = let (_,_,d,_) = select "DOCDIR" in d
+let docdir = let (_,_,d) = select "DOCDIR" in d
 
-let configdir =
-  let (_,_,d,b) = select "CONFIGDIR" in if b then Some d else None
+let configdir = let (_,_,d) = select "CONFIGDIR" in d
 
-let datadir =
-  let (_,_,d,b) = select "DATADIR" in if b then Some d else None
+let datadir = let (_,_,d) = select "DATADIR" in d
 
 
 (** * OCaml runtime flags *)
@@ -986,7 +984,7 @@ let print_summary () =
   else
     (pr "  Paths for true installation:\n";
      List.iter
-       (fun (_,msg,dir,_) -> pr "  - %s will be copied in %s\n" msg dir)
+       (fun (_,msg,dir) -> pr "  - %s will be copied in %s\n" msg dir)
        install_dirs);
   pr "\n";
   pr "If anything is wrong above, please restart './configure'.\n\n";
@@ -1033,8 +1031,8 @@ let write_configml f =
   pr_b "local" !Prefs.local;
   pr "let vmbyteflags = ["; List.iter (pr "%S;") vmbyteflags; pr "]\n";
   pr_o "coqlib" (if !Prefs.local then None else Some coqlib);
-  pr_o "configdir" configdir;
-  pr_o "datadir" datadir;
+  pr_s "configdir" configdir;
+  pr_s "datadir" datadir;
   pr_s "docdir" docdir;
   pr_s "ocaml" camlexec.top;
   pr_s "ocamlfind" camlexec.find;
@@ -1119,8 +1117,8 @@ let write_makefile f =
   pr "VMBYTEFLAGS=%s\n" (String.concat " " vmbyteflags);
   pr "%s\n\n" !build_loadpath;
   pr "# Paths for true installation\n";
-  List.iter (fun (v,msg,_,_) -> pr "# %s: path for %s\n" v msg) install_dirs;
-  List.iter (fun (v,_,dir,_) -> pr "%s=%S\n" v dir) install_dirs;
+  List.iter (fun (v,msg,_) -> pr "# %s: path for %s\n" v msg) install_dirs;
+  List.iter (fun (v,_,dir) -> pr "%s=%S\n" v dir) install_dirs;
   pr "\n# Coq version\n";
   pr "VERSION=%s\n" coq_version;
   pr "VERSION4MACOS=%s\n\n" coq_macos_version;

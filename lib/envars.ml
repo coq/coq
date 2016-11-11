@@ -23,8 +23,6 @@ let ( / ) a b =
 
 let coqify d = d / "coq"
 
-let opt2list = function None -> [] | Some x -> [x]
-
 let home ~warn =
   getenv_else "HOME" (fun () ->
     try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
@@ -189,7 +187,7 @@ let xdg_data_dirs warn =
       | Not_found when String.equal Sys.os_type "Win32" -> [relative_base / "share"]
       | Not_found -> ["/usr/local/share/coq";"/usr/share/coq"]
   in
-  xdg_data_home warn :: sys_dirs @ opt2list Coq_config.datadir
+  xdg_data_home warn :: sys_dirs @ [Coq_config.datadir]
 
 let xdg_dirs ~warn =
   List.filter Sys.file_exists (xdg_data_dirs warn)
