@@ -864,24 +864,25 @@ type path_style =
 
 let install = [
   "BINDIR", "the Coq binaries", Prefs.bindir,
-    Relative "bin", Relative "bin";
+    Relative "bin", Relative "bin", Relative "bin";
   "COQLIBINSTALL", "the Coq library", Prefs.libdir,
-    Relative "lib", Relative "lib/coq";
+    Relative "lib", Relative "lib/coq", Relative "";
   "CONFIGDIR", "the Coqide configuration files", Prefs.configdir,
-    Relative "config", Absolute "/etc/xdg/coq";
+    Relative "config", Absolute "/etc/xdg/coq", Relative "ide";
   "DATADIR", "the Coqide data files", Prefs.datadir,
-    Relative "share", Relative "share/coq";
+    Relative "share", Relative "share/coq", Relative "ide";
   "MANDIR", "the Coq man pages", Prefs.mandir,
-    Relative "man", Relative "share/man";
+    Relative "man", Relative "share/man", Relative "man";
   "DOCDIR", "the Coq documentation", Prefs.docdir,
-    Relative "doc", Relative "share/doc/coq";
+    Relative "doc", Relative "share/doc/coq", Relative "doc";
   "EMACSLIB", "the Coq Emacs mode", Prefs.emacslib,
-    Relative "emacs", Relative "share/emacs/site-lisp";
+    Relative "emacs", Relative "share/emacs/site-lisp", Relative "tools";
   "COQDOCDIR", "the Coqdoc LaTeX files", Prefs.coqdocdir,
-    Relative "latex", Relative "share/texmf/tex/latex/misc";
+    Relative "latex", Relative "share/texmf/tex/latex/misc", Relative "tools/coqdoc";
  ]
 
 let use_suffix prefix = function
+  | Relative "" -> prefix
   | Relative suff -> prefix ^ "/" ^ suff
   | Absolute path -> path
 
@@ -890,7 +891,7 @@ let relativize = function
   | Relative _ as suffix -> suffix
   | Absolute path -> Relative (String.sub path 1 (String.length path - 1))
 
-let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout) =
+let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,_) =
   let dir = match !uservalue, !Prefs.prefix with
     | Some d, _ -> d
     | _, Some p -> use_suffix p (if arch_is_win32 then selfcontainedlayout else relativize unixlayout)
@@ -901,9 +902,8 @@ let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout) =
       if line = "" then dflt else line
   in (var,msg,dir)
 
-let do_one_noinst (var,msg,_,_,_) =
-  if var="CONFIGDIR" || var="DATADIR" then (var,msg,coqtop^"/ide")
-  else (var,msg,coqtop^"/doc")
+let do_one_noinst (var,msg,_,_,_,locallayout) =
+  (var,msg,use_suffix coqtop locallayout)
 
 let install_dirs =
   let f = if !Prefs.local then do_one_noinst else do_one_instdir in
