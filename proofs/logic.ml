@@ -349,7 +349,8 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	let conclty = nf_betaiota sigma (EConstr.of_constr conclty) in
 	  if !check && occur_meta sigma (EConstr.of_constr conclty) then
 	    raise (RefinerError (MetaInType conclty));
-	  let (gl,ev,sigma) = mk_goal hyps conclty in
+	  let (gl,ev,sigma) = mk_goal hyps (EConstr.of_constr conclty) in
+	  let ev = EConstr.Unsafe.to_constr ev in
 	  gl::goalacc, conclty, sigma, ev
 
       | Cast (t,k, ty) ->
@@ -424,7 +425,8 @@ and mk_hdgoals sigma goal goalacc trm =
   match kind_of_term trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
-	let (gl,ev,sigma) = mk_goal hyps (nf_betaiota sigma (EConstr.of_constr ty)) in
+	let (gl,ev,sigma) = mk_goal hyps (EConstr.of_constr (nf_betaiota sigma (EConstr.of_constr ty))) in
+	let ev = EConstr.Unsafe.to_constr ev in
 	gl::goalacc,ty,sigma,ev
 
     | Cast (t,_, ty) ->
@@ -526,6 +528,7 @@ let prim_refiner r sigma goal =
   let env = Goal.V82.env sigma goal in
   let sign = Goal.V82.hyps sigma goal in
   let cl = Goal.V82.concl sigma goal in
+  let cl = EConstr.Unsafe.to_constr cl in
   let mk_goal hyps concl = 
     Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) 
   in
@@ -533,7 +536,7 @@ let prim_refiner r sigma goal =
     (* Logical rules *)
     | Cut (b,replace,id,t) ->
 (*        if !check && not (Retyping.get_sort_of env sigma t) then*)
-        let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma (EConstr.of_constr t)) in
+        let (sg1,ev1,sigma) = mk_goal sign (EConstr.of_constr (nf_betaiota sigma (EConstr.of_constr t))) in
 	let sign,t,cl,sigma =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
@@ -546,9 +549,10 @@ let prim_refiner r sigma goal =
 	      user_err ~hdr:"Logic.prim_refiner"
                 (str "Variable " ++ pr_id id ++ str " is already declared.");
 	     push_named_context_val (LocalAssum (id,t)) sign,t,cl,sigma) in
+        let t = EConstr.of_constr t in
         let (sg2,ev2,sigma) = 
-	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
-	let oterm = Term.mkNamedLetIn id ev1 t ev2 in
+	  Goal.V82.mk_goal sigma sign (EConstr.of_constr cl) (Goal.V82.extra sigma goal) in
+	let oterm = EConstr.mkLetIn (Name id, ev1, t, EConstr.Vars.subst_var id ev2) in
 	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
@@ -556,5 +560,5 @@ let prim_refiner r sigma goal =
 	check_meta_variables c;
 	let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl c in
 	let sgl = List.rev sgl in
-	let sigma = Goal.V82.partial_solution sigma goal oterm in
+	let sigma = Goal.V82.partial_solution sigma goal (EConstr.of_constr oterm) in
 	  (sgl, sigma)

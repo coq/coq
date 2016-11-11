@@ -1423,7 +1423,7 @@ let pr_applicable_hint () =
   match glss.Evd.it with
   | [] -> CErrors.error "No focused goal."
   | g::_ ->
-    pr_hint_term glss.Evd.sigma (Goal.V82.concl glss.Evd.sigma g)
+    pr_hint_term glss.Evd.sigma (EConstr.Unsafe.to_constr (Goal.V82.concl glss.Evd.sigma g))
 
 let pp_hint_mode = function
   | ModeInput -> str"+"

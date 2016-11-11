@@ -185,7 +185,7 @@ let set_typeclasses_depth =
 
 let pr_ev evs ev =
   Printer.pr_constr_env (Goal.V82.env evs ev) evs
-                        (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
+                        (Evarutil.nf_evar evs (EConstr.Unsafe.to_constr (Goal.V82.concl evs ev)))
 
 (** Typeclasses instance search tactic / eauto *)
 
@@ -672,6 +672,7 @@ module V85 = struct
   let hints_tac hints sk fk {it = gl,info; sigma = s} =
     let env = Goal.V82.env s gl in
     let concl = Goal.V82.concl s gl in
+    let concl = EConstr.Unsafe.to_constr concl in
     let tacgl = {it = gl; sigma = s;} in
     let secvars = secvars_of_hyps (Environ.named_context_of_val (Goal.V82.hyps s gl)) in
     let poss = e_possible_resolve hints info.hints secvars info.only_classes s concl in
@@ -784,7 +785,7 @@ module V85 = struct
                  let fk'' =
                    if not info.unique && List.is_empty gls' &&
                         not (needs_backtrack (Goal.V82.env s gl) s
-                                           info.is_evar (Goal.V82.concl s gl))
+                                           info.is_evar (EConstr.Unsafe.to_constr (Goal.V82.concl s gl)))
                    then fk
                    else fk'
                  in
@@ -1458,7 +1459,7 @@ let _ =
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
   let nc, gl, subst, _, _ = Evarutil.push_rel_context_to_named_context env gl in
   let (gl,t,sigma) =
-    Goal.V82.mk_goal sigma nc (EConstr.Unsafe.to_constr gl) Store.empty in
+    Goal.V82.mk_goal sigma nc gl Store.empty in
   let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in
   let st = Hint_db.transparent_state hints in
@@ -1473,6 +1474,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
       with Refiner.FailError _ -> raise Not_found
   in
   let evd = sig_sig gls' in
+  let t = EConstr.Unsafe.to_constr t in
   let t' = let (ev, inst) = destEvar t in
     mkEvar (ev, Array.of_list subst)
   in

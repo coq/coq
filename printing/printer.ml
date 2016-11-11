@@ -384,7 +384,7 @@ let pr_transparent_state (ids, csts) =
 let default_pr_goal gs =
   let (g,sigma) = Goal.V82.nf_evar (project gs) (sig_it gs) in
   let env = Goal.V82.env sigma g in
-  let concl = Goal.V82.concl sigma g in
+  let concl = EConstr.Unsafe.to_constr (Goal.V82.concl sigma g) in
   let goal =
     pr_context_of env sigma ++ cut () ++
       str "============================" ++ cut ()  ++
@@ -407,7 +407,7 @@ let pr_goal_name sigma g =
 let pr_concl n sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   let env = Goal.V82.env sigma g in
-  let pc = pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g) in
+  let pc = pr_goal_concl_style_env env sigma (EConstr.Unsafe.to_constr (Goal.V82.concl sigma g)) in
     str (emacs_str "")  ++
       str "subgoal " ++ int n ++ pr_goal_tag g ++ pr_goal_name sigma g ++
       str " is:" ++ cut () ++ str" "  ++ pc

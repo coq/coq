@@ -264,6 +264,7 @@ let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
 
 let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv gl =
   let concl = Goal.V82.concl clenv.evd (sig_it gl) in
+  let concl = EConstr.Unsafe.to_constr concl in
   if isMeta (fst (decompose_appvect (whd_nored clenv.evd (EConstr.of_constr clenv.templtyp.rebus)))) then
     clenv_unify CUMUL ~flags (clenv_type clenv) concl
       (clenv_unify_meta_types ~flags clenv)

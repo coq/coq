@@ -41,7 +41,7 @@ let project  = Refiner.project
 let pf_env   = Refiner.pf_env
 let pf_hyps  = Refiner.pf_hyps
 
-let pf_concl gls = Goal.V82.concl (project gls) (sig_it gls)
+let pf_concl gls = EConstr.Unsafe.to_constr (Goal.V82.concl (project gls) (sig_it gls))
 let pf_hyps_types gls  =
   let sign = Environ.named_context (pf_env gls) in
   List.map (function LocalAssum (id,x)
@@ -137,7 +137,7 @@ open Pp
 let db_pr_goal sigma g =
   let env = Goal.V82.env sigma g in
   let penv = print_named_context env in
-  let pc = print_constr_env env (Goal.V82.concl sigma g) in
+  let pc = print_constr_env env (EConstr.Unsafe.to_constr (Goal.V82.concl sigma g)) in
   str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()

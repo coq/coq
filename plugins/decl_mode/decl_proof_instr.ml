@@ -41,7 +41,7 @@ let clear ids { it = goal; sigma } =
   let ids = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty ids in
   let env = Goal.V82.env sigma goal in
   let sign = Goal.V82.hyps sigma goal in
-  let cl = Goal.V82.concl sigma goal in
+  let cl = EConstr.Unsafe.to_constr (Goal.V82.concl sigma goal) in
   let evdref = ref (Evd.clear_metas sigma) in
   let (hyps, concl) =
     try Evarutil.clear_hyps_in_evi env evdref sign cl ids
@@ -49,7 +49,7 @@ let clear ids { it = goal; sigma } =
       user_err  (str "Cannot clear " ++ pr_id id)
   in
   let sigma = !evdref in
-  let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
+  let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps (EConstr.of_constr concl) (Goal.V82.extra sigma goal) in
   let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
   { it = [gl]; sigma }
 
@@ -74,7 +74,7 @@ let tcl_change_info_gen info_gen =
      let concl = pf_concl gls in
      let hyps = Goal.V82.hyps (project gls) it in
      let extra = Goal.V82.extra (project gls) it in
-     let (gl,ev,sigma) = Goal.V82.mk_goal (project gls) hyps concl (info_gen extra) in
+     let (gl,ev,sigma) = Goal.V82.mk_goal (project gls) hyps (EConstr.of_constr concl) (info_gen extra) in
      let sigma = Goal.V82.partial_solution sigma it ev in
      { it = [gl] ; sigma= sigma; } )
 

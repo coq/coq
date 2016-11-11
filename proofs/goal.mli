@@ -38,7 +38,7 @@ module V82 : sig
   val nf_hyps : Evd.evar_map -> goal -> Environ.named_context_val
 
   (* Access to ".evar_concl" *)
-  val concl : Evd.evar_map -> goal -> Term.constr
+  val concl : Evd.evar_map -> goal -> EConstr.constr
 
   (* Access to ".evar_extra" *)
   val extra : Evd.evar_map -> goal -> Evd.Store.t
@@ -48,16 +48,16 @@ module V82 : sig
        the evar corresponding to the goal, and an updated evar_map. *)
   val mk_goal : Evd.evar_map -> 
                          Environ.named_context_val ->
-                         Term.constr ->
+                         EConstr.constr ->
                          Evd.Store.t ->
-                         goal * Term.constr * Evd.evar_map
+                         goal * EConstr.constr * Evd.evar_map
 
   (* Instantiates a goal with an open term *)
-  val partial_solution : Evd.evar_map -> goal -> Term.constr -> Evd.evar_map
+  val partial_solution : Evd.evar_map -> goal -> EConstr.constr -> Evd.evar_map
 
   (* Instantiates a goal with an open term, reusing name of goal for
      second goal *)
-  val partial_solution_to : Evd.evar_map -> goal -> goal -> Term.constr -> Evd.evar_map
+  val partial_solution_to : Evd.evar_map -> goal -> goal -> EConstr.constr -> Evd.evar_map
 
   (* Principal part of the weak-progress tactical *)
   val weak_progress : goal list Evd.sigma -> goal Evd.sigma -> bool

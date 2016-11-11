@@ -172,7 +172,7 @@ let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
 
 let dummy_goal env sigma =
   let (gl,_,sigma) = 
-    Goal.V82.mk_goal sigma (named_context_val env) mkProp Evd.Store.empty in
+    Goal.V82.mk_goal sigma (named_context_val env) EConstr.mkProp Evd.Store.empty in
   {Evd.it = gl; Evd.sigma = sigma}
 
 let constr_of v = match Value.to_constr v with
