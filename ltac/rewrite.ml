@@ -1556,7 +1556,7 @@ let assert_replacing id newt tac =
         if Id.equal n id then ev' else mkVar n
       in
       let (e, _) = destEvar ev in
-      Sigma (mkEvar (e, Array.map_of_list map nc), sigma, p +> q)
+      Sigma (EConstr.of_constr (mkEvar (e, Array.map_of_list map nc)), sigma, p +> q)
     end }
   end } in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
@@ -1582,7 +1582,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	match clause, prf with
 	| Some id, Some p ->
             let tac = tclTHENLIST [
-              Refine.refine ~unsafe:false { run = fun h -> Sigma.here p h };
+              Refine.refine ~unsafe:false { run = fun h -> Sigma.here (EConstr.of_constr p) h };
               Proofview.Unsafe.tclNEWGOALS gls;
             ] in
             Proofview.Unsafe.tclEVARS undef <*>
@@ -1597,7 +1597,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             let env = Proofview.Goal.env gl in
             let make = { run = begin fun sigma ->
               let Sigma (ev, sigma, q) = Evarutil.new_evar env sigma (EConstr.of_constr newt) in
-              Sigma (mkApp (p, [| ev |]), sigma, q)
+              Sigma (EConstr.of_constr (mkApp (p, [| ev |])), sigma, q)
             end } in
             Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
             end }

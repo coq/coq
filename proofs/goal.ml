@@ -86,12 +86,11 @@ module V82 = struct
   (* Instantiates a goal with an open term *)
   let partial_solution sigma evk c =
     (* Check that the goal itself does not appear in the refined term *)
-    let c = EConstr.Unsafe.to_constr c in
     let _ =
       if not (Evarutil.occur_evar_upto sigma evk c) then ()
-      else Pretype_errors.error_occur_check Environ.empty_env sigma evk (EConstr.of_constr c)
+      else Pretype_errors.error_occur_check Environ.empty_env sigma evk c
     in
-    Evd.define evk c sigma
+    Evd.define evk (EConstr.Unsafe.to_constr c) sigma
 
   (* Instantiates a goal with an open term, using name of goal for evk' *)
   let partial_solution_to sigma evk evk' c =

@@ -177,7 +177,7 @@ let unsafe_intro env store decl b =
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
     let Sigma (ev, sigma, p) = new_evar_instance nctx sigma (EConstr.of_constr nb) ~principal:true ~store ninst in
-    Sigma (mkNamedLambda_or_LetIn decl ev, sigma, p)
+    Sigma (EConstr.of_constr (mkNamedLambda_or_LetIn decl ev), sigma, p)
   end }
 
 let introduction ?(check=true) id =
@@ -218,7 +218,7 @@ let convert_concl ?(check=true) ty k =
         end else Sigma.here () sigma in
       let Sigma (x, sigma, q) = Evarutil.new_evar env sigma ~principal:true ~store ty in
       let ans = if k == DEFAULTcast then x else mkCast(x,k,conclty) in
-      Sigma (ans, sigma, p +> q)
+      Sigma (EConstr.of_constr ans, sigma, p +> q)
     end }
   end }
 
@@ -231,7 +231,8 @@ let convert_hyp ?(check=true) d =
     let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
     Refine.refine ~unsafe:true { run = begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr ty)
+      let Sigma (c, sigma, p) = Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr ty) in
+      Sigma (EConstr.of_constr c, sigma, p)
     end }
   end }
 
@@ -301,7 +302,8 @@ let clear_gen fail = function
     in
     let env = reset_with_named_context hyps env in
     let tac = Refine.refine ~unsafe:true { run = fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true (EConstr.of_constr concl)
+      let Sigma (c, sigma, p) = Evarutil.new_evar env sigma ~principal:true (EConstr.of_constr concl) in
+      Sigma (EConstr.of_constr c, sigma, p)
     } in
     Sigma.Unsafe.of_pair (tac, !evdref)
   end }
@@ -331,7 +333,8 @@ let move_hyp id dest =
     let sign' = move_hyp_in_named_context sigma id dest sign in
     let env = reset_with_named_context sign' env in
     Refine.refine ~unsafe:true { run = begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr ty)
+      let Sigma (c, sigma, p) = Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr ty) in
+      Sigma (EConstr.of_constr c, sigma, p)
     end }
   end }
 
@@ -385,7 +388,8 @@ let rename_hyp repl =
       let nctx = Environ.val_of_named_context nhyps in
       let instance = List.map (NamedDecl.get_id %> mkVar) hyps in
       Refine.refine ~unsafe:true { run = begin fun sigma ->
-        Evarutil.new_evar_instance nctx sigma (EConstr.of_constr nconcl) ~principal:true ~store instance
+        let Sigma (c, sigma, p) = Evarutil.new_evar_instance nctx sigma (EConstr.of_constr nconcl) ~principal:true ~store instance in
+        Sigma (EConstr.of_constr c, sigma, p)
       end }
     end }
 
@@ -541,6 +545,7 @@ let mutual_fix f n rest j = Proofview.Goal.nf_enter { enter = begin fun gl ->
     let typarray = Array.of_list (List.map pi3 all) in
     let bodies = Array.of_list evs in
     let oterm = Term.mkFix ((indxs,0),(funnames,typarray,bodies)) in
+    let oterm = EConstr.of_constr oterm in
     Sigma (oterm, sigma, p)
   end }
 end }
@@ -592,6 +597,7 @@ let mutual_cofix f others j = Proofview.Goal.nf_enter { enter = begin fun gl ->
     let typarray = Array.of_list types in
     let bodies = Array.of_list evs in
     let oterm = Term.mkCoFix (0, (funnames, typarray, bodies)) in
+    let oterm = EConstr.of_constr oterm in
     Sigma (oterm, sigma, p)
   end }
 end }
@@ -1248,6 +1254,7 @@ let cut c =
         let Sigma (f, h, p) = Evarutil.new_evar ~principal:true env h (EConstr.of_constr (mkArrow c (Vars.lift 1 concl))) in
         let Sigma (x, h, q) = Evarutil.new_evar env h (EConstr.of_constr c) in
         let f = mkLetIn (Name id, x, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
+        let f = EConstr.of_constr f in
         Sigma (f, h, p +> q)
       end }
     else
@@ -1680,6 +1687,7 @@ let solve_remaining_apply_goals =
       let concl = EConstr.of_constr concl in
       if Typeclasses.is_class_type evd concl then
         let evd', c' = Typeclasses.resolve_one_typeclass env evd concl in
+        let c' = EConstr.of_constr c' in
         let tac = Refine.refine ~unsafe:true { run = fun h -> Sigma.here c' h } in
         Sigma.Unsafe.of_pair (tac, evd')
 	else Sigma.here (Proofview.tclUNIT ()) sigma
@@ -1921,6 +1929,7 @@ let cut_and_apply c =
           let Sigma (f, sigma, p) = Evarutil.new_evar env sigma (EConstr.of_constr typ) in
           let Sigma (x, sigma, q) = Evarutil.new_evar env sigma (EConstr.of_constr c1) in
           let ans = mkApp (f, [|mkApp (c, [|x|])|]) in
+          let ans = EConstr.of_constr ans in
           Sigma (ans, sigma, p +> q)
         end }
       | _ -> error "lapply needs a non-dependent product."
@@ -1937,6 +1946,7 @@ let cut_and_apply c =
 (* let refine_no_check = Profile.profile2 refine_no_checkkey refine_no_check *)
 
 let exact_no_check c =
+  let c = EConstr.of_constr c in
   Refine.refine ~unsafe:true { run = fun h -> Sigma.here c h }
 
 let exact_check c =
@@ -1968,6 +1978,7 @@ let exact_proof c =
   Refine.refine { run = begin fun sigma ->
     let sigma = Sigma.to_evar_map sigma in
     let (c, ctx) = Constrintern.interp_casted_constr (pf_env gl) sigma c (pf_concl gl) in
+    let c = EConstr.of_constr c in
     let sigma = Evd.merge_universe_context sigma ctx in
     Sigma.Unsafe.of_pair (c, sigma)
   end }
@@ -2083,7 +2094,8 @@ let clear_body ids =
     in
     check <*>
     Refine.refine ~unsafe:true { run = begin fun sigma ->
-      Evarutil.new_evar env sigma ~principal:true (EConstr.of_constr concl)
+      let Sigma (c, sigma, p) = Evarutil.new_evar env sigma ~principal:true (EConstr.of_constr concl) in
+      Sigma (EConstr.of_constr c, sigma, p)
     end }
   end }
 
@@ -2137,7 +2149,7 @@ let apply_type newcl args =
       let newcl = nf_betaiota (Sigma.to_evar_map sigma) (EConstr.of_constr newcl) (* As in former Logic.refine *) in
       let Sigma (ev, sigma, p) =
         Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr newcl) in
-      Sigma (applist (ev, args), sigma, p)
+      Sigma (EConstr.of_constr (applist (ev, args)), sigma, p)
     end }
   end }
 
@@ -2157,7 +2169,7 @@ let bring_hyps hyps =
       Refine.refine { run = begin fun sigma ->
         let Sigma (ev, sigma, p) =
           Evarutil.new_evar env sigma ~principal:true ~store (EConstr.of_constr newcl) in
-        Sigma (mkApp (ev, args), sigma, p)
+        Sigma (EConstr.of_constr (mkApp (ev, args)), sigma, p)
       end }
     end }
 
@@ -2683,11 +2695,11 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [LocalAssum (heq,eq); decl] lastlhyp env in
       let Sigma (x, sigma, r) = new_evar newenv sigma ~principal:true ~store (EConstr.of_constr ccl) in
-      Sigma (mkNamedLetIn id c t (mkNamedLetIn heq refl eq x), sigma, p +> q +> r)
+      Sigma (EConstr.of_constr (mkNamedLetIn id c t (mkNamedLetIn heq refl eq x)), sigma, p +> q +> r)
   | None ->
       let newenv = insert_before [decl] lastlhyp env in
       let Sigma (x, sigma, p) = new_evar newenv sigma ~principal:true ~store (EConstr.of_constr ccl) in
-      Sigma (mkNamedLetIn id c t x, sigma, p)
+      Sigma (EConstr.of_constr (mkNamedLetIn id c t x), sigma, p)
 
 let letin_tac with_eq id c ty occs =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
@@ -2875,7 +2887,7 @@ let new_generalize_gen_let lconstr =
     let tac =
 	Refine.refine { run = begin fun sigma ->
           let Sigma (ev, sigma, p) = Evarutil.new_evar env sigma ~principal:true (EConstr.of_constr newcl) in
-          Sigma ((applist (ev, args)), sigma, p)
+          Sigma (EConstr.of_constr (applist (ev, args)), sigma, p)
 	end }
     in
     Sigma.Unsafe.of_pair (tac, sigma)
@@ -3569,7 +3581,7 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
     (* Apply the reflexivity proofs on the indices. *)
   let appeqs = mkApp (instc, Array.of_list refls) in
     (* Finally, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
-  Sigma (mkApp (appeqs, abshypt), sigma, p)
+  Sigma (EConstr.of_constr (mkApp (appeqs, abshypt)), sigma, p)
   end }
 
 let hyps_of_vars env sigma sign nogen hyps =
@@ -5005,6 +5017,10 @@ module New = struct
       {onhyps=None; concl_occs=AllOccurrences }
 
   let refine ?unsafe c =
+    let c = { run = begin fun sigma ->
+      let Sigma (c, sigma, p) = c.run sigma in
+      Sigma (EConstr.of_constr c, sigma, p)
+    end } in
     Refine.refine ?unsafe c <*>
     reduce_after_refine
 end

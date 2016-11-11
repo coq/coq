@@ -47,7 +47,7 @@ let typecheck_evar ev env sigma =
 
 let typecheck_proof c concl env sigma =
   let evdref = ref sigma in
-  let () = Typing.e_check env evdref (EConstr.of_constr c) (EConstr.of_constr concl) in
+  let () = Typing.e_check env evdref c concl in
   !evdref
 
 let (pr_constrv,pr_constr) =
@@ -77,6 +77,7 @@ let make_refine_enter ?(unsafe = true) f =
   let sigma = Sigma.to_evar_map sigma in
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
+  let concl = EConstr.of_constr concl in
   (** Save the [future_goals] state to restore them after the
       refinement. *)
   let prev_future_goals = Evd.future_goals sigma in
@@ -98,9 +99,10 @@ let make_refine_enter ?(unsafe = true) f =
   let self = Proofview.Goal.goal gl in
   let _ =
     if not (Evarutil.occur_evar_upto sigma self c) then ()
-    else Pretype_errors.error_occur_check env sigma self (EConstr.of_constr c)
+    else Pretype_errors.error_occur_check env sigma self c
   in
   (** Proceed to the refinement *)
+  let c = EConstr.Unsafe.to_constr c in
   let sigma = match evkmain with
     | None -> Evd.define self c sigma
     | Some evk ->
@@ -133,23 +135,22 @@ let refine ?(unsafe = true) f =
 (** Useful definitions *)
 
 let with_type env evd c t =
-  let c = EConstr.of_constr c in
   let my_type = Retyping.get_type_of env evd c in
   let my_type = EConstr.of_constr my_type in
   let j = Environ.make_judge c my_type in
   let (evd,j') =
-    Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j (EConstr.of_constr t)
+    Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t
   in
   evd , j'.Environ.uj_val
 
 let refine_casted ?unsafe f = Proofview.Goal.enter { enter = begin fun gl ->
   let gl = Proofview.Goal.assume gl in
   let concl = Proofview.Goal.concl gl in
+  let concl = EConstr.of_constr concl in
   let env = Proofview.Goal.env gl in
   let f = { run = fun h ->
     let Sigma (c, h, p) = f.run h in
     let sigma, c = with_type env (Sigma.to_evar_map h) c concl in
-    let c = EConstr.Unsafe.to_constr c in
     Sigma (c, Sigma.Unsafe.of_evar_map sigma, p)
   } in
   refine ?unsafe f

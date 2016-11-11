@@ -269,7 +269,7 @@ let unify_resolve_refine poly flags =
             {Environ.uj_val = term; Environ.uj_type = cl.cl_concl}
             concl;
         !evdref
-      in Sigma.here term (Sigma.Unsafe.of_evar_map sigma') }
+      in Sigma.here (EConstr.of_constr term) (Sigma.Unsafe.of_evar_map sigma') }
   end }
 
 (** Dealing with goals of the form A -> B and hints of the form

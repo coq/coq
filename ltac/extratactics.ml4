@@ -353,7 +353,10 @@ let refine_tac ist simple c =
     let flags = constr_flags in
     let expected_type = Pretyping.OfType (EConstr.of_constr concl) in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
-    let update = { run = fun sigma -> c.delayed env sigma } in
+    let update = { run = fun sigma ->
+      let Sigma (c, sigma, p) = c.delayed env sigma in
+      Sigma (EConstr.of_constr c, sigma, p)
+    } in
     let refine = Refine.refine ~unsafe:true update in
     if simple then refine
     else refine <*>

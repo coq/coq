@@ -458,6 +458,7 @@ let raw_inversion inv_kind id status names =
     in
     let refined id =
       let prf = mkApp (mkVar id, args) in
+      let prf = EConstr.of_constr prf in
       Refine.refine { run = fun h -> Sigma (prf, h, Sigma.refl) }
     in
     let neqns = List.length realargs in
