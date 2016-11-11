@@ -507,9 +507,12 @@ let decompose_applied_relation env sigma (c,l) =
   let open Context.Rel.Declaration in
   let ctype = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let find_rel ty =
+    let ty = EConstr.of_constr ty in
     let sigma, cl = Clenv.make_evar_clause env sigma ty in
+    let l = Miscops.map_bindings EConstr.of_constr l in
     let sigma = Clenv.solve_evar_clause env sigma true cl l in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
+    let t = EConstr.Unsafe.to_constr t in
     let (equiv, c1, c2) = decompose_app_rel env sigma t in
     let ty1 = Retyping.get_type_of env sigma (EConstr.of_constr c1) in
     let ty2 = Retyping.get_type_of env sigma (EConstr.of_constr c2) in
@@ -517,7 +520,7 @@ let decompose_applied_relation env sigma (c,l) =
     | None -> None
     | Some sigma ->
       let sort = sort_of_rel env sigma equiv in
-      let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
+      let args = Array.map_of_list (fun h -> EConstr.Unsafe.to_constr h.Clenv.hole_evar) holes in
       let value = mkApp (c, args) in
         Some (sigma, { prf=value;
                 car=ty1; rel = equiv; sort = Sorts.is_prop sort;
@@ -618,9 +621,10 @@ let solve_remaining_by env sigma holes by =
   | Some tac ->
     let map h =
       if h.Clenv.hole_deps then None
-      else
-        let (evk, _) = destEvar (h.Clenv.hole_evar) in
+      else match EConstr.kind sigma h.Clenv.hole_evar with
+      | Evar (evk, _) ->
         Some evk
+      | _ -> None
     in
     (** Only solve independent holes *)
     let indep = List.map_filter map holes in

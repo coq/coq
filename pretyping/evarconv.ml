@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module CVars = Vars
-
 open CErrors
 open Util
 open Names
@@ -184,10 +182,12 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       | None -> raise Not_found
       | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
   let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
-  let c' = EConstr.of_constr (CVars.subst_univs_level_constr subst c) in
-  let t' = CVars.subst_univs_level_constr subst t' in
-  let bs' = List.map (CVars.subst_univs_level_constr subst %> EConstr.of_constr) bs in
-  let h, _ = decompose_app_vect sigma (EConstr.of_constr t') in
+  let c = EConstr.of_constr c in
+  let c' = subst_univs_level_constr subst c in
+  let t' = EConstr.of_constr t' in
+  let t' = subst_univs_level_constr subst t' in
+  let bs' = List.map (EConstr.of_constr %> subst_univs_level_constr subst) bs in
+  let h, _ = decompose_app_vect sigma t' in
     ctx',(EConstr.of_constr h, t2),c',bs',(Stack.append_app_list params Stack.empty,params1),
     (Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
     (n, Stack.zip sigma (t2,sk2))

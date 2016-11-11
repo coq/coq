@@ -257,12 +257,12 @@ type hypinfo = {
 
 let decompose_applied_relation metas env sigma c ctype left2right =
   let find_rel ty =
-    let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ty) in
+    let eqclause = Clenv.mk_clenv_from_env env sigma None (EConstr.of_constr c,EConstr.of_constr ty) in
     let eqclause =
       if metas then eqclause
       else clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)
     in
-    let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
+    let (equiv, args) = decompose_app (EConstr.Unsafe.to_constr (Clenv.clenv_type eqclause)) in
     let rec split_last_two = function
       | [c1;c2] -> [],(c1, c2)
       | x::y::z ->
@@ -276,7 +276,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
 	in
 (* 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
 (* 	  else *)
-	    Some { hyp_cl=eqclause; hyp_prf=(Clenv.clenv_value eqclause); hyp_ty = ty;
+	    Some { hyp_cl=eqclause; hyp_prf=EConstr.Unsafe.to_constr (Clenv.clenv_value eqclause); hyp_ty = ty;
 		   hyp_car=ty1; hyp_rel=mkApp (equiv, Array.of_list others);
 		   hyp_l2r=left2right; hyp_left=c1; hyp_right=c2; }
       with Not_found -> None

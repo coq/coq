@@ -1301,11 +1301,11 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true)
     else clenv
   in
   let new_hyp_typ = clenv_type clenv in
+  let new_hyp_typ = EConstr.Unsafe.to_constr new_hyp_typ in
   if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
   if not with_evars && occur_meta clenv.evd (EConstr.of_constr new_hyp_typ) then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
-  let new_hyp_prf = EConstr.of_constr new_hyp_prf in
   let exact_tac = Proofview.V82.tactic (Tacmach.refine_no_check new_hyp_prf) in
   let naming = NamingMustBe (dloc,targetid) in
   let with_clear = do_replace (Some id) naming in
@@ -1396,9 +1396,12 @@ let elimination_clause_scheme with_evars ?(with_classes=true) ?(flags=elim_flags
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let elim = contract_letin_in_lam_header elim in
+  let bindings = Miscops.map_bindings EConstr.of_constr bindings in
+  let elim = EConstr.of_constr elim in
+  let elimty = EConstr.of_constr elimty in
   let elimclause = make_clenv_binding env sigma (elim, elimty) bindings in
   let indmv =
-    (match kind_of_term (nth_arg i elimclause.templval.rebus) with
+    (match kind_of_term (nth_arg i (EConstr.Unsafe.to_constr elimclause.templval.rebus)) with
        | Meta mv -> mv
        | _  -> user_err ~hdr:"elimination_clause"
              (str "The type of elimination clause is not well-formed."))
@@ -1438,8 +1441,10 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let sigma = Tacmach.New.project gl in
   let ct = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let t = try snd (reduce_to_quantified_ind env sigma (EConstr.of_constr ct)) with UserError _ -> ct in
+  let t = EConstr.of_constr t in
   let elimtac = elimination_clause_scheme with_evars in
-  let indclause  = make_clenv_binding env sigma (c, t) lbindc in
+  let lbindc = Miscops.map_bindings EConstr.of_constr lbindc in
+  let indclause  = make_clenv_binding env sigma (EConstr.of_constr c, t) lbindc in
   let sigma = meta_merge sigma (clear_metas indclause.evd) in
   Proofview.Unsafe.tclEVARS sigma <*>
   Tacticals.New.tclTHEN
@@ -1561,8 +1566,11 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let elim = contract_letin_in_lam_header elim in
+  let elim = EConstr.of_constr elim in
+  let elimty = EConstr.of_constr elimty in
+  let bindings = Miscops.map_bindings EConstr.of_constr bindings in
   let elimclause = make_clenv_binding env sigma (elim, elimty) bindings in
-  let indmv = destMeta (nth_arg i elimclause.templval.rebus) in
+  let indmv = destMeta (nth_arg i (EConstr.Unsafe.to_constr elimclause.templval.rebus)) in
   let hypmv =
     try match List.remove Int.equal indmv (clenv_independent elimclause) with
       | [a] -> a
@@ -1570,12 +1578,13 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
     with Failure _ -> user_err ~hdr:"elimination_clause"
           (str "The type of elimination clause is not well-formed.") in
   let elimclause'  = clenv_fchain ~flags indmv elimclause indclause in
-  let hyp = mkVar id in
-  let hyp_typ = Retyping.get_type_of env sigma (EConstr.of_constr hyp) in
+  let hyp = EConstr.mkVar id in
+  let hyp_typ = Retyping.get_type_of env sigma hyp in
+  let hyp_typ = EConstr.of_constr hyp_typ in
   let hypclause = mk_clenv_from_env env sigma (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain_in id ~flags hypmv elimclause' hypclause in
   let new_hyp_typ  = clenv_type elimclause'' in
-  if Term.eq_constr hyp_typ new_hyp_typ then
+  if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
     user_err ~hdr:"general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
   clenv_refine_in with_evars id id sigma elimclause''
@@ -1728,9 +1737,11 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
     let thm_ty0 = nf_betaiota sigma (EConstr.of_constr (Retyping.get_type_of env sigma (EConstr.of_constr c))) in
     let try_apply thm_ty nprod =
       try
-        let n = nb_prod_modulo_zeta sigma (EConstr.of_constr thm_ty) - nprod in
+        let thm_ty = EConstr.of_constr thm_ty in
+        let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
         if n<0 then error "Applied theorem has not enough premisses.";
-        let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
+        let lbind = Miscops.map_bindings EConstr.of_constr lbind in
+        let clause = make_clenv_binding_apply env sigma (Some n) (EConstr.of_constr c,thm_ty) lbind in
         Clenvtac.res_pf clause ~with_evars ~flags
       with exn when catchable_exception exn ->
         Proofview.tclZERO exn
@@ -1851,7 +1862,9 @@ let progress_with_clause flags innerclause clause =
   with Not_found -> error "Unable to unify."
 
 let apply_in_once_main flags innerclause env sigma (d,lbind) =
-  let thm = nf_betaiota sigma (EConstr.of_constr (Retyping.get_type_of env sigma (EConstr.of_constr d))) in
+  let d = EConstr.of_constr d in
+  let thm = nf_betaiota sigma (EConstr.of_constr (Retyping.get_type_of env sigma d)) in
+  let thm = EConstr.of_constr thm in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with e when CErrors.noncritical e ->
@@ -1859,6 +1872,7 @@ let apply_in_once_main flags innerclause env sigma (d,lbind) =
     try aux (clenv_push_prod clause)
     with NotExtensibleClause -> iraise e
   in
+  let lbind = Miscops.map_bindings EConstr.of_constr lbind in
   aux (make_clenv_binding env sigma (d,thm) lbind)
 
 let apply_in_once sidecond_first with_delta with_destruct with_evars naming
@@ -1870,7 +1884,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
   let flags =
     if with_delta then default_unify_flags () else default_no_delta_unify_flags () in
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
-  let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
+  let innerclause = mk_clenv_from_env env sigma (Some 0) (EConstr.mkVar id,EConstr.of_constr t') in
   let targetid = find_name true (LocalAssum (Anonymous,t')) naming gl in
   let rec aux idstoclear with_destruct c =
     Proofview.Goal.enter { enter = begin fun gl ->
@@ -2939,10 +2953,12 @@ let specialize (c,lbind) ipat =
       let sigma = Typeclasses.resolve_typeclasses env sigma in
       sigma, nf_evar sigma c
     else
-      let clause = make_clenv_binding env sigma (c,Retyping.get_type_of env sigma (EConstr.of_constr c)) lbind in
+      let c = EConstr.of_constr c in
+      let lbind = Miscops.map_bindings EConstr.of_constr lbind in
+      let clause = make_clenv_binding env sigma (c,EConstr.of_constr (Retyping.get_type_of env sigma c)) lbind in
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
-      let (thd,tstack) = whd_nored_stack clause.evd (EConstr.of_constr (clenv_value clause)) in
+      let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
       let rec chk = function
       | [] -> []
       | t::l -> if occur_meta clause.evd t then [] else EConstr.Unsafe.to_constr t :: chk l
@@ -4107,7 +4123,7 @@ let get_eliminator elim dep s gl =
    of lid are parameters (first ones), the other are
    arguments. Returns the clause obtained.  *)
 let recolle_clenv i params args elimclause gl =
-  let _,arr = destApp elimclause.templval.rebus in
+  let _,arr = destApp (EConstr.Unsafe.to_constr elimclause.templval.rebus) in
   let lindmv =
     Array.map
       (fun x ->
@@ -4132,6 +4148,8 @@ let recolle_clenv i params args elimclause gl =
       (* from_n (Some 0) means that x should be taken "as is" without
          trying to unify (which would lead to trying to apply it to
          evars if y is a product). *)
+      let x = EConstr.of_constr x in
+      let y = EConstr.of_constr y in
       let indclause  = Tacmach.New.of_old (fun gl -> mk_clenv_from_n gl (Some 0) (x,y)) gl in
       let elimclause' = clenv_fchain ~with_univs:false i acc indclause in
       elimclause')
@@ -4149,6 +4167,9 @@ let induction_tac with_evars params indvars elim =
   (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
   let elimc = contract_letin_in_lam_header elimc in
   let elimc = mkCast (elimc, DEFAULTcast, elimt) in
+  let elimc = EConstr.of_constr elimc in
+  let elimt = EConstr.of_constr elimt in
+  let lbindelimc = Miscops.map_bindings EConstr.of_constr lbindelimc in
   let elimclause = pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
   (* elimclause' is built from elimclause by instanciating all args and params. *)
   let elimclause' = recolle_clenv i params indvars elimclause gl in
@@ -4294,11 +4315,14 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       typ in
   let rec find_clause typ =
     try
+      let typ = EConstr.of_constr typ in
+      let c = EConstr.of_constr c in
+      let lbind = Miscops.map_bindings EConstr.of_constr lbind in
       let indclause = make_clenv_binding env sigma (c,typ) lbind in
-      if must_be_closed && occur_meta indclause.evd (EConstr.of_constr (clenv_value indclause)) then
+      if must_be_closed && occur_meta indclause.evd (clenv_value indclause) then
         error "Need a fully applied argument.";
       (* We lose the possibility of coercions in with-bindings *)
-      let (sigma, c) = pose_all_metas_as_evars env indclause.evd (EConstr.of_constr (clenv_value indclause)) in
+      let (sigma, c) = pose_all_metas_as_evars env indclause.evd (clenv_value indclause) in
       Sigma.Unsafe.of_pair (EConstr.Unsafe.to_constr c, sigma)
     with e when catchable_exception e ->
     try find_clause (try_red_product env sigma (EConstr.of_constr typ))
@@ -4308,13 +4332,15 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
 let check_expected_type env sigma (elimc,bl) elimt =
   (* Compute the expected template type of the term in case a using
      clause is given *)
-  let sign,_ = splay_prod env sigma (EConstr.of_constr elimt) in
+  let open EConstr in
+  let elimt = EConstr.of_constr elimt in
+  let sign,_ = splay_prod env sigma elimt in
   let n = List.length sign in
   if n == 0 then error "Scheme cannot be applied.";
   let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
   let sigma = solve_evar_clause env sigma true cl bl in
-  let (_,u,_) = destProd cl.cl_concl in
-  fun t -> Evarconv.e_cumul env (ref sigma) t (EConstr.of_constr u)
+  let (_,u,_) = destProd sigma cl.cl_concl in
+  fun t -> Evarconv.e_cumul env (ref sigma) t u
 
 let check_enough_applied env sigma elim =
   let sigma = Sigma.to_evar_map sigma in
@@ -4327,6 +4353,7 @@ let check_enough_applied env sigma elim =
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (EConstr.of_constr (fst elimc)) in
       let scheme = compute_elim_sig ~elimc elimt in
+      let elimc = Miscops.map_with_bindings EConstr.of_constr elimc in
       match scheme.indref with
       | None ->
          (* in the absence of information, do not assume it may be
@@ -4607,12 +4634,13 @@ let simple_destruct = function
 
 let elim_scheme_type elim t =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let elim = EConstr.of_constr elim in
   let clause = Tacmach.New.of_old (fun gl -> mk_clenv_type_of gl elim) gl in
-  match kind_of_term (last_arg clause.templval.rebus) with
+  match kind_of_term (last_arg (EConstr.Unsafe.to_constr clause.templval.rebus)) with
     | Meta mv ->
         let clause' =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
-	  clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
+	  clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL (EConstr.of_constr t)
             (clenv_meta_type clause mv) clause in
 	Clenvtac.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
     | _ -> anomaly (Pp.str "elim_scheme_type")

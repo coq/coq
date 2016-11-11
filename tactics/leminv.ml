@@ -258,8 +258,8 @@ let add_inversion_lemma_exn na com comsort bool tac =
 
 let lemInv id c gls =
   try
-    let clause = mk_clenv_type_of gls c in
-    let clause = clenv_constrain_last_binding (mkVar id) clause in
+    let clause = mk_clenv_type_of gls (EConstr.of_constr c) in
+    let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
     Proofview.V82.of_tactic (Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false) gls
   with
     | NoSuchBinding ->

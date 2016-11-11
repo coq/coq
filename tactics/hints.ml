@@ -276,9 +276,11 @@ let strip_params env c =
 let instantiate_hint env sigma p =
   let mk_clenv (c, cty, ctx) =
     let sigma = Evd.merge_context_set univ_flexible sigma ctx in
+    let c = EConstr.of_constr c in
+    let cty = EConstr.of_constr cty in
     let cl = mk_clenv_from_env env sigma None (c,cty) in 
       {cl with templval = 
-	  { cl.templval with rebus = strip_params env cl.templval.rebus };
+	  { cl.templval with rebus = EConstr.of_constr (strip_params env (EConstr.Unsafe.to_constr cl.templval.rebus)) };
 	env = empty_env}
   in
   let code = match p.code.obj with
@@ -765,9 +767,9 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
     match kind_of_term cty with
     | Prod _ ->
         let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
-        let ce = mk_clenv_from_env env sigma' None (c,cty) in
+        let ce = mk_clenv_from_env env sigma' None (EConstr.of_constr c,EConstr.of_constr cty) in
 	let c' = clenv_type (* ~reduce:false *) ce in
-	let pat = Patternops.pattern_of_constr env ce.evd (EConstr.of_constr c') in
+	let pat = Patternops.pattern_of_constr env ce.evd c' in
         let hd =
 	  try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry" in
@@ -912,10 +914,10 @@ let make_trivial env sigma poly ?(name=PathAny) r =
   let sigma = Evd.merge_context_set univ_flexible sigma ctx in
   let t = hnf_constr env sigma (EConstr.of_constr (unsafe_type_of env sigma (EConstr.of_constr c))) in
   let hd = head_of_constr_reference sigma (EConstr.of_constr (head_constr sigma t)) in
-  let ce = mk_clenv_from_env env sigma None (c,t) in
+  let ce = mk_clenv_from_env env sigma None (EConstr.of_constr c,EConstr.of_constr t) in
   (Some hd, { pri=1;
 	      poly = poly;
-              pat = Some (Patternops.pattern_of_constr env ce.evd (EConstr.of_constr (clenv_type ce)));
+              pat = Some (Patternops.pattern_of_constr env ce.evd (clenv_type ce));
 	      name = name;
               db = None;
               secvars = secvars_of_constr env c;

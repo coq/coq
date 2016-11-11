@@ -14,6 +14,7 @@ open Names
 open Term
 open Environ
 open Evd
+open EConstr
 open Unification
 open Misctypes
 
@@ -28,8 +29,6 @@ type clausenv = {
   templtyp : constr freelisted (** its type *)}
 
 
-val map_clenv : (constr -> constr) -> clausenv -> clausenv
-
 (** subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr
 
@@ -37,16 +36,16 @@ val clenv_value     : clausenv -> constr
 val clenv_type      : clausenv -> types
 
 (** substitute resolved metas *)
-val clenv_nf_meta   : clausenv -> constr -> constr
+val clenv_nf_meta   : clausenv -> Constr.constr -> Constr.constr
 
 (** type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
 
-val mk_clenv_from : Goal.goal sigma -> constr * types -> clausenv
+val mk_clenv_from : Goal.goal sigma -> EConstr.constr * EConstr.types -> clausenv
 val mk_clenv_from_n :
-  Goal.goal sigma -> int option -> constr * types -> clausenv
-val mk_clenv_type_of : Goal.goal sigma -> constr -> clausenv
-val mk_clenv_from_env : env -> evar_map -> int option -> constr * types -> clausenv
+  Goal.goal sigma -> int option -> EConstr.constr * EConstr.types -> clausenv
+val mk_clenv_type_of : Goal.goal sigma -> EConstr.constr -> clausenv
+val mk_clenv_from_env : env -> evar_map -> int option -> EConstr.constr * EConstr.types -> clausenv
 
 (** Refresh the universes in a clenv *)
 val refresh_undefined_univs : clausenv -> clausenv * Univ.universe_level_subst
@@ -92,18 +91,18 @@ val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
    the optional int tells how many prods of the lemma have to be used 
    use all of them if None *)
 val make_clenv_binding_env_apply :
-  env -> evar_map -> int option -> constr * constr -> constr bindings ->
+  env -> evar_map -> int option -> EConstr.constr * EConstr.constr -> constr bindings ->
    clausenv
 
 val make_clenv_binding_apply :
-  env -> evar_map -> int option -> constr * constr -> constr bindings ->
+  env -> evar_map -> int option -> EConstr.constr * EConstr.constr -> constr bindings ->
    clausenv
 
 val make_clenv_binding_env :
-  env -> evar_map -> constr * constr -> constr bindings -> clausenv
+  env -> evar_map -> EConstr.constr * EConstr.constr -> constr bindings -> clausenv
 
 val make_clenv_binding :
-  env -> evar_map -> constr * constr -> constr bindings -> clausenv
+  env -> evar_map -> EConstr.constr * EConstr.constr -> constr bindings -> clausenv
 
 (** if the clause is a product, add an extra meta for this product *)
 exception NotExtensibleClause
@@ -134,9 +133,9 @@ val pr_clenv : clausenv -> Pp.std_ppcmds
 *)
 
 type hole = {
-  hole_evar : constr;
+  hole_evar : EConstr.constr;
   (** The hole itself. Guaranteed to be an evar. *)
-  hole_type : types;
+  hole_type : EConstr.types;
   (** Type of the hole in the current environment. *)
   hole_deps  : bool;
   (** Whether the remainder of the clause was dependent in the hole. Note that
@@ -148,10 +147,10 @@ type hole = {
 
 type clause = {
   cl_holes : hole list;
-  cl_concl : types;
+  cl_concl : EConstr.types;
 }
 
-val make_evar_clause : env -> evar_map -> ?len:int -> types ->
+val make_evar_clause : env -> evar_map -> ?len:int -> EConstr.types ->
   (evar_map * clause)
 (** An evar version of {!make_clenv_binding}. Given a type [t],
     [evar_environments env sigma ~len t bl] tries to eliminate at most [len]
@@ -159,7 +158,7 @@ val make_evar_clause : env -> evar_map -> ?len:int -> types ->
     type together with the list of holes generated. Assumes that [t] is
     well-typed in the environment. *)
 
-val solve_evar_clause : env -> evar_map -> bool -> clause -> constr bindings ->
+val solve_evar_clause : env -> evar_map -> bool -> clause -> EConstr.constr bindings ->
   evar_map
 (** [solve_evar_clause env sigma hyps cl bl] tries to solve the holes contained
     in [cl] according to the [bl] argument. Assumes that [bl] are well-typed in

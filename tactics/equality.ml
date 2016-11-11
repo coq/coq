@@ -144,7 +144,7 @@ let freeze_initial_evars sigma flags clause =
   (* We take evars of the type: this may include old evars! For excluding *)
   (* all old evars, including the ones occurring in the rewriting lemma, *)
   (* we would have to take the clenv_value *)
-  let newevars = Evd.evars_of_term (clenv_type clause) in
+  let newevars = Evd.evars_of_term (EConstr.Unsafe.to_constr (clenv_type clause)) in
   let evars =
     fold_undefined (fun evk _ evars ->
       if Evar.Set.mem evk newevars then evars
@@ -165,8 +165,11 @@ let side_tac tac sidetac =
 
 let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let env = Proofview.Goal.env gl in
+  let c = EConstr.of_constr c in
+  let ty = EConstr.of_constr ty in
+  let l = Miscops.map_bindings EConstr.of_constr l in
   let eqclause = pf_apply Clenv.make_clenv_binding gl (c,ty) l in
-  let (equiv, args) = decompose_appvect (Clenv.clenv_type eqclause) in
+  let (equiv, args) = decompose_appvect (EConstr.Unsafe.to_constr (Clenv.clenv_type eqclause)) in
   let arglen = Array.length args in
   let () = if arglen < 2 then error "The term provided is not an applied relation." in
   let c1 = args.(arglen - 2) in
@@ -181,8 +184,11 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   in List.map try_occ occs
 
 let instantiate_lemma gl c ty l l2r concl =
-  let sigma, ct = pf_type_of gl (EConstr.of_constr c) in
+  let c = EConstr.of_constr c in
+  let sigma, ct = pf_type_of gl c in
   let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma (EConstr.of_constr ct)) with UserError _ -> ct in
+  let t = EConstr.of_constr t in
+  let l = Miscops.map_bindings EConstr.of_constr l in
   let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
   [eqclause]
 
@@ -975,9 +981,11 @@ let eq_baseid = Id.of_string "e"
 
 let apply_on_clause (f,t) clause =
   let sigma =  clause.evd in
+  let f = EConstr.of_constr f in
+  let t = EConstr.of_constr t in
   let f_clause = mk_clenv_from_env clause.env sigma None (f,t) in
   let argmv =
-    (match kind_of_term (last_arg f_clause.evd (EConstr.of_constr f_clause.templval.Evd.rebus)) with
+    (match kind_of_term (last_arg f_clause.evd f_clause.templval.Evd.rebus) with
      | Meta mv -> mv
      | _  -> user_err  (str "Ill-formed clause applicator.")) in
   clenv_fchain ~with_univs:false argmv f_clause clause
@@ -992,7 +1000,6 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
   let pf_ty = mkArrow eqn absurd_term in
   let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
   let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
-  let pf = EConstr.of_constr pf in
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.tclEFFECTS eff <*>
   tclTHENS (assert_after Anonymous absurd_term)
@@ -1011,13 +1018,17 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
 
 let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let c = EConstr.of_constr c in
+  let lbindc = Miscops.map_bindings EConstr.of_constr lbindc in
   let type_of = pf_unsafe_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
-  let t = type_of (EConstr.of_constr c) in
+  let t = type_of c in
   let t' = try snd (reduce_to_quantified_ind (EConstr.of_constr t)) with UserError _ -> t in
+  let t' = EConstr.of_constr t' in
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
   let eq_clause' = Clenvtac.clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
+  let eqn = EConstr.Unsafe.to_constr eqn in
   let (eq,u,eq_args) = find_this_eq_data_decompose gl eqn in
   tclTHEN
     (Proofview.Unsafe.tclEVARS eq_clause'.evd)
@@ -1371,7 +1382,8 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
       let sigma, pf_typ = Typing.type_of env sigma (EConstr.of_constr pf) in
       let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
       let pf = Clenvtac.clenv_value_cast_meta inj_clause in
-      let ty = simplify_args env sigma (clenv_type inj_clause) in
+      let ty = simplify_args env sigma (EConstr.Unsafe.to_constr (clenv_type inj_clause)) in
+      let pf = EConstr.Unsafe.to_constr pf in
 	evdref := sigma;
 	Some (pf, ty)
     with Failure _ -> None
@@ -1405,7 +1417,7 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
      tclZEROMSG (str"Nothing to inject.")
   | Inr posns ->
       inject_at_positions env sigma l2r u eq_clause posns
-	(tac (clenv_value eq_clause))
+	(tac (EConstr.Unsafe.to_constr (clenv_value eq_clause)))
 
 let get_previous_hyp_position id gl =
   let rec aux dest = function
@@ -1464,10 +1476,10 @@ let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
       | Inl (cpath, (_,dirn), _) ->
 	  discr_positions env sigma u clause cpath dirn
       | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
-        ntac (clenv_value clause) 0
+        ntac (EConstr.Unsafe.to_constr (clenv_value clause)) 0
     | Inr posns ->
 	inject_at_positions env sigma true u clause posns
-          (ntac (clenv_value clause))
+          (ntac (EConstr.Unsafe.to_constr (clenv_value clause)))
   end }
 
 let dEqThen with_evars ntac = function
@@ -1478,9 +1490,11 @@ let dEq with_evars =
   dEqThen with_evars (fun clear_flag c x ->
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
 
-let intro_decomp_eq tac data cl =
+let intro_decomp_eq tac data (c, t) =
   Proofview.Goal.enter { enter = begin fun gl ->
-    let cl = pf_apply make_clenv_binding gl cl NoBindings in
+    let c = EConstr.of_constr c in
+    let t = EConstr.of_constr t in
+    let cl = pf_apply make_clenv_binding gl (c, t) NoBindings in
     decompEqThen (fun _ -> tac) data cl
   end }
 

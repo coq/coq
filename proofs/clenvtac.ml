@@ -11,6 +11,7 @@ open Names
 open Term
 open Termops
 open Evd
+open EConstr
 open Refiner
 open Logic
 open Reduction
@@ -26,19 +27,19 @@ open Proofview.Notations
 
 let clenv_cast_meta clenv =
   let rec crec u =
-    match kind_of_term u with
+    match EConstr.kind clenv.evd u with
       | App _ | Case _ -> crec_hd u
-      | Cast (c,_,_) when isMeta c -> u
+      | Cast (c,_,_) when isMeta clenv.evd c -> u
       | Proj (p, c) -> mkProj (p, crec_hd c)
-      | _  -> map_constr crec u
+      | _  -> EConstr.map clenv.evd crec u
 
   and crec_hd u =
-    match kind_of_term (strip_outer_cast clenv.evd (EConstr.of_constr u)) with
+    match EConstr.kind clenv.evd (EConstr.of_constr (strip_outer_cast clenv.evd u)) with
       | Meta mv ->
 	  (try
             let b = Typing.meta_type clenv.evd mv in
-	    assert (not (occur_meta clenv.evd (EConstr.of_constr b)));
-	    if occur_meta clenv.evd (EConstr.of_constr b) then u
+	    assert (not (occur_meta clenv.evd b));
+	    if occur_meta clenv.evd b then u
             else mkCast (mkMeta mv, DEFAULTcast, b)
 	  with Not_found -> u)
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
@@ -95,7 +96,7 @@ let clenv_refine with_evars ?(with_classes=true) clenv =
   let clenv = { clenv with evd = evd' } in
   tclTHEN
     (tclEVARS (Evd.clear_metas evd'))
-    (refine_no_check (EConstr.of_constr (clenv_cast_meta clenv (clenv_value clenv)))) gl
+    (refine_no_check (clenv_cast_meta clenv (clenv_value clenv))) gl
   end
 
 open Unification
@@ -143,7 +144,7 @@ let unify ?(flags=fail_quick_unif_flags) m =
     let n = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
     let evd = clear_metas (Tacmach.New.project gl) in
     try
-      let evd' = w_unify env evd CONV ~flags (EConstr.of_constr m) (EConstr.of_constr n) in
+      let evd' = w_unify env evd CONV ~flags m (EConstr.of_constr n) in
 	Proofview.Unsafe.tclEVARSADVANCE evd'
     with e when CErrors.noncritical e -> Proofview.tclZERO e
   end }

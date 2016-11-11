@@ -171,6 +171,9 @@ val noccur_between : Evd.evar_map -> int -> int -> t -> bool
 
 val closedn : Evd.evar_map -> int -> t -> bool
 val closed0 : Evd.evar_map -> t -> bool
+
+val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
+
 end
 
 (** {5 Unsafe operations} *)

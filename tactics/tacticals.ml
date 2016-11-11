@@ -622,20 +622,22 @@ module New = struct
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
       isrec allnames tac predicate ind (c, t) =
+    let c = EConstr.of_constr c in
+    let t = EConstr.of_constr t in
     Proofview.Goal.nf_enter { enter = begin fun gl ->
     let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Proofview.Goal.nf_enter { enter = begin fun gl ->
     let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_unsafe_type_of gl (EConstr.of_constr elim))) gl in
+    let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (EConstr.of_constr elim,EConstr.of_constr (Tacmach.New.pf_unsafe_type_of gl (EConstr.of_constr elim)))) gl in
     let indmv =
-      match kind_of_term (last_arg elimclause.evd (EConstr.of_constr elimclause.templval.Evd.rebus)) with
+      match kind_of_term (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
       | _         -> anomaly (str"elimination")
     in
     let pmv =
-      let p, _ = decompose_app elimclause.templtyp.Evd.rebus in
+      let p, _ = decompose_app (EConstr.Unsafe.to_constr elimclause.templtyp.Evd.rebus) in
       match kind_of_term p with
       | Meta p -> p
       | _ ->
@@ -655,11 +657,11 @@ module New = struct
     let elimclause' =
       match predicate with
       | None   -> elimclause'
-      | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
+      | Some p -> clenv_unify ~flags Reduction.CONV (EConstr.mkMeta pmv) (EConstr.of_constr p) elimclause'
     in
     let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags elimclause') gl in
     let after_tac i =
-      let (hd,largs) = decompose_app clenv'.templtyp.Evd.rebus in
+      let (hd,largs) = decompose_app (EConstr.Unsafe.to_constr clenv'.templtyp.Evd.rebus) in
       let ba = { branchsign = branchsigns.(i);
                  branchnames = brnames.(i);
                  nassums = List.length branchsigns.(i);

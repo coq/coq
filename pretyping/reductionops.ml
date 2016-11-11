@@ -1588,9 +1588,11 @@ let meta_instance sigma b =
   if Metaset.is_empty fm then b.rebus
   else
     let c_sigma = Metamap.bind (fun mv -> meta_value sigma mv) fm in
-    instance sigma c_sigma (EConstr.of_constr b.rebus)
+    EConstr.of_constr (instance sigma c_sigma b.rebus)
 
-let nf_meta sigma c = meta_instance sigma (mk_freelisted c)
+let nf_meta sigma c =
+  let cl = mk_freelisted c in
+  EConstr.Unsafe.to_constr (meta_instance sigma { cl with rebus = EConstr.of_constr cl.rebus })
 
 (* Instantiate metas that create beta/iota redexes *)
 
@@ -1652,7 +1654,7 @@ let meta_reducible_instance evd b =
     | _ -> EConstr.map evd irec u
   in
   if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
-  else EConstr.Unsafe.to_constr (irec (EConstr.of_constr b.rebus))
+  else irec b.rebus
 
 
 let head_unfold_under_prod ts env sigma c =

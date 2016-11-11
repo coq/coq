@@ -295,6 +295,6 @@ val whd_betaiota_deltazeta_for_iota_state :
   state * Cst_stack.t
 
 (** {6 Meta-related reduction functions } *)
-val meta_instance : evar_map -> constr freelisted -> constr
+val meta_instance : evar_map -> EConstr.constr freelisted -> EConstr.constr
 val nf_meta       : evar_map -> constr -> constr
-val meta_reducible_instance : evar_map -> constr freelisted -> constr
+val meta_reducible_instance : evar_map -> EConstr.constr freelisted -> EConstr.constr

@@ -40,6 +40,7 @@ let meta_type evd mv =
   let ty =
     try Evd.meta_ftype evd mv
     with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv)) in
+  let ty = Evd.map_fl EConstr.of_constr ty in
   meta_instance evd ty
 
 let constant_type_knowing_parameters env sigma cst jl =
@@ -256,7 +257,7 @@ let rec execute env evdref cstr =
   let cstr = EConstr.of_constr (whd_evar !evdref (EConstr.Unsafe.to_constr cstr)) in
   match EConstr.kind !evdref cstr with
     | Meta n ->
-        { uj_val = cstr; uj_type = EConstr.of_constr (meta_type !evdref n) }
+        { uj_val = cstr; uj_type = meta_type !evdref n }
 
     | Evar ev ->
 	let ty = EConstr.existential_type !evdref ev in

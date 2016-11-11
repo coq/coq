@@ -227,6 +227,7 @@ let e_give_exact flags poly (c,clenv) gl =
     else c, gl
   in
   let t1 = pf_unsafe_type_of gl (EConstr.of_constr c) in
+  let t1 = EConstr.of_constr t1 in
   Proofview.V82.of_tactic (Clenvtac.unify ~flags t1 <*> exact_no_check c) gl
 
 let unify_e_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
@@ -247,6 +248,7 @@ let unify_resolve_refine poly flags =
   { enter = begin fun gls ((c, t, ctx),n,clenv) ->
     let env = Proofview.Goal.env gls in
     let concl = Proofview.Goal.concl gls in
+    let concl = EConstr.of_constr concl in
     Refine.refine ~unsafe:true { Sigma.run = fun sigma ->
       let sigma = Sigma.to_evar_map sigma in
       let sigma, term, ty =
@@ -259,17 +261,20 @@ let unify_resolve_refine poly flags =
           let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
           sigma, c, t
       in
+      let open EConstr in
+      let ty = EConstr.of_constr ty in
+      let term = EConstr.of_constr term in
       let sigma', cl = Clenv.make_evar_clause env sigma ?len:n ty in
-      let term = applistc term (List.map (fun x -> x.hole_evar) cl.cl_holes) in
+      let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
       let sigma' =
         let evdref = ref sigma' in
         if not (Evarconv.e_cumul env ~ts:flags.core_unify_flags.modulo_delta
-                                      evdref (EConstr.of_constr cl.cl_concl) (EConstr.of_constr concl)) then
-          Type_errors.error_actual_type env
+                                      evdref cl.cl_concl concl) then
+          Pretype_errors.error_actual_type_core env sigma'
             {Environ.uj_val = term; Environ.uj_type = cl.cl_concl}
             concl;
         !evdref
-      in Sigma.here (EConstr.of_constr term) (Sigma.Unsafe.of_evar_map sigma') }
+      in Sigma.here term (Sigma.Unsafe.of_evar_map sigma') }
   end }
 
 (** Dealing with goals of the form A -> B and hints of the form
@@ -279,9 +284,11 @@ let clenv_of_prods poly nprods (c, clenv) gl =
   let (c, _, _) = c in
   if poly || Int.equal nprods 0 then Some (None, clenv)
   else
+    let c = EConstr.of_constr c in
     let sigma = Tacmach.New.project gl in
-    let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma (EConstr.of_constr c) in
-    let diff = nb_prod sigma (EConstr.of_constr ty) - nprods in
+    let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
+    let ty = EConstr.of_constr ty in
+    let diff = nb_prod sigma ty - nprods in
     if Pervasives.(>=) diff 0 then
       (* Was Some clenv... *)
       Some (Some diff,
@@ -1515,7 +1522,7 @@ let autoapply c i gl =
   let flags = auto_unif_flags Evar.Set.empty
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
   let cty = pf_unsafe_type_of gl (EConstr.of_constr c) in
-  let ce = mk_clenv_from gl (c,cty) in
+  let ce = mk_clenv_from gl (EConstr.of_constr c,EConstr.of_constr cty) in
   let tac = { enter = fun gl -> (unify_e_resolve false flags).enter gl
     ((c,cty,Univ.ContextSet.empty),0,ce) } in
   Proofview.V82.of_tactic (Proofview.Goal.nf_enter tac) gl

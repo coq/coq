@@ -617,10 +617,10 @@ let subst_defined_metas_evars sigma (bl,el) c =
   in try Some (substrec c) with Not_found -> None
 
 let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
-  match subst_defined_metas_evars sigma (metasubst,[]) (EConstr.of_constr tyM) with
+  match subst_defined_metas_evars sigma (metasubst,[]) tyM with
   | None -> sigma
   | Some m ->
-  match subst_defined_metas_evars sigma (metasubst,[]) (EConstr.of_constr tyN) with
+  match subst_defined_metas_evars sigma (metasubst,[]) tyN with
   | None -> sigma
   | Some n ->
     if is_ground_term sigma m && is_ground_term sigma n then
@@ -705,6 +705,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 		(try
                    let tyM = Typing.meta_type sigma k in
                    let tyN = get_type_of curenv ~lax:true sigma cN in
+                   let tyN = EConstr.of_constr tyN in
                      check_compatibility curenv CUMUL flags substn tyN tyM
 		 with RetypeError _ ->
                    (* Renounce, maybe metas/evars prevents typing *) sigma)
@@ -724,6 +725,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	    if opt.with_types && flags.check_applied_meta_types then
               (try
                  let tyM = get_type_of curenv ~lax:true sigma cM in
+                 let tyM = EConstr.of_constr tyM in
                  let tyN = Typing.meta_type sigma k in
                    check_compatibility curenv CUMUL flags substn tyM tyN
                with RetypeError _ ->
@@ -977,6 +979,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	     try (* Ensure we call conversion on terms of the same type *)
 	       let tyM = get_type_of curenv ~lax:true sigma m1 in
 	       let tyN = get_type_of curenv ~lax:true sigma n1 in
+	       let tyM = EConstr.of_constr tyM in
+	       let tyN = EConstr.of_constr tyN in
 	       check_compatibility curenv CUMUL flags substn tyM tyN
 	     with RetypeError _ ->
 	       (* Renounce, maybe metas/evars prevents typing *) sigma
@@ -1265,7 +1269,7 @@ let w_coerce_to_type env evd c cty mvty =
 let w_coerce env evd mv c =
   let cty = get_type_of env evd c in
   let mvty = Typing.meta_type evd mv in
-  w_coerce_to_type env evd c (EConstr.of_constr cty) (EConstr.of_constr mvty)
+  w_coerce_to_type env evd c (EConstr.of_constr cty) mvty
 
 let unify_to_type env sigma flags c status u =
   let sigma, c = refresh_universes (Some false) env sigma c in
@@ -1275,6 +1279,7 @@ let unify_to_type env sigma flags c status u =
 
 let unify_type env sigma flags mv status c =
   let mvty = Typing.meta_type sigma mv in
+  let mvty = EConstr.Unsafe.to_constr mvty in
   let mvty = nf_meta sigma mvty in
     unify_to_type env sigma 
       (set_flags_for_type flags)
@@ -1923,7 +1928,6 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
   let flags = { flags with core_unify_flags = flags.subterm_unify_flags } in
   let (evd',cllist) = w_unify_to_subterm_list env evd flags p oplist typ in
   let typp = Typing.meta_type evd' p in
-  let typp = EConstr.of_constr typp in
   let evd',(pred,predtyp) = abstract_list_all env evd' typp typ cllist in
   let evd', b = infer_conv ~pb:CUMUL env evd' predtyp typp in
   if not b then
@@ -1942,7 +1946,7 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
 
 let secondOrderDependentAbstraction env evd flags typ (p, oplist) =
   let typp = Typing.meta_type evd p in
-  let evd, pred = abstract_list_all_with_dependencies env evd (EConstr.of_constr typp) typ oplist in
+  let evd, pred = abstract_list_all_with_dependencies env evd typp typ oplist in
   let pred = EConstr.of_constr pred in
   w_merge env false flags.merge_unify_flags
     (evd,[p,pred,(Conv,TypeProcessed)],[])

@@ -31,7 +31,7 @@ val e_sort_of : env -> evar_map ref -> EConstr.types -> sorts
 val e_check   : env -> evar_map ref -> EConstr.constr -> EConstr.types -> unit
 
 (** Returns the instantiated type of a metavariable *)
-val meta_type : evar_map -> metavariable -> types
+val meta_type : evar_map -> metavariable -> EConstr.types
 
 (** Solve existential variables using typing *)
 val e_solve_evars : env -> evar_map ref -> EConstr.constr -> constr
