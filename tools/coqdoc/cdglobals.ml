@@ -70,18 +70,21 @@ let normalize_filename f =
   let dirname = Filename.dirname f in
   normalize_path dirname, basename
 
+(** Add a local installation suffix (unless the suffix is itself
+    absolute in which case the prefix does not matter) *)
+let use_suffix prefix suffix =
+  if String.length suffix > 0 && suffix.[0] = '/' then suffix else prefix / suffix
+
 (** A weaker analog of the function in Envars *)
 
 let guess_coqlib () =
   let file = "theories/Init/Prelude.vo" in
+  let coqbin = normalize_path (Filename.dirname Sys.executable_name) in
+  let prefix = Filename.dirname coqbin in
+  let coqlib = use_suffix prefix Coq_config.coqlibsuffix in
+  if Sys.file_exists (coqlib / file) then coqlib else
   if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / file)
-  then Coq_config.coqlib
-  else
-    let coqbin = normalize_path (Filename.dirname Sys.executable_name) in
-    let prefix = Filename.dirname coqbin in
-    let coqlib = prefix / Coq_config.coqlibsuffix in
-    if Sys.file_exists (coqlib / file) then coqlib
-    else prefix
+  then Coq_config.coqlib else prefix
 
 let header_trailer = ref true
 let header_file = ref ""
