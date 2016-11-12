@@ -905,8 +905,10 @@ let find_suffix prefix path = match prefix with
      else
        Absolute path
 
-let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,_) =
-  let dir,suffix = match !uservalue, !Prefs.prefix with
+let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,locallayout) =
+  let dir,suffix =
+    if !Prefs.local then (use_suffix coqtop locallayout,locallayout)
+    else match !uservalue, !Prefs.prefix with
     | Some d, p -> d,find_suffix p d
     | _, Some p ->
       let suffix = if arch_is_win32 then selfcontainedlayout else relativize unixlayout in
@@ -920,12 +922,7 @@ let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,_) =
       if line = "" then (dflt,suffix) else (line,find_suffix p line)
   in (var,msg,dir,suffix)
 
-let do_one_noinst (var,msg,_,_,_,locallayout) =
-  (var,msg,use_suffix coqtop locallayout,locallayout)
-
-let install_dirs =
-  let f = if !Prefs.local then do_one_noinst else do_one_instdir in
-  List.map f install
+let install_dirs = List.map do_one_instdir install
 
 let select var = List.find (fun (v,_,_,_) -> v=var) install_dirs
 
