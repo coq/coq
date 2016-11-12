@@ -268,7 +268,7 @@ let rec drop_extra_implicit_args sigma c = match EConstr.kind sigma c with
 
 (* Get the last arg of an application *)
 let last_arg sigma c = match EConstr.kind sigma c with
-  | App (f,cl) -> EConstr.Unsafe.to_constr (Array.last cl)
+  | App (f,cl) -> Array.last cl
   | _ -> anomaly (Pp.str "last_arg")
 
 (* Get the last arg of an application *)

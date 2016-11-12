@@ -147,9 +147,9 @@ let ifOnHyp pred tac1 tac2 id gl =
 
 type branch_args = {
   ity        : pinductive;   (* the type we were eliminating on *)
-  largs      : constr list; (* its arguments *)
+  largs      : EConstr.constr list; (* its arguments *)
   branchnum  : int;         (* the branch number *)
-  pred       : constr;      (* the predicate we used *)
+  pred       : EConstr.constr;      (* the predicate we used *)
   nassums    : int;         (* number of assumptions/letin to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
                                true=assumption, false=let-in *)
@@ -622,8 +622,7 @@ module New = struct
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
       isrec allnames tac predicate ind (c, t) =
-    let c = EConstr.of_constr c in
-    let t = EConstr.of_constr t in
+    let open EConstr in
     Proofview.Goal.nf_enter { enter = begin fun gl ->
     let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
@@ -632,13 +631,13 @@ module New = struct
     (* applying elimination_scheme just a little modified *)
     let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (EConstr.of_constr elim,EConstr.of_constr (Tacmach.New.pf_unsafe_type_of gl (EConstr.of_constr elim)))) gl in
     let indmv =
-      match kind_of_term (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
+      match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
       | _         -> anomaly (str"elimination")
     in
     let pmv =
-      let p, _ = decompose_app (EConstr.Unsafe.to_constr elimclause.templtyp.Evd.rebus) in
-      match kind_of_term p with
+      let p, _ = decompose_app elimclause.evd elimclause.templtyp.Evd.rebus in
+      match EConstr.kind elimclause.evd p with
       | Meta p -> p
       | _ ->
 	  let name_elim =
@@ -657,11 +656,11 @@ module New = struct
     let elimclause' =
       match predicate with
       | None   -> elimclause'
-      | Some p -> clenv_unify ~flags Reduction.CONV (EConstr.mkMeta pmv) (EConstr.of_constr p) elimclause'
+      | Some p -> clenv_unify ~flags Reduction.CONV (EConstr.mkMeta pmv) p elimclause'
     in
     let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags elimclause') gl in
     let after_tac i =
-      let (hd,largs) = decompose_app (EConstr.Unsafe.to_constr clenv'.templtyp.Evd.rebus) in
+      let (hd,largs) = decompose_app clenv'.evd clenv'.templtyp.Evd.rebus in
       let ba = { branchsign = branchsigns.(i);
                  branchnames = brnames.(i);
                  nassums = List.length branchsigns.(i);
@@ -680,7 +679,8 @@ module New = struct
 
   let elimination_then tac c =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let (ind,t) = pf_reduce_to_quantified_ind gl (EConstr.of_constr (pf_unsafe_type_of gl (EConstr.of_constr c))) in
+    let (ind,t) = pf_reduce_to_quantified_ind gl (EConstr.of_constr (pf_unsafe_type_of gl c)) in
+    let t = EConstr.of_constr t in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
       | None -> true,gl_make_elim

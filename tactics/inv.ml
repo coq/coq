@@ -443,7 +443,8 @@ let raw_inversion inv_kind id status names =
         let msg = str "The type of " ++ pr_id id ++ str " is not inductive." in
         CErrors.user_err  msg
     in
-    let IndType (indf,realargs) = find_rectype env sigma (EConstr.of_constr t) in
+    let t = EConstr.of_constr t in
+    let IndType (indf,realargs) = find_rectype env sigma t in
     let evdref = ref sigma in
     let (elim_predicate, args) =
       make_inv_predicate env evdref indf realargs id status concl in
@@ -463,13 +464,14 @@ let raw_inversion inv_kind id status names =
     in
     let neqns = List.length realargs in
     let as_mode = names != None in
+    let elim_predicate = EConstr.of_constr elim_predicate in
     let tac =
       (tclTHENS
         (assert_before Anonymous cut_concl)
         [case_tac names
             (introCaseAssumsThen false (* ApplyOn not supported by inversion *)
                (rewrite_equations_tac as_mode inv_kind id neqns))
-            (Some elim_predicate) ind (c, t);
+            (Some elim_predicate) ind (EConstr.of_constr c,t);
         onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
     in
     Sigma.Unsafe.of_pair (tac, sigma)

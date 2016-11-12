@@ -97,17 +97,17 @@ val onClauseLR : (Id.t option -> tactic) -> clause -> tactic
 
 (** {6 Elimination tacticals. } *)
 
-type branch_args = {
+type branch_args = private {
   ity        : pinductive;  (** the type we were eliminating on *)
-  largs      : constr list; (** its arguments *)
+  largs      : EConstr.constr list; (** its arguments *)
   branchnum  : int;         (** the branch number *)
-  pred       : constr;      (** the predicate we used *)
+  pred       : EConstr.constr;      (** the predicate we used *)
   nassums    : int;         (** number of assumptions/letin to be introduced *)
   branchsign : bool list;   (** the signature of the branch.
                                 true=assumption, false=let-in *)
   branchnames : intro_patterns}
 
-type branch_assumptions = {
+type branch_assumptions = private {
   ba        : branch_args;       (** the branch args *)
   assums    : Context.Named.t}   (** the list of assumptions introduced *)
 
@@ -253,15 +253,15 @@ module New : sig
 
   val elimination_then :
     (branch_args -> unit Proofview.tactic) ->
-    constr -> unit Proofview.tactic
+    EConstr.constr -> unit Proofview.tactic
 
   val case_then_using :
     or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
-    constr option -> pinductive -> Term.constr * Term.types -> unit Proofview.tactic
+    EConstr.constr option -> pinductive -> EConstr.constr * EConstr.types -> unit Proofview.tactic
 
   val case_nodep_then_using :
     or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
-    constr option -> pinductive -> Term.constr * Term.types -> unit Proofview.tactic
+    EConstr.constr option -> pinductive -> EConstr.constr * EConstr.types -> unit Proofview.tactic
 
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
   val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic

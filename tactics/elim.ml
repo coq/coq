@@ -55,7 +55,7 @@ Another example :
 *)
 
 let elimHypThen tac id =
-  elimination_then tac (mkVar id)
+  elimination_then tac (EConstr.mkVar id)
 
 let rec general_decompose_on_hyp recognizer =
   ifOnHyp recognizer (general_decompose_aux recognizer) (fun _ -> Proofview.tclUNIT())
@@ -125,7 +125,7 @@ let h_decompose_and = decompose_and
 (* The tactic Double performs a double induction *)
 
 let simple_elimination c =
-  elimination_then (fun _ -> tclIDTAC) c
+  elimination_then (fun _ -> tclIDTAC) (EConstr.of_constr c)
 
 let induction_trailer abs_i abs_j bargs =
   tclTHEN
@@ -166,7 +166,7 @@ let double_ind h1 h2 =
      (onLastHypId
        	(fun id ->
            elimination_then
-             (introElimAssumsThen (induction_trailer abs_i abs_j)) (mkVar id))))
+             (introElimAssumsThen (induction_trailer abs_i abs_j)) (EConstr.mkVar id))))
   end }
 
 let h_double_induction = double_ind

@@ -44,7 +44,7 @@ type clausenv = {
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
-let clenv_nf_meta clenv c = nf_meta clenv.evd c
+let clenv_nf_meta clenv c = EConstr.of_constr (nf_meta clenv.evd (EConstr.Unsafe.to_constr c))
 let clenv_term clenv c = meta_instance clenv.evd c
 let clenv_meta_type clenv mv = Typing.meta_type clenv.evd mv
 let clenv_value clenv = meta_instance clenv.evd clenv.templval

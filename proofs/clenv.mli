@@ -36,7 +36,7 @@ val clenv_value     : clausenv -> constr
 val clenv_type      : clausenv -> types
 
 (** substitute resolved metas *)
-val clenv_nf_meta   : clausenv -> Constr.constr -> Constr.constr
+val clenv_nf_meta   : clausenv -> EConstr.constr -> EConstr.constr
 
 (** type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
