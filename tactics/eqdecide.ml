@@ -141,8 +141,8 @@ open Proofview.Notations
 
 (* spiwack: a small wrapper around [Hipattern]. *)
 
-let match_eqdec c =
-  try Proofview.tclUNIT (match_eqdec c)
+let match_eqdec sigma c =
+  try Proofview.tclUNIT (match_eqdec sigma c)
   with PatternMatchingFailure -> Proofview.tclZERO PatternMatchingFailure
 
 (* /spiwack *)
@@ -171,7 +171,9 @@ let solveEqBranch rectype =
     begin
       Proofview.Goal.enter { enter = begin fun gl ->
         let concl = pf_nf_concl gl in
-        match_eqdec concl >>= fun (eqonleft,op,lhs,rhs,_) ->
+        let concl = EConstr.of_constr concl in
+        let sigma = project gl in
+        match_eqdec sigma concl >>= fun (eqonleft,op,lhs,rhs,_) ->
           let (mib,mip) = Global.lookup_inductive rectype in
           let nparams   = mib.mind_nparams in
           let getargs l = List.skipn nparams (snd (decompose_app l)) in
@@ -196,7 +198,9 @@ let decideGralEquality =
     begin
       Proofview.Goal.enter { enter = begin fun gl ->
         let concl = pf_nf_concl gl in
-        match_eqdec concl >>= fun (eqonleft,_,c1,c2,typ) ->
+        let concl = EConstr.of_constr concl in
+        let sigma = project gl in
+        match_eqdec sigma concl >>= fun (eqonleft,_,c1,c2,typ) ->
         let headtyp = hd_app (pf_compute gl (EConstr.of_constr typ)) in
         begin match kind_of_term headtyp with
         | Ind (mi,_) -> Proofview.tclUNIT mi

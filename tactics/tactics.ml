@@ -1654,11 +1654,12 @@ let descend_in_conjunctions avoid tac (err, info) c =
     let t = EConstr.of_constr t in
     let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
     let sign,ccl = decompose_prod_assum t in
+    let ccl = EConstr.of_constr ccl in
     match match_with_tuple sigma ccl with
     | Some (_,_,isrec) ->
 	let n = (constructors_nrealargs ind).(0) in
 	let sort = Tacticals.New.elimination_sort_of_goal gl in
-	let IndType (indf,_) = find_rectype env sigma (EConstr.of_constr ccl) in
+	let IndType (indf,_) = find_rectype env sigma ccl in
 	let (_,inst), params = dest_ind_family indf in
 	let cstr = (get_constructors env indf).(0) in
 	let elim =
@@ -2324,7 +2325,7 @@ let intro_decomp_eq loc l thin tac id =
   let t = Tacmach.New.pf_unsafe_type_of gl (EConstr.of_constr c) in
   let t = EConstr.of_constr t in
   let _,t = Tacmach.New.pf_reduce_to_quantified_ind gl t in
-  match my_find_eq_data_decompose gl t with
+  match my_find_eq_data_decompose gl (EConstr.of_constr t) with
   | Some (eq,u,eq_args) ->
     !intro_decomp_eq_function
     (fun n -> tac ((dloc,id)::thin) (Some (true,n)) l)
@@ -2363,8 +2364,11 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let whd_all = Tacmach.New.pf_apply whd_all gl in
     let t = whd_all (EConstr.of_constr (type_of (EConstr.mkVar id))) in
+    let t = EConstr.of_constr t in
     let eqtac, thin = match match_with_equality_type sigma t with
     | Some (hdcncl,[_;lhs;rhs]) ->
+        let lhs = EConstr.Unsafe.to_constr lhs in
+        let rhs = EConstr.Unsafe.to_constr rhs in
         if l2r && isVar lhs && not (occur_var env sigma (destVar lhs) (EConstr.of_constr rhs)) then
           let id' = destVar lhs in
           subst_on l2r id' rhs, early_clear id' thin
@@ -2375,6 +2379,7 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
           Tacticals.New.tclTHEN (rew_on l2r onConcl) (clear [id]),
           thin
     | Some (hdcncl,[c]) ->
+        let c = EConstr.Unsafe.to_constr c in
         let l2r = not l2r in (* equality of the form eq_true *)
         if isVar c then
           let id' = destVar c in
@@ -4689,6 +4694,7 @@ let reflexivity_red allowred =
      inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
     let sigma = Tacmach.New.project gl in
     let concl = maybe_betadeltaiota_concl allowred gl in
+    let concl = EConstr.of_constr concl in
     match match_with_equality_type sigma concl with
     | None -> Proofview.tclZERO NoEquationFound
     | Some _ -> one_constructor 1 NoBindings
@@ -4716,19 +4722,21 @@ let (forward_setoid_symmetry, setoid_symmetry) = Hook.make ()
 (* This is probably not very useful any longer *)
 let prove_symmetry hdcncl eq_kind =
   let symc =
+    let open EConstr in
     match eq_kind with
     | MonomorphicLeibnizEq (c1,c2) -> mkApp(hdcncl,[|c2;c1|])
     | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp(hdcncl,[|typ;c2;c1|])
     | HeterogenousEq (t1,c1,t2,c2) -> mkApp(hdcncl,[|t2;c2;t1;c1|]) in
+  let symc = EConstr.Unsafe.to_constr symc in
   Tacticals.New.tclTHENFIRST (cut symc)
     (Tacticals.New.tclTHENLIST
       [ intro;
         Tacticals.New.onLastHyp simplest_case;
 	one_constructor 1 NoBindings ])
 
-let match_with_equation c =
+let match_with_equation sigma c =
   try
-    let res = match_with_equation c in
+    let res = match_with_equation sigma c in
     Proofview.tclUNIT res
   with NoEquationFound ->
     Proofview.tclZERO NoEquationFound
@@ -4738,8 +4746,9 @@ let symmetry_red allowred =
   (* PL: usual symmetry don't perform any reduction when searching
      for an equality, but we may need to do some when called back from
      inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
+  let sigma = Tacmach.New.project gl in
   let concl = maybe_betadeltaiota_concl allowred gl in
-  match_with_equation concl >>= fun with_eqn ->
+  match_with_equation sigma (EConstr.of_constr concl) >>= fun with_eqn ->
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
@@ -4761,15 +4770,20 @@ let (forward_setoid_symmetry_in, setoid_symmetry_in) = Hook.make ()
 
 let symmetry_in id =
   Proofview.Goal.enter { enter = begin fun gl ->
+  let sigma = Tacmach.New.project gl in
   let ctype = Tacmach.New.pf_unsafe_type_of gl (EConstr.mkVar id) in
   let sign,t = decompose_prod_assum ctype in
+  let t = EConstr.of_constr t in
   Proofview.tclORELSE
     begin
-      match_with_equation t >>= fun (_,hdcncl,eq) ->
-        let symccl = match eq with
+      match_with_equation sigma t >>= fun (_,hdcncl,eq) ->
+        let symccl =
+          let open EConstr in
+          match eq with
           | MonomorphicLeibnizEq (c1,c2) -> mkApp (hdcncl, [| c2; c1 |])
           | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp (hdcncl, [| typ; c2; c1 |])
           | HeterogenousEq (t1,c1,t2,c2) -> mkApp (hdcncl, [| t2; c2; t1; c1 |]) in
+        let symccl = EConstr.Unsafe.to_constr symccl in
         Tacticals.New.tclTHENS (cut (it_mkProd_or_LetIn symccl sign))
           [ intro_replacing id;
             Tacticals.New.tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
@@ -4804,6 +4818,8 @@ let (forward_setoid_transitivity, setoid_transitivity) = Hook.make ()
 (* This is probably not very useful any longer *)
 let prove_transitivity hdcncl eq_kind t =
   Proofview.Goal.enter { enter = begin fun gl ->
+  let t = EConstr.of_constr t in
+  let open EConstr in
   let (eq1,eq2) = match eq_kind with
   | MonomorphicLeibnizEq (c1,c2) ->
       mkApp (hdcncl, [| c1; t|]), mkApp (hdcncl, [| t; c2 |])
@@ -4813,10 +4829,13 @@ let prove_transitivity hdcncl eq_kind t =
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
       let type_of = Typing.unsafe_type_of env sigma in
-      let typt = type_of (EConstr.of_constr t) in
+      let typt = type_of t in
+      let typt = EConstr.of_constr typt in
         (mkApp(hdcncl, [| typ1; c1; typt ;t |]),
          mkApp(hdcncl, [| typt; t; typ2; c2 |]))
   in
+  let eq1 = EConstr.Unsafe.to_constr eq1 in
+  let eq2 = EConstr.Unsafe.to_constr eq2 in
   Tacticals.New.tclTHENFIRST (cut eq2)
     (Tacticals.New.tclTHENFIRST (cut eq1)
        (Tacticals.New.tclTHENLIST
@@ -4830,8 +4849,9 @@ let transitivity_red allowred t =
   (* PL: usual transitivity don't perform any reduction when searching
      for an equality, but we may need to do some when called back from
      inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
+  let sigma = Tacmach.New.project gl in
   let concl = maybe_betadeltaiota_concl allowred gl in
-  match_with_equation concl >>= fun with_eqn ->
+  match_with_equation sigma (EConstr.of_constr concl) >>= fun with_eqn ->
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN

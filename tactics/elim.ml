@@ -108,12 +108,12 @@ let decompose_these c l =
 
 let decompose_and c =
   general_decompose
-    (fun sigma (_,t) -> is_record sigma t)
+    (fun sigma (_,t) -> is_record sigma (EConstr.of_constr t))
     c
 
 let decompose_or c =
   general_decompose
-    (fun sigma (_,t) -> is_disjunction sigma t)
+    (fun sigma (_,t) -> is_disjunction sigma (EConstr.of_constr t))
     c
 
 let h_decompose l c = decompose_these c l

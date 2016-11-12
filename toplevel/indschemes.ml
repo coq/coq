@@ -313,7 +313,7 @@ let warn_cannot_build_congruence =
           strbrk "Cannot build congruence scheme because eq is not found")
 
 let declare_congr_scheme ind =
-  if Hipattern.is_equality_type Evd.empty (mkInd ind) (** FIXME *) then begin
+  if Hipattern.is_equality_type Evd.empty (EConstr.of_constr (mkInd ind)) (** FIXME *) then begin
     if
       try Coqlib.check_required_library Coqlib.logic_module_name; true
       with e when CErrors.noncritical e -> false

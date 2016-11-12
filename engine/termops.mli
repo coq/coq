@@ -268,6 +268,8 @@ val is_section_variable : Id.t -> bool
 
 val global_of_constr : Evd.evar_map -> EConstr.constr -> Globnames.global_reference puniverses
 
+val is_global : Evd.evar_map -> Globnames.global_reference -> EConstr.constr -> bool
+
 val isGlobalRef : Evd.evar_map -> EConstr.t -> bool
 
 val is_template_polymorphic : env -> Evd.evar_map -> EConstr.t -> bool

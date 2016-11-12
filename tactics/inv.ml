@@ -341,7 +341,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
     (** We only look at the type of hypothesis "id" *)
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
-    let (t,t1,t2) = Hipattern.dest_nf_eq gl hyp in
+    let (t,t1,t2) = Hipattern.dest_nf_eq gl (EConstr.of_constr hyp) in
     match (kind_of_term t1, kind_of_term t2) with
     | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
     | _, Var id2 -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2

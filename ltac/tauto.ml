@@ -113,7 +113,7 @@ let split = Tactics.split_with_bindings false [Misctypes.NoBindings]
 
 let is_empty _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
-  if is_empty_type sigma (assoc_var "X1" ist) then idtac else fail
+  if is_empty_type sigma (EConstr.of_constr (assoc_var "X1" ist)) then idtac else fail
 
 (* Strictly speaking, this exceeds the propositional fragment as it
    matches also equality types (and solves them if a reflexivity) *)
@@ -121,9 +121,10 @@ let is_unit_or_eq _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let test = if flags.strict_unit then is_unit_type else is_unit_or_eq_type in
-  if test sigma (assoc_var "X1" ist) then idtac else fail
+  if test sigma (EConstr.of_constr (assoc_var "X1" ist)) then idtac else fail
 
 let bugged_is_binary t =
+  let t = EConstr.Unsafe.to_constr t in
   isApp t &&
   let (hdapp,args) = decompose_app t in
     match (kind_of_term hdapp) with
@@ -138,6 +139,7 @@ let is_conj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let ind = assoc_var "X1" ist in
+  let ind = EConstr.of_constr ind in
     if (not flags.binary_mode_bugged_detection || bugged_is_binary ind) &&
        is_conjunction sigma
          ~strict:flags.strict_in_hyp_and_ccl
@@ -149,6 +151,7 @@ let flatten_contravariant_conj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let typ = assoc_var "X1" ist in
+  let typ = EConstr.of_constr typ in
   let c = assoc_var "X2" ist in
   let hyp = assoc_var "id" ist in
   match match_with_conjunction sigma
@@ -156,6 +159,7 @@ let flatten_contravariant_conj _ ist =
           ~onlybinary:flags.binary_mode typ
   with
   | Some (_,args) ->
+    let args = List.map EConstr.Unsafe.to_constr args in
     let newtyp = List.fold_right mkArrow args c in
     let intros = tclMAP (fun _ -> intro) args in
     let by = tclTHENLIST [intros; apply hyp; split; assumption] in
@@ -168,6 +172,7 @@ let is_disj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let t = assoc_var "X1" ist in
+  let t = EConstr.of_constr t in
   if (not flags.binary_mode_bugged_detection || bugged_is_binary t) &&
      is_disjunction sigma
        ~strict:flags.strict_in_hyp_and_ccl
@@ -179,6 +184,7 @@ let flatten_contravariant_disj _ ist =
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let typ = assoc_var "X1" ist in
+  let typ = EConstr.of_constr typ in
   let c = assoc_var "X2" ist in
   let hyp = assoc_var "id" ist in
   match match_with_disjunction sigma
@@ -186,6 +192,7 @@ let flatten_contravariant_disj _ ist =
           ~onlybinary:flags.binary_mode
           typ with
   | Some (_,args) ->
+      let args = List.map EConstr.Unsafe.to_constr args in
       let map i arg =
         let typ = mkArrow arg c in
         let ci = Tactics.constructor_tac false None (succ i) Misctypes.NoBindings in

@@ -79,15 +79,16 @@ type kind_of_formula=
 let kind_of_formula gl term =
   let normalize=special_nf gl in
   let cciterm=special_whd gl term in
-    match match_with_imp_term (project gl) cciterm with
-	Some (a,b)-> Arrow(a,(pop (EConstr.of_constr b)))
+    match match_with_imp_term (project gl) (EConstr.of_constr cciterm) with
+	Some (a,b)-> Arrow(EConstr.Unsafe.to_constr a,(pop b))
       |_->
-	 match match_with_forall_term (project gl) cciterm with
-	     Some (_,a,b)-> Forall(a,b)
+	 match match_with_forall_term (project gl) (EConstr.of_constr cciterm) with
+	     Some (_,a,b)-> Forall(EConstr.Unsafe.to_constr a,EConstr.Unsafe.to_constr b)
 	   |_->
-	      match match_with_nodep_ind (project gl) cciterm with
+	      match match_with_nodep_ind (project gl) (EConstr.of_constr cciterm) with
 		  Some (i,l,n)->
-		    let ind,u=destInd i in
+                    let l = List.map EConstr.Unsafe.to_constr l in
+		    let ind,u=EConstr.destInd (project gl) i in
 		    let (mib,mip) = Global.lookup_inductive ind in
 		    let nconstr=Array.length mip.mind_consnames in
 		      if Int.equal nconstr 0 then
@@ -108,8 +109,8 @@ let kind_of_formula gl term =
 			    else
 			      Or((ind,u),l,is_trivial)
 		| _ ->
-		    match match_with_sigma_type (project gl) cciterm with
-			Some (i,l)-> Exists((destInd i),l)
+		    match match_with_sigma_type (project gl) (EConstr.of_constr cciterm) with
+			Some (i,l)-> Exists((EConstr.destInd (project gl) i),List.map EConstr.Unsafe.to_constr l)
 		      |_-> Atom (normalize cciterm)
 
 type atoms = {positive:constr list;negative:constr list}

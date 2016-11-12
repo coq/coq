@@ -413,7 +413,7 @@ val subst_one :
 
 val declare_intro_decomp_eq :
   ((int -> unit Proofview.tactic) -> Coqlib.coq_eq_data * types *
-   (types * constr * constr) ->
+   (EConstr.types * EConstr.constr * EConstr.constr) ->
    constr * types -> unit Proofview.tactic) -> unit
 
 (** {6 Simple form of basic tactics. } *)

@@ -66,12 +66,12 @@ let contradiction_context =
           let id = NamedDecl.get_id d in
           let typ = nf_evar sigma (NamedDecl.get_type d) in
 	  let typ = whd_all env sigma (EConstr.of_constr typ) in
-	  if is_empty_type sigma typ then
+	  if is_empty_type sigma (EConstr.of_constr typ) then
 	    simplest_elim (mkVar id)
 	  else match kind_of_term typ with
-	  | Prod (na,t,u) when is_empty_type sigma u ->
+	  | Prod (na,t,u) when is_empty_type sigma (EConstr.of_constr u) ->
              let is_unit_or_eq =
-               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type sigma t
+               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type sigma (EConstr.of_constr t)
                else None in
 	     Tacticals.New.tclORELSE
                (match is_unit_or_eq with
@@ -105,7 +105,7 @@ let is_negation_of env sigma typ t =
   match kind_of_term (whd_all env sigma t) with
     | Prod (na,t,u) ->
       let u = nf_evar sigma u in
-      is_empty_type sigma u && is_conv_leq env sigma (EConstr.of_constr typ) (EConstr.of_constr t)
+      is_empty_type sigma (EConstr.of_constr u) && is_conv_leq env sigma (EConstr.of_constr typ) (EConstr.of_constr t)
     | _ -> false
 
 let contradiction_term (c,lbind as cl) =
@@ -115,7 +115,7 @@ let contradiction_term (c,lbind as cl) =
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let typ = type_of (EConstr.of_constr c) in
     let _, ccl = splay_prod env sigma (EConstr.of_constr typ) in
-    if is_empty_type sigma ccl then
+    if is_empty_type sigma (EConstr.of_constr ccl) then
       Tacticals.New.tclTHEN
         (elim false None cl None)
         (Tacticals.New.tclTRY assumption)

@@ -8,6 +8,8 @@
 
 open Names
 open Term
+open Evd
+open EConstr
 open Coqlib
 
 (** High-order patterns *)
@@ -40,8 +42,8 @@ open Coqlib
    also work on ad-hoc disjunctions introduced by the user.
    (Eduardo, 6/8/97). *)
 
-type 'a matching_function = Evd.evar_map -> constr -> 'a option
-type testing_function = Evd.evar_map -> constr -> bool
+type 'a matching_function = evar_map -> constr -> 'a option
+type testing_function = evar_map -> constr -> bool
 
 val match_with_non_recursive_type : (constr * constr list) matching_function
 val is_non_recursive_type         : testing_function
@@ -113,7 +115,7 @@ type equation_kind =
 exception NoEquationFound
 
 val match_with_equation:
-  constr -> coq_eq_data option * constr * equation_kind
+  evar_map -> constr -> coq_eq_data option * constr * equation_kind
 
 (***** Destructing patterns bound to some theory *)
 
@@ -127,25 +129,25 @@ val find_this_eq_data_decompose : ([ `NF ], 'r) Proofview.Goal.t -> constr ->
       coq_eq_data * Univ.universe_instance * (types * constr * constr)
 
 (** A variant that returns more informative structure on the equality found *)
-val find_eq_data : constr -> coq_eq_data * Univ.universe_instance * equation_kind
+val find_eq_data : evar_map -> constr -> coq_eq_data * Univ.universe_instance * equation_kind
 
 (** Match a term of the form [(existT A P t p)] 
    Returns associated lemmas and [A,P,t,p] *)
-val find_sigma_data_decompose : constr ->
+val find_sigma_data_decompose : evar_map -> constr ->
   coq_sigma_data * (Univ.universe_instance * constr * constr * constr * constr)
 
 (** Match a term of the form [{x:A|P}], returns [A] and [P] *)
-val match_sigma : constr -> constr * constr
+val match_sigma : evar_map -> constr -> constr * constr
 
-val is_matching_sigma : constr -> bool
+val is_matching_sigma : evar_map -> constr -> bool
 
 (** Match a decidable equality judgement (e.g [{t=u:>T}+{~t=u}]), returns
    [t,u,T] and a boolean telling if equality is on the left side *)
-val match_eqdec : constr -> bool * constr * constr * constr * constr
+val match_eqdec : evar_map -> constr -> bool * Constr.constr * Constr.constr * Constr.constr * Constr.constr
 
 (** Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
-val dest_nf_eq : ([ `NF ], 'r) Proofview.Goal.t -> constr -> (constr * constr * constr)
+val dest_nf_eq : ([ `NF ], 'r) Proofview.Goal.t -> constr -> (Constr.constr * Constr.constr * Constr.constr)
 
 (** Match a negation *)
-val is_matching_not : constr -> bool
-val is_matching_imp_False : constr -> bool
+val is_matching_not : evar_map -> constr -> bool
+val is_matching_imp_False : evar_map -> constr -> bool

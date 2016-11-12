@@ -96,8 +96,8 @@ val cutRewriteInConcl : bool -> constr -> unit Proofview.tactic
 val rewriteInHyp : bool -> constr -> Id.t -> unit Proofview.tactic
 val rewriteInConcl : bool -> constr -> unit Proofview.tactic
 
-val discriminable : env -> evar_map -> constr -> constr -> bool
-val injectable : env -> evar_map -> constr -> constr -> bool
+val discriminable : env -> evar_map -> EConstr.constr -> EConstr.constr -> bool
+val injectable : env -> evar_map -> EConstr.constr -> EConstr.constr -> bool
 
 (* Subst *)
 

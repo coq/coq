@@ -598,9 +598,9 @@ let rec reflexivity_with_destruct_cases g =
 	   | Some id ->
 	       match kind_of_term  (pf_unsafe_type_of g (EConstr.mkVar id)) with
 		 | App(eq,[|_;t1;t2|]) when eq_constr eq eq_ind ->
-		     if Equality.discriminable (pf_env g) (project g) t1 t2
+		     if Equality.discriminable (pf_env g) (project g) (EConstr.of_constr t1) (EConstr.of_constr t2)
 		     then Proofview.V82.of_tactic (Equality.discrHyp id) g
-		     else if Equality.injectable (pf_env g) (project g) t1 t2
+		     else if Equality.injectable (pf_env g) (project g) (EConstr.of_constr t1) (EConstr.of_constr t2)
 		     then tclTHENSEQ [Proofview.V82.of_tactic (Equality.injHyp None id);thin [id];intros_with_rewrite]  g
 		     else tclIDTAC g
 		 | _ -> tclIDTAC g
