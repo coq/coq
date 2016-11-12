@@ -79,12 +79,7 @@ let guess_coqlib () =
   else
     let coqbin = normalize_path (Filename.dirname Sys.executable_name) in
     let prefix = Filename.dirname coqbin in
-    let rpath =
-      if Coq_config.local then []
-      else if Coq_config.arch_is_win32 then ["lib"]
-      else ["lib/coq"]
-    in
-    let coqlib = List.fold_left (/) prefix rpath in
+    let coqlib = prefix / Coq_config.coqlibsuffix in
     if Sys.file_exists (coqlib / file) then coqlib
     else prefix
 

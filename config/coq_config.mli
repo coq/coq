@@ -8,10 +8,18 @@
 
 val local : bool        (* local use (no installation) *)
 
+(* The fields below are absolute paths *)
 val coqlib : string     (* where the std library is installed *)
 val configdir : string  (* where configuration files are installed *)
 val datadir : string    (* where extra data files are installed *)
 val docdir : string     (* where the doc is installed *)
+
+(* The fields below are paths relative to the installation prefix *)
+(* However, if an absolute path, it means discarding the actual prefix *)
+val coqlibsuffix : string    (* std library relative to installation prefix *)
+val configdirsuffix : string (* config files relative to installation prefix *)
+val datadirsuffix : string   (* data files relative to installation prefix *)
+val docdirsuffix : string    (* doc directory relative to installation prefix *)
 
 val ocaml : string      (* names of ocaml binaries *)
 val ocamlfind : string

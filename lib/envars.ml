@@ -102,13 +102,12 @@ let _ =
     If the check fails, then [oth ()] is evaluated.
     Using file system equality seems well enough for this heuristic *)
 let check_file_else ~dir ~file oth =
-  let path = if Coq_config.local then coqroot else coqroot / dir in
+  let path = coqroot / dir in
   if Sys.file_exists (path / file) then path else oth ()
 
 let guess_coqlib fail =
   let prelude = "theories/Init/Prelude.vo" in
-  let dir = if Coq_config.arch_is_win32 then "lib" else "lib/coq" in
-  check_file_else ~dir ~file:prelude
+  check_file_else ~dir:Coq_config.coqlibsuffix ~file:prelude
     (fun () ->
       if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / prelude)
       then Coq_config.coqlib
@@ -125,8 +124,7 @@ let set_coqlib ~fail =
 let coqlib () = !Flags.coqlib
 
 let docdir () =
-  let dir = if Coq_config.arch_is_win32 then "doc" else "share/doc/coq" in
-  check_file_else ~dir ~file:"html" (fun () -> Coq_config.docdir)
+  check_file_else ~dir:Coq_config.docdirsuffix ~file:"html" (fun () -> Coq_config.docdir)
 
 let coqpath =
   let coqpath = getenv_else "COQPATH" (fun () -> "") in
