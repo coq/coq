@@ -918,7 +918,7 @@ let configure ?(apply=(fun () -> ())) () =
   in
   let doc_url =
     let predefined = [
-      "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["refman";"html"]);
+      "file://"^(List.fold_left Filename.concat (Envars.docdir ()) ["refman";"html"]);
       Coq_config.wwwrefman;
       use_default_doc_url
     ] in
@@ -931,7 +931,7 @@ let configure ?(apply=(fun () -> ())) () =
       doc_url#get in
   let library_url =
     let predefined = [
-      "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["stdlib";"html"]);
+      "file://"^(List.fold_left Filename.concat (Envars.docdir ()) ["stdlib";"html"]);
       Coq_config.wwwstdlib
     ] in
     combo

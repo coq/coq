@@ -27,11 +27,17 @@ val home : warn:(string -> unit) -> string
 (** [coqlib] is the path to the Coq library. *)
 val coqlib : unit -> string
 
+(** [docdir] is the path to the installed documentation. *)
+val docdir : unit -> string
+
+(** [datadir] is the path to the installed data directory. *)
+val datadir : unit -> string
+
+(** [configdir] is the path to the installed config directory. *)
+val configdir : unit -> string
+
 (** [set_coqlib] must be runned once before any access to [coqlib] *)
 val set_coqlib : fail:(string -> string) -> unit
-
-(** [docdir] is the path to the Coq documentation. *)
-val docdir : unit -> string
 
 (** [coqbin] is the name of the current executable. *)
 val coqbin : string

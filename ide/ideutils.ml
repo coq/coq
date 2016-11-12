@@ -422,7 +422,7 @@ let browse prerr url =
 let doc_url () =
   if doc_url#get = use_default_doc_url || doc_url#get = ""
   then
-    let addr = List.fold_left Filename.concat (Coq_config.docdir)
+    let addr = List.fold_left Filename.concat (Envars.docdir ())
       ["html";"refman";"index.html"]
     in
     if Sys.file_exists addr then "file://"^addr else Coq_config.wwwrefman
