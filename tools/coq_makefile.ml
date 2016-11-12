@@ -119,14 +119,8 @@ let read_whole_file s =
     Buffer.contents b
 
 let makefile_template =
-  let open Filename in
   let template = "/tools/CoqMakefile.in" in
-  if Coq_config.local then
-    let coqbin = CUnix.canonical_path_name (dirname Sys.executable_name) in
-    dirname coqbin ^ template
-  else match Coq_config.coqlib with
-    | None -> assert false
-    | Some dir -> dir ^ template
+  Coq_config.coqlib ^ template
 
 let quote s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 

@@ -110,11 +110,8 @@ let guess_coqlib fail =
   let dir = if Coq_config.arch_is_win32 then "lib" else "lib/coq" in
   check_file_else ~dir ~file:prelude
     (fun () ->
-      let coqlib = match Coq_config.coqlib with
-        | Some coqlib -> coqlib
-        | None -> coqroot
-      in
-      if Sys.file_exists (coqlib / prelude) then coqlib
+      if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / prelude)
+      then Coq_config.coqlib
       else
         fail "cannot guess a path for Coq libraries; please use -coqlib option")
 

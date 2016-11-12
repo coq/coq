@@ -8,7 +8,7 @@
 
 val local : bool        (* local use (no installation) *)
 
-val coqlib : string option (* where the std library is installed *)
+val coqlib : string     (* where the std library is installed *)
 val configdir : string  (* where configuration files are installed *)
 val datadir : string    (* where extra data files are installed *)
 val docdir : string     (* where the doc is installed *)

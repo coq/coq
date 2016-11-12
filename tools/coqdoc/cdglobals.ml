@@ -74,19 +74,19 @@ let normalize_filename f =
 
 let guess_coqlib () =
   let file = "theories/Init/Prelude.vo" in
-  match Coq_config.coqlib with
-    | Some coqlib when Sys.file_exists (coqlib / file) -> coqlib
-    | Some _ | None ->
-      let coqbin = normalize_path (Filename.dirname Sys.executable_name) in
-      let prefix = Filename.dirname coqbin in
-      let rpath =
-        if Coq_config.local then []
-        else if Coq_config.arch_is_win32 then ["lib"]
-        else ["lib/coq"]
-      in
-      let coqlib = List.fold_left (/) prefix rpath in
-      if Sys.file_exists (coqlib / file) then coqlib
-      else prefix
+  if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / file)
+  then Coq_config.coqlib
+  else
+    let coqbin = normalize_path (Filename.dirname Sys.executable_name) in
+    let prefix = Filename.dirname coqbin in
+    let rpath =
+      if Coq_config.local then []
+      else if Coq_config.arch_is_win32 then ["lib"]
+      else ["lib/coq"]
+    in
+    let coqlib = List.fold_left (/) prefix rpath in
+    if Sys.file_exists (coqlib / file) then coqlib
+    else prefix
 
 let header_trailer = ref true
 let header_file = ref ""
