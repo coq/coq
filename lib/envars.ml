@@ -79,9 +79,6 @@ let expand_path_macros ~warn s =
 
 (** {2 Coq paths} *)
 
-let relative_base =
-  Filename.dirname (Filename.dirname Sys.executable_name)
-
 let coqbin =
   CUnix.canonical_path_name (Filename.dirname Sys.executable_name)
 
@@ -96,13 +93,18 @@ let _ =
   if Coq_config.arch_is_win32 then
     Unix.putenv "PATH" (coqbin ^ ";" ^ getenv_else "PATH" (fun () -> ""))
 
+(** Add a local installation suffix (unless the suffix is itself
+    absolute in which case the prefix does not matter) *)
+let use_suffix prefix suffix =
+  if String.length suffix > 0 && suffix.[0] = '/' then suffix else prefix / suffix
+
 (** [check_file_else ~dir ~file oth] checks if [file] exists in
-    the installation directory [dir] given relatively to [coqroot].
-    If this Coq is only locally built, then [file] must be in [coqroot].
+    the installation directory [dir] given relatively to [coqroot],
+    which maybe has been relocated.
     If the check fails, then [oth ()] is evaluated.
     Using file system equality seems well enough for this heuristic *)
 let check_file_else ~dir ~file oth =
-  let path = coqroot / dir in
+  let path = use_suffix coqroot dir in
   if Sys.file_exists (path / file) then path else oth ()
 
 let guess_coqlib fail =
@@ -124,7 +126,14 @@ let set_coqlib ~fail =
 let coqlib () = !Flags.coqlib
 
 let docdir () =
-  check_file_else ~dir:Coq_config.docdirsuffix ~file:"html" (fun () -> Coq_config.docdir)
+  (* This assumes implicitly that the suffix is non-trivial *)
+  let path = use_suffix coqroot Coq_config.docdirsuffix in
+  if Sys.file_exists path then path else Coq_config.docdir
+
+let datadir () =
+  (* This assumes implicitly that the suffix is non-trivial *)
+  let path = use_suffix coqroot Coq_config.datadirsuffix in
+  if Sys.file_exists path then path else Coq_config.datadir
 
 let coqpath =
   let coqpath = getenv_else "COQPATH" (fun () -> "") in
@@ -179,10 +188,9 @@ let xdg_data_dirs warn =
     try
       List.map coqify (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
     with
-      | Not_found when String.equal Sys.os_type "Win32" -> [relative_base / "share"]
-      | Not_found -> ["/usr/local/share/coq";"/usr/share/coq"]
+      | Not_found -> [datadir ()]
   in
-  xdg_data_home warn :: sys_dirs @ [Coq_config.datadir]
+  xdg_data_home warn :: sys_dirs
 
 let xdg_dirs ~warn =
   List.filter Sys.file_exists (xdg_data_dirs warn)
