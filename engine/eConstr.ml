@@ -98,6 +98,7 @@ let mkCase (ci, c, r, p) = of_kind (Case (ci, c, r, p))
 let mkFix f = of_kind (Fix f)
 let mkCoFix f = of_kind (CoFix f)
 let mkProj (p, c) = of_kind (Proj (p, c))
+let mkArrow t1 t2 = of_kind (Prod (Anonymous, t1, t2))
 
 let applist (f, arg) = mkApp (f, Array.of_list arg)
 
@@ -466,6 +467,11 @@ let eq_constr_nounivs sigma c1 c2 =
   in
   eq_constr (unsafe_to_constr c1) (unsafe_to_constr c2)
 
+let compare_constr sigma cmp c1 c2 =
+  let kind c = kind_upto sigma c in
+  let cmp c1 c2 = cmp (of_constr c1) (of_constr c2) in
+  compare_gen kind (fun _ -> Univ.Instance.equal) Sorts.equal cmp (unsafe_to_constr c1) (unsafe_to_constr c2)
+
 (** TODO: factorize with universes.ml *)
 let test_constr_universes sigma leq m n =
   let open Universes in
@@ -607,6 +613,22 @@ let mkLambda_or_LetIn decl c =
   match decl with
   | LocalAssum (na,t) -> mkLambda (na, of_constr t, c)
   | LocalDef (na,b,t) -> mkLetIn (na, of_constr b, of_constr t, c)
+
+let mkNamedProd id typ c = mkProd (Name id, typ, Vars.subst_var id c)
+let mkNamedLambda id typ c = mkLambda (Name id, typ, Vars.subst_var id c)
+let mkNamedLetIn id c1 t c2 = mkLetIn (Name id, c1, t, Vars.subst_var id c2)
+
+let mkNamedProd_or_LetIn decl c =
+  let open Context.Named.Declaration in
+  match decl with
+    | LocalAssum (id,t) -> mkNamedProd id (of_constr t) c
+    | LocalDef (id,b,t) -> mkNamedLetIn id (of_constr b) (of_constr t) c
+
+let mkNamedLambda_or_LetIn decl c =
+  let open Context.Named.Declaration in
+  match decl with
+    | LocalAssum (id,t) -> mkNamedLambda id (of_constr t) c
+    | LocalDef (id,b,t) -> mkNamedLetIn id (of_constr b) (of_constr t) c
 
 let it_mkProd_or_LetIn t ctx = List.fold_left (fun c d -> mkProd_or_LetIn d c) t ctx
 let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d c) t ctx

@@ -116,7 +116,7 @@ let lookup_named id env = lookup_named id env.env
 let e_new_evar env evdref ?src ?naming typ =
   let subst2 subst vsubst c = csubst_subst subst (replace_vars vsubst c) in
   let open Context.Named.Declaration in
-  let inst_vars = List.map (get_id %> Constr.mkVar) (named_context env.env) in
+  let inst_vars = List.map (get_id %> EConstr.mkVar) (named_context env.env) in
   let inst_rels = List.rev (rel_list 0 (nb_rel env.env)) in
   let (subst, vsubst, _, nc) = Lazy.force env.extra in
   let typ' = subst2 subst vsubst typ in
@@ -125,7 +125,7 @@ let e_new_evar env evdref ?src ?naming typ =
   let sigma = Sigma.Unsafe.of_evar_map !evdref in
   let Sigma (e, sigma, _) = new_evar_instance sign sigma typ' ?src ?naming instance in
   evdref := Sigma.to_evar_map sigma;
-  EConstr.of_constr e
+  e
 
 let push_rec_types (lna,typarray,_) env =
   let ctxt = Array.map2_i (fun i na t -> local_assum (na, lift i t)) lna typarray in
@@ -546,7 +546,7 @@ let new_type_evar env evdref loc =
       univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)
   in
   evdref := Sigma.to_evar_map sigma;
-  EConstr.of_constr e
+  e
 
 let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
 

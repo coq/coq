@@ -297,7 +297,7 @@ let inductive_template evdref env tmloc ind =
         | LocalAssum (na,ty) ->
             let ty = EConstr.of_constr ty in
 	    let ty' = substl subst ty in
-	    let e = EConstr.of_constr (e_new_evar env evdref ~src:(hole_source n) ty') in
+	    let e = e_new_evar env evdref ~src:(hole_source n) ty' in
 	    (e::subst,e::evarl,n+1)
 	| LocalDef (na,b,ty) ->
             let b = EConstr.of_constr b in
@@ -380,7 +380,7 @@ let coerce_to_indtype typing_fun evdref env matx tomatchl =
 (* Utils *)
 
 let mkExistential env ?(src=(Loc.ghost,Evar_kinds.InternalHole)) evdref =
-  let e, u = e_new_type_evar env evdref univ_flexible_alg ~src:src in EConstr.of_constr e
+  let e, u = e_new_type_evar env evdref univ_flexible_alg ~src:src in e
 
 let evd_comb2 f evdref x y =
   let (evd',y) = f !evdref x y in
@@ -1663,7 +1663,6 @@ let abstract_tycon loc env evdref subst tycon extenv t =
               1 (rel_context env) in
         let ty = EConstr.of_constr ty in
         let ev' = e_new_evar env evdref ~src ty in
-        let ev' = EConstr.of_constr ev' in
         begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,substl inst ev') with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
@@ -1698,7 +1697,6 @@ let abstract_tycon loc env evdref subst tycon extenv t =
       let candidates = u :: List.map mkRel vl in
       let candidates = List.map EConstr.Unsafe.to_constr candidates in
       let ev = e_new_evar extenv evdref ~src ~filter ~candidates ty in
-      let ev = EConstr.of_constr ev in
       lift k ev
   in
   aux (0,extenv,subst0) t0
@@ -1712,7 +1710,6 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
 	let n' = Context.Rel.length (rel_context tycon_env) in
 	let impossible_case_type, u =
 	  e_new_type_evar (reset_context env) evdref univ_flexible_alg ~src:(loc,Evar_kinds.ImpossibleCase) in
-        let impossible_case_type = EConstr.of_constr impossible_case_type in
 	(lift (n'-n) impossible_case_type, mkSort u)
     | Some t ->
         let t = abstract_tycon loc tycon_env evdref subst tycon extenv t in
@@ -2010,7 +2007,7 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
           let Sigma ((t, _), sigma, _) =
 	    new_type_evar env sigma univ_flexible_alg ~src:(loc, Evar_kinds.CasesType false) in
           let sigma = Sigma.to_evar_map sigma in
-	    sigma, EConstr.of_constr t
+	    sigma, t
 	in
         (* First strategy: we build an "inversion" predicate *)
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in

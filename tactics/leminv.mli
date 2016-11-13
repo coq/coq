@@ -12,7 +12,7 @@ open Constrexpr
 open Misctypes
 
 val lemInv_clause :
-  quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic
+  quantified_hypothesis -> EConstr.constr -> Id.t list -> unit Proofview.tactic
 
 val add_inversion_lemma_exn :
   Id.t -> constr_expr -> glob_sort -> bool -> (Id.t -> unit Proofview.tactic) ->

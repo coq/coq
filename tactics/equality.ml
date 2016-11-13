@@ -186,8 +186,8 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
 let instantiate_lemma gl c ty l l2r concl =
   let c = EConstr.of_constr c in
   let sigma, ct = pf_type_of gl c in
-  let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma (EConstr.of_constr ct)) with UserError _ -> ct in
-  let t = EConstr.of_constr t in
+  let ct = EConstr.of_constr ct in
+  let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma ct) with UserError _ -> ct in
   let l = Miscops.map_bindings EConstr.of_constr l in
   let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
   [eqclause]
@@ -413,6 +413,7 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars d
   let type_of_cls = type_of_clause cls gl in
   let dep = dep_proof_ok && dep_fun evd (EConstr.of_constr c) (EConstr.of_constr type_of_cls) in
   let Sigma ((elim, effs), sigma, p) = find_elim hdcncl lft2rgt dep cls (Some t) gl in
+  let elim = EConstr.of_constr elim in
   let tac =
       Proofview.tclEFFECTS effs <*>
       general_elim_clause with_evars frzevars tac cls c t l
@@ -562,6 +563,7 @@ let general_multi_rewrite with_evars l cl tac =
       let sigma = Tacmach.New.project gl in
       let env = Proofview.Goal.env gl in
       let (c, sigma) = run_delayed env sigma f in
+      let c = Miscops.map_with_bindings EConstr.Unsafe.to_constr c in
       tclWITHHOLES with_evars
         (general_rewrite_clause l2r with_evars ?tac c cl) sigma
     end }
@@ -646,6 +648,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
     Tacticals.New.pf_constr_of_global sym (fun sym ->
     Tacticals.New.pf_constr_of_global e (fun e ->
     let eq = applist (e, [t1;c1;c2]) in
+    let sym = EConstr.of_constr sym in
+    let eq = EConstr.of_constr eq in
     tclTHENLAST
       (replace_core clause l2r eq)
       (tclFIRST
@@ -948,7 +952,7 @@ let gen_absurdity id =
   let hyp_typ = EConstr.of_constr hyp_typ in
   if is_empty_type sigma hyp_typ
   then
-    simplest_elim (mkVar id)
+    simplest_elim (EConstr.mkVar id)
   else
     tclZEROMSG (str "Not the negation of an equality.")
   end }
@@ -996,6 +1000,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
   let t = EConstr.Unsafe.to_constr t in
   let t1 = EConstr.Unsafe.to_constr t1 in
   let t2 = EConstr.Unsafe.to_constr t2 in
+  let eqn = EConstr.Unsafe.to_constr eqn in
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (Context.Named.Declaration.LocalAssum (e,t)) env in
   let discriminator =
@@ -1004,6 +1009,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
     discrimination_pf env sigma e (t,t1,t2) discriminator lbeq in
   let pf_ty = mkArrow eqn absurd_term in
   let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
+  let absurd_term = EConstr.of_constr absurd_term in
   let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.tclEFFECTS eff <*>
@@ -1023,18 +1029,15 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
 
 let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let c = EConstr.of_constr c in
-  let lbindc = Miscops.map_bindings EConstr.of_constr lbindc in
   let type_of = pf_unsafe_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
   let t = type_of c in
-  let t' = try snd (reduce_to_quantified_ind (EConstr.of_constr t)) with UserError _ -> t in
-  let t' = EConstr.of_constr t' in
+  let t = EConstr.of_constr t in
+  let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
   let eq_clause' = Clenvtac.clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
-  let eqn = EConstr.Unsafe.to_constr eqn in
-  let (eq,u,eq_args) = find_this_eq_data_decompose gl (EConstr.of_constr eqn) in
+  let (eq,u,eq_args) = find_this_eq_data_decompose gl eqn in
   tclTHEN
     (Proofview.Unsafe.tclEVARS eq_clause'.evd)
     (tac (eq,eqn,eq_args) eq_clause')
@@ -1049,14 +1052,14 @@ let onNegatedEquality with_evars tac =
     | Prod (_,t,u) when is_empty_type sigma (EConstr.of_constr u) ->
         tclTHEN introf
           (onLastHypId (fun id ->
-            onEquality with_evars tac (mkVar id,NoBindings)))
+            onEquality with_evars tac (EConstr.mkVar id,NoBindings)))
     | _ ->
         tclZEROMSG (str "Not a negated primitive equality.")
   end }
 
 let discrSimpleClause with_evars = function
   | None -> onNegatedEquality with_evars discrEq
-  | Some id -> onEquality with_evars discrEq (mkVar id,NoBindings)
+  | Some id -> onEquality with_evars discrEq (EConstr.mkVar id,NoBindings)
 
 let discr with_evars = onEquality with_evars discrEq
 
@@ -1070,7 +1073,7 @@ let discrEverywhere with_evars =
       (tclTHEN
 	(tclREPEAT introf)
 	(tryAllHyps
-          (fun id -> tclCOMPLETE (discr with_evars (mkVar id,NoBindings)))))
+          (fun id -> tclCOMPLETE (discr with_evars (EConstr.mkVar id,NoBindings)))))
      else (* <= 8.2 compat *)
        tryAllHypsAndConcl (discrSimpleClause with_evars))
 (*    (fun gls ->
@@ -1194,17 +1197,15 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 	| (_sigS,[a;p]) -> (EConstr.Unsafe.to_constr a, EConstr.Unsafe.to_constr p)
  	| _ -> anomaly ~label:"sig_clausal_form" (Pp.str "should be a sigma type") in
       let ev = Evarutil.e_new_evar env evdref (EConstr.of_constr a) in
-      let rty = beta_applist sigma (EConstr.of_constr p_i_minus_1,[EConstr.of_constr ev]) in
+      let rty = beta_applist sigma (EConstr.of_constr p_i_minus_1,[ev]) in
       let tuple_tail = sigrec_clausal_form (siglen-1) rty in
-      match
-        Evd.existential_opt_value !evdref
-          (destEvar ev)
-      with
+      let evopt = match EConstr.kind !evdref ev with Evar _ -> None | _ -> Some ev in
+      match evopt with
 	| Some w ->
-            let w_type = unsafe_type_of env sigma (EConstr.of_constr w) in
+            let w_type = unsafe_type_of env !evdref w in
             if Evarconv.e_cumul env evdref (EConstr.of_constr w_type) (EConstr.of_constr a) then
 	      let exist_term = Evarutil.evd_comb1 (Evd.fresh_global env) evdref sigdata.intro in
-              applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
+              applist(exist_term,[a;p_i_minus_1;EConstr.Unsafe.to_constr w;tuple_tail])
             else
               error "Cannot solve a unification problem."
 	| None ->
@@ -1354,7 +1355,8 @@ let inject_if_homogenous_dependent_pair ty =
       [Proofview.tclEFFECTS eff;
        intro;
        onLastHyp (fun hyp ->
-        tclTHENS (cut (mkApp (ceq,new_eq_args)))
+       let hyp = EConstr.Unsafe.to_constr hyp in
+        tclTHENS (cut (EConstr.of_constr (mkApp (ceq,new_eq_args))))
           [clear [destVar hyp];
            Proofview.V82.tactic (Tacmach.refine
              (EConstr.of_constr (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|]))))
@@ -1404,7 +1406,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
     (Tacticals.New.tclTHENFIRST
       (Proofview.tclIGNORE (Proofview.Monad.List.map
-         (fun (pf,ty) -> tclTHENS (cut ty)
+         (fun (pf,ty) -> tclTHENS (cut (EConstr.of_constr ty))
            [inject_if_homogenous_dependent_pair (EConstr.of_constr ty);
             Proofview.V82.tactic (Tacmach.refine (EConstr.of_constr pf))])
          (if l2r then List.rev injectors else injectors)))
@@ -1452,6 +1454,7 @@ let injEq ?(old=false) with_evars clear_flag ipats =
         let destopt = match kind_of_term c with
         | Var id -> get_previous_hyp_position id gl
         | _ -> MoveLast in
+        let c = EConstr.of_constr c in
         let clear_tac =
           tclTRY (apply_clear_request clear_flag dft_clear_flag c) in
         (* Try should be removal if dependency were treated *)
@@ -1497,12 +1500,11 @@ let dEqThen with_evars ntac = function
 
 let dEq with_evars =
   dEqThen with_evars (fun clear_flag c x ->
+    let c = EConstr.of_constr c in
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
 
 let intro_decomp_eq tac data (c, t) =
   Proofview.Goal.enter { enter = begin fun gl ->
-    let c = EConstr.of_constr c in
-    let t = EConstr.of_constr t in
     let cl = pf_apply make_clenv_binding gl (c, t) NoBindings in
     decompEqThen (fun _ -> tac) data cl
   end }
@@ -1596,13 +1598,16 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
 (* on for further iterated sigma-tuples                                   *)
 
 let cutSubstInConcl l2r eqn =
+  let eqn = EConstr.of_constr eqn in
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl (EConstr.of_constr eqn) in
+  let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
   let typ = pf_concl gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
   let Sigma ((typ, expected), sigma, p) = subst_tuple_term env sigma e1 e2 typ in
+  let typ = EConstr.of_constr typ in
+  let expected = EConstr.of_constr expected in
   let tac =
   tclTHENFIRST
     (tclTHENLIST [
@@ -1615,13 +1620,16 @@ let cutSubstInConcl l2r eqn =
   end }
 
 let cutSubstInHyp l2r eqn id =
+  let eqn = EConstr.of_constr eqn in
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl (EConstr.of_constr eqn) in
+  let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
   let typ = pf_get_hyp_typ id gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
   let Sigma ((typ, expected), sigma, p) = subst_tuple_term env sigma e1 e2 typ in
+  let typ = EConstr.of_constr typ in
+  let expected = EConstr.of_constr expected in
   let tac =
     tclTHENFIRST
     (tclTHENLIST [
@@ -1653,8 +1661,9 @@ let cutRewriteInHyp l2r eqn id = cutRewriteClause l2r eqn (Some id)
 let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
 
 let substClause l2r c cls =
+  let c = EConstr.of_constr c in
   Proofview.Goal.enter { enter = begin fun gl ->
-  let eq = pf_apply get_type_of gl (EConstr.of_constr c) in
+  let eq = pf_apply get_type_of gl c in
   tclTHENS (cutSubstClause l2r eq cls)
     [Proofview.tclUNIT (); exact_no_check c]
   end }
@@ -1937,7 +1946,7 @@ let replace_term dir_opt c  =
 (* Declare rewriting tactic for intro patterns "<-" and "->" *)
 
 let _ =
-  let gmr l2r with_evars tac c = general_rewrite_clause l2r with_evars tac c in
+  let gmr l2r with_evars tac c = general_rewrite_clause l2r with_evars (Miscops.map_with_bindings EConstr.Unsafe.to_constr tac) c in
   Hook.set Tactics.general_rewrite_clause gmr
 
 let _ = Hook.set Tactics.subst_one subst_one

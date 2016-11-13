@@ -89,7 +89,7 @@ val push_arg : Term.constr ->
 val hrec_for:
     Id.t ->
     Decl_mode.per_info -> Proof_type.goal Tacmach.sigma ->
-    Id.t -> Term.constr
+    Id.t -> EConstr.constr
 
 val consider_match :
    bool ->

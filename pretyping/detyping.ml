@@ -294,7 +294,7 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | na::nal ->
     match kind_of_term c with
     | Case (ci,p,c,cl) when
-        eq_constr c (mkRel (List.index Name.equal na (fst (snd e))))
+        eq_constr sigma (EConstr.of_constr c) (EConstr.mkRel (List.index Name.equal na (fst (snd e))))
         && not (Int.equal (Array.length cl) 0)
 	&& (* don't contract if p dependent *)
 	computable p (List.length ci.ci_pp_info.ind_tags) (* FIXME: can do better *) ->

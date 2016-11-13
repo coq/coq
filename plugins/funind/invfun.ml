@@ -252,7 +252,8 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
     (* and the principle to use in this lemma in $\zeta$ normal form *)
     let f_principle,princ_type = schemes.(i) in
     let princ_type =  nf_zeta (EConstr.of_constr princ_type) in
-    let princ_infos = Tactics.compute_elim_sig princ_type in
+    let princ_type = EConstr.of_constr princ_type in
+    let princ_infos = Tactics.compute_elim_sig evd princ_type in
     (* The number of args of the function is then easily computable *)
     let nb_fun_args = nb_prod (project g) (EConstr.of_constr (pf_concl g)) - 2 in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
@@ -315,7 +316,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 			     match kind_of_term t'',kind_of_term t''' with
 			       | App(eq,args), App(graph',_)
 				   when
-				     (eq_constr eq eq_ind) &&
+				     (Term.eq_constr eq eq_ind) &&
 				       Array.exists  (Constr.eq_constr_nounivs graph') graphs_constr ->
 				   (args.(2)::(mkApp(mkVar hid,[|args.(2);(mkApp(eq_construct,[|args.(0);args.(2)|]))|]))
 				    ::acc)
@@ -387,7 +388,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	    observe_tac "rewriting res value" (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar hres)));
 	    (* Conclusion *)
 	    observe_tac "exact" (fun g ->
-				 Proofview.V82.of_tactic (exact_check (app_constructor g)) g)  
+				 Proofview.V82.of_tactic (exact_check (EConstr.of_constr (app_constructor g))) g)  
 	  ]
       )
 	g
@@ -440,7 +441,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	observe_tac "principle" (Proofview.V82.of_tactic (assert_by
 	  (Name principle_id)
 	  princ_type
-	  (exact_check f_principle)));
+	  (exact_check (EConstr.of_constr f_principle))));
 	observe_tac "intro args_names" (tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) args_names);
 	(* observe_tac "titi" (pose_proof (Name (Id.of_string "__")) (Reductionops.nf_beta Evd.empty  ((mkApp (mkVar principle_id,Array.of_list bindings))))); *)
 	observe_tac "idtac" tclIDTAC;
@@ -450,7 +451,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	       (fun gl ->
 		let term = mkApp (mkVar principle_id,Array.of_list bindings) in
 		let gl', _ty = pf_eapply (Typing.type_of ~refresh:true)  gl (EConstr.of_constr term) in
-		Proofview.V82.of_tactic (apply term) gl')
+		Proofview.V82.of_tactic (apply (EConstr.of_constr term)) gl')
 	   ))
 	  (fun i g -> observe_tac ("proving branche "^string_of_int i) (prove_branche i) g )
       ]
@@ -467,7 +468,7 @@ let generalize_dependent_of x hyp g =
   tclMAP
     (function
        | LocalAssum (id,t) when not (Id.equal id hyp) &&
-	   (Termops.occur_var (pf_env g) (project g) x (EConstr.of_constr t)) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (thin [id])
+	   (Termops.occur_var (pf_env g) (project g) x (EConstr.of_constr t)) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [EConstr.mkVar id])) (thin [id])
        | _ -> tclIDTAC
     )
     (pf_hyps g)
@@ -495,7 +496,7 @@ and intros_with_rewrite_aux : tactic =
 	  | Prod(_,t,t') ->
 	      begin
 		match kind_of_term t with
-		  | App(eq,args) when (eq_constr eq eq_ind)  ->
+		  | App(eq,args) when (Term.eq_constr eq eq_ind)  ->
  		      if Reductionops.is_conv (pf_env g) (project g) (EConstr.of_constr args.(1)) (EConstr.of_constr args.(2))
 		      then
 			let id = pf_get_new_id (Id.of_string "y") g  in
@@ -541,11 +542,11 @@ and intros_with_rewrite_aux : tactic =
 			    intros_with_rewrite
 			  ] g
 			end
-		  | Ind _ when eq_constr t (Coqlib.build_coq_False ()) ->
+		  | Ind _ when Term.eq_constr t (Coqlib.build_coq_False ()) ->
 		      Proofview.V82.of_tactic tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[
-			Proofview.V82.of_tactic (simplest_case v);
+			Proofview.V82.of_tactic (simplest_case (EConstr.of_constr v));
 			intros_with_rewrite
 		      ] g
 		  | LetIn _ ->
@@ -582,7 +583,7 @@ let rec reflexivity_with_destruct_cases g =
       match kind_of_term (snd (destApp (pf_concl g))).(2) with
 	| Case(_,_,v,_) ->
 	    tclTHENSEQ[
-	      Proofview.V82.of_tactic (simplest_case v);
+	      Proofview.V82.of_tactic (simplest_case (EConstr.of_constr v));
 	      Proofview.V82.of_tactic intros;
 	      observe_tac "reflexivity_with_destruct_cases" reflexivity_with_destruct_cases
 	    ]
@@ -597,7 +598,7 @@ let rec reflexivity_with_destruct_cases g =
 	     None -> tclIDTAC g
 	   | Some id ->
 	       match kind_of_term  (pf_unsafe_type_of g (EConstr.mkVar id)) with
-		 | App(eq,[|_;t1;t2|]) when eq_constr eq eq_ind ->
+		 | App(eq,[|_;t1;t2|]) when Term.eq_constr eq eq_ind ->
 		     if Equality.discriminable (pf_env g) (project g) (EConstr.of_constr t1) (EConstr.of_constr t2)
 		     then Proofview.V82.of_tactic (Equality.discrHyp id) g
 		     else if Equality.injectable (pf_env g) (project g) (EConstr.of_constr t1) (EConstr.of_constr t2)
@@ -662,7 +663,8 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     let f = funcs.(i) in
     let graph_principle = nf_zeta (EConstr.of_constr schemes.(i))  in
     let princ_type = pf_unsafe_type_of g (EConstr.of_constr graph_principle) in
-    let princ_infos = Tactics.compute_elim_sig princ_type in
+    let princ_type = EConstr.of_constr princ_type in
+    let princ_infos = Tactics.compute_elim_sig (project g) princ_type in
     (* Then we get the number of argument of the function
        and compute a fresh name for each of them
     *)
@@ -717,7 +719,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	       })
 	    Locusops.onConcl)
 	  ;
-	  Proofview.V82.of_tactic (generalize (List.map mkVar ids));
+	  Proofview.V82.of_tactic (generalize (List.map EConstr.mkVar ids));
 	  thin ids
 	]
       else
@@ -756,10 +758,10 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     tclTHENSEQ
       [ tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) (args_names@[res;hres]);
 	observe_tac "h_generalize"
-	(Proofview.V82.of_tactic (generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]));
+	(Proofview.V82.of_tactic (generalize [EConstr.of_constr (mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas))]));
 	Proofview.V82.of_tactic (Simple.intro graph_principle_id);
 	observe_tac "" (tclTHEN_i
-	  (observe_tac "elim" (Proofview.V82.of_tactic (elim false None (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings)))))
+	  (observe_tac "elim" (Proofview.V82.of_tactic (elim false None (EConstr.mkVar hres,NoBindings) (Some (EConstr.mkVar graph_principle_id,NoBindings)))))
 	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
       ]
       g
@@ -939,7 +941,7 @@ let revert_graph kn post_tac hid g =
 		  let f_args,res = Array.chop (Array.length args - 1) args in
 		  tclTHENSEQ
 		    [
-		      Proofview.V82.of_tactic (generalize [applist(mkConst f_complete,(Array.to_list f_args)@[res.(0);mkVar hid])]);
+		      Proofview.V82.of_tactic (generalize [EConstr.of_constr (applist(mkConst f_complete,(Array.to_list f_args)@[res.(0);mkVar hid]))]);
 		      thin [hid];
 		      Proofview.V82.of_tactic (Simple.intro hid);
 		      post_tac hid
@@ -972,18 +974,18 @@ let functional_inversion kn hid fconst f_correct : tactic =
     let old_ids = List.fold_right Id.Set.add  (pf_ids_of_hyps g) Id.Set.empty in
     let type_of_h = pf_unsafe_type_of g (EConstr.mkVar hid) in
     match kind_of_term type_of_h with
-      | App(eq,args) when eq_constr eq (make_eq ())  ->
+      | App(eq,args) when Term.eq_constr eq (make_eq ())  ->
 	  let pre_tac,f_args,res =
 	    match kind_of_term args.(1),kind_of_term args.(2) with
-	      | App(f,f_args),_ when eq_constr f fconst ->
+	      | App(f,f_args),_ when Term.eq_constr f fconst ->
 		  ((fun hid -> Proofview.V82.of_tactic (intros_symmetry (Locusops.onHyp hid))),f_args,args.(2))
-	      |_,App(f,f_args) when eq_constr f fconst ->
+	      |_,App(f,f_args) when Term.eq_constr f fconst ->
 		 ((fun hid -> tclIDTAC),f_args,args.(1))
 	      | _ -> (fun hid -> tclFAIL 1 (mt ())),[||],args.(2)
 	  in
 	  tclTHENSEQ[
 	    pre_tac hid;
-	    Proofview.V82.of_tactic (generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])]);
+	    Proofview.V82.of_tactic (generalize [EConstr.of_constr (applist(f_correct,(Array.to_list f_args)@[res;mkVar hid]))]);
 	    thin [hid];
 	    Proofview.V82.of_tactic (Simple.intro hid);
 	    Proofview.V82.of_tactic (Inv.inv FullInversion None (NamedHyp hid));
@@ -1024,7 +1026,7 @@ let invfun qhyp f g =
 	  (fun hid -> Proofview.V82.tactic begin fun g ->
 	     let hyp_typ = pf_unsafe_type_of g (EConstr.mkVar hid)  in
 	     match kind_of_term hyp_typ with
-	       | App(eq,args) when eq_constr eq (make_eq ()) ->
+	       | App(eq,args) when Term.eq_constr eq (make_eq ()) ->
 		   begin
 		     let f1,_ = decompose_app args.(1) in
 		     try

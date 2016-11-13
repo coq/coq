@@ -291,5 +291,5 @@ let lemInvIn id c ids =
 let lemInvIn_gen id c l = try_intros_until (fun id -> lemInvIn id c l) id
 
 let lemInv_clause id c = function
-  | [] -> lemInv_gen id c
-  | l -> lemInvIn_gen id c l
+  | [] -> lemInv_gen id (EConstr.Unsafe.to_constr c)
+  | l -> lemInvIn_gen id (EConstr.Unsafe.to_constr c) l

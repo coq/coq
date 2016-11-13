@@ -51,6 +51,7 @@ type coe_info_typ = {
   coe_param : int }
 
 let coe_info_typ_equal c1 c2 =
+  let eq_constr c1 c2 = Termops.eq_constr Evd.empty (EConstr.of_constr c1) (EConstr.of_constr c2) in
   eq_constr c1.coe_value c2.coe_value &&
     eq_constr c1.coe_type c2.coe_type &&
     c1.coe_local == c2.coe_local &&

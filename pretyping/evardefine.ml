@@ -22,6 +22,11 @@ open Sigma.Notations
 
 module RelDecl = Context.Rel.Declaration
 
+let nlocal_assum (na, t) =
+  let open Context.Named.Declaration in
+  let inj = EConstr.Unsafe.to_constr in
+  LocalAssum (na, inj t)
+
 let new_evar_unsafe env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
   let evd = Sigma.Unsafe.of_evar_map evd in
   let Sigma (evk, evd, _) = new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ in
@@ -88,7 +93,7 @@ let define_pure_evar_as_product evd evk =
     (Sigma.to_evar_map evd1, e)
   in
   let evd2,rng =
-    let newenv = push_named (LocalAssum (id, dom)) evenv in
+    let newenv = push_named (nlocal_assum (id, dom)) evenv in
     let src = evar_source evk evd1 in
     let filter = Filter.extend 1 (evar_filter evi) in
       if is_prop_sort s then
@@ -105,8 +110,7 @@ let define_pure_evar_as_product evd evk =
 	let evd3 = Evd.set_leq_sort evenv evd3 (Type prods) s in
 	  evd3, rng
   in
-  let rng = EConstr.of_constr rng in
-  let prod = mkProd (Name id, EConstr.of_constr dom, subst_var id rng) in
+  let prod = mkProd (Name id, dom, subst_var id rng) in
   let evd3 = Evd.define evk (EConstr.Unsafe.to_constr prod) evd2 in
     evd3,prod
 
@@ -140,14 +144,13 @@ let define_pure_evar_as_lambda env evd evk =
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd evd typ
   | _ -> error_not_product env evd typ in
   let avoid = ids_of_named_context (evar_context evi) in
-  let dom = EConstr.Unsafe.to_constr dom in
   let id =
-    next_name_away_with_default_using_types "x" na avoid (Reductionops.whd_evar evd dom) in
-  let newenv = push_named (LocalAssum (id, dom)) evenv in
+    next_name_away_with_default_using_types "x" na avoid (Reductionops.whd_evar evd (EConstr.Unsafe.to_constr dom)) in
+  let newenv = push_named (nlocal_assum (id, dom)) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
   let evd2,body = new_evar_unsafe newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
-  let lam = mkLambda (Name id, EConstr.of_constr dom, subst_var id (EConstr.of_constr body)) in
+  let lam = mkLambda (Name id, dom, subst_var id body) in
   Evd.define evk (EConstr.Unsafe.to_constr lam) evd2, lam
 
 let define_evar_as_lambda env evd (evk,args) =

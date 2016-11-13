@@ -27,7 +27,7 @@ TACTIC EXTEND reflexivity
 END
 
 TACTIC EXTEND exact
-  [ "exact" casted_constr(c) ] -> [ Tactics.exact_no_check c ]
+  [ "exact" casted_constr(c) ] -> [ Tactics.exact_no_check (EConstr.of_constr c) ]
 END
 
 TACTIC EXTEND assumption
@@ -39,35 +39,35 @@ TACTIC EXTEND etransitivity
 END
 
 TACTIC EXTEND cut
-  [ "cut" constr(c) ] -> [ Tactics.cut c ]
+  [ "cut" constr(c) ] -> [ Tactics.cut (EConstr.of_constr c) ]
 END
 
 TACTIC EXTEND exact_no_check
-  [ "exact_no_check" constr(c) ] -> [ Tactics.exact_no_check c ]
+  [ "exact_no_check" constr(c) ] -> [ Tactics.exact_no_check (EConstr.of_constr c) ]
 END
 
 TACTIC EXTEND vm_cast_no_check
-  [ "vm_cast_no_check" constr(c) ] -> [ Tactics.vm_cast_no_check c ]
+  [ "vm_cast_no_check" constr(c) ] -> [ Tactics.vm_cast_no_check (EConstr.of_constr c) ]
 END
 
 TACTIC EXTEND native_cast_no_check
-  [ "native_cast_no_check" constr(c) ] -> [ Tactics.native_cast_no_check c ]
+  [ "native_cast_no_check" constr(c) ] -> [ Tactics.native_cast_no_check (EConstr.of_constr c) ]
 END
 
 TACTIC EXTEND casetype
-  [ "casetype" constr(c) ] -> [ Tactics.case_type c ]
+  [ "casetype" constr(c) ] -> [ Tactics.case_type (EConstr.of_constr c) ]
 END
 
 TACTIC EXTEND elimtype
-  [ "elimtype" constr(c) ] -> [ Tactics.elim_type c ]
+  [ "elimtype" constr(c) ] -> [ Tactics.elim_type (EConstr.of_constr c) ]
 END
 
 TACTIC EXTEND lapply
-  [ "lapply" constr(c) ] -> [ Tactics.cut_and_apply c ]
+  [ "lapply" constr(c) ] -> [ Tactics.cut_and_apply (EConstr.of_constr c) ]
 END
 
 TACTIC EXTEND transitivity
-  [ "transitivity" constr(c) ] -> [ Tactics.intros_transitivity (Some c) ]
+  [ "transitivity" constr(c) ] -> [ Tactics.intros_transitivity (Some (EConstr.of_constr c)) ]
 END
 
 (** Left *)
@@ -297,7 +297,7 @@ END
 (* Generalize dependent *)
 
 TACTIC EXTEND generalize_dependent
-  [ "generalize" "dependent" constr(c) ] -> [ Tactics.generalize_dep c ]
+  [ "generalize" "dependent" constr(c) ] -> [ Tactics.generalize_dep (EConstr.of_constr c) ]
 END
 
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)

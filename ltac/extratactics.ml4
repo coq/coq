@@ -118,7 +118,7 @@ END
 
 let discrHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  discr_main { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
+  discr_main { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma }
 
 let injection_main with_evars c =
  elimOnConstrWithHoles (injClause None) with_evars c
@@ -150,7 +150,7 @@ END
 
 let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  injection_main false { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
+  injection_main false { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma }
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
@@ -301,6 +301,7 @@ let project_hint pri l2r r =
   let t = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let t =
     Tacred.reduce_to_quantified_ref env sigma (Lazy.force coq_iff_ref) (EConstr.of_constr t) in
+  let t = EConstr.Unsafe.to_constr t in
   let sign,ccl = decompose_prod_assum t in
   let (a,b) = match snd (decompose_app ccl) with
     | [a;b] -> (a,b)
@@ -475,6 +476,7 @@ let transitivity_left_table = Summary.ref [] ~name:"transitivity-steps-l"
 let step left x tac =
   let l =
     List.map (fun lem ->
+      let lem = EConstr.of_constr lem in
       Tacticals.New.tclTHENLAST
         (apply_with_bindings (lem, ImplicitBindings [x]))
         tac)
@@ -510,13 +512,13 @@ let add_transitivity_lemma left lem =
 (* Vernacular syntax *)
 
 TACTIC EXTEND stepl
-| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true c (Tacinterp.tactic_of_value ist tac) ]
-| ["stepl" constr(c) ] -> [ step true c (Proofview.tclUNIT ()) ]
+| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true (EConstr.of_constr c) (Tacinterp.tactic_of_value ist tac) ]
+| ["stepl" constr(c) ] -> [ step true (EConstr.of_constr c) (Proofview.tclUNIT ()) ]
 END
 
 TACTIC EXTEND stepr
-| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false c (Tacinterp.tactic_of_value ist tac) ]
-| ["stepr" constr(c) ] -> [ step false c (Proofview.tclUNIT ()) ]
+| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false (EConstr.of_constr c) (Tacinterp.tactic_of_value ist tac) ]
+| ["stepr" constr(c) ] -> [ step false (EConstr.of_constr c) (Proofview.tclUNIT ()) ]
 END
 
 VERNAC COMMAND EXTEND AddStepl CLASSIFIED AS SIDEFF
@@ -660,7 +662,7 @@ let hResolve id c occ t =
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma (EConstr.of_constr t_constr) in
   let tac =
-    (change_concl (mkLetIn (Anonymous,t_constr,t_constr_type,concl)))
+    (change_concl (EConstr.of_constr (mkLetIn (Anonymous,t_constr,t_constr_type,concl))))
   in
   Sigma.Unsafe.of_pair (tac, sigma)
   end }
@@ -694,7 +696,7 @@ let hget_evar n =
   if n <= 0 then error "Incorrect existential variable index.";
   let ev = List.nth evl (n-1) in
   let ev_type = existential_type sigma ev in
-  change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,concl))
+  change_concl (EConstr.of_constr (mkLetIn (Anonymous,mkEvar ev,ev_type,concl)))
   end }
 
 TACTIC EXTEND hget_evar
@@ -736,15 +738,16 @@ let  mkCaseEq a  : unit Proofview.tactic =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g (EConstr.of_constr a)) gl in
        Tacticals.New.tclTHENLIST
-         [Tactics.generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])];
+         [Tactics.generalize [EConstr.of_constr (mkApp(delayed_force refl_equal, [| type_of_a; a|]))];
           Proofview.Goal.nf_enter { enter = begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
             (** FIXME: this looks really wrong. Does anybody really use this tactic? *)
             let Sigma (c, _, _) = (Tacred.pattern_occs [Locus.OnlyOccurrences [1], EConstr.of_constr a]).Reductionops.e_redfun env (Sigma.Unsafe.of_evar_map Evd.empty) (EConstr.of_constr concl) in
+            let c = EConstr.of_constr c in
 	    change_concl c
           end };
-	  simplest_case a]
+	  simplest_case (EConstr.of_constr a)]
   end }
 
 

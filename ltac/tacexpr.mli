@@ -120,9 +120,9 @@ type glob_constr_pattern_and_expr = binding_bound_vars * glob_constr_and_expr * 
 type 'a delayed_open = 'a Tactypes.delayed_open =
   { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
 
-type delayed_open_constr_with_bindings = Term.constr with_bindings delayed_open
+type delayed_open_constr_with_bindings = EConstr.constr with_bindings delayed_open
 
-type delayed_open_constr = Term.constr delayed_open
+type delayed_open_constr = EConstr.constr delayed_open
 
 type intro_pattern = delayed_open_constr intro_pattern_expr located
 type intro_patterns = delayed_open_constr intro_pattern_expr located list
@@ -354,7 +354,7 @@ type raw_tactic_arg =
 
 (** Interpreted tactics *)
 
-type t_trm = Term.constr
+type t_trm = EConstr.constr
 type t_pat = constr_pattern
 type t_cst = evaluable_global_reference
 type t_ref = ltac_constant located

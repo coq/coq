@@ -133,14 +133,14 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let evd = Sigma.Unsafe.of_evar_map evd in
   let Sigma (ev, evd, _) = new_evar env evd typ in
   let evd = Sigma.to_evar_map evd in
-  let evd,ev' = evar_absorb_arguments env evd (destEvar evd (EConstr.of_constr ev)) l in
+  let evd,ev' = evar_absorb_arguments env evd (destEvar evd ev) l in
   let n = List.length l in
   let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
   let evd,b =
     Evarconv.second_order_matching empty_transparent_state
       env evd ev' argoccs c in
   if b then
-    let p = nf_evar evd ev in
+    let p = nf_evar evd (EConstr.Unsafe.to_constr ev) in
       evd, p
   else error_cannot_find_well_typed_abstraction env evd 
     c l None
@@ -184,8 +184,8 @@ let pose_all_metas_as_evars env evd t =
         let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
         let src = Evd.evar_source_of_meta mv !evdref in
         let ev = Evarutil.e_new_evar env evdref ~src ty in
-        evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
-        EConstr.of_constr ev)
+        evdref := meta_assign mv (EConstr.Unsafe.to_constr ev,(Conv,TypeNotProcessed)) !evdref;
+        ev)
   | _ ->
       EConstr.map !evdref aux t in
   let c = aux t in
@@ -1236,7 +1236,6 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
       match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma cty)) with
       | Prod (_,c1,c2) ->
         let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) c1 in
-        let evar = EConstr.of_constr evar in
 	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
       | _ -> error "Apply_Head_Then"
   in

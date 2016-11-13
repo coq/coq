@@ -73,6 +73,7 @@ val mkConstructU : pconstructor -> t
 val mkCase : case_info * t * t * t array -> t
 val mkFix : (t, t) pfixpoint -> t
 val mkCoFix : (t, t) pcofixpoint -> t
+val mkArrow : t -> t -> t
 
 val applist : t * t list -> t
 
@@ -80,6 +81,12 @@ val mkProd_or_LetIn : Rel.Declaration.t -> t -> t
 val mkLambda_or_LetIn : Rel.Declaration.t -> t -> t
 val it_mkProd_or_LetIn : t -> Rel.t -> t
 val it_mkLambda_or_LetIn : t -> Rel.t -> t
+
+val mkNamedLambda : Id.t -> types -> constr -> constr
+val mkNamedLetIn : Id.t -> constr -> types -> constr -> constr
+val mkNamedProd : Id.t -> types -> types -> types
+val mkNamedLambda_or_LetIn : Named.Declaration.t -> types -> types
+val mkNamedProd_or_LetIn : Named.Declaration.t -> types -> types
 
 (** {6 Simple case analysis} *)
 
@@ -141,6 +148,7 @@ val eq_constr_nounivs : Evd.evar_map -> t -> t -> bool
 val eq_constr_universes : Evd.evar_map -> t -> t -> Universes.universe_constraints option
 val leq_constr_universes : Evd.evar_map -> t -> t -> Universes.universe_constraints option
 val eq_constr_universes_proj : Environ.env -> Evd.evar_map -> t -> t -> Universes.universe_constraints option
+val compare_constr : Evd.evar_map -> (t -> t -> bool) -> t -> t -> bool
 
 (** {6 Iterators} *)
 

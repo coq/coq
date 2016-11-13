@@ -25,6 +25,7 @@ open Misctypes
 open Tactypes
 open Hipattern
 open Pretyping
+open Proofview.Notations
 open Tacmach.New
 open Coqlib
 
@@ -50,7 +51,10 @@ open Coqlib
    Eduardo Gimenez (30/3/98).
 *)
 
-let clear_last = (onLastHyp (fun c -> (clear [destVar c])))
+let clear_last =
+  let open EConstr in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  (onLastHyp (fun c -> (clear [destVar sigma c])))
 
 let choose_eq eqonleft =
   if eqonleft then
@@ -66,14 +70,14 @@ let choose_noteq eqonleft =
 let mkBranches c1 c2 =
   tclTHENLIST
     [generalize [c2];
-     Simple.elim c1;
+     Simple.elim (EConstr.of_constr c1);
      intros;
      onLastHyp Simple.case;
      clear_last;
      intros]
 
 let discrHyp id =
-  let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
+  let c = { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma } in
   let tac c = Equality.discr_tac false (Some (None, ElimOnConstr c)) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
@@ -121,7 +125,7 @@ let eqCase tac =
   tclTHEN intro (onLastHypId tac)
 
 let injHyp id =
-  let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
+  let c = { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma } in
   let tac c = Equality.injClause None false (Some (None, ElimOnConstr c)) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
@@ -133,7 +137,7 @@ let diseqCase hyps eqonleft =
   (tclTHEN (rewrite_and_clear (List.rev hyps))
   (tclTHEN  (red_in_concl)
   (tclTHEN  (intro_using absurd)
-  (tclTHEN  (Simple.apply (mkVar diseq))
+  (tclTHEN  (Simple.apply (EConstr.mkVar diseq))
   (tclTHEN  (injHyp absurd)
             (full_trivial []))))))))
 
@@ -158,6 +162,7 @@ let rec solveArg hyps eqonleft op largs rargs = match largs, rargs with
   Proofview.Goal.enter { enter = begin fun gl ->
   let rectype = pf_unsafe_type_of gl (EConstr.of_constr a1) in
   let decide = mkDecideEqGoal eqonleft op rectype a1 a2 in
+  let decide = EConstr.of_constr decide in
   let tac hyp = solveArg (hyp :: hyps) eqonleft op largs rargs in
   let subtacs =
     if eqonleft then [eqCase tac;diseqCase hyps eqonleft;default_auto]
@@ -207,7 +212,7 @@ let decideGralEquality =
         | _ -> tclZEROMSG (Pp.str"This decision procedure only works for inductive objects.")
         end >>= fun rectype ->
           (tclTHEN
-             (mkBranches c1 c2)
+             (mkBranches c1 (EConstr.of_constr c2))
              (tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))
       end }
     end
@@ -222,6 +227,7 @@ let decideEqualityGoal = tclTHEN intros decideGralEquality
 let decideEquality rectype =
   Proofview.Goal.enter { enter = begin fun gl ->
   let decide = mkGenDecideEqGoal rectype gl in
+  let decide = EConstr.of_constr decide in
   (tclTHENS (cut decide) [default_auto;decideEqualityGoal])
   end }
 
@@ -232,6 +238,7 @@ let compare c1 c2 =
   Proofview.Goal.enter { enter = begin fun gl ->
   let rectype = pf_unsafe_type_of gl (EConstr.of_constr c1) in
   let decide = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 in
+  let decide = EConstr.of_constr decide in
   (tclTHENS (cut decide)
             [(tclTHEN  intro
              (tclTHEN (onLastHyp simplest_case) clear_last));

@@ -175,6 +175,7 @@ let is_incompatible_eq t =
   res
 
 let change_hyp_with_using msg hyp_id t tac : tactic =
+  let t = EConstr.of_constr t in
   fun g ->
     let prov_id = pf_get_new_id hyp_id g in
     tclTHENS
@@ -451,6 +452,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 			      )
 		     in
 		     let to_refine = EConstr.of_constr to_refine in
+		     let t_x = EConstr.of_constr t_x in
 (* 		     observe_tac "rec hyp " *)
 		       (tclTHENS
 		       (Proofview.V82.of_tactic (assert_before (Name rec_pte_id) t_x))
@@ -644,7 +646,8 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 	fun g ->
 	  let prov_hid = pf_get_new_id hid g in
 	  let c = mkApp(mkVar hid,args) in
-	  let evm, _ = pf_apply Typing.type_of g (EConstr.of_constr c) in
+	  let c = EConstr.of_constr c in
+	  let evm, _ = pf_apply Typing.type_of g c in
 	  tclTHENLIST[
             Refiner.tclEVARS evm;
 	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) c);
@@ -709,13 +712,14 @@ let build_proof
 		  let term_eq =
 		    make_refl_eq (Lazy.force refl_equal) type_of_term t
 		  in
+		  let term_eq = EConstr.of_constr term_eq in
 		  tclTHENSEQ
 		    [
-		      Proofview.V82.of_tactic (generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps)));
+		      Proofview.V82.of_tactic (generalize (term_eq::(List.map EConstr.mkVar dyn_infos.rec_hyps)));
 		      thin dyn_infos.rec_hyps;
-		      Proofview.V82.of_tactic (pattern_option [Locus.AllOccurrencesBut [1],t] None);
+		      Proofview.V82.of_tactic (pattern_option [Locus.AllOccurrencesBut [1],EConstr.of_constr t] None);
 		      (fun g -> observe_tac "toto" (
-			 tclTHENSEQ [Proofview.V82.of_tactic (Simple.case t);
+			 tclTHENSEQ [Proofview.V82.of_tactic (Simple.case (EConstr.of_constr t));
 				     (fun g' ->
 					let g'_nb_prod = nb_prod (project g') (EConstr.of_constr (pf_concl g')) in
 					let nb_instanciate_partial = g'_nb_prod - g_nb_prod in
@@ -942,7 +946,7 @@ let generalize_non_dep hyp g =
   in
 (*   observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
   tclTHEN
-    ((* observe_tac "h_generalize" *) (Proofview.V82.of_tactic (generalize  (List.map mkVar to_revert) )))
+    ((* observe_tac "h_generalize" *) (Proofview.V82.of_tactic (generalize  (List.map EConstr.mkVar to_revert) )))
     ((* observe_tac "thin" *) (thin to_revert))
     g
 
@@ -950,7 +954,7 @@ let id_of_decl = RelDecl.get_name %> Nameops.out_name
 let var_of_decl = id_of_decl %> mkVar
 let revert idl =
   tclTHEN
-    (Proofview.V82.of_tactic (generalize (List.map mkVar idl)))
+    (Proofview.V82.of_tactic (generalize (List.map EConstr.mkVar idl)))
     (thin idl)
 
 let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num =
@@ -991,7 +995,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
 	   let rec_id = pf_nth_hyp_id g 1 in
 	   tclTHENSEQ
 	     [observe_tac "generalize_non_dep in generate_equation_lemma" (generalize_non_dep rec_id);
-	      observe_tac "h_case" (Proofview.V82.of_tactic (simplest_case (mkVar rec_id)));
+	      observe_tac "h_case" (Proofview.V82.of_tactic (simplest_case (EConstr.mkVar rec_id)));
 	      (Proofview.V82.of_tactic intros_reflexivity)] g
 	)
       ]
@@ -1064,10 +1068,11 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnames all_funs _nparams : tactic =
   fun g ->
   let princ_type = pf_concl g in
+  let princ_type = EConstr.of_constr princ_type in
   (* Pp.msgnl (str "princ_type " ++ Printer.pr_lconstr princ_type); *)
   (* Pp.msgnl (str "all_funs "); *)
   (* Array.iter (fun c -> Pp.msgnl (Printer.pr_lconstr c)) all_funs; *)
-    let princ_info = compute_elim_sig princ_type in
+    let princ_info = compute_elim_sig (project g) princ_type in
     let fresh_id =
       let avoid = ref (pf_ids_of_hyps g) in
       (fun na ->
@@ -1227,7 +1232,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	| _, this_fix_info::others_infos ->
 	    let other_fix_infos =
 	      List.map
-		(fun fi -> fi.name,fi.idx + 1 ,fi.types)
+		(fun fi -> fi.name,fi.idx + 1 ,EConstr.of_constr fi.types)
 		(pre_info@others_infos)
 	    in
 	    if List.is_empty other_fix_infos
@@ -1462,11 +1467,11 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 	 backtrack_eqs_until_hrec hrec eqs;
 	 (* observe_tac ("new_prove_with_tcc ( applying "^(Id.to_string hrec)^" )" ) *)
 	 (tclTHENS  (* We must have exactly ONE subgoal !*)
-	    (Proofview.V82.of_tactic (apply (mkVar hrec)))
+	    (Proofview.V82.of_tactic (apply (EConstr.mkVar hrec)))
 	    [ tclTHENSEQ
 		[
 		  (Proofview.V82.of_tactic (keep (tcc_hyps@eqs)));
-		  (Proofview.V82.of_tactic (apply (Lazy.force acc_inv)));
+		  (Proofview.V82.of_tactic (apply (EConstr.of_constr (Lazy.force acc_inv))));
 		  (fun g ->
 		     if is_mes
 		     then
@@ -1482,7 +1487,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 			    tclCOMPLETE(
 				    Eauto.eauto_with_bases
 				      (true,5)
-				      [{ Tacexpr.delayed = fun _ sigma -> Sigma.here (Lazy.force refl_equal) sigma}]
+				      [{ Tacexpr.delayed = fun _ sigma -> Sigma.here (EConstr.of_constr (Lazy.force refl_equal)) sigma}]
 				      [Hints.Hint_db.empty empty_transparent_state false]
 				  )
 			   )
@@ -1518,7 +1523,8 @@ let prove_principle_for_gen
     (f_ref,functional_ref,eq_ref) tcc_lemma_ref is_mes
     rec_arg_num rec_arg_type relation gl =
   let princ_type = pf_concl gl in
-  let princ_info = compute_elim_sig princ_type in
+  let princ_type = EConstr.of_constr princ_type in
+  let princ_info = compute_elim_sig (project gl) princ_type in
   let fresh_id =
     let avoid = ref (pf_ids_of_hyps gl) in
     fun na ->
@@ -1572,7 +1578,7 @@ let prove_principle_for_gen
     Nameops.out_name (fresh_id (Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
   in
   let revert l =
-    tclTHEN (Proofview.V82.of_tactic (Tactics.generalize (List.map mkVar l))) (Proofview.V82.of_tactic (clear l))
+    tclTHEN (Proofview.V82.of_tactic (Tactics.generalize (List.map EConstr.mkVar l))) (Proofview.V82.of_tactic (clear l))
   in
   let fix_id = Nameops.out_name (fresh_id (Name hrec_id)) in
   let prove_rec_arg_acc g =
@@ -1580,12 +1586,12 @@ let prove_principle_for_gen
 	 (tclCOMPLETE
 	    (tclTHEN
 	       (Proofview.V82.of_tactic (assert_by (Name wf_thm_id)
-		  (mkApp (delayed_force well_founded,[|input_type;relation|]))
+		  (EConstr.of_constr (mkApp (delayed_force well_founded,[|input_type;relation|])))
 		  (Proofview.V82.tactic (fun g -> (* observe_tac "prove wf" *) (tclCOMPLETE (wf_tac is_mes)) g))))
 	       (
 		 (* observe_tac  *)
 (* 		   "apply wf_thm"  *)
-		 Proofview.V82.of_tactic (Tactics.Simple.apply (mkApp(mkVar wf_thm_id,[|mkVar rec_arg_id|])))
+		 Proofview.V82.of_tactic (Tactics.Simple.apply (EConstr.of_constr (mkApp(mkVar wf_thm_id,[|mkVar rec_arg_id|]))))
 	       )
 	    )
 	 )
@@ -1596,7 +1602,7 @@ let prove_principle_for_gen
   let lemma =
     match !tcc_lemma_ref with
      | None -> error "No tcc proof !!"
-     | Some lemma -> lemma
+     | Some lemma -> EConstr.of_constr lemma
   in
 (*   let rec list_diff del_list check_list = *)
 (*     match del_list with *)
@@ -1644,7 +1650,7 @@ let prove_principle_for_gen
 	);
       (* observe_tac "" *) Proofview.V82.of_tactic (assert_by
 	 (Name acc_rec_arg_id)
- 	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
+ 	 (EConstr.of_constr (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|])))
 	 (Proofview.V82.tactic prove_rec_arg_acc)
       );
 (*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));

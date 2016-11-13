@@ -29,8 +29,9 @@ open Proofview.Notations
 let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
+  let c = EConstr.of_constr c in
   Proofview.Goal.enter { enter = begin fun gl ->
-  let t1 = Tacmach.New.pf_unsafe_type_of gl (EConstr.of_constr c) in
+  let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t1 = EConstr.of_constr t1 in
   let t2 = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
   let sigma = Tacmach.New.project gl in
@@ -77,7 +78,7 @@ let apply_tac_list tac glls =
 
 let one_step l gl =
   [Proofview.V82.of_tactic Tactics.intro]
-  @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) (List.map mkVar (pf_ids_of_hyps gl)))
+  @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) (List.map EConstr.mkVar (pf_ids_of_hyps gl)))
   @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) l)
   @ (List.map (fun c -> Proofview.V82.of_tactic (assumption c)) (pf_ids_of_hyps gl))
 
@@ -94,8 +95,9 @@ let prolog_tac l n =
   Proofview.V82.tactic begin fun gl ->
   let map c =
     let (c, sigma) = Tactics.run_delayed (pf_env gl) (project gl) c in
+    let c = EConstr.Unsafe.to_constr c in
     let c = pf_apply (prepare_hint false (false,true)) gl (sigma, c) in
-    out_term c
+    EConstr.of_constr (out_term c)
   in
   let l = List.map map l in
   try (prolog l n gl)
@@ -114,6 +116,7 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 let unify_e_resolve poly flags (c,clenv) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
       let clenv', c = connect_hint_clenv poly c clenv gl in
+      let c = EConstr.of_constr c in
       Proofview.V82.tactic
 	(fun gls ->
 	 let clenv' = clenv_unique_resolver ~flags clenv' gls in
@@ -515,6 +518,7 @@ let autounfold_one db cl =
   let did, c' = unfold_head env st 
     (match cl with Some (id, _) -> Tacmach.New.pf_get_hyp_typ id gl | None -> concl) 
   in
+  let c' = EConstr.of_constr c' in
     if did then
       match cl with
       | Some hyp -> change_in_hyp None (make_change_arg c') hyp

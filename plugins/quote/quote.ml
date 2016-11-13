@@ -458,8 +458,8 @@ let quote f lid =
       | _ -> assert false
     in
     match ivs.variable_lhs with
-    | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast
-    | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast
+    | None -> Tactics.convert_concl (EConstr.of_constr (mkApp (f, [| p |]))) DEFAULTcast
+    | Some _ -> Tactics.convert_concl (EConstr.of_constr (mkApp (f, [| vm; p |]))) DEFAULTcast
   end }
 
 let gen_quote cont c f lid =

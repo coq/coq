@@ -518,15 +518,15 @@ let is_unification_pattern (env,nb) evd f l t =
 let solve_pattern_eqn env sigma l c =
   let c' = List.fold_right (fun a c ->
     let c' = subst_term sigma (lift 1 a) (lift 1 c) in
+    let c' = EConstr.of_constr c' in
     match EConstr.kind sigma a with
       (* Rem: if [a] links to a let-in, do as if it were an assumption *)
       | Rel n ->
           let open Context.Rel.Declaration in
           let d = map_constr (CVars.lift n) (lookup_rel n env) in
-          let c' = EConstr.of_constr c' in
           mkLambda_or_LetIn d c'
       | Var id ->
-          let d = lookup_named id env in EConstr.of_constr (mkNamedLambda_or_LetIn d c')
+          let d = lookup_named id env in mkNamedLambda_or_LetIn d c'
       | _ -> assert false)
     l c in
   (* Warning: we may miss some opportunity to eta-reduce more since c'
@@ -592,10 +592,9 @@ let make_projectable_subst aliases sigma evi args =
 
 let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_sign sign filter inst_in_env =
   let evd = Sigma.Unsafe.of_evar_map evd in
-  let Sigma (evar_in_env, evd, _) = new_evar_instance sign evd (EConstr.of_constr ty_t_in_sign) ~filter ~src (List.map EConstr.Unsafe.to_constr inst_in_env) in
+  let Sigma (evar_in_env, evd, _) = new_evar_instance sign evd (EConstr.of_constr ty_t_in_sign) ~filter ~src inst_in_env in
   let evd = Sigma.to_evar_map evd in
   let t_in_env = EConstr.of_constr (whd_evar evd (EConstr.Unsafe.to_constr t_in_env)) in
-  let evar_in_env = EConstr.of_constr evar_in_env in
   let (evk, _) = destEvar evd evar_in_env in
   let evd = define_fun env evd None (EConstr.destEvar evd evar_in_env) t_in_env in
   let ctxt = named_context_of_val sign in
@@ -669,10 +668,10 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let evd = Sigma.Unsafe.of_evar_map evd in
   let ev2ty_in_sign = EConstr.of_constr ev2ty_in_sign in
   let Sigma (ev2_in_sign, evd, _) =
-    new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 ~src (List.map EConstr.Unsafe.to_constr inst2_in_sign) in
+    new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 ~src inst2_in_sign in
   let evd = Sigma.to_evar_map evd in
-  let ev2_in_env = (fst (destEvar evd (EConstr.of_constr ev2_in_sign)), Array.of_list inst2_in_env) in
-  (evd, EConstr.of_constr ev2_in_sign, ev2_in_env)
+  let ev2_in_env = (fst (destEvar evd ev2_in_sign), Array.of_list inst2_in_env) in
+  (evd, ev2_in_sign, ev2_in_env)
 
 let restrict_upon_filter evd evk p args =
   let oldfullfilter = evar_filter (Evd.find_undefined evd evk) in

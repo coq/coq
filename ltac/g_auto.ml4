@@ -48,7 +48,11 @@ let eval_uconstrs ist cs =
     fail_evar = false;
     expand_evars = true
   } in
-  List.map (fun c -> Pretyping.type_uconstr ~flags ist c) cs
+  let map c = { delayed = fun env sigma ->
+    let Sigma.Sigma (c, sigma, p) = c.delayed env sigma in
+    Sigma.Sigma (EConstr.of_constr c, sigma, p)
+  } in
+  List.map (fun c -> map (Pretyping.type_uconstr ~flags ist c)) cs
 
 let pr_auto_using _ _ _ = Pptactic.pr_auto_using (fun _ -> mt ())
 
@@ -153,7 +157,7 @@ TACTIC EXTEND autounfoldify
 END
 
 TACTIC EXTEND unify
-| ["unify" constr(x) constr(y) ] -> [ Tactics.unify x y ]
+| ["unify" constr(x) constr(y) ] -> [ Tactics.unify (EConstr.of_constr x) (EConstr.of_constr y) ]
 | ["unify" constr(x) constr(y) "with" preident(base)  ] -> [
     let table = try Some (Hints.searchtable_map base) with Not_found -> None in
     match table with
@@ -162,13 +166,13 @@ TACTIC EXTEND unify
       Tacticals.New.tclZEROMSG msg
     | Some t ->
       let state = Hints.Hint_db.transparent_state t in
-      Tactics.unify ~state x y
+      Tactics.unify ~state (EConstr.of_constr x) (EConstr.of_constr y)
   ]
 END
 
 
 TACTIC EXTEND convert_concl_no_check
-| ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check x Term.DEFAULTcast ]
+| ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check (EConstr.of_constr x) Term.DEFAULTcast ]
 END
 
 let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom

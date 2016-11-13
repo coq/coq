@@ -265,7 +265,7 @@ TACTIC EXTEND setoid_reflexivity
 END
 
 TACTIC EXTEND setoid_transitivity
-  [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity (Some t) ]
+  [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity (Some (EConstr.of_constr t)) ]
 | [ "setoid_etransitivity" ] -> [ setoid_transitivity None ]
 END
 

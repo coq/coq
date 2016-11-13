@@ -1792,7 +1792,7 @@ end = struct (* {{{ *)
               str"uc=" ++ Evd.pr_evar_universe_context uc)));
             (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
               (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
-              Tactics.exact_no_check pt)
+              Tactics.exact_no_check (EConstr.of_constr pt))
           with TacTask.NoProgress ->
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
         })

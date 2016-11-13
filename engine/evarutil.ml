@@ -367,6 +367,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
 let push_rel_context_to_named_context env typ =
   (* compute the instances relative to the named context and rel_context *)
   let open Context.Named.Declaration in
+  let open EConstr in
   let ids = List.map get_id (named_context env) in
   let inst_vars = List.map mkVar ids in
   if List.is_empty (Environ.rel_context env) then
@@ -421,6 +422,7 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
   Sigma.Unsafe.of_pair (newevk, evd)
 
 let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?principal instance =
+  let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
   let Sigma (newevk, evd, p) = new_pure_evar sign evd ?src ?filter ?candidates ?store ?naming ?principal typ in

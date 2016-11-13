@@ -97,8 +97,8 @@ let new_cstr_evar (evd,cstrs) env t =
   let evd = Sigma.Unsafe.of_evar_map evd in
   let Sigma (t, evd', _) = Evarutil.new_evar ~store:s env evd (EConstr.of_constr t) in
   let evd' = Sigma.to_evar_map evd' in
-  let ev, _ = destEvar t in
-    (evd', Evar.Set.add ev cstrs), t
+  let ev, _ = EConstr.destEvar evd' t in
+    (evd', Evar.Set.add ev cstrs), EConstr.Unsafe.to_constr t
 
 (** Building or looking up instances. *)
 let e_new_cstr_evar env evars t =
@@ -363,6 +363,7 @@ end) = struct
 	   let env' = Environ.push_rel_context rels env in
 	   let sigma = Sigma.Unsafe.of_evar_map sigma in
 	   let Sigma ((evar, _), evars, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
+	   let evar = EConstr.Unsafe.to_constr evar in
 	   let evars = Sigma.to_evar_map evars in
 	   let evars, inst = 
 	     app_poly env (evars,Evar.Set.empty)
@@ -774,7 +775,7 @@ let poly_subrelation sort =
   if sort then PropGlobal.subrelation else TypeGlobal.subrelation
 
 let resolve_subrelation env avoid car rel sort prf rel' res =
-  if eq_constr rel rel' then res
+  if Termops.eq_constr (fst res.rew_evars) (EConstr.of_constr rel) (EConstr.of_constr rel') then res
   else
     let evars, app = app_poly_check env res.rew_evars (poly_subrelation sort) [|car; rel; rel'|] in
     let evars, subrel = new_cstr_evar evars env app in
@@ -872,7 +873,7 @@ let apply_rule unify loccs : int pure_strategy =
         | Some rew ->
 	  let occ = succ occ in
 	    if not (is_occ occ) then (occ, Fail)
-	    else if eq_constr t rew.rew_to then (occ, Identity)
+	    else if Termops.eq_constr (fst rew.rew_evars) (EConstr.of_constr t) (EConstr.of_constr rew.rew_to) then (occ, Identity)
 	    else
 	      let res = { rew with rew_car = ty } in
               let rel, prf = get_rew_prf res in
@@ -1111,7 +1112,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       | Prod (n, dom, codom) ->
 	  let lam = mkLambda (n, dom, codom) in
 	  let (evars', app), unfold = 
-	    if eq_constr ty mkProp then
+	    if eq_constr (fst evars) (EConstr.of_constr ty) EConstr.mkProp then
 	      (app_poly_sort prop env evars coq_all [| dom; lam |]), TypeGlobal.unfold_all
 	    else 
 	      let forall = if prop then PropGlobal.coq_forall else TypeGlobal.coq_forall in
@@ -1409,7 +1410,7 @@ module Strategies =
           let sigma = Sigma.Unsafe.of_evar_map (goalevars evars) in
 	  let Sigma (t', sigma, _) = rfn.Reductionops.e_redfun env sigma (EConstr.of_constr t) in
 	  let evars' = Sigma.to_evar_map sigma in
-	    if eq_constr t' t then
+	    if Termops.eq_constr evars' (EConstr.of_constr t') (EConstr.of_constr t) then
 	      state, Identity
 	    else
 	      state, Success { rew_car = ty; rew_from = t; rew_to = t';
@@ -1553,14 +1554,15 @@ let assert_replacing id newt tac =
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Refine.refine ~unsafe:false { run = begin fun sigma ->
+      let open EConstr in
       let Sigma (ev, sigma, p) = Evarutil.new_evar env' sigma (EConstr.of_constr concl) in
       let Sigma (ev', sigma, q) = Evarutil.new_evar env sigma (EConstr.of_constr newt) in
       let map d =
         let n = NamedDecl.get_id d in
-        if Id.equal n id then ev' else mkVar n
+        if Id.equal n id then ev' else EConstr.mkVar n
       in
-      let (e, _) = destEvar ev in
-      Sigma (EConstr.of_constr (mkEvar (e, Array.map_of_list map nc)), sigma, p +> q)
+      let (e, _) = EConstr.destEvar (Sigma.to_evar_map sigma) ev in
+      Sigma (mkEvar (e, Array.map_of_list map nc), sigma, p +> q)
     end }
   end } in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
@@ -1596,16 +1598,18 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             convert_hyp_no_check (LocalAssum (id, newt)) <*>
             beta_hyp id
 	| None, Some p ->
+            let p = EConstr.of_constr p in
             Proofview.Unsafe.tclEVARS undef <*>
             Proofview.Goal.enter { enter = begin fun gl ->
             let env = Proofview.Goal.env gl in
             let make = { run = begin fun sigma ->
               let Sigma (ev, sigma, q) = Evarutil.new_evar env sigma (EConstr.of_constr newt) in
-              Sigma (EConstr.of_constr (mkApp (p, [| ev |])), sigma, q)
+              Sigma (EConstr.mkApp (p, [| ev |]), sigma, q)
             end } in
             Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
             end }
 	| None, None ->
+            let newt = EConstr.of_constr newt in
             Proofview.Unsafe.tclEVARS undef <*>
             convert_concl_no_check newt DEFAULTcast
   in
@@ -2168,7 +2172,7 @@ let setoid_reflexivity =
      tac_open (poly_proof PropGlobal.get_reflexive_proof
 			  TypeGlobal.get_reflexive_proof
 			  env evm car rel)
-	      (fun c -> tclCOMPLETE (apply c)))
+	      (fun c -> tclCOMPLETE (apply (EConstr.of_constr c))))
     (reflexivity_red true)
 
 let setoid_symmetry =
@@ -2177,7 +2181,7 @@ let setoid_symmetry =
       tac_open
 	(poly_proof PropGlobal.get_symmetric_proof TypeGlobal.get_symmetric_proof
 	   env evm car rel)
-	(fun c -> apply c))
+	(fun c -> apply (EConstr.of_constr c)))
     (symmetry_red true)
     
 let setoid_transitivity c =
@@ -2186,8 +2190,8 @@ let setoid_transitivity c =
       tac_open (poly_proof PropGlobal.get_transitive_proof TypeGlobal.get_transitive_proof
 	   env evm car rel)
 	(fun proof -> match c with
-	| None -> eapply proof
-	| Some c -> apply_with_bindings (proof,ImplicitBindings [ c ])))
+	| None -> eapply (EConstr.of_constr proof)
+	| Some c -> apply_with_bindings (EConstr.of_constr proof,ImplicitBindings [ c ])))
     (transitivity_red true c)
     
 let setoid_symmetry_in id =
@@ -2204,10 +2208,11 @@ let setoid_symmetry_in id =
   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
   let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
+  let new_hyp = EConstr.of_constr new_hyp in
    Proofview.V82.of_tactic
     (tclTHENLAST
       (Tactics.assert_after_replacing id new_hyp)
-      (tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ]))
+      (tclTHENLIST [ intros; setoid_symmetry; apply (EConstr.mkVar id); Tactics.assumption ]))
       gl)
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity

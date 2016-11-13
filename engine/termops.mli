@@ -41,7 +41,7 @@ val lookup_rel_id : Id.t -> Context.Rel.t -> int * constr option * types
     [rel_vect n m] builds [|Rel (n+m);...;Rel(n+1)|]
 *)
 val rel_vect : int -> int -> constr array
-val rel_list : int -> int -> constr list
+val rel_list : int -> int -> EConstr.constr list
 
 (** iterators/destructors on terms *)
 val mkProd_or_LetIn : Context.Rel.Declaration.t -> types -> types
@@ -160,10 +160,10 @@ val replace_term : Evd.evar_map -> EConstr.t -> EConstr.t -> EConstr.t -> constr
 
 (** Alternative term equalities *)
 val base_sort_cmp : Reduction.conv_pb -> sorts -> sorts -> bool
-val compare_constr_univ : (Reduction.conv_pb -> constr -> constr -> bool) ->
-  Reduction.conv_pb -> constr -> constr -> bool
-val constr_cmp : Reduction.conv_pb -> constr -> constr -> bool
-val eq_constr : constr -> constr -> bool (* FIXME rename: erases universes*)
+val compare_constr_univ : Evd.evar_map -> (Reduction.conv_pb -> EConstr.constr -> EConstr.constr -> bool) ->
+  Reduction.conv_pb -> EConstr.constr -> EConstr.constr -> bool
+val constr_cmp : Evd.evar_map -> Reduction.conv_pb -> EConstr.constr -> EConstr.constr -> bool
+val eq_constr : Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool (* FIXME rename: erases universes*)
 
 val eta_reduce_head : constr -> constr
 
@@ -185,7 +185,7 @@ exception CannotFilter
    Warning: Outer-kernel sort subtyping are taken into account: c1 has
    to be smaller than c2 wrt. sorts. *)
 type subst = (Context.Rel.t * constr) Evar.Map.t
-val filtering : Context.Rel.t -> Reduction.conv_pb -> constr -> constr -> subst
+val filtering : Evd.evar_map -> Context.Rel.t -> Reduction.conv_pb -> constr -> constr -> subst
 
 val decompose_prod_letin : Evd.evar_map -> EConstr.t -> int * Context.Rel.t * constr
 val align_prod_letin : Evd.evar_map -> EConstr.t -> EConstr.t -> Context.Rel.t * constr

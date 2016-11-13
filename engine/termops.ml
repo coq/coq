@@ -159,6 +159,7 @@ let print_env env =
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
 
 let rel_list n m =
+  let open EConstr in
   let rec reln l p =
     if p>m then l else reln (mkRel(n+p)::l) (p+1)
   in
@@ -857,16 +858,18 @@ let base_sort_cmp pb s0 s1 =
     | _ -> false
 
 (* eq_constr extended with universe erasure *)
-let compare_constr_univ f cv_pb t1 t2 =
-  match kind_of_term t1, kind_of_term t2 with
+let compare_constr_univ sigma f cv_pb t1 t2 =
+  match EConstr.kind sigma t1, EConstr.kind sigma t2 with
       Sort s1, Sort s2 -> base_sort_cmp cv_pb s1 s2
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
 	f Reduction.CONV t1 t2 && f cv_pb c1 c2
-    | _ -> compare_constr (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
+    | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
 
-let rec constr_cmp cv_pb t1 t2 = compare_constr_univ constr_cmp cv_pb t1 t2
+let constr_cmp sigma cv_pb t1 t2 =
+  let rec compare cv_pb t1 t2 = compare_constr_univ sigma compare cv_pb t1 t2 in
+  compare cv_pb t1 t2
 
-let eq_constr t1 t2 = constr_cmp Reduction.CONV t1 t2
+let eq_constr sigma t1 t2 = constr_cmp sigma Reduction.CONV t1 t2
 
 (* App(c,[t1,...tn]) -> ([c,t1,...,tn-1],tn)
    App(c,[||]) -> ([],c) *)
@@ -883,12 +886,12 @@ type subst = (Context.Rel.t * constr) Evar.Map.t
 
 exception CannotFilter
 
-let filtering env cv_pb c1 c2 =
+let filtering sigma env cv_pb c1 c2 =
   let evm = ref Evar.Map.empty in
   let define cv_pb e1 ev c1 =
     try let (e2,c2) = Evar.Map.find ev !evm in
     let shift = List.length e1 - List.length e2 in
-    if constr_cmp cv_pb c1 (lift shift c2) then () else raise CannotFilter
+    if constr_cmp sigma cv_pb (EConstr.of_constr c1) (EConstr.of_constr (lift shift c2)) then () else raise CannotFilter
     with Not_found ->
       evm := Evar.Map.add ev (e1,c1) !evm
   in
@@ -909,8 +912,9 @@ let filtering env cv_pb c1 c2 =
       | _, Evar (ev,_) -> define cv_pb env ev c1
       | Evar (ev,_), _ -> define cv_pb env ev c2
       | _ ->
-	  if compare_constr_univ
-	  (fun pb c1 c2 -> aux env pb c1 c2; true) cv_pb c1 c2 then ()
+          let inj = EConstr.Unsafe.to_constr in
+	  if compare_constr_univ sigma
+	  (fun pb c1 c2 -> aux env pb (inj c1) (inj c2); true) cv_pb (EConstr.of_constr c1) (EConstr.of_constr c2) then ()
 	  else raise CannotFilter
 	  (* TODO: le reste des binders *)
   in

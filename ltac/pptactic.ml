@@ -1158,11 +1158,12 @@ module Make
   let pr_glob_tactic env = pr_glob_tactic_level env ltop
 
   let strip_prod_binders_constr n ty =
+    let ty = EConstr.Unsafe.to_constr ty in
     let rec strip_ty acc n ty =
-      if n=0 then (List.rev acc, ty) else
+      if n=0 then (List.rev acc, EConstr.of_constr ty) else
         match Term.kind_of_term ty with
             Term.Prod(na,a,b) ->
-              strip_ty (([Loc.ghost,na],a)::acc) (n-1) b
+              strip_ty (([Loc.ghost,na],EConstr.of_constr a)::acc) (n-1) b
           | _ -> error "Cannot translate fix tactic: not enough products" in
     strip_ty [] n ty
 
@@ -1170,9 +1171,9 @@ module Make
     let prtac n (t:atomic_tactic_expr) =
       let pr = {
         pr_tactic = (fun _ _ -> str "<tactic>");
-        pr_constr = pr_constr_env env Evd.empty;
+        pr_constr = (fun c -> pr_constr_env env Evd.empty (EConstr.Unsafe.to_constr c));
         pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
-        pr_lconstr = pr_lconstr_env env Evd.empty;
+        pr_lconstr = (fun c -> pr_lconstr_env env Evd.empty (EConstr.Unsafe.to_constr c));
         pr_pattern = pr_constr_pattern_env env Evd.empty;
         pr_lpattern = pr_lconstr_pattern_env env Evd.empty;
         pr_constant = pr_evaluable_reference_env env;
@@ -1284,7 +1285,7 @@ let () =
     wit_intro_pattern
     (Miscprint.pr_intro_pattern pr_constr_expr)
     (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr c))
-    (Miscprint.pr_intro_pattern (fun c -> pr_constr (fst (run_delayed c))));
+    (Miscprint.pr_intro_pattern (fun c -> pr_constr (EConstr.Unsafe.to_constr (fst (run_delayed c)))));
   Genprint.register_print0
     wit_clause_dft_concl
     (pr_clauses (Some true) pr_lident)
@@ -1317,15 +1318,15 @@ let () =
   Genprint.register_print0 wit_bindings
     (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_bindings_no_with pr_constr pr_lconstr (fst (run_delayed it)));
+    (fun it -> pr_bindings_no_with (EConstr.Unsafe.to_constr %> pr_constr) (EConstr.Unsafe.to_constr %> pr_lconstr) (fst (run_delayed it)));
   Genprint.register_print0 wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_with_bindings pr_constr pr_lconstr (fst (run_delayed it)));
+    (fun it -> pr_with_bindings (EConstr.Unsafe.to_constr %> pr_constr) (EConstr.Unsafe.to_constr %> pr_lconstr) (fst (run_delayed it)));
   Genprint.register_print0 Tacarg.wit_destruction_arg
     (pr_destruction_arg pr_constr_expr pr_lconstr_expr)
     (pr_destruction_arg (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_destruction_arg pr_constr pr_lconstr (run_delayed_destruction_arg it));
+    (fun it -> pr_destruction_arg (EConstr.Unsafe.to_constr %> pr_constr) (EConstr.Unsafe.to_constr %> pr_lconstr) (run_delayed_destruction_arg it));
   Genprint.register_print0 Stdarg.wit_int int int int;
   Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
   Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;

@@ -355,7 +355,7 @@ struct
 	   with Invalid_argument _ -> [],c_id in
 	 let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
 	 try
-          let _ = Termops.filtering ctx Reduction.CUMUL wc whole_c in
+          let _ = Termops.filtering Evd.empty ctx Reduction.CUMUL wc whole_c in
           id :: acc
 	 with Termops.CannotFilter -> (* msgnl(str"recon "++Termops.print_constr_env (Global.env()) wc); *) acc
       ) (TDnet.find_match dpat dn) []

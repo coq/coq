@@ -312,6 +312,7 @@ let rtauto_tac gls=
 	     str "Giving proof term to Coq ... ")
     end in
   let tac_start_time = System.get_time () in
+  let term = EConstr.of_constr term in
   let result=
     if !check then
       Proofview.V82.of_tactic (Tactics.exact_check term) gls

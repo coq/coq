@@ -120,7 +120,7 @@ let get_sym_eq_data env (ind,u) =
   let paramsctxt = Vars.subst_instance_context u mib.mind_params_ctxt in
   let paramsctxt1,_ =
     List.chop (mib.mind_nparams-mip.mind_nrealargs) paramsctxt in
-  if not (List.equal eq_constr params2 constrargs) then
+  if not (List.equal Term.eq_constr params2 constrargs) then
     error "Constructors arguments must repeat the parameters.";
   (* nrealargs_ctxt and nrealargs are the same here *)
   (specif,mip.mind_nrealargs,realsign,paramsctxt,paramsctxt1)

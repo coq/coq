@@ -281,6 +281,8 @@ let fourier_lineq lineq1 =
 (* Defined constants *)
 
 let get = Lazy.force
+let cget = get
+let eget c = EConstr.of_constr (Lazy.force c)
 let constant = Coqlib.gen_constant "Fourier"
 
 (* Standard library *)
@@ -373,6 +375,7 @@ let rational_to_real x =
 (* preuve que 0<n*1/d
 *)
 let tac_zero_inf_pos gl (n,d) =
+  let get = eget in
    let tacn=ref (apply (get coq_Rlt_zero_1)) in
    let tacd=ref (apply (get coq_Rlt_zero_1)) in
    for _i = 1 to n - 1 do
@@ -385,6 +388,7 @@ let tac_zero_inf_pos gl (n,d) =
 (* preuve que 0<=n*1/d
 *)
 let tac_zero_infeq_pos gl (n,d)=
+  let get = eget in
    let tacn=ref (if n=0
                  then (apply (get coq_Rle_zero_zero))
                  else (apply (get coq_Rle_zero_1))) in
@@ -399,7 +403,8 @@ let tac_zero_infeq_pos gl (n,d)=
 (* preuve que 0<(-n)*(1/d) => False
 *)
 let tac_zero_inf_false gl (n,d) =
-    if n=0 then (apply (get coq_Rnot_lt0))
+      let get = eget in
+if n=0 then (apply (get coq_Rnot_lt0))
     else
      (Tacticals.New.tclTHEN (apply (get coq_Rle_not_lt))
 	      (tac_zero_infeq_pos gl (-n,d)))
@@ -408,6 +413,7 @@ let tac_zero_inf_false gl (n,d) =
 (* preuve que 0<=(-n)*(1/d) => False
 *)
 let tac_zero_infeq_false gl (n,d) =
+  let get = eget in
      (Tacticals.New.tclTHEN (apply (get coq_Rlt_not_le_frac_opp))
 	      (tac_zero_inf_pos gl (-n,d)))
 ;;
@@ -415,7 +421,8 @@ let tac_zero_infeq_false gl (n,d) =
 let exact = exact_check;;
 
 let tac_use h =
-  let tac = exact h.hname in
+  let get = eget in
+  let tac = exact (EConstr.of_constr h.hname) in
   match h.htype with
     "Rlt" -> tac
   |"Rle" -> tac
@@ -470,6 +477,7 @@ let rec fourier () =
     try 
       match (kind_of_term goal) with
       App (f,args) ->
+      let get = eget in
       (match (string_of_R_constr f) with
 	     "Rlt" ->
 	       (Tacticals.New.tclTHEN
@@ -548,6 +556,7 @@ let rec fourier () =
 			      !t2 |] in
 	   let tc=rational_to_real cres in
        (* puis sa preuve *)
+          let get = eget in
            let tac1=ref (if h1.hstrict
                          then (Tacticals.New.tclTHENS (apply (get coq_Rfourier_lt))
                                  [tac_use h1;
@@ -584,29 +593,29 @@ let rec fourier () =
                       then tac_zero_inf_false gl (rational_to_fraction cres)
                       else tac_zero_infeq_false gl (rational_to_fraction cres)
            in
-           tac:=(Tacticals.New.tclTHENS (cut ineq)
+           tac:=(Tacticals.New.tclTHENS (cut (EConstr.of_constr ineq))
                      [Tacticals.New.tclTHEN (change_concl
-			       (mkAppL [| get coq_not; ineq|]
-				       ))
+			       (EConstr.of_constr (mkAppL [| cget coq_not; ineq|]
+				       )))
 		      (Tacticals.New.tclTHEN (apply (if sres then get coq_Rnot_lt_lt
 					       else get coq_Rnot_le_le))
 			    (Tacticals.New.tclTHENS (Equality.replace
-				       (mkAppL [|get coq_Rminus;!t2;!t1|]
+				       (mkAppL [|cget coq_Rminus;!t2;!t1|]
 					       )
 				       tc)
 		 	       [tac2;
                                 (Tacticals.New.tclTHENS
 				  (Equality.replace
-				    (mkApp (get coq_Rinv,
-				      [|get coq_R1|]))
-				    (get coq_R1))
+				    (mkApp (cget coq_Rinv,
+				      [|cget coq_R1|]))
+				    (cget coq_R1))
 (* en attendant Field, ça peut aider Ring de remplacer 1/1 par 1 ... *)
 
       			        [Tacticals.New.tclORELSE
                                    (* TODO : Ring.polynom []*) (Proofview.tclUNIT ())
                                    (Proofview.tclUNIT ());
-				 Tacticals.New.pf_constr_of_global (get coq_sym_eqT) (fun symeq ->
-					  (Tacticals.New.tclTHEN (apply symeq)
+				 Tacticals.New.pf_constr_of_global (cget coq_sym_eqT) (fun symeq ->
+					  (Tacticals.New.tclTHEN (apply (EConstr.of_constr symeq))
 						(apply (get coq_Rinv_1))))]
 
 					 )

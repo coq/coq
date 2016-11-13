@@ -115,6 +115,7 @@ let unify_resolve_gen poly = function
 let exact poly (c,clenv) =
   Proofview.Goal.enter { enter = begin fun gl ->
     let clenv', c = connect_hint_clenv poly c clenv gl in
+    let c = EConstr.of_constr c in
     Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
     (exact_check c)

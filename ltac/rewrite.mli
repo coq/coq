@@ -105,7 +105,7 @@ val setoid_symmetry_in : Id.t -> unit Proofview.tactic
 
 val setoid_reflexivity : unit Proofview.tactic
 
-val setoid_transitivity : constr option -> unit Proofview.tactic
+val setoid_transitivity : EConstr.constr option -> unit Proofview.tactic
 
 
 val apply_strategy :

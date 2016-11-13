@@ -9,6 +9,7 @@
 open Loc
 open Names
 open Term
+open EConstr
 open Environ
 open Proof_type
 open Evd
@@ -128,7 +129,7 @@ val exact_proof      : Constrexpr.constr_expr -> unit Proofview.tactic
 
 (** {6 Reduction tactics. } *)
 
-type tactic_reduction = env -> evar_map -> EConstr.t -> constr
+type tactic_reduction = env -> evar_map -> constr -> Constr.constr
 
 type change_arg = patvar_map -> constr Sigma.run
 
@@ -259,7 +260,7 @@ type elim_scheme = {
   farg_in_concl: bool;        (** true if (f...) appears at the end of conclusion *)
 }
 
-val compute_elim_sig : ?elimc: constr with_bindings -> types -> elim_scheme
+val compute_elim_sig : evar_map -> ?elimc:constr with_bindings -> types -> elim_scheme
 
 (** elim principle with the index of its inductive arg *)
 type eliminator = {
@@ -413,7 +414,7 @@ val subst_one :
 
 val declare_intro_decomp_eq :
   ((int -> unit Proofview.tactic) -> Coqlib.coq_eq_data * types *
-   (EConstr.types * EConstr.constr * EConstr.constr) ->
+   (types * constr * constr) ->
    constr * types -> unit Proofview.tactic) -> unit
 
 (** {6 Simple form of basic tactics. } *)

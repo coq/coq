@@ -393,7 +393,7 @@ let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
-    match List.map (fun ((id,_),(t,_)) -> (id,t)) thms with
+    match List.map (fun ((id,_),(t,_)) -> (id,EConstr.of_constr t)) thms with
     | (id,_)::l -> Tactics.mutual_cofix id l 0
     | _ -> assert false
   else
@@ -401,7 +401,7 @@ let rec_tac_initializer finite guard thms snl =
     let nl = match snl with 
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
-    in match List.map2 (fun ((id,_),(t,_)) n -> (id,n,t)) thms nl with
+    in match List.map2 (fun ((id,_),(t,_)) n -> (id,n, EConstr.of_constr t)) thms nl with
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 

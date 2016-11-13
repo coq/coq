@@ -238,17 +238,17 @@ let build_projection intype (cstr:pconstructor) special default gls=
 let _M =mkMeta
 
 let app_global f args k =
-  Tacticals.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
+  Tacticals.pf_constr_of_global (Lazy.force f) (fun fc -> k (EConstr.of_constr (mkApp (fc, args))))
 
 let new_app_global f args k =
-  Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
+  Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc -> k (EConstr.of_constr (mkApp (fc, args))))
 
-let new_refine c = Proofview.V82.tactic (refine (EConstr.of_constr c))
-let refine c = refine (EConstr.of_constr c)
+let new_refine c = Proofview.V82.tactic (refine c)
+let refine c = refine c
 
 let assert_before n c =
   Proofview.Goal.enter { enter = begin fun gl ->
-    let evm, _ = Tacmach.New.pf_apply type_of gl (EConstr.of_constr c) in
+    let evm, _ = Tacmach.New.pf_apply type_of gl c in
       Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm)) (assert_before n c)
   end }
 
@@ -269,7 +269,7 @@ let rec proof_tac p : unit Proofview.tactic =
   let type_of t = Tacmach.New.pf_unsafe_type_of gl (EConstr.of_constr t) in
   try (* type_of can raise exceptions *)
   match p.p_rule with
-      Ax c -> exact_check c
+      Ax c -> exact_check (EConstr.of_constr c)
     | SymAx c ->
 	let l=constr_of_term p.p_lhs and
 	    r=constr_of_term p.p_rhs in
@@ -333,6 +333,7 @@ let refute_tac c t1 t2 p =
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
   let false_t=mkApp (c,[|mkVar hid|]) in
+  let false_t = EConstr.of_constr false_t in
   let k intype =
     let neweq= new_app_global _eq [|intype;tt1;tt2|] in
     Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
@@ -341,7 +342,7 @@ let refute_tac c t1 t2 p =
   end }
 
 let refine_exact_check c gl =
-  let evm, _ = pf_apply type_of gl (EConstr.of_constr c) in
+  let evm, _ = pf_apply type_of gl c in
     Tacticals.tclTHEN (Refiner.tclEVARS evm) (Proofview.V82.of_tactic (exact_check c)) gl
 
 let convert_to_goal_tac c t1 t2 p = 
@@ -363,6 +364,8 @@ let convert_to_hyp_tac c1 t1 c2 t2 p =
   let tt2=constr_of_term t2 in
   let h = Tacmach.New.of_old (pf_get_new_id (Id.of_string "H")) gl in
   let false_t=mkApp (c2,[|mkVar h|]) in
+  let false_t = EConstr.of_constr false_t in
+  let tt2 = EConstr.of_constr tt2 in
     Tacticals.New.tclTHENS (assert_before (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
        simplest_elim false_t]
@@ -387,6 +390,7 @@ let discriminate_tac (cstr,u as cstru) p =
 			[|intype;outtype;proj;t1;t2;mkVar hid|] in
     let endt k =
       injt (fun injt ->
+            let injt = EConstr.Unsafe.to_constr injt in
             app_global _eq_rect
 		       [|outtype;trivial;pred;identity;concl;injt|] k) in
     let neweq=new_app_global _eq [|intype;t1;t2|] in
@@ -486,7 +490,7 @@ let mk_eq f c1 c2 k =
     let term = mkApp (fc, [| ty; c1; c2 |]) in
     let evm, _ =  type_of (pf_env gl) evm (EConstr.of_constr term) in
     Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm))
-			  (k term)
+			  (k (EConstr.of_constr term))
     end })
 
 let f_equal =

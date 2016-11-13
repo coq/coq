@@ -73,7 +73,7 @@ let nthDecl m gl =
   with Failure _ -> error "No such assumption."
 
 let nthHypId m gl = nthDecl m gl |> NamedDecl.get_id
-let nthHyp m gl   = mkVar (nthHypId m gl)
+let nthHyp m gl   = EConstr.mkVar (nthHypId m gl)
 
 let lastDecl gl   = nthDecl 1 gl
 let lastHypId gl  = nthHypId 1 gl
@@ -564,7 +564,7 @@ module New = struct
     let gl = Proofview.Goal.assume gl in
     nthDecl m gl |> NamedDecl.get_id
   let nthHyp m gl = 
-    mkVar (nthHypId m gl)
+    EConstr.mkVar (nthHypId m gl)
 
   let onNthHypId m tac =
     Proofview.Goal.enter { enter = begin fun gl -> tac (nthHypId m gl) end }
@@ -680,7 +680,6 @@ module New = struct
   let elimination_then tac c =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
     let (ind,t) = pf_reduce_to_quantified_ind gl (EConstr.of_constr (pf_unsafe_type_of gl c)) in
-    let t = EConstr.of_constr t in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
       | None -> true,gl_make_elim

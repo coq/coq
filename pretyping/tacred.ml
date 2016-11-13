@@ -1196,7 +1196,7 @@ let reduce_to_ind_gen allow_product env sigma t =
     let t = hnf_constr env sigma t in
     let t = EConstr.of_constr t in
     match EConstr.kind sigma (EConstr.of_constr (fst (decompose_app_vect sigma t))) with
-      | Ind ind-> (check_privacy env ind, EConstr.Unsafe.to_constr (it_mkProd_or_LetIn t l))
+      | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
 	  let open Context.Rel.Declaration in
 	  if allow_product then
@@ -1209,7 +1209,7 @@ let reduce_to_ind_gen allow_product env sigma t =
 	  let t' = whd_all env sigma t in
 	  let t' = EConstr.of_constr t' in
 	  match EConstr.kind sigma (EConstr.of_constr (fst (decompose_app_vect sigma t'))) with
-	    | Ind ind-> (check_privacy env ind, EConstr.Unsafe.to_constr (it_mkProd_or_LetIn t' l))
+	    | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
 	    | _ -> user_err  (str"Not an inductive product.")
   in
   elimrec env t []
@@ -1219,7 +1219,7 @@ let reduce_to_atomic_ind env sigma c = reduce_to_ind_gen false env sigma c
 
 let find_hnf_rectype env sigma t =
   let ind,t = reduce_to_atomic_ind env sigma t in
-  ind, snd (Term.decompose_app t)
+  ind, snd (decompose_app sigma t)
 
 (* Reduce the weak-head redex [beta,iota/fix/cofix[all],cast,zeta,simpl/delta]
    or raise [NotStepReducible] if not a weak-head redex *)
@@ -1295,7 +1295,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
             elimrec env t' l
           with NotStepReducible -> error_cannot_recognize ref
   in
-  EConstr.Unsafe.to_constr (elimrec env t [])
+  elimrec env t []
 
 let reduce_to_quantified_ref = reduce_to_ref_gen true
 let reduce_to_atomic_ref = reduce_to_ref_gen false

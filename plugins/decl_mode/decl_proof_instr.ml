@@ -130,7 +130,7 @@ let clean_tmp gls =
     clean_all (tmp_ids gls) gls
 
 let assert_postpone id t =
-  assert_before (Name id) t
+  assert_before (Name id) (EConstr.of_constr t)
 
 (* start a proof *)
 
@@ -268,6 +268,7 @@ let add_justification_hyps keep items gls =
       | _ ->
 	  let id=pf_get_new_id local_hyp_prefix gls in
 	    keep:=Id.Set.add id !keep;
+	    let c = EConstr.of_constr c in
 	    tclTHEN (Proofview.V82.of_tactic (letin_tac None (Names.Name id) c None Locusops.nowhere))
               (Proofview.V82.of_tactic (clear_body [id])) gls in
     tclMAP add_aux items gls
@@ -488,6 +489,7 @@ let thus_tac c ctyp submetas gls =
     with Not_found ->
       error "I could not relate this statement to the thesis." in
   if List.is_empty list then
+    let proof = EConstr.of_constr proof in
     Proofview.V82.of_tactic (exact_check proof) gls
   else
     let refiner = concl_refiner list proof gls in
@@ -546,7 +548,7 @@ let decompose_eq id gls =
   let whd =  (special_whd gls typ) in
     match kind_of_term whd with
 	App (f,args)->
-	  if eq_constr f (Lazy.force _eq) && Int.equal (Array.length args) 3
+	  if Term.eq_constr f (Lazy.force _eq) && Int.equal (Array.length args) 3
 	  then (args.(0),
 		args.(1),
 		args.(2))
@@ -584,15 +586,15 @@ let instr_rew _thus rew_side cut gls0 =
 	  let new_eq = mkApp(Lazy.force _eq,[|typ;cut.cut_stat.st_it;rhs|]) in
 	    tclTHENS (Proofview.V82.of_tactic (assert_postpone c_id new_eq))
 	      [tclTHEN tcl_erase_info
-		 (tclTHENS (Proofview.V82.of_tactic (transitivity lhs))
-		    [just_tac;Proofview.V82.of_tactic (exact_check (mkVar last_id))]);
+		 (tclTHENS (Proofview.V82.of_tactic (transitivity (EConstr.of_constr lhs)))
+		    [just_tac;Proofview.V82.of_tactic (exact_check (EConstr.mkVar last_id))]);
 	       thus_tac new_eq] gls0
       | Rhs ->
 	  let new_eq = mkApp(Lazy.force _eq,[|typ;lhs;cut.cut_stat.st_it|]) in
 	    tclTHENS (Proofview.V82.of_tactic (assert_postpone c_id new_eq))
 	      [tclTHEN tcl_erase_info
-		 (tclTHENS (Proofview.V82.of_tactic (transitivity rhs))
-		    [Proofview.V82.of_tactic (exact_check (mkVar last_id));just_tac]);
+		 (tclTHENS (Proofview.V82.of_tactic (transitivity (EConstr.of_constr rhs)))
+		    [Proofview.V82.of_tactic (exact_check (EConstr.mkVar last_id));just_tac]);
 	       thus_tac new_eq] gls0
 
 
@@ -772,7 +774,7 @@ let rec consider_match may_intro introduced available expected gls =
 		 try conjunction_arity id gls with
 		     Not_found -> error "Matching hypothesis not found." in
 		 tclTHENLIST
-		   [Proofview.V82.of_tactic (simplest_case (mkVar id));
+		   [Proofview.V82.of_tactic (simplest_case (EConstr.mkVar id));
 		    intron_then nhyps []
 		      (fun l -> consider_match may_intro introduced
 			 (List.rev_append l rest_ids) expected)] gls)
@@ -780,7 +782,8 @@ let rec consider_match may_intro introduced available expected gls =
 	  gls
 
 let consider_tac c hyps gls =
-  match kind_of_term (strip_outer_cast (project gls) (EConstr.of_constr c)) with
+  let c = EConstr.of_constr c in
+  match kind_of_term (strip_outer_cast (project gls) c) with
       Var id ->
 	consider_match false [] [id] hyps gls
     | _ ->
@@ -817,6 +820,7 @@ let rec build_function sigma args body =
 
 let define_tac id args body gls =
   let t = build_function (project gls) args body in
+  let t = EConstr.of_constr t in
     Proofview.V82.of_tactic (letin_tac None (Name id) t None Locusops.nowhere) gls
 
 (* tactics for reconsider *)
@@ -828,6 +832,7 @@ let cast_tac id_or_thesis typ gls =
     | Thesis (For _ ) ->
 	error "\"thesis for ...\" is not applicable here."
     | Thesis Plain ->
+          let typ = EConstr.of_constr typ in
           Proofview.V82.of_tactic (convert_concl typ DEFAULTcast) gls
 
 (* per cases *)
@@ -1087,7 +1092,7 @@ let thesis_for obj typ per_info env=
       ((Printer.pr_constr_env env Evd.empty obj) ++ spc () ++
 	 str"cannot give an induction hypothesis (wrong inductive type).") in
   let params,args = List.chop per_info.per_nparams all_args in
-  let _ = if not (List.for_all2 eq_constr params per_info.per_params) then
+  let _ = if not (List.for_all2 Term.eq_constr params per_info.per_params) then
     user_err ~hdr:"thesis_for"
       ((Printer.pr_constr_env env Evd.empty obj) ++ spc () ++
 	 str "cannot give an induction hypothesis (wrong parameters).") in
@@ -1219,10 +1224,10 @@ let hrec_for fix_id per_info gls obj_id =
   let ind,u = destInd cind in assert (eq_ind ind per_info.per_ind);
   let params,args= List.chop per_info.per_nparams all_args in
   assert begin
-    try List.for_all2 eq_constr params per_info.per_params with
+    try List.for_all2 Term.eq_constr params per_info.per_params with
         Invalid_argument _ -> false end;
   let hd2 = applist (mkVar fix_id,args@[obj]) in
-    compose_lam rc (Reductionops.whd_beta gls.sigma (EConstr.of_constr hd2))
+    EConstr.of_constr (compose_lam rc (Reductionops.whd_beta gls.sigma (EConstr.of_constr hd2)))
 
 let warn_missing_case =
   CWarnings.create ~name:"declmode-missing-case" ~category:"declmode"
@@ -1336,7 +1341,7 @@ let my_refine c gls =
   let oc = { run = begin fun sigma ->
     let sigma = Sigma.to_evar_map sigma in
     let (sigma, c) = understand_my_constr (pf_env gls) sigma c (pf_concl gls) in
-    Sigma.Unsafe.of_pair (c, sigma)
+    Sigma.Unsafe.of_pair (EConstr.of_constr c, sigma)
   end } in
   Proofview.V82.of_tactic (Tactics.New.refine oc) gls
 
@@ -1366,14 +1371,14 @@ let end_tac et2 gls =
       begin
 	match et,ek with
 	    _,EK_unknown ->
-	      tclSOLVE [Proofview.V82.of_tactic (simplest_elim pi.per_casee)]
+	      tclSOLVE [Proofview.V82.of_tactic (simplest_elim (EConstr.of_constr pi.per_casee))]
 	  | ET_Case_analysis,EK_nodep ->
 	      tclTHEN
-		(Proofview.V82.of_tactic (simplest_case pi.per_casee))
+		(Proofview.V82.of_tactic (simplest_case (EConstr.of_constr pi.per_casee)))
 		(default_justification (List.map mkVar clauses))
 	  | ET_Induction,EK_nodep ->
 	      tclTHENLIST
-		[Proofview.V82.of_tactic (generalize (pi.per_args@[pi.per_casee]));
+		[Proofview.V82.of_tactic (generalize (List.map EConstr.of_constr (pi.per_args@[pi.per_casee])));
 		 Proofview.V82.of_tactic (simple_induct (AnonHyp (succ (List.length pi.per_args))));
 		 default_justification (List.map mkVar clauses)]
 	  | ET_Case_analysis,EK_dep tree ->
@@ -1385,7 +1390,7 @@ let end_tac et2 gls =
 		   (initial_instance_stack clauses) [pi.per_casee] 0 tree
 	  | ET_Induction,EK_dep tree ->
 	      let nargs = (List.length pi.per_args) in
-		tclTHEN (Proofview.V82.of_tactic (generalize (pi.per_args@[pi.per_casee])))
+		tclTHEN (Proofview.V82.of_tactic (generalize (List.map EConstr.of_constr (pi.per_args@[pi.per_casee]))))
 		  begin
 		    fun gls0 ->
 		      let fix_id =

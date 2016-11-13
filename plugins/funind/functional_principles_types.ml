@@ -28,7 +28,8 @@ let observe s =
    a functional one
 *)
 let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
-  let princ_type_info = compute_elim_sig princ_type in
+  let princ_type = EConstr.of_constr princ_type in
+  let princ_type_info = compute_elim_sig Evd.empty princ_type (** FIXME *) in
   let env = Global.env () in
   let env_with_params = Environ.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in
@@ -89,7 +90,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	 (Option.fold_right
 			   mkProd_or_LetIn
 			   princ_type_info.indarg
-			   princ_type_info.concl
+			   (EConstr.Unsafe.to_constr princ_type_info.concl)
 			)
 	 princ_type_info.args
       )
@@ -243,7 +244,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 
 let change_property_sort evd toSort princ princName =
   let open Context.Rel.Declaration in
-  let princ_info = compute_elim_sig princ in
+  let princ = EConstr.of_constr princ in
+  let princ_info = compute_elim_sig evd princ in
   let change_sort_in_predicate decl =
     LocalAssum
     (get_name decl,
@@ -270,7 +272,7 @@ let change_property_sort evd toSort princ princName =
 
 let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_princ_type sorts funs i proof_tac hook =
   (* First we get the type of the old graph principle *)
-  let mutr_nparams = (compute_elim_sig old_princ_type).nparams in
+  let mutr_nparams = (compute_elim_sig !evd (EConstr.of_constr old_princ_type)).nparams in
   (*   let time1 = System.get_time ()  in *)
   let new_principle_type =
     compute_new_princ_type_from_rel

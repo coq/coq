@@ -24,7 +24,7 @@ val new_evar :
   env -> 'r Sigma.t -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> EConstr.types -> (constr, 'r) Sigma.sigma
+  ?principal:bool -> EConstr.types -> (EConstr.constr, 'r) Sigma.sigma
 
 val new_pure_evar :
   named_context_val -> 'r Sigma.t -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
@@ -39,18 +39,18 @@ val e_new_evar :
   env -> evar_map ref -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> EConstr.types -> constr
+  ?principal:bool -> EConstr.types -> EConstr.constr
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
   env -> 'r Sigma.t -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
   ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid ->
-  (constr * sorts, 'r) Sigma.sigma
+  (EConstr.constr * sorts, 'r) Sigma.sigma
 
 val e_new_type_evar : env -> evar_map ref ->
   ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> constr * sorts
+  ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> EConstr.constr * sorts
 
 val new_Type : ?rigid:rigid -> env -> 'r Sigma.t -> (constr, 'r) Sigma.sigma
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
@@ -74,7 +74,7 @@ val new_evar_instance :
   ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> ?candidates:constr list ->
   ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool ->
-  constr list -> (constr, 'r) Sigma.sigma
+  EConstr.constr list -> (EConstr.constr, 'r) Sigma.sigma
 
 val make_pure_subst : evar_info -> 'a array -> (Id.t * 'a) list
 
@@ -218,7 +218,7 @@ val push_rel_decl_to_named_context :
   Context.Rel.Declaration.t -> ext_named_context -> ext_named_context
 
 val push_rel_context_to_named_context : Environ.env -> EConstr.types ->
-  named_context_val * EConstr.types * constr list * csubst * (identifier*EConstr.constr) list
+  named_context_val * EConstr.types * EConstr.constr list * csubst * (identifier*EConstr.constr) list
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 

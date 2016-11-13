@@ -1461,7 +1461,7 @@ let rec make_goal_of_formula dexpr form =
         xset (Term.mkNamedLetIn
                (Names.Id.of_string name)
                expr typ acc) l in
-    xset concl l
+    EConstr.of_constr (xset concl l)
 
 end (**
       * MODULE END: M 
@@ -2000,12 +2000,12 @@ let micromega_gen
                 (Tacticals.New.tclTHEN tac_arith tac)) in 
 
        Tacticals.New.tclTHENS
-         (Tactics.forward true (Some None) (ipat_of_name goal_name) arith_goal)
+         (Tactics.forward true (Some None) (ipat_of_name goal_name) (EConstr.of_constr arith_goal))
          [
            kill_arith;
            (Tacticals.New.tclTHENLIST
-            [(Tactics.generalize (List.map Term.mkVar ids));
-             Tactics.exact_check (Term.applist (Term.mkVar goal_name, arith_args))
+            [(Tactics.generalize (List.map EConstr.mkVar ids));
+             Tactics.exact_check (EConstr.of_constr (Term.applist (Term.mkVar goal_name, arith_args)))
             ] )
          ]
     with
@@ -2114,12 +2114,12 @@ let micromega_genr prover tac =
                 (Tacticals.New.tclTHEN tac_arith tac)) in 
 
        Tacticals.New.tclTHENS
-         (Tactics.forward true (Some None) (ipat_of_name goal_name) arith_goal)
+         (Tactics.forward true (Some None) (ipat_of_name goal_name) (EConstr.of_constr arith_goal))
          [
            kill_arith;
            (Tacticals.New.tclTHENLIST
-            [(Tactics.generalize (List.map Term.mkVar ids));
-             Tactics.exact_check (Term.applist (Term.mkVar goal_name, arith_args))
+            [(Tactics.generalize (List.map EConstr.mkVar ids));
+             Tactics.exact_check (EConstr.of_constr (Term.applist (Term.mkVar goal_name, arith_args)))
             ] )
          ]
 

@@ -58,17 +58,17 @@ val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 (** {6 Tacticals applying to hypotheses } *)
 
 val onNthHypId       : int -> (Id.t -> tactic) -> tactic
-val onNthHyp         : int -> (constr -> tactic) -> tactic
+val onNthHyp         : int -> (EConstr.constr -> tactic) -> tactic
 val onNthDecl        : int -> (Context.Named.Declaration.t -> tactic) -> tactic
 val onLastHypId      : (Id.t -> tactic) -> tactic
-val onLastHyp        : (constr -> tactic) -> tactic
+val onLastHyp        : (EConstr.constr -> tactic) -> tactic
 val onLastDecl       : (Context.Named.Declaration.t -> tactic) -> tactic
 val onNLastHypsId    : int -> (Id.t list -> tactic) -> tactic
 val onNLastHyps      : int -> (constr list -> tactic) -> tactic
 val onNLastDecls     : int -> (Context.Named.t -> tactic) -> tactic
 
 val lastHypId   : goal sigma -> Id.t
-val lastHyp     : goal sigma -> constr
+val lastHyp     : goal sigma -> EConstr.constr
 val lastDecl    : goal sigma -> Context.Named.Declaration.t
 val nLastHypsId : int -> goal sigma -> Id.t list
 val nLastHyps   : int -> goal sigma -> constr list
@@ -236,7 +236,7 @@ module New : sig
 
   val onNthHypId : int -> (identifier -> unit tactic) -> unit tactic
   val onLastHypId      : (identifier -> unit tactic) -> unit tactic
-  val onLastHyp        : (constr -> unit tactic) -> unit tactic
+  val onLastHyp        : (EConstr.constr -> unit tactic) -> unit tactic
   val onLastDecl       : (Context.Named.Declaration.t -> unit tactic) -> unit tactic
 
   val onHyps      : ([ `NF ], Context.Named.t) Proofview.Goal.enter ->

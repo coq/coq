@@ -556,6 +556,7 @@ let set_pattern_names env ind brv =
 
 let type_case_branches_with_names env sigma indspec p c =
   let (ind,args) = indspec in
+  let args = List.map EConstr.Unsafe.to_constr args in
   let (mib,mip as specif) = Inductive.lookup_mind_specif env (fst ind) in
   let nparams = mib.mind_nparams in
   let (params,realargs) = List.chop nparams args in

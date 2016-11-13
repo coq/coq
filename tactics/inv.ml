@@ -284,7 +284,7 @@ let error_too_many_names pats =
   tclZEROMSG ~loc (
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
-    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (fst (run_delayed env Evd.empty c)))) pats ++
+    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (EConstr.Unsafe.to_constr (fst (run_delayed env Evd.empty c))))) pats ++
     str ".")
 
 let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
@@ -369,7 +369,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     (* and apply a trailer which again try to substitute *)
     (fun id ->
       dEqThen false (deq_trailer id)
-	(Some (None,ElimOnConstr (mkVar id,NoBindings))))
+	(Some (None,ElimOnConstr (EConstr.mkVar id,NoBindings))))
     id
 
 let nLastDecls i tac =
@@ -443,7 +443,6 @@ let raw_inversion inv_kind id status names =
         let msg = str "The type of " ++ pr_id id ++ str " is not inductive." in
         CErrors.user_err  msg
     in
-    let t = EConstr.of_constr t in
     let IndType (indf,realargs) = find_rectype env sigma t in
     let evdref = ref sigma in
     let (elim_predicate, args) =
@@ -457,6 +456,7 @@ let raw_inversion inv_kind id status names =
         Reduction.beta_appvect elim_predicate (Array.of_list realargs),
         case_nodep_then_using
     in
+    let cut_concl = EConstr.of_constr cut_concl in
     let refined id =
       let prf = mkApp (mkVar id, args) in
       let prf = EConstr.of_constr prf in
@@ -505,7 +505,7 @@ let inv k = inv_gen k NoDep
 let inv_tac id       = inv FullInversion None (NamedHyp id)
 let inv_clear_tac id = inv FullInversionClear None (NamedHyp id)
 
-let dinv k c = inv_gen k (Dep c)
+let dinv k c = inv_gen k (Dep (Option.map EConstr.Unsafe.to_constr c))
 
 let dinv_tac id       = dinv FullInversion None None (NamedHyp id)
 let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)

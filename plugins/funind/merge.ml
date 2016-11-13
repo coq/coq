@@ -32,7 +32,7 @@ module RelDecl = Context.Rel.Declaration
 
 (** {2 Useful operations on constr and glob_constr} *)
 
-let rec popn i c = if i<=0 then c else pop (EConstr.of_constr (popn (i-1) c))
+let rec popn i c = if i<=0 then c else EConstr.of_constr (pop (popn (i-1) c))
 
 (** Substitutions in constr *)
 let compare_constr_nosub t1 t2 =
@@ -979,19 +979,20 @@ let funify_branches relinfo nfuns branch =
 
 
 let relprinctype_to_funprinctype relprinctype nfuns =
-  let relinfo = compute_elim_sig relprinctype in
+  let relprinctype = EConstr.of_constr relprinctype in
+  let relinfo = compute_elim_sig Evd.empty (** FIXME*) relprinctype in
   assert (not relinfo.farg_in_concl);
   assert (relinfo.indarg_in_concl);
   (* first remove indarg and indarg_in_concl *)
   let relinfo_noindarg = { relinfo with
     indarg_in_concl = false; indarg = None;
-    concl = remove_last_arg (pop (EConstr.of_constr relinfo.concl)); } in
+    concl = EConstr.of_constr (remove_last_arg (pop relinfo.concl)); } in
   (* the nfuns last induction arguments are functional ones: remove them *)
   let relinfo_argsok = { relinfo_noindarg with
     nargs = relinfo_noindarg.nargs - nfuns;
     (* args is in reverse order, so remove fst *)
     args = remove_n_fst_list nfuns relinfo_noindarg.args;
-    concl = popn nfuns relinfo_noindarg.concl
+    concl = popn nfuns relinfo_noindarg.concl;
   } in
   let new_branches =
     List.map (funify_branches relinfo_argsok nfuns) relinfo_argsok.branches in

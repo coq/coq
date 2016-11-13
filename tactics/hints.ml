@@ -1320,7 +1320,7 @@ let make_local_hint_db env sigma ts eapply lems =
   let map c =
     let sigma = Sigma.Unsafe.of_evar_map sigma in
     let Sigma (c, sigma, _) = c.delayed env sigma in
-    (Sigma.to_evar_map sigma, c)
+    (Sigma.to_evar_map sigma, EConstr.Unsafe.to_constr c)
   in
   let lems = List.map map lems in
   let sign = Environ.named_context env in

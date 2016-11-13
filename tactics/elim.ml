@@ -77,10 +77,12 @@ let tmphyp_name = Id.of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
+  let c = EConstr.of_constr c in
   Proofview.Goal.enter { enter = begin fun gl ->
   let type_of = pf_unsafe_type_of gl in
   let sigma = project gl in
-  let typc = type_of (EConstr.of_constr c) in
+  let typc = type_of c in
+  let typc = EConstr.of_constr typc in
   tclTHENS (cut typc)
     [ tclTHEN (intro_using tmphyp_name)
          (onLastHypId

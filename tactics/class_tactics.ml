@@ -226,7 +226,8 @@ let e_give_exact flags poly (c,clenv) gl =
         c, {gl with sigma = evd}
     else c, gl
   in
-  let t1 = pf_unsafe_type_of gl (EConstr.of_constr c) in
+  let c = EConstr.of_constr c in
+  let t1 = pf_unsafe_type_of gl c in
   let t1 = EConstr.of_constr t1 in
   Proofview.V82.of_tactic (Clenvtac.unify ~flags t1 <*> exact_no_check c) gl
 
@@ -1483,7 +1484,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
   let evd = sig_sig gls' in
   let t = EConstr.Unsafe.to_constr t in
   let t' = let (ev, inst) = destEvar t in
-    mkEvar (ev, Array.of_list subst)
+    mkEvar (ev, Array.map_of_list EConstr.Unsafe.to_constr subst)
   in
   let term = Evarutil.nf_evar evd t' in
     evd, term
@@ -1506,6 +1507,7 @@ let rec head_of_constr sigma t =
 let head_of_constr h c =
   Proofview.tclEVARMAP >>= fun sigma ->
   let c = head_of_constr sigma c in
+  let c = EConstr.of_constr c in
   letin_tac None (Name h) c None Locusops.allHyps
 
 let not_evar c =

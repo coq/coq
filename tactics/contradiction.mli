@@ -10,4 +10,4 @@ open Term
 open Misctypes
 
 val absurd                      : constr -> unit Proofview.tactic
-val contradiction               : constr with_bindings option -> unit Proofview.tactic
+val contradiction               : EConstr.constr with_bindings option -> unit Proofview.tactic

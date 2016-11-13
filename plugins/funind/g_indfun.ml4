@@ -58,7 +58,7 @@ let pr_fun_ind_using_typed prc prlc _ opt_c =
     | None -> mt ()
     | Some b ->
       let (b, _) = Tactics.run_delayed (Global.env ()) Evd.empty b in
-      spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc b)
+      spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed (EConstr.Unsafe.to_constr %> prc) (EConstr.Unsafe.to_constr %> prlc) b)
 
 
 ARGUMENT EXTEND fun_ind_using
@@ -97,7 +97,9 @@ ARGUMENT EXTEND with_names TYPED AS intropattern_opt PRINTED BY pr_intro_as_pat
 | []  ->[ None ]
 END
 
-
+let functional_induction b c x pat =
+  let x = Option.map (Miscops.map_with_bindings EConstr.Unsafe.to_constr) x in
+  Proofview.V82.tactic (functional_induction true c x (Option.map out_disjunctive pat))
 
 
 TACTIC EXTEND newfunind
@@ -108,7 +110,7 @@ TACTIC EXTEND newfunind
 	 | [c] -> c
 	 | c::cl -> applist(c,cl)
        in
-       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction true c x (Option.map out_disjunctive pat))) princl ]
+       Extratactics.onSomeWithHoles (fun x -> functional_induction true c x pat) princl ]
 END
 (***** debug only ***)
 TACTIC EXTEND snewfunind
@@ -119,7 +121,7 @@ TACTIC EXTEND snewfunind
 	 | [c] -> c
 	 | c::cl -> applist(c,cl)
        in
-       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction false c x (Option.map out_disjunctive pat))) princl ]
+       Extratactics.onSomeWithHoles (fun x -> functional_induction false c x pat) princl ]
 END
 
 

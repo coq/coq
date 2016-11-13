@@ -386,9 +386,10 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
                           (Array.map (fun x -> x) v)
                           (Array.map (fun x -> do_arg x 1) v))
                           (Array.map (fun x -> do_arg x 2) v)
-        in let app =  if Array.equal eq_constr lb_args [||]
+        in let app =  if Array.equal Term.eq_constr lb_args [||]
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
+           let app = EConstr.of_constr app in
            Tacticals.New.tclTHENLIST [
              Proofview.tclEFFECTS eff;
              Equality.replace p q ; apply app ; Auto.default_auto]
@@ -426,7 +427,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     | (t1::q1,t2::q2) ->
         Proofview.Goal.enter { enter = begin fun gl ->
         let tt1 = Tacmach.New.pf_unsafe_type_of gl (EConstr.of_constr t1) in
-        if eq_constr t1 t2 then aux q1 q2
+        if Term.eq_constr t1 t2 then aux q1 q2
         else (
           let u,v = try  destruct_ind tt1
           (* trick so that the good sequence is returned*)
@@ -455,9 +456,10 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                           (Array.map (fun x -> do_arg x 1) v))
                           (Array.map (fun x -> do_arg x 2) v )
                 in
-                let app =  if Array.equal eq_constr bl_args [||]
+                let app =  if Array.equal Term.eq_constr bl_args [||]
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
+                let app = EConstr.of_constr app in
                 Tacticals.New.tclTHENLIST [
                   Proofview.tclEFFECTS eff;
                   Equality.replace_by t1 t2
@@ -515,7 +517,7 @@ let eqI ind l =
     try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
     with Not_found -> user_err ~hdr:"AutoIndDecl.eqI"
       (str "The boolean equality on " ++ pr_mind (fst ind) ++ str " is needed.");
-  in (if Array.equal eq_constr eA [||] then e else mkApp(e,eA)), eff
+  in (if Array.equal Term.eq_constr eA [||] then e else mkApp(e,eA)), eff
 
 (**********************************************************************)
 (* Boolean->Leibniz *)
@@ -580,9 +582,9 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
   (* try with *)
       Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
                      intro_using freshn ;
-                     induct_on (mkVar freshn);
+                     induct_on (EConstr.mkVar freshn);
                      intro_using freshm;
-                     destruct_on (mkVar freshm);
+                     destruct_on (EConstr.mkVar freshm);
                      intro_using freshz;
                      intros;
                      Tacticals.New.tclTRY (
@@ -594,10 +596,10 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
                     Tacticals.New.tclREPEAT (
                       Tacticals.New.tclTHENLIST [
-                         Simple.apply_in freshz (andb_prop());
+                         Simple.apply_in freshz (EConstr.of_constr (andb_prop()));
                          Proofview.Goal.nf_enter { enter = begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
-                            destruct_on_as (mkVar freshz)
+                            destruct_on_as (EConstr.mkVar freshz)
                                   (IntroOrPattern [[dl,IntroNaming (IntroIdentifier fresht);
                                     dl,IntroNaming (IntroIdentifier freshz)]])
                          end }
@@ -723,19 +725,19 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
   (* try with *)
       Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
                      intro_using freshn ;
-                     induct_on (mkVar freshn);
+                     induct_on (EConstr.mkVar freshn);
                      intro_using freshm;
-                     destruct_on (mkVar freshm);
+                     destruct_on (EConstr.mkVar freshm);
                      intro_using freshz;
                      intros;
                      Tacticals.New.tclTRY (
                       Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     Equality.inj None false None (mkVar freshz,NoBindings);
+                     Equality.inj None false None (EConstr.mkVar freshz,NoBindings);
 		     intros; simpl_in_concl;
                      Auto.default_auto;
                      Tacticals.New.tclREPEAT (
-                      Tacticals.New.tclTHENLIST [apply (andb_true_intro());
+                      Tacticals.New.tclTHENLIST [apply (EConstr.of_constr (andb_true_intro()));
                                   simplest_split ;Auto.default_auto ]
                       );
                       Proofview.Goal.nf_enter { enter = begin fun gls ->
@@ -888,18 +890,18 @@ let compute_dec_tact ind lnamesparrec nparrec =
         intros_using fresh_first_intros;
         intros_using [freshn;freshm];
 	(*we do this so we don't have to prove the same goal twice *)
-        assert_by (Name freshH) (
+        assert_by (Name freshH) (EConstr.of_constr (
           mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
-	)
-	  (Tacticals.New.tclTHEN (destruct_on eqbnm) Auto.default_auto);
+	))
+	  (Tacticals.New.tclTHEN (destruct_on (EConstr.of_constr eqbnm)) Auto.default_auto);
 
         Proofview.Goal.nf_enter { enter = begin fun gl ->
           let freshH2 = fresh_id (Id.of_string "H") gl in
-	  Tacticals.New.tclTHENS (destruct_on_using (mkVar freshH) freshH2) [
+	  Tacticals.New.tclTHENS (destruct_on_using (EConstr.mkVar freshH) freshH2) [
 	    (* left *)
 	    Tacticals.New.tclTHENLIST [
 	      simplest_left;
-              apply (mkApp(blI,Array.map(fun x->mkVar x) xargs));
+              apply (EConstr.of_constr (mkApp(blI,Array.map(fun x->mkVar x) xargs)));
               Auto.default_auto
             ]
             ;
@@ -913,9 +915,9 @@ let compute_dec_tact ind lnamesparrec nparrec =
               intro;
               Equality.subst_all ();
               assert_by (Name freshH3)
-		(mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|]))
+		(EConstr.of_constr (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|])))
 		(Tacticals.New.tclTHENLIST [
-		  apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs));
+		  apply (EConstr.of_constr (mkApp(lbI,Array.map (fun x->mkVar x) xargs)));
                   Auto.default_auto
 		]);
 	      Equality.general_rewrite_bindings_in true
