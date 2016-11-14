@@ -1029,7 +1029,6 @@ function copy_coq_license {
     install -D plugins/micromega/LICENSE.sos  $PREFIXCOQ/license_readme/coq/LicenseMicromega.txt
     install -D README                         $PREFIXCOQ/license_readme/coq/ReadMe.txt || true
     install -D README.md                      $PREFIXCOQ/license_readme/coq/ReadMe.md || true
-    install -D README.win                     $PREFIXCOQ/license_readme/coq/ReadMeWindows.txt
     install -D README.doc                     $PREFIXCOQ/license_readme/coq/ReadMeDoc.txt
     install -D CHANGES                        $PREFIXCOQ/license_readme/coq/Changes.txt
     install -D INSTALL                        $PREFIXCOQ/license_readme/coq/Install.txt
