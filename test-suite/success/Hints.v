@@ -27,6 +27,7 @@ Parameter f : nat -> nat.
 Parameter predf : forall n, pred n -> pred (f n).
 
 (* No conversion on let-bound variables and constants in pred (the default) *)
+
 Hint Resolve pred0 | 1 (pred _) : pred.
 Hint Resolve predf | 0 : pred.
 
@@ -57,9 +58,11 @@ Create HintDb pred2conv discriminated.
 Hint Resolve pred0 : pred2conv.
 Hint Resolve predconv | 1 (pred (S _)) : pred2conv.
 
-Goal pred 3.
+Definition g := f.
+
+Goal pred (g 0).
   Fail typeclasses eauto with pred2.
-  typeclasses eauto with pred2conv.
+  typeclasses eauto with predconv.
 Abort.
 
 Set Typeclasses Filtered Unification.

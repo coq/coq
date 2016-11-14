@@ -58,6 +58,10 @@ let typeclasses_iterative_deepening = ref false
 let set_typeclasses_iterative_deepening d = (:=) typeclasses_iterative_deepening d
 let get_typeclasses_iterative_deepening () = !typeclasses_iterative_deepening
 
+let typeclasses_allow_shelved = ref true
+let set_typeclasses_allow_shelved d = (:=) typeclasses_allow_shelved d
+let get_typeclasses_allow_shelved () = !typeclasses_allow_shelved
+
 (** [typeclasses_filtered_unif] governs the unification algorithm used by type
     classes. If enabled, a new algorithm based on pattern filtering and refine
     will be used. When disabled, the previous algorithm based on apply will be
@@ -139,10 +143,19 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "compat";
+      optname  = "typeclasses filtered unification";
       optkey   = ["Typeclasses";"Filtered";"Unification"];
       optread  = get_typeclasses_filtered_unification;
       optwrite = set_typeclasses_filtered_unification; }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "typeclasses allow shelved goals";
+      optkey   = ["Typeclasses";"Allow";"Shelved"];
+      optread  = get_typeclasses_allow_shelved;
+      optwrite = set_typeclasses_allow_shelved; }
 
 let set_typeclasses_debug =
   declare_bool_option
@@ -965,6 +978,7 @@ module Search = struct
       last_tac : Pp.std_ppcmds Lazy.t;
       search_dep : bool;
       search_only_classes : bool;
+      search_allow_shelved : bool;
       search_cut : hints_path;
       search_hints : hint_db; }
 
@@ -989,12 +1003,13 @@ module Search = struct
       in
       autogoal_cache := (cwd, only_classes, sign, hints); hints
 
-  let make_autogoal ?(st=full_transparent_state) only_classes dep cut i g =
+  let make_autogoal ?(st=full_transparent_state) ~allow_shelved ~only_classes dep cut i g =
     let hints = make_autogoal_hints only_classes ~st g in
     { search_hints = hints;
       search_depth = [i]; last_tac = lazy (str"none");
       search_dep = dep;
       search_only_classes = only_classes;
+      search_allow_shelved = allow_shelved;
       search_cut = cut }
 
   (** In the proof engine failures are represented as exceptions *)
@@ -1104,6 +1119,7 @@ module Search = struct
             last_tac = pp;
             search_dep = dep';
             search_only_classes = info.search_only_classes;
+            search_allow_shelved = info.search_allow_shelved;
             search_hints = hints';
             search_cut = derivs }
         in kont info' }
@@ -1130,7 +1146,7 @@ module Search = struct
               let evi = Evd.find_undefined sigma ev in
               if info.search_only_classes then
                 Some (ev, is_class_type sigma (Evd.evar_concl evi))
-              else Some (ev, true)
+              else Some (ev, not info.search_allow_shelved)
             with Not_found -> None
           in
           let remaining = CList.map_filter filter shelf in
@@ -1234,7 +1250,7 @@ module Search = struct
                       (fun e' -> let (e, info) = merge_exceptions e e' in
                               Proofview.tclZERO ~info e))
 
-  let search_tac_gl ?st only_classes dep hints depth i sigma gls gl :
+  let search_tac_gl ?st ~allow_shelved ~only_classes dep hints depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
     let open Proofview.Notations in
@@ -1242,15 +1258,16 @@ module Search = struct
       Proofview.shelve
     else
       let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
-      let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
+      let info = make_autogoal ?st ~allow_shelved ~only_classes dep (cut_of_hints hints) i gl in
       search_tac hints depth 1 info
 
-  let search_tac ?(st=full_transparent_state) only_classes dep hints depth =
+  let search_tac ?(st=full_transparent_state) ~allow_shelved ~only_classes dep hints depth =
     let open Proofview in
     let tac sigma gls i =
       Goal.nf_enter
         { enter = fun gl ->
-          search_tac_gl ~st only_classes dep hints depth (succ i) sigma gls gl }
+		  search_tac_gl ~st ~allow_shelved ~only_classes dep hints
+				depth (succ i) sigma gls gl }
     in
       Proofview.Unsafe.tclGETGOALS >>= fun gls ->
       Proofview.tclEVARMAP >>= fun sigma ->
@@ -1296,10 +1313,10 @@ module Search = struct
     tclCASE (with_shelf tac) >>= casefn
 
   let eauto_tac ?(st=full_transparent_state) ?(unique=false)
-                ~only_classes ?strategy ~depth ~dep hints =
+                ?(allow_shelved=get_typeclasses_allow_shelved ()) ~only_classes ?strategy ~depth ~dep hints =
     let open Proofview in
     let tac =
-      let search = search_tac ~st only_classes dep hints in
+      let search = search_tac ~st ~allow_shelved ~only_classes dep hints in
       let dfs =
         match strategy with
         | None -> not (get_typeclasses_iterative_deepening ())
@@ -1342,7 +1359,10 @@ module Search = struct
                                str " in regular mode" ++
                                  match depth with None -> str ", unbounded"
                                                 | Some i -> str ", with depth limit " ++ int i));
-    let tac = if only_classes then disallow_shelved initshelf tac else tac in
+    let tac =
+      if only_classes && not allow_shelved then
+        disallow_shelved initshelf tac
+      else tac in
     tac
 
   let run_on_evars p evm tac =
@@ -1397,7 +1417,8 @@ end
 
 (** Binding to either V85 or Search implementations. *)
 
-let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
+let typeclasses_eauto ?(allow_shelved=get_typeclasses_allow_shelved ())
+		      ?(only_classes=false) ?(st=full_transparent_state)
                       ?strategy ~depth dbs =
   let dbs = List.map_filter
               (fun db -> try Some (searchtable_map db)
@@ -1412,7 +1433,7 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
       try V85.eauto85 depth ~only_classes ~st ?strategy dbs gl
       with Not_found ->
 	Refiner.tclFAIL 0 (str"Proof search failed") gl)
-  else Search.eauto_tac ~st ~only_classes ?strategy ~depth ~dep:true dbs
+  else Search.eauto_tac ~st ~allow_shelved ~only_classes ?strategy ~depth ~dep:true dbs
 
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,
