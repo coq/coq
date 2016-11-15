@@ -24,7 +24,8 @@ type search_strategy = Dfs | Bfs
 
 val set_typeclasses_strategy : search_strategy -> unit
 
-val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state -> ?strategy:search_strategy ->
+val typeclasses_eauto : ?allow_shelved:bool -> ?only_classes:bool ->
+			?st:transparent_state -> ?strategy:search_strategy ->
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic
 
@@ -41,6 +42,8 @@ module Search : sig
     ?st:Names.transparent_state ->
     (** The transparent_state used when working with local hypotheses  *)
     ?unique:bool ->
+    (** Should we allow shelved subgoals to remain (by default a global option) *)
+    ?allow_shelved:bool ->
     (** Should we force a unique solution *)
     only_classes:bool ->
     (** Should non-class goals be shelved and resolved at the end *)
