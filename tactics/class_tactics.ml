@@ -1176,7 +1176,7 @@ module Search = struct
              (fun e' ->
 	      if CErrors.noncritical (fst e') then
                 (pr_error e'; aux (merge_exceptions e e') tl)
-              else (Printf.printf "raising again\n%!"; iraise e'))
+              else iraise e')
     and aux e = function
       | x :: xs -> onetac e x xs
       | [] ->
@@ -1274,27 +1274,6 @@ module Search = struct
                                    | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
 
-  let disallow_shelved initshelf tac =
-    let open Proofview in
-    let casefn = function
-    | Fail (e,info) -> tclZERO ~info e
-    | Next ((shelved, result), k) ->
-       if not (List.is_empty shelved) then
-         begin
-           Proofview.tclEVARMAP >>= fun sigma ->
-	   let gls = prlist_with_sep spc (pr_ev sigma) shelved in
-	   (if !typeclasses_debug > 0 then
-	      let initgls = prlist_with_sep spc (pr_ev sigma) initshelf in
-	      Feedback.msg_debug (str"Non-empty shelf at end of resolution:" ++ gls
-                                  ++ str" initially: " ++ initgls ++ str"."));
-	   Tacticals.New.tclZEROMSG (str"Proof search failed: " ++
-				      str"shelved goals remain: " ++ gls)
-         end
-       else
-         tclOR (tclUNIT result) (fun e -> k e >>= fun (gls, result) -> tclUNIT result)
-    in
-    tclCASE (with_shelf tac) >>= casefn
-
   let eauto_tac ?(st=full_transparent_state) ?(unique=false)
                 ~only_classes ?strategy ~depth ~dep hints =
     let open Proofview in
@@ -1342,7 +1321,6 @@ module Search = struct
                                str " in regular mode" ++
                                  match depth with None -> str ", unbounded"
                                                 | Some i -> str ", with depth limit " ++ int i));
-    let tac = if only_classes then disallow_shelved initshelf tac else tac in
     tac
 
   let run_on_evars p evm tac =

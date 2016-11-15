@@ -24,9 +24,9 @@ Module Backtracking.
     Fail all:((once (typeclasses eauto with typeclass_instances))
               + apply eq_refl).
     (* Does backtrack if other goals fail *)
-    all:[> typeclasses eauto + reflexivity .. ].
+    all:[> (unshelve typeclasses eauto; fail) + reflexivity .. ].
     Undo 1.
-    all:(typeclasses eauto + reflexivity). (* Note "+" is a focussing combinator *)
+    all:((unshelve typeclasses eauto; fail) + reflexivity). (* Note "+" is a focussing combinator *)
     Show Proof.  
   Qed.
 
@@ -66,7 +66,7 @@ Module Backtracking.
       unshelve evar (t : A). all:cycle 1.
       refine (@ex_intro _ _ t _).
       all:cycle 1.
-      all:(typeclasses eauto + reflexivity).
+      all:((unshelve typeclasses eauto; fail) + reflexivity).
     Qed.      
   End Leivant.
 End Backtracking.

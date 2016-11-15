@@ -1,10 +1,10 @@
 (* File reduced by coq-bug-finder from original input, then from 5752 lines to 3828 lines, then from 2707 lines to 558 lines, then from 472 lines to 168 lines, then from 110 lines to 101 lines, then from 96 lines to 77 lines, then from 80 lines to 64 lines, then from 92 lines to 79 lines *)
 (* coqc version 8.5beta1 (February 2015) compiled on Feb 23 2015 18:32:3 with OCaml 4.01.0
    coqtop version cagnode15:/afs/csail.mit.edu/u/j/jgross/coq-8.5,v8.5 (ebfc19d792492417b129063fb511aa423e9d9e08) *)
-Require Import TestSuite.admit.
 Require Import Coq.Setoids.Setoid.
 Generalizable All Variables.
 Axiom admit : forall {T}, T.
+Ltac admit := apply admit.
 Class Equiv (A : Type) := equiv : relation A.
 Class type (A : Type) {e : Equiv A} := eq_equiv : Equivalence equiv.
 Class ILogicOps Frm := { lentails: relation Frm;
@@ -71,7 +71,7 @@ Goal forall (T : Type) (O0 : T -> OPred) (O1 : T -> PointedOPred)
     refine (P _ _)
   end.
   Undo.
-  lazymatch goal with
+  Fail lazymatch goal with
   | |- ?R (?f ?a ?b) (?f ?a' ?b') =>
     let P := constr:(fun H H' => Morphisms.proper_prf a a' H b b' H') in
     set(p:=P)
