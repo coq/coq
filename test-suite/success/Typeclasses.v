@@ -6,7 +6,7 @@ Module onlyclasses.
   Goal Foo * Foo.
     split. shelve.
     Set Typeclasses Debug.
-    Fail typeclasses eauto.
+    Fail (unshelve typeclasses eauto); fail.
     typeclasses eauto with typeclass_instances.
     Unshelve. typeclasses eauto with typeclass_instances.
   Qed.

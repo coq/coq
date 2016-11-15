@@ -89,5 +89,6 @@ Debug: 2.2.1.1.1.1: apply ILFun_ILogic on (ILogic OPred)
   Show Existentials.
   Set Typeclasses Debug Verbosity 2.
   Set Printing All.
-  Fail apply reflexivity.
+  (* As in 8.5, allow a shelved subgoal to remain *)
+  apply reflexivity.
   
