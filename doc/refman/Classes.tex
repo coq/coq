@@ -395,12 +395,16 @@ than {\tt eauto} and {\tt auto}. The main differences are the following:
   and will try to solve \emph{only} typeclass goals. If some subgoal of
   a hint/instance is non-dependent and not of class type, that hint
   application will fail. Dependent subgoals are automatically shelved
-  and \emph{must be} resolved entirely when the other typeclass subgoals
-  are resolved or the proof search will fail \emph{globally},
+  and, according to the value of the {\tt Typeclasses Allow Shelved}
+  flag, \emph{must be} resolved entirely when the other typeclass
+  subgoals are resolved or the proof search will fail \emph{globally},
   \emph{without} the possibility to find another complete solution with
-  no shelved subgoals.
+  no shelved subgoals. If the {\tt Typeclasses Allow Shelved} option is
+  \emph{on}, resolution does not care about shelved subgoals which might
+  appear at any point. This might result in resolutions that leave
+  dangling evars, as in \Coq{} 8.5.
 
-  \emph{Note: } As of Coq 8.6, {\tt all:once (typeclasses eauto)}
+  \emph{Note: } As of \Coq{} 8.6, {\tt all:once (typeclasses eauto)}
   faithfully mimicks what happens during typeclass resolution when it is
   called during refinement/type-inference. It might move to {\tt
     all:typeclasses eauto} in future versions when the refinement engine
@@ -469,6 +473,15 @@ subgoals, meaning that subgoals which are depended on by other subgoals
 come first, while the non-dependent subgoals were put before the
 dependent ones previously (Coq v8.5 and below). This can result in quite
 different performance behaviors of proof search.
+
+\subsection{\tt Set Typeclasses Allow Shelved}
+\optindex{Typeclasses Allow Shelved}
+
+This option (on by default in 8.6) governs the treatment of shelved
+goals during typeclass resolution (and {\tt typeclasses eauto} calls).
+If unset, shelved goals created during resolution must be solved at the
+end of it and cannot escape. Otherwise shelved goals are considered
+postponed and can remain at the end of resolution.
 
 \subsection{\tt Set Typeclasses Filtered Unification}
 \optindex{Typeclasses Filtered Unification}
