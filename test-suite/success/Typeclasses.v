@@ -1,15 +1,28 @@
 Module onlyclasses.
 
+(* In 8.6 we still allow non-class subgoals *)
   Variable Foo : Type.
   Variable foo : Foo.
   Hint Extern 0 Foo => exact foo : typeclass_instances.
   Goal Foo * Foo.
     split. shelve.
     Set Typeclasses Debug.
-    Fail (unshelve typeclasses eauto); fail.
-    typeclasses eauto with typeclass_instances.
-    Unshelve. typeclasses eauto with typeclass_instances.
+    typeclasses eauto.
+    Unshelve. typeclasses eauto.
   Qed.
+
+  Module RJung.
+    Class Foo (x : nat).
+      
+      Instance foo x : x = 2 -> Foo x.
+      Hint Extern 0 (_ = _) => reflexivity : typeclass_instances.
+      Typeclasses eauto := debug.
+      Check (_ : Foo 2).
+
+
+      Fail Definition foo := (_ : 0 = 0).
+
+  End RJung.
 End onlyclasses.
 
 Module shelve_non_class_subgoals.
@@ -17,15 +30,35 @@ Module shelve_non_class_subgoals.
   Variable foo : Foo.
   Hint Extern 0 Foo => exact foo : typeclass_instances.
   Class Bar := {}.
-  Instance bar1 (f:Foo) : Bar.
+  Instance bar1 (f:Foo) : Bar := {}.
 
   Typeclasses eauto := debug.
   Set Typeclasses Debug Verbosity 2.
   Goal Bar.
     (* Solution has shelved subgoals (of non typeclass type) *)
-    Fail typeclasses eauto.
+    typeclasses eauto.
   Abort.
 End shelve_non_class_subgoals.
+
+Module RefineVsNoTceauto.
+
+  Class Foo (A : Type) := foo : A.
+  Instance: Foo nat := { foo := 0 }.
+  Instance: Foo nat := { foo := 42 }.
+  Hint Extern 0 (_ = _) => refine eq_refl : typeclass_instances.
+  Goal exists (f : Foo nat), @foo _ f = 0.
+  Proof.
+    unshelve (notypeclasses refine (ex_intro _ _ _)). 
+    Set Typeclasses Debug. Set Printing All.
+    all:once (typeclasses eauto).
+    Fail idtac. (* Check no subgoals are left *)
+    Undo 3.
+    (** In this case, the (_ = _) subgoal is not considered 
+        by typeclass resolution *)
+    refine (ex_intro _ _ _). Fail reflexivity.
+  Abort.
+
+End RefineVsNoTceauto.
 
 Module Leivantex2PR339.
   (** Was a bug preventing to find hints associated with no pattern *)
@@ -34,8 +67,9 @@ Module Leivantex2PR339.
   Hint Extern 0 => exact True : typeclass_instances.
   Typeclasses eauto := debug.
   Goal Bar.
-    Fail typeclasses eauto.
     Set Typeclasses Debug Verbosity 2.
+    typeclasses eauto. (* Relies on resolution of a non-class subgoal *)
+    Undo 1.
     typeclasses eauto with typeclass_instances.
   Qed.
 End Leivantex2PR339.

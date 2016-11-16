@@ -1167,7 +1167,8 @@ module Search = struct
       if path_matches derivs [] then aux e tl
       else
         let filter =
-          if info.search_only_classes then fail_if_nonclass info
+          if false (* in 8.6, still allow non-class subgoals
+                    info.search_only_classes *) then fail_if_nonclass info
           else Proofview.tclUNIT ()
         in
         ortac
@@ -1238,8 +1239,8 @@ module Search = struct
         unit Proofview.tactic =
     let open Proofview in
     let open Proofview.Notations in
-    if only_classes && not (is_class_type sigma (Goal.concl gl)) then
-      Proofview.shelve
+    if false (* In 8.6, still allow non-class goals only_classes && not (is_class_type sigma (Goal.concl gl)) *) then
+      Tacticals.New.tclZEROMSG (str"Not a subgoal for a class")
     else
       let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
       let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
