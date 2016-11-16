@@ -1318,10 +1318,9 @@ module Search = struct
        Feedback.msg_debug (str"Starting resolution with " ++ int i ++
                              str" goal(s) under focus and " ++
                              int (List.length initshelf) ++ str " shelved goal(s)" ++
-                             if only_classes then str " in only_classes mode" else
-                               str " in regular mode" ++
-                                 match depth with None -> str ", unbounded"
-                                                | Some i -> str ", with depth limit " ++ int i));
+                             (if only_classes then str " in only_classes mode" else str " in regular mode") ++
+                             match depth with None -> str ", unbounded"
+                                            | Some i -> str ", with depth limit " ++ int i));
     tac
 
   let run_on_evars p evm tac =
