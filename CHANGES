@@ -104,6 +104,7 @@ Notations
 - "Bind Scope" can once again bind "Funclass" and "Sortclass".
 
 General infrastructure
+
 - New configurable warning system which can be controlled with the vernacular
   command "Set Warnings", or, under coqc/coqtop, with the flag "-w". In
   particular, the default is now that warnings are printed by coqc.
@@ -121,6 +122,10 @@ Tools
 - Removed the -verbose-compat-notations flag and the corresponding Set
   Verbose Compat vernacular, since these warnings can now be silenced or
   turned into errors using "-w".
+
+XML protocol
+
+- message format has changed, see dev/doc/changes.txt for more details.
 
 Many bug fixes, minor changes and documentation improvements are not mentioned
 here.
