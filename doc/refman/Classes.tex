@@ -391,19 +391,19 @@ than {\tt eauto} and {\tt auto}. The main differences are the following:
   It analyses the dependencies between subgoals to avoid
   backtracking on subgoals that are entirely independent.
 \item When called with no arguments, {\tt typeclasses eauto} uses the
-  {\tt typeclass\_instances} database by default (instead of {\tt core})
-  and will try to solve \emph{only} typeclass goals, shelving the other
-  goals. If some subgoal of a hint/instance is non-dependent and not of
-  class type, the hint application will fail when faced with that
-  subgoal. Dependent subgoals are automatically shelved, and shelved
+  {\tt typeclass\_instances} database by default (instead of {\tt
+    core}).
+  Dependent subgoals are automatically shelved, and shelved
   goals can remain after resolution ends (following the behavior of
   \Coq{} 8.5).
 
   \emph{Note: } As of Coq 8.6, {\tt all:once (typeclasses eauto)}
   faithfully mimicks what happens during typeclass resolution when it is
-  called during refinement/type-inference. It might move to {\tt
-    all:typeclasses eauto} in future versions when the refinement engine
-  will be able to backtrack.
+  called during refinement/type-inference, except that \emph{only}
+  declared class subgoals are considered at the start of resolution
+  during type inference, while ``all'' can select non-class subgoals as
+  well. It might move to {\tt all:typeclasses eauto} in future versions
+  when the refinement engine will be able to backtrack.
 \item When called with specific databases (e.g. {\tt with}), {\tt
     typeclasses eauto} allows shelved goals to remain at any point
   during search and treat typeclasses goals like any other.
