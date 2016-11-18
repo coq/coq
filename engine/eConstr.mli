@@ -69,7 +69,7 @@ val mkInd : inductive -> t
 val mkIndU : pinductive -> t
 val mkConstruct : constructor -> t
 val mkConstructU : pconstructor -> t
-(* val mkConstructUi : pinductive * int -> t *)
+val mkConstructUi : pinductive * int -> t
 val mkCase : case_info * t * t * t array -> t
 val mkFix : (t, t) pfixpoint -> t
 val mkCoFix : (t, t) pcofixpoint -> t

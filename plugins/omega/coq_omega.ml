@@ -1092,6 +1092,7 @@ let replay_history tactic_normalisation =
 					Lazy.force coq_Gt;
 					Lazy.force coq_Gt |])
 	    in
+	    let not_sup_sup = EConstr.of_constr not_sup_sup in
             Tacticals.New.tclTHENS
 	      (Tacticals.New.tclTHENLIST [
 		unfold sp_Zle;

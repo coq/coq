@@ -185,7 +185,7 @@ END
 open Contradiction
 
 TACTIC EXTEND absurd
- [ "absurd" constr(c) ] -> [ absurd c ]
+ [ "absurd" constr(c) ] -> [ absurd (EConstr.of_constr c) ]
 END
 
 let onSomeWithHoles tac = function

@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open Hipattern
 open Tactics
 open Coqlib
@@ -19,6 +20,7 @@ module NamedDecl = Context.Named.Declaration
 (* Absurd *)
 
 let mk_absurd_proof t =
+  let build_coq_not () = EConstr.of_constr (build_coq_not ()) in
   let id = Namegen.default_dependent_ident in
   mkLambda (Names.Name id,mkApp(build_coq_not (),[|t|]),
     mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
@@ -28,13 +30,13 @@ let absurd c =
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let sigma = Sigma.to_evar_map sigma in
-    let j = Retyping.get_judgment_of env sigma (EConstr.of_constr c) in
+    let j = Retyping.get_judgment_of env sigma c in
     let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
-    let t = EConstr.Unsafe.to_constr j.Environ.utj_val in
+    let t = j.Environ.utj_val in
     let tac =
     Tacticals.New.tclTHENLIST [
       elim_type (EConstr.of_constr (build_coq_False ()));
-      Simple.apply (EConstr.of_constr (mk_absurd_proof t))
+      Simple.apply (mk_absurd_proof t)
     ] in
     Sigma.Unsafe.of_pair (tac, sigma)
   end }
@@ -49,7 +51,7 @@ let use_negated_unit_or_eq_type () = Flags.version_strictly_greater Flags.V8_5
 let filter_hyp f tac =
   let rec seek = function
     | [] -> Proofview.tclZERO Not_found
-    | d::rest when f (NamedDecl.get_type d) -> tac (NamedDecl.get_id d)
+    | d::rest when f (EConstr.of_constr (NamedDecl.get_type d)) -> tac (NamedDecl.get_id d)
     | _::rest -> seek rest in
   Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
@@ -65,31 +67,33 @@ let contradiction_context =
       | d :: rest ->
           let id = NamedDecl.get_id d in
           let typ = nf_evar sigma (NamedDecl.get_type d) in
-	  let typ = whd_all env sigma (EConstr.of_constr typ) in
-	  if is_empty_type sigma (EConstr.of_constr typ) then
-	    simplest_elim (EConstr.mkVar id)
-	  else match kind_of_term typ with
-	  | Prod (na,t,u) when is_empty_type sigma (EConstr.of_constr u) ->
+          let typ = EConstr.of_constr typ in
+	  let typ = whd_all env sigma typ in
+          let typ = EConstr.of_constr typ in
+	  if is_empty_type sigma typ then
+	    simplest_elim (mkVar id)
+	  else match EConstr.kind sigma typ with
+	  | Prod (na,t,u) when is_empty_type sigma u ->
              let is_unit_or_eq =
-               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type sigma (EConstr.of_constr t)
+               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type sigma t
                else None in
 	     Tacticals.New.tclORELSE
                (match is_unit_or_eq with
                | Some _ ->
-                   let hd,args = decompose_app t in
-                   let (ind,_ as indu) = destInd hd in
+                   let hd,args = decompose_app sigma t in
+                   let (ind,_ as indu) = destInd sigma hd in
                    let nparams = Inductiveops.inductive_nparams_env env ind in
                    let params = Util.List.firstn nparams args in
                    let p = applist ((mkConstructUi (indu,1)), params) in
                    (* Checking on the fly that it type-checks *)
-                   simplest_elim (EConstr.mkApp (EConstr.mkVar id,[|EConstr.of_constr p|]))
+                   simplest_elim (mkApp (mkVar id,[|p|]))
                | None ->
                  Tacticals.New.tclZEROMSG (Pp.str"Not a negated unit type."))
 	      (Proofview.tclORELSE
                  (Proofview.Goal.enter { enter = begin fun gl ->
                    let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
-	           filter_hyp (fun typ -> is_conv_leq (EConstr.of_constr typ) (EConstr.of_constr t))
-		     (fun id' -> simplest_elim (EConstr.mkApp (EConstr.mkVar id,[|EConstr.mkVar id'|])))
+	           filter_hyp (fun typ -> is_conv_leq typ t)
+		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
                  end })
                  begin function (e, info) -> match e with
 	           | Not_found -> seek_neg rest
@@ -102,10 +106,9 @@ let contradiction_context =
   end }
 
 let is_negation_of env sigma typ t =
-  match kind_of_term (whd_all env sigma t) with
+  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
     | Prod (na,t,u) ->
-      let u = nf_evar sigma u in
-      is_empty_type sigma (EConstr.of_constr u) && is_conv_leq env sigma (EConstr.of_constr typ) (EConstr.of_constr t)
+      is_empty_type sigma u && is_conv_leq env sigma typ t
     | _ -> false
 
 let contradiction_term (c,lbind as cl) =
@@ -114,8 +117,10 @@ let contradiction_term (c,lbind as cl) =
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let typ = type_of c in
-    let _, ccl = splay_prod env sigma (EConstr.of_constr typ) in
-    if is_empty_type sigma (EConstr.of_constr ccl) then
+    let typ = EConstr.of_constr typ in
+    let _, ccl = splay_prod env sigma typ in
+    let ccl = EConstr.of_constr ccl in
+    if is_empty_type sigma ccl then
       Tacticals.New.tclTHEN
         (elim false None cl None)
         (Tacticals.New.tclTRY assumption)
@@ -123,8 +128,8 @@ let contradiction_term (c,lbind as cl) =
       Proofview.tclORELSE
         begin
           if lbind = NoBindings then
-            filter_hyp (fun c -> is_negation_of env sigma typ (EConstr.of_constr c))
-              (fun id -> simplest_elim (EConstr.mkApp (EConstr.mkVar id,[|c|])))
+            filter_hyp (fun c -> is_negation_of env sigma typ c)
+              (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
           else
             Proofview.tclZERO Not_found
         end
