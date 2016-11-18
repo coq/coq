@@ -471,12 +471,17 @@ struct
 	
     let super (u,n as x) (v,n' as y) =
       let cmp = Level.compare u v in
-	if Int.equal cmp 0 then 
-	  if n < n' then Inl true
-	  else Inl false
-	else if is_prop x then Inl true
-	else if is_prop y then Inl false
-	else Inr cmp
+	if Int.equal cmp 0 then Inl (n < n')
+	else
+	  match x, y with
+	  | (l,0), (l',0) ->
+	     let open RawLevel in
+	     (match Level.data l, Level.data l' with
+	      | Prop, Prop -> Inl false
+	      | Prop, _ -> Inl true
+	      | _, Prop -> Inl false
+	      | _, _ -> Inr cmp)
+	  | _, _ -> Inr cmp
 
     let to_string (v, n) =
       if Int.equal n 0 then Level.to_string v
