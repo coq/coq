@@ -266,9 +266,11 @@ let eval_print l coq =
       let to_id, _ = get_id id in
       eval_call (query (phrase, to_id)) coq
   | [ Tok(_,"WAIT") ] ->
-      eval_call (status false) coq
+      let phrase = "Stm Wait." in
+      eval_call (query (phrase,tip_id())) coq
   | [ Tok(_,"JOIN") ] ->
-      eval_call (status true) coq
+      let phrase = "Stm JoinDocument." in
+      eval_call (query (phrase,tip_id())) coq
   | [ Tok(_,"ASSERT"); Tok(_,"TIP"); Tok(_,id) ] ->
       let to_id, _ = get_id id in
       if not(Stateid.equal (Document.tip doc) to_id) then error "Wrong tip"
