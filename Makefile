@@ -63,12 +63,16 @@ define findx
  $(shell find . $(FIND_VCS_CLAUSE) '(' -name $(1) ')' -exec $(2) {} \; | sed 's|^\./||')
 endef
 
+define finddir
+ $(shell find $(1) $(FIND_VCS_CLAUSE) '(' -name $(2) ')' -print | sed 's|^\./||')
+endef
+
 ## Files in the source tree
 
 LEXFILES := $(call find, '*.mll')
 export MLLIBFILES := $(call find, '*.mllib') $(call find, '*.mlpack')
 export ML4FILES := $(call find, '*.ml4')
-export CFILES := $(call find, '*.c')
+export CFILES := $(call finddir, 'kernel/byterun', '*.c')
 
 # NB: The lists of currently existing .ml and .mli files will change
 # before and after a build or a make clean. Hence we do not export
