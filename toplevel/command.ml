@@ -537,11 +537,9 @@ let inductive_levels env evdref poly arities inds =
 	in
 	let duu = Sorts.univ_of_sort du in
 	let evd =
-	  if not (Univ.is_small_univ duu) && Evd.check_eq evd cu duu then
-	    if is_flexible_sort evd duu then
-	      if Evd.check_leq evd Univ.type0_univ duu then
-	      	evd
-	      else Evd.set_eq_sort env evd (Prop Null) du
+	  if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
+	    if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu) then
+	      Evd.set_eq_sort env evd (Prop Null) du
 	    else evd
 	  else Evd.set_eq_sort env evd (Type cu) du
 	in

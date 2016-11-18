@@ -42,33 +42,34 @@ let get_polymorphic_positions f =
         templ.template_param_levels)
   | _ -> assert false
 
-let refresh_level evd s =
-  match Evd.is_sort_variable evd s with
-  | None -> true
-  | Some l -> not (Evd.is_flexible_level evd l)
-
 let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 		      pbty env evd t =
   let evdref = ref evd in
   let modified = ref false in
-  let rec refresh status dir t = 
-    match kind_of_term t with
-    | Sort (Type u as s) when
-      (match Univ.universe_level u with
-      | None -> true
-      | Some l -> not onlyalg && refresh_level evd s) ->
+  let refresh_sort status dir s =
     let s' = evd_comb0 (new_sort_variable status) evdref in
     let evd = 
       if dir then set_leq_sort env !evdref s' s
       else set_leq_sort env !evdref s s'
     in
-      modified := true; evdref := evd; mkSort s'
+    modified := true; evdref := evd; mkSort s'
+  in
+  let rec refresh onlyalg status dir t = 
+    match kind_of_term t with
+    | Sort (Type u as s) ->
+       (match Univ.universe_level u with
+	| None -> refresh_sort status dir s
+	| Some l ->
+	   (match Evd.universe_rigidity evd l with
+	    | UnivRigid -> if not onlyalg then refresh_sort status dir s else t
+	    | UnivFlexible alg ->
+	       if onlyalg && alg then
+	         (evdref := Evd.make_flexible_variable !evdref false l; t)
+	       else t))
     | Sort (Prop Pos as s) when refreshset && not dir ->
-       let s' = evd_comb0 (new_sort_variable status) evdref in
-       let evd = set_leq_sort env !evdref s s' in
-       modified := true; evdref := evd; mkSort s'
+       refresh_sort status dir s
     | Prod (na,u,v) -> 
-      mkProd (na,u,refresh status dir v)
+      mkProd (na, u, refresh onlyalg status dir v)
     | _ -> t
   (** Refresh the types of evars under template polymorphic references *)
   and refresh_term_evars onevars top t =
@@ -81,7 +82,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
       Array.iter (refresh_term_evars onevars false) args
     | Evar (ev, a) when onevars ->
       let evi = Evd.find !evdref ev in
-      let ty' = refresh univ_flexible true evi.evar_concl in
+      let ty' = refresh onlyalg univ_flexible true evi.evar_concl in
 	if !modified then 
 	  evdref := Evd.add !evdref ev {evi with evar_concl = ty'}
 	else ()
@@ -101,9 +102,9 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   in
   let t' = 
     if isArity t then
-      (match pbty with
-      | None -> t
-      | Some dir -> refresh status dir t)
+      match pbty with
+      | None -> refresh true univ_flexible false t
+      | Some dir -> refresh onlyalg status dir t
     else (refresh_term_evars false true t; t)
   in
     if !modified then !evdref, t' else !evdref, t
