@@ -842,9 +842,9 @@ let vernac_instance abst locality poly sup inst props pri =
 let vernac_context poly l =
   if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_declare_instances locality ids pri =
+let vernac_declare_instances locality insts =
   let glob = not (make_section_locality locality) in
-  List.iter (fun id -> Classes.existing_instance glob id pri) ids
+  List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
 let vernac_declare_class id =
   Record.declare_existing_class (Nametab.global id)
@@ -1083,11 +1083,10 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
     | name1 :: names1, name2 :: names2 ->
        if Name.equal name1 name2 then
          name1 :: names_union names1 names2
-       else error "Arguments lists should agree on names they provide."
+       else error "Argument lists should agree on the names they provide."
   in
 
-  let initial = List.make num_args Anonymous in
-  let names = List.fold_left names_union initial names in
+  let names = List.fold_left names_union [] names in
 
   let rec rename prev_names names =
     match prev_names, names with
@@ -1108,19 +1107,23 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   let names = rename prev_names names in
   let renaming_specified = Option.has_some !example_renaming in
 
-  if not (List.distinct_f Name.compare (List.filter ((!=) Anonymous) names)) then
-    error "Arguments names must be distinct.";
-
   if !rename_flag_required && not rename_flag then
     user_err ~hdr:"vernac_declare_arguments"
       (strbrk "To rename arguments the \"rename\" flag must be specified."
-    ++
+    ++ spc () ++
        match !example_renaming with
        | None -> mt ()
        | Some (o,n) ->
-          str "\nArgument " ++ pr_name o ++
+          str "Argument " ++ pr_name o ++
             str " renamed to " ++ pr_name n ++ str ".");
 
+  let duplicate_names =
+    List.duplicates Name.equal (List.filter ((!=) Anonymous) names)
+  in
+  if not (List.is_empty duplicate_names) then begin
+    let duplicates = prlist_with_sep pr_comma pr_name duplicate_names in
+    user_err (strbrk "Some argument names are duplicated: " ++ duplicates)
+  end;
 
   (* Parts of this code are overly complicated because the implicit arguments
      API is completely crazy: positions (ExplByPos) are elaborated to
@@ -1492,7 +1495,7 @@ let _ =
       optwrite = (fun b ->  Constrintern.parsing_explicit := b) }
 
 let _ =
-  declare_string_option
+  declare_string_option ~preprocess:CWarnings.normalize_flags_string
     { optsync  = true;
       optdepr  = false;
       optname  = "warnings display";
@@ -1571,7 +1574,7 @@ let get_current_context_of_args = function
 let vernac_check_may_eval redexp glopt rc =
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr env sigma rc in
-  let sigma' = Evarconv.consider_remaining_unif_problems env sigma' in
+  let sigma' = Evarconv.solve_unif_constraints_with_heuristics env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
   let pl, uctx = Evd.universe_context sigma' in
@@ -1907,6 +1910,10 @@ let vernac_check_guard () =
 exception End_of_input
 
 let vernac_load interp fname =
+  let interp x =
+    let proof_mode = Proof_global.get_default_proof_mode_name () in
+    Proof_global.activate_proof_mode proof_mode;
+    interp x in
   let parse_sentence = Flags.with_option Flags.we_are_parsing
     (fun po ->
     match Pcoq.Gram.entry_parse Pcoq.main_entry po with
@@ -1990,10 +1997,10 @@ let interp ?proof ~loc locality poly c =
       vernac_identity_coercion locality poly local id s t
 
   (* Type classes *)
-  | VernacInstance (abst, sup, inst, props, pri) ->
-      vernac_instance abst locality poly sup inst props pri
+  | VernacInstance (abst, sup, inst, props, info) ->
+      vernac_instance abst locality poly sup inst props info
   | VernacContext sup -> vernac_context poly sup
-  | VernacDeclareInstances (ids, pri) -> vernac_declare_instances locality ids pri
+  | VernacDeclareInstances insts -> vernac_declare_instances locality insts
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)

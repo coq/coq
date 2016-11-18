@@ -526,7 +526,6 @@ let rec add_directory recur add_file phys_dir log_dir =
     | FileRegular f ->
         add_file phys_dir log_dir f
   in
-  check_unix_dir (fun s -> eprintf "*** Warning: %s\n" s) phys_dir;
   if exists_dir phys_dir then
     process_directory f phys_dir
   else

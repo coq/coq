@@ -175,14 +175,14 @@ Qed.
 
 End The_power_set_partial_order.
 
-Hint Resolve Empty_set_minimal: sets v62.
-Hint Resolve Power_set_Inhabited: sets v62.
-Hint Resolve Inclusion_is_an_order: sets v62.
-Hint Resolve Inclusion_is_transitive: sets v62.
-Hint Resolve Union_minimal: sets v62.
-Hint Resolve Union_increases_l: sets v62.
-Hint Resolve Union_increases_r: sets v62.
-Hint Resolve Intersection_decreases_l: sets v62.
-Hint Resolve Intersection_decreases_r: sets v62.
-Hint Resolve Empty_set_is_Bottom: sets v62.
-Hint Resolve Strict_inclusion_is_transitive: sets v62.
+Hint Resolve Empty_set_minimal: sets.
+Hint Resolve Power_set_Inhabited: sets.
+Hint Resolve Inclusion_is_an_order: sets.
+Hint Resolve Inclusion_is_transitive: sets.
+Hint Resolve Union_minimal: sets.
+Hint Resolve Union_increases_l: sets.
+Hint Resolve Union_increases_r: sets.
+Hint Resolve Intersection_decreases_l: sets.
+Hint Resolve Intersection_decreases_r: sets.
+Hint Resolve Empty_set_is_Bottom: sets.
+Hint Resolve Strict_inclusion_is_transitive: sets.

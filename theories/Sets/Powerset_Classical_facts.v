@@ -90,7 +90,7 @@ Section Sets_as_an_algebra.
     apply Subtract_intro; auto with sets.
     red; intro H'1; apply H'; rewrite H'1; auto with sets.
   Qed.
-  Hint Resolve incl_soustr_add_r: sets v62.
+  Hint Resolve incl_soustr_add_r: sets.
 
   Lemma add_soustr_2 :
     forall (X:Ensemble U) (x:U),
@@ -328,9 +328,9 @@ Section Sets_as_an_algebra.
 
 End Sets_as_an_algebra.
 
-Hint Resolve incl_soustr_in: sets v62.
-Hint Resolve incl_soustr: sets v62.
-Hint Resolve incl_soustr_add_l: sets v62.
-Hint Resolve incl_soustr_add_r: sets v62.
-Hint Resolve add_soustr_1 add_soustr_2: sets v62.
-Hint Resolve add_soustr_xy: sets v62.
+Hint Resolve incl_soustr_in: sets.
+Hint Resolve incl_soustr: sets.
+Hint Resolve incl_soustr_add_l: sets.
+Hint Resolve incl_soustr_add_r: sets.
+Hint Resolve add_soustr_1 add_soustr_2: sets.
+Hint Resolve add_soustr_xy: sets.

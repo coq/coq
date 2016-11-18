@@ -1,5 +1,5 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V8.5 SYSTEM
+            INSTALLATION PROCEDURES FOR THE COQ V8.6 SYSTEM
             -----------------------------------------------
 
 
@@ -27,7 +27,7 @@ WHAT DO YOU NEED ?
 
      port install coq
 
-   To compile Coq V8.5 yourself, you need:
+   To compile Coq V8.6 yourself, you need:
 
    - Objective Caml version 4.01.0 or later
      (available at http://caml.inria.fr/)

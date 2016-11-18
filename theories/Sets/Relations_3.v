@@ -51,10 +51,10 @@ Section Relations_3.
    Definition Noetherian : Prop := forall x:U, noetherian x.
 
 End Relations_3.
-Hint Unfold coherent: sets v62.
-Hint Unfold locally_confluent: sets v62.
-Hint Unfold confluent: sets v62.
-Hint Unfold Confluent: sets v62.
-Hint Resolve definition_of_noetherian: sets v62.
-Hint Unfold Noetherian: sets v62.
+Hint Unfold coherent: sets.
+Hint Unfold locally_confluent: sets.
+Hint Unfold confluent: sets.
+Hint Unfold Confluent: sets.
+Hint Resolve definition_of_noetherian: sets.
+Hint Unfold Noetherian: sets.
 

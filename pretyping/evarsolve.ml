@@ -1603,7 +1603,7 @@ let status_changed lev (pbty,_,t1,t2) =
   (try Evar.Set.mem (head_evar t1) lev with NoHeadEvar -> false) ||
   (try Evar.Set.mem (head_evar t2) lev with NoHeadEvar -> false)
 
-let reconsider_conv_pbs conv_algo evd =
+let reconsider_unif_constraints conv_algo evd =
   let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
   List.fold_left
     (fun p (pbty,env,t1,t2 as x) ->
@@ -1616,6 +1616,8 @@ let reconsider_conv_pbs conv_algo evd =
     (Success evd)
     pbs
 
+let reconsider_conv_pbs = reconsider_unif_constraints
+
 (* Tries to solve problem t1 = t2.
  * Precondition: t1 is an uninstantiated evar
  * Returns an optional list of evars that were instantiated, or None
@@ -1626,7 +1628,7 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
   try
     let t2 = whd_betaiota evd t2 in (* includes whd_evar *)
     let evd = evar_define conv_algo ~choose env evd pbty ev1 t2 in
-      reconsider_conv_pbs conv_algo evd
+      reconsider_unif_constraints conv_algo evd
   with
     | NotInvertibleUsingOurAlgorithm t ->
         UnifFailure (evd,NotClean (ev1,env,t))

@@ -1,3 +1,79 @@
+Module onlyclasses.
+
+(* In 8.6 we still allow non-class subgoals *)
+  Variable Foo : Type.
+  Variable foo : Foo.
+  Hint Extern 0 Foo => exact foo : typeclass_instances.
+  Goal Foo * Foo.
+    split. shelve.
+    Set Typeclasses Debug.
+    typeclasses eauto.
+    Unshelve. typeclasses eauto.
+  Qed.
+
+  Module RJung.
+    Class Foo (x : nat).
+      
+      Instance foo x : x = 2 -> Foo x.
+      Hint Extern 0 (_ = _) => reflexivity : typeclass_instances.
+      Typeclasses eauto := debug.
+      Check (_ : Foo 2).
+
+
+      Fail Definition foo := (_ : 0 = 0).
+
+  End RJung.
+End onlyclasses.
+
+Module shelve_non_class_subgoals.
+  Variable Foo : Type.
+  Variable foo : Foo.
+  Hint Extern 0 Foo => exact foo : typeclass_instances.
+  Class Bar := {}.
+  Instance bar1 (f:Foo) : Bar := {}.
+
+  Typeclasses eauto := debug.
+  Set Typeclasses Debug Verbosity 2.
+  Goal Bar.
+    (* Solution has shelved subgoals (of non typeclass type) *)
+    typeclasses eauto.
+  Abort.
+End shelve_non_class_subgoals.
+
+Module RefineVsNoTceauto.
+
+  Class Foo (A : Type) := foo : A.
+  Instance: Foo nat := { foo := 0 }.
+  Instance: Foo nat := { foo := 42 }.
+  Hint Extern 0 (_ = _) => refine eq_refl : typeclass_instances.
+  Goal exists (f : Foo nat), @foo _ f = 0.
+  Proof.
+    unshelve (notypeclasses refine (ex_intro _ _ _)). 
+    Set Typeclasses Debug. Set Printing All.
+    all:once (typeclasses eauto).
+    Fail idtac. (* Check no subgoals are left *)
+    Undo 3.
+    (** In this case, the (_ = _) subgoal is not considered 
+        by typeclass resolution *)
+    refine (ex_intro _ _ _). Fail reflexivity.
+  Abort.
+
+End RefineVsNoTceauto.
+
+Module Leivantex2PR339.
+  (** Was a bug preventing to find hints associated with no pattern *)
+  Class Bar := {}.
+  Instance bar1 (t:Type) : Bar.
+  Hint Extern 0 => exact True : typeclass_instances.
+  Typeclasses eauto := debug.
+  Goal Bar.
+    Set Typeclasses Debug Verbosity 2.
+    typeclasses eauto. (* Relies on resolution of a non-class subgoal *)
+    Undo 1.
+    typeclasses eauto with typeclass_instances.
+  Qed.
+End Leivantex2PR339.
+
 Module bt.
 Require Import Equivalence.
 
@@ -103,6 +179,40 @@ Section sec.
  Surely we can just expand it inline, right? Wrong!: *)
  Check U (fun x => e x) _.
 End sec.
+
+Module UniqueSolutions.
+  Set Typeclasses Unique Solutions.
+  Class Eq (A : Type) : Set.
+    Instance eqa : Eq nat := {}.
+    Instance eqb : Eq nat := {}.
+
+    Goal Eq nat.
+      try apply _.
+      Fail exactly_once typeclasses eauto.
+    Abort.
+End UniqueSolutions.
+
+
+Module UniqueInstances.
+  (** Optimize proof search on this class by never backtracking on (closed) goals
+      for it. *)
+  Set Typeclasses Unique Instances.
+  Class Eq (A : Type) : Set.
+    Instance eqa : Eq nat := _. constructor. Qed.
+    Instance eqb : Eq nat := {}.
+    Class Foo (A : Type) (e : Eq A) : Set.
+    Instance fooa : Foo _ eqa := {}.
+
+    Tactic Notation "refineu" open_constr(c) := unshelve refine c.
+
+    Set Typeclasses Debug.
+    Goal { e : Eq nat & Foo nat e }.
+      unshelve refineu (existT _ _ _).
+      all:simpl.
+      (** Does not backtrack on the (wrong) solution eqb *)
+      Fail all:typeclasses eauto.
+    Abort.
+End UniqueInstances.
 
 Module IterativeDeepening.
 

@@ -338,6 +338,7 @@ module Vernac_ =
     let vernac_eoi = eoi_entry vernac
     let rec_definition = gec_vernac "Vernac.rec_definition"
     let red_expr = make_gen_entry utactic "red_expr"
+    let hint_info = gec_vernac "hint_info"
     (* Main vernac entry *)
     let main_entry = Gram.entry_create "vernac"
     let noedit_mode = gec_vernac "noedit_command"

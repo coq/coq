@@ -1,0 +1,11 @@
+--- configure	2014-04-14 22:28:39.174177924 +0200
++++ configure	2014-04-14 22:29:23.253025166 +0200
+@@ -335,7 +335,7 @@
+   MAKEVERSION=`$MAKE -v | head -1 | cut -d" " -f3`
+   MAKEVERSIONMAJOR=`echo $MAKEVERSION | cut -d. -f1`
+   MAKEVERSIONMINOR=`echo $MAKEVERSION | cut -d. -f2`
+-  if [ "$MAKEVERSIONMAJOR" -eq 3 -a "$MAKEVERSIONMINOR" -ge 81 ]; then
++  if [ "$MAKEVERSIONMAJOR" -eq 3 -a "$MAKEVERSIONMINOR" -ge 81 ] || [ "$MAKEVERSIONMAJOR" -ge 4 ] ; then
+       echo "You have GNU Make $MAKEVERSION. Good!"
+   else
+       OK="no"

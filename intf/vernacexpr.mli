@@ -122,8 +122,14 @@ type hint_mode =
   | ModeNoHeadEvar (* No evar at the head *)
   | ModeOutput (* Anything *)
 
+type 'a hint_info_gen =
+    { hint_priority : int option;
+      hint_pattern : 'a option }
+
+type hint_info_expr = constr_pattern_expr hint_info_gen
+
 type hints_expr =
-  | HintsResolve of (int option * bool * reference_or_constr) list
+  | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
@@ -367,12 +373,12 @@ type vernac_expr =
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
 	(bool * constr_expr) option * (* props *)
-	int option (* Priority *)
+	hint_info_expr
 
   | VernacContext of local_binder list
 
   | VernacDeclareInstances of
-    reference list * int option (* instance names, priority *)
+    (reference * hint_info_expr) list (* instances names, priorities and patterns *)
 
   | VernacDeclareClass of reference (* inductive or definition name *)
 

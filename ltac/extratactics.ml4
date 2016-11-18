@@ -37,7 +37,7 @@ DECLARE PLUGIN "extratactics"
 let with_delayed_uconstr ist c tac =
   let flags = {
     Pretyping.use_typeclasses = false;
-    use_unif_heuristics = true;
+    solve_unification_constraints = true;
     use_hook = Some Pfedit.solve_by_implicit_tactic;
     fail_evar = false;
     expand_evars = true
@@ -315,7 +315,8 @@ let project_hint pri l2r r =
   in
   let ctx = Evd.universe_context_set sigma in
   let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id (c,ctx) in
-    (pri,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
+  let info = {Vernacexpr.hint_priority = pri; hint_pattern = None} in
+    (info,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
 
 let add_hints_iff l2r lc n bl =
   Hints.add_hints true bl
@@ -341,16 +342,17 @@ END
 
 let constr_flags = {
   Pretyping.use_typeclasses = true;
-  Pretyping.use_unif_heuristics = true;
+  Pretyping.solve_unification_constraints = true;
   Pretyping.use_hook = Some Pfedit.solve_by_implicit_tactic;
   Pretyping.fail_evar = false;
   Pretyping.expand_evars = true }
 
-let refine_tac ist simple c =
+let refine_tac ist simple with_classes c =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let flags = constr_flags in
+    let flags =
+      { constr_flags with Pretyping.use_typeclasses = with_classes } in
     let expected_type = Pretyping.OfType concl in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma -> c.delayed env sigma } in
@@ -362,11 +364,28 @@ let refine_tac ist simple c =
   end }
 
 TACTIC EXTEND refine
-| [ "refine" uconstr(c) ] -> [ refine_tac ist false c ]
+| [ "refine" uconstr(c) ] ->
+   [ refine_tac ist false true c ]
 END
 
 TACTIC EXTEND simple_refine
-| [ "simple" "refine" uconstr(c) ] -> [ refine_tac ist true c ]
+| [ "simple" "refine" uconstr(c) ] ->
+   [ refine_tac ist true true c ]
+END
+
+TACTIC EXTEND notcs_refine
+| [ "notypeclasses" "refine" uconstr(c) ] ->
+   [ refine_tac ist false false c ]
+END
+
+TACTIC EXTEND notcs_simple_refine
+| [ "simple" "notypeclasses" "refine" uconstr(c) ] ->
+   [ refine_tac ist true false c ]
+END
+
+(* Solve unification constraints using heuristics or fail if any remain *)
+TACTIC EXTEND solve_constraints
+[ "solve_constraints" ] -> [ Refine.solve_constraints ]
 END
 
 (**********************************************************************)

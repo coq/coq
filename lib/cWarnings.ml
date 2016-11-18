@@ -21,7 +21,7 @@ let warnings : (string, t) Hashtbl.t = Hashtbl.create 97
 let categories : (string, string list) Hashtbl.t = Hashtbl.create 97
 
 let current_loc = ref Loc.ghost
-let flags = ref "default"
+let flags = ref ""
 
 let set_current_loc = (:=) current_loc
 
@@ -35,6 +35,10 @@ let add_warning_in_category ~name ~category =
   in
   Hashtbl.replace categories category (name::ws)
 
+let refine_loc = function
+  | None when not (Loc.is_ghost !current_loc) -> Some !current_loc
+  | loc -> loc
+
 let create ~name ~category ?(default=Enabled) pp =
   Hashtbl.add warnings name { default; category; status = default };
   add_warning_in_category ~name ~category;
@@ -44,15 +48,17 @@ let create ~name ~category ?(default=Enabled) pp =
            match w.status with
            | Disabled -> ()
            | AsError ->
-              let loc = Option.default !current_loc loc in
-              CErrors.user_err ~loc (pp x)
+              begin match refine_loc loc with
+              | Some loc -> CErrors.user_err ~loc (pp x)
+              | None -> CErrors.user_err (pp x)
+              end
            | Enabled ->
               let msg =
                 pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
                   str category ++ str "]"
               in
-              let loc = Option.default !current_loc loc in
-              Feedback.msg_warning ~loc msg
+              let loc = refine_loc loc in
+              Feedback.msg_warning ?loc msg
 
 let warn_unknown_warning =
   create ~name:"unknown-warning" ~category:"toplevel"
@@ -62,7 +68,7 @@ let set_warning_status ~name status =
   try
     let w = Hashtbl.find warnings name in 
     Hashtbl.replace warnings name { w with status = status }
-  with Not_found -> warn_unknown_warning name
+  with Not_found -> ()
 
 let reset_default_warnings () =
   Hashtbl.iter (fun name w ->
@@ -74,6 +80,13 @@ let set_all_warnings_status status =
                 Hashtbl.replace warnings name { w with status })
     warnings
 
+let set_category_status ~name status =
+  let names = Hashtbl.find categories name in
+  List.iter (fun name -> set_warning_status name status) names
+
+let is_all_keyword name = CString.equal name "all"
+let is_none_keyword s = CString.equal s "none"
+
 let parse_flag s =
   if String.length s > 1 then
     match String.get s 0 with
@@ -82,39 +95,94 @@ let parse_flag s =
     | _ -> (Enabled, s)
   else CErrors.error "Invalid warnings flag"
 
-let rec do_all_keyword = function
-  | [] -> []
-  | (status, name as item) :: items -> 
-     if CString.equal name "all" then
-       (set_all_warnings_status status; do_all_keyword items)
-     else item :: do_all_keyword items
+let string_of_flag (status,name) =
+  match status with
+  | AsError -> "+" ^ name
+  | Disabled -> "-" ^ name
+  | Enabled -> name
 
-let rec do_categories = function
-  | [] -> []
-  | (status, name as item) :: items -> 
-     try
-       let names = Hashtbl.find categories name in
-       List.iter (fun name -> set_warning_status name status) names;
-       do_categories items
-     with Not_found -> item :: do_categories items
+let string_of_flags flags =
+  String.concat "," (List.map string_of_flag flags)
+
+let set_status ~name status =
+  if is_all_keyword name then
+    set_all_warnings_status status
+  else
+    try
+      set_category_status ~name status
+    with Not_found ->
+         try
+           set_warning_status ~name status
+         with Not_found -> ()
+
+let split_flags s =
+  let reg = Str.regexp "[ ,]+" in Str.split reg s
+
+let check_warning ~silent (_status,name) =
+  is_all_keyword name ||
+  Hashtbl.mem categories name ||
+  Hashtbl.mem warnings name ||
+  (if not silent then warn_unknown_warning name; false)
+
+(** [cut_before_all_rev] removes all flags subsumed by a later occurrence of the
+    "all" flag, and reverses the list. *)
+let rec cut_before_all_rev acc = function
+  | [] -> acc
+  | (_status,name as w) :: warnings ->
+     cut_before_all_rev (w :: if is_all_keyword name then [] else acc) warnings
+
+let cut_before_all_rev warnings = cut_before_all_rev [] warnings
+
+(** [uniquize_flags_rev] removes flags that are subsumed by later occurrences of
+    themselves or their categories, and reverses the list. *)
+let uniquize_flags_rev flags =
+  let rec aux acc visited = function
+    | (_,name as flag)::flags ->
+       if CString.Set.mem name visited then aux acc visited flags else
+         let visited =
+           try
+             let warnings = Hashtbl.find categories name in
+             List.fold_left (fun v w -> CString.Set.add w v) visited warnings
+           with Not_found ->
+             visited
+         in
+         aux (flag::acc) (CString.Set.add name visited) flags
+    | [] -> acc
+  in aux [] CString.Set.empty flags
+
+(** [normalize_flags] removes unknown or redundant warnings. If [silent] is
+    true, it emits a warning when an unknown warning is met. *)
+let normalize_flags ~silent warnings =
+  let warnings = List.filter (check_warning ~silent) warnings in
+  let warnings = cut_before_all_rev warnings in
+  uniquize_flags_rev warnings
+
+let flags_of_string s = List.map parse_flag (split_flags s)
+
+let normalize_flags_string s =
+  if is_none_keyword s then s
+  else
+    let flags = flags_of_string s in
+    let flags = normalize_flags ~silent:false flags in
+    string_of_flags flags
 
 let rec parse_warnings items =
-  List.iter (fun (status, name) -> set_warning_status ~name status) items
+  CList.iter (fun (status, name) -> set_status ~name status) items
 
 (* For compatibility, we accept "none" *)
-let parse_flags s = 
-  if CString.equal s "none" then begin
+let parse_flags s =
+  if is_none_keyword s then begin
       Flags.make_warn false;
-      set_all_warnings_status Disabled
+      set_all_warnings_status Disabled;
+      "none"
     end
   else begin
       Flags.make_warn true;
-      let reg = Str.regexp "[ ,]+" in
-      let items = List.map parse_flag (Str.split reg s) in
-      let items = do_all_keyword items in
-      let items = do_categories items in
-      parse_warnings items
+      let flags = flags_of_string s in
+      let flags = normalize_flags ~silent:true flags in
+      parse_warnings flags;
+      string_of_flags flags
     end
 
 let set_flags s =
-  flags := s; reset_default_warnings (); parse_flags s
+  reset_default_warnings (); let s = parse_flags s in flags := s

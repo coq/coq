@@ -43,7 +43,7 @@ END
 let eval_uconstrs ist cs =
   let flags = {
     Pretyping.use_typeclasses = false;
-    use_unif_heuristics = true;
+    solve_unification_constraints = true;
     use_hook = Some Pfedit.solve_by_implicit_tactic;
     fail_evar = false;
     expand_evars = true

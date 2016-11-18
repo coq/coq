@@ -644,7 +644,7 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
 
 let constr_flags = {
   use_typeclasses = true;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = Some solve_by_implicit_tactic;
   fail_evar = true;
   expand_evars = true }
@@ -659,21 +659,21 @@ let interp_type = interp_constr_gen IsType
 
 let open_constr_use_classes_flags = {
   use_typeclasses = true;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = Some solve_by_implicit_tactic;
   fail_evar = false;
   expand_evars = true }
 
 let open_constr_no_classes_flags = {
   use_typeclasses = false;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = Some solve_by_implicit_tactic;
   fail_evar = false;
   expand_evars = true }
 
 let pure_open_constr_flags = {
   use_typeclasses = false;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = None;
   fail_evar = false;
   expand_evars = false }

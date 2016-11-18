@@ -48,25 +48,34 @@ let set_typeclass_transparency c local b =
     
 let _ =
   Hook.set Typeclasses.add_instance_hint_hook
-    (fun inst path local pri poly ->
+    (fun inst path local info poly ->
      let inst' = match inst with IsConstr c -> Hints.IsConstr (c, Univ.ContextSet.empty)
        | IsGlobal gr -> Hints.IsGlobRef gr
      in
-      Flags.silently (fun () ->
+     let info =
+       let open Vernacexpr in
+       { info with hint_pattern =
+		   Option.map
+		     (Constrintern.intern_constr_pattern (Global.env()))
+		     info.hint_pattern } in
+     Flags.silently (fun () ->
 	Hints.add_hints local [typeclasses_db]
 	  (Hints.HintsResolveEntry
-	     [pri, poly, false, Hints.PathHints path, inst'])) ());
+	     [info, poly, false, Hints.PathHints path, inst'])) ());
   Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
   Hook.set Typeclasses.classes_transparent_state_hook
     (fun () -> Hints.Hint_db.transparent_state (Hints.searchtable_map typeclasses_db))
-        
+
+open Vernacexpr
+
 (** TODO: add subinstances *)
-let existing_instance glob g pri =
+let existing_instance glob g info =
   let c = global g in
+  let info = Option.default Hints.empty_hint_info info in
   let instance = Global.type_of_global_unsafe c in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
-      | Some (_, ((tc,u), _)) -> add_instance (new_instance tc pri glob 
+      | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob
   (*FIXME*) (Flags.use_polymorphic_flag ()) c)
       | None -> user_err ~loc:(loc_of_reference g)
                          ~hdr:"declare_instance"
@@ -101,12 +110,12 @@ let id_of_class cl =
 
 open Pp
 
-let instance_hook k pri global imps ?hook cst =
+let instance_hook k info global imps ?hook cst =
   Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps;
-  Typeclasses.declare_instance pri (not global) cst;
+  Typeclasses.declare_instance (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant k pri global imps ?hook id pl poly evm term termtype =
+let declare_instance_constant k info global imps ?hook id pl poly evm term termtype =
   let kind = IsDefinition Instance in
   let evm = 
     let levels = Univ.LSet.union (Universes.universes_of_constr termtype) 
@@ -121,7 +130,7 @@ let declare_instance_constant k pri global imps ?hook id pl poly evm term termty
   let kn = Declare.declare_constant id cdecl in
     Declare.definition_message id;
     Universes.register_universe_binders (ConstRef kn) pl;
-    instance_hook k pri global imps ?hook (ConstRef kn);
+    instance_hook k info global imps ?hook (ConstRef kn);
     id
 
 let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) poly ctx (instid, bk, cl) props
@@ -133,7 +142,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
   let evars = ref (Evd.from_ctx uctx) in
   let tclass, ids =
     match bk with
-    | Implicit ->
+    | Decl_kinds.Implicit ->
 	Implicit_quantifiers.implicit_application Id.Set.empty ~allow_partial:false
 	  (fun avoid (clname, _) ->
 	    match clname with
@@ -301,7 +310,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	      let hook vis gr _ =
 		let cst = match gr with ConstRef kn -> kn | _ -> assert false in
 		  Impargs.declare_manual_implicits false gr ~enriching:false [imps];
-		  Typeclasses.declare_instance pri (not global) (ConstRef cst)
+		  Typeclasses.declare_instance (Some pri) (not global) (ConstRef cst)
 	      in
 	      let obls, constr, typ =
 		match term with 
@@ -380,7 +389,7 @@ let context poly l =
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
 	match class_of_constr t with
 	| Some (rels, ((tc,_), args) as _cl) ->
-	    add_instance (Typeclasses.new_instance tc None false (*FIXME*)
+	    add_instance (Typeclasses.new_instance tc Hints.empty_hint_info false (*FIXME*)
 			    poly (ConstRef cst));
             status
 	    (* declare_subclasses (ConstRef cst) cl *)

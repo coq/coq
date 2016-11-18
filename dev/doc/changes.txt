@@ -66,6 +66,8 @@ kernel/closure.ml{,i} -> kernel/cClosure.ml{,i}
 lib/errors.ml{,i} -> lib/cErrors.ml{,i}
 toplevel/cerror.ml{,i} -> toplevel/explainErr.mli{,i}
 
+All IDE-specific files, including the XML protocol have been moved to ide/
+
 ** Reduction functions **
 
 In closure.ml, we introduced the more precise reduction flags fMATCH, fFIX,

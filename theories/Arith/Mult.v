@@ -31,13 +31,13 @@ Notation mult_0_r := Nat.mul_0_r (compat "8.4"). (* n * 0 = 0 *)
 Notation mult_1_l := Nat.mul_1_l (compat "8.4"). (* 1 * n = n *)
 Notation mult_1_r := Nat.mul_1_r (compat "8.4"). (* n * 1 = n *)
 
-Hint Resolve mult_1_l mult_1_r: arith v62.
+Hint Resolve mult_1_l mult_1_r: arith.
 
 (** ** Commutativity *)
 
 Notation mult_comm := Nat.mul_comm (compat "8.4"). (* n * m = m * n *)
 
-Hint Resolve mult_comm: arith v62.
+Hint Resolve mult_comm: arith.
 
 (** ** Distributivity *)
 
@@ -53,9 +53,9 @@ Notation mult_minus_distr_r :=
 Notation mult_minus_distr_l :=
   Nat.mul_sub_distr_l (compat "8.4"). (* n*(m-p) = n*m - n*p *)
 
-Hint Resolve mult_plus_distr_r: arith v62.
-Hint Resolve mult_minus_distr_r: arith v62.
-Hint Resolve mult_minus_distr_l: arith v62.
+Hint Resolve mult_plus_distr_r: arith.
+Hint Resolve mult_minus_distr_r: arith.
+Hint Resolve mult_minus_distr_l: arith.
 
 (** ** Associativity *)
 
@@ -66,8 +66,8 @@ Proof.
  symmetry. apply Nat.mul_assoc.
 Qed.
 
-Hint Resolve mult_assoc_reverse: arith v62.
-Hint Resolve mult_assoc: arith v62.
+Hint Resolve mult_assoc_reverse: arith.
+Hint Resolve mult_assoc: arith.
 
 (** ** Inversion lemmas *)
 
@@ -92,7 +92,7 @@ Lemma mult_O_le n m : m = 0 \/ n <= m * n.
 Proof.
  destruct m; [left|right]; simpl; trivial using Nat.le_add_r.
 Qed.
-Hint Resolve mult_O_le: arith v62.
+Hint Resolve mult_O_le: arith.
 
 Lemma mult_le_compat_l n m p : n <= m -> p * n <= p * m.
 Proof.

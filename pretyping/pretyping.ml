@@ -243,7 +243,7 @@ type inference_hook = env -> evar_map -> evar -> evar_map * constr
 
 type inference_flags = {
   use_typeclasses : bool;
-  use_unif_heuristics : bool;
+  solve_unification_constraints : bool;
   use_hook : inference_hook option;
   fail_evar : bool;
   expand_evars : bool
@@ -290,7 +290,7 @@ let apply_inference_hook hook evdref pending =
 
 let apply_heuristics env evdref fail_evar =
   (* Resolve eagerly, potentially making wrong choices *)
-  try evdref := consider_remaining_unif_problems
+  try evdref := solve_unif_constraints_with_heuristics
 	~ts:(Typeclasses.classes_transparent_state ()) env !evdref
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in if fail_evar then iraise e
@@ -339,7 +339,7 @@ let solve_remaining_evars flags env current_sigma pending =
   if flags.use_typeclasses then apply_typeclasses env evdref frozen false;
   if Option.has_some flags.use_hook then
     apply_inference_hook (Option.get flags.use_hook env) evdref pending;
-  if flags.use_unif_heuristics then apply_heuristics env evdref false;
+  if flags.solve_unification_constraints then apply_heuristics env evdref false;
   if flags.fail_evar then check_evars_are_solved env !evdref frozen pending;
   !evdref
 
@@ -1109,14 +1109,14 @@ let ise_pretype_gen flags env sigma lvar kind c =
 
 let default_inference_flags fail = {
   use_typeclasses = true;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = None;
   fail_evar = fail;
   expand_evars = true }
 
 let no_classes_no_fail_inference_flags = {
   use_typeclasses = false;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = None;
   fail_evar = false;
   expand_evars = true }
@@ -1180,7 +1180,7 @@ let understand_ltac flags env sigma lvar kind c =
 
 let constr_flags = {
   use_typeclasses = true;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = None;
   fail_evar = true;
   expand_evars = true }

@@ -56,7 +56,7 @@ Section wf_proof.
 
 End wf_proof.
 
-Hint Resolve Zwf_well_founded: datatypes v62.
+Hint Resolve Zwf_well_founded: datatypes.
 
 
 (** We also define the other family of relations:
@@ -88,4 +88,4 @@ Section wf_proof_up.
 
 End wf_proof_up.
 
-Hint Resolve Zwf_up_well_founded: datatypes v62.
+Hint Resolve Zwf_up_well_founded: datatypes.

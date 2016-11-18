@@ -187,7 +187,7 @@ End multiset_defs.
 
 Unset Implicit Arguments.
 
-Hint Unfold meq multiplicity: v62 datatypes.
+Hint Unfold meq multiplicity: datatypes.
 Hint Resolve munion_empty_right munion_comm munion_ass meq_left meq_right
-  munion_empty_left: v62 datatypes.
-Hint Immediate meq_sym: v62 datatypes.
+  munion_empty_left: datatypes.
+Hint Immediate meq_sym: datatypes.

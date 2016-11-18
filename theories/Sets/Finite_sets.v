@@ -43,8 +43,8 @@ Section Ensembles_finis.
 
 End Ensembles_finis.
 
-Hint Resolve Empty_is_finite Union_is_finite: sets v62.
-Hint Resolve card_empty card_add: sets v62.
+Hint Resolve Empty_is_finite Union_is_finite: sets.
+Hint Resolve card_empty card_add: sets.
 
 Require Import Constructive_sets.
 

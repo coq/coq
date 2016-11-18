@@ -177,12 +177,12 @@ Proof (succ_plus_discr n 3).
 
 (** * Compatibility Hints *)
 
-Hint Immediate plus_comm : arith v62.
-Hint Resolve plus_assoc plus_assoc_reverse : arith v62.
-Hint Resolve plus_le_compat_l plus_le_compat_r : arith v62.
-Hint Resolve le_plus_l le_plus_r le_plus_trans : arith v62.
-Hint Immediate lt_plus_trans : arith v62.
-Hint Resolve plus_lt_compat_l plus_lt_compat_r : arith v62.
+Hint Immediate plus_comm : arith.
+Hint Resolve plus_assoc plus_assoc_reverse : arith.
+Hint Resolve plus_le_compat_l plus_le_compat_r : arith.
+Hint Resolve le_plus_l le_plus_r le_plus_trans : arith.
+Hint Immediate lt_plus_trans : arith.
+Hint Resolve plus_lt_compat_l plus_lt_compat_r : arith.
 
 (** For compatibility, we "Require" the same files as before *)
 

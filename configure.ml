@@ -14,8 +14,8 @@ open Printf
 let coq_version = "trunk"
 let coq_macos_version = "8.4.90" (** "[...] should be a string comprised of
 three non-negative, period-separated integers [...]" *)
-let vo_magic = 8511
-let state_magic = 58511
+let vo_magic = 8591
+let state_magic = 58591
 let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqmktop";"coqworkmgr";
 "coqdoc";"coq_makefile";"coq-tex";"gallina";"coqwc";"csdpcert";"coqdep"]
 
