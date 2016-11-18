@@ -2094,6 +2094,7 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let (c,l) = Miscops.map_with_bindings EConstr.Unsafe.to_constr (c,l) in
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
   let unify env evars t = unify_abs res l2r sort env evars t in
   let app = apply_rule unify occs in

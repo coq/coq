@@ -385,7 +385,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	    (* introducing the the result of the graph and the equality hypothesis *)
 	    observe_tac "introducing" (tclMAP (fun x -> Proofview.V82.of_tactic (Simple.intro x)) [res;hres]);
 	    (* replacing [res] with its value *)
-	    observe_tac "rewriting res value" (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar hres)));
+	    observe_tac "rewriting res value" (Proofview.V82.of_tactic (Equality.rewriteLR (EConstr.mkVar hres)));
 	    (* Conclusion *)
 	    observe_tac "exact" (fun g ->
 				 Proofview.V82.of_tactic (exact_check (EConstr.of_constr (app_constructor g))) g)  
@@ -520,7 +520,7 @@ and intros_with_rewrite_aux : tactic =
 			let id = pf_get_new_id (Id.of_string "y") g  in
 			tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id);
 				     generalize_dependent_of (destVar args.(1)) id;
-				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar id)));
+				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (EConstr.mkVar id)));
 				     intros_with_rewrite
 				   ]
 			  g
@@ -529,7 +529,7 @@ and intros_with_rewrite_aux : tactic =
 			let id = pf_get_new_id (Id.of_string "y") g  in
 			tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id);
 				     generalize_dependent_of (destVar args.(2)) id;
-				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteRL (mkVar id)));
+				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteRL (EConstr.mkVar id)));
 				     intros_with_rewrite
 				   ]
 			  g
@@ -538,7 +538,7 @@ and intros_with_rewrite_aux : tactic =
 			  let id = pf_get_new_id (Id.of_string "y") g  in
 			  tclTHENSEQ[
 			    Proofview.V82.of_tactic (Simple.intro id);
-			    tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar id)));
+			    tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (EConstr.mkVar id)));
 			    intros_with_rewrite
 			  ] g
 			end
@@ -709,7 +709,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	in
 	tclTHENSEQ[
 	  tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) ids;
-	  Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_lemma));
+	  Proofview.V82.of_tactic (Equality.rewriteLR (EConstr.of_constr (mkConst eq_lemma)));
 	  (* Don't forget to $\zeta$ normlize the term since the principles
              have been $\zeta$-normalized *)
 	  Proofview.V82.of_tactic (reduce

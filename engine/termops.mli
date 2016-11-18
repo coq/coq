@@ -256,6 +256,7 @@ val compact_named_context : Context.Named.t -> Context.Compacted.t
 val clear_named_body : Id.t -> env -> env
 
 val global_vars : env -> Evd.evar_map -> EConstr.t -> Id.t list
+val global_vars_set : env -> Evd.evar_map -> EConstr.t -> Id.Set.t
 val global_vars_set_of_decl : env -> Evd.evar_map -> Context.Named.Declaration.t -> Id.Set.t
 val global_app_of_constr : Evd.evar_map -> EConstr.constr -> Globnames.global_reference puniverses * EConstr.constr option
 

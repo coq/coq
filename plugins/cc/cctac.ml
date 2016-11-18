@@ -229,7 +229,8 @@ let make_prb gls depth additionnal_terms =
 
 let build_projection intype (cstr:pconstructor) special default gls=
   let ci= (snd(fst cstr)) in
-  let body=Equality.build_selector (pf_env gls) (project gls) ci (mkRel 1) intype special default in
+  let body=Equality.build_selector (pf_env gls) (project gls) ci (EConstr.mkRel 1) (EConstr.of_constr intype) (EConstr.of_constr special) (EConstr.of_constr default) in
+  let body = EConstr.Unsafe.to_constr body in
   let id=pf_get_new_id (Id.of_string "t") gls in
     mkLambda(Name id,intype,body)
 

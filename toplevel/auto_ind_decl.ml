@@ -338,6 +338,8 @@ so from Ai we can find the the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
 let do_replace_lb mode lb_scheme_key aavoid narg p q =
+  let p = EConstr.of_constr p in
+  let q = EConstr.of_constr q in
   let avoid = Array.of_list aavoid in
   let do_arg v offset =
   try
@@ -363,7 +365,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
       )
   in
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let type_of_pq = Tacmach.New.of_old (fun gl -> pf_unsafe_type_of gl (EConstr.of_constr p)) gl in
+    let type_of_pq = Tacmach.New.of_old (fun gl -> pf_unsafe_type_of gl p) gl in
     let u,v = destruct_ind type_of_pq
     in let lb_type_of_p =
         try
@@ -425,9 +427,11 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   let rec aux l1 l2 =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
+        let t1 = EConstr.of_constr t1 in
+        let t2 = EConstr.of_constr t2 in
         Proofview.Goal.enter { enter = begin fun gl ->
-        let tt1 = Tacmach.New.pf_unsafe_type_of gl (EConstr.of_constr t1) in
-        if Term.eq_constr t1 t2 then aux q1 q2
+        let tt1 = Tacmach.New.pf_unsafe_type_of gl t1 in
+        if EConstr.eq_constr (Tacmach.New.project gl) t1 t2 then aux q1 q2
         else (
           let u,v = try  destruct_ind tt1
           (* trick so that the good sequence is returned*)
@@ -923,7 +927,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
 	      Equality.general_rewrite_bindings_in true
 	                      Locus.AllOccurrences true false
                               (List.hd !avoid)
-                              ((mkVar (List.hd (List.tl !avoid))),
+                              ((EConstr.mkVar (List.hd (List.tl !avoid))),
                                 NoBindings
                               )
                               true;

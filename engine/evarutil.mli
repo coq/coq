@@ -121,7 +121,7 @@ val advance : evar_map -> evar -> evar option
     This is roughly a combination of the previous functions and
     [nf_evar]. *)
 
-val undefined_evars_of_term : evar_map -> constr -> Evar.Set.t
+val undefined_evars_of_term : evar_map -> EConstr.constr -> Evar.Set.t
 val undefined_evars_of_named_context : evar_map -> Context.Named.t -> Evar.Set.t
 val undefined_evars_of_evar_info : evar_map -> evar_info -> Evar.Set.t
 

@@ -737,7 +737,7 @@ let secvars_of_idset s =
       else p) s Id.Pred.empty
 
 let secvars_of_constr env c =
-  secvars_of_idset (global_vars_set env c)
+  secvars_of_idset (Environ.global_vars_set env c)
 
 let secvars_of_global env gr =
   secvars_of_idset (vars_of_global_reference env gr)

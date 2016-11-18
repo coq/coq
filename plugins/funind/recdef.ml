@@ -871,10 +871,10 @@ let rec make_rewrite_list expr_info max = function
 	  in
 	  Proofview.V82.of_tactic (general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
-	    (mkVar hp,
+	    (EConstr.mkVar hp,
 	     ExplicitBindings[Loc.ghost,NamedHyp def,
-			      expr_info.f_constr;Loc.ghost,NamedHyp k,
-			      (f_S max)]) false) g) )
+			      EConstr.of_constr expr_info.f_constr;Loc.ghost,NamedHyp k,
+			      EConstr.of_constr (f_S max)]) false) g) )
       )
       [make_rewrite_list expr_info max l;
        observe_tclTHENLIST (str "make_rewrite_list")[ (* x < S max proof *)
@@ -898,10 +898,10 @@ let make_rewrite expr_info l hp max =
 	 observe_tac (str "general_rewrite_bindings")
 	   (Proofview.V82.of_tactic (general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
-	    (mkVar hp,
+	    (EConstr.mkVar hp,
 	     ExplicitBindings[Loc.ghost,NamedHyp def,
-			      expr_info.f_constr;Loc.ghost,NamedHyp k,
-			      (f_S (f_S max))]) false)) g)
+			      EConstr.of_constr expr_info.f_constr;Loc.ghost,NamedHyp k,
+			      EConstr.of_constr (f_S (f_S max))]) false)) g)
        [observe_tac(str "make_rewrite finalize") (
 	 (* tclORELSE( h_reflexivity) *)
 	 (observe_tclTHENLIST (str "make_rewrite")[

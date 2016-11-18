@@ -502,6 +502,7 @@ let evaluable_of_global_reference r = (* Tacred.evaluable_of_global_reference (G
     | _ -> assert false;;
 
 let list_rewrite (rev:bool) (eqs: (constr*bool) list) =
+  let eqs = List.map (Util.on_fst EConstr.of_constr) eqs in
   tclREPEAT
     (List.fold_right
        (fun (eq,b) i -> tclORELSE (Proofview.V82.of_tactic ((if b then Equality.rewriteLR else Equality.rewriteRL) eq)) i)

@@ -1315,8 +1315,8 @@ module Intpart = Unionfind.Make(Evar.Set)(Evar.Map)
 
 let deps_of_constraints cstrs evm p =
   List.iter (fun (_, _, x, y) ->
-    let evx = Evarutil.undefined_evars_of_term evm x in
-    let evy = Evarutil.undefined_evars_of_term evm y in
+    let evx = Evarutil.undefined_evars_of_term evm (EConstr.of_constr x) in
+    let evy = Evarutil.undefined_evars_of_term evm (EConstr.of_constr y) in
     Intpart.union_set (Evar.Set.union evx evy) p)
     cstrs
 

@@ -122,7 +122,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
        Tacticals.New.tclTHEN tac
         (one_base (fun dir c tac ->
 	  let tac = (tac, conds) in
-	    general_rewrite dir AllOccurrences true false ~tac c)
+	    general_rewrite dir AllOccurrences true false ~tac (EConstr.of_constr c))
 	  tac_main bas))
       (Proofview.tclUNIT()) lbas))
 
@@ -165,7 +165,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
           | _ -> assert false) (* there must be at least an hypothesis *)
      | _ -> assert false (* rewriting cannot complete a proof *)
  in
- let general_rewrite_in x y z w = Proofview.V82.tactic (general_rewrite_in x y z w) in
+ let general_rewrite_in x y z w = Proofview.V82.tactic (general_rewrite_in x y (EConstr.of_constr z) w) in
  Tacticals.New.tclMAP (fun id ->
   Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS
     (List.fold_left (fun tac bas ->

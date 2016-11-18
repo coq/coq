@@ -78,6 +78,8 @@ type cofixpoint = (t, t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
 type unsafe_type_judgment = types Environ.punsafe_type_judgment
 
+let in_punivs a = (a, Univ.Instance.empty)
+
 let mkProp = of_kind (Sort Sorts.prop)
 let mkSet = of_kind (Sort Sorts.set)
 let mkType u = of_kind (Sort (Sorts.Type u))
@@ -92,8 +94,11 @@ let mkLambda (na, t, c) = of_kind (Lambda (na, t, c))
 let mkLetIn (na, b, t, c) = of_kind (LetIn (na, b, t, c))
 let mkApp (f, arg) = of_kind (App (f, arg))
 let mkConstU pc = of_kind (Const pc)
+let mkConst c = of_kind (Const (in_punivs c))
 let mkIndU pi = of_kind (Ind pi)
+let mkInd i = of_kind (Ind (in_punivs i))
 let mkConstructU pc = of_kind (Construct pc)
+let mkConstruct c = of_kind (Construct (in_punivs c))
 let mkCase (ci, c, r, p) = of_kind (Case (ci, c, r, p))
 let mkFix f = of_kind (Fix f)
 let mkCoFix f = of_kind (CoFix f)

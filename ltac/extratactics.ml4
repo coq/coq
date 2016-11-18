@@ -47,16 +47,16 @@ let with_delayed_uconstr ist c tac =
 
 let replace_in_clause_maybe_by ist c1 c2 cl tac =
   with_delayed_uconstr ist c1
-  (fun c1 -> replace_in_clause_maybe_by c1 c2 cl (Option.map (Tacinterp.tactic_of_value ist) tac))
+  (fun c1 -> replace_in_clause_maybe_by (EConstr.of_constr c1) c2 cl (Option.map (Tacinterp.tactic_of_value ist) tac))
 
 let replace_term ist dir_opt c cl =
-  with_delayed_uconstr ist c (fun c -> replace_term dir_opt c cl)
+  with_delayed_uconstr ist c (fun c -> replace_term dir_opt (EConstr.of_constr c) cl)
 
 let clause = Pltac.clause_dft_concl
 
 TACTIC EXTEND replace
    ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
--> [ replace_in_clause_maybe_by ist c1 c2 cl tac ]
+-> [ replace_in_clause_maybe_by ist c1 (EConstr.of_constr c2) cl tac ]
 END
 
 TACTIC EXTEND replace_term_left
@@ -153,9 +153,9 @@ let injHyp id =
   injection_main false { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma }
 
 TACTIC EXTEND dependent_rewrite
-| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
+| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b (EConstr.of_constr c) ]
 | [ "dependent" "rewrite" orient(b) constr(c) "in" hyp(id) ]
-    -> [ rewriteInHyp b c id ]
+    -> [ rewriteInHyp b (EConstr.of_constr c) id ]
 END
 
 (** To be deprecated?, "cutrewrite (t=u) as <-" is equivalent to
@@ -163,9 +163,9 @@ END
     "cutrewrite (t=u) as ->" is equivalent to "enough (t=u) as ->". *)
 
 TACTIC EXTEND cut_rewrite
-| [ "cutrewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b eqn ]
+| [ "cutrewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b (EConstr.of_constr eqn) ]
 | [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
-    -> [ cutRewriteInHyp b eqn id ]
+    -> [ cutRewriteInHyp b (EConstr.of_constr eqn) id ]
 END
 
 (**********************************************************************)
@@ -235,7 +235,7 @@ END
 let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
   let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
   with_delayed_uconstr ist c
-    (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
+    (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (EConstr.of_constr c,NoBindings) true)
 
 TACTIC EXTEND rewrite_star
 | [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->
@@ -719,7 +719,7 @@ let rewrite_except h =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
-      Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
+      Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (EConstr.mkVar h) false))
     hyps
   end }
 

@@ -62,12 +62,12 @@ val mkProd : Name.t * t * t -> t
 val mkLambda : Name.t * t * t -> t
 val mkLetIn : Name.t * t * t * t -> t
 val mkApp : t * t array -> t
-(* val mkConst : constant -> t *)
+val mkConst : constant -> t
 val mkConstU : pconstant -> t
 val mkProj : (projection * t) -> t
-(* val mkInd : inductive -> t *)
+val mkInd : inductive -> t
 val mkIndU : pinductive -> t
-(* val mkConstruct : constructor -> t *)
+val mkConstruct : constructor -> t
 val mkConstructU : pconstructor -> t
 (* val mkConstructUi : pinductive * int -> t *)
 val mkCase : case_info * t * t * t array -> t

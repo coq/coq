@@ -690,29 +690,26 @@ let rec advance sigma evk =
 
 let undefined_evars_of_term evd t =
   let rec evrec acc c =
-    match kind_of_term c with
+    match EConstr.kind evd c with
       | Evar (n, l) ->
-	let acc = Array.fold_left evrec acc l in
-	(try match (Evd.find evd n).evar_body with
-	  | Evar_empty -> Evar.Set.add n acc
-	  | Evar_defined c -> evrec acc c
-	 with Not_found -> anomaly ~label:"undefined_evars_of_term" (Pp.str "evar not found"))
-      | _ -> fold_constr evrec acc c
+        let acc = Evar.Set.add n acc in
+	Array.fold_left evrec acc l
+      | _ -> EConstr.fold evd evrec acc c
   in
   evrec Evar.Set.empty t
 
 let undefined_evars_of_named_context evd nc =
   Context.Named.fold_outside
-    (NamedDecl.fold_constr (fun c s -> Evar.Set.union s (undefined_evars_of_term evd c)))
+    (NamedDecl.fold_constr (fun c s -> Evar.Set.union s (undefined_evars_of_term evd (EConstr.of_constr c))))
     nc
     ~init:Evar.Set.empty
 
 let undefined_evars_of_evar_info evd evi =
-  Evar.Set.union (undefined_evars_of_term evd evi.evar_concl)
+  Evar.Set.union (undefined_evars_of_term evd (EConstr.of_constr evi.evar_concl))
     (Evar.Set.union
        (match evi.evar_body with
 	 | Evar_empty -> Evar.Set.empty
-	 | Evar_defined b -> undefined_evars_of_term evd b)
+	 | Evar_defined b -> undefined_evars_of_term evd (EConstr.of_constr b))
        (undefined_evars_of_named_context evd
 	  (named_context_of_val evi.evar_hyps)))
 

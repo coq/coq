@@ -1074,7 +1074,7 @@ let global_vars_set env sigma constr =
   let rec filtrec acc c =
     let acc = match EConstr.kind sigma c with
     | Var _ | Const _ | Ind _ | Construct _ ->
-      Id.Set.union (vars_of_global env (EConstr.Unsafe.to_constr c)) acc
+      Id.Set.union (vars_of_global env (EConstr.to_constr sigma c)) acc
     | _ -> acc
     in
     EConstr.fold sigma filtrec acc c
