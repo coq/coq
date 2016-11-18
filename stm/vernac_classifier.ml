@@ -33,7 +33,10 @@ let string_of_vernac_type = function
   | VtQuery (b,(id,route)) ->
       "Query " ^ string_of_in_script b ^ " report " ^ Stateid.to_string id ^
       " route " ^ string_of_int route
-  | VtBack(_, b) -> "Stm Back " ^ string_of_in_script b
+  | VtStm ((VtFinish|VtJoinDocument|VtObserve _|VtPrintDag|VtWait), b) ->
+      "Stm " ^ string_of_in_script b
+  | VtStm (VtPG, b) -> "Stm PG " ^ string_of_in_script b
+  | VtStm (VtBack _, b) -> "Stm Back " ^ string_of_in_script b
 
 let string_of_vernac_when = function
   | VtLater -> "Later"
@@ -52,7 +55,7 @@ let declare_vernac_classifier
 let elide_part_of_script_and_now (a, _) =
   match a with
   | VtQuery (_,id) -> VtQuery (false,id), VtNow
-  | VtBack (x, _) -> VtBack (x, false), VtNow
+  | VtStm (x, _) -> VtStm (x, false), VtNow
   | x -> x, VtNow
 
 let make_polymorphic (a, b as x) =
@@ -66,12 +69,23 @@ let set_undo_classifier f = undo_classifier := f
 
 let rec classify_vernac e =
   let static_classifier e = match e with
+    (* PG compatibility *)
+    | VernacUnsetOption (["Silent"]|["Undo"]|["Printing";"Depth"])
+    | VernacSetOption   ((["Silent"]|["Undo"]|["Printing";"Depth"]),_)
+      when !Flags.print_emacs -> VtStm(VtPG,false), VtNow
     (* Univ poly compatibility: we run it now, so that we can just
      * look at Flags in stm.ml.  Would be nicer to have the stm
      * look at the entire dag to detect this option. *)
     | VernacSetOption (["Universe"; "Polymorphism"],_)
     | VernacUnsetOption (["Universe"; "Polymorphism"]) -> VtSideff [], VtNow
-
+    (* Stm *)
+    | VernacStm Finish -> VtStm (VtFinish, true), VtNow
+    | VernacStm Wait -> VtStm (VtWait, true), VtNow
+    | VernacStm JoinDocument -> VtStm (VtJoinDocument, true), VtNow
+    | VernacStm PrintDag -> VtStm (VtPrintDag, true), VtNow
+    | VernacStm (Observe id) -> VtStm (VtObserve id, true), VtNow
+    | VernacStm (Command x) -> elide_part_of_script_and_now (classify_vernac x)
+    | VernacStm (PGLast x) -> fst (classify_vernac x), VtNow
     (* Nested vernac exprs *)
     | VernacProgram e -> classify_vernac e
     | VernacLocal (_,e) -> classify_vernac e
@@ -84,7 +98,7 @@ let rec classify_vernac e =
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _
-          | VtBack _ | VtProofMode _ ), _ as x -> x
+          | VtStm _ | VtProofMode _ ), _ as x -> x
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
             VtNow

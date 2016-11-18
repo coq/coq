@@ -1941,6 +1941,7 @@ let interp ?proof ~loc locality poly c =
   | VernacTime _ -> assert false
   | VernacRedirect _ -> assert false
   | VernacTimeout _ -> assert false
+  | VernacStm _ -> assert false
 
   | VernacError e -> raise e
 
@@ -2208,6 +2209,9 @@ let interp ?(verbosely=true) ?proof (loc,c) =
       aux ?locality ~polymorphism:b isprogcmd c
     | VernacPolymorphic (b, c) -> CErrors.error "Polymorphism specified twice"
     | VernacLocal _ -> CErrors.error "Locality specified twice"
+    | VernacStm (Command c) -> aux ?locality ?polymorphism isprogcmd c
+    | VernacStm (PGLast c) -> aux ?locality ?polymorphism isprogcmd c
+    | VernacStm _ -> assert false (* Done by Stm *)
     | VernacFail v ->
         with_fail true (fun () -> aux ?locality ?polymorphism isprogcmd v)
     | VernacTimeout (n,v) ->
