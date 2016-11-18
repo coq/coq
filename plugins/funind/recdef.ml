@@ -1314,7 +1314,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 	       (fun g ->
 		  let ids = pf_ids_of_hyps g in
 		  tclTHEN
-		    (Proofview.V82.of_tactic (Elim.h_decompose_and (mkVar hid)))
+		    (Proofview.V82.of_tactic (Elim.h_decompose_and (EConstr.mkVar hid)))
 		    (fun g ->
 		       let ids' = pf_ids_of_hyps g in
 		       lid := List.rev (List.subtract Id.equal ids' ids);

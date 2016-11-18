@@ -1626,7 +1626,7 @@ let prove_principle_for_gen
 	[
 	  Proofview.V82.of_tactic (generalize [lemma]);
 	  Proofview.V82.of_tactic (Simple.intro hid);
-	  Proofview.V82.of_tactic (Elim.h_decompose_and (mkVar hid));
+	  Proofview.V82.of_tactic (Elim.h_decompose_and (EConstr.mkVar hid));
 	  (fun g ->
 	     let new_hyps = pf_ids_of_hyps g in
 	     tcc_list := List.rev (List.subtract Id.equal new_hyps (hid::hyps));

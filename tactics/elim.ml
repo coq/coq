@@ -10,6 +10,7 @@ open Util
 open Names
 open Term
 open Termops
+open EConstr
 open Inductiveops
 open Hipattern
 open Tacmach.New
@@ -55,7 +56,7 @@ Another example :
 *)
 
 let elimHypThen tac id =
-  elimination_then tac (EConstr.mkVar id)
+  elimination_then tac (mkVar id)
 
 let rec general_decompose_on_hyp recognizer =
   ifOnHyp recognizer (general_decompose_aux recognizer) (fun _ -> Proofview.tclUNIT())
@@ -77,7 +78,6 @@ let tmphyp_name = Id.of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
-  let c = EConstr.of_constr c in
   Proofview.Goal.enter { enter = begin fun gl ->
   let type_of = pf_unsafe_type_of gl in
   let sigma = project gl in
@@ -105,17 +105,17 @@ let head_in indl t gl =
 let decompose_these c l =
   Proofview.Goal.enter { enter = begin fun gl ->
   let indl = List.map (fun x -> x, Univ.Instance.empty) l in
-  general_decompose (fun sigma (_,t) -> head_in indl (EConstr.of_constr t) gl) c
+  general_decompose (fun sigma (_,t) -> head_in indl t gl) c
   end }
 
 let decompose_and c =
   general_decompose
-    (fun sigma (_,t) -> is_record sigma (EConstr.of_constr t))
+    (fun sigma (_,t) -> is_record sigma t)
     c
 
 let decompose_or c =
   general_decompose
-    (fun sigma (_,t) -> is_disjunction sigma (EConstr.of_constr t))
+    (fun sigma (_,t) -> is_disjunction sigma t)
     c
 
 let h_decompose l c = decompose_these c l
@@ -127,7 +127,7 @@ let h_decompose_and = decompose_and
 (* The tactic Double performs a double induction *)
 
 let simple_elimination c =
-  elimination_then (fun _ -> tclIDTAC) (EConstr.of_constr c)
+  elimination_then (fun _ -> tclIDTAC) c
 
 let induction_trailer abs_i abs_j bargs =
   tclTHEN
@@ -135,8 +135,9 @@ let induction_trailer abs_i abs_j bargs =
     (onLastHypId
        (fun id ->
           Proofview.Goal.nf_enter { enter = begin fun gl ->
-	  let idty = pf_unsafe_type_of gl (EConstr.mkVar id) in
-	  let fvty = global_vars (pf_env gl) (project gl) (EConstr.of_constr idty) in
+	  let idty = pf_unsafe_type_of gl (mkVar id) in
+	  let idty = EConstr.of_constr idty in
+	  let fvty = global_vars (pf_env gl) (project gl) idty in
 	  let possible_bring_hyps =
 	    (List.tl (nLastDecls gl (abs_j - abs_i))) @ bargs.Tacticals.assums
           in
@@ -168,7 +169,7 @@ let double_ind h1 h2 =
      (onLastHypId
        	(fun id ->
            elimination_then
-             (introElimAssumsThen (induction_trailer abs_i abs_j)) (EConstr.mkVar id))))
+             (introElimAssumsThen (induction_trailer abs_i abs_j)) (mkVar id))))
   end }
 
 let h_double_induction = double_ind

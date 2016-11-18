@@ -128,7 +128,7 @@ let onClauseLR tac cl gls =
   tclMAP tac (List.rev (Locusops.simple_clause_of hyps cl)) gls
 
 let ifOnHyp pred tac1 tac2 id gl =
-  if pred (id,pf_get_hyp_typ gl id) then
+  if pred (id,EConstr.of_constr (pf_get_hyp_typ gl id)) then
     tac1 id gl
   else
     tac2 id gl
@@ -583,6 +583,7 @@ module New = struct
   let ifOnHyp pred tac1 tac2 id =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
     let typ = Tacmach.New.pf_get_hyp_typ id gl in
+    let typ = EConstr.of_constr typ in
     if pred (id,typ) then
       tac1 id
     else

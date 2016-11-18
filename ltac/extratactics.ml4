@@ -172,11 +172,11 @@ END
 (* Decompose                                                          *)
 
 TACTIC EXTEND decompose_sum
-| [ "decompose" "sum" constr(c) ] -> [ Elim.h_decompose_or c ]
+| [ "decompose" "sum" constr(c) ] -> [ Elim.h_decompose_or (EConstr.of_constr c) ]
 END
 
 TACTIC EXTEND decompose_record
-| [ "decompose" "record" constr(c) ] -> [ Elim.h_decompose_and c ]
+| [ "decompose" "record" constr(c) ] -> [ Elim.h_decompose_and (EConstr.of_constr c) ]
 END
 
 (**********************************************************************)
@@ -1055,7 +1055,7 @@ let decompose l c =
   end }
 
 TACTIC EXTEND decompose
-| [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l c ]
+| [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l (EConstr.of_constr c) ]
 END
 
 (** library/keys *)

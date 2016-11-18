@@ -76,7 +76,7 @@ val nLastDecls  : int -> goal sigma -> Context.Named.t
 
 val afterHyp    : Id.t -> goal sigma -> Context.Named.t
 
-val ifOnHyp     : (Id.t * types -> bool) ->
+val ifOnHyp     : (Id.t * EConstr.types -> bool) ->
                   (Id.t -> tactic) -> (Id.t -> tactic) ->
 		   Id.t -> tactic
 
@@ -230,7 +230,7 @@ module New : sig
 
   val nLastDecls  : ([ `NF ], 'r) Proofview.Goal.t -> int -> Context.Named.t
 
-  val ifOnHyp     : (identifier * types -> bool) ->
+  val ifOnHyp     : (identifier * EConstr.types -> bool) ->
     (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
     identifier -> unit Proofview.tactic
 
