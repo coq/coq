@@ -13,6 +13,7 @@ open Names
 open Nameops
 open Term
 open Termops
+open EConstr
 open Proof_type
 open Tacticals
 open Tacmach
@@ -33,13 +34,14 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t1 = EConstr.of_constr t1 in
   let t2 = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
+  let t2 = EConstr.of_constr t2 in
   let sigma = Tacmach.New.project gl in
-  if occur_existential sigma t1 || occur_existential sigma (EConstr.of_constr t2) then
+  if occur_existential sigma t1 || occur_existential sigma t2 then
      Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
   else exact_check c
   end }
 
-let assumption id = e_give_exact (EConstr.mkVar id)
+let assumption id = e_give_exact (mkVar id)
 
 let e_assumption =
   Proofview.Goal.enter { enter = begin fun gl ->
@@ -48,7 +50,7 @@ let e_assumption =
 
 let registered_e_assumption =
   Proofview.Goal.enter { enter = begin fun gl ->
-  Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (EConstr.mkVar id))
+  Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
               (Tacmach.New.pf_ids_of_hyps gl))
   end }
 
@@ -77,7 +79,7 @@ let apply_tac_list tac glls =
 
 let one_step l gl =
   [Proofview.V82.of_tactic Tactics.intro]
-  @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) (List.map EConstr.mkVar (pf_ids_of_hyps gl)))
+  @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) (List.map mkVar (pf_ids_of_hyps gl)))
   @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) l)
   @ (List.map (fun c -> Proofview.V82.of_tactic (assumption c)) (pf_ids_of_hyps gl))
 
@@ -262,7 +264,7 @@ module SearchProblem = struct
       let g = find_first_goal lg in
       let hyps = pf_ids_of_hyps g in
       let secvars = secvars_of_hyps (pf_hyps g) in
-      let map_assum id = (e_give_exact (EConstr.mkVar id), (-1), lazy (str "exact" ++ spc () ++ pr_id id)) in
+      let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ pr_id id)) in
       let assumption_tacs =
         let tacs = List.map map_assum hyps in
         let l = filter_tactics s.tacres tacs in
@@ -469,18 +471,18 @@ let autounfold_tac db cls =
   in
   autounfold dbs cls
 
-let unfold_head env (ids, csts) c = 
+let unfold_head env sigma (ids, csts) c =
   let rec aux c = 
-    match kind_of_term c with
+    match EConstr.kind sigma c with
     | Var id when Id.Set.mem id ids ->
 	(match Environ.named_body id env with
-	| Some b -> true, b
+	| Some b -> true, EConstr.of_constr b
 	| None -> false, c)
     | Const (cst,u as c) when Cset.mem cst csts ->
-	true, Environ.constant_value_in env c
+	true, EConstr.of_constr (Environ.constant_value_in env c)
     | App (f, args) ->
 	(match aux f with
-	| true, f' -> true, Reductionops.whd_betaiota Evd.empty (EConstr.of_constr (mkApp (f', args)))
+	| true, f' -> true, EConstr.of_constr (Reductionops.whd_betaiota sigma (mkApp (f', args)))
 	| false, _ -> 
 	    let done_, args' = 
 	      Array.fold_left_i (fun i (done_, acc) arg -> 
@@ -494,7 +496,7 @@ let unfold_head env (ids, csts) c =
 	      else false, c)
     | _ -> 
 	let done_ = ref false in
-	let c' = map_constr (fun c -> 
+	let c' = EConstr.map sigma (fun c -> 
 	  if !done_ then c else 
 	    let x, c' = aux c in
 	      done_ := x; c') c
@@ -504,7 +506,9 @@ let unfold_head env (ids, csts) c =
 let autounfold_one db cl =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
+  let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
+  let concl = EConstr.of_constr concl in
   let st =
     List.fold_left (fun (i,c) dbname -> 
       let db = try searchtable_map dbname 
@@ -513,10 +517,9 @@ let autounfold_one db cl =
       let (ids, csts) = Hint_db.unfolds db in
 	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
   in
-  let did, c' = unfold_head env st 
-    (match cl with Some (id, _) -> Tacmach.New.pf_get_hyp_typ id gl | None -> concl) 
+  let did, c' = unfold_head env sigma st 
+    (match cl with Some (id, _) -> EConstr.of_constr (Tacmach.New.pf_get_hyp_typ id gl) | None -> concl) 
   in
-  let c' = EConstr.of_constr c' in
     if did then
       match cl with
       | Some hyp -> change_in_hyp None (make_change_arg c') hyp
