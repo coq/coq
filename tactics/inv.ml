@@ -12,8 +12,9 @@ open Util
 open Names
 open Nameops
 open Term
-open Vars
 open Termops
+open EConstr
+open Vars
 open Namegen
 open Environ
 open Inductiveops
@@ -62,10 +63,10 @@ let var_occurs_in_pf gl id =
 
  *)
 
-type inversion_status = Dep of constr option | NoDep
+type inversion_status = Dep of EConstr.constr option | NoDep
 
 let compute_eqn env sigma n i ai =
-  (mkRel (n-i),get_type_of env sigma (EConstr.of_constr (mkRel (n-i))))
+  (mkRel (n-i),EConstr.of_constr (get_type_of env sigma (mkRel (n-i))))
 
 let make_inv_predicate env evd indf realargs id status concl =
   let nrealargs = List.length realargs in
@@ -76,7 +77,7 @@ let make_inv_predicate env evd indf realargs id status concl =
 	  let hyps_arity,_ = get_arity env indf in
 	    (hyps_arity,concl)
       | Dep dflt_concl ->
-	  if not (occur_var env !evd id (EConstr.of_constr concl)) then
+	  if not (occur_var env !evd id concl) then
 	    user_err ~hdr:"make_inv_predicate"
               (str "Current goal does not depend on " ++ pr_id id ++ str".");
           (* We abstract the conclusion of goal with respect to
@@ -86,13 +87,14 @@ let make_inv_predicate env evd indf realargs id status concl =
             match dflt_concl with
               | Some concl -> concl (*assumed it's some [x1..xn,H:I(x1..xn)]C*)
               | None ->
-		let sort = get_sort_family_of env !evd (EConstr.of_constr concl) in
+		let sort = get_sort_family_of env !evd concl in
 		let sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd sort in
 		let p = make_arity env true indf sort in
+		let p = EConstr.of_constr p in
 		let evd',(p,ptyp) = Unification.abstract_list_all env
-                  !evd (EConstr.of_constr p) (EConstr.of_constr concl) (List.map EConstr.of_constr realargs@[EConstr.mkVar id])
-		in evd := evd'; EConstr.Unsafe.to_constr p in
-	  let hyps,bodypred = decompose_lam_n_assum (nrealargs+1) pred in
+                  !evd p concl (realargs@[mkVar id])
+		in evd := evd'; p in
+	  let hyps,bodypred = decompose_lam_n_assum !evd (nrealargs+1) pred in
 	  (* We lift to make room for the equations *)
 	  (hyps,lift nrealargs bodypred)
   in
@@ -110,34 +112,28 @@ let make_inv_predicate env evd indf realargs id status concl =
         let ai = lift nhyps ai in
         let (xi, ti) = compute_eqn env' !evd nhyps n ai in
         let (lhs,eqnty,rhs) =
-          if closed0 ti then
+          if closed0 !evd ti then
 	    (xi,ti,ai)
           else
-            let xi = EConstr.of_constr xi in
-            let ti = EConstr.of_constr ti in
-            let ai = EConstr.of_constr ai in
 	    let sigma, res = make_iterated_tuple env' !evd ai (xi,ti) in
-	    let (xi, ti, ai) = res in
-            let xi = EConstr.Unsafe.to_constr xi in
-            let ti = EConstr.Unsafe.to_constr ti in
-            let ai = EConstr.Unsafe.to_constr ai in
-            let res = (xi, ti, ai) in
 	      evd := sigma; res
 	in
         let eq_term = eqdata.Coqlib.eq in
 	let eq = Evarutil.evd_comb1 (Evd.fresh_global env) evd eq_term in
+        let eq = EConstr.of_constr eq in
         let eqn = applist (eq,[eqnty;lhs;rhs]) in
         let eqns = (Anonymous, lift n eqn) :: eqns in
         let refl_term = eqdata.Coqlib.refl in
 	let refl_term = Evarutil.evd_comb1 (Evd.fresh_global env) evd refl_term in
+	let refl_term = EConstr.of_constr refl_term in
         let refl = mkApp (refl_term, [|eqnty; rhs|]) in
-	let _ = Evarutil.evd_comb1 (Typing.type_of env) evd (EConstr.of_constr refl) in
+	let _ = Evarutil.evd_comb1 (Typing.type_of env) evd refl in
         let args = refl :: args in
         build_concl eqns args (succ n) restlist
   in
   let (newconcl, args) = build_concl [] [] 0 realargs in
-  let predicate = it_mkLambda_or_LetIn_name env newconcl hyps in
-  let _ = Evarutil.evd_comb1 (Typing.type_of env) evd (EConstr.of_constr predicate) in
+  let predicate = it_mkLambda_or_LetIn newconcl (name_context env hyps) in
+  let _ = Evarutil.evd_comb1 (Typing.type_of env) evd predicate in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)
   predicate, args
@@ -347,10 +343,11 @@ let projectAndApply as_mode thin avoid id eqname names depids =
   in
   let substHypIfVariable tac id =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
+    let sigma = project gl in
     (** We only look at the type of hypothesis "id" *)
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
     let (t,t1,t2) = Hipattern.dest_nf_eq gl (EConstr.of_constr hyp) in
-    match (kind_of_term t1, kind_of_term t2) with
+    match (EConstr.kind sigma t1, EConstr.kind sigma t2) with
     | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
     | _, Var id2 -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2
     | _ -> tac id
@@ -444,42 +441,42 @@ let raw_inversion inv_kind id status names =
     let sigma = Sigma.to_evar_map sigma in
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
+    let concl = EConstr.of_constr concl in
     let c = mkVar id in
     let (ind, t) =
-      try pf_apply Tacred.reduce_to_atomic_ind gl (EConstr.of_constr (pf_unsafe_type_of gl (EConstr.of_constr c)))
+      try pf_apply Tacred.reduce_to_atomic_ind gl (EConstr.of_constr (pf_unsafe_type_of gl c))
       with UserError _ ->
         let msg = str "The type of " ++ pr_id id ++ str " is not inductive." in
         CErrors.user_err  msg
     in
     let IndType (indf,realargs) = find_rectype env sigma t in
+    let realargs = List.map EConstr.of_constr realargs in
     let evdref = ref sigma in
     let (elim_predicate, args) =
       make_inv_predicate env evdref indf realargs id status concl in
     let sigma = !evdref in
     let (cut_concl,case_tac) =
-      if status != NoDep && (dependent sigma (EConstr.of_constr c) (EConstr.of_constr concl)) then
-        Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
+      if status != NoDep && (dependent sigma c concl) then
+        Reductionops.beta_applist sigma (elim_predicate, realargs@[c]),
         case_then_using
       else
-        Reduction.beta_appvect elim_predicate (Array.of_list realargs),
+        Reductionops.beta_applist sigma (elim_predicate, realargs),
         case_nodep_then_using
     in
     let cut_concl = EConstr.of_constr cut_concl in
     let refined id =
       let prf = mkApp (mkVar id, args) in
-      let prf = EConstr.of_constr prf in
       Refine.refine { run = fun h -> Sigma (prf, h, Sigma.refl) }
     in
     let neqns = List.length realargs in
     let as_mode = names != None in
-    let elim_predicate = EConstr.of_constr elim_predicate in
     let tac =
       (tclTHENS
         (assert_before Anonymous cut_concl)
         [case_tac names
             (introCaseAssumsThen false (* ApplyOn not supported by inversion *)
                (rewrite_equations_tac as_mode inv_kind id neqns))
-            (Some elim_predicate) ind (EConstr.of_constr c,t);
+            (Some elim_predicate) ind (c,t);
         onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
     in
     Sigma.Unsafe.of_pair (tac, sigma)
@@ -513,7 +510,7 @@ let inv k = inv_gen k NoDep
 let inv_tac id       = inv FullInversion None (NamedHyp id)
 let inv_clear_tac id = inv FullInversionClear None (NamedHyp id)
 
-let dinv k c = inv_gen k (Dep (Option.map EConstr.Unsafe.to_constr c))
+let dinv k c = inv_gen k (Dep c)
 
 let dinv_tac id       = dinv FullInversion None None (NamedHyp id)
 let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)

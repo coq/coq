@@ -4367,6 +4367,7 @@ let clear_unselected_context id inhyps cls =
 
 let use_bindings env sigma elim must_be_closed (c,lbind) typ =
   let sigma = Sigma.to_evar_map sigma in
+  let typ = EConstr.of_constr typ in
   let typ =
     if elim == None then
       (* w/o an scheme, the term has to be applied at least until
@@ -4374,7 +4375,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
          known only by pattern-matching, as in the case of a term of
          the form "nat_rect ?A ?o ?s n", with ?A to be inferred by
          matching. *)
-      let sign,t = splay_prod env sigma (EConstr.of_constr typ) in it_mkProd t sign
+      let sign,t = splay_prod env sigma typ in it_mkProd t sign
     else
       (* Otherwise, we exclude the case of an induction argument in an
          explicitly functional type. Henceforth, we can complete the
@@ -4384,7 +4385,6 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       typ in
   let rec find_clause typ =
     try
-      let typ = EConstr.of_constr typ in
       let indclause = make_clenv_binding env sigma (c,typ) lbind in
       if must_be_closed && occur_meta indclause.evd (clenv_value indclause) then
         error "Need a fully applied argument.";
@@ -4392,7 +4392,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       let (sigma, c) = pose_all_metas_as_evars env indclause.evd (clenv_value indclause) in
       Sigma.Unsafe.of_pair (c, sigma)
     with e when catchable_exception e ->
-    try find_clause (try_red_product env sigma (EConstr.of_constr typ))
+    try find_clause (EConstr.of_constr (try_red_product env sigma typ))
     with Redelimination -> raise e in
   find_clause typ
 

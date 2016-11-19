@@ -325,6 +325,7 @@ and extract_type_scheme env db c p =
           extract_type_scheme (push_rel_assum (n,t) env) db d (p-1)
       | _ ->
           let rels = fst (splay_prod env none (EConstr.of_constr (type_of env c))) in
+          let rels = List.map (on_snd EConstr.Unsafe.to_constr) rels in
           let env = push_rels_assum rels env in
           let eta_args = List.rev_map mkRel (List.interval 1 p) in
           extract_type env db 0 (lift p c) eta_args

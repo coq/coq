@@ -224,8 +224,8 @@ let mkProd_wo_LetIn decl c =
     | LocalAssum (na,t) -> mkProd (na, EConstr.of_constr t, c)
     | LocalDef (_,b,_) -> Vars.subst1 (EConstr.of_constr b) c
 
-let it_mkProd init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
-let it_mkLambda init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
+let it_mkProd init = List.fold_left (fun c (n,t)  -> EConstr.mkProd (n, t, c)) init
+let it_mkLambda init = List.fold_left (fun c (n,t)  -> EConstr.mkLambda (n, t, c)) init
 
 let it_named_context_quantifier f ~init =
   List.fold_left (fun c d -> f d c) init

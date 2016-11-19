@@ -39,6 +39,10 @@ open Context.Named.Declaration
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 
+let local_assum (na, t) =
+  let inj = EConstr.Unsafe.to_constr in
+  RelDecl.LocalAssum (na, inj t)
+
 (** Typeclass-based generalized rewriting. *)
 
 (** Constants used by the tactic. *)
@@ -531,7 +535,8 @@ let decompose_applied_relation env sigma (c,l) =
     | Some c -> c
     | None ->
 	let ctx,t' = Reductionops.splay_prod env sigma (EConstr.of_constr ctype) in (* Search for underlying eq *)
-	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx)) with
+	let t' = EConstr.Unsafe.to_constr t' in
+	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> local_assum (n, t)) ctx)) with
 	| Some c -> c
 	| None -> error "Cannot find an homogeneous relation to rewrite."
 

@@ -213,9 +213,9 @@ val hnf_lam_app      : env ->  evar_map -> EConstr.t -> EConstr.t -> constr
 val hnf_lam_appvect  : env ->  evar_map -> EConstr.t -> EConstr.t array -> constr
 val hnf_lam_applist  : env ->  evar_map -> EConstr.t -> EConstr.t list -> constr
 
-val splay_prod : env ->  evar_map -> EConstr.t -> (Name.t * constr) list * constr
-val splay_lam : env ->  evar_map -> EConstr.t -> (Name.t * constr) list * constr
-val splay_arity : env ->  evar_map -> EConstr.t -> (Name.t * constr) list * sorts
+val splay_prod : env ->  evar_map -> EConstr.t -> (Name.t * EConstr.constr) list * EConstr.constr
+val splay_lam : env ->  evar_map -> EConstr.t -> (Name.t * EConstr.constr) list * EConstr.constr
+val splay_arity : env ->  evar_map -> EConstr.t -> (Name.t * EConstr.constr) list * sorts
 val sort_of_arity : env -> evar_map -> EConstr.t -> sorts
 val splay_prod_n : env ->  evar_map -> int -> EConstr.t -> Context.Rel.t * constr
 val splay_lam_n : env ->  evar_map -> int -> EConstr.t -> Context.Rel.t * constr

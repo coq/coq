@@ -146,7 +146,7 @@ val is_matching_sigma : evar_map -> constr -> bool
 val match_eqdec : evar_map -> constr -> bool * Constr.constr * Constr.constr * Constr.constr * Constr.constr
 
 (** Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
-val dest_nf_eq : ([ `NF ], 'r) Proofview.Goal.t -> constr -> (Constr.constr * Constr.constr * Constr.constr)
+val dest_nf_eq : ([ `NF ], 'r) Proofview.Goal.t -> constr -> (constr * constr * constr)
 
 (** Match a negation *)
 val is_matching_not : evar_map -> constr -> bool

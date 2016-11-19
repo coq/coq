@@ -46,8 +46,8 @@ val rel_list : int -> int -> EConstr.constr list
 (** iterators/destructors on terms *)
 val mkProd_or_LetIn : Context.Rel.Declaration.t -> types -> types
 val mkProd_wo_LetIn : Context.Rel.Declaration.t -> EConstr.types -> EConstr.types
-val it_mkProd : types -> (Name.t * types) list -> types
-val it_mkLambda : constr -> (Name.t * types) list -> constr
+val it_mkProd : EConstr.types -> (Name.t * EConstr.types) list -> EConstr.types
+val it_mkLambda : EConstr.constr -> (Name.t * EConstr.types) list -> EConstr.constr
 val it_mkProd_or_LetIn : types -> Context.Rel.t -> types
 val it_mkProd_wo_LetIn : EConstr.types -> Context.Rel.t -> EConstr.types
 val it_mkLambda_or_LetIn : constr -> Context.Rel.t -> constr

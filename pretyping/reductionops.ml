@@ -1453,13 +1453,13 @@ let hnf_lam_applist env sigma t nl =
   List.fold_left (fun acc t -> hnf_lam_app env sigma (EConstr.of_constr acc) t) (EConstr.Unsafe.to_constr t) nl
 
 let bind_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  (na, inj t)
+  (na, t)
 
 let splay_prod env sigma =
   let rec decrec env m c =
     let t = whd_all env sigma c in
-    match EConstr.kind sigma (EConstr.of_constr t) with
+    let t = EConstr.of_constr t in
+    match EConstr.kind sigma t with
       | Prod (n,a,c0) ->
 	  decrec (push_rel (local_assum (n,a)) env)
 	    (bind_assum (n,a)::m) c0
@@ -1470,7 +1470,8 @@ let splay_prod env sigma =
 let splay_lam env sigma =
   let rec decrec env m c =
     let t = whd_all env sigma c in
-    match EConstr.kind sigma (EConstr.of_constr t) with
+    let t = EConstr.of_constr t in
+    match EConstr.kind sigma t with
       | Lambda (n,a,c0) ->
 	  decrec (push_rel (local_assum (n,a)) env)
 	    (bind_assum (n,a)::m) c0
@@ -1498,7 +1499,7 @@ let splay_prod_assum env sigma =
 
 let splay_arity env sigma c =
   let l, c = splay_prod env sigma c in
-  match EConstr.kind sigma (EConstr.of_constr c) with
+  match EConstr.kind sigma c with
     | Sort s -> l,s
     | _ -> invalid_arg "splay_arity"
 

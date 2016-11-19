@@ -203,7 +203,8 @@ let compute_canonical_projections warn (con,ind) =
   let ctx = Univ.ContextSet.of_context ctx in
   let c = Environ.constant_value_in env (con,u) in
   let lt,t = Reductionops.splay_lam env Evd.empty (EConstr.of_constr c) in
-  let lt = List.rev_map snd lt in
+  let t = EConstr.Unsafe.to_constr t in
+  let lt = List.rev_map (snd %> EConstr.Unsafe.to_constr) lt in
   let args = snd (decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
     lookup_structure ind in
@@ -303,6 +304,7 @@ let check_and_decompose_canonical_structure ref =
     | Some vc -> vc
     | None -> error_not_structure ref in
   let body = snd (splay_lam (Global.env()) Evd.empty (EConstr.of_constr vc)) (** FIXME *) in
+  let body = EConstr.Unsafe.to_constr body in
   let f,args = match kind_of_term body with
     | App (f,args) -> f,args
     | _ -> error_not_structure ref in
