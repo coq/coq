@@ -1612,12 +1612,14 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
  * ass.
  *)
 
-let status_changed lev (pbty,_,t1,t2) =
-  (try Evar.Set.mem (head_evar t1) lev with NoHeadEvar -> false) ||
-  (try Evar.Set.mem (head_evar t2) lev with NoHeadEvar -> false)
+let status_changed evd lev (pbty,_,t1,t2) =
+  let t1 = EConstr.of_constr t1 in
+  let t2 = EConstr.of_constr t2 in
+  (try Evar.Set.mem (head_evar evd t1) lev with NoHeadEvar -> false) ||
+  (try Evar.Set.mem (head_evar evd t2) lev with NoHeadEvar -> false)
 
 let reconsider_conv_pbs conv_algo evd =
-  let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
+  let (evd,pbs) = extract_changed_conv_pbs evd (status_changed evd) in
   List.fold_left
     (fun p (pbty,env,t1,t2 as x) ->
        match p with

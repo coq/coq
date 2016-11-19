@@ -217,6 +217,7 @@ let auto_unif_flags freeze st =
 }
 
 let e_give_exact flags poly (c,clenv) gl =
+  let open EConstr in
   let (c, _, _) = c in
   let c, gl =
     if poly then
@@ -226,7 +227,6 @@ let e_give_exact flags poly (c,clenv) gl =
         c, {gl with sigma = evd}
     else c, gl
   in
-  let c = EConstr.of_constr c in
   let t1 = pf_unsafe_type_of gl c in
   let t1 = EConstr.of_constr t1 in
   Proofview.V82.of_tactic (Clenvtac.unify ~flags t1 <*> exact_no_check c) gl
@@ -245,6 +245,7 @@ let unify_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
 
 (** Application of a lemma using [refine] instead of the old [w_unify] *)
 let unify_resolve_refine poly flags =
+  let open EConstr in
   let open Clenv in
   { enter = begin fun gls ((c, t, ctx),n,clenv) ->
     let env = Proofview.Goal.env gls in
@@ -262,9 +263,6 @@ let unify_resolve_refine poly flags =
           let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
           sigma, c, t
       in
-      let open EConstr in
-      let ty = EConstr.of_constr ty in
-      let term = EConstr.of_constr term in
       let sigma', cl = Clenv.make_evar_clause env sigma ?len:n ty in
       let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
       let sigma' =
@@ -285,7 +283,6 @@ let clenv_of_prods poly nprods (c, clenv) gl =
   let (c, _, _) = c in
   if poly || Int.equal nprods 0 then Some (None, clenv)
   else
-    let c = EConstr.of_constr c in
     let sigma = Tacmach.New.project gl in
     let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
     let ty = EConstr.of_constr ty in
@@ -313,7 +310,7 @@ let matches_pattern concl pat =
     | None -> Proofview.tclUNIT ()
     | Some pat ->
        let sigma = Sigma.to_evar_map sigma in
-       if Constr_matching.is_matching env sigma pat (EConstr.of_constr concl) then
+       if Constr_matching.is_matching env sigma pat concl then
          Proofview.tclUNIT ()
        else
          Tacticals.New.tclZEROMSG (str "conclPattern")
@@ -367,7 +364,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     Proofview.Goal.nf_enter { enter =
     begin fun gl ->
     let tacs = e_trivial_resolve db_list local_db secvars only_classes
-                                 (project gl) (pf_concl gl) in
+                                 (project gl) (EConstr.of_constr (pf_concl gl)) in
       tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
     end}
   in
@@ -379,13 +376,13 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
 
 and e_my_find_search db_list local_db secvars hdc complete only_classes sigma concl =
   let open Proofview.Notations in
-  let prods, concl = decompose_prod_assum concl in
+  let prods, concl = EConstr.decompose_prod_assum sigma concl in
   let nprods = List.length prods in
   let freeze =
     try
       let cl = Typeclasses.class_info (fst hdc) in
         if cl.cl_strict then
-          Evd.evars_of_term concl
+          Evarutil.undefined_evars_of_term sigma concl
         else Evar.Set.empty
     with e when CErrors.noncritical e -> Evar.Set.empty
   in
@@ -394,8 +391,8 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
       (fun db ->
         let tacs =
           if Hint_db.use_dn db then (* Using dnet *)
-            Hint_db.map_eauto secvars hdc concl db
-          else Hint_db.map_existential secvars hdc concl db
+            Hint_db.map_eauto sigma secvars hdc concl db
+          else Hint_db.map_existential sigma secvars hdc concl db
         in
         let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
           List.map (fun x -> (flags, x)) tacs)
@@ -481,7 +478,7 @@ let catchable = function
 let pr_depth l = prlist_with_sep (fun () -> str ".") int (List.rev l)
 
 let is_Prop env sigma concl =
-  let ty = Retyping.get_type_of env sigma (EConstr.of_constr concl) in
+  let ty = Retyping.get_type_of env sigma concl in
   match kind_of_term ty with
   | Sort (Prop Null) -> true
   | _ -> false
@@ -542,9 +539,10 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
                else false
   in
   let is_class = iscl env cty in
+  let cty = EConstr.of_constr cty in
   let keep = not only_classes || is_class in
     if keep then
-      let c = mkVar id in
+      let c = EConstr.mkVar id in
       let name = PathHints [VarRef id] in
       let hints =
         if is_class then
@@ -552,7 +550,7 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
             (List.map_append
                (fun (path,pri, c) -> make_resolves env sigma ~name:(PathHints path)
                   (true,false,Flags.is_verbose()) pri false
-                 (IsConstr (c,Univ.ContextSet.empty)))
+                 (IsConstr (EConstr.of_constr c,Univ.ContextSet.empty)))
                hints)
         else []
       in
@@ -674,17 +672,16 @@ module V85 = struct
 
   let needs_backtrack env evd oev concl =
     if Option.is_empty oev || is_Prop env evd concl then
-      occur_existential evd (EConstr.of_constr concl)
+      occur_existential evd concl
     else true
 
   let hints_tac hints sk fk {it = gl,info; sigma = s} =
     let env = Goal.V82.env s gl in
     let concl = Goal.V82.concl s gl in
-    let concl = EConstr.Unsafe.to_constr concl in
     let tacgl = {it = gl; sigma = s;} in
     let secvars = secvars_of_hyps (Environ.named_context_of_val (Goal.V82.hyps s gl)) in
     let poss = e_possible_resolve hints info.hints secvars info.only_classes s concl in
-    let unique = is_unique env s (EConstr.of_constr concl) in
+    let unique = is_unique env s concl in
     let rec aux i foundone = function
       | (tac, _, extern, name, pp) :: tl ->
          let derivs = path_derivate info.auto_cut name in
@@ -749,7 +746,7 @@ module V85 = struct
              let fk' =
                (fun e ->
                  let do_backtrack =
-                   if unique then occur_existential s' (EConstr.of_constr concl)
+                   if unique then occur_existential s' concl
                    else if info.unique then true
                    else if List.is_empty gls' then
                      needs_backtrack env s' info.is_evar concl
@@ -770,7 +767,7 @@ module V85 = struct
          if foundone == None && !typeclasses_debug > 0 then
            Feedback.msg_debug
              (pr_depth info.auto_depth ++ str": no match for " ++
-                Printer.pr_constr_env (Goal.V82.env s gl) s concl ++
+                Printer.pr_constr_env (Goal.V82.env s gl) s (EConstr.Unsafe.to_constr concl) ++
                 spc () ++ str ", " ++ int (List.length poss) ++
                 str" possibilities");
          match foundone with
@@ -793,7 +790,7 @@ module V85 = struct
                  let fk'' =
                    if not info.unique && List.is_empty gls' &&
                         not (needs_backtrack (Goal.V82.env s gl) s
-                                           info.is_evar (EConstr.Unsafe.to_constr (Goal.V82.concl s gl)))
+                                           info.is_evar (Goal.V82.concl s gl))
                    then fk
                    else fk'
                  in
@@ -984,7 +981,7 @@ module Search = struct
       NOT backtrack. *)
   let needs_backtrack env evd unique concl =
     if unique || is_Prop env evd concl then
-      occur_existential evd (EConstr.of_constr concl)
+      occur_existential evd concl
     else true
 
   let mark_unresolvables sigma goals =
@@ -1004,14 +1001,15 @@ module Search = struct
     let open Proofview.Notations in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
+    let concl = EConstr.of_constr concl in
     let sigma = Goal.sigma gl in
     let s = Sigma.to_evar_map sigma in
-    let unique = not info.search_dep || is_unique env s (EConstr.of_constr concl) in
+    let unique = not info.search_dep || is_unique env s concl in
     let backtrack = needs_backtrack env s unique concl in
     if !typeclasses_debug > 0 then
       Feedback.msg_debug
         (pr_depth info.search_depth ++ str": looking for " ++
-           Printer.pr_constr_env (Goal.env gl) s concl ++
+           Printer.pr_constr_env (Goal.env gl) s (EConstr.Unsafe.to_constr concl) ++
            (if backtrack then str" with backtracking"
             else str" without backtracking"));
     let secvars = compute_secvars gl in
@@ -1126,7 +1124,7 @@ module Search = struct
          if !foundone == false && !typeclasses_debug > 0 then
            Feedback.msg_debug
              (pr_depth info.search_depth ++ str": no match for " ++
-                Printer.pr_constr_env (Goal.env gl) s concl ++
+                Printer.pr_constr_env (Goal.env gl) s (EConstr.Unsafe.to_constr concl) ++
                 spc () ++ str ", " ++ int (List.length poss) ++
                 str" possibilities");
          match e with
@@ -1523,8 +1521,9 @@ let is_ground c gl =
 let autoapply c i gl =
   let flags = auto_unif_flags Evar.Set.empty
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
-  let cty = pf_unsafe_type_of gl (EConstr.of_constr c) in
-  let ce = mk_clenv_from gl (EConstr.of_constr c,EConstr.of_constr cty) in
+  let cty = pf_unsafe_type_of gl c in
+  let cty = EConstr.of_constr cty in
+  let ce = mk_clenv_from gl (c,cty) in
   let tac = { enter = fun gl -> (unify_e_resolve false flags).enter gl
     ((c,cty,Univ.ContextSet.empty),0,ce) } in
   Proofview.V82.of_tactic (Proofview.Goal.nf_enter tac) gl

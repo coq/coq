@@ -88,7 +88,7 @@ val non_instantiated : evar_map -> evar_info Evar.Map.t
 
 (** [head_evar c] returns the head evar of [c] if any *)
 exception NoHeadEvar
-val head_evar : constr -> existential_key (** may raise NoHeadEvar *)
+val head_evar : evar_map -> EConstr.constr -> existential_key (** may raise NoHeadEvar *)
 
 (* Expand head evar if any *)
 val whd_head_evar :  evar_map -> EConstr.constr -> EConstr.constr

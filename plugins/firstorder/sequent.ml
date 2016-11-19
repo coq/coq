@@ -214,8 +214,8 @@ let extend_with_auto_hints l seq gl=
       | Res_pf_THEN_trivial_fail (c,_) ->
           let (c, _, _) = c in
 	  (try
-	     let gr = global_of_constr c in
-	     let typ=(pf_unsafe_type_of gl (EConstr.of_constr c)) in
+	     let (gr, _) = Termops.global_of_constr (project gl) c in
+	     let typ=(pf_unsafe_type_of gl c) in
 	       seqref:=add_formula Hint gr typ !seqref gl
 	   with Not_found->())
       | _-> () in

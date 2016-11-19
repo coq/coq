@@ -29,7 +29,6 @@ open Proofview.Notations
 let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
-  let c = EConstr.of_constr c in
   Proofview.Goal.enter { enter = begin fun gl ->
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t1 = EConstr.of_constr t1 in
@@ -40,7 +39,7 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   else exact_check c
   end }
 
-let assumption id = e_give_exact (mkVar id)
+let assumption id = e_give_exact (EConstr.mkVar id)
 
 let e_assumption =
   Proofview.Goal.enter { enter = begin fun gl ->
@@ -49,7 +48,7 @@ let e_assumption =
 
 let registered_e_assumption =
   Proofview.Goal.enter { enter = begin fun gl ->
-  Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
+  Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (EConstr.mkVar id))
               (Tacmach.New.pf_ids_of_hyps gl))
   end }
 
@@ -89,15 +88,14 @@ let rec prolog l n gl =
 
 let out_term = function
   | IsConstr (c, _) -> c
-  | IsGlobRef gr -> fst (Universes.fresh_global_instance (Global.env ()) gr)
+  | IsGlobRef gr -> EConstr.of_constr (fst (Universes.fresh_global_instance (Global.env ()) gr))
 
 let prolog_tac l n =
   Proofview.V82.tactic begin fun gl ->
   let map c =
     let (c, sigma) = Tactics.run_delayed (pf_env gl) (project gl) c in
-    let c = EConstr.Unsafe.to_constr c in
     let c = pf_apply (prepare_hint false (false,true)) gl (sigma, c) in
-    EConstr.of_constr (out_term c)
+    out_term c
   in
   let l = List.map map l in
   try (prolog l n gl)
@@ -116,7 +114,6 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 let unify_e_resolve poly flags (c,clenv) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
       let clenv', c = connect_hint_clenv poly c clenv gl in
-      let c = EConstr.of_constr c in
       Proofview.V82.tactic
 	(fun gls ->
 	 let clenv' = clenv_unique_resolver ~flags clenv' gls in
@@ -124,13 +121,13 @@ let unify_e_resolve poly flags (c,clenv) =
 		 (Proofview.V82.of_tactic (Tactics.Simple.eapply c)) gls)
     end }
 
-let hintmap_of secvars hdc concl =
+let hintmap_of sigma secvars hdc concl =
   match hdc with
   | None -> fun db -> Hint_db.map_none ~secvars db
   | Some hdc ->
-     if occur_existential Evd.empty (EConstr.of_constr concl) then (** FIXME *)
-       (fun db -> Hint_db.map_existential ~secvars hdc concl db)
-     else (fun db -> Hint_db.map_auto ~secvars hdc concl db)
+     if occur_existential sigma concl then
+       (fun db -> Hint_db.map_existential sigma ~secvars hdc concl db)
+     else (fun db -> Hint_db.map_auto sigma ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
 let e_exact poly flags (c,clenv) =
@@ -152,13 +149,13 @@ let rec e_trivial_fail_db db_list local_db =
   let tacl =
     registered_e_assumption ::
     (Tacticals.New.tclTHEN Tactics.intro next) ::
-    (List.map fst (e_trivial_resolve (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_nf_concl gl)))
+    (List.map fst (e_trivial_resolve (Tacmach.New.project gl) db_list local_db secvars (EConstr.of_constr (Tacmach.New.pf_nf_concl gl))))
   in
   Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
   end }
 
-and e_my_find_search db_list local_db secvars hdc concl =
-  let hint_of_db = hintmap_of secvars hdc concl in
+and e_my_find_search sigma db_list local_db secvars hdc concl =
+  let hint_of_db = hintmap_of sigma secvars hdc concl in
   let hintl =
       List.map_append (fun db ->
 	let flags = auto_flags_of_state (Hint_db.transparent_state db) in
@@ -188,13 +185,13 @@ and e_my_find_search db_list local_db secvars hdc concl =
 
 and e_trivial_resolve sigma db_list local_db secvars gl =
   let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
-  try priority (e_my_find_search db_list local_db secvars hd gl)
+  try priority (e_my_find_search sigma db_list local_db secvars hd gl)
   with Not_found -> []
 
 let e_possible_resolve sigma db_list local_db secvars gl =
   let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
   try List.map (fun (b, (tac, pp)) -> (tac, b, pp))
-               (e_my_find_search db_list local_db secvars hd gl)
+               (e_my_find_search sigma db_list local_db secvars hd gl)
   with Not_found -> []
 
 let find_first_goal gls =
@@ -265,7 +262,7 @@ module SearchProblem = struct
       let g = find_first_goal lg in
       let hyps = pf_ids_of_hyps g in
       let secvars = secvars_of_hyps (pf_hyps g) in
-      let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ pr_id id)) in
+      let map_assum id = (e_give_exact (EConstr.mkVar id), (-1), lazy (str "exact" ++ spc () ++ pr_id id)) in
       let assumption_tacs =
         let tacs = List.map map_assum hyps in
         let l = filter_tactics s.tacres tacs in
@@ -293,6 +290,7 @@ module SearchProblem = struct
       let rec_tacs =
 	let l =
           let concl = Reductionops.nf_evar (project g)(pf_concl g) in
+          let concl = EConstr.of_constr concl in
 	  filter_tactics s.tacres
                          (e_possible_resolve (project g) s.dblist (List.hd s.localdb) secvars concl)
 	in

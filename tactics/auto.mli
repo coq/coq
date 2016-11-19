@@ -23,7 +23,7 @@ val default_search_depth : int ref
 val auto_flags_of_state : transparent_state -> Unification.unify_flags
 
 val connect_hint_clenv : polymorphic -> raw_hint -> clausenv ->
-  ('a, 'r) Proofview.Goal.t -> clausenv * constr
+  ('a, 'r) Proofview.Goal.t -> clausenv * EConstr.constr
 
 (** Try unification with the precompiled clause, then use registered Apply *)
 val unify_resolve : polymorphic -> Unification.unify_flags -> (raw_hint * clausenv) -> unit Proofview.tactic
@@ -33,7 +33,7 @@ val unify_resolve : polymorphic -> Unification.unify_flags -> (raw_hint * clause
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
-val conclPattern : constr -> constr_pattern option -> Genarg.glob_generic_argument -> unit Proofview.tactic
+val conclPattern : EConstr.constr -> constr_pattern option -> Genarg.glob_generic_argument -> unit Proofview.tactic
 
 (** The Auto tactic *)
 

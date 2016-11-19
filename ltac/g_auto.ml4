@@ -27,7 +27,7 @@ TACTIC EXTEND eassumption
 END
 
 TACTIC EXTEND eexact
-| [ "eexact" constr(c) ] -> [ Eauto.e_give_exact c ]
+| [ "eexact" constr(c) ] -> [ Eauto.e_give_exact (EConstr.of_constr c) ]
 END
 
 let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases

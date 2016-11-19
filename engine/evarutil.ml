@@ -187,7 +187,9 @@ let is_ground_env = memo is_ground_env
 
 exception NoHeadEvar
 
-let head_evar =
+let head_evar sigma c =
+  (** FIXME: this breaks if using evar-insensitive code *)
+  let c = EConstr.Unsafe.to_constr c in
   let rec hrec c = match kind_of_term c with
     | Evar (evk,_)   -> evk
     | Case (_,_,c,_) -> hrec c
@@ -196,7 +198,7 @@ let head_evar =
     | Proj (p, c)    -> hrec c
     | _              -> raise NoHeadEvar
   in
-  hrec
+  hrec c
 
 (* Expand head evar if any (currently consider only applications but I
    guess it should consider Case too) *)

@@ -15,7 +15,7 @@ val e_assumption : unit Proofview.tactic
 
 val registered_e_assumption : unit Proofview.tactic
 
-val e_give_exact : ?flags:Unification.unify_flags -> constr -> unit Proofview.tactic
+val e_give_exact : ?flags:Unification.unify_flags -> EConstr.constr -> unit Proofview.tactic
 
 val prolog_tac : delayed_open_constr list -> int -> unit Proofview.tactic
 

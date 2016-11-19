@@ -263,9 +263,10 @@ let rec drop_extra_implicit_args sigma c = match EConstr.kind sigma c with
   (* Removed trailing extra implicit arguments, what improves compatibility
      for constants with recently added maximal implicit arguments *)
   | App (f,args) when EConstr.isEvar sigma (Array.last args) ->
+      let open EConstr in
       drop_extra_implicit_args sigma
-	(EConstr.mkApp (f,fst (Array.chop (Array.length args - 1) args)))
-  | _ -> EConstr.Unsafe.to_constr c
+	(mkApp (f,fst (Array.chop (Array.length args - 1) args)))
+  | _ -> c
 
 (* Get the last arg of an application *)
 let last_arg sigma c = match EConstr.kind sigma c with

@@ -10,6 +10,7 @@ open Pp
 open Util
 open Names
 open Term
+open EConstr
 open Environ
 open Globnames
 open Decl_kinds
@@ -99,16 +100,16 @@ module Hint_db :
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments, _not_ using the discrimination net. *)
-    val map_existential : secvars:Id.Pred.t ->
+    val map_existential : evar_map -> secvars:Id.Pred.t ->
       (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments and using the discrimination net. *)
-    val map_eauto : secvars:Id.Pred.t -> (global_reference * constr array) -> constr -> t -> full_hint list
+    val map_eauto : evar_map -> secvars:Id.Pred.t -> (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments. *)
-    val map_auto : secvars:Id.Pred.t ->
+    val map_auto : evar_map -> secvars:Id.Pred.t ->
        (global_reference * constr array) -> constr -> t -> full_hint list
 
     val add_one : env -> evar_map -> hint_entry -> t -> t
@@ -170,7 +171,7 @@ val add_hints : locality_flag -> hint_db_name list -> hints_entry -> unit
 
 val prepare_hint : bool (* Check no remaining evars *) ->
   (bool * bool) (* polymorphic or monomorphic, local or global *) ->
-  env -> evar_map -> open_constr -> hint_term
+  env -> evar_map -> evar_map * constr -> hint_term
 
 (** [make_exact_entry pri (c, ctyp, ctx, secvars)].
    [c] is the term given as an exact proof to solve the goal;

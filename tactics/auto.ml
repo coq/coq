@@ -93,7 +93,7 @@ let connect_hint_clenv poly (c, _, ctx) clenv gl =
         evd = Evd.map_metas map evd;
         env = Proofview.Goal.env gl;
       } in
-      clenv, map c
+      clenv, emap c
     else
       let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
       { clenv with evd = evd ; env = Proofview.Goal.env gl }, c
@@ -115,7 +115,6 @@ let unify_resolve_gen poly = function
 let exact poly (c,clenv) =
   Proofview.Goal.enter { enter = begin fun gl ->
     let clenv', c = connect_hint_clenv poly c clenv gl in
-    let c = EConstr.of_constr c in
     Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
     (exact_check c)
@@ -141,7 +140,7 @@ let conclPattern concl pat tac =
     | None -> Proofview.tclUNIT Id.Map.empty
     | Some pat ->
 	try
-	  Proofview.tclUNIT (Constr_matching.matches env sigma pat (EConstr.of_constr concl))
+	  Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
 	with Constr_matching.PatternMatchingFailure ->
           Tacticals.New.tclZEROMSG (str "conclPattern")
   in
@@ -300,13 +299,13 @@ let flags_of_state st =
 let auto_flags_of_state st =
   auto_unif_flags_of full_transparent_state st false
 
-let hintmap_of secvars hdc concl =
+let hintmap_of sigma secvars hdc concl =
   match hdc with
   | None -> Hint_db.map_none ~secvars
   | Some hdc ->
-     if occur_existential Evd.empty (EConstr.of_constr concl) then (** FIXME *)
-       Hint_db.map_existential ~secvars hdc concl
-     else Hint_db.map_auto ~secvars hdc concl
+     if occur_existential sigma concl then
+       Hint_db.map_existential sigma ~secvars hdc concl
+     else Hint_db.map_auto sigma ~secvars hdc concl
 
 let exists_evaluable_reference env = function
   | EvalConstRef _ -> true
@@ -331,6 +330,7 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
   in
   Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Tacmach.New.pf_nf_concl gl in
+    let concl = EConstr.of_constr concl in
     let sigma = Tacmach.New.project gl in
     let secvars = compute_secvars gl in
     Tacticals.New.tclFIRST
@@ -339,17 +339,17 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
              (trivial_resolve sigma dbg mod_delta db_list local_db secvars concl)))
   end }
 
-and my_find_search_nodelta db_list local_db secvars hdc concl =
+and my_find_search_nodelta sigma db_list local_db secvars hdc concl =
   List.map (fun hint -> (None,hint))
-    (List.map_append (hintmap_of secvars hdc concl) (local_db::db_list))
+    (List.map_append (hintmap_of sigma secvars hdc concl) (local_db::db_list))
 
 and my_find_search mod_delta =
   if mod_delta then my_find_search_delta
   else my_find_search_nodelta
 
-and my_find_search_delta db_list local_db secvars hdc concl =
-  let f = hintmap_of secvars hdc concl in
-    if occur_existential Evd.empty (EConstr.of_constr concl) (** FIXME *) then
+and my_find_search_delta sigma db_list local_db secvars hdc concl =
+  let f = hintmap_of sigma secvars hdc concl in
+    if occur_existential sigma concl then
       List.map_append
 	(fun db ->
 	  if Hint_db.use_dn db then
@@ -371,8 +371,8 @@ and my_find_search_delta db_list local_db secvars hdc concl =
 	      match hdc with None -> Hint_db.map_none ~secvars db
 	      | Some hdc ->
 		  if (Id.Pred.is_empty ids && Cpred.is_empty csts)
-		  then Hint_db.map_auto ~secvars hdc concl db
-		  else Hint_db.map_existential ~secvars hdc concl db
+		  then Hint_db.map_auto sigma ~secvars hdc concl db
+		  else Hint_db.map_existential sigma ~secvars hdc concl db
 	    in auto_flags_of_state st, l
 	  in List.map (fun x -> (Some flags,x)) l)
       	(local_db::db_list)
@@ -414,7 +414,7 @@ and trivial_resolve sigma dbg mod_delta db_list local_db secvars cl =
     in
       List.map (tac_of_hint dbg db_list local_db cl)
 	(priority
-	    (my_find_search mod_delta db_list local_db secvars head cl))
+	    (my_find_search mod_delta sigma db_list local_db secvars head cl))
   with Not_found -> []
 
 (** The use of the "core" database can be de-activated by passing
@@ -460,7 +460,7 @@ let possible_resolve sigma dbg mod_delta db_list local_db secvars cl =
       with Bound -> None
     in
       List.map (tac_of_hint dbg db_list local_db cl)
-	(my_find_search mod_delta db_list local_db secvars head cl)
+	(my_find_search mod_delta sigma db_list local_db secvars head cl)
   with Not_found -> []
 
 let extend_local_db decl db gl =
@@ -491,6 +491,7 @@ let search d n mod_delta db_list local_db =
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
 	     ( Proofview.Goal.enter { enter = begin fun gl ->
                let concl = Tacmach.New.pf_nf_concl gl in
+               let concl = EConstr.of_constr concl in
                let sigma = Tacmach.New.project gl in
                let secvars = compute_secvars gl in
 	       let d' = incr_dbg d in

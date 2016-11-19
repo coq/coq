@@ -30,7 +30,7 @@ val not_evar : constr -> unit Proofview.tactic
 
 val is_ground : constr -> tactic
 
-val autoapply : constr -> Hints.hint_db_name -> tactic
+val autoapply : EConstr.constr -> Hints.hint_db_name -> tactic
 
 module Search : sig
   val eauto_tac :

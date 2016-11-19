@@ -49,7 +49,7 @@ let set_typeclass_transparency c local b =
 let _ =
   Hook.set Typeclasses.add_instance_hint_hook
     (fun inst path local pri poly ->
-     let inst' = match inst with IsConstr c -> Hints.IsConstr (c, Univ.ContextSet.empty)
+     let inst' = match inst with IsConstr c -> Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty)
        | IsGlobal gr -> Hints.IsGlobRef gr
      in
       Flags.silently (fun () ->

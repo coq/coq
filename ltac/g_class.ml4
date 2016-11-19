@@ -74,7 +74,7 @@ TACTIC EXTEND is_ground
 END
 
 TACTIC EXTEND autoapply
-  [ "autoapply" constr(c) "using" preident(i) ] -> [ Proofview.V82.tactic (autoapply c i) ]
+  [ "autoapply" constr(c) "using" preident(i) ] -> [ Proofview.V82.tactic (autoapply (EConstr.of_constr c) i) ]
 END
 
 (** TODO: DEPRECATE *)
