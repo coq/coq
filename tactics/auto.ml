@@ -6,14 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*
-*)
+module CVars = Vars
+
 open Pp
 open Util
 open CErrors
 open Names
 open Vars
 open Termops
+open EConstr
 open Environ
 open Tacmach
 open Genredexpr
@@ -83,8 +84,8 @@ let connect_hint_clenv poly (c, _, ctx) clenv gl =
     if poly then
       (** Refresh the instance of the hint *)
       let (subst, ctx) = Universes.fresh_universe_context_set_instance ctx in
-      let map c = Vars.subst_univs_level_constr subst c in
-      let emap c = EConstr.Vars.subst_univs_level_constr subst c in
+      let map c = CVars.subst_univs_level_constr subst c in
+      let emap c = Vars.subst_univs_level_constr subst c in
       let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
       (** Only metas are mentioning the old universes. *)
       let clenv = {
