@@ -103,7 +103,7 @@ val is_class_type : evar_map -> EConstr.types -> bool
 
 val resolve_typeclasses : ?fast_path:bool -> ?filter:evar_filter -> ?unique:bool ->
   ?split:bool -> ?fail:bool -> env -> evar_map -> evar_map
-val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> open_constr
+val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
 
 val set_typeclass_transparency_hook : (evaluable_global_reference -> bool (*local?*) -> bool -> unit) Hook.t
 val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> unit
@@ -120,7 +120,7 @@ val add_instance_hint : global_reference_or_constr -> global_reference list ->
 val remove_instance_hint : global_reference -> unit
 
 val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
-val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> open_constr) Hook.t
+val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) Hook.t
 
 val declare_instance : int option -> bool -> global_reference -> unit
 

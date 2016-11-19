@@ -10,6 +10,7 @@
 
 open Names
 open Constr
+open EConstr
 open Tacmach
 
 val catchable : exn -> bool
@@ -24,13 +25,13 @@ val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state ->
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic
 
-val head_of_constr : Id.t -> Term.constr -> unit Proofview.tactic
+val head_of_constr : Id.t -> constr -> unit Proofview.tactic
 
 val not_evar : constr -> unit Proofview.tactic
 
 val is_ground : constr -> tactic
 
-val autoapply : EConstr.constr -> Hints.hint_db_name -> tactic
+val autoapply : constr -> Hints.hint_db_name -> tactic
 
 module Search : sig
   val eauto_tac :

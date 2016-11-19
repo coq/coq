@@ -1734,7 +1734,6 @@ let solve_remaining_apply_goals =
       let concl = EConstr.of_constr concl in
       if Typeclasses.is_class_type evd concl then
         let evd', c' = Typeclasses.resolve_one_typeclass env evd concl in
-        let c' = EConstr.of_constr c' in
         let tac = Refine.refine ~unsafe:true { run = fun h -> Sigma.here c' h } in
         Sigma.Unsafe.of_pair (tac, evd')
 	else Sigma.here (Proofview.tclUNIT ()) sigma

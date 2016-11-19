@@ -132,6 +132,7 @@ let find_class_proof proof_type proof_method env evars carrier relation =
   try
     let evars, goal = app_poly_check env evars proof_type [| carrier ; relation |] in
     let evars', c = Typeclasses.resolve_one_typeclass env (goalevars evars) (EConstr.of_constr goal) in
+    let c = EConstr.Unsafe.to_constr c in
       if extends_undefined (goalevars evars) evars' then raise Not_found
       else app_poly_check env (evars',cstrevars evars) proof_method [| carrier; relation; c |]
   with e when Logic.catchable_exception e -> raise Not_found
@@ -1951,6 +1952,7 @@ let default_morphism sign m =
   in
   let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
   let evars, mor = resolve_one_typeclass env (goalevars evars) (EConstr.of_constr morph) in
+  let mor = EConstr.Unsafe.to_constr mor in
     mor, proper_projection mor morph
 
 let add_setoid global binders a aeq t n =

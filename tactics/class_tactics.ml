@@ -18,6 +18,7 @@ open Util
 open Names
 open Term
 open Termops
+open EConstr
 open Reduction
 open Proof_type
 open Tacticals
@@ -217,7 +218,6 @@ let auto_unif_flags freeze st =
 }
 
 let e_give_exact flags poly (c,clenv) gl =
-  let open EConstr in
   let (c, _, _) = c in
   let c, gl =
     if poly then
@@ -245,7 +245,6 @@ let unify_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
 
 (** Application of a lemma using [refine] instead of the old [w_unify] *)
 let unify_resolve_refine poly flags =
-  let open EConstr in
   let open Clenv in
   { enter = begin fun gls ((c, t, ctx),n,clenv) ->
     let env = Proofview.Goal.env gls in
@@ -479,7 +478,8 @@ let pr_depth l = prlist_with_sep (fun () -> str ".") int (List.rev l)
 
 let is_Prop env sigma concl =
   let ty = Retyping.get_type_of env sigma concl in
-  match kind_of_term ty with
+  let ty = EConstr.of_constr ty in
+  match EConstr.kind sigma ty with
   | Sort (Prop Null) -> true
   | _ -> false
 
@@ -527,22 +527,23 @@ let evars_to_goals p evm =
 let make_resolve_hyp env sigma st flags only_classes pri decl =
   let id = NamedDecl.get_id decl in
   let cty = Evarutil.nf_evar sigma (NamedDecl.get_type decl) in
+  let cty = EConstr.of_constr cty in
   let rec iscl env ty =
-    let ctx, ar = decompose_prod_assum ty in
-      match kind_of_term (fst (decompose_app ar)) with
+    let ctx, ar = decompose_prod_assum sigma ty in
+      match EConstr.kind sigma (fst (decompose_app sigma ar)) with
       | Const (c,_) -> is_class (ConstRef c)
       | Ind (i,_) -> is_class (IndRef i)
       | _ ->
           let env' = Environ.push_rel_context ctx env in
-          let ty' = whd_all env' ar in
-               if not (Term.eq_constr ty' ar) then iscl env' ty'
+          let ty' = Reductionops.whd_all env' sigma ar in
+          let ty' = EConstr.of_constr ty' in
+               if not (EConstr.eq_constr sigma ty' ar) then iscl env' ty'
                else false
   in
   let is_class = iscl env cty in
-  let cty = EConstr.of_constr cty in
   let keep = not only_classes || is_class in
     if keep then
-      let c = EConstr.mkVar id in
+      let c = mkVar id in
       let name = PathHints [VarRef id] in
       let hints =
         if is_class then
@@ -1466,6 +1467,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
   let nc, gl, subst, _, _ = Evarutil.push_rel_context_to_named_context env gl in
   let (gl,t,sigma) =
     Goal.V82.mk_goal sigma nc gl Store.empty in
+  let (ev, _) = destEvar sigma t in
   let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in
   let st = Hint_db.transparent_state hints in
@@ -1480,11 +1482,9 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
       with Refiner.FailError _ -> raise Not_found
   in
   let evd = sig_sig gls' in
-  let t = EConstr.Unsafe.to_constr t in
-  let t' = let (ev, inst) = destEvar t in
-    mkEvar (ev, Array.map_of_list EConstr.Unsafe.to_constr subst)
-  in
-  let term = Evarutil.nf_evar evd t' in
+  let t' = mkEvar (ev, Array.of_list subst) in
+  let term = Evarutil.nf_evar evd (EConstr.Unsafe.to_constr t') in
+  let term = EConstr.of_constr term in
     evd, term
 
 let _ =
@@ -1495,8 +1495,9 @@ let _ =
     Used in the partial application tactic. *)
 
 let rec head_of_constr sigma t =
-  let t = strip_outer_cast sigma (EConstr.of_constr (collapse_appl sigma (EConstr.of_constr t))) in
-    match kind_of_term t with
+  let t = strip_outer_cast sigma (EConstr.of_constr (collapse_appl sigma t)) in
+  let t = EConstr.of_constr t in
+    match EConstr.kind sigma t with
     | Prod (_,_,c2)  -> head_of_constr sigma c2
     | LetIn (_,_,_,c2) -> head_of_constr sigma c2
     | App (f,args)  -> head_of_constr sigma f
@@ -1505,17 +1506,16 @@ let rec head_of_constr sigma t =
 let head_of_constr h c =
   Proofview.tclEVARMAP >>= fun sigma ->
   let c = head_of_constr sigma c in
-  let c = EConstr.of_constr c in
   letin_tac None (Name h) c None Locusops.allHyps
 
 let not_evar c =
   Proofview.tclEVARMAP >>= fun sigma ->
-  match Evarutil.kind_of_term_upto sigma c with
+  match EConstr.kind sigma c with
   | Evar _ -> Tacticals.New.tclFAIL 0 (str"Evar")
   | _ -> Proofview.tclUNIT ()
 
 let is_ground c gl =
-  if Evarutil.is_ground_term (project gl) (EConstr.of_constr c) then tclIDTAC gl
+  if Evarutil.is_ground_term (project gl) c then tclIDTAC gl
   else tclFAIL 0 (str"Not ground") gl
 
 let autoapply c i gl =
