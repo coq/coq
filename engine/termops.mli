@@ -51,9 +51,9 @@ val it_mkLambda : EConstr.constr -> (Name.t * EConstr.types) list -> EConstr.con
 val it_mkProd_or_LetIn : types -> Context.Rel.t -> types
 val it_mkProd_wo_LetIn : EConstr.types -> Context.Rel.t -> EConstr.types
 val it_mkLambda_or_LetIn : constr -> Context.Rel.t -> constr
-val it_mkNamedProd_or_LetIn : types -> Context.Named.t -> types
+val it_mkNamedProd_or_LetIn : EConstr.types -> Context.Named.t -> EConstr.types
 val it_mkNamedProd_wo_LetIn : types -> Context.Named.t -> types
-val it_mkNamedLambda_or_LetIn : constr -> Context.Named.t -> constr
+val it_mkNamedLambda_or_LetIn : EConstr.constr -> Context.Named.t -> EConstr.constr
 
 (* Ad hoc version reinserting letin, assuming the body is defined in
    the context where the letins are expanded *)

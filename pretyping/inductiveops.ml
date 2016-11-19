@@ -58,21 +58,23 @@ let lift_inductive_family n = liftn_inductive_family n 1
 let substnl_ind_family l n = map_ind_family (substnl l n)
 
 
-type inductive_type = IndType of inductive_family * constr list
+type inductive_type = IndType of inductive_family * EConstr.constr list
 
 let make_ind_type (indf, realargs) = IndType (indf,realargs)
 let dest_ind_type (IndType (indf,realargs)) = (indf,realargs)
 
 let map_inductive_type f (IndType (indf, realargs)) =
-  IndType (map_ind_family f indf, List.map f realargs)
+  let f' c = EConstr.Unsafe.to_constr (f (EConstr.of_constr c)) in
+  IndType (map_ind_family f' indf, List.map f realargs)
 
-let liftn_inductive_type n d = map_inductive_type (liftn n d)
+let liftn_inductive_type n d = map_inductive_type (EConstr.Vars.liftn n d)
 let lift_inductive_type n = liftn_inductive_type n 1
 
-let substnl_ind_type l n = map_inductive_type (substnl l n)
+let substnl_ind_type l n = map_inductive_type (EConstr.Vars.substnl l n)
 
 let mkAppliedInd (IndType ((ind,params), realargs)) =
-  applist (mkIndU ind,params@realargs)
+  let open EConstr in
+  applist (mkIndU ind, (List.map EConstr.of_constr params)@realargs)
 
 (* Does not consider imbricated or mutually recursive types *)
 let mis_is_recursive_subset listind rarg =
@@ -471,7 +473,7 @@ let find_rectype env sigma c =
         if mib.mind_nparams > List.length l then raise Not_found;
         let l = List.map EConstr.Unsafe.to_constr l in
         let (par,rargs) = List.chop mib.mind_nparams l in
-        IndType((indu, par),rargs)
+        IndType((indu, par),List.map EConstr.of_constr rargs)
     | _ -> raise Not_found
 
 let find_inductive env sigma c =

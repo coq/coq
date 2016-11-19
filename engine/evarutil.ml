@@ -68,6 +68,9 @@ let rec flush_and_check_evars sigma c =
        | Some c -> flush_and_check_evars sigma c)
   | _ -> map_constr (flush_and_check_evars sigma) c
 
+let flush_and_check_evars sigma c =
+  flush_and_check_evars sigma (EConstr.Unsafe.to_constr c)
+
 (* let nf_evar_key = Profile.declare_profile "nf_evar"  *)
 (* let nf_evar = Profile.profile2 nf_evar_key Reductionops.nf_evar *)
 
@@ -474,12 +477,13 @@ let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?nami
 (* This assumes an evar with identity instance and generalizes it over only
    the De Bruijn part of the context *)
 let generalize_evar_over_rels sigma (ev,args) =
+  let open EConstr in
   let evi = Evd.find sigma ev in
   let sign = named_context_of_val evi.evar_hyps in
   List.fold_left2
     (fun (c,inst as x) a d ->
-      if isRel a then (mkNamedProd_or_LetIn d c,a::inst) else x)
-     (evi.evar_concl,[]) (Array.to_list args) sign
+      if isRel sigma a then (mkNamedProd_or_LetIn d c,a::inst) else x)
+     (EConstr.of_constr evi.evar_concl,[]) (Array.to_list args) sign
 
 (************************************)
 (* Removing a dependency in an evar *)

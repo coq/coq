@@ -450,7 +450,6 @@ let raw_inversion inv_kind id status names =
         CErrors.user_err  msg
     in
     let IndType (indf,realargs) = find_rectype env sigma t in
-    let realargs = List.map EConstr.of_constr realargs in
     let evdref = ref sigma in
     let (elim_predicate, args) =
       make_inv_predicate env evdref indf realargs id status concl in

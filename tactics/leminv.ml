@@ -11,8 +11,9 @@ open CErrors
 open Util
 open Names
 open Term
-open Vars
 open Termops
+open EConstr
+open Vars
 open Namegen
 open Evd
 open Printer
@@ -31,9 +32,17 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
+let nlocal_assum (na, t) =
+  let inj = EConstr.Unsafe.to_constr in
+  NamedDecl.LocalAssum (na, inj t)
+
+let nlocal_def (na, b, t) =
+  let inj = EConstr.Unsafe.to_constr in
+  NamedDecl.LocalDef (na, inj b, inj t)
+
 let no_inductive_inconstr env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
-     pr_lconstr_env env sigma constr ++
+     pr_lconstr_env env sigma (EConstr.Unsafe.to_constr constr) ++
      str "." ++ spc () ++ str "If there is one, may be the structure of the arity" ++
      spc () ++ str "or of the type of constructors" ++ spc () ++
      str "is hidden by constant definitions.")
@@ -116,15 +125,15 @@ let max_prefix_sign lid sign =
     | id::l -> snd (max_rec (id, sign_prefix id sign) l)
 *)
 let rec add_prods_sign env sigma t =
-  match kind_of_term (whd_all env sigma (EConstr.of_constr t)) with
+  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
     | Prod (na,c1,b) ->
-	let id = id_of_name_using_hdchar env t na in
+	let id = id_of_name_using_hdchar env (EConstr.Unsafe.to_constr t) na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (LocalAssum (id,c1)) env) sigma b'
+        add_prods_sign (push_named (nlocal_assum (id,c1)) env) sigma b'
     | LetIn (na,c1,t1,b) ->
-	let id = id_of_name_using_hdchar env t na in
+	let id = id_of_name_using_hdchar env (EConstr.Unsafe.to_constr t) na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (LocalDef (id,c1,t1)) env) sigma b'
+        add_prods_sign (push_named (nlocal_def (id,c1,t1)) env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates whether the inversion lemma is dependent or not.
@@ -147,6 +156,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
   let pty,goal =
     if dep_option  then
       let pty = make_arity env true indf sort in
+      let pty = EConstr.of_constr pty in
       let goal =
 	mkProd
 	  (Anonymous, mkAppliedInd ind, applist(mkVar p,realargs@[mkRel 1]))
@@ -154,7 +164,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       pty,goal
     else
       let i = mkAppliedInd ind in
-      let ivars = global_vars env sigma (EConstr.of_constr i) in
+      let ivars = global_vars env sigma i in
       let revargs,ownsign =
 	fold_named_context
 	  (fun env d (revargs,hyps) ->
@@ -169,7 +179,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let goal = mkArrow i (applist(mkVar p, List.rev revargs)) in
       (pty,goal)
   in
-  let npty = nf_all env sigma (EConstr.of_constr pty) in
+  let npty = nf_all env sigma pty in
   let extenv = push_named (LocalAssum (p,npty)) env in
   extenv, goal
 
@@ -183,7 +193,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
 let inversion_scheme env sigma t sort dep_option inv_op =
   let (env,i) = add_prods_sign env sigma t in
   let ind =
-    try find_rectype env sigma (EConstr.of_constr i)
+    try find_rectype env sigma i
     with Not_found ->
       user_err ~hdr:"inversion_scheme" (no_inductive_inconstr env sigma i)
   in
@@ -192,18 +202,20 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   in
   assert
     (List.subset
-       (global_vars env sigma (EConstr.of_constr invGoal))
+       (global_vars env sigma invGoal)
        (ids_of_named_context (named_context invEnv)));
   (*
     user_err ~hdr:"lemma_inversion"
     (str"Computed inversion goal was not closed in initial signature.");
   *)
+  let invGoal = EConstr.Unsafe.to_constr invGoal in
   let pf = Proof.start (Evd.from_ctx (evar_universe_context sigma)) [invEnv,invGoal] in
   let pf =
     fst (Proof.run_tactic env (
       tclTHEN intro (onLastHypId inv_op)) pf)
   in
   let pfterm = List.hd (Proof.partial_proof pf) in
+  let pfterm = EConstr.of_constr pfterm in
   let global_named_context = Global.named_context_val () in
   let ownSign = ref begin
     fold_named_context
@@ -216,18 +228,19 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let { sigma=sigma } = Proof.V82.subgoals pf in
   let sigma = Evd.nf_constraints sigma in
   let rec fill_holes c =
-    match kind_of_term c with
+    match EConstr.kind sigma c with
     | Evar (e,args) ->
 	let h = next_ident_away (Id.of_string "H") !avoid in
 	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
 	avoid := h::!avoid;
-	ownSign := Context.Named.add (LocalAssum (h,ty)) !ownSign;
+	ownSign := Context.Named.add (nlocal_assum (h,ty)) !ownSign;
 	applist (mkVar h, inst)
-    | _ -> Constr.map fill_holes c
+    | _ -> EConstr.map sigma fill_holes c
   in
   let c = fill_holes pfterm in
   (* warning: side-effect on ownSign *)
   let invProof = it_mkNamedLambda_or_LetIn c !ownSign in
+  let invProof = EConstr.Unsafe.to_constr invProof in
   let p = Evarutil.nf_evars_universes sigma invProof in
     p, Evd.universe_context sigma
 
@@ -245,6 +258,7 @@ let add_inversion_lemma_exn na com comsort bool tac =
   let env = Global.env () in
   let evd = ref (Evd.from_env env) in
   let c = Constrintern.interp_type_evars env evd com in
+  let c = EConstr.of_constr c in
   let sigma, sort = Pretyping.interp_sort !evd comsort in
   try
     add_inversion_lemma na env sigma c sort bool tac
@@ -258,14 +272,16 @@ let add_inversion_lemma_exn na com comsort bool tac =
 
 let lemInv id c gls =
   try
-    let clause = mk_clenv_type_of gls (EConstr.of_constr c) in
+    let clause = mk_clenv_type_of gls c in
     let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
     Proofview.V82.of_tactic (Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false) gls
   with
     | NoSuchBinding ->
+        let c = EConstr.Unsafe.to_constr c in
 	user_err 
 	  (hov 0 (pr_constr c ++ spc () ++ str "does not refer to an inversion lemma."))
     | UserError (a,b) ->
+        let c = EConstr.Unsafe.to_constr c in
 	 user_err ~hdr:"LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
 	      pr_lconstr_env (Refiner.pf_env gls) (Refiner.project gls) c)
@@ -291,5 +307,5 @@ let lemInvIn id c ids =
 let lemInvIn_gen id c l = try_intros_until (fun id -> lemInvIn id c l) id
 
 let lemInv_clause id c = function
-  | [] -> lemInv_gen id (EConstr.Unsafe.to_constr c)
-  | l -> lemInvIn_gen id (EConstr.Unsafe.to_constr c) l
+  | [] -> lemInv_gen id c
+  | l -> lemInvIn_gen id c l

@@ -170,7 +170,7 @@ val nf_evar_map_universes : evar_map -> evar_map * (constr -> constr)
 
 (** Replacing all evars, possibly raising [Uninstantiated_evar] *)
 exception Uninstantiated_evar of existential_key
-val flush_and_check_evars :  evar_map -> constr -> constr
+val flush_and_check_evars :  evar_map -> EConstr.constr -> constr
 
 (** {6 Term manipulation up to instantiation} *)
 
@@ -220,7 +220,7 @@ val push_rel_decl_to_named_context :
 val push_rel_context_to_named_context : Environ.env -> EConstr.types ->
   named_context_val * EConstr.types * EConstr.constr list * csubst * (identifier*EConstr.constr) list
 
-val generalize_evar_over_rels : evar_map -> existential -> types * constr list
+val generalize_evar_over_rels : evar_map -> EConstr.existential -> EConstr.types * EConstr.constr list
 
 (** Evar combinators *)
 

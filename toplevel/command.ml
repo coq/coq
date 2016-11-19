@@ -1271,9 +1271,9 @@ let do_program_recursive local p fixkind fixl ntns =
   let collect_evars id def typ imps =
     (* Generalize by the recursive prototypes  *)
     let def =
-      nf_evar evd (Termops.it_mkNamedLambda_or_LetIn def rec_sign)
+      nf_evar evd (EConstr.Unsafe.to_constr (Termops.it_mkNamedLambda_or_LetIn (EConstr.of_constr def) rec_sign))
     and typ =
-      nf_evar evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign)
+      nf_evar evd (EConstr.Unsafe.to_constr (Termops.it_mkNamedProd_or_LetIn (EConstr.of_constr typ) rec_sign))
     in
     let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ = 

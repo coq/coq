@@ -860,7 +860,6 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	let cloc = loc_of_glob_constr c in
 	  error_case_not_inductive ~loc:cloc env.ExtraEnv.env !evdref cj
     in
-    let realargs = List.map EConstr.of_constr realargs in
     let cstrs = get_constructors env.ExtraEnv.env indf in
     if not (Int.equal (Array.length cstrs) 1) then
       user_err ~loc  (str "Destructing let is only for inductive types" ++

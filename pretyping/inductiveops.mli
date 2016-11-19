@@ -37,15 +37,15 @@ val substnl_ind_family :
   constr list -> int -> inductive_family -> inductive_family
 
 (** An inductive type with its parameters and real arguments *)
-type inductive_type = IndType of inductive_family * constr list
-val make_ind_type : inductive_family * constr list -> inductive_type
-val dest_ind_type : inductive_type -> inductive_family * constr list
-val map_inductive_type : (constr -> constr) -> inductive_type -> inductive_type
+type inductive_type = IndType of inductive_family * EConstr.constr list
+val make_ind_type : inductive_family * EConstr.constr list -> inductive_type
+val dest_ind_type : inductive_type -> inductive_family * EConstr.constr list
+val map_inductive_type : (EConstr.constr -> EConstr.constr) -> inductive_type -> inductive_type
 val liftn_inductive_type : int -> int -> inductive_type -> inductive_type
 val lift_inductive_type  : int -> inductive_type -> inductive_type
-val substnl_ind_type : constr list -> int -> inductive_type -> inductive_type
+val substnl_ind_type : EConstr.constr list -> int -> inductive_type -> inductive_type
 
-val mkAppliedInd : inductive_type -> constr
+val mkAppliedInd : inductive_type -> EConstr.constr
 val mis_is_recursive_subset : int list -> wf_paths -> bool
 val mis_is_recursive :
   inductive * mutual_inductive_body * one_inductive_body -> bool

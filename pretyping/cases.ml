@@ -326,7 +326,7 @@ let inh_coerce_to_ind evdref env loc ty tyi =
 
 let binding_vars_of_inductive sigma = function
   | NotInd _ -> []
-  | IsInd (_,IndType(_,realargs),_) -> List.filter (isRel sigma) (List.map EConstr.of_constr realargs)
+  | IsInd (_,IndType(_,realargs),_) -> List.filter (isRel sigma) realargs
 
 let extract_inductive_data env sigma decl =
   match decl with
@@ -422,7 +422,7 @@ let type_of_tomatch = function
   | NotInd (_,t) -> t
 
 let map_tomatch_type f = function
-  | IsInd (t,ind,names) -> IsInd (f t,map_inductive_type (fun c -> EConstr.Unsafe.to_constr (f (EConstr.of_constr c))) ind,names)
+  | IsInd (t,ind,names) -> IsInd (f t,map_inductive_type f ind,names)
   | NotInd (c,t) -> NotInd (Option.map f c, f t)
 
 let liftn_tomatch_type n depth = map_tomatch_type (Vars.liftn n depth)
@@ -873,7 +873,7 @@ let specialize_predicate_var (cur,typ,dep) tms ccl =
   let l =
     match typ with
     | IsInd (_, IndType (_, _), []) -> []
-    | IsInd (_, IndType (_, realargs), names) -> List.map EConstr.of_constr realargs
+    | IsInd (_, IndType (_, realargs), names) -> realargs
     | NotInd _ -> [] in
   subst_predicate (l,c) ccl tms
 
@@ -922,7 +922,7 @@ let rec extract_predicate ccl = function
         subst1 cur pred
       end
   | Pushed (_,((cur,IsInd (_,IndType(_,realargs),_)),_,na))::tms ->
-      let realargs = List.rev_map EConstr.of_constr realargs in
+      let realargs = List.rev realargs in
       let k, nrealargs = match na with
       | Anonymous -> 0, realargs
       | Name _ -> 1, (cur :: realargs)
@@ -1064,7 +1064,6 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
   snd (List.fold_left (expand_arg tms) (1,ccl''') newtomatchs)
 
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
-  let realargs = List.map EConstr.of_constr realargs in
   let pred = abstract_predicate env !evdref indf current realargs dep tms p in
   (pred, EConstr.of_constr (whd_betaiota !evdref
            (applist (pred, realargs@[current]))))
@@ -1384,7 +1383,6 @@ and match_current pb (initial,tomatch) =
 	if (not no_cstr || not (List.is_empty pb.mat)) && onlydflt then
 	  compile_all_variables initial tomatch pb
 	else
-          let realargs = List.map EConstr.of_constr realargs in
 	  (* We generalize over terms depending on current term to match *)
 	  let pb,deps = generalize_problem (names,dep) pb deps in
 
@@ -1749,7 +1747,6 @@ let build_inversion_problem loc env sigma tms t =
     match tms with
     | [] -> [], acc_sign, acc
     | (t, IsInd (_,IndType(indf,realargs),_)) :: tms ->
-        let realargs = List.map EConstr.of_constr realargs in
 	let patl,acc = List.fold_map' reveal_pattern realargs acc in
 	let pat,acc = make_patvar t acc in
 	let indf' = lift_inductive_family n indf in
@@ -1919,7 +1916,6 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
 	      (match tmtype with
 		  NotInd _ -> (subst, len - signlen)
 		| IsInd (_, IndType(indf,realargs),_) ->
-                    let realargs = List.map EConstr.of_constr realargs in
 		    let subst, len =
 		      List.fold_left
 			(fun (subst, len) arg ->
@@ -2119,7 +2115,6 @@ let constr_of_pat env evdref arsign pat avoid =
 	let apptype = Retyping.get_type_of env ( !evdref) app in
 	let apptype = EConstr.of_constr apptype in
 	let IndType (indf, realargs) = find_rectype env (!evdref) apptype in
-	let realargs = List.map EConstr.of_constr realargs in
 	  match alias with
 	      Anonymous ->
 		pat', sign, app, apptype, realargs, n, avoid
@@ -2364,7 +2359,6 @@ let build_dependent_signature env evdref avoid tomatchs arsign =
 	 *)
 	 match ty with
 	 | IsInd (ty, IndType (indf, args), _) when List.length args > 0 ->
-              let args = List.map EConstr.of_constr args in
 	     (* Build the arity signature following the names in matched terms 
 		as much as possible *)
 	     let argsign = List.tl arsign in (* arguments in inverse application order *)

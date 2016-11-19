@@ -2896,8 +2896,7 @@ let old_generalize_dep ?(with_let=false) c gl =
 	  -> id::tothin
       | _ -> tothin
   in
-  let cl' = it_mkNamedProd_or_LetIn (Tacmach.pf_concl gl) to_quantify in
-  let cl' = EConstr.of_constr cl' in
+  let cl' = it_mkNamedProd_or_LetIn (EConstr.of_constr (Tacmach.pf_concl gl)) to_quantify in
   let body =
     if with_let then
       match EConstr.kind sigma c with
@@ -4256,11 +4255,11 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     let env = Proofview.Goal.env gl in
     let sigma = Sigma.to_evar_map sigma in
     let concl = Tacmach.New.pf_nf_concl gl in
+    let concl = EConstr.of_constr concl in
     let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env sigma in
-    let dep_in_concl = Option.cata (fun id -> occur_var env sigma id (EConstr.of_constr concl)) false hyp0 in
+    let dep_in_concl = Option.cata (fun id -> occur_var env sigma id concl) false hyp0 in
     let dep = dep_in_hyps || dep_in_concl in
     let tmpcl = it_mkNamedProd_or_LetIn concl deps in
-    let tmpcl = EConstr.of_constr tmpcl in
     let s = Retyping.get_sort_family_of env sigma tmpcl in
     let deps_cstr =
       List.fold_left
@@ -5008,7 +5007,7 @@ let abstract_subproof id gk tac =
 	else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, empty_named_context_val) in
   let id = next_global_ident_away id (pf_ids_of_hyps gl) in
-  let concl = it_mkNamedProd_or_LetIn (Proofview.Goal.concl gl) sign in
+  let concl = it_mkNamedProd_or_LetIn (EConstr.of_constr (Proofview.Goal.concl gl)) sign in
   let concl =
     try flush_and_check_evars !evdref concl
     with Uninstantiated_evar _ ->

@@ -123,7 +123,7 @@ let retype ?(polyprop=true) sigma =
           with Not_found -> retype_error BadRecursiveType
         in
         let n = inductive_nrealdecls_env env (fst (fst (dest_ind_family indf))) in
-        let t = EConstr.of_constr (betazetaevar_applist sigma n p (List.map EConstr.of_constr realargs)) in
+        let t = EConstr.of_constr (betazetaevar_applist sigma n p realargs) in
         (match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma (type_of env t))) with
           | Prod _ -> EConstr.of_constr (whd_beta sigma (applist (t, [c])))
           | _ -> t)

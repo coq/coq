@@ -233,9 +233,9 @@ let it_named_context_quantifier f ~init =
 let it_mkProd_or_LetIn init = it_named_context_quantifier mkProd_or_LetIn ~init
 let it_mkProd_wo_LetIn init = it_named_context_quantifier mkProd_wo_LetIn ~init
 let it_mkLambda_or_LetIn init = it_named_context_quantifier mkLambda_or_LetIn ~init
-let it_mkNamedProd_or_LetIn init = it_named_context_quantifier mkNamedProd_or_LetIn ~init
+let it_mkNamedProd_or_LetIn init = it_named_context_quantifier EConstr.mkNamedProd_or_LetIn ~init
 let it_mkNamedProd_wo_LetIn init = it_named_context_quantifier mkNamedProd_wo_LetIn ~init
-let it_mkNamedLambda_or_LetIn init = it_named_context_quantifier mkNamedLambda_or_LetIn ~init
+let it_mkNamedLambda_or_LetIn init = it_named_context_quantifier EConstr.mkNamedLambda_or_LetIn ~init
 
 let it_mkLambda_or_LetIn_from_no_LetIn c decls =
   let open RelDecl in
