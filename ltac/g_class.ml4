@@ -83,18 +83,22 @@ open Term
 open Proofview.Goal
 open Proofview.Notations
 
-let rec eq_constr_mod_evars x y =
-  match kind_of_term x, kind_of_term y with
+let rec eq_constr_mod_evars sigma x y =
+  let open EConstr in
+  match EConstr.kind sigma x, EConstr.kind sigma y with
   | Evar (e1, l1), Evar (e2, l2) when not (Evar.equal e1 e2) -> true
-  | _, _ -> compare_constr eq_constr_mod_evars x y
+  | _, _ -> compare_constr sigma (fun x y -> eq_constr_mod_evars sigma x y) x y
 
 let progress_evars t =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
+    let concl = EConstr.of_constr concl in
     let check =
       Proofview.Goal.nf_enter { enter = begin fun gl' ->
+        let sigma = Tacmach.New.project gl' in
         let newconcl = Proofview.Goal.concl gl' in
-        if eq_constr_mod_evars concl newconcl
+        let newconcl = EConstr.of_constr newconcl in
+        if eq_constr_mod_evars sigma concl newconcl
         then Tacticals.New.tclFAIL 0 (Pp.str"No progress made (modulo evars)")
         else Proofview.tclUNIT ()
       end }
