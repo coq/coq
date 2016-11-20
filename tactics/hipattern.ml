@@ -548,7 +548,10 @@ let match_eqdec sigma t =
         false,op_or,matches sigma (Lazy.force coq_eqdec_rev_pattern) t in
   match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
-      eqonleft, Universes.constr_of_global (Lazy.force op), c1, c2, typ
+      let typ = EConstr.of_constr typ in
+      let c1 = EConstr.of_constr c1 in
+      let c2 = EConstr.of_constr c2 in
+      eqonleft, EConstr.of_constr (Universes.constr_of_global (Lazy.force op)), c1, c2, typ
   | _ -> anomaly (Pp.str "Unexpected pattern")
 
 (* Patterns "~ ?" and "? -> False" *)

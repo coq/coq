@@ -23,6 +23,8 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
+let compute env sigma c = EConstr.of_constr (compute env sigma c)
+
 let re_sig it  gc = { it = it; sigma = gc; }
 
 (**************************************************************)

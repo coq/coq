@@ -23,5 +23,5 @@ TACTIC EXTEND decide_equality
 END
 
 TACTIC EXTEND compare
-| [ "compare" constr(c1) constr(c2) ] -> [ compare c1 c2 ]
+| [ "compare" constr(c1) constr(c2) ] -> [ compare (EConstr.of_constr c1) (EConstr.of_constr c2) ]
 END

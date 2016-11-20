@@ -69,7 +69,7 @@ val pf_nf                      : goal sigma -> EConstr.constr -> constr
 val pf_nf_betaiota             : goal sigma -> EConstr.constr -> constr
 val pf_reduce_to_quantified_ind : goal sigma -> EConstr.types -> pinductive * EConstr.types
 val pf_reduce_to_atomic_ind     : goal sigma -> EConstr.types -> pinductive * EConstr.types
-val pf_compute                 : goal sigma -> EConstr.constr -> constr
+val pf_compute                 : goal sigma -> EConstr.constr -> EConstr.constr
 val pf_unfoldn    : (occurrences * evaluable_global_reference) list
   -> goal sigma -> EConstr.constr -> constr
 
@@ -127,7 +127,7 @@ module New : sig
   val pf_hnf_type_of : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> types
 
   val pf_whd_all : ('a, 'r) Proofview.Goal.t -> EConstr.t -> constr
-  val pf_compute : ('a, 'r) Proofview.Goal.t -> EConstr.t -> constr
+  val pf_compute : ('a, 'r) Proofview.Goal.t -> EConstr.t -> EConstr.constr
 
   val pf_matches : ('a, 'r) Proofview.Goal.t -> constr_pattern -> EConstr.constr -> patvar_map
 

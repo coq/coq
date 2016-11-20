@@ -143,7 +143,7 @@ val is_matching_sigma : evar_map -> constr -> bool
 
 (** Match a decidable equality judgement (e.g [{t=u:>T}+{~t=u}]), returns
    [t,u,T] and a boolean telling if equality is on the left side *)
-val match_eqdec : evar_map -> constr -> bool * Constr.constr * Constr.constr * Constr.constr * Constr.constr
+val match_eqdec : evar_map -> constr -> bool * constr * constr * constr * constr
 
 (** Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
 val dest_nf_eq : ([ `NF ], 'r) Proofview.Goal.t -> constr -> (constr * constr * constr)
