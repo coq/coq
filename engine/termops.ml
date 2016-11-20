@@ -858,6 +858,11 @@ let base_sort_cmp pb s0 s1 =
     | (Type u1, Type u2) -> true
     | _ -> false
 
+let rec is_Prop sigma c = match EConstr.kind sigma c with
+  | Sort (Prop Null) -> true
+  | Cast (c,_,_) -> is_Prop sigma c
+  | _ -> false
+
 (* eq_constr extended with universe erasure *)
 let compare_constr_univ sigma f cv_pb t1 t2 =
   match EConstr.kind sigma t1, EConstr.kind sigma t2 with

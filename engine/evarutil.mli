@@ -52,8 +52,8 @@ val e_new_type_evar : env -> evar_map ref ->
   ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
   ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> EConstr.constr * sorts
 
-val new_Type : ?rigid:rigid -> env -> 'r Sigma.t -> (constr, 'r) Sigma.sigma
-val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
+val new_Type : ?rigid:rigid -> env -> 'r Sigma.t -> (EConstr.constr, 'r) Sigma.sigma
+val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> EConstr.constr
 
 val restrict_evar : 'r Sigma.t -> existential_key -> Filter.t ->
   constr list option -> (existential_key, 'r) Sigma.sigma

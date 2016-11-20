@@ -416,11 +416,18 @@ let theory_to_obj : ring_info -> obj =
 
 
 let setoid_of_relation env evd a r =
+  let a = EConstr.of_constr a in
+  let r = EConstr.of_constr r in
   try
     let evm = !evd in
     let evm, refl = Rewrite.get_reflexive_proof env evm a r in
     let evm, sym = Rewrite.get_symmetric_proof env evm a r in
     let evm, trans = Rewrite.get_transitive_proof env evm a r in
+    let refl = EConstr.Unsafe.to_constr refl in
+    let sym = EConstr.Unsafe.to_constr sym in
+    let trans = EConstr.Unsafe.to_constr trans in
+    let a = EConstr.Unsafe.to_constr a in
+    let r = EConstr.Unsafe.to_constr r in
       evd := evm;
       lapp coq_mk_Setoid [|a ; r ; refl; sym; trans |]
   with Not_found ->
@@ -498,22 +505,32 @@ let ring_equality env evd (r,add,mul,opp,req) =
 	  (setoid,op_morph)
     | _ ->
 	let setoid = setoid_of_relation (Global.env ()) evd r req in
-	let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in
+	let signature =
+          let r = EConstr.of_constr r in
+          let req = EConstr.of_constr req in
+          [Some (r,Some req);Some (r,Some req)],Some(r,Some req)
+        in
+(* 	let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in *)
 	let add_m, add_m_lem =
-	  try Rewrite.default_morphism signature add
+	  try Rewrite.default_morphism signature (EConstr.of_constr add)
           with Not_found ->
             error "ring addition should be declared as a morphism" in
+        let add_m_lem = EConstr.Unsafe.to_constr add_m_lem in
 	let mul_m, mul_m_lem =
-          try Rewrite.default_morphism signature mul
+          try Rewrite.default_morphism signature (EConstr.of_constr mul)
           with Not_found ->
             error "ring multiplication should be declared as a morphism" in
+        let mul_m_lem = EConstr.Unsafe.to_constr mul_m_lem in
         let op_morph =
           match opp with
             | Some opp ->
 		(let opp_m,opp_m_lem =
-		  try Rewrite.default_morphism ([Some(r,Some req)],Some(r,Some req)) opp
+                  let r = EConstr.of_constr r in
+                  let req = EConstr.of_constr req in
+		  try Rewrite.default_morphism ([Some(r,Some req)],Some(r,Some req)) (EConstr.of_constr opp)
 		  with Not_found ->
                     error "ring opposite should be declared as a morphism" in
+                let opp_m_lem = EConstr.Unsafe.to_constr opp_m_lem in
 		let op_morph =
 		  op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
 		  Flags.if_verbose
@@ -895,11 +912,15 @@ let field_equality evd r inv req =
         mkApp(Universes.constr_of_global (Coqlib.build_coq_eq_data()).congr,[|r;r;inv|])
     | _ ->
 	let _setoid = setoid_of_relation (Global.env ()) evd r req in
+        let r = EConstr.of_constr r in
+        let req = EConstr.of_constr req in
 	let signature = [Some (r,Some req)],Some(r,Some req) in
+	let inv = EConstr.of_constr inv in
 	let inv_m, inv_m_lem =
 	  try Rewrite.default_morphism signature inv
           with Not_found ->
             error "field inverse should be declared as a morphism" in
+        let inv_m_lem = EConstr.Unsafe.to_constr inv_m_lem in
 	  inv_m_lem
 
 let add_field_theory name (sigma,fth) eqth morphth cst_tac inj (pre,post) power sign odiv =

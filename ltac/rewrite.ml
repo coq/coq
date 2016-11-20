@@ -13,6 +13,7 @@ open Util
 open Nameops
 open Namegen
 open Term
+open EConstr
 open Vars
 open Reduction
 open Tacticals.New
@@ -31,6 +32,7 @@ open Decl_kinds
 open Elimschemes
 open Environ
 open Termops
+open EConstr
 open Libnames
 open Sigma.Notations
 open Proofview.Notations
@@ -42,6 +44,21 @@ module RelDecl = Context.Rel.Declaration
 let local_assum (na, t) =
   let inj = EConstr.Unsafe.to_constr in
   RelDecl.LocalAssum (na, inj t)
+
+let local_def (na, b, t) =
+  let inj = EConstr.Unsafe.to_constr in
+  RelDecl.LocalDef (na, inj b, inj t)
+
+let nlocal_assum (na, t) =
+  let inj = EConstr.Unsafe.to_constr in
+  NamedDecl.LocalAssum (na, inj t)
+
+let nlocal_def (na, b, t) =
+  let inj = EConstr.Unsafe.to_constr in
+  NamedDecl.LocalDef (na, inj b, inj t)
+
+let nf_evar sigma c =
+  EConstr.of_constr (Evarutil.nf_evar sigma (EConstr.Unsafe.to_constr c))
 
 (** Typeclass-based generalized rewriting. *)
 
@@ -77,6 +94,7 @@ let find_global dir s =
     fun (evd,cstrs) ->
       let sigma = Sigma.Unsafe.of_evar_map evd in
       let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force gr) in
+      let c = EConstr.of_constr c in
       let evd = Sigma.to_evar_map sigma in
 	(evd, cstrs), c
 
@@ -99,10 +117,10 @@ let cstrevars evars = snd evars
 let new_cstr_evar (evd,cstrs) env t =
   let s = Typeclasses.set_resolvable Evd.Store.empty false in
   let evd = Sigma.Unsafe.of_evar_map evd in
-  let Sigma (t, evd', _) = Evarutil.new_evar ~store:s env evd (EConstr.of_constr t) in
+  let Sigma (t, evd', _) = Evarutil.new_evar ~store:s env evd t in
   let evd' = Sigma.to_evar_map evd' in
-  let ev, _ = EConstr.destEvar evd' t in
-    (evd', Evar.Set.add ev cstrs), EConstr.Unsafe.to_constr t
+  let ev, _ = destEvar evd' t in
+    (evd', Evar.Set.add ev cstrs), t
 
 (** Building or looking up instances. *)
 let e_new_cstr_evar env evars t =
@@ -117,7 +135,8 @@ let extends_undefined evars evars' =
 let app_poly_check env evars f args =
   let (evars, cstrs), fc = f evars in
   let evdref = ref evars in 
-  let t = Typing.e_solve_evars env evdref (EConstr.of_constr (mkApp (fc, args))) in
+  let t = Typing.e_solve_evars env evdref (mkApp (fc, args)) in
+  let t = EConstr.of_constr t in
     (!evdref, cstrs), t
 
 let app_poly_nocheck env evars f args =
@@ -131,8 +150,7 @@ let app_poly_sort b =
 let find_class_proof proof_type proof_method env evars carrier relation =
   try
     let evars, goal = app_poly_check env evars proof_type [| carrier ; relation |] in
-    let evars', c = Typeclasses.resolve_one_typeclass env (goalevars evars) (EConstr.of_constr goal) in
-    let c = EConstr.Unsafe.to_constr c in
+    let evars', c = Typeclasses.resolve_one_typeclass env (goalevars evars) goal in
       if extends_undefined (goalevars evars) evars' then raise Not_found
       else app_poly_check env (evars',cstrevars evars) proof_method [| carrier; relation; c |]
   with e when Logic.catchable_exception e -> raise Not_found
@@ -188,6 +206,7 @@ end) = struct
       fun (evd,cstrs) -> 
         let sigma = Sigma.Unsafe.of_evar_map evd in
         let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
+        let c = EConstr.of_constr c in
         let evd = Sigma.to_evar_map sigma in
 	  (evd, cstrs), c
 	
@@ -196,6 +215,7 @@ end) = struct
       fun (evd,cstrs) -> 
         let sigma = Sigma.Unsafe.of_evar_map evd in
         let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
+        let c = EConstr.of_constr c in
         let evd = Sigma.to_evar_map sigma in
 	  (evd, cstrs), c
 
@@ -219,28 +239,32 @@ end) = struct
       match obj with
       | None | Some (_, None) ->
 	let evars, relty = mk_relation env evars ty in
-	  if closed0 ty then 
+	  if closed0 (goalevars evars) ty then 
 	    let env' = Environ.reset_with_named_context (Environ.named_context_val env) env in
 	      new_cstr_evar evars env' relty
 	  else new_cstr_evar evars newenv relty
       | Some (x, Some rel) -> evars, rel
     in
     let rec aux env evars ty l =
-      let t = Reductionops.whd_all env (goalevars evars) (EConstr.of_constr ty) in
-	match kind_of_term t, l with
+      let t = Reductionops.whd_all env (goalevars evars) ty in
+      let t = EConstr.of_constr t in
+	match EConstr.kind (goalevars evars) t, l with
 	| Prod (na, ty, b), obj :: cstrs ->
-          let b = Reductionops.nf_betaiota (goalevars evars) (EConstr.of_constr b) in
-	  if noccurn 1 b (* non-dependent product *) then
-	    let ty = Reductionops.nf_betaiota (goalevars evars) (EConstr.of_constr ty) in
+          let b = Reductionops.nf_betaiota (goalevars evars) b in
+          let b = EConstr.of_constr b in
+	  if noccurn (goalevars evars) 1 b (* non-dependent product *) then
+	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
+	    let ty = EConstr.of_constr ty in
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let evars, relty = mk_relty evars env ty obj in
 	    let evars, newarg = app_poly env evars respectful [| ty ; b' ; relty ; arg |] in
 	      evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
 	  else
 	    let (evars, b, arg, cstrs) =
-	      aux (Environ.push_rel (LocalAssum (na, ty)) env) evars b cstrs
+	      aux (Environ.push_rel (local_assum (na, ty)) env) evars b cstrs
 	    in
-	    let ty = Reductionops.nf_betaiota (goalevars evars) (EConstr.of_constr ty) in
+	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
+	    let ty = EConstr.of_constr ty in
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
@@ -250,7 +274,8 @@ end) = struct
 	| _, [] ->
 	  (match finalcstr with
 	  | None | Some (_, None) ->
-	    let t = Reductionops.nf_betaiota (fst evars) (EConstr.of_constr ty) in
+	    let t = Reductionops.nf_betaiota (fst evars) ty in
+	    let t = EConstr.of_constr t in
 	    let evars, rel = mk_relty evars env t None in
 	      evars, t, rel, [t, Some rel]
 	  | Some (t, Some rel) -> evars, t, rel, [t, Some rel])
@@ -258,30 +283,30 @@ end) = struct
 
   (** Folding/unfolding of the tactic constants. *)
 
-  let unfold_impl t =
-    match kind_of_term t with
+  let unfold_impl sigma t =
+    match EConstr.kind sigma t with
     | App (arrow, [| a; b |])(*  when eq_constr arrow (Lazy.force impl) *) ->
       mkProd (Anonymous, a, lift 1 b)
     | _ -> assert false
 
-  let unfold_all t =
-    match kind_of_term t with
+  let unfold_all sigma t =
+    match EConstr.kind sigma t with
     | App (id, [| a; b |]) (* when eq_constr id (Lazy.force coq_all) *) ->
-      (match kind_of_term b with
+      (match EConstr.kind sigma b with
       | Lambda (n, ty, b) -> mkProd (n, ty, b)
       | _ -> assert false)
     | _ -> assert false
 
-  let unfold_forall t =
-    match kind_of_term t with
+  let unfold_forall sigma t =
+    match EConstr.kind sigma t with
     | App (id, [| a; b |]) (* when eq_constr id (Lazy.force coq_all) *) ->
-      (match kind_of_term b with
+      (match EConstr.kind sigma b with
       | Lambda (n, ty, b) -> mkProd (n, ty, b)
       | _ -> assert false)
     | _ -> assert false
 
   let arrow_morphism env evd ta tb a b =
-    let ap = is_Prop ta and bp = is_Prop tb in
+    let ap = is_Prop (goalevars evd) ta and bp = is_Prop (goalevars evd) tb in
       if ap && bp then app_poly env evd impl [| a; b |], unfold_impl
       else if ap then (* Domain in Prop, CoDomain in Type *)
 	(app_poly env evd arrow [| a; b |]), unfold_impl
@@ -294,26 +319,25 @@ end) = struct
   let rec decomp_pointwise sigma n c =
     if Int.equal n 0 then c
     else
-      let open EConstr in
-      match kind_of_term c with
-      | App (f, [| a; b; relb |]) when Globnames.is_global (pointwise_relation_ref ()) f ->
+      match EConstr.kind sigma c with
+      | App (f, [| a; b; relb |]) when Termops.is_global sigma (pointwise_relation_ref ()) f ->
 	decomp_pointwise sigma (pred n) relb
-      | App (f, [| a; b; arelb |]) when Globnames.is_global (forall_relation_ref ()) f ->
-	decomp_pointwise sigma (pred n) (Reductionops.beta_applist sigma (EConstr.of_constr arelb, [mkRel 1]))
+      | App (f, [| a; b; arelb |]) when Termops.is_global sigma (forall_relation_ref ()) f ->
+	decomp_pointwise sigma (pred n) (EConstr.of_constr (Reductionops.beta_applist sigma (arelb, [mkRel 1])))
       | _ -> invalid_arg "decomp_pointwise"
 
   let rec apply_pointwise sigma rel = function
     | arg :: args ->
-      (match kind_of_term rel with
-      | App (f, [| a; b; relb |]) when Globnames.is_global (pointwise_relation_ref ()) f ->
+      (match EConstr.kind sigma rel with
+      | App (f, [| a; b; relb |]) when Termops.is_global sigma (pointwise_relation_ref ()) f ->
 	apply_pointwise sigma relb args
-      | App (f, [| a; b; arelb |]) when Globnames.is_global (forall_relation_ref ()) f ->
-	apply_pointwise sigma (Reductionops.beta_applist sigma (EConstr.of_constr arelb, [EConstr.of_constr arg])) args
+      | App (f, [| a; b; arelb |]) when Termops.is_global sigma (forall_relation_ref ()) f ->
+	apply_pointwise sigma (EConstr.of_constr (Reductionops.beta_applist sigma (arelb, [arg]))) args
       | _ -> invalid_arg "apply_pointwise")
     | [] -> rel
 
   let pointwise_or_dep_relation env evd n t car rel =
-    if noccurn 1 car && noccurn 1 rel then
+    if noccurn (goalevars evd) 1 car && noccurn (goalevars evd) 1 rel then
       app_poly env evd pointwise_relation [| t; lift (-1) car; lift (-1) rel |]
     else
       app_poly env evd forall_relation
@@ -330,14 +354,15 @@ end) = struct
     let rec aux evars env prod n = 
       if Int.equal n 0 then start evars env prod
       else
-	match kind_of_term (Reduction.whd_all env prod) with
+        let sigma = goalevars evars in
+	match EConstr.kind sigma (EConstr.of_constr (Reductionops.whd_all env sigma prod)) with
 	| Prod (na, ty, b) ->
-	  if noccurn 1 b then
+	  if noccurn sigma 1 b then
 	    let b' = lift (-1) b in
 	    let evars, rb = aux evars env b' (pred n) in
 	      app_poly env evars pointwise_relation [| ty; b'; rb |]
 	  else
-	    let evars, rb = aux evars (Environ.push_rel (LocalAssum (na, ty)) env) b (pred n) in
+	    let evars, rb = aux evars (Environ.push_rel (local_assum (na, ty)) env) b (pred n) in
 	      app_poly env evars forall_relation
 		[| ty; mkLambda (na, ty, b); mkLambda (na, ty, rb) |]
 	| _ -> raise Not_found
@@ -348,8 +373,10 @@ end) = struct
 	try let evars, found = aux evars env ty (succ (List.length args)) in
 	      Some (evars, found, c, ty, arg :: args)
 	with Not_found ->
-	  let ty = whd_all env ty in
-	  find env (mkApp (c, [| arg |])) (Term.prod_applist ty [arg]) args
+          let sigma = goalevars evars in
+	  let ty = Reductionops.whd_all env sigma ty in
+	  let ty = EConstr.of_constr ty in
+	  find env (mkApp (c, [| arg |])) (prod_applist sigma ty [arg]) args
     in find env c ty args
 
   let unlift_cstr env sigma = function
@@ -358,22 +385,21 @@ end) = struct
 
   (** Looking up declared rewrite relations (instances of [RewriteRelation]) *)
   let is_applied_rewrite_relation env sigma rels t =
-    match kind_of_term t with
+    match EConstr.kind sigma t with
     | App (c, args) when Array.length args >= 2 ->
-      let head = if isApp c then fst (destApp c) else c in
-	if Globnames.is_global (coq_eq_ref ()) head then None
+      let head = if isApp sigma c then fst (destApp sigma c) else c in
+	if Termops.is_global sigma (coq_eq_ref ()) head then None
 	else
 	  (try
 	   let params, args = Array.chop (Array.length args - 2) args in
 	   let env' = Environ.push_rel_context rels env in
 	   let sigma = Sigma.Unsafe.of_evar_map sigma in
 	   let Sigma ((evar, _), evars, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
-	   let evar = EConstr.Unsafe.to_constr evar in
 	   let evars = Sigma.to_evar_map evars in
 	   let evars, inst = 
 	     app_poly env (evars,Evar.Set.empty)
 	       rewrite_relation_class [| evar; mkApp (c, params) |] in
-	   let _ = Typeclasses.resolve_one_typeclass env' (goalevars evars) (EConstr.of_constr inst) in
+	   let _ = Typeclasses.resolve_one_typeclass env' (goalevars evars) inst in
 	     Some (it_mkProd_or_LetIn t rels)
 	   with e when CErrors.noncritical e -> None)
   | _ -> None
@@ -388,7 +414,7 @@ end
 
 let type_app_poly env env evd f args =
   let evars, c = app_poly_nocheck env evd f args in
-  let evd', t = Typing.type_of env (goalevars evars) (EConstr.of_constr c) in
+  let evd', t = Typing.type_of env (goalevars evars) c in
     (evd', cstrevars evars), c
 
 module PropGlobal = struct
@@ -437,7 +463,7 @@ module TypeGlobal = struct
 end
 
 let sort_of_rel env evm rel =
-  Reductionops.sort_of_arity env evm (EConstr.of_constr (Retyping.get_type_of env evm (EConstr.of_constr rel)))
+  Reductionops.sort_of_arity env evm (EConstr.of_constr (Retyping.get_type_of env evm rel))
 
 let is_applied_rewrite_relation = PropGlobal.is_applied_rewrite_relation
 
@@ -460,14 +486,14 @@ let evd_convertible env evd x y =
        unsolvable constraints remain, so we check that this unification
        does not introduce any new problem. *)
     let _, pbs = Evd.extract_all_conv_pbs evd in
-    let evd' = Evarconv.the_conv_x env (EConstr.of_constr x) (EConstr.of_constr y) evd in
+    let evd' = Evarconv.the_conv_x env x y evd in
     let _, pbs' = Evd.extract_all_conv_pbs evd' in
     if evd' == evd || problem_inclusion pbs' pbs then Some evd'
     else None
   with e when CErrors.noncritical e -> None
 
 let convertible env evd x y =
-  Reductionops.is_conv_leq env evd (EConstr.of_constr x) (EConstr.of_constr y)
+  Reductionops.is_conv_leq env evd x y
 
 type hypinfo = {
   prf : constr;
@@ -486,12 +512,14 @@ let error_no_relation () = error "Cannot find a relation to rewrite."
 
 let rec decompose_app_rel env evd t = 
   (** Head normalize for compatibility with the old meta mechanism *)
-  let t = Reductionops.whd_betaiota evd (EConstr.of_constr t) in
-  match kind_of_term t with
+  let t = Reductionops.whd_betaiota evd t in
+  let t = EConstr.of_constr t in
+  match EConstr.kind evd t with
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
     let (f', argl, argr) = decompose_app_rel env evd arg in
-    let ty = Typing.unsafe_type_of env evd (EConstr.of_constr argl) in
+    let ty = Typing.unsafe_type_of env evd argl in
+    let ty = EConstr.of_constr ty in
     let f'' = mkLambda (Name default_dependent_ident, ty,
       mkLambda (Name (Id.of_string "y"), lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
@@ -505,28 +533,29 @@ let rec decompose_app_rel env evd t =
 
 let decompose_app_rel env evd t =
   let (rel, t1, t2) = decompose_app_rel env evd t in
-  let ty = Retyping.get_type_of env evd (EConstr.of_constr rel) in
-  let () = if not (Reduction.is_arity env ty) then error_no_relation () in
+  let ty = Retyping.get_type_of env evd rel in
+  let ty = EConstr.of_constr ty in
+  let () = if not (Reductionops.is_arity env evd ty) then error_no_relation () in
   (rel, t1, t2)
 
 let decompose_applied_relation env sigma (c,l) =
   let open Context.Rel.Declaration in
-  let ctype = Retyping.get_type_of env sigma (EConstr.of_constr c) in
+  let ctype = Retyping.get_type_of env sigma c in
+  let ctype = EConstr.of_constr ctype in
   let find_rel ty =
-    let ty = EConstr.of_constr ty in
     let sigma, cl = Clenv.make_evar_clause env sigma ty in
-    let l = Miscops.map_bindings EConstr.of_constr l in
     let sigma = Clenv.solve_evar_clause env sigma true cl l in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
-    let t = EConstr.Unsafe.to_constr t in
     let (equiv, c1, c2) = decompose_app_rel env sigma t in
-    let ty1 = Retyping.get_type_of env sigma (EConstr.of_constr c1) in
-    let ty2 = Retyping.get_type_of env sigma (EConstr.of_constr c2) in
+    let ty1 = Retyping.get_type_of env sigma c1 in
+    let ty2 = Retyping.get_type_of env sigma c2 in
+    let ty1 = EConstr.of_constr ty1 in
+    let ty2 = EConstr.of_constr ty2 in
     match evd_convertible env sigma ty1 ty2 with
     | None -> None
     | Some sigma ->
       let sort = sort_of_rel env sigma equiv in
-      let args = Array.map_of_list (fun h -> EConstr.Unsafe.to_constr h.Clenv.hole_evar) holes in
+      let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
       let value = mkApp (c, args) in
         Some (sigma, { prf=value;
                 car=ty1; rel = equiv; sort = Sorts.is_prop sort;
@@ -535,8 +564,7 @@ let decompose_applied_relation env sigma (c,l) =
     match find_rel ctype with
     | Some c -> c
     | None ->
-	let ctx,t' = Reductionops.splay_prod env sigma (EConstr.of_constr ctype) in (* Search for underlying eq *)
-	let t' = EConstr.Unsafe.to_constr t' in
+	let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
 	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> local_assum (n, t)) ctx)) with
 	| Some c -> c
 	| None -> error "Cannot find an homogeneous relation to rewrite."
@@ -722,16 +750,18 @@ let symmetry env sort rew =
 let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) by t =
   try
     let left = if l2r then c1 else c2 in
-    let sigma = Unification.w_unify ~flags env sigma CONV (EConstr.of_constr left) (EConstr.of_constr t) in
+    let sigma = Unification.w_unify ~flags env sigma CONV left t in
     let sigma = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
     let evd = solve_remaining_by env sigma holes by in
-    let nf c = Evarutil.nf_evar evd (Reductionops.nf_meta evd c) in
+    let nf c = nf_evar evd (Reductionops.nf_meta evd c) in
     let c1 = nf c1 and c2 = nf c2
     and rew_car = nf car and rel = nf rel
     and prf = nf prf in
-    let ty1 = Retyping.get_type_of env evd (EConstr.of_constr c1) in
-    let ty2 = Retyping.get_type_of env evd (EConstr.of_constr c2) in
+    let ty1 = Retyping.get_type_of env evd c1 in
+    let ty2 = Retyping.get_type_of env evd c2 in
+    let ty1 = EConstr.of_constr ty1 in
+    let ty2 = EConstr.of_constr ty2 in
     let () = if not (convertible env evd ty2 ty1) then raise Reduction.NotConvertible in
     let rew_evars = evd, cstrs in
     let rew_prf = RewPrf (rel, prf) in
@@ -749,7 +779,7 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
        basically an eq_constr, except when preexisting evars occur in
        either the lemma or the goal, in which case the eq_constr also
        solved this evars *)
-    let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV (EConstr.of_constr left) (EConstr.of_constr t) in
+    let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV left t in
     let rew_evars = sigma, cstrs in
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_car = car; rew_from = c1; rew_to = c2; rew_prf; rew_evars; } in
@@ -766,9 +796,9 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
 let make_eq () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
+(*FIXME*) EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq ()))
 let make_eq_refl () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq_refl ())
+(*FIXME*) EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq_refl ()))
 
 let get_rew_prf r = match r.rew_prf with
   | RewPrf (rel, prf) -> rel, prf 
@@ -781,7 +811,7 @@ let poly_subrelation sort =
   if sort then PropGlobal.subrelation else TypeGlobal.subrelation
 
 let resolve_subrelation env avoid car rel sort prf rel' res =
-  if Termops.eq_constr (fst res.rew_evars) (EConstr.of_constr rel) (EConstr.of_constr rel') then res
+  if Termops.eq_constr (fst res.rew_evars) rel rel' then res
   else
     let evars, app = app_poly_check env res.rew_evars (poly_subrelation sort) [|car; rel; rel'|] in
     let evars, subrel = new_cstr_evar evars env app in
@@ -798,7 +828,8 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     let morphargs, morphobjs = Array.chop first args in
     let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in
-    let appmtype = Typing.unsafe_type_of env (goalevars evars) (EConstr.of_constr appm) in
+    let appmtype = Typing.unsafe_type_of env (goalevars evars) appm in
+    let appmtype = EConstr.of_constr appmtype in
     let cstrs = List.map 
       (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf)) 
       (Array.to_list morphobjs') 
@@ -818,7 +849,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 	else TypeGlobal.do_subrelation, TypeGlobal.apply_subrelation
       in
 	Environ.push_named
-	  (LocalDef (Id.of_string "do_subrelation",
+	  (nlocal_def (Id.of_string "do_subrelation",
 	             snd (app_poly_sort b env evars dosub [||]),
 	             snd (app_poly_nocheck env evars appsub [||])))
 	  env
@@ -849,8 +880,8 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 	      x :: acc, x :: subst, evars, sigargs, x :: typeargs')
       ([], [], evars, sigargs, []) args args'
   in
-  let proof = applistc proj (List.rev projargs) in
-  let newt = applistc m' (List.rev typeargs) in
+  let proof = applist (proj, List.rev projargs) in
+  let newt = applist (m', List.rev typeargs) in
     match respars with
 	[ a, Some r ] -> evars, proof, substl subst a, substl subst r, oldt, fnewt newt
       | _ -> assert(false)
@@ -873,13 +904,13 @@ let apply_rule unify loccs : int pure_strategy =
   in
   { strategy = fun { state = occ ; env ; unfresh ;
 		     term1 = t ; ty1 = ty ; cstr ; evars } ->
-      let unif = if isEvar t then None else unify env evars t in
+      let unif = if isEvar (goalevars evars) t then None else unify env evars t in
 	match unif with
 	| None -> (occ, Fail)
         | Some rew ->
 	  let occ = succ occ in
 	    if not (is_occ occ) then (occ, Fail)
-	    else if Termops.eq_constr (fst rew.rew_evars) (EConstr.of_constr t) (EConstr.of_constr rew.rew_to) then (occ, Identity)
+	    else if Termops.eq_constr (fst rew.rew_evars) t rew.rew_to then (occ, Identity)
 	    else
 	      let res = { rew with rew_car = ty } in
               let rel, prf = get_rew_prf res in
@@ -933,17 +964,18 @@ let reset_env env =
     Environ.push_rel_context (Environ.rel_context env) env'
       
 let fold_match ?(force=false) env sigma c =
-  let (ci, p, c, brs) = destCase c in
-  let cty = Retyping.get_type_of env sigma (EConstr.of_constr c) in
+  let (ci, p, c, brs) = destCase sigma c in
+  let cty = Retyping.get_type_of env sigma c in
+  let cty = EConstr.of_constr cty in
   let dep, pred, exists, (sk,eff) = 
     let env', ctx, body =
-      let ctx, pred = decompose_lam_assum p in
+      let ctx, pred = decompose_lam_assum sigma p in
       let env' = Environ.push_rel_context ctx env in
 	env', ctx, pred
     in
-    let sortp = Retyping.get_sort_family_of env' sigma (EConstr.of_constr body) in
-    let sortc = Retyping.get_sort_family_of env sigma (EConstr.of_constr cty) in
-    let dep = not (noccurn 1 body) in
+    let sortp = Retyping.get_sort_family_of env' sigma body in
+    let sortc = Retyping.get_sort_family_of env sigma cty in
+    let dep = not (noccurn sigma 1 body) in
     let pred = if dep then p else
 	it_mkProd_or_LetIn (subst1 mkProp body) (List.tl ctx)
     in
@@ -967,7 +999,8 @@ let fold_match ?(force=false) env sigma c =
       else raise Not_found
   in
   let app =
-    let ind, args = Inductive.find_rectype env cty in
+    let ind, args = Inductiveops.find_mrectype env sigma cty in
+    let args = List.map EConstr.of_constr args in
     let pars, args = List.chop ci.ci_npar args in
     let meths = List.map (fun br -> br) (Array.to_list brs) in
       applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
@@ -975,10 +1008,11 @@ let fold_match ?(force=false) env sigma c =
     sk, (if exists then env else reset_env env), app, eff
 
 let unfold_match env sigma sk app =
-  match kind_of_term app with
-  | App (f', args) when eq_constant (fst (destConst f')) sk ->
+  match EConstr.kind sigma app with
+  | App (f', args) when eq_constant (fst (destConst sigma f')) sk ->
       let v = Environ.constant_value_in (Global.env ()) (sk,Univ.Instance.empty)(*FIXME*) in
-	Reductionops.whd_beta sigma (EConstr.of_constr (mkApp (v, args)))
+      let v = EConstr.of_constr v in
+	EConstr.of_constr (Reductionops.whd_beta sigma (mkApp (v, args)))
   | _ -> app
 
 let is_rew_cast = function RewCast _ -> true | _ -> false
@@ -987,7 +1021,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
   let rec aux { state ; env ; unfresh ;
 		term1 = t ; ty1 = ty ; cstr = (prop, cstr) ; evars } =
     let cstr' = Option.map (fun c -> (ty, Some c)) cstr in
-      match kind_of_term t with
+      match EConstr.kind (goalevars evars) t with
       | App (m, args) ->
 	  let rewrite_args state success =
 	    let state, (args', evars', progress) =
@@ -996,7 +1030,8 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		  if not (Option.is_empty progress) && not all then 
 		    state, (None :: acc, evars, progress)
 		  else
-		    let argty = Retyping.get_type_of env (goalevars evars) (EConstr.of_constr arg) in
+		    let argty = Retyping.get_type_of env (goalevars evars) arg in
+		    let argty = EConstr.of_constr argty in
 		    let state, res = s.strategy { state ; env ;
 						  unfresh ;
 						  term1 = arg ;	ty1 = argty ;
@@ -1044,7 +1079,8 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	    in state, res
 	  in
 	    if flags.on_morphisms then
-	      let mty = Retyping.get_type_of env (goalevars evars) (EConstr.of_constr m) in
+	      let mty = Retyping.get_type_of env (goalevars evars) m in
+              let mty = EConstr.of_constr mty in
 	      let evars, cstr', m, mty, argsl, args = 
 		let argsl = Array.to_list args in
 		let lift = if prop then PropGlobal.lift_cstr else TypeGlobal.lift_cstr in
@@ -1071,7 +1107,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		      | x -> x
 		    in
 		    let res =
-		      { rew_car = Reductionops.hnf_prod_appvect env (goalevars evars) (EConstr.of_constr r.rew_car) (Array.map EConstr.of_constr args);
+		      { rew_car = EConstr.of_constr (Reductionops.hnf_prod_appvect env (goalevars evars) r.rew_car args);
 			rew_from = mkApp(r.rew_from, args); rew_to = mkApp(r.rew_to, args);
 			rew_prf = prf; rew_evars = r.rew_evars }
 		    in 
@@ -1084,10 +1120,12 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		    in state, res
 	    else rewrite_args state None
 	      
-      | Prod (n, x, b) when noccurn 1 b ->
+      | Prod (n, x, b) when noccurn (goalevars evars) 1 b ->
 	  let b = subst1 mkProp b in
-	  let tx = Retyping.get_type_of env (goalevars evars) (EConstr.of_constr x)
-	  and tb = Retyping.get_type_of env (goalevars evars) (EConstr.of_constr b) in
+	  let tx = Retyping.get_type_of env (goalevars evars) x
+	  and tb = Retyping.get_type_of env (goalevars evars) b in
+	  let tx = EConstr.of_constr tx in
+	  let tb = EConstr.of_constr tb in
 	  let arr = if prop then PropGlobal.arrow_morphism 
 	    else TypeGlobal.arrow_morphism 
 	  in
@@ -1097,7 +1135,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 				 cstr = (prop,cstr) ; evars = evars' } in
 	  let res = 
 	    match res with
-	    | Success r -> Success { r with rew_to = unfold r.rew_to }
+	    | Success r -> Success { r with rew_to = unfold (goalevars r.rew_evars) r.rew_to }
 	    | Fail | Identity -> res
 	  in state, res
 
@@ -1118,7 +1156,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       | Prod (n, dom, codom) ->
 	  let lam = mkLambda (n, dom, codom) in
 	  let (evars', app), unfold = 
-	    if eq_constr (fst evars) (EConstr.of_constr ty) EConstr.mkProp then
+	    if eq_constr (fst evars) ty mkProp then
 	      (app_poly_sort prop env evars coq_all [| dom; lam |]), TypeGlobal.unfold_all
 	    else 
 	      let forall = if prop then PropGlobal.coq_forall else TypeGlobal.coq_forall in
@@ -1129,7 +1167,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 				 cstr = (prop,cstr) ; evars = evars' } in
 	  let res = 
 	    match res with
-	    | Success r -> Success { r with rew_to = unfold r.rew_to }
+	    | Success r -> Success { r with rew_to = unfold (goalevars r.rew_evars) r.rew_to }
 	    | Fail | Identity -> res
 	  in state, res
 
@@ -1164,8 +1202,9 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       | Lambda (n, t, b) when flags.under_lambdas ->
         let n' = name_app (fun id -> Tactics.fresh_id_in_env unfresh id env) n in
         let open Context.Rel.Declaration in
-	let env' = Environ.push_rel (LocalAssum (n', t)) env in
-	let bty = Retyping.get_type_of env' (goalevars evars) (EConstr.of_constr b) in
+	let env' = Environ.push_rel (local_assum (n', t)) env in
+	let bty = Retyping.get_type_of env' (goalevars evars) b in
+	let bty = EConstr.of_constr bty in
 	let unlift = if prop then PropGlobal.unlift_cstr else TypeGlobal.unlift_cstr in
 	let state, b' = s.strategy { state ; env = env' ; unfresh ;
 				     term1 = b ; ty1 = bty ;
@@ -1192,7 +1231,8 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	in state, res
 	    
       | Case (ci, p, c, brs) ->
-	let cty = Retyping.get_type_of env (goalevars evars) (EConstr.of_constr c) in
+	let cty = Retyping.get_type_of env (goalevars evars) c in
+	let cty = EConstr.of_constr cty in
 	let evars', eqty = app_poly_sort prop env evars coq_eq [| cty |] in
 	let cstr' = Some eqty in
 	let state, c' = s.strategy { state ; env ; unfresh ;
@@ -1393,7 +1433,7 @@ module Strategies =
     let inj_open hint = (); fun sigma ->
       let ctx = Evd.evar_universe_context_of hint.Autorewrite.rew_ctx in
       let sigma = Evd.merge_universe_context sigma ctx in
-      (sigma, (hint.Autorewrite.rew_lemma, NoBindings))
+      (sigma, (EConstr.of_constr hint.Autorewrite.rew_lemma, NoBindings))
 
     let old_hints (db : string) : 'a pure_strategy =
       let rules = Autorewrite.find_rewrites db in
@@ -1403,6 +1443,7 @@ module Strategies =
 
     let hints (db : string) : 'a pure_strategy = { strategy =
       fun ({ term1 = t } as input) ->
+      let t = EConstr.Unsafe.to_constr t in
       let rules = Autorewrite.find_matches db t in
       let lemma hint = (inj_open hint, hint.Autorewrite.rew_l2r,
 			hint.Autorewrite.rew_tac) in
@@ -1414,9 +1455,10 @@ module Strategies =
 	fun { state = state ; env = env ; term1 = t ; ty1 = ty ; cstr = cstr ; evars = evars } ->
           let rfn, ckind = Redexpr.reduction_of_red_expr env r in
           let sigma = Sigma.Unsafe.of_evar_map (goalevars evars) in
-	  let Sigma (t', sigma, _) = rfn.Reductionops.e_redfun env sigma (EConstr.of_constr t) in
+	  let Sigma (t', sigma, _) = rfn.Reductionops.e_redfun env sigma t in
+	  let t' = EConstr.of_constr t' in
 	  let evars' = Sigma.to_evar_map sigma in
-	    if Termops.eq_constr evars' (EConstr.of_constr t') (EConstr.of_constr t) then
+	    if Termops.eq_constr evars' t' t then
 	      state, Identity
 	    else
 	      state, Success { rew_car = ty; rew_from = t; rew_to = t';
@@ -1428,14 +1470,16 @@ module Strategies =
       fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
 (* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
 	let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
+	let c = EConstr.of_constr c in
 	let unfolded =
-	  try Tacred.try_red_product env sigma (EConstr.of_constr c)
+	  try Tacred.try_red_product env sigma c
 	  with e when CErrors.noncritical e ->
             error "fold: the term is not unfoldable !"
 	in
+	let unfolded = EConstr.of_constr unfolded in
 	  try
-	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) (EConstr.of_constr unfolded) (EConstr.of_constr t) in
-	    let c' = Evarutil.nf_evar sigma c in
+	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
+	    let c' = nf_evar sigma c in
 	      state, Success { rew_car = ty; rew_from = t; rew_to = c';
 				  rew_prf = RewCast DEFAULTcast;
 				  rew_evars = (sigma, snd evars) }
@@ -1468,7 +1512,8 @@ let rewrite_with l2r flags c occs : strategy = { strategy =
 					       }
 
 let apply_strategy (s : strategy) env unfresh concl (prop, cstr) evars =
-  let ty = Retyping.get_type_of env (goalevars evars) (EConstr.of_constr concl) in
+  let ty = Retyping.get_type_of env (goalevars evars) concl in
+  let ty = EConstr.of_constr ty in
   let _, res = s.strategy { state = () ; env ; unfresh ;
 			    term1 = concl ; ty1 = ty ;
 			    cstr = (prop, Some cstr) ; evars } in
@@ -1488,7 +1533,7 @@ type result = (evar_map * constr option * types) option option
 
 let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
   let evdref = ref sigma in
-  let sort = Typing.e_sort_of env evdref (EConstr.of_constr concl) in
+  let sort = Typing.e_sort_of env evdref concl in
   let evars = (!evdref, Evar.Set.empty) in
   let evars, cstr =
     let prop, (evars, arrow) = 
@@ -1508,7 +1553,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
     | Success res ->
       let (_, cstrs) = res.rew_evars in
       let evars' = solve_constraints env res.rew_evars in
-      let newt = Evarutil.nf_evar evars' res.rew_to in
+      let newt = EConstr.of_constr (Evarutil.nf_evar evars' (EConstr.Unsafe.to_constr res.rew_to)) in
       let evars = (* Keep only original evars (potentially instantiated) and goal evars,
 		     the rest has been defined and substituted already. *)
 	Evar.Set.fold 
@@ -1523,13 +1568,14 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       let res = match res.rew_prf with
 	| RewCast c -> None
 	| RewPrf (rel, p) ->
-	  let p = nf_zeta env evars' (EConstr.of_constr (Evarutil.nf_evar evars' p)) in
+	  let p = nf_zeta env evars' (nf_evar evars' p) in
+	  let p = EConstr.of_constr p in
 	  let term =
 	    match abs with
 	    | None -> p
 	    | Some (t, ty) ->
-              let t = Evarutil.nf_evar evars' t in
-              let ty = Evarutil.nf_evar evars' ty in
+              let t = nf_evar evars' t in
+              let ty = nf_evar evars' ty in
 		mkApp (mkLambda (Name (Id.of_string "lemma"), ty, p), [| t |])
 	  in
 	  let proof = match is_hyp with
@@ -1550,24 +1596,25 @@ let rec insert_dependent env sigma decl accu hyps = match hyps with
 let assert_replacing id newt tac = 
   let prf = Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
+    let concl = EConstr.of_constr concl in
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let ctx = Environ.named_context env in
     let after, before = List.split_when (NamedDecl.get_id %> Id.equal id) ctx in
     let nc = match before with
     | [] -> assert false
-    | d :: rem -> insert_dependent env sigma (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem
+    | d :: rem -> insert_dependent env sigma (nlocal_assum (NamedDecl.get_id d, newt)) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Refine.refine ~unsafe:false { run = begin fun sigma ->
       let open EConstr in
-      let Sigma (ev, sigma, p) = Evarutil.new_evar env' sigma (EConstr.of_constr concl) in
-      let Sigma (ev', sigma, q) = Evarutil.new_evar env sigma (EConstr.of_constr newt) in
+      let Sigma (ev, sigma, p) = Evarutil.new_evar env' sigma concl in
+      let Sigma (ev', sigma, q) = Evarutil.new_evar env sigma newt in
       let map d =
         let n = NamedDecl.get_id d in
-        if Id.equal n id then ev' else EConstr.mkVar n
+        if Id.equal n id then ev' else mkVar n
       in
-      let (e, _) = EConstr.destEvar (Sigma.to_evar_map sigma) ev in
+      let (e, _) = destEvar (Sigma.to_evar_map sigma) ev in
       Sigma (mkEvar (e, Array.map_of_list map nc), sigma, p +> q)
     end }
   end } in
@@ -1594,38 +1641,37 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	match clause, prf with
 	| Some id, Some p ->
             let tac = tclTHENLIST [
-              Refine.refine ~unsafe:false { run = fun h -> Sigma.here (EConstr.of_constr p) h };
+              Refine.refine ~unsafe:false { run = fun h -> Sigma.here p h };
               Proofview.Unsafe.tclNEWGOALS gls;
             ] in
             Proofview.Unsafe.tclEVARS undef <*>
 	    tclTHENFIRST (assert_replacing id newt tac) (beta_hyp id)
 	| Some id, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_hyp_no_check (LocalAssum (id, newt)) <*>
+            convert_hyp_no_check (nlocal_assum (id, newt)) <*>
             beta_hyp id
 	| None, Some p ->
-            let p = EConstr.of_constr p in
             Proofview.Unsafe.tclEVARS undef <*>
             Proofview.Goal.enter { enter = begin fun gl ->
             let env = Proofview.Goal.env gl in
             let make = { run = begin fun sigma ->
-              let Sigma (ev, sigma, q) = Evarutil.new_evar env sigma (EConstr.of_constr newt) in
-              Sigma (EConstr.mkApp (p, [| ev |]), sigma, q)
+              let Sigma (ev, sigma, q) = Evarutil.new_evar env sigma newt in
+              Sigma (mkApp (p, [| ev |]), sigma, q)
             end } in
             Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
             end }
 	| None, None ->
-            let newt = EConstr.of_constr newt in
             Proofview.Unsafe.tclEVARS undef <*>
             convert_concl_no_check newt DEFAULTcast
   in
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
+    let concl = EConstr.of_constr concl in
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let ty = match clause with
     | None -> concl
-    | Some id -> Environ.named_type id env
+    | Some id -> EConstr.of_constr (Environ.named_type id env)
     in
     let env = match clause with
     | None -> env
@@ -1677,6 +1723,7 @@ let cl_rewrite_clause_strat strat clause =
 let apply_glob_constr c l2r occs = (); fun ({ state = () ; env = env } as input) ->
   let c sigma =
     let (sigma, c) = Pretyping.understand_tcc env sigma c in
+    let c = EConstr.of_constr c in
     (sigma, (c, NoBindings))
   in
   let flags = general_rewrite_unif_flags () in
@@ -1685,6 +1732,7 @@ let apply_glob_constr c l2r occs = (); fun ({ state = () ; env = env } as input)
 let interp_glob_constr_list env =
   let make c = (); fun sigma ->
     let sigma, c = Pretyping.understand_tcc env sigma c in
+    let c = EConstr.of_constr c in
     (sigma, (c, NoBindings))
   in
   List.map (fun c -> make c, true, None)
@@ -1869,9 +1917,10 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 
 let cHole = CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None)
 
-let proper_projection r ty =
-  let ctx, inst = decompose_prod_assum ty in
-  let mor, args = destApp inst in
+let proper_projection sigma r ty =
+  let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in
+  let ctx, inst = decompose_prod_assum sigma ty in
+  let mor, args = destApp sigma inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
   let app = mkApp (Lazy.force PropGlobal.proper_proj,
 		  Array.append args [| instarg |]) in
@@ -1882,31 +1931,37 @@ let declare_projection n instance_id r =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma,c = Evd.fresh_global env sigma r in
-  let ty = Retyping.get_type_of env sigma (EConstr.of_constr c) in
-  let term = proper_projection c ty in
-  let sigma, typ = Typing.type_of env sigma (EConstr.of_constr term) in
-  let ctx, typ = decompose_prod_assum typ in
+  let c = EConstr.of_constr c in
+  let ty = Retyping.get_type_of env sigma c in
+  let ty = EConstr.of_constr ty in
+  let term = proper_projection sigma c ty in
+  let sigma, typ = Typing.type_of env sigma term in
+  let typ = EConstr.of_constr typ in
+  let ctx, typ = decompose_prod_assum sigma typ in
   let typ =
     let n =
       let rec aux t =
-	match kind_of_term t with
+	match EConstr.kind sigma t with
 	| App (f, [| a ; a' ; rel; rel' |]) 
-	    when Globnames.is_global (PropGlobal.respectful_ref ()) f ->
+	    when Termops.is_global sigma (PropGlobal.respectful_ref ()) f ->
 	  succ (aux rel')
 	| _ -> 0
       in
       let init =
-	match kind_of_term typ with
-	    App (f, args) when Globnames.is_global (PropGlobal.respectful_ref ()) f  ->
+	match EConstr.kind sigma typ with
+	    App (f, args) when Termops.is_global sigma (PropGlobal.respectful_ref ()) f  ->
 	      mkApp (f, fst (Array.chop (Array.length args - 2) args))
 	  | _ -> typ
       in aux init
     in
-    let ctx,ccl = Reductionops.splay_prod_n env sigma (3 * n) (EConstr.of_constr typ)
+    let ctx,ccl = Reductionops.splay_prod_n env sigma (3 * n) typ in
+    let ccl = EConstr.of_constr ccl
     in it_mkProd_or_LetIn ccl ctx
   in
   let typ = it_mkProd_or_LetIn typ ctx in
   let pl, ctx = Evd.universe_context sigma in
+  let typ = EConstr.to_constr sigma typ in
+  let term = EConstr.to_constr sigma term in
   let cst = 
     Declare.definition_entry ~types:typ ~poly ~univs:ctx term
   in
@@ -1915,11 +1970,13 @@ let declare_projection n instance_id r =
 
 let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
+  let m = EConstr.of_constr m in
   let sigma = Evd.from_ctx ctx in
-  let t = Typing.unsafe_type_of env sigma (EConstr.of_constr m) in
+  let t = Typing.unsafe_type_of env sigma m in
+  let t = EConstr.of_constr t in
   let cstrs =
     let rec aux t =
-      match kind_of_term t with
+      match EConstr.kind sigma t with
 	| Prod (na, a, b) ->
 	    None :: aux b
 	| _ -> []
@@ -1939,21 +1996,21 @@ let build_morphism_signature env sigma m =
   let morph = e_app_poly env evd PropGlobal.proper_type [| t; sig_; m |] in
   let evd = solve_constraints env !evd in
   let evd = Evd.nf_constraints evd in
-  let m = Evarutil.nf_evars_universes evd morph in
+  let m = Evarutil.nf_evars_universes evd (EConstr.Unsafe.to_constr morph) in
   Pretyping.check_evars env Evd.empty evd (EConstr.of_constr m);
   Evd.evar_universe_context evd, m
 
 let default_morphism sign m =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let t = Typing.unsafe_type_of env sigma (EConstr.of_constr m) in
+  let t = Typing.unsafe_type_of env sigma m in
+  let t = EConstr.of_constr t in
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
   let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
-  let evars, mor = resolve_one_typeclass env (goalevars evars) (EConstr.of_constr morph) in
-  let mor = EConstr.Unsafe.to_constr mor in
-    mor, proper_projection mor morph
+  let evars, mor = resolve_one_typeclass env (goalevars evars) morph in
+    mor, proper_projection sigma mor morph
 
 let add_setoid global binders a aeq t n =
   init_setoid ();
@@ -2060,23 +2117,22 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
          in the context *)
       Unification.w_unify_to_subterm 
        ~flags:rewrite_unif_flags
-        env sigma (EConstr.of_constr (if l2r then c1 else c2),EConstr.of_constr but)
+        env sigma ((if l2r then c1 else c2),but)
     with
     | ex when Pretype_errors.precatchable_exception ex ->
 	(* ~flags:(true,true) to make Ring work (since it really
            exploits conversion) *)
       Unification.w_unify_to_subterm 
         ~flags:rewrite_conv_unif_flags
-        env sigma (EConstr.of_constr (if l2r then c1 else c2),EConstr.of_constr but)
+        env sigma ((if l2r then c1 else c2),but)
   in
-  let c' = EConstr.Unsafe.to_constr c' in
-  let nf c = Evarutil.nf_evar sigma c in
+  let nf c = nf_evar sigma c in
   let c1 = if l2r then nf c' else nf c1
   and c2 = if l2r then nf c2 else nf c'
   and car = nf car and rel = nf rel in
   check_evar_map_of_evars_defs sigma;
   let prf = nf prf in
-  let prfty = nf (Retyping.get_type_of env sigma (EConstr.of_constr prf)) in
+  let prfty = nf (EConstr.of_constr (Retyping.get_type_of env sigma prf)) in
   let sort = sort_of_rel env sigma but in
   let abs = prf, prfty in
   let prf = mkRel 1 in
@@ -2091,6 +2147,7 @@ let get_hyp gl (c,l) clause l2r =
     | Some id -> Tacmach.New.pf_get_hyp_typ id gl
     | None -> Evarutil.nf_evar evars (Tacmach.New.pf_concl gl)
   in
+  let but = EConstr.of_constr but in
   unification_rewrite l2r hi.c1 hi.c2 sigma hi.prf hi.car hi.rel but env
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
@@ -2101,7 +2158,6 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let (c,l) = Miscops.map_with_bindings EConstr.Unsafe.to_constr (c,l) in
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
   let unify env evars t = unify_abs res l2r sort env evars t in
   let app = apply_rule unify occs in
@@ -2130,6 +2186,7 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
 let not_declared env ty rel =
+  let rel = EConstr.Unsafe.to_constr rel in
   tclFAIL 0
     (str" The relation " ++ Printer.pr_constr_env env Evd.empty rel ++ str" is not a declared " ++
      str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
@@ -2139,12 +2196,14 @@ let setoid_proof ty fn fallback =
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
+    let concl = EConstr.of_constr concl in
     Proofview.tclORELSE
       begin
         try
           let rel, _, _ = decompose_app_rel env sigma concl in
-          let (sigma, t) = Typing.type_of env sigma (EConstr.of_constr rel) in
-          let car = RelDecl.get_type (List.hd (fst (Reduction.dest_prod env t))) in
+          let (sigma, t) = Typing.type_of env sigma rel in
+          let t = EConstr.of_constr t in
+          let car = snd (List.hd (fst (Reductionops.splay_prod env sigma t))) in
 	    (try init_relation_classes () with _ -> raise Not_found);
             fn env sigma car rel
         with e -> Proofview.tclZERO e
@@ -2180,7 +2239,7 @@ let setoid_reflexivity =
      tac_open (poly_proof PropGlobal.get_reflexive_proof
 			  TypeGlobal.get_reflexive_proof
 			  env evm car rel)
-	      (fun c -> tclCOMPLETE (apply (EConstr.of_constr c))))
+	      (fun c -> tclCOMPLETE (apply c)))
     (reflexivity_red true)
 
 let setoid_symmetry =
@@ -2189,7 +2248,7 @@ let setoid_symmetry =
       tac_open
 	(poly_proof PropGlobal.get_symmetric_proof TypeGlobal.get_symmetric_proof
 	   env evm car rel)
-	(fun c -> apply (EConstr.of_constr c)))
+	(fun c -> apply c))
     (symmetry_red true)
     
 let setoid_transitivity c =
@@ -2198,15 +2257,17 @@ let setoid_transitivity c =
       tac_open (poly_proof PropGlobal.get_transitive_proof TypeGlobal.get_transitive_proof
 	   env evm car rel)
 	(fun proof -> match c with
-	| None -> eapply (EConstr.of_constr proof)
-	| Some c -> apply_with_bindings (EConstr.of_constr proof,ImplicitBindings [ c ])))
+	| None -> eapply proof
+	| Some c -> apply_with_bindings (proof,ImplicitBindings [ c ])))
     (transitivity_red true c)
     
 let setoid_symmetry_in id =
   Proofview.V82.tactic (fun gl ->
-  let ctype = pf_unsafe_type_of gl (EConstr.mkVar id) in
-  let binders,concl = decompose_prod_assum ctype in
-  let (equiv, args) = decompose_app concl in
+  let sigma = project gl in
+  let ctype = pf_unsafe_type_of gl (mkVar id) in
+  let ctype = EConstr.of_constr ctype in
+  let binders,concl = decompose_prod_assum sigma ctype in
+  let (equiv, args) = decompose_app sigma concl in
   let rec split_last_two = function
     | [c1;c2] -> [],(c1, c2)
     | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
@@ -2216,11 +2277,10 @@ let setoid_symmetry_in id =
   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
   let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
-  let new_hyp = EConstr.of_constr new_hyp in
    Proofview.V82.of_tactic
     (tclTHENLAST
       (Tactics.assert_after_replacing id new_hyp)
-      (tclTHENLIST [ intros; setoid_symmetry; apply (EConstr.mkVar id); Tactics.assumption ]))
+      (tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ]))
       gl)
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity

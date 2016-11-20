@@ -1592,8 +1592,9 @@ let meta_instance sigma b =
     EConstr.of_constr (instance sigma c_sigma b.rebus)
 
 let nf_meta sigma c =
+  let c = EConstr.Unsafe.to_constr c in
   let cl = mk_freelisted c in
-  EConstr.Unsafe.to_constr (meta_instance sigma { cl with rebus = EConstr.of_constr cl.rebus })
+  meta_instance sigma { cl with rebus = EConstr.of_constr cl.rebus }
 
 (* Instantiate metas that create beta/iota redexes *)
 

@@ -382,6 +382,9 @@ let enstack_subsubgoals env se stack gls=
 	    Array.iteri process gentypes
       | _ -> ()
 
+let nf_meta sigma c =
+  EConstr.Unsafe.to_constr (Reductionops.nf_meta sigma (EConstr.of_constr c))
+
 let rec nf_list evd =
   function
       [] -> []
@@ -389,7 +392,7 @@ let rec nf_list evd =
 	if meta_defined evd m then
 	    nf_list evd others
 	else
-	  (m,Reductionops.nf_meta evd typ)::nf_list evd others
+	  (m,nf_meta evd typ)::nf_list evd others
 
 let find_subsubgoal c ctyp skip submetas gls =
   let env= pf_env gls in
@@ -424,7 +427,7 @@ let find_subsubgoal c ctyp skip submetas gls =
 	  dfs n
 	end in
   let nse= try dfs skip with Stack.Empty -> raise Not_found in
-    nf_list nse.se_evd nse.se_meta_list,Reductionops.nf_meta nse.se_evd (mkMeta 0)
+    nf_list nse.se_evd nse.se_meta_list,nf_meta nse.se_evd (mkMeta 0)
 
 let concl_refiner metas body gls =
   let concl = pf_concl gls in

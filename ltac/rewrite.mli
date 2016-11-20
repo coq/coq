@@ -8,6 +8,7 @@
 
 open Names
 open Constr
+open EConstr
 open Environ
 open Constrexpr
 open Tacexpr
@@ -105,13 +106,13 @@ val setoid_symmetry_in : Id.t -> unit Proofview.tactic
 
 val setoid_reflexivity : unit Proofview.tactic
 
-val setoid_transitivity : EConstr.constr option -> unit Proofview.tactic
+val setoid_transitivity : constr option -> unit Proofview.tactic
 
 
 val apply_strategy :
   strategy ->
   Environ.env ->
   Names.Id.t list ->
-  Term.constr ->
-  bool * Term.constr ->
+  constr ->
+  bool * constr ->
   evars -> rewrite_result

@@ -1013,6 +1013,7 @@ let interp_constr_with_bindings ist env sigma (c,bl) =
 let interp_open_constr_with_bindings ist env sigma (c,bl) =
   let sigma, bl = interp_bindings ist env sigma bl in
   let sigma, c = interp_open_constr ist env sigma c in
+  let (c, bl) = Miscops.map_with_bindings EConstr.of_constr (c, bl) in
   sigma, (c, bl)
 
 let loc_of_bindings = function
@@ -1027,7 +1028,6 @@ let interp_open_constr_with_bindings_loc ist ((c,_),bl as cb) =
   let f = { delayed = fun env sigma ->
     let sigma = Sigma.to_evar_map sigma in
     let (sigma, c) = interp_open_constr_with_bindings ist env sigma cb in
-    let c = Miscops.map_with_bindings EConstr.of_constr c in
     Sigma.Unsafe.of_pair (c, sigma)
   } in
     (loc,f)
@@ -1899,7 +1899,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let f = { delayed = fun env sigma ->
             let sigma = Sigma.to_evar_map sigma in
             let (sigma, c) = interp_open_constr_with_bindings ist env sigma c in
-            let c = Miscops.map_with_bindings EConstr.of_constr c in
             Sigma.Unsafe.of_pair (c, sigma)
           } in
 	  (b,m,keep,f)) l in

@@ -275,6 +275,8 @@ val isGlobalRef : Evd.evar_map -> EConstr.t -> bool
 
 val is_template_polymorphic : env -> Evd.evar_map -> EConstr.t -> bool
 
+val is_Prop : Evd.evar_map -> EConstr.t -> bool
+
 (** Combinators on judgments *)
 
 val on_judgment       : ('a -> 'b) -> ('a, 'a) punsafe_judgment -> ('b, 'b) punsafe_judgment

@@ -1272,13 +1272,15 @@ let w_coerce env evd mv c =
 
 let unify_to_type env sigma flags c status u =
   let sigma, c = refresh_universes (Some false) env sigma c in
-  let t = get_type_of env sigma (EConstr.of_constr (nf_meta sigma c)) in
-  let t = nf_betaiota sigma (EConstr.of_constr (nf_meta sigma t)) in
-    unify_0 env sigma CUMUL flags (EConstr.of_constr t) (EConstr.of_constr u)
+  let c = EConstr.of_constr c in
+  let t = get_type_of env sigma (nf_meta sigma c) in
+  let t = EConstr.of_constr t in
+  let t = nf_betaiota sigma (nf_meta sigma t) in
+  let t = EConstr.of_constr t in
+    unify_0 env sigma CUMUL flags t u
 
 let unify_type env sigma flags mv status c =
   let mvty = Typing.meta_type sigma mv in
-  let mvty = EConstr.Unsafe.to_constr mvty in
   let mvty = nf_meta sigma mvty in
     unify_to_type env sigma 
       (set_flags_for_type flags)
