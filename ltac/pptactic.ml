@@ -102,7 +102,7 @@ module Make
 
   let rec pr_value lev v : std_ppcmds =
     if has_type v Val.typ_list then
-      pr_sequence (fun x -> pr_value lev x) (unbox v Val.typ_list)
+      str "[" ++ pr_sequence (fun x -> pr_value lev x) (unbox v Val.typ_list) ++ str "]"
     else if has_type v Val.typ_opt then
       pr_opt_no_spc (fun x -> pr_value lev x) (unbox v Val.typ_opt)
     else if has_type v Val.typ_pair then
