@@ -497,7 +497,8 @@ module Make
         | _ -> pr_with_occurrences (fun () -> str" |- *") (occs,())
       in
       pr_in
-        (prlist_with_sep (fun () -> str", ") (pr_hyp_location pr_id) l ++ pr_occs)
+        (prlist_with_sep (fun () -> str",")
+           (fun id -> spc () ++ pr_hyp_location pr_id id) l ++ pr_occs)
 
   let pr_orient b = if b then mt () else str "<- "
 
