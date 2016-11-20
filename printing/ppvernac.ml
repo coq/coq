@@ -1058,7 +1058,7 @@ module Make
               in
               print_arguments nargs args ++
                 if not (List.is_empty more_implicits) then
-                  str ", " ++ prlist_with_sep (fun () -> str", ") print_implicits more_implicits
+                  prlist (fun l -> str"," ++ print_implicits l) more_implicits
                 else (mt ()) ++
                 (if not (List.is_empty mods) then str" : " else str"") ++
                   prlist_with_sep (fun () -> str", " ++ spc()) (function
