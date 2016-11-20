@@ -18,8 +18,8 @@
     substitution mapping corresponding to matched hypotheses. *)
 type 'a t = {
   subst : Constr_matching.bound_ident_map * Pattern.extended_patvar_map ;
-  context : Term.constr Names.Id.Map.t;
-  terms : Term.constr Names.Id.Map.t;
+  context : EConstr.constr Names.Id.Map.t;
+  terms : EConstr.constr Names.Id.Map.t;
   lhs : 'a;
 }
 
@@ -31,7 +31,7 @@ type 'a t = {
 val match_term :
   Environ.env ->
   Evd.evar_map ->
-  Term.constr ->
+  EConstr.constr ->
   (Tacexpr.binding_bound_vars * Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->
   Tacexpr.glob_tactic_expr t Proofview.tactic
 
@@ -44,6 +44,6 @@ val match_goal:
   Environ.env ->
   Evd.evar_map ->
   Context.Named.t ->
-  Term.constr ->
+  EConstr.constr ->
   (Tacexpr.binding_bound_vars * Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->
   Tacexpr.glob_tactic_expr t Proofview.tactic

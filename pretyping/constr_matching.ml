@@ -16,6 +16,7 @@ open Nameops
 open Termops
 open Reductionops
 open Term
+open EConstr
 open Vars
 open Pattern
 open Patternops
@@ -61,11 +62,11 @@ let constrain sigma n (ids, m) (names, terms as subst) =
   let open EConstr in
   try
     let (ids', m') = Id.Map.find n terms in
-    if List.equal Id.equal ids ids' && eq_constr sigma m (EConstr.of_constr m') then subst
+    if List.equal Id.equal ids ids' && eq_constr sigma m m' then subst
     else raise PatternMatchingFailure
   with Not_found ->
     let () = if Id.Map.mem n names then warn_meta_collision n in
-    (names, Id.Map.add n (ids, EConstr.Unsafe.to_constr m) terms)
+    (names, Id.Map.add n (ids, m) terms)
 
 let add_binders na1 na2 binding_vars (names, terms as subst) =
   match na1, na2 with
@@ -152,7 +153,6 @@ let merge_binding sigma allow_bound_rels ctx n cT subst =
   | [] -> (* Optimization *)
     ([], cT)
   | _ ->
-    let open EConstr in
     let frels = free_rels sigma cT in
     if allow_bound_rels then
       let vars = extract_bound_vars frels ctx in
@@ -344,7 +344,7 @@ type matching_result =
     { m_sub : bound_ident_map * patvar_map;
       m_ctx : constr; }
 
-let mkresult s c n = IStream.Cons ( { m_sub=s; m_ctx=EConstr.Unsafe.to_constr c; } , (IStream.thunk n) )
+let mkresult s c n = IStream.Cons ( { m_sub=s; m_ctx=c; } , (IStream.thunk n) )
 
 let isPMeta = function PMeta _ -> true | _ -> false
 
@@ -362,10 +362,9 @@ let matches_head env sigma pat c =
 
 (* Tells if it is an authorized occurrence and if the instance is closed *)
 let authorized_occ env sigma partial_app closed pat c mk_ctx =
-  let open EConstr in
   try
     let subst = matches_core_closed env sigma false partial_app pat c in
-    if closed && Id.Map.exists (fun _ c -> not (closed0 c)) (snd subst)
+    if closed && Id.Map.exists (fun _ c -> not (closed0 sigma c)) (snd subst)
     then (fun next -> next ())
     else (fun next -> mkresult subst (mk_ctx (mkMeta special_meta)) next)
   with PatternMatchingFailure -> (fun next -> next ())

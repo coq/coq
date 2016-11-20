@@ -48,7 +48,7 @@ end
 
 (** {5 Coercion functions} *)
 
-val coerce_to_constr_context : Value.t -> constr
+val coerce_to_constr_context : Value.t -> EConstr.constr
 
 val coerce_var_to_ident : bool -> Environ.env -> Value.t -> Id.t
 
@@ -91,6 +91,6 @@ val coerce_to_int_or_var_list : Value.t -> int or_var list
 
 (** {5 Missing generic arguments} *)
 
-val wit_constr_context : (Empty.t, Empty.t, constr) genarg_type
+val wit_constr_context : (Empty.t, Empty.t, EConstr.constr) genarg_type
 
 val wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) genarg_type

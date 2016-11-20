@@ -224,6 +224,8 @@ let error_instantiate_pattern id l =
     ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
 
 let instantiate_pattern env sigma lvar c =
+  let open EConstr in
+  let open Vars in
   let rec aux vars = function
   | PVar id as x ->
       (try
@@ -235,7 +237,7 @@ let instantiate_pattern env sigma lvar c =
               ctx
           in
 	  let c = substl inst c in
-	  pattern_of_constr env sigma (EConstr.of_constr c)
+	  pattern_of_constr env sigma c
 	with Not_found (* List.index failed *) ->
 	  let vars =
 	    List.map_filter (function Name id -> Some id | _ -> None) vars in

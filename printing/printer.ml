@@ -76,7 +76,7 @@ let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
   (* we also need to preserve the actual names of the patterns *)
   (* So what to do? *)
   let assums = List.map (fun id -> (Name id,(* dummy *) mkProp)) ids in
-  pr (Termops.push_rels_assum assums env) sigma c
+  pr (Termops.push_rels_assum assums env) sigma (EConstr.Unsafe.to_constr c)
 
 let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_constr_env
 let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_lconstr_env

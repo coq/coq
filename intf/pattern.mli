@@ -43,11 +43,11 @@ open Misctypes
     could be inferred. We also loose the ability of typing ltac
     variables before calling the right-hand-side of ltac matching clauses. *)
 
-type constr_under_binders = Id.t list * constr
+type constr_under_binders = Id.t list * EConstr.constr
 
 (** Types of substitutions with or w/o bound variables *)
 
-type patvar_map = constr Id.Map.t
+type patvar_map = EConstr.constr Id.Map.t
 type extended_patvar_map = constr_under_binders Id.Map.t
 
 (** {5 Patterns} *)

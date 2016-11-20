@@ -17,7 +17,7 @@ open Geninterp
 
 exception CannotCoerceTo of string
 
-let (wit_constr_context : (Empty.t, Empty.t, constr) Genarg.genarg_type) =
+let (wit_constr_context : (Empty.t, Empty.t, EConstr.constr) Genarg.genarg_type) =
   let wit = Genarg.create_arg "constr_context" in
   let () = register_val0 wit None in
   wit
@@ -64,7 +64,7 @@ let to_constr v =
     Some c
   else if has_type v (topwit wit_constr_under_binders) then
     let vars, c = out_gen (topwit wit_constr_under_binders) v in
-    match vars with [] -> Some c | _ -> None
+    match vars with [] -> Some (EConstr.Unsafe.to_constr c) | _ -> None
   else None
 
 let of_uconstr c = in_gen (topwit wit_uconstr) c
@@ -96,7 +96,7 @@ let is_variable env id =
 
 (* Transforms an id into a constr if possible, or fails with Not_found *)
 let constr_of_id env id =
-  Term.mkVar (let _ = Environ.lookup_named id env in id)
+  EConstr.mkVar (let _ = Environ.lookup_named id env in id)
 
 (* Gives the constr corresponding to a Constr_context tactic_arg *)
 let coerce_to_constr_context v =
@@ -212,7 +212,7 @@ let coerce_to_constr env v =
     | _ -> fail ()
   else if has_type v (topwit wit_constr) then
     let c = out_gen (topwit wit_constr) v in
-    ([], c)
+    ([], EConstr.of_constr c)
   else if has_type v (topwit wit_constr_under_binders) then
     out_gen (topwit wit_constr_under_binders) v
   else if has_type v (topwit wit_var) then
@@ -229,6 +229,7 @@ let coerce_to_uconstr env v =
 
 let coerce_to_closed_constr env v =
   let ids,c = coerce_to_constr env v in
+  let c = EConstr.Unsafe.to_constr c in
   let () = if not (List.is_empty ids) then raise (CannotCoerceTo "a term") in
   c
 

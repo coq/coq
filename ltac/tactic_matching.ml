@@ -23,8 +23,8 @@ module NamedDecl = Context.Named.Declaration
     substitution mapping corresponding to matched hypotheses. *)
 type 'a t = {
   subst : Constr_matching.bound_ident_map * Pattern.extended_patvar_map ;
-  context : Term.constr Id.Map.t;
-  terms : Term.constr Id.Map.t;
+  context : EConstr.constr Id.Map.t;
+  terms : EConstr.constr Id.Map.t;
   lhs : 'a;
 }
 
@@ -84,7 +84,7 @@ let equal_instances env sigma (ctx',c') (ctx,c) =
   (* How to compare instances? Do we want the terms to be convertible?
      unifiable? Do we want the universe levels to be relevant? 
      (historically, conv_x is used) *)
-  CList.equal Id.equal ctx ctx' && Reductionops.is_conv env sigma (EConstr.of_constr c') (EConstr.of_constr c)
+  CList.equal Id.equal ctx ctx' && Reductionops.is_conv env sigma c' c
 
 
 (** Merges two substitutions. Raises [Not_coherent_metas] when
@@ -233,7 +233,7 @@ module PatternMatching (E:StaticEnvironment) = struct
     | Term p ->
         begin 
           try
-            put_subst (Constr_matching.extended_matches E.env E.sigma p (EConstr.of_constr term)) <*>
+            put_subst (Constr_matching.extended_matches E.env E.sigma p term) <*>
             return lhs
           with Constr_matching.PatternMatchingFailure -> fail
         end
@@ -252,7 +252,7 @@ module PatternMatching (E:StaticEnvironment) = struct
             | Some nctx -> Proofview.tclOR (k lhs nctx) (fun e -> (map s e).stream k ctx)
         }
       in
-      map (Constr_matching.match_subterm_gen E.env E.sigma with_app_context p (EConstr.of_constr term)) imatching_error
+      map (Constr_matching.match_subterm_gen E.env E.sigma with_app_context p term) imatching_error
 
 
   (** [rule_match_term term rule] matches the term [term] with the
@@ -284,8 +284,8 @@ module PatternMatching (E:StaticEnvironment) = struct
     pick hyps >>= fun decl ->
     let id = NamedDecl.get_id decl in
     let refresh = is_local_def decl in
-    pattern_match_term refresh pat (NamedDecl.get_type decl) () <*>
-    put_terms (id_map_try_add_name hypname (Term.mkVar id) empty_term_subst) <*>
+    pattern_match_term refresh pat (EConstr.of_constr (NamedDecl.get_type decl)) () <*>
+    put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
     return id
 
   (** [hyp_match_type hypname bodypat typepat hyps] matches a single
@@ -295,9 +295,11 @@ module PatternMatching (E:StaticEnvironment) = struct
   let hyp_match_body_and_type hypname bodypat typepat hyps =
     pick hyps >>= function
       | LocalDef (id,body,hyp) ->
+          let body = EConstr.of_constr body in
+          let hyp = EConstr.of_constr hyp in
           pattern_match_term false bodypat body () <*>
           pattern_match_term true typepat hyp () <*>
-          put_terms (id_map_try_add_name hypname (Term.mkVar id) empty_term_subst) <*>
+          put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
           return id
       | LocalAssum (id,hyp) -> fail
 

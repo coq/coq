@@ -445,7 +445,7 @@ let pretype_id pretype k0 loc env evdref lvar id =
     try
       let (ids,c) = Id.Map.find id lvar.ltac_constrs in
       let subst = List.map (invert_ltac_bound_name lvar env id) ids in
-      let c = substl subst (EConstr.of_constr c) in
+      let c = substl subst c in
 	{ uj_val = c; uj_type = protected_get_type_of env sigma c }
     with Not_found -> try
        let {closure;term} = Id.Map.find id lvar.ltac_uconstrs in

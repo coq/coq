@@ -403,7 +403,7 @@ let quote_terms ivs lc =
         | (lhs, rhs)::tail ->
             begin try
               let s1 = Id.Map.bindings (matches (Global.env ()) Evd.empty rhs (EConstr.of_constr c)) in
-              let s2 = List.map (fun (i,c_i) -> (coerce_meta_out i,aux c_i)) s1
+              let s2 = List.map (fun (i,c_i) -> (coerce_meta_out i,aux (EConstr.Unsafe.to_constr c_i))) s1
 	      in
               Termops.subst_meta s2 lhs
             with PatternMatchingFailure -> auxl tail

@@ -239,7 +239,7 @@ let pr_value env v =
   else if has_type v (topwit wit_constr_context) then
     let c = out_gen (topwit wit_constr_context) v in
     match env with
-    | Some (env,sigma) -> pr_lconstr_env env sigma c
+    | Some (env,sigma) -> pr_lconstr_env env sigma (EConstr.Unsafe.to_constr c)
     | _ -> str "a term"
   else if has_type v (topwit wit_constr) then
     let c = out_gen (topwit wit_constr) v in
@@ -334,7 +334,7 @@ let (+++) lfun1 lfun2 = Id.Map.fold Id.Map.add lfun1 lfun2
 
 let extend_values_with_bindings (ln,lm) lfun =
   let of_cub c = match c with
-  | [], c -> Value.of_constr c
+  | [], c -> Value.of_constr (EConstr.Unsafe.to_constr c)
   | _ -> in_gen (topwit wit_constr_under_binders) c
   in
   (* For compatibility, bound variables are visible only if no other
@@ -790,6 +790,7 @@ let interp_may_eval f ist env sigma = function
       (try
 	let (sigma,ic) = f ist env sigma c in
 	let ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
+	let ctxt = EConstr.Unsafe.to_constr ctxt in
 	let evdref = ref sigma in
 	let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
 	let c = Typing.e_solve_evars env evdref (EConstr.of_constr c) in
@@ -860,6 +861,7 @@ let rec message_of_value v =
     end }
   else if has_type v (topwit wit_constr_context) then
     let c = out_gen (topwit wit_constr_context) v in
+    let c = EConstr.Unsafe.to_constr c in
     Ftactic.nf_enter { enter = begin fun gl -> Ftactic.return (pr_constr_env (pf_env gl) (project gl) c) end }
   else if has_type v (topwit wit_uconstr) then
     let c = out_gen (topwit wit_uconstr) v in
@@ -1464,7 +1466,7 @@ and interp_letin ist llc u =
 and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
   let (>>=) = Ftactic.bind in
   let lctxt = Id.Map.map interp_context context in
-  let hyp_subst = Id.Map.map Value.of_constr terms in
+  let hyp_subst = Id.Map.map (EConstr.Unsafe.to_constr %> Value.of_constr) terms in
   let lfun = extend_values_with_bindings subst (lctxt +++ hyp_subst +++ ist.lfun) in
   let ist = { ist with lfun } in
   val_interp ist lhs >>= fun v ->
@@ -1518,6 +1520,7 @@ and interp_match ist lz constr lmr =
           Proofview.tclZERO ~info e
     end
   end >>= fun constr ->
+  let constr = EConstr.of_constr constr in
   Ftactic.enter { enter = begin fun gl ->
     let sigma = project gl in
     let env = Proofview.Goal.env gl in
@@ -1533,6 +1536,7 @@ and interp_match_goal ist lz lr lmr =
       let hyps = Proofview.Goal.hyps gl in
       let hyps = if lr then List.rev hyps else hyps in
       let concl = Proofview.Goal.concl gl in
+      let concl = EConstr.of_constr concl in
       let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
       interp_match_successes lz ist (Tactic_matching.match_goal env sigma hyps concl ilr)
     end }
@@ -1844,7 +1848,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let c_interp patvars = { Sigma.run = begin fun sigma ->
 	  let lfun' = Id.Map.fold (fun id c lfun ->
-	    Id.Map.add id (Value.of_constr c) lfun) 
+	    Id.Map.add id (Value.of_constr (EConstr.Unsafe.to_constr c)) lfun) 
 	    patvars ist.lfun
 	  in
 	  let sigma = Sigma.to_evar_map sigma in
@@ -1871,7 +1875,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let to_catch = function Not_found -> true | e -> CErrors.is_anomaly e in
         let c_interp patvars = { Sigma.run = begin fun sigma ->
           let lfun' = Id.Map.fold (fun id c lfun ->
-            Id.Map.add id (Value.of_constr c) lfun) 
+            Id.Map.add id (Value.of_constr (EConstr.Unsafe.to_constr c)) lfun) 
             patvars ist.lfun
           in
           let ist = { ist with lfun = lfun' } in

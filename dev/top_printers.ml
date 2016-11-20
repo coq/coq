@@ -109,7 +109,7 @@ let ppididmap = ppidmap (fun _ -> pr_id)
 
 let prconstrunderbindersidmap = pridmap (fun _ (l,c) ->
   hov 1 (str"[" ++  prlist_with_sep spc Id.print l ++ str"]")
-  ++ str "," ++ spc () ++ Termops.print_constr c)
+  ++ str "," ++ spc () ++ Termops.print_constr (EConstr.Unsafe.to_constr c))
 
 let ppconstrunderbindersidmap l = pp (prconstrunderbindersidmap l)
 

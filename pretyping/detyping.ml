@@ -745,6 +745,7 @@ let detype_closed_glob ?lax isgoal avoid env sigma t =
         with Not_found -> try
           (* assumes [detype] does not raise [Not_found] exceptions *)
           let (b,c) = Id.Map.find id cl.typed in
+          let c = EConstr.Unsafe.to_constr c in
           (* spiwack: I'm not sure it is the right thing to do,
              but I'm computing the detyping environment like
              [Printer.pr_constr_under_binders_env] does. *)

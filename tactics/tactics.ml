@@ -816,7 +816,6 @@ let e_change_in_hyp redfun (id,where) =
 type change_arg = Pattern.patvar_map -> EConstr.constr Sigma.run
 
 let make_change_arg c pats =
-  let pats = Id.Map.map EConstr.of_constr pats in
   { run = fun sigma -> Sigma.here (replace_vars (Id.Map.bindings pats) c) sigma }
 
 let check_types env sigma mayneedglobalcheck deep newc origc =

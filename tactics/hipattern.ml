@@ -353,8 +353,6 @@ let is_imp_term sigma c = op2bool (match_with_imp_term sigma c)
 let match_with_nottype sigma t =
   try
     let (arg,mind) = match_arrow_pattern sigma t in
-    let arg = EConstr.of_constr arg in
-    let mind = EConstr.of_constr mind in
     if is_empty_type sigma mind then Some (mind,arg) else None
   with PatternMatchingFailure -> None
 
@@ -470,11 +468,11 @@ let match_eq_nf gls eqn (ref, hetero) =
   let n = if hetero then 4 else 3 in
   let args = List.init n (fun i -> mkGPatVar ("X" ^ string_of_int (i + 1))) in
   let pat = mkPattern (mkGAppRef ref args) in
-  let pf_whd_all gls c = EConstr.of_constr (pf_whd_all gls (EConstr.of_constr c)) in
+  let pf_whd_all gls c = EConstr.of_constr (pf_whd_all gls c) in
   match Id.Map.bindings (pf_matches gls pat eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
-	(EConstr.of_constr t,pf_whd_all gls x,pf_whd_all gls y)
+	(t,pf_whd_all gls x,pf_whd_all gls y)
     | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 terms")
 
 let dest_nf_eq gls eqn =
@@ -502,7 +500,7 @@ let coq_sig_pattern =
 
 let match_sigma sigma t =
   match Id.Map.bindings (matches sigma (Lazy.force coq_sig_pattern) t) with
-    | [(_,a); (_,p)] -> (EConstr.of_constr a,EConstr.of_constr p)
+    | [(_,a); (_,p)] -> (a,p)
     | _ -> anomaly (Pp.str "Unexpected pattern")
 
 let is_matching_sigma sigma t = is_matching sigma (Lazy.force coq_sig_pattern) t
@@ -548,9 +546,6 @@ let match_eqdec sigma t =
         false,op_or,matches sigma (Lazy.force coq_eqdec_rev_pattern) t in
   match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
-      let typ = EConstr.of_constr typ in
-      let c1 = EConstr.of_constr c1 in
-      let c2 = EConstr.of_constr c2 in
       eqonleft, EConstr.of_constr (Universes.constr_of_global (Lazy.force op)), c1, c2, typ
   | _ -> anomaly (Pp.str "Unexpected pattern")
 
