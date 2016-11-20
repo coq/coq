@@ -1034,14 +1034,14 @@ module Make
                 ++ prlist (pr_arg (pr_message_token pr.pr_name)) l),
               latom
             | TacFirst tl ->
-              keyword "first" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
+              hov 1 (keyword "first" ++ spc () ++ pr_seq_body (pr_tac ltop) tl), llet
             | TacSolve tl ->
-              keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
+              hov 1 (keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl), llet
             | TacComplete t ->
               pr_tac (lcomplete,E) t, lcomplete
             | TacSelect (s, tac) -> pr_goal_selector s ++ spc () ++ pr_tac ltop tac, latom
             | TacId l ->
-              keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
+              hov 1 (keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l), latom
             | TacAtom (loc,t) ->
               pr_with_comments loc (hov 1 (pr_atom pr strip_prod_binders tag_atom t)), ltatom
             | TacArg(_,Tacexp e) ->
@@ -1078,9 +1078,9 @@ module Make
           | ConstrMayEval c ->
             pr_may_eval pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c
           | TacFreshId l ->
-            keyword "fresh" ++ pr_fresh_ids l
+            hov 1 (keyword "fresh" ++ pr_fresh_ids l)
           | TacPretype c ->
-            keyword "type_term" ++ pr.pr_constr c
+            hov 1 (keyword "type_term" ++ pr.pr_constr c)
           | TacNumgoals ->
             keyword "numgoals"
           | (TacCall _|Tacexp _ | TacGeneric _) as a ->
