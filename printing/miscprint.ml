@@ -36,16 +36,9 @@ and pr_or_and_intro_pattern prc = function
   | IntroAndPattern pl ->
       str "(" ++ hv 0 (prlist_with_sep pr_comma (pr_intro_pattern prc) pl) ++ str ")"
   | IntroOrPattern pll ->
-      let n = List.length pll in
-      let pll = Util.List.map_i (fun i l ->
-        if Util.List.is_empty l then
-          if i=1 then if CLexer.is_keyword "[|" then spc () else mt () else
-          if i=n then if CLexer.is_keyword "|]" then spc () else mt () else
-            spc () (* because || is a keyword *)
-        else
-          prlist_with_sep spc (pr_intro_pattern prc) l) 1 pll in
-      str "[" ++ hv 0 (prlist_with_sep (fun () -> str "|") (fun x -> x) pll) ++
-      str "]"
+      str "[ " ++
+      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc (pr_intro_pattern prc)) pll)
+      ++ str " ]"
 
 (** Printing of [move_location] *)
 
