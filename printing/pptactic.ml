@@ -219,7 +219,7 @@ module Make
     | ConstrContext ((_,id),c) ->
       hov 0
         (keyword "context" ++ spc () ++ pr_id id ++ spc () ++
-           str "[" ++ prlc c ++ str "]")
+           str "[ " ++ prlc c ++ str " ]")
     | ConstrTypeOf c ->
       hov 1 (keyword "type of" ++ spc() ++ prc c)
     | ConstrTerm c when test c ->
@@ -676,9 +676,9 @@ module Make
     | Subterm (b,None,a) ->
     (** ppedrot: we don't make difference between [appcontext] and [context]
         anymore, and the interpretation is governed by a flag instead. *)
-      keyword "context" ++ str" [" ++ pr_pat a ++ str "]"
+      keyword "context" ++ str" [ " ++ pr_pat a ++ str " ]"
     | Subterm (b,Some id,a) ->
-      keyword "context" ++ spc () ++ pr_id id ++ str "[" ++ pr_pat a ++ str "]"
+      keyword "context" ++ spc () ++ pr_id id ++ str "[ " ++ pr_pat a ++ str " ]"
 
   let pr_match_hyps pr_pat = function
     | Hyp (nal,mp) ->
