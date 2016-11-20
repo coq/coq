@@ -16,6 +16,7 @@ open Pcoq.Constr
 open Pltac
 open Hints
 open Tacexpr
+open Proofview.Notations
 
 DECLARE PLUGIN "g_auto"
 
@@ -149,7 +150,8 @@ TACTIC EXTEND autounfold_one
 
 TACTIC EXTEND autounfoldify
 | [ "autounfoldify" constr(x) ] -> [
-    let db = match Term.kind_of_term x with
+    Proofview.tclEVARMAP >>= fun sigma ->
+    let db = match EConstr.kind sigma (EConstr.of_constr x) with
       | Term.Const (c,_) -> Names.Label.to_string (Names.con_label c)
       | _ -> assert false
     in Eauto.autounfold ["core";db] Locusops.onConcl 
