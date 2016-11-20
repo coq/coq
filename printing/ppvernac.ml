@@ -1013,7 +1013,10 @@ module Make
             (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
                prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
                pr_syntax_modifiers
-               (match compat with None -> [] | Some v -> [SetCompatVersion v]))
+               (match compat with
+                | None -> []
+                | Some Flags.Current -> [SetOnlyParsing]
+                | Some v -> [SetCompatVersion v]))
         )
       | VernacDeclareImplicits (q,[]) ->
         return (
