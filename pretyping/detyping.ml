@@ -267,7 +267,7 @@ let rec decomp_branch tags nal b (avoid,env as e) sigma c =
   | [] -> (List.rev nal,(e,c))
   | b::tags ->
       let na,c,f,body,t =
-        match kind_of_term (strip_outer_cast sigma (EConstr.of_constr c)), b with
+        match kind_of_term (EConstr.Unsafe.to_constr (strip_outer_cast sigma (EConstr.of_constr c))), b with
 	| Lambda (na,t,c),false -> na,c,compute_displayed_let_name_in,None,Some t
 	| LetIn (na,b,t,c),true ->
             na,c,compute_displayed_name_in,Some b,Some t
@@ -503,6 +503,7 @@ let rec detype flags avoid env sigma t =
 	      let body = pb.Declarations.proj_body in
 	      let ty = Retyping.get_type_of (snd env) sigma (EConstr.of_constr c) in
 	      let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma (EConstr.of_constr ty) in
+	      let args = List.map EConstr.Unsafe.to_constr args in
 	      let body' = strip_lam_assum body in
 	      let body' = subst_instance_constr u body' in
 		substl (c :: List.rev args) body'

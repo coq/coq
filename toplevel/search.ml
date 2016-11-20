@@ -111,20 +111,20 @@ let generic_search glnumopt fn =
 
 (** This function tries to see whether the conclusion matches a pattern. *)
 (** FIXME: this is quite dummy, we may find a more efficient algorithm. *)
-let rec pattern_filter pat ref env typ =
-  let typ = Termops.strip_outer_cast Evd.empty (EConstr.of_constr typ) (** FIXME *) in
-  if Constr_matching.is_matching env Evd.empty pat (EConstr.of_constr typ) then true
-  else match kind_of_term typ with
+let rec pattern_filter pat ref env sigma typ =
+  let typ = Termops.strip_outer_cast sigma typ in
+  if Constr_matching.is_matching env sigma pat typ then true
+  else match EConstr.kind sigma typ with
   | Prod (_, _, typ)
-  | LetIn (_, _, _, typ) -> pattern_filter pat ref env typ
+  | LetIn (_, _, _, typ) -> pattern_filter pat ref env sigma typ
   | _ -> false
 
-let rec head_filter pat ref env typ =
-  let typ = Termops.strip_outer_cast Evd.empty (EConstr.of_constr typ) (** FIXME *) in
-  if Constr_matching.is_matching_head env Evd.empty pat (EConstr.of_constr typ) then true
-  else match kind_of_term typ with
+let rec head_filter pat ref env sigma typ =
+  let typ = Termops.strip_outer_cast sigma typ in
+  if Constr_matching.is_matching_head env sigma pat typ then true
+  else match EConstr.kind sigma typ with
   | Prod (_, _, typ)
-  | LetIn (_, _, _, typ) -> head_filter pat ref env typ
+  | LetIn (_, _, _, typ) -> head_filter pat ref env sigma typ
   | _ -> false
 
 let full_name_of_reference ref =
@@ -162,7 +162,7 @@ let search_pattern gopt pat mods pr_search =
   let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     module_filter mods ref env typ &&
-    pattern_filter pat ref env typ &&
+    pattern_filter pat ref env Evd.empty (* FIXME *) (EConstr.of_constr typ) &&
     blacklist_filter ref env typ
   in
   let iter ref env typ =
@@ -186,8 +186,8 @@ let search_rewrite gopt pat mods pr_search =
   let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     module_filter mods ref env typ &&
-    (pattern_filter pat1 ref env typ ||
-       pattern_filter pat2 ref env typ) &&
+    (pattern_filter pat1 ref env Evd.empty (* FIXME *) (EConstr.of_constr typ) ||
+       pattern_filter pat2 ref env Evd.empty (EConstr.of_constr typ)) &&
     blacklist_filter ref env typ
   in
   let iter ref env typ =
@@ -201,7 +201,7 @@ let search_by_head gopt pat mods pr_search =
   let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     module_filter mods ref env typ &&
-    head_filter pat ref env typ &&
+    head_filter pat ref env Evd.empty (* FIXME *) (EConstr.of_constr typ) &&
     blacklist_filter ref env typ
   in
   let iter ref env typ =

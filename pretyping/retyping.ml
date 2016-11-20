@@ -59,7 +59,7 @@ let local_def (na, b, t) =
   LocalDef (na, inj b, inj t)
 
 let get_type_from_constraints env sigma t =
-  if isEvar sigma (EConstr.of_constr (fst (decompose_app_vect sigma t))) then
+  if isEvar sigma (fst (decompose_app_vect sigma t)) then
     match
       List.map_filter (fun (pbty,env,t1,t2) ->
         if is_fconv Reduction.CONV env sigma t (EConstr.of_constr t1) then Some t2
@@ -102,7 +102,7 @@ let retype ?(polyprop=true) sigma =
   let rec type_of env cstr =
     match EConstr.kind sigma cstr with
     | Meta n ->
-      EConstr.of_constr (try strip_outer_cast sigma (EConstr.of_constr (Evd.meta_ftype sigma n).Evd.rebus)
+      (try strip_outer_cast sigma (EConstr.of_constr (Evd.meta_ftype sigma n).Evd.rebus)
        with Not_found -> retype_error (BadMeta n))
     | Rel n ->
 	let ty = EConstr.of_constr (RelDecl.get_type (lookup_rel n env)) in
@@ -135,10 +135,10 @@ let retype ?(polyprop=true) sigma =
     | CoFix (i,(_,tys,_)) -> tys.(i)
     | App(f,args) when is_template_polymorphic env sigma f ->
 	let t = type_of_global_reference_knowing_parameters env f args in
-        EConstr.of_constr (strip_outer_cast sigma (subst_type env sigma t (Array.to_list args)))
+        strip_outer_cast sigma (subst_type env sigma t (Array.to_list args))
     | App(f,args) ->
-        EConstr.of_constr (strip_outer_cast sigma
-          (subst_type env sigma (type_of env f) (Array.to_list args)))
+        strip_outer_cast sigma
+          (subst_type env sigma (type_of env f) (Array.to_list args))
     | Proj (p,c) ->
        let ty = type_of env c in
        EConstr.of_constr (try
@@ -259,6 +259,5 @@ let expand_projection env sigma pr c args =
     try Inductiveops.find_mrectype env sigma (EConstr.of_constr ty) 
     with Not_found -> retype_error BadRecursiveType
   in
-  let ind_args = List.map EConstr.of_constr ind_args in
     mkApp (mkConstU (Projection.constant pr,u), 
 	   Array.of_list (ind_args @ (c :: args)))

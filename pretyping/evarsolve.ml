@@ -518,7 +518,6 @@ let is_unification_pattern (env,nb) evd f l t =
 let solve_pattern_eqn env sigma l c =
   let c' = List.fold_right (fun a c ->
     let c' = subst_term sigma (lift 1 a) (lift 1 c) in
-    let c' = EConstr.of_constr c' in
     match EConstr.kind sigma a with
       (* Rem: if [a] links to a let-in, do as if it were an assumption *)
       | Rel n ->
@@ -557,7 +556,7 @@ let make_projectable_subst aliases sigma evi args =
         | LocalAssum (id,c), a::rest ->
             let cstrs =
               let a',args = decompose_app_vect sigma a in
-              match EConstr.kind sigma (EConstr.of_constr a') with
+              match EConstr.kind sigma a' with
               | Construct cstr ->
                   let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
                   Constrmap.add (fst cstr) ((args,id)::l) cstrs
@@ -691,7 +690,7 @@ let find_projectable_constructor env evd cstr k args cstr_subst =
       List.filter (fun (args',id) ->
         (* is_conv is maybe too strong (and source of useless computation) *)
         (* (at least expansion of aliases is needed) *)
-        Array.for_all2 (fun c1 c2 -> is_conv env evd c1 (EConstr.of_constr c2)) args args') l in
+        Array.for_all2 (fun c1 c2 -> is_conv env evd c1 c2) args args') l in
     List.map snd l
   with Not_found ->
     []
@@ -1104,14 +1103,14 @@ exception CannotProject of evar_map * EConstr.existential
 
 let rec is_constrainable_in top evd k (ev,(fv_rels,fv_ids) as g) t =
   let f,args = decompose_app_vect evd t in
-  match EConstr.kind evd (EConstr.of_constr f) with
+  match EConstr.kind evd f with
   | Construct ((ind,_),u) ->
     let n = Inductiveops.inductive_nparams ind in
     if n > Array.length args then true (* We don't try to be more clever *)
     else
       let params = fst (Array.chop n args) in
-      Array.for_all (EConstr.of_constr %> is_constrainable_in false evd k g) params
-  | Ind _ -> Array.for_all (EConstr.of_constr %> is_constrainable_in false evd k g) args
+      Array.for_all (is_constrainable_in false evd k g) params
+  | Ind _ -> Array.for_all (is_constrainable_in false evd k g) args
   | Prod (na,t1,t2) -> is_constrainable_in false evd k g t1 && is_constrainable_in false evd k g t2
   | Evar (ev',_) -> top || not (Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
   | Var id -> Id.Set.mem id fv_ids
@@ -1463,8 +1462,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
         progress := true;
         match
           let c,args = decompose_app_vect !evdref t in
-          let args = Array.map EConstr.of_constr args in
-          match EConstr.kind !evdref (EConstr.of_constr c) with
+          match EConstr.kind !evdref c with
           | Construct (cstr,u) when noccur_between !evdref 1 k t ->
             (* This is common case when inferring the return clause of match *)
             (* (currently rudimentary: we do not treat the case of multiple *)

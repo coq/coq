@@ -528,7 +528,7 @@ fun env sigma p -> function
   let Sigma (rem, sigma, r) = mk_holes env sigma (p +> q) rem in
   Sigma (arg :: rem, sigma, r)
 
-let rec check_mutind env sigma k cl = match EConstr.kind sigma (EConstr.of_constr (strip_outer_cast sigma cl)) with
+let rec check_mutind env sigma k cl = match EConstr.kind sigma (strip_outer_cast sigma cl) with
 | Prod (na, c1, b) ->
   if Int.equal k 1 then
     try
@@ -1647,10 +1647,8 @@ let make_projection env sigma params cstr sign elim i n c u =
       then
         let t = lift (i+1-n) t in
 	let abselim = beta_applist sigma (elim, params@[t;branch]) in
-	let abselim = EConstr.of_constr abselim in
 	let args = Array.map EConstr.of_constr (Context.Rel.to_extended_vect 0 sign) in
 	let c = beta_applist sigma (abselim, [mkApp (c, args)]) in
-	let c = EConstr.of_constr c in
 	  Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
       else
 	None
@@ -2856,7 +2854,7 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let open Context.Rel.Declaration in
   let decls,cl = decompose_prod_n_assum sigma i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
-  let newdecls,_ = decompose_prod_n_assum sigma i (EConstr.of_constr (subst_term_gen sigma EConstr.eq_constr_nounivs c dummy_prod)) in
+  let newdecls,_ = decompose_prod_n_assum sigma i (subst_term_gen sigma EConstr.eq_constr_nounivs c dummy_prod) in
   let cl',sigma' = subst_closed_term_occ env sigma (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
   let cl' = EConstr.of_constr cl' in
   let na = generalized_name sigma c t ids cl' na in

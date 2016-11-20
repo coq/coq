@@ -786,7 +786,7 @@ let rec consider_match may_intro introduced available expected gls =
 
 let consider_tac c hyps gls =
   let c = EConstr.of_constr c in
-  match kind_of_term (strip_outer_cast (project gls) c) with
+  match EConstr.kind (project gls) (strip_outer_cast (project gls) c) with
       Var id ->
 	consider_match false [] [id] hyps gls
     | _ ->
@@ -810,6 +810,9 @@ let rec take_tac wits gls =
 
 
 (* tactics for define *)
+
+let subst_term sigma c t =
+  EConstr.Unsafe.to_constr (subst_term sigma c t)
 
 let rec build_function sigma args body =
   match args with

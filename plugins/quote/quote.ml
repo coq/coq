@@ -183,7 +183,7 @@ type inversion_scheme = {
 
 let i_can't_do_that () = error "Quote: not a simple fixpoint"
 
-let decomp_term gl c = kind_of_term (Termops.strip_outer_cast (Tacmach.New.project gl) (EConstr.of_constr c))
+let decomp_term gl c = kind_of_term (EConstr.Unsafe.to_constr (Termops.strip_outer_cast (Tacmach.New.project gl) (EConstr.of_constr c)))
 
 (*s [compute_lhs typ i nargsi] builds the term \texttt{(C ?nargsi ...
   ?2 ?1)}, where \texttt{C} is the [i]-th constructor of inductive

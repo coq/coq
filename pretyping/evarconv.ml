@@ -170,7 +170,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       let (i,u), ind_args = 
 	try Inductiveops.find_mrectype env sigma (EConstr.of_constr ty)
 	with _ -> raise Not_found
-      in Stack.append_app_list (List.map EConstr.of_constr ind_args) Stack.empty, c, sk1
+      in Stack.append_app_list ind_args Stack.empty, c, sk1
     | None ->
       match Stack.strip_n_app nparams sk1 with
       | Some (params1, c1, extra_args1) -> params1, c1, extra_args1
@@ -188,7 +188,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let t' = subst_univs_level_constr subst t' in
   let bs' = List.map (EConstr.of_constr %> subst_univs_level_constr subst) bs in
   let h, _ = decompose_app_vect sigma t' in
-    ctx',(EConstr.of_constr h, t2),c',bs',(Stack.append_app_list params Stack.empty,params1),
+    ctx',(h, t2),c',bs',(Stack.append_app_list params Stack.empty,params1),
     (Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
     (n, Stack.zip sigma (t2,sk2))
 
@@ -907,7 +907,7 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
        (fun i -> exact_ise_stack2 env i (evar_conv_x trs) sk1 sk2);
        test;
        (fun i -> evar_conv_x trs env i CONV h2
-	 (EConstr.of_constr (fst (decompose_app_vect i (substl ks h)))))]
+	 (fst (decompose_app_vect i (substl ks h))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =

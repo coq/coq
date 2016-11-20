@@ -971,7 +971,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  let pj = pretype_type empty_valcon env_p evdref lvar p in
 	  let ccl = nf_evar !evdref pj.utj_val in
 	  let pred = it_mkLambda_or_LetIn ccl psign in
-	  let typ = lift (- nar) (EConstr.of_constr (beta_applist !evdref (pred,[cj.uj_val]))) in
+	  let typ = lift (- nar) (beta_applist !evdref (pred,[cj.uj_val])) in
 	    pred, typ
 	| None ->
 	  let p = match tycon with
@@ -987,7 +987,6 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	let n = Context.Rel.length cs.cs_args in
 	let pi = lift n pred in (* liftn n 2 pred ? *)
 	let pi = beta_applist !evdref (pi, [EConstr.of_constr (build_dependent_constructor cs)]) in
-	let pi = EConstr.of_constr pi in
 	let csgn =
 	  if not !allow_anonymous_refs then
 	    List.map (set_name Anonymous) cs.cs_args

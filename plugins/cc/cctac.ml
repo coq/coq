@@ -87,6 +87,7 @@ let rec decompose_term env sigma t=
 	(Appli (Symb (mkConst (Projection.constant p')), decompose_term env sigma c))
     | _ ->
        let t = Termops.strip_outer_cast sigma (EConstr.of_constr t) in
+       let t = EConstr.Unsafe.to_constr t in
        if closed0 t then Symb t else raise Not_found
 
 (* decompose equality in members and type *)

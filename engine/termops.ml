@@ -276,10 +276,11 @@ let last_arg sigma c = match EConstr.kind sigma c with
 (* Get the last arg of an application *)
 let decompose_app_vect sigma c =
   match EConstr.kind sigma c with
-  | App (f,cl) -> (EConstr.Unsafe.to_constr f, Array.map EConstr.Unsafe.to_constr cl)
-  | _ -> (EConstr.Unsafe.to_constr c,[||])
+  | App (f,cl) -> (f, cl)
+  | _ -> (c,[||])
 
 let adjust_app_list_size f1 l1 f2 l2 =
+  let open EConstr in
   let len1 = List.length l1 and len2 = List.length l2 in
   if Int.equal len1 len2 then (f1,l1,f2,l2)
   else if len1 < len2 then
@@ -698,13 +699,13 @@ let rec subst_meta bl c =
 
 let rec strip_outer_cast sigma c = match EConstr.kind sigma c with
   | Cast (c,_,_) -> strip_outer_cast sigma c
-  | _ -> EConstr.Unsafe.to_constr c
+  | _ -> c
 
 (* flattens application lists throwing casts in-between *)
 let collapse_appl sigma c = match EConstr.kind sigma c with
   | App (f,cl) ->
       let rec collapse_rec f cl2 =
-        match EConstr.kind sigma (EConstr.of_constr (strip_outer_cast sigma f)) with
+        match EConstr.kind sigma (strip_outer_cast sigma f) with
         | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
         | _ -> EConstr.mkApp (f,cl2)
       in
@@ -744,15 +745,17 @@ let my_prefix_application sigma eq_fun (k,c) by_c t =
    works if [c] has rels *)
 
 let subst_term_gen sigma eq_fun c t =
+  let open EConstr in
+  let open Vars in
   let rec substrec (k,c as kc) t =
     match prefix_application sigma eq_fun kc t with
       | Some x -> x
       | None ->
     if eq_fun sigma c t then EConstr.mkRel k
     else
-      EConstr.map_with_binders sigma (fun (k,c) -> (k+1, EConstr.Vars.lift 1 c)) substrec kc t
+      EConstr.map_with_binders sigma (fun (k,c) -> (k+1,lift 1 c)) substrec kc t
   in
-  EConstr.Unsafe.to_constr (substrec (1,c) t)
+  substrec (1,c) t
 
 let subst_term sigma c t = subst_term_gen sigma EConstr.eq_constr c t
 

@@ -462,7 +462,6 @@ let raw_inversion inv_kind id status names =
         Reductionops.beta_applist sigma (elim_predicate, realargs),
         case_nodep_then_using
     in
-    let cut_concl = EConstr.of_constr cut_concl in
     let refined id =
       let prf = mkApp (mkVar id, args) in
       Refine.refine { run = fun h -> Sigma (prf, h, Sigma.refl) }

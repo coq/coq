@@ -323,7 +323,7 @@ end) = struct
       | App (f, [| a; b; relb |]) when Termops.is_global sigma (pointwise_relation_ref ()) f ->
 	decomp_pointwise sigma (pred n) relb
       | App (f, [| a; b; arelb |]) when Termops.is_global sigma (forall_relation_ref ()) f ->
-	decomp_pointwise sigma (pred n) (EConstr.of_constr (Reductionops.beta_applist sigma (arelb, [mkRel 1])))
+	decomp_pointwise sigma (pred n) (Reductionops.beta_applist sigma (arelb, [mkRel 1]))
       | _ -> invalid_arg "decomp_pointwise"
 
   let rec apply_pointwise sigma rel = function
@@ -332,7 +332,7 @@ end) = struct
       | App (f, [| a; b; relb |]) when Termops.is_global sigma (pointwise_relation_ref ()) f ->
 	apply_pointwise sigma relb args
       | App (f, [| a; b; arelb |]) when Termops.is_global sigma (forall_relation_ref ()) f ->
-	apply_pointwise sigma (EConstr.of_constr (Reductionops.beta_applist sigma (arelb, [arg]))) args
+	apply_pointwise sigma (Reductionops.beta_applist sigma (arelb, [arg])) args
       | _ -> invalid_arg "apply_pointwise")
     | [] -> rel
 
@@ -1000,7 +1000,6 @@ let fold_match ?(force=false) env sigma c =
   in
   let app =
     let ind, args = Inductiveops.find_mrectype env sigma cty in
-    let args = List.map EConstr.of_constr args in
     let pars, args = List.chop ci.ci_npar args in
     let meths = List.map (fun br -> br) (Array.to_list brs) in
       applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])

@@ -15,7 +15,7 @@ let get_inductive dir s =
   Lazy.from_fun (fun () -> Globnames.destIndRef (glob_ref ()))
 
 let decomp_term sigma (c : Term.constr) =
-  Term.kind_of_term (Termops.strip_outer_cast sigma (EConstr.of_constr c))
+  Term.kind_of_term (EConstr.Unsafe.to_constr (Termops.strip_outer_cast sigma (EConstr.of_constr c)))
 
 let lapp c v  = Term.mkApp (Lazy.force c, v)
 

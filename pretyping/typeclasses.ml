@@ -156,17 +156,17 @@ let class_of_constr sigma c =
   try Some (dest_class_arity (Global.env ()) sigma c)
   with e when CErrors.noncritical e -> None
 
-let is_class_constr c = 
-  try let gr, u = Universes.global_of_constr c in
+let is_class_constr sigma c = 
+  try let gr, u = Termops.global_of_constr sigma c in
 	Refmap.mem gr !classes
   with Not_found -> false
 
 let rec is_class_type evd c =
   let c, _ = Termops.decompose_app_vect evd c in
-    match EConstr.kind evd (EConstr.of_constr c) with
+    match EConstr.kind evd c with
     | Prod (_, _, t) -> is_class_type evd t
     | Cast (t, _, _) -> is_class_type evd t
-    | _ -> is_class_constr c
+    | _ -> is_class_constr evd c
       
 let is_class_evar evd evi =
   is_class_type evd (EConstr.of_constr evi.Evd.evar_concl)

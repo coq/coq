@@ -50,7 +50,6 @@ exception Bound
 
 let head_constr_bound sigma t =
   let t = strip_outer_cast sigma t in
-  let t = EConstr.of_constr t in
   let _,ccl = decompose_prod_assum sigma t in
   let hd,args = decompose_app sigma ccl in
   match EConstr.kind sigma hd with
@@ -66,11 +65,8 @@ let head_constr sigma c =
 
 let decompose_app_bound sigma t =
   let t = strip_outer_cast sigma t in
-  let t = EConstr.of_constr t in
   let _,ccl = decompose_prod_assum sigma t in
   let hd,args = decompose_app_vect sigma ccl in
-  let hd = EConstr.of_constr hd in
-  let args = Array.map EConstr.of_constr args in
   match EConstr.kind sigma hd with
     | Const (c,u) -> ConstRef c, args
     | Ind (i,u) -> IndRef i, args
@@ -754,7 +750,6 @@ let secvars_of_global env gr =
 let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
   let secvars = secvars_of_constr env sigma c in
   let cty = strip_outer_cast sigma cty in
-  let cty = EConstr.of_constr cty in
     match EConstr.kind sigma cty with
     | Prod _ -> failwith "make_exact_entry"
     | _ ->

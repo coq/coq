@@ -632,7 +632,7 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM 
 
 let rec is_neutral env sigma ts t =
   let (f, l) = decompose_app_vect sigma t in
-    match EConstr.kind sigma (EConstr.of_constr f) with
+    match EConstr.kind sigma f with
     | Const (c, u) ->
       not (Environ.evaluable_constant c env) ||
       not (is_transparent env (ConstKey c)) ||
@@ -1488,10 +1488,6 @@ let w_unify_core_0 env evd with_types cv_pb flags m n =
 let w_typed_unify env evd = w_unify_core_0 env evd true
 
 let w_typed_unify_array env evd flags f1 l1 f2 l2 =
-  let f1 = EConstr.of_constr f1 in
-  let f2 = EConstr.of_constr f2 in
-  let l1 = Array.map EConstr.of_constr l1 in
-  let l2 = Array.map EConstr.of_constr l2 in
   let f1,l1,f2,l2 = adjust_app_array_size f1 l1 f2 l2 in
   let (mc1,evd') = retract_coercible_metas evd in
   let fold_subst subst m n = unify_0_with_initial_metas subst true env CONV flags.core_unify_flags  m n in
@@ -1743,7 +1739,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   let bestexn = ref None in
   let kop = Keys.constr_key (EConstr.to_constr evd op) in
   let rec matchrec cl =
-    let cl = EConstr.of_constr (strip_outer_cast evd cl) in
+    let cl = strip_outer_cast evd cl in
     (try
        if closed0 evd cl && not (isEvar evd cl) && keyed_unify env evd kop cl then
        (try
@@ -1837,7 +1833,6 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
   in
   let rec matchrec cl =
     let cl = strip_outer_cast evd cl in
-    let cl = EConstr.of_constr cl in
       (bind
 	  (if closed0 evd cl
 	  then return (fun () -> w_typed_unify env evd CONV flags op cl,cl)
@@ -1898,7 +1893,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
                unify pre-existing non frozen evars of the goal or of the
                pattern *)
           set_no_delta_flags flags in
-	let t' = (EConstr.of_constr (strip_outer_cast evd op),t) in
+	let t' = (strip_outer_cast evd op,t) in
         let (evd',cl) =
           try
   	    if is_keyed_unification () then
@@ -1992,7 +1987,7 @@ let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
   let hd2,l2 = decompose_app_vect evd (EConstr.of_constr (whd_nored evd ty2)) in
   let is_empty1 = Array.is_empty l1 in
   let is_empty2 = Array.is_empty l2 in
-    match kind_of_term hd1, not is_empty1, kind_of_term hd2, not is_empty2 with
+    match EConstr.kind evd hd1, not is_empty1, EConstr.kind evd hd2, not is_empty2 with
       (* Pattern case *)
       | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
 	  when Int.equal (Array.length l1) (Array.length l2) ->

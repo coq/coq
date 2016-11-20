@@ -183,7 +183,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let flags = make_flags frzevars (Tacmach.New.project gl) rewrite_unif_flags eqclause in
   let occs =
     w_unify_to_subterm_all ~flags env eqclause.evd
-      (EConstr.of_constr (if l2r then c1 else c2),EConstr.of_constr concl)
+      ((if l2r then c1 else c2),concl)
   in List.map try_occ occs
 
 let instantiate_lemma gl c ty l l2r concl =
@@ -314,6 +314,7 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
     | None -> pf_nf_concl gl
     | Some id -> pf_get_hyp_typ id (Proofview.Goal.assume gl)
     in
+    let typ = EConstr.of_constr typ in
     let cs = instantiate_lemma typ in
     if firstonly then tclFIRST (List.map try_clause cs)
     else tclMAP try_clause cs
@@ -1207,7 +1208,6 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
  	| _ -> anomaly ~label:"sig_clausal_form" (Pp.str "should be a sigma type") in
       let ev = Evarutil.e_new_evar env evdref a in
       let rty = beta_applist sigma (p_i_minus_1,[ev]) in
-      let rty = EConstr.of_constr rty in
       let tuple_tail = sigrec_clausal_form (siglen-1) rty in
       let evopt = match EConstr.kind !evdref ev with Evar _ -> None | _ -> Some ev in
       match evopt with
@@ -1348,10 +1348,6 @@ let inject_if_homogenous_dependent_pair ty =
     if not (Termops.is_global sigma (sigTconstr()) eqTypeDest) then raise Exit;
     let hd1,ar1 = decompose_app_vect sigma t1 and
         hd2,ar2 = decompose_app_vect sigma t2 in
-    let hd1 = EConstr.of_constr hd1 in
-    let hd2 = EConstr.of_constr hd2 in
-    let ar1 = Array.map EConstr.of_constr ar1 in
-    let ar2 = Array.map EConstr.of_constr ar2 in
     if not (Termops.is_global sigma (existTconstr()) hd1) then raise Exit;
     if not (Termops.is_global sigma (existTconstr()) hd2) then raise Exit;
     let ind,_ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise Exit in
@@ -1565,7 +1561,6 @@ let decomp_tuple_term env sigma c t =
       let car_code = applist (mkConstU (destConstRef p1,i),[a;p;inner_code])
       and cdr_code = applist (mkConstU (destConstRef p2,i),[a;p;inner_code]) in
       let cdrtyp = beta_applist sigma (p,[car]) in
-      let cdrtyp = EConstr.of_constr cdrtyp in
       List.map (fun l -> ((car,a),car_code)::l) (decomprec cdr_code cdr cdrtyp)
     with Constr_matching.PatternMatchingFailure ->
       []
@@ -1593,13 +1588,11 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   (* We build the expected goal *)
   let abst_B =
     List.fold_right
-      (fun (e,t) body -> lambda_create env (t,EConstr.of_constr (subst_term sigma e body))) e1_list b in
+      (fun (e,t) body -> lambda_create env (t,subst_term sigma e body)) e1_list b in
   let pred_body = beta_applist sigma (abst_B,proj_list) in
-  let pred_body = EConstr.of_constr pred_body in
   let body = mkApp (lambda_create env (typ,pred_body),[|dep_pair1|]) in
   let expected_goal = beta_applist sigma (abst_B,List.map fst e2_list) in
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
-  let expected_goal = EConstr.of_constr expected_goal in
   let expected_goal = nf_betaiota sigma expected_goal in
   let expected_goal = EConstr.of_constr expected_goal in
   (* Retype to get universes right *)

@@ -21,7 +21,8 @@ exception UFAIL of constr*constr
    to the equation set. Raises UFAIL with a pair of  terms
 *)
 
-let strip_outer_cast t = strip_outer_cast Evd.empty (EConstr.of_constr t) (** FIXME *)
+let strip_outer_cast t =
+  EConstr.Unsafe.to_constr (strip_outer_cast Evd.empty (EConstr.of_constr t)) (** FIXME *)
 
 let unif t1 t2=
   let evd = Evd.empty in (** FIXME *)

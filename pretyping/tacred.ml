@@ -427,8 +427,6 @@ let solve_arity_problem env sigma fxminargs c =
   let rec check strict c =
     let c' = EConstr.of_constr (whd_betaiotazeta sigma c) in
     let (h,rcargs) = decompose_app_vect sigma c' in
-    let rcargs = Array.map EConstr.of_constr rcargs in
-    let h = EConstr.of_constr h in
     match EConstr.kind sigma h with
         Evar(i,_) when Evar.Map.mem i fxminargs && not (Evd.is_defined !evm i) ->
           let minargs = Evar.Map.find i fxminargs in
@@ -734,14 +732,13 @@ and reduce_params env sigma stack l =
 and whd_simpl_stack env sigma =
   let rec redrec s =
     let (x, stack) = decompose_app_vect sigma s in
-    let stack = Array.map_to_list EConstr.of_constr stack in
-    let x = EConstr.of_constr x in
+    let stack = Array.to_list stack in
     let s' = (x, stack) in
     match EConstr.kind sigma x with
       | Lambda (na,t,c) ->
           (match stack with
              | [] -> s'
-             | a :: rest -> redrec (EConstr.of_constr (beta_applist sigma (x, stack))))
+             | a :: rest -> redrec (beta_applist sigma (x, stack)))
       | LetIn (n,b,t,c) -> redrec (applist (Vars.substl [b] c, stack))
       | App (f,cl) -> redrec (applist(f, (Array.to_list cl)@stack))
       | Cast (c,_,_) -> redrec (applist(c, stack))
@@ -1122,14 +1119,12 @@ let fold_one_com com env sigma c =
      unfold produces it, so that the "unfold f; fold f" configuration works
      to refold fix expressions *)
   let a = subst_term sigma (EConstr.of_constr (clos_norm_flags unfold_side_red env sigma rcom)) c in
-  let a = EConstr.of_constr a in
   if not (EConstr.eq_constr sigma a c) then
     Vars.subst1 com a
   else
     (* Then reason on the non beta-iota-zeta form for compatibility -
        even if it is probably a useless configuration *)
     let a = subst_term sigma rcom c in
-    let a = EConstr.of_constr a in
     Vars.subst1 com a
 
 let fold_commands cl env sigma c =
@@ -1195,7 +1190,7 @@ let reduce_to_ind_gen allow_product env sigma t =
   let rec elimrec env t l =
     let t = hnf_constr env sigma t in
     let t = EConstr.of_constr t in
-    match EConstr.kind sigma (EConstr.of_constr (fst (decompose_app_vect sigma t))) with
+    match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
       | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
 	  let open Context.Rel.Declaration in
@@ -1208,7 +1203,7 @@ let reduce_to_ind_gen allow_product env sigma t =
 	     was partially the case between V5.10 and V8.1 *)
 	  let t' = whd_all env sigma t in
 	  let t' = EConstr.of_constr t' in
-	  match EConstr.kind sigma (EConstr.of_constr (fst (decompose_app_vect sigma t'))) with
+	  match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
 	    | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
 	    | _ -> user_err  (str"Not an inductive product.")
   in
@@ -1275,7 +1270,6 @@ let reduce_to_ref_gen allow_product env sigma ref t =
   (* lazily reduces to match the head of [t] with the expected [ref] *)
   let rec elimrec env t l =
     let c, _ = decompose_app_vect sigma t in
-    let c = EConstr.of_constr c in
     match EConstr.kind sigma c with
       | Prod (n,ty,t') ->
           if allow_product then

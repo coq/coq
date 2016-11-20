@@ -161,9 +161,9 @@ val make_arity : env -> bool -> inductive_family -> sorts -> types
 val build_branch_type : env -> bool -> constr -> constructor_summary -> types
 
 (** Raise [Not_found] if not given a valid inductive type *)
-val extract_mrectype : evar_map -> EConstr.t -> pinductive * constr list
-val find_mrectype    : env -> evar_map -> EConstr.types -> pinductive * constr list
-val find_mrectype_vect : env -> evar_map -> EConstr.types -> pinductive * constr array
+val extract_mrectype : evar_map -> EConstr.t -> pinductive * EConstr.constr list
+val find_mrectype    : env -> evar_map -> EConstr.types -> pinductive * EConstr.constr list
+val find_mrectype_vect : env -> evar_map -> EConstr.types -> pinductive * EConstr.constr array
 val find_rectype     : env -> evar_map -> EConstr.types -> inductive_type
 val find_inductive   : env -> evar_map -> EConstr.types -> pinductive * constr list
 val find_coinductive : env -> evar_map -> EConstr.types -> pinductive * constr list

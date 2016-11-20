@@ -81,12 +81,13 @@ let check_target clt = function
 
 (* condition d'heritage uniforme *)
 
-let uniform_cond nargs lt =
+let uniform_cond sigma nargs lt =
+  let open EConstr in
   let rec aux = function
     | (0,[]) -> true
     | (n,t::l) ->
-      let t = strip_outer_cast Evd.empty t (** FIXME *) in
-      isRel t && Int.equal (destRel t) n && aux ((n-1),l)
+      let t = strip_outer_cast sigma t in
+      isRel sigma t && Int.equal (destRel sigma t) n && aux ((n-1),l)
     | _ -> false
   in
   aux (nargs,lt)
@@ -263,7 +264,7 @@ let add_new_coercion_core coef stre poly source target isid =
       raise (CoercionError (NoSource source))
   in
   check_source (Some cls);
-  if not (uniform_cond (llp-ind) lvs) then
+  if not (uniform_cond Evd.empty (** FIXME *) (llp-ind) lvs) then
     warn_uniform_inheritance coef;
   let clt =
     try

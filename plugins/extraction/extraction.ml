@@ -42,11 +42,11 @@ let none = Evd.empty
 
 let type_of env c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_type_of ~polyprop env none (EConstr.of_constr (strip_outer_cast none (EConstr.of_constr c)))
+  Retyping.get_type_of ~polyprop env none (strip_outer_cast none (EConstr.of_constr c))
 
 let sort_of env c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_sort_family_of ~polyprop env none (EConstr.of_constr (strip_outer_cast none (EConstr.of_constr c)))
+  Retyping.get_sort_family_of ~polyprop env none (strip_outer_cast none (EConstr.of_constr c))
 
 (*S Generation of flags and signatures. *)
 

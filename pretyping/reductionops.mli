@@ -204,7 +204,7 @@ val shrink_eta : EConstr.constr -> EConstr.constr
 
 val safe_evar_value : evar_map -> existential -> constr option
 
-val beta_applist : evar_map -> EConstr.t * EConstr.t list -> constr
+val beta_applist : evar_map -> EConstr.t * EConstr.t list -> EConstr.constr
 
 val hnf_prod_app     : env ->  evar_map -> EConstr.t -> EConstr.t -> constr
 val hnf_prod_appvect : env ->  evar_map -> EConstr.t -> EConstr.t array -> constr

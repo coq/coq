@@ -138,7 +138,7 @@ let e_type_case_branches env evdref (ind,largs) pj c =
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
-  let realargs = List.map EConstr.of_constr realargs in
+  let params = List.map EConstr.Unsafe.to_constr params in
   let () = e_is_correct_arity env evdref c pj ind specif params in
   let lc = build_branches_type ind specif params (EConstr.to_constr !evdref p) in
   let lc = Array.map EConstr.of_constr lc in
@@ -232,7 +232,6 @@ let judge_of_projection env sigma p cj =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
-  let args = List.map EConstr.of_constr args in
     let ty = EConstr.of_constr (CVars.subst_instance_constr u pb.Declarations.proj_type) in
     let ty = substl (cj.uj_val :: List.rev args) ty in
       {uj_val = EConstr.mkProj (p,cj.uj_val);

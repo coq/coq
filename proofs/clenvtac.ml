@@ -34,7 +34,7 @@ let clenv_cast_meta clenv =
       | _  -> EConstr.map clenv.evd crec u
 
   and crec_hd u =
-    match EConstr.kind clenv.evd (EConstr.of_constr (strip_outer_cast clenv.evd u)) with
+    match EConstr.kind clenv.evd (strip_outer_cast clenv.evd u) with
       | Meta mv ->
 	  (try
             let b = Typing.meta_type clenv.evd mv in

@@ -669,7 +669,7 @@ let beta_app sigma (c,l) =
 
 let beta_applist sigma (c,l) =
   let zip s = Stack.zip sigma s in
-  EConstr.Unsafe.to_constr (stacklam zip [] sigma c (Stack.append_app_list l Stack.empty))
+  stacklam zip [] sigma c (Stack.append_app_list l Stack.empty)
 
 (* Iota reduction tools *)
 
@@ -1611,8 +1611,8 @@ let meta_reducible_instance evd b =
     let u = whd_betaiota Evd.empty u (** FIXME *) in
     let u = EConstr.of_constr u in
     match EConstr.kind evd u with
-    | Case (ci,p,c,bl) when EConstr.isMeta evd (EConstr.of_constr (strip_outer_cast evd c)) ->
-	let m = destMeta evd (EConstr.of_constr (strip_outer_cast evd c)) in
+    | Case (ci,p,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
+	let m = destMeta evd (strip_outer_cast evd c) in
 	(match
 	  try
 	    let g, s = Metamap.find m metas in
@@ -1623,8 +1623,8 @@ let meta_reducible_instance evd b =
 	  with
 	    | Some g -> irec (mkCase (ci,p,g,bl))
 	    | None -> mkCase (ci,irec p,c,Array.map irec bl))
-    | App (f,l) when EConstr.isMeta evd (EConstr.of_constr (strip_outer_cast evd f)) ->
-	let m = destMeta evd (EConstr.of_constr (strip_outer_cast evd f)) in
+    | App (f,l) when EConstr.isMeta evd (strip_outer_cast evd f) ->
+	let m = destMeta evd (strip_outer_cast evd f) in
 	(match
 	  try
 	    let g, s = Metamap.find m metas in
@@ -1671,8 +1671,8 @@ let head_unfold_under_prod ts env sigma c =
       | Prod (n,t,c) -> mkProd (n,aux t, aux c)
       | _ ->
 	  let (h,l) = decompose_app_vect sigma c in
-	  match EConstr.kind sigma (EConstr.of_constr h) with
-	    | Const cst -> beta_app sigma (unfold cst, Array.map EConstr.of_constr l)
+	  match EConstr.kind sigma h with
+	    | Const cst -> beta_app sigma (unfold cst, l)
 	    | _ -> c in
   EConstr.Unsafe.to_constr (aux c)
 

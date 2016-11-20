@@ -185,7 +185,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
        else false)
   in
   let rec sorec ctx env subst p t =
-    let cT = EConstr.of_constr (strip_outer_cast sigma t) in
+    let cT = strip_outer_cast sigma t in
     match p, EConstr.kind sigma cT with
       | PSoApp (n,args),m ->
         let fold (ans, seen) = function

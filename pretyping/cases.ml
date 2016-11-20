@@ -2335,7 +2335,7 @@ let abstract_tomatch env sigma tomatchs tycon =
 	     Rel n -> (lift lenctx c, lift_tomatch_type lenctx t) :: prev, ctx, names, tycon
 	   | _ ->
 	       let tycon = Option.map
-		 (fun t -> EConstr.of_constr (subst_term sigma (lift 1 c) (lift 1 t))) tycon in
+		 (fun t -> subst_term sigma (lift 1 c) (lift 1 t)) tycon in
 	       let name = next_ident_away (Id.of_string "filtered_var") names in
 		 (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev,
 	       local_def (Name name, lift lenctx c, lift lenctx $ type_of_tomatch t) :: ctx,

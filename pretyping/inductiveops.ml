@@ -451,13 +451,13 @@ let extract_mrectype sigma t =
   let open EConstr in
   let (t, l) = decompose_app sigma t in
   match EConstr.kind sigma t with
-    | Ind ind -> (ind, List.map EConstr.Unsafe.to_constr l)
+    | Ind ind -> (ind, l)
     | _ -> raise Not_found
 
 let find_mrectype_vect env sigma c =
   let open EConstr in
   let (t, l) = Termops.decompose_app_vect sigma (EConstr.of_constr (whd_all env sigma c)) in
-  match EConstr.kind sigma (EConstr.of_constr t) with
+  match EConstr.kind sigma t with
     | Ind ind -> (ind, l)
     | _ -> raise Not_found
 
