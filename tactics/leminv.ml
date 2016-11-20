@@ -294,7 +294,7 @@ let lemInvIn id c ids =
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in
       let sigma = project gl in
-      let nb_of_new_hyp = nb_prod sigma (EConstr.of_constr concl) - List.length ids in
+      let nb_of_new_hyp = nb_prod sigma concl - List.length ids in
       if nb_of_new_hyp < 1  then
         intros_replacing ids
       else

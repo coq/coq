@@ -470,7 +470,7 @@ let rec fourier () =
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
     Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
-    let goal = Termops.strip_outer_cast sigma (EConstr.of_constr concl) in
+    let goal = Termops.strip_outer_cast sigma concl in
     let goal = EConstr.Unsafe.to_constr goal in
     let fhyp=Id.of_string "new_hyp_for_fourier" in
     (* si le but est une inéquation, on introduit son contraire,

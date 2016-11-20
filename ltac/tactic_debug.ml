@@ -51,6 +51,7 @@ let db_pr_goal gl =
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let penv = print_named_context env in
+  let concl = EConstr.Unsafe.to_constr concl in
   let pc = print_constr_env env concl in
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++

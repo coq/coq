@@ -249,7 +249,6 @@ let unify_resolve_refine poly flags =
   { enter = begin fun gls ((c, t, ctx),n,clenv) ->
     let env = Proofview.Goal.env gls in
     let concl = Proofview.Goal.concl gls in
-    let concl = EConstr.of_constr concl in
     Refine.refine ~unsafe:true { Sigma.run = fun sigma ->
       let sigma = Sigma.to_evar_map sigma in
       let sigma, term, ty =
@@ -363,7 +362,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     Proofview.Goal.nf_enter { enter =
     begin fun gl ->
     let tacs = e_trivial_resolve db_list local_db secvars only_classes
-                                 (project gl) (EConstr.of_constr (pf_concl gl)) in
+                                 (project gl) (pf_concl gl) in
       tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
     end}
   in
@@ -1002,7 +1001,6 @@ module Search = struct
     let open Proofview.Notations in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
-    let concl = EConstr.of_constr concl in
     let sigma = Goal.sigma gl in
     let s = Sigma.to_evar_map sigma in
     let unique = not info.search_dep || is_unique env s concl in

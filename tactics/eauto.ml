@@ -34,7 +34,6 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t1 = EConstr.of_constr t1 in
   let t2 = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
-  let t2 = EConstr.of_constr t2 in
   let sigma = Tacmach.New.project gl in
   if occur_existential sigma t1 || occur_existential sigma t2 then
      Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
@@ -151,7 +150,7 @@ let rec e_trivial_fail_db db_list local_db =
   let tacl =
     registered_e_assumption ::
     (Tacticals.New.tclTHEN Tactics.intro next) ::
-    (List.map fst (e_trivial_resolve (Tacmach.New.project gl) db_list local_db secvars (EConstr.of_constr (Tacmach.New.pf_nf_concl gl))))
+    (List.map fst (e_trivial_resolve (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_nf_concl gl)))
   in
   Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
   end }
@@ -508,7 +507,6 @@ let autounfold_one db cl =
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
-  let concl = EConstr.of_constr concl in
   let st =
     List.fold_left (fun (i,c) dbname -> 
       let db = try searchtable_map dbname 

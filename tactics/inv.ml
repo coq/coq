@@ -34,7 +34,7 @@ module NamedDecl = Context.Named.Declaration
 let var_occurs_in_pf gl id =
   let env = Proofview.Goal.env gl in
   let sigma = project gl in
-  occur_var env sigma id (EConstr.of_constr (Proofview.Goal.concl gl)) ||
+  occur_var env sigma id (Proofview.Goal.concl gl) ||
   List.exists (occur_var_in_decl env sigma id) (Proofview.Goal.hyps gl)
 
 (* [make_inv_predicate (ity,args) C]
@@ -441,7 +441,6 @@ let raw_inversion inv_kind id status names =
     let sigma = Sigma.to_evar_map sigma in
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
-    let concl = EConstr.of_constr concl in
     let c = mkVar id in
     let (ind, t) =
       try pf_apply Tacred.reduce_to_atomic_ind gl (EConstr.of_constr (pf_unsafe_type_of gl c))
@@ -522,13 +521,13 @@ let invIn k names ids id =
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let concl = Proofview.Goal.concl gl in
     let sigma = project gl in
-    let nb_prod_init = nb_prod sigma (EConstr.of_constr concl) in
+    let nb_prod_init = nb_prod sigma concl in
     let intros_replace_ids =
       Proofview.Goal.enter { enter = begin fun gl ->
         let concl = pf_nf_concl gl in
         let sigma = project gl in
         let nb_of_new_hyp =
-          nb_prod sigma (EConstr.of_constr concl) - (List.length hyps + nb_prod_init)
+          nb_prod sigma concl - (List.length hyps + nb_prod_init)
         in
         if nb_of_new_hyp < 1 then
           intros_replacing ids

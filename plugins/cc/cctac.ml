@@ -230,7 +230,7 @@ let make_prb gls depth additionnal_terms =
 
 let build_projection intype (cstr:pconstructor) special default gls=
   let ci= (snd(fst cstr)) in
-  let body=Equality.build_selector (pf_env gls) (project gls) ci (EConstr.mkRel 1) (EConstr.of_constr intype) (EConstr.of_constr special) (EConstr.of_constr default) in
+  let body=Equality.build_selector (pf_env gls) (project gls) ci (EConstr.mkRel 1) (EConstr.of_constr intype) (EConstr.of_constr special) default in
   let body = EConstr.Unsafe.to_constr body in
   let id=pf_get_new_id (Id.of_string "t") gls in
     mkLambda(Name id,intype,body)
@@ -321,6 +321,7 @@ let rec proof_tac p : unit Proofview.tactic =
 	 let special=mkRel (1+nargs-argind) in
 	 refresh_universes (type_of ti) (fun intype ->
          refresh_universes (type_of default) (fun outtype ->
+         let default = EConstr.of_constr default in
          let proj =
            Tacmach.New.of_old (build_projection intype cstr special default) gl
          in
@@ -388,6 +389,7 @@ let discriminate_tac (cstr,u as cstru) p =
     let pred = mkLambda(Name xid,outtype,mkRel 1) in
     let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
     let proj = Tacmach.New.of_old (build_projection intype cstru trivial concl) gl in
+    let concl = EConstr.Unsafe.to_constr concl in
     let injt=app_global _f_equal
 			[|intype;outtype;proj;t1;t2;mkVar hid|] in
     let endt k =
@@ -498,6 +500,7 @@ let mk_eq f c1 c2 k =
 let f_equal =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
+    let concl = EConstr.Unsafe.to_constr concl in
     let cut_eq c1 c2 =
       try (* type_of can raise an exception *)
         Tacticals.New.tclTHENS

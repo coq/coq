@@ -312,9 +312,8 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
     in
     let typ = match cls with
     | None -> pf_nf_concl gl
-    | Some id -> pf_get_hyp_typ id (Proofview.Goal.assume gl)
+    | Some id -> EConstr.of_constr (pf_get_hyp_typ id (Proofview.Goal.assume gl))
     in
-    let typ = EConstr.of_constr typ in
     let cs = instantiate_lemma typ in
     if firstonly then tclFIRST (List.map try_clause cs)
     else tclMAP try_clause cs
@@ -409,7 +408,7 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
 
 let type_of_clause cls gl = match cls with
   | None -> Proofview.Goal.concl gl
-  | Some id -> pf_get_hyp_typ id gl
+  | Some id -> EConstr.of_constr (pf_get_hyp_typ id gl)
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
@@ -417,7 +416,6 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars d
   let isatomic = isProd evd (EConstr.of_constr (whd_zeta evd hdcncl)) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let type_of_cls = type_of_clause cls gl in
-  let type_of_cls = EConstr.of_constr type_of_cls in
   let dep = dep_proof_ok && dep_fun evd c type_of_cls in
   let Sigma ((elim, effs), sigma, p) = find_elim hdcncl lft2rgt dep cls (Some t) gl in
   let tac =
@@ -1052,7 +1050,6 @@ let onNegatedEquality with_evars tac =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let ccl = Proofview.Goal.concl gl in
-    let ccl = EConstr.of_constr ccl in
     let env = Proofview.Goal.env gl in
     match EConstr.kind sigma (EConstr.of_constr (hnf_constr env sigma ccl)) with
     | Prod (_,t,u) when is_empty_type sigma u ->
@@ -1611,7 +1608,6 @@ let cutSubstInConcl l2r eqn =
   let sigma = Proofview.Goal.sigma gl in
   let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
   let typ = pf_concl gl in
-  let typ = EConstr.of_constr typ in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
   let Sigma ((typ, expected), sigma, p) = subst_tuple_term env sigma e1 e2 typ in
   let tac =
@@ -1752,7 +1748,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
       hyps
       (MoveBefore x,[x],[]))) in (* In practice, no dep hyps before x, so MoveBefore x is good enough *)
   (* Decides if x appears in conclusion *)
-  let depconcl = occur_var env sigma x (EConstr.of_constr concl) in
+  let depconcl = occur_var env sigma x concl in
   let need_rewrite = not (List.is_empty dephyps) || depconcl in
   tclTHENLIST
     ((if need_rewrite then

@@ -468,7 +468,6 @@ let match_eq_nf gls eqn (ref, hetero) =
   let n = if hetero then 4 else 3 in
   let args = List.init n (fun i -> mkGPatVar ("X" ^ string_of_int (i + 1))) in
   let pat = mkPattern (mkGAppRef ref args) in
-  let pf_whd_all gls c = EConstr.of_constr (pf_whd_all gls c) in
   match Id.Map.bindings (pf_matches gls pat eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);

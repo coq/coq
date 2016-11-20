@@ -355,7 +355,7 @@ let refine_tac ist simple c =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags = constr_flags in
-    let expected_type = Pretyping.OfType (EConstr.of_constr concl) in
+    let expected_type = Pretyping.OfType concl in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma ->
       let Sigma (c, sigma, p) = c.delayed env sigma in
@@ -647,7 +647,6 @@ let hResolve id c occ t =
   let sigma = Sigma.to_evar_map sigma in
   let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
   let concl = Proofview.Goal.concl gl in
-  let concl = EConstr.of_constr concl in
   let env_ids = Termops.ids_of_context env in
   let c_raw = Detyping.detype true env_ids env sigma c in
   let t_raw = Detyping.detype true env_ids env sigma t in
@@ -694,6 +693,7 @@ let hget_evar n =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
+  let concl = EConstr.Unsafe.to_constr concl in
   let evl = evar_list concl in
   let concl = EConstr.of_constr concl in
   if List.length evl < n then
@@ -748,7 +748,6 @@ let  mkCaseEq a  : unit Proofview.tactic =
          [Tactics.generalize [(mkApp(EConstr.of_constr (delayed_force refl_equal), [| type_of_a; a|]))];
           Proofview.Goal.nf_enter { enter = begin fun gl ->
             let concl = Proofview.Goal.concl gl in
-            let concl = EConstr.of_constr concl in
             let env = Proofview.Goal.env gl in
             (** FIXME: this looks really wrong. Does anybody really use this tactic? *)
             let Sigma (c, _, _) = (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a]).Reductionops.e_redfun env (Sigma.Unsafe.of_evar_map Evd.empty) concl in
@@ -761,14 +760,14 @@ let  mkCaseEq a  : unit Proofview.tactic =
 
 let case_eq_intros_rewrite x =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let n = nb_prod (Tacmach.New.project gl) (EConstr.of_constr (Proofview.Goal.concl gl)) in
+  let n = nb_prod (Tacmach.New.project gl) (Proofview.Goal.concl gl) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let hyps = Tacmach.New.pf_ids_of_hyps gl in
-      let n' = nb_prod (Tacmach.New.project gl) (EConstr.of_constr concl) in
+      let n' = nb_prod (Tacmach.New.project gl) concl in
       let h = Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) gl in
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;
@@ -809,7 +808,7 @@ let destauto_in id =
   end }
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ Proofview.Goal.nf_enter { enter = begin fun gl -> destauto (EConstr.of_constr (Proofview.Goal.concl gl)) end } ]
+| [ "destauto" ] -> [ Proofview.Goal.nf_enter { enter = begin fun gl -> destauto (Proofview.Goal.concl gl) end } ]
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 

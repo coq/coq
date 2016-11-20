@@ -106,7 +106,7 @@ module New : sig
 
   val project : ('a, 'r) Proofview.Goal.t -> Evd.evar_map
   val pf_env : ('a, 'r) Proofview.Goal.t -> Environ.env
-  val pf_concl : ([ `NF ], 'r) Proofview.Goal.t -> types
+  val pf_concl : ([ `NF ], 'r) Proofview.Goal.t -> EConstr.types
 
   val pf_unsafe_type_of : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> Term.types
   val pf_type_of : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> evar_map * Term.types
@@ -120,13 +120,13 @@ module New : sig
   val pf_get_hyp_typ        : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> types
   val pf_last_hyp           : ([ `NF ], 'r) Proofview.Goal.t -> Context.Named.Declaration.t
 
-  val pf_nf_concl : ([ `LZ ], 'r) Proofview.Goal.t -> types
+  val pf_nf_concl : ([ `LZ ], 'r) Proofview.Goal.t -> EConstr.types
   val pf_reduce_to_quantified_ind : ('a, 'r) Proofview.Goal.t -> EConstr.types -> pinductive * EConstr.types
 
-  val pf_hnf_constr : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> types
-  val pf_hnf_type_of : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> types
+  val pf_hnf_constr : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> EConstr.types
+  val pf_hnf_type_of : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> EConstr.types
 
-  val pf_whd_all : ('a, 'r) Proofview.Goal.t -> EConstr.t -> constr
+  val pf_whd_all : ('a, 'r) Proofview.Goal.t -> EConstr.t -> EConstr.constr
   val pf_compute : ('a, 'r) Proofview.Goal.t -> EConstr.t -> EConstr.constr
 
   val pf_matches : ('a, 'r) Proofview.Goal.t -> constr_pattern -> EConstr.constr -> patvar_map

@@ -221,6 +221,7 @@ module Btauto = struct
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let eq = Lazy.force eq in
+      let concl = EConstr.Unsafe.to_constr concl in
       let t = decomp_term (Tacmach.New.project gl) concl in
       match t with
       | Term.App (c, [|typ; p; _|]) when c === eq ->
@@ -235,6 +236,7 @@ module Btauto = struct
   let tac =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
+      let concl = EConstr.Unsafe.to_constr concl in
       let sigma = Tacmach.New.project gl in
       let eq = Lazy.force eq in
       let bool = Lazy.force Bool.typ in

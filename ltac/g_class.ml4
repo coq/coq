@@ -92,12 +92,10 @@ let rec eq_constr_mod_evars sigma x y =
 let progress_evars t =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    let concl = EConstr.of_constr concl in
     let check =
       Proofview.Goal.nf_enter { enter = begin fun gl' ->
         let sigma = Tacmach.New.project gl' in
         let newconcl = Proofview.Goal.concl gl' in
-        let newconcl = EConstr.of_constr newconcl in
         if eq_constr_mod_evars sigma concl newconcl
         then Tacticals.New.tclFAIL 0 (Pp.str"No progress made (modulo evars)")
         else Proofview.tclUNIT ()

@@ -984,7 +984,7 @@ module Goal = struct
   type ('a, 'r) t = {
     env : Environ.env;
     sigma : Evd.evar_map;
-    concl : Term.constr ;
+    concl : EConstr.constr ;
     self : Evar.t ; (* for compatibility with old-style definitions *)
   }
 
@@ -1005,7 +1005,7 @@ module Goal = struct
   let gmake_with info env sigma goal = 
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
       sigma = sigma ;
-      concl = Evd.evar_concl info ;
+      concl = EConstr.of_constr (Evd.evar_concl info);
       self = goal }
 
   let nf_gmake env sigma goal =

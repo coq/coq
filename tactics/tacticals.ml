@@ -710,7 +710,7 @@ module New = struct
   let elimination_sort_of_goal gl =
     (** Retyping will expand evars anyway. *)
     let c = Proofview.Goal.concl (Goal.assume gl) in
-    pf_apply Retyping.get_sort_family_of gl (EConstr.of_constr c)
+    pf_apply Retyping.get_sort_family_of gl c
 
   let elimination_sort_of_hyp id gl =
     (** Retyping will expand evars anyway. *)

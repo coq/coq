@@ -611,6 +611,7 @@ let clear_hyps_in_evi_main env evdref hyps terms ids =
   (nhyps,terms)
 
 let clear_hyps_in_evi env evdref hyps concl ids =
+  let concl = EConstr.Unsafe.to_constr concl in
   match clear_hyps_in_evi_main env evdref hyps [concl] ids with
   | (nhyps,[nconcl]) -> (nhyps,nconcl)
   | _ -> assert false

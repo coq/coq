@@ -1857,6 +1857,7 @@ let destructure_goal =
 	  in
 	  Tacticals.New.tclTHEN goal_tac destructure_hyps
     in
+    let concl = EConstr.Unsafe.to_constr concl in
     (loop concl)
   end }
 

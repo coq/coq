@@ -1078,7 +1078,7 @@ END
 let thin id sigma goal =
   let ids = Id.Set.singleton id in
   let env = Goal.V82.env sigma goal in
-  let cl = EConstr.Unsafe.to_constr (Goal.V82.concl sigma goal) in
+  let cl = Goal.V82.concl sigma goal in
   let evdref = ref (Evd.clear_metas sigma) in
   let ans =
     try Some (Evarutil.clear_hyps_in_evi env evdref (Environ.named_context_val env) cl ids)

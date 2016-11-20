@@ -1595,7 +1595,6 @@ let rec insert_dependent env sigma decl accu hyps = match hyps with
 let assert_replacing id newt tac = 
   let prf = Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    let concl = EConstr.of_constr concl in
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let ctx = Environ.named_context env in
@@ -1665,7 +1664,6 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   in
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    let concl = EConstr.of_constr concl in
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let ty = match clause with
@@ -2143,10 +2141,9 @@ let get_hyp gl (c,l) clause l2r =
   let env = Tacmach.New.pf_env gl in
   let sigma, hi = decompose_applied_relation env evars (c,l) in
   let but = match clause with
-    | Some id -> Tacmach.New.pf_get_hyp_typ id gl
-    | None -> Evarutil.nf_evar evars (Tacmach.New.pf_concl gl)
+    | Some id -> EConstr.of_constr (Tacmach.New.pf_get_hyp_typ id gl)
+    | None -> nf_evar evars (Tacmach.New.pf_concl gl)
   in
-  let but = EConstr.of_constr but in
   unification_rewrite l2r hi.c1 hi.c2 sigma hi.prf hi.car hi.rel but env
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
@@ -2195,7 +2192,6 @@ let setoid_proof ty fn fallback =
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
-    let concl = EConstr.of_constr concl in
     Proofview.tclORELSE
       begin
         try

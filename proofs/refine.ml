@@ -77,7 +77,6 @@ let make_refine_enter ?(unsafe = true) f =
   let sigma = Sigma.to_evar_map sigma in
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
-  let concl = EConstr.of_constr concl in
   (** Save the [future_goals] state to restore them after the
       refinement. *)
   let prev_future_goals = Evd.future_goals sigma in
@@ -146,7 +145,6 @@ let with_type env evd c t =
 let refine_casted ?unsafe f = Proofview.Goal.enter { enter = begin fun gl ->
   let gl = Proofview.Goal.assume gl in
   let concl = Proofview.Goal.concl gl in
-  let concl = EConstr.of_constr concl in
   let env = Proofview.Goal.env gl in
   let f = { run = fun h ->
     let Sigma (c, h, p) = f.run h in

@@ -452,6 +452,7 @@ let quote f lid =
     let cl = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
     let ivs = compute_ivs f cl gl in
     let concl = Proofview.Goal.concl gl in
+    let concl = EConstr.Unsafe.to_constr concl in
     let quoted_terms = quote_terms ivs [concl] in
     let (p, vm) = match quoted_terms with
       | [p], vm -> (p,vm)

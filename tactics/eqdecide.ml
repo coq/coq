@@ -178,7 +178,6 @@ let solveEqBranch rectype =
     begin
       Proofview.Goal.enter { enter = begin fun gl ->
         let concl = pf_nf_concl gl in
-        let concl = EConstr.of_constr concl in
         let sigma = project gl in
         match_eqdec sigma concl >>= fun (eqonleft,op,lhs,rhs,_) ->
           let (mib,mip) = Global.lookup_inductive rectype in
@@ -205,7 +204,6 @@ let decideGralEquality =
     begin
       Proofview.Goal.enter { enter = begin fun gl ->
         let concl = pf_nf_concl gl in
-        let concl = EConstr.of_constr concl in
         let sigma = project gl in
         match_eqdec sigma concl >>= fun (eqonleft,_,c1,c2,typ) ->
         let headtyp = hd_app sigma (pf_compute gl typ) in

@@ -41,7 +41,7 @@ let clear ids { it = goal; sigma } =
   let ids = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty ids in
   let env = Goal.V82.env sigma goal in
   let sign = Goal.V82.hyps sigma goal in
-  let cl = EConstr.Unsafe.to_constr (Goal.V82.concl sigma goal) in
+  let cl = Goal.V82.concl sigma goal in
   let evdref = ref (Evd.clear_metas sigma) in
   let (hyps, concl) =
     try Evarutil.clear_hyps_in_evi env evdref sign cl ids

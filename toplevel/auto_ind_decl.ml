@@ -338,8 +338,6 @@ so from Ai we can find the the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
 let do_replace_lb mode lb_scheme_key aavoid narg p q =
-  let p = EConstr.of_constr p in
-  let q = EConstr.of_constr q in
   let avoid = Array.of_list aavoid in
   let do_arg v offset =
   try
@@ -399,6 +397,8 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
 
 (* used in the bool -> leib side *)
 let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
+  let lft = EConstr.Unsafe.to_constr lft in
+  let rgt = EConstr.Unsafe.to_constr rgt in
   let avoid = Array.of_list aavoid in
   let do_arg v offset =
   try
@@ -612,11 +612,12 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
 *)
-                      Proofview.Goal.nf_enter { enter = begin fun gls ->
-                        let gl = Proofview.Goal.concl gls in
-                        match (kind_of_term gl) with
+                      Proofview.Goal.nf_enter { enter = begin fun gl ->
+                        let concl = Proofview.Goal.concl gl in
+                        let sigma = Tacmach.New.project gl in
+                        match EConstr.kind sigma concl with
                         | App (c,ca) -> (
-                          match (kind_of_term c) with
+                          match EConstr.kind sigma c with
                           | Ind (indeq, u) ->
                               if eq_gr (IndRef indeq) Coqlib.glob_eq
                               then
@@ -708,6 +709,7 @@ let compute_lb_goal ind lnamesparrec nparrec =
         ))), eff
 
 let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
+  let open EConstr in
   let list_id = list_id lnamesparrec in
     let avoid = ref [] in
       let first_intros =
@@ -745,10 +747,11 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
                                   simplest_split ;Auto.default_auto ]
                       );
                       Proofview.Goal.nf_enter { enter = begin fun gls ->
-                        let gl = Proofview.Goal.concl gls in
+                        let concl = Proofview.Goal.concl gls in
+                        let sigma = Tacmach.New.project gl in
                         (* assume the goal to be eq (eq_type ...) = true *)
-                        match (kind_of_term gl) with
-                        | App(c,ca) -> (match (kind_of_term ca.(1)) with
+                        match EConstr.kind sigma concl with
+                        | App(c,ca) -> (match (EConstr.kind sigma ca.(1)) with
                           | App(c',ca') ->
                               let n = Array.length ca' in
                               do_replace_lb mode lb_scheme_key

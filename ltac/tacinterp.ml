@@ -1536,7 +1536,6 @@ and interp_match_goal ist lz lr lmr =
       let hyps = Proofview.Goal.hyps gl in
       let hyps = if lr then List.rev hyps else hyps in
       let concl = Proofview.Goal.concl gl in
-      let concl = EConstr.of_constr concl in
       let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
       interp_match_successes lz ist (Tactic_matching.match_goal env sigma hyps concl ilr)
     end }

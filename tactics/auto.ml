@@ -331,7 +331,6 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
   in
   Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Tacmach.New.pf_nf_concl gl in
-    let concl = EConstr.of_constr concl in
     let sigma = Tacmach.New.project gl in
     let secvars = compute_secvars gl in
     Tacticals.New.tclFIRST
@@ -492,7 +491,6 @@ let search d n mod_delta db_list local_db =
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
 	     ( Proofview.Goal.enter { enter = begin fun gl ->
                let concl = Tacmach.New.pf_nf_concl gl in
-               let concl = EConstr.of_constr concl in
                let sigma = Tacmach.New.project gl in
                let secvars = compute_secvars gl in
 	       let d' = incr_dbg d in

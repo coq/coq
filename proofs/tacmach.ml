@@ -220,7 +220,7 @@ module New = struct
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
     let sigma = project gl in
-    nf_evar sigma concl
+    EConstr.of_constr (nf_evar sigma (EConstr.Unsafe.to_constr concl))
 
   let pf_whd_all gl t = pf_apply whd_all gl t
 
@@ -229,13 +229,13 @@ module New = struct
   let pf_reduce_to_quantified_ind gl t =
     pf_apply reduce_to_quantified_ind gl t
 
-  let pf_hnf_constr gl t = pf_apply hnf_constr gl t
+  let pf_hnf_constr gl t = EConstr.of_constr (pf_apply hnf_constr gl t)
   let pf_hnf_type_of gl t =
-    pf_whd_all gl (EConstr.of_constr (pf_get_type_of gl t))
+    EConstr.of_constr (pf_whd_all gl (EConstr.of_constr (pf_get_type_of gl t)))
 
   let pf_matches gl pat t = pf_apply Constr_matching.matches_conv gl pat t
 
-  let pf_whd_all gl t = pf_apply whd_all gl t
+  let pf_whd_all gl t = EConstr.of_constr (pf_apply whd_all gl t)
   let pf_compute gl t = pf_apply compute gl t
 
   let pf_nf_evar gl t = nf_evar (project gl) t
