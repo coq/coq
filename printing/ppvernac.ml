@@ -911,7 +911,7 @@ module Make
       | VernacContext l ->
         return (
           hov 1 (
-            keyword "Context" ++ spc () ++ pr_and_type_binders_arg l)
+            keyword "Context" ++ pr_and_type_binders_arg l)
         )
 
       | VernacDeclareInstances insts ->
