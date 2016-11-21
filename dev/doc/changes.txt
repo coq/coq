@@ -256,7 +256,8 @@ define_evar_* mostly used internally in the unification engine.
 
   Proofview.Goal.enter { enter = begin fun gl -> ... end }
   
-- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)` --> `Tacinterp.Value.of_constr c`
+- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)`      ---> `Tacinterp.Value.of_constr c`
+- `Vernacexpr.HintsResolveEntry(priority, poly, hnf, path, atom)` ---> `Vernacexpr.HintsResolveEntry(Vernacexpr.({hint_priority = priority; hint_pattern = None}), poly, hnf, path, atom)`
 
 ** Search API **
 
