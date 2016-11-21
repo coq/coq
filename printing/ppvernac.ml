@@ -934,7 +934,7 @@ module Make
         let b = pr_module_binders bl pr_lconstr in
         return (
           hov 2 (keyword "Module" ++ spc() ++ pr_require_token export ++
-                   pr_lident m ++ b ++
+                   pr_lident m ++ b ++ spc () ++
                    pr_of_module_type pr_lconstr tys ++
                    (if List.is_empty bd then mt () else str ":= ") ++
                    prlist_with_sep (fun () -> str " <+")
@@ -953,8 +953,8 @@ module Make
         return (
           hov 2 (keyword "Module Type " ++ pr_lident id ++ b ++
                    prlist_strict (fun m -> str " <:" ++ pr_mt m) tyl ++
-                   (if List.is_empty m then mt () else str ":= ") ++
-                   prlist_with_sep (fun () -> str " <+ ") pr_mt m)
+                   (if List.is_empty m then mt () else str " :=") ++
+                   prlist_with_sep (fun () -> str " <+") pr_mt m)
         )
       | VernacInclude (mexprs) ->
         let pr_m = pr_module_ast_inl false pr_lconstr in
