@@ -124,8 +124,8 @@ let closed_term_ast l =
   let l = List.map (fun gr -> ArgArg(Loc.ghost,gr)) l in
   TacFun([Some(Id.of_string"t")],
   TacML(Loc.ghost,tacname,
-  [TacGeneric (Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (GVar(Loc.ghost,Id.of_string"t"),None));
-   TacGeneric (Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)]))
+  [TacGeneric ("constr",Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (GVar(Loc.ghost,Id.of_string"t"),None));
+   TacGeneric ("reference_list",Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)]))
 (*
 let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 *)
@@ -204,7 +204,7 @@ let exec_tactic env evd n f args =
   (** Build the getter *)
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
-  let get_res = TacML (Loc.ghost, get_res, [TacGeneric n]) in
+  let get_res = TacML (Loc.ghost, get_res, [TacGeneric ("integer",n)]) in
   let getter = Tacexp (TacFun (List.map (fun id -> Some id) lid, get_res)) in
   (** Evaluate the whole result *)
   let gl = dummy_goal env evd in

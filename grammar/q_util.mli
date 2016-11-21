@@ -46,3 +46,5 @@ val mlexpr_of_prod_entry_key : (string -> MLast.expr) -> user_symbol -> MLast.ex
 val type_of_user_symbol : user_symbol -> argument_type
 
 val parse_user_entry : string -> string -> user_symbol
+
+val string_of_user_entry : user_symbol -> string * string

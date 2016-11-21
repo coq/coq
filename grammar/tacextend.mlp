@@ -67,7 +67,8 @@ let rec mlexpr_of_symbol = function
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Tacentries.TacTerm $str:s$ >>
   | ExtNonTerminal (g, id) ->
-    <:expr< Tacentries.TacNonTerm $default_loc$ $mlexpr_of_symbol g$ $mlexpr_of_ident id$ >>
+    let s,_ = string_of_user_entry g in
+    <:expr< Tacentries.TacNonTerm $default_loc$ ($str:s$,$mlexpr_of_symbol g$) $mlexpr_of_ident id$ >>
 
 let mlexpr_of_clause cl =
   mlexpr_of_list (fun (a,_,_) -> mlexpr_of_list make_prod_item a) cl
