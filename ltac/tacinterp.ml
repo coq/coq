@@ -1330,7 +1330,7 @@ and interp_ltac_reference loc' mustbetac ist r : Val.t Ftactic.t =
 
 and interp_tacarg ist arg : Val.t Ftactic.t =
   match arg with
-  | TacGeneric arg -> interp_genarg ist arg
+  | TacGeneric (name,arg) -> interp_genarg ist arg
   | Reference r -> interp_ltac_reference dloc false ist r
   | ConstrMayEval c ->
       Ftactic.s_enter { s_enter = begin fun gl ->

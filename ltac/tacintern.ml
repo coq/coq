@@ -175,7 +175,7 @@ let intern_non_tactic_reference strict ist r =
   match r with
   | Ident (loc,id) when not strict ->
     let ipat = in_gen (glbwit wit_intro_pattern) (loc, IntroNaming (IntroIdentifier id)) in
-    TacGeneric ipat
+    TacGeneric ("ipattern",ipat)
   | _ ->
   (* Reference not found *)
   error_global_not_found (snd (qualid_of_reference r))
@@ -661,9 +661,9 @@ and intern_tacarg strict onlytac ist = function
   | TacPretype c -> TacPretype (intern_constr ist c)
   | TacNumgoals -> TacNumgoals
   | Tacexp t -> Tacexp (intern_tactic onlytac ist t)
-  | TacGeneric arg ->
+  | TacGeneric (name,arg) ->
     let arg = intern_genarg ist arg in
-    TacGeneric arg
+    TacGeneric (name,arg)
 
 (* Reads the rules of a Match Context or a Match *)
 and intern_match_rule onlytac ist ?(as_type=false) = function

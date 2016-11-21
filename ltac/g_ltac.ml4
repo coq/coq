@@ -187,7 +187,7 @@ GEXTEND Gram
     [ [ a = tactic_arg -> a
       | c = Constr.constr -> (match c with CRef (r,None) -> Reference r | c -> ConstrMayEval (ConstrTerm c))
       (* Unambiguous entries: tolerated w/o "ltac:" modifier *)
-      | "()" -> TacGeneric (genarg_of_unit ()) ] ]
+      | "()" -> TacGeneric ("unit",genarg_of_unit ()) ] ]
   ;
   (* Can be used as argument and at toplevel in tactic expressions. *)
   tactic_arg:
@@ -216,9 +216,9 @@ GEXTEND Gram
       | c = Constr.constr -> ConstrTerm c ] ]
   ;
   tactic_atom:
-    [ [ n = integer -> TacGeneric (genarg_of_int n)
+    [ [ n = integer -> TacGeneric ("integer",genarg_of_int n)
       | r = reference -> TacCall (!@loc,r,[])
-      | "()" -> TacGeneric (genarg_of_unit ()) ] ]
+      | "()" -> TacGeneric ("unit",genarg_of_unit ()) ] ]
   ;
   match_key:
     [ [ "match" -> Once

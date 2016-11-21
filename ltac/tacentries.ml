@@ -24,9 +24,6 @@ type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_exp
 | TacTerm of string
 | TacNonTerm of Loc.t * 'a * Names.Id.t
 
-type raw_argument = string * string option
-type argument = Genarg.ArgT.any Extend.user_symbol
-
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
@@ -161,16 +158,16 @@ let rec prod_item_of_symbol lev = function
 let add_tactic_entry (kn, ml, tg) state =
   let open Tacexpr in
   let entry, pos = get_tactic_entry tg.tacgram_level in
-  let mkact loc l =
-    let map arg =
+  let mkact names loc l =
+    let map name arg =
       (** HACK to handle especially the tactic(...) entry *)
       let wit = Genarg.rawwit Tacarg.wit_tactic in
       if Genarg.has_type arg wit && not ml then
         Tacexp (Genarg.out_gen wit arg)
       else
-        TacGeneric arg
+        TacGeneric (name,arg)
     in
-    let l = List.map map l in
+    let l = List.map2 map names l in
     (TacAlias (loc,kn,l):raw_tactic_expr)
   in
   let () =
@@ -179,12 +176,13 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let map = function
   | TacTerm s -> GramTerminal s
-  | TacNonTerm (loc, s, _) ->
+  | TacNonTerm (loc, (_,s), _) ->
     let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
     GramNonTerminal (loc, typ, e)
   in
   let prods = List.map map tg.tacgram_prods in
-  let rules = make_rule mkact prods in
+  let names = List.map_filter (function TacNonTerm (_,(name,_),_) -> Some name | _ -> None) tg.tacgram_prods in
+  let rules = make_rule (mkact names) prods in
   let r = ExtendRule (entry, None, (pos, [(None, None, [rules])])) in
   ([r], state)
 
@@ -225,7 +223,7 @@ let interp_prod_item = function
       end
     in
     let symbol = interp_entry_name interp symbol in
-    TacNonTerm (loc, symbol, id)
+    TacNonTerm (loc, (nt,symbol), id)
 
 let make_fresh_key =
   let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
@@ -361,10 +359,10 @@ let extend_atomic_tactic name entries =
     in
     let empty_value = function
     | TacTerm s -> raise NonEmptyArgument
-    | TacNonTerm (_, symb, _) ->
+    | TacNonTerm (_, (name,symb), _) ->
       let EntryName (typ, e) = prod_item_of_symbol 0 symb in
       let Genarg.Rawwit wit = typ in
-      let inj x = TacArg (Loc.ghost, TacGeneric (Genarg.in_gen typ x)) in
+      let inj x = TacArg (Loc.ghost, TacGeneric (name, Genarg.in_gen typ x)) in
       let default = epsilon_value inj e in
       match default with
       | None -> raise NonEmptyArgument

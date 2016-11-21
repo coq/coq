@@ -25,7 +25,7 @@ open Locus
 (** Adding scopes for generic arguments not defined through ARGUMENT EXTEND *)
 
 let create_generic_quotation name e wit =
-  let inject (loc, v) = Tacexpr.TacGeneric (Genarg.in_gen (Genarg.rawwit wit) v) in
+  let inject (loc, v) = Tacexpr.TacGeneric (name,Genarg.in_gen (Genarg.rawwit wit) v) in
   Tacentries.create_ltac_quotation name inject (e, None)
 
 let () = create_generic_quotation "integer" Pcoq.Prim.integer Stdarg.wit_int

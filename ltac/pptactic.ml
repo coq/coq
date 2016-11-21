@@ -33,7 +33,9 @@ type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string
 | TacNonTerm of Loc.t * 'a * Names.Id.t
 
-type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
+type raw_argument = string * string option
+type argument = string * Genarg.ArgT.any Extend.user_symbol
+type grammar_terminals = argument grammar_tactic_prod_item_expr list
 
 type pp_tactic = {
   pptac_level : int;
@@ -256,7 +258,7 @@ module Make
       let prods = (KNmap.find key !prnotation_tab).pptac_prods in
       let rec pr = function
       | TacTerm s -> primitive s
-      | TacNonTerm (_, symb, _) -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
+      | TacNonTerm (_, (_,symb), _) -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
       in
       pr_sequence pr prods
     with Not_found ->
@@ -268,7 +270,7 @@ module Make
       let rec pack prods args = match prods, args with
       | [], [] -> []
       | TacTerm s :: prods, args -> TacTerm s :: pack prods args
-      | TacNonTerm (loc, symb, id) :: prods, arg :: args ->
+      | TacNonTerm (loc, (_, symb), id) :: prods, arg :: args ->
         TacNonTerm (loc, (symb, arg), id) :: pack prods args
       | _ -> raise Not_found
       in
@@ -318,14 +320,15 @@ module Make
   | Extend.Uentry _ | Extend.Uentryl _ ->
     str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
 
-  let rec pr_targ prtac prgen symb arg = match symb with
+  let rec pr_targ prtac prgen symb arg =
+  match arg with
+  | TacGeneric (name,arg) -> pr_any_arg prgen symb arg
+  | _ ->
+  match symb with
   | Extend.Uentry tag when is_genarg tag (ArgumentType wit_tactic) ->
     prtac (1, Any) arg
   | Extend.Uentryl (_, l) -> prtac (l, Any) arg
-  | _ ->
-    match arg with
-    | TacGeneric arg -> pr_any_arg prgen symb arg
-    | _ -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+  | _ -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
 
   let pr_raw_extend_rec prc prlc prtac prpat =
     pr_extend_gen (pr_farg prtac)
@@ -1054,8 +1057,8 @@ module Make
               pr_may_eval pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c, leval
             | TacArg(_,TacFreshId l) ->
               primitive "fresh" ++ pr_fresh_ids l, latom
-            | TacArg(_,TacGeneric arg) ->
-              pr.pr_generic arg, latom
+            | TacArg(_,TacGeneric (name,arg)) ->
+              str name ++ str ":" ++ surround (pr.pr_generic arg), latom
             | TacArg(_,TacCall(loc,f,[])) ->
               pr.pr_reference f, latom
             | TacArg(_,TacCall(loc,f,l)) ->

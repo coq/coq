@@ -162,7 +162,7 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
       Pptactic.declare_extra_genarg_pprule
         $wit$ $lid:rawpr$ $lid:globpr$ $lid:pr$;
       Tacentries.create_ltac_quotation $se$
-        (fun (loc, v) -> Tacexpr.TacGeneric (Genarg.in_gen (Genarg.rawwit $wit$) v))
+        (fun (loc, v) -> Tacexpr.TacGeneric ($se$, Genarg.in_gen (Genarg.rawwit $wit$) v))
         ($lid:s$, None)
       } >> ]
 
