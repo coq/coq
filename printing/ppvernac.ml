@@ -79,9 +79,9 @@ module Make
     | VernacEndSubproof -> str""
     | _ -> str"."
 
-  let pr_tactic x = Pputils.pr_raw_generic (Global.env ()) (Some (5,Ppextend.E)) x
+  let pr_tactic x = Genprint.pr_raw_generic (Global.env ()) (Some (5,Ppextend.E)) x
 
-  let pr_gen lev t = Pputils.pr_raw_generic (Global.env ()) lev t
+  let pr_gen lev t = Genprint.pr_raw_generic (Global.env ()) lev t
 
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
