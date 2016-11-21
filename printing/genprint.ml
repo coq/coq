@@ -81,7 +81,6 @@ let rec pr_raw_generic env lev (GenArg (Rawwit wit, x)) =
     | ExtraArg s ->
       generic_raw_print lev (in_gen (rawwit wit) x)
 
-
 let rec pr_glb_generic env lev (GenArg (Glbwit wit, x)) =
   match wit with
     | ListArg wit ->
@@ -102,3 +101,74 @@ let rec pr_glb_generic env lev (GenArg (Glbwit wit, x)) =
       hov_if_not_empty 0 ans
     | ExtraArg s ->
       generic_glb_print lev (in_gen (glbwit wit) x)
+
+let is_genarg tag wit =
+  let ArgT.Any tag = tag in
+  argument_type_eq (ArgumentType (ExtraArg tag)) wit
+                   
+let get_list : type l. l generic_argument -> l generic_argument list option =
+  function (GenArg (wit, arg)) -> match wit with
+  | Rawwit (ListArg wit) -> Some (List.map (in_gen (rawwit wit)) arg)
+  | Glbwit (ListArg wit) -> Some (List.map (in_gen (glbwit wit)) arg)
+  | _ -> None
+
+let get_opt : type l. l generic_argument -> l generic_argument option option =
+  function (GenArg (wit, arg)) -> match wit with
+  | Rawwit (OptArg wit) -> Some (Option.map (in_gen (rawwit wit)) arg)
+  | Glbwit (OptArg wit) -> Some (Option.map (in_gen (glbwit wit)) arg)
+  | _ -> None
+
+let rec pr_any_arg : type l. (_ -> l generic_argument -> std_ppcmds) -> _ -> l generic_argument -> std_ppcmds =
+  fun pr_gen symb arg -> match symb with
+  | Extend.Uentry tag when is_genarg tag (genarg_tag arg) -> pr_gen (Some (5,Ppextend.E) (* FIXME: ok for tactic but meaningless otherwise *)) arg
+  | Extend.Uentryl (tag,n) when is_genarg tag (genarg_tag arg) -> pr_gen (Some (n,Ppextend.E)) arg
+  | Extend.Ulist1 s | Extend.Ulist0 s ->
+    begin match get_list arg with
+    | None -> assert false
+    | Some l -> pr_sequence (pr_any_arg pr_gen s) l
+    end
+  | Extend.Ulist1sep (s, sep) | Extend.Ulist0sep (s, sep) ->
+    begin match get_list arg with
+    | None -> assert false
+    | Some l -> prlist_with_sep (fun () -> spc () ++ str sep ++ spc ()) (pr_any_arg pr_gen s) l
+    end
+  | Extend.Uopt s ->
+    begin match get_opt arg with
+    | None -> assert false
+    | Some l -> pr_opt (pr_any_arg pr_gen s) l
+    end
+  | Extend.Uentry _ | Extend.Uentryl _ -> assert false
+
+type 'a arguments_production =
+| ArgTerm of string
+| ArgNonTerm of Genarg.ArgT.any Extend.user_symbol * 'a
+
+module Make
+  (Taggers  : sig
+    val tag_keyword : std_ppcmds -> std_ppcmds
+    val tag_primitive  : std_ppcmds -> std_ppcmds
+  end)
+= struct
+
+  open Taggers
+
+  let keyword x = tag_keyword (str x)
+  let primitive x = tag_primitive (str x)
+
+  let rec pr_extension_using_rule_tail pr_gen = function
+  | [] -> []
+  | ArgTerm s :: l -> keyword s :: pr_extension_using_rule_tail pr_gen l
+  | ArgNonTerm (symb, arg) :: l  ->
+     pr_gen symb arg :: pr_extension_using_rule_tail pr_gen l
+                                                
+  let pr_extension_using_rule pr_gen l =
+  let l = match l with
+    | ArgTerm s :: l ->
+       (** First terminal token should be considered as the name of the tactic,
+          so we tag it differently than the other terminal tokens. *)
+       primitive s :: pr_extension_using_rule_tail pr_gen l
+    | _ -> pr_extension_using_rule_tail pr_gen l
+  in
+  pr_sequence (fun x -> x) l
+
+end

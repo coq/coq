@@ -36,3 +36,20 @@ val register_print_with_level0 : ('raw, 'glb, 'top) genarg_type ->
 
 val pr_raw_generic : Environ.env -> rlevel generic_argument printer
 val pr_glb_generic : Environ.env -> glevel generic_argument printer
+
+type 'a arguments_production =
+| ArgTerm of string
+| ArgNonTerm of Genarg.ArgT.any Extend.user_symbol * 'a
+
+module Make (Taggers  : sig
+    val tag_keyword : std_ppcmds -> std_ppcmds
+    val tag_primitive  : std_ppcmds -> std_ppcmds
+  end) :
+sig
+  val pr_extension_using_rule :
+    (Genarg.ArgT.any Extend.user_symbol -> 'a -> std_ppcmds) ->
+    'a arguments_production list -> std_ppcmds
+end
+
+val pr_any_arg : 'a generic_argument printer ->
+  Genarg.ArgT.any Extend.user_symbol -> 'a Genarg.generic_argument -> std_ppcmds
