@@ -58,3 +58,47 @@ let top_print wit v = (Print.obj wit).top v
 let generic_raw_print x (GenArg (Rawwit w, v)) = raw_print w x v
 let generic_glb_print x (GenArg (Glbwit w, v)) = glb_print w x v
 let generic_top_print x (GenArg (Topwit w, v)) = top_print w x v
+
+let hov_if_not_empty n p = if Pp.ismt p then p else hov n p
+
+let rec pr_raw_generic env lev (GenArg (Rawwit wit, x)) =
+  match wit with
+    | ListArg wit ->
+      let map x = pr_raw_generic env lev (in_gen (rawwit wit) x) in
+      let ans = pr_sequence map x in
+      hov_if_not_empty 0 ans
+    | OptArg wit ->
+      let ans = match x with
+        | None -> mt ()
+        | Some x -> pr_raw_generic env lev (in_gen (rawwit wit) x)
+      in
+      hov_if_not_empty 0 ans
+    | PairArg (wit1, wit2) ->
+      let p, q = x in
+      let p = in_gen (rawwit wit1) p in
+      let q = in_gen (rawwit wit2) q in
+      hov_if_not_empty 0 (pr_sequence (pr_raw_generic env lev) [p; q])
+    | ExtraArg s ->
+      generic_raw_print lev (in_gen (rawwit wit) x)
+
+
+let rec pr_glb_generic env lev (GenArg (Glbwit wit, x)) =
+  match wit with
+    | ListArg wit ->
+      let map x = pr_glb_generic env lev (in_gen (glbwit wit) x) in
+      let ans = pr_sequence map x in
+      hov_if_not_empty 0 ans
+    | OptArg wit ->
+      let ans = match x with
+        | None -> mt ()
+        | Some x -> pr_glb_generic env lev (in_gen (glbwit wit) x)
+      in
+      hov_if_not_empty 0 ans
+    | PairArg (wit1, wit2) ->
+      let p, q = x in
+      let p = in_gen (glbwit wit1) p in
+      let q = in_gen (glbwit wit2) q in
+      let ans = pr_sequence (pr_glb_generic env lev) [p; q] in
+      hov_if_not_empty 0 ans
+    | ExtraArg s ->
+      generic_glb_print lev (in_gen (glbwit wit) x)

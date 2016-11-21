@@ -33,3 +33,6 @@ val register_print0 : ('raw, 'glb, 'top) genarg_type ->
 
 val register_print_with_level0 : ('raw, 'glb, 'top) genarg_type ->
   'raw printer_with_level -> 'glb printer_with_level -> 'top printer_with_level -> unit
+
+val pr_raw_generic : Environ.env -> rlevel generic_argument printer
+val pr_glb_generic : Environ.env -> glevel generic_argument printer

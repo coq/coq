@@ -338,11 +338,11 @@ module Make
 
   let pr_raw_alias prc prlc prtac prpat lev key args =
     pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))
-                          (fun l a -> Pputils.pr_raw_generic (Global.env ()) (Some l) a))
+                          (fun l a -> Genprint.pr_raw_generic (Global.env ()) (Some l) a))
                  lev key args
   let pr_glob_alias prc prlc prtac prpat lev key args =
     pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))
-                          (fun l a -> Pputils.pr_glb_generic (Global.env ()) (Some l) a))
+                          (fun l a -> Genprint.pr_glb_generic (Global.env ()) (Some l) a))
                  lev key args
 
   (**********************************************************************)
@@ -1119,7 +1119,7 @@ module Make
       pr_constant = pr_or_by_notation pr_reference;
       pr_reference = pr_reference;
       pr_name = pr_lident;
-      pr_generic = (fun arg -> Pputils.pr_raw_generic (Global.env ()) (Some ltop) arg);
+      pr_generic = (fun arg -> Genprint.pr_raw_generic (Global.env ()) (Some ltop) arg);
       pr_extend = pr_raw_extend_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
       pr_alias = pr_raw_alias pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
     } in
@@ -1149,7 +1149,7 @@ module Make
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
-        pr_generic = (fun arg -> Pputils.pr_glb_generic (Global.env ()) (Some ltop) arg);
+        pr_generic = (fun arg -> Genprint.pr_glb_generic (Global.env ()) (Some ltop) arg);
         pr_extend = pr_glob_extend_rec
           (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
           prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
@@ -1197,9 +1197,9 @@ module Make
     in
     prtac n t
 
-  let pr_raw_generic = Pputils.pr_raw_generic
+  let pr_raw_generic = Genprint.pr_raw_generic
 
-  let pr_glb_generic = Pputils.pr_glb_generic
+  let pr_glb_generic = Genprint.pr_glb_generic
 
   let pr_raw_extend env = pr_raw_extend_rec
     pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr
