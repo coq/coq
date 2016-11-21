@@ -887,7 +887,7 @@ let merlin targets (ml_inc,_,_) =
   print ".merlin:\n";
   print "\t@echo 'FLG -rectypes' > .merlin\n" ;
   List.iter (fun c ->
-      printf "\t@echo \"B $(COQLIB) %s\" >> .merlin\n" c)
+      printf "\t@echo \"B $(COQLIB)%s\" >> .merlin\n" c)
     lib_dirs ;
   List.iter (fun (_,c) ->
       printf "\t@echo \"B %s\" >> .merlin\n" c;
