@@ -25,19 +25,19 @@ type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) ->
     (constr_expr -> std_ppcmds) ->
     (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    tolerability -> 'a -> std_ppcmds
 
 type 'a glob_extra_genarg_printer =
     (glob_constr_and_expr -> std_ppcmds) ->
     (glob_constr_and_expr -> std_ppcmds) ->
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    tolerability -> 'a -> std_ppcmds
 
 type 'a extra_genarg_printer =
     (Term.constr -> std_ppcmds) ->
     (Term.constr -> std_ppcmds) ->
     (tolerability -> Val.t -> std_ppcmds) ->
-    'a -> std_ppcmds
+    tolerability -> 'a -> std_ppcmds
 
 val declare_extra_genarg_pprule :
   ('a, 'b, 'c) genarg_type ->

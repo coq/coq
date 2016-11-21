@@ -160,7 +160,7 @@ let declare_tactic_argument loc s (typ, f, g, h) cl =
      make_extend loc s cl wit;
      <:str_item< do {
       Pptactic.declare_extra_genarg_pprule
-        $wit$ $lid:rawpr$ $lid:globpr$ $lid:pr$;
+        $wit$ (fun a b c _ -> $lid:rawpr$ a b c) (fun a b c _ -> $lid:globpr$ a b c) (fun a b c _ -> $lid:pr$ a b c);
       Tacentries.create_ltac_quotation $se$
         (fun (loc, v) -> Tacexpr.TacGeneric ($se$, Genarg.in_gen (Genarg.rawwit $wit$) v))
         ($lid:s$, None)
@@ -170,8 +170,8 @@ let declare_vernac_argument loc s pr cl =
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
   let pr_rules = match pr with
-    | None -> <:expr< fun _ _ _ _ -> str $str:"[No printer for "^s^"]"$ >>
-    | Some pr -> <:expr< fun _ _ _ -> $lid:pr$ >> in
+    | None -> <:expr< fun _ _ _ _ _ -> str $str:"[No printer for "^s^"]"$ >>
+    | Some pr -> <:expr< fun _ _ _ _ -> $lid:pr$ >> in
   declare_str_items loc
    [ <:str_item<
       value ($lid:"wit_"^s$ : Genarg.genarg_type 'a unit unit) =
@@ -180,8 +180,8 @@ let declare_vernac_argument loc s pr cl =
     <:str_item< do {
       Pptactic.declare_extra_genarg_pprule $wit$
         $pr_rules$
-        (fun _ _ _ _ -> CErrors.anomaly (Pp.str "vernac argument needs not globwit printer"))
-        (fun _ _ _ _ -> CErrors.anomaly (Pp.str "vernac argument needs not wit printer")) }
+        (fun _ _ _ _ _ -> CErrors.anomaly (Pp.str "vernac argument needs not globwit printer"))
+        (fun _ _ _ _ _ -> CErrors.anomaly (Pp.str "vernac argument needs not wit printer")) }
       >> ]
 
 open Pcaml

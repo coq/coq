@@ -163,8 +163,8 @@ GEXTEND Gram
 END
 
 let () =
-  let raw_printer _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
-  let printer _ _ _ _ = str "<Unavailable printer for rec_definition>" in
+  let raw_printer _ _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
+  let printer _ _ _ _ _ = str "<Unavailable printer for rec_definition>" in
   Pptactic.declare_extra_genarg_pprule wit_function_rec_definition_loc raw_printer printer printer
 
 (* TASSI: n'importe quoi ! *)
