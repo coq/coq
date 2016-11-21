@@ -244,6 +244,10 @@ define_evar_* mostly used internally in the unification engine.
   ...
   let Sigma (xn, sigma, pn) = ... in
   Sigma (ans, sigma, p1 +> ... +> pn)
+  
+  Examples of `Sigma.Unsafe.of_evar_map` include:
+  
+  Evarutil.new_evar env (Tacmach.project goal) ty   ----> Evarutil.new_evar env (Sigma.Unsafe.of_evar_map (Tacmach.project goal)) ty
 
 - The Proofview.Goal.*enter family of functions now takes a polymorphic
   continuation given as a record as an argument.
