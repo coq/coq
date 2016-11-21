@@ -743,7 +743,6 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	let argloc = loc_of_glob_constr c in
 	let resj = evd_comb1 (Coercion.inh_app_fun resolve_tc env.ExtraEnv.env) evdref resj in
         let resty = whd_all env.ExtraEnv.env !evdref resj.uj_type in
-        let resty = EConstr.of_constr resty in
       	  match EConstr.kind !evdref resty with
 	  | Prod (na,c1,c2) ->
 	    let tycon = Some c1 in
@@ -917,7 +916,6 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	      @[EConstr.of_constr (build_dependent_constructor cs)] in
 	    let lp = lift cs.cs_nargs p in
 	    let fty = hnf_lam_applist env.ExtraEnv.env !evdref lp inst in
-	    let fty = EConstr.of_constr fty in
 	    let fj = pretype (mk_tycon fty) env_f evdref lvar d in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
@@ -1100,7 +1098,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
 	     let sigma =  !evdref in
 	     let t = Retyping.get_type_of env.ExtraEnv.env sigma v in
 	     let t = EConstr.of_constr t in
-	       match EConstr.kind sigma (EConstr.of_constr (whd_all env.ExtraEnv.env sigma t)) with
+	       match EConstr.kind sigma (whd_all env.ExtraEnv.env sigma t) with
                | Sort s -> s
                | Evar ev when is_Type (existential_type sigma ev) ->
 		   evd_comb1 (define_evar_as_sort env.ExtraEnv.env) evdref ev

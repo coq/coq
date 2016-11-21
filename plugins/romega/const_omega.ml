@@ -353,7 +353,7 @@ let parse_term t =
 let parse_rel gl t =
   try match destructurate t with
     | Kapp("eq",[typ;t1;t2])
-      when destructurate (Tacmach.pf_nf gl (EConstr.of_constr typ)) = Kapp("Z",[]) -> Req (t1,t2)
+      when destructurate (EConstr.Unsafe.to_constr (Tacmach.pf_nf gl (EConstr.of_constr typ))) = Kapp("Z",[]) -> Req (t1,t2)
     | Kapp("Zne",[t1;t2]) -> Rne (t1,t2)
     | Kapp("Z.le",[t1;t2]) -> Rle (t1,t2)
     | Kapp("Z.lt",[t1;t2]) -> Rlt (t1,t2)

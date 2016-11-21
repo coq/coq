@@ -64,7 +64,7 @@ let apply_coercion_args env evd check isproj argl funj =
 	{ uj_val = applist (j_val funj,argl);
 	  uj_type = typ }
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
-      match EConstr.kind !evdref (EConstr.of_constr (whd_all env !evdref typ)) with
+      match EConstr.kind !evdref (whd_all env !evdref typ) with
       | Prod (_,c1,c2) ->
         if check && not (e_cumul env evdref (EConstr.of_constr (Retyping.get_type_of env !evdref h)) c1) then
 	  raise NoCoercion;
@@ -96,7 +96,7 @@ let make_existential loc ?(opaque = not (get_proofs_transparency ()))  env evdre
   Evarutil.e_new_evar env evdref ~src c
 
 let app_opt env evdref f t =
-  EConstr.of_constr (whd_betaiota !evdref (app_opt f t))
+  whd_betaiota !evdref (app_opt f t)
 
 let pair_of_array a = (a.(0), a.(1))
 
@@ -134,11 +134,10 @@ let local_assum (na, t) =
 let mu env evdref t =
   let rec aux v =
     let v' = hnf env !evdref v in
-    let v' = EConstr.of_constr v' in
       match disc_subset !evdref v' with
       | Some (u, p) ->
 	let f, ct = aux u in
-	let p = EConstr.of_constr (hnf_nodelta env !evdref p) in
+	let p = hnf_nodelta env !evdref p in
 	  (Some (fun x ->
 		   app_opt env evdref 
 		     f (papp evdref sig_proj1 [| u; p; x |])),
@@ -152,8 +151,6 @@ and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
   let open Context.Rel.Declaration in
   let rec coerce_unify env x y =
     let x = hnf env !evdref x and y = hnf env !evdref y in
-    let x = EConstr.of_constr x in
-    let y = EConstr.of_constr y in
       try
 	evdref := the_conv_x_leq env x y !evdref;
 	None
@@ -162,7 +159,7 @@ and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
     let subco () = subset_coerce env evdref x y in
     let dest_prod c =
       match Reductionops.splay_prod_n env (!evdref) 1 c with
-      | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na, EConstr.of_constr t), EConstr.of_constr c
+      | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na, EConstr.of_constr t), c
       | _ -> raise NoSubtacCoercion
     in
     let coerce_application typ typ' c c' l l' =
@@ -344,7 +341,7 @@ let app_coercion env evdref coercion v =
   | None -> v
   | Some f ->
      let v' = Typing.e_solve_evars env evdref (f v) in
-     EConstr.of_constr (whd_betaiota !evdref (EConstr.of_constr v'))
+     whd_betaiota !evdref (EConstr.of_constr v')
 
 let coerce_itf loc env evd v t c1 =
   let evdref = ref evd in
@@ -381,7 +378,6 @@ let apply_coercion env sigma p hj typ_cl =
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core env evd j =
   let t = whd_all env evd j.uj_type in
-  let t = EConstr.of_constr t in
     match EConstr.kind evd t with
     | Prod (_,_,_) -> (evd,j)
     | Evar ev ->
@@ -413,7 +409,7 @@ let inh_app_fun resolve_tc env evd j =
     with NoCoercion -> (evd, j)
 
 let type_judgment env sigma j =
-  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma j.uj_type)) with
+  match EConstr.kind sigma (whd_all env sigma j.uj_type) with
     | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_a_type env sigma j
 
@@ -429,7 +425,7 @@ let inh_tosort_force loc env evd j =
 
 let inh_coerce_to_sort loc env evd j =
   let typ = whd_all env evd j.uj_type in
-    match EConstr.kind evd (EConstr.of_constr typ) with
+    match EConstr.kind evd typ with
     | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
     | Evar ev ->
 	let (evd',s) = Evardefine.define_evar_as_sort env evd ev in
@@ -480,8 +476,8 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
       match
-      EConstr.kind evd (EConstr.of_constr (whd_all env evd t)),
-      EConstr.kind evd (EConstr.of_constr (whd_all env evd c1))
+      EConstr.kind evd (whd_all env evd t),
+      EConstr.kind evd (whd_all env evd c1)
       with
       | Prod (name,t1,t2), Prod (_,u1,u2) ->
           (* Conversion did not work, we may succeed with a coercion. *)

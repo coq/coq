@@ -73,7 +73,8 @@ let print_ref reduce ref =
   let typ = Global.type_of_global_unsafe ref in
   let typ =
     if reduce then
-      let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty (EConstr.of_constr typ)
+      let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty (EConstr.of_constr typ) in
+      let ccl = EConstr.Unsafe.to_constr ccl
       in it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
@@ -595,6 +596,7 @@ let gallina_print_context with_values =
 
 let gallina_print_eval red_fun env sigma _ {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env sigma (EConstr.of_constr trm) in
+  let ntrm = EConstr.Unsafe.to_constr ntrm in
   (str "     = " ++ gallina_print_typed_value_in_env env sigma (ntrm,typ))
 
 (******************************************)

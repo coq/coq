@@ -404,7 +404,7 @@ let native_norm env sigma c ty =
         let t2 = Sys.time () in
         let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
-        res
+        EConstr.of_constr res
     | _ -> anomaly (Pp.str "Compilation failure") 
 
 let native_conv_generic pb sigma t =

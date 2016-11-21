@@ -39,7 +39,7 @@ let env_nf_evar sigma env =
 let env_nf_betaiotaevar sigma env =
   process_rel_context
     (fun d e ->
-      push_rel (RelDecl.map_constr (fun c -> Reductionops.nf_betaiota sigma (EConstr.of_constr c)) d) e) env
+      push_rel (RelDecl.map_constr (fun c -> EConstr.Unsafe.to_constr (Reductionops.nf_betaiota sigma (EConstr.of_constr c))) d) e) env
 
 (****************************************)
 (* Operations on value/type constraints *)
@@ -85,7 +85,6 @@ let define_pure_evar_as_product evd evk =
   let evenv = evar_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
   let concl = Reductionops.whd_all evenv evd (EConstr.of_constr evi.evar_concl) in
-  let concl = EConstr.of_constr concl in
   let s = destSort evd concl in
   let evd1,(dom,u1) =
     let evd = Sigma.Unsafe.of_evar_map evd in
@@ -138,7 +137,7 @@ let define_pure_evar_as_lambda env evd evk =
   let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
-  let typ = EConstr.of_constr (Reductionops.whd_all evenv evd (EConstr.of_constr (evar_concl evi))) in
+  let typ = Reductionops.whd_all evenv evd (EConstr.of_constr (evar_concl evi)) in
   let evd1,(na,dom,rng) = match EConstr.kind evd typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd evd typ
@@ -177,7 +176,6 @@ let define_evar_as_sort env evd (ev,args) =
   let evi = Evd.find_undefined evd ev in 
   let s = Type u in
   let concl = Reductionops.whd_all (evar_env evi) evd (EConstr.of_constr evi.evar_concl) in
-  let concl = EConstr.of_constr concl in
   let sort = destSort evd concl in
   let evd' = Evd.define ev (Constr.mkSort s) evd in
   Evd.set_leq_sort env evd' (Type (Univ.super u)) sort, s
@@ -190,7 +188,7 @@ let define_evar_as_sort env evd (ev,args) =
 let split_tycon loc env evd tycon =
   let rec real_split evd c =
     let t = Reductionops.whd_all env evd c in
-      match EConstr.kind evd (EConstr.of_constr t) with
+      match EConstr.kind evd t with
 	| Prod (na,dom,rng) -> evd, (na, dom, rng)
 	| Evar ev (* ev is undefined because of whd_all *) ->
 	    let (evd',prod) = define_evar_as_product evd ev in

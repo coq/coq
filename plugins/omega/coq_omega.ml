@@ -568,7 +568,7 @@ let abstract_path typ path t =
   mkLambda (Name (Id.of_string "x"), typ, abstract), !term_occur
 
 let focused_simpl path gl =
-  let newc = context (fun i t -> pf_nf gl (EConstr.of_constr t)) (List.rev path) (pf_concl gl) in
+  let newc = context (fun i t -> EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr t))) (List.rev path) (pf_concl gl) in
   let newc = EConstr.of_constr newc in
   Proofview.V82.of_tactic (convert_concl_no_check newc DEFAULTcast) gl
 
@@ -1386,7 +1386,7 @@ let destructure_omega gl tac_def (id,c) =
   else
     try match destructurate_prop c with
       | Kapp(Eq,[typ;t1;t2])
-	when begin match destructurate_type (pf_nf gl (EConstr.of_constr typ)) with Kapp(Z,[]) -> true | _ -> false end ->
+	when begin match destructurate_type (EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr typ))) with Kapp(Z,[]) -> true | _ -> false end ->
 	  let t = mk_plus t1 (mk_inv t2) in
 	  normalize_equation
 	    id EQUA (Lazy.force coq_Zegal_left) 2 t t1 t2 tac_def
@@ -1661,7 +1661,7 @@ let rec decidability gl t =
     | Kapp(Not,[t1]) ->
         mkApp (Lazy.force coq_dec_not, [| t1; decidability gl t1 |])
     | Kapp(Eq,[typ;t1;t2]) ->
-	begin match destructurate_type (pf_nf gl (EConstr.of_constr typ)) with
+	begin match destructurate_type (EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr typ))) with
           | Kapp(Z,[]) ->  mkApp (Lazy.force coq_dec_eq, [| t1;t2 |])
           | Kapp(Nat,[]) ->  mkApp (Lazy.force coq_dec_eq_nat, [| t1;t2 |])
           | _ -> raise Undecidable
@@ -1791,7 +1791,7 @@ let destructure_hyps =
 		   with Not_found -> loop lit)
 	      | Kapp(Eq,[typ;t1;t2]) ->
                   if !old_style_flag then begin
-		    match destructurate_type (pf_nf (EConstr.of_constr typ)) with
+		    match destructurate_type (EConstr.Unsafe.to_constr (pf_nf (EConstr.of_constr typ))) with
 		    | Kapp(Nat,_) ->
                         Tacticals.New.tclTHENLIST [
 			  (simplest_elim
@@ -1808,7 +1808,7 @@ let destructure_hyps =
                         ]
 		    | _ -> loop lit
                   end else begin
-		    match destructurate_type (pf_nf (EConstr.of_constr typ)) with
+		    match destructurate_type (EConstr.Unsafe.to_constr (pf_nf (EConstr.of_constr typ))) with
 		    | Kapp(Nat,_) ->
                         (Tacticals.New.tclTHEN
 			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))

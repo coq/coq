@@ -409,6 +409,7 @@ let get_funs_constant mp dp =
 	      (Evd.from_env (Global.env ()))
 	      (EConstr.of_constr body)
 	    in
+	    let body = EConstr.Unsafe.to_constr body in
 	    body
 	| None -> error ( "Cannot define a principle over an axiom ")
     in

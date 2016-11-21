@@ -264,7 +264,7 @@ let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
 let error s = pperror (str s)
 
 let reduce c =
-  Reductionops.clos_norm_flags CClosure.betaiota (Global.env ()) Evd.empty (EConstr.of_constr c)
+  EConstr.Unsafe.to_constr (Reductionops.clos_norm_flags CClosure.betaiota (Global.env ()) Evd.empty (EConstr.of_constr c))
 
 exception NoObligations of Id.t option
 
@@ -536,6 +536,8 @@ let declare_mutual_definition l =
 	let subs, typ = (subst_body true x) in
 	let term = snd (Reductionops.splay_lam_n (Global.env ()) Evd.empty len (EConstr.of_constr subs)) in
 	let typ = snd (Reductionops.splay_prod_n (Global.env ()) Evd.empty len (EConstr.of_constr typ)) in
+	let term = EConstr.Unsafe.to_constr term in
+	let typ = EConstr.Unsafe.to_constr typ in
 	  x.prg_reduce term, x.prg_reduce typ, x.prg_implicits) l)
   in
 (*   let fixdefs = List.map reduce_fix fixdefs in *)

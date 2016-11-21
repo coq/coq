@@ -53,7 +53,7 @@ let inductive_type_knowing_parameters env sigma (ind,u) jl =
   EConstr.of_constr (Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp)
 
 let e_type_judgment env evdref j =
-  match EConstr.kind !evdref (EConstr.of_constr (whd_all env !evdref j.uj_type)) with
+  match EConstr.kind !evdref (whd_all env !evdref j.uj_type) with
     | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | Evar ev ->
         let (evd,s) = Evardefine.define_evar_as_sort env !evdref ev in
@@ -71,7 +71,7 @@ let e_judge_of_apply env evdref funj argjv =
       { uj_val  = mkApp (j_val funj, Array.map j_val argjv);
         uj_type = typ }
   | hj::restjl ->
-      match EConstr.kind !evdref (EConstr.of_constr (whd_all env !evdref typ)) with
+      match EConstr.kind !evdref (whd_all env !evdref typ) with
       | Prod (_,c1,c2) ->
 	 if Evarconv.e_cumul env evdref hj.uj_type c1 then
 	   apply_rec (n+1) (subst1 hj.uj_val c2) restjl
@@ -104,7 +104,7 @@ let e_is_correct_arity env evdref c pj ind specif params =
   let allowed_sorts = elim_sorts specif in
   let error () = Pretype_errors.error_elim_arity env !evdref ind allowed_sorts c pj None in
   let rec srec env pt ar =
-    let pt' = EConstr.of_constr (whd_all env !evdref pt) in
+    let pt' = whd_all env !evdref pt in
     match EConstr.kind !evdref pt', ar with
     | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
         if not (Evarconv.e_cumul env evdref a1 (EConstr.of_constr a1')) then error ();
@@ -144,7 +144,6 @@ let e_type_case_branches env evdref (ind,largs) pj c =
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
   let ty = whd_betaiota !evdref (lambda_applist_assum !evdref (n+1) p (realargs@[c])) in
-  let ty = EConstr.of_constr ty in
   (lc, ty)
 
 let e_judge_of_case env evdref ci pj cj lfj =

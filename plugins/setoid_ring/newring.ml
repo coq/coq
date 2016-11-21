@@ -83,8 +83,8 @@ let lookup_map map =
 
 let protect_red map env sigma c =
   let c = EConstr.Unsafe.to_constr c in
-  kl (create_clos_infos all env)
-    (mk_clos_but (lookup_map map c) (Esubst.subs_id 0) c);;
+  EConstr.of_constr (kl (create_clos_infos all env)
+    (mk_clos_but (lookup_map map c) (Esubst.subs_id 0) c));;
 
 let protect_tac map =
   Tactics.reduct_option (protect_red map,DEFAULTcast) None

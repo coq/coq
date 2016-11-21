@@ -125,7 +125,7 @@ let max_prefix_sign lid sign =
     | id::l -> snd (max_rec (id, sign_prefix id sign) l)
 *)
 let rec add_prods_sign env sigma t =
-  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
+  match EConstr.kind sigma (whd_all env sigma t) with
     | Prod (na,c1,b) ->
 	let id = id_of_name_using_hdchar env (EConstr.Unsafe.to_constr t) na in
 	let b'= subst1 (mkVar id) b in
@@ -180,7 +180,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       (pty,goal)
   in
   let npty = nf_all env sigma pty in
-  let extenv = push_named (LocalAssum (p,npty)) env in
+  let extenv = push_named (nlocal_assum (p,npty)) env in
   extenv, goal
 
 (* [inversion_scheme sign I]

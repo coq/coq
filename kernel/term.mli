@@ -98,7 +98,6 @@ val isVarId : Id.t -> constr -> bool
 val isInd  : constr -> bool
 val isEvar : constr -> bool
 val isMeta : constr -> bool
-val isMetaOf : metavariable -> constr -> bool
 val isEvar_or_Meta : constr -> bool
 val isSort : constr -> bool
 val isCast : constr -> bool

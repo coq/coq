@@ -173,6 +173,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 	      base
       	| _ ->
 	   let t' = whd_all env sigma (EConstr.of_constr p) in
+	   let t' = EConstr.Unsafe.to_constr t' in
 	   if Term.eq_constr p' t' then assert false
 	   else prec env i sign t'
     in
@@ -247,6 +248,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
             applist(lift i fk,realargs@[arg])
      	| _ ->
 	   let t' = whd_all env sigma (EConstr.of_constr p) in
+	   let t' = EConstr.Unsafe.to_constr t' in
 	     if Term.eq_constr t' p' then assert false
 	     else prec env i hyps t'
     in
@@ -265,7 +267,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
            | None ->
 	       mkLambda_name env
 		 (n,t,process_constr (push_rel d env) (i+1)
-		    (whd_beta Evd.empty (EConstr.of_constr (applist (lift 1 f, [(mkRel 1)]))))
+		    (EConstr.Unsafe.to_constr (whd_beta Evd.empty (EConstr.of_constr (applist (lift 1 f, [(mkRel 1)])))))
 		    (cprest,rest))
            | Some(_,f_0) ->
 	       let nF = lift (i+1+decF) f_0 in
@@ -273,7 +275,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 	       let arg = process_pos env' nF (lift 1 t) in
                mkLambda_name env
 		 (n,t,process_constr env' (i+1)
-		    (whd_beta Evd.empty (EConstr.of_constr (applist (lift 1 f, [(mkRel 1); arg]))))
+		    (EConstr.Unsafe.to_constr (whd_beta Evd.empty (EConstr.of_constr (applist (lift 1 f, [(mkRel 1); arg])))))
 		    (cprest,rest)))
     | (LocalDef (n,c,t) as d)::cprest, rest ->
 	mkLetIn

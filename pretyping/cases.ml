@@ -1057,7 +1057,6 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
   (* Note: applying the substitution in tms is not important (is it sure?) *)
   let ccl'' =
     whd_betaiota Evd.empty (subst_predicate (realargsi, copti) ccl' tms) in
-  let ccl'' = EConstr.of_constr ccl'' in
   (* We adjust ccl st: gamma, x'1..x'n, x1..xn, tms |- ccl'' *)
   let ccl''' = liftn_predicate n (n+1) ccl'' tms in
   (* We finally get gamma,x'1..x'n,x |- [X1;x1:I(X1)]..[Xn;xn:I(Xn)]pred'''*)
@@ -1065,8 +1064,8 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
 
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
   let pred = abstract_predicate env !evdref indf current realargs dep tms p in
-  (pred, EConstr.of_constr (whd_betaiota !evdref
-           (applist (pred, realargs@[current]))))
+  (pred, whd_betaiota !evdref
+           (applist (pred, realargs@[current])))
 
 (* Take into account that a type has been discovered to be inductive, leading
    to more dependencies in the predicate if the type has indices *)
@@ -1221,7 +1220,7 @@ let rec generalize_problem names pb = function
       | LocalDef (Anonymous,_,_) -> pb', deps
       | _ ->
 	 (* for better rendering *)
-	let d = RelDecl.map_type (fun c -> whd_betaiota !(pb.evdref) (EConstr.of_constr c)) d in
+	let d = RelDecl.map_type (fun c -> EConstr.Unsafe.to_constr (whd_betaiota !(pb.evdref) (EConstr.of_constr c))) d in
         let tomatch = lift_tomatch_stack 1 pb'.tomatch in
         let tomatch = relocate_index_tomatch !(pb.evdref) (i+1) 1 tomatch in
         { pb' with
@@ -1400,7 +1399,6 @@ and match_current pb (initial,tomatch) =
 	      pred current indt (names,dep) tomatch in
 	  let ci = make_case_info pb.env (fst mind) pb.casestyle in
 	  let pred = nf_betaiota !(pb.evdref) pred in
-	  let pred = EConstr.of_constr pred in
 	  let case =
 	    make_case_or_project pb.env !(pb.evdref) indf ci pred current brvals
 	  in
@@ -1638,7 +1636,6 @@ let rec list_assoc_in_triple x = function
 
 let abstract_tycon loc env evdref subst tycon extenv t =
   let t = nf_betaiota !evdref t in (* it helps in some cases to remove K-redex*)
-  let t = EConstr.of_constr t in
   let src = match EConstr.kind !evdref t with
     | Evar (evk,_) -> (loc,Evar_kinds.SubEvar evk)
     | _ -> (loc,Evar_kinds.CasesType true) in
@@ -1734,7 +1731,7 @@ let build_inversion_problem loc env sigma tms t =
     let id = next_name_away (named_hd env (EConstr.Unsafe.to_constr t) Anonymous) avoid in
     PatVar (Loc.ghost,Name id), ((id,t)::subst, id::avoid) in
   let rec reveal_pattern t (subst,avoid as acc) =
-    match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
+    match EConstr.kind sigma (whd_all env sigma t) with
     | Construct (cstr,u) -> PatCstr (Loc.ghost,cstr,[],Anonymous), acc
     | App (f,v) when isConstruct sigma f ->
 	let cstr,u = destConstruct sigma f in

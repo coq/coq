@@ -70,11 +70,17 @@ type scheme = TypeScheme | Default
 
 type flag = info * scheme
 
+let whd_all env t =
+  EConstr.Unsafe.to_constr (whd_all env none (EConstr.of_constr t))
+
+let whd_betaiotazeta t =
+  EConstr.Unsafe.to_constr (whd_betaiotazeta none (EConstr.of_constr t))
+
 (*s [flag_of_type] transforms a type [t] into a [flag].
   Really important function. *)
 
 let rec flag_of_type env t : flag =
-  let t = whd_all env none (EConstr.of_constr t) in
+  let t = whd_all env t in
   match kind_of_term t with
     | Prod (x,t,c) -> flag_of_type (push_rel (LocalAssum (x,t)) env) c
     | Sort s when Sorts.is_prop s -> (Logic,TypeScheme)
@@ -105,14 +111,14 @@ let push_rel_assum (n, t) env =
 (*s [type_sign] gernerates a signature aimed at treating a type application. *)
 
 let rec type_sign env c =
-  match kind_of_term (whd_all env none (EConstr.of_constr c)) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	(if is_info_scheme env t then Keep else Kill Kprop)
 	:: (type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
 let rec type_scheme_nb_args env c =
-  match kind_of_term (whd_all env none (EConstr.of_constr c)) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	let n = type_scheme_nb_args (push_rel_assum (n,t) env) d in
 	if is_info_scheme env t then n+1 else n
@@ -138,7 +144,7 @@ let make_typvar n vl =
   next_ident_away id' vl
 
 let rec type_sign_vl env c =
-  match kind_of_term (whd_all env none (EConstr.of_constr c)) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	let s,vl = type_sign_vl (push_rel_assum (n,t) env) d in
 	if not (is_info_scheme env t) then Kill Kprop::s, vl
@@ -146,7 +152,7 @@ let rec type_sign_vl env c =
     | _ -> [],[]
 
 let rec nb_default_params env c =
-  match kind_of_term (whd_all env none (EConstr.of_constr c)) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	let n = nb_default_params (push_rel_assum (n,t) env) d in
 	if is_default env t then n+1 else n
@@ -217,7 +223,7 @@ let parse_ind_args si args relmax =
 
 
 let rec extract_type env db j c args =
-  match kind_of_term (whd_betaiotazeta none (EConstr.of_constr c)) with
+  match kind_of_term (whd_betaiotazeta c) with
     | App (d, args') ->
 	(* We just accumulate the arguments. *)
 	extract_type env db j d (Array.to_list args' @ args)
@@ -319,7 +325,7 @@ and extract_type_app env db (r,s) args =
 and extract_type_scheme env db c p =
   if Int.equal p 0 then extract_type env db 0 c []
   else
-    let c = whd_betaiotazeta none (EConstr.of_constr c) in
+    let c = whd_betaiotazeta c in
     match kind_of_term c with
       | Lambda (n,t,d) ->
           extract_type_scheme (push_rel_assum (n,t) env) db d (p-1)
@@ -492,7 +498,7 @@ and extract_really_ind env kn mib =
 *)
 
 and extract_type_cons env db dbmap c i =
-  match kind_of_term (whd_all env none (EConstr.of_constr c)) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	let env' = push_rel_assum (n,t) env in
 	let db' = (try Int.Map.find i dbmap with Not_found -> 0) :: db in

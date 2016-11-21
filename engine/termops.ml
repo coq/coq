@@ -692,6 +692,9 @@ type meta_type_map = (metavariable * types) list
 
 type meta_value_map = (metavariable * constr) list
 
+let isMetaOf sigma mv c =
+  match EConstr.kind sigma c with Meta mv' -> Int.equal mv mv' | _ -> false
+
 let rec subst_meta bl c =
   match kind_of_term c with
     | Meta i -> (try Int.List.assoc i bl with Not_found -> c)

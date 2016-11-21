@@ -582,7 +582,6 @@ let fix ido n = match ido with
 
 let rec check_is_mutcoind env sigma cl =
   let b = whd_all env sigma cl in
-  let b = EConstr.of_constr b in
   match EConstr.kind sigma b with
   | Prod (na, c1, b) ->
     check_is_mutcoind (push_rel (local_assum (na,c1)) env) sigma b
@@ -634,11 +633,11 @@ let cofix ido = match ido with
 (*          Reduction and conversion tactics                  *)
 (**************************************************************)
 
-type tactic_reduction = env -> evar_map -> constr -> Constr.constr
+type tactic_reduction = env -> evar_map -> constr -> constr
 
 let pf_reduce_decl redfun where decl gl =
   let open Context.Named.Declaration in
-  let redfun' c = EConstr.of_constr (Tacmach.New.pf_apply redfun gl c) in
+  let redfun' c = Tacmach.New.pf_apply redfun gl c in
   match decl with
   | LocalAssum (id,ty) ->
       let ty = EConstr.of_constr ty in
@@ -722,7 +721,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
 
 let reduct_in_concl (redfun,sty) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-    convert_concl_no_check (EConstr.of_constr (Tacmach.New.pf_apply redfun gl (Tacmach.New.pf_concl gl))) sty
+    convert_concl_no_check (Tacmach.New.pf_apply redfun gl (Tacmach.New.pf_concl gl)) sty
   end }
 
 let reduct_in_hyp ?(check=false) redfun (id,where) =
@@ -742,23 +741,25 @@ let reduct_option ?(check=false) redfun = function
 let pf_e_reduce_decl redfun where decl gl =
   let open Context.Named.Declaration in
   let sigma = Proofview.Goal.sigma gl in
-  let redfun sigma c = redfun.e_redfun (Tacmach.New.pf_env gl) sigma (EConstr.of_constr c) in
+  let redfun sigma c = redfun.e_redfun (Tacmach.New.pf_env gl) sigma c in
   match decl with
   | LocalAssum (id,ty) ->
+      let ty = EConstr.of_constr ty in
       if where == InHypValueOnly then
 	user_err  (pr_id id ++ str " has no value.");
     let Sigma (ty', sigma, p) = redfun sigma ty in
-    Sigma (LocalAssum (id, ty'), sigma, p)
+    Sigma (nlocal_assum (id, ty'), sigma, p)
   | LocalDef (id,b,ty) ->
+      let b = EConstr.of_constr b in
+      let ty = EConstr.of_constr ty in
       let Sigma (b', sigma, p) = if where != InHypTypeOnly then redfun sigma b else Sigma.here b sigma in
       let Sigma (ty', sigma, q) = if where != InHypValueOnly then redfun sigma ty else Sigma.here ty sigma in
-      Sigma (LocalDef (id, b', ty'), sigma, p +> q)
+      Sigma (nlocal_def (id, b', ty'), sigma, p +> q)
 
 let e_reduct_in_concl ~check (redfun, sty) =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let Sigma (c', sigma, p) = redfun.e_redfun (Tacmach.New.pf_env gl) sigma (Tacmach.New.pf_concl gl) in
-    let c' = EConstr.of_constr c' in
     Sigma (convert_concl ~check c' sty, sigma, p)
   end }
 
@@ -779,7 +780,6 @@ let e_change_in_concl (redfun,sty) =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let Sigma (c, sigma, p) = redfun.e_redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.raw_concl gl) in
-    let c = EConstr.of_constr c in
     Sigma (convert_concl_no_check c sty, sigma, p)
   end }
 
@@ -787,18 +787,21 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where decl env sigm
   let open Context.Named.Declaration in
   match decl with
   | LocalAssum (id,ty) ->
+      let ty = EConstr.of_constr ty in
       if where == InHypValueOnly then
 	user_err  (pr_id id ++ str " has no value.");
-    let Sigma (ty', sigma, p) = (redfun false).e_redfun env sigma (EConstr.of_constr ty) in
-    Sigma (LocalAssum (id, ty'), sigma, p)
+    let Sigma (ty', sigma, p) = (redfun false).e_redfun env sigma ty in
+    Sigma (nlocal_assum (id, ty'), sigma, p)
   | LocalDef (id,b,ty) ->
+      let b = EConstr.of_constr b in
+      let ty = EConstr.of_constr ty in
       let Sigma (b', sigma, p) =
-	if where != InHypTypeOnly then (redfun true).e_redfun env sigma (EConstr.of_constr b) else Sigma.here b sigma
+	if where != InHypTypeOnly then (redfun true).e_redfun env sigma b else Sigma.here b sigma
       in
       let Sigma (ty', sigma, q) =
-	if where != InHypValueOnly then (redfun false).e_redfun env sigma (EConstr.of_constr ty) else Sigma.here ty sigma
+	if where != InHypValueOnly then (redfun false).e_redfun env sigma ty else Sigma.here ty sigma
       in
-      Sigma (LocalDef (id,b',ty'), sigma, p +> q)
+      Sigma (nlocal_def (id,b',ty'), sigma, p +> q)
 
 let e_change_in_hyp redfun (id,where) =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
@@ -818,21 +821,22 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = EConstr.of_constr t1 in
   if deep then begin
     let t2 = Retyping.get_type_of env sigma origc in
+    let t2 = EConstr.of_constr t2 in
     let sigma, t2 = Evarsolve.refresh_universes
-		      ~onlyalg:true (Some false) env sigma (EConstr.of_constr t2) in
+		      ~onlyalg:true (Some false) env sigma t2 in
     let t2 = EConstr.of_constr t2 in
     let sigma, b = infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 in
     if not b then
       if
-        isSort sigma (EConstr.of_constr (whd_all env sigma t1)) &&
-        isSort sigma (EConstr.of_constr (whd_all env sigma t2))
+        isSort sigma (whd_all env sigma t1) &&
+        isSort sigma (whd_all env sigma t2)
       then (mayneedglobalcheck := true; sigma)
       else
         user_err ~hdr:"convert-check-hyp" (str "Types are incompatible.")
     else sigma
   end
   else
-    if not (isSort sigma (EConstr.of_constr (whd_all env sigma t1))) then
+    if not (isSort sigma (whd_all env sigma t1)) then
       user_err ~hdr:"convert-check-hyp" (str "Not a type.")
     else sigma
 
@@ -843,7 +847,7 @@ let change_and_check cv_pb mayneedglobalcheck deep t = { e_redfun = begin fun en
   let sigma = check_types env sigma mayneedglobalcheck deep t' c in
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
   if not b then user_err ~hdr:"convert-check-hyp" (str "Not convertible.");
-  Sigma.Unsafe.of_pair (EConstr.Unsafe.to_constr t', sigma)
+  Sigma.Unsafe.of_pair (t', sigma)
 end }
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
@@ -858,7 +862,7 @@ let change_on_subterm cv_pb deep t where = { e_redfun = begin fun env sigma c ->
         env sigma c in
   if !mayneedglobalcheck then
     begin
-      try ignore (Typing.unsafe_type_of env (Sigma.to_evar_map sigma) (EConstr.of_constr c))
+      try ignore (Typing.unsafe_type_of env (Sigma.to_evar_map sigma) c)
       with e when catchable_exception e ->
         error "Replacement would lead to an ill-typed term."
     end;
@@ -1101,8 +1105,8 @@ let intros_replacing ids =
 (* User-level introduction tactics *)
 
 let lookup_hypothesis_as_renamed env ccl = function
-  | AnonHyp n -> Detyping.lookup_index_as_renamed env ccl n
-  | NamedHyp id -> Detyping.lookup_name_as_displayed env ccl id
+  | AnonHyp n -> Detyping.lookup_index_as_renamed env (EConstr.Unsafe.to_constr ccl) n
+  | NamedHyp id -> Detyping.lookup_name_as_displayed env (EConstr.Unsafe.to_constr ccl) id
 
 let lookup_hypothesis_as_renamed_gen red h gl =
   let env = Proofview.Goal.env gl in
@@ -1110,11 +1114,11 @@ let lookup_hypothesis_as_renamed_gen red h gl =
     match lookup_hypothesis_as_renamed env ccl h with
       | None when red ->
         let (redfun, _) = Redexpr.reduction_of_red_expr env (Red true) in
-        let Sigma (c, _, _) = redfun.e_redfun env (Proofview.Goal.sigma gl) (EConstr.of_constr ccl) in
+        let Sigma (c, _, _) = redfun.e_redfun env (Proofview.Goal.sigma gl) ccl in
         aux c
       | x -> x
   in
-  try aux (EConstr.to_constr (Tacmach.New.project gl) (Proofview.Goal.concl gl))
+  try aux (Proofview.Goal.concl gl)
   with Redelimination -> None
 
 let is_quantified_hypothesis id gl =
@@ -1261,7 +1265,6 @@ let cut c =
         let typ = Typing.unsafe_type_of env sigma c in
         let typ = EConstr.of_constr typ in
         let typ = whd_all env sigma typ in
-        let typ = EConstr.of_constr typ in
         match EConstr.kind sigma typ with
         | Sort _ -> true
         | _ -> false
@@ -1270,7 +1273,7 @@ let cut c =
     if is_sort then
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_of_hyps gl) in
       (** Backward compat: normalize [c]. *)
-      let c = if normalize_cut then EConstr.of_constr (local_strong whd_betaiota sigma c) else c in
+      let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
       Refine.refine ~unsafe:true { run = begin fun h ->
         let Sigma (f, h, p) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
         let Sigma (x, h, q) = Evarutil.new_evar env h c in
@@ -1755,7 +1758,6 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind :
     let thm_ty0 = nf_betaiota sigma (EConstr.of_constr (Retyping.get_type_of env sigma c)) in
     let try_apply thm_ty nprod =
       try
-        let thm_ty = EConstr.of_constr thm_ty in
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
         if n<0 then error "Applied theorem has not enough premisses.";
         let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
@@ -1766,7 +1768,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind :
     let rec try_red_apply thm_ty (exn0, info) =
       try
         (* Try to head-reduce the conclusion of the theorem *)
-        let red_thm = try_red_product env sigma (EConstr.of_constr thm_ty) in
+        let red_thm = try_red_product env sigma thm_ty in
         tclORELSEOPT
           (try_apply red_thm concl_nprod)
           (function (e, info) -> match e with
@@ -1880,7 +1882,6 @@ let progress_with_clause flags innerclause clause =
 
 let apply_in_once_main flags innerclause env sigma (d,lbind) =
   let thm = nf_betaiota sigma (EConstr.of_constr (Retyping.get_type_of env sigma d)) in
-  let thm = EConstr.of_constr thm in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with e when CErrors.noncritical e ->
@@ -2183,7 +2184,6 @@ let apply_type newcl args =
     let store = Proofview.Goal.extra gl in
     Refine.refine { run = begin fun sigma ->
       let newcl = nf_betaiota (Sigma.to_evar_map sigma) newcl (* As in former Logic.refine *) in
-      let newcl = EConstr.of_constr newcl in
       let Sigma (ev, sigma, p) =
         Evarutil.new_evar env sigma ~principal:true ~store newcl in
       Sigma (applist (ev, args), sigma, p)
@@ -2377,7 +2377,6 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let whd_all = Tacmach.New.pf_apply whd_all gl in
     let t = whd_all (EConstr.of_constr (type_of (mkVar id))) in
-    let t = EConstr.of_constr t in
     let eqtac, thin = match match_with_equality_type sigma t with
     | Some (hdcncl,[_;lhs;rhs]) ->
         if l2r && isVar sigma lhs && not (occur_var env sigma (destVar sigma lhs) rhs) then
@@ -3039,7 +3038,7 @@ let unfold_body x =
   let xval = EConstr.of_constr xval in
   Tacticals.New.afterHyp x begin fun aft ->
   let hl = List.fold_right (fun decl cl -> (NamedDecl.get_id decl, InHyp) :: cl) aft [] in
-  let rfun _ _ c = EConstr.Unsafe.to_constr (replace_vars [x, xval] c) in
+  let rfun _ _ c = replace_vars [x, xval] c in
   let reducth h = reduct_in_hyp rfun h in
   let reductc = reduct_in_concl (rfun, DEFAULTcast) in
   Tacticals.New.tclTHENLIST [Tacticals.New.tclMAP reducth hl; reductc]
@@ -3692,7 +3691,6 @@ let abstract_args gl generalize_vars dep id defined f args =
   let aux (prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars, env) arg =
     let name, ty, arity =
       let rel, c = Reductionops.splay_prod_n env !sigma 1 prod in
-      let c = EConstr.of_constr c in
       let decl = List.hd rel in
       RelDecl.get_name decl, RelDecl.get_type decl, c
     in
@@ -3855,9 +3853,7 @@ let specialize_eqs id gl =
   let acc' = it_mkLambda_or_LetIn acc ctx'' in
   let ty' = Tacred.whd_simpl env !evars ty'
   and acc' = Tacred.whd_simpl env !evars acc' in
-  let acc' = EConstr.of_constr acc' in
-  let ty' = Evarutil.nf_evar !evars ty' in
-  let ty' = EConstr.of_constr ty' in
+  let ty' = EConstr.of_constr (Evarutil.nf_evar !evars (EConstr.Unsafe.to_constr ty')) in
     if worked then
       tclTHENFIRST (Tacmach.internal_cut true id ty')
 	(Proofview.V82.of_tactic (exact_no_check ((* refresh_universes_strict *) acc'))) gl
@@ -4368,7 +4364,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       let (sigma, c) = pose_all_metas_as_evars env indclause.evd (clenv_value indclause) in
       Sigma.Unsafe.of_pair (c, sigma)
     with e when catchable_exception e ->
-    try find_clause (EConstr.of_constr (try_red_product env sigma typ))
+    try find_clause (try_red_product env sigma typ)
     with Redelimination -> raise e in
   find_clause typ
 
@@ -4390,7 +4386,7 @@ let check_enough_applied env sigma elim =
   | None ->
       (* No eliminator given *)
       fun u ->
-      let t,_ = decompose_app sigma (EConstr.of_constr (whd_all env sigma u)) in isInd sigma t
+      let t,_ = decompose_app sigma (whd_all env sigma u) in isInd sigma t
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (fst elimc) in
       let elimt = EConstr.of_constr elimt in
@@ -4716,7 +4712,7 @@ let maybe_betadeltaiota_concl allowred gl =
   if not allowred then concl
   else
     let env = Proofview.Goal.env gl in
-    EConstr.of_constr (whd_all env sigma concl)
+    whd_all env sigma concl
 
 let reflexivity_red allowred =
   Proofview.Goal.enter { enter = begin fun gl ->

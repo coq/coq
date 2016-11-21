@@ -247,14 +247,11 @@ end) = struct
     in
     let rec aux env evars ty l =
       let t = Reductionops.whd_all env (goalevars evars) ty in
-      let t = EConstr.of_constr t in
 	match EConstr.kind (goalevars evars) t, l with
 	| Prod (na, ty, b), obj :: cstrs ->
           let b = Reductionops.nf_betaiota (goalevars evars) b in
-          let b = EConstr.of_constr b in
 	  if noccurn (goalevars evars) 1 b (* non-dependent product *) then
 	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
-	    let ty = EConstr.of_constr ty in
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let evars, relty = mk_relty evars env ty obj in
 	    let evars, newarg = app_poly env evars respectful [| ty ; b' ; relty ; arg |] in
@@ -264,7 +261,6 @@ end) = struct
 	      aux (Environ.push_rel (local_assum (na, ty)) env) evars b cstrs
 	    in
 	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
-	    let ty = EConstr.of_constr ty in
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
@@ -275,7 +271,6 @@ end) = struct
 	  (match finalcstr with
 	  | None | Some (_, None) ->
 	    let t = Reductionops.nf_betaiota (fst evars) ty in
-	    let t = EConstr.of_constr t in
 	    let evars, rel = mk_relty evars env t None in
 	      evars, t, rel, [t, Some rel]
 	  | Some (t, Some rel) -> evars, t, rel, [t, Some rel])
@@ -355,7 +350,7 @@ end) = struct
       if Int.equal n 0 then start evars env prod
       else
         let sigma = goalevars evars in
-	match EConstr.kind sigma (EConstr.of_constr (Reductionops.whd_all env sigma prod)) with
+	match EConstr.kind sigma (Reductionops.whd_all env sigma prod) with
 	| Prod (na, ty, b) ->
 	  if noccurn sigma 1 b then
 	    let b' = lift (-1) b in
@@ -375,7 +370,6 @@ end) = struct
 	with Not_found ->
           let sigma = goalevars evars in
 	  let ty = Reductionops.whd_all env sigma ty in
-	  let ty = EConstr.of_constr ty in
 	  find env (mkApp (c, [| arg |])) (prod_applist sigma ty [arg]) args
     in find env c ty args
 
@@ -513,7 +507,6 @@ let error_no_relation () = error "Cannot find a relation to rewrite."
 let rec decompose_app_rel env evd t = 
   (** Head normalize for compatibility with the old meta mechanism *)
   let t = Reductionops.whd_betaiota evd t in
-  let t = EConstr.of_constr t in
   match EConstr.kind evd t with
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
@@ -1011,7 +1004,7 @@ let unfold_match env sigma sk app =
   | App (f', args) when eq_constant (fst (destConst sigma f')) sk ->
       let v = Environ.constant_value_in (Global.env ()) (sk,Univ.Instance.empty)(*FIXME*) in
       let v = EConstr.of_constr v in
-	EConstr.of_constr (Reductionops.whd_beta sigma (mkApp (v, args)))
+	Reductionops.whd_beta sigma (mkApp (v, args))
   | _ -> app
 
 let is_rew_cast = function RewCast _ -> true | _ -> false
@@ -1106,7 +1099,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		      | x -> x
 		    in
 		    let res =
-		      { rew_car = EConstr.of_constr (Reductionops.hnf_prod_appvect env (goalevars evars) r.rew_car args);
+		      { rew_car = Reductionops.hnf_prod_appvect env (goalevars evars) r.rew_car args;
 			rew_from = mkApp(r.rew_from, args); rew_to = mkApp(r.rew_to, args);
 			rew_prf = prf; rew_evars = r.rew_evars }
 		    in 
@@ -1455,7 +1448,6 @@ module Strategies =
           let rfn, ckind = Redexpr.reduction_of_red_expr env r in
           let sigma = Sigma.Unsafe.of_evar_map (goalevars evars) in
 	  let Sigma (t', sigma, _) = rfn.Reductionops.e_redfun env sigma t in
-	  let t' = EConstr.of_constr t' in
 	  let evars' = Sigma.to_evar_map sigma in
 	    if Termops.eq_constr evars' t' t then
 	      state, Identity
@@ -1475,7 +1467,6 @@ module Strategies =
 	  with e when CErrors.noncritical e ->
             error "fold: the term is not unfoldable !"
 	in
-	let unfolded = EConstr.of_constr unfolded in
 	  try
 	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
 	    let c' = nf_evar sigma c in
@@ -1568,7 +1559,6 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 	| RewCast c -> None
 	| RewPrf (rel, p) ->
 	  let p = nf_zeta env evars' (nf_evar evars' p) in
-	  let p = EConstr.of_constr p in
 	  let term =
 	    match abs with
 	    | None -> p
@@ -1951,8 +1941,7 @@ let declare_projection n instance_id r =
 	  | _ -> typ
       in aux init
     in
-    let ctx,ccl = Reductionops.splay_prod_n env sigma (3 * n) typ in
-    let ccl = EConstr.of_constr ccl
+    let ctx,ccl = Reductionops.splay_prod_n env sigma (3 * n) typ
     in it_mkProd_or_LetIn ccl ctx
   in
   let typ = it_mkProd_or_LetIn typ ctx in

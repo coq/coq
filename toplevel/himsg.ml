@@ -87,7 +87,7 @@ let to_unsafe_judgment j = on_judgment EConstr.Unsafe.to_constr j
 
 let j_nf_betaiotaevar sigma j =
   { uj_val = Evarutil.nf_evar sigma j.uj_val;
-    uj_type = Reductionops.nf_betaiota sigma (EConstr.of_constr j.uj_type) }
+    uj_type = EConstr.Unsafe.to_constr (Reductionops.nf_betaiota sigma (EConstr.of_constr j.uj_type)) }
 
 let jv_nf_betaiotaevar sigma jl =
   Array.map (j_nf_betaiotaevar sigma) jl
@@ -362,6 +362,7 @@ let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env in
   let j = j_nf_betaiotaevar sigma j in
   let t = Reductionops.nf_betaiota sigma (EConstr.of_constr t) in
+  let t = EConstr.Unsafe.to_constr t in
   (** Actually print *)
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc = pr_lconstr_env env sigma (Environ.j_val j) in
@@ -381,6 +382,7 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   let randl = jv_nf_betaiotaevar sigma randl in
   let exptyp = Evarutil.nf_evar sigma exptyp in
   let actualtyp = Reductionops.nf_betaiota sigma (EConstr.of_constr actualtyp) in
+  let actualtyp = EConstr.Unsafe.to_constr actualtyp in
   let rator = Evarutil.j_nf_evar sigma rator in
   let rator = to_unsafe_judgment rator in
   let env = make_all_name_different env in
@@ -1115,6 +1117,7 @@ let explain_non_linear_proof c =
   spc () ++ str "because a metavariable has several occurrences."
 
 let explain_meta_in_type c =
+  let c = EConstr.Unsafe.to_constr c in
   str "In refiner, a meta appears in the type " ++ brk(1,1) ++ pr_lconstr c ++
   str " of another meta"
 

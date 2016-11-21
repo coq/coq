@@ -360,7 +360,7 @@ let cbv_vm env sigma c t  =
   let c = EConstr.to_constr sigma c in
   let t = EConstr.to_constr sigma t in
   let v = Vconv.val_of_constr env c in
-  nf_val env sigma v t
+  EConstr.of_constr (nf_val env sigma v t)
 
 let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
   Reductionops.infer_conv_gen (fun pb ~l2r sigma ts -> Vconv.vm_conv_gen pb)

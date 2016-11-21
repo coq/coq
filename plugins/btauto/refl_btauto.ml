@@ -182,6 +182,7 @@ module Btauto = struct
     let var = EConstr.of_constr var in
     (* Compute an assignment that dissatisfies the goal *)
     let _, var = Tacmach.pf_reduction_of_red_expr gl (Genredexpr.CbvVm None) var in
+    let var = EConstr.Unsafe.to_constr var in
     let rec to_list l = match decomp_term (Tacmach.project gl) l with
     | Term.App (c, _)
       when c === (Lazy.force CoqList._nil) -> []

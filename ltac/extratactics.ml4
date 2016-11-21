@@ -290,6 +290,7 @@ END
 (* Hint Resolve                                                       *)
 
 open Term
+open EConstr
 open Vars
 open Coqlib
 
@@ -298,23 +299,26 @@ let project_hint pri l2r r =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, c = Evd.fresh_global env sigma gr in
-  let t = Retyping.get_type_of env sigma (EConstr.of_constr c) in
+  let c = EConstr.of_constr c in
+  let t = Retyping.get_type_of env sigma c in
+  let t = EConstr.of_constr t in
   let t =
-    Tacred.reduce_to_quantified_ref env sigma (Lazy.force coq_iff_ref) (EConstr.of_constr t) in
-  let t = EConstr.Unsafe.to_constr t in
-  let sign,ccl = decompose_prod_assum t in
-  let (a,b) = match snd (decompose_app ccl) with
+    Tacred.reduce_to_quantified_ref env sigma (Lazy.force coq_iff_ref) t in
+  let sign,ccl = decompose_prod_assum sigma t in
+  let (a,b) = match snd (decompose_app sigma ccl) with
     | [a;b] -> (a,b)
     | _ -> assert false in
   let p =
     if l2r then build_coq_iff_left_proj () else build_coq_iff_right_proj () in
-  let c = Reductionops.whd_beta Evd.empty (EConstr.of_constr (mkApp (c, Context.Rel.to_extended_vect 0 sign))) in
+  let p = EConstr.of_constr p in
+  let c = Reductionops.whd_beta sigma (mkApp (c, Array.map EConstr.of_constr (Context.Rel.to_extended_vect 0 sign))) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
   let id =
     Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
   in
   let ctx = Evd.universe_context_set sigma in
+  let c = EConstr.to_constr sigma c in
   let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id (c,ctx) in
     (pri,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
 
@@ -751,7 +755,6 @@ let  mkCaseEq a  : unit Proofview.tactic =
             let env = Proofview.Goal.env gl in
             (** FIXME: this looks really wrong. Does anybody really use this tactic? *)
             let Sigma (c, _, _) = (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a]).Reductionops.e_redfun env (Sigma.Unsafe.of_evar_map Evd.empty) concl in
-            let c = EConstr.of_constr c in
 	    change_concl c
           end };
 	  simplest_case a]

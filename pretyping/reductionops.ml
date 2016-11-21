@@ -588,10 +588,10 @@ end
 (** The type of (machine) states (= lambda-bar-calculus' cuts) *)
 type state = constr * constr Stack.t
 
-type contextual_reduction_function = env -> evar_map -> constr -> Constr.constr
+type contextual_reduction_function = env -> evar_map -> constr -> constr
 type reduction_function = contextual_reduction_function
-type local_reduction_function = evar_map -> constr -> Constr.constr
-type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> constr -> (Constr.constr, 'r) Sigma.sigma }
+type local_reduction_function = evar_map -> constr -> constr
+type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> constr -> (constr, 'r) Sigma.sigma }
 
 type contextual_stack_reduction_function =
     env -> evar_map -> constr -> constr * constr list
@@ -629,19 +629,18 @@ let safe_meta_value sigma ev =
 
 let strong whdfun env sigma t =
   let rec strongrec env t =
-    let t = EConstr.of_constr (whdfun env sigma t) in
-    map_constr_with_full_binders sigma push_rel strongrec env t in
-  EConstr.Unsafe.to_constr (strongrec env t)
+    map_constr_with_full_binders sigma push_rel strongrec env (whdfun env sigma t) in
+  strongrec env t
 
 let local_strong whdfun sigma =
-  let rec strongrec t = EConstr.map sigma strongrec (EConstr.of_constr (whdfun sigma t)) in
-  fun c -> EConstr.Unsafe.to_constr (strongrec c)
+  let rec strongrec t = EConstr.map sigma strongrec (whdfun sigma t) in
+  strongrec
 
 let rec strong_prodspine redfun sigma c =
-  let x = EConstr.of_constr (redfun sigma c) in
+  let x = redfun sigma c in
   match EConstr.kind sigma x with
-    | Prod (na,a,b) -> EConstr.Unsafe.to_constr (mkProd (na,a,EConstr.of_constr (strong_prodspine redfun sigma b)))
-    | _ -> EConstr.Unsafe.to_constr x
+    | Prod (na,a,b) -> mkProd (na,a,strong_prodspine redfun sigma b)
+    | _ -> x
 
 (*************************************)
 (*** Reduction using bindingss ***)
@@ -1140,7 +1139,7 @@ let iterate_whd_gen refold flags env sigma s =
   in aux s
 
 let red_of_state_red f sigma x =
-  EConstr.Unsafe.to_constr (Stack.zip sigma (f sigma (x,Stack.empty)))
+  Stack.zip sigma (f sigma (x,Stack.empty))
 
 (* 0. No Reduction Functions *)
 
@@ -1217,9 +1216,9 @@ let nf_evar = Evarutil.nf_evar
 let clos_norm_flags flgs env sigma t =
   try
     let evars ev = safe_evar_value sigma ev in
-    CClosure.norm_val
+    EConstr.of_constr (CClosure.norm_val
       (CClosure.create_clos_infos ~evars flgs env)
-      (CClosure.inject (EConstr.Unsafe.to_constr t))
+      (CClosure.inject (EConstr.Unsafe.to_constr t)))
   with e when is_anomaly e -> error "Tried to normalize ill-typed term"
 
 let nf_beta = clos_norm_flags CClosure.beta (Global.env ())
@@ -1309,6 +1308,7 @@ let sigma_univ_state =
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =
+  (** FIXME *)
   let x = EConstr.Unsafe.to_constr x in
   let y = EConstr.Unsafe.to_constr y in
   try
@@ -1352,8 +1352,8 @@ let vm_infer_conv ?(pb=Reduction.CUMUL) env t1 t2 =
 (********************************************************************)
 
 let whd_meta sigma c = match EConstr.kind sigma c with
-  | Meta p -> (try meta_value sigma p with Not_found -> EConstr.Unsafe.to_constr c)
-  | _ -> EConstr.Unsafe.to_constr c
+  | Meta p -> (try EConstr.of_constr (meta_value sigma p) with Not_found -> c)
+  | _ -> c
 
 let default_plain_instance_ident = Id.of_string "H"
 
@@ -1431,26 +1431,26 @@ let instance sigma s c =
  * error message. *)
 
 let hnf_prod_app env sigma t n =
-  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
-    | Prod (_,_,b) -> EConstr.Unsafe.to_constr (subst1 n b)
+  match EConstr.kind sigma (whd_all env sigma t) with
+    | Prod (_,_,b) -> subst1 n b
     | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product")
 
 let hnf_prod_appvect env sigma t nl =
-  Array.fold_left (fun acc t -> hnf_prod_app env sigma (EConstr.of_constr acc) t) (EConstr.Unsafe.to_constr t) nl
+  Array.fold_left (fun acc t -> hnf_prod_app env sigma acc t) t nl
 
 let hnf_prod_applist env sigma t nl =
-  List.fold_left (fun acc t -> hnf_prod_app env sigma (EConstr.of_constr acc) t) (EConstr.Unsafe.to_constr t) nl
+  List.fold_left (fun acc t -> hnf_prod_app env sigma acc t) t nl
 
 let hnf_lam_app env sigma t n =
-  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
-    | Lambda (_,_,b) -> EConstr.Unsafe.to_constr (subst1 n b)
+  match EConstr.kind sigma (whd_all env sigma t) with
+    | Lambda (_,_,b) -> subst1 n b
     | _ -> anomaly ~label:"hnf_lam_app" (Pp.str "Need an abstraction")
 
 let hnf_lam_appvect env sigma t nl =
-  Array.fold_left (fun acc t -> hnf_lam_app env sigma (EConstr.of_constr acc) t) (EConstr.Unsafe.to_constr t) nl
+  Array.fold_left (fun acc t -> hnf_lam_app env sigma acc t) t nl
 
 let hnf_lam_applist env sigma t nl =
-  List.fold_left (fun acc t -> hnf_lam_app env sigma (EConstr.of_constr acc) t) (EConstr.Unsafe.to_constr t) nl
+  List.fold_left (fun acc t -> hnf_lam_app env sigma acc t) t nl
 
 let bind_assum (na, t) =
   (na, t)
@@ -1458,7 +1458,6 @@ let bind_assum (na, t) =
 let splay_prod env sigma =
   let rec decrec env m c =
     let t = whd_all env sigma c in
-    let t = EConstr.of_constr t in
     match EConstr.kind sigma t with
       | Prod (n,a,c0) ->
 	  decrec (push_rel (local_assum (n,a)) env)
@@ -1470,7 +1469,6 @@ let splay_prod env sigma =
 let splay_lam env sigma =
   let rec decrec env m c =
     let t = whd_all env sigma c in
-    let t = EConstr.of_constr t in
     match EConstr.kind sigma t with
       | Lambda (n,a,c0) ->
 	  decrec (push_rel (local_assum (n,a)) env)
@@ -1482,7 +1480,7 @@ let splay_lam env sigma =
 let splay_prod_assum env sigma =
   let rec prodec_rec env l c =
     let t = whd_allnolet env sigma c in
-    match EConstr.kind sigma (EConstr.of_constr t) with
+    match EConstr.kind sigma t with
     | Prod (x,t,c)  ->
 	prodec_rec (push_rel (local_assum (x,t)) env)
 	  (Context.Rel.add (local_assum (x,t)) l) c
@@ -1491,9 +1489,9 @@ let splay_prod_assum env sigma =
 	  (Context.Rel.add (local_def (x,b,t)) l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> 
-      let t' = whd_all env sigma (EConstr.of_constr t) in
-	if Term.eq_constr t t' then l,t
-	else prodec_rec env l (EConstr.of_constr t')
+      let t' = whd_all env sigma t in
+	if EConstr.eq_constr sigma t t' then l,t
+	else prodec_rec env l t'
   in
   prodec_rec env Context.Rel.empty
 
@@ -1506,8 +1504,8 @@ let splay_arity env sigma c =
 let sort_of_arity env sigma c = snd (splay_arity env sigma c)
 
 let splay_prod_n env sigma n =
-  let rec decrec env m ln c = if Int.equal m 0 then (ln, EConstr.Unsafe.to_constr c) else
-    match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma c)) with
+  let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
+    match EConstr.kind sigma (whd_all env sigma c) with
       | Prod (n,a,c0) ->
 	  decrec (push_rel (local_assum (n,a)) env)
 	    (m-1) (Context.Rel.add (local_assum (n,a)) ln) c0
@@ -1516,8 +1514,8 @@ let splay_prod_n env sigma n =
   decrec env n Context.Rel.empty
 
 let splay_lam_n env sigma n =
-  let rec decrec env m ln c = if Int.equal m 0 then (ln, EConstr.Unsafe.to_constr c) else
-    match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma c)) with
+  let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
+    match EConstr.kind sigma (whd_all env sigma c) with
       | Lambda (n,a,c0) ->
 	  decrec (push_rel (local_assum (n,a)) env)
 	    (m-1) (Context.Rel.add (local_assum (n,a)) ln) c0
@@ -1526,7 +1524,7 @@ let splay_lam_n env sigma n =
   decrec env n Context.Rel.empty
 
 let is_sort env sigma t =
-  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
+  match EConstr.kind sigma (whd_all env sigma t) with
   | Sort s -> true
   | _ -> false
 
@@ -1559,7 +1557,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
 let find_conclusion env sigma =
   let rec decrec env c =
     let t = whd_all env sigma c in
-    match EConstr.kind sigma (EConstr.of_constr t) with
+    match EConstr.kind sigma t with
       | Prod (x,t,c0) -> decrec (push_rel (local_assum (x,t)) env) c0
       | Lambda (x,t,c0) -> decrec (push_rel (local_assum (x,t)) env) c0
       | t -> t
@@ -1579,7 +1577,7 @@ let meta_value evd mv =
     match meta_opt_fvalue evd mv with
     | Some (b,_) ->
       let metas = Metamap.bind valrec b.freemetas in
-      EConstr.of_constr (instance evd metas (EConstr.of_constr b.rebus))
+      instance evd metas (EConstr.of_constr b.rebus)
     | None -> mkMeta mv
   in
   valrec mv
@@ -1589,7 +1587,7 @@ let meta_instance sigma b =
   if Metaset.is_empty fm then b.rebus
   else
     let c_sigma = Metamap.bind (fun mv -> meta_value sigma mv) fm in
-    EConstr.of_constr (instance sigma c_sigma b.rebus)
+    instance sigma c_sigma b.rebus
 
 let nf_meta sigma c =
   let c = EConstr.Unsafe.to_constr c in
@@ -1609,7 +1607,6 @@ let meta_reducible_instance evd b =
   let metas = Metaset.fold fold fm Metamap.empty in
   let rec irec u =
     let u = whd_betaiota Evd.empty u (** FIXME *) in
-    let u = EConstr.of_constr u in
     match EConstr.kind evd u with
     | Case (ci,p,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
 	let m = destMeta evd (strip_outer_cast evd c) in
@@ -1674,7 +1671,7 @@ let head_unfold_under_prod ts env sigma c =
 	  match EConstr.kind sigma h with
 	    | Const cst -> beta_app sigma (unfold cst, l)
 	    | _ -> c in
-  EConstr.Unsafe.to_constr (aux c)
+  aux c
 
 let betazetaevar_applist sigma n c l =
   let rec stacklam n env t stack =
@@ -1684,4 +1681,4 @@ let betazetaevar_applist sigma n c l =
     | LetIn(_,b,_,c), _ -> stacklam (n-1) (substl env b::env) c stack
     | Evar _, _ -> applist (substl env t, stack)
     | _ -> anomaly (Pp.str "Not enough lambda/let's") in
-  EConstr.Unsafe.to_constr (stacklam n [] c l)
+  stacklam n [] c l

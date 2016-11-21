@@ -69,7 +69,6 @@ let contradiction_context =
           let typ = nf_evar sigma (NamedDecl.get_type d) in
           let typ = EConstr.of_constr typ in
 	  let typ = whd_all env sigma typ in
-          let typ = EConstr.of_constr typ in
 	  if is_empty_type sigma typ then
 	    simplest_elim (mkVar id)
 	  else match EConstr.kind sigma typ with
@@ -106,7 +105,7 @@ let contradiction_context =
   end }
 
 let is_negation_of env sigma typ t =
-  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
+  match EConstr.kind sigma (whd_all env sigma t) with
     | Prod (na,t,u) ->
       is_empty_type sigma u && is_conv_leq env sigma typ t
     | _ -> false

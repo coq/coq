@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open EConstr
 open Univ
 open Evd
 open Environ
@@ -38,7 +39,6 @@ val set_refolding_in_reduction : bool -> unit
     cst applied to params must convertible to term of the state applied to args
 *)
 module Cst_stack : sig
-  open EConstr
   type t
   val empty : t
   val add_param : constr -> t -> t
@@ -52,7 +52,6 @@ end
 
 
 module Stack : sig
-  open EConstr
   type 'a app_node
 
   val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
@@ -109,19 +108,19 @@ end
 
 (************************************************************************)
 
-type state = EConstr.t * EConstr.t Stack.t
+type state = constr * constr Stack.t
 
-type contextual_reduction_function = env -> evar_map -> EConstr.t -> constr
+type contextual_reduction_function = env -> evar_map -> constr -> constr
 type reduction_function = contextual_reduction_function
-type local_reduction_function = evar_map -> EConstr.t -> constr
+type local_reduction_function = evar_map -> constr -> constr
 
-type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> EConstr.t -> (constr, 'r) Sigma.sigma }
+type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> constr -> (constr, 'r) Sigma.sigma }
 
 type contextual_stack_reduction_function =
-    env -> evar_map -> EConstr.t -> EConstr.t * EConstr.t list
+    env -> evar_map -> constr -> constr * constr list
 type stack_reduction_function = contextual_stack_reduction_function
 type local_stack_reduction_function =
-    evar_map -> EConstr.t -> EConstr.t * EConstr.t list
+    evar_map -> constr -> constr * constr list
 
 type contextual_state_reduction_function =
     env -> evar_map -> state -> state
@@ -139,13 +138,13 @@ val strong_prodspine : local_reduction_function -> local_reduction_function
 val stack_reduction_of_reduction :
   'a reduction_function -> 'a state_reduction_function
 i*)
-val stacklam : (state -> 'a) -> EConstr.t list -> evar_map -> EConstr.t -> EConstr.t Stack.t -> 'a
+val stacklam : (state -> 'a) -> constr list -> evar_map -> constr -> constr Stack.t -> 'a
 
 val whd_state_gen : ?csts:Cst_stack.t -> refold:bool -> tactic_mode:bool ->
   CClosure.RedFlags.reds -> Environ.env -> Evd.evar_map -> state -> state * Cst_stack.t
 
 val iterate_whd_gen : bool -> CClosure.RedFlags.reds ->
-  Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr
+  Environ.env -> Evd.evar_map -> constr -> constr
 
 (** {6 Generic Optimized Reduction Function using Closures } *)
 
@@ -156,11 +155,11 @@ val nf_beta : local_reduction_function
 val nf_betaiota : local_reduction_function
 val nf_betaiotazeta : local_reduction_function
 val nf_all : reduction_function
-val nf_evar : evar_map -> constr -> constr
+val nf_evar : evar_map -> Constr.constr -> Constr.constr
 
 (** Lazy strategy, weak head reduction *)
 
-val whd_evar :  evar_map -> constr -> constr
+val whd_evar :  evar_map -> Constr.constr -> Constr.constr
 val whd_nored : local_reduction_function
 val whd_beta : local_reduction_function
 val whd_betaiota : local_reduction_function
@@ -198,45 +197,45 @@ val whd_zeta_stack : local_stack_reduction_function
 val whd_zeta_state : local_state_reduction_function
 val whd_zeta : local_reduction_function
 
-val shrink_eta : EConstr.constr -> EConstr.constr
+val shrink_eta : constr -> constr
 
 (** Various reduction functions *)
 
-val safe_evar_value : evar_map -> existential -> constr option
+val safe_evar_value : evar_map -> Constr.existential -> Constr.constr option
 
-val beta_applist : evar_map -> EConstr.t * EConstr.t list -> EConstr.constr
+val beta_applist : evar_map -> constr * constr list -> constr
 
-val hnf_prod_app     : env ->  evar_map -> EConstr.t -> EConstr.t -> constr
-val hnf_prod_appvect : env ->  evar_map -> EConstr.t -> EConstr.t array -> constr
-val hnf_prod_applist : env ->  evar_map -> EConstr.t -> EConstr.t list -> constr
-val hnf_lam_app      : env ->  evar_map -> EConstr.t -> EConstr.t -> constr
-val hnf_lam_appvect  : env ->  evar_map -> EConstr.t -> EConstr.t array -> constr
-val hnf_lam_applist  : env ->  evar_map -> EConstr.t -> EConstr.t list -> constr
+val hnf_prod_app     : env ->  evar_map -> constr -> constr -> constr
+val hnf_prod_appvect : env ->  evar_map -> constr -> constr array -> constr
+val hnf_prod_applist : env ->  evar_map -> constr -> constr list -> constr
+val hnf_lam_app      : env ->  evar_map -> constr -> constr -> constr
+val hnf_lam_appvect  : env ->  evar_map -> constr -> constr array -> constr
+val hnf_lam_applist  : env ->  evar_map -> constr -> constr list -> constr
 
-val splay_prod : env ->  evar_map -> EConstr.t -> (Name.t * EConstr.constr) list * EConstr.constr
-val splay_lam : env ->  evar_map -> EConstr.t -> (Name.t * EConstr.constr) list * EConstr.constr
-val splay_arity : env ->  evar_map -> EConstr.t -> (Name.t * EConstr.constr) list * sorts
-val sort_of_arity : env -> evar_map -> EConstr.t -> sorts
-val splay_prod_n : env ->  evar_map -> int -> EConstr.t -> Context.Rel.t * constr
-val splay_lam_n : env ->  evar_map -> int -> EConstr.t -> Context.Rel.t * constr
+val splay_prod : env ->  evar_map -> constr -> (Name.t * constr) list * constr
+val splay_lam : env ->  evar_map -> constr -> (Name.t * constr) list * constr
+val splay_arity : env ->  evar_map -> constr -> (Name.t * constr) list * sorts
+val sort_of_arity : env -> evar_map -> constr -> sorts
+val splay_prod_n : env ->  evar_map -> int -> constr -> Context.Rel.t * constr
+val splay_lam_n : env ->  evar_map -> int -> constr -> Context.Rel.t * constr
 val splay_prod_assum :
-  env ->  evar_map -> EConstr.t -> Context.Rel.t * constr
+  env ->  evar_map -> constr -> Context.Rel.t * constr
 
 type 'a miota_args = {
-  mP      : EConstr.t;     (** the result type *)
-  mconstr : EConstr.t;     (** the constructor *)
+  mP      : constr;     (** the result type *)
+  mconstr : constr;     (** the constructor *)
   mci     : case_info;  (** special info to re-build pattern *)
   mcargs  : 'a list;    (** the constructor's arguments *)
   mlf     : 'a array }  (** the branch code vector *)
 
-val reducible_mind_case : evar_map -> EConstr.t -> bool
-val reduce_mind_case : evar_map -> EConstr.t miota_args -> EConstr.t
+val reducible_mind_case : evar_map -> constr -> bool
+val reduce_mind_case : evar_map -> constr miota_args -> constr
 
-val find_conclusion : env -> evar_map -> EConstr.t -> (EConstr.t,EConstr.t) kind_of_term
-val is_arity : env ->  evar_map -> EConstr.t -> bool
-val is_sort : env -> evar_map -> EConstr.types -> bool
+val find_conclusion : env -> evar_map -> constr -> (constr,constr) kind_of_term
+val is_arity : env ->  evar_map -> constr -> bool
+val is_sort : env -> evar_map -> types -> bool
 
-val contract_fix : ?env:Environ.env -> evar_map -> ?reference:Constant.t -> (EConstr.t, EConstr.t) pfixpoint -> EConstr.t
+val contract_fix : ?env:Environ.env -> evar_map -> ?reference:Constant.t -> fixpoint -> constr
 val fix_recarg : ('a, 'a) pfixpoint -> 'b Stack.t -> (int * 'b) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
@@ -249,14 +248,14 @@ type conversion_test = constraints -> constraints
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 
-val is_conv : ?reds:transparent_state -> env -> evar_map -> EConstr.t -> EConstr.t -> bool
-val is_conv_leq : ?reds:transparent_state -> env ->  evar_map -> EConstr.t -> EConstr.t -> bool
-val is_fconv : ?reds:transparent_state -> conv_pb -> env ->  evar_map -> EConstr.t -> EConstr.t -> bool
+val is_conv : ?reds:transparent_state -> env -> evar_map -> constr -> constr -> bool
+val is_conv_leq : ?reds:transparent_state -> env ->  evar_map -> constr -> constr -> bool
+val is_fconv : ?reds:transparent_state -> conv_pb -> env ->  evar_map -> constr -> constr -> bool
 
 (** [check_conv] Checks universe constraints only.
     pb defaults to CUMUL and ts to a full transparent state.
  *)
-val check_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> EConstr.t -> EConstr.t -> bool
+val check_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> constr -> constr -> bool
 
 (** [infer_conv] Adds necessary universe constraints to the evar map.
     pb defaults to CUMUL and ts to a full transparent state.
@@ -264,29 +263,29 @@ val check_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> ECo
     otherwise returns false in that case.
  *)
 val infer_conv : ?catch_incon:bool -> ?pb:conv_pb -> ?ts:transparent_state -> 
-  env -> evar_map -> EConstr.constr -> EConstr.constr -> evar_map * bool
+  env -> evar_map -> constr -> constr -> evar_map * bool
 
 (** Conversion with inference of universe constraints *)
-val set_vm_infer_conv : (?pb:conv_pb -> env -> evar_map -> EConstr.constr -> EConstr.constr ->
+val set_vm_infer_conv : (?pb:conv_pb -> env -> evar_map -> constr -> constr ->
   evar_map * bool) -> unit
-val vm_infer_conv : ?pb:conv_pb -> env -> evar_map -> EConstr.constr -> EConstr.constr ->
+val vm_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
   evar_map * bool
 
 
 (** [infer_conv_gen] behaves like [infer_conv] but is parametrized by a
 conversion function. Used to pretype vm and native casts. *)
 val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> transparent_state ->
-    (constr, evar_map) Reduction.generic_conversion_function) ->
+    (Constr.constr, evar_map) Reduction.generic_conversion_function) ->
   ?catch_incon:bool -> ?pb:conv_pb -> ?ts:transparent_state -> env ->
-  evar_map -> EConstr.constr -> EConstr.constr -> evar_map * bool
+  evar_map -> constr -> constr -> evar_map * bool
 
 (** {6 Special-Purpose Reduction Functions } *)
 
 val whd_meta : local_reduction_function
-val plain_instance : evar_map -> EConstr.t Metamap.t -> EConstr.t -> EConstr.t
-val instance : evar_map -> EConstr.t Metamap.t -> EConstr.t -> constr
+val plain_instance : evar_map -> constr Metamap.t -> constr -> constr
+val instance : evar_map -> constr Metamap.t -> constr -> constr
 val head_unfold_under_prod : transparent_state -> reduction_function
-val betazetaevar_applist : evar_map -> int -> EConstr.t -> EConstr.t list -> constr
+val betazetaevar_applist : evar_map -> int -> constr -> constr list -> constr
 
 (** {6 Heuristic for Conversion with Evar } *)
 
@@ -295,6 +294,6 @@ val whd_betaiota_deltazeta_for_iota_state :
   state * Cst_stack.t
 
 (** {6 Meta-related reduction functions } *)
-val meta_instance : evar_map -> EConstr.constr freelisted -> EConstr.constr
-val nf_meta       : evar_map -> EConstr.constr -> EConstr.constr
-val meta_reducible_instance : evar_map -> EConstr.constr freelisted -> EConstr.constr
+val meta_instance : evar_map -> constr freelisted -> constr
+val nf_meta       : evar_map -> constr -> constr
+val meta_reducible_instance : evar_map -> constr freelisted -> constr

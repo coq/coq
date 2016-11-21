@@ -695,7 +695,7 @@ let mkDestructEq :
         let changefun patvars = { run = fun sigma ->
           let redfun = pattern_occs [Locus.AllOccurrencesBut [1], EConstr.of_constr expr] in
           let Sigma (c, sigma, p) = redfun.Reductionops.e_redfun (pf_env g2) sigma (EConstr.of_constr (pf_concl g2)) in
-          Sigma (EConstr.of_constr c, sigma, p)
+          Sigma (c, sigma, p)
         } in
 	Proofview.V82.of_tactic (change_in_concl None changefun) g2);
       Proofview.V82.of_tactic (simplest_case (EConstr.of_constr expr))]), to_revert
@@ -1503,6 +1503,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let res_vars,eq' = decompose_prod equation_lemma_type in
   let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> LocalAssum (x,y)) res_vars) env in
   let eq' = nf_zeta env_eq' (EConstr.of_constr eq') in
+  let eq' = EConstr.Unsafe.to_constr eq' in
   let res =
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
 (*     Pp.msgnl (str "rec_arg_num := " ++ str (string_of_int rec_arg_num)); *)

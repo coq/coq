@@ -768,7 +768,7 @@ let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
 	    code = with_uid (Give_exact (c, cty, ctx)); })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c, cty, ctx) =
-  let cty = if hnf then EConstr.of_constr (hnf_constr env sigma cty) else cty in
+  let cty = if hnf then hnf_constr env sigma cty else cty in
     match EConstr.kind sigma cty with
     | Prod _ ->
         let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
@@ -921,7 +921,6 @@ let make_trivial env sigma poly ?(name=PathAny) r =
   let c,ctx = fresh_global_or_constr env sigma poly r in
   let sigma = Evd.merge_context_set univ_flexible sigma ctx in
   let t = hnf_constr env sigma (EConstr.of_constr (unsafe_type_of env sigma c)) in
-  let t = EConstr.of_constr t in
   let hd = head_constr sigma t in
   let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd, { pri=1;

@@ -79,7 +79,7 @@ let red_constant_entry n ce sigma = function
       let redfun env sigma c =
         let sigma = Sigma.Unsafe.of_evar_map sigma in
         let Sigma (c, _, _) = redfun.e_redfun env sigma c in
-        c
+        EConstr.Unsafe.to_constr c
       in
       { ce with const_entry_body = Future.chain ~greedy:true ~pure:true proof_out
         (fun ((body,ctx),eff) -> (under_binders env sigma redfun n body,ctx),eff) }
@@ -962,7 +962,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     in
       try
 	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 (EConstr.of_constr relty) in
-	  match ctx, kind_of_term ar with
+	  match ctx, EConstr.kind !evdref ar with
 	  | [LocalAssum (_,t); LocalAssum (_,u)], Sort (Prop Null)
 	      when Reductionops.is_conv env !evdref (EConstr.of_constr t) (EConstr.of_constr u) -> t
 	  | _, _ -> error ()

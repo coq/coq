@@ -456,7 +456,7 @@ let extract_mrectype sigma t =
 
 let find_mrectype_vect env sigma c =
   let open EConstr in
-  let (t, l) = Termops.decompose_app_vect sigma (EConstr.of_constr (whd_all env sigma c)) in
+  let (t, l) = Termops.decompose_app_vect sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind -> (ind, l)
     | _ -> raise Not_found
@@ -466,7 +466,7 @@ let find_mrectype env sigma c =
 
 let find_rectype env sigma c =
   let open EConstr in
-  let (t, l) = decompose_app sigma (EConstr.of_constr (whd_all env sigma c)) in
+  let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind (ind,u as indu) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -478,7 +478,7 @@ let find_rectype env sigma c =
 
 let find_inductive env sigma c =
   let open EConstr in
-  let (t, l) = decompose_app sigma (EConstr.of_constr (whd_all env sigma c)) in
+  let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> Decl_kinds.CoFinite ->
@@ -488,7 +488,7 @@ let find_inductive env sigma c =
 
 let find_coinductive env sigma c =
   let open EConstr in
-  let (t, l) = decompose_app sigma (EConstr.of_constr (whd_all env sigma c)) in
+  let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == Decl_kinds.CoFinite ->
@@ -503,7 +503,7 @@ let find_coinductive env sigma c =
 
 let is_predicate_explicitly_dep env sigma pred arsign =
   let rec srec env pval arsign =
-    let pv' = EConstr.of_constr (whd_all env sigma pval) in
+    let pv' = whd_all env sigma pval in
     match EConstr.kind sigma pv', arsign with
       | Lambda (na,t,b), (LocalAssum _)::arsign ->
 	  srec (push_rel_assum (na, t) env) b arsign

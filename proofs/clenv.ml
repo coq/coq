@@ -60,7 +60,7 @@ let refresh_undefined_univs clenv =
       { clenv with evd = evd'; templval = map_freelisted clenv.templval;
 	templtyp = map_freelisted clenv.templtyp }, subst
 
-let clenv_hnf_constr ce t = EConstr.of_constr (hnf_constr (cl_env ce) (cl_sigma ce) t)
+let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
 let clenv_get_type_of ce c = EConstr.of_constr (Retyping.get_type_of (cl_env ce) (cl_sigma ce) c)
 
@@ -71,7 +71,6 @@ let mk_freelisted c =
 
 let clenv_push_prod cl =
   let typ = whd_all (cl_env cl) (cl_sigma cl) (clenv_type cl) in
-  let typ = EConstr.of_constr typ in
   let rec clrec typ = match EConstr.kind cl.evd typ with
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->
@@ -266,7 +265,7 @@ let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
 
 let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv gl =
   let concl = Goal.V82.concl clenv.evd (sig_it gl) in
-  if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (EConstr.of_constr (whd_nored clenv.evd clenv.templtyp.rebus)))) then
+  if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (whd_nored clenv.evd clenv.templtyp.rebus))) then
     clenv_unify CUMUL ~flags (clenv_type clenv) concl
       (clenv_unify_meta_types ~flags clenv)
   else
@@ -480,7 +479,7 @@ let error_already_defined b =
           (str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type clenv c t u =
-  if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (EConstr.of_constr (whd_nored clenv.evd u)))) then
+  if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (whd_nored clenv.evd u))) then
     (* Not enough information to know if some subtyping is needed *)
     CoerceToType, clenv, c
   else
@@ -498,7 +497,6 @@ let clenv_unify_binding_type clenv c t u =
 let clenv_assign_binding clenv k c =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let c_typ = nf_betaiota clenv.evd (clenv_get_type_of clenv c) in
-  let c_typ = EConstr.of_constr c_typ in
   let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
   let c = EConstr.Unsafe.to_constr c in
   { clenv' with evd = meta_assign k (c,(Conv,status)) clenv'.evd }

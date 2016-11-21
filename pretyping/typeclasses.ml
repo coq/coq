@@ -291,6 +291,7 @@ let build_subclasses ~check env sigma glob pri =
 	let instapp = 
 	  Reductionops.whd_beta sigma (EConstr.of_constr (appvectc c (Context.Rel.to_extended_vect 0 rels)))
 	in
+	let instapp = EConstr.Unsafe.to_constr instapp in
 	let projargs = Array.of_list (args @ [instapp]) in
 	let projs = List.map_filter 
 	  (fun (n, b, proj) ->

@@ -130,6 +130,7 @@ val occur_term : Evd.evar_map -> EConstr.t -> EConstr.t -> bool (** Synonymous o
 (* Substitution of metavariables *)
 type meta_value_map = (metavariable * constr) list
 val subst_meta : meta_value_map -> constr -> constr
+val isMetaOf : Evd.evar_map -> metavariable -> EConstr.constr -> bool
 
 (** Type assignment for metavariables *)
 type meta_type_map = (metavariable * types) list

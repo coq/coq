@@ -10,4 +10,4 @@ open EConstr
 open Environ
 
 (** {6 Reduction functions } *)
-val cbv_vm : env -> Evd.evar_map -> constr -> types -> Constr.t
+val cbv_vm : env -> Evd.evar_map -> constr -> types -> constr

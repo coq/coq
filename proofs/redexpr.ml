@@ -44,7 +44,7 @@ let whd_cbn flags env sigma t =
   let (state,_) =
     (whd_state_gen true true flags env sigma (t,Reductionops.Stack.empty))
   in
-  EConstr.Unsafe.to_constr (Reductionops.Stack.zip ~refold:true sigma state)
+  Reductionops.Stack.zip ~refold:true sigma state
 
 let strong_cbn flags =
   strong (whd_cbn flags)

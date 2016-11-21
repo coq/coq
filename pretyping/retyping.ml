@@ -74,7 +74,7 @@ let get_type_from_constraints env sigma t =
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
-      match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma typ)) with
+      match EConstr.kind sigma (whd_all env sigma typ) with
         | Prod (na,c1,c2) -> subst_type env sigma (subst1 h c2) rest
         | _ -> retype_error NonFunctionalConstruction
 
@@ -83,7 +83,7 @@ let rec subst_type env sigma typ = function
 
 let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env n ar args =
-    match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma ar)), args with
+    match EConstr.kind sigma (whd_all env sigma ar), args with
     | Prod (na, t, b), h::l -> concl_of_arity (push_rel (local_def (na, lift n h, t)) env) (n + 1) b l
     | Sort s, [] -> s
     | _ -> retype_error NotASort
@@ -94,7 +94,7 @@ let type_of_var env id =
   with Not_found -> retype_error (BadVariable id)
 
 let decomp_sort env sigma t =
-  match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma t)) with
+  match EConstr.kind sigma (whd_all env sigma t) with
   | Sort s -> s
   | _ -> retype_error NotASort
 
@@ -123,9 +123,9 @@ let retype ?(polyprop=true) sigma =
           with Not_found -> retype_error BadRecursiveType
         in
         let n = inductive_nrealdecls_env env (fst (fst (dest_ind_family indf))) in
-        let t = EConstr.of_constr (betazetaevar_applist sigma n p realargs) in
-        (match EConstr.kind sigma (EConstr.of_constr (whd_all env sigma (type_of env t))) with
-          | Prod _ -> EConstr.of_constr (whd_beta sigma (applist (t, [c])))
+        let t = betazetaevar_applist sigma n p realargs in
+        (match EConstr.kind sigma (whd_all env sigma (type_of env t)) with
+          | Prod _ -> whd_beta sigma (applist (t, [c]))
           | _ -> t)
     | Lambda (name,c1,c2) ->
           mkProd (name, c1, type_of (push_rel (local_assum (name,c1)) env) c2)

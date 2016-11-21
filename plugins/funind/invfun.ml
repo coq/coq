@@ -252,7 +252,6 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
     (* and the principle to use in this lemma in $\zeta$ normal form *)
     let f_principle,princ_type = schemes.(i) in
     let princ_type =  nf_zeta (EConstr.of_constr princ_type) in
-    let princ_type = EConstr.of_constr princ_type in
     let princ_infos = Tactics.compute_elim_sig evd princ_type in
     (* The number of args of the function is then easily computable *)
     let nb_fun_args = nb_prod (project g) (EConstr.of_constr (pf_concl g)) - 2 in
@@ -429,7 +428,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) decl p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name (RelDecl.get_name decl)) avoid in
-	     (nf_zeta (EConstr.of_constr p))::bindings,id::avoid)
+	     (EConstr.Unsafe.to_constr (nf_zeta (EConstr.of_constr p)))::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
 	  (lemmas)))
@@ -662,7 +661,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     (* We get the constant and the principle corresponding to this lemma *)
     let f = funcs.(i) in
     let graph_principle = nf_zeta (EConstr.of_constr schemes.(i))  in
-    let princ_type = pf_unsafe_type_of g (EConstr.of_constr graph_principle) in
+    let princ_type = pf_unsafe_type_of g graph_principle in
     let princ_type = EConstr.of_constr princ_type in
     let princ_infos = Tactics.compute_elim_sig (project g) princ_type in
     (* Then we get the number of argument of the function
@@ -754,14 +753,15 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	g
     in
     let params_names = fst (List.chop princ_infos.nparams args_names) in
+    let open EConstr in
     let params = List.map mkVar params_names in
     tclTHENSEQ
       [ tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) (args_names@[res;hres]);
 	observe_tac "h_generalize"
-	(Proofview.V82.of_tactic (generalize [EConstr.of_constr (mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas))]));
+	(Proofview.V82.of_tactic (generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]));
 	Proofview.V82.of_tactic (Simple.intro graph_principle_id);
 	observe_tac "" (tclTHEN_i
-	  (observe_tac "elim" (Proofview.V82.of_tactic (elim false None (EConstr.mkVar hres,NoBindings) (Some (EConstr.mkVar graph_principle_id,NoBindings)))))
+	  (observe_tac "elim" (Proofview.V82.of_tactic (elim false None (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings)))))
 	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
       ]
       g
@@ -796,6 +796,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
 	 let _ = Typing.e_type_of (Global.env ()) evd (EConstr.of_constr type_of_lemma) in 
 	   let type_of_lemma = nf_zeta (EConstr.of_constr type_of_lemma) in
+	   let type_of_lemma = EConstr.Unsafe.to_constr type_of_lemma in
 	   observe (str "type_of_lemma := " ++ Printer.pr_lconstr_env (Global.env ()) !evd type_of_lemma);
 	   type_of_lemma,type_info
 	)
@@ -863,6 +864,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	   Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
 	 in
 	 let type_of_lemma = nf_zeta (EConstr.of_constr type_of_lemma) in
+	 let type_of_lemma = EConstr.Unsafe.to_constr type_of_lemma in
 	 observe (str "type_of_lemma := " ++ Printer.pr_lconstr type_of_lemma);
 	 type_of_lemma,type_info
 	)

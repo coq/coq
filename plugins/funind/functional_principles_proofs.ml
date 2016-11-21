@@ -321,6 +321,7 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
     in
     let new_type_of_hyp =
       Reductionops.nf_betaiota Evd.empty (EConstr.of_constr new_type_of_hyp) in
+    let new_type_of_hyp = EConstr.Unsafe.to_constr new_type_of_hyp in
     let new_ctxt,new_end_of_type =
       decompose_prod_n_assum ctxt_size new_type_of_hyp
     in
@@ -619,6 +620,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 		   )
 	 in
 	 let new_body = pf_nf_betaiota g' (EConstr.of_constr (mkApp(fun_body,[| new_term_value |]))) in
+	 let new_body = EConstr.Unsafe.to_constr new_body in
 	 let new_infos =
 	   {dyn_infos with
 	      info = new_body;
@@ -752,6 +754,7 @@ let build_proof
 			     pf_nf_betaiota g'
 			       (EConstr.of_constr (mkApp(dyn_infos.info,[|mkVar id|])))
 			   in
+			   let new_term = EConstr.Unsafe.to_constr new_term in
 			   let new_infos = {dyn_infos with info = new_term} in
 			   let do_prove new_hyps =
 			     build_proof do_finalize
@@ -796,6 +799,7 @@ let build_proof
 		  | Lambda _ ->
 		      let new_term =
                         Reductionops.nf_beta Evd.empty (EConstr.of_constr dyn_infos.info) in
+                      let new_term = EConstr.Unsafe.to_constr new_term in
 		      build_proof do_finalize {dyn_infos with info = new_term}
 			g
 		  | LetIn _ ->
@@ -1097,11 +1101,11 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
     let get_body const =
       match Global.body_of_constant const with
 	| Some body ->
-	     Tacred.cbv_norm_flags
+	     EConstr.Unsafe.to_constr (Tacred.cbv_norm_flags
 	       (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 	       (Global.env ())
 	       (Evd.empty)
-	       (EConstr.of_constr body)
+	       (EConstr.of_constr body))
 	| None -> error ( "Cannot define a principle over an axiom ")
     in
     let fbody = get_body fnames.(fun_num) in
@@ -1152,9 +1156,9 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	    let bodies_with_all_params =
 	      Array.map
 		(fun body ->
-		   Reductionops.nf_betaiota Evd.empty
+		   EConstr.Unsafe.to_constr (Reductionops.nf_betaiota Evd.empty
 		     (EConstr.of_constr (applist(substl (List.rev (Array.to_list all_funs_with_full_params)) body,
-			      List.rev_map var_of_decl princ_params)))
+			      List.rev_map var_of_decl princ_params))))
 		)
 		bodies
 	    in
@@ -1190,12 +1194,12 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		   let body_with_param,num =
 		     let body = get_body fnames.(i) in
 		     let body_with_full_params =
-		       Reductionops.nf_betaiota Evd.empty (EConstr.of_constr (
-			 applist(body,List.rev_map var_of_decl full_params)))
+		       EConstr.Unsafe.to_constr (Reductionops.nf_betaiota Evd.empty (EConstr.of_constr (
+			 applist(body,List.rev_map var_of_decl full_params))))
 		     in
 		     match kind_of_term body_with_full_params with
 		       | Fix((_,num),(_,_,bs)) ->
-			       Reductionops.nf_betaiota Evd.empty
+			       EConstr.Unsafe.to_constr (Reductionops.nf_betaiota Evd.empty
 				 (EConstr.of_constr (
 				   (applist
 				      (substl
@@ -1203,7 +1207,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 					    (Array.to_list all_funs_with_full_params))
 					 bs.(num),
 				       List.rev_map var_of_decl princ_params))
-				 )),num
+				 ))),num
 			 | _ -> error "Not a mutual block"
 		   in
 		   let info =
@@ -1279,8 +1283,8 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		     nb_rec_hyps = -100;
 		     rec_hyps = [];
 		     info =
-		       Reductionops.nf_betaiota Evd.empty
-			 (EConstr.of_constr (applist(fix_body,List.rev_map mkVar args_id)));
+		       EConstr.Unsafe.to_constr (Reductionops.nf_betaiota Evd.empty
+			 (EConstr.of_constr (applist(fix_body,List.rev_map mkVar args_id))));
 		     eq_hyps = []
 		   }
 		 in
@@ -1339,11 +1343,11 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		     nb_rec_hyps = -100;
 		     rec_hyps = [];
 		     info =
-		       Reductionops.nf_betaiota Evd.empty
+		       EConstr.Unsafe.to_constr (Reductionops.nf_betaiota Evd.empty
 			 (EConstr.of_constr (applist(fbody_with_full_params,
 				  (List.rev_map var_of_decl princ_params)@
 				    (List.rev_map mkVar args_id)
-				 )));
+				 ))));
 		     eq_hyps = []
 		   }
 		 in

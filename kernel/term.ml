@@ -179,8 +179,6 @@ let destMeta c = match kind_of_term c with
   | _ -> raise DestKO
 
 let isMeta c = match kind_of_term c with Meta _ -> true | _ -> false
-let isMetaOf mv c =
-  match kind_of_term c with Meta mv' -> Int.equal mv mv' | _ -> false
 
 (* Destructs a variable *)
 let destVar c = match kind_of_term c with

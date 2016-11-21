@@ -413,7 +413,7 @@ let type_of_clause cls gl = match cls with
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let evd = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
-  let isatomic = isProd evd (EConstr.of_constr (whd_zeta evd hdcncl)) in
+  let isatomic = isProd evd (whd_zeta evd hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let type_of_cls = type_of_clause cls gl in
   let dep = dep_proof_ok && dep_fun evd c type_of_cls in
@@ -453,7 +453,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
       let env = Proofview.Goal.env gl in
     let ctype = get_type_of env sigma c in
     let ctype = EConstr.of_constr ctype in
-    let rels, t = decompose_prod_assum sigma (EConstr.of_constr (whd_betaiotazeta sigma ctype)) in
+    let rels, t = decompose_prod_assum sigma (whd_betaiotazeta sigma ctype) in
       match match_with_equality_type sigma t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
@@ -470,7 +470,6 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
                   Proofview.tclEVARMAP >>= fun sigma ->
 	          let env' = push_rel_context rels env in
 	          let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
-	          let t' = EConstr.of_constr t' in
 	          match match_with_equality_type sigma t' with
 	            | Some (hdcncl,args) ->
 		  let lft2rgt = adjust_rewriting_direction args lft2rgt in
@@ -1051,7 +1050,7 @@ let onNegatedEquality with_evars tac =
     let sigma = Tacmach.New.project gl in
     let ccl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    match EConstr.kind sigma (EConstr.of_constr (hnf_constr env sigma ccl)) with
+    match EConstr.kind sigma (hnf_constr env sigma ccl) with
     | Prod (_,t,u) when is_empty_type sigma u ->
         tclTHEN introf
           (onLastHypId (fun id ->
@@ -1133,7 +1132,6 @@ let make_tuple env sigma (rterm,rty) lind =
 let minimal_free_rels env sigma (c,cty) =
   let cty_rels = free_rels sigma cty in
   let cty' = simpl env sigma cty in
-  let cty' = EConstr.of_constr cty' in
   let rels' = free_rels sigma cty' in
   if Int.Set.subset cty_rels rels' then
     (cty,cty_rels)
@@ -1380,7 +1378,6 @@ let inject_if_homogenous_dependent_pair ty =
 
 let simplify_args env sigma t =
   (* Quick hack to reduce in arguments of eq only *)
-  let simpl env sigma c = EConstr.of_constr (simpl env sigma c) in
   match decompose_app sigma t with
     | eq, [t;c1;c2] -> applist (eq,[t;simpl env sigma c1;simpl env sigma c2])
     | eq, [t1;c1;t2;c2] -> applist (eq,[t1;simpl env sigma c1;t2;simpl env sigma c2])
@@ -1591,7 +1588,6 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   let expected_goal = beta_applist sigma (abst_B,List.map fst e2_list) in
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
   let expected_goal = nf_betaiota sigma expected_goal in
-  let expected_goal = EConstr.of_constr expected_goal in
   (* Retype to get universes right *)
   let sigma, expected_goal_ty = Typing.type_of env sigma expected_goal in
   let sigma, _ = Typing.type_of env sigma body in

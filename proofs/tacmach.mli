@@ -42,7 +42,7 @@ val pf_ids_of_hyps        : goal sigma -> Id.t list
 val pf_global             : goal sigma -> Id.t -> constr
 val pf_unsafe_type_of            : goal sigma -> EConstr.constr -> types
 val pf_type_of            : goal sigma -> EConstr.constr -> evar_map * types
-val pf_hnf_type_of        : goal sigma -> EConstr.constr -> types
+val pf_hnf_type_of        : goal sigma -> EConstr.constr -> EConstr.types
 
 val pf_get_hyp            : goal sigma -> Id.t -> Context.Named.Declaration.t
 val pf_get_hyp_typ        : goal sigma -> Id.t -> types
@@ -50,7 +50,7 @@ val pf_get_hyp_typ        : goal sigma -> Id.t -> types
 val pf_get_new_id  : Id.t      -> goal sigma -> Id.t
 val pf_get_new_ids : Id.t list -> goal sigma -> Id.t list
 
-val pf_reduction_of_red_expr : goal sigma -> red_expr -> EConstr.constr -> evar_map * constr
+val pf_reduction_of_red_expr : goal sigma -> red_expr -> EConstr.constr -> evar_map * EConstr.constr
 
 
 val pf_apply : (env -> evar_map -> 'a) -> goal sigma -> 'a
@@ -63,15 +63,15 @@ val pf_e_reduce :
   (env -> evar_map -> constr -> evar_map * constr) ->
   goal sigma -> constr -> evar_map * constr
 
-val pf_whd_all       : goal sigma -> EConstr.constr -> constr
-val pf_hnf_constr              : goal sigma -> EConstr.constr -> constr
-val pf_nf                      : goal sigma -> EConstr.constr -> constr
-val pf_nf_betaiota             : goal sigma -> EConstr.constr -> constr
+val pf_whd_all       : goal sigma -> EConstr.constr -> EConstr.constr
+val pf_hnf_constr              : goal sigma -> EConstr.constr -> EConstr.constr
+val pf_nf                      : goal sigma -> EConstr.constr -> EConstr.constr
+val pf_nf_betaiota             : goal sigma -> EConstr.constr -> EConstr.constr
 val pf_reduce_to_quantified_ind : goal sigma -> EConstr.types -> pinductive * EConstr.types
 val pf_reduce_to_atomic_ind     : goal sigma -> EConstr.types -> pinductive * EConstr.types
 val pf_compute                 : goal sigma -> EConstr.constr -> EConstr.constr
 val pf_unfoldn    : (occurrences * evaluable_global_reference) list
-  -> goal sigma -> EConstr.constr -> constr
+  -> goal sigma -> EConstr.constr -> EConstr.constr
 
 val pf_const_value : goal sigma -> pconstant -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool

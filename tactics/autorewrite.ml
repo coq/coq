@@ -285,6 +285,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
     | Some c -> Some c
     | None ->
 	let ctx,t' = Reductionops.splay_prod_assum env sigma (EConstr.of_constr ctype) in (* Search for underlying eq *)
+	let t' = EConstr.Unsafe.to_constr t' in
 	match find_rel (it_mkProd_or_LetIn t' ctx) with
 	| Some c -> Some c
 	| None -> None

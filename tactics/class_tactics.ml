@@ -535,7 +535,6 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
       | _ ->
           let env' = Environ.push_rel_context ctx env in
           let ty' = Reductionops.whd_all env' sigma ar in
-          let ty' = EConstr.of_constr ty' in
                if not (EConstr.eq_constr sigma ty' ar) then iscl env' ty'
                else false
   in

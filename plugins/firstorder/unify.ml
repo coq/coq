@@ -42,8 +42,8 @@ let unif t1 t2=
     Queue.add (t1,t2) bige;
     try while true do
       let t1,t2=Queue.take bige in
-      let nt1=head_reduce (whd_betaiotazeta Evd.empty (EConstr.of_constr t1))
-      and nt2=head_reduce (whd_betaiotazeta Evd.empty (EConstr.of_constr t2)) in
+      let nt1=head_reduce (EConstr.Unsafe.to_constr (whd_betaiotazeta evd (EConstr.of_constr t1)))
+      and nt2=head_reduce (EConstr.Unsafe.to_constr (whd_betaiotazeta evd (EConstr.of_constr t2))) in
 	match (kind_of_term nt1),(kind_of_term nt2) with
 	    Meta i,Meta j->
 	      if not (Int.equal i j) then
