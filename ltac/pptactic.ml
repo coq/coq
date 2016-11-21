@@ -318,15 +318,13 @@ module Make
   | Extend.Uentry _ | Extend.Uentryl _ ->
     str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
 
-  let rec pr_targ prtac symb arg = match symb with
+  let rec pr_targ prtac prgen symb arg = match symb with
   | Extend.Uentry tag when is_genarg tag (ArgumentType wit_tactic) ->
     prtac (1, Any) arg
   | Extend.Uentryl (_, l) -> prtac (l, Any) arg
   | _ ->
     match arg with
-    | TacGeneric arg ->
-      let pr l arg = prtac l (TacGeneric arg) in
-      pr_any_arg pr symb arg
+    | TacGeneric arg -> pr_any_arg prgen symb arg
     | _ -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
 
   let pr_raw_extend_rec prc prlc prtac prpat =
@@ -335,9 +333,13 @@ module Make
     pr_extend_gen (pr_farg prtac)
 
   let pr_raw_alias prc prlc prtac prpat lev key args =
-    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))) lev key args
+    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))
+                          (fun l a -> Pputils.pr_raw_generic (Global.env ()) a))
+                 lev key args
   let pr_glob_alias prc prlc prtac prpat lev key args =
-    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))) lev key args
+    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))
+                          (fun l a -> Pputils.pr_glb_generic (Global.env ()) a))
+                 lev key args
 
   (**********************************************************************)
   (* The tactic printer                                                 *)
