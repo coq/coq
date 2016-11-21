@@ -105,6 +105,7 @@ open CErrors
 open Util
 open Names
 open Term
+open EConstr
 open Pattern
 open Patternops
 open Constr_matching
@@ -116,7 +117,8 @@ open Proofview.Notations
   We do that lazily, because this code can be linked before
   the constants are loaded in the environment *)
 
-let constant dir s = Coqlib.gen_constant "Quote" ("quote"::dir) s
+let constant dir s =
+  EConstr.of_constr (Coqlib.gen_constant "Quote" ("quote"::dir) s)
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")
@@ -165,7 +167,7 @@ exchange ?1 and ?2 in the example above)
 
 module ConstrSet = Set.Make(
   struct
-    type t = constr
+    type t = Constr.constr
     let compare = constr_ord
   end)
 
@@ -183,7 +185,7 @@ type inversion_scheme = {
 
 let i_can't_do_that () = error "Quote: not a simple fixpoint"
 
-let decomp_term gl c = kind_of_term (EConstr.Unsafe.to_constr (Termops.strip_outer_cast (Tacmach.New.project gl) (EConstr.of_constr c)))
+let decomp_term sigma c = EConstr.kind sigma (Termops.strip_outer_cast sigma c)
 
 (*s [compute_lhs typ i nargsi] builds the term \texttt{(C ?nargsi ...
   ?2 ?1)}, where \texttt{C} is the [i]-th constructor of inductive
@@ -195,8 +197,8 @@ let coerce_meta_out id =
 let coerce_meta_in n =
   Id.of_string ("M" ^ string_of_int n)
 
-let compute_lhs typ i nargsi =
-  match kind_of_term typ with
+let compute_lhs sigma typ i nargsi =
+  match EConstr.kind sigma typ with
     | Ind((sp,0),u) ->
         let argsi = Array.init nargsi (fun j -> mkMeta (nargsi - j)) in
         mkApp (mkConstructU (((sp,0),i+1),u), argsi)
@@ -205,60 +207,61 @@ let compute_lhs typ i nargsi =
 (*s This function builds the pattern from the RHS. Recursive calls are
   replaced by meta-variables ?i corresponding to those in the LHS *)
 
-let compute_rhs bodyi index_of_f =
+let compute_rhs env sigma bodyi index_of_f =
   let rec aux c =
-    match kind_of_term c with
-      | App (j, args) when isRel j && Int.equal (destRel j) index_of_f (* recursive call *) ->
-          let i = destRel (Array.last args) in
+    match EConstr.kind sigma c with
+      | App (j, args) when isRel sigma j && Int.equal (destRel sigma j) index_of_f (* recursive call *) ->
+          let i = destRel sigma (Array.last args) in
 	  PMeta (Some (coerce_meta_in i))
       | App (f,args) ->
-          PApp (pattern_of_constr (Global.env()) Evd.empty (EConstr.of_constr f), Array.map aux args)
+          PApp (pattern_of_constr env sigma f, Array.map aux args)
       | Cast (c,_,_) -> aux c
-      | _ -> pattern_of_constr (Global.env())(*FIXME*) Evd.empty (EConstr.of_constr c)
+      | _ -> pattern_of_constr env sigma c
   in
   aux bodyi
 
 (*s Now the function [compute_ivs] itself *)
 
 let compute_ivs f cs gl =
-  let cst = try destConst f with DestKO -> i_can't_do_that () in
+  let env = Proofview.Goal.env gl in
+  let sigma = Tacmach.New.project gl in
+  let cst = try destConst sigma f with DestKO -> i_can't_do_that () in
   let body = Environ.constant_value_in (Global.env()) cst in
-  match decomp_term gl body with
+  let body = EConstr.of_constr body in
+  match decomp_term sigma body with
     | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
-        let (args3, body3) = decompose_lam body2 in
+        let (args3, body3) = decompose_lam sigma body2 in
         let nargs3 = List.length args3 in
-        let env = Proofview.Goal.env gl in
-        let sigma = Tacmach.New.project gl in
         let is_conv = Reductionops.is_conv env sigma in
-          begin match decomp_term gl body3 with
+          begin match decomp_term sigma body3 with
           | Case(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)
               let n_lhs_rhs = ref []
               and v_lhs = ref (None : constr option)
               and c_lhs = ref (None : constr option) in
               Array.iteri
                 (fun i ci ->
-                   let argsi, bodyi = decompose_lam ci in
+                   let argsi, bodyi = decompose_lam sigma ci in
                    let nargsi = List.length argsi in
            (* REL (narg3 + nargsi + 1) is f *)
            (* REL nargsi+1 to REL nargsi + nargs3 are arguments of f *)
            (* REL 1 to REL nargsi are argsi (reverse order) *)
            (* First we test if the RHS is the RHS for constants *)
-                   if isRel bodyi && Int.equal (destRel bodyi) 1 then
-                     c_lhs := Some (compute_lhs (snd (List.hd args3))
+                   if isRel sigma bodyi && Int.equal (destRel sigma bodyi) 1 then
+                     c_lhs := Some (compute_lhs sigma (snd (List.hd args3))
                                       i nargsi)
            (* Then we test if the RHS is the RHS for variables *)
-                   else begin match decompose_app bodyi with
+                   else begin match decompose_app sigma bodyi with
                      | vmf, [_; _; a3; a4 ]
-                         when isRel a3 && isRel a4 && is_conv (EConstr.of_constr vmf)
-                           (EConstr.of_constr (Lazy.force coq_varmap_find)) ->
-                             v_lhs := Some (compute_lhs
+                         when isRel sigma a3 && isRel sigma a4 && is_conv vmf
+                           (Lazy.force coq_varmap_find) ->
+                             v_lhs := Some (compute_lhs sigma
                                               (snd (List.hd args3))
                                               i nargsi)
            (* Third case: this is a normal LHS-RHS *)
                      | _ ->
                          n_lhs_rhs :=
-                         (compute_lhs (snd (List.hd args3)) i nargsi,
-                          compute_rhs bodyi (nargs3 + nargsi + 1))
+                         (compute_lhs sigma (snd (List.hd args3)) i nargsi,
+                          compute_rhs env sigma bodyi (nargs3 + nargsi + 1))
                          :: !n_lhs_rhs
                    end)
                 lci;
@@ -266,8 +269,8 @@ let compute_ivs f cs gl =
               if Option.is_empty !c_lhs && Option.is_empty !v_lhs then i_can't_do_that ();
 
 	      (* The Cases predicate is a lambda; we assume no dependency *)
-	      let p = match kind_of_term p with
-		| Lambda (_,_,p) -> Termops.pop (EConstr.of_constr p)
+	      let p = match EConstr.kind sigma p with
+		| Lambda (_,_,p) -> EConstr.of_constr (Termops.pop p)
 		| _ -> p
 	      in
 
@@ -297,11 +300,11 @@ binary search trees (see file \texttt{Quote.v}) *)
 (* First the function to distinghish between constants (closed terms)
    and variables (open terms) *)
 
-let rec closed_under cset t =
-  (ConstrSet.mem t cset) ||
-  (match (kind_of_term t) with
-     | Cast(c,_,_) -> closed_under cset c
-     | App(f,l) -> closed_under cset f && Array.for_all (closed_under cset) l
+let rec closed_under sigma cset t =
+  (ConstrSet.mem (EConstr.Unsafe.to_constr t) cset) ||
+  (match EConstr.kind sigma t with
+     | Cast(c,_,_) -> closed_under sigma cset c
+     | App(f,l) -> closed_under sigma cset f && Array.for_all (closed_under sigma cset) l
      | _ -> false)
 
 (*s [btree_of_array [| c1; c2; c3; c4; c5 |]] builds the complete
@@ -361,7 +364,7 @@ let path_of_int n =
 
 let rec subterm gl (t : constr) (t' : constr) =
   (pf_conv_x gl t t') ||
-  (match (kind_of_term t) with
+  (match EConstr.kind (project gl) t with
      | App (f,args) -> Array.exists (fun t -> subterm gl t t') args
      | Cast(t,_,_) -> (subterm gl t t')
      | _ -> false)
@@ -370,9 +373,10 @@ let rec subterm gl (t : constr) (t' : constr) =
 (* Since it's a partial order the algoritm of Sort.list won't work !! *)
 
 let rec sort_subterm gl l =
+  let sigma = project gl in
   let rec insert c = function
     | [] -> [c]
-    | (h::t as l) when eq_constr c h -> l (* Avoid doing the same work twice *)
+    | (h::t as l) when EConstr.eq_constr sigma c h -> l (* Avoid doing the same work twice *)
     | h::t -> if subterm gl c h then c::h::t else h::(insert c t)
   in
   match l with
@@ -380,10 +384,14 @@ let rec sort_subterm gl l =
     | h::t -> insert h (sort_subterm gl t)
 
 module Constrhash = Hashtbl.Make
-  (struct type t = constr
-	  let equal = eq_constr
-	  let hash = hash_constr
+  (struct type t = Constr.constr
+	  let equal = Term.eq_constr
+	  let hash = Term.hash_constr
    end)
+
+let subst_meta subst c =
+  let subst = List.map (fun (i, c) -> i, EConstr.Unsafe.to_constr c) subst in
+  EConstr.of_constr (Termops.subst_meta subst (EConstr.Unsafe.to_constr c))
 
 (*s Now we are able to do the inversion itself.
   We destructurate the term and use an imperative hashtable
@@ -392,7 +400,7 @@ module Constrhash = Hashtbl.Make
   [ivs : inversion_scheme]\\
   [lc: constr list]\\
   [gl: goal sigma]\\ *)
-let quote_terms ivs lc =
+let quote_terms env sigma ivs lc =
   Coqlib.check_required_library ["Coq";"quote";"Quote"];
   let varhash  = (Constrhash.create 17 : constr Constrhash.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
@@ -402,34 +410,34 @@ let quote_terms ivs lc =
       match l with
         | (lhs, rhs)::tail ->
             begin try
-              let s1 = Id.Map.bindings (matches (Global.env ()) Evd.empty rhs (EConstr.of_constr c)) in
-              let s2 = List.map (fun (i,c_i) -> (coerce_meta_out i,aux (EConstr.Unsafe.to_constr c_i))) s1
+              let s1 = Id.Map.bindings (matches env sigma rhs c) in
+              let s2 = List.map (fun (i,c_i) -> (coerce_meta_out i,aux c_i)) s1
 	      in
-              Termops.subst_meta s2 lhs
+              subst_meta s2 lhs
             with PatternMatchingFailure -> auxl tail
             end
         |  [] ->
              begin match ivs.variable_lhs with
                | None ->
                    begin match ivs.constant_lhs with
-                     | Some c_lhs -> Termops.subst_meta [1, c] c_lhs
+                     | Some c_lhs -> subst_meta [1, c] c_lhs
                      | None -> anomaly (Pp.str "invalid inversion scheme for quote")
                    end
                | Some var_lhs ->
                    begin match ivs.constant_lhs with
-                     | Some c_lhs when closed_under ivs.constants c ->
-			 Termops.subst_meta [1, c] c_lhs
+                     | Some c_lhs when closed_under sigma ivs.constants c ->
+			 subst_meta [1, c] c_lhs
                      | _ ->
 			 begin
-                           try Constrhash.find varhash c
+                           try Constrhash.find varhash (EConstr.Unsafe.to_constr c)
                            with Not_found ->
                              let newvar =
-                               Termops.subst_meta [1, (path_of_int !counter)]
+                               subst_meta [1, (path_of_int !counter)]
 				 var_lhs in
                              begin
                                incr counter;
                                varlist := c :: !varlist;
-                               Constrhash.add varhash c newvar;
+                               Constrhash.add varhash (EConstr.Unsafe.to_constr c) newvar;
                                newvar
                              end
 			 end
@@ -448,27 +456,32 @@ let quote_terms ivs lc =
 
 let quote f lid =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Tacmach.New.project gl in
     let f = Tacmach.New.pf_global f gl in
+    let f = EConstr.of_constr f in
     let cl = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
     let ivs = compute_ivs f cl gl in
     let concl = Proofview.Goal.concl gl in
-    let concl = EConstr.Unsafe.to_constr concl in
-    let quoted_terms = quote_terms ivs [concl] in
+    let quoted_terms = quote_terms env sigma ivs [concl] in
     let (p, vm) = match quoted_terms with
       | [p], vm -> (p,vm)
       | _ -> assert false
     in
     match ivs.variable_lhs with
-    | None -> Tactics.convert_concl (EConstr.of_constr (mkApp (f, [| p |]))) DEFAULTcast
-    | Some _ -> Tactics.convert_concl (EConstr.of_constr (mkApp (f, [| vm; p |]))) DEFAULTcast
+    | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast
+    | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast
   end }
 
 let gen_quote cont c f lid =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Tacmach.New.project gl in
   let f = Tacmach.New.pf_global f gl in
+  let f = EConstr.of_constr f in
   let cl = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
   let ivs = compute_ivs f cl gl in
-  let quoted_terms = quote_terms ivs [c] in
+  let quoted_terms = quote_terms env sigma ivs [c] in
   let (p, vm) = match quoted_terms with
     | [p], vm -> (p,vm)
     | _ -> assert false

@@ -74,8 +74,8 @@ val pf_unfoldn    : (occurrences * evaluable_global_reference) list
   -> goal sigma -> EConstr.constr -> EConstr.constr
 
 val pf_const_value : goal sigma -> pconstant -> constr
-val pf_conv_x      : goal sigma -> constr -> constr -> bool
-val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
+val pf_conv_x      : goal sigma -> EConstr.constr -> EConstr.constr -> bool
+val pf_conv_x_leq  : goal sigma -> EConstr.constr -> EConstr.constr -> bool
 
 val pf_matches     : goal sigma -> constr_pattern -> EConstr.constr -> patvar_map
 val pf_is_matching : goal sigma -> constr_pattern -> EConstr.constr -> bool

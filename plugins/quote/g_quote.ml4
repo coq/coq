@@ -22,7 +22,8 @@ let loc = Loc.ghost
 let cont = Id.of_string "cont"
 let x = Id.of_string "x"
 
-let make_cont (k : Val.t) (c : Constr.t) =
+let make_cont (k : Val.t) (c : EConstr.t) =
+  let c = EConstr.Unsafe.to_constr c in
   let c = Tacinterp.Value.of_constr c in
   let tac = TacCall (loc, ArgVar (loc, cont), [Reference (ArgVar (loc, x))]) in
   let ist = { lfun = Id.Map.add cont k (Id.Map.singleton x c); extra = TacStore.empty; } in
@@ -32,8 +33,8 @@ TACTIC EXTEND quote
   [ "quote" ident(f) ] -> [ quote f [] ]
 | [ "quote" ident(f) "[" ne_ident_list(lc) "]"] -> [ quote f lc ]
 | [ "quote" ident(f) "in" constr(c) "using" tactic(k) ] ->
-  [ gen_quote (make_cont k) c f [] ]
+  [ gen_quote (make_cont k) (EConstr.of_constr c) f [] ]
 | [ "quote" ident(f) "[" ne_ident_list(lc) "]"
     "in" constr(c) "using" tactic(k) ] ->
-  [ gen_quote (make_cont k) c f lc ]
+  [ gen_quote (make_cont k) (EConstr.of_constr c) f lc ]
 END

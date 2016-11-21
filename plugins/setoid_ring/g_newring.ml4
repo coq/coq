@@ -30,7 +30,7 @@ END
 
 TACTIC EXTEND closed_term
   [ "closed_term" constr(t) "[" ne_reference_list(l) "]" ] ->
-    [ closed_term t l ]
+    [ closed_term (EConstr.of_constr t) l ]
 END
 
 open Pptactic

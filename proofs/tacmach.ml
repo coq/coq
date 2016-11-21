@@ -41,6 +41,11 @@ let project  = Refiner.project
 let pf_env   = Refiner.pf_env
 let pf_hyps  = Refiner.pf_hyps
 
+let test_conversion cb env sigma c1 c2 =
+  let c1 = EConstr.Unsafe.to_constr c1 in
+  let c2 = EConstr.Unsafe.to_constr c2 in
+  test_conversion cb env sigma c1 c2
+
 let pf_concl gls = EConstr.Unsafe.to_constr (Goal.V82.concl (project gls) (sig_it gls))
 let pf_hyps_types gls  =
   let sign = Environ.named_context (pf_env gls) in

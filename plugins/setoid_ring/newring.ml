@@ -97,9 +97,10 @@ let protect_tac_in map id =
 
 let closed_term t l =
   let open Quote_plugin in
+  Proofview.tclEVARMAP >>= fun sigma ->
   let l = List.map Universes.constr_of_global l in
   let cs = List.fold_right Quote.ConstrSet.add l Quote.ConstrSet.empty in
-  if Quote.closed_under cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
+  if Quote.closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
 
 (* TACTIC EXTEND echo
 | [ "echo" constr(t) ] ->

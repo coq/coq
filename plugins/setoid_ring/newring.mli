@@ -19,7 +19,7 @@ val protect_tac_in : string -> Id.t -> unit Proofview.tactic
 
 val protect_tac : string -> unit Proofview.tactic
 
-val closed_term : constr -> global_reference list -> unit Proofview.tactic
+val closed_term : EConstr.constr -> global_reference list -> unit Proofview.tactic
 
 val process_ring_mods :
   constr_expr ring_mod list ->
