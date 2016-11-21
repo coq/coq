@@ -862,7 +862,7 @@ module Make
               let llc = List.map (fun (id,t) -> (id,extract_binders t)) llc in
               v 0
                 (hv 0 (
-                  pr_let_clauses recflag (pr_tac ltop) llc
+                  pr_let_clauses recflag (pr_tac (0,L)) llc
                   ++ spc () ++ keyword "in"
                  ) ++ fnl () ++ pr_tac (llet,E) u),
               llet
