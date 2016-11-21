@@ -40,3 +40,5 @@ Ltac h1 := let x := ipattern:(H) in
 Ltac h2 := let x := auto_using:(using S, 0) in
            idtac
            x
+Ltac h3 := let x _ := () in
+           x ltac:(()).
