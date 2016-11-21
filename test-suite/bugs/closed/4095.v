@@ -71,7 +71,7 @@ Goal forall (T : Type) (O0 : T -> OPred) (O1 : T -> PointedOPred)
     refine (P _ _)
   end.
   Undo.
-  Fail lazymatch goal with
+  lazymatch goal with
   | |- ?R (?f ?a ?b) (?f ?a' ?b') =>
     let P := constr:(fun H H' => Morphisms.proper_prf a a' H b b' H') in
     set(p:=P)

@@ -1273,7 +1273,7 @@ let preferred_orientation evd evk1 evk2 =
   match src1,src2 with
   | (Evar_kinds.QuestionMark _ | Evar_kinds.ImplicitArg (_, _, false)) , _ -> true
   | _, (Evar_kinds.QuestionMark _ | Evar_kinds.ImplicitArg (_, _, false)) -> false
-  | _ -> true
+  | _ -> List.mem evk1 (Evd.future_goals evd) || not (List.mem evk2 (Evd.future_goals evd))
 
 let solve_evar_evar_aux force f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env evd in
