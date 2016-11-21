@@ -63,3 +63,5 @@ Ltac h1 := let x := ipattern:(H) in let c := constr:(Prop) in idtac x c.
 Print Ltac h1.
 Ltac h2 := let x := auto_using:(using S, O) in idtac x.
 Print Ltac h2.
+Ltac h3 := let x _ := () in x ().
+Print Ltac h3.
