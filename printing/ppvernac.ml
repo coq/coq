@@ -30,6 +30,9 @@ module Make
   open Taggers
   open Ppconstr
 
+  module GenprintUsingRule = Genprint.Make (struct let tag_keyword = tag_keyword let tag_primitive = fun x -> x end)
+  open GenprintUsingRule
+
   let keyword s = tag_keyword (str s)
 
   let pr_constr = pr_constr_expr
@@ -1227,23 +1230,34 @@ module Make
       | VernacEndSubproof ->
         return (str "}")
 
+  and pr_varg symb = function
+  | arg (*Tacexpr.TacGeneric (name,arg) *) ->
+     Genprint.pr_any_arg (fun l a -> Genprint.pr_raw_generic (Global.env ()) l a) symb arg
+  | _ ->
+     assert false
+
+  and translate_entry : type l a b. (l,a,b) Genarg.genarg_type * (vernac_expr,l) symbol -> Genarg.ArgT.any user_symbol = function
+    | Genarg.ExtraArg c, Aentry _ -> Uentry (Genarg.ArgT.Any c)
+    | Genarg.ListArg x, Alist0 e -> Ulist0 (translate_entry (x,e))
+    | Genarg.ListArg x, Alist1 e -> Ulist1 (translate_entry (x,e))
+    | Genarg.ListArg x, Alist0sep (e,Atoken s) -> Ulist0sep (translate_entry (x,e),snd (Tok.to_pattern s))
+    | Genarg.ListArg x, Alist1sep (e,Atoken s) -> Ulist1sep (translate_entry (x,e),snd (Tok.to_pattern s))
+    | Genarg.OptArg x, Aopt e -> Uopt (translate_entry (x,e))
+    | _ -> assert false
+
   and pr_extend s cl =
-    let pr_arg lev a =
-      try pr_gen lev a
-      with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
     try
-      let guess_level = function Aentryl (_,n) -> Some (n,Ppextend.E) | _ -> Some (5,Ppextend.E) in
       let rl = Egramml.get_extend_vernac_rule s in
-      let rec aux rl cl =
-        match rl, cl with
-        | Egramml.GramNonTerminal (_,_,e) :: rl, arg :: cl -> pr_arg (guess_level e) arg :: aux rl cl
-        | Egramml.GramTerminal s :: rl, cl -> str s :: aux rl cl
-        | [], [] -> []
-        | _ -> assert false in
-      hov 1 (pr_sequence (fun x -> x) (aux rl cl))
+      let rec pack prods args = match prods, args with
+      | Egramml.GramNonTerminal (loc,Genarg.Rawwit e,sym) :: rl, arg :: cl -> Genprint.ArgNonTerm (translate_entry (e,sym),arg):: pack rl cl
+      | Egramml.GramTerminal s :: rl, cl -> Genprint.ArgTerm s :: pack rl cl
+      | [], [] -> []
+      | _ -> assert false in
+      let prods = pack rl cl in
+      pr_extension_using_rule pr_varg prods
     with Not_found ->
       let dummy_level = Some (0,Ppextend.E) in
-      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep (pr_arg dummy_level) cl ++ str ")")
+      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep (Genprint.pr_raw_generic (Global.env ()) dummy_level) cl ++ str ")")
 
   let pr_vernac v =
     try pr_vernac_body v ++ sep_end v
