@@ -79,7 +79,9 @@ module Make
     | VernacEndSubproof -> str""
     | _ -> str"."
 
-  let pr_gen t = Pputils.pr_raw_generic (Global.env ()) t
+  let pr_tactic x = Pputils.pr_raw_generic (Global.env ()) (Some (5,Ppextend.E)) x
+
+  let pr_gen lev t = Pputils.pr_raw_generic (Global.env ()) lev t
 
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
@@ -196,7 +198,7 @@ module Make
         | HintsExtern (n,c,tac) ->
           let pat = match c with None -> mt () | Some pat -> pr_pat pat in
           keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
-            spc() ++ Pputils.pr_raw_generic (Global.env ()) tac
+            spc() ++ pr_tactic tac
     in
     hov 2 (keyword "Hint "++ pph ++ opth)
 
@@ -1203,12 +1205,12 @@ module Make
         return (keyword "Proof " ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e)
       | VernacProof (Some te, None) ->
-        return (keyword "Proof with" ++ spc() ++ Pputils.pr_raw_generic (Global.env ()) te)
+        return (keyword "Proof with" ++ spc() ++ pr_tactic te)
       | VernacProof (Some te, Some e) ->
         return (
           keyword "Proof" ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e ++ spc() ++
-            keyword "with" ++ spc() ++ Pputils.pr_raw_generic (Global.env ()) te
+            keyword "with" ++ spc() ++ pr_tactic te
         )
       | VernacProofMode s ->
         return (keyword "Proof Mode" ++ str s)
@@ -1226,20 +1228,22 @@ module Make
         return (str "}")
 
   and pr_extend s cl =
-    let pr_arg a =
-      try pr_gen a
+    let pr_arg lev a =
+      try pr_gen lev a
       with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
     try
+      let guess_level = function Aentryl (_,n) -> Some (n,Ppextend.E) | _ -> Some (5,Ppextend.E) in
       let rl = Egramml.get_extend_vernac_rule s in
       let rec aux rl cl =
         match rl, cl with
-        | Egramml.GramNonTerminal _ :: rl, arg :: cl -> pr_arg arg :: aux rl cl
+        | Egramml.GramNonTerminal (_,_,e) :: rl, arg :: cl -> pr_arg (guess_level e) arg :: aux rl cl
         | Egramml.GramTerminal s :: rl, cl -> str s :: aux rl cl
         | [], [] -> []
         | _ -> assert false in
       hov 1 (pr_sequence (fun x -> x) (aux rl cl))
     with Not_found ->
-      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
+      let dummy_level = Some (0,Ppextend.E) in
+      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep (pr_arg dummy_level) cl ++ str ")")
 
   let pr_vernac v =
     try pr_vernac_body v ++ sep_end v

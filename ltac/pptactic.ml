@@ -52,19 +52,19 @@ type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) ->
     (constr_expr -> std_ppcmds) ->
     (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    tolerability -> 'a -> std_ppcmds
 
 type 'a glob_extra_genarg_printer =
     (glob_constr_and_expr -> std_ppcmds) ->
     (glob_constr_and_expr -> std_ppcmds) ->
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    tolerability -> 'a -> std_ppcmds
 
 type 'a extra_genarg_printer =
     (Term.constr -> std_ppcmds) ->
     (Term.constr -> std_ppcmds) ->
     (tolerability -> Val.t -> std_ppcmds) ->
-    'a -> std_ppcmds
+    tolerability -> 'a -> std_ppcmds
 
 module Make
   (Ppconstr : Ppconstrsig.Pp)
@@ -122,7 +122,8 @@ module Make
         | Val.Base t ->
           begin match Val.eq t tag with
           | None -> default
-          | Some Refl -> Genprint.generic_top_print (in_gen (Topwit wit) x)
+          | Some Refl ->
+             Genprint.generic_top_print (Some (5,E)) (in_gen (Topwit wit) x)
           end
         | _ -> default
 
@@ -326,9 +327,9 @@ module Make
   | _ ->
   match symb with
   | Extend.Uentry tag when is_genarg tag (ArgumentType wit_tactic) ->
-    prtac (1, Any) arg
+    prtac (5, Any) arg
   | Extend.Uentryl (_, l) -> prtac (l, Any) arg
-  | _ -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+  | _ -> str "ltac:(" ++ prtac (5, Any) arg ++ str ")"
 
   let pr_raw_extend_rec prc prlc prtac prpat =
     pr_extend_gen (pr_farg prtac)
@@ -337,11 +338,11 @@ module Make
 
   let pr_raw_alias prc prlc prtac prpat lev key args =
     pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))
-                          (fun l a -> Pputils.pr_raw_generic (Global.env ()) a))
+                          (fun l a -> Pputils.pr_raw_generic (Global.env ()) (Some l) a))
                  lev key args
   let pr_glob_alias prc prlc prtac prpat lev key args =
     pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))
-                          (fun l a -> Pputils.pr_glb_generic (Global.env ()) a))
+                          (fun l a -> Pputils.pr_glb_generic (Global.env ()) (Some l) a))
                  lev key args
 
   (**********************************************************************)
@@ -1116,7 +1117,7 @@ module Make
       pr_constant = pr_or_by_notation pr_reference;
       pr_reference = pr_reference;
       pr_name = pr_lident;
-      pr_generic = (fun arg -> Pputils.pr_raw_generic (Global.env ()) arg);
+      pr_generic = (fun arg -> Pputils.pr_raw_generic (Global.env ()) (Some ltop) arg);
       pr_extend = pr_raw_extend_rec pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
       pr_alias = pr_raw_alias pr_constr_expr pr_lconstr_expr pr_raw_tactic_level pr_constr_pattern_expr;
     } in
@@ -1146,7 +1147,7 @@ module Make
         pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
-        pr_generic = (fun arg -> Pputils.pr_glb_generic (Global.env ()) arg);
+        pr_generic = (fun arg -> Pputils.pr_glb_generic (Global.env ()) (Some ltop) arg);
         pr_extend = pr_glob_extend_rec
           (pr_and_constr_expr (pr_glob_constr_env env)) (pr_and_constr_expr (pr_lglob_constr_env env))
           prtac (pr_pat_and_constr_expr (pr_glob_constr_env env));
@@ -1248,7 +1249,7 @@ let declare_extra_genarg_pprule wit
   (f : 'a raw_extra_genarg_printer)
   (g : 'b glob_extra_genarg_printer)
   (h : 'c extra_genarg_printer) =
-  let s = match wit with
+  let _ = match wit with
     | ExtraArg s -> ArgT.repr s
     | _ -> error
       "Can declare a pretty-printing rule only for extra argument types."
@@ -1262,7 +1263,7 @@ let declare_extra_genarg_pprule wit
     let env = Global.env () in
     h (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty) (fun _ _ -> str "<tactic>") x
   in
-  Genprint.register_print0 wit f g h
+  Genprint.register_print_with_level0 wit f g h
 
 (** Registering *)
 
@@ -1339,12 +1340,12 @@ let () =
   Genprint.register_print0 Stdarg.wit_string pr_string pr_string pr_string
 
 let () =
-  let printer _ _ prtac = prtac (0, E) in
+  let printer _ _ prtac = prtac in
   declare_extra_genarg_pprule wit_tactic printer printer printer
 
 let () =
-  let pr_unit _ _ _ () = str "()" in
-  let printer _ _ prtac = prtac (0, E) in
+  let pr_unit _ _ _ _ () = str "()" in
+  let printer _ _ prtac = prtac in
   declare_extra_genarg_pprule wit_ltac printer printer pr_unit
 
 module Richpp = struct

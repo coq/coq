@@ -1366,7 +1366,7 @@ let pr_hint h = match h.obj with
           env
         with e when CErrors.noncritical e -> Global.env ()
       in
-      (str "(*external*) " ++ Pputils.pr_glb_generic env tac)
+      (str "(*external*) " ++ Pputils.pr_glb_generic env (Some (5,Ppextend.E)) tac)
 
 let pr_id_hint (id, v) =
   let pr_pat p = str", pattern " ++ pr_lconstr_pattern p in

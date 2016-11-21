@@ -191,8 +191,8 @@ let wit_binders =
 let binders = Pcoq.create_generic_entry Pcoq.utactic "binders" (Genarg.rawwit wit_binders)
 
 let () =
-  let raw_printer _ _ _ l = Pp.pr_non_empty_arg Ppconstr.pr_binders l in
-  let printer _ _ _ _ = Pp.str "<Unavailable printer for binders>" in
+  let raw_printer _ _ _ _ l = Pp.pr_non_empty_arg Ppconstr.pr_binders l in
+  let printer _ _ _ _ _ = Pp.str "<Unavailable printer for binders>" in
   Pptactic.declare_extra_genarg_pprule wit_binders raw_printer printer printer
 
 open Pcoq

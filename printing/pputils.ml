@@ -109,44 +109,44 @@ let pr_or_by_notation f = function
 
 let hov_if_not_empty n p = if Pp.ismt p then p else hov n p
 
-let rec pr_raw_generic env (GenArg (Rawwit wit, x)) =
+let rec pr_raw_generic env lev (GenArg (Rawwit wit, x)) =
   match wit with
     | ListArg wit ->
-      let map x = pr_raw_generic env (in_gen (rawwit wit) x) in
+      let map x = pr_raw_generic env lev (in_gen (rawwit wit) x) in
       let ans = pr_sequence map x in
       hov_if_not_empty 0 ans
     | OptArg wit ->
       let ans = match x with
         | None -> mt ()
-        | Some x -> pr_raw_generic env (in_gen (rawwit wit) x)
+        | Some x -> pr_raw_generic env lev (in_gen (rawwit wit) x)
       in
       hov_if_not_empty 0 ans
     | PairArg (wit1, wit2) ->
       let p, q = x in
       let p = in_gen (rawwit wit1) p in
       let q = in_gen (rawwit wit2) q in
-      hov_if_not_empty 0 (pr_sequence (pr_raw_generic env) [p; q])
+      hov_if_not_empty 0 (pr_sequence (pr_raw_generic env lev) [p; q])
     | ExtraArg s ->
-      Genprint.generic_raw_print (in_gen (rawwit wit) x)
+      Genprint.generic_raw_print lev (in_gen (rawwit wit) x)
 
 
-let rec pr_glb_generic env (GenArg (Glbwit wit, x)) =
+let rec pr_glb_generic env lev (GenArg (Glbwit wit, x)) =
   match wit with
     | ListArg wit ->
-      let map x = pr_glb_generic env (in_gen (glbwit wit) x) in
+      let map x = pr_glb_generic env lev (in_gen (glbwit wit) x) in
       let ans = pr_sequence map x in
       hov_if_not_empty 0 ans
     | OptArg wit ->
       let ans = match x with
         | None -> mt ()
-        | Some x -> pr_glb_generic env (in_gen (glbwit wit) x)
+        | Some x -> pr_glb_generic env lev (in_gen (glbwit wit) x)
       in
       hov_if_not_empty 0 ans
     | PairArg (wit1, wit2) ->
       let p, q = x in
       let p = in_gen (glbwit wit1) p in
       let q = in_gen (glbwit wit2) q in
-      let ans = pr_sequence (pr_glb_generic env) [p; q] in
+      let ans = pr_sequence (pr_glb_generic env lev) [p; q] in
       hov_if_not_empty 0 ans
     | ExtraArg s ->
-      Genprint.generic_glb_print (in_gen (glbwit wit) x)
+      Genprint.generic_glb_print lev (in_gen (glbwit wit) x)
