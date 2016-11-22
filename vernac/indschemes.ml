@@ -92,7 +92,7 @@ let _ = (* compatibility *)
       optread  = (fun () -> !eq_flag) ;
       optwrite = (fun b -> eq_flag := b) }
 
-let is_eq_flag () = !eq_flag && Flags.version_strictly_greater Flags.V8_2
+let is_eq_flag () = !eq_flag
 
 let eq_dec_flag = ref false 
 let _ =

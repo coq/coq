@@ -106,7 +106,7 @@ let we_are_parsing = ref false
 (* Current means no particular compatibility consideration.
    For correct comparisons, this constructor should remain the last one. *)
 
-type compat_version = VOld | V8_2 | V8_3 | V8_4 | V8_5 | V8_6 | Current
+type compat_version = VOld | V8_3 | V8_4 | V8_5 | V8_6 | Current
 
 let compat_version = ref Current
 
@@ -114,9 +114,6 @@ let version_compare v1 v2 = match v1, v2 with
   | VOld, VOld -> 0
   | VOld, _ -> -1
   | _, VOld -> 1
-  | V8_2, V8_2 -> 0
-  | V8_2, _ -> -1
-  | _, V8_2 -> 1
   | V8_3, V8_3 -> 0
   | V8_3, _ -> -1
   | _, V8_3 -> 1
@@ -136,7 +133,6 @@ let version_less_or_equal v = not (version_strictly_greater v)
 
 let pr_version = function
   | VOld -> "old"
-  | V8_2 -> "8.2"
   | V8_3 -> "8.3"
   | V8_4 -> "8.4"
   | V8_5 -> "8.5"
@@ -161,7 +157,7 @@ let is_verbose () = not !quiet
 
 let auto_intros = ref true
 let make_auto_intros flag = auto_intros := flag
-let is_auto_intros () = version_strictly_greater V8_2 && !auto_intros
+let is_auto_intros () = !auto_intros
 
 let universe_polymorphism = ref false
 let make_universe_polymorphism b = universe_polymorphism := b

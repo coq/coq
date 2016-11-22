@@ -50,8 +50,7 @@ module NamedDecl = Context.Named.Declaration
 
 let discriminate_introduction = ref true
 
-let discr_do_intro () =
-  !discriminate_introduction && Flags.version_strictly_greater Flags.V8_2
+let discr_do_intro () = !discriminate_introduction
 
 open Goptions
 let _ =
@@ -356,7 +355,6 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
   if (is_global Coqlib.glob_eq hdcncl ||
       (is_global Coqlib.glob_jmeq hdcncl &&
 	 jmeq_same_dom gl ot)) && not dep
-    || Flags.version_less_or_equal Flags.V8_2
   then
     let c = 
       match EConstr.kind sigma hdcncl with 
@@ -1769,13 +1767,10 @@ type subst_tactic_flags = {
   rewrite_dependent_proof : bool
 }
 
-let default_subst_tactic_flags () =
-  if Flags.version_strictly_greater Flags.V8_2 then
-    { only_leibniz = false; rewrite_dependent_proof = true }
-  else
-    { only_leibniz = true; rewrite_dependent_proof = false }
+let default_subst_tactic_flags =
+  { only_leibniz = false; rewrite_dependent_proof = true }
 
-let subst_all ?(flags=default_subst_tactic_flags ()) () =
+let subst_all ?(flags=default_subst_tactic_flags) () =
 
   if !regular_subst_tactic then
 

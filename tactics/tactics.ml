@@ -64,7 +64,6 @@ let dependent_propositions_elimination = ref true
 
 let use_dependent_propositions_elimination () =
   !dependent_propositions_elimination
-  && Flags.version_strictly_greater Flags.V8_2
 
 let _ =
   declare_bool_option

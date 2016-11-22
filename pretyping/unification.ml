@@ -481,7 +481,6 @@ let set_flags_for_type flags = { flags with
 
 let use_evars_pattern_unification flags =
   !global_pattern_unification_flag && flags.use_pattern_unification
-  && Flags.version_strictly_greater Flags.V8_2
 
 let use_metas_pattern_unification sigma flags nb l =
   !global_pattern_unification_flag && flags.use_pattern_unification

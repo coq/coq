@@ -66,7 +66,7 @@ let negation_unfolding = ref true
 (* Whether inner iff are unfolded *)
 let iff_unfolding = ref false
 
-let unfold_iff () = !iff_unfolding || Flags.version_less_or_equal Flags.V8_2
+let unfold_iff () = !iff_unfolding
 
 open Goptions
 let _ =
