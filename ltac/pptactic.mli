@@ -25,19 +25,19 @@ type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) ->
     (constr_expr -> std_ppcmds) ->
     (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    tolerability -> 'a -> std_ppcmds
 
 type 'a glob_extra_genarg_printer =
     (glob_constr_and_expr -> std_ppcmds) ->
     (glob_constr_and_expr -> std_ppcmds) ->
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    tolerability -> 'a -> std_ppcmds
 
 type 'a extra_genarg_printer =
     (Term.constr -> std_ppcmds) ->
     (Term.constr -> std_ppcmds) ->
     (tolerability -> Val.t -> std_ppcmds) ->
-    'a -> std_ppcmds
+    tolerability -> 'a -> std_ppcmds
 
 val declare_extra_genarg_pprule :
   ('a, 'b, 'c) genarg_type ->
@@ -45,7 +45,16 @@ val declare_extra_genarg_pprule :
   'b glob_extra_genarg_printer ->
   'c extra_genarg_printer -> unit
 
-type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
+type raw_argument = string * string option
+(** An argument type as provided in Tactic notations, i.e. a string like
+    "ne_foo_list_opt" together with a separator that only makes sense in the
+    "_sep" cases. *)
+
+type argument = string * Genarg.ArgT.any Extend.user_symbol
+(** A fully resolved argument type given as an AST with generic arguments on the
+    leaves. *)
+
+type grammar_terminals = argument grammar_tactic_prod_item_expr list
 
 type pp_tactic = {
   pptac_level : int;

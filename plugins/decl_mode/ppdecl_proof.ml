@@ -182,7 +182,7 @@ let pr_gen_proof_instr pr_var pr_constr pr_pat pr_tac instr =
     pr_bare_proof_instr pr_var pr_constr pr_pat pr_tac false false instr.instr
 
 
-let pr_raw_proof_instr pconstr1 pconstr2 ptac (instr : raw_proof_instr) =
+let pr_raw_proof_instr pconstr1 pconstr2 ptac _ (instr : raw_proof_instr) =
    pr_gen_proof_instr
      (fun (_,(id,otyp)) -> 
        match otyp with
@@ -194,7 +194,7 @@ let pr_raw_proof_instr pconstr1 pconstr2 ptac (instr : raw_proof_instr) =
      (ptac Pptactic.ltop)
      instr
 
-let pr_glob_proof_instr pconstr1 pconstr2 ptac (instr : glob_proof_instr) =
+let pr_glob_proof_instr pconstr1 pconstr2 ptac _ (instr : glob_proof_instr) =
     pr_gen_proof_instr
       (fun (_,(id,otyp)) -> 
 	match otyp with
@@ -205,7 +205,7 @@ let pr_glob_proof_instr pconstr1 pconstr2 ptac (instr : glob_proof_instr) =
      (ptac Pptactic.ltop)
      instr
 
-let pr_proof_instr pconstr1 pconstr2 ptac (instr : proof_instr) =
+let pr_proof_instr pconstr1 pconstr2 ptac _ (instr : proof_instr) =
   pr_gen_proof_instr
     (fun st -> pr_statement pconstr1 st)
     pconstr2

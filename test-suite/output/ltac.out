@@ -32,3 +32,13 @@ nat
 nat
 0
 0
+Ltac h1 := let x := ipattern:(H) in
+           let c := constr:(Prop) in
+           idtac
+           x
+           c
+Ltac h2 := let x := auto_using:(using S, 0) in
+           idtac
+           x
+Ltac h3 := let x _ := () in
+           x ltac:(()).

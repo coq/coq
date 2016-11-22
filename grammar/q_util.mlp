@@ -116,3 +116,22 @@ let rec parse_user_entry s sep =
   else
     let s = match s with "hyp" -> "var" | _ -> s in
     Uentry s
+
+(* This delimits the subset of types that we can associate to a parsing rule *)
+(* based on ne_..._list, ne_..._list_sep, ..._list, ..._list_sep, ..._opt *)
+
+let string_of_atomic_user_entry = function
+  | Uentry s -> s
+  | Uentryl (s,n) -> s ^ string_of_int n
+  | _ -> failwith "Unsupported user entry."
+
+let string_of_non_sep_user_entry = function
+  | Uopt entry -> string_of_atomic_user_entry entry ^ "_opt"
+  | Ulist0 entry -> string_of_atomic_user_entry entry ^ "_list"
+  | Ulist1 entry -> "ne_" ^ string_of_atomic_user_entry entry ^ "_list"
+  | entry -> string_of_atomic_user_entry entry
+
+let rec string_of_user_entry = function
+  | Ulist1sep (entry,sep) -> "ne_" ^ string_of_non_sep_user_entry entry ^ "_list_sep",sep
+  | Ulist0sep (entry,sep) -> string_of_non_sep_user_entry entry ^ "_list",sep
+  | entry -> string_of_non_sep_user_entry entry,""

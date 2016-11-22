@@ -22,17 +22,8 @@ type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_exp
 | TacTerm of string
 | TacNonTerm of Loc.t * 'a * Names.Id.t
 
-type raw_argument = string * string option
-(** An argument type as provided in Tactic notations, i.e. a string like
-    "ne_foo_list_opt" together with a separator that only makes sense in the
-    "_sep" cases. *)
-
-type argument = Genarg.ArgT.any Extend.user_symbol
-(** A fully resolved argument type given as an AST with generic arguments on the
-    leaves. *)
-
 val add_tactic_notation :
-  locality_flag -> int -> raw_argument grammar_tactic_prod_item_expr list ->
+  locality_flag -> int -> Pptactic.raw_argument grammar_tactic_prod_item_expr list ->
   raw_tactic_expr -> unit
 (** [add_tactic_notation local level prods expr] adds a tactic notation in the
     environment at level [level] with locality [local] made of the grammar
@@ -46,7 +37,7 @@ val register_tactic_notation_entry : string -> ('a, 'b, 'c) Genarg.genarg_type -
     matching. *)
 
 val add_ml_tactic_notation : ml_tactic_name ->
-  argument grammar_tactic_prod_item_expr list list -> unit
+  Pptactic.argument grammar_tactic_prod_item_expr list list -> unit
 (** A low-level variant of {!add_tactic_notation} used by the TACTIC EXTEND
     ML-side macro. *)
 

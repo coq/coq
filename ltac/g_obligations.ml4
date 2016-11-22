@@ -152,10 +152,10 @@ open Pp
 
 (* Declare a printer for the content of Program tactics *)
 let () =
-  let printer _ _ _ = function
+  let printer _ _ _ (lev:Ppextend.tolerability) = function
   | None -> mt ()
   | Some tac -> str "with" ++ spc () ++ Pptactic.pr_raw_tactic tac
   in
   (* should not happen *)
-  let dummy _ _ _ expr = assert false in
+  let dummy _ _ _ _ expr = assert false in
   Pptactic.declare_extra_genarg_pprule wit_withtac printer dummy dummy

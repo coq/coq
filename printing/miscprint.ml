@@ -36,9 +36,9 @@ and pr_or_and_intro_pattern prc = function
   | IntroAndPattern pl ->
       str "(" ++ hv 0 (prlist_with_sep pr_comma (pr_intro_pattern prc) pl) ++ str ")"
   | IntroOrPattern pll ->
-      str "[" ++
+      str "[ " ++
       hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc (pr_intro_pattern prc)) pll)
-      ++ str "]"
+      ++ str " ]"
 
 (** Printing of [move_location] *)
 

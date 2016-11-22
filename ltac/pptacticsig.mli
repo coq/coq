@@ -33,9 +33,9 @@ module type Pp = sig
   val pr_clauses :  bool option ->
     ('a -> Pp.std_ppcmds) -> 'a Locus.clause_expr -> Pp.std_ppcmds
 
-  val pr_raw_generic : env -> rlevel generic_argument -> std_ppcmds
+  val pr_raw_generic : env -> rlevel generic_argument Genprint.printer
 
-  val pr_glb_generic : env -> glevel generic_argument -> std_ppcmds
+  val pr_glb_generic : env -> glevel generic_argument Genprint.printer
 
   val pr_raw_extend: env -> int ->
     ml_tactic_entry -> raw_tactic_arg list -> std_ppcmds

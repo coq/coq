@@ -83,7 +83,7 @@ let print_rewrite_hintdb bas =
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
 	       Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++
 	       Option.cata (fun tac -> str " then use tactic " ++
-	       Pputils.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
+	       Genprint.pr_glb_generic (Global.env()) (Some (5,Ppextend.E)) tac) (mt ()) h.rew_tac)
 	   (find_rewrites bas))
 
 type raw_rew_rule = Loc.t * constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option

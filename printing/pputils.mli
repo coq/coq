@@ -26,6 +26,3 @@ val pr_red_expr :
   ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) * ('c -> std_ppcmds) ->
   (string -> std_ppcmds) ->
   ('a,'b,'c) red_expr_gen -> std_ppcmds
-
-val pr_raw_generic : Environ.env -> rlevel generic_argument -> std_ppcmds
-val pr_glb_generic : Environ.env -> glevel generic_argument -> std_ppcmds

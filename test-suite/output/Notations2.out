@@ -84,3 +84,7 @@ a≡
      : Set
 .α
      : Set
+fun x : nat => (## x) + x
+     : nat -> nat
+fun x : nat => ## x + x
+     : nat -> nat

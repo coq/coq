@@ -30,6 +30,9 @@ module Make
   open Taggers
   open Ppconstr
 
+  module GenprintUsingRule = Genprint.Make (struct let tag_keyword = tag_keyword let tag_primitive = fun x -> x end)
+  open GenprintUsingRule
+
   let keyword s = tag_keyword (str s)
 
   let pr_constr = pr_constr_expr
@@ -79,7 +82,9 @@ module Make
     | VernacEndSubproof -> str""
     | _ -> str"."
 
-  let pr_gen t = Pputils.pr_raw_generic (Global.env ()) t
+  let pr_tactic x = Genprint.pr_raw_generic (Global.env ()) (Some (5,Ppextend.E)) x
+
+  let pr_gen lev t = Genprint.pr_raw_generic (Global.env ()) lev t
 
   let sep = fun _ -> spc()
   let sep_v2 = fun _ -> str"," ++ spc()
@@ -196,7 +201,7 @@ module Make
         | HintsExtern (n,c,tac) ->
           let pat = match c with None -> mt () | Some pat -> pr_pat pat in
           keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
-            spc() ++ Pputils.pr_raw_generic (Global.env ()) tac
+            spc() ++ pr_tactic tac
     in
     hov 2 (keyword "Hint "++ pph ++ opth)
 
@@ -911,7 +916,7 @@ module Make
       | VernacContext l ->
         return (
           hov 1 (
-            keyword "Context" ++ spc () ++ pr_and_type_binders_arg l)
+            keyword "Context" ++ pr_and_type_binders_arg l)
         )
 
       | VernacDeclareInstances insts ->
@@ -934,7 +939,7 @@ module Make
         let b = pr_module_binders bl pr_lconstr in
         return (
           hov 2 (keyword "Module" ++ spc() ++ pr_require_token export ++
-                   pr_lident m ++ b ++
+                   pr_lident m ++ b ++ spc () ++
                    pr_of_module_type pr_lconstr tys ++
                    (if List.is_empty bd then mt () else str ":= ") ++
                    prlist_with_sep (fun () -> str " <+")
@@ -953,8 +958,8 @@ module Make
         return (
           hov 2 (keyword "Module Type " ++ pr_lident id ++ b ++
                    prlist_strict (fun m -> str " <:" ++ pr_mt m) tyl ++
-                   (if List.is_empty m then mt () else str ":= ") ++
-                   prlist_with_sep (fun () -> str " <+ ") pr_mt m)
+                   (if List.is_empty m then mt () else str " :=") ++
+                   prlist_with_sep (fun () -> str " <+") pr_mt m)
         )
       | VernacInclude (mexprs) ->
         let pr_m = pr_module_ast_inl false pr_lconstr in
@@ -1013,7 +1018,10 @@ module Make
             (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
                prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
                pr_syntax_modifiers
-               (match compat with None -> [] | Some v -> [SetCompatVersion v]))
+               (match compat with
+                | None -> []
+                | Some Flags.Current -> [SetOnlyParsing]
+                | Some v -> [SetCompatVersion v]))
         )
       | VernacDeclareImplicits (q,[]) ->
         return (
@@ -1055,7 +1063,7 @@ module Make
               in
               print_arguments nargs args ++
                 if not (List.is_empty more_implicits) then
-                  str ", " ++ prlist_with_sep (fun () -> str", ") print_implicits more_implicits
+                  prlist (fun l -> str"," ++ print_implicits l) more_implicits
                 else (mt ()) ++
                 (if not (List.is_empty mods) then str" : " else str"") ++
                   prlist_with_sep (fun () -> str", " ++ spc()) (function
@@ -1126,7 +1134,7 @@ module Make
       | VernacSetAppendOption (na,v) ->
         return (
           hov 2 (keyword "Set" ++ spc() ++ pr_printoption na None ++
-                   spc() ++ keyword "Append" ++ spc() ++ str v)
+                   spc() ++ keyword "Append" ++ spc() ++ qs v)
         )
       | VernacAddOption (na,l) ->
         return (
@@ -1200,12 +1208,12 @@ module Make
         return (keyword "Proof " ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e)
       | VernacProof (Some te, None) ->
-        return (keyword "Proof with" ++ spc() ++ Pputils.pr_raw_generic (Global.env ()) te)
+        return (keyword "Proof with" ++ spc() ++ pr_tactic te)
       | VernacProof (Some te, Some e) ->
         return (
           keyword "Proof" ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e ++ spc() ++
-            keyword "with" ++ spc() ++ Pputils.pr_raw_generic (Global.env ()) te
+            keyword "with" ++ spc() ++ pr_tactic te
         )
       | VernacProofMode s ->
         return (keyword "Proof Mode" ++ str s)
@@ -1222,21 +1230,34 @@ module Make
       | VernacEndSubproof ->
         return (str "}")
 
+  and pr_varg symb = function
+  | arg (*Tacexpr.TacGeneric (name,arg) *) ->
+     Genprint.pr_any_arg (fun l a -> Genprint.pr_raw_generic (Global.env ()) l a) symb arg
+  | _ ->
+     assert false
+
+  and translate_entry : type l a b. (l,a,b) Genarg.genarg_type * (vernac_expr,l) symbol -> Genarg.ArgT.any user_symbol = function
+    | Genarg.ExtraArg c, Aentry _ -> Uentry (Genarg.ArgT.Any c)
+    | Genarg.ListArg x, Alist0 e -> Ulist0 (translate_entry (x,e))
+    | Genarg.ListArg x, Alist1 e -> Ulist1 (translate_entry (x,e))
+    | Genarg.ListArg x, Alist0sep (e,Atoken s) -> Ulist0sep (translate_entry (x,e),snd (Tok.to_pattern s))
+    | Genarg.ListArg x, Alist1sep (e,Atoken s) -> Ulist1sep (translate_entry (x,e),snd (Tok.to_pattern s))
+    | Genarg.OptArg x, Aopt e -> Uopt (translate_entry (x,e))
+    | _ -> assert false
+
   and pr_extend s cl =
-    let pr_arg a =
-      try pr_gen a
-      with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
     try
       let rl = Egramml.get_extend_vernac_rule s in
-      let rec aux rl cl =
-        match rl, cl with
-        | Egramml.GramNonTerminal _ :: rl, arg :: cl -> pr_arg arg :: aux rl cl
-        | Egramml.GramTerminal s :: rl, cl -> str s :: aux rl cl
-        | [], [] -> []
-        | _ -> assert false in
-      hov 1 (pr_sequence (fun x -> x) (aux rl cl))
+      let rec pack prods args = match prods, args with
+      | Egramml.GramNonTerminal (loc,Genarg.Rawwit e,sym) :: rl, arg :: cl -> Genprint.ArgNonTerm (translate_entry (e,sym),arg):: pack rl cl
+      | Egramml.GramTerminal s :: rl, cl -> Genprint.ArgTerm s :: pack rl cl
+      | [], [] -> []
+      | _ -> assert false in
+      let prods = pack rl cl in
+      pr_extension_using_rule pr_varg prods
     with Not_found ->
-      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
+      let dummy_level = Some (0,Ppextend.E) in
+      hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep (Genprint.pr_raw_generic (Global.env ()) dummy_level) cl ++ str ")")
 
   let pr_vernac v =
     try pr_vernac_body v ++ sep_end v

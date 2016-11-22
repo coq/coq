@@ -57,3 +57,11 @@ match goal with |- ?x*?y => idtac x end.
 match goal with H: context [?x*?y] |- _ => idtac x end.
 match goal with |- context [?x*?y] => idtac x end.
 Abort.
+
+(* Check printing of tactic expressions *)
+Ltac h1 := let x := ipattern:(H) in let c := constr:(Prop) in idtac x c.
+Print Ltac h1.
+Ltac h2 := let x := auto_using:(using S, O) in idtac x.
+Print Ltac h2.
+Ltac h3 := let x _ := () in x ().
+Print Ltac h3.
