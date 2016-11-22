@@ -1416,7 +1416,7 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
             "" else
             " You can try to use option Set Keep Proof Equalities." in
      tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
-  | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
+  | Inr [([],_,_)] ->
      tclZEROMSG (str"Nothing to inject.")
   | Inr posns ->
       inject_at_positions env sigma l2r u eq_clause posns
