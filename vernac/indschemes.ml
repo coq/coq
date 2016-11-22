@@ -84,13 +84,6 @@ let _ =
       optkey   = ["Boolean";"Equality";"Schemes"];
       optread  = (fun () -> !eq_flag) ;
       optwrite = (fun b -> eq_flag := b) }
-let _ = (* compatibility *)
-  declare_bool_option
-    { optdepr  = true;
-      optname  = "automatic declaration of boolean equality";
-      optkey   = ["Equality";"Scheme"];
-      optread  = (fun () -> !eq_flag) ;
-      optwrite = (fun b -> eq_flag := b) }
 
 let is_eq_flag () = !eq_flag
 

@@ -248,20 +248,9 @@ let sort_eqns = unify_r2l
 
 let global_pattern_unification_flag = ref true
 
-(* Compatibility option introduced and activated in Coq 8.3 whose
-   syntax is now deprecated. *)
-
 open Goptions
-let _ =
-  declare_bool_option
-    { optdepr  = true;
-      optname  = "pattern-unification for existential variables in tactics";
-      optkey   = ["Tactic";"Evars";"Pattern";"Unification"];
-      optread  = (fun () -> !global_pattern_unification_flag);
-      optwrite = (:=) global_pattern_unification_flag }
 
-(* Compatibility option superseding the previous one, introduced and
-   activated in Coq 8.4 *)
+(* Compatibility option introduced and activated in Coq 8.4 *)
 
 let _ =
   declare_bool_option
