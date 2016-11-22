@@ -319,7 +319,8 @@ let project_hint pri l2r r =
     (info,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
 
 let add_hints_iff l2r lc n bl =
-  Hints.add_hints true bl
+  let l = Locality.LocalityFixme.consume () in
+  Hints.add_hints (Locality.make_module_locality l) bl
     (Hints.HintsResolveEntry (List.map (project_hint n l2r) lc))
 
 VERNAC COMMAND EXTEND HintResolveIffLR CLASSIFIED AS SIDEFF
