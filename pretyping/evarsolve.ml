@@ -1267,13 +1267,7 @@ let solve_evar_evar_l2r force f g env evd aliases pbty ev1 (evk2,_ as ev2) =
 let opp_problem = function None -> None | Some b -> Some (not b)
 
 let preferred_orientation evd evk1 evk2 =
-  let _,src1 = (Evd.find_undefined evd evk1).evar_source in
-  let _,src2 = (Evd.find_undefined evd evk2).evar_source in
-  (* This is a heuristic useful for program to work *)
-  match src1,src2 with
-  | (Evar_kinds.QuestionMark _ | Evar_kinds.ImplicitArg (_, _, false)) , _ -> true
-  | _, (Evar_kinds.QuestionMark _ | Evar_kinds.ImplicitArg (_, _, false)) -> false
-  | _ -> List.mem evk1 (Evd.future_goals evd) || not (List.mem evk2 (Evd.future_goals evd))
+  List.mem evk1 (Evd.future_goals evd) || not (List.mem evk2 (Evd.future_goals evd))
 
 let solve_evar_evar_aux force f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env evd in
