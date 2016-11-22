@@ -254,7 +254,7 @@ open Goptions
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "pattern-unification for existential variables in tactics";
       optkey   = ["Tactic";"Pattern";"Unification"];
       optread  = (fun () -> !global_pattern_unification_flag);
