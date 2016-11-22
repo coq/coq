@@ -67,7 +67,7 @@ let use_injection_pattern_l2r_order () = !injection_pattern_l2r_order
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "injection left-to-right pattern order and clear by default when with introduction pattern";
       optkey   = ["Injection";"L2R";"Pattern";"Order"];
       optread  = (fun () -> !injection_pattern_l2r_order) ;
