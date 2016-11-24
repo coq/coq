@@ -183,7 +183,7 @@ let dummy_goal env sigma =
   {Evd.it = gl; Evd.sigma = sigma}
 
 let constr_of v = match Value.to_constr v with
-  | Some c -> c
+  | Some c -> EConstr.Unsafe.to_constr c
   | None -> failwith "Ring.exec_tactic: anomaly"
 
 let tactic_res = ref [||]
@@ -203,7 +203,6 @@ let get_res =
 
 let exec_tactic env evd n f args =
   let fold arg (i, vars, lfun) =
-    let arg = EConstr.Unsafe.to_constr arg in
     let id = Id.of_string ("x" ^ string_of_int i) in
     let x = Reference (ArgVar (Loc.ghost, id)) in
     (succ i, x :: vars, Id.Map.add id (Value.of_constr arg) lfun)
@@ -730,7 +729,7 @@ let make_term_list env evd carrier rl =
     (plapp evd coq_nil [|carrier|])
   in Typing.e_solve_evars env evd l
 
-let carg = Tacinterp.Value.of_constr
+let carg c = Tacinterp.Value.of_constr (EConstr.of_constr c)
 let tacarg expr =
   Tacinterp.Value.of_closure (Tacinterp.default_ist ()) expr
 

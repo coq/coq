@@ -77,15 +77,16 @@ let let_evar name typ =
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let sigma = ref sigma in
-    let _ = Typing.e_sort_of env sigma (EConstr.of_constr typ) in
+    let _ = Typing.e_sort_of env sigma typ in
     let sigma = Sigma.Unsafe.of_evar_map !sigma in
     let id = match name with
     | Names.Anonymous -> 
+      let typ = EConstr.Unsafe.to_constr typ in
       let id = Namegen.id_of_name_using_hdchar env typ name in
       Namegen.next_ident_away_in_goal id (Termops.ids_of_named_context (Environ.named_context env))
     | Names.Name id -> id
     in
-    let Sigma (evar, sigma, p) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) (EConstr.of_constr typ) in
+    let Sigma (evar, sigma, p) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
     let tac =
       (Tactics.letin_tac None (Names.Name id) evar None Locusops.nowhere)
     in

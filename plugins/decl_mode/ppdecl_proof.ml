@@ -206,6 +206,8 @@ let pr_glob_proof_instr pconstr1 pconstr2 ptac (instr : glob_proof_instr) =
      instr
 
 let pr_proof_instr pconstr1 pconstr2 ptac (instr : proof_instr) =
+  let pconstr1 c = pconstr1 (EConstr.of_constr c) in
+  let pconstr2 c = pconstr2 (EConstr.of_constr c) in
   pr_gen_proof_instr
     (fun st -> pr_statement pconstr1 st)
     pconstr2

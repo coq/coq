@@ -671,16 +671,13 @@ let eta_constructor_app env sigma f l1 term =
       | _ -> assert false)
   | _ -> assert false
 
-let print_constr_env env c =
-  print_constr_env env (EConstr.Unsafe.to_constr c)
-
 let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb opt ((sigma,metasubst,evarsubst) as substn : subst0) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
     and cN = Evarutil.whd_head_evar sigma curn in
     let () = 
       if !debug_unification then
-	Feedback.msg_debug (print_constr_env curenv cM ++ str" ~= " ++ print_constr_env curenv cN)
+	Feedback.msg_debug (print_constr_env curenv sigma cM ++ str" ~= " ++ print_constr_env curenv sigma cN)
     in 
       match (EConstr.kind sigma cM, EConstr.kind sigma cN) with
 	| Meta k1, Meta k2 ->

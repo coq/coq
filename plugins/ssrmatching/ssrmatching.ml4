@@ -1030,7 +1030,7 @@ let interp_constr = interp_wit wit_constr
 let interp_open_constr ist gl gc =
   interp_wit wit_open_constr ist gl gc
 let pf_intern_term ist gl (_, c) = glob_constr ist (pf_env gl) c
-let interp_term ist gl (_, c) = (interp_open_constr ist gl c)
+let interp_term ist gl (_, c) = on_snd EConstr.Unsafe.to_constr (interp_open_constr ist gl c)
 let pr_ssrterm _ _ _ = pr_term
 let input_ssrtermkind strm = match Compat.get_tok (stream_nth 0 strm) with
   | Tok.KEYWORD "(" -> '('

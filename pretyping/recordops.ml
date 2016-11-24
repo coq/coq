@@ -191,7 +191,7 @@ let warn_projection_no_head_constant =
   CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
          (fun (t,con_pp,proji_sp_pp) ->
           strbrk "Projection value has no head constant: "
-          ++ Termops.print_constr t ++ strbrk " in canonical instance "  
+          ++ Termops.print_constr (EConstr.of_constr t) ++ strbrk " in canonical instance "  
           ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it.")
 
 (* Intended to always succeed *)
@@ -256,8 +256,8 @@ let add_canonical_structure warn o =
       in match ocs with
         | None -> object_table := Refmap.add proj ((pat,s)::l) !object_table;
         | Some (c, cs) ->
-              let old_can_s = (Termops.print_constr cs.o_DEF)
-              and new_can_s = (Termops.print_constr s.o_DEF) in
+              let old_can_s = (Termops.print_constr (EConstr.of_constr cs.o_DEF))
+              and new_can_s = (Termops.print_constr (EConstr.of_constr s.o_DEF)) in
               let prj = (Nametab.pr_global_env Id.Set.empty proj)
               and hd_val = (pr_cs_pattern cs_pat) in
               if warn then warn_redundant_canonical_projection (hd_val,prj,new_can_s,old_can_s))

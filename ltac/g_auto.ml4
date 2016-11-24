@@ -28,7 +28,7 @@ TACTIC EXTEND eassumption
 END
 
 TACTIC EXTEND eexact
-| [ "eexact" constr(c) ] -> [ Eauto.e_give_exact (EConstr.of_constr c) ]
+| [ "eexact" constr(c) ] -> [ Eauto.e_give_exact c ]
 END
 
 let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
@@ -51,7 +51,7 @@ let eval_uconstrs ist cs =
   } in
   let map c = { delayed = fun env sigma ->
     let Sigma.Sigma (c, sigma, p) = c.delayed env sigma in
-    Sigma.Sigma (EConstr.of_constr c, sigma, p)
+    Sigma.Sigma (c, sigma, p)
   } in
   List.map (fun c -> map (Pretyping.type_uconstr ~flags ist c)) cs
 
@@ -151,7 +151,7 @@ TACTIC EXTEND autounfold_one
 TACTIC EXTEND autounfoldify
 | [ "autounfoldify" constr(x) ] -> [
     Proofview.tclEVARMAP >>= fun sigma ->
-    let db = match EConstr.kind sigma (EConstr.of_constr x) with
+    let db = match EConstr.kind sigma x with
       | Term.Const (c,_) -> Names.Label.to_string (Names.con_label c)
       | _ -> assert false
     in Eauto.autounfold ["core";db] Locusops.onConcl 
@@ -159,7 +159,7 @@ TACTIC EXTEND autounfoldify
 END
 
 TACTIC EXTEND unify
-| ["unify" constr(x) constr(y) ] -> [ Tactics.unify (EConstr.of_constr x) (EConstr.of_constr y) ]
+| ["unify" constr(x) constr(y) ] -> [ Tactics.unify x y ]
 | ["unify" constr(x) constr(y) "with" preident(base)  ] -> [
     let table = try Some (Hints.searchtable_map base) with Not_found -> None in
     match table with
@@ -168,13 +168,13 @@ TACTIC EXTEND unify
       Tacticals.New.tclZEROMSG msg
     | Some t ->
       let state = Hints.Hint_db.transparent_state t in
-      Tactics.unify ~state (EConstr.of_constr x) (EConstr.of_constr y)
+      Tactics.unify ~state x y
   ]
 END
 
 
 TACTIC EXTEND convert_concl_no_check
-| ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check (EConstr.of_constr x) Term.DEFAULTcast ]
+| ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check x Term.DEFAULTcast ]
 END
 
 let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom

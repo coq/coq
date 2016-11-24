@@ -414,6 +414,7 @@ let build_term_to_complete uf meta pac =
 
 let cc_tactic depth additionnal_terms =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
+    let sigma = Tacmach.New.project gl in
     Coqlib.check_required_library Coqlib.logic_module_name;
     let _ = debug (fun () -> Pp.str "Reading subgoal ...") in
     let state = Tacmach.New.of_old (fun gls -> make_prb gls depth additionnal_terms) gl in
@@ -448,7 +449,7 @@ let cc_tactic depth additionnal_terms =
 		   str "\"congruence with (" ++
 		     prlist_with_sep
 		     (fun () -> str ")" ++ spc () ++ str "(")
-		     (EConstr.Unsafe.to_constr %> Termops.print_constr_env env)
+		     (Termops.print_constr_env env sigma)
 		     terms_to_complete ++
 		     str ")\","
 		 end ++

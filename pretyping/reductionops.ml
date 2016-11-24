@@ -210,7 +210,7 @@ module Cst_stack = struct
 
   let pr l =
     let open Pp in
-    let p_c c = Termops.print_constr (EConstr.Unsafe.to_constr c) in
+    let p_c c = Termops.print_constr c in
     prlist_with_sep pr_semicolon
       (fun (c,params,args) ->
 	hov 1 (str"(" ++ p_c c ++ str ")" ++ spc () ++ pr_sequence p_c params ++ spc () ++ str "(args:" ++
@@ -606,7 +606,7 @@ type local_state_reduction_function = evar_map -> state -> state
 
 let pr_state (tm,sk) =
   let open Pp in
-  let pr c = Termops.print_constr (EConstr.Unsafe.to_constr c) in
+  let pr c = Termops.print_constr c in
   h 0 (pr tm ++ str "|" ++ cut () ++ Stack.pr pr sk)
 
 let local_assum (na, t) =
@@ -835,7 +835,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let rec whrec cst_l (x, stack) =
     let () = if !debug_RAKAM then
 	let open Pp in
-	let pr c = Termops.print_constr (EConstr.Unsafe.to_constr c) in
+	let pr c = Termops.print_constr c in
 	Feedback.msg_notice
              (h 0 (str "<<" ++ pr x ++
 		   str "|" ++ cut () ++ Cst_stack.pr cst_l ++

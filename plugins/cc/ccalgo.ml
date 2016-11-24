@@ -497,10 +497,10 @@ let rec inst_pattern subst = function
 	   args t
 
 let pr_idx_term uf i = str "[" ++ int i ++ str ":=" ++
-  Termops.print_constr (constr_of_term (term uf i)) ++ str "]"
+  Termops.print_constr (EConstr.of_constr (constr_of_term (term uf i))) ++ str "]"
 
 let pr_term t = str "[" ++
-  Termops.print_constr (constr_of_term t) ++ str "]"
+  Termops.print_constr (EConstr.of_constr (constr_of_term t)) ++ str "]"
 
 let rec add_term state t=
   let uf=state.uf in
@@ -615,7 +615,7 @@ let add_inst state (inst,int_subst) =
 	      begin
 		debug (fun () ->
 		   (str "Adding new equality, depth="++ int state.rew_depth) ++ fnl () ++
-	          (str "  [" ++ Termops.print_constr prf ++ str " : " ++
+	          (str "  [" ++ Termops.print_constr (EConstr.of_constr prf) ++ str " : " ++
 			   pr_term s ++ str " == " ++ pr_term t ++ str "]"));
 		add_equality state prf s t
 	      end
@@ -623,7 +623,7 @@ let add_inst state (inst,int_subst) =
 	      begin
 		debug (fun () ->
 		   (str "Adding new disequality, depth="++ int state.rew_depth) ++ fnl () ++
-	          (str "  [" ++ Termops.print_constr prf ++ str " : " ++
+	          (str "  [" ++ Termops.print_constr (EConstr.of_constr prf) ++ str " : " ++
 			   pr_term s ++ str " <> " ++ pr_term t ++ str "]"));
 		add_disequality state (Hyp prf) s t
 	      end

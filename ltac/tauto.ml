@@ -25,7 +25,7 @@ let () = Mltop.add_known_module tauto_plugin
 let assoc_var s ist =
   let v = Id.Map.find (Names.Id.of_string s) ist.lfun in
   match Value.to_constr v with
-    | Some c -> EConstr.of_constr c
+    | Some c -> c
     | None -> failwith "tauto: anomaly"
 
 (** Parametrization of tauto *)

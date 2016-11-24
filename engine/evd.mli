@@ -607,7 +607,7 @@ val pr_evar_suggested_name : existential_key -> evar_map -> Id.t
 
 (** {5 Debug pretty-printers} *)
 
-val print_constr_hook : (Environ.env -> constr -> Pp.std_ppcmds) Hook.t
+val print_constr_hook : (Environ.env -> evar_map -> constr -> Pp.std_ppcmds) Hook.t
 val pr_evar_info : evar_info -> Pp.std_ppcmds
 val pr_evar_constraints : evar_constraint list -> Pp.std_ppcmds
 val pr_evar_map : ?with_univs:bool -> int option -> evar_map -> Pp.std_ppcmds

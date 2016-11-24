@@ -1265,7 +1265,7 @@ let protect f x =
 
 let (f_print_constr, print_constr_hook) = Hook.make ()
 
-let print_constr a = protect (fun c -> Hook.get f_print_constr (Global.env ()) c) a
+let print_constr a = protect (fun c -> Hook.get f_print_constr (Global.env ()) empty c) a
 
 let pr_meta_map mmap =
   let pr_name = function
@@ -1423,11 +1423,11 @@ let pr_evar_constraints pbs =
       Namegen.make_all_name_different env
     in
     print_env_short env ++ spc () ++ str "|-" ++ spc () ++
-      Hook.get f_print_constr env t1 ++ spc () ++
+      Hook.get f_print_constr env empty t1 ++ spc () ++
       str (match pbty with
             | Reduction.CONV -> "=="
             | Reduction.CUMUL -> "<=") ++
-      spc () ++ Hook.get f_print_constr env t2
+      spc () ++ Hook.get f_print_constr env empty t2
   in
   prlist_with_sep fnl pr_evconstr pbs
 

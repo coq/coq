@@ -30,7 +30,7 @@ END
 
 TACTIC EXTEND closed_term
   [ "closed_term" constr(t) "[" ne_reference_list(l) "]" ] ->
-    [ closed_term (EConstr.of_constr t) l ]
+    [ closed_term t l ]
 END
 
 open Pptactic
@@ -90,11 +90,7 @@ END
 
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lrt) ] ->
-    [
-      let lH = List.map EConstr.of_constr lH in
-      let lrt = List.map EConstr.of_constr lrt in
-      let (t,lr) = List.sep_last lrt in ring_lookup f lH lr t
-    ]
+    [ let (t,lr) = List.sep_last lrt in ring_lookup f lH lr t ]
 END
 
 let pr_field_mod = function
@@ -129,9 +125,5 @@ END
 
 TACTIC EXTEND field_lookup
 | [ "field_lookup" tactic(f) "[" constr_list(lH) "]" ne_constr_list(lt) ] ->
-      [
-        let lH = List.map EConstr.of_constr lH in
-        let lt = List.map EConstr.of_constr lt in
-        let (t,l) = List.sep_last lt in field_lookup f lH l t
-      ]
+      [ let (t,l) = List.sep_last lt in field_lookup f lH l t ]
 END

@@ -11,6 +11,7 @@
 open Loc
 open Names
 open Term
+open EConstr
 open Libnames
 open Globnames
 open Genredexpr
@@ -57,12 +58,12 @@ val wit_open_constr :
 val wit_constr_with_bindings :
   (constr_expr with_bindings,
   glob_constr_and_expr with_bindings,
-  EConstr.constr with_bindings delayed_open) genarg_type
+  constr with_bindings delayed_open) genarg_type
 
 val wit_bindings :
   (constr_expr bindings,
   glob_constr_and_expr bindings,
-  EConstr.constr bindings delayed_open) genarg_type
+  constr bindings delayed_open) genarg_type
 
 val wit_red_expr :
   ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,

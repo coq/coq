@@ -38,12 +38,12 @@ val wit_lglob :
 val wit_lconstr :
   (constr_expr,
   Tacexpr.glob_constr_and_expr,
-  Constr.t) Genarg.genarg_type
+  EConstr.t) Genarg.genarg_type
 
 val wit_casted_constr :
   (constr_expr,
   Tacexpr.glob_constr_and_expr,
-  Constr.t) Genarg.genarg_type
+  EConstr.t) Genarg.genarg_type
 
 val glob : constr_expr Pcoq.Gram.entry
 val lglob : constr_expr Pcoq.Gram.entry

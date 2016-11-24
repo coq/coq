@@ -34,8 +34,8 @@ type 'a glob_extra_genarg_printer =
     'a -> std_ppcmds
 
 type 'a extra_genarg_printer =
-    (Term.constr -> std_ppcmds) ->
-    (Term.constr -> std_ppcmds) ->
+    (EConstr.constr -> std_ppcmds) ->
+    (EConstr.constr -> std_ppcmds) ->
     (tolerability -> Val.t -> std_ppcmds) ->
     'a -> std_ppcmds
 

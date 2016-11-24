@@ -429,7 +429,7 @@ let protected_get_type_of env sigma c =
   try Retyping.get_type_of ~lax:true env.ExtraEnv.env sigma c
   with Retyping.RetypeError _ ->
     user_err 
-      (str "Cannot reinterpret " ++ quote (print_constr (EConstr.Unsafe.to_constr c)) ++
+      (str "Cannot reinterpret " ++ quote (print_constr c) ++
        str " in the current environment.")
 
 let pretype_id pretype k0 loc env evdref lvar id =
@@ -1225,6 +1225,7 @@ let type_uconstr ?(flags = constr_flags)
   } in
   let sigma = Sigma.to_evar_map sigma in
   let (sigma, c) = understand_ltac flags env sigma vars expected_type term in
+  let c = EConstr.of_constr c in
   Sigma.Unsafe.of_pair (c, sigma)
   end }
 

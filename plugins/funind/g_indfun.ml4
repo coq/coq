@@ -58,7 +58,7 @@ let pr_fun_ind_using_typed prc prlc _ opt_c =
     | None -> mt ()
     | Some b ->
       let (b, _) = Tactics.run_delayed (Global.env ()) Evd.empty b in
-      spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed (EConstr.Unsafe.to_constr %> prc) (EConstr.Unsafe.to_constr %> prlc) b)
+      spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc b)
 
 
 ARGUMENT EXTEND fun_ind_using
@@ -108,8 +108,9 @@ TACTIC EXTEND newfunind
        let c = match cl with
 	 | [] -> assert false
 	 | [c] -> c
-	 | c::cl -> applist(c,cl)
+	 | c::cl -> EConstr.applist(c,cl)
        in
+       let c = EConstr.Unsafe.to_constr c in
        Extratactics.onSomeWithHoles (fun x -> functional_induction true c x pat) princl ]
 END
 (***** debug only ***)
@@ -119,8 +120,9 @@ TACTIC EXTEND snewfunind
        let c = match cl with
 	 | [] -> assert false
 	 | [c] -> c
-	 | c::cl -> applist(c,cl)
+	 | c::cl -> EConstr.applist(c,cl)
        in
+       let c = EConstr.Unsafe.to_constr c in
        Extratactics.onSomeWithHoles (fun x -> functional_induction false c x pat) princl ]
 END
 

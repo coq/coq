@@ -51,8 +51,7 @@ let db_pr_goal gl =
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let penv = print_named_context env in
-  let concl = EConstr.Unsafe.to_constr concl in
-  let pc = print_constr_env env concl in
+  let pc = print_constr_env env (Tacmach.New.project gl) concl in
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()
@@ -224,11 +223,11 @@ let is_debug db =
       return (Int.equal skip 0)
 
 (* Prints a constr *)
-let db_constr debug env c =
+let db_constr debug env sigma c =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Evaluated term: " ++ print_constr_env env c)
+    msg_tac_debug (str "Evaluated term: " ++ print_constr_env env sigma c)
   else return ()
 
 (* Prints the pattern rule *)
@@ -248,20 +247,20 @@ let hyp_bound = function
   | Name id -> str " (bound to " ++ pr_id id ++ str ")"
 
 (* Prints a matched hypothesis *)
-let db_matched_hyp debug env (id,_,c) ido =
+let db_matched_hyp debug env sigma (id,_,c) ido =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str "Hypothesis " ++ pr_id id ++ hyp_bound ido ++
-                str " has been matched: " ++ print_constr_env env c)
+                str " has been matched: " ++ print_constr_env env sigma c)
   else return ()
 
 (* Prints the matched conclusion *)
-let db_matched_concl debug env c =
+let db_matched_concl debug env sigma c =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Conclusion has been matched: " ++ print_constr_env env c)
+    msg_tac_debug (str "Conclusion has been matched: " ++ print_constr_env env sigma c)
   else return ()
 
 (* Prints a success message when the goal has been matched *)

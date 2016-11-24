@@ -119,7 +119,7 @@ val understand_judgment_tcc : env -> evar_map ref ->
 val type_uconstr :
   ?flags:inference_flags ->
   ?expected_type:typing_constraint ->
-  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> constr Tactypes.delayed_open
+  Geninterp.interp_sign -> Glob_term.closed_glob_constr -> EConstr.constr Tactypes.delayed_open
 
 (** Trying to solve remaining evars and remaining conversion problems
     possibly using type classes, heuristics, external tactic solver

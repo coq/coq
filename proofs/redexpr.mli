@@ -10,6 +10,7 @@
 
 open Names
 open Term
+open EConstr
 open Pattern
 open Genredexpr
 open Reductionops

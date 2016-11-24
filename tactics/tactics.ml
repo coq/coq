@@ -51,7 +51,7 @@ open Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let inj_with_occurrences e = (AllOccurrences,EConstr.Unsafe.to_constr e)
+let inj_with_occurrences e = (AllOccurrences,e)
 
 let dloc = Loc.ghost
 
@@ -922,7 +922,7 @@ let reduction_clause redexp cl =
 let reduce redexp cl =
   let trace () =
     let open Printer in
-    let pr = (pr_constr, pr_lconstr, pr_evaluable_reference, pr_constr_pattern) in
+    let pr = (pr_econstr, pr_leconstr, pr_evaluable_reference, pr_constr_pattern) in
     Pp.(hov 2 (Pputils.pr_red_expr pr str redexp))
   in
   Proofview.Trace.name_tactic trace begin

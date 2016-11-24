@@ -47,16 +47,16 @@ let with_delayed_uconstr ist c tac =
 
 let replace_in_clause_maybe_by ist c1 c2 cl tac =
   with_delayed_uconstr ist c1
-  (fun c1 -> replace_in_clause_maybe_by (EConstr.of_constr c1) c2 cl (Option.map (Tacinterp.tactic_of_value ist) tac))
+  (fun c1 -> replace_in_clause_maybe_by c1 c2 cl (Option.map (Tacinterp.tactic_of_value ist) tac))
 
 let replace_term ist dir_opt c cl =
-  with_delayed_uconstr ist c (fun c -> replace_term dir_opt (EConstr.of_constr c) cl)
+  with_delayed_uconstr ist c (fun c -> replace_term dir_opt c cl)
 
 let clause = Pltac.clause_dft_concl
 
 TACTIC EXTEND replace
    ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
--> [ replace_in_clause_maybe_by ist c1 (EConstr.of_constr c2) cl tac ]
+-> [ replace_in_clause_maybe_by ist c1 c2 cl tac ]
 END
 
 TACTIC EXTEND replace_term_left
@@ -153,9 +153,9 @@ let injHyp id =
   injection_main false { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma }
 
 TACTIC EXTEND dependent_rewrite
-| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b (EConstr.of_constr c) ]
+| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
 | [ "dependent" "rewrite" orient(b) constr(c) "in" hyp(id) ]
-    -> [ rewriteInHyp b (EConstr.of_constr c) id ]
+    -> [ rewriteInHyp b c id ]
 END
 
 (** To be deprecated?, "cutrewrite (t=u) as <-" is equivalent to
@@ -163,20 +163,20 @@ END
     "cutrewrite (t=u) as ->" is equivalent to "enough (t=u) as ->". *)
 
 TACTIC EXTEND cut_rewrite
-| [ "cutrewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b (EConstr.of_constr eqn) ]
+| [ "cutrewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b eqn ]
 | [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
-    -> [ cutRewriteInHyp b (EConstr.of_constr eqn) id ]
+    -> [ cutRewriteInHyp b eqn id ]
 END
 
 (**********************************************************************)
 (* Decompose                                                          *)
 
 TACTIC EXTEND decompose_sum
-| [ "decompose" "sum" constr(c) ] -> [ Elim.h_decompose_or (EConstr.of_constr c) ]
+| [ "decompose" "sum" constr(c) ] -> [ Elim.h_decompose_or c ]
 END
 
 TACTIC EXTEND decompose_record
-| [ "decompose" "record" constr(c) ] -> [ Elim.h_decompose_and (EConstr.of_constr c) ]
+| [ "decompose" "record" constr(c) ] -> [ Elim.h_decompose_and c ]
 END
 
 (**********************************************************************)
@@ -185,7 +185,7 @@ END
 open Contradiction
 
 TACTIC EXTEND absurd
- [ "absurd" constr(c) ] -> [ absurd (EConstr.of_constr c) ]
+ [ "absurd" constr(c) ] -> [ absurd c ]
 END
 
 let onSomeWithHoles tac = function
@@ -235,7 +235,7 @@ END
 let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
   let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
   with_delayed_uconstr ist c
-    (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (EConstr.of_constr c,NoBindings) true)
+    (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
 
 TACTIC EXTEND rewrite_star
 | [ "rewrite" "*" orient(o) uconstr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->
@@ -362,7 +362,7 @@ let refine_tac ist simple c =
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma ->
       let Sigma (c, sigma, p) = c.delayed env sigma in
-      Sigma (EConstr.of_constr c, sigma, p)
+      Sigma (c, sigma, p)
     } in
     let refine = Refine.refine ~unsafe:true update in
     if simple then refine
@@ -516,13 +516,13 @@ let add_transitivity_lemma left lem =
 (* Vernacular syntax *)
 
 TACTIC EXTEND stepl
-| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true (EConstr.of_constr c) (Tacinterp.tactic_of_value ist tac) ]
-| ["stepl" constr(c) ] -> [ step true (EConstr.of_constr c) (Proofview.tclUNIT ()) ]
+| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true c (Tacinterp.tactic_of_value ist tac) ]
+| ["stepl" constr(c) ] -> [ step true c (Proofview.tclUNIT ()) ]
 END
 
 TACTIC EXTEND stepr
-| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false (EConstr.of_constr c) (Tacinterp.tactic_of_value ist tac) ]
-| ["stepr" constr(c) ] -> [ step false (EConstr.of_constr c) (Proofview.tclUNIT ()) ]
+| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false c (Tacinterp.tactic_of_value ist tac) ]
+| ["stepr" constr(c) ] -> [ step false c (Proofview.tclUNIT ()) ]
 END
 
 VERNAC COMMAND EXTEND AddStepl CLASSIFIED AS SIDEFF
@@ -645,6 +645,8 @@ let subst_hole_with_term occ tc t =
 open Tacmach
 
 let hResolve id c occ t =
+  let c = EConstr.Unsafe.to_constr c in
+  let t = EConstr.Unsafe.to_constr t in
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let sigma = Sigma.to_evar_map sigma in
@@ -819,8 +821,9 @@ END
 let eq_constr x y = 
   Proofview.Goal.enter { enter = begin fun gl ->
     let evd = Tacmach.New.project gl in
-      if Evarutil.eq_constr_univs_test evd evd x y then Proofview.tclUNIT () 
-      else Tacticals.New.tclFAIL 0 (str "Not equal")
+      match EConstr.eq_constr_universes evd x y with
+      | Some _ -> Proofview.tclUNIT () 
+      | None -> Tacticals.New.tclFAIL 0 (str "Not equal")
   end }
 
 TACTIC EXTEND constr_eq
@@ -830,15 +833,13 @@ END
 TACTIC EXTEND constr_eq_nounivs
 | [ "constr_eq_nounivs" constr(x) constr(y) ] -> [
     Proofview.tclEVARMAP >>= fun sigma ->
-    let x = EConstr.of_constr x in
-    let y = EConstr.of_constr y in
     if eq_constr_nounivs sigma x y then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "Not equal") ]
 END
 
 TACTIC EXTEND is_evar
 | [ "is_evar" constr(x) ] -> [
     Proofview.tclEVARMAP >>= fun sigma ->
-    match EConstr.kind sigma (EConstr.of_constr x) with
+    match EConstr.kind sigma x with
       | Evar _ -> Proofview.tclUNIT ()
       | _ -> Tacticals.New.tclFAIL 0 (str "Not an evar")
     ]
@@ -871,14 +872,14 @@ has_evar c
 TACTIC EXTEND has_evar
 | [ "has_evar" constr(x) ] -> [
   Proofview.tclEVARMAP >>= fun sigma ->
-  if has_evar sigma (EConstr.of_constr x) then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "No evars")
+  if has_evar sigma x then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "No evars")
 ]
 END
 
 TACTIC EXTEND is_hyp
 | [ "is_var" constr(x) ] -> [
   Proofview.tclEVARMAP >>= fun sigma ->
-  match EConstr.kind sigma (EConstr.of_constr x) with
+  match EConstr.kind sigma x with
     | Var _ ->  Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (str "Not a variable or hypothesis") ]
 END
@@ -886,7 +887,7 @@ END
 TACTIC EXTEND is_fix
 | [ "is_fix" constr(x) ] -> [
   Proofview.tclEVARMAP >>= fun sigma ->
-  match EConstr.kind sigma (EConstr.of_constr x) with
+  match EConstr.kind sigma x with
     | Fix _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a fix definition") ]
 END;;
@@ -894,7 +895,7 @@ END;;
 TACTIC EXTEND is_cofix
 | [ "is_cofix" constr(x) ] -> [
   Proofview.tclEVARMAP >>= fun sigma ->
-  match EConstr.kind sigma (EConstr.of_constr x) with
+  match EConstr.kind sigma x with
     | CoFix _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a cofix definition") ]
 END;;
@@ -902,7 +903,7 @@ END;;
 TACTIC EXTEND is_ind
 | [ "is_ind" constr(x) ] -> [
   Proofview.tclEVARMAP >>= fun sigma ->
-  match EConstr.kind sigma (EConstr.of_constr x) with
+  match EConstr.kind sigma x with
     | Ind _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not an (co)inductive datatype") ]
 END;;
@@ -910,7 +911,7 @@ END;;
 TACTIC EXTEND is_constructor
 | [ "is_constructor" constr(x) ] -> [
   Proofview.tclEVARMAP >>= fun sigma ->
-  match EConstr.kind sigma (EConstr.of_constr x) with
+  match EConstr.kind sigma x with
     | Construct _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constructor") ]
 END;;
@@ -918,7 +919,7 @@ END;;
 TACTIC EXTEND is_proj
 | [ "is_proj" constr(x) ] -> [
   Proofview.tclEVARMAP >>= fun sigma ->
-  match EConstr.kind sigma (EConstr.of_constr x) with
+  match EConstr.kind sigma x with
     | Proj _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a primitive projection") ]
 END;;
@@ -926,7 +927,7 @@ END;;
 TACTIC EXTEND is_const
 | [ "is_const" constr(x) ] -> [
   Proofview.tclEVARMAP >>= fun sigma ->
-  match EConstr.kind sigma (EConstr.of_constr x) with
+  match EConstr.kind sigma x with
     | Const _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constant") ]
 END;;
@@ -1080,7 +1081,7 @@ let decompose l c =
   end }
 
 TACTIC EXTEND decompose
-| [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose (List.map EConstr.of_constr l) (EConstr.of_constr c) ]
+| [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l c ]
 END
 
 (** library/keys *)

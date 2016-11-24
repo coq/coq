@@ -9,6 +9,7 @@
 open Util
 open Names
 open Term
+open EConstr
 open Misctypes
 open Pattern
 open Genarg
@@ -48,16 +49,16 @@ end
 
 (** {5 Coercion functions} *)
 
-val coerce_to_constr_context : Value.t -> EConstr.constr
+val coerce_to_constr_context : Value.t -> constr
 
-val coerce_var_to_ident : bool -> Environ.env -> Value.t -> Id.t
+val coerce_var_to_ident : bool -> Environ.env -> Evd.evar_map -> Value.t -> Id.t
 
-val coerce_to_ident_not_fresh : Evd.evar_map -> Environ.env -> Value.t -> Id.t
+val coerce_to_ident_not_fresh : Environ.env -> Evd.evar_map -> Value.t -> Id.t
 
-val coerce_to_intro_pattern : Environ.env -> Value.t -> Tacexpr.delayed_open_constr intro_pattern_expr
+val coerce_to_intro_pattern : Environ.env -> Evd.evar_map -> Value.t -> Tacexpr.delayed_open_constr intro_pattern_expr
 
 val coerce_to_intro_pattern_naming :
-  Environ.env -> Value.t -> intro_pattern_naming_expr
+  Environ.env -> Evd.evar_map -> Value.t -> intro_pattern_naming_expr
 
 val coerce_to_hint_base : Value.t -> string
 
@@ -70,22 +71,22 @@ val coerce_to_uconstr : Environ.env -> Value.t -> Glob_term.closed_glob_constr
 val coerce_to_closed_constr : Environ.env -> Value.t -> constr
 
 val coerce_to_evaluable_ref :
-  Environ.env -> Value.t -> evaluable_global_reference
+  Environ.env -> Evd.evar_map -> Value.t -> evaluable_global_reference
 
 val coerce_to_constr_list : Environ.env -> Value.t -> constr list
 
 val coerce_to_intro_pattern_list :
-  Loc.t -> Environ.env -> Value.t -> Tacexpr.intro_patterns
+  Loc.t -> Environ.env -> Evd.evar_map -> Value.t -> Tacexpr.intro_patterns
 
-val coerce_to_hyp : Environ.env -> Value.t -> Id.t
+val coerce_to_hyp : Environ.env -> Evd.evar_map -> Value.t -> Id.t
 
-val coerce_to_hyp_list : Environ.env -> Value.t -> Id.t list
+val coerce_to_hyp_list : Environ.env -> Evd.evar_map -> Value.t -> Id.t list
 
-val coerce_to_reference : Environ.env -> Value.t -> Globnames.global_reference
+val coerce_to_reference : Environ.env -> Evd.evar_map -> Value.t -> Globnames.global_reference
 
-val coerce_to_quantified_hypothesis : Value.t -> quantified_hypothesis
+val coerce_to_quantified_hypothesis : Evd.evar_map -> Value.t -> quantified_hypothesis
 
-val coerce_to_decl_or_quant_hyp : Environ.env -> Value.t -> quantified_hypothesis
+val coerce_to_decl_or_quant_hyp : Environ.env -> Evd.evar_map -> Value.t -> quantified_hypothesis
 
 val coerce_to_int_or_var_list : Value.t -> int or_var list
 

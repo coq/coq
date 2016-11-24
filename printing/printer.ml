@@ -60,7 +60,10 @@ let pr_constr_goal_style_env env = pr_constr_core true env
 let pr_open_lconstr_env env sigma (_,c) = pr_lconstr_env env sigma c
 let pr_open_constr_env env sigma (_,c) = pr_constr_env env sigma c
 
-  (* NB do not remove the eta-redexes! Global.env() has side-effects... *)
+let pr_leconstr_env env sigma c = pr_lconstr_env env sigma (EConstr.to_constr sigma c)
+let pr_econstr_env env sigma c = pr_constr_env env sigma (EConstr.to_constr sigma c)
+
+(* NB do not remove the eta-redexes! Global.env() has side-effects... *)
 let pr_lconstr t =
   let (sigma, env) = get_current_context () in
   pr_lconstr_env env sigma t
@@ -71,15 +74,18 @@ let pr_constr t =
 let pr_open_lconstr (_,c) = pr_lconstr c
 let pr_open_constr (_,c) = pr_constr c
 
+let pr_leconstr c = pr_lconstr (EConstr.Unsafe.to_constr c)
+let pr_econstr c = pr_constr (EConstr.Unsafe.to_constr c)
+
 let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
   (* Warning: clashes can occur with variables of same name in env but *)
   (* we also need to preserve the actual names of the patterns *)
   (* So what to do? *)
   let assums = List.map (fun id -> (Name id,(* dummy *) mkProp)) ids in
-  pr (Termops.push_rels_assum assums env) sigma (EConstr.Unsafe.to_constr c)
+  pr (Termops.push_rels_assum assums env) sigma c
 
-let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_constr_env
-let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_lconstr_env
+let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
+let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_leconstr_env
 
 let pr_constr_under_binders c =
   let (sigma, env) = get_current_context () in
@@ -147,7 +153,7 @@ let pr_constr_pattern t =
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
 let _ = Termops.set_print_constr 
-  (fun env t -> pr_lconstr_expr (extern_constr ~lax:true false env Evd.empty t))
+  (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma (EConstr.Unsafe.to_constr t)))
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 

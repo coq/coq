@@ -38,6 +38,10 @@ val safe_pr_lconstr             : constr -> std_ppcmds
 val safe_pr_constr_env          : env -> evar_map -> constr -> std_ppcmds
 val safe_pr_constr              : constr -> std_ppcmds
 
+val pr_econstr_env     : env -> evar_map -> EConstr.t -> std_ppcmds
+val pr_econstr         : EConstr.t -> std_ppcmds
+val pr_leconstr_env     : env -> evar_map -> EConstr.t -> std_ppcmds
+val pr_leconstr         : EConstr.t -> std_ppcmds
 
 val pr_open_constr_env     : env -> evar_map -> open_constr -> std_ppcmds
 val pr_open_constr         : open_constr -> std_ppcmds

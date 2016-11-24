@@ -575,10 +575,9 @@ let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 (* Pretty-print *)
 
 let pr_clenv clenv =
-  let inj = EConstr.Unsafe.to_constr in
   h 0
-    (str"TEMPL: " ++ print_constr (inj clenv.templval.rebus) ++
-     str" : " ++ print_constr (inj clenv.templtyp.rebus) ++ fnl () ++
+    (str"TEMPL: " ++ print_constr clenv.templval.rebus ++
+     str" : " ++ print_constr clenv.templtyp.rebus ++ fnl () ++
      pr_evar_map (Some 2) clenv.evd)
 
 (****************************************************************)

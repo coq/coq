@@ -97,11 +97,11 @@ let rec pr_constr c = match kind_of_term c with
            cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
 
-let term_printer = ref (fun _ -> pr_constr)
-let print_constr_env t = !term_printer t
-let print_constr t = !term_printer (Global.env()) t
+let term_printer = ref (fun _env _sigma c -> pr_constr (EConstr.Unsafe.to_constr c))
+let print_constr_env env sigma t = !term_printer env sigma t
+let print_constr t = !term_printer (Global.env()) Evd.empty t
 let set_print_constr f = term_printer := f
-let () = Hook.set Evd.print_constr_hook (fun env c -> !term_printer env c)
+let () = Hook.set Evd.print_constr_hook (fun env sigma c -> !term_printer env sigma (EConstr.of_constr c))
 
 let pr_var_decl env decl =
   let open NamedDecl in
@@ -109,9 +109,10 @@ let pr_var_decl env decl =
     | LocalAssum _ ->  mt ()
     | LocalDef (_,c,_) ->
 	(* Force evaluation *)
-	let pb = print_constr_env env c in
+	let c = EConstr.of_constr c in
+	let pb = print_constr_env env Evd.empty c in
 	  (str" := " ++ pb ++ cut () ) in
-  let pt = print_constr_env env (get_type decl) in
+  let pt = print_constr_env env Evd.empty (EConstr.of_constr (get_type decl)) in
   let ptyp = (str" : " ++ pt) in
     (pr_id (get_id decl) ++ hov 0 (pbody ++ ptyp))
 
@@ -121,9 +122,10 @@ let pr_rel_decl env decl =
     | LocalAssum _ -> mt ()
     | LocalDef (_,c,_) ->
 	(* Force evaluation *)
-	let pb = print_constr_env env c in
+	let c = EConstr.of_constr c in
+	let pb = print_constr_env env Evd.empty c in
 	  (str":=" ++ spc () ++ pb ++ spc ()) in
-  let ptyp = print_constr_env env (get_type decl) in
+  let ptyp = print_constr_env env Evd.empty (EConstr.of_constr (get_type decl)) in
     match get_name decl with
       | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
       | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)

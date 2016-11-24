@@ -11,6 +11,7 @@ open CErrors
 open Util
 open Names
 open Term
+open EConstr
 open Declarations
 open Globnames
 open Genredexpr
@@ -200,9 +201,6 @@ let out_arg = function
 let out_with_occurrences (occs,c) =
   (Locusops.occurrences_map (List.map out_arg) occs, c)
 
-let out_with_occurrences' (occs,c) =
-  (Locusops.occurrences_map (List.map out_arg) occs, EConstr.of_constr c)
-
 let e_red f = { e_redfun = fun env evm c -> Sigma.here (f env (Sigma.to_evar_map evm) c) evm }
 
 let head_style = false (* Turn to true to have a semantics where simpl
@@ -242,8 +240,8 @@ let reduction_of_red_expr env =
      (e_red (strong_cbn (make_flag f)), DEFAULTcast)
   | Lazy f -> (e_red (clos_norm_flags (make_flag f)),DEFAULTcast)
   | Unfold ubinds -> (e_red (unfoldn (List.map out_with_occurrences ubinds)),DEFAULTcast)
-  | Fold cl -> (e_red (fold_commands (List.map EConstr.of_constr cl)),DEFAULTcast)
-  | Pattern lp -> (pattern_occs (List.map out_with_occurrences' lp),DEFAULTcast)
+  | Fold cl -> (e_red (fold_commands cl),DEFAULTcast)
+  | Pattern lp -> (pattern_occs (List.map out_with_occurrences lp),DEFAULTcast)
   | ExtraRedExpr s ->
       (try (e_red (String.Map.find s !reduction_tab),DEFAULTcast)
       with Not_found ->
@@ -256,9 +254,12 @@ let reduction_of_red_expr env =
   in
     reduction_of_red_expr
 
+let subst_mps subst c =
+  EConstr.of_constr (Mod_subst.subst_mps subst (EConstr.Unsafe.to_constr c))
+
 let subst_red_expr subs =
   Miscops.map_red_expr_gen
-    (Mod_subst.subst_mps subs)
+    (subst_mps subs)
     (Mod_subst.subst_evaluable_reference subs)
     (Patternops.subst_pattern subs)
 

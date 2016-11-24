@@ -62,19 +62,19 @@ TACTIC EXTEND typeclasses_eauto
 END
 
 TACTIC EXTEND head_of_constr
-  [ "head_of_constr" ident(h) constr(c) ] -> [ head_of_constr h (EConstr.of_constr c) ]
+  [ "head_of_constr" ident(h) constr(c) ] -> [ head_of_constr h c ]
 END
 
 TACTIC EXTEND not_evar
-  [ "not_evar" constr(ty) ] -> [ not_evar (EConstr.of_constr ty) ]
+  [ "not_evar" constr(ty) ] -> [ not_evar ty ]
 END
 
 TACTIC EXTEND is_ground
-  [ "is_ground" constr(ty) ] -> [ Proofview.V82.tactic (is_ground (EConstr.of_constr ty)) ]
+  [ "is_ground" constr(ty) ] -> [ Proofview.V82.tactic (is_ground ty) ]
 END
 
 TACTIC EXTEND autoapply
-  [ "autoapply" constr(c) "using" preident(i) ] -> [ Proofview.V82.tactic (autoapply (EConstr.of_constr c) i) ]
+  [ "autoapply" constr(c) "using" preident(i) ] -> [ Proofview.V82.tactic (autoapply c i) ]
 END
 
 (** TODO: DEPRECATE *)

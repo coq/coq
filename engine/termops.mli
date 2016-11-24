@@ -21,9 +21,9 @@ val pr_sort_family : sorts_family -> std_ppcmds
 val pr_fix : ('a -> std_ppcmds) -> ('a, 'a) pfixpoint -> std_ppcmds
 
 (** debug printer: do not use to display terms to the casual user... *)
-val set_print_constr : (env -> Constr.constr -> std_ppcmds) -> unit
-val print_constr     : Constr.constr -> std_ppcmds
-val print_constr_env : env -> Constr.constr -> std_ppcmds
+val set_print_constr : (env -> Evd.evar_map -> constr -> std_ppcmds) -> unit
+val print_constr     : constr -> std_ppcmds
+val print_constr_env : env -> Evd.evar_map -> constr -> std_ppcmds
 val print_named_context : env -> std_ppcmds
 val pr_rel_decl : env -> Context.Rel.Declaration.t -> std_ppcmds
 val print_rel_context : env -> std_ppcmds

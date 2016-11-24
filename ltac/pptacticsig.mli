@@ -61,7 +61,7 @@ module type Pp = sig
 
   val pr_glob_tactic : env -> glob_tactic_expr -> std_ppcmds
 
-  val pr_atomic_tactic : env -> atomic_tactic_expr -> std_ppcmds
+  val pr_atomic_tactic : env -> Evd.evar_map -> atomic_tactic_expr -> std_ppcmds
 
   val pr_hintbases : string list option -> std_ppcmds
 

@@ -208,6 +208,6 @@ let split_tycon loc env evd tycon =
 let valcon_of_tycon x = x
 let lift_tycon n = Option.map (lift n)
 
-let pr_tycon env = function
+let pr_tycon env sigma = function
     None -> str "None"
-  | Some t -> Termops.print_constr_env env (EConstr.Unsafe.to_constr t)
+  | Some t -> Termops.print_constr_env env sigma t
