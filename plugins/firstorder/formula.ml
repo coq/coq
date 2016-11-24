@@ -76,11 +76,13 @@ type kind_of_formula=
   | Forall of constr*constr
   | Atom of constr
 
+let pop t = Vars.lift (-1) t
+
 let kind_of_formula gl term =
   let normalize=special_nf gl in
   let cciterm=special_whd gl term in
     match match_with_imp_term (project gl) (EConstr.of_constr cciterm) with
-	Some (a,b)-> Arrow(EConstr.Unsafe.to_constr a,(pop b))
+	Some (a,b)-> Arrow(EConstr.Unsafe.to_constr a,(pop (EConstr.Unsafe.to_constr b)))
       |_->
 	 match match_with_forall_term (project gl) (EConstr.of_constr cciterm) with
 	     Some (_,a,b)-> Forall(EConstr.Unsafe.to_constr a,EConstr.Unsafe.to_constr b)

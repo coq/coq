@@ -118,7 +118,7 @@ let interp_definition pl bl p red_option c ctypopt =
 	let c, imps2 = interp_casted_constr_evars_impls ~impls env_bl evdref c ty in
 	let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
 	let body = nf (it_mkLambda_or_LetIn c ctx) in
-	let typ = nf (it_mkProd_or_LetIn ty ctx) in
+	let typ = nf (Term.it_mkProd_or_LetIn ty ctx) in
         let beq b1 b2 = if b1 then b2 else not b2 in
         let impl_eq (x,y,z) (x',y',z') = beq x x' && beq y y' && beq z z' in
 	(* Check that all implicit arguments inferable from the term
@@ -583,7 +583,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   (* Interpret the arities *)
   let arities = List.map (interp_ind_arity env_params evdref) indl in
 
-  let fullarities = List.map (fun (c, _, _) -> it_mkProd_or_LetIn c ctx_params) arities in
+  let fullarities = List.map (fun (c, _, _) -> Term.it_mkProd_or_LetIn c ctx_params) arities in
   let env_ar = push_types env0 indnames fullarities in
   let env_ar_params = push_rel_context ctx_params env_ar in
 
@@ -850,7 +850,7 @@ let interp_fix_body env_rec evdref impls (_,ctx) fix ccl =
     let body = interp_casted_constr_evars env evdref ~impls body ccl in
     it_mkLambda_or_LetIn body ctx) fix.fix_body
 
-let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
+let build_fix_type (_,ctx) ccl = Term.it_mkProd_or_LetIn ccl ctx
 
 let declare_fix ?(opaque = false) (_,poly,_ as kind) pl ctx f ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~poly ~univs:ctx ~eff def in
@@ -946,7 +946,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
   let top_arity = interp_type_evars top_env evdref arityc in
-  let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
+  let full_arity = Term.it_mkProd_or_LetIn top_arity binders_rel in
   let argtyp, letbinders, make = telescope binders_rel in
   let argname = Id.of_string "recarg" in
   let arg = LocalAssum (Name argname, argtyp) in
@@ -998,7 +998,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let intern_arity = substl [projection] top_arity_let in
   (* substitute the projection of wfarg for something,
      now intern_arity is in wfarg :: arg *)
-  let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfarg 1] in
+  let intern_fun_arity_prod = Term.it_mkProd_or_LetIn intern_arity [wfarg 1] in
   let intern_fun_binder = LocalAssum (Name (add_suffix recname "'"), intern_fun_arity_prod) in
   let curry_fun =
     let wfpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
@@ -1008,7 +1008,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
     let lam = LocalAssum (Name (Id.of_string "recproof"), rcurry) in
     let body = it_mkLambda_or_LetIn app (lam :: binders_rel) in
-    let ty = it_mkProd_or_LetIn (lift 1 top_arity) (lam :: binders_rel) in
+    let ty = Term.it_mkProd_or_LetIn (lift 1 top_arity) (lam :: binders_rel) in
       LocalDef (Name recname, body, ty)
   in
   let fun_bl = intern_fun_binder :: [arg] in
@@ -1045,7 +1045,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       let name = add_suffix recname "_func" in
       let hook l gr _ = 
 	let body = it_mkLambda_or_LetIn (mkApp (Universes.constr_of_global gr, [|make|])) binders_rel in
-	let ty = it_mkProd_or_LetIn top_arity binders_rel in
+	let ty = Term.it_mkProd_or_LetIn top_arity binders_rel in
 	let pl, univs = Evd.universe_context ?names:pl !evdref in
 	  (*FIXME poly? *)
 	let ce = definition_entry ~poly ~types:ty ~univs (Evarutil.nf_evar !evdref body) in
@@ -1055,10 +1055,10 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
 	  if Impargs.is_implicit_args () || not (List.is_empty impls) then
 	    Impargs.declare_manual_implicits false gr [impls]
       in
-      let typ = it_mkProd_or_LetIn top_arity binders in
+      let typ = Term.it_mkProd_or_LetIn top_arity binders in
 	hook, name, typ
     else 
-      let typ = it_mkProd_or_LetIn top_arity binders_rel in
+      let typ = Term.it_mkProd_or_LetIn top_arity binders_rel in
       let hook l gr _ = 
 	if Impargs.is_implicit_args () || not (List.is_empty impls) then
 	  Impargs.declare_manual_implicits false gr [impls]

@@ -47,10 +47,11 @@ let evd_comb2 f evdref x y =
     z
 
 let e_new_global evdref x = 
-  evd_comb1 (Evd.fresh_global (Global.env())) evdref x
+  EConstr.of_constr (evd_comb1 (Evd.fresh_global (Global.env())) evdref x)
 
 let new_global evd x = 
-  Sigma.fresh_global (Global.env()) evd x
+  let Sigma (c, sigma, p) = Sigma.fresh_global (Global.env()) evd x in
+  Sigma (EConstr.of_constr c, sigma, p)
 
 (****************************************************)
 (* Expanding/testing/exposing existential variables *)
@@ -230,7 +231,7 @@ let new_meta =
   let meta_ctr = Summary.ref 0 ~name:meta_counter_summary_name in
   fun () -> incr meta_ctr; !meta_ctr
 
-let mk_new_meta () = mkMeta(new_meta())
+let mk_new_meta () = EConstr.mkMeta(new_meta())
 
 (* The list of non-instantiated existential declarations (order is important) *)
 
@@ -396,6 +397,7 @@ let default_source = (Loc.ghost,Evar_kinds.InternalHole)
 
 let restrict_evar evd evk filter candidates =
   let evd = Sigma.to_evar_map evd in
+  let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
   let evd, evk' = Evd.restrict evk filter ?candidates evd in
   Sigma.Unsafe.of_pair (evk', Evd.declare_future_goal evk' evd)
 
@@ -408,6 +410,7 @@ let new_pure_evar_full evd evi =
 let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) typ =
   let typ = EConstr.Unsafe.to_constr typ in
   let evd = Sigma.to_evar_map evd in
+  let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
   let default_naming = Misctypes.IntroAnonymous in
   let naming = Option.default default_naming naming in
   let evi = {
@@ -437,7 +440,7 @@ let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?prin
 (* Converting the env into the sign of the evar to define *)
 let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
   let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env typ in
-  let map c = EConstr.Unsafe.to_constr (subst2 subst vsubst (EConstr.of_constr c)) in
+  let map c = subst2 subst vsubst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
   let instance =
     match filter with

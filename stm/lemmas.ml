@@ -466,7 +466,7 @@ let start_proof_com ?inference_hook kind thms hook =
     evdref := solve_remaining_evars flags env !evdref (Evd.empty,!evdref);
     let ids = List.map RelDecl.get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
-      (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
+      (nf_evar !evdref (Term.it_mkProd_or_LetIn t' ctx),
        (ids, imps @ lift_implicits (List.length ids) imps'),
        guard)))
     thms in

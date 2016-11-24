@@ -147,7 +147,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
 	  let _, a, b = destProd sigma t2 in
           if noccurn sigma 1 b then
             lookup_canonical_conversion (proji, Prod_cs),
-	    (Stack.append_app [|a;EConstr.of_constr (pop b)|] Stack.empty)
+	    (Stack.append_app [|a;pop b|] Stack.empty)
           else raise Not_found
       | Sort s ->
 	lookup_canonical_conversion

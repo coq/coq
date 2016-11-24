@@ -4544,7 +4544,7 @@ let induction_gen_l isrec with_evars elim names lc =
 		  id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
 
                 let id = new_fresh_id [] x gl in
-		let newl' = List.map (fun r -> EConstr.of_constr (replace_term sigma c (mkVar id) r)) l' in
+		let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in
 		let _ = newlc:=id::!newlc in
 		Tacticals.New.tclTHEN
 		  (letin_tac None (Name id) c None allHypsAndConcl)

@@ -17,18 +17,18 @@ open Environ
 
 (** [new_meta] is a generator of unique meta variables *)
 val new_meta : unit -> metavariable
-val mk_new_meta : unit -> constr
+val mk_new_meta : unit -> EConstr.constr
 
 (** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
   env -> 'r Sigma.t -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:EConstr.constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> EConstr.types -> (EConstr.constr, 'r) Sigma.sigma
 
 val new_pure_evar :
   named_context_val -> 'r Sigma.t -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:EConstr.constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> EConstr.types -> (evar, 'r) Sigma.sigma
 
@@ -37,7 +37,7 @@ val new_pure_evar_full : 'r Sigma.t -> evar_info -> (evar, 'r) Sigma.sigma
 (** the same with side-effects *)
 val e_new_evar :
   env -> evar_map ref -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:EConstr.constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> EConstr.types -> EConstr.constr
 
@@ -56,12 +56,12 @@ val new_Type : ?rigid:rigid -> env -> 'r Sigma.t -> (EConstr.constr, 'r) Sigma.s
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> EConstr.constr
 
 val restrict_evar : 'r Sigma.t -> existential_key -> Filter.t ->
-  constr list option -> (existential_key, 'r) Sigma.sigma
+  EConstr.constr list option -> (existential_key, 'r) Sigma.sigma
 
 (** Polymorphic constants *)
 
-val new_global : 'r Sigma.t -> Globnames.global_reference -> (constr, 'r) Sigma.sigma
-val e_new_global : evar_map ref -> Globnames.global_reference -> constr
+val new_global : 'r Sigma.t -> Globnames.global_reference -> (EConstr.constr, 'r) Sigma.sigma
+val e_new_global : evar_map ref -> Globnames.global_reference -> EConstr.constr
 
 (** Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
@@ -71,7 +71,7 @@ val e_new_global : evar_map ref -> Globnames.global_reference -> constr
    as a telescope) is [sign] *)
 val new_evar_instance :
  named_context_val -> 'r Sigma.t -> EConstr.types -> 
-  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> ?candidates:constr list ->
+  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> ?candidates:EConstr.constr list ->
   ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool ->
   EConstr.constr list -> (EConstr.constr, 'r) Sigma.sigma

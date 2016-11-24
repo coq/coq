@@ -350,9 +350,11 @@ struct
     TDnet.Idset.fold
       (fun id acc ->
 	 let c_id = Opt.reduce (Ident.constr_of id) in
+	 let c_id = EConstr.of_constr c_id in
 	 let (ctx,wc) =
-	   try Termops.align_prod_letin Evd.empty (EConstr.of_constr whole_c) (EConstr.of_constr c_id) (** FIXME *)
+	   try Termops.align_prod_letin Evd.empty (EConstr.of_constr whole_c) c_id (** FIXME *)
 	   with Invalid_argument _ -> [],c_id in
+          let wc = EConstr.Unsafe.to_constr wc in
 	 let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
 	 try
           let _ = Termops.filtering Evd.empty ctx Reduction.CUMUL wc whole_c in

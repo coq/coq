@@ -94,7 +94,6 @@ let find_global dir s =
     fun (evd,cstrs) ->
       let sigma = Sigma.Unsafe.of_evar_map evd in
       let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force gr) in
-      let c = EConstr.of_constr c in
       let evd = Sigma.to_evar_map sigma in
 	(evd, cstrs), c
 
@@ -206,7 +205,6 @@ end) = struct
       fun (evd,cstrs) -> 
         let sigma = Sigma.Unsafe.of_evar_map evd in
         let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
-        let c = EConstr.of_constr c in
         let evd = Sigma.to_evar_map sigma in
 	  (evd, cstrs), c
 	
@@ -215,7 +213,6 @@ end) = struct
       fun (evd,cstrs) -> 
         let sigma = Sigma.Unsafe.of_evar_map evd in
         let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
-        let c = EConstr.of_constr c in
         let evd = Sigma.to_evar_map sigma in
 	  (evd, cstrs), c
 

@@ -1690,7 +1690,6 @@ let abstract_tycon loc env evdref subst tycon extenv t =
 	  (named_context extenv) in
       let filter = Filter.make (rel_filter @ named_filter) in
       let candidates = u :: List.map mkRel vl in
-      let candidates = List.map EConstr.Unsafe.to_constr candidates in
       let ev = e_new_evar extenv evdref ~src ~filter ~candidates ty in
       lift k ev
   in

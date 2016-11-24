@@ -443,7 +443,7 @@ let build_branch_type env dep p cs =
       (applist (base,[build_dependent_constructor cs]))
       cs.cs_args
   else
-    it_mkProd_or_LetIn base cs.cs_args
+    Term.it_mkProd_or_LetIn base cs.cs_args
 
 (**************************************************)
 
@@ -575,7 +575,7 @@ let arity_of_case_predicate env (ind,params) dep k =
   let arsign,_ = get_arity env (ind,params) in
   let mind = build_dependent_inductive env (ind,params) in
   let concl = if dep then mkArrow mind (mkSort k) else mkSort k in
-  it_mkProd_or_LetIn concl arsign
+  Term.it_mkProd_or_LetIn concl arsign
 
 (***********************************************)
 (* Inferring the sort of parameters of a polymorphic inductive type

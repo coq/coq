@@ -399,8 +399,8 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	   match ctxt with
 	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context")
 	     | hres::res::decl::ctxt ->
-		let res = Termops.it_mkLambda_or_LetIn
-			    (Termops.it_mkProd_or_LetIn concl [hres;res])
+		let res = Term.it_mkLambda_or_LetIn
+			    (Term.it_mkProd_or_LetIn concl [hres;res])
 			    (LocalAssum (RelDecl.get_name decl, RelDecl.get_type decl) :: ctxt)
 		in
 		res
@@ -793,7 +793,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 in
 	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
 	 graphs_constr.(i) <- graph;
-	 let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
+	 let type_of_lemma = Term.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
 	 let _ = Typing.e_type_of (Global.env ()) evd (EConstr.of_constr type_of_lemma) in 
 	   let type_of_lemma = nf_zeta (EConstr.of_constr type_of_lemma) in
 	   let type_of_lemma = EConstr.Unsafe.to_constr type_of_lemma in
@@ -861,7 +861,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
 	 graphs_constr.(i) <- graph;
 	 let type_of_lemma =
-	   Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
+	   Term.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
 	 in
 	 let type_of_lemma = nf_zeta (EConstr.of_constr type_of_lemma) in
 	 let type_of_lemma = EConstr.Unsafe.to_constr type_of_lemma in

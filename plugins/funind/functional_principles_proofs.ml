@@ -95,6 +95,7 @@ let list_chop ?(msg="") n l =
   with Failure (msg') ->
     failwith (msg ^ msg')
 
+let pop t = Vars.lift (-1) t
 
 let make_refl_eq constructor type_of_t t  =
 (*   let refl_equal_term = Lazy.force refl_equal in *)
@@ -289,7 +290,7 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
     in
     let sub = compute_substitution Int.Map.empty (snd t1) (snd t2) in
     let sub = compute_substitution sub (fst t1) (fst t2) in
-    let end_of_type_with_pop = Termops.pop (EConstr.of_constr end_of_type) in (*the equation will be removed *)
+    let end_of_type_with_pop = pop end_of_type in (*the equation will be removed *)
     let new_end_of_type =
       (* Ugly hack to prevent Map.fold order change between ocaml-3.08.3 and ocaml-3.08.4
 	 Can be safely replaced by the next comment for Ocaml >= 3.08.4
@@ -311,9 +312,9 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
 	   try
 	     let witness = Int.Map.find i sub in
 	     if is_local_def decl then anomaly (Pp.str "can not redefine a rel!");
-	     (Termops.pop (EConstr.of_constr end_of_type),ctxt_size,mkLetIn (RelDecl.get_name decl, witness, RelDecl.get_type decl, witness_fun))
+	     (pop end_of_type,ctxt_size,mkLetIn (RelDecl.get_name decl, witness, RelDecl.get_type decl, witness_fun))
 	   with Not_found  ->
-	     (mkProd_or_LetIn decl end_of_type, ctxt_size + 1, mkLambda_or_LetIn decl witness_fun)
+	     (Term.mkProd_or_LetIn decl end_of_type, ctxt_size + 1, mkLambda_or_LetIn decl witness_fun)
 	)
 	1
 	(new_end_of_type,0,witness_fun)
@@ -416,7 +417,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
   let coq_I = Coqlib.build_coq_I () in
   let rec scan_type  context type_of_hyp : tactic =
     if isLetIn type_of_hyp then
-      let real_type_of_hyp = it_mkProd_or_LetIn type_of_hyp context in
+      let real_type_of_hyp = Term.it_mkProd_or_LetIn type_of_hyp context in
       let reduced_type_of_hyp = nf_betaiotazeta real_type_of_hyp in
       (* length of context didn't change ? *)
       let new_context,new_typ_of_hyp =
@@ -429,13 +430,13 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
     then
       begin
 	let (x,t_x,t') = destProd type_of_hyp in
-	let actual_real_type_of_hyp = it_mkProd_or_LetIn t' context in
+	let actual_real_type_of_hyp = Term.it_mkProd_or_LetIn t' context in
 	if is_property ptes_infos t_x actual_real_type_of_hyp then
 	  begin
 	    let pte,pte_args =  (destApp t_x) in
 	    let (* fix_info *) prove_rec_hyp = (Id.Map.find (destVar pte) ptes_infos).proving_tac in
-	    let popped_t' = Termops.pop (EConstr.of_constr t') in
-	    let real_type_of_hyp = it_mkProd_or_LetIn popped_t' context in
+	    let popped_t' = pop t' in
+	    let real_type_of_hyp = Term.it_mkProd_or_LetIn popped_t' context in
 	    let prove_new_type_of_hyp =
 	      let context_length = List.length context in
 	      tclTHENLIST
@@ -486,9 +487,9 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 (* 	    observe (str "In "++Ppconstr.pr_id hyp_id++  *)
 (* 		       str " removing useless precond True" *)
 (* 		    );  *)
-	  let popped_t' = Termops.pop (EConstr.of_constr t') in
+	  let popped_t' = pop t' in
 	  let real_type_of_hyp =
-	    it_mkProd_or_LetIn popped_t' context
+	    Term.it_mkProd_or_LetIn popped_t' context
 	  in
 	  let prove_trivial =
 	    let nb_intro = List.length context in
@@ -515,9 +516,9 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	  ]
 	else if is_trivial_eq t_x
 	then (*  t_x :=  t = t   => we remove this precond *)
-	  let popped_t' = Termops.pop (EConstr.of_constr t') in
+	  let popped_t' = pop t' in
 	  let real_type_of_hyp =
-	    it_mkProd_or_LetIn popped_t' context
+	    Term.it_mkProd_or_LetIn popped_t' context
 	  in
 	  let hd,args = destApp t_x in
 	  let get_args hd args =
@@ -616,8 +617,8 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	 let fun_body =
 	   mkLambda(Anonymous,
 		    pf_unsafe_type_of g' term,
-		    Termops.replace_term (project g') term (EConstr.mkRel 1) (EConstr.of_constr dyn_infos.info)
-		   )
+		    EConstr.Unsafe.to_constr (Termops.replace_term (project g') term (EConstr.mkRel 1) (EConstr.of_constr dyn_infos.info)
+		   ))
 	 in
 	 let new_body = pf_nf_betaiota g' (EConstr.of_constr (mkApp(fun_body,[| new_term_value |]))) in
 	 let new_body = EConstr.Unsafe.to_constr new_body in
@@ -988,7 +989,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
       (nb_params + nb_args) t,evd
   in
   let eqn = mkApp(Lazy.force eq,[|type_of_f;eq_lhs;eq_rhs|]) in
-  let lemma_type = it_mkProd_or_LetIn eqn type_ctxt in
+  let lemma_type = Term.it_mkProd_or_LetIn eqn type_ctxt in
   (* Pp.msgnl (str "lemma type " ++ Printer.pr_lconstr lemma_type ++ fnl () ++ str "f_body " ++ Printer.pr_lconstr f_body); *)
   let f_id = Label.to_id (con_label (fst (destConst f))) in
   let prove_replacement =

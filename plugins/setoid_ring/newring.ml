@@ -246,7 +246,6 @@ let lapp f args = mkApp(Lazy.force f,args)
 
 let plapp evd f args = 
   let fc = Evarutil.e_new_global evd (Lazy.force f) in
-  let fc = EConstr.of_constr fc in
     mkApp(fc,args)
 
 let dest_rel0 sigma t =
@@ -591,7 +590,6 @@ let make_hyp env evd c =
 
 let make_hyp_list env evd lH =
   let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
-  let carrier = EConstr.of_constr carrier in
   let l = 
     List.fold_right
       (fun c l -> plapp evd coq_cons [|carrier; (make_hyp env evd c); l|]) lH
@@ -602,7 +600,6 @@ let make_hyp_list env evd lH =
 
 let interp_power env evd pow =
   let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
-  let carrier = EConstr.of_constr carrier in
   match pow with
   | None ->
       let t = ArgArg(Loc.ghost, Lazy.force ltac_inv_morph_nothing) in
@@ -618,7 +615,6 @@ let interp_power env evd pow =
 
 let interp_sign env evd sign =
   let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
-  let carrier = EConstr.of_constr carrier in
   match sign with
   | None -> plapp evd coq_None [|carrier|]
   | Some spec ->
@@ -628,7 +624,6 @@ let interp_sign env evd sign =
 
 let interp_div env evd div =
   let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
-  let carrier = EConstr.of_constr carrier in
   match div with
   | None -> plapp evd coq_None [|carrier|]
   | Some spec ->

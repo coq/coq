@@ -189,8 +189,8 @@ let restrict_evar_key evd evk filter candidates =
       | None -> evar_filter evi
       | Some filter -> filter in
       let candidates = match candidates with
-      | NoUpdate -> evi.evar_candidates
-      | UpdateWith c -> Some (List.map EConstr.Unsafe.to_constr c) in
+      | NoUpdate -> Option.map (fun l -> List.map EConstr.of_constr l) evi.evar_candidates
+      | UpdateWith c -> Some c in
       let sigma = Sigma.Unsafe.of_evar_map evd in
       let Sigma (evk, sigma, _) = restrict_evar sigma evk filter candidates in
       (Sigma.to_evar_map sigma, evk)

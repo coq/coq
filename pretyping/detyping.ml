@@ -210,16 +210,18 @@ let computable p k =
   &&
   noccur_between 1 (k+1) ccl
 
+let pop t = Vars.lift (-1) t
+
 let lookup_name_as_displayed env t s =
   let rec lookup avoid n c = match kind_of_term c with
     | Prod (name,_,c') ->
 	(match compute_displayed_name_in RenamingForGoal avoid name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
-	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop (EConstr.of_constr c')))
+	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | LetIn (name,_,_,c') ->
 	(match compute_displayed_name_in RenamingForGoal avoid name c' with
            | (Name id,avoid') -> if Id.equal id s then Some n else lookup avoid' (n+1) c'
-	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop (EConstr.of_constr c')))
+	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | Cast (c,_,_) -> lookup avoid n c
     | _ -> None
   in lookup (ids_of_named_context (named_context env)) 1 t
@@ -439,7 +441,7 @@ let detype_instance sigma l =
   else Some (List.map (detype_level sigma) (Array.to_list (Univ.Instance.to_array l)))
 
 let rec detype flags avoid env sigma t =
-  match kind_of_term (collapse_appl sigma (EConstr.of_constr t)) with
+  match kind_of_term (EConstr.Unsafe.to_constr (collapse_appl sigma (EConstr.of_constr t))) with
     | Rel n ->
       (try match lookup_name_of_rel n (fst env) with
 	 | Name id   -> GVar (dl, id)

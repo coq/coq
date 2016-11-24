@@ -408,6 +408,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
 		args.(1),args.(2)
 	      in
 	      let new_b' = Termops.replace_term (project g') (EConstr.of_constr teq_lhs) (EConstr.of_constr teq_rhs) (EConstr.of_constr new_b) in 
+	      let new_b' = EConstr.Unsafe.to_constr new_b' in
 	      let new_infos = {
 		infos with 
 		  info = new_b';
@@ -1253,7 +1254,7 @@ let clear_goals =
       | Prod(Name id as na,t',b) ->
 	  let b' = clear_goal b in
 	  if noccurn 1 b' && (is_rec_res id)
-	  then Termops.pop (EConstr.of_constr b')
+	  then Vars.lift (-1) b'
 	  else if b' == b then t
 	  else mkProd(na,t',b')
       | _ -> Term.map_constr clear_goal t

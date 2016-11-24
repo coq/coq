@@ -1211,7 +1211,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
     | Evar (evk,args as ev) ->
       (* We skip the test whether args is the identity or not *)
       let t = existential_type sigma ev in
-      let t = List.fold_right (fun (e,id) c -> EConstr.of_constr (replace_term sigma e id c)) !subst t in
+      let t = List.fold_right (fun (e,id) c -> replace_term sigma e id c) !subst t in
       if not (closed0 sigma c) then
 	error "Hints with holes dependent on a bound variable not supported.";
       if occur_existential sigma t then
@@ -1225,7 +1225,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
       let id = next_ident_away_from default_prepare_hint_ident (fun id -> Id.Set.mem id !vars) in
       vars := Id.Set.add id !vars;
       subst := (evar,mkVar id)::!subst;
-      mkNamedLambda id t (iter (EConstr.of_constr (replace_term sigma evar (mkVar id) c))) in
+      mkNamedLambda id t (iter (replace_term sigma evar (mkVar id) c)) in
   let c' = iter c in
     if check then Pretyping.check_evars (Global.env()) Evd.empty sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in

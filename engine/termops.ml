@@ -210,12 +210,7 @@ let lookup_rel_id id sign =
   lookrec 1 sign
 
 (* Constructs either [forall x:t, c] or [let x:=b:t in c] *)
-let mkProd_or_LetIn decl c =
-  let open RelDecl in
-  match decl with
-    | LocalAssum (na,t) -> mkProd (na, t, c)
-    | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
-
+let mkProd_or_LetIn = EConstr.mkProd_or_LetIn
 (* Constructs either [forall x:t, c] or [c] in which [x] is replaced by [b] *)
 let mkProd_wo_LetIn decl c =
   let open EConstr in
@@ -628,9 +623,10 @@ let vars_of_global_reference env gr =
    [m] is appropriately lifted through abstractions of [t] *)
 
 let dependent_main noevar univs sigma m t =
+  let open EConstr in
   let eqc x y =
-    if univs then not (Option.is_empty (EConstr.eq_constr_universes sigma x y))
-    else EConstr.eq_constr_nounivs sigma x y
+    if univs then not (Option.is_empty (eq_constr_universes sigma x y))
+    else eq_constr_nounivs sigma x y
   in
   let rec deprec m t =
     if eqc m t then
@@ -638,13 +634,13 @@ let dependent_main noevar univs sigma m t =
     else
       match EConstr.kind sigma m, EConstr.kind sigma t with
 	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
-	    deprec m (EConstr.mkApp (ft,Array.sub lt 0 (Array.length lm)));
+	    deprec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
 	    CArray.Fun1.iter deprec m
 	      (Array.sub lt
 		(Array.length lm) ((Array.length lt) - (Array.length lm)))
-	| _, Cast (c,_,_) when noevar && EConstr.isMeta sigma c -> ()
+	| _, Cast (c,_,_) when noevar && isMeta sigma c -> ()
 	| _, Evar _ when noevar -> ()
-	| _ -> EConstr.iter_with_binders sigma (fun c -> EConstr.Vars.lift 1 c) deprec m t
+	| _ -> EConstr.iter_with_binders sigma (fun c -> Vars.lift 1 c) deprec m t
   in
   try deprec m t; false with Occur -> true
 
@@ -661,6 +657,7 @@ let dependent_in_decl sigma a decl =
     | LocalDef (_, body, t) -> dependent sigma a (EConstr.of_constr body) || dependent sigma a (EConstr.of_constr t)
 
 let count_occurrences sigma m t =
+  let open EConstr in
   let n = ref 0 in
   let rec countrec m t =
     if EConstr.eq_constr sigma m t then
@@ -668,13 +665,13 @@ let count_occurrences sigma m t =
     else
       match EConstr.kind sigma m, EConstr.kind sigma t with
 	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
-	    countrec m (EConstr.mkApp (ft,Array.sub lt 0 (Array.length lm)));
+	    countrec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
 	    Array.iter (countrec m)
 	      (Array.sub lt
 		(Array.length lm) ((Array.length lt) - (Array.length lm)))
-	| _, Cast (c,_,_) when EConstr.isMeta sigma c -> ()
+	| _, Cast (c,_,_) when isMeta sigma c -> ()
 	| _, Evar _ -> ()
-	| _ -> EConstr.iter_with_binders sigma (EConstr.Vars.lift 1) countrec m t
+	| _ -> EConstr.iter_with_binders sigma (Vars.lift 1) countrec m t
   in
   countrec m t;
   !n
@@ -682,7 +679,7 @@ let count_occurrences sigma m t =
 (* Synonymous *)
 let occur_term = dependent
 
-let pop t = EConstr.Unsafe.to_constr (EConstr.Vars.lift (-1) t)
+let pop t = EConstr.Vars.lift (-1) t
 
 (***************************)
 (*  bindings functions *)
@@ -712,33 +709,35 @@ let collapse_appl sigma c = match EConstr.kind sigma c with
         | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
         | _ -> EConstr.mkApp (f,cl2)
       in
-      EConstr.Unsafe.to_constr (collapse_rec f cl)
-  | _ -> EConstr.Unsafe.to_constr c
+      collapse_rec f cl
+  | _ -> c
 
 (* First utilities for avoiding telescope computation for subst_term *)
 
 let prefix_application sigma eq_fun (k,c) t =
-  let c' = EConstr.of_constr (collapse_appl sigma c) and t' = EConstr.of_constr (collapse_appl sigma t) in
+  let open EConstr in
+  let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
   match EConstr.kind sigma c', EConstr.kind sigma t' with
     | App (f1,cl1), App (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2
-	   && eq_fun sigma c' (EConstr.mkApp (f2, Array.sub cl2 0 l1)) then
-	  Some (EConstr.mkApp (EConstr.mkRel k, Array.sub cl2 l1 (l2 - l1)))
+	   && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
+	  Some (mkApp (mkRel k, Array.sub cl2 l1 (l2 - l1)))
 	else
 	  None
     | _ -> None
 
 let my_prefix_application sigma eq_fun (k,c) by_c t =
-  let c' = EConstr.of_constr (collapse_appl sigma c) and t' = EConstr.of_constr (collapse_appl sigma t) in
+  let open EConstr in
+  let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
   match EConstr.kind sigma c', EConstr.kind sigma t' with
     | App (f1,cl1), App (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2
-	   && eq_fun sigma c' (EConstr.mkApp (f2, Array.sub cl2 0 l1)) then
-	  Some (EConstr.mkApp ((EConstr.Vars.lift k by_c), Array.sub cl2 l1 (l2 - l1)))
+	   && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
+	  Some (mkApp ((Vars.lift k by_c), Array.sub cl2 l1 (l2 - l1)))
 	else
 	  None
     | _ -> None
@@ -754,7 +753,7 @@ let subst_term_gen sigma eq_fun c t =
     match prefix_application sigma eq_fun kc t with
       | Some x -> x
       | None ->
-    if eq_fun sigma c t then EConstr.mkRel k
+    if eq_fun sigma c t then mkRel k
     else
       EConstr.map_with_binders sigma (fun (k,c) -> (k+1,lift 1 c)) substrec kc t
   in
@@ -775,7 +774,7 @@ let replace_term_gen sigma eq_fun c by_c in_t =
       EConstr.map_with_binders sigma (fun (k,c) -> (k+1,EConstr.Vars.lift 1 c))
 	substrec kc t)
   in
-  EConstr.Unsafe.to_constr (substrec (0,c) in_t)
+  substrec (0,c) in_t
 
 let replace_term sigma c byc t = replace_term_gen sigma EConstr.eq_constr c byc t
 
@@ -933,12 +932,11 @@ let filtering sigma env cv_pb c1 c2 =
   aux env cv_pb c1 c2; !evm
 
 let decompose_prod_letin sigma c =
-  let inj c = EConstr.Unsafe.to_constr c in
   let rec prodec_rec i l sigma c = match EConstr.kind sigma c with
-    | Prod (n,t,c)    -> prodec_rec (succ i) (RelDecl.LocalAssum (n, inj t)::l) sigma c
-    | LetIn (n,d,t,c) -> prodec_rec (succ i) (RelDecl.LocalDef (n, inj d, inj t)::l) sigma c
+    | Prod (n,t,c)    -> prodec_rec (succ i) (local_assum (n, t)::l) sigma c
+    | LetIn (n,d,t,c) -> prodec_rec (succ i) (local_def (n, d, t)::l) sigma c
     | Cast (c,_,_)    -> prodec_rec i l sigma c
-    | _               -> i,l, inj c in
+    | _               -> i,l, c in
   prodec_rec 0 [] sigma c
 
 (* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
@@ -969,7 +967,7 @@ let nb_prod_modulo_zeta sigma x =
       | _ -> n
   in count 0 x
 
-let align_prod_letin sigma c a : Context.Rel.t * constr =
+let align_prod_letin sigma c a =
   let (lc,_,_) = decompose_prod_letin sigma c in
   let (la,l,a) = decompose_prod_letin sigma a in
   if not (la >= lc) then invalid_arg "align_prod_letin";
@@ -980,21 +978,23 @@ let align_prod_letin sigma c a : Context.Rel.t * constr =
 (* [x1:c1;...;xn:cn]@(f;a1...an;x1;...;xn) --> @(f;a1...an) *)
 (* Remplace 2 earlier buggish versions                      *)
 
-let rec eta_reduce_head c =
-  match kind_of_term c with
+let rec eta_reduce_head sigma c =
+  let open EConstr in
+  let open Vars in
+  match EConstr.kind sigma c with
     | Lambda (_,c1,c') ->
-	(match kind_of_term (eta_reduce_head c') with
+	(match EConstr.kind sigma (eta_reduce_head sigma c') with
            | App (f,cl) ->
                let lastn = (Array.length cl) - 1 in
                if lastn < 0 then anomaly (Pp.str "application without arguments")
                else
-                 (match kind_of_term cl.(lastn) with
+                 (match EConstr.kind sigma cl.(lastn) with
                     | Rel 1 ->
 			let c' =
                           if Int.equal lastn 0 then f
 			  else mkApp (f, Array.sub cl 0 lastn)
 			in
-			if noccurn 1 c'
+			if noccurn sigma 1 c'
                         then lift (-1) c'
                         else c
                     | _   -> c)

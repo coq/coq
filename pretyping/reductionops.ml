@@ -203,10 +203,10 @@ module Cst_stack = struct
     let reconstruct_head = List.fold_left
       (fun t (i,args) -> mkApp (t,Array.sub args i (Array.length args - i))) in
     List.fold_right
-      (fun (cst,params,args) t -> EConstr.of_constr (Termops.replace_term sigma
+      (fun (cst,params,args) t -> Termops.replace_term sigma
 	(reconstruct_head d args)
 	(applist (cst, List.rev params))
-	t)) cst_l c
+	t) cst_l c
 
   let pr l =
     let open Pp in
@@ -969,7 +969,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
             | Rel 1, [] ->
 	      let lc = Array.sub cl 0 (napp-1) in
 	      let u = if Int.equal napp 1 then f else mkApp (f,lc) in
-	      if noccurn sigma 1 u then (EConstr.of_constr (pop u),Stack.empty),Cst_stack.empty else fold ()
+	      if noccurn sigma 1 u then (pop u,Stack.empty),Cst_stack.empty else fold ()
             | _ -> fold ()
 	  else fold ()
 	| _ -> fold ())
@@ -1068,7 +1068,7 @@ let local_whd_state_gen flags sigma =
             | Rel 1, [] ->
 	      let lc = Array.sub cl 0 (napp-1) in
 	      let u = if Int.equal napp 1 then f else mkApp (f,lc) in
-	      if noccurn sigma 1 u then (EConstr.of_constr (pop u),Stack.empty) else s
+	      if noccurn sigma 1 u then (pop u,Stack.empty) else s
             | _ -> s
 	  else s
 	| _ -> s)

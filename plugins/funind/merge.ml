@@ -32,7 +32,8 @@ module RelDecl = Context.Rel.Declaration
 
 (** {2 Useful operations on constr and glob_constr} *)
 
-let rec popn i c = if i<=0 then c else EConstr.of_constr (pop (popn (i-1) c))
+let pop c = Vars.lift (-1) c
+let rec popn i c = if i<=0 then c else pop (popn (i-1) c)
 
 (** Substitutions in constr *)
 let compare_constr_nosub t1 t2 =
@@ -986,13 +987,13 @@ let relprinctype_to_funprinctype relprinctype nfuns =
   (* first remove indarg and indarg_in_concl *)
   let relinfo_noindarg = { relinfo with
     indarg_in_concl = false; indarg = None;
-    concl = EConstr.of_constr (remove_last_arg (pop relinfo.concl)); } in
+    concl = EConstr.of_constr (remove_last_arg (pop (EConstr.Unsafe.to_constr relinfo.concl))); } in
   (* the nfuns last induction arguments are functional ones: remove them *)
   let relinfo_argsok = { relinfo_noindarg with
     nargs = relinfo_noindarg.nargs - nfuns;
     (* args is in reverse order, so remove fst *)
     args = remove_n_fst_list nfuns relinfo_noindarg.args;
-    concl = popn nfuns relinfo_noindarg.concl;
+    concl = EConstr.of_constr (popn nfuns (EConstr.Unsafe.to_constr relinfo_noindarg.concl));
   } in
   let new_branches =
     List.map (funify_branches relinfo_argsok nfuns) relinfo_argsok.branches in

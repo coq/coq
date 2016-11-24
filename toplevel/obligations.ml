@@ -142,10 +142,11 @@ let trunc_named_context n ctx =
     List.firstn (len - n) ctx
 
 let rec chop_product n t =
+  let pop t = Vars.lift (-1) t in
   if Int.equal n 0 then Some t
   else
     match kind_of_term t with
-      | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop (EConstr.of_constr b)) else None
+      | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (pop b) else None
       | _ -> None
 
 let evar_dependencies evm oev =

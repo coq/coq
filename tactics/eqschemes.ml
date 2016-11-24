@@ -77,7 +77,7 @@ let build_dependent_inductive ind (mib,mip) =
        @ Context.Rel.to_extended_list 0 realargs)
 
 let my_it_mkLambda_or_LetIn s c = it_mkLambda_or_LetIn c s
-let my_it_mkProd_or_LetIn s c = it_mkProd_or_LetIn c s
+let my_it_mkProd_or_LetIn s c = Term.it_mkProd_or_LetIn c s
 let my_it_mkLambda_or_LetIn_name s c =
   it_mkLambda_or_LetIn_name (Global.env()) c s
 
