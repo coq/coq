@@ -597,6 +597,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
 
 let fix_r2l_forward_rew_scheme (c, ctx') =
   let t = Retyping.get_type_of (Global.env()) Evd.empty (EConstr.of_constr c) in
+  let t = EConstr.Unsafe.to_constr t in
   let ctx,_ = decompose_prod_assum t in
   match ctx with
   | hp :: p :: ind :: indargs ->

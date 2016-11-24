@@ -62,7 +62,7 @@ let refresh_undefined_univs clenv =
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
-let clenv_get_type_of ce c = EConstr.of_constr (Retyping.get_type_of (cl_env ce) (cl_sigma ce) c)
+let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
 
 exception NotExtensibleClause
 
@@ -673,9 +673,7 @@ let evar_of_binder holes = function
 let define_with_type sigma env ev c =
   let open EConstr in
   let t = Retyping.get_type_of env sigma ev in
-  let t = EConstr.of_constr t in
   let ty = Retyping.get_type_of env sigma c in
-  let ty = EConstr.of_constr ty in
   let j = Environ.make_judge c ty in
   let (sigma, j) = Coercion.inh_conv_coerce_to true (Loc.ghost) env sigma j t in
   let (ev, _) = destEvar sigma ev in

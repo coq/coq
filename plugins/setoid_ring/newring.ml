@@ -344,6 +344,8 @@ let _ = add_map "ring"
 (****************************************************************************)
 (* Ring database *)
 
+let pr_constr c = pr_constr (EConstr.Unsafe.to_constr c)
+
 module Cmap = Map.Make(Constr)
 
 let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
@@ -357,12 +359,12 @@ let find_ring_structure env sigma l =
         let ty = Retyping.get_type_of env sigma t in
         let check c =
           let ty' = Retyping.get_type_of env sigma c in
-          if not (Reductionops.is_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr ty')) then
+          if not (Reductionops.is_conv env sigma ty ty') then
             user_err ~hdr:"ring"
               (str"arguments of ring_simplify do not have all the same type")
         in
         List.iter check cl';
-        (try ring_for_carrier ty
+        (try ring_for_carrier (EConstr.to_constr sigma ty)
         with Not_found ->
           user_err ~hdr:"ring"
             (str"cannot find a declared ring structure over"++
@@ -495,7 +497,6 @@ let op_smorph r add mul req m1 m2 =
 (*         (setoid,op_morph) *)
 
 let ring_equality env evd (r,add,mul,opp,req) =
-  let pr_constr c = pr_constr (EConstr.to_constr !evd c) in
   match EConstr.kind !evd req with
     | App (f, [| _ |]) when eq_constr_nounivs !evd f (Lazy.force coq_eq) ->
 	let setoid = plapp evd coq_eq_setoid [|r|] in
@@ -553,7 +554,6 @@ let build_setoid_params env evd r add mul opp req eqth =
 
 let dest_ring env sigma th_spec =
   let th_typ = Retyping.get_type_of env sigma th_spec in
-  let th_typ = EConstr.of_constr th_typ in
   match EConstr.kind sigma th_typ with
       App(f,[|r;zero;one;add;mul;sub;opp;req|])
         when eq_constr_nounivs sigma f (Lazy.force coq_almost_ring_theory) ->
@@ -585,7 +585,6 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
 
 let make_hyp env evd c =
   let t = Retyping.get_type_of env !evd c in
-  let t = EConstr.of_constr t in
    plapp evd coq_mkhypo [|t;c|]
 
 let make_hyp_list env evd lH =
@@ -820,7 +819,6 @@ let sf_sr = my_reference"SF_SR"
 let dest_field env evd th_spec =
   let open Termops in
   let th_typ = Retyping.get_type_of env !evd th_spec in
-  let th_typ = EConstr.of_constr th_typ in
   match EConstr.kind !evd th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
         when is_global !evd (Lazy.force afield_theory) f ->
@@ -852,12 +850,12 @@ let find_field_structure env sigma l =
         let ty = Retyping.get_type_of env sigma t in
         let check c =
           let ty' = Retyping.get_type_of env sigma c in
-          if not (Reductionops.is_conv env sigma (EConstr.of_constr ty) (EConstr.of_constr ty')) then
+          if not (Reductionops.is_conv env sigma ty ty') then
             user_err ~hdr:"field"
               (str"arguments of field_simplify do not have all the same type")
         in
         List.iter check cl';
-        (try field_for_carrier ty
+        (try field_for_carrier (EConstr.to_constr sigma ty)
         with Not_found ->
           user_err ~hdr:"field"
             (str"cannot find a declared field structure over"++

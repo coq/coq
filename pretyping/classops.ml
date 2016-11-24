@@ -442,6 +442,7 @@ let cache_coercion (_, c) =
   let it, _ = class_info c.coercion_target in
   let value, ctx = Universes.fresh_global_instance (Global.env()) c.coercion_type in
   let typ = Retyping.get_type_of (Global.env ()) Evd.empty (EConstr.of_constr value) in
+  let typ = EConstr.Unsafe.to_constr typ in
   let xf =
     { coe_value = value;
       coe_type = typ;

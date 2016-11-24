@@ -270,7 +270,7 @@ let add_class cl =
 let check_instance env sigma c =
   try 
     let (evd, c) = resolve_one_typeclass env sigma
-      (EConstr.of_constr (Retyping.get_type_of env sigma c)) in
+      (Retyping.get_type_of env sigma c) in
       not (Evd.has_undefined evd)
   with e when CErrors.noncritical e -> false
 
@@ -314,7 +314,7 @@ let build_subclasses ~check env sigma glob pri =
 	let declare_proj hints (cref, pri, body) =
 	  let path' = cref :: path in
 	  let ty = Retyping.get_type_of env sigma (EConstr.of_constr body) in
-	  let rest = aux pri body (EConstr.of_constr ty) path' in
+	  let rest = aux pri body ty path' in
 	    hints @ (path', pri, body) :: rest
 	in List.fold_left declare_proj [] projs 
   in

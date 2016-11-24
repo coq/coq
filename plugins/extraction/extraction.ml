@@ -42,7 +42,7 @@ let none = Evd.empty
 
 let type_of env c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_type_of ~polyprop env none (strip_outer_cast none (EConstr.of_constr c))
+  EConstr.Unsafe.to_constr (Retyping.get_type_of ~polyprop env none (strip_outer_cast none (EConstr.of_constr c)))
 
 let sort_of env c =
   let polyprop = (lang() == Haskell) in

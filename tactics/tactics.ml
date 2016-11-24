@@ -818,13 +818,10 @@ let make_change_arg c pats =
 
 let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
-  let t1 = EConstr.of_constr t1 in
   if deep then begin
     let t2 = Retyping.get_type_of env sigma origc in
-    let t2 = EConstr.of_constr t2 in
     let sigma, t2 = Evarsolve.refresh_universes
 		      ~onlyalg:true (Some false) env sigma t2 in
-    let t2 = EConstr.of_constr t2 in
     let sigma, b = infer_conv ~pb:Reduction.CUMUL env sigma t1 t2 in
     if not b then
       if
@@ -1448,7 +1445,6 @@ let general_elim_clause_gen elimtac indclause elim =
   let sigma = Tacmach.New.project gl in
   let (elimc,lbindelimc) = elim.elimbody in
   let elimt = Retyping.get_type_of env sigma elimc in
-  let elimt = EConstr.of_constr elimt in
   let i =
     match elim.elimindex with None -> index_of_ind_arg sigma elimt | Some i -> i in
   elimtac elim.elimrename i (elimc, elimt, lbindelimc) indclause
@@ -1459,7 +1455,6 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let ct = Retyping.get_type_of env sigma c in
-  let ct = EConstr.of_constr ct in
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let elimtac = elimination_clause_scheme with_evars in
   let indclause  = make_clenv_binding env sigma (c, t) lbindc in
@@ -1478,7 +1473,6 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let t = Retyping.get_type_of env (Sigma.to_evar_map sigma) c in
-  let t = EConstr.of_constr t in
   let (mind,_) = reduce_to_quantified_ind env (Sigma.to_evar_map sigma) t in
   let sort = Tacticals.New.elimination_sort_of_goal gl in
   let Sigma (elim, sigma, p) =
@@ -1598,7 +1592,6 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   let elimclause'  = clenv_fchain ~flags indmv elimclause indclause in
   let hyp = mkVar id in
   let hyp_typ = Retyping.get_type_of env sigma hyp in
-  let hyp_typ = EConstr.of_constr hyp_typ in
   let hypclause = mk_clenv_from_env env sigma (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain_in id ~flags hypmv elimclause' hypclause in
   let new_hyp_typ  = clenv_type elimclause'' in
@@ -1662,7 +1655,6 @@ let make_projection env sigma params cstr sign elim i n c u =
 	  in
 	  let app = it_mkLambda_or_LetIn proj sign in
 	  let t = Retyping.get_type_of env sigma app in
-	  let t = EConstr.of_constr t in
 	    Some (app, t)
       | None -> None
   in elim
@@ -1673,7 +1665,6 @@ let descend_in_conjunctions avoid tac (err, info) c =
   let sigma = Tacmach.New.project gl in
   try
     let t = Retyping.get_type_of env sigma c in
-    let t = EConstr.of_constr t in
     let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
     let sign,ccl = EConstr.decompose_prod_assum sigma t in
     match match_with_tuple sigma ccl with
@@ -1755,7 +1746,7 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind :
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
 
-    let thm_ty0 = nf_betaiota sigma (EConstr.of_constr (Retyping.get_type_of env sigma c)) in
+    let thm_ty0 = nf_betaiota sigma (Retyping.get_type_of env sigma c) in
     let try_apply thm_ty nprod =
       try
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
@@ -1881,7 +1872,7 @@ let progress_with_clause flags innerclause clause =
   with Not_found -> error "Unable to unify."
 
 let apply_in_once_main flags innerclause env sigma (d,lbind) =
-  let thm = nf_betaiota sigma (EConstr.of_constr (Retyping.get_type_of env sigma d)) in
+  let thm = nf_betaiota sigma (Retyping.get_type_of env sigma d) in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with e when CErrors.noncritical e ->
@@ -1993,7 +1984,6 @@ let exact_check c =
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map sigma in
   let sigma, ct = Typing.type_of env sigma c in
-  let ct = EConstr.of_constr ct in
   let tac =
       Tacticals.New.tclTHEN (convert_leq ct concl) (exact_no_check c)
   in
@@ -2662,9 +2652,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
     | Some t -> Sigma.here t sigma
     | None ->
       let t = typ_of env sigma c in
-      let t = EConstr.of_constr t in
       let sigma, c = Evarsolve.refresh_universes ~onlyalg:true (Some false) env (Sigma.to_evar_map sigma) t in
-      let c = EConstr.of_constr c in
       Sigma.Unsafe.of_pair (c, sigma)
     in
     let Sigma ((newcl, eq_tac), sigma, q) = match with_eq with
@@ -2717,7 +2705,7 @@ let insert_before decls lasthyp env =
 
 let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
   let open Context.Named.Declaration in
-  let t = match ty with Some t -> t | _ -> EConstr.of_constr (typ_of env sigma c) in
+  let t = match ty with Some t -> t | _ -> typ_of env sigma c in
   let decl = if dep then nlocal_def (id,c,t)
 	     else nlocal_assum (id,t)
   in
@@ -2850,7 +2838,6 @@ let generalize_goal gl i ((occs,c,b),na as o) (cl,sigma) =
   let env = Tacmach.pf_env gl in
   let ids = Tacmach.pf_ids_of_hyps gl in
   let sigma, t = Typing.type_of env sigma c in
-  let t = EConstr.of_constr t in
   generalize_goal_gen env sigma ids i o t cl
 
 let old_generalize_dep ?(with_let=false) c gl =
@@ -2923,7 +2910,6 @@ let new_generalize_gen_let lconstr =
       List.fold_right_i 
 	(fun i ((_,c,b),_ as o) (cl, sigma, args) ->
 	  let sigma, t = Typing.type_of env sigma c in
-	  let t = EConstr.of_constr t in
 	  let args = if Option.is_empty b then c :: args else args in
           let cl, sigma = generalize_goal_gen env sigma ids i o t cl in
           (cl, sigma, args))
@@ -2974,7 +2960,7 @@ let specialize (c,lbind) ipat =
       let sigma = Typeclasses.resolve_typeclasses env sigma in
       sigma, nf_evar sigma c
     else
-      let clause = make_clenv_binding env sigma (c,EConstr.of_constr (Retyping.get_type_of env sigma c)) lbind in
+      let clause = make_clenv_binding env sigma (c,Retyping.get_type_of env sigma c) lbind in
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
       let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
@@ -2991,7 +2977,6 @@ let specialize (c,lbind) ipat =
 	  str ".");
       clause.evd, term in
   let typ = Retyping.get_type_of env sigma term in
-  let typ = EConstr.of_constr typ in
   let tac =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
     | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
@@ -3699,7 +3684,6 @@ let abstract_args gl generalize_vars dep id defined f args =
     let argty = EConstr.of_constr argty in
     let sigma', ty = Evarsolve.refresh_universes (Some true) env !sigma ty in
     let () = sigma := sigma' in
-    let ty = EConstr.of_constr ty in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
     let leq = constr_cmp !sigma Reduction.CUMUL liftargty ty in
@@ -3751,7 +3735,7 @@ let abstract_args gl generalize_vars dep id defined f args =
 	else []
       in
       let body, c' =
-	if defined then Some c', EConstr.of_constr (Retyping.get_type_of ctxenv !sigma c')
+	if defined then Some c', Retyping.get_type_of ctxenv !sigma c'
 	else None, c'
       in
       let typ = Tacmach.pf_get_hyp_typ gl id in
@@ -4339,7 +4323,6 @@ let clear_unselected_context id inhyps cls =
 
 let use_bindings env sigma elim must_be_closed (c,lbind) typ =
   let sigma = Sigma.to_evar_map sigma in
-  let typ = EConstr.of_constr typ in
   let typ =
     if elim == None then
       (* w/o an scheme, the term has to be applied at least until
@@ -4389,7 +4372,6 @@ let check_enough_applied env sigma elim =
       let t,_ = decompose_app sigma (whd_all env sigma u) in isInd sigma t
   | Some elimc ->
       let elimt = Retyping.get_type_of env sigma (fst elimc) in
-      let elimt = EConstr.of_constr elimt in
       let scheme = compute_elim_sig sigma ~elimc elimt in
       match scheme.indref with
       | None ->
@@ -4435,7 +4417,6 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
           let b = not with_evars && with_eq != None in
           let Sigma (c, sigma, p) = use_bindings env sigma elim b (c0,lbind) t0 in
           let t = Retyping.get_type_of env (Sigma.to_evar_map sigma) c in
-          let t = EConstr.of_constr t in
           let Sigma (ans, sigma, q) = mkletin_goal env sigma store with_eq false (id,lastlhyp,ccl,c) (Some t) in
           Sigma (ans, sigma, p +> q)
         end };
@@ -4487,7 +4468,7 @@ let induction_gen clear_flag isrec with_evars elim
     && lbind == NoBindings && not with_evars && Option.is_empty eqname
     && clear_flag == None
     && has_generic_occurrences_but_goal cls (destVar evd c) env evd ccl in
-  let enough_applied = check_enough_applied env sigma elim (EConstr.of_constr t) in
+  let enough_applied = check_enough_applied env sigma elim t in
   if is_arg_pure_hyp && enough_applied then
     (* First case: induction on a variable already in an inductive type and
        with maximal abstraction over the variable.
@@ -4504,6 +4485,7 @@ let induction_gen clear_flag isrec with_evars elim
      declaring the induction argument as a new local variable *)
     let id =
     (* Type not the right one if partially applied but anyway for internal use*)
+      let t = EConstr.Unsafe.to_constr t in
       let x = id_of_name_using_hdchar (Global.env()) t Anonymous in
       new_fresh_id [] x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in

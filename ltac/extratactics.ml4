@@ -301,7 +301,6 @@ let project_hint pri l2r r =
   let sigma, c = Evd.fresh_global env sigma gr in
   let c = EConstr.of_constr c in
   let t = Retyping.get_type_of env sigma c in
-  let t = EConstr.of_constr t in
   let t =
     Tacred.reduce_to_quantified_ref env sigma (Lazy.force coq_iff_ref) t in
   let sign,ccl = decompose_prod_assum sigma t in
@@ -667,7 +666,6 @@ let hResolve id c occ t =
   let t_constr = EConstr.of_constr t_constr in
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
-  let t_constr_type = EConstr.of_constr t_constr_type in
   let tac =
     (change_concl (mkLetIn (Anonymous,t_constr,t_constr_type,concl)))
   in

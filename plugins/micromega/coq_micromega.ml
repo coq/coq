@@ -898,7 +898,7 @@ struct
 
   let has_typ gl t1 typ = 
    let ty = Retyping.get_type_of (Tacmach.pf_env gl) (Tacmach.project gl) t1 in
-   Constr.equal ty typ
+   EConstr.eq_constr (Tacmach.project gl) ty (EConstr.of_constr typ)
 
 
   let is_convertible gl t1 t2 = 

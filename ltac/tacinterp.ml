@@ -802,7 +802,8 @@ let interp_may_eval f ist env sigma = function
 	    (str "Unbound context identifier" ++ pr_id s ++ str"."))
   | ConstrTypeOf c ->
       let (sigma,c_interp) = f ist env sigma c in
-      Typing.type_of ~refresh:true env sigma (EConstr.of_constr c_interp)
+      let (sigma, t) = Typing.type_of ~refresh:true env sigma (EConstr.of_constr c_interp) in
+      (sigma, EConstr.Unsafe.to_constr t)
   | ConstrTerm c ->
      try
 	f ist env sigma c

@@ -188,7 +188,6 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
 
 let instantiate_lemma gl c ty l l2r concl =
   let sigma, ct = pf_type_of gl c in
-  let ct = EConstr.of_constr ct in
   let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma ct) with UserError _ -> ct in
   let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
   [eqclause]
@@ -452,7 +451,6 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
       let sigma = Tacmach.New.project gl in
       let env = Proofview.Goal.env gl in
     let ctype = get_type_of env sigma c in
-    let ctype = EConstr.of_constr ctype in
     let rels, t = decompose_prod_assum sigma (whd_betaiotazeta sigma ctype) in
       match match_with_equality_type sigma t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
@@ -635,8 +633,6 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   let get_type_of = pf_apply get_type_of gl in
   let t1 = get_type_of c1
   and t2 = get_type_of c2 in
-  let t1 = EConstr.of_constr t1 in
-  let t2 = EConstr.of_constr t2 in
   let evd = 
     if unsafe then Some (Tacmach.New.project gl)
     else
@@ -733,7 +729,6 @@ let _ =
 let find_positions env sigma t1 t2 =
   let project env sorts posn t1 t2 =
     let ty1 = get_type_of env sigma t1 in
-    let ty1 = EConstr.of_constr ty1 in
     let s = get_sort_family_of env sigma ty1 in
     if Sorts.List.mem s sorts
     then [(List.rev posn,t1,t2)] else []
@@ -856,7 +851,7 @@ let injectable env sigma t1 t2 =
 
 let descend_then env sigma head dirn =
   let IndType (indf,_) =
-    try find_rectype env sigma (EConstr.of_constr (get_type_of env sigma head))
+    try find_rectype env sigma (get_type_of env sigma head)
     with Not_found ->
       error "Cannot project on an inductive type derived from a dependency." in
   let indp,_ = (dest_ind_family indf) in
@@ -912,7 +907,6 @@ let build_selector env sigma dirn c ind special default =
   let (indp,_) = dest_ind_family indf in
   let ind, _ = check_privacy env indp in
   let typ = Retyping.get_type_of env sigma default in
-  let typ = EConstr.of_constr typ in
   let (mib,mip) = lookup_mind_specif env ind in
   let deparsign = make_arity_signature env true indf in
   let p = it_mkLambda_or_LetIn typ deparsign in
@@ -932,7 +926,6 @@ let build_coq_I () = EConstr.of_constr (build_coq_I ())
 let rec build_discriminator env sigma dirn c = function
   | [] ->
       let ind = get_type_of env sigma c in
-      let ind = EConstr.of_constr ind in
       let true_0,false_0 =
         build_coq_True(),build_coq_False() in
       build_selector env sigma dirn c ind true_0 false_0
@@ -1108,7 +1101,6 @@ let make_tuple env sigma (rterm,rty) lind =
   assert (not (noccurn sigma lind rty));
   let sigdata = find_sigma_data env (get_sort_of env sigma rty) in
   let sigma, a = type_of ~refresh:true env sigma (mkRel lind) in
-  let a = EConstr.of_constr a in
   let na = Context.Rel.Declaration.get_name (lookup_rel lind env) in
   (* We move [lind] to [1] and lift other rels > [lind] by 1 *)
   let rty = lift (1-lind) (liftn lind (lind+1) rty) in
@@ -1396,7 +1388,6 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
       let congr = EConstr.of_constr congr in
       let pf = applist(congr,[t;resty;injfun;t1;t2]) in
       let sigma, pf_typ = Typing.type_of env sigma pf in
-      let pf_typ = EConstr.of_constr pf_typ in
       let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
       let pf = Clenvtac.clenv_value_cast_meta inj_clause in
       let ty = simplify_args env sigma (clenv_type inj_clause) in
@@ -1567,7 +1558,6 @@ let lambda_create env (a,b) =
 let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   let sigma = Sigma.to_evar_map sigma in
   let typ = get_type_of env sigma dep_pair1 in
-  let typ = EConstr.of_constr typ in
   (* We find all possible decompositions *)
   let decomps1 = decomp_tuple_term env sigma dep_pair1 typ in
   let decomps2 = decomp_tuple_term env sigma dep_pair2 typ in
@@ -1659,7 +1649,6 @@ let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
 let substClause l2r c cls =
   Proofview.Goal.enter { enter = begin fun gl ->
   let eq = pf_apply get_type_of gl c in
-  let eq = EConstr.of_constr eq in
   tclTHENS (cutSubstClause l2r eq cls)
     [Proofview.tclUNIT (); exact_no_check c]
   end }

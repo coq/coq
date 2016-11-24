@@ -985,6 +985,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
   let (type_ctxt,type_of_f),evd =
     let evd,t = Typing.type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr f)
     in 
+    let t = EConstr.Unsafe.to_constr t in
     decompose_prod_n_assum
       (nb_params + nb_args) t,evd
   in

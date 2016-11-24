@@ -109,7 +109,7 @@ let retype ?(polyprop=true) sigma =
         lift n ty
     | Var id -> type_of_var env id
     | Const cst -> EConstr.of_constr (rename_type_of_constant env cst)
-    | Evar (evk, args) -> EConstr.of_constr (Evd.existential_type sigma (evk, Array.map EConstr.Unsafe.to_constr args))
+    | Evar ev -> existential_type sigma ev
     | Ind ind -> EConstr.of_constr (rename_type_of_inductive env ind)
     | Construct cstr -> EConstr.of_constr (rename_type_of_constructor env cstr)
     | Case (_,p,c,lf) ->
@@ -210,7 +210,7 @@ let get_sort_of ?(polyprop=true) env sigma t =
 let get_sort_family_of ?(polyprop=true) env sigma c =
   let _,_,f,_ = retype ~polyprop sigma in anomaly_on_error (f env) c
 let type_of_global_reference_knowing_parameters env sigma c args =
-  let _,_,_,f = retype sigma in EConstr.Unsafe.to_constr (anomaly_on_error (f env c) args)
+  let _,_,_,f = retype sigma in anomaly_on_error (f env c) args
 
 let type_of_global_reference_knowing_conclusion env sigma c conclty =
   match EConstr.kind sigma c with
@@ -238,10 +238,10 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
 
 let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
   let f,_,_,_ = retype ~polyprop sigma in
-    if lax then EConstr.Unsafe.to_constr (f env c) else EConstr.Unsafe.to_constr (anomaly_on_error (f env) c)
+    if lax then f env c else anomaly_on_error (f env) c
 
 (* Makes an unsafe judgment from a constr *)
-let get_judgment_of env evc c = { uj_val = c; uj_type = EConstr.of_constr (get_type_of env evc c) }
+let get_judgment_of env evc c = { uj_val = c; uj_type = get_type_of env evc c }
 
 (* Returns sorts of a context *)
 let sorts_of_context env evc ctxt =
@@ -256,7 +256,7 @@ let sorts_of_context env evc ctxt =
 let expand_projection env sigma pr c args =
   let ty = get_type_of ~lax:true env sigma c in
   let (i,u), ind_args = 
-    try Inductiveops.find_mrectype env sigma (EConstr.of_constr ty) 
+    try Inductiveops.find_mrectype env sigma ty 
     with Not_found -> retype_error BadRecursiveType
   in
     mkApp (mkConstU (Projection.constant pr,u), 

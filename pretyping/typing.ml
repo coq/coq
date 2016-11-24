@@ -395,7 +395,7 @@ let type_of ?(refresh=false) env evd c =
   (* side-effect on evdref *)
     if refresh then
       Evarsolve.refresh_universes ~onlyalg:true (Some false) env !evdref j.uj_type
-    else !evdref, EConstr.Unsafe.to_constr j.uj_type
+    else !evdref, j.uj_type
 
 let e_type_of ?(refresh=false) env evdref c =
   let env = enrich_env env evdref in
@@ -405,7 +405,7 @@ let e_type_of ?(refresh=false) env evdref c =
       let evd, c = Evarsolve.refresh_universes ~onlyalg:true (Some false) env !evdref j.uj_type in
       let () = evdref := evd in
       c
-    else EConstr.Unsafe.to_constr j.uj_type
+    else j.uj_type
 
 let e_solve_evars env evdref c =
   let env = enrich_env env evdref in

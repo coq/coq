@@ -168,7 +168,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
     | Some c -> (* A primitive projection applied to c *)
       let ty = Retyping.get_type_of ~lax:true env sigma c in
       let (i,u), ind_args = 
-	try Inductiveops.find_mrectype env sigma (EConstr.of_constr ty)
+	try Inductiveops.find_mrectype env sigma ty
 	with _ -> raise Not_found
       in Stack.append_app_list ind_args Stack.empty, c, sk1
     | None ->
@@ -882,7 +882,7 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
       List.fold_left
 	(fun (i,ks,m,test) b ->
 	  if match n with Some n -> Int.equal m n | None -> false then
-	    let ty = EConstr.of_constr (Retyping.get_type_of env i t2) in
+	    let ty = Retyping.get_type_of env i t2 in
 	    let test i = evar_conv_x trs env i CUMUL ty (substl ks b) in
 	      (i,t2::ks, m-1, test)
 	  else
@@ -1052,7 +1052,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let id = NamedDecl.get_id decl' in
       let t = EConstr.of_constr (NamedDecl.get_type decl') in
       let evs = ref [] in
-      let ty = EConstr.of_constr (Retyping.get_type_of env_rhs evd c) in
+      let ty = Retyping.get_type_of env_rhs evd c in
       let filter' = filter_possible_projections evd c ty ctxt args in
       (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
   | _, _, [] -> []

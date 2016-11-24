@@ -135,6 +135,7 @@ let generate_type evd g_to_f f graph i =
   in
   evd:=evd';
   let graph_arity = Typing.e_type_of (Global.env ()) evd (EConstr.of_constr graph) in
+  let graph_arity = EConstr.Unsafe.to_constr graph_arity in
   let ctxt,_ = decompose_prod_assum graph_arity in
   let fun_ctxt,res_type =
     match ctxt with
@@ -203,6 +204,7 @@ let find_induction_principle evd f =
     | Some rect_lemma ->
        let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (Globnames.ConstRef rect_lemma) in
        let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr rect_lemma) in
+       let typ = EConstr.Unsafe.to_constr typ in
        evd:=evd';
        rect_lemma,typ
 

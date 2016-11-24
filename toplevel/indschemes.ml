@@ -404,6 +404,7 @@ let do_mutual_induction_scheme lnamedepindsort =
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma lrecspec in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma (EConstr.of_constr decl) in
+    let decltype = EConstr.to_constr sigma decltype in
     let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
     let cst = define fi UserIndividualRequest sigma proof_output (Some decltype) in
     ConstRef cst :: lrecref

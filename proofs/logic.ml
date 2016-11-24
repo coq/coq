@@ -331,7 +331,7 @@ let meta_free_prefix sigma a =
 
 let goal_type_of env sigma c =
   if !check then unsafe_type_of env sigma (EConstr.of_constr c)
-  else Retyping.get_type_of env sigma (EConstr.of_constr c)
+  else EConstr.Unsafe.to_constr (Retyping.get_type_of env sigma (EConstr.of_constr c))
 
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = Goal.V82.env sigma goal in
@@ -341,6 +341,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
   in
     if (not !check) && not (occur_meta sigma (EConstr.of_constr trm)) then
       let t'ty = Retyping.get_type_of env sigma (EConstr.of_constr trm) in
+      let t'ty = EConstr.Unsafe.to_constr t'ty in
       let sigma = check_conv_leq_goal env sigma trm t'ty conclty in
         (goalacc,t'ty,sigma,trm)
     else
@@ -377,6 +378,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	      let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
 	        type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) (Array.map EConstr.of_constr args)
 	    in
+	    let ty = EConstr.Unsafe.to_constr ty in
 	      goalacc, ty, sigma, f
 	  else
 	    mk_hdgoals sigma goal goalacc f
@@ -390,6 +392,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
 	let c = mkProj (p, c') in
 	let ty = get_type_of env sigma (EConstr.of_constr c) in
+	let ty = EConstr.Unsafe.to_constr ty in
 	  (acc',ty,sigma,c)
 
       | Case (ci,p,c,lf) ->
@@ -439,7 +442,7 @@ and mk_hdgoals sigma goal goalacc trm =
 	  if is_template_polymorphic env sigma (EConstr.of_constr f)
 	  then
 	    let l' = meta_free_prefix sigma l in
-	   (goalacc,type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) l',sigma,f)
+	   (goalacc,EConstr.Unsafe.to_constr (type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) l'),sigma,f)
 	  else mk_hdgoals sigma goal goalacc f
 	in
 	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
@@ -465,6 +468,7 @@ and mk_hdgoals sigma goal goalacc trm =
          let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
 	 let c = mkProj (p, c') in
          let ty = get_type_of env sigma (EConstr.of_constr c) in
+         let ty = EConstr.Unsafe.to_constr ty in
 	   (acc',ty,sigma,c)
 
     | _ ->

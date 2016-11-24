@@ -1502,7 +1502,7 @@ and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
   if not (Flags.is_program_mode ()) && (isRel sigma orig || isVar sigma orig) then
     (* Try to compile first using non expanded alias *)
     try
-      if initial then f orig (EConstr.of_constr (Retyping.get_type_of pb.env sigma orig))
+      if initial then f orig (Retyping.get_type_of pb.env sigma orig)
       else just_pop ()
     with e when precatchable_exception e ->
     (* Try then to compile using expanded alias *)
@@ -1517,7 +1517,7 @@ and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
     (* Could be needed in case of a recursive call which requires to
        be on a variable for size reasons *)
     pb.evdref := sigma;
-    if initial then f orig (EConstr.of_constr (Retyping.get_type_of pb.env !(pb.evdref) orig))
+    if initial then f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
     else just_pop ()
 
 
@@ -1650,13 +1650,12 @@ let abstract_tycon loc env evdref subst tycon extenv t =
     | Rel n when is_local_def (lookup_rel n env) -> t
     | Evar ev ->
         let ty = get_type_of env !evdref t in
-	let ty = Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref (EConstr.of_constr ty) in
+	let ty = Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty in
         let inst =
 	  List.map_i
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
-        let ty = EConstr.of_constr ty in
         let ev' = e_new_evar env evdref ~src ty in
         begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,substl inst ev') with
         | Success evd -> evdref := evd
@@ -1672,10 +1671,8 @@ let abstract_tycon loc env evdref subst tycon extenv t =
       let vl = List.map pi1 good in
       let ty = 
 	let ty = get_type_of env !evdref t in
-	let ty = EConstr.of_constr ty in
 	  Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty
       in
-      let ty = EConstr.of_constr ty in
       let ty = lift (-k) (aux x ty) in
       let depvl = free_rels !evdref ty in
       let inst =
@@ -1708,7 +1705,6 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
     | Some t ->
         let t = abstract_tycon loc tycon_env evdref subst tycon extenv t in
         let evd,tt = Typing.type_of extenv !evdref t in
-        let tt = EConstr.of_constr tt in
         evdref := evd;
         (t,tt) in
   let b = e_cumul env evdref tt (mkSort s) (* side effect *) in
@@ -2109,7 +2105,6 @@ let constr_of_pat env evdref arsign pat avoid =
 	let app = applist (cstr, List.map (lift (List.length sign)) params) in
 	let app = applist (app, args) in
 	let apptype = Retyping.get_type_of env ( !evdref) app in
-	let apptype = EConstr.of_constr apptype in
 	let IndType (indf, realargs) = find_rectype env (!evdref) apptype in
 	  match alias with
 	      Anonymous ->
@@ -2370,7 +2365,6 @@ let build_dependent_signature env evdref avoid tomatchs arsign =
 		    let t = RelDecl.get_type decl in
 		    let t = EConstr.of_constr t in
 		    let argt = Retyping.get_type_of env !evdref arg in
-                    let argt = EConstr.of_constr argt in
 		    let eq, refl_arg =
 		      if Reductionops.is_conv env !evdref argt t then
 			(mk_eq evdref (lift (nargeqs + slift) argt)

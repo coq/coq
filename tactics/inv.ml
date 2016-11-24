@@ -63,10 +63,10 @@ let var_occurs_in_pf gl id =
 
  *)
 
-type inversion_status = Dep of EConstr.constr option | NoDep
+type inversion_status = Dep of constr option | NoDep
 
 let compute_eqn env sigma n i ai =
-  (mkRel (n-i),EConstr.of_constr (get_type_of env sigma (mkRel (n-i))))
+  (mkRel (n-i),get_type_of env sigma (mkRel (n-i)))
 
 let make_inv_predicate env evd indf realargs id status concl =
   let nrealargs = List.length realargs in

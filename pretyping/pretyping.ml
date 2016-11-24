@@ -426,7 +426,7 @@ let invert_ltac_bound_name lvar env id0 id =
 		       str " which is not bound in current context.")
 
 let protected_get_type_of env sigma c =
-  try EConstr.of_constr (Retyping.get_type_of ~lax:true env.ExtraEnv.env sigma c)
+  try Retyping.get_type_of ~lax:true env.ExtraEnv.env sigma c
   with Retyping.RetypeError _ ->
     user_err 
       (str "Cannot reinterpret " ++ quote (print_constr (EConstr.Unsafe.to_constr c)) ++
@@ -774,9 +774,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	       refreshed right away. *)
 	    let c = mkApp (f, args) in
 	    let c = evd_comb1 (Evarsolve.refresh_universes (Some true) env.ExtraEnv.env) evdref c in
-	    let c = EConstr.of_constr c in
 	    let t = Retyping.get_type_of env.ExtraEnv.env !evdref c in
-	    let t = EConstr.of_constr t in
 	      make_judge c (* use this for keeping evars: resj.uj_val *) t
 	  else resj
       | _ -> resj 
@@ -840,7 +838,6 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let t = evd_comb1 (Evarsolve.refresh_universes
       ~onlyalg:true ~status:Evd.univ_flexible (Some false) env.ExtraEnv.env)
       evdref j.uj_type in
-    let t = EConstr.of_constr t in
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
        looked up in the rel context. *)
@@ -1025,7 +1022,6 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         let tval = evd_comb1 (Evarsolve.refresh_universes
                              ~onlyalg:true ~status:Evd.univ_flexible (Some false) env.ExtraEnv.env)
                           evdref tj.utj_val in
-        let tval = EConstr.of_constr tval in
 	let tval = nf_evar !evdref tval in
 	let cj, tval = match k with
 	  | VMcast ->
@@ -1097,7 +1093,6 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
            let s =
 	     let sigma =  !evdref in
 	     let t = Retyping.get_type_of env.ExtraEnv.env sigma v in
-	     let t = EConstr.of_constr t in
 	       match EConstr.kind sigma (whd_all env.ExtraEnv.env sigma t) with
                | Sort s -> s
                | Evar ev when is_Type (existential_type sigma ev) ->

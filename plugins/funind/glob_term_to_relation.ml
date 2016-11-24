@@ -1273,6 +1273,7 @@ let do_build_inductive
     Array.fold_right2
       (fun id c (evd,env) ->
        let evd,t = Typing.type_of env evd (EConstr.mkConstU c) in
+       let t = EConstr.Unsafe.to_constr t in
        evd,
        Environ.push_named (LocalAssum (id,t))
 			   (* try *)

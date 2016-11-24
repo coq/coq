@@ -19,10 +19,10 @@ val unsafe_type_of : env -> evar_map -> EConstr.constr -> types
 
 (** Typecheck a term and return its type + updated evars, optionally refreshing
     universes *)
-val type_of : ?refresh:bool -> env -> evar_map -> EConstr.constr -> evar_map * types
+val type_of : ?refresh:bool -> env -> evar_map -> EConstr.constr -> evar_map * EConstr.types
 
 (** Variant of [type_of] using references instead of state-passing. *)
-val e_type_of : ?refresh:bool -> env -> evar_map ref -> EConstr.constr -> types
+val e_type_of : ?refresh:bool -> env -> evar_map ref -> EConstr.constr -> EConstr.types
 
 (** Typecheck a type and return its sort *)
 val e_sort_of : env -> evar_map ref -> EConstr.types -> sorts

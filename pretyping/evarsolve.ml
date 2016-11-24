@@ -23,6 +23,14 @@ open Evarutil
 open Pretype_errors
 open Sigma.Notations
 
+let nlocal_assum (na, t) =
+  let inj = EConstr.Unsafe.to_constr in
+  Context.Named.Declaration.LocalAssum (na, inj t)
+
+let nlocal_def (na, b, t) =
+  let inj = EConstr.Unsafe.to_constr in
+  Context.Named.Declaration.LocalDef (na, inj b, inj t)
+
 let normalize_evar evd ev =
   match EConstr.kind evd (mkEvar ev) with
   | Evar (evk,args) -> (evk,args)
@@ -108,11 +116,11 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
       | Some dir -> refresh status dir t)
     else (refresh_term_evars false true t; t)
   in
-    if !modified then !evdref, EConstr.Unsafe.to_constr t' else !evdref, EConstr.Unsafe.to_constr t
+    if !modified then !evdref, t' else !evdref, t
 
 let get_type_of_refresh ?(polyprop=true) ?(lax=false) env sigma c =
   let ty = Retyping.get_type_of ~polyprop ~lax env sigma c in
-    refresh_universes (Some false) env sigma (EConstr.of_constr ty)
+    refresh_universes (Some false) env sigma ty
 		      
 
 (************************)
@@ -146,7 +154,7 @@ let recheck_applications conv_algo env evdref t =
     | App (f, args) ->
        let () = aux env f in
        let fty = Retyping.get_type_of env !evdref f in
-       let argsty = Array.map (fun x -> aux env x; EConstr.of_constr (Retyping.get_type_of env !evdref x)) args in
+       let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref x) args in
        let rec aux i ty =
 	 if i < Array.length argsty then
 	 match EConstr.kind !evdref (whd_all env !evdref ty) with
@@ -158,7 +166,7 @@ let recheck_applications conv_algo env evdref t =
 		Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), dom))
 	 | _ -> raise (IllTypedInstance (env, ty, argsty.(i)))
        else ()
-     in aux 0 (EConstr.of_constr fty)
+     in aux 0 fty
     | _ ->
        iter_with_full_binders !evdref (fun d env -> push_rel d env) aux env t
   in aux env t
@@ -173,7 +181,7 @@ type 'a update =
 | NoUpdate
 
 open Context.Named.Declaration
-let inst_of_vars sign = Array.map_of_list (get_id %> EConstr.mkVar) sign
+let inst_of_vars sign = Array.map_of_list (get_id %> mkVar) sign
 
 let restrict_evar_key evd evk filter candidates =
   match filter, candidates with
@@ -413,9 +421,9 @@ let free_vars_and_rels_up_alias_expansion sigma aliases c =
 
 let rec expand_and_check_vars sigma aliases = function
   | [] -> []
-  | a::l when EConstr.isRel sigma a || EConstr.isVar sigma a ->
+  | a::l when isRel sigma a || isVar sigma a ->
       let a = expansion_of_var sigma aliases a in
-      if EConstr.isRel sigma a || EConstr.isVar sigma a then a :: expand_and_check_vars sigma aliases l
+      if isRel sigma a || isVar sigma a then a :: expand_and_check_vars sigma aliases l
       else raise Exit
   | _ ->
       raise Exit
@@ -480,7 +488,7 @@ let is_unification_pattern_meta env evd nb m l t =
   (* so we need to be a rel <= nb *)
   if List.for_all (fun x -> isRel evd x && destRel evd x <= nb) l then
     match find_unification_pattern_args env evd l t with
-    | Some _ as x when not (dependent evd (EConstr.mkMeta m) t) -> x
+    | Some _ as x when not (dependent evd (mkMeta m) t) -> x
     | _ -> None
   else
     None
@@ -591,15 +599,15 @@ let make_projectable_subst aliases sigma evi args =
 
 let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_sign sign filter inst_in_env =
   let evd = Sigma.Unsafe.of_evar_map evd in
-  let Sigma (evar_in_env, evd, _) = new_evar_instance sign evd (EConstr.of_constr ty_t_in_sign) ~filter ~src inst_in_env in
+  let Sigma (evar_in_env, evd, _) = new_evar_instance sign evd ty_t_in_sign ~filter ~src inst_in_env in
   let evd = Sigma.to_evar_map evd in
   let t_in_env = EConstr.of_constr (whd_evar evd (EConstr.Unsafe.to_constr t_in_env)) in
   let (evk, _) = destEvar evd evar_in_env in
-  let evd = define_fun env evd None (EConstr.destEvar evd evar_in_env) t_in_env in
+  let evd = define_fun env evd None (destEvar evd evar_in_env) t_in_env in
   let ctxt = named_context_of_val sign in
   let inst_in_sign = inst_of_vars (Filter.filter_list filter ctxt) in
   let evar_in_sign = mkEvar (evk, inst_in_sign) in
-  (evd,whd_evar evd (EConstr.Unsafe.to_constr evar_in_sign))
+  (evd,EConstr.of_constr (whd_evar evd (EConstr.Unsafe.to_constr evar_in_sign)))
 
 (* We have x1..xq |- ?e1 : τ and had to solve something like
  * Σ; Γ |- ?e1[u1..uq] = (...\y1 ... \yk ... c), where c is typically some
@@ -624,7 +632,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   if Evd.is_defined evd evk1 then
       (* Some circularity somewhere (see e.g. #3209) *)
       raise MorePreciseOccurCheckNeeeded;
-  let (evk1,args1) = EConstr.destEvar evd (EConstr.mkEvar (evk1,args1)) in
+  let (evk1,args1) = destEvar evd (mkEvar (evk1,args1)) in
   let evi1 = Evd.find_undefined evd evk1 in
   let env1,rel_sign = env_rel_context_chop k env in
   let sign1 = evar_hyps evi1 in
@@ -641,16 +649,16 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
         let t_in_env = EConstr.of_constr t_in_env in
         let s = Retyping.get_sort_of env evd t_in_env in
         let evd,ty_t_in_sign = refresh_universes
-	 ~status:univ_flexible (Some false) env evd (EConstr.mkSort s) in
+	 ~status:univ_flexible (Some false) env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd src t_in_env
           ty_t_in_sign sign filter inst_in_env in
       let evd,d' = match d with
-      | LocalAssum _ -> evd, Context.Named.Declaration.LocalAssum (id,t_in_sign)
+      | LocalAssum _ -> evd, nlocal_assum (id,t_in_sign)
       | LocalDef (_,b,_) ->
           let b = EConstr.of_constr b in
           let evd,b = define_evar_from_virtual_equation define_fun env evd src b
             t_in_sign sign filter inst_in_env in
-          evd, Context.Named.Declaration.LocalDef (id,b,t_in_sign) in
+          evd, nlocal_def (id,b,t_in_sign) in
       (push_named_context_val d' sign, Filter.extend 1 filter,
        (mkRel 1)::(List.map (lift 1) inst_in_env),
        (mkRel 1)::(List.map (lift 1) inst_in_sign),
@@ -661,11 +669,10 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let evd,ev2ty_in_sign =
     let s = Retyping.get_sort_of env evd ty_in_env in
     let evd,ty_t_in_sign = refresh_universes
-     ~status:univ_flexible (Some false) env evd (EConstr.mkSort s) in
+     ~status:univ_flexible (Some false) env evd (mkSort s) in
     define_evar_from_virtual_equation define_fun env evd src ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
   let evd = Sigma.Unsafe.of_evar_map evd in
-  let ev2ty_in_sign = EConstr.of_constr ev2ty_in_sign in
   let Sigma (ev2_in_sign, evd, _) =
     new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 ~src inst2_in_sign in
   let evd = Sigma.to_evar_map evd in
@@ -899,7 +906,7 @@ let extract_unique_projection = function
 let extract_candidates sols =
   try
     UpdateWith
-      (List.map (function (id,ProjectVar) -> EConstr.mkVar id | _ -> raise Exit) sols)
+      (List.map (function (id,ProjectVar) -> mkVar id | _ -> raise Exit) sols)
   with Exit ->
     NoUpdate
 
@@ -1171,7 +1178,7 @@ let check_evar_instance evd evk1 body conv_algo =
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
   let ty =
-    try EConstr.of_constr (Retyping.get_type_of ~lax:true evenv evd body)
+    try Retyping.get_type_of ~lax:true evenv evd body
     with Retyping.RetypeError _ -> error "Ill-typed evar instance"
   in
   match conv_algo evenv evd Reduction.CUMUL ty (EConstr.of_constr evi.evar_concl) with
@@ -1378,7 +1385,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
         | (id,p)::_::_ ->
             if choose then (mkVar id, p) else raise (NotUniqueInType sols)
       in
-      let ty = lazy (EConstr.of_constr (Retyping.get_type_of env !evdref t)) in
+      let ty = lazy (Retyping.get_type_of env !evdref t) in
       let evd = do_projection_effects (evar_define conv_algo ~choose) env ty !evdref p in
       evdref := evd;
       c
@@ -1440,7 +1447,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
           if not !progress then
             raise (NotEnoughInformationEvarEvar t);
           (* Make the virtual left evar real *)
-          let ty = EConstr.of_constr (get_type_of env' evd t) in
+          let ty = get_type_of env' evd t in
           let (evd,evar'',ev'') =
              materialize_evar (evar_define conv_algo ~choose) env' evd k ev ty in
           (* materialize_evar may instantiate ev' by another evar; adjust it *)
@@ -1474,7 +1481,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
           | _ -> None
         with
         | Some l ->
-            let ty = EConstr.of_constr (get_type_of env' !evdref t) in
+            let ty = get_type_of env' !evdref t in
             let candidates =
               try
                 let t =
@@ -1563,15 +1570,15 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
            str "----> " ++ int ev ++ str " := " ++
            print_constr body);
         raise e in*)
-    let evd' = check_evar_instance evd' evk (EConstr.of_constr body) conv_algo in
-    Evd.define evk body evd'
+    let evd' = check_evar_instance evd' evk body conv_algo in
+    Evd.define evk (EConstr.Unsafe.to_constr body) evd'
   with
     | NotEnoughInformationToProgress sols ->
         postpone_non_unique_projection env evd pbty ev sols rhs
     | NotEnoughInformationEvarEvar t ->
-        add_conv_oriented_pb (pbty,env,EConstr.mkEvar ev,t) evd
+        add_conv_oriented_pb (pbty,env,mkEvar ev,t) evd
     | MorePreciseOccurCheckNeeeded ->
-        add_conv_oriented_pb (pbty,env,EConstr.mkEvar ev,rhs) evd
+        add_conv_oriented_pb (pbty,env,mkEvar ev,rhs) evd
     | NotInvertibleUsingOurAlgorithm _ | MetaOccurInBodyInternal as e ->
         raise e
     | OccurCheckIn (evd,rhs) ->

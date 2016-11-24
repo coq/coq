@@ -454,7 +454,7 @@ module TypeGlobal = struct
 end
 
 let sort_of_rel env evm rel =
-  Reductionops.sort_of_arity env evm (EConstr.of_constr (Retyping.get_type_of env evm rel))
+  Reductionops.sort_of_arity env evm (Retyping.get_type_of env evm rel)
 
 let is_applied_rewrite_relation = PropGlobal.is_applied_rewrite_relation
 
@@ -524,14 +524,12 @@ let rec decompose_app_rel env evd t =
 let decompose_app_rel env evd t =
   let (rel, t1, t2) = decompose_app_rel env evd t in
   let ty = Retyping.get_type_of env evd rel in
-  let ty = EConstr.of_constr ty in
   let () = if not (Reductionops.is_arity env evd ty) then error_no_relation () in
   (rel, t1, t2)
 
 let decompose_applied_relation env sigma (c,l) =
   let open Context.Rel.Declaration in
   let ctype = Retyping.get_type_of env sigma c in
-  let ctype = EConstr.of_constr ctype in
   let find_rel ty =
     let sigma, cl = Clenv.make_evar_clause env sigma ty in
     let sigma = Clenv.solve_evar_clause env sigma true cl l in
@@ -539,8 +537,6 @@ let decompose_applied_relation env sigma (c,l) =
     let (equiv, c1, c2) = decompose_app_rel env sigma t in
     let ty1 = Retyping.get_type_of env sigma c1 in
     let ty2 = Retyping.get_type_of env sigma c2 in
-    let ty1 = EConstr.of_constr ty1 in
-    let ty2 = EConstr.of_constr ty2 in
     match evd_convertible env sigma ty1 ty2 with
     | None -> None
     | Some sigma ->
@@ -750,8 +746,6 @@ let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) 
     and prf = nf prf in
     let ty1 = Retyping.get_type_of env evd c1 in
     let ty2 = Retyping.get_type_of env evd c2 in
-    let ty1 = EConstr.of_constr ty1 in
-    let ty2 = EConstr.of_constr ty2 in
     let () = if not (convertible env evd ty2 ty1) then raise Reduction.NotConvertible in
     let rew_evars = evd, cstrs in
     let rew_prf = RewPrf (rel, prf) in
@@ -956,7 +950,6 @@ let reset_env env =
 let fold_match ?(force=false) env sigma c =
   let (ci, p, c, brs) = destCase sigma c in
   let cty = Retyping.get_type_of env sigma c in
-  let cty = EConstr.of_constr cty in
   let dep, pred, exists, (sk,eff) = 
     let env', ctx, body =
       let ctx, pred = decompose_lam_assum sigma p in
@@ -1020,7 +1013,6 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		    state, (None :: acc, evars, progress)
 		  else
 		    let argty = Retyping.get_type_of env (goalevars evars) arg in
-		    let argty = EConstr.of_constr argty in
 		    let state, res = s.strategy { state ; env ;
 						  unfresh ;
 						  term1 = arg ;	ty1 = argty ;
@@ -1069,7 +1061,6 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	  in
 	    if flags.on_morphisms then
 	      let mty = Retyping.get_type_of env (goalevars evars) m in
-              let mty = EConstr.of_constr mty in
 	      let evars, cstr', m, mty, argsl, args = 
 		let argsl = Array.to_list args in
 		let lift = if prop then PropGlobal.lift_cstr else TypeGlobal.lift_cstr in
@@ -1113,8 +1104,6 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	  let b = subst1 mkProp b in
 	  let tx = Retyping.get_type_of env (goalevars evars) x
 	  and tb = Retyping.get_type_of env (goalevars evars) b in
-	  let tx = EConstr.of_constr tx in
-	  let tb = EConstr.of_constr tb in
 	  let arr = if prop then PropGlobal.arrow_morphism 
 	    else TypeGlobal.arrow_morphism 
 	  in
@@ -1193,7 +1182,6 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
         let open Context.Rel.Declaration in
 	let env' = Environ.push_rel (local_assum (n', t)) env in
 	let bty = Retyping.get_type_of env' (goalevars evars) b in
-	let bty = EConstr.of_constr bty in
 	let unlift = if prop then PropGlobal.unlift_cstr else TypeGlobal.unlift_cstr in
 	let state, b' = s.strategy { state ; env = env' ; unfresh ;
 				     term1 = b ; ty1 = bty ;
@@ -1221,7 +1209,6 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	    
       | Case (ci, p, c, brs) ->
 	let cty = Retyping.get_type_of env (goalevars evars) c in
-	let cty = EConstr.of_constr cty in
 	let evars', eqty = app_poly_sort prop env evars coq_eq [| cty |] in
 	let cstr' = Some eqty in
 	let state, c' = s.strategy { state ; env ; unfresh ;
@@ -1500,7 +1487,6 @@ let rewrite_with l2r flags c occs : strategy = { strategy =
 
 let apply_strategy (s : strategy) env unfresh concl (prop, cstr) evars =
   let ty = Retyping.get_type_of env (goalevars evars) concl in
-  let ty = EConstr.of_constr ty in
   let _, res = s.strategy { state = () ; env ; unfresh ;
 			    term1 = concl ; ty1 = ty ;
 			    cstr = (prop, Some cstr) ; evars } in
@@ -1917,10 +1903,8 @@ let declare_projection n instance_id r =
   let sigma,c = Evd.fresh_global env sigma r in
   let c = EConstr.of_constr c in
   let ty = Retyping.get_type_of env sigma c in
-  let ty = EConstr.of_constr ty in
   let term = proper_projection sigma c ty in
   let sigma, typ = Typing.type_of env sigma term in
-  let typ = EConstr.of_constr typ in
   let ctx, typ = decompose_prod_assum sigma typ in
   let typ =
     let n =
@@ -2115,7 +2099,7 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
   and car = nf car and rel = nf rel in
   check_evar_map_of_evars_defs sigma;
   let prf = nf prf in
-  let prfty = nf (EConstr.of_constr (Retyping.get_type_of env sigma prf)) in
+  let prfty = nf (Retyping.get_type_of env sigma prf) in
   let sort = sort_of_rel env sigma but in
   let abs = prf, prfty in
   let prf = mkRel 1 in
@@ -2183,7 +2167,6 @@ let setoid_proof ty fn fallback =
         try
           let rel, _, _ = decompose_app_rel env sigma concl in
           let (sigma, t) = Typing.type_of env sigma rel in
-          let t = EConstr.of_constr t in
           let car = snd (List.hd (fst (Reductionops.splay_prod env sigma t))) in
 	    (try init_relation_classes () with _ -> raise Not_found);
             fn env sigma car rel

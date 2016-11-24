@@ -42,7 +42,7 @@ val refresh_universes :
   (* Also refresh Prop and Set universes, so that the returned type can be any supertype
      of the original type *)
   bool option (* direction: true for levels lower than the existing levels *) ->
-  env -> evar_map -> types -> evar_map * Constr.types
+  env -> evar_map -> types -> evar_map * types
 
 val solve_refl : ?can_drop:bool -> conv_fun_bool -> env ->  evar_map ->
   bool option -> existential_key -> constr array -> constr array -> evar_map
@@ -77,4 +77,4 @@ val remove_instance_local_defs :
   evar_map -> existential_key -> 'a array -> 'a list
 
 val get_type_of_refresh : 
-  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * Constr.types
+  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * types

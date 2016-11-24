@@ -41,7 +41,7 @@ val pf_last_hyp           : goal sigma -> Context.Named.Declaration.t
 val pf_ids_of_hyps        : goal sigma -> Id.t list
 val pf_global             : goal sigma -> Id.t -> constr
 val pf_unsafe_type_of            : goal sigma -> EConstr.constr -> types
-val pf_type_of            : goal sigma -> EConstr.constr -> evar_map * types
+val pf_type_of            : goal sigma -> EConstr.constr -> evar_map * EConstr.types
 val pf_hnf_type_of        : goal sigma -> EConstr.constr -> EConstr.types
 
 val pf_get_hyp            : goal sigma -> Id.t -> Context.Named.Declaration.t
@@ -109,7 +109,7 @@ module New : sig
   val pf_concl : ([ `NF ], 'r) Proofview.Goal.t -> EConstr.types
 
   val pf_unsafe_type_of : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> Term.types
-  val pf_type_of : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> evar_map * Term.types
+  val pf_type_of : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> evar_map * EConstr.types
   val pf_conv_x : ('a, 'r) Proofview.Goal.t -> EConstr.t -> EConstr.t -> bool
 
   val pf_get_new_id  : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> identifier

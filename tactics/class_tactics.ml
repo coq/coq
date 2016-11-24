@@ -283,7 +283,6 @@ let clenv_of_prods poly nprods (c, clenv) gl =
   else
     let sigma = Tacmach.New.project gl in
     let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
-    let ty = EConstr.of_constr ty in
     let diff = nb_prod sigma ty - nprods in
     if Pervasives.(>=) diff 0 then
       (* Was Some clenv... *)
@@ -477,7 +476,6 @@ let pr_depth l = prlist_with_sep (fun () -> str ".") int (List.rev l)
 
 let is_Prop env sigma concl =
   let ty = Retyping.get_type_of env sigma concl in
-  let ty = EConstr.of_constr ty in
   match EConstr.kind sigma ty with
   | Sort (Prop Null) -> true
   | _ -> false
