@@ -40,7 +40,7 @@ Defined.
 
 (** * Conversion between natural numbers modulo 256 and ascii characters *)
 
-(** Auxillary function that turns a positive into an ascii by
+(** Auxiliary function that turns a positive into an ascii by
    looking at the last 8 bits, ie z mod 2^8 *)
 
 Definition ascii_of_pos : positive -> ascii :=
