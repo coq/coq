@@ -18,9 +18,9 @@ DECLARE PLUGIN "cc_plugin"
 TACTIC EXTEND cc
  [ "congruence" ] -> [ congruence_tac 1000 [] ]
  |[ "congruence" integer(n) ] -> [ congruence_tac n [] ]
- |[ "congruence" "with" ne_constr_list(l) ] -> [ congruence_tac 1000 l ]
+ |[ "congruence" "with" ne_constr_list(l) ] -> [ congruence_tac 1000 (List.map EConstr.of_constr l) ]
  |[ "congruence" integer(n) "with" ne_constr_list(l) ] ->
-   [ congruence_tac n l ]
+   [ congruence_tac n (List.map EConstr.of_constr l) ]
 END
 
 TACTIC EXTEND f_equal

@@ -149,6 +149,7 @@ val iterate_whd_gen : bool -> CClosure.RedFlags.reds ->
 (** {6 Generic Optimized Reduction Function using Closures } *)
 
 val clos_norm_flags : CClosure.RedFlags.reds -> reduction_function
+val clos_whd_flags : CClosure.RedFlags.reds -> reduction_function
 
 (** Same as [(strong whd_beta[delta][iota])], but much faster on big terms *)
 val nf_beta : local_reduction_function
