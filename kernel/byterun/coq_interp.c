@@ -23,7 +23,7 @@
 #include "coq_values.h" 
 
 /* spiwack: I append here a few macros for value/number manipulation */
-#define uint32_of_value(val) (((uint32_t)val >> 1))
+#define uint32_of_value(val) ((uint32_t)(val) >> 1)
 #define value_of_uint32(i)   ((value)(((uint32_t)(i) << 1) | 1))
 #define UI64_of_uint32(lo) ((uint64_t)(lo))
 #define UI64_of_value(val) (UI64_of_uint32(uint32_of_value(val)))
@@ -1206,7 +1206,7 @@ value coq_interprete
 	  Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
 	  /*unsigned shift*/
 	  Field(accu, 0) = (value)((p >> 31)|1) ;  /*higher part*/
-	  Field(accu, 1) = (value)((int32_t)p|1); /*lower part*/
+	  Field(accu, 1) = (value)((uint32_t)p|1); /*lower part*/
 	}
 	Next;
       }
