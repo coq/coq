@@ -77,9 +77,7 @@ END
 
 VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
   | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods_opt(l) ] ->
-    [ let l = match l with None -> [] | Some l -> l in
-      let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
-      add_theory id (ic t) set k cst (pre,post) power sign div]
+    [ let l = match l with None -> [] | Some l -> l in add_theory id t l]
   | [ "Print" "Rings" ] => [Vernac_classifier.classify_as_query] -> [
     Feedback.msg_notice (strbrk "The following ring structures have been declared:");
     Spmap.iter (fun fn fi ->
@@ -92,7 +90,11 @@ END
 
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lrt) ] ->
-    [ let (t,lr) = List.sep_last lrt in ring_lookup f lH lr t]
+    [
+      let lH = List.map EConstr.of_constr lH in
+      let lrt = List.map EConstr.of_constr lrt in
+      let (t,lr) = List.sep_last lrt in ring_lookup f lH lr t
+    ]
 END
 
 let pr_field_mod = function
@@ -114,9 +116,7 @@ END
 
 VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
 | [ "Add" "Field" ident(id) ":" constr(t) field_mods_opt(l) ] ->
-  [ let l = match l with None -> [] | Some l -> l in
-    let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods l in
-    add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign div]
+  [ let l = match l with None -> [] | Some l -> l in add_field_theory id t l ]
 | [ "Print" "Fields" ] => [Vernac_classifier.classify_as_query] -> [
     Feedback.msg_notice (strbrk "The following field structures have been declared:");
     Spmap.iter (fun fn fi ->
@@ -129,5 +129,9 @@ END
 
 TACTIC EXTEND field_lookup
 | [ "field_lookup" tactic(f) "[" constr_list(lH) "]" ne_constr_list(lt) ] ->
-      [ let (t,l) = List.sep_last lt in field_lookup f lH l t ]
+      [
+        let lH = List.map EConstr.of_constr lH in
+        let lt = List.map EConstr.of_constr lt in
+        let (t,l) = List.sep_last lt in field_lookup f lH l t
+      ]
 END

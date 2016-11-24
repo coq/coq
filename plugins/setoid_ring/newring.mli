@@ -8,6 +8,7 @@
 
 open Names
 open Constr
+open EConstr
 open Libnames
 open Globnames
 open Constrexpr
@@ -21,26 +22,10 @@ val protect_tac : string -> unit Proofview.tactic
 
 val closed_term : EConstr.constr -> global_reference list -> unit Proofview.tactic
 
-val process_ring_mods :
-  constr_expr ring_mod list ->
-  constr coeff_spec * (constr * constr) option *
-  cst_tac_spec option * raw_tactic_expr option *
-  raw_tactic_expr option *
-  (cst_tac_spec * constr_expr) option *
-  constr_expr option * constr_expr option
-
 val add_theory :
   Id.t ->
-  Evd.evar_map * constr ->
-  (constr * constr) option ->
-  constr coeff_spec ->
-  cst_tac_spec option ->
-  raw_tactic_expr option * raw_tactic_expr option ->
-  (cst_tac_spec * constr_expr) option ->
-  constr_expr option ->
-  constr_expr option -> unit
-
-val ic : constr_expr -> Evd.evar_map * constr
+  constr_expr ->
+  constr_expr ring_mod list -> unit
 
 val from_name : ring_info Spmap.t ref
 
@@ -49,26 +34,10 @@ val ring_lookup :
   constr list ->
   constr list -> constr -> unit Proofview.tactic
 
-val process_field_mods :
-  constr_expr field_mod list ->
-  constr coeff_spec *
-  (constr * constr) option * constr option *
-  cst_tac_spec option * raw_tactic_expr option *
-  raw_tactic_expr option *
-  (cst_tac_spec * constr_expr) option *
-  constr_expr option * constr_expr option
-
 val add_field_theory :
   Id.t ->
-  Evd.evar_map * constr ->
-  (constr * constr) option ->
-  constr coeff_spec ->
-  cst_tac_spec option ->
-  constr option ->
-  raw_tactic_expr option * raw_tactic_expr option ->
-  (cst_tac_spec * constr_expr) option ->
-  constr_expr option ->
-  constr_expr option -> unit
+  constr_expr ->
+  constr_expr field_mod list -> unit
 
 val field_from_name : field_info Spmap.t ref
 
