@@ -492,6 +492,8 @@ let string_of_genarg_arg (ArgumentType arg) =
         (prlist_with_sep (fun () -> str",")
            (fun id -> spc () ++ pr_hyp_location pr_id id) l ++ pr_occs)
 
+  let pr_generalized pr_id id = str " gen:" ++ pr_id id
+
   let pr_orient b = if b then mt () else str "<- "
 
   let pr_multi = let open Equality in function
@@ -817,10 +819,11 @@ let pr_goal_selector ~toplevel s =
           hov 1 (
             primitive (with_evars ev (if isrec then "induction" else "destruct"))
             ++ spc ()
-            ++ prlist_with_sep pr_comma (fun (h,ids,cl) ->
+            ++ prlist_with_sep pr_comma (fun (h,ids,(cl,gen)) ->
               pr_destruction_arg (pr.pr_dconstr env sigma) (pr.pr_dconstr env sigma) h ++
                 pr_non_empty_arg (pr_with_induction_names (pr.pr_dconstr env sigma)) ids ++
-                pr_opt (pr_clauses None pr.pr_name) cl) l ++
+                pr_opt (pr_clauses None pr.pr_name) cl ++
+                prlist (pr_generalized pr.pr_name) gen) l ++
               pr_opt pr_eliminator el
           )
 

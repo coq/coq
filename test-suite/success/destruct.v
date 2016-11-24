@@ -437,3 +437,10 @@ intro H.
 destruct (H (fun x => True)).
 match goal with |- True => idtac end.
 Abort.
+
+(* Check failure on clause over *)
+
+Goal forall n, True -> n=0.
+intros n H.
+Fail destruct n over H.
+Abort.

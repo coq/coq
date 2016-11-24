@@ -309,7 +309,7 @@ val destruct : evars_flag -> clear_flag -> constr -> or_and_intro_pattern option
 val induction_destruct : rec_flag -> evars_flag ->
   (delayed_open_constr_with_bindings destruction_arg
    * (intro_pattern_naming option * or_and_intro_pattern option)
-   * clause option) list *
+   * (clause option * Id.t list)) list *
   constr with_bindings option -> unit Proofview.tactic
 
 (** {6 Eliminations giving the type instead of the proof. } *)

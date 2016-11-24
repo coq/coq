@@ -552,11 +552,12 @@ let rec intern_atomic lf ist x =
 
   (* Derived basic tactics *)
   | TacInductionDestruct (ev,isrec,(l,el)) ->
-      TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats),cls) ->
+      TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats),(cls,over)) ->
               (intern_destruction_arg ist c,
                (Option.map (intern_intro_pattern_naming_loc lf ist) ipato,
                Option.map (intern_or_and_intro_pattern_loc lf ist) ipats),
-               Option.map (clause_app (intern_hyp_location ist)) cls)) l,
+               (Option.map (clause_app (intern_hyp_location ist)) cls,
+                List.map (intern_hyp ist) over))) l,
                Option.map (intern_constr_with_bindings ist) el))
   (* Conversion *)
   | TacReduce (r,cl) ->

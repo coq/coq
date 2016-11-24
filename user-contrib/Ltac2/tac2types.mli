@@ -76,7 +76,8 @@ type induction_clause =
   destruction_arg *
   intro_pattern_naming option *
   or_and_intro_pattern option *
-  clause option
+  clause option *
+  Id.t list
 
 type multi = Equality.multi =
 | Precisely of int

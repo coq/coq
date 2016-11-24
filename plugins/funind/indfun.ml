@@ -119,7 +119,7 @@ let functional_induction with_clean c princl pat =
               , ElimOnConstr
                   (fun env sigma -> (sigma, (c, Tactypes.NoBindings))) )
             , (None, pat)
-            , None ))
+            , (None, [])))
           (args @ c_list) encoded_pat_as_patlist
       in
       let princ' = Some (princ, bindings) in

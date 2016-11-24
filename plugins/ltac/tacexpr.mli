@@ -54,7 +54,7 @@ type ('dconstr,'id) induction_clause =
     'dconstr with_bindings Tactics.destruction_arg *
     (Namegen.intro_pattern_naming_expr CAst.t option (* eqn:... *)
     * 'dconstr or_and_intro_pattern_expr CAst.t or_var option) (* as ... *)
-    * 'id clause_expr option (* in ... *)
+    * ('id clause_expr option (* in ... *) * 'id list (* over ... *))
 
 type ('constr,'dconstr,'id) induction_clause_list =
     ('dconstr,'id) induction_clause list

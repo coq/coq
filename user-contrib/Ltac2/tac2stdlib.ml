@@ -131,12 +131,13 @@ let to_destruction_arg v = match Value.to_block v with
 let destruction_arg = make_to_repr to_destruction_arg
 
 let to_induction_clause v = match Value.to_tuple v with
-| [| arg; eqn; as_; in_ |] ->
+| [| arg; eqn; as_; in_; over |] ->
   let arg = to_destruction_arg arg in
   let eqn = Value.to_option to_intro_pattern_naming eqn in
   let as_ = Value.to_option to_or_and_intro_pattern as_ in
   let in_ = Value.to_option to_clause in_ in
-  (arg, eqn, as_, in_)
+  let over = Value.to_list to_ident over in
+  (arg, eqn, as_, in_, over)
 | _ ->
   assert false
 

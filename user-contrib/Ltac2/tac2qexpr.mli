@@ -87,6 +87,7 @@ type induction_clause_r = {
   indcl_eqn : intro_pattern_naming option;
   indcl_as : or_and_intro_pattern option;
   indcl_in : clause option;
+  indcl_gen : Id.t CAst.t or_anti list;
 }
 
 type induction_clause = induction_clause_r CAst.t

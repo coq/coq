@@ -88,6 +88,7 @@ Ltac2 Type induction_clause := {
   indcl_eqn : intro_pattern_naming option;
   indcl_as : or_and_intro_pattern option;
   indcl_in : clause option;
+  indcl_gen : ident list;
 }.
 
 Ltac2 Type assertion := [

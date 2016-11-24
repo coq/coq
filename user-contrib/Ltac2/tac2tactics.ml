@@ -115,11 +115,11 @@ let mk_destruction_arg = function
 | ElimOnIdent id -> Tactics.ElimOnIdent CAst.(make id)
 | ElimOnAnonHyp n -> Tactics.ElimOnAnonHyp n
 
-let mk_induction_clause (arg, eqn, as_, occ) =
+let mk_induction_clause (arg, eqn, as_, occ, over) =
   let eqn = Option.map (fun ipat -> CAst.make @@ mk_intro_pattern_naming ipat) eqn in
   let as_ = Option.map (fun ipat -> CAst.make @@ mk_or_and_intro_pattern ipat) as_ in
   let occ = Option.map mk_clause occ in
-  ((None, mk_destruction_arg arg), (eqn, as_), occ)
+  ((None, mk_destruction_arg arg), (eqn, as_), (occ, over))
 
 let induction_destruct isrec ev (ic : induction_clause list) using =
   let ic = List.map mk_induction_clause ic in

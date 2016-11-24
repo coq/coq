@@ -191,6 +191,9 @@ module New : sig
   (** [tclMAP f [x1..xn]] builds [(f x1);(f x2);...(f xn)] *)
   val tclMAP : ('a -> unit tactic) -> 'a list -> unit tactic
 
+  (** [tclMAP_i f [x1..xn]] builds [(f 1 x1);(f 2 x2);...(f n xn)] *)
+  val tclMAP_i : (int -> 'a -> unit tactic) -> 'a list -> unit tactic
+
   val tclTRY : unit tactic -> unit tactic
   val tclTRYb : unit tactic -> bool list tactic
   val tclFIRST : unit tactic list -> unit tactic

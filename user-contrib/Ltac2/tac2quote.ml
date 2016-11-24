@@ -223,11 +223,13 @@ let of_induction_clause {loc;v=cl} =
   let eqn = of_option ?loc of_intro_pattern_naming cl.indcl_eqn in
   let as_ = of_option ?loc of_or_and_intro_pattern cl.indcl_as in
   let in_ = of_option ?loc of_clause cl.indcl_in in
+  let gen = of_list ?loc (of_anti of_ident) cl.indcl_gen in
   CAst.make ?loc @@ CTacRec ([
     std_proj "indcl_arg", arg;
     std_proj "indcl_eqn", eqn;
     std_proj "indcl_as", as_;
     std_proj "indcl_in", in_;
+    std_proj "indcl_gen", gen;
   ])
 
 let check_pattern_id ?loc id =

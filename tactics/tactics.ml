@@ -3360,6 +3360,12 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   atomize_one (List.length argl) [] [] Id.Set.empty
   end
 
+let warn_redundant_over_clause =
+  CWarnings.create ~name:"redundant-clause-over" ~category:"tactics"
+    (fun id ->
+      strbrk "Clause \"over\" is for generalizing the induction hypothesis over variables or hypotheses which are not dependent (or not detected as such); no need to mention " ++
+      Id.print id ++ str " explicitly.")
+
 (* [cook_sign] builds the lists [beforetoclear] (preceding the
    ind. var.) and [aftertoclear] (coming after the ind. var.)  of hyps
    that must be erased, the lists of hyps to be generalize [decldeps] on the
@@ -3425,7 +3431,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
 
 exception Shunt of Id.t move_location
 
-let cook_sign hyp0_opt inhyps indvars env sigma =
+let cook_sign hyp0_opt (inhyps,over) indvars env sigma =
   (* First phase from L to R: get [toclear], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let toclear = ref [] in
@@ -3459,8 +3465,10 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
         (Id.Set.exists (fun id -> occur_var_in_decl env sigma id decl) indvars ||
          List.exists (fun decl' -> occur_var_in_decl env sigma (NamedDecl.get_id decl') decl) !decldeps)
       in
+      if (dephyp0 || depother) && Id.List.mem hyp over then
+        warn_redundant_over_clause hyp;
       if not (List.is_empty inhyps) && Id.List.mem hyp inhyps
-         || dephyp0 || depother
+         || dephyp0 || depother || Id.List.mem hyp over
       then begin
         decldeps := decl::!decldeps;
         avoid := Id.Set.add hyp !avoid;
@@ -4327,6 +4335,21 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
   end
 
+let check_explicit_hyps env sigma (isrec,nth) (inhyps,over) =
+  (* Check that "over" is not used in "destruct" *)
+  if not isrec && over <> [] then
+    user_err (strbrk "Clause \"over\" is only for " ++
+              (if nth>1 then strbrk "the first argument of " else mt ()) ++
+              str "\"induction\".");
+  (* Check that explicit hyps are distinct *)
+  ignore (List.fold_right (fun id l ->
+      if List.mem id l then user_err (Id.print id ++ str " occurs twice.");
+      id::l) (inhyps@over) [])
+
+let add_eq_clause_hyps with_eq (inhyps,over as allhyps) =
+  if List.is_empty inhyps then allhyps else
+  (Option.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq,over)
+
 let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
   Proofview.Goal.enter begin fun gl ->
   let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
@@ -4392,11 +4415,11 @@ let induction_without_atomization isrec with_evars elim names lid =
     induction_tac with_evars params realindvars elim;
   ] in
   let elim = ElimUsing ((ElimClause elimc, scheme.elimt), indsign) in
-  apply_induction_in_context with_evars None [] elim indvars names induct_tac
+  apply_induction_in_context with_evars None ([],[]) elim indvars names induct_tac
   end
 
 (* assume that no occurrences are selected *)
-let clear_unselected_context id inhyps cls =
+let clear_unselected_context id (inhyps,over) cls =
   Proofview.Goal.enter begin fun gl ->
   if occur_var (Tacmach.New.pf_env gl) (Tacmach.New.project gl) id (Tacmach.New.pf_concl gl) &&
     cls.concl_occs == NoOccurrences
@@ -4405,13 +4428,14 @@ let clear_unselected_context id inhyps cls =
      ++ str ".");
   match cls.onhyps with
   | Some hyps ->
+      let explicit = inhyps @ over in
       let to_erase d =
         let id' = NamedDecl.get_id d in
-        if Id.List.mem id' inhyps then (* if selected, do not erase *) None
+        if Id.List.mem id' explicit then (* if selected, do not erase *) None
         else
           (* erase if not selected and dependent on id or selected hyps *)
           let test id = occur_var_in_decl (Tacmach.New.pf_env gl) (Tacmach.New.project gl) id d in
-          if List.exists test (id::inhyps) then Some id' else None in
+          if List.exists test (id::explicit) then Some id' else None in
       let ids = List.map_filter to_erase (Proofview.Goal.hyps gl) in
       clear ids
   | None -> Proofview.tclUNIT ()
@@ -4487,7 +4511,7 @@ let guard_no_unifiable = Proofview.guard_no_unifiable >>= function
     let info = Exninfo.reify () in
     Proofview.tclZERO ~info (RefinerError (env, sigma, UnresolvedBindings l))
 
-let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
+let pose_induction_arg_then (isrec,_ as isrecn) with_evars (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
@@ -4501,11 +4525,12 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   | None ->
       (* pattern not found *)
       let with_eq = Option.map (fun eq -> (false,mk_eq_name env id eq)) eqname in
-      let inhyps = if List.is_empty inhyps then inhyps else Option.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
+      let inhyps = add_eq_clause_hyps with_eq inhyps in
       (* we restart using bindings after having tried type-class
          resolution etc. on the term given by the user *)
       let flags = tactic_infer_flags (with_evars && (* do not give a success semantics to edestruct on an open term yet *) false) in
       let (sigma, c0) = finish_evar_resolution ~flags env sigma (pending,c0) in
+      check_explicit_hyps env sigma' isrecn inhyps;
       let tac =
       (if isrec then
           (* Historically, induction has side conditions last *)
@@ -4534,7 +4559,8 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       (* TODO: if ind has predicate parameters, use JMeq instead of eq *)
       let env = reset_with_named_context sign env in
       let with_eq = Option.map (fun eq -> (false,mk_eq_name env id eq)) eqname in
-      let inhyps = if List.is_empty inhyps then inhyps else Option.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
+      let inhyps = add_eq_clause_hyps with_eq inhyps in
+      check_explicit_hyps env sigma' isrecn inhyps;
       let tac =
       Tacticals.New.tclTHENLIST [
         Refine.refine ~typecheck:false begin fun sigma ->
@@ -4551,11 +4577,11 @@ let has_generic_occurrences_but_goal cls id env sigma ccl =
   (* TODO: whd_evar of goal *)
   (cls.concl_occs != NoOccurrences || not (occur_var env sigma id ccl))
 
-let induction_gen clear_flag isrec with_evars elim
-    ((_pending,(c,lbind)),(eqname,names) as arg) cls =
+let induction_gen clear_flag (isrec,_ as isrecn) with_evars elim
+    ((_pending,(c,lbind)),(eqname,names) as arg) (cls,over) =
   let inhyps = match cls with
-  | Some {onhyps=Some hyps} -> List.map (fun ((_,id),_) -> id) hyps
-  | _ -> [] in
+  | Some {onhyps=Some hyps} -> (List.map (fun ((_,id),_) -> id) hyps, over)
+  | _ -> ([], over) in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let evd = Proofview.Goal.sigma gl in
@@ -4575,6 +4601,7 @@ let induction_gen clear_flag isrec with_evars elim
        clearable variable of the goal w/o occurrence selection
        and w/o equality kept: no need to generalize *)
     let id = destVar evd c in
+    check_explicit_hyps env evd isrecn inhyps;
     Tacticals.New.tclTHEN
       (clear_unselected_context id inhyps cls)
       (induction_with_atomization_of_ind_arg
@@ -4591,7 +4618,7 @@ let induction_gen clear_flag isrec with_evars elim
       new_fresh_id avoid x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
     pose_induction_arg_then
-      isrec with_evars info_arg elim id arg t inhyps cls
+      isrecn with_evars info_arg elim id arg t inhyps cls
     (induction_with_atomization_of_ind_arg
        isrec with_evars elim names id)
   end
@@ -4647,7 +4674,7 @@ let induction_gen_l isrec with_evars elim names lc =
 let induction_destruct isrec with_evars (lc,elim) =
   match lc with
   | [] -> assert false (* ensured by syntax, but if called inside caml? *)
-  | [c,(eqname,names as allnames),cls] ->
+  | [c,(eqname,names as allnames),(cls,over)] ->
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
@@ -4656,6 +4683,7 @@ let induction_destruct isrec with_evars (lc,elim) =
       (* Standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
       if not (Option.is_empty cls) then error "'in' clause not supported here.";
+      if not (List.is_empty over) then error "'over' clause not supported here.";
       let _,c = force_destruction_arg false env sigma c in
       onInductionArg
         (fun _clear_flag c ->
@@ -4664,7 +4692,7 @@ let induction_destruct isrec with_evars (lc,elim) =
     | _ ->
       (* standard induction *)
       onOpenInductionArg env sigma
-      (fun clear_flag c -> induction_gen clear_flag isrec with_evars elim (c,allnames) cls) c
+      (fun clear_flag c -> induction_gen clear_flag (isrec,1) with_evars elim (c,allnames) (cls,over)) c
     end
   | _ ->
     Proofview.Goal.enter begin fun gl ->
@@ -4681,21 +4709,22 @@ let induction_destruct isrec with_evars (lc,elim) =
       (* TODO *)
       Tacticals.New.tclTHEN
         (onOpenInductionArg env sigma (fun clear_flag a ->
-          induction_gen clear_flag isrec with_evars None (a,b) cl) a)
-        (Tacticals.New.tclMAP (fun (a,b,cl) ->
+          induction_gen clear_flag (isrec,1) with_evars None (a,b) cl) a)
+        (Tacticals.New.tclMAP_i (fun i (a,b,cl) ->
           Proofview.Goal.enter begin fun gl ->
           let env = Proofview.Goal.env gl in
           let sigma = Tacmach.New.project gl in
           onOpenInductionArg env sigma (fun clear_flag a ->
-            induction_gen clear_flag false with_evars None (a,b) cl) a
+            induction_gen clear_flag (false,i) with_evars None (a,b) cl) a
           end) l)
     | Some elim ->
       (* Several induction hyps with induction scheme *)
       let lc = List.map (on_pi1 (fun c -> snd (force_destruction_arg false env sigma c))) lc in
       let newlc =
-        List.map (fun (x,(eqn,names),cls) ->
+        List.map (fun (x,(eqn,names),(cls,over)) ->
           if cls != None then error "'in' clause not yet supported here.";
-          match x with (* FIXME: should we deal with ElimOnIdent? *)
+          if over != [] then error "'over' clause not yet supported here.";
+         match x with (* FIXME: should we deal with ElimOnIdent? *)
           | _clear_flag,ElimOnConstr x ->
               if eqn <> None then error "'eqn' clause not supported here.";
               (with_no_bindings x,names)
@@ -4710,12 +4739,12 @@ let induction_destruct isrec with_evars (lc,elim) =
     end
 
 let induction ev clr c l e =
-  induction_gen clr true ev e
-    ((Evd.empty,(c,NoBindings)),(None,l)) None
+  induction_gen clr (true,1) ev e
+    ((Evd.empty,(c,NoBindings)),(None,l)) (None,[])
 
 let destruct ev clr c l e =
-  induction_gen clr false ev e
-    ((Evd.empty,(c,NoBindings)),(None,l)) None
+  induction_gen clr (false,1) ev e
+    ((Evd.empty,(c,NoBindings)),(None,l)) (None,[])
 
 (*
  *  Eliminations giving the type instead of the proof.

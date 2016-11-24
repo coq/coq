@@ -538,7 +538,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   eqn_ipat:
-    [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> { Some pat }
+    [ [ IDENT "eqn"; no_space; ":"; pat = naming_intropattern -> { Some pat }
       | -> { None }
     ] ]
   ;
@@ -600,6 +600,9 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ { q_onhyps = Some []; q_concl_occs = occs } }
     ] ]
   ;
+  gen_clause:
+    [ [ IDENT "gen"; no_space; ":"; h = ident_or_anti -> { h } ] ]
+  ;
   q_clause:
     [ [ cl = clause -> { cl } ] ]
   ;
@@ -610,12 +613,13 @@ GRAMMAR EXTEND Gram
   ;
   induction_clause:
     [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
-        cl = OPT clause ->
+        gen = LIST0 gen_clause; cl = OPT clause ->
       { CAst.make ~loc @@ {
           indcl_arg = c;
           indcl_eqn = eq;
           indcl_as = pat;
           indcl_in = cl;
+          indcl_gen = gen;
         } }
     ] ]
   ;

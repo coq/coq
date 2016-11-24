@@ -182,3 +182,30 @@ induction n in m0 |- *. (* Is it legitimate to call it m0, as printed, rather th
 - apply (eq_refl (S n + m0)).
 Qed.
 End A.
+
+(* A simple example of induction over *)
+
+Goal forall n m, n + m = m + n.
+intros.
+induction n gen:m.
+- now induction m.
+- simpl; rewrite IHn.
+  now induction m.
+Qed.
+
+(* Cases of failure *)
+
+Goal forall x y, x+y=0.
+intros.
+Fail induction y in x , x|- *. (* x occurs twice *)
+Fail induction y gen:x in x. (* x occurs twice *)
+Fail induction y gen:x gen:x. (* x occurs twice *)
+Abort.
+
+(* Examples with multiple arguments *)
+
+Goal forall n p, True -> n=n -> False -> n+p=0.
+intros * H H0 H1.
+induction n gen:H gen:H1 in H0 |- *, p.
+4:Check (IHn H (f_equal pred H0) H1).
+Abort.

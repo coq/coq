@@ -1813,7 +1813,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let sigma,l =
-          List.fold_left_map begin fun sigma (c,(ipato,ipats),cls) ->
+          List.fold_left_map begin fun sigma (c,(ipato,ipats),(cls,over)) ->
             (* TODO: move sigma as a side-effect *)
              (* spiwack: the [*p] variants are for printing *)
             let cp = c in
@@ -1822,7 +1822,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
             let ipatsp = ipats in
             let sigma,ipats = interp_or_and_intro_pattern_option ist env' sigma ipats in
             let cls = Option.map (interp_clause ist env' sigma) cls in
-            sigma,((c,(ipato,ipats),cls),(cp,(ipato,ipatsp),cls))
+            let over = interp_hyp_list ist env' sigma over in
+            sigma,((c,(ipato,ipats),(cls,over)),(cp,(ipato,ipatsp),(cls,over)))
           end sigma l
         in
         let l,lp = List.split l in

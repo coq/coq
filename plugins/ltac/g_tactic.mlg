@@ -125,17 +125,18 @@ let mkNumber n =
   Number (NumTok.Signed.of_int_string (string_of_int n))
 
 let mkTacCase with_evar = function
-  | [(clear,ElimOnConstr cl),(None,None),None],None ->
+  | [(clear,ElimOnConstr cl),(None,None),(None,[])],None ->
       TacCase (with_evar,(clear,cl))
   (* Reinterpret numbers as a notation for terms *)
-  | [(clear,ElimOnAnonHyp n),(None,None),None],None ->
+  | [(clear,ElimOnAnonHyp n),(None,None),(None,[])],None ->
       TacCase (with_evar,
         (clear,(CAst.make @@ CPrim (mkNumber n),
          NoBindings)))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
-  | [(clear,ElimOnIdent id),(None,None),None],None ->
-      TacCase (with_evar,(clear,(CAst.make @@ CRef (qualid_of_ident ?loc:id.CAst.loc id.CAst.v,None),NoBindings)))
+  | [(clear,ElimOnIdent id),(None,None),(None,[])],None ->
+      let id = qualid_of_ident ?loc:id.CAst.loc id.CAst.v in
+      TacCase (with_evar,(clear,(CAst.make @@ CRef (id,None),NoBindings)))
   | ic ->
       if List.exists (function ((_, ElimOnAnonHyp _),_,_) -> true | _ -> false) (fst ic)
       then
@@ -404,6 +405,9 @@ GRAMMAR EXTEND Gram
       | "at"; occs = occs_nums -> { Some {onhyps=Some[]; concl_occs=occs} }
       | -> { None } ] ]
   ;
+  gen_clause:
+    [ [ IDENT "gen"; no_space; ":"; h = id_or_meta -> { h } ] ]
+  ;
   concl_occ:
     [ [ "*"; occs = occs -> { occs }
       | -> { NoOccurrences } ] ]
@@ -464,7 +468,7 @@ GRAMMAR EXTEND Gram
       | -> { None } ] ]
   ;
   eqn_ipat:
-    [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> { Some (CAst.make ~loc pat) }
+    [ [ IDENT "eqn"; no_space; ":"; pat = naming_intropattern -> { Some (CAst.make ~loc pat) }
       | -> { None } ] ]
   ;
   as_name:
@@ -488,16 +492,16 @@ GRAMMAR EXTEND Gram
   ;
   induction_clause:
     [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;
-        cl = opt_clause -> { (c,(eq,pat),cl) } ] ]
+        hypl = LIST0 gen_clause; cl = opt_clause -> { (c,(eq,pat),(cl,hypl)) } ] ]
   ;
   induction_clause_list:
     [ [ ic = LIST1 induction_clause SEP ","; el = OPT eliminator;
-        cl_tolerance = opt_clause ->
-        (* Condition for accepting "in" at the end by compatibility *)
-        { match ic,el,cl_tolerance with
-        | [c,pat,None],Some _,Some _ -> ([c,pat,cl_tolerance],el)
-        | _,_,Some _ -> err ()
-        | _,_,None -> (ic,el) } ] ]
+        hypl_tolerance = LIST0 gen_clause; cl_tolerance = opt_clause ->
+        (* Condition for accepting "in"/"over" at the end *)
+        { match ic,el,cl_tolerance,hypl_tolerance with
+        | [c,pat,(None,[])],Some _,_,_ -> ([c,pat,(cl_tolerance,hypl_tolerance)],el)
+        | _,_,Some _,_ | _,_,_,_::_ -> err ()
+        | _,_,None,[] -> (ic,el) } ] ]
   ;
   simple_tactic:
     [ [
@@ -625,7 +629,7 @@ GRAMMAR EXTEND Gram
           { CAst.make ~loc @@ TacAtom (TacInductionDestruct(true,true,ic)) }
       | IDENT "destruct"; icl = induction_clause_list ->
           { CAst.make ~loc @@ TacAtom (TacInductionDestruct(false,false,icl)) }
-      | IDENT "edestruct";  icl = induction_clause_list ->
+      | IDENT "edestruct"; icl = induction_clause_list ->
           { CAst.make ~loc @@ TacAtom (TacInductionDestruct(false,true,icl)) }
 
       (* Equality and inversion *)

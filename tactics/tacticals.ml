@@ -609,6 +609,10 @@ module New = struct
   let tclMAP tacfun l =
     List.fold_right (fun x -> (tclTHEN (tacfun x))) l (tclUNIT())
 
+  (* [tclMAP_i f [x1..xn]] builds [(f 1 x1);(f 2 x2);...(f n xn)] *)
+  let tclMAP_i tacfun l =
+    List.fold_right_i (fun n x -> (tclTHEN (tacfun n x))) 1 l (tclUNIT())
+
   let tclTRY t =
     tclORELSE0 t (tclUNIT ())
 

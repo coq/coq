@@ -1,0 +1,7 @@
+- **Added:**
+  The tactic :tacn:`induction` now accepts an :g:`gen:@ident` argument
+  to indicate in a lighter way than the :g:`in` clause that the
+  induction hypothesis should be generalized over some hypotheses of
+  the context.
+  (`#6836 <https://github.com/coq/coq/pull/6836>`_,
+  by Hugo Herbelin).
