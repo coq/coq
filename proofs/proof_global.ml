@@ -617,7 +617,7 @@ module Bullet = struct
     let _ = register_behavior strict
   end
 
-  (* Current bullet behavior, controled by the option *)
+  (* Current bullet behavior, controlled by the option *)
   let current_behavior = ref Strict.strict
 
   let _ =

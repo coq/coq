@@ -8,7 +8,7 @@
 
 (** * Finite sets library *)
 
-(** This file proposes an implementation of the non-dependant
+(** This file proposes an implementation of the non-dependent
     interface [FSetInterface.S] using strictly ordered list. *)
 
 Require Export FSetInterface.
