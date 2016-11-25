@@ -952,7 +952,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    in
 		    mkGProd(n,t,new_b),id_to_exclude
 		  with Continue ->
-		    let jmeq = Globnames.IndRef (fst (destInd (jmeq ()))) in
+		    let jmeq = Globnames.IndRef (fst (EConstr.destInd Evd.empty (jmeq ()))) in
 		    let ty',ctx = Pretyping.understand env (Evd.from_env env) ty in
 		    let ind,args' = Inductive.find_inductive env ty' in
 		    let mib,_ = Global.lookup_inductive (fst ind) in

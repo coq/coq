@@ -15,6 +15,6 @@ bool ->
            int -> Constrexpr.constr_expr -> (Term.pconstant ->
             Term.constr option ref ->
             Term.pconstant ->
-            Term.pconstant -> int -> Term.types -> int -> Term.constr -> 'a) -> Constrexpr.constr_expr list -> unit
+            Term.pconstant -> int -> EConstr.types -> int -> EConstr.constr -> 'a) -> Constrexpr.constr_expr list -> unit
 
 

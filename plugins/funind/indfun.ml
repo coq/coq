@@ -2,6 +2,7 @@ open CErrors
 open Util
 open Names
 open Term
+open EConstr
 open Pp
 open Indfun_common
 open Libnames
@@ -18,8 +19,8 @@ let is_rec_info sigma scheme_info =
   let test_branche min acc decl =
     acc || (
       let new_branche =
-	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum (RelDecl.get_type decl))) in
-      let free_rels_in_br = Termops.free_rels sigma (EConstr.of_constr new_branche) in
+	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum sigma (EConstr.of_constr (RelDecl.get_type decl)))) in
+      let free_rels_in_br = Termops.free_rels sigma new_branche in
       let max = min + scheme_info.Tactics.npredicates in
       Int.Set.exists (fun i -> i >= min && i< max) free_rels_in_br
     )
@@ -32,20 +33,21 @@ let choose_dest_or_ind scheme_info args =
 
 let functional_induction with_clean c princl pat =
   let res =
-    let f,args = decompose_app c in
     fun g ->
+    let sigma = Tacmach.project g in
+    let f,args = decompose_app sigma c in
     let princ,bindings, princ_type,g' =
       match princl with
       | None -> (* No principle is given let's find the good one *)
 	 begin
-	   match kind_of_term f with
+	   match EConstr.kind sigma f with
 	   | Const (c',u) ->
 	      let princ_option =
 		let finfo = (* we first try to find out a graph on f *)
 		  try find_Function_infos c'
 		  with Not_found ->
 		    user_err  (str "Cannot find induction information on "++
-				       Printer.pr_lconstr (mkConst c') )
+				       Printer.pr_leconstr (mkConst c') )
 		in
 		match Tacticals.elimination_sort_of_goal g with
 		| InProp -> finfo.prop_lemma
@@ -73,15 +75,16 @@ let functional_induction with_clean c princl pat =
 		    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
 		  with Not_found -> (* This one is neither defined ! *)
 		    user_err  (str "Cannot find induction principle for "
-				     ++Printer.pr_lconstr (mkConst c') )
+				     ++Printer.pr_leconstr (mkConst c') )
 	      in
-	      (princ,NoBindings, Tacmach.pf_unsafe_type_of g' (EConstr.of_constr princ),g')
+	      let princ = EConstr.of_constr princ in
+	      (princ,NoBindings,EConstr.of_constr (Tacmach.pf_unsafe_type_of g' princ),g')
 	   | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
 	 end
       | Some ((princ,binding)) ->
-	 princ,binding,Tacmach.pf_unsafe_type_of g (EConstr.of_constr princ),g
+	 princ,binding,EConstr.of_constr (Tacmach.pf_unsafe_type_of g princ),g
     in
-    let princ_type = EConstr.of_constr princ_type in
+    let sigma = Tacmach.project g' in
     let princ_infos = Tactics.compute_elim_sig (Tacmach.project g') princ_type in
     let args_as_induction_constr =
       let c_list =
@@ -90,15 +93,13 @@ let functional_induction with_clean c princl pat =
       in
       let encoded_pat_as_patlist =
         List.make (List.length args + List.length c_list - 1) None @ [pat] in
-      List.map2 (fun c pat -> ((None,Tacexpr.ElimOnConstr ({ Tacexpr.delayed = fun env sigma -> Sigma ((EConstr.of_constr c,NoBindings), sigma, Sigma.refl) })),(None,pat),None))
+      List.map2 (fun c pat -> ((None,Tacexpr.ElimOnConstr ({ Tacexpr.delayed = fun env sigma -> Sigma ((c,NoBindings), sigma, Sigma.refl) })),(None,pat),None))
         (args@c_list) encoded_pat_as_patlist
     in
-    let princ = EConstr.of_constr princ in
-    let bindings = Miscops.map_bindings EConstr.of_constr bindings in
     let princ' = Some (princ,bindings) in
     let princ_vars =
       List.fold_right
-	(fun a acc -> try Id.Set.add (destVar a) acc with DestKO -> acc)
+	(fun a acc -> try Id.Set.add (destVar sigma a) acc with DestKO -> acc)
 	args
 	Id.Set.empty
     in
@@ -247,7 +248,8 @@ let derive_inversion fix_names =
 	 let evd,c =
 	   Evd.fresh_global
 	     (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident id)) in 
-	 evd, destConst c::l
+        let c = EConstr.of_constr c in
+	 evd, destConst evd c::l
 	)
 	fix_names
 	(evd',[])
@@ -267,7 +269,8 @@ let derive_inversion fix_names =
 	       (Global.env ()) evd
 	       (Constrintern.locate_reference (Libnames.qualid_of_ident (mk_rel_id id)))
 	   in 
-	   evd,(fst (destInd id))::l
+	   let id = EConstr.of_constr id in
+	   evd,(fst (destInd evd id))::l
 	  )
 	  fix_names
 	  (evd',[])
@@ -334,7 +337,7 @@ let error_error names e =
 
 let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     is_general do_built (fix_rec_l:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) recdefs  interactive_proof
-    (continue_proof : int -> Names.constant array -> Term.constr array -> int ->
+    (continue_proof : int -> Names.constant array -> EConstr.constr array -> int ->
       Tacmach.tactic) : unit =
   let names = List.map (function (((_, name),_),_,_,_,_),_ -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
@@ -408,7 +411,8 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	    let evd,c =
 	      Evd.fresh_global
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
-	    evd,((destConst c)::l)
+            let c = EConstr.of_constr c in
+	    evd,((destConst evd c)::l)
 	   )
 	   (Evd.from_env (Global.env ()),[])
 	   fixpoint_exprl
@@ -422,7 +426,8 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	    let evd,c =
 	      Evd.fresh_global
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
-	    evd,((destConst c)::l)
+            let c = EConstr.of_constr c in
+	    evd,((destConst evd c)::l)
 	   )
 	   (Evd.from_env (Global.env ()),[])
 	   fixpoint_exprl
@@ -432,7 +437,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
-    (_: int) (_:Names.constant array) (_:Term.constr array) (_:int) : Tacmach.tactic =
+    (_: int) (_:Names.constant array) (_:EConstr.constr array) (_:int) : Tacmach.tactic =
   Functional_principles_proofs.prove_principle_for_gen
     (f_ref,functional_ref,eq_ref)
     tcc_lemma_ref is_mes  rec_arg_num rec_arg_type relation
@@ -840,7 +845,7 @@ let make_graph (f_ref:global_reference) =
       | ConstRef c ->
 	  begin try c,Global.lookup_constant c
 	  with Not_found ->
-	    raise (UserError (None,str "Cannot find " ++ Printer.pr_lconstr (mkConst c)) )
+	    raise (UserError (None,str "Cannot find " ++ Printer.pr_leconstr (mkConst c)) )
 	  end
       | _ -> raise (UserError (None, str "Not a function reference") )
   in

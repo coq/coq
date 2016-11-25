@@ -98,7 +98,6 @@ ARGUMENT EXTEND with_names TYPED AS intropattern_opt PRINTED BY pr_intro_as_pat
 END
 
 let functional_induction b c x pat =
-  let x = Option.map (Miscops.map_with_bindings EConstr.Unsafe.to_constr) x in
   Proofview.V82.tactic (functional_induction true c x (Option.map out_disjunctive pat))
 
 
@@ -110,7 +109,6 @@ TACTIC EXTEND newfunind
 	 | [c] -> c
 	 | c::cl -> EConstr.applist(c,cl)
        in
-       let c = EConstr.Unsafe.to_constr c in
        Extratactics.onSomeWithHoles (fun x -> functional_induction true c x pat) princl ]
 END
 (***** debug only ***)
@@ -122,7 +120,6 @@ TACTIC EXTEND snewfunind
 	 | [c] -> c
 	 | c::cl -> EConstr.applist(c,cl)
        in
-       let c = EConstr.Unsafe.to_constr c in
        Extratactics.onSomeWithHoles (fun x -> functional_induction false c x pat) princl ]
 END
 

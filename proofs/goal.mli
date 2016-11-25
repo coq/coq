@@ -75,6 +75,6 @@ module V82 : sig
   val nf_evar : Evd.evar_map -> goal -> goal * Evd.evar_map
 
   (* Goal represented as a type, doesn't take into account section variables *)
-  val abstract_type : Evd.evar_map -> goal -> Term.types 
+  val abstract_type : Evd.evar_map -> goal -> EConstr.types 
 
 end

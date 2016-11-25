@@ -40,11 +40,11 @@ val chop_rprod_n : int -> Glob_term.glob_constr ->
   (Name.t*Glob_term.glob_constr) list * Glob_term.glob_constr
 
 val def_of_const : Term.constr -> Term.constr
-val eq : Term.constr Lazy.t
-val refl_equal : Term.constr Lazy.t
+val eq : EConstr.constr Lazy.t
+val refl_equal : EConstr.constr Lazy.t
 val const_of_id: Id.t ->  Globnames.global_reference(* constantyes *)
-val jmeq : unit -> Term.constr
-val jmeq_refl : unit -> Term.constr
+val jmeq : unit -> EConstr.constr
+val jmeq_refl : unit -> EConstr.constr
 
 val save : bool -> Id.t -> Safe_typing.private_constants Entries.definition_entry  -> Decl_kinds.goal_kind ->
   unit Lemmas.declaration_hook CEphemeron.key -> unit
@@ -107,10 +107,15 @@ val is_strict_tcc : unit -> bool
 val h_intros: Names.Id.t list -> Proof_type.tactic
 val h_id :  Names.Id.t
 val hrec_id :  Names.Id.t
-val acc_inv_id :  Term.constr Util.delayed
+val acc_inv_id :  EConstr.constr Util.delayed
 val ltof_ref : Globnames.global_reference Util.delayed
-val well_founded_ltof : Term.constr Util.delayed
-val acc_rel : Term.constr Util.delayed
-val well_founded : Term.constr Util.delayed
+val well_founded_ltof : EConstr.constr Util.delayed
+val acc_rel : EConstr.constr Util.delayed
+val well_founded : EConstr.constr Util.delayed
 val evaluable_of_global_reference : Globnames.global_reference -> Names.evaluable_global_reference
-val list_rewrite : bool -> (Term.constr*bool) list -> Proof_type.tactic
+val list_rewrite : bool -> (EConstr.constr*bool) list -> Proof_type.tactic
+
+val decompose_lam_n : Evd.evar_map -> int -> EConstr.t ->
+  (Names.Name.t * EConstr.t) list * EConstr.t
+val compose_lam : (Names.Name.t * EConstr.t) list -> EConstr.t -> EConstr.t
+val compose_prod : (Names.Name.t * EConstr.t) list -> EConstr.t -> EConstr.t

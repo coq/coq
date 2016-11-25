@@ -49,7 +49,7 @@ module V82 = struct
   (* Access to ".evar_concl" *)
   let concl evars gl =
     let evi = Evd.find evars gl in
-    evi.Evd.evar_concl
+    EConstr.of_constr evi.Evd.evar_concl
 
   (* Access to ".evar_extra" *)
   let extra evars gl =
@@ -146,6 +146,7 @@ module V82 = struct
 
   (* Goal represented as a type, doesn't take into account section variables *)
   let abstract_type sigma gl =
+    let open EConstr in
     let (gl,sigma) = nf_evar sigma gl in
     let env = env sigma gl in
     let genv = Global.env () in
@@ -158,7 +159,5 @@ module V82 = struct
 					  else
 					    t
 				       ) ~init:(concl sigma gl) env
-
-  let concl sigma gl = EConstr.of_constr (concl sigma gl)
 
 end

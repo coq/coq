@@ -63,7 +63,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       else args
     in
     Context.Named.Declaration.LocalAssum (Nameops.out_name (Context.Rel.Declaration.get_name decl),
-                                          compose_prod real_args (mkSort new_sort))
+                                          Term.compose_prod real_args (mkSort new_sort))
   in
   let new_predicates =
     List.map_i
@@ -254,7 +254,7 @@ let change_property_sort evd toSort princ princName =
      let args,ty = decompose_prod (get_type decl) in
      let s = destSort ty in
        Global.add_constraints (Univ.enforce_leq (univ_of_sort toSort) (univ_of_sort s) Univ.Constraint.empty);
-       compose_prod args (mkSort toSort)
+       Term.compose_prod args (mkSort toSort)
     )
   in
   let evd,princName_as_constr =
@@ -298,7 +298,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
       hook
   ;
     (*       let _tim1 = System.get_time ()  in *)
-      ignore (Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map mkConstU funs) mutr_nparams)));
+      ignore (Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map EConstr.mkConstU funs) mutr_nparams)));
     (*       let _tim2 =  System.get_time ()  in *)
     (* 	begin *)
     (* 	  let dur1 = System.time_difference tim1 tim2 in *)

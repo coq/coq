@@ -130,8 +130,8 @@ let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
   Nametab.locate (make_qualid dp (Id.of_string s))
 
-let eq = lazy(coq_constant "eq")
-let refl_equal = lazy(coq_constant "eq_refl")
+let eq = lazy(EConstr.of_constr (coq_constant "eq"))
+let refl_equal = lazy(EConstr.of_constr (coq_constant "eq_refl"))
 
 (*****************************************************************)
 (* Copy of the standart save mechanism but without the much too  *)
@@ -475,13 +475,13 @@ exception ToShow of exn
 let jmeq () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq"
+    EConstr.of_constr (Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq")
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq_refl"
+    EConstr.of_constr (Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq_refl")
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
@@ -489,10 +489,10 @@ let h_intros l =
 
 let h_id = Id.of_string "h"
 let hrec_id = Id.of_string "hrec"
-let well_founded = function () -> (coq_constant "well_founded")
-let acc_rel = function () -> (coq_constant "Acc")
-let acc_inv_id = function () -> (coq_constant "Acc_inv")
-let well_founded_ltof = function () ->  (Coqlib.coq_constant "" ["Arith";"Wf_nat"] "well_founded_ltof")
+let well_founded = function () -> EConstr.of_constr (coq_constant "well_founded")
+let acc_rel = function () -> EConstr.of_constr (coq_constant "Acc")
+let acc_inv_id = function () -> EConstr.of_constr (coq_constant "Acc_inv")
+let well_founded_ltof = function () ->  EConstr.of_constr (Coqlib.coq_constant "" ["Arith";"Wf_nat"] "well_founded_ltof")
 let ltof_ref = function  () -> (find_reference ["Coq";"Arith";"Wf_nat"] "ltof")
 
 let evaluable_of_global_reference r = (* Tacred.evaluable_of_global_reference (Global.env ()) *)
@@ -501,9 +501,45 @@ let evaluable_of_global_reference r = (* Tacred.evaluable_of_global_reference (G
     | VarRef id -> EvalVarRef id
     | _ -> assert false;;
 
-let list_rewrite (rev:bool) (eqs: (constr*bool) list) =
-  let eqs = List.map (Util.on_fst EConstr.of_constr) eqs in
+let list_rewrite (rev:bool) (eqs: (EConstr.constr*bool) list) =
   tclREPEAT
     (List.fold_right
        (fun (eq,b) i -> tclORELSE (Proofview.V82.of_tactic ((if b then Equality.rewriteLR else Equality.rewriteRL) eq)) i)
        (if rev then (List.rev eqs) else eqs) (tclFAIL 0 (mt())));;
+
+let decompose_lam_n sigma n =
+  let open EConstr in
+  if n < 0 then CErrors.error "decompose_lam_n: integer parameter must be positive";
+  let rec lamdec_rec l n c =
+    if Int.equal n 0 then l,c
+    else match EConstr.kind sigma c with
+      | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) (n-1) c
+      | Cast (c,_,_)     -> lamdec_rec l n c
+      | _ -> CErrors.error "decompose_lam_n: not enough abstractions"
+  in
+  lamdec_rec [] n
+
+let lamn n env b =
+  let open EConstr in
+  let rec lamrec = function
+    | (0, env, b)        -> b
+    | (n, ((v,t)::l), b) -> lamrec (n-1,  l, mkLambda (v,t,b))
+    | _ -> assert false
+  in
+  lamrec (n,env,b)
+
+(* compose_lam [xn:Tn;..;x1:T1] b = [x1:T1]..[xn:Tn]b *)
+let compose_lam l b = lamn (List.length l) l b
+
+(* prodn n [xn:Tn;..;x1:T1;Gamma] b = (x1:T1)..(xn:Tn)b *)
+let prodn n env b =
+  let open EConstr in
+  let rec prodrec = function
+    | (0, env, b)        -> b
+    | (n, ((v,t)::l), b) -> prodrec (n-1,  l, mkProd (v,t,b))
+    | _ -> assert false
+  in
+  prodrec (n,env,b)
+
+(* compose_prod [xn:Tn;..;x1:T1] b = (x1:T1)..(xn:Tn)b *)
+let compose_prod l b = prodn (List.length l) l b
