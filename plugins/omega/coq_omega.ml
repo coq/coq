@@ -18,6 +18,7 @@ open Util
 open Names
 open Nameops
 open Term
+open EConstr
 open Tacticals
 open Tacmach
 open Tactics
@@ -149,7 +150,7 @@ let mk_then = tclTHENLIST
 
 let exists_tac c = constructor_tac false (Some 1) 1 (ImplicitBindings [c])
 
-let generalize_tac t = generalize (List.map EConstr.of_constr t)
+let generalize_tac t = generalize t
 let elim t = simplest_elim t
 let exact t = Tacmach.refine t
 let unfold s = Tactics.unfold_in_concl [Locus.AllOccurrences, Lazy.force s]
@@ -172,8 +173,8 @@ let tag_hypothesis,tag_of_hyp, hyp_of_tag, clear_tags =
 let hide_constr,find_constr,clear_constr_tables,dump_tables =
   let l = ref ([]:(constr * (Id.t * Id.t * bool)) list) in
   (fun h id eg b -> l := (h,(id,eg,b)):: !l),
-  (fun h ->
-    try List.assoc_f eq_constr_nounivs h !l with Not_found -> failwith "find_contr"),
+  (fun sigma h ->
+    try List.assoc_f (eq_constr_nounivs sigma) h !l with Not_found -> failwith "find_contr"),
   (fun () -> l := []),
   (fun () -> !l)
 
@@ -197,6 +198,7 @@ let coq_modules =
   init_modules @arith_modules @ [logic_dir] @ zarith_base_modules
     @ [["Coq"; "omega"; "OmegaLemmas"]]
 
+let gen_constant_in_modules n m s = EConstr.of_constr (gen_constant_in_modules n m s)
 let init_constant = gen_constant_in_modules "Omega" init_modules
 let constant = gen_constant_in_modules "Omega" coq_modules
 
@@ -348,11 +350,18 @@ let coq_not_iff = lazy (constant "not_iff")
 let coq_not_not = lazy (constant "not_not")
 let coq_imp_simp = lazy (constant "imp_simp")
 let coq_iff = lazy (constant "iff")
+let coq_not = lazy (init_constant "not")
+let coq_and = lazy (init_constant "and")
+let coq_or = lazy (init_constant "or")
+let coq_eq = lazy (init_constant "eq")
+let coq_ex = lazy (init_constant "ex")
+let coq_False = lazy (init_constant "False")
+let coq_True = lazy (init_constant "True")
 
 (* uses build_coq_and, build_coq_not, build_coq_or, build_coq_ex *)
 
 (* For unfold *)
-let evaluable_ref_of_constr s c = match kind_of_term (Lazy.force c) with
+let evaluable_ref_of_constr s c = match EConstr.kind Evd.empty (Lazy.force c) with
   | Const (kn,u) when Tacred.is_evaluable (Global.env()) (EvalConstRef kn) ->
       EvalConstRef kn
   | _ -> anomaly ~label:"Coq_omega" (Pp.str (s^" is not an evaluable constant"))
@@ -364,21 +373,21 @@ let sp_Zle = lazy (evaluable_ref_of_constr "Z.le" coq_Zle)
 let sp_Zgt = lazy (evaluable_ref_of_constr "Z.gt" coq_Zgt)
 let sp_Zge = lazy (evaluable_ref_of_constr "Z.ge" coq_Zge)
 let sp_Zlt = lazy (evaluable_ref_of_constr "Z.lt" coq_Zlt)
-let sp_not = lazy (evaluable_ref_of_constr "not" (lazy (build_coq_not ())))
+let sp_not = lazy (evaluable_ref_of_constr "not" coq_not)
 
 let mk_var v = mkVar (Id.of_string v)
 let mk_plus t1 t2 = mkApp (Lazy.force coq_Zplus, [| t1; t2 |])
 let mk_times t1 t2 = mkApp (Lazy.force coq_Zmult, [| t1; t2 |])
 let mk_minus t1 t2 = mkApp (Lazy.force coq_Zminus, [| t1;t2 |])
-let mk_eq t1 t2 = mkApp (Universes.constr_of_global (build_coq_eq ()),
+let mk_eq t1 t2 = mkApp (Lazy.force coq_eq,
 			 [| Lazy.force coq_Z; t1; t2 |])
 let mk_le t1 t2 = mkApp (Lazy.force coq_Zle, [| t1; t2 |])
-let mk_gt t1 t2 = EConstr.of_constr (mkApp (Lazy.force coq_Zgt, [| t1; t2 |]))
+let mk_gt t1 t2 = mkApp (Lazy.force coq_Zgt, [| t1; t2 |])
 let mk_inv t = mkApp (Lazy.force coq_Zopp, [| t |])
-let mk_and t1 t2 =  mkApp (build_coq_and (), [| t1; t2 |])
-let mk_or t1 t2 =  mkApp (build_coq_or (), [| t1; t2 |])
-let mk_not t = mkApp (build_coq_not (), [| t |])
-let mk_eq_rel t1 t2 = mkApp (Universes.constr_of_global (build_coq_eq ()),
+let mk_and t1 t2 =  mkApp (Lazy.force coq_and, [| t1; t2 |])
+let mk_or t1 t2 =  mkApp (Lazy.force coq_or, [| t1; t2 |])
+let mk_not t = mkApp (Lazy.force coq_not, [| t |])
+let mk_eq_rel t1 t2 = mkApp (Lazy.force coq_eq,
 			     [| Lazy.force coq_comparison; t1; t2 |])
 let mk_inj t = mkApp (Lazy.force coq_Z_of_nat, [| t |])
 
@@ -420,22 +429,23 @@ type result =
    the term parts that we manipulate, but rather Var's.
    Said otherwise: all constr manipulated here are closed *)
 
-let destructurate_prop t =
-  let c, args = decompose_app t in
-  match kind_of_term c, args with
-    | _, [_;_;_] when is_global (build_coq_eq ()) c -> Kapp (Eq,args)
+let destructurate_prop sigma t =
+  let eq_constr c1 c2 = eq_constr sigma c1 c2 in
+  let c, args = decompose_app sigma t in
+  match EConstr.kind sigma c, args with
+    | _, [_;_;_] when eq_constr (Lazy.force coq_eq) c -> Kapp (Eq,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_neq) -> Kapp (Neq,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zne) -> Kapp (Zne,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zle) -> Kapp (Zle,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zlt) -> Kapp (Zlt,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zge) -> Kapp (Zge,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zgt) -> Kapp (Zgt,args)
-    | _, [_;_] when eq_constr c (build_coq_and ()) -> Kapp (And,args)
-    | _, [_;_] when eq_constr c (build_coq_or ()) -> Kapp (Or,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_and) -> Kapp (And,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_or) -> Kapp (Or,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_iff) -> Kapp (Iff, args)
-    | _, [_] when eq_constr c (build_coq_not ()) -> Kapp (Not,args)
-    | _, [] when eq_constr c (build_coq_False ()) -> Kapp (False,args)
-    | _, [] when eq_constr c (build_coq_True ()) -> Kapp (True,args)
+    | _, [_] when eq_constr c (Lazy.force coq_not) -> Kapp (Not,args)
+    | _, [] when eq_constr c (Lazy.force coq_False) -> Kapp (False,args)
+    | _, [] when eq_constr c (Lazy.force coq_True) -> Kapp (True,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_le) -> Kapp (Le,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_lt) -> Kapp (Lt,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_ge) -> Kapp (Ge,args)
@@ -451,16 +461,18 @@ let destructurate_prop t =
     | Prod (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"
     | _ -> Kufo
 
-let destructurate_type t =
-  let c, args = decompose_app t in
-  match kind_of_term c, args with
+let destructurate_type sigma t =
+  let eq_constr c1 c2 = eq_constr sigma c1 c2 in
+  let c, args = decompose_app sigma t in
+  match EConstr.kind sigma c, args with
     | _, [] when eq_constr c (Lazy.force coq_Z) -> Kapp (Z,args)
     | _, [] when eq_constr c (Lazy.force coq_nat) -> Kapp (Nat,args)
     | _ -> Kufo
 
-let destructurate_term t =
-  let c, args = decompose_app t in
-  match kind_of_term c, args with
+let destructurate_term sigma t =
+  let eq_constr c1 c2 = eq_constr sigma c1 c2 in
+  let c, args = decompose_app sigma t in
+  match EConstr.kind sigma c, args with
     | _, [_;_] when eq_constr c (Lazy.force coq_Zplus) -> Kapp (Zplus,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zmult) -> Kapp (Zmult,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zminus) -> Kapp (Zminus,args)
@@ -480,15 +492,16 @@ let destructurate_term t =
     | Var id,[] -> Kvar id
     | _ -> Kufo
 
-let recognize_number t =
+let recognize_number sigma t =
+  let eq_constr c1 c2 = eq_constr sigma c1 c2 in
   let rec loop t =
-    match decompose_app t with
+    match decompose_app sigma t with
       | f, [t] when eq_constr f (Lazy.force coq_xI) -> one + two * loop t
       | f, [t] when eq_constr f (Lazy.force coq_xO) -> two * loop t
       | f, [] when eq_constr f (Lazy.force coq_xH) -> one
       | _ -> failwith "not a number"
   in
-  match decompose_app t with
+  match decompose_app sigma t with
     | f, [t] when eq_constr f (Lazy.force coq_Zpos) -> loop t
     | f, [t] when eq_constr f (Lazy.force coq_Zneg) -> neg (loop t)
     | f, [] when eq_constr f (Lazy.force coq_Z0) -> zero
@@ -504,9 +517,9 @@ type constr_path =
   | P_ARITY
   | P_ARG
 
-let context operation path (t : constr) =
+let context sigma operation path (t : constr) =
   let rec loop i p0 t =
-    match (p0,kind_of_term t) with
+    match (p0,EConstr.kind sigma t) with
       | (p, Cast (c,k,t)) -> mkCast (loop i p c,k,t)
       | ([], _) -> operation i t
       | ((P_APP n :: p),  App (f,v)) ->
@@ -517,7 +530,7 @@ let context operation path (t : constr) =
 	  let v' = Array.copy v in
 	  v'.(n) <- loop i p v'.(n); (mkCase (ci,q,c,v'))
       | ((P_ARITY :: p),  App (f,l)) ->
-	  appvect (loop i p f,l)
+	  mkApp (loop i p f,l)
       | ((P_ARG :: p),  App (f,v)) ->
 	  let v' = Array.copy v in
 	  v'.(0) <- loop i p v'.(0); mkApp (f,v')
@@ -542,8 +555,8 @@ let context operation path (t : constr) =
   in
   loop 1 path t
 
-let occurrence path (t : constr) =
-  let rec loop p0 t = match (p0,kind_of_term t) with
+let occurrence sigma path (t : constr) =
+  let rec loop p0 t = match (p0,EConstr.kind sigma t) with
     | (p, Cast (c,_,_)) -> loop p c
     | ([], _) -> t
     | ((P_APP n :: p),  App (f,v)) -> loop p v.(pred n)
@@ -562,14 +575,13 @@ let occurrence path (t : constr) =
   in
   loop path t
 
-let abstract_path typ path t =
+let abstract_path sigma typ path t =
   let term_occur = ref (mkRel 0) in
-  let abstract = context (fun i t -> term_occur:= t; mkRel i) path t in
+  let abstract = context sigma (fun i t -> term_occur:= t; mkRel i) path t in
   mkLambda (Name (Id.of_string "x"), typ, abstract), !term_occur
 
 let focused_simpl path gl =
-  let newc = context (fun i t -> EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr t))) (List.rev path) (EConstr.Unsafe.to_constr (pf_concl gl)) in
-  let newc = EConstr.of_constr newc in
+  let newc = context (project gl) (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
   Proofview.V82.of_tactic (convert_concl_no_check newc DEFAULTcast) gl
 
 let focused_simpl path = focused_simpl path
@@ -632,8 +644,7 @@ let mkNewMeta () = mkMeta (Evarutil.new_meta())
 
 let clever_rewrite_base_poly typ p result theorem gl =
   let full = pf_concl gl in
-  let full = EConstr.Unsafe.to_constr full in
-  let (abstracted,occ) = abstract_path typ (List.rev p) full in
+  let (abstracted,occ) = abstract_path (project gl) typ (List.rev p) full in
   let t =
     applist
       (mkLambda
@@ -646,7 +657,7 @@ let clever_rewrite_base_poly typ p result theorem gl =
 		       [| typ; result; mkRel 2; mkRel 1; occ; theorem |]))),
        [abstracted])
   in
-  exact (EConstr.of_constr (applist(t,[mkNewMeta()]))) gl
+  exact (applist(t,[mkNewMeta()])) gl
 
 let clever_rewrite_base p result theorem gl =
   clever_rewrite_base_poly (Lazy.force coq_Z) p result theorem gl
@@ -664,11 +675,10 @@ let clever_rewrite_gen_nat p result (t,args) =
 
 let clever_rewrite p vpath t gl =
   let full = pf_concl gl in
-  let full = EConstr.Unsafe.to_constr full in
-  let (abstracted,occ) = abstract_path (Lazy.force coq_Z) (List.rev p) full in
-  let vargs = List.map (fun p -> occurrence p occ) vpath in
+  let (abstracted,occ) = abstract_path (project gl) (Lazy.force coq_Z) (List.rev p) full in
+  let vargs = List.map (fun p -> occurrence (project gl) p occ) vpath in
   let t' = applist(t, (vargs @ [abstracted])) in
-  exact (EConstr.of_constr (applist(t',[mkNewMeta()]))) gl
+  exact (applist(t',[mkNewMeta()])) gl
 
 let rec shuffle p (t1,t2) =
   match t1,t2 with
@@ -910,10 +920,10 @@ let rec negate p = function
   | Oz i -> [focused_simpl p],Oz(neg i)
   | Oufo c -> [], Oufo (mkApp (Lazy.force coq_Zopp, [| c |]))
 
-let rec transform p t =
+let rec transform sigma p t =
   let default isnat t' =
     try
-      let v,th,_ = find_constr t' in
+      let v,th,_ = find_constr sigma t' in
       [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom v
     with e when CErrors.noncritical e ->
       let v = new_identifier_var ()
@@ -921,29 +931,29 @@ let rec transform p t =
       hide_constr t' v th isnat;
       [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom v
   in
-  try match destructurate_term t with
+  try match destructurate_term sigma t with
     | Kapp(Zplus,[t1;t2]) ->
-	let tac1,t1' = transform (P_APP 1 :: p) t1
-	and tac2,t2' = transform (P_APP 2 :: p) t2 in
+	let tac1,t1' = transform sigma (P_APP 1 :: p) t1
+	and tac2,t2' = transform sigma (P_APP 2 :: p) t2 in
 	let tac,t' = shuffle p (t1',t2') in
 	tac1 @ tac2 @ tac, t'
     | Kapp(Zminus,[t1;t2]) ->
 	let tac,t =
-	  transform p
+	  transform sigma p
 	    (mkApp (Lazy.force coq_Zplus,
 		     [| t1; (mkApp (Lazy.force coq_Zopp, [| t2 |])) |])) in
 	Proofview.V82.of_tactic (unfold sp_Zminus) :: tac,t
     | Kapp(Zsucc,[t1]) ->
-	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
+	let tac,t = transform sigma p (mkApp (Lazy.force coq_Zplus,
 					 [| t1; mk_integer one |])) in
 	Proofview.V82.of_tactic (unfold sp_Zsucc) :: tac,t
     | Kapp(Zpred,[t1]) ->
-	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
+	let tac,t = transform sigma p (mkApp (Lazy.force coq_Zplus,
 					 [| t1; mk_integer negone |])) in
 	Proofview.V82.of_tactic (unfold sp_Zpred) :: tac,t
    | Kapp(Zmult,[t1;t2]) ->
-       let tac1,t1' = transform (P_APP 1 :: p) t1
-       and tac2,t2' = transform (P_APP 2 :: p) t2 in
+       let tac1,t1' = transform sigma (P_APP 1 :: p) t1
+       and tac2,t2' = transform sigma (P_APP 2 :: p) t2 in
        begin match t1',t2' with
          | (_,Oz n) -> let tac,t' = scalar p n t1' in tac1 @ tac2 @ tac,t'
          | (Oz n,_) ->
@@ -954,11 +964,11 @@ let rec transform p t =
          | _ -> default false t
        end
    | Kapp((Zpos|Zneg|Z0),_) ->
-       (try ([],Oz(recognize_number t))
+       (try ([],Oz(recognize_number sigma t))
         with e when CErrors.noncritical e -> default false t)
    | Kvar s -> [],Oatom s
    | Kapp(Zopp,[t]) ->
-       let tac,t' = transform (P_APP 1 :: p) t in
+       let tac,t' = transform sigma (P_APP 1 :: p) t in
        let tac',t'' = negate p t' in
        tac @ tac', t''
    | Kapp(Z_of_nat,[t']) -> default true t'
@@ -1088,13 +1098,12 @@ let replay_history tactic_normalisation =
 	  let p_initial = [P_APP 2;P_TYPE] in
 	  let tac = shuffle_cancel p_initial e1.body in
 	  let solve_le =
-            let not_sup_sup = mkApp (Universes.constr_of_global (build_coq_eq ()),
+            let not_sup_sup = mkApp (Lazy.force coq_eq,
 				     [|
 					Lazy.force coq_comparison;
 					Lazy.force coq_Gt;
 					Lazy.force coq_Gt |])
 	    in
-	    let not_sup_sup = EConstr.of_constr not_sup_sup in
             Tacticals.New.tclTHENS
 	      (Tacticals.New.tclTHENLIST [
 		unfold sp_Zle;
@@ -1120,7 +1129,7 @@ let replay_history tactic_normalisation =
 	  let state_eg = mk_eq eq1 rhs in
 	  let tac = scalar_norm_add [P_APP 3] e2.body in
 	  Tacticals.New.tclTHENS
-	    (cut (EConstr.of_constr state_eg))
+	    (cut state_eg)
 	    [ Tacticals.New.tclTHENS
 	        (Tacticals.New.tclTHENLIST [
 		  (intros_using [aux]);
@@ -1189,7 +1198,7 @@ let replay_history tactic_normalisation =
 	  if e1.kind == DISE then
             let tac = scalar_norm [P_APP 3] e2.body in
             Tacticals.New.tclTHENS
-	      (cut (EConstr.of_constr state_eq))
+	      (cut state_eq)
 	      [Tacticals.New.tclTHENLIST [
 		(intros_using [aux1]);
 		(generalize_tac
@@ -1201,7 +1210,7 @@ let replay_history tactic_normalisation =
 	       Tacticals.New.tclTHEN (Proofview.V82.tactic (mk_then tac)) reflexivity ]
 	  else
             let tac = scalar_norm [P_APP 3] e2.body in
-            Tacticals.New.tclTHENS (cut (EConstr.of_constr state_eq))
+            Tacticals.New.tclTHENS (cut state_eq)
 	      [
 		Tacticals.New.tclTHENS
 		 (cut (mk_gt kk izero))
@@ -1231,7 +1240,7 @@ let replay_history tactic_normalisation =
             scalar_norm [P_APP 3] e1.body
 	  in
 	  Tacticals.New.tclTHENS
-	    (cut (EConstr.of_constr (mk_eq eq1 (mk_inv eq2))))
+	    (cut (mk_eq eq1 (mk_inv eq2)))
 	    [Tacticals.New.tclTHENLIST [
 	      (intros_using [aux]);
 	      (generalize_tac [mkApp (Lazy.force coq_OMEGA8,
@@ -1249,7 +1258,7 @@ let replay_history tactic_normalisation =
 	  and eq2 = val_of(decompile orig) in
 	  let vid = unintern_id v in
 	  let theorem =
-            mkApp (build_coq_ex (), [|
+            mkApp (Lazy.force coq_ex, [|
 		      Lazy.force coq_Z;
 		      mkLambda
 			(Name vid,
@@ -1264,7 +1273,7 @@ let replay_history tactic_normalisation =
             shuffle_mult_right p_initial
               orig.body m ({c= negone;v= v}::def.body) in
 	  Tacticals.New.tclTHENS
-	    (cut (EConstr.of_constr theorem))
+	    (cut theorem)
 	    [Tacticals.New.tclTHENLIST [
 	      (intros_using [aux]);
 	      (elim_id aux);
@@ -1277,7 +1286,7 @@ let replay_history tactic_normalisation =
 	      (clear [aux]);
 	      (intros_using [id]);
 	      (loop l) ];
-            Tacticals.New.tclTHEN (exists_tac (EConstr.of_constr eq1)) reflexivity ]
+            Tacticals.New.tclTHEN (exists_tac eq1) reflexivity ]
       | SPLIT_INEQ(e,(e1,act1),(e2,act2)) :: l ->
 	  let id1 = new_identifier ()
 	  and id2 = new_identifier () in
@@ -1287,7 +1296,7 @@ let replay_history tactic_normalisation =
 	  let tac2 = scalar_norm_add [P_APP 2;P_TYPE] e.body in
 	  let eq = val_of(decompile e) in
 	  Tacticals.New.tclTHENS
-	    (simplest_elim (EConstr.of_constr (applist (Lazy.force coq_OMEGA19, [eq; mkVar id]))))
+	    (simplest_elim (applist (Lazy.force coq_OMEGA19, [eq; mkVar id])))
 	    [Tacticals.New.tclTHENLIST [ Proofview.V82.tactic (mk_then tac1); (intros_using [id1]); (loop act1) ];
              Tacticals.New.tclTHENLIST [ Proofview.V82.tactic (mk_then tac2); (intros_using [id2]); (loop act2) ]]
       | SUM(e3,(k1,e1),(k2,e2)) :: l ->
@@ -1360,15 +1369,15 @@ let replay_history tactic_normalisation =
   in
   loop
 
-let normalize p_initial t =
-  let (tac,t') = transform p_initial t in
+let normalize sigma p_initial t =
+  let (tac,t') = transform sigma p_initial t in
   let (tac',t'') = condense p_initial t' in
   let (tac'',t''') = clear_zero p_initial t'' in
   tac @ tac' @ tac'' , t'''
 
-let normalize_equation id flag theorem pos t t1 t2 (tactic,defs) =
+let normalize_equation sigma id flag theorem pos t t1 t2 (tactic,defs) =
   let p_initial = [P_APP pos ;P_TYPE] in
-  let (tac,t') = normalize p_initial t in
+  let (tac,t') = normalize sigma p_initial t in
   let shift_left =
     tclTHEN
       (Proofview.V82.of_tactic (generalize_tac [mkApp (theorem, [| t1; t2; mkVar id |]) ]))
@@ -1383,34 +1392,35 @@ let normalize_equation id flag theorem pos t t1 t2 (tactic,defs) =
     (tactic,defs)
 
 let destructure_omega gl tac_def (id,c) =
+  let sigma = project gl in
   if String.equal (atompart_of_id id) "State" then
     tac_def
   else
-    try match destructurate_prop c with
+    try match destructurate_prop sigma c with
       | Kapp(Eq,[typ;t1;t2])
-	when begin match destructurate_type (EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr typ))) with Kapp(Z,[]) -> true | _ -> false end ->
+	when begin match destructurate_type sigma (pf_nf gl typ) with Kapp(Z,[]) -> true | _ -> false end ->
 	  let t = mk_plus t1 (mk_inv t2) in
-	  normalize_equation
+	  normalize_equation sigma
 	    id EQUA (Lazy.force coq_Zegal_left) 2 t t1 t2 tac_def
       | Kapp(Zne,[t1;t2]) ->
 	  let t = mk_plus t1 (mk_inv t2) in
-	  normalize_equation
+	  normalize_equation sigma
 	    id DISE (Lazy.force coq_Zne_left) 1 t t1 t2 tac_def
       | Kapp(Zle,[t1;t2]) ->
 	  let t = mk_plus t2 (mk_inv t1) in
-	  normalize_equation
+	  normalize_equation sigma
 	    id INEQ (Lazy.force coq_Zle_left) 2 t t1 t2 tac_def
       | Kapp(Zlt,[t1;t2]) ->
 	  let t = mk_plus (mk_plus t2 (mk_integer negone)) (mk_inv t1) in
-	  normalize_equation
+	  normalize_equation sigma
 	    id INEQ (Lazy.force coq_Zlt_left) 2 t t1 t2 tac_def
       | Kapp(Zge,[t1;t2]) ->
 	  let t = mk_plus t1 (mk_inv t2) in
-	  normalize_equation
+	  normalize_equation sigma
 	    id INEQ (Lazy.force coq_Zge_left) 2 t t1 t2 tac_def
       | Kapp(Zgt,[t1;t2]) ->
 	  let t = mk_plus (mk_plus t1 (mk_integer negone)) (mk_inv t2) in
-	  normalize_equation
+	  normalize_equation sigma
 	    id INEQ (Lazy.force coq_Zgt_left) 2 t t1 t2 tac_def
       | _ -> tac_def
     with e when catchable_exception e -> tac_def
@@ -1426,7 +1436,6 @@ let coq_omega =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   clear_constr_tables ();
   let hyps_types = Tacmach.New.pf_hyps_types gl in
-  let hyps_types = List.map (on_snd EConstr.Unsafe.to_constr) hyps_types in
   let destructure_omega = Tacmach.New.of_old destructure_omega gl in
   let tactic_normalisation, system =
     List.fold_left destructure_omega ([],[]) hyps_types in
@@ -1438,7 +1447,7 @@ let coq_omega =
            let i = new_id () in
            tag_hypothesis id i;
            (Tacticals.New.tclTHENLIST [
-	     (simplest_elim (EConstr.of_constr (applist (Lazy.force coq_intro_Z, [t]))));
+	     (simplest_elim (applist (Lazy.force coq_intro_Z, [t])));
 	     (intros_using [v; id]);
 	     (elim_id id);
 	     (clear [id]);
@@ -1449,7 +1458,7 @@ let coq_omega =
             constant = zero; id = i} :: sys
 	 else
            (Tacticals.New.tclTHENLIST [
-	     (simplest_elim (EConstr.of_constr (applist (Lazy.force coq_new_var, [t]))));
+	     (simplest_elim (applist (Lazy.force coq_new_var, [t])));
 	     (intros_using [v;th]);
 	     tac ]),
            sys)
@@ -1480,7 +1489,8 @@ let nat_inject =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let is_conv = Tacmach.New.pf_apply Reductionops.is_conv gl in
   let rec explore p t : unit Proofview.tactic =
-    try match destructurate_term t with
+    Proofview.tclEVARMAP >>= fun sigma ->
+    try match destructurate_term sigma t with
       | Kapp(Plus,[t1;t2]) ->
           Tacticals.New.tclTHENLIST [
 	    Proofview.V82.tactic (clever_rewrite_gen p (mk_plus (mk_inj t1) (mk_inj t2))
@@ -1499,7 +1509,7 @@ let nat_inject =
           let id = new_identifier () in
           Tacticals.New.tclTHENS
             (Tacticals.New.tclTHEN
-	       (simplest_elim (EConstr.of_constr (applist (Lazy.force coq_le_gt_dec, [t2;t1]))))
+	       (simplest_elim (applist (Lazy.force coq_le_gt_dec, [t2;t1])))
 	       (intros_using [id]))
 	    [
 	      Tacticals.New.tclTHENLIST [
@@ -1516,14 +1526,14 @@ let nat_inject =
 	    ]
       | Kapp(S,[t']) ->
           let rec is_number t =
-            try match destructurate_term t with
+            try match destructurate_term sigma t with
 		Kapp(S,[t]) -> is_number t
               | Kapp(O,[]) -> true
               | _ -> false
             with e when catchable_exception e -> false
 	  in
           let rec loop p t : unit Proofview.tactic =
-            try match destructurate_term t with
+            try match destructurate_term sigma t with
 		Kapp(S,[t]) ->
                   (Tacticals.New.tclTHEN
                      (Proofview.V82.tactic (clever_rewrite_gen p
@@ -1549,7 +1559,8 @@ let nat_inject =
   and loop = function
     | [] -> Proofview.tclUNIT ()
     | (i,t)::lit ->
-	  begin try match destructurate_prop t with
+        Proofview.tclEVARMAP >>= fun sigma ->
+	  begin try match destructurate_prop sigma t with
               Kapp(Le,[t1;t2]) ->
 		Tacticals.New.tclTHENLIST [
 		  (generalize_tac
@@ -1596,7 +1607,7 @@ let nat_inject =
 		  (loop lit)
                 ]
             | Kapp(Eq,[typ;t1;t2]) ->
-		if is_conv (EConstr.of_constr typ) (EConstr.of_constr (Lazy.force coq_nat)) then
+		if is_conv typ (Lazy.force coq_nat) then
                   Tacticals.New.tclTHENLIST [
 		    (generalize_tac
 		      [mkApp (Lazy.force coq_inj_eq, [| t1;t2;mkVar i |]) ]);
@@ -1610,7 +1621,6 @@ let nat_inject =
 	  with e when catchable_exception e -> loop lit end
   in
   let hyps_types = Tacmach.New.pf_hyps_types gl in
-  let hyps_types = List.map (on_snd EConstr.Unsafe.to_constr) hyps_types in
   loop (List.rev hyps_types)
   end }
 
@@ -1647,7 +1657,7 @@ let not_binop = function
 exception Undecidable
 
 let rec decidability gl t =
-  match destructurate_prop t with
+  match destructurate_prop (project gl) t with
     | Kapp(Or,[t1;t2]) ->
 	mkApp (Lazy.force coq_dec_or, [| t1; t2;
 		  decidability gl t1; decidability gl t2 |])
@@ -1665,7 +1675,7 @@ let rec decidability gl t =
     | Kapp(Not,[t1]) ->
         mkApp (Lazy.force coq_dec_not, [| t1; decidability gl t1 |])
     | Kapp(Eq,[typ;t1;t2]) ->
-	begin match destructurate_type (EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr typ))) with
+	begin match destructurate_type (project gl) (pf_nf gl typ) with
           | Kapp(Z,[]) ->  mkApp (Lazy.force coq_dec_eq, [| t1;t2 |])
           | Kapp(Nat,[]) ->  mkApp (Lazy.force coq_dec_eq_nat, [| t1;t2 |])
           | _ -> raise Undecidable
@@ -1696,6 +1706,15 @@ let onClearedName2 id tac =
       Tacticals.New.tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
     end })
 
+let local_assum (na, t) =
+  let inj = EConstr.Unsafe.to_constr in
+  LocalAssum (na, inj t)
+
+let rec is_Prop sigma c = match EConstr.kind sigma c with
+  | Sort (Prop Null) -> true
+  | Cast (c,_,_) -> is_Prop sigma c
+  | _ -> false
+
 let destructure_hyps =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let type_of = Tacmach.New.pf_unsafe_type_of gl in
@@ -1705,46 +1724,47 @@ let destructure_hyps =
       | [] -> (Tacticals.New.tclTHEN nat_inject coq_omega)
       | decl::lit ->
           let i = NamedDecl.get_id decl in
-	  begin try match destructurate_prop (NamedDecl.get_type decl) with
+          Proofview.tclEVARMAP >>= fun sigma ->
+	  begin try match destructurate_prop sigma (EConstr.of_constr (NamedDecl.get_type decl)) with
 	  | Kapp(False,[]) -> elim_id i
           | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop lit
           | Kapp(Or,[t1;t2]) ->
               (Tacticals.New.tclTHENS
                  (elim_id i)
-                 [ onClearedName i (fun i -> (loop (LocalAssum (i,t1)::lit)));
-                   onClearedName i (fun i -> (loop (LocalAssum (i,t2)::lit))) ])
+                 [ onClearedName i (fun i -> (loop (local_assum (i,t1)::lit)));
+                   onClearedName i (fun i -> (loop (local_assum (i,t2)::lit))) ])
           | Kapp(And,[t1;t2]) ->
               Tacticals.New.tclTHEN
 		(elim_id i)
 		(onClearedName2 i (fun i1 i2 ->
-		  loop (LocalAssum (i1,t1) :: LocalAssum (i2,t2) :: lit)))
+		  loop (local_assum (i1,t1) :: local_assum (i2,t2) :: lit)))
           | Kapp(Iff,[t1;t2]) ->
 	      Tacticals.New.tclTHEN
 		(elim_id i)
 		(onClearedName2 i (fun i1 i2 ->
-		  loop (LocalAssum (i1,mkArrow t1 t2) :: LocalAssum (i2,mkArrow t2 t1) :: lit)))
+		  loop (local_assum (i1,mkArrow t1 t2) :: local_assum (i2,mkArrow t2 t1) :: lit)))
           | Kimp(t1,t2) ->
 	      (* t1 and t2 might be in Type rather than Prop.
 		 For t1, the decidability check will ensure being Prop. *)
-              if is_Prop (EConstr.Unsafe.to_constr (type_of (EConstr.of_constr t2)))
+              if is_Prop sigma (type_of t2)
               then
 		let d1 = decidability t1 in
 		Tacticals.New.tclTHENLIST [
 		  (generalize_tac [mkApp (Lazy.force coq_imp_simp,
                                                                [| t1; t2; d1; mkVar i|])]);
 		  (onClearedName i (fun i ->
-		    (loop (LocalAssum (i,mk_or (mk_not t1) t2) :: lit))))
+		    (loop (local_assum (i,mk_or (mk_not t1) t2) :: lit))))
                 ]
               else
 		loop lit
           | Kapp(Not,[t]) ->
-              begin match destructurate_prop t with
+              begin match destructurate_prop sigma t with
 		Kapp(Or,[t1;t2]) ->
                   Tacticals.New.tclTHENLIST [
 		    (generalize_tac
                                             [mkApp (Lazy.force coq_not_or,[| t1; t2; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (LocalAssum (i,mk_and (mk_not t1) (mk_not t2)) :: lit))))
+                      (loop (local_assum (i,mk_and (mk_not t1) (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(And,[t1;t2]) ->
 		  let d1 = decidability t1 in
@@ -1753,7 +1773,7 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_and,
 				                    [| t1; t2; d1; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (LocalAssum (i,mk_or (mk_not t1) (mk_not t2)) :: lit))))
+                      (loop (local_assum (i,mk_or (mk_not t1) (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(Iff,[t1;t2]) ->
 		  let d1 = decidability t1 in
@@ -1763,7 +1783,7 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_iff,
 				                    [| t1; t2; d1; d2; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (LocalAssum (i, mk_or (mk_and t1 (mk_not t2))
+                      (loop (local_assum (i, mk_or (mk_and t1 (mk_not t2))
 				                  (mk_and (mk_not t1) t2)) :: lit))))
                   ]
 	      | Kimp(t1,t2) ->
@@ -1775,14 +1795,14 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_imp,
 				                    [| t1; t2; d1; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (LocalAssum (i,mk_and t1 (mk_not t2)) :: lit))))
+                      (loop (local_assum (i,mk_and t1 (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(Not,[t]) ->
 		  let d = decidability t in
                   Tacticals.New.tclTHENLIST [
 		    (generalize_tac
 			                    [mkApp (Lazy.force coq_not_not, [| t; d; mkVar i |])]);
-		    (onClearedName i (fun i -> (loop (LocalAssum (i,t) :: lit))))
+		    (onClearedName i (fun i -> (loop (local_assum (i,t) :: lit))))
                   ]
 	      | Kapp(op,[t1;t2]) ->
 		  (try
@@ -1795,32 +1815,32 @@ let destructure_hyps =
 		   with Not_found -> loop lit)
 	      | Kapp(Eq,[typ;t1;t2]) ->
                   if !old_style_flag then begin
-		    match destructurate_type (EConstr.Unsafe.to_constr (pf_nf (EConstr.of_constr typ))) with
+		    match destructurate_type sigma (pf_nf typ) with
 		    | Kapp(Nat,_) ->
                         Tacticals.New.tclTHENLIST [
 			  (simplest_elim
-			     (EConstr.of_constr (mkApp
-                                (Lazy.force coq_not_eq, [|t1;t2;mkVar i|]))));
+			     (mkApp
+                                (Lazy.force coq_not_eq, [|t1;t2;mkVar i|])));
 			  (onClearedName i (fun _ -> loop lit))
                         ]
 		    | Kapp(Z,_) ->
                         Tacticals.New.tclTHENLIST [
 			  (simplest_elim
-			     (EConstr.of_constr (mkApp
-				(Lazy.force coq_not_Zeq, [|t1;t2;mkVar i|]))));
+			     (mkApp
+				(Lazy.force coq_not_Zeq, [|t1;t2;mkVar i|])));
 			  (onClearedName i (fun _ -> loop lit))
                         ]
 		    | _ -> loop lit
                   end else begin
-		    match destructurate_type (EConstr.Unsafe.to_constr (pf_nf (EConstr.of_constr typ))) with
+		    match destructurate_type sigma (pf_nf typ) with
 		    | Kapp(Nat,_) ->
                         (Tacticals.New.tclTHEN
-			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
+			   (convert_hyp_no_check (NamedDecl.set_type (EConstr.Unsafe.to_constr (mkApp (Lazy.force coq_neq, [| t1;t2|])))
                                                                      decl))
 			   (loop lit))
 		    | Kapp(Z,_) ->
                         (Tacticals.New.tclTHEN
-			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
+			   (convert_hyp_no_check (NamedDecl.set_type (EConstr.Unsafe.to_constr (mkApp (Lazy.force coq_Zne, [| t1;t2|])))
                                                                      decl))
 			   (loop lit))
 		    | _ -> loop lit
@@ -1842,7 +1862,8 @@ let destructure_goal =
     let concl = Proofview.Goal.concl gl in
     let decidability = Tacmach.New.of_old decidability gl in
     let rec loop t =
-      match destructurate_prop t with
+      Proofview.tclEVARMAP >>= fun sigma ->
+      match destructurate_prop sigma t with
       | Kapp(Not,[t]) ->
           (Tacticals.New.tclTHEN
 	     (Tacticals.New.tclTHEN (unfold sp_not) intro)
@@ -1855,13 +1876,12 @@ let destructure_goal =
 	      let dec = decidability t in
 	      Tacticals.New.tclTHEN
                 (Proofview.V82.tactic (Tacmach.refine
-		                         (EConstr.of_constr (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |])))))
+		                         (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |]))))
 	        intro
-	    with Undecidable -> Tactics.elim_type (EConstr.of_constr (build_coq_False ()))
+	    with Undecidable -> Tactics.elim_type (Lazy.force coq_False)
 	  in
 	  Tacticals.New.tclTHEN goal_tac destructure_hyps
     in
-    let concl = EConstr.Unsafe.to_constr concl in
     (loop concl)
   end }
 
