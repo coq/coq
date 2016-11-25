@@ -128,7 +128,7 @@ let onClauseLR tac cl gls =
   tclMAP tac (List.rev (Locusops.simple_clause_of hyps cl)) gls
 
 let ifOnHyp pred tac1 tac2 id gl =
-  if pred (id,EConstr.of_constr (pf_get_hyp_typ gl id)) then
+  if pred (id,pf_get_hyp_typ gl id) then
     tac1 id gl
   else
     tac2 id gl
@@ -248,10 +248,10 @@ let compute_constructor_signatures isrec ((_,k as ity),u) =
   Array.map2 analrec lc lrecargs
 
 let elimination_sort_of_goal gl =
-  pf_apply Retyping.get_sort_family_of gl (EConstr.of_constr (pf_concl gl))
+  pf_apply Retyping.get_sort_family_of gl (pf_concl gl)
 
 let elimination_sort_of_hyp id gl =
-  pf_apply Retyping.get_sort_family_of gl (EConstr.of_constr (pf_get_hyp_typ gl id))
+  pf_apply Retyping.get_sort_family_of gl (pf_get_hyp_typ gl id)
 
 let elimination_sort_of_clause = function
   | None -> elimination_sort_of_goal
@@ -269,21 +269,22 @@ let pf_constr_of_global gr k =
 
 let gl_make_elim ind gl =
   let gr = Indrec.lookup_eliminator (fst ind) (elimination_sort_of_goal gl) in
-    pf_apply Evd.fresh_global gl gr
+  let (sigma, c) = pf_apply Evd.fresh_global gl gr in
+  (sigma, EConstr.of_constr c)
 
 let gl_make_case_dep ind gl =
   let sigma = Sigma.Unsafe.of_evar_map (Tacmach.project gl) in
   let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind true
     (elimination_sort_of_goal gl)
   in
-  (Sigma.to_evar_map sigma, r)
+  (Sigma.to_evar_map sigma, EConstr.of_constr r)
 
 let gl_make_case_nodep ind gl =
   let sigma = Sigma.Unsafe.of_evar_map (Tacmach.project gl) in
   let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind false
     (elimination_sort_of_goal gl)
   in
-  (Sigma.to_evar_map sigma, r)
+  (Sigma.to_evar_map sigma, EConstr.of_constr r)
 
 let make_elim_branch_assumptions ba gl =
   let assums =
@@ -583,7 +584,6 @@ module New = struct
   let ifOnHyp pred tac1 tac2 id =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
     let typ = Tacmach.New.pf_get_hyp_typ id gl in
-    let typ = EConstr.of_constr typ in
     if pred (id,typ) then
       tac1 id
     else
@@ -630,7 +630,7 @@ module New = struct
     (Proofview.Goal.nf_enter { enter = begin fun gl ->
     let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (EConstr.of_constr elim,EConstr.of_constr (Tacmach.New.pf_unsafe_type_of gl (EConstr.of_constr elim)))) gl in
+    let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_unsafe_type_of gl elim)) gl in
     let indmv =
       match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
@@ -642,7 +642,7 @@ module New = struct
       | Meta p -> p
       | _ ->
 	  let name_elim =
-	    match kind_of_term elim with
+	    match EConstr.kind sigma elim with
 	    | Const (kn, _) -> string_of_con kn
 	    | Var id -> string_of_id id
 	    | _ -> "\b"
@@ -680,7 +680,7 @@ module New = struct
 
   let elimination_then tac c =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let (ind,t) = pf_reduce_to_quantified_ind gl (EConstr.of_constr (pf_unsafe_type_of gl c)) in
+    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_unsafe_type_of gl c) in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
       | None -> true,gl_make_elim
@@ -715,7 +715,7 @@ module New = struct
   let elimination_sort_of_hyp id gl =
     (** Retyping will expand evars anyway. *)
     let c = pf_get_hyp_typ id (Goal.assume gl) in
-    pf_apply Retyping.get_sort_family_of gl (EConstr.of_constr c)
+    pf_apply Retyping.get_sort_family_of gl c
 
   let elimination_sort_of_clause id gl = match id with
   | None -> elimination_sort_of_goal gl

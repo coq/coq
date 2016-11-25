@@ -1133,7 +1133,7 @@ let fold_commands cl env sigma c =
 
 (* call by value reduction functions *)
 let cbv_norm_flags flags env sigma t =
-  EConstr.of_constr (cbv_norm (create_cbv_infos flags env sigma) t)
+  cbv_norm (create_cbv_infos flags env sigma) t
 
 let cbv_beta = cbv_norm_flags beta empty_env
 let cbv_betaiota = cbv_norm_flags betaiota empty_env

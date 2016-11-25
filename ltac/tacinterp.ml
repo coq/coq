@@ -636,7 +636,6 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let (evd,c) =
     catch_error trace (understand_ltac flags env sigma vars kind) c
   in
-  let c = EConstr.of_constr c in
   (* spiwack: to avoid unnecessary modifications of tacinterp, as this
      function already use effect, I call [run] hoping it doesn't mess
      up with any assumption. *)
@@ -795,7 +794,6 @@ let interp_may_eval f ist env sigma = function
 	let ic = EConstr.Unsafe.to_constr ic in
 	let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
 	let c = Typing.e_solve_evars env evdref (EConstr.of_constr c) in
-	let c = EConstr.of_constr c in
 	!evdref , c
       with
 	| Not_found ->

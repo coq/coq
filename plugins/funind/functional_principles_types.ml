@@ -493,7 +493,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
   in
   let _ = evd := sigma in 
   let l_schemes =
-    List.map (EConstr.of_constr %> Typing.unsafe_type_of env sigma) schemes
+    List.map (EConstr.of_constr %> Typing.unsafe_type_of env sigma %> EConstr.Unsafe.to_constr) schemes
   in
   let i = ref (-1) in
   let sorts =
@@ -671,7 +671,7 @@ let build_case_scheme fa =
       Indrec.build_case_analysis_scheme_default env sigma ind sf
   in
   let sigma = Sigma.to_evar_map sigma in
-  let scheme_type =  (Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme) in
+  let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
   let sorts =
     (fun (_,_,x) ->
        Universes.new_sort_in_family (Pretyping.interp_elimination_sort x)

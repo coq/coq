@@ -142,7 +142,7 @@ let ic c =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, c = Constrintern.interp_open_constr env sigma c in
-  (sigma, EConstr.of_constr c)
+  (sigma, c)
 
 let ic_unsafe c = (*FIXME remove *)
   let env = Global.env() in
@@ -505,8 +505,6 @@ let ring_equality env evd (r,add,mul,opp,req) =
             | None -> plapp evd coq_eq_smorph [|r;add;mul|] in
 	let setoid = Typing.e_solve_evars env evd setoid in
 	let op_morph = Typing.e_solve_evars env evd op_morph in
-	let setoid = EConstr.of_constr setoid in
-	let op_morph = EConstr.of_constr op_morph in
 	  (setoid,op_morph)
     | _ ->
 	let setoid = setoid_of_relation (Global.env ()) evd r req in
@@ -594,6 +592,7 @@ let make_hyp_list env evd lH =
       (plapp evd coq_nil [|carrier|])
   in 
   let l' = Typing.e_solve_evars env evd l in
+  let l' = EConstr.Unsafe.to_constr l' in
     Evarutil.nf_evars_universes !evd l'
 
 let interp_power env evd pow =
@@ -756,7 +755,7 @@ let ring_lookup (f : Value.t) lH rl t =
       let rl = make_args_list sigma rl t in
       let evdref = ref sigma in
       let e = find_ring_structure env sigma rl in
-      let rl = carg (make_term_list env evdref (EConstr.of_constr e.ring_carrier) rl) in
+      let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.ring_carrier) rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let ring = ltac_ring_structure e in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (ring@[lH;rl]))
@@ -1039,7 +1038,7 @@ let field_lookup (f : Value.t) lH rl t =
       let rl = make_args_list sigma rl t in
       let evdref = ref sigma in
       let e = find_field_structure env sigma rl in
-      let rl = carg (make_term_list env evdref (EConstr.of_constr e.field_carrier) rl) in
+      let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.field_carrier) rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let field = ltac_field_structure e in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (field@[lH;rl]))

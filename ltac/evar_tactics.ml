@@ -7,6 +7,9 @@
 (************************************************************************)
 
 open Util
+open Names
+open Term
+open EConstr
 open CErrors
 open Evar_refiner
 open Tacmach
@@ -35,25 +38,32 @@ let instantiate_evar evk (ist,rawc) sigma =
   let sigma' = w_refine (evk,evi) (lvar ,rawc) sigma in
   tclEVARS sigma'
 
+let evar_list sigma c =
+  let rec evrec acc c =
+    match EConstr.kind sigma c with
+    | Evar (evk, _ as ev) -> ev :: acc
+    | _ -> EConstr.fold sigma evrec acc c in
+  evrec [] c
+
 let instantiate_tac n c ido =
   Proofview.V82.tactic begin fun gl ->
   let sigma = gl.sigma in
   let evl =
     match ido with
-	ConclLocation () -> evar_list (pf_concl gl)
+	ConclLocation () -> evar_list sigma (pf_concl gl)
       | HypLocation (id,hloc) ->
 	  let decl = Environ.lookup_named_val id (Goal.V82.hyps sigma (sig_it gl)) in
 	    match hloc with
 		InHyp ->
 		  (match decl with
-                    | LocalAssum (_,typ) -> evar_list typ
+                    | LocalAssum (_,typ) -> evar_list sigma (EConstr.of_constr typ)
 		    | _ -> error
 			"Please be more specific: in type or value?")
 	      | InHypTypeOnly ->
-		  evar_list (NamedDecl.get_type decl)
+		  evar_list sigma (EConstr.of_constr (NamedDecl.get_type decl))
 	      | InHypValueOnly ->
 		  (match decl with
-		    | LocalDef (_,body,_) -> evar_list body
+		    | LocalDef (_,body,_) -> evar_list sigma (EConstr.of_constr body)
 		    | _ -> error "Not a defined hypothesis.") in
   if List.length evl < n then
     error "Not enough uninstantiated existential variables.";
@@ -92,3 +102,18 @@ let let_evar name typ =
     in
     Sigma (tac, sigma, p)
   end }
+
+let hget_evar n =
+  let open EConstr in
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let sigma = Tacmach.New.project gl in
+  let concl = Proofview.Goal.concl gl in
+  let evl = evar_list sigma concl in
+  if List.length evl < n then
+    error "Not enough uninstantiated existential variables.";
+  if n <= 0 then error "Incorrect existential variable index.";
+  let ev = List.nth evl (n-1) in
+  let ev_type = EConstr.existential_type sigma ev in
+  Tactics.change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,concl))
+  end }
+

@@ -219,7 +219,7 @@ let make_prb gls depth additionnal_terms =
 	     | `Nrule patts -> add_quant state id false patts
 	 end) (Environ.named_context_of_val (Goal.V82.nf_hyps gls.sigma gls.it));
     begin
-      match atom_of_constr env sigma (EConstr.of_constr (pf_concl gls)) with
+      match atom_of_constr env sigma (pf_concl gls) with
 	  `Eq (t,a,b) -> add_disequality state Goal a b
 	|	`Other g ->
 		  List.iter
@@ -271,7 +271,7 @@ let constr_of_term c = EConstr.of_constr (constr_of_term c)
 
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let type_of t = EConstr.of_constr (Tacmach.New.pf_unsafe_type_of gl t) in
+  let type_of t = Tacmach.New.pf_unsafe_type_of gl t in
   try (* type_of can raise exceptions *)
   match p.p_rule with
       Ax c -> exact_check (EConstr.of_constr c)
@@ -343,7 +343,7 @@ let refute_tac c t1 t2 p =
     let neweq= new_app_global _eq [|intype;tt1;tt2|] in
     Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
       [proof_tac p; simplest_elim false_t]
-  in refresh_universes (EConstr.of_constr (Tacmach.New.pf_unsafe_type_of gl tt1)) k
+  in refresh_universes (Tacmach.New.pf_unsafe_type_of gl tt1) k
   end }
 
 let refine_exact_check c gl =
@@ -361,7 +361,7 @@ let convert_to_goal_tac c t1 t2 p =
     let endt=app_global _eq_rect [|sort;tt1;identity;c;tt2;mkVar e|] in
     Tacticals.New.tclTHENS (neweq (assert_before (Name e)))
 			   [proof_tac p; Proofview.V82.tactic (endt refine_exact_check)]
-  in refresh_universes (EConstr.of_constr (Tacmach.New.pf_unsafe_type_of gl tt2)) k
+  in refresh_universes (Tacmach.New.pf_unsafe_type_of gl tt2) k
   end }
 
 let convert_to_hyp_tac c1 t1 c2 t2 p =
@@ -385,7 +385,7 @@ let discriminate_tac (cstr,u as cstru) p =
     let trivial = Universes.constr_of_global (Lazy.force _True) in
     let trivial = EConstr.of_constr trivial in
     let evm = Tacmach.New.project gl in
-    let evm, intype = refresh_type env evm (EConstr.of_constr (Tacmach.New.pf_unsafe_type_of gl t1)) in
+    let evm, intype = refresh_type env evm (Tacmach.New.pf_unsafe_type_of gl t1) in
     let evm, outtype = Evd.new_sort_variable Evd.univ_flexible evm in
     let outtype = mkSort outtype in
     let pred = mkLambda(Name xid,outtype,mkRel 1) in

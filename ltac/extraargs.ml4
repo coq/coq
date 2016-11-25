@@ -177,7 +177,7 @@ ARGUMENT EXTEND lglob
 END
 
 let interp_casted_constr ist gl c =
-  interp_constr_gen (Pretyping.OfType (EConstr.of_constr (pf_concl gl))) ist (pf_env gl) (project gl) c
+  interp_constr_gen (Pretyping.OfType (pf_concl gl)) ist (pf_env gl) (project gl) c
 
 ARGUMENT EXTEND casted_constr
   TYPED AS constr

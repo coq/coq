@@ -257,7 +257,7 @@ type hypinfo = {
 
 let decompose_applied_relation metas env sigma c ctype left2right =
   let find_rel ty =
-    let eqclause = Clenv.mk_clenv_from_env env sigma None (EConstr.of_constr c,EConstr.of_constr ty) in
+    let eqclause = Clenv.mk_clenv_from_env env sigma None (EConstr.of_constr c,ty) in
     let eqclause =
       if metas then eqclause
       else clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)
@@ -274,6 +274,8 @@ let decompose_applied_relation metas env sigma c ctype left2right =
 	let ty1, ty2 =
 	  Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c1), Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c2)
 	in
+	let ty = EConstr.Unsafe.to_constr ty in
+	let ty1 = EConstr.Unsafe.to_constr ty1 in
 (* 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
 (* 	  else *)
 	    Some { hyp_cl=eqclause; hyp_prf=EConstr.Unsafe.to_constr (Clenv.clenv_value eqclause); hyp_ty = ty;
@@ -284,9 +286,8 @@ let decompose_applied_relation metas env sigma c ctype left2right =
     match find_rel ctype with
     | Some c -> Some c
     | None ->
-	let ctx,t' = Reductionops.splay_prod_assum env sigma (EConstr.of_constr ctype) in (* Search for underlying eq *)
-	let t' = EConstr.Unsafe.to_constr t' in
-	match find_rel (Term.it_mkProd_or_LetIn t' ctx) with
+	let ctx,t' = Reductionops.splay_prod_assum env sigma ctype in (* Search for underlying eq *)
+	match find_rel (it_mkProd_or_LetIn t' ctx) with
 	| Some c -> Some c
 	| None -> None
 
@@ -296,7 +297,7 @@ let find_applied_relation metas loc env sigma c left2right =
     | Some c -> c
     | None ->
 	user_err ~loc ~hdr:"decompose_applied_relation"
-		    (str"The type" ++ spc () ++ Printer.pr_constr_env env sigma ctype ++
+		    (str"The type" ++ spc () ++ Printer.pr_econstr_env env sigma ctype ++
 		       spc () ++ str"of this term does not end with an applied relation.")
 
 (* To add rewriting rules to a base *)

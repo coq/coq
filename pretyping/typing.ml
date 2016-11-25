@@ -376,7 +376,7 @@ let unsafe_type_of env evd c =
   let evdref = ref evd in
   let env = enrich_env env evdref in
   let j = execute env evdref c in
-    EConstr.Unsafe.to_constr j.uj_type
+    j.uj_type
 
 (* Sort of a type *)
 
@@ -411,6 +411,6 @@ let e_solve_evars env evdref c =
   let env = enrich_env env evdref in
   let c = (execute env evdref c).uj_val in
   (* side-effect on evdref *)
-  nf_evar !evdref (EConstr.Unsafe.to_constr c)
+  EConstr.of_constr (nf_evar !evdref (EConstr.Unsafe.to_constr c))
 
-let _ = Evarconv.set_solve_evars (fun env evdref c -> EConstr.of_constr (e_solve_evars env evdref c))
+let _ = Evarconv.set_solve_evars (fun env evdref c -> e_solve_evars env evdref c)

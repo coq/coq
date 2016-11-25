@@ -201,6 +201,7 @@ let extend_with_ref_list l seq gl =
   let f gr (seq,gl) =
     let gl, c = pf_eapply Evd.fresh_global gl gr in
     let typ=(pf_unsafe_type_of gl (EConstr.of_constr c)) in
+    let typ = EConstr.Unsafe.to_constr typ in
       (add_formula Hyp gr typ seq gl,gl) in
     List.fold_right f l (seq,gl)
 
@@ -216,6 +217,7 @@ let extend_with_auto_hints l seq gl=
 	  (try
 	     let (gr, _) = Termops.global_of_constr (project gl) c in
 	     let typ=(pf_unsafe_type_of gl c) in
+	     let typ = EConstr.Unsafe.to_constr typ in
 	       seqref:=add_formula Hint gr typ !seqref gl
 	   with Not_found->())
       | _-> () in

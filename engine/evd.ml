@@ -729,13 +729,6 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
 
 (* excluding defined evars *)
 
-let evar_list c =
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (evk, _ as ev) -> ev :: acc
-    | _ -> Term.fold_constr evrec acc c in
-  evrec [] c
-
 let evars_of_term c =
   let rec evrec acc c =
     match kind_of_term c with

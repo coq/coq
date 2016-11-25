@@ -330,7 +330,7 @@ let meta_free_prefix sigma a =
   with Stop acc -> Array.rev_of_list acc
 
 let goal_type_of env sigma c =
-  if !check then unsafe_type_of env sigma (EConstr.of_constr c)
+  if !check then EConstr.Unsafe.to_constr (unsafe_type_of env sigma (EConstr.of_constr c))
   else EConstr.Unsafe.to_constr (Retyping.get_type_of env sigma (EConstr.of_constr c))
 
 let rec mk_refgoals sigma goal goalacc conclty trm =

@@ -420,10 +420,6 @@ val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t
     contained in the object; need the term to be evar-normal otherwise
     defined evars are returned too. *)
 
-val evar_list : constr -> existential list
-  (** excluding evars in instances of evars and collected with
-     redundancies from right to left (used by tactic "instantiate") *)
-
 val evars_of_term : constr -> Evar.Set.t
   (** including evars in instances of evars *)
 

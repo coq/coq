@@ -76,10 +76,10 @@ val allow_anonymous_refs : bool ref
     evar_map is modified explicitly or by side-effect. *)
 
 val understand_tcc : ?flags:inference_flags -> env -> evar_map ->
-  ?expected_type:typing_constraint -> glob_constr -> open_constr
+  ?expected_type:typing_constraint -> glob_constr -> evar_map * EConstr.constr
 
 val understand_tcc_evars : ?flags:inference_flags -> env -> evar_map ref ->
-  ?expected_type:typing_constraint -> glob_constr -> constr
+  ?expected_type:typing_constraint -> glob_constr -> EConstr.constr
 
 (** More general entry point with evars from ltac *)
 
@@ -95,7 +95,7 @@ val understand_tcc_evars : ?flags:inference_flags -> env -> evar_map ref ->
 
 val understand_ltac : inference_flags ->
   env -> evar_map -> ltac_var_map ->
-  typing_constraint -> glob_constr -> pure_open_constr
+  typing_constraint -> glob_constr -> evar_map * EConstr.constr
 
 (** Standard call to get a constr from a glob_constr, resolving
     implicit arguments and coercions, and compiling pattern-matching;

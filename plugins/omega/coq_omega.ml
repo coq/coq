@@ -38,9 +38,9 @@ open OmegaSolver
 
 let elim_id id =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-    simplest_elim (EConstr.of_constr (Tacmach.New.pf_global id gl))
+    simplest_elim (Tacmach.New.pf_global id gl)
   end }
-let resolve_id id gl = Proofview.V82.of_tactic (apply (EConstr.of_constr (pf_global gl id))) gl
+let resolve_id id gl = Proofview.V82.of_tactic (apply (pf_global gl id)) gl
 
 let timing timer_name f arg = f arg
 
@@ -568,7 +568,7 @@ let abstract_path typ path t =
   mkLambda (Name (Id.of_string "x"), typ, abstract), !term_occur
 
 let focused_simpl path gl =
-  let newc = context (fun i t -> EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr t))) (List.rev path) (pf_concl gl) in
+  let newc = context (fun i t -> EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr t))) (List.rev path) (EConstr.Unsafe.to_constr (pf_concl gl)) in
   let newc = EConstr.of_constr newc in
   Proofview.V82.of_tactic (convert_concl_no_check newc DEFAULTcast) gl
 
@@ -632,6 +632,7 @@ let mkNewMeta () = mkMeta (Evarutil.new_meta())
 
 let clever_rewrite_base_poly typ p result theorem gl =
   let full = pf_concl gl in
+  let full = EConstr.Unsafe.to_constr full in
   let (abstracted,occ) = abstract_path typ (List.rev p) full in
   let t =
     applist
@@ -663,6 +664,7 @@ let clever_rewrite_gen_nat p result (t,args) =
 
 let clever_rewrite p vpath t gl =
   let full = pf_concl gl in
+  let full = EConstr.Unsafe.to_constr full in
   let (abstracted,occ) = abstract_path (Lazy.force coq_Z) (List.rev p) full in
   let vargs = List.map (fun p -> occurrence p occ) vpath in
   let t' = applist(t, (vargs @ [abstracted])) in
@@ -1424,6 +1426,7 @@ let coq_omega =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   clear_constr_tables ();
   let hyps_types = Tacmach.New.pf_hyps_types gl in
+  let hyps_types = List.map (on_snd EConstr.Unsafe.to_constr) hyps_types in
   let destructure_omega = Tacmach.New.of_old destructure_omega gl in
   let tactic_normalisation, system =
     List.fold_left destructure_omega ([],[]) hyps_types in
@@ -1607,6 +1610,7 @@ let nat_inject =
 	  with e when catchable_exception e -> loop lit end
   in
   let hyps_types = Tacmach.New.pf_hyps_types gl in
+  let hyps_types = List.map (on_snd EConstr.Unsafe.to_constr) hyps_types in
   loop (List.rev hyps_types)
   end }
 
@@ -1722,7 +1726,7 @@ let destructure_hyps =
           | Kimp(t1,t2) ->
 	      (* t1 and t2 might be in Type rather than Prop.
 		 For t1, the decidability check will ensure being Prop. *)
-              if is_Prop (type_of (EConstr.of_constr t2))
+              if is_Prop (EConstr.Unsafe.to_constr (type_of (EConstr.of_constr t2)))
               then
 		let d1 = decidability t1 in
 		Tacticals.New.tclTHENLIST [

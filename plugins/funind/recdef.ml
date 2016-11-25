@@ -123,7 +123,7 @@ let pf_get_new_ids idl g =
 
 let compute_renamed_type gls c =
   EConstr.of_constr (rename_bound_vars_as_displayed (*no avoid*) [] (*no rels*) []
-    (pf_unsafe_type_of gls c))
+    (EConstr.Unsafe.to_constr (pf_unsafe_type_of gls c)))
 let h'_id = Id.of_string "h'"
 let teq_id = Id.of_string "teq"
 let ano_id = Id.of_string "anonymous"
@@ -412,7 +412,6 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
 	    h_intros to_intros;
 	    (fun g' -> 
 	      let ty_teq = pf_unsafe_type_of g' (mkVar heq) in
-	      let ty_teq = EConstr.of_constr ty_teq in
 	      let teq_lhs,teq_rhs =
 		let _,args = try destApp (project g') ty_teq with DestKO -> assert false in
 		args.(1),args.(2)
@@ -522,19 +521,19 @@ let rec prove_lt hyple g =
   let sigma = project g in
   begin
     try
-      let (varx,varz) = match decompose_app sigma (EConstr.of_constr (pf_concl g)) with
+      let (varx,varz) = match decompose_app sigma (pf_concl g) with
         | _, x::z::_ when isVar sigma x && isVar sigma z -> x, z
         | _ -> assert false
       in
       let h =
 	List.find (fun id ->
-          match decompose_app sigma (EConstr.of_constr (pf_unsafe_type_of g (mkVar id))) with
+          match decompose_app sigma (pf_unsafe_type_of g (mkVar id)) with
             | _, t::_ -> EConstr.eq_constr sigma t varx
             | _ -> false
 	) hyple
       in
       let y =
-	List.hd (List.tl (snd (decompose_app sigma (EConstr.of_constr (pf_unsafe_type_of g (mkVar h)))))) in
+	List.hd (List.tl (snd (decompose_app sigma (pf_unsafe_type_of g (mkVar h))))) in
       observe_tclTHENLIST (str "prove_lt1")[
 	Proofview.V82.of_tactic (apply (mkApp(le_lt_trans (),[|varx;y;varz;mkVar h|])));
 	observe_tac (str "prove_lt") (prove_lt hyple)
@@ -698,7 +697,6 @@ let mkDestructEq :
         then None else Some id) hyps in
   let to_revert_constr = List.rev_map mkVar to_revert in
   let type_of_expr = pf_unsafe_type_of g expr in
-  let type_of_expr = EConstr.of_constr type_of_expr in
   let new_hyps = mkApp(Lazy.force refl_equal, [|type_of_expr; expr|])::
            to_revert_constr in
     pf_typel new_hyps (fun _ ->
@@ -707,7 +705,7 @@ let mkDestructEq :
       (fun g2 ->
         let changefun patvars = { run = fun sigma ->
           let redfun = pattern_occs [Locus.AllOccurrencesBut [1], expr] in
-          let Sigma (c, sigma, p) = redfun.Reductionops.e_redfun (pf_env g2) sigma (EConstr.of_constr (pf_concl g2)) in
+          let Sigma (c, sigma, p) = redfun.Reductionops.e_redfun (pf_env g2) sigma (pf_concl g2) in
           Sigma (c, sigma, p)
         } in
 	Proofview.V82.of_tactic (change_in_concl None changefun) g2);
@@ -846,7 +844,7 @@ let equation_case next_step (ci,a,t,l) expr_info continuation_tac infos =
 let rec prove_le g = 
   let sigma = project g in
   let x,z = 
-    let _,args = decompose_app sigma (EConstr.of_constr (pf_concl g)) in 
+    let _,args = decompose_app sigma (pf_concl g) in 
     (List.hd args,List.hd (List.tl args))
   in 
   tclFIRST[
@@ -857,9 +855,8 @@ let rec prove_le g =
 	let matching_fun = 
 	  pf_is_matching g
 	    (Pattern.PApp(Pattern.PRef (reference_of_constr (EConstr.Unsafe.to_constr (le ()))),[|Pattern.PVar (destVar sigma x);Pattern.PMeta None|])) in 
-	let (h,t) = List.find (fun (_,t) -> matching_fun (EConstr.of_constr t)) (pf_hyps_types g)
+	let (h,t) = List.find (fun (_,t) -> matching_fun t) (pf_hyps_types g)
 	in 
-	let t = EConstr.of_constr t in
 	let y = 
 	  let _,args = decompose_app sigma t in 
 	  List.hd (List.tl args)
@@ -1350,7 +1347,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 	     ] gls)
       (fun g ->
         let sigma = project g in
-	 match EConstr.kind sigma (EConstr.of_constr (pf_concl g)) with
+	 match EConstr.kind sigma (pf_concl g) with
 	   | App(f,_) when EConstr.eq_constr sigma f (well_founded ()) ->
 	       Proofview.V82.of_tactic (Auto.h_auto None [] (Some []))  g
 	   | _ ->
@@ -1523,9 +1520,11 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let env = Global.env() in
   let evd = ref (Evd.from_env env) in
   let function_type = interp_type_evars env evd type_of_f in
+  let function_type = EConstr.Unsafe.to_constr function_type in
   let env = push_named (Context.Named.Declaration.LocalAssum (function_name,function_type)) env in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
   let ty = interp_type_evars env evd ~impls:rec_impls eq in
+  let ty = EConstr.Unsafe.to_constr ty in
   let evm, nf = Evarutil.nf_evars_and_universes !evd in
   let equation_lemma_type = nf_betaiotazeta (EConstr.of_constr (nf ty)) in
   let function_type = nf function_type in

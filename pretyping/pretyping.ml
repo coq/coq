@@ -524,7 +524,6 @@ let pretype_ref loc evdref env ref us =
     let evd, c = pretype_global loc univ_flexible env !evdref ref us in
     let () = evdref := evd in
     let ty = unsafe_type_of env.ExtraEnv.env evd c in
-    let ty = EConstr.of_constr ty in
       make_judge c ty
 
 let judge_of_Type loc evd s =
@@ -1194,16 +1193,16 @@ let understand
 
 let understand_tcc ?(flags=all_no_fail_flags) env sigma ?(expected_type=WithoutTypeConstraint) c =
   let (sigma, c) = ise_pretype_gen flags env sigma empty_lvar expected_type c in
-  (sigma, EConstr.Unsafe.to_constr c)
+  (sigma, c)
 
 let understand_tcc_evars ?(flags=all_no_fail_flags) env evdref ?(expected_type=WithoutTypeConstraint) c =
   let sigma, c = ise_pretype_gen flags env !evdref empty_lvar expected_type c in
   evdref := sigma;
-  EConstr.Unsafe.to_constr c
+  c
 
 let understand_ltac flags env sigma lvar kind c =
   let (sigma, c) = ise_pretype_gen flags env sigma lvar kind c in
-  (sigma, EConstr.Unsafe.to_constr c)
+  (sigma, c)
 
 let constr_flags = {
   use_typeclasses = true;
@@ -1225,7 +1224,6 @@ let type_uconstr ?(flags = constr_flags)
   } in
   let sigma = Sigma.to_evar_map sigma in
   let (sigma, c) = understand_ltac flags env sigma vars expected_type term in
-  let c = EConstr.of_constr c in
   Sigma.Unsafe.of_pair (c, sigma)
   end }
 

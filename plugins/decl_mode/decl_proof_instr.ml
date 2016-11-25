@@ -74,7 +74,7 @@ let tcl_change_info_gen info_gen =
      let concl = pf_concl gls in
      let hyps = Goal.V82.hyps (project gls) it in
      let extra = Goal.V82.extra (project gls) it in
-     let (gl,ev,sigma) = Goal.V82.mk_goal (project gls) hyps (EConstr.of_constr concl) (info_gen extra) in
+     let (gl,ev,sigma) = Goal.V82.mk_goal (project gls) hyps concl (info_gen extra) in
      let sigma = Goal.V82.partial_solution sigma it ev in
      { it = [gl] ; sigma= sigma; } )
 
@@ -88,7 +88,7 @@ let tcl_erase_info gls =
 
 let special_whd gl=
   let infos=CClosure.create_clos_infos CClosure.all (pf_env gl) in
-    (fun t -> CClosure.whd_val infos (CClosure.inject t))
+    (fun t -> CClosure.whd_val infos (CClosure.inject (EConstr.Unsafe.to_constr t)))
 
 let special_nf gl=
   let infos=CClosure.create_clos_infos CClosure.betaiotazeta (pf_env gl) in
@@ -342,7 +342,7 @@ let rec replace_in_list m l = function
   | c::q -> if Int.equal m (fst c) then l@q else c::replace_in_list m l q
 
 let enstack_subsubgoals env se stack gls=
-  let hd,params = decompose_app (special_whd gls se.se_type) in
+  let hd,params = decompose_app (special_whd gls (EConstr.of_constr se.se_type)) in
     match kind_of_term hd with
 	Ind (ind,u as indu) when is_good_inductive env ind -> (* MS: FIXME *)
 	  let mib,oib=
@@ -397,6 +397,7 @@ let rec nf_list evd =
 let find_subsubgoal c ctyp skip submetas gls =
   let env= pf_env gls in
   let concl = pf_concl gls in
+  let concl = EConstr.Unsafe.to_constr concl in
   let evd = mk_evd ((0,concl)::submetas) gls in
   let stack = Stack.create () in
   let max_meta =
@@ -412,7 +413,7 @@ let find_subsubgoal c ctyp skip submetas gls =
       try
 	let unifier =
 	  Unification.w_unify env se.se_evd Reduction.CUMUL
-	    ~flags:(Unification.elim_flags ()) (EConstr.of_constr ctyp) (EConstr.of_constr se.se_type) in
+	    ~flags:(Unification.elim_flags ()) ctyp (EConstr.of_constr se.se_type) in
 	  if n <= 0 then
 	      {se with
 		 se_evd=meta_assign se.se_meta
@@ -433,7 +434,8 @@ let concl_refiner metas body gls =
   let concl = pf_concl gls in
   let evd = sig_sig gls in
   let env = pf_env gls in
-  let sort = family_of_sort (Typing.e_sort_of env (ref evd) (EConstr.of_constr concl)) in
+  let sort = family_of_sort (Typing.e_sort_of env (ref evd) concl) in
+  let concl = EConstr.Unsafe.to_constr concl in
   let rec aux env avoid subst = function
       [] -> anomaly ~label:"concl_refiner" (Pp.str "cannot happen")
     | (n,typ)::rest ->
@@ -504,7 +506,7 @@ let mk_stat_or_thesis info gls = function
     This c -> c
   | Thesis (For _ ) ->
       error "\"thesis for ...\" is not applicable here."
-  | Thesis Plain -> pf_concl gls
+  | Thesis Plain -> EConstr.Unsafe.to_constr (pf_concl gls)
 
 let just_tac _then cut info gls0 =
   let last_item =
@@ -536,7 +538,7 @@ let instr_cut mkstat _thus _then cut gls0 =
   let c_stat = mkstat info gls0 stat.st_it in
   let thus_tac gls=
     if _thus then
-      thus_tac (mkVar c_id) c_stat [] gls
+      thus_tac (mkVar c_id) (EConstr.of_constr c_stat) [] gls
     else tclIDTAC gls in
     tclTHENS (Proofview.V82.of_tactic (assert_postpone c_id c_stat))
       [tclTHEN tcl_erase_info (just_tac _then cut info);
@@ -582,7 +584,7 @@ let instr_rew _thus rew_side cut gls0 =
     | Name id -> id,true in
   let thus_tac new_eq gls=
     if _thus then
-      thus_tac (mkVar c_id) new_eq [] gls
+      thus_tac (mkVar c_id) (EConstr.of_constr new_eq) [] gls
     else tclIDTAC gls in
     match rew_side with
 	Lhs ->
@@ -610,7 +612,7 @@ let instr_claim _thus st gls0 =
     | Name id -> id,true in
   let thus_tac gls=
     if _thus then
-      thus_tac (mkVar id) st.st_it [] gls
+      thus_tac (mkVar id) (EConstr.of_constr st.st_it) [] gls
     else tclIDTAC gls in
   let ninfo1 = {pm_stack=
       (if _thus then Focus_claim else Claim)::info.pm_stack} in
@@ -704,7 +706,7 @@ let instr_suffices _then cut gls0 =
   let c_ctx,c_head = build_applist c_stat metas in
   let c_term = applist (mkVar c_id,List.map mkMeta metas) in
   let thus_tac gls=
-    thus_tac c_term c_head c_ctx gls in
+    thus_tac c_term (EConstr.of_constr c_head) c_ctx gls in
    tclTHENS (Proofview.V82.of_tactic (assert_postpone c_id c_stat))
      [tclTHENLIST
 	 [ assume_tac ctx;
@@ -891,8 +893,9 @@ let build_per_info etype casee gls =
   let concl=pf_concl gls in
   let env=pf_env gls in
   let ctyp=pf_unsafe_type_of gls (EConstr.of_constr casee) in
-  let is_dep = dependent (project gls) (EConstr.of_constr casee) (EConstr.of_constr concl) in
+  let is_dep = dependent (project gls) (EConstr.of_constr casee) concl in
   let hd,args = decompose_app (special_whd gls ctyp) in
+  let ctyp = EConstr.Unsafe.to_constr ctyp in
   let (ind,u) =
     try
       destInd hd
@@ -906,9 +909,10 @@ let build_per_info etype casee gls =
   let params,real_args = List.chop nparams args in
   let abstract_obj c body =
     let typ=pf_unsafe_type_of gls (EConstr.of_constr c) in
+    let typ = EConstr.Unsafe.to_constr typ in
       lambda_create env (typ,subst_term (project gls) (EConstr.of_constr c) (EConstr.of_constr body)) in
   let pred= List.fold_right abstract_obj
-    real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) (EConstr.of_constr concl))) in
+    real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) concl)) in
     is_dep,
   {per_casee=casee;
    per_ctype=ctyp;
@@ -963,6 +967,7 @@ let register_nodep_subcase id= function
 let suppose_tac hyps gls0 =
   let info = get_its_info gls0 in
   let thesis = pf_concl gls0 in
+  let thesis = EConstr.Unsafe.to_constr thesis in
   let id = pf_get_new_id (Id.of_string "subcase_") gls0 in
   let clause = build_product (project gls0) hyps thesis in
   let ninfo1 = {pm_stack=Suppose_case::info.pm_stack} in
@@ -1132,7 +1137,7 @@ let rec build_product_dep pat_info per_info args body gls =
 		  with Not_found ->
 		    snd (st_assoc (Name id) pat_info.pat_aliases) in
 		  thesis_for obj typ per_info (pf_env gls)
-	    | Plain -> pf_concl gls in
+	    | Plain -> EConstr.Unsafe.to_constr (pf_concl gls) in
 	  mkProd (st.st_label,ptyp,lbody)
     | [] -> body
 
@@ -1225,6 +1230,7 @@ let pop_stacks stacks =
 let hrec_for fix_id per_info gls obj_id =
   let obj=mkVar obj_id in
   let typ=pf_get_hyp_typ gls obj_id in
+  let typ = EConstr.Unsafe.to_constr typ in
   let rc,hd1=decompose_prod typ in
   let cind,all_args=decompose_app typ in
   let ind,u = destInd cind in assert (eq_ind ind per_info.per_ind);
@@ -1269,14 +1275,16 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let env=pf_env gls in
 	let ctyp=pf_unsafe_type_of gls (EConstr.of_constr casee) in
 	let hd,all_args = decompose_app (special_whd gls ctyp) in
+	let ctyp = EConstr.Unsafe.to_constr ctyp in
 	let ind', u = destInd hd in
 	let _ = assert (eq_ind ind' ind) in (* just in case *)
 	let params,real_args = List.chop nparams all_args in
 	let abstract_obj c body =
 	  let typ=pf_unsafe_type_of gls (EConstr.of_constr c) in
+	  let typ = EConstr.Unsafe.to_constr typ in
 	    lambda_create env (typ,subst_term (project gls) (EConstr.of_constr c) (EConstr.of_constr body)) in
 	let elim_pred = List.fold_right abstract_obj
-	  real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) (EConstr.of_constr concl))) in
+	  real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) concl)) in
 	let case_info = Inductiveops.make_case_info env ind RegularStyle in
 	let gen_arities = Inductive.arities_of_constructors (ind,u) spec in
 	let f_ids typ =
@@ -1341,13 +1349,13 @@ let understand_my_constr env sigma c concl =
     | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand,Misctypes.IntroAnonymous,None)
     | rc ->  map_glob_constr frob rc
   in
-  Pretyping.understand_tcc env sigma ~expected_type:(Pretyping.OfType (EConstr.of_constr concl)) (frob rawc)
+  Pretyping.understand_tcc env sigma ~expected_type:(Pretyping.OfType concl) (frob rawc)
 
 let my_refine c gls =
   let oc = { run = begin fun sigma ->
     let sigma = Sigma.to_evar_map sigma in
     let (sigma, c) = understand_my_constr (pf_env gls) sigma c (pf_concl gls) in
-    Sigma.Unsafe.of_pair (EConstr.of_constr c, sigma)
+    Sigma.Unsafe.of_pair (c, sigma)
   end } in
   Proofview.V82.of_tactic (Tactics.New.refine oc) gls
 

@@ -262,8 +262,9 @@ let rtauto_tac gls=
   let gl=pf_concl gls in
   let _=
     if Retyping.get_sort_family_of
-      (pf_env gls) (Tacmach.project gls) (EConstr.of_constr gl) != InProp
+      (pf_env gls) (Tacmach.project gls) gl != InProp
     then user_err ~hdr:"rtauto" (Pp.str "goal should be in Prop") in
+  let gl = EConstr.Unsafe.to_constr gl in
   let glf=make_form gamma gls gl in
   let hyps=make_hyps gamma gls [gl] (pf_hyps gls) in
   let formula=

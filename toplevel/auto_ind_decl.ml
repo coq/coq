@@ -321,11 +321,12 @@ let _ = beq_scheme_kind_aux := fun () -> beq_scheme_kind
 (* This function tryies to get the [inductive] between a constr
   the constr should be Ind i or App(Ind i,[|args|])
 *)
-let destruct_ind c =
-    try let u,v =  destApp c in
-          let indc = destInd u in
+let destruct_ind sigma c =
+  let open EConstr in
+    try let u,v =  destApp sigma c in
+          let indc = destInd sigma u in
             indc,v
-    with DestKO -> let indc = destInd c in
+    with DestKO -> let indc = destInd sigma c in
             indc,[||]
 
 (*
@@ -338,11 +339,12 @@ so from Ai we can find the the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
 let do_replace_lb mode lb_scheme_key aavoid narg p q =
+  let open EConstr in
   let avoid = Array.of_list aavoid in
-  let do_arg v offset =
+  let do_arg sigma v offset =
   try
     let x = narg*offset in
-    let s = destVar v in
+    let s = destVar sigma v in
     let n = Array.length avoid in
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
@@ -355,7 +357,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
       (* if this happen then the args have to be already declared as a
               Parameter*)
       (
-        let mp,dir,lbl = repr_con (fst (destConst v)) in
+        let mp,dir,lbl = repr_con (fst (destConst sigma v)) in
           mkConst (make_con mp dir (mk_label (
           if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
                        else ((Label.to_string lbl)^"_lb")
@@ -364,7 +366,8 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
   in
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let type_of_pq = Tacmach.New.of_old (fun gl -> pf_unsafe_type_of gl p) gl in
-    let u,v = destruct_ind type_of_pq
+    let sigma = Tacmach.New.project gl in
+    let u,v = destruct_ind sigma type_of_pq
     in let lb_type_of_p =
         try
           let c, eff = find_scheme ~mode lb_scheme_key (out_punivs u) (*FIXME*) in
@@ -376,20 +379,20 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
 	    (str "Leibniz->boolean:" ++
              str "You have to declare the" ++
 	     str "decidability over " ++
-	     Printer.pr_constr type_of_pq ++
+	     Printer.pr_econstr type_of_pq ++
 	     str " first.")
           in
           Tacticals.New.tclZEROMSG err_msg
        in
        lb_type_of_p >>= fun (lb_type_of_p,eff) ->
+       Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
                           (Array.map (fun x -> x) v)
-                          (Array.map (fun x -> do_arg x 1) v))
-                          (Array.map (fun x -> do_arg x 2) v)
-        in let app =  if Array.equal Term.eq_constr lb_args [||]
+                          (Array.map (fun x -> do_arg sigma x 1) v))
+                          (Array.map (fun x -> do_arg sigma x 2) v)
+        in let app =  if Array.is_empty lb_args
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
-           let app = EConstr.of_constr app in
            Tacticals.New.tclTHENLIST [
              Proofview.tclEFFECTS eff;
              Equality.replace p q ; apply app ; Auto.default_auto]
@@ -397,13 +400,12 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
 
 (* used in the bool -> leib side *)
 let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
-  let lft = EConstr.Unsafe.to_constr lft in
-  let rgt = EConstr.Unsafe.to_constr rgt in
+  let open EConstr in
   let avoid = Array.of_list aavoid in
-  let do_arg v offset =
+  let do_arg sigma v offset =
   try
     let x = narg*offset in
-    let s = destVar v in
+    let s = destVar sigma v in
     let n = Array.length avoid in
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
@@ -416,7 +418,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
       (* if this happen then the args have to be already declared as a
          Parameter*)
       (
-        let mp,dir,lbl = repr_con (fst (destConst v)) in
+        let mp,dir,lbl = repr_con (fst (destConst sigma v)) in
           mkConst (make_con mp dir (mk_label (
           if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
                        else ((Label.to_string lbl)^"_bl")
@@ -427,13 +429,12 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   let rec aux l1 l2 =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
-        let t1 = EConstr.of_constr t1 in
-        let t2 = EConstr.of_constr t2 in
         Proofview.Goal.enter { enter = begin fun gl ->
         let tt1 = Tacmach.New.pf_unsafe_type_of gl t1 in
-        if EConstr.eq_constr (Tacmach.New.project gl) t1 t2 then aux q1 q2
+        let sigma = Tacmach.New.project gl in
+        if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (
-          let u,v = try  destruct_ind tt1
+          let u,v = try  destruct_ind sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
           in if eq_ind (fst u) ind
@@ -450,20 +451,19 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
 	                                (str "boolean->Leibniz:" ++
                                          str "You have to declare the" ++
 			   	         str "decidability over " ++
-				         Printer.pr_constr tt1 ++
+				         Printer.pr_econstr tt1 ++
 				         str " first.")
 		 in
 		 error err_msg
                in let bl_args =
                         Array.append (Array.append
                           (Array.map (fun x -> x) v)
-                          (Array.map (fun x -> do_arg x 1) v))
-                          (Array.map (fun x -> do_arg x 2) v )
+                          (Array.map (fun x -> do_arg sigma x 1) v))
+                          (Array.map (fun x -> do_arg sigma x 2) v )
                 in
-                let app =  if Array.equal Term.eq_constr bl_args [||]
+                let app =  if Array.is_empty bl_args
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
-                let app = EConstr.of_constr app in
                 Tacticals.New.tclTHENLIST [
                   Proofview.tclEFFECTS eff;
                   Equality.replace_by t1 t2
@@ -475,21 +475,22 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     | ([],[]) -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclZEROMSG (str "Both side of the equality must have the same arity.")
   in
-  begin try Proofview.tclUNIT (destApp lft)
+  Proofview.tclEVARMAP >>= fun sigma ->
+  begin try Proofview.tclUNIT (destApp sigma lft)
     with DestKO -> Tacticals.New.tclZEROMSG (str "replace failed.")
   end >>= fun (ind1,ca1) ->
-  begin try Proofview.tclUNIT (destApp rgt)
+  begin try Proofview.tclUNIT (destApp sigma rgt)
     with DestKO -> Tacticals.New.tclZEROMSG (str "replace failed.")
   end >>= fun (ind2,ca2) ->
-  begin try Proofview.tclUNIT (out_punivs (destInd ind1))
+  begin try Proofview.tclUNIT (out_punivs (destInd sigma ind1))
     with DestKO ->
-      begin try Proofview.tclUNIT (fst (fst (destConstruct ind1)))
+      begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind1)))
         with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp1,i1) ->
-  begin try Proofview.tclUNIT (out_punivs (destInd ind2))
+  begin try Proofview.tclUNIT (out_punivs (destInd sigma ind2))
     with DestKO ->
-      begin try Proofview.tclUNIT (fst (fst (destConstruct ind2)))
+      begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind2)))
         with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp2,i2) ->

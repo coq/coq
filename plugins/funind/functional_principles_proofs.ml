@@ -394,7 +394,7 @@ let rewrite_until_var arg_num eq_ids : tactic =
   *)
   let test_var g =
     let sigma = project g in
-    let _,args = destApp sigma (EConstr.of_constr (pf_concl g)) in
+    let _,args = destApp sigma (pf_concl g) in
     not ((isConstruct sigma args.(arg_num)) || isAppConstruct sigma args.(arg_num))
   in
   let rec do_rewrite eq_ids g  =
@@ -551,7 +551,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
       tclIDTAC
   in
   try
-    scan_type [] (EConstr.of_constr (Typing.unsafe_type_of env sigma (mkVar hyp_id))), [hyp_id]
+    scan_type [] (Typing.unsafe_type_of env sigma (mkVar hyp_id)), [hyp_id]
   with TOREMOVE ->
     thin [hyp_id],[]
 
@@ -602,7 +602,6 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	observe_tac "after_introduction" (fun g' ->
 	   (* We get infos on the equations introduced*)
 	   let new_term_value_eq = pf_unsafe_type_of g' (mkVar heq_id) in
-	   let new_term_value_eq = EConstr.of_constr new_term_value_eq in
 	   (* compute the new value of the body *)
 	   let new_term_value =
 	     match EConstr.kind (project g') new_term_value_eq with
@@ -615,7 +614,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	   in
 	 let fun_body =
 	   mkLambda(Anonymous,
-		    EConstr.of_constr (pf_unsafe_type_of g' term),
+		    pf_unsafe_type_of g' term,
 		    Termops.replace_term (project g') term (mkRel 1) dyn_infos.info
 		   )
 	 in
@@ -708,9 +707,8 @@ let build_proof
 		  let t = dyn_info'.info in
 		  let dyn_infos = {dyn_info' with info =
 		      mkCase(ci,ct,t,cb)} in
-		  let g_nb_prod = nb_prod (project g) (EConstr.of_constr (pf_concl g)) in
+		  let g_nb_prod = nb_prod (project g) (pf_concl g) in
 		  let type_of_term = pf_unsafe_type_of g t in
-		  let type_of_term = EConstr.of_constr type_of_term in
 		  let term_eq =
 		    make_refl_eq (Lazy.force refl_equal) type_of_term t
 		  in
@@ -722,7 +720,7 @@ let build_proof
 		      (fun g -> observe_tac "toto" (
 			 tclTHENSEQ [Proofview.V82.of_tactic (Simple.case t);
 				     (fun g' ->
-					let g'_nb_prod = nb_prod (project g') (EConstr.of_constr (pf_concl g')) in
+					let g'_nb_prod = nb_prod (project g') (pf_concl g') in
 					let nb_instanciate_partial = g'_nb_prod - g_nb_prod in
 			 		observe_tac "treat_new_case"
 					  (treat_new_case
@@ -742,7 +740,7 @@ let build_proof
 	      build_proof do_finalize_t {dyn_infos with info = t} g
 	  | Lambda(n,t,b) ->
 	      begin
-		match EConstr.kind sigma (EConstr.of_constr ( pf_concl g)) with
+		match EConstr.kind sigma (pf_concl g) with
 		  | Prod _ ->
 		      tclTHEN
 			(Proofview.V82.of_tactic intro)
@@ -914,7 +912,7 @@ let prove_rec_hyp_for_struct fix_info =
       (fun  eq_hyps -> tclTHEN
 	(rewrite_until_var (fix_info.idx) eq_hyps)
 	(fun g ->
-	   let _,pte_args = destApp (project g) (EConstr.of_constr (pf_concl g)) in
+	   let _,pte_args = destApp (project g) (pf_concl g) in
 	   let rec_hyp_proof =
 	     mkApp(mkVar fix_info.name,array_get_start pte_args)
 	   in
@@ -938,7 +936,7 @@ let generalize_non_dep hyp g =
       let hyp = get_id decl in
       if Id.List.mem hyp hyps
         || List.exists (Termops.occur_var_in_decl env (project g) hyp) keep
-	|| Termops.occur_var env (project g) hyp (EConstr.of_constr hyp_typ)
+	|| Termops.occur_var env (project g) hyp hyp_typ
 	|| Termops.is_section_variable hyp (* should be dangerous *)
       then (clear,decl::keep)
       else (hyp::clear,keep))
@@ -1054,7 +1052,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
       let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd res in 
       res
   in
-  let nb_intro_to_do = nb_prod (project g) (EConstr.of_constr (pf_concl g)) in
+  let nb_intro_to_do = nb_prod (project g) (pf_concl g) in
     tclTHEN
       (tclDO nb_intro_to_do (Proofview.V82.of_tactic intro))
       (
@@ -1070,7 +1068,6 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnames all_funs _nparams : tactic =
   fun g ->
   let princ_type = pf_concl g in
-  let princ_type = EConstr.of_constr princ_type in
   (* Pp.msgnl (str "princ_type " ++ Printer.pr_lconstr princ_type); *)
   (* Pp.msgnl (str "all_funs "); *)
   (* Array.iter (fun c -> Pp.msgnl (Printer.pr_lconstr c)) all_funs; *)
@@ -1258,7 +1255,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
     in
     let intros_after_fixes : tactic =
       fun gl ->
-	let ctxt,pte_app =  (decompose_prod_assum (project gl) (EConstr.of_constr (pf_concl gl))) in
+	let ctxt,pte_app =  (decompose_prod_assum (project gl) (pf_concl gl)) in
 	let pte,pte_args = (decompose_app (project gl) pte_app) in
 	try
 	  let pte =
@@ -1431,12 +1428,12 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
     let rewrite =
       tclFIRST (List.map (fun x -> Proofview.V82.of_tactic (Equality.rewriteRL x)) eqs )
     in
-    let _,hrec_concl  = decompose_prod (project gls) (EConstr.of_constr (pf_unsafe_type_of gls (mkVar hrec))) in
+    let _,hrec_concl  = decompose_prod (project gls) (pf_unsafe_type_of gls (mkVar hrec)) in
     let f_app = Array.last (snd (destApp (project gls) hrec_concl)) in
     let f =  (fst (destApp (project gls) f_app)) in
     let rec backtrack : tactic =
       fun g ->
-	let f_app = Array.last (snd (destApp (project g) (EConstr.of_constr (pf_concl g)))) in
+	let f_app = Array.last (snd (destApp (project g) (pf_concl g))) in
 	match EConstr.kind (project g) f_app with
 	  | App(f',_) when eq_constr (project g) f' f -> tclIDTAC g
 	  | _ -> tclTHEN rewrite backtrack g
@@ -1525,7 +1522,6 @@ let prove_principle_for_gen
     (f_ref,functional_ref,eq_ref) tcc_lemma_ref is_mes
     rec_arg_num rec_arg_type relation gl =
   let princ_type = pf_concl gl in
-  let princ_type = EConstr.of_constr princ_type in
   let princ_info = compute_elim_sig (project gl) princ_type in
   let fresh_id =
     let avoid = ref (pf_ids_of_hyps gl) in
@@ -1664,7 +1660,7 @@ let prove_principle_for_gen
       Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));
       (* observe_tac "finish" *) (fun gl' ->
 	 let body =
-	   let _,args = destApp (project gl') (EConstr.of_constr (pf_concl gl')) in
+	   let _,args = destApp (project gl') (pf_concl gl') in
 	   Array.last args
 	 in
 	 let body_info rec_hyps =

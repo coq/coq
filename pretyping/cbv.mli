@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open EConstr
 open Environ
 open CClosure
 open Esubst
@@ -19,10 +20,13 @@ open Esubst
 type cbv_infos
 
 val create_cbv_infos : RedFlags.reds -> env -> Evd.evar_map -> cbv_infos
-val cbv_norm         : cbv_infos -> EConstr.constr -> constr
+val cbv_norm         : cbv_infos -> constr -> constr
 
 (***********************************************************************
   i This is for cbv debug *)
+
+open Term
+
 type cbv_value =
   | VAL of int * constr
   | STACK of int * cbv_value * cbv_stack

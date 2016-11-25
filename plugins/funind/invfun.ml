@@ -263,7 +263,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
     let princ_type =  nf_zeta princ_type in
     let princ_infos = Tactics.compute_elim_sig evd princ_type in
     (* The number of args of the function is then easily computable *)
-    let nb_fun_args = nb_prod (project g) (EConstr.of_constr (pf_concl g)) - 2 in
+    let nb_fun_args = nb_prod (project g) (pf_concl g) - 2 in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
     (* Since we cannot ensure that the functional principle is defined in the
@@ -315,7 +315,6 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	List.fold_right 
 	  (fun hid acc ->
 	     let type_of_hid = pf_unsafe_type_of g (mkVar hid) in
-	     let type_of_hid = EConstr.of_constr type_of_hid in
 	     let sigma = project g in
 	     match EConstr.kind sigma type_of_hid with
 	       | Prod(_,_,t') ->
@@ -503,7 +502,7 @@ and intros_with_rewrite_aux : tactic =
   fun g ->
     let eq_ind = make_eq () in
     let sigma = project g in
-    match EConstr.kind sigma (EConstr.of_constr (pf_concl g)) with
+    match EConstr.kind sigma (pf_concl g) with
 	  | Prod(_,t,t') ->
 	      begin
 		match EConstr.kind sigma t with
@@ -591,7 +590,7 @@ and intros_with_rewrite_aux : tactic =
 let rec reflexivity_with_destruct_cases g =
   let destruct_case () =
     try
-      match EConstr.kind (project g) (snd (destApp (project g) (EConstr.of_constr (pf_concl g)))).(2) with
+      match EConstr.kind (project g) (snd (destApp (project g) (pf_concl g))).(2) with
 	| Case(_,_,v,_) ->
 	    tclTHENSEQ[
 	      Proofview.V82.of_tactic (simplest_case v);
@@ -608,7 +607,7 @@ let rec reflexivity_with_destruct_cases g =
 	 match sc with
 	     None -> tclIDTAC g
 	   | Some id ->
-	       match EConstr.kind (project g) (EConstr.of_constr (pf_unsafe_type_of g (mkVar id))) with
+	       match EConstr.kind (project g) (pf_unsafe_type_of g (mkVar id)) with
 		 | App(eq,[|_;t1;t2|]) when EConstr.eq_constr (project g) eq eq_ind ->
 		     if Equality.discriminable (pf_env g) (project g) t1 t2
 		     then Proofview.V82.of_tactic (Equality.discrHyp id) g
@@ -674,12 +673,11 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     let f = funcs.(i) in
     let graph_principle = nf_zeta (EConstr.of_constr schemes.(i))  in
     let princ_type = pf_unsafe_type_of g graph_principle in
-    let princ_type = EConstr.of_constr princ_type in
     let princ_infos = Tactics.compute_elim_sig (project g) princ_type in
     (* Then we get the number of argument of the function
        and compute a fresh name for each of them
     *)
-    let nb_fun_args = nb_prod (project g) (EConstr.of_constr (pf_concl g)) - 2 in
+    let nb_fun_args = nb_prod (project g) (pf_concl g) - 2 in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
     (* and fresh names for res H and the principle (cf bug bug #1174) *)
@@ -937,7 +935,6 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 let revert_graph kn post_tac hid g =
     let sigma = project g in
     let typ = pf_unsafe_type_of g (mkVar hid) in
-    let typ = EConstr.of_constr typ in
     match EConstr.kind sigma typ with
       | App(i,args) when isInd sigma i ->
 	  let ((kn',num) as ind'),u = destInd sigma i in
@@ -990,7 +987,6 @@ let functional_inversion kn hid fconst f_correct : tactic =
     let old_ids = List.fold_right Id.Set.add  (pf_ids_of_hyps g) Id.Set.empty in
     let sigma = project g in
     let type_of_h = pf_unsafe_type_of g (mkVar hid) in
-    let type_of_h = EConstr.of_constr type_of_h in
     match EConstr.kind sigma type_of_h with
       | App(eq,args) when EConstr.eq_constr sigma eq (make_eq ())  ->
 	  let pre_tac,f_args,res =
@@ -1044,7 +1040,6 @@ let invfun qhyp f g =
 	  (fun hid -> Proofview.V82.tactic begin fun g ->
             let sigma = project g in
 	     let hyp_typ = pf_unsafe_type_of g (mkVar hid)  in
-	     let hyp_typ = EConstr.of_constr hyp_typ in
 	     match EConstr.kind sigma hyp_typ with
 	       | App(eq,args) when EConstr.eq_constr sigma eq (make_eq ()) ->
 		   begin

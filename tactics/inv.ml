@@ -346,7 +346,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     let sigma = project gl in
     (** We only look at the type of hypothesis "id" *)
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
-    let (t,t1,t2) = Hipattern.dest_nf_eq gl (EConstr.of_constr hyp) in
+    let (t,t1,t2) = Hipattern.dest_nf_eq gl hyp in
     match (EConstr.kind sigma t1, EConstr.kind sigma t2) with
     | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
     | _, Var id2 -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2
@@ -443,7 +443,7 @@ let raw_inversion inv_kind id status names =
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
     let (ind, t) =
-      try pf_apply Tacred.reduce_to_atomic_ind gl (EConstr.of_constr (pf_unsafe_type_of gl c))
+      try pf_apply Tacred.reduce_to_atomic_ind gl (pf_unsafe_type_of gl c)
       with UserError _ ->
         let msg = str "The type of " ++ pr_id id ++ str " is not inductive." in
         CErrors.user_err  msg

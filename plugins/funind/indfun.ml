@@ -78,11 +78,11 @@ let functional_induction with_clean c princl pat =
 				     ++Printer.pr_leconstr (mkConst c') )
 	      in
 	      let princ = EConstr.of_constr princ in
-	      (princ,NoBindings,EConstr.of_constr (Tacmach.pf_unsafe_type_of g' princ),g')
+	      (princ,NoBindings,Tacmach.pf_unsafe_type_of g' princ,g')
 	   | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
 	 end
       | Some ((princ,binding)) ->
-	 princ,binding,EConstr.of_constr (Tacmach.pf_unsafe_type_of g princ),g
+	 princ,binding,Tacmach.pf_unsafe_type_of g princ,g
     in
     let sigma = Tacmach.project g' in
     let princ_infos = Tactics.compute_elim_sig (Tacmach.project g') princ_type in

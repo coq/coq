@@ -194,7 +194,7 @@ and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		    (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
 	else Some (fun x -> 
 	  let term = co x in
-	    EConstr.of_constr (Typing.e_solve_evars env evdref term))
+	    Typing.e_solve_evars env evdref term)
       in
 	if isEvar !evdref c || isEvar !evdref c' || not (Program.is_program_generalized_coercion ()) then
 	  (* Second-order unification needed. *)
@@ -302,7 +302,7 @@ and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		      with NoSubtacCoercion ->
 			let typ = Typing.unsafe_type_of env evm c in
 			let typ' = Typing.unsafe_type_of env evm c' in
-			  coerce_application (EConstr.of_constr typ) (EConstr.of_constr typ') c c' l l')
+			  coerce_application typ typ' c c' l l')
 		 else
 		   subco ()
 	   | x, y when EConstr.eq_constr !evdref c c' ->
@@ -310,7 +310,7 @@ and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		 let evm =  !evdref in
 		 let lam_type = Typing.unsafe_type_of env evm c in
 		 let lam_type' = Typing.unsafe_type_of env evm c' in
-		   coerce_application (EConstr.of_constr lam_type) (EConstr.of_constr lam_type') c c' l l'
+		   coerce_application lam_type lam_type' c c' l l'
 	       else subco ()
 	   | _ -> subco ())
       | _, _ ->  subco ()
@@ -341,7 +341,7 @@ let app_coercion env evdref coercion v =
   | None -> v
   | Some f ->
      let v' = Typing.e_solve_evars env evdref (f v) in
-     whd_betaiota !evdref (EConstr.of_constr v')
+     whd_betaiota !evdref v'
 
 let coerce_itf loc env evd v t c1 =
   let evdref = ref evd in

@@ -1353,6 +1353,7 @@ let fill_occ_term env cl occ sigma0 (sigma, t) =
 
 let pf_fill_occ_term gl occ t =
   let sigma0 = project gl and env = pf_env gl and concl = pf_concl gl in
+  let concl = EConstr.Unsafe.to_constr concl in
   let cl,(_,t) = fill_occ_term env concl occ sigma0 t in
   cl, t
 
@@ -1388,6 +1389,7 @@ let ssrpatterntac _ist (arg_ist,arg) gl =
   let pat = interp_rpattern arg_ist gl arg in
   let sigma0 = project gl in
   let concl0 = pf_concl gl in
+  let concl0 = EConstr.Unsafe.to_constr concl0 in
   let (t, uc), concl_x =
     fill_occ_pattern (Global.env()) sigma0 concl0 pat noindex 1 in
   let t = EConstr.of_constr t in
@@ -1416,6 +1418,7 @@ let ssrinstancesof ist arg gl =
   let ok rhs lhs ise = true in
 (*   not (Term.eq_constr lhs (Evarutil.nf_evar ise rhs)) in *)
   let env, sigma, concl = pf_env gl, project gl, pf_concl gl in
+  let concl = EConstr.Unsafe.to_constr concl in
   let sigma0, cpat = interp_cpattern ist gl arg None in
   let pat = match cpat with T x -> x | _ -> errorstrm (str"Not supported") in
   let etpat, tpat = mk_tpattern env sigma (sigma0,pat) (ok pat) L2R pat in

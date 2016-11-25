@@ -442,7 +442,7 @@ let find_eq_data sigma eqn = (* fails with PatternMatchingFailure *)
 
 let extract_eq_args gl = function
   | MonomorphicLeibnizEq (e1,e2) ->
-      let t = pf_unsafe_type_of gl e1 in (EConstr.of_constr t,e1,e2)
+      let t = pf_unsafe_type_of gl e1 in (t,e1,e2)
   | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
   | HeterogenousEq (t1,e1,t2,e2) ->
       if pf_conv_x gl t1 t2 then (t1,e1,e2)

@@ -693,24 +693,8 @@ END
    hget_evar
 *)
 
-let hget_evar n =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let sigma = Tacmach.New.project gl in
-  let concl = Proofview.Goal.concl gl in
-  let concl = EConstr.Unsafe.to_constr concl in
-  let evl = evar_list concl in
-  let concl = EConstr.of_constr concl in
-  if List.length evl < n then
-    error "Not enough uninstantiated existential variables.";
-  if n <= 0 then error "Incorrect existential variable index.";
-  let ev = List.nth evl (n-1) in
-  let ev = (fst ev, Array.map EConstr.of_constr (snd ev)) in
-  let ev_type = existential_type sigma ev in
-  change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,concl))
-  end }
-
 TACTIC EXTEND hget_evar
-| [ "hget_evar" int_or_var(n) ] -> [ hget_evar n ]
+| [ "hget_evar" int_or_var(n) ] -> [ Evar_tactics.hget_evar n ]
 END
 
 (**********************************************************************)
@@ -747,7 +731,6 @@ let refl_equal =
 let  mkCaseEq a  : unit Proofview.tactic =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g a) gl in
-    let type_of_a = EConstr.of_constr type_of_a in
        Tacticals.New.tclTHENLIST
          [Tactics.generalize [(mkApp(EConstr.of_constr (delayed_force refl_equal), [| type_of_a; a|]))];
           Proofview.Goal.nf_enter { enter = begin fun gl ->
@@ -804,7 +787,6 @@ let destauto t =
 let destauto_in id = 
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   let ctype = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g (mkVar id)) gl in
-  let ctype = EConstr.of_constr ctype in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype
@@ -1088,7 +1070,7 @@ END
 
 VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF
 | [ "Declare" "Equivalent" "Keys" constr(c) constr(c') ] -> [ 
-  let it c = snd (Constrintern.interp_open_constr (Global.env ()) Evd.empty c) in 
+  let it c = EConstr.Unsafe.to_constr (snd (Constrintern.interp_open_constr (Global.env ()) Evd.empty c)) in 
   let k1 = Keys.constr_key (it c) in
   let k2 = Keys.constr_key (it c') in
     match k1, k2 with

@@ -135,7 +135,6 @@ let app_poly_check env evars f args =
   let (evars, cstrs), fc = f evars in
   let evdref = ref evars in 
   let t = Typing.e_solve_evars env evdref (mkApp (fc, args)) in
-  let t = EConstr.of_constr t in
     (!evdref, cstrs), t
 
 let app_poly_nocheck env evars f args =
@@ -509,7 +508,6 @@ let rec decompose_app_rel env evd t =
   | App (f, [|arg|]) ->
     let (f', argl, argr) = decompose_app_rel env evd arg in
     let ty = Typing.unsafe_type_of env evd argl in
-    let ty = EConstr.of_constr ty in
     let f'' = mkLambda (Name default_dependent_ident, ty,
       mkLambda (Name (Id.of_string "y"), lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
@@ -813,7 +811,6 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in
     let appmtype = Typing.unsafe_type_of env (goalevars evars) appm in
-    let appmtype = EConstr.of_constr appmtype in
     let cstrs = List.map 
       (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf)) 
       (Array.to_list morphobjs') 
@@ -1445,7 +1442,6 @@ module Strategies =
       fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
 (* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
 	let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
-	let c = EConstr.of_constr c in
 	let unfolded =
 	  try Tacred.try_red_product env sigma c
 	  with e when CErrors.noncritical e ->
@@ -1693,7 +1689,6 @@ let cl_rewrite_clause_strat strat clause =
 let apply_glob_constr c l2r occs = (); fun ({ state = () ; env = env } as input) ->
   let c sigma =
     let (sigma, c) = Pretyping.understand_tcc env sigma c in
-    let c = EConstr.of_constr c in
     (sigma, (c, NoBindings))
   in
   let flags = general_rewrite_unif_flags () in
@@ -1702,7 +1697,6 @@ let apply_glob_constr c l2r occs = (); fun ({ state = () ; env = env } as input)
 let interp_glob_constr_list env =
   let make c = (); fun sigma ->
     let sigma, c = Pretyping.understand_tcc env sigma c in
-    let c = EConstr.of_constr c in
     (sigma, (c, NoBindings))
   in
   List.map (fun c -> make c, true, None)
@@ -1940,7 +1934,6 @@ let build_morphism_signature env sigma m =
   let m = EConstr.of_constr m in
   let sigma = Evd.from_ctx ctx in
   let t = Typing.unsafe_type_of env sigma m in
-  let t = EConstr.of_constr t in
   let cstrs =
     let rec aux t =
       match EConstr.kind sigma t with
@@ -1971,7 +1964,6 @@ let default_morphism sign m =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let t = Typing.unsafe_type_of env sigma m in
-  let t = EConstr.of_constr t in
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
@@ -2111,7 +2103,7 @@ let get_hyp gl (c,l) clause l2r =
   let env = Tacmach.New.pf_env gl in
   let sigma, hi = decompose_applied_relation env evars (c,l) in
   let but = match clause with
-    | Some id -> EConstr.of_constr (Tacmach.New.pf_get_hyp_typ id gl)
+    | Some id -> Tacmach.New.pf_get_hyp_typ id gl
     | None -> nf_evar evars (Tacmach.New.pf_concl gl)
   in
   unification_rewrite l2r hi.c1 hi.c2 sigma hi.prf hi.car hi.rel but env
@@ -2228,7 +2220,6 @@ let setoid_symmetry_in id =
   Proofview.V82.tactic (fun gl ->
   let sigma = project gl in
   let ctype = pf_unsafe_type_of gl (mkVar id) in
-  let ctype = EConstr.of_constr ctype in
   let binders,concl = decompose_prod_assum sigma ctype in
   let (equiv, args) = decompose_app sigma concl in
   let rec split_last_two = function

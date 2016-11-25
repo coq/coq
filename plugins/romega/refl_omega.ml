@@ -740,6 +740,7 @@ and oproposition_of_constr env ((negated,depends,origin,path) as ctxt) gl c =
 
 let reify_gl env gl =
   let concl = Tacmach.pf_concl gl in
+  let concl = EConstr.Unsafe.to_constr concl in
   let t_concl =
     Pnot (oproposition_of_constr env (true,[],id_concl,[O_mono]) gl concl) in
   if !debug then begin
@@ -748,6 +749,7 @@ let reify_gl env gl =
   end;
   let rec loop = function
       (i,t) :: lhyps ->
+        let t = EConstr.Unsafe.to_constr t in
 	let t' = oproposition_of_constr env (false,[],i,[]) gl t in
 	if !debug then begin
 	  Printf.printf "  %s: " (Names.Id.to_string i);

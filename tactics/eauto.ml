@@ -32,7 +32,6 @@ let eauto_unif_flags = auto_flags_of_state full_transparent_state
 let e_give_exact ?(flags=eauto_unif_flags) c =
   Proofview.Goal.enter { enter = begin fun gl ->
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
-  let t1 = EConstr.of_constr t1 in
   let t2 = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
   let sigma = Tacmach.New.project gl in
   if occur_existential sigma t1 || occur_existential sigma t2 then
@@ -290,7 +289,7 @@ module SearchProblem = struct
       in
       let rec_tacs =
 	let l =
-          let concl = Reductionops.nf_evar (project g)(pf_concl g) in
+          let concl = Reductionops.nf_evar (project g) (EConstr.Unsafe.to_constr (pf_concl g)) in
           let concl = EConstr.of_constr concl in
 	  filter_tactics s.tacres
                          (e_possible_resolve (project g) s.dblist (List.hd s.localdb) secvars concl)
@@ -516,7 +515,7 @@ let autounfold_one db cl =
 	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
   in
   let did, c' = unfold_head env sigma st 
-    (match cl with Some (id, _) -> EConstr.of_constr (Tacmach.New.pf_get_hyp_typ id gl) | None -> concl) 
+    (match cl with Some (id, _) -> Tacmach.New.pf_get_hyp_typ id gl | None -> concl) 
   in
     if did then
       match cl with

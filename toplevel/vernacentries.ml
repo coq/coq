@@ -108,7 +108,7 @@ let show_intro all =
   let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
   if not (List.is_empty gls) then begin
     let gl = {Evd.it=List.hd gls ; sigma = sigma; } in
-    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (EConstr.of_constr (pf_concl gl))) in
+    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (pf_concl gl)) in
     if all then
       let lid = Tactics.find_intro_names l gl in
       Feedback.msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
@@ -1572,6 +1572,7 @@ let get_current_context_of_args = function
 let vernac_check_may_eval redexp glopt rc =
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr env sigma rc in
+  let c = EConstr.Unsafe.to_constr c in
   let sigma' = Evarconv.consider_remaining_unif_problems env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in

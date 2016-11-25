@@ -103,6 +103,7 @@ let interp_definition pl bl p red_option c ctypopt =
 	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
 	let env_bl = push_rel_context ctx env in
 	let c, imps2 = interp_constr_evars_impls ~impls env_bl evdref c in
+	let c = EConstr.Unsafe.to_constr c in
         let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
         let body = nf (it_mkLambda_or_LetIn c ctx) in
 	let vars = Universes.universes_of_constr body in
@@ -116,8 +117,10 @@ let interp_definition pl bl p red_option c ctypopt =
 	let ctx = Context.Rel.map (Vars.subst_univs_constr subst) ctx in
 	let env_bl = push_rel_context ctx env in
 	let c, imps2 = interp_casted_constr_evars_impls ~impls env_bl evdref c ty in
+	let c = EConstr.Unsafe.to_constr c in
 	let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
 	let body = nf (it_mkLambda_or_LetIn c ctx) in
+	let ty = EConstr.Unsafe.to_constr ty in
 	let typ = nf (Term.it_mkProd_or_LetIn ty ctx) in
         let beq b1 b2 = if b1 then b2 else not b2 in
         let impl_eq (x,y,z) (x',y',z') = beq x x' && beq y y' && beq z z' in
@@ -264,6 +267,7 @@ match local with
 let interp_assumption evdref env impls bl c =
   let c = prod_constr_expr c bl in
   let ty, impls = interp_type_evars_impls env evdref ~impls c in
+  let ty = EConstr.Unsafe.to_constr ty in
   let evd, nf = nf_evars_and_universes !evdref in
   let ctx = Evd.universe_context_set evd in
     ((nf ty, ctx), impls)
@@ -318,6 +322,7 @@ let do_assumptions_bound_univs coe kind nl id pl c =
   let evdref = ref (Evd.from_ctx ctx) in
   let ty, impls = interp_type_evars_impls env evdref c in
   let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
+  let ty = EConstr.Unsafe.to_constr ty in
   let ty = nf ty in
   let vars = Universes.universes_of_constr ty in
   let evd = Evd.restrict_universe_context !evdref vars in
@@ -439,9 +444,10 @@ let interp_ind_arity env evdref ind =
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
   let t, impls = understand_tcc_evars env evdref ~expected_type:IsType c, imps in
   let pseudo_poly = check_anonymous_type c in
-  let () = if not (Reduction.is_arity env t) then
+  let () = if not (Reductionops.is_arity env !evdref t) then
     user_err ~loc:(constr_loc ind.ind_arity) (str "Not an arity")
   in
+  let t = EConstr.Unsafe.to_constr t in
     t, pseudo_poly, impls
 
 let interp_cstrs evdref env impls mldata arity ind =
@@ -449,7 +455,7 @@ let interp_cstrs evdref env impls mldata arity ind =
   (* Complete conclusions of constructor types if given in ML-style syntax *)
   let ctyps' = List.map2 (complete_conclusion mldata) cnames ctyps in
   (* Interpret the constructor types *)
-  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls evdref env ~impls) ctyps') in
+  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls evdref env ~impls %> on_fst EConstr.Unsafe.to_constr) ctyps') in
     (cnames, ctyps'', cimpls)
 
 let sign_level env evd sign =
@@ -842,12 +848,14 @@ let interp_fix_context env evdref isfix fix =
     ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 
 let interp_fix_ccl evdref impls (env,_) fix =
-  interp_type_evars_impls ~impls env evdref fix.fix_type
+  let (c, impl) = interp_type_evars_impls ~impls env evdref fix.fix_type in
+  (EConstr.Unsafe.to_constr c, impl)
 
 let interp_fix_body env_rec evdref impls (_,ctx) fix ccl =
   Option.map (fun body ->
     let env = push_rel_context ctx env_rec in
     let body = interp_casted_constr_evars env evdref ~impls body ccl in
+    let body = EConstr.Unsafe.to_constr body in
     it_mkLambda_or_LetIn body ctx) fix.fix_body
 
 let build_fix_type (_,ctx) ccl = Term.it_mkProd_or_LetIn ccl ctx
@@ -946,6 +954,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
   let top_arity = interp_type_evars top_env evdref arityc in
+  let top_arity = EConstr.Unsafe.to_constr top_arity in
   let full_arity = Term.it_mkProd_or_LetIn top_arity binders_rel in
   let argtyp, letbinders, make = telescope binders_rel in
   let argname = Id.of_string "recarg" in
@@ -953,22 +962,24 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let rel, _ = interp_constr_evars_impls env evdref r in
-  let relty = Typing.unsafe_type_of env !evdref (EConstr.of_constr rel) in
+  let relty = Typing.unsafe_type_of env !evdref rel in
   let relargty =
     let error () =
       user_err ~loc:(constr_loc r)
                ~hdr:"Command.build_wellfounded"
-		    (Printer.pr_constr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
+		    (Printer.pr_econstr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
     in
       try
-	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 (EConstr.of_constr relty) in
+	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in
 	  match ctx, EConstr.kind !evdref ar with
 	  | [LocalAssum (_,t); LocalAssum (_,u)], Sort (Prop Null)
 	      when Reductionops.is_conv env !evdref (EConstr.of_constr t) (EConstr.of_constr u) -> t
 	  | _, _ -> error ()
       with e when CErrors.noncritical e -> error ()
   in
+  let rel = EConstr.Unsafe.to_constr rel in
   let measure = interp_casted_constr_evars binders_env evdref measure relargty in
+  let measure = EConstr.Unsafe.to_constr measure in
   let wf_rel, wf_rel_fun, measure_fn =
     let measure_body, measure =
       it_mkLambda_or_LetIn measure letbinders,
@@ -1025,6 +1036,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       interp_casted_constr_evars (push_rel_context ctx env) evdref
         ~impls:newimpls body (lift 1 top_arity)
   in
+  let intern_body = EConstr.Unsafe.to_constr intern_body in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
   let prop = mkLambda (Name argname, argtyp, top_arity_let) in
   let def =
@@ -1035,6 +1047,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
 	     prop |])
   in
   let def = Typing.e_solve_evars env evdref (EConstr.of_constr def) in
+  let def = EConstr.Unsafe.to_constr def in
   let _ = evdref := Evarutil.nf_evar_map !evdref in
   let def = mkApp (def, [|intern_body_lam|]) in
   let binders_rel = nf_evar_context !evdref binders_rel in
@@ -1110,7 +1123,7 @@ let interp_recursive isfix fixl notations =
 	   let fixprot =
 	     try 
 	       let app = mkApp (delayed_force fix_proto, [|sort; t|]) in
-		 Typing.e_solve_evars env evdref (EConstr.of_constr app)
+		 EConstr.Unsafe.to_constr (Typing.e_solve_evars env evdref (EConstr.of_constr app))
 	     with e  when CErrors.noncritical e -> t
 	   in
 	     LocalAssum (id,fixprot) :: env'

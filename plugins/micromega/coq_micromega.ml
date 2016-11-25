@@ -1606,6 +1606,7 @@ let rec parse_hyps gl parse_arith env tg hyps =
  match hyps with
   | [] -> ([],env,tg)
   | (i,t)::l ->
+    let t = EConstr.Unsafe.to_constr t in
      let (lhyps,env,tg) = parse_hyps gl parse_arith env tg l in
       try
        let (c,env,tg) = parse_formula gl parse_arith env  tg t in
@@ -1713,7 +1714,7 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
        ("__varmap", vm, Term.mkApp( coq_VarMap, [|spec.typ|])); 
        ("__wit", cert, cert_typ)
       ]
-      (Tacmach.pf_concl gl))
+      (EConstr.Unsafe.to_constr (Tacmach.pf_concl gl)))
   ] 
   end }
 
@@ -1964,6 +1965,7 @@ let micromega_gen
  Proofview.Goal.nf_enter { enter = begin fun gl -> 
     let gl = Tacmach.New.of_old (fun x -> x) gl in
     let concl = Tacmach.pf_concl gl in
+    let concl = EConstr.Unsafe.to_constr concl in
     let hyps  = Tacmach.pf_hyps_types gl in
     try
      let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
@@ -2051,7 +2053,7 @@ let micromega_order_changer cert env ff  =
 	    [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|typ|]));
          ("__wit", cert, cert_typ)
         ]
-        (Tacmach.pf_concl gl)));
+        (EConstr.Unsafe.to_constr (Tacmach.pf_concl gl))));
      (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
      ]
   end }
@@ -2072,6 +2074,7 @@ let micromega_genr prover tac =
   Proofview.Goal.nf_enter { enter = begin fun gl -> 
      let gl = Tacmach.New.of_old (fun x -> x) gl in
      let concl = Tacmach.pf_concl gl in
+     let concl = EConstr.Unsafe.to_constr concl in
      let hyps  = Tacmach.pf_hyps_types gl in
 
      try

@@ -38,14 +38,14 @@ let wrap n b continue seq gls=
 	  []->anomaly (Pp.str "Not the expected number of hyps")
 	| nd::q->
             let id = NamedDecl.get_id nd in
-	    if occur_var env (project gls) id (EConstr.of_constr (pf_concl gls)) ||
+	    if occur_var env (project gls) id (pf_concl gls) ||
 	      List.exists (occur_var_in_decl env (project gls)  id) ctx then
 		(aux (i-1) q (nd::ctx))
 	    else
 	      add_formula Hyp (VarRef id) (NamedDecl.get_type nd) (aux (i-1) q (nd::ctx)) gls in
   let seq1=aux n nc [] in
   let seq2=if b then
-    add_formula Concl dummy_id (pf_concl gls) seq1 gls else seq1 in
+    add_formula Concl dummy_id (EConstr.Unsafe.to_constr (pf_concl gls)) seq1 gls else seq1 in
     continue seq2 gls
 
 let basename_of_global=function

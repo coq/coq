@@ -83,7 +83,7 @@ let type_ctx_instance evars env ctx inst subst =
       let t' = substl subst (RelDecl.get_type decl) in
       let c', l =
 	match decl with
-	| LocalAssum _ -> interp_casted_constr_evars env evars (List.hd l) t', List.tl l
+	| LocalAssum _ -> EConstr.Unsafe.to_constr (interp_casted_constr_evars env evars (List.hd l) t'), List.tl l
 	| LocalDef (_,b,_) -> substl subst b, l
       in
       let d = RelDecl.get_name decl, Some c', t' in
@@ -151,6 +151,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
   let k, u, cty, ctx', ctx, len, imps, subst =
     let impls, ((env', ctx), imps) = interp_context_evars env evars ctx in
     let c', imps' = interp_type_evars_impls ~impls env' evars tclass in
+    let c' = EConstr.Unsafe.to_constr c' in
     let len = List.length ctx in
     let imps = imps @ Impargs.lift_implicits len imps' in
     let ctx', c = decompose_prod_assum c' in
@@ -219,6 +220,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	| None -> if List.is_empty k.cl_props then Some (Inl subst) else None
 	| Some (Inr term) ->
 	    let c = interp_casted_constr_evars env' evars term cty in
+	    let c = EConstr.Unsafe.to_constr c in
 	      Some (Inr (c, subst))
 	| Some (Inl props) ->
 	    let get_id =

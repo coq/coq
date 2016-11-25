@@ -46,11 +46,11 @@ let test_conversion cb env sigma c1 c2 =
   let c2 = EConstr.Unsafe.to_constr c2 in
   test_conversion cb env sigma c1 c2
 
-let pf_concl gls = EConstr.Unsafe.to_constr (Goal.V82.concl (project gls) (sig_it gls))
+let pf_concl gls = Goal.V82.concl (project gls) (sig_it gls)
 let pf_hyps_types gls  =
   let sign = Environ.named_context (pf_env gls) in
   List.map (function LocalAssum (id,x)
-                   | LocalDef (id,_,x) -> id, x)
+                   | LocalDef (id,_,x) -> id, EConstr.of_constr x)
            sign
 
 let pf_nth_hyp_id gls n = List.nth (pf_hyps gls) (n-1) |> NamedDecl.get_id
@@ -64,7 +64,7 @@ let pf_get_hyp gls id =
     raise (RefinerError (NoSuchHyp id))
 
 let pf_get_hyp_typ gls id =
-  id |> pf_get_hyp gls |> NamedDecl.get_type
+  id |> pf_get_hyp gls |> NamedDecl.get_type |> EConstr.of_constr
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
@@ -77,7 +77,7 @@ let pf_get_new_ids ids gls =
     (fun id acc -> (next_ident_away id (acc@avoid))::acc)
     ids []
 
-let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
+let pf_global gls id = EConstr.of_constr (Constrintern.construct_reference (pf_hyps gls) id)
 
 let pf_reduction_of_red_expr gls re c =
   let (redfun, _) = reduction_of_red_expr (pf_env gls) re in
@@ -103,7 +103,7 @@ let pf_get_type_of               = pf_reduce Retyping.get_type_of
 
 let pf_conv_x gl                = pf_reduce test_conversion gl Reduction.CONV
 let pf_conv_x_leq gl            = pf_reduce test_conversion gl Reduction.CUMUL
-let pf_const_value              = pf_reduce (fun env _ -> constant_value_in env)
+let pf_const_value              = pf_reduce (fun env _ c -> EConstr.of_constr (constant_value_in env c))
 
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
@@ -173,7 +173,7 @@ module New = struct
     (** We only check for the existence of an [id] in [hyps] *)
     let gl = Proofview.Goal.assume gl in
     let hyps = Proofview.Goal.hyps gl in
-    Constrintern.construct_reference hyps id
+    EConstr.of_constr (Constrintern.construct_reference hyps id)
 
   let pf_env = Proofview.Goal.env
   let pf_concl = Proofview.Goal.concl
@@ -205,13 +205,13 @@ module New = struct
     sign
 
   let pf_get_hyp_typ id gl =
-    pf_get_hyp id gl |> NamedDecl.get_type
+    pf_get_hyp id gl |> NamedDecl.get_type |> EConstr.of_constr
 
   let pf_hyps_types gl =
     let env = Proofview.Goal.env gl in
     let sign = Environ.named_context env in
     List.map (function LocalAssum (id,x)
-                     | LocalDef (id,_,x) -> id, x)
+                     | LocalDef (id,_,x) -> id, EConstr.of_constr x)
              sign
 
   let pf_last_hyp gl =
@@ -241,6 +241,6 @@ module New = struct
   let pf_whd_all gl t = pf_apply whd_all gl t
   let pf_compute gl t = pf_apply compute gl t
 
-  let pf_nf_evar gl t = nf_evar (project gl) t
+  let pf_nf_evar gl t = EConstr.of_constr (nf_evar (project gl) (EConstr.Unsafe.to_constr t))
 
 end

@@ -66,7 +66,8 @@ let interp_fields_evars env evars impls_env nots l =
   List.fold_left2
     (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
       let t', impl = interp_type_evars_impls env evars ~impls t in
-      let b' = Option.map (fun x -> fst (interp_casted_constr_evars_impls env evars ~impls x t')) b in
+      let b' = Option.map (fun x -> EConstr.Unsafe.to_constr (fst (interp_casted_constr_evars_impls env evars ~impls x t'))) b in
+      let t' = EConstr.Unsafe.to_constr t' in
       let impls =
 	match i with
 	| Anonymous -> impls
@@ -120,7 +121,8 @@ let typecheck_params_and_fields def id pl t ps nots fs =
          match t with
          | CSort (_, Misctypes.GType []) -> true | _ -> false in
        let s = interp_type_evars env evars ~impls:empty_internalization_env t in
-       let sred = Reductionops.whd_all env !evars (EConstr.of_constr s) in
+       let sred = Reductionops.whd_all env !evars s in
+       let s = EConstr.Unsafe.to_constr s in
        let sred = EConstr.Unsafe.to_constr sred in
 	 (match kind_of_term sred with
 	 | Sort s' -> 

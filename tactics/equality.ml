@@ -311,7 +311,7 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
     in
     let typ = match cls with
     | None -> pf_nf_concl gl
-    | Some id -> EConstr.of_constr (pf_get_hyp_typ id (Proofview.Goal.assume gl))
+    | Some id -> pf_get_hyp_typ id (Proofview.Goal.assume gl)
     in
     let cs = instantiate_lemma typ in
     if firstonly then tclFIRST (List.map try_clause cs)
@@ -407,7 +407,7 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
 
 let type_of_clause cls gl = match cls with
   | None -> Proofview.Goal.concl gl
-  | Some id -> EConstr.of_constr (pf_get_hyp_typ id gl)
+  | Some id -> pf_get_hyp_typ id gl
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
@@ -950,7 +950,6 @@ let gen_absurdity id =
   Proofview.Goal.enter { enter = begin fun gl ->
   let sigma = project gl in
   let hyp_typ = pf_get_hyp_typ id (Proofview.Goal.assume gl) in
-  let hyp_typ = EConstr.of_constr hyp_typ in
   if is_empty_type sigma hyp_typ
   then
     simplest_elim (mkVar id)
@@ -1027,7 +1026,6 @@ let onEquality with_evars tac (c,lbindc) =
   let type_of = pf_unsafe_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
   let t = type_of c in
-  let t = EConstr.of_constr t in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
   let eq_clause' = Clenvtac.clenv_pose_dependent_evars with_evars eq_clause in
@@ -1136,7 +1134,7 @@ let minimal_free_rels_rec env sigma =
   let rec minimalrec_free_rels_rec prev_rels (c,cty) =
     let (cty,direct_rels) = minimal_free_rels env sigma (c,cty) in
     let combined_rels = Int.Set.union prev_rels direct_rels in
-    let folder rels i = snd (minimalrec_free_rels_rec rels (c, EConstr.of_constr (unsafe_type_of env sigma (mkRel i))))
+    let folder rels i = snd (minimalrec_free_rels_rec rels (c, unsafe_type_of env sigma (mkRel i)))
     in (cty, List.fold_left folder combined_rels (Int.Set.elements (Int.Set.diff direct_rels prev_rels)))
   in minimalrec_free_rels_rec Int.Set.empty
 
@@ -1184,7 +1182,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       (* is the default value typable with the expected type *)
       let dflt_typ = unsafe_type_of env sigma dflt in
       try
-	let () = evdref := Evarconv.the_conv_x_leq env (EConstr.of_constr dflt_typ) p_i !evdref in
+	let () = evdref := Evarconv.the_conv_x_leq env dflt_typ p_i !evdref in
 	let () = evdref := Evarconv.consider_remaining_unif_problems env !evdref in
 	dflt
       with Evarconv.UnableToUnify _ ->
@@ -1200,7 +1198,6 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       match evopt with
 	| Some w ->
             let w_type = unsafe_type_of env !evdref w in
-            let w_type = EConstr.of_constr w_type in
             if Evarconv.e_cumul env evdref w_type a then
 	      let exist_term = Evarutil.evd_comb1 (Evd.fresh_global env) evdref sigdata.intro in
 	      let exist_term = EConstr.of_constr exist_term in
@@ -1290,7 +1287,7 @@ let make_iterated_tuple env sigma dflt (z,zty) =
     sigma, (tuple,tuplety,dfltval)
 
 let rec build_injrec env sigma dflt c = function
-  | [] -> make_iterated_tuple env sigma dflt (c,EConstr.of_constr (unsafe_type_of env sigma c))
+  | [] -> make_iterated_tuple env sigma dflt (c,unsafe_type_of env sigma c)
   | ((sp,cnum),argnum)::l ->
     try
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
@@ -1345,7 +1342,7 @@ let inject_if_homogenous_dependent_pair ty =
     if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) (fst ind) &&
       pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
     Coqlib.check_required_library ["Coq";"Logic";"Eqdep_dec"];
-    let new_eq_args = [|EConstr.of_constr (pf_unsafe_type_of gl ar1.(3));ar1.(3);ar2.(3)|] in
+    let new_eq_args = [|pf_unsafe_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
     let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
       ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
     let inj2 = EConstr.of_constr inj2 in
@@ -1613,7 +1610,6 @@ let cutSubstInHyp l2r eqn id =
   let sigma = Proofview.Goal.sigma gl in
   let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
   let typ = pf_get_hyp_typ id gl in
-  let typ = EConstr.of_constr typ in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
   let Sigma ((typ, expected), sigma, p) = subst_tuple_term env sigma e1 e2 typ in
   let tac =
@@ -1702,8 +1698,7 @@ let is_eq_x gl x d =
     | Var id' -> Id.equal id id'
     | _ -> false
     in
-    let c = pf_nf_evar gl (NamedDecl.get_type d) in
-    let c = EConstr.of_constr c in
+    let c = pf_nf_evar gl (EConstr.of_constr (NamedDecl.get_type d)) in
     let (_,lhs,rhs) = pi3 (find_eq_data_decompose gl c) in
     if (is_var x lhs) && not (local_occur_var (project gl) x rhs) then raise (FoundHyp (id,rhs,true));
     if (is_var x rhs) && not (local_occur_var (project gl) x lhs) then raise (FoundHyp (id,lhs,false))
@@ -1852,7 +1847,6 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
   let find_eq_data_decompose = find_eq_data_decompose gl in
   let test (_,c) =
     try
-      let c = EConstr.of_constr c in
       let lbeq,u,(_,x,y) = find_eq_data_decompose c in
       let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
       if flags.only_leibniz then restrict_to_eq_and_identity eq;

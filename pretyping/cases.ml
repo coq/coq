@@ -2076,7 +2076,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	let IndType (indf, _) = 
 	  try find_rectype env ( !evdref) (lift (-(List.length realargs)) ty)
 	  with Not_found -> error_case_not_inductive env !evdref
-	    {uj_val = ty; uj_type = EConstr.of_constr (Typing.unsafe_type_of env !evdref ty)}
+	    {uj_val = ty; uj_type = Typing.unsafe_type_of env !evdref ty}
 	in
 	let (ind,u), params = dest_ind_family indf in
 	let params = List.map EConstr.of_constr params in

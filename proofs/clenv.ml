@@ -133,7 +133,7 @@ let mk_clenv_from_n gls n (c,cty) =
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
-let mk_clenv_type_of gls t = mk_clenv_from gls (t,EConstr.of_constr (pf_type_of gls t))
+let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 
 (******************************************************************)
 

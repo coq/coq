@@ -1228,7 +1228,7 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
 	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
       | _ -> error "Apply_Head_Then"
   in
-    apprec n c (EConstr.of_constr (Typing.unsafe_type_of env (Sigma.to_evar_map evd) c)) Sigma.refl evd
+    apprec n c (Typing.unsafe_type_of env (Sigma.to_evar_map evd) c) Sigma.refl evd
 
 let is_mimick_head sigma ts f =
   match EConstr.kind sigma f with

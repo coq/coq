@@ -504,6 +504,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		*)
 		let rt_as_constr,ctx = Pretyping.understand env (Evd.from_env env) rt in
 		let rt_typ = Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr rt_as_constr) in
+                let rt_typ = EConstr.Unsafe.to_constr rt_typ in
 		let res_raw_type = Detyping.detype false [] env (Evd.from_env env) rt_typ in
 		let res = fresh_id args_res.to_avoid "_res" in
 		let new_avoid = res::args_res.to_avoid in
@@ -612,6 +613,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let v_res = build_entry_lc env funnames avoid v in
 	let v_as_constr,ctx = Pretyping.understand env (Evd.from_env env) v in
 	let v_type = Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr v_as_constr) in
+	let v_type = EConstr.Unsafe.to_constr v_type in
 	let new_env =
 	  match n with
 	      Anonymous -> env
@@ -629,7 +631,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let b_as_constr,ctx = Pretyping.understand env (Evd.from_env env) b in
 	let b_typ = Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr b_as_constr) in
 	let (ind,_) =
-	  try Inductiveops.find_inductive env (Evd.from_env env) (EConstr.of_constr b_typ)
+	  try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	  with Not_found ->
 	    user_err  (str "Cannot find the inductive associated to " ++
 			       Printer.pr_glob_constr b ++ str " in " ++
@@ -661,7 +663,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	  let b_as_constr,ctx = Pretyping.understand env (Evd.from_env env) b in
 	  let b_typ = Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr b_as_constr) in
 	  let (ind,_) =
-	    try Inductiveops.find_inductive env (Evd.from_env env) (EConstr.of_constr b_typ)
+	    try Inductiveops.find_inductive env (Evd.from_env env) b_typ
 	    with Not_found ->
 	      user_err  (str "Cannot find the inductive associated to " ++
 				 Printer.pr_glob_constr b ++ str " in " ++
@@ -706,7 +708,7 @@ and build_entry_lc_from_case env funname make_discr
 	let types =
 	  List.map (fun (case_arg,_) ->
 		      let case_arg_as_constr,ctx = Pretyping.understand env (Evd.from_env env) case_arg in
-		      Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr case_arg_as_constr)
+		      EConstr.Unsafe.to_constr (Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr case_arg_as_constr))
 		   ) el
 	in
 	(****** The next works only if the match is not dependent ****)
@@ -755,6 +757,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 			let typ_of_id =
 			  Typing.unsafe_type_of env_with_pat_ids (Evd.from_env env) (EConstr.mkVar id)
 			in
+			let typ_of_id = EConstr.Unsafe.to_constr typ_of_id in
 			let raw_typ_of_id =
 			  Detyping.detype false []
 			    env_with_pat_ids (Evd.from_env env) typ_of_id
@@ -808,6 +811,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		      if Id.Set.mem id this_pat_ids
 		      then (Prod (Name id),
 		      let typ_of_id = Typing.unsafe_type_of new_env (Evd.from_env env) (EConstr.mkVar id) in
+		      let typ_of_id = EConstr.Unsafe.to_constr typ_of_id in
 		      let raw_typ_of_id =
 			Detyping.detype false [] new_env (Evd.from_env env) typ_of_id
 		      in
@@ -1122,6 +1126,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	  let t',ctx = Pretyping.understand env evd t in
 	  let evd = Evd.from_ctx ctx in
 	  let type_t' = Typing.unsafe_type_of env evd (EConstr.of_constr t') in
+	  let type_t' = EConstr.Unsafe.to_constr type_t' in
 	  let new_env = Environ.push_rel (LocalDef (n,t',type_t')) env in
 	  let new_b,id_to_exclude =
 	    rebuild_cons new_env
