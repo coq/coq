@@ -792,7 +792,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
 	else begin
 	  if not eapply then failwith "make_apply_entry";
           if verbose then
-	    Feedback.msg_info (str "the hint: eapply " ++ pr_lconstr (EConstr.Unsafe.to_constr c) ++
+	    Feedback.msg_info (str "the hint: eapply " ++ pr_leconstr_env env sigma' c ++
 	    str " will only be used by eauto");
           (Some hd,
            { pri = (match pri with None -> nb_hyp sigma' cty + nmiss | Some p -> p);
@@ -813,7 +813,7 @@ let pr_hint_term env sigma ctx = function
   | IsGlobRef gr -> pr_global gr
   | IsConstr (c, ctx) ->
      let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
-     pr_constr_env env sigma (EConstr.Unsafe.to_constr c)
+     pr_econstr_env env sigma c
 
 (** We need an object to record the side-effect of registering
   global universes associated with a hint. *)
@@ -863,7 +863,7 @@ let make_resolves env sigma flags pri poly ?name cr =
   in
   if List.is_empty ents then
     user_err ~hdr:"Hint"
-      (pr_lconstr (EConstr.Unsafe.to_constr c) ++ spc() ++
+      (pr_leconstr_env env sigma c ++ spc() ++
         (if pi1 flags then str"cannot be used as a hint."
 	else str "can be used as a hint only for eauto."));
   ents
@@ -1360,7 +1360,7 @@ let make_db_list dbnames =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
-let pr_hint_elt (c, _, _) = pr_constr (EConstr.Unsafe.to_constr c)
+let pr_hint_elt (c, _, _) = pr_econstr c
 
 let pr_hint h = match h.obj with
   | Res_pf (c, _) -> (str"simple apply " ++ pr_hint_elt c)

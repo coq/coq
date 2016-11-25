@@ -858,14 +858,16 @@ let rec message_of_value v =
     Ftactic.return (int (out_gen (topwit wit_int) v))
   else if has_type v (topwit wit_intro_pattern) then
     let p = out_gen (topwit wit_intro_pattern) v in
-    let print env sigma c = pr_constr_env env sigma (EConstr.Unsafe.to_constr (fst (Tactics.run_delayed env Evd.empty c))) in
+    let print env sigma c =
+      let (c, sigma) = Tactics.run_delayed env sigma c in
+      pr_econstr_env env sigma c
+    in
     Ftactic.nf_enter { enter = begin fun gl ->
       Ftactic.return (Miscprint.pr_intro_pattern (fun c -> print (pf_env gl) (project gl) c) p)
     end }
   else if has_type v (topwit wit_constr_context) then
     let c = out_gen (topwit wit_constr_context) v in
-    let c = EConstr.Unsafe.to_constr c in
-    Ftactic.nf_enter { enter = begin fun gl -> Ftactic.return (pr_constr_env (pf_env gl) (project gl) c) end }
+    Ftactic.nf_enter { enter = begin fun gl -> Ftactic.return (pr_econstr_env (pf_env gl) (project gl) c) end }
   else if has_type v (topwit wit_uconstr) then
     let c = out_gen (topwit wit_uconstr) v in
     Ftactic.nf_enter { enter = begin fun gl ->

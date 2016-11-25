@@ -42,7 +42,7 @@ let nlocal_def (na, b, t) =
 
 let no_inductive_inconstr env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
-     pr_lconstr_env env sigma (EConstr.Unsafe.to_constr constr) ++
+     pr_leconstr_env env sigma constr ++
      str "." ++ spc () ++ str "If there is one, may be the structure of the arity" ++
      spc () ++ str "or of the type of constructors" ++ spc () ++
      str "is hidden by constant definitions.")
@@ -277,14 +277,12 @@ let lemInv id c gls =
     Proofview.V82.of_tactic (Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false) gls
   with
     | NoSuchBinding ->
-        let c = EConstr.Unsafe.to_constr c in
 	user_err 
-	  (hov 0 (pr_constr c ++ spc () ++ str "does not refer to an inversion lemma."))
+	  (hov 0 (pr_econstr_env (Refiner.pf_env gls) (Refiner.project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
     | UserError (a,b) ->
-        let c = EConstr.Unsafe.to_constr c in
 	 user_err ~hdr:"LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
-	      pr_lconstr_env (Refiner.pf_env gls) (Refiner.project gls) c)
+	      pr_leconstr_env (Refiner.pf_env gls) (Refiner.project gls) c)
 
 let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv id c)) id
 

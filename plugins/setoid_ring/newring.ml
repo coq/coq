@@ -343,7 +343,7 @@ let _ = add_map "ring"
 (****************************************************************************)
 (* Ring database *)
 
-let pr_constr c = pr_constr (EConstr.Unsafe.to_constr c)
+let pr_constr c = pr_econstr c
 
 module Cmap = Map.Make(Constr)
 

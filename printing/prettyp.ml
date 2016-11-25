@@ -42,8 +42,8 @@ type object_pr = {
   print_named_decl          : Context.Named.Declaration.t -> std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
-  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> Term.constr * Term.types -> Pp.std_ppcmds;
-  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> unsafe_judgment -> std_ppcmds;
+  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.std_ppcmds;
+  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> std_ppcmds;
 }
 
 let gallina_print_module  = print_module
@@ -433,8 +433,8 @@ let print_located_qualid ref = print_located_qualid "object" [`TERM; `LTAC; `MOD
 (****  Gallina layer                  *****)
 
 let gallina_print_typed_value_in_env env sigma (trm,typ) =
-  (pr_lconstr_env env sigma trm ++ fnl () ++
-     str "     : " ++ pr_ltype_env env sigma typ)
+  (pr_leconstr_env env sigma trm ++ fnl () ++
+     str "     : " ++ pr_letype_env env sigma typ)
 
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside pr_lconstr, so that
@@ -595,8 +595,7 @@ let gallina_print_context with_values =
   prec
 
 let gallina_print_eval red_fun env sigma _ {uj_val=trm;uj_type=typ} =
-  let ntrm = red_fun env sigma (EConstr.of_constr trm) in
-  let ntrm = EConstr.Unsafe.to_constr ntrm in
+  let ntrm = red_fun env sigma trm in
   (str "     = " ++ gallina_print_typed_value_in_env env sigma (ntrm,typ))
 
 (******************************************)
@@ -643,6 +642,8 @@ let print_judgment env sigma {uj_val=trm;uj_type=typ} =
 let print_safe_judgment env sigma j =
   let trm = Safe_typing.j_val j in
   let typ = Safe_typing.j_type j in
+  let trm = EConstr.of_constr trm in
+  let typ = EConstr.of_constr typ in
   print_typed_value_in_env env sigma (trm, typ)
 
 (*********************)
@@ -762,7 +763,9 @@ let print_opaque_name qid =
     | IndRef (sp,_) ->
         print_inductive sp
     | ConstructRef cstr as gr ->
+        let open EConstr in
 	let ty = Universes.unsafe_type_of_global gr in
+	let ty = EConstr.of_constr ty in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
         env |> lookup_named id |> NamedDecl.set_id id |> print_named_decl

@@ -3073,7 +3073,7 @@ let warn_unused_intro_pattern =
           strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern")
           ++ str": " ++ prlist_with_sep spc 
          (Miscprint.pr_intro_pattern 
-	 (fun c -> Printer.pr_constr (EConstr.Unsafe.to_constr (fst (run_delayed (Global.env()) Evd.empty c))))) names)
+	 (fun c -> Printer.pr_econstr (fst (run_delayed (Global.env()) Evd.empty c)))) names)
 
 let check_unused_names names =
   if not (List.is_empty names) && Flags.is_verbose () then

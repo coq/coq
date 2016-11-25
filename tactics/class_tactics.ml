@@ -185,8 +185,7 @@ let set_typeclasses_depth =
       optwrite = set_typeclasses_depth; }
 
 let pr_ev evs ev =
-  Printer.pr_constr_env (Goal.V82.env evs ev) evs
-                        (Evarutil.nf_evar evs (EConstr.Unsafe.to_constr (Goal.V82.concl evs ev)))
+  Printer.pr_econstr_env (Goal.V82.env evs ev) evs (Goal.V82.concl evs ev)
 
 (** Typeclasses instance search tactic / eauto *)
 
@@ -764,7 +763,7 @@ module V85 = struct
          if foundone == None && !typeclasses_debug > 0 then
            Feedback.msg_debug
              (pr_depth info.auto_depth ++ str": no match for " ++
-                Printer.pr_constr_env (Goal.V82.env s gl) s (EConstr.Unsafe.to_constr concl) ++
+                Printer.pr_econstr_env (Goal.V82.env s gl) s concl ++
                 spc () ++ str ", " ++ int (List.length poss) ++
                 str" possibilities");
          match foundone with
@@ -1005,7 +1004,7 @@ module Search = struct
     if !typeclasses_debug > 0 then
       Feedback.msg_debug
         (pr_depth info.search_depth ++ str": looking for " ++
-           Printer.pr_constr_env (Goal.env gl) s (EConstr.Unsafe.to_constr concl) ++
+           Printer.pr_econstr_env (Goal.env gl) s concl ++
            (if backtrack then str" with backtracking"
             else str" without backtracking"));
     let secvars = compute_secvars gl in
@@ -1120,7 +1119,7 @@ module Search = struct
          if !foundone == false && !typeclasses_debug > 0 then
            Feedback.msg_debug
              (pr_depth info.search_depth ++ str": no match for " ++
-                Printer.pr_constr_env (Goal.env gl) s (EConstr.Unsafe.to_constr concl) ++
+                Printer.pr_econstr_env (Goal.env gl) s concl ++
                 spc () ++ str ", " ++ int (List.length poss) ++
                 str" possibilities");
          match e with

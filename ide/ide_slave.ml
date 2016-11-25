@@ -192,6 +192,7 @@ let process_goal sigma g =
   let id = Goal.uid g in
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (EConstr.Unsafe.to_constr (Goal.V82.concl sigma g)) in
+    let norm_constr = EConstr.of_constr norm_constr in
     Richpp.richpp_of_pp (pr_goal_concl_style_env env sigma norm_constr)
   in
   let process_hyp d (env,l) =

@@ -86,11 +86,11 @@ let rec contract3' env a b c = function
 let to_unsafe_judgment j = on_judgment EConstr.Unsafe.to_constr j
 
 let j_nf_betaiotaevar sigma j =
-  { uj_val = Evarutil.nf_evar sigma j.uj_val;
-    uj_type = EConstr.Unsafe.to_constr (Reductionops.nf_betaiota sigma (EConstr.of_constr j.uj_type)) }
+  { uj_val = Evarutil.nf_evar sigma (EConstr.Unsafe.to_constr j.uj_val);
+    uj_type = EConstr.Unsafe.to_constr (Reductionops.nf_betaiota sigma j.uj_type) }
 
 let jv_nf_betaiotaevar sigma jl =
-  Array.map (j_nf_betaiotaevar sigma) jl
+  Array.map (fun j -> on_judgment EConstr.of_constr (j_nf_betaiotaevar sigma j)) jl
 
 (** Printers *)
 
@@ -172,7 +172,6 @@ let explain_unbound_var env v =
 
 let explain_not_type env sigma j =
   let j = Evarutil.j_nf_evar sigma j in
-  let j = to_unsafe_judgment j in
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc,pt = pr_ljudge_env env sigma j in
   pe ++ str "The term" ++ brk(1,1) ++ pc ++ spc () ++
@@ -180,17 +179,15 @@ let explain_not_type env sigma j =
   str "which should be Set, Prop or Type."
 
 let explain_bad_assumption env sigma j =
-  let j = to_unsafe_judgment j in
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc,pt = pr_ljudge_env env sigma j in
   pe ++ str "Cannot declare a variable or hypothesis over the term" ++
   brk(1,1) ++ pc ++ spc () ++ str "of type" ++ spc () ++ pt ++ spc () ++
   str "because this term is not a type."
 
-let explain_reference_variables id c =
-  let c = EConstr.Unsafe.to_constr c in
+let explain_reference_variables sigma id c =
   (* c is intended to be a global reference *)
-  let pc = pr_global (Globnames.global_of_constr c) in
+  let pc = pr_global (fst (Termops.global_of_constr sigma c)) in
   pc ++ strbrk " depends on the variable " ++ pr_id id ++
   strbrk " which is not declared in the context."
 
@@ -207,11 +204,10 @@ let pr_puniverses f env (c,u) =
   else mt())
 
 let explain_elim_arity env sigma ind sorts c pj okinds =
-  let c = EConstr.Unsafe.to_constr c in
   let pj = to_unsafe_judgment pj in
   let env = make_all_name_different env in
   let pi = pr_inductive env (fst ind) in
-  let pc = pr_lconstr_env env sigma c in
+  let pc = pr_leconstr_env env sigma c in
   let msg = match okinds with
   | Some(kp,ki,explanation) ->
       let pki = pr_sort_family ki in
@@ -267,13 +263,11 @@ let explain_number_branches env sigma cj expn =
   str "expects " ++  int expn ++ str " branches."
 
 let explain_ill_formed_branch env sigma c ci actty expty =
-  let c = EConstr.Unsafe.to_constr c in
   let actty = EConstr.Unsafe.to_constr actty in
   let expty = EConstr.Unsafe.to_constr expty in
   let simp t = Reduction.nf_betaiota env (Evarutil.nf_evar sigma t) in
-  let c = Evarutil.nf_evar sigma c in
   let env = make_all_name_different env in
-  let pc = pr_lconstr_env env sigma c in
+  let pc = pr_leconstr_env env sigma c in
   let pa, pe = pr_explicit env sigma (simp actty) (simp expty) in
   strbrk "In pattern-matching on term" ++ brk(1,1) ++ pc ++
   spc () ++ strbrk "the branch for constructor" ++ spc () ++
@@ -282,11 +276,9 @@ let explain_ill_formed_branch env sigma c ci actty expty =
   str "which should be" ++ brk(1,1) ++ pe ++ str "."
 
 let explain_generalization env sigma (name,var) j =
-  let var = EConstr.Unsafe.to_constr var in
-  let j = to_unsafe_judgment j in
   let pe = pr_ne_context_of (str "In environment") env sigma in
-  let pv = pr_ltype_env env sigma var in
-  let (pc,pt) = pr_ljudge_env (push_rel_assum (name,EConstr.of_constr var) env) sigma j in
+  let pv = pr_letype_env env sigma var in
+  let (pc,pt) = pr_ljudge_env (push_rel_assum (name,var) env) sigma j in
   pe ++ str "Cannot generalize" ++ brk(1,1) ++ pv ++ spc () ++
   str "over" ++ brk(1,1) ++ pc ++ str "," ++ spc () ++
   str "it has type" ++ spc () ++ pt ++
@@ -297,19 +289,16 @@ let explain_unification_error env sigma p1 p2 = function
   | Some e ->
      let rec aux p1 p2 = function
      | OccurCheck (evk,rhs) ->
-        let rhs = EConstr.to_constr sigma rhs in
         [str "cannot define " ++ quote (pr_existential_key sigma evk) ++
-	strbrk " with term " ++ pr_lconstr_env env sigma rhs ++
+	strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
         strbrk " that would depend on itself"]
      | NotClean ((evk,args),env,c) ->
-        let c = EConstr.to_constr sigma c in
-        let args = Array.map (EConstr.to_constr sigma) args in
         [str "cannot instantiate " ++ quote (pr_existential_key sigma evk)
-        ++ strbrk " because " ++ pr_lconstr_env env sigma c ++
+        ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
 	strbrk " is not in its scope" ++
         (if Array.is_empty args then mt() else
          strbrk ": available arguments are " ++
-         pr_sequence (pr_lconstr_env env sigma) (List.rev (Array.to_list args)))]
+         pr_sequence (pr_leconstr_env env sigma) (List.rev (Array.to_list args)))]
      | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
         (* Error speaks from itself *) []
      | ConversionFailed (env,t1,t2) ->
@@ -357,11 +346,9 @@ let explain_unification_error env sigma p1 p2 = function
             prlist_with_sep pr_semicolon (fun x -> x) l ++ str ")"
 
 let explain_actual_type env sigma j t reason =
-  let j = to_unsafe_judgment j in
-  let t = EConstr.Unsafe.to_constr t in
   let env = make_all_name_different env in
   let j = j_nf_betaiotaevar sigma j in
-  let t = Reductionops.nf_betaiota sigma (EConstr.of_constr t) in
+  let t = Reductionops.nf_betaiota sigma t in
   let t = EConstr.Unsafe.to_constr t in
   (** Actually print *)
   let pe = pr_ne_context_of (str "In environment") env sigma in
@@ -377,14 +364,11 @@ let explain_actual_type env sigma j t reason =
 
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   let exptyp = EConstr.Unsafe.to_constr exptyp in
-  let actualtyp = EConstr.Unsafe.to_constr actualtyp in
-  let randl = Array.map to_unsafe_judgment randl in
   let randl = jv_nf_betaiotaevar sigma randl in
   let exptyp = Evarutil.nf_evar sigma exptyp in
-  let actualtyp = Reductionops.nf_betaiota sigma (EConstr.of_constr actualtyp) in
+  let actualtyp = Reductionops.nf_betaiota sigma actualtyp in
   let actualtyp = EConstr.Unsafe.to_constr actualtyp in
   let rator = Evarutil.j_nf_evar sigma rator in
-  let rator = to_unsafe_judgment rator in
   let env = make_all_name_different env in
   let actualtyp, exptyp = pr_explicit env sigma actualtyp exptyp in
   let nargs = Array.length randl in
@@ -448,7 +432,7 @@ let explain_not_product env sigma c =
 (* TODO: use the names *)
 (* (co)fixpoints *)
 let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
-  let pr_lconstr_env env sigma c = pr_lconstr_env env sigma (EConstr.Unsafe.to_constr c) in
+  let pr_lconstr_env env sigma c = pr_leconstr_env env sigma c in
   let prt_name i =
     match names.(i) with
         Name id -> str "Recursive definition of " ++ pr_id id
@@ -549,17 +533,14 @@ let explain_ill_typed_rec_body env sigma i names vdefj vargs =
   str "while it should be" ++ spc () ++ pv ++ str "."
 
 let explain_cant_find_case_type env sigma c =
-  let c = EConstr.Unsafe.to_constr c in
-  let c = Evarutil.nf_evar sigma c in
   let env = make_all_name_different env in
-  let pe = pr_lconstr_env env sigma c in
+  let pe = pr_leconstr_env env sigma c in
   str "Cannot infer the return type of pattern-matching on" ++ ws 1 ++
     pe ++ str "."
 
 let explain_occur_check env sigma ev rhs =
-  let rhs = EConstr.to_constr sigma rhs in
   let env = make_all_name_different env in
-  let pt = pr_lconstr_env env sigma rhs in
+  let pt = pr_leconstr_env env sigma rhs in
   str "Cannot define " ++ pr_existential_key sigma ev ++ str " with term" ++
   brk(1,1) ++ pt ++ spc () ++ str "that would depend on itself."
 
@@ -665,12 +646,9 @@ let explain_cannot_unify env sigma m n e =
   str "with" ++ brk(1,1) ++ pn ++ ppreason ++ str "."
 
 let explain_cannot_unify_local env sigma m n subn =
-  let m = EConstr.to_constr sigma m in
-  let n = EConstr.to_constr sigma n in
-  let subn = EConstr.to_constr sigma subn in
-  let pm = pr_lconstr_env env sigma m in
-  let pn = pr_lconstr_env env sigma n in
-  let psubn = pr_lconstr_env env sigma subn in
+  let pm = pr_leconstr_env env sigma m in
+  let pn = pr_leconstr_env env sigma n in
+  let psubn = pr_leconstr_env env sigma subn in
     str "Unable to unify" ++ brk(1,1) ++ pm ++ spc () ++
       str "with" ++ brk(1,1) ++ pn ++ spc () ++ str "as" ++ brk(1,1) ++
       psubn ++ str " contains local variables."
@@ -740,7 +718,7 @@ let explain_type_error env sigma err =
   | BadAssumption c ->
       explain_bad_assumption env sigma c
   | ReferenceVariables (id,c) ->
-      explain_reference_variables id c
+      explain_reference_variables sigma id c
   | ElimArity (ind, aritylst, c, pj, okinds) ->
       explain_elim_arity env sigma ind aritylst c pj okinds
   | CaseNotInductive cj ->
@@ -1117,8 +1095,7 @@ let explain_non_linear_proof c =
   spc () ++ str "because a metavariable has several occurrences."
 
 let explain_meta_in_type c =
-  let c = EConstr.Unsafe.to_constr c in
-  str "In refiner, a meta appears in the type " ++ brk(1,1) ++ pr_lconstr c ++
+  str "In refiner, a meta appears in the type " ++ brk(1,1) ++ pr_leconstr c ++
   str " of another meta"
 
 let explain_no_such_hyp id =
@@ -1170,7 +1147,7 @@ let error_ill_formed_constructor env id c v nparams nargs =
 
 let pr_ltype_using_barendregt_convention_env env c =
   (* Use goal_concl_style as an approximation of Barendregt's convention (?) *)
-  quote (pr_goal_concl_style_env env Evd.empty c)
+  quote (pr_goal_concl_style_env env Evd.empty (EConstr.of_constr c))
 
 let error_bad_ind_parameters env c n v1 v2  =
   let pc = pr_ltype_using_barendregt_convention_env env c in
@@ -1364,7 +1341,6 @@ let map_ptype_error f = function
 let explain_reduction_tactic_error = function
   | Tacred.InvalidAbstraction (env,sigma,c,(env',e)) ->
       let e = map_ptype_error EConstr.of_constr e in
-      let c = EConstr.to_constr sigma c in
       str "The abstracted term" ++ spc () ++
       quote (pr_goal_concl_style_env env sigma c) ++
       spc () ++ str "is not well typed." ++ fnl () ++

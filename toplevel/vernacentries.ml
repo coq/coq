@@ -1580,15 +1580,16 @@ let vernac_check_may_eval redexp glopt rc =
   let c = nf c in
   let j =
     if Evarutil.has_undefined_evars sigma' (EConstr.of_constr c) then
-      let j = Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' (EConstr.of_constr c)) in
-      Termops.on_judgment EConstr.Unsafe.to_constr j
+      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' (EConstr.of_constr c))
     else
       (* OK to call kernel which does not support evars *)
-      Arguments_renaming.rename_typing env c in
+      Termops.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
+  in
   match redexp with
     | None ->
-        let l = Evar.Set.union (Evd.evars_of_term j.Environ.uj_val) (Evd.evars_of_term j.Environ.uj_type) in
-        let j = { j with Environ.uj_type = EConstr.Unsafe.to_constr (Reductionops.nf_betaiota sigma' (EConstr.of_constr j.Environ.uj_type)) } in
+        let evars_of_term c = Evarutil.undefined_evars_of_term sigma' c in
+        let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
+        let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
 	Feedback.msg_notice (print_judgment env sigma' j ++
                     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
                     Printer.pr_universe_ctx sigma uctx)

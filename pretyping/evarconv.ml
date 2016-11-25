@@ -385,7 +385,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     match is_unification_pattern_evar env evd ev lF tM with
       | None -> fallback ()
       | Some l1' -> (* Miller-Pfenning's patterns unification *)
-	let t2 = EConstr.of_constr (nf_evar evd (EConstr.Unsafe.to_constr tM)) (** FIXME *) in
+	let t2 = tM in
 	let t2 = solve_pattern_eqn env evd l1' t2 in
 	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem on_left pbty,ev,t2) 

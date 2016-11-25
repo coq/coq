@@ -1526,7 +1526,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
     | Success res ->
       let (_, cstrs) = res.rew_evars in
       let evars' = solve_constraints env res.rew_evars in
-      let newt = EConstr.of_constr (Evarutil.nf_evar evars' (EConstr.Unsafe.to_constr res.rew_to)) in
+      let newt = nf_evar evars' res.rew_to in
       let evars = (* Keep only original evars (potentially instantiated) and goal evars,
 		     the rest has been defined and substituted already. *)
 	Evar.Set.fold 
@@ -2151,10 +2151,9 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite
 
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
-let not_declared env ty rel =
-  let rel = EConstr.Unsafe.to_constr rel in
+let not_declared env sigma ty rel =
   tclFAIL 0
-    (str" The relation " ++ Printer.pr_constr_env env Evd.empty rel ++ str" is not a declared " ++
+    (str" The relation " ++ Printer.pr_econstr_env env sigma rel ++ str" is not a declared " ++
      str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
 
 let setoid_proof ty fn fallback =
@@ -2181,7 +2180,7 @@ let setoid_proof ty fn fallback =
 	            begin match e with
 	            | (Not_found, _) ->
 	                let rel, _, _ = decompose_app_rel env sigma concl in
-		        not_declared env ty rel
+		        not_declared env sigma ty rel
 	            | (e, info) -> Proofview.tclZERO ~info e
                     end
                 | e' -> Proofview.tclZERO ~info e'

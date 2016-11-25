@@ -25,7 +25,7 @@ open Ppdecl_proof
 let pr_goal gs =
   let (g,sigma) = Goal.V82.nf_evar (Tacmach.project gs) (Evd.sig_it gs) in
   let env = Goal.V82.env sigma g in
-  let concl = EConstr.Unsafe.to_constr (Goal.V82.concl sigma g) in
+  let concl = Goal.V82.concl sigma g in
   let goal =
     Printer.pr_context_of env sigma ++ cut () ++
       str "============================" ++ cut ()  ++

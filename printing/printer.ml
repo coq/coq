@@ -99,7 +99,6 @@ let pr_type_core goal_concl_style env sigma t =
 let pr_ltype_core goal_concl_style env sigma t =
   pr_lconstr_expr (extern_type goal_concl_style env sigma t)
 
-let pr_goal_concl_style_env env = pr_ltype_core true env
 let pr_ltype_env env = pr_ltype_core false env
 let pr_type_env env = pr_type_core false env
 
@@ -110,8 +109,13 @@ let pr_type t =
     let (sigma, env) = get_current_context () in
     pr_type_env env sigma t
 
+let pr_etype_env env sigma c = pr_type_env env sigma (EConstr.to_constr sigma c)
+let pr_letype_env env sigma c = pr_ltype_env env sigma (EConstr.to_constr sigma c)
+let pr_goal_concl_style_env env sigma c =
+  pr_ltype_core true env sigma (EConstr.to_constr sigma c)
+
 let pr_ljudge_env env sigma j =
-  (pr_lconstr_env env sigma j.uj_val, pr_lconstr_env env sigma j.uj_type)
+  (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
 
 let pr_ljudge j =
   let (sigma, env) = get_current_context () in
@@ -390,7 +394,7 @@ let pr_transparent_state (ids, csts) =
 let default_pr_goal gs =
   let (g,sigma) = Goal.V82.nf_evar (project gs) (sig_it gs) in
   let env = Goal.V82.env sigma g in
-  let concl = EConstr.Unsafe.to_constr (Goal.V82.concl sigma g) in
+  let concl = Goal.V82.concl sigma g in
   let goal =
     pr_context_of env sigma ++ cut () ++
       str "============================" ++ cut ()  ++
@@ -413,7 +417,7 @@ let pr_goal_name sigma g =
 let pr_concl n sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   let env = Goal.V82.env sigma g in
-  let pc = pr_goal_concl_style_env env sigma (EConstr.Unsafe.to_constr (Goal.V82.concl sigma g)) in
+  let pc = pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g) in
     str (emacs_str "")  ++
       str "subgoal " ++ int n ++ pr_goal_tag g ++ pr_goal_name sigma g ++
       str " is:" ++ cut () ++ str" "  ++ pc
