@@ -858,7 +858,7 @@ and extract_fix env mle i (fi,ti,ci as recd) mlt =
 
 let decomp_lams_eta_n n m env c t =
   let rels = fst (splay_prod_n env none n (EConstr.of_constr t)) in
-  let rels = List.map (fun (LocalAssum (id,c) | LocalDef (id,_,c)) -> (id,c)) rels in
+  let rels = List.map (fun (LocalAssum (id,c) | LocalDef (id,_,c)) -> (id,EConstr.Unsafe.to_constr c)) rels in
   let rels',c = decompose_lam c in
   let d = n - m in
   (* we'd better keep rels' as long as possible. *)

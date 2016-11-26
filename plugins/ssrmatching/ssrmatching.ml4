@@ -838,7 +838,7 @@ let rec uniquize = function
           | Context.Rel.Declaration.LocalAssum _ as x -> x
           | Context.Rel.Declaration.LocalDef (x,_,y) ->
               Context.Rel.Declaration.LocalAssum(x,y) in
-        Environ.push_rel ctx_item env, h' + 1 in
+        EConstr.push_rel ctx_item env, h' + 1 in
       let self acc c = EConstr.of_constr (subst_loop acc (EConstr.Unsafe.to_constr c)) in
       let f = EConstr.of_constr f in
       let f' = map_constr_with_binders_left_to_right sigma inc_h self acc f in
@@ -1091,7 +1091,7 @@ let thin id sigma goal =
   | None -> sigma
   | Some (hyps, concl) ->
     let sigma = !evdref in
-    let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps (EConstr.of_constr concl) (Goal.V82.extra sigma goal) in
+    let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
     let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
     sigma
 

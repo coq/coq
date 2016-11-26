@@ -67,7 +67,7 @@ val dest_class_app : env -> evar_map -> EConstr.constr -> typeclass puniverses *
 val typeclass_univ_instance : typeclass puniverses -> typeclass puniverses
 
 (** Just return None if not a class *)
-val class_of_constr : evar_map -> EConstr.constr -> (Context.Rel.t * (typeclass puniverses * constr list)) option
+val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * (typeclass puniverses * constr list)) option
   
 val instance_impl : instance -> global_reference
 

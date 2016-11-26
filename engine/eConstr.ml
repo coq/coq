@@ -77,6 +77,10 @@ type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
 type unsafe_type_judgment = types Environ.punsafe_type_judgment
+type named_declaration = (constr, types) Context.Named.Declaration.pt
+type rel_declaration = (constr, types) Context.Rel.Declaration.pt
+type named_context = (constr, types) Context.Named.pt
+type rel_context = (constr, types) Context.Rel.pt
 
 let in_punivs a = (a, Univ.Instance.empty)
 
@@ -201,14 +205,6 @@ let decompose_app sigma c =
     | App (f,cl) -> (f, Array.to_list cl)
     | _ -> (c,[])
 
-let local_assum (na, t) =
-  let open Rel.Declaration in
-  LocalAssum (na, unsafe_to_constr t)
-
-let local_def (na, b, t) =
-  let open Rel.Declaration in
-  LocalDef (na, unsafe_to_constr b, unsafe_to_constr t)
-
 let decompose_lam sigma c =
   let rec lamdec_rec l c = match kind sigma c with
     | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) c
@@ -218,38 +214,41 @@ let decompose_lam sigma c =
   lamdec_rec [] c
 
 let decompose_lam_assum sigma c =
+  let open Rel.Declaration in
   let rec lamdec_rec l c =
     match kind sigma c with
-    | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (local_assum (x,t)) l) c
-    | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (local_def (x,b,t)) l) c
+    | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) c
+    | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)      -> lamdec_rec l c
     | _               -> l,c
   in
   lamdec_rec Context.Rel.empty c
 
 let decompose_lam_n_assum sigma n c =
+  let open Rel.Declaration in
   if n < 0 then
     error "decompose_lam_n_assum: integer parameter must be positive";
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
       match kind sigma c with
-      | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (local_assum (x,t)) l) (n-1) c
-      | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (local_def (x,b,t)) l) n c
+      | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
+      | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
       | Cast (c,_,_)      -> lamdec_rec l n c
       | c -> error "decompose_lam_n_assum: not enough abstractions"
   in
   lamdec_rec Context.Rel.empty n c
 
 let decompose_lam_n_decls sigma n =
+  let open Rel.Declaration in
   if n < 0 then
     error "decompose_lam_n_decls: integer parameter must be positive";
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
       match kind sigma c with
-      | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (local_assum (x,t)) l) (n-1) c
-      | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (local_def (x,b,t)) l) (n-1) c
+      | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
+      | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> lamdec_rec l n c
       | c -> error "decompose_lam_n_decls: not enough abstractions"
   in
@@ -264,24 +263,26 @@ let decompose_prod sigma c =
   proddec_rec [] c
 
 let decompose_prod_assum sigma c =
+  let open Rel.Declaration in
   let rec proddec_rec l c =
     match kind sigma c with
-    | Prod (x,t,c)  -> proddec_rec (Context.Rel.add (local_assum (x,t)) l) c
-    | LetIn (x,b,t,c) -> proddec_rec (Context.Rel.add (local_def (x,b,t)) l) c
+    | Prod (x,t,c)  -> proddec_rec (Context.Rel.add (LocalAssum (x,t)) l) c
+    | LetIn (x,b,t,c) -> proddec_rec (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)      -> proddec_rec l c
     | _               -> l,c
   in
   proddec_rec Context.Rel.empty c
 
 let decompose_prod_n_assum sigma n c =
+  let open Rel.Declaration in
   if n < 0 then
     error "decompose_prod_n_assum: integer parameter must be positive";
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
     else
       match kind sigma c with
-      | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (local_assum (x,t)) l) (n-1) c
-      | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (local_def (x,b,t)) l) (n-1) c
+      | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
+      | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> prodec_rec l n c
       | c -> error "decompose_prod_n_assum: not enough assumptions"
   in
@@ -413,24 +414,26 @@ let iter sigma f c = match kind sigma c with
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
   | CoFix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
 
-let iter_with_full_binders sigma g f n c = match kind sigma c with
+let iter_with_full_binders sigma g f n c =
+  let open Context.Rel.Declaration in
+  match kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> ()
   | Cast (c,_,t) -> f n c; f n t
-  | Prod (na,t,c) -> f n t; f (g (local_assum (na, t)) n) c
-  | Lambda (na,t,c) -> f n t; f (g (local_assum (na, t)) n) c
-  | LetIn (na,b,t,c) -> f n b; f n t; f (g (local_def (na, b, t)) n) c
+  | Prod (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
+  | Lambda (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
+  | LetIn (na,b,t,c) -> f n b; f n t; f (g (LocalDef (na, b, t)) n) c
   | App (c,l) -> f n c; CArray.Fun1.iter f n l
   | Evar (_,l) -> CArray.Fun1.iter f n l
   | Case (_,p,c,bl) -> f n p; f n c; CArray.Fun1.iter f n bl
   | Proj (p,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
-    let n' = Array.fold_left2 (fun n na t -> g (local_assum (na,t)) n) n lna tl in
+    let n' = Array.fold_left2 (fun n na t -> g (LocalAssum (na,t)) n) n lna tl in
     Array.iter (f n') bl
   | CoFix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
-    let n' = Array.fold_left2 (fun n na t -> g (local_assum (na,t)) n) n lna tl in
+    let n' = Array.fold_left2 (fun n na t -> g (LocalAssum (na,t)) n) n lna tl in
     Array.iter (f n') bl
 
 let iter_with_binders sigma g f n c =
@@ -611,14 +614,14 @@ let rec isArity sigma c =
 let mkProd_or_LetIn decl c =
   let open Context.Rel.Declaration in
   match decl with
-  | LocalAssum (na,t) -> mkProd (na, of_constr t, c)
-  | LocalDef (na,b,t) -> mkLetIn (na, of_constr b, of_constr t, c)
+  | LocalAssum (na,t) -> mkProd (na, t, c)
+  | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
 
 let mkLambda_or_LetIn decl c =
   let open Context.Rel.Declaration in
   match decl with
-  | LocalAssum (na,t) -> mkLambda (na, of_constr t, c)
-  | LocalDef (na,b,t) -> mkLetIn (na, of_constr b, of_constr t, c)
+  | LocalAssum (na,t) -> mkLambda (na, t, c)
+  | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
 
 let mkNamedProd id typ c = mkProd (Name id, typ, Vars.subst_var id c)
 let mkNamedLambda id typ c = mkLambda (Name id, typ, Vars.subst_var id c)
@@ -627,17 +630,55 @@ let mkNamedLetIn id c1 t c2 = mkLetIn (Name id, c1, t, Vars.subst_var id c2)
 let mkNamedProd_or_LetIn decl c =
   let open Context.Named.Declaration in
   match decl with
-    | LocalAssum (id,t) -> mkNamedProd id (of_constr t) c
-    | LocalDef (id,b,t) -> mkNamedLetIn id (of_constr b) (of_constr t) c
+    | LocalAssum (id,t) -> mkNamedProd id t c
+    | LocalDef (id,b,t) -> mkNamedLetIn id b t c
 
 let mkNamedLambda_or_LetIn decl c =
   let open Context.Named.Declaration in
   match decl with
-    | LocalAssum (id,t) -> mkNamedLambda id (of_constr t) c
-    | LocalDef (id,b,t) -> mkNamedLetIn id (of_constr b) (of_constr t) c
+    | LocalAssum (id,t) -> mkNamedLambda id t c
+    | LocalDef (id,b,t) -> mkNamedLetIn id b t c
 
 let it_mkProd_or_LetIn t ctx = List.fold_left (fun c d -> mkProd_or_LetIn d c) t ctx
 let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d c) t ctx
+
+open Context
+open Environ
+
+let sym : type a b. (a, b) eq -> (b, a) eq = fun Refl -> Refl
+
+let cast_rel_decl :
+  type a b. (a,b) eq -> (a, a) Rel.Declaration.pt -> (b, b) Rel.Declaration.pt =
+  fun Refl x -> x
+
+let cast_rel_context :
+  type a b. (a,b) eq -> (a, a) Rel.pt -> (b, b) Rel.pt =
+  fun Refl x -> x
+
+let cast_named_decl :
+  type a b. (a,b) eq -> (a, a) Named.Declaration.pt -> (b, b) Named.Declaration.pt =
+  fun Refl x -> x
+
+let cast_named_context :
+  type a b. (a,b) eq -> (a, a) Named.pt -> (b, b) Named.pt =
+  fun Refl x -> x
+
+let push_rel d e = push_rel (cast_rel_decl unsafe_eq d) e
+let push_rel_context d e = push_rel_context (cast_rel_context unsafe_eq d) e
+let push_named d e = push_named (cast_named_decl unsafe_eq d) e
+let push_named_context d e = push_named_context (cast_named_context unsafe_eq d) e
+let push_named_context_val d e = push_named_context_val (cast_named_decl unsafe_eq d) e
+
+let rel_context e = cast_rel_context (sym unsafe_eq) (rel_context e)
+let named_context e = cast_named_context (sym unsafe_eq) (named_context e)
+
+let val_of_named_context e = val_of_named_context (cast_named_context unsafe_eq e)
+let named_context_of_val e = cast_named_context (sym unsafe_eq) (named_context_of_val e)
+
+let lookup_rel i e = cast_rel_decl (sym unsafe_eq) (lookup_rel i e)
+let lookup_named n e = cast_named_decl (sym unsafe_eq) (lookup_named n e)
+let lookup_named_val n e = cast_named_decl (sym unsafe_eq) (lookup_named_val n e)
+
 
 module Unsafe =
 struct

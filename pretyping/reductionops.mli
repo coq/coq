@@ -217,10 +217,10 @@ val splay_prod : env ->  evar_map -> constr -> (Name.t * constr) list * constr
 val splay_lam : env ->  evar_map -> constr -> (Name.t * constr) list * constr
 val splay_arity : env ->  evar_map -> constr -> (Name.t * constr) list * sorts
 val sort_of_arity : env -> evar_map -> constr -> sorts
-val splay_prod_n : env ->  evar_map -> int -> constr -> Context.Rel.t * constr
-val splay_lam_n : env ->  evar_map -> int -> constr -> Context.Rel.t * constr
+val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
+val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_prod_assum :
-  env ->  evar_map -> constr -> Context.Rel.t * constr
+  env ->  evar_map -> constr -> rel_context * constr
 
 type 'a miota_args = {
   mP      : constr;     (** the result type *)

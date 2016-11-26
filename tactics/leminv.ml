@@ -12,6 +12,7 @@ open Util
 open Names
 open Term
 open Termops
+open Environ
 open EConstr
 open Vars
 open Namegen
@@ -20,7 +21,6 @@ open Printer
 open Reductionops
 open Entries
 open Inductiveops
-open Environ
 open Tacmach.New
 open Clenv
 open Declare
@@ -31,14 +31,6 @@ open Proofview.Notations
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
-
-let nlocal_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  NamedDecl.LocalAssum (na, inj t)
-
-let nlocal_def (na, b, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  NamedDecl.LocalDef (na, inj b, inj t)
 
 let no_inductive_inconstr env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
@@ -129,11 +121,11 @@ let rec add_prods_sign env sigma t =
     | Prod (na,c1,b) ->
 	let id = id_of_name_using_hdchar env (EConstr.Unsafe.to_constr t) na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (nlocal_assum (id,c1)) env) sigma b'
+        add_prods_sign (push_named (LocalAssum (id,c1)) env) sigma b'
     | LetIn (na,c1,t1,b) ->
 	let id = id_of_name_using_hdchar env (EConstr.Unsafe.to_constr t) na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (push_named (nlocal_def (id,c1,t1)) env) sigma b'
+        add_prods_sign (push_named (LocalDef (id,c1,t1)) env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates whether the inversion lemma is dependent or not.
@@ -168,6 +160,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let revargs,ownsign =
 	fold_named_context
 	  (fun env d (revargs,hyps) ->
+            let d = map_named_decl EConstr.of_constr d in
              let id = NamedDecl.get_id d in
              if Id.List.mem id ivars then
 	       ((mkVar id)::revargs, Context.Named.add d hyps)
@@ -180,7 +173,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       (pty,goal)
   in
   let npty = nf_all env sigma pty in
-  let extenv = push_named (nlocal_assum (p,npty)) env in
+  let extenv = push_named (LocalAssum (p,npty)) env in
   extenv, goal
 
 (* [inversion_scheme sign I]
@@ -218,6 +211,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let ownSign = ref begin
     fold_named_context
       (fun env d sign ->
+        let d = map_named_decl EConstr.of_constr d in
          if mem_named_context_val (NamedDecl.get_id d) global_named_context then sign
 	 else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
@@ -231,7 +225,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
 	let h = next_ident_away (Id.of_string "H") !avoid in
 	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
 	avoid := h::!avoid;
-	ownSign := Context.Named.add (nlocal_assum (h,ty)) !ownSign;
+	ownSign := Context.Named.add (LocalAssum (h,ty)) !ownSign;
 	applist (mkVar h, inst)
     | _ -> EConstr.map sigma fill_holes c
   in

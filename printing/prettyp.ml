@@ -71,11 +71,11 @@ let print_basename sp = pr_global (ConstRef sp)
 
 let print_ref reduce ref =
   let typ = Global.type_of_global_unsafe ref in
+  let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
-      let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty (EConstr.of_constr typ) in
-      let ccl = EConstr.Unsafe.to_constr ccl
-      in Term.it_mkProd_or_LetIn ccl ctx
+      let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty typ
+      in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
   let env = Global.env () in
@@ -85,7 +85,7 @@ let print_ref reduce ref =
     if Global.is_polymorphic ref then Printer.pr_universe_instance sigma univs
     else mt ()
   in
-  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_ltype_env env sigma typ ++ 
+  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++ 
   	   Printer.pr_universe_ctx sigma univs)
 
 (********************************)

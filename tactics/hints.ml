@@ -875,7 +875,7 @@ let make_resolve_hyp env sigma decl =
   try
     [make_apply_entry env sigma (true, true, false) None false
        ~name:(PathHints [VarRef hname])
-       (c, EConstr.of_constr (NamedDecl.get_type decl), Univ.ContextSet.empty)]
+       (c, NamedDecl.get_type decl, Univ.ContextSet.empty)]
   with
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly (Pp.str "make_resolve_hyp")
@@ -1335,7 +1335,7 @@ let make_local_hint_db env sigma ts eapply lems =
     (Sigma.to_evar_map sigma, c)
   in
   let lems = List.map map lems in
-  let sign = Environ.named_context env in
+  let sign = EConstr.named_context env in
   let ts = match ts with
     | None -> Hint_db.transparent_state (searchtable_map "core") 
     | Some ts -> ts

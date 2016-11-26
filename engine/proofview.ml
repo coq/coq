@@ -995,7 +995,7 @@ module Goal = struct
 
   let env { env=env } = env
   let sigma { sigma=sigma } = Sigma.Unsafe.of_evar_map sigma
-  let hyps { env=env } = Environ.named_context env
+  let hyps { env=env } = EConstr.named_context env
   let concl { concl=concl } = concl
   let extra { sigma=sigma; self=self } = goal_extra sigma self
 

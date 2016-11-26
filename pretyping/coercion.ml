@@ -18,10 +18,10 @@ open CErrors
 open Util
 open Names
 open Term
+open Environ
 open EConstr
 open Vars
 open Reductionops
-open Environ
 open Typeops
 open Pretype_errors
 open Classops
@@ -127,10 +127,6 @@ let lift_args n sign =
   in
     liftrec (List.length sign) sign
 
-let local_assum (na, t) =
-  let open Context.Rel.Declaration in
-  LocalAssum (na, EConstr.Unsafe.to_constr t)
-
 let mu env evdref t =
   let rec aux v =
     let v' = hnf env !evdref v in
@@ -159,7 +155,7 @@ and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
     let subco () = subset_coerce env evdref x y in
     let dest_prod c =
       match Reductionops.splay_prod_n env (!evdref) 1 c with
-      | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na, EConstr.of_constr t), c
+      | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na, t), c
       | _ -> raise NoSubtacCoercion
     in
     let coerce_application typ typ' c c' l l' =
@@ -212,7 +208,7 @@ and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	  let name' = 
 	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.ids_of_context env))
 	  in
-	  let env' = push_rel (local_assum (name', a')) env in
+	  let env' = push_rel (LocalAssum (name', a')) env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 	    (* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
 	  let coec1 = app_opt env' evdref c1 (mkRel 1) in
@@ -260,7 +256,7 @@ and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		       | _ -> raise NoSubtacCoercion
 		     in
 		     let (pb, b), (pb', b') = remove_head a pb, remove_head a' pb' in
-		     let env' = push_rel (local_assum (Name Namegen.default_dependent_ident, a)) env in
+		     let env' = push_rel (LocalAssum (Name Namegen.default_dependent_ident, a)) env in
 		     let c2 = coerce_unify env' b b' in
 		       match c1, c2 with
 		       | None, None -> None
@@ -489,7 +485,7 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
 	    | Anonymous -> Name Namegen.default_dependent_ident
 	    | _ -> name in
 	  let open Context.Rel.Declaration in
-	  let env1 = push_rel (local_assum (name,u1)) env in
+	  let env1 = push_rel (LocalAssum (name,u1)) env in
 	  let (evd', v1) =
 	    inh_conv_coerce_to_fail loc env1 evd rigidonly
               (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in

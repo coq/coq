@@ -23,14 +23,6 @@ open Evarutil
 open Pretype_errors
 open Sigma.Notations
 
-let nlocal_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  Context.Named.Declaration.LocalAssum (na, inj t)
-
-let nlocal_def (na, b, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  Context.Named.Declaration.LocalDef (na, inj b, inj t)
-
 let normalize_evar evd ev =
   match EConstr.kind evd (mkEvar ev) with
   | Evar (evk,args) -> (evk,args)
@@ -264,7 +256,6 @@ let compute_var_aliases sign sigma =
     let id = get_id decl in
     match decl with
     | LocalDef (_,t,_) ->
-        let t = EConstr.of_constr t in
         (match EConstr.kind sigma t with
         | Var id' ->
             let aliases_of_id =
@@ -281,8 +272,6 @@ let compute_rel_aliases var_aliases rels sigma =
 	  (n-1,
 	   match decl with
 	   | LocalDef (_,t,u) ->
-              let t = EConstr.of_constr t in
-              let u = EConstr.of_constr u in
 	      (match EConstr.kind sigma t with
 	       | Var id' ->
 		  let aliases_of_n =
@@ -338,7 +327,6 @@ let extend_alias sigma decl (var_aliases,rel_aliases) =
   let rel_aliases =
     match decl with
     | LocalDef(_,t,_) ->
-        let t = EConstr.of_constr t in
         (match EConstr.kind sigma t with
         | Var id' ->
             let aliases_of_binder =
@@ -530,7 +518,7 @@ let solve_pattern_eqn env sigma l c =
       (* Rem: if [a] links to a let-in, do as if it were an assumption *)
       | Rel n ->
           let open Context.Rel.Declaration in
-          let d = map_constr (CVars.lift n) (lookup_rel n env) in
+          let d = map_constr (lift n) (lookup_rel n env) in
           mkLambda_or_LetIn d c'
       | Var id ->
           let d = lookup_named id env in mkNamedLambda_or_LetIn d c'
@@ -556,6 +544,7 @@ let solve_pattern_eqn env sigma l c =
 
 let make_projectable_subst aliases sigma evi args =
   let sign = evar_filtered_context evi in
+  let sign = List.map (fun d -> map_named_decl EConstr.of_constr d) sign in
   let evar_aliases = compute_var_aliases sign sigma in
   let (_,full_subst,cstr_subst) =
     List.fold_right
@@ -571,7 +560,7 @@ let make_projectable_subst aliases sigma evi args =
               | _ -> cstrs in
             (rest,Id.Map.add id [a,normalize_alias_opt sigma aliases a,id] all,cstrs)
         | LocalDef (id,c,_), a::rest ->
-            (match EConstr.kind sigma (EConstr.of_constr c) with
+            (match EConstr.kind sigma c with
             | Var id' ->
                 let idc = normalize_alias_var sigma evar_aliases id' in
                 let sub = try Id.Map.find idc all with Not_found -> [] in
@@ -646,19 +635,17 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       let LocalAssum (na,t_in_env) | LocalDef (na,_,t_in_env) = d in
       let id = next_name_away na avoid in
       let evd,t_in_sign =
-        let t_in_env = EConstr.of_constr t_in_env in
         let s = Retyping.get_sort_of env evd t_in_env in
         let evd,ty_t_in_sign = refresh_universes
 	 ~status:univ_flexible (Some false) env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd src t_in_env
           ty_t_in_sign sign filter inst_in_env in
       let evd,d' = match d with
-      | LocalAssum _ -> evd, nlocal_assum (id,t_in_sign)
+      | LocalAssum _ -> evd, Context.Named.Declaration.LocalAssum (id,t_in_sign)
       | LocalDef (_,b,_) ->
-          let b = EConstr.of_constr b in
           let evd,b = define_evar_from_virtual_equation define_fun env evd src b
             t_in_sign sign filter inst_in_env in
-          evd, nlocal_def (id,b,t_in_sign) in
+          evd, Context.Named.Declaration.LocalDef (id,b,t_in_sign) in
       (push_named_context_val d' sign, Filter.extend 1 filter,
        (mkRel 1)::(List.map (lift 1) inst_in_env),
        (mkRel 1)::(List.map (lift 1) inst_in_sign),
@@ -1238,9 +1225,11 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
 	 The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
       let evienv = Evd.evar_env evi in
       let ctx1, i = Reduction.dest_arity evienv evi.evar_concl in
+      let ctx1 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx1 in
       let evi2 = Evd.find evd evk2 in
       let evi2env = Evd.evar_env evi2 in
       let ctx2, j = Reduction.dest_arity evi2env evi2.evar_concl in
+      let ctx2 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx2 in
       let ui, uj = univ_of_sort i, univ_of_sort j in
 	if i == j || Evd.check_eq evd ui uj
 	then (* Shortcut, i = j *) 
@@ -1397,7 +1386,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
           (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
           let ty = find_solution_type (evar_filtered_env evi) sols in
-          let ty' = instantiate_evar_array evi (EConstr.of_constr ty) argsv in
+          let ty' = instantiate_evar_array evi ty argsv in
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define conv_algo ~choose) env !evdref 0 ev ty' in
           let ts = expansions_of_var evd aliases t in

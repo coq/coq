@@ -521,14 +521,14 @@ let evars_to_goals p evm =
 (** Making local hints  *)
 let make_resolve_hyp env sigma st flags only_classes pri decl =
   let id = NamedDecl.get_id decl in
-  let cty = Evarutil.nf_evar sigma (EConstr.of_constr (NamedDecl.get_type decl)) in
+  let cty = Evarutil.nf_evar sigma (NamedDecl.get_type decl) in
   let rec iscl env ty =
     let ctx, ar = decompose_prod_assum sigma ty in
       match EConstr.kind sigma (fst (decompose_app sigma ar)) with
       | Const (c,_) -> is_class (ConstRef c)
       | Ind (i,_) -> is_class (IndRef i)
       | _ ->
-          let env' = Environ.push_rel_context ctx env in
+          let env' = push_rel_context ctx env in
           let ty' = Reductionops.whd_all env' sigma ar in
                if not (EConstr.eq_constr sigma ty' ar) then iscl env' ty'
                else false
@@ -562,7 +562,7 @@ let make_hints g st only_classes sign =
         let consider =
           try let t = hyp |> NamedDecl.get_id |> Global.lookup_named |> NamedDecl.get_type in
               (* Section variable, reindex only if the type changed *)
-              not (Term.eq_constr t (NamedDecl.get_type hyp))
+              not (EConstr.eq_constr (project g) (EConstr.of_constr t) (NamedDecl.get_type hyp))
           with Not_found -> true
         in
         if consider then
@@ -617,7 +617,7 @@ module V85 = struct
     then
       cached_hints
     else
-      let hints = make_hints g st only_classes (Environ.named_context_of_val sign)
+      let hints = make_hints g st only_classes (EConstr.named_context_of_val sign)
       in
       cache := (only_classes, sign, hints); hints
 
@@ -634,7 +634,7 @@ module V85 = struct
       let gls' =
         List.map (fun g' ->
             let env = Goal.V82.env s g' in
-            let context = Environ.named_context_of_val (Goal.V82.hyps s g') in
+            let context = EConstr.named_context_of_val (Goal.V82.hyps s g') in
             let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints)
               (true,false,false) info.only_classes None (List.hd context) in
             let ldb = Hint_db.add_list env s hint info.hints in
@@ -937,9 +937,10 @@ module Search = struct
     let sign = Goal.hyps g in
     let (dir, onlyc, sign', cached_hints) = !autogoal_cache in
     let cwd = Lib.cwd () in
+    let eq c1 c2 = EConstr.eq_constr (project g) c1 c2 in
     if DirPath.equal cwd dir &&
          (onlyc == only_classes) &&
-           Context.Named.equal Constr.equal sign sign' &&
+           Context.Named.equal eq sign sign' &&
              Hint_db.transparent_state cached_hints == st
     then cached_hints
     else
@@ -1033,8 +1034,9 @@ module Search = struct
           Feedback.msg_debug
             (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
                pr_ev s' (Proofview.Goal.goal gl'));
+        let eq c1 c2 = EConstr.eq_constr s' c1 c2 in
         let hints' =
-          if b && not (Context.Named.equal Constr.equal (Goal.hyps gl') (Goal.hyps gl))
+          if b && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
           then
             let st = Hint_db.transparent_state info.search_hints in
             make_autogoal_hints info.search_only_classes ~st gl'

@@ -10,6 +10,7 @@ open CSig
 open Names
 open Constr
 open Context
+open Environ
 
 type t
 (** Type of incomplete terms. Essentially a wrapper around {!Constr.t} ensuring
@@ -22,6 +23,10 @@ type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
 type unsafe_type_judgment = types Environ.punsafe_type_judgment
+type named_declaration = (constr, types) Context.Named.Declaration.pt
+type rel_declaration = (constr, types) Context.Rel.Declaration.pt
+type named_context = (constr, types) Context.Named.pt
+type rel_context = (constr, types) Context.Rel.pt
 
 (** {5 Destructors} *)
 
@@ -77,16 +82,16 @@ val mkArrow : t -> t -> t
 
 val applist : t * t list -> t
 
-val mkProd_or_LetIn : Rel.Declaration.t -> t -> t
-val mkLambda_or_LetIn : Rel.Declaration.t -> t -> t
-val it_mkProd_or_LetIn : t -> Rel.t -> t
-val it_mkLambda_or_LetIn : t -> Rel.t -> t
+val mkProd_or_LetIn : rel_declaration -> t -> t
+val mkLambda_or_LetIn : rel_declaration -> t -> t
+val it_mkProd_or_LetIn : t -> rel_context -> t
+val it_mkLambda_or_LetIn : t -> rel_context -> t
 
 val mkNamedLambda : Id.t -> types -> constr -> constr
 val mkNamedLetIn : Id.t -> constr -> types -> constr -> constr
 val mkNamedProd : Id.t -> types -> types -> types
-val mkNamedLambda_or_LetIn : Named.Declaration.t -> types -> types
-val mkNamedProd_or_LetIn : Named.Declaration.t -> types -> types
+val mkNamedLambda_or_LetIn : named_declaration -> types -> types
+val mkNamedProd_or_LetIn : named_declaration -> types -> types
 
 (** {6 Simple case analysis} *)
 
@@ -131,13 +136,13 @@ val destCoFix : Evd.evar_map -> t -> (t, t) pcofixpoint
 val decompose_app : Evd.evar_map -> t -> t * t list
 
 val decompose_lam : Evd.evar_map -> t -> (Name.t * t) list * t
-val decompose_lam_assum : Evd.evar_map -> t -> Context.Rel.t * t
-val decompose_lam_n_assum : Evd.evar_map -> int -> t -> Context.Rel.t * t
-val decompose_lam_n_decls : Evd.evar_map -> int -> t -> Context.Rel.t * t
+val decompose_lam_assum : Evd.evar_map -> t -> rel_context * t
+val decompose_lam_n_assum : Evd.evar_map -> int -> t -> rel_context * t
+val decompose_lam_n_decls : Evd.evar_map -> int -> t -> rel_context * t
 
 val decompose_prod : Evd.evar_map -> t -> (Name.t * t) list * t
-val decompose_prod_assum : Evd.evar_map -> t -> Context.Rel.t * t
-val decompose_prod_n_assum : Evd.evar_map -> int -> t -> Context.Rel.t * t
+val decompose_prod_assum : Evd.evar_map -> t -> rel_context * t
+val decompose_prod_n_assum : Evd.evar_map -> int -> t -> rel_context * t
 
 val existential_type : Evd.evar_map -> existential -> types
 
@@ -156,7 +161,7 @@ val map : Evd.evar_map -> (t -> t) -> t -> t
 val map_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> t) -> 'a -> t -> t
 val iter : Evd.evar_map -> (t -> unit) -> t -> unit
 val iter_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
-val iter_with_full_binders : Evd.evar_map -> (Rel.Declaration.t -> 'a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
+val iter_with_full_binders : Evd.evar_map -> (rel_declaration -> 'a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
 val fold : Evd.evar_map -> ('a -> t -> 'a) -> 'a -> t -> 'a
 
 (** {6 Substitutions} *)
@@ -183,6 +188,25 @@ val closed0 : Evd.evar_map -> t -> bool
 val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
 
 end
+
+(** {5 Environment handling} *)
+
+val push_rel : rel_declaration -> env -> env
+val push_rel_context : rel_context -> env -> env
+
+val push_named : named_declaration -> env -> env
+val push_named_context : named_context -> env -> env
+val push_named_context_val  : named_declaration -> named_context_val -> named_context_val
+
+val rel_context : env -> rel_context
+val named_context : env -> named_context
+
+val val_of_named_context : named_context -> named_context_val
+val named_context_of_val : named_context_val -> named_context
+
+val lookup_rel : int -> env -> rel_declaration
+val lookup_named : variable -> env -> named_declaration
+val lookup_named_val : variable -> named_context_val -> named_declaration
 
 (** {5 Unsafe operations} *)
 

@@ -2083,6 +2083,7 @@ let intern_context global_level env impl_env binders =
     user_err ~loc ~hdr:"internalize" (explain_internalization_error e)
 
 let interp_rawcontext_evars env evdref k bl =
+  let open EConstr in
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->
@@ -2093,7 +2094,6 @@ let interp_rawcontext_evars env evdref k bl =
        let t = understand_tcc_evars env evdref ~expected_type:IsType t' in
 	match b with
 	    None ->
-              let t = EConstr.Unsafe.to_constr t in
 	      let d = LocalAssum (na,t) in
 	      let impls =
 		if k == Implicit then
@@ -2104,8 +2104,6 @@ let interp_rawcontext_evars env evdref k bl =
 		(push_rel d env, d::params, succ n, impls)
 	  | Some b ->
 	      let c = understand_tcc_evars env evdref ~expected_type:(OfType t) b in
-              let t = EConstr.Unsafe.to_constr t in
-              let c = EConstr.Unsafe.to_constr c in
 	      let d = LocalDef (na, c, t) in
 		(push_rel d env, d::params, n, impls))
       (env,[],k+1,[]) (List.rev bl)

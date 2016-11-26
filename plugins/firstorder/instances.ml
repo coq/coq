@@ -117,10 +117,9 @@ let mk_open_instance id idc gl m t=
       let nid=(fresh_id avoid var_id gl) in
       let evmap = Sigma.Unsafe.of_evar_map evmap in
       let Sigma ((c, _), evmap, _) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
-      let c = EConstr.Unsafe.to_constr c in
       let evmap = Sigma.to_evar_map evmap in
       let decl = LocalAssum (Name nid, c) in
-	aux (n-1) (nid::avoid) (Environ.push_rel decl env) evmap (decl::decls) in
+	aux (n-1) (nid::avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
   let evmap, decls = aux m [] env evmap [] in
     evmap, decls, revt
 

@@ -150,6 +150,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
   in
   let k, u, cty, ctx', ctx, len, imps, subst =
     let impls, ((env', ctx), imps) = interp_context_evars env evars ctx in
+    let ctx = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) ctx in
     let c', imps' = interp_type_evars_impls ~impls env' evars tclass in
     let c' = EConstr.Unsafe.to_constr c' in
     let len = List.length ctx in
@@ -363,6 +364,7 @@ let context poly l =
   let env = Global.env() in
   let evars = ref (Evd.from_env env) in
   let _, ((env', fullctx), impls) = interp_context_evars env evars l in
+  let fullctx = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) fullctx in
   let subst = Evarutil.evd_comb0 Evarutil.nf_evars_and_universes evars in
   let fullctx = Context.Rel.map subst fullctx in
   let ce t = Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr t) in

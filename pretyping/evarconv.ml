@@ -11,12 +11,12 @@ open Util
 open Names
 open Term
 open Termops
+open Environ
 open EConstr
 open Vars
 open CClosure
 open Reduction
 open Reductionops
-open Environ
 open Recordops
 open Evarutil
 open Evardefine
@@ -58,12 +58,12 @@ let eval_flexible_term ts env evd c =
   | Rel n ->
       (try match lookup_rel n env with
            | RelDecl.LocalAssum _ -> None
-           | RelDecl.LocalDef (_,v,_) -> Some (lift n (EConstr.of_constr v))
+           | RelDecl.LocalDef (_,v,_) -> Some (lift n v)
        with Not_found -> None)
   | Var id ->
       (try
 	 if is_transparent_variable ts id then
-	   Option.map EConstr.of_constr (env |> lookup_named id |> NamedDecl.get_value)
+	   env |> lookup_named id |> NamedDecl.get_value
 	 else None
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)
@@ -404,7 +404,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
   let eta env evd onleft sk term sk' term' =
     assert (match sk with [] -> true | _ -> false);
     let (na,c1,c'1) = destLambda evd term in
-    let c = EConstr.to_constr evd c1 in
+    let c = nf_evar evd c1 in
     let env' = push_rel (RelDecl.LocalAssum (na,c)) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
       (fst ts) env' evd Cst_stack.empty (c'1, Stack.empty) in
@@ -612,8 +612,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                 (fun i -> evar_conv_x ts env i CUMUL t2 t1)]);
              (fun i -> evar_conv_x ts env i CONV b1 b2);
 	     (fun i ->
-	       let b = EConstr.to_constr i b1 in
-	       let t = EConstr.to_constr i t1 in
+	       let b = nf_evar i b1 in
+	       let t = nf_evar i t1 in
                let na = Nameops.name_max na1 na2 in
 	       evar_conv_x ts (push_rel (RelDecl.LocalDef (na,b,t)) env) i pbty c'1 c'2);
 	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
@@ -730,7 +730,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
         ise_and evd
           [(fun i -> evar_conv_x ts env i CONV c1 c2);
            (fun i ->
-	     let c = EConstr.to_constr i c1 in
+	     let c = nf_evar i c1 in
              let na = Nameops.name_max na1 na2 in
 	     evar_conv_x ts (push_rel (RelDecl.LocalAssum (na,c)) env) i CONV c'1 c'2)]
 
@@ -789,7 +789,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
             ise_and evd
               [(fun i -> evar_conv_x ts env i CONV c1 c2);
                (fun i ->
- 	         let c = EConstr.to_constr i c1 in
+ 	         let c = nf_evar i c1 in
                  let na = Nameops.name_max n1 n2 in
 	         evar_conv_x ts (push_rel (RelDecl.LocalAssum (na,c)) env) i pbty c'1 c'2)]
 

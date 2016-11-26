@@ -64,7 +64,7 @@ let pf_get_hyp gls id =
     raise (RefinerError (NoSuchHyp id))
 
 let pf_get_hyp_typ gls id =
-  id |> pf_get_hyp gls |> NamedDecl.get_type |> EConstr.of_constr
+  id |> pf_get_hyp gls |> NamedDecl.get_type
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
@@ -199,13 +199,13 @@ module New = struct
   let pf_get_hyp id gl =
     let hyps = Proofview.Goal.env gl in
     let sign =
-      try Environ.lookup_named id hyps
+      try EConstr.lookup_named id hyps
       with Not_found -> raise (RefinerError (NoSuchHyp id))
     in
     sign
 
   let pf_get_hyp_typ id gl =
-    pf_get_hyp id gl |> NamedDecl.get_type |> EConstr.of_constr
+    pf_get_hyp id gl |> NamedDecl.get_type
 
   let pf_hyps_types gl =
     let env = Proofview.Goal.env gl in

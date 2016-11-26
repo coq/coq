@@ -167,19 +167,10 @@ let rel_list n m =
   in
   reln [] 1
 
-let local_assum (na, t) =
-  let open RelDecl in
-  let inj = EConstr.Unsafe.to_constr in
-  LocalAssum (na, inj t)
-
-let local_def (na, b, t) =
-  let open RelDecl in
-  let inj = EConstr.Unsafe.to_constr in
-  LocalDef (na, inj b, inj t)
-
 let push_rel_assum (x,t) env =
   let open RelDecl in
-  push_rel (local_assum (x,t)) env
+  let open EConstr in
+  push_rel (LocalAssum (x,t)) env
 
 let push_rels_assum assums =
   let open RelDecl in
@@ -218,8 +209,8 @@ let mkProd_wo_LetIn decl c =
   let open EConstr in
   let open RelDecl in
   match decl with
-    | LocalAssum (na,t) -> mkProd (na, EConstr.of_constr t, c)
-    | LocalDef (_,b,_) -> Vars.subst1 (EConstr.of_constr b) c
+    | LocalAssum (na,t) -> mkProd (na, t, c)
+    | LocalDef (_,b,_) -> Vars.subst1 b c
 
 let it_mkProd init = List.fold_left (fun c (n,t)  -> EConstr.mkProd (n, t, c)) init
 let it_mkLambda init = List.fold_left (fun c (n,t)  -> EConstr.mkLambda (n, t, c)) init
@@ -334,7 +325,8 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
 
 let fold_rec_types g (lna,typarray,_) e =
   let open EConstr in
-  let ctxt = Array.map2_i (fun i na t -> local_assum (na, Vars.lift i t)) lna typarray in
+  let open Vars in
+  let ctxt = Array.map2_i (fun i na t -> RelDecl.LocalAssum (na, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> g assum e) e ctxt
 
 let map_left2 f a g b =
@@ -350,6 +342,7 @@ let map_left2 f a g b =
   end
 
 let map_constr_with_binders_left_to_right sigma g f l c =
+  let open RelDecl in
   let open EConstr in
   match EConstr.kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -361,18 +354,18 @@ let map_constr_with_binders_left_to_right sigma g f l c =
       else mkCast (b',k,t')
   | Prod (na,t,b) ->
       let t' = f l t in
-      let b' = f (g (local_assum (na,t)) l) b in
+      let b' = f (g (LocalAssum (na,t)) l) b in
 	if t' == t && b' == b then c
 	else mkProd (na, t', b')
   | Lambda (na,t,b) ->
       let t' = f l t in
-      let b' = f (g (local_assum (na,t)) l) b in
+      let b' = f (g (LocalAssum (na,t)) l) b in
 	if t' == t && b' == b then c
 	else mkLambda (na, t', b')
   | LetIn (na,bo,t,b) ->
       let bo' = f l bo in
       let t' = f l t in
-      let b' = f (g (local_def (na,bo,t)) l) b in
+      let b' = f (g (LocalDef (na,bo,t)) l) b in
 	if bo' == bo && t' == t && b' == b then c
 	else mkLetIn (na, bo', t', b')	    
   | App (c,[||]) -> assert false
@@ -414,7 +407,6 @@ let map_constr_with_binders_left_to_right sigma g f l c =
 
 (* strong *)
 let map_constr_with_full_binders sigma g f l cstr =
-  let inj c = EConstr.Unsafe.to_constr c in
   let open EConstr in
   let open RelDecl in
   match EConstr.kind sigma cstr with
@@ -426,16 +418,16 @@ let map_constr_with_full_binders sigma g f l cstr =
       if c==c' && t==t' then cstr else mkCast (c', k, t')
   | Prod (na,t,c) ->
       let t' = f l t in
-      let c' = f (g (LocalAssum (na, inj t)) l) c in
+      let c' = f (g (LocalAssum (na, t)) l) c in
       if t==t' && c==c' then cstr else mkProd (na, t', c')
   | Lambda (na,t,c) ->
       let t' = f l t in
-      let c' = f (g (LocalAssum (na, inj t)) l) c in
+      let c' = f (g (LocalAssum (na, t)) l) c in
       if t==t' && c==c' then cstr else  mkLambda (na, t', c')
   | LetIn (na,b,t,c) ->
       let b' = f l b in
       let t' = f l t in
-      let c' = f (g (LocalDef (na, inj b, inj t)) l) c in
+      let c' = f (g (LocalDef (na, b, t)) l) c in
       if b==b' && t==t' && c==c' then cstr else mkLetIn (na, b', t', c')
   | App (c,al) ->
       let c' = f l c in
@@ -456,7 +448,7 @@ let map_constr_with_full_binders sigma g f l cstr =
   | Fix (ln,(lna,tl,bl)) ->
       let tl' = Array.map (f l) tl in
       let l' =
-        Array.fold_left2 (fun l na t -> g (LocalAssum (na, inj t)) l) l lna tl in
+        Array.fold_left2 (fun l na t -> g (LocalAssum (na, t)) l) l lna tl in
       let bl' = Array.map (f l') bl in
       if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
@@ -464,7 +456,7 @@ let map_constr_with_full_binders sigma g f l cstr =
   | CoFix(ln,(lna,tl,bl)) ->
       let tl' = Array.map (f l) tl in
       let l' =
-        Array.fold_left2 (fun l na t -> g (LocalAssum (na, inj t)) l) l lna tl in
+        Array.fold_left2 (fun l na t -> g (LocalAssum (na, t)) l) l lna tl in
       let bl' = Array.map (f l') bl in
       if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
@@ -577,10 +569,10 @@ let occur_var env sigma id c =
 let occur_var_in_decl env sigma hyp decl =
   let open NamedDecl in
   match decl with
-    | LocalAssum (_,typ) -> occur_var env sigma hyp (EConstr.of_constr typ)
+    | LocalAssum (_,typ) -> occur_var env sigma hyp typ
     | LocalDef (_, body, typ) ->
-        occur_var env sigma hyp (EConstr.of_constr typ) ||
-        occur_var env sigma hyp (EConstr.of_constr body)
+        occur_var env sigma hyp typ ||
+        occur_var env sigma hyp body
 
 let local_occur_var sigma id c =
   let rec occur c = match EConstr.kind sigma c with
@@ -655,8 +647,8 @@ let dependent_univs_no_evar sigma c t = dependent_main true true sigma c t
 let dependent_in_decl sigma a decl =
   let open NamedDecl in
   match decl with
-    | LocalAssum (_,t) -> dependent sigma a (EConstr.of_constr t)
-    | LocalDef (_, body, t) -> dependent sigma a (EConstr.of_constr body) || dependent sigma a (EConstr.of_constr t)
+    | LocalAssum (_,t) -> dependent sigma a t
+    | LocalDef (_, body, t) -> dependent sigma a body || dependent sigma a t
 
 let count_occurrences sigma m t =
   let open EConstr in
@@ -886,7 +878,7 @@ let eq_constr sigma t1 t2 = constr_cmp sigma Reduction.CONV t1 t2
 
 (* App(c,[t1,...tn]) -> ([c,t1,...,tn-1],tn)
    App(c,[||]) -> ([],c) *)
-let split_app c = match kind_of_term c with
+let split_app sigma c = match EConstr.kind sigma c with
     App(c,l) ->
       let len = Array.length l in
       if Int.equal len 0 then ([],c) else
@@ -895,28 +887,30 @@ let split_app c = match kind_of_term c with
 	c::(Array.to_list prev), last
   | _ -> assert false
 
-type subst = (Context.Rel.t * constr) Evar.Map.t
+type subst = (EConstr.rel_context * EConstr.constr) Evar.Map.t
 
 exception CannotFilter
 
 let filtering sigma env cv_pb c1 c2 =
+  let open EConstr in
+  let open Vars in
   let evm = ref Evar.Map.empty in
   let define cv_pb e1 ev c1 =
     try let (e2,c2) = Evar.Map.find ev !evm in
     let shift = List.length e1 - List.length e2 in
-    if constr_cmp sigma cv_pb (EConstr.of_constr c1) (EConstr.of_constr (lift shift c2)) then () else raise CannotFilter
+    if constr_cmp sigma cv_pb c1 (lift shift c2) then () else raise CannotFilter
     with Not_found ->
       evm := Evar.Map.add ev (e1,c1) !evm
   in
   let rec aux env cv_pb c1 c2 =
-    match kind_of_term c1, kind_of_term c2 with
+    match EConstr.kind sigma c1, EConstr.kind sigma c2 with
       | App _, App _ ->
-        let ((p1,l1),(p2,l2)) = (split_app c1),(split_app c2) in
+        let ((p1,l1),(p2,l2)) = (split_app sigma c1),(split_app sigma c2) in
         let () = aux env cv_pb l1 l2 in
         begin match p1, p2 with
         | [], [] -> ()
         | (h1 :: p1), (h2 :: p2) ->
-          aux env cv_pb (applistc h1 p1) (applistc h2 p2)
+          aux env cv_pb (applist (h1, p1)) (applist (h2, p2))
         | _ -> assert false
         end
       | Prod (n,t1,c1), Prod (_,t2,c2) ->
@@ -925,21 +919,20 @@ let filtering sigma env cv_pb c1 c2 =
       | _, Evar (ev,_) -> define cv_pb env ev c1
       | Evar (ev,_), _ -> define cv_pb env ev c2
       | _ ->
-          let inj = EConstr.Unsafe.to_constr in
 	  if compare_constr_univ sigma
-	  (fun pb c1 c2 -> aux env pb (inj c1) (inj c2); true) cv_pb (EConstr.of_constr c1) (EConstr.of_constr c2) then ()
+	  (fun pb c1 c2 -> aux env pb c1 c2; true) cv_pb c1 c2 then ()
 	  else raise CannotFilter
 	  (* TODO: le reste des binders *)
   in
   aux env cv_pb c1 c2; !evm
 
 let decompose_prod_letin sigma c =
-  let rec prodec_rec i l sigma c = match EConstr.kind sigma c with
-    | Prod (n,t,c)    -> prodec_rec (succ i) (local_assum (n, t)::l) sigma c
-    | LetIn (n,d,t,c) -> prodec_rec (succ i) (local_def (n, d, t)::l) sigma c
-    | Cast (c,_,_)    -> prodec_rec i l sigma c
-    | _               -> i,l, c in
-  prodec_rec 0 [] sigma c
+  let rec prodec_rec i l c = match EConstr.kind sigma c with
+    | Prod (n,t,c)    -> prodec_rec (succ i) (RelDecl.LocalAssum (n,t)::l) c
+    | LetIn (n,d,t,c) -> prodec_rec (succ i) (RelDecl.LocalDef (n,d,t)::l) c
+    | Cast (c,_,_)    -> prodec_rec i l c
+    | _               -> i,l,c in
+  prodec_rec 0 [] c
 
 (* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
  * gives n (casts are ignored) *)
@@ -1007,7 +1000,7 @@ let rec eta_reduce_head sigma c =
 (* iterator on rel context *)
 let process_rel_context f env =
   let sign = named_context_val env in
-  let rels = rel_context env in
+  let rels = EConstr.rel_context env in
   let env0 = reset_with_named_context sign env in
   Context.Rel.fold_outside f rels ~init:env0
 
@@ -1055,6 +1048,14 @@ let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 let mem_named_context_val id ctxt =
   try Environ.lookup_named_val id ctxt; true with Not_found -> false
 
+let map_rel_decl f = function
+| RelDecl.LocalAssum (id, t) -> RelDecl.LocalAssum (id, f t)
+| RelDecl.LocalDef (id, b, t) -> RelDecl.LocalDef (id, f b, f t)
+
+let map_named_decl f = function
+| NamedDecl.LocalAssum (id, t) -> NamedDecl.LocalAssum (id, f t)
+| NamedDecl.LocalDef (id, b, t) -> NamedDecl.LocalDef (id, f b, f t)
+
 let compact_named_context sign =
   let compact l decl =
     match decl, l with
@@ -1098,10 +1099,10 @@ let global_vars_set env sigma constr =
 let global_vars env sigma ids = Id.Set.elements (global_vars_set env sigma ids)
 
 let global_vars_set_of_decl env sigma = function
-  | NamedDecl.LocalAssum (_,t) -> global_vars_set env sigma (EConstr.of_constr t)
+  | NamedDecl.LocalAssum (_,t) -> global_vars_set env sigma t
   | NamedDecl.LocalDef (_,c,t) ->
-      Id.Set.union (global_vars_set env sigma (EConstr.of_constr t))
-        (global_vars_set env sigma (EConstr.of_constr c))
+      Id.Set.union (global_vars_set env sigma t)
+        (global_vars_set env sigma c)
 
 let dependency_closure env sigma sign hyps =
   if Id.Set.is_empty hyps then [] else
@@ -1155,6 +1156,7 @@ let context_chop k ctx =
 
 (* Do not skip let-in's *)
 let env_rel_context_chop k env =
+  let open EConstr in
   let rels = rel_context env in
   let ctx1,ctx2 = List.chop k rels in
   push_rel_context ctx2 (reset_with_named_context (named_context_val env) env),

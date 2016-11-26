@@ -1651,7 +1651,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    v 0 (pr_id id ++ str":" ++ pr_constr (NamedDecl.get_type decl) ++ fnl() ++ fnl()
+    v 0 (pr_id id ++ str":" ++ pr_econstr (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
     | NoHyp | Not_found -> print_about ref_or_by_not

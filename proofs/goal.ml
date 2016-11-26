@@ -155,6 +155,7 @@ module V82 = struct
       with Not_found -> true in
     Environ.fold_named_context_reverse (fun t decl ->
 					  if is_proof_var decl then
+                                            let decl = Termops.map_named_decl EConstr.of_constr decl in
 					    mkNamedProd_or_LetIn decl t
 					  else
 					    t

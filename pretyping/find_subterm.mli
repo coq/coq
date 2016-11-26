@@ -51,7 +51,7 @@ val replace_term_occ_decl_modulo :
   evar_map ->
   (occurrences * hyp_location_flag) or_like_first ->
   'a testing_function -> (unit -> constr) ->
-  Context.Named.Declaration.t -> Context.Named.Declaration.t
+  named_declaration -> named_declaration
 
 (** [subst_closed_term_occ occl c d] replaces occurrences of
     closed [c] at positions [occl] by [Rel 1] in [d] (see also Note OCC),
@@ -63,7 +63,7 @@ val subst_closed_term_occ : env -> evar_map -> occurrences or_like_first ->
     closed [c] at positions [occl] by [Rel 1] in [decl]. *)
 val subst_closed_term_occ_decl : env -> evar_map ->
   (occurrences * hyp_location_flag) or_like_first ->
-  constr -> Context.Named.Declaration.t -> Context.Named.Declaration.t * evar_map
+  constr -> named_declaration -> named_declaration * evar_map
 
 (** Miscellaneous *)
 val error_invalid_occurrence : int list -> 'a

@@ -12,9 +12,9 @@ open Pp
 open CErrors
 open Util
 open Term
+open Environ
 open EConstr
 open Vars
-open Environ
 open Reductionops
 open Inductive
 open Inductiveops
@@ -22,14 +22,6 @@ open Typeops
 open Arguments_renaming
 open Pretype_errors
 open Context.Rel.Declaration
-
-let local_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  LocalAssum (na, inj t)
-
-let local_def (na, b, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  LocalDef (na, inj b, inj t)
 
 let push_rec_types pfix env =
   let (i, c, t) = pfix in
@@ -101,14 +93,15 @@ let max_sort l =
 
 let e_is_correct_arity env evdref c pj ind specif params =
   let arsign = make_arity_signature env true (make_ind_family (ind,params)) in
+  let arsign = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) arsign in
   let allowed_sorts = elim_sorts specif in
   let error () = Pretype_errors.error_elim_arity env !evdref ind allowed_sorts c pj None in
   let rec srec env pt ar =
     let pt' = whd_all env !evdref pt in
     match EConstr.kind !evdref pt', ar with
     | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
-        if not (Evarconv.e_cumul env evdref a1 (EConstr.of_constr a1')) then error ();
-        srec (push_rel (local_assum (na1,a1)) env) t ar'
+        if not (Evarconv.e_cumul env evdref a1 a1') then error ();
+        srec (push_rel (LocalAssum (na1,a1)) env) t ar'
     | Sort s, [] ->
         if not (Sorts.List.mem (Sorts.family s) allowed_sorts)
         then error ()
@@ -326,14 +319,14 @@ let rec execute env evdref cstr =
     | Lambda (name,c1,c2) ->
         let j = execute env evdref c1 in
 	let var = e_type_judgment env evdref j in
-	let env1 = push_rel (local_assum (name, var.utj_val)) env in
+	let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
         let j' = execute env1 evdref c2 in
         judge_of_abstraction env1 name var j'
 
     | Prod (name,c1,c2) ->
         let j = execute env evdref c1 in
         let varj = e_type_judgment env evdref j in
-	let env1 = push_rel (local_assum (name, varj.utj_val)) env in
+	let env1 = push_rel (LocalAssum (name, varj.utj_val)) env in
         let j' = execute env1 evdref c2 in
         let varj' = e_type_judgment env1 evdref j' in
 	judge_of_product env name varj varj'
@@ -343,7 +336,7 @@ let rec execute env evdref cstr =
         let j2 = execute env evdref c2 in
         let j2 = e_type_judgment env evdref j2 in
         let _ =  e_judge_of_cast env evdref j1 DEFAULTcast j2 in
-        let env1 = push_rel (local_def (name, j1.uj_val, j2.utj_val)) env in
+        let env1 = push_rel (LocalDef (name, j1.uj_val, j2.utj_val)) env in
         let j3 = execute env1 evdref c3 in
         judge_of_letin env name j1 j2 j3
 

@@ -1706,10 +1706,6 @@ let onClearedName2 id tac =
       Tacticals.New.tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
     end })
 
-let local_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  LocalAssum (na, inj t)
-
 let rec is_Prop sigma c = match EConstr.kind sigma c with
   | Sort (Prop Null) -> true
   | Cast (c,_,_) -> is_Prop sigma c
@@ -1725,24 +1721,24 @@ let destructure_hyps =
       | decl::lit ->
           let i = NamedDecl.get_id decl in
           Proofview.tclEVARMAP >>= fun sigma ->
-	  begin try match destructurate_prop sigma (EConstr.of_constr (NamedDecl.get_type decl)) with
+	  begin try match destructurate_prop sigma (NamedDecl.get_type decl) with
 	  | Kapp(False,[]) -> elim_id i
           | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop lit
           | Kapp(Or,[t1;t2]) ->
               (Tacticals.New.tclTHENS
                  (elim_id i)
-                 [ onClearedName i (fun i -> (loop (local_assum (i,t1)::lit)));
-                   onClearedName i (fun i -> (loop (local_assum (i,t2)::lit))) ])
+                 [ onClearedName i (fun i -> (loop (LocalAssum (i,t1)::lit)));
+                   onClearedName i (fun i -> (loop (LocalAssum (i,t2)::lit))) ])
           | Kapp(And,[t1;t2]) ->
               Tacticals.New.tclTHEN
 		(elim_id i)
 		(onClearedName2 i (fun i1 i2 ->
-		  loop (local_assum (i1,t1) :: local_assum (i2,t2) :: lit)))
+		  loop (LocalAssum (i1,t1) :: LocalAssum (i2,t2) :: lit)))
           | Kapp(Iff,[t1;t2]) ->
 	      Tacticals.New.tclTHEN
 		(elim_id i)
 		(onClearedName2 i (fun i1 i2 ->
-		  loop (local_assum (i1,mkArrow t1 t2) :: local_assum (i2,mkArrow t2 t1) :: lit)))
+		  loop (LocalAssum (i1,mkArrow t1 t2) :: LocalAssum (i2,mkArrow t2 t1) :: lit)))
           | Kimp(t1,t2) ->
 	      (* t1 and t2 might be in Type rather than Prop.
 		 For t1, the decidability check will ensure being Prop. *)
@@ -1753,7 +1749,7 @@ let destructure_hyps =
 		  (generalize_tac [mkApp (Lazy.force coq_imp_simp,
                                                                [| t1; t2; d1; mkVar i|])]);
 		  (onClearedName i (fun i ->
-		    (loop (local_assum (i,mk_or (mk_not t1) t2) :: lit))))
+		    (loop (LocalAssum (i,mk_or (mk_not t1) t2) :: lit))))
                 ]
               else
 		loop lit
@@ -1764,7 +1760,7 @@ let destructure_hyps =
 		    (generalize_tac
                                             [mkApp (Lazy.force coq_not_or,[| t1; t2; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (local_assum (i,mk_and (mk_not t1) (mk_not t2)) :: lit))))
+                      (loop (LocalAssum (i,mk_and (mk_not t1) (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(And,[t1;t2]) ->
 		  let d1 = decidability t1 in
@@ -1773,7 +1769,7 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_and,
 				                    [| t1; t2; d1; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (local_assum (i,mk_or (mk_not t1) (mk_not t2)) :: lit))))
+                      (loop (LocalAssum (i,mk_or (mk_not t1) (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(Iff,[t1;t2]) ->
 		  let d1 = decidability t1 in
@@ -1783,7 +1779,7 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_iff,
 				                    [| t1; t2; d1; d2; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (local_assum (i, mk_or (mk_and t1 (mk_not t2))
+                      (loop (LocalAssum (i, mk_or (mk_and t1 (mk_not t2))
 				                  (mk_and (mk_not t1) t2)) :: lit))))
                   ]
 	      | Kimp(t1,t2) ->
@@ -1795,14 +1791,14 @@ let destructure_hyps =
 		                            [mkApp (Lazy.force coq_not_imp,
 				                    [| t1; t2; d1; mkVar i |])]);
 		    (onClearedName i (fun i ->
-                      (loop (local_assum (i,mk_and t1 (mk_not t2)) :: lit))))
+                      (loop (LocalAssum (i,mk_and t1 (mk_not t2)) :: lit))))
                   ]
 	      | Kapp(Not,[t]) ->
 		  let d = decidability t in
                   Tacticals.New.tclTHENLIST [
 		    (generalize_tac
 			                    [mkApp (Lazy.force coq_not_not, [| t; d; mkVar i |])]);
-		    (onClearedName i (fun i -> (loop (local_assum (i,t) :: lit))))
+		    (onClearedName i (fun i -> (loop (LocalAssum (i,t) :: lit))))
                   ]
 	      | Kapp(op,[t1;t2]) ->
 		  (try
@@ -1835,12 +1831,12 @@ let destructure_hyps =
 		    match destructurate_type sigma (pf_nf typ) with
 		    | Kapp(Nat,_) ->
                         (Tacticals.New.tclTHEN
-			   (convert_hyp_no_check (NamedDecl.set_type (EConstr.Unsafe.to_constr (mkApp (Lazy.force coq_neq, [| t1;t2|])))
+			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
                                                                      decl))
 			   (loop lit))
 		    | Kapp(Z,_) ->
                         (Tacticals.New.tclTHEN
-			   (convert_hyp_no_check (NamedDecl.set_type (EConstr.Unsafe.to_constr (mkApp (Lazy.force coq_Zne, [| t1;t2|])))
+			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
                                                                      decl))
 			   (loop lit))
 		    | _ -> loop lit

@@ -28,10 +28,6 @@ open Proofview.Notations
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let local_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  RelDecl.LocalAssum (na, inj t)
-
 let reference dir s = lazy (Coqlib.gen_reference "CC" dir s)
 
 let _f_equal = reference ["Init";"Logic"] "f_equal"
@@ -160,7 +156,7 @@ let rec quantified_atom_of_constr env sigma nrels term =
 	  let patts=patterns_of_constr env sigma nrels atom in
 	      `Nrule patts
 	else 
-	  quantified_atom_of_constr (Environ.push_rel (local_assum (id,atom)) env) sigma (succ nrels) ff
+	  quantified_atom_of_constr (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma (succ nrels) ff
     | _ ->  
 	let patts=patterns_of_constr env sigma nrels term in
 	    `Rule patts
@@ -175,7 +171,7 @@ let litteral_of_constr env sigma term=
 	else
 	  begin
 	    try 
-	      quantified_atom_of_constr (Environ.push_rel (local_assum (id,atom)) env) sigma 1 ff
+	      quantified_atom_of_constr (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma 1 ff
 	    with Not_found ->
 	      `Other (decompose_term env sigma term)
 	  end

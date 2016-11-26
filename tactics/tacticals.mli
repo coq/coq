@@ -60,29 +60,29 @@ val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 
 val onNthHypId       : int -> (Id.t -> tactic) -> tactic
 val onNthHyp         : int -> (constr -> tactic) -> tactic
-val onNthDecl        : int -> (Context.Named.Declaration.t -> tactic) -> tactic
+val onNthDecl        : int -> (named_declaration -> tactic) -> tactic
 val onLastHypId      : (Id.t -> tactic) -> tactic
 val onLastHyp        : (constr -> tactic) -> tactic
-val onLastDecl       : (Context.Named.Declaration.t -> tactic) -> tactic
+val onLastDecl       : (named_declaration -> tactic) -> tactic
 val onNLastHypsId    : int -> (Id.t list -> tactic) -> tactic
 val onNLastHyps      : int -> (constr list -> tactic) -> tactic
-val onNLastDecls     : int -> (Context.Named.t -> tactic) -> tactic
+val onNLastDecls     : int -> (named_context -> tactic) -> tactic
 
 val lastHypId   : goal sigma -> Id.t
 val lastHyp     : goal sigma -> constr
-val lastDecl    : goal sigma -> Context.Named.Declaration.t
+val lastDecl    : goal sigma -> named_declaration
 val nLastHypsId : int -> goal sigma -> Id.t list
 val nLastHyps   : int -> goal sigma -> constr list
-val nLastDecls  : int -> goal sigma -> Context.Named.t
+val nLastDecls  : int -> goal sigma -> named_context
 
-val afterHyp    : Id.t -> goal sigma -> Context.Named.t
+val afterHyp    : Id.t -> goal sigma -> named_context
 
 val ifOnHyp     : (Id.t * types -> bool) ->
                   (Id.t -> tactic) -> (Id.t -> tactic) ->
 		   Id.t -> tactic
 
-val onHyps      : (goal sigma -> Context.Named.t) ->
-                  (Context.Named.t -> tactic) -> tactic
+val onHyps      : (goal sigma -> named_context) ->
+                  (named_context -> tactic) -> tactic
 
 (** {6 Tacticals applying to goal components } *)
 
@@ -110,7 +110,7 @@ type branch_args = private {
 
 type branch_assumptions = private {
   ba        : branch_args;       (** the branch args *)
-  assums    : Context.Named.t}   (** the list of assumptions introduced *)
+  assums    : named_context}   (** the list of assumptions introduced *)
 
 (** [get_and_check_or_and_pattern loc pats branchsign] returns an appropriate
    error message if |pats| <> |branchsign|; extends them if no pattern is given
@@ -229,7 +229,7 @@ module New : sig
   val tclTIMEOUT : int -> unit tactic -> unit tactic
   val tclTIME : string option -> 'a tactic -> 'a tactic
 
-  val nLastDecls  : ([ `NF ], 'r) Proofview.Goal.t -> int -> Context.Named.t
+  val nLastDecls  : ([ `NF ], 'r) Proofview.Goal.t -> int -> named_context
 
   val ifOnHyp     : (identifier * types -> bool) ->
     (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
@@ -238,11 +238,11 @@ module New : sig
   val onNthHypId : int -> (identifier -> unit tactic) -> unit tactic
   val onLastHypId      : (identifier -> unit tactic) -> unit tactic
   val onLastHyp        : (constr -> unit tactic) -> unit tactic
-  val onLastDecl       : (Context.Named.Declaration.t -> unit tactic) -> unit tactic
+  val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
 
-  val onHyps      : ([ `NF ], Context.Named.t) Proofview.Goal.enter ->
-                    (Context.Named.t -> unit tactic) -> unit tactic
-  val afterHyp    : Id.t -> (Context.Named.t -> unit tactic) -> unit tactic
+  val onHyps      : ([ `NF ], named_context) Proofview.Goal.enter ->
+                    (named_context -> unit tactic) -> unit tactic
+  val afterHyp    : Id.t -> (named_context -> unit tactic) -> unit tactic
 
   val tryAllHyps          : (identifier -> unit tactic) -> unit tactic
   val tryAllHypsAndConcl  : (identifier option -> unit tactic) -> unit tactic

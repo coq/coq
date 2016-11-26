@@ -10,6 +10,7 @@
 
 open Evd
 open Proof_type
+open EConstr
 
 (** The refiner (handles primitive rules and high-level tactics). *)
 
@@ -17,7 +18,7 @@ val sig_it  : 'a sigma -> 'a
 val project : 'a sigma -> evar_map
 
 val pf_env  : goal sigma -> Environ.env
-val pf_hyps : goal sigma -> Context.Named.t
+val pf_hyps : goal sigma -> named_context
 
 val unpackage : 'a sigma -> evar_map ref * 'a
 val repackage : evar_map ref -> 'a -> 'a sigma

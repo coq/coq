@@ -49,7 +49,7 @@ let clear ids { it = goal; sigma } =
       user_err  (str "Cannot clear " ++ pr_id id)
   in
   let sigma = !evdref in
-  let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps (EConstr.of_constr concl) (Goal.V82.extra sigma goal) in
+  let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
   let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
   { it = [gl]; sigma }
 
@@ -638,7 +638,7 @@ let assume_tac hyps gls =
        tclTHEN
 	 (push_intro_tac
 	    (fun id ->
-	       Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,st.st_it)))) st.st_label))
+	       Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,EConstr.of_constr st.st_it)))) st.st_label))
 	 hyps tclIDTAC gls
 
 let assume_hyps_or_theses hyps gls =
@@ -648,7 +648,7 @@ let assume_hyps_or_theses hyps gls =
 	   tclTHEN
 	     (push_intro_tac
 		(fun id ->
-		   Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,c)))) nam)
+		   Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,EConstr.of_constr c)))) nam)
        | Hprop {st_label=nam;st_it=Thesis (tk)} ->
 	   tclTHEN
 	     (push_intro_tac
@@ -660,7 +660,7 @@ let assume_st hyps gls =
     (fun st ->
        tclTHEN
 	 (push_intro_tac
-	    (fun id -> Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,st.st_it)))) st.st_label))
+	    (fun id -> Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,EConstr.of_constr st.st_it)))) st.st_label))
 	 hyps tclIDTAC gls
 
 let assume_st_letin hyps gls =
@@ -669,7 +669,7 @@ let assume_st_letin hyps gls =
        tclTHEN
 	 (push_intro_tac
 	    (fun id ->
-	       Proofview.V82.of_tactic (convert_hyp (LocalDef (id, fst st.st_it, snd st.st_it)))) st.st_label))
+	       Proofview.V82.of_tactic (convert_hyp (LocalDef (id, EConstr.of_constr (fst st.st_it), EConstr.of_constr (snd st.st_it))))) st.st_label))
 	 hyps tclIDTAC gls
 
 (* suffices *)
@@ -763,7 +763,7 @@ let rec consider_match may_intro introduced available expected gls =
 	  error "Not enough sub-hypotheses to match statements."
 	    (* should tell which ones *)
     | id::rest_ids,(Hvar st | Hprop st)::rest ->
-	tclIFTHENELSE (Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,st.st_it))))
+	tclIFTHENELSE (Proofview.V82.of_tactic (convert_hyp (LocalAssum (id,EConstr.of_constr st.st_it))))
 	  begin
 	    match st.st_label with
 		Anonymous ->
@@ -834,13 +834,13 @@ let define_tac id args body gls =
 (* tactics for reconsider *)
 
 let cast_tac id_or_thesis typ gls =
+  let typ = EConstr.of_constr typ in
   match id_or_thesis with
     | This id ->
         Proofview.V82.of_tactic  (id |> pf_get_hyp gls |> NamedDecl.set_id id |> NamedDecl.set_type typ |> convert_hyp) gls
     | Thesis (For _ ) ->
 	error "\"thesis for ...\" is not applicable here."
     | Thesis Plain ->
-          let typ = EConstr.of_constr typ in
           Proofview.V82.of_tactic (convert_concl typ DEFAULTcast) gls
 
 (* per cases *)
@@ -1290,6 +1290,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let f_ids typ =
 	  let sign =
 	    (prod_assum (Term.prod_applist typ params)) in
+          let sign = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) sign in
 	    find_intro_names sign gls in
 	let constr_args_ids = Array.map f_ids gen_arities in
 	let case_term =

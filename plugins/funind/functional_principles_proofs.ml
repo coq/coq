@@ -236,7 +236,7 @@ let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta
 
 
 
-let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
+let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
   let nochange ?t' msg  =
     begin
       observe (str ("Not treating ( "^msg^" )") ++ pr_leconstr t  ++ str "    " ++ match t' with None -> str "" | Some t -> Printer.pr_leconstr t );
@@ -315,7 +315,7 @@ let change_eq env sigma hyp_id (context:Context.Rel.t) x t end_of_type  =
 	   try
 	     let witness = Int.Map.find i sub in
 	     if is_local_def decl then anomaly (Pp.str "can not redefine a rel!");
-	     (pop end_of_type,ctxt_size,mkLetIn (RelDecl.get_name decl, witness, EConstr.of_constr (RelDecl.get_type decl), witness_fun))
+	     (pop end_of_type,ctxt_size,mkLetIn (RelDecl.get_name decl, witness, RelDecl.get_type decl, witness_fun))
 	   with Not_found  ->
 	     (mkProd_or_LetIn decl end_of_type, ctxt_size + 1, mkLambda_or_LetIn decl witness_fun)
 	)
@@ -544,7 +544,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 		(scan_type new_context new_t')
 	    with Failure "NoChange" ->
 	      (* Last thing todo : push the rel in the context and continue *)
-	      scan_type (local_assum (x,t_x) :: context) t'
+	      scan_type (LocalAssum (x,t_x) :: context) t'
 	  end
       end
     else
@@ -933,6 +933,7 @@ let generalize_non_dep hyp g =
   let to_revert,_ =
     let open Context.Named.Declaration in
     Environ.fold_named_context_reverse (fun (clear,keep) decl ->
+      let decl = map_named_decl EConstr.of_constr decl in
       let hyp = get_id decl in
       if Id.List.mem hyp hyps
         || List.exists (Termops.occur_var_in_decl env (project g) hyp) keep

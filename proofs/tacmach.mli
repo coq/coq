@@ -34,18 +34,18 @@ val apply_sig_tac :
 
 val pf_concl              : goal sigma -> types
 val pf_env                : goal sigma -> env
-val pf_hyps               : goal sigma -> Context.Named.t
+val pf_hyps               : goal sigma -> named_context
 (*i val pf_untyped_hyps       : goal sigma -> (Id.t * constr) list i*)
 val pf_hyps_types         : goal sigma -> (Id.t * types) list
 val pf_nth_hyp_id         : goal sigma -> int -> Id.t
-val pf_last_hyp           : goal sigma -> Context.Named.Declaration.t
+val pf_last_hyp           : goal sigma -> named_declaration
 val pf_ids_of_hyps        : goal sigma -> Id.t list
 val pf_global             : goal sigma -> Id.t -> constr
 val pf_unsafe_type_of            : goal sigma -> constr -> types
 val pf_type_of            : goal sigma -> constr -> evar_map * types
 val pf_hnf_type_of        : goal sigma -> constr -> types
 
-val pf_get_hyp            : goal sigma -> Id.t -> Context.Named.Declaration.t
+val pf_get_hyp            : goal sigma -> Id.t -> named_declaration
 val pf_get_hyp_typ        : goal sigma -> Id.t -> types
 
 val pf_get_new_id  : Id.t      -> goal sigma -> Id.t
@@ -117,9 +117,9 @@ module New : sig
   val pf_ids_of_hyps : ('a, 'r) Proofview.Goal.t -> identifier list
   val pf_hyps_types : ('a, 'r) Proofview.Goal.t -> (identifier * types) list
 
-  val pf_get_hyp : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> Context.Named.Declaration.t
+  val pf_get_hyp : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> named_declaration
   val pf_get_hyp_typ        : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> types
-  val pf_last_hyp           : ([ `NF ], 'r) Proofview.Goal.t -> Context.Named.Declaration.t
+  val pf_last_hyp           : ([ `NF ], 'r) Proofview.Goal.t -> named_declaration
 
   val pf_nf_concl : ([ `LZ ], 'r) Proofview.Goal.t -> types
   val pf_reduce_to_quantified_ind : ('a, 'r) Proofview.Goal.t -> types -> pinductive * types

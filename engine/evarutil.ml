@@ -139,12 +139,12 @@ let nf_named_context_evar sigma ctx =
   Context.Named.map (nf_evar0 sigma) ctx
 
 let nf_rel_context_evar sigma ctx =
-  Context.Rel.map (nf_evar0 sigma) ctx
+  Context.Rel.map (nf_evar sigma) ctx
 
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
-  let rel' = nf_rel_context_evar sigma (Environ.rel_context env) in
-    push_rel_context rel' (reset_with_named_context (val_of_named_context nc') env)
+  let rel' = nf_rel_context_evar sigma (EConstr.rel_context env) in
+    EConstr.push_rel_context rel' (reset_with_named_context (val_of_named_context nc') env)
 
 let nf_evar_info evc info = map_evar_info (nf_evar0 evc) info
 
@@ -320,7 +320,7 @@ let empty_csubst = (0, Int.Map.empty)
 
 type ext_named_context =
   csubst * (Id.t * EConstr.constr) list *
-  Id.Set.t * Context.Named.t
+  Id.Set.t * EConstr.named_context
 
 let push_var id (n, s) =
   let s = Int.Map.add n (EConstr.mkVar id) s in
@@ -330,7 +330,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
   let open EConstr in
   let open Vars in
   let map_decl f d =
-    NamedDecl.map_constr (fun c -> EConstr.Unsafe.to_constr (f (EConstr.of_constr c))) d
+    NamedDecl.map_constr f d
   in
   let replace_var_named_declaration id0 id decl =
     let id' = NamedDecl.get_id decl in
@@ -354,7 +354,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
     else
       (** id_of_name_using_hdchar only depends on the rel context which is empty
           here *)
-      next_ident_away (id_of_name_using_hdchar empty_env (RelDecl.get_type decl) na) avoid
+      next_ident_away (id_of_name_using_hdchar empty_env (EConstr.Unsafe.to_constr (RelDecl.get_type decl)) na) avoid
   in
   match extract_if_neq id na with
   | Some id0 when not (is_section_variable id0) ->
@@ -542,6 +542,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
 	       removed *)
 	    let evi = Evd.find_undefined !evdref evk in
 	    let ctxt = Evd.evar_filtered_context evi in
+	    let ctxt = List.map (fun d -> map_named_decl EConstr.of_constr d) ctxt in
 	    let (rids,filter) =
               List.fold_right2
                 (fun h a (ri,filter) ->
@@ -595,6 +596,7 @@ let clear_hyps_in_evi_main env evdref hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occurring in evi *)
+  let terms = List.map EConstr.Unsafe.to_constr terms in
   let global = Id.Set.exists is_section_variable ids in
   let terms =
     List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids global) terms in
@@ -616,10 +618,9 @@ let clear_hyps_in_evi_main env evdref hyps terms ids =
     in
       remove_hyps ids check_context check_value hyps
   in
-  (nhyps,terms)
+  (nhyps,List.map EConstr.of_constr terms)
 
 let clear_hyps_in_evi env evdref hyps concl ids =
-  let concl = EConstr.Unsafe.to_constr concl in
   match clear_hyps_in_evi_main env evdref hyps [concl] ids with
   | (nhyps,[nconcl]) -> (nhyps,nconcl)
   | _ -> assert false
@@ -746,6 +747,7 @@ let occur_evar_upto sigma n c =
    any type has type Type. May cause some trouble, but not so far... *)
 
 let judge_of_new_Type evd =
+  let open EConstr in
   let Sigma (s, evd', p) = Sigma.new_univ_variable univ_rigid evd in
   Sigma ({ uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) }, evd', p)
 

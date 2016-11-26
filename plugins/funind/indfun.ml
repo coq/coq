@@ -19,7 +19,7 @@ let is_rec_info sigma scheme_info =
   let test_branche min acc decl =
     acc || (
       let new_branche =
-	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum sigma (EConstr.of_constr (RelDecl.get_type decl)))) in
+	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum sigma (RelDecl.get_type decl))) in
       let free_rels_in_br = Termops.free_rels sigma new_branche in
       let max = min + scheme_info.Tactics.npredicates in
       Int.Set.exists (fun i -> i >= min && i< max) free_rels_in_br

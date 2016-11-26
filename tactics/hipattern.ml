@@ -107,8 +107,8 @@ let match_with_one_constructor sigma style onlybinary allow_rec t =
 	    List.for_all
 	      (fun decl -> let c = RelDecl.get_type decl in
 	                   is_local_assum decl &&
-			   Term.isRel c &&
-                           Int.equal (Term.destRel c) mib.mind_nparams) ctx
+			   isRel sigma c &&
+                           Int.equal (destRel sigma c) mib.mind_nparams) ctx
 	  then
 	    Some (hdapp,args)
 	  else None
@@ -117,7 +117,6 @@ let match_with_one_constructor sigma style onlybinary allow_rec t =
 	  let cargs = List.map RelDecl.get_type (prod_assum sigma ctyp) in
 	  if not (is_lax_conjunction style) || has_nodep_prod sigma ctyp then
 	    (* Record or non strict conjunction *)
-	    let cargs = List.map EConstr.of_constr cargs in
 	    Some (hdapp,List.rev cargs)
 	  else
 	      None

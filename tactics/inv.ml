@@ -13,10 +13,10 @@ open Names
 open Nameops
 open Term
 open Termops
+open Environ
 open EConstr
 open Vars
 open Namegen
-open Environ
 open Inductiveops
 open Printer
 open Retyping
@@ -75,6 +75,7 @@ let make_inv_predicate env evd indf realargs id status concl =
       | NoDep ->
 	  (* We push the arity and leave concl unchanged *)
 	  let hyps_arity,_ = get_arity env indf in
+	  let hyps_arity = List.map (fun d -> map_rel_decl EConstr.of_constr d) hyps_arity in
 	    (hyps_arity,concl)
       | Dep dflt_concl ->
 	  if not (occur_var env !evd id concl) then
@@ -132,6 +133,10 @@ let make_inv_predicate env evd indf realargs id status concl =
         build_concl eqns args (succ n) restlist
   in
   let (newconcl, args) = build_concl [] [] 0 realargs in
+  let name_context env ctx =
+    let map f c = List.map (fun d -> Termops.map_rel_decl f d) c in
+    map EConstr.of_constr (name_context env (map EConstr.Unsafe.to_constr ctx))
+  in
   let predicate = it_mkLambda_or_LetIn newconcl (name_context env hyps) in
   let _ = Evarutil.evd_comb1 (Typing.type_of env) evd predicate in
   (* OK - this predicate should now be usable by res_elimination_then to

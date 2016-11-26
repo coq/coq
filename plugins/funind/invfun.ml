@@ -26,12 +26,6 @@ open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 
-let local_assum (na, t) =
-  RelDecl.LocalAssum (na, EConstr.Unsafe.to_constr t)
-
-let local_def (na, b, t) =
-  RelDecl.LocalDef (na, EConstr.Unsafe.to_constr b, EConstr.Unsafe.to_constr t)
-
 (* Some pretty printing function for debugging purpose *)
 
 let pr_binding prc  =
@@ -147,7 +141,7 @@ let generate_type evd g_to_f f graph i =
   let fun_ctxt,res_type =
     match ctxt with
       | [] | [_] -> anomaly (Pp.str "Not a valid context")
-      | decl :: fun_ctxt -> fun_ctxt, EConstr.of_constr (RelDecl.get_type decl)
+      | decl :: fun_ctxt -> fun_ctxt, RelDecl.get_type decl
   in
   let rec args_from_decl i accu = function
   | [] -> accu
@@ -187,12 +181,12 @@ let generate_type evd g_to_f f graph i =
     \[\forall (x_1:t_1)\ldots(x_n:t_n), let fv := f x_1\ldots x_n in, forall res,  \]
     i*)
   let pre_ctxt =
-    local_assum (Name res_id, lift 1 res_type) :: local_def (Name fv_id, mkApp (f,args_as_rels), res_type) :: fun_ctxt
+    LocalAssum (Name res_id, lift 1 res_type) :: LocalDef (Name fv_id, mkApp (f,args_as_rels), res_type) :: fun_ctxt
   in
   (*i and we can return the solution depending on which lemma type we are defining i*)
   if g_to_f
-  then local_assum (Anonymous,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args),graph
-  else local_assum (Anonymous,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied),graph
+  then LocalAssum (Anonymous,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args),graph
+  else LocalAssum (Anonymous,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied),graph
 
 
 (*
@@ -280,7 +274,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	(fun decl ->
 	   List.map
 	     (fun id -> Loc.ghost, IntroNaming (IntroIdentifier id))
-	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum evd (EConstr.of_constr (RelDecl.get_type decl))))))
+	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum evd (RelDecl.get_type decl)))))
 	)
 	branches
     in
@@ -477,7 +471,7 @@ let generalize_dependent_of x hyp g =
   tclMAP
     (function
        | LocalAssum (id,t) when not (Id.equal id hyp) &&
-	   (Termops.occur_var (pf_env g) (project g) x (EConstr.of_constr t)) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (thin [id])
+	   (Termops.occur_var (pf_env g) (project g) x t) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (thin [id])
        | _ -> tclIDTAC
     )
     (pf_hyps g)
@@ -695,7 +689,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(fun decl ->
 	   List.map
 	     (fun id -> id)
-	     (generate_fresh_id (Id.of_string "y") ids (nb_prod (project g) (EConstr.of_constr (RelDecl.get_type decl))))
+	     (generate_fresh_id (Id.of_string "y") ids (nb_prod (project g) (RelDecl.get_type decl)))
 	)
 	branches
     in

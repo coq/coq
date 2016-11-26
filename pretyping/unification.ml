@@ -14,10 +14,10 @@ open Util
 open Names
 open Term
 open Termops
+open Environ
 open EConstr
 open Vars
 open Namegen
-open Environ
 open Evd
 open Reduction
 open Reductionops
@@ -91,7 +91,6 @@ let abstract_scheme env evd c l lname_typ =
     (fun (t,evd) (locc,a) decl ->
        let na = RelDecl.get_name decl in
        let ta = RelDecl.get_type decl in
-       let ta = EConstr.of_constr ta in
        let na = match EConstr.kind evd a with Var id -> Name id | _ -> na in
 (* [occur_meta ta] test removed for support of eelim/ecase but consequences
    are unclear...
@@ -1627,6 +1626,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = EConstr.mkVar id in
   let compute_dependency _ d (sign,depdecls) =
+    let d = map_named_decl EConstr.of_constr d in
     let hyp = NamedDecl.get_id d in
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
@@ -1634,7 +1634,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     | AllOccurrences, InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo sigma occ test mkvarid d in
-        if Context.Named.Declaration.equal Constr.equal d newdecl
+        if Context.Named.Declaration.equal (EConstr.eq_constr sigma) d newdecl
            && not (indirectly_dependent sigma c d depdecls)
         then
           if check_occs && not (in_every_hyp occs)
@@ -1688,7 +1688,7 @@ type abstraction_request =
 
 type 'r abstraction_result =
   Names.Id.t * named_context_val *
-    Context.Named.Declaration.t list * Names.Id.t option *
+    named_declaration list * Names.Id.t option *
     types * (constr, 'r) Sigma.sigma option
 
 let make_abstraction env evd ccl abs =

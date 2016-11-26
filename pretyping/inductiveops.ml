@@ -371,7 +371,7 @@ let make_case_or_project env sigma indf ci pred c branches =
 	  | LocalAssum (na, t) ->
 	     let t = mkProj (Projection.make ps.(i) true, c) in
 	     (i + 1, t :: subst)
-	  | LocalDef (na, b, t) -> (i, Vars.substl subst (EConstr.of_constr b) :: subst))
+	  | LocalDef (na, b, t) -> (i, Vars.substl subst b :: subst))
 	 ctx (0, [])
      in Vars.substl subst br
 

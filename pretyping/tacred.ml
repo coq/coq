@@ -14,11 +14,11 @@ open Term
 open Libnames
 open Globnames
 open Termops
+open Environ
 open EConstr
 open Vars
 open Find_subterm
 open Namegen
-open Environ
 open CClosure
 open Reductionops
 open Cbv
@@ -60,7 +60,7 @@ let is_evaluable env = function
 let value_of_evaluable_ref env evref u =
   match evref with
   | EvalConstRef con -> 
-    (try constant_value_in env (con,u)
+    EConstr.of_constr (try constant_value_in env (con,u)
     with NotEvaluableConst IsProj -> 
       raise (Invalid_argument "value_of_evaluable_ref"))
   | EvalVarRef id -> env |> lookup_named id |> NamedDecl.get_value |> Option.get
@@ -115,9 +115,9 @@ let unsafe_reference_opt_value env sigma eval =
     | Declarations.Def c -> Some (EConstr.of_constr (Mod_subst.force_constr c))
     | _ -> None)
   | EvalVar id ->
-      env |> lookup_named id |> NamedDecl.get_value |> Option.map EConstr.of_constr
+      env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      env |> lookup_rel n |> RelDecl.get_value |> Option.map (EConstr.of_constr %> lift n)
+      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
   | EvalEvar ev ->
     match EConstr.kind sigma (mkEvar ev) with
     | Evar _ -> None
@@ -127,9 +127,9 @@ let reference_opt_value env sigma eval u =
   match eval with
   | EvalConst cst -> Option.map EConstr.of_constr (constant_opt_value_in env (cst,u))
   | EvalVar id ->
-      env |> lookup_named id |> NamedDecl.get_value |> Option.map EConstr.of_constr
+      env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      env |> lookup_rel n |> RelDecl.get_value |> Option.map (EConstr.of_constr %> lift n)
+      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
   | EvalEvar ev ->
     match EConstr.kind sigma (mkEvar ev) with
     | Evar _ -> None
@@ -146,11 +146,11 @@ let reference_value env sigma c u =
 (* One reuses the name of the function after reduction of the fixpoint  *)
 
 type constant_evaluation =
-  | EliminationFix of int * int * (int * (int * EConstr.t) list * int)
+  | EliminationFix of int * int * (int * (int * constr) list * int)
   | EliminationMutualFix of
       int * evaluable_reference *
       ((int*evaluable_reference) option array *
-       (int * (int * EConstr.t) list * int))
+       (int * (int * constr) list * int))
   | EliminationCases of int
   | EliminationProj of int
   | NotAnElimination
@@ -261,22 +261,13 @@ let invert_name labs l na0 env sigma ref = function
    [compute_consteval_mutual_fix] only one by one, until finding the
    last one before the Fix if the latter is mutually defined *)
 
-let local_assum (na, t) =
-  let open Context.Rel.Declaration in
-  let inj = EConstr.Unsafe.to_constr in
-  LocalAssum (na, inj t)
-
-let local_def (na, b, t) =
-  let open Context.Rel.Declaration in
-  let inj = EConstr.Unsafe.to_constr in
-  LocalDef (na, inj b, inj t)
-
 let compute_consteval_direct env sigma ref =
   let rec srec env n labs onlyproj c =
     let c',l = whd_betadeltazeta_stack env sigma c in
     match EConstr.kind sigma c' with
       | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
-	  srec (push_rel (local_assum (id,t)) env) (n+1) (t::labs) onlyproj g
+          let open Context.Rel.Declaration in
+	  srec (push_rel (LocalAssum (id,t)) env) (n+1) (t::labs) onlyproj g
       | Fix fix when not onlyproj ->
 	  (try check_fix_reversibility sigma labs l fix
 	  with Elimconst -> NotAnElimination)
@@ -295,7 +286,8 @@ let compute_consteval_mutual_fix env sigma ref =
     let nargs = List.length l in
     match EConstr.kind sigma c' with
       | Lambda (na,t,g) when List.is_empty l ->
-	  srec (push_rel (local_assum (na,t)) env) (minarg+1) (t::labs) ref g
+          let open Context.Rel.Declaration in
+	  srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref g
       | Fix ((lv,i),(names,_,_)) ->
 	  (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
 	  (match compute_consteval_direct env sigma ref with
@@ -386,7 +378,7 @@ let make_elim_fun (names,(nbfix,lv,n)) u largs =
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)]:
    do so that the reduction uses this extra information *)
 
-let dummy = Constr.mkProp
+let dummy = mkProp
 let vfx = Id.of_string "_expanded_fix_"
 let vfun = Id.of_string "_eliminator_function_"
 let venv = let open Context.Named.Declaration in
@@ -405,7 +397,7 @@ let substl_with_function subst sigma constr =
       match v.(i-k-1) with
       | (fx, Some (min, ref)) ->
         let sigma = Sigma.Unsafe.of_evar_map !evd in
-        let Sigma (evk, sigma, _) = Evarutil.new_pure_evar venv sigma (EConstr.of_constr dummy) in
+        let Sigma (evk, sigma, _) = Evarutil.new_pure_evar venv sigma dummy in
         let sigma = Sigma.to_evar_map sigma in
         evd := sigma;
         minargs := Evar.Map.add evk min !minargs;
@@ -466,7 +458,7 @@ let substl_checking_arity env subst sigma c =
   in
   nf_fix body
 
-type fix_reduction_result = NotReducible | Reduced of (EConstr.t * EConstr.t list)
+type fix_reduction_result = NotReducible | Reduced of (constr * constr list)
 
 let reduce_fix whdfun sigma fix stack =
   match fix_recarg fix (Stack.append_app_list stack Stack.empty) with
@@ -557,9 +549,9 @@ let match_eval_ref_value env sigma constr =
   | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
     Some (EConstr.of_constr (constant_value_in env (sp, u)))
   | Var id when is_evaluable env (EvalVarRef id) -> 
-     env |> lookup_named id |> NamedDecl.get_value |> Option.map EConstr.of_constr
+     env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
-     env |> lookup_rel n |> RelDecl.get_value |> Option.map (EConstr.of_constr %> lift n)
+     env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
   | _ -> None
 
 let special_red_case env sigma whfun (ci, p, c, lf) =
@@ -625,12 +617,12 @@ let whd_nothing_for_iota env sigma s =
       | Rel n ->
           let open Context.Rel.Declaration in
 	  (match lookup_rel n env with
-	     | LocalDef (_,body,_) -> whrec (lift n (EConstr.of_constr body), stack)
+	     | LocalDef (_,body,_) -> whrec (lift n body, stack)
 	     | _ -> s)
       | Var id ->
           let open Context.Named.Declaration in
 	  (match lookup_named id env with
-	     | LocalDef (_,body,_) -> whrec (EConstr.of_constr body, stack)
+	     | LocalDef (_,body,_) -> whrec (body, stack)
 	     | _ -> s)
       | Evar ev -> s
       | Meta ev ->
@@ -834,7 +826,8 @@ let try_red_product env sigma c =
              | _ -> simpfun (mkApp (redrec env f, l)))
       | Cast (c,_,_) -> redrec env c
       | Prod (x,a,b) ->
-	  mkProd (x, a, redrec (push_rel (local_assum (x, a)) env) b)
+          let open Context.Rel.Declaration in
+	  mkProd (x, a, redrec (push_rel (LocalAssum (x, a)) env) b)
       | LetIn (x,a,b,t) -> redrec env (Vars.subst1 a t)
       | Case (ci,p,d,lf) -> simpfun (mkCase (ci,p,redrec env d,lf))
       | Proj (p, c) -> 
@@ -1053,7 +1046,7 @@ let substlin env sigma evalref n (nowhere_except_in,locs) c =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref n in
   assert (List.for_all (fun x -> x >= 0) locs);
-  let value u = EConstr.of_constr (value_of_evaluable_ref env evalref u) in
+  let value u = value_of_evaluable_ref env evalref u in
   let rec substrec () c =
     if nowhere_except_in && !pos > maxocc then c
     else 
@@ -1192,7 +1185,7 @@ let reduce_to_ind_gen allow_product env sigma t =
       | Prod (n,ty,t') ->
 	  let open Context.Rel.Declaration in
 	  if allow_product then
-	    elimrec (push_rel (local_assum (n,ty)) env) t' ((local_assum (n,ty))::l)
+	    elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
 	  else
 	    user_err  (str"Not an inductive definition.")
       | _ ->
@@ -1270,7 +1263,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
       | Prod (n,ty,t') ->
           if allow_product then
 	    let open Context.Rel.Declaration in
-	    elimrec (push_rel (local_assum (n,t)) env) t' ((local_assum (n,ty))::l)
+	    elimrec (push_rel (LocalAssum (n,t)) env) t' ((LocalAssum (n,ty))::l)
           else
             error_cannot_recognize ref
       | _ ->

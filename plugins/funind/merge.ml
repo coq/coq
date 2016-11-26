@@ -976,7 +976,7 @@ let funify_branches relinfo nfuns branch =
       | Rel i -> let reali = i-shift in (reali>=0 && reali<relinfo.nbranches)
       | _ -> false in
   (* FIXME: *)
-  LocalDef (Anonymous,mkProp,mkProp)
+  LocalDef (Anonymous,EConstr.mkProp,EConstr.mkProp)
 
 
 let relprinctype_to_funprinctype relprinctype nfuns =

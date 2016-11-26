@@ -174,12 +174,14 @@ let reorder_context env sigma sign ord =
   step ord ords sign mt_q []
 
 let reorder_val_context env sigma sign ord =
+  let open EConstr in
   val_of_named_context (reorder_context env sigma (named_context_of_val sign) ord)
 
 
 
 
 let check_decl_position env sigma sign d =
+  let open EConstr in
   let x = NamedDecl.get_id d in
   let needed = global_vars_set_of_decl env sigma d in
   let deps = dependency_closure env sigma (named_context_of_val sign) needed in
@@ -266,6 +268,7 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
       	else
 	  moverec first' middle' right
   in
+  let open EConstr in
   if toleft then
     let right =
       List.fold_right push_named_context_val right empty_named_context_val in
@@ -279,6 +282,7 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
       right left
 
 let move_hyp_in_named_context sigma hfrom hto sign =
+  let open EConstr in
   let (left,right,declfrom,toleft) =
     split_sign hfrom hto (named_context_of_val sign) in
   move_hyp sigma toleft (left,declfrom,right) hto
@@ -507,7 +511,7 @@ and mk_casegoals sigma goal goalacc p c =
 
 let convert_hyp check sign sigma d =
   let id = NamedDecl.get_id d in
-  let b = Option.map EConstr.of_constr (NamedDecl.get_value d) in
+  let b = NamedDecl.get_value d in
   let env = Global.env() in
   let reorder = ref [] in
   let sign' =
@@ -515,14 +519,14 @@ let convert_hyp check sign sigma d =
       (fun _ d' _ ->
         let c = Option.map EConstr.of_constr (NamedDecl.get_value d') in
         let env = Global.env_of_context sign in
-        if check && not (is_conv env sigma (EConstr.of_constr (NamedDecl.get_type d)) (EConstr.of_constr (NamedDecl.get_type d'))) then
+        if check && not (is_conv env sigma (NamedDecl.get_type d) (EConstr.of_constr (NamedDecl.get_type d'))) then
 	  user_err ~hdr:"Logic.convert_hyp"
             (str "Incorrect change of the type of " ++ pr_id id ++ str ".");
         if check && not (Option.equal (is_conv env sigma) b c) then
 	  user_err ~hdr:"Logic.convert_hyp"
             (str "Incorrect change of the body of "++ pr_id id ++ str ".");
        if check then reorder := check_decl_position env sigma sign d;
-       d) in
+       map_named_decl EConstr.Unsafe.to_constr d) in
   reorder_val_context env sigma sign' !reorder
 
 
@@ -535,15 +539,16 @@ let prim_refiner r sigma goal =
   let env = Goal.V82.env sigma goal in
   let sign = Goal.V82.hyps sigma goal in
   let cl = Goal.V82.concl sigma goal in
-  let cl = EConstr.Unsafe.to_constr cl in
   let mk_goal hyps concl = 
     Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) 
   in
+  let open EConstr in
   match r with
     (* Logical rules *)
     | Cut (b,replace,id,t) ->
 (*        if !check && not (Retyping.get_sort_of env sigma t) then*)
-        let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma (EConstr.of_constr t)) in
+        let t = EConstr.of_constr t in
+        let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma t) in
 	let sign,t,cl,sigma =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
@@ -556,14 +561,14 @@ let prim_refiner r sigma goal =
 	      user_err ~hdr:"Logic.prim_refiner"
                 (str "Variable " ++ pr_id id ++ str " is already declared.");
 	     push_named_context_val (LocalAssum (id,t)) sign,t,cl,sigma) in
-        let t = EConstr.of_constr t in
         let (sg2,ev2,sigma) = 
-	  Goal.V82.mk_goal sigma sign (EConstr.of_constr cl) (Goal.V82.extra sigma goal) in
-	let oterm = EConstr.mkLetIn (Name id, ev1, t, EConstr.Vars.subst_var id ev2) in
+	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
+	let oterm = mkLetIn (Name id, ev1, t, EConstr.Vars.subst_var id ev2) in
 	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
     | Refine c ->
+        let cl = EConstr.Unsafe.to_constr cl in
 	check_meta_variables c;
 	let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl c in
 	let sgl = List.rev sgl in

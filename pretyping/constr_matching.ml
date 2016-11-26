@@ -136,14 +136,6 @@ let make_renaming ids = function
   end
 | _ -> dummy_constr
 
-let local_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  LocalAssum (na, inj t)
-
-let local_def (na, b, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  LocalDef (na, inj b, inj t)
-
 let to_fix (idx, (nas, cs, ts)) =
   let inj = EConstr.of_constr in
   (idx, (nas, Array.map inj cs, Array.map inj ts))
@@ -273,15 +265,15 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
           sorec ctx env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (local_assum (na2,c2)) env)
+	  sorec ((na1,na2,c2)::ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLambda (na1,c1,d1), Lambda(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (local_assum (na2,c2)) env)
+	  sorec ((na1,na2,c2)::ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLetIn (na1,c1,d1), LetIn(na2,c2,t2,d2) ->
-	  sorec ((na1,na2,t2)::ctx) (Environ.push_rel (local_def (na2,c2,t2)) env)
+	  sorec ((na1,na2,t2)::ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
@@ -290,12 +282,12 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 	  let n = Context.Rel.length ctx_b2 in
           let n' = Context.Rel.length ctx_b2' in
 	  if Vars.noccur_between sigma 1 n b2 && Vars.noccur_between sigma 1 n' b2' then
-            let f l (LocalAssum (na,t) | LocalDef (na,_,t)) = (Anonymous,na,EConstr.of_constr t)::l in
+            let f l (LocalAssum (na,t) | LocalDef (na,_,t)) = (Anonymous,na,t)::l in
 	    let ctx_br = List.fold_left f ctx ctx_b2 in
 	    let ctx_br' = List.fold_left f ctx ctx_b2' in
 	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in
-	    sorec ctx_br' (Environ.push_rel_context ctx_b2' env)
-	      (sorec ctx_br (Environ.push_rel_context ctx_b2 env)
+	    sorec ctx_br' (push_rel_context ctx_b2' env)
+	      (sorec ctx_br (push_rel_context ctx_b2 env)
                  (sorec ctx env subst a1 a2) b1 b2) b1' b2'
           else
             raise PatternMatchingFailure
@@ -388,21 +380,21 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
       | [c1; c2] -> mk_ctx (mkLambda (x, c1, c2))
       | _ -> assert false
       in
-      let env' = Environ.push_rel (local_assum (x,c1)) env in
+      let env' = EConstr.push_rel (LocalAssum (x,c1)) env in
       try_aux [(env, c1); (env', c2)] next_mk_ctx next
   | Prod (x,c1,c2) ->
       let next_mk_ctx = function
       | [c1; c2] -> mk_ctx (mkProd (x, c1, c2))
       | _ -> assert false
       in
-      let env' = Environ.push_rel (local_assum (x,c1)) env in
+      let env' = EConstr.push_rel (LocalAssum (x,c1)) env in
       try_aux [(env, c1); (env', c2)] next_mk_ctx next
   | LetIn (x,c1,t,c2) ->
       let next_mk_ctx = function
       | [c1; c2] -> mk_ctx (mkLetIn (x, c1, t, c2))
       | _ -> assert false
       in
-      let env' = Environ.push_rel (local_def (x,c1,t)) env in
+      let env' = EConstr.push_rel (LocalDef (x,c1,t)) env in
       try_aux [(env, c1); (env', c2)] next_mk_ctx next
   | App (c1,lc) ->
         let topdown = true in

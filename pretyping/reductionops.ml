@@ -13,9 +13,9 @@ open Term
 open Termops
 open Univ
 open Evd
+open Environ
 open EConstr
 open Vars
-open Environ
 open Context.Rel.Declaration
 
 exception Elimconst
@@ -609,14 +609,6 @@ let pr_state (tm,sk) =
   let pr c = Termops.print_constr c in
   h 0 (pr tm ++ str "|" ++ cut () ++ Stack.pr pr sk)
 
-let local_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  LocalAssum (na, inj t)
-
-let local_def (na, b, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  LocalDef (na, inj b, inj t)
-
 (*************************************)
 (*** Reduction Functions Operators ***)
 (*************************************)
@@ -851,12 +843,12 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
     match c0 with
     | Rel n when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
       (match lookup_rel n env with
-      | LocalDef (_,body,_) -> whrec Cst_stack.empty (lift n (EConstr.of_constr body), stack)
+      | LocalDef (_,body,_) -> whrec Cst_stack.empty (lift n body, stack)
       | _ -> fold ())
     | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
       (match lookup_named id env with
       | LocalDef (_,body,_) ->
-	whrec (if refold then Cst_stack.add_cst (mkVar id) cst_l else cst_l) (EConstr.of_constr body, stack)
+	whrec (if refold then Cst_stack.add_cst (mkVar id) cst_l else cst_l) (body, stack)
       | _ -> fold ())
     | Evar ev -> fold ()
     | Meta ev ->
@@ -958,7 +950,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       | Some _ when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
 	apply_subst (fun _ -> whrec) [] sigma refold cst_l x stack
       | None when CClosure.RedFlags.red_set flags CClosure.RedFlags.fETA ->
-	let env' = push_rel (local_assum (na, t)) env in
+	let env' = push_rel (LocalAssum (na, t)) env in
 	let whrec' = whd_state_gen ~refold ~tactic_mode flags env' sigma in
         (match EConstr.kind sigma (Stack.zip ~refold sigma (fst (whrec' (c, Stack.empty)))) with
         | App (f,cl) ->
@@ -1468,7 +1460,7 @@ let splay_prod env sigma =
     let t = whd_all env sigma c in
     match EConstr.kind sigma t with
       | Prod (n,a,c0) ->
-	  decrec (push_rel (local_assum (n,a)) env)
+	  decrec (push_rel (LocalAssum (n,a)) env)
 	    (bind_assum (n,a)::m) c0
       | _ -> m,t
   in
@@ -1479,7 +1471,7 @@ let splay_lam env sigma =
     let t = whd_all env sigma c in
     match EConstr.kind sigma t with
       | Lambda (n,a,c0) ->
-	  decrec (push_rel (local_assum (n,a)) env)
+	  decrec (push_rel (LocalAssum (n,a)) env)
 	    (bind_assum (n,a)::m) c0
       | _ -> m,t
   in
@@ -1490,11 +1482,11 @@ let splay_prod_assum env sigma =
     let t = whd_allnolet env sigma c in
     match EConstr.kind sigma t with
     | Prod (x,t,c)  ->
-	prodec_rec (push_rel (local_assum (x,t)) env)
-	  (Context.Rel.add (local_assum (x,t)) l) c
+	prodec_rec (push_rel (LocalAssum (x,t)) env)
+	  (Context.Rel.add (LocalAssum (x,t)) l) c
     | LetIn (x,b,t,c) ->
-	prodec_rec (push_rel (local_def (x,b,t)) env)
-	  (Context.Rel.add (local_def (x,b,t)) l) c
+	prodec_rec (push_rel (LocalDef (x,b,t)) env)
+	  (Context.Rel.add (LocalDef (x,b,t)) l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> 
       let t' = whd_all env sigma t in
@@ -1515,8 +1507,8 @@ let splay_prod_n env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match EConstr.kind sigma (whd_all env sigma c) with
       | Prod (n,a,c0) ->
-	  decrec (push_rel (local_assum (n,a)) env)
-	    (m-1) (Context.Rel.add (local_assum (n,a)) ln) c0
+	  decrec (push_rel (LocalAssum (n,a)) env)
+	    (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
       | _                      -> invalid_arg "splay_prod_n"
   in
   decrec env n Context.Rel.empty
@@ -1525,8 +1517,8 @@ let splay_lam_n env sigma n =
   let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match EConstr.kind sigma (whd_all env sigma c) with
       | Lambda (n,a,c0) ->
-	  decrec (push_rel (local_assum (n,a)) env)
-	    (m-1) (Context.Rel.add (local_assum (n,a)) ln) c0
+	  decrec (push_rel (LocalAssum (n,a)) env)
+	    (m-1) (Context.Rel.add (LocalAssum (n,a)) ln) c0
       | _                      -> invalid_arg "splay_lam_n"
   in
   decrec env n Context.Rel.empty
@@ -1566,8 +1558,8 @@ let find_conclusion env sigma =
   let rec decrec env c =
     let t = whd_all env sigma c in
     match EConstr.kind sigma t with
-      | Prod (x,t,c0) -> decrec (push_rel (local_assum (x,t)) env) c0
-      | Lambda (x,t,c0) -> decrec (push_rel (local_assum (x,t)) env) c0
+      | Prod (x,t,c0) -> decrec (push_rel (LocalAssum (x,t)) env) c0
+      | Lambda (x,t,c0) -> decrec (push_rel (LocalAssum (x,t)) env) c0
       | t -> t
   in
   decrec env

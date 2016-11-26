@@ -190,6 +190,8 @@ type hineq={hname:constr; (* le nom de l'hypothèse *)
 exception NoIneq
 
 let ineq1_of_constr (h,t) =
+  let h = EConstr.Unsafe.to_constr h in
+  let t = EConstr.Unsafe.to_constr t in
     match (kind_of_term t) with
       | App (f,args) ->
         (match kind_of_term f with
@@ -504,7 +506,7 @@ let rec fourier () =
         |_-> raise GoalDone
      with GoalDone ->
     (* les hypothèses *)
-    let hyps = List.map (fun (h,t)-> (mkVar h,t))
+    let hyps = List.map (fun (h,t)-> (EConstr.mkVar h,t))
                         (list_of_sign (Proofview.Goal.hyps gl)) in
     let lineq =ref [] in
     List.iter (fun h -> try (lineq:=(ineq1_of_constr h)@(!lineq))

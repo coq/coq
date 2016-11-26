@@ -50,14 +50,6 @@ let anomaly_on_error f x =
  try f x
  with RetypeError e -> anomaly ~label:"retyping" (print_retype_error e)
 
-let local_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  LocalAssum (na, inj t)
-
-let local_def (na, b, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  LocalDef (na, inj b, inj t)
-
 let get_type_from_constraints env sigma t =
   if isEvar sigma (fst (decompose_app_vect sigma t)) then
     match
@@ -84,13 +76,13 @@ let rec subst_type env sigma typ = function
 let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env n ar args =
     match EConstr.kind sigma (whd_all env sigma ar), args with
-    | Prod (na, t, b), h::l -> concl_of_arity (push_rel (local_def (na, lift n h, t)) env) (n + 1) b l
+    | Prod (na, t, b), h::l -> concl_of_arity (push_rel (LocalDef (na, lift n h, t)) env) (n + 1) b l
     | Sort s, [] -> s
     | _ -> retype_error NotASort
   in concl_of_arity env 0 ft (Array.to_list args)
 
 let type_of_var env id =
-  try EConstr.of_constr (NamedDecl.get_type (lookup_named id env))
+  try NamedDecl.get_type (lookup_named id env)
   with Not_found -> retype_error (BadVariable id)
 
 let decomp_sort env sigma t =
@@ -105,7 +97,7 @@ let retype ?(polyprop=true) sigma =
       (try strip_outer_cast sigma (EConstr.of_constr (Evd.meta_ftype sigma n).Evd.rebus)
        with Not_found -> retype_error (BadMeta n))
     | Rel n ->
-	let ty = EConstr.of_constr (RelDecl.get_type (lookup_rel n env)) in
+	let ty = RelDecl.get_type (lookup_rel n env) in
         lift n ty
     | Var id -> type_of_var env id
     | Const cst -> EConstr.of_constr (rename_type_of_constant env cst)
@@ -128,9 +120,9 @@ let retype ?(polyprop=true) sigma =
           | Prod _ -> whd_beta sigma (applist (t, [c]))
           | _ -> t)
     | Lambda (name,c1,c2) ->
-          mkProd (name, c1, type_of (push_rel (local_assum (name,c1)) env) c2)
+          mkProd (name, c1, type_of (push_rel (LocalAssum (name,c1)) env) c2)
     | LetIn (name,b,c1,c2) ->
-         subst1 b (type_of (push_rel (local_def (name,b,c1)) env) c2)
+         subst1 b (type_of (push_rel (LocalDef (name,b,c1)) env) c2)
     | Fix ((_,i),(_,tys,_)) -> tys.(i)
     | CoFix (i,(_,tys,_)) -> tys.(i)
     | App(f,args) when is_template_polymorphic env sigma f ->
@@ -153,7 +145,7 @@ let retype ?(polyprop=true) sigma =
     | Sort (Prop c) -> type1_sort
     | Sort (Type u) -> Type (Univ.super u)
     | Prod (name,t,c2) ->
-        (match (sort_of env t, sort_of (push_rel (local_assum (name,t)) env) c2) with
+        (match (sort_of env t, sort_of (push_rel (LocalAssum (name,t)) env) c2) with
 	  | _, (Prop Null as s) -> s
           | Prop _, (Prop Pos as s) -> s
           | Type _, (Prop Pos as s) when is_impredicative_set env -> s
@@ -174,7 +166,7 @@ let retype ?(polyprop=true) sigma =
     | Sort (Prop c) -> InType
     | Sort (Type u) -> InType
     | Prod (name,t,c2) ->
-	let s2 = sort_family_of (push_rel (local_assum (name,t)) env) c2 in
+	let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
 	if not (is_impredicative_set env) &&
 	   s2 == InSet && sort_family_of env t == InType then InType else s2
     | App(f,args) when is_template_polymorphic env sigma f ->
@@ -249,7 +241,7 @@ let sorts_of_context env evc ctxt =
   | [] -> env,[]
   | d :: ctxt ->
       let env,sorts = aux ctxt in
-      let s = get_sort_of env evc (EConstr.of_constr (RelDecl.get_type d)) in
+      let s = get_sort_of env evc (RelDecl.get_type d) in
       (push_rel d env,s::sorts) in
   snd (aux ctxt)
 

@@ -64,8 +64,8 @@ let proceed_with_occurrences f occs x =
 let map_named_declaration_with_hyploc f hyploc acc decl =
   let open Context.Named.Declaration in
   let f acc typ =
-    let acc, typ = f (Some (NamedDecl.get_id decl, hyploc)) acc (EConstr.of_constr typ) in
-    acc, EConstr.Unsafe.to_constr typ
+    let acc, typ = f (Some (NamedDecl.get_id decl, hyploc)) acc typ in
+    acc, typ
   in
   match decl,hyploc with
   | LocalAssum (id,_), InHypValueOnly ->

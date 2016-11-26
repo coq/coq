@@ -43,7 +43,7 @@ val match_term :
 val match_goal:
   Environ.env ->
   Evd.evar_map ->
-  Context.Named.t ->
+  EConstr.named_context ->
   EConstr.constr ->
   (Tacexpr.binding_bound_vars * Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->
   Tacexpr.glob_tactic_expr t Proofview.tactic

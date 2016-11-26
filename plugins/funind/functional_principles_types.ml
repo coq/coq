@@ -33,9 +33,9 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let princ_type = EConstr.of_constr princ_type in
   let princ_type_info = compute_elim_sig Evd.empty princ_type (** FIXME *) in
   let env = Global.env () in
-  let env_with_params = Environ.push_rel_context princ_type_info.params env in
+  let env_with_params = EConstr.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in
-  let rec change_predicates_names (avoid:Id.t list) (predicates:Context.Rel.t)  : Context.Rel.t =
+  let rec change_predicates_names (avoid:Id.t list) (predicates:EConstr.rel_context)  : EConstr.rel_context =
     match predicates with
     | [] -> []
     | decl :: predicates ->
@@ -56,7 +56,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 (*   observe (str "princ_infos : " ++ pr_elim_scheme princ_type_info); *)
   let change_predicate_sort i decl =
     let new_sort = sorts.(i) in
-    let args,_ = decompose_prod (RelDecl.get_type decl) in
+    let args,_ = decompose_prod (EConstr.Unsafe.to_constr (RelDecl.get_type decl)) in
     let real_args =
       if princ_type_info.indarg_in_concl
       then List.tl args
@@ -87,17 +87,19 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| _ -> false
   in
   let pre_princ =
+    let open EConstr in
     it_mkProd_or_LetIn
       (it_mkProd_or_LetIn
 	 (Option.fold_right
 			   mkProd_or_LetIn
 			   princ_type_info.indarg
-			   (EConstr.Unsafe.to_constr princ_type_info.concl)
+			   princ_type_info.concl
 			)
 	 princ_type_info.args
       )
       princ_type_info.branches
   in
+  let pre_princ = EConstr.Unsafe.to_constr pre_princ in
   let pre_princ = substl (List.map mkVar ptes_vars) pre_princ in
   let is_dom c =
     match kind_of_term c with
@@ -240,7 +242,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
                                  | Context.Named.Declaration.LocalDef (id,t,b) -> LocalDef (Name (Hashtbl.find tbl id), t, b))
           	      new_predicates)
     )
-    princ_type_info.params
+    (List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) princ_type_info.params)
 
 
 
@@ -251,7 +253,7 @@ let change_property_sort evd toSort princ princName =
   let change_sort_in_predicate decl =
     LocalAssum
     (get_name decl,
-     let args,ty = decompose_prod (get_type decl) in
+     let args,ty = decompose_prod (EConstr.Unsafe.to_constr (get_type decl)) in
      let s = destSort ty in
        Global.add_constraints (Univ.enforce_leq (univ_of_sort toSort) (univ_of_sort s) Univ.Constraint.empty);
        Term.compose_prod args (mkSort toSort)
@@ -270,7 +272,7 @@ let change_property_sort evd toSort princ princName =
     (it_mkLambda_or_LetIn init
        (List.map change_sort_in_predicate princ_info.predicates)
     )
-    princ_info.params
+    (List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) princ_info.params)
 
 let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_princ_type sorts funs i proof_tac hook =
   (* First we get the type of the old graph principle *)

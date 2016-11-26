@@ -34,7 +34,7 @@ val push_rel_assum : Name.t * types -> env -> env
 val push_rels_assum : (Name.t * Constr.types) list -> env -> env
 val push_named_rec_types : Name.t array * Constr.types array * 'a -> env -> env
 
-val lookup_rel_id : Id.t -> Context.Rel.t -> int * Constr.constr option * Constr.types
+val lookup_rel_id : Id.t -> ('c, 't) Context.Rel.pt -> int * 'c option * 't
 (** Associates the contents of an identifier in a [rel_context]. Raise
     [Not_found] if there is no such identifier. *)
 
@@ -45,16 +45,16 @@ val rel_vect : int -> int -> Constr.constr array
 val rel_list : int -> int -> constr list
 
 (** iterators/destructors on terms *)
-val mkProd_or_LetIn : Context.Rel.Declaration.t -> types -> types
-val mkProd_wo_LetIn : Context.Rel.Declaration.t -> types -> types
+val mkProd_or_LetIn : rel_declaration -> types -> types
+val mkProd_wo_LetIn : rel_declaration -> types -> types
 val it_mkProd : types -> (Name.t * types) list -> types
 val it_mkLambda : constr -> (Name.t * types) list -> constr
-val it_mkProd_or_LetIn : types -> Context.Rel.t -> types
-val it_mkProd_wo_LetIn : types -> Context.Rel.t -> types
+val it_mkProd_or_LetIn : types -> rel_context -> types
+val it_mkProd_wo_LetIn : types -> rel_context -> types
 val it_mkLambda_or_LetIn : Constr.constr -> Context.Rel.t -> Constr.constr
-val it_mkNamedProd_or_LetIn : types -> Context.Named.t -> types
+val it_mkNamedProd_or_LetIn : types -> named_context -> types
 val it_mkNamedProd_wo_LetIn : Constr.types -> Context.Named.t -> Constr.types
-val it_mkNamedLambda_or_LetIn : constr -> Context.Named.t -> constr
+val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
 
 (* Ad hoc version reinserting letin, assuming the body is defined in
    the context where the letins are expanded *)
@@ -64,12 +64,12 @@ val it_mkLambda_or_LetIn_from_no_LetIn : Constr.constr -> Context.Rel.t -> Const
 
 val map_constr_with_binders_left_to_right :
   Evd.evar_map ->
-  (Context.Rel.Declaration.t -> 'a -> 'a) ->
+  (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) ->
     'a -> constr -> constr
 val map_constr_with_full_binders :
   Evd.evar_map ->
-  (Context.Rel.Declaration.t -> 'a -> 'a) ->
+  (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
 
 (** [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
@@ -105,7 +105,7 @@ val occur_evar : Evd.evar_map -> existential_key -> constr -> bool
 val occur_var : env -> Evd.evar_map -> Id.t -> constr -> bool
 val occur_var_in_decl :
   env -> Evd.evar_map ->
-  Id.t -> Context.Named.Declaration.t -> bool
+  Id.t -> named_declaration -> bool
 
 (** As {!occur_var} but assume the identifier not to be a section variable *)
 val local_occur_var : Evd.evar_map -> Id.t -> constr -> bool
@@ -117,7 +117,7 @@ val dependent : Evd.evar_map -> constr -> constr -> bool
 val dependent_no_evar : Evd.evar_map -> constr -> constr -> bool
 val dependent_univs : Evd.evar_map -> constr -> constr -> bool
 val dependent_univs_no_evar : Evd.evar_map -> constr -> constr -> bool
-val dependent_in_decl : Evd.evar_map -> constr -> Context.Named.Declaration.t -> bool
+val dependent_in_decl : Evd.evar_map -> constr -> named_declaration -> bool
 val count_occurrences : Evd.evar_map -> constr -> constr -> int
 val collect_metas : Evd.evar_map -> constr -> int list
 val collect_vars : Evd.evar_map -> constr -> Id.Set.t (** for visible vars only *)
@@ -182,11 +182,11 @@ exception CannotFilter
    (context,term), or raises [CannotFilter].
    Warning: Outer-kernel sort subtyping are taken into account: c1 has
    to be smaller than c2 wrt. sorts. *)
-type subst = (Context.Rel.t * Constr.constr) Evar.Map.t
-val filtering : Evd.evar_map -> Context.Rel.t -> Reduction.conv_pb -> Constr.constr -> Constr.constr -> subst
+type subst = (rel_context * constr) Evar.Map.t
+val filtering : Evd.evar_map -> rel_context -> Reduction.conv_pb -> constr -> constr -> subst
 
-val decompose_prod_letin : Evd.evar_map -> constr -> int * Context.Rel.t * constr
-val align_prod_letin : Evd.evar_map -> constr -> constr -> Context.Rel.t * constr
+val decompose_prod_letin : Evd.evar_map -> constr -> int * rel_context * constr
+val align_prod_letin : Evd.evar_map -> constr -> constr -> rel_context * constr
 
 (** [nb_lam] {% $ %}[x_1:T_1]...[x_n:T_n]c{% $ %} where {% $ %}c{% $ %} is not an abstraction
    gives {% $ %}n{% $ %} (casts are ignored) *)
@@ -215,8 +215,8 @@ val add_name : Name.t -> names_context -> names_context
 val lookup_name_of_rel : int -> names_context -> Name.t
 val lookup_rel_of_name : Id.t -> names_context -> int
 val empty_names_context : names_context
-val ids_of_rel_context : Context.Rel.t -> Id.t list
-val ids_of_named_context : Context.Named.t -> Id.t list
+val ids_of_rel_context : ('c, 't) Context.Rel.pt -> Id.t list
+val ids_of_named_context : ('c, 't) Context.Named.pt -> Id.t list
 val ids_of_context : env -> Id.t list
 val names_of_rel_context : env -> names_context
 
@@ -228,15 +228,15 @@ val context_chop : int -> Context.Rel.t -> Context.Rel.t * Context.Rel.t
 (* [env_rel_context_chop n env] extracts out the [n] top declarations
    of the rel_context part of [env], counting both local definitions and
    hypotheses *)
-val env_rel_context_chop : int -> env -> env * Context.Rel.t
+val env_rel_context_chop : int -> env -> env * rel_context
 
 (** Set of local names *)
 val vars_of_env: env -> Id.Set.t
 val add_vname : Id.Set.t -> Name.t -> Id.Set.t
 
 (** other signature iterators *)
-val process_rel_context : (Context.Rel.Declaration.t -> env -> env) -> env -> env
-val assums_of_rel_context : Context.Rel.t -> (Name.t * Constr.constr) list
+val process_rel_context : (rel_declaration -> env -> env) -> env -> env
+val assums_of_rel_context : ('c, 't) Context.Rel.pt -> (Name.t * 't) list
 val lift_rel_context : int -> Context.Rel.t -> Context.Rel.t
 val substl_rel_context : Constr.constr list -> Context.Rel.t -> Context.Rel.t
 val smash_rel_context : Context.Rel.t -> Context.Rel.t (** expand lets in context *)
@@ -244,23 +244,26 @@ val smash_rel_context : Context.Rel.t -> Context.Rel.t (** expand lets in contex
 val map_rel_context_in_env :
   (env -> Constr.constr -> Constr.constr) -> env -> Context.Rel.t -> Context.Rel.t
 val map_rel_context_with_binders :
-  (int -> Constr.constr -> Constr.constr) -> Context.Rel.t -> Context.Rel.t
+  (int -> 'c -> 'c) -> ('c, 'c) Context.Rel.pt -> ('c, 'c) Context.Rel.pt
 val fold_named_context_both_sides :
   ('a -> Context.Named.Declaration.t -> Context.Named.Declaration.t list -> 'a) ->
     Context.Named.t -> init:'a -> 'a
 val mem_named_context_val : Id.t -> named_context_val -> bool
 val compact_named_context : Context.Named.t -> Context.Compacted.t
 
+val map_rel_decl : ('a -> 'b) -> ('a, 'a) Context.Rel.Declaration.pt -> ('b, 'b) Context.Rel.Declaration.pt
+val map_named_decl : ('a -> 'b) -> ('a, 'a) Context.Named.Declaration.pt -> ('b, 'b) Context.Named.Declaration.pt
+
 val clear_named_body : Id.t -> env -> env
 
 val global_vars : env -> Evd.evar_map -> constr -> Id.t list
 val global_vars_set : env -> Evd.evar_map -> constr -> Id.Set.t
-val global_vars_set_of_decl : env -> Evd.evar_map -> Context.Named.Declaration.t -> Id.Set.t
+val global_vars_set_of_decl : env -> Evd.evar_map -> named_declaration -> Id.Set.t
 val global_app_of_constr : Evd.evar_map -> constr -> Globnames.global_reference puniverses * constr option
 
 (** Gives an ordered list of hypotheses, closed by dependencies,
    containing a given set *)
-val dependency_closure : env -> Evd.evar_map -> Context.Named.t -> Id.Set.t -> Id.t list
+val dependency_closure : env -> Evd.evar_map -> named_context -> Id.Set.t -> Id.t list
 
 (** Test if an identifier is the basename of a global reference *)
 val is_section_variable : Id.t -> bool

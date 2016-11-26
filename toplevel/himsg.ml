@@ -29,56 +29,56 @@ module RelDecl = Context.Rel.Declaration
 
 (* This simplifies the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)
-let contract env lc =
+let contract env sigma lc =
+  let open EConstr in
   let l = ref [] in
   let contract_context decl env =
     match decl with
-      | LocalDef (_,c',_) when isRel c' ->
+      | LocalDef (_,c',_) when isRel sigma c' ->
           l := (Vars.substl !l c') :: !l;
           env
       | _ ->
           let t = Vars.substl !l (RelDecl.get_type decl) in
-          let decl = decl |> RelDecl.map_name (named_hd env t) |> RelDecl.map_value (Vars.substl !l) |> RelDecl.set_type t in
+          let decl = decl |> RelDecl.map_name (named_hd env (EConstr.Unsafe.to_constr t)) |> RelDecl.map_value (Vars.substl !l) |> RelDecl.set_type t in
           l := (mkRel 1) :: List.map (Vars.lift 1) !l;
           push_rel decl env
   in
   let env = process_rel_context contract_context env in
   (env, List.map (Vars.substl !l) lc)
 
-let contract2 env a b = match contract env [a;b] with
+let contract2 env sigma a b = match contract env sigma [a;b] with
   | env, [a;b] -> env,a,b | _ -> assert false
 
-let contract3 env a b c = match contract env [a;b;c] with
+let contract3 env sigma a b c = match contract env sigma [a;b;c] with
   | env, [a;b;c] -> env,a,b,c | _ -> assert false
 
-let contract4 env a b c d = match contract env [a;b;c;d] with
+let contract4 env sigma a b c d = match contract env sigma [a;b;c;d] with
   | env, [a;b;c;d] -> (env,a,b,c),d | _ -> assert false
 
-let contract1_vect env a v =
-  match contract env (a :: Array.to_list v) with
+let contract1_vect env sigma a v =
+  match contract env sigma (a :: Array.to_list v) with
   | env, a::l -> env,a,Array.of_list l
   | _ -> assert false
 
-let rec contract3' env a b c = function
+let rec contract3' env sigma a b c = function
   | OccurCheck (evk,d) ->
-    let d = EConstr.Unsafe.to_constr d in
-    let x,d = contract4 env a b c d in x,OccurCheck(evk, EConstr.of_constr d)
+    let x,d = contract4 env sigma a b c d in x,OccurCheck(evk, d)
   | NotClean ((evk,args),env',d) ->
-      let d = EConstr.Unsafe.to_constr d in
-      let args = Array.map EConstr.Unsafe.to_constr args in
-      let env',d,args = contract1_vect env' d args in
-      contract3 env a b c,NotClean((evk,Array.map EConstr.of_constr args),env',EConstr.of_constr d)
+      let env',d,args = contract1_vect env' sigma d args in
+      contract3 env sigma a b c,NotClean((evk,args),env',d)
   | ConversionFailed (env',t1,t2) ->
-      let t1 = EConstr.Unsafe.to_constr t1 in
-      let t2 = EConstr.Unsafe.to_constr t2 in
-      let (env',t1,t2) = contract2 env' t1 t2 in
-      contract3 env a b c, ConversionFailed (env',EConstr.of_constr t1,EConstr.of_constr t2)
+      let (env',t1,t2) = contract2 env' sigma t1 t2 in
+      contract3 env sigma a b c, ConversionFailed (env',t1,t2)
   | NotSameArgSize | NotSameHead | NoCanonicalStructure
   | MetaOccurInBody _ | InstanceNotSameType _ | ProblemBeyondCapabilities
-  | UnifUnivInconsistency _ as x -> contract3 env a b c, x
+  | UnifUnivInconsistency _ as x -> contract3 env sigma a b c, x
   | CannotSolveConstraint ((pb,env',t,u),x) ->
-      let env',t,u = contract2 env' t u in
-      let y,x = contract3' env a b c x in
+      let t = EConstr.of_constr t in
+      let u = EConstr.of_constr u in
+      let env',t,u = contract2 env' sigma t u in
+      let t = EConstr.Unsafe.to_constr t in
+      let u = EConstr.Unsafe.to_constr u in
+      let y,x = contract3' env sigma a b c x in
       y,CannotSolveConstraint ((pb,env',t,u),x)
 
 (** Ad-hoc reductions *)
@@ -820,29 +820,19 @@ let explain_pretype_error env sigma err =
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c
   | ActualTypeNotCoercible (j,t,e) ->
-    let j = to_unsafe_judgment j in
-    let t = EConstr.Unsafe.to_constr t in
     let {uj_val = c; uj_type = actty} = j in
-    let (env, c, actty, expty), e = contract3' env c actty t e in
+    let (env, c, actty, expty), e = contract3' env sigma c actty t e in
     let j = {uj_val = c; uj_type = actty} in
-    explain_actual_type env sigma (on_judgment EConstr.of_constr j) (EConstr.of_constr expty) (Some e)
+    explain_actual_type env sigma j expty (Some e)
   | UnifOccurCheck (ev,rhs) -> explain_occur_check env sigma ev rhs
   | UnsolvableImplicit (evk,exp) -> explain_unsolvable_implicit env sigma evk exp
   | VarNotFound id -> explain_var_not_found env id
   | UnexpectedType (actual,expect) ->
-    let actual = EConstr.Unsafe.to_constr actual in
-    let expect = EConstr.Unsafe.to_constr expect in
-    let env, actual, expect = contract2 env actual expect in
-    let actual = EConstr.of_constr actual in
-    let expect = EConstr.of_constr expect in
+    let env, actual, expect = contract2 env sigma actual expect in
     explain_unexpected_type env sigma actual expect
   | NotProduct c -> explain_not_product env sigma c
   | CannotUnify (m,n,e) ->
-    let m = EConstr.Unsafe.to_constr m in
-    let n = EConstr.Unsafe.to_constr n in
-    let env, m, n = contract2 env m n in
-    let m = EConstr.of_constr m in
-    let n = EConstr.of_constr n in
+    let env, m, n = contract2 env sigma m n in
     explain_cannot_unify env sigma m n e
   | CannotUnifyLocal (m,n,sn) -> explain_cannot_unify_local env sigma m n sn
   | CannotGeneralize ty -> explain_refiner_cannot_generalize env sigma ty

@@ -158,7 +158,7 @@ type branch_args = {
 
 type branch_assumptions = {
   ba        : branch_args;       (* the branch args *)
-  assums    : Context.Named.t}   (* the list of assumptions introduced *)
+  assums    : named_context}   (* the list of assumptions introduced *)
 
 open Misctypes
 
@@ -625,7 +625,6 @@ module New = struct
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
       isrec allnames tac predicate ind (c, t) =
-    let open EConstr in
     Proofview.Goal.nf_enter { enter = begin fun gl ->
     let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)

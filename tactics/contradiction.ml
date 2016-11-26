@@ -51,7 +51,7 @@ let use_negated_unit_or_eq_type () = Flags.version_strictly_greater Flags.V8_5
 let filter_hyp f tac =
   let rec seek = function
     | [] -> Proofview.tclZERO Not_found
-    | d::rest when f (EConstr.of_constr (NamedDecl.get_type d)) -> tac (NamedDecl.get_id d)
+    | d::rest when f (NamedDecl.get_type d) -> tac (NamedDecl.get_id d)
     | _::rest -> seek rest in
   Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
@@ -66,7 +66,7 @@ let contradiction_context =
       | [] ->  Tacticals.New.tclZEROMSG (Pp.str"No such contradiction")
       | d :: rest ->
           let id = NamedDecl.get_id d in
-          let typ = nf_evar sigma (EConstr.of_constr (NamedDecl.get_type d)) in
+          let typ = nf_evar sigma (NamedDecl.get_type d) in
 	  let typ = whd_all env sigma typ in
 	  if is_empty_type sigma typ then
 	    simplest_elim (mkVar id)

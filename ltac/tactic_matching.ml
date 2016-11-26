@@ -284,7 +284,7 @@ module PatternMatching (E:StaticEnvironment) = struct
     pick hyps >>= fun decl ->
     let id = NamedDecl.get_id decl in
     let refresh = is_local_def decl in
-    pattern_match_term refresh pat (EConstr.of_constr (NamedDecl.get_type decl)) () <*>
+    pattern_match_term refresh pat (NamedDecl.get_type decl) () <*>
     put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
     return id
 
@@ -295,8 +295,6 @@ module PatternMatching (E:StaticEnvironment) = struct
   let hyp_match_body_and_type hypname bodypat typepat hyps =
     pick hyps >>= function
       | LocalDef (id,body,hyp) ->
-          let body = EConstr.of_constr body in
-          let hyp = EConstr.of_constr hyp in
           pattern_match_term false bodypat body () <*>
           pattern_match_term true typepat hyp () <*>
           put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>

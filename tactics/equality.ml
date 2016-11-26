@@ -13,12 +13,12 @@ open Names
 open Nameops
 open Term
 open Termops
+open Environ
 open EConstr
 open Vars
 open Namegen
 open Inductive
 open Inductiveops
-open Environ
 open Libnames
 open Globnames
 open Reductionops
@@ -46,10 +46,6 @@ open Unification
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
-
-let nlocal_assum (na, t) =
-  let inj = EConstr.Unsafe.to_constr in
-  NamedDecl.LocalAssum (na, inj t)
 
 (* Options *)
 
@@ -333,7 +329,7 @@ let jmeq_same_dom gl = function
   | None -> true (* already checked in Hipattern.find_eq_data_decompose *)
   | Some t ->
     let rels, t = decompose_prod_assum (project gl) t in
-    let env = Environ.push_rel_context rels (Proofview.Goal.env gl) in
+    let env = push_rel_context rels (Proofview.Goal.env gl) in
     match decompose_app (project gl) t with
       | _, [dom1; _; dom2;_] -> is_conv env (Tacmach.New.project gl) dom1 dom2
       | _ -> false
@@ -857,16 +853,19 @@ let descend_then env sigma head dirn =
   let (mib,mip) = lookup_mind_specif env ind in
   let cstr = get_constructors env indf in
   let dirn_nlams = cstr.(dirn-1).cs_nargs in
-  let dirn_env = push_rel_context cstr.(dirn-1).cs_args env in
+  let dirn_env = Environ.push_rel_context cstr.(dirn-1).cs_args env in
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
       let deparsign = make_arity_signature env true indf in
+      let deparsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) deparsign in
       let p =
 	it_mkLambda_or_LetIn (lift (mip.mind_nrealargs+1) resty) deparsign in
       let build_branch i =
 	let result = if Int.equal i dirn then dirnval else dfltval in
-	it_mkLambda_or_LetIn result (name_context env cstr.(i-1).cs_args) in
+	let args = name_context env cstr.(i-1).cs_args in
+	let args = List.map (fun d -> map_rel_decl EConstr.of_constr d) args in
+	it_mkLambda_or_LetIn result args in
       let brl =
         List.map build_branch
           (List.interval 1 (Array.length mip.mind_consnames)) in
@@ -907,11 +906,13 @@ let build_selector env sigma dirn c ind special default =
   let typ = Retyping.get_type_of env sigma default in
   let (mib,mip) = lookup_mind_specif env ind in
   let deparsign = make_arity_signature env true indf in
+  let deparsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) deparsign in
   let p = it_mkLambda_or_LetIn typ deparsign in
   let cstrs = get_constructors env indf in
   let build_branch i =
     let endpt = if Int.equal i dirn then special else default in
-    it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args in
+    let args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstrs.(i-1).cs_args in
+    it_mkLambda_or_LetIn endpt args in
   let brl =
     List.map build_branch(List.interval 1 (Array.length mip.mind_consnames)) in
   let ci = make_case_info env ind RegularStyle in
@@ -995,7 +996,7 @@ let apply_on_clause (f,t) clause =
 
 let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
   let e = next_ident_away eq_baseid (ids_of_context env) in
-  let e_env = push_named (nlocal_assum (e, t)) env in
+  let e_env = push_named (Context.Named.Declaration.LocalAssum (e,t)) env in
   let discriminator =
     build_discriminator e_env sigma dirn (mkVar e) cpath in
   let sigma,(pf, absurd_term), eff = 
@@ -1372,7 +1373,7 @@ let simplify_args env sigma t =
 
 let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
   let e = next_ident_away eq_baseid (ids_of_context env) in
-  let e_env = push_named (nlocal_assum (e,t)) env in
+  let e_env = push_named (LocalAssum (e,t)) env in
   let evdref = ref sigma in
   let filter (cpath, t1', t2') =
     try
@@ -1696,7 +1697,7 @@ let is_eq_x gl x d =
     | Var id' -> Id.equal id id'
     | _ -> false
     in
-    let c = pf_nf_evar gl (EConstr.of_constr (NamedDecl.get_type d)) in
+    let c = pf_nf_evar gl (NamedDecl.get_type d) in
     let (_,lhs,rhs) = pi3 (find_eq_data_decompose gl c) in
     if (is_var x lhs) && not (local_occur_var (project gl) x rhs) then raise (FoundHyp (id,rhs,true));
     if (is_var x rhs) && not (local_occur_var (project gl) x lhs) then raise (FoundHyp (id,lhs,false))
@@ -1793,7 +1794,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     let find_eq_data_decompose = find_eq_data_decompose gl in
     let select_equation_name decl =
       try
-        let lbeq,u,(_,x,y) = find_eq_data_decompose (EConstr.of_constr (NamedDecl.get_type decl)) in
+        let lbeq,u,(_,x,y) = find_eq_data_decompose (NamedDecl.get_type decl) in
         let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match EConstr.kind sigma x, EConstr.kind sigma y with
@@ -1817,7 +1818,6 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     let env = Proofview.Goal.env gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
     let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
-    let c = EConstr.of_constr c in
     let _,_,(_,x,y) = find_eq_data_decompose c in
     (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
     if EConstr.eq_constr sigma x y then Proofview.tclUNIT () else
@@ -1890,7 +1890,7 @@ let rewrite_assumption_cond cond_eq_term cl =
         let id = NamedDecl.get_id hyp in
 	begin
 	  try
-            let dir = cond_eq_term (EConstr.of_constr (NamedDecl.get_type hyp)) gl in
+            let dir = cond_eq_term (NamedDecl.get_type hyp) gl in
 	    general_rewrite_clause dir false (mkVar id,NoBindings) cl
 	  with | Failure _ | UserError _ -> arec rest gl
 	end
