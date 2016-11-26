@@ -241,10 +241,10 @@ let build_projection intype (cstr:pconstructor) special default gls=
 let _M =mkMeta
 
 let app_global f args k =
-  Tacticals.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (EConstr.of_constr fc, args)))
+  Tacticals.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
 
 let new_app_global f args k =
-  Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (EConstr.of_constr fc, args)))
+  Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
 
 let new_refine c = Proofview.V82.tactic (refine c)
 let refine c = refine c
@@ -491,7 +491,6 @@ let congruence_tac depth l =
 
 let mk_eq f c1 c2 k =
   Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc ->
-  let fc = EConstr.of_constr fc in
   Proofview.Goal.enter { enter = begin fun gl ->
     let open Tacmach.New in
     let evm, ty = pf_apply type_of gl c1 in

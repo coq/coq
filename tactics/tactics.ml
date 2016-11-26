@@ -4742,7 +4742,7 @@ let symmetry_red allowred =
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
         (convert_concl_no_check concl DEFAULTcast)
-        (Tacticals.New.pf_constr_of_global eq_data.sym (EConstr.of_constr %> apply))
+        (Tacticals.New.pf_constr_of_global eq_data.sym apply)
   | None,eq,eq_kind -> prove_symmetry eq eq_kind
   end }
 
@@ -4838,8 +4838,8 @@ let transitivity_red allowred t =
       Tacticals.New.tclTHEN
         (convert_concl_no_check concl DEFAULTcast)
         (match t with
-	  | None -> Tacticals.New.pf_constr_of_global eq_data.trans (EConstr.of_constr %> eapply)
-	  | Some t -> Tacticals.New.pf_constr_of_global eq_data.trans (fun trans -> apply_list [EConstr.of_constr trans;t]))
+	  | None -> Tacticals.New.pf_constr_of_global eq_data.trans eapply
+	  | Some t -> Tacticals.New.pf_constr_of_global eq_data.trans (fun trans -> apply_list [trans;t]))
    | None,eq,eq_kind ->
       match t with
       | None -> Tacticals.New.tclZEROMSG (str"etransitivity not supported for this relation.")

@@ -11,6 +11,7 @@ open CErrors
 open Util
 open Names
 open Term
+open EConstr
 open Termops
 open Declarations
 open Tacmach
@@ -73,7 +74,7 @@ let nthDecl m gl =
   with Failure _ -> error "No such assumption."
 
 let nthHypId m gl = nthDecl m gl |> NamedDecl.get_id
-let nthHyp m gl   = EConstr.mkVar (nthHypId m gl)
+let nthHyp m gl   = mkVar (nthHypId m gl)
 
 let lastDecl gl   = nthDecl 1 gl
 let lastHypId gl  = nthHypId 1 gl
@@ -83,7 +84,7 @@ let nLastDecls n gl =
   try List.firstn n (pf_hyps gl)
   with Failure _ -> error "Not enough hypotheses in the goal."
 
-let nLastHypsId n gl = List.map NamedDecl.get_id (nLastDecls n gl)
+let nLastHypsId n gl = List.map (NamedDecl.get_id) (nLastDecls n gl)
 let nLastHyps n gl   = List.map mkVar (nLastHypsId n gl)
 
 let onNthDecl m tac gl  = tac (nthDecl m gl) gl
@@ -147,9 +148,9 @@ let ifOnHyp pred tac1 tac2 id gl =
 
 type branch_args = {
   ity        : pinductive;   (* the type we were eliminating on *)
-  largs      : EConstr.constr list; (* its arguments *)
+  largs      : constr list; (* its arguments *)
   branchnum  : int;         (* the branch number *)
-  pred       : EConstr.constr;      (* the predicate we used *)
+  pred       : constr;      (* the predicate we used *)
   nassums    : int;         (* number of assumptions/letin to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
                                true=assumption, false=let-in *)
@@ -226,6 +227,7 @@ let compute_induction_names = compute_induction_names_gen true
 
 (* Compute the let-in signature of case analysis or standard induction scheme *)
 let compute_constructor_signatures isrec ((_,k as ity),u) =
+  let open Term in
   let rec analrec c recargs =
     match kind_of_term c, recargs with
     | Prod (_,_,c), recarg::rest ->
@@ -263,7 +265,7 @@ let pf_with_evars glsev k gls =
     tclTHEN (Refiner.tclEVARS evd) (k a) gls
 
 let pf_constr_of_global gr k =
-  pf_with_evars (fun gls -> pf_apply Evd.fresh_global gls gr) k
+  pf_with_evars (fun gls -> on_snd EConstr.of_constr (pf_apply Evd.fresh_global gls gr)) k
 
 (* computing the case/elim combinators *)
 
@@ -565,7 +567,7 @@ module New = struct
     let gl = Proofview.Goal.assume gl in
     nthDecl m gl |> NamedDecl.get_id
   let nthHyp m gl = 
-    EConstr.mkVar (nthHypId m gl)
+    mkVar (nthHypId m gl)
 
   let onNthHypId m tac =
     Proofview.Goal.enter { enter = begin fun gl -> tac (nthHypId m gl) end }
@@ -657,7 +659,7 @@ module New = struct
     let elimclause' =
       match predicate with
       | None   -> elimclause'
-      | Some p -> clenv_unify ~flags Reduction.CONV (EConstr.mkMeta pmv) p elimclause'
+      | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
     in
     let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags elimclause') gl in
     let after_tac i =
@@ -726,6 +728,7 @@ module New = struct
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
       let (sigma, c) = Evd.fresh_global env sigma ref in
+      let c = EConstr.of_constr c in
       Proofview.Unsafe.tclEVARS sigma <*> (tac c)
     end }
 

@@ -65,14 +65,14 @@ val onLastHypId      : (Id.t -> tactic) -> tactic
 val onLastHyp        : (constr -> tactic) -> tactic
 val onLastDecl       : (Context.Named.Declaration.t -> tactic) -> tactic
 val onNLastHypsId    : int -> (Id.t list -> tactic) -> tactic
-val onNLastHyps      : int -> (Constr.constr list -> tactic) -> tactic
+val onNLastHyps      : int -> (constr list -> tactic) -> tactic
 val onNLastDecls     : int -> (Context.Named.t -> tactic) -> tactic
 
 val lastHypId   : goal sigma -> Id.t
 val lastHyp     : goal sigma -> constr
 val lastDecl    : goal sigma -> Context.Named.Declaration.t
 val nLastHypsId : int -> goal sigma -> Id.t list
-val nLastHyps   : int -> goal sigma -> Constr.constr list
+val nLastHyps   : int -> goal sigma -> constr list
 val nLastDecls  : int -> goal sigma -> Context.Named.t
 
 val afterHyp    : Id.t -> goal sigma -> Context.Named.t
@@ -135,7 +135,7 @@ val elimination_sort_of_hyp  : Id.t -> goal sigma -> sorts_family
 val elimination_sort_of_clause : Id.t option -> goal sigma -> sorts_family
 
 val pf_with_evars :  (goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) -> tactic
-val pf_constr_of_global : Globnames.global_reference -> (Constr.constr -> tactic) -> tactic
+val pf_constr_of_global : Globnames.global_reference -> (constr -> tactic) -> tactic
 
 val elim_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
 val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
@@ -267,5 +267,5 @@ module New : sig
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
   val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
 
-  val pf_constr_of_global : Globnames.global_reference -> (Constr.constr -> unit Proofview.tactic) -> unit Proofview.tactic
+  val pf_constr_of_global : Globnames.global_reference -> (constr -> unit Proofview.tactic) -> unit Proofview.tactic
 end

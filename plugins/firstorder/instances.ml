@@ -104,7 +104,7 @@ let mk_open_instance id idc gl m t=
   let evmap=Refiner.project gl in
   let var_id=
     if id==dummy_id then dummy_bvid else
-      let typ=pf_unsafe_type_of gl (EConstr.of_constr idc) in
+      let typ=pf_unsafe_type_of gl idc in
 	(* since we know we will get a product,
 	   reduction is not too expensive *)
       let (nam,_,_)=destProd (EConstr.Unsafe.to_constr (whd_all env evmap typ)) in
@@ -127,6 +127,7 @@ let mk_open_instance id idc gl m t=
 (* tactics   *)
 
 let left_instance_tac (inst,id) continue seq=
+  let open EConstr in
   match inst with
       Phantom dom->
 	if lookup (id,None) seq then
@@ -137,8 +138,8 @@ let left_instance_tac (inst,id) continue seq=
 	       [Proofview.V82.of_tactic introf;
                 pf_constr_of_global id (fun idc ->
 		(fun gls-> Proofview.V82.of_tactic (generalize
-		   [EConstr.of_constr (mkApp(idc,
-			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|]))]) gls));
+		   [mkApp(idc,
+			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])]) gls));
 		Proofview.V82.of_tactic introf;
 		tclSOLVE [wrap 1 false continue
 			    (deepen (record (id,None) seq))]];
@@ -152,18 +153,19 @@ let left_instance_tac (inst,id) continue seq=
 	      pf_constr_of_global id (fun idc ->
 		fun gl->
 		  let evmap,rc,ot = mk_open_instance id idc gl m t in
+		  let ot = EConstr.of_constr ot in
 		  let gt=
 		    it_mkLambda_or_LetIn
 		      (mkApp(idc,[|ot|])) rc in
-                  let gt = EConstr.of_constr gt in
 		  let evmap, _ =
 		    try Typing.type_of (pf_env gl) evmap gt
 		    with e when CErrors.noncritical e ->
 		      error "Untypable instance, maybe higher-order non-prenex quantification" in
 		    tclTHEN (Refiner.tclEVARS evmap) (Proofview.V82.of_tactic (generalize [gt])) gl)
 	    else
+              let t = EConstr.of_constr t in
 	      pf_constr_of_global id (fun idc ->
-		Proofview.V82.of_tactic (generalize [EConstr.of_constr (mkApp(idc,[|t|]))]))
+		Proofview.V82.of_tactic (generalize [mkApp(idc,[|t|])]))
 	  in
 	    tclTHENLIST
 	      [special_generalize;
