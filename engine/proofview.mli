@@ -43,7 +43,7 @@ val compact : entry -> proofview -> entry * proofview
     empty [evar_map] (indeed a proof can be triggered by an incomplete
     pretyping), [init] takes an additional argument to represent the
     initial [evar_map]. *)
-val init : Evd.evar_map -> (Environ.env * Term.types) list -> entry * proofview
+val init : Evd.evar_map -> (Environ.env * EConstr.types) list -> entry * proofview
 
 (** A [telescope] is a list of environment and conclusion like in
     {!init}, except that each element may depend on the previous
@@ -52,7 +52,7 @@ val init : Evd.evar_map -> (Environ.env * Term.types) list -> entry * proofview
     [evar_map] is threaded in state passing style. *)
 type telescope =
   | TNil of Evd.evar_map
-  | TCons of Environ.env * Evd.evar_map * Term.types * (Evd.evar_map -> Term.constr -> telescope)
+  | TCons of Environ.env * Evd.evar_map * EConstr.types * (Evd.evar_map -> EConstr.constr -> telescope)
 
 (** Like {!init}, but goals are allowed to be dependent on one
     another. Dependencies between goals is represented with the type
@@ -69,8 +69,8 @@ val finished : proofview -> bool
 (** Returns the current [evar] state. *)
 val return : proofview -> Evd.evar_map
 
-val partial_proof : entry -> proofview -> constr list
-val initial_goals : entry -> (constr * types) list
+val partial_proof : entry -> proofview -> EConstr.constr list
+val initial_goals : entry -> (EConstr.constr * EConstr.types) list
 
 
 

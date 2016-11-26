@@ -449,7 +449,7 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
-      start_proof_univs id ?pl kind ctx t ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
+      start_proof_univs id ?pl kind ctx (EConstr.of_constr t) ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
 
 let start_proof_com ?inference_hook kind thms hook =
   let env0 = Global.env () in
@@ -461,13 +461,12 @@ let start_proof_com ?inference_hook kind thms hook =
   let thms = List.map (fun (sopt,(bl,t,guard)) ->
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
-    let t' = EConstr.Unsafe.to_constr t' in
     let flags = all_and_fail_flags in
     let flags = { flags with use_hook = inference_hook } in
     evdref := solve_remaining_evars flags env !evdref (Evd.empty,!evdref);
     let ids = List.map RelDecl.get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
-      (nf_evar !evdref (Term.it_mkProd_or_LetIn t' ctx),
+      (EConstr.Unsafe.to_constr (nf_evar !evdref (EConstr.it_mkProd_or_LetIn t' ctx)),
        (ids, imps @ lift_implicits (List.length ids) imps'),
        guard)))
     thms in
@@ -519,6 +518,7 @@ let save_proof ?proof = function
         | None ->
             let pftree = Pfedit.get_pftreestate () in
             let id, k, typ = Pfedit.current_proof_statement () in
+            let typ = EConstr.Unsafe.to_constr typ in
             let universes = Proof.initial_euctx pftree in
             (* This will warn if the proof is complete *)
             let pproofs, _univs =

@@ -181,7 +181,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
   let env' = push_rel_context ctx env in
   evars := Evarutil.nf_evar_map !evars;
   evars := resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env !evars;
-  let subst = List.map (Evarutil.nf_evar !evars) subst in
+  let subst = List.map (fun c -> EConstr.Unsafe.to_constr (Evarutil.nf_evar !evars (EConstr.of_constr c))) subst in
     if abstract then
       begin
 	let subst = List.fold_left2
@@ -327,7 +327,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
                      the refinement manually.*)
 		let gls = List.rev (Evd.future_goals evm) in
                 let evm = Evd.reset_future_goals evm in
-                Lemmas.start_proof id kind evm termtype
+                Lemmas.start_proof id kind evm (EConstr.of_constr termtype)
 		(Lemmas.mk_hook
                   (fun _ -> instance_hook k pri global imps ?hook));
                  (* spiwack: I don't know what to do with the status here. *)

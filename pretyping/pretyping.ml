@@ -143,9 +143,6 @@ let nf_fix sigma (nas, cs, ts) =
   let inj c = EConstr.to_constr sigma c in
   (nas, Array.map inj cs, Array.map inj ts)
 
-let nf_evar sigma c =
-  EConstr.of_constr (nf_evar sigma (EConstr.Unsafe.to_constr c))
-
 let search_guard loc env possible_indexes fixdefs =
   (* Standard situation with only one possibility for each fix. *)
   (* We treat it separately in order to get proper error msg. *)

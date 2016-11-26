@@ -99,16 +99,21 @@ let rec whd_evar sigma c =
 	if u' == u then c else mkConstructU (co, u')
     | _ -> c
 
-let rec nf_evar sigma t = Constr.map (fun t -> nf_evar sigma t) (whd_evar sigma t)
-let e_nf_evar sigma t = EConstr.of_constr (nf_evar sigma (EConstr.Unsafe.to_constr t))
+(** Term exploration up to instantiation. *)
+let kind_of_term_upto sigma t =
+  Constr.kind (whd_evar sigma t)
+
+let rec nf_evar0 sigma t = Constr.map (fun t -> nf_evar0 sigma t) (whd_evar sigma t)
+let whd_evar sigma c = EConstr.of_constr (whd_evar sigma (EConstr.Unsafe.to_constr c))
+let nf_evar sigma c = EConstr.of_constr (nf_evar0 sigma (EConstr.Unsafe.to_constr c))
 
 let j_nf_evar sigma j =
-  { uj_val = e_nf_evar sigma j.uj_val;
-    uj_type = e_nf_evar sigma j.uj_type }
+  { uj_val = nf_evar sigma j.uj_val;
+    uj_type = nf_evar sigma j.uj_type }
 let jl_nf_evar sigma jl = List.map (j_nf_evar sigma) jl
 let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
 let tj_nf_evar sigma {utj_val=v;utj_type=t} =
-  {utj_val=e_nf_evar sigma v;utj_type=t}
+  {utj_val=nf_evar sigma v;utj_type=t}
 
 let nf_evars_universes evm =
   Universes.nf_evars_and_universes_opt_subst (safe_evar_value evm) 
@@ -125,23 +130,23 @@ let e_nf_evars_and_universes evdref =
 let nf_evar_map_universes evm =
   let evm = Evd.nf_constraints evm in
   let subst = Evd.universe_subst evm in
-    if Univ.LMap.is_empty subst then evm, nf_evar evm
+    if Univ.LMap.is_empty subst then evm, nf_evar0 evm
     else
       let f = nf_evars_universes evm in
 	Evd.raw_map (fun _ -> map_evar_info f) evm, f
 
 let nf_named_context_evar sigma ctx =
-  Context.Named.map (nf_evar sigma) ctx
+  Context.Named.map (nf_evar0 sigma) ctx
 
 let nf_rel_context_evar sigma ctx =
-  Context.Rel.map (nf_evar sigma) ctx
+  Context.Rel.map (nf_evar0 sigma) ctx
 
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
   let rel' = nf_rel_context_evar sigma (Environ.rel_context env) in
     push_rel_context rel' (reset_with_named_context (val_of_named_context nc') env)
 
-let nf_evar_info evc info = map_evar_info (nf_evar evc) info
+let nf_evar_info evc info = map_evar_info (nf_evar0 evc) info
 
 let nf_evar_map evm =
   Evd.raw_map (fun _ evi -> nf_evar_info evm evi) evm
@@ -527,7 +532,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
       | Evar (evk,l as ev) ->
 	  if Evd.is_defined !evdref evk then
 	    (* If evk is already defined we replace it by its definition *)
-	    let nc = whd_evar !evdref c in
+	    let nc = Evd.existential_value !evdref ev in
 	      (check_and_clear_in_constr env evdref err ids global nc)
 	  else
 	    (* We check for dependencies to elements of ids in the
@@ -582,7 +587,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
 	      let evi' = { evi with evar_extra = extra' } in
 	      evdref := Evd.add !evdref evk evi' ;
 	    (* spiwack: /hacking session *)
-              whd_evar !evdref c
+              Evd.existential_value !evdref ev
 
       | _ -> map_constr (check_and_clear_in_constr env evdref err ids global) c
 
@@ -750,10 +755,6 @@ let subterm_source evk (loc,k) =
     | _ -> evk in
   (loc,Evar_kinds.SubEvar evk)
 
-
-(** Term exploration up to instantiation. *)
-let kind_of_term_upto sigma t =
-  Constr.kind (whd_evar sigma t)
 
 (** [eq_constr_univs_test sigma1 sigma2 t u] tests equality of [t] and
     [u] up to existential variable instantiation and equalisable

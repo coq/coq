@@ -199,6 +199,7 @@ let refine_by_tactic env sigma ty tac =
   | _ -> assert false
   in
   let ans = Reductionops.nf_evar sigma ans in
+  let ans = EConstr.Unsafe.to_constr ans in
   (** [neff] contains the freshly generated side-effects *)
   let neff = Evd.eval_side_effects sigma in
   (** Reset the old side-effects *)
@@ -232,7 +233,8 @@ let solve_by_implicit_tactic env sigma evk =
       let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (CErrors.UserError (None,Pp.str"Proof is not complete."))) []) in
       (try
         let c = Evarutil.nf_evars_universes sigma evi.evar_concl in
-        if Evarutil.has_undefined_evars sigma (EConstr.of_constr c) then raise Exit;
+        let c = EConstr.of_constr c in
+        if Evarutil.has_undefined_evars sigma c then raise Exit;
         let (ans, _, ctx) =
 	  build_by_tactic env (Evd.evar_universe_context sigma) c tac in
         let sigma = Evd.set_universe_context sigma ctx in

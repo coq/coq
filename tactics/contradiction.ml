@@ -66,8 +66,7 @@ let contradiction_context =
       | [] ->  Tacticals.New.tclZEROMSG (Pp.str"No such contradiction")
       | d :: rest ->
           let id = NamedDecl.get_id d in
-          let typ = nf_evar sigma (NamedDecl.get_type d) in
-          let typ = EConstr.of_constr typ in
+          let typ = nf_evar sigma (EConstr.of_constr (NamedDecl.get_type d)) in
 	  let typ = whd_all env sigma typ in
 	  if is_empty_type sigma typ then
 	    simplest_elim (mkVar id)

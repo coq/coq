@@ -24,7 +24,7 @@ type proofview = Proofview_monad.proofview
 
 (* The first items in pairs below are proofs (under construction).
    The second items in the pairs below are statements that are being proved. *)
-type entry = (Term.constr * Term.types) list
+type entry = (EConstr.constr * EConstr.types) list
 
 (** Returns a stylised view of a proofview for use by, for instance,
     ide-s. *)
@@ -37,15 +37,16 @@ let proofview p =
   p.comb , p.solution
 
 let compact el ({ solution } as pv) =
-  let nf = Evarutil.nf_evar solution in
+  let nf c = Evarutil.nf_evar solution c in
+  let nf0 c = EConstr.Unsafe.to_constr (Evarutil.nf_evar solution (EConstr.of_constr c)) in
   let size = Evd.fold (fun _ _ i -> i+1) solution 0 in
   let new_el = List.map (fun (t,ty) -> nf t, nf ty) el in
   let pruned_solution = Evd.drop_all_defined solution in
   let apply_subst_einfo _ ei =
     Evd.({ ei with
-       evar_concl =  nf ei.evar_concl;
-       evar_hyps = Environ.map_named_val nf ei.evar_hyps;
-       evar_candidates = Option.map (List.map nf) ei.evar_candidates }) in
+       evar_concl =  nf0 ei.evar_concl;
+       evar_hyps = Environ.map_named_val nf0 ei.evar_hyps;
+       evar_candidates = Option.map (List.map nf0) ei.evar_candidates }) in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
   Feedback.msg_info (Pp.str (Printf.sprintf "Evars: %d -> %d\n" size new_size));
@@ -56,7 +57,7 @@ let compact el ({ solution } as pv) =
 
 type telescope =
   | TNil of Evd.evar_map
-  | TCons of Environ.env * Evd.evar_map * Term.types * (Evd.evar_map -> Term.constr -> telescope)
+  | TCons of Environ.env * Evd.evar_map * EConstr.types * (Evd.evar_map -> EConstr.constr -> telescope)
 
 let typeclass_resolvable = Evd.Store.field ()
 
@@ -71,11 +72,10 @@ let dependent_init =
   | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }
   | TCons (env, sigma, typ, t) ->
     let sigma = Sigma.Unsafe.of_evar_map sigma in
-    let Sigma (econstr, sigma, _) = Evarutil.new_evar env sigma ~src ~store (EConstr.of_constr typ) in
-    let econstr = EConstr.Unsafe.to_constr econstr in
+    let Sigma (econstr, sigma, _) = Evarutil.new_evar env sigma ~src ~store typ in
+    let (gl, _) = EConstr.destEvar (Sigma.to_evar_map sigma) econstr in
     let sigma = Sigma.to_evar_map sigma in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
-    let (gl, _) = Term.destEvar econstr in
     let entry = (econstr, typ) :: ret in
     entry, { solution = sol; comb = gl :: comb; shelf = [] }
   in
@@ -1222,12 +1222,12 @@ module V82 = struct
    { Evd.it = comb ; sigma = solution }
 
   let top_goals initial { solution=solution; } =
-    let goals = CList.map (fun (t,_) -> fst (Term.destEvar t)) initial in
+    let goals = CList.map (fun (t,_) -> fst (Term.destEvar (EConstr.Unsafe.to_constr t))) initial in
     { Evd.it = goals ; sigma=solution; }
 
   let top_evars initial =
     let evars_of_initial (c,_) =
-      Evar.Set.elements (Evd.evars_of_term c)
+      Evar.Set.elements (Evd.evars_of_term (EConstr.Unsafe.to_constr c))
     in
     CList.flatten (CList.map evars_of_initial initial)
 

@@ -208,14 +208,12 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     user_err ~hdr:"lemma_inversion"
     (str"Computed inversion goal was not closed in initial signature.");
   *)
-  let invGoal = EConstr.Unsafe.to_constr invGoal in
   let pf = Proof.start (Evd.from_ctx (evar_universe_context sigma)) [invEnv,invGoal] in
   let pf =
     fst (Proof.run_tactic env (
       tclTHEN intro (onLastHypId inv_op)) pf)
   in
   let pfterm = List.hd (Proof.partial_proof pf) in
-  let pfterm = EConstr.of_constr pfterm in
   let global_named_context = Global.named_context_val () in
   let ownSign = ref begin
     fold_named_context

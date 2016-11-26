@@ -10,50 +10,51 @@ open Util
 open Names
 open Term
 open Environ
+open EConstr
 open Type_errors
 
 type unification_error =
-  | OccurCheck of existential_key * EConstr.constr
-  | NotClean of EConstr.existential * env * EConstr.constr (* Constr is a variable not in scope *)
+  | OccurCheck of existential_key * constr
+  | NotClean of existential * env * constr (* Constr is a variable not in scope *)
   | NotSameArgSize
   | NotSameHead
   | NoCanonicalStructure
-  | ConversionFailed of env * EConstr.constr * EConstr.constr (* Non convertible closed terms *)
+  | ConversionFailed of env * constr * constr (* Non convertible closed terms *)
   | MetaOccurInBody of existential_key
-  | InstanceNotSameType of existential_key * env * EConstr.types * EConstr.types
+  | InstanceNotSameType of existential_key * env * types * types
   | UnifUnivInconsistency of Univ.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
   | ProblemBeyondCapabilities
 
 type position = (Id.t * Locus.hyp_location_flag) option
 
-type position_reporting = (position * int) * EConstr.t
+type position_reporting = (position * int) * constr
 
-type subterm_unification_error = bool * position_reporting * position_reporting * (EConstr.constr * EConstr.constr * unification_error) option
+type subterm_unification_error = bool * position_reporting * position_reporting * (constr * constr * unification_error) option
 
-type type_error = (EConstr.constr, EConstr.types) ptype_error
+type type_error = (constr, types) ptype_error
 
 type pretype_error =
   (* Old Case *)
-  | CantFindCaseType of EConstr.constr
+  | CantFindCaseType of constr
   (* Type inference unification *)
-  | ActualTypeNotCoercible of EConstr.unsafe_judgment * EConstr.types * unification_error
+  | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
   (* Tactic unification *)
-  | UnifOccurCheck of existential_key * EConstr.constr
+  | UnifOccurCheck of existential_key * constr
   | UnsolvableImplicit of existential_key * Evd.unsolvability_explanation option
-  | CannotUnify of EConstr.constr * EConstr.constr * unification_error option
-  | CannotUnifyLocal of EConstr.constr * EConstr.constr * EConstr.constr
+  | CannotUnify of constr * constr * unification_error option
+  | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
-  | NoOccurrenceFound of EConstr.constr * Id.t option
-  | CannotFindWellTypedAbstraction of EConstr.constr * EConstr.constr list * (env * type_error) option
-  | WrongAbstractionType of Name.t * EConstr.constr * EConstr.types * EConstr.types
+  | NoOccurrenceFound of constr * Id.t option
+  | CannotFindWellTypedAbstraction of constr * constr list * (env * type_error) option
+  | WrongAbstractionType of Name.t * constr * types * types
   | AbstractionOverMeta of Name.t * Name.t
-  | NonLinearUnification of Name.t * EConstr.constr
+  | NonLinearUnification of Name.t * constr
   (* Pretyping *)
   | VarNotFound of Id.t
-  | UnexpectedType of EConstr.constr * EConstr.constr
-  | NotProduct of EConstr.constr
+  | UnexpectedType of constr * constr
+  | NotProduct of constr
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of

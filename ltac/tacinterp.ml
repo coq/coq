@@ -2101,7 +2101,6 @@ let interp_redexp env sigma r =
 
 let _ =
   let eval ty env sigma lfun arg =
-    let ty = EConstr.Unsafe.to_constr ty in
     let ist = { lfun = lfun; extra = TacStore.empty; } in
     if Genarg.has_type arg (glbwit wit_tactic) then
       let tac = Genarg.out_gen (glbwit wit_tactic) arg in

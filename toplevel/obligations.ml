@@ -818,7 +818,7 @@ let rec string_of_list sep f = function
 
 let solve_by_tac name evi t poly ctx =
   let id = name in
-  let concl = evi.evar_concl in
+  let concl = EConstr.of_constr evi.evar_concl in
   (* spiwack: the status is dropped. *)
   let (entry,_,ctx') = Pfedit.build_constant_by_tactic 
     id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps concl (Tacticals.New.tclCOMPLETE t) in
@@ -936,7 +936,7 @@ let rec solve_obligation prg num tac =
     Proof_global.make_terminator
       (obligation_terminator prg.prg_name num guard hook auto) in
   let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
-  let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd obl.obl_type ~terminator hook in
+  let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator hook in
   let _ = Pfedit.by !default_tactic in
   Option.iter (fun tac -> Pfedit.set_end_tac tac) tac
 

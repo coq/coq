@@ -28,16 +28,17 @@ let start_deriving f suchthat lemma =
   (* spiwack: I don't know what the rigidity flag does, picked the one
      that looked the most general. *)
   let (sigma,f_type_sort) = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
-  let f_type_type = Term.mkSort f_type_sort in
+  let f_type_type = EConstr.mkSort f_type_sort in
   (** create the initial goals for the proof: |- Type ; |- ?1 ; f:=?2 |- suchthat *)
   let goals =
     let open Proofview in
         TCons ( env , sigma , f_type_type , (fun sigma f_type ->
         TCons ( env , sigma , f_type , (fun sigma ef ->
+        let f_type = EConstr.Unsafe.to_constr f_type in
+        let ef = EConstr.Unsafe.to_constr ef in
         let env' = Environ.push_named (LocalDef (f, ef, f_type)) env in
         let evdref = ref sigma in
         let suchthat = Constrintern.interp_type_evars env' evdref suchthat in
-        let suchthat = EConstr.Unsafe.to_constr suchthat in
         TCons ( env' , !evdref , suchthat , (fun sigma _ ->
         TNil sigma))))))
     in

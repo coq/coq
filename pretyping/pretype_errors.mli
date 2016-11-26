@@ -45,8 +45,8 @@ type pretype_error =
   | UnsolvableImplicit of existential_key * Evd.unsolvability_explanation option
   | CannotUnify of constr * constr * unification_error option
   | CannotUnifyLocal of constr * constr * constr
-  | CannotUnifyBindingType of Constr.constr * Constr.constr
-  | CannotGeneralize of Constr.constr
+  | CannotUnifyBindingType of constr * constr
+  | CannotGeneralize of constr
   | NoOccurrenceFound of constr * Id.t option
   | CannotFindWellTypedAbstraction of constr * constr list * (env * type_error) option
   | WrongAbstractionType of Name.t * constr * types * types

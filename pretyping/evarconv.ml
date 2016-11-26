@@ -526,7 +526,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  | None, Success i' ->
             (* We do have sk1[] = sk2[]: we now unify ?ev1 and ?ev2 *)
             (* Note that ?ev1 and ?ev2, may have been instantiated in the meantime *)
-	    let ev1' = EConstr.of_constr (whd_evar i' (EConstr.Unsafe.to_constr (mkEvar ev1))) in
+	    let ev1' = whd_evar i' (mkEvar ev1) in
 	      if isEvar i' ev1' then
 		solve_simple_eqn (evar_conv_x ts) env i'
 		  (position_problem true pbty,destEvar i' ev1', term2)
@@ -536,7 +536,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  | Some (r,[]), Success i' ->
             (* We have sk1'[] = sk2[] for some sk1' s.t. sk1[]=sk1'[r[]] *)
             (* we now unify r[?ev1] and ?ev2 *)
-	    let ev2' = EConstr.of_constr (whd_evar i' (EConstr.Unsafe.to_constr (mkEvar ev2))) in
+	    let ev2' = whd_evar i' (mkEvar ev2) in
 	      if isEvar i' ev2' then
 		solve_simple_eqn (evar_conv_x ts) env i'
 		  (position_problem false pbty,destEvar i' ev2',Stack.zip evd (term1,r))
@@ -547,7 +547,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
             (* Symmetrically *)
             (* We have sk1[] = sk2'[] for some sk2' s.t. sk2[]=sk2'[r[]] *)
             (* we now unify ?ev1 and r[?ev2] *)
-	    let ev1' = EConstr.of_constr (whd_evar i' (EConstr.Unsafe.to_constr (mkEvar ev1))) in
+	    let ev1' = whd_evar i' (mkEvar ev1) in
 	      if isEvar i' ev1' then
 		solve_simple_eqn (evar_conv_x ts) env i'
 	          (position_problem true pbty,destEvar i' ev1',Stack.zip evd (term2,r))

@@ -375,6 +375,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
   in
   let entries =
     Future.map2 (fun p (_, t) ->
+      let t = EConstr.Unsafe.to_constr t in
       let univstyp, body = make_body t p in
       let univs, typ = Future.force univstyp in
 	{ Entries.
@@ -406,7 +407,7 @@ let return_proof ?(allow_partial=false) () =
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
-  let proofs = List.map (fun c -> c, eff) proofs in
+  let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
     proofs, Evd.evar_universe_context evd
  end else
   let initial_goals = Proof.initial_goals proof in
@@ -430,7 +431,7 @@ let return_proof ?(allow_partial=false) () =
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
   let proofs = 
-    List.map (fun (c, _) -> (Evarutil.nf_evars_universes evd c, eff)) initial_goals in
+    List.map (fun (c, _) -> (Evarutil.nf_evars_universes evd (EConstr.Unsafe.to_constr c), eff)) initial_goals in
     proofs, Evd.evar_universe_context evd
 
 let close_future_proof ~feedback_id proof =

@@ -59,7 +59,7 @@ let show_proof () =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   let p = Proof_global.give_me_the_proof () in
   let pprf = Proof.partial_proof p in
-  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
+  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_econstr pprf)
 
 let show_node () =
   (* spiwack: I'm have little clue what this function used to do. I deactivated it, 
@@ -459,7 +459,8 @@ let start_proof_and_print k l hook =
         let env = Evd.evar_filtered_env evi in
         try
           let concl = Evarutil.nf_evars_universes sigma evi.Evd.evar_concl in
-          if Evarutil.has_undefined_evars sigma (EConstr.of_constr concl) then raise Exit;
+          let concl = EConstr.of_constr concl in
+          if Evarutil.has_undefined_evars sigma concl then raise Exit;
           let c, _, ctx =
             Pfedit.build_by_tactic env (Evd.evar_universe_context sigma)
                                    concl (Tacticals.New.tclCOMPLETE tac)
@@ -877,6 +878,7 @@ let vernac_set_used_variables e =
   let env = Global.env () in
   let tys =
     List.map snd (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
+  let tys = List.map EConstr.Unsafe.to_constr tys in
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
   List.iter (fun id -> 
@@ -1901,7 +1903,7 @@ let vernac_check_guard () =
     try
       let { Evd.it=gl ; sigma=sigma } = Proof.V82.top_goal pts in
       Inductiveops.control_only_guard (Goal.V82.env sigma gl)
-	pfterm;
+	(EConstr.Unsafe.to_constr pfterm);
       (str "The condition holds up to here")
     with UserError(_,s) ->
       (str ("Condition violated: ") ++s)

@@ -521,8 +521,7 @@ let evars_to_goals p evm =
 (** Making local hints  *)
 let make_resolve_hyp env sigma st flags only_classes pri decl =
   let id = NamedDecl.get_id decl in
-  let cty = Evarutil.nf_evar sigma (NamedDecl.get_type decl) in
-  let cty = EConstr.of_constr cty in
+  let cty = Evarutil.nf_evar sigma (EConstr.of_constr (NamedDecl.get_type decl)) in
   let rec iscl env ty =
     let ctx, ar = decompose_prod_assum sigma ty in
       match EConstr.kind sigma (fst (decompose_app sigma ar)) with
@@ -1476,8 +1475,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
   in
   let evd = sig_sig gls' in
   let t' = mkEvar (ev, Array.of_list subst) in
-  let term = Evarutil.nf_evar evd (EConstr.Unsafe.to_constr t') in
-  let term = EConstr.of_constr term in
+  let term = Evarutil.nf_evar evd t' in
     evd, term
 
 let _ =

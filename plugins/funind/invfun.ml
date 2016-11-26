@@ -846,7 +846,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	   lem_id
 	   (Decl_kinds.Global,Flags.is_universe_polymorphism (),((Decl_kinds.Proof Decl_kinds.Theorem)))
            !evd
-	   (EConstr.Unsafe.to_constr typ)
+	   typ
            (Lemmas.mk_hook (fun _ _ -> ()));
 	 ignore (Pfedit.by
 		   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
@@ -908,7 +908,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 let lem_id = mk_complete_id f_id in
 	 Lemmas.start_proof lem_id
 	   (Decl_kinds.Global,Flags.is_universe_polymorphism (),(Decl_kinds.Proof Decl_kinds.Theorem)) sigma
-	 (EConstr.Unsafe.to_constr (fst lemmas_types_infos.(i)))
+	 (fst lemmas_types_infos.(i))
            (Lemmas.mk_hook (fun _ _ -> ()));
 	 ignore (Pfedit.by
 	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")

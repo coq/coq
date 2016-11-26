@@ -252,7 +252,7 @@ let judge_of_letin env name defj typj j =
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)
 let rec execute env evdref cstr =
-  let cstr = EConstr.of_constr (whd_evar !evdref (EConstr.Unsafe.to_constr cstr)) in
+  let cstr = whd_evar !evdref cstr in
   match EConstr.kind !evdref cstr with
     | Meta n ->
         { uj_val = cstr; uj_type = meta_type !evdref n }
@@ -411,6 +411,6 @@ let e_solve_evars env evdref c =
   let env = enrich_env env evdref in
   let c = (execute env evdref c).uj_val in
   (* side-effect on evdref *)
-  EConstr.of_constr (nf_evar !evdref (EConstr.Unsafe.to_constr c))
+  nf_evar !evdref c
 
 let _ = Evarconv.set_solve_evars (fun env evdref c -> e_solve_evars env evdref c)

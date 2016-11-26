@@ -33,8 +33,9 @@ let new_evar_unsafe env evd ?src ?filter ?candidates ?store ?naming ?principal t
   (Sigma.to_evar_map evd, evk)
 
 let env_nf_evar sigma env =
+  let nf_evar c = EConstr.Unsafe.to_constr (nf_evar sigma (EConstr.of_constr c)) in
   process_rel_context
-    (fun d e -> push_rel (RelDecl.map_constr (nf_evar sigma) d) e) env
+    (fun d e -> push_rel (RelDecl.map_constr nf_evar d) e) env
 
 let env_nf_betaiotaevar sigma env =
   process_rel_context
@@ -144,7 +145,7 @@ let define_pure_evar_as_lambda env evd evk =
   | _ -> error_not_product env evd typ in
   let avoid = ids_of_named_context (evar_context evi) in
   let id =
-    next_name_away_with_default_using_types "x" na avoid (Reductionops.whd_evar evd (EConstr.Unsafe.to_constr dom)) in
+    next_name_away_with_default_using_types "x" na avoid (EConstr.Unsafe.to_constr (Reductionops.whd_evar evd dom)) in
   let newenv = push_named (nlocal_assum (id, dom)) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in

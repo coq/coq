@@ -1007,7 +1007,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
     (mk_equation_id f_id)
     (Decl_kinds.Global, Flags.is_universe_polymorphism (), (Decl_kinds.Proof Decl_kinds.Theorem))
     evd
-  (EConstr.Unsafe.to_constr lemma_type)
+  lemma_type
   (Lemmas.mk_hook (fun _ _ -> ()));
   ignore (Pfedit.by (Proofview.V82.tactic prove_replacement));
   Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None))); 

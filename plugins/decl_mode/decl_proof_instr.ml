@@ -1506,6 +1506,7 @@ let rec postprocess pts instr =
     | Pend (B_elim ET_Induction) ->
   	begin
 	  let pfterm = List.hd (Proof.partial_proof pts) in
+	  let pfterm = EConstr.Unsafe.to_constr pfterm in
 	  let { it = gls ; sigma = sigma } = Proof.V82.subgoals pts in
 	  let env =  try
 		       Goal.V82.env sigma (List.hd gls)

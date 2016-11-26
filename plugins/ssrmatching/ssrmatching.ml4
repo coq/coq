@@ -178,6 +178,9 @@ let mk_lterm = mk_term ' '
 
 let pf_type_of gl t = let sigma, ty = pf_type_of gl t in re_sig (sig_it gl)  sigma, ty
 
+let nf_evar sigma c =
+  EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr c))
+
 (* }}} *)
 
 (** Profiling {{{ *************************************************************)
@@ -780,13 +783,13 @@ let on_instance, instances =
 let rec uniquize = function
   | [] -> []
   | (sigma,_,{ up_f = f; up_a = a; up_t = t } as x) :: xs ->
-    let t = Reductionops.nf_evar sigma t in
-    let f = Reductionops.nf_evar sigma f in
-    let a = Array.map (Reductionops.nf_evar sigma) a in
+    let t = nf_evar sigma t in
+    let f = nf_evar sigma f in
+    let a = Array.map (nf_evar sigma) a in
     let neq (sigma1,_,{ up_f = f1; up_a = a1; up_t = t1 }) =
-      let t1 = Reductionops.nf_evar sigma1 t1 in
-      let f1 = Reductionops.nf_evar sigma1 f1 in
-      let a1 = Array.map (Reductionops.nf_evar sigma1) a1 in
+      let t1 = nf_evar sigma1 t1 in
+      let f1 = nf_evar sigma1 f1 in
+      let a1 = Array.map (nf_evar sigma1) a1 in
       not (Term.eq_constr t t1 &&
            Term.eq_constr f f1 && CArray.for_all2 Term.eq_constr a a1) in
     x :: uniquize (List.filter neq xs) in
@@ -1138,7 +1141,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
           if k = h_k || List.mem k acc || Evd.mem sigma0 k then acc else
           (update k; k::acc)
       | _ -> fold_constr aux acc t in 
-      aux [] (Evarutil.nf_evar sigma rp) in
+      aux [] (nf_evar sigma rp) in
     let sigma = 
       List.fold_left (fun sigma e ->
         if Evd.is_defined sigma e then sigma else (* clear may be recursive *)
@@ -1195,7 +1198,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
     let sigma, rp = interp_term ist gl rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
-    let rp = subst1 h (Evarutil.nf_evar sigma rp) in
+    let rp = subst1 h (nf_evar sigma rp) in
     sigma, mk h rp
   | E_In_X_In_T(e, x, rp) | E_As_X_In_T (e, x, rp) ->
     let mk e x p =
@@ -1204,7 +1207,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
     let sigma, rp = interp_term ist gl rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
-    let rp = subst1 h (Evarutil.nf_evar sigma rp) in
+    let rp = subst1 h (nf_evar sigma rp) in
     let sigma, e = interp_term ist (re_sig (sig_it gl) sigma) e in
     sigma, mk e h rp
 ;;
@@ -1220,7 +1223,7 @@ let noindex = Some(false,[])
 
 (* calls do_subst on every sub-term identified by (pattern,occ) *)
 let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
-  let fs sigma x = Reductionops.nf_evar sigma x in
+  let fs sigma x = nf_evar sigma x in
   let pop_evar sigma e p =
     let { Evd.evar_body = e_body } as e_def = Evd.find sigma e in
     let e_body = match e_body with Evar_defined c -> c
@@ -1307,7 +1310,7 @@ let redex_of_pattern ?(resolve_typeclasses=false) env (sigma, p) =
   let sigma =
     if not resolve_typeclasses then sigma
     else Typeclasses.resolve_typeclasses ~fail:false env sigma in
-  Reductionops.nf_evar sigma e, Evd.evar_universe_context sigma
+  nf_evar sigma e, Evd.evar_universe_context sigma
 
 let fill_occ_pattern ?raise_NoMatch env sigma cl pat occ h =
   let do_make_rel, occ =

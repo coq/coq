@@ -601,13 +601,13 @@ let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_si
   let evd = Sigma.Unsafe.of_evar_map evd in
   let Sigma (evar_in_env, evd, _) = new_evar_instance sign evd ty_t_in_sign ~filter ~src inst_in_env in
   let evd = Sigma.to_evar_map evd in
-  let t_in_env = EConstr.of_constr (whd_evar evd (EConstr.Unsafe.to_constr t_in_env)) in
+  let t_in_env = whd_evar evd t_in_env in
   let (evk, _) = destEvar evd evar_in_env in
   let evd = define_fun env evd None (destEvar evd evar_in_env) t_in_env in
   let ctxt = named_context_of_val sign in
   let inst_in_sign = inst_of_vars (Filter.filter_list filter ctxt) in
   let evar_in_sign = mkEvar (evk, inst_in_sign) in
-  (evd,EConstr.of_constr (whd_evar evd (EConstr.Unsafe.to_constr evar_in_sign)))
+  (evd,whd_evar evd evar_in_sign)
 
 (* We have x1..xq |- ?e1 : τ and had to solve something like
  * Σ; Γ |- ?e1[u1..uq] = (...\y1 ... \yk ... c), where c is typically some

@@ -60,7 +60,7 @@ type lemma_possible_guards = Proof_global.lemma_possible_guards
 type universe_binders = Id.t Loc.located list
 
 val start_proof :
-  Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_map -> named_context_val -> constr ->
+  Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_map -> named_context_val -> EConstr.constr ->
   ?init_tac:unit Proofview.tactic ->
   Proof_global.proof_terminator -> unit
 
@@ -106,7 +106,7 @@ val get_current_context : unit -> Evd.evar_map * env
 (** [current_proof_statement] *)
 
 val current_proof_statement :
-  unit -> Id.t * goal_kind * types
+  unit -> Id.t * goal_kind * EConstr.types
 
 (** {6 ... } *)
 (** [get_current_proof_name ()] return the name of the current focused
@@ -166,15 +166,15 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 
 val build_constant_by_tactic :
   Id.t -> Evd.evar_universe_context -> named_context_val -> ?goal_kind:goal_kind ->
-  types -> unit Proofview.tactic -> 
+  EConstr.types -> unit Proofview.tactic -> 
   Safe_typing.private_constants Entries.definition_entry * bool *
     Evd.evar_universe_context
 
 val build_by_tactic : ?side_eff:bool -> env -> Evd.evar_universe_context -> ?poly:polymorphic ->
-  types -> unit Proofview.tactic -> 
+  EConstr.types -> unit Proofview.tactic -> 
   constr * bool * Evd.evar_universe_context
 
-val refine_by_tactic : env -> Evd.evar_map -> types -> unit Proofview.tactic ->
+val refine_by_tactic : env -> Evd.evar_map -> EConstr.types -> unit Proofview.tactic ->
   constr * Evd.evar_map
 (** A variant of the above function that handles open terms as well.
     Caveat: all effects are purged in the returned term at the end, but other

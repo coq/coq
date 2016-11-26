@@ -156,11 +156,11 @@ val nf_beta : local_reduction_function
 val nf_betaiota : local_reduction_function
 val nf_betaiotazeta : local_reduction_function
 val nf_all : reduction_function
-val nf_evar : evar_map -> Constr.constr -> Constr.constr
+val nf_evar : evar_map -> constr -> constr
 
 (** Lazy strategy, weak head reduction *)
 
-val whd_evar :  evar_map -> Constr.constr -> Constr.constr
+val whd_evar :  evar_map -> constr -> constr
 val whd_nored : local_reduction_function
 val whd_beta : local_reduction_function
 val whd_betaiota : local_reduction_function

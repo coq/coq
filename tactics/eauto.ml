@@ -289,8 +289,7 @@ module SearchProblem = struct
       in
       let rec_tacs =
 	let l =
-          let concl = Reductionops.nf_evar (project g) (EConstr.Unsafe.to_constr (pf_concl g)) in
-          let concl = EConstr.of_constr concl in
+          let concl = Reductionops.nf_evar (project g) (pf_concl g) in
 	  filter_tactics s.tacres
                          (e_possible_resolve (project g) s.dblist (List.hd s.localdb) secvars concl)
 	in

@@ -506,8 +506,8 @@ let print_evar_constraints gl sigma =
        end
   in
   let pr_evconstr (pbty,env,t1,t2) =
-    let t1 = Evarutil.nf_evar sigma t1
-    and t2 = Evarutil.nf_evar sigma t2 in
+    let t1 = Evarutil.nf_evar sigma (EConstr.of_constr t1)
+    and t2 = Evarutil.nf_evar sigma (EConstr.of_constr t2) in
     let env =
       (** We currently allow evar instances to refer to anonymous de Bruijn
           indices, so we protect the error printing code in this case by giving
@@ -517,11 +517,11 @@ let print_evar_constraints gl sigma =
           naming/renaming *)
       Namegen.make_all_name_different env in
     str" " ++
-      hov 2 (pr_env env ++ pr_lconstr_env env sigma t1 ++ spc () ++
+      hov 2 (pr_env env ++ pr_leconstr_env env sigma t1 ++ spc () ++
              str (match pbty with
                   | Reduction.CONV -> "=="
                   | Reduction.CUMUL -> "<=") ++
-             spc () ++ pr_lconstr_env env sigma t2)
+             spc () ++ pr_leconstr_env env sigma t2)
   in
   let pr_candidate ev evi (candidates,acc) =
     if Option.has_some evi.evar_candidates then

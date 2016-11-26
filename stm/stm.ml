@@ -1719,8 +1719,10 @@ end = struct (* {{{ *)
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> RespNoProgress
         | Evd.Evar_defined t ->
+            let t = EConstr.of_constr t in
             let t = Evarutil.nf_evar sigma t in
-            if Evarutil.is_ground_term sigma (EConstr.of_constr t) then
+            if Evarutil.is_ground_term sigma t then
+              let t = EConstr.Unsafe.to_constr t in
               RespBuiltSubProof (t, Evd.evar_universe_context sigma)
             else CErrors.user_err ~hdr:"STM" (str"The solution is not ground")
        end) ()

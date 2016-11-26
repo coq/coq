@@ -86,7 +86,7 @@ val apply_terminator : proof_terminator -> proof_ending -> unit
     end of the proof to close the proof. *)
 val start_proof :
   Evd.evar_map -> Names.Id.t -> ?pl:universe_binders ->
-  Decl_kinds.goal_kind -> (Environ.env * Term.types) list  ->
+  Decl_kinds.goal_kind -> (Environ.env * EConstr.types) list  ->
     proof_terminator -> unit
 
 (** Like [start_proof] except that there may be dependencies between
@@ -201,7 +201,7 @@ end
 val get_default_goal_selector : unit -> Vernacexpr.goal_selector
 
 module V82 : sig
-  val get_current_initial_conclusions : unit -> Names.Id.t *(Term.types list *
+  val get_current_initial_conclusions : unit -> Names.Id.t *(EConstr.types list *
   Decl_kinds.goal_kind)
 end
 

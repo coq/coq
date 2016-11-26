@@ -2945,7 +2945,6 @@ let quantify lconstr =
 (* Modifying/Adding an hypothesis  *)
 
 let specialize (c,lbind) ipat =
-  let nf_evar sigma c = EConstr.of_constr (nf_evar sigma (EConstr.Unsafe.to_constr c)) in
   Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
@@ -3825,7 +3824,7 @@ let specialize_eqs id gl =
   let acc' = it_mkLambda_or_LetIn acc ctx'' in
   let ty' = Tacred.whd_simpl env !evars ty'
   and acc' = Tacred.whd_simpl env !evars acc' in
-  let ty' = EConstr.of_constr (Evarutil.nf_evar !evars (EConstr.Unsafe.to_constr ty')) in
+  let ty' = Evarutil.nf_evar !evars ty' in
     if worked then
       tclTHENFIRST (Tacmach.internal_cut true id ty')
 	(Proofview.V82.of_tactic (exact_no_check ((* refresh_universes_strict *) acc'))) gl
@@ -4951,6 +4950,7 @@ let abstract_subproof id gk tac =
     let ctx = Evd.universe_context_set evd in
       evd, ctx, nf concl
   in
+  let concl = EConstr.of_constr concl in
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac) in
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =

@@ -362,7 +362,7 @@ let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
   let j = typing_fun tycon env evdref tomatch in
   let evd, j = Coercion.inh_coerce_to_base (loc_of_glob_constr tomatch) env !evdref j in
   evdref := evd;
-  let typ = EConstr.of_constr (nf_evar !evdref (EConstr.Unsafe.to_constr j.uj_type)) in
+  let typ = nf_evar !evdref j.uj_type in
   let t =
     try try_find_ind env !evdref typ realnames
     with Not_found ->
@@ -1145,7 +1145,7 @@ let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
-      let d = map_constr (nf_evar evd) d in
+      let d = map_constr (fun c -> EConstr.Unsafe.to_constr (nf_evar evd (EConstr.of_constr c))) d in
       let is_d = match d with LocalAssum _ -> false | LocalDef _ -> true in
       if is_d || List.exists (fun c -> dependent_decl evd (lift k c) d) tocheck
                  && Array.exists (is_dependent_branch evd k) brs then
@@ -2008,9 +2008,9 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
       let envar = List.fold_right push_rel_context arsign env in
       let sigma, newt = new_sort_variable univ_flexible_alg sigma in
       let evdref = ref sigma in
-      let predcclj = typing_fun (mk_tycon (EConstr.mkSort newt)) envar evdref rtntyp in
+      let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref rtntyp in
       let sigma = !evdref in
-      let predccl = EConstr.of_constr (nf_evar sigma (EConstr.Unsafe.to_constr predcclj.uj_val)) in
+      let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl]
   in
   List.map

@@ -57,9 +57,6 @@ let nlocal_def (na, b, t) =
   let inj = EConstr.Unsafe.to_constr in
   NamedDecl.LocalDef (na, inj b, inj t)
 
-let nf_evar sigma c =
-  EConstr.of_constr (Evarutil.nf_evar sigma (EConstr.Unsafe.to_constr c))
-
 (** Typeclass-based generalized rewriting. *)
 
 (** Constants used by the tactic. *)
@@ -663,7 +660,7 @@ let solve_remaining_by env sigma holes by =
         (** Evar should not be defined, but just in case *)
       | Some evi ->
         let env = Environ.reset_with_named_context evi.evar_hyps env in
-        let ty = evi.evar_concl in
+        let ty = EConstr.of_constr evi.evar_concl in
         let c, sigma = Pfedit.refine_by_tactic env sigma ty solve_tac in
         Evd.define evk c sigma
     in
@@ -738,7 +735,7 @@ let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) 
     let sigma = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
     let evd = solve_remaining_by env sigma holes by in
-    let nf c = nf_evar evd (Reductionops.nf_meta evd c) in
+    let nf c = Reductionops.nf_evar evd (Reductionops.nf_meta evd c) in
     let c1 = nf c1 and c2 = nf c2
     and rew_car = nf car and rel = nf rel
     and prf = nf prf in
@@ -1449,7 +1446,7 @@ module Strategies =
 	in
 	  try
 	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
-	    let c' = nf_evar sigma c in
+	    let c' = Reductionops.nf_evar sigma c in
 	      state, Success { rew_car = ty; rew_from = t; rew_to = c';
 				  rew_prf = RewCast DEFAULTcast;
 				  rew_evars = (sigma, snd evars) }
@@ -1522,7 +1519,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
     | Success res ->
       let (_, cstrs) = res.rew_evars in
       let evars' = solve_constraints env res.rew_evars in
-      let newt = nf_evar evars' res.rew_to in
+      let newt = Reductionops.nf_evar evars' res.rew_to in
       let evars = (* Keep only original evars (potentially instantiated) and goal evars,
 		     the rest has been defined and substituted already. *)
 	Evar.Set.fold 
@@ -1537,13 +1534,13 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       let res = match res.rew_prf with
 	| RewCast c -> None
 	| RewPrf (rel, p) ->
-	  let p = nf_zeta env evars' (nf_evar evars' p) in
+	  let p = nf_zeta env evars' (Reductionops.nf_evar evars' p) in
 	  let term =
 	    match abs with
 	    | None -> p
 	    | Some (t, ty) ->
-              let t = nf_evar evars' t in
-              let ty = nf_evar evars' ty in
+              let t = Reductionops.nf_evar evars' t in
+              let ty = Reductionops.nf_evar evars' ty in
 		mkApp (mkLambda (Name (Id.of_string "lemma"), ty, p), [| t |])
 	  in
 	  let proof = match is_hyp with
@@ -2024,7 +2021,7 @@ let add_morphism_infer glob m n =
       let hook = Lemmas.mk_hook hook in
 	Flags.silently
 	  (fun () ->
-	    Lemmas.start_proof instance_id kind (Evd.from_ctx uctx) instance hook;
+	    Lemmas.start_proof instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) hook;
 	    ignore (Pfedit.by (Tacinterp.interp tac))) ()
 
 let add_morphism glob binders m s n =
@@ -2085,7 +2082,7 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
         ~flags:rewrite_conv_unif_flags
         env sigma ((if l2r then c1 else c2),but)
   in
-  let nf c = nf_evar sigma c in
+  let nf c = Reductionops.nf_evar sigma c in
   let c1 = if l2r then nf c' else nf c1
   and c2 = if l2r then nf c2 else nf c'
   and car = nf car and rel = nf rel in
@@ -2104,7 +2101,7 @@ let get_hyp gl (c,l) clause l2r =
   let sigma, hi = decompose_applied_relation env evars (c,l) in
   let but = match clause with
     | Some id -> Tacmach.New.pf_get_hyp_typ id gl
-    | None -> nf_evar evars (Tacmach.New.pf_concl gl)
+    | None -> Reductionops.nf_evar evars (Tacmach.New.pf_concl gl)
   in
   unification_rewrite l2r hi.c1 hi.c2 sigma hi.prf hi.car hi.rel but env
 

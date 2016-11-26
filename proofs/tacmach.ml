@@ -223,7 +223,7 @@ module New = struct
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
     let sigma = project gl in
-    EConstr.of_constr (nf_evar sigma (EConstr.Unsafe.to_constr concl))
+    nf_evar sigma concl
 
   let pf_whd_all gl t = pf_apply whd_all gl t
 
@@ -241,6 +241,6 @@ module New = struct
   let pf_whd_all gl t = pf_apply whd_all gl t
   let pf_compute gl t = pf_apply compute gl t
 
-  let pf_nf_evar gl t = EConstr.of_constr (nf_evar (project gl) (EConstr.Unsafe.to_constr t))
+  let pf_nf_evar gl t = nf_evar (project gl) t
 
 end

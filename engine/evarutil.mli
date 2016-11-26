@@ -139,8 +139,8 @@ val judge_of_new_Type : 'r Sigma.t -> (unsafe_judgment, 'r) Sigma.sigma
 (** [flush_and_check_evars] raise [Uninstantiated_evar] if an evar remains
     uninstantiated; [nf_evar] leaves uninstantiated evars as is *)
 
-val whd_evar :  evar_map -> constr -> constr
-val nf_evar :  evar_map -> constr -> constr
+val whd_evar :  evar_map -> EConstr.constr -> EConstr.constr
+val nf_evar :  evar_map -> EConstr.constr -> EConstr.constr
 val j_nf_evar :  evar_map -> EConstr.unsafe_judgment -> EConstr.unsafe_judgment
 val jl_nf_evar :
    evar_map -> EConstr.unsafe_judgment list -> EConstr.unsafe_judgment list

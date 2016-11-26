@@ -137,7 +137,7 @@ let abstract_list_all_with_dependencies env evd typ c l =
     Evarconv.second_order_matching empty_transparent_state
       env evd ev' argoccs c in
   if b then
-    let p = nf_evar evd (EConstr.Unsafe.to_constr ev) in
+    let p = nf_evar evd ev in
       evd, p
   else error_cannot_find_well_typed_abstraction env evd 
     c l None
@@ -1240,7 +1240,7 @@ let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
   let (evd',j') = inh_conv_coerce_rigid_to true Loc.ghost env evd j tycon in
   let evd' = Evarconv.consider_remaining_unif_problems env evd' in
-  let evd' = Evd.map_metas_fvalue (nf_evar evd') evd' in
+  let evd' = Evd.map_metas_fvalue (fun c -> EConstr.Unsafe.to_constr (nf_evar evd' (EConstr.of_constr c))) evd' in
     (evd',j'.uj_val)
 
 let w_coerce_to_type env evd c cty mvty =
@@ -1397,7 +1397,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
     let evd''' = w_merge_rec evd'' mc ec [] in
     if evd' == evd'''
     then Evd.define sp (EConstr.Unsafe.to_constr c) evd'''
-    else Evd.define sp (Evarutil.nf_evar evd''' (EConstr.Unsafe.to_constr c)) evd''' in
+    else Evd.define sp (EConstr.Unsafe.to_constr (Evarutil.nf_evar evd''' c)) evd''' in
 
   let check_types evd = 
     let metas = Evd.meta_list evd in
@@ -1513,8 +1513,7 @@ let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sig
   let current_sigma = Sigma.to_evar_map current_sigma in
   let sigma = Pretyping.solve_remaining_evars flags env current_sigma pending in
   let sigma, subst = nf_univ_variables sigma in
-  let c = EConstr.Unsafe.to_constr c in
-  Sigma.Unsafe.of_pair (EConstr.of_constr (CVars.subst_univs_constr subst (nf_evar sigma c)), sigma)
+  Sigma.Unsafe.of_pair (EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr (nf_evar sigma c))), sigma)
 
 let default_matching_core_flags sigma =
   let ts = Names.full_transparent_state in {
@@ -1602,7 +1601,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   (fun test -> match test.testing_state with
   | None -> None
   | Some (sigma,_,l) ->
-     let c = applist (EConstr.of_constr (nf_evar sigma (EConstr.Unsafe.to_constr (local_strong whd_meta sigma c))), l) in
+     let c = applist (nf_evar sigma (local_strong whd_meta sigma c), l) in
      let univs, subst = nf_univ_variables sigma in
      Some (sigma,EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr c))))
 
@@ -1926,7 +1925,6 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
 let secondOrderDependentAbstraction env evd flags typ (p, oplist) =
   let typp = Typing.meta_type evd p in
   let evd, pred = abstract_list_all_with_dependencies env evd typp typ oplist in
-  let pred = EConstr.of_constr pred in
   w_merge env false flags.merge_unify_flags
     (evd,[p,pred,(Conv,TypeProcessed)],[])
 

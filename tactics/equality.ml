@@ -1212,7 +1212,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 	    error "Cannot solve a unification problem."
   in
   let scf = sigrec_clausal_form siglen ty in
-    !evdref, EConstr.of_constr (Evarutil.nf_evar !evdref (EConstr.Unsafe.to_constr scf))
+    !evdref, Evarutil.nf_evar !evdref scf
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors

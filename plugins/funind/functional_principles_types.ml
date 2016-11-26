@@ -294,7 +294,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
       new_princ_name
       (Decl_kinds.Global,Flags.is_universe_polymorphism (),(Decl_kinds.Proof Decl_kinds.Theorem))
       !evd
-      new_principle_type
+      (EConstr.of_constr new_principle_type)
       hook
   ;
     (*       let _tim1 = System.get_time ()  in *)

@@ -12,8 +12,8 @@
 open Pp
 open Names
 open Term
-open EConstr
 open Environ
+open EConstr
 
 (** printers *)
 val print_sort : sorts -> std_ppcmds
@@ -283,4 +283,4 @@ val on_judgment_type  : ('t -> 't) -> ('c, 't) punsafe_judgment -> ('c, 't) puns
 
 (** {6 Functions to deal with impossible cases } *)
 val set_impossible_default_clause : (unit -> (Constr.constr * Constr.types) Univ.in_universe_context_set) -> unit
-val coq_unit_judge : unit -> EConstr.unsafe_judgment Univ.in_universe_context_set
+val coq_unit_judge : unit -> unsafe_judgment Univ.in_universe_context_set
