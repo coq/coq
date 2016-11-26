@@ -310,7 +310,7 @@ let project_hint pri l2r r =
   let p =
     if l2r then build_coq_iff_left_proj () else build_coq_iff_right_proj () in
   let p = EConstr.of_constr p in
-  let c = Reductionops.whd_beta sigma (mkApp (c, Array.map EConstr.of_constr (Context.Rel.to_extended_vect 0 sign))) in
+  let c = Reductionops.whd_beta sigma (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
   let id =

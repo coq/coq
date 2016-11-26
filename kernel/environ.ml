@@ -120,7 +120,7 @@ let lookup_named = lookup_named
 let lookup_named_val id ctxt = fst (Id.Map.find id ctxt.env_named_map)
 
 let eq_named_context_val c1 c2 =
-   c1 == c2 || Context.Named.equal (named_context_of_val c1) (named_context_of_val c2)
+   c1 == c2 || Context.Named.equal Constr.equal (named_context_of_val c1) (named_context_of_val c2)
 
 (* A local const is evaluable if it is defined  *)
 

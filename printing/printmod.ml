@@ -88,7 +88,7 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
     else Univ.Instance.empty in
   let mip = mib.mind_packets.(i) in
   let params = Inductive.inductive_paramdecls (mib,u) in
-  let args = Context.Rel.to_extended_list 0 params in
+  let args = Context.Rel.to_extended_list mkRel 0 params in
   let arity = hnf_prod_applist env (build_ind_type env ((mib,mip),u)) args in
   let cstrtypes = Inductive.type_of_constructors (ind,u) (mib,mip) in
   let cstrtypes = Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
@@ -142,7 +142,7 @@ let print_record env mind mib =
   in
   let mip = mib.mind_packets.(0) in
   let params = Inductive.inductive_paramdecls (mib,u) in
-  let args = Context.Rel.to_extended_list 0 params in
+  let args = Context.Rel.to_extended_list mkRel 0 params in
   let arity = hnf_prod_applist env (build_ind_type env ((mib,mip),u)) args in
   let cstrtypes = Inductive.type_of_constructors ((mind,0),u) (mib,mip) in
   let cstrtype = hnf_prod_applist env cstrtypes.(0) args in

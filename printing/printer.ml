@@ -499,8 +499,8 @@ let print_evar_constraints gl sigma =
     | Some g ->
        let env = Goal.V82.env sigma g in fun e' ->
        begin
-         if Context.Named.equal (named_context env) (named_context e') then
-           if Context.Rel.equal (rel_context env) (rel_context e') then mt ()
+         if Context.Named.equal Constr.equal (named_context env) (named_context e') then
+           if Context.Rel.equal Constr.equal (rel_context env) (rel_context e') then mt ()
            else pr_rel_context_of e' sigma ++ str " |-" ++ spc ()
          else pr_context_of e' sigma ++ str " |-" ++ spc ()
        end

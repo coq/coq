@@ -273,8 +273,8 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
   let ctx = Univ.instantiate_univ_context mib.mind_universes in
   let indu = indsp, u in
   let r = mkIndU (indsp,u) in
-  let rp = applist (r, Context.Rel.to_extended_list 0 paramdecls) in
-  let paramargs = Context.Rel.to_extended_list 1 paramdecls in (*def in [[params;x:rp]]*)
+  let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
+  let paramargs = Context.Rel.to_extended_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
   let x = Name binder_name in
   let fields = instantiate_possibly_recursive_type indu paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
@@ -386,7 +386,7 @@ open Typeclasses
 let declare_structure finite poly ctx id idbuild paramimpls params arity template 
     fieldimpls fields ?(kind=StructureComponent) ?name is_coe coers sign =
   let nparams = List.length params and nfields = List.length fields in
-  let args = Context.Rel.to_extended_list nfields params in
+  let args = Context.Rel.to_extended_list mkRel nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
   let type_constructor = it_mkProd_or_LetIn ind fields in
   let binder_name = 

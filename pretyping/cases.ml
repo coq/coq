@@ -943,7 +943,7 @@ let abstract_predicate env sigma indf cur realargs (names,na) tms ccl =
   let tms = List.fold_right2 (fun par arg tomatch ->
     match EConstr.kind sigma par with
     | Rel i -> relocate_index_tomatch sigma (i+n) (destRel sigma arg) tomatch
-    | _ -> tomatch) (realargs@[cur]) (List.map EConstr.of_constr (Context.Rel.to_extended_list 0 sign))
+    | _ -> tomatch) (realargs@[cur]) (Context.Rel.to_extended_list EConstr.mkRel 0 sign)
        (lift_tomatch_stack n tms) in
   (* Pred is already dependent in the current term to match (if      *)
   (* (na<>Anonymous) and its realargs; we just need to adjust it to  *)

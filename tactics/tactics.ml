@@ -1634,7 +1634,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       then
         let t = lift (i+1-n) t in
 	let abselim = beta_applist sigma (elim, params@[t;branch]) in
-	let args = Array.map EConstr.of_constr (Context.Rel.to_extended_vect 0 sign) in
+	let args = Context.Rel.to_extended_vect mkRel 0 sign in
 	let c = beta_applist sigma (abselim, [mkApp (c, args)]) in
 	  Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
       else
@@ -1643,8 +1643,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       (* goes from left to right when i increases! *)
       match List.nth l i with
       | Some proj ->
-	  let args = Context.Rel.to_extended_vect 0 sign in
-	  let args = Array.map EConstr.of_constr args in
+	  let args = Context.Rel.to_extended_vect mkRel 0 sign in
 	  let proj =
 	    if Environ.is_projection proj env then
 	      mkProj (Projection.make proj false, mkApp (c, args))
@@ -2190,7 +2189,7 @@ let bring_hyps hyps =
       let store = Proofview.Goal.extra gl in
       let concl = Tacmach.New.pf_nf_concl gl in
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
-      let args = Array.map_of_list EConstr.of_constr (Context.Named.to_instance hyps) in
+      let args = Array.of_list (Context.Named.to_instance mkVar hyps) in
       Refine.refine { run = begin fun sigma ->
         let Sigma (ev, sigma, p) =
           Evarutil.new_evar env sigma ~principal:true ~store newcl in
@@ -2868,8 +2867,7 @@ let old_generalize_dep ?(with_let=false) c gl =
     (cl',project gl) in
   (** Check that the generalization is indeed well-typed *)
   let (evd, _) = Typing.type_of env evd cl'' in
-  let args = Context.Named.to_instance to_quantify_rev in
-  let args = List.map EConstr.of_constr args in
+  let args = Context.Named.to_instance mkVar to_quantify_rev in
   tclTHENLIST
     [tclEVARS evd;
      Proofview.V82.of_tactic (apply_type cl'' (if Option.is_empty body then c::args else args));
@@ -3994,7 +3992,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
 	    let ind_is_ok =
 	      List.equal (fun c1 c2 -> EConstr.eq_constr evd c1 c2)
 		(List.lastn scheme.nargs indargs)
-		(List.map EConstr.of_constr (Context.Rel.to_extended_list 0 scheme.args)) in
+		(Context.Rel.to_extended_list mkRel 0 scheme.args) in
 	    if not (ccl_arg_ok && ind_is_ok) then
 	      error_ind_scheme "the conclusion of"
 	  in (cond, check_concl)
@@ -4965,7 +4963,7 @@ let abstract_subproof id gk tac =
   in
   let const, args =
     if !shrink_abstract then shrink_entry sign const
-    else (const, List.rev (Context.Named.to_instance sign))
+    else (const, List.rev (Context.Named.to_instance Constr.mkVar sign))
   in
   let args = List.map EConstr.of_constr args in
   let cd = Entries.DefinitionEntry const in

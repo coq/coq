@@ -939,7 +939,7 @@ module Search = struct
     let cwd = Lib.cwd () in
     if DirPath.equal cwd dir &&
          (onlyc == only_classes) &&
-           Context.Named.equal sign sign' &&
+           Context.Named.equal Constr.equal sign sign' &&
              Hint_db.transparent_state cached_hints == st
     then cached_hints
     else
@@ -1034,7 +1034,7 @@ module Search = struct
             (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
                pr_ev s' (Proofview.Goal.goal gl'));
         let hints' =
-          if b && not (Context.Named.equal (Goal.hyps gl') (Goal.hyps gl))
+          if b && not (Context.Named.equal Constr.equal (Goal.hyps gl') (Goal.hyps gl))
           then
             let st = Hint_db.transparent_state info.search_hints in
             make_autogoal_hints info.search_only_classes ~st gl'

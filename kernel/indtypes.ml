@@ -734,7 +734,7 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
       matching with a parameter context. *)
   let indty, paramsletsubst =
     (* [ty] = [Ind inst] is typed in context [params] *)
-    let inst = Context.Rel.to_extended_vect 0 paramslet in
+    let inst = Context.Rel.to_extended_vect mkRel 0 paramslet in
     let ty = mkApp (mkIndU indu, inst) in
     (* [Ind inst] is typed in context [params-wo-let] *)
     let inst' = rel_list 0 nparamargs in

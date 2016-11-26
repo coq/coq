@@ -297,7 +297,7 @@ let build_dependent_inductive ind (_,mip) params =
   applist
     (mkIndU ind,
        List.map (lift mip.mind_nrealdecls) params
-       @ Context.Rel.to_extended_list 0 realargs)
+       @ Context.Rel.to_extended_list mkRel 0 realargs)
 
 (* This exception is local *)
 exception LocalArity of (sorts_family * sorts_family * arity_error) option
@@ -355,7 +355,7 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
     let (lparams,vargs) = List.chop (inductive_params specif) allargs in
     let cargs =
       let cstr = ith_constructor_of_inductive ind (i+1) in
-      let dep_cstr = applist (mkConstructU (cstr,u),lparams@(Context.Rel.to_extended_list 0 cstrsign)) in
+      let dep_cstr = applist (mkConstructU (cstr,u),lparams@(Context.Rel.to_extended_list mkRel 0 cstrsign)) in
       vargs @ [dep_cstr] in
     let base = lambda_appvect_assum (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
     it_mkProd_or_LetIn base cstrsign in

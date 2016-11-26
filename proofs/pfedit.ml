@@ -228,7 +228,7 @@ let solve_by_implicit_tactic env sigma evk =
   match (!implicit_tactic, snd (evar_source evk sigma)) with
   | Some tac, (Evar_kinds.ImplicitArg _ | Evar_kinds.QuestionMark _)
       when
-	Context.Named.equal (Environ.named_context_of_val evi.evar_hyps)
+	Context.Named.equal Constr.equal (Environ.named_context_of_val evi.evar_hyps)
 	(Environ.named_context env) ->
       let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (CErrors.UserError (None,Pp.str"Proof is not complete."))) []) in
       (try
