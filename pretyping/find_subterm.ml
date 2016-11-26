@@ -141,8 +141,8 @@ let replace_term_occ_gen_modulo sigma occs like_first test bywhat cl occ t =
 let replace_term_occ_modulo evd occs test bywhat t =
   let occs',like_first =
     match occs with AtOccs occs -> occs,false | LikeFirst -> AllOccurrences,true in
-  EConstr.Unsafe.to_constr (proceed_with_occurrences
-    (replace_term_occ_gen_modulo evd occs' like_first test bywhat None) occs' t)
+  proceed_with_occurrences
+    (replace_term_occ_gen_modulo evd occs' like_first test bywhat None) occs' t
 
 let replace_term_occ_decl_modulo evd occs test bywhat d =
   let (plocs,hyploc),like_first =

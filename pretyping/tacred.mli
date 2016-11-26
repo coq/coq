@@ -10,6 +10,7 @@ open Names
 open Term
 open Environ
 open Evd
+open EConstr
 open Reductionops
 open Pattern
 open Globnames
@@ -17,7 +18,7 @@ open Locus
 open Univ
 
 type reduction_tactic_error =
-    InvalidAbstraction of env * evar_map * EConstr.constr * (env * Type_errors.type_error)
+    InvalidAbstraction of env * evar_map * constr * (env * Type_errors.type_error)
 
 exception ReductionTacticError of reduction_tactic_error
 
@@ -58,10 +59,10 @@ val unfoldn :
   (occurrences * evaluable_global_reference) list ->  reduction_function
 
 (** Fold *)
-val fold_commands : EConstr.constr list ->  reduction_function
+val fold_commands : constr list ->  reduction_function
 
 (** Pattern *)
-val pattern_occs : (occurrences * EConstr.constr) list -> e_reduction_function
+val pattern_occs : (occurrences * constr) list -> e_reduction_function
 
 (** Rem: Lazy strategies are defined in Reduction *)
 
@@ -75,23 +76,23 @@ val cbv_norm_flags : CClosure.RedFlags.reds ->  reduction_function
 (** [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]
    with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
-val reduce_to_atomic_ind : env ->  evar_map -> EConstr.types -> pinductive * EConstr.types
+val reduce_to_atomic_ind : env ->  evar_map -> types -> pinductive * types
 
 (** [reduce_to_quantified_ind env sigma t] puts [t] in the form
    [t'=(x1:A1)..(xn:An)(I args)] with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
-val reduce_to_quantified_ind : env ->  evar_map -> EConstr.types -> pinductive * EConstr.types
+val reduce_to_quantified_ind : env ->  evar_map -> types -> pinductive * types
 
 (** [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
    [t'=(x1:A1)..(xn:An)(ref args)] and fails with user error if not possible *)
 val reduce_to_quantified_ref :
-  env ->  evar_map -> global_reference -> EConstr.types -> EConstr.types
+  env ->  evar_map -> global_reference -> types -> types
 
 val reduce_to_atomic_ref :
-  env ->  evar_map -> global_reference -> EConstr.types -> EConstr.types
+  env ->  evar_map -> global_reference -> types -> types
 
 val find_hnf_rectype : 
-  env ->  evar_map -> EConstr.types -> pinductive * EConstr.constr list
+  env ->  evar_map -> types -> pinductive * constr list
 
 val contextually : bool -> occurrences * constr_pattern ->
   (patvar_map -> reduction_function) -> reduction_function

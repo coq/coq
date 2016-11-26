@@ -9,6 +9,7 @@
 open Pp
 open Names
 open Term
+open EConstr
 open Tacmach
 open Proof_type
 open Locus
@@ -58,25 +59,25 @@ val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 (** {6 Tacticals applying to hypotheses } *)
 
 val onNthHypId       : int -> (Id.t -> tactic) -> tactic
-val onNthHyp         : int -> (EConstr.constr -> tactic) -> tactic
+val onNthHyp         : int -> (constr -> tactic) -> tactic
 val onNthDecl        : int -> (Context.Named.Declaration.t -> tactic) -> tactic
 val onLastHypId      : (Id.t -> tactic) -> tactic
-val onLastHyp        : (EConstr.constr -> tactic) -> tactic
+val onLastHyp        : (constr -> tactic) -> tactic
 val onLastDecl       : (Context.Named.Declaration.t -> tactic) -> tactic
 val onNLastHypsId    : int -> (Id.t list -> tactic) -> tactic
-val onNLastHyps      : int -> (constr list -> tactic) -> tactic
+val onNLastHyps      : int -> (Constr.constr list -> tactic) -> tactic
 val onNLastDecls     : int -> (Context.Named.t -> tactic) -> tactic
 
 val lastHypId   : goal sigma -> Id.t
-val lastHyp     : goal sigma -> EConstr.constr
+val lastHyp     : goal sigma -> constr
 val lastDecl    : goal sigma -> Context.Named.Declaration.t
 val nLastHypsId : int -> goal sigma -> Id.t list
-val nLastHyps   : int -> goal sigma -> constr list
+val nLastHyps   : int -> goal sigma -> Constr.constr list
 val nLastDecls  : int -> goal sigma -> Context.Named.t
 
 val afterHyp    : Id.t -> goal sigma -> Context.Named.t
 
-val ifOnHyp     : (Id.t * EConstr.types -> bool) ->
+val ifOnHyp     : (Id.t * types -> bool) ->
                   (Id.t -> tactic) -> (Id.t -> tactic) ->
 		   Id.t -> tactic
 
@@ -99,9 +100,9 @@ val onClauseLR : (Id.t option -> tactic) -> clause -> tactic
 
 type branch_args = private {
   ity        : pinductive;  (** the type we were eliminating on *)
-  largs      : EConstr.constr list; (** its arguments *)
+  largs      : constr list; (** its arguments *)
   branchnum  : int;         (** the branch number *)
-  pred       : EConstr.constr;      (** the predicate we used *)
+  pred       : constr;      (** the predicate we used *)
   nassums    : int;         (** number of assumptions/letin to be introduced *)
   branchsign : bool list;   (** the signature of the branch.
                                 true=assumption, false=let-in *)
@@ -134,7 +135,7 @@ val elimination_sort_of_hyp  : Id.t -> goal sigma -> sorts_family
 val elimination_sort_of_clause : Id.t option -> goal sigma -> sorts_family
 
 val pf_with_evars :  (goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) -> tactic
-val pf_constr_of_global : Globnames.global_reference -> (constr -> tactic) -> tactic
+val pf_constr_of_global : Globnames.global_reference -> (Constr.constr -> tactic) -> tactic
 
 val elim_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
 val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
@@ -230,13 +231,13 @@ module New : sig
 
   val nLastDecls  : ([ `NF ], 'r) Proofview.Goal.t -> int -> Context.Named.t
 
-  val ifOnHyp     : (identifier * EConstr.types -> bool) ->
+  val ifOnHyp     : (identifier * types -> bool) ->
     (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
     identifier -> unit Proofview.tactic
 
   val onNthHypId : int -> (identifier -> unit tactic) -> unit tactic
   val onLastHypId      : (identifier -> unit tactic) -> unit tactic
-  val onLastHyp        : (EConstr.constr -> unit tactic) -> unit tactic
+  val onLastHyp        : (constr -> unit tactic) -> unit tactic
   val onLastDecl       : (Context.Named.Declaration.t -> unit tactic) -> unit tactic
 
   val onHyps      : ([ `NF ], Context.Named.t) Proofview.Goal.enter ->
@@ -253,18 +254,18 @@ module New : sig
 
   val elimination_then :
     (branch_args -> unit Proofview.tactic) ->
-    EConstr.constr -> unit Proofview.tactic
+    constr -> unit Proofview.tactic
 
   val case_then_using :
     or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
-    EConstr.constr option -> pinductive -> EConstr.constr * EConstr.types -> unit Proofview.tactic
+    constr option -> pinductive -> constr * types -> unit Proofview.tactic
 
   val case_nodep_then_using :
     or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
-    EConstr.constr option -> pinductive -> EConstr.constr * EConstr.types -> unit Proofview.tactic
+    constr option -> pinductive -> constr * types -> unit Proofview.tactic
 
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
   val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
 
-  val pf_constr_of_global : Globnames.global_reference -> (constr -> unit Proofview.tactic) -> unit Proofview.tactic
+  val pf_constr_of_global : Globnames.global_reference -> (Constr.constr -> unit Proofview.tactic) -> unit Proofview.tactic
 end

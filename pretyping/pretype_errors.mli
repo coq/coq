@@ -9,52 +9,53 @@
 open Names
 open Term
 open Environ
+open EConstr
 open Type_errors
 
 (** {6 The type of errors raised by the pretyper } *)
 
 type unification_error =
-  | OccurCheck of existential_key * EConstr.constr
-  | NotClean of EConstr.existential * env * EConstr.constr
+  | OccurCheck of existential_key * constr
+  | NotClean of existential * env * constr
   | NotSameArgSize
   | NotSameHead
   | NoCanonicalStructure
-  | ConversionFailed of env * EConstr.constr * EConstr.constr
+  | ConversionFailed of env * constr * constr
   | MetaOccurInBody of existential_key
-  | InstanceNotSameType of existential_key * env * EConstr.types * EConstr.types
+  | InstanceNotSameType of existential_key * env * types * types
   | UnifUnivInconsistency of Univ.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
   | ProblemBeyondCapabilities
 
 type position = (Id.t * Locus.hyp_location_flag) option
 
-type position_reporting = (position * int) * EConstr.t
+type position_reporting = (position * int) * constr
 
-type subterm_unification_error = bool * position_reporting * position_reporting * (EConstr.constr * EConstr.constr * unification_error) option
+type subterm_unification_error = bool * position_reporting * position_reporting * (constr * constr * unification_error) option
 
-type type_error = (EConstr.constr, EConstr.types) ptype_error
+type type_error = (constr, types) ptype_error
 
 type pretype_error =
   (** Old Case *)
-  | CantFindCaseType of EConstr.constr
+  | CantFindCaseType of constr
   (** Type inference unification *)
-  | ActualTypeNotCoercible of EConstr.unsafe_judgment * EConstr.types * unification_error
+  | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
   (** Tactic Unification *)
-  | UnifOccurCheck of existential_key * EConstr.constr
+  | UnifOccurCheck of existential_key * constr
   | UnsolvableImplicit of existential_key * Evd.unsolvability_explanation option
-  | CannotUnify of EConstr.constr * EConstr.constr * unification_error option
-  | CannotUnifyLocal of EConstr.constr * EConstr.constr * EConstr.constr
-  | CannotUnifyBindingType of constr * constr
-  | CannotGeneralize of constr
-  | NoOccurrenceFound of EConstr.constr * Id.t option
-  | CannotFindWellTypedAbstraction of EConstr.constr * EConstr.constr list * (env * type_error) option
-  | WrongAbstractionType of Name.t * EConstr.constr * EConstr.types * EConstr.types
+  | CannotUnify of constr * constr * unification_error option
+  | CannotUnifyLocal of constr * constr * constr
+  | CannotUnifyBindingType of Constr.constr * Constr.constr
+  | CannotGeneralize of Constr.constr
+  | NoOccurrenceFound of constr * Id.t option
+  | CannotFindWellTypedAbstraction of constr * constr list * (env * type_error) option
+  | WrongAbstractionType of Name.t * constr * types * types
   | AbstractionOverMeta of Name.t * Name.t
-  | NonLinearUnification of Name.t * EConstr.constr
+  | NonLinearUnification of Name.t * constr
   (** Pretyping *)
   | VarNotFound of Id.t
-  | UnexpectedType of EConstr.constr * EConstr.constr
-  | NotProduct of EConstr.constr
+  | UnexpectedType of constr * constr
+  | NotProduct of constr
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of
@@ -67,85 +68,85 @@ val precatchable_exception : exn -> bool
 
 (** Raising errors *)
 val error_actual_type :
-  ?loc:Loc.t -> env -> Evd.evar_map -> EConstr.unsafe_judgment -> EConstr.constr ->
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr ->
       unification_error -> 'b
 
 val error_actual_type_core :
-  ?loc:Loc.t -> env -> Evd.evar_map -> EConstr.unsafe_judgment -> EConstr.constr -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr -> 'b
 
 val error_cant_apply_not_functional :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      EConstr.unsafe_judgment -> EConstr.unsafe_judgment array -> 'b
+      unsafe_judgment -> unsafe_judgment array -> 'b
 
 val error_cant_apply_bad_type :
-  ?loc:Loc.t -> env -> Evd.evar_map -> int * EConstr.constr * EConstr.constr ->
-      EConstr.unsafe_judgment -> EConstr.unsafe_judgment array -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> int * constr * constr ->
+      unsafe_judgment -> unsafe_judgment array -> 'b
 
 val error_case_not_inductive :
-  ?loc:Loc.t -> env -> Evd.evar_map -> EConstr.unsafe_judgment -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
 
 val error_ill_formed_branch :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      EConstr.constr -> pconstructor -> EConstr.constr -> EConstr.constr -> 'b
+      constr -> pconstructor -> constr -> constr -> 'b
 
 val error_number_branches :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      EConstr.unsafe_judgment -> int -> 'b
+      unsafe_judgment -> int -> 'b
 
 val error_ill_typed_rec_body :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      int -> Name.t array -> EConstr.unsafe_judgment array -> EConstr.types array -> 'b
+      int -> Name.t array -> unsafe_judgment array -> types array -> 'b
 
 val error_elim_arity :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      pinductive -> sorts_family list -> EConstr.constr ->
-      EConstr.unsafe_judgment -> (sorts_family * sorts_family * arity_error) option -> 'b
+      pinductive -> sorts_family list -> constr ->
+      unsafe_judgment -> (sorts_family * sorts_family * arity_error) option -> 'b
 
 val error_not_a_type :
-  ?loc:Loc.t -> env -> Evd.evar_map -> EConstr.unsafe_judgment -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
 
 val error_assumption :
-  ?loc:Loc.t -> env -> Evd.evar_map -> EConstr.unsafe_judgment -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
 
-val error_cannot_coerce : env -> Evd.evar_map -> EConstr.constr * EConstr.constr -> 'b
+val error_cannot_coerce : env -> Evd.evar_map -> constr * constr -> 'b
 
 (** {6 Implicit arguments synthesis errors } *)
 
-val error_occur_check : env -> Evd.evar_map -> existential_key -> EConstr.constr -> 'b
+val error_occur_check : env -> Evd.evar_map -> existential_key -> constr -> 'b
 
 val error_unsolvable_implicit :
   ?loc:Loc.t -> env -> Evd.evar_map -> existential_key ->
       Evd.unsolvability_explanation option -> 'b
 
 val error_cannot_unify : ?loc:Loc.t -> env -> Evd.evar_map ->
-  ?reason:unification_error -> EConstr.constr * EConstr.constr -> 'b
+  ?reason:unification_error -> constr * constr -> 'b
 
-val error_cannot_unify_local : env -> Evd.evar_map -> EConstr.constr * EConstr.constr * EConstr.constr -> 'b
+val error_cannot_unify_local : env -> Evd.evar_map -> constr * constr * constr -> 'b
 
 val error_cannot_find_well_typed_abstraction : env -> Evd.evar_map ->
-      EConstr.constr -> EConstr.constr list -> (env * type_error) option -> 'b
+      constr -> constr list -> (env * type_error) option -> 'b
 
 val error_wrong_abstraction_type :  env -> Evd.evar_map ->
-      Name.t -> EConstr.constr -> EConstr.types -> EConstr.types -> 'b
+      Name.t -> constr -> types -> types -> 'b
 
 val error_abstraction_over_meta : env -> Evd.evar_map ->
   metavariable -> metavariable -> 'b
 
 val error_non_linear_unification : env -> Evd.evar_map ->
-  metavariable -> EConstr.constr -> 'b
+  metavariable -> constr -> 'b
 
 (** {6 Ml Case errors } *)
 
 val error_cant_find_case_type :
-  ?loc:Loc.t -> env -> Evd.evar_map -> EConstr.constr -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> constr -> 'b
 
 (** {6 Pretyping errors } *)
 
 val error_unexpected_type :
-  ?loc:Loc.t -> env -> Evd.evar_map -> EConstr.constr -> EConstr.constr -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> constr -> constr -> 'b
 
 val error_not_product :
-  ?loc:Loc.t -> env -> Evd.evar_map -> EConstr.constr -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> constr -> 'b
 
 (** {6 Error in conversion from AST to glob_constr } *)
 

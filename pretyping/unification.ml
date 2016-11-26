@@ -100,7 +100,6 @@ let abstract_scheme env evd c l lname_typ =
        if occur_meta evd a then mkLambda_name env (na,ta,t), evd
        else
 	 let t', evd' = Find_subterm.subst_closed_term_occ env evd locc a t in
-	 let t' = EConstr.of_constr t' in
 	   mkLambda_name env (na,ta,t'), evd')
     (c,evd)
     (List.rev l)
@@ -1656,7 +1655,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
       | NoOccurrences -> concl
       | occ ->
           let occ = if likefirst then LikeFirst else AtOccs occ in
-          EConstr.of_constr (replace_term_occ_modulo sigma occ test mkvarid concl)
+          replace_term_occ_modulo sigma occ test mkvarid concl
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (NamedDecl.get_id (List.last depdecls)) in

@@ -1154,7 +1154,6 @@ let abstract_scheme env sigma (locc,a) (c, sigma) =
     mkLambda (na,ta,c), sigma
   else
     let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a c in
-    let c' = EConstr.of_constr c' in
       mkLambda (na,ta,c'), sigma'
 
 let pattern_occs loccs_trm = { e_redfun = begin fun env sigma c ->

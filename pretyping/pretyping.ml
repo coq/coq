@@ -61,7 +61,7 @@ type ltac_var_map = {
   ltac_genargs : unbound_ltac_var_map;
 }
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
-type pure_open_constr = evar_map * Constr.constr
+type pure_open_constr = evar_map * EConstr.constr
 
 (************************************************************************)
 (* This concerns Cases *)
