@@ -601,16 +601,20 @@ let isAllowedEvar sigma flags c = match EConstr.kind sigma c with
 
 
 let subst_defined_metas_evars sigma (bl,el) c =
-  let rec substrec c = match EConstr.kind sigma c with
+  (** This seems to be performance-critical, and using the evar-insensitive
+      primitives blow up the time passed in this function. *)
+  let c = EConstr.Unsafe.to_constr c in
+  let rec substrec c = match kind_of_term c with
     | Meta i ->
       let select (j,_,_) = Int.equal i j in
-      substrec (pi2 (List.find select bl))
+      substrec (EConstr.Unsafe.to_constr (pi2 (List.find select bl)))
     | Evar (evk,args) ->
-      let select (_,(evk',args'),_) = Evar.equal evk evk' && Array.equal (EConstr.eq_constr sigma) args args' in
-      (try substrec (pi3 (List.find select el))
-       with Not_found -> EConstr.map sigma substrec c)
-    | _ -> EConstr.map sigma substrec c
-  in try Some (substrec c) with Not_found -> None
+      let eq c1 c2 = Constr.equal c1 (EConstr.Unsafe.to_constr c2) in
+      let select (_,(evk',args'),_) = Evar.equal evk evk' && Array.for_all2 eq args args' in
+      (try substrec (EConstr.Unsafe.to_constr (pi3 (List.find select el)))
+       with Not_found -> Constr.map substrec c)
+    | _ -> Constr.map substrec c
+  in try Some (EConstr.of_constr (substrec c)) with Not_found -> None
 
 let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM tyN =
   match subst_defined_metas_evars sigma (metasubst,[]) tyM with
