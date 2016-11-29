@@ -40,6 +40,18 @@ type recursion_scheme_error =
 
 exception RecursionSchemeError of recursion_scheme_error
 
+let named_hd env t na = named_hd env Evd.empty (EConstr.of_constr t) na
+let name_assumption env = function
+| LocalAssum (na,t) -> LocalAssum (named_hd env t na, t)
+| LocalDef (na,c,t) -> LocalDef (named_hd env c na, c, t)
+
+let mkLambda_or_LetIn_name env d b = mkLambda_or_LetIn (name_assumption env d) b
+let mkProd_or_LetIn_name env d b = mkProd_or_LetIn (name_assumption env d) b
+let mkLambda_name env (n,a,b) = mkLambda_or_LetIn_name env (LocalAssum (n,a)) b
+let mkProd_name env (n,a,b) = mkProd_or_LetIn_name env (LocalAssum (n,a)) b
+let it_mkProd_or_LetIn_name env b l = List.fold_left (fun c d -> mkProd_or_LetIn_name env d c) b l
+let it_mkLambda_or_LetIn_name env b l = List.fold_left (fun c d -> mkLambda_or_LetIn_name env d c) b l
+
 let make_prod_dep dep env = if dep then mkProd_name env else mkProd
 let mkLambda_string s t c = mkLambda (Name (Id.of_string s), t, c)
 
@@ -118,12 +130,13 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 	it_mkLambda_or_LetIn_name env' obj deparsign
     else
       let cs = lift_constructor (k+1) constrs.(k) in
-      let t = build_branch_type env dep (mkRel (k+1)) cs in
+      let t = build_branch_type env (Sigma.to_evar_map sigma) dep (mkRel (k+1)) cs in
       mkLambda_string "f" t
 	(add_branch (push_rel (LocalAssum (Anonymous, t)) env) (k+1))
   in
   let Sigma (s, sigma, p) = Sigma.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env sigma kind in
-  let typP = make_arity env' dep indf s in
+  let typP = make_arity env' (Sigma.to_evar_map sigma) dep indf s in
+  let typP = EConstr.Unsafe.to_constr typP in
   let c = 
     it_mkLambda_or_LetIn_name env
     (mkLambda_string "P" typP
@@ -443,7 +456,8 @@ let mis_make_indrec env sigma listdepkind mib u =
 	    Evarutil.evd_comb1 (Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env) 
 	      evdref kinds 
 	  in
-	  let typP = make_arity env dep indf s in
+	  let typP = make_arity env !evdref dep indf s in
+	  let typP = EConstr.Unsafe.to_constr typP in
 	    mkLambda_string "P" typP
 	      (put_arity (push_rel (LocalAssum (Anonymous,typP)) env) (i+1) rest)
       | [] ->

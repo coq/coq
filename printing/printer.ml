@@ -515,7 +515,7 @@ let print_evar_constraints gl sigma =
           problem. MS: we should rather stop depending on anonymous variables, they
           can be used to indicate independency. Also, this depends on a strategy for 
           naming/renaming *)
-      Namegen.make_all_name_different env in
+      Namegen.make_all_name_different env sigma in
     str" " ++
       hov 2 (pr_env env ++ pr_leconstr_env env sigma t1 ++ spc () ++
              str (match pbty with

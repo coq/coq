@@ -140,7 +140,7 @@ let define_pure_evar_as_lambda env evd evk =
   | _ -> error_not_product env evd typ in
   let avoid = ids_of_named_context (evar_context evi) in
   let id =
-    next_name_away_with_default_using_types "x" na avoid (EConstr.Unsafe.to_constr (Reductionops.whd_evar evd dom)) in
+    next_name_away_with_default_using_types "x" na avoid (Reductionops.whd_evar evd dom) in
   let newenv = push_named (LocalAssum (id, dom)) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in

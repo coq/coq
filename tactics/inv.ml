@@ -90,8 +90,7 @@ let make_inv_predicate env evd indf realargs id status concl =
               | None ->
 		let sort = get_sort_family_of env !evd concl in
 		let sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd sort in
-		let p = make_arity env true indf sort in
-		let p = EConstr.of_constr p in
+		let p = make_arity env !evd true indf sort in
 		let evd',(p,ptyp) = Unification.abstract_list_all env
                   !evd p concl (realargs@[mkVar id])
 		in evd := evd'; p in
@@ -133,11 +132,7 @@ let make_inv_predicate env evd indf realargs id status concl =
         build_concl eqns args (succ n) restlist
   in
   let (newconcl, args) = build_concl [] [] 0 realargs in
-  let name_context env ctx =
-    let map f c = List.map (fun d -> Termops.map_rel_decl f d) c in
-    map EConstr.of_constr (name_context env (map EConstr.Unsafe.to_constr ctx))
-  in
-  let predicate = it_mkLambda_or_LetIn newconcl (name_context env hyps) in
+  let predicate = it_mkLambda_or_LetIn newconcl (name_context env !evd hyps) in
   let _ = Evarutil.evd_comb1 (Typing.type_of env) evd predicate in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)

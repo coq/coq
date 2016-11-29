@@ -15,12 +15,13 @@
 open Util
 open Names
 open Term
+open Environ
+open EConstr
 open Vars
 open Nametab
 open Nameops
 open Libnames
 open Globnames
-open Environ
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -84,13 +85,20 @@ let is_section_variable id =
 (**********************************************************************)
 (* Generating "intuitive" names from its type *)
 
-let head_name c = (* Find the head constant of a constr if any *)
+let global_of_constr = function
+| Const (c, _) -> ConstRef c
+| Ind (i, _) -> IndRef i
+| Construct (c, _) -> ConstructRef c
+| Var id -> VarRef id
+| _ -> assert false
+
+let head_name sigma c = (* Find the head constant of a constr if any *)
   let rec hdrec c =
-    match kind_of_term c with
+    match EConstr.kind sigma c with
     | Prod (_,_,c) | Lambda (_,_,c) | LetIn (_,_,_,c)
     | Cast (c,_,_) | App (c,_) -> hdrec c
     | Proj (kn,_) -> Some (Label.to_id (con_label (Projection.constant kn)))
-    | Const _ | Ind _ | Construct _ | Var _ ->
+    | Const _ | Ind _ | Construct _ | Var _ as c ->
 	Some (basename_of_global (global_of_constr c))
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
 	Some (match lna.(i) with Name id -> id | _ -> assert false)
@@ -105,9 +113,9 @@ let sort_hdchar = function
   | Prop(_) -> "P"
   | Type(_) -> "T"
 
-let hdchar env c =
+let hdchar env sigma c =
   let rec hdrec k c =
-    match kind_of_term c with
+    match EConstr.kind sigma c with
     | Prod (_,_,c) | Lambda (_,_,c) | LetIn (_,_,_,c) -> hdrec (k+1) c
     | Cast (c,_,_) | App (c,_) -> hdrec k c
     | Proj (kn,_) -> lowercase_first_char (Label.to_id (con_label (Projection.constant kn)))
@@ -119,7 +127,7 @@ let hdchar env c =
     | Rel n ->
 	(if n<=k then "p" (* the initial term is flexible product/function *)
 	 else
-	   try match Environ.lookup_rel (n-k) env with
+	   try match lookup_rel (n-k) env with
 	     | LocalAssum (Name id,_)   | LocalDef (Name id,_,_) -> lowercase_first_char id
 	     | LocalAssum (Anonymous,t) | LocalDef (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
 	   with Not_found -> "y")
@@ -131,41 +139,41 @@ let hdchar env c =
   in
   hdrec 0 c
 
-let id_of_name_using_hdchar env a = function
-  | Anonymous -> Id.of_string (hdchar env a)
+let id_of_name_using_hdchar env sigma a = function
+  | Anonymous -> Id.of_string (hdchar env sigma a)
   | Name id   -> id
 
-let named_hd env a = function
-  | Anonymous -> Name (Id.of_string (hdchar env a))
+let named_hd env sigma a = function
+  | Anonymous -> Name (Id.of_string (hdchar env sigma a))
   | x         -> x
 
-let mkProd_name   env (n,a,b) = mkProd (named_hd env a n, a, b)
-let mkLambda_name env (n,a,b) = mkLambda (named_hd env a n, a, b)
+let mkProd_name   env sigma (n,a,b) = mkProd (named_hd env sigma a n, a, b)
+let mkLambda_name env sigma (n,a,b) = mkLambda (named_hd env sigma a n, a, b)
 
 let lambda_name = mkLambda_name
 let prod_name = mkProd_name
 
-let prod_create   env (a,b) = mkProd (named_hd env a Anonymous, a, b)
-let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous, a, b)
+let prod_create   env sigma (a,b) = mkProd (named_hd env sigma a Anonymous, a, b)
+let lambda_create env sigma (a,b) =  mkLambda (named_hd env sigma a Anonymous, a, b)
 
-let name_assumption env = function
-    | LocalAssum (na,t) -> LocalAssum (named_hd env t na, t)
-    | LocalDef (na,c,t) -> LocalDef (named_hd env c na, c, t)
+let name_assumption env sigma = function
+    | LocalAssum (na,t) -> LocalAssum (named_hd env sigma t na, t)
+    | LocalDef (na,c,t) -> LocalDef (named_hd env sigma c na, c, t)
 
-let name_context env hyps =
+let name_context env sigma hyps =
   snd
     (List.fold_left
        (fun (env,hyps) d ->
-	  let d' = name_assumption env d in (push_rel d' env, d' :: hyps))
+	  let d' = name_assumption env sigma d in (push_rel d' env, d' :: hyps))
        (env,[]) (List.rev hyps))
 
-let mkProd_or_LetIn_name env b d = mkProd_or_LetIn (name_assumption env d) b
-let mkLambda_or_LetIn_name env b d = mkLambda_or_LetIn (name_assumption env d)b
+let mkProd_or_LetIn_name env sigma b d = mkProd_or_LetIn (name_assumption env sigma d) b
+let mkLambda_or_LetIn_name env sigma b d = mkLambda_or_LetIn (name_assumption env sigma d) b
 
-let it_mkProd_or_LetIn_name env b hyps =
-  it_mkProd_or_LetIn b (name_context env hyps)
-let it_mkLambda_or_LetIn_name env b hyps =
-  it_mkLambda_or_LetIn b (name_context env hyps)
+let it_mkProd_or_LetIn_name env sigma b hyps =
+  it_mkProd_or_LetIn b (name_context env sigma hyps)
+let it_mkLambda_or_LetIn_name env sigma b hyps =
+  it_mkLambda_or_LetIn b (name_context env sigma hyps)
 
 (**********************************************************************)
 (* Fresh names *)
@@ -185,10 +193,10 @@ let restart_subscript id =
      *** make_ident id (Some 0) *** but compatibility would be lost... *)
     forget_subscript id
 
-let visible_ids (nenv, c) =
+let visible_ids sigma (nenv, c) =
   let accu = ref (Refset_env.empty, Int.Set.empty, Id.Set.empty) in
-  let rec visible_ids n c = match kind_of_term c with
-  | Const _ | Ind _ | Construct _ | Var _ ->
+  let rec visible_ids n c = match EConstr.kind sigma c with
+  | Const _ | Ind _ | Construct _ | Var _ as c ->
     let (gseen, vseen, ids) = !accu in
     let g = global_of_constr c in
     if not (Refset_env.mem g gseen) then
@@ -218,7 +226,7 @@ let visible_ids (nenv, c) =
       | _ -> ids
       in
       accu := (gseen, vseen, ids)
-  | _ -> Constr.iter_with_binders succ visible_ids n c
+  | _ -> EConstr.iter_with_binders sigma succ visible_ids n c
   in
   let () = visible_ids 1 c in
   let (_, _, ids) = !accu in
@@ -228,9 +236,9 @@ let visible_ids (nenv, c) =
 
 (* 1- Looks for a fresh name for printing in cases pattern *)
 
-let next_name_away_in_cases_pattern env_t na avoid =
+let next_name_away_in_cases_pattern sigma env_t na avoid =
   let id = match na with Name id -> id | Anonymous -> default_dependent_ident in
-  let visible = visible_ids env_t in
+  let visible = visible_ids sigma env_t in
   let bad id = Id.List.mem id avoid || is_constructor id
                                     || Id.Set.mem id visible in
   next_ident_away_from id bad
@@ -292,7 +300,7 @@ let next_name_away_with_default_using_types default na avoid t =
 
 let next_name_away = next_name_away_with_default default_non_dependent_string
 
-let make_all_name_different env =
+let make_all_name_different env sigma =
   (** FIXME: this is inefficient, but only used in printing *)
   let avoid = ref (Id.Set.elements (Context.Named.to_vars (named_context env))) in
   let sign = named_context_val env in
@@ -300,7 +308,7 @@ let make_all_name_different env =
   let env0 = reset_with_named_context sign env in
   Context.Rel.fold_outside
     (fun decl newenv ->
-       let na = named_hd newenv (RelDecl.get_type decl) (RelDecl.get_name decl) in
+       let na = named_hd newenv sigma (RelDecl.get_type decl) (RelDecl.get_name decl) in
        let id = next_name_away na !avoid in
        avoid := id::!avoid;
        push_rel (RelDecl.set_name (Name id) decl) newenv)
@@ -311,12 +319,12 @@ let make_all_name_different env =
    looks for name of same base with lower available subscript beyond current
    subscript *)
 
-let next_ident_away_for_default_printing env_t id avoid =
-  let visible = visible_ids env_t in
+let next_ident_away_for_default_printing sigma env_t id avoid =
+  let visible = visible_ids sigma env_t in
   let bad id = Id.List.mem id avoid || Id.Set.mem id visible in
   next_ident_away_from id bad
 
-let next_name_away_for_default_printing env_t na avoid =
+let next_name_away_for_default_printing sigma env_t na avoid =
   let id = match na with
   | Name id   -> id
   | Anonymous ->
@@ -324,7 +332,7 @@ let next_name_away_for_default_printing env_t na avoid =
       (* taken into account by the function compute_displayed_name_in; *)
       (* just in case, invent a valid name *)
       default_non_dependent_ident in
-  next_ident_away_for_default_printing env_t id avoid
+  next_ident_away_for_default_printing sigma env_t id avoid
 
 (**********************************************************************)
 (* Displaying terms avoiding bound variables clashes *)
@@ -349,45 +357,45 @@ type renaming_flags =
   | RenamingForGoal
   | RenamingElsewhereFor of (Name.t list * constr)
 
-let next_name_for_display flags =
+let next_name_for_display sigma flags =
   match flags with
-  | RenamingForCasesPattern env_t -> next_name_away_in_cases_pattern env_t
+  | RenamingForCasesPattern env_t -> next_name_away_in_cases_pattern sigma env_t
   | RenamingForGoal -> next_name_away_in_goal
-  | RenamingElsewhereFor env_t -> next_name_away_for_default_printing env_t
+  | RenamingElsewhereFor env_t -> next_name_away_for_default_printing sigma env_t
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
-let compute_displayed_name_in flags avoid na c =
+let compute_displayed_name_in sigma flags avoid na c =
   match na with
-  | Anonymous when noccurn 1 c ->
+  | Anonymous when noccurn sigma 1 c ->
     (Anonymous,avoid)
   | _ ->
-    let fresh_id = next_name_for_display flags na avoid in
-    let idopt = if noccurn 1 c then Anonymous else Name fresh_id in
+    let fresh_id = next_name_for_display sigma flags na avoid in
+    let idopt = if noccurn sigma 1 c then Anonymous else Name fresh_id in
     (idopt, fresh_id::avoid)
 
-let compute_and_force_displayed_name_in flags avoid na c =
+let compute_and_force_displayed_name_in sigma flags avoid na c =
   match na with
-  | Anonymous when noccurn 1 c ->
+  | Anonymous when noccurn sigma 1 c ->
     (Anonymous,avoid)
   | _ ->
-    let fresh_id = next_name_for_display flags na avoid in
+    let fresh_id = next_name_for_display sigma flags na avoid in
     (Name fresh_id, fresh_id::avoid)
 
-let compute_displayed_let_name_in flags avoid na c =
-  let fresh_id = next_name_for_display flags na avoid in
+let compute_displayed_let_name_in sigma flags avoid na c =
+  let fresh_id = next_name_for_display sigma flags na avoid in
   (Name fresh_id, fresh_id::avoid)
 
-let rename_bound_vars_as_displayed avoid env c =
+let rename_bound_vars_as_displayed sigma avoid env c =
   let rec rename avoid env c =
-    match kind_of_term c with
+    match EConstr.kind sigma c with
     | Prod (na,c1,c2)  ->
 	let na',avoid' =
-          compute_displayed_name_in
+          compute_displayed_name_in sigma
             (RenamingElsewhereFor (env,c2)) avoid na c2 in
 	mkProd (na', c1, rename avoid' (na' :: env) c2)
     | LetIn (na,c1,t,c2) ->
 	let na',avoid' =
-          compute_displayed_let_name_in
+          compute_displayed_let_name_in sigma
             (RenamingElsewhereFor (env,c2)) avoid na c2 in
 	mkLetIn (na',c1,t, rename avoid' (na' :: env) c2)
     | Cast (c,k,t) -> mkCast (rename avoid env c, k,t)

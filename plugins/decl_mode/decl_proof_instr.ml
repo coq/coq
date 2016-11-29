@@ -440,7 +440,7 @@ let concl_refiner metas body gls =
       [] -> anomaly ~label:"concl_refiner" (Pp.str "cannot happen")
     | (n,typ)::rest ->
 	let _A = subst_meta subst typ in
-	let x = id_of_name_using_hdchar env _A Anonymous in
+	let x = id_of_name_using_hdchar env evd (EConstr.of_constr _A) Anonymous in
 	let _x = fresh_id avoid x gls in
 	let nenv = Environ.push_named (LocalAssum (_x,_A)) env in
 	let asort = family_of_sort (Typing.e_sort_of nenv (ref evd) (EConstr.of_constr _A)) in
@@ -895,7 +895,6 @@ let build_per_info etype casee gls =
   let ctyp=pf_unsafe_type_of gls (EConstr.of_constr casee) in
   let is_dep = dependent (project gls) (EConstr.of_constr casee) concl in
   let hd,args = decompose_app (special_whd gls ctyp) in
-  let ctyp = EConstr.Unsafe.to_constr ctyp in
   let (ind,u) =
     try
       destInd hd
@@ -909,10 +908,11 @@ let build_per_info etype casee gls =
   let params,real_args = List.chop nparams args in
   let abstract_obj c body =
     let typ=pf_unsafe_type_of gls (EConstr.of_constr c) in
-    let typ = EConstr.Unsafe.to_constr typ in
-      lambda_create env (typ,subst_term (project gls) (EConstr.of_constr c) (EConstr.of_constr body)) in
+      lambda_create env (project gls) (typ,Termops.subst_term (project gls) (EConstr.of_constr c) body) in
   let pred= List.fold_right abstract_obj
-    real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) concl)) in
+    real_args (lambda_create env (project gls) (ctyp,Termops.subst_term (project gls) (EConstr.of_constr casee) concl)) in
+  let ctyp = EConstr.Unsafe.to_constr ctyp in
+  let pred = EConstr.Unsafe.to_constr pred in
     is_dep,
   {per_casee=casee;
    per_ctype=ctyp;
@@ -1275,16 +1275,15 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let env=pf_env gls in
 	let ctyp=pf_unsafe_type_of gls (EConstr.of_constr casee) in
 	let hd,all_args = decompose_app (special_whd gls ctyp) in
-	let ctyp = EConstr.Unsafe.to_constr ctyp in
 	let ind', u = destInd hd in
 	let _ = assert (eq_ind ind' ind) in (* just in case *)
 	let params,real_args = List.chop nparams all_args in
 	let abstract_obj c body =
 	  let typ=pf_unsafe_type_of gls (EConstr.of_constr c) in
-	  let typ = EConstr.Unsafe.to_constr typ in
-	    lambda_create env (typ,subst_term (project gls) (EConstr.of_constr c) (EConstr.of_constr body)) in
+	    lambda_create env (project gls) (typ,Termops.subst_term (project gls) (EConstr.of_constr c) body) in
 	let elim_pred = List.fold_right abstract_obj
-	  real_args (lambda_create env (ctyp,subst_term (project gls) (EConstr.of_constr casee) concl)) in
+	  real_args (lambda_create env (project gls) (ctyp,Termops.subst_term (project gls) (EConstr.of_constr casee) concl)) in
+        let elim_pred = EConstr.Unsafe.to_constr elim_pred in
 	let case_info = Inductiveops.make_case_info env ind RegularStyle in
 	let gen_arities = Inductive.arities_of_constructors (ind,u) spec in
 	let f_ids typ =
@@ -1345,6 +1344,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 
 let understand_my_constr env sigma c concl =
   let env = env in
+  let c = EConstr.of_constr c in
   let rawc = Detyping.detype false [] env Evd.empty c in
   let rec frob = function
     | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand,Misctypes.IntroAnonymous,None)

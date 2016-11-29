@@ -228,10 +228,12 @@ let rec is_rigid_head t = match kind_of_term t with
 
 (* calcule la liste des arguments implicites *)
 
-let find_displayed_name_in all avoid na (_,b as envnames_b) =
+let find_displayed_name_in all avoid na (env, b) =
+  let b = EConstr.of_constr b in
+  let envnames_b = (env, b) in
   let flag = RenamingElsewhereFor envnames_b in
-  if all then compute_and_force_displayed_name_in flag avoid na b
-  else compute_displayed_name_in flag avoid na b
+  if all then compute_and_force_displayed_name_in Evd.empty flag avoid na b
+  else compute_displayed_name_in Evd.empty flag avoid na b
 
 let compute_implicits_gen strict strongly_strict revpat contextual all env t =
   let rigid = ref true in

@@ -1237,7 +1237,7 @@ let vernac_reserve bl =
     let env = Global.env() in
     let sigma = Evd.from_env env in
     let t,ctx = Constrintern.interp_type env sigma c in
-    let t = Detyping.detype false [] env (Evd.from_ctx ctx) t in
+    let t = Detyping.detype false [] env (Evd.from_ctx ctx) (EConstr.of_constr t) in
     let t,_ = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl

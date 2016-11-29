@@ -857,14 +857,13 @@ let descend_then env sigma head dirn =
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
-      let deparsign = make_arity_signature env true indf in
-      let deparsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) deparsign in
+      let deparsign = make_arity_signature env sigma true indf in
       let p =
 	it_mkLambda_or_LetIn (lift (mip.mind_nrealargs+1) resty) deparsign in
       let build_branch i =
 	let result = if Int.equal i dirn then dirnval else dfltval in
-	let args = name_context env cstr.(i-1).cs_args in
-	let args = List.map (fun d -> map_rel_decl EConstr.of_constr d) args in
+	let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstr.(i-1).cs_args in
+	let args = name_context env sigma cs_args in
 	it_mkLambda_or_LetIn result args in
       let brl =
         List.map build_branch
@@ -905,8 +904,7 @@ let build_selector env sigma dirn c ind special default =
   let ind, _ = check_privacy env indp in
   let typ = Retyping.get_type_of env sigma default in
   let (mib,mip) = lookup_mind_specif env ind in
-  let deparsign = make_arity_signature env true indf in
-  let deparsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) deparsign in
+  let deparsign = make_arity_signature env sigma true indf in
   let p = it_mkLambda_or_LetIn typ deparsign in
   let cstrs = get_constructors env indf in
   let build_branch i =
@@ -1535,9 +1533,6 @@ let decomp_tuple_term env sigma c t =
     in [((ex,exty),inner_code)]::iterated_decomp
   in decomprec (mkRel 1) c t
 
-let lambda_create env (a,b) =
-  mkLambda (named_hd env (EConstr.Unsafe.to_constr a) Anonymous, a, b)
-
 let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   let sigma = Sigma.to_evar_map sigma in
   let typ = get_type_of env sigma dep_pair1 in
@@ -1555,9 +1550,9 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   (* We build the expected goal *)
   let abst_B =
     List.fold_right
-      (fun (e,t) body -> lambda_create env (t,subst_term sigma e body)) e1_list b in
+      (fun (e,t) body -> lambda_create env sigma (t,subst_term sigma e body)) e1_list b in
   let pred_body = beta_applist sigma (abst_B,proj_list) in
-  let body = mkApp (lambda_create env (typ,pred_body),[|dep_pair1|]) in
+  let body = mkApp (lambda_create env sigma (typ,pred_body),[|dep_pair1|]) in
   let expected_goal = beta_applist sigma (abst_B,List.map fst e2_list) in
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
   let expected_goal = nf_betaiota sigma expected_goal in

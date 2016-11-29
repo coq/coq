@@ -216,9 +216,9 @@ type ext_named_context =
   Id.Set.t * named_context
 
 val push_rel_decl_to_named_context :
-  rel_declaration -> ext_named_context -> ext_named_context
+  evar_map -> rel_declaration -> ext_named_context -> ext_named_context
 
-val push_rel_context_to_named_context : Environ.env -> types ->
+val push_rel_context_to_named_context : Environ.env -> evar_map -> types ->
   named_context_val * types * constr list * csubst * (identifier*constr) list
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list

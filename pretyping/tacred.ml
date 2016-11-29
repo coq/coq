@@ -1141,7 +1141,7 @@ let compute = cbv_betadeltaiota
 
 let abstract_scheme env sigma (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
-  let na = named_hd env (EConstr.to_constr sigma ta) Anonymous in
+  let na = named_hd env sigma ta Anonymous in
   if occur_meta sigma ta then error "Cannot find a type for the generalisation.";
   if occur_meta sigma a then
     mkLambda (na,ta,c), sigma

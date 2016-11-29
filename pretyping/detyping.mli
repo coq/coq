@@ -9,6 +9,7 @@
 open Names
 open Term
 open Environ
+open EConstr
 open Glob_term
 open Termops
 open Mod_subst
@@ -45,13 +46,13 @@ val detype_case :
 val detype_sort : evar_map -> sorts -> glob_sort
 
 val detype_rel_context : ?lax:bool -> constr option -> Id.t list -> (names_context * env) -> 
-  evar_map -> Context.Rel.t -> glob_decl list
+  evar_map -> rel_context -> glob_decl list
 
 val detype_closed_glob : ?lax:bool -> bool -> Id.t list -> env -> evar_map -> closed_glob_constr -> glob_constr
 
 (** look for the index of a named var or a nondep var as it is renamed *)
-val lookup_name_as_displayed  : env -> constr -> Id.t -> int option
-val lookup_index_as_renamed : env -> constr -> int -> int option
+val lookup_name_as_displayed  : env -> evar_map -> constr -> Id.t -> int option
+val lookup_index_as_renamed : env -> evar_map -> constr -> int -> int option
 
 val set_detype_anonymous : (Loc.t -> int -> glob_constr) -> unit
 val force_wildcard : unit -> bool

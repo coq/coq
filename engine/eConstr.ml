@@ -131,6 +131,8 @@ let isCase sigma c = match kind sigma c with Case _ -> true | _ -> false
 let isProj sigma c = match kind sigma c with Proj _ -> true | _ -> false
 let isVarId sigma id c =
   match kind sigma c with Var id' -> Id.equal id id' | _ -> false
+let isRelN sigma n c =
+  match kind sigma c with Rel n' -> Int.equal n n' | _ -> false
 
 let destRel sigma c = match kind sigma c with
 | Rel p -> p

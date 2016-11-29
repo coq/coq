@@ -1843,7 +1843,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 		  (add_name match_acc (loc,x)) ((loc,x)::var_acc)
 	      | (LocalAssum (cano_name,ty) | LocalDef (cano_name,_,ty)) :: t, c::tt ->
 		let fresh =
-		  Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names ty in
+		  Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names (EConstr.of_constr ty) in
 		canonize_args t tt (fresh::forbidden_names)
 		  ((fresh,c)::match_acc) ((cases_pattern_loc c,Name fresh)::var_acc)
 	      | _ -> assert false in

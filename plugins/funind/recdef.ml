@@ -122,8 +122,8 @@ let pf_get_new_ids idl g =
     []
 
 let compute_renamed_type gls c =
-  EConstr.of_constr (rename_bound_vars_as_displayed (*no avoid*) [] (*no rels*) []
-    (EConstr.Unsafe.to_constr (pf_unsafe_type_of gls c)))
+  rename_bound_vars_as_displayed (project gls) (*no avoid*) [] (*no rels*) []
+    (pf_unsafe_type_of gls c)
 let h'_id = Id.of_string "h'"
 let teq_id = Id.of_string "teq"
 let ano_id = Id.of_string "anonymous"

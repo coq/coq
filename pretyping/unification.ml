@@ -85,7 +85,7 @@ let occur_meta_evd sigma mv c =
 
 let abstract_scheme env evd c l lname_typ =
   let mkLambda_name env (n,a,b) =
-    mkLambda (named_hd env (EConstr.Unsafe.to_constr a) n, a, b)
+    mkLambda (named_hd env evd a n, a, b)
   in
   List.fold_left2
     (fun (t,evd) (locc,a) decl ->
@@ -1617,8 +1617,7 @@ let make_eq_test env evd c =
 let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   let id =
     let t = match ty with Some t -> t | None -> get_type_of env sigma c in
-    let t = EConstr.Unsafe.to_constr t in
-    let x = id_of_name_using_hdchar (Global.env()) t name in
+    let x = id_of_name_using_hdchar (Global.env()) sigma t name in
     let ids = ids_of_named_context (named_context env) in
     if name == Anonymous then next_ident_away_in_goal x ids else
     if mem_named_context_val x (named_context_val env) then

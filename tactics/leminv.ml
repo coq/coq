@@ -119,11 +119,11 @@ let max_prefix_sign lid sign =
 let rec add_prods_sign env sigma t =
   match EConstr.kind sigma (whd_all env sigma t) with
     | Prod (na,c1,b) ->
-	let id = id_of_name_using_hdchar env (EConstr.Unsafe.to_constr t) na in
+	let id = id_of_name_using_hdchar env sigma t na in
 	let b'= subst1 (mkVar id) b in
         add_prods_sign (push_named (LocalAssum (id,c1)) env) sigma b'
     | LetIn (na,c1,t1,b) ->
-	let id = id_of_name_using_hdchar env (EConstr.Unsafe.to_constr t) na in
+	let id = id_of_name_using_hdchar env sigma t na in
 	let b'= subst1 (mkVar id) b in
         add_prods_sign (push_named (LocalDef (id,c1,t1)) env) sigma b'
     | _ -> (env,t)
@@ -147,8 +147,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
   let p = next_ident_away (Id.of_string "P") allvars in
   let pty,goal =
     if dep_option  then
-      let pty = make_arity env true indf sort in
-      let pty = EConstr.of_constr pty in
+      let pty = make_arity env sigma true indf sort in
       let goal =
 	mkProd
 	  (Anonymous, mkAppliedInd ind, applist(mkVar p,realargs@[mkRel 1]))

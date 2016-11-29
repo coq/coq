@@ -92,8 +92,7 @@ let max_sort l =
   if Sorts.List.mem InSet l then InSet else InProp
 
 let e_is_correct_arity env evdref c pj ind specif params =
-  let arsign = make_arity_signature env true (make_ind_family (ind,params)) in
-  let arsign = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) arsign in
+  let arsign = make_arity_signature env !evdref true (make_ind_family (ind,params)) in
   let allowed_sorts = elim_sorts specif in
   let error () = Pretype_errors.error_elim_arity env !evdref ind allowed_sorts c pj None in
   let rec srec env pt ar =

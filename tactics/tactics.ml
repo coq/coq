@@ -412,16 +412,13 @@ let id_of_name_with_default id = function
 let default_id_of_sort s =
   if Sorts.is_small s then default_small_ident else default_type_ident
 
-let id_of_name_using_hdchar env c name =
-  id_of_name_using_hdchar env (EConstr.Unsafe.to_constr c) name
-
 let default_id env sigma decl =
   let open Context.Rel.Declaration in
   match decl with
   | LocalAssum (name,t) ->
       let dft = default_id_of_sort (Retyping.get_sort_of env sigma t) in
       id_of_name_with_default dft name
-  | LocalDef (name,b,_) -> id_of_name_using_hdchar env b name
+  | LocalDef (name,b,_) -> id_of_name_using_hdchar env sigma b name
 
 (* Non primitive introduction tactics are treated by intro_then_gen
    There is possibly renaming, with possibly names to avoid and
@@ -1075,14 +1072,14 @@ let intros_replacing ids =
 
 (* User-level introduction tactics *)
 
-let lookup_hypothesis_as_renamed env ccl = function
-  | AnonHyp n -> Detyping.lookup_index_as_renamed env (EConstr.Unsafe.to_constr ccl) n
-  | NamedHyp id -> Detyping.lookup_name_as_displayed env (EConstr.Unsafe.to_constr ccl) id
+let lookup_hypothesis_as_renamed env sigma ccl = function
+  | AnonHyp n -> Detyping.lookup_index_as_renamed env sigma ccl n
+  | NamedHyp id -> Detyping.lookup_name_as_displayed env sigma ccl id
 
 let lookup_hypothesis_as_renamed_gen red h gl =
   let env = Proofview.Goal.env gl in
   let rec aux ccl =
-    match lookup_hypothesis_as_renamed env ccl h with
+    match lookup_hypothesis_as_renamed env (Tacmach.New.project gl) ccl h with
       | None when red ->
         let (redfun, _) = Redexpr.reduction_of_red_expr env (Red true) in
         let Sigma (c, _, _) = redfun.e_redfun env (Proofview.Goal.sigma gl) ccl in
@@ -1350,7 +1347,7 @@ let enforce_prop_bound_names rename tac =
               if Retyping.get_sort_family_of env sigma t = InProp then
                 (* "very_standard" says that we should have "H" names only, but
                    this would break compatibility even more... *)
-                let s = match Namegen.head_name (EConstr.Unsafe.to_constr t) with
+                let s = match Namegen.head_name sigma t with
                   | Some id when not very_standard -> string_of_id id
                   | _ -> "" in
                 Name (add_suffix Namegen.default_prop_ident s)
@@ -2768,7 +2765,7 @@ let enough_by na t tac = forward false (Some (Some tac)) (ipat_of_name na) t
 
 (* Compute a name for a generalization *)
 
-let generalized_name sigma c t ids cl = function
+let generalized_name env sigma c t ids cl = function
   | Name id as na ->
       if Id.List.mem id ids then
 	user_err  (pr_id id ++ str " is already used.");
@@ -2783,7 +2780,7 @@ let generalized_name sigma c t ids cl = function
 	    (* On ne s'etait pas casse la tete : on avait pris pour nom de
                variable la premiere lettre du type, meme si "c" avait ete une
                constante dont on aurait pu prendre directement le nom *)
-	    named_hd (Global.env()) (EConstr.Unsafe.to_constr t) Anonymous
+	    named_hd env sigma t Anonymous
 
 (* Abstract over [c] in [forall x1:A1(c)..xi:Ai(c).T(c)] producing
    [forall x, x1:A1(x1), .., xi:Ai(x). T(x)] with all [c] abtracted in [Ai]
@@ -2795,7 +2792,7 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let newdecls,_ = decompose_prod_n_assum sigma i (subst_term_gen sigma EConstr.eq_constr_nounivs c dummy_prod) in
   let cl',sigma' = subst_closed_term_occ env sigma (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
-  let na = generalized_name sigma c t ids cl' na in
+  let na = generalized_name env sigma c t ids cl' na in
   let decl = match b with
     | None -> LocalAssum (na,t)
     | Some b -> LocalDef (na,b,t)
@@ -3230,7 +3227,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             | Var id -> id
             | _ ->
             let type_of = Tacmach.New.pf_unsafe_type_of gl in
-            id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
+            id_of_name_using_hdchar (Global.env()) sigma (type_of c) Anonymous in
             let x = fresh_id_in_env avoid id env in
 	    Tacticals.New.tclTHEN
 	      (letin_tac None (Name x) c None allHypsAndConcl)
@@ -4434,7 +4431,7 @@ let induction_gen clear_flag isrec with_evars elim
      declaring the induction argument as a new local variable *)
     let id =
     (* Type not the right one if partially applied but anyway for internal use*)
-      let x = id_of_name_using_hdchar (Global.env()) t Anonymous in
+      let x = id_of_name_using_hdchar (Global.env()) evd t Anonymous in
       new_fresh_id [] x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
     pose_induction_arg_then
@@ -4471,7 +4468,7 @@ let induction_gen_l isrec with_evars elim names lc =
                 let type_of = Tacmach.New.pf_unsafe_type_of gl in
                 let sigma = Tacmach.New.project gl in
                 let x =
-		  id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
+		  id_of_name_using_hdchar (Global.env()) sigma (type_of c) Anonymous in
 
                 let id = new_fresh_id [] x gl in
 		let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in

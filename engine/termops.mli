@@ -288,7 +288,7 @@ val pr_existential_key : evar_map -> evar -> Pp.std_ppcmds
 val pr_evar_suggested_name : existential_key -> evar_map -> Id.t
 
 val pr_evar_info : evar_info -> Pp.std_ppcmds
-val pr_evar_constraints : evar_constraint list -> Pp.std_ppcmds
+val pr_evar_constraints : evar_map -> evar_constraint list -> Pp.std_ppcmds
 val pr_evar_map : ?with_univs:bool -> int option -> evar_map -> Pp.std_ppcmds
 val pr_evar_map_filter : ?with_univs:bool -> (Evar.t -> evar_info -> bool) ->
   evar_map -> Pp.std_ppcmds

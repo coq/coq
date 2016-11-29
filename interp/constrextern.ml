@@ -953,6 +953,7 @@ let extern_constr_gen lax goal_concl_style scopt env sigma t =
   (* Not "goal_concl_style" means do alpha-conversion avoiding only *)
   (* those goal/section/rel variables that occurs in the subterm under *)
   (* consideration; see namegen.ml for further details *)
+  let t = EConstr.of_constr t in
   let avoid = if goal_concl_style then ids_of_context env else [] in
   let r = Detyping.detype ~lax:lax goal_concl_style avoid env sigma t in
   let vars = vars_of_env env in
@@ -965,6 +966,7 @@ let extern_constr ?(lax=false) goal_concl_style env sigma t =
   extern_constr_gen lax goal_concl_style None env sigma t
 
 let extern_type goal_concl_style env sigma t =
+  let t = EConstr.of_constr t in
   let avoid = if goal_concl_style then ids_of_context env else [] in
   let r = Detyping.detype goal_concl_style avoid env sigma t in
   extern_glob_type (vars_of_env env) r
@@ -1042,14 +1044,16 @@ let rec glob_of_pat env sigma = function
 	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive")
       in
       GCases (loc,RegularStyle,rtn,[glob_of_pat env sigma tm,indnames],mat)
-  | PFix f -> Detyping.detype_names false [] env (Global.env()) sigma (mkFix f) (** FIXME bad env *)
-  | PCoFix c -> Detyping.detype_names false [] env (Global.env()) sigma (mkCoFix c)
+  | PFix f -> Detyping.detype_names false [] env (Global.env()) sigma (EConstr.of_constr (mkFix f)) (** FIXME bad env *)
+  | PCoFix c -> Detyping.detype_names false [] env (Global.env()) sigma (EConstr.of_constr (mkCoFix c))
   | PSort s -> GSort (loc,s)
 
 let extern_constr_pattern env sigma pat =
   extern true (None,[]) Id.Set.empty (glob_of_pat env sigma pat)
 
 let extern_rel_context where env sigma sign =
+  let sign = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) sign in
+  let where = Option.map EConstr.of_constr where in
   let a = detype_rel_context where [] (names_of_rel_context env,env) sigma sign in
   let vars = vars_of_env env in
   let a = List.map (fun (p,bk,x,t) -> (Inl p,bk,x,t)) a in

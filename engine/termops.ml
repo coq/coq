@@ -115,7 +115,7 @@ let pr_evar_suggested_name evk sigma =
   | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
   | _ ->
       let env = reset_with_named_context evi.evar_hyps (Global.env()) in
-      Namegen.id_of_name_using_hdchar env evi.evar_concl Anonymous
+      Namegen.id_of_name_using_hdchar env sigma (EConstr.of_constr evi.evar_concl) Anonymous
   in
   let names = EvMap.mapi base_id (undefined_map sigma) in
   let id = EvMap.find evk names in
@@ -316,7 +316,7 @@ let print_env_short env =
     str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++
     str "[" ++ pr_sequence pr_rel_decl rc ++ str "]"
 
-let pr_evar_constraints pbs =
+let pr_evar_constraints sigma pbs =
   let pr_evconstr (pbty, env, t1, t2) =
     let env =
       (** We currently allow evar instances to refer to anonymous de
@@ -326,10 +326,10 @@ let pr_evar_constraints pbs =
           stop depending on anonymous variables, they can be used to
           indicate independency. Also, this depends on a strategy for
           naming/renaming. *)
-      Namegen.make_all_name_different env
+      Namegen.make_all_name_different env sigma
     in
     print_env_short env ++ spc () ++ str "|-" ++ spc () ++
-      print_constr_env env Evd.empty (EConstr.of_constr t1) ++ spc () ++
+      print_constr_env env sigma (EConstr.of_constr t1) ++ spc () ++
       str (match pbty with
             | Reduction.CONV -> "=="
             | Reduction.CUMUL -> "<=") ++
@@ -346,7 +346,7 @@ let pr_evar_map_gen with_univs pr_evars sigma =
     if List.is_empty conv_pbs then mt ()
     else
     str "CONSTRAINTS:" ++ brk (0, 1) ++
-      pr_evar_constraints conv_pbs ++ fnl ()
+      pr_evar_constraints sigma conv_pbs ++ fnl ()
   and metas =
     if List.is_empty (Evd.meta_list sigma) then mt ()
     else

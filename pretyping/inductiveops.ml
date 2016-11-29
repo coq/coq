@@ -422,26 +422,29 @@ let build_dependent_inductive env ((ind, params) as indf) =
 
 (* builds the arity of an elimination predicate in sort [s] *)
 
-let make_arity_signature env dep indf =
+let make_arity_signature env sigma dep indf =
   let (arsign,_) = get_arity env indf in
+  let arsign = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) arsign in
   if dep then
     (* We need names everywhere *)
-    Namegen.name_context env
-      ((LocalAssum (Anonymous,build_dependent_inductive env indf))::arsign)
+    Namegen.name_context env sigma
+      ((LocalAssum (Anonymous,EConstr.of_constr (build_dependent_inductive env indf)))::arsign)
       (* Costly: would be better to name once for all at definition time *)
   else
     (* No need to enforce names *)
     arsign
 
-let make_arity env dep indf s = mkArity (make_arity_signature env dep indf, s)
+let make_arity env sigma dep indf s =
+  let open EConstr in
+  it_mkProd_or_LetIn (mkSort s) (make_arity_signature env sigma dep indf)
 
 (* [p] is the predicate and [cs] a constructor summary *)
-let build_branch_type env dep p cs =
+let build_branch_type env sigma dep p cs =
   let base = appvect (lift cs.cs_nargs p, cs.cs_concl_realargs) in
   if dep then
-    Namegen.it_mkProd_or_LetIn_name env
-      (applist (base,[build_dependent_constructor cs]))
-      cs.cs_args
+    EConstr.Unsafe.to_constr (Namegen.it_mkProd_or_LetIn_name env sigma
+      (EConstr.of_constr (applist (base,[build_dependent_constructor cs])))
+      (List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) cs.cs_args))
   else
     Term.it_mkProd_or_LetIn base cs.cs_args
 
@@ -542,11 +545,12 @@ let is_elim_predicate_explicitly_dependent env sigma pred indf =
   let arsign,_ = get_arity env indf in
   is_predicate_explicitly_dep env sigma pred arsign
 
-let set_names env n brty =
-  let (ctxt,cl) = decompose_prod_n_assum n brty in
-  Namegen.it_mkProd_or_LetIn_name env cl ctxt
+let set_names env sigma n brty =
+  let open EConstr in
+  let (ctxt,cl) = decompose_prod_n_assum sigma n brty in
+  EConstr.Unsafe.to_constr (Namegen.it_mkProd_or_LetIn_name env sigma cl ctxt)
 
-let set_pattern_names env ind brv =
+let set_pattern_names env sigma ind brv =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let arities =
     Array.map
@@ -554,7 +558,7 @@ let set_pattern_names env ind brv =
         Context.Rel.length ((prod_assum c)) -
         mib.mind_nparams)
       mip.mind_nf_lc in
-  Array.map2 (set_names env) arities brv
+  Array.map2 (set_names env sigma) arities brv
 
 let type_case_branches_with_names env sigma indspec p c =
   let (ind,args) = indspec in
@@ -567,7 +571,7 @@ let type_case_branches_with_names env sigma indspec p c =
   let conclty = lambda_appvect_assum (mip.mind_nrealdecls+1) p (Array.of_list (realargs@[c])) in
   (* Adjust names *)
   if is_elim_predicate_explicitly_dependent env sigma p (ind,params) then
-    (set_pattern_names env (fst ind) lbrty, conclty)
+    (set_pattern_names env sigma (fst ind) (Array.map EConstr.of_constr lbrty), conclty)
   else (lbrty, conclty)
 
 (* Type of Case predicates *)

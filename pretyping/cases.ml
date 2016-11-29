@@ -708,7 +708,7 @@ let merge_name get_name obj = function
 
 let merge_names get_name = List.map2 (merge_name get_name)
 
-let get_names env sign eqns =
+let get_names env sigma sign eqns =
   let names1 = List.make (Context.Rel.length sign) Anonymous in
   (* If any, we prefer names used in pats, from top to bottom *)
   let names2,aliasname =
@@ -727,7 +727,7 @@ let get_names env sign eqns =
       (fun (l,avoid) d na ->
 	 let na =
 	   merge_name
-	     (fun (LocalAssum (na,t) | LocalDef (na,_,t)) -> Name (next_name_away (named_hd env (EConstr.Unsafe.to_constr t) na) avoid))
+	     (fun (LocalAssum (na,t) | LocalDef (na,_,t)) -> Name (next_name_away (named_hd env sigma t na) avoid))
 	     d na
 	 in
          (na::l,(out_name na)::avoid))
@@ -924,7 +924,7 @@ let rec extract_predicate ccl = function
       ccl
 
 let abstract_predicate env sigma indf cur realargs (names,na) tms ccl =
-  let sign = make_arity_signature env true indf in
+  let sign = make_arity_signature env sigma true indf in
   (* n is the number of real args + 1 (+ possible let-ins in sign) *)
   let n = List.length sign in
   (* Before abstracting we generalize over cur and on those realargs *)
@@ -945,7 +945,7 @@ let abstract_predicate env sigma indf cur realargs (names,na) tms ccl =
   let pred = extract_predicate ccl tms in
   (* Build the predicate properly speaking *)
   let sign = List.map2 set_name (na::names) sign in
-  EConstr.of_constr (it_mkLambda_or_LetIn_name env (EConstr.Unsafe.to_constr pred) sign)
+  it_mkLambda_or_LetIn_name env sigma pred sign
 
 (* [expand_arg] is used by [specialize_predicate]
    if Yk denotes [Xk;xk] or [Xk],
@@ -1238,7 +1238,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   (* that had matched constructor C *)
   let cs_args = const_info.cs_args in
   let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cs_args in
-  let names,aliasname = get_names pb.env cs_args eqns in
+  let names,aliasname = get_names pb.env !(pb.evdref) cs_args eqns in
   let typs = List.map2 RelDecl.set_name names cs_args
   in
 
@@ -1714,7 +1714,7 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
 
 let build_inversion_problem loc env sigma tms t =
   let make_patvar t (subst,avoid) =
-    let id = next_name_away (named_hd env (EConstr.Unsafe.to_constr t) Anonymous) avoid in
+    let id = next_name_away (named_hd env sigma t Anonymous) avoid in
     PatVar (Loc.ghost,Name id), ((id,t)::subst, id::avoid) in
   let rec reveal_pattern t (subst,avoid as acc) =
     match EConstr.kind sigma (whd_all env sigma t) with
@@ -1733,8 +1733,7 @@ let build_inversion_problem loc env sigma tms t =
 	let patl,acc = List.fold_map' reveal_pattern realargs acc in
 	let pat,acc = make_patvar t acc in
 	let indf' = lift_inductive_family n indf in
-	let sign = make_arity_signature env true indf' in
-	let sign = List.map (fun d -> map_rel_decl EConstr.of_constr d) sign in
+	let sign = make_arity_signature env sigma true indf' in
         let patl = pat :: List.rev patl in
 	let patl,sign = recover_and_adjust_alias_names patl sign in
 	let p = List.length patl in

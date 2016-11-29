@@ -76,10 +76,24 @@ let build_dependent_inductive ind (mib,mip) =
        Context.Rel.to_extended_list mkRel mip.mind_nrealdecls mib.mind_params_ctxt
        @ Context.Rel.to_extended_list mkRel 0 realargs)
 
+let named_hd env t na = named_hd env Evd.empty (EConstr.of_constr t) na
+let name_assumption env = function
+| LocalAssum (na,t) -> LocalAssum (named_hd env t na, t)
+| LocalDef (na,c,t) -> LocalDef (named_hd env c na, c, t)
+
+let name_context env hyps =
+  snd
+    (List.fold_left
+       (fun (env,hyps) d ->
+	  let d' = name_assumption env d in (push_rel d' env, d' :: hyps))
+       (env,[]) (List.rev hyps))
+
 let my_it_mkLambda_or_LetIn s c = it_mkLambda_or_LetIn c s
 let my_it_mkProd_or_LetIn s c = Term.it_mkProd_or_LetIn c s
 let my_it_mkLambda_or_LetIn_name s c =
-  it_mkLambda_or_LetIn_name (Global.env()) c s
+  let env = Global.env () in
+  let mkLambda_or_LetIn_name d b = mkLambda_or_LetIn (name_assumption env d) b in
+  List.fold_left (fun c d -> mkLambda_or_LetIn_name d c) c s
 
 let get_coq_eq ctx =
   try

@@ -645,8 +645,6 @@ let subst_hole_with_term occ tc t =
 open Tacmach
 
 let hResolve id c occ t =
-  let c = EConstr.Unsafe.to_constr c in
-  let t = EConstr.Unsafe.to_constr t in
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let sigma = Sigma.to_evar_map sigma in

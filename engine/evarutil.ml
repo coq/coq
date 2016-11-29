@@ -326,7 +326,7 @@ let push_var id (n, s) =
   let s = Int.Map.add n (EConstr.mkVar id) s in
   (succ n, s)
 
-let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
+let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc) =
   let open EConstr in
   let open Vars in
   let map_decl f d =
@@ -354,7 +354,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
     else
       (** id_of_name_using_hdchar only depends on the rel context which is empty
           here *)
-      next_ident_away (id_of_name_using_hdchar empty_env (EConstr.Unsafe.to_constr (RelDecl.get_type decl)) na) avoid
+      next_ident_away (id_of_name_using_hdchar empty_env sigma (RelDecl.get_type decl) na) avoid
   in
   match extract_if_neq id na with
   | Some id0 when not (is_section_variable id0) ->
@@ -375,7 +375,7 @@ let push_rel_decl_to_named_context decl (subst, vsubst, avoid, nc) =
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (subst2 subst vsubst) in
       (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc)
 
-let push_rel_context_to_named_context env typ =
+let push_rel_context_to_named_context env sigma typ =
   (* compute the instances relative to the named context and rel_context *)
   let open Context.Named.Declaration in
   let open EConstr in
@@ -390,7 +390,7 @@ let push_rel_context_to_named_context env typ =
     (* with vars of the rel context *)
     (* We do keep the instances corresponding to local definition (see above) *)
     let (subst, vsubst, _, env) =
-      Context.Rel.fold_outside push_rel_decl_to_named_context
+      Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context sigma d acc)
         (rel_context env) ~init:(empty_csubst, [], avoid, named_context env) in
     (val_of_named_context env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
@@ -452,7 +452,7 @@ let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?prin
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
-  let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env typ in
+  let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env (Sigma.to_evar_map evd) typ in
   let map c = subst2 subst vsubst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
   let instance =

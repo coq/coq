@@ -421,7 +421,7 @@ let rec pattern_to_term_and_type env typ  = function
 	Array.to_list
 	  (Array.init
 	     (cst_narg - List.length patternl)
-	     (fun i -> Detyping.detype false [] env (Evd.from_env env) csta.(i))
+	     (fun i -> Detyping.detype false [] env (Evd.from_env env) (EConstr.of_constr csta.(i)))
 	  )
       in
       let patl_as_term =
@@ -504,7 +504,6 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		*)
 		let rt_as_constr,ctx = Pretyping.understand env (Evd.from_env env) rt in
 		let rt_typ = Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr rt_as_constr) in
-                let rt_typ = EConstr.Unsafe.to_constr rt_typ in
 		let res_raw_type = Detyping.detype false [] env (Evd.from_env env) rt_typ in
 		let res = fresh_id args_res.to_avoid "_res" in
 		let new_avoid = res::args_res.to_avoid in
@@ -757,7 +756,6 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 			let typ_of_id =
 			  Typing.unsafe_type_of env_with_pat_ids (Evd.from_env env) (EConstr.mkVar id)
 			in
-			let typ_of_id = EConstr.Unsafe.to_constr typ_of_id in
 			let raw_typ_of_id =
 			  Detyping.detype false []
 			    env_with_pat_ids (Evd.from_env env) typ_of_id
@@ -804,6 +802,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	      List.map3
 	      (fun pat e typ_as_constr ->
 		 let this_pat_ids = ids_of_pat pat in
+		 let typ_as_constr = EConstr.of_constr typ_as_constr in
 		 let typ = Detyping.detype false [] new_env (Evd.from_env env) typ_as_constr in
 		 let pat_as_term = pattern_to_term pat in
 		 List.fold_right
@@ -811,7 +810,6 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		      if Id.Set.mem id this_pat_ids
 		      then (Prod (Name id),
 		      let typ_of_id = Typing.unsafe_type_of new_env (Evd.from_env env) (EConstr.mkVar id) in
-		      let typ_of_id = EConstr.Unsafe.to_constr typ_of_id in
 		      let raw_typ_of_id =
 			Detyping.detype false [] new_env (Evd.from_env env) typ_of_id
 		      in
@@ -970,7 +968,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			    (List.map
 			      (fun p -> Detyping.detype false []
 				 env (Evd.from_env env)
-				 p) params)@(Array.to_list
+				 (EConstr.of_constr p)) params)@(Array.to_list
 				      (Array.make
 					 (List.length args' - nparam)
 					 (mkGHole ()))))
@@ -988,6 +986,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			    let ty' = snd (Util.List.chop nparam ty) in
 			    List.fold_left2
 			      (fun acc var_as_constr arg ->
+                                let arg = EConstr.of_constr arg in
 				 if isRel var_as_constr
 				 then
 				   let na = RelDecl.get_name (Environ.lookup_rel (destRel var_as_constr) env) in

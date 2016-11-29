@@ -114,6 +114,7 @@ val isCase : Evd.evar_map -> t -> bool
 val isProj : Evd.evar_map -> t -> bool
 val isArity : Evd.evar_map -> t -> bool
 val isVarId  : Evd.evar_map -> Id.t -> t -> bool
+val isRelN : Evd.evar_map -> int -> t -> bool
 
 val destRel : Evd.evar_map -> t -> int
 val destMeta : Evd.evar_map -> t -> metavariable

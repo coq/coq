@@ -441,6 +441,7 @@ let notation_constr_of_glob_constr nenv a =
 (* Substitution of kernel names, avoiding a list of bound identifiers *)
 
 let notation_constr_of_constr avoiding t =
+  let t = EConstr.of_constr t in
   let t = Detyping.detype false avoiding (Global.env()) Evd.empty t in
   let nenv = {
     ninterp_var_type = Id.Map.empty;
