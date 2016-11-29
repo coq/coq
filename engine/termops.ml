@@ -101,7 +101,329 @@ let term_printer = ref (fun _env _sigma c -> pr_constr (EConstr.Unsafe.to_constr
 let print_constr_env env sigma t = !term_printer env sigma t
 let print_constr t = !term_printer (Global.env()) Evd.empty t
 let set_print_constr f = term_printer := f
-let () = Hook.set Evd.print_constr_hook (fun env sigma c -> !term_printer env sigma (EConstr.of_constr c))
+
+module EvMap = Evar.Map
+
+let pr_evar_suggested_name evk sigma =
+  let open Evd in
+  let base_id evk' evi =
+  match evar_ident evk' sigma with
+  | Some id -> id
+  | None -> match evi.evar_source with
+  | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
+  | _,Evar_kinds.VarInstance id -> id
+  | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
+  | _ ->
+      let env = reset_with_named_context evi.evar_hyps (Global.env()) in
+      Namegen.id_of_name_using_hdchar env evi.evar_concl Anonymous
+  in
+  let names = EvMap.mapi base_id (undefined_map sigma) in
+  let id = EvMap.find evk names in
+  let fold evk' id' (seen, n) =
+    if seen then (seen, n)
+    else if Evar.equal evk evk' then (true, n)
+    else if Id.equal id id' then (seen, succ n)
+    else (seen, n)
+  in
+  let (_, n) = EvMap.fold fold names (false, 0) in
+  if n = 0 then id else Nameops.add_suffix id (string_of_int (pred n))
+
+let pr_existential_key sigma evk =
+let open Evd in
+match evar_ident evk sigma with
+| None ->
+  str "?" ++ pr_id (pr_evar_suggested_name evk sigma)
+| Some id ->
+  str "?" ++ pr_id id
+
+let pr_instance_status (sc,typ) =
+  let open Evd in
+  begin match sc with
+  | IsSubType -> str " [or a subtype of it]"
+  | IsSuperType -> str " [or a supertype of it]"
+  | Conv -> mt ()
+  end ++
+  begin match typ with
+  | CoerceToType -> str " [up to coercion]"
+  | TypeNotProcessed -> mt ()
+  | TypeProcessed -> str " [type is checked]"
+  end
+
+let protect f x =
+  try f x
+  with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
+
+let print_kconstr a =
+  protect (fun c -> print_constr (EConstr.of_constr c)) a
+
+let pr_meta_map evd =
+  let open Evd in
+  let print_constr = print_kconstr in
+  let pr_name = function
+      Name id -> str"[" ++ pr_id id ++ str"]"
+    | _ -> mt() in
+  let pr_meta_binding = function
+    | (mv,Cltyp (na,b)) ->
+      	hov 0
+	  (pr_meta mv ++ pr_name na ++ str " : " ++
+           print_constr b.rebus ++ fnl ())
+    | (mv,Clval(na,(b,s),t)) ->
+      	hov 0
+	  (pr_meta mv ++ pr_name na ++ str " := " ++
+           print_constr b.rebus ++
+	   str " : " ++ print_constr t.rebus ++
+	   spc () ++ pr_instance_status s ++ fnl ())
+  in
+  prlist pr_meta_binding (meta_list evd)
+
+let pr_decl (decl,ok) =
+  let open NamedDecl in
+  let print_constr = print_kconstr in
+  match decl with
+  | LocalAssum (id,_) -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
+  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
+                           print_constr c ++ str (if ok then ")" else "}")
+
+let pr_evar_source = function
+  | Evar_kinds.QuestionMark _ -> str "underscore"
+  | Evar_kinds.CasesType false -> str "pattern-matching return predicate"
+  | Evar_kinds.CasesType true ->
+      str "subterm of pattern-matching return predicate"
+  | Evar_kinds.BinderType (Name id) -> str "type of " ++ Nameops.pr_id id
+  | Evar_kinds.BinderType Anonymous -> str "type of anonymous binder"
+  | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
+      let open Globnames in
+      let print_constr = print_kconstr in
+      let id = Option.get ido in
+      str "parameter " ++ pr_id id ++ spc () ++ str "of" ++
+      spc () ++ print_constr (printable_constr_of_global c)
+  | Evar_kinds.InternalHole -> str "internal placeholder"
+  | Evar_kinds.TomatchTypeParameter (ind,n) ->
+      let print_constr = print_kconstr in
+      pr_nth n ++ str " argument of type " ++ print_constr (mkInd ind)
+  | Evar_kinds.GoalEvar -> str "goal evar"
+  | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
+  | Evar_kinds.MatchingVar _ -> str "matching variable"
+  | Evar_kinds.VarInstance id -> str "instance of " ++ pr_id id
+  | Evar_kinds.SubEvar evk ->
+      let open Evd in
+      str "subterm of " ++ str (string_of_existential evk)
+
+let pr_evar_info evi =
+  let open Evd in
+  let print_constr = print_kconstr in
+  let phyps =
+    try
+      let decls = match Filter.repr (evar_filter evi) with
+      | None -> List.map (fun c -> (c, true)) (evar_context evi)
+      | Some filter -> List.combine (evar_context evi) filter
+      in
+      prlist_with_sep spc pr_decl (List.rev decls)
+    with Invalid_argument _ -> str "Ill-formed filtered context" in
+  let pty = print_constr evi.evar_concl in
+  let pb =
+    match evi.evar_body with
+      | Evar_empty -> mt ()
+      | Evar_defined c -> spc() ++ str"=> "  ++ print_constr c
+  in
+  let candidates =
+    match evi.evar_body, evi.evar_candidates with
+      | Evar_empty, Some l ->
+           spc () ++ str "{" ++
+           prlist_with_sep (fun () -> str "|") print_constr l ++ str "}"
+      | _ ->
+          mt ()
+  in
+  let src = str "(" ++ pr_evar_source (snd evi.evar_source) ++ str ")" in
+  hov 2
+    (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]" ++
+       candidates ++ spc() ++ src)
+
+let compute_evar_dependency_graph sigma =
+  let open Evd in
+  (* Compute the map binding ev to the evars whose body depends on ev *)
+  let fold evk evi acc =
+    let fold_ev evk' acc =
+      let tab =
+        try EvMap.find evk' acc
+        with Not_found -> Evar.Set.empty
+      in
+      EvMap.add evk' (Evar.Set.add evk tab) acc
+    in
+    match evar_body evi with
+    | Evar_empty -> acc
+    | Evar_defined c -> Evar.Set.fold fold_ev (evars_of_term c) acc
+  in
+  Evd.fold fold sigma EvMap.empty
+
+let evar_dependency_closure n sigma =
+  let open Evd in
+  (** Create the DAG of depth [n] representing the recursive dependencies of
+      undefined evars. *)
+  let graph = compute_evar_dependency_graph sigma in
+  let rec aux n curr accu =
+    if Int.equal n 0 then Evar.Set.union curr accu
+    else
+      let fold evk accu =
+        try
+          let deps = EvMap.find evk graph in
+          Evar.Set.union deps accu
+        with Not_found -> accu
+      in
+      (** Consider only the newly added evars *)
+      let ncurr = Evar.Set.fold fold curr Evar.Set.empty in
+      (** Merge the others *)
+      let accu = Evar.Set.union curr accu in
+      aux (n - 1) ncurr accu
+  in
+  let undef = EvMap.domain (undefined_map sigma) in
+  aux n undef Evar.Set.empty
+
+let evar_dependency_closure n sigma =
+  let open Evd in
+  let deps = evar_dependency_closure n sigma in
+  let map = EvMap.bind (fun ev -> find sigma ev) deps in
+  EvMap.bindings map
+
+let has_no_evar sigma =
+  try let () = Evd.fold (fun _ _ () -> raise Exit) sigma () in true
+  with Exit -> false
+
+let pr_evd_level evd = UState.pr_uctx_level (Evd.evar_universe_context evd)
+
+let pr_evar_universe_context ctx =
+  let open UState in
+  let open Evd in
+  let prl = pr_uctx_level ctx in
+  if UState.is_empty ctx then mt ()
+  else
+    (str"UNIVERSES:"++brk(0,1)++ 
+       h 0 (Univ.pr_universe_context_set prl (evar_universe_context_set ctx)) ++ fnl () ++
+     str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
+     h 0 (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
+     str"UNDEFINED UNIVERSES:"++brk(0,1)++
+       h 0 (Universes.pr_universe_opt_subst (UState.subst ctx)) ++ fnl())
+
+let print_env_short env =
+  let print_constr = print_kconstr in
+  let pr_rel_decl = function
+    | RelDecl.LocalAssum (n,_) -> pr_name n
+    | RelDecl.LocalDef (n,b,_) -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")"
+  in
+  let pr_named_decl = NamedDecl.to_rel_decl %> pr_rel_decl in
+  let nc = List.rev (named_context env) in
+  let rc = List.rev (rel_context env) in
+    str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++
+    str "[" ++ pr_sequence pr_rel_decl rc ++ str "]"
+
+let pr_evar_constraints pbs =
+  let pr_evconstr (pbty, env, t1, t2) =
+    let env =
+      (** We currently allow evar instances to refer to anonymous de
+          Bruijn indices, so we protect the error printing code in this
+          case by giving names to every de Bruijn variable in the
+          rel_context of the conversion problem. MS: we should rather
+          stop depending on anonymous variables, they can be used to
+          indicate independency. Also, this depends on a strategy for
+          naming/renaming. *)
+      Namegen.make_all_name_different env
+    in
+    print_env_short env ++ spc () ++ str "|-" ++ spc () ++
+      print_constr_env env Evd.empty (EConstr.of_constr t1) ++ spc () ++
+      str (match pbty with
+            | Reduction.CONV -> "=="
+            | Reduction.CUMUL -> "<=") ++
+      spc () ++ print_constr_env env Evd.empty (EConstr.of_constr t2)
+  in
+  prlist_with_sep fnl pr_evconstr pbs
+
+let pr_evar_map_gen with_univs pr_evars sigma =
+  let uvs = Evd.evar_universe_context sigma in
+  let (_, conv_pbs) = Evd.extract_all_conv_pbs sigma in
+  let evs = if has_no_evar sigma then mt () else pr_evars sigma ++ fnl ()
+  and svs = if with_univs then pr_evar_universe_context uvs else mt ()
+  and cstrs =
+    if List.is_empty conv_pbs then mt ()
+    else
+    str "CONSTRAINTS:" ++ brk (0, 1) ++
+      pr_evar_constraints conv_pbs ++ fnl ()
+  and metas =
+    if List.is_empty (Evd.meta_list sigma) then mt ()
+    else
+      str "METAS:" ++ brk (0, 1) ++ pr_meta_map sigma
+  in
+  evs ++ svs ++ cstrs ++ metas
+
+let pr_evar_list sigma l =
+  let open Evd in
+  let pr (ev, evi) =
+    h 0 (str (string_of_existential ev) ++
+      str "==" ++ pr_evar_info evi ++
+      (if evi.evar_body == Evar_empty
+       then str " {" ++  pr_existential_key sigma ev ++ str "}"
+       else mt ()))
+  in
+  h 0 (prlist_with_sep fnl pr l)
+
+let pr_evar_by_depth depth sigma = match depth with
+| None ->
+  (* Print all evars *)
+  let to_list d =
+    let open Evd in
+    (* Workaround for change in Map.fold behavior in ocaml 3.08.4 *)
+    let l = ref [] in
+    let fold_def evk evi () = match evi.evar_body with
+    | Evar_defined _ -> l := (evk, evi) :: !l
+    | Evar_empty -> ()
+    in
+    let fold_undef evk evi () = match evi.evar_body with
+    | Evar_empty -> l := (evk, evi) :: !l
+    | Evar_defined _ -> ()
+    in
+    Evd.fold fold_def d ();
+    Evd.fold fold_undef d ();
+    !l
+  in
+  str"EVARS:"++brk(0,1)++pr_evar_list sigma (to_list sigma)++fnl()
+| Some n ->
+  (* Print all evars *)
+  str"UNDEFINED EVARS:"++
+  (if Int.equal n 0 then mt() else str" (+level "++int n++str" closure):")++
+  brk(0,1)++
+  pr_evar_list sigma (evar_dependency_closure n sigma)++fnl()
+
+let pr_evar_by_filter filter sigma =
+  let open Evd in
+  let elts = Evd.fold (fun evk evi accu -> (evk, evi) :: accu) sigma [] in
+  let elts = List.rev elts in
+  let is_def (_, evi) = match evi.evar_body with
+  | Evar_defined _ -> true
+  | Evar_empty -> false
+  in
+  let (defined, undefined) = List.partition is_def elts in
+  let filter (evk, evi) = filter evk evi in
+  let defined = List.filter filter defined in
+  let undefined = List.filter filter undefined in
+  let prdef =
+    if List.is_empty defined then mt ()
+    else str "DEFINED EVARS:" ++ brk (0, 1) ++
+      pr_evar_list sigma defined
+  in
+  let prundef =
+    if List.is_empty undefined then mt ()
+    else str "UNDEFINED EVARS:" ++ brk (0, 1) ++
+      pr_evar_list sigma undefined
+  in
+  prdef ++ prundef
+
+let pr_evar_map ?(with_univs=true) depth sigma =
+  pr_evar_map_gen with_univs (fun sigma -> pr_evar_by_depth depth sigma) sigma
+
+let pr_evar_map_filter ?(with_univs=true) filter sigma =
+  pr_evar_map_gen with_univs (fun sigma -> pr_evar_by_filter filter sigma) sigma
+
+let pr_metaset metas =
+  str "[" ++ pr_sequence pr_meta (Evd.Metaset.elements metas) ++ str "]"
 
 let pr_var_decl env decl =
   let open NamedDecl in

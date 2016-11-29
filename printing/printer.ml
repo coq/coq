@@ -223,7 +223,7 @@ let safe_pr_constr t =
 let pr_universe_ctx sigma c =
   if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
     fnl()++pr_in_comment (fun c -> v 0 
-      (Univ.pr_universe_context (Evd.pr_evd_level sigma) c)) c
+      (Univ.pr_universe_context (Termops.pr_evd_level sigma) c)) c
   else
     mt()
 
@@ -240,7 +240,7 @@ let pr_puniverses f env (c,u) =
    else mt ())
 
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
-let pr_existential_key = Evd.pr_existential_key
+let pr_existential_key = Termops.pr_existential_key
 let pr_existential env sigma ev = pr_lconstr_env env sigma (mkEvar ev)
 let pr_inductive env ind = pr_lconstr_env env Evd.empty (mkInd ind)
 let pr_constructor env cstr = pr_lconstr_env env Evd.empty (mkConstruct cstr)
@@ -922,4 +922,4 @@ let pr_polymorphic b =
 
 let pr_universe_instance evd ctx =
   let inst = Univ.UContext.instance ctx in
-    str"@{" ++ Univ.Instance.pr (Evd.pr_evd_level evd) inst ++ str"}"
+    str"@{" ++ Univ.Instance.pr (Termops.pr_evd_level evd) inst ++ str"}"

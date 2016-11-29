@@ -81,8 +81,8 @@ let show_universes () =
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
   let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
-    Feedback.msg_notice (Evd.pr_evar_universe_context (Evd.evar_universe_context sigma));
-    Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Evd.pr_evd_level sigma) ctx)
+    Feedback.msg_notice (Termops.pr_evar_universe_context (Evd.evar_universe_context sigma));
+    Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
 
 let show_prooftree () =
   (* Spiwack: proof tree is currently not working *)

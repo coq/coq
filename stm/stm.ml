@@ -1791,7 +1791,7 @@ end = struct (* {{{ *)
             prerr_endline (fun () -> string_of_ppcmds(hov 0 (
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
-              str"uc=" ++ Evd.pr_evar_universe_context uc)));
+              str"uc=" ++ Termops.pr_evar_universe_context uc)));
             (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
               (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
               Tactics.exact_no_check (EConstr.of_constr pt))

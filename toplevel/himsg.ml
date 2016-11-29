@@ -691,7 +691,7 @@ let explain_non_linear_unification env sigma m t =
 
 let explain_unsatisfied_constraints env sigma cst =
   strbrk "Unsatisfied constraints: " ++ 
-    Univ.pr_constraints (Evd.pr_evd_level sigma) cst ++ 
+    Univ.pr_constraints (Termops.pr_evd_level sigma) cst ++ 
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_type_error env sigma err =
@@ -903,7 +903,7 @@ let explain_not_match_error = function
       quote (Printer.safe_pr_lconstr_env env Evd.empty t2)
   | IncompatibleConstraints cst ->
     str " the expected (polymorphic) constraints do not imply " ++
-      quote (Univ.pr_constraints (Evd.pr_evd_level Evd.empty) cst)
+      quote (Univ.pr_constraints (Termops.pr_evd_level Evd.empty) cst)
 
 let explain_signature_mismatch l spec why =
   str "Signature components for label " ++ pr_label l ++

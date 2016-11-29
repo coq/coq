@@ -584,22 +584,6 @@ type open_constr = evar_map * constr (* Special case when before is empty *)
 type unsolvability_explanation = SeveralInstancesFound of int
 (** Failure explanation. *)
 
-val pr_existential_key : evar_map -> evar -> Pp.std_ppcmds
-
-val pr_evar_suggested_name : existential_key -> evar_map -> Id.t
-
-(** {5 Debug pretty-printers} *)
-
-val print_constr_hook : (Environ.env -> evar_map -> constr -> Pp.std_ppcmds) Hook.t
-val pr_evar_info : evar_info -> Pp.std_ppcmds
-val pr_evar_constraints : evar_constraint list -> Pp.std_ppcmds
-val pr_evar_map : ?with_univs:bool -> int option -> evar_map -> Pp.std_ppcmds
-val pr_evar_map_filter : ?with_univs:bool -> (Evar.t -> evar_info -> bool) ->
-  evar_map -> Pp.std_ppcmds
-val pr_metaset : Metaset.t -> Pp.std_ppcmds
-val pr_evar_universe_context : evar_universe_context -> Pp.std_ppcmds
-val pr_evd_level : evar_map -> Univ.Level.t -> Pp.std_ppcmds
-
 (** {5 Deprecated functions} *)
 
 val create_evar_defs      : evar_map -> evar_map

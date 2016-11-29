@@ -1511,7 +1511,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 	   if not (Evd.is_defined acc ev) then 
 	     user_err ~hdr:"rewrite"
 			  (str "Unsolved constraint remaining: " ++ spc () ++
-			   Evd.pr_evar_info (Evd.find acc ev))
+			   Termops.pr_evar_info (Evd.find acc ev))
 	   else Evd.remove acc ev) 
 	  cstrs evars'
       in
