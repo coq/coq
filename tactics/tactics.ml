@@ -4831,8 +4831,11 @@ let intros_transitivity  n  = Tacticals.New.tclTHEN intros (transitivity_gen n)
 (** d1 is the section variable in the global context, d2 in the goal context *)
 let interpretable_as_section_decl evd d1 d2 =
   let open Context.Named.Declaration in
-  let e_eq_constr_univs sigma c1 c2 =
-    e_eq_constr_univs sigma (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2)
+  let e_eq_constr_univs sigma c1 c2 = match eq_constr_universes !sigma c1 c2 with
+  | None -> false
+  | Some cstr ->
+    try ignore (Evd.add_universe_constraints !sigma cstr); true
+    with UniversesDiffer -> false
   in
   match d2, d1 with
   | LocalDef _, LocalAssum _ -> false

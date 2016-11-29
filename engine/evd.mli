@@ -569,19 +569,6 @@ val fresh_constructor_instance : ?loc:Loc.t -> env -> evar_map -> constructor ->
 val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env ->
   evar_map -> Globnames.global_reference -> evar_map * constr
 
-(********************************************************************
-  Conversion w.r.t. an evar map, not unifying universes. See 
-  [Reductionops.infer_conv] for conversion up-to universes. *)
-
-val test_conversion : env -> evar_map -> conv_pb -> constr -> constr -> bool
-(** WARNING: This does not allow unification of universes *)
-
-val eq_constr_univs : evar_map -> constr -> constr -> evar_map * bool
-(** Syntactic equality up to universes, recording the associated constraints *)
-
-val e_eq_constr_univs : evar_map ref -> constr -> constr -> bool
-(** Syntactic equality up to universes. *)
-
 (********************************************************************)
 (* constr with holes and pending resolution of classes, conversion  *)
 (* problems, candidates, etc.                                       *)

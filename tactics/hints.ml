@@ -250,9 +250,8 @@ let rebuild_dn st se =
   in
   { se with sentry_bnet = dn' }
 
-let lookup_tacs concl st se =
-  let concl = EConstr.Unsafe.to_constr concl in
-  let l'  = Bounded_net.lookup st se.sentry_bnet concl in
+let lookup_tacs sigma concl st se =
+  let l'  = Bounded_net.lookup sigma st se.sentry_bnet concl in
   let sl' = List.stable_sort pri_order_int l' in
   List.merge pri_order_int se.sentry_nopat sl'
 
@@ -510,6 +509,17 @@ struct
       (** Warn about no longer typable hint? *)
       None
 
+  let head_evar sigma c =
+    let rec hrec c = match EConstr.kind sigma c with
+      | Evar (evk,_)   -> evk
+      | Case (_,_,c,_) -> hrec c
+      | App (c,_)      -> hrec c
+      | Cast (c,_,_)   -> hrec c
+      | Proj (p, c)    -> hrec c
+      | _              -> raise Evarutil.NoHeadEvar
+    in
+    hrec c
+
   let match_mode sigma m arg =
     match m with
     | ModeInput -> not (occur_existential sigma arg)
@@ -543,7 +553,7 @@ struct
   let map_auto sigma ~secvars (k,args) concl db =
     let se = find k db in
     let st = if db.use_dn then  (Some db.hintdb_state) else None in
-    let pat = lookup_tacs concl st se in
+    let pat = lookup_tacs sigma concl st se in
     merge_entry secvars db [] pat
 
   let map_existential sigma ~secvars (k,args) concl db =
@@ -557,7 +567,7 @@ struct
     let se = find k db in
       if matches_modes sigma args se.sentry_mode then
         let st = if db.use_dn then Some db.hintdb_state else None in
-        let pat = lookup_tacs concl st se in
+        let pat = lookup_tacs sigma concl st se in
         merge_entry secvars db [] pat
       else merge_entry secvars db [] []
 

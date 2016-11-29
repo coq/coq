@@ -1263,7 +1263,13 @@ type conv_fun_bool =
 
 let solve_refl ?(can_drop=false) conv_algo env evd pbty evk argsv1 argsv2 =
   let evdref = ref evd in
-  if Array.equal (fun c1 c2 -> e_eq_constr_univs evdref (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) ) argsv1 argsv2 then !evdref else
+  let eq_constr c1 c2 = match EConstr.eq_constr_universes !evdref c1 c2 with
+  | None -> false
+  | Some cstr ->
+    try ignore (Evd.add_universe_constraints !evdref cstr); true
+    with UniversesDiffer -> false
+  in
+  if Array.equal eq_constr argsv1 argsv2 then !evdref else
   (* Filter and restrict if needed *)
   let args = Array.map2 (fun a1 a2 -> (a1, a2)) argsv1 argsv2 in
   let untypedfilter =

@@ -83,8 +83,6 @@ let rec contract3' env sigma a b c = function
 
 (** Ad-hoc reductions *)
 
-let to_unsafe_judgment j = on_judgment EConstr.Unsafe.to_constr j
-
 let j_nf_betaiotaevar sigma j =
   { uj_val = Evarutil.nf_evar sigma j.uj_val;
     uj_type = Reductionops.nf_betaiota sigma j.uj_type }
@@ -207,7 +205,7 @@ let pr_puniverses f env (c,u) =
   else mt())
 
 let explain_elim_arity env sigma ind sorts c pj okinds =
-  let pj = to_unsafe_judgment pj in
+  let open EConstr in
   let env = make_all_name_different env in
   let pi = pr_inductive env (fst ind) in
   let pc = pr_leconstr_env env sigma c in
@@ -223,7 +221,7 @@ let explain_elim_arity env sigma ind sorts c pj okinds =
 	| WrongArity ->
 	  "wrong arity" in
       let ppar = pr_disjunction (fun s -> quote (pr_sort_family s)) sorts in
-      let ppt = pr_lconstr_env env sigma ((strip_prod_assum pj.uj_type)) in
+      let ppt = pr_leconstr_env env sigma (snd (decompose_prod_assum sigma pj.uj_type)) in
       hov 0
 	(str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
 	 str "while it" ++ spc () ++ str "should be " ++ ppar ++ str ".") ++
@@ -243,11 +241,10 @@ let explain_elim_arity env sigma ind sorts c pj okinds =
 
 let explain_case_not_inductive env sigma cj =
   let cj = Evarutil.j_nf_evar sigma cj in
-  let cj = to_unsafe_judgment cj in
   let env = make_all_name_different env in
-  let pc = pr_lconstr_env env sigma cj.uj_val in
-  let pct = pr_lconstr_env env sigma cj.uj_type in
-    match kind_of_term cj.uj_type with
+  let pc = pr_leconstr_env env sigma cj.uj_val in
+  let pct = pr_leconstr_env env sigma cj.uj_type in
+    match EConstr.kind sigma cj.uj_type with
       | Evar _ ->
 	  str "Cannot infer a type for this expression."
       | _ ->
@@ -257,10 +254,9 @@ let explain_case_not_inductive env sigma cj =
 
 let explain_number_branches env sigma cj expn =
   let cj = Evarutil.j_nf_evar sigma cj in
-  let cj = to_unsafe_judgment cj in
   let env = make_all_name_different env in
-  let pc = pr_lconstr_env env sigma cj.uj_val in
-  let pct = pr_lconstr_env env sigma cj.uj_type in
+  let pc = pr_leconstr_env env sigma cj.uj_val in
+  let pct = pr_leconstr_env env sigma cj.uj_type in
   str "Matching on term" ++ brk(1,1) ++ pc ++ spc () ++
   str "of type" ++ brk(1,1) ++ pct ++ spc () ++
   str "expects " ++  int expn ++ str " branches."
@@ -390,18 +386,16 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
 
 let explain_cant_apply_not_functional env sigma rator randl =
   let randl = Evarutil.jv_nf_evar sigma randl in
-  let randl = Array.map to_unsafe_judgment randl in
   let rator = Evarutil.j_nf_evar sigma rator in
-  let rator = to_unsafe_judgment rator in
   let env = make_all_name_different env in
   let nargs = Array.length randl in
 (*  let pe = pr_ne_context_of (str "in environment") env sigma in*)
-  let pr = pr_lconstr_env env sigma rator.uj_val in
-  let prt = pr_lconstr_env env sigma rator.uj_type in
+  let pr = pr_leconstr_env env sigma rator.uj_val in
+  let prt = pr_leconstr_env env sigma rator.uj_type in
   let appl = prvect_with_sep fnl
 	       (fun c ->
-		  let pc = pr_lconstr_env env sigma c.uj_val in
-		  let pct = pr_lconstr_env env sigma c.uj_type in
+		  let pc = pr_leconstr_env env sigma c.uj_val in
+		  let pct = pr_leconstr_env env sigma c.uj_type in
 		  hov 2 (pc ++ spc () ++ str ": " ++ pct)) randl
   in
   str "Illegal application (Non-functional construction): " ++

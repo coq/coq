@@ -8,6 +8,7 @@
 
 open Util
 open Term
+open EConstr
 open Names
 open Pattern
 open Globnames
@@ -38,18 +39,18 @@ let decomp_pat =
   in
   decrec []
 
-let decomp =
-  let rec decrec acc c = match kind_of_term c with
+let decomp sigma t =
+  let rec decrec acc c = match EConstr.kind sigma c with
     | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
     | Proj (p, c) -> (mkConst (Projection.constant p), c :: acc)
     | Cast (c1,_,_) -> decrec acc c1
     | _ -> (c,acc)
   in
-    decrec []
+    decrec [] t
 
-let constr_val_discr t =
-  let c, l = decomp t in
-    match kind_of_term c with
+let constr_val_discr sigma t =
+  let c, l = decomp sigma t in
+    match EConstr.kind sigma c with
     | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
     | Var id -> Label(GRLabel (VarRef id),l)
@@ -66,9 +67,9 @@ let constr_pat_discr t =
     | PRef ((VarRef v) as ref), args -> Some(GRLabel ref,args)
     | _ -> None
 
-let constr_val_discr_st (idpred,cpred) t =
-  let c, l = decomp t in
-    match kind_of_term c with
+let constr_val_discr_st sigma (idpred,cpred) t =
+  let c, l = decomp sigma t in
+    match EConstr.kind sigma c with
     | Const (c,u) -> if Cpred.mem c cpred then Everything else Label(GRLabel (ConstRef c),l)
     | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
@@ -105,11 +106,11 @@ let bounded_constr_pat_discr_st st (t,depth) =
       | None -> None
       | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
-let bounded_constr_val_discr_st st (t,depth) =
+let bounded_constr_val_discr_st sigma st (t,depth) =
   if Int.equal depth 0 then
     Nothing
   else
-    match constr_val_discr_st st t with
+    match constr_val_discr_st sigma st t with
       | Label (c,l) -> Label(c,List.map (fun c -> (c,depth-1)) l)
       | Nothing -> Nothing
       | Everything -> Everything
@@ -122,11 +123,11 @@ let bounded_constr_pat_discr (t,depth) =
       | None -> None
       | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
-let bounded_constr_val_discr (t,depth) =
+let bounded_constr_val_discr sigma (t,depth) =
   if Int.equal depth 0 then
     Nothing
   else
-    match constr_val_discr t with
+    match constr_val_discr sigma t with
       | Label (c,l) -> Label(c,List.map (fun c -> (c,depth-1)) l)
       | Nothing -> Nothing
       | Everything -> Everything
@@ -162,13 +163,13 @@ struct
 	(fun dn (c,v) ->
 	 Dn.rmv dn (bounded_constr_pat_discr_st st) ((c,!dnet_depth),v))
 
-  let lookup = function
+  let lookup sigma = function
     | None ->
 	(fun dn t ->
-	     Dn.lookup dn bounded_constr_val_discr (t,!dnet_depth))
+	     Dn.lookup dn (bounded_constr_val_discr sigma) (t,!dnet_depth))
     | Some st ->
 	(fun dn t ->
-	     Dn.lookup dn (bounded_constr_val_discr_st st) (t,!dnet_depth))
+	     Dn.lookup dn (bounded_constr_val_discr_st sigma st) (t,!dnet_depth))
 
   let app f dn = Dn.app f dn
 

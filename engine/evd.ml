@@ -941,36 +941,7 @@ let universes evd = UState.ugraph evd.universes
 let update_sigma_env evd env =
   { evd with universes = UState.update_sigma_env evd.universes env }
 
-(* Conversion w.r.t. an evar map and its local universes. *)
-
-let test_conversion_gen env evd pb t u =
-  match pb with 
-  | Reduction.CONV -> 
-    Reduction.conv env
-      ~evars:((existential_opt_value evd), (UState.ugraph evd.universes))
-      t u
-  | Reduction.CUMUL -> Reduction.conv_leq env
-      ~evars:((existential_opt_value evd), (UState.ugraph evd.universes))
-      t u
-
-let test_conversion env d pb t u =
-  try test_conversion_gen env d pb t u; true
-  with _ -> false
-
 exception UniversesDiffer = UState.UniversesDiffer
-
-let eq_constr_univs evd t u =
-  let fold cstr sigma =
-    try Some (add_universe_constraints sigma cstr)
-    with Univ.UniverseInconsistency _ | UniversesDiffer -> None
-  in
-  match Universes.eq_constr_univs_infer (UState.ugraph evd.universes) fold t u evd with
-  | None -> evd, false
-  | Some evd -> evd, true
-
-let e_eq_constr_univs evdref t u =
-  let evd, b = eq_constr_univs !evdref t u in
-    evdref := evd; b
 
 (**********************************************************)
 (* Side effects *)

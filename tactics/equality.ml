@@ -1300,19 +1300,6 @@ let build_injector env sigma dflt c cpath =
   let sigma, (injcode,resty,_) = build_injrec env sigma dflt c cpath in
     sigma, (injcode,resty)
 
-(*
-let try_delta_expand env sigma t =
-  let whdt = whd_all env sigma t  in
-  let rec hd_rec c  =
-    match kind_of_term c with
-      | Construct _ -> whdt
-      | App (f,_)  -> hd_rec f
-      | Cast (c,_,_) -> hd_rec c
-      | _  -> t
-  in
-  hd_rec whdt
-*)
-
 let eq_dec_scheme_kind_name = ref (fun _ -> failwith "eq_dec_scheme undefined")
 let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 

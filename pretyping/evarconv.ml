@@ -973,7 +973,13 @@ let apply_on_subterm env evdref f c t =
     (* By using eq_constr, we make an approximation, for instance, we *)
     (* could also be interested in finding a term u convertible to t *)
     (* such that c occurs in u *)
-    if e_eq_constr_univs evdref (EConstr.Unsafe.to_constr c) (EConstr.Unsafe.to_constr t) then f k
+    let eq_constr c1 c2 = match EConstr.eq_constr_universes !evdref c1 c2 with
+    | None -> false
+    | Some cstr ->
+      try ignore (Evd.add_universe_constraints !evdref cstr); true
+      with UniversesDiffer -> false
+    in
+    if eq_constr c t then f k
     else
       match EConstr.kind !evdref t with
       | Evar (evk,args) ->
