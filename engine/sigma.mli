@@ -61,7 +61,7 @@ val to_evar : 'r evar -> Evar.t
 
 type 'r fresh = Fresh : 's evar * 's t * ('r, 's) le -> 'r fresh
 
-val new_evar : 'r t -> ?naming:Misctypes.intro_pattern_naming_expr ->
+val new_evar : 'r t -> ?name:Id.t ->
   Evd.evar_info -> 'r fresh
 
 val define : 'r evar -> Constr.t -> 'r t -> (unit, 'r) sigma

@@ -418,6 +418,14 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
   let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
   let default_naming = Misctypes.IntroAnonymous in
   let naming = Option.default default_naming naming in
+  let name = match naming with
+  | Misctypes.IntroAnonymous -> None
+  | Misctypes.IntroIdentifier id -> Some id
+  | Misctypes.IntroFresh id ->
+    let has_name id = try let _ = Evd.evar_key id evd in true with Not_found -> false in
+    let id = Namegen.next_ident_away_from id has_name in
+    Some id
+  in
   let evi = {
     evar_hyps = sign;
     evar_concl = typ;
@@ -427,7 +435,7 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
     evar_candidates = candidates;
     evar_extra = store; }
   in
-  let (evd, newevk) = Evd.new_evar evd ~naming evi in
+  let (evd, newevk) = Evd.new_evar evd ?name evi in
   let evd =
     if principal then Evd.declare_principal_goal newevk evd
     else Evd.declare_future_goal newevk evd

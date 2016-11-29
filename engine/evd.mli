@@ -149,7 +149,7 @@ val has_undefined : evar_map -> bool
     there are uninstantiated evars in [sigma]. *)
 
 val new_evar : evar_map ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> evar_info -> evar_map * evar
+  ?name:Id.t -> evar_info -> evar_map * evar
 (** Creates a fresh evar mapping to the given information. *)
 
 val add : evar_map -> evar -> evar_info -> evar_map

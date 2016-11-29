@@ -29,8 +29,8 @@ let here x s = Sigma (x, s, ())
 
 type 'r fresh = Fresh : 's evar * 's t * ('r, 's) le -> 'r fresh
 
-let new_evar sigma ?naming info =
-  let (sigma, evk) = Evd.new_evar sigma ?naming info in
+let new_evar sigma ?name info =
+  let (sigma, evk) = Evd.new_evar sigma ?name info in
   Fresh (evk, sigma, ())
 
 let define evk c sigma =

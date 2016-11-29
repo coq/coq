@@ -365,7 +365,7 @@ open Misctypes
 type t
 
 val empty : t
-val add_name_undefined : intro_pattern_naming_expr -> Evar.t -> evar_info -> t -> t
+val add_name_undefined : Id.t option -> Evar.t -> evar_info -> t -> t
 val remove_name_defined : Evar.t -> t -> t
 val rename : Evar.t -> Id.t -> t -> t
 val reassign_name_defined : Evar.t -> Evar.t -> t -> t
@@ -379,20 +379,13 @@ type t = Id.t EvMap.t * existential_key Idmap.t
 
 let empty = (EvMap.empty, Idmap.empty)
 
-let add_name_newly_undefined naming evk evi (evtoid, idtoev as names) =
-  let id = match naming with
-  | Misctypes.IntroAnonymous -> None
-  | Misctypes.IntroIdentifier id ->
-    if Idmap.mem id idtoev then
-    user_err  (str "Already an existential evar of name " ++ pr_id id);
-    Some id
-  | Misctypes.IntroFresh id ->
-    let id = Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
-    Some id
-  in
+let add_name_newly_undefined id evk evi (evtoid, idtoev as names) =
   match id with
   | None -> names
-  | Some id -> (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
+  | Some id ->
+    if Idmap.mem id idtoev then
+      user_err  (str "Already an existential evar of name " ++ pr_id id);
+    (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
 
 let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =
   if EvMap.mem evk evtoid then
@@ -462,9 +455,9 @@ type evar_map = {
 let rename evk id evd =
   { evd with evar_names = EvNames.rename evk id evd.evar_names }
 
-let add_with_name ?(naming = Misctypes.IntroAnonymous) d e i = match i.evar_body with
+let add_with_name ?name d e i = match i.evar_body with
 | Evar_empty ->
-  let evar_names = EvNames.add_name_undefined naming e i d.evar_names in
+  let evar_names = EvNames.add_name_undefined name e i d.evar_names in
   { d with undf_evars = EvMap.add e i d.undf_evars; evar_names }
 | Evar_defined _ ->
   let evar_names = EvNames.remove_name_defined e d.evar_names in
@@ -481,9 +474,9 @@ let new_untyped_evar =
   let evar_ctr = Summary.ref 0 ~name:evar_counter_summary_name in
   fun () -> incr evar_ctr; Evar.unsafe_of_int !evar_ctr
 
-let new_evar evd ?naming evi =
+let new_evar evd ?name evi =
   let evk = new_untyped_evar () in
-  let evd = add_with_name evd ?naming evk evi in
+  let evd = add_with_name evd ?name evk evi in
   (evd, evk)
 
 let remove d e =
