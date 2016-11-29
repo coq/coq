@@ -121,11 +121,11 @@ val match_with_equation:
 
 (** Match terms [eq A t u], [identity A t u] or [JMeq A t A u] 
    Returns associated lemmas and [A,t,u] or fails PatternMatchingFailure *)
-val find_eq_data_decompose : ([ `NF ], 'r) Proofview.Goal.t -> constr ->
+val find_eq_data_decompose : ('a, 'r) Proofview.Goal.t -> constr ->
       coq_eq_data * Univ.universe_instance * (types * constr * constr)
 
 (** Idem but fails with an error message instead of PatternMatchingFailure *)
-val find_this_eq_data_decompose : ([ `NF ], 'r) Proofview.Goal.t -> constr ->
+val find_this_eq_data_decompose : ('a, 'r) Proofview.Goal.t -> constr ->
       coq_eq_data * Univ.universe_instance * (types * constr * constr)
 
 (** A variant that returns more informative structure on the equality found *)
@@ -146,7 +146,7 @@ val is_matching_sigma : evar_map -> constr -> bool
 val match_eqdec : evar_map -> constr -> bool * constr * constr * constr * constr
 
 (** Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
-val dest_nf_eq : ([ `NF ], 'r) Proofview.Goal.t -> constr -> (constr * constr * constr)
+val dest_nf_eq : ('a, 'r) Proofview.Goal.t -> constr -> (constr * constr * constr)
 
 (** Match a negation *)
 val is_matching_not : evar_map -> constr -> bool

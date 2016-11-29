@@ -107,19 +107,19 @@ module New : sig
 
   val project : ('a, 'r) Proofview.Goal.t -> Evd.evar_map
   val pf_env : ('a, 'r) Proofview.Goal.t -> Environ.env
-  val pf_concl : ([ `NF ], 'r) Proofview.Goal.t -> types
+  val pf_concl : ('a, 'r) Proofview.Goal.t -> types
 
   val pf_unsafe_type_of : ('a, 'r) Proofview.Goal.t -> constr -> types
   val pf_type_of : ('a, 'r) Proofview.Goal.t -> constr -> evar_map * types
   val pf_conv_x : ('a, 'r) Proofview.Goal.t -> t -> t -> bool
 
-  val pf_get_new_id  : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> identifier
+  val pf_get_new_id  : identifier -> ('a, 'r) Proofview.Goal.t -> identifier
   val pf_ids_of_hyps : ('a, 'r) Proofview.Goal.t -> identifier list
   val pf_hyps_types : ('a, 'r) Proofview.Goal.t -> (identifier * types) list
 
-  val pf_get_hyp : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> named_declaration
-  val pf_get_hyp_typ        : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> types
-  val pf_last_hyp           : ([ `NF ], 'r) Proofview.Goal.t -> named_declaration
+  val pf_get_hyp : identifier -> ('a, 'r) Proofview.Goal.t -> named_declaration
+  val pf_get_hyp_typ        : identifier -> ('a, 'r) Proofview.Goal.t -> types
+  val pf_last_hyp           : ('a, 'r) Proofview.Goal.t -> named_declaration
 
   val pf_nf_concl : ([ `LZ ], 'r) Proofview.Goal.t -> types
   val pf_reduce_to_quantified_ind : ('a, 'r) Proofview.Goal.t -> types -> pinductive * types

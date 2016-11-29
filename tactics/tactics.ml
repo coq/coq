@@ -208,7 +208,7 @@ let convert_concl ?(check=true) ty k =
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
-    let conclty = Proofview.Goal.raw_concl gl in
+    let conclty = Proofview.Goal.concl gl in
     Refine.refine ~unsafe:true { run = begin fun sigma ->
       let Sigma ((), sigma, p) =
         if check then begin
@@ -228,7 +228,7 @@ let convert_hyp ?(check=true) d =
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
-    let ty = Proofview.Goal.raw_concl gl in
+    let ty = Proofview.Goal.concl gl in
     let store = Proofview.Goal.extra gl in
     let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
@@ -328,7 +328,7 @@ let move_hyp id dest =
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
-    let ty = Proofview.Goal.raw_concl gl in
+    let ty = Proofview.Goal.concl gl in
     let store = Proofview.Goal.extra gl in
     let sign = named_context_val env in
     let sign' = move_hyp_in_named_context sigma id dest sign in
@@ -756,7 +756,7 @@ let e_reduct_option ?(check=false) redfun = function
 let e_change_in_concl (redfun,sty) =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
-    let Sigma (c, sigma, p) = redfun.e_redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.raw_concl gl) in
+    let Sigma (c, sigma, p) = redfun.e_redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.concl gl) in
     Sigma (convert_concl_no_check c sty, sigma, p)
   end }
 
@@ -4340,7 +4340,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
-  let ccl = Proofview.Goal.raw_concl gl in
+  let ccl = Proofview.Goal.concl gl in
   let store = Proofview.Goal.extra gl in
   let check = check_enough_applied env sigma elim in
   let Sigma (c, sigma', p) = use_bindings env sigma elim false (c0,lbind) t0 in
@@ -4409,7 +4409,7 @@ let induction_gen clear_flag isrec with_evars elim
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let evd = Sigma.to_evar_map sigma in
-  let ccl = Proofview.Goal.raw_concl gl in
+  let ccl = Proofview.Goal.concl gl in
   let cls = Option.default allHypsAndConcl cls in
   let t = typ_of env sigma c in
   let is_arg_pure_hyp =

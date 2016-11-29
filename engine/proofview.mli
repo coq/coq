@@ -485,15 +485,11 @@ module Goal : sig
       respectively the conclusion of [gl], the hypotheses of [gl], the
       environment of [gl] (i.e. the global environment and the
       hypotheses) and the current evar map. *)
-  val concl : ([ `NF ], 'r) t -> constr
-  val hyps : ([ `NF ], 'r) t -> named_context
+  val concl : ('a, 'r) t -> constr
+  val hyps : ('a, 'r) t -> named_context
   val env : ('a, 'r) t -> Environ.env
   val sigma : ('a, 'r) t -> 'r Sigma.t
   val extra : ('a, 'r) t -> Evd.Store.t
-
-  (** Returns the goal's conclusion even if the goal is not
-      normalised. *)
-  val raw_concl : ('a, 'r) t -> constr
 
   type ('a, 'b) enter =
     { enter : 'r. ('a, 'r) t -> 'b }

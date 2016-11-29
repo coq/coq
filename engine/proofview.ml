@@ -999,9 +999,6 @@ module Goal = struct
   let concl { concl=concl } = concl
   let extra { sigma=sigma; self=self } = goal_extra sigma self
 
-  let raw_concl { concl=concl } = concl
-
-
   let gmake_with info env sigma goal = 
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
       sigma = sigma ;
