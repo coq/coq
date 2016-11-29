@@ -582,9 +582,9 @@ let warn_deprecated_implicit_arguments =
 
 let warn_deprecated_arguments_syntax =
   CWarnings.create ~name:"deprecated-arguments-syntax" ~category:"deprecated"
-         (fun () -> strbrk "The \"/\" modifier has an effect only in the first "
-                    ++ strbrk "arguments list. The syntax allowing it to appear"
-                    ++ strbrk " in other lists is deprecated.")
+         (fun () -> strbrk "The \"/\" and \"!\" modifiers have an effect only "
+                    ++ strbrk "in the first arguments list. The syntax allowing"
+                    ++ strbrk " them to appear in other lists is deprecated.")
 
 (* Extensions: implicits, coercions, etc. *)
 GEXTEND Gram
@@ -664,8 +664,8 @@ GEXTEND Gram
         more_implicits = OPT
           [ ","; impl = LIST1
             [ impl = LIST0 more_implicits_block ->
-              let warn_slash = List.exists fst impl in
-              if warn_slash then warn_deprecated_arguments_syntax ~loc:!@loc ();
+              let warn_deprecated = List.exists fst impl in
+              if warn_deprecated then warn_deprecated_arguments_syntax ~loc:!@loc ();
               List.flatten (List.map snd impl)]
             SEP "," -> impl
           ];
@@ -776,14 +776,19 @@ GEXTEND Gram
                  implicit_status = MaximallyImplicit}) items
     ]
   ];
+  name_or_bang: [
+       [ b = OPT "!"; id = name ->
+       not (Option.is_empty b), id
+    ]
+  ];
   (* Same as [argument_spec_block], but with only implicit status and names *)
   more_implicits_block: [
-    [ name = name -> (false, [(snd name, Vernacexpr.NotImplicit)])
+    [ (bang,name) = name_or_bang -> (bang, [(snd name, Vernacexpr.NotImplicit)])
     | "/" -> (true (* Should warn about deprecated syntax *), [])
-    | "["; items = LIST1 name; "]" ->
-       (false, List.map (fun name -> (snd name, Vernacexpr.Implicit)) items)
-    | "{"; items = LIST1 name; "}" ->
-       (false, List.map (fun name -> (snd name, Vernacexpr.MaximallyImplicit)) items)
+    | "["; items = LIST1 name_or_bang; "]" ->
+       (List.exists fst items, List.map (fun (_,(_,name)) -> (name, Vernacexpr.Implicit)) items)
+    | "{"; items = LIST1 name_or_bang; "}" ->
+       (List.exists fst items, List.map (fun (_,(_,name)) -> (name, Vernacexpr.MaximallyImplicit)) items)
     ]
   ];
   strategy_level:
