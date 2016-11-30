@@ -38,7 +38,7 @@ module Gram : module type of Compat.GrammarMake(CLexer)
         |     (together with a constr entry level, e.g. 50, and indications of)
         |     (subentries, e.g. x in constr next level and y constr same level)
         |
-        | spliting into tokens by Metasyntax.split_notation_string
+        | splitting into tokens by Metasyntax.split_notation_string
         V
       [String "x"; String "+"; String "y"] : symbol_token list
         |
@@ -95,7 +95,7 @@ module Gram : module type of Compat.GrammarMake(CLexer)
 
 *)
 
-(** Temporary activate camlp4 verbosity *)
+(** Temporarily activate camlp4 verbosity *)
 
 val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
 
@@ -208,14 +208,14 @@ type gram_reinit = gram_assoc * gram_position
 
 val grammar_extend : 'a Gram.entry -> gram_reinit option ->
   'a Extend.extend_statment -> unit
-(** Extend the grammar of Coq, without synchronizing it with the bactracking
+(** Extend the grammar of Coq, without synchronizing it with the backtracking
     mechanism. This means that grammar extensions defined this way will survive
     an undo. *)
 
 (** {5 Extending the parser with summary-synchronized commands} *)
 
 module GramState : Store.S
-(** Auxilliary state of the grammar. Any added data must be marshallable. *)
+(** Auxiliary state of the grammar. Any added data must be marshallable. *)
 
 type 'a grammar_command
 (** Type of synchronized parsing extensions. The ['a] type should be

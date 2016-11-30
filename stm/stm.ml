@@ -896,6 +896,7 @@ end = struct (* {{{ *)
     with e ->
       let (e, info) = CErrors.push e in
       let good_id = !cur_id in
+      cur_id := Stateid.dummy;
       VCS.reached id;
       let ie =
         match Stateid.get info, safe_id with

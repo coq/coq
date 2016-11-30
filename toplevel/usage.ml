@@ -36,8 +36,6 @@ let print_usage_channel co command =
 \n  -noinit                start without loading the Init library\
 \n  -nois                  (idem)\
 \n  -compat X.Y            provides compatibility support for Coq version X.Y\
-\n  -verbose-compat-notations  be warned when using compatibility notations\
-\n  -no-compat-notations   get an error when using compatibility notations\
 \n\
 \n  -load-ml-object f      load ML object file f\
 \n  -load-ml-source f      load ML file f\

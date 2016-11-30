@@ -767,6 +767,11 @@ GEXTEND Gram
                  implicit_status = MaximallyImplicit}) items
     ]
   ];
+  name_or_bang: [
+       [ b = OPT "!"; id = name ->
+       not (Option.is_empty b), id
+    ]
+  ];
   (* Same as [argument_spec_block], but with only implicit status and names *)
   more_implicits_block: [
     [ name = name -> [(snd name, Vernacexpr.NotImplicit)]

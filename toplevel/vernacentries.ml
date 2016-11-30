@@ -1128,7 +1128,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   (* Parts of this code are overly complicated because the implicit arguments
      API is completely crazy: positions (ExplByPos) are elaborated to
      names. This is broken by design, since not all arguments have names. So
-     eventhough we eventually want to map only positions to implicit statuses,
+     even though we eventually want to map only positions to implicit statuses,
      we have to check whether the corresponding arguments have names, not to
      trigger an error in the impargs code. Even better, the names we have to
      check are not the current ones (after previous renamings), but the original
@@ -2136,7 +2136,7 @@ let enforce_polymorphism = function
   | None -> Flags.is_universe_polymorphism ()
   | Some b -> Flags.make_polymorphic_flag b; b
 
-(** A global default timeout, controled by option "Set Default Timeout n".
+(** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
 
 let default_timeout = ref None

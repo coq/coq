@@ -17,6 +17,10 @@ let version = 1
 
 let oc = ref None
 
+let chop_extension f =
+  if check_suffix f ".v" then chop_extension f
+  else f
+
 let aux_file_name_for vfile =
   dirname vfile ^ "/." ^ chop_extension(basename vfile) ^ ".aux"
 
