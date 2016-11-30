@@ -21,10 +21,6 @@ open Sigma.Notations
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let safe_evar_info sigma evk =
-  try Some (Evd.find sigma evk)
-  with Not_found -> None
-
 let safe_evar_value sigma ev =
   try Some (Evd.existential_value sigma ev)
   with NotInstantiatedEvar | Not_found -> None
@@ -72,40 +68,12 @@ let rec flush_and_check_evars sigma c =
 let flush_and_check_evars sigma c =
   flush_and_check_evars sigma (EConstr.Unsafe.to_constr c)
 
-(* let nf_evar_key = Profile.declare_profile "nf_evar"  *)
-(* let nf_evar = Profile.profile2 nf_evar_key Reductionops.nf_evar *)
-
-let rec whd_evar sigma c =
-  match kind_of_term c with
-    | Evar (evk, args) ->
-      begin match safe_evar_info sigma evk with
-      | Some ({ evar_body = Evar_defined c } as info) ->
-        let args = Array.map (fun c -> whd_evar sigma c) args in
-        let c = instantiate_evar_array info c args in
-        whd_evar sigma c
-      | _ -> c
-      end
-    | Sort (Type u) -> 
-      let u' = Evd.normalize_universe sigma u in
-	if u' == u then c else mkSort (Sorts.sort_of_univ u')
-    | Const (c', u) when not (Univ.Instance.is_empty u) -> 
-      let u' = Evd.normalize_universe_instance sigma u in
-	if u' == u then c else mkConstU (c', u')
-    | Ind (i, u) when not (Univ.Instance.is_empty u) -> 
-      let u' = Evd.normalize_universe_instance sigma u in
-	if u' == u then c else mkIndU (i, u')
-    | Construct (co, u) when not (Univ.Instance.is_empty u) ->
-      let u' = Evd.normalize_universe_instance sigma u in
-	if u' == u then c else mkConstructU (co, u')
-    | _ -> c
-
 (** Term exploration up to instantiation. *)
-let kind_of_term_upto sigma t =
-  Constr.kind (whd_evar sigma t)
+let kind_of_term_upto = EConstr.kind_upto
 
-let rec nf_evar0 sigma t = Constr.map (fun t -> nf_evar0 sigma t) (whd_evar sigma t)
-let whd_evar sigma c = EConstr.of_constr (whd_evar sigma (EConstr.Unsafe.to_constr c))
-let nf_evar sigma c = EConstr.of_constr (nf_evar0 sigma (EConstr.Unsafe.to_constr c))
+let nf_evar0 sigma t = EConstr.to_constr sigma (EConstr.of_constr t)
+let whd_evar = EConstr.whd_evar
+let nf_evar sigma c = EConstr.of_constr (EConstr.to_constr sigma c)
 
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;

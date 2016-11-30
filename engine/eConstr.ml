@@ -19,8 +19,10 @@ sig
 type t
 val kind : Evd.evar_map -> t -> (t, t) Constr.kind_of_term
 val kind_upto : Evd.evar_map -> constr -> (constr, types) Constr.kind_of_term
+val whd_evar : Evd.evar_map -> t -> t
 val of_kind : (t, t) Constr.kind_of_term -> t
 val of_constr : Constr.t -> t
+val to_constr : evar_map -> t -> Constr.t
 val unsafe_to_constr : t -> Constr.t
 val unsafe_eq : (t, Constr.t) eq
 end =
@@ -32,39 +34,42 @@ let safe_evar_value sigma ev =
   try Some (Evd.existential_value sigma ev)
   with NotInstantiatedEvar | Not_found -> None
 
-let rec kind sigma c =
-  let c0 = Constr.kind c in
-  match c0 with
+let rec whd_evar sigma c =
+  match Constr.kind c with
   | Evar (evk, args) ->
     (match safe_evar_value sigma (evk, args) with
-        Some c -> kind sigma c
-      | None -> c0)
+        Some c -> whd_evar sigma c
+      | None -> c)
   | Sort (Type u) ->
     let u' = Evd.normalize_universe sigma u in
-    if u' == u then c0 else Sort (Type u')
+    if u' == u then c else mkSort (Sorts.sort_of_univ u')
   | Const (c', u) when not (Univ.Instance.is_empty u) ->
     let u' = Evd.normalize_universe_instance sigma u in
-    if u' == u then c0 else Const (c', u')
+    if u' == u then c else mkConstU (c', u')
   | Ind (i, u) when not (Univ.Instance.is_empty u) ->
     let u' = Evd.normalize_universe_instance sigma u in
-    if u' == u then c0 else Ind (i, u')
+    if u' == u then c else mkIndU (i, u')
   | Construct (co, u) when not (Univ.Instance.is_empty u) ->
     let u' = Evd.normalize_universe_instance sigma u in
-    if u' == u then c0 else Construct (co, u')
-  | App (c, args) when isEvar c ->
+    if u' == u then c else mkConstructU (co, u')
+  | App (f, args) when isEvar f ->
     (** Enforce smart constructor invariant on applications *)
-    let ev = destEvar c in
+    let ev = destEvar f in
     begin match safe_evar_value sigma ev with
-    | None -> c0
-    | Some c -> kind sigma (mkApp (c, args))
+    | None -> c
+    | Some f -> whd_evar sigma (mkApp (f, args))
     end
-  | _ -> c0
+  | _ -> c
 
+let kind sigma c = Constr.kind (whd_evar sigma c)
 let kind_upto = kind
 let of_kind = Constr.of_kind
 let of_constr c = c
 let unsafe_to_constr c = c
 let unsafe_eq = Refl
+
+let rec to_constr sigma t =
+  Constr.map (fun t -> to_constr sigma t) (whd_evar sigma t)
 
 end
 
@@ -456,10 +461,6 @@ let fold sigma f acc c = match kind sigma c with
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
   | CoFix (_,(lna,tl,bl)) ->
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
-
-let to_constr sigma t =
-  let rec map c = Constr.map map (Constr.of_kind (kind_upto sigma c)) in
-  map (unsafe_to_constr t)
 
 let compare_gen k eq_inst eq_sort eq_constr c1 c2 =
   (c1 == c2) || Constr.compare_head_gen_with k k eq_inst eq_sort eq_constr c1 c2

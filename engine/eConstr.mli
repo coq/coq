@@ -34,6 +34,8 @@ val kind : Evd.evar_map -> t -> (t, t) Constr.kind_of_term
 (** Same as {!Constr.kind} except that it expands evars and normalizes
     universes on the fly. *)
 
+val kind_upto : Evd.evar_map -> Constr.t -> (Constr.t, Constr.t) Constr.kind_of_term
+
 val to_constr : Evd.evar_map -> t -> Constr.t
 (** Returns the evar-normal form of the argument. See {!Evarutil.nf_evar}. *)
 
@@ -146,6 +148,7 @@ val decompose_prod_assum : Evd.evar_map -> t -> rel_context * t
 val decompose_prod_n_assum : Evd.evar_map -> int -> t -> rel_context * t
 
 val existential_type : Evd.evar_map -> existential -> types
+val whd_evar : Evd.evar_map -> constr -> constr
 
 (** {6 Equality} *)
 
