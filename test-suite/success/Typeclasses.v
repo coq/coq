@@ -98,7 +98,7 @@ Goal exists R, @Refl nat R.
   solve [typeclasses eauto with foo].
 Qed.
 
-(* Set Typeclasses Compatibility "8.5". *)
+Set Typeclasses Compatibility "8.5".
 Parameter f : nat -> Prop.
 Parameter g : nat -> nat -> Prop.
 Parameter h : nat -> nat -> nat -> Prop.
@@ -108,8 +108,7 @@ Axiom c : forall x y z, h x y z -> f x -> f y.
 Hint Resolve a b c : mybase.
 Goal forall x y z, h x y z -> f x -> f y.
   intros.
-  Set Typeclasses Debug.
-  typeclasses eauto with mybase.
+  Fail Timeout 1 typeclasses eauto with mybase. (* Loops now *)
   Unshelve.
 Abort.
 End bt.
@@ -138,7 +137,8 @@ Notation "'return' t" := (unit t).
 Class A `(e: T) := { a := True }.
 Class B `(e_: T) := { e := e_; sg_ass :> A e }.
 
-Set Typeclasses Debug.
+(* Set Typeclasses Debug. *)
+(* Set Typeclasses Debug Verbosity 2. *)
 
 Goal forall `{B T}, Prop.
   intros. apply a.

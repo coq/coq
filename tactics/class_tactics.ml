@@ -1129,7 +1129,7 @@ module Search = struct
             try
               let evi = Evd.find_undefined sigma ev in
               if info.search_only_classes then
-                Some (ev, is_class_type sigma (Evd.evar_concl evi))
+                Some (ev, not (is_class_type sigma (Evd.evar_concl evi)))
               else Some (ev, true)
             with Not_found -> None
           in
@@ -1147,7 +1147,7 @@ module Search = struct
           begin
             (* Some existentials produced by the original tactic were not solved
                in the subgoals, turn them into subgoals now. *)
-            let shelved, goals = List.split_when (fun (ev, s) -> s) remaining in
+            let shelved, goals = List.partition (fun (ev, s) -> s) remaining in
             let shelved = List.map fst shelved and goals = List.map fst goals in
             if !typeclasses_debug > 1 && not (List.is_empty goals) then
               Feedback.msg_debug
