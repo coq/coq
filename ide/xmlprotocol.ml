@@ -92,11 +92,6 @@ let to_stateid = function
 
 let of_stateid i = Element ("state_id",["val",string_of_int (Stateid.to_int i)],[])
 
-let of_richpp x = Element ("richpp", [], [Richpp.repr x])
-let to_richpp xml = match xml with
-  | Element ("richpp", [], [x]) -> Richpp.richpp_of_xml x
-  | x -> raise Serialize.(Marshal_error("richpp",x))
-
 let of_box (ppb : Pp.block_type) = let open Pp in match ppb with
   | Pp_hbox   i -> constructor "ppbox" "hbox"   [of_int i]
   | Pp_vbox   i -> constructor "ppbox" "vbox"   [of_int i]

@@ -111,8 +111,9 @@ let annotate phrase =
     let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
     Vernac.parse_sentence (pa,None)
   in
-  Richpp.repr (Richpp.richpp_of_pp (Ppvernac.pr_vernac ast))
-    
+  (* XXX: Width should be a parameter of annotate... *)
+  Richpp.richpp_of_pp (Ppvernac.pr_vernac ast)
+
 (** Goal display *)
 
 let hyp_next_tac sigma env decl =

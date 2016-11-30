@@ -43,7 +43,7 @@ let xml_to_string xml =
   | Element (_, _, children) ->
     List.iter iter children
   in
-  let () = iter (Richpp.repr xml) in
+  let () = iter xml in
   Buffer.contents buf
 
 let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
@@ -75,7 +75,7 @@ let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
     let tags = try tag t :: tags with Not_found -> tags in
     List.iter (fun xml -> insert tags xml) children
   in
-  let () = try insert tags (Richpp.repr msg) with _ -> () in
+  let () = try insert tags msg with _ -> () in
   buf#delete_mark rmark
 
 let set_location = ref  (function s -> failwith "not ready")

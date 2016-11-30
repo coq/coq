@@ -57,10 +57,6 @@ val pr_call : 'a call -> string
 val pr_value : 'a value -> string
 val pr_full_value : 'a call -> 'a value -> string
 
-(** * Serialization of rich documents *)
-val of_richpp : Richpp.richpp -> Xml_datatype.xml
-val to_richpp : Xml_datatype.xml -> Richpp.richpp
-
 (** * Serializaiton of feedback  *)
 val of_feedback : Feedback.feedback -> xml
 val to_feedback : xml -> Feedback.feedback

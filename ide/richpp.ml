@@ -172,10 +172,6 @@ let xml_of_rich_pp tag_of_annotation attributes_of_annotation xml =
 
 type richpp = xml
 
-let repr xml = xml
-let richpp_of_xml xml = xml
-let richpp_of_string s = PCData s
-
 let richpp_of_pp pp =
   let annotate t = Some (Ppstyle.repr t)    in
   let rec drop = function
@@ -188,13 +184,3 @@ let richpp_of_pp pp =
   in
   let xml = rich_pp annotate pp in
   Element ("_", [], drop xml)
-
-let raw_print xml =
-  let buf = Buffer.create 1024 in
-  let rec print = function
-  | PCData s -> Buffer.add_string buf s
-  | Element (_, _, cs) -> List.iter print cs
-  in
-  let () = print xml in
-  Buffer.contents buf
-
