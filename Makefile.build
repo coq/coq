@@ -440,10 +440,9 @@ $(COQWORKMGR): $(call bestobj, lib/clib.cma stm/coqworkmgrApi.cmo tools/coqworkm
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-FAKEIDECMO:= lib/clib.cma lib/cErrors.cmo lib/spawn.cmo			\
- ide/document.cmo ide/serialize.cmo ide/richpp.cmo ide/xml_lexer.cmo	\
- ide/xml_parser.cmo ide/xml_printer.cmo ide/xmlprotocol.cmo		\
- tools/fake_ide.cmo
+FAKEIDECMO:= lib/clib.cma lib/cErrors.cmo lib/spawn.cmo	ide/document.cmo \
+ ide/serialize.cmo ide/xml_lexer.cmo ide/xml_parser.cmo ide/xml_printer.cmo \
+ ide/xmlprotocol.cmo tools/fake_ide.cmo
 
 $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
 	$(SHOW)'OCAMLBEST -o $@'
