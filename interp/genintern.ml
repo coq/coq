@@ -10,9 +10,19 @@ open Names
 open Mod_subst
 open Genarg
 
+module Store = Store.Make(struct end)
+
 type glob_sign = {
   ltacvars : Id.Set.t;
-  genv : Environ.env }
+  genv : Environ.env;
+  extra : Store.t;
+}
+
+let empty_glob_sign env = {
+  ltacvars = Id.Set.empty;
+  genv = env;
+  extra = Store.empty;
+}
 
 type ('raw, 'glb) intern_fun = glob_sign -> 'raw -> glob_sign * 'glb
 type 'glb subst_fun = substitution -> 'glb -> 'glb

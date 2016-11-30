@@ -68,6 +68,7 @@ type internalization_env =
 type ltac_sign = {
   ltac_vars : Id.Set.t;
   ltac_bound : Id.Set.t;
+  ltac_extra : Genintern.Store.t;
 }
 
 let interning_grammar = ref false
@@ -1735,12 +1736,14 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
         | Some gen ->
           let (ltacvars, ntnvars) = lvar in
           let ntnvars = Id.Map.domain ntnvars in
+          let extra = ltacvars.ltac_extra in
           let lvars = Id.Set.union ltacvars.ltac_bound ltacvars.ltac_vars in
           let lvars = Id.Set.union lvars ntnvars in
-          let lvars = Id.Set.union lvars env.ids in
+          let ltacvars = Id.Set.union lvars env.ids in
           let ist = {
-            Genintern.ltacvars = lvars;
-            genv = globalenv;
+            Genintern.genv = globalenv;
+            ltacvars;
+            extra;
           } in
           let (_, glb) = Genintern.generic_intern ist gen in
           Some glb
@@ -1931,6 +1934,7 @@ let scope_of_type_kind = function
 let empty_ltac_sign = {
   ltac_vars = Id.Set.empty;
   ltac_bound = Id.Set.empty;
+  ltac_extra = Genintern.Store.empty;
 }
 
 let intern_gen kind env

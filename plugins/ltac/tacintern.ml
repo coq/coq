@@ -41,13 +41,12 @@ let error_tactic_expected ?loc =
 type glob_sign = Genintern.glob_sign = {
   ltacvars : Id.Set.t;
      (* ltac variables and the subset of vars introduced by Intro/Let/... *)
-  genv : Environ.env }
+  genv : Environ.env;
+  extra : Genintern.Store.t;
+}
 
-let fully_empty_glob_sign =
-  { ltacvars = Id.Set.empty; genv = Environ.empty_env }
-
-let make_empty_glob_sign () =
-  { fully_empty_glob_sign with genv = Global.env () }
+let fully_empty_glob_sign = Genintern.empty_glob_sign Environ.empty_env
+let make_empty_glob_sign () = Genintern.empty_glob_sign (Global.env ())
 
 (* We have identifier <| global_reference <| constr *)
 
@@ -192,12 +191,13 @@ let intern_binding_name ist x =
      and if a term w/o ltac vars, check the name is indeed quantified *)
   x
 
-let intern_constr_gen allow_patvar isarity {ltacvars=lfun; genv=env} c =
+let intern_constr_gen allow_patvar isarity {ltacvars=lfun; genv=env; extra} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
   let ltacvars = {
     Constrintern.ltac_vars = lfun;
     ltac_bound = Id.Set.empty;
+    ltac_extra = extra;
   } in
   let c' =
     warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars env) c
@@ -313,6 +313,7 @@ let intern_constr_pattern ist ~as_type ~ltacvars pc =
   let ltacvars = {
     Constrintern.ltac_vars = ltacvars;
     ltac_bound = Id.Set.empty;
+    ltac_extra = ist.extra;
   } in
   let metas,pat = Constrintern.intern_constr_pattern
     ist.genv ~as_type ~ltacvars pc
@@ -344,7 +345,11 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       let r = match r with
       | AN r -> r
       | _ -> Qualid (loc,qualid_of_path (path_of_global (smart_global r))) in
-      let sign = { Constrintern.ltac_vars = ist.ltacvars; Constrintern.ltac_bound = Id.Set.empty } in
+      let sign = {
+        Constrintern.ltac_vars = ist.ltacvars;
+        ltac_bound = Id.Set.empty;
+        ltac_extra = ist.extra;
+      } in
       let c = Constrintern.interp_reference sign r in
       match c with
       | GRef (_,r,None) ->
@@ -708,8 +713,7 @@ let glob_tactic_env l env x =
   let ltacvars =
     List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
   Flags.with_option strict_check
-  (intern_pure_tactic
-    { ltacvars; genv = env })
+  (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars })
     x
 
 let split_ltac_fun = function

@@ -844,7 +844,7 @@ let vernac_solve_existential = instantiate_nth_evar_com
 
 let vernac_set_end_tac tac =
   let open Genintern in
-  let env = { genv = Global.env (); ltacvars = Id.Set.empty } in
+  let env = Genintern.empty_glob_sign (Global.env ()) in
   let _, tac = Genintern.generic_intern env tac in
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
