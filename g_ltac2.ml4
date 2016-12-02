@@ -21,6 +21,9 @@ let tac2def_typ = Gram.entry_create "tactic:tac2def_typ"
 let tac2def_ext = Gram.entry_create "tactic:tac2def_ext"
 let tac2mode = Gram.entry_create "vernac:ltac2_command"
 
+let inj_wit wit loc x = CTacExt (loc, Genarg.in_gen (Genarg.rawwit wit) x)
+let inj_constr loc c = inj_wit Stdarg.wit_constr loc c
+
 GEXTEND Gram
   GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext;
   tac2pat:
@@ -77,6 +80,7 @@ GEXTEND Gram
     [ [ n = Prim.integer -> CTacAtm (!@loc, AtmInt n)
       | s = Prim.string -> CTacAtm (!@loc, AtmStr s)
       | id = Prim.qualid -> CTacRef id
+      | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_constr !@loc c
     ] ]
   ;
   let_clause:

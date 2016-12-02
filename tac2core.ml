@@ -8,8 +8,11 @@
 
 open CSig
 open Pp
+open CErrors
 open Names
+open Genarg
 open Geninterp
+open Tac2env
 open Tac2expr
 open Proofview.Notations
 
@@ -26,6 +29,7 @@ let t_string = coq_core "string"
 let t_array = coq_core "array"
 let t_unit = coq_core "unit"
 let t_list = coq_core "list"
+let t_constr = coq_core "constr"
 
 let c_nil = coq_core "[]"
 let c_cons = coq_core "::"
@@ -65,6 +69,8 @@ match Val.eq tag tag' with
 
 let val_pp = Val.create "ltac2:pp"
 let get_pp v = extract_val val_pp v
+
+let val_valexpr = Val.create "ltac2:valexpr"
 
 (** Helper functions *)
 
@@ -117,3 +123,66 @@ let () = Tac2env.define_primitive (pname "array_make") prm_array_make
 let () = Tac2env.define_primitive (pname "array_length") prm_array_length
 let () = Tac2env.define_primitive (pname "array_get") prm_array_get
 let () = Tac2env.define_primitive (pname "array_set") prm_array_set
+
+(** ML types *)
+
+let val_tag t = match val_tag t with
+| Val.Base t -> t
+| _ -> assert false
+
+let tag_constr = val_tag (topwit Stdarg.wit_constr)
+
+let constr_flags () =
+  let open Pretyping in
+  {
+    use_typeclasses = true;
+    solve_unification_constraints = true;
+    use_hook = Pfedit.solve_by_implicit_tactic ();
+    fail_evar = true;
+    expand_evars = true
+  }
+
+(** In Ltac2, the notion of "current environment" only makes sense when there is
+    at most one goal under focus. Contrarily to Ltac1, instead of dynamically
+    focussing when we need it, we raise a non-backtracking error when it does
+    not make sense. *)
+exception NonFocussedGoal
+
+let () = register_handler begin function
+| NonFocussedGoal -> str "Several goals under focus"
+| _ -> raise Unhandled
+end
+
+let pf_apply f =
+  Proofview.Goal.goals >>= function
+  | [] ->
+    Proofview.tclENV >>= fun env ->
+    Proofview.tclEVARMAP >>= fun sigma ->
+    f env sigma
+  | [gl] ->
+    gl >>= fun gl ->
+    f (Proofview.Goal.env gl) (Tacmach.New.project gl)
+  | _ :: _ :: _ ->
+    Proofview.tclLIFT (Proofview.NonLogical.raise NonFocussedGoal)
+
+(** Embed all Ltac2 data into Values *)
+let to_lvar ist =
+  let open Pretyping in
+  let map e = Val.Dyn (val_valexpr, e) in
+  let lfun = Id.Map.map map ist in
+  { empty_lvar with ltac_genargs = lfun }
+
+let () =
+  let open Pretyping in
+  let interp ist (c, _) = pf_apply begin fun env sigma ->
+    let ist = to_lvar ist in
+    let (sigma, c) = understand_ltac (constr_flags ()) env sigma ist WithoutTypeConstraint c in
+    let c = Val.Dyn (tag_constr, c) in
+    Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+    Proofview.tclUNIT c
+  end in
+  let obj = {
+    ml_type = t_constr;
+    ml_interp = interp;
+  } in
+  define_ml_object Stdarg.wit_constr obj

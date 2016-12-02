@@ -613,7 +613,7 @@ let rec intern_rec env = function
   let genv = Global.env_of_context Environ.empty_named_context_val in
   let ist = empty_glob_sign genv in
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
-  let (_, ext) = generic_intern ist ext in
+  let (_, ext) = Flags.with_option Ltac_plugin.Tacintern.strict_check (fun () -> generic_intern ist ext) () in
   (GTacExt ext, GTypRef (tpe.ml_type, []))
 
 and intern_let_rec env loc el e =
