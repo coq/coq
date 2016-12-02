@@ -100,17 +100,24 @@ type 'a hint_ast =
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Genarg.glob_generic_argument (* Hint Extern *)
 
-type hints_path_atom = 
-  | PathHints of global_reference list
+
+type 'a hints_path_atom_gen =
+  | PathHints of 'a list
+  (* For forward hints, their names is the list of projections *)
   | PathAny
 
-type hints_path =
-  | PathAtom of hints_path_atom
-  | PathStar of hints_path
-  | PathSeq of hints_path * hints_path
-  | PathOr of hints_path * hints_path
+type hints_path_atom = global_reference hints_path_atom_gen
+
+type 'a hints_path_gen =
+  | PathAtom of 'a hints_path_atom_gen
+  | PathStar of 'a hints_path_gen
+  | PathSeq of 'a hints_path_gen * 'a hints_path_gen
+  | PathOr of 'a hints_path_gen * 'a hints_path_gen
   | PathEmpty
   | PathEpsilon
+
+type pre_hints_path = Libnames.reference hints_path_gen
+type hints_path = global_reference hints_path_gen
 
 type hint_term =
   | IsGlobRef of global_reference
@@ -393,21 +400,40 @@ let rec normalize_path h =
 
 let path_derivate hp hint = normalize_path (path_derivate hp hint)
 
-let pp_hints_path_atom a =
+let pp_hints_path_atom prg a =
   match a with
   | PathAny -> str"_"
-  | PathHints grs -> pr_sequence pr_global grs
-					   
-let rec pp_hints_path = function
-  | PathAtom pa -> pp_hints_path_atom pa
-  | PathStar (PathAtom PathAny) -> str"_*"
-  | PathStar p -> str "(" ++ pp_hints_path p ++ str")*"
-  | PathSeq (p, p') -> pp_hints_path p ++ spc () ++ pp_hints_path p'
-  | PathOr (p, p') -> 
-     str "(" ++ pp_hints_path p ++ spc () ++ str"|" ++ cut () ++ spc () ++
-       pp_hints_path p' ++ str ")"
+  | PathHints grs -> pr_sequence prg grs
+
+let pp_hints_path_gen prg =
+  let rec aux = function
+    | PathAtom pa -> pp_hints_path_atom prg pa
+    | PathStar (PathAtom PathAny) -> str"_*"
+    | PathStar p -> str "(" ++ aux p ++ str")*"
+    | PathSeq (p, p') -> aux p ++ spc () ++ aux p'
+    | PathOr (p, p') -> 
+     str "(" ++ aux p ++ spc () ++ str"|" ++ cut () ++ spc () ++
+     aux p' ++ str ")"
   | PathEmpty -> str"emp"
   | PathEpsilon -> str"eps"
+  in aux
+     
+let pp_hints_path = pp_hints_path_gen pr_global
+
+let glob_hints_path_atom p =
+  match p with
+  | PathHints g -> PathHints (List.map Nametab.global g)
+  | PathAny -> PathAny
+
+let glob_hints_path =
+  let rec aux = function
+    | PathAtom pa -> PathAtom (glob_hints_path_atom pa)
+    | PathStar p -> PathStar (aux p)
+    | PathSeq (p, p') -> PathSeq (aux p, aux p')
+    | PathOr (p, p') -> PathOr (aux p, aux p')
+    | PathEmpty -> PathEmpty
+    | PathEpsilon -> PathEpsilon
+  in aux
 
 let subst_path_atom subst p =
   match p with

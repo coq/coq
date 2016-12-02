@@ -171,18 +171,32 @@ TACTIC EXTEND convert_concl_no_check
 | ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check x Term.DEFAULTcast ]
 END
 
-let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom
+let pr_pre_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Libnames.pr_reference
+let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Printer.pr_global
+let glob_hints_path_atom ist = Hints.glob_hints_path_atom
 
 ARGUMENT EXTEND hints_path_atom
   PRINTED BY pr_hints_path_atom
-| [ ne_global_list(g) ] -> [ Hints.PathHints (List.map Nametab.global g) ]
+
+  GLOBALIZED BY glob_hints_path_atom
+
+  RAW_PRINTED BY pr_pre_hints_path_atom
+  GLOB_PRINTED BY pr_hints_path_atom
+| [ ne_global_list(g) ] -> [ Hints.PathHints g ]
 | [ "_" ] -> [ Hints.PathAny ]
 END
 
 let pr_hints_path prc prx pry c = Hints.pp_hints_path c
-
+let pr_pre_hints_path prc prx pry c = Hints.pp_hints_path_gen Libnames.pr_reference c
+let glob_hints_path ist = Hints.glob_hints_path
+							      
 ARGUMENT EXTEND hints_path
-  PRINTED BY pr_hints_path
+PRINTED BY pr_hints_path
+
+GLOBALIZED BY glob_hints_path
+RAW_PRINTED BY pr_pre_hints_path
+GLOB_PRINTED BY pr_hints_path
+
 | [ "(" hints_path(p) ")"  ] -> [ p ]
 | [ hints_path(p) "*" ] -> [ Hints.PathStar p ]
 | [ "emp" ] -> [ Hints.PathEmpty ]
@@ -203,7 +217,7 @@ END
 
 VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
 | [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
-  let entry = Hints.HintsCutEntry p in
+  let entry = Hints.HintsCutEntry (Hints.glob_hints_path p) in
     Hints.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
       (match dbnames with None -> ["core"] | Some l -> l) entry ]
 END
