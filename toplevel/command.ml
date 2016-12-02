@@ -286,6 +286,7 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
         l []
     else l
   in
+  (* We intepret all declarations in the same evar_map, i.e. as a telescope. *)
   let _,l = List.fold_map (fun (env,ienv) (is_coe,(idl,c)) ->
     let t,imps = interp_assumption evdref env ienv [] c in
     let env =
@@ -297,6 +298,7 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
     (env,empty_internalization_env) l
   in
   let evd = solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref) in
+  (* The universe constraints come from the whole telescope. *)
   let evd = Evd.nf_constraints evd in
   let ctx = Evd.universe_context_set evd in
   let l = List.map (on_pi2 (nf_evar evd)) l in
@@ -307,7 +309,9 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
       (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u)))
       idl refs 
     in
-      (subst'@subst, status' && status, Univ.ContextSet.empty)) ([],true,ctx) l)
+    (subst'@subst, status' && status,
+     (* The universe constraints are declared with the first declaration only. *)
+     Univ.ContextSet.empty)) ([],true,ctx) l)
 
 let do_assumptions_bound_univs coe kind nl id pl c =
   let env = Global.env () in
