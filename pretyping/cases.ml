@@ -1935,6 +1935,9 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
 
 let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
   let refresh_tycon sigma t =
+    (** If we put the typing constraint in the term, it has to be
+       refreshed to preserve the invariant that no algebraic universe
+       can appear in the term.  *)
     refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some true)
 		      env sigma t
   in

@@ -468,20 +468,32 @@ struct
       else if Level.is_prop u then
 	hcons (Level.set,n+k)
       else hcons (u,n+k)
-	
+
+    type super_result =
+	SuperSame of bool
+        (* The level expressions are in cumulativity relation. boolean
+           indicates if left is smaller than right?  *)
+      | SuperDiff of int
+        (* The level expressions are unrelated, the comparison result
+           is canonical *)
+
+    (** [super u v] compares two level expressions,
+       returning [SuperSame] if they refer to the same level at potentially different
+       increments or [SuperDiff] if they are different. The booleans indicate if the
+       left expression is "smaller" than the right one in both cases. *)
     let super (u,n as x) (v,n' as y) =
       let cmp = Level.compare u v in
-	if Int.equal cmp 0 then Inl (n < n')
+	if Int.equal cmp 0 then SuperSame (n < n')
 	else
 	  match x, y with
 	  | (l,0), (l',0) ->
 	     let open RawLevel in
 	     (match Level.data l, Level.data l' with
-	      | Prop, Prop -> Inl false
-	      | Prop, _ -> Inl true
-	      | _, Prop -> Inl false
-	      | _, _ -> Inr cmp)
-	  | _, _ -> Inr cmp
+	      | Prop, Prop -> SuperSame false
+	      | Prop, _ -> SuperSame true
+	      | _, Prop -> SuperSame false
+	      | _, _ -> SuperDiff cmp)
+	  | _, _ -> SuperDiff cmp
 
     let to_string (v, n) =
       if Int.equal n 0 then Level.to_string v
@@ -603,24 +615,26 @@ struct
     | Nil, _ -> l2
     | _, Nil -> l1
     | Cons (h1, _, t1), Cons (h2, _, t2) ->
-      (match Expr.super h1 h2 with
-      | Inl true (* h1 < h2 *) -> merge_univs t1 l2
-      | Inl false -> merge_univs l1 t2
-      | Inr c -> 
-        if c <= 0 (* h1 < h2 is name order *)
-	then cons h1 (merge_univs t1 l2)
-	else cons h2 (merge_univs l1 t2))
+       let open Expr in
+       (match super h1 h2 with
+	| SuperSame true (* h1 < h2 *) -> merge_univs t1 l2
+	| SuperSame false -> merge_univs l1 t2
+	| SuperDiff c ->
+           if c <= 0 (* h1 < h2 is name order *)
+	   then cons h1 (merge_univs t1 l2)
+	   else cons h2 (merge_univs l1 t2))
 
   let sort u =
     let rec aux a l = 
       match l with
       | Cons (b, _, l') ->
-        (match Expr.super a b with
-	| Inl false -> aux a l'
-	| Inl true -> l
-	| Inr c ->
-	  if c <= 0 then cons a l
-	  else cons b (aux a l'))
+	let open Expr in
+        (match super a b with
+	 | SuperSame false -> aux a l'
+	 | SuperSame true -> l
+	 | SuperDiff c ->
+	    if c <= 0 then cons a l
+	    else cons b (aux a l'))
       | Nil -> cons a l
     in 
       fold (fun a acc -> aux a acc) u nil

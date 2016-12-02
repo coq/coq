@@ -46,30 +46,35 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 		      pbty env evd t =
   let evdref = ref evd in
   let modified = ref false in
-  let refresh_sort status dir s =
+  (* direction: true for fresh universes lower than the existing ones *)
+  let refresh_sort status ~direction s =
     let s' = evd_comb0 (new_sort_variable status) evdref in
     let evd = 
-      if dir then set_leq_sort env !evdref s' s
+      if direction then set_leq_sort env !evdref s' s
       else set_leq_sort env !evdref s s'
     in
     modified := true; evdref := evd; mkSort s'
   in
-  let rec refresh onlyalg status dir t = 
+  let rec refresh ~onlyalg status ~direction t =
     match kind_of_term t with
     | Sort (Type u as s) ->
        (match Univ.universe_level u with
-	| None -> refresh_sort status dir s
+	| None -> refresh_sort status ~direction s
 	| Some l ->
 	   (match Evd.universe_rigidity evd l with
-	    | UnivRigid -> if not onlyalg then refresh_sort status dir s else t
+	    | UnivRigid ->
+	       if not onlyalg then refresh_sort status ~direction s
+	       else t
 	    | UnivFlexible alg ->
 	       if onlyalg && alg then
 	         (evdref := Evd.make_flexible_variable !evdref false l; t)
 	       else t))
-    | Sort (Prop Pos as s) when refreshset && not dir ->
-       refresh_sort status dir s
+    | Sort (Prop Pos as s) when refreshset && not direction ->
+       (* Cannot make a universe "lower" than "Set",
+          only refreshing when we want higher universes. *)
+       refresh_sort status ~direction s
     | Prod (na,u,v) -> 
-      mkProd (na, u, refresh onlyalg status dir v)
+      mkProd (na, u, refresh ~onlyalg status ~direction v)
     | _ -> t
   (** Refresh the types of evars under template polymorphic references *)
   and refresh_term_evars onevars top t =
@@ -82,7 +87,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
       Array.iter (refresh_term_evars onevars false) args
     | Evar (ev, a) when onevars ->
       let evi = Evd.find !evdref ev in
-      let ty' = refresh onlyalg univ_flexible true evi.evar_concl in
+      let ty' = refresh ~onlyalg univ_flexible ~direction:true evi.evar_concl in
 	if !modified then 
 	  evdref := Evd.add !evdref ev {evi with evar_concl = ty'}
 	else ()
@@ -103,8 +108,10 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   let t' = 
     if isArity t then
       match pbty with
-      | None -> refresh true univ_flexible false t
-      | Some dir -> refresh onlyalg status dir t
+      | None ->
+	 (* No cumulativity needed, but we still need to refresh the algebraics *)
+	 refresh ~onlyalg:true univ_flexible ~direction:false t
+      | Some direction -> refresh ~onlyalg status ~direction t
     else (refresh_term_evars false true t; t)
   in
     if !modified then !evdref, t' else !evdref, t
