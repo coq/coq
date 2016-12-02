@@ -262,10 +262,11 @@ define_evar_* mostly used internally in the unification engine.
 
   Proofview.Goal.enter { enter = begin fun gl -> ... end }
   
-- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)` ---> `Tacinterp.Value.of_constr c`
-- `Pretyping.Termops.mem_named_context`                      ---> `Engine.Termops.mem_named_context_val`
-  (`Global.named_context`                                    ---> `Global.named_context_val`)
-  (`Context.Named.lookup`                                    ---> `Environ.lookup_named_val`)
+- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)`      ---> `Tacinterp.Value.of_constr c`
+- `Vernacexpr.HintsResolveEntry(priority, poly, hnf, path, atom)` ---> `Vernacexpr.HintsResolveEntry(Vernacexpr.({hint_priority = priority; hint_pattern = None}), poly, hnf, path, atom)`
+- `Pretyping.Termops.mem_named_context`                           ---> `Engine.Termops.mem_named_context_val`
+  (`Global.named_context`                                         ---> `Global.named_context_val`)
+  (`Context.Named.lookup`                                         ---> `Environ.lookup_named_val`)
 
 ** Search API **
 
