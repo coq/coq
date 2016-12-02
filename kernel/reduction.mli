@@ -36,7 +36,7 @@ type 'a extended_conversion_function =
 type conv_pb = CONV | CUMUL
 
 type 'a universe_compare = 
-  { (* Might raise NotConvertible *)
+  { (* Might raise NotConvertible or UnivInconsistency *)
     compare : env -> conv_pb -> sorts -> sorts -> 'a -> 'a;
     compare_instances: flex:bool -> 
 		       Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
@@ -56,9 +56,12 @@ constructors. *)
 val convert_instances : flex:bool -> Univ.Instance.t -> Univ.Instance.t ->
   'a * 'a universe_compare -> 'a * 'a universe_compare
 
+(** These two never raise UnivInconsistency, inferred_universes
+    just gathers the constraints. *)
 val checked_universes : UGraph.t universe_compare
 val inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare
 
+(** These two functions can only raise NotConvertible *)
 val conv : constr extended_conversion_function
 
 val conv_leq : types extended_conversion_function
@@ -70,6 +73,9 @@ val infer_conv : ?l2r:bool -> ?evars:(existential->constr option) ->
 val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) -> 
   ?ts:Names.transparent_state -> types infer_conversion_function
 
+(** Depending on the universe state functions, this might raise
+  [UniverseInconsistency] in addition to [NotConvertible] (for better error
+  messages). *)
 val generic_conv : conv_pb -> l2r:bool -> (existential->constr option) ->
   Names.transparent_state -> (constr,'a) generic_conversion_function
 
