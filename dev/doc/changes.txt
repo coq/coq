@@ -218,6 +218,8 @@ val get_id_for_feedback : unit -> edit_or_state_id * route_id
   for constructing compound entries still works over this scheme. Note that in
   the case of (VERNAC) ARGUMENT EXTEND, the name of the argument entry is bound
   in the parsing rules, so beware of recursive calls.
+  
+  For example, to get "wit_constr" you must "open Constrarg" at the top of the file.
 
 - Evarutil was split in two parts. The new Evardefine file exposes functions
 define_evar_* mostly used internally in the unification engine.
