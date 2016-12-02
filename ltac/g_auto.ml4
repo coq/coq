@@ -50,11 +50,17 @@ let eval_uconstrs ist cs =
   } in
   List.map (fun c -> Pretyping.type_uconstr ~flags ist c) cs
 
-let pr_auto_using _ _ _ = Pptactic.pr_auto_using (fun _ -> mt ())
+let pr_auto_using_raw _ _ _  = Pptactic.pr_auto_using Ppconstr.pr_constr_expr
+let pr_auto_using_glob _ _ _ = Pptactic.pr_auto_using (fun (c,_) -> Printer.pr_glob_constr c)
+let pr_auto_using _ _ _ = Pptactic.pr_auto_using Printer.pr_closed_glob
 
 ARGUMENT EXTEND auto_using
   TYPED AS uconstr_list
   PRINTED BY pr_auto_using
+  RAW_TYPED AS uconstr_list
+  RAW_PRINTED BY pr_auto_using_raw
+  GLOB_TYPED AS uconstr_list
+  GLOB_PRINTED BY pr_auto_using_glob
 | [ "using" ne_uconstr_list_sep(l, ",") ] -> [ l ]
 | [ ] -> [ [] ]
 END
@@ -205,8 +211,6 @@ GLOB_PRINTED BY pr_hints_path
 | [ hints_path_atom(a) ] -> [ Hints.PathAtom a ]
 | [ hints_path(p) hints_path(q) ] -> [ Hints.PathSeq (p, q) ]
 END
-
-let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
 
 ARGUMENT EXTEND opthints
   TYPED AS preident_list_opt

@@ -219,7 +219,7 @@ module Make
     | ConstrContext ((_,id),c) ->
       hov 0
         (keyword "context" ++ spc () ++ pr_id id ++ spc () ++
-           str "[" ++ prlc c ++ str "]")
+           str "[ " ++ prlc c ++ str " ]")
     | ConstrTypeOf c ->
       hov 1 (keyword "type of" ++ spc() ++ prc c)
     | ConstrTerm c when test c ->
@@ -630,7 +630,8 @@ module Make
         | _ -> pr_with_occurrences (fun () -> str" |- *") (occs,())
       in
       pr_in
-        (prlist_with_sep (fun () -> str", ") (pr_hyp_location pr_id) l ++ pr_occs)
+        (prlist_with_sep (fun () -> str",")
+           (fun id -> spc () ++ pr_hyp_location pr_id id) l ++ pr_occs)
 
   let pr_orient b = if b then mt () else str "<- "
 
@@ -675,9 +676,9 @@ module Make
     | Subterm (b,None,a) ->
     (** ppedrot: we don't make difference between [appcontext] and [context]
         anymore, and the interpretation is governed by a flag instead. *)
-      keyword "context" ++ str" [" ++ pr_pat a ++ str "]"
+      keyword "context" ++ str" [ " ++ pr_pat a ++ str " ]"
     | Subterm (b,Some id,a) ->
-      keyword "context" ++ spc () ++ pr_id id ++ str "[" ++ pr_pat a ++ str "]"
+      keyword "context" ++ spc () ++ pr_id id ++ str "[ " ++ pr_pat a ++ str " ]"
 
   let pr_match_hyps pr_pat = function
     | Hyp (nal,mp) ->
@@ -1216,7 +1217,7 @@ module Make
           | TacNumgoals ->
             keyword "numgoals"
           | (TacCall _|Tacexp _ | TacGeneric _) as a ->
-            str "ltac:(" ++ pr_tac (1,Any) (TacArg (Loc.ghost,a)) ++ str ")"
+            hov 0 (keyword "ltac:" ++ surround (pr_tac ltop (TacArg (Loc.ghost,a))))
 
         in pr_tac
 

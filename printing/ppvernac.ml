@@ -913,7 +913,7 @@ module Make
       | VernacContext l ->
         return (
           hov 1 (
-            keyword "Context" ++ spc () ++ pr_and_type_binders_arg l)
+            keyword "Context" ++ pr_and_type_binders_arg l)
         )
 
       | VernacDeclareInstances insts ->
@@ -1015,7 +1015,10 @@ module Make
             (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
                prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
                pr_syntax_modifiers
-               (match compat with None -> [] | Some v -> [SetCompatVersion v]))
+               (match compat with
+                | None -> []
+                | Some Flags.Current -> [SetOnlyParsing]
+                | Some v -> [SetCompatVersion v]))
         )
       | VernacDeclareImplicits (q,[]) ->
         return (
@@ -1057,7 +1060,7 @@ module Make
               in
               print_arguments nargs args ++
                 if not (List.is_empty more_implicits) then
-                  str ", " ++ prlist_with_sep (fun () -> str", ") print_implicits more_implicits
+                  prlist (fun l -> str"," ++ print_implicits l) more_implicits
                 else (mt ()) ++
                 (if not (List.is_empty mods) then str" : " else str"") ++
                   prlist_with_sep (fun () -> str", " ++ spc()) (function
@@ -1128,7 +1131,7 @@ module Make
       | VernacSetAppendOption (na,v) ->
         return (
           hov 2 (keyword "Set" ++ spc() ++ pr_printoption na None ++
-                   spc() ++ keyword "Append" ++ spc() ++ str v)
+                   spc() ++ keyword "Append" ++ spc() ++ qs v)
         )
       | VernacAddOption (na,l) ->
         return (
