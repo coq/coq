@@ -409,7 +409,7 @@ Theorem f_equal2 :
     (x2 y2:A2), x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2.
 Proof.
   destruct 1; destruct 1; reflexivity.
-Qed.
+Defined.
 
 Theorem f_equal3 :
   forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B) (x1 y1:A1)
@@ -417,7 +417,7 @@ Theorem f_equal3 :
     x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
 Proof.
   destruct 1; destruct 1; destruct 1; reflexivity.
-Qed.
+Defined.
 
 Theorem f_equal4 :
   forall (A1 A2 A3 A4 B:Type) (f:A1 -> A2 -> A3 -> A4 -> B)
@@ -425,7 +425,7 @@ Theorem f_equal4 :
     x1 = y1 -> x2 = y2 -> x3 = y3 -> x4 = y4 -> f x1 x2 x3 x4 = f y1 y2 y3 y4.
 Proof.
   destruct 1; destruct 1; destruct 1; destruct 1; reflexivity.
-Qed.
+Defined.
 
 Theorem f_equal5 :
   forall (A1 A2 A3 A4 A5 B:Type) (f:A1 -> A2 -> A3 -> A4 -> A5 -> B)
@@ -435,7 +435,7 @@ Theorem f_equal5 :
     x3 = y3 -> x4 = y4 -> x5 = y5 -> f x1 x2 x3 x4 x5 = f y1 y2 y3 y4 y5.
 Proof.
   destruct 1; destruct 1; destruct 1; destruct 1; destruct 1; reflexivity.
-Qed.
+Defined.
 
 Theorem f_equal_compose : forall A B C (a b:A) (f:A->B) (g:B->C) (e:a=b),
   f_equal g (f_equal f e) = f_equal (fun a => g (f a)) e.
