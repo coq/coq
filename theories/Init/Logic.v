@@ -313,8 +313,8 @@ Arguments eq_ind [A] x P _ y _.
 Arguments eq_rec [A] x P _ y _.
 Arguments eq_rect [A] x P _ y _.
 
-Hint Resolve I conj or_introl or_intror : core. 
-Hint Resolve eq_refl: core. 
+Hint Resolve I conj or_introl or_intror : core.
+Hint Resolve eq_refl: core.
 Hint Resolve ex_intro ex_intro2: core.
 
 Section Logic_lemmas.
@@ -504,6 +504,11 @@ Proof.
   reflexivity.
 Defined.
 
+Lemma eq_refl_map_distr : forall A B x (f:A->B), f_equal f (eq_refl x) = eq_refl (f x).
+Proof.
+  reflexivity.
+Defined.
+
 Lemma eq_trans_map_distr : forall A B x y z (f:A->B) (e:x=y) (e':y=z), f_equal f (eq_trans e e') = eq_trans (f_equal f e) (f_equal f e').
 Proof.
 destruct e'.
@@ -521,6 +526,19 @@ Proof.
 destruct e, e'.
 reflexivity.
 Defined.
+
+Lemma eq_trans_eq_rect_distr : forall A (P:A -> Type) (x y z:A) (e:x=y) (e':y=z) (k:P x),
+    eq_rect _ P k _ (eq_trans e e') = eq_rect _ P (eq_rect _ P k _ e) _ e'.
+Proof.
+  destruct e, e'; reflexivity.
+Defined.
+
+Lemma eq_rect_const : forall A P (x y:A) (e:x=y) (k:P),
+    eq_rect _ (fun _ : A => P) k _ e = k.
+Proof.
+  destruct e; reflexivity.
+Defined.
+
 
 (* Aliases *)
 
@@ -575,7 +593,7 @@ Proof.
     assert (H : x0 = x1) by (transitivity x; [symmetry|]; auto).
     destruct H.
     assumption.
-Qed.   
+Qed.
 
 Lemma forall_exists_coincide_unique_domain :
   forall A (P:A->Prop),
@@ -587,7 +605,7 @@ Proof.
   exists x. split; [trivial|].
   destruct H with (Q:=fun x'=>x=x') as (_,Huniq).
   apply Huniq. exists x; auto.
-Qed.       
+Qed.
 
 (** * Being inhabited *)
 
