@@ -649,3 +649,42 @@ Qed.
 
 Declare Left Step iff_stepl.
 Declare Right Step iff_trans.
+
+(** Equality for [ex] *)
+Section ex.
+  Local Unset Implicit Arguments.
+  Definition eq_ex_uncurried' {A : Type} (P : A -> Prop) {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+             (pq : exists p : u1 = v1, eq_rect _ _ u2 _ p = v2)
+  : ex_intro P u1 u2 = ex_intro P v1 v2.
+  Proof.
+    destruct pq as [p q].
+    destruct q; simpl in *.
+    destruct p; reflexivity.
+  Defined.
+
+  Definition eq_ex' {A : Type} {P : A -> Prop} (u1 v1 : A) (u2 : P u1) (v2 : P v1)
+             (p : u1 = v1) (q : eq_rect _ _ u2 _ p = v2)
+  : ex_intro P u1 u2 = ex_intro P v1 v2
+    := eq_ex_uncurried' P (ex_intro _ p q).
+
+  Definition eq_ex'_hprop {A} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
+             (u1 v1 : A) (u2 : P u1) (v2 : P v1)
+             (p : u1 = v1)
+    : ex_intro P u1 u2 = ex_intro P v1 v2
+    := eq_ex' u1 v1 u2 v2 p (P_hprop _ _ _).
+
+  Lemma eq_rect_ex {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : ex (Q x)) {y} (H : x = y)
+  : eq_rect x (fun a => ex (Q a)) u y H
+    = match u with
+        | ex_intro _ u1 u2
+          => ex_intro
+               (Q y)
+               (eq_rect x P u1 y H)
+               match H in (_ = y) return Q y (eq_rect x P u1 y H) with
+                 | eq_refl => u2
+               end
+      end.
+  Proof.
+    destruct H, u; reflexivity.
+  Defined.
+End ex.
