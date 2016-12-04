@@ -243,3 +243,42 @@ with the actual [dependent induction] tactic. *)
 
 Tactic Notation "dependent" "induction" ident(H) :=
   fail "To use dependent induction, first [Require Import Coq.Program.Equality.]".
+
+(** *** [inversion_sigma] *)
+(** The built-in [inversion] will frequently leave equalities of
+    dependent pairs.  When the first type in the pair is an hProp or
+    otherwise simplifies, [inversion_sigma] is useful; it will replace
+    the equality of pairs with a pair of equalities, one involving a
+    term casted along the other.  This might also prove useful for
+    writing a version of [inversion] / [dependent destruction] which
+    does not lose information, i.e., does not turn a goal which is
+    provable into one which requires axiom K / UIP.  *)
+Ltac simpl_proj_exist_in H :=
+  repeat match type of H with
+         | context G[proj1_sig (exist _ ?x ?p)]
+           => let G' := context G[x] in change G' in H
+         | context G[proj2_sig (exist _ ?x ?p)]
+           => let G' := context G[p] in change G' in H
+         | context G[projT1 (existT _ ?x ?p)]
+           => let G' := context G[x] in change G' in H
+         | context G[projT2 (existT _ ?x ?p)]
+           => let G' := context G[p] in change G' in H
+         end.
+Ltac induction_sigma_in_using H rect :=
+  let H0 := fresh H in
+  let H1 := fresh H in
+  induction H as [H0 H1] using (rect _ _ _ _);
+  simpl_proj_exist_in H0;
+  simpl_proj_exist_in H1.
+Ltac inversion_sigma_step :=
+  match goal with
+  | [ H : _ = exist _ _ _ |- _ ]
+    => induction_sigma_in_using H @eq_sig_rect
+  | [ H : _ = existT _ _ _ |- _ ]
+    => induction_sigma_in_using H @eq_sigT_rect
+  | [ H : exist _ _ _ = _ |- _ ]
+    => induction_sigma_in_using H @eq_sig_rect
+  | [ H : existT _ _ _ = _ |- _ ]
+    => induction_sigma_in_using H @eq_sigT_rect
+  end.
+Ltac inversion_sigma := repeat inversion_sigma_step.
