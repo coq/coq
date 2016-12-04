@@ -238,7 +238,7 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 	$(SHOW)'CCDEP	$<'
 	$(HIDE)echo "$@ $(@:.c.d=.o): $(@:.c.d=.c)" > $@
 
-%.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
+kernel/byterun/%.c.d: $(D_DEPEND_BEFORE_SRC) kernel/byterun/%.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
 	$(HIDE)$(OCAMLC) -ccopt "-MM -MQ $@ -MQ $(<:.c=.o) -isystem $(CAMLHLIB)" $< $(TOTARGET)
 
