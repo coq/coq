@@ -261,10 +261,7 @@ match local with
 
 let interp_assumption evdref env impls bl c =
   let c = prod_constr_expr c bl in
-  let ty, impls = interp_type_evars_impls env evdref ~impls c in
-  let evd, nf = nf_evars_and_universes !evdref in
-  let ctx = Evd.universe_context_set evd in
-    ((nf ty, ctx), impls)
+  interp_type_evars_impls env evdref ~impls c
 
 let declare_assumptions idl is_coe k (c,ctx) pl imps impl_is_on nl =
   let refs, status, _ =
@@ -289,26 +286,32 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
         l []
     else l
   in
+  (* We intepret all declarations in the same evar_map, i.e. as a telescope. *)
   let _,l = List.fold_map (fun (env,ienv) (is_coe,(idl,c)) ->
-    let (t,ctx),imps = interp_assumption evdref env ienv [] c in
+    let t,imps = interp_assumption evdref env ienv [] c in
     let env =
       push_named_context (List.map (fun (_,id) -> LocalAssum (id,t)) idl) env in
     let ienv = List.fold_right (fun (_,id) ienv ->
       let impls = compute_internalization_data env Variable t imps in
       Id.Map.add id impls ienv) idl ienv in
-      ((env,ienv),((is_coe,idl),t,(ctx,imps)))) 
+      ((env,ienv),((is_coe,idl),t,imps))) 
     (env,empty_internalization_env) l
   in
   let evd = solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref) in
+  (* The universe constraints come from the whole telescope. *)
+  let evd = Evd.nf_constraints evd in
+  let ctx = Evd.universe_context_set evd in
   let l = List.map (on_pi2 (nf_evar evd)) l in
-  snd (List.fold_left (fun (subst,status) ((is_coe,idl),t,(ctx,imps)) ->
+  pi2 (List.fold_left (fun (subst,status,ctx) ((is_coe,idl),t,imps) ->
     let t = replace_vars subst t in
     let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) [] imps false nl in
     let subst' = List.map2 
       (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u)))
       idl refs 
     in
-      (subst'@subst, status' && status)) ([],true) l)
+    (subst'@subst, status' && status,
+     (* The universe constraints are declared with the first declaration only. *)
+     Univ.ContextSet.empty)) ([],true,ctx) l)
 
 let do_assumptions_bound_univs coe kind nl id pl c =
   let env = Global.env () in
