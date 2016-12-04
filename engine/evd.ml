@@ -854,6 +854,13 @@ let is_eq_sort s1 s2 =
       if Univ.Universe.equal u1 u2 then None
       else Some (u1, u2)
 
+(* Precondition: l is not defined in the substitution *)
+let universe_rigidity evd l =
+  let uctx = evd.universes in
+  if Univ.LSet.mem l (Univ.ContextSet.levels (UState.context_set uctx)) then
+    UnivFlexible (Univ.LSet.mem l (UState.algebraics uctx))
+  else UnivRigid
+
 let normalize_universe evd =
   let vars = ref (UState.subst evd.universes) in
   let normalize = Universes.normalize_universe_opt_subst vars in

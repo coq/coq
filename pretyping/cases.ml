@@ -1934,14 +1934,22 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
  *)
 
 let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
+  let refresh_tycon sigma t =
+    (** If we put the typing constraint in the term, it has to be
+       refreshed to preserve the invariant that no algebraic universe
+       can appear in the term.  *)
+    refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some true)
+		      env sigma t
+  in
   let preds =
     match pred, tycon with
     (* No return clause *)
     | None, Some t when not (noccur_with_meta 0 max_int t) ->
 	(* If the tycon is not closed w.r.t real variables, we try *)
         (* two different strategies *)
-	(* First strategy: we abstract the tycon wrt to the dependencies *)
-        let p1 =
+       (* First strategy: we abstract the tycon wrt to the dependencies *)
+         let sigma, t = refresh_tycon sigma t in
+         let p1 =
           prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign t in
 	(* Second strategy: we build an "inversion" predicate *)
 	let sigma2,pred2 = build_inversion_problem loc env sigma tomatchs t in
@@ -1952,7 +1960,7 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
 	(* No dependent type constraint, or no constraints at all: *)
 	(* we use two strategies *)
         let sigma,t = match tycon with
-	| Some t -> sigma,t
+	| Some t -> refresh_tycon sigma t
 	| None -> 
           let sigma = Sigma.Unsafe.of_evar_map sigma in
           let Sigma ((t, _), sigma, _) =
