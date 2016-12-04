@@ -15,23 +15,35 @@ open Tac2expr
 
 type ltac_constant = KerName.t
 type ltac_constructor = KerName.t
+type ltac_projection = KerName.t
 type type_constant = KerName.t
 
 type constructor_data = {
+  cdata_prms : int;
   cdata_type : type_constant;
-  cdata_args : int * int glb_typexpr list;
+  cdata_args : int glb_typexpr list;
   cdata_indx : int;
+}
+
+type projection_data = {
+  pdata_prms : int;
+  pdata_type : type_constant;
+  pdata_ptyp : int glb_typexpr;
+  pdata_mutb : bool;
+  pdata_indx : int;
 }
 
 type ltac_state = {
   ltac_tactics : (glb_tacexpr * type_scheme) KNmap.t;
   ltac_constructors : constructor_data KNmap.t;
+  ltac_projections : projection_data KNmap.t;
   ltac_types : glb_quant_typedef KNmap.t;
 }
 
 let empty_state = {
   ltac_tactics = KNmap.empty;
   ltac_constructors = KNmap.empty;
+  ltac_projections = KNmap.empty;
   ltac_types = KNmap.empty;
 }
 
@@ -51,8 +63,8 @@ let rec eval_pure = function
 | GTacTup el -> ValBlk (0, Array.map_of_list eval_pure el)
 | GTacCst (_, n, []) -> ValInt n
 | GTacCst (_, n, el) -> ValBlk (n, Array.map_of_list eval_pure el)
-| GTacAtm (AtmStr _) | GTacArr _ | GTacLet _ | GTacVar _
-| GTacApp _ | GTacCse _ | GTacPrm _ | GTacExt _ ->
+| GTacAtm (AtmStr _) | GTacArr _ | GTacLet _ | GTacVar _ | GTacSet _
+| GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ ->
   anomaly (Pp.str "Term is not a syntactical value")
 
 let define_global kn e =
@@ -68,6 +80,12 @@ let define_constructor kn t =
   ltac_state := { state with ltac_constructors = KNmap.add kn t state.ltac_constructors }
 
 let interp_constructor kn = KNmap.find kn ltac_state.contents.ltac_constructors
+
+let define_projection kn t =
+  let state = !ltac_state in
+  ltac_state := { state with ltac_projections = KNmap.add kn t state.ltac_projections }
+
+let interp_projection kn = KNmap.find kn ltac_state.contents.ltac_projections
 
 let define_type kn e =
   let state = !ltac_state in
@@ -103,28 +121,47 @@ struct
     id, (DirPath.repr dir)
 end
 
+type tacref =
+| TacConstant of ltac_constant
+| TacConstructor of ltac_constructor
+
+module TacRef =
+struct
+type t = tacref
+let equal r1 r2 = match r1, r2 with
+| TacConstant c1, TacConstant c2 -> KerName.equal c1 c2
+| TacConstructor c1, TacConstructor c2 -> KerName.equal c1 c2
+| _ -> false
+end
+
 module KnTab = Nametab.Make(FullPath)(KerName)
+module RfTab = Nametab.Make(FullPath)(TacRef)
 
 type nametab = {
-  tab_ltac : KnTab.t;
+  tab_ltac : RfTab.t;
   tab_type : KnTab.t;
+  tab_proj : KnTab.t;
 }
 
-let empty_nametab = { tab_ltac = KnTab.empty; tab_type = KnTab.empty }
+let empty_nametab = {
+  tab_ltac = RfTab.empty;
+  tab_type = KnTab.empty;
+  tab_proj = KnTab.empty;
+}
 
 let nametab = Summary.ref empty_nametab ~name:"ltac2-nametab"
 
 let push_ltac vis sp kn =
   let tab = !nametab in
-  nametab := { tab with tab_ltac = KnTab.push vis sp kn tab.tab_ltac }
+  nametab := { tab with tab_ltac = RfTab.push vis sp kn tab.tab_ltac }
 
 let locate_ltac qid =
   let tab = !nametab in
-  KnTab.locate qid tab.tab_ltac
+  RfTab.locate qid tab.tab_ltac
 
 let locate_extended_all_ltac qid =
   let tab = !nametab in
-  KnTab.find_prefixes qid tab.tab_ltac
+  RfTab.find_prefixes qid tab.tab_ltac
 
 let push_type vis sp kn =
   let tab = !nametab in
@@ -137,6 +174,18 @@ let locate_type qid =
 let locate_extended_all_type qid =
   let tab = !nametab in
   KnTab.find_prefixes qid tab.tab_type
+
+let push_projection vis sp kn =
+  let tab = !nametab in
+  nametab := { tab with tab_proj = KnTab.push vis sp kn tab.tab_proj }
+
+let locate_projection qid =
+  let tab = !nametab in
+  KnTab.locate qid tab.tab_proj
+
+let locate_extended_all_projection qid =
+  let tab = !nametab in
+  KnTab.find_prefixes qid tab.tab_proj
 
 type 'a ml_object = {
   ml_type : type_constant;

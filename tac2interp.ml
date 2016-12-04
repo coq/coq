@@ -80,6 +80,12 @@ let rec interp ist = function
   return (ValBlk (n, Array.of_list el))
 | GTacCse (e, _, cse0, cse1) ->
   interp ist e >>= fun e -> interp_case ist e cse0 cse1
+| GTacPrj (e, p) ->
+  interp ist e >>= fun e -> interp_proj ist e p
+| GTacSet (e, p, r) ->
+  interp ist e >>= fun e ->
+  interp ist r >>= fun r ->
+  interp_set ist e p r
 | GTacPrm (ml, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   Tac2env.interp_primitive ml el
@@ -109,4 +115,17 @@ and interp_case ist e cse0 cse1 = match e with
   let ist = CArray.fold_left2 push_name ist ids args in
   interp ist e
 | ValExt _ | ValStr _ | ValCls _ ->
+  anomaly (str "Unexpected value shape")
+
+and interp_proj ist e p = match e with
+| ValBlk (_, args) ->
+  return args.(p)
+| ValInt _ | ValExt _ | ValStr _ | ValCls _ ->
+  anomaly (str "Unexpected value shape")
+
+and interp_set ist e p r = match e with
+| ValBlk (_, args) ->
+  let () = args.(p) <- r in
+  return (ValInt 0)
+| ValInt _ | ValExt _ | ValStr _ | ValCls _ ->
   anomaly (str "Unexpected value shape")

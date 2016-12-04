@@ -16,6 +16,11 @@ type rec_flag = bool
 type lid = Id.t
 type uid = Id.t
 
+type ltac_constant = KerName.t
+type ltac_constructor = KerName.t
+type ltac_projection = KerName.t
+type type_constant = KerName.t
+
 (** {5 Misc} *)
 
 type ml_tactic_name = {
@@ -40,7 +45,7 @@ type 'a glb_typexpr =
 | GTypVar of 'a
 | GTypArrow of 'a glb_typexpr * 'a glb_typexpr
 | GTypTuple of 'a glb_typexpr list
-| GTypRef of KerName.t * 'a glb_typexpr list
+| GTypRef of type_constant * 'a glb_typexpr list
 
 type glb_typedef =
 | GTydDef of int glb_typexpr option
@@ -76,25 +81,32 @@ type raw_tacexpr =
 | CTacCnv of Loc.t * raw_tacexpr * raw_typexpr
 | CTacSeq of Loc.t * raw_tacexpr * raw_tacexpr
 | CTacCse of Loc.t * raw_tacexpr * raw_taccase list
+| CTacRec of Loc.t * raw_recexpr
+| CTacPrj of Loc.t * raw_tacexpr * qualid located
+| CTacSet of Loc.t * raw_tacexpr * qualid located * raw_tacexpr
 | CTacExt of Loc.t * raw_generic_argument
 
 and raw_taccase = raw_patexpr * raw_tacexpr
 
+and raw_recexpr = (qualid located * raw_tacexpr) list
+
 type case_info =
 | GCaseTuple of int
-| GCaseAlg of KerName.t
+| GCaseAlg of type_constant
 
 type glb_tacexpr =
 | GTacAtm of atom
 | GTacVar of Id.t
-| GTacRef of KerName.t
+| GTacRef of ltac_constant
 | GTacFun of Name.t list * glb_tacexpr
 | GTacApp of glb_tacexpr * glb_tacexpr list
 | GTacLet of rec_flag * (Name.t * glb_tacexpr) list * glb_tacexpr
 | GTacTup of glb_tacexpr list
 | GTacArr of glb_tacexpr list
-| GTacCst of KerName.t * int * glb_tacexpr list
+| GTacCst of type_constant * int * glb_tacexpr list
 | GTacCse of glb_tacexpr * case_info * glb_tacexpr array * (Name.t array * glb_tacexpr) array
+| GTacPrj of glb_tacexpr * int
+| GTacSet of glb_tacexpr * int * glb_tacexpr
 | GTacExt of glob_generic_argument
 | GTacPrm of ml_tactic_name * glb_tacexpr list
 

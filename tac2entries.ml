@@ -13,6 +13,7 @@ open Names
 open Libnames
 open Libobject
 open Nametab
+open Tac2env
 open Tac2expr
 open Tac2intern
 open Vernacexpr
@@ -24,14 +25,14 @@ type tacdef = {
 }
 
 let perform_tacdef visibility ((sp, kn), def) =
-  let () = if not def.tacdef_local then Tac2env.push_ltac visibility sp kn in
+  let () = if not def.tacdef_local then Tac2env.push_ltac visibility sp (TacConstant kn) in
   Tac2env.define_global kn (def.tacdef_expr, def.tacdef_type)
 
 let load_tacdef i obj = perform_tacdef (Until i) obj
 let open_tacdef i obj = perform_tacdef (Exactly i) obj
 
 let cache_tacdef ((sp, kn), def) =
-  let () = Tac2env.push_ltac (Until 1) sp kn in
+  let () = Tac2env.push_ltac (Until 1) sp (TacConstant kn) in
   Tac2env.define_global kn (def.tacdef_expr, def.tacdef_type)
 
 let subst_tacdef (subst, def) =
@@ -71,12 +72,19 @@ let push_typedef visibility sp kn (_, def) = match def with
   let iter (c, _) =
     let spc = change_sp_label sp c in
     let knc = change_kn_label kn c in
-    Tac2env.push_ltac visibility spc knc
+    Tac2env.push_ltac visibility spc (TacConstructor knc)
   in
   Tac2env.push_type visibility sp kn;
   List.iter iter cstrs
-| GTydRec _ ->
-  assert false (** FIXME *)
+| GTydRec fields ->
+  (** Register fields *)
+  let iter (c, _, _) =
+    let spc = change_sp_label sp c in
+    let knc = change_kn_label kn c in
+    Tac2env.push_projection visibility spc knc
+  in
+  Tac2env.push_type visibility sp kn;
+  List.iter iter fields
 
 let next i =
   let ans = !i in
@@ -95,27 +103,31 @@ let define_typedef kn (params, def as qdef) = match def with
   let iter (c, args) =
     let knc = change_kn_label kn c in
     let tag = if List.is_empty args then next constant else next nonconstant in
-    let ids = List.mapi (fun i _ -> dummy_var i) args in
-    let c = GTacCst (kn, tag, List.map (fun id -> GTacVar id) ids) in
-    let c =
-      if List.is_empty args then c
-      else GTacFun (List.map (fun id -> Name id) ids, c)
-    in
-    let fold arg tpe = GTypArrow (arg, tpe) in
-    let cT = GTypRef (kn, List.init params (fun i -> GTypVar i)) in
-    let cT = List.fold_right fold args cT in
     let data = {
-      Tac2env.cdata_type = kn;
-      cdata_args = params, args;
+      Tac2env.cdata_prms = params;
+      cdata_type = kn;
+      cdata_args = args;
       cdata_indx = tag;
     } in
-    Tac2env.define_constructor knc data;
-    Tac2env.define_global knc (c, (params, cT))
+    Tac2env.define_constructor knc data
   in
   Tac2env.define_type kn qdef;
   List.iter iter cstrs
-| GTydRec _ ->
-  assert false (** FIXME *)
+| GTydRec fs ->
+  (** Define projections *)
+  let iter i (id, mut, t) =
+    let knp = change_kn_label kn id in
+    let proj = {
+      Tac2env.pdata_prms = params;
+      pdata_type = kn;
+      pdata_ptyp = t;
+      pdata_mutb = mut;
+      pdata_indx = i;
+    } in
+    Tac2env.define_projection knp proj
+  in
+  Tac2env.define_type kn qdef;
+  List.iteri iter fs
 
 let perform_typdef vs ((sp, kn), def) =
   let () = if not def.typdef_local then push_typedef vs sp kn def.typdef_expr in
@@ -213,8 +225,22 @@ let register_type ?(local = false) isrec types =
       if isrec then
         user_err ~loc (str "The type abbreviation " ++ Id.print id ++
           str " cannot be recursive")
-    | CTydAlg _ -> () (** FIXME *)
-    | CTydRec _ -> assert false (** FIXME *)
+    | CTydAlg cs ->
+      let same_name (id1, _) (id2, _) = Id.equal id1 id2 in
+      let () = match List.duplicates same_name cs with
+      | [] -> ()
+      | (id, _) :: _ ->
+        user_err (str "Multiple definitions of the constructor " ++ Id.print id)
+      in
+      ()
+    | CTydRec ps ->
+      let same_name (id1, _, _) (id2, _, _) = Id.equal id1 id2 in
+      let () = match List.duplicates same_name ps with
+      | [] -> ()
+      | (id, _, _) :: _ ->
+        user_err (str "Multiple definitions of the projection " ++ Id.print id)
+      in
+      ()
   in
   let () = List.iter check types in
   let self =
@@ -275,8 +301,13 @@ let print_ltac ref =
     try Tac2env.locate_ltac qid
     with Not_found -> user_err ~loc (str "Unknown tactic " ++ pr_qualid qid)
   in
-  let (_, (_, t)) = Tac2env.interp_global kn in
-  Feedback.msg_notice (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype t)
+  match kn with
+  | TacConstant kn ->
+    let (_, (_, t)) = Tac2env.interp_global kn in
+    Feedback.msg_notice (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype t)
+  | TacConstructor kn ->
+    let _ = Tac2env.interp_constructor kn in
+    Feedback.msg_notice (str "Constructor" ++ spc () ++ str ":" ++ spc () ++ pr_qualid qid)
 
 (** Calling tactics *)
 

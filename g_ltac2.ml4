@@ -50,6 +50,8 @@ GEXTEND Gram
       [ e1 = tac2expr; ";"; e2 = tac2expr -> CTacSeq (!@loc, e1, e2) ]
     | "1" LEFTA
       [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" -> CTacApp (!@loc, e, el)
+      | e = SELF; ".("; qid = Prim.qualid; ")" -> CTacPrj (!@loc, e, qid)
+      | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "1" -> CTacSet (!@loc, e, qid, r)
       | e0 = tac2expr; ","; el = LIST1 tac2expr LEVEL "0" SEP "," -> CTacTup (!@loc, e0 :: el) ]
     | "0"
       [ "("; a = tac2expr LEVEL "5"; ")" -> a
@@ -57,6 +59,7 @@ GEXTEND Gram
       | "()" -> CTacTup (!@loc, [])
       | "("; ")" -> CTacTup (!@loc, [])
       | "["; a = LIST0 tac2expr LEVEL "1" SEP ";"; "]" -> CTacLst (!@loc, a)
+      | "{"; a = tac2rec_fieldexprs; "}" -> CTacRec (!@loc, a)
       | a = tactic_atom -> a ]
     ]
   ;
@@ -126,15 +129,34 @@ GEXTEND Gram
   ;
   tac2typ_knd:
     [ [ t = tac2type -> CTydDef (Some t)
-      | t = tac2alg_type -> CTydAlg t ] ]
+      | "["; t = tac2alg_constructors; "]" -> CTydAlg t
+      | "{"; t = tac2rec_fields; "}"-> CTydRec t ] ]
   ;
-  tac2alg_type:
-    [ [ -> []
-      | "|"; bl = LIST1 tac2alg_constructor SEP "|" -> bl ] ]
+  tac2alg_constructors:
+    [ [ "|"; cs = LIST1 tac2alg_constructor SEP "|" -> cs
+      | cs = LIST0 tac2alg_constructor SEP "|" -> cs ] ]
   ;
   tac2alg_constructor:
     [ [ c = Prim.ident -> (c, [])
       | c = Prim.ident; "("; args = LIST0 tac2type SEP ","; ")"-> (c, args) ] ]
+  ;
+  tac2rec_fields:
+    [ [ f = tac2rec_field; ";"; l = tac2rec_fields -> f :: l
+      | f = tac2rec_field; ";" -> [f]
+      | f = tac2rec_field -> [f]
+      | -> [] ] ]
+  ;
+  tac2rec_field:
+    [ [ mut = [ -> false | IDENT "mutable" -> true]; id = Prim.ident; ":"; t = tac2type -> (id, mut, t) ] ]
+  ;
+  tac2rec_fieldexprs:
+    [ [ f = tac2rec_fieldexpr; ";"; l = tac2rec_fieldexprs -> f :: l
+      | f = tac2rec_fieldexpr; ";" -> [f]
+      | f = tac2rec_fieldexpr-> [f]
+      | -> [] ] ]
+  ;
+  tac2rec_fieldexpr:
+    [ [ qid = Prim.qualid; ":="; e = tac2expr LEVEL "1" -> qid, e ] ]
   ;
   tac2typ_prm:
     [ [ -> []

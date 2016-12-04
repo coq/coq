@@ -14,10 +14,6 @@ open Tac2expr
 
 (** Ltac2 global environment *)
 
-type ltac_constant = KerName.t
-type ltac_constructor = KerName.t
-type type_constant = KerName.t
-
 (** {5 Toplevel definition of values} *)
 
 val define_global : ltac_constant -> (glb_tacexpr * type_scheme) -> unit
@@ -31,23 +27,56 @@ val interp_type : type_constant -> glb_quant_typedef
 (** {5 Toplevel definition of algebraic constructors} *)
 
 type constructor_data = {
+  cdata_prms : int;
+  (** Type parameters *)
   cdata_type : type_constant;
-  cdata_args : int * int glb_typexpr list;
+  (** Inductive definition to which the constructor pertains *)
+  cdata_args : int glb_typexpr list;
+  (** Types of the constructor arguments *)
   cdata_indx : int;
+  (** Index of the constructor in the ADT. Numbering is duplicated between
+      argumentless and argument-using constructors, e.g. in type ['a option]
+      [None] and [Some] have both index 0. *)
 }
 
 val define_constructor : ltac_constructor -> constructor_data -> unit
 val interp_constructor : ltac_constructor -> constructor_data
 
+(** {5 Toplevel definition of projections} *)
+
+type projection_data = {
+  pdata_prms : int;
+  (** Type parameters *)
+  pdata_type : type_constant;
+  (** Record definition to which the projection pertains *)
+  pdata_ptyp : int glb_typexpr;
+  (** Type of the projection *)
+  pdata_mutb : bool;
+  (** Whether the field is mutable *)
+  pdata_indx : int;
+  (** Index of the projection *)
+}
+
+val define_projection : ltac_projection -> projection_data -> unit
+val interp_projection : ltac_projection -> projection_data
+
 (** {5 Name management} *)
 
-val push_ltac : visibility -> full_path -> ltac_constant -> unit
-val locate_ltac : qualid -> ltac_constant
-val locate_extended_all_ltac : qualid -> ltac_constant list
+type tacref =
+| TacConstant of ltac_constant
+| TacConstructor of ltac_constructor
+
+val push_ltac : visibility -> full_path -> tacref -> unit
+val locate_ltac : qualid -> tacref
+val locate_extended_all_ltac : qualid -> tacref list
 
 val push_type : visibility -> full_path -> type_constant -> unit
 val locate_type : qualid -> type_constant
 val locate_extended_all_type : qualid -> type_constant list
+
+val push_projection : visibility -> full_path -> ltac_projection -> unit
+val locate_projection : qualid -> ltac_projection
+val locate_extended_all_projection : qualid -> ltac_projection list
 
 (** {5 Toplevel definitions of ML tactics} *)
 

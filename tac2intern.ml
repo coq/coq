@@ -174,12 +174,20 @@ let loc_of_tacexpr = function
 | CTacCnv (loc, _, _) -> loc
 | CTacSeq (loc, _, _) -> loc
 | CTacCse (loc, _, _) -> loc
+| CTacRec (loc, _) -> loc
+| CTacPrj (loc, _, _) -> loc
+| CTacSet (loc, _, _, _) -> loc
 | CTacExt (loc, _) -> loc
 
 let loc_of_patexpr = function
 | CPatAny loc -> loc
 | CPatRef (loc, _, _) -> loc
 | CPatTup (loc, _) -> loc
+
+let error_nargs_mismatch loc nargs nfound =
+  user_err ~loc (str "Constructor expects " ++ int nargs ++
+    str " arguments, but is applied to " ++ int nfound ++
+    str " arguments")
 
 let rec subst_type subst (t : 'a glb_typexpr) = match t with
 | GTypVar id -> subst id
@@ -320,20 +328,27 @@ let unify loc env t1 t2 =
 
 (** Term typing *)
 
+let is_pure_constructor kn =
+  match snd (Tac2env.interp_type kn) with
+  | GTydAlg _ -> true
+  | GTydRec fields ->
+    let is_pure (_, mut, _) = not mut in
+    List.for_all is_pure fields
+  | GTydDef _ -> assert false (** Type definitions have no constructors *)
+
 let rec is_value = function
 | GTacAtm (AtmInt _) | GTacVar _ | GTacRef _ | GTacFun _ -> true
 | GTacAtm (AtmStr _) | GTacApp _ | GTacLet _ -> false
 | GTacTup el -> List.for_all is_value el
 | GTacCst (_, _, []) -> true
-| GTacCst (kn, n, el) ->
-  (** To be a value, a constructor must be immutable *)
-  assert false (** TODO *)
-| GTacArr _ | GTacCse _ | GTacExt _ | GTacPrm _ -> false
+| GTacCst (kn, _, el) -> is_pure_constructor kn && List.for_all is_value el
+| GTacArr _ | GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _ -> false
 
 let is_rec_rhs = function
 | GTacFun _ -> true
-| GTacAtm _ | GTacVar _ | GTacRef _ | GTacApp _ | GTacLet _ -> false
-| GTacTup _ | GTacArr _ | GTacExt _ | GTacPrm _ | GTacCst _ | GTacCse _ -> false
+| GTacAtm _ | GTacVar _ | GTacRef _ | GTacApp _ | GTacLet _ | GTacPrj _
+| GTacSet _ | GTacTup _ | GTacArr _ | GTacExt _ | GTacPrm _ | GTacCst _
+| GTacCse _ -> false
 
 let rec fv_type f t accu = match t with
 | GTypVar id -> f id accu
@@ -438,17 +453,22 @@ let get_variable env (loc, qid) =
 let get_constructor env (loc, qid) =
   let c = try Some (Tac2env.locate_ltac qid) with Not_found -> None in
   match c with
-  | Some knc ->
-    let kn =
-      try Tac2env.interp_constructor knc
-      with Not_found ->
-        CErrors.user_err ~loc (str "The term " ++ pr_qualid qid ++
-          str " is not the constructor of an inductive type.")    in
+  | Some (TacConstructor knc) ->
+    let kn = Tac2env.interp_constructor knc in
     ArgArg (kn, knc)
+  | Some (TacConstant _) ->
+    CErrors.user_err ~loc (str "The term " ++ pr_qualid qid ++
+      str " is not the constructor of an inductive type.")
   | None ->
     let (dp, id) = repr_qualid qid in
     if DirPath.is_empty dp then ArgVar (loc, id)
     else CErrors.user_err ~loc (str "Unbound constructor " ++ pr_qualid qid)
+
+let get_projection (loc, qid) =
+  let kn = try Tac2env.locate_projection qid with Not_found ->
+    user_err ~loc (pr_qualid qid ++ str " is not a projection")
+  in
+  Tac2env.interp_projection kn
 
 let intern_atm env = function
 | AtmInt n -> (GTacAtm (AtmInt n), GTypRef (t_int, []))
@@ -496,6 +516,10 @@ let get_pattern_kind env pl = match pl with
   in
   get_kind p pl
 
+let is_constructor env qid = match get_variable env qid with
+| ArgArg (TacConstructor _) -> true
+| _ -> false
+
 let rec intern_rec env = function
 | CTacAtm (_, atm) -> intern_atm env atm
 | CTacRef qid ->
@@ -503,9 +527,11 @@ let rec intern_rec env = function
   | ArgVar (_, id) ->
     let sch = Id.Map.find id env.env_var in
     (GTacVar id, fresh_mix_type_scheme env sch)
-  | ArgArg kn ->
+  | ArgArg (TacConstant kn) ->
     let (_, sch) = Tac2env.interp_global kn in
     (GTacRef kn, fresh_type_scheme env sch)
+  | ArgArg (TacConstructor kn) ->
+    intern_constructor env (fst qid) kn []
   end
 | CTacFun (loc, bnd, e) ->
   let fold (env, bnd, tl) ((_, na), t) =
@@ -520,6 +546,12 @@ let rec intern_rec env = function
   let (e, t) = intern_rec env e in
   let t = List.fold_left (fun accu t -> GTypArrow (t, accu)) t tl in
   (GTacFun (bnd, e), t)
+| CTacApp (loc, CTacRef qid, args) when is_constructor env qid ->
+  let kn = match get_variable env qid with
+  | ArgArg (TacConstructor kn) -> kn
+  | _ -> assert false
+  in
+  intern_constructor env (fst qid) kn args
 | CTacApp (loc, f, args) ->
   let (f, ft) = intern_rec env f in
   let fold arg (args, t) =
@@ -571,12 +603,7 @@ let rec intern_rec env = function
   (GTacArr [], GTypRef (t_int, [GTypVar id]))
 | CTacArr (loc, e0 :: el) ->
   let (e0, t0) = intern_rec env e0 in
-  let fold e el =
-    let loc = loc_of_tacexpr e in
-    let (e, t) = intern_rec env e in
-    let () = unify loc env t t0 in
-    e :: el
-  in
+  let fold e el = intern_rec_with_constraint env e t0 :: el in
   let el = e0 :: List.fold_right fold el [] in
   (GTacArr el, GTypRef (t_array, [t0]))
 | CTacLst (loc, []) ->
@@ -584,12 +611,7 @@ let rec intern_rec env = function
   (c_nil, GTypRef (t_list, [GTypVar id]))
 | CTacLst (loc, e0 :: el) ->
   let (e0, t0) = intern_rec env e0 in
-  let fold e el =
-    let loc = loc_of_tacexpr e in
-    let (e, t) = intern_rec env e in
-    let () = unify loc env t t0 in
-    c_cons e el
-  in
+  let fold e el = c_cons (intern_rec_with_constraint env e t0) el in
   let el = c_cons e0 (List.fold_right fold el c_nil) in
   (el, GTypRef (t_list, [t0]))
 | CTacCnv (loc, e, tc) ->
@@ -604,6 +626,34 @@ let rec intern_rec env = function
   (GTacLet (false, [Anonymous, e1], e2), t2)
 | CTacCse (loc, e, pl) ->
   intern_case env loc e pl
+| CTacRec (loc, fs) ->
+  intern_record env loc fs
+| CTacPrj (loc, e, proj) ->
+  let pinfo = get_projection proj in
+  let loc = loc_of_tacexpr e in
+  let (e, t) = intern_rec env e in
+  let subst = Array.init pinfo.pdata_prms (fun _ -> fresh_id env) in
+  let params = Array.map_to_list (fun i -> GTypVar i) subst in
+  let exp = GTypRef (pinfo.pdata_type, params) in
+  let () = unify loc env t exp in
+  let substf i = GTypVar subst.(i) in
+  let ret = subst_type substf pinfo.pdata_ptyp in
+  (GTacPrj (e, pinfo.pdata_indx), ret)
+| CTacSet (loc, e, proj, r) ->
+  let pinfo = get_projection proj in
+  let () =
+    if not pinfo.pdata_mutb then
+      let (loc, _) = proj in
+      user_err ~loc (str "Field is not mutable")
+  in
+  let subst = Array.init pinfo.pdata_prms (fun _ -> fresh_id env) in
+  let params = Array.map_to_list (fun i -> GTypVar i) subst in
+  let exp = GTypRef (pinfo.pdata_type, params) in
+  let e = intern_rec_with_constraint env e exp in
+  let substf i = GTypVar subst.(i) in
+  let ret = subst_type substf pinfo.pdata_ptyp in
+  let r = intern_rec_with_constraint env r ret in
+  (GTacSet (e, pinfo.pdata_indx, r), GTypRef (t_unit, []))
 | CTacExt (loc, ext) ->
   let open Genintern in
   let GenArg (Rawwit tag, _) = ext in
@@ -615,6 +665,12 @@ let rec intern_rec env = function
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
   let (_, ext) = Flags.with_option Ltac_plugin.Tacintern.strict_check (fun () -> generic_intern ist ext) () in
   (GTacExt ext, GTypRef (tpe.ml_type, []))
+
+and intern_rec_with_constraint env e exp =
+  let loc = loc_of_tacexpr e in
+  let (e, t) = intern_rec env e in
+  let () = unify loc env t exp in
+  e
 
 and intern_let_rec env loc el e =
   let fold accu ((loc, na), _, _) = match na with
@@ -760,12 +816,9 @@ and intern_case env loc e pl =
         in
         let ids = List.map get_id args in
         let nids = List.length ids in
-        let nargs = List.length (snd data.cdata_args) in
+        let nargs = List.length data.cdata_args in
         let () =
-          if not (Int.equal nids nargs) then
-            user_err ~loc (str "Constructor expects " ++ int nargs ++
-              str " arguments, but is applied to " ++ int nids ++
-              str " arguments")
+          if not (Int.equal nids nargs) then error_nargs_mismatch loc nargs nids
         in
         let fold env id tpe =
           (** Instantiate all arguments *)
@@ -773,7 +826,7 @@ and intern_case env loc e pl =
           let tpe = subst_type subst tpe in
           push_name id (monomorphic tpe) env
         in
-        let nenv = List.fold_left2 fold env ids (snd data.cdata_args) in
+        let nenv = List.fold_left2 fold env ids data.cdata_args in
         let (br', brT) = intern_rec nenv br in
         let () =
           let index = data.cdata_indx in
@@ -801,6 +854,64 @@ and intern_case env loc e pl =
     let nonconst = Array.map map nonconst in
     let ce = GTacCse (e', GCaseAlg kn, const, nonconst) in
     (ce, ret)
+
+and intern_constructor env loc kn args =
+  let cstr = interp_constructor kn in
+  let nargs = List.length cstr.cdata_args in
+  if Int.equal nargs (List.length args) then
+    let subst = Array.init cstr.cdata_prms (fun _ -> fresh_id env) in
+    let substf i = GTypVar subst.(i) in
+    let types = List.map (fun t -> subst_type substf t) cstr.cdata_args in
+    let ans = GTypRef (cstr.cdata_type, List.init cstr.cdata_prms (fun i -> GTypVar subst.(i))) in
+    let map arg tpe = intern_rec_with_constraint env arg tpe in
+    let args = List.map2 map args types in
+    (GTacCst (cstr.cdata_type, cstr.cdata_indx, args), ans)
+  else
+    error_nargs_mismatch loc nargs (List.length args)
+
+and intern_record env loc fs =
+  let map ((loc, qid), e) =
+    let proj = get_projection (loc, qid) in
+    (loc, proj, e)
+  in
+  let fs = List.map map fs in
+  let kn = match fs with
+  | [] -> user_err ~loc (str "Cannot infer the corresponding record type")
+  | (_, proj, _) :: _ -> proj.pdata_type
+  in
+  let params, typdef = match Tac2env.interp_type kn with
+  | n, GTydRec def -> n, def
+  | _ -> assert false
+  in
+  let subst = Array.init params (fun _ -> fresh_id env) in
+  (** Set the answer [args] imperatively *)
+  let args = Array.make (List.length typdef) None in
+  let iter (loc, pinfo, e) =
+    if KerName.equal kn pinfo.pdata_type then
+      let index = pinfo.pdata_indx in
+      match args.(index) with
+      | None ->
+        let exp = subst_type (fun i -> GTypVar subst.(i)) pinfo.pdata_ptyp in
+        let e = intern_rec_with_constraint env e exp in
+        args.(index) <- Some e
+      | Some _ ->
+        let (name, _, _) = List.nth typdef pinfo.pdata_indx in
+        user_err ~loc (str "Field " ++ Id.print name ++ str " is defined \
+          several times")
+    else
+      user_err ~loc (str "Field " ++ (*KerName.print knp ++*) str " does not \
+        pertain to record definition " ++ KerName.print pinfo.pdata_type)
+  in
+  let () = List.iter iter fs in
+  let () = match Array.findi (fun _ o -> Option.is_empty o) args with
+  | None -> ()
+  | Some i ->
+    let (field, _, _) = List.nth typdef i in
+    user_err ~loc (str "Field " ++ Id.print field ++ str " is undefined")
+  in
+  let args = Array.map_to_list Option.get args in
+  let tparam = List.init params (fun i -> GTypVar subst.(i)) in
+  (GTacCst (kn, 0, args), GTypRef (kn, tparam))
 
 let normalize env (count, vars) (t : UF.elt glb_typexpr) =
   let get_var id =
@@ -907,6 +1018,13 @@ let rec subst_expr subst e = match e with
   let cse1' = Array.map (fun (ids, e) -> (ids, subst_expr subst e)) cse1 in
   let ci' = subst_case_info subst ci in
   GTacCse (subst_expr subst e, ci', cse0', cse1')
+| GTacPrj (e, p) as e0 ->
+  let e' = subst_expr subst e in
+  if e' == e then e0 else GTacPrj (e', p)
+| GTacSet (e, p, r) as e0 ->
+  let e' = subst_expr subst e in
+  let r' = subst_expr subst r in
+  if e' == e && r' == r then e0 else GTacSet (e', p, r')
 | GTacExt ext ->
   let ext' = Genintern.generic_substitute subst ext in
   if ext' == ext then e else GTacExt ext'

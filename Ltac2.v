@@ -20,7 +20,7 @@ Ltac2 Type 'a array.
 
 (** Pervasive types *)
 
-Ltac2 Type 'a option := | None | Some ('a).
+Ltac2 Type 'a option := [ None | Some ('a) ].
 
 (** Primitive tactics *)
 
