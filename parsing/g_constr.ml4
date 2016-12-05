@@ -231,7 +231,7 @@ GEXTEND Gram
 
   record_field_declaration:
     [ [ id = global; params = LIST0 identref; ":="; c = lconstr ->
-      (id, abstract_constr_expr c (binders_of_lidents params)) ] ]
+      (id, mkCLambdaN (!@loc) (binders_of_lidents params) c) ] ]
   ;
   binder_constr:
     [ [ "forall"; bl = open_binders; ","; c = operconstr LEVEL "200" ->

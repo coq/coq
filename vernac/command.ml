@@ -262,7 +262,7 @@ match local with
     (gr,inst,Lib.is_modtype_strict ())
 
 let interp_assumption evdref env impls bl c =
-  let c = prod_constr_expr c bl in
+  let c = mkCProdN (local_binders_loc bl) bl c in
   interp_type_evars_impls env evdref ~impls c
 
 let declare_assumptions idl is_coe k (c,ctx) pl imps impl_is_on nl =
