@@ -19,7 +19,7 @@ type 'annotation located = {
 (* XXX: The width parameter should be moved to a `formatter_property`
    record shared with Topfmt *)
 
-(** [rich_pp width get_annotations ppcmds] returns the interpretation
+(** [rich_pp width ppcmds] returns the interpretation
     of [ppcmds] as a semi-structured document
     that represents (located) annotations of this string.
     The [get_annotations] function is used to convert tags into the desired

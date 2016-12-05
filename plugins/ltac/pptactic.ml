@@ -29,17 +29,10 @@ open Printer
 
 module Tag =
 struct
-  let keyword =
-    let style = Terminal.make ~bold:true () in
-    Ppstyle.make ~style ["tactic"; "keyword"]
 
-  let primitive =
-    let style = Terminal.make ~fg_color:`LIGHT_GREEN () in
-    Ppstyle.make ~style ["tactic"; "primitive"]
-
-  let string =
-    let style = Terminal.make ~fg_color:`LIGHT_RED () in
-    Ppstyle.make ~style ["tactic"; "string"]
+  let keyword   = "tactic.keyword"
+  let primitive = "tactic.primitive"
+  let string    = "tactic.string"
 
 end
 

@@ -67,8 +67,8 @@ let init_color () =
       ()
     | Some s ->
       (** Overwrite all colors *)
-      Ppstyle.clear_styles ();
-      Ppstyle.parse_config s;
+      Topfmt.clear_styles ();
+      Topfmt.parse_color_config s;
       Topfmt.init_color_output ()
   end
 
@@ -308,19 +308,16 @@ let usage () =
 
 let print_style_tags () =
   let () = init_color () in
-  let tags = Ppstyle.dump () in
+  let tags = Topfmt.dump_tags () in
   let iter (t, st) =
-    let st = match st with Some st -> st | None -> Terminal.make () in
-    let opt = Terminal.eval st ^ t ^   Terminal.reset ^ "\n" in
+    let opt = Terminal.eval st ^ t ^ Terminal.reset ^ "\n" in
     print_string opt
   in
-  let make (t, st) = match st with
-  | None -> None
-  | Some st ->
+  let make (t, st) =
     let tags = List.map string_of_int (Terminal.repr st) in
-    Some (t ^ "=" ^ String.concat ";" tags)
+    (t ^ "=" ^ String.concat ";" tags)
   in
-  let repr = List.map_filter make tags in
+  let repr = List.map make tags in
   let () = Printf.printf "COQ_COLORS=\"%s\"\n" (String.concat ":" repr) in
   let () = List.iter iter tags in
   flush_all ()

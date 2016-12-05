@@ -252,7 +252,7 @@ let print_toplevel_error (e, info) =
       else mt ()
     else print_location_in_file loc
   in
-  let hdr msg = hov 0 (tag Ppstyle.error_tag (str "Error:") ++ spc () ++ msg) in
+  let hdr msg = hov 0 (Topfmt.err_hdr ++ msg) in
   locmsg ++ hdr (CErrors.iprint (e, info))
 
 (* Read the input stream until a dot is encountered *)

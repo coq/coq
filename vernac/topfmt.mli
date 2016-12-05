@@ -36,12 +36,18 @@ val get_depth_boxes : unit -> int option
 val set_margin : int option -> unit
 val get_margin : unit -> int option
 
+(** Headers for tagging *)
+val err_hdr : Pp.std_ppcmds
+
 (** Console display of feedback *)
 val std_logger : ?loc:Loc.t -> Feedback.level -> Pp.std_ppcmds -> unit
 
 val emacs_logger : ?loc:Loc.t -> Feedback.level -> Pp.std_ppcmds -> unit
 
 val init_color_output : unit -> unit
+val clear_styles : unit -> unit
+val parse_color_config : string -> unit
+val dump_tags : unit -> (string * Terminal.style) list
 
 (** [with_output_to_file file f x] executes [f x] with logging
     redirected to a file [file] *)

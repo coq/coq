@@ -97,6 +97,15 @@ let set_margin v =
 
 (** Console display of feedback *)
 
+(** Default tags *)
+module Tag = struct
+
+  let error   = "message.error"
+  let warning = "message.warning"
+  let debug   = "message.debug"
+
+end
+
 type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
 
 let msgnl_with fmt strm =
@@ -123,10 +132,10 @@ end
 
 open Emacs
 
-let  dbg_str = tag Ppstyle.debug_tag   (str "Debug:")   ++ spc ()
-let info_str = mt ()
-let warn_str = tag Ppstyle.warning_tag (str "Warning:") ++ spc ()
-let  err_str = tag Ppstyle.error_tag   (str "Error:")   ++ spc ()
+let  dbg_hdr = tag Tag.debug   (str "Debug:")   ++ spc ()
+let info_hdr = mt ()
+let warn_hdr = tag Tag.warning (str "Warning:") ++ spc ()
+let  err_hdr = tag Tag.error   (str "Error:")   ++ spc ()
 
 let make_body quoter info ?loc s =
   let loc = Option.cata Pp.pr_loc (Pp.mt ()) loc in
@@ -134,13 +143,13 @@ let make_body quoter info ?loc s =
 
 (* Generic logger *)
 let gen_logger dbg err ?loc level msg = match level with
-  | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_str ?loc msg)
-  | Info    -> msgnl_with !std_ft (make_body dbg info_str ?loc msg)
+  | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_hdr ?loc msg)
+  | Info    -> msgnl_with !std_ft (make_body dbg info_hdr ?loc msg)
   (* XXX: What to do with loc here? *)
   | Notice  -> msgnl_with !std_ft msg
   | Warning -> Flags.if_warn (fun () ->
-               msgnl_with !err_ft (make_body err warn_str ?loc msg)) ()
-  | Error   -> msgnl_with !err_ft (make_body err  err_str ?loc msg)
+               msgnl_with !err_ft (make_body err warn_hdr ?loc msg)) ()
+  | Error   -> msgnl_with !err_ft (make_body err  err_hdr ?loc msg)
 
 (** Standard loggers *)
 
@@ -153,7 +162,43 @@ let std_logger ?loc level msg =
   gen_logger (fun x -> x) (fun x -> x) ?loc level msg;
   !std_logger_cleanup ()
 
-(** Color logging. Moved from pp_style, it may need some more refactoring  *)
+(** Color logging. Moved from Ppstyle, it may need some more refactoring  *)
+
+(* Tag map for terminal style *)
+let default_tag_map () = let open Terminal in [
+  (* Local to console toplevel *)
+    "message.error"    , make ~bold:true ~fg_color:`WHITE ~bg_color:`RED ()
+  ; "message.warning"  , make ~bold:true ~fg_color:`WHITE ~bg_color:`YELLOW ()
+  ; "message.debug"    , make ~bold:true ~fg_color:`WHITE ~bg_color:`MAGENTA ()
+  (* Coming from the printer *)
+  ; "constr.evar"      , make            ~fg_color:`LIGHT_BLUE ()
+  ; "constr.keyword"   , make ~bold:true ()
+  ; "constr.type"      , make ~bold:true ~fg_color:`YELLOW ()
+  ; "constr.notation"  , make ~fg_color:`WHITE ()
+  (* ["constr"; "variable"] is not assigned *)
+  ; "constr.reference" , make ~fg_color:`LIGHT_GREEN ()
+  ; "constr.path"      , make ~fg_color:`LIGHT_MAGENTA ()
+  ; "module.definition", make ~bold:true ~fg_color:`LIGHT_RED ()
+  ; "module.keyword"   , make ~bold:true ()
+  ; "tactic.keyword"   , make ~bold:true ()
+  ; "tactic.primitive" , make ~fg_color:`LIGHT_GREEN ()
+  ; "tactic.string"    , make ~fg_color:`LIGHT_RED ()
+  ]
+
+let tag_map = ref CString.Map.empty
+
+let init_tag_map styles =
+  let set accu (name, st) = CString.Map.add name st accu in
+  tag_map := List.fold_left set !tag_map styles
+
+let clear_styles () =
+  tag_map := CString.Map.empty
+
+let parse_color_config file =
+  let styles = Terminal.parse file in
+  init_tag_map styles
+
+let dump_tags () = CString.Map.bindings !tag_map
 
 (** Not thread-safe. We should put a lock somewhere if we print from
     different threads. Do we? *)
@@ -175,9 +220,9 @@ let make_style_stack () =
   | st :: _ -> st
   in
   let push tag =
-    let style = match Ppstyle.get_style tag with
-      | None    -> empty
-      | Some st -> st
+    let style =
+      try CString.Map.find tag !tag_map
+      with | Not_found -> empty
     in
     (** Use the merging of the latest tag and the one being currently pushed.
     This may be useful if for instance the latest tag changes the background and
@@ -196,6 +241,7 @@ let make_style_stack () =
   push, pop, clear
 
 let init_color_output () =
+  init_tag_map (default_tag_map ());
   let push_tag, pop_tag, clear_tag = make_style_stack () in
   std_logger_cleanup := clear_tag;
   let tag_handler = {
@@ -220,8 +266,8 @@ let emacs_logger = gen_logger emacs_quote_info emacs_quote_err
 let ft_logger old_logger ft ?loc level mesg =
   let id x = x in
   match level with
-  | Debug   -> msgnl_with ft (make_body id  dbg_str mesg)
-  | Info    -> msgnl_with ft (make_body id info_str mesg)
+  | Debug   -> msgnl_with ft (make_body id  dbg_hdr mesg)
+  | Info    -> msgnl_with ft (make_body id info_hdr mesg)
   | Notice  -> msgnl_with ft mesg
   | Warning -> old_logger ?loc level mesg
   | Error   -> old_logger ?loc level mesg

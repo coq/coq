@@ -28,12 +28,10 @@ open Goptions
 
 module Tag =
 struct
-  let definition =
-    let style = Terminal.make ~bold:true ~fg_color:`LIGHT_RED () in
-    Ppstyle.make ~style ["module"; "definition"]
-  let keyword =
-    let style = Terminal.make ~bold:true () in
-    Ppstyle.make ~style ["module"; "keyword"]
+
+  let definition = "module.definition"
+  let keyword    = "module.keyword"
+
 end
 
 let tag t s = Pp.tag t s

@@ -23,32 +23,14 @@ open Misctypes
 
 module Tag =
 struct
-  let keyword =
-    let style = Terminal.make ~bold:true () in
-    Ppstyle.make ~style ["constr"; "keyword"]
+  let keyword   = "constr.keyword"
+  let evar      = "constr.evar"
+  let univ      = "constr.type"
+  let notation  = "constr.notation"
+  let variable  = "constr.variable"
+  let reference = "constr.reference"
+  let path      = "constr.path"
 
-  let evar =
-    let style = Terminal.make ~fg_color:`LIGHT_BLUE () in
-    Ppstyle.make ~style ["constr"; "evar"]
-
-  let univ =
-    let style = Terminal.make ~bold:true ~fg_color:`YELLOW () in
-    Ppstyle.make ~style ["constr"; "type"]
-
-  let notation =
-    let style = Terminal.make ~fg_color:`WHITE () in
-    Ppstyle.make ~style ["constr"; "notation"]
-
-  let variable =
-    Ppstyle.make ["constr"; "variable"]
-
-  let reference =
-    let style = Terminal.make ~fg_color:`LIGHT_GREEN () in
-    Ppstyle.make ~style ["constr"; "reference"]
-
-  let path =
-    let style = Terminal.make ~fg_color:`LIGHT_MAGENTA () in
-    Ppstyle.make ~style ["constr"; "path"]
 end
 
 let do_not_tag _ x = x

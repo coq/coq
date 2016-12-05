@@ -160,12 +160,11 @@ val surround : std_ppcmds -> std_ppcmds
 (** Surround with parenthesis. *)
 
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
-
 val pr_loc : Loc.t -> std_ppcmds
 
 (** {6 Main renderers, to formatter and to string } *)
 
-(** [msg_with fmt pp] Print [pp] to [fmt] and don't flush [fmt]  *)
+(** [pp_with fmt pp] Print [pp] to [fmt] and don't flush [fmt]  *)
 val pp_with          : Format.formatter -> std_ppcmds -> unit
 
 val string_of_ppcmds : std_ppcmds -> string
