@@ -59,9 +59,6 @@ val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
 
 val fresh_var_hook : (Names.Id.t list -> Constrexpr.constr_expr -> Names.Id.t) Hook.t
-val expand_pattern_binders :
-  (Loc.t -> local_binder list -> constr_expr -> constr_expr) ->
-  local_binder list -> constr_expr -> local_binder list * constr_expr
 
 (** {6 Destructors}*)
 

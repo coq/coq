@@ -301,67 +301,47 @@ let add_name_in_env env n =
 
 let (fresh_var, fresh_var_hook) = Hook.make ~default:(fun _ _ -> assert false) ()
 
-let expand_pattern_binders mkC bl c =
-  let rec loop bl c =
+let expand_binders mkC loc bl c =
+  let rec loop loc bl c =
     match bl with
-    | [] -> ([], [], c)
+    | [] -> ([], c)
     | b :: bl ->
-        let (env, bl, c) = loop bl c in
         match b with
-        | LocalRawDef (n, _) ->
+        | LocalRawDef ((loc1,_) as n, b) ->
+            let env, c = loop (Loc.merge loc1 loc) bl c in
             let env = add_name_in_env env n in
-            (env, b :: bl, c)
-        | LocalRawAssum (nl, _, _) ->
+            (env, CLetIn (loc,n,b,c))
+        | LocalRawAssum ((loc1,_)::_ as nl, bk, t) ->
+            let env, c = loop (Loc.merge loc1 loc) bl c in
             let env = List.fold_left add_name_in_env env nl in
-            (env, b :: bl, c)
-        | LocalPattern (loc, p, ty) ->
+            (env, mkC loc (nl,bk,t) c)
+        | LocalRawAssum ([],_,_) -> loop loc bl c
+        | LocalPattern (loc1, p, ty) ->
+            let env, c = loop (Loc.merge loc1 loc) bl c in
             let ni = Hook.get fresh_var env c in
-            let id = (loc, Name ni) in
-            let b =
-              LocalRawAssum
-                ([id], Default Explicit,
-                 match ty with
+            let id = (loc1, Name ni) in
+            let ty = match ty with
                  | Some ty -> ty
-                 | None -> CHole (loc, None, IntroAnonymous, None))
+                 | None -> CHole (loc1, None, IntroAnonymous, None)
             in
-            let e = CRef (Libnames.Ident (loc, ni), None) in
+            let e = CRef (Libnames.Ident (loc1, ni), None) in
             let c =
               CCases
                 (loc, LetPatternStyle, None, [(e,None,None)],
-                 [(loc, [(loc,[p])], mkC loc bl c)])
+                 [(loc1, [(loc1,[p])], c)])
             in
-            (ni :: env, [b], c)
+            (ni :: env, mkC loc ([id],Default Explicit,ty) c)
   in
-  let (_, bl, c) = loop bl c in
-  (bl, c)
+  let (_, c) = loop loc bl c in
+  c
 
 let mkCProdN loc bll c =
-  let rec loop loc bll c =
-    match bll with
-    | LocalRawAssum ((loc1,_)::_ as idl,bk,t) :: bll ->
-        CProdN (loc,[idl,bk,t],loop (Loc.merge loc1 loc) bll c)
-    | LocalRawDef ((loc1,_) as id,b) :: bll ->
-        CLetIn (loc,id,b,loop (Loc.merge loc1 loc) bll c)
-    | [] -> c
-    | LocalRawAssum ([],_,_) :: bll -> loop loc bll c
-    | LocalPattern (loc,p,ty) :: bll -> assert false
-  in
-  let (bll, c) = expand_pattern_binders loop bll c in
-  loop loc bll c
+  let mk loc b c = CProdN (loc,[b],c) in
+  expand_binders mk loc bll c
 
 let mkCLambdaN loc bll c =
-  let rec loop loc bll c =
-    match bll with
-    | LocalRawAssum ((loc1,_)::_ as idl,bk,t) :: bll ->
-        CLambdaN (loc,[idl,bk,t],loop (Loc.merge loc1 loc) bll c)
-    | LocalRawDef ((loc1,_) as id,b) :: bll ->
-        CLetIn (loc,id,b,loop (Loc.merge loc1 loc) bll c)
-    | [] -> c
-    | LocalRawAssum ([],_,_) :: bll -> loop loc bll c
-    | LocalPattern (loc,p,ty) :: bll -> assert false
-  in
-  let (bll, c) = expand_pattern_binders loop bll c in
-  loop loc bll c
+  let mk loc b c = CLambdaN (loc,[b],c) in
+  expand_binders mk loc bll c
 
 (* Deprecated *)
 let abstract_constr_expr c bl = mkCLambdaN (local_binders_loc bl) bl c
