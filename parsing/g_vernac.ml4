@@ -243,16 +243,22 @@ GEXTEND Gram
   (* Simple definitions *)
   def_body:
     [ [ bl = binders; ":="; red = reduce; c = lconstr ->
-      let (bl, c) = expand_pattern_binders mkCLambdaN bl c in
-      (match c with
-          CCast(_,c, CastConv t) -> DefineBody (bl, red, c, Some t)
+      if List.exists (function LocalPattern _ -> true | _ -> false) bl
+      then
+        (* FIXME: "red" will be applied to types in bl and Cast with remain *)
+        let c = mkCLambdaN (!@loc) bl c in
+	DefineBody ([], red, c, None)
+      else
+        (match c with
+        | CCast(_,c, CastConv t) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
         let ((bl, c), tyo) =
           if List.exists (function LocalPattern _ -> true | _ -> false) bl
           then
+            (* FIXME: "red" will be applied to types in bl and Cast with remain *)
             let c = CCast (!@loc, c, CastConv t) in
-            (expand_pattern_binders mkCLambdaN bl c, None)
+            (([],mkCLambdaN (!@loc) bl c), None)
           else ((bl, c), Some t)
         in
 	DefineBody (bl, red, c, tyo)
