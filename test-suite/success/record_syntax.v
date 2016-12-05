@@ -45,3 +45,11 @@ Record Foo := { foo : unit; }.
 Definition foo_ := {| foo := tt; |}.
 
 End E.
+
+Module F.
+
+Record Foo := { foo : nat * nat -> nat -> nat }.
+
+Definition foo_ := {| foo '(x,y) n := x+y+n |}.
+
+End F.
