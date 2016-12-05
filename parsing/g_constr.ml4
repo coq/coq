@@ -223,7 +223,6 @@ GEXTEND Gram
 
   record_fields:
     [ [ f = record_field_declaration; ";"; fs = record_fields -> f :: fs
-      | f = record_field_declaration; ";" -> [f]
       | f = record_field_declaration -> [f]
       | -> []
     ] ]
