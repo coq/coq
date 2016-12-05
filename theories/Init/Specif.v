@@ -219,6 +219,7 @@ Proof.
 Qed.
 
 (** Equality of sigma types *)
+Import EqNotations.
 
 (** Equality for [sigT] *)
 Section sigT.
@@ -230,14 +231,14 @@ Section sigT.
 
   (** Projecting an equality of a pair to equality of the second components *)
   Definition projT2_eq {A} {P : A -> Type} {u v : sigT P} (p : u = v)
-  : eq_rect _ _ (projT2 u) _ (projT1_eq p) = projT2 v.
+  : rew projT1_eq p in projT2 u = projT2 v.
   Proof.
     destruct p; reflexivity.
   Defined.
 
   (** Equality of [sigT] is itself a [sigT] *)
   Definition eq_sigT_uncurried {A : Type} {P : A -> Type} (u v : sigT P)
-             (pq : sigT (fun p : projT1 u = projT1 v => eq_rect _ _ (projT2 u) _ p = projT2 v))
+             (pq : sigT (fun p : projT1 u = projT1 v => rew p in projT2 u = projT2 v))
   : u = v.
   Proof.
     destruct u as [u1 u2], v as [v1 v2]; simpl in *.
@@ -248,7 +249,7 @@ Section sigT.
 
   (** Curried version of proving equality of sigma types *)
   Definition eq_sigT {A : Type} {P : A -> Type} (u v : sigT P)
-             (p : projT1 u = projT1 v) (q : eq_rect _ _ (projT2 u) _ p = projT2 v)
+             (p : projT1 u = projT1 v) (q : rew p in projT2 u = projT2 v)
   : u = v
     := eq_sigT_uncurried u v (existT _ p q).
 
@@ -265,7 +266,7 @@ Section sigT.
       in dependent positions, we'd need it. *)
   Definition eq_sigT_uncurried_iff {A P}
              (u v : @sigT A P)
-    : u = v <-> (sigT (fun p : projT1 u = projT1 v => eq_rect _ _ (projT2 u) _ p = projT2 v)).
+    : u = v <-> (sigT (fun p : projT1 u = projT1 v => rew p in projT2 u = projT2 v)).
   Proof.
     split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sigT_uncurried ].
   Defined.
@@ -292,11 +293,11 @@ Section sigT.
 
   (** Classification of transporting across an equality of [sigT]s *)
   Lemma eq_rect_sigT {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : sigT (Q x)) {y} (H : x = y)
-  : eq_rect x (fun a => sigT (Q a)) u y H
+  : rew [fun a => sigT (Q a)] H in u
     = existT
         (Q y)
-        (eq_rect x P (projT1 u) y H)
-        match H in (_ = y) return Q y (eq_rect x P (projT1 u) y H) with
+        (rew H in projT1 u)
+        match H in (_ = y) return Q y (rew H in projT1 u) with
           | eq_refl => projT2 u
         end.
   Proof.
@@ -312,13 +313,13 @@ Section sig.
     := f_equal (@proj1_sig _ _) p.
 
   Definition proj2_sig_eq {A} {P : A -> Prop} {u v : sig P} (p : u = v)
-  : eq_rect _ _ (proj2_sig u) _ (proj1_sig_eq p) = proj2_sig v.
+  : rew proj1_sig_eq p in proj2_sig u = proj2_sig v.
   Proof.
     destruct p; reflexivity.
   Defined.
 
   Definition eq_sig_uncurried {A : Type} {P : A -> Prop} (u v : sig P)
-             (pq : {p : proj1_sig u = proj1_sig v | eq_rect _ _ (proj2_sig u) _ p = proj2_sig v})
+             (pq : {p : proj1_sig u = proj1_sig v | rew p in proj2_sig u = proj2_sig v})
   : u = v.
   Proof.
     destruct u as [u1 u2], v as [v1 v2]; simpl in *.
@@ -328,7 +329,7 @@ Section sig.
   Defined.
 
   Definition eq_sig {A : Type} {P : A -> Prop} (u v : sig P)
-             (p : proj1_sig u = proj1_sig v) (q : eq_rect _ _ (proj2_sig u) _ p = proj2_sig v)
+             (p : proj1_sig u = proj1_sig v) (q : rew p in proj2_sig u = proj2_sig v)
   : u = v
     := eq_sig_uncurried u v (exist _ p q).
 
@@ -347,7 +348,7 @@ Section sig.
 
   Definition eq_sig_uncurried_iff {A} {P : A -> Prop}
              (u v : @sig A P)
-    : u = v <-> (sig (fun p : proj1_sig u = proj1_sig v => eq_rect _ _ (proj2_sig u) _ p = proj2_sig v)).
+    : u = v <-> (sig (fun p : proj1_sig u = proj1_sig v => rew p in proj2_sig u = proj2_sig v)).
   Proof.
     split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sig_uncurried ].
   Defined.
@@ -358,11 +359,11 @@ Section sig.
     := conj (fun p => f_equal (@proj1_sig _ _) p) (eq_sig_hprop P_hprop u v).
 
   Lemma eq_rect_sig {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : sig (Q x)) {y} (H : x = y)
-  : eq_rect x (fun a => sig (Q a)) u y H
+  : rew [fun a => sig (Q a)] H in u
     = exist
         (Q y)
-        (eq_rect x P (proj1_sig u) y H)
-        match H in (_ = y) return Q y (eq_rect x P (proj1_sig u) y H) with
+        (rew H in proj1_sig u)
+        match H in (_ = y) return Q y (rew H in proj1_sig u) with
           | eq_refl => proj2_sig u
         end.
   Proof.
