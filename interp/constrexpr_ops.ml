@@ -363,21 +363,9 @@ let mkCLambdaN loc bll c =
   let (bll, c) = expand_pattern_binders loop bll c in
   loop loc bll c
 
-let rec abstract_constr_expr c = function
-  | [] -> c
-  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
-  | LocalRawAssum (idl,bk,t)::bl ->
-      List.fold_right (fun x b -> mkLambdaC([x],bk,t,b)) idl
-      (abstract_constr_expr c bl)
-  | LocalPattern _::_ -> assert false
-
-let rec prod_constr_expr c = function
-  | [] -> c
-  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_constr_expr c bl)
-  | LocalRawAssum (idl,bk,t)::bl ->
-      List.fold_right (fun x b -> mkProdC([x],bk,t,b)) idl
-      (prod_constr_expr c bl)
-  | LocalPattern _::_ -> assert false
+(* Deprecated *)
+let abstract_constr_expr c bl = mkCLambdaN (local_binders_loc bl) bl c
+let prod_constr_expr c bl =  mkCProdN (local_binders_loc bl) bl c
 
 let coerce_reference_to_id = function
   | Ident (_,id) -> id
