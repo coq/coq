@@ -19,27 +19,20 @@ let make ?style tag =
   let name = to_format tag                          in
   let () = assert (not (String.Map.mem name !tags)) in
   let () = tags := String.Map.add name style !tags  in
-  tag
-
-let repr t = t
+  name
 
 let get_style tag =
-  try String.Map.find (to_format tag) !tags
-  with Not_found -> assert false
-
-let get_style_format tag =
   try String.Map.find tag !tags
   with Not_found -> assert false
 
 let set_style tag st =
-  try tags := String.Map.update (to_format tag) st !tags
+  try tags := String.Map.update tag st !tags
   with Not_found -> assert false
 
 let clear_styles () =
   tags := String.Map.map (fun _ -> None) !tags
 
-let dump () =
-  List.map (fun (s,b) -> (String.split '.' s, b)) (String.Map.bindings !tags)
+let dump () = String.Map.bindings !tags
 
 let parse_config s =
   let styles = Terminal.parse s in

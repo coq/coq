@@ -311,18 +311,13 @@ let print_style_tags () =
   let tags = Ppstyle.dump () in
   let iter (t, st) =
     let st = match st with Some st -> st | None -> Terminal.make () in
-    let opt =
-      Terminal.eval st ^
-      String.concat "." (Ppstyle.repr t) ^
-      Terminal.reset ^ "\n"
-    in
+    let opt = Terminal.eval st ^ t ^   Terminal.reset ^ "\n" in
     print_string opt
   in
   let make (t, st) = match st with
   | None -> None
   | Some st ->
     let tags = List.map string_of_int (Terminal.repr st) in
-    let t = String.concat "." (Ppstyle.repr t) in
     Some (t ^ "=" ^ String.concat ";" tags)
   in
   let repr = List.map_filter make tags in
@@ -445,7 +440,7 @@ let get_native_name s =
     with the appropriate error code *)
 let fatal_error info anomaly =
   let msg = info ++ fnl () in
-  Format.fprintf !Topfmt.err_ft "@[%a@]%!" (pp_with ?pp_tag:None) msg;
+  Format.fprintf !Topfmt.err_ft "@[%a@]%!" pp_with msg;
   exit (if anomaly then 129 else 1)
 
 let parse_args arglist =

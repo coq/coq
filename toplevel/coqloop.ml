@@ -14,7 +14,7 @@ open Vernac
 open Pcoq
 
 let top_stderr x =
-  Format.fprintf !Topfmt.err_ft "@[%a@]%!" (pp_with ~pp_tag:Ppstyle.to_format) x
+  Format.fprintf !Topfmt.err_ft "@[%a@]%!" pp_with x
 
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)

@@ -99,8 +99,8 @@ let set_margin v =
 
 type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
 
-let msgnl_with ?pp_tag fmt strm =
-  pp_with ?pp_tag fmt (strm ++ fnl ());
+let msgnl_with fmt strm =
+  pp_with fmt (strm ++ fnl ());
   Format.pp_print_flush fmt ()
 
 (* XXX: This is really painful! *)
@@ -133,25 +133,24 @@ let make_body quoter info ?loc s =
   quoter (hov 0 (loc ++ info ++ s))
 
 (* Generic logger *)
-let gen_logger ?pp_tag dbg err ?loc level msg = match level with
-  | Debug   -> msgnl_with ?pp_tag !std_ft (make_body dbg  dbg_str ?loc msg)
-  | Info    -> msgnl_with ?pp_tag !std_ft (make_body dbg info_str ?loc msg)
+let gen_logger dbg err ?loc level msg = match level with
+  | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_str ?loc msg)
+  | Info    -> msgnl_with !std_ft (make_body dbg info_str ?loc msg)
   (* XXX: What to do with loc here? *)
-  | Notice  -> msgnl_with ?pp_tag !std_ft msg
+  | Notice  -> msgnl_with !std_ft msg
   | Warning -> Flags.if_warn (fun () ->
-               msgnl_with ?pp_tag !err_ft (make_body err warn_str ?loc msg)) ()
-  | Error   -> msgnl_with ?pp_tag !err_ft (make_body err  err_str ?loc msg)
+               msgnl_with !err_ft (make_body err warn_str ?loc msg)) ()
+  | Error   -> msgnl_with !err_ft (make_body err  err_str ?loc msg)
 
 (** Standard loggers *)
 
 (* We provide a generic clear_log_backend callback for backends
    wanting to do clenaup after the print.
 *)
-let std_logger_tag     = ref None
 let std_logger_cleanup = ref (fun () -> ())
 
 let std_logger ?loc level msg =
-  gen_logger (fun x -> x) (fun x -> x) ?pp_tag:!std_logger_tag ?loc level msg;
+  gen_logger (fun x -> x) (fun x -> x) ?loc level msg;
   !std_logger_cleanup ()
 
 (** Color logging. Moved from pp_style, it may need some more refactoring  *)
@@ -176,7 +175,7 @@ let make_style_stack () =
   | st :: _ -> st
   in
   let push tag =
-    let style = match Ppstyle.get_style_format tag with
+    let style = match Ppstyle.get_style tag with
       | None    -> empty
       | Some st -> st
     in
@@ -199,7 +198,6 @@ let make_style_stack () =
 let init_color_output () =
   let push_tag, pop_tag, clear_tag = make_style_stack () in
   std_logger_cleanup := clear_tag;
-  std_logger_tag     := Some Ppstyle.to_format;
   let tag_handler = {
     Format.mark_open_tag   = push_tag;
     Format.mark_close_tag  = pop_tag;

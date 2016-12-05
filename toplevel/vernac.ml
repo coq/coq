@@ -181,7 +181,7 @@ let pp_cmd_header loc com =
  *)
 (* FIXME *)
 let print_cmd_header loc com =
-  Pp.pp_with ~pp_tag:Ppstyle.to_format !Topfmt.std_ft (pp_cmd_header loc com);
+  Pp.pp_with !Topfmt.std_ft (pp_cmd_header loc com);
   Format.pp_print_flush !Topfmt.std_ft ()
 
 let rec interp_vernac po chan_beautify checknav (loc,com) =

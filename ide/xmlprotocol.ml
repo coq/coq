@@ -112,7 +112,7 @@ let rec of_pp (pp : Pp.std_ppcmds) = let open Pp in match pp with
     | Ppcmd_string s      -> constructor "ppdoc" "string" [of_string s]
     | Ppcmd_glue sl       -> constructor "ppdoc" "glue"   [of_list of_pp sl]
     | Ppcmd_box (bt,s)    -> constructor "ppdoc" "box"    [of_pair of_box of_pp (bt,s)]
-    | Ppcmd_tag (t,s)     -> constructor "ppdoc" "tag"    [of_pair (of_list of_string) of_pp (t,s)]
+    | Ppcmd_tag (t,s)     -> constructor "ppdoc" "tag"    [of_pair of_string of_pp (t,s)]
     | Ppcmd_print_break (i,j)
                           -> constructor "ppdoc" "break"     [of_pair of_int of_int (i,j)]
     | Ppcmd_force_newline -> constructor "ppdoc" "newline"   []
@@ -126,7 +126,7 @@ let rec to_pp xpp = let open Pp in
     | "glue"      -> Ppcmd_glue (to_list to_pp (singleton args))
     | "box"       -> let (bt,s) = to_pair to_box to_pp (singleton args) in
                      Ppcmd_box(bt,s)
-    | "tag"       -> let (tg,s) = to_pair (to_list to_string) to_pp (singleton args) in
+    | "tag"       -> let (tg,s) = to_pair to_string to_pp (singleton args) in
                      Ppcmd_tag(tg,s)
     | "break"     -> let (i,j)   = to_pair to_int to_int (singleton args) in
                      Ppcmd_print_break(i, j)

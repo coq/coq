@@ -33,7 +33,7 @@
 (************************************************************************)
 
 (* XXX: Improve and add attributes *)
-type pp_tag = string list
+type pp_tag = string
 
 type block_type =
   | Pp_hbox   of int
@@ -165,9 +165,7 @@ val pr_loc : Loc.t -> std_ppcmds
 
 (** {6 Main renderers, to formatter and to string } *)
 
-(** FIXME: These ignore the logging settings and call [Format] directly *)
-type tag_handler = pp_tag -> Format.tag
-
 (** [msg_with fmt pp] Print [pp] to [fmt] and don't flush [fmt]  *)
-val pp_with          : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
-val string_of_ppcmds : ?pp_tag:tag_handler -> std_ppcmds -> string
+val pp_with          : Format.formatter -> std_ppcmds -> unit
+
+val string_of_ppcmds : std_ppcmds -> string

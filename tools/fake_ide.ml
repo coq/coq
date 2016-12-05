@@ -18,7 +18,7 @@ type coqtop = {
 }
 
 let print_error msg =
-  Format.eprintf "fake_id: error: @[%a@]\n%!" (Pp.pp_with ?pp_tag:None) msg
+  Format.eprintf "fake_id: error: @[%a@]\n%!" Pp.pp_with msg
 
 let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   if print then prerr_endline (Xmlprotocol.pr_call call);

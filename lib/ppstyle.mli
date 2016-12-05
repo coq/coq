@@ -14,27 +14,16 @@
 (** This API is provisional and will likely be refined. *)
 type t = Pp.pp_tag
 
-val to_format : t -> Format.tag
-val of_format : Format.tag -> t
-
 (** Style tags *)
 
 val make : ?style:Terminal.style -> string list -> t
 (** Create a new tag with the given name. Each name must be unique. The optional
     style is taken as the default one. *)
 
-val repr : t -> string list
-(** Gives back the original name of the style tag where each string has been
-    concatenated and separated with a dot. *)
-
 (** {5 Manipulating global styles} *)
 
 val get_style : t -> Terminal.style option
-(** Get the style associated to a tag. *)
-
-val get_style_format : Format.tag -> Terminal.style option
 (** Get the style associated to a tag from a format tag. *)
-
 
 val set_style : t -> Terminal.style option -> unit
 (** Set a style associated to a tag. *)

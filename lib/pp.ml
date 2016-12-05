@@ -17,7 +17,7 @@
    \end{description}
  *)
 
-type pp_tag = string list
+type pp_tag = string
 
 type block_type =
   | Pp_hbox   of int
@@ -161,10 +161,8 @@ let rec pr_com ft s =
       Some s2 -> Format.pp_force_newline ft (); pr_com ft s2
     | None -> ()
 
-type tag_handler = pp_tag -> Format.tag
-
 (* pretty printing functions *)
-let pp_with ?pp_tag ft =
+let pp_with ft =
   let cpp_open_box = function
     | Pp_hbox n   -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n
@@ -182,9 +180,9 @@ let pp_with ?pp_tag ft =
     | Ppcmd_print_break(m,n)  -> pp_print_break ft m n
     | Ppcmd_force_newline     -> pp_force_newline ft ()
     | Ppcmd_comment coms      -> List.iter (pr_com ft) coms
-    | Ppcmd_tag(tag, s)       -> Option.iter (fun f -> pp_open_tag  ft (f tag)) pp_tag;
+    | Ppcmd_tag(tag, s)       -> pp_open_tag  ft tag;
                                  pp_cmd s;
-                                 Option.iter (fun _ -> pp_close_tag ft ()     ) pp_tag
+                                 pp_close_tag ft ()
   in
   try pp_cmd
   with reraise ->
@@ -197,8 +195,8 @@ let pp_with ?pp_tag ft =
    them to different windows. *)
 
 (** Output to a string formatter *)
-let string_of_ppcmds ?pp_tag c =
-  Format.fprintf Format.str_formatter "@[%a@]" (pp_with ?pp_tag) c;
+let string_of_ppcmds c =
+  Format.fprintf Format.str_formatter "@[%a@]" pp_with c;
   Format.flush_str_formatter ()
 
 (* Copy paste from Util *)
