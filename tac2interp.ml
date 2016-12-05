@@ -15,6 +15,8 @@ open Tac2expr
 
 exception LtacError of KerName.t * valexpr
 
+let val_exn = Geninterp.Val.create "ltac2:exn"
+
 type environment = valexpr Id.Map.t
 
 let empty_environment = Id.Map.empty
@@ -35,7 +37,7 @@ let return = Proofview.tclUNIT
 
 let rec interp ist = function
 | GTacAtm (AtmInt n) -> return (ValInt n)
-| GTacAtm (AtmStr s) -> return (ValStr s)
+| GTacAtm (AtmStr s) -> return (ValStr (Bytes.of_string s))
 | GTacVar id -> return (get_var ist id)
 | GTacRef qid -> return (get_ref ist qid)
 | GTacFun (ids, e) ->
@@ -44,7 +46,7 @@ let rec interp ist = function
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
-  interp_app ist f args
+  interp_app f args
 | GTacLet (false, el, e) ->
   let fold accu (na, e) =
     interp ist e >>= fun e ->
@@ -94,11 +96,11 @@ let rec interp ist = function
   let tpe = Tac2env.interp_ml_object tag in
   tpe.Tac2env.ml_interp ist e >>= fun e -> return (ValExt e)
 
-and interp_app ist f args = match f with
+and interp_app f args = match f with
 | ValCls { clos_env = ist; clos_var = ids; clos_exp = e } ->
   let rec push ist ids args = match ids, args with
   | [], [] -> interp ist e
-  | [], _ :: _ -> interp ist e >>= fun f -> interp_app ist f args
+  | [], _ :: _ -> interp ist e >>= fun f -> interp_app f args
   | _ :: _, [] ->
     let cls = { clos_env = ist; clos_var = ids; clos_exp = e } in
     return (ValCls cls)

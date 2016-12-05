@@ -131,7 +131,7 @@ type valexpr =
   (** Immediate integers *)
 | ValBlk of tag * valexpr array
   (** Structured blocks *)
-| ValStr of string
+| ValStr of Bytes.t
   (** Strings *)
 | ValCls of closure
   (** Closures *)

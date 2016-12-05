@@ -10,10 +10,18 @@ open Genarg
 open Names
 open Tac2expr
 
-exception LtacError of KerName.t * valexpr
-
 type environment = valexpr Id.Map.t
 
 val empty_environment : environment
 
 val interp : environment -> glb_tacexpr -> valexpr Proofview.tactic
+
+val interp_app : valexpr -> valexpr list -> valexpr Proofview.tactic
+
+(** {5 Exceptions} *)
+
+exception LtacError of KerName.t * valexpr
+(** Ltac2-defined exceptions *)
+
+val val_exn : Exninfo.iexn Geninterp.Val.typ
+(** Toplevel representation of Ltac2 exceptions *)

@@ -6,11 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export Coq.ltac2.Init.
+Require Import Coq.ltac2.Init.
 
-Require Coq.ltac2.Int.
-Require Coq.ltac2.String.
-Require Coq.ltac2.Array.
-Require Coq.ltac2.Message.
-Require Coq.ltac2.Constr.
-Require Coq.ltac2.Control.
+Ltac2 @ external print : message -> unit := "ltac2" "print".
+
+Ltac2 @ external of_string : string -> message := "ltac2" "message_of_string".
+
+Ltac2 @ external of_int : int -> message := "ltac2" "message_of_int".
+
+Ltac2 @ external of_constr : constr -> message := "ltac2" "message_of_constr".
+(** Panics if there is more than one goal under focus. *)
+
+Ltac2 @ external concat : message -> message -> message := "ltac2" "message_concat".

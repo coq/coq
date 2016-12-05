@@ -6,11 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export Coq.ltac2.Init.
+Require Import Coq.ltac2.Init.
 
-Require Coq.ltac2.Int.
-Require Coq.ltac2.String.
-Require Coq.ltac2.Array.
-Require Coq.ltac2.Message.
-Require Coq.ltac2.Constr.
-Require Coq.ltac2.Control.
+Ltac2 @ external equal : int -> int -> bool := "ltac2" "int_equal".
+Ltac2 @ external compare : int -> int -> int := "ltac2" "int_compare".
+Ltac2 @ external add : int -> int -> int := "ltac2" "int_add".
+Ltac2 @ external sub : int -> int -> int := "ltac2" "int_sub".
+Ltac2 @ external mul : int -> int -> int := "ltac2" "int_mul".
+Ltac2 @ external neg : int -> int := "ltac2" "int_neg".

@@ -22,13 +22,32 @@ end
 
 (** {5 Ltac2 FFI} *)
 
+(** These functions allow to convert back and forth between OCaml and Ltac2
+    data representation. The [to_*] functions raise an anomaly whenever the data
+    has not expected shape. *)
+
 module Value :
 sig
 
 val of_unit : unit -> valexpr
 val to_unit : valexpr -> unit
 
+val of_int : int -> valexpr
+val to_int : valexpr -> int
+
+val of_bool : bool -> valexpr
+val to_bool : valexpr -> bool
+
+val of_char : char -> valexpr
+val to_char : valexpr -> char
+
 val of_list : valexpr list -> valexpr
 val to_list : valexpr -> valexpr list
+
+val of_constr : EConstr.t -> valexpr
+val to_constr : valexpr -> EConstr.t
+
+val of_exn : Exninfo.iexn -> valexpr
+val to_exn : valexpr -> Exninfo.iexn
 
 end

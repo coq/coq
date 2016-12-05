@@ -6,11 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export Coq.ltac2.Init.
+Require Import Coq.ltac2.Init.
 
-Require Coq.ltac2.Int.
-Require Coq.ltac2.String.
-Require Coq.ltac2.Array.
-Require Coq.ltac2.Message.
-Require Coq.ltac2.Constr.
-Require Coq.ltac2.Control.
+Ltac2 @external make : int -> char -> string := "ltac2" "string_make".
+Ltac2 @external length : string -> int := "ltac2" "string_length".
+Ltac2 @external get : string -> int -> char := "ltac2" "string_get".
+Ltac2 @external set : string -> int -> char -> unit := "ltac2" "string_set".

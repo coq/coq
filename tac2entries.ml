@@ -338,8 +338,7 @@ let register_prim_alg name params def =
   let def = { typdef_local = false; typdef_expr = def } in
   ignore (Lib.add_leaf id (inTypDef def))
 
-let coq_prefix = DirPath.make (List.map Id.of_string ["Ltac2"; "ltac2"; "Coq"])
-let coq_def n = KerName.make2 (MPfile coq_prefix) (Label.make n)
+let coq_def n = KerName.make2 Tac2env.coq_prefix (Label.make n)
 
 let t_list = coq_def "list"
 

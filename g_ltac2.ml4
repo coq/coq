@@ -23,6 +23,8 @@ let tac2mode = Gram.entry_create "vernac:ltac2_command"
 
 let inj_wit wit loc x = CTacExt (loc, Genarg.in_gen (Genarg.rawwit wit) x)
 let inj_constr loc c = inj_wit Stdarg.wit_constr loc c
+let inj_open_constr loc c = inj_wit Stdarg.wit_open_constr loc c
+let inj_ident loc c = inj_wit Stdarg.wit_ident loc c
 
 GEXTEND Gram
   GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext;
@@ -84,6 +86,8 @@ GEXTEND Gram
       | s = Prim.string -> CTacAtm (!@loc, AtmStr s)
       | id = Prim.qualid -> CTacRef id
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_constr !@loc c
+      | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_open_constr !@loc c
+      | IDENT "ident"; ":"; "("; c = Prim.ident; ")" -> inj_ident !@loc c
     ] ]
   ;
   let_clause:
@@ -97,13 +101,15 @@ GEXTEND Gram
       [ t1 = tac2type; "->"; t2 = tac2type -> CTypArrow (!@loc, t1, t2) ]
     | "2"
       [ t = tac2type; "*"; tl = LIST1 tac2type SEP "*" -> CTypTuple (!@loc, t :: tl) ]
-    | "1"
-      [ "("; p = LIST1 tac2type LEVEL "5" SEP ","; ")"; qid = Prim.qualid -> CTypRef (!@loc, qid, p) ]
+    | "1" LEFTA
+      [ t = SELF; qid = Prim.qualid -> CTypRef (!@loc, qid, [t]) ]
     | "0"
-      [ "("; t = tac2type; ")"  -> t
+      [ "("; t = tac2type LEVEL "5"; ")"  -> t
       | id = typ_param -> CTypVar (!@loc, Name id)
       | "_" -> CTypVar (!@loc, Anonymous)
-      | qid = Prim.qualid -> CTypRef (!@loc, qid, []) ]
+      | qid = Prim.qualid -> CTypRef (!@loc, qid, [])
+      | "("; p = LIST1 tac2type LEVEL "5" SEP ","; ")"; qid = Prim.qualid ->
+        CTypRef (!@loc, qid, p) ]
     ];
   locident:
     [ [ id = Prim.ident -> (!@loc, id) ] ]

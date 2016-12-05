@@ -6,11 +6,27 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export Coq.ltac2.Init.
+Declare ML Module "ltac2_plugin".
 
-Require Coq.ltac2.Int.
-Require Coq.ltac2.String.
-Require Coq.ltac2.Array.
-Require Coq.ltac2.Message.
-Require Coq.ltac2.Constr.
-Require Coq.ltac2.Control.
+Global Set Default Proof Mode "Ltac2".
+
+(** Primitive types *)
+
+Ltac2 Type int.
+Ltac2 Type string.
+Ltac2 Type char.
+
+Ltac2 Type evar.
+Ltac2 Type constr.
+Ltac2 Type ident.
+Ltac2 Type message.
+Ltac2 Type exn.
+Ltac2 Type 'a array.
+
+(** Pervasive types *)
+
+Ltac2 Type 'a option := [ None | Some ('a) ].
+
+Ltac2 Type 'a ref := { mutable contents : 'a }.
+
+Ltac2 Type bool := [ true | false ].

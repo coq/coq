@@ -18,8 +18,7 @@ open Tac2expr
 
 (** Hardwired types and constants *)
 
-let coq_prefix = DirPath.make (List.map Id.of_string ["Ltac2"; "ltac2"; "Coq"])
-let coq_type n = KerName.make2 (MPfile coq_prefix) (Label.make n)
+let coq_type n = KerName.make2 Tac2env.coq_prefix (Label.make n)
 
 let t_int = coq_type "int"
 let t_string = coq_type "string"

@@ -203,3 +203,8 @@ module MLType = Genarg.Register(MLTypeObj)
 
 let define_ml_object t tpe = MLType.register0 t tpe
 let interp_ml_object t = MLType.obj t
+
+(** Absolute paths *)
+
+let coq_prefix =
+  MPfile (DirPath.make (List.map Id.of_string ["Init"; "ltac2"; "Coq"]))

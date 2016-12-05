@@ -95,3 +95,8 @@ type 'a ml_object = {
 
 val define_ml_object : ('a, 'b, 'c) genarg_type -> 'b ml_object -> unit
 val interp_ml_object : ('a, 'b, 'c) genarg_type -> 'b ml_object
+
+(** {5 Absolute paths} *)
+
+val coq_prefix : ModPath.t
+(** Path where primitive datatypes are defined in Ltac2 plugin. *)
