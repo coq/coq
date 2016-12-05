@@ -64,3 +64,6 @@ Check fun '((x,y) : A*B) '(z,t) => swap (x,y) = (z,t).
 Check forall '(x,y) '((z,t) : B*A), swap (x,y) = (z,t).
 
 End Suboptimal.
+
+(** Test risk of collision for internal name *)
+Check fun pat => fun '(x,y) => x+y = pat.

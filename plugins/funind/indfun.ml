@@ -151,7 +151,7 @@ let build_newrecursive
   let (rec_sign,rec_impls) =
     List.fold_left
       (fun (env,impls) (((_,recname),_),bl,arityc,_) ->
-        let arityc = Constrexpr_ops.prod_constr_expr arityc bl in
+        let arityc = Constrexpr_ops.mkCProdN Loc.ghost bl arityc in
         let arity,ctx = Constrintern.interp_type env0 sigma arityc in
 	let evdref = ref (Evd.from_env env0) in
 	let _, (_, impls') = Constrintern.interp_context_evars env evdref bl in
@@ -436,7 +436,7 @@ let generate_correction_proof_wf f_ref tcc_lemma_ref
 let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas args ret_type body
     pre_hook
     =
-  let type_of_f = Constrexpr_ops.prod_constr_expr ret_type args in
+  let type_of_f = Constrexpr_ops.mkCProdN Loc.ghost args ret_type in
   let rec_arg_num =
     let names =
       List.map
@@ -467,7 +467,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
     Constrexpr.CApp (Loc.ghost,(None,Constrexpr_ops.mkRefC (Qualid (Loc.ghost,(qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
-  let eq = Constrexpr_ops.prod_constr_expr unbounded_eq args in
+  let eq = Constrexpr_ops.mkCProdN Loc.ghost args unbounded_eq in
   let hook ((f_ref,_) as fconst) tcc_lemma_ref (functional_ref,_) (eq_ref,_) rec_arg_num rec_arg_type
       nb_args relation =
     try

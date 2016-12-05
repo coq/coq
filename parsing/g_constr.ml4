@@ -44,9 +44,6 @@ let binder_of_name expl (loc,na) =
 let binders_of_names l =
   List.map (binder_of_name Explicit) l
 
-let binders_of_lidents l =
-  List.map (fun (loc, id) -> binder_of_name Explicit (loc, Name id)) l
-
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
   let ty = match tyc with
       Some ty -> ty
@@ -223,15 +220,14 @@ GEXTEND Gram
 
   record_fields:
     [ [ f = record_field_declaration; ";"; fs = record_fields -> f :: fs
-      | f = record_field_declaration; ";" -> [f]
       | f = record_field_declaration -> [f]
       | -> []
     ] ]
   ;
 
   record_field_declaration:
-    [ [ id = global; params = LIST0 identref; ":="; c = lconstr ->
-      (id, abstract_constr_expr c (binders_of_lidents params)) ] ]
+    [ [ id = global; bl = binders; ":="; c = lconstr ->
+      (id, mkCLambdaN (!@loc) bl c) ] ]
   ;
   binder_constr:
     [ [ "forall"; bl = open_binders; ","; c = operconstr LEVEL "200" ->
