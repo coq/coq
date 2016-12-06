@@ -434,7 +434,7 @@ let proj_nparams c =
   try 1 + Recordops.find_projection_nparams (ConstRef c) with _ -> 0
 
 let isFixed c = match kind_of_term c with
-  | Var _ | Ind _ | Construct _ | Const _ -> true
+  | Var _ | Ind _ | Construct _ | Const _ | Proj _ -> true
   | _ -> false
 
 let isRigid c = match kind_of_term c with
@@ -486,6 +486,7 @@ let mk_tpattern ?p_origin ?(hack=false) env sigma0 (ise, t) ok dir p =
       let np = proj_nparams p in
       if np = 0 || np > List.length a then KpatConst, f, a else
       let a1, a2 = List.chop np a in KpatProj p, applist(f, a1), a2
+    | Proj (p,arg) -> KpatProj (Projection.constant p), f, a
     | Var _ | Ind _ | Construct _ -> KpatFixed, f, a
     | Evar (k, _) ->
       if Evd.mem sigma0 k then KpatEvar k, f, a else
@@ -566,6 +567,10 @@ let filter_upat i0 f n u fpats =
   if np < na then fpats else
   let () = if !i0 < np then i0 := n in (u, np) :: fpats
 
+let eq_prim_proj c t = match kind_of_term t with
+  | Proj(p,_) -> Constant.equal (Projection.constant p) c
+  | _ -> false
+
 let filter_upat_FO i0 f n u fpats =
   let np = nb_args u.up_FO in
   if n < np then fpats else
@@ -576,7 +581,7 @@ let filter_upat_FO i0 f n u fpats =
   | KpatLet -> isLetIn f
   | KpatLam -> isLambda f
   | KpatRigid -> isRigid f
-  | KpatProj pc -> Term.eq_constr f (mkConst pc)
+  | KpatProj pc -> Term.eq_constr f (mkConst pc) || eq_prim_proj pc f
   | KpatFlex -> i0 := n; true in
   if ok then begin if !i0 < np then i0 := np; (u, np) :: fpats end else fpats
 
