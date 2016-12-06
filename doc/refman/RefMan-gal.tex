@@ -713,9 +713,9 @@ definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
            {\tt Inductive} \nelist{\inductivebody}{with} {\tt .} \\
  & $|$ & {\tt CoInductive} \nelist{\inductivebody}{with} {\tt .} \\
            & & \\
-{\inductivebody} & ::= & 
-  {\ident} \zeroone{\binders} {\tt :} {\term} {\tt :=} \\
-   && ~~\zeroone{\zeroone{\tt |} \nelist{$\!${\ident}$\!$ \zeroone{\binders} {\typecstrwithoutblank}}{|}} \\
+{\inductivebody} & ::= &
+  {\ident} \zeroone{\binders} {\typecstr} {\tt :=} \\
+   && ~~\zeroone{\zeroone{\tt |} \nelist{$\!${\ident}$\!$ \zeroone{\binders} {\typecstr}}{|}} \\
            & & \\  %% TODO: where ...
 %% Fixpoints
 {\fixpoint} & ::= & {\tt Fixpoint} \nelist{\fixpointbody}{with} {\tt .} \\
