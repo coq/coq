@@ -79,7 +79,3 @@ let msg_notice  ?loc x = feedback_logger ?loc Notice x
 let msg_warning ?loc x = feedback_logger ?loc Warning x
 let msg_error   ?loc x = feedback_logger ?loc Error x
 let msg_debug   ?loc x = feedback_logger ?loc Debug x
-
-let debug_feeder = function
-  | { contents = Message (Debug, loc, pp) } -> msg_debug ?loc pp
-  | _ -> ()

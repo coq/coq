@@ -64,9 +64,6 @@ val add_feeder : (feedback -> unit) -> int
 (** [del_feeder fid] removes the feeder with id [fid] *)
 val del_feeder : int -> unit
 
-(** Prints feedback messages of kind Message(Debug,_) using msg_debug *)
-val debug_feeder : feedback -> unit
-
 (** [feedback ?id ?route fb] produces feedback fb, with [route] and
     [id] set appropiatedly, if absent, it will use the defaults set by
     [set_id_for_feedback] *)
