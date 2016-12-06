@@ -431,6 +431,13 @@ let get_native_name s =
       Nativelib.output_dir; Library.native_name_from_filename s]
   with _ -> ""
 
+(** Prints info which is either an error or an anomaly and then exits
+    with the appropriate error code *)
+let fatal_error info anomaly =
+  let msg = info ++ fnl () in
+  Format.fprintf !Topfmt.err_ft "@[%a@]%!" pp_with msg;
+  exit (if anomaly then 129 else 1)
+
 let parse_args arglist =
   let args = ref arglist in
   let extras = ref [] in

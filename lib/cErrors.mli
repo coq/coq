@@ -98,8 +98,3 @@ val noncritical : exn -> bool
 (** Check whether an exception is handled by some toplevel printer. The
     [Anomaly] exception is never handled. *)
 val handled : exn -> bool
-
-(** Prints info which is either an error or
-   an anomaly and then exits with the appropriate
-   error code *)
-val fatal_error : Pp.std_ppcmds -> bool -> 'a
