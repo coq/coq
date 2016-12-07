@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Pp
 open CErrors
 open Genarg
@@ -30,7 +31,7 @@ let get_var ist id =
     anomaly (str "Unbound variable " ++ Id.print id)
 
 let get_ref ist kn =
-  try fst (Tac2env.interp_global kn) with Not_found ->
+  try pi2 (Tac2env.interp_global kn) with Not_found ->
     anomaly (str "Unbound reference" ++ KerName.print kn)
 
 let return = Proofview.tclUNIT
@@ -82,9 +83,9 @@ let rec interp ist = function
   return (ValBlk (n, Array.of_list el))
 | GTacCse (e, _, cse0, cse1) ->
   interp ist e >>= fun e -> interp_case ist e cse0 cse1
-| GTacPrj (e, p) ->
+| GTacPrj (_, e, p) ->
   interp ist e >>= fun e -> interp_proj ist e p
-| GTacSet (e, p, r) ->
+| GTacSet (_, e, p, r) ->
   interp ist e >>= fun e ->
   interp ist r >>= fun r ->
   interp_set ist e p r

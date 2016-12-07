@@ -105,8 +105,8 @@ type glb_tacexpr =
 | GTacArr of glb_tacexpr list
 | GTacCst of type_constant * int * glb_tacexpr list
 | GTacCse of glb_tacexpr * case_info * glb_tacexpr array * (Name.t array * glb_tacexpr) array
-| GTacPrj of glb_tacexpr * int
-| GTacSet of glb_tacexpr * int * glb_tacexpr
+| GTacPrj of type_constant * glb_tacexpr * int
+| GTacSet of type_constant * glb_tacexpr * int * glb_tacexpr
 | GTacExt of glob_generic_argument
 | GTacPrm of ml_tactic_name * glb_tacexpr list
 

@@ -17,7 +17,7 @@ open Tac2expr
 (** {5 Toplevel definition of values} *)
 
 val define_global : ltac_constant -> (glb_tacexpr * type_scheme) -> unit
-val interp_global : ltac_constant -> (valexpr * type_scheme)
+val interp_global : ltac_constant -> (glb_tacexpr * valexpr * type_scheme)
 
 (** {5 Toplevel definition of types} *)
 
@@ -69,14 +69,17 @@ type tacref =
 val push_ltac : visibility -> full_path -> tacref -> unit
 val locate_ltac : qualid -> tacref
 val locate_extended_all_ltac : qualid -> tacref list
+val shortest_qualid_of_ltac : tacref -> qualid
 
 val push_type : visibility -> full_path -> type_constant -> unit
 val locate_type : qualid -> type_constant
 val locate_extended_all_type : qualid -> type_constant list
+val shortest_qualid_of_type : type_constant -> qualid
 
 val push_projection : visibility -> full_path -> ltac_projection -> unit
 val locate_projection : qualid -> ltac_projection
 val locate_extended_all_projection : qualid -> ltac_projection list
+val shortest_qualid_of_projection : ltac_projection -> qualid
 
 (** {5 Toplevel definitions of ML tactics} *)
 

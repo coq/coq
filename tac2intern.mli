@@ -26,5 +26,3 @@ val subst_type : substitution -> 'a glb_typexpr -> 'a glb_typexpr
 val subst_expr : substitution -> glb_tacexpr -> glb_tacexpr
 val subst_quant_typedef : substitution -> glb_quant_typedef -> glb_quant_typedef
 val subst_type_scheme : substitution -> type_scheme -> type_scheme
-
-val pr_glbtype : 'a glb_typexpr -> Pp.std_ppcmds

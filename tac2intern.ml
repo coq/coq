@@ -14,6 +14,7 @@ open Names
 open Libnames
 open Misctypes
 open Tac2env
+open Tac2print
 open Tac2expr
 
 (** Hardwired types and constants *)
@@ -50,6 +51,7 @@ sig
   val add : key -> 'a -> 'a t -> 'a t
   val mem : key -> 'a t -> bool
   val find : key -> 'a t -> 'a
+  val exists : (key -> 'a -> bool) -> 'a t -> bool
 end
 end
 =
@@ -142,6 +144,31 @@ let empty_env () = {
   env_opn = true;
   env_rec = Id.Map.empty;
 }
+
+let env_name env =
+  (** Generate names according to a provided environment *)
+  let mk num =
+    let base = num mod 26 in
+    let rem = num / 26 in
+    let name = String.make 1 (Char.chr (97 + base)) in
+    let suff = if Int.equal rem 0 then "" else string_of_int rem in
+    let name = name ^ suff in
+    name
+  in
+  let fold id elt acc = UF.Map.add elt (Id.to_string id) acc in
+  let vars = Id.Map.fold fold env.env_als.contents UF.Map.empty in
+  let vars = ref vars in
+  let rec fresh n =
+    let name = mk n in
+    if UF.Map.exists (fun _ name' -> String.equal name name') !vars then fresh (succ n)
+    else name
+  in
+  fun n ->
+    if UF.Map.mem n !vars then UF.Map.find n !vars
+    else
+      let ans = fresh 0 in
+      let () = vars := UF.Map.add n ans !vars in
+      ans
 
 let ltac2_env : environment Genintern.Store.field =
   Genintern.Store.field ()
@@ -311,19 +338,12 @@ let rec unify env t1 t2 = match kind env t1, kind env t2 with
   else raise (CannotUnify (t1, t2))
 | _ -> raise (CannotUnify (t1, t2))
 
-(** FIXME *)
-let rec pr_glbtype = function
-| GTypVar n -> str "?"
-| GTypRef (kn, tl) ->
-  KerName.print kn ++ str "(" ++ prlist_with_sep (fun () -> str ", ") pr_glbtype tl ++ str ")"
-| GTypArrow (t1, t2) -> str "Arr(" ++ pr_glbtype t1 ++ str ", " ++ pr_glbtype t2 ++ str ")"
-| GTypTuple tl -> str "Tup(" ++ prlist_with_sep (fun () -> str ", ") pr_glbtype tl ++ str ")"
-
 let unify loc env t1 t2 =
   try unify env t1 t2
   with CannotUnify (u1, u2) ->
-    user_err ~loc (str "This expression has type " ++ pr_glbtype t1 ++
-      str " but an expression what expected of type " ++ pr_glbtype t2)
+    let name = env_name env in
+    user_err ~loc (str "This expression has type " ++ pr_glbtype name t1 ++
+      str " but an expression what expected of type " ++ pr_glbtype name t2)
 
 (** Term typing *)
 
@@ -418,13 +438,15 @@ let check_elt_empty loc env t = match kind env t with
 | GTypVar _ ->
   user_err ~loc (str "Cannot infer an empty type for this expression")
 | GTypArrow _ | GTypTuple _ ->
-  user_err ~loc (str "Type " ++ pr_glbtype t ++ str " is not an empty type")
+  let name = env_name env in
+  user_err ~loc (str "Type " ++ pr_glbtype name t ++ str " is not an empty type")
 | GTypRef (kn, _) ->
   let def = Tac2env.interp_type kn in
   match def with
   | _, GTydAlg [] -> kn
   | _ ->
-    user_err ~loc (str "Type " ++ pr_glbtype t ++ str " is not an empty type")
+    let name = env_name env in
+    user_err ~loc (str "Type " ++ pr_glbtype name t ++ str " is not an empty type")
 
 let check_unit ?loc t =
   let maybe_unit = match t with
@@ -475,11 +497,11 @@ let intern_atm env = function
 
 let invalid_pattern ~loc kn t =
   let pt = match t with
-  | GCaseAlg kn' -> KerName.print kn
+  | GCaseAlg kn' -> pr_typref kn
   | GCaseTuple n -> str "tuple"
   in
   user_err ~loc (str "Invalid pattern, expected a pattern for type " ++
-    KerName.print kn ++ str ", found a pattern of type " ++ pt) (** FIXME *)
+    pr_typref kn ++ str ", found a pattern of type " ++ pt) (** FIXME *)
 
 type pattern_kind =
 | PKind_empty
@@ -527,7 +549,7 @@ let rec intern_rec env = function
     let sch = Id.Map.find id env.env_var in
     (GTacVar id, fresh_mix_type_scheme env sch)
   | ArgArg (TacConstant kn) ->
-    let (_, sch) = Tac2env.interp_global kn in
+    let (_, _, sch) = Tac2env.interp_global kn in
     (GTacRef kn, fresh_type_scheme env sch)
   | ArgArg (TacConstructor kn) ->
     intern_constructor env (fst qid) kn []
@@ -542,6 +564,7 @@ let rec intern_rec env = function
     (env, na :: bnd, t :: tl)
   in
   let (env, bnd, tl) = List.fold_left fold (env, [], []) bnd in
+  let bnd = List.rev bnd in
   let (e, t) = intern_rec env e in
   let t = List.fold_left (fun accu t -> GTypArrow (t, accu)) t tl in
   (GTacFun (bnd, e), t)
@@ -637,7 +660,7 @@ let rec intern_rec env = function
   let () = unify loc env t exp in
   let substf i = GTypVar subst.(i) in
   let ret = subst_type substf pinfo.pdata_ptyp in
-  (GTacPrj (e, pinfo.pdata_indx), ret)
+  (GTacPrj (pinfo.pdata_type, e, pinfo.pdata_indx), ret)
 | CTacSet (loc, e, proj, r) ->
   let pinfo = get_projection proj in
   let () =
@@ -652,7 +675,7 @@ let rec intern_rec env = function
   let substf i = GTypVar subst.(i) in
   let ret = subst_type substf pinfo.pdata_ptyp in
   let r = intern_rec_with_constraint env r ret in
-  (GTacSet (e, pinfo.pdata_indx, r), GTypRef (t_unit, []))
+  (GTacSet (pinfo.pdata_type, e, pinfo.pdata_indx, r), GTypRef (t_unit, []))
 | CTacExt (loc, ext) ->
   let open Genintern in
   let GenArg (Rawwit tag, _) = ext in
@@ -899,7 +922,7 @@ and intern_record env loc fs =
           several times")
     else
       user_err ~loc (str "Field " ++ (*KerName.print knp ++*) str " does not \
-        pertain to record definition " ++ KerName.print pinfo.pdata_type)
+        pertain to record definition " ++ pr_typref pinfo.pdata_type)
   in
   let () = List.iter iter fs in
   let () = match Array.findi (fun _ o -> Option.is_empty o) args with
@@ -1017,13 +1040,15 @@ let rec subst_expr subst e = match e with
   let cse1' = Array.map (fun (ids, e) -> (ids, subst_expr subst e)) cse1 in
   let ci' = subst_case_info subst ci in
   GTacCse (subst_expr subst e, ci', cse0', cse1')
-| GTacPrj (e, p) as e0 ->
+| GTacPrj (kn, e, p) as e0 ->
+  let kn' = subst_kn subst kn in
   let e' = subst_expr subst e in
-  if e' == e then e0 else GTacPrj (e', p)
-| GTacSet (e, p, r) as e0 ->
+  if kn' == kn && e' == e then e0 else GTacPrj (kn', e', p)
+| GTacSet (kn, e, p, r) as e0 ->
+  let kn' = subst_kn subst kn in
   let e' = subst_expr subst e in
   let r' = subst_expr subst r in
-  if e' == e && r' == r then e0 else GTacSet (e', p, r')
+  if kn' == kn && e' == e && r' == r then e0 else GTacSet (kn', e', p, r')
 | GTacExt ext ->
   let ext' = Genintern.generic_substitute subst ext in
   if ext' == ext then e else GTacExt ext'

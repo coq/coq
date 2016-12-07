@@ -15,6 +15,7 @@ open Libobject
 open Nametab
 open Tac2env
 open Tac2expr
+open Tac2print
 open Tac2intern
 open Vernacexpr
 
@@ -303,11 +304,17 @@ let print_ltac ref =
   in
   match kn with
   | TacConstant kn ->
-    let (_, (_, t)) = Tac2env.interp_global kn in
-    Feedback.msg_notice (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype t)
+    let (e, _, (_, t)) = Tac2env.interp_global kn in
+    let name = int_name () in
+    Feedback.msg_notice (
+      hov 0 (
+        hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t) ++ fnl () ++
+        hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e)
+      )
+    )
   | TacConstructor kn ->
     let _ = Tac2env.interp_constructor kn in
-    Feedback.msg_notice (str "Constructor" ++ spc () ++ str ":" ++ spc () ++ pr_qualid qid)
+    Feedback.msg_notice (hov 2 (str "Constructor" ++ spc () ++ str ":" ++ spc () ++ pr_qualid qid))
 
 (** Calling tactics *)
 

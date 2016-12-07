@@ -73,7 +73,7 @@ let define_global kn e =
 
 let interp_global kn =
   let (e, t) = KNmap.find kn ltac_state.contents.ltac_tactics in
-  (eval_pure e, t)
+  (e, eval_pure e, t)
 
 let define_constructor kn t =
   let state = !ltac_state in
@@ -139,21 +139,33 @@ module RfTab = Nametab.Make(FullPath)(TacRef)
 
 type nametab = {
   tab_ltac : RfTab.t;
+  tab_ltac_rev : full_path KNmap.t * full_path KNmap.t;
   tab_type : KnTab.t;
+  tab_type_rev : full_path KNmap.t;
   tab_proj : KnTab.t;
+  tab_proj_rev : full_path KNmap.t;
 }
 
 let empty_nametab = {
   tab_ltac = RfTab.empty;
+  tab_ltac_rev = (KNmap.empty, KNmap.empty);
   tab_type = KnTab.empty;
+  tab_type_rev = KNmap.empty;
   tab_proj = KnTab.empty;
+  tab_proj_rev = KNmap.empty;
 }
 
 let nametab = Summary.ref empty_nametab ~name:"ltac2-nametab"
 
 let push_ltac vis sp kn =
   let tab = !nametab in
-  nametab := { tab with tab_ltac = RfTab.push vis sp kn tab.tab_ltac }
+  let tab_ltac = RfTab.push vis sp kn tab.tab_ltac in
+  let (constant_map, constructor_map) = tab.tab_ltac_rev in
+  let tab_ltac_rev = match kn with
+  | TacConstant c -> (KNmap.add c sp constant_map, constructor_map)
+  | TacConstructor c -> (constant_map, KNmap.add c sp constructor_map)
+  in
+  nametab := { tab with tab_ltac; tab_ltac_rev }
 
 let locate_ltac qid =
   let tab = !nametab in
@@ -163,9 +175,19 @@ let locate_extended_all_ltac qid =
   let tab = !nametab in
   RfTab.find_prefixes qid tab.tab_ltac
 
+let shortest_qualid_of_ltac kn =
+  let tab = !nametab in
+  let sp = match kn with
+  | TacConstant c -> KNmap.find c (fst tab.tab_ltac_rev)
+  | TacConstructor c -> KNmap.find c (snd tab.tab_ltac_rev)
+  in
+  RfTab.shortest_qualid Id.Set.empty sp tab.tab_ltac
+
 let push_type vis sp kn =
   let tab = !nametab in
-  nametab := { tab with tab_type = KnTab.push vis sp kn tab.tab_type }
+  let tab_type = KnTab.push vis sp kn tab.tab_type in
+  let tab_type_rev = KNmap.add kn sp tab.tab_type_rev in
+  nametab := { tab with tab_type; tab_type_rev }
 
 let locate_type qid =
   let tab = !nametab in
@@ -175,9 +197,16 @@ let locate_extended_all_type qid =
   let tab = !nametab in
   KnTab.find_prefixes qid tab.tab_type
 
+let shortest_qualid_of_type kn =
+  let tab = !nametab in
+  let sp = KNmap.find kn tab.tab_type_rev in
+  KnTab.shortest_qualid Id.Set.empty sp tab.tab_type
+
 let push_projection vis sp kn =
   let tab = !nametab in
-  nametab := { tab with tab_proj = KnTab.push vis sp kn tab.tab_proj }
+  let tab_proj = KnTab.push vis sp kn tab.tab_proj in
+  let tab_proj_rev = KNmap.add kn sp tab.tab_proj_rev in
+  nametab := { tab with tab_proj; tab_proj_rev }
 
 let locate_projection qid =
   let tab = !nametab in
@@ -186,6 +215,11 @@ let locate_projection qid =
 let locate_extended_all_projection qid =
   let tab = !nametab in
   KnTab.find_prefixes qid tab.tab_proj
+
+let shortest_qualid_of_projection kn =
+  let tab = !nametab in
+  let sp = KNmap.find kn tab.tab_proj_rev in
+  KnTab.shortest_qualid Id.Set.empty sp tab.tab_proj
 
 type 'a ml_object = {
   ml_type : type_constant;

@@ -56,7 +56,7 @@ GEXTEND Gram
       [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" -> CTacApp (!@loc, e, el)
       | e = SELF; ".("; qid = Prim.qualid; ")" -> CTacPrj (!@loc, e, qid)
       | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "1" -> CTacSet (!@loc, e, qid, r)
-      | e0 = tac2expr; ","; el = LIST1 tac2expr LEVEL "0" SEP "," -> CTacTup (!@loc, e0 :: el) ]
+      | e0 = tac2expr; ","; el = LIST1 tac2expr LEVEL "1" SEP "," -> CTacTup (!@loc, e0 :: el) ]
     | "0"
       [ "("; a = tac2expr LEVEL "5"; ")" -> a
       | "("; a = tac2expr; ":"; t = tac2type; ")" -> CTacCnv (!@loc, a, t)
