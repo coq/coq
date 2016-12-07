@@ -390,7 +390,8 @@ let iter_constr_LR f c = match kind_of_term c with
   | Case (_, p, v, b) -> f v; f p; Array.iter f b
   | Fix (_, (_, t, b)) | CoFix (_, (_, t, b)) ->
     for i = 0 to Array.length t - 1 do f t.(i); f b.(i) done
-  | _ -> ()
+  | Proj(_,a) -> f a
+  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _) -> ()
 
 (* The comparison used to determine which subterms matches is KEYED        *)
 (* CONVERSION. This looks for convertible terms that either have the same  *)
@@ -524,7 +525,13 @@ let nb_cs_proj_args pc f u =
   try match kind_of_term f with
   | Prod _ -> na Prod_cs
   | Sort s -> na (Sort_cs (family_of_sort s))
-  | Const (c',_) when Constant.equal c' pc -> Array.length (snd (destApp u.up_f))
+  | Const (c',_) when Constant.equal c' pc ->
+      begin match kind_of_term u.up_f with
+      | App(_,args) -> Array.length args
+      | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be
+                       the number of arguments including the projected *)
+      | _ -> assert false
+      end
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (global_of_constr f))
   | _ -> -1
   with Not_found -> -1
