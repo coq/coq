@@ -11,6 +11,8 @@ open Util
 open Genarg
 open Names
 open Pcoq
+open Constrexpr
+open Misctypes
 open Tac2expr
 open Ltac_plugin
 
@@ -187,6 +189,14 @@ GEXTEND Gram
         let ml = { mltac_plugin = plugin; mltac_tactic = name } in
         StrPrm (id, t, ml)
     ] ]
+  ;
+END
+
+GEXTEND Gram
+  Pcoq.Constr.operconstr: LEVEL "0"
+    [ [ IDENT "ltac2"; ":"; "("; tac = tac2expr; ")" ->
+          let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
+          CHole (!@loc, None, IntroAnonymous, Some arg) ] ]
   ;
 END
 

@@ -473,3 +473,17 @@ let () =
     ml_interp = interp;
   } in
   define_ml_object Stdarg.wit_ident obj
+
+let () =
+  let interp ist env sigma concl tac =
+    let fold id (Val.Dyn (tag, v)) (accu : environment) : environment =
+      match Val.eq tag val_valexpr with
+      | None -> accu
+      | Some Refl -> Id.Map.add id v accu
+    in
+    let ist = Id.Map.fold fold ist Id.Map.empty in
+    let tac = Proofview.tclIGNORE (interp ist tac) in
+    let c, sigma = Pfedit.refine_by_tactic env sigma concl tac in
+    (EConstr.of_constr c, sigma)
+  in
+  Pretyping.register_constr_interp0 wit_ltac2 interp

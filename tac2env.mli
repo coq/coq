@@ -100,3 +100,7 @@ val interp_ml_object : ('a, 'b, 'c) genarg_type -> 'b ml_object
 
 val coq_prefix : ModPath.t
 (** Path where primitive datatypes are defined in Ltac2 plugin. *)
+
+(** {5 Generic arguments} *)
+
+val wit_ltac2 : (raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type

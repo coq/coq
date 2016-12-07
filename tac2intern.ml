@@ -1054,3 +1054,20 @@ let subst_quant_typedef subst (prm, def as qdef) =
 let subst_type_scheme subst (prm, t as sch) =
   let t' = subst_type subst t in
   if t' == t then sch else (prm, t')
+
+(** Registering *)
+
+let () =
+  let open Genintern in
+  let intern ist tac =
+    let env = match Genintern.Store.get ist.extra ltac2_env with
+    | None -> empty_env ()
+    | Some env -> env
+    in
+    let loc = loc_of_tacexpr tac in
+    let (tac, t) = intern_rec env tac in
+    let () = check_elt_unit loc env t in
+    (ist, tac)
+  in
+  Genintern.register_intern0 wit_ltac2 intern
+let () = Genintern.register_subst0 wit_ltac2 subst_expr
