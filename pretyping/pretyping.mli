@@ -163,6 +163,6 @@ val ise_pretype_gen :
 val interp_sort : ?loc:Loc.t -> evar_map -> glob_sort -> evar_map * sorts
 val interp_elimination_sort : glob_sort -> sorts_family
 
-val genarg_interp_hook :
-  (types -> env -> evar_map -> unbound_ltac_var_map ->
-    Genarg.glob_generic_argument -> constr * evar_map) Hook.t
+val register_constr_interp0 :
+  ('r, 'g, 't) Genarg.genarg_type ->
+    (unbound_ltac_var_map -> env -> evar_map -> types -> 'g -> constr * evar_map) -> unit

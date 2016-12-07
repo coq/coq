@@ -560,7 +560,17 @@ let new_type_evar env evdref loc =
   evdref := Sigma.to_evar_map sigma;
   e
 
-let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
+module ConstrInterpObj =
+struct
+  type ('r, 'g, 't) obj =
+    unbound_ltac_var_map -> env -> evar_map -> types -> 'g -> constr * evar_map
+  let name = "constr_interp"
+  let default _ = None
+end
+
+module ConstrInterp = Genarg.Register(ConstrInterpObj)
+
+let register_constr_interp0 = ConstrInterp.register0
 
 (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [evdref] and *)
@@ -620,8 +630,11 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         | Some ty -> ty
         | None ->
           new_type_evar env evdref loc in
+      let open Genarg in
       let ist = lvar.ltac_genargs in
-      let (c, sigma) = Hook.get f_genarg_interp ty env.ExtraEnv.env !evdref ist arg in
+      let GenArg (Glbwit tag, arg) = arg in
+      let interp = ConstrInterp.obj tag in
+      let (c, sigma) = interp ist env.ExtraEnv.env !evdref ty arg in
       let () = evdref := sigma in
       { uj_val = c; uj_type = ty }
 

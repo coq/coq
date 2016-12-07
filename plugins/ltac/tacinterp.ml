@@ -2100,17 +2100,13 @@ let interp_redexp env sigma r =
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
 let _ =
-  let eval ty env sigma lfun arg =
+  let eval lfun env sigma ty tac =
     let ist = { lfun = lfun; extra = TacStore.empty; } in
-    if Genarg.has_type arg (glbwit wit_tactic) then
-      let tac = Genarg.out_gen (glbwit wit_tactic) arg in
-      let tac = interp_tactic ist tac in
-      let (c, sigma) = Pfedit.refine_by_tactic env sigma ty tac in
-      (EConstr.of_constr c, sigma)
-    else
-      failwith "not a tactic"
+    let tac = interp_tactic ist tac in
+    let (c, sigma) = Pfedit.refine_by_tactic env sigma ty tac in
+    (EConstr.of_constr c, sigma)
   in
-  Hook.set Pretyping.genarg_interp_hook eval
+  Pretyping.register_constr_interp0 wit_tactic eval
 
 (** Used in tactic extension **)
 
