@@ -419,8 +419,8 @@ let rec comment loc bp = parser bp2
          | [< '')' >] -> push_string "*)"; loc
          | [< s >] -> real_push_char '*'; comment loc bp s >] -> loc
   | [< ''"'; s >] ->
-      let loc = fst (string loc ~comm_level:(Some 0) bp2 0 s)
-      in
+      let loc, len = string loc ~comm_level:(Some 0) bp2 0 s in
+      push_string "\""; push_string (get_buff len); push_string "\"";
       comment loc bp s
   | [< _ = Stream.empty >] ep ->
       let loc = set_loc_pos loc bp ep in

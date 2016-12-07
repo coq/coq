@@ -23,9 +23,9 @@
 #include "coq_values.h" 
 
 /* spiwack: I append here a few macros for value/number manipulation */
-#define uint32_of_value(val) ((uint32_t)(val) >> 1)
-#define value_of_uint32(i)   ((value)(((uint32_t)(i) << 1) | 1))
-#define UI64_of_uint32(lo) ((uint64_t)(lo))
+#define uint32_of_value(val) (((uint32_t)(val)) >> 1)
+#define value_of_uint32(i)   ((value)((((uint32_t)(i)) << 1) | 1))
+#define UI64_of_uint32(lo) ((uint64_t)((uint32_t)(lo)))
 #define UI64_of_value(val) (UI64_of_uint32(uint32_of_value(val)))
 /* /spiwack */
 

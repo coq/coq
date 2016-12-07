@@ -1124,12 +1124,12 @@ module Search = struct
           else tclDISPATCH
                  (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j))))
         in
-        let finish sigma =
+        let finish nestedshelf sigma =
           let filter ev =
             try
               let evi = Evd.find_undefined sigma ev in
               if info.search_only_classes then
-                Some (ev, is_class_type sigma (Evd.evar_concl evi))
+                Some (ev, not (is_class_type sigma (Evd.evar_concl evi)))
               else Some (ev, true)
             with Not_found -> None
           in
@@ -1147,9 +1147,9 @@ module Search = struct
           begin
             (* Some existentials produced by the original tactic were not solved
                in the subgoals, turn them into subgoals now. *)
-            let shelved, goals = List.split_when (fun (ev, s) -> s) remaining in
-            let shelved = List.map fst shelved and goals = List.map fst goals in
-            if !typeclasses_debug > 1 && not (List.is_empty goals) then
+            let shelved, goals = List.partition (fun (ev, s) -> s) remaining in
+            let shelved = List.map fst shelved @ nestedshelf and goals = List.map fst goals in
+            if !typeclasses_debug > 1 && not (List.is_empty shelved && List.is_empty goals) then
               Feedback.msg_debug
                 (str"Adding shelved subgoals to the search: " ++
                  prlist_with_sep spc (pr_ev sigma) goals ++
@@ -1162,7 +1162,8 @@ module Search = struct
 	         with_shelf (Unsafe.tclEVARS sigma' <*> Unsafe.tclNEWGOALS goals) >>=
                       fun s -> result s i (Some (Option.default 0 k + j)))
           end
-        in res <*> tclEVARMAP >>= finish
+        in with_shelf res >>= fun (sh, ()) ->
+           tclEVARMAP >>= finish sh
       in
       if path_matches derivs [] then aux e tl
       else

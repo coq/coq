@@ -4,6 +4,8 @@ S ltac
 B ltac
 S config
 B config
+S ide
+B ide
 S lib
 B lib
 S intf

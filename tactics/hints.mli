@@ -45,11 +45,12 @@ type 'a hint_ast =
 type hint
 type raw_hint = constr * types * Univ.universe_context_set
 
-type hints_path_atom = 
-  | PathHints of global_reference list
+type 'a hints_path_atom_gen =
+  | PathHints of 'a list
   (* For forward hints, their names is the list of projections *)
   | PathAny
 
+type hints_path_atom = global_reference hints_path_atom_gen
 type hint_db_name = string
 
 type 'a with_metadata = private {
@@ -70,20 +71,28 @@ type search_entry
 
 type hint_entry
 
-type hints_path =
-  | PathAtom of hints_path_atom
-  | PathStar of hints_path
-  | PathSeq of hints_path * hints_path
-  | PathOr of hints_path * hints_path
+type 'a hints_path_gen =
+  | PathAtom of 'a hints_path_atom_gen
+  | PathStar of 'a hints_path_gen
+  | PathSeq of 'a hints_path_gen * 'a hints_path_gen
+  | PathOr of 'a hints_path_gen * 'a hints_path_gen
   | PathEmpty
   | PathEpsilon
 
+type pre_hints_path = Libnames.reference hints_path_gen
+type hints_path = global_reference hints_path_gen
+    
 val normalize_path : hints_path -> hints_path
 val path_matches : hints_path -> hints_path_atom list -> bool
 val path_derivate : hints_path -> hints_path_atom -> hints_path
-val pp_hints_path_atom : hints_path_atom -> Pp.std_ppcmds
+val pp_hints_path_gen : ('a -> Pp.std_ppcmds) -> 'a hints_path_gen -> Pp.std_ppcmds
+val pp_hints_path_atom : ('a -> Pp.std_ppcmds) -> 'a hints_path_atom_gen -> Pp.std_ppcmds
 val pp_hints_path : hints_path -> Pp.std_ppcmds
 val pp_hint_mode : hint_mode -> Pp.std_ppcmds
+val glob_hints_path_atom :
+  Libnames.reference hints_path_atom_gen -> Globnames.global_reference hints_path_atom_gen
+val glob_hints_path :
+  Libnames.reference hints_path_gen -> Globnames.global_reference hints_path_gen
 
 module Hint_db :
   sig
