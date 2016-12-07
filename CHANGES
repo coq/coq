@@ -1,3 +1,13 @@
+Changes from V8.6beta1 to V8.6
+==============================
+
+Kernel
+
+- Fixed critical bug #5248 in VM long multiplication on 32-bit
+  architectures. Was there only since 8.6beta1, so no stable release impacted.
+
+Other bug fixes in universes, type class shelving,...
+
 Changes from V8.5 to V8.6beta1
 ==============================
 
