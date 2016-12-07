@@ -108,7 +108,7 @@ let remove_ids_and_lets env s ids =
 let suggest_Proof_using name env vars ids_typ context_ids =
   let module S = Id.Set in
   let open Pp in
-  let print x = prerr_endline (string_of_ppcmds x) in
+  let print x = Feedback.msg_error x in
   let pr_set parens s =
     let wrap ppcmds =
       if parens && S.cardinal s > 1 then str "(" ++ ppcmds ++ str ")"

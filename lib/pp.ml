@@ -77,6 +77,8 @@ let app s1 s2 = match s1, s2 with
   | s, Ppcmd_empty -> s
   | s1, s2         -> Ppcmd_glue [s1; s2]
 
+let seq s = Ppcmd_glue s
+
 let (++) = app
 
 (* formatting commands *)

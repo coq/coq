@@ -128,6 +128,9 @@ end = struct
 end
 open SentenceId
 
+let log_pp msg : unit task =
+  Coq.lift (fun () -> Minilib.log_pp msg)
+
 let log msg : unit task =
   Coq.lift (fun () -> Minilib.log msg)
 
@@ -308,7 +311,7 @@ object(self)
 
   method private print_stack =
     Minilib.log "document:";
-    Minilib.log (Pp.string_of_ppcmds (Doc.print document (dbg_to_string buffer)))
+    Minilib.log_pp (Doc.print document (dbg_to_string buffer))
 
   method private enter_focus start stop =
     let at id id' _ = Stateid.equal id' id in
@@ -379,8 +382,7 @@ object(self)
     Coq.bind (Coq.seq action query) next
 
   method private mark_as_needed sentence =
-    Minilib.log("Marking " ^
-      Pp.string_of_ppcmds (dbg_to_string buffer false None sentence));
+    Minilib.log_pp Pp.(str "Marking " ++ dbg_to_string buffer false None sentence);
     let start = buffer#get_iter_at_mark sentence.start in
     let stop = buffer#get_iter_at_mark sentence.stop in
     let to_process = Tags.Script.to_process in
@@ -437,9 +439,11 @@ object(self)
           | _ -> None in
         try Some (Doc.find_map document finder)
         with Not_found -> None in
-      let log s state_id =
-        Minilib.log ("Feedback " ^ s ^ " on " ^ Stateid.to_string
-          (Option.default Stateid.dummy state_id)) in
+      let log_pp s state_id =
+        Minilib.log_pp Pp.(seq
+                [str "Feedback "; s; str " on ";
+                 str (Stateid.to_string (Option.default Stateid.dummy state_id))]) in
+      let log s state_id = log_pp (Pp.str s) state_id in
       begin match msg.contents, sentence with
       | AddedAxiom, Some (id,sentence) ->
           log "AddedAxiom" id;
@@ -469,24 +473,24 @@ object(self)
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | Message(Error, loc, msg), Some (id,sentence) ->
           let loc = Option.default Loc.ghost loc in
-          let msg = Pp.string_of_ppcmds msg      in
-          log "ErrorMsg" id;
+          log_pp Pp.(str "ErrorMsg" ++ msg) id;
           remove_flag sentence `PROCESSING;
-          add_flag sentence (`ERROR (loc, msg));
+          let rmsg = Pp.string_of_ppcmds msg     in
+          add_flag sentence (`ERROR (loc, rmsg));
           self#mark_as_needed sentence;
-          self#attach_tooltip sentence loc msg;
+          self#attach_tooltip sentence loc rmsg;
           if not (Loc.is_ghost loc) then
             self#position_error_tag_at_sentence sentence (Some (Loc.unloc loc))
       | Message(Warning, loc, msg), Some (id,sentence) ->
           let loc = Option.default Loc.ghost loc in
-          let rmsg = Pp.string_of_ppcmds msg      in
-          log ("WarningMsg: " ^ Pp.string_of_ppcmds msg)id;
+          log_pp Pp.(str "WarningMsg" ++ msg) id;
+          let rmsg = Pp.string_of_ppcmds msg     in
           add_flag sentence (`WARNING (loc, rmsg));
           self#attach_tooltip sentence loc rmsg;
           self#position_warning_tag_at_sentence sentence loc;
           messages#push Warning msg
       | Message(lvl, loc, msg), Some (id,sentence) ->
-          log ("Msg: " ^ Pp.string_of_ppcmds msg) id;
+          log_pp Pp.(str "Msg" ++ msg) id;
           messages#push lvl msg
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n

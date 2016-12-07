@@ -337,7 +337,7 @@ let default_logger level message =
   | Feedback.Warning -> `WARNING
   | Feedback.Error -> `ERROR
   in
-  Minilib.log ~level (Pp.string_of_ppcmds message)
+  Minilib.log_pp ~level message
 
 
 (** {6 File operations} *)

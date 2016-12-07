@@ -444,14 +444,14 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                with Not_found ->
 		 (* spiwack: the format of this error message should probably
 	                     be improved. *)
-		 let err_msg = string_of_ppcmds
+		 let err_msg =
 	                                (str "boolean->Leibniz:" ++
                                          str "You have to declare the" ++
 			   	         str "decidability over " ++
 				         Printer.pr_constr tt1 ++
 				         str " first.")
 		 in
-		 error err_msg
+		 user_err err_msg
                in let bl_args =
                         Array.append (Array.append
                           (Array.map (fun x -> x) v)

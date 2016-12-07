@@ -68,6 +68,9 @@ val comment  : string list -> std_ppcmds
 val app : std_ppcmds -> std_ppcmds -> std_ppcmds
 (** Concatenation. *)
 
+val seq : std_ppcmds list -> std_ppcmds
+(** Multi-Concatenation. *)
+
 val (++) : std_ppcmds -> std_ppcmds -> std_ppcmds
 (** Infix alias for [app]. *)
 
