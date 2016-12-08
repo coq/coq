@@ -27,8 +27,8 @@ let t_array = coq_type "array"
 let t_unit = coq_type "unit"
 let t_list = coq_type "list"
 
-let c_nil = GTacCst (t_list, 0, [])
-let c_cons e el = GTacCst (t_list, 0, [e; el])
+let c_nil = GTacCst (GCaseAlg t_list, 0, [])
+let c_cons e el = GTacCst (GCaseAlg t_list, 0, [e; el])
 
 (** Union find *)
 
@@ -358,15 +358,15 @@ let is_pure_constructor kn =
 let rec is_value = function
 | GTacAtm (AtmInt _) | GTacVar _ | GTacRef _ | GTacFun _ -> true
 | GTacAtm (AtmStr _) | GTacApp _ | GTacLet _ -> false
-| GTacTup el -> List.for_all is_value el
+| GTacCst (GCaseTuple _, _, el) -> List.for_all is_value el
 | GTacCst (_, _, []) -> true
-| GTacCst (kn, _, el) -> is_pure_constructor kn && List.for_all is_value el
+| GTacCst (GCaseAlg kn, _, el) -> is_pure_constructor kn && List.for_all is_value el
 | GTacArr _ | GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _ -> false
 
 let is_rec_rhs = function
 | GTacFun _ -> true
 | GTacAtm _ | GTacVar _ | GTacRef _ | GTacApp _ | GTacLet _ | GTacPrj _
-| GTacSet _ | GTacTup _ | GTacArr _ | GTacExt _ | GTacPrm _ | GTacCst _
+| GTacSet _ | GTacArr _ | GTacExt _ | GTacPrm _ | GTacCst _
 | GTacCse _ -> false
 
 let rec fv_type f t accu = match t with
@@ -612,14 +612,14 @@ let rec intern_rec env = function
 | CTacLet (loc, true, el, e) ->
   intern_let_rec env loc el e
 | CTacTup (loc, []) ->
-  (GTacTup [], GTypRef (t_unit, []))
+  (GTacCst (GCaseAlg t_unit, 0, []), GTypRef (t_unit, []))
 | CTacTup (loc, el) ->
   let fold e (el, tl) =
     let (e, t) = intern_rec env e in
     (e :: el, t :: tl)
   in
   let (el, tl) = List.fold_right fold el ([], []) in
-  (GTacTup el, GTypTuple tl)
+  (GTacCst (GCaseTuple (List.length el), 0, el), GTypTuple tl)
 | CTacArr (loc, []) ->
   let id = fresh_id env in
   (GTacArr [], GTypRef (t_int, [GTypVar id]))
@@ -887,7 +887,7 @@ and intern_constructor env loc kn args =
     let ans = GTypRef (cstr.cdata_type, List.init cstr.cdata_prms (fun i -> GTypVar subst.(i))) in
     let map arg tpe = intern_rec_with_constraint env arg tpe in
     let args = List.map2 map args types in
-    (GTacCst (cstr.cdata_type, cstr.cdata_indx, args), ans)
+    (GTacCst (GCaseAlg cstr.cdata_type, cstr.cdata_indx, args), ans)
   else
     error_nargs_mismatch loc nargs (List.length args)
 
@@ -933,7 +933,7 @@ and intern_record env loc fs =
   in
   let args = Array.map_to_list Option.get args in
   let tparam = List.init params (fun i -> GTypVar subst.(i)) in
-  (GTacCst (kn, 0, args), GTypRef (kn, tparam))
+  (GTacCst (GCaseAlg kn, 0, args), GTypRef (kn, tparam))
 
 let normalize env (count, vars) (t : UF.elt glb_typexpr) =
   let get_var id =
@@ -1029,12 +1029,17 @@ let rec subst_expr subst e = match e with
 | GTacLet (r, bs, e) ->
   let bs = List.map (fun (na, e) -> (na, subst_expr subst e)) bs in
   GTacLet (r, bs, subst_expr subst e)
-| GTacTup el ->
-  GTacTup (List.map (fun e -> subst_expr subst e) el)
 | GTacArr el ->
   GTacArr (List.map (fun e -> subst_expr subst e) el)
-| GTacCst (kn, n, el) -> 
-  GTacCst (subst_kn subst kn, n, List.map (fun e -> subst_expr subst e) el)
+| GTacCst (t, n, el) as e0 ->
+  let t' = match t with
+  | GCaseAlg kn ->
+    let kn' = subst_kn subst kn in
+    if kn' == kn then t else GCaseAlg kn'
+  | GCaseTuple _ -> t
+  in
+  let el' = List.smartmap (fun e -> subst_expr subst e) el in
+  if t' == t && el' == el then e0 else GTacCst (t', n, el')
 | GTacCse (e, ci, cse0, cse1) ->
   let cse0' = Array.map (fun e -> subst_expr subst e) cse0 in
   let cse1' = Array.map (fun (ids, e) -> (ids, subst_expr subst e)) cse1 in

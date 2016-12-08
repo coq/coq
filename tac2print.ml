@@ -165,7 +165,7 @@ let pr_glbexpr_gen lvl c =
     in
     let bnd = prlist_with_sep (fun () -> str "with" ++ spc ()) pr_bnd bnd in
     paren (str "let" ++ spc () ++ mut ++ bnd ++ str "in" ++ spc () ++ pr_glbexpr E5 e)
-  | GTacTup cl ->
+  | GTacCst (GCaseTuple _, _, cl) ->
     let paren = match lvl with
     | E0 | E1 -> paren
     | E2 | E3 | E4 | E5 -> fun x -> x
@@ -173,7 +173,7 @@ let pr_glbexpr_gen lvl c =
     paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_glbexpr E1) cl)
   | GTacArr cl ->
     mt () (** FIXME when implemented *)
-  | GTacCst (tpe, n, cl) ->
+  | GTacCst (GCaseAlg tpe, n, cl) ->
     begin match Tac2env.interp_type tpe with
     | _, GTydAlg def ->
       let paren = match lvl with

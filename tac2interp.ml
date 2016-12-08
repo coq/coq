@@ -72,9 +72,7 @@ let rec interp ist = function
   let iter (_, e) = e.clos_env <- ist in
   let () = List.iter iter fixs in
   interp ist e
-| GTacTup [] ->
-  return (ValInt 0)
-| GTacTup el | GTacArr el ->
+| GTacArr el ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   return (ValBlk (0, Array.of_list el))
 | GTacCst (_, n, []) -> return (ValInt n)

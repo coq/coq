@@ -60,7 +60,6 @@ let rec eval_pure = function
   eval_pure e
 | GTacFun (na, e) ->
   ValCls { clos_env = Id.Map.empty; clos_var = na; clos_exp = e }
-| GTacTup el -> ValBlk (0, Array.map_of_list eval_pure el)
 | GTacCst (_, n, []) -> ValInt n
 | GTacCst (_, n, el) -> ValBlk (n, Array.map_of_list eval_pure el)
 | GTacAtm (AtmStr _) | GTacArr _ | GTacLet _ | GTacVar _ | GTacSet _
