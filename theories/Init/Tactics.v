@@ -263,6 +263,14 @@ Ltac simpl_proj_exist_in H :=
            => let G' := context G[x] in change G' in H
          | context G[projT2 (existT _ ?x ?p)]
            => let G' := context G[p] in change G' in H
+         | context G[proj3_sig (exist2 _ _ ?x ?p ?q)]
+           => let G' := context G[q] in change G' in H
+         | context G[projT3 (existT2 _ _ ?x ?p ?q)]
+           => let G' := context G[q] in change G' in H
+         | context G[sig_of_sig2 (@exist2 ?A ?P ?Q ?x ?p ?q)]
+           => let G' := context G[@exist A P x p] in change G' in H
+         | context G[sigT_of_sigT2 (@existT2 ?A ?P ?Q ?x ?p ?q)]
+           => let G' := context G[@existT A P x p] in change G' in H
          end.
 Ltac induction_sigma_in_using H rect :=
   let H0 := fresh H in
@@ -270,6 +278,14 @@ Ltac induction_sigma_in_using H rect :=
   induction H as [H0 H1] using (rect _ _ _ _);
   simpl_proj_exist_in H0;
   simpl_proj_exist_in H1.
+Ltac induction_sigma2_in_using H rect :=
+  let H0 := fresh H in
+  let H1 := fresh H in
+  let H2 := fresh H in
+  induction H as [H0 H1 H2] using (rect _ _ _ _ _);
+  simpl_proj_exist_in H0;
+  simpl_proj_exist_in H1;
+  simpl_proj_exist_in H2.
 Ltac inversion_sigma_step :=
   match goal with
   | [ H : _ = exist _ _ _ |- _ ]
@@ -280,5 +296,13 @@ Ltac inversion_sigma_step :=
     => induction_sigma_in_using H @eq_sig_rect
   | [ H : existT _ _ _ = _ |- _ ]
     => induction_sigma_in_using H @eq_sigT_rect
+  | [ H : _ = exist2 _ _ _ _ _ |- _ ]
+    => induction_sigma2_in_using H @eq_sig2_rect
+  | [ H : _ = existT2 _ _ _ _ _ |- _ ]
+    => induction_sigma2_in_using H @eq_sigT2_rect
+  | [ H : exist2 _ _ _ _ _ = _ |- _ ]
+    => induction_sigma_in_using H @eq_sig2_rect
+  | [ H : existT2 _ _ _ _ _ = _ |- _ ]
+    => induction_sigma_in_using H @eq_sigT2_rect
   end.
 Ltac inversion_sigma := repeat inversion_sigma_step.
