@@ -688,3 +688,57 @@ Section ex.
     destruct H, u; reflexivity.
   Defined.
 End ex.
+
+(** Equality for [ex2] *)
+Section ex2.
+  Local Unset Implicit Arguments.
+
+  Definition eq_ex2_uncurried' {A : Type} (P Q : A -> Prop) {u1 v1 : A}
+             {u2 : P u1} {v2 : P v1}
+             {u3 : Q u1} {v3 : Q v1}
+             (pq : exists2 p : u1 = v1, rew p in u2 = v2 & rew p in u3 = v3)
+  : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3.
+  Proof.
+    destruct pq as [p q r].
+    destruct r, q, p; simpl in *.
+    reflexivity.
+  Defined.
+
+  Definition eq_ex2' {A : Type} {P Q : A -> Prop}
+             (u1 v1 : A)
+             (u2 : P u1) (v2 : P v1)
+             (u3 : Q u1) (v3 : Q v1)
+             (p : u1 = v1) (q : rew p in u2 = v2) (r : rew p in u3 = v3)
+  : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3
+    := eq_ex2_uncurried' P Q (ex_intro2 _ _ p q r).
+
+  Definition eq_ex2'_hprop {A} {P Q : A -> Prop}
+             (P_hprop : forall (x : A) (p q : P x), p = q)
+             (Q_hprop : forall (x : A) (p q : Q x), p = q)
+             (u1 v1 : A) (u2 : P u1) (v2 : P v1) (u3 : Q u1) (v3 : Q v1)
+             (p : u1 = v1)
+    : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3
+    := eq_ex2' u1 v1 u2 v2 u3 v3 p (P_hprop _ _ _) (Q_hprop _ _ _).
+
+  Lemma eq_rect_ex2 {A x} {P : A -> Type}
+        (Q : forall a, P a -> Prop)
+        (R : forall a, P a -> Prop)
+        (u : ex2 (Q x) (R x)) {y} (H : x = y)
+  : rew [fun a => ex2 (Q a) (R a)] H in u
+    = match u with
+        | ex_intro2 _ _ u1 u2 u3
+          => ex_intro2
+               (Q y)
+               (R y)
+               (rew H in u1)
+               match H in (_ = y) return Q y (rew H in u1) with
+                 | eq_refl => u2
+               end
+               match H in (_ = y) return R y (rew H in u1) with
+                 | eq_refl => u3
+               end
+      end.
+  Proof.
+    destruct H, u; reflexivity.
+  Defined.
+End ex2.
