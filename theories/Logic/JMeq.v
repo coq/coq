@@ -130,7 +130,7 @@ Qed.
     is as strong as [eq_dep U P p x q y] (this uses [JMeq_eq]) *)
 
 Lemma JMeq_eq_dep : 
-  forall U (P:U->Prop) p q (x:P p) (y:P q), 
+  forall U (P:U->Type) p q (x:P p) (y:P q), 
   p = q -> JMeq x y -> eq_dep U P p x q y.
 Proof.
 intros.
