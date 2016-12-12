@@ -20,7 +20,6 @@ open Declarations
 open Environ
 open Entries
 open Typeops
-open Fast_typeops
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
