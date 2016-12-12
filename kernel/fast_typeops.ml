@@ -37,19 +37,14 @@ let check_constraints cst env =
   else error_unsatisfied_constraints env cst
 
 (* This should be a type (a priori without intention to be an assumption) *)
-let type_judgment env c t =
-  match kind_of_term(whd_all env t) with
-    | Sort s -> {utj_val = c; utj_type = s }
-    | _ -> error_not_type env (make_judge c t)
-
 let check_type env c t =
   match kind_of_term(whd_all env t) with
   | Sort s -> s
   | _ -> error_not_type env (make_judge c t)
 
-(* This should be a type intended to be assumed. The error message is *)
-(* not as useful as for [type_judgment]. *)
-let assumption_of_judgment env t ty =
+(* This should be a type intended to be assumed. The error message is
+   not as useful as for [type_judgment]. *)
+let check_assumption env t ty =
   try let _ = check_type env t ty in t
   with TypeError _ ->
     error_assumption env (make_judge t ty)
@@ -62,26 +57,24 @@ let assumption_of_judgment env t ty =
 
 (* Prop and Set *)
 
-let judge_of_prop = mkSort type1_sort
-
-let judge_of_prop_contents _ = judge_of_prop
+let type1 = mkSort type1_sort
 
 (* Type of Type(i). *)
 
-let judge_of_type u =
+let type_of_type u =
   let uu = Universe.super u in
     mkType uu
 
 (*s Type of a de Bruijn index. *)
 
-let judge_of_relative env n =
+let type_of_relative env n =
   try
     env |> lookup_rel n |> RelDecl.get_type |> lift n
   with Not_found ->
     error_unbound_rel env n
 
 (* Type of variables *)
-let judge_of_variable env id =
+let type_of_variable env id =
   try named_type id env
   with Not_found ->
     error_unbound_var env id
@@ -89,17 +82,24 @@ let judge_of_variable env id =
 (* Management of context of variables. *)
 
 (* Checks if a context of variables can be instantiated by the
-   variables of the current env *)
-(* TODO: check order? *)
+   variables of the current env.
+   Order does not have to be checked assuming that all names are distinct *)
 let check_hyps_inclusion env f c sign =
   Context.Named.fold_outside
-    (fun decl () ->
-      let id = NamedDecl.get_id decl in
-      let ty1 = NamedDecl.get_type decl in
+    (fun d1 () ->
+      let open Context.Named.Declaration in
+      let id = NamedDecl.get_id d1 in
       try
-        let ty2 = named_type id env in
-        if not (eq_constr ty2 ty1) then raise Exit
-      with Not_found | Exit ->
+        let d2 = lookup_named id env in
+        conv env (get_type d2) (get_type d1);
+        (match d2,d1 with
+        | LocalAssum _, LocalAssum _ -> ()
+        | LocalAssum _, LocalDef _ ->
+            (* This is wrong, because we don't know if the body is
+               needed or not for typechecking: *) ()
+        | LocalDef _, LocalAssum _ -> raise NotConvertible
+        | LocalDef (_,b2,_), LocalDef (_,b1,_) -> conv env b2 b1);
+      with Not_found | NotConvertible | Option.Heterogeneous ->
         error_reference_variables env id (f c))
     sign
     ~init:()
@@ -111,7 +111,7 @@ let check_hyps_inclusion env f c sign =
 (* Type of constants *)
 
 
-let type_of_constant_knowing_parameters_arity env t paramtyps =
+let type_of_constant_type_knowing_parameters env t paramtyps =
   match t with
   | RegularArity t -> t
   | TemplateArity (sign,ar) ->
@@ -119,19 +119,28 @@ let type_of_constant_knowing_parameters_arity env t paramtyps =
       let ctx,s = instantiate_universes env ctx ar paramtyps in
       mkArity (List.rev ctx,s)
 
-let type_of_constant_knowing_parameters env cst paramtyps =
-  let ty, cu = constant_type env cst in
-    type_of_constant_knowing_parameters_arity env ty paramtyps, cu
-
-let judge_of_constant_knowing_parameters env (kn,u as cst) args =
+let type_of_constant_knowing_parameters env (kn,u as cst) args =
   let cb = lookup_constant kn env in
   let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
-  let ty, cu = type_of_constant_knowing_parameters env cst args in
+  let ty, cu = constant_type env cst in
+  let ty = type_of_constant_type_knowing_parameters env ty args in
   let () = check_constraints cu env in
     ty
 
-let judge_of_constant env cst =
-  judge_of_constant_knowing_parameters env cst [||]
+let type_of_constant_knowing_parameters_in env (kn,u as cst) args =
+  let cb = lookup_constant kn env in
+  let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
+  let ty = constant_type_in env cst in
+  type_of_constant_type_knowing_parameters env ty args
+
+let type_of_constant env cst =
+  type_of_constant_knowing_parameters env cst [||]
+
+let type_of_constant_in env cst =
+  type_of_constant_knowing_parameters_in env cst [||]
+
+let type_of_constant_type env t =
+  type_of_constant_type_knowing_parameters env t [||]
 
 (* Type of a lambda-abstraction. *)
 
@@ -145,7 +154,7 @@ let judge_of_constant env cst =
   and no upper constraint exists on the sort $s$, we don't need to compute $s$
 *)
 
-let judge_of_abstraction env name var ty =
+let type_of_abstraction env name var ty =
   mkProd (name, var, ty)
 
 (* Type of an application. *)
@@ -153,7 +162,7 @@ let judge_of_abstraction env name var ty =
 let make_judgev c t = 
   Array.map2 make_judge c t
 
-let judge_of_apply env func funt argsv argstv =
+let type_of_apply env func funt argsv argstv =
   let len = Array.length argsv in
   let rec apply_rec i typ = 
     if Int.equal i len then typ
@@ -207,7 +216,7 @@ let sort_of_product env domsort rangsort =
 
   where j.uj_type is convertible to a sort s2
 *)
-let judge_of_product env name s1 s2 =
+let type_of_product env name s1 s2 =
   let s = sort_of_product env s1 s2 in
     mkSort s
 
@@ -220,7 +229,7 @@ let judge_of_product env name s1 s2 =
          env |- c:typ2
 *)
 
-let judge_of_cast env c ct k expected_type =
+let check_cast env c ct k expected_type =
   try
     match k with
     | VMcast ->
@@ -249,33 +258,34 @@ let judge_of_cast env c ct k expected_type =
    the App case of execute; from this constraints, the expected
    dynamic constraints of the form u<=v are enforced *)
 
-let judge_of_inductive_knowing_parameters env (ind,u as indu) args =
+let type_of_inductive_knowing_parameters env (ind,u as indu) args =
   let (mib,mip) as spec = lookup_mind_specif env ind in
   check_hyps_inclusion env mkIndU indu mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters 
     env (spec,u) args
   in
-    check_constraints cst env;
-    t
+  check_constraints cst env;
+  t
 
-let judge_of_inductive env (ind,u as indu) =
+let type_of_inductive env (ind,u as indu) =
   let (mib,mip) = lookup_mind_specif env ind in
   check_hyps_inclusion env mkIndU indu mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive env ((mib,mip),u) in
-    check_constraints cst env;
-    t
+  check_constraints cst env;
+  t
 
 (* Constructors. *)
 
-let judge_of_constructor env (c,u as cu) =
-  let _ =
+let type_of_constructor env (c,u as cu) =
+  let () =
     let ((kn,_),_) = c in
     let mib = lookup_mind kn env in
-    check_hyps_inclusion env mkConstructU cu mib.mind_hyps in
+    check_hyps_inclusion env mkConstructU cu mib.mind_hyps
+  in
   let specif = lookup_mind_specif env (inductive_of_constructor c) in
   let t,cst = constrained_type_of_constructor cu specif in
   let () = check_constraints cst env in
-    t
+  t
 
 (* Case. *)
 
@@ -287,25 +297,25 @@ let check_branch_types env (ind,u) c ct lft explft =
     | Invalid_argument _ ->
         error_number_branches env (make_judge c ct) (Array.length explft)
 
-let judge_of_case env ci p pt c ct lf lft =
+let type_of_case env ci p pt c ct lf lft =
   let (pind, _ as indspec) =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
-  let _ = check_case_info env pind ci in
+  let () = check_case_info env pind ci in
   let (bty,rslty) =
     type_case_branches env indspec (make_judge p pt) c in
   let () = check_branch_types env pind c ct lft bty in
-    rslty
+  rslty
 
-let judge_of_projection env p c ct =
+let type_of_projection env p c ct =
   let pb = lookup_projection p env in
   let (ind,u), args =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct)
   in
-    assert(eq_mind pb.proj_ind (fst ind));
-    let ty = Vars.subst_instance_constr u pb.Declarations.proj_type in
-      substl (c :: List.rev args) ty
+  assert(eq_mind pb.proj_ind (fst ind));
+  let ty = Vars.subst_instance_constr u pb.Declarations.proj_type in
+  substl (c :: List.rev args) ty
       
 
 (* Fixpoints. *)
@@ -313,7 +323,7 @@ let judge_of_projection env p c ct =
 (* Checks the type of a general (co)fixpoint, i.e. without checking *)
 (* the specific guard condition. *)
 
-let type_fixpoint env lna lar vdef vdeft =
+let check_fixpoint env lna lar vdef vdeft =
   let lt = Array.length vdeft in
   assert (Int.equal (Array.length lar) lt);
   try
@@ -333,23 +343,23 @@ let rec execute env cstr =
   match kind_of_term cstr with
     (* Atomic terms *)
     | Sort (Prop c) ->
-      judge_of_prop_contents c
+      type1
 	
     | Sort (Type u) ->
-      judge_of_type u
+      type_of_type u
 
     | Rel n ->
-      judge_of_relative env n
+      type_of_relative env n
 
     | Var id ->
-      judge_of_variable env id
+      type_of_variable env id
 
     | Const c ->
-      judge_of_constant env c
+      type_of_constant env c
 	
     | Proj (p, c) ->
         let ct = execute env c in
-          judge_of_projection env p c ct
+          type_of_projection env p c ct
 
     (* Lambda calculus operators *)
     | App (f,args) ->
@@ -359,56 +369,56 @@ let rec execute env cstr =
 	  | Ind ind when Environ.template_polymorphic_pind ind env ->
 	      (* Template sort-polymorphism of inductive types *)
 	    let args = Array.map (fun t -> lazy t) argst in
-	      judge_of_inductive_knowing_parameters env ind args
+              type_of_inductive_knowing_parameters env ind args
 	  | Const cst when Environ.template_polymorphic_pconstant cst env ->
 	      (* Template sort-polymorphism of constants *)
 	    let args = Array.map (fun t -> lazy t) argst in
-	      judge_of_constant_knowing_parameters env cst args
+              type_of_constant_knowing_parameters env cst args
 	  | _ ->
 	    (* Full or no sort-polymorphism *)
             execute env f
 	in
 
-	  judge_of_apply env f ft args argst
+          type_of_apply env f ft args argst
 
     | Lambda (name,c1,c2) ->
       let _ = execute_is_type env c1 in
       let env1 = push_rel (LocalAssum (name,c1)) env in
       let c2t = execute env1 c2 in
-        judge_of_abstraction env name c1 c2t
+        type_of_abstraction env name c1 c2t
 
     | Prod (name,c1,c2) ->
       let vars = execute_is_type env c1 in
       let env1 = push_rel (LocalAssum (name,c1)) env in
       let vars' = execute_is_type env1 c2 in
-	judge_of_product env name vars vars'
+        type_of_product env name vars vars'
 
     | LetIn (name,c1,c2,c3) ->
       let c1t = execute env c1 in
       let _c2s = execute_is_type env c2 in
-      let _ = judge_of_cast env c1 c1t DEFAULTcast c2 in
+      let () = check_cast env c1 c1t DEFAULTcast c2 in
       let env1 = push_rel (LocalDef (name,c1,c2)) env in
       let c3t = execute env1 c3 in
 	subst1 c1 c3t
 
     | Cast (c,k,t) ->
       let ct = execute env c in
-      let _ts = execute_type env t in
-      let _ = judge_of_cast env c ct k t in
+      let _ts = (check_type env t (execute env t)) in
+      let () = check_cast env c ct k t in
 	t
 
     (* Inductive types *)
     | Ind ind ->
-      judge_of_inductive env ind
+      type_of_inductive env ind
 
     | Construct c ->
-      judge_of_constructor env c
+      type_of_constructor env c
 
     | Case (ci,p,c,lf) ->
         let ct = execute env c in
         let pt = execute env p in
         let lft = execute_array env lf in
-          judge_of_case env ci p pt c ct lf lft
+          type_of_case env ci p pt c ct lf lft
 
     | Fix ((vn,i as vni),recdef) ->
       let (fix_ty,recdef') = execute_recdef env recdef i in
@@ -431,16 +441,12 @@ and execute_is_type env constr =
   let t = execute env constr in
     check_type env constr t
 
-and execute_type env constr =
-  let t = execute env constr in
-    type_judgment env constr t
-
 and execute_recdef env (names,lar,vdef) i =
   let lart = execute_array env lar in
-  let lara = Array.map2 (assumption_of_judgment env) lar lart in
+  let lara = Array.map2 (check_assumption env) lar lart in
   let env1 = push_rec_types (names,lara,vdef) env in
   let vdeft = execute_array env1 vdef in
-  let () = type_fixpoint env1 names lara vdef vdeft in
+  let () = check_fixpoint env1 names lara vdef vdeft in
     (lara.(i),(names,lara,vdef))
 
 and execute_array env = Array.map (execute env)
@@ -456,9 +462,133 @@ let infer =
       Profile.profile2 infer_key (fun b c -> infer b c)
   else (fun b c -> infer b c)
 
+let assumption_of_judgment env {uj_val=c; uj_type=t} =
+  check_assumption env c t
+
+let type_judgment env {uj_val=c; uj_type=t} =
+  let s = check_type env c t in
+  {utj_val = c; utj_type = s }
+
 let infer_type env constr =
-  execute_type env constr
+  let t = execute env constr in
+  let s = check_type env constr t in
+  {utj_val = constr; utj_type = s}
 
 let infer_v env cv =
   let jv = execute_array env cv in
     make_judgev cv jv
+
+(* Typing of several terms. *)
+
+let infer_local_decl env id = function
+  | Entries.LocalDefEntry c ->
+      let t = execute env c in
+      RelDecl.LocalDef (Name id, c, t)
+  | Entries.LocalAssumEntry c ->
+      let t = execute env c in
+      RelDecl.LocalAssum (Name id, check_assumption env c t)
+
+let infer_local_decls env decls =
+  let rec inferec env = function
+  | (id, d) :: l ->
+      let (env, l) = inferec env l in
+      let d = infer_local_decl env id d in
+        (push_rel d env, Context.Rel.add d l)
+  | [] -> (env, Context.Rel.empty)
+  in
+  inferec env decls
+
+let judge_of_prop = make_judge mkProp type1
+let judge_of_set = make_judge mkSet type1
+let judge_of_type u = make_judge (mkType u) (type_of_type u)
+
+let judge_of_prop_contents = function
+  | Null -> judge_of_prop
+  | Pos -> judge_of_set
+
+let judge_of_relative env k = make_judge (mkRel k) (type_of_relative env k)
+
+let judge_of_variable env x = make_judge (mkVar x) (type_of_variable env x)
+
+let judge_of_constant env cst = make_judge (mkConstU cst) (type_of_constant env cst)
+let judge_of_constant_knowing_parameters env cst args =
+  make_judge (mkConstU cst) (type_of_constant_knowing_parameters env cst args)
+
+let judge_of_projection env p cj =
+  make_judge (mkProj (p,cj.uj_val)) (type_of_projection env p cj.uj_val cj.uj_type)
+
+let dest_judgev v =
+  Array.map j_val v, Array.map j_type v
+
+let judge_of_apply env funj argjv =
+  let args, argtys = dest_judgev argjv in
+  make_judge (mkApp (funj.uj_val, args)) (type_of_apply env funj.uj_val funj.uj_type args argtys)
+
+let judge_of_abstraction env x varj bodyj =
+  make_judge (mkLambda (x, varj.utj_val, bodyj.uj_val))
+             (type_of_abstraction env x varj.utj_val bodyj.uj_type)
+
+let judge_of_product env x varj outj =
+  make_judge (mkProd (x, varj.utj_val, outj.utj_val))
+             (mkSort (sort_of_product env varj.utj_type outj.utj_type))
+
+let judge_of_letin env name defj typj j =
+  make_judge (mkLetIn (name, defj.uj_val, typj.utj_val, j.uj_val))
+             (subst1 defj.uj_val j.uj_type)
+
+let judge_of_cast env cj k tj =
+  let () = check_cast env cj.uj_val cj.uj_type k tj.utj_val in
+  let c = match k with | REVERTcast -> cj.uj_val | _ -> mkCast (cj.uj_val, k, tj.utj_val) in
+  make_judge c tj.utj_val
+
+let judge_of_inductive env indu =
+  make_judge (mkIndU indu) (type_of_inductive env indu)
+
+let judge_of_constructor env cu =
+  make_judge (mkConstructU cu) (type_of_constructor env cu)
+
+let judge_of_case env ci pj cj lfj =
+  let lf, lft = dest_judgev lfj in
+  make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val, lft))
+             (type_of_case env ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft)
+
+let type_of_projection_constant env (p,u) =
+  let cst = Projection.constant p in
+  let cb = lookup_constant cst env in
+  match cb.const_proj with
+  | Some pb ->
+    if cb.const_polymorphic then
+      Vars.subst_instance_constr u pb.proj_type
+    else pb.proj_type
+  | None -> raise (Invalid_argument "type_of_projection: not a projection")
+
+(* Instantiation of terms on real arguments. *)
+
+(* Make a type polymorphic if an arity *)
+
+let extract_level env p =
+  let _,c = dest_prod_assum env p in
+  match kind_of_term c with Sort (Type u) -> Univ.Universe.level u | _ -> None
+
+let extract_context_levels env l =
+  let fold l = function
+    | RelDecl.LocalAssum (_,p) -> extract_level env p :: l
+    | RelDecl.LocalDef _ -> l
+  in
+  List.fold_left fold [] l
+
+let make_polymorphic_if_constant_for_ind env {uj_val = c; uj_type = t} =
+  let params, ccl = dest_prod_assum env t in
+  match kind_of_term ccl with
+  | Sort (Type u) ->
+     let ind, l = decompose_app (whd_all env c) in
+     if isInd ind && List.is_empty l then
+       let mis = lookup_mind_specif env (fst (destInd ind)) in
+       let nparams = Inductive.inductive_params mis in
+       let paramsl = CList.lastn nparams params in
+       let param_ccls = extract_context_levels env paramsl in
+       let s = { template_param_levels = param_ccls; template_level = u} in
+       TemplateArity (params,s)
+     else RegularArity t
+  | _ ->
+      RegularArity t

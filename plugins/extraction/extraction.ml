@@ -258,7 +258,7 @@ let rec extract_type env db j c args =
     | Const (kn,u as c) ->
 	let r = ConstRef kn in
 	let cb = lookup_constant kn env in
-	let typ,_ = Typeops.type_of_constant env c in
+        let typ = Typeops.type_of_constant_in env c in (* FIXME constraints *)
 	(match flag_of_type env typ with
 	   | (Logic,_) -> assert false (* Cf. logical cases above *)
 	   | (Info, TypeScheme) ->
