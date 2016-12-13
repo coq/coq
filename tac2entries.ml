@@ -19,6 +19,8 @@ open Tac2print
 open Tac2intern
 open Vernacexpr
 
+(** Tactic definition *)
+
 type tacdef = {
   tacdef_local : bool;
   tacdef_expr : glb_tacexpr;
@@ -51,6 +53,8 @@ let inTacDef : tacdef -> obj =
      open_function   = open_tacdef;
      subst_function = subst_tacdef;
      classify_function = classify_tacdef}
+
+(** Type definition *)
 
 type typdef = {
   typdef_local : bool;
@@ -86,6 +90,8 @@ let push_typedef visibility sp kn (_, def) = match def with
   in
   Tac2env.push_type visibility sp kn;
   List.iter iter fields
+| GTydOpn ->
+  Tac2env.push_type visibility sp kn
 
 let next i =
   let ans = !i in
@@ -108,7 +114,7 @@ let define_typedef kn (params, def as qdef) = match def with
       Tac2env.cdata_prms = params;
       cdata_type = kn;
       cdata_args = args;
-      cdata_indx = tag;
+      cdata_indx = Some tag;
     } in
     Tac2env.define_constructor knc data
   in
@@ -129,6 +135,8 @@ let define_typedef kn (params, def as qdef) = match def with
   in
   Tac2env.define_type kn qdef;
   List.iteri iter fs
+| GTydOpn ->
+  Tac2env.define_type kn qdef
 
 let perform_typdef vs ((sp, kn), def) =
   let () = if not def.typdef_local then push_typedef vs sp kn def.typdef_expr in
@@ -154,6 +162,78 @@ let inTypDef : typdef -> obj =
      open_function   = open_typdef;
      subst_function = subst_typdef;
      classify_function = classify_typdef}
+
+(** Type extension *)
+
+type extension_data = {
+  edata_name : Id.t;
+  edata_args : int glb_typexpr list;
+}
+
+type typext = {
+  typext_local : bool;
+  typext_prms : int;
+  typext_type : type_constant;
+  typext_expr : extension_data list;
+}
+
+let push_typext vis sp kn def =
+  let iter data =
+    let spc = change_sp_label sp data.edata_name in
+    let knc = change_kn_label kn data.edata_name in
+    Tac2env.push_ltac vis spc (TacConstructor knc)
+  in
+  List.iter iter def.typext_expr
+
+let define_typext kn def =
+  let iter data =
+    let knc = change_kn_label kn data.edata_name in
+    let cdata = {
+      Tac2env.cdata_prms = def.typext_prms;
+      cdata_type = def.typext_type;
+      cdata_args = data.edata_args;
+      cdata_indx = None;
+    } in
+    Tac2env.define_constructor knc cdata
+  in
+  List.iter iter def.typext_expr
+
+let cache_typext ((sp, kn), def) =
+  let () = define_typext kn def in
+  push_typext (Until 1) sp kn def
+
+let perform_typext vs ((sp, kn), def) =
+  let () = if not def.typext_local then push_typext vs sp kn def in
+  define_typext kn def
+
+let load_typext i obj = perform_typext (Until i) obj
+let open_typext i obj = perform_typext (Exactly i) obj
+
+let subst_typext (subst, e) =
+  let open Mod_subst in
+  let subst_data data =
+    let edata_args = List.smartmap (fun e -> subst_type subst e) data.edata_args in
+    if edata_args == data.edata_args then data
+    else { data with edata_args }
+  in
+  let typext_type = subst_kn subst e.typext_type in
+  let typext_expr = List.smartmap subst_data e.typext_expr in
+  if typext_type == e.typext_type && typext_expr == e.typext_expr then
+    e
+  else
+    { e with typext_type; typext_expr }
+
+let classify_typext o = Substitute o
+
+let inTypExt : typext -> obj =
+  declare_object {(default_object "TAC2-TYPE-EXTENSION") with
+     cache_function  = cache_typext;
+     load_function   = load_typext;
+     open_function   = open_typext;
+     subst_function = subst_typext;
+     classify_function = classify_typext}
+
+(** Toplevel entries *)
 
 let register_ltac ?(local = false) isrec tactics =
   if isrec then
@@ -206,7 +286,12 @@ let register_ltac ?(local = false) isrec tactics =
     in
     List.iter iter defs
 
-let register_type ?(local = false) isrec types =
+let qualid_to_ident (loc, qid) =
+  let (dp, id) = Libnames.repr_qualid qid in
+  if DirPath.is_empty dp then (loc, id)
+  else user_err ~loc (str "Identifier expected")
+
+let register_typedef ?(local = false) isrec types =
   let same_name ((_, id1), _) ((_, id2), _) = Id.equal id1 id2 in
   let () = match List.duplicates same_name types with
   | [] -> ()
@@ -242,6 +327,10 @@ let register_type ?(local = false) isrec types =
         user_err (str "Multiple definitions of the projection " ++ Id.print id)
       in
       ()
+    | CTydOpn ->
+      if isrec then
+        user_err ~loc (str "The open type declaration " ++ Id.print id ++
+          str " cannot be recursive")
   in
   let () = List.iter check types in
   let self =
@@ -288,6 +377,63 @@ let register_primitive ?(local = false) (loc, id) t ml =
     tacdef_type = t;
   } in
   ignore (Lib.add_leaf id (inTacDef def))
+
+let register_open ?(local = false) (loc, qid) (params, def) =
+  let kn =
+    try Tac2env.locate_type qid
+    with Not_found ->
+      user_err ~loc (str "Unbound type " ++ pr_qualid qid)
+  in
+  let (tparams, t) = Tac2env.interp_type kn in
+  let () = match t with
+  | GTydOpn -> ()
+  | GTydAlg _ | GTydRec _ | GTydDef _ ->
+    user_err ~loc (str "Type " ++ pr_qualid qid ++ str " is not an open type")
+  in
+  let () =
+    if not (Int.equal (List.length params) tparams) then
+      Tac2intern.error_nparams_mismatch loc (List.length params) tparams
+  in
+  match def with
+  | CTydOpn -> ()
+  | CTydAlg def ->
+    let intern_type t =
+      let tpe = CTydDef (Some t) in
+      let (_, ans) = intern_typedef Id.Map.empty (params, tpe) in
+      match ans with
+      | GTydDef (Some t) -> t
+      | _ -> assert false
+    in
+    let map (id, tpe) =
+      let tpe = List.map intern_type tpe in
+      { edata_name = id; edata_args = tpe }
+    in
+    let def = List.map map def in
+    let def = {
+      typext_local = local;
+      typext_type = kn;
+      typext_prms = tparams;
+      typext_expr = def;
+    } in
+    Lib.add_anonymous_leaf (inTypExt def)
+  | CTydRec _ | CTydDef _ ->
+    user_err ~loc (str "Extensions only accept inductive constructors")
+
+let register_type ?local isrec types = match types with
+| [qid, true, def] ->
+  let (loc, _) = qid in
+  let () = if isrec then user_err ~loc (str "Extensions cannot be recursive") in
+  register_open ?local qid def
+| _ ->
+  let map (qid, redef, def) =
+    let (loc, _) = qid in
+    let () = if redef then
+      user_err ~loc (str "Types can only be extended one by one")
+    in
+    (qualid_to_ident qid, def)
+  in
+  let types = List.map map types in
+  register_typedef ?local isrec types
 
 let register_struct ?local str = match str with
 | StrVal (isrec, e) -> register_ltac ?local isrec e

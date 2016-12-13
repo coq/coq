@@ -13,6 +13,7 @@ open Libnames
 
 type mutable_flag = bool
 type rec_flag = bool
+type redef_flag = bool
 type lid = Id.t
 type uid = Id.t
 
@@ -40,6 +41,7 @@ type raw_typedef =
 | CTydDef of raw_typexpr option
 | CTydAlg of (uid * raw_typexpr list) list
 | CTydRec of (lid * mutable_flag * raw_typexpr) list
+| CTydOpn
 
 type 'a glb_typexpr =
 | GTypVar of 'a
@@ -51,6 +53,7 @@ type glb_typedef =
 | GTydDef of int glb_typexpr option
 | GTydAlg of (uid * int glb_typexpr list) list
 | GTydRec of (lid * mutable_flag * int glb_typexpr) list
+| GTydOpn
 
 type type_scheme = int * int glb_typexpr
 
@@ -94,6 +97,13 @@ type case_info =
 | GCaseTuple of int
 | GCaseAlg of type_constant
 
+type 'a open_match = {
+  opn_match : 'a;
+  opn_branch : (Name.t * Name.t array * 'a) KNmap.t;
+  (** Invariant: should not be empty *)
+  opn_default : Name.t * 'a;
+}
+
 type glb_tacexpr =
 | GTacAtm of atom
 | GTacVar of Id.t
@@ -106,22 +116,27 @@ type glb_tacexpr =
 | GTacCse of glb_tacexpr * case_info * glb_tacexpr array * (Name.t array * glb_tacexpr) array
 | GTacPrj of type_constant * glb_tacexpr * int
 | GTacSet of type_constant * glb_tacexpr * int * glb_tacexpr
+| GTacOpn of ltac_constructor * glb_tacexpr list
+| GTacWth of glb_tacexpr open_match
 | GTacExt of glob_generic_argument
 | GTacPrm of ml_tactic_name * glb_tacexpr list
 
 (** Toplevel statements *)
 type strexpr =
 | StrVal of rec_flag * (Name.t located * raw_tacexpr) list
-| StrTyp of rec_flag * (Id.t located * raw_quant_typedef) list
+  (** Term definition *)
+| StrTyp of rec_flag * (qualid located * redef_flag * raw_quant_typedef) list
+  (** Type definition *)
 | StrPrm of Id.t located * raw_typexpr * ml_tactic_name
+  (** External definition *)
 
 (** {5 Dynamic semantics} *)
 
 (** Values are represented in a way similar to OCaml, i.e. they constrast
     immediate integers (integers, constructors without arguments) and structured
     blocks (tuples, arrays, constructors with arguments), as well as a few other
-    base cases, namely closures, strings and dynamic type coming from the Coq
-    implementation. *)
+    base cases, namely closures, strings, named constructors, and dynamic type
+    coming from the Coq implementation. *)
 
 type tag = int
 
@@ -134,6 +149,8 @@ type valexpr =
   (** Strings *)
 | ValCls of closure
   (** Closures *)
+| ValOpn of KerName.t * valexpr array
+  (** Open constructors *)
 | ValExt of Geninterp.Val.t
   (** Arbitrary data *)
 

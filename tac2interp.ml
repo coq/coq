@@ -14,7 +14,14 @@ open Names
 open Proofview.Notations
 open Tac2expr
 
-exception LtacError of KerName.t * valexpr
+exception LtacError of KerName.t * valexpr array
+
+let () = register_handler begin function
+| LtacError (kn, _) ->
+  let c = Tac2print.pr_constructor kn in
+  hov 0 (str "Uncaught Ltac2 exception:" ++ spc () ++ hov 0 c)
+| _ -> raise Unhandled
+end
 
 let val_exn = Geninterp.Val.create "ltac2:exn"
 
@@ -81,12 +88,17 @@ let rec interp ist = function
   return (ValBlk (n, Array.of_list el))
 | GTacCse (e, _, cse0, cse1) ->
   interp ist e >>= fun e -> interp_case ist e cse0 cse1
+| GTacWth { opn_match = e; opn_branch = cse; opn_default = def } ->
+  interp ist e >>= fun e -> interp_with ist e cse def
 | GTacPrj (_, e, p) ->
   interp ist e >>= fun e -> interp_proj ist e p
 | GTacSet (_, e, p, r) ->
   interp ist e >>= fun e ->
   interp ist r >>= fun r ->
   interp_set ist e p r
+| GTacOpn (kn, el) ->
+  Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
+  return (ValOpn (kn, Array.of_list el))
 | GTacPrm (ml, el) ->
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   Tac2env.interp_primitive ml el
@@ -106,7 +118,7 @@ and interp_app f args = match f with
   | id :: ids, arg :: args -> push (push_name ist id arg) ids args
   in
   push ist ids args
-| ValExt _ | ValInt _ | ValBlk _ | ValStr _ ->
+| ValExt _ | ValInt _ | ValBlk _ | ValStr _ | ValOpn _ ->
   anomaly (str "Unexpected value shape")
 
 and interp_case ist e cse0 cse1 = match e with
@@ -115,18 +127,34 @@ and interp_case ist e cse0 cse1 = match e with
   let (ids, e) = cse1.(n) in
   let ist = CArray.fold_left2 push_name ist ids args in
   interp ist e
-| ValExt _ | ValStr _ | ValCls _ ->
+| ValExt _ | ValStr _ | ValCls _ | ValOpn _ ->
+  anomaly (str "Unexpected value shape")
+
+and interp_with ist e cse def = match e with
+| ValOpn (kn, args) ->
+  let br = try Some (KNmap.find kn cse) with Not_found -> None in
+  begin match br with
+  | None ->
+    let (self, def) = def in
+    let ist = push_name ist self e in
+    interp ist def
+  | Some (self, ids, p) ->
+    let ist = push_name ist self e in
+    let ist = CArray.fold_left2 push_name ist ids args in
+    interp ist p
+  end
+| ValInt _ | ValBlk _ | ValExt _ | ValStr _ | ValCls _ ->
   anomaly (str "Unexpected value shape")
 
 and interp_proj ist e p = match e with
 | ValBlk (_, args) ->
   return args.(p)
-| ValInt _ | ValExt _ | ValStr _ | ValCls _ ->
+| ValInt _ | ValExt _ | ValStr _ | ValCls _ | ValOpn _ ->
   anomaly (str "Unexpected value shape")
 
 and interp_set ist e p r = match e with
 | ValBlk (_, args) ->
   let () = args.(p) <- r in
   return (ValInt 0)
-| ValInt _ | ValExt _ | ValStr _ | ValCls _ ->
+| ValInt _ | ValExt _ | ValStr _ | ValCls _ | ValOpn _ ->
   anomaly (str "Unexpected value shape")

@@ -153,7 +153,7 @@ let pr_glbexpr_gen lvl c =
     | E0 -> paren
     | E1 | E2 | E3 | E4 | E5 -> fun x -> x
     in
-    paren (pr_glbexpr E1 c) ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)
+    paren (pr_glbexpr E1 c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl))
   | GTacLet (mut, bnd, e) ->
     let paren = match lvl with
     | E0 | E1 | E2 | E3 | E4 -> paren
@@ -195,7 +195,7 @@ let pr_glbexpr_gen lvl c =
       in
       let args = prlist_with_sep (fun () -> str ";" ++ spc ()) pr_arg args in
       str "{" ++ spc () ++ args ++ spc () ++ str "}"
-    | _, GTydDef _ -> assert false
+    | _, (GTydDef _ | GTydOpn) -> assert false
     end
   | GTacCse (e, info, cst_br, ncst_br) ->
     let e = pr_glbexpr E5 e in
@@ -203,7 +203,7 @@ let pr_glbexpr_gen lvl c =
     | GCaseAlg kn ->
       let def = match Tac2env.interp_type kn with
       | _, GTydAlg def -> def
-      | _, GTydDef _ | _, GTydRec _ -> assert false
+      | _, GTydDef _ | _, GTydRec _ | _, GTydOpn -> assert false
       in
       let br = order_branches cst_br ncst_br def in
       let pr_branch (cstr, vars, p) =
@@ -224,10 +224,33 @@ let pr_glbexpr_gen lvl c =
       str "|" ++ spc () ++ paren vars ++ spc () ++ str "=>" ++ spc () ++ p
     in
     hov 0 (hov 0 (str "match" ++ spc () ++ e ++ spc () ++ str "with") ++ spc () ++ Pp.v 0 br ++ str "end")
+  | GTacWth wth ->
+    let e = pr_glbexpr E5 wth.opn_match in
+    let pr_pattern c self vars p =
+      let self = match self with
+      | Anonymous -> mt ()
+      | Name id -> spc () ++ str "as" ++ spc () ++ Id.print id
+      in
+      hov 0 (str "|" ++ spc () ++ c ++ vars ++ self ++ spc () ++ str "=>" ++ spc () ++
+        hov 2 (pr_glbexpr E5 p)) ++ spc ()
+    in
+    let pr_branch (cstr, (self, vars, p)) =
+      let cstr = pr_constructor cstr in
+      let vars = match Array.to_list vars with
+      | [] -> mt ()
+      | vars -> spc () ++ pr_sequence pr_name vars
+      in
+      pr_pattern cstr self vars p
+    in
+    let br = prlist pr_branch (KNmap.bindings wth.opn_branch) in
+    let (def_as, def_p) = wth.opn_default in
+    let def = pr_pattern (str "_") def_as (mt ()) def_p in
+    let br = br ++ def in
+    hov 0 (hov 0 (str "match" ++ spc () ++ e ++ spc () ++ str "with") ++ spc () ++ Pp.v 0 br ++ str "end")
   | GTacPrj (kn, e, n) ->
     let def = match Tac2env.interp_type kn with
     | _, GTydRec def -> def
-    | _, GTydDef _ | _, GTydAlg _ -> assert false
+    | _, GTydDef _ | _, GTydAlg _ | _, GTydOpn -> assert false
     in
     let (proj, _, _) = List.nth def n in
     let proj = change_kn_label kn proj in
@@ -237,7 +260,7 @@ let pr_glbexpr_gen lvl c =
   | GTacSet (kn, e, n, r) ->
     let def = match Tac2env.interp_type kn with
     | _, GTydRec def -> def
-    | _, GTydDef _ | _, GTydAlg _ -> assert false
+    | _, GTydDef _ | _, GTydAlg _ | _, GTydOpn -> assert false
     in
     let (proj, _, _) = List.nth def n in
     let proj = change_kn_label kn proj in
@@ -245,6 +268,13 @@ let pr_glbexpr_gen lvl c =
     let e = pr_glbexpr E0 e in
     let r = pr_glbexpr E1 r in
     e ++ str "." ++ paren proj ++ spc () ++ str ":=" ++ spc () ++ r
+  | GTacOpn (kn, cl) ->
+    let paren = match lvl with
+    | E0 -> paren
+    | E1 | E2 | E3 | E4 | E5 -> fun x -> x
+    in
+    let c = pr_constructor kn in
+    paren (c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl))
   | GTacExt arg ->
     let GenArg (Glbwit tag, arg) = arg in
     let name = match tag with

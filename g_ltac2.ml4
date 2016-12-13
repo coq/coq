@@ -137,6 +137,7 @@ GEXTEND Gram
   ;
   tac2typ_knd:
     [ [ t = tac2type -> CTydDef (Some t)
+      | "["; ".."; "]" -> CTydOpn
       | "["; t = tac2alg_constructors; "]" -> CTydAlg t
       | "{"; t = tac2rec_fields; "}"-> CTydRec t ] ]
   ;
@@ -173,9 +174,12 @@ GEXTEND Gram
     ] ]
   ;
   tac2typ_def:
-    [ [ prm = tac2typ_prm; id = locident; ":="; e = tac2typ_knd ->
-        (id, (prm, e))
-      | prm = tac2typ_prm; id = locident -> (id, (prm, CTydDef None))
+    [ [ prm = tac2typ_prm; id = Prim.qualid; (r, e) = tac2type_body -> (id, r, (prm, e)) ] ]
+  ;
+  tac2type_body:
+    [ [ -> false, CTydDef None
+      | ":="; e = tac2typ_knd -> false, e
+      | "::="; e = tac2typ_knd -> true, e
     ] ]
   ;
   tac2def_typ:

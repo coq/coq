@@ -22,7 +22,7 @@ type constructor_data = {
   cdata_prms : int;
   cdata_type : type_constant;
   cdata_args : int glb_typexpr list;
-  cdata_indx : int;
+  cdata_indx : int option;
 }
 
 type projection_data = {
@@ -62,8 +62,9 @@ let rec eval_pure = function
   ValCls { clos_env = Id.Map.empty; clos_var = na; clos_exp = e }
 | GTacCst (_, n, []) -> ValInt n
 | GTacCst (_, n, el) -> ValBlk (n, Array.map_of_list eval_pure el)
+| GTacOpn (kn, el) -> ValOpn (kn, Array.map_of_list eval_pure el)
 | GTacAtm (AtmStr _) | GTacArr _ | GTacLet _ | GTacVar _ | GTacSet _
-| GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ ->
+| GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ | GTacWth _ ->
   anomaly (Pp.str "Term is not a syntactical value")
 
 let define_global kn e =

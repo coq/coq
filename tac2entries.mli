@@ -8,6 +8,7 @@
 
 open Loc
 open Names
+open Libnames
 open Tac2expr
 
 (** {5 Toplevel definitions} *)
@@ -16,7 +17,7 @@ val register_ltac : ?local:bool -> rec_flag ->
   (Name.t located * raw_tacexpr) list -> unit
 
 val register_type : ?local:bool -> rec_flag ->
-  (Id.t located * raw_quant_typedef) list -> unit
+  (qualid located * redef_flag * raw_quant_typedef) list -> unit
 
 val register_primitive : ?local:bool ->
   Id.t located -> raw_typexpr -> ml_tactic_name -> unit

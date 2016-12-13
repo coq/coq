@@ -215,6 +215,11 @@ let error_nargs_mismatch loc nargs nfound =
     str " arguments, but is applied to " ++ int nfound ++
     str " arguments")
 
+let error_nparams_mismatch loc nargs nfound =
+  user_err ~loc (str "Type expects " ++ int nargs ++
+    str " arguments, but is applied to " ++ int nfound ++
+    str " arguments")
+
 let rec subst_type subst (t : 'a glb_typexpr) = match t with
 | GTypVar id -> subst id
 | GTypArrow (t1, t2) -> GTypArrow (subst_type subst t1, subst_type subst t2)
@@ -275,7 +280,7 @@ let fresh_reftype env (kn : KerName.t) =
 
 let is_unfoldable kn = match snd (Tac2env.interp_type kn) with
 | GTydDef (Some _) -> true
-| GTydDef None | GTydAlg _ | GTydRec _ -> false
+| GTydDef None | GTydAlg _ | GTydRec _ | GTydOpn -> false
 
 let unfold env kn args =
   let (nparams, def) = Tac2env.interp_type kn in
@@ -349,7 +354,7 @@ let unify loc env t1 t2 =
 
 let is_pure_constructor kn =
   match snd (Tac2env.interp_type kn) with
-  | GTydAlg _ -> true
+  | GTydAlg _ | GTydOpn -> true
   | GTydRec fields ->
     let is_pure (_, mut, _) = not mut in
     List.for_all is_pure fields
@@ -360,14 +365,16 @@ let rec is_value = function
 | GTacAtm (AtmStr _) | GTacApp _ | GTacLet _ -> false
 | GTacCst (GCaseTuple _, _, el) -> List.for_all is_value el
 | GTacCst (_, _, []) -> true
+| GTacOpn (_, el) -> List.for_all is_value el
 | GTacCst (GCaseAlg kn, _, el) -> is_pure_constructor kn && List.for_all is_value el
-| GTacArr _ | GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _ -> false
+| GTacArr _ | GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _
+| GTacWth _ -> false
 
 let is_rec_rhs = function
 | GTacFun _ -> true
 | GTacAtm _ | GTacVar _ | GTacRef _ | GTacApp _ | GTacLet _ | GTacPrj _
 | GTacSet _ | GTacArr _ | GTacExt _ | GTacPrm _ | GTacCst _
-| GTacCse _ -> false
+| GTacCse _ | GTacOpn _ | GTacWth _ -> false
 
 let rec fv_type f t accu = match t with
 | GTypVar id -> f id accu
@@ -503,39 +510,54 @@ let invalid_pattern ~loc kn t =
   user_err ~loc (str "Invalid pattern, expected a pattern for type " ++
     pr_typref kn ++ str ", found a pattern of type " ++ pt) (** FIXME *)
 
+(** Pattern view *)
+
+type glb_patexpr =
+| GPatVar of Name.t
+| GPatRef of ltac_constructor * glb_patexpr list
+| GPatTup of glb_patexpr list
+
+let rec intern_patexpr env = function
+| CPatAny _ -> GPatVar Anonymous
+| CPatRef (_, qid, []) ->
+  begin match get_constructor env qid with
+  | ArgVar (_, id) -> GPatVar (Name id)
+  | ArgArg (_, kn) -> GPatRef (kn, [])
+  end
+| CPatRef (_, qid, pl) ->
+  begin match get_constructor env qid with
+  | ArgVar (loc, _) ->
+    user_err ~loc (str "Unbound constructor " ++ pr_qualid (snd qid))
+  | ArgArg (_, kn) -> GPatRef (kn, List.map (fun p -> intern_patexpr env p) pl)
+  end
+| CPatTup (_, pl) ->
+  GPatTup (List.map (fun p -> intern_patexpr env p) pl)
+
 type pattern_kind =
 | PKind_empty
-| PKind_variant of KerName.t
+| PKind_variant of type_constant
+| PKind_open of type_constant
 | PKind_tuple of int
 | PKind_any
 
 let get_pattern_kind env pl = match pl with
 | [] -> PKind_empty
 | p :: pl ->
-  let rec get_kind p pl = match fst p with
-  | CPatAny _ ->
+  let rec get_kind (p, _) pl = match intern_patexpr env p with
+  | GPatVar _ ->
     begin match pl with
     | [] -> PKind_any
     | p :: pl -> get_kind p pl
     end
-  | CPatRef (_, qid, []) ->
-    begin match get_constructor env qid with
-    | ArgVar _ ->
-      begin match pl with
-      | [] -> PKind_any
-      | p :: pl -> get_kind p pl
-      end
-    | ArgArg (data, _) -> PKind_variant data.cdata_type
-    end
-  | CPatRef (_, qid, _ :: _) ->
-    begin match get_constructor env qid with
-    | ArgVar (loc, _) ->
-      user_err ~loc (str "Unbound constructor " ++ pr_qualid (snd qid))
-    | ArgArg (data, _) -> PKind_variant data.cdata_type
-    end
-  | CPatTup (_, tp) -> PKind_tuple (List.length tp)
+  | GPatRef (kn, pl) ->
+    let data = Tac2env.interp_constructor kn in
+    if Option.is_empty data.cdata_indx then PKind_open data.cdata_type
+    else PKind_variant data.cdata_type
+  | GPatTup tp -> PKind_tuple (List.length tp)
   in
   get_kind p pl
+
+(** Internalization *)
 
 let is_constructor env qid = match get_variable env qid with
 | ArgArg (TacConstructor _) -> true
@@ -739,9 +761,8 @@ and intern_case env loc e pl =
   match get_pattern_kind env pl with
   | PKind_any ->
     let (pat, b) = List.hd pl in
-    let na = match pat with
-    | CPatAny _ -> Anonymous
-    | CPatRef (_, (_, qid), _) -> Name (snd (repr_qualid qid))
+    let na = match intern_patexpr env pat with
+    | GPatVar na -> na
     | _ -> assert false
     in
     let () = check_redundant_clause (List.tl pl) in
@@ -851,7 +872,10 @@ and intern_case env loc e pl =
         let nenv = List.fold_left2 fold env ids data.cdata_args in
         let (br', brT) = intern_rec nenv br in
         let () =
-          let index = data.cdata_indx in
+          let index = match data.cdata_indx with
+          | Some i -> i
+          | None -> assert false
+          in
           if List.is_empty args then
             if Option.is_empty const.(index) then const.(index) <- Some br'
             else warn_redundant_clause ~loc ()
@@ -869,13 +893,67 @@ and intern_case env loc e pl =
     in
     let () = intern_branch pl in
     let map = function
-    | None -> user_err ~loc (str "Unhandled match case") (** FIXME *)
+    | None -> user_err ~loc (str "TODO: Unhandled match case") (** FIXME *)
     | Some x -> x
     in
     let const = Array.map map const in
     let nonconst = Array.map map nonconst in
     let ce = GTacCse (e', GCaseAlg kn, const, nonconst) in
     (ce, ret)
+  | PKind_open kn ->
+    let subst, tc = fresh_reftype env kn in
+    let () = unify (loc_of_tacexpr e) env t tc in
+    let ret = GTypVar (fresh_id env) in
+    let rec intern_branch map = function
+    | [] ->
+      user_err ~loc (str "Missing default case")
+    | (pat, br) :: rem ->
+      match intern_patexpr env pat with
+      | GPatVar na ->
+        let () = check_redundant_clause rem in
+        let nenv = push_name na (monomorphic tc) env in
+        let br' = intern_rec_with_constraint nenv br ret in
+        let def = (na, br') in
+        (map, def)
+      | GPatRef (knc, args) ->
+        let get = function
+        | GPatVar na -> na
+        | GPatRef _ | GPatTup _ ->
+          user_err ~loc (str "TODO: Unhandled match case") (** FIXME *)
+        in
+        let loc = loc_of_patexpr pat in
+        let ids = List.map get args in
+        let data = Tac2env.interp_constructor knc in
+        let () =
+          if not (KerName.equal kn data.cdata_type) then
+            invalid_pattern ~loc kn (GCaseAlg data.cdata_type)
+        in
+        let nids = List.length ids in
+        let nargs = List.length data.cdata_args in
+        let () =
+          if not (Int.equal nids nargs) then error_nargs_mismatch loc nargs nids
+        in
+        let fold env id tpe =
+          (** Instantiate all arguments *)
+          let subst n = GTypVar subst.(n) in
+          let tpe = subst_type subst tpe in
+          push_name id (monomorphic tpe) env
+        in
+        let nenv = List.fold_left2 fold env ids data.cdata_args in
+        let br' = intern_rec_with_constraint nenv br ret in
+        let map =
+          if KNmap.mem knc map then
+            let () = warn_redundant_clause ~loc () in
+            map
+          else
+            KNmap.add knc (Anonymous, Array.of_list ids, br') map
+        in
+        intern_branch map rem
+      | GPatTup tup ->
+        invalid_pattern ~loc kn (GCaseTuple (List.length tup))
+    in
+    let (map, def) = intern_branch KNmap.empty pl in
+    (GTacWth { opn_match = e'; opn_branch = map; opn_default = def }, ret)
 
 and intern_constructor env loc kn args =
   let cstr = interp_constructor kn in
@@ -887,7 +965,11 @@ and intern_constructor env loc kn args =
     let ans = GTypRef (cstr.cdata_type, List.init cstr.cdata_prms (fun i -> GTypVar subst.(i))) in
     let map arg tpe = intern_rec_with_constraint env arg tpe in
     let args = List.map2 map args types in
-    (GTacCst (GCaseAlg cstr.cdata_type, cstr.cdata_indx, args), ans)
+    match cstr.cdata_indx with
+    | Some idx ->
+      (GTacCst (GCaseAlg cstr.cdata_type, idx, args), ans)
+    | None ->
+      (GTacOpn (kn, args), ans)
   else
     error_nargs_mismatch loc nargs (List.length args)
 
@@ -986,6 +1068,7 @@ let intern_typedef self (ids, t) : glb_quant_typedef =
     let map (c, mut, t) = (c, mut, intern t) in
     let fields = List.map map fields in
     (count, GTydRec fields)
+  | CTydOpn -> (count, GTydOpn)
 
 let intern_open_type t =
   let env = empty_env () in
@@ -1045,6 +1128,18 @@ let rec subst_expr subst e = match e with
   let cse1' = Array.map (fun (ids, e) -> (ids, subst_expr subst e)) cse1 in
   let ci' = subst_case_info subst ci in
   GTacCse (subst_expr subst e, ci', cse0', cse1')
+| GTacWth { opn_match = e; opn_branch = br; opn_default = (na, def) } as e0 ->
+  let e' = subst_expr subst e in
+  let def' = subst_expr subst def in
+  let fold kn (self, vars, p) accu =
+    let kn' = subst_kn subst kn in
+    let p' = subst_expr subst p in
+    if kn' == kn && p' == p then accu
+    else KNmap.add kn' (self, vars, p') (KNmap.remove kn accu)
+  in
+  let br' = KNmap.fold fold br br in
+  if e' == e && br' == br && def' == def then e0
+  else GTacWth { opn_match = e'; opn_default = (na, def'); opn_branch = br' }
 | GTacPrj (kn, e, p) as e0 ->
   let kn' = subst_kn subst kn in
   let e' = subst_expr subst e in
@@ -1057,6 +1152,10 @@ let rec subst_expr subst e = match e with
 | GTacExt ext ->
   let ext' = Genintern.generic_substitute subst ext in
   if ext' == ext then e else GTacExt ext'
+| GTacOpn (kn, el) as e0 ->
+  let kn' = subst_kn subst kn in
+  let el' = List.smartmap (fun e -> subst_expr subst e) el in
+  if kn' == kn && el' == el then e0 else GTacOpn (kn', el')
 
 let subst_typedef subst e = match e with
 | GTydDef t ->
@@ -1076,6 +1175,7 @@ let subst_typedef subst e = match e with
   in
   let fields' = List.smartmap map fields in
   if fields' == fields then e else GTydRec fields'
+| GTydOpn -> GTydOpn
 
 let subst_quant_typedef subst (prm, def as qdef) =
   let def' = subst_typedef subst def in

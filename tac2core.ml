@@ -109,8 +109,14 @@ let to_constr c = to_ext val_constr c
 let of_ident c = of_ext val_ident c
 let to_ident c = to_ext val_ident c
 
-let of_exn c = of_ext val_exn c
-let to_exn c = to_ext val_exn c
+(** FIXME: handle backtrace in Ltac2 exceptions *)
+let of_exn c = match fst c with
+| LtacError (kn, c) -> ValOpn (kn, c)
+| _ -> of_ext val_exn c
+
+let to_exn c = match c with
+| ValOpn (kn, c) -> (LtacError (kn, c), Exninfo.null)
+| _ -> to_ext val_exn c
 
 let of_pp c = of_ext val_pp c
 let to_pp c = to_ext val_pp c

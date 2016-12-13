@@ -20,8 +20,9 @@ val interp_app : valexpr -> valexpr list -> valexpr Proofview.tactic
 
 (** {5 Exceptions} *)
 
-exception LtacError of KerName.t * valexpr
-(** Ltac2-defined exceptions *)
+exception LtacError of KerName.t * valexpr array
+(** Ltac2-defined exceptions seen from OCaml side *)
 
 val val_exn : Exninfo.iexn Geninterp.Val.typ
-(** Toplevel representation of Ltac2 exceptions *)
+(** Toplevel representation of OCaml exceptions. Invariant: no [LtacError]
+    should be put into a value with tag [val_exn]. *)

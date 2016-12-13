@@ -20,7 +20,7 @@ Ltac2 Type evar.
 Ltac2 Type constr.
 Ltac2 Type ident.
 Ltac2 Type message.
-Ltac2 Type exn.
+Ltac2 Type exn := [ .. ].
 Ltac2 Type 'a array.
 
 (** Pervasive types *)

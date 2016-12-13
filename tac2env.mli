@@ -33,10 +33,11 @@ type constructor_data = {
   (** Inductive definition to which the constructor pertains *)
   cdata_args : int glb_typexpr list;
   (** Types of the constructor arguments *)
-  cdata_indx : int;
+  cdata_indx : int option;
   (** Index of the constructor in the ADT. Numbering is duplicated between
       argumentless and argument-using constructors, e.g. in type ['a option]
-      [None] and [Some] have both index 0. *)
+      [None] and [Some] have both index 0. This field is empty whenever the
+      constructor is a member of an open type. *)
 }
 
 val define_constructor : ltac_constructor -> constructor_data -> unit
