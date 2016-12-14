@@ -8,6 +8,8 @@
 
 Require Import Coq.ltac2.Init.
 
+Ltac2 Type exn ::= [ Division_by_zero ].
+
 Ltac2 @ external equal : int -> int -> bool := "ltac2" "int_equal".
 Ltac2 @ external compare : int -> int -> int := "ltac2" "int_compare".
 Ltac2 @ external add : int -> int -> int := "ltac2" "int_add".

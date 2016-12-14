@@ -30,3 +30,17 @@ Ltac2 Type 'a option := [ None | Some ('a) ].
 Ltac2 Type 'a ref := { mutable contents : 'a }.
 
 Ltac2 Type bool := [ true | false ].
+
+(** Pervasive exceptions *)
+
+Ltac2 Type exn ::= [ Out_of_bounds ].
+(** Used for bound checking, e.g. with String and Array. *)
+
+Ltac2 Type exn ::= [ Not_focussed ].
+(** In Ltac2, the notion of "current environment" only makes sense when there is
+    at most one goal under focus. Contrarily to Ltac1, instead of dynamically
+    focussing when we need it, we raise this non-backtracking error when it does
+    not make sense. *)
+
+Ltac2 Type exn ::= [ Not_found ].
+(** Used when something is missing. *)

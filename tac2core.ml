@@ -20,6 +20,10 @@ open Proofview.Notations
 (** Standard values *)
 
 let coq_core n = KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string_soft n))
+let stdlib_prefix md =
+  MPfile (DirPath.make (List.map Id.of_string [md; "ltac2"; "Coq"]))
+let coq_stdlib md n =
+  KerName.make2 (stdlib_prefix md) (Label.of_id (Id.of_string n))
 
 let val_tag t = match val_tag t with
 | Val.Base t -> t
@@ -125,9 +129,21 @@ end
 
 let val_valexpr = Val.create "ltac2:valexpr"
 
+(** Stdlib exceptions *)
+
+let err_notfocussed =
+  LtacError (coq_core "Not_focussed", [||])
+
+let err_outofbounds =
+  LtacError (coq_core "Out_of_bounds", [||])
+
+let err_notfound =
+  LtacError (coq_core "Not_found", [||])
+
 (** Helper functions *)
 
 let thaw f = interp_app f [v_unit]
+let throw e = Proofview.tclLIFT (Proofview.NonLogical.raise e)
 
 let return x = Proofview.tclUNIT x
 let pname s = { mltac_plugin = "ltac2"; mltac_tactic = s }
@@ -138,16 +154,9 @@ let wrap f =
 let wrap_unit f =
   return () >>= fun () -> f (); return v_unit
 
-(** In Ltac2, the notion of "current environment" only makes sense when there is
-    at most one goal under focus. Contrarily to Ltac1, instead of dynamically
-    focussing when we need it, we raise a non-backtracking error when it does
-    not make sense. *)
-exception NonFocussedGoal
-
-let () = register_handler begin function
-| NonFocussedGoal -> str "Several goals under focus"
-| _ -> raise Unhandled
-end
+let wrap_exn f err =
+  return () >>= fun () ->
+    try return (f ()) with e when CErrors.noncritical e -> err
 
 let pf_apply f =
   Proofview.Goal.goals >>= function
@@ -159,7 +168,7 @@ let pf_apply f =
     gl >>= fun gl ->
     f (Proofview.Goal.env gl) (Tacmach.New.project gl)
   | _ :: _ :: _ ->
-    Proofview.tclLIFT (Proofview.NonLogical.raise NonFocussedGoal)
+    throw err_notfocussed
 
 (** Primitives *)
 
@@ -197,8 +206,8 @@ let prm_message_concat : ml_tactic = function
 
 let prm_array_make : ml_tactic = function
 | [ValInt n; x] ->
-  (** FIXME: wrap exception *)
-  wrap (fun () -> ValBlk (0, Array.make n x))
+  if n < 0 || n > Sys.max_array_length then throw err_outofbounds
+  else wrap (fun () -> ValBlk (0, Array.make n x))
 | _ -> assert false
 
 let prm_array_length : ml_tactic = function
@@ -207,14 +216,14 @@ let prm_array_length : ml_tactic = function
 
 let prm_array_set : ml_tactic = function
 | [ValBlk (_, v); ValInt n; x] ->
-  (** FIXME: wrap exception *)
-  wrap_unit (fun () -> v.(n) <- x)
+  if n < 0 || n >= Array.length v then throw err_outofbounds
+  else wrap_unit (fun () -> v.(n) <- x)
 | _ -> assert false
 
 let prm_array_get : ml_tactic = function
 | [ValBlk (_, v); ValInt n] ->
-  (** FIXME: wrap exception *)
-  wrap (fun () -> v.(n))
+  if n < 0 || n >= Array.length v then throw err_outofbounds
+  else wrap (fun () -> v.(n))
 | _ -> assert false
 
 (** Int *)
@@ -243,8 +252,8 @@ let prm_string_make : ml_tactic = function
 | [n; c] ->
   let n = Value.to_int n in
   let c = Value.to_char c in
-  (** FIXME: wrap exception *)
-  wrap (fun () -> Value.of_string (Bytes.make n c))
+  if n < 0 || n > Sys.max_string_length then throw err_outofbounds
+  else wrap (fun () -> Value.of_string (Bytes.make n c))
 | _ -> assert false
 
 let prm_string_length : ml_tactic = function
@@ -257,16 +266,16 @@ let prm_string_set : ml_tactic = function
   let s = Value.to_string s in
   let n = Value.to_int n in
   let c = Value.to_char c in
-  (** FIXME: wrap exception *)
-  wrap_unit (fun () -> Bytes.set s n c)
+  if n < 0 || n >= Bytes.length s then throw err_outofbounds
+  else wrap_unit (fun () -> Bytes.set s n c)
 | _ -> assert false
 
 let prm_string_get : ml_tactic = function
 | [s; n] ->
   let s = Value.to_string s in
   let n = Value.to_int n in
-  (** FIXME: wrap exception *)
-  wrap (fun () -> Value.of_char (Bytes.get s n))
+  if n < 0 || n >= Bytes.length s then throw err_outofbounds
+  else wrap (fun () -> Value.of_char (Bytes.get s n))
 | _ -> assert false
 
 (** Error *)
