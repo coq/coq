@@ -231,13 +231,13 @@ let e_give_exact flags poly (c,clenv) gl =
 
 let unify_e_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
   let clenv', c = connect_hint_clenv poly c clenv gls in
-  let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags clenv') gls in
+  let clenv' = clenv_unique_resolver ~flags clenv' gls in
     Clenvtac.clenv_refine true ~with_classes:false clenv'
   end }
 
 let unify_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
   let clenv', _ = connect_hint_clenv poly c clenv gls in
-  let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags clenv') gls in
+  let clenv' = clenv_unique_resolver ~flags clenv' gls in
     Clenvtac.clenv_refine false ~with_classes:false clenv'
   end }
 
@@ -285,16 +285,16 @@ let clenv_of_prods poly nprods (c, clenv) gl =
     if Pervasives.(>=) diff 0 then
       (* Was Some clenv... *)
       Some (Some diff,
-            Tacmach.New.of_old (fun gls -> mk_clenv_from_n gls (Some diff) (c,ty)) gl)
+            mk_clenv_from_n gl (Some diff) (c,ty))
     else None
 
 let with_prods nprods poly (c, clenv) f =
   if get_typeclasses_limit_intros () then
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
      match clenv_of_prods poly nprods (c, clenv) gl with
      | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
      | Some (diff, clenv') -> f.enter gl (c, diff, clenv') end }
-  else Proofview.Goal.nf_enter
+  else Proofview.Goal.enter
          { enter = begin fun gl ->
                    if Int.equal nprods 0 then f.enter gl (c, None, clenv)
                    else Tacticals.New.tclZEROMSG (str"Not enough premisses") end }
@@ -345,7 +345,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   let open Tacticals.New in
   let open Tacmach.New in
   let trivial_fail =
-    Proofview.Goal.nf_enter { enter =
+    Proofview.Goal.enter { enter =
     begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
@@ -356,7 +356,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
       end }
   in
   let trivial_resolve =
-    Proofview.Goal.nf_enter { enter =
+    Proofview.Goal.enter { enter =
     begin fun gl ->
     let tacs = e_trivial_resolve db_list local_db secvars only_classes
                                  (project gl) (pf_concl gl) in
@@ -944,7 +944,7 @@ module Search = struct
              Hint_db.transparent_state cached_hints == st
     then cached_hints
     else
-      let hints = make_hints {it = Goal.goal g; sigma = project g}
+      let hints = make_hints {it = Goal.goal (Proofview.Goal.assume g); sigma = project g}
                              st only_classes sign
       in
       autogoal_cache := (cwd, only_classes, sign, hints); hints
@@ -1024,16 +1024,16 @@ module Search = struct
            (pr_depth (!idx :: info.search_depth) ++ str": trying " ++
               Lazy.force pp ++
               (if !foundone != true then
-                 str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)
+                 str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal (Proofview.Goal.assume gl))
                else mt ())));
-      let tac_of gls i j = Goal.nf_enter { enter = fun gl' ->
+      let tac_of gls i j = Goal.enter { enter = fun gl' ->
         let sigma' = Goal.sigma gl' in
         let s' = Sigma.to_evar_map sigma' in
         let _concl = Goal.concl gl' in
         if !typeclasses_debug > 0 then
           Feedback.msg_debug
             (pr_depth (succ j :: i :: info.search_depth) ++ str" : " ++
-               pr_ev s' (Proofview.Goal.goal gl'));
+               pr_ev s' (Proofview.Goal.goal (Proofview.Goal.assume gl')));
         let eq c1 c2 = EConstr.eq_constr s' c1 c2 in
         let hints' =
           if b && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
@@ -1042,7 +1042,7 @@ module Search = struct
             make_autogoal_hints info.search_only_classes ~st gl'
           else info.search_hints
         in
-        let dep' = info.search_dep || Proofview.unifiable s' (Goal.goal gl') gls in
+        let dep' = info.search_dep || Proofview.unifiable s' (Goal.goal (Proofview.Goal.assume gl')) gls in
         let info' =
           { search_depth = succ j :: i :: info.search_depth;
             last_tac = pp;
@@ -1059,7 +1059,7 @@ module Search = struct
         (if !typeclasses_debug > 0 then
            Feedback.msg_debug
              (pr_depth (i :: info.search_depth) ++ str": " ++ Lazy.force pp
-              ++ str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal gl)
+              ++ str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal (Proofview.Goal.assume gl))
               ++ str", " ++ int j ++ str" subgoal(s)" ++
                 (Option.cata (fun k -> str " in addition to the first " ++ int k)
                              (mt()) k)));
@@ -1130,7 +1130,7 @@ module Search = struct
     else tclONCE (aux (NotApplicableEx,Exninfo.null) poss)
 
   let hints_tac hints info kont : unit Proofview.tactic =
-    Proofview.Goal.nf_enter
+    Proofview.Goal.enter
       { enter = fun gl -> hints_tac_gl hints info kont gl }
 
   let intro_tac info kont gl =
@@ -1150,7 +1150,7 @@ module Search = struct
 
   let intro info kont =
     Proofview.tclBIND Tactics.intro
-     (fun _ -> Proofview.Goal.nf_enter { enter = fun gl -> intro_tac info kont gl })
+     (fun _ -> Proofview.Goal.enter { enter = fun gl -> intro_tac info kont gl })
 
   let rec search_tac hints limit depth =
     let kont info =
@@ -1173,7 +1173,7 @@ module Search = struct
         unit Proofview.tactic =
     let open Proofview in
     let open Proofview.Notations in
-    let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
+    let dep = dep || Proofview.unifiable sigma (Goal.goal (Proofview.Goal.assume gl)) gls in
     let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
     search_tac hints depth 1 info
 
@@ -1510,11 +1510,11 @@ let is_ground c gl =
   if Evarutil.is_ground_term (project gl) c then tclIDTAC gl
   else tclFAIL 0 (str"Not ground") gl
 
-let autoapply c i gl =
+let autoapply c i = Proofview.Goal.enter { enter = begin fun gl ->
   let flags = auto_unif_flags Evar.Set.empty
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
-  let cty = pf_unsafe_type_of gl c in
+  let cty = Tacmach.New.pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
-  let tac = { enter = fun gl -> (unify_e_resolve false flags).enter gl
-    ((c,cty,Univ.ContextSet.empty),0,ce) } in
-  Proofview.V82.of_tactic (Proofview.Goal.nf_enter tac) gl
+  (unify_e_resolve false flags).enter gl
+    ((c,cty,Univ.ContextSet.empty),0,ce)
+end }

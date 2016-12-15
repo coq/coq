@@ -133,7 +133,7 @@ let induction_trailer abs_i abs_j bargs =
     (tclDO (abs_j - abs_i) intro)
     (onLastHypId
        (fun id ->
-          Proofview.Goal.nf_enter { enter = begin fun gl ->
+          Proofview.Goal.enter { enter = begin fun gl ->
 	  let idty = pf_unsafe_type_of gl (mkVar id) in
 	  let fvty = global_vars (pf_env gl) (project gl) idty in
 	  let possible_bring_hyps =
@@ -155,7 +155,7 @@ let induction_trailer abs_i abs_j bargs =
           ))
 
 let double_ind h1 h2 =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let abs_i = depth_of_quantified_hypothesis true h1 gl in
   let abs_j = depth_of_quantified_hypothesis true h2 gl in
   let abs =

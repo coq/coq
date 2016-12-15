@@ -137,9 +137,6 @@ val elimination_sort_of_clause : Id.t option -> goal sigma -> sorts_family
 val pf_with_evars :  (goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) -> tactic
 val pf_constr_of_global : Globnames.global_reference -> (constr -> tactic) -> tactic
 
-val elim_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
-val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
-
 (** Tacticals defined directly in term of Proofview *)
 
 (** The tacticals in the module [New] are the tactical of Ltac. Their
@@ -240,7 +237,7 @@ module New : sig
   val onLastHyp        : (constr -> unit tactic) -> unit tactic
   val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
 
-  val onHyps      : ([ `NF ], named_context) Proofview.Goal.enter ->
+  val onHyps      : ([ `LZ ], named_context) Proofview.Goal.enter ->
                     (named_context -> unit tactic) -> unit tactic
   val afterHyp    : Id.t -> (named_context -> unit tactic) -> unit tactic
 

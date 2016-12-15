@@ -38,7 +38,7 @@ open OmegaSolver
 (* Added by JCF, 09/03/98 *)
 
 let elim_id id =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     simplest_elim (Tacmach.New.pf_global id gl)
   end }
 let resolve_id id gl = Proofview.V82.of_tactic (apply (pf_global gl id)) gl
@@ -1391,7 +1391,10 @@ let normalize_equation sigma id flag theorem pos t t1 t2 (tactic,defs) =
   else
     (tactic,defs)
 
+let pf_nf gl c = Tacmach.New.pf_apply Tacred.simpl gl c
+
 let destructure_omega gl tac_def (id,c) =
+  let open Tacmach.New in
   let sigma = project gl in
   if String.equal (atompart_of_id id) "State" then
     tac_def
@@ -1433,10 +1436,10 @@ let reintroduce id =
 open Proofview.Notations
 
 let coq_omega =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   clear_constr_tables ();
   let hyps_types = Tacmach.New.pf_hyps_types gl in
-  let destructure_omega = Tacmach.New.of_old destructure_omega gl in
+  let destructure_omega = destructure_omega gl in
   let tactic_normalisation, system =
     List.fold_left destructure_omega ([],[]) hyps_types in
   let prelude,sys =
@@ -1486,7 +1489,7 @@ let coq_omega =
 let coq_omega = coq_omega
 
 let nat_inject =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let is_conv = Tacmach.New.pf_apply Reductionops.is_conv gl in
   let rec explore p t : unit Proofview.tactic =
     Proofview.tclEVARMAP >>= fun sigma ->
@@ -1657,6 +1660,7 @@ let not_binop = function
 exception Undecidable
 
 let rec decidability gl t =
+  let open Tacmach.New in
   match destructurate_prop (project gl) t with
     | Kapp(Or,[t1;t2]) ->
 	mkApp (Lazy.force coq_dec_or, [| t1; t2;
@@ -1687,22 +1691,25 @@ let rec decidability gl t =
     | Kapp(True,[]) -> Lazy.force coq_dec_True
     | _ -> raise Undecidable
 
+let fresh_id avoid id gl =
+  fresh_id_in_env avoid id (Proofview.Goal.env gl)
+
 let onClearedName id tac =
   (* We cannot ensure that hyps can be cleared (because of dependencies), *)
   (* so renaming may be necessary *)
   Tacticals.New.tclTHEN
     (Tacticals.New.tclTRY (clear [id]))
-    (Proofview.Goal.nf_enter { enter = begin fun gl ->
-     let id = Tacmach.New.of_old (fresh_id [] id) gl in
+    (Proofview.Goal.enter { enter = begin fun gl ->
+     let id = fresh_id [] id gl in
      Tacticals.New.tclTHEN (introduction id) (tac id)
     end })
 
 let onClearedName2 id tac =
   Tacticals.New.tclTHEN
     (Tacticals.New.tclTRY (clear [id]))
-    (Proofview.Goal.nf_enter { enter = begin fun gl ->
-     let id1 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_left")) gl in
-     let id2 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_right")) gl in
+    (Proofview.Goal.enter { enter = begin fun gl ->
+     let id1 = fresh_id [] (add_suffix id "_left") gl in
+     let id2 = fresh_id [] (add_suffix id "_right") gl in
       Tacticals.New.tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
     end })
 
@@ -1712,10 +1719,10 @@ let rec is_Prop sigma c = match EConstr.kind sigma c with
   | _ -> false
 
 let destructure_hyps =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let type_of = Tacmach.New.pf_unsafe_type_of gl in
-  let decidability = Tacmach.New.of_old decidability gl in
-  let pf_nf = Tacmach.New.of_old pf_nf gl in
+  let decidability = decidability gl in
+  let pf_nf = pf_nf gl in
     let rec loop = function
       | [] -> (Tacticals.New.tclTHEN nat_inject coq_omega)
       | decl::lit ->
@@ -1854,9 +1861,9 @@ let destructure_hyps =
   end }
 
 let destructure_goal =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    let decidability = Tacmach.New.of_old decidability gl in
+    let decidability = decidability gl in
     let rec loop t =
       Proofview.tclEVARMAP >>= fun sigma ->
       let prop () = Proofview.tclUNIT (destructurate_prop sigma t) in

@@ -262,7 +262,8 @@ let add_inversion_lemma_exn na com comsort bool tac =
 
 let lemInv id c gls =
   try
-    let clause = mk_clenv_type_of gls c in
+    let open Tacmach in
+    let clause = mk_clenv_from_env (pf_env gls) (project gls) None (c, pf_unsafe_type_of gls c) in
     let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
     Proofview.V82.of_tactic (Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false) gls
   with
@@ -277,7 +278,7 @@ let lemInv id c gls =
 let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv id c)) id
 
 let lemInvIn id c ids =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in

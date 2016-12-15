@@ -74,7 +74,7 @@ TACTIC EXTEND is_ground
 END
 
 TACTIC EXTEND autoapply
-  [ "autoapply" constr(c) "using" preident(i) ] -> [ Proofview.V82.tactic (autoapply c i) ]
+  [ "autoapply" constr(c) "using" preident(i) ] -> [ autoapply c i ]
 END
 
 (** TODO: DEPRECATE *)
@@ -90,10 +90,10 @@ let rec eq_constr_mod_evars sigma x y =
   | _, _ -> compare_constr sigma (fun x y -> eq_constr_mod_evars sigma x y) x y
 
 let progress_evars t =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let check =
-      Proofview.Goal.nf_enter { enter = begin fun gl' ->
+      Proofview.Goal.enter { enter = begin fun gl' ->
         let sigma = Tacmach.New.project gl' in
         let newconcl = Proofview.Goal.concl gl' in
         if eq_constr_mod_evars sigma concl newconcl

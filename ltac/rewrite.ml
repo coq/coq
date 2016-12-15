@@ -1543,7 +1543,7 @@ let rec insert_dependent env sigma decl accu hyps = match hyps with
     insert_dependent env sigma decl (ndecl :: accu) rem
 
 let assert_replacing id newt tac = 
-  let prf = Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let prf = Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
@@ -1611,7 +1611,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             Proofview.Unsafe.tclEVARS undef <*>
             convert_concl_no_check newt DEFAULTcast
   in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
@@ -2095,7 +2095,7 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
   let unify env evars t = unify_abs res l2r sort env evars t in
   let app = apply_rule unify occs in
@@ -2129,7 +2129,7 @@ let not_declared env sigma ty rel =
      str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
 
 let setoid_proof ty fn fallback =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in

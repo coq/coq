@@ -273,7 +273,7 @@ Nota: with Inversion_clear, only four useless hypotheses
 
 let generalizeRewriteIntros as_mode tac depids id =
   Proofview.tclENV >>= fun env ->
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let dids = dependent_hyps env id depids gl in
   let reintros = if as_mode then intros_replacing else intros_possibly_replacing in
   (tclTHENLIST
@@ -342,7 +342,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
     let sigma = project gl in
     (** We only look at the type of hypothesis "id" *)
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
@@ -378,7 +378,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     id
 
 let nLastDecls i tac =
-  Proofview.Goal.nf_enter { enter = begin fun gl -> tac (nLastDecls gl i) end }
+  Proofview.Goal.enter { enter = begin fun gl -> tac (nLastDecls gl i) end }
 
 (* Introduction of the equations on arguments
    othin: discriminates Simple Inversion, Inversion and Inversion_clear
@@ -386,7 +386,7 @@ let nLastDecls i tac =
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
 let rewrite_equations as_mode othin neqns names ba =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let first_eq = ref MoveLast in
   let avoid = if as_mode then List.map NamedDecl.get_id nodepids else [] in
@@ -436,7 +436,7 @@ let rewrite_equations_tac as_mode othin id neqns names ba =
     tac
 
 let raw_inversion inv_kind id status names =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let sigma = Sigma.to_evar_map sigma in
     let env = Proofview.Goal.env gl in
@@ -517,14 +517,14 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
  * back to their places in the hyp-list. *)
 
 let invIn k names ids id =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let concl = Proofview.Goal.concl gl in
     let sigma = project gl in
     let nb_prod_init = nb_prod sigma concl in
     let intros_replace_ids =
       Proofview.Goal.enter { enter = begin fun gl ->
-        let concl = pf_nf_concl gl in
+        let concl = pf_concl gl in
         let sigma = project gl in
         let nb_of_new_hyp =
           nb_prod sigma concl - (List.length hyps + nb_prod_init)

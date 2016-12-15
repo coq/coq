@@ -129,11 +129,13 @@ let mk_clenv_from_env env sigma n (c,cty) =
     env = env }
 
 let mk_clenv_from_n gls n (c,cty) =
-  mk_clenv_from_env (pf_env gls) gls.sigma n (c, cty)
+  let env = Proofview.Goal.env gls in
+  let sigma = Tacmach.New.project gls in
+  mk_clenv_from_env env sigma n (c, cty)
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
-let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
+let mk_clenv_type_of gls t = mk_clenv_from gls (t,Tacmach.New.pf_unsafe_type_of gls t)
 
 (******************************************************************)
 
@@ -263,14 +265,21 @@ let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
 let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
   { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }
 
-let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv gl =
-  let concl = Goal.V82.concl clenv.evd (sig_it gl) in
+let clenv_unique_resolver_gen ?(flags=default_unify_flags ()) clenv concl =
   if isMeta clenv.evd (fst (decompose_app_vect clenv.evd (whd_nored clenv.evd clenv.templtyp.rebus))) then
     clenv_unify CUMUL ~flags (clenv_type clenv) concl
       (clenv_unify_meta_types ~flags clenv)
   else
     clenv_unify CUMUL ~flags
       (meta_reducible_instance clenv.evd clenv.templtyp) concl clenv
+
+let old_clenv_unique_resolver ?flags clenv gl =
+  let concl = Goal.V82.concl clenv.evd (sig_it gl) in
+  clenv_unique_resolver_gen ?flags clenv concl
+
+let clenv_unique_resolver ?flags clenv gl =
+  let concl = Proofview.Goal.concl gl in
+  clenv_unique_resolver_gen ?flags clenv concl
 
 let adjust_meta_source evd mv = function
   | loc,Evar_kinds.VarInstance id ->

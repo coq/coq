@@ -844,10 +844,10 @@ let rec message_of_value v =
     Ftactic.return (str "<tactic>")
   else if has_type v (topwit wit_constr) then
     let v = out_gen (topwit wit_constr) v in
-    Ftactic.nf_enter {enter = begin fun gl -> Ftactic.return (pr_econstr_env (pf_env gl) (project gl) v) end }
+    Ftactic.enter {enter = begin fun gl -> Ftactic.return (pr_econstr_env (pf_env gl) (project gl) v) end }
   else if has_type v (topwit wit_constr_under_binders) then
     let c = out_gen (topwit wit_constr_under_binders) v in
-    Ftactic.nf_enter { enter = begin fun gl ->
+    Ftactic.enter { enter = begin fun gl ->
       Ftactic.return (pr_constr_under_binders_env (pf_env gl) (project gl) c)
     end }
   else if has_type v (topwit wit_unit) then
@@ -860,21 +860,21 @@ let rec message_of_value v =
       let (c, sigma) = Tactics.run_delayed env sigma c in
       pr_econstr_env env sigma c
     in
-    Ftactic.nf_enter { enter = begin fun gl ->
+    Ftactic.enter { enter = begin fun gl ->
       Ftactic.return (Miscprint.pr_intro_pattern (fun c -> print (pf_env gl) (project gl) c) p)
     end }
   else if has_type v (topwit wit_constr_context) then
     let c = out_gen (topwit wit_constr_context) v in
-    Ftactic.nf_enter { enter = begin fun gl -> Ftactic.return (pr_econstr_env (pf_env gl) (project gl) c) end }
+    Ftactic.enter { enter = begin fun gl -> Ftactic.return (pr_econstr_env (pf_env gl) (project gl) c) end }
   else if has_type v (topwit wit_uconstr) then
     let c = out_gen (topwit wit_uconstr) v in
-    Ftactic.nf_enter { enter = begin fun gl ->
+    Ftactic.enter { enter = begin fun gl ->
       Ftactic.return (pr_closed_glob_env (pf_env gl)
                         (project gl) c)
     end }
   else if has_type v (topwit wit_var) then
     let id = out_gen (topwit wit_var) v in
-    Ftactic.nf_enter { enter = begin fun gl -> Ftactic.return (pr_id id) end }
+    Ftactic.enter { enter = begin fun gl -> Ftactic.return (pr_id id) end }
   else match Value.to_list v with
   | Some l ->
     Ftactic.List.map message_of_value l >>= fun l ->
@@ -1213,7 +1213,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
            tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))
          end
   | TacAbstract (tac,ido) ->
-      Proofview.Goal.nf_enter { enter = begin fun gl -> Tactics.tclABSTRACT
+      Proofview.Goal.enter { enter = begin fun gl -> Tactics.tclABSTRACT
         (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist tac)
       end }
   | TacThen (t1,t) ->
@@ -1521,7 +1521,7 @@ and interp_match ist lz constr lmr =
 
 (* Interprets the Match Context expressions *)
 and interp_match_goal ist lz lr lmr =
-    Ftactic.nf_enter { enter = begin fun gl ->
+    Ftactic.enter { enter = begin fun gl ->
       let sigma = project gl in
       let env = Proofview.Goal.env gl in
       let hyps = Proofview.Goal.hyps gl in
@@ -1750,8 +1750,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (Tactics.generalize_gen cl)) sigma
       end }
   | TacLetTac (na,c,clp,b,eqpat) ->
-      Proofview.V82.nf_evar_goals <*>
-      Proofview.Goal.nf_enter { enter = begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let clp = interp_clause ist env sigma clp in
@@ -1788,7 +1787,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacInductionDestruct (isrec,ev,(l,el)) ->
       (* spiwack: some unknown part of destruct needs the goal to be
          prenormalised. *)
-      Proofview.V82.nf_evar_goals <*>
       Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
@@ -1824,8 +1822,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacChange (None,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<change>") begin
-      Proofview.V82.nf_evar_goals <*>
-      Proofview.Goal.nf_enter { enter = begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
         let is_onhyps = match cl.onhyps with
           | None | Some [] -> true
           | _ -> false
@@ -1854,7 +1851,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacChange (Some op,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<change>") begin
-      Proofview.V82.nf_evar_goals <*>
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
@@ -1899,7 +1895,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
                 by))
       end }
   | TacInversion (DepInversion (k,c,ids),hyp) ->
-      Proofview.Goal.nf_enter { enter = begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let (sigma,c_interp) =
@@ -2050,7 +2046,7 @@ let interp_constr_with_bindings' ist c = Ftactic.return { delayed = fun env sigm
   Sigma.Unsafe.of_pair (c, sigma)
   }
 
-let interp_destruction_arg' ist c = Ftactic.nf_enter { enter = begin fun gl ->
+let interp_destruction_arg' ist c = Ftactic.enter { enter = begin fun gl ->
   Ftactic.return (interp_destruction_arg ist gl c)
 end }
 
@@ -2080,7 +2076,7 @@ let () =
   register_interp0 wit_ltac interp
 
 let () =
-  register_interp0 wit_uconstr (fun ist c -> Ftactic.nf_enter { enter = begin fun gl ->
+  register_interp0 wit_uconstr (fun ist c -> Ftactic.enter { enter = begin fun gl ->
     Ftactic.return (interp_uconstr ist (Proofview.Goal.env gl) (Tacmach.New.project gl) c)
   end })
 

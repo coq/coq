@@ -364,8 +364,8 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
         )))
       )
   in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let type_of_pq = Tacmach.New.of_old (fun gl -> pf_unsafe_type_of gl p) gl in
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let type_of_pq = Tacmach.New.pf_unsafe_type_of gl p in
     let sigma = Tacmach.New.project gl in
     let u,v = destruct_ind sigma type_of_pq
     in let lb_type_of_p =
@@ -574,12 +574,10 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
       in
       let fresh_id s gl =
-        Tacmach.New.of_old begin fun gsig ->
-          let fresh = fresh_id (!avoid) s gsig in
+          let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
           avoid := fresh::(!avoid); fresh
-        end gl
       in
-      Proofview.Goal.nf_enter { enter = begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
       let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
       let freshn = fresh_id (Id.of_string "x") gl in
       let freshm = fresh_id (Id.of_string "y") gl in
@@ -602,7 +600,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                     Tacticals.New.tclREPEAT (
                       Tacticals.New.tclTHENLIST [
                          Simple.apply_in freshz (EConstr.of_constr (andb_prop()));
-                         Proofview.Goal.nf_enter { enter = begin fun gl ->
+                         Proofview.Goal.enter { enter = begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
                             destruct_on_as (EConstr.mkVar freshz)
                                   (IntroOrPattern [[dl,IntroNaming (IntroIdentifier fresht);
@@ -613,7 +611,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
 *)
-                      Proofview.Goal.nf_enter { enter = begin fun gl ->
+                      Proofview.Goal.enter { enter = begin fun gl ->
                         let concl = Proofview.Goal.concl gl in
                         let sigma = Tacmach.New.project gl in
                         match EConstr.kind sigma concl with
@@ -720,12 +718,10 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,_,slb) -> slb) list_id )
       in
       let fresh_id s gl =
-        Tacmach.New.of_old begin fun gsig ->
-          let fresh = fresh_id (!avoid) s gsig in
+          let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
           avoid := fresh::(!avoid); fresh
-        end gl
       in
-      Proofview.Goal.nf_enter { enter = begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
       let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
       let freshn = fresh_id (Id.of_string "x") gl in
       let freshm = fresh_id (Id.of_string "y") gl in
@@ -748,7 +744,7 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
                       Tacticals.New.tclTHENLIST [apply (EConstr.of_constr (andb_true_intro()));
                                   simplest_split ;Auto.default_auto ]
                       );
-                      Proofview.Goal.nf_enter { enter = begin fun gls ->
+                      Proofview.Goal.enter { enter = begin fun gls ->
                         let concl = Proofview.Goal.concl gls in
                         let sigma = Tacmach.New.project gl in
                         (* assume the goal to be eq (eq_type ...) = true *)
@@ -869,12 +865,10 @@ let compute_dec_tact ind lnamesparrec nparrec =
       ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
   let fresh_id s gl =
-    Tacmach.New.of_old begin fun gsig ->
-      let fresh = fresh_id (!avoid) s gsig in
+      let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
       avoid := fresh::(!avoid); fresh
-    end gl
   in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
   let freshn = fresh_id (Id.of_string "x") gl in
   let freshm = fresh_id (Id.of_string "y") gl in
@@ -905,7 +899,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
 	))
 	  (Tacticals.New.tclTHEN (destruct_on (EConstr.of_constr eqbnm)) Auto.default_auto);
 
-        Proofview.Goal.nf_enter { enter = begin fun gl ->
+        Proofview.Goal.enter { enter = begin fun gl ->
           let freshH2 = fresh_id (Id.of_string "H") gl in
 	  Tacticals.New.tclTHENS (destruct_on_using (EConstr.mkVar freshH) freshH2) [
 	    (* left *)
@@ -917,7 +911,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
             ;
 
 	    (*right *)
-            Proofview.Goal.nf_enter { enter = begin fun gl ->
+            Proofview.Goal.enter { enter = begin fun gl ->
             let freshH3 = fresh_id (Id.of_string "H") gl in
             Tacticals.New.tclTHENLIST [
 	      simplest_right ;

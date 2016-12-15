@@ -41,10 +41,10 @@ val clenv_nf_meta   : clausenv -> EConstr.constr -> EConstr.constr
 (** type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
 
-val mk_clenv_from : Goal.goal sigma -> EConstr.constr * EConstr.types -> clausenv
+val mk_clenv_from : ('a, 'r) Proofview.Goal.t -> EConstr.constr * EConstr.types -> clausenv
 val mk_clenv_from_n :
-  Goal.goal sigma -> int option -> EConstr.constr * EConstr.types -> clausenv
-val mk_clenv_type_of : Goal.goal sigma -> EConstr.constr -> clausenv
+  ('a, 'r) Proofview.Goal.t -> int option -> EConstr.constr * EConstr.types -> clausenv
+val mk_clenv_type_of : ('a, 'r) Proofview.Goal.t -> EConstr.constr -> clausenv
 val mk_clenv_from_env : env -> evar_map -> int option -> EConstr.constr * EConstr.types -> clausenv
 
 (** Refresh the universes in a clenv *)
@@ -62,8 +62,11 @@ val clenv_unify :
   ?flags:unify_flags -> conv_pb -> constr -> constr -> clausenv -> clausenv
 
 (** unifies the concl of the goal with the type of the clenv *)
-val clenv_unique_resolver :
+val old_clenv_unique_resolver :
   ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
+
+val clenv_unique_resolver :
+  ?flags:unify_flags -> clausenv -> ('a, 'r) Proofview.Goal.t -> clausenv
 
 val clenv_dependent : clausenv -> metavariable list
 

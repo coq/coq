@@ -101,9 +101,9 @@ let connect_hint_clenv poly (c, _, ctx) clenv gl =
   in clenv, c
 
 let unify_resolve poly flags ((c : raw_hint), clenv) =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let clenv, c = connect_hint_clenv poly c clenv gl in
-  let clenv = Tacmach.New.of_old (fun gl -> clenv_unique_resolver ~flags clenv gl) gl in
+  let clenv = clenv_unique_resolver ~flags clenv gl in
   Clenvtac.clenv_refine false clenv
   end }
 
@@ -330,7 +330,7 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
       end })
   in
   Proofview.Goal.enter { enter = begin fun gl ->
-    let concl = Tacmach.New.pf_nf_concl gl in
+    let concl = Tacmach.New.pf_concl gl in
     let sigma = Tacmach.New.project gl in
     let secvars = compute_secvars gl in
     Tacticals.New.tclFIRST
@@ -421,7 +421,7 @@ and trivial_resolve sigma dbg mod_delta db_list local_db secvars cl =
     "nocore" amongst the databases. *)
 
 let trivial ?(debug=Off) lems dbnames =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let db_list = make_db_list dbnames in
@@ -432,7 +432,7 @@ let trivial ?(debug=Off) lems dbnames =
   end }
 
 let full_trivial ?(debug=Off) lems =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let db_list = current_pure_db () in
@@ -490,7 +490,7 @@ let search d n mod_delta db_list local_db =
         Tacticals.New.tclORELSE0 (dbg_assumption d)
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
 	     ( Proofview.Goal.enter { enter = begin fun gl ->
-               let concl = Tacmach.New.pf_nf_concl gl in
+               let concl = Tacmach.New.pf_concl gl in
                let sigma = Tacmach.New.project gl in
                let secvars = compute_secvars gl in
 	       let d' = incr_dbg d in
@@ -506,7 +506,7 @@ let search d n mod_delta db_list local_db =
 let default_search_depth = ref 5
 
 let delta_auto debug mod_delta n lems dbnames =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let db_list = make_db_list dbnames in
@@ -529,7 +529,7 @@ let new_auto ?(debug=Off) n = delta_auto debug true n
 let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto ?(debug=Off) mod_delta n lems =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let db_list = current_pure_db () in

@@ -306,7 +306,7 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
       else instantiate_lemma_all frzevars gl c t l l2r concl
     in
     let typ = match cls with
-    | None -> pf_nf_concl gl
+    | None -> pf_concl gl
     | Some id -> pf_get_hyp_typ id (Proofview.Goal.assume gl)
     in
     let cs = instantiate_lemma typ in
@@ -406,7 +406,7 @@ let type_of_clause cls gl = match cls with
   | Some id -> pf_get_hyp_typ id gl
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
   let evd = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   let isatomic = isProd evd (whd_zeta evd hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
@@ -1009,7 +1009,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
 
 let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
     match find_positions env sigma t1 t2 with
     | Inr _ ->
@@ -1019,7 +1019,7 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   end }
 
 let onEquality with_evars tac (c,lbindc) =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let type_of = pf_unsafe_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
   let t = type_of c in
@@ -1034,7 +1034,7 @@ let onEquality with_evars tac (c,lbindc) =
   end }
 
 let onNegatedEquality with_evars tac =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let ccl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
@@ -1302,7 +1302,7 @@ let eq_dec_scheme_kind_name = ref (fun _ -> failwith "eq_dec_scheme undefined")
 let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 
 let inject_if_homogenous_dependent_pair ty =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   try
     let sigma = Tacmach.New.project gl in
     let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
@@ -1458,7 +1458,7 @@ let injConcl = injClause None false None
 let injHyp clear_flag id = injClause None false (Some (clear_flag,ElimOnIdent (Loc.ghost,id)))
 
 let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let sigma =  clause.evd in
     let env = Proofview.Goal.env gl in
       match find_positions env sigma t1 t2 with
@@ -1567,7 +1567,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
 (* on for further iterated sigma-tuples                                   *)
 
 let cutSubstInConcl l2r eqn =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
@@ -1586,7 +1586,7 @@ let cutSubstInConcl l2r eqn =
   end }
 
 let cutSubstInHyp l2r eqn id =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
@@ -1812,7 +1812,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
           Proofview.tclUNIT ()
     end }
   in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let ids = find_equations gl in
     tclMAP process ids
   end }
@@ -1822,7 +1822,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
 (* Old implementation, not able to manage configurations like a=b, a=t,
    or situations like "a = S b, b = S a", or also accidentally unfolding
    let-ins *)
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let sigma = project gl in
   let find_eq_data_decompose = find_eq_data_decompose gl in
   let test (_,c) =
@@ -1877,7 +1877,7 @@ let rewrite_assumption_cond cond_eq_term cl =
 	  with | Failure _ | UserError _ -> arec rest gl
 	end
   in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.lift gl Sigma.Unsafe.le in
     let hyps = Proofview.Goal.hyps gl in
     arec hyps gl

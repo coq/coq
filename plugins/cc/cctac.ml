@@ -182,9 +182,10 @@ let litteral_of_constr env sigma term=
 (* store all equalities from the context *)
 
 let make_prb gls depth additionnal_terms =
+  let open Tacmach.New in
   let env=pf_env gls in
-  let sigma=sig_sig gls in
-  let state = empty depth gls in
+  let sigma=project gls in
+  let state = empty depth {it = Proofview.Goal.goal (Proofview.Goal.assume gls); sigma } in
   let pos_hyps = ref [] in
   let neg_hyps =ref [] in
     List.iter
@@ -196,7 +197,7 @@ let make_prb gls depth additionnal_terms =
          let id = NamedDecl.get_id decl in
 	 begin
 	   let cid=Constr.mkVar id in
-	   match litteral_of_constr env sigma (EConstr.of_constr (NamedDecl.get_type decl)) with
+	   match litteral_of_constr env sigma (NamedDecl.get_type decl) with
 	       `Eq (t,a,b) -> add_equality state cid a b
 	     | `Neq (t,a,b) -> add_disequality state (Hyp cid) a b
 	     | `Other ph ->
@@ -213,7 +214,7 @@ let make_prb gls depth additionnal_terms =
 		 neg_hyps:=(cid,nh):: !neg_hyps
 	     | `Rule patts -> add_quant state id true patts
 	     | `Nrule patts -> add_quant state id false patts
-	 end) (Environ.named_context_of_val (Goal.V82.nf_hyps gls.sigma gls.it));
+	 end) (Proofview.Goal.hyps gls);
     begin
       match atom_of_constr env sigma (pf_concl gls) with
 	  `Eq (t,a,b) -> add_disequality state Goal a b
@@ -227,6 +228,7 @@ let make_prb gls depth additionnal_terms =
 (* indhyps builds the array of arrays of constructor hyps for (ind largs) *)
 
 let build_projection intype (cstr:pconstructor) special default gls=
+  let open Tacmach.New in
   let ci= (snd(fst cstr)) in
   let body=Equality.build_selector (pf_env gls) (project gls) ci (mkRel 1) intype special default in
   let id=pf_get_new_id (Id.of_string "t") gls in
@@ -266,7 +268,7 @@ let refresh_universes ty k =
 let constr_of_term c = EConstr.of_constr (constr_of_term c)
 
 let rec proof_tac p : unit Proofview.tactic =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let type_of t = Tacmach.New.pf_unsafe_type_of gl t in
   try (* type_of can raise exceptions *)
   match p.p_rule with
@@ -296,7 +298,7 @@ let rec proof_tac p : unit Proofview.tactic =
 	refresh_universes (type_of tf1) (fun typf ->
 	refresh_universes (type_of tx1) (fun typx ->
 	refresh_universes (type_of (mkApp (tf1,[|tx1|]))) (fun typfx ->
-        let id = Tacmach.New.of_old (fun gls -> pf_get_new_id (Id.of_string "f") gls) gl in
+        let id = Tacmach.New.pf_get_new_id (Id.of_string "f") gl in
 	let appx1 = mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
 	let lemma1 = app_global _f_equal [|typf;typfx;appx1;tf1;tf2;_M 1|] in
 	let lemma2 = app_global _f_equal [|typx;typfx;tf2;tx1;tx2;_M 1|] in
@@ -322,7 +324,7 @@ let rec proof_tac p : unit Proofview.tactic =
 	 refresh_universes (type_of ti) (fun intype ->
          refresh_universes (type_of default) (fun outtype ->
          let proj =
-           Tacmach.New.of_old (build_projection intype cstr special default) gl
+           build_projection intype cstr special default gl
          in
 	 let injt=
            app_global _f_equal [|intype;outtype;proj;ti;tj;_M 1|] in
@@ -331,9 +333,9 @@ let rec proof_tac p : unit Proofview.tactic =
   end }
 
 let refute_tac c t1 t2 p =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
+  let hid = Tacmach.New.pf_get_new_id (Id.of_string "Heq") gl in
   let false_t=mkApp (c,[|mkVar hid|]) in
   let k intype =
     let neweq= new_app_global _eq [|intype;tt1;tt2|] in
@@ -347,12 +349,12 @@ let refine_exact_check c gl =
     Tacticals.tclTHEN (Refiner.tclEVARS evm) (Proofview.V82.of_tactic (exact_check c)) gl
 
 let convert_to_goal_tac c t1 t2 p = 
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let k sort =
     let neweq= new_app_global _eq [|sort;tt1;tt2|] in
-    let e = Tacmach.New.of_old (pf_get_new_id (Id.of_string "e")) gl in
-    let x = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
+    let e = Tacmach.New.pf_get_new_id (Id.of_string "e") gl in
+    let x = Tacmach.New.pf_get_new_id (Id.of_string "X") gl in
     let identity=mkLambda (Name x,sort,mkRel 1) in
     let endt=app_global _eq_rect [|sort;tt1;identity;c;tt2;mkVar e|] in
     Tacticals.New.tclTHENS (neweq (assert_before (Name e)))
@@ -361,9 +363,9 @@ let convert_to_goal_tac c t1 t2 p =
   end }
 
 let convert_to_hyp_tac c1 t1 c2 t2 p =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let tt2=constr_of_term t2 in
-  let h = Tacmach.New.of_old (pf_get_new_id (Id.of_string "H")) gl in
+  let h = Tacmach.New.pf_get_new_id (Id.of_string "H") gl in
   let false_t=mkApp (c2,[|mkVar h|]) in
     Tacticals.New.tclTHENS (assert_before (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
@@ -371,11 +373,11 @@ let convert_to_hyp_tac c1 t1 c2 t2 p =
   end }
 
 let discriminate_tac (cstr,u as cstru) p =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
-    let xid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
+    let xid = Tacmach.New.pf_get_new_id (Id.of_string "X") gl in
     let identity = Universes.constr_of_global (Lazy.force _I) in
     let identity = EConstr.of_constr identity in
     let trivial = Universes.constr_of_global (Lazy.force _True) in
@@ -385,8 +387,8 @@ let discriminate_tac (cstr,u as cstru) p =
     let evm, outtype = Evd.new_sort_variable Evd.univ_flexible evm in
     let outtype = mkSort outtype in
     let pred = mkLambda(Name xid,outtype,mkRel 1) in
-    let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
-    let proj = Tacmach.New.of_old (build_projection intype cstru trivial concl) gl in
+    let hid = Tacmach.New.pf_get_new_id (Id.of_string "Heq") gl in
+    let proj = build_projection intype cstru trivial concl gl in
     let injt=app_global _f_equal
 			[|intype;outtype;proj;t1;t2;mkVar hid|] in
     let endt k =
@@ -409,11 +411,11 @@ let build_term_to_complete uf meta pac =
     applist (mkConstructU cinfo.ci_constr, all_args)
 
 let cc_tactic depth additionnal_terms =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let sigma = Tacmach.New.project gl in
     Coqlib.check_required_library Coqlib.logic_module_name;
     let _ = debug (fun () -> Pp.str "Reading subgoal ...") in
-    let state = Tacmach.New.of_old (fun gls -> make_prb gls depth additionnal_terms) gl in
+    let state = make_prb gl depth additionnal_terms in
     let _ = debug (fun () -> Pp.str "Problem built, solving ...") in
     let sol = execute true state in
     let _ = debug (fun () -> Pp.str "Computation completed.") in
@@ -498,7 +500,7 @@ let mk_eq f c1 c2 k =
     end })
 
 let f_equal =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
     let cut_eq c1 c2 =

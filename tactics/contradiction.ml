@@ -110,7 +110,7 @@ let is_negation_of env sigma typ t =
     | _ -> false
 
 let contradiction_term (c,lbind as cl) =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
