@@ -382,9 +382,9 @@ let msg_option_value (name,v) =
     | BoolValue false -> str "off"
     | IntValue (Some n) -> int n
     | IntValue None   -> str "undefined"
-    | StringValue s   -> str "\"" ++ str s ++ str "\""
+    | StringValue s   -> quote (str s)
     | StringOptValue None   -> str"undefined"
-    | StringOptValue (Some s)   -> str "\"" ++ str s ++ str "\""
+    | StringOptValue (Some s)   -> quote (str s)
 (*     | IdentValue r    -> pr_global_env Id.Set.empty r *)
 
 let print_option_value key =
