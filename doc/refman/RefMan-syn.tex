@@ -649,7 +649,7 @@ A recursive pattern for binders can be used in position of a recursive
 pattern for terms. Here is an example:
 
 \begin{coq_example*}
-Notation ``'FUNAPP' x .. y , f'' :=
+Notation "'FUNAPP' x .. y , f" :=
   (fun x => .. (fun y => (.. (f x) ..) y ) ..)
   (at level 200, x binder, y binder, right associativity).
 \end{coq_example*}
