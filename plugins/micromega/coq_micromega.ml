@@ -364,6 +364,7 @@ struct
     [["Coq";"Reals" ; "Rdefinitions"];
      ["Coq";"Reals" ; "Rpow_def"] ;
      ["Coq";"Reals" ; "Raxioms"] ;
+     ["Coq";"QArith"; "Qreals"] ;
     ]
 
   let z_modules = [["Coq";"ZArith";"BinInt"]]
@@ -480,7 +481,7 @@ struct
   let coq_Rinv = lazy (r_constant "Rinv")
   let coq_Rpower = lazy (r_constant "pow")
   let coq_IZR    = lazy (r_constant "IZR")
-  let coq_IQR    = lazy (constant "IQR")
+  let coq_IQR    = lazy (r_constant "Q2R")
 
 
   let coq_PEX = lazy (constant "PEX" )
