@@ -782,6 +782,7 @@ let intern_ltac ist tac =
 let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
+  Genintern.register_intern0 wit_pre_ident (fun ist c -> (ist,c));
   Genintern.register_intern0 wit_ident intern_ident';
   Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);

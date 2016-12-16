@@ -291,6 +291,7 @@ and subst_genarg subst (GenArg (Glbwit wit, x)) =
 let () =
   Genintern.register_subst0 wit_int_or_var (fun _ v -> v);
   Genintern.register_subst0 wit_ref subst_global_reference;
+  Genintern.register_subst0 wit_pre_ident (fun _ v -> v);
   Genintern.register_subst0 wit_ident (fun _ v -> v);
   Genintern.register_subst0 wit_var (fun _ v -> v);
   Genintern.register_subst0 wit_intro_pattern (fun _ v -> v);
