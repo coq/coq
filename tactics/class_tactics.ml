@@ -1180,7 +1180,7 @@ module Search = struct
   let search_tac ?(st=full_transparent_state) only_classes dep hints depth =
     let open Proofview in
     let tac sigma gls i =
-      Goal.nf_enter
+      Goal.enter
         { enter = fun gl ->
           search_tac_gl ~st only_classes dep hints depth (succ i) sigma gls gl }
     in

@@ -524,8 +524,8 @@ struct
     match m with
     | ModeInput -> not (occur_existential sigma arg)
     | ModeNoHeadEvar ->
-       Evarutil.(try ignore(head_evar sigma arg); false
-                 with NoHeadEvar -> true)
+       (try ignore(head_evar sigma arg); false
+                 with Evarutil.NoHeadEvar -> true)
     | ModeOutput -> true
                                
   let matches_mode sigma args mode =
