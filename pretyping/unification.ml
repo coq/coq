@@ -65,10 +65,17 @@ let _ = Goptions.declare_bool_option {
 }
 
 let occur_meta_or_undefined_evar evd c =
-  let rec occrec c = match EConstr.kind evd c with
+  (** This is performance-critical. Using the evar-insensitive API changes the
+      resulting heuristic. *)
+  let c = EConstr.Unsafe.to_constr c in
+  let rec occrec c = match kind_of_term c with
     | Meta _ -> raise Occur
-    | Evar _ -> raise Occur
-    | _ -> EConstr.iter evd occrec c
+    | Evar (ev,args) ->
+        (match evar_body (Evd.find evd ev) with
+        | Evar_defined c ->
+            occrec c; Array.iter occrec args
+        | Evar_empty -> raise Occur)
+    | _ -> Constr.iter occrec c
   in try occrec c; false with Occur | Not_found -> true
 
 let occur_meta_evd sigma mv c =
