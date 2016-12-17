@@ -1859,7 +1859,9 @@ let destructure_goal =
     let decidability = Tacmach.New.of_old decidability gl in
     let rec loop t =
       Proofview.tclEVARMAP >>= fun sigma ->
-      match destructurate_prop sigma t with
+      let prop () = Proofview.tclUNIT (destructurate_prop sigma t) in
+      Proofview.V82.wrap_exceptions prop >>= fun prop ->
+      match prop with
       | Kapp(Not,[t]) ->
           (Tacticals.New.tclTHEN
 	     (Tacticals.New.tclTHEN (unfold sp_not) intro)
