@@ -51,7 +51,7 @@ let lib_dirs =
   ["kernel"; "lib"; "library"; "parsing";
    "pretyping"; "interp"; "printing"; "intf";
    "proofs"; "tactics"; "tools"; "ltacprof";
-   "toplevel"; "stm"; "grammar"; "config";
+   "vernac"; "stm"; "toplevel"; "grammar"; "config";
    "ltac"; "engine"]
 
 

@@ -75,6 +75,7 @@ let std_includes basedir =
   let rebase d = match basedir with None -> d | Some base -> base / d in
   ["-I"; rebase ".";
    "-I"; rebase "lib";
+   "-I"; rebase "vernac";       (* For Mltop *)
    "-I"; rebase "toplevel";
    "-I"; rebase "kernel/byterun";
    "-I"; Envars.camlp4lib () ] @

@@ -20,6 +20,12 @@ open Pp
 open CErrors
 open Util
 
+(* EJGA: This should go away, no more need for fix_exn  *)
+module Stm = struct
+    let u = (fun x -> x)
+    let get_fix_exn () = u
+end
+
 module NamedDecl = Context.Named.Declaration
 
 let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)

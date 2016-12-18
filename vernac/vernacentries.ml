@@ -517,8 +517,10 @@ let qed_display_script = ref true
 let vernac_end_proof ?proof = function
   | Admitted -> save_proof ?proof Admitted
   | Proved (_,_) as e ->
+    (*
     if is_verbose () && !qed_display_script && !Flags.coqtop_ui then
       Stm.show_script ?proof ();
+    *)
     save_proof ?proof e
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
@@ -1882,7 +1884,7 @@ let vernac_show = let open Feedback in function
       Constrextern.with_implicits msg_notice (pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
-  | ShowScript -> Stm.show_script ()
+  | ShowScript -> (* Stm.show_script () *) ()
   | ShowExistentials -> show_top_evars ()
   | ShowUniverses -> show_universes ()
   | ShowTree -> show_prooftree ()
@@ -1909,6 +1911,12 @@ let vernac_check_guard () =
 
 exception End_of_input
 
+(* XXX: This won't properly set the proof mode, as of today, it is
+   controlled by the STM. Thus, we would need access information from
+   the classifier. The proper fix is to move it to the STM, however,
+   the way the proof mode is set there makes the task non trivial
+   without a considerable amount of refactoring.
+ *)
 let vernac_load interp fname =
   let interp x =
     let proof_mode = Proof_global.get_default_proof_mode_name () in
@@ -1936,15 +1944,44 @@ let vernac_load interp fname =
 let interp ?proof ~loc locality poly c =
   prerr_endline (fun () -> "interpreting: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac c));
   match c with
-  (* Done later in this file *)
+  (* The below vernac are candidates for removal from the main type
+     and to be put into a new doc_command datatype: *)
+
   | VernacLoad _ -> assert false
+
+  (* Done later in this file *)
   | VernacFail _ -> assert false
   | VernacTime _ -> assert false
   | VernacRedirect _ -> assert false
   | VernacTimeout _ -> assert false
   | VernacStm _ -> assert false
 
+  (* The STM should handle that, but LOAD bypasses the STM... *)
+  | VernacAbortAll    -> CErrors.user_err  (str "AbortAll cannot be used through the Load command")
+  | VernacRestart     -> CErrors.user_err  (str "Restart cannot be used through the Load command")
+  | VernacUndo _      -> CErrors.user_err  (str "Undo cannot be used through the Load command")
+  | VernacUndoTo _    -> CErrors.user_err  (str "UndoTo cannot be used through the Load command")
+  | VernacBacktrack _ -> CErrors.user_err  (str "Backtrack cannot be used through the Load command")
+
+  (* Toplevel control *)
+  | VernacToplevelControl e -> raise e
+
+  (* Resetting *)
+  | VernacResetName _  -> anomaly (str "VernacResetName not handled by Stm")
+  | VernacResetInitial -> anomaly (str "VernacResetInitial not handled by Stm")
+  | VernacBack _       -> anomaly (str "VernacBack not handled by Stm")
+  | VernacBackTo _     -> anomaly (str "VernacBackTo not handled by Stm")
+
+  (* Horrible Hack that should die. *)
   | VernacError e -> raise e
+
+  (* This one is possible to handle here *)
+  | VernacAbort id    -> CErrors.user_err  (str "Abort cannot be used through the Load command")
+
+  (* Handled elsewhere *)
+  | VernacProgram _
+  | VernacPolymorphic _
+  | VernacLocal _ -> assert false
 
   (* Syntax *)
   | VernacSyntaxExtension (local,sl) ->
@@ -2017,12 +2054,6 @@ let interp ?proof ~loc locality poly c =
   | VernacWriteState s -> vernac_write_state s
   | VernacRestoreState s -> vernac_restore_state s
 
-  (* Resetting *)
-  | VernacResetName _ -> anomaly (str "VernacResetName not handled by Stm")
-  | VernacResetInitial -> anomaly (str "VernacResetInitial not handled by Stm")
-  | VernacBack _ -> anomaly (str "VernacBack not handled by Stm")
-  | VernacBackTo _ -> anomaly (str "VernacBackTo not handled by Stm")
-
   (* Commands *)
   | VernacCreateHintDb (dbname,b) -> vernac_create_hintdb locality dbname b
   | VernacRemoveHints (dbnames,ids) -> vernac_remove_hints locality dbnames ids
@@ -2054,14 +2085,6 @@ let interp ?proof ~loc locality poly c =
   | VernacRegister (id, r) -> vernac_register id r
   | VernacComments l -> if_verbose Feedback.msg_info (str "Comments ok\n")
 
-  (* The STM should handle that, but LOAD bypasses the STM... *)
-  | VernacAbort id -> CErrors.user_err  (str "Abort cannot be used through the Load command")
-  | VernacAbortAll -> CErrors.user_err  (str "AbortAll cannot be used through the Load command")
-  | VernacRestart -> CErrors.user_err  (str "Restart cannot be used through the Load command")
-  | VernacUndo _ -> CErrors.user_err  (str "Undo cannot be used through the Load command")
-  | VernacUndoTo _ -> CErrors.user_err  (str "UndoTo cannot be used through the Load command")
-  | VernacBacktrack _ -> CErrors.user_err  (str "Backtrack cannot be used through the Load command")
-  
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t,None)] false
   | VernacFocus n -> vernac_focus n
@@ -2084,16 +2107,9 @@ let interp ?proof ~loc locality poly c =
       Aux_file.record_in_aux_at loc "VernacProof" "tac:yes using:yes";
       vernac_set_end_tac tac; vernac_set_used_variables l
   | VernacProofMode mn -> Proof_global.set_proof_mode mn
-  (* Toplevel control *)
-  | VernacToplevelControl e -> raise e
 
   (* Extensions *)
   | VernacExtend (opn,args) -> Vernacinterp.call ?locality (opn,args)
-
-  (* Handled elsewhere *)
-  | VernacProgram _
-  | VernacPolymorphic _
-  | VernacLocal _ -> assert false
 
 (* Vernaculars that take a locality flag *)
 let check_vernac_supports_locality c l =
@@ -2253,6 +2269,3 @@ let interp ?(verbosely=true) ?proof (loc,c) =
   in
     if verbosely then Flags.verbosely (aux false) c
     else aux false c
-
-let () = Hook.set Stm.interp_hook interp
-let () = Hook.set Stm.with_fail_hook with_fail
