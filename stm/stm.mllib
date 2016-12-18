@@ -4,7 +4,6 @@ Vcs
 TQueue
 WorkerPool
 Vernac_classifier
-Lemmas
 CoqworkmgrApi
 AsyncTaskQueue
 Stm

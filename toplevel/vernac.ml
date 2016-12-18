@@ -343,7 +343,7 @@ let compile verbosely f =
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
       Library.save_library_raw lfdv sum lib univs proofs
 
-let compile v f = 
+let compile v f =
   ignore(CoqworkmgrApi.get 1);
   compile v f;
   CoqworkmgrApi.giveback 1
