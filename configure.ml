@@ -487,19 +487,14 @@ let caml_version_nums =
          "Is it installed properly?")
 
 let check_caml_version () =
-  if caml_version_nums >= [4;1;0] then
-    if caml_version_nums = [4;2;0] && not !Prefs.force_caml_version then
-      die ("Your version of OCaml is 4.02.0 which suffers from a bug inducing\n" ^
-        "very slow compilation times. If you still want to use it, use \n" ^
-        "option -force-caml-version.\n")
-    else
-      printf "You have OCaml %s. Good!\n" caml_version
+  if caml_version_nums >= [4;2;3] then
+    printf "You have OCaml %s. Good!\n" caml_version
   else
     let () = printf "Your version of OCaml is %s.\n" caml_version in
     if !Prefs.force_caml_version then
       printf "*Warning* Your version of OCaml is outdated.\n"
     else
-      die "You need OCaml 4.01 or later."
+      die "You need OCaml 4.02.3 or later."
 
 let _ = check_caml_version ()
 
@@ -554,13 +549,6 @@ let check_camlp5_version camlp5o =
     printf "You have Camlp5 %s. Good!\n" version; version
   | _ -> die "Error: unsupported Camlp5 (version < 6.06 or unrecognized).\n"
 
-let check_caml_version_for_camlp4 () =
-  if caml_version_nums = [4;1;0] && !Prefs.debug && not !Prefs.force_caml_version then
-    die ("Your version of OCaml is detected to be 4.01.0 which fails to compile\n" ^
-         "Coq in -debug mode with Camlp4. Remove -debug option or use a different\n" ^
-         "version of OCaml or use Camlp5, or bypass this test by using option\n" ^
-         "-force-caml-version.\n")
-
 let config_camlpX () =
   try
     if not !Prefs.usecamlp5 then raise NoCamlp5;
@@ -579,7 +567,6 @@ let config_camlpX () =
       let camlp4orf = which_camlpX "camlp4orf" in
       let version_line, _ = run ~err:StdOut camlp4orf ["-v"] in
       let camlp4_version = List.nth (string_split ' ' version_line) 2 in
-      check_caml_version_for_camlp4 ();
       "camlp4", camlp4orf, Filename.dirname camlp4orf, camlp4libdir, camlp4mod, camlp4_version
     with _ -> die "No Camlp4 installation found.\n"
 
