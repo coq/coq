@@ -592,28 +592,31 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
      | (FRel _ | FAtom _ | FInd _ | FFix _ | FCoFix _
         | FProd _ | FEvar _), _ -> raise NotConvertible
 
+(* [convert_stacks] compares stacks for equality, starting from the head.
+   Application nodes are compared left to right, like in unification. *)
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
-  let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
+  let f cuniv (l1, t1) (l2, t2) = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
   let rec cmp_rec pstk1 pstk2 cuniv =
     match (pstk1,pstk2) with
       | (z1::s1, z2::s2) ->
-          let cu1 = cmp_rec s1 s2 cuniv in
-          (match (z1,z2) with
+          let cuniv = match (z1,z2) with
             | (Zlapp a1,Zlapp a2) ->
-               Array.fold_right2 f a1 a2 cu1
+               Array.fold_left2 f cuniv a1 a2
             | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
               if not (Projection.Repr.equal c1 c2) then
                 raise NotConvertible
-              else cu1
+              else cuniv
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
-                let cu2 = f fx1 fx2 cu1 in
-                cmp_rec a1 a2 cu2
+                let cuniv = f cuniv fx1 fx2 in
+                cmp_rec a1 a2 cuniv
             | (Zlcase(ci1,l1,p1,br1,e1),Zlcase(ci2,l2,p2,br2,e2)) ->
                 if not (eq_ind ci1.ci_ind ci2.ci_ind) then
                   raise NotConvertible;
-                let cu2 = f (l1, mk_clos e1 p1) (l2, mk_clos e2 p2) cu1 in
-                convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cu2
-            | _ -> assert false)
+                let cuniv = f cuniv (l1, mk_clos e1 p1) (l2, mk_clos e2 p2) in
+                convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cuniv
+            | _ -> assert false
+          in
+          cmp_rec s1 s2 cuniv
       | _ -> cuniv in
   if compare_stack_shape stk1 stk2 then
     cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
