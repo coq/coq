@@ -206,7 +206,9 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst : subst0) 
 	let pb = (Conv,TypeNotProcessed) in
 	  if noccur_between sigma 1 nb c then
             sigma,(k,lift (-nb) c,pb)::metasubst,evarsubst
-	  else error_cannot_unify_local env sigma (applist (f, l),c,c)
+	  else
+            let l = List.map of_alias l in
+            error_cannot_unify_local env sigma (applist (f, l),c,c)
     | Evar ev ->
         let env' = pop_rel_context nb env in
 	let sigma,c = pose_all_metas_as_evars env' sigma c in

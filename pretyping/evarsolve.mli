@@ -11,6 +11,10 @@ open EConstr
 open Evd
 open Environ
 
+type alias
+
+val of_alias : alias -> EConstr.t
+
 type unification_result =
   | Success of evar_map
   | UnifFailure of evar_map * Pretype_errors.unification_error
@@ -58,12 +62,12 @@ val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
 val reconsider_conv_pbs : conv_fun -> evar_map -> unification_result
 
 val is_unification_pattern_evar : env -> evar_map -> existential -> constr list ->
-  constr -> constr list option
+  constr -> alias list option
 
 val is_unification_pattern : env * int -> evar_map -> constr -> constr list ->
-  constr -> constr list option
+  constr -> alias list option
 
-val solve_pattern_eqn : env -> evar_map -> constr list -> constr -> constr
+val solve_pattern_eqn : env -> evar_map -> alias list -> constr -> constr
 
 val noccur_evar : env -> evar_map -> Evar.t -> constr -> bool
 
