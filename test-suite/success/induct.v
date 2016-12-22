@@ -164,3 +164,10 @@ Undo.
 destruct 1 as [? IHv].
 exact IHv. (* Check that the name is granted *)
 Qed.
+
+(* Was failing up to 8.7 *)
+
+Goal forall H : True/\False, H = H.
+induction H.
+reflexivity.
+Qed.

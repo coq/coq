@@ -2293,7 +2293,7 @@ Proof.
     { left; assumption. }
     elim H0; intros; assumption. }
   eapply StepFun_P7;
-    [ elim H0; intros; apply Rle_trans with c; [ apply H2 | apply H3 ]
+    [ elim H0; intros H2 H3; apply Rle_trans with c; [ apply H2 | apply H3 ]
     | apply H ].
 Qed.
 
@@ -2368,7 +2368,7 @@ Proof.
         split with lf1'; assumption. }
     split; [ left; assumption | elim H0; intros; assumption ]. }
   eapply StepFun_P7;
-    [ elim H0; intros; apply Rle_trans with c; [ apply H2 | apply H3 ]
+    [ elim H0; intros H2 H3; apply Rle_trans with c; [ apply H2 | apply H3 ]
     | apply H ].
 Qed.
 
