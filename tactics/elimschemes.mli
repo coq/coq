@@ -20,21 +20,22 @@ val optimize_non_type_induction_scheme :
   Names.inductive ->
   (Constr.constr * UState.t) * Safe_typing.private_constants
 
-val rect_scheme_kind_from_prop : individual scheme_kind
-val ind_scheme_kind_from_prop : individual scheme_kind
-val rec_scheme_kind_from_prop : individual scheme_kind
-val rect_scheme_kind_from_type : individual scheme_kind
+val rect_scheme_kind_from_prop : individual scheme_kind (* not dep *)
+val rect_dep_scheme_kind_from_prop : individual scheme_kind
+val ind_scheme_kind_from_prop : individual scheme_kind (* not dep *)
+val ind_dep_scheme_kind_from_prop : individual scheme_kind
+val rec_scheme_kind_from_prop : individual scheme_kind (* not dep *)
+val rect_scheme_kind_from_type : individual scheme_kind (* not dep *)
 val rect_dep_scheme_kind_from_type : individual scheme_kind
-val ind_scheme_kind_from_type : individual scheme_kind
+val ind_scheme_kind_from_type : individual scheme_kind (* not dep *)
 val ind_dep_scheme_kind_from_type : individual scheme_kind
-val rec_scheme_kind_from_type : individual scheme_kind
+val rec_scheme_kind_from_type : individual scheme_kind (* not dep *)
 val rec_dep_scheme_kind_from_type : individual scheme_kind
-
 
 (** Case analysis schemes *)
 
-val case_scheme_kind_from_type : individual scheme_kind
-val case_scheme_kind_from_prop : individual scheme_kind
+val case_scheme_kind_from_type : individual scheme_kind (* not dep *)
+val case_scheme_kind_from_prop : individual scheme_kind (* not dep *)
 val case_dep_scheme_kind_from_type : individual scheme_kind
 val case_dep_scheme_kind_from_type_in_prop : individual scheme_kind
 val case_dep_scheme_kind_from_prop : individual scheme_kind

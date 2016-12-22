@@ -72,9 +72,17 @@ let rect_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_rect" ~aux:"_rect_from_type"
     (fun _ x -> build_induction_scheme_in_type true InType x, Safe_typing.empty_private_constants)
 
+let rect_dep_scheme_kind_from_prop =
+  declare_individual_scheme_object "_rect_dep" ~aux:"_rect_dep_from_prop"
+    (fun _ x -> build_induction_scheme_in_type true InType x, Safe_typing.empty_private_constants)
+
 let rec_scheme_kind_from_type =
   declare_individual_scheme_object "_rec_nodep" ~aux:"_rec_nodep_from_type"
   (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InSet)
+
+let ind_dep_scheme_kind_from_prop =
+  declare_individual_scheme_object "_ind_dep" ~aux:"_ind_dep_from_prop"
+  (optimize_non_type_induction_scheme rect_scheme_kind_from_prop true InProp)
 
 let rec_scheme_kind_from_prop =
   declare_individual_scheme_object "_rec" ~aux:"_rec_from_prop"
