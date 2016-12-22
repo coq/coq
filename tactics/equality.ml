@@ -725,7 +725,7 @@ let find_positions env sigma t1 t2 =
     let hd1,args1 = whd_all_stack env sigma t1 in
     let hd2,args2 = whd_all_stack env sigma t2 in
     match (kind_of_term hd1, kind_of_term hd2) with
-      | Construct (sp1,_), Construct (sp2,_)
+      | Construct ((ind1,i1 as sp1),u1), Construct (sp2,_)
           when Int.equal (List.length args1) (constructor_nallargs_env env sp1)
             ->
 	  let sorts' =
@@ -734,11 +734,14 @@ let find_positions env sigma t1 t2 =
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
 	  if eq_constructor sp1 sp2 then
-	    let nrealargs = constructor_nrealargs_env env sp1 in
-	    let rargs1 = List.lastn nrealargs args1 in
-	    let rargs2 = List.lastn nrealargs args2 in
+	    let nparams = inductive_nparams_env env ind1 in
+	    let params1,rargs1 = List.chop nparams args1 in
+	    let _,rargs2 = List.chop nparams args2 in
+            let (mib,mip) = lookup_mind_specif env ind1 in
+            let ctxt = (get_constructor ((ind1,u1),mib,mip,params1) i1).cs_args in
+            let adjust i = Vars.adjust_rel_to_rel_context ctxt (i+1) - 1 in
             List.flatten
-	      (List.map2_i (fun i -> findrec sorts' ((sp1,i)::posn))
+	      (List.map2_i (fun i -> findrec sorts' ((sp1,adjust i)::posn))
 		0 rargs1 rargs2)
 	  else if Sorts.List.mem InType sorts'
           then (* see build_discriminator *)

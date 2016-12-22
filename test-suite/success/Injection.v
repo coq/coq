@@ -150,6 +150,13 @@ match goal with
 end.
 Abort.
 
+(* Injection in the presence of local definitions *)
+Inductive A := B (T := unit) (x y : bool) (z := x).
+Goal forall x y x' y', B x y = B x' y' -> y = y'.
+intros * [= H1 H2].
+exact H2.
+Qed.
+
 (* Injection does not project at positions in Prop... allow it?
 
 Inductive t (A:Prop) : Set := c : A -> t A.
