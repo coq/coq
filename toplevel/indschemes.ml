@@ -185,6 +185,9 @@ let try_declare_scheme what f internal names kn =
     | DecidabilityMutualNotSupported ->
         alarm what internal
           (str "Decidability lemma for mutual inductive types not supported.")
+    | EqUnknown s ->
+         alarm what internal
+           (str "Found unsupported " ++ str s ++ str " while building Boolean equality.")
     | e when Errors.noncritical e ->
         alarm what internal
 	  (str "Unexpected error during scheme creation: " ++ Errors.print e)

@@ -204,19 +204,19 @@ let build_beq_scheme mode kn =
             end
         | Sort _  -> raise InductiveWithSort
         | Prod _ -> raise InductiveWithProduct
-        | Lambda _-> raise (EqUnknown "Lambda")
-        | LetIn _ -> raise (EqUnknown "LetIn")
+        | Lambda _-> raise (EqUnknown "abstraction")
+        | LetIn _ -> raise (EqUnknown "let-in")
         | Const kn ->
 	    (match Environ.constant_opt_value_in env kn with
 	      | None -> raise (ParameterWithoutEquality (fst kn))
 	      | Some c -> aux (applist (c,a)))
-        | Proj _ -> raise (EqUnknown "Proj")
-        | Construct _ -> raise (EqUnknown "Construct")
-        | Case _ -> raise (EqUnknown "Case")
-        | CoFix _ -> raise (EqUnknown "CoFix")
-        | Fix _   -> raise (EqUnknown "Fix")
-        | Meta _  -> raise (EqUnknown "Meta")
-        | Evar _  -> raise (EqUnknown "Evar")
+        | Proj _ -> raise (EqUnknown "projection")
+        | Construct _ -> raise (EqUnknown "constructor")
+        | Case _ -> raise (EqUnknown "match")
+        | CoFix _ -> raise (EqUnknown "cofix")
+        | Fix _   -> raise (EqUnknown "fix")
+        | Meta _  -> raise (EqUnknown "meta-variable")
+        | Evar _  -> raise (EqUnknown "existential variable")
     in
       aux t
   in
