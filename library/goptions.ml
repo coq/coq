@@ -286,8 +286,9 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
   let warn () = if depr then warn_deprecated_option key in
   let cread () = cast (read ()) in
   let cwrite l v = warn (); change l OptSet (uncast v) in
+  let asyncwrite v = write (uncast v) in
   let cappend l v = warn (); change l OptAppend (uncast v) in
-  value_tab := OptionMap.add key (name, depr, (sync,cread,cwrite,cappend)) !value_tab;
+  value_tab := OptionMap.add key (name, depr, (sync,cread,cwrite,asyncwrite,cappend)) !value_tab;
   write
 
 type 'a write_function = 'a -> unit
@@ -326,7 +327,7 @@ let set_option_value locality check_and_cast key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (name, depr, (_,read,write,append)) ->
+  | Some (name, depr, (_,read,write,_,append)) ->
     write (get_locality locality) (check_and_cast v (read ()))
 
 let bad_type_error () = error "Bad type of value for this option."
@@ -367,12 +368,33 @@ let set_string_option_append_value_gen locality key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (name, depr, (_,read,write,append)) ->
+  | Some (name, depr, (_,read,write,_,append)) ->
     append (get_locality locality) (check_string_value v (read ()))
 
 let set_int_option_value = set_int_option_value_gen None
 let set_bool_option_value = set_bool_option_value_gen None
 let set_string_option_value = set_string_option_value_gen None
+
+type previous_option_value = option_value
+
+let override_option_value key b =
+  let (name, depr, (_,read,_,asyncwrite,_)) =
+    try get_option key with Not_found -> error_undeclared_key key in
+  let a = read () in
+  asyncwrite b;
+  a
+
+let restore_option_value key b =
+  let (name, depr, (_,read,_,asyncwrite,_)) =
+    try get_option key with Not_found -> error_undeclared_key key in
+  asyncwrite b
+
+let with_option_value key v f a =
+  let (name, depr, (_,read,_,asyncwrite,_)) =
+    try get_option key with Not_found -> error_undeclared_key key in
+  let current = read () in
+  try asyncwrite v; let x = f a in asyncwrite current; x
+  with e -> asyncwrite current; raise e
 
 (* Printing options/tables *)
 
@@ -388,7 +410,7 @@ let msg_option_value (name,v) =
 (*     | IdentValue r    -> pr_global_env Id.Set.empty r *)
 
 let print_option_value key =
-  let (name, depr, (_,read,_,_)) = get_option key in
+  let (name, depr, (_,read,_,_,_)) = get_option key in
   let s = read () in
   match s with
     | BoolValue b ->
@@ -398,7 +420,7 @@ let print_option_value key =
 
 let get_tables () =
   let tables = !value_tab in
-  let fold key (name, depr, (sync,read,_,_)) accu =
+  let fold key (name, depr, (sync,read,_,_,_)) accu =
     let state = {
       opt_sync = sync;
       opt_name = name;
@@ -417,13 +439,13 @@ let print_tables () =
   in
   str "Synchronous options:" ++ fnl () ++
     OptionMap.fold
-      (fun key (name, depr, (sync,read,_,_)) p ->
+      (fun key (name, depr, (sync,read,_,_,_)) p ->
         if sync then p ++ print_option key name (read ()) depr
         else p)
       !value_tab (mt ()) ++
   str "Asynchronous options:" ++ fnl () ++
     OptionMap.fold
-      (fun key (name, depr, (sync,read,_,_)) p ->
+      (fun key (name, depr, (sync,read,_,_,_)) p ->
         if sync then p
         else p ++ print_option key name (read ()) depr)
       !value_tab (mt ()) ++
