@@ -196,3 +196,9 @@ Goal forall m n:nat, n=m.
 double induction m n.
 Abort.
 
+(* Was failing up to 8.7 *)
+
+Goal forall H : True/\False, H = H.
+induction H.
+reflexivity.
+Qed.

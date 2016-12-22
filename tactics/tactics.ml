@@ -1447,14 +1447,24 @@ exception IsNonrec
 
 let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations.BiFinite
 
-let find_ind_eliminator ind s gl =
-  let gr = lookup_eliminator ind s in
-  Tacmach.New.pf_apply Evd.fresh_global gl gr
+let find_ind_eliminator dep (ind,_ as indu) s gl =
+  let indsort = Inductive.inductive_sort_family (snd (Global.lookup_inductive ind)) in
+  if dep = Some true && indsort == Sorts.InProp then
+    let evd,c = Tacmach.New.pf_apply (fun env sigma -> build_induction_scheme env sigma indu true) gl s in
+    evd, EConstr.of_constr c
+  else
+    let gr = lookup_eliminator ind s in
+    Tacmach.New.pf_apply Evd.fresh_global gl gr
 
 let find_eliminator c gl =
-  let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_unsafe_type_of gl c) in
+  let dep =
+    (* This is approximative, maybe there are evars, not using conversion *)
+    let concl = Proofview.Goal.concl gl in
+    dependent (Tacmach.New.project gl) c concl in
+  let ((ind,u as indu),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_unsafe_type_of gl c) in
   if is_nonrec ind then raise IsNonrec;
-  let evd, c = find_ind_eliminator ind (Tacticals.New.elimination_sort_of_goal gl) gl in
+  let u = EInstance.kind (Tacmach.New.project gl) u in
+  let evd, c = find_ind_eliminator (Some dep) (ind,u) (Tacticals.New.elimination_sort_of_goal gl) gl in
     evd, {elimindex = None; elimbody = (c,NoBindings);
           elimrename = Some (true, constructors_nrealdecls ind)}
 
@@ -4080,12 +4090,12 @@ let guess_elim isrec dep s hyp0 gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let (mind, u), _ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
   let evd, elimc =
-    if isrec && not (is_nonrec mind) then find_ind_eliminator mind s gl
+    let u = EInstance.kind (Tacmach.New.project gl) u in
+    if isrec && not (is_nonrec mind) then find_ind_eliminator dep (mind,u) s gl
     else
       let env = Tacmach.New.pf_env gl in
       let sigma = Tacmach.New.project gl in
-      let u = EInstance.kind (Tacmach.New.project gl) u in
-      if dep then
+      if dep = Some true then
         let (sigma, ind) = build_case_analysis_scheme env sigma (mind, u) true s in
         let ind = EConstr.of_constr ind in
         (sigma, ind)
@@ -4117,10 +4127,10 @@ let find_induction_type isrec elim hyp0 gl =
     match elim with
     | None ->
        let sort = Tacticals.New.elimination_sort_of_goal gl in
-       let _, (elimc,elimt),_ = guess_elim isrec false sort hyp0 gl in
-       let scheme = compute_elim_sig sigma ~elimc elimt in
-       (* We drop the scheme waiting to know if it is dependent *)
-       scheme, ElimOver (isrec,hyp0)
+       let _, (elimc,elimt),_ = guess_elim isrec None sort hyp0 gl in
+        let scheme = compute_elim_sig sigma ~elimc elimt in
+        (* We drop the scheme waiting to know if it is dependent *)
+        scheme, ElimOver (isrec,hyp0)
     | Some e ->
 	let evd, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
 	let scheme = compute_elim_sig sigma ~elimc elimt in
@@ -4151,7 +4161,7 @@ let get_eliminator elim dep s gl =
   | ElimUsing (elim,indsign) ->
       Tacmach.New.project gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc,elimt),_ as elims = guess_elim isrec dep s id gl in
+      let evd, (elimc,elimt),_ as elims = guess_elim isrec (Some dep) s id gl in
       let _, (l, s) = compute_elim_signature elims id in
       let branchlengthes = List.map (fun d -> assert (RelDecl.is_local_assum d); pi1 (decompose_prod_letin (Tacmach.New.project gl) (RelDecl.get_type d)))
                                     (List.rev s.branches)
@@ -4649,8 +4659,9 @@ let elim_scheme_type elim t =
 
 let elim_type t =
   Proofview.Goal.enter begin fun gl ->
-  let (ind,t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
-  let evd, elimc = find_ind_eliminator (fst ind) (Tacticals.New.elimination_sort_of_goal gl) gl in
+  let ((ind,u),t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
+  let u = EInstance.kind (Tacmach.New.project gl) u in
+  let evd, elimc = find_ind_eliminator None (ind,u) (Tacticals.New.elimination_sort_of_goal gl) gl in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type elimc t)
   end
 

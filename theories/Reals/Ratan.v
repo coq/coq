@@ -348,9 +348,9 @@ intros x y Z_le_x x_lt_y y_le_1.
   intros ; apply derivable_pt_tan ; intuition.
  apply derive_increasing_interv with (a:=-PI/2) (b:=PI/2) (pr:=local_derivable_pt_tan) ; intuition.
  lra.
- assert (Temp := pr_nu tan t (derivable_pt_tan t t_encad) (local_derivable_pt_tan t t_encad)) ;
+ assert (Temp := pr_nu tan t (derivable_pt_tan t (conj r r0)) (local_derivable_pt_tan t (conj r r0))) ;
  rewrite <- Temp ; clear Temp.
- assert (Temp := derive_pt_tan t t_encad) ; rewrite Temp ; clear Temp.
+ assert (Temp := derive_pt_tan t (conj r r0)) ; rewrite Temp ; clear Temp.
  apply plus_Rsqr_gt_0.
 Qed.
 

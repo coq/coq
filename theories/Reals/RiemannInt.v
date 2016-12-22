@@ -2734,7 +2734,8 @@ Lemma RiemannInt_P28 :
     (C0:forall x:R, a <= x <= b -> continuity_pt f x),
     a <= x <= b -> derivable_pt_lim (primitive h (FTC_P1 h C0)) x (f x).
 Proof.
-  intro f; intros; elim h; intro.
+  intro f; intros; elim h; intro H0;
+  clear h; [set (h:=or_introl H0)|set (h:=or_intror H0)].
   elim H; clear H; intros; elim H; intro.
   elim H1; intro.
   apply RiemannInt_P27; split; assumption.
@@ -2791,7 +2792,7 @@ Proof.
   rewrite <- Rabs_Ropp; apply RRle_abs.
   left; assumption.
   unfold del; apply Rle_trans with (Rmin x1 (b - a)); apply Rmin_r.
-  replace (primitive h (FTC_P1 h C0) (b + h0) - primitive h (FTC_P1 h C0) b)
+  replace (primitive h (FTC_P1 h C0) (b + h0) - primitive h (FTC_P1 _ C0) b)
     with (- RiemannInt H13).
   replace (f b) with (- RiemannInt (RiemannInt_P14 (b + h0) b (f b)) / h0).
   rewrite <- Rabs_Ropp; unfold Rminus; unfold Rdiv;

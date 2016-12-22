@@ -702,7 +702,7 @@ Proof.
   intros; apply derivable_continuous_pt; apply derivable_pt_minus;
     [ apply H3 | apply H4 ]; assumption.
   assert (H7 : forall (x:R) (P:a < x < b), derive_pt (g1 - g2) x (H5 x P) = 0).
-  intros; elim P; intros; apply derive_pt_eq_0; replace 0 with (f x0 - f x0);
+  intros; elim P; intros H7 H8; apply derive_pt_eq_0; replace 0 with (f x0 - f x0);
     [ idtac | ring ].
   assert (H9 : a <= x0 <= b).
   split; left; assumption.
