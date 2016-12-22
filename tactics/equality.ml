@@ -48,6 +48,12 @@ module NamedDecl = Context.Named.Declaration
 
 (* Options *)
 
+type inj_flags = {
+    keep_proof_equalities : bool;
+    injection_in_context : bool;
+    injection_pattern_l2r_order : bool;
+  }
+
 let discriminate_introduction = ref true
 
 let discr_do_intro () = !discriminate_introduction
@@ -63,7 +69,9 @@ let _ =
 
 let injection_pattern_l2r_order = ref true
 
-let use_injection_pattern_l2r_order () = !injection_pattern_l2r_order
+let use_injection_pattern_l2r_order = function
+  | None -> !injection_pattern_l2r_order
+  | Some flags -> flags.injection_pattern_l2r_order
 
 let _ =
   declare_bool_option
@@ -75,9 +83,9 @@ let _ =
 
 let injection_in_context = ref false
 
-let use_injection_in_context () =
-  !injection_in_context
-  && Flags.version_strictly_greater Flags.V8_5
+let use_injection_in_context = function
+  | None -> !injection_in_context && Flags.version_strictly_greater Flags.V8_5
+  | Some flags -> flags.injection_in_context
 
 let _ =
   declare_bool_option
@@ -721,7 +729,14 @@ let _ =
       optread  = (fun () -> !keep_proof_equalities_for_injection) ;
       optwrite = (fun b -> keep_proof_equalities_for_injection := b) }
 
-let find_positions env sigma ~no_discr t1 t2 =
+let keep_proof_equalities = function
+  | None -> !keep_proof_equalities_for_injection
+  | Some flags -> flags.keep_proof_equalities
+
+(* [keep_proofs] is relevant for types in Prop with elimination in Type *)
+(* In particular, it is relevant for injection but not for discriminate *)
+
+let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
   let project env sorts posn t1 t2 =
     let ty1 = get_type_of env sigma t1 in
     let s = get_sort_family_of env sigma ty1 in
@@ -768,20 +783,22 @@ let find_positions env sigma ~no_discr t1 t2 =
 	    project env sorts posn t1_0 t2_0
   in
   try
-    let sorts = if !keep_proof_equalities_for_injection then [InSet;InType;InProp]
-		else [InSet;InType]
-    in
+    let sorts = if keep_proofs then [InSet;InType;InProp] else [InSet;InType] in
     Inr (findrec sorts [] t1 t2)
   with DiscrFound (path,c1,c2) ->
     Inl (path,c1,c2)
 
+let use_keep_proofs = function
+  | None -> !keep_proof_equalities_for_injection
+  | Some b -> b
+
 let discriminable env sigma t1 t2 =
-  match find_positions env sigma ~no_discr:false t1 t2 with
+  match find_positions env sigma ~keep_proofs:false ~no_discr:false t1 t2 with
     | Inl _ -> true
     | _ -> false
 
-let injectable env sigma t1 t2 =
-    match find_positions env sigma ~no_discr:true t1 t2 with
+let injectable env sigma ~keep_proofs t1 t2 =
+    match find_positions env sigma ~keep_proofs:(use_keep_proofs keep_proofs) ~no_discr:true t1 t2 with
     | Inl _ -> assert false
     | Inr [] | Inr [([],_,_)] -> false
     | Inr _ -> true
@@ -1024,7 +1041,7 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    match find_positions env sigma ~no_discr:false t1 t2 with
+    match find_positions env sigma ~keep_proofs:false ~no_discr:false t1 t2 with
     | Inr _ ->
 	tclZEROMSG (str"Not a discriminable equality.")
     | Inl (cpath, (_,dirn), _) ->
@@ -1078,9 +1095,7 @@ let discrEverywhere with_evars =
           (fun id -> tclCOMPLETE (discr with_evars (mkVar id,NoBindings)))))
      else (* <= 8.2 compat *)
        tryAllHypsAndConcl (discrSimpleClause with_evars))
-(*    (fun gls ->
-       user_err ~hdr:"DiscrEverywhere" (str"No discriminable equalities."))
-*)
+
 let discr_tac with_evars = function
   | None -> discrEverywhere with_evars
   | Some c -> onInductionArg (fun clear_flag -> discr with_evars) c
@@ -1402,15 +1417,15 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
          (if l2r then List.rev injectors else injectors)))
       (tac (List.length injectors)))
 
-let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
+let injEqThen keep_proofs tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   let env = eq_clause.env in
-  match find_positions env sigma ~no_discr:true t1 t2 with
+  match find_positions env sigma ~keep_proofs ~no_discr:true t1 t2 with
   | Inl _ ->
      assert false
   | Inr [] ->
      let suggestion =
-         if !keep_proof_equalities_for_injection then
+         if keep_proofs then
             "" else
             " You can try to use option Set Keep Proof Equalities." in
      tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
@@ -1429,13 +1444,13 @@ let get_previous_hyp_position id gl =
   in
   aux MoveLast (Proofview.Goal.hyps (Proofview.Goal.assume gl))
 
-let injEq ?(old=false) with_evars clear_flag ipats =
+let injEq flags ?(old=false) with_evars clear_flag ipats =
   (* Decide which compatibility mode to use *)
   let ipats_style, l2r, dft_clear_flag, bounded_intro = match ipats with
-    | None when not old && use_injection_in_context () ->
+    | None when not old && use_injection_in_context flags ->
       Some [], true, true, true
     | None -> None, false, false, false
-    | _ -> let b = use_injection_pattern_l2r_order () in ipats, b, b, b in
+    | _ -> let b = use_injection_pattern_l2r_order flags in ipats, b, b, b in
   (* Built the post tactic depending on compatibility mode *)
   let post_tac c n =
     match ipats_style with
@@ -1455,26 +1470,26 @@ let injEq ?(old=false) with_evars clear_flag ipats =
         tclTHEN clear_tac intro_tac
       end
     | None -> tclIDTAC in
-  injEqThen post_tac l2r
+  injEqThen (keep_proof_equalities flags) post_tac l2r
 
-let inj ipats with_evars clear_flag = onEquality with_evars (injEq with_evars clear_flag ipats)
+let inj flags ipats with_evars clear_flag = onEquality with_evars (injEq flags with_evars clear_flag ipats)
 
-let injClause ipats with_evars = function
-  | None -> onNegatedEquality with_evars (injEq with_evars None ipats)
-  | Some c -> onInductionArg (inj ipats with_evars) c
+let injClause flags ipats with_evars = function
+  | None -> onNegatedEquality with_evars (injEq flags with_evars None ipats)
+  | Some c -> onInductionArg (inj flags ipats with_evars) c
 
-let simpleInjClause with_evars = function
-  | None -> onNegatedEquality with_evars (injEq ~old:true with_evars None None)
-  | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (injEq ~old:true with_evars clear_flag None)) c
+let simpleInjClause flags with_evars = function
+  | None -> onNegatedEquality with_evars (injEq flags ~old:true with_evars None None)
+  | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (injEq flags ~old:true with_evars clear_flag None)) c
 
-let injConcl = injClause None false None
-let injHyp clear_flag id = injClause None false (Some (clear_flag,ElimOnIdent (Loc.tag id)))
+let injConcl flags = injClause flags None false None
+let injHyp flags clear_flag id = injClause flags None false (Some (clear_flag,ElimOnIdent (Loc.tag id)))
 
-let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
+let decompEqThen keep_proofs ntac (lbeq,_,(t,t1,t2) as u) clause =
   Proofview.Goal.enter begin fun gl ->
     let sigma =  clause.evd in
     let env = Proofview.Goal.env gl in
-      match find_positions env sigma ~no_discr:false t1 t2 with
+      match find_positions env sigma ~keep_proofs ~no_discr:false t1 t2 with
       | Inl (cpath, (_,dirn), _) ->
 	  discr_positions env sigma u clause cpath dirn
       | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
@@ -1484,18 +1499,18 @@ let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
           (ntac (clenv_value clause))
   end
 
-let dEqThen with_evars ntac = function
-  | None -> onNegatedEquality with_evars (decompEqThen (ntac None))
-  | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (decompEqThen (ntac clear_flag))) c
+let dEqThen ~keep_proofs with_evars ntac = function
+  | None -> onNegatedEquality with_evars (decompEqThen (use_keep_proofs keep_proofs) (ntac None))
+  | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (decompEqThen (use_keep_proofs keep_proofs) (ntac clear_flag))) c
 
-let dEq with_evars =
-  dEqThen with_evars (fun clear_flag c x ->
+let dEq ~keep_proofs with_evars =
+  dEqThen ~keep_proofs with_evars (fun clear_flag c x ->
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
 
 let intro_decomp_eq tac data (c, t) =
   Proofview.Goal.enter begin fun gl ->
     let cl = pf_apply make_clenv_binding gl (c, t) NoBindings in
-    decompEqThen (fun _ -> tac) data cl
+    decompEqThen !keep_proof_equalities_for_injection (fun _ -> tac) data cl
   end
 
 let _ = declare_intro_decomp_eq intro_decomp_eq

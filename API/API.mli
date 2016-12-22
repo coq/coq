@@ -5337,6 +5337,11 @@ sig
     | Naive
     | FirstSolved
     | AllMatches
+  type inj_flags = {
+    keep_proof_equalities : bool; (* One may want it or not *)
+    injection_in_context : bool;  (* For regularity; one may want it from ML code but not interactively *)
+    injection_pattern_l2r_order : bool; (* Compatibility option: no reason not to want it *)
+  }
 
   val build_selector :
     Environ.env -> Evd.evar_map -> int -> EConstr.constr -> EConstr.types ->
@@ -5345,20 +5350,20 @@ sig
   val general_rewrite :
     orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
     ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr -> unit Proofview.tactic
-  val inj : Tactypes.intro_patterns option -> Misctypes.evars_flag ->
+  val inj : inj_flags option -> Tactypes.intro_patterns option -> Misctypes.evars_flag ->
             Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
   val general_multi_rewrite :
     Misctypes.evars_flag -> (bool * Misctypes.multi * Misctypes.clear_flag * Tactypes.delayed_open_constr_with_bindings) list ->
     Locus.clause -> (unit Proofview.tactic * conditions) option -> unit Proofview.tactic
   val replace_in_clause_maybe_by : EConstr.constr -> EConstr.constr -> Locus.clause -> unit Proofview.tactic option -> unit Proofview.tactic
   val replace_term : bool option -> EConstr.constr -> Locus.clause -> unit Proofview.tactic
-  val dEq : Misctypes.evars_flag -> EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option -> unit Proofview.tactic
+  val dEq : keep_proofs:bool option -> Misctypes.evars_flag -> EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option -> unit Proofview.tactic
   val discr_tac : Misctypes.evars_flag ->
                   EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option -> unit Proofview.tactic
-  val injClause    : Tactypes.intro_patterns option -> Misctypes.evars_flag ->
+  val injClause    : inj_flags option -> Tactypes.intro_patterns option -> Misctypes.evars_flag ->
                      EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option -> unit Proofview.tactic
 
-  val simpleInjClause : Misctypes.evars_flag ->
+  val simpleInjClause : inj_flags option -> Misctypes.evars_flag ->
                         EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option ->
                         unit Proofview.tactic
   val rewriteInConcl : bool -> EConstr.constr -> unit Proofview.tactic
@@ -5392,8 +5397,8 @@ sig
     ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
   val discriminable : Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
   val discrHyp : Names.Id.t -> unit Proofview.tactic
-  val injectable : Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
-  val injHyp : Misctypes.clear_flag -> Names.Id.t -> unit Proofview.tactic
+  val injectable : Environ.env -> Evd.evar_map -> keep_proofs:(bool option) -> EConstr.constr -> EConstr.constr -> bool
+  val injHyp : inj_flags option -> Misctypes.clear_flag -> Names.Id.t -> unit Proofview.tactic
   val subst_gen : bool -> Names.Id.t list -> unit Proofview.tactic
 end
 

@@ -570,6 +570,11 @@ let rec reflexivity_with_destruct_cases g =
     with e when CErrors.noncritical e -> Proofview.V82.of_tactic reflexivity
   in
   let eq_ind = make_eq () in
+  let my_inj_flags = Some {
+    Equality.keep_proof_equalities = false;
+    injection_in_context = false; (* for compatibility, necessary *)
+    injection_pattern_l2r_order = false; (* probably does not matter; except maybe with dependent hyps *)
+  } in
   let discr_inject =
     Tacticals.onAllHypsAndConcl (
        fun sc g ->
@@ -580,8 +585,8 @@ let rec reflexivity_with_destruct_cases g =
 		 | App(eq,[|_;t1;t2|]) when EConstr.eq_constr (project g) eq eq_ind ->
 		     if Equality.discriminable (pf_env g) (project g) t1 t2
 		     then Proofview.V82.of_tactic (Equality.discrHyp id) g
-		     else if Equality.injectable (pf_env g) (project g) t1 t2
-		     then tclTHENLIST [Proofview.V82.of_tactic (Equality.injHyp None id);thin [id];intros_with_rewrite]  g
+		     else if Equality.injectable (pf_env g) (project g) ~keep_proofs:None t1 t2
+		     then tclTHENLIST [Proofview.V82.of_tactic (Equality.injHyp my_inj_flags None id);thin [id];intros_with_rewrite]  g
 		     else tclIDTAC g
 		 | _ -> tclIDTAC g
     )

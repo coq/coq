@@ -396,7 +396,7 @@ let revtoptac n0 gl =
 
 let equality_inj l b id c gl =
   let msg = ref "" in
-  try Proofview.V82.of_tactic (Equality.inj l b None c) gl
+  try Proofview.V82.of_tactic (Equality.inj None l b None c) gl
   with
     | Ploc.Exc(_,CErrors.UserError (_,s))
     | CErrors.UserError (_,s)
