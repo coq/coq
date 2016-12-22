@@ -910,7 +910,23 @@ let tclTIMEOUT n t =
         return res
     | Util.Inr (e, info) -> tclZERO ~info e
 
-let tclTIME s t =
+let tclIO f g h t =
+  let rec aux n t =
+    let open Proof in
+    tclUNIT () >>= fun () ->
+    let start = f () in
+    Proof.split t >>= let open Logic_monad in function
+    | Nil (e, info) ->
+      begin
+        g n start;
+        tclZERO ~info e
+      end
+    | Cons (x,k) ->
+        h n start;
+        tclOR (tclUNIT x) (fun e -> aux (n+1) (k e))
+  in aux 0 t
+
+let tclTIME s =
   let pr_time t1 t2 n msg =
     let msg =
       if n = 0 then
@@ -920,24 +936,16 @@ let tclTIME s t =
     in
     Feedback.msg_info(str "Tactic call" ++ pr_opt str s ++ str " ran for " ++
              System.fmt_time_difference t1 t2 ++ str " " ++ surround msg) in
-  let rec aux n t =
-    let open Proof in
-    tclUNIT () >>= fun () ->
-    let tstart = System.get_time() in
-    Proof.split t >>= let open Logic_monad in function
-    | Nil (e, info) ->
-      begin
-        let tend = System.get_time() in
-        pr_time tstart tend n "failure";
-        tclZERO ~info e
-      end
-    | Cons (x,k) ->
-        let tend = System.get_time() in
-        pr_time tstart tend n "success";
-        tclOR (tclUNIT x) (fun e -> aux (n+1) (k e))
-  in aux 0 t
+  tclIO
+    System.get_time
+    (fun n tstart -> let tend = System.get_time() in pr_time tstart tend n "failure")
+    (fun n tstart -> let tend = System.get_time() in pr_time tstart tend n "success")
 
-
+let tclWITHOPTION option_name b =
+  tclIO
+    (fun () -> Goptions.override_option_value option_name b)
+    (fun _ old -> Goptions.restore_option_value option_name old)
+    (fun _ old -> Goptions.restore_option_value option_name old)
 
 (** {7 Unsafe primitives} *)
 

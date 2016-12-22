@@ -393,6 +393,10 @@ val tclTIMEOUT : int -> 'a tactic -> 'a tactic
     identifying annotation if present *)
 val tclTIME : string option -> 'a tactic -> 'a tactic
 
+(** [tclOPTION o v t] sets option o to value v while executing t *)
+val tclWITHOPTION : Goptions.option_name ->
+  Goptions.option_value -> 'a tactic -> 'a tactic
+
 (** {7 Unsafe primitives} *)
 
 (** The primitives in the [Unsafe] module should be avoided as much as
