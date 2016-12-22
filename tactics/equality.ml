@@ -704,12 +704,14 @@ exception DiscrFound of
 
 let keep_proof_equalities_for_injection = ref false
 
+let keep_proof_equalities_for_injection_name = ["Keep";"Proof";"Equalities"]
+
 let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
       optname  = "injection on prop arguments";
-      optkey   = ["Keep";"Proof";"Equalities"];
+      optkey   = keep_proof_equalities_for_injection_name;
       optread  = (fun () -> !keep_proof_equalities_for_injection) ;
       optwrite = (fun b -> keep_proof_equalities_for_injection := b) }
 

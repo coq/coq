@@ -74,7 +74,11 @@ let mkBranches c1 c2 =
 
 let discrHyp id =
   let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
-  let tac c = Equality.discr_tac false (Some (None, ElimOnConstr c)) in
+  let tac c =
+    Proofview.tclWITHOPTION
+      Equality.keep_proof_equalities_for_injection_name
+      (Goptions.BoolValue true)
+      (Equality.discr_tac false (Some (None, ElimOnConstr c))) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
 let solveNoteqBranch side =
@@ -122,7 +126,11 @@ let eqCase tac =
 
 let injHyp id =
   let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
-  let tac c = Equality.injClause None false (Some (None, ElimOnConstr c)) in
+  let tac c =
+    Proofview.tclWITHOPTION
+      Equality.keep_proof_equalities_for_injection_name
+      (Goptions.BoolValue true)
+      (Equality.injClause None false (Some (None, ElimOnConstr c))) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
 let diseqCase hyps eqonleft =

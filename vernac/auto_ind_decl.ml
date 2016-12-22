@@ -95,6 +95,18 @@ let destruct_on_using c id =
 let destruct_on_as c l =
   destruct false None c (Some (dl,l)) None
 
+let my_discr_tac =
+  Proofview.tclWITHOPTION
+    Equality.keep_proof_equalities_for_injection_name
+    (Goptions.BoolValue true)
+    (Equality.discr_tac false None)
+
+let my_inj_tac x =
+  Proofview.tclWITHOPTION
+    Equality.keep_proof_equalities_for_injection_name
+    (Goptions.BoolValue true)
+    (Equality.inj None false None (mkVar x,NoBindings))
+
 (* reconstruct the inductive with the correct deBruijn indexes *)
 let mkFullInd (ind,u) n =
   let mib = Global.lookup_mind (fst ind) in
@@ -592,7 +604,7 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
                      intro_using freshz;
                      intros;
                      Tacticals.New.tclTRY (
-                      Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
+                      Tacticals.New.tclORELSE reflexivity my_discr_tac
                      );
                      simpl_in_hyp (freshz,Locus.InHyp);
 (*
@@ -736,9 +748,9 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
                      intro_using freshz;
                      intros;
                      Tacticals.New.tclTRY (
-                      Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
+                      Tacticals.New.tclORELSE reflexivity my_discr_tac
                      );
-                     Equality.inj None false None (mkVar freshz,NoBindings);
+                     my_inj_tac freshz;
 		     intros; simpl_in_concl;
                      Auto.default_auto;
                      Tacticals.New.tclREPEAT (
@@ -933,7 +945,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
                                 NoBindings
                               )
                               true;
-              Equality.discr_tac false None
+              my_discr_tac
 	    ]
             end }
 	  ]
