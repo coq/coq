@@ -56,6 +56,7 @@ exception InductiveWithSort
 exception ParameterWithoutEquality of constant
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
+exception NoDecidabilityCoInductive
 
 let dl = Loc.ghost
 
@@ -301,6 +302,8 @@ let build_beq_scheme mode kn =
       let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
 	if not (Sorts.List.mem InSet kelim) then
 	  raise (NonSingletonProp (kn,i));
+        if mib.mind_finite = Decl_kinds.CoFinite then
+	  raise NoDecidabilityCoInductive;
         let fix = mkFix (((Array.make nb_ind 0),i),(names,types,cores)) in
         create_input fix),
        Evd.make_evar_universe_context (Global.env ()) None),
