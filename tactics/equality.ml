@@ -1069,9 +1069,8 @@ let discr with_evars = onEquality with_evars discrEq
 let discrClause with_evars = onClause (discrSimpleClause with_evars)
 
 let discrEverywhere with_evars =
-(*
-  tclORELSE
-*)
+  tclTHEN (Proofview.tclUNIT ())
+    (* Delay the interpretation of side-effect *)
     (if discr_do_intro () then
       (tclTHEN
 	(tclREPEAT introf)
