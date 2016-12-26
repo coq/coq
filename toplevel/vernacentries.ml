@@ -2050,7 +2050,7 @@ let enforce_polymorphism = function
   | None -> Flags.is_universe_polymorphism ()
   | Some b -> Flags.make_polymorphic_flag b; b
 
-(** A global default timeout, controled by option "Set Default Timeout n".
+(** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
 
 let default_timeout = ref None

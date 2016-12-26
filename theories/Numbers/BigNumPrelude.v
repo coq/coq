@@ -10,7 +10,7 @@
 
 (** * BigNumPrelude *)
 
-(** Auxillary functions & theorems used for arbitrary precision efficient
+(** Auxiliary functions & theorems used for arbitrary precision efficient
     numbers. *)
 
 
@@ -22,7 +22,7 @@ Require Export Zpow_facts.
 Declare ML Module "numbers_syntax_plugin".
 
 (* *** Nota Bene ***
-   All results that were general enough has been moved in ZArith.
+   All results that were general enough have been moved in ZArith.
    Only remain here specialized lemmas and compatibility elements.
    (P.L. 5/11/2007).
 *)

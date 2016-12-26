@@ -146,9 +146,9 @@ let merge_profile filename (curr_table, curr_outside, curr_total as new_data) =
    number of allocated bytes may exceed the maximum integer capacity
    (2^31 on 32-bits architectures);  therefore, allocation is measured
    by small steps, total allocations are computed by adding elementary
-   measures and carries are controled from step to step *)
+   measures and carries are controlled from step to step *)
 
-(* Unix measure of time is approximative and shoitt delays are often
+(* Unix measure of time is approximate and short delays are often
    unperceivable; therefore, total times are measured in one (big)
    step to avoid rounding errors and to get the best possible
    approximation.
@@ -358,7 +358,7 @@ let declare_profile name =
   prof_table := (name,e)::!prof_table;
   e
 
-(* Default initialisation, may be overriden *)
+(* Default initialization, may be overridden *)
 let _ = init_profile ()
 
 (******************************)

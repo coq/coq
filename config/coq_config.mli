@@ -37,7 +37,7 @@ val cflags : string     (* arguments passed to gcc *)
 val best : string       (* byte/opt *)
 val arch : string       (* architecture *)
 val arch_is_win32 : bool
-val osdeplibs : string  (* OS dependant link options for ocamlc *)
+val osdeplibs : string  (* OS dependent link options for ocamlc *)
 val vmbyteflags : string list (* -custom/-dllib -lcoqrun *)
 
 
@@ -56,7 +56,7 @@ val exec_extension : string (* "" under Unix, ".exe" under MS-windows *)
 val with_geoproof : bool ref (* to (de)activate functions specific to Geoproof with Coqide *)
 
 val browser : string
-(** default web browser to use, may be overriden by environment
+(** default web browser to use, may be overridden by environment
     variable COQREMOTEBROWSER *)
 
 val has_coqide : string

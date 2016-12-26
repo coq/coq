@@ -40,7 +40,7 @@ module Gram : GrammarSig
         |     (together with a constr entry level, e.g. 50, and indications of)
         |     (subentries, e.g. x in constr next level and y constr same level)
         |
-        | spliting into tokens by Metasyntax.split_notation_string
+        | splitting into tokens by Metasyntax.split_notation_string
         V
       [String "x"; String "+"; String "y"] : symbol_token list
         |
@@ -128,7 +128,7 @@ val type_of_typed_entry : typed_entry -> entry_type
 val object_of_typed_entry : typed_entry -> grammar_object Gram.entry
 val weaken_entry : 'a Gram.entry -> grammar_object Gram.entry
 
-(** Temporary activate camlp4 verbosity *)
+(** Temporarily activate camlp4 verbosity *)
 
 val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
 

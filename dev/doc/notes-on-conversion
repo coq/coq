@@ -21,7 +21,7 @@ Notation OMEGA := (ack 4 4).
 
 Definition f (x:nat) := x.
 
-(* Evaluation in tactics can somehow be controled *)
+(* Evaluation in tactics can somehow be controlled *)
 Lemma l1 : OMEGA = OMEGA.
 reflexivity.  (* succeed: identity *)
 Qed.          (* succeed: identity *)
