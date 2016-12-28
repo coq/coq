@@ -3,6 +3,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{textcomp}
 \usepackage{pslatex}
+\usepackage{hyperref}
 
 \input{../common/version.tex}
 \input{../common/macros.tex}
@@ -17,7 +18,7 @@
 
 \chapter*{Getting started}
 
-\Coq\ is a Proof Assistant for a Logical Framework known as the Calculus
+\Coq{} is a Proof Assistant for a Logical Framework known as the Calculus
 of Inductive Constructions. It allows the interactive construction of
 formal proofs, and also the manipulation of functional programs 
 consistently with their specifications. It runs as a computer program
@@ -29,7 +30,7 @@ possibilities of \Coq, but rather to present in the most elementary
 manner a tutorial on the basic specification language, called Gallina,
 in which formal axiomatisations may be developed, and on the main
 proof tools.  For more advanced information, the reader could refer to
-the \Coq{} Reference Manual or the \textit{Coq'Art}, a new book by Y.
+the \Coq{} Reference Manual or the \textit{Coq'Art}, a book by Y.
 Bertot and P. Castéran on practical uses of the \Coq{} system.
 
 Coq can be used from a standard teletype-like shell window but
@@ -39,9 +40,9 @@ and Pcoq.}.
 
 Instructions on installation procedures, as well as more comprehensive
 documentation, may be found in the standard distribution of \Coq,
-which may be obtained from \Coq{} web site \texttt{http://coq.inria.fr}.
+which may be obtained from \Coq{} web site \url{https://coq.inria.fr/}.
 
-In the following, we assume that \Coq~ is called from a standard
+In the following, we assume that \Coq{} is called from a standard
 teletype-like shell window. All examples preceded by the prompting
 sequence \verb:Coq < : represent user input, terminated by a
 period. 
@@ -51,10 +52,10 @@ users screen. When used from a graphical user interface such as
 CoqIde, the prompt is not displayed: user input is given in one window
 and \Coq's answers are displayed in a different window.
 
-The sequence of such examples is a valid \Coq~
+The sequence of such examples is a valid \Coq{}
 session, unless otherwise specified. This version of the tutorial has
 been prepared on a PC workstation running Linux.  The standard
-invocation of \Coq\ delivers a message such as:
+invocation of \Coq{} delivers a message such as:
 
 \begin{small}
 \begin{flushleft}
@@ -67,17 +68,17 @@ Coq <
 \end{flushleft}
 \end{small}
 
-The first line gives a banner stating the precise version of \Coq~
+The first line gives a banner stating the precise version of \Coq{}
 used. You should always return this banner when you report an anomaly
 to our bug-tracking system
-\verb|http://logical.futurs.inria.fr/coq-bugs|
+\url{https://coq.inria.fr/bugs/}.
 
 \chapter{Basic Predicate Calculus}
 
 \section{An overview of the specification language Gallina}
 
 A formal development in Gallina consists in a sequence of {\sl declarations}
-and {\sl definitions}. You may also send \Coq~ {\sl commands} which are
+and {\sl definitions}. You may also send \Coq{} {\sl commands} which are
 not really part of the formal development, but correspond to information
 requests, or service routine invocations. For instance, the command:
 \begin{verbatim}
@@ -106,7 +107,7 @@ of the system, called respectively \verb:Prop:, \verb:Set:, and
 Every valid expression $e$ in Gallina is associated with a specification,
 itself a valid expression, called its {\sl type} $\tau(E)$. We write
 $e:\tau(E)$ for the judgment that $e$ is of type $E$. 
-You may request \Coq~ to return to you the type of a valid expression by using
+You may request \Coq{} to return to you the type of a valid expression by using
 the command \verb:Check::
 
 \begin{coq_eval}
@@ -130,7 +131,7 @@ Check nat.
 The specification \verb:Set: is an abstract type, one of the basic
 sorts of the Gallina language, whereas the notions $nat$ and $O$ are
 notions which are defined in the arithmetic prelude,
-automatically loaded when running the \Coq\ system.
+automatically loaded when running the \Coq{} system.
 
 We start by introducing a so-called section name. The role of sections
 is to structure the modelisation by limiting the scope of parameters,
@@ -206,7 +207,7 @@ We may optionally indicate the required type:
 Definition two : nat := S one.
 \end{coq_example}
 
-Actually \Coq~ allows several possible syntaxes:
+Actually \Coq{} allows several possible syntaxes:
 \begin{coq_example}
 Definition three := S two : nat.
 \end{coq_example}
@@ -249,7 +250,7 @@ explicitly the type of the quantified variable. We check:
 Check (forall m:nat, gt m 0).
 \end{coq_example}
 We may revert to the clean state of
-our initial session using the \Coq~ \verb:Reset: command:
+our initial session using the \Coq{} \verb:Reset: command:
 \begin{coq_example}
 Reset Initial.
 \end{coq_example}
@@ -340,7 +341,7 @@ assumption.
 \end{coq_example}
 
 The proof is now finished. We may either discard it, by using the
-command \verb:Abort: which returns to the standard \Coq~ toplevel loop
+command \verb:Abort: which returns to the standard \Coq{} toplevel loop
 without further ado, or else save it as a lemma in the current context,
 under name say \verb:trivial_lemma::
 \begin{coq_example}
@@ -414,7 +415,7 @@ backtrack one step, and more generally \verb:Undo n: to
 backtrack n steps.
 
 We end this section by showing a useful command, \verb:Inspect n.:,
-which inspects the global \Coq~ environment, showing the last \verb:n: declared
+which inspects the global \Coq{} environment, showing the last \verb:n: declared
 notions: 
 \begin{coq_example}
 Inspect 3.
@@ -429,7 +430,7 @@ their value (or proof-term) is omitted.
 \subsection{Conjunction}
 
 We have seen how \verb:intro: and \verb:apply: tactics could be combined
-in order to prove implicational statements. More generally, \Coq~ favors a style
+in order to prove implicational statements. More generally, \Coq{} favors a style
 of reasoning, called {\sl Natural Deduction}, which decomposes reasoning into 
 so called {\sl introduction rules}, which tell how to prove a goal whose main 
 operator is a given propositional connective, and {\sl elimination rules},
@@ -528,7 +529,7 @@ such a simple tautology. The reason is that we want to keep
 \subsection{Tauto}
 
 A complete tactic for propositional
-tautologies is indeed available in \Coq~ as the \verb:tauto: tactic. 
+tautologies is indeed available in \Coq{} as the \verb:tauto: tactic.
 \begin{coq_example}
 Restart.
 tauto.
@@ -555,7 +556,7 @@ The two instantiations are effected automatically by the tactic
 \verb:apply: when pattern-matching a goal. The specialist will of course
 recognize our proof term as a $\lambda$-term, used as notation for the
 natural deduction proof term through the Curry-Howard isomorphism. The
-naive user of \Coq~ may safely ignore these formal details.
+naive user of \Coq{} may safely ignore these formal details.
 
 Let us exercise the \verb:tauto: tactic on a more complex example:
 \begin{coq_example}
@@ -579,7 +580,7 @@ argument fails.
 This may come as a surprise to someone familiar with classical reasoning. 
 Peirce's lemma is true in Boolean logic, i.e. it evaluates to \verb:true: for 
 every truth-assignment to \verb:A: and \verb:B:. Indeed the double negation
-of Peirce's law may be proved in \Coq~ using \verb:tauto::
+of Peirce's law may be proved in \Coq{} using \verb:tauto::
 \begin{coq_example}
 Abort.
 Lemma NNPeirce : ~ ~ (((A -> B) -> A) -> A).
@@ -588,7 +589,7 @@ Qed.
 \end{coq_example}
 
 In classical logic, the double negation of a proposition is equivalent to this 
-proposition, but in the constructive logic of \Coq~ this is not so. If you 
+proposition, but in the constructive logic of \Coq{} this is not so. If you
 want to use classical logic in \Coq, you have to import explicitly the
 \verb:Classical: module, which will declare the axiom \verb:classic:
 of excluded middle, and classical tautologies such as de Morgan's laws.
@@ -652,7 +653,7 @@ function and predicate symbols.
 \subsection{Sections and signatures}
 
 Usually one works in some domain of discourse, over which range the individual 
-variables and function symbols. In \Coq~ we speak in a language with a rich 
+variables and function symbols. In \Coq{} we speak in a language with a rich
 variety of types, so me may mix several domains of discourse, in our 
 multi-sorted language. For the moment, we just do a few exercises, over a 
 domain of discourse \verb:D: axiomatised as a \verb:Set:, and we consider two 
@@ -660,7 +661,7 @@ predicate symbols  \verb:P: and \verb:R: over \verb:D:, of arities
 respectively 1 and 2. Such abstract entities may be entered in the context
 as global variables. But we must be careful about the pollution of our
 global environment by such declarations. For instance, we have already 
-polluted our \Coq~ session by declaring the variables
+polluted our \Coq{} session by declaring the variables
 \verb:n:, \verb:Pos_n:, \verb:A:, \verb:B:, and \verb:C:.
 
 \begin{coq_example}
@@ -714,7 +715,7 @@ Check ex.
 \end{coq_example}
 and the notation \verb+(exists x:D, P x)+ is just concrete syntax for 
 the expression \verb+(ex D (fun x:D => P x))+. 
-Existential quantification is handled in \Coq~ in a similar
+Existential quantification is handled in \Coq{} in a similar
 fashion to the connectives \verb:/\: and \verb:\/: : it is introduced by
 the proof combinator \verb:ex_intro:, which is invoked by the specific 
 tactic \verb:Exists:, and its elimination provides a witness \verb+a:D+ to
@@ -951,7 +952,7 @@ Abort.
 
 \subsection{Equality}
 
-The basic equality provided in \Coq~ is Leibniz equality, noted infix like
+The basic equality provided in \Coq{} is Leibniz equality, noted infix like
 \verb+x=y+, when \verb:x: and \verb:y: are two expressions of
 type the same Set. The replacement of \verb:x: by \verb:y: in any
 term is effected by a variety of tactics, such as \verb:rewrite:
@@ -1208,7 +1209,7 @@ About prim_rec.
 Oops! Instead of the expected type \verb+nat->(nat->nat->nat)->nat->nat+ we
 get an apparently more complicated expression. Indeed the type of
 \verb:prim_rec: is equivalent by rule $\beta$ to its expected type; this may
-be checked in \Coq~ by command \verb:Eval Cbv Beta:, which $\beta$-reduces
+be checked in \Coq{} by command \verb:Eval Cbv Beta:, which $\beta$-reduces
 an expression to its {\sl normal form}:
 \begin{coq_example}
 Eval cbv beta in
@@ -1228,7 +1229,7 @@ That is, we specify that \verb+(addition n m)+ computes by cases on \verb:n:
 according to its main constructor; when \verb:n = O:, we get \verb:m:;
  when \verb:n = S p:, we get \verb:(S rec):, where \verb:rec: is the result
 of the recursive computation \verb+(addition p m)+. Let us verify it by
-asking \Coq~to compute for us say $2+3$:
+asking \Coq{} to compute for us say $2+3$:
 \begin{coq_example}
 Eval compute in (addition (S (S O)) (S (S (S O)))).
 \end{coq_example}
@@ -1275,7 +1276,7 @@ as subgoals the corresponding instantiations of the base case \verb:(P O): ,
 and of the inductive step \verb+forall y:nat, P y -> P (S y)+.
 In each case we get an instance of function \verb:plus: in which its second
 argument starts with a constructor, and is thus amenable to simplification
-by primitive recursion. The \Coq~tactic \verb:simpl: can be used for
+by primitive recursion. The \Coq{} tactic \verb:simpl: can be used for
 this purpose:
 \begin{coq_example}
 simpl.
@@ -1488,7 +1489,7 @@ Set Printing Width 60.
 
 \section{Opening library modules}
 
-When you start \Coq~ without further requirements in the command line,
+When you start \Coq{} without further requirements in the command line,
 you get a bare system with few libraries loaded.  As we saw, a standard
 prelude module provides the standard logic connectives, and a few
 arithmetic notions. If you want to load and open other modules from
@@ -1503,9 +1504,9 @@ Such a command looks for a (compiled) module file \verb:Arith.vo: in
 the libraries registered by \Coq. Libraries inherit the structure of
 the file system of the operating system and are registered with the
 command \verb:Add LoadPath:. Physical directories are mapped to
-logical directories. Especially the standard library of \Coq~ is
+logical directories. Especially the standard library of \Coq{} is
 pre-registered as a library of name \verb=Coq=.  Modules have absolute
-unique names denoting their place in \Coq~ libraries.  An absolute
+unique names denoting their place in \Coq{} libraries.  An absolute
 name is a sequence of single identifiers separated by dots.  E.g. the
 module \verb=Arith= has full name \verb=Coq.Arith.Arith= and because
 it resides in eponym subdirectory \verb=Arith= of the standard
