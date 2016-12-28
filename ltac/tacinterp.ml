@@ -644,7 +644,7 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
 
 let constr_flags = {
   use_typeclasses = true;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = Some solve_by_implicit_tactic;
   fail_evar = true;
   expand_evars = true }
@@ -659,21 +659,21 @@ let interp_type = interp_constr_gen IsType
 
 let open_constr_use_classes_flags = {
   use_typeclasses = true;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = Some solve_by_implicit_tactic;
   fail_evar = false;
   expand_evars = true }
 
 let open_constr_no_classes_flags = {
   use_typeclasses = false;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = Some solve_by_implicit_tactic;
   fail_evar = false;
   expand_evars = true }
 
 let pure_open_constr_flags = {
   use_typeclasses = false;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = None;
   fail_evar = false;
   expand_evars = false }
@@ -866,6 +866,9 @@ let rec message_of_value v =
       Ftactic.return (pr_closed_glob_env (pf_env gl)
                         (project gl) c)
     end }
+  else if has_type v (topwit wit_var) then
+    let id = out_gen (topwit wit_var) v in
+    Ftactic.nf_enter { enter = begin fun gl -> Ftactic.return (pr_id id) end }
   else match Value.to_list v with
   | Some l ->
     Ftactic.List.map message_of_value l >>= fun l ->

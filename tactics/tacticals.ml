@@ -324,7 +324,7 @@ module New = struct
     try
       Refiner.catch_failerror e;
       tclUNIT ()
-    with e -> tclZERO e
+    with e when CErrors.noncritical e -> tclZERO e
 
   (* spiwack: I chose to give the Ltac + the same semantics as
      [Proofview.tclOR], however, for consistency with the or-else

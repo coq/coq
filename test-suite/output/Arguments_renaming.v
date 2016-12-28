@@ -1,5 +1,5 @@
 Fail Arguments eq_refl {B y}, [B] y.
-Fail Arguments identity T _ _.
+Arguments identity A _ _.
 Arguments eq_refl A x : assert.
 Arguments eq_refl {B y}, [B] y : rename.
 
@@ -46,9 +46,9 @@ About myplus.
 Check @myplus.
 
 Fail Arguments eq_refl {F g}, [H] k.
-Fail Arguments eq_refl {F}, [F].
-Fail Arguments eq_refl {F F}, [F] F.
-Fail Arguments eq {F} x [z].
+Fail Arguments eq_refl {F}, [F] : rename.
+Fail Arguments eq_refl {F F}, [F] F : rename.
+Fail Arguments eq {F} x [z] : rename.
 Fail Arguments eq {F} x z y.
 Fail Arguments eq {R} s t.
 

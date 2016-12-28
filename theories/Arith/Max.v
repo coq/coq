@@ -42,7 +42,7 @@ Notation max_SS := Nat.succ_max_distr (only parsing).
 (* end hide *)
 
 Hint Resolve
- Nat.max_l Nat.max_r Nat.le_max_l Nat.le_max_r : arith v62.
+ Nat.max_l Nat.max_r Nat.le_max_l Nat.le_max_r : arith.
 
 Hint Resolve
- Nat.min_l Nat.min_r Nat.le_min_l Nat.le_min_r : arith v62.
+ Nat.min_l Nat.min_r Nat.le_min_l Nat.le_min_r : arith.

@@ -1,19 +1,18 @@
-Changes beyond V8.5
+Changes beyond V8.6
 ===================
 
-Bugfixes
+Tactics
 
-- #4527: when typechecking the statement of a lemma using universe polymorphic
-  definitions with explicit universe binders, check that the type can indeed be
-  typechecked using only those universes (after minimization of the other,
-  flexible universes), or raise an error (fixed scripts can be made forward
-  compatible).
-- #4726: treat user-provided sorts of universe polymorphic records as rigid
-  (i.e. non-minimizable).
-- #4592, #4932: notations sharing recursive patterns or sharing
-  binders made more robust.
-- #4780: Induction with universe polymorphism on was creating ill-typed terms.
-- #3070: fixing "subst" in the presence of a chain of dependencies.
+- New tactic "extensionality in H" which applies (possibly dependent)
+  functional extensionality in H supposed to be a quantified equality
+  until giving a bare equality.
+
+Changes from V8.5 to V8.6beta1
+==============================
+
+Kernel
+
+- A new, faster state-of-the-art universe constraint checker.
 
 Specification language
 
@@ -27,7 +26,10 @@ Specification language
 Tactics
 
 - Flag "Bracketing Last Introduction Pattern" is now on by default.
-- Flag "Regular Subst Tactic" is now on by default.
+- Flag "Regular Subst Tactic" is now on by default: it respects the
+  initial order of hypothesis, it contracts cycles, it unfolds no
+  local definitions (common source of incompatibilities, fixable by
+  "Unset Regular Subst Tactic").
 - New flag "Refolding Reduction", now disabled by default, which turns
   on refolding of constants/fixpoints (as in cbn) during the reductions
   done during type inference and tactic retyping. Can be extremely
@@ -54,9 +56,9 @@ Tactics
   given a free identifier, it is not bound in subsequent tactics anymore.
   In order to introduce a binding, use e.g. the "fresh" primitive instead
   (potential source of incompatibilities).
-- New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac (DOC TODO).
-- New goal selectors.  Sets of goals can be selected by select by listing
-  integers ranges. Example: "1,4-7,24: tac" focuses "tac" on goals 1,4,5,6,7,24.
+- New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac.
+- New goal selectors.  Sets of goals can be selected by listing integers
+  ranges. Example: "1,4-7,24: tac" focuses "tac" on goals 1,4,5,6,7,24.
 - For uniformity with "destruct"/"induction" and for a more natural
   behavior, "injection" can now work in place by activating option
   "Structural Injection". In this case, hypotheses are also put in the
@@ -66,6 +68,20 @@ Tactics
   hypotheses of the form "~True" or "t<>t" (possible source of
   incompatibilities because of more successes in automation, but
   generally a more intuitive strategy).
+- Option "Injection On Proofs" was renamed "Keep Proof Equalities". When
+  enabled, injection and inversion do not drop equalities between objects
+  in Prop. Still disabled by default.
+- New tactics "notypeclasses refine" and "simple notypeclasses refine" that
+  disallow typeclass resolution when typechecking their argument, for use
+  in typeclass hints.
+- Integration of LtacProf, a profiler for Ltac.
+- Reduction tactics now accept more fine-grained flags: iota is now a shorthand
+  for the new flags match, fix and cofix.
+- The ssreflect subterm selection algorithm is now accessible to tactic writers
+  through the ssrmatching plugin.
+- When used as an argument of an ltac function, "auto" without "with"
+  nor "using" clause now correctly uses only the core hint database by
+  default.
 
 Hints
 
@@ -73,6 +89,16 @@ Hints
 - Hint Mode now accepts "!" which means that the mode matches only if the
   argument's head is not an evar (it goes under applications, casts, and
   scrutinees of matches and projections).
+- Hints can now take an optional user-given pattern, used only by
+  [typeclasses eauto] with the [Filtered Unification] option on.
+
+Typeclasses
+
+- Many new options and new engine based on the proof monad. The
+  [typeclasses eauto] tactic is now a multi-goal, multi-success tactic.
+  See reference manual for more information. It is planned to
+  replace auto and eauto in the following version. The 8.5 resolution
+  engine is still available to help solve compatibility issues.
 
 Program
 
@@ -86,6 +112,14 @@ Notations
 
 - "Bind Scope" can once again bind "Funclass" and "Sortclass".
 
+General infrastructure
+
+- New configurable warning system which can be controlled with the vernacular
+  command "Set Warnings", or, under coqc/coqtop, with the flag "-w". In
+  particular, the default is now that warnings are printed by coqc.
+- In asynchronous mode, Coq is now capable of recovering from errors and
+  continue processing the document.
+
 Tools
 
 - coqc accepts a -o option to specify the output file name
@@ -94,11 +128,22 @@ Tools
 - Setting [Printing Dependent Evars Line] can be unset to disable the
   computation associated with printing the "dependent evars: " line in
   -emacs mode
+- Removed the -verbose-compat-notations flag and the corresponding Set
+  Verbose Compat vernacular, since these warnings can now be silenced or
+  turned into errors using "-w".
+
+XML protocol
+
+- message format has changed, see dev/doc/changes.txt for more details.
+
+Many bug fixes, minor changes and documentation improvements are not mentioned
+here.
 
 Changes from V8.5pl2 to V8.5pl3
 ===============================
 
 Critical bugfix
+
 - #4876: Guard checker incompleteness when using primitive projections
 
 Other bugfixes
@@ -107,7 +152,50 @@ Other bugfixes
 - #4673: regression in setoid_rewrite, unfolding let-ins for type unification.
 - #4754: Regression in setoid_rewrite, allow postponed unification problems to remain.
 - #4769: Anomaly with universe polymorphic schemes defined inside sections.
-- #3886: Program: duplicate obligations of mutual fixpoints
+- #3886: Program: duplicate obligations of mutual fixpoints.
+- #4994: Documentation typo.
+- #5008: Use the "md5" command on OpenBSD.
+- #5007: Do not assume the "TERM" environment variable is always set.
+- #4606: Output a break before a list only if there was an empty line.
+- #5001: metas not cleaned properly in clenv_refine_in.
+- #2336: incorrect glob data for module symbols (bug #2336).
+- #4832: Remove extraneous dot in error message.
+- Anomaly in printing a unification error message.
+- #4947: Options which take string arguments are not backwards compatible.
+- #4156: micromega cache files are now hidden files.
+- #4871: interrupting par:abstract kills coqtop.
+- #5043: [Admitted] lemmas pick up section variables.
+- Fix name of internal refine ("simple refine").
+- #5062: probably a typo in Strict Proofs mode.
+- #5065: Anomaly: Not a proof by induction.
+- Restore native compiler optimizations, they were disabled since 8.5!
+- #5077: failure on typing a fixpoint with evars in its type.
+- Fix recursive notation bug.
+- #5095: non relevant too strict test in let-in abstraction.
+- Ensuring that the evar name is preserved by "rename".
+- #4887: confusion between using and with in documentation of firstorder.
+- Bug in subst with let-ins.
+- #4762: eauto weaker than auto.
+- Remove if_then_else (was buggy). Use tryif instead.
+- #4970: confusion between special "{" and non special "{{" in notations.
+- #4529: primitive projections unfolding.
+- #4416: Incorrect "Error: Incorrect number of goals".
+- #4863: abstract in typeclass hint fails.
+- #5123: unshelve can impact typeclass resolution
+- Fix a collision about the meta-variable ".." in recursive notations.
+- Fix printing of info_auto.
+- #3209: Not_found due to an occur-check cycle.
+- #5097: status of evars refined by "clear" in ltac: closed wrt evars.
+- #5150: Missing dependency of the test-suite subsystems in prerequisite.
+- Fix a bug in error printing of unif constraints
+- #3941: Do not stop propagation of signals when Coq is busy.
+- #4822: Incorrect assertion in cbn.
+- #3479 parsing of "{" and "}" when a keyword starts with "{" or "}".
+- #5127: Memory corruption with the VM.
+- #5102: bullets parsing broken by calls to parse_entry.
+
+Various documentation improvements
+
 
 Changes from V8.5pl1 to V8.5pl2
 ===============================
@@ -1051,7 +1139,7 @@ Extraction
   instead of accessing their body, they are now considered as axioms.
   The previous behaviour can be reactivated via the option
   "Set Extraction AccessOpaque".
-- The pretty-printer for Haskell now produces layout-independant code
+- The pretty-printer for Haskell now produces layout-independent code
 - A new command "Separate Extraction cst1 cst2 ..." that mixes a
   minimal extracted environment a la "Recursive Extraction" and the
   production of several files (one per coq source) a la "Extraction Library"
@@ -1736,7 +1824,7 @@ Tactics
   Moreover, romega now has a variant "romega with *" that can be also used
   on non-Z goals (nat, N, positive) via a call to a translation tactic named
   zify (its purpose is to Z-ify your goal...). This zify may also be used
-  independantly of romega.
+  independently of romega.
 - Tactic "remember" now supports an "in" clause to remember only selected
   occurrences of a term.
 - Tactic "pose proof" supports name overwriting in case of specialization of an

@@ -1,0 +1,13 @@
+coq-8.4pl6.orig
+--- coq-8.4pl6.orig/configure	2015-04-09 15:59:35.000000000 +0200
++++ coq-8.4pl6//configure	2016-11-09 13:29:42.235319800 +0100
+@@ -309,9 +309,6 @@
+ # executable extension
+ 
+ case "$ARCH,$CYGWIN" in
+-    win32,yes)
+-      EXE=".exe"
+-      DLLEXT=".so";;
+     win32,*)
+       EXE=".exe"
+       DLLEXT=".dll";;

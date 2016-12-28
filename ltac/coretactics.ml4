@@ -151,7 +151,10 @@ END
 
 TACTIC EXTEND symmetry
   [ "symmetry" ] -> [ Tactics.intros_symmetry {onhyps=Some[];concl_occs=AllOccurrences} ]
-| [ "symmetry" clause_dft_concl(cl) ] -> [ Tactics.intros_symmetry cl ]
+END
+
+TACTIC EXTEND symmetry_in
+| [ "symmetry" "in" in_clause(cl) ] -> [ Tactics.intros_symmetry cl ]
 END
 
 (** Split *)

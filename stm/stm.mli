@@ -139,8 +139,8 @@ module QueryTask : AsyncTaskQueue.Task
 module DynBlockData : Dyn.S
 
 type static_block_declaration = {
-  start : Stateid.t;
-  stop : Stateid.t;
+  block_start : Stateid.t;
+  block_stop : Stateid.t;
   dynamic_switch : Stateid.t;
   carry_on_data : DynBlockData.t;
 }

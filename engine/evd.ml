@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Term
 open Vars
-open Termops
 open Environ
 open Globnames
 open Context.Named.Declaration
@@ -643,6 +642,7 @@ let set_universe_context evd uctx' =
   { evd with universes = uctx' }
 
 let add_conv_pb ?(tail=false) pb d =
+  (** MS: we have duplicates here, why? *)
   if tail then {d with conv_pbs = d.conv_pbs @ [pb]}
   else {d with conv_pbs = pb::d.conv_pbs}
 
@@ -853,6 +853,13 @@ let is_eq_sort s1 s2 =
     and u2 = univ_of_sort s2 in
       if Univ.Universe.equal u1 u2 then None
       else Some (u1, u2)
+
+(* Precondition: l is not defined in the substitution *)
+let universe_rigidity evd l =
+  let uctx = evd.universes in
+  if Univ.LSet.mem l (Univ.ContextSet.levels (UState.context_set uctx)) then
+    UnivFlexible (Univ.LSet.mem l (UState.algebraics uctx))
+  else UnivRigid
 
 let normalize_universe evd =
   let vars = ref (UState.subst evd.universes) in
@@ -1263,7 +1270,9 @@ let protect f x =
   try f x
   with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
 
-let print_constr a = protect print_constr a
+let (f_print_constr, print_constr_hook) = Hook.make ()
+
+let print_constr a = protect (fun c -> Hook.get f_print_constr (Global.env ()) c) a
 
 let pr_meta_map mmap =
   let pr_name = function
@@ -1410,12 +1419,22 @@ let print_env_short env =
 
 let pr_evar_constraints pbs =
   let pr_evconstr (pbty, env, t1, t2) =
+    let env =
+      (** We currently allow evar instances to refer to anonymous de
+          Bruijn indices, so we protect the error printing code in this
+          case by giving names to every de Bruijn variable in the
+          rel_context of the conversion problem. MS: we should rather
+          stop depending on anonymous variables, they can be used to
+          indicate independency. Also, this depends on a strategy for
+          naming/renaming. *)
+      Namegen.make_all_name_different env
+    in
     print_env_short env ++ spc () ++ str "|-" ++ spc () ++
-      print_constr_env env t1 ++ spc () ++
+      Hook.get f_print_constr env t1 ++ spc () ++
       str (match pbty with
             | Reduction.CONV -> "=="
             | Reduction.CUMUL -> "<=") ++
-      spc () ++ print_constr_env env t2
+      spc () ++ Hook.get f_print_constr env t2
   in
   prlist_with_sep fnl pr_evconstr pbs
 

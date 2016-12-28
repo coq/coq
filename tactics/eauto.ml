@@ -119,12 +119,13 @@ let unify_e_resolve poly flags (c,clenv) =
 		 (Proofview.V82.of_tactic (Tactics.Simple.eapply c)) gls)
     end }
 
-let hintmap_of hdc concl =
+let hintmap_of secvars hdc concl =
   match hdc with
-  | None -> fun db -> Hint_db.map_none db
+  | None -> fun db -> Hint_db.map_none ~secvars db
   | Some hdc ->
-    if occur_existential concl then (fun db -> Hint_db.map_existential hdc concl db)
-    else (fun db -> Hint_db.map_auto hdc concl db)
+     if occur_existential concl then
+       (fun db -> Hint_db.map_existential ~secvars hdc concl db)
+     else (fun db -> Hint_db.map_auto ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
 let e_exact poly flags (c,clenv) =
@@ -142,16 +143,17 @@ let rec e_trivial_fail_db db_list local_db =
     e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) (Tacmach.New.project gl) hintl local_db)
   end } in
   Proofview.Goal.enter { enter = begin fun gl ->
+  let secvars = compute_secvars gl in
   let tacl =
     registered_e_assumption ::
     (Tacticals.New.tclTHEN Tactics.intro next) ::
-    (List.map fst (e_trivial_resolve db_list local_db (Tacmach.New.pf_nf_concl gl)))
+    (List.map fst (e_trivial_resolve db_list local_db secvars (Tacmach.New.pf_nf_concl gl)))
   in
   Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
   end }
 
-and e_my_find_search db_list local_db hdc concl =
-  let hint_of_db = hintmap_of hdc concl in
+and e_my_find_search db_list local_db secvars hdc concl =
+  let hint_of_db = hintmap_of secvars hdc concl in
   let hintl =
       List.map_append (fun db ->
 	let flags = auto_flags_of_state (Hint_db.transparent_state db) in
@@ -179,14 +181,15 @@ and e_my_find_search db_list local_db hdc concl =
   in
   List.map tac_of_hint hintl
 
-and e_trivial_resolve db_list local_db gl =
+and e_trivial_resolve db_list local_db secvars gl =
   let hd = try Some (decompose_app_bound gl) with Bound -> None in
-  try priority (e_my_find_search db_list local_db hd gl)
+  try priority (e_my_find_search db_list local_db secvars hd gl)
   with Not_found -> []
 
-let e_possible_resolve db_list local_db gl =
+let e_possible_resolve db_list local_db secvars gl =
   let hd = try Some (decompose_app_bound gl) with Bound -> None in
-  try List.map (fun (b, (tac, pp)) -> (tac, b, pp)) (e_my_find_search db_list local_db hd gl)
+  try List.map (fun (b, (tac, pp)) -> (tac, b, pp))
+               (e_my_find_search db_list local_db secvars hd gl)
   with Not_found -> []
 
 let find_first_goal gls =
@@ -255,9 +258,11 @@ module SearchProblem = struct
       let nbgl = List.length (sig_it lg) in
       assert (nbgl > 0);
       let g = find_first_goal lg in
+      let hyps = pf_ids_of_hyps g in
+      let secvars = secvars_of_hyps (pf_hyps g) in
       let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ pr_id id)) in
       let assumption_tacs =
-        let tacs = List.map map_assum (pf_ids_of_hyps g) in
+        let tacs = List.map map_assum hyps in
         let l = filter_tactics s.tacres tacs in
 	List.map (fun (res, cost, pp) -> { depth = s.depth; priority = cost; tacres = res;
 				    last_tactic = pp; dblist = s.dblist;
@@ -282,7 +287,9 @@ module SearchProblem = struct
       in
       let rec_tacs =
 	let l =
-	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
+          let concl = Reductionops.nf_evar (project g)(pf_concl g) in
+	  filter_tactics s.tacres
+                         (e_possible_resolve s.dblist (List.hd s.localdb) secvars concl)
 	in
 	List.map
 	  (fun (lgls, cost, pp) ->
@@ -345,13 +352,13 @@ let mk_eauto_dbg d =
   else Off
 
 let pr_info_nop = function
-  | Info -> Feedback.msg_debug (str "idtac.")
+  | Info -> Feedback.msg_info (str "idtac.")
   | _ -> ()
 
 let pr_dbg_header = function
   | Off -> ()
-  | Debug -> Feedback.msg_debug (str "(* debug eauto : *)")
-  | Info  -> Feedback.msg_debug (str "(* info eauto : *)")
+  | Debug -> Feedback.msg_debug (str "(* debug eauto: *)")
+  | Info  -> Feedback.msg_info (str "(* info eauto: *)")
 
 let pr_info dbg s =
   if dbg != Info then ()
@@ -362,7 +369,7 @@ let pr_info dbg s =
 	| State sp ->
 	  let mindepth = loop sp in
 	  let indent = String.make (mindepth - sp.depth) ' ' in
-	  Feedback.msg_debug (str indent ++ Lazy.force s.last_tactic ++ str ".");
+	  Feedback.msg_info (str indent ++ Lazy.force s.last_tactic ++ str ".");
 	  mindepth
     in
     ignore (loop s)
@@ -409,9 +416,7 @@ let eauto ?(debug=Off) np lems dbnames =
   tclTRY (e_search_auto debug np lems db_list)
 
 let full_eauto ?(debug=Off) n lems gl =
-  let dbnames = current_db_names () in
-  let dbnames =  String.Set.remove "v62" dbnames in
-  let db_list = List.map searchtable_map (String.Set.elements dbnames) in
+  let db_list = current_pure_db () in
   tclTRY (e_search_auto debug n lems db_list) gl
 
 let gen_eauto ?(debug=Off) np lems = function

@@ -9,22 +9,7 @@
 val add_keyword : string -> unit
 val remove_keyword : string -> unit
 val is_keyword : string -> bool
-
-(* val location_function : int -> Loc.t *)
-
-(** for coqdoc *)
-type location_table
-val location_table : unit -> location_table
-val restore_location_table : location_table -> unit
-
-
-(** [get_current_file fname] returns the filename used in locations emitted by
-    the lexer *)
-val get_current_file : unit -> string
-
-(** [set_current_file fname] sets the filename used in locations emitted by the
-    lexer *)
-val set_current_file : fname:string -> unit
+val keywords : unit -> CString.Set.t
 
 val check_ident : string -> unit
 val is_ident : string -> bool
@@ -34,11 +19,11 @@ type frozen_t
 val freeze : unit -> frozen_t
 val unfreeze : frozen_t -> unit
 
-type com_state
-val com_state: unit -> com_state
-val restore_com_state: com_state -> unit
-
 val xml_output_comment : (string -> unit) Hook.t
+
+(* Retrieve the comments lexed at a given location of the stream
+   currently being processeed *)
+val extract_comments : int -> string list
 
 val terminal : string -> Tok.t
 

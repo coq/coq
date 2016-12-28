@@ -468,7 +468,7 @@ let create_tag name default =
   let iter table =
     let tag = GText.tag ~name () in
     table#add tag#as_tag;
-    pref#connect#changed (fun _ -> set_tag tag);
+    ignore (pref#connect#changed (fun _ -> set_tag tag));
     set_tag tag;
   in
   List.iter iter [Tags.Script.table; Tags.Proof.table; Tags.Message.table];
@@ -918,7 +918,7 @@ let configure ?(apply=(fun () -> ())) () =
   in
   let doc_url =
     let predefined = [
-      "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["html";"refman";""]);
+      "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["refman";"html"]);
       Coq_config.wwwrefman;
       use_default_doc_url
     ] in
@@ -931,7 +931,7 @@ let configure ?(apply=(fun () -> ())) () =
       doc_url#get in
   let library_url =
     let predefined = [
-      "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["html";"stdlib";""]);
+      "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["stdlib";"html"]);
       Coq_config.wwwstdlib
     ] in
     combo

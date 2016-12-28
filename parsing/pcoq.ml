@@ -304,6 +304,7 @@ module Constr =
     let binder_constr = gec_constr "binder_constr"
     let ident = make_gen_entry uconstr "ident"
     let global = make_gen_entry uconstr "global"
+    let universe_level = make_gen_entry uconstr "universe_level"
     let sort = make_gen_entry uconstr "sort"
     let pattern = Gram.entry_create "constr:pattern"
     let constr_pattern = gec_constr "constr_pattern"
@@ -337,6 +338,7 @@ module Vernac_ =
     let vernac_eoi = eoi_entry vernac
     let rec_definition = gec_vernac "Vernac.rec_definition"
     let red_expr = make_gen_entry utactic "red_expr"
+    let hint_info = gec_vernac "hint_info"
     (* Main vernac entry *)
     let main_entry = Gram.entry_create "vernac"
     let noedit_mode = gec_vernac "noedit_command"

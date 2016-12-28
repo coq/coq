@@ -326,8 +326,9 @@ val unshelve : Goal.goal list -> proofview -> proofview
 (** [depends_on g1 g2 sigma] checks if g1 occurs in the type/ctx of g2 *)
 val depends_on : Evd.evar_map -> Goal.goal -> Goal.goal -> bool
 
-(** [with_shelf tac] executes [tac] and returns its result together with the set
-    of goals shelved by [tac]. The current shelf is unchanged. *)
+(** [with_shelf tac] executes [tac] and returns its result together with
+    the set of goals shelved by [tac]. The current shelf is unchanged
+    and the returned list contains only unsolved goals. *)
 val with_shelf : 'a tactic -> (Goal.goal list * 'a) tactic
 
 (** If [n] is positive, [cycle n] puts the [n] first goal last. If [n]
@@ -372,7 +373,6 @@ val mark_as_unsafe : unit tactic
     with given up goals cannot be closed. *)
 val give_up : unit tactic
 
-
 (** {7 Control primitives} *)
 
 (** [tclPROGRESS t] checks the state of the proof after [t]. It it is
@@ -409,6 +409,9 @@ module Unsafe : sig
   (** Like {!tclEVARS} but also checks whether goals have been solved. *)
   val tclEVARSADVANCE : Evd.evar_map -> unit tactic
 
+  (** Set the global environment of the tactic *)
+  val tclSETENV : Environ.env -> unit tactic
+
   (** [tclNEWGOALS gls] adds the goals [gls] to the ones currently
       being proved, appending them to the list of focused goals. If a
       goal is already solved, it is not added. *)
@@ -430,6 +433,9 @@ module Unsafe : sig
   (** Give an evar the status of a goal (changes its source location
       and makes it unresolvable for type classes. *)
   val mark_as_goal : Evd.evar_map -> Evar.t -> Evd.evar_map
+
+  (** Make an evar unresolvable for type classes. *)
+  val mark_as_unresolvable : proofview -> Evar.t -> proofview
 
   (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
       the current avatar of [g] (for instance [g] was changed by [clear]
@@ -517,6 +523,10 @@ module Goal : sig
   (** Recover the list of current goals under focus, without evar-normalization.
       FIXME: encapsulate the level in an existential type. *)
   val goals : ([ `LZ ], 'r) t tactic list tactic
+
+  (** [unsolved g] is [true] if [g] is still unsolved in the current
+      proof state. *)
+  val unsolved : ('a, 'r) t -> bool tactic
 
   (** Compatibility: avoid if possible *)
   val goal : ([ `NF ], 'r) t -> Evar.t

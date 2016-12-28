@@ -173,6 +173,9 @@ module New = struct
   let pf_unsafe_type_of gl t =
     pf_apply unsafe_type_of gl t
 
+  let pf_get_type_of gl t =
+    pf_apply (Retyping.get_type_of ~lax:true) gl t
+
   let pf_type_of gl t =
     pf_apply type_of gl t
 
@@ -189,9 +192,9 @@ module New = struct
     next_ident_away id ids
 
   let pf_get_hyp id gl =
-    let hyps = Proofview.Goal.hyps gl in
+    let hyps = Proofview.Goal.env gl in
     let sign =
-      try Context.Named.lookup id hyps
+      try Environ.lookup_named id hyps
       with Not_found -> raise (RefinerError (NoSuchHyp id))
     in
     sign

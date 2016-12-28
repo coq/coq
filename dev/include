@@ -47,7 +47,6 @@
 #install_printer  (* univ full subst *) ppuniverse_level_subst;;
 #install_printer  (* univ opt subst *) ppuniverse_opt_subst;;
 #install_printer  (* evar univ ctx *) ppevar_universe_context;;
-#install_printer  (* constraints_map *) ppconstraints_map;;
 #install_printer  (* inductive *) ppind;;
 #install_printer  (* 'a scheme_kind *) ppscheme;;
 #install_printer  (* type_judgement *) pptype;;

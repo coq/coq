@@ -122,13 +122,19 @@ type 'a option_sig = {
 
 (** When an option is declared synchronous ([optsync] is [true]), the output is
    a synchronous write function. Otherwise it is [optwrite] *)
+(** The [preprocess] function is triggered before setting the option. It can be
+    used to emit a warning on certain values, and clean-up the final value. *)
 
 type 'a write_function = 'a -> unit
 
-val declare_int_option   : int option option_sig -> int option write_function
-val declare_bool_option  : bool option_sig   -> bool write_function
-val declare_string_option: string option_sig -> string write_function
-val declare_stringopt_option: string option option_sig -> string option write_function
+val declare_int_option   : ?preprocess:(int option -> int option) ->
+                           int option option_sig -> int option write_function
+val declare_bool_option  : ?preprocess:(bool -> bool) ->
+                           bool option_sig   -> bool write_function
+val declare_string_option: ?preprocess:(string -> string) ->
+                           string option_sig -> string write_function
+val declare_stringopt_option: ?preprocess:(string option -> string option) ->
+                              string option option_sig -> string option write_function
 
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
@@ -154,6 +160,7 @@ val get_ref_table :
 val set_int_option_value_gen    : bool option -> option_name -> int option -> unit
 val set_bool_option_value_gen   : bool option -> option_name -> bool   -> unit
 val set_string_option_value_gen : bool option -> option_name -> string -> unit
+val set_string_option_append_value_gen : bool option -> option_name -> string -> unit
 val unset_option_value_gen : bool option -> option_name -> unit
 
 val set_int_option_value    : option_name -> int option -> unit

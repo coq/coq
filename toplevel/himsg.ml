@@ -303,7 +303,8 @@ let explain_unification_error env sigma p1 p2 = function
         else []
      | MetaOccurInBody evk ->
         [str "instance for " ++ quote (pr_existential_key sigma evk) ++
-	strbrk " refers to a metavariable - please report your example"]
+	strbrk " refers to a metavariable - please report your example" ++
+        strbrk "at " ++ str Coq_config.wwwbugtracker ++ str "."]
      | InstanceNotSameType (evk,env,t,u) ->
         let t, u = pr_explicit env sigma t u in
         [str "unable to find a well-typed instantiation for " ++
@@ -514,7 +515,8 @@ let explain_cant_find_case_type env sigma c =
   let c = Evarutil.nf_evar sigma c in
   let env = make_all_name_different env in
   let pe = pr_lconstr_env env sigma c in
-  str "Cannot infer type of pattern-matching on" ++ ws 1 ++ pe ++ str "."
+  str "Cannot infer the return type of pattern-matching on" ++ ws 1 ++
+    pe ++ str "."
 
 let explain_occur_check env sigma ev rhs =
   let rhs = Evarutil.nf_evar sigma rhs in
@@ -753,7 +755,7 @@ let pr_constraints printenv env sigma evars cstrs =
       let evs =
         prlist
         (fun (ev, evi) -> fnl () ++ pr_existential_key sigma ev ++
-            str " : " ++ pr_lconstr_env env' sigma evi.evar_concl) l
+            str " : " ++ pr_lconstr_env env' sigma evi.evar_concl ++ fnl ()) l
       in
       h 0 (pe ++ evs ++ pr_evar_constraints cstrs)
     else

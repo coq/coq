@@ -53,6 +53,23 @@ let typecheck_proof c concl env sigma =
 let (pr_constrv,pr_constr) =
   Hook.make ~default:(fun _env _sigma _c -> Pp.str"<constr>") ()
 
+(* Get the side-effect's constant declarations to update the monad's
+  * environmnent *)
+let add_if_undefined kn cb env =
+  try ignore(Environ.lookup_constant kn env); env
+  with Not_found -> Environ.add_constant kn cb env
+
+(* Add the side effects to the monad's environment, if not already done. *)
+let add_side_effect env = function
+  | { Entries.eff = Entries.SEsubproof (kn, cb, eff_env) } ->
+    add_if_undefined kn cb env
+  | { Entries.eff = Entries.SEscheme (l,_) } ->
+    List.fold_left (fun env (_,kn,cb,eff_env) ->
+        add_if_undefined kn cb env) env l
+
+let add_side_effects env effects =
+  List.fold_left (fun env eff -> add_side_effect env eff) env effects
+
 let make_refine_enter ?(unsafe = true) f =
   { enter = fun gl ->
   let gl = Proofview.Goal.assume gl in
@@ -68,6 +85,10 @@ let make_refine_enter ?(unsafe = true) f =
   let ((v,c), sigma) = Sigma.run (Evd.reset_future_goals sigma) f in
   let evs = Evd.future_goals sigma in
   let evkmain = Evd.principal_future_goal sigma in
+  (** Redo the effects in sigma in the monad's env *)
+  let privates_csts = Evd.eval_side_effects sigma in
+  let sideff = Safe_typing.side_effects_of_private_constants privates_csts in
+  let env = add_side_effects env sideff in
   (** Check that the introduced evars are well-typed *)
   let fold accu ev = typecheck_evar ev env accu in
   let sigma = if unsafe then sigma else CList.fold_left fold sigma evs in
@@ -96,6 +117,7 @@ let make_refine_enter ?(unsafe = true) f =
   let sigma = CList.fold_left Proofview.Unsafe.mark_as_goal sigma comb in
   let trace () = Pp.(hov 2 (str"simple refine"++spc()++ Hook.get pr_constrv env sigma c)) in
   Proofview.Trace.name_tactic trace (Proofview.tclUNIT v) >>= fun v ->
+  Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
   Proofview.tclUNIT v
@@ -129,3 +151,14 @@ let refine_casted ?unsafe f = Proofview.Goal.enter { enter = begin fun gl ->
   } in
   refine ?unsafe f
 end }
+
+(** {7 solve_constraints}
+
+  Ensure no remaining unification problems are left. Run at every "." by default. *)
+
+let solve_constraints =
+  let open Proofview in
+  tclENV >>= fun env -> tclEVARMAP >>= fun sigma ->
+   try let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
+       Unsafe.tclEVARSADVANCE sigma
+   with e -> tclZERO e

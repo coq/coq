@@ -44,14 +44,7 @@ val parse_config : string -> unit
 val dump : unit -> (t * Terminal.style option) list
 (** Recover the list of known tags together with their current style. *)
 
-(** {5 Setting color output} *)
-
-val init_color_output : unit -> unit
-
-val color_msg : ?loc:Loc.t -> ?header:string * Format.tag ->
-  Format.formatter -> Pp.std_ppcmds -> unit
-(** {!color_msg ?header fmt pp} will format according to the tags
-     defined in this file *)
+(** {5 Color output} *)
 
 val pp_tag : Pp.tag_handler
 (** Returns the name of a style tag that is understandable by the formatters

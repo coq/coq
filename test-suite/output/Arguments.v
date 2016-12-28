@@ -17,7 +17,7 @@ Definition fcomp A B C f (g : A -> B) (x : A) : C := f (g x).
 Arguments fcomp {_ _ _}%type_scope f g x /.
 About fcomp.
 Definition volatile := fun x : nat => x.
-Arguments volatile /.
+Arguments volatile / _.
 About volatile.
 Set Implicit Arguments.
 Section S1.

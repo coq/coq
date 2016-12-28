@@ -121,6 +121,7 @@ val dependent_in_decl : constr -> Context.Named.Declaration.t -> bool
 val count_occurrences : constr -> constr -> int
 val collect_metas : constr -> int list
 val collect_vars : constr -> Id.Set.t (** for visible vars only *)
+val vars_of_global_reference : env -> Globnames.global_reference -> Id.Set.t
 val occur_term : constr -> constr -> bool (** Synonymous
  of dependent 
    Substitution of metavariables *)
@@ -162,6 +163,13 @@ val constr_cmp : Reduction.conv_pb -> constr -> constr -> bool
 val eq_constr : constr -> constr -> bool (* FIXME rename: erases universes*)
 
 val eta_reduce_head : constr -> constr
+
+(** Flattens application lists *)
+val collapse_appl : constr -> constr
+
+(** Remove recursively the casts around a term i.e.
+   [strip_outer_cast (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
+val strip_outer_cast : constr -> constr
 
 exception CannotFilter
 
@@ -237,7 +245,7 @@ val map_rel_context_with_binders :
 val fold_named_context_both_sides :
   ('a -> Context.Named.Declaration.t -> Context.Named.Declaration.t list -> 'a) ->
     Context.Named.t -> init:'a -> 'a
-val mem_named_context : Id.t -> Context.Named.t -> bool
+val mem_named_context_val : Id.t -> named_context_val -> bool
 val compact_named_context : Context.Named.t -> Context.Compacted.t
 
 val clear_named_body : Id.t -> env -> env

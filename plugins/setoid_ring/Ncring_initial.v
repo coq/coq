@@ -18,7 +18,6 @@ Require Import BinInt.
 Require Import Setoid.
 Require Export Ncring.
 Require Export Ncring_polynom.
-Import List.
 
 Set Implicit Arguments.
 
@@ -78,7 +77,8 @@ Context {R:Type}`{Ring R}.
   | Z0 => 0
   | Zneg p => -(gen_phiPOS p)
   end.
- Notation "[ x ]" := (gen_phiZ x).
+ Local Notation "[ x ]" := (gen_phiZ x) : ZMORPHISM.
+ Local Open Scope ZMORPHISM.
 
  Definition get_signZ z :=
   match z with

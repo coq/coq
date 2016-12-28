@@ -62,12 +62,14 @@ let force_lazy_val vk = match !vk with
 let dummy_lazy_val () = ref VKnone
 let build_lazy_val vk key = vk := VKvalue (CEphemeron.create key)
 
-type named_vals = (Id.t * lazy_val) list
+type named_context_val = {
+  env_named_ctx : Context.Named.t;
+  env_named_map : (Context.Named.Declaration.t * lazy_val) Id.Map.t;
+}
 
 type env = {
   env_globals       : globals;
-  env_named_context : Context.Named.t;
-  env_named_vals    : named_vals;
+  env_named_context : named_context_val;
   env_rel_context   : Context.Rel.t;
   env_rel_val       : lazy_val list;
   env_nb_rel        : int;
@@ -78,9 +80,10 @@ type env = {
   indirect_pterms : Opaqueproof.opaquetab;
 }
 
-type named_context_val = Context.Named.t * named_vals
-
-let empty_named_context_val = [],[]
+let empty_named_context_val = {
+  env_named_ctx = [];
+  env_named_map = Id.Map.empty;
+}
 
 let empty_env = {
   env_globals = {
@@ -88,8 +91,7 @@ let empty_env = {
     env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
-  env_named_context = Context.Named.empty;
-  env_named_vals = [];
+  env_named_context = empty_named_context_val;
   env_rel_context = Context.Rel.empty;
   env_rel_val = [];
   env_nb_rel = 0;
@@ -126,17 +128,42 @@ let env_of_rel n env =
 
 (* Named context *)
 
-let push_named_context_val d (ctxt,vals) =
-  let rval = ref VKnone in
-    Context.Named.add d ctxt, (NamedDecl.get_id d,rval)::vals
+let push_named_context_val_val d rval ctxt =
+(*   assert (not (Id.Map.mem (NamedDecl.get_id d) ctxt.env_named_map)); *)
+  {
+    env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
+    env_named_map = Id.Map.add (NamedDecl.get_id d) (d, rval) ctxt.env_named_map;
+  }
+
+let push_named_context_val d ctxt =
+  push_named_context_val_val d (ref VKnone) ctxt
+
+let match_named_context_val c = match c.env_named_ctx with
+| [] -> None
+| decl :: ctx ->
+  let (_, v) = Id.Map.find (NamedDecl.get_id decl) c.env_named_map in
+  let map = Id.Map.remove (NamedDecl.get_id decl) c.env_named_map in
+  let cval = { env_named_ctx = ctx; env_named_map = map } in
+  Some (decl, v, cval)
+
+let map_named_val f ctxt =
+  let open Context.Named.Declaration in
+  let fold accu d =
+    let d' = map_constr f d in
+    let accu =
+      if d == d' then accu
+      else Id.Map.modify (get_id d) (fun _ (_, v) -> (d', v)) accu
+    in
+    (accu, d')
+  in
+  let map, ctx = List.fold_map fold ctxt.env_named_map ctxt.env_named_ctx in
+  { env_named_ctx = ctx; env_named_map = map }
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
   assert (env.env_rel_context = []); *)
-  let rval = ref VKnone in
   { env_globals = env.env_globals;
-    env_named_context = Context.Named.add d env.env_named_context;
-    env_named_vals = (NamedDecl.get_id d, rval) :: env.env_named_vals;
+    env_named_context = push_named_context_val d env.env_named_context;
     env_rel_context = env.env_rel_context;
     env_rel_val = env.env_rel_val;
     env_nb_rel = env.env_nb_rel;
@@ -147,8 +174,11 @@ let push_named d env =
     indirect_pterms = env.indirect_pterms;
   }
 
+let lookup_named id env =
+  fst (Id.Map.find id env.env_named_context.env_named_map)
+
 let lookup_named_val id env =
-  snd(List.find (fun (id',_) -> Id.equal id id') env.env_named_vals)
+  snd(Id.Map.find id env.env_named_context.env_named_map)
 
 (* Warning all the names should be different *)
 let env_of_named id env = env

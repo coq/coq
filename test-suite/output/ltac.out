@@ -1,5 +1,6 @@
 The command has indeed failed with message:
-Error: Ltac variable y depends on pattern variable name z which is not bound in current context.
+Error:
+Ltac variable y depends on pattern variable name z which is not bound in current context.
 Ltac f x y z :=
   symmetry in x, y; auto with z; auto; intros **; clearbody x; generalize
    dependent z
@@ -26,3 +27,8 @@ The command has indeed failed with message:
 In nested Ltac calls to "h" and "injection (destruction_arg)", last call
 failed.
 Error: No primitive equality found.
+Hx
+nat
+nat
+0
+0

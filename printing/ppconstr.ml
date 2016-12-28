@@ -129,7 +129,7 @@ end) = struct
     str "`" ++ str hd ++ c ++ str tl
 
   let pr_com_at n =
-    if Flags.do_beautify() && not (Int.equal n 0) then comment n
+    if !Flags.beautify && not (Int.equal n 0) then comment (CLexer.extract_comments n)
     else mt()
 
   let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
@@ -148,6 +148,12 @@ end) = struct
     | GSet -> tag_type (str "Set")
     | GType [] -> tag_type (str "Type")
     | GType u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
+
+  let pr_glob_level = function
+    | GProp -> tag_type (str "Prop")
+    | GSet -> tag_type (str "Set")
+    | GType None -> tag_type (str "Type")
+    | GType (Some (_, u)) -> tag_type (str u)
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
@@ -364,13 +370,13 @@ end) = struct
     let n = begin_of_binders bl in
     match bl with
       | [LocalRawAssum (nal,k,t)] ->
-        pr_com_at n ++ kw() ++ pr_binder false pr_c (nal,k,t)
+        kw n ++ pr_binder false pr_c (nal,k,t)
       | (LocalRawAssum _ | LocalPattern _) :: _ as bdl ->
-        pr_com_at n ++ kw() ++ pr_undelimited_binders sep pr_c bdl
+        kw n ++ pr_undelimited_binders sep pr_c bdl
       | _ -> assert false
 
   let pr_binders_gen pr_c sep is_open =
-    if is_open then pr_delimited_binders mt sep pr_c
+    if is_open then pr_delimited_binders pr_com_at sep pr_c
     else pr_undelimited_binders sep pr_c
 
   let rec extract_prod_binders = function
@@ -519,9 +525,9 @@ end) = struct
     prlist_with_sep pr_semicolon
       (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr ltop c)) l
 
-  let pr_forall () = keyword "forall" ++ spc ()
+  let pr_forall n = keyword "forall" ++ pr_com_at n ++ spc ()
 
-  let pr_fun () = keyword "fun" ++ spc ()
+  let pr_fun n = keyword "fun" ++ pr_com_at n ++ spc ()
 
   let pr_fun_sep = spc () ++ str "=>"
 

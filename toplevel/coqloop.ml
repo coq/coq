@@ -13,7 +13,7 @@ open Flags
 open Vernac
 open Pcoq
 
-let top_stderr x = msg_with !Pp_control.err_ft x
+let top_stderr x = msg_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft x
 
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
@@ -23,7 +23,7 @@ type input_buffer = {
   mutable str : string; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)
   mutable bols : int list; (* offsets in str of beginning of lines *)
-  mutable tokens : Gram.parsable; (* stream of tokens *)
+  mutable tokens : Gram.coq_parsable; (* stream of tokens *)
   mutable start : int } (* stream count of the first char of the buffer *)
 
 (* Double the size of the buffer. *)
@@ -34,7 +34,7 @@ let resize_buffer ibuf =
   ibuf.str <- nstr
 
 (* Delete all irrelevant lines of the input buffer. Keep the last line
-   in the buffer (useful when there are several commands on the same line. *)
+   in the buffer (useful when there are several commands on the same line). *)
 
 let resynch_buffer ibuf =
   match ibuf.bols with
@@ -274,9 +274,9 @@ let rec discard_to_dot () =
     | End_of_input -> raise End_of_input
     | e when CErrors.noncritical e -> ()
 
-let read_sentence () =
+let read_sentence input =
   try
-    let (loc, _ as r) = Vernac.parse_sentence (top_buffer.tokens, None) in
+    let (loc, _ as r) = Vernac.parse_sentence input in
     CWarnings.set_current_loc loc; r
   with reraise ->
     let reraise = CErrors.push reraise in
@@ -298,7 +298,8 @@ let do_vernac () =
   if !print_emacs then top_stderr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   try
-    Vernac.eval_expr (read_sentence ())
+    let input = (top_buffer.tokens, None) in
+    Vernac.process_expr top_buffer.tokens (read_sentence input)
   with
     | End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
@@ -307,7 +308,6 @@ let do_vernac () =
         else Feedback.msg_error (str"There is no ML toplevel.")
     | any ->
         let any = CErrors.push any in
-        Format.set_formatter_out_channel stdout;
         let msg = print_toplevel_error any ++ fnl () in
         pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;
         Format.pp_print_flush !Pp_control.std_ft ()
@@ -348,5 +348,7 @@ let rec loop () =
     | any ->
       Feedback.msg_error (str"Anomaly: main loop exited with exception: " ++
                 str (Printexc.to_string any) ++
-                fnl() ++ str"Please report.");
+                fnl() ++
+                str"Please report" ++
+                strbrk" at " ++ str Coq_config.wwwbugtracker ++ str ".");
       loop ()

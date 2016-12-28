@@ -21,7 +21,7 @@ Delimit Scope mylist_scope with mylist.
 Bind Scope mylist_scope with mylist.
 Arguments mynil {_}, _.
 Arguments mycons {_} _ _.
-Notation " [] " := mynil : mylist_scope.
+Notation " [] " := mynil (compat "8.5") : mylist_scope.
 Notation " [ ] " := mynil (format "[ ]") : mylist_scope.
 Notation " [ x ] " := (mycons x nil) : mylist_scope.
 Notation " [ x ; y ; .. ; z ] " :=  (mycons x (mycons y .. (mycons z nil) ..)) : mylist_scope.

@@ -58,7 +58,7 @@ Check (fun x:nat*nat => match x with R x y => (x,y) end).
 
 (* Check multi-tokens recursive notations *)
 
-Local Notation "[ a  # ; ..  # ; b ]" := (a + .. (b + 0) ..).   
+Local Notation "[ a  # ; ..  # ; b ]" := (a + .. (b + 0) ..).
 Check [ 0 ].
 Check [ 0 # ; 1 ].
 
@@ -110,3 +110,21 @@ Goal True -> True. intros H. exact H. Qed.
 
 (* Check absence of collision on ".." in nested notations with ".." *)
 Notation "[ a , .. , b ]" := (a, (.. (b,tt) ..)).
+
+(* Check that vector notations do not break Ltac [] (bugs #4785, #4733) *)
+Require Import Coq.Vectors.VectorDef.
+Import VectorNotations.
+Goal True. idtac; []. (* important for test: no space here *) constructor. Qed.
+
+(* Check parsing of { and } is not affected by notations #3479 *)
+Notation " |- {{ a }} b" := (a=b) (no associativity, at level 10).
+Goal True.
+{{ exact I. }}
+Qed.
+Check |- {{ 0 }} 0.
+
+(* Check parsing of { and } is not affected by notations #3479 *)
+Notation " |- {{ a }} b" := (a=b) (no associativity, at level 10).
+Goal True.
+{{ exact I. }}
+Qed.

@@ -28,6 +28,10 @@ val decompose_app_bound : constr -> global_reference * constr array
 
 type debug = Debug | Info | Off
 
+val secvars_of_hyps : Context.Named.t -> Id.Pred.t
+
+val empty_hint_info : 'a hint_info_gen
+
 (** Pre-created hint databases *)
 
 type 'a hint_ast =
@@ -41,17 +45,22 @@ type 'a hint_ast =
 type hint
 type raw_hint = constr * types * Univ.universe_context_set
 
-type hints_path_atom = 
-  | PathHints of global_reference list
+type 'a hints_path_atom_gen =
+  | PathHints of 'a list
   (* For forward hints, their names is the list of projections *)
   | PathAny
+
+type hints_path_atom = global_reference hints_path_atom_gen
+type hint_db_name = string
 
 type 'a with_metadata = private {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
   name  : hints_path_atom; (** A potential name to refer to the hint *) 
-  code  : 'a; (** the tactic to apply when the concl matches pat *)
+  db    : hint_db_name option;
+  secvars : Id.Pred.t; (** The section variables this hint depends on, as a predicate *)
+  code    : 'a; (** the tactic to apply when the concl matches pat *)
 }
 
 type full_hint = hint with_metadata
@@ -62,42 +71,56 @@ type search_entry
 
 type hint_entry
 
-type hints_path =
-  | PathAtom of hints_path_atom
-  | PathStar of hints_path
-  | PathSeq of hints_path * hints_path
-  | PathOr of hints_path * hints_path
+type 'a hints_path_gen =
+  | PathAtom of 'a hints_path_atom_gen
+  | PathStar of 'a hints_path_gen
+  | PathSeq of 'a hints_path_gen * 'a hints_path_gen
+  | PathOr of 'a hints_path_gen * 'a hints_path_gen
   | PathEmpty
   | PathEpsilon
 
+type pre_hints_path = Libnames.reference hints_path_gen
+type hints_path = global_reference hints_path_gen
+    
 val normalize_path : hints_path -> hints_path
 val path_matches : hints_path -> hints_path_atom list -> bool
 val path_derivate : hints_path -> hints_path_atom -> hints_path
-val pp_hints_path_atom : hints_path_atom -> Pp.std_ppcmds
+val pp_hints_path_gen : ('a -> Pp.std_ppcmds) -> 'a hints_path_gen -> Pp.std_ppcmds
+val pp_hints_path_atom : ('a -> Pp.std_ppcmds) -> 'a hints_path_atom_gen -> Pp.std_ppcmds
 val pp_hints_path : hints_path -> Pp.std_ppcmds
 val pp_hint_mode : hint_mode -> Pp.std_ppcmds
+val glob_hints_path_atom :
+  Libnames.reference hints_path_atom_gen -> Globnames.global_reference hints_path_atom_gen
+val glob_hints_path :
+  Libnames.reference hints_path_gen -> Globnames.global_reference hints_path_gen
 
 module Hint_db :
   sig
     type t
-    val empty : transparent_state -> bool -> t
+    val empty : ?name:hint_db_name -> transparent_state -> bool -> t
     val find : global_reference -> t -> search_entry
-    val map_none : t -> full_hint list
+
+    (** All hints which have no pattern.
+     * [secvars] represent the set of section variables that
+     * can be used in the hint. *)
+    val map_none : secvars:Id.Pred.t -> t -> full_hint list
 
     (** All hints associated to the reference *)
-    val map_all : global_reference -> t -> full_hint list
+    val map_all : secvars:Id.Pred.t -> global_reference -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments, _not_ using the discrimination net. *)
-    val map_existential : (global_reference * constr array) -> constr -> t -> full_hint list
+    val map_existential : secvars:Id.Pred.t ->
+      (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments and using the discrimination net. *)
-    val map_eauto : (global_reference * constr array) -> constr -> t -> full_hint list
+    val map_eauto : secvars:Id.Pred.t -> (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments. *)
-    val map_auto : (global_reference * constr array) -> constr -> t -> full_hint list
+    val map_auto : secvars:Id.Pred.t ->
+       (global_reference * constr array) -> constr -> t -> full_hint list
 
     val add_one : env -> evar_map -> hint_entry -> t -> t
     val add_list : env -> evar_map -> hint_entry list -> t -> t
@@ -116,26 +139,25 @@ module Hint_db :
     val unfolds : t -> Id.Set.t * Cset.t
   end
 
-type hint_db_name = string
-
 type hint_db = Hint_db.t
 
 type hnf = bool
+
+type hint_info = (patvar list * constr_pattern) hint_info_gen
 
 type hint_term =
   | IsGlobRef of global_reference
   | IsConstr of constr * Univ.universe_context_set
 
 type hints_entry =
-  | HintsResolveEntry of (int option * polymorphic * hnf * hints_path_atom * 
-			  hint_term) list
+  | HintsResolveEntry of
+    (hint_info * polymorphic * hnf * hints_path_atom * hint_term) list
   | HintsImmediateEntry of (hints_path_atom * polymorphic * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsModeEntry of global_reference * hint_mode list
-  | HintsExternEntry of
-      int * (patvar list * constr_pattern) option * Genarg.glob_generic_argument
+  | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
 val searchtable_map : hint_db_name -> hint_db
 
@@ -162,22 +184,34 @@ val prepare_hint : bool (* Check no remaining evars *) ->
   (bool * bool) (* polymorphic or monomorphic, local or global *) ->
   env -> evar_map -> open_constr -> hint_term
 
-(** [make_exact_entry pri (c, ctyp)].
+(** [make_exact_entry info (c, ctyp, ctx)].
    [c] is the term given as an exact proof to solve the goal;
-   [ctyp] is the type of [c]. *)
+   [ctyp] is the type of [c].
+   [ctx] is its (refreshable) universe context. 
+   In info:
+   [hint_priority] is the hint's desired priority, it is 0 if unspecified
+   [hint_pattern] is the hint's desired pattern, it is inferred if not specified
+*)
 
-val make_exact_entry : env -> evar_map -> int option -> polymorphic -> ?name:hints_path_atom -> 
+val make_exact_entry : env -> evar_map -> hint_info -> polymorphic -> ?name:hints_path_atom ->
   (constr * types * Univ.universe_context_set) -> hint_entry
 
-(** [make_apply_entry (eapply,hnf,verbose) pri (c,cty)].
+(** [make_apply_entry (eapply,hnf,verbose) info (c,cty,ctx))].
    [eapply] is true if this hint will be used only with EApply;
    [hnf] should be true if we should expand the head of cty before searching for
    products;
    [c] is the term given as an exact proof to solve the goal;
-   [cty] is the type of [c]. *)
+   [cty] is the type of [c].
+   [ctx] is its (refreshable) universe context. 
+   In info:
+   [hint_priority] is the hint's desired priority, it is computed as the number of products in [cty]
+   if unspecified
+   [hint_pattern] is the hint's desired pattern, it is inferred from the conclusion of [cty]
+   if not specified
+*)
 
 val make_apply_entry :
-  env -> evar_map -> bool * bool * bool -> int option -> polymorphic -> ?name:hints_path_atom -> 
+  env -> evar_map -> bool * bool * bool -> hint_info -> polymorphic -> ?name:hints_path_atom ->
   (constr * types * Univ.universe_context_set) -> hint_entry
 
 (** A constr which is Hint'ed will be:
@@ -188,7 +222,7 @@ val make_apply_entry :
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool * bool -> int option -> polymorphic -> ?name:hints_path_atom -> 
+  env -> evar_map -> bool * bool * bool -> hint_info -> polymorphic -> ?name:hints_path_atom ->
   hint_term -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].

@@ -25,16 +25,16 @@ Check [ _ ]%list : list _.
 Check [ _ ]%vector : Vector.t _ _.
 Check [ _ ; _ ]%list : list _.
 Check [ _ ; _ ]%vector : Vector.t _ _.
-Fail Check [ _ ; _ ]%mylist : mylist _. (* ideally, this should work, but that requires removing notations from the parser *)
+Check [ _ ; _ ]%mylist : mylist _.
 Check [ _ ; _ ; _ ]%list : list _.
 Check [ _ ; _ ; _ ]%vector : Vector.t _ _.
-Fail Check [ _ ; _ ; _ ]%mylist : mylist _. (* ideally, this should work, but that requires removing notations from the parser *)
+Check [ _ ; _ ; _ ]%mylist : mylist _.
 Check [ _ ; _ ; _ ; _ ]%list : list _.
 Check [ _ ; _ ; _ ; _ ]%vector : Vector.t _ _.
-Fail Check [ _ ; _ ; _ ; _ ]%mylist : mylist _. (* ideally, this should work, but that requires removing notations from the parser *)
+Check [ _ ; _ ; _ ; _ ]%mylist : mylist _.
 
 Notation " [ x ; y ; .. ; z ] " := (mycons x (mycons y .. (mycons z mynil) ..)) : mylist_scope.
-(* Now these all work, but not so in 8.4.  If we get the ability to remove notations, and the above fails can be removed, this section can also just be removed. *)
+(* Now these all work, but not so in 8.4.  If we get the ability to remove notations, this section can also just be removed. *)
 Check [ ]%mylist : mylist _.
 Check [ ]%list : list _.
 Check []%vector : Vector.t _ _.

@@ -215,7 +215,6 @@ let ppuniverse_subst l = pp (Univ.pr_universe_subst l)
 let ppuniverse_opt_subst l = pp (Universes.pr_universe_opt_subst l)
 let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst l)
 let ppevar_universe_context l = pp (Evd.pr_evar_universe_context l)
-let ppconstraints_map c = pp (Universes.pr_constraints_map c)
 let ppconstraints c = pp (pr_constraints Level.pr c)
 let ppuniverseconstraints c = pp (Universes.Constraints.pr c)
 let ppuniverse_context_future c = 
@@ -477,6 +476,8 @@ let prgenarginfo arg =
     str "<genarg:" ++ tpe ++ str ">"
 
 let ppgenarginfo arg = pp (prgenarginfo arg)
+
+let ppgenargargt arg = pp (str (Genarg.ArgT.repr arg))
 
 let ppist ist =
   let pr id arg = prgenarginfo arg in

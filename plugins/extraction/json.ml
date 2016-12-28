@@ -142,7 +142,8 @@ let rec json_expr env = function
           ("what", json_str "fix:item");
           ("name", json_id fi);
           ("body", json_function env' ti)
-        ]) (Array.map2 (fun a b -> a,b) ids' defs)))
+        ]) (Array.map2 (fun a b -> a,b) ids' defs)));
+      ("for", json_int i);
     ]
   | MLexn s -> json_dict [
       ("what", json_str "expr:exception");

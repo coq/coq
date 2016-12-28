@@ -31,17 +31,6 @@ query, separated by a newline. This type of output is useful for
 editors (like emacs), to generate a list of completion candidates
 without having to parse thorugh the types of all symbols. *)
 
-let search_output_name_only = ref false
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "output-name-only search";
-      optkey   = ["Search";"Output";"Name";"Only"];
-      optread  = (fun () -> !search_output_name_only);
-      optwrite = (:=) search_output_name_only }
-
 type glob_search_about_item =
   | GlobSearchSubPattern of constr_pattern
   | GlobSearchString of string
@@ -118,24 +107,12 @@ let generic_search glnumopt fn =
   | Some glnum ->  iter_hypothesis glnum fn);
   iter_declarations fn
 
-(** Standard display *)
-let plain_display accu ref env c =
-  let pr = pr_global ref in
-  if !search_output_name_only then
-    accu := pr :: !accu
-  else begin
-    let pc = pr_lconstr_env env Evd.empty c in
-    accu := hov 2 (pr ++ str":" ++ spc () ++ pc) :: !accu
-  end
-
-let format_display l = prlist_with_sep fnl (fun x -> x) (List.rev l)
-
 (** Filters *)
 
 (** This function tries to see whether the conclusion matches a pattern. *)
 (** FIXME: this is quite dummy, we may find a more efficient algorithm. *)
 let rec pattern_filter pat ref env typ =
-  let typ = strip_outer_cast typ in
+  let typ = Termops.strip_outer_cast typ in
   if Constr_matching.is_matching env Evd.empty pat typ then true
   else match kind_of_term typ with
   | Prod (_, _, typ)
@@ -143,7 +120,7 @@ let rec pattern_filter pat ref env typ =
   | _ -> false
 
 let rec head_filter pat ref env typ =
-  let typ = strip_outer_cast typ in
+  let typ = Termops.strip_outer_cast typ in
   if Constr_matching.is_matching_head env Evd.empty pat typ then true
   else match kind_of_term typ with
   | Prod (_, _, typ)
@@ -155,8 +132,9 @@ let full_name_of_reference ref =
   DirPath.to_string dir ^ "." ^ Id.to_string id
 
 (** Whether a reference is blacklisted *)
-let blacklist_filter ref env typ =
+let blacklist_filter_aux () =
   let l = SearchBlacklist.elements () in
+  fun ref env typ ->
   let name = full_name_of_reference ref in
   let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
   List.for_all is_not_bl l
@@ -180,19 +158,17 @@ let search_about_filter query gr env typ = match query with
 
 (** SearchPattern *)
 
-let search_pattern gopt pat mods =
-  let ans = ref [] in
+let search_pattern gopt pat mods pr_search =
+  let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
-    let f_module = module_filter mods ref env typ in
-    let f_blacklist = blacklist_filter ref env typ in
-    let f_pattern () = pattern_filter pat ref env typ in
-    f_module && f_pattern () && f_blacklist
+    module_filter mods ref env typ &&
+    pattern_filter pat ref env typ &&
+    blacklist_filter ref env typ
   in
   let iter ref env typ =
-    if filter ref env typ then plain_display ans ref env typ
+    if filter ref env typ then pr_search ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter
 
 (** SearchRewrite *)
 
@@ -204,57 +180,50 @@ let rewrite_pat1 pat =
 let rewrite_pat2 pat =
   PApp (PRef eq, [| PMeta None; PMeta None; pat |])
 
-let search_rewrite gopt pat mods =
+let search_rewrite gopt pat mods pr_search =
   let pat1 = rewrite_pat1 pat in
   let pat2 = rewrite_pat2 pat in
-  let ans = ref [] in
+  let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
-    let f_module = module_filter mods ref env typ in
-    let f_blacklist = blacklist_filter ref env typ in
-    let f_pattern () =
-      pattern_filter pat1 ref env typ ||
-      pattern_filter pat2 ref env typ
-    in
-    f_module && f_pattern () && f_blacklist
+    module_filter mods ref env typ &&
+    (pattern_filter pat1 ref env typ ||
+       pattern_filter pat2 ref env typ) &&
+    blacklist_filter ref env typ
   in
   let iter ref env typ =
-    if filter ref env typ then plain_display ans ref env typ
+    if filter ref env typ then pr_search ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter
 
 (** Search *)
 
-let search_by_head gopt pat mods =
-  let ans = ref [] in
+let search_by_head gopt pat mods pr_search =
+  let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
-    let f_module = module_filter mods ref env typ in
-    let f_blacklist = blacklist_filter ref env typ in
-    let f_pattern () = head_filter pat ref env typ in
-    f_module && f_pattern () && f_blacklist
+    module_filter mods ref env typ &&
+    head_filter pat ref env typ &&
+    blacklist_filter ref env typ
   in
   let iter ref env typ =
-    if filter ref env typ then plain_display ans ref env typ
+    if filter ref env typ then pr_search ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter
 
 (** SearchAbout *)
 
-let search_about gopt items mods =
-  let ans = ref [] in
+let search_about gopt items mods pr_search =
+  let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     let eqb b1 b2 = if b1 then b2 else not b2 in
-    let f_module = module_filter mods ref env typ in
-    let f_about (b, i) = eqb b (search_about_filter i ref env typ) in
-    let f_blacklist = blacklist_filter ref env typ in
-    f_module && List.for_all f_about items && f_blacklist
+    module_filter mods ref env typ &&
+    List.for_all
+      (fun (b,i) -> eqb b (search_about_filter i ref env typ)) items &&
+    blacklist_filter ref env typ
   in
   let iter ref env typ =
-    if filter ref env typ then plain_display ans ref env typ
+    if filter ref env typ then pr_search ref env typ
   in
-  let () = generic_search gopt iter in
-  format_display !ans
+  generic_search gopt iter
 
 type search_constraint =
   | Name_Pattern of Str.regexp
@@ -287,6 +256,7 @@ let interface_search =
   let (name, tpe, subtpe, mods, blacklist) =
     extract_flags [] [] [] [] false flags
   in
+  let blacklist_filter = blacklist_filter_aux () in
   let filter_function ref env constr =
     let id = Names.Id.to_string (Nametab.basename_of_global ref) in
     let path = Libnames.dirpath (Nametab.path_of_global ref) in
@@ -305,13 +275,11 @@ let interface_search =
     let match_module (mdl, flag) =
       toggle (Libnames.is_dirpath_prefix_of mdl path) flag
     in
-    let in_blacklist =
-      blacklist || (blacklist_filter ref env constr)
-    in
     List.for_all match_name name &&
     List.for_all match_type tpe &&
     List.for_all match_subtype subtpe &&
-    List.for_all match_module mods && in_blacklist
+    List.for_all match_module mods &&
+    (blacklist || blacklist_filter ref env constr)
   in
   let ans = ref [] in
   let print_function ref env constr =
@@ -342,3 +310,6 @@ let interface_search =
   in
   let () = generic_search glnum iter in
   !ans
+
+let blacklist_filter ref env typ =
+  blacklist_filter_aux () ref env typ

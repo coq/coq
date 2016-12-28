@@ -556,15 +556,13 @@ let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeBinderList, NtnTypeBinderList -> true
 | (NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList), _ -> false
 
-
-let vars_eq (id1, (sc1, tp1)) (id2, (sc2, tp2)) =
-  Id.equal id1 id2 &&
+let var_attributes_eq (_, (sc1, tp1)) (_, (sc2, tp2)) =
   pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
   ntpe_eq tp1 tp2
 
 let interpretation_eq (vars1, t1) (vars2, t2) =
-  List.equal vars_eq vars1 vars2 &&
-  Notation_ops.eq_notation_constr t1 t2
+  List.equal var_attributes_eq vars1 vars2 &&
+  Notation_ops.eq_notation_constr (List.map fst vars1, List.map fst vars2) t1 t2
 
 let exists_notation_in_scope scopt ntn r =
   let scope = match scopt with Some s -> s | None -> default_scope in
@@ -1013,6 +1011,9 @@ let find_notation_extra_printing_rules ntn =
 let find_notation_parsing_rules ntn =
   try pi3 (String.Map.find ntn !notation_rules)
   with Not_found -> anomaly (str "No parsing rule found for " ++ str ntn)
+
+let get_defined_notations () =
+  String.Set.elements @@ String.Map.domain !notation_rules
 
 let add_notation_extra_printing_rule ntn k v =
   try

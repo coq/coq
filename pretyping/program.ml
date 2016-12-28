@@ -15,10 +15,12 @@ open Term
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
 let find_reference locstr dir s =
-  let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
+  let dp = make_dir dir in
+  let sp = Libnames.make_path dp (Id.of_string s) in
   try Nametab.global_of_path sp
   with Not_found ->
-    anomaly ~label:locstr (Pp.str "cannot find" ++ spc () ++ Libnames.pr_path sp)
+    user_err (str "Library " ++ Libnames.pr_dirpath dp ++
+      str " has to be required first.")
 
 let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
 let coq_constant locstr dir s = Universes.constr_of_global (coq_reference locstr dir s)

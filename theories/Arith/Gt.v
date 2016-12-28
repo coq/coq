@@ -133,14 +133,14 @@ Qed.
 
 (** * Hints *)
 
-Hint Resolve gt_Sn_O gt_Sn_n gt_n_S : arith v62.
-Hint Immediate gt_S_n gt_pred : arith v62.
-Hint Resolve gt_irrefl gt_asym : arith v62.
-Hint Resolve le_not_gt gt_not_le : arith v62.
-Hint Immediate le_S_gt gt_S_le : arith v62.
-Hint Resolve gt_le_S le_gt_S : arith v62.
-Hint Resolve gt_trans_S le_gt_trans gt_le_trans: arith v62.
-Hint Resolve plus_gt_compat_l: arith v62.
+Hint Resolve gt_Sn_O gt_Sn_n gt_n_S : arith.
+Hint Immediate gt_S_n gt_pred : arith.
+Hint Resolve gt_irrefl gt_asym : arith.
+Hint Resolve le_not_gt gt_not_le : arith.
+Hint Immediate le_S_gt gt_S_le : arith.
+Hint Resolve gt_le_S le_gt_S : arith.
+Hint Resolve gt_trans_S le_gt_trans gt_le_trans: arith.
+Hint Resolve plus_gt_compat_l: arith.
 
 (* begin hide *)
 Notation gt_O_eq := gt_0_eq (only parsing).

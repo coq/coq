@@ -328,37 +328,8 @@ let destCoFix c = match kind_of_term c with
 let isCoFix c =  match kind_of_term c with CoFix _ -> true | _ -> false
 
 (******************************************************************)
-(* Cast management                                                *)
-(******************************************************************)
-
-let rec strip_outer_cast c = match kind_of_term c with
-  | Cast (c,_,_) -> strip_outer_cast c
-  | _ -> c
-
-(* Fonction spéciale qui laisse les cast clés sous les Fix ou les Case *)
-
-let under_outer_cast f c =  match kind_of_term c with
-  | Cast (b,k,t) -> mkCast (f b, k, f t)
-  | _ -> f c
-
-let rec under_casts f c = match kind_of_term c with
-  | Cast (c,k,t) -> mkCast (under_casts f c, k, t)
-  | _            -> f c
-
-(******************************************************************)
 (* Flattening and unflattening of embedded applications and casts *)
 (******************************************************************)
-
-(* flattens application lists throwing casts in-between *)
-let collapse_appl c = match kind_of_term c with
-  | App (f,cl) ->
-      let rec collapse_rec f cl2 =
-        match kind_of_term (strip_outer_cast f) with
-        | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-        | _ -> mkApp (f,cl2)
-      in
-      collapse_rec f cl
-  | _ -> c
 
 let decompose_app c =
   match kind_of_term c with

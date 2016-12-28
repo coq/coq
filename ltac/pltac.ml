@@ -33,6 +33,7 @@ let destruction_arg = make_gen_entry utactic "destruction_arg"
 let int_or_var = make_gen_entry utactic "int_or_var"
 let simple_intropattern =
   make_gen_entry utactic "simple_intropattern"
+let in_clause = make_gen_entry utactic "in_clause"
 let clause_dft_concl = 
   make_gen_entry utactic "clause"
 

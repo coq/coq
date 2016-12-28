@@ -11,6 +11,8 @@ open CErrors
 open Util
 open Names
 
+let chk_pp = Pp.pp_with Format.std_formatter
+
 let pr_dirpath dp = str (DirPath.to_string dp)
 let default_root_prefix = DirPath.empty
 let split_dirpath d =
@@ -118,7 +120,6 @@ let check_one_lib admit (dir,m) =
     (Flags.if_verbose Feedback.msg_notice
       (str "Checking library: " ++ pr_dirpath dir);
       Safe_typing.import file md m.library_extra_univs dig);
-  Flags.if_verbose Feedback.msg_notice (fnl());
   register_loaded_library m
 
 (*************************************************************************)
@@ -298,7 +299,7 @@ let name_clash_message dir mdir f =
 let depgraph = ref LibraryMap.empty
 
 let intern_from_file (dir, f) =
-  Flags.if_verbose Feedback.msg_notice(str"[intern "++str f++str" ...");
+  Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
   let (sd,md,table,opaque_csts,digest) =
     try
       let ch = System.with_magic_number_check raw_intern_library f in
@@ -322,7 +323,7 @@ let intern_from_file (dir, f) =
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
-       Feedback.msg_notice(str " (was a vio file) ");
+       chk_pp (str " (was a vio file) ");
       Option.iter (fun (_,_,b) -> if not b then
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " is still a .vio"))
@@ -333,12 +334,12 @@ let intern_from_file (dir, f) =
       Validate.validate !Flags.debug Values.v_libsum sd;
       Validate.validate !Flags.debug Values.v_lib md;
       Validate.validate !Flags.debug Values.v_opaques table;
-      Flags.if_verbose Feedback.msg_notice (str" done]");
+      Flags.if_verbose chk_pp (str" done]" ++ fnl ());
       let digest =
         if opaque_csts <> None then Cic.Dviovo (digest,udg)
         else (Cic.Dvo digest) in
       sd,md,table,opaque_csts,digest
-    with e -> Flags.if_verbose Feedback.msg_notice (str" failed!]"); raise e in
+    with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
   opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
   Option.iter (fun (opaque_csts,_,_) ->

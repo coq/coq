@@ -33,7 +33,9 @@ val start_proof_univs : Id.t -> ?pl:universe_binders -> goal_kind -> Evd.evar_ma
   ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
   (Evd.evar_universe_context option -> unit declaration_hook) -> unit
 
-val start_proof_com : goal_kind -> Vernacexpr.proof_expr list ->
+val start_proof_com :
+  ?inference_hook:Pretyping.inference_hook ->
+  goal_kind -> Vernacexpr.proof_expr list ->
   unit declaration_hook -> unit
 
 val start_proof_with_initialization : 

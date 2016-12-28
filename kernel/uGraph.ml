@@ -638,19 +638,6 @@ let check_smaller g strict u v =
 
 type 'a check_function = universes -> 'a -> 'a -> bool
 
-let check_equal_expr g x y =
-  x == y || (let (u, n) = x and (v, m) = y in 
-               Int.equal n m && check_equal g u v)
-
-let check_eq_univs g l1 l2 =
-  let f x1 x2 = check_equal_expr g x1 x2 in
-  let exists x1 l = Universe.exists (fun x2 -> f x1 x2) l in
-    Universe.for_all (fun x1 -> exists x1 l2) l1
-    && Universe.for_all (fun x2 -> exists x2 l1) l2
-
-let check_eq g u v =
-  Universe.equal u v || check_eq_univs g u v
-
 let check_smaller_expr g (u,n) (v,m) =
   let diff = n - m in
     match diff with
@@ -669,7 +656,13 @@ let real_check_leq g u v =
 let check_leq g u v =
   Universe.equal u v ||
     is_type0m_univ u ||
-    check_eq_univs g u v || real_check_leq g u v
+    real_check_leq g u v
+
+let check_eq_univs g l1 l2 =
+  real_check_leq g l1 l2 && real_check_leq g l2 l1
+
+let check_eq g u v =
+  Universe.equal u v || check_eq_univs g u v
 
 (* enforce_univ_eq g u v will force u=v if possible, will fail otherwise *)
 

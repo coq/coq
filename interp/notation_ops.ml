@@ -47,62 +47,62 @@ let compare_glob_constr f add t1 t2 = match t1,t2 with
     | GHole _ | GSort _ | GLetIn _), _
       -> false
 
-let rec eq_notation_constr t1 t2 = match t1, t2 with
+let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
 | NRef gr1, NRef gr2 -> eq_gr gr1 gr2
-| NVar id1, NVar id2 -> Id.equal id1 id2
+| NVar id1, NVar id2 -> Int.equal (List.index Id.equal id1 vars1) (List.index Id.equal id2 vars2)
 | NApp (t1, a1), NApp (t2, a2) ->
-  eq_notation_constr t1 t2 && List.equal eq_notation_constr a1 a2
+  (eq_notation_constr vars) t1 t2 && List.equal (eq_notation_constr vars) a1 a2
 | NHole (_, _, _), NHole (_, _, _) -> true (** FIXME? *)
 | NList (i1, j1, t1, u1, b1), NList (i2, j2, t2, u2, b2) ->
-  Id.equal i1 i2 && Id.equal j1 j2 && eq_notation_constr t1 t2 &&
-  eq_notation_constr u1 u2 && b1 == b2
+  Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
+  (eq_notation_constr vars) u1 u2 && b1 == b2
 | NLambda (na1, t1, u1), NLambda (na2, t2, u2) ->
-  Name.equal na1 na2 && eq_notation_constr t1 t2 && eq_notation_constr u1 u2
+  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
 | NProd (na1, t1, u1), NProd (na2, t2, u2) ->
-  Name.equal na1 na2 && eq_notation_constr t1 t2 && eq_notation_constr u1 u2
+  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
 | NBinderList (i1, j1, t1, u1), NBinderList (i2, j2, t2, u2) ->
-  Id.equal i1 i2 && Id.equal j1 j2 && eq_notation_constr t1 t2 &&
-  eq_notation_constr u1 u2
+  Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
+  (eq_notation_constr vars) u1 u2
 | NLetIn (na1, t1, u1), NLetIn (na2, t2, u2) ->
-  Name.equal na1 na2 && eq_notation_constr t1 t2 && eq_notation_constr u1 u2
+  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
 | NCases (_, o1, r1, p1), NCases (_, o2, r2, p2) -> (** FIXME? *)
   let eqpat (p1, t1) (p2, t2) =
     List.equal cases_pattern_eq p1 p2 &&
-    eq_notation_constr t1 t2
+    (eq_notation_constr vars) t1 t2
   in
   let eqf (t1, (na1, o1)) (t2, (na2, o2)) =
     let eq (i1, n1) (i2, n2) = eq_ind i1 i2 && List.equal Name.equal n1 n2 in
-    eq_notation_constr t1 t2 && Name.equal na1 na2 && Option.equal eq o1 o2
+    (eq_notation_constr vars) t1 t2 && Name.equal na1 na2 && Option.equal eq o1 o2
   in
-  Option.equal eq_notation_constr o1 o2 &&
+  Option.equal (eq_notation_constr vars) o1 o2 &&
   List.equal eqf r1 r2 &&
   List.equal eqpat p1 p2
 | NLetTuple (nas1, (na1, o1), t1, u1), NLetTuple (nas2, (na2, o2), t2, u2) ->
   List.equal Name.equal nas1 nas2 &&
   Name.equal na1 na2 &&
-  Option.equal eq_notation_constr o1 o2 &&
-  eq_notation_constr t1 t2 &&
-  eq_notation_constr u1 u2
+  Option.equal (eq_notation_constr vars) o1 o2 &&
+  (eq_notation_constr vars) t1 t2 &&
+  (eq_notation_constr vars) u1 u2
 | NIf (t1, (na1, o1), u1, r1), NIf (t2, (na2, o2), u2, r2) ->
-  eq_notation_constr t1 t2 &&
+  (eq_notation_constr vars) t1 t2 &&
   Name.equal na1 na2 &&
-  Option.equal eq_notation_constr o1 o2 &&
-  eq_notation_constr u1 u2 &&
-  eq_notation_constr r1 r2
+  Option.equal (eq_notation_constr vars) o1 o2 &&
+  (eq_notation_constr vars) u1 u2 &&
+  (eq_notation_constr vars) r1 r2
 | NRec (_, ids1, ts1, us1, rs1), NRec (_, ids2, ts2, us2, rs2) -> (** FIXME? *)
   let eq (na1, o1, t1) (na2, o2, t2) =
     Name.equal na1 na2 &&
-    Option.equal eq_notation_constr o1 o2 &&
-    eq_notation_constr t1 t2
+    Option.equal (eq_notation_constr vars) o1 o2 &&
+    (eq_notation_constr vars) t1 t2
   in
   Array.equal Id.equal ids1 ids2 &&
   Array.equal (List.equal eq) ts1 ts2 &&
-  Array.equal eq_notation_constr us1 us2 &&
-  Array.equal eq_notation_constr rs1 rs2
+  Array.equal (eq_notation_constr vars) us1 us2 &&
+  Array.equal (eq_notation_constr vars) rs1 rs2
 | NSort s1, NSort s2 ->
   Miscops.glob_sort_eq s1 s2
 | NCast (t1, c1), NCast (t2, c2) ->
-  eq_notation_constr t1 t2 && cast_type_eq eq_notation_constr c1 c2
+  (eq_notation_constr vars) t1 t2 && cast_type_eq (eq_notation_constr vars) c1 c2
 | (NRef _ | NVar _ | NApp _ | NHole _ | NList _ | NLambda _ | NProd _
   | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
   | NRec _ | NSort _ | NCast _), _ -> false
@@ -248,6 +248,10 @@ let check_is_hole id = function GHole _ -> () | t ->
 
 let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
 
+type recursive_pattern_kind =
+| RecursiveTerms of bool (* associativity *)
+| RecursiveBinders of glob_constr * glob_constr
+
 let compare_recursive_parts found f f' (iterator,subc) =
   let diff = ref None in
   let terminator = ref None in
@@ -269,18 +273,16 @@ let compare_recursive_parts found f f' (iterator,subc) =
       let x,y = if lassoc then y,x else x,y in
       begin match !diff with
       | None ->
-        let () = diff := Some (x, y, Some lassoc) in
+        let () = diff := Some (x, y, RecursiveTerms lassoc) in
         true
       | Some _ -> false
       end
   | GLambda (_,Name x,_,t_x,c), GLambda (_,Name y,_,t_y,term)
   | GProd (_,Name x,_,t_x,c), GProd (_,Name y,_,t_y,term) ->
       (* We found a binding position where it differs *)
-      check_is_hole x t_x;
-      check_is_hole y t_y;
       begin match !diff with
       | None ->
-        let () = diff := Some (x, y, None) in
+        let () = diff := Some (x, y, RecursiveBinders (t_x,t_y)) in
         aux c term
       | Some _ -> false
       end
@@ -294,7 +296,7 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	(* Here, we would need a loc made of several parts ... *)
 	user_err ~loc:(subtract_loc loc1 loc2)
           (str "Both ends of the recursive pattern are the same.")
-    | Some (x,y,Some lassoc) ->
+    | Some (x,y,RecursiveTerms lassoc) ->
         let newfound,x,y,lassoc =
           if List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi2 !found) ||
              List.mem_f (pair_equal Id.equal Id.equal) (x,y) (pi3 !found)
@@ -312,17 +314,20 @@ let compare_recursive_parts found f f' (iterator,subc) =
 	(* found have been collected by compare_constr *)
 	found := newfound;
 	NList (x,y,iterator,f (Option.get !terminator),lassoc)
-    | Some (x,y,None) ->
+    | Some (x,y,RecursiveBinders (t_x,t_y)) ->
 	let newfound = (pi1 !found, pi2 !found, (x,y) :: pi3 !found) in
 	let iterator = f' (subst_glob_vars [x,GVar(Loc.ghost,y)] iterator) in
 	(* found have been collected by compare_constr *)
 	found := newfound;
+	check_is_hole x t_x;
+	check_is_hole y t_y;
 	NBinderList (x,y,iterator,f (Option.get !terminator))
   else
     raise Not_found
 
 let notation_constr_and_vars_of_glob_constr a =
   let found = ref ([],[],[]) in
+  let has_ltac = ref false in
   let rec aux c =
     let keepfound = !found in
     (* n^2 complexity but small and done only once per notation *)
@@ -368,7 +373,9 @@ let notation_constr_and_vars_of_glob_constr a =
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
   | GCast (_,c,k) -> NCast (aux c,Miscops.map_cast_type aux k)
   | GSort (_,s) -> NSort s
-  | GHole (_,w,naming,arg) -> NHole (w, naming, arg)
+  | GHole (_,w,naming,arg) ->
+     if arg != None then has_ltac := true;
+     NHole (w, naming, arg)
   | GRef (_,r,_) -> NRef r
   | GEvar _ | GPatVar _ ->
       error "Existential variables not allowed in notations."
@@ -376,9 +383,10 @@ let notation_constr_and_vars_of_glob_constr a =
   in
   let t = aux a in
   (* Side effect *)
-  t, !found
+  t, !found, !has_ltac
 
-let check_variables nenv (found,foundrec,foundrecbinding) =
+let check_variables_and_reversibility nenv (found,foundrec,foundrecbinding) =
+  let injective = ref true in
   let recvars = nenv.ninterp_rec_vars in
   let fold _ y accu = Id.Set.add y accu in
   let useless_vars = Id.Map.fold fold recvars Id.Set.empty in
@@ -401,7 +409,7 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
 	error
           (Id.to_string x ^
           " should not be bound in a recursive pattern of the right-hand side.")
-      else nenv.ninterp_only_parse <- true
+      else injective := false
   in
   let check_pair s x y where =
     if not (List.mem_f (pair_equal Id.equal Id.equal) (x,y) where) then
@@ -421,12 +429,13 @@ let check_variables nenv (found,foundrec,foundrecbinding) =
 	  with Not_found -> check_bound x
 	end
     | NtnInternTypeIdent -> check_bound x in
-  Id.Map.iter check_type vars
+  Id.Map.iter check_type vars;
+  !injective
 
 let notation_constr_of_glob_constr nenv a =
-  let a, found = notation_constr_and_vars_of_glob_constr a in
-  let () = check_variables nenv found in
-  a
+  let a, found, has_ltac = notation_constr_and_vars_of_glob_constr a in
+  let injective = check_variables_and_reversibility nenv found in
+  a, not has_ltac && injective
 
 (**********************************************************************)
 (* Substitution of kernel names, avoiding a list of bound identifiers *)
@@ -436,7 +445,6 @@ let notation_constr_of_constr avoiding t =
   let nenv = {
     ninterp_var_type = Id.Map.empty;
     ninterp_rec_vars = Id.Map.empty;
-    ninterp_only_parse = false;
   } in
   notation_constr_of_glob_constr nenv t
 
@@ -454,7 +462,7 @@ let rec subst_notation_constr subst bound raw =
   | NRef ref ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then raw else
-	  notation_constr_of_constr bound t
+	  fst (notation_constr_of_constr bound t)
 
   | NVar _ -> raw
 

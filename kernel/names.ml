@@ -34,9 +34,15 @@ struct
 
   let hash = String.hash
 
+  let warn_invalid_identifier =
+    CWarnings.create ~name:"invalid-identifier" ~category:"parsing"
+                     ~default:CWarnings.Disabled
+                     (fun s -> str s)
+
   let check_soft ?(warn = true) x =
     let iter (fatal, x) =
-      if fatal then CErrors.error x else if warn then Feedback.msg_warning (str x)
+      if fatal then CErrors.error x else
+        if warn then warn_invalid_identifier x
     in
     Option.iter iter (Unicode.ident_refutation x)
 
@@ -598,7 +604,13 @@ end
 module Constant = KerPair
 
 module Cmap = HMap.Make(Constant.CanOrd)
+(** A map whose keys are constants (values of the {!Constant.t} type).
+    Keys are ordered wrt. "cannonical form" of the constant. *)
+
 module Cmap_env = HMap.Make(Constant.UserOrd)
+(** A map whose keys are constants (values of the {!Constant.t} type).
+    Keys are ordered wrt. "user form" of the constant. *)
+
 module Cpred = Predicate.Make(Constant.CanOrd)
 module Cset = Cmap.Set
 module Cset_env = Cmap_env.Set

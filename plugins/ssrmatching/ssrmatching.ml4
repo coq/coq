@@ -113,8 +113,7 @@ let guard_term ch1 s i = match s.[i] with
 (* The call 'guard s i' should return true if the contents of s *)
 (* starting at i need bracketing to avoid ambiguities.          *)
 let pr_guarded guard prc c =
-  msg_with Format.str_formatter (prc c);
-  let s = Format.flush_str_formatter () ^ "$" in
+  let s = Pp.string_of_ppcmds (prc c) ^ "$" in
   if guard s (skip_wschars s 0) then pr_paren prc c else prc c
 (* More sensible names for constr printers *)
 let pr_constr = pr_constr
@@ -356,7 +355,7 @@ let nf_open_term sigma0 ise c =
   !s', Evd.evar_universe_context s, c'
 
 let unif_end env sigma0 ise0 pt ok =
-  let ise = Evarconv.consider_remaining_unif_problems env ise0 in
+  let ise = Evarconv.solve_unif_constraints_with_heuristics env ise0 in
   let s, uc, t = nf_open_term sigma0 ise pt in
   let ise1 = create_evar_defs s in
   let ise1 = Evd.set_universe_context ise1 uc in
@@ -436,7 +435,7 @@ let proj_nparams c =
   try 1 + Recordops.find_projection_nparams (ConstRef c) with _ -> 0
 
 let isFixed c = match kind_of_term c with
-  | Var _ | Ind _ | Construct _ | Const _ -> true
+  | Var _ | Ind _ | Construct _ | Const _ | Proj _ -> true
   | _ -> false
 
 let isRigid c = match kind_of_term c with
@@ -488,6 +487,7 @@ let mk_tpattern ?p_origin ?(hack=false) env sigma0 (ise, t) ok dir p =
       let np = proj_nparams p in
       if np = 0 || np > List.length a then KpatConst, f, a else
       let a1, a2 = List.chop np a in KpatProj p, applist(f, a1), a2
+    | Proj (p,arg) -> KpatProj (Projection.constant p), f, a
     | Var _ | Ind _ | Construct _ -> KpatFixed, f, a
     | Evar (k, _) ->
       if Evd.mem sigma0 k then KpatEvar k, f, a else
@@ -568,6 +568,10 @@ let filter_upat i0 f n u fpats =
   if np < na then fpats else
   let () = if !i0 < np then i0 := n in (u, np) :: fpats
 
+let eq_prim_proj c t = match kind_of_term t with
+  | Proj(p,_) -> Constant.equal (Projection.constant p) c
+  | _ -> false
+
 let filter_upat_FO i0 f n u fpats =
   let np = nb_args u.up_FO in
   if n < np then fpats else
@@ -578,7 +582,7 @@ let filter_upat_FO i0 f n u fpats =
   | KpatLet -> isLetIn f
   | KpatLam -> isLambda f
   | KpatRigid -> isRigid f
-  | KpatProj pc -> Term.eq_constr f (mkConst pc)
+  | KpatProj pc -> Term.eq_constr f (mkConst pc) || eq_prim_proj pc f
   | KpatFlex -> i0 := n; true in
   if ok then begin if !i0 < np then i0 := np; (u, np) :: fpats end else fpats
 
@@ -909,9 +913,47 @@ let glob_ssrterm gs = function
       fst x, Some c
   | ct -> ct
 
+(* This piece of code asserts the following notations are reserved *)
+(* Reserved Notation "( a 'in' b )"        (at level 0).           *)
+(* Reserved Notation "( a 'as' b )"        (at level 0).           *)
+(* Reserved Notation "( a 'in' b 'in' c )" (at level 0).           *)
+(* Reserved Notation "( a 'as' b 'in' c )" (at level 0).           *)
+let glob_cpattern gs p =
+  pp(lazy(str"globbing pattern: " ++ pr_term p));
+  let glob x = snd (glob_ssrterm gs (mk_lterm x)) in
+  let encode k s l =
+    let name = Name (id_of_string ("_ssrpat_" ^ s)) in
+    k, (mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None) in
+  let bind_in t1 t2 =
+    let d = dummy_loc in let n = Name (destCVar t1) in
+    fst (glob (mkCCast d (mkCHole d) (mkCLambda d n (mkCHole d) t2))) in
+  let check_var t2 = if not (isCVar t2) then
+    loc_error (constr_loc t2) "Only identifiers are allowed here" in
+  match p with
+  | _, (_, None) as x -> x
+  | k, (v, Some t) as orig ->
+     if k = 'x' then glob_ssrterm gs ('(', (v, Some t)) else
+     match t with
+     | CNotation(_, "( _ in _ )", ([t1; t2], [], [])) ->
+         (try match glob t1, glob t2 with
+         | (r1, None), (r2, None) -> encode k "In" [r1;r2]
+         | (r1, Some _), (r2, Some _) when isCVar t1 ->
+             encode k "In" [r1; r2; bind_in t1 t2]
+         | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
+         | _ -> CErrors.anomaly (str"where are we?")
+         with _ when isCVar t1 -> encode k "In" [bind_in t1 t2])
+     | CNotation(_, "( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
+         check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
+     | CNotation(_, "( _ as _ )", ([t1; t2], [], [])) ->
+         encode k "As" [fst (glob t1); fst (glob t2)]
+     | CNotation(_, "( _ as _ in _ )", ([t1; t2; t3], [], [])) ->
+         check_var t2; encode k "As" [fst (glob t1); bind_in t2 t3]
+     | _ -> glob_ssrterm gs orig
+;;
+
 let glob_rpattern s p =
   match p with
-  | T t -> T (glob_ssrterm s t)
+  | T t -> T (glob_cpattern s t)
   | In_T t -> In_T (glob_ssrterm s t)
   | X_In_T(x,t) -> X_In_T (x,glob_ssrterm s t)
   | In_X_In_T(x,t) -> In_X_In_T (x,glob_ssrterm s t)
@@ -995,44 +1037,6 @@ let input_ssrtermkind strm = match Compat.get_tok (stream_nth 0 strm) with
   | Tok.KEYWORD "@" -> '@'
   | _ -> ' '
 let ssrtermkind = Gram.Entry.of_parser "ssrtermkind" input_ssrtermkind
-
-(* This piece of code asserts the following notations are reserved *)
-(* Reserved Notation "( a 'in' b )"        (at level 0).           *)
-(* Reserved Notation "( a 'as' b )"        (at level 0).           *)
-(* Reserved Notation "( a 'in' b 'in' c )" (at level 0).           *)
-(* Reserved Notation "( a 'as' b 'in' c )" (at level 0).           *)
-let glob_cpattern gs p =
-  pp(lazy(str"globbing pattern: " ++ pr_term p));
-  let glob x = snd (glob_ssrterm gs (mk_lterm x)) in
-  let encode k s l =
-    let name = Name (id_of_string ("_ssrpat_" ^ s)) in
-    k, (mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None) in
-  let bind_in t1 t2 =
-    let d = dummy_loc in let n = Name (destCVar t1) in
-    fst (glob (mkCCast d (mkCHole d) (mkCLambda d n (mkCHole d) t2))) in
-  let check_var t2 = if not (isCVar t2) then
-    loc_error (constr_loc t2) "Only identifiers are allowed here" in
-  match p with
-  | _, (_, None) as x -> x
-  | k, (v, Some t) as orig ->
-     if k = 'x' then glob_ssrterm gs ('(', (v, Some t)) else
-     match t with
-     | CNotation(_, "( _ in _ )", ([t1; t2], [], [])) ->
-         (try match glob t1, glob t2 with
-         | (r1, None), (r2, None) -> encode k "In" [r1;r2]
-         | (r1, Some _), (r2, Some _) when isCVar t1 ->
-             encode k "In" [r1; r2; bind_in t1 t2]
-         | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
-         | _ -> CErrors.anomaly (str"where are we?")
-         with _ when isCVar t1 -> encode k "In" [bind_in t1 t2])
-     | CNotation(_, "( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
-         check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
-     | CNotation(_, "( _ as _ )", ([t1; t2], [], [])) ->
-         encode k "As" [fst (glob t1); fst (glob t2)]
-     | CNotation(_, "( _ as _ in _ )", ([t1; t2; t3], [], [])) ->
-         check_var t2; encode k "As" [fst (glob t1); bind_in t2 t3]
-     | _ -> glob_ssrterm gs orig
-;;
 
 let interp_ssrterm _ gl t = Tacmach.project gl, t
 

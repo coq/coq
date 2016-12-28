@@ -21,9 +21,34 @@ val root_of_id : Id.t -> Id.t (** remove trailing digits, ' and _ *)
 val add_suffix : Id.t -> string -> Id.t
 val add_prefix : string -> Id.t -> Id.t
 
-val has_subscript    : Id.t -> bool
-val lift_subscript   : Id.t -> Id.t
-val forget_subscript : Id.t -> Id.t
+(** Below, by {i subscript} we mean a suffix composed solely from (decimal) digits. *)
+
+val has_subscript       : Id.t -> bool
+
+val increment_subscript : Id.t -> Id.t
+(** Return the same identifier as the original one but whose {i subscript} is incremented.
+    If the original identifier does not have a suffix, [0] is appended to it.
+
+    Example mappings:
+
+    [bar]   ↦ [bar0]
+
+    [bar0]  ↦ [bar1]
+
+    [bar00] ↦ [bar01]
+
+    [bar1]  ↦ [bar2]
+
+    [bar01] ↦ [bar01]
+
+    [bar9]  ↦ [bar10]
+
+    [bar09] ↦ [bar10]
+
+    [bar99] ↦ [bar100]
+*)
+
+val forget_subscript    : Id.t -> Id.t
 
 val out_name : Name.t -> Id.t
 (** [out_name] associates [id] to [Name id]. Raises [Failure "Nameops.out_name"]

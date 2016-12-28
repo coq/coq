@@ -411,7 +411,7 @@ let inMLModule : ml_module_object -> obj =
 
 let declare_ml_modules local l =
   let l = List.map mod_of_name l in
-  Lib.add_anonymous_leaf (inMLModule {mlocal=local; mnames=l})
+  Lib.add_anonymous_leaf ~cache_first:false (inMLModule {mlocal=local; mnames=l})
 
 let print_ml_path () =
   let l = !coq_mlpath_copy in

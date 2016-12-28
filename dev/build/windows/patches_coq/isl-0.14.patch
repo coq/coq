@@ -1,0 +1,11 @@
+--- orig.isl-0.14/configure	2014-10-26 08:36:32.000000000 +0100
++++ isl-0.14/configure	2016-10-10 18:16:01.430224500 +0200
+@@ -8134,7 +8134,7 @@
+      lt_sysroot=`$CC --print-sysroot 2>/dev/null`
+    fi
+    ;; #(
+- /*)
++ /*|[A-Z]:\\*|[A-Z]:/*)
+    lt_sysroot=`echo "$with_sysroot" | sed -e "$sed_quote_subst"`
+    ;; #(
+  no|'')

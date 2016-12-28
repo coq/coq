@@ -47,10 +47,12 @@ val empty_lvar : ltac_var_map
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
 
+type inference_hook = env -> evar_map -> evar -> evar_map * constr
+
 type inference_flags = {
   use_typeclasses : bool;
-  use_unif_heuristics : bool;
-  use_hook : (env -> evar_map -> evar -> constr) option;
+  solve_unification_constraints : bool;
+  use_hook : inference_hook option;
   fail_evar : bool;
   expand_evars : bool
 }

@@ -67,9 +67,21 @@ let root_of_id id =
   let suffixstart = cut_ident true id in
   Id.of_string (String.sub (Id.to_string id) 0 suffixstart)
 
-(* Rem: semantics is a bit different, if an ident starts with toto00 then
-  after successive renamings it comes to toto09, then it goes on with toto10 *)
-let lift_subscript id =
+(* Return the same identifier as the original one but whose {i subscript} is incremented.
+   If the original identifier does not have a suffix, [0] is appended to it.
+
+   Example mappings:
+
+   [bar]   ↦ [bar0]
+   [bar0]  ↦ [bar1]
+   [bar00] ↦ [bar01]
+   [bar1]  ↦ [bar2]
+   [bar01] ↦ [bar01]
+   [bar9]  ↦ [bar10]
+   [bar09] ↦ [bar10]
+   [bar99] ↦ [bar100]
+*)
+let increment_subscript id =
   let id = Id.to_string id in
   let len = String.length id in
   let rec add carrypos =

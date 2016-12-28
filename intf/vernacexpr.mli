@@ -122,8 +122,14 @@ type hint_mode =
   | ModeNoHeadEvar (* No evar at the head *)
   | ModeOutput (* Anything *)
 
+type 'a hint_info_gen =
+    { hint_priority : int option;
+      hint_pattern : 'a option }
+
+type hint_info_expr = constr_pattern_expr hint_info_gen
+
 type hints_expr =
-  | HintsResolve of (int option * bool * reference_or_constr) list
+  | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
@@ -210,8 +216,9 @@ type syntax_modifier =
   | SetLevel of int
   | SetAssoc of Extend.gram_assoc
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
-  | SetOnlyParsing of Flags.compat_version
+  | SetOnlyParsing
   | SetOnlyPrinting
+  | SetCompatVersion of Flags.compat_version
   | SetFormat of string * string located
 
 type proof_end =
@@ -345,7 +352,7 @@ type vernac_expr =
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
-  | VernacConstraint of (lident * Univ.constraint_type * lident) list
+  | VernacConstraint of (glob_level * Univ.constraint_type * glob_level) list
 
   (* Gallina extensions *)
   | VernacBeginSection of lident
@@ -366,12 +373,12 @@ type vernac_expr =
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
 	(bool * constr_expr) option * (* props *)
-	int option (* Priority *)
+	hint_info_expr
 
   | VernacContext of local_binder list
 
   | VernacDeclareInstances of
-    reference list * int option (* instance names, priority *)
+    (reference * hint_info_expr) list (* instances names, priorities and patterns *)
 
   | VernacDeclareClass of reference (* inductive or definition name *)
 
@@ -414,10 +421,12 @@ type vernac_expr =
   | VernacDeclareImplicits of reference or_by_notation *
       (explicitation * bool * bool) list list
   | VernacArguments of reference or_by_notation *
-      ((Name.t * bool * (Loc.t * string) option * bool * bool) list) list *
-      int * [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
-              `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
-              `DefaultImplicits ] list
+      vernac_argument_status list (* Main arguments status list *) *
+        (Name.t * vernac_implicit_status) list list (* Extra implicit status lists *) *
+      int option (* Number of args to trigger reduction *) *
+        [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
+          `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
+          `DefaultImplicits ] list
   | VernacArgumentsScope of reference or_by_notation *
       scope_name option list
   | VernacReserve of simple_binder list
@@ -427,6 +436,7 @@ type vernac_expr =
       (Conv_oracle.level * reference or_by_notation list) list
   | VernacUnsetOption of Goptions.option_name
   | VernacSetOption of Goptions.option_name * option_value
+  | VernacSetAppendOption of Goptions.option_name * string
   | VernacAddOption of Goptions.option_name * option_ref_value list
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list
@@ -471,6 +481,15 @@ type vernac_expr =
   | VernacProgram of vernac_expr
   | VernacPolymorphic of bool * vernac_expr
   | VernacLocal of bool * vernac_expr
+
+and vernac_implicit_status = Implicit | MaximallyImplicit | NotImplicit
+
+and vernac_argument_status = {
+  name : Name.t;
+  recarg_like : bool;
+  notation_scope : (Loc.t * string) option;
+  implicit_status : vernac_implicit_status;
+}
 
 (* A vernac classifier has to tell if a command:
    vernac_when: has to be executed now (alters the parser) or later

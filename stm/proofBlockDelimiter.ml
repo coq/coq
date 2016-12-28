@@ -83,7 +83,7 @@ let static_bullet ({ entry_point; prev_node } as view) =
         if node.indentation > base then `Cont node else
         match node.ast with
         | Vernacexpr.VernacBullet b' when b = b' ->
-          `Found { stop = entry_point.id; start = prev.id;
+          `Found { block_stop = entry_point.id; block_start = prev.id;
                    dynamic_switch = node.id; carry_on_data = of_bullet_val b }
         | _ -> `Stop) entry_point
   | _ -> assert false
@@ -108,7 +108,7 @@ let static_curly_brace ({ entry_point; prev_node } as view) =
   crawl view (fun (nesting,prev) node ->
     match node.ast with
     | Vernacexpr.VernacSubproof _ when nesting = 0 ->
-      `Found { stop = entry_point.id; start = prev.id;
+      `Found { block_stop = entry_point.id; block_start = prev.id;
                dynamic_switch = node.id; carry_on_data = unit_val }
     | Vernacexpr.VernacSubproof _ ->
       `Cont (nesting - 1,node)
@@ -135,7 +135,7 @@ let static_par { entry_point; prev_node } =
   match prev_node entry_point with
   | None -> None
   | Some { id = pid } ->
-      Some { stop = entry_point.id; start = pid;
+      Some { block_stop = entry_point.id; block_start = pid;
              dynamic_switch = pid; carry_on_data = unit_val }
 
 let dynamic_par { dynamic_switch = id } =
@@ -162,7 +162,7 @@ let static_indent ({ entry_point; prev_node } as view) =
         crawl view ~init:(Some last_tac) (fun prev node ->
         if node.indentation >= last_tac.indentation then `Cont node
         else 
-          `Found { stop = entry_point.id; start = node.id;
+          `Found { block_stop = entry_point.id; block_start = node.id;
                    dynamic_switch = node.id;
                    carry_on_data = of_vernac_expr_val entry_point.ast }
         ) last_tac

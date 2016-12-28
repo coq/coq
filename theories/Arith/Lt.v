@@ -25,7 +25,7 @@ Local Open Scope nat_scope.
 
 Notation lt_irrefl := Nat.lt_irrefl (compat "8.4"). (* ~ x < x *)
 
-Hint Resolve lt_irrefl: arith v62.
+Hint Resolve lt_irrefl: arith.
 
 (** * Relationship between [le] and [lt] *)
 
@@ -44,9 +44,9 @@ Proof.
  apply Nat.lt_succ_r.
 Qed.
 
-Hint Immediate lt_le_S: arith v62.
-Hint Immediate lt_n_Sm_le: arith v62.
-Hint Immediate le_lt_n_Sm: arith v62.
+Hint Immediate lt_le_S: arith.
+Hint Immediate lt_n_Sm_le: arith.
+Hint Immediate le_lt_n_Sm: arith.
 
 Theorem le_not_lt n m : n <= m -> ~ m < n.
 Proof.
@@ -58,7 +58,7 @@ Proof.
  apply Nat.lt_nge.
 Qed.
 
-Hint Immediate le_not_lt lt_not_le: arith v62.
+Hint Immediate le_not_lt lt_not_le: arith.
 
 (** * Asymmetry *)
 
@@ -79,8 +79,8 @@ Proof.
  intros. now apply Nat.neq_sym, Nat.neq_0_lt_0.
 Qed.
 
-Hint Resolve lt_0_Sn lt_n_0 : arith v62.
-Hint Immediate neq_0_lt lt_0_neq: arith v62.
+Hint Resolve lt_0_Sn lt_n_0 : arith.
+Hint Immediate neq_0_lt lt_0_neq: arith.
 
 (** * Order and successor *)
 
@@ -97,8 +97,8 @@ Proof.
  apply Nat.succ_lt_mono.
 Qed.
 
-Hint Resolve lt_n_Sn lt_S lt_n_S : arith v62.
-Hint Immediate lt_S_n : arith v62.
+Hint Resolve lt_n_Sn lt_S lt_n_S : arith.
+Hint Immediate lt_S_n : arith.
 
 (** * Predecessor *)
 
@@ -117,8 +117,8 @@ Proof.
  intros. now apply Nat.lt_pred_l, Nat.neq_0_lt_0.
 Qed.
 
-Hint Immediate lt_pred: arith v62.
-Hint Resolve lt_pred_n_n: arith v62.
+Hint Immediate lt_pred: arith.
+Hint Resolve lt_pred_n_n: arith.
 
 (** * Transitivity properties *)
 
@@ -126,7 +126,7 @@ Notation lt_trans := Nat.lt_trans (compat "8.4").
 Notation lt_le_trans := Nat.lt_le_trans (compat "8.4").
 Notation le_lt_trans := Nat.le_lt_trans (compat "8.4").
 
-Hint Resolve lt_trans lt_le_trans le_lt_trans: arith v62.
+Hint Resolve lt_trans lt_le_trans le_lt_trans: arith.
 
 (** * Large = strict or equal *)
 
@@ -139,7 +139,7 @@ Qed.
 
 Notation lt_le_weak := Nat.lt_le_incl (compat "8.4").
 
-Hint Immediate lt_le_weak: arith v62.
+Hint Immediate lt_le_weak: arith.
 
 (** * Dichotomy *)
 

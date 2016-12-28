@@ -70,7 +70,7 @@ let priority_of_string = function
   | "high" -> High
   | _ -> raise (Invalid_argument "priority_of_string")
 type tac_error_filter = [ `None | `Only of string list | `All ]
-let async_proofs_tac_error_resilience = ref (`Only [ "par" ; "curly" ])
+let async_proofs_tac_error_resilience = ref (`Only [ "curly" ])
 let async_proofs_cmd_error_resilience = ref true
 
 let async_proofs_is_worker () =
@@ -112,20 +112,25 @@ type compat_version = V8_2 | V8_3 | V8_4 | V8_5 | V8_6 | Current
 
 let compat_version = ref Current
 
-let version_strictly_greater v = match !compat_version, v with
-| _ , Current -> false
-| Current , _ -> true
-| _ , V8_6 -> false
-| V8_6 , _ -> true
-| _ , V8_5 -> false
-| V8_5 , _ -> true
-| _ , V8_4 -> false
-| V8_4 , _ -> true
-| _ , V8_3 -> false
-| V8_3 , _ -> true
-| V8_2 , V8_2 -> false
+let version_compare v1 v2 = match v1, v2 with
+| V8_2, V8_2 -> 0
+| V8_2, (V8_3 | V8_4 | V8_5 | V8_6 | Current) -> -1
+| V8_3, V8_2 -> 1
+| V8_3, V8_3 -> 0
+| V8_3, (V8_4 | V8_5 | V8_6 | Current) -> -1
+| V8_4, (V8_2 | V8_3) -> 1
+| V8_4, V8_4 -> 0
+| V8_4, (V8_5 | V8_6 | Current) -> -1
+| V8_5, (V8_2 | V8_3 | V8_4) -> 1
+| V8_5, V8_5 -> 0
+| V8_5, (V8_6 | Current) -> -1
+| V8_6, (V8_2 | V8_3 | V8_4 | V8_5) -> 1
+| V8_6, V8_6 -> 0
+| V8_6, Current -> -1
+| Current, Current -> 0
+| Current, (V8_2 | V8_3 | V8_4 | V8_5 | V8_6) -> 1
 
-
+let version_strictly_greater v = version_compare !compat_version v > 0
 let version_less_or_equal v = not (version_strictly_greater v)
 
 let pr_version = function
@@ -138,8 +143,6 @@ let pr_version = function
 
 (* Translate *)
 let beautify = ref false
-let make_beautify f = beautify := f
-let do_beautify () = !beautify
 let beautify_file = ref false
 
 (* Silent / Verbose *)
@@ -230,6 +233,7 @@ let print_mod_uid = ref false
 
 let tactic_context_compat = ref false
 let profile_ltac = ref false
+let profile_ltac_cutoff = ref 2.0
 
 let dump_bytecode = ref false
 let set_dump_bytecode = (:=) dump_bytecode

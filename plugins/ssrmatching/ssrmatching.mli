@@ -213,7 +213,7 @@ val assert_done : 'a option ref -> 'a
 
 (** Very low level APIs.
     these are calls to evarconv's [the_conv_x] followed by
-    [consider_remaining_unif_problems] and [resolve_typeclasses].
+    [solve_unif_constraints_with_heuristics] and [resolve_typeclasses].
     In case of failure they raise [NoMatch] *)
 
 val unify_HO : env -> evar_map -> constr -> constr -> evar_map

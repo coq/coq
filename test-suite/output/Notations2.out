@@ -60,3 +60,27 @@ exist (Q x) y conj
      : nat -> nat
 {1, 2}
      : nat -> Prop
+a#
+     : Set
+a#
+     : Set
+a≡
+     : Set
+a≡
+     : Set
+.≡
+     : Set
+.≡
+     : Set
+.a#
+     : Set
+.a#
+     : Set
+.a≡
+     : Set
+.a≡
+     : Set
+.α
+     : Set
+.α
+     : Set

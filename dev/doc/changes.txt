@@ -10,10 +10,12 @@ We renamed the following functions:
   Context.Named.Declaration.fold -> Context.Named.Declaration.fold_constr
   Printer.pr_var_list_decl       -> Printer.pr_compacted_decl
   Printer.pr_var_decl            -> Printer.pr_named_decl
+  Nameops.lift_subscript         -> Nameops.increment_subscript
 
 We removed the following functions:
 
-  Termops.Termops.compact_named_context_reverse
+  Termops.compact_named_context_reverse ... practical substitute is Termops.compact_named_context
+  Namegen.to_avoid                      ... equivalent substitute is Names.Id.List.mem
 
 We renamed the following modules:
 
@@ -52,12 +54,19 @@ important things:
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================
 
+** Parsing **
+
+Pcoq.parsable now takes an extra optional filename argument so as to
+bind locations to a file name when relevant.
+
 ** Files **
 
 To avoid clashes with OCaml's compiler libs, the following files were renamed:
 kernel/closure.ml{,i} -> kernel/cClosure.ml{,i}
 lib/errors.ml{,i} -> lib/cErrors.ml{,i}
 toplevel/cerror.ml{,i} -> toplevel/explainErr.mli{,i}
+
+All IDE-specific files, including the XML protocol have been moved to ide/
 
 ** Reduction functions **
 
@@ -261,6 +270,8 @@ val get_id_for_feedback : unit -> edit_or_state_id * route_id
   for constructing compound entries still works over this scheme. Note that in
   the case of (VERNAC) ARGUMENT EXTEND, the name of the argument entry is bound
   in the parsing rules, so beware of recursive calls.
+  
+  For example, to get "wit_constr" you must "open Constrarg" at the top of the file.
 
 - Evarutil was split in two parts. The new Evardefine file exposes functions
 define_evar_* mostly used internally in the unification engine.
@@ -287,6 +298,10 @@ define_evar_* mostly used internally in the unification engine.
   ...
   let Sigma (xn, sigma, pn) = ... in
   Sigma (ans, sigma, p1 +> ... +> pn)
+  
+  Examples of `Sigma.Unsafe.of_evar_map` include:
+  
+  Evarutil.new_evar env (Tacmach.project goal) ty   ----> Evarutil.new_evar env (Sigma.Unsafe.of_evar_map (Tacmach.project goal)) ty
 
 - The Proofview.Goal.*enter family of functions now takes a polymorphic
   continuation given as a record as an argument.
@@ -299,7 +314,17 @@ define_evar_* mostly used internally in the unification engine.
 
   Proofview.Goal.enter { enter = begin fun gl -> ... end }
   
-- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)` --> `Tacinterp.Value.of_constr c`
+- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)`      ---> `Tacinterp.Value.of_constr c`
+- `Vernacexpr.HintsResolveEntry(priority, poly, hnf, path, atom)` ---> `Vernacexpr.HintsResolveEntry(Vernacexpr.({hint_priority = priority; hint_pattern = None}), poly, hnf, path, atom)`
+- `Pretyping.Termops.mem_named_context`                           ---> `Engine.Termops.mem_named_context_val`
+  (`Global.named_context`                                         ---> `Global.named_context_val`)
+  (`Context.Named.lookup`                                         ---> `Environ.lookup_named_val`)
+
+** Search API **
+
+The main search functions now take a function iterating over the
+results. This allows for clients to use streaming or more economic
+printing.
 
 =========================================
 = CHANGES BETWEEN COQ V8.4 AND COQ V8.5 =

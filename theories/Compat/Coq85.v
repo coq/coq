@@ -12,6 +12,10 @@
     are likely needed to make them behave like Coq 8.5. *)
 Require Export Coq.Compat.Coq86.
 
+(** We use some deprecated options in this file, so we disable the
+    corresponding warning, to silence the build of this file. *)
+Local Set Warnings "-deprecated-option".
+
 (* In 8.5, "intros [|]", taken e.g. on a goal "A\/B->C", does not
    behave as "intros [H|H]" but leave instead hypotheses quantified in
    the goal, here producing subgoals A->C and B->C. *)
@@ -23,20 +27,10 @@ Global Unset Shrink Abstract.
 Global Unset Shrink Obligations.
 Global Set Refolding Reduction.
 
-(** In Coq 8.5, [] meant Vector, and [ ] meant list.  Restore this
-    behavior, to allow user-defined [] to not override vector
-    notations.  See https://coq.inria.fr/bugs/show_bug.cgi?id=4785. *)
+(** The resolution algorithm for type classes has changed. *)
+Global Set Typeclasses Legacy Resolution.
+Global Set Typeclasses Limit Intros.
+Global Unset Typeclasses Filtered Unification.
 
-Require Coq.Lists.List.
-Require Coq.Vectors.VectorDef.
-Module Export Coq.
-Module Export Vectors.
-Module VectorDef.
-Export Coq.Vectors.VectorDef.
-Module VectorNotations.
-Export Coq.Vectors.VectorDef.VectorNotations.
-Notation "[]" := (VectorDef.nil _) : vector_scope.
-End VectorNotations.
-End VectorDef.
-End Vectors.
-End Coq.
+(** Allow silently letting unification constraints float after a "." *)
+Global Unset Solve Unification Constraints.

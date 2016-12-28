@@ -45,12 +45,7 @@ let _ = Goptions.declare_bool_option {
 let unfold_projection env evd ts p c =
   let cst = Projection.constant p in
     if is_transparent_constant ts cst then
-      let c' = Some (mkProj (Projection.make cst true, c)) in
-	match ReductionBehaviour.get (Globnames.ConstRef cst) with
-	| None -> c'
-	| Some (recargs, nargs, flags) ->
-	  if (List.mem `ReductionNeverUnfold flags) then None
-	  else c'
+      Some (mkProj (Projection.make cst true, c))
     else None
       
 let eval_flexible_term ts env evd c =
@@ -104,19 +99,19 @@ let position_problem l2r = function
   | CONV -> None
   | CUMUL -> Some l2r
 
-let occur_rigidly ev evd t = 
+let occur_rigidly (evk,_ as ev) evd t =
   let rec aux t =
     match kind_of_term (whd_evar evd t) with
     | App (f, c) -> if aux f then Array.exists aux c else false
     | Construct _ | Ind _ | Sort _ | Meta _ | Fix _ | CoFix _ -> true
     | Proj (p, c) -> not (aux c)
-    | Evar (ev',_) -> if Evar.equal ev ev' then raise Occur else false
+    | Evar (evk',_) -> if Evar.equal evk evk' then raise Occur else false
     | Cast (p, _, _) -> aux p
     | Lambda _ | LetIn _ -> false
     | Const _ -> false
     | Prod (_, b, t) -> ignore(aux b || aux t); true
     | Rel _ | Var _ -> false
-    | Case _ -> false
+    | Case (_,_,c,_) -> if eq_constr (mkEvar ev) c then raise Occur else false
   in try ignore(aux t); false with Occur -> true
 
 (* [check_conv_record env sigma (t1,stack1) (t2,stack2)] tries to decompose 
@@ -406,14 +401,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     else evar_eqappr_x ts env' evd CONV out2 out1
   in
   let rigids env evd sk term sk' term' =
-    let b,univs = Universes.eq_constr_universes term term' in
-      if b then
+    let univs = Universes.eq_constr_universes term term' in
+    match univs with
+    | Some univs ->
        ise_and evd [(fun i ->
          let cstrs = Universes.to_constraints (Evd.universes i) univs in
            try Success (Evd.add_constraints i cstrs)
            with Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
                   (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk sk')]
-      else UnifFailure (evd,NotSameHead)
+    | None ->
+      UnifFailure (evd,NotSameHead)
   in
   let flex_maybeflex on_left ev ((termF,skF as apprF),cstsF) ((termM, skM as apprM),cstsM) vM =
     let switch f a b = if on_left then f a b else f b a in
@@ -485,7 +482,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	      ise_try evd 
 	        [eta;(* Postpone the use of an heuristic *)
 		 (fun i -> 
-		   if not (occur_rigidly (fst ev) i tR) then
+		   if not (occur_rigidly ev i tR) then
                      let i,tF =
                        if isRel tR || isVar tR then
                          (* Optimization so as to generate candidates *)
@@ -655,14 +652,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     allow this identification (first-order unification of universes). Otherwise
 	     fallback to unfolding.
 	  *)
-	  let b,univs = Universes.eq_constr_universes term1 term2 in
-	    if b then
+	  let univs = Universes.eq_constr_universes term1 term2 in
+          match univs with
+          | Some univs ->
 	      ise_and i [(fun i -> 
 		try Success (Evd.add_universe_constraints i univs)
 		with UniversesDiffer -> UnifFailure (i,NotSameHead)
 		| Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
 			 (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
-	    else UnifFailure (i,NotSameHead)
+          | None ->
+            UnifFailure (i,NotSameHead)
 	and f2 i =
 	  (try 
 	     if not (snd ts) then raise Not_found
@@ -1090,7 +1089,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
               match evar_conv_x ts env_evar evd CUMUL idty evty with
               | UnifFailure _ -> error "Cannot find an instance"
               | Success evd ->
-              match reconsider_conv_pbs (evar_conv_x ts) evd with
+              match reconsider_unif_constraints (evar_conv_x ts) evd with
               | UnifFailure _ -> error "Cannot find an instance"
               | Success evd ->
               evd
@@ -1156,7 +1155,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       let f env evd pbty x y = is_fconv ~reds:ts pbty env evd x y in
       Success (solve_refl ~can_drop:true f env evd
                  (position_problem true pbty) evk1 args1 args2)
-  | Evar ev1, Evar ev2 ->
+  | Evar ev1, Evar ev2 when app_empty ->
       Success (solve_evar_evar ~force:true
         (evar_define (evar_conv_x ts) ~choose:true) (evar_conv_x ts) env evd
         (position_problem true pbty) ev1 ev2)
@@ -1184,9 +1183,14 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       (* Some head evar have been instantiated, or unknown kind of problem *)
       evar_conv_x ts env evd pbty t1 t2
 
+let error_cannot_unify env evd pb ?reason t1 t2 =
+  Pretype_errors.error_cannot_unify
+    ~loc:(loc_of_conv_pb evd pb) env
+    evd ?reason (t1, t2)
+
 let check_problems_are_solved env evd =
   match snd (extract_all_conv_pbs evd) with
-  | (pbty,env,t1,t2)::_ -> Pretype_errors.error_cannot_unify env evd (t1, t2)
+  | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb t1 t2
   | _ -> ()
 
 let max_undefined_with_candidates evd =
@@ -1217,7 +1221,7 @@ let rec solve_unconstrained_evars_with_candidates ts evd =
             let conv_algo = evar_conv_x ts in
             let evd = check_evar_instance evd evk a conv_algo in
             let evd = Evd.define evk a evd in
-            match reconsider_conv_pbs conv_algo evd with
+            match reconsider_unif_constraints conv_algo evd with
             | Success evd -> solve_unconstrained_evars_with_candidates ts evd
             | UnifFailure _ -> aux l
           with
@@ -1240,7 +1244,7 @@ let solve_unconstrained_impossible_cases env evd =
 	Evd.define evk ty evd' 
     | _ -> evd') evd evd
 
-let consider_remaining_unif_problems env
+let solve_unif_constraints_with_heuristics env
     ?(ts=Conv_oracle.get_transp_state (Environ.oracle env)) evd =
   let evd = solve_unconstrained_evars_with_candidates ts evd in
   let rec aux evd pbs progress stuck =
@@ -1255,22 +1259,22 @@ let consider_remaining_unif_problems env
 	      aux evd pbs progress (pb :: stuck)
             end
         | UnifFailure (evd,reason) ->
-	    Pretype_errors.error_cannot_unify ~loc:(loc_of_conv_pb evd pb)
-              env evd ~reason (t1, t2))
+           error_cannot_unify env evd pb ~reason t1 t2)
     | _ -> 
 	if progress then aux evd stuck false []
 	else 
 	  match stuck with
 	  | [] -> (* We're finished *) evd
 	  | (pbty,env,t1,t2 as pb) :: _ ->
-	      (* There remains stuck problems *)
-	      Pretype_errors.error_cannot_unify ~loc:(loc_of_conv_pb evd pb)
-                env evd (t1, t2)
+	     (* There remains stuck problems *)
+             error_cannot_unify env evd pb t1 t2
   in
   let (evd,pbs) = extract_all_conv_pbs evd in
   let heuristic_solved_evd = aux evd pbs false [] in
   check_problems_are_solved env heuristic_solved_evd;
   solve_unconstrained_impossible_cases env heuristic_solved_evd
+
+let consider_remaining_unif_problems = solve_unif_constraints_with_heuristics
 
 (* Main entry points *)
 

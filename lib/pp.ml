@@ -77,17 +77,6 @@ open Pp_control
    \end{description}
  *)
 
-let comments = ref []
-
-let rec split_com comacc acc pos = function
-    [] -> comments := List.rev acc; comacc
-  | ((b,e),c as com)::coms ->
-      (* Take all comments that terminates before pos, or begin exactly
-         at pos (used to print comments attached after an expression) *)
-      if e<=pos || pos=b then split_com (c::comacc) acc pos coms
-      else  split_com comacc (com::acc) pos coms
-
-
 type block_type =
   | Pp_hbox of int
   | Pp_vbox of int
@@ -111,7 +100,7 @@ type 'a ppcmd_token =
   | Ppcmd_open_box of block_type
   | Ppcmd_close_box
   | Ppcmd_close_tbox
-  | Ppcmd_comment of int
+  | Ppcmd_comment of string list
   | Ppcmd_open_tag of Tag.t
   | Ppcmd_close_tag
 
@@ -177,7 +166,7 @@ let tab () = Glue.atom(Ppcmd_set_tab)
 let fnl () = Glue.atom(Ppcmd_force_newline)
 let pifb () = Glue.atom(Ppcmd_print_if_broken)
 let ws n = Glue.atom(Ppcmd_white_space n)
-let comment n = Glue.atom(Ppcmd_comment n)
+let comment l = Glue.atom(Ppcmd_comment l)
 
 (* derived commands *)
 let mt () = Glue.empty
@@ -254,32 +243,15 @@ let qstring s = str "\"" ++ str (escape_string s) ++ str "\""
 let qs = qstring
 let quote s = h 0 (str "\"" ++ s ++ str "\"")
 
-(* This flag tells if the last printed comment ends with a newline, to
-  avoid empty lines *)
-let com_eol = ref false
-
-let com_brk ft = com_eol := false
-let com_if ft f =
-  if !com_eol then (com_eol := false; Format.pp_force_newline ft ())
-  else Lazy.force f
-
 let rec pr_com ft s =
   let (s1,os) =
     try
       let n = String.index s '\n' in
       String.sub s 0 n, Some (String.sub s (n+1) (String.length s - n - 1))
     with Not_found -> s,None in
-  com_if ft (Lazy.from_val());
-(*  let s1 =
-    if String.length s1 <> 0 && s1.[0] = ' ' then
-      (Format.pp_print_space ft (); String.sub s1 1 (String.length s1 - 1))
-    else s1 in*)
   Format.pp_print_as ft (utf8_length s1) s1;
   match os with
-      Some s2 ->
-        if Int.equal (String.length s2) 0 then (com_eol := true)
-        else
-          (Format.pp_force_newline ft (); pr_com ft s2)
+      Some s2 -> Format.pp_force_newline ft (); pr_com ft s2
     | None -> ()
 
 type tag_handler = Tag.t -> Format.tag
@@ -298,34 +270,24 @@ let pp_dirs ?pp_tag ft =
         begin match tok with
         | Str_def s ->
           let n = utf8_length s in
-          com_if ft (Lazy.from_val()); Format.pp_print_as ft n s
+          Format.pp_print_as ft n s
         | Str_len (s, n) ->
-          com_if ft (Lazy.from_val()); Format.pp_print_as ft n s
+          Format.pp_print_as ft n s
         end
     | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
-        com_if ft (Lazy.from_val());
         pp_open_box bty ;
         if not (Format.over_max_boxes ()) then Glue.iter pp_cmd ss;
         Format.pp_close_box ft ()
-    | Ppcmd_open_box bty      -> com_if ft (Lazy.from_val()); pp_open_box bty
+    | Ppcmd_open_box bty      -> pp_open_box bty
     | Ppcmd_close_box         -> Format.pp_close_box ft ()
     | Ppcmd_close_tbox        -> Format.pp_close_tbox ft ()
-    | Ppcmd_white_space n     ->
-        com_if ft (Lazy.from_fun (fun()->Format.pp_print_break ft n 0))
-    | Ppcmd_print_break(m,n)  ->
-        com_if ft (Lazy.from_fun(fun()->Format.pp_print_break ft m n))
+    | Ppcmd_white_space n     -> Format.pp_print_break ft n 0
+    | Ppcmd_print_break(m,n)  -> Format.pp_print_break ft m n
     | Ppcmd_set_tab           -> Format.pp_set_tab ft ()
-    | Ppcmd_print_tbreak(m,n) ->
-        com_if ft (Lazy.from_fun(fun()->Format.pp_print_tbreak ft m n))
-    | Ppcmd_force_newline     ->
-        com_brk ft; Format.pp_force_newline ft ()
-    | Ppcmd_print_if_broken   ->
-        com_if ft (Lazy.from_fun(fun()->Format.pp_print_if_newline ft ()))
-    | Ppcmd_comment i         ->
-        let coms = split_com [] [] i !comments in
-(*        Format.pp_open_hvbox ft 0;*)
-        List.iter (pr_com ft) coms(*;
-        Format.pp_close_box ft ()*)
+    | Ppcmd_print_tbreak(m,n) -> Format.pp_print_tbreak ft m n
+    | Ppcmd_force_newline     -> Format.pp_force_newline ft ()
+    | Ppcmd_print_if_broken   -> Format.pp_print_if_newline ft ()
+    | Ppcmd_comment coms      -> List.iter (pr_com ft) coms
     | Ppcmd_open_tag tag ->
       begin match pp_tag with
       | None -> ()
@@ -339,13 +301,12 @@ let pp_dirs ?pp_tag ft =
   in
   let pp_dir = function
     | Ppdir_ppcmds cmdstream -> Glue.iter pp_cmd cmdstream
-    | Ppdir_print_newline    ->
-        com_brk ft; Format.pp_print_newline ft ()
+    | Ppdir_print_newline    -> Format.pp_print_newline ft ()
     | Ppdir_print_flush      -> Format.pp_print_flush ft ()
   in
   fun (dirstream : _ ppdirs) ->
     try
-      Glue.iter pp_dir dirstream; com_brk ft
+      Glue.iter pp_dir dirstream
     with reraise ->
       let reraise = Backtrace.add_backtrace reraise in
       let () = Format.pp_print_flush ft () in
@@ -356,8 +317,8 @@ let pp_with ?pp_tag ft strm =
   pp_dirs ?pp_tag ft (Glue.atom (Ppdir_ppcmds strm))
 
 (* pretty printing functions WITH FLUSH *)
-let msg_with ft strm =
-  pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_flush))
+let msg_with ?pp_tag ft strm =
+  pp_dirs ?pp_tag ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_flush))
 
 (* If mixing some output and a goal display, please use msg_warning,
    so that interfaces (proofgeneral for example) can easily dispatch
@@ -365,7 +326,7 @@ let msg_with ft strm =
 
 (** Output to a string formatter *)
 let string_of_ppcmds c =
-  Format.fprintf Format.str_formatter "@[%a@]" msg_with c;
+  Format.fprintf Format.str_formatter "@[%a@]" (msg_with ?pp_tag:None) c;
   Format.flush_str_formatter ()
 
 (* Copy paste from Util *)

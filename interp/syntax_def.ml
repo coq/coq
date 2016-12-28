@@ -84,11 +84,6 @@ let declare_syntactic_definition local id onlyparse pat =
 
 let pr_syndef kn = pr_qualid (shortest_qualid_of_syndef Id.Set.empty kn)
 
-let verbose_compat_notations = ref true
-
-let is_verbose_compat () =
-  !verbose_compat_notations
-
 let pr_compat_warning (kn, def, v) =
   let pp_def = match def with
     | [], NRef r -> spc () ++ str "is" ++ spc () ++ pr_global_env Id.Set.empty r
@@ -98,11 +93,11 @@ let pr_compat_warning (kn, def, v) =
   pr_syndef kn ++ pp_def ++ since
 
 let warn_compatibility_notation =
-  CWarnings.create ~name:"compatibility-notation"
-                   ~category:"deprecated" pr_compat_warning
+  CWarnings.(create ~name:"compatibility-notation"
+                    ~category:"deprecated" ~default:Disabled pr_compat_warning)
 
 let verbose_compat kn def = function
-  | Some v when is_verbose_compat () && Flags.version_strictly_greater v ->
+  | Some v when Flags.version_strictly_greater v ->
      warn_compatibility_notation (kn, def, v)
   | _ -> ()
 
@@ -113,12 +108,3 @@ let search_syntactic_definition kn =
   def
 
 open Goptions
-
-let set_verbose_compat_notations =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "verbose compatibility notations";
-      optkey   = ["Verbose";"Compat";"Notations"];
-      optread  = (fun () -> !verbose_compat_notations);
-      optwrite = ((:=) verbose_compat_notations) }

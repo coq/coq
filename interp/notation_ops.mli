@@ -12,7 +12,7 @@ open Glob_term
 
 (** {5 Utilities about [notation_constr]} *)
 
-val eq_notation_constr : notation_constr -> notation_constr -> bool
+val eq_notation_constr : Id.t list * Id.t list -> notation_constr -> notation_constr -> bool
 
 (** Substitution of kernel names in interpretation data                *)
 
@@ -29,7 +29,7 @@ val ldots_var : Id.t
     bound by the notation; also interpret recursive patterns           *)
 
 val notation_constr_of_glob_constr : notation_interp_env ->
-  glob_constr -> notation_constr
+  glob_constr -> notation_constr * reversibility_flag
 
 (** Re-interpret a notation as a [glob_constr], taking care of binders *)
 

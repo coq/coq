@@ -51,7 +51,7 @@ SINGLE_QUOTE="
 get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_args,$(1)), ($(call get_coq_prog_args,$(1)))))
 # get the command to use with this set of arguments; if there's -compile, use coqc, else use coqtop
 has_compile_flag = $(filter "-compile",$(call get_coq_prog_args,$(1)))
-has_profile_ltac_or_compile_flag = $(filter "-profile-ltac" "-compile",$(call get_coq_prog_args,$(1)))
+has_profile_ltac_or_compile_flag = $(filter "-profile-ltac-cutoff" "-profile-ltac" "-compile",$(call get_coq_prog_args,$(1)))
 get_command_based_on_flags = $(if $(call has_profile_ltac_or_compile_flag,$(1)),$(coqc),$(command))
 
 
@@ -88,6 +88,9 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk
 
+PREREQUISITELOG = prerequisite/admit.v.log			\
+  prerequisite/make_local.v.log prerequisite/make_notation.v.log
+
 #######################################################################
 # Phony targets
 #######################################################################
@@ -102,7 +105,7 @@ run: $(SUBSYSTEMS)
 bugs: $(BUGS)
 
 clean:
-	rm -f trace lia.cache
+	rm -f trace .lia.cache
 	$(SHOW) "RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log>"
 	$(HIDE)find . \( \
 	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.log' \
@@ -226,7 +229,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	  fi; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods -impredicative-set)"; \
@@ -257,7 +260,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	  fi; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
@@ -271,7 +274,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
 	  fi; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out
+$(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
@@ -281,6 +284,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    | grep -v "^<W>" \
+	    | sed 's/File "[^"]*"/File "stdin"/' \
 	    > $$tmpoutput; \
 	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
@@ -304,16 +308,19 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    | grep -v "^<W>" \
-	    | sed -e 's/\s*[0-9]*\.[0-9]\+\s*//g' \
+	    | sed -e 's/\s*[-+0-9]*\.[0-9][0-9]*\s*//g' \
 	          -e 's/\s*0\.\s*//g' \
 		  -e 's/\s*[-+]nan\s*//g' \
 		  -e 's/\s*[-+]inf\s*//g' \
+		  -e 's/^[^a-zA-Z]*//' \
+	    | sort \
 	    > $$tmpoutput; \
-	  sed -e 's/\s*[0-9]*\.[0-9]\+\s*//g' \
+	  sed -e 's/\s*[-+0-9]*\.[0-9][0-9]*\s*//g' \
 		-e 's/\s*0\.\s*//g' \
 		-e 's/\s*[-+]nan\s*//g' \
 		-e 's/\s*[-+]inf\s*//g' \
-       	       $*.out > $$tmpexpected; \
+		-e 's/^[^a-zA-Z]*//' \
+	       $*.out | sort > $$tmpexpected; \
 	  diff -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
@@ -326,7 +333,7 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	  rm $$tmpexpected; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
@@ -344,7 +351,7 @@ $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v
 # the .v file with exactly two digits after the dot. The reference for
 # time is a 6120 bogomips cpu.
 ifneq (,$(bogomips))
-$(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
@@ -375,7 +382,7 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v
 endif
 
 # Ideal-features tests
-$(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \

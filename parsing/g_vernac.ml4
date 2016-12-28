@@ -226,8 +226,8 @@ GEXTEND Gram
     [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
   ;
   univ_constraint:
-    [ [ l = identref; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
-	r = identref -> (l, ord, r) ] ]
+    [ [ l = universe_level; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
+	r = universe_level -> (l, ord, r) ] ]
   ;
   finite_token:
     [ [ "Inductive" -> (Inductive_kw,Finite)
@@ -582,7 +582,7 @@ let warn_deprecated_implicit_arguments =
 
 (* Extensions: implicits, coercions, etc. *)
 GEXTEND Gram
-  GLOBAL: gallina_ext instance_name;
+  GLOBAL: gallina_ext instance_name hint_info;
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
@@ -635,62 +635,48 @@ GEXTEND Gram
 
       | IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
-	 pri = OPT [ "|"; i = natural -> i ] ;
+	 info = hint_info ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> Some (true,r) |
 	     ":="; c = lconstr -> Some (false,c) | -> None ] ->
-	   VernacInstance (false,snd namesup,(fst namesup,expl,t),props,pri)
+	   VernacInstance (false,snd namesup,(fst namesup,expl,t),props,info)
 
       | IDENT "Existing"; IDENT "Instance"; id = global;
-          pri = OPT [ "|"; i = natural -> i ] ->
-	  VernacDeclareInstances ([id], pri)
+          info = hint_info ->
+	  VernacDeclareInstances [id, info]
+
       | IDENT "Existing"; IDENT "Instances"; ids = LIST1 global;
-          pri = OPT [ "|"; i = natural -> i ] ->
-	  VernacDeclareInstances (ids, pri)
+        pri = OPT [ "|"; i = natural -> i ] ->
+         let info = { hint_priority = pri; hint_pattern = None } in
+         let insts = List.map (fun i -> (i, info)) ids in
+	  VernacDeclareInstances insts
 
       | IDENT "Existing"; IDENT "Class"; is = global -> VernacDeclareClass is
 
       (* Arguments *)
       | IDENT "Arguments"; qid = smart_global; 
-        impl = LIST1 [ l = LIST0
-        [ item = argument_spec ->
-            let id, r, s = item in [`Id (id,r,s,false,false)]
-        | "/" -> [`Slash]
-        | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
-            let f x = match sc, x with
-            | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
-            | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (id,r,s) -> `Id(id,r,f s,false,false)) items
-        | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
-            let f x = match sc, x with
-            | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
-            | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (id,r,s) -> `Id(id,r,f s,true,false)) items
-        | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
-            let f x = match sc, x with
-            | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
-            | Some _, Some _ -> error "scope declared twice" in
-            List.map (fun (id,r,s) -> `Id(id,r,f s,true,true)) items
-        ] -> l ] SEP ",";
+        args = LIST0 argument_spec_block;
+        more_implicits = OPT
+          [ ","; impl = LIST1
+            [ impl = LIST0 more_implicits_block -> List.flatten impl]
+            SEP "," -> impl
+          ];
         mods = OPT [ ":"; l = LIST1 arguments_modifier SEP "," -> l ] ->
          let mods = match mods with None -> [] | Some l -> List.flatten l in
-         let impl = List.map List.flatten impl in
-         let rec aux n (narg, impl) = function
-           | `Id x :: tl -> aux (n+1) (narg, impl@[x]) tl
-           | `Slash :: tl -> aux (n+1) (n, impl) tl
-           | [] -> narg, impl in
-         let nargs, impl = List.split (List.map (aux 0 (-1, [])) impl) in
-         let nargs, rest = List.hd nargs, List.tl nargs in
-         if List.exists (fun arg -> not (Int.equal arg nargs)) rest then
-           error "All arguments lists must have the same length";
-         let err_incompat x y =
-           error ("Options \""^x^"\" and \""^y^"\" are incompatible") in
-         if nargs > 0 && List.mem `ReductionNeverUnfold mods then
-           err_incompat "simpl never" "/";
-         if List.mem `ReductionNeverUnfold mods &&
-            List.mem `ReductionDontExposeCase mods then
-           err_incompat "simpl never" "simpl nomatch";
-         VernacArguments (qid, impl, nargs, mods)
+         let slash_position = ref None in
+         let rec parse_args i = function
+           | [] -> []
+           | `Id x :: args -> x :: parse_args (i+1) args
+           | `Slash :: args ->
+              if Option.is_empty !slash_position then
+                (slash_position := Some i; parse_args i args)
+              else
+                error "The \"/\" modifier can occur only once"
+         in
+         let args = parse_args 0 (List.flatten args) in
+         let more_implicits = Option.default [] more_implicits in
+         VernacArguments (qid, args, more_implicits, !slash_position, mods)
 
+ 
      (* moved there so that camlp5 factors it with the previous rule *)
      | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
        "["; scl = LIST0 [ "_" -> None | sc = IDENT -> Some sc ]; "]" ->
@@ -747,6 +733,54 @@ GEXTEND Gram
        snd id, not (Option.is_empty b), Option.map (fun x -> !@loc, x) s
     ]
   ];
+  (* List of arguments implicit status, scope, modifiers *)
+  argument_spec_block: [
+    [ item = argument_spec ->
+      let name, recarg_like, notation_scope = item in
+      [`Id { name=name; recarg_like=recarg_like;
+             notation_scope=notation_scope;
+             implicit_status = NotImplicit}]
+    | "/" -> [`Slash]
+    | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
+       let f x = match sc, x with
+         | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
+         | Some _, Some _ -> error "scope declared twice" in
+       List.map (fun (name,recarg_like,notation_scope) ->
+           `Id { name=name; recarg_like=recarg_like;
+                 notation_scope=f notation_scope;
+                 implicit_status = NotImplicit}) items
+    | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
+       let f x = match sc, x with
+         | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
+         | Some _, Some _ -> error "scope declared twice" in
+       List.map (fun (name,recarg_like,notation_scope) ->
+           `Id { name=name; recarg_like=recarg_like;
+                 notation_scope=f notation_scope;
+                 implicit_status = Implicit}) items
+    | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
+       let f x = match sc, x with
+         | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
+         | Some _, Some _ -> error "scope declared twice" in
+       List.map (fun (name,recarg_like,notation_scope) ->
+           `Id { name=name; recarg_like=recarg_like;
+                 notation_scope=f notation_scope;
+                 implicit_status = MaximallyImplicit}) items
+    ]
+  ];
+  name_or_bang: [
+       [ b = OPT "!"; id = name ->
+       not (Option.is_empty b), id
+    ]
+  ];
+  (* Same as [argument_spec_block], but with only implicit status and names *)
+  more_implicits_block: [
+    [ name = name -> [(snd name, Vernacexpr.NotImplicit)]
+    | "["; items = LIST1 name; "]" ->
+       List.map (fun name -> (snd name, Vernacexpr.Implicit)) items
+    | "{"; items = LIST1 name; "}" ->
+       List.map (fun name -> (snd name, Vernacexpr.MaximallyImplicit)) items
+    ]
+  ];
   strategy_level:
     [ [ IDENT "expand" -> Conv_oracle.Expand
       | IDENT "opaque" -> Conv_oracle.Opaque
@@ -759,6 +793,11 @@ GEXTEND Gram
 	  (let ((loc,id),l) = name in ((loc, Name id),l)),
           (Option.default [] sup)
       | -> ((!@loc, Anonymous), None), []  ] ]
+  ;
+  hint_info:
+    [ [ "|"; i = OPT natural; pat = OPT constr_pattern ->
+         { hint_priority = i; hint_pattern = pat }
+      | -> { hint_priority = None; hint_pattern = None } ] ]
   ;
   reserv_list:
     [ [ bl = LIST1 reserv_tuple -> bl | b = simple_reserv -> [b] ] ]
@@ -781,8 +820,8 @@ GEXTEND Gram
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
-	 pri = OPT [ "|"; i = natural -> i ] ->
-	   VernacInstance (true, snd namesup, (fst namesup, expl, t), None, pri)
+	 info = hint_info ->
+	   VernacInstance (true, snd namesup, (fst namesup, expl, t), None, info)
 
       (* System directory *)
       | IDENT "Pwd" -> VernacChdir None
@@ -838,7 +877,20 @@ GEXTEND Gram
 
       (* For acting on parameter tables *)
       | "Set"; table = option_table; v = option_value ->
-  	  VernacSetOption (table,v)
+        begin match v with
+        | StringValue s ->
+          (* We make a special case for warnings because appending is their
+          natural semantics *)
+          if CString.List.equal table ["Warnings"] then
+            VernacSetAppendOption (table, s)
+          else
+            let (last, prefix) = List.sep_last table in
+            if String.equal last "Append" && not (List.is_empty prefix) then
+              VernacSetAppendOption (prefix, s)
+            else
+              VernacSetOption (table, v)
+        | _ -> VernacSetOption (table, v)
+        end
       | "Set"; table = option_table ->
   	  VernacSetOption (table,BoolValue true)
       | IDENT "Unset"; table = option_table ->
@@ -1103,10 +1155,9 @@ GEXTEND Gram
       | IDENT "right"; IDENT "associativity" -> SetAssoc RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc NonA
       | IDENT "only"; IDENT "printing" -> SetOnlyPrinting
-      | IDENT "only"; IDENT "parsing" ->
-        SetOnlyParsing Flags.Current
+      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
       | IDENT "compat"; s = STRING ->
-        SetOnlyParsing (Coqinit.get_compat_version s)
+        SetCompatVersion (Coqinit.get_compat_version s)
       | IDENT "format"; s1 = [s = STRING -> (!@loc,s)];
                         s2 = OPT [s = STRING -> (!@loc,s)] ->
           begin match s1, s2 with

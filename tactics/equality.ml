@@ -702,16 +702,16 @@ let replace_in_clause_maybe_by c1 c2 cl tac_opt =
 exception DiscrFound of
   (constructor * int) list * constructor * constructor
 
-let injection_on_proofs = ref false
+let keep_proof_equalities_for_injection = ref false
 
 let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
       optname  = "injection on prop arguments";
-      optkey   = ["Injection";"On";"Proofs"];
-      optread  = (fun () -> !injection_on_proofs) ;
-      optwrite = (fun b -> injection_on_proofs := b) }
+      optkey   = ["Keep";"Proof";"Equalities"];
+      optread  = (fun () -> !keep_proof_equalities_for_injection) ;
+      optwrite = (fun b -> keep_proof_equalities_for_injection := b) }
 
 
 let find_positions env sigma t1 t2 =
@@ -725,7 +725,7 @@ let find_positions env sigma t1 t2 =
     let hd1,args1 = whd_all_stack env sigma t1 in
     let hd2,args2 = whd_all_stack env sigma t2 in
     match (kind_of_term hd1, kind_of_term hd2) with
-      | Construct (sp1,_), Construct (sp2,_)
+      | Construct ((ind1,i1 as sp1),u1), Construct (sp2,_)
           when Int.equal (List.length args1) (constructor_nallargs_env env sp1)
             ->
 	  let sorts' =
@@ -734,11 +734,14 @@ let find_positions env sigma t1 t2 =
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
 	  if eq_constructor sp1 sp2 then
-	    let nrealargs = constructor_nrealargs_env env sp1 in
-	    let rargs1 = List.lastn nrealargs args1 in
-	    let rargs2 = List.lastn nrealargs args2 in
+	    let nparams = inductive_nparams_env env ind1 in
+	    let params1,rargs1 = List.chop nparams args1 in
+	    let _,rargs2 = List.chop nparams args2 in
+            let (mib,mip) = lookup_mind_specif env ind1 in
+            let ctxt = (get_constructor ((ind1,u1),mib,mip,params1) i1).cs_args in
+            let adjust i = Vars.adjust_rel_to_rel_context ctxt (i+1) - 1 in
             List.flatten
-	      (List.map2_i (fun i -> findrec sorts' ((sp1,i)::posn))
+	      (List.map2_i (fun i -> findrec sorts' ((sp1,adjust i)::posn))
 		0 rargs1 rargs2)
 	  else if Sorts.List.mem InType sorts'
           then (* see build_discriminator *)
@@ -756,7 +759,7 @@ let find_positions env sigma t1 t2 =
 	    project env sorts posn t1_0 t2_0
   in
   try
-    let sorts = if !injection_on_proofs then [InSet;InType;InProp]
+    let sorts = if !keep_proof_equalities_for_injection then [InSet;InType;InProp]
 		else [InSet;InType]
     in
     Inr (findrec sorts [] t1 t2)
@@ -1164,7 +1167,8 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       let dflt_typ = unsafe_type_of env sigma dflt in
       try
 	let () = evdref := Evarconv.the_conv_x_leq env dflt_typ p_i !evdref in
-	let () = evdref := Evarconv.consider_remaining_unif_problems env !evdref in
+	let () =
+          evdref := Evarconv.solve_unif_constraints_with_heuristics env !evdref in
 	dflt
       with Evarconv.UnableToUnify _ ->
 	error "Cannot solve a unification problem."
@@ -1390,7 +1394,10 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   | Inl _ ->
      tclZEROMSG (strbrk"This equality is discriminable. You should use the discriminate tactic to solve the goal.")
   | Inr [] ->
-     let suggestion = if !injection_on_proofs then "" else " You can try to use option Set Injection On Proofs." in
+     let suggestion =
+         if !keep_proof_equalities_for_injection then
+            "" else
+            " You can try to use option Set Keep Proof Equalities." in
      tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
   | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
      tclZEROMSG (str"Nothing to inject.")
@@ -1762,35 +1769,38 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     let gl = Proofview.Goal.assume gl in
     let env = Proofview.Goal.env gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
-    let test decl =
+    let select_equation_name decl =
       try
         let lbeq,u,(_,x,y) = find_eq_data_decompose (NamedDecl.get_type decl) in
         let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match kind_of_term x, kind_of_term y with
-        | Var z, _ | _, Var z when not (is_evaluable env (EvalVarRef z))  ->
+        | Var z, _  when not (is_evaluable env (EvalVarRef z)) ->
+            Some (NamedDecl.get_id decl)
+        | _, Var z when not (is_evaluable env (EvalVarRef z)) ->
             Some (NamedDecl.get_id decl)
         | _ ->
             None
       with Constr_matching.PatternMatchingFailure -> None
     in
     let hyps = Proofview.Goal.hyps gl in
-    List.rev (List.map_filter test hyps)
+    List.rev (List.map_filter select_equation_name hyps)
   in
 
   (* Second step: treat equations *)
   let process hyp =
     Proofview.Goal.enter { enter = begin fun gl ->
     let gl = Proofview.Goal.assume gl in
+    let env = Proofview.Goal.env gl in
     let find_eq_data_decompose = find_eq_data_decompose gl in
     let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
     let _,_,(_,x,y) = find_eq_data_decompose c in
     (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
     if Term.eq_constr x y then Proofview.tclUNIT () else
       match kind_of_term x, kind_of_term y with
-      | Var x', _ when not (occur_term x y) ->
+      | Var x', _ when not (occur_term x y) && not (is_evaluable env (EvalVarRef x')) ->
           subst_one flags.rewrite_dependent_proof x' (hyp,y,true)
-      | _, Var y' when not (occur_term y x) ->
+      | _, Var y' when not (occur_term y x) && not (is_evaluable env (EvalVarRef y')) ->
           subst_one flags.rewrite_dependent_proof y' (hyp,x,false)
       | _ ->
           Proofview.tclUNIT ()

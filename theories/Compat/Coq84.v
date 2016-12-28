@@ -74,12 +74,6 @@ Coercion sig_of_sigT : sigT >-> sig.
 Coercion sigT2_of_sig2 : sig2 >-> sigT2.
 Coercion sig2_of_sigT2 : sigT2 >-> sig2.
 
-(** As per bug #4733 (https://coq.inria.fr/bugs/show_bug.cgi?id=4733), we want the user to be able to create custom list-like notatoins that work in both 8.4 and 8.5.  This is necessary.  These should become compat 8.4 notations in the relevant files, but these modify the parser (bug #4798), so this cannot happen until that bug is fixed. *)
-Require Coq.Lists.List.
-Require Coq.Vectors.VectorDef.
-Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..) : list_scope.
-Notation "[ x ; .. ; y ]" := (VectorDef.cons _ x _ .. (VectorDef.cons _ y _ (nil _)) ..) : vector_scope.
-
 (** In 8.4, the statement of admitted lemmas did not depend on the section
     variables. *)
 Unset Keep Admitted Variables.

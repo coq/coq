@@ -256,8 +256,8 @@ and pt = { (* TODO: inline records in OCaml 4.03 *)
   qed   : Stateid.t;
 }
 and static_block_declaration = {
-  start : Stateid.t;
-  stop : Stateid.t;
+  block_start : Stateid.t;
+  block_stop  : Stateid.t;
   dynamic_switch : Stateid.t;
   carry_on_data : DynBlockData.t;
 }
@@ -362,10 +362,10 @@ module VCS : sig
   val get_state : id -> cached_state
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
-  val slice : start:id -> stop:id -> vcs
-  val nodes_in_slice : start:id -> stop:id -> Stateid.t list
+  val slice : block_start:id -> block_stop:id -> vcs
+  val nodes_in_slice : block_start:id -> block_stop:id -> Stateid.t list
   
-  val create_proof_task_box : id list -> qed:id -> start:id -> unit
+  val create_proof_task_box : id list -> qed:id -> block_start:id -> unit
   val create_proof_block : static_block_declaration -> string -> unit
   val box_of : id -> box list
   val delete_boxes_of : id -> unit
@@ -582,20 +582,20 @@ end = struct (* {{{ *)
   
   let visit id = Vcs_aux.visit !vcs id
 
-  let nodes_in_slice ~start ~stop =
+  let nodes_in_slice ~block_start ~block_stop =
     let rec aux id =
-      if Stateid.equal id start then [] else
+      if Stateid.equal id block_start then [] else
       match visit id with
       | { next = n; step = `Cmd x } -> (id,Cmd x) :: aux n
       | { next = n; step = `Alias x } -> (id,Alias x) :: aux n
       | { next = n; step = `Sideff (`Ast (x,_)) } ->
            (id,Sideff (Some x)) :: aux n
-      | _ -> anomaly(str("Cannot slice from "^ Stateid.to_string start ^
-                         " to "^Stateid.to_string stop))
-    in aux stop
+      | _ -> anomaly(str("Cannot slice from "^ Stateid.to_string block_start ^
+                         " to "^Stateid.to_string block_stop))
+    in aux block_stop
 
-  let slice ~start ~stop =
-    let l = nodes_in_slice ~start ~stop in
+  let slice ~block_start ~block_stop =
+    let l = nodes_in_slice ~block_start ~block_stop in
     let copy_info v id =
       Vcs_.set_info v id
         { (get_info id) with state = Empty; vcs_backup = None,None } in
@@ -611,27 +611,27 @@ end = struct (* {{{ *)
           (Stateid.Set.elements (Vcs_.Dag.Property.having_it p))
           (Vcs_.Dag.Property.data p)) v props
     in
-    let v = Vcs_.empty start in
-    let v = copy_info v start in
+    let v = Vcs_.empty block_start in
+    let v = copy_info v block_start in
     let v = List.fold_right (fun (id,tr) v ->
       let v = Vcs_.commit v id tr in
       let v = copy_info v id in
       v) l v in
     (* Stm should have reached the beginning of proof *)
-    assert (match (get_info start).state with Valid _ -> true | _ -> false);
+    assert (match (get_info block_start).state with Valid _ -> true | _ -> false);
     (* We put in the new dag the most recent state known to master *)
     let rec fill id =
       match (get_info id).state with
       | Empty | Error _ -> fill (Vcs_aux.visit v id).next
       | Valid _ -> copy_info_w_state v id in
-    let v = fill stop in
+    let v = fill block_stop in
     (* We put in the new dag the first state (since Qed shall run on it,
      * see check_task_aux) *)
-    let v = copy_info_w_state v start in
+    let v = copy_info_w_state v block_start in
     copy_proof_blockes v
 
-  let nodes_in_slice ~start ~stop =
-    List.rev (List.map fst (nodes_in_slice ~start ~stop))
+  let nodes_in_slice ~block_start ~block_stop =
+    List.rev (List.map fst (nodes_in_slice ~block_start ~block_stop))
 
   let topo_invariant l =
     let all = List.fold_right Stateid.Set.add l Stateid.Set.empty in
@@ -642,11 +642,11 @@ end = struct (* {{{ *)
          List.for_all (fun s -> Stateid.Set.(subset s all || subset all s)) sets)
       l
 
-  let create_proof_task_box l ~qed ~start:lemma =
+  let create_proof_task_box l ~qed ~block_start:lemma =
     if not (topo_invariant l) then anomaly (str "overlapping boxes");
     vcs := create_property !vcs l (ProofTask { qed; lemma })
-  let create_proof_block ({ start; stop} as decl) name =
-    let l = nodes_in_slice ~start ~stop in
+  let create_proof_block ({ block_start; block_stop} as decl) name =
+    let l = nodes_in_slice ~block_start ~block_stop in
     if not (topo_invariant l) then anomaly (str "overlapping boxes");
     vcs := create_property !vcs l (ProofBlock (decl, name))
   let box_of id = List.map Dag.Property.data (property_of !vcs id)
@@ -746,7 +746,7 @@ module State : sig
   val is_cached_and_valid : ?cache:Summary.marshallable -> Stateid.t -> bool
 
 
-  val exn_on : Stateid.t -> ?valid:Stateid.t -> iexn -> iexn
+  val exn_on : Stateid.t -> valid:Stateid.t -> iexn -> iexn
   (* to send states across worker/master *)
   type frozen_state
   val get_cached : Stateid.t -> frozen_state
@@ -854,14 +854,14 @@ end = struct (* {{{ *)
            VCS.set_state id (Valid s)
     with VCS.Expired -> ()
 
-  let exn_on id ?valid (e, info) =
+  let exn_on id ~valid (e, info) =
     match Stateid.get info with
     | Some _ -> (e, info)
     | None ->
         let loc = Option.default Loc.ghost (Loc.get_loc info) in
         let (e, info) = Hooks.(call_process_error_once (e, info)) in
         Hooks.(call execution_error id loc (iprint (e, info)));
-        (e, Stateid.add info ?valid id)
+        (e, Stateid.add info ~valid id)
 
   let same_env { system = s1 } { system = s2 } =
     let s1 = States.summary_of_state s1 in
@@ -896,6 +896,7 @@ end = struct (* {{{ *)
     with e ->
       let (e, info) = CErrors.push e in
       let good_id = !cur_id in
+      cur_id := Stateid.dummy;
       VCS.reached id;
       let ie =
         match Stateid.get info, safe_id with
@@ -1139,7 +1140,7 @@ let detect_proof_block id name =
       let static, _ = List.assoc name !proof_block_delimiters in
       begin match static { prev_node; entry_point } with
       | None -> ()
-      | Some ({ start; stop } as decl) ->
+      | Some ({ block_start; block_stop } as decl) ->
           VCS.create_proof_block decl name
       end
     with Not_found ->
@@ -1251,7 +1252,7 @@ end = struct (* {{{ *)
         try Some (ReqBuildProof ({
           Stateid.exn_info = t_exn_info;
           stop = t_stop;
-          document = VCS.slice ~start:t_start ~stop:t_stop;
+          document = VCS.slice ~block_start:t_start ~block_stop:t_stop;
           loc = t_loc;
           uuid = t_uuid;
           name = t_name }, t_drop, t_states))
@@ -1401,7 +1402,7 @@ and Slaves : sig
   (* (eventually) remote calls *)
   val build_proof :
     loc:Loc.t -> drop_pt:bool ->
-    exn_info:(Stateid.t * Stateid.t) -> start:Stateid.t -> stop:Stateid.t ->
+    exn_info:(Stateid.t * Stateid.t) -> block_start:Stateid.t -> block_stop:Stateid.t ->
       name:string -> future_proof * cancel_switch
 
   (* blocking function that waits for the task queue to be empty *)
@@ -1560,7 +1561,7 @@ end = struct (* {{{ *)
        BuildProof { t_states = s2 } -> overlap_rel s1 s2
      | _ -> 0)
 
-  let build_proof ~loc ~drop_pt ~exn_info ~start ~stop ~name:pname =
+  let build_proof ~loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
@@ -1569,21 +1570,21 @@ end = struct (* {{{ *)
          Future.create_delegate ~blocking:true ~name:pname (State.exn_on id ~valid) in
         let t_uuid = Future.uuid f in
         let task = ProofTask.(BuildProof {
-          t_exn_info; t_start = start; t_stop = stop; t_drop = drop_pt;
+          t_exn_info; t_start = block_start; t_stop = block_stop; t_drop = drop_pt;
           t_assign = assign; t_loc = loc; t_uuid; t_name = pname;
-          t_states = VCS.nodes_in_slice ~start ~stop }) in
+          t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
         TaskQueue.enqueue_task (Option.get !queue) (task,cancel_switch);
         f, cancel_switch
       end else
-        ProofTask.build_proof_here ~drop_pt t_exn_info loc stop, cancel_switch
+        ProofTask.build_proof_here ~drop_pt t_exn_info loc block_stop, cancel_switch
     else 
       let f, t_assign = Future.create_delegate ~name:pname (State.exn_on id ~valid) in
       let t_uuid = Future.uuid f in
       feedback (InProgress 1);
       let task = ProofTask.(BuildProof {
-        t_exn_info; t_start = start; t_stop = stop; t_assign; t_drop = drop_pt;
+        t_exn_info; t_start = block_start; t_stop = block_stop; t_assign; t_drop = drop_pt;
         t_loc = loc; t_uuid; t_name = pname;
-        t_states = VCS.nodes_in_slice ~start ~stop }) in
+        t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
       TaskQueue.enqueue_task (Option.get !queue) (task,cancel_switch);
       f, cancel_switch
 
@@ -1665,7 +1666,7 @@ end = struct (* {{{ *)
       r_state_fb = t_state_fb;
       r_document =
         if age <> `Fresh then None
-        else Some (VCS.slice ~start:t_state ~stop:t_state);
+        else Some (VCS.slice ~block_start:t_state ~block_stop:t_state);
       r_ast      = t_ast;
       r_goal     = t_goal;
       r_name     = t_name }
@@ -1823,7 +1824,7 @@ end = struct (* {{{ *)
     try Some {
       r_where = t_where;
       r_for   = t_for;
-      r_doc   = VCS.slice ~start:t_where ~stop:t_where;
+      r_doc   = VCS.slice ~block_start:t_where ~block_stop:t_where;
       r_what  = t_what }
     with VCS.Expired -> None
   
@@ -2026,7 +2027,7 @@ let known_state ?(redefine_qed=false) ~cache id =
 
     let boxes = VCS.box_of id in
     let valid_boxes = CList.map_filter (function
-      | ProofBlock ({ stop } as decl, name) when Stateid.equal stop id ->
+      | ProofBlock ({ block_stop } as decl, name) when Stateid.equal block_stop id ->
           Some (decl, name)
       | _ -> None) boxes in
     assert(List.length valid_boxes < 2);
@@ -2156,12 +2157,12 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), `Yes, true
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
-          | `ASync (start, pua, nodes, name, delegate) -> (fun () ->
+          | `ASync (block_start, pua, nodes, name, delegate) -> (fun () ->
                 assert(keep == VtKeep || keep == VtKeepAsAxiom);
                 let drop_pt = keep == VtKeepAsAxiom in
-                let stop, exn_info, loc = eop, (id, eop), x.loc in
+                let block_stop, exn_info, loc = eop, (id, eop), x.loc in
                 log_processing_async id name;
-                VCS.create_proof_task_box nodes ~qed:id ~start;
+                VCS.create_proof_task_box nodes ~qed:id ~block_start;
                 begin match brinfo, qed.fproof with
                 | { VCS.kind = `Edit _ }, None -> assert false
                 | { VCS.kind = `Edit (_,_,_, okeep, _) }, Some (ofp, cancel) ->
@@ -2175,19 +2176,22 @@ let known_state ?(redefine_qed=false) ~cache id =
                         ^"the proof's statement to avoid that."));
                     let fp, cancel =
                       Slaves.build_proof
-                        ~loc ~drop_pt ~exn_info ~start ~stop ~name in
+                        ~loc ~drop_pt ~exn_info ~block_start ~block_stop ~name in
                     Future.replace ofp fp;
-                    qed.fproof <- Some (fp, cancel)
+                    qed.fproof <- Some (fp, cancel);
+                    (* We don't generate a new state, but we still need
+                     * to install the right one *)
+                    State.install_cached id
                 | { VCS.kind = `Proof _ }, Some _ -> assert false
                 | { VCS.kind = `Proof _ }, None ->
-                    reach ~cache:`Shallow start;
+                    reach ~cache:`Shallow block_start;
                     let fp, cancel =
                       if delegate then
                         Slaves.build_proof
-                          ~loc ~drop_pt ~exn_info ~start ~stop ~name
+                          ~loc ~drop_pt ~exn_info ~block_start ~block_stop ~name
                       else
                         ProofTask.build_proof_here
-                          ~drop_pt exn_info loc stop, ref false
+                          ~drop_pt exn_info loc block_stop, ref false
                     in
                     qed.fproof <- Some (fp, cancel);
                     let proof =
@@ -2351,7 +2355,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     msg_error (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
-let merge_proof_branch ?valid ?id qast keep brname =
+let merge_proof_branch ~valid ?id qast keep brname =
   let brinfo = VCS.get_branch brname in
   let qed fproof = { qast; keep; brname; brinfo; fproof } in
   match brinfo with
@@ -2374,7 +2378,7 @@ let merge_proof_branch ?valid ?id qast keep brname =
       VCS.checkout VCS.Branch.master;
       `Unfocus qed_id
   | { VCS.kind = `Master } ->
-       iraise (State.exn_on ?valid Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
+       iraise (State.exn_on ~valid Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
 
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
@@ -2443,9 +2447,10 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
       | VtStm (VtBack oid, true), w ->
           let id = VCS.new_node ~id:newtip () in
           let { mine; others } = Backtrack.branches_of oid in
+          let valid = VCS.get_branch_pos head in
           List.iter (fun branch ->
             if not (List.mem_assoc branch (mine::others)) then
-              ignore(merge_proof_branch x VtDrop branch))
+              ignore(merge_proof_branch ~valid x VtDrop branch))
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           let head = VCS.current_branch () in
@@ -2540,8 +2545,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           detect_proof_block id cblock; *)
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
-          let valid = if tty then Some(VCS.get_branch_pos head) else None in
-          let rc = merge_proof_branch ?valid ~id:newtip x keep head in
+          let valid = VCS.get_branch_pos head in
+          let rc = merge_proof_branch ~valid ~id:newtip x keep head in
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish ();
           rc

@@ -20,11 +20,6 @@ val (//) : unix_path -> string -> unix_path
 
 val exists_dir : unix_path -> bool
 
-(** [check_unix_dir warn path] calls [warn] with an appropriate
-     message if [path] looks does not look like a Unix path on Windows *)
-
-val check_unix_dir : (string -> unit) -> unix_path -> unit
-
 (** [exclude_search_in_dirname path] excludes [path] when processing
     directories *)
 

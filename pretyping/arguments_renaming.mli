@@ -11,10 +11,10 @@ open Globnames
 open Environ
 open Term
 
-val rename_arguments : bool -> global_reference -> Name.t list list -> unit
+val rename_arguments : bool -> global_reference -> Name.t list -> unit
 
-(** [Not_found] is raised is no names are defined for [r] *)
-val arguments_names : global_reference -> Name.t list list
+(** [Not_found] is raised if no names are defined for [r] *)
+val arguments_names : global_reference -> Name.t list
 
 val rename_type_of_constant : env -> pconstant -> types
 val rename_type_of_inductive : env -> pinductive -> types

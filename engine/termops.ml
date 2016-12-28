@@ -101,6 +101,7 @@ let term_printer = ref (fun _ -> pr_constr)
 let print_constr_env t = !term_printer t
 let print_constr t = !term_printer (Global.env()) t
 let set_print_constr f = term_printer := f
+let () = Hook.set Evd.print_constr_hook (fun env c -> !term_printer env c)
 
 let pr_var_decl env decl =
   let open NamedDecl in
@@ -600,11 +601,18 @@ let collect_vars c =
   | _ -> fold_constr aux vars c in
   aux Id.Set.empty c
 
+let vars_of_global_reference env gr =
+  let c, _ = Universes.unsafe_constr_of_global gr in
+  vars_of_global (Global.env ()) c
+
 (* Tests whether [m] is a subterm of [t]:
    [m] is appropriately lifted through abstractions of [t] *)
 
 let dependent_main noevar univs m t =
-  let eqc x y = if univs then fst (Universes.eq_constr_universes x y) else eq_constr_nounivs x y in
+  let eqc x y =
+    if univs then not (Option.is_empty (Universes.eq_constr_universes x y))
+    else eq_constr_nounivs x y
+  in
   let rec deprec m t =
     if eqc m t then
       raise Occur
@@ -669,6 +677,21 @@ let rec subst_meta bl c =
   match kind_of_term c with
     | Meta i -> (try Int.List.assoc i bl with Not_found -> c)
     | _ -> map_constr (subst_meta bl) c
+
+let rec strip_outer_cast c = match kind_of_term c with
+  | Cast (c,_,_) -> strip_outer_cast c
+  | _ -> c
+
+(* flattens application lists throwing casts in-between *)
+let collapse_appl c = match kind_of_term c with
+  | App (f,cl) ->
+      let rec collapse_rec f cl2 =
+        match kind_of_term (strip_outer_cast f) with
+        | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
+        | _ -> mkApp (f,cl2)
+      in
+      collapse_rec f cl
+  | _ -> c
 
 (* First utilities for avoiding telescope computation for subst_term *)
 
@@ -976,11 +999,8 @@ let smash_rel_context sign =
 
 let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 
-let rec mem_named_context id ctxt =
-  match ctxt with
-  | decl :: _ when Id.equal id (NamedDecl.get_id decl) -> true
-  | _ :: sign -> mem_named_context id sign
-  | [] -> false
+let mem_named_context_val id ctxt =
+  try ignore(Environ.lookup_named_val id ctxt); true with Not_found -> false
 
 let compact_named_context sign =
   let compact l decl =

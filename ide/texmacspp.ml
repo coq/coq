@@ -185,7 +185,8 @@ match sm with
       end
   | SetEntryType (s, _) -> ["entrytype", s]
   | SetOnlyPrinting -> ["onlyprinting", ""]
-  | SetOnlyParsing v -> ["compat", Flags.pr_version v]
+  | SetOnlyParsing -> ["onlyparsing", ""]
+  | SetCompatVersion v -> ["compat", Flags.pr_version v]
   | SetFormat (system, (loc, s)) ->
       let start, stop = unlock loc in
       ["format-"^system, s; "begin", start; "end", stop]
@@ -704,6 +705,7 @@ let rec tmpp v loc =
   | VernacSetStrategy _ as x -> xmlTODO loc x
   | VernacUnsetOption _ as x -> xmlTODO loc x
   | VernacSetOption _ as x -> xmlTODO loc x
+  | VernacSetAppendOption _ as x -> xmlTODO loc x
   | VernacAddOption _ as x -> xmlTODO loc x
   | VernacRemoveOption _ as x -> xmlTODO loc x
   | VernacMemOption _ as x -> xmlTODO loc x

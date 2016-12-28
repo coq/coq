@@ -61,8 +61,7 @@ let init_color () =
     match colors with
     | None ->
       (** Default colors *)
-      Ppstyle.init_color_output ();
-      Feedback.set_logger Feedback.color_terminal_logger
+      Feedback.init_color_output ()
     | Some "" ->
       (** No color output *)
       ()
@@ -70,8 +69,7 @@ let init_color () =
       (** Overwrite all colors *)
       Ppstyle.clear_styles ();
       Ppstyle.parse_config s;
-      Ppstyle.init_color_output ();
-      Feedback.set_logger Feedback.color_terminal_logger
+      Feedback.init_color_output ()
   end
 
 let toploop_init = ref begin fun x ->
@@ -170,7 +168,7 @@ let load_vernacular () =
   List.iter
     (fun (s,b) ->
       let s = Loadpath.locate_file s in
-      if Flags.do_beautify () then
+      if !Flags.beautify then
 	with_option beautify_file (Vernac.load_vernac b) s
       else
 	Vernac.load_vernac b s)
@@ -221,7 +219,7 @@ let add_compile verbose s =
   compile_list := (verbose,s) :: !compile_list
 
 let compile_file (v,f) =
-  if Flags.do_beautify () then
+  if !Flags.beautify then
     with_option beautify_file (Vernac.compile v) f
   else
     Vernac.compile v f
@@ -230,11 +228,9 @@ let compile_files () =
   if !compile_list == [] then ()
   else
     let init_state = States.freeze ~marshallable:`No in
-    let coqdoc_init_state = CLexer.location_table () in
     Feedback.(add_feeder debug_feeder);
     List.iter (fun vf ->
         States.unfreeze init_state;
-        CLexer.restore_location_table coqdoc_init_state;
         compile_file vf)
       (List.rev !compile_list)
 
@@ -331,9 +327,6 @@ let error_missing_arg s =
 
 let filter_opts = ref false
 let exitcode () = if !filter_opts then 2 else 0
-
-let verb_compat_ntn = ref false
-let no_compat_ntn = ref false
 
 let print_where = ref false
 let print_config = ref false
@@ -523,6 +516,7 @@ let parse_args arglist =
     |"-load-vernac-source-verbose"|"-lv" -> add_load_vernacular true (next ())
     |"-outputstate" -> set_outputstate (next ())
     |"-print-mod-uid" -> let s = String.concat " " (List.map get_native_name rem) in print_endline s; exit 0
+    |"-profile-ltac-cutoff" -> Flags.profile_ltac := true; Flags.profile_ltac_cutoff := get_float opt (next ())
     |"-require" -> add_require (next ())
     |"-top" -> set_toplevel_name (dirpath_of_string (next ()))
     |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())
@@ -530,7 +524,7 @@ let parse_args arglist =
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
     |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Vio2Vo
     |"-toploop" -> set_toploop (next ())
-    |"-w" | "-W" -> CWarnings.set_flags (next ())
+    |"-w" | "-W" -> CWarnings.set_flags (CWarnings.normalize_flags_string (next ()))
     |"-o" -> Flags.compilation_output_name := Some (next())
 
     (* Options with zero arg *)
@@ -542,7 +536,7 @@ let parse_args arglist =
         Flags.async_proofs_never_reopen_branch := true;
     |"-batch" -> set_batch_mode ()
     |"-test-mode" -> test_mode := true
-    |"-beautify" -> make_beautify true
+    |"-beautify" -> beautify := true
     |"-boot" -> boot := true; no_load_rc ()
     |"-bt" -> Backtrace.record_backtrace true
     |"-color" -> set_color (next ())
@@ -554,10 +548,9 @@ let parse_args arglist =
     |"-ideslave" -> set_ideslave ()
     |"-impredicative-set" -> set_impredicative_set ()
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()
-    |"-just-parsing" -> Vernac.just_parsing := true
+    |"-just-parsing" -> warning "-just-parsing option has been removed in 8.6"
     |"-m"|"--memory" -> memory_stat := true
     |"-noinit"|"-nois" -> load_init := false
-    |"-no-compat-notations" -> no_compat_ntn := true
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true
     |"-native-compiler" ->
       if Coq_config.no_native_compiler then
@@ -575,7 +568,6 @@ let parse_args arglist =
     |"-unicode" -> add_require "Utf8_core"
     |"-v"|"--version" -> Usage.version (exitcode ())
     |"--print-version" -> Usage.machine_readable_version (exitcode ())
-    |"-verbose-compat-notations" -> verb_compat_ntn := true
     |"-where" -> print_where := true
     |"-xml" -> Flags.xml_export := true
 
@@ -636,9 +628,6 @@ let init_toplevel arglist =
       inputstate ();
       Mltop.init_known_plugins ();
       engage ();
-      (* Be careful to set these variables after the inputstate *)
-      Syntax_def.set_verbose_compat_notations !verb_compat_ntn;
-(*       Syntax_def.set_compat_notations (not !no_compat_ntn); FIXME *)
       if (not !batch_mode || List.is_empty !compile_list)
          && Global.env_is_initial ()
       then Option.iter Declaremods.start_library !toplevel_name;

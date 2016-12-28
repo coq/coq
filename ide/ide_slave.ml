@@ -104,7 +104,7 @@ let coqide_cmd_checks (loc,ast) =
   if is_debug ast then
     user_error "Debug mode not available within CoqIDE";
   if is_known_option ast then
-    Feedback.msg_warning (strbrk"This will not work. Use CoqIDE display menu instead");
+    Feedback.msg_warning (strbrk"This will not work. Use CoqIDE view menu instead");
   if Vernac.is_navigation_vernac ast || is_undo ast then
     Feedback.msg_warning (strbrk "Rather use CoqIDE navigation instead");
   if is_query ast then

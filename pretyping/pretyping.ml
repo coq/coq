@@ -188,7 +188,7 @@ let _ =
 						  
 (** Miscellaneous interpretation functions *)
 let interp_universe_level_name evd (loc,s) =
-  let names, _ = Universes.global_universe_names () in
+  let names, _ = Global.global_universe_names () in
     if CString.string_contains s "." then
       match List.rev (CString.split '.' s) with
       | [] -> anomaly (str"Invalid universe name " ++ str s)
@@ -239,25 +239,34 @@ let interp_elimination_sort = function
   | GSet  -> InSet
   | GType _ -> InType
 
+type inference_hook = env -> evar_map -> evar -> evar_map * constr
+
 type inference_flags = {
   use_typeclasses : bool;
-  use_unif_heuristics : bool;
-  use_hook : (env -> evar_map -> evar -> constr) option;
+  solve_unification_constraints : bool;
+  use_hook : inference_hook option;
   fail_evar : bool;
   expand_evars : bool
 }
 
-let frozen_holes (sigma, sigma') =
-  (); fun ev -> Evar.Map.mem ev (Evd.undefined_map sigma)
+(* Compute the set of still-undefined initial evars up to restriction
+   (e.g. clearing) and the set of yet-unsolved evars freshly created
+   in the extension [sigma'] of [sigma] (excluding the restrictions of
+   the undefined evars of [sigma] to be freshly created evars of
+   [sigma']). Otherwise said, we partition the undefined evars of
+   [sigma'] into those already in [sigma] or deriving from an evar in
+   [sigma] by restriction, and the evars properly created in [sigma'] *)
 
-let pending_holes (sigma, sigma') =
-  let fold evk _ accu =
-    if not (Evd.mem sigma evk) then Evar.Set.add evk accu else accu
-  in
-  Evd.fold_undefined fold sigma' Evar.Set.empty
+let frozen_and_pending_holes (sigma, sigma') =
+  let add_derivative_of evk evi acc =
+    match advance sigma' evk with None -> acc | Some evk' -> Evar.Set.add evk' acc in
+  let frozen = Evd.fold_undefined add_derivative_of sigma Evar.Set.empty in
+  let fold evk _ accu = if not (Evar.Set.mem evk frozen) then Evar.Set.add evk accu else accu in
+  let pending = Evd.fold_undefined fold sigma' Evar.Set.empty in
+  (frozen,pending)
 
 let apply_typeclasses env evdref frozen fail_evar =
-  let filter_frozen = frozen in
+  let filter_frozen evk = Evar.Set.mem evk frozen in
   evdref := Typeclasses.resolve_typeclasses
      ~filter:(if Flags.is_program_mode () 
 	      then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && not (filter_frozen evk))
@@ -272,7 +281,7 @@ let apply_inference_hook hook evdref pending =
     if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
       try
-        let c = hook sigma evk in
+        let sigma, c = hook sigma evk in
         Evd.define evk c sigma
       with Exit ->
         sigma
@@ -281,7 +290,7 @@ let apply_inference_hook hook evdref pending =
 
 let apply_heuristics env evdref fail_evar =
   (* Resolve eagerly, potentially making wrong choices *)
-  try evdref := consider_remaining_unif_problems
+  try evdref := solve_unif_constraints_with_heuristics
 	~ts:(Typeclasses.classes_transparent_state ()) env !evdref
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in if fail_evar then iraise e
@@ -325,19 +334,17 @@ let check_evars_are_solved env current_sigma frozen pending =
 (* Try typeclasses, hooks, unification heuristics ... *)
 
 let solve_remaining_evars flags env current_sigma pending =
-  let frozen = frozen_holes pending in
-  let pending = pending_holes pending in
+  let frozen,pending = frozen_and_pending_holes pending in
   let evdref = ref current_sigma in
   if flags.use_typeclasses then apply_typeclasses env evdref frozen false;
   if Option.has_some flags.use_hook then
     apply_inference_hook (Option.get flags.use_hook env) evdref pending;
-  if flags.use_unif_heuristics then apply_heuristics env evdref false;
+  if flags.solve_unification_constraints then apply_heuristics env evdref false;
   if flags.fail_evar then check_evars_are_solved env !evdref frozen pending;
   !evdref
 
 let check_evars_are_solved env current_sigma pending =
-  let frozen = frozen_holes pending in
-  let pending = pending_holes pending in
+  let frozen,pending = frozen_and_pending_holes pending in
   check_evars_are_solved env current_sigma frozen pending
 
 let process_inference_flags flags env initial_sigma (sigma,c) =
@@ -1102,14 +1109,14 @@ let ise_pretype_gen flags env sigma lvar kind c =
 
 let default_inference_flags fail = {
   use_typeclasses = true;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = None;
   fail_evar = fail;
   expand_evars = true }
 
 let no_classes_no_fail_inference_flags = {
   use_typeclasses = false;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = None;
   fail_evar = false;
   expand_evars = true }
@@ -1173,7 +1180,7 @@ let understand_ltac flags env sigma lvar kind c =
 
 let constr_flags = {
   use_typeclasses = true;
-  use_unif_heuristics = true;
+  solve_unification_constraints = true;
   use_hook = None;
   fail_evar = true;
   expand_evars = true }

@@ -17,13 +17,6 @@ val is_set_minimization : unit -> bool
 
 (** Universes *)
 
-(** Global universe name <-> level mapping *)
-type universe_names = 
-  (Decl_kinds.polymorphic * Univ.universe_level) Idmap.t * Id.t Univ.LMap.t
-
-val global_universe_names : unit -> universe_names
-val set_global_universe_names : universe_names -> unit
-
 val pr_with_global_universes : Level.t -> Pp.std_ppcmds
 
 (** Local universe name <-> level mapping *)
@@ -95,11 +88,11 @@ val leq_constr_univs_infer : UGraph.t -> 'a constraint_accumulator ->
 
 (** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
     application grouping and the universe constraints in [c]. *)
-val eq_constr_universes : constr -> constr -> bool universe_constrained
+val eq_constr_universes : constr -> constr -> universe_constraints option
 
 (** [leq_constr_universes a b] [true, c] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe constraints in [c]. *)
-val leq_constr_universes : constr -> constr -> bool universe_constrained
+val leq_constr_universes : constr -> constr -> universe_constraints option
 
 (** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
     application grouping and the universe constraints in [c]. *)
@@ -231,40 +224,6 @@ val refresh_constraints : UGraph.t -> universe_context_set -> universe_context_s
 (** Pretty-printing *)
 
 val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
-
-(* For tracing *)
-
-type constraints_map = (Univ.constraint_type * Univ.LMap.key) list Univ.LMap.t
-
-val pr_constraints_map : constraints_map -> Pp.std_ppcmds
-
-val choose_canonical : universe_set -> (Level.t -> bool) (* flexibles *) -> universe_set -> universe_set -> 
-  universe_level * (universe_set * universe_set * universe_set)
-    
-val compute_lbound : (constraint_type * Univ.universe) list -> universe option
-
-val instantiate_with_lbound : 
-  Univ.LMap.key ->
-  Univ.universe ->
-  bool ->
-  bool ->
-  Univ.LSet.t * Univ.universe option Univ.LMap.t *
-    Univ.LSet.t *
-    (bool * bool * Univ.universe) Univ.LMap.t * Univ.constraints ->
-  (Univ.LSet.t * Univ.universe option Univ.LMap.t *
-    Univ.LSet.t *
-     (bool * bool * Univ.universe) Univ.LMap.t * Univ.constraints) *
-    (bool * bool * Univ.universe)
-
-val minimize_univ_variables : 
-           Univ.LSet.t ->
-           Univ.universe option Univ.LMap.t ->
-           Univ.LSet.t ->
-  constraints_map -> constraints_map ->
-           Univ.constraints ->
-           Univ.LSet.t * Univ.universe option Univ.LMap.t *
-	     Univ.LSet.t *
-           (bool * bool * Univ.universe) Univ.LMap.t * Univ.constraints
 
 (** {6 Support for old-style sort-polymorphism } *)
 

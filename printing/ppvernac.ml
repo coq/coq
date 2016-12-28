@@ -164,14 +164,17 @@ module Make
     | ModeNoHeadEvar -> str"!"
     | ModeOutput -> str"-"
 
+  let pr_hint_info pr_pat { hint_priority = pri; hint_pattern = pat } =
+    pr_opt (fun x -> str"|" ++ int x) pri ++
+    pr_opt (fun y -> (if Option.is_empty pri then str"| " else mt()) ++ pr_pat y) pat
+
   let pr_hints db h pr_c pr_pat =
     let opth = pr_opt_hintbases db  in
     let pph =
       match h with
         | HintsResolve l ->
           keyword "Resolve " ++ prlist_with_sep sep
-            (fun (pri, _, c) -> pr_reference_or_constr pr_c c ++
-              match pri with Some x -> spc () ++ str"(" ++ int x ++ str")" | None -> mt ())
+            (fun (info, _, c) -> pr_reference_or_constr pr_c c ++ pr_hint_info pr_pat info)
             l
         | HintsImmediate l ->
           keyword "Immediate" ++ spc() ++
@@ -261,7 +264,7 @@ module Make
 
   let pr_decl_notation prc ((loc,ntn),c,scopt) =
     fnl () ++ keyword "where " ++ qs ntn ++ str " := "
-    ++ Flags.without_option Flags.beautify_file prc c ++
+    ++ Flags.without_option Flags.beautify prc c ++
       pr_opt (fun sc -> str ": " ++ str sc) scopt
 
   let pr_binders_arg =
@@ -365,8 +368,8 @@ module Make
     | SetAssoc NonA -> keyword "no associativity"
     | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
     | SetOnlyPrinting -> keyword "only printing"
-    | SetOnlyParsing Flags.Current -> keyword "only parsing"
-    | SetOnlyParsing v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")
+    | SetOnlyParsing -> keyword "only parsing"
+    | SetCompatVersion v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")
     | SetFormat("text",s) -> keyword "format " ++ pr_located qs s
     | SetFormat(k,s) -> keyword "format " ++ qs k ++ spc() ++ pr_located qs s
 
@@ -381,7 +384,7 @@ module Make
     | Some pl -> str"@{" ++ prlist_with_sep spc pr_lident pl ++ str"}"
 
   let pr_rec_definition ((((loc,id),pl),ro,bl,type_,def),ntn) =
-    let pr_pure_lconstr c = Flags.without_option Flags.beautify_file pr_lconstr c in
+    let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
     let annot = pr_guard_annot pr_lconstr_expr bl ro in
     pr_id id ++ pr_univs pl ++ pr_binders_arg bl ++ annot
     ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
@@ -676,7 +679,7 @@ module Make
       | VernacNotation (_,c,((_,s),l),opt) ->
         return (
           hov 2 (keyword "Notation" ++ spc() ++ qs s ++
-                   str " :=" ++ Flags.without_option Flags.beautify_file pr_constrarg c ++ pr_syntax_modifiers l ++
+                   str " :=" ++ Flags.without_option Flags.beautify pr_constrarg c ++ pr_syntax_modifiers l ++
                    (match opt with
                      | None -> mt()
                      | Some sc -> str" :" ++ spc() ++ str sc))
@@ -758,7 +761,7 @@ module Make
         let pr_constructor (coe,(id,c)) =
           hov 2 (pr_lident id ++ str" " ++
                    (if coe then str":>" else str":") ++
-                   Flags.without_option Flags.beautify_file pr_spc_lconstr c)
+                   Flags.without_option Flags.beautify pr_spc_lconstr c)
         in
         let pr_constructor_list b l = match l with
           | Constructors [] -> mt()
@@ -836,7 +839,8 @@ module Make
         )
       | VernacConstraint v ->
         let pr_uconstraint (l, d, r) =
-          pr_lident l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++ pr_lident r
+          pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
+            pr_glob_level r
         in
         return (
           hov 2 (keyword "Constraint" ++ spc () ++
@@ -885,7 +889,7 @@ module Make
               spc() ++ pr_class_rawexpr c2)
         )
 
-      | VernacInstance (abst, sup, (instid, bk, cl), props, pri) ->
+      | VernacInstance (abst, sup, (instid, bk, cl), props, info) ->
         return (
           hov 1 (
             (if abst then keyword "Declare" ++ spc () else mt ()) ++
@@ -896,7 +900,7 @@ module Make
               pr_and_type_binders_arg sup ++
               str":" ++ spc () ++
               (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
-              pr_constr cl ++ pr_priority pri ++
+              pr_constr cl ++ pr_hint_info pr_constr_pattern_expr info ++
               (match props with
                 | Some (true,CRecord (_,l)) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
                 | Some (true,_) -> assert false
@@ -907,14 +911,17 @@ module Make
       | VernacContext l ->
         return (
           hov 1 (
-            keyword "Context" ++ spc () ++ pr_and_type_binders_arg l)
+            keyword "Context" ++ pr_and_type_binders_arg l)
         )
 
-      | VernacDeclareInstances (ids, pri) ->
-        return (
+      | VernacDeclareInstances insts ->
+         let pr_inst (id, info) =
+           pr_reference id ++ pr_hint_info pr_constr_pattern_expr info
+         in
+         return (
           hov 1 (keyword "Existing" ++ spc () ++
-                   keyword(String.plural (List.length ids) "Instance") ++
-                   spc () ++ prlist_with_sep spc pr_reference ids ++ pr_priority pri)
+                   keyword(String.plural (List.length insts) "Instance") ++
+                 spc () ++ prlist_with_sep (fun () -> str", ") pr_inst insts)
         )
 
       | VernacDeclareClass id ->
@@ -1000,13 +1007,16 @@ module Make
         )
       | VernacHints (_, dbnames,h) ->
         return (pr_hints dbnames h pr_constr pr_constr_pattern_expr)
-      | VernacSyntacticDefinition (id,(ids,c),_,onlyparsing) ->
+      | VernacSyntacticDefinition (id,(ids,c),_,compat) ->
         return (
           hov 2
             (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
                prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
                pr_syntax_modifiers
-               (match onlyparsing with None -> [] | Some v -> [SetOnlyParsing v]))
+               (match compat with
+                | None -> []
+                | Some Flags.Current -> [SetOnlyParsing]
+                | Some v -> [SetCompatVersion v]))
         )
       | VernacDeclareImplicits (q,[]) ->
         return (
@@ -1020,25 +1030,36 @@ module Make
                      str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
                    impls)
         )
-      | VernacArguments (q, impl, nargs, mods) ->
+      | VernacArguments (q, args, more_implicits, nargs, mods) ->
         return (
           hov 2 (
             keyword "Arguments" ++ spc() ++
               pr_smart_global q ++
               let pr_s = function None -> str"" | Some (_,s) -> str "%" ++ str s in
               let pr_if b x = if b then x else str "" in
-              let pr_br imp max x = match imp, max with
-                | true, false -> str "[" ++ x ++ str "]"
-                | true, true -> str "{" ++ x ++ str "}"
-                | _ -> x in
-              let rec aux n l =
+              let pr_br imp x = match imp with
+                | Vernacexpr.Implicit -> str "[" ++ x ++ str "]"
+                | Vernacexpr.MaximallyImplicit -> str "{" ++ x ++ str "}"
+                | Vernacexpr.NotImplicit -> x in
+              let rec print_arguments n l =
                 match n, l with
-                  | 0, l -> spc () ++ str"/" ++ aux ~-1 l
+                  | Some 0, l -> spc () ++ str"/" ++ print_arguments None l
                   | _, [] -> mt()
-                  | n, (id,k,s,imp,max) :: tl ->
-                    spc() ++ pr_br imp max (pr_if k (str"!") ++ pr_name id ++ pr_s s) ++
-                      aux (n-1) tl in
-              prlist_with_sep (fun () -> str", ") (aux nargs) impl ++
+                  | n, { name = id; recarg_like = k;
+                         notation_scope = s;
+                         implicit_status = imp } :: tl ->
+                    spc() ++ pr_br imp (pr_if k (str"!") ++ pr_name id ++ pr_s s) ++
+                      print_arguments (Option.map pred n) tl
+              in
+              let rec print_implicits = function
+                | [] -> mt ()
+                | (name, impl) :: rest ->
+                   spc() ++ pr_br impl (pr_name name) ++ print_implicits rest
+              in
+              print_arguments nargs args ++
+                if not (List.is_empty more_implicits) then
+                  prlist (fun l -> str"," ++ print_implicits l) more_implicits
+                else (mt ()) ++
                 (if not (List.is_empty mods) then str" : " else str"") ++
                   prlist_with_sep (fun () -> str", " ++ spc()) (function
                     | `ReductionDontExposeCase -> keyword "simpl nomatch"
@@ -1104,6 +1125,11 @@ module Make
       | VernacSetOption (na,v) ->
         return (
           hov 2 (keyword "Set" ++ spc() ++ pr_set_option na v)
+        )
+      | VernacSetAppendOption (na,v) ->
+        return (
+          hov 2 (keyword "Set" ++ spc() ++ pr_printoption na None ++
+                   spc() ++ keyword "Append" ++ spc() ++ qs v)
         )
       | VernacAddOption (na,l) ->
         return (

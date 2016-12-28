@@ -1,9 +1,11 @@
 The command has indeed failed with message:
 Error: To rename arguments the "rename" flag must be specified.
 Argument A renamed to B.
-The command has indeed failed with message:
-Error: To rename arguments the "rename" flag must be specified.
-Argument A renamed to T.
+File "stdin", line 2, characters 0-25:
+Warning: This command is just asserting the names of arguments of identity.
+If this is what you want add ': assert' to silence the warning. If you want
+to clear implicit arguments add ': clear implicits'. If you want to clear
+notation scopes add ': clear scopes' [arguments-assert,vernacular]
 @eq_refl
      : forall (B : Type) (y : B), y = y
 eq_refl
@@ -101,15 +103,15 @@ Expands to: Constant Top.myplus
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 The command has indeed failed with message:
-Error: All arguments lists must declare the same names.
+Error: Argument lists should agree on the names they provide.
 The command has indeed failed with message:
-Error: The following arguments are not declared: x.
+Error: Sequences of implicit arguments must be of different lengths.
 The command has indeed failed with message:
-Error: Arguments names must be distinct.
+Error: Some argument names are duplicated: F
 The command has indeed failed with message:
 Error: Argument z cannot be declared implicit.
 The command has indeed failed with message:
-Error: Extra argument y.
+Error: Extra arguments: y.
 The command has indeed failed with message:
 Error: To rename arguments the "rename" flag must be specified.
 Argument A renamed to R.

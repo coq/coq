@@ -11,6 +11,12 @@ Remedy:
   instead (compatible with 8.4).
 - Unset the option for the program/proof the obligation/subproof originates
   from.
+
+Symptom: In a goal, order of hypotheses, or absence of an equality of
+the form "x = t" or "t = x", or no unfolding of a local definition.
+Cause: This might be connected to a number of fixes in the tactic
+"subst". The former behavior can be reactivated by issuing "Unset
+Regular Subst Tactic".
   
 Potential sources of incompatibilities between Coq V8.4 and V8.5
 ----------------------------------------------------------------

@@ -8,11 +8,7 @@ subgoal 2 is:
  forall n : nat, ?Goal n -> ?Goal (S n)
 subgoal 3 is:
  nat
-unification constraints:
- ?Goal ?Goal2 <=
-   True /\ True /\ True \/
-   veeryyyyyyyyyyyyloooooooooooooonggidentifier =
-   veeryyyyyyyyyyyyloooooooooooooonggidentifier
+unification constraint:
  ?Goal ?Goal2 <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
@@ -28,11 +24,7 @@ subgoal 2 is:
  forall n0 : nat, ?Goal@{n:=n; m:=m} n0 -> ?Goal@{n:=n; m:=m} (S n0)
 subgoal 3 is:
  nat
-unification constraints:
- ?Goal@{n:=n; m:=m} ?Goal2@{n:=n; m:=m} <=
-   True /\ True /\ True \/
-   veeryyyyyyyyyyyyloooooooooooooonggidentifier =
-   veeryyyyyyyyyyyyloooooooooooooonggidentifier
+unification constraint:
  ?Goal@{n:=n; m:=m} ?Goal2@{n:=n; m:=m} <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
@@ -48,12 +40,7 @@ subgoal 2 is:
  forall n0 : nat, ?Goal1@{m:=m} n0 -> ?Goal1@{m:=m} (S n0)
 subgoal 3 is:
  nat
-unification constraints:
- 
- n, m : nat |- ?Goal1@{m:=m} ?Goal0@{n:=n; m:=m} <=
-   True /\ True /\ True \/
-   veeryyyyyyyyyyyyloooooooooooooonggidentifier =
-   veeryyyyyyyyyyyyloooooooooooooonggidentifier
+unification constraint:
  
  n, m : nat |- ?Goal1@{m:=m} ?Goal0@{n:=n; m:=m} <=
    True /\ True /\ True \/
@@ -70,12 +57,7 @@ subgoal 2 is:
  forall n0 : nat, ?Goal0@{m:=m} n0 -> ?Goal0@{m:=m} (S n0)
 subgoal 3 is:
  nat
-unification constraints:
- 
- n, m : nat |- ?Goal0@{m:=m} ?Goal2@{n:=n} <=
-   True /\ True /\ True \/
-   veeryyyyyyyyyyyyloooooooooooooonggidentifier =
-   veeryyyyyyyyyyyyloooooooooooooonggidentifier
+unification constraint:
  
  n, m : nat |- ?Goal0@{m:=m} ?Goal2@{n:=n} <=
    True /\ True /\ True \/

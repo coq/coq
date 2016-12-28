@@ -166,9 +166,6 @@ module Cst_stack = struct
   let empty = []
   let is_empty = CList.is_empty
 
-  let sanity x y =
-    assert(Term.eq_constr x y)
-
   let drop_useless = function
     | _ :: ((_,_,[])::_ as q) -> q
     | l -> l
@@ -177,9 +174,9 @@ module Cst_stack = struct
     let append2cst = function
       | (c,params,[]) -> (c, h::params, [])
       | (c,params,((i,t)::q)) when i = pred (Array.length t) ->
-	 let () = sanity h t.(i) in (c, params, q)
+	(c, params, q)
       | (c,params,(i,t)::q) ->
-	let () = sanity h t.(i) in (c, params, (succ i,t)::q)
+	(c, params, (succ i,t)::q)
     in
       drop_useless (List.map append2cst cst_l)
 
@@ -684,13 +681,17 @@ let magicaly_constant_of_fixbody env reference bd = function
       match constant_opt_value_in env (cst,u) with
       | None -> bd
       | Some t ->
-        let b, csts = Universes.eq_constr_universes t bd in
-    	let subst = Universes.Constraints.fold (fun (l,d,r) acc ->
-    	  Univ.LMap.add (Option.get (Universe.level l)) (Option.get (Universe.level r)) acc)
-    	  csts Univ.LMap.empty
-    	in
-    	let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
-          if b then mkConstU (cst,inst) else bd
+        let csts = Universes.eq_constr_universes t bd in
+        begin match csts with
+        | Some csts ->
+          let subst = Universes.Constraints.fold (fun (l,d,r) acc ->
+            Univ.LMap.add (Option.get (Universe.level l)) (Option.get (Universe.level r)) acc)
+            csts Univ.LMap.empty
+          in
+          let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
+          mkConstU (cst,inst)
+        | None -> bd
+        end
     with
     | Not_found -> bd
 
@@ -1265,7 +1266,7 @@ let sigma_compare_sorts env pb s0 s1 sigma =
   match pb with
   | Reduction.CONV -> Evd.set_eq_sort env sigma s0 s1
   | Reduction.CUMUL -> Evd.set_leq_sort env sigma s0 s1
-    
+
 let sigma_compare_instances ~flex i0 i1 sigma =
   try Evd.set_eq_instances ~flex sigma i0 i1
   with Evd.UniversesDiffer

@@ -434,14 +434,14 @@ Lemma eqb_compare x y :
  (x =? y) = match compare x y with Eq => true | _ => false end.
 Proof.
 apply eq_true_iff_eq. rewrite eqb_eq, <- compare_eq_iff.
-destruct compare; now split.
+now destruct compare.
 Qed.
 
 Lemma ltb_compare x y :
  (x <? y) = match compare x y with Lt => true | _ => false end.
 Proof.
 apply eq_true_iff_eq. rewrite ltb_lt, <- compare_lt_iff.
-destruct compare; now split.
+now destruct compare.
 Qed.
 
 Lemma leb_compare x y :

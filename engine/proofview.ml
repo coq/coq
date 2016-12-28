@@ -22,6 +22,8 @@ open Context.Named.Declaration
 (** Main state of tactics *)
 type proofview = Proofview_monad.proofview
 
+(* The first items in pairs below are proofs (under construction).
+   The second items in the pairs below are statements that are being proved. *)
 type entry = (Term.constr * Term.types) list
 
 (** Returns a stylised view of a proofview for use by, for instance,
@@ -152,33 +154,9 @@ let focus i j sp =
   let (new_comb, context) = focus_sublist i j sp.comb in
   ( { sp with comb = new_comb } , context )
 
-
-(** [advance sigma g] returns [Some g'] if [g'] is undefined and is
-    the current avatar of [g] (for instance [g] was changed by [clear]
-    into [g']). It returns [None] if [g] has been (partially)
-    solved. *)
-(* spiwack: [advance] is probably performance critical, and the good
-   behaviour of its definition may depend sensitively to the actual
-   definition of [Evd.find]. Currently, [Evd.find] starts looking for
-   a value in the heap of undefined variable, which is small. Hence in
-   the most common case, where [advance] is applied to an unsolved
-   goal ([advance] is used to figure if a side effect has modified the
-   goal) it terminates quickly. *)
-let rec advance sigma g =
-  let open Evd in
-  let evi = Evd.find sigma g in
-  match evi.evar_body with
-  | Evar_empty -> Some g
-  | Evar_defined v ->
-      if Option.default false (Store.get evi.evar_extra Evarutil.cleared) then
-        let (e,_) = Term.destEvar v in
-        advance sigma e
-      else
-        None
-
 (** [undefined defs l] is the list of goals in [l] which are still
     unsolved (after advancing cleared goals). *)
-let undefined defs l = CList.map_filter (advance defs) l
+let undefined defs l = CList.map_filter (Evarutil.advance defs) l
 
 (** Unfocuses a proofview with respect to a context. *)
 let unfocus c sp =
@@ -465,7 +443,7 @@ let iter_goal i =
   Comb.get >>= fun initial ->
   Proof.List.fold_left begin fun (subgoals as cur) goal ->
     Solution.get >>= fun step ->
-    match advance step goal with
+    match Evarutil.advance step goal with
     | None -> return cur
     | Some goal ->
         Comb.set [goal] >>
@@ -489,7 +467,7 @@ let fold_left2_goal i s l =
   in 
   Proof.List.fold_left2 err begin fun ((r,subgoals) as cur) goal a ->
     Solution.get >>= fun step ->
-    match advance step goal with
+    match Evarutil.advance step goal with
     | None -> return cur
     | Some goal ->
         Comb.set [goal] >>
@@ -533,7 +511,7 @@ let tclDISPATCHGEN0 join tacs =
         let open Proof in
         Pv.get >>= function
         | { comb=[goal] ; solution } ->
-            begin match advance solution goal with
+            begin match Evarutil.advance solution goal with
             | None -> tclUNIT (join [])
             | Some _ -> Proof.map (fun res -> join [res]) tac
             end
@@ -685,6 +663,21 @@ let unshelve l p =
   let l = undefined p.solution l in
   { p with comb = p.comb@l }
 
+let mark_in_evm ~goal evd content =
+  let info = Evd.find evd content in
+  let info =
+    if goal then
+      { info with Evd.evar_source = match info.Evd.evar_source with
+            | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
+            | loc,_ -> loc,Evar_kinds.GoalEvar }
+    else info
+  in
+  let info = match Evd.Store.get info.Evd.evar_extra typeclass_resolvable with
+  | None -> { info with Evd.evar_extra = Evd.Store.set info.Evd.evar_extra typeclass_resolvable () }
+  | Some () -> info
+  in
+  Evd.add evd content info
+
 let with_shelf tac =
   let open Proof in
   Pv.get >>= fun pv ->
@@ -697,8 +690,11 @@ let with_shelf tac =
   let fgoals = Evd.future_goals solution in
   let pgoal = Evd.principal_future_goal solution in
   let sigma = Evd.restore_future_goals sigma fgoals pgoal in
-  Pv.set { npv with shelf; solution = sigma } >>
-  tclUNIT (CList.rev_append gls' gls, ans)
+  (* Ensure we mark and return only unsolved goals *)
+  let gls' = undefined sigma (CList.rev_append gls' gls) in
+  let sigma = CList.fold_left (mark_in_evm ~goal:false) sigma gls' in
+  let npv = { npv with shelf; solution = sigma } in
+  Pv.set npv >> tclUNIT (gls', ans)
 
 (** [goodmod p m] computes the representative of [p] modulo [m] in the
     interval [[0,m-1]].*)
@@ -929,6 +925,8 @@ module Unsafe = struct
       { step with comb = step.comb @ gls }
     end
 
+  let tclSETENV = Env.set
+
   let tclGETGOALS = Comb.get
 
   let tclSETGOALS = Comb.set
@@ -943,19 +941,12 @@ module Unsafe = struct
     { p with solution = Evd.reset_future_goals p.solution }
 
   let mark_as_goal evd content =
-    let info = Evd.find evd content in
-    let info =
-      { info with Evd.evar_source = match info.Evd.evar_source with
-      | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
-      | loc,_ -> loc,Evar_kinds.GoalEvar }
-    in
-    let info = match Evd.Store.get info.Evd.evar_extra typeclass_resolvable with
-    | None -> { info with Evd.evar_extra = Evd.Store.set info.Evd.evar_extra typeclass_resolvable () }
-    | Some () -> info
-    in
-    Evd.add evd content info
+    mark_in_evm ~goal:true evd content
 
-  let advance = advance
+  let advance = Evarutil.advance
+
+  let mark_as_unresolvable p gl =
+    { p with solution = mark_in_evm ~goal:false p.solution gl }
 
   let typeclass_resolvable = typeclass_resolvable
 
@@ -1117,7 +1108,7 @@ module Goal = struct
     Pv.get >>= fun step ->
     let sigma = step.solution in
     let map goal =
-      match advance sigma goal with
+      match Evarutil.advance sigma goal with
       | None -> None (** ppedrot: Is this check really necessary? *)
       | Some goal ->
         let gl =
@@ -1128,6 +1119,10 @@ module Goal = struct
         Some gl
     in
     tclUNIT (CList.map_filter map step.comb)
+
+  let unsolved { self=self } =
+    tclEVARMAP >>= fun sigma ->
+    tclUNIT (not (Option.is_empty (Evarutil.advance sigma self)))
 
   (* compatibility *)
   let goal { self=self } = self
@@ -1163,10 +1158,6 @@ let tclLIFT = Proof.lift
 
 let tclCHECKINTERRUPT =
    tclLIFT (NonLogical.make Control.check_for_interrupt)
-
-
-
-
 
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 = struct

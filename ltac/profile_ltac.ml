@@ -128,7 +128,7 @@ let to_ltacprof_results xml =
   | _ -> CErrors.anomaly Pp.(str "Malformed ltacprof XML")
 
 let feedback_results results =
-  Feedback.(feedback 
+  Feedback.(feedback
     (Custom (Loc.dummy_loc, "ltacprof_results", of_ltacprof_results results)))
 
 (* ************** pretty printing ************************************* *)
@@ -218,7 +218,7 @@ let to_string ~filter ?(cutoff=0.0) node =
     !global
   in
   warn_encountered_multi_success_backtracking ();
-  let filter s n = filter s && n >= cutoff in
+  let filter s n = filter s && (all_total <= 0.0 || n /. all_total >= cutoff /. 100.0) in
   let msg =
     h 0 (str "total time: " ++ padl 11 (format_sec (all_total))) ++
     fnl () ++
@@ -401,11 +401,11 @@ let print_results ~cutoff =
   print_results_filter ~cutoff ~filter:(fun _ -> true)
 
 let print_results_tactic tactic =
-  print_results_filter ~cutoff:0.0 ~filter:(fun s ->
+  print_results_filter ~cutoff:!Flags.profile_ltac_cutoff ~filter:(fun s ->
     String.(equal tactic (sub (s ^ ".") 0 (min (1+length s) (length tactic)))))
 
 let do_print_results_at_close () =
-  if get_profiling () then print_results ~cutoff:0.0
+  if get_profiling () then print_results ~cutoff:!Flags.profile_ltac_cutoff
 
 let _ = Declaremods.append_end_library_hook do_print_results_at_close
 

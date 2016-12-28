@@ -1517,27 +1517,27 @@ let rec apply_ids t ids =
   | [] -> t
   | i::ids -> apply_ids (Term.mkApp(t,[| Term.mkVar i |])) ids
 
-let coq_Node = 
+let coq_Node = lazy
  (Coqlib.gen_constant_in_modules "VarMap"
    [["Coq" ; "micromega" ; "VarMap"];["VarMap"]] "Node")
-let coq_Leaf = 
+let coq_Leaf = lazy
  (Coqlib.gen_constant_in_modules "VarMap"
    [["Coq" ; "micromega" ; "VarMap"];["VarMap"]] "Leaf")
-let coq_Empty = 
+let coq_Empty = lazy
  (Coqlib.gen_constant_in_modules "VarMap"
    [["Coq" ; "micromega" ;"VarMap"];["VarMap"]] "Empty")
 
-let coq_VarMap = 
+let coq_VarMap = lazy
   (Coqlib.gen_constant_in_modules "VarMap"
      [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t")
  
 
 let rec dump_varmap typ m =
   match m with
-  | Mc.Empty -> Term.mkApp(coq_Empty,[| typ |])
-  | Mc.Leaf v -> Term.mkApp(coq_Leaf,[| typ; v|])
-  | Mc.Node(l,o,r) -> 
-    Term.mkApp (coq_Node, [| typ; dump_varmap typ l; o ; dump_varmap typ r |])
+  | Mc.Empty -> Term.mkApp(Lazy.force coq_Empty,[| typ |])
+  | Mc.Leaf v -> Term.mkApp(Lazy.force coq_Leaf,[| typ; v|])
+  | Mc.Node(l,o,r) ->
+    Term.mkApp (Lazy.force coq_Node, [| typ; dump_varmap typ l; o ; dump_varmap typ r |])
 
 
 let vm_of_list env =
@@ -1709,7 +1709,7 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
     (set
       [
        ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
-       ("__varmap", vm, Term.mkApp( coq_VarMap, [|spec.typ|])); 
+       ("__varmap", vm, Term.mkApp(Lazy.force coq_VarMap, [|spec.typ|]));
        ("__wit", cert, cert_typ)
       ]
       (Tacmach.pf_concl gl))

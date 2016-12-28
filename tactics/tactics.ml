@@ -52,7 +52,11 @@ let inj_with_occurrences e = (AllOccurrences,e)
 
 let dloc = Loc.ghost
 
-let typ_of env sigma c = Retyping.get_type_of env (Sigma.to_evar_map sigma) c
+let typ_of env sigma c =
+  let open Retyping in
+  try get_type_of ~lax:true env (Sigma.to_evar_map sigma) c
+  with RetypeError e ->
+    user_err (print_retype_error e)
 
 open Goptions
 
@@ -83,7 +87,7 @@ let _ =
 
 let apply_solve_class_goals = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optsync = true; Goptions.optdepr = true;
   Goptions.optname =
     "Perform typeclass resolution on apply-generated subgoals.";
   Goptions.optkey = ["Typeclass";"Resolution";"After";"Apply"];
@@ -181,10 +185,10 @@ let introduction ?(check=true) id =
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
-    let hyps = Proofview.Goal.hyps gl in
+    let hyps = named_context_val (Proofview.Goal.env gl) in
     let store = Proofview.Goal.extra gl in
     let env = Proofview.Goal.env gl in
-    let () = if check && mem_named_context id hyps then
+    let () = if check && mem_named_context_val id hyps then
       user_err ~hdr:"Tactics.introduction"
         (str "Variable " ++ pr_id id ++ str " is already declared.")
     in
@@ -520,7 +524,7 @@ let mutual_fix f n rest j = Proofview.Goal.nf_enter { enter = begin fun gl ->
     let (sp', u')  = check_mutind env sigma n ar in
     if not (eq_mind sp sp') then
       error "Fixpoints should be on the same mutual inductive declaration.";
-    if mem_named_context f (named_context_of_val sign) then
+    if mem_named_context_val f sign then
       user_err ~hdr:"Logic.prim_refiner"
         (str "Name " ++ pr_id f ++ str " already used in the environment");
     mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
@@ -573,7 +577,7 @@ let mutual_cofix f others j = Proofview.Goal.nf_enter { enter = begin fun gl ->
   | [] -> sign
   | (f, ar) :: oth ->
     let open Context.Named.Declaration in
-    if mem_named_context f (named_context_of_val sign) then
+    if mem_named_context_val f sign then
       error "Name already used in the environment.";
     mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
   in
@@ -1141,7 +1145,7 @@ let run_delayed env sigma c =
 
 let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
-  Pretyping.use_unif_heuristics = true;
+  Pretyping.solve_unification_constraints = true;
   Pretyping.use_hook = Some solve_by_implicit_tactic;
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
@@ -1941,9 +1945,7 @@ let exact_check c =
 let cast_no_check cast c =
   Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
-    Refine.refine ~unsafe:true { run = begin fun sigma ->
-      Sigma.here (Term.mkCast (c, cast, concl)) sigma
-    end }
+    exact_no_check (Term.mkCast (c, cast, concl))
   end }
 
 let vm_cast_no_check c = cast_no_check Term.VMcast c
@@ -1979,7 +1981,7 @@ let assumption =
     in
     if is_same_type then
       (Proofview.Unsafe.tclEVARS sigma) <*>
-	Refine.refine ~unsafe:true { run = fun h -> Sigma.here (mkVar (NamedDecl.get_id decl)) h }
+	exact_no_check (mkVar (NamedDecl.get_id decl))
     else arec gl only_eq rest
   in
   let assumption_tac = { enter = begin fun gl ->
@@ -2713,7 +2715,7 @@ let forward b usetac ipat c =
   match usetac with
   | None ->
       Proofview.Goal.enter { enter = begin fun gl ->
-      let t = Tacmach.New.pf_unsafe_type_of gl c in
+      let t = Tacmach.New.pf_get_type_of gl c in
       let hd = head_ident c in
       Tacticals.New.tclTHENFIRST (assert_as true hd ipat t) (exact_no_check c)
       end }
@@ -2793,7 +2795,7 @@ let old_generalize_dep ?(with_let=false) c gl =
   let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
   let tothin' =
     match kind_of_term c with
-      | Var id when mem_named_context id sign && not (Id.List.mem id init_ids)
+      | Var id when mem_named_context_val id (val_of_named_context sign) && not (Id.List.mem id init_ids)
 	  -> id::tothin
       | _ -> tothin
   in
@@ -2807,6 +2809,8 @@ let old_generalize_dep ?(with_let=false) c gl =
   in
   let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous)
     (cl',project gl) in
+  (** Check that the generalization is indeed well-typed *)
+  let (evd, _) = Typing.type_of env evd cl'' in
   let args = Context.Named.to_instance to_quantify_rev in
   tclTHENLIST
     [tclEVARS evd;
@@ -2819,10 +2823,12 @@ let generalize_dep ?(with_let = false) c =
 
 (**  *)
 let generalize_gen_let lconstr = Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let newcl, evd =
     List.fold_right_i (Tacmach.New.of_old generalize_goal gl) 0 lconstr
       (Tacmach.New.pf_concl gl,Tacmach.New.project gl)
   in
+  let (evd, _) = Typing.type_of env evd newcl in
   let map ((_, c, b),_) = if Option.is_empty b then Some c else None in
   let tac = apply_type newcl (List.map_filter map lconstr) in
   Sigma.Unsafe.of_pair (tac, evd)
@@ -2943,8 +2949,8 @@ let unfold_body x =
   let open Context.Named.Declaration in
   Proofview.Goal.enter { enter = begin fun gl ->
   (** We normalize the given hypothesis immediately. *)
-  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-  let xval = match Context.Named.lookup x hyps with
+  let env = Proofview.Goal.env (Proofview.Goal.assume gl) in
+  let xval = match Environ.lookup_named x env with
   | LocalAssum _ -> user_err ~hdr:"unfold_body"
     (pr_id x ++ str" is not a defined hypothesis.")
   | LocalDef (_,xval,_) -> xval
@@ -4362,7 +4368,7 @@ let induction_gen clear_flag isrec with_evars elim
   let cls = Option.default allHypsAndConcl cls in
   let t = typ_of env sigma c in
   let is_arg_pure_hyp =
-    isVar c && not (mem_named_context (destVar c) (Global.named_context()))
+    isVar c && not (mem_named_context_val (destVar c) (Global.named_context_val ()))
     && lbind == NoBindings && not with_evars && Option.is_empty eqname
     && clear_flag == None
     && has_generic_occurrences_but_goal cls (destVar c) env ccl in
@@ -4409,7 +4415,7 @@ let induction_gen_l isrec with_evars elim names lc =
       | [] -> Proofview.tclUNIT ()
       | c::l' ->
 	  match kind_of_term c with
-	    | Var id when not (mem_named_context id (Global.named_context()))
+	    | Var id when not (mem_named_context_val id (Global.named_context_val ()))
 		&& not with_evars ->
 		let _ = newlc:= id::!newlc in
 		atomize_list l'
@@ -4829,7 +4835,7 @@ let abstract_subproof id gk tac =
   let open Proofview.Notations in
   Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
-  let current_sign = Global.named_context()
+  let current_sign = Global.named_context_val ()
   and global_sign = Proofview.Goal.hyps gl in
   let sigma = Sigma.to_evar_map sigma in
   let evdref = ref sigma in
@@ -4837,8 +4843,8 @@ let abstract_subproof id gk tac =
     List.fold_right
       (fun d (s1,s2) ->
         let id = NamedDecl.get_id d in
-	if mem_named_context id current_sign &&
-          interpretable_as_section_decl evdref (Context.Named.lookup id current_sign) d
+	if mem_named_context_val id current_sign &&
+          interpretable_as_section_decl evdref (lookup_named_val id current_sign) d
         then (s1,push_named_context_val d s2)
 	else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, empty_named_context_val) in
@@ -4961,9 +4967,16 @@ module New = struct
   open Locus
 
   let reduce_after_refine =
+    let onhyps =
+      (** We reduced everywhere in the hyps before 8.6 *)
+      if Flags.version_compare !Flags.compat_version Flags.V8_5 == 0
+      then None
+      else Some []
+    in
     reduce
-      (Lazy {rBeta=true;rMatch=true;rFix=true;rCofix=true;rZeta=false;rDelta=false;rConst=[]})
-      {onhyps=Some []; concl_occs=AllOccurrences }
+      (Lazy {rBeta=true;rMatch=true;rFix=true;rCofix=true;
+	     rZeta=false;rDelta=false;rConst=[]})
+      {onhyps; concl_occs=AllOccurrences }
 
   let refine ?unsafe c =
     Refine.refine ?unsafe c <*>

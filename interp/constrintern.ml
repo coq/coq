@@ -1051,6 +1051,15 @@ let find_pattern_variable = function
   | Ident (loc,id) -> id
   | Qualid (loc,_) as x -> raise (InternalizationError(loc,NotAConstructor x))
 
+let check_duplicate loc fields =
+  let eq (ref1, _) (ref2, _) = eq_reference ref1 ref2 in
+  let dups = List.duplicates eq fields in
+  match dups with
+  | [] -> ()
+  | (r, _) :: _ ->
+    user_err ~loc (str "This record defines several times the field " ++
+      pr_reference r ++ str ".")
+
 (** [sort_fields ~complete loc fields completer] expects a list
     [fields] of field assignments [f = e1; g = e2; ...], where [f, g]
     are fields of a record and [e1] are "values" (either terms, when
@@ -1084,6 +1093,7 @@ let sort_fields ~complete loc fields completer =
           try Qualid (loc, shortest_qualid_of_global Id.Set.empty global_record_id)
           with Not_found ->
             anomaly (str "Environment corruption for records") in
+        let () = check_duplicate loc fields in
         let (end_index,    (* one past the last field index *)
              first_field_index,  (* index of the first field of the record *)
              proj_list)    (* list of projections *)
@@ -1389,7 +1399,40 @@ let rec intern_pat genv aliases pat =
       check_or_pat_variables loc ids (List.tl idsl);
       (ids,List.flatten pl')
 
+(* [check_no_patcast p] raises an error if [p] contains a cast. This code is a
+   bit ad-hoc, and is due to current restrictions on casts in patterns. We
+   support them only in local binders and only at top level. In fact, they are
+   currently eliminated by the parser. The only reason why they are in the
+   [cases_pattern_expr] type is that the parser needs to factor the "(c : t)"
+   notation with user defined notations (such as the pair). In the long term, we
+   will try to support such casts everywhere, and use them to print the domains
+   of lambdas in the encoding of match in constr. We put this check here and not
+   in the parser because it would require to duplicate the levels of the
+   [pattern] rule. *)
+let rec check_no_patcast = function
+  | CPatCast (loc,_,_) ->
+     CErrors.user_err ~loc ~hdr:"check_no_patcast"
+                           (Pp.strbrk "Casts are not supported here.")
+  | CPatDelimiters(_,_,p)
+  | CPatAlias(_,p,_) -> check_no_patcast p
+  | CPatCstr(_,_,opl,pl) ->
+     Option.iter (List.iter check_no_patcast) opl;
+     List.iter check_no_patcast pl
+  | CPatOr(_,pl) ->
+     List.iter check_no_patcast pl
+  | CPatNotation(_,_,subst,pl) ->
+     check_no_patcast_subst subst;
+     List.iter check_no_patcast pl
+  | CPatRecord(_,prl) ->
+     List.iter (fun (_,p) -> check_no_patcast p) prl
+  | CPatAtom _ | CPatPrim _ -> ()
+
+and check_no_patcast_subst (pl,pll) =
+  List.iter check_no_patcast pl;
+  List.iter (List.iter check_no_patcast) pll
+
 let intern_cases_pattern genv scopes aliases pat =
+  check_no_patcast pat;
   intern_pat genv aliases
     (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) scopes pat)
 
@@ -1398,6 +1441,7 @@ let _ =
     fun scopes p -> intern_cases_pattern (Global.env ()) scopes empty_alias p
 
 let intern_ind_pattern genv scopes pat =
+  check_no_patcast pat;
   let no_not =
     try
       drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) scopes pat
@@ -1992,14 +2036,14 @@ let interp_notation_constr ?(impls=empty_internalization_env) nenv a =
 						tmp_scope = None; scopes = []; impls = impls}
     false (empty_ltac_sign, vl) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
-  let a = notation_constr_of_glob_constr nenv c in
+  let a, reversible = notation_constr_of_glob_constr nenv c in
   (* Splits variables into those that are binding, bound, or both *)
   (* binding and bound *)
   let out_scope = function None -> None,[] | Some (a,l) -> a,l in
   let vars = Id.Map.map (fun (isonlybinding, sc, typ) ->
     (!isonlybinding, out_scope !sc, typ)) vl in
   (* Returns [a] and the ordered list of variables with their scopes *)
-  vars, a
+  vars, a, reversible
 
 (* Interpret binders and contexts  *)
 

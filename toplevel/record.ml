@@ -519,15 +519,9 @@ let add_inductive_class ind =
   let k =
     let ctx = oneind.mind_arity_ctxt in
     let inst = Univ.UContext.instance mind.mind_universes in
-    let map = function
-    | LocalDef _ -> None
-    | LocalAssum (_, t) -> Some (lazy t)
-    in
-    let args = List.map_filter map ctx in
-    let ty = Inductive.type_of_inductive_knowing_parameters
+    let ty = Inductive.type_of_inductive
       (push_rel_context ctx (Global.env ()))
       ((mind,oneind),inst)
-      (Array.of_list args)
     in
       { cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;
@@ -569,8 +563,9 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
       typecheck_params_and_fields (kind = Class true) idstruc pl s ps notations fs) () in
   let sign = structure_signature (fields@params) in
   let gr = match kind with
-    | Class def ->
-	let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
+  | Class def ->
+     let priorities = List.map (fun id -> {hint_priority = id; hint_pattern = None}) priorities in
+     let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
 	  implpars params arity template implfs fields is_coe coers priorities sign in
 	gr
     | _ ->

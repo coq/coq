@@ -1,0 +1,30 @@
+diff -u -r glib-2.46.0/gio/glocalfile.c glib-2.46.0.patched/gio/glocalfile.c
+--- glib-2.46.0/gio/glocalfile.c	2015-08-27 05:32:26.000000000 +0200
++++ glib-2.46.0.patched/gio/glocalfile.c	2016-01-27 13:08:30.059736400 +0100
+@@ -2682,7 +2682,10 @@
+         (!g_path_is_absolute (filename) || len > g_path_skip_root (filename) - filename))
+       wfilename[len] = '\0';
+ 
+-    retval = _wstat32i64 (wfilename, &buf);
++    // MSoegtrop: _wstat32i64 is the wrong function for GLocalFileStat = struct _stati64
++    // The correct function is _wstati64, see https://msdn.microsoft.com/en-us/library/14h5k7ff.aspx
++    // Also _wstat32i64 is a VC function, not a windows SDK function, see https://msdn.microsoft.com/en-us/library/aa273365(v=vs.60).aspx
++    retval = _wstati64 (wfilename, &buf);
+     save_errno = errno;
+ 
+     g_free (wfilename);
+diff -u -r glib-2.46.0/glib/gstdio.c glib-2.46.0.patched/glib/gstdio.c
+--- glib-2.46.0/glib/gstdio.c	2015-02-26 13:57:09.000000000 +0100
++++ glib-2.46.0.patched/glib/gstdio.c	2016-01-27 13:31:12.708987700 +0100
+@@ -493,7 +493,10 @@
+       (!g_path_is_absolute (filename) || len > g_path_skip_root (filename) - filename))
+     wfilename[len] = '\0';
+ 
+-  retval = _wstat (wfilename, buf);
++  // MSoegtrop: _wstat32i64 is the wrong function for GLocalFileStat = struct _stati64
++  // The correct function is _wstati64, see https://msdn.microsoft.com/en-us/library/14h5k7ff.aspx
++  // Also _wstat32i64 is a VC function, not a windows SDK function, see https://msdn.microsoft.com/en-us/library/aa273365(v=vs.60).aspx
++  retval = _wstati64 (wfilename, buf);
+   save_errno = errno;
+ 
+   g_free (wfilename);

@@ -8,7 +8,7 @@
 
 (** * Finite sets library *)
 
-(** This file proposes an implementation of the non-dependant
+(** This file proposes an implementation of the non-dependent
     interface [FSetInterface.WS] using lists without redundancy. *)
 
 Require Import FSetInterface.

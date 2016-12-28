@@ -1,0 +1,22 @@
+===== Environemt SIZE =====
+
+find and xargs can fail if the environment is to large. I think the limit is 8k.
+
+xargs --show-limits
+
+shows the actual environment size
+
+The configure_profile.sh script sets ORIGINAL_PATH (set by cygwin) to "" to
+avoid issues
+
+===== OCAMLLIB =====
+
+If the environment variable OCAMLLIB is defined, it takes precedence over the
+internal paths of ocaml tools. This usually messes up things considerably. A
+typical failure is
+
+Error: Error on dynamically loaded library: .\dlllablgtk2.dll: %1 is not a valid Win32 application.
+
+The configure_profile.sh script clears OCAMLLIB, but if you use the ocaml
+compiler from outside the provided cygwin shell, OCAMLLIB might be defined.
+

@@ -17,6 +17,3 @@ val declare_syntactic_definition : bool -> Id.t ->
   Flags.compat_version option -> syndef_interpretation -> unit
 
 val search_syntactic_definition : kernel_name -> syndef_interpretation
-
-(** Option concerning verbose display of compatibility notations  *)
-val set_verbose_compat_notations : bool -> unit

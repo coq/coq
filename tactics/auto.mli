@@ -16,7 +16,7 @@ open Decl_kinds
 open Hints
 open Tactypes
 
-val priority : ('a * full_hint) list -> ('a * full_hint) list
+val compute_secvars : ('a,'b) Proofview.Goal.t -> Id.Pred.t
 
 val default_search_depth : int ref
 
@@ -51,17 +51,15 @@ val new_auto : ?debug:debug ->
 (** auto with default search depth and with the hint database "core" *)
 val default_auto : unit Proofview.tactic
 
-(** auto with all hint databases except the "v62" compatibility database *)
+(** auto with all hint databases *)
 val full_auto : ?debug:debug ->
   int -> delayed_open_constr list -> unit Proofview.tactic
 
-(** auto with all hint databases except the "v62" compatibility database
-   and doing delta *)
+(** auto with all hint databases and doing delta *)
 val new_full_auto : ?debug:debug ->
   int -> delayed_open_constr list -> unit Proofview.tactic
 
-(** auto with default search depth and with all hint databases
-   except the "v62" compatibility database *)
+(** auto with default search depth and with all hint databases *)
 val default_full_auto : unit Proofview.tactic
 
 (** The generic form of auto (second arg [None] means all bases) *)

@@ -16,6 +16,8 @@ open Check
 
 let () = at_exit flush_all
 
+let chk_pp = Pp.pp_with Format.std_formatter
+
 let fatal_error info anomaly =
   flush_all (); Feedback.msg_error info; flush_all ();
   exit (if anomaly then 129 else 1)
@@ -209,7 +211,8 @@ let usage () =
 open Type_errors
 
 let anomaly_string () = str "Anomaly: "
-let report () = (str "." ++ spc () ++ str "Please report.")
+let report () = (str "." ++ spc () ++ str "Please report" ++
+                 strbrk "at " ++ str Coq_config.wwwbugtracker ++ str ".")
 
 let guill s = str "\"" ++ str s ++ str "\""
 
@@ -284,7 +287,8 @@ let rec explain_exn = function
           Format.printf "@\nis not convertible with@\n";
           Print.print_pure_constr a;
           Format.printf "@\n====== universes ====@\n";
-          Feedback.msg_notice (Univ.pr_universes
+          chk_pp
+            (Univ.pr_universes
             (ctx.Environ.env_stratification.Environ.env_universes));
           str "\nCantApplyBadType at argument " ++ int n
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"

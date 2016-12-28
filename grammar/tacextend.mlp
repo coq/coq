@@ -48,7 +48,7 @@ let make_fun_clauses loc s l =
   let map c = GramCompat.make_fun loc [make_clause c] in
   mlexpr_of_list map l
 
-let get_argt e = <:expr< match $e$ with [ Genarg.ExtraArg tag -> tag | _ -> assert False ] >>
+let get_argt e = <:expr< (fun e -> match e with [ Genarg.ExtraArg tag -> tag | _ -> assert False ]) $e$ >>
 
 let rec mlexpr_of_symbol = function
 | Ulist1 s -> <:expr< Extend.Ulist1 $mlexpr_of_symbol s$ >>

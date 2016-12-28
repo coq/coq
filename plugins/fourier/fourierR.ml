@@ -462,7 +462,7 @@ let rec fourier () =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
-    let goal = strip_outer_cast concl in
+    let goal = Termops.strip_outer_cast concl in
     let fhyp=Id.of_string "new_hyp_for_fourier" in
     (* si le but est une inéquation, on introduit son contraire,
        et le but à prouver devient False *)
