@@ -1,3 +1,11 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
 type target =
   | ML of string (* ML file : foo.ml -> (ML "foo.ml") *)
   | MLI of string (* MLI file : foo.mli -> (MLI "foo.mli") *)
@@ -200,3 +208,5 @@ let args_from_project file project_files default_name =
 	let newdir = Filename.dirname dir in
 	  if dir = newdir then "",[] else find_project_file newdir
       in find_project_file (Filename.dirname file)
+
+(* vim:set ft=ocaml: *)
