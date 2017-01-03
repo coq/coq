@@ -6,63 +6,44 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type target =
-  | ML of string (* ML file : foo.ml -> (ML "foo.ml") *)
-  | MLI of string (* MLI file : foo.mli -> (MLI "foo.mli") *)
-  | ML4 of string (* ML4 file : foo.ml4 -> (ML4 "foo.ml4") *)
-  | MLLIB of string (* MLLIB file : foo.mllib -> (MLLIB "foo.mllib") *)
-  | MLPACK of string (* MLLIB file : foo.mlpack -> (MLLIB "foo.mlpack") *)
-  | V of string  (* V file : foo.v -> (V "foo") *)
-  | Arg of string
-  | Special of string * string * bool * string
-    (* file, dependencies, is_phony, command *)
-  | Subdir of string
-  | Def of string * string (* X=foo -> Def ("X","foo") *)
-  | MLInclude of string (* -I physicalpath *)
-  | Include of string * string (* -Q physicalpath logicalpath *)
-  | RInclude of string * string (* -R physicalpath logicalpath *)
+exception Parsing_error of string
 
-type install =
+type project = {
+  project_file  : string option;
+  makefile : string option;
+  install_kind  : install option;
+  use_ocamlopt : bool;
+
+  v_files : string list;
+  mli_files : string list;
+  ml4_files : string list;
+  ml_files : string list;
+  mllib_files : string list;
+  mlpack_files : string list;
+
+  extra_targets : extra_target list;
+  subdirs : string list;
+  ml_includes : path list;
+  r_includes  : (path * logic_path) list;
+  q_includes  : (path * logic_path) list;
+  extra_args : string list;
+  defs : (string * string) list;
+}
+and extra_target = {
+  target : string;
+  dependencies : string;
+  phony : bool;
+  command : string;
+}
+and logic_path = string
+and path = { path : string; canonical_path : string }
+and install =
   | NoInstall
   | TraditionalInstall
   | UserInstall
-  | UnspecInstall
 
-exception Parsing_error
-
-val args_from_project : 
-           string ->
-           (string *
-            ('a *
-             (('b * string) list * ('c * string * string) list *
-              ('d * string * string) list) *
-             (string list * 'e)))
-           list -> string -> string * string list
-
-val read_project_file :
-           string ->
-           (string list *
-            (string list * string list * string list * string list *
-             string list) *
-            (string * string * bool * string) list * string list) *
-           ((string * string) list * (string * string * string) list *
-            (string * string * string) list) *
-           (string list * (string * string) list)
-
-val process_cmd_line :
-           string ->
-           string option * string option * install * bool ->
-           target list ->
-           string list ->
-           (string option * string option * install * bool) * target list
-
-val split_arguments :
-           target list ->
-           (string list *
-            (string list * string list * string list * string list *
-             string list) *
-            (string * string * bool * string) list * string list) *
-           ((string * string) list * (string * string * string) list *
-            (string * string * string) list) *
-           (string list * (string * string) list)
+val cmdline_args_to_project : curdir:string -> string list -> project
+val read_project_file : string -> project
+val coqtop_args_from_project : project -> string list
+val find_project_file : from:string -> projfile_name:string -> string option
 

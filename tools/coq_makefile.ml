@@ -282,7 +282,7 @@ let where_put_doc = function
 	"$(INSTALLDEFAULTROOT)"
 
 let install (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,sds) inc = function
-  |CoqProject_file.NoInstall -> ()
+  |Some CoqProject_file.NoInstall -> ()
   |is_install ->
     let not_empty = function |[] -> false |_::_ -> true in
     let cmos = List.rev_append mlpacks (List.rev_append mls ml4s) in
@@ -295,7 +295,7 @@ let install (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,sds) inc = function
        ("CMOFILES",cmos);("CMIFILES",cmis);("CMAFILES",mllibs)]
       inc in
     let doc_dir = where_put_doc inc in
-    if is_install = CoqProject_file.UnspecInstall then begin
+    if is_install = None then begin
 	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n"
     end;
     if not_empty cmxss then begin
@@ -533,8 +533,8 @@ let variables is_install opt (args,defs) =
 \n  $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
     end;
     match is_install with
-      | CoqProject_file.NoInstall -> ()
-      | CoqProject_file.UnspecInstall ->
+      | Some CoqProject_file.NoInstall -> ()
+      | None ->
         section "Install Paths.";
 	print "ifdef USERINSTALL\n";
         print "XDG_DATA_HOME?=\"$(HOME)/.local/share\"\n";
@@ -545,13 +545,13 @@ let variables is_install opt (args,defs) =
         print "COQDOCINSTALL=\"${DOCDIR}user-contrib\"\n";
         print "COQTOPINSTALL=\"${COQLIB}toploop\"\n";
 	print "endif\n\n"
-      | CoqProject_file.TraditionalInstall ->
+      | Some CoqProject_file.TraditionalInstall ->
           section "Install Paths.";
           print "COQLIBINSTALL=\"${COQLIB}user-contrib\"\n";
           print "COQDOCINSTALL=\"${DOCDIR}user-contrib\"\n";
           print "COQTOPINSTALL=\"${COQLIB}toploop\"\n";
           print "\n"
-      | CoqProject_file.UserInstall ->
+      | Some CoqProject_file.UserInstall ->
           section "Install Paths.";
           print "XDG_DATA_HOME?=\"$(HOME)/.local/share\"\n";
           print "COQLIBINSTALL=$(XDG_DATA_HOME)/coq\n";
@@ -890,16 +890,38 @@ let merlin targets (ml_inc,_,_) =
   print "\n"
 
 let do_makefile args =
+  let open CoqProject_file in
   let has_file var = function
     |[] -> var := false
     |_::_ -> var := true in
-  let (project_file,makefile,is_install,opt),l =
-    try
-      CoqProject_file.process_cmd_line Filename.current_dir_name
-       (None,None,CoqProject_file.UnspecInstall,true) [] args
-    with CoqProject_file.Parsing_error -> usage () in
-  let (v_f,(mli_f,ml4_f,ml_f,mllib_f,mlpack_f),sps,sds as targets), inc, defs =
-    CoqProject_file.split_arguments l in
+  let { 
+    project_file = project_file;
+    makefile;
+    install_kind = is_install;
+    use_ocamlopt = opt;
+    v_files = v_f;
+    mli_files = mli_f;
+    ml4_files = ml4_f;
+    ml_files = ml_f;
+    mllib_files = mllib_f;
+    mlpack_files = mlpack_f;
+    extra_targets;
+    subdirs = sds;
+    ml_includes;
+    r_includes;
+    q_includes;
+    extra_args;
+    defs;
+  } =
+    try cmdline_args_to_project Filename.current_dir_name args
+    with Parsing_error s -> prerr_endline s; usage () in
+  let sps = List.map (fun { target = fn; dependencies = d; phony = p; command = c } -> fn, d, p, c) extra_targets in
+  let targets = (v_f,(mli_f,ml4_f,ml_f,mllib_f,mlpack_f),sps,sds) in
+  let inc =
+    List.map (fun ({ path = p; canonical_path = c }) -> p,c) ml_includes,
+    List.map (fun ({ path = p; canonical_path = c },l) -> p,l,c) q_includes,
+    List.map (fun ({ path = p; canonical_path = c },l) -> p,l,c) r_includes in
+  let defs = extra_args, defs in
 
   let () = match project_file with |None -> () |Some f -> make_name := f in
   let () = match makefile with
@@ -920,7 +942,7 @@ let do_makefile args =
     List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies)) sps;
 
   let inc = ensure_root_dir targets inc in
-  if is_install <> CoqProject_file.NoInstall then begin
+  if is_install <> (Some CoqProject_file.NoInstall) then begin
     warn_install_at_root_directory targets inc;
   end;
   check_overlapping_include inc;
