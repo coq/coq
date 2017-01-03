@@ -377,7 +377,7 @@ $(GALLINA): $(call bestobj, tools/gallina_lexer.cmo tools/gallina.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,)
 
-COQMAKEFILECMO:=lib/clib.cma ide/project_file.cmo tools/coq_makefile.cmo
+COQMAKEFILECMO:=lib/clib.cma tools/coq_makefile.cmo
 
 $(COQMAKEFILE): $(call bestobj,$(COQMAKEFILECMO))
 	$(SHOW)'OCAMLBEST -o $@'

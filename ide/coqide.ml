@@ -84,7 +84,7 @@ let pr_exit_status = function
 let make_coqtop_args = function
   |None -> "", !sup_args
   |Some the_file ->
-    let get_args f = Project_file.args_from_project f
+    let get_args f = CoqProject_file.args_from_project f
       !custom_project_files project_file_name#get
     in
     match read_project#get with
@@ -1346,7 +1346,7 @@ let read_coqide_args argv =
       else (output_string stderr "Error: multiple -coqtop options"; exit 1)
     |"-f" :: file :: args ->
       let d = CUnix.canonical_path_name (Filename.dirname file) in
-      let p = Project_file.read_project_file file in
+      let p = CoqProject_file.read_project_file file in
       filter_coqtop coqtop ((d,p) :: project_files) out args
     |"-f" :: [] ->
       output_string stderr "Error: missing project file name"; exit 1
