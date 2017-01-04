@@ -146,8 +146,6 @@ let coqpath =
 
 let exe s = s ^ Coq_config.exec_extension
 
-let guess_ocamlfind () = which (user_path ()) (exe "ocamlfind")
-
 let ocamlfind () =
   if !Flags.ocamlfind_spec then !Flags.ocamlfind else
     if !Flags.boot then Coq_config.ocamlfind else
@@ -210,6 +208,13 @@ let xdg_dirs ~warn =
 
 (* Print the configuration information *)
 
+let coq_src_subdirs = [ 
+   "config" ; "dev" ; "lib" ; "kernel" ; "library" ;
+   "engine" ; "pretyping" ; "interp" ; "parsing" ; "proofs" ;
+   "tactics" ; "toplevel" ; "printing" ; "intf" ;
+   "grammar" ; "ide" ; "stm"; "vernac" ] @
+   Coq_config.plugins_dirs
+  
 let print_config f =
   let open Printf in 
   fprintf f "LOCAL=%s\n" (if Coq_config.local then "1" else "0");
@@ -222,3 +227,4 @@ let print_config f =
   fprintf f "CAMLP4LIB=%s\n" (camlp4lib ());
   fprintf f "CAMLP4OPTIONS=%s\n" Coq_config.camlp4compat;
   fprintf f "HASNATDYNLINK=%s\n" (if Coq_config.has_natdynlink then "true" else "false")
+

@@ -47,13 +47,7 @@ let section s =
 (* These are the Coq library directories that are used for
  * plugin development
  *)
-let lib_dirs =
-  ["kernel"; "lib"; "library"; "parsing";
-   "pretyping"; "interp"; "printing"; "intf";
-   "proofs"; "tactics"; "tools";
-   "vernac"; "stm"; "toplevel"; "grammar"; "config";
-   "engine"]
-
+let lib_dirs = Envars.coq_src_subdirs
 
 let usage () =
   output_string stderr "Usage summary:\
