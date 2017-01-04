@@ -83,7 +83,7 @@ let parse_args () =
 
     | ("-config" | "--config") :: _ ->
         Envars.set_coqlib ~fail:(fun x -> x);
-        Usage.print_config ();
+        Envars.print_config stdout;
         exit 0
 
 (* Options for coqtop : a) options with 0 argument *)

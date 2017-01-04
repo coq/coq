@@ -115,16 +115,3 @@ let print_usage_coqc () =
   flush stderr ;
   exit 1
 
-(* Print the configuration information *)
-
-let print_config () =
-  if Coq_config.local then Printf.printf "LOCAL=1\n" else Printf.printf "LOCAL=0\n";
-  Printf.printf "COQLIB=%s/\n" (Envars.coqlib ());
-  Printf.printf "DOCDIR=%s/\n" (Envars.docdir ());
-  Printf.printf "OCAMLFIND=%s\n" (Envars.ocamlfind ());
-  Printf.printf "CAMLP4=%s\n" Coq_config.camlp4;
-  Printf.printf "CAMLP4O=%s\n" Coq_config.camlp4o;
-  Printf.printf "CAMLP4BIN=%s/\n" (Envars.camlp4bin ());
-  Printf.printf "CAMLP4LIB=%s\n" (Envars.camlp4lib ());
-  Printf.printf "CAMLP4OPTIONS=%s\n" Coq_config.camlp4compat;
-  Printf.printf "HASNATDYNLINK=%s\n" (if Coq_config.has_natdynlink then "true" else "false")

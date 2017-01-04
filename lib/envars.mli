@@ -69,3 +69,6 @@ val xdg_data_home   : (string -> unit) -> string
 val xdg_config_dirs : (string -> unit) -> string list
 val xdg_data_dirs   : (string -> unit) -> string list
 val xdg_dirs : warn : (string -> unit) -> string list
+
+(** {6 Prints the configuration information } *)
+val print_config : out_channel -> unit

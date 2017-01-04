@@ -207,3 +207,18 @@ let xdg_config_dirs warn =
 
 let xdg_dirs ~warn =
   List.filter Sys.file_exists (xdg_data_dirs warn)
+
+(* Print the configuration information *)
+
+let print_config f =
+  let open Printf in 
+  fprintf f "LOCAL=%s\n" (if Coq_config.local then "1" else "0");
+  fprintf f "COQLIB=%s/\n" (coqlib ());
+  fprintf f "DOCDIR=%s/\n" (docdir ());
+  fprintf f "OCAMLFIND=%s\n" (ocamlfind ());
+  fprintf f "CAMLP4=%s\n" Coq_config.camlp4;
+  fprintf f "CAMLP4O=%s\n" Coq_config.camlp4o;
+  fprintf f "CAMLP4BIN=%s/\n" (camlp4bin ());
+  fprintf f "CAMLP4LIB=%s\n" (camlp4lib ());
+  fprintf f "CAMLP4OPTIONS=%s\n" Coq_config.camlp4compat;
+  fprintf f "HASNATDYNLINK=%s\n" (if Coq_config.has_natdynlink then "true" else "false")
