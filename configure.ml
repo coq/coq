@@ -514,6 +514,20 @@ let camltag = match caml_version_list with
 (** * CamlpX configuration *)
 
 (* Convention: we use camldir as a prioritary location for camlpX, if given *)
+(* i.e., in the case of camlp5, we search for a copy of camlp5o which *)
+(* answers the right camlp5 lib dir *)
+
+let strip_slash dir =
+  let n = String.length dir in
+  if n>0 && dir.[n - 1] = '/' then String.sub dir 0 (n-1) else dir
+
+let which_camlp5o_for camlp5lib =
+  let camlp5o = Filename.concat camlbin "camlp5o" in
+  let camlp5lib = strip_slash camlp5lib in
+  if fst (tryrun camlp5o ["-where"]) = camlp5lib then camlp5o else
+  let camlp5o = which "camlp5o" in
+  if fst (tryrun camlp5o ["-where"]) = camlp5lib then camlp5o else
+  die ("Error: cannot find Camlp5 binaries corresponding to Camlp5 library " ^ camlp5lib)
 
 let which_camlpX base =
   let file = Filename.concat camlbin base in
@@ -528,7 +542,7 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
   | Some dir ->
     if Sys.file_exists (dir/testcma) then
       let camlp5o =
-        try which_camlpX "camlp5o"
+        try which_camlp5o_for dir
         with Not_found -> die "Error: cannot find Camlp5 binaries in path.\n" in
       dir, camlp5o
     else
