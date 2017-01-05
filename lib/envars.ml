@@ -226,5 +226,7 @@ let print_config f =
   fprintf f "CAMLP4BIN=%s/\n" (camlp4bin ());
   fprintf f "CAMLP4LIB=%s\n" (camlp4lib ());
   fprintf f "CAMLP4OPTIONS=%s\n" Coq_config.camlp4compat;
-  fprintf f "HASNATDYNLINK=%s\n" (if Coq_config.has_natdynlink then "true" else "false")
+  fprintf f "HASNATDYNLINK=%s\n"
+    (if Coq_config.has_natdynlink then "true" else "false");
+  fprintf f "COQ_SRC_SUBDIRS=%s\n" (String.concat " " coq_src_subdirs)
 
