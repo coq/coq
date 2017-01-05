@@ -19,13 +19,14 @@ type project = {
   mllib_files : string list;
   mlpack_files : string list;
 
-  extra_targets : extra_target list;
-  subdirs : string list;
   ml_includes : path list;
   r_includes  : (path * logic_path) list;
   q_includes  : (path * logic_path) list;
   extra_args : string list;
   defs : (string * string) list;
+  
+  extra_targets : extra_target list;
+  subdirs : string list;
 }
 and extra_target = {
   target : string;
