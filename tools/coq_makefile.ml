@@ -363,17 +363,62 @@ let clean sds sps =
      || !some_mllibfile || !some_mlpackfile
   then
     begin
-      print "\trm -f $(ALLCMOFILES) $(CMIFILES) $(CMAFILES)\n";
-      print "\trm -f $(ALLCMOFILES:.cmo=.cmx) $(CMXAFILES) $(CMXSFILES) $(ALLCMOFILES:.cmo=.o) $(CMXAFILES:.cmxa=.a)\n";
-      print "\trm -f $(addsuffix .d,$(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(MLPACKFILES))\n";
+      print "\t$(SHOW)RM *.cmo\n";
+      print "\t$(HIDE)rm -f $(ALLCMOFILES)\n";
+      print "\t$(SHOW)RM *.cmi\n";
+      print "\t$(HIDE)rm -f $(CMIFILES)\n";
+      print "\t$(SHOW)RM *.cma\n";
+      print "\t$(HIDE)rm -f $(CMAFILES)\n";
+      print "\t$(SHOW)RM *.cmx\n";
+      print "\t$(HIDE)rm -f $(ALLCMOFILES:.cmo=.cmx)\n";
+      print "\t$(SHOW)RM *.cmxa\n";
+      print "\t$(HIDE)rm -f $(CMXAFILES)\n";
+      print "\t$(SHOW)RM *.cmxs\n";
+      print "\t$(HIDE)rm -f $(CMXSFILES)\n";
+      print "\t$(SHOW)RM *.o\n";
+      print "\t$(HIDE)rm -f $(ALLCMOFILES:.cmo=.o)\n";
+      print "\t$(SHOW)RM *.a\n";
+      print "\t$(HIDE)rm -f $(CMXAFILES:.cmxa=.a)\n";
+      print "\t$(SHOW)RM *.ml.d\n";
+      print "\t$(HIDE)rm -f $(addsuffix .d,$(MLFILES))\n";
+      print "\t$(SHOW)RM *.mli.d\n";
+      print "\t$(HIDE)rm -f $(addsuffix .d,$(MLIFILES))\n";
+      print "\t$(SHOW)RM *.ml4.d\n";
+      print "\t$(HIDE)rm -f $(addsuffix .d,$(ML4FILES))\n";
+      print "\t$(SHOW)RM *.mllib.d\n";
+      print "\t$(HIDE)rm -f $(addsuffix .d,$(MLLIBFILES))\n";
+      print "\t$(SHOW)RM *.mlpack.d\n";
+      print "\t$(HIDE)rm -f $(addsuffix .d,$(MLPACKFILES))\n";
     end;
   if !some_vfile then
     begin
-      print "\trm -f $(OBJFILES) $(OBJFILES:.o=.native) $(NATIVEFILES)\n";
+      print "\t$(SHOW)RM *.o\n";
+      print "\t$(HIDE)rm -f $(OBJFILES)\n";
+      print "\t$(SHOW)RM *.native\n";
+      print "\t$(HIDE)rm -f $(OBJFILES:.o=.native)\n";
+      print "\t$(SHOW)RM *.cmi *.cmo *.cmx *.cmxs\n";
+      print "\t$(HIDE)rm -f $(NATIVEFILES)\n";
       print "\tfind . -name .coq-native -type d -empty -delete\n";
-      print "\trm -f $(VOFILES) $(VOFILES:.vo=.vio) $(GFILES) $(VFILES:.v=.v.d) $(VFILES:=.beautified) $(VFILES:=.old)\n"
+      print "\t$(SHOW)RM *.vo\n";
+      print "\t$(HIDE)rm -f $(VOFILES)\n";
+      print "\t$(SHOW)RM *.vio\n";
+      print "\t$(HIDE)rm -f $(VOFILES:.vo=.vio)\n";
+      print "\t$(SHOW)RM *.g\n";
+      print "\t$(HIDE)rm -f $(GFILES)\n";
+      print "\t$(SHOW)RM *.v.d\n";
+      print "\t$(HIDE)rm -f $(VFILES:.v=.v.d)\n";
+      print "\t$(SHOW)RM *.v.beautified\n";
+      print "\t$(HIDE)rm -f $(VFILES:=.beautified)\n";
+      print "\t$(SHOW)RM *.v.old\n";
+      print "\t$(HIDE)rm -f $(VFILES:=.old)\n";
     end;
-  print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) all-mli.tex\n";
+  print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob all-mli.tex\n";
+  print "\t$(SHOW)RM *.glob\n";
+  print "\t$(HIDE)rm -f $(VFILES:.v=.glob)\n";
+  print "\t$(SHOW)RM *.tex\n";
+  print "\t$(HIDE)rm -f $(VFILES:.v=.tex)\n";
+  print "\t$(SHOW)RM *.g.tex\n";
+  print "\t$(HIDE)rm -f $(VFILES:.v=.g.tex)\n";
   print "\t- rm -rf html mlihtml uninstall_me.sh\n";
   List.iter
     (fun (file,_,is_phony,_) ->
