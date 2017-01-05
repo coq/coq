@@ -293,15 +293,15 @@ let traite_fichier_modules md ext =
       (fun a_faire str -> match search_mlpack_known str with
 	| Some mldir ->
 	  let file = file_name str mldir in
-	  a_faire^" "^file
+          a_faire @ [file]
 	| None ->
 	  match search_ml_known str with
 	    | Some mldir ->
 	      let file = file_name str mldir in
-	      a_faire^" "^file
-	    | None -> a_faire) "" list
+              a_faire @ [file]
+            | None -> a_faire) [] list
   with
-    | Sys_error _ -> ""
+    | Sys_error _ -> []
     | Syntax_error (i,j) -> error_cannot_parse (md^ext) (i,j)
 
 (* Makefile's escaping rules are awful: $ is escaped by doubling and
@@ -443,7 +443,7 @@ let mL_dependencies () =
        let fullname = file_name name dirname in
        let dep = traite_fichier_modules fullname ".mllib" in
        let efullname = escape fullname in
-       printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname dep;
+       printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname (String.concat " " dep);
        printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
        printf "%s.cmxa:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
        flush stdout)
@@ -453,9 +453,13 @@ let mL_dependencies () =
        let fullname = file_name name dirname in
        let dep = traite_fichier_modules fullname ".mlpack" in
        let efullname = escape fullname in
-       printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname dep;
+       printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname (String.concat " " dep);
        printf "%s.cmo:$(addsuffix .cmo,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
        printf "%s.cmx:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
+       let efullname_capital = String.capitalize (Filename.basename efullname) in
+       List.iter (fun dep ->
+         printf "%s.cmx : FOR_PACK=-for-pack %s\n" dep efullname_capital)
+         dep;
        flush stdout)
     (List.rev !mlpackAccu)
 
