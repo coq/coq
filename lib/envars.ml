@@ -147,9 +147,7 @@ let coqpath =
 let exe s = s ^ Coq_config.exec_extension
 
 let ocamlfind () =
-  if !Flags.ocamlfind_spec then !Flags.ocamlfind else
-    if !Flags.boot then Coq_config.ocamlfind else
-      try guess_ocamlfind () / "ocamlfind"  with Not_found -> Coq_config.ocamlfind
+  if !Flags.ocamlfind_spec then !Flags.ocamlfind else Coq_config.ocamlfind
 
 (** {2 Camlp4 paths} *)
 
