@@ -13,24 +13,38 @@ open Loc
 
 (** state-transaction-machine interface *)
 
-(* [add ontop check vebose eid s] adds a new command [s] on the state [ontop]
-   having edit id [eid].  [check] is called on the AST.
+(* [add ontop check vebose eid pa] reads a new sentence from parsable [pa]
+   on the state [ontop]. [eid] will be used to report parsing failure.
+   [check] is called on the AST.
    The [ontop] parameter is just for asserting the GUI is on sync, but
    will eventually call edit_at on the fly if needed.
-   The sentence [s] is parsed in the state [ontop].
+
+   If parsing is successful, [add] will return the new state id
+   associated to the sentence along with the location the sentenced
+   ends.
+
    If [newtip] is provided, then the returned state id is guaranteed to be
-   [newtip] *)
+   [newtip].
+
+   [`NewTip] is the common case when adding a new leaf to the
+   document, however, if the [add] is a part of an editing sequence of
+   a subpart of the document, [`Unfocus] will be returned when the Stm
+   thinks the sub-document has been closed, (usually at `Qed`) time.
+
+   Reminder: A parsable [pa] is constructed using [Pcoq.Gram.coq_parsable stream],
+   where [stream : char Stream.t].
+ *)
 val add :
   ontop:Stateid.t -> ?newtip:Stateid.t ->
   ?check:(vernac_expr located -> unit) ->
-  bool -> edit_id -> string ->
-    Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
+  bool -> edit_id -> Pcoq.Gram.coq_parsable ->
+    Stateid.t * Loc.t * [ `NewTip | `Unfocus of Stateid.t ]
 
 (* parses and executes a command at a given state, throws away its side effects
    but for the printings.  Feedback is sent with report_with (defaults to dummy
    state id)  *)
 val query :
-  at:Stateid.t -> ?report_with:(Stateid.t * Feedback.route_id) -> string -> unit
+  at:Stateid.t -> ?report_with:(Stateid.t * Feedback.route_id) -> Pcoq.Gram.coq_parsable -> unit
 
 (* [edit_at id] is issued to change the editing zone.  [`NewTip] is returned if
    the requested id is the new document tip hence the document portion following
