@@ -261,7 +261,7 @@ module Prefs = struct
   let withdoc = ref false
   let geoproof = ref false
   let byteonly = ref false
-  let debug = ref false
+  let debug = ref true
   let profile = ref false
   let annotate = ref false
   let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
@@ -337,6 +337,8 @@ let args_options = Arg.align [
     " Compiles only bytecode version of Coq";
   "-debug", Arg.Set Prefs.debug,
     " Add debugging information in the Coq executables";
+  "-nodebug", Arg.Clear Prefs.debug,
+    " Do not add debugging information in the Coq executables";
   "-profile", Arg.Set Prefs.profile,
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Set Prefs.annotate,
