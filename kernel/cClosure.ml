@@ -1059,11 +1059,23 @@ and norm_head_array info env n (v : constr array) =
 
 (* weak reduction *)
 let whd_val info v =
-  with_stats (lazy (term_of_fconstr (kh info v [])))
+  if !stats then begin
+    reset();
+    let r = term_of_fconstr (kh info v []) in
+    stop();
+    r
+  end else
+    term_of_fconstr (kh info v [])
 
 (* strong reduction *)
 let norm_val info v =
-  with_stats (lazy (kl info v))
+  if !stats then begin
+    reset();
+    let r = kl info v in
+    stop();
+    r
+  end else
+    kl info v
 
 let inject c = mk_clos (subs_id 0) c
 
