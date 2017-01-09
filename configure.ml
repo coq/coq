@@ -381,7 +381,7 @@ let coq_debug_flag = if !Prefs.debug then "-g" else ""
 let coq_profile_flag = if !Prefs.profile then "-p" else ""
 let coq_annotate_flag =
   if !Prefs.annotate
-  then if program_in_path "ocamlmerlin" then "-bin-annot" else "-dtypes"
+  then if program_in_path "ocamlmerlin" then "-bin-annot" else "-annot"
   else ""
 
 let cflags = "-Wall -Wno-unused -g -O2"
@@ -487,14 +487,14 @@ let caml_version_nums =
          "Is it installed properly?")
 
 let check_caml_version () =
-  if caml_version_nums >= [4;2;3] then
+  if caml_version_nums >= [4;2;1] then
     printf "You have OCaml %s. Good!\n" caml_version
   else
     let () = printf "Your version of OCaml is %s.\n" caml_version in
     if !Prefs.force_caml_version then
       printf "*Warning* Your version of OCaml is outdated.\n"
     else
-      die "You need OCaml 4.02.3 or later."
+      die "You need OCaml 4.02.1 or later."
 
 let _ = check_caml_version ()
 
