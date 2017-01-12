@@ -563,7 +563,7 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
 let check_camlp5_version camlp5o =
   let version_line, _ = run ~err:StdOut camlp5o ["-v"] in
   let version = List.nth (string_split ' ' version_line) 2 in
-  match string_split '.' version with
+  match numeric_prefix_list version with
   | major::minor::_ when s2i major > 6 || (s2i major, s2i minor) >= (6,6) ->
     printf "You have Camlp5 %s. Good!\n" version; version
   | _ -> die "Error: unsupported Camlp5 (version < 6.06 or unrecognized).\n"
