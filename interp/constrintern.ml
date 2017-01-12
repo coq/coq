@@ -230,7 +230,7 @@ let contract_pat_notation ntn (l,ll) =
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | CPatNotation (_,"{ _ }",([a],[]),[]) :: l ->
+    | (_, CPatNotation ("{ _ }",([a],[]),[])) :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
@@ -430,17 +430,16 @@ let intern_assumption intern lvar env nal bk ty =
      let env, b = intern_generalized_binder intern_type lvar env (List.hd nal) b b' t ty in
      env, b
 
-let rec free_vars_of_pat il =
-  function
-  | CPatCstr (loc, c, l1, l2) ->
+let rec free_vars_of_pat il (loc, pt) = match pt with
+  | CPatCstr (c, l1, l2) ->
       let il = List.fold_left free_vars_of_pat il (Option.default [] l1) in
       List.fold_left free_vars_of_pat il l2
-  | CPatAtom (loc, ro) ->
+  | CPatAtom ro ->
       begin match ro with
       | Some (Ident (loc, i)) -> (loc, i) :: il
       | Some _ | None -> il
       end
-  | CPatNotation (loc, n, l1, l2) ->
+  | CPatNotation (n, l1, l2) ->
       let il = List.fold_left free_vars_of_pat il (fst l1) in
       List.fold_left (List.fold_left free_vars_of_pat) il (snd l1)
   | _ -> anomaly (str "free_vars_of_pat")
@@ -988,10 +987,10 @@ let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 
 	      else Int.equal args_len nargs_with_letin || (fst (fail (nargs - List.length impl_list + i))))
 	       ,l)
     |imp::q as il,[] -> if is_status_implicit imp && maximal_insertion_of imp
-      then let (b,out) = aux i (q,[]) in (b,RCPatAtom(Loc.ghost,None)::out)
+      then let (b,out) = aux i (q,[]) in (b,(Loc.ghost,RCPatAtom(None))::out)
       else fail (remaining_args (len_pl1+i) il)
     |imp::q,(hh::tt as l) -> if is_status_implicit imp
-      then let (b,out) = aux i (q,l) in (b,RCPatAtom(Loc.ghost,None)::out)
+      then let (b,out) = aux i (q,l) in (b,(Loc.ghost, RCPatAtom(None))::out)
       else let (b,out) = aux (succ i) (q,tt) in (b,hh::out)
   in aux 0 (impl_list,pl2)
 
@@ -1194,14 +1193,14 @@ let alias_of als = match als.alias_ids with
 
 *)
 
-let rec subst_pat_iterator y t p = match p with
-  | RCPatAtom (_,id) ->
-    begin match id with Some x when Id.equal x y -> t | _ -> p end
-  | RCPatCstr (loc,id,l1,l2) ->
-     RCPatCstr (loc,id,List.map (subst_pat_iterator y t) l1,
-	       List.map (subst_pat_iterator y t) l2)
-  | RCPatAlias (l,p,a) -> RCPatAlias (l,subst_pat_iterator y t p,a)
-  | RCPatOr (l,pl) -> RCPatOr (l,List.map (subst_pat_iterator y t) pl)
+let rec subst_pat_iterator y t (loc, p) = match p with
+  | RCPatAtom id ->
+    begin match id with Some x when Id.equal x y -> t | _ -> Loc.tag ~loc p end
+  | RCPatCstr (id,l1,l2) ->
+     Loc.tag ~loc @@ RCPatCstr (id, List.map (subst_pat_iterator y t) l1,
+                                    List.map (subst_pat_iterator y t) l2)
+  | RCPatAlias (p,a) -> Loc.tag ~loc @@ RCPatAlias (subst_pat_iterator y t p,a)
+  | RCPatOr pl       -> Loc.tag ~loc @@ RCPatOr (List.map (subst_pat_iterator y t) pl)
 
 let drop_notations_pattern looked_for =
   (* At toplevel, Constructors and Inductives are accepted, in recursive calls
@@ -1250,46 +1249,46 @@ let drop_notations_pattern looked_for =
 	  let (_,argscs) = find_remaining_scopes [] pats g in
 	  Some (g,[],List.map2 (fun x -> in_pat false (x,snd scopes)) argscs pats)
     with Not_found -> None
-  and in_pat top scopes = function
-    | CPatAlias (loc, p, id) -> RCPatAlias (loc, in_pat top scopes p, id)
-    | CPatRecord (loc, l) ->
+  and in_pat top scopes (loc, pt) = match pt with
+    | CPatAlias (p, id) -> Loc.tag ~loc @@ RCPatAlias (in_pat top scopes p, id)
+    | CPatRecord l ->
       let sorted_fields =
-	sort_fields ~complete:false loc l (fun _idx -> (CPatAtom (loc, None))) in
+	sort_fields ~complete:false loc l (fun _idx -> (loc, CPatAtom None)) in
       begin match sorted_fields with
-	| None -> RCPatAtom (loc, None)
+	| None -> Loc.tag ~loc @@ RCPatAtom None
 	| Some (n, head, pl) ->
           let pl =
             if !asymmetric_patterns then pl else
-            let pars = List.make n (CPatAtom (loc, None)) in
+            let pars = List.make n (loc, CPatAtom None) in
             List.rev_append pars pl in
 	  match drop_syndef top scopes head pl with
-	    |Some (a,b,c) -> RCPatCstr(loc, a, b, c)
+	    |Some (a,b,c) -> (loc, RCPatCstr(a, b, c))
 	    |None -> raise (InternalizationError (loc,NotAConstructor head))
       end
-    | CPatCstr (loc, head, None, pl) ->
+    | CPatCstr (head, None, pl) ->
       begin
 	match drop_syndef top scopes head pl with
-	  | Some (a,b,c) -> RCPatCstr(loc, a, b, c)
+	  | Some (a,b,c) -> Loc.tag ~loc @@ RCPatCstr(a, b, c)
 	  | None -> raise (InternalizationError (loc,NotAConstructor head))
       end
-     | CPatCstr (loc, r, Some expl_pl, pl) ->
+     | CPatCstr (r, Some expl_pl, pl) ->
       let g = try locate (snd (qualid_of_reference r))
 	      with Not_found ->
  	      raise (InternalizationError (loc,NotAConstructor r)) in
       if expl_pl == [] then
         (* Convention: (@r) deactivates all further implicit arguments and scopes *)
-        RCPatCstr (loc, g, List.map (in_pat false scopes) pl, [])
+        Loc.tag ~loc @@ RCPatCstr (g, List.map (in_pat false scopes) pl, [])
       else
         (* Convention: (@r expl_pl) deactivates implicit arguments in expl_pl and in pl *)
         (* but not scopes in expl_pl *)
         let (argscs1,_) = find_remaining_scopes expl_pl pl g in
-        RCPatCstr (loc, g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat false scopes) pl, [])
-    | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]),[])
+        Loc.tag ~loc @@ RCPatCstr (g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat false scopes) pl, [])
+    | CPatNotation ("- _",([_loc,CPatPrim(Numeral p)],[]),[])
 	when Bigint.is_strictly_pos p ->
       fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false loc) (Numeral (Bigint.neg p)) scopes)
-    | CPatNotation (_,"( _ )",([a],[]),[]) ->
+    | CPatNotation ("( _ )",([a],[]),[]) ->
       in_pat top scopes a
-    | CPatNotation (loc, ntn, fullargs,extrargs) ->
+    | CPatNotation (ntn, fullargs,extrargs) ->
       let ntn,(args,argsl as fullargs) = contract_pat_notation ntn fullargs in
       let ((ids',c),df) = Notation.interp_notation loc ntn scopes in
       let (ids',idsl',_) = split_by_type ids' in
@@ -1297,18 +1296,17 @@ let drop_notations_pattern looked_for =
       let substlist = make_subst idsl' argsl in
       let subst = make_subst ids' args in
       in_not top loc scopes (subst,substlist) extrargs c
-    | CPatDelimiters (loc, key, e) ->
+    | CPatDelimiters (key, e) ->
       in_pat top (None,find_delimiters_scope loc key::snd scopes) e
-    | CPatPrim (loc,p) -> fst (Notation.interp_prim_token_cases_pattern_expr loc (test_kind false) p scopes)
-    | CPatAtom (loc, Some id) ->
+    | CPatPrim p -> fst (Notation.interp_prim_token_cases_pattern_expr loc (test_kind false) p scopes)
+    | CPatAtom Some id ->
       begin
 	match drop_syndef top scopes id [] with
-	  |Some (a,b,c) -> RCPatCstr (loc, a, b, c)
-	  |None -> RCPatAtom (loc, Some (find_pattern_variable id))
+	  | Some (a,b,c) -> Loc.tag ~loc @@ RCPatCstr (a, b, c)
+	  | None         -> Loc.tag ~loc @@ RCPatAtom (Some (find_pattern_variable id))
       end
-    | CPatAtom (loc,None) -> RCPatAtom (loc,None)
-    | CPatOr (loc, pl) ->
-      RCPatOr (loc,List.map (in_pat top scopes) pl)
+    | CPatAtom None -> Loc.tag ~loc @@ RCPatAtom None
+    | CPatOr pl     -> Loc.tag ~loc @@ RCPatOr (List.map (in_pat top scopes) pl)
     | CPatCast _ ->
       assert false
   and in_pat_sc scopes x = in_pat false (x,snd scopes)
@@ -1322,17 +1320,17 @@ let drop_notations_pattern looked_for =
 	  let (a,(scopt,subscopes)) = Id.Map.find id subst in
 	  in_pat top (scopt,subscopes@snd scopes) a
 	with Not_found ->
-	  if Id.equal id ldots_var then RCPatAtom (loc,Some id) else
+	  if Id.equal id ldots_var then Loc.tag ~loc @@ RCPatAtom (Some id) else
 	    anomaly (str "Unbound pattern notation variable: " ++ Id.print id)
       end
     | NRef g ->
       ensure_kind top loc g;
       let (_,argscs) = find_remaining_scopes [] args g in
-      RCPatCstr (loc, g, [], List.map2 (in_pat_sc scopes) argscs args)
+      Loc.tag ~loc @@ RCPatCstr (g, [], List.map2 (in_pat_sc scopes) argscs args)
     | NApp (NRef g,pl) ->
       ensure_kind top loc g;
       let (argscs1,argscs2) = find_remaining_scopes pl args g in
-      RCPatCstr (loc, g,
+      Loc.tag ~loc @@ RCPatCstr (g,
 		 List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl @
 		 List.map (in_pat false scopes) args, [])
     | NList (x,y,iter,terminator,lassoc) ->
@@ -1351,7 +1349,7 @@ let drop_notations_pattern looked_for =
          anomaly (Pp.str "Inconsistent substitution of recursive notation"))
     | NHole _ ->
       let () = assert (List.is_empty args) in
-      RCPatAtom (loc, None)
+      Loc.tag ~loc @@ RCPatAtom None
     | t -> error_invalid_pattern_notation ~loc ()
   in in_pat true
 
@@ -1363,10 +1361,10 @@ let rec intern_pat genv aliases pat =
       (asubst, PatCstr (loc,c,chop_params_pattern loc (fst c) pl with_letin,alias_of aliases))) pll in
     ids',pl' in
   match pat with
-    | RCPatAlias (loc, p, id) ->
+    | loc, RCPatAlias (p, id) ->
       let aliases' = merge_aliases aliases id in
       intern_pat genv aliases' p
-    | RCPatCstr (loc, head, expl_pl, pl) ->
+    | loc, RCPatCstr (head, expl_pl, pl) ->
       if !asymmetric_patterns then
         let len = if List.is_empty expl_pl then Some (List.length pl) else None in
 	let c,idslpl1 = find_constructor loc len head in
@@ -1378,13 +1376,13 @@ let rec intern_pat genv aliases pat =
 	let with_letin, pl2 =
 	  add_implicits_check_constructor_length genv loc c (List.length idslpl1 + List.length expl_pl) pl in
 	intern_cstr_with_all_args loc c with_letin idslpl1 (expl_pl@pl2)
-    | RCPatAtom (loc, Some id) ->
+    | loc, RCPatAtom (Some id) ->
       let aliases = merge_aliases aliases id in
       (aliases.alias_ids,[aliases.alias_map, PatVar (loc, alias_of aliases)])
-    | RCPatAtom (loc, None) ->
+    | loc, RCPatAtom (None) ->
       let { alias_ids = ids; alias_map = asubst; } = aliases in
       (ids, [asubst, PatVar (loc, alias_of aliases)])
-    | RCPatOr (loc, pl) ->
+    | loc, RCPatOr pl ->
       assert (not (List.is_empty pl));
       let pl' = List.map (intern_pat genv aliases) pl in
       let (idsl,pl') = List.split pl' in
@@ -1402,21 +1400,21 @@ let rec intern_pat genv aliases pat =
    of lambdas in the encoding of match in constr. We put this check here and not
    in the parser because it would require to duplicate the levels of the
    [pattern] rule. *)
-let rec check_no_patcast = function
-  | CPatCast (loc,_,_) ->
+let rec check_no_patcast (loc, pt) = match pt with
+  | CPatCast (_,_) ->
      CErrors.user_err ~loc ~hdr:"check_no_patcast"
                            (Pp.strbrk "Casts are not supported here.")
-  | CPatDelimiters(_,_,p)
-  | CPatAlias(_,p,_) -> check_no_patcast p
-  | CPatCstr(_,_,opl,pl) ->
+  | CPatDelimiters(_,p)
+  | CPatAlias(p,_) -> check_no_patcast p
+  | CPatCstr(_,opl,pl) ->
      Option.iter (List.iter check_no_patcast) opl;
      List.iter check_no_patcast pl
-  | CPatOr(_,pl) ->
+  | CPatOr pl ->
      List.iter check_no_patcast pl
-  | CPatNotation(_,_,subst,pl) ->
+  | CPatNotation(_,subst,pl) ->
      check_no_patcast_subst subst;
      List.iter check_no_patcast pl
-  | CPatRecord(_,prl) ->
+  | CPatRecord prl ->
      List.iter (fun (_,p) -> check_no_patcast p) prl
   | CPatAtom _ | CPatPrim _ -> ()
 
@@ -1441,7 +1439,7 @@ let intern_ind_pattern genv scopes pat =
     with InternalizationError(loc,NotAConstructor _) -> error_bad_inductive_type ~loc
   in
   match no_not with
-    | RCPatCstr (loc, head, expl_pl, pl) ->
+    | loc, RCPatCstr (head, expl_pl, pl) ->
       let c = (function IndRef ind -> ind | _ -> error_bad_inductive_type ~loc) head in
       let with_letin, pl2 = add_implicits_check_ind_length genv loc c
 	(List.length expl_pl) pl in
@@ -1784,7 +1782,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
     (ids,List.flatten mpl')
 
   (* Expands a pattern-matching clause [lhs => rhs] *)
-  and intern_eqn n env (loc,lhs,rhs) =
+  and intern_eqn n env (loc,(lhs,rhs)) =
     let eqn_ids,pll = intern_disjunctive_multiple_pattern env loc n lhs in
     (* Linearity implies the order in ids is irrelevant *)
     check_linearity lhs eqn_ids;

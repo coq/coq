@@ -252,62 +252,62 @@ let tag_var = tag Tag.variable
   let lpator = 100
   let lpatrec = 0
 
-  let rec pr_patt sep inh p =
+  let rec pr_patt sep inh (loc, p) =
     let (strm,prec) = match p with
-      | CPatRecord (_, l) ->
+      | CPatRecord l ->
         let pp (c, p) =
           pr_reference c ++ spc() ++ str ":=" ++ pr_patt spc (lpatrec, Any) p
         in
         str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}", lpatrec
 
-      | CPatAlias (_, p, id) ->
+      | CPatAlias (p, id) ->
         pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
 
-      | CPatCstr (_,c, None, []) ->
+      | CPatCstr (c, None, []) ->
         pr_reference c, latom
 
-      | CPatCstr (_, c, None, args) ->
+      | CPatCstr (c, None, args) ->
         pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
 
-      | CPatCstr (_, c, Some args, []) ->
+      | CPatCstr (c, Some args, []) ->
         str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
 
-      | CPatCstr (_, c, Some expl_args, extra_args) ->
+      | CPatCstr (c, Some expl_args, extra_args) ->
         surround (str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) expl_args)
         ++ prlist (pr_patt spc (lapp,L)) extra_args, lapp
 
-      | CPatAtom (_, None) ->
+      | CPatAtom (None) ->
         str "_", latom
 
-      | CPatAtom (_,Some r) ->
+      | CPatAtom (Some r) ->
         pr_reference r, latom
 
-      | CPatOr (_,pl) ->
+      | CPatOr pl ->
         hov 0 (prlist_with_sep pr_bar (pr_patt spc (lpator,L)) pl), lpator
 
-      | CPatNotation (_,"( _ )",([p],[]),[]) ->
+      | CPatNotation ("( _ )",([p],[]),[]) ->
         pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
 
-      | CPatNotation (_,s,(l,ll),args) ->
+      | CPatNotation (s,(l,ll),args) ->
         let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ _ -> mt()) s (l,ll,[]) in
         (if List.is_empty args||prec_less l_not (lapp,L) then strm_not else surround strm_not)
         ++ prlist (pr_patt spc (lapp,L)) args, if not (List.is_empty args) then lapp else l_not
 
-      | CPatPrim (_,p) ->
+      | CPatPrim p ->
         pr_prim_token p, latom
 
-      | CPatDelimiters (_,k,p) ->
+      | CPatDelimiters (k,p) ->
         pr_delimiters k (pr_patt mt lsimplepatt p), 1
       | CPatCast _ ->
         assert false
     in
-    let loc = cases_pattern_expr_loc p in
+    let loc = cases_pattern_expr_loc (loc, p) in
     pr_with_comments loc
       (sep() ++ if prec_less prec inh then strm else surround strm)
 
   let pr_patt = pr_patt mt
 
-  let pr_eqn pr (loc,pl,rhs) =
+  let pr_eqn pr (loc,(pl,rhs)) =
     let pl = List.map snd pl in
     spc() ++ hov 4
       (pr_with_comments loc
@@ -397,7 +397,7 @@ let tag_var = tag Tag.variable
     | CProdN (loc,[],c) ->
       extract_prod_binders c
     | CProdN (loc,[[_,Name id],bk,t],
-              CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)]))
+              CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,([_,[p]],b))]))
          when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_prod_binders b in
       CLocalPattern (loc,p,None) :: bl, c
@@ -413,7 +413,7 @@ let tag_var = tag Tag.variable
     | CLambdaN (loc,[],c) ->
       extract_lam_binders c
     | CLambdaN (loc,[[_,Name id],bk,t],
-                CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)]))
+                CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,([_,[p]],b))]))
          when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_lam_binders b in
       CLocalPattern (loc,p,None) :: bl, c
@@ -642,7 +642,7 @@ let tag_var = tag Tag.variable
           hv 0 (str"{|" ++ pr_record_body_gen (pr spc) l ++ str" |}"),
           latom
         )
-      | CCases (_,LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,[(loc,[p])],b)]) ->
+      | CCases (_,LetPatternStyle,rtntypopt,[c,as_clause,in_clause],[(_,([(loc,[p])],b))]) ->
         return (
           hv 0 (
             keyword "let" ++ spc () ++ str"'" ++

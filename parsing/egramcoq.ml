@@ -318,8 +318,8 @@ let constr_expr_of_name (loc,na) = match na with
   | Name id -> CRef (Ident (loc,id), None)
 
 let cases_pattern_expr_of_name (loc,na) = match na with
-  | Anonymous -> CPatAtom (loc,None)
-  | Name id -> CPatAtom (loc,Some (Ident (loc,id)))
+  | Anonymous -> Loc.tag ~loc @@ CPatAtom None
+  | Name id   -> Loc.tag ~loc @@ CPatAtom (Some (Ident (loc,id)))
 
 type 'r env = {
   constrs : 'r list;
@@ -342,13 +342,13 @@ match e with
 | TTBinderListF _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
 | TTBigint ->
   begin match forpat with
-  | ForConstr -> push_constr subst (CPrim (Loc.ghost, Numeral v))
-  | ForPattern -> push_constr subst (CPatPrim (Loc.ghost, Numeral v))
+  | ForConstr ->  push_constr subst (CPrim (Loc.ghost, Numeral v))
+  | ForPattern -> push_constr subst (Loc.tag @@ CPatPrim (Numeral v))
   end
 | TTReference ->
   begin match forpat with
-  | ForConstr -> push_constr subst (CRef (v, None))
-  | ForPattern -> push_constr subst (CPatAtom (Loc.ghost, Some v))
+  | ForConstr  -> push_constr subst (CRef (v, None))
+  | ForPattern -> push_constr subst (Loc.tag @@ CPatAtom (Some v))
   end
 | TTConstrList _ -> { subst with constrlists = v :: subst.constrlists }
 
@@ -436,7 +436,7 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   let invalid = List.exists (fun (_, b) -> not b) env.binders in
   let () = if invalid then Topconstr.error_invalid_pattern_notation ~loc () in
   let env = (env.constrs, env.constrlists) in
-  CPatNotation (loc, notation, env, [])
+  Loc.tag ~loc @@ CPatNotation (notation, env, [])
 
 let extend_constr state forpat ng =
   let n = ng.notgram_level in

@@ -36,31 +36,33 @@ type prim_token =
   | Numeral of Bigint.bigint (** representation of integer literals that appear in Coq scripts. *)
   | String of string
 
-type raw_cases_pattern_expr =
-  | RCPatAlias of Loc.t * raw_cases_pattern_expr * Id.t
-  | RCPatCstr of Loc.t * Globnames.global_reference
+type raw_cases_pattern_expr_r =
+  | RCPatAlias of raw_cases_pattern_expr * Id.t
+  | RCPatCstr  of Globnames.global_reference
     * raw_cases_pattern_expr list * raw_cases_pattern_expr list
   (** [CPatCstr (_, c, l1, l2)] represents ((@c l1) l2) *)
-  | RCPatAtom of Loc.t * Id.t option
-  | RCPatOr of Loc.t * raw_cases_pattern_expr list
+  | RCPatAtom of Id.t option
+  | RCPatOr of raw_cases_pattern_expr list
+and raw_cases_pattern_expr = raw_cases_pattern_expr_r Loc.located
 
 type instance_expr = Misctypes.glob_level list
 
-type cases_pattern_expr =
-  | CPatAlias of Loc.t * cases_pattern_expr * Id.t
-  | CPatCstr of Loc.t * reference
+type cases_pattern_expr_r =
+  | CPatAlias of cases_pattern_expr * Id.t
+  | CPatCstr  of reference
     * cases_pattern_expr list option * cases_pattern_expr list
   (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
-  | CPatAtom of Loc.t * reference option
-  | CPatOr of Loc.t * cases_pattern_expr list
-  | CPatNotation of Loc.t * notation * cases_pattern_notation_substitution
+  | CPatAtom of reference option
+  | CPatOr   of cases_pattern_expr list
+  | CPatNotation of notation * cases_pattern_notation_substitution
     * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
 				  (notation n applied with substitution l1)
 				  applied to arguments l2 *)
-  | CPatPrim of Loc.t * prim_token
-  | CPatRecord of Loc.t * (reference * cases_pattern_expr) list
-  | CPatDelimiters of Loc.t * string * cases_pattern_expr
-  | CPatCast of Loc.t * cases_pattern_expr * constr_expr
+  | CPatPrim   of prim_token
+  | CPatRecord of (reference * cases_pattern_expr) list
+  | CPatDelimiters of string * cases_pattern_expr
+  | CPatCast   of cases_pattern_expr * constr_expr
+and cases_pattern_expr = cases_pattern_expr_r located
 
 and cases_pattern_notation_substitution =
     cases_pattern_expr list *     (** for constr subterms *)
@@ -104,7 +106,7 @@ and case_expr = constr_expr                 (* expression that is being matched 
 	      * cases_pattern_expr option   (* in-clause *)
 
 and branch_expr =
-  Loc.t * cases_pattern_expr list located list * constr_expr
+  (cases_pattern_expr list located list * constr_expr) Loc.located
 
 and binder_expr =
   Name.t located list * binder_kind * constr_expr
@@ -144,7 +146,8 @@ type with_declaration_ast =
   | CWith_Module of Id.t list located * qualid located
   | CWith_Definition of Id.t list located * constr_expr
 
-type module_ast =
-  | CMident of qualid located
-  | CMapply of Loc.t * module_ast * module_ast
-  | CMwith of Loc.t * module_ast * with_declaration_ast
+type module_ast_r =
+  | CMident of qualid
+  | CMapply of module_ast * module_ast
+  | CMwith  of module_ast * with_declaration_ast
+and module_ast = module_ast_r located

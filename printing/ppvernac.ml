@@ -204,18 +204,18 @@ open Decl_kinds
         pr_located pr_qualid qid
 
   let rec pr_module_ast leading_space pr_c = function
-    | CMident qid ->
+    | loc, CMident qid ->
       if leading_space then
-        spc () ++ pr_located pr_qualid qid
+        spc () ++ pr_located pr_qualid (loc, qid)
       else
-        pr_located pr_qualid qid
-    | CMwith (_,mty,decl) ->
+        pr_located pr_qualid (loc,qid)
+    | _loc, CMwith (mty,decl) ->
       let m = pr_module_ast leading_space pr_c mty in
       let p = pr_with_declaration pr_c decl in
       m ++ spc() ++ keyword "with" ++ spc() ++ p
-    | CMapply (_,me1,(CMident _ as me2)) ->
+    | _loc, CMapply (me1,(_, CMident _ as me2)) ->
       pr_module_ast leading_space pr_c me1 ++ spc() ++ pr_module_ast false pr_c me2
-    | CMapply (_,me1,me2) ->
+    | _loc, CMapply (me1,me2) ->
       pr_module_ast leading_space pr_c me1 ++ spc() ++
         hov 1 (str"(" ++ pr_module_ast false pr_c me2 ++ str")")
 

@@ -300,32 +300,32 @@ and pp_cofixpoint_expr (((loc, id), pl), lbl, ce, ceo) = (* cofixpoint_expr *)
   end
 and pp_lident (loc, id) = xmlCst (Id.to_string id) loc
 and pp_simple_binder (idl, ce) = List.map pp_lident idl @ [pp_expr ce]
-and pp_cases_pattern_expr cpe =
+and pp_cases_pattern_expr (loc, cpe) =
   match cpe with
-  | CPatAlias (loc, cpe, id) ->
+  | CPatAlias (cpe, id) ->
       xmlApply loc
         (xmlOperator "alias" ~attr:["name", string_of_id id] loc ::
           [pp_cases_pattern_expr cpe])
-  | CPatCstr (loc, ref, None, cpel2) ->
+  | CPatCstr (ref, None, cpel2) ->
       xmlApply loc
         (xmlOperator "reference"
            ~attr:["name", Libnames.string_of_reference ref] loc ::
          [Element ("impargs", [], []);
           Element ("args", [], (List.map pp_cases_pattern_expr cpel2))])
-  | CPatCstr (loc, ref, Some cpel1, cpel2) ->
+  | CPatCstr (ref, Some cpel1, cpel2) ->
       xmlApply loc
         (xmlOperator "reference"
            ~attr:["name", Libnames.string_of_reference ref] loc ::
          [Element ("impargs", [], (List.map pp_cases_pattern_expr cpel1));
           Element ("args", [], (List.map pp_cases_pattern_expr cpel2))])
-  | CPatAtom (loc, optr) ->
+  | CPatAtom optr ->
       let attrs = match optr with
         | None -> []
         | Some r -> ["name", Libnames.string_of_reference r] in
       xmlApply loc (xmlOperator "atom" ~attr:attrs loc :: [])
-  | CPatOr (loc, cpel) ->
+  | CPatOr cpel ->
       xmlApply loc (xmlOperator "or" loc :: List.map pp_cases_pattern_expr cpel)
-  | CPatNotation (loc, n, (subst_constr, subst_rec), cpel) ->
+  | CPatNotation (n, (subst_constr, subst_rec), cpel) ->
       xmlApply loc
         (xmlOperator "notation" loc ::
           [xmlOperator n loc;
@@ -339,8 +339,8 @@ and pp_cases_pattern_expr cpe =
                        List.map pp_cases_pattern_expr cpel))
                 subst_rec)]);
            Element ("args", [], (List.map pp_cases_pattern_expr cpel))])
-  | CPatPrim (loc, tok) -> pp_token loc tok
-  | CPatRecord (loc, rcl) ->
+  | CPatPrim tok   -> pp_token loc tok
+  | CPatRecord rcl ->
       xmlApply loc
         (xmlOperator "record" loc ::
            List.map (fun (r, cpe) ->
@@ -348,7 +348,7 @@ and pp_cases_pattern_expr cpe =
                ["reference", Libnames.string_of_reference r],
                [pp_cases_pattern_expr cpe]))
            rcl)
-  | CPatDelimiters (loc, delim, cpe) ->
+  | CPatDelimiters (delim, cpe) ->
       xmlApply loc
         (xmlOperator "delimiter" ~attr:["name", delim] loc ::
           [pp_cases_pattern_expr cpe])
@@ -370,7 +370,7 @@ and pp_case_expr (e, name, pat) =
 and pp_branch_expr_list bel =
   xmlWith
     (List.map
-      (fun (_, cpel, e) ->
+      (fun (_, (cpel, e)) ->
         let ppcepl =
           List.map pp_cases_pattern_expr (List.flatten (List.map snd cpel)) in
         let ppe = [pp_expr e] in

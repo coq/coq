@@ -18,9 +18,6 @@ type t = {
   ep : int; (** end position *)
 }
 
-type 'a located = t * 'a
-(** Embed a location in a type *)
-
 (** {5 Location manipulation} *)
 
 (** This is inherited from CAMPL4/5. *)
@@ -54,12 +51,22 @@ val get_loc : Exninfo.info -> t option
 val raise : ?loc:t -> exn -> 'a
 (** [raise loc e] is the same as [Pervasives.raise (add_loc e loc)]. *)
 
-(** {5 Location utilities} *)
+(** {5 Objects with location information } *)
+
+type 'a located = t * 'a
+(** Embed a location in a type *)
+
+(** Warning, this API is experimental  *)
+
+val to_pair : 'a located -> t * 'a
+val tag : ?loc:t -> 'a -> 'a located
 
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
+val down_located : ('a -> 'b) -> 'a located -> 'b
+
+(* Current not used *)
 val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
 
-val down_located : ('a -> 'b) -> 'a located -> 'b
 (** Projects out a located object *)
 
 (** {5 Backward compatibility} *)

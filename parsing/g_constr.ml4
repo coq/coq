@@ -120,7 +120,7 @@ let name_colon =
               | _ -> err ())
         | _ -> err ())
 
-let aliasvar = function CPatAlias (loc, _, id) -> Some (loc,Name id) | _ -> None
+let aliasvar = function loc, CPatAlias (_, id) -> Some (loc,Name id) | _ -> None
 
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr universe_level sort global
@@ -254,14 +254,14 @@ GEXTEND Gram
           CLetTuple (!@loc,lb,po,c1,c2)
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, None, [c1, None, None], [(!@loc, [(!@loc,[p])], c2)])
+	    CCases (!@loc, LetPatternStyle, None,    [c1, None, None],       [Loc.tag ~loc:!@loc ([(!@loc, [p])], c2)])
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
 	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, Some rt, [c1, aliasvar p, None], [(!@loc, [(!@loc, [p])], c2)])
+	    CCases (!@loc, LetPatternStyle, Some rt, [c1, aliasvar p, None], [Loc.tag ~loc:!@loc ([(!@loc, [p])], c2)])
       | "let"; "'"; p=pattern; "in"; t = pattern LEVEL "200";
 	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [(!@loc, [(!@loc, [p])], c2)])
+	    CCases (!@loc, LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [Loc.tag ~loc:!@loc ([(!@loc, [p])], c2)])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
@@ -349,7 +349,7 @@ GEXTEND Gram
   ;
   eqn:
     [ [ pll = LIST1 mult_pattern SEP "|";
-        "=>"; rhs = lconstr -> (!@loc,pll,rhs) ] ]
+        "=>"; rhs = lconstr -> (Loc.tag ~loc:!@loc (pll,rhs)) ] ]
   ;
   record_pattern:
     [ [ id = global; ":="; pat = pattern -> (id, pat) ] ]
@@ -364,46 +364,46 @@ GEXTEND Gram
   pattern:
     [ "200" RIGHTA [ ]
     | "100" RIGHTA
-      [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CPatOr (!@loc,p::pl) ]
+      [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> !@loc, CPatOr (p::pl) ]
     | "99" RIGHTA [ ]
     | "11" LEFTA
       [ p = pattern; "as"; id = ident ->
-	  CPatAlias (!@loc, p, id) ]
+        Loc.tag ~loc:!@loc @@ CPatAlias (p, id) ]
     | "10" RIGHTA
       [ p = pattern; lp = LIST1 NEXT ->
         (match p with
-	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, None, lp)
-	  | CPatCstr (_, r, None, l2) -> CErrors.user_err
-              ~loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
-              (Pp.str "Nested applications not supported.")
-	  | CPatCstr (_, r, l1, l2) -> CPatCstr (!@loc, r, l1 , l2@lp)
-	  | CPatNotation (_, n, s, l) -> CPatNotation (!@loc, n , s, l@lp)
+	  | _,   CPatAtom (Some r) -> Loc.tag ~loc:!@loc @@ CPatCstr (r, None, lp)
+	  | loc, CPatCstr (r, None, l2) ->
+                 CErrors.user_err ~loc ~hdr:"compound_pattern"
+                 (Pp.str "Nested applications not supported.")
+	  | _,   CPatCstr (r, l1, l2)   -> Loc.tag ~loc:!@loc @@ CPatCstr (r, l1 , l2@lp)
+	  | _,   CPatNotation (n, s, l) -> Loc.tag ~loc:!@loc @@ CPatNotation (n , s, l@lp)
           | _ -> CErrors.user_err
               ~loc:(cases_pattern_expr_loc p) ~hdr:"compound_pattern"
               (Pp.str "Such pattern cannot have arguments."))
       |"@"; r = Prim.reference; lp = LIST0 NEXT ->
-        CPatCstr (!@loc, r, Some lp, []) ]
+        !@loc, CPatCstr (r, Some lp, []) ]
     | "1" LEFTA
-      [ c = pattern; "%"; key=IDENT -> CPatDelimiters (!@loc,key,c) ]
+      [ c = pattern; "%"; key=IDENT -> !@loc, CPatDelimiters (key,c) ]
     | "0"
-      [ r = Prim.reference -> CPatAtom (!@loc,Some r)
-      | "{|"; pat = record_patterns; "|}" -> CPatRecord (!@loc, pat)
-      | "_" -> CPatAtom (!@loc,None)
+      [ r = Prim.reference                -> Loc.tag ~loc:!@loc @@ CPatAtom (Some r)
+      | "{|"; pat = record_patterns; "|}" -> Loc.tag ~loc:!@loc @@ CPatRecord pat
+      | "_" -> !@loc, CPatAtom None
       | "("; p = pattern LEVEL "200"; ")" ->
           (match p with
-              CPatPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
-                CPatNotation(!@loc,"( _ )",([p],[]),[])
+            | _, CPatPrim (Numeral z) when Bigint.is_pos_or_zero z ->
+                 Loc.tag ~loc:!@loc @@ CPatNotation("( _ )",([p],[]),[])
             | _ -> p)
       | "("; p = pattern LEVEL "200"; ":"; ty = lconstr; ")" ->
           let p =
             match p with
-              CPatPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
-                CPatNotation(!@loc,"( _ )",([p],[]),[])
+            | _, CPatPrim (Numeral z) when Bigint.is_pos_or_zero z ->
+                 Loc.tag ~loc:!@loc @@ CPatNotation("( _ )",([p],[]),[])
             | _ -> p
           in
-	  CPatCast (!@loc, p, ty)
-      | n = INT -> CPatPrim (!@loc, Numeral (Bigint.of_string n))
-      | s = string -> CPatPrim (!@loc, String s) ] ]
+	  !@loc, CPatCast (p, ty)
+      | n = INT    -> Loc.tag ~loc:!@loc @@ CPatPrim (Numeral (Bigint.of_string n))
+      | s = string -> Loc.tag ~loc:!@loc @@ CPatPrim (String s) ] ]
   ;
   impl_ident_tail:
     [ [ "}" -> binder_of_name Implicit
@@ -482,7 +482,7 @@ GEXTEND Gram
       | "'"; p = pattern LEVEL "0" ->
           let (p, ty) =
             match p with
-            | CPatCast (_, p, ty) -> (p, Some ty)
+            | _, CPatCast (p, ty) -> (p, Some ty)
             | _ -> (p, None)
           in
           [CLocalPattern (!@loc, p, ty)]

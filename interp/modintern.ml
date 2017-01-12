@@ -65,17 +65,16 @@ let transl_with_decl env = function
     let ctx = Evd.evar_context_universe_context ectx in
       WithDef (fqid,(c,ctx))
 
-let loc_of_module = function
-  | CMident (loc,_) | CMapply (loc,_,_) | CMwith (loc,_,_) -> loc
+let loc_of_module (l, _) = l
 
 (* Invariant : the returned kind is never ModAny, and it is
    equal to the input kind when this one isn't ModAny. *)
 
-let rec interp_module_ast env kind = function
+let rec interp_module_ast env kind (loc, m) = match m with
   | CMident qid ->
-      let (mp,kind) = lookup_module_or_modtype kind qid in
+      let (mp,kind) = lookup_module_or_modtype kind (loc,qid) in
       (MEident mp, kind)
-  | CMapply (_,me1,me2) ->
+  | CMapply (me1,me2) ->
       let me1',kind1 = interp_module_ast env kind me1 in
       let me2',kind2 = interp_module_ast env ModAny me2 in
       let mp2 = match me2' with
@@ -85,7 +84,7 @@ let rec interp_module_ast env kind = function
       if kind2 == ModType then
         error_application_to_module_type (loc_of_module me2);
       (MEapply (me1',mp2), kind1)
-  | CMwith (loc,me,decl) ->
+  | CMwith (me,decl) ->
       let me,kind = interp_module_ast env kind me in
       if kind == Module then error_incorrect_with_in_module loc;
       let decl = transl_with_decl env decl in

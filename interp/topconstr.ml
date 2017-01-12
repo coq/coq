@@ -43,22 +43,22 @@ let is_constructor id =
            (Nametab.locate_extended (qualid_of_ident id)))
   with Not_found -> false
 
-let rec cases_pattern_fold_names f a = function
-  | CPatRecord (_, l) ->
+let rec cases_pattern_fold_names f a pt = match snd pt with
+  | CPatRecord l ->
       List.fold_left (fun acc (r, cp) -> cases_pattern_fold_names f acc cp) a l
-  | CPatAlias (_,pat,id) -> f id a
-  | CPatOr (_,patl) ->
+  | CPatAlias (pat,id) -> f id a
+  | CPatOr (patl) ->
       List.fold_left (cases_pattern_fold_names f) a patl
-  | CPatCstr (_,_,patl1,patl2) ->
+  | CPatCstr (_,patl1,patl2) ->
     List.fold_left (cases_pattern_fold_names f)
       (Option.fold_left (List.fold_left (cases_pattern_fold_names f)) a patl1) patl2
-  | CPatNotation (_,_,(patl,patll),patl') ->
+  | CPatNotation (_,(patl,patll),patl') ->
       List.fold_left (cases_pattern_fold_names f)
 	(List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)) patl'
-  | CPatDelimiters (_,_,pat) -> cases_pattern_fold_names f a pat
-  | CPatAtom (_,Some (Ident (_,id))) when not (is_constructor id) -> f id a
+  | CPatDelimiters (_,pat) -> cases_pattern_fold_names f a pat
+  | CPatAtom (Some (Ident (_,id))) when not (is_constructor id) -> f id a
   | CPatPrim _ | CPatAtom _ -> a
-  | CPatCast (loc,_,_) ->
+  | CPatCast ((loc,_),_) ->
      CErrors.user_err ~loc ~hdr:"cases_pattern_fold_names"
                       (Pp.strbrk "Casts are not supported here.")
 
@@ -125,7 +125,7 @@ let fold_constr_expr_with_binders g f n acc = function
       let ids = ids_of_cases_tomatch al in
       let acc = Option.fold_left (f (Id.Set.fold g ids n)) acc rtnpo in
       let acc = List.fold_left (f n) acc (List.map (fun (fst,_,_) -> fst) al) in
-      List.fold_right (fun (loc,patl,rhs) acc ->
+      List.fold_right (fun (loc,(patl,rhs)) acc ->
 	let ids = ids_of_pattern_list patl in
 	f (Id.Set.fold g ids n) acc rhs) bl acc
   | CLetTuple (loc,nal,(ona,po),b,c) ->
@@ -230,9 +230,9 @@ let map_constr_expr_with_binders g f e = function
   | CPrim _ | CRef _ as x -> x
   | CRecord (loc,l) -> CRecord (loc,List.map (fun (id, c) -> (id, f e c)) l)
   | CCases (loc,sty,rtnpo,a,bl) ->
-      let bl = List.map (fun (loc,patl,rhs) ->
+      let bl = List.map (fun (loc,(patl,rhs)) ->
         let ids = ids_of_pattern_list patl in
-        (loc,patl,f (Id.Set.fold g ids e) rhs)) bl in
+        (loc,(patl,f (Id.Set.fold g ids e) rhs))) bl in
       let ids = ids_of_cases_tomatch a in
       let po = Option.map (f (Id.Set.fold g ids e)) rtnpo in
       CCases (loc, sty, po, List.map (fun (tm,x,y) -> f e tm,x,y) a,bl)

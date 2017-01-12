@@ -59,6 +59,10 @@ let join_loc = merge
 (** Located type *)
 
 type 'a located = t * 'a
+
+let to_pair x = x
+let tag ?loc x = Option.default ghost loc, x
+
 let located_fold_left f x (_,a) = f x a
 let located_iter2 f (_,a) (_,b) = f a b
 let down_located f (_,a) = f a

@@ -760,7 +760,7 @@ let rec add_args id new_args b =
 	     List.map (fun (b,na,b_option) ->
 			 add_args id new_args b,
 			 na, b_option) cel,
-	     List.map (fun (loc,cpl,e) -> (loc,cpl,add_args id new_args e)) cal
+	     List.map (fun (loc,(cpl,e)) -> Loc.tag ~loc:loc @@ (cpl,add_args id new_args e)) cal
 	    )
   | CLetTuple(loc,nal,(na,b_option),b1,b2) ->
       CLetTuple(loc,nal,(na,Option.map (add_args id new_args) b_option),

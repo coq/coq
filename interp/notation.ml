@@ -472,11 +472,11 @@ let interp_prim_token =
 (** [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
 
 let rec rcp_of_glob looked_for = function
-  | GVar (loc,id) -> RCPatAtom (loc,Some id)
-  | GHole (loc,_,_,_) -> RCPatAtom (loc,None)
-  | GRef (loc,g,_) -> looked_for g; RCPatCstr (loc, g,[],[])
+  | GVar (loc,id)     -> Loc.tag ~loc @@ RCPatAtom (Some id)
+  | GHole (loc,_,_,_) -> Loc.tag ~loc @@ RCPatAtom (None)
+  | GRef (loc,g,_)    -> looked_for g; Loc.tag ~loc @@ RCPatCstr (g,[],[])
   | GApp (loc,GRef (_,g,_),l) ->
-    looked_for g; RCPatCstr (loc, g, List.map (rcp_of_glob looked_for) l,[])
+    looked_for g; Loc.tag ~loc @@ RCPatCstr (g, List.map (rcp_of_glob looked_for) l,[])
   | _ -> raise Not_found
 
 let interp_prim_token_cases_pattern_expr loc looked_for p =

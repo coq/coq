@@ -59,31 +59,31 @@ let explicitation_eq ex1 ex2 = match ex1, ex2 with
 
 let eq_located f (_, x) (_, y) = f x y
 
-let rec cases_pattern_expr_eq p1 p2 =
+let rec cases_pattern_expr_eq (l1, p1) (l2, p2) =
   if p1 == p2 then true
   else match p1, p2 with
-  | CPatAlias(_,a1,i1), CPatAlias(_,a2,i2) ->
+  | CPatAlias(a1,i1), CPatAlias(a2,i2) ->
       Id.equal i1 i2 && cases_pattern_expr_eq a1 a2
-  | CPatCstr(_,c1,a1,b1), CPatCstr(_,c2,a2,b2) ->
+  | CPatCstr(c1,a1,b1), CPatCstr(c2,a2,b2) ->
       eq_reference c1 c2 &&
       Option.equal (List.equal cases_pattern_expr_eq) a1 a2 &&
       List.equal cases_pattern_expr_eq b1 b2
-  | CPatAtom(_,r1), CPatAtom(_,r2) ->
+  | CPatAtom(r1), CPatAtom(r2) ->
       Option.equal eq_reference r1 r2
-  | CPatOr (_, a1), CPatOr (_, a2) ->
+  | CPatOr a1, CPatOr a2 ->
       List.equal cases_pattern_expr_eq a1 a2
-  | CPatNotation (_, n1, s1, l1), CPatNotation (_, n2, s2, l2) ->
+  | CPatNotation (n1, s1, l1), CPatNotation (n2, s2, l2) ->
     String.equal n1 n2 &&
     cases_pattern_notation_substitution_eq s1 s2 &&
     List.equal cases_pattern_expr_eq l1 l2
-  | CPatPrim(_,i1), CPatPrim(_,i2) ->
+  | CPatPrim i1, CPatPrim i2 ->
       prim_token_eq i1 i2
-  | CPatRecord (_, l1), CPatRecord (_, l2) ->
+  | CPatRecord l1, CPatRecord l2 ->
       let equal (r1, e1) (r2, e2) =
         eq_reference r1 r2 && cases_pattern_expr_eq e1 e2
       in
       List.equal equal l1 l2
-  | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) ->
+  | CPatDelimiters(s1,e1), CPatDelimiters(s2,e2) ->
       String.equal s1 s2 && cases_pattern_expr_eq e1 e2
   | _ -> false
 
@@ -183,7 +183,7 @@ and case_expr_eq (e1, n1, p1) (e2, n2, p2) =
   Option.equal (eq_located Name.equal) n1 n2 &&
   Option.equal cases_pattern_expr_eq p1 p2
 
-and branch_expr_eq (_, p1, e1) (_, p2, e2) =
+and branch_expr_eq (_, (p1, e1)) (_, (p2, e2)) =
   List.equal (eq_located (List.equal cases_pattern_expr_eq)) p1 p2 &&
   constr_expr_eq e1 e2
 
@@ -252,22 +252,9 @@ let constr_loc = function
   | CPrim (loc,_) -> loc
   | CDelimiters (loc,_,_) -> loc
 
-let cases_pattern_expr_loc = function
-  | CPatAlias (loc,_,_) -> loc
-  | CPatCstr (loc,_,_,_) -> loc
-  | CPatAtom (loc,_) -> loc
-  | CPatOr (loc,_) -> loc
-  | CPatNotation (loc,_,_,_) -> loc
-  | CPatRecord (loc, _) -> loc
-  | CPatPrim (loc,_) -> loc
-  | CPatDelimiters (loc,_,_) -> loc
-  | CPatCast(loc,_,_) -> loc
+let cases_pattern_expr_loc (l,_) = l
 
-let raw_cases_pattern_expr_loc = function
-  | RCPatAlias (loc,_,_) -> loc
-  | RCPatCstr (loc,_,_,_) -> loc
-  | RCPatAtom (loc,_) -> loc
-  | RCPatOr (loc,_) -> loc
+let raw_cases_pattern_expr_loc (l, _) = l
 
 let local_binder_loc = function
   | CLocalAssum ((loc,_)::_,_,t)
@@ -330,7 +317,7 @@ let expand_binders mkC loc bl c =
             let c =
               CCases
                 (loc, LetPatternStyle, None, [(e,None,None)],
-                 [(loc1, [(loc1,[p])], c)])
+                 [(loc1, ([(loc1,[p])], c))])
             in
             (ni :: env, mkC loc ([id],Default Explicit,ty) c)
   in
