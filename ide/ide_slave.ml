@@ -392,7 +392,8 @@ let init =
              Stm.add false ~ontop:(Stm.get_current_state ())
                0 (Printf.sprintf "Add LoadPath \"%s\". " dir)
            else Stm.get_current_state (), `NewTip in
-         Stm.set_compilation_hints file;
+         if Filename.check_suffix file ".v" then
+           Stm.set_compilation_hints file;
          Stm.finish ();
          initial_id
    end
