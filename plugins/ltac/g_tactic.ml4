@@ -130,14 +130,14 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
           (try List.index Names.Name.equal (snd x) ids
           with Not_found -> error "No such fix variable.")
       | _ -> error "Cannot guess decreasing argument of fix." in
-  (id,n,CProdN(loc,bl,ty))
+  (id,n, Loc.tag ~loc @@ CProdN(bl,ty))
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
   let _ = Option.map (fun (aloc,_) ->
     user_err ~loc:aloc
       ~hdr:"Constr:mk_cofix_tac"
       (Pp.str"Annotation forbidden in cofix expression.")) ann in
-  (id,CProdN(loc,bl,ty))
+  (id,Loc.tag ~loc @@ CProdN(bl,ty))
 
 (* Functions overloaded by quotifier *)
 let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
@@ -154,12 +154,12 @@ let mkTacCase with_evar = function
   (* Reinterpret numbers as a notation for terms *)
   | [(clear,ElimOnAnonHyp n),(None,None),None],None ->
       TacCase (with_evar,
-        (clear,(CPrim (Loc.ghost, Numeral (Bigint.of_int n)),
+        (clear,(Loc.tag @@ CPrim (Numeral (Bigint.of_int n)),
 	 NoBindings)))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
   | [(clear,ElimOnIdent id),(None,None),None],None ->
-      TacCase (with_evar,(clear,(CRef (Ident id,None),NoBindings)))
+      TacCase (with_evar,(clear,(Loc.tag @@ CRef (Ident id,None),NoBindings)))
   | ic ->
       if List.exists (function ((_, ElimOnAnonHyp _),_,_) -> true | _ -> false) (fst ic)
       then
@@ -169,7 +169,7 @@ let mkTacCase with_evar = function
 let rec mkCLambdaN_simple_loc loc bll c =
   match bll with
   | ((loc1,_)::_ as idl,bk,t) :: bll ->
-      CLambdaN (loc,[idl,bk,t],mkCLambdaN_simple_loc (Loc.merge loc1 loc) bll c)
+      Loc.tag ~loc @@ CLambdaN ([idl,bk,t],mkCLambdaN_simple_loc (Loc.merge loc1 loc) bll c)
   | ([],_,_) :: bll -> mkCLambdaN_simple_loc loc bll c
   | [] -> c
 
@@ -440,7 +440,7 @@ GEXTEND Gram
       | -> true ]]
   ;
   simple_binder:
-    [ [ na=name -> ([na],Default Explicit,CHole (!@loc, Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None))
+    [ [ na=name -> ([na],Default Explicit, Loc.tag ~loc:!@loc @@ CHole (Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None))
       | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> (nal,Default Explicit,c)
     ] ]
   ;

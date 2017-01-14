@@ -254,7 +254,7 @@ open Decl_kinds
     prlist_strict (pr_module_vardecls pr_c) l
 
   let pr_type_option pr_c = function
-    | CHole (loc, k, Misctypes.IntroAnonymous, _) -> mt()
+    | _loc, CHole (k, Misctypes.IntroAnonymous, _) -> mt()
     | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
 
   let pr_decl_notation prc ((loc,ntn),c,scopt) =
@@ -885,7 +885,7 @@ open Decl_kinds
               (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
               pr_constr cl ++ pr_hint_info pr_constr_pattern_expr info ++
               (match props with
-                | Some (true,CRecord (_,l)) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
+                | Some (true, (_loc, CRecord l)) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
                 | Some (true,_) -> assert false
                 | Some (false,p) -> spc () ++ str":=" ++ spc () ++ pr_constr p
                 | None -> mt()))

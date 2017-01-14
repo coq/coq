@@ -93,7 +93,8 @@ let compute_constructor_level evars env l =
 
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
-  | Vernacexpr.DefExpr(n,c,t) -> (n,Some c, match t with Some c -> c | None -> CHole (fst n, None, Misctypes.IntroAnonymous, None))
+  | Vernacexpr.DefExpr(n,c,t) -> (n,Some c, match t with Some c -> c
+                                                       | None   -> Loc.tag ~loc:(fst n) @@ CHole (None, Misctypes.IntroAnonymous, None))
 
 let binders_of_decls = List.map binder_of_decl
 
@@ -120,8 +121,8 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     | Some t -> 
        let env = push_rel_context newps env0 in
        let poly =
-         match t with
-         | CSort (_, Misctypes.GType []) -> true | _ -> false in
+         match snd t with
+         | CSort (Misctypes.GType []) -> true | _ -> false in
        let s = interp_type_evars env evars ~impls:empty_internalization_env t in
        let sred = Reductionops.whd_all env !evars s in
        let s = EConstr.Unsafe.to_constr s in

@@ -469,8 +469,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
   in
   let unbounded_eq =
     let f_app_args =
-      Constrexpr.CAppExpl
-	(Loc.ghost,
+      Loc.tag @@ Constrexpr.CAppExpl(
 	 (None,(Ident (Loc.ghost,fname)),None) ,
 	 (List.map
 	    (function
@@ -481,7 +480,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 )
 	)
     in
-    Constrexpr.CApp (Loc.ghost,(None,Constrexpr_ops.mkRefC (Qualid (Loc.ghost,(qualid_of_string "Logic.eq")))),
+    Loc.tag @@ Constrexpr.CApp ((None,Constrexpr_ops.mkRefC (Qualid (Loc.ghost,(qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Constrexpr_ops.mkCProdN Loc.ghost args unbounded_eq in
@@ -589,15 +588,15 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	  | [], _ -> (List.rev aux,replace_vars_constr_expr assoc typ,assoc)
 	  | (Constrexpr.CLocalAssum(nal,bk,_))::bl',typ ->
 	     rebuild_nal (aux,assoc) bk bl' nal (List.length nal) typ
-	  | (Constrexpr.CLocalDef(na,_,_))::bl',Constrexpr.CLetIn(_,_,nat,ty,typ') ->
+	  | (Constrexpr.CLocalDef(na,_,_))::bl',(_loc, Constrexpr.CLetIn(_,nat,ty,typ')) ->
 	    rebuild_bl ((Constrexpr.CLocalDef(na,replace_vars_constr_expr assoc nat,Option.map (replace_vars_constr_expr assoc) ty (* ??? *))::aux),assoc)
 	      bl' typ'
 	  | _ -> assert false
       and rebuild_nal (aux,assoc) bk bl' nal lnal typ = 
-	match nal,typ with 
+	match nal, snd typ with 
 	  | [], _ -> rebuild_bl (aux,assoc) bl' typ
-	  | _,CProdN(_,[],typ) -> rebuild_nal (aux,assoc) bk bl' nal lnal typ
-	  | _,CProdN(_,(nal',bk',nal't)::rest,typ') -> 
+	  | _,CProdN([],typ) -> rebuild_nal (aux,assoc) bk bl' nal lnal typ
+	  | _,CProdN((nal',bk',nal't)::rest,typ') -> 
 	    let lnal' = List.length nal' in 
 	    if lnal' >= lnal 
 	    then 
@@ -607,15 +606,15 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	      rebuild_bl ((assum :: aux), nassoc) bl' 
 		(if List.is_empty new_nal' && List.is_empty rest
 		 then typ'
-		 else if List.is_empty new_nal'
-		 then CProdN(Loc.ghost,rest,typ')
-		 else CProdN(Loc.ghost,((new_nal',bk',nal't)::rest),typ'))
+		 else Loc.tag @@ if List.is_empty new_nal'
+		 then CProdN(rest,typ')
+		 else CProdN(((new_nal',bk',nal't)::rest),typ'))
 	    else 
 	      let captured_nal,non_captured_nal = List.chop lnal' nal in
 	      let nassoc = make_assoc assoc nal' captured_nal in
 	      let assum = CLocalAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't) in
 	      rebuild_nal ((assum :: aux), nassoc)
-		bk bl' non_captured_nal (lnal - lnal') (CProdN(Loc.ghost,rest,typ'))
+		bk bl' non_captured_nal (lnal - lnal') (Loc.tag @@ CProdN(rest,typ'))
 	  | _ -> assert false
 
 let rebuild_bl (aux,assoc) bl typ = rebuild_bl (aux,assoc) bl typ
@@ -726,67 +725,65 @@ let do_generate_principle pconstants on_error register_built interactive_proof
   in
   ()
 
-let rec add_args id new_args b =
-  match b with
-  | CRef (r,_) ->
-      begin      match r with
+let rec add_args id new_args = Loc.map (function
+  | CRef (r,_) as b ->
+      begin match r with
 	| Libnames.Ident(loc,fname) when Id.equal fname id ->
-	    CAppExpl(Loc.ghost,(None,r,None),new_args)
+	    CAppExpl((None,r,None),new_args)
 	| _ -> b
       end
   | CFix  _  | CCoFix _ -> anomaly ~label:"add_args " (Pp.str "todo")
-  | CProdN(loc,nal,b1) ->
-      CProdN(loc,
-	     List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args b2)) nal,
+  | CProdN(nal,b1) ->
+        CProdN(List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args b2)) nal,
 	     add_args id new_args  b1)
-  | CLambdaN(loc,nal,b1) ->
-      CLambdaN(loc,
-	       List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args  b2)) nal,
+  | CLambdaN(nal,b1) ->
+      CLambdaN(List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args  b2)) nal,
 	       add_args id new_args  b1)
-  | CLetIn(loc,na,b1,t,b2) ->
-      CLetIn(loc,na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
-  | CAppExpl(loc,(pf,r,us),exprl) ->
+  | CLetIn(na,b1,t,b2) ->
+      CLetIn(na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
+  | CAppExpl((pf,r,us),exprl) ->
       begin
 	match r with
 	| Libnames.Ident(loc,fname) when Id.equal fname id ->
-	    CAppExpl(loc,(pf,r,us),new_args@(List.map (add_args id new_args) exprl))
-	| _ -> CAppExpl(loc,(pf,r,us),List.map (add_args id new_args) exprl)
+	    CAppExpl((pf,r,us),new_args@(List.map (add_args id new_args) exprl))
+	| _ -> CAppExpl((pf,r,us),List.map (add_args id new_args) exprl)
       end
-  | CApp(loc,(pf,b),bl) ->
-      CApp(loc,(pf,add_args id new_args b),
+  | CApp((pf,b),bl) ->
+      CApp((pf,add_args id new_args b),
 	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
-  | CCases(loc,sty,b_option,cel,cal) ->
-      CCases(loc,sty,Option.map (add_args id new_args) b_option,
+  | CCases(sty,b_option,cel,cal) ->
+      CCases(sty,Option.map (add_args id new_args) b_option,
 	     List.map (fun (b,na,b_option) ->
 			 add_args id new_args b,
 			 na, b_option) cel,
-	     List.map (fun (loc,(cpl,e)) -> Loc.tag ~loc:loc @@ (cpl,add_args id new_args e)) cal
+	     List.map (fun (loc,(cpl,e)) -> Loc.tag ~loc @@ (cpl,add_args id new_args e)) cal
 	    )
-  | CLetTuple(loc,nal,(na,b_option),b1,b2) ->
-      CLetTuple(loc,nal,(na,Option.map (add_args id new_args) b_option),
+  | CLetTuple(nal,(na,b_option),b1,b2) ->
+      CLetTuple(nal,(na,Option.map (add_args id new_args) b_option),
 		add_args id new_args b1,
 		add_args id new_args b2
 	       )
 
-  | CIf(loc,b1,(na,b_option),b2,b3) ->
-      CIf(loc,add_args id new_args b1,
+  | CIf(b1,(na,b_option),b2,b3) ->
+      CIf(add_args id new_args b1,
 	  (na,Option.map (add_args id new_args) b_option),
 	  add_args id new_args b2,
 	  add_args id new_args b3
 	 )
-  | CHole _ -> b
-  | CPatVar _ -> b
-  | CEvar _ -> b
-  | CSort _ -> b
-  | CCast(loc,b1,b2)  ->
-      CCast(loc,add_args id new_args b1,
+  | CHole _
+  | CPatVar _
+  | CEvar _
+  | CPrim _
+  | CSort _ as b -> b
+  | CCast(b1,b2)  ->
+      CCast(add_args id new_args b1,
 	    Miscops.map_cast_type (add_args id new_args) b2)
-  | CRecord (loc, pars) ->
-      CRecord (loc, List.map (fun (e,o) -> e, add_args id new_args o) pars)
+  | CRecord pars ->
+      CRecord (List.map (fun (e,o) -> e, add_args id new_args o) pars)
   | CNotation _ -> anomaly ~label:"add_args " (Pp.str "CNotation")
   | CGeneralization _ -> anomaly ~label:"add_args " (Pp.str "CGeneralization")
-  | CPrim _ -> b
   | CDelimiters _ -> anomaly ~label:"add_args " (Pp.str "CDelimiters")
+  )
 exception Stop of  Constrexpr.constr_expr
 
 
@@ -797,8 +794,8 @@ let rec chop_n_arrow n t =
   if n <= 0
   then t (* If we have already removed all the arrows then return the type *)
   else (* If not we check the form of [t] *)
-    match t with
-      | Constrexpr.CProdN(_,nal_ta',t') -> (* If we have a forall, to result are possible :
+    match snd t with
+      | Constrexpr.CProdN(nal_ta',t') -> (* If we have a forall, to result are possible :
 					     either we need to discard more than the number of arrows contained
 					     in this product declaration then we just recall [chop_n_arrow] on
 					     the remaining number of arrow to chop and [t'] we discard it and
@@ -816,8 +813,8 @@ let rec chop_n_arrow n t =
 		    then
 		      aux (n - nal_l) nal_ta'
 		    else
-		      let new_t' =
-			Constrexpr.CProdN(Loc.ghost,
+		      let new_t' = Loc.tag @@
+			Constrexpr.CProdN(
 					((snd (List.chop n nal)),k,t'')::nal_ta',t')
 		      in
 		      raise (Stop new_t')
@@ -832,8 +829,8 @@ let rec chop_n_arrow n t =
 
 let rec get_args b t : Constrexpr.local_binder_expr list *
     Constrexpr.constr_expr * Constrexpr.constr_expr =
-  match b with
-    | Constrexpr.CLambdaN (loc, (nal_ta), b') ->
+  match snd b with
+    | Constrexpr.CLambdaN ((nal_ta), b') ->
 	begin
 	  let n =
 	    (List.fold_left (fun n (nal,_,_) ->
@@ -872,8 +869,8 @@ let make_graph (f_ref:global_reference) =
 	 in
 	 let (nal_tas,b,t)  = get_args extern_body extern_type in
 	 let expr_list =
-	   match b with
-	     | Constrexpr.CFix(loc,l_id,fixexprl) ->
+	   match snd b with
+	     | Constrexpr.CFix(l_id,fixexprl) ->
 		 let l =
 		   List.map
 		     (fun (id,(n,recexp),bl,t,b) ->
@@ -885,7 +882,7 @@ let make_graph (f_ref:global_reference) =
 				  | Constrexpr.CLocalDef (na,_,_)-> []
 				  | Constrexpr.CLocalAssum (nal,_,_) ->
 				      List.map
-					(fun (loc,n) ->
+					(fun (loc,n) -> Loc.tag ~loc @@ 
 					   CRef(Libnames.Ident(loc, Nameops.out_name n),None))
 					nal
                                   | Constrexpr.CLocalPattern _ -> assert false

@@ -1416,7 +1416,7 @@ let add_notation_extra_printing_rule df k v =
 
 (* Infix notations *)
 
-let inject_var x = CRef (Ident (Loc.ghost, Id.of_string x),None)
+let inject_var x = Loc.tag @@ CRef (Ident (Loc.ghost, Id.of_string x),None)
 
 let add_infix local ((loc,inf),modifiers) pr sc =
   check_infix_modifiers modifiers;
@@ -1477,7 +1477,7 @@ let add_class_scope scope cl =
 (* Check if abbreviation to a name and avoid early insertion of
    maximal implicit arguments *)
 let try_interp_name_alias = function
-  | [], CRef (ref,_) -> intern_reference ref
+  | [], (_loc, CRef (ref,_)) -> intern_reference ref
   | _ -> raise Not_found
 
 let add_syntactic_definition ident (vars,c) local onlyparse =

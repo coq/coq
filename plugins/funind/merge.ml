@@ -73,7 +73,7 @@ let isVarf f x =
     in global environment. *)
 let ident_global_exist id =
   try
-    let ans = CRef (Libnames.Ident (Loc.ghost,id), None) in
+    let ans = Loc.tag @@ CRef (Libnames.Ident (Loc.ghost,id), None) in
     let _ = ignore (Constrintern.intern_constr (Global.env()) ans) in
     true
   with e when CErrors.noncritical e -> false
@@ -835,7 +835,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let c = RelDecl.get_type decl in
         let typ = Constrextern.extern_constr false env Evd.empty c in
         let newenv = Environ.push_rel (LocalAssum (nm,c)) env in
-        CProdN (Loc.ghost, [[(Loc.ghost,nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
+        Loc.tag @@ CProdN ([[(Loc.ghost,nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
       (concl,Global.env())
       (shift.funresprms2 @ shift.funresprms1
         @ shift.args2 @ shift.args1 @ shift.otherprms2 @ shift.otherprms1) in

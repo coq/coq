@@ -49,10 +49,10 @@ val mkLambdaC : Name.t located list * binder_kind * constr_expr * constr_expr ->
 val mkLetInC : Name.t located * constr_expr * constr_expr option * constr_expr -> constr_expr
 val mkProdC : Name.t located list * binder_kind * constr_expr * constr_expr -> constr_expr
 
-val mkCLambdaN : Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
+val mkCLambdaN : loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
 (** Same as [abstract_constr_expr], with location *)
 
-val mkCProdN : Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
+val mkCProdN : loc:Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
 (** Same as [prod_constr_expr], with location *)
 
 (** @deprecated variant of mkCLambdaN *)

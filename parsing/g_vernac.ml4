@@ -229,19 +229,19 @@ GEXTEND Gram
       if List.exists (function CLocalPattern _ -> true | _ -> false) bl
       then
         (* FIXME: "red" will be applied to types in bl and Cast with remain *)
-        let c = mkCLambdaN (!@loc) bl c in
+        let c = mkCLambdaN ~loc:!@loc bl c in
 	DefineBody ([], red, c, None)
       else
         (match c with
-        | CCast(_,c, CastConv t) -> DefineBody (bl, red, c, Some t)
+        | _, CCast(c, CastConv t) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
         let ((bl, c), tyo) =
           if List.exists (function CLocalPattern _ -> true | _ -> false) bl
           then
             (* FIXME: "red" will be applied to types in bl and Cast with remain *)
-            let c = CCast (!@loc, c, CastConv t) in
-            (([],mkCLambdaN (!@loc) bl c), None)
+            let c = Loc.tag ~loc:!@loc @@ CCast (c, CastConv t) in
+            (([],mkCLambdaN ~loc:!@loc bl c), None)
           else ((bl, c), Some t)
         in
 	DefineBody (bl, red, c, tyo)
@@ -305,7 +305,7 @@ GEXTEND Gram
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c
-      | -> CHole (!@loc, None, Misctypes.IntroAnonymous, None) ] ]
+      | -> Loc.tag ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None) ] ]
   ;
   (* Inductive schemes *)
   scheme:
@@ -352,16 +352,16 @@ GEXTEND Gram
          t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN (!@loc) l t))
       | l = binders; oc = of_type_with_opt_coercion;
          t = lconstr; ":="; b = lconstr -> fun id ->
-	   (oc,DefExpr (id,mkCLambdaN (!@loc) l b,Some (mkCProdN (!@loc) l t)))
+	   (oc,DefExpr (id,mkCLambdaN ~loc:!@loc l b,Some (mkCProdN (!@loc) l t)))
       | l = binders; ":="; b = lconstr -> fun id ->
-         match b with
-	 | CCast(_,b, (CastConv t|CastVM t|CastNative t)) ->
-	     (None,DefExpr(id,mkCLambdaN (!@loc) l b,Some (mkCProdN (!@loc) l t)))
+         match snd b with
+	 | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
+	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b',Some (mkCProdN (!@loc) l t)))
          | _ ->
-	     (None,DefExpr(id,mkCLambdaN (!@loc) l b,None)) ] ]
+	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b,None)) ] ]
   ;
   record_binder:
-    [ [ id = name -> (None,AssumExpr(id,CHole (!@loc, None, Misctypes.IntroAnonymous, None)))
+    [ [ id = name -> (None,AssumExpr(id, Loc.tag ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))
       | id = name; f = record_binder_body -> f id ] ]
   ;
   assum_list:
@@ -380,7 +380,7 @@ GEXTEND Gram
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
 	            fun l id -> (not (Option.is_empty coe),(id,mkCProdN (!@loc) l c))
             |  ->
-		 fun l id -> (false,(id,mkCProdN (!@loc) l (CHole (!@loc, None, Misctypes.IntroAnonymous, None)))) ]
+		 fun l id -> (false,(id,mkCProdN (!@loc) l (Loc.tag ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))) ]
 	 -> t l
      ]]
 ;

@@ -103,49 +103,50 @@ let rec fold_local_binders g f n acc b = function
   | [] ->
       f n acc b
 
-let fold_constr_expr_with_binders g f n acc = function
-  | CAppExpl (loc,(_,_,_),l) -> List.fold_left (f n) acc l
-  | CApp (loc,(_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
-  | CProdN (_,l,b) | CLambdaN (_,l,b) -> fold_constr_expr_binders g f n acc b l
-  | CLetIn (_,na,a,t,b) ->
+let fold_constr_expr_with_binders g f n acc = Loc.with_loc (fun ~loc -> function
+  | CAppExpl ((_,_,_),l) -> List.fold_left (f n) acc l
+  | CApp ((_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
+  | CProdN (l,b) | CLambdaN (l,b) -> fold_constr_expr_binders g f n acc b l
+  | CLetIn (na,a,t,b) ->
      f (name_fold g (snd na) n) (Option.fold_left (f n) (f n acc a) t) b
-  | CCast (loc,a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
-  | CCast (loc,a,CastCoerce) -> f n acc a
-  | CNotation (_,_,(l,ll,bll)) ->
+  | CCast (a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
+  | CCast (a,CastCoerce) -> f n acc a
+  | CNotation (_,(l,ll,bll)) ->
       (* The following is an approximation: we don't know exactly if
          an ident is binding nor to which subterms bindings apply *)
       let acc = List.fold_left (f n) acc (l@List.flatten ll) in
-      List.fold_left (fun acc bl -> fold_local_binders g f n acc (CHole (Loc.ghost,None,IntroAnonymous,None)) bl) acc bll
-  | CGeneralization (_,_,_,c) -> f n acc c
-  | CDelimiters (loc,_,a) -> f n acc a
+      List.fold_left (fun acc bl -> fold_local_binders g f n acc (Loc.tag @@ CHole (None,IntroAnonymous,None)) bl) acc bll
+  | CGeneralization (_,_,c) -> f n acc c
+  | CDelimiters (_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
       acc
-  | CRecord (loc,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
-  | CCases (loc,sty,rtnpo,al,bl) ->
+  | CRecord l -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
+  | CCases (sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
       let acc = Option.fold_left (f (Id.Set.fold g ids n)) acc rtnpo in
       let acc = List.fold_left (f n) acc (List.map (fun (fst,_,_) -> fst) al) in
       List.fold_right (fun (loc,(patl,rhs)) acc ->
 	let ids = ids_of_pattern_list patl in
 	f (Id.Set.fold g ids n) acc rhs) bl acc
-  | CLetTuple (loc,nal,(ona,po),b,c) ->
+  | CLetTuple (nal,(ona,po),b,c) ->
       let n' = List.fold_right (Loc.down_located (name_fold g)) nal n in
       f (Option.fold_right (Loc.down_located (name_fold g)) ona n') (f n acc b) c
-  | CIf (_,c,(ona,po),b1,b2) ->
+  | CIf (c,(ona,po),b1,b2) ->
       let acc = f n (f n (f n acc b1) b2) c in
       Option.fold_left
 	(f (Option.fold_right (Loc.down_located (name_fold g)) ona n)) acc po
-  | CFix (loc,_,l) ->
+  | CFix (_,l) ->
       let n' = List.fold_right (fun ((_,id),_,_,_,_) -> g id) l n in
       List.fold_right (fun (_,(_,o),lb,t,c) acc ->
 	fold_local_binders g f n'
 	  (fold_local_binders g f n acc t lb) c lb) l acc
-  | CCoFix (loc,_,_) ->
+  | CCoFix (_,_) ->
       Feedback.msg_warning (strbrk "Capture check in multiple binders not done"); acc
+  )
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
-  | CRef (Ident (_,id),_) -> if Id.List.mem id bdvars then l else Id.Set.add id l
+  | _loc, CRef (Ident (_,id),_) -> if Id.List.mem id bdvars then l else Id.Set.add id l
   | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux [] Id.Set.empty c
 
@@ -209,60 +210,61 @@ let map_local_binders f g e bl =
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
 
-let map_constr_expr_with_binders g f e = function
-  | CAppExpl (loc,r,l) -> CAppExpl (loc,r,List.map (f e) l)
-  | CApp (loc,(p,a),l) ->
-      CApp (loc,(p,f e a),List.map (fun (a,i) -> (f e a,i)) l)
-  | CProdN (loc,bl,b) ->
-      let (e,bl) = map_binders f g e bl in CProdN (loc,bl,f e b)
-  | CLambdaN (loc,bl,b) ->
-      let (e,bl) = map_binders f g e bl in CLambdaN (loc,bl,f e b)
-  | CLetIn (loc,na,a,t,b) ->
-      CLetIn (loc,na,f e a,Option.map (f e) t,f (name_fold g (snd na) e) b)
-  | CCast (loc,a,c) -> CCast (loc,f e a, Miscops.map_cast_type (f e) c)
-  | CNotation (loc,n,(l,ll,bll)) ->
+let map_constr_expr_with_binders g f e = Loc.map (function
+  | CAppExpl (r,l) -> CAppExpl (r,List.map (f e) l)
+  | CApp ((p,a),l) ->
+      CApp ((p,f e a),List.map (fun (a,i) -> (f e a,i)) l)
+  | CProdN (bl,b) ->
+      let (e,bl) = map_binders f g e bl in CProdN (bl,f e b)
+  | CLambdaN (bl,b) ->
+      let (e,bl) = map_binders f g e bl in CLambdaN (bl,f e b)
+  | CLetIn (na,a,t,b) ->
+      CLetIn (na,f e a,Option.map (f e) t,f (name_fold g (snd na) e) b)
+  | CCast (a,c) -> CCast (f e a, Miscops.map_cast_type (f e) c)
+  | CNotation (n,(l,ll,bll)) ->
       (* This is an approximation because we don't know what binds what *)
-      CNotation (loc,n,(List.map (f e) l,List.map (List.map (f e)) ll,
+      CNotation (n,(List.map (f e) l,List.map (List.map (f e)) ll,
                      List.map (fun bl -> snd (map_local_binders f g e bl)) bll))
-  | CGeneralization (loc,b,a,c) -> CGeneralization (loc,b,a,f e c)
-  | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
+  | CGeneralization (b,a,c) -> CGeneralization (b,a,f e c)
+  | CDelimiters (s,a) -> CDelimiters (s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _
   | CPrim _ | CRef _ as x -> x
-  | CRecord (loc,l) -> CRecord (loc,List.map (fun (id, c) -> (id, f e c)) l)
-  | CCases (loc,sty,rtnpo,a,bl) ->
+  | CRecord l -> CRecord (List.map (fun (id, c) -> (id, f e c)) l)
+  | CCases (sty,rtnpo,a,bl) ->
       let bl = List.map (fun (loc,(patl,rhs)) ->
         let ids = ids_of_pattern_list patl in
         (loc,(patl,f (Id.Set.fold g ids e) rhs))) bl in
       let ids = ids_of_cases_tomatch a in
       let po = Option.map (f (Id.Set.fold g ids e)) rtnpo in
-      CCases (loc, sty, po, List.map (fun (tm,x,y) -> f e tm,x,y) a,bl)
-  | CLetTuple (loc,nal,(ona,po),b,c) ->
+      CCases (sty, po, List.map (fun (tm,x,y) -> f e tm,x,y) a,bl)
+  | CLetTuple (nal,(ona,po),b,c) ->
       let e' = List.fold_right (Loc.down_located (name_fold g)) nal e in
       let e'' = Option.fold_right (Loc.down_located (name_fold g)) ona e in
-      CLetTuple (loc,nal,(ona,Option.map (f e'') po),f e b,f e' c)
-  | CIf (loc,c,(ona,po),b1,b2) ->
+      CLetTuple (nal,(ona,Option.map (f e'') po),f e b,f e' c)
+  | CIf (c,(ona,po),b1,b2) ->
       let e' = Option.fold_right (Loc.down_located (name_fold g)) ona e in
-      CIf (loc,f e c,(ona,Option.map (f e') po),f e b1,f e b2)
-  | CFix (loc,id,dl) ->
-      CFix (loc,id,List.map (fun (id,n,bl,t,d) ->
+      CIf (f e c,(ona,Option.map (f e') po),f e b1,f e b2)
+  | CFix (id,dl) ->
+      CFix (id,List.map (fun (id,n,bl,t,d) ->
         let (e',bl') = map_local_binders f g e bl in
         let t' = f e' t in
         (* Note: fix names should be inserted before the arguments... *)
         let e'' = List.fold_left (fun e ((_,id),_,_,_,_) -> g id e) e' dl in
         let d' = f e'' d in
         (id,n,bl',t',d')) dl)
-  | CCoFix (loc,id,dl) ->
-      CCoFix (loc,id,List.map (fun (id,bl,t,d) ->
+  | CCoFix (id,dl) ->
+      CCoFix (id,List.map (fun (id,bl,t,d) ->
         let (e',bl') = map_local_binders f g e bl in
         let t' = f e' t in
         let e'' = List.fold_left (fun e ((_,id),_,_,_) -> g id e) e' dl in
         let d' = f e'' d in
         (id,bl',t',d')) dl)
+  )
 
 (* Used in constrintern *)
 let rec replace_vars_constr_expr l = function
-  | CRef (Ident (loc,id),us) as x ->
-      (try CRef (Ident (loc,Id.Map.find id l),us) with Not_found -> x)
+  | loc, CRef (Ident (loc_id,id),us) as x ->
+      (try loc, CRef (Ident (loc_id,Id.Map.find id l),us) with Not_found -> x)
   | c -> map_constr_expr_with_binders Id.Map.remove
            replace_vars_constr_expr l c
 

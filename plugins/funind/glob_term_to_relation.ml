@@ -1247,16 +1247,15 @@ let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * glob_
   in
   List.rev !l
 
-let rec rebuild_return_type rt =
+let rec rebuild_return_type (loc, rt) =
   match rt with
-    | Constrexpr.CProdN(loc,n,t') ->
-	Constrexpr.CProdN(loc,n,rebuild_return_type t')
-    | Constrexpr.CLetIn(loc,na,v,t,t') ->
-	Constrexpr.CLetIn(loc,na,v,t,rebuild_return_type t')
-    | _ -> Constrexpr.CProdN(Loc.ghost,[[Loc.ghost,Anonymous],
-				       Constrexpr.Default Decl_kinds.Explicit,rt],
-			    Constrexpr.CSort(Loc.ghost,GType []))
-
+    | Constrexpr.CProdN(n,t') ->
+        Loc.tag ~loc @@ Constrexpr.CProdN(n,rebuild_return_type t')
+    | Constrexpr.CLetIn(na,v,t,t') ->
+	Loc.tag ~loc @@ Constrexpr.CLetIn(na,v,t,rebuild_return_type t')
+    | _ -> Loc.tag ~loc @@ Constrexpr.CProdN([[Loc.ghost,Anonymous],
+				       Constrexpr.Default Decl_kinds.Explicit,Loc.tag ~loc rt],
+			    Loc.tag @@ Constrexpr.CSort(GType []))
 
 let do_build_inductive
       evd (funconstants: Term.pconstant list) (funsargs: (Name.t * glob_constr * glob_constr option) list list)
@@ -1307,13 +1306,12 @@ let do_build_inductive
 	(fun (n,t,typ) acc ->
           match typ with
           | Some typ ->
-	     Constrexpr.CLetIn(Loc.ghost,(Loc.ghost, n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
+	     Loc.tag @@ Constrexpr.CLetIn((Loc.ghost, n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
                               Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
 			      acc)
 	  | None ->
-	     Constrexpr.CProdN
-	       (Loc.ghost,
-		[[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
+	     Loc.tag @@ Constrexpr.CProdN
+	       ([[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
 		acc
 	       )
 	)
@@ -1375,13 +1373,12 @@ let do_build_inductive
       (fun (n,t,typ) acc ->
          match typ with
          | Some typ ->
-	   Constrexpr.CLetIn(Loc.ghost,(Loc.ghost, n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
+	   Loc.tag @@ Constrexpr.CLetIn((Loc.ghost, n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
                               Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
 			    acc)
 	 | None ->
-	   Constrexpr.CProdN
-	   (Loc.ghost,
-	   [[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
+           Loc.tag @@ Constrexpr.CProdN
+	   ([[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
 	    acc
 	   )
       )

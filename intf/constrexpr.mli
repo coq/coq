@@ -68,38 +68,38 @@ and cases_pattern_notation_substitution =
     cases_pattern_expr list *     (** for constr subterms *)
     cases_pattern_expr list list  (** for recursive notations *)
 
-and constr_expr =
-  | CRef of reference * instance_expr option
-  | CFix of Loc.t * Id.t located * fix_expr list
-  | CCoFix of Loc.t * Id.t located * cofix_expr list
-  | CProdN of Loc.t * binder_expr list * constr_expr
-  | CLambdaN of Loc.t * binder_expr list * constr_expr
-  | CLetIn of Loc.t * Name.t located * constr_expr * constr_expr option * constr_expr
-  | CAppExpl of Loc.t * (proj_flag * reference * instance_expr option) * constr_expr list
-  | CApp of Loc.t * (proj_flag * constr_expr) *
-      (constr_expr * explicitation located option) list
-  | CRecord of Loc.t * (reference * constr_expr) list
+and constr_expr_r =
+  | CRef     of reference * instance_expr option
+  | CFix     of Id.t located * fix_expr list
+  | CCoFix   of Id.t located * cofix_expr list
+  | CProdN   of binder_expr list * constr_expr
+  | CLambdaN of binder_expr list * constr_expr
+  | CLetIn   of Name.t located * constr_expr * constr_expr option * constr_expr
+  | CAppExpl of (proj_flag * reference * instance_expr option) * constr_expr list
+  | CApp     of (proj_flag * constr_expr) *
+                (constr_expr * explicitation located option) list
+  | CRecord  of (reference * constr_expr) list
 
   (* representation of the "let" and "match" constructs *)
-  | CCases of Loc.t                 (* position of the "match" keyword *)
-	      * case_style          (* determines whether this value represents "let" or "match" construct *)
-	      * constr_expr option  (* return-clause *)
-	      * case_expr list
-	      * branch_expr list    (* branches *)
+  | CCases of case_style          (* determines whether this value represents "let" or "match" construct *)
+            * constr_expr option  (* return-clause *)
+            * case_expr list
+            * branch_expr list    (* branches *)
 
-  | CLetTuple of Loc.t * Name.t located list * (Name.t located option * constr_expr option) *
-      constr_expr * constr_expr
-  | CIf of Loc.t * constr_expr * (Name.t located option * constr_expr option)
-      * constr_expr * constr_expr
-  | CHole of Loc.t * Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
-  | CPatVar of Loc.t * patvar
-  | CEvar of Loc.t * Glob_term.existential_name * (Id.t * constr_expr) list
-  | CSort of Loc.t * glob_sort
-  | CCast of Loc.t * constr_expr * constr_expr cast_type
-  | CNotation of Loc.t * notation * constr_notation_substitution
-  | CGeneralization of Loc.t * binding_kind * abstraction_kind option * constr_expr
-  | CPrim of Loc.t * prim_token
-  | CDelimiters of Loc.t * string * constr_expr
+  | CLetTuple of Name.t located list * (Name.t located option * constr_expr option) *
+                 constr_expr * constr_expr
+  | CIf of constr_expr * (Name.t located option * constr_expr option)
+         * constr_expr * constr_expr
+  | CHole   of Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
+  | CPatVar of patvar
+  | CEvar   of Glob_term.existential_name * (Id.t * constr_expr) list
+  | CSort   of glob_sort
+  | CCast   of constr_expr * constr_expr cast_type
+  | CNotation of notation * constr_notation_substitution
+  | CGeneralization of binding_kind * abstraction_kind option * constr_expr
+  | CPrim of prim_token
+  | CDelimiters of string * constr_expr
+and constr_expr = constr_expr_r located
 
 and case_expr = constr_expr                 (* expression that is being matched *)
 	      * Name.t located option       (* as-clause *)

@@ -1074,7 +1074,7 @@ let interp_destruction_arg ist gl arg =
 	if Tactics.is_quantified_hypothesis id gl then
           keep,ElimOnIdent (loc,id)
 	else
-          let c = (GVar (loc,id),Some (CRef (Ident (loc,id),None))) in
+          let c = (GVar (loc,id),Some (Loc.tag @@ CRef (Ident (loc,id),None))) in
           let f = { delayed = fun env sigma ->
             let sigma = Sigma.to_evar_map sigma in
             let (sigma,c) = interp_open_constr ist env sigma c in

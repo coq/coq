@@ -34,11 +34,11 @@ let mk_cast = function
     (c,(_,None)) -> c
   | (c,(_,Some ty)) ->
     let loc = Loc.merge (constr_loc c) (constr_loc ty)
-    in CCast(loc, c, CastConv ty)
+    in Loc.tag ~loc @@ CCast(c, CastConv ty)
 
 let binder_of_name expl (loc,na) =
   CLocalAssum ([loc, na], Default expl,
-    CHole (loc, Some (Evar_kinds.BinderType na), IntroAnonymous, None))
+    Loc.tag ~loc @@ CHole (Some (Evar_kinds.BinderType na), IntroAnonymous, None))
 
 let binders_of_names l =
   List.map (binder_of_name Explicit) l
@@ -46,7 +46,7 @@ let binders_of_names l =
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
   let ty = match tyc with
       Some ty -> ty
-    | None -> CHole (loc, None, IntroAnonymous, None) in
+    | None    -> Loc.tag @@ CHole (None, IntroAnonymous, None) in
   (id,ann,bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
@@ -56,16 +56,16 @@ let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
       (Pp.str"Annotation forbidden in cofix expression.")) (fst ann) in
   let ty = match tyc with
       Some ty -> ty
-    | None -> CHole (loc, None, IntroAnonymous, None) in
+    | None -> Loc.tag @@ CHole (None, IntroAnonymous, None) in
   (id,bl,ty,body)
 
 let mk_fix(loc,kw,id,dcls) =
   if kw then
     let fb = List.map mk_fixb dcls in
-    CFix(loc,id,fb)
+    Loc.tag ~loc @@ CFix(id,fb)
   else
     let fb = List.map mk_cofixb dcls in
-    CCoFix(loc,id,fb)
+    Loc.tag ~loc @@ CCoFix(id,fb)
 
 let mk_single_fix (loc,kw,dcl) =
   let (id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
@@ -159,62 +159,62 @@ GEXTEND Gram
   ;
   constr:
     [ [ c = operconstr LEVEL "8" -> c
-      | "@"; f=global; i = instance -> CAppExpl(!@loc,(None,f,i),[]) ] ]
+      | "@"; f=global; i = instance -> Loc.tag ~loc:!@loc @@ CAppExpl((None,f,i),[]) ] ]
   ;
   operconstr:
     [ "200" RIGHTA
       [ c = binder_constr -> c ]
     | "100" RIGHTA
       [ c1 = operconstr; "<:"; c2 = binder_constr ->
-                 CCast(!@loc,c1, CastVM c2)
+                 Loc.tag ~loc:(!@loc) @@ CCast(c1, CastVM c2)
       | c1 = operconstr; "<:"; c2 = SELF ->
-                 CCast(!@loc,c1, CastVM c2)
+                 Loc.tag ~loc:(!@loc) @@ CCast(c1, CastVM c2)
       | c1 = operconstr; "<<:"; c2 = binder_constr ->
-                 CCast(!@loc,c1, CastNative c2)
+                 Loc.tag ~loc:(!@loc) @@ CCast(c1, CastNative c2)
       | c1 = operconstr; "<<:"; c2 = SELF ->
-                 CCast(!@loc,c1, CastNative c2)
+                 Loc.tag ~loc:(!@loc) @@ CCast(c1, CastNative c2)
       | c1 = operconstr; ":";c2 = binder_constr ->
-                 CCast(!@loc,c1, CastConv c2)
+                 Loc.tag ~loc:(!@loc) @@ CCast(c1, CastConv c2)
       | c1 = operconstr; ":"; c2 = SELF ->
-                 CCast(!@loc,c1, CastConv c2)
+                 Loc.tag ~loc:(!@loc) @@ CCast(c1, CastConv c2)
       | c1 = operconstr; ":>" ->
-                 CCast(!@loc,c1, CastCoerce) ]
+                 Loc.tag ~loc:(!@loc) @@ CCast(c1, CastCoerce) ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
     | "10" LEFTA
-      [ f=operconstr; args=LIST1 appl_arg -> CApp(!@loc,(None,f),args)
-      | "@"; f=global; i = instance; args=LIST0 NEXT -> CAppExpl(!@loc,(None,f,i),args)
+      [ f=operconstr; args=LIST1 appl_arg -> Loc.tag ~loc:(!@loc) @@ CApp((None,f),args)
+      | "@"; f=global; i = instance; args=LIST0 NEXT -> Loc.tag ~loc:(!@loc) @@ CAppExpl((None,f,i),args)
       | "@"; (locid,id) = pattern_identref; args=LIST1 identref ->
-          let args = List.map (fun x -> CRef (Ident x,None), None) args in
-          CApp(!@loc,(None,CPatVar(locid,id)),args) ]
+          let args = List.map (fun x -> Loc.tag @@ CRef (Ident x,None), None) args in
+          Loc.tag ~loc:(!@loc) @@ CApp((None, Loc.tag ~loc:locid @@ CPatVar id),args) ]
     | "9"
         [ ".."; c = operconstr LEVEL "0"; ".." ->
-          CAppExpl (!@loc,(None,Ident (!@loc,ldots_var),None),[c]) ]
+          Loc.tag ~loc:(!@loc) @@ CAppExpl ((None, Ident (!@loc,ldots_var),None),[c]) ]
     | "8" [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
-	CApp(!@loc,(Some (List.length args+1),CRef (f,None)),args@[c,None])
+	Loc.tag ~loc:(!@loc) @@ CApp((Some (List.length args+1), Loc.tag @@ CRef (f,None)),args@[c,None])
       | c=operconstr; ".("; "@"; f=global;
         args=LIST0 (operconstr LEVEL "9"); ")" ->
-        CAppExpl(!@loc,(Some (List.length args+1),f,None),args@[c])
-      | c=operconstr; "%"; key=IDENT -> CDelimiters (!@loc,key,c) ]
+        Loc.tag ~loc:(!@loc) @@ CAppExpl((Some (List.length args+1),f,None),args@[c])
+      | c=operconstr; "%"; key=IDENT -> Loc.tag ~loc:(!@loc) @@ CDelimiters (key,c) ]
     | "0"
       [ c=atomic_constr -> c
       | c=match_constr -> c
       | "("; c = operconstr LEVEL "200"; ")" ->
-          (match c with
-              CPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
-                CNotation(!@loc,"( _ )",([c],[],[]))
+          (match snd c with
+              CPrim (Numeral z) when Bigint.is_pos_or_zero z ->
+                Loc.tag ~loc:(!@loc) @@ CNotation("( _ )",([c],[],[]))
             | _ -> c)
       | "{|"; c = record_declaration; "|}" -> c
       | "`{"; c = operconstr LEVEL "200"; "}" ->
-	  CGeneralization (!@loc, Implicit, None, c)
+	  Loc.tag ~loc:(!@loc) @@ CGeneralization (Implicit, None, c)
       | "`("; c = operconstr LEVEL "200"; ")" ->
-	  CGeneralization (!@loc, Explicit, None, c)
+	  Loc.tag ~loc:(!@loc) @@ CGeneralization (Explicit, None, c)
       ] ]
   ;
   record_declaration:
-    [ [ fs = record_fields -> CRecord (!@loc, fs) ] ]
+    [ [ fs = record_fields -> Loc.tag ~loc:(!@loc) @@ CRecord fs ] ]
   ;
 
   record_fields:
@@ -236,36 +236,36 @@ GEXTEND Gram
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
           let ty,c1 = match ty, c1 with
-          | (_,None), CCast(loc,c, CastConv t) -> (constr_loc t,Some t), c (* Tolerance, see G_vernac.def_body *)
+          | (_,None), (_, CCast(c, CastConv t)) -> (Loc.tag ~loc:(constr_loc t) @@ Some t), c (* Tolerance, see G_vernac.def_body *)
           | _, _ -> ty, c1 in
-          CLetIn(!@loc,id,mkCLambdaN (constr_loc c1) bl c1,
-                 Option.map (mkCProdN (fst ty) bl) (snd ty), c2)
+          Loc.tag ~loc:!@loc @@ CLetIn(id,mkCLambdaN (constr_loc c1) bl c1,
+                 Option.map (mkCProdN ~loc:(fst ty) bl) (snd ty), c2)
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
           let fixp = mk_single_fix fx in
-          let (li,id) = match fixp with
-              CFix(_,id,_) -> id
-            | CCoFix(_,id,_) -> id
+          let (li,id) = match snd fixp with
+              CFix(id,_) -> id
+            | CCoFix(id,_) -> id
             | _ -> assert false in
-          CLetIn(!@loc,(li,Name id),fixp,None,c)
+          Loc.tag ~loc:!@loc @@ CLetIn((li,Name id),fixp,None,c)
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> l | "()" -> []];
 	  po = return_type;
 	  ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
-          CLetTuple (!@loc,lb,po,c1,c2)
+          Loc.tag ~loc:!@loc @@ CLetTuple (lb,po,c1,c2)
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, None,    [c1, None, None],       [Loc.tag ~loc:!@loc ([(!@loc, [p])], c2)])
+	    Loc.tag ~loc:!@loc @@ CCases (LetPatternStyle, None,    [c1, None, None],       [Loc.tag ~loc:!@loc ([(!@loc, [p])], c2)])
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
 	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, Some rt, [c1, aliasvar p, None], [Loc.tag ~loc:!@loc ([(!@loc, [p])], c2)])
+	    Loc.tag ~loc:!@loc @@ CCases (LetPatternStyle, Some rt, [c1, aliasvar p, None], [Loc.tag ~loc:!@loc ([(!@loc, [p])], c2)])
       | "let"; "'"; p=pattern; "in"; t = pattern LEVEL "200";
 	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
-	    CCases (!@loc, LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [Loc.tag ~loc:!@loc ([(!@loc, [p])], c2)])
+	    Loc.tag ~loc:!@loc @@ CCases (LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [Loc.tag ~loc:!@loc ([(!@loc, [p])], c2)])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
-          CIf (!@loc, c, po, b1, b2)
+          Loc.tag ~loc:(!@loc) @@ CIf (c, po, b1, b2)
       | c=fix_constr -> c ] ]
   ;
   appl_arg:
@@ -274,14 +274,14 @@ GEXTEND Gram
       | c=operconstr LEVEL "9" -> (c,None) ] ]
   ;
   atomic_constr:
-    [ [ g=global; i=instance -> CRef (g,i)
-      | s=sort -> CSort (!@loc,s)
-      | n=INT -> CPrim (!@loc, Numeral (Bigint.of_string n))
-      | s=string -> CPrim (!@loc, String s)
-      | "_" -> CHole (!@loc, None, IntroAnonymous, None)
-      | "?"; "["; id=ident; "]"  -> CHole (!@loc, None, IntroIdentifier id, None)
-      | "?"; "["; id=pattern_ident; "]"  -> CHole (!@loc, None, IntroFresh id, None)
-      | id=pattern_ident; inst = evar_instance -> CEvar(!@loc,id,inst) ] ]
+    [ [ g=global; i=instance -> Loc.tag ~loc:!@loc @@ CRef (g,i)
+      | s=sort   -> Loc.tag ~loc:!@loc @@  CSort s
+      | n=INT    -> Loc.tag ~loc:!@loc @@ CPrim (Numeral (Bigint.of_string n))
+      | s=string -> Loc.tag ~loc:!@loc @@ CPrim (String s)
+      | "_"      -> Loc.tag ~loc:!@loc @@ CHole (None, IntroAnonymous, None)
+      | "?"; "["; id=ident; "]"  -> Loc.tag ~loc:!@loc @@  CHole (None, IntroIdentifier id, None)
+      | "?"; "["; id=pattern_ident; "]"  -> Loc.tag ~loc:!@loc @@  CHole (None, IntroFresh id, None)
+      | id=pattern_ident; inst = evar_instance -> Loc.tag ~loc:!@loc @@ CEvar(id,inst) ] ]
   ;
   inst:
     [ [ id = ident; ":="; c = lconstr -> (id,c) ] ]
@@ -322,7 +322,7 @@ GEXTEND Gram
   ;
   match_constr:
     [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";
-        br=branches; "end" -> CCases(!@loc,RegularStyle,ty,ci,br) ] ]
+        br=branches; "end" -> Loc.tag ~loc:!@loc @@ CCases(RegularStyle,ty,ci,br) ] ]
   ;
   case_item:
     [ [ c=operconstr LEVEL "100";
@@ -410,7 +410,8 @@ GEXTEND Gram
     | nal=LIST1 name; ":"; c=lconstr; "}" ->
         (fun na -> CLocalAssum (na::nal,Default Implicit,c))
     | nal=LIST1 name; "}" ->
-        (fun na -> CLocalAssum (na::nal,Default Implicit,CHole (Loc.join_loc (fst na) !@loc, Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None)))
+        (fun na -> CLocalAssum (na::nal,Default Implicit,
+                                Loc.tag ~loc:(Loc.join_loc (fst na) !@loc) @@ CHole (Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None)))
     | ":"; c=lconstr; "}" ->
 	(fun na -> CLocalAssum ([na],Default Implicit,c))
     ] ]
@@ -444,7 +445,7 @@ GEXTEND Gram
           binders_of_names (id::idl) @ bl
       | id1 = name; ".."; id2 = name ->
           [CLocalAssum ([id1;(!@loc,Name ldots_var);id2],
-	                  Default Explicit,CHole (!@loc, None, IntroAnonymous, None))]
+	                  Default Explicit, Loc.tag ~loc:!@loc @@ CHole (None, IntroAnonymous, None))]
       | bl = closed_binder; bl' = binders ->
 	  bl@bl'
     ] ]
@@ -453,7 +454,7 @@ GEXTEND Gram
     [ [ l = LIST0 binder -> List.flatten l ] ]
   ;
   binder:
-    [ [ id = name -> [CLocalAssum ([id],Default Explicit,CHole (!@loc, None, IntroAnonymous, None))]
+    [ [ id = name -> [CLocalAssum ([id],Default Explicit, Loc.tag ~loc:!@loc @@ CHole (None, IntroAnonymous, None))]
       | bl = closed_binder -> bl ] ]
   ;
   closed_binder:
@@ -463,18 +464,18 @@ GEXTEND Gram
           [CLocalAssum ([id],Default Explicit,c)]
       | "("; id=name; ":="; c=lconstr; ")" ->
           (match c with
-          | CCast(_,c, CastConv t) -> [CLocalDef (id,c,Some t)]
+          | (_, CCast(c, CastConv t)) -> [CLocalDef (id,c,Some t)]
           | _ -> [CLocalDef (id,c,None)])
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" ->
           [CLocalDef (id,c,Some t)]
       | "{"; id=name; "}" ->
-          [CLocalAssum ([id],Default Implicit,CHole (!@loc, None, IntroAnonymous, None))]
+          [CLocalAssum ([id],Default Implicit, Loc.tag ~loc:!@loc @@ CHole (None, IntroAnonymous, None))]
       | "{"; id=name; idl=LIST1 name; ":"; c=lconstr; "}" ->
           [CLocalAssum (id::idl,Default Implicit,c)]
       | "{"; id=name; ":"; c=lconstr; "}" ->
           [CLocalAssum ([id],Default Implicit,c)]
       | "{"; id=name; idl=LIST1 name; "}" ->
-          List.map (fun id -> CLocalAssum ([id],Default Implicit,CHole (!@loc, None, IntroAnonymous, None))) (id::idl)
+          List.map (fun id -> CLocalAssum ([id],Default Implicit, Loc.tag ~loc:!@loc @@ CHole (None, IntroAnonymous, None))) (id::idl)
       | "`("; tc = LIST1 typeclass_constraint SEP "," ; ")" ->
 	  List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
       | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->

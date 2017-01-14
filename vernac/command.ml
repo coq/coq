@@ -53,18 +53,19 @@ let rec under_binders env sigma f n c =
 	  mkLetIn (x,b,t,under_binders (push_rel (LocalDef (x,b,t)) env) sigma f (n-1) c)
       | _ -> assert false
 
-let rec complete_conclusion a cs = function
-  | CProdN (loc,bl,c) -> CProdN (loc,bl,complete_conclusion a cs c)
-  | CLetIn (loc,na,b,t,c) -> CLetIn (loc,na,b,t,complete_conclusion a cs c)
-  | CHole (loc, k, _, _) ->
+let rec complete_conclusion a cs = Loc.map_with_loc (fun ~loc -> function
+  | CProdN (bl,c) -> CProdN (bl,complete_conclusion a cs c)
+  | CLetIn (na,b,t,c) -> CLetIn (na,b,t,complete_conclusion a cs c)
+  | CHole (k, _, _) ->
       let (has_no_args,name,params) = a in
       if not has_no_args then
-	user_err ~loc 
+	user_err ~loc
 	 (strbrk"Cannot infer the non constant arguments of the conclusion of "
 	  ++ pr_id cs ++ str ".");
-      let args = List.map (fun id -> CRef(Ident(loc,id),None)) params in
-      CAppExpl (loc,(None,Ident(loc,name),None),List.rev args)
+      let args = List.map (fun id -> Loc.tag ~loc @@ CRef(Ident(loc,id),None)) params in
+      CAppExpl ((None,Ident(loc,name),None),List.rev args)
   | c -> c
+  )
 
 (* Commands of the interface *)
 
@@ -682,7 +683,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun (((_,indname),pl),_,ar,lc) -> {
     ind_name = indname; ind_univs = pl;
-    ind_arity = Option.cata (fun x -> x) (CSort (Loc.ghost,GType [])) ar;
+    ind_arity = Option.cata (fun x -> x) (Loc.tag @@ CSort (GType [])) ar;
     ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
   }) indl
 
@@ -1354,7 +1355,7 @@ let do_program_fixpoint local poly l =
 	     
     | [(n, CMeasureRec (m, r))], [((((_,id),pl),_,bl,typ,def),ntn)] ->
 	build_wellfounded (id, pl, n, bl, typ, out_def def) poly
-	  (Option.default (CRef (lt_ref,None)) r) m ntn
+	  (Option.default (Loc.tag @@ CRef (lt_ref,None)) r) m ntn
 	  
     | _, _ when List.for_all (fun (n, ro) -> ro == CStructRec) g ->
 	let fixl,ntns = extract_fixpoint_components true l in

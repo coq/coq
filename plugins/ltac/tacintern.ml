@@ -110,13 +110,13 @@ let intern_ltac_variable ist = function
 
 let intern_constr_reference strict ist = function
   | Ident (_,id) as r when not strict && find_hyp id ist ->
-      GVar (dloc,id), Some (CRef (r,None))
+      GVar (dloc,id), Some (Loc.tag @@ CRef (r,None))
   | Ident (_,id) as r when find_var id ist ->
-      GVar (dloc,id), if strict then None else Some (CRef (r,None))
+      GVar (dloc,id), if strict then None else Some (Loc.tag @@ CRef (r,None))
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
       GRef (loc,locate_global_with_alias lqid,None), 
-	if strict then None else Some (CRef (r,None))
+	if strict then None else Some (Loc.tag @@ CRef (r,None))
 
 let intern_move_location ist = function
   | MoveAfter id -> MoveAfter (intern_hyp ist id)
@@ -273,7 +273,7 @@ let intern_destruction_arg ist = function
   | clear,ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-	match intern_constr ist (CRef (Ident (dloc,id), None)) with
+	match intern_constr ist (Loc.tag @@ CRef (Ident (dloc,id), None)) with
 	| GVar (loc,id),_ -> clear,ElimOnIdent (loc,id)
 	| c -> clear,ElimOnConstr (c,NoBindings)
       else
@@ -363,7 +363,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
           Inr (bound_names,(c,None),dummy_pat) in
   (l, match p with
   | Inl r -> interp_ref r
-  | Inr (CAppExpl(_,(None,r,None),[])) ->
+  | Inr (_, CAppExpl((None,r,None),[])) ->
       (* We interpret similarly @ref and ref *)
       interp_ref (AN r)
   | Inr c ->

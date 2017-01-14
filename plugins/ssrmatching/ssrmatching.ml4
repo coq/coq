@@ -149,15 +149,15 @@ let add_genarg tag pr =
 (** Constructors for cast type *)
 let dC t = CastConv t
 (** Constructors for constr_expr *)
-let isCVar = function CRef (Ident _, _) -> true | _ -> false
-let destCVar = function CRef (Ident (_, id), _) -> id | _ ->
+let isCVar   = function _loc, CRef (Ident _, _) -> true | _ -> false
+let destCVar = function _loc, CRef (Ident (_, id), _) -> id | _ ->
   CErrors.anomaly (str"not a CRef")
-let mkCHole loc = CHole (loc, None, IntroAnonymous, None)
-let mkCLambda loc name ty t = 
-   CLambdaN (loc, [[loc, name], Default Explicit, ty], t)
-let mkCLetIn loc name bo t = 
-   CLetIn (loc, (loc, name), bo, None, t)
-let mkCCast loc t ty = CCast (loc,t, dC ty)
+let mkCHole loc = Loc.tag ~loc @@ CHole (None, IntroAnonymous, None)
+let mkCLambda loc name ty t = Loc.tag ~loc @@
+   CLambdaN ([[loc, name], Default Explicit, ty], t)
+let mkCLetIn loc name bo t = Loc.tag ~loc @@
+   CLetIn ((loc, name), bo, None, t)
+let mkCCast loc t ty = Loc.tag ~loc @@ CCast (t, dC ty)
 (** Constructors for rawconstr *)
 let mkRHole = GHole (dummy_loc, InternalHole, IntroAnonymous, None)
 let mkRApp f args = if args = [] then f else GApp (dummy_loc, f, args)
@@ -952,8 +952,8 @@ let glob_cpattern gs p =
   | _, (_, None) as x -> x
   | k, (v, Some t) as orig ->
      if k = 'x' then glob_ssrterm gs ('(', (v, Some t)) else
-     match t with
-     | CNotation(_, "( _ in _ )", ([t1; t2], [], [])) ->
+     match snd (Loc.to_pair t) with
+     | CNotation("( _ in _ )", ([t1; t2], [], [])) ->
          (try match glob t1, glob t2 with
          | (r1, None), (r2, None) -> encode k "In" [r1;r2]
          | (r1, Some _), (r2, Some _) when isCVar t1 ->
@@ -961,11 +961,11 @@ let glob_cpattern gs p =
          | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
          | _ -> CErrors.anomaly (str"where are we?")
          with _ when isCVar t1 -> encode k "In" [bind_in t1 t2])
-     | CNotation(_, "( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
+     | CNotation("( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
          check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
-     | CNotation(_, "( _ as _ )", ([t1; t2], [], [])) ->
+     | CNotation("( _ as _ )", ([t1; t2], [], [])) ->
          encode k "As" [fst (glob t1); fst (glob t2)]
-     | CNotation(_, "( _ as _ in _ )", ([t1; t2; t3], [], [])) ->
+     | CNotation("( _ as _ in _ )", ([t1; t2; t3], [], [])) ->
          check_var t2; encode k "As" [fst (glob t1); bind_in t2 t3]
      | _ -> glob_ssrterm gs orig
 ;;
@@ -1021,8 +1021,8 @@ type pattern = Evd.evar_map * (constr, constr) ssrpattern
 
 
 let id_of_cpattern = function
-  | _,(_,Some (CRef (Ident (_, x), _))) -> Some x
-  | _,(_,Some (CAppExpl (_, (_, Ident (_, x), _), []))) -> Some x
+  | _,(_,Some (_loc, CRef (Ident (_, x), _))) -> Some x
+  | _,(_,Some (_loc, CAppExpl ((_, Ident (_, x), _), []))) -> Some x
   | _,(GRef (_, VarRef x, _) ,None) -> Some x
   | _ -> None
 let id_of_Cterm t = match id_of_cpattern t with
@@ -1378,7 +1378,7 @@ let pf_fill_occ_term gl occ t =
 let cpattern_of_id id = ' ', (GRef (dummy_loc, VarRef  id, None), None)
 
 let is_wildcard = function
-  | _,(_,Some (CHole _)|GHole _,None) -> true
+  | _,(_,Some (_, CHole _)|GHole _,None) -> true
   | _ -> false
 
 (* "ssrpattern" *)

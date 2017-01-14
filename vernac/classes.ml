@@ -147,14 +147,14 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	  (fun avoid (clname, _) ->
 	    match clname with
 	    | Some (cl, b) ->
-		let t = CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
+		let t = Loc.tag @@ CHole (None, Misctypes.IntroAnonymous, None) in
 		  t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
 	  cl
     | Explicit -> cl, Id.Set.empty
   in
   let tclass = 
-    if generalize then CGeneralization (Loc.ghost, Implicit, Some AbsPi, tclass) 
+    if generalize then Loc.tag @@ CGeneralization (Implicit, Some AbsPi, tclass) 
     else tclass 
   in
   let k, u, cty, ctx', ctx, len, imps, subst =
@@ -217,7 +217,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     else (
       let props =
 	match props with
-	| Some (true, CRecord (loc, fs)) ->
+	| Some (true, (_loc, CRecord fs)) ->
 	    if List.length fs > List.length k.cl_props then
 	      mismatched_props env' (List.map snd fs) k.cl_props;
 	    Some (Inl fs)
@@ -261,7 +261,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 			   k.cl_projs;
 			 c :: props, rest'
 		     with Not_found ->
-		       (CHole (Loc.ghost, None(* Some Evar_kinds.GoalEvar *), Misctypes.IntroAnonymous, None) :: props), rest
+		       ((Loc.tag @@ CHole (None(* Some Evar_kinds.GoalEvar *), Misctypes.IntroAnonymous, None)) :: props), rest
 		   else props, rest)
 		([], props) k.cl_props
 	    in

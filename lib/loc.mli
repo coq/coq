@@ -61,6 +61,11 @@ type 'a located = t * 'a
 val to_pair : 'a located -> t * 'a
 val tag : ?loc:t -> 'a -> 'a located
 
+val with_loc : (loc:t -> 'a -> 'b) -> 'a located -> 'b
+
+val map : ('a -> 'b) -> 'a located -> 'b located
+val map_with_loc : (loc:t -> 'a -> 'b) -> 'a located -> 'b located
+
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
 val down_located : ('a -> 'b) -> 'a located -> 'b
 

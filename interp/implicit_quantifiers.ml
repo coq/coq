@@ -92,11 +92,11 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
       else ungeneralizable loc id
     else l
   in
-  let rec aux bdvars l c = match c with
+  let rec aux bdvars l (loc, c) = match c with
     | CRef (Ident (loc,id),_) -> found loc id bdvars l
-    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id),_) :: _, [], [])) when not (Id.Set.mem id bdvars) ->
-	Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add id bdvars) l c
-    | c -> Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c
+    | CNotation ("{ _ : _ | _ }", ((_, CRef (Ident (_, id),_)) :: _, [], [])) when not (Id.Set.mem id bdvars) ->
+	Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add id bdvars) l (loc, c)
+    | c -> Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l (loc, c)
   in aux bound l c
 
 let ids_of_names l =
@@ -251,18 +251,18 @@ let combine_params avoid fn applied needed =
 let combine_params_freevar =
   fun avoid (_, decl) ->
     let id' = next_name_away_from (RelDecl.get_name decl) avoid in
-      (CRef (Ident (Loc.ghost, id'),None), Id.Set.add id' avoid)
+      (Loc.tag @@ CRef (Ident (Loc.ghost, id'),None), Id.Set.add id' avoid)
 
-let destClassApp cl =
+let destClassApp (loc, cl) =
   match cl with
-    | CApp (loc, (None, CRef (ref, inst)), l) -> loc, ref, List.map fst l, inst
-    | CAppExpl (loc, (None, ref, inst), l) -> loc, ref, l, inst
+    | CApp ((None, (_loc, CRef (ref, inst))), l) -> loc, ref, List.map fst l, inst
+    | CAppExpl ((None, ref, inst), l) -> loc, ref, l, inst
     | CRef (ref, inst) -> loc_of_reference ref, ref, [], inst
     | _ -> raise Not_found
 
-let destClassAppExpl cl =
+let destClassAppExpl (loc, cl) =
   match cl with
-    | CApp (loc, (None, CRef (ref, inst)), l) -> loc, ref, l, inst
+    | CApp ((None, (_loc, CRef (ref, inst))), l) -> loc, ref, l, inst
     | CRef (ref, inst) -> loc_of_reference ref, ref, [], inst
     | _ -> raise Not_found
 
@@ -295,7 +295,7 @@ let implicit_application env ?(allow_partial=true) f ty =
 	    end;
 	  let pars = List.rev (List.combine ci rd) in
 	  let args, avoid = combine_params avoid f par pars in
-	    CAppExpl (loc, (None, id, inst), args), avoid
+	    Loc.tag ~loc @@ CAppExpl ((None, id, inst), args), avoid
 	in c, avoid
 
 let implicits_of_glob_constr ?(with_products=true) l =

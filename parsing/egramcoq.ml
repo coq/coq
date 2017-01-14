@@ -313,13 +313,13 @@ let interp_entry forpat e = match e with
 | ETBinderList (true, _) -> assert false
 | ETBinderList (false, tkl) -> TTAny (TTBinderListF tkl)
 
-let constr_expr_of_name (loc,na) = match na with
-  | Anonymous -> CHole (loc,None,Misctypes.IntroAnonymous,None)
-  | Name id -> CRef (Ident (loc,id), None)
+let constr_expr_of_name (loc,na) = Loc.tag ~loc @@ match na with
+  | Anonymous -> CHole (None,Misctypes.IntroAnonymous,None)
+  | Name id   -> CRef (Ident (loc,id), None)
 
-let cases_pattern_expr_of_name (loc,na) = match na with
-  | Anonymous -> Loc.tag ~loc @@ CPatAtom None
-  | Name id   -> Loc.tag ~loc @@ CPatAtom (Some (Ident (loc,id)))
+let cases_pattern_expr_of_name (loc,na) = Loc.tag ~loc @@ match na with
+  | Anonymous -> CPatAtom None
+  | Name id   -> CPatAtom (Some (Ident (loc,id)))
 
 type 'r env = {
   constrs : 'r list;
@@ -342,12 +342,12 @@ match e with
 | TTBinderListF _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
 | TTBigint ->
   begin match forpat with
-  | ForConstr ->  push_constr subst (CPrim (Loc.ghost, Numeral v))
+  | ForConstr ->  push_constr subst (Loc.tag @@ CPrim (Numeral v))
   | ForPattern -> push_constr subst (Loc.tag @@ CPatPrim (Numeral v))
   end
 | TTReference ->
   begin match forpat with
-  | ForConstr  -> push_constr subst (CRef (v, None))
+  | ForConstr  -> push_constr subst (Loc.tag @@ CRef (v, None))
   | ForPattern -> push_constr subst (Loc.tag @@ CPatAtom (Some v))
   end
 | TTConstrList _ -> { subst with constrlists = v :: subst.constrlists }
@@ -431,7 +431,7 @@ let rec pure_sublevels : type a b c. int option -> (a, b, c) rule -> int list = 
 let make_act : type r. r target -> _ -> r gen_eval = function
 | ForConstr -> fun notation loc env ->
   let env = (env.constrs, env.constrlists, List.map fst env.binders) in
-  CNotation (loc, notation , env)
+  Loc.tag ~loc @@ CNotation (notation , env)
 | ForPattern -> fun notation loc env ->
   let invalid = List.exists (fun (_, b) -> not b) env.binders in
   let () = if invalid then Topconstr.error_invalid_pattern_notation ~loc () in
