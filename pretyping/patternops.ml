@@ -380,13 +380,13 @@ let rec pat_of_raw metas vars = function
 	| _ -> None
       in
       let ind_tags,ind = match indnames with
-	| Some (_,ind,nal) -> Some (List.length nal), Some ind
+	| Some (_,(ind,nal)) -> Some (List.length nal), Some ind
 	| None -> None, get_ind brs
       in
       let ext,brs = pats_of_glob_branches loc metas vars ind brs
       in
       let pred = match p,indnames with
-	| Some p, Some (_,_,nal) ->
+	| Some p, Some (_,(_,nal)) ->
           let nvars = na :: List.rev nal @ vars in
           rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas nvars p))
         | (None | Some (GHole _)), _ -> PMeta None

@@ -20,7 +20,7 @@ let cases_pattern_loc (loc, _) = loc
 let cases_predicate_names tml =
   List.flatten (List.map (function
     | (tm,(na,None)) -> [na]
-    | (tm,(na,Some (_,_,nal))) -> na::nal) tml)
+    | (tm,(na,Some (_,(_,nal)))) -> na::nal) tml)
 
 let mkGApp loc p t =
   match p with
@@ -103,7 +103,7 @@ let rec glob_constr_eq c1 c2 = match c1, c2 with
 | _ -> false
 
 and tomatch_tuple_eq (c1, p1) (c2, p2) =
-  let eqp (_, i1, na1) (_, i2, na2) =
+  let eqp (_, (i1, na1)) (_, (i2, na2)) =
     eq_ind i1 i2 && List.equal Name.equal na1 na2
   in
   let eq_pred (n1, o1) (n2, o2) = Name.equal n1 n2 && Option.equal eqp o1 o2 in
@@ -411,10 +411,10 @@ let bound_glob_vars =
    probably be no significant penalty in doing reallocation as
    pattern-matching expressions are usually rather small. *)
 
-let map_inpattern_binders f ((loc,id,nal) as x) =
+let map_inpattern_binders f ((loc,(id,nal)) as x) =
   let r = CList.smartmap f nal in
   if r == nal then x
-  else loc,id,r
+  else loc,(id,r)
 
 let map_tomatch_binders f ((c,(na,inp)) as x) : tomatch_tuple =
   let r = Option.smartmap (fun p -> map_inpattern_binders f p) inp in
@@ -525,7 +525,7 @@ let rec rename_glob_vars l = function
   (* Lazy strategy: we fail if a collision with renaming occurs, rather than renaming further *)
   | GCases (loc,ci,po,tomatchl,cls) ->
       let test_pred_pat (na,ino) =
-        test_na l na; Option.iter (fun (_,_,nal) -> List.iter (test_na l) nal) ino in
+        test_na l na; Option.iter (fun (_,(_,nal)) -> List.iter (test_na l) nal) ino in
       let test_clause idl = List.iter (test_id l) idl in
       let po = Option.map (rename_glob_vars l) po in
       let tomatchl = Util.List.map_left (fun (tm,x) -> test_pred_pat x; (rename_glob_vars l tm,x)) tomatchl in

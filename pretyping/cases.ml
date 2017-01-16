@@ -342,7 +342,7 @@ let unify_tomatch_with_patterns evdref env loc typ pats realnames =
 
 let find_tomatch_tycon evdref env loc = function
   (* Try if some 'in I ...' is present and can be used as a constraint *)
-  | Some (_,ind,realnal) ->
+  | Some (_,(ind,realnal)) ->
       mk_tycon (inductive_template evdref env loc ind),Some (List.rev realnal)
   | None ->
       empty_tycon,None
@@ -360,7 +360,7 @@ let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
       unify_tomatch_with_patterns evdref env loc typ pats realnames in
   (j.uj_val,t)
 
-let coerce_to_indtype typing_fun evdref env matx tomatchl =
+let coerce_to_indtype typing_fun evdref env matx tomatchl = 
   let pats = List.map (fun r ->  r.patterns) matx in
   let matx' = match matrix_transpose pats with
     | [] -> List.map (fun _ -> []) tomatchl (* no patterns at all *)
@@ -1852,7 +1852,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 	    | None -> (match bo with
 		       | None -> [LocalAssum (na, lift n typ)]
 		       | Some b -> [LocalDef (na, lift n b, lift n typ)])
-	    | Some (loc,_,_) ->
+	    | Some (loc,_) ->
  	    user_err ~loc 
                 (str"Unexpected type annotation for a term of non inductive type."))
       | IsInd (term,IndType(indf,realargs),_) ->
@@ -1863,7 +1863,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 	  let arsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) arsign in
 	  let realnal =
 	    match t with
-	      | Some (loc,ind',realnal) ->
+	      | Some (loc,(ind',realnal)) ->
 		  if not (eq_ind ind ind') then
 		    user_err ~loc  (str "Wrong inductive type.");
 		  if not (Int.equal nrealargs_ctxt (List.length realnal)) then

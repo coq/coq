@@ -749,7 +749,7 @@ let rec extern inctx scopes vars r =
                    | Name _, _ -> Some (Loc.ghost,na) in
                  (sub_extern false scopes vars tm,
                   na',
-                  Option.map (fun (loc,ind,nal) ->
+                  Option.map (fun (loc,(ind,nal)) ->
                               let args = List.map (fun x -> Loc.tag @@ PatVar x) nal in
                               let fullargs = add_cpatt_for_params ind args in
                               extern_ind_pattern_in_scope scopes vars ind fullargs

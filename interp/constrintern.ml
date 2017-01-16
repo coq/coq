@@ -1836,7 +1836,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 	  let _,args_rel =
 	    List.chop nparams (List.rev mip.Declarations.mind_arity_ctxt) in
 	  canonize_args args_rel l (Id.Set.elements forbidden_names_for_gen) [] [] in
-	match_to_do, Some (cases_pattern_expr_loc t,ind,List.rev_map snd nal)
+	match_to_do, Some (cases_pattern_expr_loc t,(ind,List.rev_map snd nal))
     | None ->
       [], None in
     (tm',(snd na,typ)), extra_id, match_td

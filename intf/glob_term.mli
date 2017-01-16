@@ -67,7 +67,7 @@ and fix_kind =
   | GCoFix of int
 
 and predicate_pattern =
-    Name.t * (Loc.t * inductive * Name.t list) option
+    Name.t * (inductive * Name.t list) Loc.located option
       (** [(na,id)] = "as 'na' in 'id'" where if [id] is [Some(l,I,k,args)]. *)
 
 and tomatch_tuple = (glob_constr * predicate_pattern)

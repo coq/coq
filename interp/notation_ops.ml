@@ -179,7 +179,7 @@ let glob_constr_of_notation_constr_with_binders loc g f e = function
 	| Some (ind,nal) ->
 	  let e',nal' = List.fold_right (fun na (e',nal) ->
 	      let e',na' = g e' na in e',na'::nal) nal (e',[]) in
-	  e',Some (loc,ind,nal') in
+	  e',Some (loc,(ind,nal')) in
 	let e',na' = g e' na in
 	(e',(f e tm,(na',t'))::tml')) tml (e,[]) in
       let fold (idl,e) na = let (e,na) = g e na in ((name_cons na idl,e),na) in
@@ -356,8 +356,8 @@ let notation_constr_and_vars_of_glob_constr a =
         List.map (fun (tm,(na,x)) ->
 	  add_name found na;
 	  Option.iter
-	    (fun (_,_,nl) -> List.iter (add_name found) nl) x;
-          (aux tm,(na,Option.map (fun (_,ind,nal) -> (ind,nal)) x))) tml,
+	    (fun (_,(_,nl)) -> List.iter (add_name found) nl) x;
+          (aux tm,(na,Option.map (fun (_,(ind,nal)) -> (ind,nal)) x))) tml,
         List.map f eqnl)
   | GLetTuple (loc,nal,(na,po),b,c) ->
       add_name found na;
@@ -589,7 +589,7 @@ let abstract_return_type_context pi mklam tml rtno =
     rtno
 
 let abstract_return_type_context_glob_constr =
-  abstract_return_type_context (fun (_,_,nal) -> nal)
+  abstract_return_type_context (fun (_,(_,nal)) -> nal)
     (fun na c ->
       GLambda(Loc.ghost,na,Explicit,GHole(Loc.ghost,Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None),c))
 

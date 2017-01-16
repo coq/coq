@@ -380,7 +380,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 	      | _ -> Anonymous, typ in
 	    let aliastyp =
 	      if List.for_all (Name.equal Anonymous) nl then None
-	      else Some (dl,indsp,nl) in
+	      else Some (dl,(indsp,nl)) in
             n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
@@ -844,9 +844,9 @@ let rec subst_glob_constr subst raw =
         let a' = subst_glob_constr subst a in
         let (n,topt) = x in
         let topt' = Option.smartmap
-          (fun (loc,(sp,i),y as t) ->
+          (fun ((loc,((sp,i),y) as t)) ->
             let sp' = subst_mind subst sp in
-            if sp == sp' then t else (loc,(sp',i),y)) topt in
+            if sp == sp' then t else (loc,((sp',i),y))) topt in
         if a == a' && topt == topt' then y else (a',(n,topt'))) rl
       and branches' = List.smartmap
 			(fun (loc,idl,cpl,r as branch) ->
@@ -919,4 +919,4 @@ let simple_cases_matrix_of_branches ind brs =
 
 let return_type_of_predicate ind nrealargs_tags pred =
   let nal,p = it_destRLambda_or_LetIn_names (nrealargs_tags@[false]) pred in
-  (List.hd nal, Some (Loc.ghost, ind, List.tl nal)), Some p
+  (List.hd nal, Some (Loc.tag (ind, List.tl nal))), Some p
