@@ -63,7 +63,8 @@ type 'a located = t * 'a
 let to_pair x = x
 let tag ?loc x = Option.default ghost loc, x
 
-let with_loc f (loc, x) = f ~loc x
+let with_loc   f (loc, x) = f ~loc x
+let with_unloc f (_,x) = f x
 
 let map f (l,x) = (l, f x)
 let map_with_loc f (loc, x) = (loc, f ~loc x)

@@ -193,10 +193,10 @@ let (value_f:Constr.constr list -> global_reference -> Constr.constr) =
 	(d0,RegularStyle,None,
 	 [GApp(d0, GRef(d0,fterm,None), List.rev_map (fun x_id -> GVar(d0, x_id)) rev_x_id_l),
 	  (Anonymous,None)],
-	 [d0, [v_id], [PatCstr(d0,(destIndRef
+	 [d0, [v_id], [d0,PatCstr((destIndRef
 				     (delayed_force coq_sig_ref),1),
-			       [PatVar(d0, Name v_id);
-				PatVar(d0, Anonymous)],
+			       [d0, PatVar(Name v_id);
+				d0, PatVar(Anonymous)],
 			       Anonymous)],
 	  GVar(d0,v_id)])
     in

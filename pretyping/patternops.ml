@@ -376,7 +376,7 @@ let rec pat_of_raw metas vars = function
              [0,tags,pat_of_raw metas vars c])
   | GCases (loc,sty,p,[c,(na,indnames)],brs) ->
       let get_ind = function
-	| (_,_,[PatCstr(_,(ind,_),_,_)],_)::_ -> Some ind
+	| (_,_,[_, PatCstr((ind,_),_,_)],_)::_ -> Some ind
 	| _ -> None
       in
       let ind_tags,ind = match indnames with
@@ -408,15 +408,15 @@ let rec pat_of_raw metas vars = function
 
 and pats_of_glob_branches loc metas vars ind brs =
   let get_arg = function
-    | PatVar(_,na) ->
+    | _, PatVar na ->
       name_iter (fun n -> metas := n::!metas) na;
       na
-    | PatCstr(loc,_,_,_) -> err ~loc (Pp.str "Non supported pattern.")
+    | loc, PatCstr(_,_,_) -> err ~loc (Pp.str "Non supported pattern.")
   in
   let rec get_pat indexes = function
     | [] -> false, []
-    | [(_,_,[PatVar(_,Anonymous)],GHole _)] -> true, [] (* ends with _ => _ *)
-    | (_,_,[PatCstr(_,(indsp,j),lv,_)],br) :: brs ->
+    | [(_,_,[_, PatVar(Anonymous)],GHole _)] -> true, [] (* ends with _ => _ *)
+    | (_,_,[_, PatCstr((indsp,j),lv,_)],br) :: brs ->
       let () = match ind with
       | Some sp when eq_ind sp indsp -> ()
       | _ ->

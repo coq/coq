@@ -24,10 +24,11 @@ type existential_name = Id.t
 (**  The kind of patterns that occurs in "match ... with ... end"
 
      locs here refers to the ident's location, not whole pat *)
-type cases_pattern =
-  | PatVar of Loc.t * Name.t
-  | PatCstr of Loc.t * constructor * cases_pattern list * Name.t
+type cases_pattern_r =
+  | PatVar  of Name.t
+  | PatCstr of constructor * cases_pattern list * Name.t
       (** [PatCstr(p,C,l,x)] = "|'C' 'l' as 'x'" *)
+and cases_pattern = cases_pattern_r Loc.located
 
 (** Representation of an internalized (or in other words globalized) term. *)
 type glob_constr =

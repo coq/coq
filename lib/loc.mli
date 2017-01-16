@@ -62,6 +62,7 @@ val to_pair : 'a located -> t * 'a
 val tag : ?loc:t -> 'a -> 'a located
 
 val with_loc : (loc:t -> 'a -> 'b) -> 'a located -> 'b
+val with_unloc : ('a -> 'b) -> 'a located -> 'b
 
 val map : ('a -> 'b) -> 'a located -> 'b located
 val map_with_loc : (loc:t -> 'a -> 'b) -> 'a located -> 'b located

@@ -273,7 +273,7 @@ let glob_constr_keys = function
   | _ -> [Oth]
 
 let cases_pattern_key = function
-  | PatCstr (_,ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
+  | _, PatCstr (ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
   | _ -> Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)

@@ -194,19 +194,19 @@ let change_vars =
 
 
 
-let rec alpha_pat excluded pat =
+let rec alpha_pat excluded (loc, pat) =
   match pat with
-    | PatVar(loc,Anonymous) ->
+    | PatVar Anonymous ->
 	let new_id = Indfun_common.fresh_id excluded "_x" in
-	PatVar(loc,Name new_id),(new_id::excluded),Id.Map.empty
-    | PatVar(loc,Name id) ->
+	(Loc.tag ~loc @@ PatVar(Name new_id)),(new_id::excluded),Id.Map.empty
+    | PatVar(Name id) ->
 	if Id.List.mem id excluded
 	then
 	  let new_id = Namegen.next_ident_away id excluded in
-	  PatVar(loc,Name new_id),(new_id::excluded),
+	  (Loc.tag ~loc @@ PatVar(Name new_id)),(new_id::excluded),
 	(Id.Map.add id new_id Id.Map.empty)
-	else pat,excluded,Id.Map.empty
-    | PatCstr(loc,constr,patl,na) ->
+	else (Loc.tag ~loc pat),excluded,Id.Map.empty
+    | PatCstr(constr,patl,na) ->
 	let new_na,new_excluded,map =
 	  match na with
 	    | Name id when Id.List.mem id excluded ->
@@ -223,7 +223,7 @@ let rec alpha_pat excluded pat =
 	    ([],new_excluded,map)
 	    patl
 	in
-	PatCstr(loc,constr,List.rev new_patl,new_na),new_excluded,new_map
+        (Loc.tag ~loc @@ PatCstr(constr,List.rev new_patl,new_na)),new_excluded,new_map
 
 let alpha_patl excluded patl  =
   let patl,new_excluded,map =
@@ -241,12 +241,12 @@ let alpha_patl excluded patl  =
 
 
 let raw_get_pattern_id pat acc =
-  let rec get_pattern_id pat =
+  let rec get_pattern_id (loc, pat) =
     match pat with
-      | PatVar(loc,Anonymous) -> assert false
-      | PatVar(loc,Name id) ->
+      | PatVar(Anonymous) -> assert false
+      | PatVar(Name id) ->
 	  [id]
-      | PatCstr(loc,constr,patternl,_) ->
+      | PatCstr(constr,patternl,_) ->
 	  List.fold_right
 	  (fun pat idl ->
 	     let idl' = get_pattern_id pat in
@@ -425,11 +425,11 @@ let is_free_in id =
 
 
 
-let rec pattern_to_term  = function
-  | PatVar(loc,Anonymous) -> assert false
-  | PatVar(loc,Name id) ->
+let rec pattern_to_term pt = Loc.with_unloc (function
+  | PatVar Anonymous -> assert false
+  | PatVar(Name id) ->
 	mkGVar id
-  | PatCstr(loc,constr,patternl,_) ->
+  | PatCstr(constr,patternl,_) ->
       let cst_narg =
 	Inductiveops.constructor_nallargs_env
 	  (Global.env ())
@@ -448,7 +448,7 @@ let rec pattern_to_term  = function
       mkGApp(mkGRef(Globnames.ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
-
+  ) pt
 
 
 let replace_var_by_term x_id term =
@@ -533,8 +533,8 @@ let rec are_unifiable_aux  = function
   | [] -> ()
   | eq::eqs ->
       match eq with
-	 | PatVar _,_ | _,PatVar _ -> are_unifiable_aux eqs
-	 | PatCstr(_,constructor1,cpl1,_),PatCstr(_,constructor2,cpl2,_) ->
+	 | (_,PatVar _),_ | _,(_,PatVar _) -> are_unifiable_aux eqs
+	 | (_,PatCstr(constructor1,cpl1,_)),(_,PatCstr(constructor2,cpl2,_)) ->
 	     if not (eq_constructor constructor2 constructor1)
 	     then raise NotUnifiable
 	     else
@@ -555,8 +555,8 @@ let rec eq_cases_pattern_aux  = function
   | [] -> ()
   | eq::eqs ->
       match eq with
-	 | PatVar _,PatVar _ -> eq_cases_pattern_aux eqs
-	 | PatCstr(_,constructor1,cpl1,_),PatCstr(_,constructor2,cpl2,_) ->
+	 | (_,PatVar _),(_,PatVar _) -> eq_cases_pattern_aux eqs
+	 | (_,PatCstr(constructor1,cpl1,_)),(_,PatCstr(constructor2,cpl2,_)) ->
 	     if not (eq_constructor constructor2 constructor1)
 	     then raise NotUnifiable
 	     else
@@ -576,10 +576,11 @@ let eq_cases_pattern pat1 pat2 =
 
 
 let ids_of_pat =
-  let rec ids_of_pat ids = function
-    | PatVar(_,Anonymous) -> ids
-    | PatVar(_,Name id) -> Id.Set.add id ids
-    | PatCstr(_,_,patl,_) -> List.fold_left ids_of_pat ids patl
+  let rec ids_of_pat ids = Loc.with_unloc (function
+    | PatVar Anonymous -> ids
+    | PatVar(Name id) -> Id.Set.add id ids
+    | PatCstr(_,patl,_) -> List.fold_left ids_of_pat ids patl
+    )
   in
   ids_of_pat Id.Set.empty
 
@@ -679,12 +680,12 @@ let zeta_normalize =
 
 let expand_as =
 
-  let rec add_as map pat =
+  let rec add_as map (loc, pat) =
     match pat with
       | PatVar _ -> map
-      | PatCstr(_,_,patl,Name id) ->
-	  Id.Map.add id (pattern_to_term pat) (List.fold_left add_as map patl)
-      | PatCstr(_,_,patl,_) -> List.fold_left add_as map patl
+      | PatCstr(_,patl,Name id) ->
+	  Id.Map.add id (pattern_to_term (loc, pat)) (List.fold_left add_as map patl)
+      | PatCstr(_,patl,_) -> List.fold_left add_as map patl
   in
   let rec expand_as map rt =
     match rt with

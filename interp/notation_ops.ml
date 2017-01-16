@@ -117,13 +117,14 @@ let name_to_ident = function
 
 let to_id g e id = let e,na = g e (Name id) in e,name_to_ident na
 
-let rec cases_pattern_fold_map loc g e = function
-  | PatVar (_,na) ->
-      let e',na' = g e na in e', PatVar (loc,na')
-  | PatCstr (_,cstr,patl,na) ->
+let rec cases_pattern_fold_map loc g e = Loc.with_unloc (function
+  | PatVar na ->
+      let e',na' = g e na in e', Loc.tag ~loc @@ PatVar na'
+  | PatCstr (cstr,patl,na) ->
       let e',na' = g e na in
       let e',patl' = List.fold_map (cases_pattern_fold_map loc g) e patl in
-      e', PatCstr (loc,cstr,patl',na')
+      e', Loc.tag ~loc @@ PatCstr (cstr,patl',na')
+  )
 
 let subst_binder_type_vars l = function
   | Evar_kinds.BinderType (Name id) ->
@@ -450,14 +451,15 @@ let notation_constr_of_constr avoiding t =
   } in
   notation_constr_of_glob_constr nenv t
 
-let rec subst_pat subst pat =
+let rec subst_pat subst (loc, pat) =
   match pat with
-  | PatVar _ -> pat
-  | PatCstr (loc,((kn,i),j),cpl,n) ->
+  | PatVar _ -> (loc, pat)
+  | PatCstr (((kn,i),j),cpl,n) ->
       let kn' = subst_mind subst kn
       and cpl' = List.smartmap (subst_pat subst) cpl in
+      Loc.tag ~loc @@
         if kn' == kn && cpl' == cpl then pat else
-          PatCstr (loc,((kn',i),j),cpl',n)
+          PatCstr (((kn',i),j),cpl',n)
 
 let rec subst_notation_constr subst bound raw =
   match raw with
@@ -662,11 +664,11 @@ let add_bindinglist_env (terms,onlybinders,termlists,binderlists) x bl =
   (terms,onlybinders,termlists,(x,bl)::binderlists)
 
 let rec pat_binder_of_term = function
-  | GVar (loc, id) -> PatVar (loc, Name id)
+  | GVar (loc, id) -> Loc.tag ~loc @@ PatVar (Name id)
   | GApp (loc, GRef (_,ConstructRef cstr,_), l) ->
      let nparams = Inductiveops.inductive_nparams (fst cstr) in
      let _,l = List.chop nparams l in
-     PatCstr (loc, cstr, List.map pat_binder_of_term l, Anonymous)
+     Loc.tag ~loc @@ PatCstr (cstr, List.map pat_binder_of_term l, Anonymous)
   | _ -> raise No_match
 
 let bind_term_env alp (terms,onlybinders,termlists,binderlists as sigma) var v =
@@ -738,16 +740,17 @@ let bind_binding_env alp (terms,onlybinders,termlists,binderlists as sigma) var 
         else (fst alp,(id1,id2)::snd alp),sigma
   with Not_found -> alp, add_binding_env alp sigma var v
 
-let rec map_cases_pattern_name_left f = function
-  | PatVar (loc,na) -> PatVar (loc,f na)
-  | PatCstr (loc,c,l,na) -> PatCstr (loc,c,List.map_left (map_cases_pattern_name_left f) l,f na)
+let rec map_cases_pattern_name_left f = Loc.map (function
+  | PatVar na -> PatVar (f na)
+  | PatCstr (c,l,na) -> PatCstr (c,List.map_left (map_cases_pattern_name_left f) l,f na)
+  )
 
 let rec fold_cases_pattern_eq f x p p' = match p, p' with
-  | PatVar (loc,na), PatVar (_,na') -> let x,na = f x na na' in x, PatVar (loc,na)
-  | PatCstr (loc,c,l,na), PatCstr (_,c',l',na') when eq_constructor c c' ->
+  | (loc, PatVar na), (_, PatVar na') -> let x,na = f x na na' in x, Loc.tag ~loc @@ PatVar na
+  | (loc, PatCstr (c,l,na)), (_, PatCstr (c',l',na')) when eq_constructor c c' ->
      let x,l = fold_cases_pattern_list_eq f x l l' in
      let x,na = f x na na' in
-     x, PatCstr (loc,c,l,na)
+     x, Loc.tag ~loc @@ PatCstr (c,l,na)
   | _ -> failwith "Not equal"
 
 and fold_cases_pattern_list_eq f x pl pl' = match pl, pl' with
@@ -758,9 +761,9 @@ and fold_cases_pattern_list_eq f x pl pl' = match pl, pl' with
      x, p :: pl
   | _ -> assert false
 
-let rec cases_pattern_eq p1 p2 = match p1, p2 with
-| PatVar (_, na1), PatVar (_, na2) -> Name.equal na1 na2
-| PatCstr (_, c1, pl1, na1), PatCstr (_, c2, pl2, na2) ->
+let rec cases_pattern_eq (_,p1) (_,p2) = match p1, p2 with
+| PatVar na1, PatVar na2 -> Name.equal na1 na2
+| PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
   eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
   Name.equal na1 na2
 | _ -> false
@@ -878,10 +881,10 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
   | (Anonymous,Anonymous) -> alp,sigma
   | _ -> raise No_match
 
-let rec match_cases_pattern_binders metas acc pat1 pat2 =
-  match (pat1,pat2) with
-  | PatVar (_,na1), PatVar (_,na2) -> match_names metas acc na1 na2
-  | PatCstr (_,c1,patl1,na1), PatCstr (_,c2,patl2,na2)
+let rec match_cases_pattern_binders metas acc (_, pat1) (_, pat2) =
+  match pat1, pat2 with
+  | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
+  | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
       when eq_constructor c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
       List.fold_left2 (match_cases_pattern_binders metas)
 	(match_names metas acc na1 na2) patl1 patl2
@@ -1173,7 +1176,7 @@ let match_notation_constr u c (metas,pat) =
 let add_patterns_for_params ind l =
   let mib,_ = Global.lookup_inductive ind in
   let nparams = mib.Declarations.mind_nparams in
-    Util.List.addn nparams (PatVar (Loc.ghost,Anonymous)) l
+    Util.List.addn nparams (Loc.tag @@ PatVar Anonymous) l
 
 let bind_env_cases_pattern (terms,x,termlists,y as sigma) var v =
   try
@@ -1197,13 +1200,13 @@ let match_cases_pattern_list match_fun metas sigma rest x y iter termin lassoc =
   let l,(terms,onlybinders,termlists,binderlists as sigma) = aux sigma [] rest in
   (terms,onlybinders,(x,if lassoc then l else List.rev l)::termlists, binderlists)
 
-let rec match_cases_pattern metas (terms,(),termlists,() as sigma) a1 a2 =
- match (a1,a2) with
-  | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
-  | PatVar (_,Anonymous), NHole _ -> sigma,(0,[])
-  | PatCstr (loc,(ind,_ as r1),largs,_), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
+let rec match_cases_pattern metas (terms,(),termlists,() as sigma) (loc, a1) a2 =
+ match a1, a2 with
+  | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 (loc, r1)),(0,[])
+  | PatVar Anonymous, NHole _ -> sigma,(0,[])
+  | PatCstr ((ind,_ as r1),largs,_), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
       sigma,(0,add_patterns_for_params (fst r1) largs)
-  | PatCstr (loc,(ind,_ as r1),args1,_), NApp (NRef (ConstructRef r2),l2)
+  | PatCstr ((ind,_ as r1),args1,_), NApp (NRef (ConstructRef r2),l2)
       when eq_constructor r1 r2 ->
       let l1 = add_patterns_for_params (fst r1) args1 in
       let le2 = List.length l2 in
@@ -1215,7 +1218,7 @@ let rec match_cases_pattern metas (terms,(),termlists,() as sigma) a1 a2 =
 	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(le2,more_args)
   | r1, NList (x,y,iter,termin,lassoc) ->
       (match_cases_pattern_list (match_cases_pattern_no_more_args)
-	metas (terms,(),termlists,()) r1 x y iter termin lassoc),(0,[])
+	metas (terms,(),termlists,()) (loc, r1) x y iter termin lassoc),(0,[])
   | _ -> raise No_match
 
 and match_cases_pattern_no_more_args metas sigma a1 a2 =

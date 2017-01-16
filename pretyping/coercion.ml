@@ -78,8 +78,9 @@ let apply_coercion_args env evd check isproj argl funj =
 let apply_pattern_coercion loc pat p =
   List.fold_left
     (fun pat (co,n) ->
-       let f i = if i<n then Glob_term.PatVar (loc, Anonymous) else pat in
-	 Glob_term.PatCstr (loc, co, List.init (n+1) f, Anonymous))
+       let f i =
+         if i<n then (Loc.tag ~loc @@ Glob_term.PatVar Anonymous) else pat in
+        Loc.tag ~loc @@ Glob_term.PatCstr (co, List.init (n+1) f, Anonymous))
     pat p
 
 (* raise Not_found if no coercion found *)

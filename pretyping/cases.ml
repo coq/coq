@@ -95,7 +95,7 @@ let msg_may_need_inversion () =
 
 (* Utils *)
 let make_anonymous_patvars n =
-  List.make n (PatVar (Loc.ghost,Anonymous))
+  List.make n (Loc.tag @@ PatVar Anonymous)
 
 (* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
    over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
@@ -178,7 +178,7 @@ and build_glob_pattern args = function
   | Top -> args
   | MakeConstructor (pci, rh) ->
       glob_pattern_of_partial_history
-	[PatCstr (Loc.ghost, pci, args, Anonymous)] rh
+	[Loc.tag @@ PatCstr (pci, args, Anonymous)] rh
 
 let complete_history = glob_pattern_of_partial_history []
 
@@ -188,12 +188,12 @@ let pop_history_pattern = function
   | Continuation (0, l, Top) ->
       Result (List.rev l)
   | Continuation (0, l, MakeConstructor (pci, rh)) ->
-      feed_history (PatCstr (Loc.ghost,pci,List.rev l,Anonymous)) rh
+      feed_history (Loc.tag @@ PatCstr (pci,List.rev l,Anonymous)) rh
   | _ ->
       anomaly (Pp.str "Constructor not yet filled with its arguments")
 
 let pop_history h =
-  feed_history (PatVar (Loc.ghost, Anonymous)) h
+  feed_history (Loc.tag @@ PatVar Anonymous) h
 
 (* Builds a continuation expecting [n] arguments and building [ci] applied
    to this [n] arguments *)
@@ -273,8 +273,8 @@ type 'a pattern_matching_problem =
 
 let rec find_row_ind = function
     [] -> None
-  | PatVar _ :: l -> find_row_ind l
-  | PatCstr(loc,c,_,_) :: _ -> Some (loc,c)
+  | (_, PatVar _) :: l -> find_row_ind l
+  | (loc, PatCstr(c,_,_)) :: _ -> Some (loc,c)
 
 let inductive_template evdref env tmloc ind =
   let indu = evd_comb1 (Evd.fresh_inductive_instance env) evdref ind in
@@ -427,9 +427,10 @@ let current_pattern eqn =
     | pat::_ -> pat
     | [] -> anomaly (Pp.str "Empty list of patterns")
 
-let alias_of_pat = function
-  | PatVar (_,name) -> name
-  | PatCstr(_,_,_,name) -> name
+let alias_of_pat = Loc.with_loc (fun ~loc -> function
+  | PatVar name -> name
+  | PatCstr(_,_,name) -> name
+  )
 
 let remove_current_pattern eqn =
   match eqn.patterns with
@@ -472,13 +473,13 @@ let rec adjust_local_defs loc = function
   | (pat :: pats, LocalAssum _ :: decls) ->
       pat :: adjust_local_defs loc (pats,decls)
   | (pats, LocalDef _ :: decls) ->
-      PatVar (loc, Anonymous) :: adjust_local_defs loc (pats,decls)
+      (Loc.tag ~loc @@ PatVar Anonymous) :: adjust_local_defs loc (pats,decls)
   | [], [] -> []
   | _ -> raise NotAdjustable
 
 let check_and_adjust_constructor env ind cstrs = function
-  | PatVar _ as pat -> pat
-  | PatCstr (loc,((_,i) as cstr),args,alias) as pat ->
+  | _,   PatVar _ as pat -> pat
+  | loc, PatCstr (((_,i) as cstr),args,alias) as pat ->
       (* Check it is constructor of the right type *)
       let ind' = inductive_of_constructor cstr in
       if eq_ind ind' ind then
@@ -489,7 +490,7 @@ let check_and_adjust_constructor env ind cstrs = function
 	else
 	  try
 	    let args' = adjust_local_defs loc (args, List.rev ci.cs_args)
-	    in PatCstr (loc, cstr, args', alias)
+	    in Loc.tag ~loc @@ PatCstr (cstr, args', alias)
 	  with NotAdjustable ->
 	    error_wrong_numarg_constructor ~loc env cstr nb_args_constr
       else
@@ -502,8 +503,8 @@ let check_and_adjust_constructor env ind cstrs = function
 let check_all_variables env sigma typ mat =
   List.iter
     (fun eqn -> match current_pattern eqn with
-       | PatVar (_,id) -> ()
-       | PatCstr (loc,cstr_sp,_,_) ->
+       | _,   PatVar id -> ()
+       | loc, PatCstr (cstr_sp,_,_) ->
 	   error_bad_pattern ~loc env sigma cstr_sp typ)
     mat
 
@@ -529,8 +530,8 @@ let occur_in_rhs na rhs =
     | Name id -> Id.List.mem id rhs.rhs_vars
 
 let is_dep_patt_in eqn = function
-  | PatVar (_,name) -> Flags.is_program_mode () || occur_in_rhs name eqn.rhs
-  | PatCstr _ -> true
+  | _, PatVar name -> Flags.is_program_mode () || occur_in_rhs name eqn.rhs
+  | _, PatCstr _ -> true
 
 let mk_dep_patt_row (pats,_,eqn) =
   List.map (is_dep_patt_in eqn) pats
@@ -750,7 +751,7 @@ let recover_and_adjust_alias_names names sign =
   | x::names, LocalAssum (_,t)::sign ->
       (x, LocalAssum (alias_of_pat x,t)) :: aux (names,sign)
   | names, (LocalDef (na,_,_) as decl)::sign ->
-      (PatVar (Loc.ghost,na), decl) :: aux (names,sign)
+      (Loc.tag @@ PatVar na, decl) :: aux (names,sign)
   | _ -> assert false
   in
   List.split (aux (names,sign))
@@ -967,7 +968,7 @@ let use_unit_judge evd =
     evd', j
 
 let add_assert_false_case pb tomatch =
-  let pats = List.map (fun _ -> PatVar (Loc.ghost,Anonymous)) tomatch in
+  let pats = List.map (fun _ -> Loc.tag @@ PatVar Anonymous) tomatch in
   let aliasnames =
     List.map_filter (function Alias _ | NonDepAlias -> Some Anonymous | _ -> None) tomatch
   in
@@ -1165,8 +1166,8 @@ let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
 (* Sorting equations by constructor *)
 
 let rec irrefutable env = function
-  | PatVar (_,name) -> true
-  | PatCstr (_,cstr,args,_) ->
+  | _, PatVar name -> true
+  | _, PatCstr (cstr,args,_) ->
       let ind = inductive_of_constructor cstr in
       let (_,mip) = Inductive.lookup_mind_specif env ind in
       let one_constr = Int.equal (Array.length mip.mind_user_lc) 1 in
@@ -1187,14 +1188,14 @@ let group_equations pb ind current cstrs mat =
 	 let rest = remove_current_pattern eqn in
 	 let pat = current_pattern eqn in
 	 match check_and_adjust_constructor pb.env ind cstrs pat with
-	   | PatVar (_,name) ->
+	   | _, PatVar name ->
 	       (* This is a default clause that we expand *)
 	       for i=1 to Array.length cstrs do
 		 let args = make_anonymous_patvars cstrs.(i-1).cs_nargs in
 		 brs.(i-1) <- (args, name, rest) :: brs.(i-1)
 	       done;
 	       if !only_default == None then only_default := Some true
-	   | PatCstr (loc,((_,i)),args,name) ->
+	   | loc, PatCstr (((_,i)),args,name) ->
 	       (* This is a regular clause *)
 	       only_default := Some false;
 	       brs.(i-1) <- (args, name, rest) :: brs.(i-1)) mat () in
@@ -1718,16 +1719,16 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
 let build_inversion_problem loc env sigma tms t =
   let make_patvar t (subst,avoid) =
     let id = next_name_away (named_hd env sigma t Anonymous) avoid in
-    PatVar (Loc.ghost,Name id), ((id,t)::subst, id::avoid) in
+    Loc.tag @@ PatVar (Name id), ((id,t)::subst, id::avoid) in
   let rec reveal_pattern t (subst,avoid as acc) =
     match EConstr.kind sigma (whd_all env sigma t) with
-    | Construct (cstr,u) -> PatCstr (Loc.ghost,cstr,[],Anonymous), acc
+    | Construct (cstr,u) -> Loc.tag (PatCstr (cstr,[],Anonymous)), acc
     | App (f,v) when isConstruct sigma f ->
 	let cstr,u = destConstruct sigma f in
 	let n = constructor_nrealargs_env env cstr in
 	let l = List.lastn n (Array.to_list v) in
 	let l,acc = List.fold_map' reveal_pattern l acc in
-	PatCstr (Loc.ghost,cstr,l,Anonymous), acc
+	Loc.tag (PatCstr (cstr,l,Anonymous)), acc
     | _ -> make_patvar t acc in
   let rec aux n env acc_sign tms acc =
     match tms with
@@ -1803,7 +1804,7 @@ let build_inversion_problem loc env sigma tms t =
       (* No need for a catch all clause *)
       []
     else
-      [ { patterns = List.map (fun _ -> PatVar (Loc.ghost,Anonymous)) patl;
+      [ { patterns = List.map (fun _ -> Loc.tag @@ PatVar Anonymous) patl;
           alias_stack = [];
           eqn_loc = Loc.ghost;
           used = ref false;
@@ -2063,18 +2064,18 @@ let hole =
          Misctypes.IntroAnonymous, None)
 
 let constr_of_pat env evdref arsign pat avoid =
-  let rec typ env (ty, realargs) pat avoid =
+  let rec typ env (ty, realargs) (loc, pat) avoid =
     match pat with
-    | PatVar (l,name) ->
+    | PatVar name ->
 	let name, avoid = match name with
 	    Name n -> name, avoid
 	  | Anonymous ->
 	      let previd, id = prime avoid (Name (Id.of_string "wildcard")) in
 		Name id, id :: avoid
 	in
-	  (PatVar (l, name), [LocalAssum (name, ty)] @ realargs, mkRel 1, ty,
+	  ((Loc.tag ~loc @@ PatVar name), [LocalAssum (name, ty)] @ realargs, mkRel 1, ty,
 	   (List.map (fun x -> mkRel 1) realargs), 1, avoid)
-    | PatCstr (l,((_, i) as cstr),args,alias) ->
+    | PatCstr (((_, i) as cstr),args,alias) ->
 	let cind = inductive_of_constructor cstr in
 	let IndType (indf, _) = 
 	  try find_rectype env ( !evdref) (lift (-(List.length realargs)) ty)
@@ -2083,7 +2084,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	in
 	let (ind,u), params = dest_ind_family indf in
 	let params = List.map EConstr.of_constr params in
-	if not (eq_ind ind cind) then error_bad_constructor ~loc:l env cstr ind;
+	if not (eq_ind ind cind) then error_bad_constructor ~loc env cstr ind;
 	let cstrs = get_constructors env indf in
 	let ci = cstrs.(i-1) in
 	let nb_args_constr = ci.cs_nargs in
@@ -2103,7 +2104,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	in
 	let args = List.rev args in
 	let patargs = List.rev patargs in
-	let pat' = PatCstr (l, cstr, patargs, alias) in
+	let pat' = Loc.tag ~loc @@ PatCstr (cstr, patargs, alias) in
 	let cstr = mkConstructU (on_snd EInstance.make ci.cs_cstr) in
 	let app = applist (cstr, List.map (lift (List.length sign)) params) in
 	let app = applist (app, args) in
@@ -2169,11 +2170,11 @@ let vars_of_ctx sigma ctx =
       ctx (Id.of_string "vars_of_ctx_error", [])
   in List.rev y
 
-let rec is_included x y =
+let rec is_included (loc_x, x) (loc_y, y) =
   match x, y with
     | PatVar _, _ -> true
     | _, PatVar _ -> true
-    | PatCstr (l, (_, i), args, alias), PatCstr (l', (_, i'), args', alias')  ->
+    | PatCstr ((_, i), args, alias), PatCstr ((_, i'), args', alias')  ->
 	if Int.equal i i' then List.for_all2 is_included args args'
 	else false
 

@@ -285,7 +285,7 @@ let rec decomp_branch tags nal b (avoid,env as e) sigma c =
       (avoid', add_name_opt na' body t env) sigma c
 
 let rec build_tree na isgoal e sigma ci cl =
-  let mkpat n rhs pl = PatCstr(dl,(ci.ci_ind,n+1),pl,update_name sigma na rhs) in
+  let mkpat n rhs pl = Loc.tag @@ PatCstr((ci.ci_ind,n+1),pl,update_name sigma na rhs) in
   let cnl = ci.ci_pp_info.cstr_tags in
   let cna = ci.ci_cstr_nargs in
   List.flatten
@@ -308,7 +308,7 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
 	      List.map (fun (hd,rest) -> pat::hd,rest) lines)
 	    clauses)
     | _ ->
-	let pat = PatVar(dl,update_name sigma na rhs) in
+	let pat = Loc.tag @@ PatVar(update_name sigma na rhs) in
 	let mat = align_tree nal isgoal rhs sigma in
 	List.map (fun (hd,rest) -> pat::hd,rest) mat
 
@@ -644,17 +644,17 @@ and detype_eqns flags avoid env sigma ci computable constructs consnargsl bl =
 and detype_eqn (lax,isgoal as flags) avoid env sigma constr construct_nargs branch =
   let make_pat x avoid env b body ty ids =
     if force_wildcard () && noccurn sigma 1 b then
-      PatVar (dl,Anonymous),avoid,(add_name Anonymous body ty env),ids
+      Loc.tag @@ PatVar (Anonymous),avoid,(add_name Anonymous body ty env),ids
     else
       let flag = if isgoal then RenamingForGoal else RenamingForCasesPattern (fst env,b) in
       let na,avoid' = compute_displayed_name_in sigma flag avoid x b in
-      PatVar (dl,na),avoid',(add_name na body ty env),add_vname ids na
+      Loc.tag @@ PatVar na,avoid',(add_name na body ty env),add_vname ids na
   in
   let rec buildrec ids patlist avoid env l b =
     match EConstr.kind sigma b, l with
       | _, [] ->
         (dl, Id.Set.elements ids,
-         [PatCstr(dl, constr, List.rev patlist,Anonymous)],
+         [Loc.tag ~loc:dl @@ PatCstr(constr, List.rev patlist,Anonymous)],
          detype flags avoid env sigma b)
       | Lambda (x,t,b), false::l ->
 	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b None t ids in
@@ -668,7 +668,7 @@ and detype_eqn (lax,isgoal as flags) avoid env sigma constr construct_nargs bran
 	    buildrec ids patlist avoid env l c
 
       | _, true::l ->
-	    let pat = PatVar (dl,Anonymous) in
+	    let pat = Loc.tag ~loc:dl @@ PatVar Anonymous in
             buildrec ids (pat::patlist) avoid env l b
 
       | _, false::l ->
@@ -793,14 +793,14 @@ let detype_closed_glob ?lax isgoal avoid env sigma t =
 (**********************************************************************)
 (* Module substitution: relies on detyping                            *)
 
-let rec subst_cases_pattern subst pat =
+let rec subst_cases_pattern subst (loc, pat) = Loc.tag ~loc @@
   match pat with
   | PatVar _ -> pat
-  | PatCstr (loc,((kn,i),j),cpl,n) ->
+  | PatCstr (((kn,i),j),cpl,n) ->
       let kn' = subst_mind subst kn
       and cpl' = List.smartmap (subst_cases_pattern subst) cpl in
 	if kn' == kn && cpl' == cpl then pat else
-	  PatCstr (loc,((kn',i),j),cpl',n)
+	  PatCstr (((kn',i),j),cpl',n)
 
 let (f_subst_genarg, subst_genarg_hook) = Hook.make ()
 
@@ -910,8 +910,8 @@ let rec subst_glob_constr subst raw =
 let simple_cases_matrix_of_branches ind brs =
   List.map (fun (i,n,b) ->
       let nal,c = it_destRLambda_or_LetIn_names n b in
-      let mkPatVar na = PatVar (Loc.ghost,na) in
-      let p = PatCstr (Loc.ghost,(ind,i+1),List.map mkPatVar nal,Anonymous) in
+      let mkPatVar na = Loc.tag @@ PatVar na in
+      let p = Loc.tag @@ PatCstr ((ind,i+1),List.map mkPatVar nal,Anonymous) in
       let map name = try Some (Nameops.out_name name) with Failure _ -> None in
       let ids = List.map_filter map nal in
       (Loc.ghost,ids,[p],c))

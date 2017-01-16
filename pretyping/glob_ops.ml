@@ -15,9 +15,7 @@ open Glob_term
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
 
-let cases_pattern_loc = function
-    PatVar(loc,_) -> loc
-  | PatCstr(loc,_,_,_) -> loc
+let cases_pattern_loc (loc, _) = loc
 
 let cases_predicate_names tml =
   List.flatten (List.map (function
@@ -47,9 +45,9 @@ let case_style_eq s1 s2 = match s1, s2 with
 | RegularStyle, RegularStyle -> true
 | _ -> false
 
-let rec cases_pattern_eq p1 p2 = match p1, p2 with
-| PatVar (_, na1), PatVar (_, na2) -> Name.equal na1 na2
-| PatCstr (_, c1, pl1, na1), PatCstr (_, c2, pl2, na2) ->
+let rec cases_pattern_eq (_loc1, p1) (_loc2, p2) = match p1, p2 with
+| PatVar na1, PatVar na2 -> Name.equal na1 na2
+| PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
   eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
   Name.equal na1 na2
 | _ -> false
@@ -423,18 +421,19 @@ let map_tomatch_binders f ((c,(na,inp)) as x) : tomatch_tuple =
   if r == inp then x
   else c,(f na, r)
 
-let rec map_case_pattern_binders f = function
-  | PatVar (loc,na) as x ->
+let rec map_case_pattern_binders f = Loc.map (function
+  | PatVar na as x ->
       let r = f na in
       if r == na then x
-      else PatVar (loc,r)
-  | PatCstr (loc,c,ps,na) as x ->
+      else PatVar r
+  | PatCstr (c,ps,na) as x ->
       let rna = f na in
       let rps =
         CList.smartmap (fun p -> map_case_pattern_binders f p) ps
       in
       if rna == na && rps == ps then x
-      else PatCstr(loc,c,rps,rna)
+      else PatCstr(c,rps,rna)
+  )
 
 let map_cases_branch_binders f ((loc,il,cll,rhs) as x) : cases_clause =
   (* spiwack: not sure if I must do something with the list of idents.
@@ -558,26 +557,27 @@ let rec cases_pattern_of_glob_constr na = function
     | Name _ ->
       (* Unable to manage the presence of both an alias and a variable *)
       raise Not_found
-    | Anonymous -> PatVar (loc,Name id)
+    | Anonymous -> Loc.tag ~loc @@ PatVar (Name id)
     end
-  | GHole (loc,_,_,_) -> PatVar (loc,na)
+  | GHole (loc,_,_,_) -> Loc.tag ~loc @@ PatVar na
   | GRef (loc,ConstructRef cstr,_) ->
-      PatCstr (loc,cstr,[],na)
+      Loc.tag ~loc @@ PatCstr (cstr,[],na)
   | GApp (loc,GRef (_,ConstructRef cstr,_),l) ->
-      PatCstr (loc,cstr,List.map (cases_pattern_of_glob_constr Anonymous) l,na)
+      Loc.tag ~loc @@ PatCstr (cstr,List.map (cases_pattern_of_glob_constr Anonymous) l,na)
   | _ -> raise Not_found
 
 (* Turn a closed cases pattern into a glob_constr *)
-let rec glob_constr_of_closed_cases_pattern_aux = function
-  | PatCstr (loc,cstr,[],Anonymous) ->
+let rec glob_constr_of_closed_cases_pattern_aux x = Loc.with_loc (fun ~loc -> function
+  | PatCstr (cstr,[],Anonymous) ->
       GRef (loc,ConstructRef cstr,None)
-  | PatCstr (loc,cstr,l,Anonymous) ->
+  | PatCstr (cstr,l,Anonymous) ->
       let ref = GRef (loc,ConstructRef cstr,None) in
       GApp (loc,ref, List.map glob_constr_of_closed_cases_pattern_aux l)
   | _ -> raise Not_found
+  ) x
 
 let glob_constr_of_closed_cases_pattern = function
-  | PatCstr (loc,cstr,l,na) ->
-      na,glob_constr_of_closed_cases_pattern_aux (PatCstr (loc,cstr,l,Anonymous))
+  | loc, PatCstr (cstr,l,na) ->
+      na,glob_constr_of_closed_cases_pattern_aux (loc, PatCstr (cstr,l,Anonymous))
   | _ ->
       raise Not_found

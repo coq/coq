@@ -182,7 +182,7 @@ let add_patt_for_params ind l =
 
 let add_cpatt_for_params ind l =
   if !Flags.in_debugger then l else
-    Util.List.addn  (Inductiveops.inductive_nparamdecls ind) (PatVar (Loc.ghost,Anonymous)) l
+    Util.List.addn  (Inductiveops.inductive_nparamdecls ind) (Loc.tag @@ PatVar Anonymous) l
 
 let drop_implicits_in_patt cst nb_expl args =
   let impl_st = (implicits_of_global cst) in
@@ -291,7 +291,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   (* pboutill: There are letins in pat which is incompatible with notations and
      not explicit application. *)
   match pat with
-    | PatCstr(loc,cstrsp,args,na)
+    | loc, PatCstr(cstrsp,args,na)
 	when !Flags.in_debugger||Inductiveops.constructor_has_local_defs cstrsp ->
       let c = extern_reference loc Id.Set.empty (ConstructRef cstrsp) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
@@ -312,9 +312,9 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	(uninterp_cases_pattern_notations pat)
     with No_match ->
       match pat with
-	| PatVar (loc,Name id)   -> Loc.tag ~loc @@ CPatAtom (Some (Ident (loc,id)))
-	| PatVar (loc,Anonymous) -> Loc.tag ~loc @@ CPatAtom None
-	| PatCstr(loc,cstrsp,args,na) ->
+	| loc, PatVar (Name id)   -> Loc.tag ~loc @@ CPatAtom (Some (Ident (loc,id)))
+	| loc, PatVar (Anonymous) -> Loc.tag ~loc @@ CPatAtom None
+	| loc, PatCstr(cstrsp,args,na) ->
 	  let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
 	  let p =
 	    try
@@ -391,20 +391,20 @@ and apply_notation_to_pattern loc gr ((subst,substlist),(nb_to_drop,more_args))
       in
       assert (List.is_empty substlist);
       mkPat loc qid (List.rev_append l1 l2')
-and extern_notation_pattern (tmp_scope,scopes as allscopes) vars t = function
+and extern_notation_pattern (tmp_scope,scopes as allscopes) vars (loc, t) = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
       if List.mem keyrule !print_non_active_notations then raise No_match;
       match t with
-	| PatCstr (loc,cstr,_,na) ->
+	| PatCstr (cstr,_,na) ->
 	  let p = apply_notation_to_pattern loc (ConstructRef cstr)
-	    (match_notation_constr_cases_pattern t pat) allscopes vars keyrule in
+	    (match_notation_constr_cases_pattern (loc, t) pat) allscopes vars keyrule in
 	  insert_pat_alias loc p na
-	| PatVar (loc,Anonymous) -> Loc.tag ~loc @@ CPatAtom None
-	| PatVar (loc,Name id)   -> Loc.tag ~loc @@ CPatAtom (Some (Ident (loc,id)))
+	| PatVar Anonymous -> Loc.tag ~loc @@ CPatAtom None
+	| PatVar (Name id) -> Loc.tag ~loc @@ CPatAtom (Some (Ident (loc,id)))
     with
-	No_match -> extern_notation_pattern allscopes vars t rules
+	No_match -> extern_notation_pattern allscopes vars (loc, t) rules
 
 let rec extern_notation_ind_pattern allscopes vars ind args = function
   | [] -> raise No_match
@@ -750,7 +750,7 @@ let rec extern inctx scopes vars r =
                  (sub_extern false scopes vars tm,
                   na',
                   Option.map (fun (loc,ind,nal) ->
-                              let args = List.map (fun x -> PatVar (Loc.ghost, x)) nal in
+                              let args = List.map (fun x -> Loc.tag @@ PatVar x) nal in
                               let fullargs = add_cpatt_for_params ind args in
                               extern_ind_pattern_in_scope scopes vars ind fullargs
                              ) x))
@@ -1008,7 +1008,7 @@ let extern_closed_glob ?lax goal_concl_style env sigma t =
 
 let any_any_branch =
   (* | _ => _ *)
-  (loc,[],[PatVar (loc,Anonymous)],GHole (loc,Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None))
+  (loc,[],[Loc.tag ~loc @@ PatVar Anonymous],GHole (loc,Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None))
 
 let rec glob_of_pat env sigma = function
   | PRef ref -> GRef (loc,ref,None)

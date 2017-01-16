@@ -591,14 +591,14 @@ let rec subordinate_letins letins = function
       letins,[]
 
 let terms_of_binders bl =
-  let rec term_of_pat = function
-    | PatVar (loc,Name id)   -> Loc.tag ~loc @@ CRef (Ident (loc,id), None)
-    | PatVar (loc,Anonymous) -> error "Cannot turn \"_\" into a term."
-    | PatCstr (loc,c,l,_) ->
+  let rec term_of_pat pt = Loc.map_with_loc (fun ~loc -> function
+    | PatVar (Name id)   -> CRef (Ident (loc,id), None)
+    | PatVar (Anonymous) -> error "Cannot turn \"_\" into a term."
+    | PatCstr (c,l,_) ->
        let r = Qualid (loc,qualid_of_path (path_of_global (ConstructRef c))) in
        let hole = Loc.tag ~loc @@ CHole (None,Misctypes.IntroAnonymous,None) in
        let params = List.make (Inductiveops.inductive_nparams (fst c)) hole in
-       Loc.tag ~loc @@ CAppExpl ((None,r,None),params @ List.map term_of_pat l) in
+       CAppExpl ((None,r,None),params @ List.map term_of_pat l)) pt in
   let rec extract_variables = function
     | GLocalAssum (loc,Name id,_,_)::l -> (Loc.tag ~loc @@ CRef (Ident (loc,id), None)) :: extract_variables l
     | GLocalDef (loc,Name id,_,_,_)::l -> extract_variables l
@@ -1015,8 +1015,8 @@ let chop_params_pattern loc ind args with_letin =
     else Inductiveops.inductive_nparams ind in
   assert (nparams <= List.length args);
   let params,args = List.chop nparams args in
-  List.iter (function PatVar(_,Anonymous) -> ()
-    | PatVar (loc',_) | PatCstr(loc',_,_,_) -> error_parameter_not_implicit ~loc:loc') params;
+  List.iter (function _, PatVar Anonymous -> ()
+    | loc', PatVar _ | loc', PatCstr(_,_,_) -> error_parameter_not_implicit ~loc:loc') params;
   args
 
 let find_constructor loc add_params ref =
@@ -1036,7 +1036,7 @@ let find_constructor loc add_params ref =
           then Inductiveops.inductive_nparamdecls ind
           else Inductiveops.inductive_nparams ind
       in
-      List.make nb ([], [(Id.Map.empty, PatVar(Loc.ghost,Anonymous))])
+      List.make nb ([], [(Id.Map.empty, Loc.tag @@ PatVar Anonymous)])
     | None -> []
 
 let find_pattern_variable = function
@@ -1358,7 +1358,7 @@ let rec intern_pat genv aliases pat =
     let idslpl2 = List.map (intern_pat genv empty_alias) pl2 in
     let (ids',pll) = product_of_cases_patterns aliases.alias_ids (idslpl1@idslpl2) in
     let pl' = List.map (fun (asubst,pl) ->
-      (asubst, PatCstr (loc,c,chop_params_pattern loc (fst c) pl with_letin,alias_of aliases))) pll in
+      (asubst, Loc.tag ~loc @@ PatCstr (c,chop_params_pattern loc (fst c) pl with_letin,alias_of aliases))) pll in
     ids',pl' in
   match pat with
     | loc, RCPatAlias (p, id) ->
@@ -1378,10 +1378,10 @@ let rec intern_pat genv aliases pat =
 	intern_cstr_with_all_args loc c with_letin idslpl1 (expl_pl@pl2)
     | loc, RCPatAtom (Some id) ->
       let aliases = merge_aliases aliases id in
-      (aliases.alias_ids,[aliases.alias_map, PatVar (loc, alias_of aliases)])
+      (aliases.alias_ids,[aliases.alias_map, Loc.tag ~loc @@ PatVar (alias_of aliases)])
     | loc, RCPatAtom (None) ->
       let { alias_ids = ids; alias_map = asubst; } = aliases in
-      (ids, [asubst, PatVar (loc, alias_of aliases)])
+      (ids, [asubst, Loc.tag ~loc @@ PatVar (alias_of aliases)])
     | loc, RCPatOr pl ->
       assert (not (List.is_empty pl));
       let pl' = List.map (intern_pat genv aliases) pl in
@@ -1678,14 +1678,14 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
         let stripped_match_from_in =
           let rec aux = function
 	    | [] -> []
-	    | (_,PatVar _) :: q -> aux q
+	    | (_, (_loc, PatVar _)) :: q -> aux q
 	    | l -> l
 	  in aux match_from_in in
         let rtnpo = match stripped_match_from_in with
 	  | [] -> Option.map (intern_type env') rtnpo (* Only PatVar in "in" clauses *)
 	  | l ->
              (* Build a return predicate by expansion of the patterns of the "in" clause *)
-             let thevars,thepats = List.split l in
+             let thevars, thepats = List.split l in
              let sub_rtn = (* Some (GSort (Loc.ghost,GType None)) *) None in
              let sub_tms = List.map (fun id -> GVar (Loc.ghost,id),(Name id,None)) thevars (* "match v1,..,vn" *) in
              let main_sub_eqn =
@@ -1695,7 +1695,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
                   rtnpo) (* "=> P" if there were a return predicate P, and "=> _" otherwise *) in
              let catch_all_sub_eqn =
                if List.for_all (irrefutable globalenv) thepats then [] else
-                 [Loc.ghost,[],List.make (List.length thepats) (PatVar(Loc.ghost,Anonymous)), (* "|_,..,_" *)
+                 [Loc.ghost,[],List.make (List.length thepats) (Loc.tag @@ PatVar Anonymous), (* "|_,..,_" *)
 		  GHole(Loc.ghost,Evar_kinds.ImpossibleCase,Misctypes.IntroAnonymous,None)]   (* "=> _" *) in
              Some (GCases(Loc.ghost,Term.RegularStyle,sub_rtn,sub_tms,main_sub_eqn::catch_all_sub_eqn))
 	in
@@ -1817,14 +1817,14 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 	  let rec canonize_args case_rel_ctxt arg_pats forbidden_names match_acc var_acc =
 	    let add_name l = function
 	      | _,Anonymous -> l
-	      | loc,(Name y as x) -> (y,PatVar(loc,x)) :: l in
+	      | loc,(Name y as x) -> (y, Loc.tag ~loc @@ PatVar x) :: l in
 	    match case_rel_ctxt,arg_pats with
 	      (* LetIn in the rel_context *)
 	      | LocalDef _ :: t, l when not with_letin ->
 		canonize_args t l forbidden_names match_acc ((Loc.ghost,Anonymous)::var_acc)
 	      | [],[] ->
 		(add_name match_acc na, var_acc)
-	      | _::t,PatVar (loc,x)::tt ->
+	      | _::t, (loc, PatVar x)::tt ->
 		canonize_args t tt forbidden_names
 		  (add_name match_acc (loc,x)) ((loc,x)::var_acc)
 	      | (LocalAssum (cano_name,ty) | LocalDef (cano_name,_,ty)) :: t, c::tt ->

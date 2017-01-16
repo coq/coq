@@ -345,12 +345,12 @@ let raw_push_named (na,raw_value,raw_typ) env =
 
 
 let add_pat_variables pat typ env : Environ.env =
-  let rec add_pat_variables env pat typ  : Environ.env =
+  let rec add_pat_variables env (loc, pat) typ  : Environ.env =
     observe (str "new rel env := " ++ Printer.pr_rel_context_of env (Evd.from_env env));
 
     match pat with
-      | PatVar(_,na) -> Environ.push_rel (RelDecl.LocalAssum (na,typ)) env
-      | PatCstr(_,c,patl,na) ->
+      | PatVar na -> Environ.push_rel (RelDecl.LocalAssum (na,typ)) env
+      | PatCstr(c,patl,na) ->
 	  let Inductiveops.IndType(indf,indargs) =
 	    try Inductiveops.find_rectype env (Evd.from_env env) (EConstr.of_constr typ)
 	    with Not_found -> assert false
@@ -398,11 +398,11 @@ let add_pat_variables pat typ env : Environ.env =
 
 
 
-let rec pattern_to_term_and_type env typ  = function
-  | PatVar(loc,Anonymous) -> assert false
-  | PatVar(loc,Name id) ->
+let rec pattern_to_term_and_type env typ  = Loc.with_unloc (function
+  | PatVar Anonymous -> assert false
+  | PatVar (Name id) ->
 	mkGVar id
-  | PatCstr(loc,constr,patternl,_) ->
+  | PatCstr(constr,patternl,_) ->
       let cst_narg =
 	Inductiveops.constructor_nallargs_env
 	  (Global.env ())
@@ -430,6 +430,7 @@ let rec pattern_to_term_and_type env typ  = function
       mkGApp(mkGRef(ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
+  )
 
 (* [build_entry_lc funnames avoid rt] construct the list (in fact a build_entry_return)
    of constructors corresponding to [rt] when replacing calls to [funnames] by calls to the
