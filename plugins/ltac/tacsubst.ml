@@ -32,8 +32,8 @@ let subst_glob_constr_and_expr subst (c, e) =
 
 let subst_glob_constr = subst_glob_constr_and_expr (* shortening *)
 
-let subst_binding subst (loc,b,c) =
-  (loc,subst_quantified_hypothesis subst b,subst_glob_constr subst c)
+let subst_binding subst (loc,(b,c)) =
+  (loc,(subst_quantified_hypothesis subst b,subst_glob_constr subst c))
 
 let subst_bindings subst = function
   | NoBindings -> NoBindings

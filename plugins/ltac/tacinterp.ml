@@ -987,9 +987,9 @@ let interp_declared_or_quantified_hypothesis ist env sigma = function
 	    (coerce_to_decl_or_quant_hyp env sigma) ist (Some (env,sigma)) (dloc,id)
       with Not_found -> NamedHyp id
 
-let interp_binding ist env sigma (loc,b,c) =
+let interp_binding ist env sigma (loc,(b,c)) =
   let sigma, c = interp_open_constr ist env sigma c in
-  sigma, (loc,interp_binding_name ist sigma b,c)
+  sigma, (loc,(interp_binding_name ist sigma b,c))
 
 let interp_bindings ist env sigma = function
 | NoBindings ->
@@ -1014,7 +1014,7 @@ let interp_open_constr_with_bindings ist env sigma (c,bl) =
 let loc_of_bindings = function
 | NoBindings -> Loc.ghost
 | ImplicitBindings l -> loc_of_glob_constr (fst (List.last l))
-| ExplicitBindings l -> pi1 (List.last l)
+| ExplicitBindings l -> fst (List.last l)
 
 let interp_open_constr_with_bindings_loc ist ((c,_),bl as cb) =
   let loc1 = loc_of_glob_constr c in

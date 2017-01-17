@@ -482,7 +482,7 @@ and vernac_implicit_status = Implicit | MaximallyImplicit | NotImplicit
 and vernac_argument_status = {
   name : Name.t;
   recarg_like : bool;
-  notation_scope : (Loc.t * string) option;
+  notation_scope : string Loc.located option;
   implicit_status : vernac_implicit_status;
 }
 

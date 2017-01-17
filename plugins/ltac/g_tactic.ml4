@@ -336,8 +336,8 @@ GEXTEND Gram
       | pat = naming_intropattern -> !@loc, IntroNaming pat ] ]
   ;
   simple_binding:
-    [ [ "("; id = ident; ":="; c = lconstr; ")" -> (!@loc, NamedHyp id, c)
-      | "("; n = natural; ":="; c = lconstr; ")" -> (!@loc, AnonHyp n, c) ] ]
+    [ [ "("; id = ident; ":="; c = lconstr; ")" -> Loc.tag ~loc:!@loc (NamedHyp id, c)
+      | "("; n = natural; ":="; c = lconstr; ")" -> Loc.tag ~loc:!@loc (AnonHyp n, c) ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->

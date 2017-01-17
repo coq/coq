@@ -81,7 +81,7 @@ GEXTEND Gram
       ] ]
   ;
   by_notation:
-    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> (!@loc, s, sc) ] ]
+    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> Loc.tag ~loc:!@loc (s, sc) ] ]
   ;
   smart_global:
     [ [ c = reference -> Misctypes.AN c

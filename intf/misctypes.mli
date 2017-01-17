@@ -27,12 +27,12 @@ and intro_pattern_naming_expr =
 and 'constr intro_pattern_action_expr =
   | IntroWildcard
   | IntroOrAndPattern of 'constr or_and_intro_pattern_expr
-  | IntroInjection of (Loc.t * 'constr intro_pattern_expr) list
-  | IntroApplyOn of (Loc.t * 'constr) * (Loc.t * 'constr intro_pattern_expr)
+  | IntroInjection of ('constr intro_pattern_expr) Loc.located list
+  | IntroApplyOn of 'constr Loc.located * 'constr intro_pattern_expr Loc.located
   | IntroRewrite of bool
 and 'constr or_and_intro_pattern_expr =
-  | IntroOrPattern of (Loc.t * 'constr intro_pattern_expr) list list
-  | IntroAndPattern of (Loc.t * 'constr intro_pattern_expr) list
+  | IntroOrPattern of ('constr intro_pattern_expr) Loc.located list list
+  | IntroAndPattern of ('constr intro_pattern_expr) Loc.located list
 
 (** Move destination for hypothesis *)
 
@@ -79,7 +79,7 @@ type 'a cast_type =
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of Id.t
 
-type 'a explicit_bindings = (Loc.t * quantified_hypothesis * 'a) list
+type 'a explicit_bindings = (quantified_hypothesis * 'a) Loc.located list
 
 type 'a bindings =
   | ImplicitBindings of 'a list
@@ -99,7 +99,7 @@ type 'a and_short_name = 'a * Id.t Loc.located option
 
 type 'a or_by_notation =
   | AN of 'a
-  | ByNotation of (Loc.t * string * string option)
+  | ByNotation of (string * string option) Loc.located
 
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)

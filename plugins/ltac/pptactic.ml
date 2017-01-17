@@ -149,7 +149,7 @@ type 'a extra_genarg_printer =
 
   let pr_or_by_notation f = function
     | AN v -> f v
-    | ByNotation (_,s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
+    | ByNotation (_,(s,sc)) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
   let pr_located pr (loc,x) = pr x
 
@@ -162,8 +162,8 @@ type 'a extra_genarg_printer =
     | NamedHyp id -> pr_id id
 
   let pr_binding prc = function
-    | loc, NamedHyp id, c -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
-    | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
+    | loc, (NamedHyp id, c) -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
+    | loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
 
   let pr_bindings prc prlc = function
     | ImplicitBindings l ->
@@ -368,8 +368,8 @@ type 'a extra_genarg_printer =
 
   let pr_esubst prc l =
     let pr_qhyp = function
-    (_,AnonHyp n,c) -> str "(" ++ int n ++ str" := " ++ prc c ++ str ")"
-      | (_,NamedHyp id,c) ->
+    (_,(AnonHyp n,c)) -> str "(" ++ int n ++ str" := " ++ prc c ++ str ")"
+      | (_,(NamedHyp id,c)) ->
         str "(" ++ pr_id id ++ str" := " ++ prc c ++ str ")"
     in
     prlist_with_sep spc pr_qhyp l

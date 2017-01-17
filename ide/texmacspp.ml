@@ -649,7 +649,7 @@ let rec tmpp v loc =
         match r with
         | AN (Qualid (_, q)) -> ["qualid", string_of_qualid q]
         | AN (Ident (_, id)) -> ["id", Id.to_string id]
-        | ByNotation (_, s, _) -> ["notation", s] in
+        | ByNotation (_, (s, _)) -> ["notation", s] in
       xmlCanonicalStructure attr loc
   | VernacCoercion _ as x -> xmlTODO loc x
   | VernacIdentityCoercion _ as x -> xmlTODO loc x

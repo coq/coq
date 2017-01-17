@@ -31,8 +31,8 @@ module RelDecl = Context.Rel.Declaration
 
 let pr_binding prc  =
   function
-    | loc, NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
-    | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, (NamedHyp id, c) -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
 
 let pr_bindings prc prlc = function
   | ImplicitBindings l ->

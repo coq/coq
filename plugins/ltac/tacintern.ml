@@ -212,8 +212,8 @@ let intern_constr = intern_constr_gen false false
 let intern_type = intern_constr_gen false true
 
 (* Globalize bindings *)
-let intern_binding ist (loc,b,c) =
-  (loc,intern_binding_name ist b,intern_constr ist c)
+let intern_binding ist (loc,(b,c)) =
+  (loc,(intern_binding_name ist b,intern_constr ist c))
 
 let intern_bindings ist = function
   | NoBindings -> NoBindings
@@ -291,7 +291,7 @@ let intern_evaluable_global_reference ist r =
 
 let intern_evaluable_reference_or_by_notation ist = function
   | AN r -> intern_evaluable_global_reference ist r
-  | ByNotation (loc,ntn,sc) ->
+  | ByNotation (loc,(ntn,sc)) ->
       evaluable_of_global_reference ist.genv
       (Notation.interp_notation_as_global_reference loc
         (function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)

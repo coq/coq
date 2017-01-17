@@ -750,7 +750,7 @@ let print_any_name = function
       ~hdr:"print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_name = function
-  | ByNotation (loc,ntn,sc) ->
+  | ByNotation (loc,(ntn,sc)) ->
       print_any_name
         (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true)
                ntn sc))
@@ -798,7 +798,7 @@ let print_about_any loc k =
       hov 0 (pr_located_qualid k)
 
 let print_about = function
-  | ByNotation (loc,ntn,sc) ->
+  | ByNotation (loc,(ntn,sc)) ->
       print_about_any loc
         (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true)
                ntn sc))
