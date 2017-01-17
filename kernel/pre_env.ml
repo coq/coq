@@ -156,7 +156,8 @@ let map_named_val f ctxt =
     (accu, d')
   in
   let map, ctx = List.fold_map fold ctxt.env_named_map ctxt.env_named_ctx in
-  { env_named_ctx = ctx; env_named_map = map }
+  if map == ctxt.env_named_map then ctxt
+  else { env_named_ctx = ctx; env_named_map = map }
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
