@@ -44,25 +44,25 @@ let glob_xI = ConstructRef path_of_xI
 let glob_xO = ConstructRef path_of_xO
 let glob_xH = ConstructRef path_of_xH
 
-let pos_of_bignat loc x = 
-  let ref_xI = Loc.tag ~loc @@ GRef (glob_xI, None) in
-  let ref_xH = Loc.tag ~loc @@ GRef (glob_xH, None) in
-  let ref_xO = Loc.tag ~loc @@ GRef (glob_xO, None) in
+let pos_of_bignat ?loc x = 
+  let ref_xI = Loc.tag ?loc @@ GRef (glob_xI, None) in
+  let ref_xH = Loc.tag ?loc @@ GRef (glob_xH, None) in
+  let ref_xO = Loc.tag ?loc @@ GRef (glob_xO, None) in
   let rec pos_of x =
     match div2_with_rest x with
-      | (q,false) -> Loc.tag ~loc @@ GApp (ref_xO,[pos_of q])
-      | (q,true) when not (Bigint.equal q zero) -> Loc.tag ~loc @@ GApp (ref_xI,[pos_of q])
+      | (q,false) -> Loc.tag ?loc @@ GApp (ref_xO,[pos_of q])
+      | (q,true) when not (Bigint.equal q zero) -> Loc.tag ?loc @@ GApp (ref_xI,[pos_of q])
       | (q,true) -> ref_xH
   in
   pos_of x
 
-let error_non_positive dloc =
-  user_err ~loc:dloc ~hdr:"interp_positive"
+let error_non_positive ?loc =
+  user_err ?loc ~hdr:"interp_positive"
    (str "Only strictly positive numbers in type \"positive\".")
 
-let interp_positive dloc n =
-  if is_strictly_pos n then pos_of_bignat dloc n
-  else error_non_positive dloc
+let interp_positive ?loc n =
+  if is_strictly_pos n then pos_of_bignat ?loc n
+  else error_non_positive ?loc
 
 (**********************************************************************)
 (* Printing positive via scopes                                       *)
@@ -106,18 +106,18 @@ let glob_Npos = ConstructRef path_of_Npos
 
 let n_path = make_path binnums "N"
 
-let n_of_binnat loc pos_or_neg n = Loc.tag ~loc @@
+let n_of_binnat ?loc pos_or_neg n = Loc.tag ?loc @@
   if not (Bigint.equal n zero) then
-    GApp(Loc.tag @@ GRef (glob_Npos,None), [pos_of_bignat loc n])
+    GApp(Loc.tag @@ GRef (glob_Npos,None), [pos_of_bignat ?loc n])
   else
     GRef(glob_N0, None)
 
-let error_negative dloc =
-  user_err ~loc:dloc ~hdr:"interp_N" (str "No negative numbers in type \"N\".")
+let error_negative ?loc =
+  user_err ?loc ~hdr:"interp_N" (str "No negative numbers in type \"N\".")
 
-let n_of_int dloc n =
-  if is_pos_or_zero n then n_of_binnat dloc true n
-  else error_negative dloc
+let n_of_int ?loc n =
+  if is_pos_or_zero n then n_of_binnat ?loc true n
+  else error_negative ?loc
 
 (**********************************************************************)
 (* Printing N via scopes                                              *)
@@ -157,13 +157,13 @@ let glob_ZERO = ConstructRef path_of_ZERO
 let glob_POS = ConstructRef path_of_POS
 let glob_NEG = ConstructRef path_of_NEG
 
-let z_of_int loc n =
+let z_of_int ?loc n =
   if not (Bigint.equal n zero) then
     let sgn, n =
       if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
-    Loc.tag ~loc @@ GApp(Loc.tag ~loc @@ GRef(sgn,None), [pos_of_bignat loc n])
+    Loc.tag ?loc @@ GApp(Loc.tag ?loc @@ GRef(sgn,None), [pos_of_bignat ?loc n])
   else
-    Loc.tag ~loc @@ GRef(glob_ZERO, None)
+    Loc.tag ?loc @@ GRef(glob_ZERO, None)
 
 (**********************************************************************)
 (* Printing Z via scopes                                              *)

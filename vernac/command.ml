@@ -267,7 +267,7 @@ match local with
     (gr,inst,Lib.is_modtype_strict ())
 
 let interp_assumption evdref env impls bl c =
-  let c = mkCProdN (local_binders_loc bl) bl c in
+  let c = mkCProdN ?loc:(local_binders_loc bl) bl c in
   let ty, impls = interp_type_evars_impls env evdref ~impls c in
   let ty = EConstr.Unsafe.to_constr ty in
   (ty, impls)
@@ -917,7 +917,7 @@ let mkSubset name typ prop =
 	 [| typ; mkLambda (name, typ, prop) |])
 let sigT = Lazy.from_fun build_sigma_type
 
-let make_qref s = Qualid (Loc.ghost, qualid_of_string s)
+let make_qref s = Qualid (Loc.tag @@ qualid_of_string s)
 let lt_ref = make_qref "Init.Peano.lt"
 
 let rec telescope l =
@@ -1059,7 +1059,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     mkApp (EConstr.of_constr (Universes.constr_of_global (delayed_force fix_sub_ref)),
 	  [| argtyp ; wf_rel ;
 	     Evarutil.e_new_evar env evdref
-	       ~src:(Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
+	       ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
 	     prop |])
   in
   let def = Typing.e_solve_evars env evdref def in
@@ -1212,7 +1212,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let env = Global.env() in
-    let indexes = search_guard Loc.ghost env indexes fixdecls in
+    let indexes = search_guard env indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let vars = Universes.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
@@ -1327,8 +1327,7 @@ let do_program_recursive local p fixkind fixl ntns =
 	Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in
       let indexes = 
-        Pretyping.search_guard
-          Loc.ghost (Global.env ()) possible_indexes fixdecls in
+        Pretyping.search_guard (Global.env ()) possible_indexes fixdecls in
       List.iteri (fun i _ ->
           Inductive.check_fix env
                               ((indexes,i),fixdecls))

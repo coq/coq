@@ -79,10 +79,11 @@ and cases_clause = (Id.t list * cases_pattern list * glob_constr) Loc.located
     of [t] are members of [il]. *)
 and cases_clauses = cases_clause list
 
-type extended_glob_local_binder =
-  | GLocalAssum of Loc.t * Name.t * binding_kind * glob_constr
-  | GLocalDef of Loc.t * Name.t * binding_kind * glob_constr * glob_constr option
-  | GLocalPattern of Loc.t * (cases_pattern * Id.t list) * Id.t * binding_kind * glob_constr
+type extended_glob_local_binder_r =
+  | GLocalAssum   of Name.t * binding_kind * glob_constr
+  | GLocalDef     of Name.t * binding_kind * glob_constr * glob_constr option
+  | GLocalPattern of (cases_pattern * Id.t list) * Id.t * binding_kind * glob_constr
+and extended_glob_local_binder = extended_glob_local_binder_r Loc.located
 
 (** A globalised term together with a closure representing the value
     of its free variables. Intended for use when these variables are taken

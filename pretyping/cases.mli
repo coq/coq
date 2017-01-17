@@ -38,7 +38,7 @@ val irrefutable : env -> cases_pattern -> bool
 (** {6 Compilation primitive. } *)
 
 val compile_cases :
-  Loc.t -> case_style ->
+  ?loc:Loc.t -> case_style ->
   (type_constraint -> env -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
   type_constraint ->
   env -> glob_constr option * tomatch_tuples * cases_clauses ->
@@ -65,7 +65,7 @@ type 'a equation =
     { patterns     : cases_pattern list;
       rhs          : 'a rhs;
       alias_stack  : Name.t list;
-      eqn_loc      : Loc.t;
+      eqn_loc      : Loc.t option;
       used         : bool ref }
 
 type 'a matrix = 'a equation list
@@ -106,14 +106,14 @@ type 'a pattern_matching_problem =
       tomatch   : tomatch_stack;
       history   : pattern_continuation;
       mat       : 'a matrix;
-      caseloc   : Loc.t;
+      caseloc   : Loc.t option;
       casestyle : case_style;
       typing_function: type_constraint -> env -> evar_map ref -> 'a option -> unsafe_judgment }
 
 
 val compile : 'a pattern_matching_problem -> unsafe_judgment
 
-val prepare_predicate :            Loc.t ->
+val prepare_predicate : ?loc:Loc.t ->
            (Evarutil.type_constraint ->
             Environ.env -> Evd.evar_map ref -> glob_constr -> unsafe_judgment) ->
            Environ.env ->

@@ -60,8 +60,6 @@ exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
 exception NoDecidabilityCoInductive
 
-let dl = Loc.ghost
-
 let constr_of_global g = lazy (Universes.constr_of_global g)
 
 (* Some pre declaration of constant we are going to use *)
@@ -88,12 +86,12 @@ let destruct_on c = destruct false None c None None
 
 let destruct_on_using c id =
   destruct false None c
-    (Some (dl,IntroOrPattern [[dl,IntroNaming IntroAnonymous];
-               [dl,IntroNaming (IntroIdentifier id)]]))
+    (Some (Loc.tag @@ IntroOrPattern [[Loc.tag @@ IntroNaming IntroAnonymous];
+               [Loc.tag @@ IntroNaming (IntroIdentifier id)]]))
     None
 
 let destruct_on_as c l =
-  destruct false None c (Some (dl,l)) None
+  destruct false None c (Some (Loc.tag l)) None
 
 (* reconstruct the inductive with the correct deBruijn indexes *)
 let mkFullInd (ind,u) n =
@@ -611,8 +609,8 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                          Proofview.Goal.enter { enter = begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
                             destruct_on_as (EConstr.mkVar freshz)
-                                  (IntroOrPattern [[dl,IntroNaming (IntroIdentifier fresht);
-                                    dl,IntroNaming (IntroIdentifier freshz)]])
+                                  (IntroOrPattern [[Loc.tag @@ IntroNaming (IntroIdentifier fresht);
+                                    Loc.tag @@ IntroNaming (IntroIdentifier freshz)]])
                          end }
                         ]);
 (*

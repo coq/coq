@@ -41,7 +41,7 @@ type ('a,'b) request = {
   exn_info : t * t;
   stop : t;
   document : 'b;
-  loc : Loc.t;
+  loc : Loc.t option;
   uuid     : 'a;
   name     : string
 }

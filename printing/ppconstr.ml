@@ -145,9 +145,9 @@ let tag_var = tag Tag.variable
     if !Flags.beautify && not (Int.equal n 0) then comment (CLexer.extract_comments n)
     else mt()
 
-  let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
+  let pr_with_comments ?loc pp = pr_located (fun x -> x) (Loc.tag ?loc pp)
 
-  let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
+  let pr_sep_com sep f c = pr_with_comments ~loc:(constr_loc c) (sep() ++ f c)
 
   let pr_univ l =
     match l with
@@ -302,7 +302,7 @@ let tag_var = tag Tag.variable
         assert false
     in
     let loc = cases_pattern_expr_loc (loc, p) in
-    pr_with_comments loc
+    pr_with_comments ~loc
       (sep() ++ if prec_less prec inh then strm else surround strm)
 
   let pr_patt = pr_patt mt
@@ -310,7 +310,7 @@ let tag_var = tag Tag.variable
   let pr_eqn pr (loc,(pl,rhs)) =
     let pl = List.map snd pl in
     spc() ++ hov 4
-      (pr_with_comments loc
+      (pr_with_comments ~loc
          (str "| " ++
             hov 0 (prlist_with_sep pr_bar (prlist_with_sep sep_v (pr_patt ltop)) pl
                    ++ str " =>") ++
@@ -730,7 +730,7 @@ let tag_var = tag Tag.variable
         return (pr_delimiters sc (pr mt (ldelim,E) a), ldelim)
     in
     let loc = constr_loc a in
-    pr_with_comments loc
+    pr_with_comments ~loc
       (sep() ++ if prec_less prec inherited then strm else surround strm)
 
   type term_pr = {

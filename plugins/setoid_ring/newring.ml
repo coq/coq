@@ -128,11 +128,11 @@ let closed_term_ast l =
     mltac_name = tacname;
     mltac_index = 0;
   } in
-  let l = List.map (fun gr -> ArgArg(Loc.ghost,gr)) l in
+  let l = List.map (fun gr -> ArgArg(Loc.tag gr)) l in
   TacFun([Name(Id.of_string"t")],
-  TacML(Loc.ghost,tacname,
+  TacML(Loc.tag (tacname,
   [TacGeneric (Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (Loc.tag @@ GVar(Id.of_string"t"),None));
-   TacGeneric (Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)]))
+   TacGeneric (Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)])))
 (*
 let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 *)
@@ -170,7 +170,7 @@ let ltac_lcall tac args =
 let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
-    let x = Reference (ArgVar (Loc.ghost, id)) in
+    let x = Reference (ArgVar (Loc.tag id)) in
     (succ i, x :: vars, Id.Map.add id arg lfun)
   in
   let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
@@ -205,7 +205,7 @@ let get_res =
 let exec_tactic env evd n f args =
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
-    let x = Reference (ArgVar (Loc.ghost, id)) in
+    let x = Reference (ArgVar (Loc.tag id)) in
     (succ i, x :: vars, Id.Map.add id (Value.of_constr arg) lfun)
   in
   let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
@@ -213,7 +213,7 @@ let exec_tactic env evd n f args =
   (** Build the getter *)
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
-  let get_res = TacML (Loc.ghost, get_res, [TacGeneric n]) in
+  let get_res = TacML (Loc.tag (get_res, [TacGeneric n])) in
   let getter = Tacexp (TacFun (List.map (fun n -> Name n) lid, get_res)) in
   (** Evaluate the whole result *)
   let gl = dummy_goal env evd in
@@ -603,7 +603,7 @@ let interp_power env evd pow =
   match pow with
   | None ->
       let t = ArgArg(Loc.tag (Lazy.force ltac_inv_morph_nothing)) in
-      (TacArg(Loc.ghost,TacCall(Loc.tag (t,[]))), plapp evd coq_None [|carrier|])
+      (TacArg(Loc.tag (TacCall(Loc.tag (t,[])))), plapp evd coq_None [|carrier|])
   | Some (tac, spec) ->
       let tac =
         match tac with

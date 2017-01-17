@@ -33,12 +33,12 @@ let glob_EmptyString = lazy (make_reference "EmptyString")
 
 open Lazy
 
-let interp_string loc s =
+let interp_string ?loc s =
   let le = String.length s in
   let rec aux n =
-     if n = le then Loc.tag ~loc @@ GRef (force glob_EmptyString, None) else
-     Loc.tag ~loc @@ GApp (Loc.tag ~loc @@ GRef (force glob_String, None),
-       [interp_ascii loc (int_of_char s.[n]); aux (n+1)])
+     if n = le then Loc.tag ?loc @@ GRef (force glob_EmptyString, None) else
+     Loc.tag ?loc @@ GApp (Loc.tag ?loc @@ GRef (force glob_String, None),
+       [interp_ascii ?loc (int_of_char s.[n]); aux (n+1)])
   in aux 0
 
 let uninterp_string r =

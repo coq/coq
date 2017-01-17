@@ -234,7 +234,7 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacAlias (_,(s,l)) ->
       let s = subst_kn subst s in
       TacAlias (Loc.tag (s,List.map (subst_tacarg subst) l))
-  | TacML (_loc,opn,l) -> TacML (_loc, opn,List.map (subst_tacarg subst) l)
+  | TacML (loc,(opn,l)) -> TacML (loc, (opn,List.map (subst_tacarg subst) l))
 
 and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)
 

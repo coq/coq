@@ -76,7 +76,7 @@ and full_set env =
   List.fold_right Id.Set.add (List.map NamedDecl.get_id (named_context env)) Id.Set.empty
 
 let process_expr env e ty =
-  let ty_expr = SsSingl(Loc.ghost, Id.of_string "Type") in
+  let ty_expr = SsSingl(Loc.tag @@ Id.of_string "Type") in
   let v_ty = process_expr env ty_expr ty in
   let s = Id.Set.union v_ty (process_expr env e ty) in
   Id.Set.elements s

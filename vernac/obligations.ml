@@ -558,8 +558,7 @@ let declare_mutual_definition l =
 	    List.map3 compute_possible_guardness_evidences
               wfl fixdefs fixtypes in
 	  let indexes = 
-              Pretyping.search_guard
-              Loc.ghost (Global.env())
+              Pretyping.search_guard (Global.env())
               possible_indexes fixdecls in
           Some indexes, 
           List.map_i (fun i _ ->
@@ -674,7 +673,7 @@ let init_prog_info ?(opaque = false) sign n pl b t ctx deps fixkind
 	assert(Int.equal (Array.length obls) 0);
 	let n = Nameops.add_suffix n "_obligation" in
 	  [| { obl_name = n; obl_body = None;
-	       obl_location = Loc.ghost, Evar_kinds.InternalHole; obl_type = t;
+	       obl_location = Loc.tag Evar_kinds.InternalHole; obl_type = t;
 	       obl_status = false, Evar_kinds.Expand; obl_deps = Int.Set.empty;
 	       obl_tac = None } |],
 	mkVar n

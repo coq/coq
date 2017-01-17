@@ -201,8 +201,6 @@ end
 
 let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
 
-let dloc = Loc.ghost
-
 let catching_error call_trace fail (e, info) =
   let inner_trace =
     Option.default [] (Exninfo.get info ltac_trace_info)
@@ -326,7 +324,7 @@ let coerce_to_tactic loc id v =
     | _ -> fail ()
   else fail ()
 
-let intro_pattern_of_ident id = (Loc.ghost, IntroNaming (IntroIdentifier id))
+let intro_pattern_of_ident id = (Loc.tag @@ IntroNaming (IntroIdentifier id))
 let value_of_ident id =
   in_gen (topwit wit_intro_pattern) (intro_pattern_of_ident id)
 
@@ -370,22 +368,22 @@ let debugging_exception_step ist signal_anomaly e pp =
   debugging_step ist (fun () ->
     pp() ++ spc() ++ str "raised the exception" ++ fnl() ++ explain_exc e)
 
-let error_ltac_variable loc id env v s =
-   user_err ~loc  (str "Ltac variable " ++ pr_id id ++
+let error_ltac_variable ?loc id env v s =
+   user_err ?loc  (str "Ltac variable " ++ pr_id id ++
    strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
    strbrk "which cannot be coerced to " ++ str s ++ str".")
 
 (* Raise Not_found if not in interpretation sign *)
 let try_interp_ltac_var coerce ist env (loc,id) =
   let v = Id.Map.find id ist.lfun in
-  try coerce v with CannotCoerceTo s -> error_ltac_variable loc id env v s
+  try coerce v with CannotCoerceTo s -> error_ltac_variable ~loc id env v s
 
 let interp_ltac_var coerce ist env locid =
   try try_interp_ltac_var coerce ist env locid
   with Not_found -> anomaly (str "Detected '" ++ Id.print (snd locid) ++ str "' as ltac var at interning time")
 
 let interp_ident ist env sigma id =
-  try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (env,sigma)) (dloc,id)
+  try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (env,sigma)) (Loc.tag id)
   with Not_found -> id
 
 (* Interprets an optional identifier, bound or fresh *)
@@ -531,7 +529,7 @@ let extract_ids ids lfun =
     if has_type v (topwit wit_intro_pattern) then
       let (_, ipat) = out_gen (topwit wit_intro_pattern) v in
       if Id.List.mem id ids then accu
-      else accu @ intropattern_ids (dloc, ipat)
+      else accu @ intropattern_ids (Loc.tag ipat)
     else accu
   in
   Id.Map.fold fold lfun []
@@ -541,7 +539,7 @@ let default_fresh_id = Id.of_string "H"
 let interp_fresh_id ist env sigma l =
   let extract_ident ist env sigma id =
     try try_interp_ltac_var (coerce_to_ident_not_fresh env sigma)
-			    ist (Some (env,sigma)) (dloc,id)
+			    ist (Some (env,sigma)) (Loc.tag id)
     with Not_found -> id in
   let ids = List.map_filter (function ArgVar (_, id) -> Some id | _ -> None) l in
   let avoid = match TacStore.get ist.extra f_avoid_ids with
@@ -977,14 +975,14 @@ let interp_binding_name ist sigma = function
       (* If a name is bound, it has to be a quantified hypothesis *)
       (* user has to use other names for variables if these ones clash with *)
       (* a name intented to be used as a (non-variable) identifier *)
-      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist None(dloc,id)
+      try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist None(Loc.tag id)
       with Not_found -> NamedHyp id
 
 let interp_declared_or_quantified_hypothesis ist env sigma = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       try try_interp_ltac_var
-	    (coerce_to_decl_or_quant_hyp env sigma) ist (Some (env,sigma)) (dloc,id)
+	    (coerce_to_decl_or_quant_hyp env sigma) ist (Some (env,sigma)) (Loc.tag id)
       with Not_found -> NamedHyp id
 
 let interp_binding ist env sigma (loc,(b,c)) =
@@ -1012,14 +1010,14 @@ let interp_open_constr_with_bindings ist env sigma (c,bl) =
   sigma, (c, bl)
 
 let loc_of_bindings = function
-| NoBindings -> Loc.ghost
-| ImplicitBindings l -> loc_of_glob_constr (fst (List.last l))
-| ExplicitBindings l -> fst (List.last l)
+| NoBindings         -> None
+| ImplicitBindings l -> Some (loc_of_glob_constr (fst (List.last l)))
+| ExplicitBindings l -> Some (fst (List.last l))
 
 let interp_open_constr_with_bindings_loc ist ((c,_),bl as cb) =
   let loc1 = loc_of_glob_constr c in
   let loc2 = loc_of_bindings bl in
-  let loc = if Loc.is_ghost loc2 then loc1 else Loc.merge loc1 loc2 in
+  let loc  = Loc.opt_merge loc1 loc2 in
   let f = { delayed = fun env sigma ->
     let sigma = Sigma.to_evar_map sigma in
     let (sigma, c) = interp_open_constr_with_bindings ist env sigma cb in
@@ -1288,8 +1286,8 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       in
       Ftactic.run tac (fun () -> Proofview.tclUNIT ())
 
-  | TacML (loc,opn,l) ->
-      push_trace (loc,LtacMLCall tac) ist >>= fun trace ->
+  | TacML (loc,(opn,l)) ->
+      push_trace (Loc.tag ~loc @@ LtacMLCall tac) ist >>= fun trace ->
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       let tac = Tacenv.interp_ml_tactic opn in
       let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
@@ -1308,7 +1306,7 @@ and force_vrec ist v : Val.t Ftactic.t =
     | v -> Ftactic.return (of_tacvalue v)
   else Ftactic.return v
 
-and interp_ltac_reference loc' mustbetac ist r : Val.t Ftactic.t =
+and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
   match r with
   | ArgVar (loc,id) ->
       let v =
@@ -1322,7 +1320,7 @@ and interp_ltac_reference loc' mustbetac ist r : Val.t Ftactic.t =
       end
   | ArgArg (loc,r) ->
       let ids = extract_ids [] ist.lfun in
-      let loc_info = ((if Loc.is_ghost loc' then loc else loc'),LtacNameCall r) in
+      let loc_info = (Option.default loc loc',LtacNameCall r) in
       let extra = TacStore.set ist.extra f_avoid_ids ids in
       push_trace loc_info ist >>= fun trace ->
       let extra = TacStore.set extra f_trace trace in
@@ -1333,7 +1331,7 @@ and interp_ltac_reference loc' mustbetac ist r : Val.t Ftactic.t =
 and interp_tacarg ist arg : Val.t Ftactic.t =
   match arg with
   | TacGeneric arg -> interp_genarg ist arg
-  | Reference r -> interp_ltac_reference dloc false ist r
+  | Reference r -> interp_ltac_reference false ist r
   | ConstrMayEval c ->
       Ftactic.s_enter { s_enter = begin fun gl ->
         let sigma = project gl in
@@ -1342,16 +1340,16 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
         Sigma.Unsafe.of_pair (Ftactic.return (Value.of_constr c_interp), sigma)
       end }
   | TacCall (loc,(r,[])) ->
-      interp_ltac_reference loc true ist r
+      interp_ltac_reference true ist r
   | TacCall (loc,(f,l)) ->
       let (>>=) = Ftactic.bind in
-      interp_ltac_reference loc true ist f >>= fun fv ->
+      interp_ltac_reference true ist f >>= fun fv ->
       Ftactic.List.map (fun a -> interp_tacarg ist a) l >>= fun largs ->
       interp_app loc ist fv largs
   | TacFreshId l ->
       Ftactic.enter { enter = begin fun gl ->
         let id = interp_fresh_id ist (pf_env gl) (project gl) l in
-        Ftactic.return (in_gen (topwit wit_intro_pattern) (dloc, IntroNaming (IntroIdentifier id)))
+        Ftactic.return (in_gen (topwit wit_intro_pattern) (Loc.tag @@ IntroNaming (IntroIdentifier id)))
       end }
   | TacPretype c ->
       Ftactic.s_enter { s_enter = begin fun gl ->
@@ -1442,7 +1440,7 @@ and interp_letrec ist llc u =
   Proofview.tclUNIT () >>= fun () -> (* delay for the effects of [lref], just in case. *)
   let lref = ref ist.lfun in
   let fold accu ((_, id), b) =
-    let v = of_tacvalue (VRec (lref, TacArg (dloc, b))) in
+    let v = of_tacvalue (VRec (lref, TacArg (Loc.tag b))) in
     Id.Map.add id v accu
   in
   let lfun = List.fold_left fold ist.lfun llc in
@@ -1768,7 +1766,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         (* We try to fully-typecheck the term *)
           let (sigma,c_interp) = interp_constr ist env sigma c in
           let let_tac b na c cl eqpat =
-            let id = Option.default (Loc.ghost,IntroAnonymous) eqpat in
+            let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_tac with_eq na c None cl
           in
@@ -1780,7 +1778,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         else
         (* We try to keep the pattern structure as much as possible *)
           let let_pat_tac b na c cl eqpat =
-            let id = Option.default (Loc.ghost,IntroAnonymous) eqpat in
+            let id = Option.default (Loc.tag IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_pat_tac with_eq na c cl
           in
@@ -2132,7 +2130,7 @@ let lift_constr_tac_to_ml_tac vars tac =
       let c = Id.Map.find id ist.lfun in
       try Some (coerce_to_closed_constr env c)
       with CannotCoerceTo ty ->
-        error_ltac_variable Loc.ghost dummy_id (Some (env,sigma)) c ty
+        error_ltac_variable dummy_id (Some (env,sigma)) c ty
     in
     let args = List.map_filter map vars in
     tac args ist

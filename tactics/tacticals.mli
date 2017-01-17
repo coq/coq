@@ -116,7 +116,7 @@ type branch_assumptions = private {
    error message if |pats| <> |branchsign|; extends them if no pattern is given
    for let-ins in the case of a conjunctive pattern *)
 val get_and_check_or_and_pattern :
-  Loc.t -> delayed_open_constr or_and_intro_pattern_expr ->
+  ?loc:Loc.t -> delayed_open_constr or_and_intro_pattern_expr ->
   bool list array -> intro_patterns array
 
 (** Tolerate "[]" to mean a disjunctive pattern of any length *)

@@ -283,7 +283,7 @@ let generalizeRewriteIntros as_mode tac depids id =
   end }
 
 let error_too_many_names pats =
-  let loc = Loc.join_loc (fst (List.hd pats)) (fst (List.last pats)) in
+  let loc = Loc.merge (fst (List.hd pats)) (fst (List.last pats)) in
   Proofview.tclENV >>= fun env ->
   tclZEROMSG ~loc (
     str "Unexpected " ++

@@ -29,8 +29,6 @@ open Misctypes
 open Decl_kinds
 open Context.Named.Declaration
 
-let dl = Loc.ghost
-
 (** Should we keep details of universes during detyping ? *)
 let print_universes = Flags.univ_print
 

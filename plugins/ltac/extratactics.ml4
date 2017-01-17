@@ -76,7 +76,7 @@ END
 
 let induction_arg_of_quantified_hyp = function
   | AnonHyp n -> None,ElimOnAnonHyp n
-  | NamedHyp id -> None,ElimOnIdent (Loc.ghost,id)
+  | NamedHyp id -> None,ElimOnIdent (Loc.tag id)
 
 (* Versions *_main must come first!! so that "1" is interpreted as a
    ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a
@@ -679,8 +679,8 @@ let hResolve id c occ t =
     with
       | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
           let (e, info) = CErrors.push e in
-          let loc = match Loc.get_loc info with None -> Loc.ghost | Some loc -> loc in
-          resolve_hole (subst_hole_with_term (fst (Loc.unloc loc)) c_raw t_hole)
+          let loc = match Loc.get_loc info with None -> 0,0 | Some loc -> Loc.unloc loc in
+          resolve_hole (subst_hole_with_term (fst loc) c_raw t_hole)
   in
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
   let t_constr = EConstr.of_constr t_constr in
@@ -784,7 +784,7 @@ let case_eq_intros_rewrite x =
 let rec find_a_destructable_match sigma t =
   let cl = induction_arg_of_quantified_hyp (NamedHyp (Id.of_string "x")) in
   let cl = [cl, (None, None), None], None in
-  let dest = TacAtom (Loc.ghost, TacInductionDestruct(false, false, cl)) in
+  let dest = TacAtom (Loc.tag @@ TacInductionDestruct(false, false, cl)) in
   match EConstr.kind sigma t with
     | Case (_,_,x,_) when closed0 sigma x ->
 	if isVar sigma x then

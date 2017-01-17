@@ -37,24 +37,24 @@ let glob_Ascii = lazy (make_reference "Ascii")
 
 open Lazy
 
-let interp_ascii loc p =
+let interp_ascii ?loc p =
   let rec aux n p =
      if Int.equal n 0 then [] else
      let mp = p mod 2 in
-     (Loc.tag ~loc @@ GRef ((if Int.equal mp 0 then glob_false else glob_true),None))
+     (Loc.tag ?loc @@ GRef ((if Int.equal mp 0 then glob_false else glob_true),None))
      :: (aux (n-1) (p/2)) in
-  Loc.tag ~loc @@ GApp (Loc.tag ~loc @@ GRef(force glob_Ascii,None), aux 8 p)
+  Loc.tag ?loc @@ GApp (Loc.tag ?loc @@ GRef(force glob_Ascii,None), aux 8 p)
 
-let interp_ascii_string dloc s =
+let interp_ascii_string ?loc s =
   let p =
     if Int.equal (String.length s) 1 then int_of_char s.[0]
     else
       if Int.equal (String.length s) 3 && is_digit s.[0] && is_digit s.[1] && is_digit s.[2]
       then int_of_string s
       else
-	user_err ~loc:dloc ~hdr:"interp_ascii_string"
+	user_err ?loc ~hdr:"interp_ascii_string"
 	 (str "Expects a single character or a three-digits ascii code.") in
-  interp_ascii dloc p
+  interp_ascii ?loc p
 
 let uninterp_ascii r =
   let rec uninterp_bool_list n = function

@@ -539,7 +539,7 @@ let gallina_print_constant_with_infos sp =
 let gallina_print_syntactic_def kn =
   let qid = Nametab.shortest_qualid_of_syndef Id.Set.empty kn
   and (vars,a) = Syntax_def.search_syntactic_definition kn in
-  let c = Notation_ops.glob_constr_of_notation_constr Loc.ghost a in
+  let c = Notation_ops.glob_constr_of_notation_constr a in
   hov 2
     (hov 4
        (str "Notation " ++ pr_qualid qid ++
@@ -752,7 +752,7 @@ let print_any_name = function
 let print_name = function
   | ByNotation (loc,(ntn,sc)) ->
       print_any_name
-        (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true)
+        (Term (Notation.interp_notation_as_global_reference ~loc (fun _ -> true)
                ntn sc))
   | AN ref ->
       print_any_name (locate_any_name ref)
@@ -800,7 +800,7 @@ let print_about_any loc k =
 let print_about = function
   | ByNotation (loc,(ntn,sc)) ->
       print_about_any loc
-        (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true)
+        (Term (Notation.interp_notation_as_global_reference ~loc (fun _ -> true)
                ntn sc))
   | AN ref ->
       print_about_any (loc_of_reference ref) (locate_any_name ref)

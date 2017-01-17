@@ -1416,7 +1416,7 @@ let add_notation_extra_printing_rule df k v =
 
 (* Infix notations *)
 
-let inject_var x = Loc.tag @@ CRef (Ident (Loc.ghost, Id.of_string x),None)
+let inject_var x = Loc.tag @@ CRef (Ident (Loc.tag @@ Id.of_string x),None)
 
 let add_infix local ((loc,inf),modifiers) pr sc =
   check_infix_modifiers modifiers;

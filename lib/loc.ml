@@ -26,12 +26,6 @@ let make_loc (bp, ep) = {
   fname = ""; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
   bp = bp; ep = ep; }
 
-let ghost = {
-  fname = ""; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
-  bp = 0; ep = 0; }
-
-let is_ghost loc = loc.ep = 0
-
 let merge loc1 loc2 =
   if loc1.bp < loc2.bp then
     if loc1.ep < loc2.ep then {
@@ -51,15 +45,24 @@ let merge loc1 loc2 =
     bp = loc2.bp; ep = loc1.ep; }
   else loc2
 
+let merge_opt l1 l2 = Option.cata (fun l1 -> merge l1 l2) l2 l1
+let opt_merge l1 l2 = Option.cata (fun l2 -> merge l1 l2) l1 l2
+
 let unloc loc = (loc.bp, loc.ep)
 
-let dummy_loc = ghost
 let join_loc = merge
 
 (** Located type *)
 
 type 'a located = t * 'a
 
+let is_ghost loc = loc.ep = 0
+
+let ghost = {
+  fname = ""; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
+  bp = 0; ep = 0; }
+
+let internal_ghost = ghost
 let to_pair x = x
 let tag ?loc x = Option.default ghost loc, x
 let obj (_,x) = x

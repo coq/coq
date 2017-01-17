@@ -156,7 +156,7 @@ let build_newrecursive
   let (rec_sign,rec_impls) =
     List.fold_left
       (fun (env,impls) (((_,recname),_),bl,arityc,_) ->
-        let arityc = Constrexpr_ops.mkCProdN Loc.ghost bl arityc in
+        let arityc = Constrexpr_ops.mkCProdN bl arityc in
         let arity,ctx = Constrintern.interp_type env0 sigma arityc in
 	let evdref = ref (Evd.from_env env0) in
 	let _, (_, impls') = Constrintern.interp_context_evars env evdref bl in
@@ -355,7 +355,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 	(*i The next call to mk_rel_id is valid since we have just construct the graph
 	   Ensures by : do_built
 	i*)
-	let f_R_mut = Ident (Loc.ghost,mk_rel_id (List.nth names 0)) in
+	let f_R_mut = Ident (Loc.tag @@ mk_rel_id (List.nth names 0)) in
 	let ind_kn =
 	  fst (locate_with_msg
 		 (pr_reference f_R_mut++str ": Not an inductive type!")
@@ -453,7 +453,7 @@ let generate_correction_proof_wf f_ref tcc_lemma_ref
 let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas args ret_type body
     pre_hook
     =
-  let type_of_f = Constrexpr_ops.mkCProdN Loc.ghost args ret_type in
+  let type_of_f = Constrexpr_ops.mkCProdN args ret_type in
   let rec_arg_num =
     let names =
       List.map
@@ -470,7 +470,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
   let unbounded_eq =
     let f_app_args =
       Loc.tag @@ Constrexpr.CAppExpl(
-	 (None,(Ident (Loc.ghost,fname)),None) ,
+	 (None,(Ident (Loc.tag fname)),None) ,
 	 (List.map
 	    (function
 	       | _,Anonymous -> assert false
@@ -480,10 +480,10 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 )
 	)
     in
-    Loc.tag @@ Constrexpr.CApp ((None,Constrexpr_ops.mkRefC (Qualid (Loc.ghost,(qualid_of_string "Logic.eq")))),
+    Loc.tag @@ Constrexpr.CApp ((None,Constrexpr_ops.mkRefC (Qualid (Loc.tag (qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
-  let eq = Constrexpr_ops.mkCProdN Loc.ghost args unbounded_eq in
+  let eq = Constrexpr_ops.mkCProdN args unbounded_eq in
   let hook ((f_ref,_) as fconst) tcc_lemma_ref (functional_ref,_) (eq_ref,_) rec_arg_num rec_arg_type
       nb_args relation =
     try
@@ -537,13 +537,13 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
       | None ->
 	  let ltof =
 	    let make_dir l = DirPath.make (List.rev_map Id.of_string l) in
-	    Libnames.Qualid (Loc.ghost,Libnames.qualid_of_path
+	    Libnames.Qualid (Loc.tag @@ Libnames.qualid_of_path
 			       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (Id.of_string "ltof")))
 	  in
 	  let fun_from_mes =
 	    let applied_mes =
 	      Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC wf_arg])    in
-	    Constrexpr_ops.mkLambdaC ([(Loc.ghost,Name wf_arg)],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
+	    Constrexpr_ops.mkLambdaC ([(Loc.tag @@ Name wf_arg)],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
 	  in
 	  let wf_rel_from_mes =
 	    Constrexpr_ops.mkAppC(Constrexpr_ops.mkRefC  ltof,[wf_arg_type;fun_from_mes])
@@ -554,7 +554,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	    let a = Names.Id.of_string "___a" in 
 	    let b = Names.Id.of_string "___b" in 
 	    Constrexpr_ops.mkLambdaC(
-	      [Loc.ghost,Name a;Loc.ghost,Name b],
+	      [Loc.tag @@ Name a;Loc.tag @@ Name b],
 	      Constrexpr.Default Explicit,
 	      wf_arg_type,
 	      Constrexpr_ops.mkAppC(wf_rel_expr,
@@ -891,14 +891,14 @@ let make_graph (f_ref:global_reference) =
 			    )
 			in
 			let b' = add_args (snd id) new_args b in
-			((((id,None), ( Some (Loc.ghost,rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
+			((((id,None), ( Some (Loc.tag rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
 		     )
 		     fixexprl
 		 in
 		 l
 	     | _ ->
 		let id = Label.to_id (con_label c) in
-		 [(((Loc.ghost,id),None),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
+		 [(((Loc.tag id),None),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
 	 let mp,dp,_ = repr_con c in
 	 do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list;

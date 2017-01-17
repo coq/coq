@@ -78,4 +78,4 @@ val db_breakpoint : debug_info ->
   Id.t Loc.located message_token list -> unit Proofview.NonLogical.t
 
 val extract_ltac_trace :
-  Tacexpr.ltac_trace -> Loc.t -> Pp.std_ppcmds option * Loc.t
+  ?loc:Loc.t -> Tacexpr.ltac_trace -> Pp.std_ppcmds option Loc.located

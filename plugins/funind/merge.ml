@@ -73,7 +73,7 @@ let isVarf f x =
     in global environment. *)
 let ident_global_exist id =
   try
-    let ans = Loc.tag @@ CRef (Libnames.Ident (Loc.ghost,id), None) in
+    let ans = Loc.tag @@ CRef (Libnames.Ident (Loc.tag id), None) in
     let _ = ignore (Constrintern.intern_constr (Global.env()) ans) in
     true
   with e when CErrors.noncritical e -> false
@@ -825,7 +825,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let _ = prNamedRConstr (string_of_name nme) tp in
         let _ = prstr "  ;  " in
         let typ = glob_constr_to_constr_expr tp in
-        CLocalAssum ([(Loc.ghost,nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
+        CLocalAssum ([(Loc.tag nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
       [] params in
   let concl = Constrextern.extern_constr false (Global.env()) Evd.empty concl in
   let arity,_ =
@@ -835,7 +835,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let c = RelDecl.get_type decl in
         let typ = Constrextern.extern_constr false env Evd.empty c in
         let newenv = Environ.push_rel (LocalAssum (nm,c)) env in
-        Loc.tag @@ CProdN ([[(Loc.ghost,nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
+        Loc.tag @@ CProdN ([[(Loc.tag nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
       (concl,Global.env())
       (shift.funresprms2 @ shift.funresprms1
         @ shift.args2 @ shift.args1 @ shift.otherprms2 @ shift.otherprms1) in
@@ -849,12 +849,12 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
     FIXME: params et cstr_expr (arity) *)
 let glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
     (rawlist:(Id.t * glob_constr) list) =
-  let lident = (Loc.ghost, shift.ident), None in
+  let lident = (Loc.tag shift.ident), None in
   let bindlist , cstr_expr = (* params , arities *)
     merge_rec_params_and_arity prms1 prms2 shift mkSet in
   let lcstor_expr : (bool * (lident * constr_expr)) list  =
     List.map (* zeta_normalize t ? *)
-      (fun (id,t) -> false, ((Loc.ghost,id),glob_constr_to_constr_expr t))
+      (fun (id,t) -> false, ((Loc.tag id),glob_constr_to_constr_expr t))
       rawlist in
   lident , bindlist , Some cstr_expr , lcstor_expr
 
@@ -902,7 +902,7 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
 (* Find infos on identifier id. *)
 let find_Function_infos_safe (id:Id.t): Indfun_common.function_info =
   let kn_of_id x =
-    let f_ref = Libnames.Ident (Loc.ghost,x) in
+    let f_ref = Libnames.Ident (Loc.tag x) in
     locate_with_msg (str "Don't know what to do with " ++ Libnames.pr_reference f_ref)
       locate_constant f_ref in
     try find_Function_infos (kn_of_id id)

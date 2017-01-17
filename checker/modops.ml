@@ -32,10 +32,10 @@ let error_no_such_label_sub l l1 =
   error ("The field "^
          Label.to_string l^" is missing in "^l1^".")
 
-let error_not_a_module_loc loc s =
-  user_err ~loc  (str ("\""^Label.to_string s^"\" is not a module"))
+let error_not_a_module_loc ?loc s =
+  user_err ?loc  (str ("\""^Label.to_string s^"\" is not a module"))
 
-let error_not_a_module s = error_not_a_module_loc Loc.ghost s
+let error_not_a_module s = error_not_a_module_loc s
 
 let error_with_module () =
   error "Unsupported 'with' constraint in module implementation"

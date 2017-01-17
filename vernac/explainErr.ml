@@ -119,6 +119,6 @@ let process_vernac_interp_error ?(allow_uncaught=true) (exc, info) =
   in
   match e' with
   | None -> e
-  | Some (None, loc) -> (fst e, Loc.add_loc (snd e) loc)
-  | Some (Some msg, loc) ->
+  | Some (loc, None) -> (fst e, Loc.add_loc (snd e) loc)
+  | Some (loc, Some msg) ->
     (EvaluatedError (msg, Some (fst e)), Loc.add_loc (snd e) loc)

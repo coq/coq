@@ -61,7 +61,7 @@ let default_intuition_tac =
   let name = { Tacexpr.mltac_plugin = "ground_plugin"; mltac_tactic = "auto_with"; } in
   let entry = { Tacexpr.mltac_name = name; mltac_index = 0 } in
   Tacenv.register_ml_tactic name [| tac |];
-  Tacexpr.TacML (Loc.ghost, entry, [])
+  Tacexpr.TacML (Loc.tag (entry, []))
 
 let (set_default_solver, default_solver, print_default_solver) = 
   Tactic_option.declare_tactic_option ~default:default_intuition_tac "Firstorder default solver"

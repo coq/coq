@@ -643,7 +643,7 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
   in
   Dumpglob.dump_moddef loc mp "mod";
   if_verbose Feedback.msg_info (str "Module " ++ pr_id id ++ str " is declared");
-  Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
+  Option.iter (fun export -> vernac_import export [Ident (Loc.tag id)]) export
 
 let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
@@ -668,7 +668,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
+             (fun export -> vernac_import export [Ident (Loc.tag id)]) export
          ) argsexport
     | _::_ ->
        let binders_ast = List.map
@@ -683,7 +683,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        Dumpglob.dump_moddef loc mp "mod";
        if_verbose Feedback.msg_info
 	 (str "Module " ++ pr_id id ++ str " is defined");
-       Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)])
+       Option.iter (fun export -> vernac_import export [Ident (Loc.tag id)])
          export
 
 let vernac_end_module export (loc,id as lid) =
@@ -715,7 +715,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
+             (fun export -> vernac_import export [Ident (Loc.tag id)]) export
          ) argsexport
 
     | _ :: _ ->
@@ -1176,10 +1176,10 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   end;
 
   if scopes_specified || clear_scopes_flag then begin
-      let scopes = List.map (Option.map (fun (o,k) -> 
+      let scopes = List.map (Option.map (fun (loc,k) -> 
         try ignore (Notation.find_scope k); k
         with UserError _ ->
-          Notation.find_delimiters_scope o k)) scopes
+          Notation.find_delimiters_scope ~loc k)) scopes
       in
       vernac_arguments_scope locality reference scopes
     end;
@@ -1708,7 +1708,7 @@ let interp_search_about_item env =
   | SearchString (s,sc) ->
       try
 	let ref =
-	  Notation.interp_notation_as_global_reference Loc.ghost
+	  Notation.interp_notation_as_global_reference
 	    (fun _ -> true) s sc in
 	GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->
@@ -2065,15 +2065,15 @@ let interp ?proof ~loc locality poly c =
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
   | VernacProof (None, None) ->
-      Aux_file.record_in_aux_at loc "VernacProof" "tac:no using:no"
+      Aux_file.record_in_aux_at ~loc "VernacProof" "tac:no using:no"
   | VernacProof (Some tac, None) ->
-      Aux_file.record_in_aux_at loc "VernacProof" "tac:yes using:no";
+      Aux_file.record_in_aux_at ~loc "VernacProof" "tac:yes using:no";
       vernac_set_end_tac tac
   | VernacProof (None, Some l) ->
-      Aux_file.record_in_aux_at loc "VernacProof" "tac:no using:yes";
+      Aux_file.record_in_aux_at ~loc "VernacProof" "tac:no using:yes";
       vernac_set_used_variables l
   | VernacProof (Some tac, Some l) -> 
-      Aux_file.record_in_aux_at loc "VernacProof" "tac:yes using:yes";
+      Aux_file.record_in_aux_at ~loc "VernacProof" "tac:yes using:yes";
       vernac_set_end_tac tac; vernac_set_used_variables l
   | VernacProofMode mn -> Proof_global.set_proof_mode mn
 

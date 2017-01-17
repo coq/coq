@@ -22,7 +22,7 @@ let cases_predicate_names tml =
     | (tm,(na,None)) -> [na]
     | (tm,(na,Some (_,(_,nal)))) -> na::nal) tml)
 
-let mkGApp loc p t = Loc.tag ~loc @@
+let mkGApp ?loc p t = Loc.tag ?loc @@
   match snd p with
   | GApp (f,l) -> GApp (f,l@[t])
   | _          -> GApp (p,[t])

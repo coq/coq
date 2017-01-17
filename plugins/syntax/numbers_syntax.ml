@@ -86,10 +86,10 @@ exception Non_closed
 
 (* parses a *non-negative* integer (from bigint.ml) into an int31
    wraps modulo 2^31 *)
-let int31_of_pos_bigint loc n =
-  let ref_construct = Loc.tag ~loc @@ GRef (int31_construct, None) in
-  let ref_0 = Loc.tag ~loc @@ GRef (int31_0, None) in
-  let ref_1 = Loc.tag ~loc @@ GRef (int31_1, None) in
+let int31_of_pos_bigint ?loc n =
+  let ref_construct = Loc.tag ?loc @@ GRef (int31_construct, None) in
+  let ref_0 = Loc.tag ?loc @@ GRef (int31_0, None) in
+  let ref_1 = Loc.tag ?loc @@ GRef (int31_1, None) in
   let rec args counter n =
     if counter <= 0 then
       []
@@ -97,16 +97,16 @@ let int31_of_pos_bigint loc n =
       let (q,r) = div2_with_rest n in
 	(if r then ref_1 else ref_0)::(args (counter-1) q)
   in
-  Loc.tag ~loc @@ GApp (ref_construct, List.rev (args 31 n))
+  Loc.tag ?loc @@ GApp (ref_construct, List.rev (args 31 n))
 
-let error_negative dloc =
-  CErrors.user_err ~loc:dloc ~hdr:"interp_int31" (Pp.str "int31 are only non-negative numbers.")
+let error_negative ?loc =
+  CErrors.user_err ?loc ~hdr:"interp_int31" (Pp.str "int31 are only non-negative numbers.")
 
-let interp_int31 dloc n =
+let interp_int31 ?loc n =
   if is_pos_or_zero n then
-    int31_of_pos_bigint dloc n
+    int31_of_pos_bigint ?loc n
   else
-    error_negative dloc
+    error_negative ?loc
 
 (* Pretty prints an int31 *)
 
@@ -162,40 +162,40 @@ let height bi =
   in hght 0 base
 
 (* n must be a non-negative integer (from bigint.ml) *)
-let word_of_pos_bigint loc hght n =
-  let ref_W0 = Loc.tag ~loc @@ GRef (zn2z_W0, None) in
-  let ref_WW = Loc.tag ~loc @@ GRef (zn2z_WW, None) in
+let word_of_pos_bigint ?loc hght n =
+  let ref_W0 = Loc.tag ?loc @@ GRef (zn2z_W0, None) in
+  let ref_WW = Loc.tag ?loc @@ GRef (zn2z_WW, None) in
   let rec decomp hgt n =
     if hgt <= 0 then
-      int31_of_pos_bigint loc n
+      int31_of_pos_bigint ?loc n
     else if equal n zero then
-      Loc.tag ~loc @@ GApp (ref_W0, [Loc.tag ~loc @@ GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None)])
+      Loc.tag ?loc @@ GApp (ref_W0, [Loc.tag ?loc @@ GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None)])
     else
       let (h,l) = split_at hgt n in
-      Loc.tag ~loc @@ GApp (ref_WW, [Loc.tag ~loc @@ GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None);
+      Loc.tag ?loc @@ GApp (ref_WW, [Loc.tag ?loc @@ GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None);
 			   decomp (hgt-1) h;
 			   decomp (hgt-1) l])
   in
   decomp hght n
 
-let bigN_of_pos_bigint loc n =
+let bigN_of_pos_bigint ?loc n =
   let h = height n in
-  let ref_constructor = Loc.tag ~loc @@ GRef (bigN_constructor h, None) in
-  let word = word_of_pos_bigint loc h n in
+  let ref_constructor = Loc.tag ?loc @@ GRef (bigN_constructor h, None) in
+  let word = word_of_pos_bigint ?loc h n in
   let args =
     if h < n_inlined then [word]
-    else [Nat_syntax_plugin.Nat_syntax.nat_of_int loc (of_int (h-n_inlined));word]
+    else [Nat_syntax_plugin.Nat_syntax.nat_of_int ?loc (of_int (h-n_inlined));word]
   in
-  Loc.tag ~loc @@ GApp (ref_constructor, args)
+  Loc.tag ?loc @@ GApp (ref_constructor, args)
 
-let bigN_error_negative loc =
-  CErrors.user_err ~loc ~hdr:"interp_bigN" (Pp.str "bigN are only non-negative numbers.")
+let bigN_error_negative ?loc =
+  CErrors.user_err ?loc ~hdr:"interp_bigN" (Pp.str "bigN are only non-negative numbers.")
 
-let interp_bigN dloc n =
+let interp_bigN ?loc n =
   if is_pos_or_zero n then
-    bigN_of_pos_bigint dloc n
+    bigN_of_pos_bigint ?loc n
   else
-    bigN_error_negative dloc
+    bigN_error_negative ?loc
 
 
 (* Pretty prints a bigN *)
@@ -256,13 +256,13 @@ let _ = Notation.declare_numeral_interpreter bigN_scope
 
 
 (*** Parsing for bigZ in digital notation ***)
-let interp_bigZ loc n =
-  let ref_pos = Loc.tag ~loc @@ GRef (bigZ_pos, None) in
-  let ref_neg = Loc.tag ~loc @@ GRef (bigZ_neg, None) in
+let interp_bigZ ?loc n =
+  let ref_pos = Loc.tag ?loc @@ GRef (bigZ_pos, None) in
+  let ref_neg = Loc.tag ?loc @@ GRef (bigZ_neg, None) in
   if is_pos_or_zero n then
-    Loc.tag ~loc @@ GApp (ref_pos, [bigN_of_pos_bigint loc n])
+    Loc.tag ?loc @@ GApp (ref_pos, [bigN_of_pos_bigint ?loc n])
   else
-    Loc.tag ~loc @@ GApp (ref_neg, [bigN_of_pos_bigint loc (neg n)])
+    Loc.tag ?loc @@ GApp (ref_neg, [bigN_of_pos_bigint ?loc (neg n)])
 
 (* pretty printing functions for bigZ *)
 let bigint_of_bigZ = function
@@ -292,9 +292,9 @@ let _ = Notation.declare_numeral_interpreter bigZ_scope
    true)
 
 (*** Parsing for bigQ in digital notation ***)
-let interp_bigQ loc n =
-  let ref_z = Loc.tag ~loc @@ GRef (bigQ_z, None) in
-  Loc.tag ~loc @@ GApp (ref_z, [interp_bigZ loc n])
+let interp_bigQ ?loc n =
+  let ref_z = Loc.tag ?loc @@ GRef (bigQ_z, None) in
+  Loc.tag ?loc @@ GApp (ref_z, [interp_bigZ ?loc n])
 
 let uninterp_bigQ rc =
   try match rc with

@@ -44,7 +44,7 @@ val check_allowed_sort : env -> evar_map -> pinductive -> constr -> constr ->
 
 (** Raise an error message if bodies have types not unifiable with the
     expected ones *)
-val check_type_fixpoint : Loc.t -> env -> evar_map ref ->
+val check_type_fixpoint : ?loc:Loc.t -> env -> evar_map ref ->
   Names.Name.t array -> types array -> unsafe_judgment array -> unit
 
 val judge_of_prop : unsafe_judgment

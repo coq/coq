@@ -242,13 +242,12 @@ let local_binder_loc = function
   | CLocalPattern (loc,_) -> loc
 
 let local_binders_loc bll = match bll with
-  | [] -> Loc.ghost
-  | h :: l ->
-    Loc.merge (local_binder_loc h) (local_binder_loc (List.last bll))
+  | []     -> None
+  | h :: l -> Some (Loc.merge (local_binder_loc h) (local_binder_loc (List.last bll)))
 
 (** Pseudo-constructors *)
 
-let mkIdentC id   = Loc.tag @@ CRef (Ident (Loc.ghost, id),None)
+let mkIdentC id   = Loc.tag @@ CRef (Ident (Loc.tag id),None)
 let mkRefC r      = Loc.tag @@ CRef (r,None)
 let mkCastC (a,k) = Loc.tag @@ CCast (a,k)
 let mkLambdaC (idl,bk,a,b) = Loc.tag @@ CLambdaN ([idl,bk,a],b)
@@ -268,23 +267,23 @@ let add_name_in_env env n =
 
 let (fresh_var, fresh_var_hook) = Hook.make ~default:(fun _ _ -> assert false) ()
 
-let expand_binders ~loc mkC bl c =
-  let rec loop ~loc bl c =
+let expand_binders ?loc mkC bl c =
+  let rec loop ?loc bl c =
     match bl with
     | [] -> ([], c)
     | b :: bl ->
         match b with
         | CLocalDef ((loc1,_) as n, oty, b) ->
-            let env, c = loop ~loc:(Loc.merge loc1 loc) bl c in
+            let env, c = loop ~loc:(Loc.opt_merge loc1 loc) bl c in
             let env = add_name_in_env env n in
-            (env, Loc.tag ~loc @@ CLetIn (n,oty,b,c))
+            (env, Loc.tag ?loc @@ CLetIn (n,oty,b,c))
         | CLocalAssum ((loc1,_)::_ as nl, bk, t) ->
-            let env, c = loop ~loc:(Loc.merge loc1 loc) bl c in
+            let env, c = loop ~loc:(Loc.opt_merge loc1 loc) bl c in
             let env = List.fold_left add_name_in_env env nl in
-            (env, mkC ~loc (nl,bk,t) c)
-        | CLocalAssum ([],_,_) -> loop loc bl c
+            (env, mkC ?loc (nl,bk,t) c)
+        | CLocalAssum ([],_,_) -> loop ?loc bl c
         | CLocalPattern (loc1, (p, ty)) ->
-            let env, c = loop ~loc:(Loc.merge loc1 loc) bl c in
+            let env, c = loop ~loc:(Loc.opt_merge loc1 loc) bl c in
             let ni = Hook.get fresh_var env c in
             let id = (loc1, Name ni) in
             let ty = match ty with
@@ -292,27 +291,27 @@ let expand_binders ~loc mkC bl c =
                  | None -> Loc.tag ~loc:loc1 @@ CHole (None, IntroAnonymous, None)
             in
             let e = Loc.tag @@ CRef (Libnames.Ident (loc1, ni), None) in
-            let c = Loc.tag ~loc @@
+            let c = Loc.tag ?loc @@
               CCases
                 (LetPatternStyle, None, [(e,None,None)],
                  [(Loc.tag ~loc:loc1 ([(loc1,[p])], c))])
             in
-            (ni :: env, mkC ~loc ([id],Default Explicit,ty) c)
+            (ni :: env, mkC ?loc ([id],Default Explicit,ty) c)
   in
-  let (_, c) = loop loc bl c in
+  let (_, c) = loop ?loc bl c in
   c
 
-let mkCProdN ~loc bll c =
-  let mk ~loc b c = Loc.tag ~loc @@ CProdN ([b],c) in
-  expand_binders ~loc mk bll c
+let mkCProdN ?loc bll c =
+  let mk ?loc b c = Loc.tag ?loc @@ CProdN ([b],c) in
+  expand_binders ?loc mk bll c
 
-let mkCLambdaN ~loc bll c =
-  let mk ~loc b c = Loc.tag ~loc @@ CLambdaN ([b],c) in
-  expand_binders ~loc mk bll c
+let mkCLambdaN ?loc bll c =
+  let mk ?loc b c = Loc.tag ?loc @@ CLambdaN ([b],c) in
+  expand_binders ?loc mk bll c
 
 (* Deprecated *)
-let abstract_constr_expr c bl = mkCLambdaN (local_binders_loc bl) bl c
-let prod_constr_expr c bl =  mkCProdN (local_binders_loc bl) bl c
+let abstract_constr_expr c bl = mkCLambdaN ?loc:(local_binders_loc bl) bl c
+let prod_constr_expr c bl =  mkCProdN ?loc:(local_binders_loc bl) bl c
 
 let coerce_reference_to_id = function
   | Ident (_,id) -> id

@@ -41,7 +41,7 @@ let glob_xI = ConstructRef path_of_xI
 let glob_xO = ConstructRef path_of_xO
 let glob_xH = ConstructRef path_of_xH
 
-let pos_of_bignat dloc x =
+let pos_of_bignat ?loc x =
   let ref_xI = Loc.tag @@ GRef (glob_xI, None) in
   let ref_xH = Loc.tag @@ GRef (glob_xH, None) in
   let ref_xO = Loc.tag @@ GRef (glob_xO, None) in
@@ -77,11 +77,11 @@ let glob_ZERO = ConstructRef path_of_ZERO
 let glob_POS = ConstructRef path_of_POS
 let glob_NEG = ConstructRef path_of_NEG
 
-let z_of_int dloc n =
+let z_of_int ?loc n =
   if not (Bigint.equal n zero) then
     let sgn, n =
       if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
-    Loc.tag @@ GApp(Loc.tag @@ GRef (sgn,None), [pos_of_bignat dloc n])
+    Loc.tag @@ GApp(Loc.tag @@ GRef (sgn,None), [pos_of_bignat ?loc n])
   else
     Loc.tag @@ GRef (glob_ZERO, None)
 
@@ -107,8 +107,8 @@ let make_path dir id = Globnames.encode_con dir (Id.of_string id)
 
 let glob_IZR = ConstRef (make_path (make_dir rdefinitions) "IZR")
 
-let r_of_int dloc z =
-  Loc.tag @@ GApp (Loc.tag @@ GRef(glob_IZR,None), [z_of_int dloc z])
+let r_of_int ?loc z =
+  Loc.tag @@ GApp (Loc.tag @@ GRef(glob_IZR,None), [z_of_int ?loc z])
 
 (**********************************************************************)
 (* Printing R via scopes                                              *)
@@ -128,6 +128,6 @@ let uninterp_r p =
 let _ = Notation.declare_numeral_interpreter "R_scope"
   (r_path,["Coq";"Reals";"Rdefinitions"])
   r_of_int
-  ([Loc.tag @@ GRef (glob_IZR,None)],
+  ([Loc.tag @@ GRef (glob_IZR, None)],
     uninterp_r,
     false)

@@ -81,7 +81,7 @@ let adjust_guardness_conditions const = function
                     List.fold_left (fun e (_,c,cb,_) -> add c cb e) env l)
                 env (Safe_typing.side_effects_of_private_constants eff) in
               let indexes =
-                search_guard Loc.ghost env
+                search_guard env
                   possible_indexes fixdecls in
 		(mkFix ((indexes,0),fixdecls), ctx), eff
           | _ -> (body, ctx), eff) }

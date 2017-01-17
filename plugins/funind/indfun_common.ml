@@ -106,7 +106,7 @@ let list_add_set_eq eq_fun x l =
 
 let const_of_id id =
   let _,princ_ref =
-    qualid_of_reference (Libnames.Ident (Loc.ghost,id))
+    qualid_of_reference (Libnames.Ident (Loc.tag id))
   in
   try Constrintern.locate_reference princ_ref
   with Not_found ->

@@ -274,7 +274,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       List.map
 	(fun decl ->
 	   List.map
-	     (fun id -> Loc.ghost, IntroNaming (IntroIdentifier id))
+	     (fun id -> Loc.tag @@ IntroNaming (IntroIdentifier id))
 	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum evd (RelDecl.get_type decl)))))
 	)
 	branches

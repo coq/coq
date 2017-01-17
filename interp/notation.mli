@@ -55,7 +55,7 @@ val find_scope : scope_name -> scope
 
 val declare_delimiters : scope_name -> delimiters -> unit
 val remove_delimiters : scope_name -> unit
-val find_delimiters_scope : Loc.t -> delimiters -> scope_name
+val find_delimiters_scope : ?loc:Loc.t -> delimiters -> scope_name
 
 (** {6 Declare and uses back and forth an interpretation of primitive token } *)
 
@@ -69,7 +69,7 @@ type required_module = full_path * string list
 type cases_pattern_status = bool (** true = use prim token in patterns *)
 
 type 'a prim_token_interpreter =
-    Loc.t -> 'a -> glob_constr
+    ?loc:Loc.t -> 'a -> glob_constr
 
 type 'a prim_token_uninterpreter =
     glob_constr list * (glob_constr -> 'a option) * cases_pattern_status
@@ -83,9 +83,9 @@ val declare_string_interpreter : scope_name -> required_module ->
 (** Return the [term]/[cases_pattern] bound to a primitive token in a
    given scope context*)
 
-val interp_prim_token : Loc.t -> prim_token -> local_scopes ->
+val interp_prim_token : ?loc:Loc.t -> prim_token -> local_scopes ->
   glob_constr * (notation_location * scope_name option)
-val interp_prim_token_cases_pattern_expr : Loc.t -> (global_reference -> unit) -> prim_token ->
+val interp_prim_token_cases_pattern_expr : ?loc:Loc.t -> (global_reference -> unit) -> prim_token ->
   local_scopes -> raw_cases_pattern_expr * (notation_location * scope_name option)
 
 (** Return the primitive token associated to a [term]/[cases_pattern];
@@ -114,7 +114,7 @@ val declare_notation_interpretation : notation -> scope_name option ->
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
 (** Return the interpretation bound to a notation *)
-val interp_notation : Loc.t -> notation -> local_scopes ->
+val interp_notation : ?loc:Loc.t -> notation -> local_scopes ->
       interpretation * (notation_location * scope_name option)
 
 type notation_rule = interp_rule * interpretation * int option
@@ -137,7 +137,7 @@ val level_of_notation : notation -> level (** raise [Not_found] if no level *)
 
 (** {6 Miscellaneous} *)
 
-val interp_notation_as_global_reference : Loc.t -> (global_reference -> bool) ->
+val interp_notation_as_global_reference : ?loc:Loc.t -> (global_reference -> bool) ->
       notation -> delimiters option -> global_reference
 
 (** Checks for already existing notations *)

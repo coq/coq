@@ -23,9 +23,9 @@ open Feedback
 open Vernacexpr
 open Vernac_classifier
 
-let execution_error state_id loc msg =
+let execution_error ?loc state_id msg =
     feedback ~id:state_id
-      (Message (Error, Some loc, msg))
+      (Message (Error, loc, msg))
 
 module Hooks = struct
 
@@ -72,7 +72,7 @@ let async_proofs_workers_extra_env = ref [||]
 
 type aast = {
   verbose : bool;
-  loc : Loc.t;
+  loc : Loc.t option;
   indentation : int;
   strlen : int;
   mutable expr : vernac_expr; (* mutable: Proof using hinted by aux file *)
@@ -801,9 +801,9 @@ end = struct (* {{{ *)
     match Stateid.get info with
     | Some _ -> (e, info)
     | None ->
-        let loc = Option.default Loc.ghost (Loc.get_loc info) in
+        let loc = Loc.get_loc info in
         let (e, info) = Hooks.(call_process_error_once (e, info)) in
-        execution_error id loc (iprint (e, info));
+        execution_error ?loc id (iprint (e, info));
         (e, Stateid.add info ~valid id)
 
   let same_env { system = s1 } { system = s2 } =
@@ -949,7 +949,7 @@ let stm_vernac_interp ?proof id ?route { verbose; loc; expr } =
      the whole document state, such as backtrack, etc... so we start
      to design the stm command interpreter now *)
   set_id_for_feedback ?route id;
-  Aux_file.record_in_aux_set_at loc;
+  Aux_file.record_in_aux_set_at ?loc;
   (* We need to check if a command should be filtered from
    * vernac_entries, as it cannot handle it. This should go away in
    * future refactorings.
@@ -968,7 +968,7 @@ let stm_vernac_interp ?proof id ?route { verbose; loc; expr } =
   | VernacShow ShowScript -> ShowScript.show_script ()
   | expr ->
     stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-    try Vernacentries.interp ?verbosely:(Some verbose) ?proof (loc, expr)
+    try Vernacentries.interp ?verbosely:(Some verbose) ?proof (Loc.tag ?loc expr)
     with e ->
       let e = CErrors.push e in
       Exninfo.iraise Hooks.(call_process_error_once e)
@@ -1111,12 +1111,12 @@ end (* }}} *)
 let hints = ref Aux_file.empty_aux_file
 let set_compilation_hints file =
   hints := Aux_file.load_aux_file_for file
-let get_hint_ctx loc =
-  let s = Aux_file.get !hints loc "context_used" in
+let get_hint_ctx ?loc =
+  let s = Aux_file.get ?loc !hints "context_used" in
   match Str.split (Str.regexp ";") s with
   | ids :: _ ->
       let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") ids) in
-      let ids = List.map (fun id -> Loc.ghost, id) ids in
+      let ids = List.map (fun id -> Loc.tag id) ids in
       begin match ids with
       | [] -> SsEmpty
       | x :: xs ->
@@ -1125,15 +1125,15 @@ let get_hint_ctx loc =
   | _ -> raise Not_found
 
 let get_hint_bp_time proof_name =
-  try float_of_string (Aux_file.get !hints Loc.ghost proof_name)
+  try float_of_string (Aux_file.get !hints proof_name)
   with Not_found -> 1.0
 
-let record_pb_time proof_name loc time =
+let record_pb_time ?loc proof_name time =
   let proof_build_time = Printf.sprintf "%.3f" time in
-  Aux_file.record_in_aux_at loc "proof_build_time" proof_build_time;
+  Aux_file.record_in_aux_at ?loc "proof_build_time" proof_build_time;
   if proof_name <> "" then begin
-    Aux_file.record_in_aux_at Loc.ghost proof_name proof_build_time;
-    hints := Aux_file.set !hints Loc.ghost proof_name proof_build_time
+    Aux_file.record_in_aux_at proof_name proof_build_time;
+    hints := Aux_file.set !hints proof_name proof_build_time
   end
  
 exception RemoteException of Pp.std_ppcmds
@@ -1222,7 +1222,7 @@ module rec ProofTask : sig
     t_drop     : bool;
     t_states   : competence;
     t_assign   : Proof_global.closed_proof_output Future.assignement -> unit;
-    t_loc      : Loc.t;
+    t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
 
@@ -1240,8 +1240,9 @@ module rec ProofTask : sig
   and  type request := request
 
   val build_proof_here :
+    ?loc:Loc.t ->
     drop_pt:bool ->
-    Stateid.t * Stateid.t -> Loc.t -> Stateid.t ->
+    Stateid.t * Stateid.t -> Stateid.t ->
       Proof_global.closed_proof_output Future.computation
 
   (* If set, only tasks overlapping with this list are processed *)
@@ -1259,7 +1260,7 @@ end = struct (* {{{ *)
     t_drop     : bool;
     t_states   : competence;
     t_assign   : Proof_global.closed_proof_output Future.assignement -> unit;
-    t_loc      : Loc.t;
+    t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
 
@@ -1328,7 +1329,7 @@ end = struct (* {{{ *)
               RespBuiltProof (pl, time) ->
         feedback (InProgress ~-1);
         t_assign (`Val pl);
-        record_pb_time t_name t_loc time;
+        record_pb_time ?loc:t_loc t_name time;
         if !Flags.async_proofs_full || t_drop
         then `Stay(t_states,[States t_states])
         else `End
@@ -1349,16 +1350,16 @@ end = struct (* {{{ *)
         let info = Stateid.add ~valid:start Exninfo.null start in
         let e = (RemoteException (Pp.strbrk s), info) in
         t_assign (`Exn e);
-        execution_error start Loc.ghost (Pp.strbrk s);
+        execution_error start (Pp.strbrk s);
         feedback (InProgress ~-1)
 
-  let build_proof_here ~drop_pt (id,valid) loc eop =
+  let build_proof_here ?loc ~drop_pt (id,valid) eop =
     Future.create (State.exn_on id ~valid) (fun () ->
       let wall_clock1 = Unix.gettimeofday () in
       if !Flags.batch_mode then Reach.known_state ~cache:`No eop
       else Reach.known_state ~cache:`Shallow eop;
       let wall_clock2 = Unix.gettimeofday () in
-      Aux_file.record_in_aux_at loc "proof_build_time"
+      Aux_file.record_in_aux_at ?loc "proof_build_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       let p = Proof_global.return_proof ~allow_partial:drop_pt () in
       if drop_pt then feedback ~id Complete;
@@ -1370,7 +1371,7 @@ end = struct (* {{{ *)
       VCS.print ();
       let proof, future_proof, time =
         let wall_clock = Unix.gettimeofday () in
-        let fp = build_proof_here ~drop_pt:drop exn_info loc stop in
+        let fp = build_proof_here ?loc ~drop_pt:drop exn_info stop in
         let proof = Future.force fp in
         proof, fp, Unix.gettimeofday () -. wall_clock in
       (* We typecheck the proof with the kernel (in the worker) to spot
@@ -1452,7 +1453,7 @@ end = struct (* {{{ *)
       msg_error(Pp.strbrk("Marshalling error: "^s^". "^
         "The system state could not be sent to the worker process. "^
         "Falling back to local, lazy, evaluation."));
-      t_assign(`Comp(build_proof_here ~drop_pt t_exn_info t_loc t_stop));
+      t_assign(`Comp(build_proof_here ?loc:t_loc ~drop_pt t_exn_info t_stop));
       feedback (InProgress ~-1)
 
 end (* }}} *)
@@ -1462,7 +1463,7 @@ and Slaves : sig
 
   (* (eventually) remote calls *)
   val build_proof :
-    loc:Loc.t -> drop_pt:bool ->
+    ?loc:Loc.t -> drop_pt:bool ->
     exn_info:(Stateid.t * Stateid.t) -> block_start:Stateid.t -> block_stop:Stateid.t ->
       name:string -> future_proof * cancel_switch
 
@@ -1542,7 +1543,7 @@ end = struct (* {{{ *)
           | { step = `Fork (( { loc }, _, _, _), _) } 
           | { step = `Qed ( { qast = { loc } }, _) } 
           | { step = `Sideff (`Ast ( { loc }, _)) } ->
-              let start, stop = Loc.unloc loc in
+              let start, stop = Option.cata Loc.unloc (0,0) loc in
               msg_error Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 str ": chars " ++ int start ++ str "-" ++ int stop ++
@@ -1598,10 +1599,10 @@ end = struct (* {{{ *)
   let info_tasks l =
     CList.map_i (fun i ({ Stateid.loc; name }, _) ->
       let time1 =
-        try float_of_string (Aux_file.get !hints loc "proof_build_time")
+        try float_of_string (Aux_file.get ?loc !hints "proof_build_time")
         with Not_found -> 0.0 in
       let time2 =
-        try float_of_string (Aux_file.get !hints loc "proof_check_time")
+        try float_of_string (Aux_file.get ?loc !hints "proof_check_time")
         with Not_found -> 0.0 in
       name, max (time1 +. time2) 0.0001,i) 0 l
 
@@ -1622,7 +1623,7 @@ end = struct (* {{{ *)
        BuildProof { t_states = s2 } -> overlap_rel s1 s2
      | _ -> 0)
 
-  let build_proof ~loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
+  let build_proof ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
@@ -1637,7 +1638,7 @@ end = struct (* {{{ *)
         TaskQueue.enqueue_task (Option.get !queue) (task,cancel_switch);
         f, cancel_switch
       end else
-        ProofTask.build_proof_here ~drop_pt t_exn_info loc block_stop, cancel_switch
+        ProofTask.build_proof_here ?loc ~drop_pt t_exn_info block_stop, cancel_switch
     else 
       let f, t_assign = Future.create_delegate ~name:pname (State.exn_on id ~valid) in
       let t_uuid = Future.uuid f in
@@ -2026,7 +2027,7 @@ let collect_proof keep cur hd brkind id =
        !Flags.compilation_mode = Flags.BuildVio ->
         assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
         (try
-          let name, hint = name ids, get_hint_ctx loc  in
+          let name, hint = name ids, get_hint_ctx ?loc  in
           let t, v = proof_no_using last in
           v.expr <- VernacProof(t, Some hint);
           `ASync (parent last,proof_using_ast last,accn,name,delegate name)
@@ -2122,7 +2123,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                  feedback ~id:id Feedback.AddedAxiom;
                  fst (Pfedit.solve Vernacexpr.SelectAll None tac p), ());
                Option.iter (fun expr -> stm_vernac_interp id {
-                  verbose = true; loc = Loc.ghost; expr; indentation = 0;
+                  verbose = true; loc = None; expr; indentation = 0;
                   strlen = 0 })
                recovery_command
            | _ -> assert false
@@ -2244,7 +2245,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                         ^"the proof's statement to avoid that."));
                     let fp, cancel =
                       Slaves.build_proof
-                        ~loc ~drop_pt ~exn_info ~block_start ~block_stop ~name in
+                        ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name in
                     Future.replace ofp fp;
                     qed.fproof <- Some (fp, cancel);
                     (* We don't generate a new state, but we still need
@@ -2256,10 +2257,10 @@ let known_state ?(redefine_qed=false) ~cache id =
                     let fp, cancel =
                       if delegate then
                         Slaves.build_proof
-                          ~loc ~drop_pt ~exn_info ~block_start ~block_stop ~name
+                          ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name
                       else
-                        ProofTask.build_proof_here
-                          ~drop_pt exn_info loc block_stop, ref false
+                        ProofTask.build_proof_here ?loc
+                          ~drop_pt exn_info block_stop, ref false
                     in
                     qed.fproof <- Some (fp, cancel);
                     let proof =
@@ -2279,7 +2280,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 log_processing_sync id name reason;
                 reach eop;
                 let wall_clock = Unix.gettimeofday () in
-                record_pb_time name x.loc (wall_clock -. !wall_clock_last_fork);
+                record_pb_time name ?loc:x.loc (wall_clock -. !wall_clock_last_fork);
                 let proof =
                   match keep with
                   | VtDrop -> None
@@ -2296,7 +2297,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 let wall_clock2 = Unix.gettimeofday () in
                 stm_vernac_interp id ?proof x;
                 let wall_clock3 = Unix.gettimeofday () in
-                Aux_file.record_in_aux_at x.loc "proof_check_time"
+                Aux_file.record_in_aux_at ?loc:x.loc "proof_check_time"
                   (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));
                 Proof_global.discard_all ()
               ), `Yes, true
@@ -2658,7 +2659,7 @@ let get_ast id =
   | { step = `Cmd { cast = { loc; expr } } }
   | { step = `Fork (({ loc; expr }, _, _, _), _) } 
   | { step = `Qed ({ qast = { loc; expr } }, _) } ->
-         Some (expr, loc)
+         Some (Loc.tag ?loc expr)
   | _ -> None
 
 let stop_worker n = Slaves.cancel_worker n
@@ -2749,7 +2750,7 @@ let add ~ontop ?newtip verb (loc, ast) =
   CWarnings.set_current_loc loc;
   (* XXX: Classifiy vernac should be moved inside process transaction *)
   let clas = classify_vernac ast in
-  let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
+  let aast = { verbose = verb; indentation; strlen; loc = Some loc; expr = ast } in
   match process_transaction ?newtip aast clas with
   | `Ok -> VCS.cur_tip (), `NewTip
   | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
@@ -2770,7 +2771,7 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
     let indentation, strlen = compute_indentation at loc in
     CWarnings.set_current_loc loc;
     let clas = classify_vernac ast in
-    let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
+    let aast = { verbose = true; indentation; strlen; loc = Some loc; expr = ast } in
     match clas with
     | VtStm (w,_), _ ->
        ignore(process_transaction aast (VtStm (w,false), VtNow))

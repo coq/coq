@@ -25,7 +25,7 @@ val cases_pattern_loc : cases_pattern -> Loc.t
 val cases_predicate_names : tomatch_tuples -> Name.t list
 
 (** Apply one argument to a glob_constr *)
-val mkGApp : Loc.t -> glob_constr -> glob_constr -> glob_constr
+val mkGApp : ?loc:Loc.t -> glob_constr -> glob_constr -> glob_constr
 
 val map_glob_constr :
   (glob_constr -> glob_constr) -> glob_constr -> glob_constr

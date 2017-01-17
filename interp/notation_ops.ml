@@ -117,13 +117,13 @@ let name_to_ident = function
 
 let to_id g e id = let e,na = g e (Name id) in e,name_to_ident na
 
-let rec cases_pattern_fold_map loc g e = Loc.with_unloc (function
+let rec cases_pattern_fold_map ?loc g e = Loc.with_unloc (function
   | PatVar na ->
-      let e',na' = g e na in e', Loc.tag ~loc @@ PatVar na'
+      let e',na' = g e na in e', Loc.tag ?loc @@ PatVar na'
   | PatCstr (cstr,patl,na) ->
       let e',na' = g e na in
-      let e',patl' = List.fold_map (cases_pattern_fold_map loc g) e patl in
-      e', Loc.tag ~loc @@ PatCstr (cstr,patl',na')
+      let e',patl' = List.fold_map (cases_pattern_fold_map ?loc g) e patl in
+      e', Loc.tag ?loc @@ PatCstr (cstr,patl',na')
   )
 
 let subst_binder_type_vars l = function
@@ -152,8 +152,8 @@ let rec subst_glob_vars l gc = Loc.map (function
 
 let ldots_var = Id.of_string ".."
 
-let glob_constr_of_notation_constr_with_binders loc g f e nc =
-  let lt x = Loc.tag ~loc x in lt @@ match nc with
+let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
+  let lt x = Loc.tag ?loc x in lt @@ match nc with
   | NVar id -> GVar id
   | NApp (a,args) -> GApp (f e a, List.map (f e) args)
   | NList (x,y,iter,tail,swap) ->
@@ -181,13 +181,13 @@ let glob_constr_of_notation_constr_with_binders loc g f e nc =
 	| Some (ind,nal) ->
 	  let e',nal' = List.fold_right (fun na (e',nal) ->
 	      let e',na' = g e' na in e',na'::nal) nal (e',[]) in
-	  e',Some (loc,(ind,nal')) in
+	  e',Some (Loc.tag ?loc (ind,nal')) in
 	let e',na' = g e' na in
 	(e',(f e tm,(na',t'))::tml')) tml (e,[]) in
       let fold (idl,e) na = let (e,na) = g e na in ((name_cons na idl,e),na) in
       let eqnl' = List.map (fun (patl,rhs) ->
 	let ((idl,e),patl) =
-	  List.fold_map (cases_pattern_fold_map loc fold) ([],e) patl in
+	  List.fold_map (cases_pattern_fold_map ?loc fold) ([],e) patl in
 	lt (idl,patl,f e rhs)) eqnl in
       GCases (sty,Option.map (f e') rtntypopt,tml',eqnl')
   | NLetTuple (nal,(na,po),b,c) ->
@@ -208,9 +208,9 @@ let glob_constr_of_notation_constr_with_binders loc g f e nc =
   | NHole (x, naming, arg)  -> GHole (x, naming, arg)
   | NRef x -> GRef (x,None)
 
-let glob_constr_of_notation_constr loc x =
+let glob_constr_of_notation_constr ?loc x =
   let rec aux () x =
-    glob_constr_of_notation_constr_with_binders loc (fun () id -> ((),id)) aux () x
+    glob_constr_of_notation_constr_with_binders ?loc (fun () id -> ((),id)) aux () x
   in aux () x
 
 (******************************************************************************)
@@ -795,17 +795,17 @@ let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) 
       | (Some _ as x), None | None, (Some _ as x) -> x
       | None, None -> None in
     let unify_binding_kind bk bk' = if bk == bk' then bk' else raise No_match in
-    let unify_binder alp b b' =
+    let unify_binder alp (loc, b) (loc', b') =
       match b, b' with
-      | GLocalAssum (loc,na,bk,t), GLocalAssum (_,na',bk',t') ->
+      | GLocalAssum (na,bk,t), GLocalAssum (na',bk',t') ->
          let alp, na = unify_name alp na na' in
-         alp, GLocalAssum (loc, na, unify_binding_kind bk bk', unify_term alp t t')
-      | GLocalDef (loc,na,bk,c,t), GLocalDef (_,na',bk',c',t') ->
+         alp, Loc.tag ~loc @@ GLocalAssum (na, unify_binding_kind bk bk', unify_term alp t t')
+      | GLocalDef (na,bk,c,t), GLocalDef (na',bk',c',t') ->
          let alp, na = unify_name alp na na' in
-         alp, GLocalDef (loc, na, unify_binding_kind bk bk', unify_term alp c c', unify_opt_term alp t t')
-      | GLocalPattern (loc,(p,ids),id,bk,t), GLocalPattern (_,(p',_),_,bk',t') ->
+         alp, Loc.tag ~loc @@ GLocalDef (na, unify_binding_kind bk bk', unify_term alp c c', unify_opt_term alp t t')
+      | GLocalPattern ((p,ids),id,bk,t), GLocalPattern ((p',_),_,bk',t') ->
          let alp, p = unify_pat alp p p' in
-         alp, GLocalPattern (loc, (p,ids), id, unify_binding_kind bk bk', unify_term alp t t')
+         alp, Loc.tag ~loc @@ GLocalPattern ((p,ids), id, unify_binding_kind bk bk', unify_term alp t t')
       | _ -> raise No_match in
     let rec unify alp bl bl' =
     match bl, bl' with
@@ -832,18 +832,18 @@ let bind_bindinglist_as_term_env alp (terms,onlybinders,termlists,binderlists) v
     let unify_pat p p' =
       if cases_pattern_eq (map_cases_pattern_name_left (name_app (rename_var (snd alp))) p) p' then p'
       else raise No_match in
-    let unify_term_binder c b' =
+    let unify_term_binder c (loc, b') = Loc.tag ~loc @@
       match c, b' with
-      | (_, GVar id), GLocalAssum (loc, na', bk', t') ->
-         GLocalAssum (loc, unify_id id na', bk', t')
-      | c, GLocalPattern (loc, (p',ids), id, bk', t') ->
+      | (_, GVar id), GLocalAssum (na', bk', t') ->
+         GLocalAssum (unify_id id na', bk', t')
+      | c, GLocalPattern ((p',ids), id, bk', t') ->
          let p = pat_binder_of_term c in
-         GLocalPattern (loc, (unify_pat p p',ids), id, bk', t')
+         GLocalPattern ((unify_pat p p',ids), id, bk', t')
       | _ -> raise No_match in
     let rec unify cl bl' =
     match cl, bl' with
     | [], [] -> []
-    | c :: cl, GLocalDef (_, _, _, _, t) :: bl' -> unify cl bl'
+    | c :: cl, (_loc, GLocalDef ( _, _, _, t)) :: bl' -> unify cl bl'
     | c :: cl, b' :: bl' -> unify_term_binder c b' :: unify cl bl'
     | _ -> raise No_match in
     let bl = unify cl bl' in
@@ -898,17 +898,17 @@ let glue_letin_with_decls = true
 let rec match_iterated_binders islambda decls bi = Loc.with_loc (fun ~loc -> function
   | GLambda (Name p,bk,t,(_, GCases (LetPatternStyle,None,[((_, GVar e),_)],[(_,(ids,[cp],b))])))
       when islambda && Id.equal p e ->
-      match_iterated_binders islambda (GLocalPattern(loc,(cp,ids),p,bk,t)::decls) b
+      match_iterated_binders islambda ((Loc.tag ~loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b
   | GLambda (na,bk,t,b) when islambda ->
-      match_iterated_binders islambda (GLocalAssum(loc,na,bk,t)::decls) b
+      match_iterated_binders islambda ((Loc.tag ~loc @@ GLocalAssum(na,bk,t))::decls) b
   | GProd (Name p,bk,t,(_, GCases (LetPatternStyle,None,[((_, GVar e),_)],[(_,(ids,[cp],b))])))
       when not islambda && Id.equal p e ->
-      match_iterated_binders islambda (GLocalPattern(loc,(cp,ids),p,bk,t)::decls) b
+      match_iterated_binders islambda ((Loc.tag ~loc @@ GLocalPattern((cp,ids),p,bk,t))::decls) b
   | GProd ((Name _ as na),bk,t,b) when not islambda ->
-      match_iterated_binders islambda (GLocalAssum(loc,na,bk,t)::decls) b
+      match_iterated_binders islambda ((Loc.tag ~loc @@ GLocalAssum(na,bk,t))::decls) b
   | GLetIn (na,c,t,b) when glue_letin_with_decls ->
       match_iterated_binders islambda
-	(GLocalDef (loc,na,Explicit (*?*), c,t)::decls) b
+	((Loc.tag ~loc @@ GLocalDef (na,Explicit (*?*), c,t))::decls) b
   | b -> (decls, Loc.tag ~loc b)
   ) bi
 
@@ -989,13 +989,13 @@ let rec match_ inner u alp metas sigma a1 a2 =
   (* "λ p, let 'cp = p in t" -> "λ 'cp, t" *)
   | GLambda (Name p,bk,t1,(_, GCases (LetPatternStyle,None,[((_, GVar e),_)],[(_,(ids,[cp],b1))]))),
     NBinderList (x,_,NLambda (Name _id2,_,b2),termin) when Id.equal p e ->
-      let (decls,b) = match_iterated_binders true [GLocalPattern(loc,(cp,ids),p,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders true [Loc.tag ~loc @@ GLocalPattern((cp,ids),p,bk,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
 
   (* Matching recursive notations for binders: ad hoc cases supporting let-in *)
   | GLambda (na1,bk,t1,b1), NBinderList (x,_,NLambda (Name _id2,_,b2),termin)->
-      let (decls,b) = match_iterated_binders true [GLocalAssum (loc,na1,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders true [Loc.tag ~loc @@ GLocalAssum (na1,bk,t1)] b1 in
       (* TODO: address the possibility that termin is a Lambda itself *)
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
@@ -1003,13 +1003,13 @@ let rec match_ inner u alp metas sigma a1 a2 =
   (* "∀ p, let 'cp = p in t" -> "∀ 'cp, t" *)
   | GProd (Name p,bk,t1,(_, GCases (LetPatternStyle,None,[((_, GVar e),_)],[(_,(ids,[cp],b1))]))),
     NBinderList (x,_,NProd (Name _id2,_,b2),(NVar v as termin)) when Id.equal p e ->
-      let (decls,b) = match_iterated_binders true [GLocalPattern (loc,(cp,ids),p,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders true [Loc.tag ~loc @@ GLocalPattern ((cp,ids),p,bk,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
 
   | GProd (na1,bk,t1,b1), NBinderList (x,_,NProd (Name _id2,_,b2),termin)
       when na1 != Anonymous ->
-      let (decls,b) = match_iterated_binders false [GLocalAssum (loc,na1,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders false [Loc.tag ~loc @@ GLocalAssum (na1,bk,t1)] b1 in
       (* TODO: address the possibility that termin is a Prod itself *)
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
@@ -1021,15 +1021,15 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GLambda (Name p,bk,t,(_, GCases (LetPatternStyle,None,[((_, GVar e),_)],[(_,(ids,[cp],b1))]))),
     NLambda (Name id,_,b2)
       when is_bindinglist_meta id metas ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [GLocalPattern (loc,(cp,ids),p,bk,t)] in
+      let alp,sigma = bind_bindinglist_env alp sigma id [Loc.tag ~loc @@ GLocalPattern ((cp,ids),p,bk,t)] in
       match_in u alp metas sigma b1 b2
   | GLambda (na,bk,t,b1), NLambda (Name id,_,b2)
       when is_bindinglist_meta id metas ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [GLocalAssum (loc,na,bk,t)] in
+      let alp,sigma = bind_bindinglist_env alp sigma id [Loc.tag ~loc @@ GLocalAssum (na,bk,t)] in
       match_in u alp metas sigma b1 b2
   | GProd (na,bk,t,b1), NProd (Name id,_,b2)
       when is_bindinglist_meta id metas && na != Anonymous ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [GLocalAssum (loc,na,bk,t)] in
+      let alp,sigma = bind_bindinglist_env alp sigma id [Loc.tag ~loc @@ GLocalAssum (na,bk,t)] in
       match_in u alp metas sigma b1 b2
 
   (* Matching compositionally *)
@@ -1121,10 +1121,10 @@ let rec match_ inner u alp metas sigma a1 a2 =
       | _ -> assert false in
       let (alp,sigma) =
         if is_bindinglist_meta id metas then
-          bind_bindinglist_env alp sigma id [GLocalAssum (Loc.ghost,Name id',Explicit,t1)]
+          bind_bindinglist_env alp sigma id [Loc.tag @@ GLocalAssum (Name id',Explicit,t1)]
         else
           match_names metas (alp,sigma) (Name id') na in
-      match_in u alp metas sigma (mkGApp Loc.ghost a1 (Loc.tag @@ GVar id')) b2
+      match_in u alp metas sigma (mkGApp a1 (Loc.tag @@ GVar id')) b2
 
   | (GRec _ | GEvar _), _
   | _,_ -> raise No_match

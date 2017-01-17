@@ -282,7 +282,7 @@ let locs_of_notation loc locs ntn =
 let ntn_loc loc (args,argslist,binderslist) =
   locs_of_notation loc
     (List.map constr_loc (args@List.flatten argslist)@
-     List.map local_binders_loc binderslist)
+     List.map_filter local_binders_loc binderslist)
 
 let patntn_loc loc (args,argslist) =
   locs_of_notation loc

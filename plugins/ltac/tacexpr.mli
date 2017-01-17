@@ -265,7 +265,7 @@ and 'a gen_tactic_expr =
   | TacArg of 'a gen_tactic_arg located
   | TacSelect of goal_selector * 'a gen_tactic_expr
   (* For ML extensions *)
-  | TacML of Loc.t * ml_tactic_entry * 'a gen_tactic_arg list
+  | TacML of (ml_tactic_entry * 'a gen_tactic_arg list) Loc.located
   (* For syntax extensions *)
   | TacAlias of (KerName.t * 'a gen_tactic_arg list) Loc.located
 

@@ -22,7 +22,7 @@ open Nameops
 
 type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
 | TacTerm of string
-| TacNonTerm of Loc.t * 'a * Names.Id.t
+| TacNonTerm of ('a * Names.Id.t) Loc.located
 
 type raw_argument = string * string option
 type argument = Genarg.ArgT.any Extend.user_symbol
@@ -178,7 +178,7 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let map = function
   | TacTerm s -> GramTerminal s
-  | TacNonTerm (loc, s, _) ->
+  | TacNonTerm (loc, (s, _)) ->
     let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
     GramNonTerminal (loc, typ, e)
   in
@@ -206,7 +206,7 @@ let register_tactic_notation_entry name entry =
 
 let interp_prod_item = function
   | TacTerm s -> TacTerm s
-  | TacNonTerm (loc, (nt, sep), id) ->
+  | TacNonTerm (loc, ((nt, sep), id)) ->
     let symbol = parse_user_entry nt sep in
     let interp s = function
     | None ->
@@ -224,7 +224,7 @@ let interp_prod_item = function
       end
     in
     let symbol = interp_entry_name interp symbol in
-    TacNonTerm (loc, symbol, id)
+    TacNonTerm (loc, (symbol, id))
 
 let make_fresh_key =
   let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
@@ -300,7 +300,7 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
 
 let cons_production_parameter = function
 | TacTerm _ -> None
-| TacNonTerm (_, _, id) -> Some id
+| TacNonTerm (_, (_, id)) -> Some id
 
 let add_glob_tactic_notation local ~level prods forml ids tac =
   let parule = {
@@ -338,10 +338,10 @@ let extend_atomic_tactic name entries =
     in
     let empty_value = function
     | TacTerm s -> raise NonEmptyArgument
-    | TacNonTerm (_, symb, _) ->
+    | TacNonTerm (_, (symb, _)) ->
       let EntryName (typ, e) = prod_item_of_symbol 0 symb in
       let Genarg.Rawwit wit = typ in
-      let inj x = TacArg (Loc.ghost, TacGeneric (Genarg.in_gen typ x)) in
+      let inj x = TacArg (Loc.tag @@ TacGeneric (Genarg.in_gen typ x)) in
       let default = epsilon_value inj e in
       match default with
       | None -> raise NonEmptyArgument
@@ -355,7 +355,7 @@ let extend_atomic_tactic name entries =
   | Some (id, args) ->
     let args = List.map (fun a -> Tacexp a) args in
     let entry = { mltac_name = name; mltac_index = i } in
-    let body = TacML (Loc.ghost, entry, args) in
+    let body = TacML (Loc.tag (entry, args)) in
     Tacenv.register_ltac false false (Names.Id.of_string id) body
   in
   List.iteri add_atomic entries
@@ -366,12 +366,12 @@ let add_ml_tactic_notation name ~level prods =
     let open Tacexpr in
     let get_id = function
     | TacTerm s -> None
-    | TacNonTerm (_, _, id) -> Some id
+    | TacNonTerm (_, (_, id)) -> Some id
     in
     let ids = List.map_filter get_id prods in
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
-    let map id = Reference (Misctypes.ArgVar (Loc.ghost, id)) in
-    let tac = TacML (Loc.ghost, entry, List.map map ids) in
+    let map id = Reference (Misctypes.ArgVar (Loc.tag id)) in
+    let tac = TacML (Loc.tag (entry, List.map map ids)) in
     add_glob_tactic_notation false ~level prods true ids tac
   in
   List.iteri iter (List.rev prods);

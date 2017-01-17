@@ -32,13 +32,14 @@ val unloc : t -> int * int
 val make_loc : int * int -> t
 (** Make a location out of its start and end position *)
 
-val ghost : t
-(** Dummy location *)
-
+val internal_ghost : t
 val is_ghost : t -> bool
 (** Test whether the location is meaningful *)
 
 val merge : t -> t -> t
+
+val merge_opt : t option -> t -> t
+val opt_merge : t -> t option -> t
 
 (** {5 Located exceptions} *)
 
@@ -71,15 +72,7 @@ val map_with_loc : (loc:t -> 'a -> 'b) -> 'a located -> 'b located
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
 val down_located : ('a -> 'b) -> 'a located -> 'b
 
-(* Current not used *)
+(* Currently not used *)
 val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
 
 (** Projects out a located object *)
-
-(** {5 Backward compatibility} *)
-
-val dummy_loc : t
-(** Same as [ghost] *)
-
-val join_loc : t -> t -> t
-(** Same as [merge] *)

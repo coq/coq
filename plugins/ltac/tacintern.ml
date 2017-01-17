@@ -72,7 +72,7 @@ let intern_name l ist = function
 
 let strict_check = ref false
 
-let adjust_loc loc = if !strict_check then Loc.ghost else loc
+let adjust_loc loc = if !strict_check then None else Some loc
 
 (* Globalize a name which must be bound -- actually just check it is bound *)
 let intern_hyp ist (loc,id as locid) =
@@ -293,7 +293,7 @@ let intern_evaluable_reference_or_by_notation ist = function
   | AN r -> intern_evaluable_global_reference ist r
   | ByNotation (loc,(ntn,sc)) ->
       evaluable_of_global_reference ist.genv
-      (Notation.interp_notation_as_global_reference loc
+      (Notation.interp_notation_as_global_reference ~loc
         (function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
 
 (* Globalize a reduction expression *)
@@ -550,7 +550,7 @@ and intern_tactic_seq onlytac ist = function
   | TacAtom (loc,t) ->
       let lf = ref ist.ltacvars in
       let t = intern_atomic lf ist t in
-      !lf, TacAtom (adjust_loc loc, t)
+      !lf, TacAtom (Loc.tag ?loc:(adjust_loc loc) t)
   | TacFun tacfun -> ist.ltacvars, TacFun (intern_tactic_fun ist tacfun)
   | TacLetIn (isrec,l,u) ->
       let ltacvars = Id.Set.union (extract_let_names l) ist.ltacvars in
@@ -627,9 +627,9 @@ and intern_tactic_seq onlytac ist = function
   | TacAlias (loc,(s,l)) ->
       let l = List.map (intern_tacarg !strict_check false ist) l in
       ist.ltacvars, TacAlias (Loc.tag ~loc (s,l))
-  | TacML (loc,opn,l) ->
+  | TacML (loc,(opn,l)) ->
       let _ignore = Tacenv.interp_ml_tactic opn in
-      ist.ltacvars, TacML (adjust_loc loc, opn,List.map (intern_tacarg !strict_check false ist) l)
+      ist.ltacvars, TacML (loc, (opn,List.map (intern_tacarg !strict_check false ist) l))
 
 and intern_tactic_as_arg loc onlytac ist a =
   match intern_tacarg !strict_check onlytac ist a with

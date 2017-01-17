@@ -408,7 +408,7 @@ let context poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus =
         pi3 (Command.declare_assumption false decl (t, !uctx) [] [] impl
-          Vernacexpr.NoInline (Loc.ghost, id))
+          Vernacexpr.NoInline (Loc.tag id))
       in
       let () = uctx := Univ.ContextSet.empty in
 	status && nstatus

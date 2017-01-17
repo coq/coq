@@ -226,19 +226,19 @@ GEXTEND Gram
 
   record_field_declaration:
     [ [ id = global; bl = binders; ":="; c = lconstr ->
-      (id, mkCLambdaN (!@loc) bl c) ] ]
+      (id, mkCLambdaN ~loc:!@loc bl c) ] ]
   ;
   binder_constr:
     [ [ "forall"; bl = open_binders; ","; c = operconstr LEVEL "200" ->
-          mkCProdN (!@loc) bl c
+          mkCProdN ~loc:!@loc bl c
       | "fun"; bl = open_binders; "=>"; c = operconstr LEVEL "200" ->
-          mkCLambdaN (!@loc) bl c
+          mkCLambdaN ~loc:!@loc bl c
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
           let ty,c1 = match ty, c1 with
           | (_,None), (_, CCast(c, CastConv t)) -> (Loc.tag ~loc:(constr_loc t) @@ Some t), c (* Tolerance, see G_vernac.def_body *)
           | _, _ -> ty, c1 in
-          Loc.tag ~loc:!@loc @@ CLetIn(id,mkCLambdaN (constr_loc c1) bl c1,
+          Loc.tag ~loc:!@loc @@ CLetIn(id,mkCLambdaN ~loc:(constr_loc c1) bl c1,
                  Option.map (mkCProdN ~loc:(fst ty) bl) (snd ty), c2)
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
           let fixp = mk_single_fix fx in
@@ -411,7 +411,7 @@ GEXTEND Gram
         (fun na -> CLocalAssum (na::nal,Default Implicit,c))
     | nal=LIST1 name; "}" ->
         (fun na -> CLocalAssum (na::nal,Default Implicit,
-                                Loc.tag ~loc:(Loc.join_loc (fst na) !@loc) @@ CHole (Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None)))
+                                Loc.tag ~loc:(Loc.merge (fst na) !@loc) @@ CHole (Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None)))
     | ":"; c=lconstr; "}" ->
 	(fun na -> CLocalAssum ([na],Default Implicit,c))
     ] ]

@@ -66,7 +66,7 @@ let dependent_init =
      for type classes. *)
   let store = Evd.Store.set Evd.Store.empty typeclass_resolvable () in
   (* Goals don't have a source location. *)
-  let src = (Loc.ghost,Evar_kinds.GoalEvar) in
+  let src = Loc.tag @@ Evar_kinds.GoalEvar in
   (* Main routine *)
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }

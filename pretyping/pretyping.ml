@@ -133,7 +133,7 @@ let nf_fix sigma (nas, cs, ts) =
   let inj c = EConstr.to_constr sigma c in
   (nas, Array.map inj cs, Array.map inj ts)
 
-let search_guard loc env possible_indexes fixdefs =
+let search_guard ?loc env possible_indexes fixdefs =
   (* Standard situation with only one possibility for each fix. *)
   (* We treat it separately in order to get proper error msg. *)
   let is_singleton = function [_] -> true | _ -> false in
@@ -143,7 +143,7 @@ let search_guard loc env possible_indexes fixdefs =
     (try check_fix env fix
      with reraise ->
        let (e, info) = CErrors.push reraise in
-       let info = Loc.add_loc info loc in
+       let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
        iraise (e, info));
     indexes
   else
@@ -166,7 +166,7 @@ let search_guard loc env possible_indexes fixdefs =
 	    with TypeError _ -> ())
 	 (List.combinations possible_indexes);
        let errmsg = "Cannot guess decreasing argument of fix." in
-	 user_err ~loc ~hdr:"search_guard" (Pp.str errmsg)
+	 user_err ?loc ~hdr:"search_guard" (Pp.str errmsg)
      with Found indexes -> indexes)
 
 (* To force universe name declaration before use *)
@@ -384,10 +384,10 @@ let process_inference_flags flags env initial_sigma (sigma,c) =
 let allow_anonymous_refs = ref false
 
 (* coerce to tycon if any *)
-let inh_conv_coerce_to_tycon resolve_tc loc env evdref j = function
+let inh_conv_coerce_to_tycon ?loc resolve_tc env evdref j = function
   | None -> j
   | Some t ->
-      evd_comb2 (Coercion.inh_conv_coerce_to resolve_tc loc env.ExtraEnv.env) evdref j t
+      evd_comb2 (Coercion.inh_conv_coerce_to ?loc resolve_tc env.ExtraEnv.env) evdref j t
 
 let check_instance loc subst = function
   | [] -> ()
@@ -568,18 +568,18 @@ let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
 (* the type constraint tycon *)
 
 let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdref (lvar : ltac_var_map) (loc, t) =
-  let inh_conv_coerce_to_tycon = inh_conv_coerce_to_tycon resolve_tc in
+  let inh_conv_coerce_to_tycon ?loc = inh_conv_coerce_to_tycon ?loc resolve_tc in
   let pretype_type = pretype_type k0 resolve_tc in
   let pretype = pretype k0 resolve_tc in
   let open Context.Rel.Declaration in
   match t with
   | GRef (ref,u) ->
-      inh_conv_coerce_to_tycon loc env evdref
+      inh_conv_coerce_to_tycon ~loc env evdref
 	(pretype_ref loc evdref env ref u)
 	tycon
 
   | GVar id ->
-    inh_conv_coerce_to_tycon loc env evdref
+    inh_conv_coerce_to_tycon ~loc env evdref
       (pretype_id (fun e r l t -> pretype tycon e r l t) k0 loc env evdref lvar id)
       tycon
 
@@ -594,7 +594,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let args = pretype_instance k0 resolve_tc env evdref lvar loc hyps evk inst in
       let c = mkEvar (evk, args) in
       let j = (Retyping.get_judgment_of env.ExtraEnv.env !evdref c) in
-	inh_conv_coerce_to_tycon loc env evdref j tycon
+	inh_conv_coerce_to_tycon ~loc env evdref j tycon
 
   | GPatVar (someta,n) ->
     let env = ltac_interp_name_env k0 lvar env !evdref in
@@ -674,7 +674,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	    { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
 	      uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
         ctxtv vdef in
-      Typing.check_type_fixpoint loc env.ExtraEnv.env evdref names ftys vdefj;
+      Typing.check_type_fixpoint ~loc env.ExtraEnv.env evdref names ftys vdefj;
       let nf c = nf_evar !evdref c in
       let ftys = Array.map nf ftys in (** FIXME *)
       let fdefs = Array.map (fun x -> nf (j_val x)) vdefj in
@@ -696,7 +696,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  let fixdecls = (names,ftys,fdefs) in
           let indexes =
             search_guard
-              loc env.ExtraEnv.env possible_indexes (nf_fix !evdref fixdecls)
+              ~loc env.ExtraEnv.env possible_indexes (nf_fix !evdref fixdecls)
           in
 	    make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	| GCoFix i ->
@@ -709,11 +709,11 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
                iraise (e, info));
 	    make_judge (mkCoFix cofix) ftys.(i)
       in
-	inh_conv_coerce_to_tycon loc env evdref fixj tycon
+	inh_conv_coerce_to_tycon ~loc env evdref fixj tycon
 
   | GSort s ->
     let j = pretype_sort loc evdref s in
-      inh_conv_coerce_to_tycon loc env evdref j tycon
+      inh_conv_coerce_to_tycon ~loc env evdref j tycon
 
   | GApp (f,args) ->
     let fj = pretype empty_tycon env evdref lvar f in
@@ -792,7 +792,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  else resj
       | _ -> resj 
     in
-      inh_conv_coerce_to_tycon loc env evdref resj tycon
+      inh_conv_coerce_to_tycon ~loc env evdref resj tycon
 
   | GLambda(name,bk,c1,c2)      ->
     let tycon' = evd_comb1
@@ -800,7 +800,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	match tycon with
 	| None -> evd, tycon
 	| Some ty ->
-	  let evd, ty' = Coercion.inh_coerce_to_prod loc env.ExtraEnv.env evd ty in
+	  let evd, ty' = Coercion.inh_coerce_to_prod ~loc env.ExtraEnv.env evd ty in
 	    evd, Some ty')
       evdref tycon
     in
@@ -814,7 +814,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let j' = pretype rng (push_rel !evdref var env) evdref lvar c2 in
     let name = ltac_interp_name lvar name in
     let resj = judge_of_abstraction env.ExtraEnv.env (orelse_name name name') j j' in
-      inh_conv_coerce_to_tycon loc env evdref resj tycon
+      inh_conv_coerce_to_tycon ~loc env evdref resj tycon
 
   | GProd(name,bk,c1,c2)        ->
     let j = pretype_type empty_valcon env evdref lvar c1 in
@@ -838,7 +838,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         let (e, info) = CErrors.push e in
         let info = Loc.add_loc info loc in
         iraise (e, info) in
-      inh_conv_coerce_to_tycon loc env evdref resj tycon
+      inh_conv_coerce_to_tycon ~loc env evdref resj tycon
 
   | GLetIn(name,c1,t,c2)      ->
     let tycon1 =
@@ -1020,10 +1020,10 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  mkCase (ci, pred, cj.uj_val, [|b1;b2|])
       in
       let cj = { uj_val = v; uj_type = p } in
-      inh_conv_coerce_to_tycon loc env evdref cj tycon
+      inh_conv_coerce_to_tycon ~loc env evdref cj tycon
 
   | GCases (sty,po,tml,eqns) ->
-    Cases.compile_cases loc sty
+    Cases.compile_cases ~loc sty
       ((fun vtyc env evdref -> pretype vtyc (make_env env !evdref) evdref lvar),evdref)
       tycon env.ExtraEnv.env (* loc *) (po,tml,eqns)
 
@@ -1032,7 +1032,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       match k with
       | CastCoerce ->
 	let cj = pretype empty_tycon env evdref lvar c in
-	  evd_comb1 (Coercion.inh_coerce_to_base loc env.ExtraEnv.env) evdref cj
+	  evd_comb1 (Coercion.inh_coerce_to_base ~loc env.ExtraEnv.env) evdref cj
       | CastConv t | CastVM t | CastNative t ->
 	let k = (match k with CastVM _ -> VMcast | CastNative _ -> NATIVEcast | _ -> DEFAULTcast) in
 	let tj = pretype_type empty_valcon env evdref lvar t in
@@ -1067,7 +1067,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	in
 	let v = mkCast (cj.uj_val, k, tval) in
 	  { uj_val = v; uj_type = tval }
-    in inh_conv_coerce_to_tycon loc env evdref cj tycon
+    in inh_conv_coerce_to_tycon ~loc env evdref cj tycon
 
 and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
   let f decl (subst,update) =
@@ -1128,7 +1128,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
   | c ->
       let j = pretype k0 resolve_tc empty_tycon env evdref lvar c in
       let loc = loc_of_glob_constr c in
-      let tj = evd_comb1 (Coercion.inh_coerce_to_sort loc env.ExtraEnv.env) evdref j in
+      let tj = evd_comb1 (Coercion.inh_coerce_to_sort ~loc env.ExtraEnv.env) evdref j in
 	match valcon with
 	| None -> tj
 	| Some v ->

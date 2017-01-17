@@ -252,7 +252,7 @@ let combine_params avoid fn applied needed =
 let combine_params_freevar =
   fun avoid (_, decl) ->
     let id' = next_name_away_from (RelDecl.get_name decl) avoid in
-      (Loc.tag @@ CRef (Ident (Loc.ghost, id'),None), Id.Set.add id' avoid)
+      (Loc.tag @@ CRef (Ident (Loc.tag id'),None), Id.Set.add id' avoid)
 
 let destClassApp (loc, cl) =
   match cl with

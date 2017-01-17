@@ -379,7 +379,7 @@ requested
               | InType -> recs ^ "t_nodep")
         ) in
         let newid = add_suffix (basename_of_global (IndRef ind)) suffix in
-        let newref = (Loc.ghost,newid) in
+        let newref = Loc.tag newid in
           ((newref,isdep,ind,z)::l1),l2
       in
 	match t with

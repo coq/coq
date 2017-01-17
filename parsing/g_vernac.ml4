@@ -349,14 +349,14 @@ GEXTEND Gram
   ;
   record_binder_body:
     [ [ l = binders; oc = of_type_with_opt_coercion;
-         t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN (!@loc) l t))
+         t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN ~loc:!@loc l t))
       | l = binders; oc = of_type_with_opt_coercion;
          t = lconstr; ":="; b = lconstr -> fun id ->
-	   (oc,DefExpr (id,mkCLambdaN ~loc:!@loc l b,Some (mkCProdN (!@loc) l t)))
+	   (oc,DefExpr (id,mkCLambdaN ~loc:!@loc l b,Some (mkCProdN ~loc:!@loc l t)))
       | l = binders; ":="; b = lconstr -> fun id ->
          match snd b with
 	 | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
-	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b',Some (mkCProdN (!@loc) l t)))
+	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b',Some (mkCProdN ~loc:!@loc l t)))
          | _ ->
 	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b,None)) ] ]
   ;
@@ -378,9 +378,9 @@ GEXTEND Gram
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
-	            fun l id -> (not (Option.is_empty coe),(id,mkCProdN (!@loc) l c))
+	            fun l id -> (not (Option.is_empty coe),(id,mkCProdN ~loc:!@loc l c))
             |  ->
-		 fun l id -> (false,(id,mkCProdN (!@loc) l (Loc.tag ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))) ]
+		 fun l id -> (false,(id,mkCProdN ~loc:!@loc l (Loc.tag ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))) ]
 	 -> t l
      ]]
 ;
@@ -592,15 +592,15 @@ GEXTEND Gram
           d = def_body ->
           let s = coerce_reference_to_id qid in
 	  VernacDefinition
-	    ((Some Global,CanonicalStructure),((Loc.ghost,s),None),d)
+	    ((Some Global,CanonicalStructure),((Loc.tag s),None),d)
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-	  VernacDefinition ((None,Coercion),((Loc.ghost,s),None),d)
+	  VernacDefinition ((None,Coercion),((Loc.tag s),None),d)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = coerce_reference_to_id qid in
-	  VernacDefinition ((Some Decl_kinds.Local,Coercion),((Loc.ghost,s),None),d)
+	  VernacDefinition ((Some Decl_kinds.Local,Coercion),((Loc.tag s),None),d)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr ->
 	   VernacIdentityCoercion (true, f, s, t)

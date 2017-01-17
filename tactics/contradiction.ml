@@ -31,7 +31,7 @@ let absurd c =
     let env = Proofview.Goal.env gl in
     let sigma = Sigma.to_evar_map sigma in
     let j = Retyping.get_judgment_of env sigma c in
-    let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
+    let sigma, j = Coercion.inh_coerce_to_sort env sigma j in
     let t = j.Environ.utj_val in
     let tac =
     Tacticals.New.tclTHENLIST [

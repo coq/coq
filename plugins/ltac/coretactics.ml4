@@ -305,10 +305,9 @@ END
 open Tacexpr
 
 let initial_atomic () =
-  let dloc = Loc.ghost in
   let nocl = {onhyps=Some[];concl_occs=AllOccurrences} in
   let iter (s, t) =
-    let body = TacAtom (dloc, t) in
+    let body = TacAtom (Loc.tag t) in
     Tacenv.register_ltac false false (Id.of_string s) body
   in
   let () = List.iter iter
@@ -323,7 +322,7 @@ let initial_atomic () =
   List.iter iter
       [ "idtac",TacId [];
         "fail", TacFail(TacLocal,ArgArg 0,[]);
-        "fresh", TacArg(dloc,TacFreshId [])
+        "fresh", TacArg(Loc.tag @@ TacFreshId [])
       ]
 
 let () = Mltop.declare_cache_obj initial_atomic "coretactics"

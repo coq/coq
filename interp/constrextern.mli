@@ -37,7 +37,7 @@ val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob
 
 val extern_constr : ?lax:bool -> bool -> env -> Evd.evar_map -> constr -> constr_expr
 val extern_constr_in_scope : bool -> scope_name -> env -> Evd.evar_map -> constr -> constr_expr
-val extern_reference : Loc.t -> Id.Set.t -> global_reference -> reference
+val extern_reference : ?loc:Loc.t -> Id.Set.t -> global_reference -> reference
 val extern_type : bool -> env -> Evd.evar_map -> types -> constr_expr
 val extern_sort : Evd.evar_map -> sorts -> glob_sort
 val extern_rel_context : constr option -> env -> Evd.evar_map ->
@@ -55,9 +55,9 @@ val print_projections : bool ref
 
 (** Customization of the global_reference printer *)
 val set_extern_reference :
-  (Loc.t -> Id.Set.t -> global_reference -> reference) -> unit
+  (?loc:Loc.t -> Id.Set.t -> global_reference -> reference) -> unit
 val get_extern_reference :
-  unit -> (Loc.t -> Id.Set.t -> global_reference -> reference)
+  unit -> (?loc:Loc.t -> Id.Set.t -> global_reference -> reference)
 
 (** This governs printing of implicit arguments. If [with_implicits] is
    on and not [with_arguments] then implicit args are printed prefixed

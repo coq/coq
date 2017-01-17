@@ -38,7 +38,7 @@ type feedback_content =
   | FileDependency of string option * string
   | FileLoaded of string * string
   (* Extra metadata *)
-  | Custom of Loc.t * string * xml
+  | Custom of Loc.t option * string * xml
   (* Generic messages *)
   | Message of level * Loc.t option * Pp.std_ppcmds
 

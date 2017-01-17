@@ -146,9 +146,11 @@ let rec interp_vernac sid po (loc,com) =
       interp com
     with reraise ->
       let (reraise, info) = CErrors.push reraise in
-      let loc' = Option.default Loc.ghost (Loc.get_loc info) in
-      if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
-      else iraise (reraise, info)
+      let info = begin
+        match Loc.get_loc info with
+        | None   -> Loc.add_loc info loc
+        | Some _ -> info
+      end in iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
 and load_vernac verbosely sid file =
@@ -281,7 +283,7 @@ let compile verbosely f =
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
       Library.save_library_to ldir long_f_dot_vo (Global.opaque_tables ());
-      Aux_file.record_in_aux_at Loc.ghost "vo_compile_time"
+      Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
       if !Flags.xml_export then Hook.get f_xml_end_library ();

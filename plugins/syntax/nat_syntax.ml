@@ -33,21 +33,21 @@ let warn_large_nat =
                  strbrk "may vary from 5000 to 70000 depending on your system " ++
                  strbrk "limits and on the command executed).")
 
-let nat_of_int loc n =
+let nat_of_int ?loc n =
   if is_pos_or_zero n then begin
       if less_than threshold n then warn_large_nat ();
-      let ref_O = Loc.tag ~loc @@ GRef (glob_O, None) in
-      let ref_S = Loc.tag ~loc @@ GRef (glob_S, None) in
+      let ref_O = Loc.tag ?loc @@ GRef (glob_O, None) in
+      let ref_S = Loc.tag ?loc @@ GRef (glob_S, None) in
       let rec mk_nat acc n =
 	if n <> zero then
-	  mk_nat (Loc.tag ~loc @@ GApp (ref_S, [acc])) (sub_1 n)
+	  mk_nat (Loc.tag ?loc @@ GApp (ref_S, [acc])) (sub_1 n)
 	else
 	  acc
       in
       mk_nat ref_O n
     end
   else
-      user_err ~hdr:"nat_of_int"
+      user_err ?loc ~hdr:"nat_of_int"
        (str "Cannot interpret a negative number as a number of type nat")
 
 (************************************************************************)

@@ -1462,7 +1462,7 @@ let simpleInjClause with_evars = function
   | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (injEq ~old:true with_evars clear_flag None)) c
 
 let injConcl = injClause None false None
-let injHyp clear_flag id = injClause None false (Some (clear_flag,ElimOnIdent (Loc.ghost,id)))
+let injHyp clear_flag id = injClause None false (Some (clear_flag,ElimOnIdent (Loc.tag id)))
 
 let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
   Proofview.Goal.enter { enter = begin fun gl ->

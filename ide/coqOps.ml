@@ -465,20 +465,22 @@ object(self)
           self#attach_tooltip ~loc sentence
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | Message(Error, loc, msg), Some (id,sentence) ->
-          let uloc = Option.default Loc.ghost loc in
           log_pp ?id Pp.(str "ErrorMsg" ++ msg);
           remove_flag sentence `PROCESSING;
           let rmsg = Pp.string_of_ppcmds msg     in
-          add_flag sentence (`ERROR (uloc, rmsg));
+          Option.iter (fun loc ->
+              add_flag sentence (`ERROR (loc, rmsg));
+            ) loc;
           self#mark_as_needed sentence;
-          self#attach_tooltip sentence ?loc rmsg;
+          self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.error sentence
       | Message(Warning, loc, msg), Some (id,sentence) ->
-          let uloc = Option.default Loc.ghost loc in
           log_pp ?id Pp.(str "WarningMsg" ++ msg);
           let rmsg = Pp.string_of_ppcmds msg     in
-          add_flag sentence (`WARNING (uloc, rmsg));
-          self#attach_tooltip sentence ?loc rmsg;
+          Option.iter (fun loc ->
+              add_flag sentence (`WARNING (loc, rmsg));
+            ) loc;
+          self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.warning sentence;
           messages#push Warning msg
       | Message(lvl, loc, msg), Some (id,sentence) ->
@@ -528,14 +530,14 @@ object(self)
     let start, stop, phrase = self#get_sentence sentence in
     self#position_tag_at_iter ?loc start stop tag phrase
 
-  method private process_interp_error queue sentence loc msg tip id =
+  method private process_interp_error ?loc queue sentence msg tip id =
     Coq.bind (Coq.return ()) (function () ->
     let start, stop, phrase = self#get_sentence sentence in
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
     pop_info ();
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
-      self#position_tag_at_iter ~loc start stop Tags.Script.error phrase;
+      self#position_tag_at_iter ?loc start stop Tags.Script.error phrase;
       buffer#place_cursor ~where:stop;
       messages#clear;
       messages#push Feedback.Error msg;
@@ -649,9 +651,9 @@ object(self)
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
-                  let loc = Option.cata Loc.make_loc Loc.ghost loc in
+                  let loc = Option.map Loc.make_loc loc in
                   let sentence = Doc.pop document in
-                  self#process_interp_error queue sentence loc msg tip id in
+                  self#process_interp_error ?loc queue sentence msg tip id in
             Coq.bind coq_query handle_answer
       in
       let tip =

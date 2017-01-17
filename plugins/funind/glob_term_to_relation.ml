@@ -672,9 +672,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  in
 	  let case_pats = build_constructors_of_type (fst ind) nal_as_glob_constr in
 	  assert (Int.equal (Array.length case_pats) 1);
-	  let br =
-	    (Loc.ghost,([],[case_pats.(0)],e))
-	  in
+	  let br = Loc.tag ([],[case_pats.(0)],e) in
 	  let match_expr = mkGCases(None,[b,(Anonymous,None)],[br]) in
 	  build_entry_lc env funnames avoid match_expr
 
@@ -1254,7 +1252,7 @@ let rec rebuild_return_type (loc, rt) =
         Loc.tag ~loc @@ Constrexpr.CProdN(n,rebuild_return_type t')
     | Constrexpr.CLetIn(na,v,t,t') ->
 	Loc.tag ~loc @@ Constrexpr.CLetIn(na,v,t,rebuild_return_type t')
-    | _ -> Loc.tag ~loc @@ Constrexpr.CProdN([[Loc.ghost,Anonymous],
+    | _ -> Loc.tag ~loc @@ Constrexpr.CProdN([[Loc.tag Anonymous],
 				       Constrexpr.Default Decl_kinds.Explicit,Loc.tag ~loc rt],
 			    Loc.tag @@ Constrexpr.CSort(GType []))
 
@@ -1307,12 +1305,12 @@ let do_build_inductive
 	(fun (n,t,typ) acc ->
           match typ with
           | Some typ ->
-	     Loc.tag @@ Constrexpr.CLetIn((Loc.ghost, n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
+	     Loc.tag @@ Constrexpr.CLetIn((Loc.tag n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
                               Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
 			      acc)
 	  | None ->
 	     Loc.tag @@ Constrexpr.CProdN
-	       ([[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
+	       ([[(Loc.tag n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
 		acc
 	       )
 	)
@@ -1374,12 +1372,12 @@ let do_build_inductive
       (fun (n,t,typ) acc ->
          match typ with
          | Some typ ->
-	   Loc.tag @@ Constrexpr.CLetIn((Loc.ghost, n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
+	   Loc.tag @@ Constrexpr.CLetIn((Loc.tag n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
                               Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
 			    acc)
 	 | None ->
            Loc.tag @@ Constrexpr.CProdN
-	   ([[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
+	   ([[(Loc.tag n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
 	    acc
 	   )
       )
@@ -1406,18 +1404,18 @@ let do_build_inductive
       (fun (n,t,typ) ->
          match typ with
          | Some typ ->
-	   Constrexpr.CLocalDef((Loc.ghost,n), Constrextern.extern_glob_constr Id.Set.empty t,
+	   Constrexpr.CLocalDef((Loc.tag n), Constrextern.extern_glob_constr Id.Set.empty t,
                                   Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ))
 	 | None ->
 	 Constrexpr.CLocalAssum
-	   ([(Loc.ghost,n)], Constrexpr_ops.default_binder_kind, Constrextern.extern_glob_constr Id.Set.empty t)
+	   ([(Loc.tag n)], Constrexpr_ops.default_binder_kind, Constrextern.extern_glob_constr Id.Set.empty t)
       )
       rels_params
   in
   let ext_rels_constructors =
     Array.map (List.map
       (fun (id,t) ->
-	 false,((Loc.ghost,id),
+	 false,((Loc.tag id),
 		with_full_print
 		  (Constrextern.extern_glob_type Id.Set.empty) ((* zeta_normalize *) (alpha_rt rel_params_ids t))
 	       )
@@ -1425,7 +1423,7 @@ let do_build_inductive
       (rel_constructors)
   in
   let rel_ind i ext_rel_constructors =
-    (((Loc.ghost,relnames.(i)), None),
+    (((Loc.tag @@ relnames.(i)), None),
     rel_params,
     Some rel_arities.(i),
     ext_rel_constructors),[]
