@@ -126,7 +126,7 @@ let intern_move_location ist = function
 
 let intern_isolated_global_tactic_reference r =
   let (loc,qid) = qualid_of_reference r in
-  TacCall (loc,ArgArg (loc,locate_tactic qid),[])
+  TacCall (Loc.tag ~loc (ArgArg (loc,locate_tactic qid),[]))
 
 let intern_isolated_tactic_reference strict ist r =
   (* An ltac reference *)
@@ -624,12 +624,12 @@ and intern_tactic_seq onlytac ist = function
       ist.ltacvars, TacSelect (sel, intern_pure_tactic ist tac)
 
   (* For extensions *)
-  | TacAlias (loc,s,l) ->
+  | TacAlias (loc,(s,l)) ->
       let l = List.map (intern_tacarg !strict_check false ist) l in
-      ist.ltacvars, TacAlias (loc,s,l)
+      ist.ltacvars, TacAlias (Loc.tag ~loc (s,l))
   | TacML (loc,opn,l) ->
       let _ignore = Tacenv.interp_ml_tactic opn in
-      ist.ltacvars, TacML (adjust_loc loc,opn,List.map (intern_tacarg !strict_check false ist) l)
+      ist.ltacvars, TacML (adjust_loc loc, opn,List.map (intern_tacarg !strict_check false ist) l)
 
 and intern_tactic_as_arg loc onlytac ist a =
   match intern_tacarg !strict_check onlytac ist a with
@@ -650,11 +650,11 @@ and intern_tactic_fun ist (var,body) =
 and intern_tacarg strict onlytac ist = function
   | Reference r -> intern_non_tactic_reference strict ist r
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
-  | TacCall (loc,f,[]) -> intern_isolated_tactic_reference strict ist f
-  | TacCall (loc,f,l) ->
-      TacCall (loc,
+  | TacCall (loc,(f,[])) -> intern_isolated_tactic_reference strict ist f
+  | TacCall (loc,(f,l)) ->
+      TacCall (Loc.tag ~loc (
         intern_applied_tactic_reference ist f,
-        List.map (intern_tacarg !strict_check false ist) l)
+        List.map (intern_tacarg !strict_check false ist) l))
   | TacFreshId x -> TacFreshId (List.map (intern_string_or_var ist) x)
   | TacPretype c -> TacPretype (intern_constr ist c)
   | TacNumgoals -> TacNumgoals

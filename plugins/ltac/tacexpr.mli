@@ -184,8 +184,7 @@ type 'a gen_tactic_arg =
   | TacGeneric     of 'lev generic_argument
   | ConstrMayEval  of ('trm,'cst,'pat) may_eval
   | Reference      of 'ref
-  | TacCall of Loc.t * 'ref *
-      'a gen_tactic_arg list
+  | TacCall    of ('ref * 'a gen_tactic_arg list) Loc.located
   | TacFreshId of string or_var list
   | Tacexp of 'tacexpr
   | TacPretype of 'trm
@@ -207,7 +206,7 @@ constraint 'a = <
     'r : ltac refs, 'n : idents, 'l : levels *)
 
 and 'a gen_tactic_expr =
-  | TacAtom of Loc.t * 'a gen_atomic_tactic_expr
+  | TacAtom of ('a gen_atomic_tactic_expr) Loc.located
   | TacThen of
       'a gen_tactic_expr *
       'a gen_tactic_expr
@@ -268,7 +267,7 @@ and 'a gen_tactic_expr =
   (* For ML extensions *)
   | TacML of Loc.t * ml_tactic_entry * 'a gen_tactic_arg list
   (* For syntax extensions *)
-  | TacAlias of Loc.t * KerName.t * 'a gen_tactic_arg list
+  | TacAlias of (KerName.t * 'a gen_tactic_arg list) Loc.located
 
 constraint 'a = <
     term:'t;
@@ -389,7 +388,7 @@ type ltac_call_kind =
   | LtacVarCall of Id.t * glob_tactic_expr
   | LtacConstrInterp of Glob_term.glob_constr * Pretyping.ltac_var_map
 
-type ltac_trace = (Loc.t * ltac_call_kind) list
+type ltac_trace = ltac_call_kind Loc.located list
 
 type tacdef_body =
   | TacticDefinition of Id.t Loc.located * raw_tactic_expr  (* indicates that user employed ':=' in Ltac body *)

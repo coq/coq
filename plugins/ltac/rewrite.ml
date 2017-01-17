@@ -1969,7 +1969,7 @@ let make_tactic name =
   let loc = Loc.ghost in
   let tacpath = Libnames.qualid_of_string name in
   let tacname = Qualid (loc, tacpath) in
-  TacArg (loc, TacCall (loc, tacname, []))
+  TacArg (loc, TacCall (Loc.tag ~loc (tacname, [])))
 
 let add_morphism_infer glob m n =
   init_setoid ();

@@ -161,7 +161,7 @@ GEXTEND Gram
       | st = simple_tactic -> st
       | a = tactic_arg -> TacArg(!@loc,a)
       | r = reference; la = LIST0 tactic_arg_compat ->
-          TacArg(!@loc,TacCall (!@loc,r,la)) ]
+          TacArg(!@loc, TacCall (!@loc,(r,la))) ]
     | "0"
       [ "("; a = tactic_expr; ")" -> a
       | "["; ">"; (tf,tail) = tactic_then_gen; "]" ->
@@ -219,7 +219,7 @@ GEXTEND Gram
   ;
   tactic_atom:
     [ [ n = integer -> TacGeneric (genarg_of_int n)
-      | r = reference -> TacCall (!@loc,r,[])
+      | r = reference -> TacCall (!@loc,(r,[]))
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
   match_key:

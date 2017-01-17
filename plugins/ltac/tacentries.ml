@@ -170,7 +170,7 @@ let add_tactic_entry (kn, ml, tg) state =
         TacGeneric arg
     in
     let l = List.map map l in
-    (TacAlias (loc,kn,l):raw_tactic_expr)
+    (TacAlias (loc,(kn,l)):raw_tactic_expr)
   in
   let () =
     if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then

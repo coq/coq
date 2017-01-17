@@ -161,11 +161,11 @@ let decl_constant na ctx c =
 
 (* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =
-  TacArg(Loc.ghost,TacCall(Loc.ghost, ArgArg(Loc.ghost, Lazy.force tac),args))
+  TacArg(Loc.tag @@ TacCall (Loc.tag (ArgArg(Loc.tag @@ Lazy.force tac),args)))
 
 (* Calling a locally bound tactic *)
 let ltac_lcall tac args =
-  TacArg(Loc.ghost,TacCall(Loc.ghost, ArgVar(Loc.ghost, Id.of_string tac),args))
+  TacArg(Loc.tag @@ TacCall (Loc.tag (ArgVar(Loc.tag @@ Id.of_string tac),args)))
 
 let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
   let fold arg (i, vars, lfun) =
@@ -580,8 +580,8 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
     | Some (Closed lc) ->
         closed_term_ast (List.map Smartlocate.global_with_alias lc)
     | None ->
-        let t = ArgArg(Loc.ghost,Lazy.force ltac_inv_morph_nothing) in
-              TacArg(Loc.ghost,TacCall(Loc.ghost,t,[]))
+        let t = ArgArg(Loc.tag @@ Lazy.force ltac_inv_morph_nothing) in
+              TacArg(Loc.tag (TacCall(Loc.tag (t,[]))))
 
 let make_hyp env evd c =
   let t = Retyping.get_type_of env !evd c in
@@ -602,8 +602,8 @@ let interp_power env evd pow =
   let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
   match pow with
   | None ->
-      let t = ArgArg(Loc.ghost, Lazy.force ltac_inv_morph_nothing) in
-      (TacArg(Loc.ghost,TacCall(Loc.ghost,t,[])), plapp evd coq_None [|carrier|])
+      let t = ArgArg(Loc.tag (Lazy.force ltac_inv_morph_nothing)) in
+      (TacArg(Loc.ghost,TacCall(Loc.tag (t,[]))), plapp evd coq_None [|carrier|])
   | Some (tac, spec) ->
       let tac =
         match tac with

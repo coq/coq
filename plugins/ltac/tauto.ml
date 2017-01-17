@@ -264,7 +264,7 @@ let with_flags flags _ ist =
   let x = (loc, Id.of_string "x") in
   let arg = Val.Dyn (tag_tauto_flags, flags) in
   let ist = { ist with lfun = Id.Map.add (snd x) arg ist.lfun } in
-  eval_tactic_ist ist (TacArg (loc, TacCall (loc, ArgVar f, [Reference (ArgVar x)])))
+  eval_tactic_ist ist (TacArg (loc, TacCall (loc, (ArgVar f, [Reference (ArgVar x)]))))
 
 let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in

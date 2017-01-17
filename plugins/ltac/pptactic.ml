@@ -1048,9 +1048,9 @@ type 'a extra_genarg_printer =
               primitive "fresh" ++ pr_fresh_ids l, latom
             | TacArg(_,TacGeneric arg) ->
               pr.pr_generic arg, latom
-            | TacArg(_,TacCall(loc,f,[])) ->
+            | TacArg(_,TacCall(loc,(f,[]))) ->
               pr.pr_reference f, latom
-            | TacArg(_,TacCall(loc,f,l)) ->
+            | TacArg(_,TacCall(loc,(f,l))) ->
               pr_with_comments loc (hov 1 (
                 pr.pr_reference f ++ spc ()
                 ++ prlist_with_sep spc pr_tacarg l)),
@@ -1059,7 +1059,7 @@ type 'a extra_genarg_printer =
               pr_tacarg a, latom
             | TacML (loc,s,l) ->
               pr_with_comments loc (pr.pr_extend 1 s l), lcall
-            | TacAlias (loc,kn,l) ->
+            | TacAlias (loc,(kn,l)) ->
               pr_with_comments loc (pr.pr_alias (level_of inherited) kn l), latom
           )
           in

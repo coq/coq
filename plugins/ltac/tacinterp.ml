@@ -1257,7 +1257,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       eval_tactic ist tac
   | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
-  | TacAlias (loc,s,l) ->
+  | TacAlias (loc,(s,l)) ->
       let (ids, body) = Tacenv.interp_alias s in
       let (>>=) = Ftactic.bind in
       let interp_vars = Ftactic.List.map (fun v -> interp_tacarg ist v) l in
@@ -1341,9 +1341,9 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
         let (sigma,c_interp) = interp_constr_may_eval ist env sigma c in
         Sigma.Unsafe.of_pair (Ftactic.return (Value.of_constr c_interp), sigma)
       end }
-  | TacCall (loc,r,[]) ->
+  | TacCall (loc,(r,[])) ->
       interp_ltac_reference loc true ist r
-  | TacCall (loc,f,l) ->
+  | TacCall (loc,(f,l)) ->
       let (>>=) = Ftactic.bind in
       interp_ltac_reference loc true ist f >>= fun fv ->
       Ftactic.List.map (fun a -> interp_tacarg ist a) l >>= fun largs ->
