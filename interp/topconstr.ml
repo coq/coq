@@ -97,7 +97,7 @@ let rec fold_local_binders g f n acc b = function
       f n (fold_local_binders g f n' acc b l) t
   | CLocalDef ((_,na),c,t)::l ->
       Option.fold_left (f n) (f n (fold_local_binders g f (name_fold g na n) acc b l) c) t
-  | CLocalPattern (_,pat,t)::l ->
+  | CLocalPattern (_,(pat,t))::l ->
       let acc = fold_local_binders g f (cases_pattern_fold_names g n pat) acc b l in
       Option.fold_left (f n) acc t
   | [] ->
@@ -180,7 +180,7 @@ let split_at_annot bl na =
               (List.rev ans, CLocalAssum (r, k, t) :: rest)
             end
 	| CLocalDef _ as x :: rest -> aux (x :: acc) rest
-        | CLocalPattern (loc,_,_) :: rest ->
+        | CLocalPattern (loc,_) :: rest ->
             Loc.raise ~loc (Stream.Error "pattern with quote not allowed after fix")
 	| [] ->
             user_err ~loc 
@@ -204,9 +204,9 @@ let map_local_binders f g e bl =
         (map_binder g e nal, CLocalAssum(nal,k,f e ty)::bl)
     | CLocalDef((loc,na),c,ty) ->
         (name_fold g na e, CLocalDef((loc,na),f e c,Option.map (f e) ty)::bl)
-    | CLocalPattern (loc,pat,t) ->
+    | CLocalPattern (loc,(pat,t)) ->
         let ids = ids_of_pattern pat in
-        (Id.Set.fold g ids e, CLocalPattern (loc,pat,Option.map (f e) t)::bl) in
+        (Id.Set.fold g ids e, CLocalPattern (loc,(pat,Option.map (f e) t))::bl) in
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
 

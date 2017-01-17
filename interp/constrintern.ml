@@ -475,7 +475,7 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
      let ty = Option.map (intern env) ty in
       (push_name_env lvar (impls_term_list term) env locna,
        GLocalDef (loc,na,Explicit,term,ty) :: bl)
-  | CLocalPattern (loc,p,ty) ->
+  | CLocalPattern (loc,(p,ty)) ->
       let tyc =
         match ty with
         | Some ty -> ty

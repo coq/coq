@@ -319,7 +319,7 @@ let tag_var = tag Tag.variable
   let begin_of_binder = function
     | CLocalDef((loc,_),_,_) -> fst (Loc.unloc loc)
     | CLocalAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
-    | CLocalPattern(loc,_,_) -> fst (Loc.unloc loc)
+    | CLocalPattern(loc,(_,_)) -> fst (Loc.unloc loc)
     | _ -> assert false
 
   let begin_of_binders = function
@@ -366,7 +366,7 @@ let tag_var = tag Tag.variable
       surround (pr_lname na ++
                 pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr_c t) topt ++
                 str" :=" ++ spc() ++ pr_c c)
-    | CLocalPattern (loc,p,tyo) ->
+    | CLocalPattern (loc,(p,tyo)) ->
       let p = pr_patt lsimplepatt p in
       match tyo with
         | None ->
@@ -400,7 +400,7 @@ let tag_var = tag Tag.variable
               (_loc', CCases (LetPatternStyle,None, [(_loc'', CRef (Ident (_,id'),None)),None,None],[(_,([_,[p]],b))])))
          when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_prod_binders b in
-      CLocalPattern (loc, p,None) :: bl, c
+      CLocalPattern (loc, (p,None)) :: bl, c
     | loc, CProdN ((nal,bk,t)::bl,c) ->
       let bl,c = extract_prod_binders (loc, CProdN(bl,c)) in
       CLocalAssum (nal,bk,t) :: bl, c
@@ -416,7 +416,7 @@ let tag_var = tag Tag.variable
                 (_loc, CCases (LetPatternStyle,None, [(_loc', CRef (Ident (_,id'),None)),None,None],[(_,([_,[p]],b))])))
          when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_lam_binders b in
-      CLocalPattern (loc,p,None) :: bl, c
+      CLocalPattern (loc,(p,None)) :: bl, c
     | CLambdaN ((nal,bk,t)::bl,c) ->
       let bl,c = extract_lam_binders (loc, CLambdaN(bl,c)) in
       CLocalAssum (nal,bk,t) :: bl, c

@@ -486,7 +486,7 @@ GEXTEND Gram
             | _, CPatCast (p, ty) -> (p, Some ty)
             | _ -> (p, None)
           in
-          [CLocalPattern (!@loc, p, ty)]
+          [CLocalPattern (Loc.tag ~loc:!@loc (p, ty))]
     ] ]
   ;
   typeclass_constraint:

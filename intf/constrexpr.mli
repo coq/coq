@@ -125,9 +125,9 @@ and recursion_order_expr =
 
 (** Anonymous defs allowed ?? *)
 and local_binder_expr =
-  | CLocalAssum of Name.t located list * binder_kind * constr_expr
-  | CLocalDef of Name.t located * constr_expr * constr_expr option
-  | CLocalPattern of Loc.t * cases_pattern_expr * constr_expr option
+  | CLocalAssum   of Name.t located list * binder_kind * constr_expr
+  | CLocalDef     of Name.t located * constr_expr * constr_expr option
+  | CLocalPattern of (cases_pattern_expr * constr_expr option) Loc.located
 
 and constr_notation_substitution =
     constr_expr list *      (** for constr subterms *)

@@ -866,7 +866,7 @@ and extern_local_binder scopes vars = function
         if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
       let p = extern_cases_pattern vars p in
       let (assums,ids,l) = extern_local_binder scopes vars l in
-      (assums,ids, CLocalPattern(Loc.ghost,p,ty) :: l)
+      (assums,ids, CLocalPattern(Loc.tag @@ (p,ty)) :: l)
 
 and extern_eqn inctx scopes vars (loc,(ids,pl,c)) =
   Loc.tag ~loc ([loc,List.map (extern_cases_pattern_in_scope scopes vars) pl],

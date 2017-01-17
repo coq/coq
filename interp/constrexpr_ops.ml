@@ -239,7 +239,7 @@ let local_binder_loc = function
   | CLocalDef ((loc,_),t,None) -> Loc.merge loc (constr_loc t)
   | CLocalDef ((loc,_),b,Some t) -> Loc.merge loc (Loc.merge (constr_loc b) (constr_loc t))
   | CLocalAssum ([],_,_) -> assert false
-  | CLocalPattern (loc,_,_) -> loc
+  | CLocalPattern (loc,_) -> loc
 
 let local_binders_loc bll = match bll with
   | [] -> Loc.ghost
@@ -283,7 +283,7 @@ let expand_binders ~loc mkC bl c =
             let env = List.fold_left add_name_in_env env nl in
             (env, mkC ~loc (nl,bk,t) c)
         | CLocalAssum ([],_,_) -> loop loc bl c
-        | CLocalPattern (loc1, p, ty) ->
+        | CLocalPattern (loc1, (p, ty)) ->
             let env, c = loop ~loc:(Loc.merge loc1 loc) bl c in
             let ni = Hook.get fresh_var env c in
             let id = (loc1, Name ni) in
