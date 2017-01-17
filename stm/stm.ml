@@ -2584,12 +2584,12 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
             if not in_proof && Proof_global.there_are_pending_proofs () then
             begin
               let bname = VCS.mk_branch_name x in
-              let opacity_of_produced_term =
-                match x.expr with
+              let rec opacity_of_produced_term = function
                 (* This AST is ambiguous, hence we check it dynamically *)
                 | VernacInstance (false, _,_ , None, _) -> GuaranteesOpacity
+                | VernacLocal (_,e) -> opacity_of_produced_term e
                 | _ -> Doesn'tGuaranteeOpacity in
-              VCS.commit id (Fork (x,bname,opacity_of_produced_term,[]));
+              VCS.commit id (Fork (x,bname,opacity_of_produced_term x.expr,[]));
               let proof_mode = default_proof_mode () in
               VCS.branch bname (`Proof (proof_mode, VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode proof_mode;
