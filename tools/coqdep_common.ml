@@ -219,7 +219,6 @@ let register_dir_logpath,find_dir_logpath =
 
 let file_name s = function
   | None     -> s
-  | Some "." -> s
   | Some d   -> d // s
 
 let depend_ML str =
