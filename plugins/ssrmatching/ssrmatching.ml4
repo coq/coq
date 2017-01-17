@@ -62,7 +62,6 @@ open Locusops
 DECLARE PLUGIN "ssrmatching_plugin"
 
 type loc = Loc.t
-let dummy_loc = Loc.ghost
 let errorstrm = CErrors.user_err ~hdr:"ssrmatching"
 let loc_error loc msg = CErrors.user_err ~loc ~hdr:msg (str msg)
 let ppnl = Feedback.msg_info
@@ -159,10 +158,10 @@ let mkCLetIn loc name bo t = Loc.tag ~loc @@
    CLetIn ((loc, name), bo, None, t)
 let mkCCast loc t ty = Loc.tag ~loc @@ CCast (t, dC ty)
 (** Constructors for rawconstr *)
-let mkRHole = GHole (dummy_loc, InternalHole, IntroAnonymous, None)
-let mkRApp f args = if args = [] then f else GApp (dummy_loc, f, args)
-let mkRCast rc rt =  GCast (dummy_loc, rc, dC rt)
-let mkRLambda n s t = GLambda (dummy_loc, n, Explicit, s, t)
+let mkRHole = Loc.tag @@ GHole (InternalHole, IntroAnonymous, None)
+let mkRApp f args = if args = [] then f else Loc.tag @@ GApp (f, args)
+let mkRCast rc rt =  Loc.tag @@ GCast (rc, dC rt)
+let mkRLambda n s t = Loc.tag @@ GLambda (n, Explicit, s, t)
 
 (* ssrterm conbinators *)
 let combineCG t1 t2 f g = match t1, t2 with
@@ -944,7 +943,7 @@ let glob_cpattern gs p =
     let name = Name (id_of_string ("_ssrpat_" ^ s)) in
     k, (mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None) in
   let bind_in t1 t2 =
-    let d = dummy_loc in let n = Name (destCVar t1) in
+    let d = Loc.ghost in let n = Name (destCVar t1) in
     fst (glob (mkCCast d (mkCHole d) (mkCLambda d n (mkCHole d) t2))) in
   let check_var t2 = if not (isCVar t2) then
     loc_error (constr_loc t2) "Only identifiers are allowed here" in
@@ -1023,7 +1022,7 @@ type pattern = Evd.evar_map * (constr, constr) ssrpattern
 let id_of_cpattern = function
   | _,(_,Some (_loc, CRef (Ident (_, x), _))) -> Some x
   | _,(_,Some (_loc, CAppExpl ((_, Ident (_, x), _), []))) -> Some x
-  | _,(GRef (_, VarRef x, _) ,None) -> Some x
+  | _,((_, GRef (VarRef x, _)) ,None) -> Some x
   | _ -> None
 let id_of_Cterm t = match id_of_cpattern t with
   | Some x -> x
@@ -1123,8 +1122,8 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   let mkG ?(k=' ') x = k,(x,None) in
   let decode ist t ?reccall f g =
     try match (pf_intern_term ist gl t) with
-    | GCast(_,GHole _,CastConv(GLambda(_,Name x,_,_,c))) -> f x (' ',(c,None))
-    | GVar(_,id)
+    | _, GCast((_, GHole _),CastConv((_, GLambda(Name x,_,_,c)))) -> f x (' ',(c,None))
+    | _, GVar id
       when Id.Map.mem id ist.lfun &&
            not(Option.is_empty reccall) &&
            not(Option.is_empty wit_ssrpatternarg) ->
@@ -1166,17 +1165,17 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
       sigma new_evars in
     sigma in
   let red = let rec decode_red (ist,red) = match red with
-    | T(k,(GCast (_,GHole _,(CastConv(GLambda (_,Name id,_,_,t)))),None))
+    | T(k,((_, GCast ((_, GHole _),CastConv((_, GLambda (Name id,_,_,t))))),None))
         when let id = string_of_id id in let len = String.length id in
         (len > 8 && String.sub id 0 8 = "_ssrpat_") ->
         let id = string_of_id id in let len = String.length id in
         (match String.sub id 8 (len - 8), t with
-        | "In", GApp(_, _, [t]) -> decodeG t xInT (fun x -> T x)
-        | "In", GApp(_, _, [e; t]) -> decodeG t (eInXInT (mkG e)) (bad_enc id)
-        | "In", GApp(_, _, [e; t; e_in_t]) ->
+        | "In", (_, GApp( _, [t])) -> decodeG t xInT (fun x -> T x)
+        | "In", (_, GApp( _, [e; t])) -> decodeG t (eInXInT (mkG e)) (bad_enc id)
+        | "In", (_, GApp( _, [e; t; e_in_t])) ->
             decodeG t (eInXInT (mkG e))
               (fun _ -> decodeG e_in_t xInT (fun _ -> assert false))
-        | "As", GApp(_, _, [e; t]) -> decodeG t (eAsXInT (mkG e)) (bad_enc id)
+        | "As", (_, GApp(_, [e; t])) -> decodeG t (eAsXInT (mkG e)) (bad_enc id)
         | _ -> bad_enc id ())
     | T t -> decode ist ~reccall:decode_red t xInT (fun x -> T x)
     | In_T t -> decode ist t inXInT inT
@@ -1202,13 +1201,13 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   pp(lazy(str"typed as: " ++ pr_pattern_w_ids red));
   let mkXLetIn loc x (a,(g,c)) = match c with
   | Some b -> a,(g,Some (mkCLetIn loc x (mkCHole loc) b))
-  | None -> a,(GLetIn (loc,x,(GHole (loc, BinderType x, IntroAnonymous, None)), None, g), None) in
+  | None -> a,(Loc.tag ~loc @@ GLetIn (x, Loc.tag ~loc @@ GHole (BinderType x, IntroAnonymous, None), None, g), None) in
   match red with
   | T t -> let sigma, t = interp_term ist gl t in sigma, T t
   | In_T t -> let sigma, t = interp_term ist gl t in sigma, In_T t
   | X_In_T (x, rp) | In_X_In_T (x, rp) ->
     let mk x p = match red with X_In_T _ -> X_In_T(x,p) | _ -> In_X_In_T(x,p) in
-    let rp = mkXLetIn dummy_loc (Name x) rp in
+    let rp = mkXLetIn Loc.ghost (Name x) rp in
     let sigma, rp = interp_term ist gl rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
@@ -1217,7 +1216,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   | E_In_X_In_T(e, x, rp) | E_As_X_In_T (e, x, rp) ->
     let mk e x p =
       match red with E_In_X_In_T _ ->E_In_X_In_T(e,x,p)|_->E_As_X_In_T(e,x,p) in
-    let rp = mkXLetIn dummy_loc (Name x) rp in
+    let rp = mkXLetIn Loc.ghost (Name x) rp in
     let sigma, rp = interp_term ist gl rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
@@ -1375,10 +1374,10 @@ let pf_fill_occ_term gl occ t =
   let cl,(_,t) = fill_occ_term env concl occ sigma0 t in
   cl, t
 
-let cpattern_of_id id = ' ', (GRef (dummy_loc, VarRef  id, None), None)
+let cpattern_of_id id = ' ', (Loc.tag @@ GRef (VarRef  id, None), None)
 
-let is_wildcard = function
-  | _,(_,Some (_, CHole _)|GHole _,None) -> true
+let is_wildcard : cpattern -> bool = function
+  | _,(_,Some (_, CHole _)| (_, GHole _),None) -> true
   | _ -> false
 
 (* "ssrpattern" *)

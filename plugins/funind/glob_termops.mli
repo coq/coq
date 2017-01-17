@@ -82,11 +82,8 @@ val alpha_rt : Id.t list -> glob_constr -> glob_constr
 
 (* same as alpha_rt but for case branches *)
 val alpha_br : Id.t list ->
-    Loc.t * Id.t list * Glob_term.cases_pattern list *
-    Glob_term.glob_constr ->
-    Loc.t * Id.t list * Glob_term.cases_pattern list *
-    Glob_term.glob_constr
-
+  Glob_term.cases_clause ->
+  Glob_term.cases_clause
 
 (* Reduction function *)
 val replace_var_by_term  :

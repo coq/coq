@@ -567,23 +567,23 @@ let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
 (* in environment [env], with existential variables [evdref] and *)
 (* the type constraint tycon *)
 
-let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdref (lvar : ltac_var_map) t =
+let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdref (lvar : ltac_var_map) (loc, t) =
   let inh_conv_coerce_to_tycon = inh_conv_coerce_to_tycon resolve_tc in
   let pretype_type = pretype_type k0 resolve_tc in
   let pretype = pretype k0 resolve_tc in
   let open Context.Rel.Declaration in
   match t with
-  | GRef (loc,ref,u) ->
+  | GRef (ref,u) ->
       inh_conv_coerce_to_tycon loc env evdref
 	(pretype_ref loc evdref env ref u)
 	tycon
 
-  | GVar (loc, id) ->
+  | GVar id ->
     inh_conv_coerce_to_tycon loc env evdref
       (pretype_id (fun e r l t -> pretype tycon e r l t) k0 loc env evdref lvar id)
       tycon
 
-  | GEvar (loc, id, inst) ->
+  | GEvar (id, inst) ->
       (* Ne faudrait-il pas s'assurer que hyps est bien un
 	 sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
       let evk =
@@ -596,7 +596,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let j = (Retyping.get_judgment_of env.ExtraEnv.env !evdref c) in
 	inh_conv_coerce_to_tycon loc env evdref j tycon
 
-  | GPatVar (loc,(someta,n)) ->
+  | GPatVar (someta,n) ->
     let env = ltac_interp_name_env k0 lvar env !evdref in
     let ty =
       match tycon with
@@ -605,7 +605,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let k = Evar_kinds.MatchingVar (someta,n) in
       { uj_val = e_new_evar env evdref ~src:(loc,k) ty; uj_type = ty }
 
-  | GHole (loc, k, naming, None) ->
+  | GHole (k, naming, None) ->
       let env = ltac_interp_name_env k0 lvar env !evdref in
       let ty =
         match tycon with
@@ -614,7 +614,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
           new_type_evar env evdref loc in
         { uj_val = e_new_evar env evdref ~src:(loc,k) ~naming ty; uj_type = ty }
 
-  | GHole (loc, k, _naming, Some arg) ->
+  | GHole (k, _naming, Some arg) ->
       let env = ltac_interp_name_env k0 lvar env !evdref in
       let ty =
         match tycon with
@@ -626,7 +626,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let () = evdref := sigma in
       { uj_val = c; uj_type = ty }
 
-  | GRec (loc,fixkind,names,bl,lar,vdef) ->
+  | GRec (fixkind,names,bl,lar,vdef) ->
     let rec type_bl env ctxt = function
     [] -> ctxt
       | (na,bk,None,ty)::bl ->
@@ -711,11 +711,11 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       in
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 
-  | GSort (loc,s) ->
+  | GSort s ->
     let j = pretype_sort loc evdref s in
       inh_conv_coerce_to_tycon loc env evdref j tycon
 
-  | GApp (loc,f,args) ->
+  | GApp (f,args) ->
     let fj = pretype empty_tycon env evdref lvar f in
     let floc = loc_of_glob_constr f in
     let length = List.length args in
@@ -794,7 +794,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
 
-  | GLambda(loc,name,bk,c1,c2)      ->
+  | GLambda(name,bk,c1,c2)      ->
     let tycon' = evd_comb1
       (fun evd tycon ->
 	match tycon with
@@ -816,7 +816,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
     let resj = judge_of_abstraction env.ExtraEnv.env (orelse_name name name') j j' in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
 
-  | GProd(loc,name,bk,c1,c2)        ->
+  | GProd(name,bk,c1,c2)        ->
     let j = pretype_type empty_valcon env evdref lvar c1 in
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
@@ -840,7 +840,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         iraise (e, info) in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
 
-  | GLetIn(loc,name,c1,t,c2)      ->
+  | GLetIn(name,c1,t,c2)      ->
     let tycon1 =
       match t with
       | Some t ->
@@ -861,7 +861,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	uj_type = subst1 j.uj_val j'.uj_type }
 
-  | GLetTuple (loc,nal,(na,po),c,d) ->
+  | GLetTuple (nal,(na,po),c,d) ->
     let cj = pretype empty_tycon env evdref lvar c in
     let (IndType (indf,realargs)) =
       try find_rectype env.ExtraEnv.env !evdref cj.uj_type
@@ -954,7 +954,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 		obj ind p cj.uj_val fj.uj_val
 	    in { uj_val = v; uj_type = ccl })
 
-  | GIf (loc,c,(na,po),b1,b2) ->
+  | GIf (c,(na,po),b1,b2) ->
     let cj = pretype empty_tycon env evdref lvar c in
     let (IndType (indf,realargs)) =
       try find_rectype env.ExtraEnv.env !evdref cj.uj_type
@@ -1022,12 +1022,12 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let cj = { uj_val = v; uj_type = p } in
       inh_conv_coerce_to_tycon loc env evdref cj tycon
 
-  | GCases (loc,sty,po,tml,eqns) ->
+  | GCases (sty,po,tml,eqns) ->
     Cases.compile_cases loc sty
       ((fun vtyc env evdref -> pretype vtyc (make_env env !evdref) evdref lvar),evdref)
       tycon env.ExtraEnv.env (* loc *) (po,tml,eqns)
 
-  | GCast (loc,c,k) ->
+  | GCast (c,k) ->
     let cj =
       match k with
       | CastCoerce ->
@@ -1097,7 +1097,7 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
 and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
-  | GHole (loc, knd, naming, None) ->
+  | loc, GHole (knd, naming, None) ->
       let rec is_Type c = match EConstr.kind !evdref c with
       | Sort s ->
         begin match ESorts.kind !evdref s with

@@ -123,7 +123,7 @@ TACTIC EXTEND rewrite_strat
 END
 
 let clsubstitute o c =
-  let is_tac id = match fst (fst (snd c)) with GVar (_, id') when Id.equal id' id -> true | _ -> false in
+  let is_tac id = match fst (fst (snd c)) with (_, GVar id') when Id.equal id' id -> true | _ -> false in
     Tacticals.onAllHypsAndConcl
       (fun cl ->
         match cl with

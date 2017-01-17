@@ -304,12 +304,12 @@ let reset_tmp_scope env = {env with tmp_scope = None}
 
 let rec it_mkGProd loc2 env body =
   match env with
-      (loc1, (na, bk, t)) :: tl -> it_mkGProd loc2 tl (GProd (Loc.merge loc1 loc2, na, bk, t, body))
+      (loc1, (na, bk, t)) :: tl -> it_mkGProd loc2 tl (Loc.tag ~loc:(Loc.merge loc1 loc2) @@ GProd (na, bk, t, body))
     | [] -> body
 
 let rec it_mkGLambda loc2 env body =
   match env with
-      (loc1, (na, bk, t)) :: tl -> it_mkGLambda loc2 tl (GLambda (Loc.merge loc1 loc2, na, bk, t, body))
+      (loc1, (na, bk, t)) :: tl -> it_mkGLambda loc2 tl (Loc.tag ~loc:(Loc.merge loc1 loc2) @@ GLambda (na, bk, t, body))
     | [] -> body
 
 (**********************************************************************)
@@ -322,14 +322,14 @@ let build_impls = function
 
 let impls_type_list ?(args = []) =
   let rec aux acc = function
-    |GProd (_,na,bk,_,c) -> aux ((build_impls bk na)::acc) c
+    |_, GProd (na,bk,_,c) -> aux ((build_impls bk na)::acc) c
     |_ -> (Variable,[],List.append args (List.rev acc),[])
   in aux []
 
 let impls_term_list ?(args = []) =
   let rec aux acc = function
-    |GLambda (_,na,bk,_,c) -> aux ((build_impls bk na)::acc) c
-    |GRec (_, fix_kind, nas, args, tys, bds) ->
+    |_, GLambda (na,bk,_,c) -> aux ((build_impls bk na)::acc) c
+    |_, GRec (fix_kind, nas, args, tys, bds) ->
        let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
        let acc' = List.fold_left (fun a (na, bk, _, _) -> (build_impls bk na)::a) acc args.(nb) in
 	 aux acc' bds.(nb)
@@ -346,12 +346,12 @@ let rec check_capture ty = function
       ()
 
 let locate_if_hole loc na = function
-  | GHole (_,_,naming,arg) ->
+  | _, GHole (_,naming,arg) ->
       (try match na with
 	| Name id -> glob_constr_of_notation_constr loc
 	               (Reserve.find_reserved_type id)
 	| Anonymous -> raise Not_found
-      with Not_found -> GHole (loc, Evar_kinds.BinderType na, naming, arg))
+      with Not_found -> Loc.tag ~loc @@ GHole (Evar_kinds.BinderType na, naming, arg))
   | x -> x
 
 let reset_hidden_inductive_implicit_test env =
@@ -397,7 +397,7 @@ let intern_generalized_binder ?(global_level=false) intern_type lvar
     env fvs in
   let bl = List.map
     (fun (id, loc) ->
-      (loc, (Name id, b, GHole (loc, Evar_kinds.BinderType (Name id), Misctypes.IntroAnonymous, None))))
+      (loc, (Name id, b, Loc.tag ~loc @@ GHole (Evar_kinds.BinderType (Name id), Misctypes.IntroAnonymous, None))))
     fvs
   in
   let na = match na with
@@ -458,7 +458,7 @@ let glob_local_binder_of_extended = function
   | GLocalAssum (loc,na,bk,t) -> (na,bk,None,t)
   | GLocalDef (loc,na,bk,c,Some t) -> (na,bk,Some c,t)
   | GLocalDef (loc,na,bk,c,None) ->
-      let t = GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None) in
+      let t = Loc.tag ~loc @@ GHole(Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None) in
       (na,bk,Some c,t)
   | GLocalPattern (loc,_,_,_,_) ->
       Loc.raise ~loc (Stream.Error "pattern with quote not allowed here.")
@@ -517,10 +517,12 @@ let intern_generalization intern env lvar loc bk ak c =
       in
 	if pi then
 	  (fun (id, loc') acc ->
-	    GProd (Loc.merge loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id), Misctypes.IntroAnonymous, None), acc))
+            Loc.tag ~loc:(Loc.merge loc' loc) @@
+	    GProd (Name id, bk, Loc.tag ~loc:loc' @@ GHole (Evar_kinds.BinderType (Name id), Misctypes.IntroAnonymous, None), acc))
 	else
 	  (fun (id, loc') acc ->
-	    GLambda (Loc.merge loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id), Misctypes.IntroAnonymous, None), acc))
+            Loc.tag ~loc:(Loc.merge loc' loc) @@
+	    GLambda (Name id, bk, Loc.tag ~loc:loc' @@ GHole (Evar_kinds.BinderType (Name id), Misctypes.IntroAnonymous, None), acc))
     in
       List.fold_right (fun (id, loc as lid) (env, acc) ->
 	let env' = push_name_env lvar (Variable,[],[],[]) env (loc, Name id) in
@@ -572,10 +574,10 @@ let make_letins =
     (fun a c ->
      match a with
      | LPLetIn (loc,(na,b,t)) ->
-         GLetIn(loc,na,b,t,c)
+       Loc.tag ~loc @@ GLetIn(na,b,t,c)
      | LPCases (loc,(cp,il),id) ->
-         let tt = (GVar(loc,id),(Name id,None)) in
-         GCases(loc,Misctypes.LetPatternStyle,None,[tt],[(loc,il,[cp],c)]))
+         let tt = (Loc.tag ~loc @@ GVar id, (Name id,None)) in
+         Loc.tag ~loc @@ GCases(Misctypes.LetPatternStyle,None,[tt],[(loc,(il,[cp],c))]))
 
 let rec subordinate_letins letins = function
   (* binders come in reverse order; the non-let are returned in reverse order together *)
@@ -660,7 +662,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
         let bindings = Id.Map.map mk_env terms in
         Some (Genintern.generic_substitute_notation bindings arg)
       in
-      GHole (loc, knd, naming, arg)
+      Loc.tag ~loc @@ GHole (knd, naming, arg)
     | NBinderList (x,y,iter,terminator) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
@@ -678,22 +680,22 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
         let a,letins = snd (Option.get binderopt) in
         let e = make_letins letins (aux subst' infos c') in
         let (loc,(na,bk,t)) = a in
-        GProd (loc,na,bk,t,e)
+        Loc.tag ~loc @@ GProd (na,bk,t,e)
     | NLambda (Name id,NHole _,c') when option_mem_assoc id binderopt ->
         let a,letins = snd (Option.get binderopt) in
         let (loc,(na,bk,t)) = a in
-        GLambda (loc,na,bk,t,make_letins letins (aux subst' infos c'))
+        Loc.tag ~loc @@ GLambda (na,bk,t,make_letins letins (aux subst' infos c'))
     (* Two special cases to keep binder name synchronous with BinderType *)
     | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
         let subinfos,na = traverse_binder subst avoid subinfos na in
-        let ty = GHole (loc,Evar_kinds.BinderType na,naming,arg) in
-	GProd (loc,na,Explicit,ty,aux subst' subinfos c')
+        let ty = Loc.tag ~loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
+	Loc.tag ~loc @@ GProd (na,Explicit,ty,aux subst' subinfos c')
     | NLambda (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
         let subinfos,na = traverse_binder subst avoid subinfos na in
-        let ty = GHole (loc,Evar_kinds.BinderType na,naming,arg) in
-	GLambda (loc,na,Explicit,ty,aux subst' subinfos c')
+        let ty = Loc.tag ~loc @@ GHole (Evar_kinds.BinderType na,naming,arg) in
+	Loc.tag ~loc @@ GLambda (na,Explicit,ty,aux subst' subinfos c')
     | t ->
       glob_constr_of_notation_constr_with_binders loc
         (traverse_binder subst avoid) (aux subst') subinfos t
@@ -705,11 +707,12 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
       intern {env with tmp_scope = scopt;
                 scopes = subscopes @ env.scopes} a
     with Not_found ->
+    Loc.tag ~loc (
     try
-      GVar (loc, Id.Map.find id renaming)
+      GVar (Id.Map.find id renaming)
     with Not_found ->
       (* Happens for local notation joint with inductive/fixpoint defs *)
-      GVar (loc,id)
+      GVar id)
   in aux (terms,None,None) infos c
 
 let split_by_type ids =
@@ -744,7 +747,7 @@ let string_of_ty = function
   | Variable -> "var"
 
 let gvar (loc, id) us = match us with
-| None -> GVar (loc, id)
+| None -> Loc.tag ~loc @@ GVar id
 | Some _ ->
   user_err ~loc  (str "Variable " ++ pr_id id ++
     str " cannot have a universe instance")
@@ -786,25 +789,25 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id us =
 	let impls = implicits_of_global ref in
 	let scopes = find_arguments_scope ref in
 	Dumpglob.dump_reference loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
-	GRef (loc, ref, us), impls, scopes, []
+	Loc.tag ~loc @@ GRef (ref, us), impls, scopes, []
       with e when CErrors.noncritical e ->
 	(* [id] a goal variable *)
 	gvar (loc,id) us, [], [], []
 
 let find_appl_head_data c =
-  match c with
-  | GRef (loc,ref,_) as x -> 
+  match Loc.obj c with
+  | GRef (ref,_) ->
     let impls = implicits_of_global ref in
     let scopes = find_arguments_scope ref in
-      x, impls, scopes, []
-  | GApp (_,GRef (_,ref,_),l) as x
+      c, impls, scopes, []
+  | GApp ((_, GRef (ref,_)),l)
       when l != [] && Flags.version_strictly_greater Flags.V8_2 ->
       let n = List.length l in
       let impls = implicits_of_global ref in 
       let scopes = find_arguments_scope ref in
-	x, List.map (drop_first_implicits n) impls,
+	c, List.map (drop_first_implicits n) impls,
 	List.skipn_at_least n scopes,[]
-  | x -> x,[],[],[]
+  | _ -> c,[],[],[]
 
 let error_not_enough_arguments loc =
   user_err ~loc  (str "Abbreviation is not applied enough.")
@@ -836,7 +839,7 @@ let intern_reference ref =
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid loc qid intern env lvar us args =
   match intern_extended_global_of_qualid (loc,qid) with
-  | TrueGlobal ref -> GRef (loc, ref, us), true, args
+  | TrueGlobal ref -> (Loc.tag ~loc @@ GRef (ref, us)), true, args
   | SynDef sp ->
       let (ids,c) = Syntax_def.search_syntactic_definition sp in
       let nids = List.length ids in
@@ -850,9 +853,9 @@ let intern_qualid loc qid intern env lvar us args =
       let c = instantiate_notation_constr loc intern lvar subst infos c in
       let c = match us, c with
       | None, _ -> c
-      | Some _, GRef (loc, ref, None) -> GRef (loc, ref, us)
-      | Some _, GApp (loc, GRef (loc', ref, None), arg) ->
-         GApp (loc, GRef (loc', ref, us), arg)
+      | Some _, (loc, GRef (ref, None)) -> Loc.tag ~loc @@ GRef (ref, us)
+      | Some _, (loc, GApp ((loc', GRef (ref, None)), arg)) ->
+        Loc.tag ~loc @@ GApp (Loc.tag ~loc:loc' @@ GRef (ref, us), arg)
       | Some _, _ ->
         user_err ~loc  (str "Notation " ++ pr_qualid qid ++
           str " cannot have a universe instance, its expanded head
@@ -863,7 +866,7 @@ let intern_qualid loc qid intern env lvar us args =
 (* Rule out section vars since these should have been found by intern_var *)
 let intern_non_secvar_qualid loc qid intern env lvar us args =
   match intern_qualid loc qid intern env lvar us args with
-    | GRef (_, VarRef _, _),_,_ -> raise Not_found
+    | (_, GRef (VarRef _, _)),_,_ -> raise Not_found
     | r -> r
 
 let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args = function
@@ -1470,8 +1473,8 @@ let get_implicit_name n imps =
   Some (Impargs.name_of_implicit (List.nth imps (n-1)))
 
 let set_hole_implicit i b = function
-  | GRef (loc,r,_) | GApp (_,GRef (loc,r,_),_) -> (loc,Evar_kinds.ImplicitArg (r,i,b),Misctypes.IntroAnonymous,None)
-  | GVar (loc,id) -> (loc,Evar_kinds.ImplicitArg (VarRef id,i,b),Misctypes.IntroAnonymous,None)
+  | (loc, GRef (r,_)) | (_, GApp ((loc, (GRef (r,_))),_)) -> Loc.tag ~loc (Evar_kinds.ImplicitArg (r,i,b),Misctypes.IntroAnonymous,None)
+  | (loc, GVar id) -> Loc.tag ~loc (Evar_kinds.ImplicitArg (VarRef id,i,b),Misctypes.IntroAnonymous,None)
   | _ -> anomaly (Pp.str "Only refs have implicits")
 
 let exists_implicit_name id =
@@ -1558,7 +1561,8 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 					       push_name_env ntnvars (impls_type_list ~args:fix_args tyi)
 					    en (Loc.ghost, Name name)) 0 env' lf in
              (a,b,c,intern {env'' with tmp_scope = None} bd)) dl idl_temp in
-	GRec (loc,GFix
+	Loc.tag ~loc @@
+          GRec (GFix
 	      (Array.map (fun (ro,_,_,_) -> ro) idl,n),
               Array.of_list lf,
               Array.map (fun (_,bl,_,_) -> bl) idl,
@@ -1584,7 +1588,8 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 	       push_name_env ntnvars (impls_type_list ~args:cofix_args tyi)
 					    en (Loc.ghost, Name name)) 0 env' lf in
              (b,c,intern {env'' with tmp_scope = None} bd)) dl idl_tmp in
-	GRec (loc,GCoFix n,
+	Loc.tag ~loc @@
+	GRec (GCoFix n,
               Array.of_list lf,
               Array.map (fun (bl,_,_) -> bl) idl,
               Array.map (fun (_,ty,_) -> ty) idl,
@@ -1600,7 +1605,8 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
     | CLetIn (na,c1,t,c2) ->
 	let inc1 = intern (reset_tmp_scope env) c1 in
 	let int = Option.map (intern_type env) t in
-	GLetIn (loc, snd na, inc1, int,
+	Loc.tag ~loc @@
+	GLetIn (snd na, inc1, int,
           intern (push_name_env ntnvars (impls_term_list inc1) env na) c2)
     | CNotation ("- _",([_, CPrim (Numeral p)],[],[]))
 	when Bigint.is_strictly_pos p ->
@@ -1622,7 +1628,8 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 	    lvar us args ref 
 	in
 	  (* Rem: GApp(_,f,[]) stands for @f *)
-	  GApp (loc, f, intern_args env args_scopes (List.map fst args))
+	Loc.tag ~loc @@
+	  GApp (f, intern_args env args_scopes (List.map fst args))
 
     | CApp ((isproj,f), args) ->
         let f,args = match f with
@@ -1687,20 +1694,21 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
              (* Build a return predicate by expansion of the patterns of the "in" clause *)
              let thevars, thepats = List.split l in
              let sub_rtn = (* Some (GSort (Loc.ghost,GType None)) *) None in
-             let sub_tms = List.map (fun id -> GVar (Loc.ghost,id),(Name id,None)) thevars (* "match v1,..,vn" *) in
-             let main_sub_eqn =
-               (Loc.ghost,[],thepats, (* "|p1,..,pn" *)
+             let sub_tms = List.map (fun id -> (Loc.tag @@ GVar id),(Name id,None)) thevars (* "match v1,..,vn" *) in
+             let main_sub_eqn = Loc.tag @@
+               ([],thepats, (* "|p1,..,pn" *)
 		Option.cata (intern_type env')
-                  (GHole(Loc.ghost,Evar_kinds.CasesType false,Misctypes.IntroAnonymous,None))
+                  (Loc.tag ~loc @@ GHole(Evar_kinds.CasesType false,Misctypes.IntroAnonymous,None))
                   rtnpo) (* "=> P" if there were a return predicate P, and "=> _" otherwise *) in
              let catch_all_sub_eqn =
                if List.for_all (irrefutable globalenv) thepats then [] else
-                 [Loc.ghost,[],List.make (List.length thepats) (Loc.tag @@ PatVar Anonymous), (* "|_,..,_" *)
-		  GHole(Loc.ghost,Evar_kinds.ImpossibleCase,Misctypes.IntroAnonymous,None)]   (* "=> _" *) in
-             Some (GCases(Loc.ghost,Term.RegularStyle,sub_rtn,sub_tms,main_sub_eqn::catch_all_sub_eqn))
+                  [Loc.tag @@ ([],List.make (List.length thepats) (Loc.tag @@ PatVar Anonymous), (* "|_,..,_" *)
+                   Loc.tag @@ GHole(Evar_kinds.ImpossibleCase,Misctypes.IntroAnonymous,None))]   (* "=> _" *) in
+             Some (Loc.tag @@ GCases(Term.RegularStyle,sub_rtn,sub_tms,main_sub_eqn::catch_all_sub_eqn))
 	in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
-	GCases (loc, sty, rtnpo, tms, List.flatten eqns')
+	Loc.tag ~loc @@
+	GCases (sty, rtnpo, tms, List.flatten eqns')
     | CLetTuple (nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
 	(* "in" is None so no match to add *)
@@ -1709,7 +1717,8 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 	  let env'' = push_name_env ntnvars (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env')
 	    (Loc.ghost,na') in
 	  intern_type env'' u) po in
-        GLetTuple (loc, List.map snd nal, (na', p'), b',
+	Loc.tag ~loc @@
+        GLetTuple (List.map snd nal, (na', p'), b',
                    intern (List.fold_left (push_name_env ntnvars (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) nal) c)
     | CIf (c, (na,po), b1, b2) ->
       let env' = reset_tmp_scope env in
@@ -1718,7 +1727,8 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
           let env'' = push_name_env ntnvars (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env)
 	    (Loc.ghost,na') in
 	  intern_type env'' p) po in
-        GIf (loc, c', (na', p'), intern env b1, intern env b2)
+	Loc.tag ~loc @@
+        GIf (c', (na', p'), intern env b1, intern env b2)
     | CHole (k, naming, solve) ->
         let k = match k with
         | None ->
@@ -1743,23 +1753,29 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
           let (_, glb) = Genintern.generic_intern ist gen in
           Some glb
         in
-	GHole (loc, k, naming, solve)
+	Loc.tag ~loc @@
+	GHole (k, naming, solve)
     (* Parsing pattern variables *)
     | CPatVar n when allow_patvar ->
-	GPatVar (loc, (true,n))
+	Loc.tag ~loc @@
+	GPatVar (true,n)
     | CEvar (n, []) when allow_patvar ->
-	GPatVar (loc, (false,n))
+	Loc.tag ~loc @@
+	GPatVar (false,n)
     (* end *)
     (* Parsing existential variables *)
     | CEvar (n, l) ->
-	GEvar (loc, n, List.map (on_snd (intern env)) l)
+	Loc.tag ~loc @@
+	GEvar (n, List.map (on_snd (intern env)) l)
     | CPatVar _ ->
         raise (InternalizationError (loc,IllegalMetavariable))
     (* end *)
     | CSort s ->
-	GSort(loc,s)
+	Loc.tag ~loc @@
+	GSort s
     | CCast (c1, c2) ->
-        GCast (loc,intern env c1, Miscops.map_cast_type (intern_type env) c2)
+	Loc.tag ~loc @@
+        GCast (intern env c1, Miscops.map_cast_type (intern_type env) c2)
   )
   and intern_type env = intern (set_type_scope env)
 
@@ -1790,15 +1806,15 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
     List.map (fun (asubst,pl) ->
       let rhs = replace_vars_constr_expr asubst rhs in
       let rhs' = intern {env with ids = env_ids} rhs in
-      (loc,eqn_ids,pl,rhs')) pll
+      (loc,(eqn_ids,pl,rhs'))) pll
 
   and intern_case_item env forbidden_names_for_gen (tm,na,t) =
     (* the "match" part *)
     let tm' = intern env tm in
     (* the "as" part *)
     let extra_id,na = match tm', na with
-      | GVar (loc,id), None when not (Id.Map.mem id (snd lvar)) -> Some id,(loc,Name id)
-      | GRef (loc, VarRef id, _), None -> Some id,(loc,Name id)
+      | (loc , GVar id), None when not (Id.Map.mem id (snd lvar)) -> Some id,(loc,Name id)
+      | (loc, GRef (VarRef id, _)), None -> Some id,(loc,Name id)
       | _, None -> None,(Loc.ghost,Anonymous)
       | _, Some (loc,na) -> None,(loc,na) in
     (* the "in" part *)
@@ -1870,8 +1886,9 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
             (* with implicit arguments if maximal insertion is set *)
 	    []
 	  else
-	    GHole (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c) ::
-	      aux (n+1) impl' subscopes' eargs rargs
+              (Loc.map (fun (a,b,c) -> GHole(a,b,c))
+                (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c)
+              ) :: aux (n+1) impl' subscopes' eargs rargs
 	  end
       | (imp::impl', a::rargs') ->
 	  intern enva a :: aux (n+1) impl' subscopes' eargs rargs'
@@ -1895,8 +1912,8 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
   and smart_gapp f loc = function
     | [] -> f
     | l -> match f with
-      | GApp (loc', g, args) -> GApp (Loc.merge loc' loc, g, args@l)
-      | _ -> GApp (Loc.merge (loc_of_glob_constr f) loc, f, l)
+      | (loc', GApp (g, args)) -> Loc.tag ~loc:(Loc.merge loc' loc) @@ GApp (g, args@l)
+      | _ -> Loc.tag ~loc:(Loc.merge (loc_of_glob_constr f) loc) @@ GApp (f, l)
 
   and intern_args env subscopes = function
     | [] -> []

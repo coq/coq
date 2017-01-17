@@ -26,7 +26,7 @@ open Clenv
 let _ = Detyping.print_evar_arguments := true
 let _ = Detyping.print_universes := true
 let _ = set_bool_option_value ["Printing";"Matching"] false
-let _ = Detyping.set_detype_anonymous (fun _ _ -> raise Not_found)
+let _ = Detyping.set_detype_anonymous (fun ?loc _ -> raise Not_found)
 
 (* std_ppcmds *)
 let pp   x = Pp.pp_with !Topfmt.std_ft x

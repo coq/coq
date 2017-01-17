@@ -422,13 +422,13 @@ let prepare_param = function
     
 let rec check_anonymous_type ind =
   let open Glob_term in
-    match ind with
-    | GSort (_, GType []) -> true
-    | GProd (_, _, _, _, e) 
-    | GLetIn (_, _, _, _, e)
-    | GLambda (_, _, _, _, e)
-    | GApp (_, e, _)
-    | GCast (_, e, _) -> check_anonymous_type e
+    match snd ind with
+    | GSort (GType []) -> true
+    | GProd ( _, _, _, e) 
+    | GLetIn (_, _, _, e)
+    | GLambda (_, _, _, e)
+    | GApp (e, _)
+    | GCast (e, _) -> check_anonymous_type e
     | _ -> false
 
 let make_conclusion_flexible evdref ty poly =

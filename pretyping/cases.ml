@@ -348,8 +348,8 @@ let find_tomatch_tycon evdref env loc = function
       empty_tycon,None
 
 let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
-  let loc = Some (loc_of_glob_constr tomatch) in
-  let tycon,realnames = find_tomatch_tycon evdref env loc indopt in
+  let loc = loc_of_glob_constr tomatch in
+  let tycon,realnames = find_tomatch_tycon evdref env (Some loc) indopt in
   let j = typing_fun tycon env evdref tomatch in
   let evd, j = Coercion.inh_coerce_to_base (loc_of_glob_constr tomatch) env !evdref j in
   evdref := evd;
@@ -357,7 +357,7 @@ let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
   let t =
     try try_find_ind env !evdref typ realnames
     with Not_found ->
-      unify_tomatch_with_patterns evdref env loc typ pats realnames in
+      unify_tomatch_with_patterns evdref env (Some loc) typ pats realnames in
   (j.uj_val,t)
 
 let coerce_to_indtype typing_fun evdref env matx tomatchl = 
@@ -1535,7 +1535,7 @@ substituer après par les initiaux *)
  * and linearizing the _ patterns.
  * Syntactic correctness has already been done in astterm *)
 let matx_of_eqns env eqns =
-  let build_eqn (loc,ids,lpat,rhs) =
+  let build_eqn (loc,(ids,lpat,rhs)) =
     let initial_lpat,initial_rhs = lpat,rhs in
     let initial_rhs = rhs in
     let rhs =
@@ -2059,8 +2059,8 @@ let mk_JMeq evdref typ x typ' y =
 let mk_JMeq_refl evdref typ x = 
   papp evdref coq_JMeq_refl [| typ; x |]
 
-let hole =
-  GHole (Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define false),
+let hole = Loc.tag @@
+  GHole (Evar_kinds.QuestionMark (Evar_kinds.Define false),
          Misctypes.IntroAnonymous, None)
 
 let constr_of_pat env evdref arsign pat avoid =
@@ -2160,13 +2160,13 @@ let vars_of_ctx sigma ctx =
       match decl with
 	| LocalDef (na,t',t) when is_topvar sigma t' ->
 	    prev,
-	    (GApp (Loc.ghost,
-		(GRef (Loc.ghost, delayed_force coq_eq_refl_ref, None)), 
-		   [hole; GVar (Loc.ghost, prev)])) :: vars
+	    (Loc.tag @@ GApp (
+		(Loc.tag @@ GRef (delayed_force coq_eq_refl_ref, None)), 
+		   [hole; Loc.tag @@ GVar prev])) :: vars
 	| _ ->
 	    match RelDecl.get_name decl with
 		Anonymous -> invalid_arg "vars_of_ctx"
-	      | Name n -> n, GVar (Loc.ghost, n) :: vars)
+	      | Name n -> n, (Loc.tag @@ GVar n) :: vars)
       ctx (Id.of_string "vars_of_ctx_error", [])
   in List.rev y
 
@@ -2289,13 +2289,13 @@ let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
 	 let branch_name = Id.of_string ("program_branch_" ^ (string_of_int !i)) in
 	 let branch_decl = LocalDef (Name branch_name, lift !i bbody, lift !i btype) in
 	 let branch =
-	   let bref = GVar (Loc.ghost, branch_name) in
+	   let bref = Loc.tag @@ GVar branch_name in
 	     match vars_of_ctx !evdref rhs_rels with
 		 [] -> bref
-	       | l -> GApp (Loc.ghost, bref, l)
+	       | l  -> Loc.tag @@ GApp (bref, l)
 	 in
 	 let branch = match ineqs with
-	     Some _ -> GApp (Loc.ghost, branch, [ hole ])
+	     Some _ -> Loc.tag @@ GApp (branch, [ hole ])
 	   | None -> branch
 	 in
 	 incr i;

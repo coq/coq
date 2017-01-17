@@ -31,8 +31,6 @@ open Locus
 (** Globalization of tactic expressions :
     Conversion from [raw_tactic_expr] to [glob_tactic_expr] *)
 
-let dloc = Loc.ghost
-
 let error_tactic_expected ?loc =
   user_err ?loc  (str "Tactic expected.")
 
@@ -74,14 +72,14 @@ let intern_name l ist = function
 
 let strict_check = ref false
 
-let adjust_loc loc = if !strict_check then dloc else loc
+let adjust_loc loc = if !strict_check then Loc.ghost else loc
 
 (* Globalize a name which must be bound -- actually just check it is bound *)
 let intern_hyp ist (loc,id as locid) =
   if not !strict_check then
     locid
   else if find_ident id ist then
-    (dloc,id)
+    Loc.tag id
   else
     Pretype_errors.error_var_not_found ~loc id
 
@@ -110,12 +108,12 @@ let intern_ltac_variable ist = function
 
 let intern_constr_reference strict ist = function
   | Ident (_,id) as r when not strict && find_hyp id ist ->
-      GVar (dloc,id), Some (Loc.tag @@ CRef (r,None))
+      (Loc.tag @@ GVar id), Some (Loc.tag @@ CRef (r,None))
   | Ident (_,id) as r when find_var id ist ->
-      GVar (dloc,id), if strict then None else Some (Loc.tag @@ CRef (r,None))
+      (Loc.tag @@ GVar id), if strict then None else Some (Loc.tag @@ CRef (r,None))
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
-      GRef (loc,locate_global_with_alias lqid,None), 
+      Loc.tag @@ GRef (locate_global_with_alias lqid,None), 
 	if strict then None else Some (Loc.tag @@ CRef (r,None))
 
 let intern_move_location ist = function
@@ -273,8 +271,8 @@ let intern_destruction_arg ist = function
   | clear,ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-	match intern_constr ist (Loc.tag @@ CRef (Ident (dloc,id), None)) with
-	| GVar (loc,id),_ -> clear,ElimOnIdent (loc,id)
+	match intern_constr ist (Loc.tag @@ CRef (Ident (Loc.tag id), None)) with
+	| (loc, GVar id), _ -> clear,ElimOnIdent (loc,id)
 	| c -> clear,ElimOnConstr (c,NoBindings)
       else
 	clear,ElimOnIdent (loc,id)
@@ -352,10 +350,10 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       | _ -> Qualid (loc,qualid_of_path (path_of_global (smart_global r))) in
       let sign = { Constrintern.ltac_vars = ist.ltacvars; Constrintern.ltac_bound = Id.Set.empty } in
       let c = Constrintern.interp_reference sign r in
-      match c with
-      | GRef (_,r,None) ->
+      match Loc.obj c with
+      | GRef (r,None) ->
           Inl (ArgArg (evaluable_of_global_reference ist.genv r,None))
-      | GVar (_,id) ->
+      | GVar id ->
           let r = evaluable_of_global_reference ist.genv (VarRef id) in
           Inl (ArgArg (r,None))
       | _ ->

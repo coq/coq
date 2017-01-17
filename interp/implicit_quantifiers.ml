@@ -125,37 +125,38 @@ let add_name_to_ids set na =
   | Name id -> Id.Set.add id set
 
 let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.empty) =
-  let rec vars bound vs = function
-    | GVar (loc,id) ->
+  let rec vars bound vs (loc, t) = match t with
+    | GVar id ->
 	if is_freevar bound (Global.env ()) id then
 	  if Id.List.mem_assoc id vs then vs
 	  else (id, loc) :: vs
 	else vs
-    | GApp (loc,f,args) -> List.fold_left (vars bound) vs (f::args)
-    | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) ->
+
+    | GApp (f,args) -> List.fold_left (vars bound) vs (f::args)
+    | GLambda (na,_,ty,c) | GProd (na,_,ty,c) ->
 	let vs' = vars bound vs ty in
 	let bound' = add_name_to_ids bound na in
 	vars bound' vs' c
-    | GLetIn (loc,na,b,ty,c) ->
+    | GLetIn (na,b,ty,c) ->
 	let vs' = vars bound vs b in
 	let vs'' = Option.fold_left (vars bound) vs' ty in
 	let bound' = add_name_to_ids bound na in
 	vars bound' vs'' c
-    | GCases (loc,sty,rtntypopt,tml,pl) ->
+    | GCases (sty,rtntypopt,tml,pl) ->
 	let vs1 = vars_option bound vs rtntypopt in
 	let vs2 = List.fold_left (fun vs (tm,_) -> vars bound vs tm) vs1 tml in
 	List.fold_left (vars_pattern bound) vs2 pl
-    | GLetTuple (loc,nal,rtntyp,b,c) ->
+    | GLetTuple (nal,rtntyp,b,c) ->
 	let vs1 = vars_return_type bound vs rtntyp in
 	let vs2 = vars bound vs1 b in
 	let bound' = List.fold_left add_name_to_ids bound nal in
 	vars bound' vs2 c
-    | GIf (loc,c,rtntyp,b1,b2) ->
+    | GIf (c,rtntyp,b1,b2) ->
 	let vs1 = vars_return_type bound vs rtntyp in
 	let vs2 = vars bound vs1 c in
 	let vs3 = vars bound vs2 b1 in
 	vars bound vs3 b2
-    | GRec (loc,fk,idl,bl,tyl,bv) ->
+    | GRec (fk,idl,bl,tyl,bv) ->
 	let bound' = Array.fold_right Id.Set.add idl bound in
 	let vars_fix i vs fid =
 	  let vs1,bound1 =
@@ -173,11 +174,11 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
 	  vars bound1 vs2 bv.(i)
 	in
 	Array.fold_left_i vars_fix vs idl
-    | GCast (loc,c,k) -> let v = vars bound vs c in
+    | GCast (c,k) -> let v = vars bound vs c in
 	(match k with CastConv t | CastVM t -> vars bound v t | _ -> v)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
 
-  and vars_pattern bound vs (loc,idl,p,c) =
+  and vars_pattern bound vs (loc,(idl,p,c)) =
     let bound' = List.fold_right Id.Set.add idl bound  in
     vars bound' vs c
 
@@ -309,12 +310,12 @@ let implicits_of_glob_constr ?(with_products=true) l =
     (ExplByPos (i, name), (true, true, true)) :: l
   | _ -> l
   in
-  let rec aux i c =
+  let rec aux i (loc, c) =
     let abs na bk b =
       add_impl i na bk (aux (succ i) b)
     in
       match c with
-      | GProd (loc, na, bk, t, b) ->
+      | GProd (na, bk, t, b) ->
 	  if with_products then abs na bk b
 	  else
             let () = match bk with
@@ -323,9 +324,9 @@ let implicits_of_glob_constr ?(with_products=true) l =
 			      pr_name na ++ strbrk " and following binders")
             | _ -> ()
             in []
-      | GLambda (loc, na, bk, t, b) -> abs na bk b
-      | GLetIn (loc, na, b, t, c) -> aux i c
-      | GRec (_, fix_kind, nas, args, tys, bds) ->
+      | GLambda (na, bk, t, b) -> abs na bk b
+      | GLetIn (na, b, t, c) -> aux i b
+      | GRec (fix_kind, nas, args, tys, bds) ->
        let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
        List.fold_left_i (fun i l (na,bk,_,_) -> add_impl i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)
       | _ -> []

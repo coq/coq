@@ -190,18 +190,18 @@ let build_newrecursive l =
 let is_rec names =
   let names = List.fold_right Id.Set.add names Id.Set.empty in
   let check_id id names =  Id.Set.mem id names in
-  let rec lookup names = function
-    | GVar(_,id) -> check_id id names
+  let rec lookup names (loc, gt) = match gt with
+    | GVar(id) -> check_id id names
     | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
-    | GCast(_,b,_) -> lookup names b
+    | GCast(b,_) -> lookup names b
     | GRec _ -> error "GRec not handled"
-    | GIf(_,b,_,lhs,rhs) ->
+    | GIf(b,_,lhs,rhs) ->
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
-    | GProd(_,na,_,t,b) | GLambda(_,na,_,t,b) ->
+    | GProd(na,_,t,b) | GLambda(na,_,t,b) ->
 	lookup names t || lookup (Nameops.name_fold Id.Set.remove na names) b
-    | GLetIn(_,na,b,t,c) ->
+    | GLetIn(na,b,t,c) ->
 	lookup names b || Option.cata (lookup names) true t || lookup (Nameops.name_fold Id.Set.remove na names) c
-    | GLetTuple(_,nal,_,t,b) -> lookup names t ||
+    | GLetTuple(nal,_,t,b) -> lookup names t ||
 	lookup
 	  (List.fold_left
 	     (fun acc na -> Nameops.name_fold Id.Set.remove na acc)
@@ -209,11 +209,11 @@ let is_rec names =
 	     nal
 	  )
 	  b
-    | GApp(_,f,args) -> List.exists (lookup names) (f::args)
-    | GCases(_,_,_,el,brl) ->
+    | GApp(f,args) -> List.exists (lookup names) (f::args)
+    | GCases(_,_,el,brl) ->
 	List.exists (fun (e,_) -> lookup names e) el ||
 	  List.exists (lookup_br names) brl
-  and lookup_br names (_,idl,_,rt) =
+  and lookup_br names (_,(idl,_,rt)) =
     let new_names = List.fold_right Id.Set.remove idl names in
     lookup new_names rt
   in

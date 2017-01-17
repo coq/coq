@@ -31,29 +31,29 @@ type cases_pattern_r =
 and cases_pattern = cases_pattern_r Loc.located
 
 (** Representation of an internalized (or in other words globalized) term. *)
-type glob_constr =
-  | GRef of (Loc.t * global_reference * glob_level list option)
+type glob_constr_r =
+  | GRef of global_reference * glob_level list option
       (** An identifier that represents a reference to an object defined
           either in the (global) environment or in the (local) context. *)
-  | GVar of (Loc.t * Id.t)
+  | GVar of Id.t
       (** An identifier that cannot be regarded as "GRef".
           Bound variables are typically represented this way. *)
-  | GEvar of Loc.t * existential_name * (Id.t * glob_constr) list
-  | GPatVar of Loc.t * (bool * patvar) (** Used for patterns only *)
-  | GApp of Loc.t * glob_constr * glob_constr list
-  | GLambda of Loc.t * Name.t * binding_kind *  glob_constr * glob_constr
-  | GProd of Loc.t * Name.t * binding_kind * glob_constr * glob_constr
-  | GLetIn of Loc.t * Name.t * glob_constr * glob_constr option * glob_constr
-  | GCases of Loc.t * case_style * glob_constr option * tomatch_tuples * cases_clauses
-      (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in [MatchStyle]) *)
-  | GLetTuple of Loc.t * Name.t list * (Name.t * glob_constr option) *
-      glob_constr * glob_constr
-  | GIf of Loc.t * glob_constr * (Name.t * glob_constr option) * glob_constr * glob_constr
-  | GRec of Loc.t * fix_kind * Id.t array * glob_decl list array *
-      glob_constr array * glob_constr array
-  | GSort of Loc.t * glob_sort
-  | GHole of (Loc.t * Evar_kinds.t * intro_pattern_naming_expr * Genarg.glob_generic_argument option)
-  | GCast of Loc.t * glob_constr * glob_constr cast_type
+  | GEvar   of existential_name * (Id.t * glob_constr) list
+  | GPatVar of bool * patvar (** Used for patterns only *)
+  | GApp    of glob_constr * glob_constr list
+  | GLambda of Name.t * binding_kind *  glob_constr * glob_constr
+  | GProd   of Name.t * binding_kind * glob_constr * glob_constr
+  | GLetIn  of Name.t * glob_constr * glob_constr option * glob_constr
+  | GCases  of case_style * glob_constr option * tomatch_tuples * cases_clauses
+      (** [GCases(style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in [MatchStyle]) *)
+  | GLetTuple of Name.t list * (Name.t * glob_constr option) * glob_constr * glob_constr
+  | GIf   of glob_constr * (Name.t * glob_constr option) * glob_constr * glob_constr
+  | GRec  of fix_kind * Id.t array * glob_decl list array *
+             glob_constr array * glob_constr array
+  | GSort of glob_sort
+  | GHole of Evar_kinds.t * intro_pattern_naming_expr * Genarg.glob_generic_argument option
+  | GCast of glob_constr * glob_constr cast_type
+and glob_constr = glob_constr_r Loc.located
 
 and glob_decl = Name.t * binding_kind * glob_constr option * glob_constr
 
@@ -74,7 +74,7 @@ and tomatch_tuple = (glob_constr * predicate_pattern)
 
 and tomatch_tuples = tomatch_tuple list
 
-and cases_clause = (Loc.t * Id.t list * cases_pattern list * glob_constr)
+and cases_clause = (Id.t list * cases_pattern list * glob_constr) Loc.located
 (** [(p,il,cl,t)] = "|'cl' => 't'". Precondition: the free variables
     of [t] are members of [il]. *)
 and cases_clauses = cases_clause list

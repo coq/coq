@@ -69,9 +69,9 @@ let chop_rlambda_n  =
       if n == 0
       then List.rev acc,rt
       else
-	match rt with
-	  | Glob_term.GLambda(_,name,k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
-	  | Glob_term.GLetIn(_,name,v,t,b) -> chop_lambda_n ((name,v,t)::acc) (n-1) b
+	match Loc.obj rt with
+	  | Glob_term.GLambda(name,k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
+	  | Glob_term.GLetIn(name,v,t,b) -> chop_lambda_n ((name,v,t)::acc) (n-1) b
 	  | _ ->
 	      raise (CErrors.UserError(Some "chop_rlambda_n",
 				    str "chop_rlambda_n: Not enough Lambdas"))
@@ -83,8 +83,8 @@ let chop_rprod_n  =
       if n == 0
       then List.rev acc,rt
       else
-	match rt with
-	  | Glob_term.GProd(_,name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
+	match Loc.obj rt with
+	  | Glob_term.GProd(name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
 	  | _ -> raise (CErrors.UserError(Some "chop_rprod_n",str "chop_rprod_n: Not enough products"))
   in
   chop_prod_n []

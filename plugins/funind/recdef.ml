@@ -172,7 +172,6 @@ let simpl_iter clause =
 let (value_f:Constr.constr list -> global_reference -> Constr.constr) =
   let open Term in
   fun al fterm ->
-    let d0 = Loc.ghost in
     let rev_x_id_l =
       (
 	List.fold_left
@@ -189,16 +188,15 @@ let (value_f:Constr.constr list -> global_reference -> Constr.constr) =
     in
     let env = Environ.push_rel_context context (Global.env ()) in
     let glob_body =
-      GCases
-	(d0,RegularStyle,None,
-	 [GApp(d0, GRef(d0,fterm,None), List.rev_map (fun x_id -> GVar(d0, x_id)) rev_x_id_l),
+      Loc.tag @@
+       GCases
+	(RegularStyle,None,
+	 [Loc.tag @@ GApp(Loc.tag @@ GRef(fterm,None), List.rev_map (fun x_id -> Loc.tag @@ GVar x_id) rev_x_id_l),
 	  (Anonymous,None)],
-	 [d0, [v_id], [d0,PatCstr((destIndRef
-				     (delayed_force coq_sig_ref),1),
-			       [d0, PatVar(Name v_id);
-				d0, PatVar(Anonymous)],
-			       Anonymous)],
-	  GVar(d0,v_id)])
+	 [Loc.tag ([v_id], [Loc.tag @@ PatCstr ((destIndRef (delayed_force coq_sig_ref),1),
+			   [Loc.tag @@ PatVar(Name v_id); Loc.tag @@ PatVar Anonymous],
+                           Anonymous)],
+	    Loc.tag @@ GVar v_id)])
     in
     let body = fst (understand env (Evd.from_env env) glob_body)(*FIXME*) in
     it_mkLambda_or_LetIn body context

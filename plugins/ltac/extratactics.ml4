@@ -631,15 +631,15 @@ let subst_var_with_hole occ tid t =
   let occref = if occ > 0 then ref occ else Find_subterm.error_invalid_occurrence [occ] in
   let locref = ref 0 in
   let rec substrec = function
-    | GVar (_,id) as x -> 
+    | (_, GVar id) as x -> 
         if Id.equal id tid 
         then
 	  (decr occref;
 	   if Int.equal !occref 0 then x
            else
 	     (incr locref;
-	      GHole (Loc.make_loc (!locref,0),
-		     Evar_kinds.QuestionMark(Evar_kinds.Define true),
+              Loc.tag ~loc:(Loc.make_loc (!locref,0)) @@
+	      GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true),
                      Misctypes.IntroAnonymous, None)))
         else x
     | c -> map_glob_constr_left_to_right substrec c in
@@ -651,13 +651,13 @@ let subst_hole_with_term occ tc t =
   let locref = ref 0 in
   let occref = ref occ in
   let rec substrec = function
-    | GHole (_,Evar_kinds.QuestionMark(Evar_kinds.Define true),Misctypes.IntroAnonymous,s) ->
+    | _, GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true),Misctypes.IntroAnonymous,s) ->
         decr occref;
         if Int.equal !occref 0 then tc
         else
 	  (incr locref;
-	   GHole (Loc.make_loc (!locref,0),
-		  Evar_kinds.QuestionMark(Evar_kinds.Define true),Misctypes.IntroAnonymous,s))
+           Loc.tag ~loc:(Loc.make_loc (!locref,0)) @@
+	   GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true),Misctypes.IntroAnonymous,s))
     | c -> map_glob_constr_left_to_right substrec c
   in
   substrec t
