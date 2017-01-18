@@ -159,7 +159,7 @@ GEXTEND Gram
   GLOBAL: function_rec_definition_loc ;
 
   function_rec_definition_loc:
-    [ [ g = Vernac.rec_definition -> !@loc, g ]]
+    [ [ g = Vernac.rec_definition -> Loc.tag ~loc:!@loc g ]]
     ;
 
 END

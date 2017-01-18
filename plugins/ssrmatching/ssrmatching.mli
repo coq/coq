@@ -222,7 +222,7 @@ val pf_unify_HO : goal sigma -> EConstr.constr -> EConstr.constr -> goal sigma
 (** Some more low level functions needed to implement the full SSR language
     on top of the former APIs *)
 val tag_of_cpattern : cpattern -> char
-val loc_of_cpattern : cpattern -> Loc.t
+val loc_of_cpattern : cpattern -> Loc.t option
 val id_of_pattern : pattern -> Names.variable option
 val is_wildcard : cpattern -> bool
 val cpattern_of_id : Names.variable -> cpattern

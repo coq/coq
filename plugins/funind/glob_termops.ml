@@ -193,14 +193,14 @@ let rec alpha_pat excluded (loc, pat) =
   match pat with
     | PatVar Anonymous ->
 	let new_id = Indfun_common.fresh_id excluded "_x" in
-	(Loc.tag ~loc @@ PatVar(Name new_id)),(new_id::excluded),Id.Map.empty
+	(Loc.tag ?loc @@ PatVar(Name new_id)),(new_id::excluded),Id.Map.empty
     | PatVar(Name id) ->
 	if Id.List.mem id excluded
 	then
 	  let new_id = Namegen.next_ident_away id excluded in
-	  (Loc.tag ~loc @@ PatVar(Name new_id)),(new_id::excluded),
+	  (Loc.tag ?loc @@ PatVar(Name new_id)),(new_id::excluded),
 	(Id.Map.add id new_id Id.Map.empty)
-	else (Loc.tag ~loc pat),excluded,Id.Map.empty
+	else (Loc.tag ?loc pat),excluded,Id.Map.empty
     | PatCstr(constr,patl,na) ->
 	let new_na,new_excluded,map =
 	  match na with
@@ -218,7 +218,7 @@ let rec alpha_pat excluded (loc, pat) =
 	    ([],new_excluded,map)
 	    patl
 	in
-        (Loc.tag ~loc @@ PatCstr(constr,List.rev new_patl,new_na)),new_excluded,new_map
+        (Loc.tag ?loc @@ PatCstr(constr,List.rev new_patl,new_na)),new_excluded,new_map
 
 let alpha_patl excluded patl  =
   let patl,new_excluded,map =
@@ -255,7 +255,7 @@ let raw_get_pattern_id pat acc =
 let get_pattern_id pat = raw_get_pattern_id pat []
 
 let rec alpha_rt excluded (loc, rt) =
-  let new_rt = Loc.tag ~loc @@
+  let new_rt = Loc.tag ?loc @@
     match rt with
       | GRef _ | GVar _ | GEvar _ | GPatVar _ -> rt
       | GLambda(Anonymous,k,t,b) ->
@@ -445,7 +445,7 @@ let rec pattern_to_term pt = Loc.with_unloc (function
 
 
 let replace_var_by_term x_id term =
-  let rec replace_var_by_pattern (loc, rt) = Loc.tag ~loc @@
+  let rec replace_var_by_pattern (loc, rt) = Loc.tag ?loc @@
     match rt with
       | GRef _ -> rt
       | GVar id when Id.compare id x_id == 0 -> Loc.obj term
@@ -605,7 +605,7 @@ let ids_of_glob_constr c =
 
 
 let zeta_normalize =
-  let rec zeta_normalize_term (loc, rt) = Loc.tag ~loc @@
+  let rec zeta_normalize_term (loc, rt) = Loc.tag ?loc @@
     match rt with
       | GRef _ -> rt
       | GVar _ -> rt
@@ -673,7 +673,7 @@ let expand_as =
       | PatCstr(_,patl,_) -> List.fold_left add_as map patl
   in
   let rec expand_as map (loc, rt) =
-    Loc.tag ~loc @@
+    Loc.tag ?loc @@
     match rt with
       | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ -> rt
       | GVar id ->

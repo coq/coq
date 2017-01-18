@@ -38,7 +38,7 @@ let check_evars env evm =
      | Evar_kinds.QuestionMark _
      | Evar_kinds.ImplicitArg (_,_,false) -> ()
      | _ ->
-       Pretype_errors.error_unsolvable_implicit ~loc env evm key None)
+       Pretype_errors.error_unsolvable_implicit ?loc env evm key None)
   (Evd.undefined_map evm)
 
 type oblinfo =
@@ -991,7 +991,7 @@ and solve_obligation_by_tac prg obls i tac =
           let (e, _) = CErrors.push e in
           match e with
 	  | Refiner.FailError (_, s) ->
-	      user_err ~loc:(fst obl.obl_location) ~hdr:"solve_obligation" (Lazy.force s)
+	      user_err ?loc:(fst obl.obl_location) ~hdr:"solve_obligation" (Lazy.force s)
           | e -> None (* FIXME really ? *)
 
 and solve_prg_obligations prg ?oblset tac =

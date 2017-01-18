@@ -313,13 +313,13 @@ let interp_entry forpat e = match e with
 | ETBinderList (true, _) -> assert false
 | ETBinderList (false, tkl) -> TTAny (TTBinderListF tkl)
 
-let constr_expr_of_name (loc,na) = Loc.tag ~loc @@ match na with
+let constr_expr_of_name (loc,na) = Loc.tag ?loc @@ match na with
   | Anonymous -> CHole (None,Misctypes.IntroAnonymous,None)
-  | Name id   -> CRef (Ident (loc,id), None)
+  | Name id   -> CRef (Ident (Loc.tag ?loc id), None)
 
-let cases_pattern_expr_of_name (loc,na) = Loc.tag ~loc @@ match na with
+let cases_pattern_expr_of_name (loc,na) = Loc.tag ?loc @@ match na with
   | Anonymous -> CPatAtom None
-  | Name id   -> CPatAtom (Some (Ident (loc,id)))
+  | Name id   -> CPatAtom (Some (Ident (Loc.tag ?loc id)))
 
 type 'r env = {
   constrs : 'r list;

@@ -146,13 +146,10 @@ let print_highlight_location ib loc =
   highlight_lines
 
 let valid_buffer_loc ib loc =
-  not (Loc.is_ghost loc) &&
   let (b,e) = Loc.unloc loc in b-ib.start >= 0 && e-ib.start < ib.len && b<=e
 
 (* This is specific to the toplevel *)
-let pr_loc loc =
-  if Loc.is_ghost loc then str"<unknown>"
-  else
+let pr_loc ?loc = Option.default (fun loc ->
     let fname = loc.Loc.fname in
     if CString.equal fname "" then
       Loc.(str"Toplevel input, characters " ++ int loc.bp ++
@@ -162,6 +159,7 @@ let pr_loc loc =
 	   str", line " ++ int loc.line_nb ++ str", characters " ++
 	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++
 	   str":")
+  ) loc
 
 (* Toplevel error explanation. *)
 let error_info_for_buffer ?loc buf =

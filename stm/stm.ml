@@ -1111,7 +1111,7 @@ end (* }}} *)
 let hints = ref Aux_file.empty_aux_file
 let set_compilation_hints file =
   hints := Aux_file.load_aux_file_for file
-let get_hint_ctx ?loc =
+let get_hint_ctx loc =
   let s = Aux_file.get ?loc !hints "context_used" in
   match Str.split (Str.regexp ";") s with
   | ids :: _ ->
@@ -2027,7 +2027,7 @@ let collect_proof keep cur hd brkind id =
        !Flags.compilation_mode = Flags.BuildVio ->
         assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
         (try
-          let name, hint = name ids, get_hint_ctx ?loc  in
+          let name, hint = name ids, get_hint_ctx loc  in
           let t, v = proof_no_using last in
           v.expr <- VernacProof(t, Some hint);
           `ASync (parent last,proof_using_ast last,accn,name,delegate name)
@@ -2697,8 +2697,8 @@ let parse_sentence sid pa =
   Flags.with_option Flags.we_are_parsing (fun () ->
       try
         match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
-        | None     -> raise End_of_input
-        | Some com -> com
+        | None            -> raise End_of_input
+        | Some (loc, cmd) -> Loc.tag ~loc cmd
       with e when CErrors.noncritical e ->
         let (e, info) = CErrors.push e in
         Exninfo.iraise (e, info))
@@ -2723,7 +2723,7 @@ let ind_len_loc_of_id sid =
    Note, this could maybe improved by handling more cases in
    compute_indentation. *)
 
-let compute_indentation sid loc =
+let compute_indentation ?loc sid = Option.cata (fun loc ->
   let open Loc              in
   (* The effective lenght is the lenght on the last line *)
   let len = loc.ep - loc.bp in
@@ -2737,20 +2737,20 @@ let compute_indentation sid loc =
     eff_indent + prev_indent, len
   else
     eff_indent, len
-
+  ) (0, 0) loc
 
 let add ~ontop ?newtip verb (loc, ast) =
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
-    user_err ~hdr:"Stm.add"
+    user_err ?loc ~hdr:"Stm.add"
       (str "Stm.add called for a different state (" ++ str (Stateid.to_string ontop) ++
        str ") than the tip: " ++ str (Stateid.to_string cur_tip) ++ str "." ++ fnl () ++
        str "This is not supported yet, sorry.");
-  let indentation, strlen = compute_indentation ontop loc in
+  let indentation, strlen = compute_indentation ?loc ontop in
   CWarnings.set_current_loc loc;
   (* XXX: Classifiy vernac should be moved inside process transaction *)
   let clas = classify_vernac ast in
-  let aast = { verbose = verb; indentation; strlen; loc = Some loc; expr = ast } in
+  let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
   match process_transaction ?newtip aast clas with
   | `Ok -> VCS.cur_tip (), `NewTip
   | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
@@ -2768,10 +2768,10 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
     let loc, ast = parse_sentence at s in
-    let indentation, strlen = compute_indentation at loc in
+    let indentation, strlen = compute_indentation ?loc at in
     CWarnings.set_current_loc loc;
     let clas = classify_vernac ast in
-    let aast = { verbose = true; indentation; strlen; loc = Some loc; expr = ast } in
+    let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
     match clas with
     | VtStm (w,_), _ ->
        ignore(process_transaction aast (VtStm (w,false), VtNow))

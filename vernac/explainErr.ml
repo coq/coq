@@ -117,8 +117,9 @@ let process_vernac_interp_error ?(allow_uncaught=true) (exc, info) =
     try Some (CList.find_map (fun f -> f e) !additional_error_info)
     with _ -> None
   in
+  let add_loc_opt ?loc info = Option.cata (fun l -> Loc.add_loc info l) info loc in
   match e' with
   | None -> e
-  | Some (loc, None) -> (fst e, Loc.add_loc (snd e) loc)
+  | Some (loc, None) -> (fst e, add_loc_opt ?loc (snd e))
   | Some (loc, Some msg) ->
-    (EvaluatedError (msg, Some (fst e)), Loc.add_loc (snd e) loc)
+    (EvaluatedError (msg, Some (fst e)), add_loc_opt ?loc (snd e))

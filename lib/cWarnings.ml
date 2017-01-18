@@ -23,7 +23,7 @@ let categories : (string, string list) Hashtbl.t = Hashtbl.create 97
 let current_loc = ref None
 let flags = ref ""
 
-let set_current_loc loc = current_loc := Some loc
+let set_current_loc loc = current_loc := loc
 
 let get_flags () = !flags
 

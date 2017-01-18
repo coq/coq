@@ -522,7 +522,7 @@ let do_constraint poly l =
        let names, _ = Global.global_universe_names () in
        try loc, Idmap.find id names
        with Not_found ->
-         user_err ~loc ~hdr:"Constraint" (str "Undeclared universe " ++ pr_id id)
+         user_err ?loc ~hdr:"Constraint" (str "Undeclared universe " ++ pr_id id)
   in
   let in_section = Lib.sections_are_opened () in
   let () =
@@ -530,18 +530,18 @@ let do_constraint poly l =
       user_err ~hdr:"Constraint"
                     (str"Cannot declare polymorphic constraints outside sections")
   in
-  let check_poly loc p loc' p' =
+  let check_poly ?loc p loc' p' =
     if poly then ()
     else if p || p' then
       let loc = if p then loc else loc' in
-      user_err ~loc ~hdr:"Constraint"
+      user_err ?loc ~hdr:"Constraint"
                     (str "Cannot declare a global constraint on " ++
                     str "a polymorphic universe, use "
                     ++ str "Polymorphic Constraint instead")
   in
   let constraints = List.fold_left (fun acc (l, d, r) ->
      let ploc, (p, lu) = u_of_id l and rloc, (p', ru) = u_of_id r in
-     check_poly ploc p rloc p';
+     check_poly ?loc:ploc p rloc p';
      Univ.Constraint.add (lu, d, ru) acc)
     Univ.Constraint.empty l
   in

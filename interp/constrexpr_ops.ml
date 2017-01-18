@@ -236,14 +236,14 @@ let raw_cases_pattern_expr_loc (l, _) = l
 
 let local_binder_loc = function
   | CLocalAssum ((loc,_)::_,_,t)
-  | CLocalDef ((loc,_),t,None) -> Loc.merge loc (constr_loc t)
-  | CLocalDef ((loc,_),b,Some t) -> Loc.merge loc (Loc.merge (constr_loc b) (constr_loc t))
+  | CLocalDef ((loc,_),t,None) -> Loc.merge_opt loc (constr_loc t)
+  | CLocalDef ((loc,_),b,Some t) -> Loc.merge_opt loc (Loc.merge_opt (constr_loc b) (constr_loc t))
   | CLocalAssum ([],_,_) -> assert false
   | CLocalPattern (loc,_) -> loc
 
 let local_binders_loc bll = match bll with
   | []     -> None
-  | h :: l -> Some (Loc.merge (local_binder_loc h) (local_binder_loc (List.last bll)))
+  | h :: l -> Loc.merge_opt (local_binder_loc h) (local_binder_loc (List.last bll))
 
 (** Pseudo-constructors *)
 
@@ -274,27 +274,27 @@ let expand_binders ?loc mkC bl c =
     | b :: bl ->
         match b with
         | CLocalDef ((loc1,_) as n, oty, b) ->
-            let env, c = loop ~loc:(Loc.opt_merge loc1 loc) bl c in
+            let env, c = loop ?loc:(Loc.merge_opt loc1 loc) bl c in
             let env = add_name_in_env env n in
             (env, Loc.tag ?loc @@ CLetIn (n,oty,b,c))
         | CLocalAssum ((loc1,_)::_ as nl, bk, t) ->
-            let env, c = loop ~loc:(Loc.opt_merge loc1 loc) bl c in
+            let env, c = loop ?loc:(Loc.merge_opt loc1 loc) bl c in
             let env = List.fold_left add_name_in_env env nl in
             (env, mkC ?loc (nl,bk,t) c)
         | CLocalAssum ([],_,_) -> loop ?loc bl c
         | CLocalPattern (loc1, (p, ty)) ->
-            let env, c = loop ~loc:(Loc.opt_merge loc1 loc) bl c in
+            let env, c = loop ?loc:(Loc.merge_opt loc1 loc) bl c in
             let ni = Hook.get fresh_var env c in
             let id = (loc1, Name ni) in
             let ty = match ty with
                  | Some ty -> ty
-                 | None -> Loc.tag ~loc:loc1 @@ CHole (None, IntroAnonymous, None)
+                 | None -> Loc.tag ?loc:loc1 @@ CHole (None, IntroAnonymous, None)
             in
             let e = Loc.tag @@ CRef (Libnames.Ident (loc1, ni), None) in
             let c = Loc.tag ?loc @@
               CCases
                 (LetPatternStyle, None, [(e,None,None)],
-                 [(Loc.tag ~loc:loc1 ([(loc1,[p])], c))])
+                 [(Loc.tag ?loc:loc1 ([(loc1,[p])], c))])
             in
             (ni :: env, mkC ?loc ([id],Default Explicit,ty) c)
   in
@@ -316,12 +316,12 @@ let prod_constr_expr c bl =  mkCProdN ?loc:(local_binders_loc bl) bl c
 let coerce_reference_to_id = function
   | Ident (_,id) -> id
   | Qualid (loc,_) ->
-      CErrors.user_err ~loc ~hdr:"coerce_reference_to_id"
+      CErrors.user_err ?loc ~hdr:"coerce_reference_to_id"
         (str "This expression should be a simple identifier.")
 
 let coerce_to_id = function
   | _loc, CRef (Ident (loc,id),_) -> (loc,id)
-  | a -> CErrors.user_err ~loc:(constr_loc a)
+  | a -> CErrors.user_err ?loc:(constr_loc a)
        ~hdr:"coerce_to_id"
          (str "This expression should be a simple identifier.")
 
@@ -329,5 +329,5 @@ let coerce_to_name = function
   | _loc, CRef (Ident (loc,id),_) -> (loc,Name id)
   | loc, CHole (_,_,_) -> (loc,Anonymous)
   | a -> CErrors.user_err
-         ~loc:(constr_loc a) ~hdr:"coerce_to_name"
+         ?loc:(constr_loc a) ~hdr:"coerce_to_name"
          (str "This expression should be a name.")

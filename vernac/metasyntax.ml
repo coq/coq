@@ -192,7 +192,7 @@ let parse_format ((loc, str) : lstring) =
       error "Empty format."
   with reraise ->
     let (e, info) = CErrors.push reraise in
-    let info = Loc.add_loc info loc in
+    let info = Option.cata (Loc.add_loc info) info loc in
     iraise (e, info)
 
 (***********************)

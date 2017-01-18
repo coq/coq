@@ -68,14 +68,14 @@ let isomorphic_to_tuple lc = Int.equal (Array.length lc) 1
 let encode_bool r =
   let (x,lc) = encode_inductive r in
   if not (has_two_constructors lc) then
-    user_err ~loc:(loc_of_reference r) ~hdr:"encode_if"
+    user_err ?loc:(loc_of_reference r) ~hdr:"encode_if"
       (str "This type has not exactly two constructors.");
   x
 
 let encode_tuple r =
   let (x,lc) = encode_inductive r in
   if not (isomorphic_to_tuple lc) then
-    user_err ~loc:(loc_of_reference r) ~hdr:"encode_tuple"
+    user_err ?loc:(loc_of_reference r) ~hdr:"encode_tuple"
       (str "This type cannot be seen as a tuple type.");
   x
 
@@ -793,7 +793,7 @@ let detype_closed_glob ?lax isgoal avoid env sigma t =
 (**********************************************************************)
 (* Module substitution: relies on detyping                            *)
 
-let rec subst_cases_pattern subst (loc, pat) = Loc.tag ~loc @@
+let rec subst_cases_pattern subst (loc, pat) = Loc.tag ?loc @@
   match pat with
   | PatVar _ -> pat
   | PatCstr (((kn,i),j),cpl,n) ->
@@ -804,7 +804,7 @@ let rec subst_cases_pattern subst (loc, pat) = Loc.tag ~loc @@
 
 let (f_subst_genarg, subst_genarg_hook) = Hook.make ()
 
-let rec subst_glob_constr subst (loc, raw) = Loc.tag ~loc @@
+let rec subst_glob_constr subst (loc, raw) = Loc.tag ?loc @@
   match raw with
   | GRef (ref,u) ->
       let ref',t = subst_global subst ref in

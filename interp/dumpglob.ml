@@ -139,30 +139,32 @@ let interval loc =
   let loc1,loc2 = Loc.unloc loc in
   loc1, loc2-1
 
-let dump_ref loc filepath modpath ident ty =
+let dump_ref ?loc filepath modpath ident ty =
   match !glob_output with
   | Feedback ->
-    Feedback.feedback (Feedback.GlobRef (loc, filepath, modpath, ident, ty))
+    Option.iter (fun loc ->
+        Feedback.feedback (Feedback.GlobRef (loc, filepath, modpath, ident, ty))
+      ) loc
   | NoGlob -> ()
-  | _ when not (Loc.is_ghost loc) ->
+  | _ -> Option.iter (fun loc ->
     let bl,el = interval loc in
     dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
 		  bl el filepath modpath ident ty)
-  | _ -> ()
+    ) loc
 
-let dump_reference loc modpath ident ty =
+let dump_reference ?loc modpath ident ty =
   let filepath = Names.DirPath.to_string (Lib.library_dp ()) in
-  dump_ref loc filepath modpath ident ty
+  dump_ref ?loc filepath modpath ident ty
 
-let dump_modref loc mp ty =
+let dump_modref ?loc mp ty =
   let (dp, l) = Lib.split_modpath mp in
   let filepath = Names.DirPath.to_string dp in
   let modpath = Names.DirPath.to_string (Names.DirPath.make l) in
   let ident = "<>" in
-  dump_ref loc filepath modpath ident ty
+  dump_ref ?loc filepath modpath ident ty
 
-let dump_libref loc dp ty =
-  dump_ref loc (Names.DirPath.to_string dp) "<>" "<>" ty
+let dump_libref ?loc dp ty =
+  dump_ref ?loc (Names.DirPath.to_string dp) "<>" "<>" ty
 
 let cook_notation df sc =
   (* We encode notations so that they are space-free and still human-readable *)
@@ -208,10 +210,10 @@ let dump_notation_location posl df (((path,secpath),_),sc) =
     let secpath = Names.DirPath.to_string secpath in
     let df = cook_notation df sc in
     List.iter (fun l ->
-      dump_ref (Loc.make_loc l) path secpath df "not")
+      dump_ref ~loc:(Loc.make_loc l) path secpath df "not")
       posl
 
-let add_glob_gen loc sp lib_dp ty =
+let add_glob_gen ?loc sp lib_dp ty =
   if dump () then
     let mod_dp,id = Libnames.repr_path sp in
     let mod_dp = remove_sections mod_dp in
@@ -219,50 +221,51 @@ let add_glob_gen loc sp lib_dp ty =
     let filepath = Names.DirPath.to_string lib_dp in
     let modpath = Names.DirPath.to_string mod_dp_trunc in
     let ident = Names.Id.to_string id in
-      dump_ref loc filepath modpath ident ty
+      dump_ref ?loc filepath modpath ident ty
 
-let add_glob loc ref =
-  if dump () && not (Loc.is_ghost loc) then
+let add_glob ?loc ref =
+  if dump () then
     let sp = Nametab.path_of_global ref in
     let lib_dp = Lib.library_part ref in
     let ty = type_of_global_ref ref in
-      add_glob_gen loc sp lib_dp ty
+    add_glob_gen ?loc sp lib_dp ty
 
 let mp_of_kn kn =
   let mp,sec,l = Names.repr_kn kn in
     Names.MPdot (mp,l)
 
-let add_glob_kn loc kn =
-  if dump () && not (Loc.is_ghost loc) then
+let add_glob_kn ?loc kn =
+  if dump () then
     let sp = Nametab.path_of_syndef kn in
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
-      add_glob_gen loc sp lib_dp "syndef"
+    add_glob_gen ?loc sp lib_dp "syndef"
 
-let dump_binding loc id = ()
+let dump_binding ?loc id = ()
 
-let dump_def ty loc secpath id =
+let dump_def ?loc ty secpath id = Option.iter (fun loc ->
   if !glob_output = Feedback then
     Feedback.feedback (Feedback.GlobDef (loc, id, secpath, ty))
   else
     let bl,el = interval loc in
     dump_string (Printf.sprintf "%s %d:%d %s %s\n" ty bl el secpath id)
+  ) loc
 
 let dump_definition (loc, id) sec s =
-  dump_def s loc (Names.DirPath.to_string (Lib.current_dirpath sec)) (Names.Id.to_string id)
+  dump_def ?loc s (Names.DirPath.to_string (Lib.current_dirpath sec)) (Names.Id.to_string id)
 
 let dump_constraint (((loc, n),_), _, _) sec ty =
   match n with
     | Names.Name id -> dump_definition (loc, id) sec ty
     | Names.Anonymous -> ()
 
-let dump_moddef loc mp ty =
+let dump_moddef ?loc mp ty =
   let (dp, l) = Lib.split_modpath mp in
   let mp = Names.DirPath.to_string (Names.DirPath.make l) in
-  dump_def ty loc "<>" mp
+  dump_def ?loc ty "<>" mp
 
-let dump_notation (loc,(df,_)) sc sec =
+let dump_notation (loc,(df,_)) sc sec = Option.iter (fun loc ->
   (* We dump the location of the opening '"' *)
   let i = fst (Loc.unloc loc) in
   let location = (Loc.make_loc (i, i+1)) in
-  dump_def "not" location (Names.DirPath.to_string (Lib.current_dirpath sec)) (cook_notation df sc)
-
+  dump_def ~loc:location "not" (Names.DirPath.to_string (Lib.current_dirpath sec)) (cook_notation df sc)
+  ) loc

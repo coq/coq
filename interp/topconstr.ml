@@ -59,7 +59,7 @@ let rec cases_pattern_fold_names f a pt = match snd pt with
   | CPatAtom (Some (Ident (_,id))) when not (is_constructor id) -> f id a
   | CPatPrim _ | CPatAtom _ -> a
   | CPatCast ((loc,_),_) ->
-     CErrors.user_err ~loc ~hdr:"cases_pattern_fold_names"
+     CErrors.user_err ?loc ~hdr:"cases_pattern_fold_names"
                       (Pp.strbrk "Casts are not supported here.")
 
 let ids_of_pattern =
@@ -103,7 +103,7 @@ let rec fold_local_binders g f n acc b = function
   | [] ->
       f n acc b
 
-let fold_constr_expr_with_binders g f n acc = Loc.with_loc (fun ~loc -> function
+let fold_constr_expr_with_binders g f n acc = Loc.with_loc (fun ?loc -> function
   | CAppExpl ((_,_,_),l) -> List.fold_left (f n) acc l
   | CApp ((_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (l,b) | CLambdaN (l,b) -> fold_constr_expr_binders g f n acc b l
@@ -181,9 +181,9 @@ let split_at_annot bl na =
             end
 	| CLocalDef _ as x :: rest -> aux (x :: acc) rest
         | CLocalPattern (loc,_) :: rest ->
-            Loc.raise ~loc (Stream.Error "pattern with quote not allowed after fix")
+            Loc.raise ?loc (Stream.Error "pattern with quote not allowed after fix")
 	| [] ->
-            user_err ~loc 
+            user_err ?loc 
 			 (str "No parameter named " ++ Nameops.pr_id id ++ str".")
       in aux [] bl
 
@@ -271,19 +271,20 @@ let rec replace_vars_constr_expr l = function
 (* Returns the ranges of locs of the notation that are not occupied by args  *)
 (* and which are then occupied by proper symbols of the notation (or spaces) *)
 
-let locs_of_notation loc locs ntn =
-  let (bl, el) = Loc.unloc loc in
-  let locs =  List.map Loc.unloc locs in
+let locs_of_notation ?loc locs ntn =
+  let unloc loc = Option.cata Loc.unloc (0,0) loc in
+  let (bl, el) = unloc loc        in
+  let locs =  List.map unloc locs in
   let rec aux pos = function
     | [] -> if Int.equal pos el then [] else [(pos,el)]
     | (ba,ea)::l -> if Int.equal pos ba then aux ea l else (pos,ba)::aux ea l
   in aux bl (List.sort (fun l1 l2 -> fst l1 - fst l2) locs)
 
-let ntn_loc loc (args,argslist,binderslist) =
-  locs_of_notation loc
+let ntn_loc ?loc (args,argslist,binderslist) =
+  locs_of_notation ?loc
     (List.map constr_loc (args@List.flatten argslist)@
-     List.map_filter local_binders_loc binderslist)
+     List.map local_binders_loc binderslist)
 
-let patntn_loc loc (args,argslist) =
-  locs_of_notation loc
+let patntn_loc ?loc (args,argslist) =
+  locs_of_notation ?loc
     (List.map cases_pattern_expr_loc (args@List.flatten argslist))

@@ -187,7 +187,7 @@ let check_or_and_pattern_size ?loc check_and names branchsigns =
   | IntroAndPattern l ->
       if not (Int.equal n 1) then errn n;
       let l' = List.filter (function _,IntroForthcoming _ -> true | _,IntroNaming _ | _,IntroAction _ -> false) l in
-      if l' != [] then errforthcoming ~loc:(fst (List.hd l'));
+      if l' != [] then errforthcoming ?loc:(fst (List.hd l'));
       if check_and then
         let p1 = List.count (fun x -> x) branchsigns.(0) in
         let p2 = List.length branchsigns.(0) in
@@ -221,7 +221,7 @@ let compute_induction_names_gen check_and branchletsigns = function
       Array.make (Array.length branchletsigns) []
   | Some (loc,names) ->
       let names = fix_empty_or_and_pattern (Array.length branchletsigns) names in
-      get_and_check_or_and_pattern_gen check_and ~loc names branchletsigns
+      get_and_check_or_and_pattern_gen check_and ?loc names branchletsigns
 
 let compute_induction_names = compute_induction_names_gen true
 
@@ -492,7 +492,7 @@ module New = struct
     | [] -> ()
     | (evk,evi) :: _ ->
       let (loc,_) = evi.Evd.evar_source in
-      Pretype_errors.error_unsolvable_implicit ~loc env sigma evk None
+      Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
 
   let tclWITHHOLES accept_unresolved_holes tac sigma =
     tclEVARMAP >>= fun sigma_initial ->

@@ -76,7 +76,7 @@ val coerce_to_evaluable_ref :
 val coerce_to_constr_list : Environ.env -> Value.t -> constr list
 
 val coerce_to_intro_pattern_list :
-  Loc.t -> Environ.env -> Evd.evar_map -> Value.t -> Tacexpr.intro_patterns
+  ?loc:Loc.t -> Environ.env -> Evd.evar_map -> Value.t -> Tacexpr.intro_patterns
 
 val coerce_to_hyp : Environ.env -> Evd.evar_map -> Value.t -> Id.t
 

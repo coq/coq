@@ -94,7 +94,7 @@ let compute_constructor_level evars env l =
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
   | Vernacexpr.DefExpr(n,c,t) -> (n,Some c, match t with Some c -> c
-                                                       | None   -> Loc.tag ~loc:(fst n) @@ CHole (None, Misctypes.IntroAnonymous, None))
+                                                       | None   -> Loc.tag ?loc:(fst n) @@ CHole (None, Misctypes.IntroAnonymous, None))
 
 let binders_of_decls = List.map binder_of_decl
 
@@ -106,14 +106,14 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     let error bk (loc, name) = 
       match bk, name with
       | Default _, Anonymous ->
-        user_err ~loc ~hdr:"record" (str "Record parameters must be named")
+        user_err ?loc ~hdr:"record" (str "Record parameters must be named")
       | _ -> ()
     in
       List.iter 
 	(function CLocalDef (b, _, _) -> error default_binder_kind b
 	   | CLocalAssum (ls, bk, ce) -> List.iter (error bk) ls
            | CLocalPattern (loc,(_,_)) ->
-              Loc.raise ~loc (Stream.Error "pattern with quote not allowed in record parameters.")) ps
+              Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters.")) ps
   in 
   let impls_env, ((env1,newps), imps) = interp_context_evars env0 evars ps in
   let newps = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) newps in
@@ -135,7 +135,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
 	                  sred, true
 	       | None -> s, false
              else s, false)
-	 | _ -> user_err ~loc:(constr_loc t) (str"Sort expected."))
+	 | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
     | None -> 
       let uvarkind = Evd.univ_flexible_alg in
 	mkSort (Evarutil.evd_comb0 (Evd.new_sort_variable uvarkind) evars), true

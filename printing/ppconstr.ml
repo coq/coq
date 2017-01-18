@@ -147,7 +147,7 @@ let tag_var = tag Tag.variable
 
   let pr_with_comments ?loc pp = pr_located (fun x -> x) (Loc.tag ?loc pp)
 
-  let pr_sep_com sep f c = pr_with_comments ~loc:(constr_loc c) (sep() ++ f c)
+  let pr_sep_com sep f c = pr_with_comments ?loc:(constr_loc c) (sep() ++ f c)
 
   let pr_univ l =
     match l with
@@ -221,11 +221,10 @@ let tag_var = tag Tag.variable
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
 
   let pr_lident (loc,id) =
-    if not (Loc.is_ghost loc) then
-      let (b,_) = Loc.unloc loc in
-      pr_located pr_id (Loc.make_loc (b,b + String.length (Id.to_string id)), id)
-    else
-      pr_id id
+    match loc with
+    | None     -> pr_id id
+    | Some loc -> let (b,_) = Loc.unloc loc in
+                  pr_located pr_id @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (Id.to_string id))) id
 
   let pr_lname = function
     | (loc,Name id) -> pr_lident (loc,id)
@@ -302,7 +301,7 @@ let tag_var = tag Tag.variable
         assert false
     in
     let loc = cases_pattern_expr_loc (loc, p) in
-    pr_with_comments ~loc
+    pr_with_comments ?loc
       (sep() ++ if prec_less prec inh then strm else surround strm)
 
   let pr_patt = pr_patt mt
@@ -310,16 +309,18 @@ let tag_var = tag Tag.variable
   let pr_eqn pr (loc,(pl,rhs)) =
     let pl = List.map snd pl in
     spc() ++ hov 4
-      (pr_with_comments ~loc
+      (pr_with_comments ?loc
          (str "| " ++
             hov 0 (prlist_with_sep pr_bar (prlist_with_sep sep_v (pr_patt ltop)) pl
                    ++ str " =>") ++
             pr_sep_com spc (pr ltop) rhs))
 
-  let begin_of_binder = function
-    | CLocalDef((loc,_),_,_) -> fst (Loc.unloc loc)
-    | CLocalAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
-    | CLocalPattern(loc,(_,_)) -> fst (Loc.unloc loc)
+  let begin_of_binder l_bi = 
+    let b_loc l = fst (Option.cata Loc.unloc (0,0) l) in
+    match l_bi with
+    | CLocalDef((loc,_),_,_) -> b_loc loc
+    | CLocalAssum((loc,_)::_,_,_) -> b_loc loc
+    | CLocalPattern(loc,(_,_)) -> b_loc loc
     | _ -> assert false
 
   let begin_of_binders = function
@@ -420,12 +421,12 @@ let tag_var = tag Tag.variable
     | CLambdaN ((nal,bk,t)::bl,c) ->
       let bl,c = extract_lam_binders (loc, CLambdaN(bl,c)) in
       CLocalAssum (nal,bk,t) :: bl, c
-    | c -> [], Loc.tag ~loc c
+    | c -> [], Loc.tag ?loc c
 
-  let split_lambda = Loc.with_loc (fun ~loc -> function
+  let split_lambda = Loc.with_loc (fun ?loc -> function
     | CLambdaN ([[na],bk,t],c) -> (na,t,c)
-    | CLambdaN (([na],bk,t)::bl,c) -> (na,t,Loc.tag ~loc @@ CLambdaN(bl,c))
-    | CLambdaN ((na::nal,bk,t)::bl,c) -> (na,t,Loc.tag ~loc @@ CLambdaN((nal,bk,t)::bl,c))
+    | CLambdaN (([na],bk,t)::bl,c) -> (na,t,Loc.tag ?loc @@ CLambdaN(bl,c))
+    | CLambdaN ((na::nal,bk,t)::bl,c) -> (na,t,Loc.tag ?loc @@ CLambdaN((nal,bk,t)::bl,c))
     | _ -> anomaly (Pp.str "ill-formed fixpoint body")
     )
 
@@ -436,11 +437,11 @@ let tag_var = tag Tag.variable
       | (_,Name id), (_,Anonymous) -> (na,t,c)
       | _ -> (na',t,c)
 
-  let split_product na' = Loc.with_loc (fun ~loc -> function
+  let split_product na' = Loc.with_loc (fun ?loc -> function
     | CProdN ([[na],bk,t],c) -> rename na na' t c
-    | CProdN (([na],bk,t)::bl,c) -> rename na na' t (Loc.tag ~loc @@ CProdN(bl,c))
+    | CProdN (([na],bk,t)::bl,c) -> rename na na' t (Loc.tag ?loc @@ CProdN(bl,c))
     | CProdN ((na::nal,bk,t)::bl,c) ->
-      rename na na' t (Loc.tag ~loc @@ CProdN((nal,bk,t)::bl,c))
+      rename na na' t (Loc.tag ?loc @@ CProdN((nal,bk,t)::bl,c))
     | _ -> anomaly (Pp.str "ill-formed fixpoint body")
     )
 
@@ -730,7 +731,7 @@ let tag_var = tag Tag.variable
         return (pr_delimiters sc (pr mt (ldelim,E) a), ldelim)
     in
     let loc = constr_loc a in
-    pr_with_comments ~loc
+    pr_with_comments ?loc
       (sep() ++ if prec_less prec inherited then strm else surround strm)
 
   type term_pr = {

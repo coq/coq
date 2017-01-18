@@ -387,12 +387,11 @@ let skip_extensions trace =
   | [] -> [] in
   List.rev (aux (List.rev trace))
 
-let finer_loc loc1 loc2 = Loc.merge loc1 loc2 = loc2
+let finer_loc loc1 loc2 = Loc.merge_opt loc1 loc2 = loc2
 
 let extract_ltac_trace ?loc trace =
   let trace = skip_extensions trace in
   let (tloc,c),tail = List.sep_last trace in
-  let loc = Option.default tloc loc       in
   if is_defined_ltac trace then
     (* We entered a user-defined tactic,
        we display the trace with location of the call *)
@@ -405,8 +404,8 @@ let extract_ltac_trace ?loc trace =
       (* trace is with innermost call coming first *)
       let rec aux best_loc = function
         | (loc,_)::tail ->
-           if Loc.is_ghost best_loc ||
-              not (Loc.is_ghost loc) && finer_loc loc best_loc
+           if Option.is_empty best_loc ||
+              not (Option.is_empty loc) && finer_loc loc best_loc
            then
              aux loc tail
            else

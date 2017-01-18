@@ -108,7 +108,7 @@ let xmlPatvar ?loc id = xmlWithLoc ?loc "patvar" ["id", id] []
 
 let xmlReference ref =
   let name = Libnames.string_of_reference ref in
-  let i, j = Loc.unloc (Libnames.loc_of_reference ref) in
+  let i, j = Option.cata Loc.unloc (0,0) (Libnames.loc_of_reference ref) in
   let b, e = string_of_int i, string_of_int j in
   Element("reference",["name", name; "begin", b; "end", e] ,[])
 
@@ -189,7 +189,7 @@ match sm with
   | SetOnlyParsing -> ["onlyparsing", ""]
   | SetCompatVersion v -> ["compat", Flags.pr_version v]
   | SetFormat (system, (loc, s)) ->
-      let start, stop = unlock ~loc in
+      let start, stop = unlock ?loc in
       ["format-"^system, s; "begin", start; "end", stop]
 
 let string_of_assumption_kind l a many =
@@ -217,7 +217,7 @@ let rec pp_bindlist bl =
             let names =
               (List.map
                 (fun (loc, name) ->
-                  xmlCst ~loc (string_of_name name)) loc_names) in
+                  xmlCst ?loc (string_of_name name)) loc_names) in
             match e with
               | _, CHole _ -> names
               | _ -> names @ [pp_expr e])
@@ -232,12 +232,12 @@ and pp_local_binder lb = (* don't know what it is for now *)
   | CLocalDef ((loc, nam), ce, ty) ->
       let attrs = ["name", string_of_name nam] in
       let value = match ty with
-          Some t -> Loc.tag ~loc:(Loc.merge (constr_loc ce) (constr_loc t)) @@ CCast (ce, CastConv t)
+          Some t -> Loc.tag ?loc:(Loc.merge_opt (constr_loc ce) (constr_loc t)) @@ CCast (ce, CastConv t)
         | None -> ce in
       pp_expr ~attr:attrs value
   | CLocalAssum (namll, _, ce) ->
       let ppl =
-        List.map (fun (loc, nam) -> (xmlCst ~loc (string_of_name nam))) namll in
+        List.map (fun (loc, nam) -> (xmlCst ?loc (string_of_name nam))) namll in
       xmlTyped (ppl @ [pp_expr ce])
   | CLocalPattern _ ->
       assert false
@@ -247,7 +247,7 @@ and pp_local_decl_expr lde = (* don't know what it is for now *)
   | DefExpr (_, ce, _) -> pp_expr ce
 and pp_inductive_expr ((_, ((l, id),_)), lbl, ceo, _, cl_or_rdexpr) =
   (* inductive_expr *)
-  let b,e = Loc.unloc l in
+  let b,e = Option.cata Loc.unloc (0,0) l in
   let location = ["begin", string_of_int b; "end", string_of_int e] in
   [Element ("lident", ["name", Id.to_string id] @ location, [])] @ (* inductive name *)
   begin match cl_or_rdexpr with
@@ -265,7 +265,7 @@ and pp_recursion_order_expr optid roe = (* don't know what it is for now *)
     match optid with
     | None -> []
     | Some (loc, id) ->
-        let start, stop = unlock ~loc in
+        let start, stop = unlock ?loc in
         ["begin", start; "end", stop ; "name", Id.to_string id] in
   let kind, expr =
     match roe with
@@ -276,7 +276,7 @@ and pp_recursion_order_expr optid roe = (* don't know what it is for now *)
   Element ("recursion_order", ["kind", kind] @ attrs, expr)
 and pp_fixpoint_expr (((loc, id), pl), (optid, roe), lbl, ce, ceo) =
   (* fixpoint_expr *)
-  let start, stop = unlock ~loc in
+  let start, stop = unlock ?loc in
   let id = Id.to_string id in
   [Element ("lident", ["begin", start; "end", stop ; "name", id], [])] @
   (* fixpoint name *)
@@ -290,7 +290,7 @@ and pp_fixpoint_expr (((loc, id), pl), (optid, roe), lbl, ce, ceo) =
 and pp_cofixpoint_expr (((loc, id), pl), lbl, ce, ceo) = (* cofixpoint_expr *)
   (* Nota: it is like fixpoint_expr without (optid, roe)
    * so could be merged if there is no more differences *)
-  let start, stop = unlock ~loc in
+  let start, stop = unlock ?loc in
   let id = Id.to_string id in
   [Element ("lident", ["begin", start; "end", stop ; "name", id], [])] @
   (* cofixpoint name *)
@@ -300,23 +300,23 @@ and pp_cofixpoint_expr (((loc, id), pl), lbl, ce, ceo) = (* cofixpoint_expr *)
   | Some ce -> [pp_expr ce]
   | None -> []
   end
-and pp_lident (loc, id) = xmlCst ~loc (Id.to_string id)
+and pp_lident (loc, id) = xmlCst ?loc (Id.to_string id)
 and pp_simple_binder (idl, ce) = List.map pp_lident idl @ [pp_expr ce]
 and pp_cases_pattern_expr (loc, cpe) =
   match cpe with
   | CPatAlias (cpe, id) ->
-      xmlApply ~loc
-        (xmlOperator ~loc ~attr:["name", string_of_id id] "alias" ::
+      xmlApply ?loc
+        (xmlOperator ?loc ~attr:["name", string_of_id id] "alias" ::
           [pp_cases_pattern_expr cpe])
   | CPatCstr (ref, None, cpel2) ->
-      xmlApply ~loc
-        (xmlOperator ~loc "reference"
+      xmlApply ?loc
+        (xmlOperator ?loc "reference"
            ~attr:["name", Libnames.string_of_reference ref] ::
          [Element ("impargs", [], []);
           Element ("args", [], (List.map pp_cases_pattern_expr cpel2))])
   | CPatCstr (ref, Some cpel1, cpel2) ->
-      xmlApply ~loc
-        (xmlOperator ~loc "reference"
+      xmlApply ?loc
+        (xmlOperator ?loc "reference"
            ~attr:["name", Libnames.string_of_reference ref] ::
          [Element ("impargs", [], (List.map pp_cases_pattern_expr cpel1));
           Element ("args", [], (List.map pp_cases_pattern_expr cpel2))])
@@ -324,13 +324,13 @@ and pp_cases_pattern_expr (loc, cpe) =
       let attrs = match optr with
         | None -> []
         | Some r -> ["name", Libnames.string_of_reference r] in
-      xmlApply ~loc (xmlOperator ~loc "atom" ~attr:attrs :: [])
+      xmlApply ?loc (xmlOperator ?loc "atom" ~attr:attrs :: [])
   | CPatOr cpel ->
-      xmlApply ~loc (xmlOperator ~loc "or" :: List.map pp_cases_pattern_expr cpel)
+      xmlApply ?loc (xmlOperator ?loc "or" :: List.map pp_cases_pattern_expr cpel)
   | CPatNotation (n, (subst_constr, subst_rec), cpel) ->
-      xmlApply ~loc
-        (xmlOperator ~loc "notation" ::
-          [xmlOperator ~loc n;
+      xmlApply ?loc
+        (xmlOperator ?loc "notation" ::
+          [xmlOperator ?loc n;
            Element ("subst", [],
              [Element ("subterms", [],
                 List.map pp_cases_pattern_expr subst_constr);
@@ -341,29 +341,29 @@ and pp_cases_pattern_expr (loc, cpe) =
                        List.map pp_cases_pattern_expr cpel))
                 subst_rec)]);
            Element ("args", [], (List.map pp_cases_pattern_expr cpel))])
-  | CPatPrim tok   -> pp_token ~loc tok
+  | CPatPrim tok   -> pp_token ?loc tok
   | CPatRecord rcl ->
-      xmlApply ~loc
-        (xmlOperator ~loc "record" ::
+      xmlApply ?loc
+        (xmlOperator ?loc "record" ::
            List.map (fun (r, cpe) ->
              Element ("field",
                ["reference", Libnames.string_of_reference r],
                [pp_cases_pattern_expr cpe]))
            rcl)
   | CPatDelimiters (delim, cpe) ->
-      xmlApply ~loc
-        (xmlOperator ~loc "delimiter" ~attr:["name", delim] ::
+      xmlApply ?loc
+        (xmlOperator ?loc "delimiter" ~attr:["name", delim] ::
           [pp_cases_pattern_expr cpe])
   | CPatCast _ -> assert false
 and pp_case_expr (e, name, pat) =
   match name, pat with
   | None, None -> xmlScrutinee [pp_expr e]
   | Some (loc, name), None ->
-      let start, stop= unlock ~loc in
+      let start, stop= unlock ?loc in
       xmlScrutinee ~attr:["name", string_of_name name;
                           "begin", start; "end", stop] [pp_expr e]
   | Some (loc, name), Some p ->
-      let start, stop= unlock ~loc in
+      let start, stop= unlock ?loc in
       xmlScrutinee ~attr:["name", string_of_name name;
                           "begin", start; "end", stop]
         [Element ("in", [], [pp_cases_pattern_expr p]) ; pp_expr e]
@@ -393,77 +393,77 @@ and pp_const_expr_list cel =
 and pp_expr ?(attr=[]) (loc, e) =
   match e with
   | CRef (r, _) ->
-      xmlCst ~loc:(Libnames.loc_of_reference r) ~attr (Libnames.string_of_reference r)
+      xmlCst ?loc:(Libnames.loc_of_reference r) ~attr (Libnames.string_of_reference r)
   | CProdN (bl, e) ->
-      xmlApply ~loc
-        (xmlOperator ~loc "forall" :: [pp_bindlist bl] @ [pp_expr e])
+      xmlApply ?loc
+        (xmlOperator ?loc "forall" :: [pp_bindlist bl] @ [pp_expr e])
   | CApp ((_, hd), args) ->
-       xmlApply ~loc ~attr (pp_expr hd :: List.map (fun (e,_) -> pp_expr e) args)
+       xmlApply ?loc ~attr (pp_expr hd :: List.map (fun (e,_) -> pp_expr e) args)
   | CAppExpl ((_, r, _), args) ->
-       xmlApply ~loc ~attr
-         (xmlCst ~loc:(Libnames.loc_of_reference r) (Libnames.string_of_reference r)
+       xmlApply ?loc ~attr
+         (xmlCst ?loc:(Libnames.loc_of_reference r) (Libnames.string_of_reference r)
                  :: List.map pp_expr args)
   | CNotation (notation,  ([],[],[])) ->
-       xmlOperator ~loc notation
+       xmlOperator ?loc notation
   | CNotation (notation,  (args, cell, lbll)) ->
       let fmts = Notation.find_notation_extra_printing_rules notation in
-      let oper = xmlOperator ~loc notation ~pprules:fmts in
+      let oper = xmlOperator ?loc notation ~pprules:fmts in
       let cels = List.map pp_const_expr_list cell in
       let lbls = List.map pp_local_binder_list lbll in
       let args = List.map pp_expr args in
-      xmlApply ~loc (oper :: (List.sort compare_begin_att (args @ cels @ lbls)))
+      xmlApply ?loc (oper :: (List.sort compare_begin_att (args @ cels @ lbls)))
   | CSort(s) ->
-      xmlOperator ~loc (string_of_glob_sort s)
+      xmlOperator ?loc (string_of_glob_sort s)
   | CDelimiters (scope, ce) ->
-      xmlApply ~loc (xmlOperator ~loc "delimiter" ~attr:["name", scope] ::
+      xmlApply ?loc (xmlOperator ?loc "delimiter" ~attr:["name", scope] ::
         [pp_expr ce])
-  | CPrim tok -> pp_token ~loc tok
+  | CPrim tok -> pp_token ?loc tok
   | CGeneralization (kind, _, e) ->
       let kind= match kind with
       | Explicit -> "explicit"
       | Implicit -> "implicit" in
-      xmlApply ~loc
-        (xmlOperator ~loc ~attr:["kind", kind] "generalization" :: [pp_expr e])
+      xmlApply ?loc
+        (xmlOperator ?loc ~attr:["kind", kind] "generalization" :: [pp_expr e])
   | CCast (e, tc) ->
       begin match tc with
       | CastConv t | CastVM t |CastNative t ->
-          xmlApply ~loc
-            (xmlOperator ~loc ":" ~attr:["kind", (string_of_cast_sort tc)] ::
+          xmlApply ?loc
+            (xmlOperator ?loc ":" ~attr:["kind", (string_of_cast_sort tc)] ::
              [pp_expr e; pp_expr t])
       | CastCoerce   ->
-          xmlApply ~loc
-            (xmlOperator ~loc ":" ~attr:["kind", "CastCoerce"] ::
+          xmlApply ?loc
+            (xmlOperator ?loc ":" ~attr:["kind", "CastCoerce"] ::
              [pp_expr e])
       end
   | CEvar (ek, cel) ->
       let ppcel = List.map (fun (id,e) -> xmlAssign id (pp_expr e)) cel in
-      xmlApply ~loc
-        (xmlOperator ~loc "evar" ~attr:["id", string_of_id ek] ::
+      xmlApply ?loc
+        (xmlOperator ?loc "evar" ~attr:["id", string_of_id ek] ::
           ppcel)
-  | CPatVar id -> xmlPatvar ~loc (string_of_id id)
-  | CHole (_, _, _) -> xmlCst ~loc ~attr  "_"
+  | CPatVar id -> xmlPatvar ?loc (string_of_id id)
+  | CHole (_, _, _) -> xmlCst ?loc ~attr  "_"
   | CIf (test, (_, ret), th, el) ->
       let return = match ret with
       | None -> []
       | Some r -> [xmlReturn [pp_expr r]] in
-      xmlApply ~loc
-        (xmlOperator ~loc "if" ::
+      xmlApply ?loc
+        (xmlOperator ?loc "if" ::
           return @ [pp_expr th] @ [pp_expr el])
   | CLetTuple (names, (_, ret), value, body) ->
       let return = match ret with
       | None -> []
       | Some r -> [xmlReturn [pp_expr r]] in
-      xmlApply ~loc
-        (xmlOperator ~loc "lettuple" ::
+      xmlApply ?loc
+        (xmlOperator ?loc "lettuple" ::
           return @
-          (List.map (fun (loc, var) -> xmlCst ~loc (string_of_name var)) names) @
+          (List.map (fun (loc, var) -> xmlCst ?loc (string_of_name var)) names) @
           [pp_expr value; pp_expr body])
   | CCases (sty, ret, cel, bel) ->
       let return = match ret with
       | None -> []
       | Some r -> [xmlReturn [pp_expr r]] in
-      xmlApply ~loc
-        (xmlOperator ~loc ~attr:["style", (string_of_case_style sty)] "match" ::
+      xmlApply ?loc
+        (xmlOperator ?loc ~attr:["style", (string_of_case_style sty)] "match" ::
           (return @
            [Element ("scrutinees", [], List.map pp_case_expr cel)] @
            [pp_branch_expr_list bel]))
@@ -471,18 +471,18 @@ and pp_expr ?(attr=[]) (loc, e) =
   | CLetIn ((varloc, var), value, typ, body) ->
       let (loc, value) = match typ with
         | Some t ->
-          Loc.tag ~loc:(Loc.merge (constr_loc value) (constr_loc t)) (CCast (value, CastConv t))
+          Loc.tag ?loc:(Loc.merge_opt (constr_loc value) (constr_loc t)) (CCast (value, CastConv t))
         | None -> value in
-      xmlApply ~loc
-        (xmlOperator ~loc "let" ::
-         [xmlCst ~loc:varloc (string_of_name var) ; pp_expr (Loc.tag ~loc value); pp_expr body])
+      xmlApply ?loc
+        (xmlOperator ?loc "let" ::
+         [xmlCst ?loc:varloc (string_of_name var) ; pp_expr (Loc.tag ?loc value); pp_expr body])
   | CLambdaN (bl, e) ->
-      xmlApply ~loc
-        (xmlOperator ~loc "lambda" :: [pp_bindlist bl] @ [pp_expr e])
+      xmlApply ?loc
+        (xmlOperator ?loc "lambda" :: [pp_bindlist bl] @ [pp_expr e])
   | CCoFix (_, _) -> assert false
   | CFix (lid, fel) ->
-      xmlApply ~loc
-        (xmlOperator ~loc "fix" ::
+      xmlApply ?loc
+        (xmlOperator ?loc "fix" ::
            List.flatten (List.map
              (fun (a,b,cl,c,d) -> pp_fixpoint_expr ((a,None),b,cl,c,Some d))
              fel))
@@ -499,11 +499,11 @@ let rec tmpp ?loc v =
   | VernacLoad (verbose,f) ->
       xmlWithLoc ?loc "load" ["verbose",string_of_bool verbose;"file",f] []
   | VernacTime (loc,e) ->
-      xmlApply ~loc (Element("time",[],[]) ::
-                    [tmpp ~loc e])
+      xmlApply ?loc (Element("time",[],[]) ::
+                    [tmpp ?loc e])
   | VernacRedirect (s, (loc,e)) ->
-      xmlApply ~loc (Element("redirect",["path", s],[]) ::
-                    [tmpp ~loc e])
+      xmlApply ?loc (Element("redirect",["path", s],[]) ::
+                    [tmpp ?loc e])
   | VernacTimeout (s,e) ->
       xmlApply ?loc (Element("timeout",["val",string_of_int s],[]) ::
                     [tmpp ?loc e])
@@ -586,7 +586,7 @@ let rec tmpp ?loc v =
       xmlAssumption ?loc kind exprs
   | VernacInductive (_, _, iednll) ->
       let kind =
-        let (_, _, _, k, _),_ = List.hd iednll in
+        let (_, _, _, k, _), _ = List.hd iednll in
 	  begin
             match k with
             | Record -> "Record"

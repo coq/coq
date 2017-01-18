@@ -267,7 +267,7 @@ let add_rewrite_hint bases ort t lcsr =
 	  (Declare.declare_universe_context false ctx;
            Univ.ContextSet.empty)
     in
-      Constrexpr_ops.constr_loc ce, (c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t in
+      Loc.tag ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
   let eqs = List.map f lcsr in
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
@@ -679,8 +679,8 @@ let hResolve id c occ t =
     with
       | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
           let (e, info) = CErrors.push e in
-          let loc = match Loc.get_loc info with None -> 0,0 | Some loc -> Loc.unloc loc in
-          resolve_hole (subst_hole_with_term (fst loc) c_raw t_hole)
+          let loc_begin = Option.cata (fun l -> fst (Loc.unloc l)) 0 (Loc.get_loc info) in
+          resolve_hole (subst_hole_with_term loc_begin c_raw t_hole)
   in
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
   let t_constr = EConstr.of_constr t_constr in

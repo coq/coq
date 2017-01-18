@@ -20,7 +20,7 @@ val glob_constr_eq : glob_constr -> glob_constr -> bool
 
 (** Operations on [glob_constr] *)
 
-val cases_pattern_loc : cases_pattern -> Loc.t
+val cases_pattern_loc : cases_pattern -> Loc.t option
 
 val cases_predicate_names : tomatch_tuples -> Name.t list
 
@@ -41,7 +41,8 @@ val iter_glob_constr : (glob_constr -> unit) -> glob_constr -> unit
 val occur_glob_constr : Id.t -> glob_constr -> bool
 val free_glob_vars : glob_constr -> Id.t list
 val bound_glob_vars : glob_constr -> Id.Set.t
-val loc_of_glob_constr : glob_constr -> Loc.t
+(* Obsolete *)
+val loc_of_glob_constr : glob_constr -> Loc.t option
 val glob_visible_short_qualid : glob_constr -> Id.t list
 
 (* Renaming free variables using a renaming map; fails with

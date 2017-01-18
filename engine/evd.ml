@@ -704,10 +704,10 @@ let extract_all_conv_pbs evd =
 
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
   match kind_of_term (fst (decompose_app t1)) with
-  | Evar (evk1,_) -> Some (fst (evar_source evk1 evd))
+  | Evar (evk1,_) -> fst (evar_source evk1 evd)
   | _ ->
   match kind_of_term (fst (decompose_app t2)) with
-  | Evar (evk2,_) -> Some (fst (evar_source evk2 evd))
+  | Evar (evk2,_) -> fst (evar_source evk2 evd)
   | _             -> None
 
 (** The following functions return the set of evars immediately
@@ -794,7 +794,7 @@ let make_evar_universe_context e l =
   | Some us ->
       List.fold_left
         (fun uctx (loc,id) ->
-        fst (UState.new_univ_variable ~loc univ_rigid (Some (Id.to_string id)) uctx))
+        fst (UState.new_univ_variable ?loc univ_rigid (Some (Id.to_string id)) uctx))
         uctx us
 
 (****************************************)

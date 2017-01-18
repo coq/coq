@@ -1268,7 +1268,7 @@ let solve_unconstrained_impossible_cases env evd =
     match ev_info.evar_source with
     | loc,Evar_kinds.ImpossibleCase ->
       let j, ctx = coq_unit_judge () in
-      let evd' = Evd.merge_context_set Evd.univ_flexible_alg ~loc evd' ctx in
+      let evd' = Evd.merge_context_set Evd.univ_flexible_alg ?loc evd' ctx in
       let ty = j_type j in
       let conv_algo = evar_conv_x full_transparent_state in
       let evd' = check_evar_instance evd' evk ty conv_algo in

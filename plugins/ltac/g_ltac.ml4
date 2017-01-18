@@ -41,7 +41,7 @@ let in_tac tac = in_gen (rawwit Tacarg.wit_ltac) tac
 let reference_to_id = function
   | Libnames.Ident (loc, id) -> (loc, id)
   | Libnames.Qualid (loc,_) ->
-      CErrors.user_err ~loc 
+      CErrors.user_err ?loc 
        (str "This expression should be a simple identifier.")
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
@@ -159,9 +159,9 @@ GEXTEND Gram
       | g=failkw; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  l = LIST0 message_token -> TacFail (g,n,l)
       | st = simple_tactic -> st
-      | a = tactic_arg -> TacArg(!@loc,a)
+      | a = tactic_arg -> TacArg(Loc.tag ~loc:!@loc a)
       | r = reference; la = LIST0 tactic_arg_compat ->
-          TacArg(!@loc, TacCall (!@loc,(r,la))) ]
+          TacArg(Loc.tag ~loc:!@loc @@ TacCall (Loc.tag ~loc:!@loc (r,la))) ]
     | "0"
       [ "("; a = tactic_expr; ")" -> a
       | "["; ">"; (tf,tail) = tactic_then_gen; "]" ->
@@ -169,7 +169,7 @@ GEXTEND Gram
           | Some (t,tl) -> TacExtendTac(Array.of_list tf,t,tl)
           | None -> TacDispatch tf
           end
-      | a = tactic_atom -> TacArg (!@loc,a) ] ]
+      | a = tactic_atom -> TacArg (Loc.tag ~loc:!@loc a) ] ]
   ;
   failkw:
   [ [ IDENT "fail" -> TacLocal | IDENT "gfail" -> TacGlobal ] ]
@@ -203,7 +203,7 @@ GEXTEND Gram
      verbose most of the time. *)
   fresh_id:
     [ [ s = STRING -> ArgArg s (*| id = ident -> ArgVar (!@loc,id)*)
-	| qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (!@loc,id) ] ]
+	| qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (Loc.tag ~loc:!@loc id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
@@ -219,7 +219,7 @@ GEXTEND Gram
   ;
   tactic_atom:
     [ [ n = integer -> TacGeneric (genarg_of_int n)
-      | r = reference -> TacCall (!@loc,(r,[]))
+      | r = reference -> TacCall (Loc.tag ~loc:!@loc (r,[]))
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
   match_key:
@@ -470,7 +470,7 @@ let pr_ltac_production_item = function
 VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY pr_ltac_production_item
 | [ string(s) ] -> [ Tacentries.TacTerm s ]
 | [ ident(nt) "(" ident(p) ltac_production_sep_opt(sep) ")" ] ->
-  [ Tacentries.TacNonTerm (loc, ((Names.Id.to_string nt, sep), p)) ]
+  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Names.Id.to_string nt, sep), p)) ]
 END
 
 VERNAC COMMAND EXTEND VernacTacticNotation

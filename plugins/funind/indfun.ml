@@ -756,7 +756,7 @@ let rec add_args id new_args = Loc.map (function
 	     List.map (fun (b,na,b_option) ->
 			 add_args id new_args b,
 			 na, b_option) cel,
-	     List.map (fun (loc,(cpl,e)) -> Loc.tag ~loc @@ (cpl,add_args id new_args e)) cal
+	     List.map (fun (loc,(cpl,e)) -> Loc.tag ?loc @@ (cpl,add_args id new_args e)) cal
 	    )
   | CLetTuple(nal,(na,b_option),b1,b2) ->
       CLetTuple(nal,(na,Option.map (add_args id new_args) b_option),
@@ -882,7 +882,7 @@ let make_graph (f_ref:global_reference) =
 				  | Constrexpr.CLocalDef (na,_,_)-> []
 				  | Constrexpr.CLocalAssum (nal,_,_) ->
 				      List.map
-					(fun (loc,n) -> Loc.tag ~loc @@ 
+					(fun (loc,n) -> Loc.tag ?loc @@ 
 					   CRef(Libnames.Ident(loc, Nameops.out_name n),None))
 					nal
                                   | Constrexpr.CLocalPattern _ -> assert false

@@ -33,13 +33,11 @@ val make_loc : int * int -> t
 (** Make a location out of its start and end position *)
 
 val internal_ghost : t
-val is_ghost : t -> bool
+
 (** Test whether the location is meaningful *)
 
 val merge : t -> t -> t
-
-val merge_opt : t option -> t -> t
-val opt_merge : t -> t option -> t
+val merge_opt : t option -> t option -> t option
 
 (** {5 Located exceptions} *)
 
@@ -54,20 +52,20 @@ val raise : ?loc:t -> exn -> 'a
 
 (** {5 Objects with location information } *)
 
-type 'a located = t * 'a
+type 'a located = t option * 'a
 (** Embed a location in a type *)
 
 (** Warning, this API is experimental  *)
 
-val to_pair : 'a located -> t * 'a
+val to_pair : 'a located -> t option * 'a
 val tag : ?loc:t -> 'a -> 'a located
 val obj : 'a located -> 'a
 
-val with_loc : (loc:t -> 'a -> 'b) -> 'a located -> 'b
+val with_loc : (?loc:t -> 'a -> 'b) -> 'a located -> 'b
 val with_unloc : ('a -> 'b) -> 'a located -> 'b
 
 val map : ('a -> 'b) -> 'a located -> 'b located
-val map_with_loc : (loc:t -> 'a -> 'b) -> 'a located -> 'b located
+val map_with_loc : (?loc:t -> 'a -> 'b) -> 'a located -> 'b located
 
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
 val down_located : ('a -> 'b) -> 'a located -> 'b

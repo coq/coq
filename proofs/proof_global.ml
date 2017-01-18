@@ -207,7 +207,7 @@ let discard (loc,id) =
   let n = List.length !pstates in
   discard_gen id;
   if Int.equal (List.length !pstates) n then
-    CErrors.user_err ~loc
+    CErrors.user_err ?loc
       ~hdr:"Pfedit.delete_proof" (str"No such proof" ++ msg_proofs ())
 
 let discard_current () =

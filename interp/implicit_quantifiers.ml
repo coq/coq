@@ -29,11 +29,11 @@ let generalizable_table = Summary.ref Id.Pred.empty ~name:"generalizable-ident"
 
 let declare_generalizable_ident table (loc,id) =
   if not (Id.equal id (root_of_id id)) then
-    user_err ~loc ~hdr:"declare_generalizable_ident"
+    user_err ?loc ~hdr:"declare_generalizable_ident"
     ((pr_id id ++ str
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
   if Id.Pred.mem id table then
-    user_err ~loc ~hdr:"declare_generalizable_ident"
+    user_err ?loc ~hdr:"declare_generalizable_ident"
 		((pr_id id++str" is already declared as a generalizable identifier"))
   else Id.Pred.add id table
 
@@ -80,7 +80,7 @@ let is_freevar ids env x =
 (* Auxiliary functions for the inference of implicitly quantified variables. *)
 
 let ungeneralizable loc id =
-  user_err ~loc ~hdr:"Generalization"
+  user_err ?loc ~hdr:"Generalization"
 	       (str "Unbound and ungeneralizable variable " ++ pr_id id)
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
@@ -128,8 +128,8 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
   let rec vars bound vs (loc, t) = match t with
     | GVar id ->
 	if is_freevar bound (Global.env ()) id then
-	  if Id.List.mem_assoc id vs then vs
-	  else (id, loc) :: vs
+	  if Id.List.mem_assoc_sym id vs then vs
+	  else (Loc.tag ?loc id) :: vs
 	else vs
 
     | GApp (f,args) -> List.fold_left (vars bound) vs (f::args)
@@ -189,7 +189,7 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
     vars_option bound' vs tyopt
   in fun rt -> 
     let vars = List.rev (vars bound [] rt) in
-      List.iter (fun (id, loc) ->
+      List.iter (fun (loc, id) ->
 	if not (Id.Set.mem id allowed || find_generalizable_ident id) then 
 	  ungeneralizable loc id) vars;
       vars
@@ -212,7 +212,7 @@ let combine_params avoid fn applied needed =
             | Anonymous -> false
             in
 	    if not (List.exists is_id needed) then
-	      user_err ~loc  (str "Wrong argument name: " ++ Nameops.pr_id id);
+	      user_err ?loc  (str "Wrong argument name: " ++ Nameops.pr_id id);
 	    true
 	| _ -> false) applied
   in
@@ -246,7 +246,7 @@ let combine_params avoid fn applied needed =
 	    aux (t' :: ids) avoid' app need
 
       | (x,_) :: _, [] ->
-	  user_err ~loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
+	  user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
 let combine_params_freevar =
@@ -256,21 +256,21 @@ let combine_params_freevar =
 
 let destClassApp (loc, cl) =
   match cl with
-    | CApp ((None, (_loc, CRef (ref, inst))), l) -> loc, ref, List.map fst l, inst
-    | CAppExpl ((None, ref, inst), l) -> loc, ref, l, inst
-    | CRef (ref, inst) -> loc_of_reference ref, ref, [], inst
+    | CApp ((None, (_loc, CRef (ref, inst))), l) -> Loc.tag ?loc (ref, List.map fst l, inst)
+    | CAppExpl ((None, ref, inst), l) -> Loc.tag ?loc (ref, l, inst)
+    | CRef (ref, inst) -> Loc.tag ?loc:(loc_of_reference ref) (ref, [], inst)
     | _ -> raise Not_found
 
 let destClassAppExpl (loc, cl) =
   match cl with
-    | CApp ((None, (_loc, CRef (ref, inst))), l) -> loc, ref, l, inst
-    | CRef (ref, inst) -> loc_of_reference ref, ref, [], inst
+    | CApp ((None, (_loc, CRef (ref, inst))), l) -> Loc.tag ?loc (ref, l, inst)
+    | CRef (ref, inst) -> Loc.tag ?loc:(loc_of_reference ref) (ref, [], inst)
     | _ -> raise Not_found
 
 let implicit_application env ?(allow_partial=true) f ty =
   let is_class =
     try
-      let (_, r, _, _ as clapp) = destClassAppExpl ty in
+      let (_, (r, _, _) as clapp) = destClassAppExpl ty in
       let (loc, qid) = qualid_of_reference r in
       let gr = Nametab.locate qid in
 	if Typeclasses.is_class gr then Some (clapp, gr) else None
@@ -278,7 +278,7 @@ let implicit_application env ?(allow_partial=true) f ty =
   in
     match is_class with
     | None -> ty, env
-    | Some ((loc, id, par, inst), gr) ->
+    | Some ((loc, (id, par, inst)), gr) ->
 	let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
 	let c, avoid =
 	  let c = class_info gr in
@@ -296,7 +296,7 @@ let implicit_application env ?(allow_partial=true) f ty =
 	    end;
 	  let pars = List.rev (List.combine ci rd) in
 	  let args, avoid = combine_params avoid f par pars in
-	    Loc.tag ~loc @@ CAppExpl ((None, id, inst), args), avoid
+	    Loc.tag ?loc @@ CAppExpl ((None, id, inst), args), avoid
 	in c, avoid
 
 let implicits_of_glob_constr ?(with_products=true) l =

@@ -170,7 +170,7 @@ let add_tactic_entry (kn, ml, tg) state =
         TacGeneric arg
     in
     let l = List.map map l in
-    (TacAlias (loc,(kn,l)):raw_tactic_expr)
+    (TacAlias (Loc.tag ~loc (kn,l)):raw_tactic_expr)
   in
   let () =
     if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
@@ -180,6 +180,7 @@ let add_tactic_entry (kn, ml, tg) state =
   | TacTerm s -> GramTerminal s
   | TacNonTerm (loc, (s, _)) ->
     let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
+    let loc = Option.default Loc.internal_ghost loc in
     GramNonTerminal (loc, typ, e)
   in
   let prods = List.map map tg.tacgram_prods in
@@ -405,7 +406,7 @@ let create_ltac_quotation name cast (e, l) =
       entry),
       Atoken (CLexer.terminal ")"))
   in
-  let action _ v _ _ _ loc = cast (loc, v) in
+  let action _ v _ _ _ loc = cast (Some loc, v) in
   let gram = (level, assoc, [Rule (rule, action)]) in
   Pcoq.grammar_extend Pltac.tactic_arg None (None, [gram])
 
@@ -431,7 +432,7 @@ let register_ltac local tacl =
         let kn = Lib.make_kn id in
         let id_pp = pr_id id in
         let () = if is_defined_tac kn then
-          CErrors.user_err ~loc 
+          CErrors.user_err ?loc 
             (str "There is already an Ltac named " ++ id_pp ++ str".")
         in
         let is_shadowed =
@@ -448,7 +449,7 @@ let register_ltac local tacl =
         let kn =
           try Nametab.locate_tactic (snd (qualid_of_reference ident))
           with Not_found ->
-            CErrors.user_err ~loc 
+            CErrors.user_err ?loc 
                        (str "There is no Ltac named " ++ pr_reference ident ++ str ".")
         in
         UpdateTac kn, body

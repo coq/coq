@@ -12,7 +12,7 @@ open Term
 open Equality
 
 (** Rewriting rules before tactic interpretation *)
-type raw_rew_rule = Loc.t * constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option
+type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) Loc.located
 
 (** To add rewriting rules to a base *)
 val add_rew_rules : string -> raw_rew_rule list -> unit
@@ -56,7 +56,7 @@ type hypinfo = {
   hyp_right : constr;
 }
 
-val find_applied_relation : bool ->
-  Loc.t ->
+val find_applied_relation :
+  ?loc:Loc.t -> bool ->
   Environ.env -> Evd.evar_map -> Term.constr -> bool -> hypinfo
 

@@ -349,15 +349,15 @@ let find_tomatch_tycon evdref env loc = function
 
 let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
   let loc = loc_of_glob_constr tomatch in
-  let tycon,realnames = find_tomatch_tycon evdref env (Some loc) indopt in
+  let tycon,realnames = find_tomatch_tycon evdref env loc indopt in
   let j = typing_fun tycon env evdref tomatch in
-  let evd, j = Coercion.inh_coerce_to_base ~loc:(loc_of_glob_constr tomatch) env !evdref j in
+  let evd, j = Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) env !evdref j in
   evdref := evd;
   let typ = nf_evar !evdref j.uj_type in
   let t =
     try try_find_ind env !evdref typ realnames
     with Not_found ->
-      unify_tomatch_with_patterns evdref env (Some loc) typ pats realnames in
+      unify_tomatch_with_patterns evdref env loc typ pats realnames in
   (j.uj_val,t)
 
 let coerce_to_indtype typing_fun evdref env matx tomatchl = 
@@ -427,7 +427,7 @@ let current_pattern eqn =
     | pat::_ -> pat
     | [] -> anomaly (Pp.str "Empty list of patterns")
 
-let alias_of_pat = Loc.with_loc (fun ~loc -> function
+let alias_of_pat = Loc.with_loc (fun ?loc -> function
   | PatVar name -> name
   | PatCstr(_,_,name) -> name
   )
@@ -489,23 +489,23 @@ let check_and_adjust_constructor env ind cstrs = function
 	if Int.equal (List.length args) nb_args_constr then pat
 	else
 	  try
-	    let args' = adjust_local_defs ~loc (args, List.rev ci.cs_args)
-	    in Loc.tag ~loc @@ PatCstr (cstr, args', alias)
+	    let args' = adjust_local_defs ?loc (args, List.rev ci.cs_args)
+	    in Loc.tag ?loc @@ PatCstr (cstr, args', alias)
 	  with NotAdjustable ->
-	    error_wrong_numarg_constructor ~loc env cstr nb_args_constr
+	    error_wrong_numarg_constructor ?loc env cstr nb_args_constr
       else
 	(* Try to insert a coercion *)
 	try
-	  Coercion.inh_pattern_coerce_to ~loc env pat ind' ind
+	  Coercion.inh_pattern_coerce_to ?loc env pat ind' ind
 	with Not_found ->
-	  error_bad_constructor ~loc env cstr ind
+	  error_bad_constructor ?loc env cstr ind
 
 let check_all_variables env sigma typ mat =
   List.iter
     (fun eqn -> match current_pattern eqn with
        | _,   PatVar id -> ()
        | loc, PatCstr (cstr_sp,_,_) ->
-	   error_bad_pattern ~loc env sigma cstr_sp typ)
+	   error_bad_pattern ?loc env sigma cstr_sp typ)
     mat
 
 let check_unused_pattern env eqn =
@@ -1545,7 +1545,7 @@ let matx_of_eqns env eqns =
 	it = Some initial_rhs } in
     { patterns = initial_lpat;
       alias_stack = [];
-      eqn_loc = Some loc;
+      eqn_loc = loc;
       used = ref false;
       rhs = rhs }
   in List.map build_eqn eqns
@@ -1853,7 +1853,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 		       | None -> [LocalAssum (na, lift n typ)]
 		       | Some b -> [LocalDef (na, lift n b, lift n typ)])
 	    | Some (loc,_) ->
- 	    user_err ~loc 
+ 	    user_err ?loc 
                 (str"Unexpected type annotation for a term of non inductive type."))
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = if dolift then lift_inductive_family n indf else indf in
@@ -1865,7 +1865,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 	    match t with
 	      | Some (loc,(ind',realnal)) ->
 		  if not (eq_ind ind ind') then
-		    user_err ~loc  (str "Wrong inductive type.");
+		    user_err ?loc  (str "Wrong inductive type.");
 		  if not (Int.equal nrealargs_ctxt (List.length realnal)) then
 		      anomaly (Pp.str "Ill-formed 'in' clause in cases");
 		  List.rev realnal
@@ -2073,7 +2073,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	      let previd, id = prime avoid (Name (Id.of_string "wildcard")) in
 		Name id, id :: avoid
 	in
-	  ((Loc.tag ~loc @@ PatVar name), [LocalAssum (name, ty)] @ realargs, mkRel 1, ty,
+	  ((Loc.tag ?loc @@ PatVar name), [LocalAssum (name, ty)] @ realargs, mkRel 1, ty,
 	   (List.map (fun x -> mkRel 1) realargs), 1, avoid)
     | PatCstr (((_, i) as cstr),args,alias) ->
 	let cind = inductive_of_constructor cstr in
@@ -2084,7 +2084,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	in
 	let (ind,u), params = dest_ind_family indf in
 	let params = List.map EConstr.of_constr params in
-	if not (eq_ind ind cind) then error_bad_constructor ~loc env cstr ind;
+	if not (eq_ind ind cind) then error_bad_constructor ?loc env cstr ind;
 	let cstrs = get_constructors env indf in
 	let ci = cstrs.(i-1) in
 	let nb_args_constr = ci.cs_nargs in
@@ -2104,7 +2104,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	in
 	let args = List.rev args in
 	let patargs = List.rev patargs in
-	let pat' = Loc.tag ~loc @@ PatCstr (cstr, patargs, alias) in
+	let pat' = Loc.tag ?loc @@ PatCstr (cstr, patargs, alias) in
 	let cstr = mkConstructU (on_snd EInstance.make ci.cs_cstr) in
 	let app = applist (cstr, List.map (lift (List.length sign)) params) in
 	let app = applist (app, args) in

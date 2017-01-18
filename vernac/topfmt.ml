@@ -108,7 +108,7 @@ end
 
 type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
 
-let msgnl_with ?pre_hdr fmt strm =
+let msgnl_with fmt strm =
   pp_with fmt (strm ++ fnl ());
   Format.pp_print_flush fmt ()
 

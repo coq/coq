@@ -53,16 +53,16 @@ let rec under_binders env sigma f n c =
 	  mkLetIn (x,b,t,under_binders (push_rel (LocalDef (x,b,t)) env) sigma f (n-1) c)
       | _ -> assert false
 
-let rec complete_conclusion a cs = Loc.map_with_loc (fun ~loc -> function
+let rec complete_conclusion a cs = Loc.map_with_loc (fun ?loc -> function
   | CProdN (bl,c) -> CProdN (bl,complete_conclusion a cs c)
   | CLetIn (na,b,t,c) -> CLetIn (na,b,t,complete_conclusion a cs c)
   | CHole (k, _, _) ->
       let (has_no_args,name,params) = a in
       if not has_no_args then
-	user_err ~loc
+	user_err ?loc
 	 (strbrk"Cannot infer the non constant arguments of the conclusion of "
 	  ++ pr_id cs ++ str ".");
-      let args = List.map (fun id -> Loc.tag ~loc @@ CRef(Ident(loc,id),None)) params in
+      let args = List.map (fun id -> Loc.tag ?loc @@ CRef(Ident(loc,id),None)) params in
       CAppExpl ((None,Ident(loc,name),None),List.rev args)
   | c -> c
   )
@@ -344,7 +344,7 @@ let do_assumptions kind nl l = match l with
   | (Discharge, _, _) when Lib.sections_are_opened () ->
     let loc = fst id in
     let msg = Pp.str "Section variables cannot be polymorphic." in
-    user_err ~loc  msg
+    user_err ?loc  msg
   | _ -> ()
   in
   do_assumptions_bound_univs coe kind nl id (Some pl) c
@@ -356,7 +356,7 @@ let do_assumptions kind nl l = match l with
       let loc = fst id in
       let msg =
 	Pp.str "Assumptions with bound universes can only be defined one at a time." in
-      user_err ~loc  msg
+      user_err ?loc  msg
     in
     (coe, (List.map map idl, c))
   in
@@ -452,7 +452,7 @@ let interp_ind_arity env evdref ind =
   let t, impls = understand_tcc_evars env evdref ~expected_type:IsType c, imps in
   let pseudo_poly = check_anonymous_type c in
   let () = if not (Reductionops.is_arity env !evdref t) then
-    user_err ~loc:(constr_loc ind.ind_arity) (str "Not an arity")
+    user_err ?loc:(constr_loc ind.ind_arity) (str "Not an arity")
   in
   let t = EConstr.Unsafe.to_constr t in
     t, pseudo_poly, impls
@@ -566,7 +566,7 @@ let check_named (loc, na) = match na with
 | Name _ -> ()
 | Anonymous ->
   let msg = str "Parameters must be named." in
-  user_err ~loc  msg
+  user_err ?loc  msg
 
 
 let check_param = function
@@ -982,7 +982,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let relty = Typing.unsafe_type_of env !evdref rel in
   let relargty =
     let error () =
-      user_err ~loc:(constr_loc r)
+      user_err ?loc:(constr_loc r)
                ~hdr:"Command.build_wellfounded"
 		    (Printer.pr_econstr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
     in

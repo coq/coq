@@ -242,7 +242,7 @@ and subst_tacarg subst = function
   | Reference r -> Reference (subst_reference subst r)
   | ConstrMayEval c -> ConstrMayEval (subst_raw_may_eval subst c)
   | TacCall (loc,(f,l)) ->
-      TacCall (Loc.tag ~loc (subst_reference subst f, List.map (subst_tacarg subst) l))
+      TacCall (Loc.tag ?loc (subst_reference subst f, List.map (subst_tacarg subst) l))
   | TacFreshId _ as x -> x
   | TacPretype c -> TacPretype (subst_glob_constr subst c)
   | TacNumgoals -> TacNumgoals

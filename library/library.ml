@@ -582,7 +582,7 @@ let require_library_from_dirpath modrefl export =
 let safe_locate_module (loc,qid) =
   try Nametab.locate_module qid
   with Not_found ->
-    user_err ~loc ~hdr:"import_library"
+    user_err ?loc ~hdr:"import_library"
       (pr_qualid qid ++ str " is not a module")
 
 let import_module export modl =
@@ -597,7 +597,7 @@ let import_module export modl =
     | [] -> ()
     | modl -> add_anonymous_leaf (in_import_library (List.rev modl, export)) in
   let rec aux acc = function
-    | (loc,dir as m) :: l ->
+    | (loc, dir as m) :: l ->
         let m,acc =
           try Nametab.locate_module dir, acc
           with Not_found-> flush acc; safe_locate_module m, [] in
@@ -607,7 +607,7 @@ let import_module export modl =
             flush acc;
             try Declaremods.import_module export mp; aux [] l
             with Not_found ->
-              user_err ~loc ~hdr:"import_library"
+              user_err ?loc ~hdr:"import_library"
                 (pr_qualid dir ++ str " is not a module"))
     | [] -> flush acc
   in aux [] modl

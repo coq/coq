@@ -72,7 +72,7 @@ let intern_name l ist = function
 
 let strict_check = ref false
 
-let adjust_loc loc = if !strict_check then None else Some loc
+let adjust_loc loc = if !strict_check then None else loc
 
 (* Globalize a name which must be bound -- actually just check it is bound *)
 let intern_hyp ist (loc,id as locid) =
@@ -81,7 +81,7 @@ let intern_hyp ist (loc,id as locid) =
   else if find_ident id ist then
     Loc.tag id
   else
-    Pretype_errors.error_var_not_found ~loc id
+    Pretype_errors.error_var_not_found ?loc id
 
 let intern_or_var f ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)
@@ -126,7 +126,7 @@ let intern_move_location ist = function
 
 let intern_isolated_global_tactic_reference r =
   let (loc,qid) = qualid_of_reference r in
-  TacCall (Loc.tag ~loc (ArgArg (loc,locate_tactic qid),[]))
+  TacCall (Loc.tag ?loc (ArgArg (loc,locate_tactic qid),[]))
 
 let intern_isolated_tactic_reference strict ist r =
   (* An ltac reference *)
@@ -293,7 +293,7 @@ let intern_evaluable_reference_or_by_notation ist = function
   | AN r -> intern_evaluable_global_reference ist r
   | ByNotation (loc,(ntn,sc)) ->
       evaluable_of_global_reference ist.genv
-      (Notation.interp_notation_as_global_reference ~loc
+      (Notation.interp_notation_as_global_reference ?loc
         (function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
 
 (* Globalize a reduction expression *)
@@ -372,13 +372,13 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
 let dump_glob_red_expr = function
   | Unfold occs -> List.iter (fun (_, r) ->
     try
-      Dumpglob.add_glob (loc_of_or_by_notation Libnames.loc_of_reference r)
+      Dumpglob.add_glob ?loc:(loc_of_or_by_notation Libnames.loc_of_reference r)
 	(Smartlocate.smart_global r)
     with e when CErrors.noncritical e -> ()) occs
   | Cbv grf | Lazy grf ->
     List.iter (fun r ->
       try
-        Dumpglob.add_glob (loc_of_or_by_notation Libnames.loc_of_reference r)
+        Dumpglob.add_glob ?loc:(loc_of_or_by_notation Libnames.loc_of_reference r)
 	  (Smartlocate.smart_global r)
       with e when CErrors.noncritical e -> ()) grf.rConst
   | _ -> ()
@@ -459,7 +459,7 @@ let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function
 (* Utilities *)
 let extract_let_names lrc =
   let fold accu ((loc, name), _) =
-    if Id.Set.mem name accu then user_err ~loc
+    if Id.Set.mem name accu then user_err ?loc
       ~hdr:"glob_tactic" (str "This variable is bound several times.")
     else Id.Set.add name accu
   in
@@ -626,7 +626,7 @@ and intern_tactic_seq onlytac ist = function
   (* For extensions *)
   | TacAlias (loc,(s,l)) ->
       let l = List.map (intern_tacarg !strict_check false ist) l in
-      ist.ltacvars, TacAlias (Loc.tag ~loc (s,l))
+      ist.ltacvars, TacAlias (Loc.tag ?loc (s,l))
   | TacML (loc,(opn,l)) ->
       let _ignore = Tacenv.interp_ml_tactic opn in
       ist.ltacvars, TacML (loc, (opn,List.map (intern_tacarg !strict_check false ist) l))
@@ -637,7 +637,7 @@ and intern_tactic_as_arg loc onlytac ist a =
   | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
   | ConstrMayEval _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
-      if onlytac then error_tactic_expected ~loc else TacArg (loc,a)
+      if onlytac then error_tactic_expected ?loc else TacArg (loc,a)
 
 and intern_tactic_or_tacarg ist = intern_tactic false ist
 
@@ -652,7 +652,7 @@ and intern_tacarg strict onlytac ist = function
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
   | TacCall (loc,(f,[])) -> intern_isolated_tactic_reference strict ist f
   | TacCall (loc,(f,l)) ->
-      TacCall (Loc.tag ~loc (
+      TacCall (Loc.tag ?loc (
         intern_applied_tactic_reference ist f,
         List.map (intern_tacarg !strict_check false ist) l))
   | TacFreshId x -> TacFreshId (List.map (intern_string_or_var ist) x)

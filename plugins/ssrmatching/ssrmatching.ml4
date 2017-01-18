@@ -63,7 +63,7 @@ DECLARE PLUGIN "ssrmatching_plugin"
 
 type loc = Loc.t
 let errorstrm = CErrors.user_err ~hdr:"ssrmatching"
-let loc_error loc msg = CErrors.user_err ~loc ~hdr:msg (str msg)
+let loc_error loc msg = CErrors.user_err ?loc ~hdr:msg (str msg)
 let ppnl = Feedback.msg_info
 
 (* 0 cost pp function. Active only if env variable SSRDEBUG is set *)
@@ -1071,7 +1071,7 @@ GEXTEND Gram
   GLOBAL: cpattern;
   cpattern: [[ k = ssrtermkind; c = constr ->
     let pattern = mk_term k c in
-    if loc_ofCG pattern <> !@loc && k = '(' then mk_term 'x' c else pattern ]];
+    if loc_ofCG pattern <> Some !@loc && k = '(' then mk_term 'x' c else pattern ]];
 END
 
 ARGUMENT EXTEND lcpattern
@@ -1088,7 +1088,7 @@ GEXTEND Gram
   GLOBAL: lcpattern;
   lcpattern: [[ k = ssrtermkind; c = lconstr ->
     let pattern = mk_term k c in
-    if loc_ofCG pattern <> !@loc && k = '(' then mk_term 'x' c else pattern ]];
+    if loc_ofCG pattern <> Some !@loc && k = '(' then mk_term 'x' c else pattern ]];
 END
 
 let thin id sigma goal =
@@ -1187,16 +1187,16 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   pp(lazy(str"decoded as: " ++ pr_pattern_w_ids red));
   let red = match redty with None -> red | Some ty -> let ty = ' ', ty in
   match red with
-  | T t -> T (combineCG t ty (mkCCast ~loc:(loc_ofCG t)) mkRCast)
+  | T t -> T (combineCG t ty (mkCCast ?loc:(loc_ofCG t)) mkRCast)
   | X_In_T (x,t) ->
       let ty = pf_intern_term ist gl ty in
       E_As_X_In_T (mkG (mkRCast mkRHole ty), x, t)
   | E_In_X_In_T (e,x,t) ->
       let ty = mkG (pf_intern_term ist gl ty) in
-      E_In_X_In_T (combineCG e ty (mkCCast ~loc:(loc_ofCG t)) mkRCast, x, t)
+      E_In_X_In_T (combineCG e ty (mkCCast ?loc:(loc_ofCG t)) mkRCast, x, t)
   | E_As_X_In_T (e,x,t) ->
       let ty = mkG (pf_intern_term ist gl ty) in
-      E_As_X_In_T (combineCG e ty (mkCCast ~loc:(loc_ofCG t)) mkRCast, x, t)
+      E_As_X_In_T (combineCG e ty (mkCCast ?loc:(loc_ofCG t)) mkRCast, x, t)
   | red -> red in
   pp(lazy(str"typed as: " ++ pr_pattern_w_ids red));
   let mkXLetIn ?loc x (a,(g,c)) = match c with

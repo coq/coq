@@ -354,7 +354,7 @@ let add_and_check_ident id set =
   Id.Set.add id set
 
 let bound_glob_vars =
-  let rec vars bound = Loc.with_loc (fun ~loc -> function
+  let rec vars bound = Loc.with_loc (fun ?loc -> function
     | GLambda (na,_,_,_) | GProd (na,_,_,_) | GLetIn (na,_,_,_) as c ->
         let bound = name_fold add_and_check_ident na bound in
         fold_glob_constr vars bound (loc, c)
@@ -495,7 +495,7 @@ let rename_var l id =
     if List.exists (fun (_,id') -> Id.equal id id') l then raise UnsoundRenaming
     else id
 
-let rec rename_glob_vars l = Loc.map_with_loc (fun ~loc -> function
+let rec rename_glob_vars l = Loc.map_with_loc (fun ?loc -> function
   | GVar id as r ->
       let id' = rename_var l id in
       if id == id' then r else GVar id'
@@ -558,10 +558,10 @@ let rec cases_pattern_of_glob_constr na = Loc.map (function
   )
 
 (* Turn a closed cases pattern into a glob_constr *)
-let rec glob_constr_of_closed_cases_pattern_aux x = Loc.map_with_loc (fun ~loc -> function
+let rec glob_constr_of_closed_cases_pattern_aux x = Loc.map_with_loc (fun ?loc -> function
   | PatCstr (cstr,[],Anonymous) -> GRef (ConstructRef cstr,None)
   | PatCstr (cstr,l,Anonymous)  ->
-      let ref = Loc.tag ~loc @@ GRef (ConstructRef cstr,None) in
+      let ref = Loc.tag ?loc @@ GRef (ConstructRef cstr,None) in
       GApp (ref, List.map glob_constr_of_closed_cases_pattern_aux l)
   | _ -> raise Not_found
   ) x

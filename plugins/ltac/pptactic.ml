@@ -352,7 +352,7 @@ type 'a extra_genarg_printer =
 
   let pr_ltac_or_var pr = function
     | ArgArg x -> pr x
-    | ArgVar (loc,id) -> pr_with_comments ~loc (pr_id id)
+    | ArgVar (loc,id) -> pr_with_comments ?loc (pr_id id)
 
   let pr_ltac_constant kn =
     if !Flags.in_debugger then pr_kn kn
@@ -507,7 +507,7 @@ type 'a extra_genarg_printer =
 
   let pr_core_destruction_arg prc prlc = function
     | ElimOnConstr c -> pr_with_bindings prc prlc c
-    | ElimOnIdent (loc,id) -> pr_with_comments ~loc (pr_id id)
+    | ElimOnIdent (loc,id) -> pr_with_comments ?loc (pr_id id)
     | ElimOnAnonHyp n -> int n
 
   let pr_destruction_arg prc prlc (clear_flag,h) =
@@ -1037,7 +1037,7 @@ type 'a extra_genarg_printer =
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
             | TacAtom (loc,t) ->
-              pr_with_comments ~loc (hov 1 (pr_atom pr strip_prod_binders tag_atom t)), ltatom
+              pr_with_comments ?loc (hov 1 (pr_atom pr strip_prod_binders tag_atom t)), ltatom
             | TacArg(_,Tacexp e) ->
               pr.pr_tactic (latom,E) e, latom
             | TacArg(_,ConstrMayEval (ConstrTerm c)) ->
@@ -1051,16 +1051,16 @@ type 'a extra_genarg_printer =
             | TacArg(_,TacCall(loc,(f,[]))) ->
               pr.pr_reference f, latom
             | TacArg(_,TacCall(loc,(f,l))) ->
-              pr_with_comments ~loc (hov 1 (
+              pr_with_comments ?loc (hov 1 (
                 pr.pr_reference f ++ spc ()
                 ++ prlist_with_sep spc pr_tacarg l)),
               lcall
             | TacArg (_,a) ->
               pr_tacarg a, latom
             | TacML (loc,(s,l)) ->
-              pr_with_comments ~loc (pr.pr_extend 1 s l), lcall
+              pr_with_comments ?loc (pr.pr_extend 1 s l), lcall
             | TacAlias (loc,(kn,l)) ->
-              pr_with_comments ~loc (pr.pr_alias (level_of inherited) kn l), latom
+              pr_with_comments ?loc (pr.pr_alias (level_of inherited) kn l), latom
           )
           in
           if prec_less prec inherited then strm

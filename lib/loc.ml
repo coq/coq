@@ -45,33 +45,32 @@ let merge loc1 loc2 =
     bp = loc2.bp; ep = loc1.ep; }
   else loc2
 
-let merge_opt l1 l2 = Option.cata (fun l1 -> merge l1 l2) l2 l1
-let opt_merge l1 l2 = Option.cata (fun l2 -> merge l1 l2) l1 l2
+let merge_opt l1 l2 = match l1, l2 with
+  | None, None    -> None
+  | Some l , None -> Some l
+  | None, Some l  -> Some l
+  | Some l1, Some l2 -> Some (merge l1 l2)
 
 let unloc loc = (loc.bp, loc.ep)
 
 let join_loc = merge
 
-(** Located type *)
-
-type 'a located = t * 'a
-
-let is_ghost loc = loc.ep = 0
-
-let ghost = {
+let internal_ghost = {
   fname = ""; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
   bp = 0; ep = 0; }
 
-let internal_ghost = ghost
+(** Located type *)
+type 'a located = t option * 'a
+
 let to_pair x = x
-let tag ?loc x = Option.default ghost loc, x
+let tag ?loc x = loc, x
 let obj (_,x) = x
 
-let with_loc   f (loc, x) = f ~loc x
+let with_loc   f (loc, x) = f ?loc x
 let with_unloc f (_,x) = f x
 
 let map f (l,x) = (l, f x)
-let map_with_loc f (loc, x) = (loc, f ~loc x)
+let map_with_loc f (loc, x) = (loc, f ?loc x)
 
 let located_fold_left f x (_,a) = f x a
 let located_iter2 f (_,a) (_,b) = f a b

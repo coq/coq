@@ -77,7 +77,7 @@ let existing_instance glob g info =
     match class_of_constr Evd.empty (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob
   (*FIXME*) (Flags.use_polymorphic_flag ()) c)
-      | None -> user_err ~loc:(loc_of_reference g)
+      | None -> user_err ?loc:(loc_of_reference g)
                          ~hdr:"declare_instance"
                          (Pp.str "Constant does not build instances of a declared type class.")
 
@@ -237,7 +237,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	    let get_id =
 	      function
 		| Ident id' -> id'
-		| Qualid (loc,id') -> (loc, snd (repr_qualid id'))
+		| Qualid (loc,id') -> (Loc.tag ?loc @@ snd (repr_qualid id'))
 	    in
 	    let props, rest =
 	      List.fold_left
@@ -257,7 +257,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 		       let (loc, mid) = get_id loc_mid in
 			 List.iter (fun (n, _, x) -> 
 				      if Name.equal n (Name mid) then
-					Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) x)
+					Option.iter (fun x -> Dumpglob.add_glob ?loc (ConstRef x)) x)
 			   k.cl_projs;
 			 c :: props, rest'
 		     with Not_found ->

@@ -224,7 +224,7 @@ let compute_proof_name locality = function
       if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
 	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
       then
-        user_err ~loc  (pr_id id ++ str " already exists.");
+        user_err ?loc  (pr_id id ++ str " already exists.");
       id, pl
   | None ->
       next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()), None
@@ -337,7 +337,7 @@ let get_proof proof do_guard hook opacity =
 let check_exist =
   List.iter (fun (loc,id) ->
     if not (Nametab.exists_cci (Lib.make_path id)) then
-        user_err ~loc  (pr_id id ++ str " does not exist.")
+        user_err ?loc  (pr_id id ++ str " does not exist.")
   )
 
 let universe_proof_terminator compute_guard hook =

@@ -32,11 +32,10 @@ open Decl_kinds
   let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 
   let pr_lident (loc,id) =
-    if Loc.is_ghost loc then
-      let (b,_) = Loc.unloc loc in
-      pr_located pr_id (Loc.make_loc (b,b + String.length(Id.to_string id)),id)
-    else
-      pr_id id
+    match loc with
+    | None     -> pr_id id
+    | Some loc -> let (b,_) = Loc.unloc loc in
+                  pr_located pr_id @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (Id.to_string id))) id
 
   let pr_plident (lid, l) =
     pr_lident lid ++
@@ -50,11 +49,10 @@ open Decl_kinds
   let pr_fqid fqid = str (string_of_fqid fqid)
 
   let pr_lfqid (loc,fqid) =
-    if Loc.is_ghost loc then
-      let (b,_) = Loc.unloc loc in
-      pr_located pr_fqid (Loc.make_loc (b,b + String.length(string_of_fqid fqid)),fqid)
-    else
-      pr_fqid fqid
+    match loc with
+    | None     -> pr_fqid fqid
+    | Some loc -> let (b,_) = Loc.unloc loc in
+                  pr_located pr_fqid @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (string_of_fqid fqid))) fqid
 
   let pr_lname = function
     | (loc,Name id) -> pr_lident (loc,id)
@@ -296,7 +294,7 @@ open Decl_kinds
 
   let begin_of_inductive = function
     | [] -> 0
-    | (_,((loc,_),_))::_ -> fst (Loc.unloc loc)
+    | (_,((loc,_),_))::_ -> Option.cata (fun loc -> fst (Loc.unloc loc)) 0 loc
 
   let pr_class_rawexpr = function
     | FunClass -> keyword "Funclass"

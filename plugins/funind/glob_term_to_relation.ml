@@ -610,7 +610,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	   then the one corresponding to the value [t]
 	   and combine the two result
 	*)
-        let v = match typ with None -> v | Some t -> Loc.tag ~loc @@ GCast (v,CastConv t) in
+        let v = match typ with None -> v | Some t -> Loc.tag ?loc @@ GCast (v,CastConv t) in
 	let v_res = build_entry_lc env funnames avoid v in
 	let v_as_constr,ctx = Pretyping.understand env (Evd.from_env env) v in
 	let v_type = Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr v_as_constr) in
@@ -973,7 +973,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 					 (mkGHole ()))))
 		    in
 		    let eq' =
-		      Loc.tag ~loc:loc1 @@ GApp(Loc.tag ~loc:loc2 @@GRef(jmeq,None),[ty;Loc.tag ~loc:loc3 @@ GVar id;rt_typ;rt])
+		      Loc.tag ?loc:loc1 @@ GApp(Loc.tag ?loc:loc2 @@GRef(jmeq,None),[ty;Loc.tag ?loc:loc3 @@ GVar id;rt_typ;rt])
 		    in
 		    observe (str "computing new type for jmeq : " ++ pr_glob_constr eq');
 		    let eq'_as_constr,ctx = Pretyping.understand env (Evd.from_env env) eq' in
@@ -1119,7 +1119,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	end
     | loc, GLetIn(n,v,t,b) ->
 	begin
-          let t = match t with None -> v | Some t -> Loc.tag ~loc @@ GCast (v,CastConv t) in
+          let t = match t with None -> v | Some t -> Loc.tag ?loc @@ GCast (v,CastConv t) in
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let evd = (Evd.from_env env) in
 	  let t',ctx = Pretyping.understand env evd t in
@@ -1249,11 +1249,11 @@ let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * glob_
 let rec rebuild_return_type (loc, rt) =
   match rt with
     | Constrexpr.CProdN(n,t') ->
-        Loc.tag ~loc @@ Constrexpr.CProdN(n,rebuild_return_type t')
+        Loc.tag ?loc @@ Constrexpr.CProdN(n,rebuild_return_type t')
     | Constrexpr.CLetIn(na,v,t,t') ->
-	Loc.tag ~loc @@ Constrexpr.CLetIn(na,v,t,rebuild_return_type t')
-    | _ -> Loc.tag ~loc @@ Constrexpr.CProdN([[Loc.tag Anonymous],
-				       Constrexpr.Default Decl_kinds.Explicit,Loc.tag ~loc rt],
+	Loc.tag ?loc @@ Constrexpr.CLetIn(na,v,t,rebuild_return_type t')
+    | _ -> Loc.tag ?loc @@ Constrexpr.CProdN([[Loc.tag Anonymous],
+				       Constrexpr.Default Decl_kinds.Explicit,Loc.tag ?loc rt],
 			    Loc.tag @@ Constrexpr.CSort(GType []))
 
 let do_build_inductive
