@@ -30,6 +30,7 @@ val inline_entry_side_effects :
     yet type checked proof. *)
 
 val uniq_seff : side_effects -> side_effects
+val equal_eff : side_effect -> side_effect -> bool
 
 val translate_constant :
   structure_body -> env -> constant -> side_effects constant_entry ->
