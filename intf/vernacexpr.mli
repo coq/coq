@@ -524,9 +524,6 @@ and vernac_control =
   | VtObserve of Stateid.t
   | VtBack of Stateid.t
   | VtPG
-(* Qed typically generates an opaque proof term.  Still, by declaring
- * a proof terminator one can use such opaque term to generate transparent
- * ones.  In this corner case the STM needs to know... *)
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
