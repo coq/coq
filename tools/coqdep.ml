@@ -37,13 +37,15 @@ let warning_mult suf iter =
   in
   iter check
 
+(* FIXME syntax errors are not properly caught *)
 let sort () =
   let seen = Hashtbl.create 97 in
-  let rec loop file =
-    let file = canonize file in
+  let rec loop origin =
+    let origin = map_origin canonize origin in
+    let file = name_of_origin origin in
     if not (Hashtbl.mem seen file) then begin
       Hashtbl.add seen file ();
-      let cin = open_in (file ^ ".v") in
+      let cin = open_origin (map_origin (fun f -> f ^ ".v") origin) in
       let lb = Lexing.from_channel cin in
       try
 	while true do
@@ -53,7 +55,7 @@ let sort () =
 		  (fun s ->
                     match search_v_known ?from s with
                     | None -> ()
-                    | Some f -> loop f)
+                    | Some f -> loop (File f))
 		sl
 	    | _ -> ()
 	done
@@ -62,7 +64,7 @@ let sort () =
 	printf "%s%s " file !suffixe
     end
   in
-  List.iter (fun (name,_) -> loop name) !vAccu
+  List.iter (fun (origin,_) -> loop origin) !vAccu
 
 let (dep_tab : (string,string list) Hashtbl.t) = Hashtbl.create 151
 
@@ -145,8 +147,8 @@ let traite_Declare f =
 
 let declare_dependencies () =
   List.iter
-    (fun (name,_) ->
-       traite_Declare (name^".v");
+    (fun (o,_) ->
+       traite_Declare (name_of_origin o ^".v");
        flush stdout)
     (List.rev !vAccu)
 
@@ -289,80 +291,6 @@ struct
 
 module DAG = DAG(struct type t = string let compare = compare end)
 
-(** TODO: we should share this code with Coqdep_common *)
-module VData = struct
-  type t = string list option * string list
-  let compare = Pervasives.compare
-end
-
-module VCache = Set.Make(VData)
-
-let treat_coq_file chan =
-  let buf = Lexing.from_channel chan in
-  let deja_vu_v = ref VCache.empty in
-  let deja_vu_ml = ref StrSet.empty in
-  let mark_v_done from acc str =
-    let seen = VCache.mem (from, str) !deja_vu_v in
-    if not seen then
-      let () = deja_vu_v := VCache.add (from, str) !deja_vu_v in
-      match search_v_known ?from str with
-      | None -> acc
-      | Some file_str -> (canonize file_str, !suffixe) :: acc
-    else acc
-  in
-  let rec loop acc =
-    let token = try Some (coq_action buf) with Fin_fichier -> None in
-    match token with
-    | None -> acc
-    | Some action ->
-      let acc = match action with
-      | Require (from, strl) ->
-        List.fold_left (fun accu v -> mark_v_done from accu v) acc strl
-      | Declare sl ->
-        let declare suff dir s =
-          let base = file_name s dir in
-          let opt = if !option_natdynlk then " " ^ base ^ ".cmxs" else "" in
-          (escape base, suff ^ opt)
-        in
-        let decl acc str =
-          let s = basename_noext str in
-          if not (StrSet.mem s !deja_vu_ml) then
-            let () = deja_vu_ml := StrSet.add s !deja_vu_ml in
-            match search_mllib_known s with
-            | Some mldir -> (declare ".cma" mldir s) :: acc
-            | None ->
-              match search_ml_known s with
-              | Some mldir -> (declare ".cmo" mldir s) :: acc
-              | None -> acc
-          else acc
-        in
-        List.fold_left decl acc sl
-      | Load str ->
-        let str = Filename.basename str in
-        let seen = VCache.mem (None, [str]) !deja_vu_v in
-        if not seen then
-          let () = deja_vu_v := VCache.add (None, [str]) !deja_vu_v in
-          match search_v_known [str] with
-          | None -> acc
-          | Some file_str -> (canonize file_str, ".v") :: acc
-        else acc
-      | AddLoadPath _ | AddRecLoadPath _ -> acc (** TODO *)
-      in
-      loop acc
-  in
-  loop []
-
-let treat_coq_file f =
-  let chan = try Some (open_in f) with Sys_error _ -> None in
-  match chan with
-  | None -> []
-  | Some chan ->
-    try
-      let ans = treat_coq_file chan in
-      let () = close_in chan in
-      ans
-    with Syntax_error (i, j) -> close_in chan; error_cannot_parse f (i, j)
-
 type graph =
   | Element of string
   | Subgraph of string * graph list
@@ -402,7 +330,8 @@ let insert_raw_graph file =
   insert_graph file (get_boxes file)
 
 let rec get_dependencies name args =
-  let vdep  = treat_coq_file (name ^ ".v") in
+  let vdep = v_file_deps ~verbose:false (File (name ^ ".v")) in
+  let vdep = List.map (fun (f,ext) -> (f, vio_to_v ext)) vdep in
   let fold (deps, graphs, alseen) (dep, _) =
     let dag = DAG.add_transitive_edge name dep deps in
     if not (List.mem dep alseen) then
@@ -414,13 +343,14 @@ let rec get_dependencies name args =
 
 let coq_dependencies_dump chan dumpboxes =
   let (deps, graphs, _) =
-    List.fold_left (fun ih (name, _) -> get_dependencies name ih)
-    (DAG.empty, List.fold_left (fun ih (file, _) -> insert_raw_graph file ih) [] !vAccu,
-    List.map fst !vAccu) !vAccu
+    List.fold_left (fun ih (o, _) -> get_dependencies (name_of_origin o) ih)
+    (DAG.empty, List.fold_left (fun ih (o, _) -> insert_raw_graph (name_of_origin o) ih) [] !vAccu,
+    List.map (fun (o,_) -> name_of_origin o) !vAccu) !vAccu
   in
   fprintf chan "digraph dependencies {\n"; flush chan;
   if dumpboxes then print_graphs chan (pop_common_prefix graphs)
-  else List.iter (fun (name, _) -> fprintf chan "\"%s\"[label=\"%s\"]\n" name (basename_noext name)) !vAccu;
+  else List.iter (fun (o, _) -> let name = name_of_origin o in
+         fprintf chan "\"%s\"[label=\"%s\"]\n" name (basename_noext name)) !vAccu;
   DAG.iter (fun name dep -> fprintf chan "\"%s\" -> \"%s\"\n" dep name) deps;
   fprintf chan "}\n"
 
@@ -447,6 +377,7 @@ let usage () =
   eprintf "  -dumpgraphbox f : print a dot dependency graph box in file 'f'\n";
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
+  eprintf "  -stdin f : reads stdin and process it as if it was the contents of f.v\n";
   eprintf "  -suffix s : \n";
   eprintf "  -slash : deprecated, no effect\n";
   exit 1
@@ -476,6 +407,7 @@ let rec parse = function
   | "-slash" :: ll ->
     Printf.eprintf "warning: option -slash has no effect and is deprecated.\n";
     parse ll
+  | "-stdin" :: f :: ll -> process_stdin f; parse ll
   | ("-h"|"--help"|"-help") :: _ -> usage ()
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
