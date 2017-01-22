@@ -897,7 +897,7 @@ let do_one_instdir (var,msg,r,dflt,suff) =
 
 let do_one_noinst (var,msg,_,_,_) =
   if var="CONFIGDIR" || var="DATADIR" then (var,msg,coqtop^"/ide",true)
-  else (var,msg,"",false)
+  else (var,msg,coqtop^"/doc",false)
 
 let install_dirs =
   let f = if !Prefs.local then do_one_noinst else do_one_instdir in
