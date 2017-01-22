@@ -1739,7 +1739,9 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
         let k = match k with
         | None ->
            let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
-           Evar_kinds.QuestionMark st
+           (match naming with
+           | Misctypes.IntroIdentifier id -> Evar_kinds.NamedHole id
+           | _ -> Evar_kinds.QuestionMark st)
         | Some k -> k
         in
         let solve = match solve with

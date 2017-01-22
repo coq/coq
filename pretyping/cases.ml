@@ -275,9 +275,9 @@ let rec find_row_ind = function
 let inductive_template evdref env tmloc ind =
   let indu = evd_comb1 (Evd.fresh_inductive_instance env) evdref ind in
   let arsign = inductive_alldecls_env env indu in
-  let hole_source = match tmloc with
-    | Some loc -> fun i -> (loc, Evar_kinds.TomatchTypeParameter (ind,i))
-    | None -> fun _ -> (Loc.ghost, Evar_kinds.InternalHole) in
+  let hole_source i = match tmloc with
+    | Some loc -> (loc, Evar_kinds.TomatchTypeParameter (ind,i))
+    | None -> (Loc.ghost, Evar_kinds.TomatchTypeParameter (ind,i)) in
    let (_,evarl,_) =
     List.fold_right
       (fun decl (subst,evarl,n) ->

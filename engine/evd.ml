@@ -1299,6 +1299,7 @@ let pr_decl (decl,ok) =
                            print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_source = function
+  | Evar_kinds.NamedHole id -> pr_id id
   | Evar_kinds.QuestionMark _ -> str "underscore"
   | Evar_kinds.CasesType false -> str "pattern-matching return predicate"
   | Evar_kinds.CasesType true ->
