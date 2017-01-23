@@ -2954,9 +2954,6 @@ let proofname b = match VCS.get_branch b with
 let get_all_proof_names () =
   List.map unmangle (List.map_filter proofname (VCS.branches ()))
 
-let get_current_proof_name () =
-  Option.map unmangle (proofname (VCS.current_branch ()))
-
 (* Export hooks *)
 let state_computed_hook = Hooks.state_computed_hook
 let state_ready_hook = Hooks.state_ready_hook

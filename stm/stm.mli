@@ -212,7 +212,6 @@ val interp : bool -> vernac_expr located -> unit
 (* Queries for backward compatibility *)
 val current_proof_depth : unit -> int
 val get_all_proof_names : unit -> Id.t list
-val get_current_proof_name : unit -> Id.t option
 
 (* Hooks to be set by other Coq components in order to break file cycles *)
 val process_error_hook : Future.fix_exn Hook.t
