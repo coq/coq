@@ -53,9 +53,9 @@ INSTALLSH:=./install.sh
 MKDIR:=install -d
 
 CORESRCDIRS:=\
-  config 	lib		kernel		kernel/byterun	library \
-  proofs 	tactics 	pretyping	interp		stm \
-  toplevel	parsing 	printing	intf	engine	ltac vernac
+  config 	lib		kernel	intf	kernel/byterun	library \
+  engine 	pretyping	interp	proofs	parsing 	printing \
+  tactics 	vernac		stm		toplevel 	ltac
 
 PLUGINDIRS:=\
   omega		romega 		micromega 	quote \
