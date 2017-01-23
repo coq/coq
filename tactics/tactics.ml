@@ -2285,6 +2285,23 @@ let intro_decomp_eq loc l thin tac id =
     Tacticals.New.tclZEROMSG (str "Not a primitive equality here.")
   end }
 
+let select_intro_or_split loc pat tac1 tac2 =
+  Proofview.Goal.enter { enter = begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let env = Proofview.Goal.env gl in
+  let ccl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+  let err loc =
+    user_err ~loc (str "Cannot find neither an hypothesis to introduce nor a goal to split.") in
+  let ccl = hnf_constr (* as used in "intro" *) env (Sigma.to_evar_map sigma) ccl in
+  match kind_of_term ccl, pat with
+  | Prod _, _ -> tac1
+  | _, IntroOrAndPattern (IntroOrPattern ll) ->
+      (match match_with_conjunction ccl with
+      | Some (ind,typs) -> tac2 (List.length typs) ll
+      | None -> err loc)
+  | _, _ -> err loc
+  end }
+
 let intro_or_and_pattern loc with_evars bracketed ll thin tac id =
   Proofview.Goal.enter { enter = begin fun gl ->
   let c = mkVar id in
@@ -2299,6 +2316,17 @@ let intro_or_and_pattern loc with_evars bracketed ll thin tac id =
     (Array.map2 (fun n l -> tac thin (Some (bracketed,n)) l)
        nv_with_let ll)
   end }
+
+let split_then loc n ll tac =
+   let ll =
+     if ll = [] then (* Tolerance *) List.make n [] else
+     if List.length ll <> n then
+       user_err ~loc  (str "Expects a pattern with " ++ int n ++ str " branches.")
+     else
+       ll in
+   Tacticals.New.tclTHENS
+     simplest_split
+     (List.map (fun l -> tac l) ll)
 
 let rewrite_hyp_then assert_style with_evars thin l2r id tac =
   let rew_on l2r =
@@ -2430,13 +2458,19 @@ let rec intro_patterns_core with_evars b avoid ids thin destopt bound n tac =
         (fun ids -> intro_patterns_core with_evars b avoid ids thin destopt bound
           (n+List.length ids) tac l)
   | IntroAction pat ->
-      intro_then_gen (make_tmp_naming avoid l pat)
+    select_intro_or_split loc pat
+      (intro_then_gen (make_tmp_naming avoid l pat)
 	destopt true false
         (intro_pattern_action loc with_evars (b || not (List.is_empty l)) false
           pat thin destopt
           (fun thin bound' -> intro_patterns_core with_evars b avoid ids thin destopt bound' 0
             (fun ids thin ->
+              intro_patterns_core with_evars b avoid ids thin destopt bound (n+1) tac l))))
+      (fun n ll -> split_then loc n ll
+          (intro_patterns_core with_evars b avoid ids thin destopt None 0
+            (fun ids thin ->
               intro_patterns_core with_evars b avoid ids thin destopt bound (n+1) tac l)))
+                                         
   | IntroNaming pat ->
       intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound (n+1) tac l
 

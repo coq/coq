@@ -128,3 +128,10 @@ exact Logic.I.
 Qed.
 
 
+(* Test intro-patterns for splitting *)
+
+Goal (False/\True) <-> False.
+intros [(H,H')|H].
+- exact H.
+- contradiction.
+Qed.
