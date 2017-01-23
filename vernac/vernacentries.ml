@@ -515,13 +515,8 @@ let vernac_start_proof locality p kind l lettop =
 let qed_display_script = ref true
 
 let vernac_end_proof ?proof = function
-  | Admitted -> save_proof ?proof Admitted
-  | Proved (_,_) as e ->
-    (*
-    if is_verbose () && !qed_display_script && !Flags.coqtop_ui then
-      Stm.show_script ?proof ();
-    *)
-    save_proof ?proof e
+  | Admitted          -> save_proof ?proof Admitted
+  | Proved (_,_) as e -> save_proof ?proof e
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
      the theories [??] *)
@@ -1870,6 +1865,7 @@ let vernac_bullet (bullet:Proof_global.Bullet.t) =
     Proof_global.Bullet.put p bullet)
 
 let vernac_show = let open Feedback in function
+  | ShowScript -> assert false  (* Only the stm knows the script *)
   | ShowGoal goalref ->
     let info = match goalref with
       | OpenSubgoals -> pr_open_subgoals ()
@@ -1884,7 +1880,6 @@ let vernac_show = let open Feedback in function
       Constrextern.with_implicits msg_notice (pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
-  | ShowScript -> (* Stm.show_script () *) ()
   | ShowExistentials -> show_top_evars ()
   | ShowUniverses -> show_universes ()
   | ShowTree -> show_prooftree ()
