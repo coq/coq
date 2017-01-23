@@ -213,7 +213,6 @@ val interp : bool -> vernac_expr located -> unit
 val current_proof_depth : unit -> int
 val get_all_proof_names : unit -> Id.t list
 val get_current_proof_name : unit -> Id.t option
-val show_script : ?proof:Proof_global.closed_proof -> unit -> unit
 
 (* Hooks to be set by other Coq components in order to break file cycles *)
 val process_error_hook : Future.fix_exn Hook.t
