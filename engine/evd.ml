@@ -680,13 +680,16 @@ let restrict evk filter ?candidates evd =
     { evar_info with evar_filter = filter;
       evar_candidates = candidates;
       evar_extra = Store.empty } in
+  let last_mods = match evd.conv_pbs with
+  | [] ->  evd.last_mods
+  | _ -> Evar.Set.add evk evd.last_mods in
   let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
   let id_inst = Array.map_of_list (mkVar % get_id) ctxt in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
-    defn_evars; evar_names }, evk'
+    defn_evars; last_mods; evar_names }, evk'
 
 let downcast evk ccl evd =
   let evar_info = EvMap.find evk evd.undf_evars in

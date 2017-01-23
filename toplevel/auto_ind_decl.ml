@@ -57,6 +57,7 @@ exception InductiveWithSort
 exception ParameterWithoutEquality of global_reference
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
+exception NoDecidabilityCoInductive
 
 let dl = Loc.ghost
 
@@ -211,19 +212,19 @@ let build_beq_scheme mode kn =
             end
         | Sort _  -> raise InductiveWithSort
         | Prod _ -> raise InductiveWithProduct
-        | Lambda _-> raise (EqUnknown "Lambda")
-        | LetIn _ -> raise (EqUnknown "LetIn")
+        | Lambda _-> raise (EqUnknown "abstraction")
+        | LetIn _ -> raise (EqUnknown "let-in")
         | Const kn ->
 	    (match Environ.constant_opt_value_in env kn with
 	      | None -> raise (ParameterWithoutEquality (ConstRef (fst kn)))
 	      | Some c -> aux (applist (c,a)))
-        | Proj _ -> raise (EqUnknown "Proj")
-        | Construct _ -> raise (EqUnknown "Construct")
-        | Case _ -> raise (EqUnknown "Case")
-        | CoFix _ -> raise (EqUnknown "CoFix")
-        | Fix _   -> raise (EqUnknown "Fix")
-        | Meta _  -> raise (EqUnknown "Meta")
-        | Evar _  -> raise (EqUnknown "Evar")
+        | Proj _ -> raise (EqUnknown "projection")
+        | Construct _ -> raise (EqUnknown "constructor")
+        | Case _ -> raise (EqUnknown "match")
+        | CoFix _ -> raise (EqUnknown "cofix")
+        | Fix _   -> raise (EqUnknown "fix")
+        | Meta _  -> raise (EqUnknown "meta-variable")
+        | Evar _  -> raise (EqUnknown "existential variable")
     in
       aux t
   in
@@ -308,6 +309,8 @@ let build_beq_scheme mode kn =
       let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
 	if not (Sorts.List.mem InSet kelim) then
 	  raise (NonSingletonProp (kn,i));
+        if mib.mind_finite = Decl_kinds.CoFinite then
+	  raise NoDecidabilityCoInductive;
         let fix = mkFix (((Array.make nb_ind 0),i),(names,types,cores)) in
         create_input fix),
        Evd.make_evar_universe_context (Global.env ()) None),

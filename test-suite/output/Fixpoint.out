@@ -10,3 +10,5 @@ let fix f (m : nat) : nat := match m with
                              end in f 0
      : nat
 Ltac f id1 id2 := fix id1 2 with (id2 (n:_) (H:odd n) {struct H} : n >= 1)
+     = cofix inf : Inf := {| projS := inf |}
+     : Inf
