@@ -60,6 +60,14 @@ test-suite/.nra.cache
 test-suite/trace
 test-suite/misc/universes/all_stdlib.v
 test-suite/misc/universes/universes.txt
+test-suite/coq-makefile/*/actual
+test-suite/coq-makefile/*/desired
+test-suite/coq-makefile/*/Makefile
+test-suite/coq-makefile/*/Makefile.conf
+test-suite/coq-makefile/*/src/test.ml
+test-suite/coq-makefile/*/html
+test-suite/coq-makefile/*/mlihtml
+test-suite/coq-makefile/*/subdir/done
 
 # documentation
 
