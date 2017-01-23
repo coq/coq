@@ -3,8 +3,10 @@
 #set -x
 set -e
 
-. ../template/init.sh
+if which ocamlopt; then
 
+. ../template/init.sh
+	
 coq_makefile -f _CoqProject -o Makefile
 make
 make html mlihtml
@@ -21,5 +23,12 @@ sort > desired <<EOT
 ./test/test_plugin.cmxs
 ./test/test.v
 ./test/test.vo
+./test/.coq-native
+./test/.coq-native/Ntest_test.cmi
+./test/.coq-native/Ntest_test.cmx
+./test/.coq-native/Ntest_test.cmxs
 EOT
 exec diff -u desired actual
+
+fi
+exit 0 # test skipped

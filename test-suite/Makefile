@@ -486,7 +486,7 @@ coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 coq-makefile: $(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh))
 
 coq-makefile/%.log : coq-makefile/%/run.sh
-	@echo "TEST      $*"
+	@echo "TEST      coq-makefile/$*"
 	$(HIDE)(\
 	  cd coq-makefile/$* && \
 	  ./run.sh 2>&1; \

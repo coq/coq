@@ -5,6 +5,7 @@ set -e
 
 . ../template/init.sh
 
+mv src/test_plugin.mlpack src/test_plugin.mllib
 coq_makefile -f _CoqProject -o Makefile
 make
 make html mlihtml
@@ -15,9 +16,14 @@ sort > desired <<EOT
 .
 ./test
 ./test/test.glob
-./test/test_plugin.cmi
-./test/test_plugin.cmo
-./test/test_plugin.cmx
+./test/test.cmi
+./test/test.cmo
+./test/test.cmx
+./test/test_aux.cmi
+./test/test_aux.cmo
+./test/test_aux.cmx
+./test/test_plugin.cma
+./test/test_plugin.cmxa
 ./test/test_plugin.cmxs
 ./test/test.v
 ./test/test.vo

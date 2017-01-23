@@ -3,11 +3,13 @@
 #set -x
 set -e
 
-export PATH=../../../bin/:$PATH
-git clean -dfx .
+. ../template/init.sh
+
 coq_makefile -f _CoqProject -o Makefile
 make .merlin
-echo B $PWD/src > desired
-echo S $PWD/src >> desired
+cat > desired <<EOT
+B src
+S src
+EOT
 tail -2 .merlin > actual
 exec diff -u desired actual

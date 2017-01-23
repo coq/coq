@@ -1,5 +1,5 @@
--R src/ test
--R theories/ test
+-R src test
+-R theories test
 -I src
 
 src/test_plugin.mlpack
