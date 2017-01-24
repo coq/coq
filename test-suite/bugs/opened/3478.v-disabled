@@ -5,4 +5,4 @@ Record bar T := { bar1 : T }.
 Goal forall (s : foo) (x : foom s), True.
 Proof.
   intros.
-  Timeout 1 pose (x : bar _) as x'.
+  Timeout 2 pose (x : bar _) as x'.
