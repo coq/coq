@@ -55,7 +55,7 @@ let rich_pp annotate ppcmds =
     string_of_int index
   in
 
-  let pp_buffer = Buffer.create 13 in
+  let pp_buffer = Buffer.create 180 in
 
   let push_pcdata () =
     (** Push the optional PCData on the above node *)
@@ -112,6 +112,13 @@ let rich_pp annotate ppcmds =
 
   pp_set_formatter_tag_functions ft tag_functions;
   pp_set_mark_tags ft true;
+
+  (* Set formatter width. This is currently a hack and duplicate code
+     with Pp_control. Hopefully it will be fixed better in Coq 8.7 *)
+  let w = pp_get_margin str_formatter () in
+  let m = max (64 * w / 100) (w-30) in
+  pp_set_margin ft w;
+  pp_set_max_indent ft m;
 
   (** The whole output must be a valid document. To that
       end, we nest the document inside <pp> tags. *)
