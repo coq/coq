@@ -37,7 +37,7 @@ Hint Resolve predf | 0 : predconv.
 
 Goal exists n, pred n.
   eexists.
-  Fail Timeout 1 typeclasses eauto with pred.
+  Fail Timeout 2 typeclasses eauto with pred.
   Set Typeclasses Filtered Unification.
   Set Typeclasses Debug Verbosity 2.
   (* predf is not tried as it doesn't match the goal *)
@@ -81,7 +81,7 @@ Qed.
 Goal exists n, pred (0 + n).
   eexists.
   (* predf is applied indefinitely *)
-  Fail Timeout 1 typeclasses eauto with pred.
+  Fail Timeout 2 typeclasses eauto with pred.
   (* pred0 (pred _) matches the goal *)
   typeclasses eauto with predconv.
 Qed.
