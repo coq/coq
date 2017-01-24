@@ -37,7 +37,7 @@ Hint Resolve predf | 0 : predconv.
 
 Goal exists n, pred n.
   eexists.
-  Fail Timeout 1 typeclasses eauto with pred.
+  Fail Timeout 2 typeclasses eauto with pred.
   Set Typeclasses Filtered Unification.
   Set Typeclasses Debug Verbosity 2.
   (* predf is not tried as it doesn't match the goal *)
@@ -81,7 +81,7 @@ Qed.
 Goal exists n, pred (0 + n).
   eexists.
   (* predf is applied indefinitely *)
-  Fail Timeout 1 typeclasses eauto with pred.
+  Fail Timeout 2 typeclasses eauto with pred.
   (* pred0 (pred _) matches the goal *)
   typeclasses eauto with predconv.
 Qed.
@@ -169,11 +169,11 @@ Instance foo f :
   E (id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘
      id ∘ id ∘ id ∘ id ∘ id ∘ f ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id ∘ id).
 Proof.
-  Fail Timeout 1 apply _. (* 3.7s *)
+  Fail Timeout 2 apply _. (* 3.7s *)
   
 Hint Cut [_* (a_is_b | b_is_c | c_is_d | d_is_e)
                  (a_compose | b_compose | c_compose | d_compose | e_compose)] : typeclass_instances.
 
-  Timeout 1 Fail apply _. (* 0.06s *)
+  Timeout 2 Fail apply _. (* 0.06s *)
 Abort.
 End HintCut.

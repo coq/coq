@@ -215,8 +215,8 @@ type private_constant_role = Term_typing.side_effect_role =
   | Schema of inductive * string
 
 let empty_private_constants = []
-let add_private x xs = x :: xs
-let concat_private xs ys = xs @ ys
+let add_private x xs = if List.mem_f Term_typing.equal_eff x xs then xs else x :: xs
+let concat_private xs ys = List.fold_right add_private xs ys
 let mk_pure_proof = Term_typing.mk_pure_proof
 let inline_private_constants_in_constr = Term_typing.inline_side_effects
 let inline_private_constants_in_definition_entry = Term_typing.inline_entry_side_effects

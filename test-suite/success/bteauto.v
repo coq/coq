@@ -93,7 +93,7 @@ Module Hierarchies.
   Definition makeB (a : A) : B := _.
   Definition makeA (a : B) : A := _.
 
-  Fail Timeout 1 Definition makeA' : A := _.
+  Fail Timeout 2 Definition makeA' : A := _.
 
   Hint Cut [_* mkB aofb] : typeclass_instances.
   Fail Definition makeA' : A := _.
@@ -134,7 +134,7 @@ Proof.
   intros []. constructor. reflexivity.
 Qed.
 
-Fail Timeout 1 Check prf.
+Fail Timeout 2 Check prf.
 
 Hint Mode SomeProp + + : typeclass_instances.
 Check prf.
@@ -155,13 +155,13 @@ Module IterativeDeepening.
   
   Goal C -> A.
     intros.
-    Fail Timeout 1 typeclasses eauto.
+    Fail Timeout 2 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
     Fail typeclasses eauto 1.
     typeclasses eauto 2.
     Undo.
     Unset Typeclasses Iterative Deepening.
-    Fail Timeout 1 typeclasses eauto.
+    Fail Timeout 2 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
     Typeclasses eauto := debug 3.
     typeclasses eauto.

@@ -442,7 +442,7 @@ end) = struct
   let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
     let pr_body =
       if dangling_with_for then pr_dangling else pr in
-    pr_id id ++ str" " ++
+    pr_id id ++ (if bl = [] then mt () else str" ") ++
       hov 0 (pr_undelimited_binders spc (pr ltop) bl ++ annot) ++
       pr_opt_type_spc pr t ++ str " :=" ++
       pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
