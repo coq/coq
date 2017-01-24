@@ -55,7 +55,7 @@ Definition FunctorCategory C D : PreCategory
                         admit.
 Notation "[ C , D ]" := (FunctorCategory C D) : category_scope.
 Class silly {T} := term : T.
-Timeout 1 Fail Definition NTWhiskerR_Functorial (C D E : PreCategory) (G : [C, D]%category)
+Timeout 2 Fail Definition NTWhiskerR_Functorial (C D E : PreCategory) (G : [C, D]%category)
 : [[D, E], [C, E]]%category
   := Build_Functor
        [C, D] [C, E]

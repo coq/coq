@@ -27,7 +27,7 @@ Module Prim.
   Defined.
   Goal True.
     pose ((fun y => y = y) (projT1 _ x)) as y.
-    Timeout 1 cbv beta in y. (* takes around 2s.  Grows with the value passed to [exp] above *)
+    Timeout 2 cbv beta in y. (* takes around 2s.  Grows with the value passed to [exp] above *)
     admit.
   Defined.
 End Prim.

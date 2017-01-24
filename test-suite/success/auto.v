@@ -75,7 +75,7 @@ Module Instnopat.
   Local Instance: D ftest.
   Local Hint Resolve flipD | 0 : typeclass_instances.
   (* pattern: D (flip _) *)
-  Fail Timeout 1 Check (_ : D _). (* loops applying flipD *)  
+  Fail Timeout 2 Check (_ : D _). (* loops applying flipD *)
   
 End Instnopat.
 

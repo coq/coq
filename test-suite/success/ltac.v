@@ -227,7 +227,7 @@ Qed.
 Section LtacLoopTest.
   Ltac f x := idtac.
   Goal True.
-  Timeout 1 try f()().
+  Timeout 2 try f()().
   Abort.
 End LtacLoopTest.
 
