@@ -214,9 +214,9 @@ let compute_rhs env sigma bodyi index_of_f =
           let i = destRel sigma (Array.last args) in
 	  PMeta (Some (coerce_meta_in i))
       | App (f,args) ->
-          PApp (pattern_of_constr env sigma f, Array.map aux args)
+          PApp (pattern_of_constr env sigma (EConstr.to_constr sigma f), Array.map aux args)
       | Cast (c,_,_) -> aux c
-      | _ -> pattern_of_constr env sigma c
+      | _ -> pattern_of_constr env sigma (EConstr.to_constr sigma c)
   in
   aux bodyi
 
