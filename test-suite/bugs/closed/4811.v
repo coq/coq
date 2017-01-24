@@ -1680,6 +1680,6 @@ Goal    forall x9 x8 x7 x6 x5 x4 x3 x2 x1 x0 y9 y8 y7 y6 y5 y4 y3 y2 y1 y0 : Z,
                                       (@nil Z)))))))))))).
   cbv beta zeta.
   intros.
-  (timeout 1 (apply f_equal; reflexivity)) || fail 0 "too early".
+  (timeout 2 (apply f_equal; reflexivity)) || fail 0 "too early".
   Undo.
-  Time Timeout 1 f_equal. (* Finished transaction in 0. secs (0.3u,0.s) in 8.4 *)
+  Time Timeout 2 f_equal. (* Finished transaction in 0. secs (0.3u,0.s) in 8.4 *)

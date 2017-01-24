@@ -108,7 +108,7 @@ Axiom c : forall x y z, h x y z -> f x -> f y.
 Hint Resolve a b c : mybase.
 Goal forall x y z, h x y z -> f x -> f y.
   intros.
-  Fail Timeout 1 typeclasses eauto with mybase. (* Loops now *)
+  Fail Timeout 2 typeclasses eauto with mybase. (* Loops now *)
   Unshelve.
 Abort.
 End bt.
@@ -228,13 +228,13 @@ Module IterativeDeepening.
   Goal C -> A.
     intros.
     Set Typeclasses Debug.
-    Fail Timeout 1 typeclasses eauto.
+    Fail Timeout 2 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
     Fail typeclasses eauto 1.
     typeclasses eauto 2.
     Undo.
     Unset Typeclasses Iterative Deepening.
-    Fail Timeout 1 typeclasses eauto.
+    Fail Timeout 2 typeclasses eauto.
     Set Typeclasses Iterative Deepening.
     typeclasses eauto.
   Qed.

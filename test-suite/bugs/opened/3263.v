@@ -215,7 +215,7 @@ Proof.
   unfold yoneda.
   Time let t := (type of CYE) in
   let t' := (eval simpl in t) in pose proof ((fun (x : t) => (x : t')) CYE) as CYE'. (* Finished transaction in 0. secs (0.216013u,0.004s) *)
-  Fail Timeout 1 let t := match goal with |- ?G => constr:(G) end in
+  Fail Timeout 2 let t := match goal with |- ?G => constr:(G) end in
   let t' := (eval simpl in t) in exact ((fun (x : t') => (x : t)) CYE').
   Time let t := match goal with |- ?G => constr:(G) end in
   let t' := (eval simpl in t) in exact ((fun (x : t') => (x : t)) CYE'). (* Finished transaction in 0. secs (0.248016u,0.s) *)
@@ -227,6 +227,6 @@ Proof.
   intros a b.
   pose proof (coyoneda_embedding A^op a b) as CYE.
   unfold yoneda; simpl in *.
-  Fail Timeout 1 exact CYE.
+  Fail Timeout 2 exact CYE.
   Time exact CYE. (* Finished transaction in 0. secs (0.012001u,0.s) *)
 Fail Timeout 60 Defined. (* Timeout! *)

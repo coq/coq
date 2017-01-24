@@ -706,4 +706,4 @@ Section implementation.
              @BooleanRecognizer.parse_nonterminal Char splitter splitter G parser_data str G = true in
          G'.
     intros str G'.
-    Timeout 1 assert (pf' : G' -> Prop) by abstract admit.
+    Timeout 2 assert (pf' : G' -> Prop) by abstract admit.
