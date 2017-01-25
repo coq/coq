@@ -6,9 +6,4 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module W = AsyncTaskQueue.MakeWorker(Stm.ProofTask)
-
-let () = Coqtop.toploop_init := WorkerLoop.loop W.init_stdout
-
-let () = Coqtop.toploop_run := W.main_loop
-
+val loop : (unit -> unit) -> string list -> string list
