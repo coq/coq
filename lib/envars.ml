@@ -213,18 +213,18 @@ let coq_src_subdirs = [
    "grammar" ; "ide" ; "stm"; "vernac" ] @
    Coq_config.plugins_dirs
   
-let print_config f =
+let print_config ?(prefix_var_name="") f =
   let open Printf in 
-  fprintf f "LOCAL=%s\n" (if Coq_config.local then "1" else "0");
-  fprintf f "COQLIB=%s/\n" (coqlib ());
-  fprintf f "DOCDIR=%s/\n" (docdir ());
-  fprintf f "OCAMLFIND=%s\n" (ocamlfind ());
-  fprintf f "CAMLP4=%s\n" Coq_config.camlp4;
-  fprintf f "CAMLP4O=%s\n" Coq_config.camlp4o;
-  fprintf f "CAMLP4BIN=%s/\n" (camlp4bin ());
-  fprintf f "CAMLP4LIB=%s\n" (camlp4lib ());
-  fprintf f "CAMLP4OPTIONS=%s\n" Coq_config.camlp4compat;
-  fprintf f "HASNATDYNLINK=%s\n"
+  fprintf f "%sLOCAL=%s\n" prefix_var_name (if Coq_config.local then "1" else "0");
+  fprintf f "%sCOQLIB=%s/\n" prefix_var_name (coqlib ());
+  fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
+  fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
+  fprintf f "%sCAMLP4=%s\n" prefix_var_name Coq_config.camlp4;
+  fprintf f "%sCAMLP4O=%s\n" prefix_var_name Coq_config.camlp4o;
+  fprintf f "%sCAMLP4BIN=%s/\n" prefix_var_name (camlp4bin ());
+  fprintf f "%sCAMLP4LIB=%s\n" prefix_var_name (camlp4lib ());
+  fprintf f "%sCAMLP4OPTIONS=%s\n" prefix_var_name Coq_config.camlp4compat;
+  fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
     (if Coq_config.has_natdynlink then "true" else "false");
-  fprintf f "COQ_SRC_SUBDIRS=%s\n" (String.concat " " coq_src_subdirs)
+  fprintf f "%sCOQ_SRC_SUBDIRS=%s\n" prefix_var_name (String.concat " " coq_src_subdirs)
 

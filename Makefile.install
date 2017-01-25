@@ -96,6 +96,7 @@ install-devfiles:
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMO) $(GRAMMARCMA)
 	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
+	$(INSTALLSH)  $(FULLCOQLIB) tools/CoqMakefile.in
 ifeq ($(BEST),opt)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
 endif

@@ -71,7 +71,7 @@ val xdg_data_dirs   : (string -> unit) -> string list
 val xdg_dirs : warn : (string -> unit) -> string list
 
 (** {6 Prints the configuration information } *)
-val print_config : out_channel -> unit
+val print_config : ?prefix_var_name:string -> out_channel -> unit
 
 (** Directories in which coq sources are found *)
 val coq_src_subdirs : string list
