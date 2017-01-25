@@ -12,6 +12,9 @@
 
 let protocol_version = "20150913"
 
+type msg_format = Richpp of int | Ppcmds
+let msg_format = ref (Richpp 72)
+
 (** * Interface of calls to Coq by CoqIde *)
 
 open Util
@@ -134,6 +137,14 @@ let rec to_pp xpp = let open Pp in
     | "comment"   -> Ppcmd_comment (to_list to_string (singleton args))
     | x           -> raise (Marshal_error("*ppdoc",PCData x))
   ) xpp
+
+let of_richpp x = Element ("richpp", [], [x])
+
+(* Run-time Selectable *)
+let of_pp (pp : Pp.std_ppcmds) =
+  match !msg_format with
+  | Richpp margin -> of_richpp (Richpp.richpp_of_pp margin pp)
+  | Ppcmds        -> of_pp pp
 
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
@@ -669,6 +680,9 @@ let of_answer : type a. a call -> a value -> xml = function
   | PrintAst _   -> of_value (of_value_type print_ast_rty_t  )
   | Annotate _   -> of_value (of_value_type annotate_rty_t   )
 
+let of_answer msg_fmt =
+  msg_format := msg_fmt; of_answer
+
 let to_answer : type a. a call -> xml -> a value = function
   | Add _        -> to_value (to_value_type add_rty_t        )
   | Edit_at _    -> to_value (to_value_type edit_at_rty_t    )
@@ -901,6 +915,9 @@ let of_feedback msg =
   let obj, id = of_edit_or_state_id msg.id in
   let route = string_of_int msg.route in
   Element ("feedback", obj @ ["route",route], [id;content])
+
+let of_feedback msg_fmt =
+  msg_format := msg_fmt; of_feedback
 
 let to_feedback xml = match xml with
   | Element ("feedback", ["object","edit";"route",route], [id;content]) -> {

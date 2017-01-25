@@ -40,12 +40,17 @@ val abstract_eval_call : handler -> 'a call -> 'a value
 
 val protocol_version : string
 
+(** By default, we still output messages in Richpp so we are
+    compatible with 8.6, however, 8.7 aware clients will want to
+    set this to Ppcmds *)
+type msg_format = Richpp of int | Ppcmds
+
 (** * XML data marshalling *)
 
 val of_call : 'a call -> xml
 val to_call : xml -> unknown_call
 
-val of_answer : 'a call -> 'a value -> xml
+val of_answer : msg_format -> 'a call -> 'a value -> xml
 val to_answer : 'a call -> xml -> 'a value
 
 (* Prints the documentation of this module *)
@@ -58,10 +63,7 @@ val pr_value : 'a value -> string
 val pr_full_value : 'a call -> 'a value -> string
 
 (** * Serializaiton of feedback  *)
-val of_feedback : Feedback.feedback -> xml
+val of_feedback : msg_format -> Feedback.feedback -> xml
 val to_feedback : xml -> Feedback.feedback
+
 val is_feedback : xml -> bool
-
-val of_message : Feedback.level -> Loc.t option -> Pp.std_ppcmds -> xml
-(* val to_message : xml -> Feedback.message *)
-

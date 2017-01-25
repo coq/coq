@@ -296,11 +296,12 @@ let main =
   Sys.set_signal Sys.sigpipe
     (Sys.Signal_handle
        (fun _ -> prerr_endline "Broken Pipe (coqtop died ?)"; exit 1));
+  let def_args = ["--xml_format=Ppcmds"; "-ideslave"] in
   let coqtop_name, coqtop_args, input_file = match Sys.argv with
-    | [| _; f |] -> "coqtop",[|"-ideslave"|], f
+    | [| _; f |] -> "coqtop", Array.of_list def_args, f
     | [| _; f; ct |] ->
         let ct = Str.split (Str.regexp " ") ct in
-        List.hd ct, Array.of_list ("-ideslave" :: List.tl ct), f
+        List.hd ct, Array.of_list (def_args @ List.tl ct), f
     | _ -> usage () in
   let inc = if input_file = "-" then stdin else open_in input_file in
   let coq =

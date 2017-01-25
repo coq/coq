@@ -442,7 +442,7 @@ $(COQWORKMGR): $(call bestobj, lib/clib.cma stm/coqworkmgrApi.cmo tools/coqworkm
 
 FAKEIDECMO:= lib/clib.cma lib/cErrors.cmo lib/spawn.cmo	ide/document.cmo \
  ide/serialize.cmo ide/xml_lexer.cmo ide/xml_parser.cmo ide/xml_printer.cmo \
- ide/xmlprotocol.cmo tools/fake_ide.cmo
+ ide/richpp.cmo ide/xmlprotocol.cmo tools/fake_ide.cmo
 
 $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
 	$(SHOW)'OCAMLBEST -o $@'

@@ -6,9 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-let rec parse args = args
+let rec parse = function
+  | "--xml_format=Ppcmds" :: rest -> parse rest
+  | x :: rest -> x :: parse rest
+  | [] -> []
 
 let loop init args =
+  let args = parse args in
   Flags.make_silent true;
   init ();
   CoqworkmgrApi.init !Flags.async_proofs_worker_priority;

@@ -441,8 +441,8 @@ let print_xml =
     try Xml_printer.print oc xml; Mutex.unlock m
     with e -> let e = CErrors.push e in Mutex.unlock m; iraise e
 
-let slave_feeder xml_oc msg =
-  let xml = Xmlprotocol.of_feedback msg in
+let slave_feeder fmt xml_oc msg =
+  let xml = Xmlprotocol.(of_feedback fmt msg) in
   print_xml xml_oc xml
 
 (** The main loop *)
@@ -450,6 +450,11 @@ let slave_feeder xml_oc msg =
 (** Exceptions during eval_call should be converted into [Interface.Fail]
     messages by [handle_exn] above. Otherwise, we die badly, without
     trying to answer malformed requests. *)
+
+let msg_format = ref (fun () ->
+    let margin = Option.default 72 (Topfmt.get_margin ()) in
+    Xmlprotocol.Richpp margin
+)
 
 let loop () =
   init_signal_handler ();
@@ -461,7 +466,7 @@ let loop () =
   (* SEXP parser make *)
   let xml_ic        = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
-  Feedback.add_feeder (slave_feeder xml_oc);
+  ignore (Feedback.add_feeder (slave_feeder (!msg_format ()) xml_oc));
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
@@ -474,7 +479,7 @@ let loop () =
       let r  = eval_call q in
       let () = pr_debug_answer q r in
 (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
-      print_xml xml_oc (Xmlprotocol.of_answer q r);
+      print_xml xml_oc Xmlprotocol.(of_answer (!msg_format ()) q r);
       flush out_ch
     with
       | Xml_parser.Error (Xml_parser.Empty, _) ->
@@ -496,6 +501,8 @@ let loop () =
 let rec parse = function
   | "--help-XML-protocol" :: rest ->
         Xmlprotocol.document Xml_printer.to_string_fmt; exit 0
+  | "--xml_format=Ppcmds" :: rest ->
+        msg_format := (fun () -> Xmlprotocol.Ppcmds); parse rest
   | x :: rest -> x :: parse rest
   | [] -> []
 
@@ -507,4 +514,6 @@ let () = Coqtop.toploop_init := (fun args ->
 
 let () = Coqtop.toploop_run := loop
 
-let () = Usage.add_to_usage "coqidetop" "  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"
+let () = Usage.add_to_usage "coqidetop"
+"  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format
+  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"
