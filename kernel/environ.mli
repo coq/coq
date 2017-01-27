@@ -11,6 +11,9 @@ open Term
 open Declarations
 open Univ
 
+module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 (** Unsafe environments. We define here a datatype for environments.
    Since typing is not yet defined, it is not possible to check the
    informations added in environments, and that is why we speak here
@@ -61,19 +64,19 @@ val empty_context : env -> bool
 (** {5 Context of de Bruijn variables ([rel_context]) } *)
 
 val nb_rel           : env -> int
-val push_rel         : Context.Rel.Declaration.t -> env -> env
+val push_rel         : RelDecl.t -> env -> env
 val push_rel_context : Context.Rel.t -> env -> env
 val push_rec_types   : rec_declaration -> env -> env
 
 (** Looks up in the context of local vars referred by indice ([rel_context]) 
    raises [Not_found] if the index points out of the context *)
-val lookup_rel    : int -> env -> Context.Rel.Declaration.t
+val lookup_rel    : int -> env -> RelDecl.t
 val evaluable_rel : int -> env -> bool
 
 (** {6 Recurrence on [rel_context] } *)
 
 val fold_rel_context :
-  (env -> Context.Rel.Declaration.t -> 'a -> 'a) -> env -> init:'a -> 'a
+  (env -> RelDecl.t -> 'a -> 'a) -> env -> init:'a -> 'a
 
 (** {5 Context of variables (section variables and goal assumptions) } *)
 
@@ -88,18 +91,18 @@ val empty_named_context_val : named_context_val
 val map_named_val :
    (constr -> constr) -> named_context_val -> named_context_val
 
-val push_named : Context.Named.Declaration.t -> env -> env
+val push_named : NamedDecl.t -> env -> env
 val push_named_context : Context.Named.t -> env -> env
 val push_named_context_val  :
-    Context.Named.Declaration.t -> named_context_val -> named_context_val
+    NamedDecl.t -> named_context_val -> named_context_val
 
 
 
 (** Looks up in the context of local vars referred by names ([named_context]) 
    raises [Not_found] if the Id.t is not found *)
 
-val lookup_named     : variable -> env -> Context.Named.Declaration.t
-val lookup_named_val : variable -> named_context_val -> Context.Named.Declaration.t
+val lookup_named     : variable -> env -> NamedDecl.t
+val lookup_named_val : variable -> named_context_val -> NamedDecl.t
 val evaluable_named  : variable -> env -> bool
 val named_type : variable -> env -> types
 val named_body : variable -> env -> constr option
@@ -107,11 +110,11 @@ val named_body : variable -> env -> constr option
 (** {6 Recurrence on [named_context]: older declarations processed first } *)
 
 val fold_named_context :
-  (env -> Context.Named.Declaration.t -> 'a -> 'a) -> env -> init:'a -> 'a
+  (env -> NamedDecl.t -> 'a -> 'a) -> env -> init:'a -> 'a
 
 (** Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :
-  ('a -> Context.Named.Declaration.t -> 'a) -> init:'a -> env -> 'a
+  ('a -> NamedDecl.t -> 'a) -> init:'a -> env -> 'a
 
 (** This forgets named and rel contexts *)
 val reset_context : env -> env
@@ -261,10 +264,10 @@ exception Hyp_not_found
    return [tail::(f head (id,_,_) (rev tail))::head].
    the value associated to id should not change *)
 val apply_to_hyp : named_context_val -> variable ->
-  (Context.Named.t -> Context.Named.Declaration.t -> Context.Named.t -> Context.Named.Declaration.t) ->
+  (Context.Named.t -> NamedDecl.t -> Context.Named.t -> NamedDecl.t) ->
     named_context_val
 
-val remove_hyps : Id.Set.t -> (Context.Named.Declaration.t -> Context.Named.Declaration.t) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
+val remove_hyps : Id.Set.t -> (NamedDecl.t -> NamedDecl.t) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
 
 
 
