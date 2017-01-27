@@ -139,7 +139,7 @@ type add_rty = state_id * ((unit, state_id) union * string)
     [Inr (start,(stop,tip))] if [id] is in a zone that can be focused.
     In that case the zone is delimited by [start] and [stop] while [tip]
     is the new document [tip].  Edits made by subsequent [add] are always
-    performend on top of [id]. *)
+    performed on top of [id]. *)
 type edit_at_sty = state_id
 type edit_at_rty = (unit, state_id * (state_id * state_id)) union
 
@@ -153,7 +153,7 @@ type query_rty = string
 type goals_sty = unit
 type goals_rty = goals option
 
-(** Retrieve the list of unintantiated evars in the current proof. [None] if no
+(** Retrieve the list of uninstantiated evars in the current proof. [None] if no
     proof is in progress. *)
 type evars_sty = unit
 type evars_rty = evar list option
