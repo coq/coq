@@ -1120,6 +1120,12 @@ Check (fun (A:Prop) (B:Set) => prod A B).
 Check (fun (A:Type) (B:Prop) => prod A B).
 \end{coq_example}
 
+Internally, Coq calls sort polymorphism of inductive types
+{\em template polymorphism}. For instance:
+\begin{coq_example}
+About prod.
+\end{coq_example}
+
 \subsection{Destructors}
 The specification of inductive definitions with arities and
 constructors is quite natural.  But we still have to say how to use an
