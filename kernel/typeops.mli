@@ -91,17 +91,12 @@ val judge_of_cast :
 
 val judge_of_inductive : env -> inductive puniverses -> unsafe_judgment
 
-(* val judge_of_inductive_knowing_parameters : *)
-(*   env -> inductive -> unsafe_judgment array -> unsafe_judgment *)
-
 val judge_of_constructor : env -> constructor puniverses -> unsafe_judgment
 
 (** {6 Type of Cases. } *)
 val judge_of_case : env -> case_info
   -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment array
     -> unsafe_judgment
-
-(* val type_of_constant : env -> pconstant -> types constrained *)
 
 val type_of_constant_type : env -> constant_type -> types
 
@@ -111,9 +106,6 @@ val type_of_constant_in : env -> pconstant -> types
 
 val type_of_constant_type_knowing_parameters :
   env -> constant_type -> types Lazy.t array -> types
-
-(* val type_of_constant_knowing_parameters : *)
-(*   env -> pconstant -> types Lazy.t array -> types constrained *)
 
 val type_of_constant_knowing_parameters_in :
   env -> pconstant -> types Lazy.t array -> types
