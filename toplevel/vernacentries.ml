@@ -521,9 +521,6 @@ let vernac_end_proof ?proof = function
       Stm.show_script ?proof ();
     save_proof ?proof e
 
-  (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
-     the theories [??] *)
-
 let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
