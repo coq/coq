@@ -36,7 +36,6 @@ type feedback_content =
   | InProgress of int
   | WorkerStatus of string * string
   (* Generally useful metadata *)
-  | Goals of Loc.t * string
   | AddedAxiom
   | GlobRef of Loc.t * string * string * string * string
   | GlobDef of Loc.t * string * string * string
