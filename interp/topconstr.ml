@@ -93,8 +93,8 @@ let rec fold_local_binders g f n acc b = function
       let nal = snd (List.split nal) in
       let n' = List.fold_right (name_fold g) nal n in
       f n (fold_local_binders g f n' acc b l) t
-  | CLocalDef ((_,na),t)::l ->
-      f n (fold_local_binders g f (name_fold g na n) acc b l) t
+  | CLocalDef ((_,na),c,t)::l ->
+      Option.fold_left (f n) (f n (fold_local_binders g f (name_fold g na n) acc b l) c) t
   | CLocalPattern (_,pat,t)::l ->
       let acc = fold_local_binders g f (cases_pattern_fold_names g n pat) acc b l in
       Option.fold_left (f n) acc t
@@ -105,7 +105,8 @@ let fold_constr_expr_with_binders g f n acc = function
   | CAppExpl (loc,(_,_,_),l) -> List.fold_left (f n) acc l
   | CApp (loc,(_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (_,l,b) | CLambdaN (_,l,b) -> fold_constr_expr_binders g f n acc b l
-  | CLetIn (_,na,a,b) -> fold_constr_expr_binders g f n acc b [[na],default_binder_kind,a]
+  | CLetIn (_,na,a,t,b) ->
+     f (name_fold g (snd na) n) (Option.fold_left (f n) (f n acc a) t) b
   | CCast (loc,a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
   | CCast (loc,a,CastCoerce) -> f n acc a
   | CNotation (_,_,(l,ll,bll)) ->
@@ -198,8 +199,8 @@ let map_local_binders f g e bl =
   let h (e,bl) = function
       CLocalAssum(nal,k,ty) ->
         (map_binder g e nal, CLocalAssum(nal,k,f e ty)::bl)
-    | CLocalDef((loc,na),ty) ->
-        (name_fold g na e, CLocalDef((loc,na),f e ty)::bl)
+    | CLocalDef((loc,na),c,ty) ->
+        (name_fold g na e, CLocalDef((loc,na),f e c,Option.map (f e) ty)::bl)
     | CLocalPattern (loc,pat,t) ->
         let ids = ids_of_pattern pat in
         (Id.Set.fold g ids e, CLocalPattern (loc,pat,Option.map (f e) t)::bl) in
@@ -214,7 +215,8 @@ let map_constr_expr_with_binders g f e = function
       let (e,bl) = map_binders f g e bl in CProdN (loc,bl,f e b)
   | CLambdaN (loc,bl,b) ->
       let (e,bl) = map_binders f g e bl in CLambdaN (loc,bl,f e b)
-  | CLetIn (loc,na,a,b) -> CLetIn (loc,na,f e a,f (name_fold g (snd na) e) b)
+  | CLetIn (loc,na,a,t,b) ->
+      CLetIn (loc,na,f e a,Option.map (f e) t,f (name_fold g (snd na) e) b)
   | CCast (loc,a,c) -> CCast (loc,f e a, Miscops.map_cast_type (f e) c)
   | CNotation (loc,n,(l,ll,bll)) ->
       (* This is an approximation because we don't know what binds what *)

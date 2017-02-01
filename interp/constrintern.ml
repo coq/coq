@@ -457,7 +457,10 @@ let intern_local_pattern intern lvar env p =
 
 let glob_local_binder_of_extended = function
   | GLocalAssum (loc,na,bk,t) -> (na,bk,None,t)
-  | GLocalDef (loc,na,bk,c,t) -> (na,bk,Some c,t)
+  | GLocalDef (loc,na,bk,c,Some t) -> (na,bk,Some c,t)
+  | GLocalDef (loc,na,bk,c,None) ->
+      let t = GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None) in
+      (na,bk,Some c,t)
   | GLocalPattern (loc,_,_,_,_) ->
       Loc.raise ~loc (Stream.Error "pattern with quote not allowed here.")
 
@@ -468,14 +471,10 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
       let env, bl' = intern_assumption intern lvar env nal bk ty in
       let bl' = List.map (fun (loc,(na,c,t)) -> GLocalAssum (loc,na,c,t)) bl' in
       env, bl' @ bl
-  | CLocalDef((loc,na as locna),def) ->
-     let indef = intern env def in
-     let term, ty =
-       match indef with
-       | GCast (loc, b, Misctypes.CastConv t) -> b, t
-       | _ -> indef, GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None)
-     in
-      (push_name_env lvar (impls_term_list indef) env locna,
+  | CLocalDef((loc,na as locna),def,ty) ->
+     let term = intern env def in
+     let ty = Option.map (intern env) ty in
+      (push_name_env lvar (impls_term_list term) env locna,
        GLocalDef (loc,na,Explicit,term,ty) :: bl)
   | CLocalPattern (loc,p,ty) ->
       let tyc =
@@ -566,15 +565,15 @@ let traverse_binder (terms,_,_ as subst) avoid (renaming,env) = function
     (renaming',env), Name id'
 
 type letin_param =
-  | LPLetIn of Loc.t * (Name.t * glob_constr)
+  | LPLetIn of Loc.t * (Name.t * glob_constr * glob_constr option)
   | LPCases of Loc.t * (cases_pattern * Id.t list) * Id.t
 
 let make_letins =
   List.fold_right
     (fun a c ->
      match a with
-     | LPLetIn (loc,(na,b)) ->
-         GLetIn(loc,na,b,c)
+     | LPLetIn (loc,(na,b,t)) ->
+         GLetIn(loc,na,b,t,c)
      | LPCases (loc,(cp,il),id) ->
          let tt = (GVar(loc,id),(Name id,None)) in
          GCases(loc,Misctypes.LetPatternStyle,None,[tt],[(loc,il,[cp],c)]))
@@ -582,8 +581,8 @@ let make_letins =
 let rec subordinate_letins letins = function
   (* binders come in reverse order; the non-let are returned in reverse order together *)
   (* with the subordinated let-in in writing order *)
-  | GLocalDef (loc,na,_,b,_)::l ->
-      subordinate_letins (LPLetIn (loc,(na,b))::letins) l
+  | GLocalDef (loc,na,_,b,t)::l ->
+      subordinate_letins (LPLetIn (loc,(na,b,t))::letins) l
   | GLocalAssum (loc,na,bk,t)::l ->
       let letins',rest = subordinate_letins [] l in
       letins',((loc,(na,bk,t)),letins)::rest
@@ -1600,9 +1599,10 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
         intern env c2
     | CLambdaN (loc,(nal,bk,ty)::bll,c2) ->
 	iterate_lam loc (reset_tmp_scope env) bk ty (CLambdaN (loc, bll, c2)) nal
-    | CLetIn (loc,na,c1,c2) ->
+    | CLetIn (loc,na,c1,t,c2) ->
 	let inc1 = intern (reset_tmp_scope env) c1 in
-	GLetIn (loc, snd na, inc1,
+	let int = Option.map (intern_type env) t in
+	GLetIn (loc, snd na, inc1, int,
           intern (push_name_env ntnvars (impls_term_list inc1) env na) c2)
     | CNotation (loc,"- _",([CPrim (_,Numeral p)],[],[]))
 	when Bigint.is_strictly_pos p ->

@@ -42,7 +42,7 @@ type glob_constr =
   | GApp of Loc.t * glob_constr * glob_constr list
   | GLambda of Loc.t * Name.t * binding_kind *  glob_constr * glob_constr
   | GProd of Loc.t * Name.t * binding_kind * glob_constr * glob_constr
-  | GLetIn of Loc.t * Name.t * glob_constr * glob_constr
+  | GLetIn of Loc.t * Name.t * glob_constr * glob_constr option * glob_constr
   | GCases of Loc.t * case_style * glob_constr option * tomatch_tuples * cases_clauses
       (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in [MatchStyle]) *)
   | GLetTuple of Loc.t * Name.t list * (Name.t * glob_constr option) *
@@ -80,7 +80,7 @@ and cases_clauses = cases_clause list
 
 type extended_glob_local_binder =
   | GLocalAssum of Loc.t * Name.t * binding_kind * glob_constr
-  | GLocalDef of Loc.t * Name.t * binding_kind * glob_constr * glob_constr
+  | GLocalDef of Loc.t * Name.t * binding_kind * glob_constr * glob_constr option
   | GLocalPattern of Loc.t * (cases_pattern * Id.t list) * Id.t * binding_kind * glob_constr
 
 (** A globalised term together with a closure representing the value

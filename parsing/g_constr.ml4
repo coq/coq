@@ -240,17 +240,15 @@ GEXTEND Gram
           mkCLambdaN (!@loc) bl c
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
-          let loc1 =
-	    Loc.merge (local_binders_loc bl) (constr_loc c1)
-	  in
-          CLetIn(!@loc,id,mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
+          CLetIn(!@loc,id,mkCLambdaN (constr_loc c1) bl c1,
+                 Option.map (mkCProdN (fst ty) bl) (snd ty), c2)
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
           let fixp = mk_single_fix fx in
           let (li,id) = match fixp with
               CFix(_,id,_) -> id
             | CCoFix(_,id,_) -> id
             | _ -> assert false in
-          CLetIn(!@loc,(li,Name id),fixp,c)
+          CLetIn(!@loc,(li,Name id),fixp,None,c)
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> l | "()" -> []];
 	  po = return_type;
 	  ":="; c1 = operconstr LEVEL "200"; "in";
@@ -466,9 +464,11 @@ GEXTEND Gram
       | "("; id=name; ":"; c=lconstr; ")" ->
           [CLocalAssum ([id],Default Explicit,c)]
       | "("; id=name; ":="; c=lconstr; ")" ->
-          [CLocalDef (id,c)]
+          (match c with
+          | CCast(_,c, CastConv t) -> [CLocalDef (id,c,Some t)]
+          | _ -> [CLocalDef (id,c,None)])
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" ->
-          [CLocalDef (id,CCast (Loc.merge (constr_loc t) (!@loc),c, CastConv t))]
+          [CLocalDef (id,c,Some t)]
       | "{"; id=name; "}" ->
           [CLocalAssum ([id],Default Implicit,CHole (!@loc, None, IntroAnonymous, None))]
       | "{"; id=name; idl=LIST1 name; ":"; c=lconstr; "}" ->

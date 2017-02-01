@@ -108,7 +108,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
       | _ -> ()
     in
       List.iter 
-	(function CLocalDef (b, _) -> error default_binder_kind b
+	(function CLocalDef (b, _, _) -> error default_binder_kind b
 	   | CLocalAssum (ls, bk, ce) -> List.iter (error bk) ls
            | CLocalPattern (loc,_,_) ->
               Loc.raise ~loc (Stream.Error "pattern with quote not allowed in record parameters.")) ps

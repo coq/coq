@@ -15,6 +15,7 @@ open Bigint
 open Decl_kinds
 open Extend
 open Libnames
+open Constrexpr_ops
 
 let unlock loc =
   let start, stop = Loc.unloc loc in
@@ -228,9 +229,10 @@ and pp_decl_notation ((_, s), ce, sc) = (* don't know what it is for now *)
   Element ("decl_notation", ["name", s], [pp_expr ce])
 and pp_local_binder lb = (* don't know what it is for now *)
   match lb with
-  | CLocalDef ((_, nam), ce) ->
+  | CLocalDef ((loc, nam), ce, ty) ->
       let attrs = ["name", string_of_name nam] in
-      pp_expr ~attr:attrs ce
+      let value = match ty with Some t -> CCast (Loc.merge (constr_loc ce) (constr_loc t),ce, CastConv t) | None -> ce in
+      pp_expr ~attr:attrs value
   | CLocalAssum (namll, _, ce) ->
       let ppl =
         List.map (fun (loc, nam) -> (xmlCst (string_of_name nam) loc)) namll in
@@ -465,7 +467,8 @@ and pp_expr ?(attr=[]) e =
            [Element ("scrutinees", [], List.map pp_case_expr cel)] @
            [pp_branch_expr_list bel]))
   | CRecord (_, _) -> assert false
-  | CLetIn (loc, (varloc, var), value, body) ->
+  | CLetIn (loc, (varloc, var), value, typ, body) ->
+      let value = match typ with Some t -> CCast (Loc.merge (constr_loc value) (constr_loc t),value, CastConv t) | None -> value in
       xmlApply loc
         (xmlOperator "let" loc ::
          [xmlCst (string_of_name var) varloc; pp_expr value; pp_expr body])

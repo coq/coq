@@ -72,7 +72,7 @@ and constr_expr =
   | CCoFix of Loc.t * Id.t located * cofix_expr list
   | CProdN of Loc.t * binder_expr list * constr_expr
   | CLambdaN of Loc.t * binder_expr list * constr_expr
-  | CLetIn of Loc.t * Name.t located * constr_expr * constr_expr
+  | CLetIn of Loc.t * Name.t located * constr_expr * constr_expr option * constr_expr
   | CAppExpl of Loc.t * (proj_flag * reference * instance_expr option) * constr_expr list
   | CApp of Loc.t * (proj_flag * constr_expr) *
       (constr_expr * explicitation located option) list
@@ -124,7 +124,7 @@ and recursion_order_expr =
 (** Anonymous defs allowed ?? *)
 and local_binder_expr =
   | CLocalAssum of Name.t located list * binder_kind * constr_expr
-  | CLocalDef of Name.t located * constr_expr
+  | CLocalDef of Name.t located * constr_expr * constr_expr option
   | CLocalPattern of Loc.t * cases_pattern_expr * constr_expr option
 
 and constr_notation_substitution =

@@ -317,7 +317,7 @@ let tag_var = tag Tag.variable
             pr_sep_com spc (pr ltop) rhs))
 
   let begin_of_binder = function
-  CLocalDef((loc,_),_) -> fst (Loc.unloc loc)
+    | CLocalDef((loc,_),_,_) -> fst (Loc.unloc loc)
     | CLocalAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
     | CLocalPattern(loc,_,_) -> fst (Loc.unloc loc)
     | _ -> assert false
@@ -362,12 +362,9 @@ let tag_var = tag Tag.variable
   let pr_binder_among_many pr_c = function
     | CLocalAssum (nal,k,t) ->
       pr_binder true pr_c (nal,k,t)
-    | CLocalDef (na,c) ->
-      let c,topt = match c with
-        | CCast(_,c, (CastConv t|CastVM t|CastNative t)) -> c, t
-        | _ -> c, CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
-      surround (pr_lname na ++ pr_opt_type pr_c topt ++
-                  str":=" ++ cut() ++ pr_c c)
+    | CLocalDef (na,c,topt) ->
+      surround (pr_lname na ++ str":=" ++ cut() ++ pr_c c ++
+                pr_opt_no_spc (fun t -> cut () ++ str ":" ++ pr_c t) topt)
     | CLocalPattern (loc,p,tyo) ->
       let p = pr_patt lsimplepatt p in
       match tyo with
@@ -468,7 +465,7 @@ let tag_var = tag Tag.variable
           | CStructRec ->
             let names_of_binder = function
               | CLocalAssum (nal,_,_) -> nal
-              | CLocalDef (_,_) -> []
+              | CLocalDef (_,_,_) -> []
               | CLocalPattern _ -> assert false
             in let ids = List.flatten (List.map names_of_binder bl) in
                if List.length ids > 1 then
@@ -588,7 +585,7 @@ let tag_var = tag Tag.variable
               pr_fun_sep ++ pr spc ltop a),
           llambda
         )
-      | CLetIn (_,(_,Name x),(CFix(_,(_,x'),[_])|CCoFix(_,(_,x'),[_]) as fx), b)
+      | CLetIn (_,(_,Name x),(CFix(_,(_,x'),[_])|CCoFix(_,(_,x'),[_]) as fx), t, b)
           when Id.equal x x' ->
         return (
           hv 0 (
@@ -598,11 +595,12 @@ let tag_var = tag Tag.variable
               pr spc ltop b),
           lletin
         )
-      | CLetIn (_,x,a,b) ->
+      | CLetIn (_,x,a,t,b) ->
         return (
           hv 0 (
             hov 2 (keyword "let" ++ spc () ++ pr_lname x ++ str " :="
                    ++ pr spc ltop a ++ spc ()
+                   ++ pr_opt_no_spc (fun t -> str ":" ++ ws 1 ++ pr mt ltop t ++ spc ()) t
                    ++ keyword "in") ++
               pr spc ltop b),
           lletin

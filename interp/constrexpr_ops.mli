@@ -46,7 +46,7 @@ val mkRefC : reference -> constr_expr
 val mkAppC : constr_expr * constr_expr list -> constr_expr
 val mkCastC : constr_expr * constr_expr cast_type -> constr_expr
 val mkLambdaC : Name.t located list * binder_kind * constr_expr * constr_expr -> constr_expr
-val mkLetInC : Name.t located * constr_expr * constr_expr -> constr_expr
+val mkLetInC : Name.t located * constr_expr * constr_expr option * constr_expr -> constr_expr
 val mkProdC : Name.t located list * binder_kind * constr_expr * constr_expr -> constr_expr
 
 val abstract_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
