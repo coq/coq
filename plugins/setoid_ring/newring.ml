@@ -330,7 +330,7 @@ let _ = add_map "ring"
           (function -1|8|9|10|11|13|15|17->Eval|16->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function -1|7|9|12->Eval|11->Rec|_->Prot)])
+    pol_cst "PEeval", (function -1|8|10|13->Eval|12->Rec|_->Prot)])
 
 (****************************************************************************)
 (* Ring database *)
@@ -761,7 +761,7 @@ let _ = add_map "field"
     my_reference "display_linear",
       (function -1|9|10|11|12|13|15|16->Eval|14->Rec|_->Prot);
     my_reference "display_pow_linear",
-     (function -1|9|10|11|12|13|14|16|18|19->Eval|17->Rec|_->Prot);
+     (function -1|9|10|11|12|14|16|18|19->Eval|17->Rec|_->Prot);
    (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
     pol_cst "Pphi_dev", (function -1|8|9|10|11|12|14->Eval|13->Rec|_->Prot);
@@ -769,10 +769,10 @@ let _ = add_map "field"
           (function -1|8|9|10|11|13|15|17->Eval|16->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function -1|7|9|12->Eval|11->Rec|_->Prot);
+    pol_cst "PEeval", (function -1|8|10|13->Eval|12->Rec|_->Prot);
     (* FEeval: evaluate morphism, protect field
        operations and make recursive call on the var map *)
-    my_reference "FEeval", (function -1|8|9|10|11|14->Eval|13->Rec|_->Prot)]);;
+    my_reference "FEeval", (function -1|10|12|15->Eval|14->Rec|_->Prot)]);;
 
 let _ = add_map "field_cond"
   (map_without_eq
@@ -781,7 +781,6 @@ let _ = add_map "field_cond"
     (* PCond: evaluate morphism and denum list, protect ring
        operations and make recursive call on the var map *)
      my_reference "PCond", (function -1|9|11|14->Eval|13->Rec|_->Prot)]);;
-(*                       (function -1|9|11->Eval|10->Rec|_->Prot)]);;*)
 
 
 let _ = Redexpr.declare_reduction "simpl_field_expr"
