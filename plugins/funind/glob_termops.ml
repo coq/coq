@@ -15,7 +15,7 @@ let mkGVar id = GVar(Loc.ghost,id)
 let mkGApp(rt,rtl) = GApp(Loc.ghost,rt,rtl)
 let mkGLambda(n,t,b) = GLambda(Loc.ghost,n,Explicit,t,b)
 let mkGProd(n,t,b) = GProd(Loc.ghost,n,Explicit,t,b)
-let mkGLetIn(n,t,b) = GLetIn(Loc.ghost,n,t,b)
+let mkGLetIn(n,b,t,c) = GLetIn(Loc.ghost,n,b,t,c)
 let mkGCases(rto,l,brl) = GCases(Loc.ghost,Term.RegularStyle,rto,l,brl)
 let mkGSort s = GSort(Loc.ghost,s)
 let mkGHole () = GHole(Loc.ghost,Evar_kinds.BinderType Anonymous,Misctypes.IntroAnonymous,None)
@@ -37,8 +37,8 @@ let glob_decompose_prod_or_letin =
   let rec glob_decompose_prod args = function
   | GProd(_,n,k,t,b) ->
       glob_decompose_prod ((n,None,Some t)::args) b
-  | GLetIn(_,n,t,b) ->
-      glob_decompose_prod ((n,Some t,None)::args) b
+  | GLetIn(_,n,b,t,c) ->
+      glob_decompose_prod ((n,Some b,t)::args) c
   | rt -> args,rt
   in
   glob_decompose_prod []
@@ -51,7 +51,7 @@ let glob_compose_prod_or_letin =
       fun concl decl ->
 	match decl with
 	  | (n,None,Some t) -> mkGProd(n,t,concl)
-	  | (n,Some bdy,None) -> mkGLetIn(n,bdy,concl)
+	  | (n,Some bdy,t) -> mkGLetIn(n,bdy,t,concl)
 	  | _ -> assert false)
 
 let glob_decompose_prod_n n =
@@ -73,8 +73,8 @@ let glob_decompose_prod_or_letin_n n =
       match c with
 	| GProd(_,n,_,t,b) ->
 	    glob_decompose_prod (i-1) ((n,None,Some t)::args) b
-	| GLetIn(_,n,t,b) ->
-	    glob_decompose_prod (i-1) ((n,Some t,None)::args) b
+	| GLetIn(_,n,b,t,c) ->
+	    glob_decompose_prod (i-1) ((n,Some b,t)::args) c
 	| rt -> args,rt
   in
   glob_decompose_prod n []
@@ -150,10 +150,11 @@ let change_vars =
 		  change_vars mapping t,
 		  change_vars (remove_name_from_mapping mapping name) b
 		 )
-      | GLetIn(loc,name,def,b) ->
+      | GLetIn(loc,name,def,typ,b) ->
 	  GLetIn(loc,
 		 name,
 		 change_vars mapping def,
+		 Option.map (change_vars mapping) typ,
 		 change_vars (remove_name_from_mapping mapping name) b
 		)
       | GLetTuple(loc,nal,(na,rto),b,e) ->
@@ -272,10 +273,11 @@ let rec alpha_rt excluded rt =
 	let new_t = alpha_rt excluded t in
 	let new_b = alpha_rt excluded b in
 	GProd(loc,Anonymous,k,new_t,new_b)
-    | GLetIn(loc,Anonymous,t,b) ->
-	let new_t = alpha_rt excluded t in
+    | GLetIn(loc,Anonymous,b,t,c) ->
 	let new_b = alpha_rt excluded b in
-	GLetIn(loc,Anonymous,new_t,new_b)
+	let new_t = Option.map (alpha_rt excluded) t in
+	let new_c = alpha_rt excluded c in
+	GLetIn(loc,Anonymous,new_b,new_t,new_c)
     | GLambda(loc,Name id,k,t,b) ->
 	let new_id = Namegen.next_ident_away id excluded in
 	let t,b =
@@ -302,19 +304,17 @@ let rec alpha_rt excluded rt =
 	let new_t = alpha_rt new_excluded t in
 	let new_b = alpha_rt new_excluded b in
 	GProd(loc,Name new_id,k,new_t,new_b)
-    | GLetIn(loc,Name id,t,b) ->
+    | GLetIn(loc,Name id,b,t,c) ->
 	let new_id = Namegen.next_ident_away id excluded in
-	let t,b =
-	  if Id.equal new_id id
-	  then t,b
-	  else
-	    let replace = change_vars (Id.Map.add id new_id Id.Map.empty) in
-	    (t,replace b)
+	let c =
+	  if Id.equal new_id id then c
+	  else change_vars (Id.Map.add id new_id Id.Map.empty) c
 	in
 	let new_excluded = new_id::excluded in
-	let new_t = alpha_rt new_excluded t in
 	let new_b = alpha_rt new_excluded b in
-	GLetIn(loc,Name new_id,new_t,new_b)
+	let new_t = Option.map (alpha_rt new_excluded) t in
+	let new_c = alpha_rt new_excluded c in
+	GLetIn(loc,Name new_id,new_b,new_t,new_c)
 
 
     | GLetTuple(loc,nal,(na,rto),t,b) ->
@@ -388,13 +388,20 @@ let is_free_in id =
     | GEvar _ -> false
     | GPatVar _ -> false
     | GApp(_,rt,rtl) -> List.exists is_free_in (rt::rtl)
-    | GLambda(_,n,_,t,b) | GProd(_,n,_,t,b) | GLetIn(_,n,t,b) ->
+    | GLambda(_,n,_,t,b) | GProd(_,n,_,t,b) ->
 	let check_in_b =
 	  match n with
 	    | Name id' -> not (Id.equal id' id)
 	    | _ -> true
 	in
 	is_free_in t || (check_in_b && is_free_in b)
+    | GLetIn(_,n,b,t,c) ->
+	let check_in_c =
+	  match n with
+	    | Name id' -> not (Id.equal id' id)
+	    | _ -> true
+	in
+	is_free_in b || Option.cata is_free_in true t || (check_in_c && is_free_in c)
     | GCases(_,_,_,el,brl) ->
 	(List.exists (fun (e,_) -> is_free_in e) el) ||
 	  List.exists is_free_in_br brl
@@ -473,11 +480,12 @@ let replace_var_by_term x_id term =
 		  replace_var_by_pattern t,
 		  replace_var_by_pattern b
 		 )
-      | GLetIn(_,Name id,_,_) when Id.compare id x_id == 0 -> rt
-      | GLetIn(loc,name,def,b) ->
+      | GLetIn(_,Name id,_,_,_) when Id.compare id x_id == 0 -> rt
+      | GLetIn(loc,name,def,typ,b) ->
 	  GLetIn(loc,
 		 name,
 		 replace_var_by_pattern def,
+		 Option.map (replace_var_by_pattern) typ,
 		 replace_var_by_pattern b
 		)
       | GLetTuple(_,nal,_,_,_)
@@ -589,7 +597,7 @@ let ids_of_glob_constr c =
           ids_of_glob_constr [] g @ List.flatten (List.map (ids_of_glob_constr []) args) @ acc
       | GLambda (loc,na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
       | GProd (loc,na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
-      | GLetIn (loc,na,b,c) -> idof na :: ids_of_glob_constr [] b @ ids_of_glob_constr [] c @ acc
+      | GLetIn (loc,na,b,t,c) -> idof na :: ids_of_glob_constr [] b @ Option.cata (ids_of_glob_constr []) [] t @ ids_of_glob_constr [] c @ acc
       | GCast (loc,c,(CastConv t|CastVM t|CastNative t)) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] t @ acc
       | GCast (loc,c,CastCoerce) -> ids_of_glob_constr [] c @ acc
       | GIf (loc,c,(na,po),b1,b2) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] b1 @ ids_of_glob_constr [] b2 @ acc
@@ -633,9 +641,9 @@ let zeta_normalize =
 		zeta_normalize_term t,
 		zeta_normalize_term b
 		 )
-      | GLetIn(_,Name id,def,b) ->
+      | GLetIn(_,Name id,def,typ,b) ->
 	  zeta_normalize_term (replace_var_by_term id def b)
-      | GLetIn(loc,Anonymous,def,b) -> zeta_normalize_term b
+      | GLetIn(loc,Anonymous,def,typ,b) -> zeta_normalize_term b
       | GLetTuple(loc,nal,(na,rto),def,b) ->
 	  GLetTuple(loc,
 		    nal,
@@ -690,7 +698,7 @@ let expand_as =
       | GApp(loc,f,args) -> GApp(loc,expand_as map f,List.map (expand_as map) args)
       | GLambda(loc,na,k,t,b) -> GLambda(loc,na,k,expand_as map t, expand_as map b)
       | GProd(loc,na,k,t,b) -> GProd(loc,na,k,expand_as map t, expand_as map b)
-      | GLetIn(loc,na,v,b) -> GLetIn(loc,na, expand_as map v,expand_as map b)
+      | GLetIn(loc,na,v,typ,b) -> GLetIn(loc,na, expand_as map v,Option.map (expand_as map) typ,expand_as map b)
       | GLetTuple(loc,nal,(na,po),v,b) ->
 	  GLetTuple(loc,nal,(na,Option.map (expand_as map) po),
 		    expand_as map v, expand_as map b)

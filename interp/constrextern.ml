@@ -601,8 +601,9 @@ let extern_optimal_prim_token scopes r r' =
 (* mapping decl                                                       *)
 
 let extended_glob_local_binder_of_decl loc = function
-  | (p,bk,Some x,t) -> GLocalDef (loc,p,bk,x,t)
   | (p,bk,None,t) -> GLocalAssum (loc,p,bk,t)
+  | (p,bk,Some x,GHole (_, _, Misctypes.IntroAnonymous, None)) -> GLocalDef (loc,p,bk,x,None)
+  | (p,bk,Some x,t) -> GLocalDef (loc,p,bk,x,Some t)
 
 (**********************************************************************)
 (* mapping glob_constr to constr_expr                                    *)
@@ -699,8 +700,9 @@ let rec extern inctx scopes vars r =
 	   explicitize loc inctx [] (None,sub_extern false scopes vars f)
              (List.map (fun c -> lazy (sub_extern true scopes vars c)) args))
 
-  | GLetIn (loc,na,t,c) ->
-      CLetIn (loc,(loc,na),sub_extern false scopes vars t,
+  | GLetIn (loc,na,b,t,c) ->
+      CLetIn (loc,(loc,na),sub_extern false scopes vars b,
+              Option.map (extern_typ scopes vars) t,
               extern inctx scopes (add_vname vars na) c)
 
   | GProd (loc,na,bk,t,c) ->
@@ -828,7 +830,8 @@ and extern_local_binder scopes vars = function
       let (assums,ids,l) =
         extern_local_binder scopes (name_fold Id.Set.add na vars) l in
       (assums,na::ids,
-       CLocalDef((Loc.ghost,na), extern false scopes vars bd) :: l)
+       CLocalDef((Loc.ghost,na), extern false scopes vars bd,
+                   Option.map (extern false scopes vars) ty) :: l)
 
   | GLocalAssum (_,na,bk,ty)::l ->
       let ty = extern_typ scopes vars ty in
@@ -1020,8 +1023,9 @@ let rec glob_of_pat env sigma = function
         List.map (glob_of_pat env sigma) args)
   | PProd (na,t,c) ->
       GProd (loc,na,Explicit,glob_of_pat env sigma t,glob_of_pat (na::env) sigma c)
-  | PLetIn (na,t,c) ->
-      GLetIn (loc,na,glob_of_pat env sigma t, glob_of_pat (na::env) sigma c)
+  | PLetIn (na,b,t,c) ->
+      GLetIn (loc,na,glob_of_pat env sigma b, Option.map (glob_of_pat env sigma) t,
+              glob_of_pat (na::env) sigma c)
   | PLambda (na,t,c) ->
       GLambda (loc,na,Explicit,glob_of_pat env sigma t, glob_of_pat (na::env) sigma c)
   | PIf (c,b1,b2) ->

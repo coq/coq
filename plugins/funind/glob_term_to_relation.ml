@@ -42,7 +42,7 @@ let compose_glob_context =
     match bt with
       | Lambda n -> mkGLambda(n,t,acc)
       | Prod n -> mkGProd(n,t,acc)
-      | LetIn n -> mkGLetIn(n,t,acc)
+      | LetIn n -> mkGLetIn(n,t,None,acc)
   in
   List.fold_right compose_binder
 
@@ -489,7 +489,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		    | u::l -> 
 			match t with 
 			  | GLambda(loc,na,_,nat,b) -> 
-			      GLetIn(Loc.ghost,na,u,aux b l)
+			      GLetIn(Loc.ghost,na,u,None,aux b l)
 			  | _ -> 
 			      GApp(Loc.ghost,t,l)
 		in
@@ -535,7 +535,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		      args_res.result
 		}
 	    | GApp _ -> assert false (* we have collected all the app in [glob_decompose_app] *)
-       	    | GLetIn(_,n,t,b) ->
+	    | GLetIn(_,n,v,t,b) ->
 		(* if we have [(let x := v in b) t1 ... tn] ,
 		   we discard our work and compute the list of constructor for
 		   [let x = v in (b t1 ... tn)] up to alpha conversion
@@ -559,7 +559,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		  env
 		  funnames
 		  avoid
-		  (mkGLetIn(new_n,t,mkGApp(new_b,args)))
+		  (mkGLetIn(new_n,v,t,mkGApp(new_b,args)))
 	    | GCases _  | GIf _ | GLetTuple _ ->
 		(* we have [(match e1, ...., en with ..... end) t1 tn]
 		   we first compute the result from the case and
@@ -603,12 +603,13 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let new_env = raw_push_named (n,None,t) env in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_prod n) t_res b_res
-    | GLetIn(_,n,v,b) ->
+    | GLetIn(loc,n,v,typ,b) ->
 	(* we first compute the list of constructor
 	   corresponding to the body of the function,
 	   then the one corresponding to the value [t]
 	   and combine the two result
 	*)
+        let v = match typ with None -> v | Some t -> GCast (loc,v,CastConv t) in
 	let v_res = build_entry_lc env funnames avoid v in
 	let v_as_constr,ctx = Pretyping.understand env (Evd.from_env env) v in
 	let v_type = Typing.unsafe_type_of env (Evd.from_env env) v_as_constr in
@@ -1115,8 +1116,9 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		(* We have renamed all the anonymous functions during alpha_renaming phase *)
 
 	end
-    | GLetIn(_,n,t,b) ->
+    | GLetIn(loc,n,v,t,b) ->
 	begin
+          let t = match t with None -> v | Some t -> GCast (loc,v,CastConv t) in
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let evd = (Evd.from_env env) in
 	  let t',ctx = Pretyping.understand env evd t in
@@ -1131,7 +1133,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	  match n with
 	    | Name id when Id.Set.mem id id_to_exclude && depth >= nb_args  ->
 		new_b,Id.Set.remove id (Id.Set.filter not_free_in_t id_to_exclude)
-	    | _ -> GLetIn(Loc.ghost,n,t,new_b),
+	    | _ -> GLetIn(Loc.ghost,n,t,None,new_b), (* HOPING IT WOULD WORK *)
 		Id.Set.filter not_free_in_t id_to_exclude
 	end
     | GLetTuple(_,nal,(na,rto),t,b) ->
@@ -1189,8 +1191,12 @@ let rec compute_cst_params relnames params = function
       compute_cst_params_from_app [] (params,rtl)
   | GApp(_,f,args) ->
       List.fold_left (compute_cst_params relnames) params (f::args)
-  | GLambda(_,_,_,t,b) | GProd(_,_,_,t,b) | GLetIn(_,_,t,b) | GLetTuple(_,_,_,t,b) ->
+  | GLambda(_,_,_,t,b) | GProd(_,_,_,t,b) | GLetTuple(_,_,_,t,b) ->
       let t_params = compute_cst_params relnames params t in
+      compute_cst_params relnames t_params b
+  | GLetIn(_,_,v,t,b) ->
+      let v_params = compute_cst_params relnames params v in
+      let t_params = Option.fold_left (compute_cst_params relnames) v_params t in
       compute_cst_params relnames t_params b
   | GCases _ ->
       params  (* If there is still cases at this point they can only be
@@ -1202,12 +1208,12 @@ let rec compute_cst_params relnames params = function
 and compute_cst_params_from_app acc (params,rtl) =
   match params,rtl with
     | _::_,[] -> assert false (* the rel has at least nargs + 1 arguments ! *)
-    | ((Name id,_,is_defined) as param)::params',(GVar(_,id'))::rtl'
-	when Id.compare id id' == 0 && not is_defined ->
+    | ((Name id,_,None) as param)::params',(GVar(_,id'))::rtl'
+	when Id.compare id id' == 0 ->
 	compute_cst_params_from_app (param::acc) (params',rtl')
     | _  -> List.rev acc
 
-let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * bool) list array) csts =
+let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * glob_constr option) list array) csts =
   let rels_params =
     Array.mapi
       (fun i args ->
@@ -1222,11 +1228,11 @@ let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * bool)
   let _ =
     try
       List.iteri
-	(fun i ((n,nt,is_defined) as param) ->
+	(fun i ((n,nt,typ) as param) ->
 	   if Array.for_all
 	     (fun l ->
-		let (n',nt',is_defined') = List.nth l i in
-		Name.equal n n' && glob_constr_eq nt nt' && (is_defined : bool) == is_defined')
+		let (n',nt',typ') = List.nth l i in
+		Name.equal n n' && glob_constr_eq nt nt' && Option.equal glob_constr_eq typ typ')
 	     rels_params
 	   then
 	     l := param::!l
@@ -1241,15 +1247,15 @@ let rec rebuild_return_type rt =
   match rt with
     | Constrexpr.CProdN(loc,n,t') ->
 	Constrexpr.CProdN(loc,n,rebuild_return_type t')
-    | Constrexpr.CLetIn(loc,na,t,t') ->
-	Constrexpr.CLetIn(loc,na,t,rebuild_return_type t')
+    | Constrexpr.CLetIn(loc,na,v,t,t') ->
+	Constrexpr.CLetIn(loc,na,v,t,rebuild_return_type t')
     | _ -> Constrexpr.CProdN(Loc.ghost,[[Loc.ghost,Anonymous],
 				       Constrexpr.Default Decl_kinds.Explicit,rt],
 			    Constrexpr.CSort(Loc.ghost,GType []))
 
 
 let do_build_inductive
-      evd (funconstants: Term.pconstant list) (funsargs: (Name.t * glob_constr * bool) list list)
+      evd (funconstants: Term.pconstant list) (funsargs: (Name.t * glob_constr * glob_constr option) list list)
       returned_types
       (rtl:glob_constr list) =
   let _time1 = System.get_time () in
@@ -1288,16 +1294,17 @@ let do_build_inductive
   let resa = Array.map (build_entry_lc env  funnames_as_set []) rta in
   let env_with_graphs =
     let rel_arity i funargs =  (* Rebuilding arities (with parameters) *)
-      let rel_first_args :(Name.t * Glob_term.glob_constr * bool ) list  =
+      let rel_first_args :(Name.t * Glob_term.glob_constr * Glob_term.glob_constr option ) list  =
 	funargs
       in
       List.fold_right
-	(fun (n,t,is_defined) acc ->
-	   if is_defined
-	   then
+	(fun (n,t,typ) acc ->
+          match typ with
+          | Some typ ->
 	     Constrexpr.CLetIn(Loc.ghost,(Loc.ghost, n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
+                              Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
 			      acc)
-	   else
+	  | None ->
 	     Constrexpr.CProdN
 	       (Loc.ghost,
 		[[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
@@ -1355,16 +1362,17 @@ let do_build_inductive
     rel_constructors
   in
   let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
-    let rel_first_args :(Name.t * Glob_term.glob_constr * bool ) list  =
+    let rel_first_args :(Name.t * Glob_term.glob_constr * Glob_term.glob_constr option ) list  =
       (snd (List.chop nrel_params funargs))
     in
     List.fold_right
-      (fun (n,t,is_defined) acc ->
-	 if is_defined
-	 then
+      (fun (n,t,typ) acc ->
+         match typ with
+         | Some typ ->
 	   Constrexpr.CLetIn(Loc.ghost,(Loc.ghost, n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
+                              Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
 			    acc)
-	 else
+	 | None ->
 	   Constrexpr.CProdN
 	   (Loc.ghost,
 	   [[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
@@ -1391,11 +1399,12 @@ let do_build_inductive
   in
   let rel_params =
     List.map
-      (fun (n,t,is_defined) ->
-	 if is_defined
-	 then
-	   Constrexpr.CLocalDef((Loc.ghost,n), Constrextern.extern_glob_constr Id.Set.empty t)
-	 else
+      (fun (n,t,typ) ->
+         match typ with
+         | Some typ ->
+	   Constrexpr.CLocalDef((Loc.ghost,n), Constrextern.extern_glob_constr Id.Set.empty t,
+                                  Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ))
+	 | None ->
 	 Constrexpr.CLocalAssum
 	   ([(Loc.ghost,n)], Constrexpr_ops.default_binder_kind, Constrextern.extern_glob_constr Id.Set.empty t)
       )

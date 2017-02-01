@@ -19,7 +19,7 @@ val mkGVar : Id.t -> glob_constr
 val mkGApp  : glob_constr*(glob_constr list) -> glob_constr
 val mkGLambda : Name.t * glob_constr * glob_constr -> glob_constr
 val mkGProd : Name.t * glob_constr * glob_constr -> glob_constr
-val mkGLetIn : Name.t * glob_constr * glob_constr -> glob_constr
+val mkGLetIn : Name.t * glob_constr * glob_constr option * glob_constr -> glob_constr
 val mkGCases : glob_constr option * tomatch_tuples * cases_clauses -> glob_constr
 val mkGSort : glob_sort -> glob_constr
 val mkGHole : unit -> glob_constr (* we only build Evd.BinderType Anonymous holes *)

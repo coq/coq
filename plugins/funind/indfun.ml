@@ -129,7 +129,7 @@ let functional_induction with_clean c princl pat =
 
 let rec abstract_glob_constr c = function
   | [] -> c
-  | Constrexpr.CLocalDef (x,b)::bl -> Constrexpr_ops.mkLetInC(x,b,abstract_glob_constr c bl)
+  | Constrexpr.CLocalDef (x,b,t)::bl -> Constrexpr_ops.mkLetInC(x,b,t,abstract_glob_constr c bl)
   | Constrexpr.CLocalAssum (idl,k,t)::bl ->
       List.fold_right (fun x b -> Constrexpr_ops.mkLambdaC([x],k,t,b)) idl
         (abstract_glob_constr c bl)
@@ -192,8 +192,10 @@ let is_rec names =
     | GRec _ -> error "GRec not handled"
     | GIf(_,b,_,lhs,rhs) ->
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
-    | GLetIn(_,na,t,b) | GLambda(_,na,_,t,b) | GProd(_,na,_,t,b)  ->
+    | GProd(_,na,_,t,b) | GLambda(_,na,_,t,b) ->
 	lookup names t || lookup (Nameops.name_fold Id.Set.remove na names) b
+    | GLetIn(_,na,b,t,c) ->
+	lookup names b || Option.cata (lookup names) true t || lookup (Nameops.name_fold Id.Set.remove na names) c
     | GLetTuple(_,nal,_,t,b) -> lookup names t ||
 	lookup
 	  (List.fold_left
@@ -572,8 +574,8 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	  | [], _ -> (List.rev aux,replace_vars_constr_expr assoc typ,assoc)
 	  | (Constrexpr.CLocalAssum(nal,bk,_))::bl',typ ->
 	     rebuild_nal (aux,assoc) bk bl' nal (List.length nal) typ
-	  | (Constrexpr.CLocalDef(na,_))::bl',Constrexpr.CLetIn(_,_,nat,typ') ->
-	    rebuild_bl ((Constrexpr.CLocalDef(na,replace_vars_constr_expr assoc nat)::aux),assoc)
+	  | (Constrexpr.CLocalDef(na,_,_))::bl',Constrexpr.CLetIn(_,_,nat,ty,typ') ->
+	    rebuild_bl ((Constrexpr.CLocalDef(na,replace_vars_constr_expr assoc nat,Option.map (replace_vars_constr_expr assoc) ty (* ??? *))::aux),assoc)
 	      bl' typ'
 	  | _ -> assert false
       and rebuild_nal (aux,assoc) bk bl' nal lnal typ = 
@@ -726,8 +728,8 @@ let rec add_args id new_args b =
       CLambdaN(loc,
 	       List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args  b2)) nal,
 	       add_args id new_args  b1)
-  | CLetIn(loc,na,b1,b2) ->
-      CLetIn(loc,na,add_args id new_args b1,add_args id new_args b2)
+  | CLetIn(loc,na,b1,t,b2) ->
+      CLetIn(loc,na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
   | CAppExpl(loc,(pf,r,us),exprl) ->
       begin
 	match r with
@@ -865,7 +867,7 @@ let make_graph (f_ref:global_reference) =
 			  List.flatten
 			    (List.map
 			       (function
-				  | Constrexpr.CLocalDef (na,_)-> []
+				  | Constrexpr.CLocalDef (na,_,_)-> []
 				  | Constrexpr.CLocalAssum (nal,_,_) ->
 				      List.map
 					(fun (loc,n) ->

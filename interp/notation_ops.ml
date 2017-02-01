@@ -36,7 +36,7 @@ let compare_glob_constr f add t1 t2 = match t1,t2 with
       on_true_do (f ty1 ty2 && f c1 c2) add na1
   | GHole _, GHole _ -> true
   | GSort (_,s1), GSort (_,s2) -> Miscops.glob_sort_eq s1 s2
-  | GLetIn (_,na1,b1,c1), GLetIn (_,na2,b2,c2) when Name.equal na1 na2 ->
+  | GLetIn (_,na1,b1,t1,c1), GLetIn (_,na2,b2,t2,c2) when Name.equal na1 na2 ->
       on_true_do (f b1 b2 && f c1 c2) add na1
   | (GCases _ | GRec _
     | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _),_
@@ -63,8 +63,9 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
 | NBinderList (i1, j1, t1, u1), NBinderList (i2, j2, t2, u2) ->
   Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
   (eq_notation_constr vars) u1 u2
-| NLetIn (na1, t1, u1), NLetIn (na2, t2, u2) ->
-  Name.equal na1 na2 && (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
+| NLetIn (na1, b1, t1, u1), NLetIn (na2, b2, t2, u2) ->
+  Name.equal na1 na2 && eq_notation_constr vars b1 b2 &&
+  Option.equal (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
 | NCases (_, o1, r1, p1), NCases (_, o2, r2, p2) -> (** FIXME? *)
   let eqpat (p1, t1) (p2, t2) =
     List.equal cases_pattern_eq p1 p2 &&
@@ -168,8 +169,8 @@ let glob_constr_of_notation_constr_with_binders loc g f e = function
       let e',na = g e na in GLambda (loc,na,Explicit,f e ty,f e' c)
   | NProd (na,ty,c) ->
       let e',na = g e na in GProd (loc,na,Explicit,f e ty,f e' c)
-  | NLetIn (na,b,c) ->
-      let e',na = g e na in GLetIn (loc,na,f e b,f e' c)
+  | NLetIn (na,b,t,c) ->
+      let e',na = g e na in GLetIn (loc,na,f e b,Option.map (f e) t,f e' c)
   | NCases (sty,rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
@@ -347,7 +348,7 @@ let notation_constr_and_vars_of_glob_constr a =
   | GApp (_,g,args) -> NApp (aux g, List.map aux args)
   | GLambda (_,na,bk,ty,c) -> add_name found na; NLambda (na,aux ty,aux c)
   | GProd (_,na,bk,ty,c) -> add_name found na; NProd (na,aux ty,aux c)
-  | GLetIn (_,na,b,c) -> add_name found na; NLetIn (na,aux b,aux c)
+  | GLetIn (_,na,b,t,c) -> add_name found na; NLetIn (na,aux b,Option.map aux t,aux c)
   | GCases (_,sty,rtntypopt,tml,eqnl) ->
       let f (_,idl,pat,rhs) = List.iter (add_id found) idl; (pat,aux rhs) in
       NCases (sty,Option.map aux rtntypopt,
@@ -496,11 +497,12 @@ let rec subst_notation_constr subst bound raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  NBinderList (id1,id2,r1',r2')
 
-  | NLetIn (n,r1,r2) ->
-      let r1' = subst_notation_constr subst bound r1
-      and r2' = subst_notation_constr subst bound r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  NLetIn (n,r1',r2')
+  | NLetIn (n,r1,t,r2) ->
+      let r1' = subst_notation_constr subst bound r1 in
+      let t' = Option.smartmap (subst_notation_constr subst bound) t in
+      let r2' = subst_notation_constr subst bound r2 in
+	if r1' == r1 && t == t' && r2' == r2 then raw else
+	  NLetIn (n,r1',t',r2')
 
   | NCases (sty,rtntypopt,rl,branches) ->
       let rtntypopt' = Option.smartmap (subst_notation_constr subst bound) rtntypopt
@@ -780,6 +782,11 @@ let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) 
       | GHole _, _ -> v'
       | _, GHole _ -> v
       | _, _ -> if glob_constr_eq (alpha_rename (snd alp) v) v' then v else raise No_match in
+    let unify_opt_term alp v v' =
+      match v, v' with
+      | Some t, Some t' -> Some (unify_term alp t t')
+      | (Some _ as x), None | None, (Some _ as x) -> x
+      | None, None -> None in
     let unify_binding_kind bk bk' = if bk == bk' then bk' else raise No_match in
     let unify_binder alp b b' =
       match b, b' with
@@ -788,7 +795,7 @@ let bind_bindinglist_env alp (terms,onlybinders,termlists,binderlists as sigma) 
          alp, GLocalAssum (loc, na, unify_binding_kind bk bk', unify_term alp t t')
       | GLocalDef (loc,na,bk,c,t), GLocalDef (_,na',bk',c',t') ->
          let alp, na = unify_name alp na na' in
-         alp, GLocalDef (loc, na, unify_binding_kind bk bk', unify_term alp c c', unify_term alp t t')
+         alp, GLocalDef (loc, na, unify_binding_kind bk bk', unify_term alp c c', unify_opt_term alp t t')
       | GLocalPattern (loc,(p,ids),id,bk,t), GLocalPattern (_,(p',_),_,bk',t') ->
          let alp, p = unify_pat alp p p' in
          alp, GLocalPattern (loc, (p,ids), id, unify_binding_kind bk bk', unify_term alp t t')
@@ -892,9 +899,9 @@ let rec match_iterated_binders islambda decls = function
       match_iterated_binders islambda (GLocalPattern (loc,(cp,[](*dummy*)),p,bk,t)::decls) b
   | GProd (loc,(Name _ as na),bk,t,b) when not islambda ->
       match_iterated_binders islambda (GLocalAssum (loc,na,bk,t)::decls) b
-  | GLetIn (loc,na,c,b) when glue_letin_with_decls ->
+  | GLetIn (loc,na,c,t,b) when glue_letin_with_decls ->
       match_iterated_binders islambda
-	(GLocalDef (loc,na,Explicit (*?*), c,GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None))::decls) b
+	(GLocalDef (loc,na,Explicit (*?*), c,t)::decls) b
   | b -> (decls,b)
 
 let remove_sigma x (terms,onlybinders,termlists,binderlists) =
@@ -1034,8 +1041,12 @@ let rec match_ inner u alp metas sigma a1 a2 =
      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GProd (_,na1,_,t1,b1), NProd (na2,t2,b2) ->
      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
-  | GLetIn (_,na1,t1,b1), NLetIn (na2,t2,b2) ->
-     match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
+  | GLetIn (_,na1,b1,_,c1), NLetIn (na2,b2,None,c2)
+  | GLetIn (_,na1,b1,None,c1), NLetIn (na2,b2,_,c2) ->
+     match_binders u alp metas na1 na2 (match_in u alp metas sigma b1 b2) c1 c2
+  | GLetIn (_,na1,b1,Some t1,c1), NLetIn (na2,b2,Some t2,c2) ->
+     match_binders u alp metas na1 na2
+       (match_in u alp metas (match_in u alp metas sigma b1 b2) t1 t2) c1 c2
   | GCases (_,sty1,rtno1,tml1,eqnl1), NCases (sty2,rtno2,tml2,eqnl2)
       when sty1 == sty2
 	 && Int.equal (List.length tml1) (List.length tml2)

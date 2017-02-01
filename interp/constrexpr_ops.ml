@@ -40,7 +40,7 @@ let names_of_local_assums bl =
   List.flatten (List.map (function CLocalAssum(l,_,_)->l|_->[]) bl)
 
 let names_of_local_binders bl =
-  List.flatten (List.map (function CLocalAssum(l,_,_)->l|CLocalDef(l,_)->[l]|CLocalPattern _ -> assert false) bl)
+  List.flatten (List.map (function CLocalAssum(l,_,_)->l|CLocalDef(l,_,_)->[l]|CLocalPattern _ -> assert false) bl)
 
 (**********************************************************************)
 (* Functions on constr_expr *)
@@ -113,9 +113,10 @@ let rec constr_expr_eq e1 e2 =
   | CLambdaN(_,bl1,a1), CLambdaN(_,bl2,a2) ->
       List.equal binder_expr_eq bl1 bl2 &&
       constr_expr_eq a1 a2
-  | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) ->
+  | CLetIn(_,(_,na1),a1,t1,b1), CLetIn(_,(_,na2),a2,t2,b2) ->
       Name.equal na1 na2 &&
       constr_expr_eq a1 a2 &&
+      Option.equal constr_expr_eq t1 t2 &&
       constr_expr_eq b1 b2
   | CAppExpl(_,(proj1,r1,_),al1), CAppExpl(_,(proj2,r2,_),al2) ->
       Option.equal Int.equal proj1 proj2 &&
@@ -212,8 +213,8 @@ and recursion_order_expr_eq r1 r2 = match r1, r2 with
 | _ -> false
 
 and local_binder_eq l1 l2 = match l1, l2 with
-| CLocalDef (n1, e1), CLocalDef (n2, e2) ->
-  eq_located Name.equal n1 n2 && constr_expr_eq e1 e2
+| CLocalDef (n1, e1, t1), CLocalDef (n2, e2, t2) ->
+  eq_located Name.equal n1 n2 && constr_expr_eq e1 e2 && Option.equal constr_expr_eq t1 t2
 | CLocalAssum (n1, _, e1), CLocalAssum (n2, _, e2) ->
   (** Don't care about the [binder_kind] *)
   List.equal (eq_located Name.equal) n1 n2 && constr_expr_eq e1 e2
@@ -234,7 +235,7 @@ let constr_loc = function
   | CCoFix (loc,_,_) -> loc
   | CProdN (loc,_,_) -> loc
   | CLambdaN (loc,_,_) -> loc
-  | CLetIn (loc,_,_,_) -> loc
+  | CLetIn (loc,_,_,_,_) -> loc
   | CAppExpl (loc,_,_) -> loc
   | CApp (loc,_,_) -> loc
   | CRecord (loc,_) -> loc
@@ -270,7 +271,8 @@ let raw_cases_pattern_expr_loc = function
 
 let local_binder_loc = function
   | CLocalAssum ((loc,_)::_,_,t)
-  | CLocalDef ((loc,_),t) -> Loc.merge loc (constr_loc t)
+  | CLocalDef ((loc,_),t,None) -> Loc.merge loc (constr_loc t)
+  | CLocalDef ((loc,_),b,Some t) -> Loc.merge loc (Loc.merge (constr_loc b) (constr_loc t))
   | CLocalAssum ([],_,_) -> assert false
   | CLocalPattern (loc,_,_) -> loc
 
@@ -285,7 +287,7 @@ let mkIdentC id  = CRef (Ident (Loc.ghost, id),None)
 let mkRefC r     = CRef (r,None)
 let mkCastC (a,k)  = CCast (Loc.ghost,a,k)
 let mkLambdaC (idl,bk,a,b) = CLambdaN (Loc.ghost,[idl,bk,a],b)
-let mkLetInC (id,a,b)   = CLetIn (Loc.ghost,id,a,b)
+let mkLetInC (id,a,t,b)   = CLetIn (Loc.ghost,id,a,t,b)
 let mkProdC (idl,bk,a,b)   = CProdN (Loc.ghost,[idl,bk,a],b)
 
 let mkAppC (f,l) =
@@ -308,7 +310,7 @@ let expand_pattern_binders mkC bl c =
     | b :: bl ->
         let (env, bl, c) = loop bl c in
         match b with
-        | CLocalDef (n, _) ->
+        | CLocalDef (n, _, _) ->
             let env = add_name_in_env env n in
             (env, b :: bl, c)
         | CLocalAssum (nl, _, _) ->
@@ -340,8 +342,8 @@ let mkCProdN loc bll c =
     match bll with
     | CLocalAssum ((loc1,_)::_ as idl,bk,t) :: bll ->
         CProdN (loc,[idl,bk,t],loop (Loc.merge loc1 loc) bll c)
-    | CLocalDef ((loc1,_) as id,b) :: bll ->
-        CLetIn (loc,id,b,loop (Loc.merge loc1 loc) bll c)
+    | CLocalDef ((loc1,_) as id,b,t) :: bll ->
+        CLetIn (loc,id,b,t,loop (Loc.merge loc1 loc) bll c)
     | [] -> c
     | CLocalAssum ([],_,_) :: bll -> loop loc bll c
     | CLocalPattern (loc,p,ty) :: bll -> assert false
@@ -354,8 +356,8 @@ let mkCLambdaN loc bll c =
     match bll with
     | CLocalAssum ((loc1,_)::_ as idl,bk,t) :: bll ->
         CLambdaN (loc,[idl,bk,t],loop (Loc.merge loc1 loc) bll c)
-    | CLocalDef ((loc1,_) as id,b) :: bll ->
-        CLetIn (loc,id,b,loop (Loc.merge loc1 loc) bll c)
+    | CLocalDef ((loc1,_) as id,b,t) :: bll ->
+        CLetIn (loc,id,b,t,loop (Loc.merge loc1 loc) bll c)
     | [] -> c
     | CLocalAssum ([],_,_) :: bll -> loop loc bll c
     | CLocalPattern (loc,p,ty) :: bll -> assert false
@@ -365,7 +367,7 @@ let mkCLambdaN loc bll c =
 
 let rec abstract_constr_expr c = function
   | [] -> c
-  | CLocalDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
+  | CLocalDef (x,b,t)::bl -> mkLetInC(x,b,t,abstract_constr_expr c bl)
   | CLocalAssum (idl,bk,t)::bl ->
       List.fold_right (fun x b -> mkLambdaC([x],bk,t,b)) idl
       (abstract_constr_expr c bl)
@@ -373,7 +375,7 @@ let rec abstract_constr_expr c = function
 
 let rec prod_constr_expr c = function
   | [] -> c
-  | CLocalDef (x,b)::bl -> mkLetInC(x,b,prod_constr_expr c bl)
+  | CLocalDef (x,b,t)::bl -> mkLetInC(x,b,t,prod_constr_expr c bl)
   | CLocalAssum (idl,bk,t)::bl ->
       List.fold_right (fun x b -> mkProdC([x],bk,t,b)) idl
       (prod_constr_expr c bl)

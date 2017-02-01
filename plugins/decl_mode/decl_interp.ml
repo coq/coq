@@ -263,7 +263,7 @@ let prod_one_id (loc,id) glob =
 	 GHole (loc,Evar_kinds.BinderType (Name id), Misctypes.IntroAnonymous, None), glob)
 
 let let_in_one_alias (id,pat) glob =
-  GLetIn (Loc.ghost,Name id, glob_of_pat pat, glob)
+  GLetIn (Loc.ghost,Name id, glob_of_pat pat, None, glob)
 
 let rec bind_primary_aliases map pat =
   match pat with
@@ -358,10 +358,7 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
     let rids=ref ([],pat_vars) in
     let npatt= deanonymize rids patt in
       List.rev (fst !rids),npatt in
-  let term2 =
-    GLetIn(Loc.ghost,Anonymous,
-	   GCast(Loc.ghost,glob_of_pat npatt,
-		 CastConv app_ind),term1) in
+  let term2=GLetIn(Loc.ghost,Anonymous,glob_of_pat npatt,Some app_ind,term1) in
   let term3=List.fold_right let_in_one_alias aliases term2 in
   let term4=List.fold_right prod_one_id loc_ids term3 in
   let term5=List.fold_right prod_one_hyp params term4 in
