@@ -794,7 +794,10 @@ type compiled_library = {
 type native_library = Nativecode.global list
 
 let get_library_native_symbols senv dir =
-  DPMap.find dir senv.native_symbols
+  try DPMap.find dir senv.native_symbols
+  with Not_found -> CErrors.errorlabstrm "get_library_native_symbols"
+                      Pp.((str "Linker error in the native compiler. Are you using Require inside a nested Module declaration?") ++ fnl () ++
+                          (str "This use case is not supported, but disabling the native compiler may help."))
 
 (** FIXME: MS: remove?*)
 let current_modpath senv = senv.modpath
