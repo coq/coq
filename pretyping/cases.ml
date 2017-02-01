@@ -849,7 +849,7 @@ let subst_predicate (subst,copt) ccl tms =
     | Some c -> c::subst in
   substnl_predicate sigma 0 ccl tms
 
-let specialize_predicate_var (cur,typ,dep) tms ccl =
+let specialize_predicate_var (cur,typ,dep) env tms ccl =
   let c = match dep with
   | Anonymous -> None
   | Name _ -> Some cur
@@ -857,7 +857,9 @@ let specialize_predicate_var (cur,typ,dep) tms ccl =
   let l =
     match typ with
     | IsInd (_, IndType (_, _), []) -> []
-    | IsInd (_, IndType (_, realargs), names) -> realargs
+    | IsInd (_, IndType (indf, realargs), names) ->
+       let arsign,_ = get_arity env indf in
+       subst_of_rel_context_instance arsign realargs
     | NotInd _ -> [] in
   subst_predicate (l,c) ccl tms
 
@@ -1391,7 +1393,7 @@ and match_current pb (initial,tomatch) =
 and shift_problem ((current,t),_,na) pb =
   let ty = type_of_tomatch t in
   let tomatch = lift_tomatch_stack 1 pb.tomatch in
-  let pred = specialize_predicate_var (current,t,na) pb.tomatch pb.pred in
+  let pred = specialize_predicate_var (current,t,na) pb.env pb.tomatch pb.pred in
   let pb =
     { pb with
        env = push_rel (LocalDef (na,current,ty)) pb.env;
@@ -1408,7 +1410,7 @@ and shift_problem ((current,t),_,na) pb =
    are already introduced in the context, we avoid creating aliases to
    themselves by treating this case specially. *)
 and pop_problem ((current,t),_,na) pb =
-  let pred = specialize_predicate_var (current,t,na) pb.tomatch pb.pred in
+  let pred = specialize_predicate_var (current,t,na) pb.env pb.tomatch pb.pred in
   let pb =
     { pb with
        pred = pred;
