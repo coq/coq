@@ -95,7 +95,7 @@ let rec fold_local_binders g f n acc b = function
       f n (fold_local_binders g f n' acc b l) t
   | LocalRawDef ((_,na),t)::l ->
       f n (fold_local_binders g f (name_fold g na n) acc b l) t
-  | LocalPattern (_,pat,t)::l ->
+  | LocalRawPattern (_,pat,t)::l ->
       let acc = fold_local_binders g f (cases_pattern_fold_names g n pat) acc b l in
       Option.fold_left (f n) acc t
   | [] ->
@@ -176,7 +176,7 @@ let split_at_annot bl na =
               (List.rev ans, LocalRawAssum (r, k, t) :: rest)
             end
 	| LocalRawDef _ as x :: rest -> aux (x :: acc) rest
-        | LocalPattern (loc,_,_) :: rest ->
+        | LocalRawPattern (loc,_,_) :: rest ->
             Loc.raise ~loc (Stream.Error "pattern with quote not allowed after fix")
 	| [] ->
             user_err ~loc 
@@ -200,9 +200,9 @@ let map_local_binders f g e bl =
         (map_binder g e nal, LocalRawAssum(nal,k,f e ty)::bl)
     | LocalRawDef((loc,na),ty) ->
         (name_fold g na e, LocalRawDef((loc,na),f e ty)::bl)
-    | LocalPattern (loc,pat,t) ->
+    | LocalRawPattern (loc,pat,t) ->
         let ids = ids_of_pattern pat in
-        (Id.Set.fold g ids e, LocalPattern (loc,pat,Option.map (f e) t)::bl) in
+        (Id.Set.fold g ids e, LocalRawPattern (loc,pat,Option.map (f e) t)::bl) in
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
 

@@ -125,7 +125,7 @@ and recursion_order_expr =
 and local_binder =
   | LocalRawDef of Name.t located * constr_expr
   | LocalRawAssum of Name.t located list * binder_kind * constr_expr
-  | LocalPattern of Loc.t * cases_pattern_expr * constr_expr option
+  | LocalRawPattern of Loc.t * cases_pattern_expr * constr_expr option
 
 and constr_notation_substitution =
     constr_expr list *      (** for constr subterms *)

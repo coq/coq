@@ -319,7 +319,7 @@ let tag_var = tag Tag.variable
   let begin_of_binder = function
   LocalRawDef((loc,_),_) -> fst (Loc.unloc loc)
     | LocalRawAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
-    | LocalPattern(loc,_,_) -> fst (Loc.unloc loc)
+    | LocalRawPattern(loc,_,_) -> fst (Loc.unloc loc)
     | _ -> assert false
 
   let begin_of_binders = function
@@ -368,7 +368,7 @@ let tag_var = tag Tag.variable
         | _ -> c, CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
                   str":=" ++ cut() ++ pr_c c)
-    | LocalPattern (loc,p,tyo) ->
+    | LocalRawPattern (loc,p,tyo) ->
       let p = pr_patt lsimplepatt p in
       match tyo with
         | None ->
@@ -384,7 +384,7 @@ let tag_var = tag Tag.variable
     match bl with
       | [LocalRawAssum (nal,k,t)] ->
         kw n ++ pr_binder false pr_c (nal,k,t)
-      | (LocalRawAssum _ | LocalPattern _) :: _ as bdl ->
+      | (LocalRawAssum _ | LocalRawPattern _) :: _ as bdl ->
         kw n ++ pr_undelimited_binders sep pr_c bdl
       | _ -> assert false
 
@@ -402,7 +402,7 @@ let tag_var = tag Tag.variable
               CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)]))
          when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_prod_binders b in
-      LocalPattern (loc,p,None) :: bl, c
+      LocalRawPattern (loc,p,None) :: bl, c
     | CProdN (loc,(nal,bk,t)::bl,c) ->
       let bl,c = extract_prod_binders (CProdN(loc,bl,c)) in
       LocalRawAssum (nal,bk,t) :: bl, c
@@ -418,7 +418,7 @@ let tag_var = tag Tag.variable
                 CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)]))
          when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_lam_binders b in
-      LocalPattern (loc,p,None) :: bl, c
+      LocalRawPattern (loc,p,None) :: bl, c
     | CLambdaN (loc,(nal,bk,t)::bl,c) ->
       let bl,c = extract_lam_binders (CLambdaN(loc,bl,c)) in
       LocalRawAssum (nal,bk,t) :: bl, c
@@ -469,7 +469,7 @@ let tag_var = tag Tag.variable
             let names_of_binder = function
               | LocalRawAssum (nal,_,_) -> nal
               | LocalRawDef (_,_) -> []
-              | LocalPattern _ -> assert false
+              | LocalRawPattern _ -> assert false
             in let ids = List.flatten (List.map names_of_binder bl) in
                if List.length ids > 1 then
                  spc() ++ str "{" ++ keyword "struct" ++ spc () ++ pr_id id ++ str"}"

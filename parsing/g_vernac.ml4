@@ -249,7 +249,7 @@ GEXTEND Gram
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
         let ((bl, c), tyo) =
-          if List.exists (function LocalPattern _ -> true | _ -> false) bl
+          if List.exists (function LocalRawPattern _ -> true | _ -> false) bl
           then
             let c = CCast (!@loc, c, CastConv t) in
             (expand_pattern_binders mkCLambdaN bl c, None)

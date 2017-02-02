@@ -235,7 +235,7 @@ and pp_local_binder lb = (* don't know what it is for now *)
       let ppl =
         List.map (fun (loc, nam) -> (xmlCst (string_of_name nam) loc)) namll in
       xmlTyped (ppl @ [pp_expr ce])
-  | LocalPattern _ ->
+  | LocalRawPattern _ ->
       assert false
 and pp_local_decl_expr lde = (* don't know what it is for now *)
   match lde with
