@@ -1602,7 +1602,8 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
         let idl_tmp = Array.map
           (fun ((loc,id),bl,ty,_) ->
             let (env',rbl) = List.fold_left intern_local_binder (env,[]) bl in
-            let rbl = List.map (function BDRawDef a -> a | BDPattern _ -> assert false) rbl in
+            let rbl = List.map (function BDRawDef a -> a | BDPattern _ -> 
+                      Loc.raise loc (Stream.Error "pattern with quote not allowed after cofix")) rbl in
             (List.rev rbl,
              intern_type env' ty,env')) dl in
 	let idl = Array.map2 (fun (_,_,_,bd) (b,c,env') ->
