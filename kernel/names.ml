@@ -170,10 +170,7 @@ struct
       if Int.equal c 0 then compare p1 p2 else c
     end
 
-  let rec equal p1 p2 = p1 == p2 || match p1, p2 with
-  | [], [] -> true
-  | id1 :: p1, id2 :: p2 -> Id.equal id1 id2 && equal p1 p2
-  | _ -> false
+  let equal = List.equal Id.equal
 
   let rec hash accu = function
   | [] -> accu
