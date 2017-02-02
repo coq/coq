@@ -175,7 +175,7 @@ struct
 
   let empty = []
 
-  let is_empty d = match d with [] -> true | _ -> false
+  let is_empty = List.is_empty
 
   let to_string = function
     | [] -> "<>"
