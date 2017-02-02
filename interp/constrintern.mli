@@ -88,7 +88,7 @@ val intern_gen : typing_constraint -> env ->
 val intern_pattern : env -> cases_pattern_expr ->
   Id.t list * (Id.t Id.Map.t * cases_pattern) list
 
-val intern_context : bool -> env -> internalization_env -> local_binder list -> internalization_env * glob_binder list
+val intern_context : bool -> env -> internalization_env -> local_binder list -> internalization_env * glob_decl list
 
 (** {6 Composing internalization with type inference (pretyping) } *)
 
