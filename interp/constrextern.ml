@@ -598,6 +598,13 @@ let extern_optimal_prim_token scopes r r' =
   | _ -> raise No_match
 
 (**********************************************************************)
+(* mapping decl                                                       *)
+
+let extended_glob_local_binder_of_decl loc = function
+  | (p,bk,Some x,t) -> GLocalDef (loc,p,bk,x,t)
+  | (p,bk,None,t) -> GLocalAssum (loc,p,bk,t)
+
+(**********************************************************************)
 (* mapping glob_constr to constr_expr                                    *)
 
 let extern_glob_sort = function
@@ -756,7 +763,7 @@ let rec extern inctx scopes vars r =
 	     let listdecl =
 	       Array.mapi (fun i fi ->
                  let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
-                 let bl = List.map (fun (p,bk,x,t) -> (Inl p,bk,x,t)) bl in
+                 let bl = List.map (extended_glob_local_binder_of_decl loc) bl in
                  let (assums,ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Id.Set.add) ids vars in
                  let vars1 = List.fold_right (name_fold Id.Set.add) ids vars' in
@@ -773,7 +780,7 @@ let rec extern inctx scopes vars r =
 	 | GCoFix n ->
 	     let listdecl =
                Array.mapi (fun i fi ->
-                 let bl = List.map (fun (p,bk,x,t) -> (Inl p,bk,x,t)) blv.(i) in
+                 let bl = List.map (extended_glob_local_binder_of_decl loc) blv.(i) in
                  let (_,ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Id.Set.add) ids vars in
                  let vars1 = List.fold_right (name_fold Id.Set.add) ids vars' in
@@ -817,13 +824,13 @@ and factorize_lambda inctx scopes vars na bk aty c =
 
 and extern_local_binder scopes vars = function
     [] -> ([],[],[])
-  | (Inl na,bk,Some bd,ty)::l ->
+  | GLocalDef (_,na,bk,bd,ty)::l ->
       let (assums,ids,l) =
         extern_local_binder scopes (name_fold Id.Set.add na vars) l in
       (assums,na::ids,
        CLocalDef((Loc.ghost,na), extern false scopes vars bd) :: l)
 
-  | (Inl na,bk,None,ty)::l ->
+  | GLocalAssum (_,na,bk,ty)::l ->
       let ty = extern_typ scopes vars ty in
       (match extern_local_binder scopes (name_fold Id.Set.add na vars) l with
           (assums,ids,CLocalAssum(nal,k,ty')::l)
@@ -836,9 +843,7 @@ and extern_local_binder scopes vars = function
             (na::assums,na::ids,
              CLocalAssum([(Loc.ghost,na)],Default bk,ty) :: l))
 
-  | (Inr p,bk,Some bd,ty)::l -> assert false
-
-  | (Inr p,bk,None,ty)::l ->
+  | GLocalPattern (_,(p,_),_,bk,ty)::l ->
       let ty =
         if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
       let p = extern_cases_pattern vars p in
@@ -1052,5 +1057,5 @@ let extern_constr_pattern env sigma pat =
 let extern_rel_context where env sigma sign =
   let a = detype_rel_context where [] (names_of_rel_context env,env) sigma sign in
   let vars = vars_of_env env in
-  let a = List.map (fun (p,bk,x,t) -> (Inl p,bk,x,t)) a in
+  let a = List.map (extended_glob_local_binder_of_decl Loc.ghost) a in
   pi3 (extern_local_binder (None,[]) vars a)
