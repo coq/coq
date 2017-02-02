@@ -104,17 +104,17 @@ let ids_of_names l =
 
 let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr list) =
   let rec aux bdvars l c = match c with
-      ((LocalRawAssum (n, _, c)) :: tl) ->
+      ((CLocalAssum (n, _, c)) :: tl) ->
 	let bound = ids_of_names n in
 	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
 	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
-    | ((LocalRawDef (n, c)) :: tl) ->
+    | ((CLocalDef (n, c)) :: tl) ->
 	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
 	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
 	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
-    | LocalRawPattern _ :: tl -> assert false
+    | CLocalPattern _ :: tl -> assert false
     | [] -> bdvars, l
   in aux bound l binders
 

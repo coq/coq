@@ -38,7 +38,7 @@ let mk_cast = function
     in CCast(loc, c, CastConv ty)
 
 let binder_of_name expl (loc,na) =
-  LocalRawAssum ([loc, na], Default expl,
+  CLocalAssum ([loc, na], Default expl,
     CHole (loc, Some (Evar_kinds.BinderType na), IntroAnonymous, None))
 
 let binders_of_names l =
@@ -412,11 +412,11 @@ GEXTEND Gram
   impl_ident_tail:
     [ [ "}" -> binder_of_name Implicit
     | nal=LIST1 name; ":"; c=lconstr; "}" ->
-        (fun na -> LocalRawAssum (na::nal,Default Implicit,c))
+        (fun na -> CLocalAssum (na::nal,Default Implicit,c))
     | nal=LIST1 name; "}" ->
-        (fun na -> LocalRawAssum (na::nal,Default Implicit,CHole (Loc.join_loc (fst na) !@loc, Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None)))
+        (fun na -> CLocalAssum (na::nal,Default Implicit,CHole (Loc.join_loc (fst na) !@loc, Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None)))
     | ":"; c=lconstr; "}" ->
-	(fun na -> LocalRawAssum ([na],Default Implicit,c))
+	(fun na -> CLocalAssum ([na],Default Implicit,c))
     ] ]
   ;
   fixannot:
@@ -442,12 +442,12 @@ GEXTEND Gram
        the latter is unique *)
     [ [ (* open binder *)
         id = name; idl = LIST0 name; ":"; c = lconstr ->
-          [LocalRawAssum (id::idl,Default Explicit,c)]
+          [CLocalAssum (id::idl,Default Explicit,c)]
 	(* binders factorized with open binder *)
       | id = name; idl = LIST0 name; bl = binders ->
           binders_of_names (id::idl) @ bl
       | id1 = name; ".."; id2 = name ->
-          [LocalRawAssum ([id1;(!@loc,Name ldots_var);id2],
+          [CLocalAssum ([id1;(!@loc,Name ldots_var);id2],
 	                  Default Explicit,CHole (!@loc, None, IntroAnonymous, None))]
       | bl = closed_binder; bl' = binders ->
 	  bl@bl'
@@ -457,37 +457,37 @@ GEXTEND Gram
     [ [ l = LIST0 binder -> List.flatten l ] ]
   ;
   binder:
-    [ [ id = name -> [LocalRawAssum ([id],Default Explicit,CHole (!@loc, None, IntroAnonymous, None))]
+    [ [ id = name -> [CLocalAssum ([id],Default Explicit,CHole (!@loc, None, IntroAnonymous, None))]
       | bl = closed_binder -> bl ] ]
   ;
   closed_binder:
     [ [ "("; id=name; idl=LIST1 name; ":"; c=lconstr; ")" ->
-          [LocalRawAssum (id::idl,Default Explicit,c)]
+          [CLocalAssum (id::idl,Default Explicit,c)]
       | "("; id=name; ":"; c=lconstr; ")" ->
-          [LocalRawAssum ([id],Default Explicit,c)]
+          [CLocalAssum ([id],Default Explicit,c)]
       | "("; id=name; ":="; c=lconstr; ")" ->
-          [LocalRawDef (id,c)]
+          [CLocalDef (id,c)]
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" ->
-          [LocalRawDef (id,CCast (Loc.merge (constr_loc t) (!@loc),c, CastConv t))]
+          [CLocalDef (id,CCast (Loc.merge (constr_loc t) (!@loc),c, CastConv t))]
       | "{"; id=name; "}" ->
-          [LocalRawAssum ([id],Default Implicit,CHole (!@loc, None, IntroAnonymous, None))]
+          [CLocalAssum ([id],Default Implicit,CHole (!@loc, None, IntroAnonymous, None))]
       | "{"; id=name; idl=LIST1 name; ":"; c=lconstr; "}" ->
-          [LocalRawAssum (id::idl,Default Implicit,c)]
+          [CLocalAssum (id::idl,Default Implicit,c)]
       | "{"; id=name; ":"; c=lconstr; "}" ->
-          [LocalRawAssum ([id],Default Implicit,c)]
+          [CLocalAssum ([id],Default Implicit,c)]
       | "{"; id=name; idl=LIST1 name; "}" ->
-          List.map (fun id -> LocalRawAssum ([id],Default Implicit,CHole (!@loc, None, IntroAnonymous, None))) (id::idl)
+          List.map (fun id -> CLocalAssum ([id],Default Implicit,CHole (!@loc, None, IntroAnonymous, None))) (id::idl)
       | "`("; tc = LIST1 typeclass_constraint SEP "," ; ")" ->
-	  List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
+	  List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
       | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->
-	  List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
+	  List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
       | "'"; p = pattern LEVEL "0" ->
           let (p, ty) =
             match p with
             | CPatCast (_, p, ty) -> (p, Some ty)
             | _ -> (p, None)
           in
-          [LocalRawPattern (!@loc, p, ty)]
+          [CLocalPattern (!@loc, p, ty)]
     ] ]
   ;
   typeclass_constraint:

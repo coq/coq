@@ -470,11 +470,11 @@ let glob_local_binder_of_extended = function
 let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
 
 let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = function
-  | LocalRawAssum(nal,bk,ty) ->
+  | CLocalAssum(nal,bk,ty) ->
       let env, bl' = intern_assumption intern lvar env nal bk ty in
       let bl' = List.map (fun a -> GLocalAssum a) bl' in
       env, bl' @ bl
-  | LocalRawDef((loc,na as locna),def) ->
+  | CLocalDef((loc,na as locna),def) ->
      let indef = intern env def in
      let term, ty =
        match indef with
@@ -483,7 +483,7 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
      in
       (push_name_env lvar (impls_term_list indef) env locna,
        (GLocalDef ((loc,(na,Explicit,term,ty))))::bl)
-  | LocalRawPattern (loc,p,ty) ->
+  | CLocalPattern (loc,p,ty) ->
       let tyc =
         match ty with
         | Some ty -> ty

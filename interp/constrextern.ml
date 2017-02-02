@@ -821,20 +821,20 @@ and extern_local_binder scopes vars = function
       let (assums,ids,l) =
         extern_local_binder scopes (name_fold Id.Set.add na vars) l in
       (assums,na::ids,
-       LocalRawDef((Loc.ghost,na), extern false scopes vars bd) :: l)
+       CLocalDef((Loc.ghost,na), extern false scopes vars bd) :: l)
 
   | (Inl na,bk,None,ty)::l ->
       let ty = extern_typ scopes vars ty in
       (match extern_local_binder scopes (name_fold Id.Set.add na vars) l with
-          (assums,ids,LocalRawAssum(nal,k,ty')::l)
+          (assums,ids,CLocalAssum(nal,k,ty')::l)
             when constr_expr_eq ty ty' &&
               match na with Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
               (na::assums,na::ids,
-               LocalRawAssum((Loc.ghost,na)::nal,k,ty')::l)
+               CLocalAssum((Loc.ghost,na)::nal,k,ty')::l)
         | (assums,ids,l) ->
             (na::assums,na::ids,
-             LocalRawAssum([(Loc.ghost,na)],Default bk,ty) :: l))
+             CLocalAssum([(Loc.ghost,na)],Default bk,ty) :: l))
 
   | (Inr p,bk,Some bd,ty)::l -> assert false
 
@@ -843,7 +843,7 @@ and extern_local_binder scopes vars = function
         if !Flags.raw_print then Some (extern_typ scopes vars ty) else None in
       let p = extern_cases_pattern vars p in
       let (assums,ids,l) = extern_local_binder scopes vars l in
-      (assums,ids, LocalRawPattern(Loc.ghost,p,ty) :: l)
+      (assums,ids, CLocalPattern(Loc.ghost,p,ty) :: l)
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,[loc,List.map (extern_cases_pattern_in_scope scopes vars) pl],

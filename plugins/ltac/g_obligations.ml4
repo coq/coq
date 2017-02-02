@@ -70,7 +70,7 @@ GEXTEND Gram
   Constr.closed_binder:
     [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" ->
 	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
-          [LocalRawAssum ([id], default_binder_kind, typ)]
+          [CLocalAssum ([id], default_binder_kind, typ)]
     ] ];
 
   END

@@ -822,7 +822,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let _ = prNamedRConstr (string_of_name nme) tp in
         let _ = prstr "  ;  " in
         let typ = glob_constr_to_constr_expr tp in
-        LocalRawAssum ([(Loc.ghost,nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
+        CLocalAssum ([(Loc.ghost,nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
       [] params in
   let concl = Constrextern.extern_constr false (Global.env()) Evd.empty concl in
   let arity,_ =

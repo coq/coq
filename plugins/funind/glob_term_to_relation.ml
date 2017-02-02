@@ -1394,9 +1394,9 @@ let do_build_inductive
       (fun (n,t,is_defined) ->
 	 if is_defined
 	 then
-	   Constrexpr.LocalRawDef((Loc.ghost,n), Constrextern.extern_glob_constr Id.Set.empty t)
+	   Constrexpr.CLocalDef((Loc.ghost,n), Constrextern.extern_glob_constr Id.Set.empty t)
 	 else
-	 Constrexpr.LocalRawAssum
+	 Constrexpr.CLocalAssum
 	   ([(Loc.ghost,n)], Constrexpr_ops.default_binder_kind, Constrextern.extern_glob_constr Id.Set.empty t)
       )
       rels_params
