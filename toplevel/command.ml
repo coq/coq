@@ -560,10 +560,10 @@ let check_named (loc, na) = match na with
 
 
 let check_param = function
-| LocalRawDef (na, _) -> check_named na
-| LocalRawAssum (nas, Default _, _) -> List.iter check_named nas
-| LocalRawAssum (nas, Generalized _, _) -> ()
-| LocalRawPattern _ -> assert false
+| CLocalDef (na, _) -> check_named na
+| CLocalAssum (nas, Default _, _) -> List.iter check_named nas
+| CLocalAssum (nas, Generalized _, _) -> ()
+| CLocalPattern _ -> assert false
 
 let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   check_all_names_different indl;

@@ -228,14 +228,14 @@ and pp_decl_notation ((_, s), ce, sc) = (* don't know what it is for now *)
   Element ("decl_notation", ["name", s], [pp_expr ce])
 and pp_local_binder lb = (* don't know what it is for now *)
   match lb with
-  | LocalRawDef ((_, nam), ce) ->
+  | CLocalDef ((_, nam), ce) ->
       let attrs = ["name", string_of_name nam] in
       pp_expr ~attr:attrs ce
-  | LocalRawAssum (namll, _, ce) ->
+  | CLocalAssum (namll, _, ce) ->
       let ppl =
         List.map (fun (loc, nam) -> (xmlCst (string_of_name nam) loc)) namll in
       xmlTyped (ppl @ [pp_expr ce])
-  | LocalRawPattern _ ->
+  | CLocalPattern _ ->
       assert false
 and pp_local_decl_expr lde = (* don't know what it is for now *)
   match lde with
