@@ -42,7 +42,7 @@ val new_instance :
   ?global:bool -> (** Not global by default. *)
   ?refine:bool -> (** Allow refinement *)
   Decl_kinds.polymorphic ->
-  local_binder list ->
+  local_binder_expr list ->
   typeclass_constraint ->
   (bool * constr_expr) option ->
   ?generalize:bool ->
@@ -63,4 +63,4 @@ val id_of_class : typeclass -> Id.t
 
 (** returns [false] if, for lack of section, it declares an assumption
     (unless in a module type). *)
-val context : Decl_kinds.polymorphic -> local_binder list -> bool
+val context : Decl_kinds.polymorphic -> local_binder_expr list -> bool

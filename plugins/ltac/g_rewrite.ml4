@@ -183,7 +183,7 @@ VERNAC COMMAND EXTEND AddRelation3 CLASSIFIED AS SIDEFF
       [ declare_relation a aeq n None None (Some lemma3) ]
 END
 
-type binders_argtype = local_binder list
+type binders_argtype = local_binder_expr list
 
 let wit_binders =
  (Genarg.create_arg "binders" : binders_argtype Genarg.uniform_genarg_type)

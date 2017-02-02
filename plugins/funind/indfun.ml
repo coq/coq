@@ -813,7 +813,7 @@ let rec chop_n_arrow n t =
       | _ -> anomaly (Pp.str "Not enough products")
 
 
-let rec get_args b t : Constrexpr.local_binder list *
+let rec get_args b t : Constrexpr.local_binder_expr list *
     Constrexpr.constr_expr * Constrexpr.constr_expr =
   match b with
     | Constrexpr.CLambdaN (loc, (nal_ta), b') ->

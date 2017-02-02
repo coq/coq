@@ -370,7 +370,7 @@ type structured_one_inductive_expr = {
 }
 
 type structured_inductive_expr =
-  local_binder list * structured_one_inductive_expr list
+  local_binder_expr list * structured_one_inductive_expr list
 
 let minductive_message warn = function
   | []  -> error "No inductive definition."
@@ -830,7 +830,7 @@ type structured_fixpoint_expr = {
   fix_name : Id.t;
   fix_univs : lident list option;
   fix_annot : Id.t Loc.located option;
-  fix_binders : local_binder list;
+  fix_binders : local_binder_expr list;
   fix_body : constr_expr option;
   fix_type : constr_expr
 }
