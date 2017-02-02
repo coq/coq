@@ -487,7 +487,7 @@ GEXTEND Gram
             | CPatCast (_, p, ty) -> (p, Some ty)
             | _ -> (p, None)
           in
-          [LocalPattern (!@loc, p, ty)]
+          [LocalRawPattern (!@loc, p, ty)]
     ] ]
   ;
   typeclass_constraint:

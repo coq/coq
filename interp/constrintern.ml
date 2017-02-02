@@ -484,7 +484,7 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
      in
       (push_name_env lvar (impls_term_list indef) env locna,
        (BDRawDef ((loc,(na,Explicit,Some(term),ty))))::bl)
-  | LocalPattern (loc,p,ty) ->
+  | LocalRawPattern (loc,p,ty) ->
       let tyc =
         match ty with
         | Some ty -> ty

@@ -40,7 +40,7 @@ let names_of_local_assums bl =
   List.flatten (List.map (function LocalRawAssum(l,_,_)->l|_->[]) bl)
 
 let names_of_local_binders bl =
-  List.flatten (List.map (function LocalRawAssum(l,_,_)->l|LocalRawDef(l,_)->[l]|LocalPattern _ -> assert false) bl)
+  List.flatten (List.map (function LocalRawAssum(l,_,_)->l|LocalRawDef(l,_)->[l]|LocalRawPattern _ -> assert false) bl)
 
 (**********************************************************************)
 (* Functions on constr_expr *)
@@ -272,7 +272,7 @@ let local_binder_loc = function
   | LocalRawAssum ((loc,_)::_,_,t)
   | LocalRawDef ((loc,_),t) -> Loc.merge loc (constr_loc t)
   | LocalRawAssum ([],_,_) -> assert false
-  | LocalPattern (loc,_,_) -> loc
+  | LocalRawPattern (loc,_,_) -> loc
 
 let local_binders_loc bll = match bll with
   | [] -> Loc.ghost
@@ -314,7 +314,7 @@ let expand_pattern_binders mkC bl c =
         | LocalRawAssum (nl, _, _) ->
             let env = List.fold_left add_name_in_env env nl in
             (env, b :: bl, c)
-        | LocalPattern (loc, p, ty) ->
+        | LocalRawPattern (loc, p, ty) ->
             let ni = Hook.get fresh_var env c in
             let id = (loc, Name ni) in
             let b =
@@ -344,7 +344,7 @@ let mkCProdN loc bll c =
         CLetIn (loc,id,b,loop (Loc.merge loc1 loc) bll c)
     | [] -> c
     | LocalRawAssum ([],_,_) :: bll -> loop loc bll c
-    | LocalPattern (loc,p,ty) :: bll -> assert false
+    | LocalRawPattern (loc,p,ty) :: bll -> assert false
   in
   let (bll, c) = expand_pattern_binders loop bll c in
   loop loc bll c
@@ -358,7 +358,7 @@ let mkCLambdaN loc bll c =
         CLetIn (loc,id,b,loop (Loc.merge loc1 loc) bll c)
     | [] -> c
     | LocalRawAssum ([],_,_) :: bll -> loop loc bll c
-    | LocalPattern (loc,p,ty) :: bll -> assert false
+    | LocalRawPattern (loc,p,ty) :: bll -> assert false
   in
   let (bll, c) = expand_pattern_binders loop bll c in
   loop loc bll c
@@ -369,7 +369,7 @@ let rec abstract_constr_expr c = function
   | LocalRawAssum (idl,bk,t)::bl ->
       List.fold_right (fun x b -> mkLambdaC([x],bk,t,b)) idl
       (abstract_constr_expr c bl)
-  | LocalPattern _::_ -> assert false
+  | LocalRawPattern _::_ -> assert false
 
 let rec prod_constr_expr c = function
   | [] -> c
@@ -377,7 +377,7 @@ let rec prod_constr_expr c = function
   | LocalRawAssum (idl,bk,t)::bl ->
       List.fold_right (fun x b -> mkProdC([x],bk,t,b)) idl
       (prod_constr_expr c bl)
-  | LocalPattern _::_ -> assert false
+  | LocalRawPattern _::_ -> assert false
 
 let coerce_reference_to_id = function
   | Ident (_,id) -> id

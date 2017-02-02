@@ -92,7 +92,7 @@ let rec fold_local_binders g f n acc b = function
       f n (fold_local_binders g f n' acc b l) t
   | LocalRawDef ((_,na),t)::l ->
       f n (fold_local_binders g f (name_fold g na n) acc b l) t
-  | LocalPattern (_,pat,t)::l ->
+  | LocalRawPattern (_,pat,t)::l ->
       let acc = fold_local_binders g f (cases_pattern_fold_names g n pat) acc b l in
       Option.fold_left (f n) acc t
   | [] ->
@@ -173,7 +173,7 @@ let split_at_annot bl na =
               (List.rev ans, LocalRawAssum (r, k, t) :: rest)
             end
 	| LocalRawDef _ as x :: rest -> aux (x :: acc) rest
-        | LocalPattern _ :: rest -> assert false
+        | LocalRawPattern _ :: rest -> assert false
 	| [] ->
             user_err ~loc 
 			 (str "No parameter named " ++ Nameops.pr_id id ++ str".")
@@ -196,7 +196,7 @@ let map_local_binders f g e bl =
         (map_binder g e nal, LocalRawAssum(nal,k,f e ty)::bl)
     | LocalRawDef((loc,na),ty) ->
         (name_fold g na e, LocalRawDef((loc,na),f e ty)::bl)
-    | LocalPattern _ ->
+    | LocalRawPattern _ ->
         assert false in
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
