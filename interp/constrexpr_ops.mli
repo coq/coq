@@ -23,8 +23,8 @@ val constr_expr_eq : constr_expr -> constr_expr -> bool
 (** Equality on [constr_expr]. This is a syntactical one, which is oblivious to
     some parsing details, including locations. *)
 
-val local_binder_eq : local_binder -> local_binder -> bool
-(** Equality on [local_binder]. Same properties as [constr_expr_eq]. *)
+val local_binder_eq : local_binder_expr -> local_binder_expr -> bool
+(** Equality on [local_binder_expr]. Same properties as [constr_expr_eq]. *)
 
 val binding_kind_eq : Decl_kinds.binding_kind -> Decl_kinds.binding_kind -> bool
 (** Equality on [binding_kind] *)
@@ -37,7 +37,7 @@ val binder_kind_eq : binder_kind -> binder_kind -> bool
 val constr_loc : constr_expr -> Loc.t
 val cases_pattern_expr_loc : cases_pattern_expr -> Loc.t
 val raw_cases_pattern_expr_loc : raw_cases_pattern_expr -> Loc.t
-val local_binders_loc : local_binder list -> Loc.t
+val local_binders_loc : local_binder_expr list -> Loc.t
 
 (** {6 Constructors}*)
 
@@ -49,19 +49,19 @@ val mkLambdaC : Name.t located list * binder_kind * constr_expr * constr_expr ->
 val mkLetInC : Name.t located * constr_expr * constr_expr -> constr_expr
 val mkProdC : Name.t located list * binder_kind * constr_expr * constr_expr -> constr_expr
 
-val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
-val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
+val abstract_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
+val prod_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
 
-val mkCLambdaN : Loc.t -> local_binder list -> constr_expr -> constr_expr
+val mkCLambdaN : Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
 (** Same as [abstract_constr_expr], with location *)
 
-val mkCProdN : Loc.t -> local_binder list -> constr_expr -> constr_expr
+val mkCProdN : Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
 (** Same as [prod_constr_expr], with location *)
 
 val fresh_var_hook : (Names.Id.t list -> Constrexpr.constr_expr -> Names.Id.t) Hook.t
 val expand_pattern_binders :
-  (Loc.t -> local_binder list -> constr_expr -> constr_expr) ->
-  local_binder list -> constr_expr -> local_binder list * constr_expr
+  (Loc.t -> local_binder_expr list -> constr_expr -> constr_expr) ->
+  local_binder_expr list -> constr_expr -> local_binder_expr list * constr_expr
 
 (** {6 Destructors}*)
 
@@ -78,9 +78,9 @@ val coerce_to_name : constr_expr -> Name.t located
 
 val default_binder_kind : binder_kind
 
-val names_of_local_binders : local_binder list -> Name.t located list
+val names_of_local_binders : local_binder_expr list -> Name.t located list
 (** Retrieve a list of binding names from a list of binders. *)
 
-val names_of_local_assums : local_binder list -> Name.t located list
-(** Same as [names_of_local_binders], but does not take the [let] bindings into
+val names_of_local_assums : local_binder_expr list -> Name.t located list
+(** Same as [names_of_local_binder_exprs], but does not take the [let] bindings into
     account. *)

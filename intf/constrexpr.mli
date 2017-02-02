@@ -111,10 +111,10 @@ and binder_expr =
 
 and fix_expr =
     Id.t located * (Id.t located option * recursion_order_expr) *
-      local_binder list * constr_expr * constr_expr
+      local_binder_expr list * constr_expr * constr_expr
 
 and cofix_expr =
-    Id.t located * local_binder list * constr_expr * constr_expr
+    Id.t located * local_binder_expr list * constr_expr * constr_expr
 
 and recursion_order_expr =
   | CStructRec
@@ -122,7 +122,7 @@ and recursion_order_expr =
   | CMeasureRec of constr_expr * constr_expr option (** measure, relation *)
 
 (** Anonymous defs allowed ?? *)
-and local_binder =
+and local_binder_expr =
   | LocalRawAssum of Name.t located list * binder_kind * constr_expr
   | LocalRawDef of Name.t located * constr_expr
   | LocalRawPattern of Loc.t * cases_pattern_expr * constr_expr option
@@ -130,7 +130,7 @@ and local_binder =
 and constr_notation_substitution =
     constr_expr list *      (** for constr subterms *)
     constr_expr list list * (** for recursive notations *)
-    local_binder list list (** for binders subexpressions *)
+    local_binder_expr list list (** for binders subexpressions *)
 
 type typeclass_constraint = (Name.t located * Id.t located list option) * binding_kind * constr_expr
 

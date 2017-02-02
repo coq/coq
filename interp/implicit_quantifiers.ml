@@ -102,7 +102,7 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
 let ids_of_names l =
   List.fold_left (fun acc x -> match snd x with Name na -> na :: acc | Anonymous -> acc) [] l
 
-let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder list) =
+let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr list) =
   let rec aux bdvars l c = match c with
       ((LocalRawAssum (n, _, c)) :: tl) ->
 	let bound = ids_of_names n in
