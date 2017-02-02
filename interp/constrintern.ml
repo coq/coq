@@ -455,16 +455,10 @@ let intern_local_pattern intern lvar env p =
        env)
     env (free_vars_of_pat [] p)
 
-type extended_glob_local_binder =
-  | GLocalAssum of (Loc.t * (Name.t * binding_kind * glob_constr))
-  | GLocalDef of Loc.t * (Name.t * binding_kind * glob_constr * glob_constr)
-  | GLocalPattern of
-      Loc.t * (cases_pattern * Id.t list) * Id.t * (Name.t * binding_kind * glob_constr)
-
 let glob_local_binder_of_extended = function
-  | GLocalAssum (loc,(na,bk,t)) -> (na,bk,None,t)
-  | GLocalDef (loc,(na,bk,c,t)) -> (na,bk,Some c,t)
-  | GLocalPattern (loc,_,_,_) ->
+  | GLocalAssum (loc,na,bk,t) -> (na,bk,None,t)
+  | GLocalDef (loc,na,bk,c,t) -> (na,bk,Some c,t)
+  | GLocalPattern (loc,_,_,_,_) ->
       Loc.raise ~loc (Stream.Error "pattern with quote not allowed here.")
 
 let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
@@ -472,7 +466,7 @@ let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd"
 let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = function
   | CLocalAssum(nal,bk,ty) ->
       let env, bl' = intern_assumption intern lvar env nal bk ty in
-      let bl' = List.map (fun a -> GLocalAssum a) bl' in
+      let bl' = List.map (fun (loc,(na,c,t)) -> GLocalAssum (loc,na,c,t)) bl' in
       env, bl' @ bl
   | CLocalDef((loc,na as locna),def) ->
      let indef = intern env def in
@@ -482,7 +476,7 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
        | _ -> indef, GHole(loc,Evar_kinds.BinderType na,Misctypes.IntroAnonymous,None)
      in
       (push_name_env lvar (impls_term_list indef) env locna,
-       (GLocalDef ((loc,(na,Explicit,term,ty))))::bl)
+       GLocalDef (loc,na,Explicit,term,ty) :: bl)
   | CLocalPattern (loc,p,ty) ->
       let tyc =
         match ty with
@@ -490,18 +484,19 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
         | None -> CHole(loc,None,Misctypes.IntroAnonymous,None)
       in
       let env = intern_local_pattern intern lvar env p in
+      let il = List.map snd (free_vars_of_pat [] p) in
       let cp =
         match !intern_cases_pattern_fwd (None,env.scopes) p with
         | (_, [(_, cp)]) -> cp
         | _ -> assert false
       in
-      let il = List.map snd (free_vars_of_pat [] p) in
       let ienv = Id.Set.elements env.ids in
       let id = Namegen.next_ident_away (Id.of_string "pat") ienv in
       let na = (loc, Name id) in
       let bk = Default Explicit in
       let _, bl' = intern_assumption intern lvar env [na] bk tyc in
-      (env, GLocalPattern(loc,(cp,il),id,snd (List.hd bl')) :: bl)
+      let _,(_,bk,t) = List.hd bl' in
+      (env, GLocalPattern(loc,(cp,il),id,bk,t) :: bl)
 
 let intern_generalization intern env lvar loc bk ak c =
   let c = intern {env with unb = true} c in
@@ -587,13 +582,13 @@ let make_letins =
 let rec subordinate_letins letins = function
   (* binders come in reverse order; the non-let are returned in reverse order together *)
   (* with the subordinated let-in in writing order *)
-  | GLocalDef (loc,(na,_,b,_))::l ->
+  | GLocalDef (loc,na,_,b,_)::l ->
       subordinate_letins (LPLetIn (loc,(na,b))::letins) l
-  | GLocalAssum (loc,(na,bk,t))::l ->
+  | GLocalAssum (loc,na,bk,t)::l ->
       let letins',rest = subordinate_letins [] l in
       letins',((loc,(na,bk,t)),letins)::rest
-  | GLocalPattern (loc,u,id,decl) :: l ->
-      subordinate_letins (LPCases (loc,u,id)::letins) ([GLocalAssum (loc,decl)] @ l)
+  | GLocalPattern (loc,u,id,bk,t) :: l ->
+      subordinate_letins (LPCases (loc,u,id)::letins) ([GLocalAssum (loc,Name id,bk,t)] @ l)
   | [] ->
       letins,[]
 
@@ -607,11 +602,11 @@ let terms_of_binders bl =
        let params = List.make (Inductiveops.inductive_nparams (fst c)) hole in
        CAppExpl (loc,(None,r,None),params @ List.map term_of_pat l) in
   let rec extract_variables = function
-    | GLocalAssum (loc,(Name id,_,_))::l -> CRef (Ident (loc,id), None) :: extract_variables l
-    | GLocalDef (loc,(Name id,_,_,_))::l -> extract_variables l
-    | GLocalDef (loc,(Anonymous,_,_,_))::l
-    | GLocalAssum (loc,(Anonymous,_,_))::l -> error "Cannot turn \"_\" into a term."
-    | GLocalPattern (loc,(u,_),_,_) :: l -> term_of_pat u :: extract_variables l
+    | GLocalAssum (loc,Name id,_,_)::l -> CRef (Ident (loc,id), None) :: extract_variables l
+    | GLocalDef (loc,Name id,_,_,_)::l -> extract_variables l
+    | GLocalDef (loc,Anonymous,_,_,_)::l
+    | GLocalAssum (loc,Anonymous,_,_)::l -> error "Cannot turn \"_\" into a term."
+    | GLocalPattern (loc,(u,_),_,_,_) :: l -> term_of_pat u :: extract_variables l
     | [] -> [] in
   extract_variables bl
 
