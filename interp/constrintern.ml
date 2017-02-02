@@ -457,20 +457,14 @@ let intern_local_pattern intern lvar env p =
 
 type extended_glob_local_binder =
   | GLocalAssum of (Loc.t * (Name.t * binding_kind * glob_constr))
-  | GLocalDef of (Loc.t * (Name.t * binding_kind * glob_constr * glob_constr))
+  | GLocalDef of Loc.t * (Name.t * binding_kind * glob_constr * glob_constr)
   | GLocalPattern of
-      (Loc.t * (cases_pattern * Id.t list) *
-         (bool ref *
-          (Notation_term.tmp_scope_name option *
-           Notation_term.tmp_scope_name list)
-          option ref * Notation_term.notation_var_internalization_type)
-         Names.Id.Map.t *
-       intern_env * constr_expr)
+      Loc.t * (cases_pattern * Id.t list) * Id.t * (Name.t * binding_kind * glob_constr)
 
 let glob_local_binder_of_extended = function
   | GLocalAssum (loc,(na,bk,t)) -> (na,bk,None,t)
   | GLocalDef (loc,(na,bk,c,t)) -> (na,bk,Some c,t)
-  | GLocalPattern (loc,_,_,_,_) ->
+  | GLocalPattern (loc,_,_,_) ->
       Loc.raise ~loc (Stream.Error "pattern with quote not allowed here.")
 
 let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
@@ -502,7 +496,12 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
         | _ -> assert false
       in
       let il = List.map snd (free_vars_of_pat [] p) in
-      (env, GLocalPattern(loc,(cp,il),lvar,env,tyc) :: bl)
+      let ienv = Id.Set.elements env.ids in
+      let id = Namegen.next_ident_away (Id.of_string "pat") ienv in
+      let na = (loc, Name id) in
+      let bk = Default Explicit in
+      let _, bl' = intern_assumption intern lvar env [na] bk tyc in
+      (env, GLocalPattern(loc,(cp,il),id,snd (List.hd bl')) :: bl)
 
 let intern_generalization intern env lvar loc bk ak c =
   let c = intern {env with unb = true} c in
@@ -585,22 +584,16 @@ let make_letins =
          let tt = (GVar(loc,id),(Name id,None)) in
          GCases(loc,Misctypes.LetPatternStyle,None,[tt],[(loc,il,[cp],c)]))
 
-let rec subordinate_letins intern letins = function
+let rec subordinate_letins letins = function
   (* binders come in reverse order; the non-let are returned in reverse order together *)
   (* with the subordinated let-in in writing order *)
   | GLocalDef (loc,(na,_,b,_))::l ->
-      subordinate_letins intern (LPLetIn (loc,(na,b))::letins) l
+      subordinate_letins (LPLetIn (loc,(na,b))::letins) l
   | GLocalAssum (loc,(na,bk,t))::l ->
-      let letins',rest = subordinate_letins intern [] l in
+      let letins',rest = subordinate_letins [] l in
       letins',((loc,(na,bk,t)),letins)::rest
-  | GLocalPattern (loc,u,lvar,env,tyc) :: l ->
-      let ienv = Id.Set.elements env.ids in
-      let id = Namegen.next_ident_away (Id.of_string "pat") ienv in
-      let na = (loc, Name id) in
-      let bk = Default Explicit in
-      let _, bl' = intern_assumption intern lvar env [na] bk tyc in
-      let bl' = List.map (fun a -> GLocalAssum a) bl' in
-      subordinate_letins intern (LPCases (loc,u,id)::letins) (bl'@ l)
+  | GLocalPattern (loc,u,id,decl) :: l ->
+      subordinate_letins (LPCases (loc,u,id)::letins) ([GLocalAssum (loc,decl)] @ l)
   | [] ->
       letins,[]
 
@@ -618,7 +611,7 @@ let terms_of_binders bl =
     | GLocalDef (loc,(Name id,_,_,_))::l -> extract_variables l
     | GLocalDef (loc,(Anonymous,_,_,_))::l
     | GLocalAssum (loc,(Anonymous,_,_))::l -> error "Cannot turn \"_\" into a term."
-    | GLocalPattern (loc,(u,_),lvar,env,tyc) :: l -> term_of_pat u :: extract_variables l
+    | GLocalPattern (loc,(u,_),_,_) :: l -> term_of_pat u :: extract_variables l
     | [] -> [] in
   extract_variables bl
 
@@ -680,7 +673,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (bl,(scopt,subscopes)) = Id.Map.find x binders in
 	let env,bl = List.fold_left (intern_local_binder_aux intern ntnvars) (env,[]) bl in
-	let letins,bl = subordinate_letins intern [] bl in
+	let letins,bl = subordinate_letins [] bl in
         let termin = aux (terms,None,None) (renaming,env) terminator in
 	let res = List.fold_left (fun t binder ->
 	    aux (terms,Some(y,binder),Some t) subinfos iter)
