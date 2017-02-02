@@ -123,8 +123,8 @@ and recursion_order_expr =
 
 (** Anonymous defs allowed ?? *)
 and local_binder =
-  | LocalRawDef of Name.t located * constr_expr
   | LocalRawAssum of Name.t located list * binder_kind * constr_expr
+  | LocalRawDef of Name.t located * constr_expr
   | LocalRawPattern of Loc.t * cases_pattern_expr * constr_expr option
 
 and constr_notation_substitution =
