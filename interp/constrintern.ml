@@ -456,8 +456,8 @@ let intern_local_pattern intern lvar env p =
     env (free_vars_of_pat [] p)
 
 type extended_glob_local_binder =
-  | GLocalDef of (Loc.t * (Name.t * binding_kind * glob_constr * glob_constr))
   | GLocalAssum of (Loc.t * (Name.t * binding_kind * glob_constr))
+  | GLocalDef of (Loc.t * (Name.t * binding_kind * glob_constr * glob_constr))
   | GLocalPattern of
       (Loc.t * (cases_pattern * Id.t list) *
          (bool ref *
