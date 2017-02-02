@@ -78,6 +78,8 @@ and cases_clause = (Loc.t * Id.t list * cases_pattern list * glob_constr)
     of [t] are members of [il]. *)
 and cases_clauses = cases_clause list
 
+type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
+
 (** A globalised term together with a closure representing the value
     of its free variables. Intended for use when these variables are taken
     from the Ltac environment. *)
