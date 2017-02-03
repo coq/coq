@@ -15,4 +15,5 @@ install:
 script:
 - ./configure -local
 - make
-- make validate
+- travis_wait make validate
+- travis_wait make test-suite
