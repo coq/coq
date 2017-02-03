@@ -1,0 +1,19 @@
+sudo: required
+dist: precise
+language: ocaml
+cache:
+  apt: true
+install:
+- sudo add-apt-repository --yes ppa:avsm/ppa
+- sudo apt-get update -q -y
+- sudo apt-get install -q -y opam
+- opam init --compiler=4.02.3 -y -v
+- eval $(opam config env)
+- opam config var root
+- opam install -y -v camlp5 ocamlfind
+- opam list
+script:
+- ./configure -local
+- make
+- travis_wait make validate
+- travis_wait make test-suite
