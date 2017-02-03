@@ -1020,11 +1020,11 @@ module Goal = struct
 
   let assume (gl : ('a, 'r) t) = (gl :> ([ `NF ], 'r) t)
 
-  let env { env=env } = env
-  let sigma { sigma=sigma } = Sigma.Unsafe.of_evar_map sigma
-  let hyps { env=env } = EConstr.named_context env
-  let concl { concl=concl } = concl
-  let extra { sigma=sigma; self=self } = goal_extra sigma self
+  let env {env} = env
+  let sigma {sigma} = Sigma.Unsafe.of_evar_map sigma
+  let hyps {env} = EConstr.named_context env
+  let concl {concl} = concl
+  let extra {sigma; self} = goal_extra sigma self
 
   let gmake_with info env sigma goal = 
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
