@@ -1040,7 +1040,7 @@ module Goal = struct
   let nf_enter f =
     InfoL.tag (Info.Dispatch) begin
     iter_goal begin fun goal ->
-      Env.get >>= fun env ->
+      tclENV >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try
         let (gl, sigma) = nf_gmake env sigma goal in
