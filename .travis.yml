@@ -24,8 +24,13 @@ addons:
     - ghostscript
     - transfig
     - imagemagick
+env:
+  global:
+  - NJOBS=1
+  matrix:
+  - TEST_TARGET="validate"    TW="travis_wait"
+  - TEST_TARGET="test-suite"  TW=""
 install:
-- ": ${NJOBS:=1}"
 - "[ -e .opam ] || opam init -j ${NJOBS} --compiler=4.02.3 -n -y"
 - eval $(opam config env)
 - opam config var root
@@ -34,5 +39,4 @@ install:
 script:
 - ./configure -local -usecamlp5 -native-compiler yes -coqide opt -with-doc yes
 - make -j ${NJOBS}
-- travis_wait make -j ${NJOBS} validate
-- travis_wait make -j ${NJOBS} test-suite
+- ${TW} make -j ${NJOBS} ${TEST_TARGET}
