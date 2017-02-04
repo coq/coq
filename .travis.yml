@@ -1,4 +1,5 @@
 dist: trusty
+sudo: required
 language: ocaml
 cache:
   apt: true
@@ -10,19 +11,28 @@ addons:
     - avsm
     packages:
     - opam
+    - aspcud
     - libgtk2.0-dev
     - libgtksourceview2.0-dev
     - texlive-latex-base
+    - texlive-latex-recommended
+    - texlive-latex-extra
+    - texlive-math-extra
+    - texlive-fonts-recommended
+    - texlive-fonts-extra
+    - latex-xcolor
+    - ghostscript
     - transfig
     - imagemagick
 install:
-- "[ -e .opam ] || opam init --compiler=4.02.3 -y"
+- ": ${NJOBS:=1}"
+- "[ -e .opam ] || opam init -j ${NJOBS} --compiler=4.02.3 -n -y"
 - eval $(opam config env)
 - opam config var root
-- opam install -y camlp5 ocamlfind lablgtk-extras hevea
+- opam install -j ${NJOBS} -y camlp5 ocamlfind lablgtk-extras hevea
 - opam list
 script:
 - ./configure -local -usecamlp5 -native-compiler yes -coqide opt -with-doc yes
-- make
-- travis_wait make validate
-- travis_wait make test-suite
+- make -j ${NJOBS}
+- travis_wait make -j ${NJOBS} validate
+- travis_wait make -j ${NJOBS} test-suite
