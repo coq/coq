@@ -12,31 +12,75 @@ addons:
     packages:
     - opam
     - aspcud
-    - libgtk2.0-dev
-    - libgtksourceview2.0-dev
-    - texlive-latex-base
-    - texlive-latex-recommended
-    - texlive-latex-extra
-    - texlive-math-extra
-    - texlive-fonts-recommended
-    - texlive-fonts-extra
-    - latex-xcolor
-    - ghostscript
-    - transfig
-    - imagemagick
 env:
   global:
   - NJOBS=1
+  - COMPILER="4.02.3"
+  # Main test suites
   matrix:
-  - TEST_TARGET="validate"    TW="travis_wait"
-  - TEST_TARGET="test-suite"  TW=""
+  - TEST_TARGET="validate"           TW="travis_wait"
+  - TEST_TARGET="contrib-hott"
+  - TEST_TARGET="contrib-math-comp"
+  - TEST_TARGET="contrib-compcert"
+
+matrix:
+  # Extra is Full COQ build and test-suite with two compilers
+  include:
+    - env:
+      - TEST_TARGET="test-suite"
+      - EXTRA_CONF="-coqide opt -with-doc yes"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages:
+          - opam
+          - aspcud
+          - libgtk2.0-dev
+          - libgtksourceview2.0-dev
+          - texlive-latex-base
+          - texlive-latex-recommended
+          - texlive-latex-extra
+          - texlive-math-extra
+          - texlive-fonts-recommended
+          - texlive-fonts-extra
+          - latex-xcolor
+          - ghostscript
+          - transfig
+          - imagemagick
+    - env:
+      - TEST_TARGET="test-suite"
+      - COMPILER="4.04.0"
+      - EXTRA_CONF="-coqide opt -with-doc yes"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages:
+          - opam
+          - aspcud
+          - libgtk2.0-dev
+          - libgtksourceview2.0-dev
+          - texlive-latex-base
+          - texlive-latex-recommended
+          - texlive-latex-extra
+          - texlive-math-extra
+          - texlive-fonts-recommended
+          - texlive-fonts-extra
+          - latex-xcolor
+          - ghostscript
+          - transfig
+          - imagemagick
+
 install:
-- "[ -e .opam ] || opam init -j ${NJOBS} --compiler=4.02.3 -n -y"
+- "[ -e .opam ] || opam init -j ${NJOBS} --compiler=${COMPILER} -n -y"
 - eval $(opam config env)
 - opam config var root
-- opam install -j ${NJOBS} -y camlp5 ocamlfind lablgtk-extras hevea
+- opam install -j ${NJOBS} -y camlp5 ocamlfind ${EXTRA_OPAM}
 - opam list
 script:
-- ./configure -local -usecamlp5 -native-compiler yes -coqide opt -with-doc yes
+- ./configure -local -usecamlp5 -native-compiler yes ${EXTRA_CONF}
 - make -j ${NJOBS}
 - ${TW} make -j ${NJOBS} ${TEST_TARGET}
