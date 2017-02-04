@@ -240,6 +240,9 @@ GEXTEND Gram
           mkCLambdaN (!@loc) bl c
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
+          let ty,c1 = match ty, c1 with
+          | (_,None), CCast(loc,c, CastConv t) -> (constr_loc t,Some t), c (* Tolerance, see G_vernac.def_body *)
+          | _, _ -> ty, c1 in
           CLetIn(!@loc,id,mkCLambdaN (constr_loc c1) bl c1,
                  Option.map (mkCProdN (fst ty) bl) (snd ty), c2)
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
