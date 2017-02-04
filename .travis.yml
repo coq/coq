@@ -1,6 +1,7 @@
 dist: trusty
 sudo: required
-language: ocaml
+# Until Ocaml becomes a language, we set a known one.
+language: c
 cache:
   apt: true
   directories:
@@ -14,8 +15,9 @@ addons:
     - aspcud
 env:
   global:
-  - NJOBS=1
-  - COMPILER="4.02.3"
+  - NJOBS=2
+  # system is == 4.02.3
+  - COMPILER="system"
   # Main test suites
   matrix:
   - TEST_TARGET="validate"           TW="travis_wait"
@@ -24,7 +26,12 @@ env:
   - TEST_TARGET="contrib-compcert"
 
 matrix:
-  # Extra is Full COQ build and test-suite with two compilers
+
+  allow_failures:
+  - env: TEST_TARGET="ci-cpdt"
+
+  # Full Coq test-suite with two compilers
+  # [TODO: use yaml refs and avoid duplication for packages list]
   include:
     - env:
       - TEST_TARGET="test-suite"
@@ -75,12 +82,22 @@ matrix:
           - imagemagick
 
 install:
-- "[ -e .opam ] || opam init -j ${NJOBS} --compiler=${COMPILER} -n -y"
+- opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
 - eval $(opam config env)
 - opam config var root
 - opam install -j ${NJOBS} -y camlp5 ocamlfind ${EXTRA_OPAM}
 - opam list
+
 script:
+
+- echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
 - ./configure -local -usecamlp5 -native-compiler yes ${EXTRA_CONF}
+- echo -en 'travis_fold:end:coq.config\\r'
+
+- echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'
 - make -j ${NJOBS}
+- echo -en 'travis_fold:end:coq.build\\r'
+
+- echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
 - ${TW} make -j ${NJOBS} ${TEST_TARGET}
+- echo -en 'travis_fold:end:coq.test\\r'
