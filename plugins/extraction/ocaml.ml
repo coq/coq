@@ -555,24 +555,6 @@ let pp_decl = function
     | Dfix (rv,defs,typs) ->
 	pp_Dfix (rv,defs,typs)
 
-let pp_alias_decl ren = function
-  | Dind (kn,i) -> pp_mind kn { i with ind_equiv = RenEquiv ren }
-  | Dtype (r, l, _) ->
-      let name = pp_global Type r in
-      let l = rename_tvars keywords l in
-      let ids = pp_parameters l in
-      hov 2 (str "type " ++ ids ++ name ++ str " =" ++ spc () ++ ids ++
-	     str (ren^".") ++ name)
-  | Dterm (r, a, t) ->
-      let name = pp_global Term r in
-      hov 2 (str "let " ++ name ++ str (" = "^ren^".") ++ name)
-  | Dfix (rv, _, _) ->
-      prvecti (fun i r -> if is_inline_custom r then mt () else
-		 let name = pp_global Term r in
-		 hov 2 (str "let " ++ name ++ str (" = "^ren^".") ++ name) ++
-		 fnl ())
-	rv
-
 let pp_spec = function
   | Sval (r,_) when is_inline_custom r -> mt ()
   | Stype (r,_,_) when is_inline_custom r -> mt ()
@@ -597,16 +579,6 @@ let pp_spec = function
       in
       hov 2 (str "type " ++ ids ++ name ++ def)
 
-let pp_alias_spec ren = function
-  | Sind (kn,i) -> pp_mind kn { i with ind_equiv = RenEquiv ren }
-  | Stype (r,l,_) ->
-      let name = pp_global Type r in
-      let l = rename_tvars keywords l in
-      let ids = pp_parameters l in
-      hov 2 (str "type " ++ ids ++ name ++ str " =" ++ spc () ++ ids ++
-	     str (ren^".") ++ name)
-  | Sval _ -> assert false
-
 let rec pp_specif = function
   | (_,Spec (Sval _ as s)) -> pp_spec s
   | (l,Spec s) ->
@@ -615,7 +587,7 @@ let rec pp_specif = function
       | Some ren ->
 	 hov 1 (str ("module "^ren^" : sig") ++ fnl () ++ pp_spec s) ++
 	 fnl () ++ str "end" ++ fnl () ++
-	 pp_alias_spec ren s)
+         str ("include module type of struct include "^ren^" end"))
   | (l,Smodule mt) ->
       let def = pp_module_type [] mt in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
@@ -685,8 +657,7 @@ let rec pp_structure_elem = function
       | None -> pp_decl d
       | Some ren ->
 	 hov 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
-	 fnl () ++ str "end" ++ fnl () ++
-	 pp_alias_decl ren d)
+	 fnl () ++ str "end" ++ fnl () ++ str ("include "^ren))
   | (l,SEmodule m) ->
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
