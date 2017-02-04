@@ -21,9 +21,9 @@ env:
   # Main test suites
   matrix:
   - TEST_TARGET="validate"           TW="travis_wait"
-  - TEST_TARGET="contrib-hott"
-  - TEST_TARGET="contrib-math-comp"
-  - TEST_TARGET="contrib-compcert"
+  - TEST_TARGET="ci-hott"
+  - TEST_TARGET="ci-math-comp"
+  - TEST_TARGET="ci-compcert"
 
 matrix:
 

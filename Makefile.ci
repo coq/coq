@@ -1,0 +1,13 @@
+.PHONY: ci-all ci-hott ci-math-comp ci-compcert
+
+ci-all: ci-hott ci-math-comp ci-compcert
+
+# TODO Do generic rule
+ci-hott:
+	./tools/ci/ci-hott.sh
+
+ci-math-comp:
+	./tools/ci/ci-math-comp.sh
+
+ci-compcert:
+	./tools/ci/ci-compcert.sh

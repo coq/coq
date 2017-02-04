@@ -246,9 +246,9 @@ devdocclean:
 	rm -f $(OCAMLDOCDIR)/html/*.html
 
 ###########################################################################
-# Contrib tests
+# Continuous Intregration Tests
 ###########################################################################
-include Makefile.contrib
+include Makefile.ci
 
 ###########################################################################
 # Emacs tags
