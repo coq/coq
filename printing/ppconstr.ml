@@ -363,8 +363,9 @@ let tag_var = tag Tag.variable
     | CLocalAssum (nal,k,t) ->
       pr_binder true pr_c (nal,k,t)
     | CLocalDef (na,c,topt) ->
-      surround (pr_lname na ++ str":=" ++ cut() ++ pr_c c ++
-                pr_opt_no_spc (fun t -> cut () ++ str ":" ++ pr_c t) topt)
+      surround (pr_lname na ++
+                pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr_c t) topt ++
+                str" :=" ++ spc() ++ pr_c c)
     | CLocalPattern (loc,p,tyo) ->
       let p = pr_patt lsimplepatt p in
       match tyo with
@@ -598,9 +599,9 @@ let tag_var = tag Tag.variable
       | CLetIn (_,x,a,t,b) ->
         return (
           hv 0 (
-            hov 2 (keyword "let" ++ spc () ++ pr_lname x ++ str " :="
-                   ++ pr spc ltop a ++ spc ()
-                   ++ pr_opt_no_spc (fun t -> str ":" ++ ws 1 ++ pr mt ltop t ++ spc ()) t
+            hov 2 (keyword "let" ++ spc () ++ pr_lname x
+                   ++ pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr mt ltop t) t
+                   ++ str " :=" ++ pr spc ltop a ++ spc ()
                    ++ keyword "in") ++
               pr spc ltop b),
           lletin
