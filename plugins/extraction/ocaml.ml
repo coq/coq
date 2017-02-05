@@ -625,8 +625,10 @@ and pp_module_type params = function
       let l = List.rev l in
       pop_visible ();
       str "sig" ++ fnl () ++
-      v 1 (str " " ++ prlist_with_sep cut2 identity l) ++
-	fnl () ++ str "end"
+      (if List.is_empty l then mt ()
+       else
+         v 1 (str " " ++ prlist_with_sep cut2 identity l) ++ fnl ())
+      ++ str "end"
   | MTwith(mt,ML_With_type(idl,vl,typ)) ->
       let ids = pp_parameters (rename_tvars keywords vl) in
       let mp_mt = msid_of_mt mt in
@@ -701,8 +703,10 @@ and pp_module_expr params = function
       let l = List.rev l in
       pop_visible ();
       str "struct" ++ fnl () ++
-      v 1 (str " " ++ prlist_with_sep cut2 identity l) ++
-      fnl () ++ str "end"
+      (if List.is_empty l then mt ()
+       else
+         v 1 (str " " ++ prlist_with_sep cut2 identity l) ++ fnl ())
+      ++ str "end"
 
 let rec prlist_sep_nonempty sep f = function
   | [] -> mt ()
