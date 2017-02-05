@@ -36,6 +36,9 @@ val pr_binding : Id.t list -> std_ppcmds
 
 val rename_id : Id.t -> Id.Set.t -> Id.t
 
+(** For Scheme extraction, replace the ['] by [~] *)
+val unquote : string -> string
+
 type env = Id.t list * Id.Set.t
 val empty_env : unit -> env
 

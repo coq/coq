@@ -21,8 +21,8 @@ open Common
 
 (*s Haskell renaming issues. *)
 
-let pr_lower_id id = str (String.uncapitalize (Id.to_string id))
-let pr_upper_id id = str (String.capitalize (Id.to_string id))
+let pr_lower_id id = str (String.uncapitalize_ascii (Id.to_string id))
+let pr_upper_id id = str (String.capitalize_ascii (Id.to_string id))
 
 let keywords =
   List.fold_right (fun s -> Id.Set.add (Id.of_string s))
