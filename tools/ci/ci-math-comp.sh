@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# Proof of concept contrib build script.
-
-set -xe
-
-export PATH=`pwd`/bin:$PATH
+# $0 is not the safest way, but...
+ci_dir="$(dirname "$0")"
+source ${ci_dir}/ci-common.sh
 
 git clone --depth 3 https://github.com/math-comp/math-comp.git
 
