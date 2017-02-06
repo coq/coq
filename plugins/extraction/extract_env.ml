@@ -519,8 +519,10 @@ let print_structure_to_file (fn,si,mo) dry struc =
     set_phase Impl;
     pp_with ft (d.preamble mo comment opened unsafe_needs);
     pp_with ft (d.pp_struct struc);
+    Format.pp_print_flush ft ();
     Option.iter close_out cout;
   with reraise ->
+    Format.pp_print_flush ft ();
     Option.iter close_out cout; raise reraise
   end;
   if not dry then Option.iter info_file fn;
@@ -533,8 +535,10 @@ let print_structure_to_file (fn,si,mo) dry struc =
 	 set_phase Intf;
 	 pp_with ft (d.sig_preamble mo comment opened unsafe_needs);
 	 pp_with ft (d.pp_sig (signature_of_structure struc));
+         Format.pp_print_flush ft ();
 	 close_out cout;
        with reraise ->
+         Format.pp_print_flush ft ();
 	 close_out cout; raise reraise
        end;
        info_file si)
