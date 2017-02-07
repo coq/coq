@@ -40,7 +40,7 @@ Maintaining your contribution manually [current method]
 ======================================
 
 To add your contribution to the Coq Travis CI set, add a script for
-building your library to `tools/ci/`, update `.travis.yml` and
+building your library to `dev/ci/`, update `.travis.yml` and
 `Makefile.ci`. Then, submit a PR.
 
 Maintaining your contribution as an OPAM package [work in progress] [to be implemented]
@@ -67,7 +67,7 @@ repositories of some of the tests so they can provide fixed
 developments.
 
 The general idea is that the PR author will drop a file
-`tools/ci/overlays/$branch.overlay` where branch name is taken from
+`dev/ci/overlays/$branch.overlay` where branch name is taken from
 `${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH}`
 that is to say, the name of the original branch for the PR.
 

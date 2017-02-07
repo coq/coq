@@ -6,5 +6,5 @@ CI_TARGETS=ci-all ci-hott ci-math-comp ci-compcert ci-sf ci-cpdt	\
 
 # Generic rule, we use make to easy travis integraton with mixed rules
 $(CI_TARGETS): ci-%:
-	./tools/ci/ci-$*.sh
+	./dev/ci/ci-$*.sh
 
