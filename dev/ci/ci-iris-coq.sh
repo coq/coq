@@ -24,6 +24,11 @@ git clone --depth 1 https://github.com/math-comp/math-comp.git
 # echo "Add ML Path \"`pwd`/math-comp/mathcomp/\"." > ${HOME}/.coqrc
 # echo "Add LoadPath \"`pwd`/math-comp/mathcomp/\" as mathcomp." >> ${HOME}/.coqrc
 
+# Setup stdpp
+git clone --depth 1 https://gitlab.mpi-sws.org/robbertkrebbers/coq-stdpp.git
+
+( cd coq-stdpp && make -j ${NJOBS} && make install )
+
 # Setup Iris
 git clone --depth 1 https://gitlab.mpi-sws.org/FP/iris-coq.git
 
