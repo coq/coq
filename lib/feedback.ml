@@ -27,7 +27,6 @@ type feedback_content =
   | ProcessingIn of string
   | InProgress of int
   | WorkerStatus of string * string
-  | Goals of Loc.t * string
   | AddedAxiom
   | GlobRef of Loc.t * string * string * string * string
   | GlobDef of Loc.t * string * string * string

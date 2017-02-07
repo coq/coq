@@ -201,15 +201,17 @@ doc/refman/styles.hva: doc/common/styles/html/$(HTMLSTYLE)/styles.hva
 	$(INSTALLLIB) $< doc/refman
 
 INDEXES:= doc/refman/html/command-index.html doc/refman/html/tactic-index.html
-ALLINDEXES:= doc/refman/html/index.html $(INDEXES)
 
-refman-html-dir $(ALLINDEXES): doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
+refman-html-dir $(INDEXES): doc/refman/html/index.html ;
+
+doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 	       doc/refman/cover.html doc/refman/styles.hva doc/refman/index.html
 	- rm -rf doc/refman/html
 	$(MKDIR) doc/refman/html
 	$(INSTALLLIB) $(REFMANPNGFILES) doc/refman/html
 	(cd doc/refman/html; $(HACHA) -nolinks -tocbis -o toc.html ../styles.hva ../Reference-Manual.html)
 	$(INSTALLLIB) doc/refman/cover.html doc/refman/html/index.html
+	@touch $(INDEXES)
 	-$(INSTALLLIB) doc/common/styles/html/$(HTMLSTYLE)/*.css doc/refman/html
 
 refman-quick:

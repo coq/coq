@@ -41,6 +41,7 @@ Definition F (x:IND True) (A:Type) :=
 Theorem paradox : False.
   (* This succeeded in 8.3, 8.4 and 8.5beta1 because F had wrong type *)
 Fail Proof (F C False).
+Abort.
 
 (* Another bug found in November 2015 (a substitution was wrongly
    reversed at pretyping level) *)
@@ -61,3 +62,30 @@ Inductive Ind2 (b:=1) (c:nat) : Type :=
   Constr2 : Ind2 c.
 
 Eval vm_compute in Constr2 2.
+
+(* A bug introduced in ade2363 (similar to #5322 and #5324). This
+   commit started to see that some List.rev was wrong in the "var"
+   case of a pattern-matching problem but it failed to see that a
+   transformation from a list of arguments into a substitution was
+   still needed. *)
+
+(* The order of real arguments was made wrong by ade2363 in the "var"
+   case of the compilation of "match" *)
+
+Inductive IND2 : forall X Y:Type, Type :=
+  CONSTR2 : IND2 unit Empty_set.
+
+Check fun x:IND2 bool nat =>
+  match x in IND2 a b return a with
+  | y => _
+  end = true.
+
+(* From January 2017, using the proper function to turn arguments into
+   a substitution up to a context possibly containing let-ins, so that
+   the following, which was wrong also before ade2363, now works
+   correctly *)
+
+Check fun x:Ind bool nat =>
+  match x in Ind _ X Y Z return Z with
+  | y => (true,0)
+  end.

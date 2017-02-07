@@ -816,7 +816,6 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "workerstatus", [ns] ->
        let n, s = to_pair to_string to_string ns in
        WorkerStatus(n,s)
-  | "goals", [loc;s] -> Goals (to_loc loc, to_string s)
   | "custom", [loc;name;x]-> Custom (to_loc loc, to_string name, x)
   | "filedependency", [from; dep] ->
       FileDependency (to_option to_string from, to_string dep)
@@ -849,8 +848,6 @@ let of_feedback_content = function
   | WorkerStatus(n,s) ->
       constructor "feedback_content" "workerstatus"
         [of_pair of_string of_string (n,s)]
-  | Goals (loc,s) ->
-      constructor "feedback_content" "goals" [of_loc loc;of_string s]
   | Custom (loc, name, x) ->
       constructor "feedback_content" "custom" [of_loc loc; of_string name; x]
   | FileDependency (from, depends_on) ->

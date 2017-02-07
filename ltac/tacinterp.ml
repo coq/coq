@@ -948,7 +948,7 @@ let interp_or_and_intro_pattern_option ist env sigma = function
       (match coerce_to_intro_pattern env (Id.Map.find id ist.lfun) with
       | IntroAction (IntroOrAndPattern l) -> sigma, Some (loc,l)
       | _ ->
-        raise (CannotCoerceTo "a disjunctive/conjunctive introduction pattern"))
+        user_err ~loc (str "Cannot coerce to a disjunctive/conjunctive pattern."))
   | Some (ArgArg (loc,l)) ->
       let sigma,l = interp_or_and_intro_pattern ist env sigma l in
       sigma, Some (loc,l)

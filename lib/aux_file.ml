@@ -17,10 +17,6 @@ let version = 1
 
 let oc = ref None
 
-let chop_extension f =
-  if check_suffix f ".v" then chop_extension f
-  else f
-
 let aux_file_name_for vfile =
   dirname vfile ^ "/." ^ chop_extension(basename vfile) ^ ".aux"
 
@@ -76,14 +72,15 @@ let load_aux_file_for vfile =
   let add loc k v = h := set !h loc k v in
   let aux_fname = aux_file_name_for vfile in
   try
-    let ic = open_in aux_fname in
-    let ver, hash, fname = Scanf.fscanf ic "COQAUX%d %s %s\n" ret3 in
+    let ib = Scanf.Scanning.from_channel (open_in aux_fname) in
+    let ver, hash, fname =
+      Scanf.bscanf ib "COQAUX%d %s %s\n" ret3 in
     if ver <> version then raise (Failure "aux file version mismatch");
     if fname <> vfile then
       raise (Failure "aux file name mismatch");
     let only_dummyloc = Digest.to_hex (Digest.file vfile) <> hash in
     while true do
-      let i, j, k, v = Scanf.fscanf ic "%d %d %s %S\n" ret4 in
+      let i, j, k, v = Scanf.bscanf ib "%d %d %s %S\n" ret4 in
       if not only_dummyloc || (i = 0 && j = 0) then add (i,j) k v;
     done;
     raise End_of_file

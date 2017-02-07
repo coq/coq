@@ -309,6 +309,7 @@ let with_time time f x =
     raise e
 
 let process_id () =
-  if Flags.async_proofs_is_worker () then !Flags.async_proofs_worker_id
-  else Printf.sprintf "master:%d" (Thread.id (Thread.self ()))
-    
+  Printf.sprintf "%d:%s:%d" (Unix.getpid ())
+    (if Flags.async_proofs_is_worker () then !Flags.async_proofs_worker_id
+     else "master")
+    (Thread.id (Thread.self ()))

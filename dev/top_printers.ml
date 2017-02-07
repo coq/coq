@@ -200,7 +200,8 @@ let pppftreestate p = pp(print_pftreestate p)
 (* let ppsigmagoal g = pp(pr_goal (sig_it g)) *)
 (* let prgls gls = pp(pr_gls gls) *)
 (* let prglls glls = pp(pr_glls glls) *)
-(* let pproof p = pp(print_proof Evd.empty empty_named_context p) *)
+
+let pproof p = pp(Proof.pr_proof p)
 
 let ppuni u = pp(pr_uni u)
 let ppuni_level u = pp (Level.pr u)

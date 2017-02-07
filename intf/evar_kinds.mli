@@ -20,6 +20,7 @@ type t =
   | ImplicitArg of global_reference * (int * Id.t option)
      * bool (** Force inference *)
   | BinderType of Name.t
+  | NamedHole of Id.t (* coming from some ?[id] syntax *)
   | QuestionMark of obligation_definition_status
   | CasesType of bool (* true = a subterm of the type *)
   | InternalHole

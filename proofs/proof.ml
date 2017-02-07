@@ -372,6 +372,22 @@ let in_proof p k = k (Proofview.return p.proofview)
 let unshelve p =
   { p with proofview = Proofview.unshelve (p.shelf) (p.proofview) ; shelf = [] }
 
+let pr_proof p =
+  let p = map_structured_proof p (fun _sigma g -> g) in
+  Pp.(
+    let pr_goal_list = prlist_with_sep spc Goal.pr_goal in
+    let rec aux acc = function
+      | [] -> acc
+      | (before,after)::stack ->
+         aux (pr_goal_list before ++ spc () ++ str "{" ++ acc ++ str "}" ++ spc () ++
+              pr_goal_list after) stack in
+    str "[" ++ str "focus structure: " ++
+               aux (pr_goal_list p.fg_goals) p.bg_goals ++ str ";" ++ spc () ++
+    str "shelved: " ++ pr_goal_list p.shelved_goals ++ str ";" ++ spc () ++
+    str "given up: " ++ pr_goal_list p.given_up_goals ++
+    str "]"
+  )
+
 (*** Compatibility layer with <=v8.2 ***)
 module V82 = struct
   let subgoals p =
