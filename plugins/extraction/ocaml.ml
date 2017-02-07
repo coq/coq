@@ -616,7 +616,7 @@ let rec pp_specif = function
       (try
 	 let ren = Common.check_duplicate (top_visible_mp ()) l in
          fnl () ++
-         hov 1 (str ("module "^ren^" : ") ++ spc () ++
+         hov 1 (str ("module "^ren^" :") ++ spc () ++
                 str "module type of struct include " ++ name ++ str " end")
        with Not_found -> Pp.mt ())
   | (l,Smodtype mt) ->
