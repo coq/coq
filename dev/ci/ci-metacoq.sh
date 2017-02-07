@@ -6,11 +6,11 @@ source ${ci_dir}/ci-common.sh
 
 # MetaCoq + UniCoq
 
-git clone --depth 1 https://github.com/unicoq/unicoq.git
+git_checkout master https://github.com/unicoq/unicoq.git unicoq
 
 ( cd unicoq && coq_makefile -f Make -o Makefile && make -j ${NJOBS} && make install )
 
-git clone --depth 1 https://github.com/MetaCoq/MetaCoq.git
+git_checkout master https://github.com/MetaCoq/MetaCoq.git MetaCoq
 
 ( cd MetaCoq && coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} )
 
