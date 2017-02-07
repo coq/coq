@@ -618,12 +618,13 @@ let rec pp_specif = function
        with Not_found -> pp_spec s)
   | (l,Smodule mt) ->
       let def = pp_module_type [] mt in
-      let def' = pp_module_type [] mt in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module " ++ name ++ str " :" ++ fnl () ++ def) ++
       (try
 	 let ren = Common.check_duplicate (top_visible_mp ()) l in
-	 fnl () ++ hov 1 (str ("module "^ren^" :") ++ fnl () ++ def')
+         fnl () ++
+         hov 1 (str ("module "^ren^" : ") ++ spc () ++
+		str "module type of struct include " ++ name ++ str " end")
        with Not_found -> Pp.mt ())
   | (l,Smodtype mt) ->
       let def = pp_module_type [] mt in
