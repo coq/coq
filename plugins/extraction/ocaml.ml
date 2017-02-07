@@ -622,9 +622,15 @@ let rec pp_specif = function
       hov 1 (str "module " ++ name ++ str " :" ++ fnl () ++ def) ++
       (try
 	 let ren = Common.check_duplicate (top_visible_mp ()) l in
+	 (* use the module type from "name", which should be the same type as "def" here,
+            using OCaml's "module type of" construct
+
+	    an earlier version of this code instead called "pp_module_type" a second time
+	    to get a module type, which led to time blowup during extraction
+	 *)
          fnl () ++
          hov 1 (str ("module "^ren^" : ") ++ spc () ++
-		str "module type of struct include " ++ name ++ str " end")
+                str "module type of struct include " ++ name ++ str " end")
        with Not_found -> Pp.mt ())
   | (l,Smodtype mt) ->
       let def = pp_module_type [] mt in
