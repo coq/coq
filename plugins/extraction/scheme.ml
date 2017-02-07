@@ -39,7 +39,12 @@ let preamble _ comment _ usf =
   str "(load \"macros_extr.scm\")\n\n" ++
   (if usf.mldummy then str "(define __ (lambda (_) __))\n\n" else mt ())
 
-let pr_id id = str (unquote (Id.to_string id))
+let pr_id id =
+  let s = Id.to_string id in
+  for i = 0 to String.length s - 1 do
+    if s.[i] == '\'' then s.[i] <- '~'
+  done;
+  str s
 
 let paren = pp_par true
 

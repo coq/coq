@@ -55,7 +55,7 @@ let is_modfile = function
   | _ -> false
 
 let raw_string_of_modfile = function
-  | MPfile f -> String.capitalize_ascii (Id.to_string (List.hd (DirPath.repr f)))
+  | MPfile f -> String.capitalize (Id.to_string (List.hd (DirPath.repr f)))
   | _ -> assert false
 
 let is_toplevel mp =
@@ -773,14 +773,13 @@ let file_of_modfile mp =
     | MPfile f -> Id.to_string (List.hd (DirPath.repr f))
     | _ -> assert false
   in
-  let s = Bytes.of_string (string_of_modfile mp) in
-  let () = Bytes.set s 0 (s0.[0]) in
-  Bytes.to_string s
+  let s = String.copy (string_of_modfile mp) in
+  if s.[0] != s0.[0] then s.[0] <- s0.[0];
+  s
 
 let add_blacklist_entries l =
   blacklist_table :=
-    List.fold_right
-      (fun s -> Id.Set.add (Id.of_string (String.capitalize_ascii s)))
+    List.fold_right (fun s -> Id.Set.add (Id.of_string (String.capitalize s)))
       l !blacklist_table
 
 (* Registration of operations for rollback. *)

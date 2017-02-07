@@ -92,11 +92,9 @@ let begins_with_CoqXX s =
 let unquote s =
   if lang () != Scheme then s
   else
-    let b = Bytes.of_string s in
-    for i=0 to Bytes.length b - 1 do
-      if Bytes.get b i == '\'' then Bytes.set b i '~'
-    done;
-    Bytes.to_string b
+    let s = String.copy s in
+    for i=0 to String.length s - 1 do if s.[i] == '\'' then s.[i] <- '~' done;
+    s
 
 let rec qualify delim = function
   | [] -> assert false
@@ -112,13 +110,12 @@ let pseudo_qualify = qualify "__"
 let is_upper s = match s.[0] with 'A' .. 'Z' -> true | _ -> false
 let is_lower s = match s.[0] with 'a' .. 'z' | '_' -> true | _ -> false
 
-let lowercase_id id =
-  Id.of_string (String.uncapitalize_ascii (ascii_of_id id))
+let lowercase_id id = Id.of_string (String.uncapitalize (ascii_of_id id))
 let uppercase_id id =
   let s = ascii_of_id id in
   assert (not (String.is_empty s));
   if s.[0] == '_' then Id.of_string ("Coq_"^s)
-  else Id.of_string (String.capitalize_ascii s)
+  else Id.of_string (String.capitalize s)
 
 type kind = Term | Type | Cons | Mod
 
