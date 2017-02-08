@@ -444,7 +444,7 @@ and applist_projection c l =
     let p = Projection.make (fst c) false in
     (match l with 
     | [] -> (* Expand the projection *)
-      let ty,_ = Typeops.type_of_constant (Global.env ()) c in
+      let ty = Typeops.type_of_constant_in (Global.env ()) c in (* FIXME constraints *)
       let pb = Environ.lookup_projection p (Global.env()) in
       let ctx,_ = Term.decompose_prod_n_assum (pb.Declarations.proj_npars + 1) ty in
 	it_mkLambda_or_LetIn (mkProj(p,mkRel 1)) ctx

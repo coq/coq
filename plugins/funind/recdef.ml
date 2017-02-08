@@ -78,8 +78,10 @@ let def_of_const t =
 
 let type_of_const t =
    match (kind_of_term t) with
-    Const sp -> Typeops.type_of_constant (Global.env()) sp
-    |_ -> assert false
+   | Const sp ->
+      (* FIXME discarding universe constraints *)
+      Typeops.type_of_constant_in (Global.env()) sp
+   |_ -> assert false
 
 let constr_of_global x = 
   fst (Universes.unsafe_constr_of_global x)
@@ -1422,7 +1424,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
   (cont_tactic:Id.t list -> tactic) g =
   let ids = pf_ids_of_hyps g in
   let terminate_constr = constr_of_global term_f in
-  let nargs = nb_prod (fst (type_of_const terminate_constr)) (*FIXME*) in
+  let nargs = nb_prod (type_of_const terminate_constr) in
   let x = n_x_id ids nargs in
   observe_tac (str "start_equation") (observe_tclTHENLIST (str "start_equation") [
     h_intros x;
