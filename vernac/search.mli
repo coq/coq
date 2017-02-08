@@ -67,7 +67,7 @@ type 'a coq_object = {
 }
 
 val interface_search : ?glnum:int -> (search_constraint * bool) list ->
-  string coq_object list
+  constr coq_object list
 
 (** {6 Generic search function} *)
 

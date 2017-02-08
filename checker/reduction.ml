@@ -176,9 +176,9 @@ let sort_cmp env univ pb s0 s1 =
         then begin
           if !Flags.debug then begin
             let op = match pb with CONV -> "=" | CUMUL -> "<=" in
-            Printf.eprintf "sort_cmp: %s\n%!" Pp.(string_of_ppcmds
-              (str"Error: " ++ Univ.pr_uni u1 ++ str op ++ Univ.pr_uni u2 ++ str ":" ++ cut()
-               ++ Univ.pr_universes univ))
+            Format.eprintf "sort_cmp: @[%a@]\n%!" Pp.pp_with Pp.(
+               str"Error: " ++ Univ.pr_uni u1 ++ str op ++ Univ.pr_uni u2 ++ str ":" ++ cut()
+               ++ Univ.pr_universes univ)
           end;
           raise NotConvertible
         end

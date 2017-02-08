@@ -6,10 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-let stm_pr_err s = Printf.eprintf "%s] %s\n" (System.process_id ()) s; flush stderr
+let stm_pr_err s  = Printf.eprintf "%s] %s\n"     (System.process_id ()) s; flush stderr
+let stm_pp_err pp = Format.eprintf "%s] @[%a@]\n" (System.process_id ()) Pp.pp_with pp; flush stderr
 
 let stm_prerr_endline s = if false then begin stm_pr_err (s ()) end else ()
 let stm_prerr_debug s = if !Flags.debug then begin stm_pr_err (s ()) end else ()
+
+let stm_pperr_endline s = if false then begin stm_pp_err (s ()) end else ()
 
 open Vernacexpr
 open CErrors
@@ -994,11 +997,11 @@ let stm_vernac_interp ?proof id ?route { verbose; loc; expr } =
   in
   let aux_interp cmd =
   if is_filtered_command cmd then
-    stm_prerr_endline (fun () -> "ignoring " ^ Pp.string_of_ppcmds(pr_vernac expr))
+    stm_pperr_endline Pp.(fun () -> str "ignoring " ++ pr_vernac expr)
   else match cmd with
   | VernacShow ShowScript -> ShowScript.show_script ()
   | expr ->
-    stm_prerr_endline (fun () -> "interpreting " ^ Pp.string_of_ppcmds(pr_vernac expr));
+    stm_pperr_endline Pp.(fun () -> str "interpreting " ++ pr_vernac expr);
     try Vernacentries.interp ?verbosely:(Some verbose) ?proof (loc, expr)
     with e ->
       let e = CErrors.push e in
@@ -1431,11 +1434,10 @@ end = struct (* {{{ *)
           | Some (safe, err) -> err, safe
           | None -> Stateid.dummy, Stateid.dummy in
         let e_msg = iprint (e, info) in
-        stm_prerr_endline (fun () -> "failed with the following exception:");
-        stm_prerr_endline (fun () -> string_of_ppcmds e_msg);
+        stm_pperr_endline Pp.(fun () -> str "failed with the following exception: " ++ fnl () ++ e_msg);
         let e_safe_states = List.filter State.is_cached_and_valid my_states in
         RespError { e_error_at; e_safe_id; e_msg; e_safe_states }
-  
+
   let perform_states query =
     if query = [] then [] else
     let is_tac e = match classify_vernac e with
@@ -1880,10 +1882,10 @@ end = struct (* {{{ *)
           let open Notations in
           try
             let pt, uc = Future.join f in
-            stm_prerr_endline (fun () -> string_of_ppcmds(hov 0 (
+            stm_pperr_endline (fun () -> hov 0 (
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
-              str"uc=" ++ Evd.pr_evar_universe_context uc)));
+              str"uc=" ++ Evd.pr_evar_universe_context uc));
             (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
               (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
               Tactics.exact_no_check pt)
@@ -2514,7 +2516,7 @@ let reset_task_queue = Slaves.reset_task_queue
 (* Document building *)
 let process_transaction ?(newtip=Stateid.fresh ()) ~tty
   ({ verbose; loc; expr } as x) c =
-  stm_prerr_endline (fun () -> "{{{ processing: "^ string_of_ppcmds (pr_ast x));
+  stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
   try
     let head = VCS.current_branch () in

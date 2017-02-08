@@ -255,7 +255,7 @@ let status force =
 let export_coq_object t = {
   Interface.coq_object_prefix = t.Search.coq_object_prefix;
   Interface.coq_object_qualid = t.Search.coq_object_qualid;
-  Interface.coq_object_object = t.Search.coq_object_object
+  Interface.coq_object_object = Pp.string_of_ppcmds (pr_lconstr_env (Global.env ()) Evd.empty t.Search.coq_object_object)
 }
 
 let pattern_of_string ?env s =

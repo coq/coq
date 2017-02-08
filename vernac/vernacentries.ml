@@ -39,8 +39,9 @@ module NamedDecl = Context.Named.Declaration
 let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
 
 let debug = false
-let vernac_prerr_endline x =
-  if debug then prerr_endline (x ()) else ()
+(* XXX Should move to a common library *)
+let vernac_pperr_endline pp =
+  if debug then Format.eprintf "@[%a@]@\n%!" Pp.pp_with (pp ()) else ()
 
 (* Misc *)
 
@@ -1933,7 +1934,7 @@ let vernac_load interp fname =
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
 let interp ?proof ~loc locality poly c =
-  vernac_prerr_endline (fun () -> "interpreting: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac c));
+  vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac c);
   match c with
   (* The below vernac are candidates for removal from the main type
      and to be put into a new doc_command datatype: *)

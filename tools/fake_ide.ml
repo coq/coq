@@ -12,6 +12,8 @@ let error s =
   prerr_endline ("fake_id: error: "^s);
   exit 1
 
+let pperr_endline pp = Format.eprintf "@[%a@]\n%!" Pp.pp_with pp
+
 type coqtop = {
   xml_printer : Xml_printer.t;
   xml_parser : Xml_parser.t;
@@ -170,7 +172,7 @@ let print_document () =
           Str.global_replace (Str.regexp "^[\n ]*") ""
       (if String.length s > 20 then String.sub s 0 17 ^ "..."
        else s) in
-  prerr_endline (Pp.string_of_ppcmds
+  pperr_endline (
     (Document.print doc
       (fun b state_id { name; text } ->
         Pp.str (Printf.sprintf "%s[%10s, %3s] %s"
