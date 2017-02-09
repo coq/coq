@@ -194,7 +194,7 @@ val mk_tpattern_matcher :
 (* convenience shortcut: [pf_fill_occ_term gl occ (sigma,t)] returns
  * the conclusion of [gl] where [occ] occurrences of [t] have been replaced
  * by [Rel 1] and the instance of [t] *)
-val pf_fill_occ_term : goal sigma -> occ -> evar_map * constr -> constr * constr
+val pf_fill_occ_term : goal sigma -> occ -> evar_map * EConstr.t -> EConstr.t * EConstr.t
 
 (* It may be handy to inject a simple term into the first form of cpattern *)
 val cpattern_of_term : char * glob_constr_and_expr -> cpattern
@@ -216,8 +216,8 @@ val assert_done : 'a option ref -> 'a
     [consider_remaining_unif_problems] and [resolve_typeclasses].
     In case of failure they raise [NoMatch] *)
 
-val unify_HO : env -> evar_map -> constr -> constr -> evar_map
-val pf_unify_HO : goal sigma -> constr -> constr -> goal sigma
+val unify_HO : env -> evar_map -> EConstr.constr -> EConstr.constr -> evar_map
+val pf_unify_HO : goal sigma -> EConstr.constr -> EConstr.constr -> goal sigma
 
 (** Some more low level functions needed to implement the full SSR language
     on top of the former APIs *)
