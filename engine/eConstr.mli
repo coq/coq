@@ -39,6 +39,8 @@ val kind_upto : Evd.evar_map -> Constr.t -> (Constr.t, Constr.t) Constr.kind_of_
 val to_constr : Evd.evar_map -> t -> Constr.t
 (** Returns the evar-normal form of the argument. See {!Evarutil.nf_evar}. *)
 
+val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
+
 (** {5 Constructors} *)
 
 val of_kind : (t, t) Constr.kind_of_term -> t
@@ -143,6 +145,9 @@ val decompose_lam_assum : Evd.evar_map -> t -> rel_context * t
 val decompose_lam_n_assum : Evd.evar_map -> int -> t -> rel_context * t
 val decompose_lam_n_decls : Evd.evar_map -> int -> t -> rel_context * t
 
+val compose_lam : (Name.t * t) list -> t -> t
+val to_lambda : Evd.evar_map -> int -> t -> t
+
 val decompose_prod : Evd.evar_map -> t -> (Name.t * t) list * t
 val decompose_prod_assum : Evd.evar_map -> t -> rel_context * t
 val decompose_prod_n_assum : Evd.evar_map -> int -> t -> rel_context * t
@@ -212,11 +217,27 @@ val lookup_rel : int -> env -> rel_declaration
 val lookup_named : variable -> env -> named_declaration
 val lookup_named_val : variable -> named_context_val -> named_declaration
 
+(* XXX Missing Sigma proxy *)
+val fresh_global :
+  ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->
+  'r Sigma.t -> Globnames.global_reference -> (t, 'r) Sigma.sigma
+
+(** {5 Extra} *)
+
+val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt -> (t, types) Context.Named.Declaration.pt
+val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, types) Context.Rel.Declaration.pt
+
 (** {5 Unsafe operations} *)
 
 module Unsafe :
 sig
   val to_constr : t -> Constr.t
+  (** Physical identity. Does not care for defined evars. *)
+
+  val to_rel_decl : (t, types) Context.Rel.Declaration.pt -> (Constr.t, Constr.types) Context.Rel.Declaration.pt
+  (** Physical identity. Does not care for defined evars. *)
+
+  val to_named_decl : (t, types) Context.Named.Declaration.pt -> (Constr.t, Constr.types) Context.Named.Declaration.pt
   (** Physical identity. Does not care for defined evars. *)
 
   val eq : (t, Constr.t) eq
