@@ -214,7 +214,7 @@ sig
     val to_rel_decl : ('c, 't) pt -> ('c, 't) Rel.Declaration.pt
   end
 
-  (** Rel-context is represented as a list of declarations.
+  (** Named-context is represented as a list of declarations.
       Inner-most declarations are at the beginning of the list.
       Outer-most declarations are at the end of the list. *)
   type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
@@ -223,7 +223,7 @@ sig
   (** empty named-context *)
   val empty : ('c, 't) pt
 
-  (** Return a new rel-context enriched by with a given inner-most declaration. *)
+  (** Return a new named-context enriched by with a given inner-most declaration. *)
   val add : ('c, 't) Declaration.pt -> ('c, 't) pt -> ('c, 't) pt
 
   (** Return the number of {e local declarations} in a given named-context. *)
@@ -233,7 +233,7 @@ sig
       @raise Not_found if the designated identifier is not bound in a given named-context. *)
   val lookup : Id.t -> ('c, 't) pt -> ('c, 't) Declaration.pt
 
-  (** Check whether given two rel-contexts are equal. *)
+  (** Check whether given two named-contexts are equal. *)
   val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
 
   (** Map all terms in a given named-context. *)
@@ -253,8 +253,8 @@ sig
   (** Return the set of all identifiers bound in a given named-context. *)
   val to_vars : ('c, 't) pt -> Id.Set.t
 
-  (** [instance_from_named_context Ω] builds an instance [args] such
-      that [Ω ⊢ args:Ω] where [Ω] is a named context and with the local
+  (** [to_instance Ω] builds an instance [args] such
+      that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the local
       definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
       gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
   val to_instance : (Id.t -> 'r) -> ('c, 't) pt -> 'r list
