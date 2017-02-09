@@ -60,6 +60,9 @@ let rec cases_pattern_fold_names f a = function
   | CPatPrim _ | CPatAtom _ -> a
   | CPatCast _ -> assert false
 
+let ids_of_pattern =
+  cases_pattern_fold_names Id.Set.add Id.Set.empty
+
 let ids_of_pattern_list =
   List.fold_left
     (Loc.located_fold_left
@@ -173,7 +176,8 @@ let split_at_annot bl na =
               (List.rev ans, LocalRawAssum (r, k, t) :: rest)
             end
 	| LocalRawDef _ as x :: rest -> aux (x :: acc) rest
-        | LocalPattern _ :: rest -> assert false
+        | LocalPattern (loc,_,_) :: rest ->
+            Loc.raise loc (Stream.Error "pattern with quote not allowed after fix")
 	| [] ->
             user_err_loc(loc,"",
 			 str "No parameter named " ++ Nameops.pr_id id ++ str".")
@@ -196,8 +200,9 @@ let map_local_binders f g e bl =
         (map_binder g e nal, LocalRawAssum(nal,k,f e ty)::bl)
     | LocalRawDef((loc,na),ty) ->
         (name_fold g na e, LocalRawDef((loc,na),f e ty)::bl)
-    | LocalPattern _ ->
-        assert false in
+    | LocalPattern (loc,pat,t) ->
+        let ids = ids_of_pattern pat in
+        (Id.Set.fold g ids e, LocalPattern (loc,pat,Option.map (f e) t)::bl) in
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
 
