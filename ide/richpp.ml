@@ -104,9 +104,11 @@ let rich_pp width ppcmds =
 
   (** The whole output must be a valid document. To that
       end, we nest the document inside <pp> tags. *)
+  pp_open_box ft 0;
   pp_open_tag ft "pp";
   Pp.(pp_with ft ppcmds);
   pp_close_tag ft ();
+  pp_close_box ft ();
 
   (** Get the resulting XML tree. *)
   let () = pp_print_flush ft () in
