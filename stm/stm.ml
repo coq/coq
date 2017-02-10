@@ -2961,5 +2961,6 @@ let parse_error_hook = Hooks.parse_error_hook
 let forward_feedback_hook = Hooks.forward_feedback_hook
 let process_error_hook = Hooks.process_error_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
+let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
 let tactic_being_run_hook = Hooks.tactic_being_run_hook
 (* vim:set foldmethod=marker: *)
