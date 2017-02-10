@@ -20,16 +20,12 @@ open Pp
 open CErrors
 open Util
 
-(* EJGA: This should go away, no more need for fix_exn  *)
-module Stm = struct
-    let u = (fun x -> x)
-    let get_fix_exn () = u
-end
-
 module NamedDecl = Context.Named.Declaration
 
 let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)
 let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
+
+let get_fix_exn, stm_get_fix_exn = Hook.make ()
 
 let succfix (depth, fixrels) =
   (succ depth, List.map succ fixrels)
@@ -491,7 +487,7 @@ let declare_definition prg =
   let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
     (Evd.evar_universe_context_subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
-  let fix_exn = Stm.get_fix_exn () in
+  let fix_exn = Hook.get get_fix_exn () in
   let pl, ctx =
     Evd.universe_context ?names:prg.prg_pl (Evd.from_ctx prg.prg_ctx) in
   let ce =
@@ -572,7 +568,7 @@ let declare_mutual_definition l =
   in
   (* Declare the recursive definitions *)
   let ctx = Evd.evar_context_universe_context first.prg_ctx in
-  let fix_exn = Stm.get_fix_exn () in
+  let fix_exn = Hook.get get_fix_exn () in
   let kns = List.map4 (!declare_fix_ref ~opaque (local, poly, kind) ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
