@@ -1,0 +1,50 @@
+% The LaTeX generator wraps all custom spans in \DUrole{class}{contents}.  That
+% command then checks for another command called \DUroleclass.
+
+% Most of our CSS class names have dashes, so we need ‘\csname … \endcsname’
+
+% <magic>
+% \def\newcssclass#1#2{\expandafter\def\csname DUrole#1\endcsname ##1{#2}}
+% </magic>
+
+\RequirePackage{adjustbox}
+\RequirePackage{xcolor}
+\RequirePackage{amsmath}
+
+\definecolor{nbordercolor}{HTML}{AAAAAA}
+\definecolor{nbgcolor}{HTML}{EAEAEA}
+\definecolor{nholecolor}{HTML}{4E9A06}
+
+\newlength{\nscriptsize}
+\setlength{\nscriptsize}{0.8em}
+
+\newcommand*{\scriptsmallsquarebox}[1]{%
+  % Force width
+  \makebox[\nscriptsize]{%
+    % Force height and center vertically
+    \raisebox{\dimexpr .5\nscriptsize - .5\height \relax}[\nscriptsize][0pt]{%
+      % Cancel depth
+      \raisebox{\depth}{#1}}}}
+\newcommand*{\nscriptdecoratedbox}[2][]{\adjustbox{cfbox=nbordercolor 0.5pt 0pt,bgcolor=nbgcolor}{#2}}
+\newcommand*{\nscriptbox}[1]{\nscriptdecoratedbox{\scriptsmallsquarebox{\textbf{#1}}}}
+\newcommand*{\nscript}[2]{\text{\hspace{-.5\nscriptsize}\raisebox{-#1\nscriptsize}{\nscriptbox{\small#2}}}}
+\newcommand*{\nsup}[1]{^{\nscript{0.15}{#1}}}
+\newcommand*{\nsub}[1]{_{\nscript{0.35}{#1}}}
+\newcommand*{\nnotation}[1]{#1}
+\newcommand*{\nrepeat}[1]{\text{\adjustbox{cfbox=nbordercolor 0.5pt 2pt,bgcolor=nbgcolor}{#1\hspace{.5\nscriptsize}}}}
+\newcommand*{\nwrapper}[1]{\ensuremath{\displaystyle#1}} % https://tex.stackexchange.com/questions/310877/
+\newcommand*{\nhole}[1]{\textit{\color{nholecolor}#1}}
+
+% <magic>
+% Make it easier to define new commands matching CSS classes
+\newcommand{\newcssclass}[2]{%
+  \expandafter\def\csname DUrole#1\endcsname##1{#2}
+}
+% </magic>
+
+\newcssclass{notation-sup}{\nsup{#1}}
+\newcssclass{notation-sub}{\nsub{#1}}
+\newcssclass{notation}{\nnotation{#1}}
+\newcssclass{repeat}{\nrepeat{#1}}
+\newcssclass{repeat-wrapper}{\nwrapper{#1}}
+\newcssclass{hole}{\nhole{#1}}

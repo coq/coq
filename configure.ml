@@ -957,15 +957,16 @@ let strip =
 
 (** * Documentation : do we have latex, hevea, ... *)
 
+let check_sphinx_deps () =
+  ignore (run (which "python3") ["doc/tools/coqrst/checkdeps.py"])
+
 let check_doc () =
   let err s =
     die (sprintf "A documentation build was requested, but %s was not found." s);
   in
-  if not (program_in_path "latex") then err "latex";
-  if not (program_in_path "hevea") then err "hevea";
-  if not (program_in_path "hacha") then err "hacha";
-  if not (program_in_path "fig2dev") then err "fig2dev";
-  if not (program_in_path "convert") then err "convert"
+  if not (program_in_path "python3") then err "python3";
+  if not (program_in_path "sphinx-build") then err "sphinx-build";
+  check_sphinx_deps ()
 
 let _ = if !prefs.withdoc then check_doc ()
 

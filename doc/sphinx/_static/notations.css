@@ -1,0 +1,177 @@
+/************************************************************************/
+/*         *   The Coq Proof Assistant / The Coq Development Team       */
+/*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       */
+/* <O___,, *       (see CREDITS file for the list of authors)           */
+/*   \VV/  **************************************************************/
+/*    //   *    This file is distributed under the terms of the         */
+/*         *     GNU Lesser General Public License Version 2.1          */
+/*         *     (see LICENSE file for the text of the license)         */
+/************************************************************************/
+.notation {
+    /* font-family: "Ubuntu Mono", "Consolas", monospace; */
+    white-space: pre-wrap;
+}
+
+.notation .notation-sup {
+    top: -0.4em;
+}
+
+.notation .notation-sub {
+    bottom: -0.4em;
+    border-radius: 1rem;
+}
+
+@font-face { /* This font has been edited to center all characters */
+  font-family: 'UbuntuMono-Square';
+  font-style: normal;
+  font-weight: 800;
+  src: local('UbuntuMono-Square'), url(./UbuntuMono-Square.ttf) format('truetype');
+}
+
+.notation .notation-sup, .notation .notation-sub {
+    background: #EAEAEA;
+    border: 1px solid #AAA;
+    color: black;
+    /* cursor: help; */
+    display: inline-block;
+    font-size: 0.5em;
+    font-weight: bolder;
+    font-family: UbuntuMono-Square, monospace;
+    height: 2em;
+    line-height: 1.6em;
+    position: absolute;
+    right: -1em; /* half of the width */
+    text-align: center;
+    width: 2em;
+}
+
+.notation .repeat {
+    background: #EAEAEA;
+    border: 1px solid #AAA;
+    display: inline-block;
+    padding-right: 0.6em; /* Space for the left half of the sub- and sup-scripts */
+    padding-left: 0.2em;
+    margin: 0.25em 0;
+}
+
+.notation .repeat-wrapper {
+    display: inline-block;
+    position: relative;
+    margin-right: 0.4em; /* Space for the right half of the sub- and sup-scripts */
+}
+
+.notation .hole {
+    color: #4e9a06;
+    font-style: italic;
+}
+
+/***********************/
+/* Small extra classes */
+/***********************/
+
+.math-preamble {
+    display: none;
+}
+
+.inline-grammar-production {
+    font-weight: bold;
+}
+
+/************************/
+/* Coqtop IO and Coqdoc */
+/************************/
+
+.coqtop dd, .ansi-bg-default {
+    background: #eeeeee !important;
+}
+
+.coqtop dd, .ansi-fg-default {
+    color: #2e3436 !important;
+}
+
+.coqtop dt {                    /* Questions */
+    background: none !important;
+    color: #333 !important;
+    font-weight: normal !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.coqtop dd {                    /* Responses */
+    padding: 0.5em;
+    margin-left: 0 !important;
+    margin-top: 0.5em !important;
+}
+
+.coqdoc, .coqtop dl {
+    margin: 12px; /* Copied from RTD theme */
+}
+
+.coqdoc {
+    display: block;
+    white-space: pre;
+}
+
+.coqtop dt, .coqtop dd {
+    border: none !important;
+    display: block !important;
+}
+
+.coqtop.coqtop-hidden, dd.coqtop-hidden, dt.coqtop-hidden { /* Overqualifying for precedence */
+    display: none !important;
+}
+
+/* FIXME: Specific to the RTD theme */
+.coqdoc, .coqtop dt, .coqtop dd, pre { /* pre added because of production lists */
+    font-family: Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L",Monaco,"Courier New",Courier,monospace !important; /* Copied from RTD theme */
+    font-size: 12px !important; /* Copied from RTD theme */
+    line-height: 1.5 !important; /* Copied from RTD theme */
+    white-space: pre;
+}
+
+/*************/
+/* Overrides */
+/*************/
+
+.rst-content table.docutils td, .rst-content table.docutils th {
+    padding: 8px; /* Reduce horizontal padding */
+    border-left: none;
+    border-right: none;
+}
+
+/* We can't display nested blocks otherwise */
+code, .rst-content tt, .rst-content code {
+    background: transparent !important;
+    border: none !important;
+    font-size: inherit !important;
+}
+
+code {
+    padding: 0 !important;      /* This padding doesn't make sense without a border */
+}
+
+dt > .property {
+    margin-right: 0.25em;
+}
+
+.icon-home:visited {
+  color: #FFFFFF;
+}
+
+/* FIXME: Specific to the RTD theme */
+a:visited {
+    color: #2980B9;
+}
+
+/* Pygments for Coq is confused by ‘…’ */
+code span.error {
+    background: inherit !important;
+    line-height: inherit !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+}
+
+/* Red is too aggressive */
+.rst-content tt.literal, .rst-content tt.literal, .rst-content code.literal {
+    color: inherit !important;
+}

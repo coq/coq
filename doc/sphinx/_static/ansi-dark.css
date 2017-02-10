@@ -1,0 +1,144 @@
+/************************************************************************/
+/*         *   The Coq Proof Assistant / The Coq Development Team       */
+/*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       */
+/* <O___,, *       (see CREDITS file for the list of authors)           */
+/*   \VV/  **************************************************************/
+/*    //   *    This file is distributed under the terms of the         */
+/*         *     GNU Lesser General Public License Version 2.1          */
+/*         *     (see LICENSE file for the text of the license)         */
+/************************************************************************/
+.ansi-bold {
+    font-weight: bold;
+}
+
+.ansi-italic {
+    font-style: italic;
+}
+
+.ansi-negative {
+    filter: invert(100%);
+}
+
+.ansi-underline {
+    text-decoration: underline;
+}
+
+.ansi-no-bold {
+    font-weight: normal;
+}
+
+.ansi-no-italic {
+    font-style: normal;
+}
+
+.ansi-no-negative {
+    filter: invert(0%);
+}
+
+.ansi-no-underline {
+    text-decoration: none;
+}
+
+.ansi-black {
+    color: #000000;
+}
+
+.ansi-fg-red {
+    color: #b21717;
+}
+
+.ansi-fg-green {
+    color: #17b217;
+}
+
+.ansi-fg-yellow {
+    color: #b26717;
+}
+
+.ansi-fg-blue {
+    color: #1717b2;
+}
+
+.ansi-fg-magenta {
+    color: #b217b2;
+}
+
+.ansi-fg-cyan {
+    color: #17b2b2;
+}
+
+.ansi-fg-white {
+    color: #b2b2b2;
+}
+
+.ansi-fg-default {
+    color: #404040;
+}
+
+.ansi-fg-light-black {
+    color: #686868;
+}
+
+.ansi-fg-light-red {
+    color: #ff5454;
+}
+
+.ansi-fg-light-green {
+    color: #54ff54;
+}
+
+.ansi-fg-light-yellow {
+    color: #ffff54;
+}
+
+.ansi-fg-light-blue {
+    color: #5454ff;
+}
+
+.ansi-fg-light-magenta {
+    color: #ff54ff;
+}
+
+.ansi-fg-light-cyan {
+    color: #54ffff;
+}
+
+.ansi-fg-light-white {
+    color: #ffffff;
+}
+
+.ansi-bg-black {
+    background-color: #000000;
+}
+
+.ansi-bg-red {
+    background-color: #b21717;
+}
+
+.ansi-bg-green {
+    background-color: #17b217;
+}
+
+.ansi-bg-yellow {
+    background-color: #b26717;
+}
+
+.ansi-bg-blue {
+    background-color: #1717b2;
+}
+
+.ansi-bg-magenta {
+    background-color: #b217b2;
+}
+
+.ansi-bg-cyan {
+    background-color: #17b2b2;
+}
+
+.ansi-bg-white {
+    background-color: #b2b2b2;
+}
+
+.ansi-bg-default {
+    background-color: transparent;
+}
