@@ -36,6 +36,7 @@ env:
   - TEST_TARGET="ci-math-classes"
   - TEST_TARGET="ci-math-comp"
   - TEST_TARGET="ci-sf"
+  - TEST_TARGET="ci-unimath"
   # Not ready yet for 8.7
   # - TEST_TARGET="ci-metacoq"
   # - TEST_TARGET="ci-tlc"

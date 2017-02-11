@@ -2,7 +2,10 @@
 
 set -xe
 
+# Coq's tools need an ending slash :S, we should fix them.
+export COQBIN=`pwd`/bin/
 export PATH=`pwd`/bin:$PATH
+
 ls `pwd`/bin
 
 # Maybe we should just use Ruby...
