@@ -368,6 +368,16 @@ module New = struct
           catch_failerror e <*> t2
         end
     end
+
+  let tclORELSE0L t1 t2 =
+    tclINDEPENDENTL begin
+      tclORELSE
+        t1
+        begin fun e ->
+          catch_failerror e <*> t2
+        end
+    end
+
   let tclORELSE t1 t2 =
     tclORELSE0 (tclPROGRESS t1) t2
 
@@ -419,6 +429,9 @@ module New = struct
 
   let tclTRY t =
     tclORELSE0 t (tclUNIT ())
+  
+  let tclTRYb t =
+    tclORELSE0L (t <*> tclUNIT true) (tclUNIT false)
 
   let tclIFTHENELSE t1 t2 t3 =
     tclINDEPENDENT begin

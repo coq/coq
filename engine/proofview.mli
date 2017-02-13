@@ -292,6 +292,7 @@ val tclEXTEND : unit tactic list -> unit tactic -> unit tactic list -> unit tact
     independent of backtracking in another. It is equivalent to
     [tclEXTEND [] tac []]. *)
 val tclINDEPENDENT : unit tactic -> unit tactic
+val tclINDEPENDENTL: 'a tactic -> 'a list tactic
 
 
 (** {7 Goal manipulation} *)

@@ -209,6 +209,7 @@ module New : sig
   val tclMAP : ('a -> unit tactic) -> 'a list -> unit tactic
 
   val tclTRY : unit tactic -> unit tactic
+  val tclTRYb : unit tactic -> bool list tactic
   val tclFIRST : unit tactic list -> unit tactic
   val tclIFTHENELSE : unit tactic -> unit tactic -> unit tactic -> unit tactic
   val tclIFTHENSVELSE : unit tactic -> unit tactic array -> unit tactic -> unit tactic
