@@ -984,6 +984,7 @@ let remove_curly_brackets l =
 
 let compute_syntax_data df modifiers =
   let (assoc,n,etyps,onlyparse,onlyprint,compat,fmt,extra) = interp_modifiers modifiers in
+  if onlyprint && onlyparse then error "A notation cannot be both 'only printing' and 'only parsing'.";
   let assoc = match assoc with None -> (* default *) Some NonA | a -> a in
   let toks = split_notation_string df in
   let (recvars,mainvars,symbols) = analyze_notation_tokens toks in
