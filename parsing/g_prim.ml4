@@ -34,7 +34,7 @@ GEXTEND Gram
   GLOBAL:
     bigint natural integer identref name ident var preident
     fullyqualid qualid reference dirpath ne_lstring
-    ne_string string pattern_ident pattern_identref by_notation smart_global;
+    ne_string string lstring pattern_ident pattern_identref by_notation smart_global;
   preident:
     [ [ s = IDENT -> s ] ]
   ;
@@ -105,6 +105,9 @@ GEXTEND Gram
   ;
   string:
     [ [ s = STRING -> s ] ]
+  ;
+  lstring:
+    [ [ s = string -> (!@loc, s) ] ]
   ;
   integer:
     [ [ i = INT      -> my_int_of_string (!@loc) i

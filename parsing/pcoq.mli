@@ -137,6 +137,7 @@ module Prim :
     val bigint : Bigint.bigint Gram.entry
     val integer : int Gram.entry
     val string : string Gram.entry
+    val lstring : string located Gram.entry
     val qualid : qualid located Gram.entry
     val fullyqualid : Id.t list located Gram.entry
     val reference : reference Gram.entry

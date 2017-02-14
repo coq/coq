@@ -1122,7 +1122,7 @@ GEXTEND Gram
 	 idl = LIST0 ident; ":="; c = constr; b = only_parsing ->
            VernacSyntacticDefinition
 	     (id,(idl,c),local,b)
-     | IDENT "Notation"; local = obsolete_locality; s = ne_lstring; ":=";
+     | IDENT "Notation"; local = obsolete_locality; s = lstring; ":=";
 	 c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
