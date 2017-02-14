@@ -1787,13 +1787,13 @@ let vernac_search s gopt r =
   in
   match s with
   | SearchPattern c ->
-      Search.search_pattern gopt (get_pattern c) r pr_search
+      (Search.search_pattern gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchRewrite c ->
-      Search.search_rewrite gopt (get_pattern c) r pr_search
+      (Search.search_rewrite gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchHead c ->
-      Search.search_by_head gopt (get_pattern c) r pr_search
+      (Search.search_by_head gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchAbout sl ->
-      Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r pr_search
+      (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r |> Search.prioritize_search) pr_search
 
 let vernac_locate = let open Feedback in function
   | LocateAny (AN qid)  -> msg_notice (print_located_qualid qid)

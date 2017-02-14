@@ -107,6 +107,72 @@ let generic_search glnumopt fn =
   | Some glnum ->  iter_hypothesis glnum fn);
   iter_declarations fn
 
+(** This module defines a preference on constrs in the form of a
+    [compare] function (preferred constr must be big for this
+    functions, so preferences such as small constr must use a reversed
+    order). This priority will be used to order search results and
+    propose first results which are more likely to be relevant to the
+    query, this is why the type [t] contains the other elements
+    required of a search. *)
+module ConstrPriority = struct
+
+  (* The priority is memoised here. Because of the very localised use
+     of this module, it is not worth it making a convenient interface. *)
+  type t =
+    Globnames.global_reference * Environ.env * Constr.t * priority
+  and priority = int
+
+  module ConstrSet = CSet.Make(Constr)
+
+  (** A measure of the size of a term *)
+  let rec size t =
+    Constr.fold (fun s t -> 1 + s + size t) 0 t
+
+  (** Set of the "symbols" (definitions, inductives, constructors)
+      which appear in a term. *)
+  let rec symbols acc t =
+    let open Constr in
+    match kind t with
+    | Const _ | Ind _ | Construct _ -> ConstrSet.add t acc
+    | _ -> Constr.fold symbols acc t
+
+  (** The number of distinct "symbols" (see {!symbols}) which appear
+      in a term. *)
+  let num_symbols t =
+    ConstrSet.(cardinal (symbols empty t))
+
+  let priority t : priority =
+    -(3*(num_symbols t) + size t)
+
+  let compare (_,_,_,p1) (_,_,_,p2) =
+    compare p1 p2
+end
+
+module PriorityQueue = Heap.Functional(ConstrPriority)
+
+let rec iter_priority_queue q fn =
+  (* use an option to make the function tail recursive. Will be
+     obsoleted with Ocaml 4.02 with the [match … with | exception …]
+     syntax. *)
+  let next = begin
+      try Some (PriorityQueue.maximum q)
+      with Heap.EmptyHeap -> None
+  end in
+  match next with
+  | Some (gref,env,t,_) ->
+    fn gref env t;
+    iter_priority_queue (PriorityQueue.remove q) fn
+  | None -> ()
+
+let prioritize_search seq fn =
+  let acc = ref PriorityQueue.empty in
+  let iter gref env t =
+    let p = ConstrPriority.priority t in
+    acc := PriorityQueue.add (gref,env,t,p) !acc
+  in
+  let () = seq iter in
+  iter_priority_queue !acc fn
+
 (** Filters *)
 
 (** This function tries to see whether the conclusion matches a pattern. *)
