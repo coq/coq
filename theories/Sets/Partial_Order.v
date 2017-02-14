@@ -51,8 +51,8 @@ Section Partial_orders.
 
 End Partial_orders.
 
-Hint Unfold Carrier_of Rel_of Strict_Rel_of: sets v62.
-Hint Resolve Definition_of_covers: sets v62.
+Hint Unfold Carrier_of Rel_of Strict_Rel_of: sets.
+Hint Resolve Definition_of_covers: sets.
 
 
 Section Partial_order_facts.

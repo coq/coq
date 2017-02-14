@@ -47,7 +47,7 @@ Check @myplus.
 
 Fail Arguments eq_refl {F g}, [H] k.
 Fail Arguments eq_refl {F}, [F] : rename.
-Fail Arguments eq_refl {F F}, [F] F.
+Fail Arguments eq_refl {F F}, [F] F : rename.
 Fail Arguments eq {F} x [z] : rename.
 Fail Arguments eq {F} x z y.
 Fail Arguments eq {R} s t.

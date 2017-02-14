@@ -308,15 +308,16 @@ end
 
 module DupMap = Map.Make(DupOrd)
 
-let add_duplicate, check_duplicate =
+let add_duplicate, get_duplicate =
   let index = ref 0 and dups = ref DupMap.empty in
   register_cleanup (fun () -> index := 0; dups := DupMap.empty);
   let add mp l =
      incr index;
      let ren = "Coq__" ^ string_of_int !index in
      dups := DupMap.add (mp,l) ren !dups
-  and check mp l = DupMap.find (mp, l) !dups
-  in (add,check)
+  and get mp l =
+    try Some (DupMap.find (mp, l) !dups) with Not_found -> None
+  in (add,get)
 
 type reset_kind = AllButExternal | Everything
 
@@ -510,10 +511,11 @@ let pp_duplicate k' prefix mp rls olab =
       (* Here rls=s::rls', we search the label for s inside mp *)
       List.tl rls, get_nth_label_mp (mp_length mp - mp_length prefix) mp
   in
-  try dottify (check_duplicate prefix lbl :: rls')
-  with Not_found ->
-    assert (get_phase () == Pre); (* otherwise it's too late *)
-    add_duplicate prefix lbl; dottify rls
+  match get_duplicate prefix lbl with
+  | Some ren -> dottify (ren :: rls')
+  | None ->
+     assert (get_phase () == Pre); (* otherwise it's too late *)
+     add_duplicate prefix lbl; dottify rls
 
 let fstlev_ks k = function
   | [] -> assert false

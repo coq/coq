@@ -299,7 +299,7 @@ Proof.
   apply (h2 h1).
 Defined.
 
-Hint Resolve left right inleft inright: core v62.
+Hint Resolve left right inleft inright: core.
 Hint Resolve exist exist2 existT existT2: core.
 
 (* Compatibility *)

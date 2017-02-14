@@ -32,7 +32,7 @@ type typeclass = {
       Some may be undefinable due to sorting restrictions or simply undefined if 
       no name is provided. The [int option option] indicates subclasses whose hint has
       the given priority. *)
-  cl_projs : (Name.t * (direction * int option) option * constant option) list;
+  cl_projs : (Name.t * (direction * Vernacexpr.hint_info_expr) option * constant option) list;
 
   (** Whether we use matching or full unification during resolution *)
   cl_strict : bool; 
@@ -50,7 +50,7 @@ val all_instances : unit -> instance list
 
 val add_class : typeclass -> unit
 
-val new_instance : typeclass -> int option -> bool -> Decl_kinds.polymorphic -> 
+val new_instance : typeclass -> Vernacexpr.hint_info_expr -> bool -> Decl_kinds.polymorphic ->
   global_reference -> instance
 val add_instance : instance -> unit
 val remove_instance : instance -> unit
@@ -71,7 +71,7 @@ val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * (type
   
 val instance_impl : instance -> global_reference
 
-val instance_priority : instance -> int option
+val hint_priority : instance -> int option
 
 val is_class : global_reference -> bool
 val is_instance : global_reference -> bool
@@ -113,21 +113,22 @@ val classes_transparent_state : unit -> transparent_state
 
 val add_instance_hint_hook : 
   (global_reference_or_constr -> global_reference list ->
-   bool (* local? *) -> int option -> Decl_kinds.polymorphic -> unit) Hook.t
+   bool (* local? *) -> Vernacexpr.hint_info_expr -> Decl_kinds.polymorphic -> unit) Hook.t
 val remove_instance_hint_hook : (global_reference -> unit) Hook.t
 val add_instance_hint : global_reference_or_constr -> global_reference list -> 
-  bool -> int option -> Decl_kinds.polymorphic -> unit
+  bool -> Vernacexpr.hint_info_expr -> Decl_kinds.polymorphic -> unit
 val remove_instance_hint : global_reference -> unit
 
 val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
 val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) Hook.t
 
-val declare_instance : int option -> bool -> global_reference -> unit
+val declare_instance : Vernacexpr.hint_info_expr option -> bool -> global_reference -> unit
 
 
 (** Build the subinstances hints for a given typeclass object.
     check tells if we should check for existence of the 
     subinstances and add only the missing ones. *)
 
-val build_subclasses : check:bool -> env -> evar_map -> global_reference -> int option (* priority *) ->
-  (global_reference list * int option * constr) list
+val build_subclasses : check:bool -> env -> evar_map -> global_reference ->
+		       Vernacexpr.hint_info_expr ->
+		       (global_reference list * Vernacexpr.hint_info_expr * constr) list

@@ -32,7 +32,7 @@ Hint Resolve Rplus_assoc: real.
 
 (**********)
 Axiom Rplus_opp_r : forall r:R, r + - r = 0.
-Hint Resolve Rplus_opp_r: real v62.
+Hint Resolve Rplus_opp_r: real.
 
 (**********)
 Axiom Rplus_0_l : forall r:R, 0 + r = r.
@@ -44,11 +44,11 @@ Hint Resolve Rplus_0_l: real.
 
 (**********)
 Axiom Rmult_comm : forall r1 r2:R, r1 * r2 = r2 * r1.
-Hint Resolve Rmult_comm: real v62.
+Hint Resolve Rmult_comm: real.
 
 (**********)
 Axiom Rmult_assoc : forall r1 r2 r3:R, r1 * r2 * r3 = r1 * (r2 * r3).
-Hint Resolve Rmult_assoc: real v62.
+Hint Resolve Rmult_assoc: real.
 
 (**********)
 Axiom Rinv_l : forall r:R, r <> 0 -> / r * r = 1.
@@ -69,7 +69,7 @@ Hint Resolve R1_neq_R0: real.
 (**********)
 Axiom
   Rmult_plus_distr_l : forall r1 r2 r3:R, r1 * (r2 + r3) = r1 * r2 + r1 * r3.
-Hint Resolve Rmult_plus_distr_l: real v62.
+Hint Resolve Rmult_plus_distr_l: real.
 
 (*********************************************************)
 (** *    Order axioms                                    *)

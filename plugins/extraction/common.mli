@@ -62,7 +62,7 @@ val top_visible_mp : unit -> module_path
 val push_visible : module_path -> module_path list -> unit
 val pop_visible : unit -> unit
 
-val check_duplicate : module_path -> Label.t -> string
+val get_duplicate : module_path -> Label.t -> string option
 
 type reset_kind = AllButExternal | Everything
 

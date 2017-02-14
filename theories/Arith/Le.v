@@ -30,8 +30,8 @@ Notation le_refl := Nat.le_refl (compat "8.4").
 Notation le_trans := Nat.le_trans (compat "8.4").
 Notation le_antisym := Nat.le_antisymm (compat "8.4").
 
-Hint Resolve le_trans: arith v62.
-Hint Immediate le_antisym: arith v62.
+Hint Resolve le_trans: arith.
+Hint Immediate le_antisym: arith.
 
 (** * Properties of [le] w.r.t 0 *)
 
@@ -59,16 +59,16 @@ Notation le_Sn_n := Nat.nle_succ_diag_l (compat "8.4"). (* ~ S n <= n *)
 Theorem le_Sn_le : forall n m, S n <= m -> n <= m.
 Proof Nat.lt_le_incl.
 
-Hint Resolve le_0_n le_Sn_0: arith v62.
-Hint Resolve le_n_S le_n_Sn le_Sn_n : arith v62.
-Hint Immediate le_n_0_eq le_Sn_le le_S_n : arith v62.
+Hint Resolve le_0_n le_Sn_0: arith.
+Hint Resolve le_n_S le_n_Sn le_Sn_n : arith.
+Hint Immediate le_n_0_eq le_Sn_le le_S_n : arith.
 
 (** * Properties of [le] w.r.t predecessor *)
 
 Notation le_pred_n := Nat.le_pred_l (compat "8.4"). (* pred n <= n *)
 Notation le_pred := Nat.pred_le_mono (compat "8.4"). (* n<=m -> pred n <= pred m *)
 
-Hint Resolve le_pred_n: arith v62.
+Hint Resolve le_pred_n: arith.
 
 (** * A different elimination principle for the order on natural numbers *)
 

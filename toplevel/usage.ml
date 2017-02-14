@@ -36,8 +36,6 @@ let print_usage_channel co command =
 \n  -noinit                start without loading the Init library\
 \n  -nois                  (idem)\
 \n  -compat X.Y            provides compatibility support for Coq version X.Y\
-\n  -verbose-compat-notations  be warned when using compatibility notations\
-\n  -no-compat-notations   get an error when using compatibility notations\
 \n\
 \n  -load-ml-object f      load ML object file f\
 \n  -load-ml-source f      load ML file f\
@@ -61,8 +59,8 @@ let print_usage_channel co command =
 \n  -v                     print Coq version and exit\
 \n  -list-tags             print highlight color tags known by Coq and exit\
 \n\
-\n  -quiet                 unset display of extra information (implies -w none)\
-\n  -w (all|none)          configure display of warnings\
+\n  -quiet                 unset display of extra information (implies -w \"-all\")\
+\n  -w (w1,..,wn)          configure display of warnings\
 \n  -color (yes|no|auto)   configure color output\
 \n\
 \n  -q                     skip loading of rcfile\

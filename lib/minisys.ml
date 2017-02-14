@@ -46,14 +46,6 @@ let ok_dirname f =
 let exists_dir dir =
   try Sys.is_directory dir with Sys_error _ -> false
 
-let check_unix_dir warn dir =
-  if (Sys.os_type = "Win32" || Sys.os_type = "Cygwin") &&
-    (String.length dir > 2 && dir.[1] = ':' ||
-     String.contains dir '\\' ||
-     String.contains dir ';')
-  then warn ("assuming " ^ dir ^
-             " to be a Unix path even if looking like a Win32 path.")
-
 let apply_subdir f path name =
   (* we avoid all files and subdirs starting by '.' (e.g. .svn) *)
   (* as well as skipped files like CVS, ... *)

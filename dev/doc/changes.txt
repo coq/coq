@@ -66,6 +66,8 @@ kernel/closure.ml{,i} -> kernel/cClosure.ml{,i}
 lib/errors.ml{,i} -> lib/cErrors.ml{,i}
 toplevel/cerror.ml{,i} -> toplevel/explainErr.mli{,i}
 
+All IDE-specific files, including the XML protocol have been moved to ide/
+
 ** Reduction functions **
 
 In closure.ml, we introduced the more precise reduction flags fMATCH, fFIX,
@@ -268,6 +270,8 @@ val get_id_for_feedback : unit -> edit_or_state_id * route_id
   for constructing compound entries still works over this scheme. Note that in
   the case of (VERNAC) ARGUMENT EXTEND, the name of the argument entry is bound
   in the parsing rules, so beware of recursive calls.
+  
+  For example, to get "wit_constr" you must "open Constrarg" at the top of the file.
 
 - Evarutil was split in two parts. The new Evardefine file exposes functions
 define_evar_* mostly used internally in the unification engine.
@@ -294,6 +298,10 @@ define_evar_* mostly used internally in the unification engine.
   ...
   let Sigma (xn, sigma, pn) = ... in
   Sigma (ans, sigma, p1 +> ... +> pn)
+  
+  Examples of `Sigma.Unsafe.of_evar_map` include:
+  
+  Evarutil.new_evar env (Tacmach.project goal) ty   ----> Evarutil.new_evar env (Sigma.Unsafe.of_evar_map (Tacmach.project goal)) ty
 
 - The Proofview.Goal.*enter family of functions now takes a polymorphic
   continuation given as a record as an argument.
@@ -306,7 +314,11 @@ define_evar_* mostly used internally in the unification engine.
 
   Proofview.Goal.enter { enter = begin fun gl -> ... end }
   
-- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)` --> `Tacinterp.Value.of_constr c`
+- `Tacexpr.TacDynamic(Loc.dummy_loc, Pretyping.constr_in c)`      ---> `Tacinterp.Value.of_constr c`
+- `Vernacexpr.HintsResolveEntry(priority, poly, hnf, path, atom)` ---> `Vernacexpr.HintsResolveEntry(Vernacexpr.({hint_priority = priority; hint_pattern = None}), poly, hnf, path, atom)`
+- `Pretyping.Termops.mem_named_context`                           ---> `Engine.Termops.mem_named_context_val`
+  (`Global.named_context`                                         ---> `Global.named_context_val`)
+  (`Context.Named.lookup`                                         ---> `Environ.lookup_named_val`)
 
 ** Search API **
 

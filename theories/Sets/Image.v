@@ -200,4 +200,4 @@ Section Image.
 
 End Image.
 
-Hint Resolve Im_def image_empty finite_image: sets v62.
+Hint Resolve Im_def image_empty finite_image: sets.

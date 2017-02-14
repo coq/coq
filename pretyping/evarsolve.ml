@@ -44,33 +44,39 @@ let get_polymorphic_positions sigma f =
         templ.template_param_levels)
   | _ -> assert false
 
-let refresh_level evd s =
-  match Evd.is_sort_variable evd s with
-  | None -> true
-  | Some l -> not (Evd.is_flexible_level evd l)
-
 let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 		      pbty env evd t =
   let evdref = ref evd in
   let modified = ref false in
-  let rec refresh status dir t = 
-    match EConstr.kind !evdref t with
-    | Sort (Type u as s) when
-      (match Univ.universe_level u with
-      | None -> true
-      | Some l -> not onlyalg && refresh_level evd s) ->
+  (* direction: true for fresh universes lower than the existing ones *)
+  let refresh_sort status ~direction s =
     let s' = evd_comb0 (new_sort_variable status) evdref in
     let evd = 
-      if dir then set_leq_sort env !evdref s' s
+      if direction then set_leq_sort env !evdref s' s
       else set_leq_sort env !evdref s s'
     in
-      modified := true; evdref := evd; mkSort s'
-    | Sort (Prop Pos as s) when refreshset && not dir ->
-       let s' = evd_comb0 (new_sort_variable status) evdref in
-       let evd = set_leq_sort env !evdref s s' in
-       modified := true; evdref := evd; mkSort s'
+    modified := true; evdref := evd; mkSort s'
+  in
+  let rec refresh ~onlyalg status ~direction t =
+    match EConstr.kind !evdref t with
+    | Sort (Type u as s) ->
+       (match Univ.universe_level u with
+	| None -> refresh_sort status ~direction s
+	| Some l ->
+	   (match Evd.universe_rigidity evd l with
+	    | UnivRigid ->
+	       if not onlyalg then refresh_sort status ~direction s
+	       else t
+	    | UnivFlexible alg ->
+	       if onlyalg && alg then
+	         (evdref := Evd.make_flexible_variable !evdref false l; t)
+	       else t))
+    | Sort (Prop Pos as s) when refreshset && not direction ->
+       (* Cannot make a universe "lower" than "Set",
+          only refreshing when we want higher universes. *)
+       refresh_sort status ~direction s
     | Prod (na,u,v) -> 
-      mkProd (na,u,refresh status dir v)
+      mkProd (na, u, refresh ~onlyalg status ~direction v)
     | _ -> t
   (** Refresh the types of evars under template polymorphic references *)
   and refresh_term_evars onevars top t =
@@ -83,7 +89,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
       Array.iter (refresh_term_evars onevars false) args
     | Evar (ev, a) when onevars ->
       let evi = Evd.find !evdref ev in
-      let ty' = refresh univ_flexible true (EConstr.of_constr evi.evar_concl) in
+      let ty' = refresh ~onlyalg univ_flexible ~direction:true (EConstr.of_constr evi.evar_concl) in
 	if !modified then 
 	  evdref := Evd.add !evdref ev {evi with evar_concl = EConstr.Unsafe.to_constr ty'}
 	else ()
@@ -103,9 +109,11 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   in
   let t' = 
     if isArity !evdref t then
-      (match pbty with
-      | None -> t
-      | Some dir -> refresh status dir t)
+      match pbty with
+      | None ->
+	 (* No cumulativity needed, but we still need to refresh the algebraics *)
+	 refresh ~onlyalg:true univ_flexible ~direction:false t
+      | Some direction -> refresh ~onlyalg status ~direction t
     else (refresh_term_evars false true t; t)
   in
     if !modified then !evdref, t' else !evdref, t
@@ -1680,7 +1688,7 @@ let status_changed evd lev (pbty,_,t1,t2) =
   (try Evar.Set.mem (head_evar evd t1) lev with NoHeadEvar -> false) ||
   (try Evar.Set.mem (head_evar evd t2) lev with NoHeadEvar -> false)
 
-let reconsider_conv_pbs conv_algo evd =
+let reconsider_unif_constraints conv_algo evd =
   let (evd,pbs) = extract_changed_conv_pbs evd (status_changed evd) in
   List.fold_left
     (fun p (pbty,env,t1,t2 as x) ->
@@ -1693,6 +1701,8 @@ let reconsider_conv_pbs conv_algo evd =
     (Success evd)
     pbs
 
+let reconsider_conv_pbs = reconsider_unif_constraints
+
 (* Tries to solve problem t1 = t2.
  * Precondition: t1 is an uninstantiated evar
  * Returns an optional list of evars that were instantiated, or None
@@ -1703,7 +1713,7 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
   try
     let t2 = whd_betaiota evd t2 in (* includes whd_evar *)
     let evd = evar_define conv_algo ~choose env evd pbty ev1 t2 in
-      reconsider_conv_pbs conv_algo evd
+      reconsider_unif_constraints conv_algo evd
   with
     | NotInvertibleUsingOurAlgorithm t ->
         UnifFailure (evd,NotClean (ev1,env,t))

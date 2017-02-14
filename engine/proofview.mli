@@ -293,6 +293,7 @@ val tclEXTEND : unit tactic list -> unit tactic -> unit tactic list -> unit tact
     independent of backtracking in another. It is equivalent to
     [tclEXTEND [] tac []]. *)
 val tclINDEPENDENT : unit tactic -> unit tactic
+val tclINDEPENDENTL: 'a tactic -> 'a list tactic
 
 
 (** {7 Goal manipulation} *)
@@ -373,7 +374,6 @@ val mark_as_unsafe : unit tactic
 (** Gives up on the goal under focus. Reports an unsafe status. Proofs
     with given up goals cannot be closed. *)
 val give_up : unit tactic
-
 
 (** {7 Control primitives} *)
 

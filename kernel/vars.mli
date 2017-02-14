@@ -73,6 +73,10 @@ val subst_of_rel_context_instance : Context.Rel.t -> constr list -> substl
 (** For compatibility: returns the substitution reversed *)
 val adjust_subst_to_rel_context : Context.Rel.t -> constr list -> constr list
 
+(** Take an index in an instance of a context and returns its index wrt to
+    the full context (e.g. 2 in [x:A;y:=b;z:C] is 3, i.e. a reference to z) *)
+val adjust_rel_to_rel_context : ('a, 'b) Context.Rel.pt -> int -> int
+
 (** [substnl [a₁;...;an] k c] substitutes in parallel [a₁],...,[an]
     for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
     accordingly indexes in [an],...,[a1] and [c]. In terms of typing, if

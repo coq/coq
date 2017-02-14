@@ -185,6 +185,7 @@ let pr_decl (decl,ok) =
                            print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_source = function
+  | Evar_kinds.NamedHole id -> pr_id id
   | Evar_kinds.QuestionMark _ -> str "underscore"
   | Evar_kinds.CasesType false -> str "pattern-matching return predicate"
   | Evar_kinds.CasesType true ->
@@ -1368,7 +1369,7 @@ let smash_rel_context sign =
 let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 
 let mem_named_context_val id ctxt =
-  try Environ.lookup_named_val id ctxt; true with Not_found -> false
+  try ignore(Environ.lookup_named_val id ctxt); true with Not_found -> false
 
 let map_rel_decl f = function
 | RelDecl.LocalAssum (id, t) -> RelDecl.LocalAssum (id, f t)

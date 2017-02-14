@@ -74,3 +74,11 @@ val interface_search : ?glnum:int -> (search_constraint * bool) list ->
 val generic_search : int option -> display_function -> unit
 (** This function iterates over all hypothesis of the goal numbered
     [glnum] (if present) and all known declarations. *)
+
+(** {6 Search function modifiers} *)
+
+val prioritize_search : (display_function -> unit) -> display_function -> unit
+(** [prioritize_search iter] iterates over the values of [iter] (seen
+    as a sequence of declarations), in a relevance order. This requires to
+    perform the entire iteration of [iter] before starting streaming. So
+    [prioritize_search] should not be used for low-latency streaming. *)

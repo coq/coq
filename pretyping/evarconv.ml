@@ -1109,7 +1109,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
               match evar_conv_x ts env_evar evd CUMUL idty evty with
               | UnifFailure _ -> error "Cannot find an instance"
               | Success evd ->
-              match reconsider_conv_pbs (evar_conv_x ts) evd with
+              match reconsider_unif_constraints (evar_conv_x ts) evd with
               | UnifFailure _ -> error "Cannot find an instance"
               | Success evd ->
               evd
@@ -1244,7 +1244,7 @@ let rec solve_unconstrained_evars_with_candidates ts evd =
             let conv_algo = evar_conv_x ts in
             let evd = check_evar_instance evd evk (EConstr.of_constr a) conv_algo in
             let evd = Evd.define evk a evd in
-            match reconsider_conv_pbs conv_algo evd with
+            match reconsider_unif_constraints conv_algo evd with
             | Success evd -> solve_unconstrained_evars_with_candidates ts evd
             | UnifFailure _ -> aux l
           with
@@ -1267,7 +1267,7 @@ let solve_unconstrained_impossible_cases env evd =
 	Evd.define evk (EConstr.Unsafe.to_constr ty) evd' 
     | _ -> evd') evd evd
 
-let consider_remaining_unif_problems env
+let solve_unif_constraints_with_heuristics env
     ?(ts=Conv_oracle.get_transp_state (Environ.oracle env)) evd =
   let evd = solve_unconstrained_evars_with_candidates ts evd in
   let rec aux evd pbs progress stuck =
@@ -1300,6 +1300,8 @@ let consider_remaining_unif_problems env
   let heuristic_solved_evd = aux evd pbs false [] in
   check_problems_are_solved env heuristic_solved_evd;
   solve_unconstrained_impossible_cases env heuristic_solved_evd
+
+let consider_remaining_unif_problems = solve_unif_constraints_with_heuristics
 
 (* Main entry points *)
 

@@ -1,0 +1,118 @@
+dist: trusty
+sudo: required
+# Until Ocaml becomes a language, we set a known one.
+language: c
+cache:
+  apt: true
+  directories:
+  - $HOME/.opam
+addons:
+  apt:
+    sources:
+    - avsm
+    packages:
+    - opam
+    - aspcud
+    - gcc-multilib
+env:
+  global:
+  - NJOBS=2
+  # system is == 4.02.3
+  - COMPILER="system"
+  # Main test suites
+  matrix:
+  - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
+  - TEST_TARGET="validate"                           TW="travis_wait"
+  - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
+  - TEST_TARGET="ci-color"
+  - TEST_TARGET="ci-compcert"
+  - TEST_TARGET="ci-coquelicot"
+  - TEST_TARGET="ci-cpdt"
+  - TEST_TARGET="ci-geocoq"
+  - TEST_TARGET="ci-fiat-crypto"
+  - TEST_TARGET="ci-flocq"
+  - TEST_TARGET="ci-hott"
+  - TEST_TARGET="ci-iris-coq"
+  - TEST_TARGET="ci-math-classes"
+  - TEST_TARGET="ci-math-comp"
+  - TEST_TARGET="ci-sf"
+  # Not ready yet for 8.7
+  # - TEST_TARGET="ci-metacoq"
+  # - TEST_TARGET="ci-tlc"
+
+matrix:
+
+  allow_failures:
+  - env: TEST_TARGET="ci-cpdt"
+
+  # Full Coq test-suite with two compilers
+  # [TODO: use yaml refs and avoid duplication for packages list]
+  include:
+    - env:
+      - TEST_TARGET="test-suite"
+      - EXTRA_CONF="-coqide opt -with-doc yes"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages:
+          - opam
+          - aspcud
+          - libgtk2.0-dev
+          - libgtksourceview2.0-dev
+          - texlive-latex-base
+          - texlive-latex-recommended
+          - texlive-latex-extra
+          - texlive-math-extra
+          - texlive-fonts-recommended
+          - texlive-fonts-extra
+          - latex-xcolor
+          - ghostscript
+          - transfig
+          - imagemagick
+    - env:
+      - TEST_TARGET="test-suite"
+      - COMPILER="4.04.0"
+      - EXTRA_CONF="-coqide opt -with-doc yes"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages:
+          - opam
+          - aspcud
+          - libgtk2.0-dev
+          - libgtksourceview2.0-dev
+          - texlive-latex-base
+          - texlive-latex-recommended
+          - texlive-latex-extra
+          - texlive-math-extra
+          - texlive-fonts-recommended
+          - texlive-fonts-extra
+          - latex-xcolor
+          - ghostscript
+          - transfig
+          - imagemagick
+
+install:
+- opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
+- eval $(opam config env)
+- opam config var root
+- opam install -j ${NJOBS} -y camlp5 ocamlfind ${EXTRA_OPAM}
+- opam list
+
+script:
+
+- echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
+- ./configure -local -usecamlp5 -native-compiler yes ${EXTRA_CONF}
+- echo -en 'travis_fold:end:coq.config\\r'
+
+- echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'
+- make -j ${NJOBS}
+- echo -en 'travis_fold:end:coq.build\\r'
+
+- echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
+- ${TW} make -j ${NJOBS} ${TEST_TARGET}
+- echo -en 'travis_fold:end:coq.test\\r'

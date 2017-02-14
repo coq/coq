@@ -170,7 +170,7 @@ module Make(T : Task) = struct
         | Unix.WSIGNALED sno -> Printf.sprintf "signalled(%d)" sno
         | Unix.WSTOPPED sno -> Printf.sprintf "stopped(%d)" sno) in
     let more_univs n =
-      CList.init 10 (fun _ ->
+      CList.init n (fun _ ->
         Universes.new_univ_level (Global.current_dirpath ())) in
 
     let rec kill_if () =

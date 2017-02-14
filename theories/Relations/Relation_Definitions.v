@@ -66,10 +66,10 @@ Section Relation_Definition.
 
 End Relation_Definition.
 
-Hint Unfold reflexive transitive antisymmetric symmetric: sets v62.
+Hint Unfold reflexive transitive antisymmetric symmetric: sets.
 
 Hint Resolve Build_preorder Build_order Build_equivalence Build_PER
   preord_refl preord_trans ord_refl ord_trans ord_antisym equiv_refl
-  equiv_trans equiv_sym per_sym per_trans: sets v62.
+  equiv_trans equiv_sym per_sym per_trans: sets.
 
-Hint Unfold inclusion same_relation commut: sets v62.
+Hint Unfold inclusion same_relation commut: sets.

@@ -7,25 +7,22 @@ Tactics
   functional extensionality in H supposed to be a quantified equality
   until giving a bare equality.
 
+Changes from V8.6beta1 to V8.6
+==============================
+
+Kernel
+
+- Fixed critical bug #5248 in VM long multiplication on 32-bit
+  architectures. Was there only since 8.6beta1, so no stable release impacted.
+
+Other bug fixes in universes, type class shelving,...
+
 Changes from V8.5 to V8.6beta1
 ==============================
 
-Bugfixes
+Kernel
 
-- #4527: when typechecking the statement of a lemma using universe polymorphic
-  definitions with explicit universe binders, check that the type can indeed be
-  typechecked using only those universes (after minimization of the other,
-  flexible universes), or raise an error (fixed scripts can be made forward
-  compatible).
-- #4726: treat user-provided sorts of universe polymorphic records as rigid
-  (i.e. non-minimizable).
-- #4592, #4932: notations sharing recursive patterns or sharing
-  binders made more robust.
-- #4780: Induction with universe polymorphism on was creating ill-typed terms.
-- #3070: fixing "subst" in the presence of a chain of dependencies.
-- When used as an argument of an ltac function, "auto" without "with"
-  nor "using" clause now correctly uses only the core hint database by
-  default.
+- A new, faster state-of-the-art universe constraint checker.
 
 Specification language
 
@@ -69,9 +66,9 @@ Tactics
   given a free identifier, it is not bound in subsequent tactics anymore.
   In order to introduce a binding, use e.g. the "fresh" primitive instead
   (potential source of incompatibilities).
-- New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac (DOC TODO).
-- New goal selectors.  Sets of goals can be selected by select by listing
-  integers ranges. Example: "1,4-7,24: tac" focuses "tac" on goals 1,4,5,6,7,24.
+- New tactics is_ind, is_const, is_proj, is_constructor for use in Ltac.
+- New goal selectors.  Sets of goals can be selected by listing integers
+  ranges. Example: "1,4-7,24: tac" focuses "tac" on goals 1,4,5,6,7,24.
 - For uniformity with "destruct"/"induction" and for a more natural
   behavior, "injection" can now work in place by activating option
   "Structural Injection". In this case, hypotheses are also put in the
@@ -84,6 +81,17 @@ Tactics
 - Option "Injection On Proofs" was renamed "Keep Proof Equalities". When
   enabled, injection and inversion do not drop equalities between objects
   in Prop. Still disabled by default.
+- New tactics "notypeclasses refine" and "simple notypeclasses refine" that
+  disallow typeclass resolution when typechecking their argument, for use
+  in typeclass hints.
+- Integration of LtacProf, a profiler for Ltac.
+- Reduction tactics now accept more fine-grained flags: iota is now a shorthand
+  for the new flags match, fix and cofix.
+- The ssreflect subterm selection algorithm is now accessible to tactic writers
+  through the ssrmatching plugin.
+- When used as an argument of an ltac function, "auto" without "with"
+  nor "using" clause now correctly uses only the core hint database by
+  default.
 
 Hints
 
@@ -91,6 +99,16 @@ Hints
 - Hint Mode now accepts "!" which means that the mode matches only if the
   argument's head is not an evar (it goes under applications, casts, and
   scrutinees of matches and projections).
+- Hints can now take an optional user-given pattern, used only by
+  [typeclasses eauto] with the [Filtered Unification] option on.
+
+Typeclasses
+
+- Many new options and new engine based on the proof monad. The
+  [typeclasses eauto] tactic is now a multi-goal, multi-success tactic.
+  See reference manual for more information. It is planned to
+  replace auto and eauto in the following version. The 8.5 resolution
+  engine is still available to help solve compatibility issues.
 
 Program
 
@@ -104,6 +122,14 @@ Notations
 
 - "Bind Scope" can once again bind "Funclass" and "Sortclass".
 
+General infrastructure
+
+- New configurable warning system which can be controlled with the vernacular
+  command "Set Warnings", or, under coqc/coqtop, with the flag "-w". In
+  particular, the default is now that warnings are printed by coqc.
+- In asynchronous mode, Coq is now capable of recovering from errors and
+  continue processing the document.
+
 Tools
 
 - coqc accepts a -o option to specify the output file name
@@ -115,6 +141,13 @@ Tools
 - Removed the -verbose-compat-notations flag and the corresponding Set
   Verbose Compat vernacular, since these warnings can now be silenced or
   turned into errors using "-w".
+
+XML protocol
+
+- message format has changed, see dev/doc/changes.txt for more details.
+
+Many bug fixes, minor changes and documentation improvements are not mentioned
+here.
 
 Changes from V8.5pl2 to V8.5pl3
 ===============================
@@ -1116,7 +1149,7 @@ Extraction
   instead of accessing their body, they are now considered as axioms.
   The previous behaviour can be reactivated via the option
   "Set Extraction AccessOpaque".
-- The pretty-printer for Haskell now produces layout-independant code
+- The pretty-printer for Haskell now produces layout-independent code
 - A new command "Separate Extraction cst1 cst2 ..." that mixes a
   minimal extracted environment a la "Recursive Extraction" and the
   production of several files (one per coq source) a la "Extraction Library"
@@ -1801,7 +1834,7 @@ Tactics
   Moreover, romega now has a variant "romega with *" that can be also used
   on non-Z goals (nat, N, positive) via a call to a translation tactic named
   zify (its purpose is to Z-ify your goal...). This zify may also be used
-  independantly of romega.
+  independently of romega.
 - Tactic "remember" now supports an "in" clause to remember only selected
   occurrences of a term.
 - Tactic "pose proof" supports name overwriting in case of specialization of an

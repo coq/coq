@@ -390,7 +390,7 @@ let clean sds sps =
   let () =
     if !some_vfile then
       let () = print "cleanall:: clean\n" in
-      print "\trm -f $(patsubst %.v,.%.aux,$(VFILES))\n\n" in
+      print "\trm -f $(foreach f,$(VFILES:.v=),$(dir $(f)).$(notdir $(f)).aux)\n\n" in
   print "archclean::\n";
   print "\trm -f *.cmx *.o\n";
   List.iter
@@ -887,7 +887,7 @@ let merlin targets (ml_inc,_,_) =
   print ".merlin:\n";
   print "\t@echo 'FLG -rectypes' > .merlin\n" ;
   List.iter (fun c ->
-      printf "\t@echo \"B $(COQLIB) %s\" >> .merlin\n" c)
+      printf "\t@echo \"B $(COQLIB)%s\" >> .merlin\n" c)
     lib_dirs ;
   List.iter (fun (_,c) ->
       printf "\t@echo \"B %s\" >> .merlin\n" c;

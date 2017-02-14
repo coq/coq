@@ -68,7 +68,8 @@ type typeclass = {
   cl_props : Context.Rel.t;
 
   (* The method implementaions as projections. *)
-  cl_projs : (Name.t * (direction * int option) option * constant option) list;
+  cl_projs : (Name.t * (direction * Vernacexpr.hint_info_expr) option
+	      * constant option) list;
   
   cl_strict : bool;
 
@@ -79,10 +80,9 @@ type typeclasses = typeclass Refmap.t
 
 type instance = {
   is_class: global_reference;
-  is_pri: int option;
+  is_info: Vernacexpr.hint_info_expr;
   (* Sections where the instance should be redeclared,
-     -1 for discard, 0 for none, mutable to avoid redeclarations
-     when multiple rebuild_object happen. *)
+     -1 for discard, 0 for none. *)
   is_global: int;
   is_poly: bool;
   is_impl: global_reference;
@@ -92,15 +92,15 @@ type instances = (instance Refmap.t) Refmap.t
 
 let instance_impl is = is.is_impl
 
-let instance_priority is = is.is_pri
+let hint_priority is = is.is_info.Vernacexpr.hint_priority
 
-let new_instance cl pri glob poly impl =
+let new_instance cl info glob poly impl =
   let global =
     if glob then Lib.sections_depth ()
     else -1
   in
     { is_class = cl.cl_impl;
-      is_pri = pri ;
+      is_info = info ;
       is_global = global ;
       is_poly = poly;
       is_impl = impl }
@@ -274,7 +274,9 @@ let check_instance env sigma c =
       not (Evd.has_undefined evd)
   with e when CErrors.noncritical e -> false
 
-let build_subclasses ~check env sigma glob pri =
+open Vernacexpr
+
+let build_subclasses ~check env sigma glob { hint_priority = pri } =
   let _id = Nametab.basename_of_global glob in
   let _next_id = 
     let i = ref (-1) in 
@@ -298,25 +300,25 @@ let build_subclasses ~check env sigma glob pri =
 	   match b with 
 	   | None -> None
 	   | Some (Backward, _) -> None
-	   | Some (Forward, pri') ->
+	   | Some (Forward, info) ->
 	     let proj = Option.get proj in
 	     let rels = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) rels in
 	     let body = it_mkLambda_or_LetIn (mkApp (mkConstU (proj,u), projargs)) rels in
 	       if check && check_instance env sigma (EConstr.of_constr body) then None
 	       else 
-		 let pri = 
-		   match pri, pri' with
+		 let newpri =
+		   match pri, info.hint_priority with
 		   | Some p, Some p' -> Some (p + p')
 		   | Some p, None -> Some (p + 1)
 		   | _, _ -> None
 		 in
-		   Some (ConstRef proj, pri, body)) tc.cl_projs 
+		   Some (ConstRef proj, { info with hint_priority = newpri }, body)) tc.cl_projs
 	in
-	let declare_proj hints (cref, pri, body) =
+	let declare_proj hints (cref, info, body) =
 	  let path' = cref :: path in
 	  let ty = Retyping.get_type_of env sigma (EConstr.of_constr body) in
 	  let rest = aux pri body ty path' in
-	    hints @ (path', pri, body) :: rest
+	    hints @ (path', info, body) :: rest
 	in List.fold_left declare_proj [] projs 
   in
   let term = Universes.constr_of_global_univ (glob,Univ.UContext.instance ctx) in
@@ -370,11 +372,11 @@ let is_local i = Int.equal i.is_global (-1)
 let add_instance check inst =
   let poly = Global.is_polymorphic inst.is_impl in
   add_instance_hint (IsGlobal inst.is_impl) [inst.is_impl] (is_local inst) 
-    inst.is_pri poly;
+    inst.is_info poly;
   List.iter (fun (path, pri, c) -> add_instance_hint (IsConstr c) path
     (is_local inst) pri poly)
     (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
-       (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_pri)
+       (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_info)
 
 let rebuild_instance (action, inst) =
   let () = match action with
@@ -406,26 +408,22 @@ let remove_instance i =
   Lib.add_anonymous_leaf (instance_input (RemoveInstance, i));
   remove_instance_hint i.is_impl
 
-let declare_instance pri local glob =
+let declare_instance info local glob =
   let ty = Global.type_of_global_unsafe glob in
+  let info = Option.default {hint_priority = None; hint_pattern = None} info in
     match class_of_constr Evd.empty (EConstr.of_constr ty) with
     | Some (rels, ((tc,_), args) as _cl) ->
-      add_instance (new_instance tc pri (not local) (Flags.use_polymorphic_flag ()) glob)
-(*       let path, hints = build_subclasses (not local) (Global.env ()) Evd.empty glob in *)
-(*       let entries = List.map (fun (path, pri, c) -> (pri, local, path, c)) hints in *)
-(* 	Auto.add_hints local [typeclasses_db] (Auto.HintsResolveEntry entries); *)
-(* 	Auto.add_hints local [typeclasses_db]  *)
-(* 	(Auto.HintsCutEntry (PathSeq (PathStar (PathAtom PathAny), path))) *)
+      add_instance (new_instance tc info (not local) (Flags.use_polymorphic_flag ()) glob)
     | None -> ()
 
 let add_class cl =
   add_class cl;
   List.iter (fun (n, inst, body) ->
 	     match inst with
-	     | Some (Backward, pri) ->
+	     | Some (Backward, info) ->
 	       (match body with
 	       | None -> CErrors.error "Non-definable projection can not be declared as a subinstance"
-	       | Some b -> declare_instance pri false (ConstRef b))
+	       | Some b -> declare_instance (Some info) false (ConstRef b))
 	     | _ -> ())
   cl.cl_projs
 

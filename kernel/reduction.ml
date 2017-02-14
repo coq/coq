@@ -316,7 +316,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       (try
 	 let cuniv = conv_table_key infos fl1 fl2 cuniv in
 	   convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-       with NotConvertible ->
+       with NotConvertible | Univ.UniverseInconsistency _ ->
            (* else the oracle tells which constant is to be expanded *)
 	 let oracle = CClosure.oracle_of_infos infos in
          let (app1,app2) =

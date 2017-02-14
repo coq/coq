@@ -44,7 +44,7 @@ END
 let eval_uconstrs ist cs =
   let flags = {
     Pretyping.use_typeclasses = false;
-    use_unif_heuristics = true;
+    solve_unification_constraints = true;
     use_hook = Some Pfedit.solve_by_implicit_tactic;
     fail_evar = false;
     expand_evars = true
@@ -55,11 +55,17 @@ let eval_uconstrs ist cs =
   } in
   List.map (fun c -> map (Pretyping.type_uconstr ~flags ist c)) cs
 
-let pr_auto_using _ _ _ = Pptactic.pr_auto_using (fun _ -> mt ())
+let pr_auto_using_raw _ _ _  = Pptactic.pr_auto_using Ppconstr.pr_constr_expr
+let pr_auto_using_glob _ _ _ = Pptactic.pr_auto_using (fun (c,_) -> Printer.pr_glob_constr c)
+let pr_auto_using _ _ _ = Pptactic.pr_auto_using Printer.pr_closed_glob
 
 ARGUMENT EXTEND auto_using
   TYPED AS uconstr_list
   PRINTED BY pr_auto_using
+  RAW_TYPED AS uconstr_list
+  RAW_PRINTED BY pr_auto_using_raw
+  GLOB_TYPED AS uconstr_list
+  GLOB_PRINTED BY pr_auto_using_glob
 | [ "using" ne_uconstr_list_sep(l, ",") ] -> [ l ]
 | [ ] -> [ [] ]
 END
@@ -177,18 +183,32 @@ TACTIC EXTEND convert_concl_no_check
 | ["convert_concl_no_check" constr(x) ] -> [ Tactics.convert_concl_no_check x Term.DEFAULTcast ]
 END
 
-let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom
+let pr_pre_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Libnames.pr_reference
+let pr_hints_path_atom _ _ _ = Hints.pp_hints_path_atom Printer.pr_global
+let glob_hints_path_atom ist = Hints.glob_hints_path_atom
 
 ARGUMENT EXTEND hints_path_atom
   PRINTED BY pr_hints_path_atom
-| [ ne_global_list(g) ] -> [ Hints.PathHints (List.map Nametab.global g) ]
+
+  GLOBALIZED BY glob_hints_path_atom
+
+  RAW_PRINTED BY pr_pre_hints_path_atom
+  GLOB_PRINTED BY pr_hints_path_atom
+| [ ne_global_list(g) ] -> [ Hints.PathHints g ]
 | [ "_" ] -> [ Hints.PathAny ]
 END
 
 let pr_hints_path prc prx pry c = Hints.pp_hints_path c
-
+let pr_pre_hints_path prc prx pry c = Hints.pp_hints_path_gen Libnames.pr_reference c
+let glob_hints_path ist = Hints.glob_hints_path
+							      
 ARGUMENT EXTEND hints_path
-  PRINTED BY pr_hints_path
+PRINTED BY pr_hints_path
+
+GLOBALIZED BY glob_hints_path
+RAW_PRINTED BY pr_pre_hints_path
+GLOB_PRINTED BY pr_hints_path
+
 | [ "(" hints_path(p) ")"  ] -> [ p ]
 | [ hints_path(p) "*" ] -> [ Hints.PathStar p ]
 | [ "emp" ] -> [ Hints.PathEmpty ]
@@ -197,8 +217,6 @@ ARGUMENT EXTEND hints_path
 | [ hints_path_atom(a) ] -> [ Hints.PathAtom a ]
 | [ hints_path(p) hints_path(q) ] -> [ Hints.PathSeq (p, q) ]
 END
-
-let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
 
 ARGUMENT EXTEND opthints
   TYPED AS preident_list_opt
@@ -209,7 +227,7 @@ END
 
 VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
 | [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
-  let entry = Hints.HintsCutEntry p in
+  let entry = Hints.HintsCutEntry (Hints.glob_hints_path p) in
     Hints.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
       (match dbnames with None -> ["core"] | Some l -> l) entry ]
 END

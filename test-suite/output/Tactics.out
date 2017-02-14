@@ -1,4 +1,4 @@
 Ltac f H := split; [ a H | e H ]
 Ltac g := match goal with
-          | |- context [if ?X then _ else _] => case X
+          | |- context [ if ?X then _ else _ ] => case X
           end

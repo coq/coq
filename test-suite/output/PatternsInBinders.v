@@ -58,7 +58,7 @@ Definition F '(n,p) : Type := (Fin n * Fin p)%type.
 Definition both_z '(n,p) : F (n,p) := (Z _,Z _).
 Print both_z.
 
-(** These tests show examples which do not factorize binders *)
+(** Test factorization of binders *)
 
 Check fun '((x,y) : A*B) '(z,t) => swap (x,y) = (z,t).
 Check forall '(x,y) '((z,t) : B*A), swap (x,y) = (z,t).

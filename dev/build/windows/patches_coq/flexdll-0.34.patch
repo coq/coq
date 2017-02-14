@@ -1,0 +1,14 @@
+reloc.ml
+--- orig.flexdll-0.34/reloc.ml	2015-01-22 17:30:07.000000000 +0100
++++ flexdll-0.34/reloc.ml	2016-10-12 11:59:16.885829700 +0200
+@@ -117,8 +117,8 @@
+ 
+ let new_cmdline () =
+   let rf = match !toolchain with
+-  | `MSVC | `MSVC64 | `LIGHTLD -> true
+-  | `MINGW | `MINGW64 | `GNAT | `CYGWIN | `CYGWIN64 -> false
++  | `MSVC | `MSVC64 | `LIGHTLD | `MINGW | `MINGW64 -> true
++  | `GNAT | `CYGWIN | `CYGWIN64 -> false
+   in
+   {
+    may_use_response_file = rf;

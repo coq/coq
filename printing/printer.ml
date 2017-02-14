@@ -541,7 +541,7 @@ let print_evar_constraints gl sigma =
         str" with candidates:" ++ fnl () ++ hov 0 ppcandidates
     else mt ()
 
-let should_print_dependent_evars = ref true
+let should_print_dependent_evars = ref false
 
 let _ =
   let open Goptions in

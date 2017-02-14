@@ -664,13 +664,16 @@ let restrict evk filter ?candidates evd =
     { evar_info with evar_filter = filter;
       evar_candidates = candidates;
       evar_extra = Store.empty } in
+  let last_mods = match evd.conv_pbs with
+  | [] ->  evd.last_mods
+  | _ -> Evar.Set.add evk evd.last_mods in
   let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
   let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
-    defn_evars; evar_names }, evk'
+    defn_evars; last_mods; evar_names }, evk'
 
 let downcast evk ccl evd =
   let evar_info = EvMap.find evk evd.undf_evars in
@@ -828,6 +831,13 @@ let is_eq_sort s1 s2 =
     and u2 = univ_of_sort s2 in
       if Univ.Universe.equal u1 u2 then None
       else Some (u1, u2)
+
+(* Precondition: l is not defined in the substitution *)
+let universe_rigidity evd l =
+  let uctx = evd.universes in
+  if Univ.LSet.mem l (Univ.ContextSet.levels (UState.context_set uctx)) then
+    UnivFlexible (Univ.LSet.mem l (UState.algebraics uctx))
+  else UnivRigid
 
 let normalize_universe evd =
   let vars = ref (UState.subst evd.universes) in

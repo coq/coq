@@ -555,24 +555,6 @@ let pp_decl = function
     | Dfix (rv,defs,typs) ->
 	pp_Dfix (rv,defs,typs)
 
-let pp_alias_decl ren = function
-  | Dind (kn,i) -> pp_mind kn { i with ind_equiv = RenEquiv ren }
-  | Dtype (r, l, _) ->
-      let name = pp_global Type r in
-      let l = rename_tvars keywords l in
-      let ids = pp_parameters l in
-      hov 2 (str "type " ++ ids ++ name ++ str " =" ++ spc () ++ ids ++
-	     str (ren^".") ++ name)
-  | Dterm (r, a, t) ->
-      let name = pp_global Term r in
-      hov 2 (str "let " ++ name ++ str (" = "^ren^".") ++ name)
-  | Dfix (rv, _, _) ->
-      prvecti (fun i r -> if is_inline_custom r then mt () else
-		 let name = pp_global Term r in
-		 hov 2 (str "let " ++ name ++ str (" = "^ren^".") ++ name) ++
-		 fnl ())
-	rv
-
 let pp_spec = function
   | Sval (r,_) when is_inline_custom r -> mt ()
   | Stype (r,_,_) when is_inline_custom r -> mt ()
@@ -597,42 +579,32 @@ let pp_spec = function
       in
       hov 2 (str "type " ++ ids ++ name ++ def)
 
-let pp_alias_spec ren = function
-  | Sind (kn,i) -> pp_mind kn { i with ind_equiv = RenEquiv ren }
-  | Stype (r,l,_) ->
-      let name = pp_global Type r in
-      let l = rename_tvars keywords l in
-      let ids = pp_parameters l in
-      hov 2 (str "type " ++ ids ++ name ++ str " =" ++ spc () ++ ids ++
-	     str (ren^".") ++ name)
-  | Sval _ -> assert false
-
 let rec pp_specif = function
   | (_,Spec (Sval _ as s)) -> pp_spec s
   | (l,Spec s) ->
-      (try
-	 let ren = Common.check_duplicate (top_visible_mp ()) l in
+     (match Common.get_duplicate (top_visible_mp ()) l with
+      | None -> pp_spec s
+      | Some ren ->
 	 hov 1 (str ("module "^ren^" : sig") ++ fnl () ++ pp_spec s) ++
 	 fnl () ++ str "end" ++ fnl () ++
-	 pp_alias_spec ren s
-       with Not_found -> pp_spec s)
+         str ("include module type of struct include "^ren^" end"))
   | (l,Smodule mt) ->
       let def = pp_module_type [] mt in
-      let def' = pp_module_type [] mt in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module " ++ name ++ str " :" ++ fnl () ++ def) ++
-      (try
-	 let ren = Common.check_duplicate (top_visible_mp ()) l in
-	 fnl () ++ hov 1 (str ("module "^ren^" :") ++ fnl () ++ def')
-       with Not_found -> Pp.mt ())
+      (match Common.get_duplicate (top_visible_mp ()) l with
+       | None -> Pp.mt ()
+       | Some ren ->
+         fnl () ++
+         hov 1 (str ("module "^ren^" :") ++ spc () ++
+                str "module type of struct include " ++ name ++ str " end"))
   | (l,Smodtype mt) ->
       let def = pp_module_type [] mt in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module type " ++ name ++ str " =" ++ fnl () ++ def) ++
-      (try
-	 let ren = Common.check_duplicate (top_visible_mp ()) l in
-	 fnl () ++ str ("module type "^ren^" = ") ++ name
-       with Not_found -> Pp.mt ())
+      (match Common.get_duplicate (top_visible_mp ()) l with
+       | None -> Pp.mt ()
+       | Some ren -> fnl () ++ str ("module type "^ren^" = ") ++ name)
 
 and pp_module_type params = function
   | MTident kn ->
@@ -653,8 +625,10 @@ and pp_module_type params = function
       let l = List.rev l in
       pop_visible ();
       str "sig" ++ fnl () ++
-      v 1 (str " " ++ prlist_with_sep cut2 identity l) ++
-	fnl () ++ str "end"
+      (if List.is_empty l then mt ()
+       else
+         v 1 (str " " ++ prlist_with_sep cut2 identity l) ++ fnl ())
+      ++ str "end"
   | MTwith(mt,ML_With_type(idl,vl,typ)) ->
       let ids = pp_parameters (rename_tvars keywords vl) in
       let mp_mt = msid_of_mt mt in
@@ -681,12 +655,11 @@ let is_short = function MEident _ | MEapply _ -> true | _ -> false
 
 let rec pp_structure_elem = function
   | (l,SEdecl d) ->
-       (try
-	 let ren = Common.check_duplicate (top_visible_mp ()) l in
+     (match Common.get_duplicate (top_visible_mp ()) l with
+      | None -> pp_decl d
+      | Some ren ->
 	 hov 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
-	 fnl () ++ str "end" ++ fnl () ++
-	 pp_alias_decl ren d
-	with Not_found -> pp_decl d)
+	 fnl () ++ str "end" ++ fnl () ++ str ("include "^ren))
   | (l,SEmodule m) ->
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
@@ -699,18 +672,16 @@ let rec pp_structure_elem = function
       hov 1
 	(str "module " ++ name ++ typ ++ str " =" ++
 	 (if is_short m.ml_mod_expr then spc () else fnl ()) ++ def) ++
-      (try
-	 let ren = Common.check_duplicate (top_visible_mp ()) l in
-	 fnl () ++ str ("module "^ren^" = ") ++ name
-       with Not_found -> mt ())
+      (match Common.get_duplicate (top_visible_mp ()) l with
+       | Some ren -> fnl () ++ str ("module "^ren^" = ") ++ name
+       | None -> mt ())
   | (l,SEmodtype m) ->
       let def = pp_module_type [] m in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module type " ++ name ++ str " =" ++ fnl () ++ def) ++
-      (try
-	 let ren = Common.check_duplicate (top_visible_mp ()) l in
-         fnl () ++ str ("module type "^ren^" = ") ++ name
-       with Not_found -> mt ())
+      (match Common.get_duplicate (top_visible_mp ()) l with
+       | None -> mt ()
+       | Some ren -> fnl () ++ str ("module type "^ren^" = ") ++ name)
 
 and pp_module_expr params = function
   | MEident mp -> pp_modname mp
@@ -732,8 +703,10 @@ and pp_module_expr params = function
       let l = List.rev l in
       pop_visible ();
       str "struct" ++ fnl () ++
-      v 1 (str " " ++ prlist_with_sep cut2 identity l) ++
-      fnl () ++ str "end"
+      (if List.is_empty l then mt ()
+       else
+         v 1 (str " " ++ prlist_with_sep cut2 identity l) ++ fnl ())
+      ++ str "end"
 
 let rec prlist_sep_nonempty sep f = function
   | [] -> mt ()

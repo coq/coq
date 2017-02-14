@@ -1315,10 +1315,10 @@ command:
 \begin{quote}
 \tt Arguments {\qualid} \nelist{\possiblybracketedident}{}
 \end{quote}
-where the list of {\possiblybracketedident} is the list of all arguments of
-{\qualid} where the ones to be declared implicit are surrounded by
-square brackets and the ones to be declared as maximally inserted implicits
-are surrounded by curly braces.
+where the list of {\possiblybracketedident} is a prefix of the list of arguments
+of {\qualid} where the ones to be declared implicit are surrounded by square
+brackets and the ones to be declared as maximally inserted implicits are
+surrounded by curly braces.
 
 After the above declaration is issued, implicit arguments can just (and
 have to) be skipped in any expression involving an application of
@@ -1591,7 +1591,7 @@ Implicit arguments names can be redefined using the following syntax:
 {\tt Arguments {\qualid} \nelist{\name}{}  : rename}
 \end{quote}
 
-Without the {\tt rename} flag, {\tt Arguments} can be used to assert
+With the {\tt assert} flag, {\tt Arguments} can be used to assert
 that a given object has the expected number of arguments and that
 these arguments are named as expected.
 
@@ -1600,7 +1600,7 @@ these arguments are named as expected.
 Arguments p [s t] _ [u] _: rename.
 Check (p r1 (u:=c)).
 Check (p (s:=a) (t:=b) r1 (u:=c) r2).
-Fail Arguments p [s t] _ [w] _.
+Fail Arguments p [s t] _ [w] _ : assert.
 \end{coq_example}
 
 

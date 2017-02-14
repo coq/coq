@@ -359,7 +359,7 @@ let nf_open_term sigma0 ise c =
   !s', Evd.evar_universe_context s, EConstr.of_constr c'
 
 let unif_end env sigma0 ise0 pt ok =
-  let ise = Evarconv.consider_remaining_unif_problems env ise0 in
+  let ise = Evarconv.solve_unif_constraints_with_heuristics env ise0 in
   let s, uc, t = nf_open_term sigma0 ise pt in
   let ise1 = create_evar_defs s in
   let ise1 = Evd.set_universe_context ise1 uc in
@@ -395,7 +395,8 @@ let iter_constr_LR f c = match kind_of_term c with
   | Case (_, p, v, b) -> f v; f p; Array.iter f b
   | Fix (_, (_, t, b)) | CoFix (_, (_, t, b)) ->
     for i = 0 to Array.length t - 1 do f t.(i); f b.(i) done
-  | _ -> ()
+  | Proj(_,a) -> f a
+  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _) -> ()
 
 (* The comparison used to determine which subterms matches is KEYED        *)
 (* CONVERSION. This looks for convertible terms that either have the same  *)
@@ -439,7 +440,7 @@ let proj_nparams c =
   try 1 + Recordops.find_projection_nparams (ConstRef c) with _ -> 0
 
 let isFixed c = match kind_of_term c with
-  | Var _ | Ind _ | Construct _ | Const _ -> true
+  | Var _ | Ind _ | Construct _ | Const _ | Proj _ -> true
   | _ -> false
 
 let isRigid c = match kind_of_term c with
@@ -493,6 +494,7 @@ let mk_tpattern ?p_origin ?(hack=false) env sigma0 (ise, t) ok dir p =
       let np = proj_nparams p in
       if np = 0 || np > List.length a then KpatConst, f, a else
       let a1, a2 = List.chop np a in KpatProj p, applist(f, a1), a2
+    | Proj (p,arg) -> KpatProj (Projection.constant p), f, a
     | Var _ | Ind _ | Construct _ -> KpatFixed, f, a
     | Evar (k, _) ->
       if Evd.mem sigma0 k then KpatEvar k, f, a else
@@ -530,7 +532,13 @@ let nb_cs_proj_args pc f u =
   try match kind_of_term f with
   | Prod _ -> na Prod_cs
   | Sort s -> na (Sort_cs (family_of_sort s))
-  | Const (c',_) when Constant.equal c' pc -> Array.length (snd (destApp u.up_f))
+  | Const (c',_) when Constant.equal c' pc ->
+      begin match kind_of_term u.up_f with
+      | App(_,args) -> Array.length args
+      | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be
+                       the number of arguments including the projected *)
+      | _ -> assert false
+      end
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (global_of_constr f))
   | _ -> -1
   with Not_found -> -1
@@ -573,6 +581,10 @@ let filter_upat i0 f n u fpats =
   if np < na then fpats else
   let () = if !i0 < np then i0 := n in (u, np) :: fpats
 
+let eq_prim_proj c t = match kind_of_term t with
+  | Proj(p,_) -> Constant.equal (Projection.constant p) c
+  | _ -> false
+
 let filter_upat_FO i0 f n u fpats =
   let np = nb_args u.up_FO in
   if n < np then fpats else
@@ -583,7 +595,7 @@ let filter_upat_FO i0 f n u fpats =
   | KpatLet -> isLetIn f
   | KpatLam -> isLambda f
   | KpatRigid -> isRigid f
-  | KpatProj pc -> Term.eq_constr f (mkConst pc)
+  | KpatProj pc -> Term.eq_constr f (mkConst pc) || eq_prim_proj pc f
   | KpatFlex -> i0 := n; true in
   if ok then begin if !i0 < np then i0 := np; (u, np) :: fpats end else fpats
 

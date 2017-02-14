@@ -90,7 +90,7 @@ let _ =
 
 let apply_solve_class_goals = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optsync = true; Goptions.optdepr = true;
   Goptions.optname =
     "Perform typeclass resolution on apply-generated subgoals.";
   Goptions.optkey = ["Typeclass";"Resolution";"After";"Apply"];
@@ -1150,7 +1150,7 @@ let run_delayed env sigma c =
 
 let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
-  Pretyping.use_unif_heuristics = true;
+  Pretyping.solve_unification_constraints = true;
   Pretyping.use_hook = Some solve_by_implicit_tactic;
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
@@ -2740,7 +2740,7 @@ let forward b usetac ipat c =
   match usetac with
   | None ->
       Proofview.Goal.enter { enter = begin fun gl ->
-      let t = Tacmach.New.pf_unsafe_type_of gl c in
+      let t = Tacmach.New.pf_get_type_of gl c in
       let sigma = Tacmach.New.project gl in
       let hd = head_ident sigma c in
       Tacticals.New.tclTHENFIRST (assert_as true hd ipat t) (exact_no_check c)
@@ -5035,9 +5035,16 @@ module New = struct
   open Locus
 
   let reduce_after_refine =
+    let onhyps =
+      (** We reduced everywhere in the hyps before 8.6 *)
+      if Flags.version_compare !Flags.compat_version Flags.V8_5 == 0
+      then None
+      else Some []
+    in
     reduce
-      (Lazy {rBeta=true;rMatch=true;rFix=true;rCofix=true;rZeta=false;rDelta=false;rConst=[]})
-      {onhyps=None; concl_occs=AllOccurrences }
+      (Lazy {rBeta=true;rMatch=true;rFix=true;rCofix=true;
+	     rZeta=false;rDelta=false;rConst=[]})
+      {onhyps; concl_occs=AllOccurrences }
 
   let refine ?unsafe c =
     Refine.refine ?unsafe c <*>

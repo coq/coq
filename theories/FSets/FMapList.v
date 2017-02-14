@@ -8,7 +8,7 @@
 
 (** * Finite map library *)
 
-(** This file proposes an implementation of the non-dependant interface
+(** This file proposes an implementation of the non-dependent interface
  [FMapInterface.S] using lists of pairs ordered (increasing) with respect to
  left projection. *)
 

@@ -24,14 +24,14 @@ open Context.Rel.Declaration
 
 let type_of_inductive env (ind,u) =
  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
- Typeops.check_hyps_inclusion env (mkInd ind) mib.mind_hyps;
+ Typeops.check_hyps_inclusion env mkInd ind mib.mind_hyps;
  Inductive.type_of_inductive env (specif,u)
 
 (* Return type as quoted by the user *)
 let type_of_constructor env (cstr,u) =
  let (mib,_ as specif) =
    Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
- Typeops.check_hyps_inclusion env (mkConstruct cstr) mib.mind_hyps;
+ Typeops.check_hyps_inclusion env mkConstruct cstr mib.mind_hyps;
  Inductive.type_of_constructor (cstr,u) specif
 
 (* Return constructor types in user form *)
@@ -632,7 +632,7 @@ let type_of_projection_knowing_arg env sigma p c ty =
       raise (Invalid_argument "type_of_projection_knowing_arg_type: not an inductive type")
   in
   let (_,u), pars = dest_ind_family pars in
-  substl (c :: List.rev pars) (Typeops.type_of_projection env (p,u))
+  substl (c :: List.rev pars) (Typeops.type_of_projection_constant env (p,u))
 
 (***********************************************)
 (* Guard condition *)

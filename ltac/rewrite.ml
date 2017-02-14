@@ -1799,7 +1799,7 @@ let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 let anew_instance global binders instance fields =
   new_instance (Flags.is_universe_polymorphism ()) 
     binders instance (Some (true, CRecord (Loc.ghost,fields)))
-    ~global ~generalize:false ~refine:false None
+    ~global ~generalize:false ~refine:false Hints.empty_hint_info
 
 let declare_instance_refl global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
@@ -1985,7 +1985,7 @@ let add_morphism_infer glob m n =
 				 Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
 	add_instance (Typeclasses.new_instance 
-			(Lazy.force PropGlobal.proper_class) None glob 
+			(Lazy.force PropGlobal.proper_class) Hints.empty_hint_info glob
 			poly (ConstRef cst));
 	declare_projection n instance_id (ConstRef cst)
     else
@@ -1996,7 +1996,7 @@ let add_morphism_infer glob m n =
       let hook _ = function
 	| Globnames.ConstRef cst ->
 	  add_instance (Typeclasses.new_instance 
-			  (Lazy.force PropGlobal.proper_class) None
+			  (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info
 			  glob poly (ConstRef cst));
 	  declare_projection n instance_id (ConstRef cst)
 	| _ -> assert false
@@ -2020,7 +2020,7 @@ let add_morphism glob binders m s n =
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
     ignore(new_instance ~global:glob poly binders instance 
 	     (Some (true, CRecord (Loc.ghost,[])))
-	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) None)
+	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info)
 
 (** Bind to "rewrite" too *)
 

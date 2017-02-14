@@ -92,8 +92,9 @@ let rec fold_local_binders g f n acc b = function
       f n (fold_local_binders g f n' acc b l) t
   | LocalRawDef ((_,na),t)::l ->
       f n (fold_local_binders g f (name_fold g na n) acc b l) t
-  | LocalPattern _::l ->
-      assert false
+  | LocalPattern (_,pat,t)::l ->
+      let acc = fold_local_binders g f (cases_pattern_fold_names g n pat) acc b l in
+      Option.fold_left (f n) acc t
   | [] ->
       f n acc b
 

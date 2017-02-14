@@ -1,0 +1,20 @@
+(* info auto: *)
+simple apply or_intror (in core).
+ intro.
+ assumption.
+Debug: (* debug auto: *)
+Debug: * assumption. (*fail*)
+Debug: * intro. (*fail*)
+Debug: * simple apply or_intror (in core). (*success*)
+Debug: ** assumption. (*fail*)
+Debug: ** intro. (*success*)
+Debug: ** assumption. (*success*)
+(* info eauto: *)
+simple apply or_intror.
+ intro.
+ exact H.
+Debug: (* debug eauto: *)
+Debug: 1 depth=5 
+Debug: 1.1 depth=4 simple apply or_intror
+Debug: 1.1.1 depth=4 intro
+Debug: 1.1.1.1 depth=4 exact H

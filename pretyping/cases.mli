@@ -115,10 +115,10 @@ val compile : 'a pattern_matching_problem -> unsafe_judgment
 
 val prepare_predicate :            Loc.t ->
            (Evarutil.type_constraint ->
-            Environ.env -> Evd.evar_map ref -> 'a -> unsafe_judgment) ->
+            Environ.env -> Evd.evar_map ref -> glob_constr -> unsafe_judgment) ->
            Environ.env ->
            Evd.evar_map ->
            (types * tomatch_type) list ->
            rel_context list ->
            constr option ->
-           'a option -> (Evd.evar_map * Names.name list * constr) list
+           glob_constr option -> (Evd.evar_map * Names.name list * constr) list

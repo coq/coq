@@ -107,13 +107,13 @@ Qed.
 
 (** * Hints *)
 
-Hint Resolve minus_n_O: arith v62.
-Hint Resolve minus_Sn_m: arith v62.
-Hint Resolve minus_diag_reverse: arith v62.
-Hint Resolve minus_plus_simpl_l_reverse: arith v62.
-Hint Immediate plus_minus: arith v62.
-Hint Resolve minus_plus: arith v62.
-Hint Resolve le_plus_minus: arith v62.
-Hint Resolve le_plus_minus_r: arith v62.
-Hint Resolve lt_minus: arith v62.
-Hint Immediate lt_O_minus_lt: arith v62.
+Hint Resolve minus_n_O: arith.
+Hint Resolve minus_Sn_m: arith.
+Hint Resolve minus_diag_reverse: arith.
+Hint Resolve minus_plus_simpl_l_reverse: arith.
+Hint Immediate plus_minus: arith.
+Hint Resolve minus_plus: arith.
+Hint Resolve le_plus_minus: arith.
+Hint Resolve le_plus_minus_r: arith.
+Hint Resolve lt_minus: arith.
+Hint Immediate lt_O_minus_lt: arith.

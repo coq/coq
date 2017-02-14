@@ -562,7 +562,7 @@ End Paradox.
 End NoRetractFromSmallPropositionToProp.
 
 
-(** * Large universes are no retracts of [Prop]. *)
+(** * Large universes are not retracts of [Prop]. *)
 
 (** The existence in the Calculus of Constructions with universes of a
     retract from some [Type] universe into [Prop] is inconsistent. *)

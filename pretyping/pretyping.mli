@@ -52,7 +52,7 @@ type inference_hook = env -> evar_map -> evar -> evar_map * constr
 
 type inference_flags = {
   use_typeclasses : bool;
-  use_unif_heuristics : bool;
+  solve_unification_constraints : bool;
   use_hook : inference_hook option;
   fail_evar : bool;
   expand_evars : bool

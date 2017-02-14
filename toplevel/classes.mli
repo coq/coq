@@ -20,12 +20,12 @@ val mismatched_props : env -> constr_expr list -> Context.Rel.t -> 'a
 
 (** Instance declaration *)
 
-val existing_instance : bool -> reference -> int option -> unit
-(** globality, reference, priority *)
+val existing_instance : bool -> reference -> Vernacexpr.hint_info_expr option -> unit
+(** globality, reference, optional priority and pattern information *)
 
 val declare_instance_constant :
   typeclass ->
-  int option -> (** priority *)
+  Vernacexpr.hint_info_expr -> (** priority *)
   bool -> (** globality *)
   Impargs.manual_explicitation list -> (** implicits *)
   ?hook:(Globnames.global_reference -> unit) ->
@@ -48,7 +48,7 @@ val new_instance :
   ?generalize:bool ->
   ?tac:unit Proofview.tactic  ->
   ?hook:(Globnames.global_reference -> unit) ->
-  int option ->
+  Vernacexpr.hint_info_expr ->
   Id.t
 
 (** Setting opacity *)

@@ -463,7 +463,17 @@ val retract_coercible_metas : evar_map -> metabinding list * evar_map
 (*********************************************************
    Sort/universe variables *)
 
-(** Rigid or flexible universe variables *)
+(** Rigid or flexible universe variables.
+
+   [UnivRigid] variables are user-provided or come from an explicit
+   [Type] in the source, we do not minimize them or unify them eagerly.
+
+   [UnivFlexible alg] variables are fresh universe variables of
+   polymorphic constants or generated during refinement, sometimes in
+   algebraic position (i.e. not appearing in the term at the moment of
+   creation). They are the candidates for minimization (if alg, to an
+   algebraic universe) and unified eagerly in the first-order
+   unification heurstic.  *)
 
 type rigid = UState.rigid =
   | UnivRigid
@@ -510,7 +520,8 @@ val new_univ_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_
 val new_sort_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * sorts
 
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
-											   
+
+val universe_rigidity : evar_map -> Univ.Level.t -> rigid
 val make_flexible_variable : evar_map -> bool -> Univ.universe_level -> evar_map
 val is_sort_variable : evar_map -> sorts -> Univ.universe_level option 
 (** [is_sort_variable evm s] returns [Some u] or [None] if [s] is 

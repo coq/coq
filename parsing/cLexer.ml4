@@ -408,24 +408,6 @@ let comment_stop ep =
   comment_begin := None;
   between_commands := false
 
-(* Does not unescape!!! *)
-let rec comm_string loc bp = parser
-  | [< ''"' >] -> push_string "\""; loc
-  | [< ''\\'; loc =
-           (parser [< ' ('"' | '\\' as c) >] ->
-              let () = match c with
-              | '"' -> real_push_char c
-              | _ -> ()
-              in
-              real_push_char c; loc
-                 | [< >] -> real_push_char '\\'; loc); s >]
-     -> comm_string loc bp s
-  | [< _ = Stream.empty >] ep ->
-      let loc = set_loc_pos loc bp ep in
-      err loc Unterminated_string
-  | [< ''\n' as c; s >] ep -> real_push_char c; comm_string (bump_loc_line loc ep) bp s
-  | [< 'c; s >] -> real_push_char c; comm_string loc bp s
-
 let rec comment loc bp = parser bp2
   | [< ''(';
        loc = (parser
@@ -437,12 +419,8 @@ let rec comment loc bp = parser bp2
          | [< '')' >] -> push_string "*)"; loc
          | [< s >] -> real_push_char '*'; comment loc bp s >] -> loc
   | [< ''"'; s >] ->
-      let loc =
-	(* In beautify mode, the lexing differs between strings in comments and
-	   regular strings (e.g. escaping). It seems wrong. *)
-	if !Flags.beautify then (push_string"\""; comm_string loc bp2 s)
-	else fst (string loc ~comm_level:(Some 0) bp2 0 s)
-      in
+      let loc, len = string loc ~comm_level:(Some 0) bp2 0 s in
+      push_string "\""; push_string (get_buff len); push_string "\"";
       comment loc bp s
   | [< _ = Stream.empty >] ep ->
       let loc = set_loc_pos loc bp ep in

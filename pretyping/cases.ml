@@ -279,9 +279,9 @@ let rec find_row_ind = function
 let inductive_template evdref env tmloc ind =
   let indu = evd_comb1 (Evd.fresh_inductive_instance env) evdref ind in
   let arsign = inductive_alldecls_env env indu in
-  let hole_source = match tmloc with
-    | Some loc -> fun i -> (loc, Evar_kinds.TomatchTypeParameter (ind,i))
-    | None -> fun _ -> (Loc.ghost, Evar_kinds.InternalHole) in
+  let hole_source i = match tmloc with
+    | Some loc -> (loc, Evar_kinds.TomatchTypeParameter (ind,i))
+    | None -> (Loc.ghost, Evar_kinds.TomatchTypeParameter (ind,i)) in
    let (_,evarl,_) =
     List.fold_right
       (fun decl (subst,evarl,n) ->
@@ -855,7 +855,7 @@ let subst_predicate (subst,copt) ccl tms =
     | Some c -> c::subst in
   substnl_predicate sigma 0 ccl tms
 
-let specialize_predicate_var (cur,typ,dep) tms ccl =
+let specialize_predicate_var (cur,typ,dep) env tms ccl =
   let c = match dep with
   | Anonymous -> None
   | Name _ -> Some cur
@@ -863,7 +863,10 @@ let specialize_predicate_var (cur,typ,dep) tms ccl =
   let l =
     match typ with
     | IsInd (_, IndType (_, _), []) -> []
-    | IsInd (_, IndType (_, realargs), names) -> realargs
+    | IsInd (_, IndType (indf, realargs), names) ->
+       let arsign,_ = get_arity env indf in
+       let arsign = List.map EConstr.of_rel_decl arsign in
+       subst_of_rel_context_instance arsign realargs
     | NotInd _ -> [] in
   subst_predicate (l,c) ccl tms
 
@@ -1403,7 +1406,7 @@ and match_current pb (initial,tomatch) =
 and shift_problem ((current,t),_,na) pb =
   let ty = type_of_tomatch t in
   let tomatch = lift_tomatch_stack 1 pb.tomatch in
-  let pred = specialize_predicate_var (current,t,na) pb.tomatch pb.pred in
+  let pred = specialize_predicate_var (current,t,na) pb.env pb.tomatch pb.pred in
   let pb =
     { pb with
        env = push_rel (LocalDef (na,current,ty)) pb.env;
@@ -1420,7 +1423,7 @@ and shift_problem ((current,t),_,na) pb =
    are already introduced in the context, we avoid creating aliases to
    themselves by treating this case specially. *)
 and pop_problem ((current,t),_,na) pb =
-  let pred = specialize_predicate_var (current,t,na) pb.tomatch pb.pred in
+  let pred = specialize_predicate_var (current,t,na) pb.env pb.tomatch pb.pred in
   let pb =
     { pb with
        pred = pred;
@@ -1963,14 +1966,22 @@ let noccur_with_meta sigma n m term =
   try (occur_rec n term; true) with LocalOccur -> false
 
 let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
+  let refresh_tycon sigma t =
+    (** If we put the typing constraint in the term, it has to be
+       refreshed to preserve the invariant that no algebraic universe
+       can appear in the term.  *)
+    refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some true)
+		      env sigma t
+  in
   let preds =
     match pred, tycon with
     (* No return clause *)
     | None, Some t when not (noccur_with_meta sigma 0 max_int t) ->
 	(* If the tycon is not closed w.r.t real variables, we try *)
         (* two different strategies *)
-	(* First strategy: we abstract the tycon wrt to the dependencies *)
-        let p1 =
+       (* First strategy: we abstract the tycon wrt to the dependencies *)
+         let sigma, t = refresh_tycon sigma t in
+         let p1 =
           prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign t in
 	(* Second strategy: we build an "inversion" predicate *)
 	let sigma2,pred2 = build_inversion_problem loc env sigma tomatchs t in
@@ -1981,7 +1992,7 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
 	(* No dependent type constraint, or no constraints at all: *)
 	(* we use two strategies *)
         let sigma,t = match tycon with
-	| Some t -> sigma,t
+	| Some t -> refresh_tycon sigma t
 	| None -> 
           let sigma = Sigma.Unsafe.of_evar_map sigma in
           let Sigma ((t, _), sigma, _) =

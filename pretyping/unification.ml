@@ -1251,7 +1251,7 @@ let is_mimick_head sigma ts f =
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
   let (evd',j') = inh_conv_coerce_rigid_to true Loc.ghost env evd j tycon in
-  let evd' = Evarconv.consider_remaining_unif_problems env evd' in
+  let evd' = Evarconv.solve_unif_constraints_with_heuristics env evd' in
   let evd' = Evd.map_metas_fvalue (fun c -> EConstr.Unsafe.to_constr (nf_evar evd' (EConstr.of_constr c))) evd' in
     (evd',j'.uj_val)
 
@@ -1301,7 +1301,11 @@ let solve_simple_evar_eqn ts env evd ev rhs =
   | UnifFailure (evd,reason) ->
       error_cannot_unify env evd ~reason (mkEvar ev,rhs);
   | Success evd ->
-      Evarconv.consider_remaining_unif_problems env evd
+     if Flags.version_less_or_equal Flags.V8_5 then
+       (* We used to force solving unrelated problems at arbitrary times *)
+       Evarconv.solve_unif_constraints_with_heuristics env evd
+     else (* solve_simple_eqn calls reconsider_unif_constraints itself *)
+       evd
 
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]
@@ -1328,7 +1332,6 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
 	      if is_mimick_head evd flags.modulo_delta f then
 		let evd' =
 		  mimick_undefined_evar evd flags f (Array.length cl) evk in
-		(* let evd' = Evarconv.consider_remaining_unif_problems env evd' in *)
 		  w_merge_rec evd' metas evars eqns
 	      else
 		let evd' = 
@@ -1424,8 +1427,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
                 (* Assign evars in the order of assignments during unification *)
                 (List.rev evars) []
   in
-    if with_types then check_types res
-    else res
+  if with_types then check_types res else res
 
 let retract_coercible_metas evd =
   let (metas, evd) = retract_coercible_metas evd in
@@ -1492,7 +1494,7 @@ let w_typed_unify_array env evd flags f1 l1 f2 l2 =
   let subst = Array.fold_left2 fold_subst subst l1 l2 in
   let evd = w_merge env true flags.merge_unify_flags subst in
   try_resolve_typeclasses env evd flags.resolve_evars
-    (mkApp(f1,l1)) (mkApp(f2,l2))
+                          (mkApp(f1,l1)) (mkApp(f2,l2))
 
 (* takes a substitution s, an open term op and a closed term cl
    try to find a subterm of cl which matches op, if op is just a Meta
@@ -1924,21 +1926,14 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
     error_wrong_abstraction_type env evd'
       (Evd.meta_name evd p) pred typp predtyp;
   w_merge env false flags.merge_unify_flags
-    (evd',[p,pred,(Conv,TypeProcessed)],[])
-
-  (* let evd',metas,evars =  *)
-  (*   try unify_0 env evd' CUMUL flags predtyp typp  *)
-  (*   with NotConvertible -> *)
-  (*     error_wrong_abstraction_type env evd *)
-  (*       (Evd.meta_name evd p) pred typp predtyp *)
-  (* in *)
-  (*   w_merge env false flags (evd',(p,pred,(Conv,TypeProcessed))::metas,evars) *)
+          (evd',[p,pred,(Conv,TypeProcessed)],[])
 
 let secondOrderDependentAbstraction env evd flags typ (p, oplist) =
   let typp = Typing.meta_type evd p in
   let evd, pred = abstract_list_all_with_dependencies env evd typp typ oplist in
   w_merge env false flags.merge_unify_flags
-    (evd,[p,pred,(Conv,TypeProcessed)],[])
+          (evd,[p,pred,(Conv,TypeProcessed)],[])
+
 
 let secondOrderAbstractionAlgo dep =
   if dep then secondOrderDependentAbstraction else secondOrderAbstraction

@@ -24,6 +24,7 @@ exception InductiveWithSort
 exception ParameterWithoutEquality of Globnames.global_reference
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
+exception NoDecidabilityCoInductive
 
 val beq_scheme_kind : mutual scheme_kind
 val build_beq_scheme : mutual_scheme_object_function

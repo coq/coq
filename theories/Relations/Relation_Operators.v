@@ -226,9 +226,9 @@ Section Lexicographic_Exponentiation.
 
 End Lexicographic_Exponentiation.
 
-Hint Unfold transp union: sets v62.
-Hint Resolve t_step rt_step rt_refl rst_step rst_refl: sets v62.
-Hint Immediate rst_sym: sets v62.
+Hint Unfold transp union: sets.
+Hint Resolve t_step rt_step rt_refl rst_step rst_refl: sets.
+Hint Immediate rst_sym: sets.
 
 (* begin hide *)
 (* Compatibility *)

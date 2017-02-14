@@ -34,7 +34,10 @@ val e_cumul : env -> ?ts:transparent_state -> evar_map ref -> constr -> constr -
 (** Try heuristics to solve pending unification problems and to solve
     evars with candidates *)
 
+val solve_unif_constraints_with_heuristics : env -> ?ts:transparent_state -> evar_map -> evar_map
+
 val consider_remaining_unif_problems : env -> ?ts:transparent_state -> evar_map -> evar_map
+(** @deprecated Alias for [solve_unif_constraints_with_heuristics] *)
 
 (** Check all pending unification problems are solved and raise an
     error otherwise *)

@@ -634,6 +634,9 @@ let closedn sigma n c =
 
 let closed0 sigma c = closedn sigma 0 c
 
+let subst_of_rel_context_instance ctx subst =
+  List.map of_constr (Vars.subst_of_rel_context_instance (List.map unsafe_to_rel_decl ctx) (List.map to_constr subst))
+
 end
 
 let rec isArity sigma c =

@@ -649,7 +649,7 @@ A recursive pattern for binders can be used in position of a recursive
 pattern for terms. Here is an example:
 
 \begin{coq_example*}
-Notation ``'FUNAPP' x .. y , f'' :=
+Notation "'FUNAPP' x .. y , f" :=
   (fun x => .. (fun y => (.. (f x) ..) y ) ..)
   (at level 200, x binder, y binder, right associativity).
 \end{coq_example*}
@@ -811,13 +811,13 @@ constant have to be interpreted in a given scope. The command is
 \begin{quote}
 {\tt Arguments} {\qualid} \nelist{\name {\tt \%}\scope}{}
 \end{quote}
-where the list is the list of the arguments of {\qualid} eventually
-annotated with their {\scope}. Grouping round parentheses can
-be used to decorate multiple arguments with the same scope.
-{\scope} can be either a scope name or its delimiting key. For example
-the following command puts the first two arguments of {\tt plus\_fct}
-in the scope delimited by the key {\tt F} ({\tt Rfun\_scope}) and the
-last argument in the scope delimited by the key {\tt R} ({\tt R\_scope}).
+where the list is a prefix of the list of the arguments of {\qualid} eventually
+annotated with their {\scope}. Grouping round parentheses can be used to
+decorate multiple arguments with the same scope.  {\scope} can be either a scope
+name or its delimiting key. For example the following command puts the first two
+arguments of {\tt plus\_fct} in the scope delimited by the key {\tt F} ({\tt
+  Rfun\_scope}) and the last argument in the scope delimited by the key {\tt R}
+({\tt R\_scope}).
 
 \begin{coq_example*}
 Arguments plus_fct (f1 f2)%F x%R.

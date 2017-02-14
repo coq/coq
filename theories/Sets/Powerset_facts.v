@@ -254,5 +254,5 @@ Section Sets_as_an_algebra.
 End Sets_as_an_algebra.
 
 Hint Resolve Empty_set_zero Empty_set_zero' Union_associative Union_add
-  singlx incl_add: sets v62.
+  singlx incl_add: sets.
 

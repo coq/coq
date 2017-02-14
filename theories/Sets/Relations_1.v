@@ -60,6 +60,6 @@ Section Relations_1.
 
 End Relations_1.
 Hint Unfold Reflexive Transitive Antisymmetric Symmetric contains
-  same_relation: sets v62.
+  same_relation: sets.
 Hint Resolve Definition_of_preorder Definition_of_order
-  Definition_of_equivalence Definition_of_PER: sets v62.
+  Definition_of_equivalence Definition_of_PER: sets.

@@ -48,7 +48,7 @@ Definition Strongly_confluent : Prop :=
 
 End Relations_2.
 
-Hint Resolve Rstar_0: sets v62.
-Hint Resolve Rstar1_0: sets v62.
-Hint Resolve Rstar1_1: sets v62.
-Hint Resolve Rplus_0: sets v62.
+Hint Resolve Rstar_0: sets.
+Hint Resolve Rstar1_0: sets.
+Hint Resolve Rstar1_1: sets.
+Hint Resolve Rplus_0: sets.

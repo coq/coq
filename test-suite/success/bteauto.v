@@ -1,3 +1,4 @@
+Require Import Program.Tactics.
 Module Backtracking.
   Class A := { foo : nat }.
 
@@ -8,7 +9,6 @@ Module Backtracking.
   Qed.
   
   Arguments foo A : clear implicits.
-  
   Example find42 : exists n, n = 42.
   Proof.
     eexists.
@@ -20,9 +20,13 @@ Module Backtracking.
     Fail reflexivity. 
     Undo 2.
     (* Without multiple successes it fails *)
-    Fail all:((once typeclasses eauto) + apply eq_refl).
+    Set Typeclasses Debug Verbosity 2.
+    Fail all:((once (typeclasses eauto with typeclass_instances))
+              + apply eq_refl).
     (* Does backtrack if other goals fail *)
-    all:((typeclasses eauto) + reflexivity).
+    all:[> typeclasses eauto + reflexivity .. ].
+    Undo 1.
+    all:(typeclasses eauto + reflexivity). (* Note "+" is a focussing combinator *)
     Show Proof.  
   Qed.
 

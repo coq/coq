@@ -51,7 +51,7 @@ Lemma tl_nth_tl :
 Proof.
   simple induction n; simpl; auto.
 Qed.
-Hint Resolve tl_nth_tl: datatypes v62.
+Hint Resolve tl_nth_tl: datatypes.
 
 Lemma Str_nth_tl_plus :
  forall (n m:nat) (s:Stream),

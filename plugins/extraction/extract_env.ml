@@ -507,8 +507,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
   in
   (* First, a dry run, for computing objects to rename or duplicate *)
   set_phase Pre;
-  let devnull = formatter true None in
-  pp_with devnull (d.pp_struct struc);
+  ignore (d.pp_struct struc);
   let opened = opened_libraries () in
   (* Print the implementation *)
   let cout = if dry then None else Option.map open_out fn in

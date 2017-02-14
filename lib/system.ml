@@ -33,7 +33,6 @@ let all_subdirs ~unix_path:root =
       | _ -> ()
     in process_directory f path
   in
-  check_unix_dir (fun s -> Feedback.msg_warning (str s)) root;
   if exists_dir root then traverse root []
   else warn_cannot_open_dir root;
   List.rev !l
@@ -310,6 +309,7 @@ let with_time time f x =
     raise e
 
 let process_id () =
-  if Flags.async_proofs_is_worker () then !Flags.async_proofs_worker_id
-  else Printf.sprintf "master:%d" (Thread.id (Thread.self ()))
-    
+  Printf.sprintf "%d:%s:%d" (Unix.getpid ())
+    (if Flags.async_proofs_is_worker () then !Flags.async_proofs_worker_id
+     else "master")
+    (Thread.id (Thread.self ()))

@@ -539,6 +539,8 @@ let pr_trailing_ne_context_of env sigma =
   else (str " in environment:"++ pr_context_unlimited env sigma)
 
 let rec explain_evar_kind env sigma evk ty = function
+  | Evar_kinds.NamedHole id ->
+      strbrk "the existential variable named " ++ pr_id id
   | Evar_kinds.QuestionMark _ ->
       strbrk "this placeholder of type " ++ ty
   | Evar_kinds.CasesType false ->

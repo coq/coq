@@ -23,9 +23,9 @@
 #include "coq_values.h" 
 
 /* spiwack: I append here a few macros for value/number manipulation */
-#define uint32_of_value(val) (((uint32_t)val >> 1))
-#define value_of_uint32(i)   ((value)(((uint32_t)(i) << 1) | 1))
-#define UI64_of_uint32(lo) ((uint64_t)(lo))
+#define uint32_of_value(val) (((uint32_t)(val)) >> 1)
+#define value_of_uint32(i)   ((value)((((uint32_t)(i)) << 1) | 1))
+#define UI64_of_uint32(lo) ((uint64_t)((uint32_t)(lo)))
 #define UI64_of_value(val) (UI64_of_uint32(uint32_of_value(val)))
 /* /spiwack */
 
@@ -891,25 +891,58 @@ value coq_interprete
 
 
       Instruct(PROJ){
+        do_proj:
 	print_instr("PROJ");
 	if (Is_accu (accu)) {
-          value block;
-	  /* Skip over the index of projected field */
-	  pc++;
-	  /* Create atom */
-	  Alloc_small(block, 2, ATOM_PROJ_TAG);
-	  Field(block, 0) = Field(coq_global_data, *pc);
-	  Field(block, 1) = accu;
-          accu = block;
-          /* Create accumulator */
-          Alloc_small(block, 2, Accu_tag);
-          Code_val(block) = accumulate;
-          Field(block, 1) = accu;
-          accu = block;
+          *--sp = accu; // Save matched block on stack
+          accu = Field(accu, 1); // Save atom to accu register
+          switch (Tag_val(accu)) {
+          case ATOM_COFIX_TAG: // We are forcing a cofix
+            {
+              mlsize_t i, nargs;
+              sp -= 2;
+              // Push the current instruction as the return address
+              sp[0] = (value)(pc - 1);
+              sp[1] = coq_env;
+              coq_env = Field(accu, 0); // Pointer to suspension
+              accu = sp[2]; // Save accumulator to accu register
+              sp[2] = Val_long(coq_extra_args); // Push number of args for return
+              nargs = Wosize_val(accu) - 2; // Number of args = size of accumulator - 1 (accumulator code) - 1 (atom)
+              // Push arguments to stack
+              CHECK_STACK(nargs + 1);
+              sp -= nargs;
+              for (i = 0; i < nargs; ++i) sp[i] = Field(accu, i + 2);
+              *--sp = accu; // Last argument is the pointer to the suspension
+              coq_extra_args = nargs;
+              pc = Code_val(coq_env); // Trigger evaluation
+              goto check_stack;
+            }
+          case ATOM_COFIXEVALUATED_TAG:
+            {
+              accu = Field(accu, 1);
+              ++sp;
+              goto do_proj;
+            }
+          default:
+            {
+              value block;
+              /* Skip over the index of projected field */
+              ++pc;
+              /* Create atom */
+              Alloc_small(accu, 2, ATOM_PROJ_TAG);
+              Field(accu, 0) = Field(coq_global_data, *pc++);
+              Field(accu, 1) = *sp++;
+              /* Create accumulator */
+              Alloc_small(block, 2, Accu_tag);
+              Code_val(block) = accumulate;
+              Field(block, 1) = accu;
+              accu = block;
+            }
+          }
 	} else {
-	    accu = Field(accu, *pc++);
+          accu = Field(accu, *pc);
+          pc += 2;
 	}
-	pc++;
 	Next;
       }
 
@@ -1206,7 +1239,7 @@ value coq_interprete
 	  Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
 	  /*unsigned shift*/
 	  Field(accu, 0) = (value)((p >> 31)|1) ;  /*higher part*/
-	  Field(accu, 1) = (value)((int32_t)p|1); /*lower part*/
+	  Field(accu, 1) = (value)((uint32_t)p|1); /*lower part*/
 	}
 	Next;
       }

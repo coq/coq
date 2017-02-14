@@ -38,3 +38,10 @@ Abort.
 Goal ~ identity 0 1.
 discriminate.
 Qed.
+
+(* Check discriminate on types with local definitions *)
+
+Inductive A := B (T := unit) (x y : bool) (z := x).
+Goal forall x y, B x true = B y false -> False.
+discriminate.
+Qed.

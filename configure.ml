@@ -12,10 +12,10 @@
 open Printf
 
 let coq_version = "trunk"
-let coq_macos_version = "8.4.90" (** "[...] should be a string comprised of
+let coq_macos_version = "8.6.90" (** "[...] should be a string comprised of
 three non-negative, period-separated integers [...]" *)
-let vo_magic = 8511
-let state_magic = 58511
+let vo_magic = 8691
+let state_magic = 58691
 let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqmktop";"coqworkmgr";
 "coqdoc";"coq_makefile";"coq-tex";"gallina";"coqwc";"csdpcert";"coqdep"]
 
@@ -381,7 +381,7 @@ let coq_debug_flag = if !Prefs.debug then "-g" else ""
 let coq_profile_flag = if !Prefs.profile then "-p" else ""
 let coq_annotate_flag =
   if !Prefs.annotate
-  then if program_in_path "ocamlmerlin" then "-bin-annot" else "-dtypes"
+  then if program_in_path "ocamlmerlin" then "-bin-annot" else "-annot"
   else ""
 
 let cflags = "-Wall -Wno-unused -g -O2"
@@ -487,19 +487,14 @@ let caml_version_nums =
          "Is it installed properly?")
 
 let check_caml_version () =
-  if caml_version_nums >= [4;1;0] then
-    if caml_version_nums = [4;2;0] && not !Prefs.force_caml_version then
-      die ("Your version of OCaml is 4.02.0 which suffers from a bug inducing\n" ^
-        "very slow compilation times. If you still want to use it, use \n" ^
-        "option -force-caml-version.\n")
-    else
-      printf "You have OCaml %s. Good!\n" caml_version
+  if caml_version_nums >= [4;2;1] then
+    printf "You have OCaml %s. Good!\n" caml_version
   else
     let () = printf "Your version of OCaml is %s.\n" caml_version in
     if !Prefs.force_caml_version then
       printf "*Warning* Your version of OCaml is outdated.\n"
     else
-      die "You need OCaml 4.01 or later."
+      die "You need OCaml 4.02.1 or later."
 
 let _ = check_caml_version ()
 
@@ -514,6 +509,20 @@ let camltag = match caml_version_list with
 (** * CamlpX configuration *)
 
 (* Convention: we use camldir as a prioritary location for camlpX, if given *)
+(* i.e., in the case of camlp5, we search for a copy of camlp5o which *)
+(* answers the right camlp5 lib dir *)
+
+let strip_slash dir =
+  let n = String.length dir in
+  if n>0 && dir.[n - 1] = '/' then String.sub dir 0 (n-1) else dir
+
+let which_camlp5o_for camlp5lib =
+  let camlp5o = Filename.concat camlbin "camlp5o" in
+  let camlp5lib = strip_slash camlp5lib in
+  if fst (tryrun camlp5o ["-where"]) = camlp5lib then camlp5o else
+  let camlp5o = which "camlp5o" in
+  if fst (tryrun camlp5o ["-where"]) = camlp5lib then camlp5o else
+  die ("Error: cannot find Camlp5 binaries corresponding to Camlp5 library " ^ camlp5lib)
 
 let which_camlpX base =
   let file = Filename.concat camlbin base in
@@ -528,7 +537,7 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
   | Some dir ->
     if Sys.file_exists (dir/testcma) then
       let camlp5o =
-        try which_camlpX "camlp5o"
+        try which_camlp5o_for dir
         with Not_found -> die "Error: cannot find Camlp5 binaries in path.\n" in
       dir, camlp5o
     else
@@ -549,17 +558,10 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
 let check_camlp5_version camlp5o =
   let version_line, _ = run ~err:StdOut camlp5o ["-v"] in
   let version = List.nth (string_split ' ' version_line) 2 in
-  match string_split '.' version with
+  match numeric_prefix_list version with
   | major::minor::_ when s2i major > 6 || (s2i major, s2i minor) >= (6,6) ->
     printf "You have Camlp5 %s. Good!\n" version; version
   | _ -> die "Error: unsupported Camlp5 (version < 6.06 or unrecognized).\n"
-
-let check_caml_version_for_camlp4 () =
-  if caml_version_nums = [4;1;0] && !Prefs.debug && not !Prefs.force_caml_version then
-    die ("Your version of OCaml is detected to be 4.01.0 which fails to compile\n" ^
-         "Coq in -debug mode with Camlp4. Remove -debug option or use a different\n" ^
-         "version of OCaml or use Camlp5, or bypass this test by using option\n" ^
-         "-force-caml-version.\n")
 
 let config_camlpX () =
   try
@@ -579,7 +581,6 @@ let config_camlpX () =
       let camlp4orf = which_camlpX "camlp4orf" in
       let version_line, _ = run ~err:StdOut camlp4orf ["-v"] in
       let camlp4_version = List.nth (string_split ' ' version_line) 2 in
-      check_caml_version_for_camlp4 ();
       "camlp4", camlp4orf, Filename.dirname camlp4orf, camlp4libdir, camlp4mod, camlp4_version
     with _ -> die "No Camlp4 installation found.\n"
 

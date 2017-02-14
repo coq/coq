@@ -556,8 +556,10 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
     | Vernacexpr.DefExpr ((_,Name id),_,_) -> id::acc
     | _ -> acc in
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
-  if not (List.distinct_f Id.compare allnames)
-  then error "Two objects have the same name";
+  let () = match List.duplicates Id.equal allnames with
+  | [] -> ()
+  | id :: _ -> user_err (str "Two objects have the same name" ++ spc () ++ quote (Id.print id))
+  in
   let isnot_class = match kind with Class false -> false | _ -> true in
   if isnot_class && List.exists (fun opt -> not (Option.is_empty opt)) priorities then
     error "Priorities only allowed for type class substructures";
@@ -567,8 +569,9 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
       typecheck_params_and_fields (kind = Class true) idstruc pl s ps notations fs) () in
   let sign = structure_signature (fields@params) in
   let gr = match kind with
-    | Class def ->
-	let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
+  | Class def ->
+     let priorities = List.map (fun id -> {hint_priority = id; hint_pattern = None}) priorities in
+     let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
 	  implpars params arity template implfs fields is_coe coers priorities sign in
 	gr
     | _ ->

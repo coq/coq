@@ -34,9 +34,15 @@ struct
 
   let hash = String.hash
 
+  let warn_invalid_identifier =
+    CWarnings.create ~name:"invalid-identifier" ~category:"parsing"
+                     ~default:CWarnings.Disabled
+                     (fun s -> str s)
+
   let check_soft ?(warn = true) x =
     let iter (fatal, x) =
-      if fatal then CErrors.error x else if warn then Feedback.msg_warning (str x)
+      if fatal then CErrors.error x else
+        if warn then warn_invalid_identifier x
     in
     Option.iter iter (Unicode.ident_refutation x)
 

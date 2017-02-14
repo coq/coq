@@ -573,10 +573,10 @@ let vernac_inductive poly lo finite indl =
 	| _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
   match indl with
-  | [ ( _ , _ , _ ,Record, Constructors _ ),_ ] ->
-      CErrors.error "The Record keyword cannot be used to define a variant type. Use Variant instead."
+  | [ ( _ , _ , _ ,(Record|Structure), Constructors _ ),_ ] ->
+      CErrors.error "The Record keyword is for types defined using the syntax { ... }."
   | [ (_ , _ , _ ,Variant, RecordDecl _),_ ] ->
-      CErrors.error "The Variant keyword cannot be used to define a record type. Use Record instead."
+      CErrors.error "The Variant keyword does not support syntax { ... }."
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
       vernac_record (match b with Class _ -> Class false | _ -> b)
        poly finite id bl c oc fs
@@ -844,9 +844,9 @@ let vernac_instance abst locality poly sup inst props pri =
 let vernac_context poly l =
   if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_declare_instances locality ids pri =
+let vernac_declare_instances locality insts =
   let glob = not (make_section_locality locality) in
-  List.iter (fun id -> Classes.existing_instance glob id pri) ids
+  List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
 let vernac_declare_class id =
   Record.declare_existing_class (Nametab.global id)
@@ -1086,11 +1086,10 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
     | name1 :: names1, name2 :: names2 ->
        if Name.equal name1 name2 then
          name1 :: names_union names1 names2
-       else error "Arguments lists should agree on names they provide."
+       else error "Argument lists should agree on the names they provide."
   in
 
-  let initial = List.make num_args Anonymous in
-  let names = List.fold_left names_union initial names in
+  let names = List.fold_left names_union [] names in
 
   let rec rename prev_names names =
     match prev_names, names with
@@ -1111,24 +1110,28 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   let names = rename prev_names names in
   let renaming_specified = Option.has_some !example_renaming in
 
-  if not (List.distinct_f Name.compare (List.filter ((!=) Anonymous) names)) then
-    error "Arguments names must be distinct.";
-
   if !rename_flag_required && not rename_flag then
     user_err ~hdr:"vernac_declare_arguments"
       (strbrk "To rename arguments the \"rename\" flag must be specified."
-    ++
+    ++ spc () ++
        match !example_renaming with
        | None -> mt ()
        | Some (o,n) ->
-          str "\nArgument " ++ pr_name o ++
+          str "Argument " ++ pr_name o ++
             str " renamed to " ++ pr_name n ++ str ".");
 
+  let duplicate_names =
+    List.duplicates Name.equal (List.filter ((!=) Anonymous) names)
+  in
+  if not (List.is_empty duplicate_names) then begin
+    let duplicates = prlist_with_sep pr_comma pr_name duplicate_names in
+    user_err (strbrk "Some argument names are duplicated: " ++ duplicates)
+  end;
 
   (* Parts of this code are overly complicated because the implicit arguments
      API is completely crazy: positions (ExplByPos) are elaborated to
      names. This is broken by design, since not all arguments have names. So
-     eventhough we eventually want to map only positions to implicit statuses,
+     even though we eventually want to map only positions to implicit statuses,
      we have to check whether the corresponding arguments have names, not to
      trigger an error in the impargs code. Even better, the names we have to
      check are not the current ones (after previous renamings), but the original
@@ -1495,7 +1498,7 @@ let _ =
       optwrite = (fun b ->  Constrintern.parsing_explicit := b) }
 
 let _ =
-  declare_string_option
+  declare_string_option ~preprocess:CWarnings.normalize_flags_string
     { optsync  = true;
       optdepr  = false;
       optname  = "warnings display";
@@ -1575,7 +1578,7 @@ let vernac_check_may_eval redexp glopt rc =
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr env sigma rc in
   let c = EConstr.Unsafe.to_constr c in
-  let sigma' = Evarconv.consider_remaining_unif_problems env sigma' in
+  let sigma' = Evarconv.solve_unif_constraints_with_heuristics env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
   let pl, uctx = Evd.universe_context sigma' in
@@ -1790,13 +1793,13 @@ let vernac_search s gopt r =
   in
   match s with
   | SearchPattern c ->
-      Search.search_pattern gopt (get_pattern c) r pr_search
+      (Search.search_pattern gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchRewrite c ->
-      Search.search_rewrite gopt (get_pattern c) r pr_search
+      (Search.search_rewrite gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchHead c ->
-      Search.search_by_head gopt (get_pattern c) r pr_search
+      (Search.search_by_head gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchAbout sl ->
-      Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r pr_search
+      (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r |> Search.prioritize_search) pr_search
 
 let vernac_locate = let open Feedback in function
   | LocateAny (AN qid)  -> msg_notice (print_located_qualid qid)
@@ -1913,6 +1916,10 @@ let vernac_check_guard () =
 exception End_of_input
 
 let vernac_load interp fname =
+  let interp x =
+    let proof_mode = Proof_global.get_default_proof_mode_name () in
+    Proof_global.activate_proof_mode proof_mode;
+    interp x in
   let parse_sentence = Flags.with_option Flags.we_are_parsing
     (fun po ->
     match Pcoq.Gram.entry_parse Pcoq.main_entry po with
@@ -1996,10 +2003,10 @@ let interp ?proof ~loc locality poly c =
       vernac_identity_coercion locality poly local id s t
 
   (* Type classes *)
-  | VernacInstance (abst, sup, inst, props, pri) ->
-      vernac_instance abst locality poly sup inst props pri
+  | VernacInstance (abst, sup, inst, props, info) ->
+      vernac_instance abst locality poly sup inst props info
   | VernacContext sup -> vernac_context poly sup
-  | VernacDeclareInstances (ids, pri) -> vernac_declare_instances locality ids pri
+  | VernacDeclareInstances insts -> vernac_declare_instances locality insts
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)
@@ -2135,7 +2142,7 @@ let enforce_polymorphism = function
   | None -> Flags.is_universe_polymorphism ()
   | Some b -> Flags.make_polymorphic_flag b; b
 
-(** A global default timeout, controled by option "Set Default Timeout n".
+(** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
 
 let default_timeout = ref None

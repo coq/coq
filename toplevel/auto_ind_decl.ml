@@ -58,6 +58,7 @@ exception InductiveWithSort
 exception ParameterWithoutEquality of global_reference
 exception NonSingletonProp of inductive
 exception DecidabilityMutualNotSupported
+exception NoDecidabilityCoInductive
 
 let dl = Loc.ghost
 
@@ -212,19 +213,19 @@ let build_beq_scheme mode kn =
             end
         | Sort _  -> raise InductiveWithSort
         | Prod _ -> raise InductiveWithProduct
-        | Lambda _-> raise (EqUnknown "Lambda")
-        | LetIn _ -> raise (EqUnknown "LetIn")
+        | Lambda _-> raise (EqUnknown "abstraction")
+        | LetIn _ -> raise (EqUnknown "let-in")
         | Const kn ->
 	    (match Environ.constant_opt_value_in env kn with
 	      | None -> raise (ParameterWithoutEquality (ConstRef (fst kn)))
 	      | Some c -> aux (EConstr.applist (EConstr.of_constr c,a)))
-        | Proj _ -> raise (EqUnknown "Proj")
-        | Construct _ -> raise (EqUnknown "Construct")
-        | Case _ -> raise (EqUnknown "Case")
-        | CoFix _ -> raise (EqUnknown "CoFix")
-        | Fix _   -> raise (EqUnknown "Fix")
-        | Meta _  -> raise (EqUnknown "Meta")
-        | Evar _  -> raise (EqUnknown "Evar")
+        | Proj _ -> raise (EqUnknown "projection")
+        | Construct _ -> raise (EqUnknown "constructor")
+        | Case _ -> raise (EqUnknown "match")
+        | CoFix _ -> raise (EqUnknown "cofix")
+        | Fix _   -> raise (EqUnknown "fix")
+        | Meta _  -> raise (EqUnknown "meta-variable")
+        | Evar _  -> raise (EqUnknown "existential variable")
     in
       aux t
   in
@@ -309,6 +310,8 @@ let build_beq_scheme mode kn =
       let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
 	if not (Sorts.List.mem InSet kelim) then
 	  raise (NonSingletonProp (kn,i));
+        if mib.mind_finite = Decl_kinds.CoFinite then
+	  raise NoDecidabilityCoInductive;
         let fix = mkFix (((Array.make nb_ind 0),i),(names,types,cores)) in
         create_input fix),
        Evd.make_evar_universe_context (Global.env ()) None),
@@ -527,12 +530,15 @@ let eqI ind l =
 (**********************************************************************)
 (* Boolean->Leibniz *)
 
+open Namegen
+
 let compute_bl_goal ind lnamesparrec nparrec =
   let eqI, eff = eqI ind lnamesparrec in
   let list_id = list_id lnamesparrec in
+  let avoid = List.fold_right (Nameops.name_fold (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
   let create_input c =
-    let x = Id.of_string "x" and
-        y = Id.of_string "y" in
+    let x = next_ident_away (Id.of_string "x") avoid and
+        y = next_ident_away (Id.of_string "y") avoid in
       let bl_typ = List.map (fun (s,seq,_,_) ->
         mkNamedProd x (mkVar s) (
             mkNamedProd y (mkVar s) (
@@ -551,11 +557,11 @@ let compute_bl_goal ind lnamesparrec nparrec =
         mkNamedProd seq b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl -> mkNamedProd
-                (match RelDecl.get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
+                (match RelDecl.get_name decl with Name s -> s | Anonymous -> next_ident_away (Id.of_string "A") avoid)
                 (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
-      let n = Id.of_string "x" and
-          m = Id.of_string "y" in
+      let n = next_ident_away (Id.of_string "x") avoid and
+          m = next_ident_away (Id.of_string "y") avoid in
       let u = Univ.Instance.empty in
      create_input (
         mkNamedProd n (mkFullInd (ind,u) nparrec) (
@@ -672,10 +678,11 @@ let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
 let compute_lb_goal ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
+  let avoid = List.fold_right (Nameops.name_fold (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
   let eqI, eff = eqI ind lnamesparrec in
     let create_input c =
-      let x = Id.of_string "x" and
-          y = Id.of_string "y" in
+      let x = next_ident_away (Id.of_string "x") avoid and
+          y = next_ident_away (Id.of_string "y") avoid in
       let lb_typ = List.map (fun (s,seq,_,_) ->
         mkNamedProd x (mkVar s) (
             mkNamedProd y (mkVar s) (
@@ -697,8 +704,8 @@ let compute_lb_goal ind lnamesparrec nparrec =
                 (match (RelDecl.get_name decl) with Name s -> s | Anonymous ->  Id.of_string "A")
                 (RelDecl.get_type decl)  a) eq_input lnamesparrec
     in
-      let n = Id.of_string "x" and
-          m = Id.of_string "y" in
+      let n = next_ident_away (Id.of_string "x") avoid and
+          m = next_ident_away (Id.of_string "y") avoid in
       let u = Univ.Instance.empty in
       create_input (
         mkNamedProd n (mkFullInd (ind,u) nparrec) (
@@ -802,9 +809,10 @@ let compute_dec_goal ind lnamesparrec nparrec =
   check_not_is_defined ();
   let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
   let list_id = list_id lnamesparrec in
+  let avoid = List.fold_right (Nameops.name_fold (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
     let create_input c =
-      let x = Id.of_string "x" and
-          y = Id.of_string "y" in
+      let x = next_ident_away (Id.of_string "x") avoid and
+          y = next_ident_away (Id.of_string "y") avoid in
       let lb_typ = List.map (fun (s,seq,_,_) ->
         mkNamedProd x (mkVar s) (
             mkNamedProd y (mkVar s) (
@@ -839,8 +847,8 @@ let compute_dec_goal ind lnamesparrec nparrec =
                 (match RelDecl.get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
                 (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
-      let n = Id.of_string "x" and
-          m = Id.of_string "y" in
+      let n = next_ident_away (Id.of_string "x") avoid and
+          m = next_ident_away (Id.of_string "y") avoid in
         let eqnm = mkApp(eq,[|mkFullInd ind (2*nparrec+2);mkVar n;mkVar m|]) in
         create_input (
           mkNamedProd n (mkFullInd ind (2*nparrec)) (
