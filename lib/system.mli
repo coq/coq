@@ -75,10 +75,6 @@ val raw_extern_state : int -> string -> out_channel
 
 val raw_intern_state : int -> string -> in_channel
 
-val extern_state : int -> string -> 'a -> unit
-
-val intern_state : int -> string -> 'a
-
 val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
 
 (** Clones of Marshal.to_channel (with flush) and

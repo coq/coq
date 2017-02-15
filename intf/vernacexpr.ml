@@ -401,10 +401,6 @@ type nonrec vernac_expr =
   | VernacDeclareMLModule of string list
   | VernacChdir of string option
 
-  (* State management *)
-  | VernacWriteState of string
-  | VernacRestoreState of string
-
   (* Resetting *)
   | VernacResetName of lident
   | VernacResetInitial

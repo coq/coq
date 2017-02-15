@@ -942,21 +942,9 @@ let vernac_chdir = function
       end;
       Flags.if_verbose Feedback.msg_info (str (Sys.getcwd()))
 
-(********************)
-(* State management *)
-
-let vernac_write_state file =
-  Proof_global.discard_all ();
-  let file = CUnix.make_suffix file ".coq" in
-  States.extern_state file
-
-let vernac_restore_state file =
-  Proof_global.discard_all ();
-  let file = Loadpath.locate_file (CUnix.make_suffix file ".coq") in
-  States.intern_state file
-
 (************)
 (* Commands *)
+(************)
 
 let vernac_create_hintdb ~atts id b =
   let local = make_module_locality atts.locality in
@@ -2033,10 +2021,6 @@ let interp ?proof ~atts ~st c =
   | VernacAddMLPath (isrec,s) -> vernac_add_ml_path isrec s
   | VernacDeclareMLModule l -> vernac_declare_ml_module ~atts l
   | VernacChdir s -> vernac_chdir s
-
-  (* State management *)
-  | VernacWriteState s -> vernac_write_state s
-  | VernacRestoreState s -> vernac_restore_state s
 
   (* Commands *)
   | VernacCreateHintDb (dbname,b) -> vernac_create_hintdb ~atts dbname b

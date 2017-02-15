@@ -166,15 +166,6 @@ let open_trapping_failure name =
   with e when CErrors.noncritical e ->
     CErrors.user_err ~hdr:"System.open" (str "Can't open " ++ str name)
 
-let warn_cannot_remove_file =
-  CWarnings.create ~name:"cannot-remove-file" ~category:"filesystem"
-  (fun filename -> str"Could not remove file " ++ str filename ++ str" which is corrupted!")
-
-let try_remove filename =
-  try Sys.remove filename
-  with e when CErrors.noncritical e ->
-    warn_cannot_remove_file filename
-
 let error_corrupted file s =
   CErrors.user_err ~hdr:"System" (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
 
@@ -241,28 +232,6 @@ let raw_intern_state magic filename =
   with
   | End_of_file -> error_corrupted filename "premature end of file"
   | Failure s | Sys_error s -> error_corrupted filename s
-
-let extern_state magic filename val_0 =
-  try
-    let channel = raw_extern_state magic filename in
-    try
-      marshal_out channel val_0;
-      close_out channel
-    with reraise ->
-      let reraise = CErrors.push reraise in
-      let () = try_remove filename in
-      iraise reraise
-  with Sys_error s ->
-    CErrors.user_err ~hdr:"System.extern_state" (str "System error: " ++ str s)
-
-let intern_state magic filename =
-  try
-    let channel = raw_intern_state magic filename in
-    let v = marshal_in filename channel in
-    close_in channel;
-    v
-  with Sys_error s ->
-    CErrors.user_err ~hdr:"System.intern_state" (str "System error: " ++ str s)
 
 let with_magic_number_check f a =
   try f a

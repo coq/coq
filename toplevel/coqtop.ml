@@ -75,19 +75,6 @@ let print_memory_stat () =
 let _ = at_exit print_memory_stat
 
 (******************************************************************************)
-(* Input/Output State                                                         *)
-(******************************************************************************)
-let inputstate opts =
-  Option.iter (fun istate_file ->
-    let fname = Loadpath.locate_file (CUnix.make_suffix istate_file ".coq") in
-    States.intern_state fname) opts.inputstate
-
-let outputstate opts =
-  Option.iter (fun ostate_file ->
-    let fname = CUnix.make_suffix ostate_file ".coq" in
-    States.extern_state fname) opts.outputstate
-
-(******************************************************************************)
 (* Interactive Load File Simulation                                           *)
 (******************************************************************************)
 let load_vernacular opts ~state =
@@ -444,9 +431,6 @@ let init_toplevel arglist =
       Mltop.init_known_plugins ();
       Global.set_engagement opts.impredicative_set;
 
-      (* Allow the user to load an arbitrary state here *)
-      inputstate opts;
-
       (* This state will be shared by all the documents *)
       Stm.init_core ();
 
@@ -487,8 +471,6 @@ let init_toplevel arglist =
           if opts.vio_files <> [] then schedule_vio opts;
           (* Vio task pass *)
           check_vio_tasks opts;
-          (* Allow the user to output an arbitrary state *)
-          outputstate opts;
           None, opts
         with any -> flush_all(); fatal_error_exn any
       end;
