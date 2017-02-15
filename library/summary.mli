@@ -10,18 +10,16 @@
    in synchronization during the various backtracks of the system. *)
 
 type marshallable =
-  [ `Yes       (* Full data will be marshalled to disk                        *)
-  | `No        (* Full data will be store in memory, e.g. for Undo            *)
+  [ `No        (* Full data will be store in memory, e.g. for Undo            *)
   | `Shallow ] (* Only part of the data will be marshalled to a slave process *)
 
 (** Types of global Coq states. The ['a] type should be pure and marshallable by
     the standard OCaml marshalling function. *)
 type 'a summary_declaration = {
-  (** freeze_function [true] is for marshalling to disk. 
-   *  e.g. lazy must be forced *)
   freeze_function : marshallable -> 'a;
   unfreeze_function : 'a -> unit;
-  init_function : unit -> unit }
+  init_function : unit -> unit
+}
 
 (** For tables registered during the launch of coqtop, the [init_function]
     will be run only once, during an [init_summaries] done at the end of
