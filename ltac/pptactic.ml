@@ -1243,11 +1243,10 @@ let declare_extra_genarg_pprule wit
   (f : 'a raw_extra_genarg_printer)
   (g : 'b glob_extra_genarg_printer)
   (h : 'c extra_genarg_printer) =
-  let s = match wit with
-    | ExtraArg s -> ArgT.repr s
-    | _ -> error
-      "Can declare a pretty-printing rule only for extra argument types."
-  in
+  begin match wit with
+    | ExtraArg s -> ()
+    | _          -> error "Can declare a pretty-printing rule only for extra argument types."
+  end;
   let f x = f pr_constr_expr pr_lconstr_expr pr_raw_tactic_level x in
   let g x =
     let env = Global.env () in

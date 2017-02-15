@@ -124,27 +124,11 @@ exception End_of_input
 let utf8_of_unicode n =
   if n < 128 then
     String.make 1 (Char.chr n)
-  else if n < 2048 then
-    let s = String.make 2 (Char.chr (128 + n mod 64)) in
-    begin
-      s.[0] <- Char.chr (192 + n / 64);
-      s
-    end
-  else if n < 65536 then
-    let s = String.make 3 (Char.chr (128 + n mod 64)) in
-    begin
-      s.[1] <- Char.chr (128 + (n / 64) mod 64);
-      s.[0] <- Char.chr (224 + n / 4096);
-      s
-    end
   else
-    let s = String.make 4 (Char.chr (128 + n mod 64)) in
-    begin
-      s.[2] <- Char.chr (128 + (n / 64) mod 64);
-      s.[1] <- Char.chr (128 + (n / 4096) mod 64);
-      s.[0] <- Char.chr (240 + n / 262144);
-      s
-    end
+    let (m,s) = if n < 2048 then (2,192) else if n < 65536 then (3,224) else (4,240) in
+    String.init m (fun i ->
+        let j = (n lsr ((m - 1 - i) * 6)) land 63 in
+        Char.chr (j + if i = 0 then s else 128))
 
 (* If [s] is some UTF-8 encoded string
    and [i] is a position of some UTF-8 character within [s]
