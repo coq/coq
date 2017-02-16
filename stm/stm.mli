@@ -13,24 +13,31 @@ open Loc
 
 (** state-transaction-machine interface *)
 
-(* [add ontop check vebose eid s] adds a new command [s] on the state [ontop].
-   [check] is called on the AST.
-   The [ontop] parameter is just for asserting the GUI is on sync, but
-   will eventually call edit_at on the fly if needed.
-   The sentence [s] is parsed in the state [ontop].
-   If [newtip] is provided, then the returned state id is guaranteed to be
-   [newtip] *)
-val add :
-  ontop:Stateid.t -> ?newtip:Stateid.t ->
-  ?check:(vernac_expr located -> unit) ->
-  bool -> string ->
-    Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
+(* [parse_sentence sid pa] Reads a sentence from [pa] with parsing
+   state [sid] Returns [End_of_input] if the stream ends *)
+val parse_sentence : Stateid.t -> Pcoq.Gram.coq_parsable ->
+  Vernacexpr.vernac_expr Loc.located
 
-(* parses and executes a command at a given state, throws away its side effects
-   but for the printings.  Feedback is sent with report_with (defaults to dummy
-   state id)  *)
+(* Reminder: A parsable [pa] is constructed using
+   [Pcoq.Gram.coq_parsable stream], where [stream : char Stream.t]. *)
+
+exception End_of_input
+
+(* [add ~ontop ?newtip verbose cmd] adds a new command [cmd] ontop of
+   the state [ontop].
+   The [ontop] parameter just asserts that the GUI is on
+   sync, but it will eventually call edit_at on the fly if needed.
+   If [newtip] is provided, then the returned state id is guaranteed
+   to be [newtip] *)
+val add : ontop:Stateid.t -> ?newtip:Stateid.t ->
+  bool -> (Loc.t * Vernacexpr.vernac_expr) ->
+  Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
+
+(* [query at ?report_with cmd] Executes [cmd] at a given state [at],
+   throwing away side effects except messages. Feedback will
+   be sent with [report_with], which defaults to the dummy state id *)
 val query :
-  at:Stateid.t -> ?report_with:(Stateid.t * Feedback.route_id) -> string -> unit
+  at:Stateid.t -> ?report_with:(Stateid.t * Feedback.route_id) -> Pcoq.Gram.coq_parsable -> unit
 
 (* [edit_at id] is issued to change the editing zone.  [`NewTip] is returned if
    the requested id is the new document tip hence the document portion following

@@ -86,16 +86,19 @@ let ide_cmd_checks (loc,ast) =
   if is_debug ast then
     user_error "Debug mode not available in the IDE";
   if is_known_option ast then
-    Feedback.msg_warning (strbrk "Set this option from the IDE menu instead");
+    Feedback.msg_warning ~loc (strbrk "Set this option from the IDE menu instead");
   if Vernac.is_navigation_vernac ast || is_undo ast then
-    Feedback.msg_warning (strbrk "Use IDE navigation instead");
+    Feedback.msg_warning ~loc (strbrk "Use IDE navigation instead");
   if is_query ast then
-    Feedback.msg_warning (strbrk "Query commands should not be inserted in scripts")
+    Feedback.msg_warning ~loc (strbrk "Query commands should not be inserted in scripts")
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
 let add ((s,eid),(sid,verbose)) =
-  let newid, rc = Stm.add ~ontop:sid verbose ~check:ide_cmd_checks s in
+  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
+  let loc_ast = Stm.parse_sentence sid pa in
+  ide_cmd_checks loc_ast;
+  let newid, rc = Stm.add ~ontop:sid verbose loc_ast in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
   (* TODO: the "" parameter is a leftover of the times the protocol
    * used to include stderr/stdout output.
@@ -122,7 +125,9 @@ let edit_at id =
  * as not to break the core protocol for this minor change, but it should
  * be removed in the next version of the protocol.
  *)
-let query (s,id) = Stm.query ~at:id s; ""
+let query (s,id) =
+  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
+  Stm.query ~at:id pa; ""
 
 let annotate phrase =
   let (loc, ast) =
@@ -370,17 +375,19 @@ let init =
   fun file ->
    if !initialized then anomaly (str "Already initialized")
    else begin
+     let init_sid = Stm.get_current_state () in
      initialized := true;
      match file with
-     | None -> Stm.get_current_state ()
+     | None -> init_sid
      | Some file ->
          let dir = Filename.dirname file in
          let open Loadpath in let open CUnix in
          let initial_id, _ =
-           if not (is_in_load_paths (physical_path_of_string dir)) then
-             Stm.add false ~ontop:(Stm.get_current_state ())
-               (Printf.sprintf "Add LoadPath \"%s\". " dir)
-           else Stm.get_current_state (), `NewTip in
+           if not (is_in_load_paths (physical_path_of_string dir)) then begin
+             let pa = Pcoq.Gram.parsable (Stream.of_string (Printf.sprintf "Add LoadPath \"%s\". " dir)) in
+             let loc_ast = Stm.parse_sentence init_sid pa in
+             Stm.add false ~ontop:init_sid loc_ast
+           end else init_sid, `NewTip in
          if Filename.check_suffix file ".v" then
            Stm.set_compilation_hints file;
          Stm.finish ();

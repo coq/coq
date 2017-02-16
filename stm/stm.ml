@@ -93,49 +93,6 @@ let may_pierce_opaque = function
   | { expr = VernacExtend (("ExtractionInductive",_), _) } -> true
   | _ -> false
 
-(* Wrapper for Vernac.parse_sentence to set the feedback id *)
-let indentation_of_string s =
-  let len = String.length s in
-  let rec aux n i precise =
-    if i >= len then 0, precise, len
-    else
-      match s.[i] with
-      | ' ' | '\t' -> aux (succ n) (succ i) precise
-      | '\n' | '\r' -> aux 0 (succ i) true
-      | _ -> n, precise, len in
-  aux 0 0 false
-
-(* We must parse on top of a state id, it should be something like:
-
-   - get parsing information for that state.
-   - feed the parsable / parser with the right parsing information.
-   - call the parser
-
-   Now, the invariant in ensured by the callers, but this is a bit
-   problematic.
-*)
-let stm_parse ?(indlen_prev=fun() -> 0) s =
-  let indentation, precise, strlen = indentation_of_string s in
-  let indentation =
-    if precise then indentation else indlen_prev () + indentation in
-  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
-  Flags.with_option Flags.we_are_parsing (fun () ->
-    try
-      match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
-      | None            -> raise (Invalid_argument "stm_parse")
-      | Some (loc, ast) -> indentation, strlen, loc, ast
-    with e when CErrors.noncritical e ->
-      let (e, info) = CErrors.push e in
-      (* This is the old error recovery strategy.             *)
-      (* let loc = Loc.get_loc info in                        *)
-      (* feedback (?newtip || eid) (Message(Error, loc, msg)) *)
-      iraise (e, info))
-  ()
-
-let pr_open_cur_subgoals () =
-  try Printer.pr_open_subgoals ()
-  with Proof_global.NoCurrentProof -> Pp.str ""
-
 let update_global_env () =
   if Proof_global.there_are_pending_proofs () then
     Proof_global.update_global_env ()
@@ -2385,6 +2342,10 @@ let observe id =
     VCS.restore vcs;
     iraise e
 
+let pr_open_cur_subgoals () =
+  try Printer.pr_open_subgoals ()
+  with Proof_global.NoCurrentProof -> Pp.str ""
+
 let finish ?(print_goals=false) () =
   let head = VCS.current_branch () in
   observe (VCS.get_branch_pos head);
@@ -2706,26 +2667,80 @@ let get_ast id =
 
 let stop_worker n = Slaves.cancel_worker n
 
+(* We must parse on top of a state id, it should be something like:
+
+   - get parsing information for that state.
+   - feed the parsable / parser with the right parsing information.
+   - call the parser
+
+   Now, the invariant in ensured by the callers, but this is a bit
+   problematic.
+*)
+exception End_of_input
+
+let parse_sentence sid pa =
+  (* XXX: Should this restore the previous state?
+     Using reach here to try to really get to the
+     proper state makes the error resilience code fail *)
+  (* Reach.known_state ~cache:`Yes sid; *)
+  let cur_tip = VCS.cur_tip () in
+  if not (Stateid.equal sid cur_tip) then
+    user_err ~hdr:"Stm.parse_sentence"
+      (str "Currently, the parsing api only supports parsing at the tip of the document.");
+  Flags.with_option Flags.we_are_parsing (fun () ->
+      try
+        match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
+        | None     -> raise End_of_input
+        | Some com -> com
+      with e when CErrors.noncritical e ->
+        let (e, info) = CErrors.push e in
+        iraise (e, info))
+    ()
+
 (* You may need to know the len + indentation of previous command to compute
  * the indentation of the current one.
  *  Eg.   foo. bar.
  * Here bar is indented of the indentation of foo + its strlen (4) *)
-let ind_len_of id =
-  if Stateid.equal id Stateid.initial then 0
-  else match (VCS.visit id).step with
-  | `Cmd { ctac = true; cast = { indentation; strlen } } ->
-       indentation + strlen
-  | _ -> 0
+let ind_len_loc_of_id sid =
+  if Stateid.equal sid Stateid.initial then None
+  else match (VCS.visit sid).step with
+  | `Cmd { ctac = true; cast = { indentation; strlen; loc } } ->
+         Some (indentation, strlen, loc)
+  | _ -> None
 
-let add ~ontop ?newtip ?(check=ignore) verb s =
+(* the indentation logic works like this: if the beginning of the
+   command is different than the start we are in a new line, thus
+   indentation follows from the starting position. Otherwise, we use
+   the previous one plus the offset.
+
+   Note, this could maybe improved by handling more cases in
+   compute_indentation. *)
+
+let compute_indentation sid loc =
+  let open Loc              in
+  (* The effective lenght is the lenght on the last line *)
+  let len = loc.ep - loc.bp in
+  let prev_indent = match ind_len_loc_of_id sid with
+    | None         -> 0
+    | Some (i,l,p) -> i + l
+  in
+  (* Now if the line has not changed, the need to add the previous indent *)
+  let eff_indent = loc.bp - loc.bol_pos in
+  if loc.bol_pos = 0 then
+    eff_indent + prev_indent, len
+  else
+    eff_indent, len
+
+
+let add ~ontop ?newtip verb (loc, ast) =
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
-    (* For now, arbitrary edits should be announced with edit_at *)
-    anomaly(str"Not yet implemented, the GUI should not try this");
-  let indentation, strlen, loc, ast =
-    stm_parse ~indlen_prev:(fun () -> ind_len_of ontop) s in
+    user_err ~hdr:"Stm.add"
+      (str "You used Stm.add on a different state than the tip" ++ fnl () ++
+       str "This is not supported yet, sorry.");
+  let indentation, strlen = compute_indentation ontop loc in
   CWarnings.set_current_loc loc;
-  check(loc,ast);
+  (* XXX: Classifiy vernac should be moved inside process transaction *)
   let clas = classify_vernac ast in
   let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
   match process_transaction ?newtip ~tty:false aast clas with
@@ -2744,7 +2759,8 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
-    let indentation, strlen, loc, ast = stm_parse s in
+    let loc, ast = parse_sentence at s in
+    let indentation, strlen = compute_indentation at loc in
     CWarnings.set_current_loc loc;
     let clas = classify_vernac ast in
     let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
