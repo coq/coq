@@ -71,6 +71,17 @@ let rec zlapp v = function
     Zlapp v2 :: s -> zlapp (Array.append v v2) s
   | s -> Zlapp v :: s
 
+(** Hand-unrolling of the map function to bypass the call to the generic array
+    allocation. Type annotation is required to tell OCaml that the array does
+    not contain floats. *)
+let map_lift (l : lift) (v : fconstr array) = match v with
+| [||] -> assert false
+| [|c0|] -> [|(l, c0)|]
+| [|c0; c1|] -> [|(l, c0); (l, c1)|]
+| [|c0; c1; c2|] -> [|(l, c0); (l, c1); (l, c2)|]
+| [|c0; c1; c2; c3|] -> [|(l, c0); (l, c1); (l, c2); (l, c3)|]
+| v -> CArray.Fun1.map (fun l t -> (l, t)) l v
+
 let pure_stack lfts stk =
   let rec pure_rec lfts stk =
     match stk with
@@ -80,7 +91,7 @@ let pure_stack lfts stk =
               (Zupdate _,lpstk)  -> lpstk
             | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
             | (Zapp a, (l,pstk)) ->
-                (l,zlapp (Array.map (fun t -> (l,t)) a) pstk)
+                (l,zlapp (map_lift l a) pstk)
 	    | (Zproj (n,m,c), (l,pstk)) ->
 		(l, Zlproj (c,l)::pstk)
             | (Zfix(fx,a),(l,pstk)) ->
