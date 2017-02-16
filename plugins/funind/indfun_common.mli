@@ -34,7 +34,7 @@ val list_add_set_eq :
   ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
 
 val chop_rlambda_n : int -> Glob_term.glob_constr ->
-  (Name.t*Glob_term.glob_constr*bool) list * Glob_term.glob_constr
+  (Name.t*Glob_term.glob_constr*Glob_term.glob_constr option) list * Glob_term.glob_constr
 
 val chop_rprod_n : int -> Glob_term.glob_constr ->
   (Name.t*Glob_term.glob_constr) list * Glob_term.glob_constr

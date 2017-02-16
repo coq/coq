@@ -129,11 +129,11 @@ let functional_induction with_clean c princl pat =
 
 let rec abstract_glob_constr c = function
   | [] -> c
-  | Constrexpr.LocalRawDef (x,b)::bl -> Constrexpr_ops.mkLetInC(x,b,abstract_glob_constr c bl)
-  | Constrexpr.LocalRawAssum (idl,k,t)::bl ->
+  | Constrexpr.CLocalDef (x,b,t)::bl -> Constrexpr_ops.mkLetInC(x,b,t,abstract_glob_constr c bl)
+  | Constrexpr.CLocalAssum (idl,k,t)::bl ->
       List.fold_right (fun x b -> Constrexpr_ops.mkLambdaC([x],k,t,b)) idl
         (abstract_glob_constr c bl)
-  | Constrexpr.LocalPattern _::bl -> assert false
+  | Constrexpr.CLocalPattern _::bl -> assert false
 
 let interp_casted_constr_with_implicits env sigma impls c  =
   Constrintern.intern_gen Pretyping.WithoutTypeConstraint env ~impls
@@ -192,8 +192,10 @@ let is_rec names =
     | GRec _ -> error "GRec not handled"
     | GIf(_,b,_,lhs,rhs) ->
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
-    | GLetIn(_,na,t,b) | GLambda(_,na,_,t,b) | GProd(_,na,_,t,b)  ->
+    | GProd(_,na,_,t,b) | GLambda(_,na,_,t,b) ->
 	lookup names t || lookup (Nameops.name_fold Id.Set.remove na names) b
+    | GLetIn(_,na,b,t,c) ->
+	lookup names b || Option.cata (lookup names) true t || lookup (Nameops.name_fold Id.Set.remove na names) c
     | GLetTuple(_,nal,_,t,b) -> lookup names t ||
 	lookup
 	  (List.fold_left
@@ -215,9 +217,9 @@ let is_rec names =
 let rec local_binders_length = function
   (* Assume that no `{ ... } contexts occur *)
   | [] -> 0
-  | Constrexpr.LocalRawDef _::bl -> 1 + local_binders_length bl
-  | Constrexpr.LocalRawAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
-  | Constrexpr.LocalPattern _::bl -> assert false
+  | Constrexpr.CLocalDef _::bl -> 1 + local_binders_length bl
+  | Constrexpr.CLocalAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
+  | Constrexpr.CLocalPattern _::bl -> assert false
 
 let prepare_body ((name,_,args,types,_),_) rt =
   let n = local_binders_length args in
@@ -496,7 +498,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
       | None ->
 	  begin
 	    match args with
-	      | [Constrexpr.LocalRawAssum ([(_,Name x)],k,t)] -> t,x
+	      | [Constrexpr.CLocalAssum ([(_,Name x)],k,t)] -> t,x
 	      | _ -> error "Recursive argument must be specified"
 	  end
       | Some wf_args ->
@@ -504,7 +506,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	    match
 	      List.find
 		(function
-		   | Constrexpr.LocalRawAssum(l,k,t) ->
+		   | Constrexpr.CLocalAssum(l,k,t) ->
 		       List.exists
 			 (function (_,Name id) -> Id.equal id wf_args | _ -> false)
 			 l
@@ -512,7 +514,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 		)
 		args
 	    with
-	      | Constrexpr.LocalRawAssum(_,k,t)  ->	    t,wf_args
+	      | Constrexpr.CLocalAssum(_,k,t)  ->	    t,wf_args
 	      | _ -> assert false
 	  with Not_found -> assert false
   in
@@ -570,10 +572,10 @@ let make_assoc assoc l1 l2 =
 let rec rebuild_bl (aux,assoc) bl typ = 
 	match bl,typ with 
 	  | [], _ -> (List.rev aux,replace_vars_constr_expr assoc typ,assoc)
-	  | (Constrexpr.LocalRawAssum(nal,bk,_))::bl',typ ->
+	  | (Constrexpr.CLocalAssum(nal,bk,_))::bl',typ ->
 	     rebuild_nal (aux,assoc) bk bl' nal (List.length nal) typ
-	  | (Constrexpr.LocalRawDef(na,_))::bl',Constrexpr.CLetIn(_,_,nat,typ') ->
-	    rebuild_bl ((Constrexpr.LocalRawDef(na,replace_vars_constr_expr assoc nat)::aux),assoc)
+	  | (Constrexpr.CLocalDef(na,_,_))::bl',Constrexpr.CLetIn(_,_,nat,ty,typ') ->
+	    rebuild_bl ((Constrexpr.CLocalDef(na,replace_vars_constr_expr assoc nat,Option.map (replace_vars_constr_expr assoc) ty (* ??? *))::aux),assoc)
 	      bl' typ'
 	  | _ -> assert false
       and rebuild_nal (aux,assoc) bk bl' nal lnal typ = 
@@ -586,7 +588,7 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	    then 
 	      let old_nal',new_nal' = List.chop lnal nal' in
 	      let nassoc = make_assoc assoc old_nal' nal in
-	      let assum = LocalRawAssum(nal,bk,replace_vars_constr_expr assoc nal't) in
+	      let assum = CLocalAssum(nal,bk,replace_vars_constr_expr assoc nal't) in
 	      rebuild_bl ((assum :: aux), nassoc) bl' 
 		(if List.is_empty new_nal' && List.is_empty rest
 		 then typ'
@@ -596,7 +598,7 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	    else 
 	      let captured_nal,non_captured_nal = List.chop lnal' nal in
 	      let nassoc = make_assoc assoc nal' captured_nal in
-	      let assum = LocalRawAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't) in
+	      let assum = CLocalAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't) in
 	      rebuild_nal ((assum :: aux), nassoc)
 		bk bl' non_captured_nal (lnal - lnal') (CProdN(Loc.ghost,rest,typ'))
 	  | _ -> assert false
@@ -726,8 +728,8 @@ let rec add_args id new_args b =
       CLambdaN(loc,
 	       List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args  b2)) nal,
 	       add_args id new_args  b1)
-  | CLetIn(loc,na,b1,b2) ->
-      CLetIn(loc,na,add_args id new_args b1,add_args id new_args b2)
+  | CLetIn(loc,na,b1,t,b2) ->
+      CLetIn(loc,na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
   | CAppExpl(loc,(pf,r,us),exprl) ->
       begin
 	match r with
@@ -813,7 +815,7 @@ let rec chop_n_arrow n t =
       | _ -> anomaly (Pp.str "Not enough products")
 
 
-let rec get_args b t : Constrexpr.local_binder list *
+let rec get_args b t : Constrexpr.local_binder_expr list *
     Constrexpr.constr_expr * Constrexpr.constr_expr =
   match b with
     | Constrexpr.CLambdaN (loc, (nal_ta), b') ->
@@ -824,7 +826,7 @@ let rec get_args b t : Constrexpr.local_binder list *
 	  in
 	  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in
 	  (List.map (fun (nal,k,ta) ->
-		       (Constrexpr.LocalRawAssum (nal,k,ta))) nal_ta)@nal_tas, b'',t''
+		       (Constrexpr.CLocalAssum (nal,k,ta))) nal_ta)@nal_tas, b'',t''
 	end
     | _ -> [],b,t
 
@@ -865,13 +867,13 @@ let make_graph (f_ref:global_reference) =
 			  List.flatten
 			    (List.map
 			       (function
-				  | Constrexpr.LocalRawDef (na,_)-> []
-				  | Constrexpr.LocalRawAssum (nal,_,_) ->
+				  | Constrexpr.CLocalDef (na,_,_)-> []
+				  | Constrexpr.CLocalAssum (nal,_,_) ->
 				      List.map
 					(fun (loc,n) ->
 					   CRef(Libnames.Ident(loc, Nameops.out_name n),None))
 					nal
-                                  | Constrexpr.LocalPattern _ -> assert false
+                                  | Constrexpr.CLocalPattern _ -> assert false
 			       )
 			       nal_tas
 			    )

@@ -810,14 +810,14 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         iraise (e, info) in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
 
-  | GLetIn(loc,name,c1,c2)      ->
-    let j =
-      match c1 with
-      | GCast (loc, c, CastConv t) ->
-	let tj = pretype_type empty_valcon env evdref lvar t in
-	  pretype (mk_tycon tj.utj_val) env evdref lvar c
-      | _ -> pretype empty_tycon env evdref lvar c1
-    in
+  | GLetIn(loc,name,c1,t,c2)      ->
+    let tycon1 =
+      match t with
+      | Some t ->
+	 mk_tycon (pretype_type empty_valcon env evdref lvar t).utj_val
+      | None ->
+         empty_tycon in
+    let j = pretype tycon1 env evdref lvar c1 in
     let t = evd_comb1 (Evarsolve.refresh_universes
       ~onlyalg:true ~status:Evd.univ_flexible (Some false) env.ExtraEnv.env)
       evdref j.uj_type in

@@ -331,7 +331,7 @@ let extract_nondep_branches test c b l =
     match r,l with
       | r, [] -> r
       | GLambda (_,_,_,_,t), false::l -> strip l t
-      | GLetIn (_,_,_,t), true::l -> strip l t
+      | GLetIn (_,_,_,_,t), true::l -> strip l t
       (* FIXME: do we need adjustment? *)
       | _,_ -> assert false in
   if test c l then Some (strip l b) else None
@@ -341,7 +341,7 @@ let it_destRLambda_or_LetIn_names l c =
     match c, l with
       | _, [] -> (List.rev nal,c)
       | GLambda (_,na,_,_,c), false::l -> aux l (na::nal) c
-      | GLetIn (_,na,_,c), true::l -> aux l (na::nal) c
+      | GLetIn (_,na,_,_,c), true::l -> aux l (na::nal) c
       | _, true::l -> (* let-expansion *) aux l (Anonymous :: nal) c
       | _, false::l ->
           (* eta-expansion *)
@@ -690,9 +690,8 @@ and detype_binder (lax,isgoal as flags) bk avoid env sigma na body ty c =
       let c = detype (lax,false) avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
       let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
-      let c = if s != InProp then c else
-          GCast (dl, c, CastConv (detype (lax,false) avoid env sigma ty)) in
-      GLetIn (dl, na', c, r)
+      let t = if s != InProp then None else Some (detype (lax,false) avoid env sigma ty) in
+      GLetIn (dl, na', c, t, r)
 
 let detype_rel_context ?(lax=false) where avoid env sigma sign =
   let where = Option.map (fun c -> it_mkLambda_or_LetIn c sign) where in
@@ -764,9 +763,9 @@ let detype_closed_glob ?lax isgoal avoid env sigma t =
     | GProd (loc,id,k,t,c) ->
         let id = convert_name cl id in
         GProd(loc,id,k,detype_closed_glob cl t, detype_closed_glob cl c)
-    | GLetIn (loc,id,b,e) ->
+    | GLetIn (loc,id,b,t,e) ->
         let id = convert_name cl id in
-        GLetIn(loc,id,detype_closed_glob cl b, detype_closed_glob cl e)
+        GLetIn(loc,id,detype_closed_glob cl b, Option.map (detype_closed_glob cl) t, detype_closed_glob cl e)
     | GLetTuple (loc,ids,(n,r),b,e) ->
         let ids = List.map (convert_name cl) ids in
         let n = convert_name cl n in
@@ -825,10 +824,12 @@ let rec subst_glob_constr subst raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  GProd (loc,n,bk,r1',r2')
 
-  | GLetIn (loc,n,r1,r2) ->
-      let r1' = subst_glob_constr subst r1 and r2' = subst_glob_constr subst r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  GLetIn (loc,n,r1',r2')
+  | GLetIn (loc,n,r1,t,r2) ->
+      let r1' = subst_glob_constr subst r1 in
+      let t' = Option.smartmap (subst_glob_constr subst) t in
+      let r2' = subst_glob_constr subst r2 in
+	if r1' == r1 && t == t' && r2' == r2 then raw else
+	  GLetIn (loc,n,r1',t',r2')
 
   | GCases (loc,sty,rtno,rl,branches) ->
       let rtno' = Option.smartmap (subst_glob_constr subst) rtno

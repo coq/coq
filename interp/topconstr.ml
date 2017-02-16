@@ -86,13 +86,13 @@ let rec fold_constr_expr_binders g f n acc b = function
       f n acc b
 
 let rec fold_local_binders g f n acc b = function
-  | LocalRawAssum (nal,bk,t)::l ->
+  | CLocalAssum (nal,bk,t)::l ->
       let nal = snd (List.split nal) in
       let n' = List.fold_right (name_fold g) nal n in
       f n (fold_local_binders g f n' acc b l) t
-  | LocalRawDef ((_,na),t)::l ->
-      f n (fold_local_binders g f (name_fold g na n) acc b l) t
-  | LocalPattern (_,pat,t)::l ->
+  | CLocalDef ((_,na),c,t)::l ->
+      Option.fold_left (f n) (f n (fold_local_binders g f (name_fold g na n) acc b l) c) t
+  | CLocalPattern (_,pat,t)::l ->
       let acc = fold_local_binders g f (cases_pattern_fold_names g n pat) acc b l in
       Option.fold_left (f n) acc t
   | [] ->
@@ -102,7 +102,8 @@ let fold_constr_expr_with_binders g f n acc = function
   | CAppExpl (loc,(_,_,_),l) -> List.fold_left (f n) acc l
   | CApp (loc,(_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (_,l,b) | CLambdaN (_,l,b) -> fold_constr_expr_binders g f n acc b l
-  | CLetIn (_,na,a,b) -> fold_constr_expr_binders g f n acc b [[na],default_binder_kind,a]
+  | CLetIn (_,na,a,t,b) ->
+     f (name_fold g (snd na) n) (Option.fold_left (f n) (f n acc a) t) b
   | CCast (loc,a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
   | CCast (loc,a,CastCoerce) -> f n acc a
   | CNotation (_,_,(l,ll,bll)) ->
@@ -157,7 +158,7 @@ let split_at_annot bl na =
       end
   | Some (loc, id) ->
       let rec aux acc = function
-	| LocalRawAssum (bls, k, t) as x :: rest ->
+	| CLocalAssum (bls, k, t) as x :: rest ->
             let test (_, na) = match na with
             | Name id' -> Id.equal id id'
             | Anonymous -> false
@@ -168,12 +169,12 @@ let split_at_annot bl na =
             | _ ->
               let ans = match l with
               | [] -> acc
-              | _ -> LocalRawAssum (l, k, t) :: acc
+              | _ -> CLocalAssum (l, k, t) :: acc
               in
-              (List.rev ans, LocalRawAssum (r, k, t) :: rest)
+              (List.rev ans, CLocalAssum (r, k, t) :: rest)
             end
-	| LocalRawDef _ as x :: rest -> aux (x :: acc) rest
-        | LocalPattern _ :: rest -> assert false
+	| CLocalDef _ as x :: rest -> aux (x :: acc) rest
+        | CLocalPattern _ :: rest -> assert false
 	| [] ->
             user_err ~loc 
 			 (str "No parameter named " ++ Nameops.pr_id id ++ str".")
@@ -192,11 +193,11 @@ let map_binders f g e bl =
 let map_local_binders f g e bl =
   (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
   let h (e,bl) = function
-      LocalRawAssum(nal,k,ty) ->
-        (map_binder g e nal, LocalRawAssum(nal,k,f e ty)::bl)
-    | LocalRawDef((loc,na),ty) ->
-        (name_fold g na e, LocalRawDef((loc,na),f e ty)::bl)
-    | LocalPattern _ ->
+      CLocalAssum(nal,k,ty) ->
+        (map_binder g e nal, CLocalAssum(nal,k,f e ty)::bl)
+    | CLocalDef((loc,na),c,ty) ->
+        (name_fold g na e, CLocalDef((loc,na),f e c,Option.map (f e) ty)::bl)
+    | CLocalPattern _ ->
         assert false in
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
@@ -209,7 +210,8 @@ let map_constr_expr_with_binders g f e = function
       let (e,bl) = map_binders f g e bl in CProdN (loc,bl,f e b)
   | CLambdaN (loc,bl,b) ->
       let (e,bl) = map_binders f g e bl in CLambdaN (loc,bl,f e b)
-  | CLetIn (loc,na,a,b) -> CLetIn (loc,na,f e a,f (name_fold g (snd na) e) b)
+  | CLetIn (loc,na,a,t,b) ->
+      CLetIn (loc,na,f e a,Option.map (f e) t,f (name_fold g (snd na) e) b)
   | CCast (loc,a,c) -> CCast (loc,f e a, Miscops.map_cast_type (f e) c)
   | CNotation (loc,n,(l,ll,bll)) ->
       (* This is an approximation because we don't know what binds what *)

@@ -304,9 +304,9 @@ end) = struct
             pr_sep_com spc (pr ltop) rhs))
 
   let begin_of_binder = function
-  LocalRawDef((loc,_),_) -> fst (Loc.unloc loc)
-    | LocalRawAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
-    | LocalPattern(loc,_,_) -> fst (Loc.unloc loc)
+    | CLocalDef((loc,_),_,_) -> fst (Loc.unloc loc)
+    | CLocalAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
+    | CLocalPattern(loc,_,_) -> fst (Loc.unloc loc)
     | _ -> assert false
 
   let begin_of_binders = function
@@ -347,15 +347,13 @@ end) = struct
             hov 1 (if many then surround_impl b s else surround_implicit b s)
 
   let pr_binder_among_many pr_c = function
-    | LocalRawAssum (nal,k,t) ->
+    | CLocalAssum (nal,k,t) ->
       pr_binder true pr_c (nal,k,t)
-    | LocalRawDef (na,c) ->
-      let c,topt = match c with
-        | CCast(_,c, (CastConv t|CastVM t|CastNative t)) -> c, t
-        | _ -> c, CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
-      surround (pr_lname na ++ pr_opt_type pr_c topt ++
-                  str":=" ++ cut() ++ pr_c c)
-    | LocalPattern (loc,p,tyo) ->
+    | CLocalDef (na,c,topt) ->
+      surround (pr_lname na ++
+                pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr_c t) topt ++
+                str" :=" ++ spc() ++ pr_c c)
+    | CLocalPattern (loc,p,tyo) ->
       let p = pr_patt lsimplepatt p in
       match tyo with
         | None ->
@@ -369,9 +367,9 @@ end) = struct
   let pr_delimited_binders kw sep pr_c bl =
     let n = begin_of_binders bl in
     match bl with
-      | [LocalRawAssum (nal,k,t)] ->
+      | [CLocalAssum (nal,k,t)] ->
         kw n ++ pr_binder false pr_c (nal,k,t)
-      | (LocalRawAssum _ | LocalPattern _) :: _ as bdl ->
+      | (CLocalAssum _ | CLocalPattern _) :: _ as bdl ->
         kw n ++ pr_undelimited_binders sep pr_c bdl
       | _ -> assert false
 
@@ -382,33 +380,33 @@ end) = struct
   let rec extract_prod_binders = function
   (*  | CLetIn (loc,na,b,c) as x ->
       let bl,c = extract_prod_binders c in
-      if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
+      if bl = [] then [], x else CLocalDef (na,b) :: bl, c*)
     | CProdN (loc,[],c) ->
       extract_prod_binders c
     | CProdN (loc,[[_,Name id],bk,t],
               CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)]))
          when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_prod_binders b in
-      LocalPattern (loc,p,None) :: bl, c
+      CLocalPattern (loc,p,None) :: bl, c
     | CProdN (loc,(nal,bk,t)::bl,c) ->
       let bl,c = extract_prod_binders (CProdN(loc,bl,c)) in
-      LocalRawAssum (nal,bk,t) :: bl, c
+      CLocalAssum (nal,bk,t) :: bl, c
     | c -> [], c
 
   let rec extract_lam_binders = function
   (*  | CLetIn (loc,na,b,c) as x ->
       let bl,c = extract_lam_binders c in
-      if bl = [] then [], x else LocalRawDef (na,b) :: bl, c*)
+      if bl = [] then [], x else CLocalDef (na,b) :: bl, c*)
     | CLambdaN (loc,[],c) ->
       extract_lam_binders c
     | CLambdaN (loc,[[_,Name id],bk,t],
                 CCases (_,LetPatternStyle,None, [CRef (Ident (_,id'),None),None,None],[(_,[_,[p]],b)]))
          when Id.equal id id' && not (Id.Set.mem id (Topconstr.free_vars_of_constr_expr b)) ->
       let bl,c = extract_lam_binders b in
-      LocalPattern (loc,p,None) :: bl, c
+      CLocalPattern (loc,p,None) :: bl, c
     | CLambdaN (loc,(nal,bk,t)::bl,c) ->
       let bl,c = extract_lam_binders (CLambdaN(loc,bl,c)) in
-      LocalRawAssum (nal,bk,t) :: bl, c
+      CLocalAssum (nal,bk,t) :: bl, c
     | c -> [], c
 
   let split_lambda = function
@@ -437,7 +435,7 @@ end) = struct
       let (na,_,def) = split_lambda def in
       let (na,t,typ) = split_product na typ in
       let (bl,typ,def) = split_fix (n-1) typ def in
-      (LocalRawAssum ([na],default_binder_kind,t)::bl,typ,def)
+      (CLocalAssum ([na],default_binder_kind,t)::bl,typ,def)
 
   let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
     let pr_body =
@@ -454,9 +452,9 @@ end) = struct
         match (ro : Constrexpr.recursion_order_expr) with
           | CStructRec ->
             let names_of_binder = function
-              | LocalRawAssum (nal,_,_) -> nal
-              | LocalRawDef (_,_) -> []
-              | LocalPattern _ -> assert false
+              | CLocalAssum (nal,_,_) -> nal
+              | CLocalDef (_,_,_) -> []
+              | CLocalPattern _ -> assert false
             in let ids = List.flatten (List.map names_of_binder bl) in
                if List.length ids > 1 then
                  spc() ++ str "{" ++ keyword "struct" ++ spc () ++ pr_id id ++ str"}"
@@ -575,7 +573,7 @@ end) = struct
               pr_fun_sep ++ pr spc ltop a),
           llambda
         )
-      | CLetIn (_,(_,Name x),(CFix(_,(_,x'),[_])|CCoFix(_,(_,x'),[_]) as fx), b)
+      | CLetIn (_,(_,Name x),(CFix(_,(_,x'),[_])|CCoFix(_,(_,x'),[_]) as fx), t, b)
           when Id.equal x x' ->
         return (
           hv 0 (
@@ -585,11 +583,12 @@ end) = struct
               pr spc ltop b),
           lletin
         )
-      | CLetIn (_,x,a,b) ->
+      | CLetIn (_,x,a,t,b) ->
         return (
           hv 0 (
-            hov 2 (keyword "let" ++ spc () ++ pr_lname x ++ str " :="
-                   ++ pr spc ltop a ++ spc ()
+            hov 2 (keyword "let" ++ spc () ++ pr_lname x
+                   ++ pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr mt ltop t) t
+                   ++ str " :=" ++ pr spc ltop a ++ spc ()
                    ++ keyword "in") ++
               pr spc ltop b),
           lletin

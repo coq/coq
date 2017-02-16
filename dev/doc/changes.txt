@@ -27,6 +27,17 @@ The following type aliases where removed
 
 The module Constrarg was merged into Stdarg.
 
+The following types have been moved and modified:
+
+  local_binder -> local_binder_expr
+  glob_binder merged with glob_decl
+
+The following constructors have been renamed:
+
+  LocalRawDef -> CLocalDef
+  LocalRawAssum -> CLocalAssum
+  LocalPattern -> CLocalPattern
+
 ** Ltac API **
 
 Many Ltac specific API has been moved in its own ltac/ folder. Amongst other

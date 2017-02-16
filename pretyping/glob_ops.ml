@@ -77,8 +77,8 @@ let rec glob_constr_eq c1 c2 = match c1, c2 with
 | GProd (_, na1, bk1, t1, c1), GProd (_, na2, bk2, t2, c2) ->
   Name.equal na1 na2 && binding_kind_eq bk1 bk2 &&
   glob_constr_eq t1 t2 && glob_constr_eq c1 c2
-| GLetIn (_, na1, t1, c1), GLetIn (_, na2, t2, c2) ->
-  Name.equal na1 na2 && glob_constr_eq t1 t2 && glob_constr_eq c1 c2
+| GLetIn (_, na1, b1, t1, c1), GLetIn (_, na2, b2, t2, c2) ->
+  Name.equal na1 na2 && glob_constr_eq b1 b2 && Option.equal glob_constr_eq t1 t2 && glob_constr_eq c1 c2
 | GCases (_, st1, c1, tp1, cl1), GCases (_, st2, c2, tp2, cl2) ->
   case_style_eq st1 st2 && Option.equal glob_constr_eq c1 c2 &&
   List.equal tomatch_tuple_eq tp1 tp2 &&
@@ -152,10 +152,11 @@ let map_glob_constr_left_to_right f = function
       let comp1 = f ty in
       let comp2 = f c in
       GProd (loc,na,bk,comp1,comp2)
-  | GLetIn (loc,na,b,c) ->
+  | GLetIn (loc,na,b,t,c) ->
       let comp1 = f b in
+      let compt = Option.map f t in
       let comp2 = f c in
-      GLetIn (loc,na,comp1,comp2)
+      GLetIn (loc,na,comp1,compt,comp2)
   | GCases (loc,sty,rtntypopt,tml,pl) ->
       let comp1 = Option.map f rtntypopt in
       let comp2 = Util.List.map_left (fun (tm,x) -> (f tm,x)) tml in
@@ -189,8 +190,10 @@ let fold_return_type f acc (na,tyopt) = Option.fold_left f acc tyopt
 let fold_glob_constr f acc = function
   | GVar _ -> acc
   | GApp (_,c,args) -> List.fold_left f (f acc c) args
-  | GLambda (_,_,_,b,c) | GProd (_,_,_,b,c) | GLetIn (_,_,b,c) ->
+  | GLambda (_,_,_,b,c) | GProd (_,_,_,b,c) ->
     f (f acc b) c
+  | GLetIn (_,_,b,t,c) ->
+    f (Option.fold_left f (f acc b) t) c
   | GCases (_,_,rtntypopt,tml,pl) ->
     let fold_pattern acc (_,idl,p,c) = f acc c in
     List.fold_left fold_pattern
@@ -225,8 +228,8 @@ let occur_glob_constr id =
       (occur ty) || (not (same_id na id) && (occur c))
     | GProd (loc,na,bk,ty,c) ->
       (occur ty) || (not (same_id na id) && (occur c))
-    | GLetIn (loc,na,b,c) ->
-      (occur b) || (not (same_id na id) && (occur c))
+    | GLetIn (loc,na,b,t,c) ->
+      (Option.fold_left (fun b t -> occur t || b) (occur b) t) || (not (same_id na id) && (occur c))
     | GCases (loc,sty,rtntypopt,tml,pl) ->
 	(occur_option rtntypopt)
         || (List.exists (fun (tm,_) -> occur tm) tml)
@@ -270,10 +273,15 @@ let free_glob_vars =
   let rec vars bounded vs = function
     | GVar (loc,id') -> if Id.Set.mem id' bounded then vs else Id.Set.add id' vs
     | GApp (loc,f,args) -> List.fold_left (vars bounded) vs (f::args)
-    | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) | GLetIn (loc,na,ty,c) ->
+    | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) ->
 	let vs' = vars bounded vs ty in
 	let bounded' = add_name_to_ids bounded na in
        vars bounded' vs' c
+    | GLetIn (loc,na,b,ty,c) ->
+	let vs' = vars bounded vs b in
+	let vs'' = Option.fold_left (vars bounded) vs' ty in
+	let bounded' = add_name_to_ids bounded na in
+       vars bounded' vs'' c
     | GCases (loc,sty,rtntypopt,tml,pl) ->
 	let vs1 = vars_option bounded vs rtntypopt in
 	let vs2 = List.fold_left (fun vs (tm,_) -> vars bounded vs tm) vs1 tml in
@@ -346,7 +354,7 @@ let add_and_check_ident id set =
 
 let bound_glob_vars =
   let rec vars bound = function
-    | GLambda (_,na,_,_,_) | GProd (_,na,_,_,_) | GLetIn (_,na,_,_) as c ->
+    | GLambda (_,na,_,_,_) | GProd (_,na,_,_,_) | GLetIn (_,na,_,_,_) as c ->
         let bound = name_fold add_and_check_ident na bound in
         fold_glob_constr vars bound c
     | GCases (loc,sty,rtntypopt,tml,pl) ->
@@ -460,7 +468,7 @@ let loc_of_glob_constr = function
   | GApp (loc,_,_) -> loc
   | GLambda (loc,_,_,_,_) -> loc
   | GProd (loc,_,_,_,_) -> loc
-  | GLetIn (loc,_,_,_) -> loc
+  | GLetIn (loc,_,_,_,_) -> loc
   | GCases (loc,_,_,_,_) -> loc
   | GLetTuple (loc,_,_,_,_) -> loc
   | GIf (loc,_,_,_,_) -> loc
@@ -512,9 +520,9 @@ let rec rename_glob_vars l = function
   | GLambda (loc,na,bk,t,c) ->
       let na',l' = update_subst na l in
       GLambda (loc,na',bk,rename_glob_vars l t,rename_glob_vars l' c)
-  | GLetIn (loc,na,b,c) ->
+  | GLetIn (loc,na,b,t,c) ->
       let na',l' = update_subst na l in
-      GLetIn (loc,na',rename_glob_vars l b,rename_glob_vars l' c)
+      GLetIn (loc,na',rename_glob_vars l b,Option.map (rename_glob_vars l) t,rename_glob_vars l' c)
   (* Lazy strategy: we fail if a collision with renaming occurs, rather than renaming further *)
   | GCases (loc,ci,po,tomatchl,cls) ->
       let test_pred_pat (na,ino) =

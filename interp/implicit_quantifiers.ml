@@ -102,19 +102,20 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
 let ids_of_names l =
   List.fold_left (fun acc x -> match snd x with Name na -> na :: acc | Anonymous -> acc) [] l
 
-let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder list) =
+let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr list) =
   let rec aux bdvars l c = match c with
-      ((LocalRawAssum (n, _, c)) :: tl) ->
+      ((CLocalAssum (n, _, c)) :: tl) ->
 	let bound = ids_of_names n in
 	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
 	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
-    | ((LocalRawDef (n, c)) :: tl) ->
+    | ((CLocalDef (n, c, t)) :: tl) ->
 	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
 	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
+	let l'' = Option.fold_left (fun l t -> free_vars_of_constr_expr t ~bound:bdvars l) l' t in
+	  aux (Id.Set.union (ids_of_list bound) bdvars) l'' tl
 
-    | LocalPattern _ :: tl -> assert false
+    | CLocalPattern _ :: tl -> assert false
     | [] -> bdvars, l
   in aux bound l binders
 
@@ -131,10 +132,15 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
 	  else (id, loc) :: vs
 	else vs
     | GApp (loc,f,args) -> List.fold_left (vars bound) vs (f::args)
-    | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) | GLetIn (loc,na,ty,c) ->
+    | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) ->
 	let vs' = vars bound vs ty in
 	let bound' = add_name_to_ids bound na in
 	vars bound' vs' c
+    | GLetIn (loc,na,b,ty,c) ->
+	let vs' = vars bound vs b in
+	let vs'' = Option.fold_left (vars bound) vs' ty in
+	let bound' = add_name_to_ids bound na in
+	vars bound' vs'' c
     | GCases (loc,sty,rtntypopt,tml,pl) ->
 	let vs1 = vars_option bound vs rtntypopt in
 	let vs2 = List.fold_left (fun vs (tm,_) -> vars bound vs tm) vs1 tml in
@@ -318,7 +324,7 @@ let implicits_of_glob_constr ?(with_products=true) l =
             | _ -> ()
             in []
       | GLambda (loc, na, bk, t, b) -> abs na bk b
-      | GLetIn (loc, na, t, b) -> aux i b
+      | GLetIn (loc, na, b, t, c) -> aux i c
       | GRec (_, fix_kind, nas, args, tys, bds) ->
        let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
        List.fold_left_i (fun i l (na,bk,_,_) -> add_impl i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)

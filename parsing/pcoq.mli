@@ -161,11 +161,11 @@ module Constr :
     val pattern : cases_pattern_expr Gram.entry
     val constr_pattern : constr_expr Gram.entry
     val lconstr_pattern : constr_expr Gram.entry
-    val closed_binder : local_binder list Gram.entry
-    val binder : local_binder list Gram.entry (* closed_binder or variable *)
-    val binders : local_binder list Gram.entry (* list of binder *)
-    val open_binders : local_binder list Gram.entry
-    val binders_fixannot : (local_binder list * (Id.t located option * recursion_order_expr)) Gram.entry
+    val closed_binder : local_binder_expr list Gram.entry
+    val binder : local_binder_expr list Gram.entry (* closed_binder or variable *)
+    val binders : local_binder_expr list Gram.entry (* list of binder *)
+    val open_binders : local_binder_expr list Gram.entry
+    val binders_fixannot : (local_binder_expr list * (Id.t located option * recursion_order_expr)) Gram.entry
     val typeclass_constraint : (Name.t located * bool * constr_expr) Gram.entry
     val record_declaration : constr_expr Gram.entry
     val appl_arg : (constr_expr * explicitation located option) Gram.entry
