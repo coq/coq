@@ -184,7 +184,6 @@ val register_proof_block_delimiter :
 val state_computed_hook : (Stateid.t -> in_cache:bool -> unit) Hook.t
 val parse_error_hook :
   (Feedback.edit_or_state_id -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
-val execution_error_hook : (Stateid.t -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val unreachable_state_hook : (Stateid.t -> Exninfo.iexn -> unit) Hook.t
 (* ready means that master has it at hand *)
 val state_ready_hook : (Stateid.t -> unit) Hook.t
@@ -213,12 +212,6 @@ val interp : bool -> vernac_expr located -> unit
 (* Queries for backward compatibility *)
 val current_proof_depth : unit -> int
 val get_all_proof_names : unit -> Id.t list
-val get_current_proof_name : unit -> Id.t option
-val show_script : ?proof:Proof_global.closed_proof -> unit -> unit
 
 (* Hooks to be set by other Coq components in order to break file cycles *)
 val process_error_hook : Future.fix_exn Hook.t
-val interp_hook : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
-  Loc.t * Vernacexpr.vernac_expr -> unit) Hook.t
-val with_fail_hook : (bool -> (unit -> unit) -> unit) Hook.t
-val get_fix_exn : unit -> (Exninfo.iexn -> Exninfo.iexn)

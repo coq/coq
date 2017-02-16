@@ -24,11 +24,13 @@ open Ppvernac
 open Vernac_classifier
 open Feedback
 
+let execution_error state_id loc msg =
+    feedback ~id:(State state_id)
+      (Message (Error, Some loc, pp_to_richpp msg))
+
 module Hooks = struct
 
 let process_error, process_error_hook = Hook.make ()
-let interp, interp_hook = Hook.make ()
-let with_fail, with_fail_hook = Hook.make ()
 
 let state_computed, state_computed_hook = Hook.make
  ~default:(fun state_id ~in_cache ->
@@ -47,10 +49,6 @@ let forward_feedback, forward_feedback_hook =
 let parse_error, parse_error_hook = Hook.make
  ~default:(fun id loc msg ->
         feedback ~id (Message(Error, Some loc, pp_to_richpp msg))) ()
-
-let execution_error, execution_error_hook = Hook.make
- ~default:(fun state_id loc msg ->
-    feedback ~id:(State state_id) (Message(Error, Some loc, pp_to_richpp msg))) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
  ~default:(fun _ _ -> ()) ()
@@ -104,26 +102,6 @@ let may_pierce_opaque = function
   | { expr = VernacExtend (("ExtractionInlinedConstant",_), _) } -> true
   | { expr = VernacExtend (("ExtractionInductive",_), _) } -> true
   | _ -> false
-
-(* Wrapper for Vernacentries.interp to set the feedback id *)
-let vernac_interp ?proof id ?route { verbose; loc; expr } =
-  let rec internal_command = function
-    | VernacResetName _ | VernacResetInitial | VernacBack _
-    | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
-    | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true
-    | VernacTime (_,e) | VernacTimeout (_,e) | VernacRedirect (_,(_,e)) -> internal_command e
-    | _ -> false in
-  if internal_command expr then begin
-    prerr_endline (fun () -> "ignoring " ^ Pp.string_of_ppcmds(pr_vernac expr))
-  end else begin
-    set_id_for_feedback ?route (State id);
-    Aux_file.record_in_aux_set_at loc;
-    prerr_endline (fun () -> "interpreting " ^ Pp.string_of_ppcmds(pr_vernac expr));
-    try Hooks.(call interp ?verbosely:(Some verbose) ?proof (loc, expr))
-    with e ->
-      let e = CErrors.push e in
-      iraise Hooks.(call_process_error_once e)
-  end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
 let indentation_of_string s =
@@ -860,7 +838,7 @@ end = struct (* {{{ *)
     | None ->
         let loc = Option.default Loc.ghost (Loc.get_loc info) in
         let (e, info) = Hooks.(call_process_error_once (e, info)) in
-        Hooks.(call execution_error id loc (iprint (e, info)));
+        execution_error id loc (iprint (e, info));
         (e, Stateid.add info ~valid id)
 
   let same_env { system = s1 } { system = s2 } =
@@ -910,6 +888,126 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
+(* indentation code for Show Script, initially contributed
+ * by D. de Rauglaudre. Should be moved away.
+ *)
+
+module ShowScript = struct
+
+let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
+  (* ng1 : number of goals remaining at the current level (before cmd)
+     ngl1 : stack of previous levels with their remaining goals
+     ng : number of goals after the execution of cmd
+     beginend : special indentation stack for { } *)
+  let ngprev = List.fold_left (+) ng1 ngl1 in
+  let new_ngl =
+    if ng > ngprev then
+      (* We've branched *)
+      (ng - ngprev + 1, ng1 - 1 :: ngl1)
+    else if ng < ngprev then
+      (* A subgoal have been solved. Let's compute the new current level
+	 by discarding all levels with 0 remaining goals. *)
+      let rec loop = function
+	| (0, ng2::ngl2) -> loop (ng2,ngl2)
+	| p -> p
+      in loop (ng1-1, ngl1)
+    else
+      (* Standard case, same goal number as before *)
+      (ng1, ngl1)
+  in
+  (* When a subgoal have been solved, separate this block by an empty line *)
+  let new_nl = (ng < ngprev)
+  in
+  (* Indentation depth *)
+  let ind = List.length ngl1
+  in
+  (* Some special handling of bullets and { }, to get a nicer display *)
+  let pred n = max 0 (n-1) in
+  let ind, nl, new_beginend = match cmd with
+    | VernacSubproof _ -> pred ind, nl, (pred ind)::beginend
+    | VernacEndSubproof -> List.hd beginend, false, List.tl beginend
+    | VernacBullet _ -> pred ind, nl, beginend
+    | _ -> ind, nl, beginend
+  in
+  let pp =
+    (if nl then fnl () else mt ()) ++
+    (hov (ind+1) (str (String.make ind ' ') ++ Ppvernac.pr_vernac cmd))
+  in
+  (new_ngl, new_nl, new_beginend, pp :: ppl)
+
+let get_script prf =
+  let branch, test =
+    match prf with
+    | None -> VCS.Branch.master, fun _ -> true
+    | Some name -> VCS.current_branch (),fun nl -> nl=[] || List.mem name nl in
+  let rec find acc id =
+    if Stateid.equal id Stateid.initial ||
+       Stateid.equal id Stateid.dummy then acc else
+    let view = VCS.visit id in
+    match view.step with
+    | `Fork((_,_,_,ns), _) when test ns -> acc
+    | `Qed (qed, proof) -> find [qed.qast.expr, (VCS.get_info id).n_goals] proof
+    | `Sideff (`Ast (x,_)) ->
+         find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
+    | `Sideff (`Id id)  -> find acc id
+    | `Cmd {cast = x; ctac} when ctac -> (* skip non-tactics *)
+         find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
+    | `Cmd _ -> find acc view.next
+    | `Alias (id,_) -> find acc id
+    | `Fork _ -> find acc view.next
+    in
+  find [] (VCS.get_branch_pos branch)
+
+let show_script ?proof () =
+  try
+    let prf =
+      try match proof with
+      | None -> Some (Pfedit.get_current_proof_name ())
+      | Some (p,_) -> Some (p.Proof_global.id)
+      with Proof_global.NoCurrentProof -> None
+    in
+    let cmds = get_script prf in
+    let _,_,_,indented_cmds =
+      List.fold_left indent_script_item ((1,[]),false,[],[]) cmds
+    in
+    let indented_cmds = List.rev (indented_cmds) in
+    msg_notice (v 0 (prlist_with_sep fnl (fun x -> x) indented_cmds))
+  with Vcs_aux.Expired -> ()
+
+end
+
+(* Wrapper for Vernacentries.interp to set the feedback id *)
+(* It is currently called 19 times, this number should be certainly
+   reduced... *)
+let stm_vernac_interp ?proof id ?route { verbose; loc; expr } =
+  (* The Stm will gain the capability to interpret commmads affecting
+     the whole document state, such as backtrack, etc... so we start
+     to design the stm command interpreter now *)
+  set_id_for_feedback ?route (State id);
+  Aux_file.record_in_aux_set_at loc;
+  (* We need to check if a command should be filtered from
+   * vernac_entries, as it cannot handle it. This should go away in
+   * future refactorings.
+   *)
+  let rec is_filtered_command = function
+  | VernacResetName _ | VernacResetInitial | VernacBack _
+  | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
+  | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true
+  | VernacTime (_,e) | VernacTimeout (_,e) | VernacRedirect (_,(_,e)) -> is_filtered_command e
+  | _ -> false
+  in
+  let aux_interp cmd =
+  if is_filtered_command cmd then
+    prerr_endline (fun () -> "ignoring " ^ Pp.string_of_ppcmds(pr_vernac expr))
+  else match cmd with
+  | VernacShow ShowScript -> ShowScript.show_script ()
+  | expr ->
+    prerr_endline (fun () -> "interpreting " ^ Pp.string_of_ppcmds(pr_vernac expr));
+    try Vernacentries.interp ?verbosely:(Some verbose) ?proof (loc, expr)
+    with e ->
+      let e = CErrors.push e in
+      iraise Hooks.(call_process_error_once e)
+  in aux_interp expr
 
 (****************************** CRUFT *****************************************)
 (******************************************************************************)
@@ -1287,7 +1385,7 @@ end = struct (* {{{ *)
         let info = Stateid.add ~valid:start Exninfo.null start in
         let e = (RemoteException (strbrk s), info) in
         t_assign (`Exn e);
-        Hooks.(call execution_error start Loc.ghost (strbrk s));
+        execution_error start Loc.ghost (strbrk s);
         feedback (InProgress ~-1)
 
   let build_proof_here ~drop_pt (id,valid) loc eop =
@@ -1321,7 +1419,7 @@ end = struct (* {{{ *)
             Proof_global.close_future_proof stop (Future.from_val ~fix_exn p) in
           let terminator = (* The one sent by master is an InvalidKey *)
             Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
-          vernac_interp stop
+          stm_vernac_interp stop
             ~proof:(pobject, terminator)
             { verbose = false; loc; indentation = 0; strlen = 0;
               expr = (VernacEndProof (Proved (Opaque None,None))) }) in
@@ -1463,7 +1561,7 @@ end = struct (* {{{ *)
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
       Reach.known_state ~cache:`No start;
-      vernac_interp stop ~proof
+      stm_vernac_interp stop ~proof
         { verbose = false; loc; indentation = 0; strlen = 0;
           expr = (VernacEndProof (Proved (Opaque None,None))) };
       `OK proof
@@ -1714,7 +1812,7 @@ end = struct (* {{{ *)
        else begin
         let (i, ast) = r_ast in
         Proof_global.simple_with_current_proof (fun _ p -> Proof.focus focus_cond () i p);
-        vernac_interp r_state_fb ast;
+        stm_vernac_interp r_state_fb ast;
         let _,_,_,_,sigma = Proof.proof (Proof_global.give_me_the_proof ()) in
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> RespNoProgress
@@ -1750,7 +1848,7 @@ end = struct (* {{{ *)
         | VernacTime (_,e) | VernacRedirect (_,(_,e)) -> find true fail e
         | VernacFail e -> find time true e
         | _ -> e, time, fail in find false false e in
-    Hooks.call Hooks.with_fail fail (fun () ->
+    Vernacentries.with_fail fail (fun () ->
     (if time then System.with_time false else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
     Proof_global.with_current_proof (fun _ p ->
@@ -1843,7 +1941,7 @@ end = struct (* {{{ *)
     VCS.print ();
     Reach.known_state ~cache:`No r_where;
     try
-      vernac_interp r_for { r_what with verbose = true };
+      stm_vernac_interp r_for { r_what with verbose = true };
       feedback ~id:(State r_for) Processed
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
@@ -2052,7 +2150,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                Proof_global.with_current_proof (fun _ p ->
                  feedback ~id:(State id) Feedback.AddedAxiom;
                  fst (Pfedit.solve Vernacexpr.SelectAll None tac p), ());
-               Option.iter (fun expr -> vernac_interp id {
+               Option.iter (fun expr -> stm_vernac_interp id {
                   verbose = true; loc = Loc.ghost; expr; indentation = 0;
                   strlen = 0 })
                recovery_command
@@ -2131,24 +2229,24 @@ let known_state ?(redefine_qed=false) ~cache id =
             resilient_tactic id cblock (fun () ->
               reach view.next;
               Hooks.(call tactic_being_run true); 
-              vernac_interp id x;
+              stm_vernac_interp id x;
               Hooks.(call tactic_being_run false)); 
 	    if eff then update_global_env ()
           ), (if eff then `Yes else cache), true
       | `Cmd { cast = x; ceff = eff } -> (fun () ->
             resilient_command reach view.next;
-            vernac_interp id x;
+            stm_vernac_interp id x;
 	    if eff then update_global_env ()
           ), (if eff then `Yes else cache), true
       | `Fork ((x,_,_,_), None) -> (fun () ->
             resilient_command reach view.next;
-            vernac_interp id x;
+            stm_vernac_interp id x;
             wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes, true
       | `Fork ((x,_,_,_), Some prev) -> (fun () -> (* nested proof *)
             reach ~cache:`Shallow prev;
             reach view.next;
-            (try vernac_interp id x;
+            (try stm_vernac_interp id x;
             with e when CErrors.noncritical e ->
               let (e, info) = CErrors.push e in
               let info = Stateid.add info ~valid:prev id in
@@ -2198,14 +2296,14 @@ let known_state ?(redefine_qed=false) ~cache id =
                       Proof_global.close_future_proof ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
-                    vernac_interp id ~proof x;
+                    stm_vernac_interp id ~proof x;
                     feedback ~id:(State id) Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
                 Proof_global.discard_all ()
               ), (if redefine_qed then `No else `Yes), true
           | `Sync (name, _, `Immediate) -> (fun () -> 
-                reach eop; vernac_interp id x; Proof_global.discard_all ()
+                reach eop; stm_vernac_interp id x; Proof_global.discard_all ()
               ), `Yes, true
           | `Sync (name, pua, reason) -> (fun () ->
                 log_processing_sync id name reason;
@@ -2226,7 +2324,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 if keep != VtKeepAsAxiom then
                   reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in
-                vernac_interp id ?proof x;
+                stm_vernac_interp id ?proof x;
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at x.loc "proof_check_time"
                   (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));
@@ -2242,7 +2340,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           in
           aux (collect_proof keep (view.next, x) brname brinfo eop)
       | `Sideff (`Ast (x,_)) -> (fun () ->
-            reach view.next; vernac_interp id x; update_global_env ()
+            reach view.next; stm_vernac_interp id x; update_global_env ()
           ), cache, true
       | `Sideff (`Id origin) -> (fun () ->
             reach view.next;
@@ -2430,7 +2528,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
         "  classified as: " ^ string_of_vernac_classification c);
       match c with
       (* PG stuff *)    
-      | VtStm(VtPG,false), VtNow -> vernac_interp Stateid.dummy x; `Ok
+      | VtStm(VtPG,false), VtNow -> stm_vernac_interp Stateid.dummy x; `Ok
       | VtStm(VtPG,_), _ -> anomaly(str "PG command in script or VtLater")
       (* Joining various parts of the document *)
       | VtStm (VtJoinDocument, b), VtNow -> join (); `Ok
@@ -2474,13 +2572,13 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
       (* Query *)
       | VtQuery (false,(report_id,route)), VtNow when tty = true ->
           finish ();
-          (try Future.purify (vernac_interp report_id ~route)
+          (try Future.purify (stm_vernac_interp report_id ~route)
             {x with verbose = true }
            with e when CErrors.noncritical e ->
              let e = CErrors.push e in
              iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
       | VtQuery (false,(report_id,route)), VtNow ->
-          (try vernac_interp report_id ~route x
+          (try stm_vernac_interp report_id ~route x
            with e ->
              let e = CErrors.push e in
              iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
@@ -2553,7 +2651,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           
       (* Side effect on all branches *)
       | VtUnknown, _ when expr = VernacToplevelControl Drop ->
-          vernac_interp (VCS.get_branch_pos head) x; `Ok
+          stm_vernac_interp (VCS.get_branch_pos head) x; `Ok
 
       | VtSideff l, w ->
           let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
@@ -2579,7 +2677,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
             VCS.checkout VCS.Branch.master;
             let mid = VCS.get_branch_pos VCS.Branch.master in
             Reach.known_state ~cache:(interactive ()) mid;
-            vernac_interp id x;
+            stm_vernac_interp id x;
             (* Vernac x may or may not start a proof *)
             if not in_proof && Proof_global.there_are_pending_proofs () then
             begin
@@ -2609,7 +2707,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
     begin match expr with 
       | VernacStm (PGLast _) ->
         if not (VCS.Branch.equal head VCS.Branch.master) then
-          vernac_interp Stateid.dummy
+          stm_vernac_interp Stateid.dummy
             { verbose = true; loc = Loc.ghost; indentation = 0; strlen = 0;
               expr = VernacShow (ShowGoal OpenSubgoals) }
       | _ -> ()
@@ -2856,102 +2954,13 @@ let proofname b = match VCS.get_branch b with
 let get_all_proof_names () =
   List.map unmangle (List.map_filter proofname (VCS.branches ()))
 
-let get_current_proof_name () =
-  Option.map unmangle (proofname (VCS.current_branch ()))
-
-let get_script prf =
-  let branch, test =
-    match prf with
-    | None -> VCS.Branch.master, fun _ -> true
-    | Some name -> VCS.current_branch (),fun nl -> nl=[] || List.mem name nl in
-  let rec find acc id =
-    if Stateid.equal id Stateid.initial ||
-       Stateid.equal id Stateid.dummy then acc else
-    let view = VCS.visit id in
-    match view.step with
-    | `Fork((_,_,_,ns), _) when test ns -> acc
-    | `Qed (qed, proof) -> find [qed.qast.expr, (VCS.get_info id).n_goals] proof
-    | `Sideff (`Ast (x,_)) ->
-         find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
-    | `Sideff (`Id id)  -> find acc id
-    | `Cmd {cast = x; ctac} when ctac -> (* skip non-tactics *)
-         find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
-    | `Cmd _ -> find acc view.next
-    | `Alias (id,_) -> find acc id
-    | `Fork _ -> find acc view.next
-    in
-  find [] (VCS.get_branch_pos branch)
-
-(* indentation code for Show Script, initially contributed
-   by D. de Rauglaudre *)
-
-let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
-  (* ng1 : number of goals remaining at the current level (before cmd)
-     ngl1 : stack of previous levels with their remaining goals
-     ng : number of goals after the execution of cmd
-     beginend : special indentation stack for { } *)
-  let ngprev = List.fold_left (+) ng1 ngl1 in
-  let new_ngl =
-    if ng > ngprev then
-      (* We've branched *)
-      (ng - ngprev + 1, ng1 - 1 :: ngl1)
-    else if ng < ngprev then
-      (* A subgoal have been solved. Let's compute the new current level
-	 by discarding all levels with 0 remaining goals. *)
-      let rec loop = function
-	| (0, ng2::ngl2) -> loop (ng2,ngl2)
-	| p -> p
-      in loop (ng1-1, ngl1)
-    else
-      (* Standard case, same goal number as before *)
-      (ng1, ngl1)
-  in
-  (* When a subgoal have been solved, separate this block by an empty line *)
-  let new_nl = (ng < ngprev)
-  in
-  (* Indentation depth *)
-  let ind = List.length ngl1
-  in
-  (* Some special handling of bullets and { }, to get a nicer display *)
-  let pred n = max 0 (n-1) in
-  let ind, nl, new_beginend = match cmd with
-    | VernacSubproof _ -> pred ind, nl, (pred ind)::beginend
-    | VernacEndSubproof -> List.hd beginend, false, List.tl beginend
-    | VernacBullet _ -> pred ind, nl, beginend
-    | _ -> ind, nl, beginend
-  in
-  let pp =
-    (if nl then fnl () else mt ()) ++
-    (hov (ind+1) (str (String.make ind ' ') ++ Ppvernac.pr_vernac cmd))
-  in
-  (new_ngl, new_nl, new_beginend, pp :: ppl)
-
-let show_script ?proof () =
-  try
-    let prf =
-      try match proof with
-      | None -> Some (Pfedit.get_current_proof_name ())
-      | Some (p,_) -> Some (p.Proof_global.id)
-      with Proof_global.NoCurrentProof -> None
-    in
-    let cmds = get_script prf in
-    let _,_,_,indented_cmds =
-      List.fold_left indent_script_item ((1,[]),false,[],[]) cmds
-    in
-    let indented_cmds = List.rev (indented_cmds) in
-    msg_notice (v 0 (prlist_with_sep fnl (fun x -> x) indented_cmds))
-  with Vcs_aux.Expired -> ()
-
 (* Export hooks *)
 let state_computed_hook = Hooks.state_computed_hook
 let state_ready_hook = Hooks.state_ready_hook
 let parse_error_hook = Hooks.parse_error_hook
-let execution_error_hook = Hooks.execution_error_hook
 let forward_feedback_hook = Hooks.forward_feedback_hook
 let process_error_hook = Hooks.process_error_hook
-let interp_hook = Hooks.interp_hook
-let with_fail_hook = Hooks.with_fail_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
-let get_fix_exn () = !State.fix_exn_ref
+let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
 let tactic_being_run_hook = Hooks.tactic_being_run_hook
 (* vim:set foldmethod=marker: *)
