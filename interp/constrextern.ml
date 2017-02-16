@@ -274,17 +274,8 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
 
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
-  (* pboutill: There are letins in pat which is incompatible with notations and
-     not explicit application. *)
-  match pat with
-    | PatCstr(loc,cstrsp,args,na)
-	when !Flags.in_debugger||Inductiveops.constructor_has_local_defs cstrsp ->
-      let c = extern_reference loc Id.Set.empty (ConstructRef cstrsp) in
-      let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-      CPatCstr (loc, c, Some (add_patt_for_params (fst cstrsp) args), [])
-    | _ ->
   try
-    if !Flags.raw_print || !print_no_symbol then raise No_match;
+    if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
     match availability_of_prim_token p sc scopes with
       | None -> raise No_match
@@ -293,7 +284,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	insert_pat_alias loc (insert_pat_delimiters loc (CPatPrim(loc,p)) key) na
   with No_match ->
     try
-      if !Flags.raw_print || !print_no_symbol then raise No_match;
+      if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
       extern_notation_pattern scopes vars pat
 	(uninterp_cases_pattern_notations pat)
     with No_match ->

@@ -20,3 +20,13 @@ fun '{| T := T |} => T
      : N -> Type
 fun '(C T p) => (T, p)
      : N -> Type * True
+fun '{| q := p |} => p
+     : M -> True
+fun '{| U := T |} => T
+     : M -> Type
+fun '{| U := T; q := p |} => (T, p)
+     : M -> Type * True
+fun '{| U := T; a := a; q := p |} => (T, p, a)
+     : M -> Type * True * nat
+fun '{| U := T; a := a; q := p |} => (T, p, a)
+     : M -> Type * True * nat
