@@ -7,7 +7,7 @@ source ${ci_dir}/ci-common.sh
 GeoCoq_CI_BRANCH=master
 GeoCoq_CI_GITURL=https://github.com/GeoCoq/GeoCoq.git
 
-git clone --depth 1 -b ${GeoCoq_CI_BRANCH} ${GeoCoq_CI_GITURL}
+git_checkout ${GeoCoq_CI_BRANCH} ${GeoCoq_CI_GITURL} GeoCoq
 
 ( cd GeoCoq                                               && \
   ./configure.sh                                          && \

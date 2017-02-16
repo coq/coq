@@ -4,9 +4,6 @@
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-git clone --depth 3 https://github.com/mit-plv/fiat-crypto.git
+git_checkout master https://github.com/mit-plv/fiat-crypto.git fiat-crypto
 
 ( cd fiat-crypto && make -j ${NJOBS} )
-
-# ( cd corn && make -j ${NJOBS} )
-
