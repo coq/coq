@@ -347,6 +347,3 @@ let compile v f =
   ignore(CoqworkmgrApi.get 1);
   compile v f;
   CoqworkmgrApi.giveback 1
-
-let () = Hook.set Stm.process_error_hook
-  ExplainErr.process_vernac_interp_error

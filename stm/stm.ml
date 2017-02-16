@@ -29,8 +29,6 @@ let execution_error state_id loc msg =
 
 module Hooks = struct
 
-let process_error, process_error_hook = Hook.make ()
-
 let state_computed, state_computed_hook = Hook.make
  ~default:(fun state_id ~in_cache ->
     feedback ~id:(State state_id) Processed) ()
@@ -63,7 +61,7 @@ let call_process_error_once =
     match Exninfo.get info processed with
     | Some _ -> ei
     | None ->
-        let e, info = call process_error ei in
+        let e, info = ExplainErr.process_vernac_interp_error ei in
         let info = Exninfo.add info processed () in
         e, info
 
@@ -2936,7 +2934,6 @@ let state_computed_hook = Hooks.state_computed_hook
 let state_ready_hook = Hooks.state_ready_hook
 let parse_error_hook = Hooks.parse_error_hook
 let forward_feedback_hook = Hooks.forward_feedback_hook
-let process_error_hook = Hooks.process_error_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
 let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
 (* vim:set foldmethod=marker: *)
