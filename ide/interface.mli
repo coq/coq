@@ -111,8 +111,10 @@ type coq_info = {
 (** Calls result *)
 
 type location = (int * int) option (* start and end of the error *)
-type state_id = Feedback.state_id
-type edit_id = Feedback.edit_id
+type state_id = Stateid.t
+
+(* Obsolete *)
+type edit_id  = int
 
 (* The fail case carries the current state_id of the prover, the GUI
    should probably retract to that point *)

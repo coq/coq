@@ -105,7 +105,7 @@ module Make(T : Task) = struct
 
   let report_status ?(id = !Flags.async_proofs_worker_id) s =
     let open Feedback in
-    feedback ~id:(State Stateid.initial) (WorkerStatus(id, s))
+    feedback ~id:Stateid.initial (WorkerStatus(id, s))
 
   module Worker = Spawn.Sync(struct end)
 

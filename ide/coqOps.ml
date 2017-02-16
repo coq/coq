@@ -415,11 +415,7 @@ object(self)
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
     add_tooltip sentence pre post markup
 
-  method private is_dummy_id id =
-    match id with
-    | Edit 0 -> true
-    | State id when Stateid.equal id Stateid.dummy -> true
-    | _ -> false
+  method private is_dummy_id id = Stateid.equal id Stateid.dummy
 
   method private enqueue_feedback msg =
     (* Minilib.log ("Feedback received: " ^ Xml_printer.to_string_fmt (Xmlprotocol.of_feedback msg)); *)
@@ -434,8 +430,7 @@ object(self)
       let sentence =
         let finder _ state_id s =
           match state_id, id with
-          | Some id', State id when Stateid.equal id id' -> Some (state_id, s)
-          | _, Edit id when id = s.edit_id -> Some (state_id, s)
+          | Some id', id when Stateid.equal id id' -> Some (state_id, s)
           | _ -> None in
         try Some (Doc.find_map document finder)
         with Not_found -> None in
@@ -505,8 +500,7 @@ object(self)
           else
             try
               match id, Doc.tip document with
-              | Edit _, _ -> ()
-              | State id1, id2 when Stateid.newer_than id2 id1 -> ()
+              | id1, id2 when Stateid.newer_than id2 id1 -> ()
               | _ -> Queue.add msg feedbacks
             with Doc.Empty | Invalid_argument _ -> Queue.add msg feedbacks 
       end;

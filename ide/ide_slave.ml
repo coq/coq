@@ -95,7 +95,7 @@ let ide_cmd_checks (loc,ast) =
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
 let add ((s,eid),(sid,verbose)) =
-  let newid, rc = Stm.add ~ontop:sid verbose ~check:ide_cmd_checks eid s in
+  let newid, rc = Stm.add ~ontop:sid verbose ~check:ide_cmd_checks s in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
   (* TODO: the "" parameter is a leftover of the times the protocol
    * used to include stderr/stdout output.
@@ -379,7 +379,7 @@ let init =
          let initial_id, _ =
            if not (is_in_load_paths (physical_path_of_string dir)) then
              Stm.add false ~ontop:(Stm.get_current_state ())
-               0 (Printf.sprintf "Add LoadPath \"%s\". " dir)
+               (Printf.sprintf "Add LoadPath \"%s\". " dir)
            else Stm.get_current_state (), `NewTip in
          if Filename.check_suffix file ".v" then
            Stm.set_compilation_hints file;

@@ -24,14 +24,14 @@ open Vernac_classifier
 open Feedback
 
 let execution_error state_id loc msg =
-    feedback ~id:(State state_id)
+    feedback ~id:state_id
       (Message (Error, Some loc, msg))
 
 module Hooks = struct
 
 let state_computed, state_computed_hook = Hook.make
  ~default:(fun state_id ~in_cache ->
-    feedback ~id:(State state_id) Processed) ()
+    feedback ~id:state_id Processed) ()
 
 let state_ready, state_ready_hook = Hook.make
  ~default:(fun state_id -> ()) ()
@@ -42,10 +42,6 @@ let forward_feedback, forward_feedback_hook =
     | { id = id; route; contents } ->
         try Mutex.lock m; feedback ~id:id ~route contents; Mutex.unlock m
         with e -> Mutex.unlock m; raise e) ()
-
-let parse_error, parse_error_hook = Hook.make
- ~default:(fun id loc msg ->
-        feedback ~id (Message(Error, Some loc, msg))) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
  ~default:(fun _ _ -> ()) ()
@@ -109,24 +105,30 @@ let indentation_of_string s =
       | _ -> n, precise, len in
   aux 0 0 false
 
-let vernac_parse ?(indlen_prev=fun() -> 0) ?newtip ?route eid s =
-  let feedback_id = 
-    if Option.is_empty newtip then Edit eid
-    else State (Option.get newtip) in
+(* We must parse on top of a state id, it should be something like:
+
+   - get parsing information for that state.
+   - feed the parsable / parser with the right parsing information.
+   - call the parser
+
+   Now, the invariant in ensured by the callers, but this is a bit
+   problematic.
+*)
+let stm_parse ?(indlen_prev=fun() -> 0) s =
   let indentation, precise, strlen = indentation_of_string s in
   let indentation =
     if precise then indentation else indlen_prev () + indentation in
-  set_id_for_feedback ?route feedback_id;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   Flags.with_option Flags.we_are_parsing (fun () ->
     try
       match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
-      | None -> raise (Invalid_argument "vernac_parse")
+      | None            -> raise (Invalid_argument "stm_parse")
       | Some (loc, ast) -> indentation, strlen, loc, ast
     with e when CErrors.noncritical e ->
       let (e, info) = CErrors.push e in
-      let loc = Option.default Loc.ghost (Loc.get_loc info) in
-      Hooks.(call parse_error feedback_id loc (iprint (e, info)));
+      (* This is the old error recovery strategy.             *)
+      (* let loc = Loc.get_loc info in                        *)
+      (* feedback (?newtip || eid) (Message(Error, loc, msg)) *)
       iraise (e, info))
   ()
 
@@ -845,7 +847,7 @@ end = struct (* {{{ *)
   let define ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
   =
-    feedback ~id:(State id) (ProcessingIn !Flags.async_proofs_worker_id);
+    feedback ~id:id (ProcessingIn !Flags.async_proofs_worker_id);
     let str_id = Stateid.to_string id in
     if is_cached id && not redefine then
       anomaly (str"defining state "++str str_id++str" twice");
@@ -977,7 +979,7 @@ let stm_vernac_interp ?proof id ?route { verbose; loc; expr } =
   (* The Stm will gain the capability to interpret commmads affecting
      the whole document state, such as backtrack, etc... so we start
      to design the stm command interpreter now *)
-  set_id_for_feedback ?route (State id);
+  set_id_for_feedback ?route id;
   Aux_file.record_in_aux_set_at loc;
   (* We need to check if a command should be filtered from
    * vernac_entries, as it cannot handle it. This should go away in
@@ -1391,7 +1393,7 @@ end = struct (* {{{ *)
       Aux_file.record_in_aux_at loc "proof_build_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       let p = Proof_global.return_proof ~allow_partial:drop_pt () in
-      if drop_pt then feedback ~id:(State id) Complete;
+      if drop_pt then feedback ~id Complete;
       p)
 
   let perform_buildp { Stateid.exn_info; stop; document; loc } drop my_states =
@@ -1935,11 +1937,11 @@ end = struct (* {{{ *)
     Reach.known_state ~cache:`No r_where;
     try
       stm_vernac_interp r_for { r_what with verbose = true };
-      feedback ~id:(State r_for) Processed
+      feedback ~id:r_for Processed
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
       let msg = iprint e     in
-      feedback ~id:(State r_for) (Message (Error, None, msg))
+      feedback ~id:r_for (Message (Error, None, msg))
     
   let name_of_task { t_what } = string_of_ppcmds (pr_ast t_what)
   let name_of_request { r_what } = string_of_ppcmds (pr_ast r_what)
@@ -2141,7 +2143,7 @@ let known_state ?(redefine_qed=false) ~cache id =
            | Valid { proof } ->
                Proof_global.unfreeze proof;
                Proof_global.with_current_proof (fun _ p ->
-                 feedback ~id:(State id) Feedback.AddedAxiom;
+                 feedback ~id:id Feedback.AddedAxiom;
                  fst (Pfedit.solve Vernacexpr.SelectAll None tac p), ());
                Option.iter (fun expr -> stm_vernac_interp id {
                   verbose = true; loc = Loc.ghost; expr; indentation = 0;
@@ -2289,7 +2291,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     stm_vernac_interp id ~proof x;
-                    feedback ~id:(State id) Incomplete
+                    feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
                 Proof_global.discard_all ()
@@ -2715,13 +2717,13 @@ let ind_len_of id =
        indentation + strlen
   | _ -> 0
 
-let add ~ontop ?newtip ?(check=ignore) verb eid s =
+let add ~ontop ?newtip ?(check=ignore) verb s =
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
     (* For now, arbitrary edits should be announced with edit_at *)
     anomaly(str"Not yet implemented, the GUI should not try this");
   let indentation, strlen, loc, ast =
-    vernac_parse ~indlen_prev:(fun () -> ind_len_of ontop) ?newtip eid s in
+    stm_parse ~indlen_prev:(fun () -> ind_len_of ontop) s in
   CWarnings.set_current_loc loc;
   check(loc,ast);
   let clas = classify_vernac ast in
@@ -2742,8 +2744,7 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
-    let newtip, route = report_with in
-    let indentation, strlen, loc, ast = vernac_parse ~newtip ~route 0 s in
+    let indentation, strlen, loc, ast = stm_parse s in
     CWarnings.set_current_loc loc;
     let clas = classify_vernac ast in
     let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
@@ -2932,8 +2933,8 @@ let get_all_proof_names () =
 (* Export hooks *)
 let state_computed_hook = Hooks.state_computed_hook
 let state_ready_hook = Hooks.state_ready_hook
-let parse_error_hook = Hooks.parse_error_hook
 let forward_feedback_hook = Hooks.forward_feedback_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
 let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
+
 (* vim:set foldmethod=marker: *)

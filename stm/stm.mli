@@ -13,8 +13,8 @@ open Loc
 
 (** state-transaction-machine interface *)
 
-(* [add ontop check vebose eid s] adds a new command [s] on the state [ontop]
-   having edit id [eid].  [check] is called on the AST.
+(* [add ontop check vebose eid s] adds a new command [s] on the state [ontop].
+   [check] is called on the AST.
    The [ontop] parameter is just for asserting the GUI is on sync, but
    will eventually call edit_at on the fly if needed.
    The sentence [s] is parsed in the state [ontop].
@@ -23,7 +23,7 @@ open Loc
 val add :
   ontop:Stateid.t -> ?newtip:Stateid.t ->
   ?check:(vernac_expr located -> unit) ->
-  bool -> edit_id -> string ->
+  bool -> string ->
     Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
 (* parses and executes a command at a given state, throws away its side effects
@@ -182,9 +182,8 @@ val register_proof_block_delimiter :
  * the name of the Task(s) above) *)
 
 val state_computed_hook : (Stateid.t -> in_cache:bool -> unit) Hook.t
-val parse_error_hook :
-  (Feedback.edit_or_state_id -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val unreachable_state_hook : (Stateid.t -> Exninfo.iexn -> unit) Hook.t
+
 (* ready means that master has it at hand *)
 val state_ready_hook : (Stateid.t -> unit) Hook.t
 
