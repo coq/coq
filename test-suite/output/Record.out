@@ -14,3 +14,9 @@ build 5
      : test_r
 build_c 5
      : test_c
+fun x : N => let 'C _ p := x in p
+     : N -> True
+fun x : N => let '{| T := T |} := x in T
+     : N -> Type
+fun x : N => let 'C T p := x in (T, p)
+     : N -> Type * True

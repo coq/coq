@@ -301,16 +301,19 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
               if !Flags.raw_print then raise Exit;
 	      let projs = Recordops.lookup_projections (fst cstrsp) in
 	      let rec ip projs args acc =
-		match projs with
-		  | [] -> acc
-		  | None :: q -> ip q args acc
-		  | Some c :: q ->
-		    match args with
-		      | [] -> raise No_match
-		      | CPatAtom(_, None) :: tail -> ip q tail acc
-		    (* we don't want to have 'x = _' in our patterns *)
-		      | head :: tail -> ip q tail
-		        ((extern_reference loc Id.Set.empty (ConstRef c), head) :: acc)
+		match projs, args with
+		  | [], [] -> acc
+		  | proj :: q, pat :: tail ->
+                     let acc =
+                       match proj, pat with
+		       | _, CPatAtom(_, None) ->
+		          (* we don't want to have 'x := _' in our patterns *)
+                          acc
+		       | Some c, _ ->
+		          ((extern_reference loc Id.Set.empty (ConstRef c), pat) :: acc)
+                       | _ -> raise No_match in
+                     ip q tail acc
+	          | _ -> assert false
 	      in
 	      CPatRecord(loc, List.rev (ip projs args []))
 	    with
