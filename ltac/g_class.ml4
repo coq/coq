@@ -13,6 +13,7 @@ open Class_tactics
 open Pltac
 open Stdarg
 open Tacarg
+open Names
 
 DECLARE PLUGIN "g_class"
 

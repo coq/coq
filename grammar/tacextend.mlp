@@ -88,7 +88,7 @@ let declare_tactic loc s c cl = match cl with
       add any grammar nor printing rule and add it as a true Ltac definition. *)
   let patt = make_patt rem in
   let vars = List.map make_var rem in
-  let vars = mlexpr_of_list (mlexpr_of_option mlexpr_of_ident) vars in
+  let vars = mlexpr_of_list (mlexpr_of_name mlexpr_of_ident) vars in
   let entry = mlexpr_of_string s in
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let ml = <:expr< { Tacexpr.mltac_name = $se$; Tacexpr.mltac_index = 0 } >> in

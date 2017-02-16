@@ -40,6 +40,9 @@ important things:
 - Some printing functions were moved from Pptactic to Pputils
 - A part of Tacexpr has been moved to Tactypes
 
+The TacFun tactic expression constructor now takes a `Name.t list` for the
+variable list rather than an `Id.t option list`.
+
 ** Error handling **
 
 - All error functions now take an optional parameter `?loc:Loc.t`. For

@@ -646,7 +646,7 @@ and intern_tactic_or_tacarg ist = intern_tactic false ist
 and intern_pure_tactic ist = intern_tactic true ist
 
 and intern_tactic_fun ist (var,body) =
-  let lfun = List.fold_left opt_cons ist.ltacvars var in
+  let lfun = List.fold_left name_cons ist.ltacvars var in
   (var,intern_tactic_or_tacarg { ist with ltacvars = lfun } body)
 
 and intern_tacarg strict onlytac ist = function
@@ -722,9 +722,7 @@ let split_ltac_fun = function
   | TacFun (l,t) -> (l,t)
   | t -> ([],t)
 
-let pr_ltac_fun_arg = function
-  | None -> spc () ++ str "_"
-  | Some id -> spc () ++ pr_id id
+let pr_ltac_fun_arg n = spc () ++ pr_name n
 
 let print_ltac id =
  try

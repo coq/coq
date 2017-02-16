@@ -10,6 +10,8 @@ DECLARE PLUGIN "nsatz_plugin"
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+open Names
+
 DECLARE PLUGIN "nsatz_plugin"
 
 TACTIC EXTEND nsatz_compute

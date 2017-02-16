@@ -58,6 +58,10 @@ let mlexpr_of_option f = function
   | None -> <:expr< None >>
   | Some e -> <:expr< Some $f e$ >>
 
+let mlexpr_of_name f = function
+  | None -> <:expr< Anonymous >>
+  | Some e -> <:expr< Name $f e$ >>
+
 let symbol_of_string s = <:expr< Extend.Atoken (CLexer.terminal $str:s$) >>
 
 let rec mlexpr_of_prod_entry_key f = function

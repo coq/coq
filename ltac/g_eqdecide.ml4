@@ -15,6 +15,7 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Eqdecide
+open Names
 
 DECLARE PLUGIN "g_eqdecide"
 
