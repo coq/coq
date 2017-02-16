@@ -857,6 +857,7 @@ let match_notation_constr u c (metas,pat) =
     metas ([],[],[])
 
 (* Matching cases pattern *)
+
 let add_patterns_for_params ind l =
   let mib,_ = Global.lookup_inductive ind in
   let nparams = mib.Declarations.mind_nparams in
@@ -875,10 +876,11 @@ let rec match_cases_pattern metas sigma a1 a2 =
   | r1, NVar id2 when Id.List.mem id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
   | PatVar (_,Anonymous), NHole _ -> sigma,(0,[])
   | PatCstr (loc,(ind,_ as r1),largs,_), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
-      sigma,(0,add_patterns_for_params (fst r1) largs)
+      let l = try add_patterns_for_params_remove_local_defs r1 largs with Not_found -> raise No_match in
+      sigma,(0,l)
   | PatCstr (loc,(ind,_ as r1),args1,_), NApp (NRef (ConstructRef r2),l2)
       when eq_constructor r1 r2 ->
-      let l1 = add_patterns_for_params (fst r1) args1 in
+      let l1 = try add_patterns_for_params_remove_local_defs r1 args1 with Not_found -> raise No_match in
       let le2 = List.length l2 in
       if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length l1
       then

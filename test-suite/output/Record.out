@@ -20,3 +20,13 @@ fun x : N => let '{| T := T |} := x in T
      : N -> Type
 fun x : N => let 'C T p := x in (T, p)
      : N -> Type * True
+fun x : M => let '{| q := p |} := x in p
+     : M -> True
+fun x : M => let '{| U := T |} := x in T
+     : M -> Type
+fun x : M => let '{| U := T; q := p |} := x in (T, p)
+     : M -> Type * True
+fun x : M => let '{| U := T; a := a; q := p |} := x in (T, p, a)
+     : M -> Type * True * nat
+fun x : M => let '{| U := T; a := a; q := p |} := x in (T, p, a)
+     : M -> Type * True * nat

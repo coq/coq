@@ -54,3 +54,9 @@ match H with
      else fun _ : P false => Logic.I) x
 end
      : B -> True
+fun x : J => let '{{n, m, _}} := x in n + m
+     : J -> nat
+fun x : J => let '{{n, m, p}} := x in n + m + p
+     : J -> nat
+fun x : J => let 'D n m p q := x in n + m + p + q
+     : J -> nat

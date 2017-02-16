@@ -64,3 +64,5 @@ val map_pattern : (glob_constr -> glob_constr) ->
 val cases_pattern_of_glob_constr : Name.t -> glob_constr -> cases_pattern
 
 val glob_constr_of_closed_cases_pattern : cases_pattern -> Name.t * glob_constr
+
+val add_patterns_for_params_remove_local_defs : constructor -> cases_pattern list -> cases_pattern list
