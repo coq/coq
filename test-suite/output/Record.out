@@ -14,3 +14,9 @@ build 5
      : test_r
 build_c 5
      : test_c
+fun '(C _ p) => p
+     : N -> True
+fun '{| T := T |} => T
+     : N -> Type
+fun '(C T p) => (T, p)
+     : N -> Type * True
