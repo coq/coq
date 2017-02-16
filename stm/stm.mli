@@ -187,9 +187,6 @@ val parse_error_hook :
 val unreachable_state_hook : (Stateid.t -> Exninfo.iexn -> unit) Hook.t
 (* ready means that master has it at hand *)
 val state_ready_hook : (Stateid.t -> unit) Hook.t
-(* called with true before and with false after a tactic explicitly
- * in the document is run *)
-val tactic_being_run_hook : (bool -> unit) Hook.t
 
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t

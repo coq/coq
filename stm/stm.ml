@@ -52,9 +52,6 @@ let parse_error, parse_error_hook = Hook.make
 let unreachable_state, unreachable_state_hook = Hook.make
  ~default:(fun _ _ -> ()) ()
 
-let tactic_being_run, tactic_being_run_hook = Hook.make
- ~default:(fun _ -> ()) ()
-
 include Hook
 
 (* enables:  Hooks.(call foo args) *)
@@ -2213,10 +2210,8 @@ let known_state ?(redefine_qed=false) ~cache id =
           (fun () ->
             resilient_tactic id cblock (fun () ->
               reach ~cache:`Shallow view.next;
-              Hooks.(call tactic_being_run true); 
               Partac.vernac_interp ~solve ~abstract
-                cancel !Flags.async_proofs_n_tacworkers view.next id x;
-              Hooks.(call tactic_being_run false))
+                cancel !Flags.async_proofs_n_tacworkers view.next id x)
           ), cache, true
       | `Cmd { cast = x; cqueue = `QueryQueue cancel }
         when Flags.async_proofs_is_master () -> (fun () ->
@@ -2226,9 +2221,7 @@ let known_state ?(redefine_qed=false) ~cache id =
       | `Cmd { cast = x; ceff = eff; ctac = true; cblock } -> (fun () ->
             resilient_tactic id cblock (fun () ->
               reach view.next;
-              Hooks.(call tactic_being_run true); 
-              stm_vernac_interp id x;
-              Hooks.(call tactic_being_run false)); 
+              stm_vernac_interp id x);
 	    if eff then update_global_env ()
           ), (if eff then `Yes else cache), true
       | `Cmd { cast = x; ceff = eff } -> (fun () ->
@@ -2946,5 +2939,4 @@ let forward_feedback_hook = Hooks.forward_feedback_hook
 let process_error_hook = Hooks.process_error_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
 let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
-let tactic_being_run_hook = Hooks.tactic_being_run_hook
 (* vim:set foldmethod=marker: *)
