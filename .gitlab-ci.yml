@@ -18,8 +18,8 @@ variables:
   # some useful values
   COMPILER_32BIT: "4.02.3+32bit"
 
-  COMPILER_BLEEDING_EDGE: "4.04.1"
-  CAMLP5_VER_BLEEDING_EDGE: "6.17"
+  COMPILER_BLEEDING_EDGE: "4.05.0"
+  CAMLP5_VER_BLEEDING_EDGE: "7.01"
 
   COQIDE_PACKAGES: "libgtk2.0-dev libgtksourceview2.0-dev"
   #COQIDE_PACKAGES_32BIT: "libgtk2.0-dev:i386 libgtksourceview2.0-dev:i386"
