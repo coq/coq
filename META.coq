@@ -172,7 +172,7 @@ package "parsing" (
 
 package "printing" (
 
-  description = "Coq Printing Libraries"
+  description = "Coq Printing Engine"
   version     = "8.6"
 
   requires    = "coq.parsing"
@@ -185,7 +185,7 @@ package "printing" (
 
 package "tactics" (
 
-  description = "Coq Tactics"
+  description = "Coq Basic Tactics"
   version     = "8.6"
 
   requires    = "coq.printing"
@@ -196,12 +196,25 @@ package "tactics" (
 
 )
 
+package "vernac" (
+
+  description = "Coq Vernacular Interpreter"
+  version     = "8.6"
+
+  requires    = "coq.tactics"
+  directory   = "vernac"
+
+  archive(byte)    = "vernac.cma"
+  archive(native)  = "vernac.cmxa"
+
+)
+
 package "stm" (
 
   description = "Coq State Transactional Machine"
   version     = "8.6"
 
-  requires    = "coq.tactics"
+  requires    = "coq.vernac"
   directory   = "stm"
 
   archive(byte)    = "stm.cma"
