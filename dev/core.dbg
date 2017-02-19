@@ -12,6 +12,7 @@ load_printer proofs.cma
 load_printer parsing.cma
 load_printer printing.cma
 load_printer tactics.cma
+load_printer vernac.cma
 load_printer stm.cma
 load_printer toplevel.cma
 load_printer highparsing.cma
