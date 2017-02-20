@@ -56,7 +56,7 @@ package "vm" (
 
 package "kernel" (
 
-  description = "The Coq's Kernel"
+  description = "Coq's Kernel"
   version     = "8.6"
 
   directory   = "kernel"
@@ -95,7 +95,7 @@ package "intf" (
 
 package "engine" (
 
-  description = "Coq Libraries (vo) support"
+  description = "Coq Tactic Engine"
   version     = "8.6"
 
   requires    = "coq.library"
