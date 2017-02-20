@@ -15,8 +15,6 @@ type std_ppcmds
 val str   : string -> std_ppcmds
 val stras : int * string -> std_ppcmds
 val brk   : int * int -> std_ppcmds
-val tbrk  : int * int -> std_ppcmds
-val tab   : unit -> std_ppcmds
 val fnl   : unit -> std_ppcmds
 val pifb  : unit -> std_ppcmds
 val ws    : int -> std_ppcmds
@@ -58,7 +56,6 @@ val h : int -> std_ppcmds -> std_ppcmds
 val v : int -> std_ppcmds -> std_ppcmds
 val hv : int -> std_ppcmds -> std_ppcmds
 val hov : int -> std_ppcmds -> std_ppcmds
-val t : std_ppcmds -> std_ppcmds
 
 (** {6 Opening and closing of boxes} *)
 
@@ -66,9 +63,7 @@ val hb : int -> std_ppcmds
 val vb : int -> std_ppcmds
 val hvb : int -> std_ppcmds
 val hovb : int -> std_ppcmds
-val tb : unit -> std_ppcmds
 val close : unit -> std_ppcmds
-val tclose : unit -> std_ppcmds
 
 (** {6 Opening and closing of tags} *)
 

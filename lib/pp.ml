@@ -72,8 +72,6 @@ open Pp_control
       this block is small enough to fit on a single line
    \item[hovbox:] Horizontal or Vertical block: breaks lead to new line
       only when necessary to print the content of the block
-   \item[tbox:] Tabulation block: go to tabulation marks and no line breaking
-      (except if no mark yet on the reste of the line)
    \end{description}
  *)
 
@@ -82,7 +80,6 @@ type block_type =
   | Pp_vbox of int
   | Pp_hvbox of int
   | Pp_hovbox of int
-  | Pp_tbox
 
 type str_token =
 | Str_def of string
@@ -92,14 +89,11 @@ type 'a ppcmd_token =
   | Ppcmd_print of 'a
   | Ppcmd_box of block_type * ('a ppcmd_token Glue.t)
   | Ppcmd_print_break of int * int
-  | Ppcmd_set_tab
-  | Ppcmd_print_tbreak of int * int
   | Ppcmd_white_space of int
   | Ppcmd_force_newline
   | Ppcmd_print_if_broken
   | Ppcmd_open_box of block_type
   | Ppcmd_close_box
-  | Ppcmd_close_tbox
   | Ppcmd_comment of string list
   | Ppcmd_open_tag of Tag.t
   | Ppcmd_close_tag
@@ -161,8 +155,6 @@ let utf8_length s =
 let str s = Glue.atom(Ppcmd_print (Str_def s))
 let stras (i, s) = Glue.atom(Ppcmd_print (Str_len (s, i)))
 let brk (a,b) = Glue.atom(Ppcmd_print_break (a,b))
-let tbrk (a,b) = Glue.atom(Ppcmd_print_tbreak (a,b))
-let tab () = Glue.atom(Ppcmd_set_tab)
 let fnl () = Glue.atom(Ppcmd_force_newline)
 let pifb () = Glue.atom(Ppcmd_print_if_broken)
 let ws n = Glue.atom(Ppcmd_white_space n)
@@ -212,16 +204,13 @@ let h n s = Glue.atom(Ppcmd_box(Pp_hbox n,s))
 let v n s = Glue.atom(Ppcmd_box(Pp_vbox n,s))
 let hv n s = Glue.atom(Ppcmd_box(Pp_hvbox n,s))
 let hov n s = Glue.atom(Ppcmd_box(Pp_hovbox n,s))
-let t s = Glue.atom(Ppcmd_box(Pp_tbox,s))
 
 (* Opening and closing of boxes *)
 let hb n = Glue.atom(Ppcmd_open_box(Pp_hbox n))
 let vb n = Glue.atom(Ppcmd_open_box(Pp_vbox n))
 let hvb n = Glue.atom(Ppcmd_open_box(Pp_hvbox n))
 let hovb n = Glue.atom(Ppcmd_open_box(Pp_hovbox n))
-let tb () = Glue.atom(Ppcmd_open_box Pp_tbox)
 let close () = Glue.atom(Ppcmd_close_box)
-let tclose () = Glue.atom(Ppcmd_close_tbox)
 
 (* Opening and closed of tags *)
 let open_tag t = Glue.atom(Ppcmd_open_tag t)
@@ -263,7 +252,6 @@ let pp_dirs ?pp_tag ft =
     | Pp_vbox n   -> Format.pp_open_vbox ft n
     | Pp_hvbox n  -> Format.pp_open_hvbox ft n
     | Pp_hovbox n -> Format.pp_open_hovbox ft n
-    | Pp_tbox     -> Format.pp_open_tbox ft ()
   in
   let rec pp_cmd = function
     | Ppcmd_print tok         ->
@@ -280,11 +268,8 @@ let pp_dirs ?pp_tag ft =
         Format.pp_close_box ft ()
     | Ppcmd_open_box bty      -> pp_open_box bty
     | Ppcmd_close_box         -> Format.pp_close_box ft ()
-    | Ppcmd_close_tbox        -> Format.pp_close_tbox ft ()
     | Ppcmd_white_space n     -> Format.pp_print_break ft n 0
     | Ppcmd_print_break(m,n)  -> Format.pp_print_break ft m n
-    | Ppcmd_set_tab           -> Format.pp_set_tab ft ()
-    | Ppcmd_print_tbreak(m,n) -> Format.pp_print_tbreak ft m n
     | Ppcmd_force_newline     -> Format.pp_force_newline ft ()
     | Ppcmd_print_if_broken   -> Format.pp_print_if_newline ft ()
     | Ppcmd_comment coms      -> List.iter (pr_com ft) coms

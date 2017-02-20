@@ -165,7 +165,7 @@ let show_match id =
 let print_path_entry p =
   let dir = pr_dirpath (Loadpath.logical p) in
   let path = str (Loadpath.physical p) in
-  (dir ++ str " " ++ tbrk (0, 0) ++ path)
+  Pp.hov 2 (dir ++ spc () ++ path)
 
 let print_loadpath dir =
   let l = Loadpath.get_load_paths () in
@@ -175,9 +175,8 @@ let print_loadpath dir =
     let filter p = is_dirpath_prefix_of dir (Loadpath.logical p) in
     List.filter filter l
   in
-  Pp.t (str "Logical Path:                 " ++
-                tab () ++ str "Physical path:" ++ fnl () ++
-                prlist_with_sep fnl print_path_entry l)
+  str "Logical Path / Physical path:" ++ fnl () ++
+    prlist_with_sep fnl print_path_entry l
 
 let print_modules () =
   let opened = Library.opened_libraries ()
