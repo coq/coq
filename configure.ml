@@ -336,7 +336,7 @@ let args_options = Arg.align [
   "-byteonly", Arg.Set Prefs.byteonly,
     " Compiles only bytecode version of Coq";
   "-debug", Arg.Set Prefs.debug,
-    " Add debugging information in the Coq executables";
+    " Deprecated";
   "-nodebug", Arg.Clear Prefs.debug,
     " Do not add debugging information in the Coq executables";
   "-profile", Arg.Set Prefs.profile,
