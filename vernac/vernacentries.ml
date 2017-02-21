@@ -2210,6 +2210,11 @@ let with_fail b f =
 let interp ?(verbosely=true) ?proof (loc,c) =
   let orig_program_mode = Flags.is_program_mode () in
   let rec aux ?locality ?polymorphism isprogcmd = function
+
+    (* This assert case will be removed when fake_ide can understand
+       completion feedback *)
+    | VernacStm _ -> assert false (* Done by Stm *)
+
     | VernacProgram c when not isprogcmd -> aux ?locality ?polymorphism true c
     | VernacProgram _ -> CErrors.error "Program mode specified twice"
     | VernacLocal (b, c) when Option.is_empty locality -> 
@@ -2218,9 +2223,6 @@ let interp ?(verbosely=true) ?proof (loc,c) =
       aux ?locality ~polymorphism:b isprogcmd c
     | VernacPolymorphic (b, c) -> CErrors.error "Polymorphism specified twice"
     | VernacLocal _ -> CErrors.error "Locality specified twice"
-    | VernacStm (Command c) -> aux ?locality ?polymorphism isprogcmd c
-    | VernacStm (PGLast c) -> aux ?locality ?polymorphism isprogcmd c
-    | VernacStm _ -> assert false (* Done by Stm *)
     | VernacFail v ->
         with_fail true (fun () -> aux ?locality ?polymorphism isprogcmd v)
     | VernacTimeout (n,v) ->
