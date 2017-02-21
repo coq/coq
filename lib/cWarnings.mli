@@ -8,6 +8,13 @@
 
 type status = Disabled | Enabled | AsError
 
+type t = {
+  name : string;
+  default : status;
+  category : string;
+  status : status;
+}
+
 val set_current_loc : Loc.t -> unit
 
 val create : name:string -> category:string -> ?default:status ->
@@ -19,3 +26,7 @@ val set_flags : string -> unit
 (** Cleans up a user provided warnings status string, e.g. removing unknown
     warnings (in which case a warning is emitted) or subsumed warnings . *)
 val normalize_flags_string : string -> string
+
+val get_categories : unit -> string list
+val get_category_warnings : string -> t list
+val get_warning : string -> t

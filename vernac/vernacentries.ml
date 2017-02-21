@@ -9,6 +9,7 @@
 (* Concrete syntax of the mathematical vernacular MV V2.6 *)
 
 open Pp
+open CWarnings
 open CErrors
 open Util
 open Flags
@@ -322,6 +323,23 @@ let print_strategy r =
     in
     let lvl = get_strategy oracle key in
     Feedback.msg_notice (pr_strategy (r, lvl))
+
+let pr_warning w =
+  let pr_status = function
+  | AsError -> str "error"
+  | Disabled -> str "disabled"
+  | Enabled -> str "enabled"
+  in
+  hov 0 (str w.CWarnings.name ++ spc () ++ pr_status w.status ++ spc () ++
+    str "(default: " ++ pr_status w.default ++ str ")")
+
+let pr_category_warnings category =
+  let warnings = get_category_warnings category in
+  let warnings = pr_vertical_list pr_warning warnings in
+  hov 1 (str category ++ str":" ++ fnl () ++ warnings) ++ fnl ()
+
+let pr_warnings () =
+  pr_vertical_list pr_category_warnings (get_categories ())
 
 let dump_universes_gen g s =
   let output = open_out s in
@@ -1707,6 +1725,9 @@ let vernac_print = let open Feedback in function
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
       msg_notice (Printer.pr_assumptionset (Global.env ()) nassums)
   | PrintStrategy r -> print_strategy r
+  | PrintWarnings -> Feedback.msg_notice (pr_warnings ())
+  | PrintCategoryWarnings c -> Feedback.msg_notice (pr_category_warnings c)
+  | PrintWarning w -> Feedback.msg_notice (pr_warning (get_warning w))
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
