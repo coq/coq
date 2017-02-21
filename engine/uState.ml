@@ -381,16 +381,21 @@ let add_global_univ uctx u =
                                      uctx_initial_universes = initial;
                                      uctx_universes = univs }
 
-let make_flexible_variable ctx b u =
-  let {uctx_univ_variables = uvars; uctx_univ_algebraic = avars} = ctx in
+let make_flexible_variable ctx ~algebraic u =
+  let {uctx_local = cstrs; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} = ctx in
   let uvars' = Univ.LMap.add u None uvars in
   let avars' = 
-    if b then
+    if algebraic then
       let uu = Univ.Universe.make u in
       let substu_not_alg u' v =
         Option.cata (fun vu -> Univ.Universe.equal uu vu && not (Univ.LSet.mem u' avars)) false v
       in
-        if not (Univ.LMap.exists substu_not_alg uvars)
+      let has_upper_constraint () =
+        Univ.Constraint.exists
+          (fun (l,d,r) -> d == Univ.Lt && Univ.Level.equal l u)
+          (Univ.ContextSet.constraints cstrs)
+      in
+        if not (Univ.LMap.exists substu_not_alg uvars || has_upper_constraint ())
         then Univ.LSet.add u avars else avars 
     else avars 
   in

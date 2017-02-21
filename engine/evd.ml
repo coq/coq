@@ -809,8 +809,9 @@ let new_sort_variable ?loc ?name rigid d =
 let add_global_univ d u =
   { d with universes = UState.add_global_univ d.universes u }
 
-let make_flexible_variable evd b u =
-  { evd with universes = UState.make_flexible_variable evd.universes b u }
+let make_flexible_variable evd ~algebraic u =
+  { evd with universes =
+      UState.make_flexible_variable evd.universes ~algebraic u }
 
 let make_evar_universe_context e l =
   let uctx = UState.make (Environ.universes e) in
