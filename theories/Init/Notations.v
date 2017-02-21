@@ -88,9 +88,12 @@ Open Scope type_scope.
 
 (** ML Tactic Notations *)
 
+Declare ML Module "ltac_plugin".
 Declare ML Module "coretactics".
 Declare ML Module "extratactics".
 Declare ML Module "g_auto".
 Declare ML Module "g_class".
 Declare ML Module "g_eqdecide".
 Declare ML Module "g_rewrite".
+
+Global Set Default Proof Mode "Classic".

@@ -10,6 +10,7 @@
 
 DECLARE PLUGIN "romega_plugin"
 
+open Ltac_plugin
 open Names
 open Refl_omega
 open Stdarg

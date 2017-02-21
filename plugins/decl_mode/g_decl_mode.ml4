@@ -10,6 +10,7 @@
 
 DECLARE PLUGIN "decl_mode_plugin"
 
+open Ltac_plugin
 open Compat
 open Pp
 open Decl_expr

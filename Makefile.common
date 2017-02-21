@@ -55,14 +55,14 @@ MKDIR:=install -d
 CORESRCDIRS:=\
   config 	lib		kernel	intf	kernel/byterun	library \
   engine 	pretyping	interp	proofs	parsing 	printing \
-  tactics 	vernac		stm		toplevel 	ltac
+  tactics 	vernac		stm		toplevel
 
 PLUGINDIRS:=\
   omega		romega 		micromega 	quote \
   setoid_ring 	extraction 	fourier \
   cc 		funind 		firstorder 	derive \
   rtauto 	nsatz           syntax          decl_mode	btauto \
-  ssrmatching
+  ssrmatching	ltac
 
 SRCDIRS:=\
   $(CORESRCDIRS)  \
@@ -77,14 +77,13 @@ BYTERUN:=$(addprefix kernel/byterun/, \
   coq_fix_code.o coq_memory.o coq_values.o coq_interp.o )
 
 # LINK ORDER:
-# Beware that highparsing.cma should appear before ltac.cma
 # respecting this order is useful for developers that want to load or link
 # the libraries directly
 
 CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
-	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma ltac/ltac.cma
+	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma
 
 TOPLOOPCMA:=stm/proofworkertop.cma stm/tacworkertop.cma stm/queryworkertop.cma
 
@@ -120,6 +119,7 @@ OTHERSYNTAXCMO:=$(addprefix plugins/syntax/, \
         string_syntax_plugin.cmo )
 DECLMODECMO:=plugins/decl_mode/decl_mode_plugin.cmo
 DERIVECMO:=plugins/derive/derive_plugin.cmo
+LTACCMO:=plugins/ltac/ltac_plugin.cmo
 SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
 
 PLUGINSCMO:=$(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) $(DECLMODECMO) \
@@ -127,7 +127,7 @@ PLUGINSCMO:=$(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) $(DECLMODECMO) \
         $(FOURIERCMO) $(EXTRACTIONCMO) \
         $(CCCMO)  $(FOCMO) $(RTAUTOCMO) $(BTAUTOCMO) \
         $(FUNINDCMO) $(NSATZCMO) $(NATSYNTAXCMO) $(OTHERSYNTAXCMO) \
-	$(DERIVECMO) $(SSRMATCHINGCMO)
+	$(DERIVECMO) $(SSRMATCHINGCMO) $(LTACCMO)
 
 ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
  STATICPLUGINS:=$(PLUGINSCMO)
