@@ -527,13 +527,13 @@ destruct e, e'.
 reflexivity.
 Defined.
 
-Lemma eq_trans_eq_rect_distr : forall A (P:A -> Type) (x y z:A) (e:x=y) (e':y=z) (k:P x),
+Lemma eq_trans_rew_distr : forall A (P:A -> Type) (x y z:A) (e:x=y) (e':y=z) (k:P x),
     rew (eq_trans e e') in k = rew e' in rew e in k.
 Proof.
   destruct e, e'; reflexivity.
 Defined.
 
-Lemma eq_rect_const : forall A P (x y:A) (e:x=y) (k:P),
+Lemma rew_const : forall A P (x y:A) (e:x=y) (k:P),
     rew [fun _ => P] e in k = k.
 Proof.
   destruct e; reflexivity.
