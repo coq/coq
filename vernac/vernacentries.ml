@@ -1362,15 +1362,6 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "record printing";
-      optkey   = ["Printing";"Records"];
-      optread  = (fun () -> !Flags.record_print);
-      optwrite = (fun b -> Flags.record_print := b) }
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
       optname  = "use of the program extension";
       optkey   = ["Program";"Mode"];
       optread  = (fun () -> !Flags.program_mode);
@@ -1416,15 +1407,6 @@ let _ =
       optkey   = ["Undo"];
       optread  = (fun _ -> None);
       optwrite = (fun _ -> ()) }
-
-let _ =
-  declare_int_option
-    { optsync  = false;
-      optdepr  = false;
-      optname  = "the hypotheses limit";
-      optkey   = ["Hyps";"Limit"];
-      optread  = Flags.print_hyps_limit;
-      optwrite = Flags.set_print_hyps_limit }
 
 let _ =
   declare_int_option

@@ -365,8 +365,21 @@ let pr_context_limit_compact ?n env sigma =
 let pr_context_unlimited_compact env sigma =
   pr_context_limit_compact env sigma
 
-let pr_context_of env sigma =
-  match Flags.print_hyps_limit () with
+(* The number of printed hypothesis in a goal *)
+(* If [None], no limit *)
+let print_hyps_limit = ref (None : int option)
+
+let _ =
+  let open Goptions in
+  declare_int_option
+    { optsync  = false;
+      optdepr  = false;
+      optname  = "the hypotheses limit";
+      optkey   = ["Hyps";"Limit"];
+      optread  = (fun () -> !print_hyps_limit);
+      optwrite = (fun x -> print_hyps_limit := x) }
+
+let pr_context_of env sigma = match !print_hyps_limit with
   | None -> hv 0 (pr_context_limit_compact env sigma)
   | Some n -> hv 0 (pr_context_limit_compact ~n env sigma)
 

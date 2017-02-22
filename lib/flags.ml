@@ -95,7 +95,6 @@ let time = ref false
 
 let raw_print = ref false
 
-let record_print = ref true
 
 let univ_print = ref false
 
@@ -180,12 +179,6 @@ let is_program_mode () = !program_mode
 let warn = ref true
 let make_warn flag = warn := flag;  ()
 let if_warn f x = if !warn then f x
-
-(* The number of printed hypothesis in a goal *)
-
-let print_hyps_limit = ref (None : int option)
-let set_print_hyps_limit n = print_hyps_limit := n
-let print_hyps_limit () = !print_hyps_limit
 
 (* Flags for external tools *)
 
