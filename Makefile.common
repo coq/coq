@@ -146,7 +146,8 @@ OTHERSYNTAXCMO:=$(addprefix plugins/syntax/, \
         z_syntax_plugin.cmo r_syntax_plugin.cmo \
 	int31_syntax_plugin.cmo \
 	ascii_syntax_plugin.cmo \
-        string_syntax_plugin.cmo )
+        string_syntax_plugin.cmo \
+	numeral_notation_plugin.cmo)
 DERIVECMO:=plugins/derive/derive_plugin.cmo
 LTACCMO:=plugins/ltac/ltac_plugin.cmo plugins/ltac/tauto_plugin.cmo
 SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
