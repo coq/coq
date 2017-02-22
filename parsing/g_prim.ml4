@@ -114,7 +114,7 @@ GEXTEND Gram
   natural:
     [ [ i = INT -> my_int_of_string (!@loc) i ] ]
   ;
-  bigint: (* Negative numbers are dealt with specially *)
-    [ [ i = INT -> (Bigint.of_string i) ] ]
+  bigint: (* Negative numbers are dealt with elsewhere *)
+    [ [ i = INT -> i ] ]
   ;
 END

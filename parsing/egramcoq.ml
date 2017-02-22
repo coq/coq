@@ -227,7 +227,7 @@ type prod_info = production_level * production_position
 type (_, _) entry =
 | TTName : ('self, Name.t Loc.located) entry
 | TTReference : ('self, reference) entry
-| TTBigint : ('self, Bigint.bigint) entry
+| TTBigint : ('self, Constrexpr.raw_natural_number) entry
 | TTBinder : ('self, local_binder_expr list) entry
 | TTConstr : prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : prod_info * Tok.t list * 'r target -> ('r, 'r list) entry
@@ -324,10 +324,6 @@ type 'r env = {
 
 let push_constr subst v = { subst with constrs = v :: subst.constrs }
 
-let mkNumeral n =
-  if Bigint.is_pos_or_zero n then Numeral (Bigint.to_string n, true)
-  else Numeral (Bigint.to_string (Bigint.neg n), false)
-
 let push_item : type s r. s target -> (s, r) entry -> s env -> r -> s env = fun forpat e subst v ->
 match e with
 | TTConstr _ -> push_constr subst v
@@ -341,8 +337,8 @@ match e with
 | TTBinderListF _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
 | TTBigint ->
   begin match forpat with
-  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (mkNumeral v))
-  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (mkNumeral v))
+  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (v,true)))
+  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Numeral (v,true)))
   end
 | TTReference ->
   begin match forpat with
