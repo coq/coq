@@ -84,24 +84,10 @@ let show_universes () =
     Feedback.msg_notice (Evd.pr_evar_universe_context (Evd.evar_universe_context sigma));
     Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Evd.pr_evd_level sigma) ctx)
 
-let show_prooftree () =
-  (* Spiwack: proof tree is currently not working *)
-  ()
+(* Spiwack: proof tree is currently not working *)
+let show_prooftree () = ()
 
-let enable_goal_printing = ref true
-
-let print_subgoals () =
-  if !enable_goal_printing && is_verbose ()
-  then begin
-    Feedback.msg_notice (pr_open_subgoals ())
-  end
-
-let try_print_subgoals () =
-  try print_subgoals () with Proof_global.NoCurrentProof | UserError _ -> ()
-
-
-  (* Simulate the Intro(s) tactic *)
-
+(* Simulate the Intro(s) tactic *)
 let show_intro all =
   let pf = get_pftreestate() in
   let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
@@ -510,8 +496,6 @@ let vernac_start_proof locality p kind l lettop =
       user_err ~hdr:"Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
   start_proof_and_print (local, p, Proof kind) l no_hook
-
-let qed_display_script = ref true
 
 let vernac_end_proof ?proof = function
   | Admitted          -> save_proof ?proof Admitted

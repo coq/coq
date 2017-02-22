@@ -250,7 +250,6 @@ let set_emacs () =
   if not (Option.is_empty !toploop) then
     error "Flag -emacs is incompatible with a custom toplevel loop";
   Flags.print_emacs := true;
-  Vernacentries.qed_display_script := false;
   color := `OFF
 
 (** Options for CoqIDE *)

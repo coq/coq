@@ -345,7 +345,6 @@ let loop_flush_all () =
 
 let rec loop () =
   Sys.catch_break true;
-  if !Flags.print_emacs then Vernacentries.qed_display_script := false;
   try
     reset_input_buffer stdin top_buffer;
     (* Be careful to keep this loop tail-recursive *)

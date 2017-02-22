@@ -466,9 +466,6 @@ let loop () =
   let xml_ic        = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
   ignore (Feedback.add_feeder (slave_feeder (!msg_format ()) xml_oc));
-  (* We'll handle goal fetching and display in our own way *)
-  Vernacentries.enable_goal_printing := false;
-  Vernacentries.qed_display_script := false;
   while not !quit do
     try
       let xml_query = Xml_parser.parse xml_ic in
