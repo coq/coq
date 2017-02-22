@@ -653,7 +653,7 @@ Declare Right Step iff_trans.
 (** Equality for [ex] *)
 Section ex.
   Local Unset Implicit Arguments.
-  Definition eq_ex_uncurried' {A : Type} (P : A -> Prop) {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+  Definition eq_ex_uncurried {A : Type} (P : A -> Prop) {u1 v1 : A} {u2 : P u1} {v2 : P v1}
              (pq : exists p : u1 = v1, rew p in u2 = v2)
   : ex_intro P u1 u2 = ex_intro P v1 v2.
   Proof.
@@ -662,16 +662,16 @@ Section ex.
     destruct p; reflexivity.
   Defined.
 
-  Definition eq_ex' {A : Type} {P : A -> Prop} (u1 v1 : A) (u2 : P u1) (v2 : P v1)
+  Definition eq_ex {A : Type} {P : A -> Prop} (u1 v1 : A) (u2 : P u1) (v2 : P v1)
              (p : u1 = v1) (q : rew p in u2 = v2)
   : ex_intro P u1 u2 = ex_intro P v1 v2
-    := eq_ex_uncurried' P (ex_intro _ p q).
+    := eq_ex_uncurried P (ex_intro _ p q).
 
-  Definition eq_ex'_hprop {A} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
+  Definition eq_ex_hprop {A} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
              (u1 v1 : A) (u2 : P u1) (v2 : P v1)
              (p : u1 = v1)
     : ex_intro P u1 u2 = ex_intro P v1 v2
-    := eq_ex' u1 v1 u2 v2 p (P_hprop _ _ _).
+    := eq_ex u1 v1 u2 v2 p (P_hprop _ _ _).
 
   Lemma rew_ex {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : ex (Q x)) {y} (H : x = y)
   : rew [fun a => ex (Q a)] H in u
@@ -693,7 +693,7 @@ End ex.
 Section ex2.
   Local Unset Implicit Arguments.
 
-  Definition eq_ex2_uncurried' {A : Type} (P Q : A -> Prop) {u1 v1 : A}
+  Definition eq_ex2_uncurried {A : Type} (P Q : A -> Prop) {u1 v1 : A}
              {u2 : P u1} {v2 : P v1}
              {u3 : Q u1} {v3 : Q v1}
              (pq : exists2 p : u1 = v1, rew p in u2 = v2 & rew p in u3 = v3)
@@ -704,21 +704,21 @@ Section ex2.
     reflexivity.
   Defined.
 
-  Definition eq_ex2' {A : Type} {P Q : A -> Prop}
+  Definition eq_ex2 {A : Type} {P Q : A -> Prop}
              (u1 v1 : A)
              (u2 : P u1) (v2 : P v1)
              (u3 : Q u1) (v3 : Q v1)
              (p : u1 = v1) (q : rew p in u2 = v2) (r : rew p in u3 = v3)
   : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3
-    := eq_ex2_uncurried' P Q (ex_intro2 _ _ p q r).
+    := eq_ex2_uncurried P Q (ex_intro2 _ _ p q r).
 
-  Definition eq_ex2'_hprop {A} {P Q : A -> Prop}
+  Definition eq_ex2_hprop {A} {P Q : A -> Prop}
              (P_hprop : forall (x : A) (p q : P x), p = q)
              (Q_hprop : forall (x : A) (p q : Q x), p = q)
              (u1 v1 : A) (u2 : P u1) (v2 : P v1) (u3 : Q u1) (v3 : Q v1)
              (p : u1 = v1)
     : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3
-    := eq_ex2' u1 v1 u2 v2 u3 v3 p (P_hprop _ _ _) (Q_hprop _ _ _).
+    := eq_ex2 u1 v1 u2 v2 u3 v3 p (P_hprop _ _ _) (Q_hprop _ _ _).
 
   Lemma rew_ex2 {A x} {P : A -> Type}
         (Q : forall a, P a -> Prop)
