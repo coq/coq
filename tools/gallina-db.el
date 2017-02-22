@@ -163,7 +163,7 @@ for DB structure."
 
 (defun coq-sort-menu-entries (menu)
   (sort menu 
-	'(lambda (x y) (string< 
+	(lambda (x y) (string< 
 			(downcase (elt x 0)) 
 			(downcase (elt y 0))))))
 
