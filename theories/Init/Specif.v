@@ -289,10 +289,10 @@ Section sigT.
   Definition eq_sigT_nondep {A B : Type} (u v : @sigT A (fun _ => B))
              (p : projT1 u = projT1 v) (q : projT2 u = projT2 v)
   : u = v
-    := @eq_sigT _ _ u v p (eq_trans (eq_rect_const _ _) q).
+    := @eq_sigT _ _ u v p (eq_trans (rew_const _ _) q).
 
   (** Classification of transporting across an equality of [sigT]s *)
-  Lemma eq_rect_sigT {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : sigT (Q x)) {y} (H : x = y)
+  Lemma rew_sigT {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : sigT (Q x)) {y} (H : x = y)
   : rew [fun a => sigT (Q a)] H in u
     = existT
         (Q y)
@@ -358,7 +358,7 @@ Section sig.
     : u = v <-> (proj1_sig u = proj1_sig v)
     := conj (fun p => f_equal (@proj1_sig _ _) p) (eq_sig_hprop P_hprop u v).
 
-  Lemma eq_rect_sig {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : sig (Q x)) {y} (H : x = y)
+  Lemma rew_sig {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : sig (Q x)) {y} (H : x = y)
   : rew [fun a => sig (Q a)] H in u
     = exist
         (Q y)
@@ -460,10 +460,10 @@ Section sigT2.
   Definition eq_sigT2_nondep {A B C : Type} (u v : @sigT2 A (fun _ => B) (fun _ => C))
              (p : projT1 u = projT1 v) (q : projT2 u = projT2 v) (r : projT3 u = projT3 v)
   : u = v
-    := @eq_sigT2 _ _ _ u v p (eq_trans (eq_rect_const _ _) q) (eq_trans (eq_rect_const _ _) r).
+    := @eq_sigT2 _ _ _ u v p (eq_trans (rew_const _ _) q) (eq_trans (rew_const _ _) r).
 
   (** Classification of transporting across an equality of [sigT2]s *)
-  Lemma eq_rect_sigT2 {A x} {P : A -> Type} (Q R : forall a, P a -> Prop)
+  Lemma rew_sigT2 {A x} {P : A -> Type} (Q R : forall a, P a -> Prop)
         (u : sigT2 (Q x) (R x))
         {y} (H : x = y)
   : rew [fun a => sigT2 (Q a) (R a)] H in u
@@ -571,10 +571,10 @@ Section sig2.
   Definition eq_sig2_nondep {A} {B C : Prop} (u v : @sig2 A (fun _ => B) (fun _ => C))
              (p : proj1_sig u = proj1_sig v) (q : proj2_sig u = proj2_sig v) (r : proj3_sig u = proj3_sig v)
   : u = v
-    := @eq_sig2 _ _ _ u v p (eq_trans (eq_rect_const _ _) q) (eq_trans (eq_rect_const _ _) r).
+    := @eq_sig2 _ _ _ u v p (eq_trans (rew_const _ _) q) (eq_trans (rew_const _ _) r).
 
   (** Classification of transporting across an equality of [sig2]s *)
-  Lemma eq_rect_sig2 {A x} {P : A -> Type} (Q R : forall a, P a -> Prop)
+  Lemma rew_sig2 {A x} {P : A -> Type} (Q R : forall a, P a -> Prop)
         (u : sig2 (Q x) (R x))
         {y} (H : x = y)
   : rew [fun a => sig2 (Q a) (R a)] H in u

@@ -673,7 +673,7 @@ Section ex.
     : ex_intro P u1 u2 = ex_intro P v1 v2
     := eq_ex' u1 v1 u2 v2 p (P_hprop _ _ _).
 
-  Lemma eq_rect_ex {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : ex (Q x)) {y} (H : x = y)
+  Lemma rew_ex {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : ex (Q x)) {y} (H : x = y)
   : rew [fun a => ex (Q a)] H in u
     = match u with
         | ex_intro _ u1 u2
@@ -720,7 +720,7 @@ Section ex2.
     : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3
     := eq_ex2' u1 v1 u2 v2 u3 v3 p (P_hprop _ _ _) (Q_hprop _ _ _).
 
-  Lemma eq_rect_ex2 {A x} {P : A -> Type}
+  Lemma rew_ex2 {A x} {P : A -> Type}
         (Q : forall a, P a -> Prop)
         (R : forall a, P a -> Prop)
         (u : ex2 (Q x) (R x)) {y} (H : x = y)
