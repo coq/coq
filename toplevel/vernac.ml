@@ -108,7 +108,7 @@ let verbose_phrase verbch loc =
 	let s = Bytes.create len in
         seek_in ch (fst loc);
         really_input ch s 0 len;
-        Feedback.msg_notice (str s)
+        Feedback.msg_notice (str (Bytes.to_string s))
     | None -> ()
 
 exception End_of_input
@@ -126,7 +126,7 @@ let chan_beautify = ref stdout
 let beautify_suffix = ".beautified"
 
 let set_formatter_translator ch =
-  let out s b e = output ch s b e in
+  let out s b e = output_substring ch s b e in
   Format.set_formatter_output_functions out (fun () -> flush ch);
   Format.set_max_boxes max_int
 
@@ -161,13 +161,11 @@ let pr_new_syntax po loc chan_beautify ocom =
 
 let pp_cmd_header loc com =
   let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
-  let noblank s =
-    for i = 0 to Bytes.length s - 1 do
-      match s.[i] with
-	| ' ' | '\n' | '\t' | '\r' -> s.[i] <- '~'
-	| _ -> ()
-    done;
-    s
+  let noblank s = String.map (fun c ->
+      match c with
+	| ' ' | '\n' | '\t' | '\r' -> '~'
+	| x -> x
+      ) s
   in
   let (start,stop) = Loc.unloc loc in
   let safe_pr_vernac x =
