@@ -245,27 +245,31 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
     is provided too.
 *)
 
+Reserved Notation "'exists' x .. y , p"
+  (at level 200, x binder, right associativity,
+   format "'[' 'exists'  '/  ' x  ..  y ,  '/  ' p ']'").
+
 Inductive ex (A:Type) (P:A -> Prop) : Prop :=
-  ex_intro : forall x:A, P x -> ex (A:=A) P.
+  ex_intro : forall x:A, P x -> exists y : A, P y
+ where "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
+  : type_scope.
+
+Reserved Notation "'exists2' x , p & q"
+  (at level 200, x ident, p at level 200, right associativity).
 
 Inductive ex2 (A:Type) (P Q:A -> Prop) : Prop :=
-  ex_intro2 : forall x:A, P x -> Q x -> ex2 (A:=A) P Q.
-
-Definition all (A:Type) (P:A -> Prop) := forall x:A, P x.
+  ex_intro2 : forall x:A, P x -> Q x -> exists2 x, P x & Q x
+ where "'exists2' x , p & q" := (ex2 (fun x => p) (fun x => q))
+  : type_scope.
 
 (* Rule order is important to give printing priority to fully typed exists *)
 
-Notation "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
-  (at level 200, x binder, right associativity,
-   format "'[' 'exists'  '/  ' x  ..  y ,  '/  ' p ']'")
-  : type_scope.
-
-Notation "'exists2' x , p & q" := (ex2 (fun x => p) (fun x => q))
-  (at level 200, x ident, p at level 200, right associativity) : type_scope.
-Notation "'exists2' x : A , p & q" := (ex2 (A:=A) (fun x => p) (fun x => q))
+Notation "'exists2' x : A , p & q" := (ex2 (A:=A) (fun x:A => p) (fun x:A => q))
   (at level 200, x ident, A at level 200, p at level 200, right associativity,
     format "'[' 'exists2'  '/  ' x  :  A ,  '/  ' '[' p  &  '/' q ']' ']'")
   : type_scope.
+
+Definition all (A:Type) (P:A -> Prop) := forall x:A, P x.
 
 (** Derived rules for universal quantification *)
 
