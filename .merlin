@@ -1,4 +1,4 @@
-FLG -rectypes -thread
+FLG -rectypes -thread -safe-string
 
 S ltac
 B ltac
