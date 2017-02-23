@@ -72,11 +72,11 @@ Section Subset_projections.
   Variable A : Type.
   Variable P : A -> Prop.
 
-  Definition proj1_sig (e:sig P) := match e with
+  Definition proj1_sig (e : {x|P x}) := match e with
                                     | exist _ a b => a
                                     end.
 
-  Definition proj2_sig (e:sig P) :=
+  Definition proj2_sig (e : {x|P x}) :=
     match e return P (proj1_sig e) with
     | exist _ a b => b
     end.
@@ -92,7 +92,7 @@ End Subset_projections.
     [proj1_sig] of a coerced [X : sig2 P Q] will unify with [let (a,
     _, _) := X in a] *)
 
-Definition sig_of_sig2 (A : Type) (P Q : A -> Prop) (X : sig2 P Q) : sig P
+Definition sig_of_sig2 (A : Type) (P Q : A -> Prop) (X : {x|P x & Q x}) : {x|P x}
   := exist P
            (let (a, _, _) := X in a)
            (let (x, p, _) as s return (P (let (a, _, _) := s in a)) := X in p).
@@ -111,7 +111,7 @@ Section Subset_projections2.
   Variable A : Type.
   Variables P Q : A -> Prop.
 
-  Definition proj3_sig (e : sig2 P Q) :=
+  Definition proj3_sig (e : {x|P x & Q x}) :=
     let (a, b, c) return Q (proj1_sig (sig_of_sig2 e)) := e in c.
 
 End Subset_projections2.
@@ -131,11 +131,11 @@ Section Projections.
   Variable A : Type.
   Variable P : A -> Type.
 
-  Definition projT1 (x:sigT P) : A := match x with
+  Definition projT1 (x : {x:A & P x}) : A := match x with
                                       | existT _ a _ => a
                                       end.
 
-  Definition projT2 (x:sigT P) : P (projT1 x) :=
+  Definition projT2 (x : {x:A & P x}) : P (projT1 x) :=
     match x return P (projT1 x) with
     | existT _ _ h => h
     end.
@@ -150,7 +150,7 @@ End Projections.
     [projT1] of a coerced [X : sigT2 P Q] will unify with [let (a,
     _, _) := X in a] *)
 
-Definition sigT_of_sigT2 (A : Type) (P Q : A -> Type) (X : sigT2 P Q) : sigT P
+Definition sigT_of_sigT2 (A : Type) (P Q : A -> Type) (X : {x:A & P x & Q x}) : {x:A & P x}
   := existT P
             (let (a, _, _) := X in a)
             (let (x, p, _) as s return (P (let (a, _, _) := s in a)) := X in p).
@@ -169,25 +169,25 @@ Section Projections2.
   Variable A : Type.
   Variables P Q : A -> Type.
 
-  Definition projT3 (e : sigT2 P Q) :=
+  Definition projT3 (e : {x:A & P x & Q x}) :=
     let (a, b, c) return Q (projT1 (sigT_of_sigT2 e)) := e in c.
 
 End Projections2.
 
 (** [sigT] of a predicate is equivalent to [sig] *)
 
-Definition sig_of_sigT (A : Type) (P : A -> Prop) (X : sigT P) : sig P
+Definition sig_of_sigT (A : Type) (P : A -> Prop) (X : {x:A & P x}) : {x:A | P x}
   := exist P (projT1 X) (projT2 X).
 
-Definition sigT_of_sig (A : Type) (P : A -> Prop) (X : sig P) : sigT P
+Definition sigT_of_sig (A : Type) (P : A -> Prop) (X : {x:A | P x}) : {x:A & P x}
   := existT P (proj1_sig X) (proj2_sig X).
 
 (** [sigT2] of a predicate is equivalent to [sig2] *)
 
-Definition sig2_of_sigT2 (A : Type) (P Q : A -> Prop) (X : sigT2 P Q) : sig2 P Q
+Definition sig2_of_sigT2 (A : Type) (P Q : A -> Prop) (X : {x:A & P x & Q x}) : {x:A | P x & Q x}
   := exist2 P Q (projT1 (sigT_of_sigT2 X)) (projT2 (sigT_of_sigT2 X)) (projT3 X).
 
-Definition sigT2_of_sig2 (A : Type) (P Q : A -> Prop) (X : sig2 P Q) : sigT2 P Q
+Definition sigT2_of_sig2 (A : Type) (P Q : A -> Prop) (X : {x:A | P x & Q x}) : {x:A & P x & Q x}
   := existT2 P Q (proj1_sig (sig_of_sig2 X)) (proj2_sig (sig_of_sig2 X)) (proj3_sig X).
 
 (** η Principles *)
