@@ -240,18 +240,19 @@ let unfreeze tt = (token_tree := tt)
 
 (* The string buffering machinery *)
 
-let buff = ref (String.create 80)
+let buff = ref (Bytes.create 80)
 
 let store len x =
-  if len >= String.length !buff then
-    buff := !buff ^ String.create (String.length !buff);
-  !buff.[len] <- x;
+  let open Bytes in
+  if len >= length !buff then
+    buff := cat !buff (create (length !buff));
+  set !buff len x;
   succ len
 
 let rec nstore n len cs =
   if n>0 then nstore (n-1) (store len (Stream.next cs)) cs else len
 
-let get_buff len = String.sub !buff 0 len
+let get_buff len = Bytes.sub_string !buff 0 len
 
 (* The classical lexer: idents, numbers, quoted strings, comments *)
 
@@ -382,6 +383,7 @@ let push_char c =
     real_push_char c
 
 let push_string s = Buffer.add_string current_comment s
+let push_bytes s = Buffer.add_bytes current_comment s
 
 let null_comment s =
   let rec null i =
@@ -716,13 +718,13 @@ let strip s =
   in
   if len == String.length s then s
   else
-    let s' = String.create len in
+    let s' = Bytes.create len in
     let rec loop i i' =
       if i == String.length s then s'
       else if s.[i] == ' ' then loop (i + 1) i'
-      else begin s'.[i'] <- s.[i]; loop (i + 1) (i' + 1) end
+      else begin Bytes.set s' i' s.[i]; loop (i + 1) (i' + 1) end
     in
-    loop 0 0
+    Bytes.to_string (loop 0 0)
 
 let terminal s =
   let s = strip s in
