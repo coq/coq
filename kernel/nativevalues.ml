@@ -491,12 +491,12 @@ let str_encode expr =
 let str_decode s =
   let mshl_expr_len = String.length s / 2 in
   let mshl_expr = Buffer.create mshl_expr_len in
-  let buf = String.create 2 in
+  let buf = Bytes.create 2 in
   for i = 0 to mshl_expr_len - 1 do
-    String.blit s (2*i) buf 0 2;
-    Buffer.add_char mshl_expr (bin_of_hex buf)
+    Bytes.blit_string s (2*i) buf 0 2;
+    Buffer.add_char mshl_expr (bin_of_hex (Bytes.to_string buf))
   done;
-  Marshal.from_string (Buffer.contents mshl_expr) 0
+  Marshal.from_bytes (Buffer.to_bytes mshl_expr) 0
 
 (** Retroknowledge, to be removed when we switch to primitive integers *)
 
