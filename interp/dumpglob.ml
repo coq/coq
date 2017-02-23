@@ -173,32 +173,33 @@ let cook_notation df sc =
   (* - all single quotes in terminal tokens are doubled                       *)
   (* - characters < 32 are represented by '^A, '^B, '^C, etc                  *)
   (* The output is decoded in function Index.prepare_entry of coqdoc          *)
-  let ntn = String.make (String.length df * 5) '_' in
+  let ntn = Bytes.make (String.length df * 5) '_' in
   let j = ref 0 in
   let l = String.length df - 1 in
   let i = ref 0 in
+  let open Bytes in             (* Bytes.set *)
   while !i <= l do
     assert (df.[!i] != ' ');
     if df.[!i] == '_' && (Int.equal !i l || df.[!i+1] == ' ') then
       (* Next token is a non-terminal *)
-      (ntn.[!j] <- 'x'; incr j; incr i)
+      (set ntn !j 'x'; incr j; incr i)
     else begin
       (* Next token is a terminal *)
-      ntn.[!j] <- '\''; incr j;
+      set ntn !j '\''; incr j;
       while !i <= l && df.[!i] != ' ' do
 	if df.[!i] < ' ' then
 	  let c = char_of_int (int_of_char 'A' + int_of_char df.[!i] - 1) in
 	  (String.blit ("'^" ^ String.make 1 c) 0 ntn !j 3; j := !j+3; incr i)
 	else begin
-	  if df.[!i] == '\'' then (ntn.[!j] <- '\''; incr j);
-	  ntn.[!j] <- df.[!i]; incr j; incr i
+	  if df.[!i] == '\'' then (set ntn !j '\''; incr j);
+	  set ntn !j df.[!i]; incr j; incr i
 	end
       done;
-      ntn.[!j] <- '\''; incr j
+      set ntn !j '\''; incr j
     end;
-    if !i <= l then (ntn.[!j] <- '_'; incr j; incr i)
+    if !i <= l then (set ntn !j '_'; incr j; incr i)
   done;
-  let df = String.sub ntn 0 !j in
+  let df = Bytes.sub_string ntn 0 !j in
   match sc with Some sc -> ":" ^ sc ^ ":" ^ df | _ -> "::" ^ df
 
 let dump_notation_location posl df (((path,secpath),_),sc) =
