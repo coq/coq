@@ -20,7 +20,7 @@ let top_stderr x = msg_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft x
 
 type input_buffer = {
   mutable prompt : unit -> string;
-  mutable str : string; (* buffer of already read characters *)
+  mutable str : Bytes.t; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)
   mutable bols : int list; (* offsets in str of beginning of lines *)
   mutable tokens : Gram.coq_parsable; (* stream of tokens *)
@@ -28,9 +28,9 @@ type input_buffer = {
 
 (* Double the size of the buffer. *)
 
-let resize_buffer ibuf =
-  let nstr = String.create (2 * String.length ibuf.str + 1) in
-  String.blit ibuf.str 0 nstr 0 (String.length ibuf.str);
+let resize_buffer ibuf = let open Bytes in
+  let nstr = create (2 * length ibuf.str + 1) in
+  blit ibuf.str 0 nstr 0 (length ibuf.str);
   ibuf.str <- nstr
 
 (* Delete all irrelevant lines of the input buffer. Keep the last line
@@ -40,7 +40,7 @@ let resynch_buffer ibuf =
   match ibuf.bols with
     | ll::_ ->
         let new_len = ibuf.len - ll in
-        String.blit ibuf.str ll ibuf.str 0 new_len;
+        Bytes.blit ibuf.str ll ibuf.str 0 new_len;
         ibuf.len <- new_len;
         ibuf.bols <- [];
         ibuf.start <- ibuf.start + ll
@@ -65,8 +65,8 @@ let prompt_char ic ibuf count =
   try
     let c = input_char ic in
     if c == '\n' then ibuf.bols <- (ibuf.len+1) :: ibuf.bols;
-    if ibuf.len == String.length ibuf.str then resize_buffer ibuf;
-    ibuf.str.[ibuf.len] <- c;
+    if ibuf.len == Bytes.length ibuf.str then resize_buffer ibuf;
+    Bytes.set ibuf.str ibuf.len c;
     ibuf.len <- ibuf.len + 1;
     Some c
   with End_of_file ->
@@ -75,7 +75,7 @@ let prompt_char ic ibuf count =
 (* Reinitialize the char stream (after a Drop) *)
 
 let reset_input_buffer ic ibuf =
-  ibuf.str <- "";
+  ibuf.str <- Bytes.empty;
   ibuf.len <- 0;
   ibuf.bols <- [];
   ibuf.tokens <- Gram.parsable (Stream.from (prompt_char ic ibuf));
@@ -109,19 +109,19 @@ let dotted_location (b,e) =
   else
     (String.make (e-b-1) '.', " ")
 
-let blanch_utf8_string s bp ep =
-  let s' = String.make (ep-bp) ' ' in
+let blanch_utf8_string s bp ep = let open Bytes in
+  let s' = make (ep-bp) ' ' in
   let j = ref 0 in
   for i = bp to ep - 1 do
-    let n = Char.code s.[i] in
+    let n = Char.code (get s i) in
     (* Heuristic: assume utf-8 chars are printed using a single
     fixed-size char and therefore contract all utf-8 code into one
     space; in any case, preserve tabulation so
     that its effective interpretation in terms of spacing is preserved *)
-    if s.[i] == '\t' then s'.[!j] <- '\t';
+    if get s i == '\t' then set s' !j '\t';
     if n < 0x80 || 0xC0 <= n then incr j
   done;
-  String.sub s' 0 !j
+  Bytes.sub_string s' 0 !j
 
 let print_highlight_location ib loc =
   let (bp,ep) = Loc.unloc loc in
@@ -132,17 +132,17 @@ let print_highlight_location ib loc =
       | ([],(bl,el)) ->
 	  let shift = blanch_utf8_string ib.str bl bp in
 	  let span = String.length (blanch_utf8_string ib.str bp ep) in
-	  (str"> " ++ str(String.sub ib.str bl (el-bl-1)) ++ fnl () ++
+	  (str"> " ++ str(Bytes.sub_string ib.str bl (el-bl-1)) ++ fnl () ++
            str"> " ++ str(shift) ++ str(String.make span '^'))
       | ((b1,e1)::ml,(bn,en)) ->
           let (d1,s1) = dotted_location (b1,bp) in
           let (dn,sn) = dotted_location (ep,en) in
           let l1 = (str"> " ++ str d1 ++ str s1 ++
-                      str(String.sub ib.str bp (e1-bp))) in
+                      str(Bytes.sub_string ib.str bp (e1-bp))) in
           let li =
             prlist (fun (bi,ei) ->
-                      (str"> " ++ str(String.sub ib.str bi (ei-bi)))) ml in
-          let ln = (str"> " ++ str(String.sub ib.str bn (ep-bn)) ++
+                      (str"> " ++ str(Bytes.sub_string ib.str bi (ei-bi)))) ml in
+          let ln = (str"> " ++ str(Bytes.sub_string ib.str bn (ep-bn)) ++
                       str sn ++ str dn) in
 	  (l1 ++ li ++ ln)
   in
@@ -220,7 +220,7 @@ let top_buffer =
     ^ emacs_prompt_endstring()
   in
   { prompt = pr;
-    str = "";
+    str = Bytes.empty;
     len = 0;
     bols = [];
     tokens = Gram.parsable (Stream.of_list []);
