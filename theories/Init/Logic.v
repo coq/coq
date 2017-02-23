@@ -673,8 +673,8 @@ Section ex.
     : ex_intro P u1 u2 = ex_intro P v1 v2
     := eq_ex u1 v1 u2 v2 p (P_hprop _ _ _).
 
-  Lemma rew_ex {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : ex (Q x)) {y} (H : x = y)
-  : rew [fun a => ex (Q a)] H in u
+  Lemma rew_ex {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : exists p, Q x p) {y} (H : x = y)
+  : rew [fun a => exists p, Q a p] H in u
     = match u with
         | ex_intro _ u1 u2
           => ex_intro
@@ -723,8 +723,8 @@ Section ex2.
   Lemma rew_ex2 {A x} {P : A -> Type}
         (Q : forall a, P a -> Prop)
         (R : forall a, P a -> Prop)
-        (u : ex2 (Q x) (R x)) {y} (H : x = y)
-  : rew [fun a => ex2 (Q a) (R a)] H in u
+        (u : exists2 p, Q x p & R x p) {y} (H : x = y)
+  : rew [fun a => exists2 p, Q a p & R a p] H in u
     = match u with
         | ex_intro2 _ _ u1 u2 u3
           => ex_intro2
