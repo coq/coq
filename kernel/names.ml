@@ -50,6 +50,11 @@ struct
   | None -> true
   | Some _ -> false
 
+  let of_bytes s =
+    let s = Bytes.to_string s in
+    check_soft s;
+    String.hcons s
+
   let of_string s =
     let () = check_soft s in
     let s = String.copy s in
