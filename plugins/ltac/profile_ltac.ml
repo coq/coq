@@ -257,7 +257,7 @@ let string_of_call ck =
          (Pptactic.pr_glob_tactic (Global.env ())
             te)
     ) in
-  for i = 0 to String.length s - 1 do if s.[i] = '\n' then s.[i] <- ' ' done;
+  let s = String.map (fun c -> if c = '\n' then ' ' else c) s in
   let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
   CString.strip s
 
