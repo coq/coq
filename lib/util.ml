@@ -161,11 +161,11 @@ let iraise = Exninfo.iraise
 
 let open_utf8_file_in fname =
   let is_bom s =
-    Int.equal (Char.code s.[0]) 0xEF &&
-    Int.equal (Char.code s.[1]) 0xBB &&
-    Int.equal (Char.code s.[2]) 0xBF
+    Int.equal (Char.code (Bytes.get s 0)) 0xEF &&
+    Int.equal (Char.code (Bytes.get s 1)) 0xBB &&
+    Int.equal (Char.code (Bytes.get s 2)) 0xBF
   in
   let in_chan = open_in fname in
-  let s = "   " in
+  let s = Bytes.make 3 ' ' in
   if input in_chan s 0 3 < 3 || not (is_bom s) then seek_in in_chan 0;
   in_chan

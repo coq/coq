@@ -58,7 +58,7 @@ let with_fp chan out_function flush_function =
 (* Output on a channel ch *)
 
 let with_output_to ch =
-  let ft = with_fp ch (output ch) (fun () -> flush ch) in
+  let ft = with_fp ch (output_substring ch) (fun () -> flush ch) in
   set_gp ft deep_gp;
   ft
 
