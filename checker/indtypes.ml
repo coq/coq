@@ -321,9 +321,12 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
     | [] -> ()
     | LocalDef _ :: hyps -> check k (index+1) hyps
     | _::hyps ->
-        match whd_all env lpar.(k) with
-	  | Rel w when w = index -> check (k-1) (index+1) hyps
-	  | _ -> raise (IllFormedInd (LocalNonPar (k+1,index,l)))
+        begin
+          try conv env lpar.(k) (Rel index)
+          with NotConvertible ->
+	     raise (IllFormedInd (LocalNonPar (k+1,index,l)))
+        end;
+        check (k-1) (index+1) hyps
   in check (nparams-1) (n-nhyps) hyps;
   if not (Array.for_all (noccur_between n ntypes) largs') then
     failwith_non_pos_vect n ntypes largs'

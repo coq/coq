@@ -409,14 +409,15 @@ let check_correct_par (env,n,ntypes,_) paramdecls ind_index args =
     | LocalDef _ :: paramdecls ->
       check param_index (paramdecl_index+1) paramdecls
     | _::paramdecls ->
-        match kind_of_term (whd_all env params.(param_index)) with
-	  | Rel w when Int.equal w paramdecl_index ->
-            check (param_index-1) (paramdecl_index+1) paramdecls
-	  | _ ->
+       begin
+         try conv env params.(param_index) (mkRel paramdecl_index)
+         with NotConvertible ->
             let paramdecl_index_in_env = paramdecl_index-n+nparamdecls+1 in
             let err =
               LocalNonPar (param_index+1, paramdecl_index_in_env, ind_index) in
             raise (IllFormedInd err)
+       end;
+       check (param_index-1) (paramdecl_index+1) paramdecls
   in check (nparams-1) (n-nparamdecls) paramdecls;
   if not (Array.for_all (noccur_between n ntypes) realargs) then
     failwith_non_pos_vect n ntypes realargs
