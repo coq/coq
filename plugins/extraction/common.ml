@@ -91,10 +91,7 @@ let begins_with_CoqXX s =
 
 let unquote s =
   if lang () != Scheme then s
-  else
-    let s = String.copy s in
-    for i=0 to String.length s - 1 do if s.[i] == '\'' then s.[i] <- '~' done;
-    s
+  else String.map (fun c -> if c == '\'' then '~' else c) s
 
 let rec qualify delim = function
   | [] -> assert false

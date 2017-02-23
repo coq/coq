@@ -773,9 +773,7 @@ let file_of_modfile mp =
     | MPfile f -> Id.to_string (List.hd (DirPath.repr f))
     | _ -> assert false
   in
-  let s = String.copy (string_of_modfile mp) in
-  if s.[0] != s0.[0] then s.[0] <- s0.[0];
-  s
+  String.mapi (fun i c -> if i = 0 then s0.[0] else c) (string_of_modfile mp)
 
 let add_blacklist_entries l =
   blacklist_table :=
