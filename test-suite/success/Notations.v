@@ -116,3 +116,9 @@ Notation " |- {{ a }} b" := (a=b) (no associativity, at level 10).
 Goal True.
 {{ exact I. }}
 Qed.
+
+(* Check "where" clause for inductive types with parameters *)
+
+Reserved Notation "x === y" (at level 50).
+Inductive EQ {A} (x:A) : A -> Prop := REFL : x === x
+ where "x === y" := (EQ x y).
