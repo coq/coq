@@ -125,12 +125,9 @@ let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in
   let pdir =
     if le >= 0 && ldir.[le] = '.' then String.sub ldir 0 (le - 1)
-    else String.copy ldir
+    else ldir
   in
-  for i = 0 to le - 1 do
-    if pdir.[i] = '.' then pdir.[i] <- '/';
-  done;
-  pdir
+  String.map (fun c -> if c = '.' then '/' else c) pdir
 
 let standard opt =
   print "byte:\n";

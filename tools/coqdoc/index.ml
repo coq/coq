@@ -197,7 +197,7 @@ let prepare_entry s = function
       let h = try String.index_from s 0 ':' with _ -> err () in
       let i = try String.index_from s (h+1) ':' with _ -> err () in
       let sc = String.sub s (h+1) (i-h-1) in
-      let ntn = String.make (String.length s - i) ' ' in
+      let ntn = Bytes.make (String.length s - i) ' ' in
       let k = ref 0 in
       let j = ref (i+1) in
       let quoted = ref false in
@@ -220,7 +220,7 @@ let prepare_entry s = function
 	  end;
 	incr j
       done;
-      let ntn = String.sub ntn 0 !k in
+      let ntn = Bytes.sub_string ntn 0 !k in
       if sc = "" then ntn else ntn ^ " (" ^ sc ^ ")"
   | _ ->
       s
