@@ -144,7 +144,7 @@ Tactic Notation "extensionality" ident(x) :=
     until finding an equality statement *)
 (* Note that you can write [Ltac extensionality_in_checker tac ::= tac tt.] to get a more informative error message. *)
 Ltac extensionality_in_checker tac :=
-  first [ tac tt | fail 1 "Anomaly: Unexpected error in extensionality tactic.  Please report." ].
+  first [ tac tt | fail 1 "Anomaly: Unexpected error in extensionality tactic.  Please report" ].
 Tactic Notation "extensionality" "in" hyp(H) :=
   let rec check_is_extensional_equality H :=
       lazymatch type of H with
@@ -186,7 +186,9 @@ Tactic Notation "extensionality" "in" hyp(H) :=
       | forall a : ?A, _
         => let Ha := fresh in
            let ret := constr:(fun a : A => match H a with Ha => ltac:(let v := lift_sig_extensionality Ha in exact v) end) in
-           lazymatch type of ret with
+           let t := type of ret in
+           let t := eval lazy beta in t in
+           lazymatch t with
            | forall a : ?A, sig (fun b : ?B => @?f a b = @?g a b)
              => eta_contract (exist (fun b : (forall a : A, B) => (fun a : A => f a (b a)) = (fun a : A => g a (b a)))
                                     (fun a : A => proj1_sig (ret a))
