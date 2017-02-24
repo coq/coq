@@ -6,6 +6,17 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+type metadata = {
+  name_var : string list;
+}
+
+module Monomial :
+sig
+type t
+val repr : t -> int array
+val make : int array -> t
+end
+
 module Make (P : Polynom.S) :
 sig
 (* Polynomials *)
@@ -14,31 +25,25 @@ type deg = int
 type coef = P.t
 type poly
 
-val repr : poly -> (coef * int array) list
+val repr : poly -> (coef * Monomial.t) list
 val polconst : int -> coef -> poly
 val zeroP : poly
 val gen : int -> int -> poly
 
 val equal : poly -> poly -> bool
-val name_var : string list ref
 
 val plusP : poly -> poly -> poly
 val oppP : poly -> poly
 val multP : poly -> poly -> poly
 val puisP : poly -> int -> poly
 
-val poldepcontent : coef list ref
-
 type certificate =
     { coef : coef; power : int;
       gb_comb : poly list list; last_comb : poly list }
 
-val in_ideal : deg -> poly list -> poly -> poly list * poly * certificate
+val in_ideal : metadata -> deg -> poly list -> poly -> certificate
 
 module Hashpol : Hashtbl.S with type key = poly
-
-val sugar_flag : bool ref
-val divide_rem_with_critical_pair : bool ref
 
 end
 

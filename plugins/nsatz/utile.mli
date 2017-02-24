@@ -4,7 +4,8 @@ val pr : string -> unit
 val prn : string -> unit
 val prt0 : 'a -> unit
 val prt : string -> unit
-val info : string -> unit
+val info : (unit -> string) -> unit
+val sinfo : string -> unit
 
 (* Listes *)
 val list_mem_eq : ('a -> 'b -> bool) -> 'a -> 'b list -> bool
