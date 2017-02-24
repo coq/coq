@@ -143,12 +143,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     (p,status)
   with
-    | Proof_global.NoCurrentProof  -> CErrors.error "No focused proof"
-    | CList.IndexOutOfRange ->
-        match gi with
-	| Vernacexpr.SelectNth i -> let msg = str "No such goal: " ++ int i ++ str "." in
-	                            CErrors.user_err  msg
-        | _ -> assert false
+    Proof_global.NoCurrentProof -> CErrors.error "No focused proof"
 
 let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) None tac)
 
