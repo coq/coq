@@ -506,7 +506,7 @@ if [ "$camlp5dir" != "" ]; then
 	echo "Configuration script failed!"
 	exit 1
     fi
-    camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
+    camlp4oexec=`echo "$camlp4oexec" | sed -e 's/camlp4o$/camlp5o/g'`
 else
     case $CAMLTAG in
         OCAML31*|OCAML4*)
