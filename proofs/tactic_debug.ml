@@ -66,6 +66,18 @@ let goal_com g tac =
 let skipped = ref 0
 let skip = ref 0
 let breakpoint = ref None
+let batch = ref false
+
+open Goptions
+
+let _ =
+  declare_bool_option
+    { optsync  = false;
+      optdepr  = false;
+      optname  = "Ltac batch debug";
+      optkey   = ["Ltac";"Batch";"Debug"];
+      optread  = (fun () -> !batch);
+      optwrite = (fun x -> batch := x) }
 
 let rec drop_spaces inst i =
   if String.length inst > i && inst.[i] = ' ' then drop_spaces inst (i+1)
@@ -115,6 +127,7 @@ let rec prompt level =
     msg (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ");
     flush stdout;
     let exit () = skip:=0;skipped:=0;raise Sys.Break in
+    if !batch then (msg (fnl()); flush stdout; DebugOn (level+1)) else
     let inst = try read_line () with End_of_file -> exit () in
     match inst with
     | ""  -> DebugOn (level+1)
