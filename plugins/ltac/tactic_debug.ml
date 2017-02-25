@@ -85,6 +85,19 @@ let skipped = Proofview.NonLogical.run (Proofview.NonLogical.ref 0)
 let skip = Proofview.NonLogical.run (Proofview.NonLogical.ref 0)
 let breakpoint = Proofview.NonLogical.run (Proofview.NonLogical.ref None)
 
+let batch = ref false
+
+open Goptions
+
+let _ =
+  declare_bool_option
+    { optsync  = false;
+      optdepr  = false;
+      optname  = "Ltac batch debug";
+      optkey   = ["Ltac";"Batch";"Debug"];
+      optread  = (fun () -> !batch);
+      optwrite = (fun x -> batch := x) }
+
 let rec drop_spaces inst i =
   if String.length inst > i && inst.[i] == ' ' then drop_spaces inst (i+1)
   else i
@@ -150,6 +163,7 @@ let rec prompt level =
   begin
     let open Proofview.NonLogical in
     Proofview.NonLogical.print_notice (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ") >>
+    if Pervasives.(!batch) then return (DebugOn (level+1)) else
     let exit = (skip:=0) >> (skipped:=0) >> raise Sys.Break in
     Proofview.NonLogical.catch Proofview.NonLogical.read_line
       begin function (e, info) -> match e with
