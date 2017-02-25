@@ -548,7 +548,7 @@ esac
 
 case $usecamlp5 in
   yes)
-    camlp4oexec=`echo "$camlp4oexec" | tr 4 5`
+    camlp4oexec=`echo "$camlp4oexec" | sed -e 's/camlp4o$/camlp5o/g'`
     case `"$camlp4oexec" -v 2>&1` in
 	*"version 4.0"*|*5.00*)
 	    echo "Camlp5 version < 5.01 not supported."
