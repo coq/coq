@@ -322,17 +322,17 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          let (app1,app2) =
            if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
 	     match unfold_reference infos fl1 with
-             | Some def1 -> ((lft1, whd def1 v1), appr2)
+             | Some def1 -> ((lft1, (def1, v1)), appr2)
              | None ->
                (match unfold_reference infos fl2 with
-               | Some def2 -> (appr1, (lft2, whd def2 v2))
+               | Some def2 -> (appr1, (lft2, (def2, v2)))
 	       | None -> raise NotConvertible)
            else
 	     match unfold_reference infos fl2 with
-             | Some def2 -> (appr1, (lft2, whd def2 v2))
+             | Some def2 -> (appr1, (lft2, (def2, v2)))
              | None ->
                (match unfold_reference infos fl1 with
-               | Some def1 -> ((lft1, whd def1 v1), appr2)
+               | Some def1 -> ((lft1, (def1, v1)), appr2)
 	       | None -> raise NotConvertible) 
 	 in
            eqappr cv_pb l2r infos app1 app2 cuniv)
@@ -343,11 +343,11 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	 form *)
       (match unfold_projection infos p1 c1 with
       | Some (def1,s1) -> 
-	eqappr cv_pb l2r infos (lft1, whd def1 (s1 :: v1)) appr2 cuniv
+	eqappr cv_pb l2r infos (lft1, (def1, s1 :: v1)) appr2 cuniv
       | None ->
 	match unfold_projection infos p2 c2 with
 	| Some (def2,s2) ->
-	  eqappr cv_pb l2r infos appr1 (lft2, whd def2 (s2 :: v2)) cuniv
+	  eqappr cv_pb l2r infos appr1 (lft2, (def2, s2 :: v2)) cuniv
 	| None -> 
           if Constant.equal (Projection.constant p1) (Projection.constant p2)
 	     && compare_stack_shape v1 v2 then
@@ -359,26 +359,26 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FProj (p1,c1), t2) ->
       (match unfold_projection infos p1 c1 with
       | Some (def1,s1) ->
-         eqappr cv_pb l2r infos (lft1, whd def1 (s1 :: v1)) appr2 cuniv
+         eqappr cv_pb l2r infos (lft1, (def1, s1 :: v1)) appr2 cuniv
       | None -> 
 	 (match t2 with 
 	  | FFlex fl2 ->
 	     (match unfold_reference infos fl2 with
               | Some def2 ->
-		 eqappr cv_pb l2r infos appr1 (lft2, whd def2 v2) cuniv
+		 eqappr cv_pb l2r infos appr1 (lft2, (def2, v2)) cuniv
               | None -> raise NotConvertible)
 	  | _ -> raise NotConvertible))
       
     | (t1, FProj (p2,c2)) ->
       (match unfold_projection infos p2 c2 with
       | Some (def2,s2) -> 
-         eqappr cv_pb l2r infos appr1 (lft2, whd def2 (s2 :: v2)) cuniv
+         eqappr cv_pb l2r infos appr1 (lft2, (def2, s2 :: v2)) cuniv
       | None -> 
 	 (match t1 with 
 	  | FFlex fl1 ->
 	     (match unfold_reference infos fl1 with
               | Some def1 ->
-		 eqappr cv_pb l2r infos (lft1, whd def1 v1) appr2 cuniv
+		 eqappr cv_pb l2r infos (lft1, (def1, v1)) appr2 cuniv
               | None -> raise NotConvertible)
 	  | _ -> raise NotConvertible))
       
@@ -424,7 +424,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FFlex fl1, c2)      ->
        (match unfold_reference infos fl1 with
 	| Some def1 ->
-	   eqappr cv_pb l2r infos (lft1, whd def1 v1) appr2 cuniv
+	   eqappr cv_pb l2r infos (lft1, (def1, v1)) appr2 cuniv
 	| None -> 
 	   match c2 with
 	   | FConstruct ((ind2,j2),u2) ->
@@ -438,7 +438,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (c1, FFlex fl2)      ->
        (match unfold_reference infos fl2 with
         | Some def2 ->
-	   eqappr cv_pb l2r infos appr1 (lft2, whd def2 v2) cuniv
+	   eqappr cv_pb l2r infos appr1 (lft2, (def2, v2)) cuniv
         | None -> 
 	   match c1 with
 	   | FConstruct ((ind1,j1),u1) ->
