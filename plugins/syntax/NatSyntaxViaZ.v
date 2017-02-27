@@ -44,13 +44,14 @@ Definition Z_succ x :=
       end
   end.
 
-Fixpoint Z_of_nat_loop n :=
+Fixpoint Z_of_nat n :=
   match n with
   | O => Z0
-  | S p => Z_succ (Z_of_nat_loop p)
+  | S p => Z_succ (Z_of_nat p)
   end.
 
-Definition Z_of_nat n := Some (Z_of_nat_loop n).
+(** The 1st conversion must either have type [Z->nat] or [Z->option nat].
+  The 2nd one must either have type [nat->Z] or [nat->option Z]. *)
 
 Numeral Notation nat nat_of_Z Z_of_nat : nat_scope
   (warning after 5000).
