@@ -19,6 +19,8 @@ open Util
 (*********************)
 
 (* Explicit lifts and basic operations *)
+(* Invariant to preserve in this module: no lift contains two consecutive
+    [ELSHFT] nor two consecutive [ELLFT]. *)
 type lift =
   | ELID
   | ELSHFT of lift * int (* ELSHFT(l,n) == lift of n, then apply lift l *)
@@ -28,15 +30,15 @@ type lift =
 let el_id = ELID
 
 (* compose a relocation of magnitude n *)
-let rec el_shft_rec n = function
-  | ELSHFT(el,k) -> el_shft_rec (k+n) el
+let el_shft_rec n = function
+  | ELSHFT(el,k) -> ELSHFT(el,k+n)
   | el           -> ELSHFT(el,n)
 let el_shft n el = if Int.equal n 0 then el else el_shft_rec n el
 
 (* cross n binders *)
-let rec el_liftn_rec n = function
+let el_liftn_rec n = function
   | ELID        -> ELID
-  | ELLFT(k,el) -> el_liftn_rec (n+k) el
+  | ELLFT(k,el) -> ELLFT(n+k, el)
   | el          -> ELLFT(n, el)
 let el_liftn n el = if Int.equal n 0 then el else el_liftn_rec n el
 
