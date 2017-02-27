@@ -323,6 +323,15 @@ end = struct (* {{{ *)
   open Printf
 
   let print_dag vcs () =
+
+    (* Due to threading, be wary that this will be called from the
+       toplevel with we_are_parsing set to true, as indeed, the
+       toplevel is waiting for input . What a race! XD
+
+       In case you are hitting the race enable stm_debug.
+    *)
+    if stm_debug then Flags.we_are_parsing := false;
+
     let fname =
       "stm_" ^ Str.global_replace (Str.regexp " ") "_" (System.process_id ()) in
     let string_of_transaction = function
@@ -970,7 +979,6 @@ module Backtrack : sig
 
   val record : unit -> unit
   val backto : Stateid.t -> unit
-  val back_safe : unit -> unit
 
   (* we could navigate the dag, but this ways easy *)
   val branches_of : Stateid.t -> backup
@@ -2342,21 +2350,17 @@ let observe id =
     VCS.restore vcs;
     iraise e
 
-let pr_open_cur_subgoals () =
-  try Printer.pr_open_subgoals ()
-  with Proof_global.NoCurrentProof -> Pp.str ""
-
-let finish ?(print_goals=false) () =
+let finish () =
   let head = VCS.current_branch () in
   observe (VCS.get_branch_pos head);
-  if print_goals then msg_notice (pr_open_cur_subgoals ());
   VCS.print ();
+  (* EJGA: Setting here the proof state looks really wrong, and it
+     hides true bugs cf bug #5363. Also, what happens with observe? *)
   (* Some commands may by side effect change the proof mode *)
   match VCS.get_branch head with
   | { VCS.kind = `Edit (mode,_,_,_,_) } -> Proof_global.activate_proof_mode mode
   | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode
   | _ -> ()
-
 
 let wait () =
   Slaves.wait_all_done ();
@@ -2435,29 +2439,17 @@ let merge_proof_branch ~valid ?id qast keep brname =
 
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
-let handle_failure (e, info) vcs tty =
+let handle_failure (e, info) vcs =
   if e = CErrors.Drop then iraise (e, info) else
   match Stateid.get info with
   | None ->
       VCS.restore vcs;
-      VCS.print ();
-      if tty && interactive () = `Yes then begin
-        (* Hopefully the 1 to last state is valid *)
-        Backtrack.back_safe (); 
-        VCS.checkout_shallowest_proof_branch ();
-      end;
       VCS.print ();
       anomaly(str"error with no safe_id attached:" ++ spc() ++
         CErrors.iprint_no_report (e, info))
   | Some (safe_id, id) ->
       stm_prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
       VCS.restore vcs;
-      if tty && interactive () = `Yes then begin
-        (* We stay on a valid state *)
-        Backtrack.backto safe_id;
-        VCS.checkout_shallowest_proof_branch ();
-        Reach.known_state ~cache:(interactive ()) safe_id;
-      end;
       VCS.print ();
       iraise (e, info)
 
@@ -2471,7 +2463,7 @@ let snapshot_vio ldir long_f_dot_vo =
 let reset_task_queue = Slaves.reset_task_queue
 
 (* Document building *)
-let process_transaction ?(newtip=Stateid.fresh ()) ~tty
+let process_transaction ?(newtip=Stateid.fresh ())
   ({ verbose; loc; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
@@ -2517,13 +2509,6 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
           anomaly(str"classifier: VtBack + VtLater must imply part_of_script")
 
       (* Query *)
-      | VtQuery (false,(report_id,route)), VtNow when tty = true ->
-          finish ();
-          (try Future.purify (stm_vernac_interp report_id ~route)
-            {x with verbose = true }
-           with e when CErrors.noncritical e ->
-             let e = CErrors.push e in
-             iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
       | VtQuery (false,(report_id,route)), VtNow ->
           (try stm_vernac_interp report_id ~route x
            with e ->
@@ -2655,7 +2640,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
     rc
   with e ->
     let e = CErrors.push e in
-    handle_failure e vcs tty
+    handle_failure e vcs
 
 let get_ast id =
   match VCS.visit id with
@@ -2743,7 +2728,7 @@ let add ~ontop ?newtip verb (loc, ast) =
   (* XXX: Classifiy vernac should be moved inside process transaction *)
   let clas = classify_vernac ast in
   let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
-  match process_transaction ?newtip ~tty:false aast clas with
+  match process_transaction ?newtip aast clas with
   | `Ok -> VCS.cur_tip (), `NewTip
   | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
 
@@ -2766,10 +2751,9 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
     let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
     match clas with
     | VtStm (w,_), _ ->
-       ignore(process_transaction ~tty:false aast (VtStm (w,false), VtNow))
+       ignore(process_transaction aast (VtStm (w,false), VtNow))
     | _ ->
-       ignore(process_transaction
-         ~tty:false aast (VtQuery (false,report_with), VtNow)))
+       ignore(process_transaction aast (VtQuery (false,report_with), VtNow)))
   s
 
 let edit_at id =
@@ -2898,31 +2882,10 @@ let edit_at id =
 let backup () = VCS.backup ()
 let restore d = VCS.restore d
 
+let get_current_state () = VCS.cur_tip ()
+
 (*********************** TTY API (PG, coqtop, coqc) ***************************)
 (******************************************************************************)
-
-let interp verb (loc,e) =
-  let clas = classify_vernac e in
-  let aast = { verbose = verb; indentation = 0; strlen = 0; loc; expr = e } in
-  let rc = process_transaction ~tty:true aast clas in
-  if rc <> `Ok then anomaly(str"tty loop can't be mixed with the STM protocol");
-  if interactive () = `Yes ||
-     (!Flags.async_proofs_mode = Flags.APoff &&
-      !Flags.compilation_mode = Flags.BuildVo) then
-    let vcs = VCS.backup () in
-    let print_goals =
-      verb && match clas with
-       | VtQuery _, _ -> false
-       | (VtProofStep _ | VtStm (VtBack _, _) | VtStartProof _), _ -> true
-       | _ -> not !Flags.coqtop_ui in
-    try finish ~print_goals ()
-    with e ->
-      let e = CErrors.push e in
-      handle_failure e vcs true
-
-let finish () = finish ()
-
-let get_current_state () = VCS.cur_tip ()
 
 let current_proof_depth () =
   let head = VCS.current_branch () in

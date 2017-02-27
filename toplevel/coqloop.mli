@@ -31,7 +31,7 @@ val coqloop_feed : Feedback.feedback -> unit
 
 (** Parse and execute one vernac command. *)
 
-val do_vernac : unit -> unit
+val do_vernac : Stateid.t -> Stateid.t
 
 (** Main entry point of Coq: read and execute vernac commands. *)
 

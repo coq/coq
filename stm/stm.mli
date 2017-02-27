@@ -30,7 +30,7 @@ exception End_of_input
    If [newtip] is provided, then the returned state id is guaranteed
    to be [newtip] *)
 val add : ontop:Stateid.t -> ?newtip:Stateid.t ->
-  bool -> (Loc.t * Vernacexpr.vernac_expr) ->
+  bool -> Vernacexpr.vernac_expr Loc.located ->
   Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
 (* [query at ?report_with cmd] Executes [cmd] at a given state [at],
@@ -204,13 +204,6 @@ type state = {
 }
 val state_of_id :
   Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
-
-(** read-eval-print loop compatible interface ****************************** **)
-
-(* Adds a new line to the document.  It replaces the core of Vernac.interp.
-   [finish] is called as the last bit of this function if the system
-   is running interactively (-emacs or coqtop). *)
-val interp : bool -> vernac_expr located -> unit
 
 (* Queries for backward compatibility *)
 val current_proof_depth : unit -> int

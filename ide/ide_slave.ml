@@ -8,6 +8,7 @@
 (************************************************************************)
 
 open Vernacexpr
+open Vernacprop
 open CErrors
 open Util
 open Pp
@@ -60,25 +61,6 @@ let is_known_option cmd = match cmd with
   | VernacUnsetOption o -> coqide_known_option o
   | _ -> false
 
-let is_debug cmd = match cmd with
-  | VernacSetOption (["Ltac";"Debug"], _) -> true
-  | _ -> false
-
-let is_query cmd = match cmd with
-  | VernacChdir None
-  | VernacMemOption _
-  | VernacPrintOption _
-  | VernacCheckMayEval _
-  | VernacGlobalCheck _
-  | VernacPrint _
-  | VernacSearch _
-  | VernacLocate _ -> true
-  | _ -> false
-
-let is_undo cmd = match cmd with
-  | VernacUndo _ | VernacUndoTo _ -> true
-  | _ -> false
-
 (** Check whether a command is forbidden in the IDE *)
 
 let ide_cmd_checks (loc,ast) =
@@ -87,7 +69,7 @@ let ide_cmd_checks (loc,ast) =
     user_error "Debug mode not available in the IDE";
   if is_known_option ast then
     Feedback.msg_warning ~loc (strbrk "Set this option from the IDE menu instead");
-  if Vernac.is_navigation_vernac ast || is_undo ast then
+  if is_navigation_vernac ast || is_undo ast then
     Feedback.msg_warning ~loc (strbrk "Use IDE navigation instead");
   if is_query ast then
     Feedback.msg_warning ~loc (strbrk "Query commands should not be inserted in scripts")
@@ -132,7 +114,7 @@ let query (s,id) =
 let annotate phrase =
   let (loc, ast) =
     let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
-    Vernac.parse_sentence (pa,None)
+    Stm.parse_sentence (Stm.get_current_state ()) pa
   in
   (* XXX: Width should be a parameter of annotate... *)
   Richpp.richpp_of_pp 78 (Ppvernac.pr_vernac ast)
@@ -394,26 +376,9 @@ let init =
          initial_id
    end
 
-(* Retrocompatibility stuff *)
+(* Retrocompatibility stuff, disabled since 8.7 *)
 let interp ((_raw, verbose), s) =
-  let vernac_parse s =
-    let pa = Pcoq.Gram.parsable (Stream.of_string s) in
-    Flags.with_option Flags.we_are_parsing (fun () ->
-      match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
-      | None -> raise (Invalid_argument "vernac_parse")
-      | Some ast -> ast)
-    () in
-  Stm.interp verbose (vernac_parse s);
-  (* TODO: the "" parameter is a leftover of the times the protocol
-   * used to include stderr/stdout output.
-   *
-   * Currently, we force all the output meant for the to go via the
-   * feedback mechanism, and we don't manipulate stderr/stdout, which
-   * are left to the client's discrection. The parameter is still there
-   * as not to break the core protocol for this minor change, but it should
-   * be removed in the next version of the protocol.
-   *)
-  Stm.get_current_state (), CSig.Inl ""
+  Stateid.dummy, CSig.Inr "The interp call has been disabled, please use Add."
 
 (** When receiving the Quit call, we don't directly do an [exit 0],
     but rather set this reference, in order to send a final answer

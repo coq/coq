@@ -6,23 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Initialization. *)
+(* We define some high-level properties of vernacular commands, used
+   mainly by the UI components *)
 
-val set_debug : unit -> unit
+open Vernacexpr
 
-val set_rcfile : string -> unit
-
-val no_load_rc : unit -> unit
-val load_rcfile : Stateid.t -> Stateid.t
-
-val push_include : string -> Names.DirPath.t -> bool -> unit
-(** [push_include phys_path log_path implicit] *)
-
-val push_ml_include : string -> unit
-
-val init_load_path : unit -> unit
-val init_library_roots : unit -> unit
-
-val init_ocaml_path : unit -> unit
-
-val get_compat_version : string -> Flags.compat_version
+val is_navigation_vernac : vernac_expr -> bool
+val is_deep_navigation_vernac : vernac_expr -> bool
+val is_reset : vernac_expr -> bool
+val is_query : vernac_expr -> bool
+val is_debug : vernac_expr -> bool
+val is_undo : vernac_expr -> bool

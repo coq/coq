@@ -257,7 +257,7 @@ let set_prompt prompt =
 let parse_to_dot =
   let rec dot st = match Stream.next st with
     | Tok.KEYWORD ("."|"...") -> ()
-    | Tok.EOI -> raise End_of_input
+    | Tok.EOI -> raise Stm.End_of_input
     | _ -> dot st
   in
   Gram.Entry.of_parser "Coqtoplevel.dot" dot
@@ -271,13 +271,11 @@ let rec discard_to_dot () =
     Gram.entry_parse parse_to_dot top_buffer.tokens
   with
     | Token.Error _ | CLexer.Error.E _ -> discard_to_dot ()
-    | End_of_input -> raise End_of_input
+    | Stm.End_of_input -> raise Stm.End_of_input
     | e when CErrors.noncritical e -> ()
 
-let read_sentence input =
-  try
-    let (loc, _ as r) = Vernac.parse_sentence input in
-    CWarnings.set_current_loc loc; r
+let read_sentence sid input =
+  try Stm.parse_sentence sid input
   with reraise ->
     let reraise = CErrors.push reraise in
     discard_to_dot ();
@@ -312,25 +310,24 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
     is caught and handled (i.e. not re-raised).
 *)
 
-let do_vernac () =
+let do_vernac sid =
   top_stderr (fnl());
   if !print_emacs then top_stderr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.process_expr top_buffer.tokens (read_sentence input)
+    Vernac.process_expr sid top_buffer.tokens (read_sentence sid (fst input))
   with
-    | End_of_input | CErrors.Quit ->
+    | Stm.End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
     | CErrors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise CErrors.Drop
-        else Feedback.msg_error (str "There is no ML toplevel.")
+        else (Feedback.msg_error (str "There is no ML toplevel."); sid)
     (* Exception printing is done now by the feedback listener. *)
     (* XXX: We need this hack due to the side effects of the exception
        printer and the reliance of Stm.define on attaching crutial
        state to exceptions *)
-    | any -> ignore (CErrors.(iprint (push any)))
-
+    | any -> ignore (CErrors.(iprint (push any))); sid
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
@@ -349,10 +346,16 @@ let loop_flush_all () =
 let rec loop () =
   Sys.catch_break true;
   if !Flags.print_emacs then Vernacentries.qed_display_script := false;
-  Flags.coqtop_ui := true;
   try
     reset_input_buffer stdin top_buffer;
-    while true do do_vernac(); loop_flush_all () done
+    (* Be careful to keep this loop tail-recursive *)
+    let rec vernac_loop sid =
+      let nsid = do_vernac sid in
+      loop_flush_all ();
+      vernac_loop nsid
+    (* We recover the current stateid, threading from the caller is
+       not possible due exceptions. *)
+    in vernac_loop (Stm.get_current_state ())
   with
     | CErrors.Drop -> ()
     | CErrors.Quit -> exit 0

@@ -175,15 +175,15 @@ let set_include d p implicit =
 let load_vernacular_list = ref ([] : (string * bool) list)
 let add_load_vernacular verb s =
   load_vernacular_list := ((CUnix.make_suffix s ".v"),verb) :: !load_vernacular_list
-let load_vernacular () =
-  List.iter
-    (fun (s,b) ->
+let load_vernacular sid =
+  List.fold_left
+    (fun sid (s,v) ->
       let s = Loadpath.locate_file s in
       if !Flags.beautify then
-	with_option beautify_file (Vernac.load_vernac b) s
+	with_option beautify_file (Vernac.load_vernac v sid) s
       else
-	Vernac.load_vernac b s)
-    (List.rev !load_vernacular_list)
+	Vernac.load_vernac v sid s)
+    sid (List.rev !load_vernacular_list)
 
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
@@ -641,8 +641,9 @@ let init_toplevel arglist =
       load_vernac_obj ();
       require ();
       Stm.init ();
-      load_rcfile();
-      load_vernacular ();
+      let sid  = load_rcfile (Stm.get_current_state ()) in
+      (* XXX: We ignore this for now, but should be threaded to the toplevels *)
+      let _sid = load_vernacular sid in
       compile_files ();
       schedule_vio_checking ();
       schedule_vio_compilation ();
