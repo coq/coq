@@ -557,4 +557,59 @@ Fixpoint of_succ_nat (n:nat) : positive :=
     | S x => succ (of_succ_nat x)
   end.
 
+(** ** Conversion with a decimal representation for printing/parsing *)
+
+Local Notation ten := 1~0~1~0.
+
+Fixpoint of_uint_acc (d:Decimal.uint)(acc:positive) :=
+  match d with
+  | Decimal.Nil => acc
+  | Decimal.D0 l => of_uint_acc l (mul ten acc)
+  | Decimal.D1 l => of_uint_acc l (add 1 (mul ten acc))
+  | Decimal.D2 l => of_uint_acc l (add 1~0 (mul ten acc))
+  | Decimal.D3 l => of_uint_acc l (add 1~1 (mul ten acc))
+  | Decimal.D4 l => of_uint_acc l (add 1~0~0 (mul ten acc))
+  | Decimal.D5 l => of_uint_acc l (add 1~0~1 (mul ten acc))
+  | Decimal.D6 l => of_uint_acc l (add 1~1~0 (mul ten acc))
+  | Decimal.D7 l => of_uint_acc l (add 1~1~1 (mul ten acc))
+  | Decimal.D8 l => of_uint_acc l (add 1~0~0~0 (mul ten acc))
+  | Decimal.D9 l => of_uint_acc l (add 1~0~0~1 (mul ten acc))
+  end.
+
+Fixpoint of_uint (d:Decimal.uint) : N :=
+  match d with
+  | Decimal.Nil => N0
+  | Decimal.D0 l => of_uint l
+  | Decimal.D1 l => Npos (of_uint_acc l 1)
+  | Decimal.D2 l => Npos (of_uint_acc l 1~0)
+  | Decimal.D3 l => Npos (of_uint_acc l 1~1)
+  | Decimal.D4 l => Npos (of_uint_acc l 1~0~0)
+  | Decimal.D5 l => Npos (of_uint_acc l 1~0~1)
+  | Decimal.D6 l => Npos (of_uint_acc l 1~1~0)
+  | Decimal.D7 l => Npos (of_uint_acc l 1~1~1)
+  | Decimal.D8 l => Npos (of_uint_acc l 1~0~0~0)
+  | Decimal.D9 l => Npos (of_uint_acc l 1~0~0~1)
+  end.
+
+Definition of_int (d:Decimal.int) : option positive :=
+  match d with
+  | Decimal.Pos d =>
+    match of_uint d with
+    | N0 => None
+    | Npos p => Some p
+    end
+  | Decimal.Neg _ => None
+  end.
+
+Fixpoint to_little_uint p :=
+  match p with
+  | 1 => Decimal.D1 Decimal.Nil
+  | p~1 => Decimal.Little.succ_double (to_little_uint p)
+  | p~0 => Decimal.Little.double (to_little_uint p)
+  end.
+
+Definition to_uint p := Decimal.rev (to_little_uint p) Decimal.Nil.
+
+Definition to_int n := Decimal.Pos (to_uint n).
+
 End Pos.

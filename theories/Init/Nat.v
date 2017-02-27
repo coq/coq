@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import Notations Logic Datatypes.
-
+Require Decimal.
 Local Open Scope nat_scope.
 
 (**********************************************************************)
@@ -133,6 +133,66 @@ Fixpoint pow n m :=
   end
 
 where "n ^ m" := (pow n m) : nat_scope.
+
+(** ** Tail-recursive versions of [add] and [mul] *)
+
+Module Tail.
+
+Fixpoint add n m :=
+  match n with
+    | O => m
+    | S n => add n (S m)
+  end.
+
+(** [addmul r n m] is [r + n * m]. *)
+
+Fixpoint addmul r n m :=
+  match n with
+    | O => r
+    | S n => addmul (add m r) n m
+  end.
+
+Definition mul n m := addmul 0 n m.
+
+End Tail.
+
+(** ** Conversion with a decimal representation for printing/parsing *)
+
+Local Notation ten := (S (S (S (S (S (S (S (S (S (S O)))))))))).
+
+Fixpoint of_uint_acc (d:Decimal.uint)(acc:nat) :=
+  match d with
+  | Decimal.Nil => acc
+  | Decimal.D0 d => of_uint_acc d (Tail.mul ten acc)
+  | Decimal.D1 d => of_uint_acc d (S (Tail.mul ten acc))
+  | Decimal.D2 d => of_uint_acc d (S (S (Tail.mul ten acc)))
+  | Decimal.D3 d => of_uint_acc d (S (S (S (Tail.mul ten acc))))
+  | Decimal.D4 d => of_uint_acc d (S (S (S (S (Tail.mul ten acc)))))
+  | Decimal.D5 d => of_uint_acc d (S (S (S (S (S (Tail.mul ten acc))))))
+  | Decimal.D6 d => of_uint_acc d (S (S (S (S (S (S (Tail.mul ten acc)))))))
+  | Decimal.D7 d => of_uint_acc d (S (S (S (S (S (S (S (Tail.mul ten acc))))))))
+  | Decimal.D8 d => of_uint_acc d (S (S (S (S (S (S (S (S (Tail.mul ten acc)))))))))
+  | Decimal.D9 d => of_uint_acc d (S (S (S (S (S (S (S (S (S (Tail.mul ten acc))))))))))
+  end.
+
+Definition of_uint (d:Decimal.uint) := of_uint_acc d O.
+
+Fixpoint to_little_uint n acc :=
+  match n with
+  | O => acc
+  | S n => to_little_uint n (Decimal.Little.succ acc)
+  end.
+
+Definition to_uint n :=
+  Decimal.rev (to_little_uint n Decimal.zero) Decimal.Nil.
+
+Definition of_int (d:Decimal.int) : option nat :=
+  match Decimal.norm d with
+    | Decimal.Pos u => Some (of_uint u)
+    | _ => None
+  end.
+
+Definition to_int n := Decimal.Pos (to_uint n).
 
 (** ** Euclidean division *)
 
