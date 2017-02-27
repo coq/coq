@@ -149,15 +149,6 @@ TACTIC EXTEND autounfold_one
     [ Eauto.autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) None ]
       END
 
-TACTIC EXTEND autounfoldify
-| [ "autounfoldify" constr(x) ] -> [
-    let db = match Term.kind_of_term x with
-      | Term.Const (c,_) -> Names.Label.to_string (Names.con_label c)
-      | _ -> assert false
-    in Eauto.autounfold ["core";db] Locusops.onConcl 
-  ]
-END
-
 TACTIC EXTEND unify
 | ["unify" constr(x) constr(y) ] -> [ Tactics.unify x y ]
 | ["unify" constr(x) constr(y) "with" preident(base)  ] -> [

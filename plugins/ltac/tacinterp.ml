@@ -2023,9 +2023,6 @@ let () =
 let () =
   declare_uniform wit_string
 
-let () =
-  declare_uniform wit_pre_ident
-
 let lift f = (); fun ist x -> Ftactic.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
@@ -2053,9 +2050,13 @@ let interp_destruction_arg' ist c = Ftactic.nf_enter { enter = begin fun gl ->
   Ftactic.return (interp_destruction_arg ist gl c)
 end }
 
+let interp_pre_ident ist env sigma s =
+  s |> Id.of_string |> interp_ident ist env sigma |> Id.to_string
+
 let () =
   register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
   register_interp0 wit_ref (lift interp_reference);
+  register_interp0 wit_pre_ident (lift interp_pre_ident);
   register_interp0 wit_ident (lift interp_ident);
   register_interp0 wit_var (lift interp_hyp);
   register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
