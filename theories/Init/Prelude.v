@@ -26,5 +26,15 @@ Require Export Coq.Init.Tauto.
 *)
 Declare ML Module "cc_plugin".
 Declare ML Module "ground_plugin".
+Declare ML Module "numeral_notation_plugin".
+
+(* Parsing / printing of decimal numbers *)
+Arguments Nat.of_uint d%uint_scope.
+Arguments Nat.of_int d%int_scope.
+Numeral Notation Decimal.uint Decimal.uint_of_uint Decimal.uint_of_uint
+  : uint_scope.
+Numeral Notation Decimal.int Decimal.int_of_int Decimal.int_of_int
+  : int_scope.
+
 (* Default substrings not considered by queries like SearchAbout *)
 Add Search Blacklist "_subproof" "_subterm" "Private_".
