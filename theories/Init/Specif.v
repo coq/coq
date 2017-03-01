@@ -103,7 +103,7 @@ Definition sig_of_sig2 (A : Type) (P Q : A -> Prop) (X : sig2 P Q) : sig P
     of an [a] of type [A], a of a proof [h] that [a] satisfies [P],
     and a proof [h'] that [a] satisfies [Q].  Then
     [(proj1_sig (sig_of_sig2 y))] is the witness [a],
-    [(proj2_sig (sig_of_sig2 y))] is the proof of [(P a)], and 
+    [(proj2_sig (sig_of_sig2 y))] is the proof of [(P a)], and
     [(proj3_sig y)] is the proof of [(Q a)]. *)
 
 Section Subset_projections2.
@@ -263,10 +263,10 @@ Section Dependent_choice_lemmas.
     (forall x:X, {y | R x y}) ->
     forall x0, {f : nat -> X | f O = x0 /\ forall n, R (f n) (f (S n))}.
   Proof.
-    intros H x0. 
+    intros H x0.
     set (f:=fix f n := match n with O => x0 | S n' => proj1_sig (H (f n')) end).
     exists f.
-    split. reflexivity. 
+    split. reflexivity.
     induction n; simpl; apply proj2_sig.
   Defined.
 
