@@ -20,4 +20,3 @@ G_rewrite
 Tauto
 G_eqdecide
 G_ltac
-Ltac_plugin
