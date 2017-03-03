@@ -1396,6 +1396,21 @@ Proof. easy. Qed.
 Lemma neg_le_pos p q : Zneg p <= Zpos q.
 Proof. easy. Qed.
 
+Lemma neg_lt_pos p q : Zneg p < Zpos q.
+Proof. easy. Qed.
+
+Lemma neg_le_neg p q : (q <= p)%positive -> Zneg p <= Zneg q.
+Proof. intros; unfold Z.le; simpl. now rewrite <- Pos.compare_antisym. Qed.
+
+Lemma neg_lt_neg p q : (q < p)%positive -> Zneg p < Zneg q.
+Proof. intros; unfold Z.lt; simpl. now rewrite <- Pos.compare_antisym. Qed.
+
+Lemma pos_le_pos p q : (p <= q)%positive -> Zpos p <= Zpos q.
+Proof. easy. Qed.
+
+Lemma pos_lt_pos p q : (p < q)%positive -> Zpos p < Zpos q.
+Proof. easy. Qed.
+
 Lemma neg_xO p : Z.neg p~0 = 2 * Z.neg p.
 Proof. reflexivity. Qed.
 
