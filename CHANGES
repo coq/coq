@@ -7,6 +7,15 @@ Tactics
   functional extensionality in H supposed to be a quantified equality
   until giving a bare equality.
 
+Libraries
+
+- New file PropExtensionality.v to explicitly work in the axiomatic
+  context of propositional extensionality.
+- New file SetoidChoice.v axiomatically providing choice over setoids,
+  and, consequently, choice of representatives in equivalence classes.
+  Various proof-theoretic characterizations of choice over setoids in
+  file ChoiceFacts.v.
+
 Changes from V8.6beta1 to V8.6
 ==============================
 
