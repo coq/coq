@@ -24,7 +24,7 @@ Section Between.
 
   Lemma bet_eq : forall k l, l = k -> between k l.
   Proof.
-    induction 1; auto with arith.
+    intros * ->; auto with arith.
   Qed.
 
   Hint Resolve bet_eq: arith.
@@ -37,9 +37,7 @@ Section Between.
 
   Lemma between_Sk_l : forall k l, between k l -> S k <= l -> between (S k) l.
   Proof.
-    intros k l H; induction H as [|l H].
-    intros; absurd (S k <= k); auto with arith.
-    destruct H; auto with arith.
+    induction 1 as [|* [|]]; auto with arith.
   Qed.
   Hint Resolve between_Sk_l: arith.
 
@@ -74,32 +72,32 @@ Section Between.
 
   Lemma in_int_intro : forall p q r, p <= r -> r < q -> in_int p q r.
   Proof.
-    red; auto with arith.
+    split; assumption.
   Qed.
   Hint Resolve in_int_intro: arith.
 
   Lemma in_int_lt : forall p q r, in_int p q r -> p < q.
   Proof.
-    induction 1; intros.
-    apply le_lt_trans with r; auto with arith.
+    intros * [].
+    eapply le_lt_trans; eassumption.
   Qed.
 
   Lemma in_int_p_Sq :
-    forall p q r, in_int p (S q) r -> in_int p q r \/ r = q :>nat.
+    forall p q r, in_int p (S q) r -> in_int p q r \/ r = q.
   Proof.
-    induction 1; intros.
-    elim (le_lt_or_eq r q); auto with arith.
+    intros p q r [].
+    destruct (le_lt_or_eq r q); auto with arith.
   Qed.
 
   Lemma in_int_S : forall p q r, in_int p q r -> in_int p (S q) r.
   Proof.
-    induction 1; auto with arith.
+    intros * []; auto with arith.
   Qed.
   Hint Resolve in_int_S: arith.
 
   Lemma in_int_Sp_q : forall p q r, in_int (S p) q r -> in_int p q r.
   Proof.
-    induction 1; auto with arith.
+    intros * []; auto with arith.
   Qed.
   Hint Immediate in_int_Sp_q: arith.
 
@@ -107,10 +105,9 @@ Section Between.
     forall k l, between k l -> forall r, in_int k l r -> P r.
   Proof.
     induction 1; intros.
-    absurd (k < k); auto with arith.
-    apply in_int_lt with r; auto with arith.
-    elim (in_int_p_Sq k l r); intros; auto with arith.
-    rewrite H2; trivial with arith.
+    - absurd (k < k). { auto with arith. }
+      eapply in_int_lt; eassumption.
+    - destruct (in_int_p_Sq k l r) as [| ->]; auto with arith.
   Qed.
 
   Lemma in_int_between :
@@ -120,17 +117,17 @@ Section Between.
   Qed.
 
   Lemma exists_in_int :
-    forall k l, exists_between k l ->  exists2 m : nat, in_int k l m & Q m.
+    forall k l, exists_between k l -> exists2 m : nat, in_int k l m & Q m.
   Proof.
-    induction 1.
-    case IHexists_between; intros p inp Qp; exists p; auto with arith.
-    exists l; auto with arith.
+    induction 1 as [* ? (p, ?, ?)|].
+    - exists p; auto with arith.
+    - exists l; auto with arith.
   Qed.
 
   Lemma in_int_exists : forall k l r, in_int k l r -> Q r -> exists_between k l.
   Proof.
-    destruct 1; intros.
-    elim H0; auto with arith.
+    intros * (?, lt_r_l) ?.
+    induction lt_r_l; auto with arith.
   Qed.
 
   Lemma between_or_exists :
@@ -139,9 +136,11 @@ Section Between.
       (forall n:nat, in_int k l n -> P n \/ Q n) ->
       between k l \/ exists_between k l.
   Proof.
-    induction 1; intros; auto with arith.
-    elim IHle; intro; auto with arith.
-    elim (H0 m); auto with arith.
+    induction 1 as [|m ? IHle].
+    - auto with arith.
+    - intros P_or_Q.
+      destruct IHle; auto with arith.
+      destruct (P_or_Q m); auto with arith.
   Qed.
 
   Lemma between_not_exists :
@@ -150,14 +149,14 @@ Section Between.
       (forall n:nat, in_int k l n -> P n -> ~ Q n) -> ~ exists_between k l.
   Proof.
     induction 1; red; intros.
-    absurd (k < k); auto with arith.
-    absurd (Q l); auto with arith.
-    elim (exists_in_int k (S l)); auto with arith; intros l' inl' Ql'.
-    replace l with l'; auto with arith.
-    elim inl'; intros.
-    elim (le_lt_or_eq l' l); auto with arith; intros.
-    absurd (exists_between k l); auto with arith.
-    apply in_int_exists with l'; auto with arith.
+    - absurd (k < k); auto with arith.
+    - absurd (Q l). { auto with arith. }
+      destruct (exists_in_int k (S l)) as (l',[],?).
+      + auto with arith.
+      + replace l with l'. { trivial. }
+        destruct (le_lt_or_eq l' l); auto with arith.
+        absurd (exists_between k l). { auto with arith. }
+        eapply in_int_exists; eauto with arith.
   Qed.
 
   Inductive P_nth (init:nat) : nat -> nat -> Prop :=
@@ -168,15 +167,16 @@ Section Between.
 
   Lemma nth_le : forall (init:nat) l (n:nat), P_nth init l n -> init <= l.
   Proof.
-    induction 1; intros; auto with arith.
-    apply le_trans with (S k); auto with arith.
+    induction 1.
+    - auto with arith.
+    - eapply le_trans; eauto with arith.
   Qed.
 
   Definition eventually (n:nat) :=  exists2 k : nat, k <= n & Q k.
 
   Lemma event_O : eventually 0 -> Q 0.
   Proof.
-    induction 1; intros.
+    intros (x, ?, ?).
     replace 0 with x; auto with arith.
   Qed.
 
