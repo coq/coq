@@ -1393,6 +1393,9 @@ Proof. reflexivity. Qed.
 Lemma pos_is_nonneg p : 0 <= Z.pos p.
 Proof. easy. Qed.
 
+Lemma neg_le_pos p q : Zneg p <= Zpos q.
+Proof. easy. Qed.
+
 Lemma neg_xO p : Z.neg p~0 = 2 * Z.neg p.
 Proof. reflexivity. Qed.
 
