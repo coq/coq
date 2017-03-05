@@ -1618,9 +1618,9 @@ end = struct (* {{{ *)
           Future.from_val (Option.get (Global.body_of_constant_body c)) in
         let uc =
           Future.chain
-            ~greedy:true ~pure:true uc Univ.hcons_universe_context_set in
-        let pr = Future.chain ~greedy:true ~pure:true pr discharge in
-        let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
+            ~pure:true uc Univ.hcons_universe_context_set in
+        let pr = Future.chain ~pure:true pr discharge in
+        let pr = Future.chain ~pure:true pr Constr.hcons in
         Future.sink pr;
         let extra = Future.join uc in
         u.(bucket) <- uc;
