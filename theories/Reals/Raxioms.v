@@ -115,35 +115,6 @@ Arguments INR n%nat.
 
 
 (**********************************************************)
-(** *    Injection from [Z] to [R]                        *)
-(**********************************************************)
-
-(* compact representation for 2*p *)
-Fixpoint IPR_2 (p:positive) : R :=
-  match p with
-  | xH => 1 + 1
-  | xO p => (1 + 1) * IPR_2 p
-  | xI p => (1 + 1) * (1 + IPR_2 p)
-  end.
-
-Definition IPR (p:positive) : R :=
-  match p with
-  | xH => 1
-  | xO p => IPR_2 p
-  | xI p => 1 + IPR_2 p
-  end.
-Arguments IPR p%positive : simpl never.
-
-(**********)
-Definition IZR (z:Z) : R :=
-  match z with
-  | Z0 => 0
-  | Zpos n => IPR n
-  | Zneg n => - IPR n
-  end.
-Arguments IZR z%Z : simpl never.
-
-(**********************************************************)
 (** *    [R] Archimedean                                  *)
 (**********************************************************)
 

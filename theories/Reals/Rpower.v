@@ -488,12 +488,9 @@ Proof.
   rewrite Rinv_r.
   apply exp_lt_inv.
   apply Rle_lt_trans with (1 := exp_le_3).
-  change (3 < 2 ^R 2).
+  change (3 < 2 ^R (1 + 1)).
   repeat rewrite Rpower_plus; repeat rewrite Rpower_1.
-  repeat rewrite Rmult_plus_distr_r; repeat rewrite Rmult_plus_distr_l;
-    repeat rewrite Rmult_1_l.
-  pattern 3 at 1; rewrite <- Rplus_0_r; replace (2 + 2) with (3 + 1);
-    [ apply Rplus_lt_compat_l; apply Rlt_0_1 | ring ].
+  now apply (IZR_lt 3 4).
   prove_sup0.
   discrR.
 Qed.
@@ -715,7 +712,7 @@ Definition arcsinh x := ln (x + sqrt (x ^ 2 + 1)).
 Lemma arcsinh_sinh : forall x, arcsinh (sinh x) = x.
 intros x; unfold sinh, arcsinh.
 assert (Rminus_eq_0 : forall r, r - r = 0) by (intros; ring).
-pattern 1 at 5; rewrite <- exp_0, <- (Rminus_eq_0 x); unfold Rminus.
+rewrite <- exp_0, <- (Rminus_eq_0 x); unfold Rminus.
 rewrite exp_plus.
 match goal with |- context[sqrt ?a] => 
   replace a with (((exp x + exp(-x))/2)^2) by field

@@ -439,20 +439,16 @@ Proof.
   repeat rewrite <- Rmult_assoc.
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_l.
-  replace (INR N * INR N) with (Rsqr (INR N)); [ idtac | reflexivity ].
-  rewrite Rmult_assoc.
-  rewrite Rmult_comm.
-  replace 4 with (Rsqr 2); [ idtac | ring_Rsqr ].
+  change 4 with (Rsqr 2).
   rewrite <- Rsqr_mult.
   apply Rsqr_incr_1.
-  replace 2 with (INR 2).
-  rewrite <- mult_INR; apply H1.
-  reflexivity.
+  change 2 with (INR 2).
+  rewrite Rmult_comm, <- mult_INR; apply H1.
   left; apply lt_INR_0; apply H.
   left; apply Rmult_lt_0_compat.
-  prove_sup0.
   apply lt_INR_0; apply div2_not_R0.
   apply lt_n_S; apply H.
+  now apply IZR_lt.
   cut (1 < S N)%nat.
   intro; unfold Rsqr; apply prod_neq_R0; apply not_O_INR; intro;
     assert (H4 := div2_not_R0 _ H2); rewrite H3 in H4;

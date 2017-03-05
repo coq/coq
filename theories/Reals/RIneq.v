@@ -1812,7 +1812,7 @@ Qed.
 (**********)
 Lemma succ_IZR : forall n:Z, IZR (Z.succ n) = IZR n + 1.
 Proof.
-  intro; change 1 with (IZR 1); unfold Z.succ; apply plus_IZR.
+  intro; unfold Z.succ; apply plus_IZR.
 Qed.
 
 (**********)

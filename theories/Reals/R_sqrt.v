@@ -420,10 +420,10 @@ Proof.
   rewrite (Rmult_comm (/ a)).
   rewrite Rmult_assoc.
   rewrite <- Rinv_mult_distr.
-  replace (2 * (2 * a) * a) with (Rsqr (2 * a)).
+  replace (4 * a * a) with (Rsqr (2 * a)).
   reflexivity.
   ring_Rsqr.
-  rewrite <- Rmult_assoc; apply prod_neq_R0;
+  apply prod_neq_R0;
     [ discrR | apply (cond_nonzero a) ].
   apply (cond_nonzero a).
   assumption.

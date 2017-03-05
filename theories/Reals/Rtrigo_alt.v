@@ -320,7 +320,7 @@ Proof.
   (1 - sum_f_R0 (fun i:nat => cos_n i * Rsqr a0 ^ i) (S n1)).
   unfold Rminus; rewrite Ropp_plus_distr; rewrite Ropp_involutive;
     repeat rewrite Rplus_assoc; rewrite (Rplus_comm 1);
-      rewrite (Rplus_comm (-1)); repeat rewrite Rplus_assoc;
+      rewrite (Rplus_comm (-(1))); repeat rewrite Rplus_assoc;
         rewrite Rplus_opp_l; rewrite Rplus_0_r; rewrite <- Rabs_Ropp;
           rewrite Ropp_plus_distr; rewrite Ropp_involutive;
             unfold Rminus in H6; apply H6.
@@ -367,10 +367,10 @@ Proof.
   reflexivity.
   ring.
   intro; elim H2; intros; split.
-  apply Rplus_le_reg_l with (-1).
+  apply Rplus_le_reg_l with (-(1)).
   rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
     rewrite (Rplus_comm (-1)); apply H3.
-  apply Rplus_le_reg_l with (-1).
+  apply Rplus_le_reg_l with (-(1)).
   rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
     rewrite (Rplus_comm (-1)); apply H4.
   unfold cos_term; simpl; unfold Rdiv; rewrite Rinv_1;

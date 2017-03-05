@@ -416,8 +416,9 @@ Proof.
   simpl; apply Rabs_R1.
   replace (S n) with (n + 1)%nat; [ rewrite pow_add | ring ].
   rewrite Rabs_mult.
-  rewrite Hrecn; rewrite Rmult_1_l; simpl; rewrite Rmult_1_r;
-    rewrite Rabs_Ropp; apply Rabs_R1.
+  rewrite Hrecn; rewrite Rmult_1_l; simpl; rewrite Rmult_1_r.
+  change (-1) with (-(1)).
+  rewrite Rabs_Ropp; apply Rabs_R1.
 Qed.
 
 Lemma pow_mult : forall (x:R) (n1 n2:nat), x ^ (n1 * n2) = (x ^ n1) ^ n2.

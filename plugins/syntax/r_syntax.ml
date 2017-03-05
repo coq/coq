@@ -9,6 +9,8 @@
 open Util
 open Names
 open Globnames
+open Glob_term
+open Bigint
 
 (* Poor's man DECLARE PLUGIN *)
 let __coq_plugin_name = "r_syntax_plugin"
@@ -17,95 +19,105 @@ let () = Mltop.add_known_module __coq_plugin_name
 exception Non_closed_number
 
 (**********************************************************************)
+(* Parsing positive via scopes                                        *)
+(**********************************************************************)
+
+let binnums = ["Coq";"Numbers";"BinNums"]
+
+let make_dir l = DirPath.make (List.rev_map Id.of_string l)
+let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
+
+let positive_path = make_path binnums "positive"
+
+(* TODO: temporary hack *)
+let make_kn dir id = Globnames.encode_mind dir id
+
+let positive_kn = make_kn (make_dir binnums) (Id.of_string "positive")
+let glob_positive = IndRef (positive_kn,0)
+let path_of_xI = ((positive_kn,0),1)
+let path_of_xO = ((positive_kn,0),2)
+let path_of_xH = ((positive_kn,0),3)
+let glob_xI = ConstructRef path_of_xI
+let glob_xO = ConstructRef path_of_xO
+let glob_xH = ConstructRef path_of_xH
+
+let pos_of_bignat dloc x =
+  let ref_xI = GRef (dloc, glob_xI, None) in
+  let ref_xH = GRef (dloc, glob_xH, None) in
+  let ref_xO = GRef (dloc, glob_xO, None) in
+  let rec pos_of x =
+    match div2_with_rest x with
+      | (q,false) -> GApp (dloc, ref_xO,[pos_of q])
+      | (q,true) when not (Bigint.equal q zero) -> GApp (dloc,ref_xI,[pos_of q])
+      | (q,true) -> ref_xH
+  in
+  pos_of x
+
+(**********************************************************************)
+(* Printing positive via scopes                                       *)
+(**********************************************************************)
+
+let rec bignat_of_pos = function
+  | GApp (_, GRef (_,b,_),[a]) when Globnames.eq_gr b glob_xO -> mult_2(bignat_of_pos a)
+  | GApp (_, GRef (_,b,_),[a]) when Globnames.eq_gr b glob_xI -> add_1(mult_2(bignat_of_pos a))
+  | GRef (_, a, _) when Globnames.eq_gr a glob_xH -> Bigint.one
+  | _ -> raise Non_closed_number
+
+(**********************************************************************)
+(* Parsing Z via scopes                                               *)
+(**********************************************************************)
+
+let z_path = make_path binnums "Z"
+let z_kn = make_kn (make_dir binnums) (Id.of_string "Z")
+let glob_z = IndRef (z_kn,0)
+let path_of_ZERO = ((z_kn,0),1)
+let path_of_POS = ((z_kn,0),2)
+let path_of_NEG = ((z_kn,0),3)
+let glob_ZERO = ConstructRef path_of_ZERO
+let glob_POS = ConstructRef path_of_POS
+let glob_NEG = ConstructRef path_of_NEG
+
+let z_of_int dloc n =
+  if not (Bigint.equal n zero) then
+    let sgn, n =
+      if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
+    GApp(dloc, GRef (dloc,sgn,None), [pos_of_bignat dloc n])
+  else
+    GRef (dloc, glob_ZERO, None)
+
+(**********************************************************************)
+(* Printing Z via scopes                                              *)
+(**********************************************************************)
+
+let bigint_of_z = function
+  | GApp (_, GRef (_,b,_),[a]) when Globnames.eq_gr b glob_POS -> bignat_of_pos a
+  | GApp (_, GRef (_,b,_),[a]) when Globnames.eq_gr b glob_NEG -> Bigint.neg (bignat_of_pos a)
+  | GRef (_, a, _) when Globnames.eq_gr a glob_ZERO -> Bigint.zero
+  | _ -> raise Non_closed_number
+
+(**********************************************************************)
 (* Parsing R via scopes                                               *)
 (**********************************************************************)
 
-open Glob_term
-open Bigint
-
-let make_dir l = DirPath.make (List.rev_map Id.of_string l)
-let rdefinitions = make_dir ["Coq";"Reals";"Rdefinitions"]
-let make_path dir id = Libnames.make_path dir (Id.of_string id)
-
+let rdefinitions = ["Coq";"Reals";"Rdefinitions"]
 let r_path = make_path rdefinitions "R"
 
 (* TODO: temporary hack *)
 let make_path dir id = Globnames.encode_con dir (Id.of_string id)
 
-let r_kn = make_path rdefinitions "R"
-let glob_R = ConstRef r_kn
-let glob_R1 = ConstRef (make_path rdefinitions "R1")
-let glob_R0 = ConstRef (make_path rdefinitions "R0")
-let glob_Ropp = ConstRef (make_path rdefinitions "Ropp")
-let glob_Rplus = ConstRef (make_path rdefinitions "Rplus")
-let glob_Rmult = ConstRef (make_path rdefinitions "Rmult")
-
-let two = mult_2 one
-let three = add_1 two
-let four = mult_2 two
-
-(* Unary representation of strictly positive numbers *)
-let rec small_r dloc n =
-  if equal one n then GRef (dloc, glob_R1, None)
-  else GApp(dloc,GRef (dloc,glob_Rplus, None),
-            [GRef (dloc, glob_R1, None);small_r dloc (sub_1 n)])
-
-let r_of_posint dloc n =
-  let r1 = GRef (dloc, glob_R1, None) in
-  let r2 = small_r dloc two in
-  let rec r_of_pos n =
-    if less_than n four then small_r dloc n
-    else
-      let (q,r) = div2_with_rest n in
-      let b = GApp(dloc,GRef(dloc,glob_Rmult,None),[r2;r_of_pos q]) in
-      if r then GApp(dloc,GRef(dloc,glob_Rplus,None),[r1;b]) else b in
-  if not (Bigint.equal n zero) then r_of_pos n else GRef(dloc,glob_R0,None)
+let glob_IZR = ConstRef (make_path (make_dir rdefinitions) "IZR")
 
 let r_of_int dloc z =
-  if is_strictly_neg z then
-    GApp (dloc, GRef(dloc,glob_Ropp,None), [r_of_posint dloc (neg z)])
-  else
-    r_of_posint dloc z
+  GApp (dloc, GRef(dloc,glob_IZR,None), [z_of_int dloc z])
 
 (**********************************************************************)
 (* Printing R via scopes                                              *)
 (**********************************************************************)
 
-let bignat_of_r =
-(* for numbers > 1 *)
-let rec bignat_of_pos = function
-  (* 1+1 *)
-  | GApp (_,GRef (_,p,_), [GRef (_,o1,_); GRef (_,o2,_)])
-      when Globnames.eq_gr p glob_Rplus && Globnames.eq_gr o1 glob_R1 && Globnames.eq_gr o2 glob_R1 -> two
-  (* 1+(1+1) *)
-  | GApp (_,GRef (_,p1,_), [GRef (_,o1,_);
-      GApp(_,GRef (_,p2,_),[GRef(_,o2,_);GRef(_,o3,_)])])
-      when Globnames.eq_gr p1 glob_Rplus && Globnames.eq_gr p2 glob_Rplus &&
-           Globnames.eq_gr o1 glob_R1 && Globnames.eq_gr o2 glob_R1 && Globnames.eq_gr o3 glob_R1 -> three
-  (* (1+1)*b *)
-  | GApp (_,GRef (_,p,_), [a; b]) when Globnames.eq_gr p glob_Rmult ->
-      if not (Bigint.equal (bignat_of_pos a) two) then raise Non_closed_number;
-      mult_2 (bignat_of_pos b)
-  (* 1+(1+1)*b *)
-  | GApp (_,GRef (_,p1,_), [GRef (_,o,_); GApp (_,GRef (_,p2,_),[a;b])])
-      when Globnames.eq_gr p1 glob_Rplus && Globnames.eq_gr p2 glob_Rmult && Globnames.eq_gr o glob_R1  ->
-      if not (Bigint.equal (bignat_of_pos a) two) then raise Non_closed_number;
-        add_1 (mult_2 (bignat_of_pos b))
-  | _ -> raise Non_closed_number
-in
-let bignat_of_r = function
-  | GRef (_,a,_) when Globnames.eq_gr a glob_R0 -> zero
-  | GRef (_,a,_) when Globnames.eq_gr a glob_R1 -> one
-  | r -> bignat_of_pos r
-in
-bignat_of_r
-
 let bigint_of_r = function
-  | GApp (_,GRef (_,o,_), [a]) when Globnames.eq_gr o glob_Ropp ->
-      let n = bignat_of_r a in
-      if Bigint.equal n zero then raise Non_closed_number;
-      neg n
-  | a -> bignat_of_r a
+  | GApp (_,GRef (_,o,_), [a]) when Globnames.eq_gr o glob_IZR ->
+      bigint_of_z a
+  | _ -> raise Non_closed_number
 
 let uninterp_r p =
   try
@@ -113,12 +125,9 @@ let uninterp_r p =
   with Non_closed_number ->
     None
 
-let mkGRef gr = GRef (Loc.ghost,gr,None)
-
 let _ = Notation.declare_numeral_interpreter "R_scope"
   (r_path,["Coq";"Reals";"Rdefinitions"])
   r_of_int
-  (List.map mkGRef 
-    [glob_Ropp;glob_R0;glob_Rplus;glob_Rmult;glob_R1],
+  ([GRef (Loc.ghost,glob_IZR,None)],
     uninterp_r,
     false)

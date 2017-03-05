@@ -106,7 +106,7 @@ Proof.
   split.
   ring.
   unfold k0; case (Rcase_abs y) as [Hlt|Hge].
-  assert (H0 := archimed (x / - y)); rewrite <- Z_R_minus; change (IZR 1) with 1;
+  assert (H0 := archimed (x / - y)); rewrite <- Z_R_minus; simpl;
     unfold Rminus.
   replace (- ((1 + - IZR (up (x / - y))) * y)) with
     ((IZR (up (x / - y)) - 1) * y); [ idtac | ring ].
@@ -140,10 +140,10 @@ Proof.
   rewrite <- Ropp_mult_distr_r_reverse; rewrite (Ropp_inv_permute _ H); elim H0;
     unfold Rdiv; intros H1 _; exact H1.
   apply Ropp_neq_0_compat; assumption.
-  assert (H0 := archimed (x / y)); rewrite <- Z_R_minus; change (IZR 1) with 1;
+  assert (H0 := archimed (x / y)); rewrite <- Z_R_minus; simpl;
     cut (0 < y).
   intro; unfold Rminus;
-    replace (- ((IZR (up (x / y)) + -1) * y)) with ((1 - IZR (up (x / y))) * y);
+    replace (- ((IZR (up (x / y)) + -(1)) * y)) with ((1 - IZR (up (x / y))) * y);
       [ idtac | ring ].
   split.
   apply Rmult_le_reg_l with (/ y).

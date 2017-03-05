@@ -31,9 +31,6 @@ Ltac discrR :=
   try
    match goal with
    |  |- (?X1 <> ?X2) =>
-       change 2 with (IZR 2);
-       change 1 with (IZR 1);
-       change 0 with (IZR 0);
        repeat
          rewrite <- plus_IZR ||
            rewrite <- mult_IZR ||
@@ -52,9 +49,6 @@ Ltac prove_sup0 :=
   end.
 
 Ltac omega_sup :=
-  change 2 with (IZR 2);
-  change 1 with (IZR 1);
-  change 0 with (IZR 0);
   repeat
     rewrite <- plus_IZR ||
       rewrite <- mult_IZR || rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus;
@@ -72,9 +66,6 @@ Ltac prove_sup :=
   end.
 
 Ltac Rcompute :=
-  change 2 with (IZR 2);
-  change 1 with (IZR 1);
-  change 0 with (IZR 0);
   repeat
     rewrite <- plus_IZR ||
       rewrite <- mult_IZR || rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus;
