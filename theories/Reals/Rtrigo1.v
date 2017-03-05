@@ -182,8 +182,8 @@ destruct (pre_cos_bound _ 0 lo up) as [_ upper].
 apply Rle_lt_trans with (1 := upper).
 apply Rlt_le_trans with (2 := lower).
 unfold cos_approx, sin_approx.
-simpl sum_f_R0; replace 7 with (IZR 7) by (simpl; field).
-replace 8 with (IZR 8) by (simpl; field).
+simpl sum_f_R0; change 7 with (IZR 7).
+change 8 with (IZR 8).
 unfold cos_term, sin_term; simpl fact; rewrite !INR_IZR_INZ.
 simpl plus; simpl mult.
 field_simplify;
@@ -1798,7 +1798,7 @@ Lemma cos_eq_0_0 (x:R) :
 Proof.
   rewrite cos_sin. intros Hx.
   destruct (sin_eq_0_0 (PI/2 + x) Hx) as (k,Hk). clear Hx.
-  exists (k-1)%Z. rewrite <- Z_R_minus; simpl.
+  exists (k-1)%Z. rewrite <- Z_R_minus; change (IZR 1) with 1.
   symmetry in Hk. field_simplify [Hk]. field.
 Qed.
 
@@ -1836,7 +1836,7 @@ Proof.
   - right; left; auto.
   - left.
     clear Hi. subst.
-    replace 0 with (IZR 0 * PI) by (simpl; ring). f_equal. f_equal.
+    replace 0 with (IZR 0 * PI) by apply Rmult_0_l. f_equal. f_equal.
     apply one_IZR_lt1.
     split.
     + apply Rlt_le_trans with 0;

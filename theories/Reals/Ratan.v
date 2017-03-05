@@ -322,8 +322,8 @@ apply Rlt_le_trans with (2 := t); clear t.
 unfold cos_approx; simpl; unfold cos_term.
 simpl mult; replace ((-1)^ 0) with 1 by ring; replace ((-1)^2) with 1 by ring;
  replace ((-1)^4) with 1 by ring; replace ((-1)^1) with (-1) by ring;
- replace ((-1)^3) with (-1) by ring; replace 3 with (IZR 3) by (simpl; ring);
- replace 2 with (IZR 2) by (simpl; ring); simpl Z.of_nat;
+ replace ((-1)^3) with (-1) by ring; change 3 with (IZR 3);
+ change 2 with (IZR 2); simpl Z.of_nat;
  rewrite !INR_IZR_INZ, Ropp_mult_distr_l_reverse, Rmult_1_l.
 match goal with |- _ < ?a =>
 replace a with ((- IZR 3 ^ 6 * IZR (Z.of_nat (fact 0)) * IZR (Z.of_nat (fact 2)) *
@@ -853,6 +853,8 @@ intros x Hx eps Heps.
    apply Rlt_trans with (2 := H).
    apply Rinv_0_lt_compat.
    exact Heps.
+   unfold N.
+   rewrite INR_IZR_INZ, positive_nat_Z.
    exact HN.
    apply lt_INR.
    omega.

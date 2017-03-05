@@ -613,11 +613,12 @@ Qed.
 
 Lemma Rabs_Zabs : forall z:Z, Rabs (IZR z) = IZR (Z.abs z).
 Proof.
-  intros z; case z; simpl; auto with real.
-  apply Rabs_right; auto with real.
-  intros p0; apply Rabs_right; auto with real zarith.
+  intros z; case z; unfold Zabs.
+  apply Rabs_R0.
+  now intros p0; apply Rabs_pos_eq, (IZR_le 0).
+  unfold IZR at 1.
   intros p0; rewrite Rabs_Ropp.
-  apply Rabs_right; auto with real zarith.
+  now apply Rabs_pos_eq, (IZR_le 0).
 Qed.
 
 Lemma abs_IZR : forall z, IZR (Z.abs z) = Rabs (IZR z).
