@@ -1260,44 +1260,22 @@ Proof.
   intros x y H1 H2 H3 H4; rewrite <- (cos_neg x); rewrite <- (cos_neg y);
     rewrite <- (cos_period (- x) 1); rewrite <- (cos_period (- y) 1);
       unfold INR in |- *;
-        replace (- x + 2 * 1 * PI) with (PI / 2 - (x - 3 * (PI / 2))).
-  replace (- y + 2 * 1 * PI) with (PI / 2 - (y - 3 * (PI / 2))).
+        replace (- x + 2 * 1 * PI) with (PI / 2 - (x - 3 * (PI / 2))) by field.
+  replace (- y + 2 * 1 * PI) with (PI / 2 - (y - 3 * (PI / 2))) by field.
   repeat rewrite cos_shift; intro H5;
     generalize (Rplus_le_compat_l (-3 * (PI / 2)) PI x H1);
       generalize (Rplus_le_compat_l (-3 * (PI / 2)) x (2 * PI) H2);
         generalize (Rplus_le_compat_l (-3 * (PI / 2)) PI y H3);
           generalize (Rplus_le_compat_l (-3 * (PI / 2)) y (2 * PI) H4).
-  replace (-3 * (PI / 2) + y) with (y - 3 * (PI / 2)).
-  replace (-3 * (PI / 2) + x) with (x - 3 * (PI / 2)).
-  replace (-3 * (PI / 2) + 2 * PI) with (PI / 2).
-  replace (-3 * (PI / 2) + PI) with (- (PI / 2)).
+  replace (-3 * (PI / 2) + y) with (y - 3 * (PI / 2)) by ring.
+  replace (-3 * (PI / 2) + x) with (x - 3 * (PI / 2)) by ring.
+  replace (-3 * (PI / 2) + 2 * PI) with (PI / 2) by field.
+  replace (-3 * (PI / 2) + PI) with (- (PI / 2)) by field.
   clear H1 H2 H3 H4; intros H1 H2 H3 H4;
     apply Rplus_lt_reg_l with (-3 * (PI / 2));
-      replace (-3 * (PI / 2) + x) with (x - 3 * (PI / 2)).
-  replace (-3 * (PI / 2) + y) with (y - 3 * (PI / 2)).
+      replace (-3 * (PI / 2) + x) with (x - 3 * (PI / 2)) by ring.
+  replace (-3 * (PI / 2) + y) with (y - 3 * (PI / 2)) by ring.
   apply (sin_increasing_0 (x - 3 * (PI / 2)) (y - 3 * (PI / 2)) H4 H3 H2 H1 H5).
-  unfold Rminus in |- *.
-  rewrite Ropp_mult_distr_l_reverse.
-  apply Rplus_comm.
-  unfold Rminus in |- *.
-  rewrite Ropp_mult_distr_l_reverse.
-  apply Rplus_comm.
-  pattern PI at 3 in |- *; rewrite double_var.
-  ring.
-  rewrite double; pattern PI at 3 4 in |- *; rewrite double_var.
-  ring.
-  unfold Rminus in |- *.
-  rewrite Ropp_mult_distr_l_reverse.
-  apply Rplus_comm.
-  unfold Rminus in |- *.
-  rewrite Ropp_mult_distr_l_reverse.
-  apply Rplus_comm.
-  rewrite Rmult_1_r.
-  rewrite (double PI); pattern PI at 3 4 in |- *; rewrite double_var.
-  ring.
-  rewrite Rmult_1_r.
-  rewrite (double PI); pattern PI at 3 4 in |- *; rewrite double_var.
-  ring.
 Qed.
 
 Lemma cos_increasing_1 :

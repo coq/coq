@@ -2017,42 +2017,18 @@ Qed.
 Lemma le_epsilon :
   forall r1 r2, (forall eps:R, 0 < eps -> r1 <= r2 + eps) -> r1 <= r2.
 Proof.
-  intros x y; intros; elim (Rtotal_order x y); intro.
-  left; assumption.
-  elim H0; intro.
-  right; assumption.
-  clear H0; generalize (Rgt_minus x y H1); intro H2; change (0 < x - y) in H2.
-  cut (0 < 2).
-  intro.
-  generalize (Rmult_lt_0_compat (x - y) (/ 2) H2 (Rinv_0_lt_compat 2 H0));
-    intro H3; generalize (H ((x - y) * / 2) H3);
-      replace (y + (x - y) * / 2) with ((y + x) * / 2).
-  intro H4;
-    generalize (Rmult_le_compat_l 2 x ((y + x) * / 2) (Rlt_le 0 2 H0) H4);
-      rewrite <- (Rmult_comm ((y + x) * / 2)); rewrite Rmult_assoc;
-        rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; replace (2 * x) with (x + x).
-  rewrite (Rplus_comm y); intro H5; apply Rplus_le_reg_l with x; assumption.
-  ring.
-  replace 2 with (INR 2); [ apply not_0_INR; discriminate | reflexivity ].
-  pattern y at 2; replace y with (y / 2 + y / 2).
-  unfold Rminus, Rdiv.
-  repeat rewrite Rmult_plus_distr_r.
-  ring.
-  cut (forall z:R, 2 * z = z + z).
-  intro.
-  rewrite <- (H4 (y / 2)).
-  unfold Rdiv.
-  rewrite <- Rmult_assoc; apply Rinv_r_simpl_m.
-  replace 2 with (INR 2).
-  apply not_0_INR.
-  discriminate.
-  unfold INR; reflexivity.
-  intro; ring.
-  cut (0%nat <> 2%nat);
-    [ intro H0; generalize (lt_0_INR 2 (neq_O_lt 2 H0)); unfold INR;
-      intro; assumption
-      | discriminate ].
+  intros x y H.
+  destruct (Rle_or_lt x y) as [H1|H1].
+  exact H1.
+  apply Rplus_le_reg_r with x.
+  replace (y + x) with (2 * (y + (x - y) * / 2)) by field.
+  replace (x + x) with (2 * x) by ring.
+  apply Rmult_le_compat_l.
+  now apply (IZR_le 0 2).
+  apply H.
+  apply Rmult_lt_0_compat.
+  now apply Rgt_minus.
+  apply Rinv_0_lt_compat, Rlt_0_2.
 Qed.
 
 (**********)

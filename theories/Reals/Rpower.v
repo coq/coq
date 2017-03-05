@@ -55,25 +55,8 @@ Proof.
     simpl in H0.
   replace (/ 3) with
   (1 * / 1 + -1 * 1 * / 1 + -1 * (-1 * 1) * / 2 +
-    -1 * (-1 * (-1 * 1)) * / (2 + 1 + 1 + 1 + 1)).
+    -1 * (-1 * (-1 * 1)) * / (2 + 1 + 1 + 1 + 1)) by field.
   apply H0.
-  repeat rewrite Rinv_1; repeat rewrite Rmult_1_r;
-    rewrite Ropp_mult_distr_l_reverse; rewrite Rmult_1_l;
-      rewrite Ropp_involutive; rewrite Rplus_opp_r; rewrite Rmult_1_r;
-        rewrite Rplus_0_l; rewrite Rmult_1_l; apply Rmult_eq_reg_l with 6.
-  rewrite Rmult_plus_distr_l; replace (2 + 1 + 1 + 1 + 1) with 6.
-  rewrite <- (Rmult_comm (/ 6)); rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_l; replace 6 with 6.
-  do 2 rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_r; rewrite (Rmult_comm 3); rewrite <- Rmult_assoc;
-    rewrite <- Rinv_r_sym.
-  ring.
-  discrR.
-  discrR.
-  ring.
-  discrR.
-  ring.
-  discrR.
   apply H.
   unfold Un_decreasing; intros;
     apply Rmult_le_reg_l with (INR (fact n)).
