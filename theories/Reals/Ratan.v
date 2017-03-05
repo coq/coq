@@ -319,10 +319,10 @@ apply PI2_lower_bound;[split; fourier | ].
 destruct (pre_cos_bound (3/2) 1) as [t _]; [fourier | fourier | ].
 apply Rlt_le_trans with (2 := t); clear t.
 unfold cos_approx; simpl; unfold cos_term.
-unfold INR.
+rewrite !INR_IZR_INZ.
 simpl.
 field_simplify.
-change (0 */ 1 < 9925632 / 141557760).
+unfold Rdiv.
 rewrite Rmult_0_l.
 apply Rdiv_lt_0_compat ; now apply IZR_lt.
 Qed.
