@@ -395,15 +395,8 @@ Proof.
   apply Rlt_le_trans with alp.
   apply H7.
   unfold alp; apply Rmin_l.
-  rewrite sin_plus; unfold Rminus, Rdiv;
-    repeat rewrite Rmult_plus_distr_r; repeat rewrite Rmult_plus_distr_l;
-      repeat rewrite Rmult_assoc; repeat rewrite Rplus_assoc;
-        apply Rplus_eq_compat_l.
-  rewrite (Rplus_comm (sin x * (-1 * / h))); repeat rewrite Rplus_assoc;
-    apply Rplus_eq_compat_l.
-  rewrite Ropp_mult_distr_r_reverse; rewrite Ropp_mult_distr_l_reverse;
-    rewrite Rmult_1_r; rewrite Rmult_1_l; rewrite Ropp_mult_distr_r_reverse;
-      rewrite <- Ropp_mult_distr_l_reverse; apply Rplus_comm.
+  rewrite sin_plus.
+  now field.
   unfold alp; unfold Rmin; case (Rle_dec alp1 alp2); intro.
   apply (cond_pos alp1).
   apply (cond_pos alp2).

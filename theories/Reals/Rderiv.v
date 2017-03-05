@@ -296,14 +296,10 @@ Proof.
       intros; generalize (H0 eps H1); clear H0; intro; elim H0;
         clear H0; intros; elim H0; clear H0; simpl;
           intros; split with x; split; auto.
-  intros; generalize (H2 x1 H3); clear H2; intro;
-    rewrite Ropp_mult_distr_l_reverse in H2;
-      rewrite Ropp_mult_distr_l_reverse in H2;
-        rewrite Ropp_mult_distr_l_reverse in H2;
-          rewrite (let (H1, H2) := Rmult_ne (f x1) in H2) in H2;
-            rewrite (let (H1, H2) := Rmult_ne (f x0) in H2) in H2;
-              rewrite (let (H1, H2) := Rmult_ne (df x0) in H2) in H2;
-                assumption.
+  intros; generalize (H2 x1 H3); clear H2; intro.
+  replace (- f x1 - - f x0) with (-1 * f x1 - -1 * f x0) by ring.
+  replace (- df x0) with (-1 * df x0) by ring.
+  exact H2.
 Qed.
 
 (*********)
