@@ -2016,6 +2016,31 @@ Proof.
   [ apply not_0_INR; discriminate | unfold INR; ring ].
 Qed.
 
+Lemma R_rm : ring_morph
+  R0 R1 Rplus Rmult Rminus Ropp eq
+  0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool IZR.
+Proof.
+constructor ; try easy.
+exact plus_IZR.
+exact minus_IZR.
+exact mult_IZR.
+exact opp_IZR.
+intros x y H.
+apply f_equal.
+now apply Zeq_bool_eq.
+Qed.
+
+Lemma Zeq_bool_IZR x y :
+  IZR x = IZR y -> Zeq_bool x y = true.
+Proof.
+intros H.
+apply Zeq_is_eq_bool.
+now apply eq_IZR.
+Qed.
+
+Add Field RField : Rfield
+  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).
+
 (*********************************************************)
 (** ** Other rules about < and <=                        *)
 (*********************************************************)

@@ -186,7 +186,6 @@ simpl sum_f_R0.
 unfold cos_term, sin_term; simpl fact; rewrite !INR_IZR_INZ.
 simpl plus; simpl mult; simpl Z_of_nat.
 field_simplify.
-change (8073344 / 12582912 < 18760 / 24576).
 match goal with 
   |- IZR ?a / ?b < ?c / ?d =>
   apply Rmult_lt_reg_r with d;[apply (IZR_lt 0); reflexivity |
@@ -196,7 +195,7 @@ match goal with
 end.
 unfold Rdiv; rewrite !Rmult_assoc, Rinv_l, Rmult_1_r;
  [ | apply not_eq_sym, Rlt_not_eq, (IZR_lt 0); reflexivity].
-repeat (rewrite <- !plus_IZR || rewrite <- !mult_IZR).
+rewrite <- !mult_IZR.
 apply IZR_lt; reflexivity.
 Qed.
 
