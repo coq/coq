@@ -82,7 +82,7 @@ assert (HN: (INR N + 1 = IZR (up (/ l)) - 1)%R).
   apply Rle_lt_trans with (1 := H1l).
   apply archimed.
   rewrite minus_IZR.
-  simpl.
+  change (IZR 2) with 2%R.
   ring.
 assert (Hl': (/ (INR (S N) + 1) < l)%R).
   rewrite <- (Rinv_involutive l) by now apply Rgt_not_eq.

@@ -92,7 +92,7 @@ Proof.
     auto with zarith real.
     (*inf a 1*)
   cut (r - IZR (up r) < 0).
-  rewrite <- Z_R_minus; simpl; intro; unfold Rminus;
+  rewrite <- Z_R_minus; change (IZR 1) with 1; intro; unfold Rminus;
     rewrite Ropp_plus_distr; rewrite <- Rplus_assoc;
       fold (r - IZR (up r)); rewrite Ropp_involutive;
         elim (Rplus_ne 1); intros a b; pattern 1 at 2;
@@ -376,7 +376,7 @@ Proof.
               rewrite (Ropp_involutive (IZR 1));
                 rewrite (Ropp_involutive (IZR (Int_part r2)));
                   rewrite (Ropp_plus_distr (IZR (Int_part r1)));
-                    rewrite (Ropp_involutive (IZR (Int_part r2))); simpl;
+                    rewrite (Ropp_involutive (IZR (Int_part r2))); change (IZR 1) with 1;
                       rewrite <-
                         (Rplus_assoc (r1 + - r2) (- IZR (Int_part r1) + IZR (Int_part r2)) 1)
                         ; rewrite (Rplus_assoc r1 (- r2) (- IZR (Int_part r1) + IZR (Int_part r2)));
