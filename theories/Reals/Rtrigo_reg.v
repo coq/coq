@@ -251,6 +251,7 @@ Proof.
   exists delta; intros.
   rewrite Rplus_0_l; replace (cos h - cos 0) with (-2 * Rsqr (sin (h / 2))).
   unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r.
+  change (-2) with (-(2)).
   unfold Rdiv; do 2 rewrite Ropp_mult_distr_l_reverse.
   rewrite Rabs_Ropp.
   replace (2 * Rsqr (sin (h * / 2)) * / h) with
@@ -266,7 +267,7 @@ Proof.
   apply Rabs_pos.
   assert (H9 := SIN_bound (h / 2)).
   unfold Rabs; case (Rcase_abs (sin (h / 2))); intro.
-  pattern 1 at 3; rewrite <- (Ropp_involutive 1).
+  rewrite <- (Ropp_involutive 1).
   apply Ropp_le_contravar.
   elim H9; intros; assumption.
   elim H9; intros; assumption.

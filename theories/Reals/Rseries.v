@@ -207,7 +207,7 @@ Section sequence.
 
     assert (Rabs (/2) < 1).
     rewrite Rabs_pos_eq.
-    rewrite <- Rinv_1 at 3.
+    rewrite <- Rinv_1.
     apply Rinv_lt_contravar.
     rewrite Rmult_1_l.
     now apply (IZR_lt 0 2).

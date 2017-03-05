@@ -88,17 +88,11 @@ Proof.
   right; unfold Rdiv.
   repeat rewrite Rabs_mult.
   rewrite Rabs_Rinv; discrR.
-  replace (Rabs 8) with 8.
-  replace 8 with 8; [ idtac | ring ].
-  rewrite Rinv_mult_distr; [ idtac | discrR | discrR ].
-  replace (2 * / Rabs (f2 x) * (Rabs eps * Rabs (f2 x) * (/ 2 * / 4))) with
-  (Rabs eps * / 4 * (2 * / 2) * (Rabs (f2 x) * / Rabs (f2 x)));
-  [ idtac | ring ].
-  replace (Rabs eps) with eps.
-  repeat rewrite <- Rinv_r_sym; try discrR || (apply Rabs_no_R0; assumption).
-  ring.
-  symmetry ; apply Rabs_right; left; assumption.
-  symmetry ; apply Rabs_right; left; prove_sup.
+  rewrite (Rabs_pos_eq 8) by now apply IZR_le.
+  rewrite (Rabs_pos_eq eps).
+  field.
+  now apply Rabs_no_R0.
+  now apply Rlt_le.
 Qed.
 
 Lemma maj_term2 :

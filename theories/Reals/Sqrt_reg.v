@@ -21,6 +21,7 @@ Proof.
   destruct (total_order_T h 0) as [[Hlt|Heq]|Hgt].
   repeat rewrite Rabs_left.
   unfold Rminus; do 2 rewrite <- (Rplus_comm (-1)).
+  change (-1) with (-(1)).
   do 2 rewrite Ropp_plus_distr; rewrite Ropp_involutive;
     apply Rplus_le_compat_l.
   apply Ropp_le_contravar; apply sqrt_le_1.
