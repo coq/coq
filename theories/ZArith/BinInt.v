@@ -1367,7 +1367,7 @@ Lemma inj_testbit a n : 0<=n ->
  Z.testbit (Z.pos a) n = N.testbit (N.pos a) (Z.to_N n).
 Proof. apply Z.testbit_Zpos. Qed.
 
-(** Some results concerning Z.neg *)
+(** Some results concerning Z.neg and Z.pos *)
 
 Lemma inj_neg p q : Z.neg p = Z.neg q -> p = q.
 Proof. now injection 1. Qed.
@@ -1375,16 +1375,52 @@ Proof. now injection 1. Qed.
 Lemma inj_neg_iff p q : Z.neg p = Z.neg q <-> p = q.
 Proof. split. apply inj_neg. intros; now f_equal. Qed.
 
+Lemma inj_pos p q : Z.pos p = Z.pos q -> p = q.
+Proof. now injection 1. Qed.
+
+Lemma inj_pos_iff p q : Z.pos p = Z.pos q <-> p = q.
+Proof. split. apply inj_pos. intros; now f_equal. Qed.
+
 Lemma neg_is_neg p : Z.neg p < 0.
 Proof. reflexivity. Qed.
 
 Lemma neg_is_nonpos p : Z.neg p <= 0.
 Proof. easy. Qed.
 
+Lemma pos_is_pos p : 0 < Z.pos p.
+Proof. reflexivity. Qed.
+
+Lemma pos_is_nonneg p : 0 <= Z.pos p.
+Proof. easy. Qed.
+
+Lemma neg_le_pos p q : Zneg p <= Zpos q.
+Proof. easy. Qed.
+
+Lemma neg_lt_pos p q : Zneg p < Zpos q.
+Proof. easy. Qed.
+
+Lemma neg_le_neg p q : (q <= p)%positive -> Zneg p <= Zneg q.
+Proof. intros; unfold Z.le; simpl. now rewrite <- Pos.compare_antisym. Qed.
+
+Lemma neg_lt_neg p q : (q < p)%positive -> Zneg p < Zneg q.
+Proof. intros; unfold Z.lt; simpl. now rewrite <- Pos.compare_antisym. Qed.
+
+Lemma pos_le_pos p q : (p <= q)%positive -> Zpos p <= Zpos q.
+Proof. easy. Qed.
+
+Lemma pos_lt_pos p q : (p < q)%positive -> Zpos p < Zpos q.
+Proof. easy. Qed.
+
 Lemma neg_xO p : Z.neg p~0 = 2 * Z.neg p.
 Proof. reflexivity. Qed.
 
 Lemma neg_xI p : Z.neg p~1 = 2 * Z.neg p - 1.
+Proof. reflexivity. Qed.
+
+Lemma pos_xO p : Z.pos p~0 = 2 * Z.pos p.
+Proof. reflexivity. Qed.
+
+Lemma pos_xI p : Z.pos p~1 = 2 * Z.pos p + 1.
 Proof. reflexivity. Qed.
 
 Lemma opp_neg p : - Z.neg p = Z.pos p.
@@ -1402,6 +1438,9 @@ Proof. reflexivity. Qed.
 Lemma add_neg_pos p q : Z.neg p + Z.pos q = Z.pos_sub q p.
 Proof. reflexivity. Qed.
 
+Lemma add_pos_pos p q : Z.pos p + Z.pos q = Z.pos (p+q).
+Proof. reflexivity. Qed.
+
 Lemma divide_pos_neg_r n p : (n|Z.pos p) <-> (n|Z.neg p).
 Proof. apply Z.divide_Zpos_Zneg_r. Qed.
 
@@ -1411,6 +1450,10 @@ Proof. apply Z.divide_Zpos_Zneg_l. Qed.
 Lemma testbit_neg a n : 0<=n ->
  Z.testbit (Z.neg a) n = negb (N.testbit (Pos.pred_N a) (Z.to_N n)).
 Proof. apply Z.testbit_Zneg. Qed.
+
+Lemma testbit_pos a n : 0<=n ->
+ Z.testbit (Z.pos a) n = N.testbit (N.pos a) (Z.to_N n).
+Proof. apply Z.testbit_Zpos. Qed.
 
 End Pos2Z.
 

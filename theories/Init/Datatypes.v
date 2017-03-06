@@ -262,6 +262,11 @@ Inductive comparison : Set :=
   | Lt : comparison
   | Gt : comparison.
 
+Lemma comparison_eq_stable : forall c c' : comparison, ~~ c = c' -> c = c'.
+Proof.
+  destruct c, c'; intro H; reflexivity || destruct H; discriminate.
+Qed.
+
 Definition CompOpp (r:comparison) :=
   match r with
     | Eq => Eq
@@ -325,7 +330,6 @@ Hint Unfold CompSpec CompSpecT.
 Lemma CompSpec2Type : forall A (eq lt:A->A->Prop) x y c,
  CompSpec eq lt x y c -> CompSpecT eq lt x y c.
 Proof. intros. apply CompareSpec2Type; assumption. Defined.
-
 
 (******************************************************************)
 (** * Misc Other Datatypes *)

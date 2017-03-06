@@ -339,7 +339,7 @@ Notation Zle_0_1 := Z.le_0_1 (compat "8.3").
 
 Lemma Zle_neg_pos : forall p q:positive, Zneg p <= Zpos q.
 Proof.
-  easy.
+  exact Pos2Z.neg_le_pos.
 Qed.
 
 Lemma Zgt_pos_0 : forall p:positive, Zpos p > 0.
@@ -350,12 +350,12 @@ Qed.
 (* weaker but useful (in [Z.pow] for instance) *)
 Lemma Zle_0_pos : forall p:positive, 0 <= Zpos p.
 Proof.
- easy.
+  exact Pos2Z.pos_is_nonneg.
 Qed.
 
 Lemma Zlt_neg_0 : forall p:positive, Zneg p < 0.
 Proof.
- easy.
+  exact Pos2Z.neg_is_neg.
 Qed.
 
 Lemma Zle_0_nat : forall n:nat, 0 <= Z.of_nat n.
