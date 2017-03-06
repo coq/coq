@@ -323,7 +323,8 @@ let start_compilation s mp =
   let prefix = s, (mp, Names.DirPath.empty) in
   let () = add_anonymous_entry (CompilingLibrary prefix) in
   comp_name := Some s;
-  path_prefix := prefix
+  path_prefix := prefix;
+  prefix
 
 let end_compilation_checks dir =
   let _ =
