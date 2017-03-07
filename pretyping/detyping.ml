@@ -173,7 +173,7 @@ let _ = declare_bool_option
 	    optread  = print_primproj_params;
 	    optwrite = (:=) print_primproj_params_value }
 
-let print_primproj_compatibility_value = ref true
+let print_primproj_compatibility_value = ref false
 let print_primproj_compatibility () = !print_primproj_compatibility_value
 
 let _ = declare_bool_option
