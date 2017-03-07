@@ -27,7 +27,6 @@ env:
   - TEST_TARGET="ci-color"
   - TEST_TARGET="ci-compcert"
   - TEST_TARGET="ci-coquelicot"
-  - TEST_TARGET="ci-cpdt"
   - TEST_TARGET="ci-geocoq"
   - TEST_TARGET="ci-fiat-crypto"
   - TEST_TARGET="ci-fiat-parsers"
@@ -39,13 +38,14 @@ env:
   - TEST_TARGET="ci-sf"
   - TEST_TARGET="ci-unimath"
   # Not ready yet for 8.7
+  # - TEST_TARGET="ci-cpdt"
   # - TEST_TARGET="ci-metacoq"
   # - TEST_TARGET="ci-tlc"
 
 matrix:
 
   allow_failures:
-  - env: TEST_TARGET="ci-cpdt"
+  - env: TEST_TARGET="ci-geocoq"
 
   # Full Coq test-suite with two compilers
   # [TODO: use yaml refs and avoid duplication for packages list]
