@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
 
-# $0 is not the safest way, but...
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-git_checkout v8.6 https://github.com/math-classes/math-classes.git math-classes
-( cd math-classes && make -j ${NJOBS} && make install )
+math_classes_CI_BRANCH=v8.6
+math_classes_CI_GITURL=https://github.com/math-classes/math-classes.git
+math_classes_CI_DIR=${CI_BUILD_DIR}/math-classes
 
-git_checkout v8.6 https://github.com/c-corn/corn.git corn
-( cd corn         && make -j ${NJOBS} )
+Corn_CI_BRANCH=v8.6
+Corn_CI_GITURL=https://github.com/c-corn/corn.git
+Corn_CI_DIR=${CI_BUILD_DIR}/corn
 
+# Setup Math-Classes
+
+git_checkout ${math_classes_CI_BRANCH} ${math_classes_CI_GITURL} ${math_classes_CI_DIR}
+
+( cd ${math_classes_CI_DIR} && make -j ${NJOBS} && make install )
+
+# Setup Corn
+
+git_checkout ${Corn_CI_BRANCH} ${Corn_CI_GITURL} ${Corn_CI_DIR}
+
+( cd ${Corn_CI_DIR} && make -j ${NJOBS} )

@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
-# $0 is not the safest way, but...
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
+Coquelicot_CI_BRANCH=master
+Coquelicot_CI_GITURL=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot.git
+Coquelicot_CI_DIR=${CI_BUILD_DIR}/coquelicot
+
 install_ssreflect
 
-# Setup coquelicot
-git_checkout master https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot.git coquelicot
+git_checkout ${Coquelicot_CI_BRANCH} ${Coquelicot_CI_GITURL} ${Coquelicot_CI_DIR}
 
-( cd coquelicot && ./autogen.sh && ./configure && ./remake -j${NJOBS} )
+( cd ${Coquelicot_CI_DIR} && ./autogen.sh && ./configure && ./remake -j${NJOBS} )
