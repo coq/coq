@@ -2811,20 +2811,18 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   mkProd_or_LetIn decl cl', sigma'
 
 let generalize_goal gl i ((occs,c,b),na as o) (cl,sigma) =
-  let env = Tacmach.pf_env gl in
-  let ids = Tacmach.pf_ids_of_hyps gl in
-  let sigma, t = Typing.type_of env sigma c in
-  generalize_goal_gen env sigma ids i o t cl
-
-let new_generalize_goal gl i ((occs,c,b),na as o) (cl,sigma) =
-  let env = Tacmach.New.pf_env gl in
-  let ids = Tacmach.New.pf_ids_of_hyps gl in
-  let sigma, t = Typing.type_of env sigma c in
-  generalize_goal_gen env sigma ids i o t cl
-
-let old_generalize_dep ?(with_let=false) c gl =
+  let open Tacmach.New in
   let env = pf_env gl in
-  let sign = pf_hyps gl in
+  let ids = pf_ids_of_hyps gl in
+  let sigma, t = Typing.type_of env sigma c in
+  generalize_goal_gen env sigma ids i o t cl
+
+let generalize_dep ?(with_let=false) c =
+  let open Tacmach.New in
+  let open Tacticals.New in
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  let env = pf_env gl in
+  let sign = Proofview.Goal.hyps gl in
   let sigma = project gl in
   let init_ids = ids_of_named_context (Global.named_context()) in
   let seek (d:named_declaration) (toquant:named_context) =
@@ -2843,11 +2841,11 @@ let old_generalize_dep ?(with_let=false) c gl =
 	  -> id::tothin
       | _ -> tothin
   in
-  let cl' = it_mkNamedProd_or_LetIn (Tacmach.pf_concl gl) to_quantify in
+  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
   let body =
     if with_let then
       match EConstr.kind sigma c with
-      | Var id -> id |> Tacmach.pf_get_hyp gl |> NamedDecl.get_value
+      | Var id -> id |> (fun id -> pf_get_hyp id gl) |> NamedDecl.get_value
       | _ -> None
     else None
   in
@@ -2856,20 +2854,19 @@ let old_generalize_dep ?(with_let=false) c gl =
   (** Check that the generalization is indeed well-typed *)
   let (evd, _) = Typing.type_of env evd cl'' in
   let args = Context.Named.to_instance mkVar to_quantify_rev in
-  tclTHENLIST
-    [tclEVARS evd;
-     Proofview.V82.of_tactic (apply_type cl'' (if Option.is_empty body then c::args else args));
-     Proofview.V82.of_tactic (clear (List.rev tothin'))]
-    gl
-
-let generalize_dep ?(with_let = false) c =
-  Proofview.V82.tactic (old_generalize_dep ~with_let c)
+  let tac =
+    tclTHEN
+      (apply_type cl'' (if Option.is_empty body then c::args else args))
+      (clear (List.rev tothin'))
+  in
+  Sigma.Unsafe.of_pair (tac, evd)
+  end }
 
 (**  *)
 let generalize_gen_let lconstr = Proofview.Goal.s_enter { s_enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let newcl, evd =
-    List.fold_right_i (new_generalize_goal gl) 0 lconstr
+    List.fold_right_i (generalize_goal gl) 0 lconstr
       (Tacmach.New.pf_concl gl,Tacmach.New.project gl)
   in
   let (evd, _) = Typing.type_of env evd newcl in
