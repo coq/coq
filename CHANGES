@@ -7,6 +7,10 @@ Tactics
   functional extensionality in H supposed to be a quantified equality
   until giving a bare equality.
 
+Code removed
+
+- The mathematical proof language (also known as declarative mode)
+
 Changes from V8.6beta1 to V8.6
 ==============================
 

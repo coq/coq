@@ -48,7 +48,7 @@ REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
   RefMan-cic.v.tex RefMan-lib.v.tex \
   RefMan-tacex.v.tex RefMan-syn.v.tex \
   RefMan-oth.v.tex RefMan-ltac.v.tex \
-  RefMan-decl.v.tex RefMan-pro.v.tex RefMan-sch.v.tex \
+  RefMan-pro.v.tex RefMan-sch.v.tex \
   Cases.v.tex Coercion.v.tex CanonicalStructures.v.tex Extraction.v.tex \
   Program.v.tex Omega.v.tex Micromega.v.tex Polynom.v.tex Nsatz.v.tex \
   Setoid.v.tex Classes.v.tex Universes.v.tex \

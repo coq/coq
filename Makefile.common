@@ -61,7 +61,7 @@ PLUGINDIRS:=\
   omega		romega 		micromega 	quote \
   setoid_ring 	extraction 	fourier \
   cc 		funind 		firstorder 	derive \
-  rtauto 	nsatz           syntax          decl_mode	btauto \
+  rtauto 	nsatz           syntax          btauto \
   ssrmatching	ltac
 
 SRCDIRS:=\
