@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # $0 is not the safest way, but...
 ci_dir="$(dirname "$0")"

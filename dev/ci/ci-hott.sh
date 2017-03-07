@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
