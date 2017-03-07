@@ -12,6 +12,9 @@ ls `pwd`/bin
 mathcomp_CI_BRANCH=master
 mathcomp_CI_GITURL=https://github.com/math-comp/math-comp.git
 
+# Where we clone and build external developments
+CI_BUILD_DIR=`pwd`/_build_ci
+
 # git_checkout branch
 git_checkout()
 {
@@ -19,9 +22,15 @@ git_checkout()
   local _URL=${2}
   local _DEST=${3}
 
-  echo "Checking out ${_DEST}"
-  git clone --depth 1 -b ${_BRANCH} ${_URL} ${_DEST}
-  ( cd ${3} && echo "${_DEST}: `git log -1 --format='%s | %H | %cd | %aN'`" )
+  mkdir -p ${CI_BUILD_DIR}
+  cd ${CI_BUILD_DIR}
+
+  if [ ! -d ${_DEST} ] ; then
+    echo "Checking out ${_DEST}"
+    git clone --depth 1 -b ${_BRANCH} ${_URL} ${_DEST}
+  fi
+  ( cd ${_DEST} && git pull &&
+    echo "${_DEST}: `git log -1 --format='%s | %H | %cd | %aN'`" )
 }
 
 checkout_mathcomp()
