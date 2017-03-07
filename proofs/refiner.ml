@@ -174,19 +174,6 @@ let tclPROGRESS tac ptree =
   if Goal.V82.progress rslt ptree then rslt
   else user_err ~hdr:"Refiner.PROGRESS" (str"Failed to progress.")
 
-(* Same as tclWEAK_PROGRESS but fails also if tactics generates several goals,
-   one of them being identical to the original goal *)
-let tclNOTSAMEGOAL (tac : tactic) goal =
-  let same_goal gls1 evd2 gl2 =
-    Goal.V82.same_goal gls1.sigma gls1.it evd2 gl2
-  in
-  let rslt = tac goal in
-  let {it=gls;sigma=sigma} = rslt in
-  if List.exists (same_goal goal sigma) gls
-  then user_err ~hdr:"Refiner.tclNOTSAMEGOAL"
-      (str"Tactic generated a subgoal identical to the original goal.")
-  else rslt
-
 (* Execute tac, show the names of new hypothesis names created by tac
    in the "as" format and then forget everything. From the logical
    point of view [tclSHOWHYPS tac] is therefore equivalent to idtac,

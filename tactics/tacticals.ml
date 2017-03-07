@@ -54,7 +54,6 @@ let tclDO            = Refiner.tclDO
 let tclWEAK_PROGRESS = Refiner.tclWEAK_PROGRESS
 let tclPROGRESS      = Refiner.tclPROGRESS
 let tclSHOWHYPS      = Refiner.tclSHOWHYPS
-let tclNOTSAMEGOAL   = Refiner.tclNOTSAMEGOAL
 let tclTHENTRY       = Refiner.tclTHENTRY
 let tclIFTHENELSE    = Refiner.tclIFTHENELSE
 let tclIFTHENSELSE   = Refiner.tclIFTHENSELSE

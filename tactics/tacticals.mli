@@ -47,7 +47,6 @@ val tclDO            : int -> tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic
-val tclNOTSAMEGOAL   : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
 
