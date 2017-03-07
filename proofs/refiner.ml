@@ -162,13 +162,6 @@ let tclMAP tacfun l =
 
 (* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
 the goal unchanged *)
-let tclWEAK_PROGRESS tac ptree =
-  let rslt = tac ptree in
-  if Goal.V82.weak_progress rslt ptree then rslt
-  else user_err ~hdr:"Refiner.WEAK_PROGRESS" (str"Failed to progress.")
-
-(* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
-the goal unchanged *)
 let tclPROGRESS tac ptree =
   let rslt = tac ptree in
   if Goal.V82.progress rslt ptree then rslt

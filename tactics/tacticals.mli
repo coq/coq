@@ -44,7 +44,6 @@ val tclAT_LEAST_ONCE : tactic -> tactic
 val tclFAIL          : int -> std_ppcmds -> tactic
 val tclFAIL_lazy     : int -> std_ppcmds Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
-val tclWEAK_PROGRESS : tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic

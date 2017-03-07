@@ -59,9 +59,6 @@ module V82 : sig
      second goal *)
   val partial_solution_to : Evd.evar_map -> goal -> goal -> EConstr.constr -> Evd.evar_map
 
-  (* Principal part of the weak-progress tactical *)
-  val weak_progress : goal list Evd.sigma -> goal Evd.sigma -> bool
-   
   (* Principal part of the progress tactical *)
   val progress : goal list Evd.sigma -> goal Evd.sigma -> bool
     

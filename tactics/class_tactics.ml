@@ -462,8 +462,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
                    else e_trivial_fail_db only_classes db_list local_db secvars in
          Tacticals.New.tclTHEN fst snd
       | Unfold_nth c ->
-         let tac = Proofview.V82.of_tactic (unfold_in_concl [AllOccurrences,c]) in
-         Proofview.V82.tactic (tclWEAK_PROGRESS tac)
+         Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
       | Extern tacast -> conclPattern concl p tacast
       in
       let tac = run_hint t tac in
