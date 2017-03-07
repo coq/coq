@@ -296,6 +296,9 @@ let pr_named_context_of env sigma =
   let psl = List.rev (fold_named_context make_decl_list env ~init:[]) in
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
+let pr_var_list_decl env sigma decl =
+  hov 0 (pr_compacted_decl env sigma decl)
+
 let pr_named_context env sigma ne_context =
   hv 0 (Context.Named.fold_outside
 	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
@@ -329,39 +332,43 @@ let pr_ne_context_of header env sigma =
     List.is_empty (Environ.named_context env)  then (mt ())
   else let penv = pr_context_unlimited env sigma in (header ++ penv ++ fnl ())
 
-let pr_context_limit n env sigma =
-  let named_context = Environ.named_context env in
-  let lgsign = List.length named_context in
-  if n >= lgsign then
-    pr_context_unlimited env sigma
-  else
-    let k = lgsign-n in
-    let _,sign_env =
-      Context.Compacted.fold
-        (fun d (i,pps) ->
-           if i < k then
-	     (i+1, (pps ++str "."))
-	   else
-             let pidt = pr_compacted_decl env sigma d in
-	     (i+1, (pps ++ fnl () ++
-		      str (emacs_str "") ++
-		      pidt)))
-        (Termops.compact_named_context (Environ.named_context env)) ~init:(0,(mt ()))
-    in
-    let db_env =
-      fold_rel_context
-        (fun env d pps ->
-           let pnat = pr_rel_decl env sigma d in
-	   (pps ++ fnl () ++
-	      str (emacs_str "") ++
-	      pnat))
-        env ~init:(mt ())
-    in
-    (sign_env ++ db_env)
+let rec bld_sign_env env sigma ctxt pps =
+  match ctxt with
+  | [] -> pps
+  | d:: ctxt' ->
+     let pidt = pr_var_list_decl env sigma d in
+     let pps' = pps ++ brk (0,0) ++ pidt in
+     bld_sign_env env sigma ctxt' pps'
 
-let pr_context_of env sigma = match Flags.print_hyps_limit () with
-  | None -> hv 0 (pr_context_unlimited env sigma)
-  | Some n -> hv 0 (pr_context_limit n env sigma)
+
+let pr_context_limit_compact ?n env sigma =
+  let ctxt = Termops.compact_named_context (named_context env) in
+  let lgth = List.length ctxt in
+  let n_capped =
+    match n with
+    | None -> lgth
+    | Some n when n > lgth -> lgth
+    | Some n -> n in
+  let ctxt_chopped,ctxt_hidden = Util.List.chop n_capped ctxt in
+  (* a dot line hinting the number of hiden hyps. *)
+  let hidden_dots = String.make (List.length ctxt_hidden) '.' in
+  let sign_env = v 0 (str hidden_dots ++ (mt ())
+                 ++ bld_sign_env env sigma (List.rev ctxt_chopped) (mt ())) in
+  let db_env =
+    fold_rel_context
+      (fun env d pps -> pps ++ fnl () ++ pr_rel_decl env sigma d)
+      env ~init:(mt ()) in
+  (sign_env ++ db_env)
+
+(* compact printing an env (variables and de Bruijn). Separator: three
+   spaces between simple hyps, and newline otherwise *)
+let pr_context_unlimited_compact env sigma =
+  pr_context_limit_compact env sigma
+
+let pr_context_of env sigma =
+  match Flags.print_hyps_limit () with
+  | None -> hv 0 (pr_context_limit_compact env sigma)
+  | Some n -> hv 0 (pr_context_limit_compact ~n env sigma)
 
 (* display goal parts (Proof mode) *)
 
