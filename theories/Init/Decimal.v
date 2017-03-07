@@ -50,23 +50,29 @@ Bind Scope int_scope with int.
     and choose our canonical representation of 0 (here [D0 Nil]
     for unsigned numbers and [Pos (D0 Nil)] for signed numbers). *)
 
-Fixpoint nonzero_head d :=
+(** [nzhead] removes all head zero digits *)
+
+Fixpoint nzhead d :=
   match d with
-  | D0 d => nonzero_head d
+  | D0 d => nzhead d
   | _ => d
   end.
 
+(** [unorm] : normalization of unsigned integers *)
+
 Definition unorm d :=
-  match nonzero_head d with
+  match nzhead d with
   | Nil => zero
   | d => d
   end.
+
+(** [norm] : normalization of signed integers *)
 
 Definition norm d :=
   match d with
   | Pos d => Pos (unorm d)
   | Neg d =>
-    match nonzero_head d with
+    match nzhead d with
     | Nil => Pos zero
     | d => Neg d
     end
@@ -84,20 +90,22 @@ Definition opp (d:int) :=
 (** For conversions with binary numbers, it is easier to operate
     on little-endian numbers. *)
 
-Fixpoint rev (l l' : uint) :=
-  match l with
-  | Nil => l'
-  | D0 l => rev l (D0 l')
-  | D1 l => rev l (D1 l')
-  | D2 l => rev l (D2 l')
-  | D3 l => rev l (D3 l')
-  | D4 l => rev l (D4 l')
-  | D5 l => rev l (D5 l')
-  | D6 l => rev l (D6 l')
-  | D7 l => rev l (D7 l')
-  | D8 l => rev l (D8 l')
-  | D9 l => rev l (D9 l')
+Fixpoint revapp (d d' : uint) :=
+  match d with
+  | Nil => d'
+  | D0 d => revapp d (D0 d')
+  | D1 d => revapp d (D1 d')
+  | D2 d => revapp d (D2 d')
+  | D3 d => revapp d (D3 d')
+  | D4 d => revapp d (D4 d')
+  | D5 d => revapp d (D5 d')
+  | D6 d => revapp d (D6 d')
+  | D7 d => revapp d (D7 d')
+  | D8 d => revapp d (D8 d')
+  | D9 d => revapp d (D9 d')
   end.
+
+Definition rev d := revapp d Nil.
 
 Module Little.
 
@@ -106,16 +114,16 @@ Module Little.
 Fixpoint succ d :=
   match d with
   | Nil => D1 Nil
-  | D0 l => D1 l
-  | D1 l => D2 l
-  | D2 l => D3 l
-  | D3 l => D4 l
-  | D4 l => D5 l
-  | D5 l => D6 l
-  | D6 l => D7 l
-  | D7 l => D8 l
-  | D8 l => D9 l
-  | D9 l => D0 (succ l)
+  | D0 d => D1 d
+  | D1 d => D2 d
+  | D2 d => D3 d
+  | D3 d => D4 d
+  | D4 d => D5 d
+  | D5 d => D6 d
+  | D6 d => D7 d
+  | D7 d => D8 d
+  | D8 d => D9 d
+  | D9 d => D0 (succ d)
   end.
 
 (** Doubling little-endian numbers *)
@@ -123,31 +131,31 @@ Fixpoint succ d :=
 Fixpoint double d :=
   match d with
   | Nil => Nil
-  | D0 l => D0 (double l)
-  | D1 l => D2 (double l)
-  | D2 l => D4 (double l)
-  | D3 l => D6 (double l)
-  | D4 l => D8 (double l)
-  | D5 l => D0 (succ_double l)
-  | D6 l => D2 (succ_double l)
-  | D7 l => D4 (succ_double l)
-  | D8 l => D6 (succ_double l)
-  | D9 l => D8 (succ_double l)
+  | D0 d => D0 (double d)
+  | D1 d => D2 (double d)
+  | D2 d => D4 (double d)
+  | D3 d => D6 (double d)
+  | D4 d => D8 (double d)
+  | D5 d => D0 (succ_double d)
+  | D6 d => D2 (succ_double d)
+  | D7 d => D4 (succ_double d)
+  | D8 d => D6 (succ_double d)
+  | D9 d => D8 (succ_double d)
   end
 
 with succ_double d :=
   match d with
   | Nil => D1 Nil
-  | D0 l => D1 (double l)
-  | D1 l => D3 (double l)
-  | D2 l => D5 (double l)
-  | D3 l => D7 (double l)
-  | D4 l => D9 (double l)
-  | D5 l => D1 (succ_double l)
-  | D6 l => D3 (succ_double l)
-  | D7 l => D5 (succ_double l)
-  | D8 l => D7 (succ_double l)
-  | D9 l => D9 (succ_double l)
+  | D0 d => D1 (double d)
+  | D1 d => D3 (double d)
+  | D2 d => D5 (double d)
+  | D3 d => D7 (double d)
+  | D4 d => D9 (double d)
+  | D5 d => D1 (succ_double d)
+  | D6 d => D3 (succ_double d)
+  | D7 d => D5 (succ_double d)
+  | D8 d => D7 (succ_double d)
+  | D9 d => D9 (succ_double d)
   end.
 
 End Little.

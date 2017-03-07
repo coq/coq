@@ -608,7 +608,7 @@ Fixpoint to_little_uint p :=
   | p~0 => Decimal.Little.double (to_little_uint p)
   end.
 
-Definition to_uint p := Decimal.rev (to_little_uint p) Decimal.Nil.
+Definition to_uint p := Decimal.rev (to_little_uint p).
 
 Definition to_int n := Decimal.Pos (to_uint n).
 

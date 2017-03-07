@@ -724,6 +724,26 @@ Definition shiftr_spec a n m (_:0<=m) := shiftr_specif a n m.
 
 Include NExtraProp.
 
+(** Properties of tail-recursive addition and multiplication *)
+
+Lemma tail_add_spec n m : tail_add n m = n + m.
+Proof.
+ revert m. induction n as [|n IH]; simpl; trivial.
+ intros. now rewrite IH, add_succ_r.
+Qed.
+
+Lemma tail_addmul_spec r n m : tail_addmul r n m = r + n * m.
+Proof.
+ revert m r. induction n as [| n IH]; simpl; trivial.
+ intros. rewrite IH, tail_add_spec.
+ rewrite add_assoc. f_equal. apply add_comm.
+Qed.
+
+Lemma tail_mul_spec n m : tail_mul n m = n * m.
+Proof.
+ unfold tail_mul. now rewrite tail_addmul_spec.
+Qed.
+
 End Nat.
 
 (** Re-export notations that should be available even when
