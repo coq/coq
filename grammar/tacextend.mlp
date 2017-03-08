@@ -10,7 +10,15 @@
 
 open Q_util
 open Argextend
-open GramCompat
+
+(** Quotation difference for match clauses *)
+
+let default_patt loc =
+  (<:patt< _ >>, Ploc.VaVal None, <:expr< failwith "Extension: cannot occur" >>)
+
+let make_fun loc cl =
+  let l = cl @ [default_patt loc] in
+  MLast.ExFun (loc, Ploc.VaVal l)  (* correspond to <:expr< fun [ $list:l$ ] >> *)
 
 let dloc = <:expr< Loc.ghost >>
 
@@ -41,11 +49,11 @@ let rec make_let raw e = function
 
 let make_clause (pt,_,e) =
   (make_patt pt,
-   vala None,
+   Ploc.VaVal None,
    make_let false e pt)
 
 let make_fun_clauses loc s l =
-  let map c = GramCompat.make_fun loc [make_clause c] in
+  let map c = make_fun loc [make_clause c] in
   mlexpr_of_list map l
 
 let get_argt e = <:expr< (fun e -> match e with [ Genarg.ExtraArg tag -> tag | _ -> assert False ]) $e$ >>
@@ -100,7 +108,7 @@ let declare_tactic loc tacname ~level classification clause = match clause with
         whole-prof tactics like [shelve_unifiable]. *)
       <:expr< fun _ $lid:"ist"$ -> $tac$ >>
   | _ ->
-      let f = GramCompat.make_fun loc [patt, vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
+      let f = make_fun loc [patt, Ploc.VaVal None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
       <:expr< Tacinterp.lift_constr_tac_to_ml_tac $vars$ $f$ >>
   in
   (** Arguments are not passed directly to the ML tactic in the TacML node,
@@ -129,7 +137,6 @@ let declare_tactic loc tacname ~level classification clause = match clause with
     ]
 
 open Pcaml
-open PcamlSig (* necessary for camlp4 *)
 
 EXTEND
   GLOBAL: str_item;

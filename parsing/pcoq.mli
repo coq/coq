@@ -18,7 +18,73 @@ open Genredexpr
 
 (** The parser of Coq *)
 
-module Gram : module type of Compat.GrammarMake(CLexer)
+module Gram : sig
+
+  include Grammar.S with type te = Tok.t
+
+(* Where Grammar.S is
+
+module type S =
+  sig
+    type te = 'x;
+    type parsable = 'x;
+    value parsable : Stream.t char -> parsable;
+    value tokens : string -> list (string * int);
+    value glexer : Plexing.lexer te;
+    value set_algorithm : parse_algorithm -> unit;
+    module Entry :
+      sig
+        type e 'a = 'y;
+        value create : string -> e 'a;
+        value parse : e 'a -> parsable -> 'a;
+        value parse_token : e 'a -> Stream.t te -> 'a;
+        value name : e 'a -> string;
+        value of_parser : string -> (Stream.t te -> 'a) -> e 'a;
+        value print : Format.formatter -> e 'a -> unit;
+        external obj : e 'a -> Gramext.g_entry te = "%identity";
+      end
+    ;
+    module Unsafe :
+      sig
+        value gram_reinit : Plexing.lexer te -> unit;
+        value clear_entry : Entry.e 'a -> unit;
+      end
+    ;
+    value extend :
+      Entry.e 'a -> option Gramext.position ->
+        list
+          (option string * option Gramext.g_assoc *
+           list (list (Gramext.g_symbol te) * Gramext.g_action)) ->
+        unit;
+    value delete_rule : Entry.e 'a -> list (Gramext.g_symbol te) -> unit;
+  end
+
+*)
+
+  type 'a entry = 'a Entry.e
+  type internal_entry = Tok.t Gramext.g_entry
+  type symbol = Tok.t Gramext.g_symbol
+  type action = Gramext.g_action
+  type production_rule = symbol list * action
+  type single_extend_statment =
+      string option * Gramext.g_assoc option * production_rule list
+  type extend_statment =
+      Gramext.position option * single_extend_statment list
+
+  type coq_parsable
+
+  val parsable : ?file:string -> char Stream.t -> coq_parsable
+  val action : 'a -> action
+  val entry_create : string -> 'a entry
+  val entry_parse : 'a entry -> coq_parsable -> 'a
+  val entry_print : Format.formatter -> 'a entry -> unit
+  val with_parsable : coq_parsable -> ('a -> 'b) -> 'a -> 'b
+
+  (* Apparently not used *)
+  val srules' : production_rule list -> symbol
+  val parse_tokens_after_filter : 'a entry -> Tok.t Stream.t -> 'a
+
+end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e
 
 (** The parser of Coq is built from three kinds of rule declarations:
 
@@ -242,3 +308,7 @@ val recover_grammar_command : 'a grammar_command -> 'a list
 (** Recover the current stack of grammar extensions. *)
 
 val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
+
+(** Location Utils  *)
+val to_coqloc : Ploc.t -> Loc.t
+val (!@) : Ploc.t -> Loc.t

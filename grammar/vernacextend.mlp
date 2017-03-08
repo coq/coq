@@ -11,7 +11,6 @@
 open Q_util
 open Argextend
 open Tacextend
-open GramCompat
 
 type rule = {
   r_head : string option;
@@ -37,7 +36,7 @@ let rec make_let e = function
 
 let make_clause { r_patt = pt; r_branch = e; } =
   (make_patt pt,
-   vala None,
+   Ploc.VaVal None,
    make_let e pt)
 
 (* To avoid warnings *)
@@ -55,11 +54,11 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
   match c ,cg with
   | Some c, _ ->
      (make_patt pt,
-      vala None,
+      Ploc.VaVal None,
       make_let (mk_ignore c pt) pt)
   | None, Some cg ->
      (make_patt pt,
-      vala None,
+      Ploc.VaVal None,
       <:expr< fun () -> $cg$ $str:s$ >>)
   | None, None -> prerr_endline
       (("Vernac entry \""^s^"\" misses a classifier. "^
@@ -82,7 +81,7 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
        ("Specific classifiers have precedence over global "^
          "classifiers. Only one classifier is called.") ^ "\n");
     (make_patt pt,
-      vala None,
+      Ploc.VaVal None,
       <:expr< fun () -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
 
 let make_fun_clauses loc s l =
@@ -91,13 +90,13 @@ let make_fun_clauses loc s l =
     | None -> false
     | Some () -> true
     in
-    let cl = GramCompat.make_fun loc [make_clause c] in
+    let cl = make_fun loc [make_clause c] in
     <:expr< ($mlexpr_of_bool depr$, $cl$)>>
   in
   mlexpr_of_list map l
 
 let make_fun_classifiers loc s c l =
-  let cl = List.map (fun x -> GramCompat.make_fun loc [make_clause_classifier c s x]) l in
+  let cl = List.map (fun x -> make_fun loc [make_clause_classifier c s x]) l in
   mlexpr_of_list (fun x -> x) cl
 
 let make_prod_item = function
@@ -128,7 +127,6 @@ let declare_command loc s c nt cl =
       } >> ]
 
 open Pcaml
-open PcamlSig (* necessary for camlp4 *)
 
 EXTEND
   GLOBAL: str_item;

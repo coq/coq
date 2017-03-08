@@ -121,7 +121,6 @@ ide/xml_lexer.ml
 g_*.ml
 
 ide/project_file.ml
-parsing/compat.ml
 parsing/cLexer.ml
 plugins/ltac/coretactics.ml
 plugins/ltac/extratactics.ml

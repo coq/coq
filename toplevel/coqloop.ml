@@ -255,7 +255,7 @@ let set_prompt prompt =
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
-  let rec dot st = match Compat.get_tok (Stream.next st) with
+  let rec dot st = match Stream.next st with
     | Tok.KEYWORD ("."|"...") -> ()
     | Tok.EOI -> raise End_of_input
     | _ -> dot st
@@ -270,7 +270,7 @@ let rec discard_to_dot () =
   try
     Gram.entry_parse parse_to_dot top_buffer.tokens
   with
-    | Compat.Token.Error _ | CLexer.Error.E _ -> discard_to_dot ()
+    | Token.Error _ | CLexer.Error.E _ -> discard_to_dot ()
     | End_of_input -> raise End_of_input
     | e when CErrors.noncritical e -> ()
 

@@ -12,7 +12,6 @@ open Constrexpr
 open Constrexpr_ops
 open Util
 open Tok
-open Compat
 open Misctypes
 open Decl_kinds
 
@@ -81,11 +80,11 @@ let err () = raise Stream.Failure
 let lpar_id_coloneq =
   Gram.Entry.of_parser "test_lpar_id_coloneq"
     (fun strm ->
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
         | KEYWORD "(" ->
-            (match get_tok (stream_nth 1 strm) with
+            (match stream_nth 1 strm with
 	      | IDENT s ->
-                  (match get_tok (stream_nth 2 strm) with
+                  (match stream_nth 2 strm with
                     | KEYWORD ":=" ->
                         stream_njunk 3 strm;
                         Names.Id.of_string s
@@ -96,9 +95,9 @@ let lpar_id_coloneq =
 let impl_ident_head =
   Gram.Entry.of_parser "impl_ident_head"
     (fun strm ->
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
 	| KEYWORD "{" ->
-	    (match get_tok (stream_nth 1 strm) with
+	    (match stream_nth 1 strm with
 	      | IDENT ("wf"|"struct"|"measure") -> err ()
 	      | IDENT s ->
 		  stream_njunk 2 strm;
@@ -109,15 +108,15 @@ let impl_ident_head =
 let name_colon =
   Gram.Entry.of_parser "name_colon"
     (fun strm ->
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
 	| IDENT s ->
-            (match get_tok (stream_nth 1 strm) with
+            (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
                   Name (Names.Id.of_string s)
               | _ -> err ())
 	| KEYWORD "_" ->
-          (match get_tok (stream_nth 1 strm) with
+          (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
                   Anonymous

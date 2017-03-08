@@ -7,7 +7,6 @@
 (************************************************************************)
 (*i camlp4deps: "grammar/grammar.cma" i*)
 open Ltac_plugin
-open Compat
 open Util
 open Term
 open Pp
@@ -17,6 +16,7 @@ open Indfun
 open Genarg
 open Stdarg
 open Misctypes
+open Pcoq
 open Pcoq.Prim
 open Pcoq.Constr
 open Pltac

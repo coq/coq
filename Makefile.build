@@ -272,11 +272,10 @@ endif
 
 ## Explicit dependencies for grammar stuff
 
-GRAMBASEDEPS := grammar/gramCompat.cmo grammar/q_util.cmi
-GRAMCMO := grammar/gramCompat.cmo grammar/q_util.cmo \
+GRAMBASEDEPS := grammar/q_util.cmi
+GRAMCMO := grammar/q_util.cmo \
  grammar/argextend.cmo grammar/tacextend.cmo grammar/vernacextend.cmo
 
-grammar/q_util.cmi : grammar/gramCompat.cmo
 grammar/argextend.cmo : $(GRAMBASEDEPS)
 grammar/q_util.cmo : $(GRAMBASEDEPS)
 grammar/tacextend.cmo : $(GRAMBASEDEPS) grammar/argextend.cmo

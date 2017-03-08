@@ -310,10 +310,8 @@ let args_options = Arg.align [
     "<dir> Specifies the ocamlfind command to use";
   "-lablgtkdir", arg_string_option Prefs.lablgtkdir,
     "<dir> Specifies the path to the Lablgtk library";
-  "-usecamlp5", Arg.Set Prefs.usecamlp5,
-    " Specifies to use camlp5 instead of camlp4";
-  "-usecamlp4", Arg.Clear Prefs.usecamlp5,
-    " Specifies to use camlp4 instead of camlp5";
+  "-usecamlp5", Arg.Unit (fun () -> ()),
+    " Deprecated";
   "-camlp5dir",
     Arg.String (fun s -> Prefs.usecamlp5:=true; Prefs.camlp5dir:=Some s),
     "<dir> Specifies where is the Camlp5 library and tells to use it";
@@ -561,7 +559,6 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
       dir, camlp5o
     with Not_found ->
       let () = printf "No Camlp5 installation found." in
-      let () = printf "Looking for Camlp4 instead...\n" in
       raise NoCamlp5
 
 let check_camlp5_version camlp5o =
@@ -580,18 +577,7 @@ let config_camlpX () =
     let camlp5_version = check_camlp5_version camlp5o in
     "camlp5", camlp5o, Filename.dirname camlp5o, camlp5libdir, camlp5mod, camlp5_version
   with NoCamlp5 ->
-    (* We now try to use Camlp4, either by explicit choice or
-       by lack of proper Camlp5 installation *)
-    let camlp4mod = "camlp4lib" in
-    let camlp4libdir = camllib/"camlp4" in
-    if not (Sys.file_exists (camlp4libdir/camlp4mod^".cma")) then
-      die "No Camlp4 installation found.\n";
-    try
-      let camlp4orf = which_camlpX "camlp4orf" in
-      let version_line, _ = run ~err:StdOut camlp4orf ["-v"] in
-      let camlp4_version = List.nth (string_split ' ' version_line) 2 in
-      "camlp4", camlp4orf, Filename.dirname camlp4orf, camlp4libdir, camlp4mod, camlp4_version
-    with _ -> die "No Camlp4 installation found.\n"
+      die "No Camlp5 installation found.\n"
 
 let camlpX, camlpXo, camlpXbindir, fullcamlpXlibdir, camlpXmod, camlpX_version = config_camlpX ()
 
