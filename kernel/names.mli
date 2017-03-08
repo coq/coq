@@ -549,24 +549,31 @@ type identifier = Id.t
 (** @deprecated Alias for [Id.t] *)
 
 val string_of_id : identifier -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [Id.to_string]. *)
 
 val id_of_string : string -> identifier
+[@@ocaml.deprecated]
 (** @deprecated Same as [Id.of_string]. *)
 
 val id_ord : identifier -> identifier -> int
+[@@ocaml.deprecated]
 (** @deprecated Same as [Id.compare]. *)
 
 val id_eq : identifier -> identifier -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [Id.equal]. *)
 
 module Idset  : Set.S with type elt = identifier and type t = Id.Set.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [Id.Set]. *)
 
 module Idpred : Predicate.S with type elt = identifier and type t = Id.Pred.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [Id.Pred]. *)
 
 module Idmap : module type of Id.Map
+[@@ocaml.deprecated]
 (** @deprecated Same as [Id.Map]. *)
 
 (** {5 Directory paths} *)
@@ -575,27 +582,35 @@ type dir_path = DirPath.t
 (** @deprecated Alias for [DirPath.t]. *)
 
 val dir_path_ord : dir_path -> dir_path -> int
+[@@ocaml.deprecated]
 (** @deprecated Same as [DirPath.compare]. *)
 
 val dir_path_eq : dir_path -> dir_path -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [DirPath.equal]. *)
 
 val make_dirpath : module_ident list -> dir_path
+[@@ocaml.deprecated]
 (** @deprecated Same as [DirPath.make]. *)
 
 val repr_dirpath : dir_path -> module_ident list
+[@@ocaml.deprecated]
 (** @deprecated Same as [DirPath.repr]. *)
 
 val empty_dirpath : dir_path
+[@@ocaml.deprecated]
 (** @deprecated Same as [DirPath.empty]. *)
 
 val is_empty_dirpath : dir_path -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [DirPath.is_empty]. *)
 
 val string_of_dirpath : dir_path -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [DirPath.to_string]. *)
 
 val initial_dir : DirPath.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [DirPath.initial]. *)
 
 (** {5 Labels} *)
@@ -604,21 +619,27 @@ type label = Label.t
 (** Alias type *)
 
 val mk_label : string -> label
+[@@ocaml.deprecated]
 (** @deprecated Same as [Label.make]. *)
 
 val string_of_label : label -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [Label.to_string]. *)
 
 val pr_label : label -> Pp.std_ppcmds
+[@@ocaml.deprecated]
 (** @deprecated Same as [Label.print]. *)
 
 val label_of_id : Id.t -> label
+[@@ocaml.deprecated]
 (** @deprecated Same as [Label.of_id]. *)
 
 val id_of_label : label -> Id.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [Label.to_id]. *)
 
 val eq_label : label -> label -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [Label.equal]. *)
 
 (** {5 Unique bound module names} *)
@@ -627,29 +648,37 @@ type mod_bound_id = MBId.t
 (** Alias type. *)
 
 val mod_bound_id_ord : mod_bound_id -> mod_bound_id -> int
+[@@ocaml.deprecated]
 (** @deprecated Same as [MBId.compare]. *)
 
 val mod_bound_id_eq : mod_bound_id -> mod_bound_id -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [MBId.equal]. *)
 
 val make_mbid : DirPath.t -> Id.t -> mod_bound_id
+[@@ocaml.deprecated]
 (** @deprecated Same as [MBId.make]. *)
 
 val repr_mbid : mod_bound_id -> int * Id.t * DirPath.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [MBId.repr]. *)
 
 val id_of_mbid : mod_bound_id -> Id.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [MBId.to_id]. *)
 
 val string_of_mbid : mod_bound_id -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [MBId.to_string]. *)
 
 val debug_string_of_mbid : mod_bound_id -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [MBId.debug_to_string]. *)
 
 (** {5 Names} *)
 
 val name_eq : name -> name -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [Name.equal]. *)
 
 (** {5 Module paths} *)
@@ -661,18 +690,23 @@ type module_path = ModPath.t =
 (** @deprecated Alias type *)
 
 val mp_ord : module_path -> module_path -> int
+[@@ocaml.deprecated]
 (** @deprecated Same as [ModPath.compare]. *)
 
 val mp_eq : module_path -> module_path -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [ModPath.equal]. *)
 
 val check_bound_mp : module_path -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [ModPath.is_bound]. *)
 
 val string_of_mp : module_path -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [ModPath.to_string]. *)
 
 val initial_path : module_path
+[@@ocaml.deprecated]
 (** @deprecated Same as [ModPath.initial]. *)
 
 (** {5 Kernel names} *)
@@ -681,24 +715,31 @@ type kernel_name = KerName.t
 (** @deprecated Alias type *)
 
 val make_kn : ModPath.t -> DirPath.t -> Label.t -> kernel_name
+[@@ocaml.deprecated]
 (** @deprecated Same as [KerName.make]. *)
 
 val repr_kn : kernel_name -> module_path * DirPath.t * Label.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [KerName.repr]. *)
 
 val modpath : kernel_name -> module_path
+[@@ocaml.deprecated]
 (** @deprecated Same as [KerName.modpath]. *)
 
 val label : kernel_name -> Label.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [KerName.label]. *)
 
 val string_of_kn : kernel_name -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [KerName.to_string]. *)
 
 val pr_kn : kernel_name -> Pp.std_ppcmds
+[@@ocaml.deprecated]
 (** @deprecated Same as [KerName.print]. *)
 
 val kn_ord : kernel_name -> kernel_name -> int
+[@@ocaml.deprecated]
 (** @deprecated Same as [KerName.compare]. *)
 
 (** {5 Constant names} *)
@@ -738,51 +779,67 @@ end
 type projection = Projection.t
 
 val constant_of_kn_equiv : KerName.t -> KerName.t -> constant
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.make] *)
 
 val constant_of_kn : KerName.t -> constant
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.make1] *)
 
 val make_con : ModPath.t -> DirPath.t -> Label.t -> constant
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.make3] *)
 
 val repr_con : constant -> ModPath.t * DirPath.t * Label.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.repr3] *)
 
 val user_con : constant -> KerName.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.user] *)
 
 val canonical_con : constant -> KerName.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.canonical] *)
 
 val con_modpath : constant -> ModPath.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.modpath] *)
 
 val con_label : constant -> Label.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.label] *)
 
 val eq_constant : constant -> constant -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.equal] *)
 
 val con_ord : constant -> constant -> int
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.CanOrd.compare] *)
 
 val con_user_ord : constant -> constant -> int
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.UserOrd.compare] *)
 
 val con_with_label : constant -> Label.t -> constant
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.change_label] *)
 
 val string_of_con : constant -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.to_string] *)
 
 val pr_con : constant -> Pp.std_ppcmds
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.print] *)
 
 val debug_pr_con : constant -> Pp.std_ppcmds
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.debug_print] *)
 
 val debug_string_of_con : constant -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [Constant.debug_to_string] *)
 
 (** {5 Mutual Inductive names} *)
@@ -791,46 +848,61 @@ type mutual_inductive = MutInd.t
 (** @deprecated Alias type *)
 
 val mind_of_kn : KerName.t -> mutual_inductive
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.make1] *)
 
 val mind_of_kn_equiv : KerName.t -> KerName.t -> mutual_inductive
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.make] *)
 
 val make_mind : ModPath.t -> DirPath.t -> Label.t -> mutual_inductive
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.make3] *)
 
 val user_mind : mutual_inductive -> KerName.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.user] *)
 
 val canonical_mind : mutual_inductive -> KerName.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.canonical] *)
 
 val repr_mind : mutual_inductive -> ModPath.t * DirPath.t * Label.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.repr3] *)
 
 val eq_mind : mutual_inductive -> mutual_inductive -> bool
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.equal] *)
 
 val mind_ord : mutual_inductive -> mutual_inductive -> int
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.CanOrd.compare] *)
 
 val mind_user_ord : mutual_inductive -> mutual_inductive -> int
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.UserOrd.compare] *)
 
 val mind_label : mutual_inductive -> Label.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.label] *)
 
 val mind_modpath : mutual_inductive -> ModPath.t
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.modpath] *)
 
 val string_of_mind : mutual_inductive -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.to_string] *)
 
 val pr_mind : mutual_inductive -> Pp.std_ppcmds
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.print] *)
 
 val debug_pr_mind : mutual_inductive -> Pp.std_ppcmds
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.debug_print] *)
 
 val debug_string_of_mind : mutual_inductive -> string
+[@@ocaml.deprecated]
 (** @deprecated Same as [MutInd.debug_to_string] *)
