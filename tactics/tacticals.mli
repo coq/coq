@@ -16,6 +16,10 @@ open Locus
 open Misctypes
 open Tactypes
 
+(** Deactivate deprecated warning. TODO: move deprecated code to a proper
+    module, and move this attribute inside. *)
+[@@@ocaml.warning "-3"]
+
 (** Tacticals i.e. functions from tactics to tactics. *)
 
 val tclIDTAC         : tactic

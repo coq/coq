@@ -42,6 +42,9 @@ type subst0 =
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 let keyed_unification = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optdepr = false;

@@ -3,6 +3,10 @@ open Pp
 open Libnames
 open Globnames
 open Refiner
+
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 let mk_prefix pre id = Id.of_string (pre^(Id.to_string id))
 let mk_rel_id = mk_prefix "R_"
 let mk_correct_id id = Nameops.add_suffix (mk_rel_id id) "_correct"

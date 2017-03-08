@@ -15,6 +15,9 @@ open Misctypes
 
 module RelDecl = Context.Rel.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved
 

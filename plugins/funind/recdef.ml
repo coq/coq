@@ -45,6 +45,9 @@ open Eauto
 open Indfun_common
 open Context.Rel.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 (* Ugly things which should not be here *)
 
 let coq_constant m s = EConstr.of_constr @@ Universes.constr_of_global @@

@@ -22,6 +22,10 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
+(** Deactivate deprecated warning. TODO: move deprecated code to a proper
+    module, and move this attribute inside. *)
+[@@@ocaml.warning "-3"]
+
 let re_sig it  gc = { it = it; sigma = gc; }
 
 (**************************************************************)

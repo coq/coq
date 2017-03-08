@@ -26,6 +26,9 @@ open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 (* The local debugging mechanism *)
 (* let msgnl = Pp.msgnl *)
 

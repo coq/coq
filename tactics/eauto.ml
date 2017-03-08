@@ -27,6 +27,9 @@ open Locusops
 open Hints
 open Proofview.Notations
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
 let e_give_exact ?(flags=eauto_unif_flags) c =

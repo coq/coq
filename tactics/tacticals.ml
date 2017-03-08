@@ -20,6 +20,10 @@ open Tactypes
 
 module NamedDecl = Context.Named.Declaration
 
+(** Deactivate deprecated warning. TODO: move deprecated code to a proper
+    module, and move this attribute inside. *)
+[@@@ocaml.warning "-3"]
+
 (************************************************************************)
 (* Tacticals re-exported from the Refiner module                        *)
 (************************************************************************)
