@@ -17,6 +17,7 @@ open Proof_type
    argument; works by side-effect *)
 
 val with_check    : tactic -> tactic
+[@@ocaml.deprecated]
 
 (** [without_check] respectively means:\\
   [Intro]: no check that the name does not exist\\
@@ -31,6 +32,7 @@ val with_check    : tactic -> tactic
 (** The primitive refiner. *)
 
 val prim_refiner : prim_rule -> evar_map -> goal -> goal list * evar_map
+[@@ocaml.deprecated]
 
 
 (** {6 Refiner errors. } *)

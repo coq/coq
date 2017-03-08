@@ -75,3 +75,4 @@ module V82 : sig
   val abstract_type : Evd.evar_map -> goal -> EConstr.types 
 
 end
+[@@ocaml.deprecated]

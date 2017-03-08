@@ -18,84 +18,133 @@ open Locus
 
 (** Operations for handling terms under a local typing context. *)
 
-type 'a sigma   = 'a Evd.sigma;;
-type tactic     = Proof_type.tactic;;
+type 'a sigma   = 'a Evd.sigma
+[@@ocaml.deprecated]
+type tactic     = Proof_type.tactic
+[@@ocaml.deprecated]
 
 val sig_it  : 'a sigma   -> 'a
+[@@ocaml.deprecated]
 val project : goal sigma -> evar_map
+[@@ocaml.deprecated]
 
 val re_sig : 'a -> evar_map -> 'a sigma
+[@@ocaml.deprecated]
 
 val unpackage : 'a sigma -> evar_map ref * 'a
+[@@ocaml.deprecated]
 val repackage : evar_map ref -> 'a -> 'a sigma
+[@@ocaml.deprecated]
 val apply_sig_tac :
   evar_map ref -> (goal sigma -> (goal list) sigma) -> goal -> (goal list)
+[@@ocaml.deprecated]
 
 val pf_concl              : goal sigma -> types
+[@@ocaml.deprecated]
 val pf_env                : goal sigma -> env
+[@@ocaml.deprecated]
 val pf_hyps               : goal sigma -> named_context
+[@@ocaml.deprecated]
 (*i val pf_untyped_hyps       : goal sigma -> (Id.t * constr) list i*)
 val pf_hyps_types         : goal sigma -> (Id.t * types) list
+[@@ocaml.deprecated]
 val pf_nth_hyp_id         : goal sigma -> int -> Id.t
+[@@ocaml.deprecated]
 val pf_last_hyp           : goal sigma -> named_declaration
+[@@ocaml.deprecated]
 val pf_ids_of_hyps        : goal sigma -> Id.t list
+[@@ocaml.deprecated]
 val pf_global             : goal sigma -> Id.t -> constr
+[@@ocaml.deprecated]
 val pf_unsafe_type_of            : goal sigma -> constr -> types
+[@@ocaml.deprecated]
 val pf_type_of            : goal sigma -> constr -> evar_map * types
+[@@ocaml.deprecated]
 val pf_hnf_type_of        : goal sigma -> constr -> types
+[@@ocaml.deprecated]
 
 val pf_get_hyp            : goal sigma -> Id.t -> named_declaration
+[@@ocaml.deprecated]
 val pf_get_hyp_typ        : goal sigma -> Id.t -> types
+[@@ocaml.deprecated]
 
 val pf_get_new_id  : Id.t      -> goal sigma -> Id.t
+[@@ocaml.deprecated]
 val pf_get_new_ids : Id.t list -> goal sigma -> Id.t list
+[@@ocaml.deprecated]
 
 val pf_reduction_of_red_expr : goal sigma -> red_expr -> constr -> evar_map * constr
+[@@ocaml.deprecated]
 
 
 val pf_apply : (env -> evar_map -> 'a) -> goal sigma -> 'a
+[@@ocaml.deprecated]
 val pf_eapply : (env -> evar_map -> 'a -> evar_map * 'b) -> 
   goal sigma -> 'a -> goal sigma * 'b
+[@@ocaml.deprecated]
 val pf_reduce :
   (env -> evar_map -> constr -> constr) ->
   goal sigma -> constr -> constr
+[@@ocaml.deprecated]
 val pf_e_reduce :
   (env -> evar_map -> constr -> evar_map * constr) ->
   goal sigma -> constr -> evar_map * constr
+[@@ocaml.deprecated]
 
 val pf_whd_all       : goal sigma -> constr -> constr
+[@@ocaml.deprecated]
 val pf_hnf_constr              : goal sigma -> constr -> constr
+[@@ocaml.deprecated]
 val pf_nf                      : goal sigma -> constr -> constr
+[@@ocaml.deprecated]
 val pf_nf_betaiota             : goal sigma -> constr -> constr
+[@@ocaml.deprecated]
 val pf_reduce_to_quantified_ind : goal sigma -> types -> (inductive * EInstance.t) * types
+[@@ocaml.deprecated]
 val pf_reduce_to_atomic_ind     : goal sigma -> types -> (inductive * EInstance.t) * types
+[@@ocaml.deprecated]
 val pf_compute                 : goal sigma -> constr -> constr
+[@@ocaml.deprecated]
 val pf_unfoldn    : (occurrences * evaluable_global_reference) list
   -> goal sigma -> constr -> constr
+[@@ocaml.deprecated]
 
 val pf_const_value : goal sigma -> pconstant -> constr
+[@@ocaml.deprecated]
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
+[@@ocaml.deprecated]
 val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
+[@@ocaml.deprecated]
 
 val pf_matches     : goal sigma -> constr_pattern -> constr -> patvar_map
+[@@ocaml.deprecated]
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
+[@@ocaml.deprecated]
 
 
 (** {6 The most primitive tactics. } *)
 
 val refiner                   : rule -> tactic
+[@@ocaml.deprecated]
 val internal_cut_no_check     : bool -> Id.t -> types -> tactic
+[@@ocaml.deprecated]
 val refine_no_check           : constr -> tactic
+[@@ocaml.deprecated]
 
 (** {6 The most primitive tactics with consistency and type checking } *)
 
 val internal_cut     : bool -> Id.t -> types -> tactic
+[@@ocaml.deprecated]
 val internal_cut_rev : bool -> Id.t -> types -> tactic
+[@@ocaml.deprecated]
 val refine           : constr -> tactic
+[@@ocaml.deprecated]
 
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : goal sigma -> Pp.std_ppcmds
+[@@ocaml.deprecated]
 val pr_glls   : goal list sigma -> Pp.std_ppcmds
+[@@ocaml.deprecated]
 
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig
