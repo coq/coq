@@ -38,7 +38,9 @@ val mkLambda_name : env -> evar_map -> Name.t * types * constr -> constr
 
 (** Deprecated synonyms of [mkProd_name] and [mkLambda_name] *)
 val prod_name : env -> evar_map -> Name.t * types * types -> types
+[@@ocaml.deprecated]
 val lambda_name : env -> evar_map -> Name.t * types * constr -> constr
+[@@ocaml.deprecated]
 
 val prod_create : env -> evar_map -> types * types -> constr
 val lambda_create : env -> evar_map -> types * constr -> constr

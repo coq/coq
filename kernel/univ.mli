@@ -491,10 +491,13 @@ val hcons_abstract_cumulativity_info : abstract_cumulativity_info -> abstract_cu
 
 (* deprecated: use qualified names instead *)
 val compare_levels : universe_level -> universe_level -> int
+[@@ocaml.deprecated]
 val eq_levels : universe_level -> universe_level -> bool
+[@@ocaml.deprecated]
 
 (** deprecated: Equality of formal universe expressions. *)
 val equal_universes : universe -> universe -> bool
+[@@ocaml.deprecated]
 
 (** Universes of constraints *)
 val universes_of_constraints : constraints -> universe_set
