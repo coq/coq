@@ -251,7 +251,6 @@ module Prefs = struct
   let coqdocdir = ref (None : string option)
   let ocamlfindcmd = ref (None : string option)
   let lablgtkdir = ref (None : string option)
-  let usecamlp5 = ref true
   let camlp5dir = ref (None : string option)
   let arch = ref (None : string option)
   let natdynlink = ref true
@@ -311,9 +310,9 @@ let args_options = Arg.align [
   "-lablgtkdir", arg_string_option Prefs.lablgtkdir,
     "<dir> Specifies the path to the Lablgtk library";
   "-usecamlp5", Arg.Unit (fun () -> ()),
-    " Deprecated";
+    "Deprecated";
   "-camlp5dir",
-    Arg.String (fun s -> Prefs.usecamlp5:=true; Prefs.camlp5dir:=Some s),
+    Arg.String (fun s -> Prefs.camlp5dir:=Some s),
     "<dir> Specifies where is the Camlp5 library and tells to use it";
   "-arch", arg_string_option Prefs.arch,
     "<arch> Specifies the architecture";
@@ -538,8 +537,6 @@ let which_camlpX base =
 (* TODO: camlp5dir should rather be the *binary* location, just as camldir *)
 (* TODO: remove the late attempts at finding gramlib.cma *)
 
-exception NoCamlp5
-
 let check_camlp5 testcma = match !Prefs.camlp5dir with
   | Some dir ->
     if Sys.file_exists (dir/testcma) then
@@ -558,8 +555,7 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
       let dir,_ = tryrun camlp5o ["-where"] in
       dir, camlp5o
     with Not_found ->
-      let () = printf "No Camlp5 installation found." in
-      raise NoCamlp5
+      die "No Camlp5 installation found."
 
 let check_camlp5_version camlp5o =
   let version_line, _ = run ~err:StdOut camlp5o ["-v"] in
@@ -570,14 +566,10 @@ let check_camlp5_version camlp5o =
   | _ -> die "Error: unsupported Camlp5 (version < 6.06 or unrecognized).\n"
 
 let config_camlpX () =
-  try
-    if not !Prefs.usecamlp5 then raise NoCamlp5;
     let camlp5mod = "gramlib" in
     let camlp5libdir, camlp5o = check_camlp5 (camlp5mod^".cma") in
     let camlp5_version = check_camlp5_version camlp5o in
     "camlp5", camlp5o, Filename.dirname camlp5o, camlp5libdir, camlp5mod, camlp5_version
-  with NoCamlp5 ->
-      die "No Camlp5 installation found.\n"
 
 let camlpX, camlpXo, camlpXbindir, fullcamlpXlibdir, camlpXmod, camlpX_version = config_camlpX ()
 

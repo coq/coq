@@ -20,13 +20,8 @@ DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo
 devel: printers
 printers: $(CORECMA) $(DEBUGPRINTERS) dev/camlp4.dbg
 
-ifeq ($(CAMLP4),camlp5)
 dev/camlp4.dbg:
 	echo "load_printer gramlib.cma" > $@
-else
-dev/camlp4.dbg:
-	echo "load_printer camlp4lib.cma" > $@
-endif
 
 ############
 # revision
@@ -198,22 +193,6 @@ ltac: $(LTACVO) $(LTACCMO)
 
 .PHONY: omega micromega setoid_ring nsatz extraction
 .PHONY: fourier funind cc rtauto btauto ltac
-
-#################################
-### Misc other development rules
-#################################
-
-# NOTA : otags only accepts camlp4 as preprocessor, so the following rule
-# won't build tags of .ml4 when compiling with camlp5
-
-otags:
-	otags $(MLIFILES) $(filter-out configure.ml, $(MLSTATICFILES)) \
-	$(if $(filter camlp5,$(CAMLP4)), , \
-          -pa op -pa g -pa m -pa rq $(addprefix -pa , $(CAMLP4DEPS)) \
-          $(addprefix -impl , $(ML4FILES)))
-
-.PHONY: otags
-
 
 # For emacs:
 # Local Variables:

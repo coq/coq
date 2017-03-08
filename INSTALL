@@ -39,8 +39,7 @@ WHAT DO YOU NEED ?
      probably available in your distribution and for sure at
      http://projects.camlcity.org/projects/findlib.html)
 
-   - Camlp5 (version >= 6.02) (Coq compiles with Camlp4 but might be
-     less well supported)
+   - Camlp5 (version >= 6.02)
 
    - GNU Make version 3.81 or later
 
@@ -74,11 +73,10 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    bigger), you will also need the "ocamlopt" (or its native code version
    "ocamlopt.opt") command.
 
-2- Check that you have Camlp5 (or a supported Camlp4) installed on your
-   computer and that the command "camlp5" lies in a directory which
-   is present in your $PATH environment variable path.
-   (You need Camlp5/4 in both bytecode and native versions if
-   your platform supports it).
+2- Check that you have Camlp5 installed on your computer and that the
+   command "camlp5" lies in a directory which is present in your $PATH
+   environment variable path.  (You need Camlp5 in both bytecode and
+   native versions if your platform supports it).
 
 3- The uncompression and un-tarring of the distribution file gave birth
    to a directory named "coq-8.xx". You can rename this directory and put

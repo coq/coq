@@ -26,6 +26,10 @@ Plugins
 
 - The mathematical proof language (also known as declarative mode) was removed.
 
+Dependencies
+
+- Support for camlp4 has been removed.
+
 Changes from V8.6beta1 to V8.6
 ==============================
 
