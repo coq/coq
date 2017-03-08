@@ -20,7 +20,7 @@ open Nameops
 open Term
 open EConstr
 open Tacticals.New
-open Tacmach
+open Tacmach.New
 open Tactics
 open Logic
 open Libnames
@@ -154,8 +154,8 @@ let exists_tac c = constructor_tac false (Some 1) 1 (ImplicitBindings [c])
 
 let generalize_tac t = generalize t
 let elim t = simplest_elim t
-let exact t = Tacmach.refine t
 let unfold s = Tactics.unfold_in_concl [Locus.AllOccurrences, Lazy.force s]
+let pf_nf gl c = pf_apply Tacred.simpl gl c
 
 let rev_assoc k =
   let rec loop = function
@@ -583,10 +583,11 @@ let abstract_path sigma typ path t =
   mkLambda (Name (Id.of_string "x"), typ, abstract), !term_occur
 
 let focused_simpl path =
-  Proofview.V82.tactic begin fun gl ->
+  let open Tacmach.New in
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let newc = context (project gl) (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
-  Proofview.V82.of_tactic (convert_concl_no_check newc DEFAULTcast) gl
-  end
+  convert_concl_no_check newc DEFAULTcast
+  end }
 
 let focused_simpl path = focused_simpl path
 
@@ -644,12 +645,19 @@ let decompile af =
   in
   loop af.body
 
-let mkNewMeta () = mkMeta (Evarutil.new_meta())
+(** Backward compat to emulate the old Refine: normalize the goal conclusion *)
+let new_hole env sigma c =
+  let c = Reductionops.nf_betaiota (Sigma.to_evar_map sigma) c in
+  Evarutil.new_evar env sigma c
 
 let clever_rewrite_base_poly typ p result theorem =
-  Proofview.V82.tactic begin fun gl ->
+  let open Tacmach.New in
+  let open Sigma in
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let full = pf_concl gl in
+  let env = pf_env gl in
   let (abstracted,occ) = abstract_path (project gl) typ (List.rev p) full in
+  Refine.refine { run = begin fun sigma ->
   let t =
     applist
       (mkLambda
@@ -662,8 +670,11 @@ let clever_rewrite_base_poly typ p result theorem =
 		       [| typ; result; mkRel 2; mkRel 1; occ; theorem |]))),
        [abstracted])
   in
-  exact (applist(t,[mkNewMeta()])) gl
-  end
+  let argt = mkApp (abstracted, [|result|]) in
+  let Sigma (hole, sigma, p) = new_hole env sigma argt in
+  Sigma (applist (t, [hole]), sigma, p)
+  end }
+  end }
 
 let clever_rewrite_base p result theorem =
   clever_rewrite_base_poly (Lazy.force coq_Z) p result theorem
@@ -679,14 +690,29 @@ let clever_rewrite_gen_nat p result (t,args) =
   let theorem = applist(t, args) in
   clever_rewrite_base_nat p result theorem
 
+(** Solve using the term the term [t _] *)
+let refine_app gl t =
+  let open Tacmach.New in
+  let open Sigma in
+  Refine.refine { run = begin fun sigma ->
+  let env = pf_env gl in
+  let ht = match EConstr.kind (Sigma.to_evar_map sigma) (pf_get_type_of gl t) with
+  | Prod (_, t, _) -> t
+  | _ -> assert false
+  in
+  let Sigma (hole, sigma, p) = new_hole env sigma ht in
+  Sigma (applist (t, [hole]), sigma, p)
+  end }
+
 let clever_rewrite p vpath t =
-  Proofview.V82.tactic begin fun gl ->
+  let open Tacmach.New in
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   let full = pf_concl gl in
   let (abstracted,occ) = abstract_path (project gl) (Lazy.force coq_Z) (List.rev p) full in
   let vargs = List.map (fun p -> occurrence (project gl) p occ) vpath in
   let t' = applist(t, (vargs @ [abstracted])) in
-  exact (applist(t',[mkNewMeta()])) gl
-  end
+  refine_app gl t'
+  end }
 
 let rec shuffle p (t1,t2) =
   match t1,t2 with
@@ -1888,8 +1914,9 @@ let destructure_goal =
 	    try
 	      let dec = decidability t in
 	      tclTHEN
-                (Proofview.V82.tactic (Tacmach.refine
-		                         (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |]))))
+                (Proofview.Goal.nf_enter { enter = begin fun gl ->
+		                         refine_app gl (mkApp (Lazy.force coq_dec_not_not, [| t; dec |]))
+		                         end })
 	        intro
 	    with Undecidable -> Tactics.elim_type (Lazy.force coq_False)
 	    | e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
