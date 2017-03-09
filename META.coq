@@ -263,9 +263,9 @@ package "ltac" (
   version     = "8.7"
 
   requires    = "coq.highparsing"
-  directory   = "ltac"
+  directory   = "plugins/ltac"
 
-  archive(byte)    = "ltac.cma"
-  archive(native)  = "ltac.cmxa"
+  archive(byte)    = "ltac_plugin.cmo"
+  archive(native)  = "ltac_plugin.cmx"
 
 )
