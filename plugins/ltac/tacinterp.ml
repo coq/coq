@@ -1219,15 +1219,15 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacThen (t1,t) ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
   | TacDispatch tl ->
-      Proofview.tclDISPATCH (List.map (interp_tactic ist) tl)
+      Proofview.tclDISPATCH (interp_tactic_list ist tl)
   | TacExtendTac (tf,t,tl) ->
-      Proofview.tclEXTEND (Array.map_to_list (interp_tactic ist) tf)
+      Proofview.tclEXTEND (interp_tactic_list ist (Array.to_list tf))
                           (interp_tactic ist t)
-                          (Array.map_to_list (interp_tactic ist) tl)
-  | TacThens (t1,tl) -> Tacticals.New.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
+                          (interp_tactic_list ist (Array.to_list tl))
+  | TacThens (t1,tl) -> Tacticals.New.tclTHENS (interp_tactic ist t1) (interp_tactic_list ist tl)
   | TacThens3parts (t1,tf,t,tl) ->
       Tacticals.New.tclTHENS3PARTS (interp_tactic ist t1)
-	(Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
+	(interp_tactic_array ist tf) (interp_tactic ist t) (interp_tactic_array ist tl)
   | TacDo (n,tac) -> Tacticals.New.tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTimeout (n,tac) -> Tacticals.New.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTime (s,tac) -> Tacticals.New.tclTIME s (interp_tactic ist tac)
@@ -1246,8 +1246,8 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         (fun () -> interp_tactic ist te)
   | TacOrelse (tac1,tac2) ->
       Tacticals.New.tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
-  | TacFirst l -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)
-  | TacSolve l -> Tacticals.New.tclSOLVE (List.map (interp_tactic ist) l)
+  | TacFirst l -> Tacticals.New.tclFIRST (interp_tactic_list ist l)
+  | TacSolve l -> Tacticals.New.tclSOLVE (interp_tactic_list ist l)
   | TacComplete tac -> Tacticals.New.tclCOMPLETE (interp_tactic ist tac)
   | TacArg a -> interp_tactic ist (TacArg a)
   | TacInfo tac ->
@@ -1627,6 +1627,21 @@ and interp_ltac_constr ist e : constr Ftactic.t =
 (* Interprets tactic expressions : returns a "tactic" *)
 and interp_tactic ist tac : unit Proofview.tactic =
   Ftactic.run (val_interp ist tac) (fun v -> tactic_of_value ist v)
+
+(* Try to coerce a single variable as a list of tactics *)
+and interp_tactic_list ist tacl : unit Proofview.tactic list =
+  let coerce_to_tactic_list ist v =
+  match Value.to_list v with
+  | None -> raise (CannotCoerceTo "a tactic list")
+  | Some l -> List.map (tactic_of_value ist) l in
+  match tacl with
+  | [TacArg (_, Reference (ArgVar (_, id)))] ->
+      (try coerce_to_tactic_list ist (Id.Map.find id ist.lfun)
+       with Not_found | CannotCoerceTo _ -> List.map (interp_tactic ist) tacl)
+  | _ -> List.map (interp_tactic ist) tacl
+
+and interp_tactic_array ist tacv : unit Proofview.tactic array =
+  Array.of_list (interp_tactic_list ist (Array.to_list tacv))
 
 (* Provides a "name" for the trace to atomic tactics *)
 and name_atomic ?env tacexpr tac : unit Proofview.tactic =

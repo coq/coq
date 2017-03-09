@@ -170,6 +170,18 @@ intros.
 revert a b c H.
 Abort.
 
+Module A.
+
+Tactic Notation (at level 4) tactic4(tac) ";" "first" "[" tactic_list_sep(tacl,"|") "]" := tac ; first [ tacl ].
+Tactic Notation (at level 4) tactic4(tac) ";" "first" tactic3(tac') := tac; [ tac' | ..].
+Tactic Notation (at level 4) tactic4(tac) ";" "last" tactic3(tac') := tac; [ .. | tac'].
+
+Goal True.
+idtac; first [exact I].
+Qed.
+
+End A.
+
 (* Used to fail until revision 9280 because of a parasitic App node with
    empty args *)
 
