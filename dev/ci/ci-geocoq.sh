@@ -11,6 +11,5 @@ git_checkout ${GeoCoq_CI_BRANCH} ${GeoCoq_CI_GITURL} GeoCoq
 
 ( cd GeoCoq                                               && \
   ./configure.sh                                          && \
-  sed -i.bak '/Ch16_coordinates_with_functions\.v/d' Make && \
   coq_makefile -f Make -o Makefile                        && \
   make -j ${NJOBS} )
