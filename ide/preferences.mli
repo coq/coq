@@ -43,6 +43,7 @@ type pref =
       mutable modifier_for_templates : string;
       mutable modifier_for_tactics : string;
       mutable modifier_for_display : string;
+      mutable modifier_for_queries : string;
       mutable modifiers_valid : string;
 
       mutable cmd_browse : string;
@@ -85,6 +86,8 @@ type pref =
       mutable highlight_current_line : bool;
 
       mutable nanoPG : bool;
+
+      mutable user_queries : (string * string) list;
 
     }
 

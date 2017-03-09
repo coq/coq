@@ -116,6 +116,7 @@ type pref =
       mutable modifier_for_templates : string;
       mutable modifier_for_tactics : string;
       mutable modifier_for_display : string;
+      mutable modifier_for_queries : string;
       mutable modifiers_valid : string;
 
       mutable cmd_browse : string;
@@ -159,6 +160,8 @@ type pref =
 
       mutable nanoPG : bool;
 
+      mutable user_queries : (string * string) list;
+
 }
 
 let use_default_doc_url = "(automatic)"
@@ -194,6 +197,7 @@ let current = {
     modifier_for_templates = "<Control><Shift>";
     modifier_for_tactics = "<Control><Alt>";
     modifier_for_display = "<Alt><Shift>";
+    modifier_for_queries = "<Control><Shift>";
     modifiers_valid = "<Alt><Control><Shift>";
 
 
@@ -240,6 +244,8 @@ let current = {
     highlight_current_line = false;
 
     nanoPG = false;
+
+    user_queries = [];
   }
 
 let save_pref () =
@@ -277,6 +283,7 @@ let save_pref () =
     add "modifier_for_templates" [p.modifier_for_templates] ++
     add "modifier_for_tactics" [p.modifier_for_tactics] ++
     add "modifier_for_display" [p.modifier_for_display] ++
+    add "modifier_for_queries" [p.modifier_for_queries] ++
     add "modifiers_valid" [p.modifiers_valid] ++
     add "cmd_browse" [p.cmd_browse] ++
     add "cmd_editor" [p.cmd_editor] ++
@@ -312,6 +319,7 @@ let save_pref () =
     add "tab_length" [string_of_int p.tab_length] ++
     add "highlight_current_line" [string_of_bool p.highlight_current_line] ++
     add "nanoPG" [string_of_bool p.nanoPG] ++
+    add "user_queries" (CList.map (fun (f, s) -> f ^ "$" ^ s) p.user_queries) ++
     Config_lexer.print_file pref_file
 
 let load_pref () =
@@ -357,6 +365,8 @@ let load_pref () =
       (fun v -> np.modifier_for_tactics <- v);
     set_hd "modifier_for_display"
       (fun v -> np.modifier_for_display <- v);
+    set_hd "modifier_for_queries"
+      (fun v -> np.modifier_for_queries <- v);
     set_hd "modifiers_valid"
       (fun v ->
 	np.modifiers_valid <- v);
@@ -400,6 +410,12 @@ let load_pref () =
     set_int "tab_length" (fun v -> np.tab_length <- v);
     set_bool "highlight_current_line" (fun v -> np.highlight_current_line <- v);
     set_bool "nanoPG" (fun v -> np.nanoPG <- v);
+    set "user_queries" (fun v ->
+      np.user_queries <- CList.map (fun s ->
+        match CString.split '$' s with
+        | [q; s] -> (q, s)
+        | _ -> raise Exit
+      ) v);
     ()
 
 let configure ?(apply=(fun () -> ())) () =
@@ -747,6 +763,14 @@ let configure ?(apply=(fun () -> ())) () =
       "Modifiers for View Menu"
       (str_to_mod_list current.modifier_for_display)
   in
+  let modifier_for_queries =
+    modifiers
+      ~allow:the_valid_mod
+      ~f:(fun l -> current.modifier_for_queries <- mod_list_to_str l)
+      ~help:help_string
+      "Modifiers for Queries Menu"
+      (str_to_mod_list current.modifier_for_queries)
+  in
   let modifiers_valid =
     modifiers
       ~f:(fun l ->
@@ -835,6 +859,30 @@ let configure ?(apply=(fun () -> ())) () =
   let misc = [contextual_menus_on_goal;stop_before;reset_on_tab_switch;
               vertical_tabs;opposite_tabs] in
 
+  let edit_user_query (q, k) =
+    let input_string l s v =
+      match GToolbox.input_string ~title:l ~text:s v with
+      | None -> s
+      | Some s -> s
+    in
+    let q = input_string "User query" q "Your query" in
+    let k = input_string "Shortcut key" k "Shortcut (a single letter)" in
+      q, k
+  in
+
+  let user_queries =
+    list
+      ~f:(fun l -> current.user_queries <- l)
+      ~eq:(fun (q1, _) (q2, _) -> q1 = q2)
+      ~edit:edit_user_query
+      ~add:(fun () -> ["<user query>", "<shortcut key>"])
+      ~titles:["User query"; "Shortcut key"]
+      "User queries"
+      (fun (q, s) -> [q; s])
+      current.user_queries
+
+  in
+
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
    (shame on Benjamin) *)
   let cmds =
@@ -862,9 +910,10 @@ let configure ?(apply=(fun () -> ())) () =
 	     [automatic_tactics]);
      Section("Shortcuts", Some `PREFERENCES,
 	     [modifiers_valid; modifier_for_tactics;
-	      modifier_for_templates; modifier_for_display; modifier_for_navigation; modifier_notice]);
+        modifier_for_templates; modifier_for_display; modifier_for_navigation;
+        modifier_for_queries; user_queries; modifier_notice]);
      Section("Misc", Some `ADD,
-	     misc)]
+       misc)]
   in
 (*
   Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string current.text_font);

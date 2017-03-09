@@ -18,6 +18,15 @@ let list_items menu li =
   let () = List.iter (fun b -> Buffer.add_buffer res_buf (tactic_item b)) li in
   res_buf
 
+let list_queries menu li =
+  let res_buf = Buffer.create 500 in
+  let query_item (q, _) =
+    let s = "<menuitem action='"^menu^" "^(no_under q)^"' />\n" in
+    Buffer.add_string res_buf s
+  in
+  let () = List.iter query_item li in
+  res_buf
+
 let init () =
   let theui = Printf.sprintf "<ui>
 <menubar name='CoqIde MenuBar'>
@@ -119,6 +128,8 @@ let init () =
     <menuitem action='About' />
     <menuitem action='Locate' />
     <menuitem action='Print Assumptions' />
+    <separator />
+    %s
   </menu>
   <menu name='Tools' action='Tools'>
     <menuitem action='Comment' />
@@ -162,5 +173,6 @@ let init () =
     (if Coq_config.gtk_platform <> `QUARTZ then "<menuitem action='Quit' />" else "")
     (Buffer.contents (list_items "Tactic" Coq_commands.tactics))
     (Buffer.contents (list_items "Template" Coq_commands.commands))
+    (Buffer.contents (list_queries "Query" Preferences.current.Preferences.user_queries))
  in
   ignore (ui_m#add_ui_from_string theui);
