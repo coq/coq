@@ -1,5 +1,5 @@
 dist: trusty
-sudo: required
+sudo: false
 # Until Ocaml becomes a language, we set a known one.
 language: c
 cache:
