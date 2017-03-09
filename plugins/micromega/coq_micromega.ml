@@ -383,7 +383,6 @@ struct
   let coq_and = lazy (init_constant "and")
   let coq_or = lazy (init_constant "or")
   let coq_not = lazy (init_constant "not")
-  let coq_not_gl_ref = (Nametab.locate (  Libnames.qualid_of_string "Coq.Init.Logic.not"))
 
   let coq_iff = lazy (init_constant "iff")
   let coq_True = lazy (init_constant "True")
