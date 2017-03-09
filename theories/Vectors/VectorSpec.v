@@ -122,3 +122,32 @@ induction l.
 - reflexivity.
 - unfold to_list; simpl. now f_equal.
 Qed.
+
+Lemma take_O : forall {A} {n} le (v:t A n), take 0 le v = [].
+Proof. 
+  reflexivity.
+Qed. 
+
+Lemma take_idem : forall {A} p n (v:t A n)  le le', 
+  take p le' (take p le v) = take p le v.
+Proof. 
+  induction p; intros n v le le'.
+  - auto. 
+  - destruct v. inversion le. simpl. apply f_equal. apply IHp. 
+Qed.
+
+Lemma take_app : forall {A} {n} (v:t A n) {m} (w:t A m) le, take n le (append v w) = v.
+Proof. 
+  induction v; intros m w le.
+  - reflexivity. 
+  - simpl. apply f_equal. apply IHv. 
+Qed.
+
+(* Proof is irrelevant for [take] *)
+Lemma take_prf_irr : forall {A} p {n} (v:t A n) le le', take p le v = take p le' v.
+Proof. 
+  induction p; intros n v le le'. 
+  - reflexivity.  
+  - destruct v. inversion le. simpl. apply f_equal. apply IHp. 
+Qed.
+

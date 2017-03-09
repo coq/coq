@@ -147,6 +147,16 @@ Definition shiftrepeat {A} := @rectS _ (fun n _ => t A (S (S n)))
   (fun h =>  h :: h :: []) (fun h _ _ H => h :: H).
 Global Arguments shiftrepeat {A} {n} v.
 
+(** Take first [p] elements of a vector *)
+Fixpoint take {A} {n} (p:nat) (le:p <= n) (v:t A n) : t A p := 
+  match p as p return p <= n -> t A p with 
+  | 0 => fun _ => [] 
+  | S p' => match v in t _ n return S p' <= n -> t A (S p') with
+    | []=> fun le => False_rect _ (Nat.nle_succ_0 p' le)
+    | x::xs => fun le => x::take p' (le_S_n p' _ le) xs
+    end 
+  end le.
+
 (** Remove [p] last elements of a vector *)
 Lemma trunc : forall {A} {n} (p:nat), n > p -> t A n
   -> t A (n - p).
