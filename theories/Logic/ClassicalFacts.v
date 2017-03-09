@@ -34,8 +34,11 @@ Table of contents:
 
 3 3. Independence of general premises and drinker's paradox
 
-4. Classical logic and principle of unrestricted minimization
+4. Principles equivalent to classical logic
 
+4.1 Classical logic = principle of unrestricted minimization
+
+4.2 Classical logic = choice of representatives in a partition of bool
 *)
 
 (************************************************************************)
@@ -94,12 +97,14 @@ Qed.
 (** A weakest form of propositional extensionality: extensionality for
     provable propositions only *)
 
+Require Import PropExtensionalityFacts.
+
 Definition provable_prop_extensionality := forall A:Prop, A -> A = True.
 
 Lemma provable_prop_ext :
   prop_extensionality -> provable_prop_extensionality.
 Proof.
-  intros Ext A Ha; apply Ext; split; trivial.
+  exact PropExt_imp_ProvPropExt.
 Qed.
 
 (************************************************************************)
@@ -516,7 +521,7 @@ End Weak_proof_irrelevance_CCI.
 (** ** Weak excluded-middle *)
 
 (** The weak classical logic based on [~~A \/ ~A] is referred to with
-    name KC in {[ChagrovZakharyaschev97]]
+    name KC in [[ChagrovZakharyaschev97]]
 
    [[ChagrovZakharyaschev97]] Alexander Chagrov and Michael
    Zakharyaschev, "Modal Logic", Clarendon Press, 1997.
@@ -661,6 +666,8 @@ Proof.
     exists x0; exact Hnot.
 Qed.
 
+(** * Axioms equivalent to classical logic *)
+
 (** ** Principle of unrestricted minimization *)
 
 Require Import Coq.Arith.PeanoNat.
@@ -736,3 +743,56 @@ Section Example_of_undecidable_predicate_with_the_minimization_property.
   Qed.
 
 End Example_of_undecidable_predicate_with_the_minimization_property.
+
+(** ** Choice of representatives in a partition of bool *)
+
+(** This is similar to Bell's "weak extensional selection principle"  in [[Bell]]
+
+   [[Bell]] John L. Bell, Choice principles in intuitionistic set theory, unpublished.
+*)
+
+Require Import RelationClasses.
+
+Local Notation representative_boolean_partition :=
+  (forall R:bool->bool->Prop,
+    Equivalence R -> exists f, forall x, R x (f x) /\ forall y, R x y -> f x = f y).
+
+Theorem representative_boolean_partition_imp_excluded_middle :
+  representative_boolean_partition -> excluded_middle.
+Proof.
+  intros ReprFunChoice P.
+  pose (R (b1 b2 : bool) := b1 = b2 \/ P).
+  assert (Equivalence R).
+  { split.
+    - now left.
+    - destruct 1. now left. now right.
+    - destruct 1, 1; try now right. left; now transitivity y. }
+  destruct (ReprFunChoice R H) as (f,Hf). clear H.
+  destruct (Bool.bool_dec (f true) (f false)) as [Heq|Hneq].
+  + left.
+     destruct (Hf false) as ([Hfalse|HP],_); try easy.
+     destruct (Hf true) as ([Htrue|HP],_); try easy.
+     congruence.
+  + right. intro HP.
+     destruct (Hf true) as (_,H). apply Hneq, H. now right.
+Qed.
+
+Theorem excluded_middle_imp_representative_boolean_partition :
+  excluded_middle -> representative_boolean_partition.
+Proof.
+  intros EM R H.
+  destruct (EM (R true false)).
+  - exists (fun _ => true).
+    intros []; firstorder.
+  - exists (fun b => b).
+    intro b. split.
+    + reflexivity.
+    + destruct b, y; intros HR; easy || now symmetry in HR.
+Qed.
+
+Theorem excluded_middle_iff_representative_boolean_partition :
+  excluded_middle <-> representative_boolean_partition.
+Proof.
+  split; auto using excluded_middle_imp_representative_boolean_partition,
+                    representative_boolean_partition_imp_excluded_middle.
+Qed.

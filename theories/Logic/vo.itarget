@@ -20,11 +20,14 @@ WeakFan.vo
 WKL.vo
 FunctionalExtensionality.vo
 ExtensionalityFacts.vo
+ExtensionalFunctionRepresentative.vo
 Hurkens.vo
 IndefiniteDescription.vo
 JMeq.vo
 ProofIrrelevanceFacts.vo
 ProofIrrelevance.vo
+PropExtensionality.vo
 RelationalChoice.vo
 SetIsType.vo
+SetoidChoice.vo
 FinFun.vo
