@@ -1,5 +1,15 @@
+# TODO: Move to META.in once coq_makefile2 is merged.
+# We need to reuse:
+# - The variable substitution mechanism.
+# - Sourcing of "coq_install_path" and "coq_version" variables.
+#
+# With this rules, we would have:
+#  version = ${coq_version}
+# and
+#  linkopts(byte)   = "-dllpath ${coq_install_path}/kernel/byterun/ -dllib -lcoqrun"
+
 description = "The Coq Proof Assistant Plugin API"
-version = "8.6"
+version = "8.7"
 
 directory = ""
 requires = "camlp5"
@@ -7,7 +17,7 @@ requires = "camlp5"
 package "config" (
 
   description = "Coq Configuration Variables"
-  version     = "8.6"
+  version     = "8.7"
 
   directory   = "config"
 
@@ -16,7 +26,7 @@ package "config" (
 package "lib" (
 
   description = "Base Coq Library"
-  version     = "8.6"
+  version     = "8.7"
 
   directory   = "lib"
 
@@ -34,13 +44,12 @@ package "vm" (
 
   description = "Coq VM"
 
-  version     = "8.6"
+  version     = "8.7"
 
-# EJGA FIXME: Unfortunately dllpath is dependent on the type of Coq
-# install. In a local one we'll want kernel/byterun, in a non-local
-# one we want to set it to coqlib. We should thus generate this file
-# at configure time, but let's hear for some more feedback from
-# experts.
+# dllpath is dependent on the type of Coq install. In a local one
+# we'll want kernel/byterun, in a non-local one we want to set it to
+# coqlib. We should thus generate this file at configure time, but
+# let's hear for some more feedback from experts.
 
 # Enable for local native & byte builds
 #  directory        = "kernel/byterun"
@@ -57,7 +66,7 @@ package "vm" (
 package "kernel" (
 
   description = "Coq's Kernel"
-  version     = "8.6"
+  version     = "8.7"
 
   directory   = "kernel"
 
@@ -71,7 +80,7 @@ package "kernel" (
 package "library" (
 
   description = "Coq Libraries (vo) support"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.kernel"
 
@@ -85,7 +94,7 @@ package "library" (
 package "intf" (
 
   description = "Coq Public Data Types"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.library"
 
@@ -96,7 +105,7 @@ package "intf" (
 package "engine" (
 
   description = "Coq Tactic Engine"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.library"
   directory   = "engine"
@@ -109,7 +118,7 @@ package "engine" (
 package "pretyping" (
 
   description = "Coq Pretyper"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.engine"
   directory   = "pretyping"
@@ -122,7 +131,7 @@ package "pretyping" (
 package "interp" (
 
   description = "Coq Term Interpretation"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.pretyping"
   directory   = "interp"
@@ -135,7 +144,7 @@ package "interp" (
 package "grammar" (
 
   description = "Coq Base Grammar"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.interp"
   directory   = "grammar"
@@ -147,7 +156,7 @@ package "grammar" (
 package "proofs" (
 
   description = "Coq Proof Engine"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.interp"
   directory   = "proofs"
@@ -160,7 +169,7 @@ package "proofs" (
 package "parsing" (
 
   description = "Coq Parsing Engine"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.proofs"
   directory   = "parsing"
@@ -173,7 +182,7 @@ package "parsing" (
 package "printing" (
 
   description = "Coq Printing Engine"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.parsing"
   directory   = "printing"
@@ -186,7 +195,7 @@ package "printing" (
 package "tactics" (
 
   description = "Coq Basic Tactics"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.printing"
   directory   = "tactics"
@@ -199,7 +208,7 @@ package "tactics" (
 package "vernac" (
 
   description = "Coq Vernacular Interpreter"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.tactics"
   directory   = "vernac"
@@ -212,7 +221,7 @@ package "vernac" (
 package "stm" (
 
   description = "Coq State Transactional Machine"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.vernac"
   directory   = "stm"
@@ -225,7 +234,7 @@ package "stm" (
 package "toplevel" (
 
   description = "Coq Toplevel"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.stm"
   directory   = "toplevel"
@@ -238,7 +247,7 @@ package "toplevel" (
 package "highparsing" (
 
   description = "Coq Extra Parsing"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.toplevel"
   directory   = "parsing"
@@ -251,7 +260,7 @@ package "highparsing" (
 package "ltac" (
 
   description = "Coq LTAC Plugin"
-  version     = "8.6"
+  version     = "8.7"
 
   requires    = "coq.highparsing"
   directory   = "ltac"
