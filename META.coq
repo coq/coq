@@ -43,21 +43,16 @@ package "lib" (
 package "vm" (
 
   description = "Coq VM"
-
   version     = "8.7"
 
-# dllpath is dependent on the type of Coq install. In a local one
-# we'll want kernel/byterun, in a non-local one we want to set it to
-# coqlib. We should thus generate this file at configure time, but
-# let's hear for some more feedback from experts.
+  directory        = "kernel/byterun"
 
-# Enable for local native & byte builds
-#  directory        = "kernel/byterun"
+# We should generate this file at configure time for local byte builds
+# to work properly.
 
-# Enable for local byte builds and set up properly
-#  linkopts(byte)   = "-dllpath /path/to/coq/kernel/byterun/ -dllib -lcoqrun"
+# Enable this setting for local byte builds, disabling the one below.
+#  linkopts(byte)   = "-dllpath path_to_coq/kernel/byterun/ -dllib -lcoqrun"
 
-# Disable for local byte builds
   linkopts(byte)   = "-dllib -lcoqrun"
   linkopts(native) = "-cclib -lcoqrun"
 
