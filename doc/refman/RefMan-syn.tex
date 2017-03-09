@@ -59,6 +59,12 @@ and pretty-printer of {\Coq} already know how to deal with the
 syntactic expression (see \ref{ReservedNotation}), explicit precedences and
 associativity rules have to be given.
 
+\Rem The right-hand side of a notation is interpreted at the time the
+notation is given. In particular, implicit arguments (see
+Section~\ref{Implicit Arguments}), coercions (see
+Section~\ref{Coercions}), etc. are resolved at the time of the
+declaration of the notation.
+
 \subsection[Precedences and associativity]{Precedences and associativity\index{Precedences}
 \index{Associativity}}
 
@@ -907,6 +913,28 @@ interpretation. See the next section.
 
 \SeeAlso The command to show the scopes bound to the arguments of a
 function is described in Section~\ref{About}.
+
+\Rem In notations, the subterms matching the identifiers of the
+notations are interpreted in the scope in which the identifiers
+occurred at the time of the declaration of the notation. Here is an
+example:
+
+\begin{coq_example}
+Parameter g : bool -> bool.
+Notation "@@" := true (only parsing) : bool_scope.
+Notation "@@" := false (only parsing): mybool_scope.
+
+(* Defining a notation while the argument of g is bound to bool_scope *)
+Bind Scope bool_scope with bool.
+Notation "# x #" := (g x) (at level 40).
+Check # @@ #.
+(* Rebinding the argument of g to mybool_scope has no effect on the notation *)
+Arguments g _%mybool_scope.
+Check # @@ #.
+(* But we can force the scope *)
+Delimit Scope mybool_scope with mybool.
+Check # @@%mybool #.
+\end{coq_example}
 
 \subsection[The {\tt type\_scope} interpretation scope]{The {\tt type\_scope} interpretation scope\index{type\_scope@\texttt{type\_scope}}}
 
