@@ -1233,7 +1233,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	    else
 	      Proofview.V82.of_tactic (Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
 		other_fix_infos 0)
-	| _ -> anomaly (Pp.str "Not a valid information")
+	| _,[] -> tclIDTAC
     in
     let first_tac : tactic = (* every operations until fix creations *)
       tclTHENSEQ
