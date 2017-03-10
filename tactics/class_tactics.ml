@@ -1604,10 +1604,16 @@ let is_ground c gl =
   else tclFAIL 0 (str"Not ground") gl
 
 let autoapply c i gl =
+  let open Proofview.Notations in
   let flags = auto_unif_flags Evar.Set.empty
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
   let cty = pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
-  let tac = { enter = fun gl -> (unify_e_resolve false flags).enter gl
-    ((c,cty,Univ.ContextSet.empty),0,ce) } in
-  Proofview.V82.of_tactic (Proofview.Goal.nf_enter tac) gl
+  let enter gl =
+    (unify_e_resolve false flags).enter gl
+                                 ((c,cty,Univ.ContextSet.empty),0,ce) <*>
+      Proofview.tclEVARMAP >>= (fun sigma ->
+      let sigma = Typeclasses.mark_unresolvables ~filter:Typeclasses.all_goals sigma in
+      Proofview.Unsafe.tclEVARS sigma)
+  in
+  Proofview.V82.of_tactic (Proofview.Goal.nf_enter { enter }) gl
