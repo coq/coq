@@ -1,4 +1,7 @@
 dist: trusty
+# Travis builds are slower using sudo: false (the container-based
+# infrastructure) as of March 2017; see
+# https://github.com/coq/coq/pull/467 for some discussion.
 sudo: required
 # Until Ocaml becomes a language, we set a known one.
 language: c
