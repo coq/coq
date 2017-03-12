@@ -24,8 +24,6 @@ open Fast_typeops
 
 (* Insertion of constants and parameters in environment. *)
 
-let mk_pure_proof c = (c, Univ.ContextSet.empty), []
-
 let equal_eff e1 e2 =
   let open Entries in
   match e1, e2 with
@@ -37,20 +35,54 @@ let equal_eff e1 e2 =
           cl1 cl2
   | _ -> false
 
-type side_effects = side_effect list
+module SideEffects :
+sig
+  type t
+  val repr : t -> side_effect list
+  val empty : t
+  val add : side_effect -> t -> t
+  val concat : t -> t -> t
+end =
+struct
 
-let rec uniq_seff_aux = function
-  | [] -> []
-  | x :: xs -> x :: uniq_seff_aux (List.filter (fun y -> not (equal_eff x y)) xs)
-(* The list of side effects is in reverse order (most recent first).
- * To keep the "topological" order between effects we have to uniq-ize from
- * the tail *)
-let uniq_seff_rev l = List.rev (uniq_seff_aux (List.rev l))
-let uniq_seff l = List.rev (uniq_seff_aux l)
+let compare_seff e1 e2 = match e1, e2 with
+| SEsubproof (c1, _, _), SEsubproof (c2, _, _) -> Constant.CanOrd.compare c1 c2
+| SEscheme (cl1, _), SEscheme (cl2, _) ->
+  let cmp (_, c1, _, _) (_, c2, _, _) = Constant.CanOrd.compare c1 c2 in
+  CList.compare cmp cl1 cl2
+| SEsubproof _, SEscheme _ -> -1
+| SEscheme _, SEsubproof _ -> 1
 
-let empty_seff = []
-let add_seff x xs = if List.mem_f equal_eff x xs then xs else x :: xs
-let concat_seff xs ys = List.fold_right add_seff xs ys
+module SeffOrd = struct
+type t = side_effect
+let compare e1 e2 = compare_seff e1.eff e2.eff
+end
+
+module SeffSet = Set.Make(SeffOrd)
+
+type t = { seff : side_effect list; elts : SeffSet.t }
+(** Invariant: [seff] is a permutation of the elements of [elts] *)
+
+let repr eff = eff.seff
+let empty = { seff = []; elts = SeffSet.empty }
+let add x es =
+  if SeffSet.mem x es.elts then es
+  else { seff = x :: es.seff; elts = SeffSet.add x es.elts }
+let concat xes yes =
+  List.fold_right add xes.seff yes
+
+end
+
+type side_effects = SideEffects.t
+
+let uniq_seff_rev = SideEffects.repr
+let uniq_seff l = List.rev (SideEffects.repr l)
+
+let empty_seff = SideEffects.empty
+let add_seff = SideEffects.add
+let concat_seff = SideEffects.concat
+
+let mk_pure_proof c = (c, Univ.ContextSet.empty), empty_seff
 
 let inline_side_effects env body ctx side_eff =
   let handle_sideff (t,ctx,sl) { eff = se; from_env = mb } =
@@ -388,7 +420,7 @@ let constant_entry_of_side_effect cb u =
     | Def b, `Nothing -> Mod_subst.force_constr b, Univ.ContextSet.empty
     | _ -> assert false in
   DefinitionEntry {
-    const_entry_body = Future.from_val (pt, []);
+    const_entry_body = Future.from_val (pt, empty_seff);
     const_entry_secctx = None;
     const_entry_feedback = None;
     const_entry_type =
@@ -422,7 +454,7 @@ let export_side_effects mb env ce =
       let _, eff = Future.force body in
       let ce = DefinitionEntry { c with
         const_entry_body = Future.chain ~greedy:true ~pure:true body
-          (fun (b_ctx, _) -> b_ctx, []) } in
+          (fun (b_ctx, _) -> b_ctx, empty_seff) } in
       let not_exists (c,_,_,_) =
         try ignore(Environ.lookup_constant c env); false
         with Not_found -> true in 
@@ -507,7 +539,7 @@ let inline_entry_side_effects env ce = { ce with
   const_entry_body = Future.chain ~greedy:true ~pure:true
     ce.const_entry_body (fun ((body, ctx), side_eff) ->
       let body, ctx',_ = inline_side_effects env body ctx side_eff in
-      (body, ctx'), []);
+      (body, ctx'), empty_seff);
 }
 
 let inline_side_effects env body side_eff =
