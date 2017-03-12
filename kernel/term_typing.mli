@@ -12,6 +12,8 @@ open Environ
 open Declarations
 open Entries
 
+type side_effects
+
 val translate_local_def : structure_body -> env -> Id.t -> side_effects definition_entry ->
   constant_def * types * constant_universes
 
@@ -29,7 +31,10 @@ val inline_entry_side_effects :
     {!Entries.const_entry_body} field. It is meant to get a term out of a not
     yet type checked proof. *)
 
-val uniq_seff : side_effects -> side_effects
+val empty_seff : side_effects
+val add_seff : side_effect -> side_effects -> side_effects
+val concat_seff : side_effects -> side_effects -> side_effects
+val uniq_seff : side_effects -> side_effect list
 val equal_eff : side_effect -> side_effect -> bool
 
 val translate_constant :

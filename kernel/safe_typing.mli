@@ -47,7 +47,7 @@ type private_constant_role =
   | Schema of inductive * string
 
 val side_effects_of_private_constants :
-  private_constants -> Entries.side_effects
+  private_constants -> Entries.side_effect list
 
 val empty_private_constants : private_constants
 val add_private : private_constant -> private_constants -> private_constants

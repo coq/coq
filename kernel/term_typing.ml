@@ -37,13 +37,20 @@ let equal_eff e1 e2 =
           cl1 cl2
   | _ -> false
 
-let rec uniq_seff = function
+type side_effects = side_effect list
+
+let rec uniq_seff_aux = function
   | [] -> []
-  | x :: xs -> x :: uniq_seff (List.filter (fun y -> not (equal_eff x y)) xs)
+  | x :: xs -> x :: uniq_seff_aux (List.filter (fun y -> not (equal_eff x y)) xs)
 (* The list of side effects is in reverse order (most recent first).
  * To keep the "topological" order between effects we have to uniq-ize from
  * the tail *)
-let uniq_seff l = List.rev (uniq_seff (List.rev l))
+let uniq_seff_rev l = List.rev (uniq_seff_aux (List.rev l))
+let uniq_seff l = List.rev (uniq_seff_aux l)
+
+let empty_seff = []
+let add_seff x xs = if List.mem_f equal_eff x xs then xs else x :: xs
+let concat_seff xs ys = List.fold_right add_seff xs ys
 
 let inline_side_effects env body ctx side_eff =
   let handle_sideff (t,ctx,sl) { eff = se; from_env = mb } =
@@ -97,7 +104,7 @@ let inline_side_effects env body ctx side_eff =
     t, ctx, (mb,List.length cbl) :: sl
   in
   (* CAVEAT: we assure a proper order *)
-  List.fold_left handle_sideff (body,ctx,[]) (uniq_seff side_eff)
+  List.fold_left handle_sideff (body,ctx,[]) (uniq_seff_rev side_eff)
 
 (* Given the list of signatures of side effects, checks if they match.
  * I.e. if they are ordered descendants of the current revstruct *)
@@ -427,7 +434,7 @@ let export_side_effects mb env ce =
         let cbl = List.filter not_exists cbl in
         if cbl = [] then acc, sl
         else cbl :: acc, (mb,List.length cbl) :: sl in
-      let seff, signatures = List.fold_left aux ([],[]) (uniq_seff eff) in
+      let seff, signatures = List.fold_left aux ([],[]) (uniq_seff_rev eff) in
       let trusted = check_signatures mb signatures in
       let push_seff env = function
         | kn, cb, `Nothing, _ ->
