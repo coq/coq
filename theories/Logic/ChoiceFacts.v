@@ -269,13 +269,16 @@ Definition SmallDrinker'sParadox :=
 
    We show that the functional formulation of the axiom of Choice
    (usual formulation in type theory) is equivalent to its relational
-   formulation (only formulation of set theory) + functional relation
-   reification (aka axiom of unique choice, or, principle of (parametric)
-   definite descriptions) *)
+   formulation + functional relation reification (aka axiom of unique
+   choice, or, principle of (parametric) definite descriptions) *)
 
-(** This shows that the axiom of choice can be assumed (under its
-   relational formulation) without known inconsistency with classical logic,
-   though functional relation reification conflicts with classical logic *)
+(** This decomposition highlights the role played by functional
+   relation reification in the inconsistency of functional choice,
+   classical logic and impredicativity of Set: choice alone can be
+   assumed under its relational formulation without known
+   inconsistency with classical logic, while functional relation
+   reification alone is enough to conflicts with classical logic in
+   the presence of impredicative Set. *)
 
 Lemma description_rel_choice_imp_funct_choice :
   forall A B : Type,
