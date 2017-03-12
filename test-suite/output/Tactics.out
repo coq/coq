@@ -2,3 +2,7 @@ Ltac f H := split; [ a H | e H ]
 Ltac g := match goal with
           | |- context [ if ?X then _ else _ ] => case X
           end
+The command has indeed failed with message:
+H is already used.
+The command has indeed failed with message:
+H is already used.
