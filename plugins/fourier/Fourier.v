@@ -13,6 +13,6 @@ Require Export DiscrR.
 Require Export Fourier_util.
 Declare ML Module "fourier_plugin".
 
-Ltac fourier := abstract (fourierz; field; discrR).
+Ltac fourier := abstract (compute [IZR IPR IPR_2] in *; fourierz; field; discrR).
 
 Ltac fourier_eq := apply Rge_antisym; fourier.

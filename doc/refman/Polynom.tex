@@ -342,16 +342,16 @@ describes their syntax and effects:
   By default the tactic does not recognize power expressions as ring
   expressions.
 \item[sign {\term}] allows {\tt ring\_simplify} to use a minus operation
-  when outputing its normal form, i.e writing $x - y$ instead of $x + (-y)$. 
+  when outputting its normal form, i.e writing $x - y$ instead of $x + (-y)$.
   The term {\term} is a proof that a given sign function indicates expressions
    that are signed ({\term} has to be a
-  proof of {\tt Ring\_theory.get\_sign}). See  {\tt plugins/setoid\_ring/IntialRing.v} for examples of sign function.
-\item[div {\term}] allows  {\tt ring} and {\tt ring\_simplify} to use moniomals
+  proof of {\tt Ring\_theory.get\_sign}). See  {\tt plugins/setoid\_ring/InitialRing.v} for examples of sign function.
+\item[div {\term}] allows  {\tt ring} and {\tt ring\_simplify} to use monomials
 with coefficient other than 1 in the rewriting. The term {\term} is a proof that a given division function  satisfies the specification of an euclidean
   division function  ({\term} has to be a
   proof of {\tt Ring\_theory.div\_theory}). For example, this function is
   called when trying to rewrite $7x$ by $2x = z$ to tell that $7 = 3 * 2 + 1$.
-   See  {\tt plugins/setoid\_ring/IntialRing.v} for examples of div function.
+   See  {\tt plugins/setoid\_ring/InitialRing.v} for examples of div function.
   
 \end{description}
 

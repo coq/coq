@@ -451,20 +451,16 @@ Qed.
 
 Lemma Rabs_Ropp : forall x:R, Rabs (- x) = Rabs x.
 Proof.
-  intro; cut (- x = -1 * x).
-  intros; rewrite H.
+  intro; replace (-x) with (-1 * x) by ring.
   rewrite Rabs_mult.
-  cut (Rabs (-1) = 1).
-  intros; rewrite H0.
-  ring.
+  replace (Rabs (-1)) with 1.
+  apply Rmult_1_l.
   unfold Rabs; case (Rcase_abs (-1)).
   intro; ring.
-  intro H0; generalize (Rge_le (-1) 0 H0); intros.
-  generalize (Ropp_le_ge_contravar 0 (-1) H1).
-  rewrite Ropp_involutive; rewrite Ropp_0.
-  intro; generalize (Rgt_not_le 1 0 Rlt_0_1); intro; generalize (Rge_le 0 1 H2);
-    intro; exfalso; auto.
-  ring.
+  rewrite <- Ropp_0.
+  intro H0; apply Ropp_ge_cancel in H0.
+  elim (Rge_not_lt _ _ H0).
+  apply Rlt_0_1.
 Qed.
 
 (*********)
@@ -613,11 +609,12 @@ Qed.
 
 Lemma Rabs_Zabs : forall z:Z, Rabs (IZR z) = IZR (Z.abs z).
 Proof.
-  intros z; case z; simpl; auto with real.
-  apply Rabs_right; auto with real.
-  intros p0; apply Rabs_right; auto with real zarith.
+  intros z; case z; unfold Zabs.
+  apply Rabs_R0.
+  now intros p0; apply Rabs_pos_eq, (IZR_le 0).
+  unfold IZR at 1.
   intros p0; rewrite Rabs_Ropp.
-  apply Rabs_right; auto with real zarith.
+  now apply Rabs_pos_eq, (IZR_le 0).
 Qed.
 
 Lemma abs_IZR : forall z, IZR (Z.abs z) = Rabs (IZR z).

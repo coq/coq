@@ -249,8 +249,10 @@ assert (Sublemma : forall x y lb ub, lb <= x <= ub /\ lb <= y <= ub -> lb <= (x+
   split.
   replace lb with ((lb + lb) * /2) by field.
   unfold Rdiv ; apply Rmult_le_compat_r ; intuition.
+  now apply Rlt_le, Rinv_0_lt_compat, IZR_lt.
   replace ub with ((ub + ub) * /2) by field.
   unfold Rdiv ; apply Rmult_le_compat_r ; intuition.
+  now apply Rlt_le, Rinv_0_lt_compat, IZR_lt.
 intros x y P N x_lt_y.
 induction N.
  simpl ; intuition.
@@ -1030,6 +1032,7 @@ intros x ub lb lb_lt_x x_lt_ub.
  assert (T : 0 < ub - lb).
   fourier.
  unfold Rdiv ; apply Rlt_mult_inv_pos ; intuition.
+now apply IZR_lt.
 Qed.
 
 Definition mkposreal_lb_ub (x lb ub:R) (lb_lt_x:lb<x) (x_lt_ub:x<ub) : posreal.
@@ -1102,7 +1105,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
     rewrite <- Rmult_1_r ; replace 1 with (derive_pt id c (pr2 c P)) by reg.
     replace (- (fn N (x + h) - fn N x)) with (fn N x - fn N (x + h)) by field.
     assumption.
-   solve[apply Rlt_not_eq ; intuition].
+  now apply Rlt_not_eq, IZR_lt.
   rewrite <- Hc'; clear Hc Hc'.
   replace (derive_pt (fn N) c (pr1 c P)) with (fn' N c).
   replace (h * fn' N c - h * g x) with (h * (fn' N c - g x)) by field.

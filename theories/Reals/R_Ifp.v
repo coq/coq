@@ -112,21 +112,12 @@ Lemma base_Int_part :
 Proof.
   intro; unfold Int_part; elim (archimed r); intros.
   split; rewrite <- (Z_R_minus (up r) 1); simpl.
-  generalize (Rle_minus (IZR (up r) - r) 1 H0); intro; unfold Rminus in H1;
-    rewrite (Rplus_assoc (IZR (up r)) (- r) (-1)) in H1;
-      rewrite (Rplus_comm (- r) (-1)) in H1;
-        rewrite <- (Rplus_assoc (IZR (up r)) (-1) (- r)) in H1;
-          fold (IZR (up r) - 1) in H1; fold (IZR (up r) - 1 - r) in H1;
-            apply Rminus_le; auto with zarith real.
-  generalize (Rplus_gt_compat_l (-1) (IZR (up r)) r H); intro;
-    rewrite (Rplus_comm (-1) (IZR (up r))) in H1;
-      generalize (Rplus_gt_compat_l (- r) (IZR (up r) + -1) (-1 + r) H1);
-        intro; clear H H0 H1; rewrite (Rplus_comm (- r) (IZR (up r) + -1)) in H2;
-          fold (IZR (up r) - 1) in H2; fold (IZR (up r) - 1 - r) in H2;
-            rewrite (Rplus_comm (- r) (-1 + r)) in H2;
-              rewrite (Rplus_assoc (-1) r (- r)) in H2; rewrite (Rplus_opp_r r) in H2;
-                elim (Rplus_ne (-1)); intros a b; rewrite a in H2;
-                  clear a b; auto with zarith real.
+  apply Rminus_le.
+  replace (IZR (up r) - 1 - r) with (IZR (up r) - r - 1) by ring.
+  now apply Rle_minus.
+  apply Rminus_gt.
+  replace (IZR (up r) - 1 - r - -1) with (IZR (up r) - r) by ring.
+  now apply Rgt_minus.
 Qed.
 
 (**********)
@@ -240,7 +231,6 @@ Proof.
                                                                                                                   clear a b; rewrite (Z_R_minus (Int_part r1) (Int_part r2)) in H0;
                                                                                                                     rewrite (Z_R_minus (Int_part r1) (Int_part r2)) in H;
                                                                                                                       cut (1 = IZR 1); auto with zarith real.
-  intro; rewrite H1 in H; clear H1;
     rewrite <- (plus_IZR (Int_part r1 - Int_part r2) 1) in H;
       generalize (up_tech (r1 - r2) (Int_part r1 - Int_part r2) H0 H);
         intros; clear H H0; unfold Int_part at 1;
@@ -324,12 +314,12 @@ Proof.
                                                                                                       rewrite (Rplus_opp_r (IZR (Int_part r1) - IZR (Int_part r2))) in H0;
                                                                                                         elim (Rplus_ne (r1 - r2)); intros a b; rewrite b in H0;
                                                                                                           clear a b; rewrite <- (Rplus_opp_l 1) in H0;
-                                                                                                            rewrite <- (Rplus_assoc (IZR (Int_part r1) - IZR (Int_part r2)) (-1) 1)
+                                                                                                            rewrite <- (Rplus_assoc (IZR (Int_part r1) - IZR (Int_part r2)) (-(1)) 1)
                                                                                                               in H0; fold (IZR (Int_part r1) - IZR (Int_part r2) - 1) in H0;
                                                                                                                 rewrite (Z_R_minus (Int_part r1) (Int_part r2)) in H0;
                                                                                                                   rewrite (Z_R_minus (Int_part r1) (Int_part r2)) in H;
-                                                                                                                    cut (1 = IZR 1); auto with zarith real.
-  intro; rewrite H1 in H; rewrite H1 in H0; clear H1;
+                                                                                                                    auto with zarith real.
+  change (_ + -1) with (IZR (Int_part r1 - Int_part r2) - 1) in H;
     rewrite (Z_R_minus (Int_part r1 - Int_part r2) 1) in H;
       rewrite (Z_R_minus (Int_part r1 - Int_part r2) 1) in H0;
         rewrite <- (plus_IZR (Int_part r1 - Int_part r2 - 1) 1) in H0;
@@ -442,9 +432,9 @@ Proof.
                                                                 in H0; rewrite (Rplus_opp_r (IZR (Int_part r1) + IZR (Int_part r2))) in H0;
                                                                   elim (Rplus_ne (r1 + r2)); intros a b; rewrite b in H0;
                                                                     clear a b;
+                                                                      change 2 with (1 + 1) in H0;
                                                                       rewrite <- (Rplus_assoc (IZR (Int_part r1) + IZR (Int_part r2)) 1 1) in H0;
-                                                                        cut (1 = IZR 1); auto with zarith real.
-  intro; rewrite H1 in H0; rewrite H1 in H; clear H1;
+                                                                        auto with zarith real.
     rewrite <- (plus_IZR (Int_part r1) (Int_part r2)) in H;
       rewrite <- (plus_IZR (Int_part r1) (Int_part r2)) in H0;
         rewrite <- (plus_IZR (Int_part r1 + Int_part r2) 1) in H;
@@ -509,7 +499,6 @@ Proof.
                                                                     intros a b; rewrite a in H0; clear a b; elim (Rplus_ne (r1 + r2));
                                                                       intros a b; rewrite b in H0; clear a b; cut (1 = IZR 1);
                                                                         auto with zarith real.
-  intro; rewrite H in H1; clear H;
     rewrite <- (plus_IZR (Int_part r1) (Int_part r2)) in H0;
       rewrite <- (plus_IZR (Int_part r1) (Int_part r2)) in H1;
         rewrite <- (plus_IZR (Int_part r1 + Int_part r2) 1) in H1;
@@ -536,7 +525,7 @@ Proof.
                     rewrite <- (Ropp_plus_distr (IZR (Int_part r1)) (IZR (Int_part r2)));
                       unfold Rminus;
                         rewrite
-                          (Rplus_assoc (r1 + r2) (- (IZR (Int_part r1) + IZR (Int_part r2))) (-1))
+                          (Rplus_assoc (r1 + r2) (- (IZR (Int_part r1) + IZR (Int_part r2))) (-(1)))
                           ; rewrite <- (Ropp_plus_distr (IZR (Int_part r1) + IZR (Int_part r2)) 1);
                             trivial with zarith real.
 Qed.

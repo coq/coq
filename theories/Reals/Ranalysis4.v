@@ -130,15 +130,8 @@ Proof.
   intro; exists (mkposreal (- x) H1); intros.
   rewrite (Rabs_left x).
   rewrite (Rabs_left (x + h)).
-  rewrite Rplus_comm.
-  rewrite Ropp_plus_distr.
-  unfold Rminus; rewrite Ropp_involutive; rewrite Rplus_assoc;
-    rewrite Rplus_opp_l.
-  rewrite Rplus_0_r; unfold Rdiv.
-  rewrite Ropp_mult_distr_l_reverse.
-  rewrite <- Rinv_r_sym.
-  rewrite Ropp_involutive; rewrite Rplus_opp_l; rewrite Rabs_R0; apply H0.
-  apply H2.
+  replace ((-(x + h) - - x) / h - -1) with 0 by now field.
+  rewrite Rabs_R0; apply H0.
   destruct (Rcase_abs h) as [Hlt|Hgt].
   apply Ropp_lt_cancel.
   rewrite Ropp_0; rewrite Ropp_plus_distr; apply Rplus_lt_0_compat.
