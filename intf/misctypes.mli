@@ -28,7 +28,7 @@ and 'constr intro_pattern_action_expr =
   | IntroWildcard
   | IntroOrAndPattern of 'constr or_and_intro_pattern_expr
   | IntroInjection of (Loc.t * 'constr intro_pattern_expr) list
-  | IntroApplyOn of 'constr * (Loc.t * 'constr intro_pattern_expr)
+  | IntroApplyOn of (Loc.t * 'constr) * (Loc.t * 'constr intro_pattern_expr)
   | IntroRewrite of bool
 and 'constr or_and_intro_pattern_expr =
   | IntroOrPattern of (Loc.t * 'constr intro_pattern_expr) list list

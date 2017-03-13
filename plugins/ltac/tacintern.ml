@@ -248,8 +248,8 @@ and intern_intro_pattern_action lf ist = function
   | IntroInjection l ->
       IntroInjection (List.map (intern_intro_pattern lf ist) l)
   | IntroWildcard | IntroRewrite _ as x -> x
-  | IntroApplyOn (c,pat) ->
-      IntroApplyOn (intern_constr ist c, intern_intro_pattern lf ist pat)
+  | IntroApplyOn ((loc,c),pat) ->
+      IntroApplyOn ((loc,intern_constr ist c), intern_intro_pattern lf ist pat)
 
 and intern_or_and_intro_pattern lf ist = function
    | IntroAndPattern l ->

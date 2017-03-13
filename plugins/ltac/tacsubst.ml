@@ -51,8 +51,8 @@ let rec subst_intro_pattern subst = function
   | loc, IntroNaming _ | loc, IntroForthcoming _ as x -> x
 
 and subst_intro_pattern_action subst = function
-  | IntroApplyOn (t,pat) ->
-      IntroApplyOn (subst_glob_constr subst t,subst_intro_pattern subst pat)
+  | IntroApplyOn ((loc,t),pat) ->
+      IntroApplyOn ((loc,subst_glob_constr subst t),subst_intro_pattern subst pat)
   | IntroOrAndPattern l ->
       IntroOrAndPattern (subst_intro_or_and_pattern subst l)
   | IntroInjection l -> IntroInjection (List.map (subst_intro_pattern subst) l)

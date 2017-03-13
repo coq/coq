@@ -520,7 +520,7 @@ let rec intropattern_ids (loc,pat) = match pat with
       List.flatten (List.map intropattern_ids (List.flatten ll))
   | IntroAction (IntroInjection l) ->
       List.flatten (List.map intropattern_ids l)
-  | IntroAction (IntroApplyOn (c,pat)) -> intropattern_ids pat
+  | IntroAction (IntroApplyOn ((_,c),pat)) -> intropattern_ids pat
   | IntroNaming (IntroAnonymous | IntroFresh _)
   | IntroAction (IntroWildcard | IntroRewrite _)
   | IntroForthcoming _ -> []
@@ -913,14 +913,14 @@ and interp_intro_pattern_action ist env sigma = function
   | IntroInjection l ->
       let sigma,l = interp_intro_pattern_list_as_list ist env sigma l in
       sigma, IntroInjection l
-  | IntroApplyOn (c,ipat) ->
+  | IntroApplyOn ((loc,c),ipat) ->
       let c = { delayed = fun env sigma ->
         let sigma = Sigma.to_evar_map sigma in
         let (sigma, c) = interp_open_constr ist env sigma c in
         Sigma.Unsafe.of_pair (c, sigma)
       } in
       let sigma,ipat = interp_intro_pattern ist env sigma ipat in
-      sigma, IntroApplyOn (c,ipat)
+      sigma, IntroApplyOn ((loc,c),ipat)
   | IntroWildcard | IntroRewrite _ as x -> sigma, x
 
 and interp_or_and_intro_pattern ist env sigma = function

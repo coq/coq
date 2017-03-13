@@ -325,8 +325,9 @@ GEXTEND Gram
         l = LIST0 ["%"; c = operconstr LEVEL "0" -> c] ->
           let loc0,pat = pat in
           let f c pat =
-            let loc = Loc.merge loc0 (Constrexpr_ops.constr_loc c) in
-            IntroAction (IntroApplyOn (c,(loc,pat))) in
+            let loc1 = Constrexpr_ops.constr_loc c in
+            let loc = Loc.merge loc0 loc1 in
+            IntroAction (IntroApplyOn ((loc1,c),(loc,pat))) in
           !@loc, List.fold_right f l pat ] ]
   ;
   simple_intropattern_closed:
