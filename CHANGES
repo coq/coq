@@ -7,7 +7,7 @@ Tactics
   functional extensionality in H supposed to be a quantified equality
   until giving a bare equality.
 
-Libraries
+Standard Library
 
 - New file PropExtensionality.v to explicitly work in the axiomatic
   context of propositional extensionality.
@@ -15,6 +15,12 @@ Libraries
   and, consequently, choice of representatives in equivalence classes.
   Various proof-theoretic characterizations of choice over setoids in
   file ChoiceFacts.v.
+
+- IZR (Reals) has been changed to produce a compact representation of
+  integers. As a consequence, IZR is no longer convertible to INR and
+  lemmas such as INR_IZR_INZ should be used instead.
+- Real constants are now represented using IZR rather than R0 and R1;
+  this might cause rewriting rules to fail to apply to constants.
 
 Changes from V8.6beta1 to V8.6
 ==============================
