@@ -3,12 +3,8 @@
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-math_classes_CI_BRANCH=v8.6
-math_classes_CI_GITURL=https://github.com/math-classes/math-classes.git
 math_classes_CI_DIR=${CI_BUILD_DIR}/math-classes
 
-Corn_CI_BRANCH=v8.6
-Corn_CI_GITURL=https://github.com/c-corn/corn.git
 Corn_CI_DIR=${CI_BUILD_DIR}/corn
 
 # Setup Math-Classes
