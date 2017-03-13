@@ -561,7 +561,7 @@ let close_section () =
 
 (* State and initialization. *)
 
-type frozen = Names.DirPath.t option * library_segment
+type frozen = Names.DirPath.t option * library_segment * (Names.DirPath.t * (Names.module_path * Names.DirPath.t))
 
 let freeze ~marshallable =
   match marshallable with
@@ -579,17 +579,17 @@ let freeze ~marshallable =
         | n, ClosedSection _ -> Some (n,ClosedSection [])
         | _, FrozenState _ -> None)
       !lib_stk in
-    !comp_name, lib_stk
+    !comp_name, lib_stk, !path_prefix
   | _ ->
-    !comp_name, !lib_stk
+    !comp_name, !lib_stk, !path_prefix
 
-let unfreeze (mn,stk) =
+let unfreeze (mn,stk,path_prfx) =
   comp_name := mn;
   lib_stk := stk;
-  recalc_path_prefix ()
+  path_prefix := path_prfx
 
 let init () =
-  unfreeze (None,[]);
+  unfreeze (None,[],initial_prefix);
   Summary.init_summaries ();
   add_frozen_state () (* Stores e.g. the keywords declared in g_*.ml4 *)
 
