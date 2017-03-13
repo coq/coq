@@ -43,6 +43,7 @@ TAGS
 .DS_Store
 .pc
 bin/
+_build_ci
 _build
 myocamlbuild_config.ml
 config/Makefile

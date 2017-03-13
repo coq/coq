@@ -1,8 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-svn checkout https://scm.gforge.inria.fr/anonscm/svn/color/trunk/color color
+Color_CI_SVNURL=https://scm.gforge.inria.fr/anonscm/svn/color/trunk/color
+Color_CI_DIR=${CI_BUILD_DIR}/color
 
-( cd color && make -j ${NJOBS} )
+svn checkout ${Color_CI_SVNURL} ${Color_CI_DIR}
+
+( cd ${Color_CI_DIR} && make -j ${NJOBS} )

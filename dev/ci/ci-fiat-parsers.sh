@@ -1,12 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# $0 is not the safest way, but...
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
 fiat_parsers_CI_BRANCH=master
 fiat_parsers_CI_GITURL=https://github.com/mit-plv/fiat.git
+fiat_parsers_CI_DIR=${CI_BUILD_DIR}/fiat
 
-git_checkout ${fiat_parsers_CI_BRANCH} ${fiat_parsers_CI_GITURL} fiat
+git_checkout ${fiat_parsers_CI_BRANCH} ${fiat_parsers_CI_GITURL} ${fiat_parsers_CI_DIR}
 
-( cd fiat && make -j ${NJOBS} parsers )
+( cd ${fiat_parsers_CI_DIR} && make -j ${NJOBS} parsers )
