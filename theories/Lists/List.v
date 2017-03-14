@@ -419,7 +419,7 @@ Section Elts.
   Proof.
     unfold lt; induction n as [| n hn]; simpl.
     - destruct l; simpl; [ inversion 2 | auto ].
-    - destruct l as [| a l hl]; simpl.
+    - destruct l; simpl.
       * inversion 2.
       * intros d ie; right; apply hn; auto with arith.
   Qed.
@@ -1280,7 +1280,7 @@ End Fold_Right_Recursor.
     partition l = ([], []) <-> l = [].
   Proof.
     split.
-    - destruct l as [|a l' _].
+    - destruct l as [|a l'].
       * intuition.
       * simpl. destruct (f a), (partition l'); now intros [= -> ->].
     - now intros ->.

@@ -141,7 +141,7 @@ Qed.
 Lemma Zdiv_Qdiv (n m: Z): (n / m)%Z = Qfloor (n / m).
 Proof.
  unfold Qfloor. intros. simpl.
- destruct m as [?|?|p]; simpl.
+ destruct m as [ | | p]; simpl.
   now rewrite Zdiv_0_r, Z.mul_0_r.
   now rewrite Z.mul_1_r.
  rewrite <- Z.opp_eq_mul_m1.
