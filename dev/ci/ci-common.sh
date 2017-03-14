@@ -11,9 +11,9 @@ ls `pwd`/bin
 # Where we clone and build external developments
 CI_BUILD_DIR=`pwd`/_build_ci
 
-# Maybe we should just use Ruby...
-mathcomp_CI_BRANCH=master
-mathcomp_CI_GITURL=https://github.com/math-comp/math-comp.git
+source ${ci_dir}/ci-user-overlay.sh
+source ${ci_dir}/ci-basic-overlay.sh
+
 mathcomp_CI_DIR=${CI_BUILD_DIR}/math-comp
 
 # git_checkout branch url dest will create a git repository

@@ -3,8 +3,6 @@
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-fiat_crypto_CI_BRANCH=master
-fiat_crypto_CI_GITURL=https://github.com/mit-plv/fiat-crypto.git
 fiat_crypto_CI_DIR=${CI_BUILD_DIR}/fiat-crypto
 
 git_checkout ${fiat_crypto_CI_BRANCH} ${fiat_crypto_CI_GITURL} ${fiat_crypto_CI_DIR}

@@ -3,8 +3,6 @@
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-GeoCoq_CI_BRANCH=master
-GeoCoq_CI_GITURL=https://github.com/GeoCoq/GeoCoq.git
 GeoCoq_CI_DIR=${CI_BUILD_DIR}/GeoCoq
 
 git_checkout ${GeoCoq_CI_BRANCH} ${GeoCoq_CI_GITURL} ${GeoCoq_CI_DIR}

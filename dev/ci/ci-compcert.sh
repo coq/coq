@@ -3,8 +3,6 @@
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-CompCert_CI_BRANCH=master
-CompCert_CI_GITURL=https://github.com/AbsInt/CompCert.git
 CompCert_CI_DIR=${CI_BUILD_DIR}/CompCert
 
 opam install -j ${NJOBS} -y menhir

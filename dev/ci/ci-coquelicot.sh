@@ -3,8 +3,6 @@
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-Coquelicot_CI_BRANCH=master
-Coquelicot_CI_GITURL=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot.git
 Coquelicot_CI_DIR=${CI_BUILD_DIR}/coquelicot
 
 install_ssreflect

@@ -3,12 +3,7 @@
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-unicoq_CI_BRANCH=master
-unicoq_CI_GITURL=https://github.com/unicoq/unicoq.git
 unicoq_CI_DIR=${CI_BUILD_DIR}/unicoq
-
-metacoq_CI_BRANCH=master
-metacoq_CI_GITURL=https://github.com/MetaCoq/MetaCoq.git
 metacoq_CI_DIR=${CI_BUILD_DIR}/MetaCoq
 
 # Setup UniCoq
