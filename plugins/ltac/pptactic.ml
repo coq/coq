@@ -574,9 +574,7 @@ module Make
               str "=>" ++ brk (1,4) ++ pr t))
     | All t -> str "_" ++ spc () ++ str "=>" ++ brk (1,4) ++ pr t
 
-  let pr_funvar = function
-    | None -> spc () ++ str "_"
-    | Some id -> spc () ++ pr_id id
+  let pr_funvar n = spc () ++ pr_name n
 
   let pr_let_clause k pr (id,(bl,t)) =
     hov 0 (keyword k ++ spc () ++ pr_lident id ++ prlist pr_funvar bl ++

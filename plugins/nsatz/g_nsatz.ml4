@@ -9,6 +9,7 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Ltac_plugin
+open Names
 
 DECLARE PLUGIN "nsatz_plugin"
 

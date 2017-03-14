@@ -115,7 +115,7 @@ val error_ltac_variable : Loc.t -> Id.t ->
 
 (** Transforms a constr-expecting tactic into a tactic finding its arguments in
     the Ltac environment according to the given names. *)
-val lift_constr_tac_to_ml_tac : Id.t option list ->
+val lift_constr_tac_to_ml_tac : Name.t list ->
   (constr list -> Geninterp.interp_sign -> unit Proofview.tactic) -> Tacenv.ml_tactic
 
 val default_ist : unit -> Geninterp.interp_sign

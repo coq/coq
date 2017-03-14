@@ -1412,7 +1412,7 @@ let () =
   let name = { mltac_plugin = "ssrmatching_plugin"; mltac_tactic = "ssrpattern"; } in
   let () = Tacenv.register_ml_tactic name [|mltac|] in
   let tac =
-    TacFun ([Some (Id.of_string "pattern")],
+    TacFun ([Name (Id.of_string "pattern")],
       TacML (Loc.ghost, { mltac_name = name; mltac_index = 0 }, [])) in
   let obj () =
     Tacenv.register_ltac true false (Id.of_string "ssrpattern") tac in

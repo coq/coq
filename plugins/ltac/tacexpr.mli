@@ -282,7 +282,7 @@ constraint 'a = <
 >
 
 and 'a gen_tactic_fun_ast =
-    Id.t option list * 'a gen_tactic_expr
+    Name.t list * 'a gen_tactic_expr
 
 constraint 'a = <
     term:'t;

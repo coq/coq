@@ -16,6 +16,7 @@ open Pcoq.Constr
 open Pltac
 open Hints
 open Tacexpr
+open Names
 
 DECLARE PLUGIN "g_auto"
 

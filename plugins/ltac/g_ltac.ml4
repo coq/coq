@@ -17,6 +17,7 @@ open Misctypes
 open Genarg
 open Genredexpr
 open Tok (* necessary for camlp4 *)
+open Names
 
 open Pcoq
 open Pcoq.Constr
@@ -226,8 +227,8 @@ GEXTEND Gram
       | "multimatch" -> General ] ]
   ;
   input_fun:
-    [ [ "_" -> None
-      | l = ident -> Some l ] ]
+    [ [ "_" -> Anonymous
+      | l = ident -> Name l ] ]
   ;
   let_clause:
     [ [ id = identref; ":="; te = tactic_expr ->
@@ -499,8 +500,8 @@ let pr_tacdef_body tacdef_body =
       | Tacexpr.TacFun (idl,b) -> idl,b
       | _ -> [], body in
   id ++
-    prlist (function None -> str " _"
-      | Some id -> spc () ++ Nameops.pr_id id) idl
+    prlist (function Anonymous -> str " _"
+      | Name id -> spc () ++ Nameops.pr_id id) idl
   ++ (if redef then str" ::=" else str" :=") ++ brk(1,1)
   ++ Pptactic.pr_raw_tactic body
 

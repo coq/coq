@@ -504,10 +504,7 @@ let print_ltacs () =
     | Tacexpr.TacFun (l, t) -> (l, t)
     | _ -> ([], body)
     in
-    let pr_ltac_fun_arg = function
-    | None -> spc () ++ str "_"
-    | Some id -> spc () ++ pr_id id
-    in
+    let pr_ltac_fun_arg n = spc () ++ pr_name n in
     hov 2 (pr_qualid qid ++ prlist pr_ltac_fun_arg l)
   in
   Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)

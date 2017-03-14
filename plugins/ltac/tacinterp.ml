@@ -120,7 +120,7 @@ let combine_appl appl1 appl2 =
 (* Values for interpretation *)
 type tacvalue =
   | VFun of appl*ltac_trace * value Id.Map.t *
-      Id.t option list * glob_tactic_expr
+      Name.t list * glob_tactic_expr
   | VRec of value Id.Map.t ref * glob_tactic_expr
 
 let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
@@ -1087,8 +1087,8 @@ let head_with_value (lvar,lval) =
     | ([],[]) -> (lacc,[],[])
     | (vr::tvr,ve::tve) ->
       (match vr with
-      |	None -> head_with_value_rec lacc (tvr,tve)
-      | Some v -> head_with_value_rec ((v,ve)::lacc) (tvr,tve))
+      |	Anonymous -> head_with_value_rec lacc (tvr,tve)
+      | Name v -> head_with_value_rec ((v,ve)::lacc) (tvr,tve))
     | (vr,[]) -> (lacc,vr,[])
     | ([],ve) -> (lacc,[],ve)
   in
@@ -2120,8 +2120,8 @@ let lift_constr_tac_to_ml_tac vars tac =
     let env = Proofview.Goal.env gl in
     let sigma = project gl in
     let map = function
-    | None -> None
-    | Some id ->
+    | Anonymous -> None
+    | Name id ->
       let c = Id.Map.find id ist.lfun in
       try Some (coerce_to_closed_constr env c)
       with CannotCoerceTo ty ->
