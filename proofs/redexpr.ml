@@ -52,7 +52,7 @@ let strong_cbn flags =
 
 let simplIsCbn = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optdepr = false;
   Goptions.optname =
     "Plug the simpl tactic to the new cbn mechanism";
   Goptions.optkey = ["SimplIsCbn"];

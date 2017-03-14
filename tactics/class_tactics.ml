@@ -92,8 +92,7 @@ open Goptions
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = true;
+    { optdepr  = true;
       optname  = "do typeclass search modulo eta conversion";
       optkey   = ["Typeclasses";"Modulo";"Eta"];
       optread  = get_typeclasses_modulo_eta;
@@ -101,8 +100,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "do typeclass search avoiding eta-expansions " ^
                    " in proof terms (expensive)";
       optkey   = ["Typeclasses";"Limit";"Intros"];
@@ -111,8 +109,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "during typeclass resolution, solve instances according to their dependency order";
       optkey   = ["Typeclasses";"Dependency";"Order"];
       optread  = get_typeclasses_dependency_order;
@@ -120,8 +117,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "use iterative deepening strategy";
       optkey   = ["Typeclasses";"Iterative";"Deepening"];
       optread  = get_typeclasses_iterative_deepening;
@@ -129,8 +125,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "compat";
       optkey   = ["Typeclasses";"Legacy";"Resolution"];
       optread  = get_typeclasses_legacy_resolution;
@@ -138,8 +133,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "compat";
       optkey   = ["Typeclasses";"Filtered";"Unification"];
       optread  = get_typeclasses_filtered_unification;
@@ -147,8 +141,7 @@ let _ =
 
 let set_typeclasses_debug =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "debug output for typeclasses proof search";
       optkey   = ["Typeclasses";"Debug"];
       optread  = get_typeclasses_debug;
@@ -156,8 +149,7 @@ let set_typeclasses_debug =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "debug output for typeclasses proof search";
       optkey   = ["Debug";"Typeclasses"];
       optread  = get_typeclasses_debug;
@@ -165,8 +157,7 @@ let _ =
 
 let _ =
   declare_int_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "verbosity of debug output for typeclasses proof search";
       optkey   = ["Typeclasses";"Debug";"Verbosity"];
       optread  = get_typeclasses_verbose;
@@ -174,8 +165,7 @@ let _ =
 
 let set_typeclasses_depth =
   declare_int_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "depth for typeclasses proof search";
       optkey   = ["Typeclasses";"Depth"];
       optread  = get_typeclasses_depth;

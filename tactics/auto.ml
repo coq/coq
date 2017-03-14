@@ -174,8 +174,7 @@ let global_info_auto = ref false
 
 let add_option ls refe =
   let _ = Goptions.declare_bool_option
-    { Goptions.optsync  = true;
-      Goptions.optdepr  = false;
+    { Goptions.optdepr  = false;
       Goptions.optname  = String.concat " " ls;
       Goptions.optkey   = ls;
       Goptions.optread  = (fun () -> !refe);

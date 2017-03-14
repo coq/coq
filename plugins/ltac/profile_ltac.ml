@@ -411,8 +411,7 @@ let _ = Declaremods.append_end_library_hook do_print_results_at_close
 let _ =
   let open Goptions in
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "Ltac Profiling";
       optkey   = ["Ltac"; "Profiling"];
       optread  = get_profiling;

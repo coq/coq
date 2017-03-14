@@ -45,8 +45,7 @@ open Context.Rel.Declaration
 let elim_flag = ref true
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "automatic declaration of induction schemes";
       optkey   = ["Elimination";"Schemes"];
       optread  = (fun () -> !elim_flag) ;
@@ -55,16 +54,14 @@ let _ =
 let bifinite_elim_flag = ref false
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "automatic declaration of induction schemes for non-recursive types";
       optkey   = ["Nonrecursive";"Elimination";"Schemes"];
       optread  = (fun () -> !bifinite_elim_flag) ;
       optwrite = (fun b -> bifinite_elim_flag := b) }
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = true; (* compatibility 2014-09-03*)
+    { optdepr  = true; (* compatibility 2014-09-03*)
       optname  = "automatic declaration of induction schemes for non-recursive types";
       optkey   = ["Record";"Elimination";"Schemes"];
       optread  = (fun () -> !bifinite_elim_flag) ;
@@ -73,8 +70,7 @@ let _ =
 let case_flag = ref false
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "automatic declaration of case analysis schemes";
       optkey   = ["Case";"Analysis";"Schemes"];
       optread  = (fun () -> !case_flag) ;
@@ -83,16 +79,14 @@ let _ =
 let eq_flag = ref false
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "automatic declaration of boolean equality";
       optkey   = ["Boolean";"Equality";"Schemes"];
       optread  = (fun () -> !eq_flag) ;
       optwrite = (fun b -> eq_flag := b) }
 let _ = (* compatibility *)
   declare_bool_option
-    { optsync  = true;
-      optdepr  = true;
+    { optdepr  = true;
       optname  = "automatic declaration of boolean equality";
       optkey   = ["Equality";"Scheme"];
       optread  = (fun () -> !eq_flag) ;
@@ -103,8 +97,7 @@ let is_eq_flag () = !eq_flag && Flags.version_strictly_greater Flags.V8_2
 let eq_dec_flag = ref false 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "automatic declaration of decidable equality";
       optkey   = ["Decidable";"Equality";"Schemes"];
       optread  = (fun () -> !eq_dec_flag) ;
@@ -113,8 +106,7 @@ let _ =
 let rewriting_flag = ref false
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  ="automatic declaration of rewriting schemes for equality types";
       optkey   = ["Rewriting";"Schemes"];
       optread  = (fun () -> !rewriting_flag) ;

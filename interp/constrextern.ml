@@ -91,8 +91,7 @@ let record_print = ref true
 let _ =
   let open Goptions in
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "record printing";
       optkey   = ["Printing";"Records"];
       optread  = (fun () -> !record_print);

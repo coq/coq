@@ -312,7 +312,7 @@ let import_option_value = function
   | Interface.StringOptValue s -> Goptions.StringOptValue s
 
 let export_option_state s = {
-  Interface.opt_sync  = s.Goptions.opt_sync;
+  Interface.opt_sync  = true;
   Interface.opt_depr  = s.Goptions.opt_depr;
   Interface.opt_name  = s.Goptions.opt_name;
   Interface.opt_value = export_option_value s.Goptions.opt_value;

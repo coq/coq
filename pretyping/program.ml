@@ -87,8 +87,7 @@ open Goptions
 
 let _ =
   declare_bool_option
-  { optsync  = true;
-    optdepr  = false;
+  { optdepr  = false;
     optname  = "preferred transparency of Program obligations";
     optkey   = ["Transparent";"Obligations"];
     optread  = get_proofs_transparency;
@@ -96,8 +95,7 @@ let _ =
 
 let _ =
   declare_bool_option
-  { optsync  = true;
-    optdepr  = false;
+  { optdepr  = false;
     optname  = "program cases";
     optkey   = ["Program";"Cases"];
     optread  = (fun () -> !program_cases);
@@ -105,8 +103,7 @@ let _ =
 
 let _ =
   declare_bool_option
-  { optsync  = true;
-    optdepr  = false;
+  { optdepr  = false;
     optname  = "program generalized coercion";
     optkey   = ["Program";"Generalized";"Coercion"];
     optread  = (fun () -> !program_generalized_coercion);

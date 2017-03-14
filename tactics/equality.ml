@@ -57,8 +57,7 @@ let discr_do_intro () =
 open Goptions
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "automatic introduction of hypotheses by discriminate";
       optkey   = ["Discriminate";"Introduction"];
       optread  = (fun () -> !discriminate_introduction);
@@ -72,8 +71,7 @@ let use_injection_pattern_l2r_order () =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "injection left-to-right pattern order and clear by default when with introduction pattern";
       optkey   = ["Injection";"L2R";"Pattern";"Order"];
       optread  = (fun () -> !injection_pattern_l2r_order) ;
@@ -87,8 +85,7 @@ let use_injection_in_context () =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "injection in context";
       optkey   = ["Structural";"Injection"];
       optread  = (fun () -> !injection_in_context) ;
@@ -729,8 +726,7 @@ let keep_proof_equalities_for_injection = ref false
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "injection on prop arguments";
       optkey   = ["Keep";"Proof";"Equalities"];
       optread  = (fun () -> !keep_proof_equalities_for_injection) ;
@@ -1680,8 +1676,7 @@ let regular_subst_tactic = ref true
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "more regular behavior of tactic subst";
       optkey   = ["Regular";"Subst";"Tactic"];
       optread  = (fun () -> !regular_subst_tactic);

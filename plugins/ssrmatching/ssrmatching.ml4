@@ -64,8 +64,7 @@ let debug b =
   if b then pp_ref := ssr_pp else pp_ref := fun _ -> ()
 let _ =
   Goptions.declare_bool_option
-    { Goptions.optsync  = false;
-      Goptions.optname  = "ssrmatching debugging";
+    { Goptions.optname  = "ssrmatching debugging";
       Goptions.optkey   = ["Debug";"SsrMatching"];
       Goptions.optdepr  = false;
       Goptions.optread  = (fun _ -> !pp_ref == ssr_pp);
@@ -184,8 +183,7 @@ let profile b =
 ;;
 let _ =
   Goptions.declare_bool_option
-    { Goptions.optsync  = false;
-      Goptions.optname  = "ssrmatching profiling";
+    { Goptions.optname  = "ssrmatching profiling";
       Goptions.optkey   = ["SsrMatchingProfiling"];
       Goptions.optread  = (fun _ -> !profile_now);
       Goptions.optdepr  = false;

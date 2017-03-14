@@ -428,8 +428,7 @@ let automatically_import_coercions = ref false
 open Goptions
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "automatic import of coercions";
       optkey   = ["Automatic";"Coercions";"Import"];
       optread  = (fun () -> !automatically_import_coercions);
@@ -556,7 +555,6 @@ module CoercionPrinting =
     let member_message x b =
       str "Explicit printing of coercion " ++ printer x ++
       str (if b then " is set" else " is unset")
-    let synchronous = true
   end
 
 module PrintingCoercion  = Goptions.MakeRefTable(CoercionPrinting)

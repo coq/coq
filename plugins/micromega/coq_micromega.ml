@@ -65,7 +65,6 @@ let _ =
  
  let int_opt l vref =
   {
-   optsync = true;
    optdepr = false;
    optname = List.fold_right (^) l "";
    optkey  = l ;
@@ -75,7 +74,6 @@ let _ =
 
  let lia_enum_opt = 
   {
-   optsync = true;
    optdepr = false;
    optname = "Lia Enum";
    optkey  = ["Lia";"Enum"];

@@ -51,6 +51,13 @@ In Constrexpr_ops:
   interpreting "(x y z:_)" as "(x:_) (y:_) (z:_)" while the second
   ones were preserving the original sharing of the type.
 
+In GOption:
+
+  Support for non-synchronous options has been removed. Now all
+  options are handled as a piece of normal document state, and thus
+  passed to workers, etc... As a consequence, the field
+  `Goptions.optsync` has been removed.
+
 ** Tactic API **
 
 - pf_constr_of_global now returns a tactic instead of taking a continuation.

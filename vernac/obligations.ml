@@ -340,8 +340,7 @@ let get_hide_obligations () = !hide_obligations
 open Goptions
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "Hidding of Program obligations";
       optkey   = ["Hide";"Obligations"];
       optread  = get_hide_obligations;
@@ -354,8 +353,7 @@ let get_shrink_obligations () = !shrink_obligations
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = true;
+    { optdepr  = true;
       optname  = "Shrinking of Program obligations";
       optkey   = ["Shrink";"Obligations"];
       optread  = get_shrink_obligations;

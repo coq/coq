@@ -422,7 +422,6 @@ open Goptions
 
 let functional_induction_rewrite_dependent_proofs_sig = 
   {
-    optsync = false;
     optdepr = false;
     optname = "Functional Induction Rewrite Dependent";
     optkey =  ["Functional";"Induction";"Rewrite";"Dependent"];
@@ -435,7 +434,6 @@ let do_rewrite_dependent () = !functional_induction_rewrite_dependent_proofs = t
 
 let function_debug_sig =
   {
-    optsync = false;
     optdepr = false;
     optname = "Function debug";
     optkey =  ["Function_debug"];
@@ -454,7 +452,6 @@ let strict_tcc = ref false
 let is_strict_tcc () = !strict_tcc
 let strict_tcc_sig =
   {
-    optsync = false;
     optdepr = false;
     optname = "Raw Function Tcc";
     optkey =  ["Function_raw_tcc"];

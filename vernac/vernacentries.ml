@@ -1228,8 +1228,7 @@ let vernac_generalizable locality =
 
 let _ =
   declare_bool_option
-    { optsync  = false;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "silent";
       optkey   = ["Silent"];
       optread  = (fun () -> !Flags.quiet);
@@ -1237,8 +1236,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "implicit arguments";
       optkey   = ["Implicit";"Arguments"];
       optread  = Impargs.is_implicit_args;
@@ -1246,8 +1244,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "strict implicit arguments";
       optkey   = ["Strict";"Implicit"];
       optread  = Impargs.is_strict_implicit_args;
@@ -1255,8 +1252,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "strong strict implicit arguments";
       optkey   = ["Strongly";"Strict";"Implicit"];
       optread  = Impargs.is_strongly_strict_implicit_args;
@@ -1264,8 +1260,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "contextual implicit arguments";
       optkey   = ["Contextual";"Implicit"];
       optread  = Impargs.is_contextual_implicit_args;
@@ -1273,8 +1268,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "implicit status of reversible patterns";
       optkey   = ["Reversible";"Pattern";"Implicit"];
       optread  = Impargs.is_reversible_pattern_implicit_args;
@@ -1282,8 +1276,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "maximal insertion of implicit";
       optkey   = ["Maximal";"Implicit";"Insertion"];
       optread  = Impargs.is_maximal_implicit_args;
@@ -1291,8 +1284,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "automatic introduction of variables";
       optkey   = ["Automatic";"Introduction"];
       optread  = Flags.is_auto_intros;
@@ -1300,8 +1292,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "coercion printing";
       optkey   = ["Printing";"Coercions"];
       optread  = (fun () -> !Constrextern.print_coercions);
@@ -1309,8 +1300,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "printing of existential variable instances";
       optkey   = ["Printing";"Existential";"Instances"];
       optread  = (fun () -> !Detyping.print_evar_arguments);
@@ -1318,8 +1308,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "implicit arguments printing";
       optkey   = ["Printing";"Implicit"];
       optread  = (fun () -> !Constrextern.print_implicits);
@@ -1327,8 +1316,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "implicit arguments defensive printing";
       optkey   = ["Printing";"Implicit";"Defensive"];
       optread  = (fun () -> !Constrextern.print_implicits_defensive);
@@ -1336,8 +1324,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "projection printing using dot notation";
       optkey   = ["Printing";"Projections"];
       optread  = (fun () -> !Constrextern.print_projections);
@@ -1345,8 +1332,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "notations printing";
       optkey   = ["Printing";"Notations"];
       optread  = (fun () -> not !Constrextern.print_no_symbol);
@@ -1354,8 +1340,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "raw printing";
       optkey   = ["Printing";"All"];
       optread  = (fun () -> !Flags.raw_print);
@@ -1363,8 +1348,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "use of the program extension";
       optkey   = ["Program";"Mode"];
       optread  = (fun () -> !Flags.program_mode);
@@ -1372,8 +1356,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "universe polymorphism";
       optkey   = ["Universe"; "Polymorphism"];
       optread  = Flags.is_universe_polymorphism;
@@ -1381,8 +1364,7 @@ let _ =
 
 let _ =
   declare_int_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "the level of inlining during functor application";
       optkey   = ["Inline";"Level"];
       optread  = (fun () -> Some (Flags.get_inline_level ()));
@@ -1392,8 +1374,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "kernel term sharing";
       optkey   = ["Kernel"; "Term"; "Sharing"];
       optread  = (fun () -> !CClosure.share);
@@ -1404,8 +1385,7 @@ let _ =
 
 let _ =
   declare_int_option
-    { optsync  = false;
-      optdepr  = true;
+    { optdepr  = true;
       optname  = "the undo limit (OBSOLETE)";
       optkey   = ["Undo"];
       optread  = (fun _ -> None);
@@ -1413,8 +1393,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "display compact goal contexts";
       optkey   = ["Printing";"Compact";"Contexts"];
       optread  = (fun () -> Printer.get_compact_context());
@@ -1422,8 +1401,7 @@ let _ =
 
 let _ =
   declare_int_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "the printing depth";
       optkey   = ["Printing";"Depth"];
       optread  = Topfmt.get_depth_boxes;
@@ -1431,8 +1409,7 @@ let _ =
 
 let _ =
   declare_int_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "the printing width";
       optkey   = ["Printing";"Width"];
       optread  = Topfmt.get_margin;
@@ -1440,8 +1417,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "printing of universes";
       optkey   = ["Printing";"Universes"];
       optread  = (fun () -> !Constrextern.print_universes);
@@ -1449,8 +1425,7 @@ let _ =
      
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "dumping bytecode after compilation";
       optkey   = ["Dump";"Bytecode"];
       optread  = Flags.get_dump_bytecode;
@@ -1458,8 +1433,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "explicitly parsing implicit arguments";
       optkey   = ["Parsing";"Explicit"];
       optread  = (fun () -> !Constrintern.parsing_explicit);
@@ -1467,8 +1441,7 @@ let _ =
 
 let _ =
   declare_string_option ~preprocess:CWarnings.normalize_flags_string
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "warnings display";
       optkey   = ["Warnings"];
       optread  = CWarnings.get_flags;
@@ -1739,8 +1712,7 @@ let search_output_name_only = ref false
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "output-name-only search";
       optkey   = ["Search";"Output";"Name";"Only"];
       optread  = (fun () -> !search_output_name_only);
@@ -2137,8 +2109,7 @@ let default_timeout = ref None
 
 let _ =
   Goptions.declare_int_option
-    { Goptions.optsync  = true;
-      Goptions.optdepr  = false;
+    { Goptions.optdepr  = false;
       Goptions.optname  = "the default timeout";
       Goptions.optkey   = ["Default";"Timeout"];
       Goptions.optread  = (fun () -> !default_timeout);

@@ -30,8 +30,7 @@ open Goptions
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "check that typeclasses proof search returns unique solutions";
       optkey   = ["Typeclasses";"Unique";"Solutions"];
       optread  = get_typeclasses_unique_solutions;

@@ -418,8 +418,7 @@ let use_h_based_elimination_names () =
 open Goptions
 
 let _ = declare_bool_option
-	  { optsync  = true;
-            optdepr  = false;
+	  { optdepr  = false;
 	    optname  = "use of \"H\"-based proposition names in elimination tactics";
 	    optkey   = ["Standard";"Proposition";"Elimination";"Names"];
 	    optread  = (fun () -> !h_based_elimination_names);

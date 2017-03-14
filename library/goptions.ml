@@ -24,7 +24,6 @@ type option_value =
 
 (** Summary of an option status *)
 type option_state = {
-  opt_sync  : bool;
   opt_depr  : bool;
   opt_name  : string;
   opt_value : option_value;
@@ -62,7 +61,6 @@ module MakeTable =
           val key : option_name
           val title : string
           val member_message : t -> bool -> std_ppcmds
-          val synchronous : bool
         end) ->
   struct
     type option_mark =
@@ -77,13 +75,9 @@ module MakeTable =
 
     module MySet = Set.Make (struct type t = A.t let compare = A.compare end)
 
-    let t =
-      if A.synchronous
-      then Summary.ref MySet.empty ~name:nick
-      else ref MySet.empty
+    let t = Summary.ref MySet.empty ~name:nick
 
     let (add_option,remove_option) =
-      if A.synchronous then
         let cache_options (_,(f,p)) = match f with
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
@@ -103,9 +97,6 @@ module MakeTable =
 	in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
          (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
-      else
-        ((fun c -> t := MySet.add c !t),
-         (fun c -> t := MySet.remove c !t))
 
     let print_table table_name printer table =
       Feedback.msg_notice
@@ -141,7 +132,6 @@ sig
   val key : option_name
   val title : string
   val member_message : string -> bool -> std_ppcmds
-  val synchronous : bool
 end
 
 module StringConvert = functor (A : StringConvertArg) ->
@@ -156,7 +146,6 @@ struct
   let key = A.key
   let title = A.title
   let member_message = A.member_message
-  let synchronous = A.synchronous
 end
 
 module MakeStringTable =
@@ -176,7 +165,6 @@ sig
   val key : option_name
   val title : string
   val member_message : t -> bool -> std_ppcmds
-  val synchronous : bool
 end
 
 module RefConvert = functor (A : RefConvertArg) ->
@@ -191,7 +179,6 @@ struct
   let key = A.key
   let title = A.title
   let member_message = A.member_message
-  let synchronous = A.synchronous
 end
 
 module MakeRefTable =
@@ -201,7 +188,6 @@ module MakeRefTable =
 (* 2- Flags.                                                              *)
 
 type 'a option_sig = {
-  optsync  : bool;
   optdepr  : bool;
   optname  : string;
   optkey   : option_name;
@@ -247,11 +233,10 @@ let get_locality = function
   | None -> OptDefault
 
 let declare_option cast uncast append ?(preprocess = fun x -> x)
-  { optsync=sync; optdepr=depr; optname=name; optkey=key; optread=read; optwrite=write } =
+  { optdepr=depr; optname=name; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
   let change =
-    if sync then
       let _ = Summary.declare_summary (nickname key)
         { Summary.freeze_function = (fun _ -> read ());
           Summary.unfreeze_function = write;
@@ -275,18 +260,12 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
             discharge_function = discharge_options;
             classify_function = classify_options } in
       (fun l m v -> let v = preprocess v in Lib.add_anonymous_leaf (options (l, m, v)))
-    else
-      (fun _ m v ->
-        let v = preprocess v in
-        match m with
-       | OptSet -> write v
-       | OptAppend -> write (append (read ()) v))
   in
   let warn () = if depr then warn_deprecated_option key in
   let cread () = cast (read ()) in
   let cwrite l v = warn (); change l OptSet (uncast v) in
   let cappend l v = warn (); change l OptAppend (uncast v) in
-  value_tab := OptionMap.add key (name, depr, (sync,cread,cwrite,cappend)) !value_tab;
+  value_tab := OptionMap.add key (name, depr, (cread,cwrite,cappend)) !value_tab;
   write
 
 type 'a write_function = 'a -> unit
@@ -325,7 +304,7 @@ let set_option_value locality check_and_cast key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (name, depr, (_,read,write,append)) ->
+  | Some (name, depr, (read,write,append)) ->
     write (get_locality locality) (check_and_cast v (read ()))
 
 let bad_type_error () = error "Bad type of value for this option."
@@ -366,7 +345,7 @@ let set_string_option_append_value_gen locality key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (name, depr, (_,read,write,append)) ->
+  | Some (name, depr, (read,write,append)) ->
     append (get_locality locality) (check_string_value v (read ()))
 
 let set_int_option_value = set_int_option_value_gen None
@@ -387,7 +366,7 @@ let msg_option_value (name,v) =
 (*     | IdentValue r    -> pr_global_env Id.Set.empty r *)
 
 let print_option_value key =
-  let (name, depr, (_,read,_,_)) = get_option key in
+  let (name, depr, (read,_,_)) = get_option key in
   let s = read () in
   match s with
     | BoolValue b ->
@@ -397,9 +376,8 @@ let print_option_value key =
 
 let get_tables () =
   let tables = !value_tab in
-  let fold key (name, depr, (sync,read,_,_)) accu =
+  let fold key (name, depr, (read,_,_)) accu =
     let state = {
-      opt_sync = sync;
       opt_name = name;
       opt_depr = depr;
       opt_value = read ();
@@ -416,15 +394,8 @@ let print_tables () =
   in
   str "Synchronous options:" ++ fnl () ++
     OptionMap.fold
-      (fun key (name, depr, (sync,read,_,_)) p ->
-        if sync then p ++ print_option key name (read ()) depr
-        else p)
-      !value_tab (mt ()) ++
-  str "Asynchronous options:" ++ fnl () ++
-    OptionMap.fold
-      (fun key (name, depr, (sync,read,_,_)) p ->
-        if sync then p
-        else p ++ print_option key name (read ()) depr)
+      (fun key (name, depr, (read,_,_)) p ->
+        p ++ print_option key name (read ()) depr)
       !value_tab (mt ()) ++
   str "Tables:" ++ fnl () ++
     List.fold_right

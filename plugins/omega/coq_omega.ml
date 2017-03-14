@@ -71,8 +71,7 @@ open Goptions
 
 let _ =
   declare_bool_option
-    { optsync  = false;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "Omega system time displaying flag";
       optkey   = ["Omega";"System"];
       optread  = read display_system_flag;
@@ -80,8 +79,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = false;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "Omega action display flag";
       optkey   = ["Omega";"Action"];
       optread  = read display_action_flag;
@@ -89,8 +87,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = false;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "Omega old style flag";
       optkey   = ["Omega";"OldStyle"];
       optread  = read old_style_flag;
@@ -98,8 +95,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = true;
+    { optdepr  = true;
       optname  = "Omega automatic reset of generated names";
       optkey   = ["Stable";"Omega"];
       optread  = read reset_flag;

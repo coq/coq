@@ -45,7 +45,7 @@ module NamedDecl = Context.Named.Declaration
 
 let keyed_unification = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optdepr = false;
   Goptions.optname = "Unification is keyed";
   Goptions.optkey = ["Keyed";"Unification"];
   Goptions.optread = (fun () -> !keyed_unification);
@@ -56,7 +56,7 @@ let is_keyed_unification () = !keyed_unification
 
 let debug_unification = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optdepr = false;
   Goptions.optname =
     "Print states sent to tactic unification";
   Goptions.optkey = ["Debug";"Tactic";"Unification"];
@@ -257,8 +257,7 @@ let global_pattern_unification_flag = ref true
 open Goptions
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = true;
+    { optdepr  = true;
       optname  = "pattern-unification for existential variables in tactics";
       optkey   = ["Tactic";"Evars";"Pattern";"Unification"];
       optread  = (fun () -> !global_pattern_unification_flag);
@@ -269,8 +268,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "pattern-unification for existential variables in tactics";
       optkey   = ["Tactic";"Pattern";"Unification"];
       optread  = (fun () -> !global_pattern_unification_flag);

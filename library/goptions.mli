@@ -40,8 +40,8 @@
        Unset Tata Tutu Titi.
        Print Table Tata Tutu Titi. (** synonym: Test Table Tata Tutu Titi. *)
 
-   The created table/option may be declared synchronous or not
-   (synchronous = consistent with the resetting commands)                   *)
+   All options are synchronized with the document.
+*)
 
 open Pp
 open Libnames
@@ -65,7 +65,6 @@ module MakeStringTable :
        val key : option_name
        val title : string
        val member_message : string -> bool -> std_ppcmds
-       val synchronous : bool
      end) ->
 sig
   val active : string -> bool
@@ -93,7 +92,6 @@ module MakeRefTable :
            val key : option_name
            val title : string
            val member_message : t -> bool -> std_ppcmds
-           val synchronous : bool
          end) ->
     sig
       val active : A.t -> bool
@@ -108,8 +106,6 @@ module MakeRefTable :
    used when printing the option value (command "Print Toto Titi." *)
 
 type 'a option_sig = {
-  optsync    : bool;
-  (** whether the option is synchronous w.r.t to the section/module system. *)
   optdepr    : bool;
   (** whether the option is DEPRECATED *)
   optname    : string;
@@ -120,8 +116,6 @@ type 'a option_sig = {
   optwrite   : 'a -> unit
 }
 
-(** When an option is declared synchronous ([optsync] is [true]), the output is
-   a synchronous write function. Otherwise it is [optwrite] *)
 (** The [preprocess] function is triggered before setting the option. It can be
     used to emit a warning on certain values, and clean-up the final value. *)
 
@@ -177,7 +171,6 @@ type option_value =
 
 (** Summary of an option status *)
 type option_state = {
-  opt_sync  : bool;
   opt_depr  : bool;
   opt_name  : string;
   opt_value : option_value;
