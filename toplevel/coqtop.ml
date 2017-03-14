@@ -122,11 +122,10 @@ let engage () =
 let set_batch_mode () = batch_mode := true
 
 let toplevel_default_name = DirPath.make [Id.of_string "Top"]
-let toplevel_name = ref (Some toplevel_default_name)
+let toplevel_name = ref toplevel_default_name
 let set_toplevel_name dir =
   if DirPath.is_empty dir then error "Need a non empty toplevel module name";
-  toplevel_name := Some dir
-let unset_toplevel_name () = toplevel_name := None
+  toplevel_name := dir
 
 let remove_top_ml () = Mltop.remove ()
 
@@ -556,7 +555,6 @@ let parse_args arglist =
       if Coq_config.no_native_compiler then
 	warning "Native compilation was disabled at configure time."
       else native_compiler := true
-    |"-notop" -> unset_toplevel_name ()
     |"-output-context" -> output_context := true
     |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> no_load_rc ()
@@ -628,7 +626,7 @@ let init_toplevel arglist =
       engage ();
       if (not !batch_mode || List.is_empty !compile_list)
          && Global.env_is_initial ()
-      then Option.iter Declaremods.start_library !toplevel_name;
+      then Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();
       require ();

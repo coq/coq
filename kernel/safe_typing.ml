@@ -71,7 +71,7 @@ module NamedDecl = Context.Named.Declaration
   - [env] : the underlying environment (cf Environ)
   - [modpath] : the current module name
   - [modvariant] :
-    * NONE before coqtop initialization (or when -notop is used)
+    * NONE before coqtop initialization
     * LIBRARY at toplevel of a compilation or a regular coqtop session
     * STRUCT (params,oldsenv) : inside a local module, with
       module parameters [params] and earlier environment [oldsenv]
