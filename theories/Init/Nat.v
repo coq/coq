@@ -24,6 +24,10 @@ Definition t := nat.
 
 (** ** Constants *)
 
+Local Notation "0" := O.
+Local Notation "1" := (S O).
+Local Notation "2" := (S (S O)).
+
 Definition zero := 0.
 Definition one := 1.
 Definition two := 2.

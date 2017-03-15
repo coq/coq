@@ -26,6 +26,8 @@ Require Export BinNums.
     for the number 6 (which is 110 in binary notation).
 *)
 
+Local Notation "1" := xH.
+
 Notation "p ~ 1" := (xI p)
  (at level 7, left associativity, format "p '~' '1'") : positive_scope.
 Notation "p ~ 0" := (xO p)
@@ -325,14 +327,14 @@ Definition sqrtrem_step (f g:positive->positive) p :=
     let r' := g (f r) in
     if s' <=? r' then (s~1, sub_mask r' s')
     else (s~0, IsPos r')
-  | (s,_)  => (s~0, sub_mask (g (f 1)) 4)
+  | (s,_)  => (s~0, sub_mask (g (f 1)) 1~0~0)
  end.
 
 Fixpoint sqrtrem p : positive * mask :=
  match p with
   | 1 => (1,IsNul)
-  | 2 => (1,IsPos 1)
-  | 3 => (1,IsPos 2)
+  | 1~0 => (1,IsPos 1)
+  | 1~1 => (1,IsPos 1~0)
   | p~0~0 => sqrtrem_step xO xO (sqrtrem p)
   | p~0~1 => sqrtrem_step xO xI (sqrtrem p)
   | p~1~0 => sqrtrem_step xI xO (sqrtrem p)
@@ -615,3 +617,5 @@ Definition to_uint p := Decimal.rev (to_little_uint p).
 Definition to_int n := Decimal.Pos (to_uint n).
 
 End Pos.
+
+Numeral Notation positive Pos.of_int Pos.to_uint : positive_scope.
