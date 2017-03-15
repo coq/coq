@@ -21,7 +21,6 @@ Require Export Coq.Init.Tactics.
 Require Export Coq.Init.Tauto.
 (* Some initially available plugins. See also:
    - ltac_plugin (in Notations)
-   - nat_syntax_plugin (in Datatypes)
    - tauto_plugin (in Tauto).
 *)
 Declare ML Module "cc_plugin".
@@ -35,6 +34,9 @@ Numeral Notation Decimal.uint Decimal.uint_of_uint Decimal.uint_of_uint
   : uint_scope.
 Numeral Notation Decimal.int Decimal.int_of_int Decimal.int_of_int
   : int_scope.
+
+(* Parsing / printing of [nat] numbers *)
+Numeral Notation nat Nat.of_uint Nat.to_uint : nat_scope (abstract after 5000).
 
 (* Default substrings not considered by queries like SearchAbout *)
 Add Search Blacklist "_subproof" "_subterm" "Private_".

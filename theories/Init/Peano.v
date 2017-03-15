@@ -31,6 +31,7 @@ Require Import Logic.
 Require Coq.Init.Nat.
 
 Open Scope nat_scope.
+Local Notation "0" := O.
 
 Definition eq_S := f_equal S.
 Definition f_equal_nat := f_equal (A:=nat).
