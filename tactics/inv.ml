@@ -292,27 +292,27 @@ let error_too_many_names pats =
 
 let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
   | IntroNaming IntroAnonymous | IntroForthcoming _ ->
-      error "Anonymous pattern not allowed for inversion equations."
+      user_err Pp.(str "Anonymous pattern not allowed for inversion equations.")
   | IntroNaming (IntroFresh _) ->
-      error "Fresh pattern not allowed for inversion equations."
+      user_err Pp.(str "Fresh pattern not allowed for inversion equations.")
   | IntroAction IntroWildcard ->
-      error "Discarding pattern not allowed for inversion equations."
+      user_err Pp.(str "Discarding pattern not allowed for inversion equations.")
   | IntroAction (IntroRewrite _) ->
-      error "Rewriting pattern not allowed for inversion equations."
+      user_err Pp.(str "Rewriting pattern not allowed for inversion equations.")
   | IntroAction (IntroOrAndPattern (IntroAndPattern [])) when allow_conj -> (None, [])
   | IntroAction (IntroOrAndPattern (IntroAndPattern ((_,IntroNaming (IntroIdentifier id)) :: _ as l) | IntroOrPattern [(_,IntroNaming (IntroIdentifier id)) :: _ as l ]))
       when allow_conj -> (Some id,l)
   | IntroAction (IntroOrAndPattern (IntroAndPattern _)) ->
       if issimple then
-        error"Conjunctive patterns not allowed for simple inversion equations."
+        user_err Pp.(str"Conjunctive patterns not allowed for simple inversion equations.")
       else
-        error"Nested conjunctive patterns not allowed for inversion equations."
+        user_err Pp.(str"Nested conjunctive patterns not allowed for inversion equations.")
   | IntroAction (IntroInjection l) ->
-      error "Injection patterns not allowed for inversion equations."
+      user_err Pp.(str "Injection patterns not allowed for inversion equations.")
   | IntroAction (IntroOrAndPattern (IntroOrPattern _)) ->
-      error "Disjunctive patterns not allowed for inversion equations."
+      user_err Pp.(str "Disjunctive patterns not allowed for inversion equations.")
   | IntroAction (IntroApplyOn (c,pat)) ->
-      error "Apply patterns not allowed for inversion equations."
+      user_err Pp.(str "Apply patterns not allowed for inversion equations.")
   | IntroNaming (IntroIdentifier id) ->
       (Some id,[x])
 

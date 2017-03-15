@@ -579,7 +579,7 @@ let rec subordinate_letins letins = function
 let terms_of_binders bl =
   let rec term_of_pat pt = CAst.map_with_loc (fun ?loc -> function
     | PatVar (Name id)   -> CRef (Ident (loc,id), None)
-    | PatVar (Anonymous) -> error "Cannot turn \"_\" into a term."
+    | PatVar (Anonymous) -> user_err Pp.(str "Cannot turn \"_\" into a term.")
     | PatCstr (c,l,_) ->
        let r = Qualid (loc,qualid_of_path (path_of_global (ConstructRef c))) in
        let hole = CAst.make ?loc @@ CHole (None,Misctypes.IntroAnonymous,None) in
@@ -589,7 +589,7 @@ let terms_of_binders bl =
     | {loc; v = GLocalAssum (Name id,_,_)}::l -> (CAst.make ?loc @@ CRef (Ident (loc,id), None)) :: extract_variables l
     | {loc; v = GLocalDef (Name id,_,_,_)}::l -> extract_variables l
     | {loc; v = GLocalDef (Anonymous,_,_,_)}::l
-    | {loc; v = GLocalAssum (Anonymous,_,_)}::l -> error "Cannot turn \"_\" into a term."
+    | {loc; v = GLocalAssum (Anonymous,_,_)}::l -> user_err Pp.(str "Cannot turn \"_\" into a term.")
     | {loc; v = GLocalPattern ((u,_),_,_,_)}::l -> term_of_pat u :: extract_variables l
     | [] -> [] in
   extract_variables bl
@@ -1862,7 +1862,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
     let eargs, rargs = extract_explicit_arg l args in
     if !parsing_explicit then
       if Id.Map.is_empty eargs then intern_args env subscopes rargs
-      else error "Arguments given by name or position not supported in explicit mode."
+      else user_err Pp.(str "Arguments given by name or position not supported in explicit mode.")
     else
     let rec aux n impl subscopes eargs rargs =
       let (enva,subscopes') = apply_scope_env env subscopes in

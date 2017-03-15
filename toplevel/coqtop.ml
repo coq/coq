@@ -133,7 +133,7 @@ let set_batch_mode () = batch_mode := true
 let toplevel_default_name = Names.(DirPath.make [Id.of_string "Top"])
 let toplevel_name = ref toplevel_default_name
 let set_toplevel_name dir =
-  if Names.DirPath.is_empty dir then error "Need a non empty toplevel module name";
+  if Names.DirPath.is_empty dir then user_err Pp.(str "Need a non empty toplevel module name");
   toplevel_name := dir
 
 let remove_top_ml () = Mltop.remove ()
@@ -245,7 +245,7 @@ let compile_files () =
 
 let set_emacs () =
   if not (Option.is_empty !toploop) then
-    error "Flag -emacs is incompatible with a custom toplevel loop";
+    user_err Pp.(str "Flag -emacs is incompatible with a custom toplevel loop");
   Flags.print_emacs := true;
   Printer.enable_goal_tags_printing := true;
   color := `OFF
@@ -253,14 +253,14 @@ let set_emacs () =
 (** Options for CoqIDE *)
 
 let set_ideslave () =
-  if !Flags.print_emacs then error "Flags -ideslave and -emacs are incompatible";
+  if !Flags.print_emacs then user_err Pp.(str "Flags -ideslave and -emacs are incompatible");
   toploop := Some "coqidetop";
   Flags.ide_slave := true
 
 (** Options for slaves *)
 
 let set_toploop name =
-  if !Flags.print_emacs then error "Flags -toploop and -emacs are incompatible";
+  if !Flags.print_emacs then user_err Pp.(str "Flags -toploop and -emacs are incompatible");
   toploop := Some name
 
 (** GC tweaking *)
@@ -591,7 +591,7 @@ let parse_args arglist =
     |"-notactics" -> warning "Obsolete option \"-notactics\"."; remove_top_ml ()
     |"-emacs-U" ->
       warning "Obsolete option \"-emacs-U\", use -emacs instead."; set_emacs ()
-    |"-v7" -> error "This version of Coq does not support v7 syntax"
+    |"-v7" -> user_err Pp.(str "This version of Coq does not support v7 syntax")
     |"-v8" -> warning "Obsolete option \"-v8\"."
     |"-lazy-load-proofs" -> warning "Obsolete option \"-lazy-load-proofs\"."
     |"-dont-load-proofs" -> warning "Obsolete option \"-dont-load-proofs\"."
@@ -619,7 +619,7 @@ let init_toplevel arglist =
       (* If we have been spawned by the Spawn module, this has to be done
        * early since the master waits us to connect back *)
       Spawned.init_channels ();
-      Envars.set_coqlib ~fail:CErrors.error;
+      Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
       if !print_where then (print_endline(Envars.coqlib ()); exit(exitcode ()));
       if !print_config then (Envars.print_config stdout; exit (exitcode ()));
       if !print_tags then (print_style_tags (); exit (exitcode ()));

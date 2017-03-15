@@ -536,5 +536,5 @@ let dest_arity env c =
   let l, c = dest_prod_assum env c in
   match c with
     | Sort s -> l,s
-    | _ -> error "not an arity"
+    | _ -> user_err Pp.(str "not an arity")
 

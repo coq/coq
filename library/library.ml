@@ -764,7 +764,7 @@ let save_library_to ?todo dir f otab =
     if !Flags.native_compiler then
       let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
       if not (Nativelib.compile_library dir ast fn) then
-	error "Could not compile the library to native code."
+	user_err Pp.(str "Could not compile the library to native code.")
    with reraise ->
     let reraise = CErrors.push reraise in
     let () = Feedback.msg_warning (str "Removed file " ++ str f') in

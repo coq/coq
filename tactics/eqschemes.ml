@@ -103,7 +103,7 @@ let get_coq_eq ctx =
       (Universes.fresh_inductive_instance (Global.env ()) eq) in
       mkIndU eq, mkConstructUi (eq,1), ctx
   with Not_found ->
-    error "eq not found."
+    user_err Pp.(str "eq not found.")
 
 let univ_of_eq env eq =
   let eq = EConstr.of_constr eq in
@@ -119,6 +119,8 @@ let univ_of_eq env eq =
 (*                                                                    *)
 (* in which case, a symmetry lemma is definable                       *)
 (**********************************************************************)
+
+let error msg = user_err Pp.(str msg)
 
 let get_sym_eq_data env (ind,u) =
   let (mib,mip as specif) = lookup_mind_specif env ind in

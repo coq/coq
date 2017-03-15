@@ -143,8 +143,8 @@ struct
 		(* This is an absolute name, we must keep it otherwise it may
 		   become unaccessible forever *)
 		(* But ours is also absolute! This is an error! *)
-		error ("Cannot mask the absolute name \""
-		       ^ U.to_string uname' ^ "\"!")
+		user_err Pp.(str @@ "Cannot mask the absolute name \""
+                                   ^ U.to_string uname' ^ "\"!")
 	  | Nothing
 	  | Relative _ -> mktree (Absolute (uname,o)) tree.map
 

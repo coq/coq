@@ -192,7 +192,7 @@ let check_engagement env expected_impredicative_set =
   begin
     match impredicative_set, expected_impredicative_set with
     | PredicativeSet, ImpredicativeSet ->
-        CErrors.error "Needs option -impredicative-set."
+        CErrors.user_err Pp.(str "Needs option -impredicative-set.")
     | _ -> ()
   end
 
@@ -346,10 +346,10 @@ let check_required current_libs needed =
     try
       let actual = DPMap.find id current_libs in
       if not(digest_match ~actual ~required) then
-        CErrors.error
-          ("Inconsistent assumptions over module "^(DirPath.to_string id)^".")
+        CErrors.user_err Pp.(pr_sequence str
+          ["Inconsistent assumptions over module"; DirPath.to_string id; "."])
     with Not_found ->
-      CErrors.error ("Reference to unknown module "^(DirPath.to_string id)^".")
+      CErrors.user_err Pp.(pr_sequence str ["Reference to unknown module"; DirPath.to_string id; "."])
   in
   Array.iter check needed
 
@@ -367,7 +367,7 @@ let safe_push_named d env =
   let _ =
     try
       let _ = Environ.lookup_named id env in
-      CErrors.error ("Identifier "^Id.to_string id^" already defined.")
+      CErrors.user_err Pp.(pr_sequence str ["Identifier"; Id.to_string id; "already defined."])
     with Not_found -> () in
   Environ.push_named d env
 
@@ -908,7 +908,7 @@ let register_inline kn senv =
   let open Environ in
   let open Pre_env in
   if not (evaluable_constant kn senv.env) then
-    CErrors.error "Register inline: an evaluable constant is expected";
+    CErrors.user_err Pp.(str "Register inline: an evaluable constant is expected");
   let env = pre_env senv.env in
   let (cb,r) = Cmap_env.find kn env.env_globals.env_constants in
   let cb = {cb with const_inline_code = true} in

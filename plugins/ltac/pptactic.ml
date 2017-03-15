@@ -348,7 +348,7 @@ type 'a extra_genarg_printer =
             let bll = List.map (fun (x, _, y) -> x, y) bll in
             if nb >= n then (List.rev (bll@acc)), a
             else strip_ty (bll@acc) (n-nb) a
-        | _ -> error "Cannot translate fix tactic: not enough products" in
+        | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
 
   let pr_ltac_or_var pr = function
@@ -1089,7 +1089,7 @@ type 'a extra_genarg_printer =
         match ty.CAst.v with
             Glob_term.GProd(na,Explicit,a,b) ->
               strip_ty (([Loc.tag na],(a,None))::acc) (n-1) b
-          | _ -> error "Cannot translate fix tactic: not enough products" in
+          | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
 
   let raw_printers =
@@ -1160,7 +1160,7 @@ type 'a extra_genarg_printer =
         match Term.kind_of_term ty with
             Term.Prod(na,a,b) ->
               strip_ty (([Loc.tag na],EConstr.of_constr a)::acc) (n-1) b
-          | _ -> error "Cannot translate fix tactic: not enough products" in
+          | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty
 
   let pr_atomic_tactic_level env sigma n t =
@@ -1210,7 +1210,7 @@ let declare_extra_genarg_pprule wit
   (h : 'c extra_genarg_printer) =
   begin match wit with
     | ExtraArg s -> ()
-    | _          -> error "Can declare a pretty-printing rule only for extra argument types."
+    | _          -> user_err Pp.(str "Can declare a pretty-printing rule only for extra argument types.")
   end;
   let f x = f pr_constr_expr pr_lconstr_expr pr_raw_tactic_level x in
   let g x =

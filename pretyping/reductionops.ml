@@ -1219,7 +1219,7 @@ let clos_norm_flags flgs env sigma t =
     EConstr.of_constr (CClosure.norm_val
       (CClosure.create_clos_infos ~evars flgs env)
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
-  with e when is_anomaly e -> error "Tried to normalize ill-typed term"
+  with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
 let clos_whd_flags flgs env sigma t =
   try
@@ -1227,7 +1227,7 @@ let clos_whd_flags flgs env sigma t =
     EConstr.of_constr (CClosure.whd_val
       (CClosure.create_clos_infos ~evars flgs env)
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
-  with e when is_anomaly e -> error "Tried to normalize ill-typed term"
+  with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
 let nf_beta = clos_norm_flags CClosure.beta (Global.env ())
 let nf_betaiota = clos_norm_flags CClosure.betaiota (Global.env ())

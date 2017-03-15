@@ -576,8 +576,8 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 		   WARNING: We need to restart since [b] itself should be an application term
 		*)
 		build_entry_lc env funnames avoid (mkGApp(b,args))
-	    | GRec _ -> error "Not handled GRec"
-	    | GProd _ -> error "Cannot apply a type"
+	    | GRec _ -> user_err Pp.(str "Not handled GRec")
+	    | GProd _ -> user_err Pp.(str "Cannot apply a type")
 	end (* end of the application treatement *)
 
     | GLambda(n,_,t,b) ->
@@ -678,7 +678,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  build_entry_lc env funnames avoid match_expr
 
 	end
-    | GRec _ -> error "Not handled GRec"
+    | GRec _ -> user_err Pp.(str "Not handled GRec")
     | GCast(b,_) ->
 	build_entry_lc env funnames  avoid b
 and build_entry_lc_from_case env funname make_discr

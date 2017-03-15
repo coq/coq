@@ -422,7 +422,7 @@ let add_class cl =
 	     match inst with
 	     | Some (Backward, info) ->
 	       (match body with
-	       | None -> CErrors.error "Non-definable projection can not be declared as a subinstance"
+	       | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
 	       | Some b -> declare_instance (Some info) false (ConstRef b))
 	     | _ -> ())
   cl.cl_projs

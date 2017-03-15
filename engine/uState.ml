@@ -188,7 +188,7 @@ let process_universe_constraints ctx cstrs =
               | _ -> local
             else
               begin match Univ.Universe.level r with
-              | None -> error ("Algebraic universe on the right")
+              | None -> user_err Pp.(str "Algebraic universe on the right")
               | Some r' ->
                 if Univ.Level.is_small r' then
                   let levels = Univ.Universe.levels l in

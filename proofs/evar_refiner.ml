@@ -39,11 +39,11 @@ let define_and_solve_constraints evk c env evd =
       pbs
   with
     | Success evd -> evd
-    | UnifFailure _ -> error "Instance does not satisfy the constraints."
+    | UnifFailure _ -> user_err Pp.(str "Instance does not satisfy the constraints.")
 
 let w_refine (evk,evi) (ltac_var,rawc) sigma =
   if Evd.is_defined sigma evk then
-    error "Instantiate called on already-defined evar";
+    user_err Pp.(str "Instantiate called on already-defined evar");
   let env = Evd.evar_filtered_env evi in
   let sigma',typed_c =
     let flags = {

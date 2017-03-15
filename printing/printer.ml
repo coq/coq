@@ -566,7 +566,7 @@ let pr_selected_subgoal name sigma g =
 
 let default_pr_subgoal n sigma =
   let rec prrec p = function
-    | [] -> error "No such goal."
+    | [] -> user_err Pp.(str "No such goal.")
     | g::rest ->
 	if Int.equal p 1 then
           pr_selected_subgoal (int n) sigma g
@@ -828,7 +828,7 @@ let pr_goal_by_id id =
     Proof.in_proof p (fun sigma ->
       let g = Evd.evar_key id sigma in
       pr_selected_subgoal (pr_id id) sigma g)
-  with Not_found -> error "No such goal."
+  with Not_found -> user_err Pp.(str "No such goal.")
 
 let pr_goal_by_uid uid =
   let p = Proof_global.give_me_the_proof () in
@@ -839,7 +839,7 @@ let pr_goal_by_uid uid =
   in
   try
     Proof.in_proof p (fun sigma -> pr {it=g;sigma=sigma;})
-  with Not_found -> error "Invalid goal identifier."
+  with Not_found -> user_err Pp.(str "Invalid goal identifier.")
 
 (* Elementary tactics *)
 

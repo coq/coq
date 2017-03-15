@@ -347,7 +347,7 @@ let filter_shift_stable_right (lnk:int merged_arg array) (l:'a list): 'a list =
   filter_shift_stable lnk (Array.to_list larr)
 
 
-
+let error msg = user_err Pp.(str msg)
 
 (** {1 Utilities for merging} *)
 

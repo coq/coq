@@ -75,7 +75,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let rel_as_kn =
     fst (match princ_type_info.indref with
 	   | Some (Globnames.IndRef ind) -> ind
-	   | _ -> error "Not a valid predicate"
+	   | _ -> user_err Pp.(str "Not a valid predicate")
 	)
   in
   let ptes_vars = List.map Context.Named.Declaration.get_id new_predicates in
@@ -416,7 +416,7 @@ let get_funs_constant mp dp =
 	    in
 	    let body = EConstr.Unsafe.to_constr body in
 	    body
-	| None -> error ( "Cannot define a principle over an axiom ")
+	| None -> user_err Pp.(str ( "Cannot define a principle over an axiom "))
     in
     let f = find_constant_body const in
     let l_const = get_funs_constant const f in
@@ -432,7 +432,7 @@ let get_funs_constant mp dp =
       List.iter
 	(fun params ->
 	   if not (List.equal (fun (n1, c1) (n2, c2) -> Name.equal n1 n2 && eq_constr c1 c2) first_params params)
-	   then error "Not a mutal recursive block"
+	   then user_err Pp.(str "Not a mutal recursive block")
 	)
 	l_params
     in
@@ -445,7 +445,7 @@ let get_funs_constant mp dp =
 	    | _ ->
 		if is_first && Int.equal (List.length l_bodies) 1
 		then raise Not_Rec
-		else error "Not a mutal recursive block"
+		else user_err Pp.(str "Not a mutal recursive block")
 	in
 	let first_infos = extract_info true (List.hd l_bodies) in
 	let check body  = (* Hope this is correct *)
@@ -454,7 +454,7 @@ let get_funs_constant mp dp =
             Array.equal eq_constr ta1 ta2 && Array.equal eq_constr ca1 ca2
 	  in
 	  if not (eq_infos first_infos (extract_info false body))
-	  then  error "Not a mutal recursive block"
+	  then  user_err Pp.(str "Not a mutal recursive block")
 	in
 	List.iter check l_bodies
       with Not_Rec -> ()

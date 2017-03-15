@@ -162,7 +162,7 @@ uses type classes and rejects terms with unresolved holes.
   functions that used to carry a suffix `_loc`, such suffix has been
   dropped.
 
-- `errorlabstrm` has been removed in favor of `user_err`.
+- `errorlabstrm` and `error` has been removed in favor of `user_err`.
 
 - The header parameter to `user_err` has been made optional.
 

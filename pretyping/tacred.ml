@@ -858,7 +858,7 @@ let try_red_product env sigma c =
 
 let red_product env sigma c =
   try try_red_product env sigma c
-  with Redelimination -> error "No head constant to reduce."
+  with Redelimination -> user_err (str "No head constant to reduce.")
 
 (*
 (* This old version of hnf uses betadeltaiota instead of itself (resp
@@ -1080,7 +1080,7 @@ let unfold env sigma name c =
   if is_evaluable env name then
     clos_norm_flags (unfold_red name) env sigma c
   else
-    error (string_of_evaluable_ref env name^" is opaque.")
+    user_err Pp.(str (string_of_evaluable_ref env name^" is opaque."))
 
 (* [unfoldoccs : (readable_constraints -> (int list * full_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.
@@ -1090,7 +1090,7 @@ let unfoldoccs env sigma (occs,name) c =
   let unfo nowhere_except_in locs =
     let (nbocc,uc) = substlin env sigma name 1 (nowhere_except_in,locs) c in
     if Int.equal nbocc 1 then
-      error ((string_of_evaluable_ref env name)^" does not occur.");
+      user_err Pp.(str ((string_of_evaluable_ref env name)^" does not occur."));
     let rest = List.filter (fun o -> o >= nbocc) locs in
     let () = match rest with
     | [] -> ()
@@ -1112,7 +1112,7 @@ let unfoldn loccname env sigma c =
 let fold_one_com com env sigma c =
   let rcom =
     try red_product env sigma com
-    with Redelimination -> error "Not reducible." in
+    with Redelimination -> user_err Pp.(str "Not reducible.") in
   (* Reason first on the beta-iota-zeta normal form of the constant as
      unfold produces it, so that the "unfold f; fold f" configuration works
      to refold fix expressions *)
@@ -1147,7 +1147,7 @@ let compute = cbv_betadeltaiota
 let abstract_scheme env sigma (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
   let na = named_hd env sigma ta Anonymous in
-  if occur_meta sigma ta then error "Cannot find a type for the generalisation.";
+  if occur_meta sigma ta then user_err Pp.(str "Cannot find a type for the generalisation.");
   if occur_meta sigma a then
     mkLambda (na,ta,c), sigma
   else

@@ -1050,7 +1050,7 @@ let do_restrict_hyps evd (evk,args as ev) filter candidates =
   | None -> None,candidates
   | Some filter -> restrict_hyps evd evk filter candidates in
   match candidates,filter with
-  | UpdateWith [], _ -> error "Not solvable."
+  | UpdateWith [], _ -> user_err Pp.(str "Not solvable.")
   | UpdateWith [nc],_ ->
       let evd = Evd.define evk (EConstr.Unsafe.to_constr nc) evd in
       raise (EvarSolvedWhileRestricting (evd,mkEvar ev))
@@ -1230,7 +1230,7 @@ let check_evar_instance evd evk1 body conv_algo =
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
   let ty =
     try Retyping.get_type_of ~lax:true evenv evd body
-    with Retyping.RetypeError _ -> error "Ill-typed evar instance"
+    with Retyping.RetypeError _ -> user_err Pp.(str "Ill-typed evar instance")
   in
   match conv_algo evenv evd Reduction.CUMUL ty (EConstr.of_constr evi.evar_concl) with
   | Success evd -> evd

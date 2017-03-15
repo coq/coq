@@ -345,7 +345,7 @@ let get_applications mexpr =
   let rec get params = function
     | MEident mp -> mp, params
     | MEapply (fexpr, mp) -> get (mp::params) fexpr
-    | MEwith _ -> error "Non-atomic functor application."
+    | MEwith _ -> user_err Pp.(str "Non-atomic functor application.")
   in get [] mexpr
 
 (** Create the substitution corresponding to some functor applications *)
@@ -353,7 +353,7 @@ let get_applications mexpr =
 let rec compute_subst env mbids sign mp_l inl =
   match mbids,mp_l with
     | _,[] -> mbids,empty_subst
-    | [],r -> error "Application of a functor with too few arguments."
+    | [],r -> user_err Pp.(str "Application of a functor with too few arguments.")
     | mbid::mbids,mp::mp_l ->
 	let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
 	let mb = Environ.lookup_module mp env in
@@ -777,7 +777,7 @@ let rec decompose_functor mpl typ =
   match mpl, typ with
   | [], _ -> typ
   | _::mpl, MoreFunctor(_,_,str) -> decompose_functor mpl str
-  | _ -> error "Application of a functor with too much arguments."
+  | _ -> user_err Pp.(str "Application of a functor with too much arguments.")
 
 exception NoIncludeSelf
 

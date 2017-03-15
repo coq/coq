@@ -335,7 +335,7 @@ let parse_args argv =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-where" :: _ ->
-        Envars.set_coqlib ~fail:CErrors.error;
+        Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
         print_endline (Envars.coqlib ());
         exit 0
 
@@ -373,7 +373,7 @@ let init_with_argv argv =
     try
       parse_args argv;
       if !Flags.debug then Printexc.record_backtrace true;
-      Envars.set_coqlib ~fail:CErrors.error;
+      Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
       if_verbose print_header ();
       init_load_path ();
       engage ();

@@ -90,7 +90,7 @@ let pr_intro_as_pat _prc _ _ pat =
 
 let out_disjunctive = function
   | loc, IntroAction (IntroOrAndPattern l) -> (loc,l)
-  | _ -> CErrors.error "Disjunctive or conjunctive intro pattern expected."
+  | _ -> CErrors.user_err Pp.(str "Disjunctive or conjunctive intro pattern expected.")
 
 ARGUMENT EXTEND with_names TYPED AS intropattern_opt PRINTED BY pr_intro_as_pat
 |   [ "as"  simple_intropattern(ipat) ] -> [ Some ipat ]
@@ -228,7 +228,7 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 		  ;
 		    try Functional_principles_types.build_scheme fas
 		    with Functional_principles_types.No_graph_found ->
-		      CErrors.error ("Cannot generate induction principle(s)")
+		      CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
 		      | e when CErrors.noncritical e ->
 			  let names = List.map (fun (_,na,_) -> na) fas in
 			  warning_error names e

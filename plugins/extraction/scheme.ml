@@ -96,9 +96,9 @@ let rec pp_expr env args =
 		 prlist_with_sep spc (pp_cons_args env) args')
 	in
 	if is_coinductive r then paren (str "delay " ++ st) else st
-    | MLtuple _ -> error "Cannot handle tuples in Scheme yet."
+    | MLtuple _ -> user_err Pp.(str "Cannot handle tuples in Scheme yet.")
     | MLcase (_,_,pv) when not (is_regular_match pv) ->
-	error "Cannot handle general patterns in Scheme yet."
+	user_err Pp.(str "Cannot handle general patterns in Scheme yet.")
     | MLcase (_,t,pv) when is_custom_match pv ->
 	let mkfun (ids,_,e) =
 	  if not (List.is_empty ids) then named_lams (List.rev ids) e

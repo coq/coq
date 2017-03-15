@@ -35,7 +35,7 @@ struct
   let hash = String.hash
 
   let check_valid ?(strict=true) x =
-    let iter (fatal, x) = if fatal || strict then CErrors.error x in
+    let iter (fatal, x) = if fatal || strict then CErrors.user_err Pp.(str x) in
     Option.iter iter (Unicode.ident_refutation x)
 
   let is_valid s = match Unicode.ident_refutation s with

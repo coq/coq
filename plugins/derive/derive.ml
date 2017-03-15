@@ -53,9 +53,9 @@ let start_deriving f suchthat lemma =
           [suchthat], respectively. *)
       let (opaque,f_def,lemma_def) =
         match com with
-        | Admitted _ -> CErrors.error"Admitted isn't supported in Derive."
+        | Admitted _ -> CErrors.user_err Pp.(str "Admitted isn't supported in Derive.")
         | Proved (_,Some _,_) ->
-            CErrors.error"Cannot save a proof of Derive with an explicit name."
+            CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.")
         | Proved (opaque, None, obj) ->
             match Proof_global.(obj.entries) with
             | [_;f_def;lemma_def] ->

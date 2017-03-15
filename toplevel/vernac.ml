@@ -29,7 +29,7 @@ let checknav_deep (loc, ast) =
 
 
 let disable_drop = function
-  | Drop -> CErrors.error "Drop is forbidden."
+  | Drop -> CErrors.user_err Pp.(str "Drop is forbidden.")
   | e -> e
 
 (* Echo from a buffer based on position.

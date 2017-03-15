@@ -41,7 +41,7 @@ let toplevel_env () =
 	  | "MODULE TYPE" ->
             let modtype = Global.lookup_modtype (MPdot (mp, l)) in
             Some (l, SFBmodtype modtype)
-          | "INCLUDE" -> error "No extraction of toplevel Include yet."
+          | "INCLUDE" -> user_err Pp.(str "No extraction of toplevel Include yet.")
 	  | _ -> None
         end
     | _ -> None
@@ -435,7 +435,7 @@ let mono_filename f =
 	  else
             try Id.of_string (Filename.basename f)
 	    with UserError _ ->
-              error "Extraction: provided filename is not a valid identifier"
+              user_err Pp.(str "Extraction: provided filename is not a valid identifier")
 	in
 	Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id
 

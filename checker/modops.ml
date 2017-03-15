@@ -16,21 +16,21 @@ open Declarations
 (*i*)
 
 let error_not_a_constant l =
-  error ("\""^(Label.to_string l)^"\" is not a constant")
+  user_err Pp.(str ("\""^(Label.to_string l)^"\" is not a constant"))
 
-let error_not_a_functor () = error "Application of not a functor"
+let error_not_a_functor () = user_err Pp.(str "Application of not a functor")
 
-let error_incompatible_modtypes _ _ = error "Incompatible module types"
+let error_incompatible_modtypes _ _ = user_err Pp.(str "Incompatible module types")
 
 let error_not_match l _ =
-  error ("Signature components for label "^Label.to_string l^" do not match")
+  user_err Pp.(str ("Signature components for label "^Label.to_string l^" do not match"))
 
-let error_no_such_label l = error ("No such label "^Label.to_string l)
+let error_no_such_label l = user_err Pp.(str ("No such label "^Label.to_string l))
 
 let error_no_such_label_sub l l1 =
   let l1 = ModPath.to_string l1 in
-  error ("The field "^
-         Label.to_string l^" is missing in "^l1^".")
+  user_err Pp.(str ("The field "^
+         Label.to_string l^" is missing in "^l1^"."))
 
 let error_not_a_module_loc ?loc s =
   user_err ?loc  (str ("\""^Label.to_string s^"\" is not a module"))
@@ -38,7 +38,7 @@ let error_not_a_module_loc ?loc s =
 let error_not_a_module s = error_not_a_module_loc s
 
 let error_with_module () =
-  error "Unsupported 'with' constraint in module implementation"
+  user_err Pp.(str "Unsupported 'with' constraint in module implementation")
 
 let is_functor = function
   | MoreFunctor _ -> true

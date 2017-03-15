@@ -56,17 +56,16 @@ let instantiate_tac n c ido =
 		InHyp ->
 		  (match decl with
                     | LocalAssum (_,typ) -> evar_list sigma (EConstr.of_constr typ)
-		    | _ -> error
-			"Please be more specific: in type or value?")
+		    | _ -> user_err Pp.(str "Please be more specific: in type or value?"))
 	      | InHypTypeOnly ->
 		  evar_list sigma (EConstr.of_constr (NamedDecl.get_type decl))
 	      | InHypValueOnly ->
 		  (match decl with
 		    | LocalDef (_,body,_) -> evar_list sigma (EConstr.of_constr body)
-		    | _ -> error "Not a defined hypothesis.") in
+		    | _ -> user_err Pp.(str "Not a defined hypothesis.")) in
   if List.length evl < n then
-    error "Not enough uninstantiated existential variables.";
-  if n <= 0 then error "Incorrect existential variable index.";
+    user_err Pp.(str "Not enough uninstantiated existential variables.");
+  if n <= 0 then user_err Pp.(str "Incorrect existential variable index.");
   let evk,_ = List.nth evl (n-1) in
   instantiate_evar evk c sigma gl
   end
@@ -76,7 +75,7 @@ let instantiate_tac_by_name id c =
   let sigma = gl.sigma in
   let evk =
     try Evd.evar_key id sigma
-    with Not_found -> error "Unknown existential variable." in
+    with Not_found -> user_err Pp.(str "Unknown existential variable.") in
   instantiate_evar evk c sigma gl
   end
 
@@ -109,8 +108,8 @@ let hget_evar n =
   let concl = Proofview.Goal.concl gl in
   let evl = evar_list sigma concl in
   if List.length evl < n then
-    error "Not enough uninstantiated existential variables.";
-  if n <= 0 then error "Incorrect existential variable index.";
+    user_err Pp.(str "Not enough uninstantiated existential variables.");
+  if n <= 0 then user_err Pp.(str "Incorrect existential variable index.");
   let ev = List.nth evl (n-1) in
   let ev_type = EConstr.existential_type sigma ev in
   Tactics.change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,concl))

@@ -62,7 +62,7 @@ let registered_e_assumption =
 
 let first_goal gls =
   let gl = gls.Evd.it and sig_0 = gls.Evd.sigma in
-  if List.is_empty gl then error "first_goal";
+  if List.is_empty gl then user_err Pp.(str "first_goal");
   { Evd.it = List.hd gl; Evd.sigma = sig_0; }
 
 (* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
@@ -73,7 +73,7 @@ let apply_tac_list tac glls =
   | (g1::rest) ->
       let gl = apply_sig_tac sigr tac g1 in
       repackage sigr (gl@rest)
-  | _ -> error "apply_tac_list"
+  | _ -> user_err Pp.(str "apply_tac_list")
 
 let one_step l gl =
   [Proofview.V82.of_tactic Tactics.intro]
@@ -82,7 +82,7 @@ let one_step l gl =
   @ (List.map (fun c -> Proofview.V82.of_tactic (assumption c)) (pf_ids_of_hyps gl))
 
 let rec prolog l n gl =
-  if n <= 0 then error "prolog - failure";
+  if n <= 0 then user_err Pp.(str "prolog - failure");
   let prol = (prolog l (n-1)) in
   (tclFIRST (List.map (fun t -> (tclTHEN t prol)) (one_step l gl))) gl
 
@@ -402,7 +402,7 @@ let e_search_auto debug (in_depth,p) lems db_list gl =
     s.tacres
   with Not_found ->
     pr_info_nop d;
-    error "eauto: search failed"
+    user_err Pp.(str "eauto: search failed")
 
 (* let e_search_auto_key = Profile.declare_profile "e_search_auto" *)
 (* let e_search_auto = Profile.profile5 e_search_auto_key e_search_auto *)

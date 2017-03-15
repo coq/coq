@@ -227,7 +227,7 @@ let extend_with_auto_hints env sigma l seq =
       try
 	searchtable_map dbname
       with Not_found->
-	error ("Firstorder: "^dbname^" : No such Hint database") in
+	user_err Pp.(str ("Firstorder: "^dbname^" : No such Hint database")) in
       Hint_db.iter g hdb in
     List.iter h l;
     !seqref, sigma (*FIXME: forgetting about universes*)

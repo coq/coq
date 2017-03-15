@@ -36,7 +36,7 @@ let proof_modes = Hashtbl.create 6
 let find_proof_mode n =
   try Hashtbl.find proof_modes n
   with Not_found ->
-    CErrors.error (Format.sprintf "No proof mode named \"%s\"." n)
+    CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." n))
 
 let register_proof_mode ({name = n} as m) =
   Hashtbl.add proof_modes n (CEphemeron.create m)
@@ -124,13 +124,13 @@ let push a l = l := a::!l;
 
 exception NoSuchProof
 let _ = CErrors.register_handler begin function
-  | NoSuchProof -> CErrors.error "No such proof."
+  | NoSuchProof -> CErrors.user_err Pp.(str "No such proof.")
   | _ -> raise CErrors.Unhandled
 end
 
 exception NoCurrentProof
 let _ = CErrors.register_handler begin function
-  | NoCurrentProof -> CErrors.error "No focused proof (No proof-editing in progress)."
+  | NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof (No proof-editing in progress).")
   | _ -> raise CErrors.Unhandled
 end
 
@@ -299,7 +299,7 @@ let set_used_variables l =
   | [] -> raise NoCurrentProof
   | p :: rest ->
       if not (Option.is_empty p.section_vars) then
-        CErrors.error "Used section variables can be declared only once";
+        CErrors.user_err Pp.(str "Used section variables can be declared only once");
       pstates := { p with section_vars = Some ctx} :: rest;
       ctx, to_clear
 
@@ -637,7 +637,7 @@ module Bullet = struct
 	current_behavior :=
           try Hashtbl.find behaviors n
           with Not_found ->
-            CErrors.error ("Unknown bullet behavior: \"" ^ n ^ "\".")
+            CErrors.user_err Pp.(str ("Unknown bullet behavior: \"" ^ n ^ "\"."))
       end
     })
 
@@ -687,9 +687,9 @@ let parse_goal_selector = function
       let err_msg = "The default selector must be \"all\" or a natural number." in
       begin try
               let i = int_of_string i in
-              if i < 0 then CErrors.error err_msg;
+              if i < 0 then CErrors.user_err Pp.(str err_msg);
               Vernacexpr.SelectNth i
-        with Failure _ -> CErrors.error err_msg
+        with Failure _ -> CErrors.user_err Pp.(str err_msg)
       end
 
 let _ =

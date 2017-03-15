@@ -110,8 +110,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   in
   let u = 
     if poly then 
-      CErrors.error ("Checking of subtyping of polymorphic" ^
-		       " inductive types not implemented")
+      CErrors.user_err Pp.(str "Checking of subtyping of polymorphic inductive types not implemented")
     else Instance.empty
   in
   let mib2 =  Declareops.subst_mind_body subst2 mib2 in
@@ -347,7 +346,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 	      let c2 = Mod_subst.force_constr lc2 in
 	      check_conv NotConvertibleBodyField cst poly u infer_conv env' c1 c2))
    | IndType ((kn,i),mind1) ->
-       ignore (CErrors.error (
+       ignore (CErrors.user_err Pp.(str @@
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by an inductive type. Hint: you can rename the " ^
        "inductive type and give a definition to map the old name to the new " ^
@@ -364,7 +363,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let error = NotConvertibleTypeField (env, arity1, typ2) in
        check_conv error cst false Univ.Instance.empty infer_conv_leq env arity1 typ2
    | IndConstr (((kn,i),j) as cstr,mind1) ->
-      ignore (CErrors.error (
+      ignore (CErrors.user_err Pp.(str @@
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by a constructor. Hint: you can rename the " ^
        "constructor and give a definition to map the old name to the new " ^

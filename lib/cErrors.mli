@@ -41,9 +41,6 @@ val user_err : ?loc:Loc.t -> ?hdr:string -> std_ppcmds -> 'a
 (** Main error raising primitive. [user_err ?loc ?hdr pp] signals an
     error [pp] with optional header and location [hdr] [loc] *)
 
-val error : string -> 'a
-(** [error s] just calls [user_error "_" (str s)] *)
-
 exception AlreadyDeclared of std_ppcmds
 val alreadydeclared : std_ppcmds -> 'a
 
@@ -98,3 +95,14 @@ val noncritical : exn -> bool
 (** Check whether an exception is handled by some toplevel printer. The
     [Anomaly] exception is never handled. *)
 val handled : exn -> bool
+
+(** Deprecated functions  *)
+val error : string -> 'a
+ [@@ocaml.deprecated "use [user_err] instead"]
+
+val errorlabstrm : string -> std_ppcmds -> 'a
+ [@@ocaml.deprecated "use [user_err ~hdr] instead"]
+
+val user_err_loc : Loc.t * string * std_ppcmds -> 'a
+ [@@ocaml.deprecated "use [user_err ~loc] instead"]
+

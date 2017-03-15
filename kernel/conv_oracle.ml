@@ -71,7 +71,7 @@ let set_strategy ({ var_opacity; cst_opacity } as oracle) k l =
     | _ -> Cpred.add c oracle.cst_trstate
     in
     { oracle with cst_opacity; cst_trstate; }
-  | RelKey _ -> CErrors.error "set_strategy: RelKey"
+  | RelKey _ -> CErrors.user_err Pp.(str "set_strategy: RelKey")
 
 let fold_strategy f { var_opacity; cst_opacity; } accu =
   let fvar id lvl accu = f (VarKey id) lvl accu in

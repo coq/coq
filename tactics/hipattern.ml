@@ -460,7 +460,7 @@ let find_this_eq_data_decompose gl eqn =
   let eq_args =
     try extract_eq_args gl eq_args
     with PatternMatchingFailure ->
-      error "Don't know what to do with JMeq on arguments not of same type." in
+      user_err Pp.(str "Don't know what to do with JMeq on arguments not of same type.") in
   (lbeq,u,eq_args)
 
 let match_eq_nf gls eqn (ref, hetero) =
@@ -477,7 +477,7 @@ let dest_nf_eq gls eqn =
   try
     snd (first_match (match_eq_nf gls eqn) equalities)
   with PatternMatchingFailure ->
-    error "Not an equality."
+    user_err Pp.(str "Not an equality.")
 
 (*** Sigma-types *)
 

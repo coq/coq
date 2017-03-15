@@ -462,7 +462,7 @@ let theoremedeszeros_termes lp =
 	  lexico:=true;
       |7 -> sinfo "ordre lexico computation with sugar, division by pairs";
 	  lexico:=true;
-      | _ -> error "nsatz: bad parameter"
+      | _ -> user_err Pp.(str "nsatz: bad parameter")
        );
       let lvar = List.init nvars (fun i -> Printf.sprintf "x%i" (i + 1)) in
       let lvar = ["a";"b";"c";"d";"e";"f";"g";"h";"i";"j";"k";"l";"m";"n";"o";"p";"q";"r";"s";"t";"u";"v";"w";"x";"y";"z"] @ lvar in
@@ -549,5 +549,5 @@ let nsatz_compute t =
   let lpol =
     try nsatz t
     with Ideal.NotInIdeal ->
-      error "nsatz cannot solve this problem" in
+      user_err Pp.(str "nsatz cannot solve this problem") in
   return_term lpol

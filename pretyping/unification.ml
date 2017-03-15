@@ -1250,7 +1250,7 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
       | Prod (_,c1,c2) ->
         let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.tag Evar_kinds.GoalEvar) c1 in
 	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
-      | _ -> error "Apply_Head_Then"
+      | _ -> user_err Pp.(str "Apply_Head_Then")
   in
     apprec n c (Typing.unsafe_type_of env (Sigma.to_evar_map evd) c) Sigma.refl evd
 
@@ -1516,7 +1516,7 @@ let w_typed_unify_array env evd flags f1 l1 f2 l2 =
 let iter_fail f a =
   let n = Array.length a in
   let rec ffail i =
-    if Int.equal i n then error "iter_fail"
+    if Int.equal i n then user_err Pp.(str "iter_fail")
     else
       try f a.(i)
       with ex when precatchable_exception ex -> ffail (i+1)
@@ -1754,8 +1754,8 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
 	   w_typed_unify_array env evd flags f1 l1 f2 l2,cl
 	 else w_typed_unify env evd CONV flags op cl,cl
        with ex when Pretype_errors.unsatisfiable_exception ex ->
-	    bestexn := Some ex; error "Unsat")
-       else error "Bound 1"
+	    bestexn := Some ex; user_err Pp.(str "Unsat"))
+       else user_err Pp.(str "Bound 1")
      with ex when precatchable_exception ex ->
        (match EConstr.kind evd cl with
 	  | App (f,args) ->
@@ -1804,7 +1804,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
 	       with ex when precatchable_exception ex ->
 		 matchrec c)
 
-          | _ -> error "Match_subterm"))
+          | _ -> user_err Pp.(str "Match_subterm")))
   in
   try matchrec cl
   with ex when precatchable_exception ex ->
@@ -1820,7 +1820,7 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
     let (evd,c as a) = a () in
       if List.exists (fun (evd',c') -> EConstr.eq_constr evd' c c') b then b else a :: b
   in
-  let fail str _ = error str in
+  let fail str _ = user_err (Pp.str str) in
   let bind f g a =
     let a1 = try f a
              with ex
@@ -1956,7 +1956,7 @@ let w_unify2 env evd flags dep cv_pb ty1 ty2 =
     | _, Meta p2 ->
         (* Find the predicate *)
         secondOrderAbstractionAlgo dep env evd flags ty1 (p2, oplist2)
-    | _ -> error "w_unify2"
+    | _ -> user_err Pp.(str "w_unify2")
 
 (* The unique unification algorithm works like this: If the pattern is
    flexible, and the goal has a lambda-abstraction at the head, then

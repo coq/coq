@@ -1084,7 +1084,7 @@ let decompose l c =
     let sigma = Tacmach.New.project gl in
     let to_ind c =
       if isInd sigma c then fst (destInd sigma c)
-      else error "not an inductive type"
+      else user_err Pp.(str "not an inductive type")
     in
     let l = List.map to_ind l in
     Elim.h_decompose l c

@@ -513,11 +513,11 @@ let rec fourier () =
 		        with NoIneq -> ())
               hyps;
     (* lineq = les inéquations découlant des hypothèses *)
-    if !lineq=[] then CErrors.error "No inequalities";
+    if !lineq=[] then CErrors.user_err Pp.(str "No inequalities");
     let res=fourier_lineq (!lineq) in
     let tac=ref (Proofview.tclUNIT ()) in
     if res=[]
-    then CErrors.error "fourier failed"
+    then CErrors.user_err Pp.(str "fourier failed")
     (* l'algorithme de Fourier a réussi: on va en tirer une preuve Coq *)
     else (match res with
         [(cres,sres,lc)]->
