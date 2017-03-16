@@ -236,3 +236,13 @@ Tactic Notation "clear" "dependent" hyp(h) :=
 
 Tactic Notation "revert" "dependent" hyp(h) :=
  generalize dependent h.
+
+(** Test if a tactic succeeds, but always roll-back the results. *)
+Ltac pre_test tac :=
+  try (first [ tac | fail 2 tac "does not succeed" ]; fail tac "succeeds"; [](* test for [t] solved all goals *)).
+(* We must handle level 1 failure separately. *)
+Tactic Notation "test" tactic3(tac) :=
+  pre_test tac; pre_test ltac:(try tac).
+
+(** [not tac] is equivalent to [fail tac "succeeds"] if [tac] succeeds, and is equivalent to [idtac] if [tac] fails at levels 0, 1, or 2. *)
+Tactic Notation "not" tactic3(tac) := try ((test tac); fail 1 tac "succeeds").
