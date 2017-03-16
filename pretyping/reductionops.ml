@@ -1167,7 +1167,8 @@ let local_whd_state_gen flags sigma =
 	|_ -> s
       else s
 
-    | x -> s
+    | Rel _ | Var _ | Sort _ | Prod _ | LetIn _ | Const _  | Ind _ | Proj _ -> s
+
   in
   whrec
 
@@ -1771,8 +1772,8 @@ let meta_reducible_instance evd b =
           let is_coerce = match s with CoerceToType -> true | _ -> false in
           if not is_coerce then irec g else u
 	 with Not_found -> u)
-    | Proj (p,c) when isMeta evd c || isCast evd c && isMeta evd (pi1 (destCast evd c)) ->
-	let m = try destMeta evd c with _ -> destMeta evd (pi1 (destCast evd c)) in
+    | Proj (p,c) when isMeta evd c || isCast evd c && isMeta evd (pi1 (destCast evd c)) (* What if two nested casts? *) ->
+      let m = try destMeta evd c with _ -> destMeta evd (pi1 (destCast evd c)) (* idem *) in
 	  (match
 	  try
 	    let g, s = Metamap.find m metas in

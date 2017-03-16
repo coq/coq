@@ -57,7 +57,9 @@ let compare_stack_shape stk1 stk2 =
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
-    | (_,_) -> false in
+    | [], _ :: _
+    | (Zproj _ | ZcaseT _ | Zfix _) :: _, _ -> false
+  in
   compare_rec 0 stk1 stk2
 
 type lft_constr_stack_elt =
@@ -122,14 +124,17 @@ let nf_betaiota env t =
 
 let whd_betaiotazeta env x =
   match kind x with
-    | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
+  | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> x
     | App (c, _) ->
       begin match kind c with
       | Ind _ | Construct _ | Evar _ | Meta _ | Const _ -> x
-      | _ -> whd_val (create_clos_infos betaiotazeta env) (inject x)
+      | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
+        | Case _ | Fix _ | CoFix _ | Proj _ ->
+         whd_val (create_clos_infos betaiotazeta env) (inject x)
       end
-    | _ -> whd_val (create_clos_infos betaiotazeta env) (inject x)
+    | Rel _ | Cast _ | LetIn _ | Case _ | Proj _ ->
+        whd_val (create_clos_infos betaiotazeta env) (inject x)
 
 let whd_all env t =
   match kind t with
@@ -138,9 +143,12 @@ let whd_all env t =
     | App (c, _) ->
       begin match kind c with
       | Ind _ | Construct _ | Evar _ | Meta _ -> t
-      | _ -> whd_val (create_clos_infos all env) (inject t)
+      | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
+        | Const _ |Case _ | Fix _ | CoFix _ | Proj _ ->
+         whd_val (create_clos_infos all env) (inject t)
       end
-    | _ -> whd_val (create_clos_infos all env) (inject t)
+    | Rel _ | Cast _ | LetIn _ | Case _ | Proj _ | Const _ | Var _ ->
+        whd_val (create_clos_infos all env) (inject t)
 
 let whd_allnolet env t =
   match kind t with
@@ -149,9 +157,12 @@ let whd_allnolet env t =
     | App (c, _) ->
       begin match kind c with
       | Ind _ | Construct _ | Evar _ | Meta _ | LetIn _ -> t
-      | _ -> whd_val (create_clos_infos allnolet env) (inject t)
+      | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | App _
+        | Const _ | Case _ | Fix _ | CoFix _ | Proj _ ->
+         whd_val (create_clos_infos allnolet env) (inject t)
       end
-    | _ -> whd_val (create_clos_infos allnolet env) (inject t)
+    | Rel _ | Cast _ | Case _ | Proj _ | Const _ | Var _ ->
+        whd_val (create_clos_infos allnolet env) (inject t)
 
 (********************************************************************)
 (*                         Conversion                               *)
@@ -578,10 +589,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
      (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)
      | ( (FLetIn _, _) | (FCaseT _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)
        | (_, FLetIn _) | (_,FCaseT _) | (_,FApp _) | (_,FCLOS _) | (_,FLIFT _)
-       | (FLOCKED,_) | (_,FLOCKED) ) -> assert false
+       | (FLOCKED,_) | (_,FLOCKED) ) | (FCast _, _) | (_, FCast _) -> assert false
 
-     (* In all other cases, terms are not convertible *)
-     | _ -> raise NotConvertible
+     | (FRel _ | FAtom _ | FInd _ | FFix _ | FCoFix _
+        | FProd _ | FEvar _), _ -> raise NotConvertible
 
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
   compare_stacks

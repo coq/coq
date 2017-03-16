@@ -980,6 +980,19 @@ let match_termlist match_fun alp metas sigma rest x y iter termin lassoc =
   else
     bind_termlist_env alp sigma x l
 
+let match_cast match_fun sigma c1 c2 =
+  match c1, c2 with
+  | CastConv t1, CastConv t2
+  | CastVM t1, CastVM t2
+  | CastNative t1, CastNative t2 ->
+    match_fun sigma t1 t2
+  | CastCoerce, CastCoerce ->
+    sigma
+  | CastConv _, _
+  | CastVM _, _
+  | CastNative _, _
+  | CastCoerce, _ -> raise No_match
+
 let does_not_come_from_already_eta_expanded_var glob =
   (* This is hack to avoid looping on a rule with rhs of the form *)
   (* "?f (fun ?x => ?g)" since otherwise, matching "F H" expands in *)
@@ -1125,11 +1138,8 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let alp,sigma = Array.fold_right2 (fun id1 id2 alsig ->
 	match_names metas alsig (Name id1) (Name id2)) idl1 idl2 (alp,sigma) in
       Array.fold_left2 (match_in u alp metas) sigma bl1 bl2
-  | GCast(c1,CastConv t1), NCast (c2,CastConv t2)
-  | GCast(c1,CastVM t1), NCast (c2,CastVM t2) ->
-      match_in u alp metas (match_in u alp metas sigma c1 c2) t1 t2
-  | GCast(c1, CastCoerce), NCast(c2, CastCoerce) ->
-      match_in u alp metas sigma c1 c2
+  | GCast(t1, c1), NCast(t2, c2) ->
+    match_cast (match_in u alp metas) (match_in u alp metas sigma t1 t2) c1 c2
   | GSort (GType _), NSort (GType _) when not u -> sigma
   | GSort s1, NSort s2 when Miscops.glob_sort_eq s1 s2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
@@ -1157,8 +1167,9 @@ let rec match_ inner u alp metas sigma a1 a2 =
           match_names metas (alp,sigma) (Name id') na in
       match_in u alp metas sigma (mkGApp a1 (DAst.make @@ GVar id')) b2
 
-  | (GRec _ | GEvar _), _
-  | _,_ -> raise No_match
+  | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _
+     | GLetIn _ | GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _
+     | GCast _), _ -> raise No_match
 
 and match_in u = match_ true u
 

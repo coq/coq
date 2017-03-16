@@ -302,7 +302,7 @@ let rec extract_type env db j c args =
        if Projection.unfolded p then Tunknown
        else extract_type env db j (mkProj (Projection.unfold p, t)) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
-    | _ -> assert false
+    | Var _ | Meta _ | Evar _ | Cast _ | LetIn _ | Construct _ -> assert false
 
 (*s Auxiliary function dealing with type application.
   Precondition: [r] is a type scheme represented by the signature [s],

@@ -809,8 +809,11 @@ let rec subterm_specif renv stack t =
 	| Dead_code -> Dead_code
 	| Not_subterm -> Not_subterm)
 
+    | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _ | Ind _
+      | Construct _ | CoFix _ -> Not_subterm
+
+
       (* Other terms are not subterms *)
-    | _ -> Not_subterm
 
 and lazy_subterm_specif renv stack t =
   lazy (subterm_specif renv stack t)
@@ -1193,8 +1196,8 @@ let check_one_cofix env nbfix def deftype =
 	| Meta _ -> ()
         | Evar _ ->
 	    List.iter (check_rec_call env alreadygrd n tree vlra) args
-
-	| _    -> raise (CoFixGuardError (env,NotGuardedForm t)) in
+        | Rel _ | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _
+          | Ind _ | Fix _ | Proj _ -> raise (CoFixGuardError (env,NotGuardedForm t)) in
 
   let ((mind, _),_) = codomain_is_coind env deftype in
   let vlra = lookup_subterms env mind in

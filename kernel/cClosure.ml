@@ -480,7 +480,8 @@ let rec lft_fconstr n ft =
     | FCoFix(cfx,e) -> {norm=Cstr; term=FCoFix(cfx,subs_shft(n,e))}
     | FLIFT(k,m) -> lft_fconstr (n+k) m
     | FLOCKED -> assert false
-    | _ -> {norm=ft.norm; term=FLIFT(n,ft)}
+    | FFlex _ | FAtom _ | FCast _ | FApp _ | FProj _ | FCaseT _ | FProd _
+      | FLetIn _ | FEvar _ | FCLOS _ -> {norm=ft.norm; term=FLIFT(n,ft)}
 let lift_fconstr k f =
   if Int.equal k 0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
@@ -958,7 +959,10 @@ let rec knr info m stk =
       (match evar_value info.i_cache ev with
           Some c -> knit info env c stk
         | None -> (m,stk))
-  | _ -> (m,stk)
+  | FLOCKED | FRel _ | FAtom _ | FCast _ | FFlex _ | FInd _ | FApp _ | FProj _
+    | FFix _ | FCoFix _ | FCaseT _ | FLambda _ | FProd _ | FLetIn _ | FLIFT _
+    | FCLOS _ -> (m, stk)
+
 
 (* Computes the weak head normal form of a term *)
 and kni info m stk =
@@ -1034,7 +1038,8 @@ and norm_head info m =
           mkEvar(i, Array.map (fun a -> kl info (mk_clos env a)) args)
       | FProj (p,c) ->
           mkProj (p, kl info c)
-      | t -> term_of_fconstr m
+      | FLOCKED | FRel _ | FAtom _ | FCast _ | FFlex _ | FInd _ | FConstruct _
+        | FApp _ | FCaseT _ | FLIFT _ | FCLOS _ -> term_of_fconstr m
 
 (* Initialization and then normalization *)
 

@@ -95,13 +95,20 @@ struct
 
   let compare cmp t1 t2 = match t1, t2 with
   | DRel, DRel -> 0
+  | DRel, _ -> -1 | _, DRel -> 1
   | DSort, DSort -> 0
+  | DSort, _ -> -1 | _, DSort -> 1
   | DRef gr1, DRef gr2 -> RefOrdered.compare gr1 gr2
+  | DRef _, _ -> -1 | _, DRef _ -> 1
+
   | DCtx (tl1, tr1), DCtx (tl2, tr2)
   | DLambda (tl1, tr1), DLambda (tl2, tr2)
   | DApp (tl1, tr1), DApp (tl2, tr2) ->
     let c = cmp tl1 tl2 in
     if c = 0 then cmp tr1 tr2 else c
+  | DCtx _, _ -> -1 | _, DCtx _ -> 1
+  | DLambda _, _ -> -1 | _, DLambda _ -> 1
+  | DApp _, _ -> -1 | _, DApp _ -> 1
 
   | DCase (ci1, c1, t1, p1), DCase (ci2, c2, t2, p2) ->
     let c = cmp c1 c2 in
@@ -113,6 +120,7 @@ struct
         else c
       else c
     else c
+  | DCase _, _ -> -1 | _, DCase _ -> 1
 
   | DFix (i1, j1, tl1, pl1), DFix (i2, j2, tl2, pl2) ->
     let c = Int.compare j1 j2 in
@@ -124,6 +132,8 @@ struct
         else c
       else c
     else c
+  | DFix _, _ -> -1 | _, DFix _ -> 1
+
   | DCoFix (i1, tl1, pl1), DCoFix (i2, tl2, pl2) ->
     let c = Int.compare i1 i2 in
     if c = 0 then
@@ -131,7 +141,18 @@ struct
       if c = 0 then Array.compare cmp pl1 pl2
       else c
     else c
-  | _ -> Pervasives.compare t1 t2 (** OK **)
+  | DCoFix _, _ -> -1 | _, DCoFix _ -> 1
+
+  | DCons ((t1, ot1), u1), DCons ((t2, ot2), u2) ->
+     let c = cmp t1 t2 in
+     if Int.equal c 0 then
+       let c = Option.compare cmp ot1 ot2 in
+       if Int.equal c 0 then cmp u1 u2
+       else c
+     else c
+  | DCons _, _ -> -1 | _, DCons _ -> 1
+
+  | DNil, DNil -> 0
 
   let fold f acc = function
     | (DRel | DNil | DSort | DRef _) -> acc
@@ -174,7 +195,8 @@ struct
 	    Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
 	    f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
-	| _ -> assert false
+        | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
+           | DFix _ | DCoFix _ | DCons _), _ -> assert false
 
   let map2 (f:'a -> 'b -> 'c) (c1:'a t) (c2:'b t) : 'c t =
     let head w = map (fun _ -> ()) w in
@@ -194,7 +216,8 @@ struct
 	    DCoFix (i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
 	    DCons ((f t1 t2,Option.lift2 f topt1 topt2), f u1 u2)
-	| _ -> assert false
+        | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
+           | DFix _ | DCoFix _ | DCons _), _ -> assert false
 
   let terminal = function
     | (DRel | DSort | DNil | DRef _) -> true

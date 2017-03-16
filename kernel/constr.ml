@@ -513,6 +513,7 @@ let compare_head_gen_leq_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
   | Prod (_,t1,c1), Prod (_,t2,c2) -> eq t1 t2 && leq c1 c2
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq t1 t2 && eq c1 c2
   | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> eq b1 b2 && eq t1 t2 && leq c1 c2
+  (* Why do we suddenly make a special case for Cast here? *)
   | App (Cast(c1, _, _),l1), _ -> leq (mkApp (c1,l1)) t2
   | _, App (Cast (c2, _, _),l2) -> leq t1 (mkApp (c2,l2))
   | App (c1,l1), App (c2,l2) ->
@@ -530,7 +531,9 @@ let compare_head_gen_leq_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
       && Array.equal_norefl eq tl1 tl2 && Array.equal_norefl eq bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
       Int.equal ln1 ln2 && Array.equal_norefl eq tl1 tl2 && Array.equal_norefl eq bl1 bl2
-  | _ -> false
+  | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
+     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
+     | CoFix _), _ -> false
 
 (* [compare_head_gen_leq u s eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
    the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
@@ -650,9 +653,6 @@ let always_true _ _ = true
 let rec eq_constr_nounivs m n =
   (m == n) || compare_head_gen (fun _ -> always_true) always_true eq_constr_nounivs m n
 
-(** We only use this function over blocks! *)
-let tag t = Obj.tag (Obj.repr t)
-
 let constr_ord_int f t1 t2 =
   let (=?) f g i1 i2 j1 j2=
     let c = f i1 i2 in
@@ -664,35 +664,50 @@ let constr_ord_int f t1 t2 =
     ((Array.compare Int.compare) =? Int.compare) a1 a2 i1 i2
   in
   match kind t1, kind t2 with
-    | Rel n1, Rel n2 -> Int.compare n1 n2
-    | Meta m1, Meta m2 -> Int.compare m1 m2
-    | Var id1, Var id2 -> Id.compare id1 id2
-    | Sort s1, Sort s2 -> Sorts.compare s1 s2
     | Cast (c1,_,_), _ -> f c1 t2
     | _, Cast (c2,_,_) -> f t1 c2
+    (* Why this special case? *)
+    | App (Cast(c1,_,_),l1), _ -> f (mkApp (c1,l1)) t2
+    | _, App (Cast(c2, _,_),l2) -> f t1 (mkApp (c2,l2))
+    | Rel n1, Rel n2 -> Int.compare n1 n2
+    | Rel _, _ -> -1 | _, Rel _ -> 1
+    | Var id1, Var id2 -> Id.compare id1 id2
+    | Var _, _ -> -1 | _, Var _ -> 1
+    | Meta m1, Meta m2 -> Int.compare m1 m2
+    | Meta _, _ -> -1 | _, Meta _ -> 1
+    | Evar (e1,l1), Evar (e2,l2) ->
+        (Evar.compare =? (Array.compare f)) e1 e2 l1 l2
+    | Evar _, _ -> -1 | _, Evar _ -> 1
+    | Sort s1, Sort s2 -> Sorts.compare s1 s2
+    | Sort _, _ -> -1 | _, Sort _ -> 1
     | Prod (_,t1,c1), Prod (_,t2,c2)
     | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
         (f =? f) t1 t2 c1 c2
+    | Prod _, _ -> -1 | _, Prod _ -> 1
+    | Lambda _, _ -> -1 | _, Lambda _ -> 1
     | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) ->
         ((f =? f) ==? f) b1 b2 t1 t2 c1 c2
-    | App (Cast(c1,_,_),l1), _ -> f (mkApp (c1,l1)) t2
-    | _, App (Cast(c2, _,_),l2) -> f t1 (mkApp (c2,l2))
+    | LetIn _, _ -> -1 | _, LetIn _ -> 1
     | App (c1,l1), App (c2,l2) -> (f =? (Array.compare f)) c1 c2 l1 l2
-    | Proj (p1,c1), Proj (p2,c2) -> (Projection.compare =? f) p1 p2 c1 c2
-    | Evar (e1,l1), Evar (e2,l2) ->
-        (Evar.compare =? (Array.compare f)) e1 e2 l1 l2
+    | App _, _ -> -1 | _, App _ -> 1
     | Const (c1,u1), Const (c2,u2) -> Constant.CanOrd.compare c1 c2
+    | Const _, _ -> -1 | _, Const _ -> 1
     | Ind (ind1, u1), Ind (ind2, u2) -> ind_ord ind1 ind2
+    | Ind _, _ -> -1 | _, Ind _ -> 1
     | Construct (ct1,u1), Construct (ct2,u2) -> constructor_ord ct1 ct2
+    | Construct _, _ -> -1 | _, Construct _ -> 1
     | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
         ((f =? f) ==? (Array.compare f)) p1 p2 c1 c2 bl1 bl2
+    | Case _, _ -> -1 | _, Case _ -> 1
     | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
         ((fix_cmp =? (Array.compare f)) ==? (Array.compare f))
         ln1 ln2 tl1 tl2 bl1 bl2
+    | Fix _, _ -> -1 | _, Fix _ -> 1
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
         ((Int.compare =? (Array.compare f)) ==? (Array.compare f))
         ln1 ln2 tl1 tl2 bl1 bl2
-    | t1, t2 -> Int.compare (tag t1) (tag t2)
+    | CoFix _, _ -> -1 | _, CoFix _ -> 1
+    | Proj (p1,c1), Proj (p2,c2) -> (Projection.compare =? f) p1 p2 c1 c2
 
 let rec compare m n=
   constr_ord_int compare m n
@@ -776,7 +791,9 @@ let hasheq t1 t2 =
       && array_eqeq lna1 lna2
       && array_eqeq tl1 tl2
       && array_eqeq bl1 bl2
-    | _ -> false
+    | (Rel _ | Meta _ | Var _ | Sort _ | Cast _ | Prod _ | Lambda _ | LetIn _
+      | App _ | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _
+      | Fix _ | CoFix _), _ -> false
 
 (** Note that the following Make has the side effect of creating
     once and for all the table we'll use for hash-consing all constr *)
