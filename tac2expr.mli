@@ -22,6 +22,10 @@ type ltac_constructor = KerName.t
 type ltac_projection = KerName.t
 type type_constant = KerName.t
 
+type 'a or_relid =
+| RelId of qualid located
+| AbsKn of 'a
+
 (** {5 Misc} *)
 
 type ml_tactic_name = {
@@ -35,7 +39,7 @@ type raw_typexpr =
 | CTypVar of Name.t located
 | CTypArrow of Loc.t * raw_typexpr * raw_typexpr
 | CTypTuple of Loc.t * raw_typexpr list
-| CTypRef of Loc.t * qualid located * raw_typexpr list
+| CTypRef of Loc.t * type_constant or_relid * raw_typexpr list
 
 type raw_typedef =
 | CTydDef of raw_typexpr option
@@ -66,15 +70,19 @@ type atom =
 | AtmInt of int
 | AtmStr of string
 
+type tacref =
+| TacConstant of ltac_constant
+| TacConstructor of ltac_constructor
+
 (** Tactic expressions *)
 type raw_patexpr =
 | CPatAny of Loc.t
-| CPatRef of Loc.t * qualid located * raw_patexpr list
+| CPatRef of Loc.t * ltac_constructor or_relid * raw_patexpr list
 | CPatTup of raw_patexpr list located
 
 type raw_tacexpr =
 | CTacAtm of atom located
-| CTacRef of qualid located
+| CTacRef of tacref or_relid
 | CTacFun of Loc.t * (Name.t located * raw_typexpr option) list * raw_tacexpr
 | CTacApp of Loc.t * raw_tacexpr * raw_tacexpr list
 | CTacLet of Loc.t * rec_flag * (Name.t located * raw_typexpr option * raw_tacexpr) list * raw_tacexpr
@@ -85,13 +93,13 @@ type raw_tacexpr =
 | CTacSeq of Loc.t * raw_tacexpr * raw_tacexpr
 | CTacCse of Loc.t * raw_tacexpr * raw_taccase list
 | CTacRec of Loc.t * raw_recexpr
-| CTacPrj of Loc.t * raw_tacexpr * qualid located
-| CTacSet of Loc.t * raw_tacexpr * qualid located * raw_tacexpr
+| CTacPrj of Loc.t * raw_tacexpr * ltac_projection or_relid
+| CTacSet of Loc.t * raw_tacexpr * ltac_projection or_relid * raw_tacexpr
 | CTacExt of Loc.t * raw_generic_argument
 
 and raw_taccase = raw_patexpr * raw_tacexpr
 
-and raw_recexpr = (qualid located * raw_tacexpr) list
+and raw_recexpr = (ltac_projection or_relid * raw_tacexpr) list
 
 type case_info =
 | GCaseTuple of int

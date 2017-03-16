@@ -63,10 +63,6 @@ val interp_projection : ltac_projection -> projection_data
 
 (** {5 Name management} *)
 
-type tacref =
-| TacConstant of ltac_constant
-| TacConstructor of ltac_constructor
-
 val push_ltac : visibility -> full_path -> tacref -> unit
 val locate_ltac : qualid -> tacref
 val locate_extended_all_ltac : qualid -> tacref list

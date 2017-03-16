@@ -32,12 +32,12 @@ GEXTEND Gram
   GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext;
   tac2pat:
     [ "1" LEFTA
-      [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" -> CPatRef (!@loc, id, pl)
-      | id = Prim.qualid -> CPatRef (!@loc, id, []) ]
+      [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" -> CPatRef (!@loc, RelId id, pl)
+      | id = Prim.qualid -> CPatRef (!@loc, RelId id, []) ]
     | "0"
       [ "_" -> CPatAny (!@loc)
       | "()" -> CPatTup (!@loc, [])
-      | id = Prim.qualid -> CPatRef (!@loc, id, [])
+      | id = Prim.qualid -> CPatRef (!@loc, RelId id, [])
       | "("; pl = LIST0 tac2pat LEVEL "1" SEP ","; ")" -> CPatTup (!@loc, pl) ]
     ]
   ;
@@ -54,8 +54,8 @@ GEXTEND Gram
       [ e1 = tac2expr; ";"; e2 = tac2expr -> CTacSeq (!@loc, e1, e2) ]
     | "1" LEFTA
       [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" -> CTacApp (!@loc, e, el)
-      | e = SELF; ".("; qid = Prim.qualid; ")" -> CTacPrj (!@loc, e, qid)
-      | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "1" -> CTacSet (!@loc, e, qid, r)
+      | e = SELF; ".("; qid = Prim.qualid; ")" -> CTacPrj (!@loc, e, RelId qid)
+      | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = tac2expr LEVEL "1" -> CTacSet (!@loc, e, RelId qid, r)
       | e0 = tac2expr; ","; el = LIST1 tac2expr LEVEL "1" SEP "," -> CTacTup (!@loc, e0 :: el) ]
     | "0"
       [ "("; a = tac2expr LEVEL "5"; ")" -> a
@@ -86,7 +86,7 @@ GEXTEND Gram
   tactic_atom:
     [ [ n = Prim.integer -> CTacAtm (!@loc, AtmInt n)
       | s = Prim.string -> CTacAtm (!@loc, AtmStr s)
-      | id = Prim.qualid -> CTacRef id
+      | id = Prim.qualid -> CTacRef (RelId id)
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_constr !@loc c
       | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> inj_open_constr !@loc c
       | IDENT "ident"; ":"; "("; c = Prim.ident; ")" -> inj_ident !@loc c
@@ -104,14 +104,14 @@ GEXTEND Gram
     | "2"
       [ t = tac2type; "*"; tl = LIST1 tac2type SEP "*" -> CTypTuple (!@loc, t :: tl) ]
     | "1" LEFTA
-      [ t = SELF; qid = Prim.qualid -> CTypRef (!@loc, qid, [t]) ]
+      [ t = SELF; qid = Prim.qualid -> CTypRef (!@loc, RelId qid, [t]) ]
     | "0"
       [ "("; t = tac2type LEVEL "5"; ")"  -> t
       | id = typ_param -> CTypVar (!@loc, Name id)
       | "_" -> CTypVar (!@loc, Anonymous)
-      | qid = Prim.qualid -> CTypRef (!@loc, qid, [])
+      | qid = Prim.qualid -> CTypRef (!@loc, RelId qid, [])
       | "("; p = LIST1 tac2type LEVEL "5" SEP ","; ")"; qid = Prim.qualid ->
-        CTypRef (!@loc, qid, p) ]
+        CTypRef (!@loc, RelId qid, p) ]
     ];
   locident:
     [ [ id = Prim.ident -> (!@loc, id) ] ]
@@ -165,7 +165,7 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   tac2rec_fieldexpr:
-    [ [ qid = Prim.qualid; ":="; e = tac2expr LEVEL "1" -> qid, e ] ]
+    [ [ qid = Prim.qualid; ":="; e = tac2expr LEVEL "1" -> RelId qid, e ] ]
   ;
   tac2typ_prm:
     [ [ -> []

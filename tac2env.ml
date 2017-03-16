@@ -13,11 +13,6 @@ open Names
 open Libnames
 open Tac2expr
 
-type ltac_constant = KerName.t
-type ltac_constructor = KerName.t
-type ltac_projection = KerName.t
-type type_constant = KerName.t
-
 type constructor_data = {
   cdata_prms : int;
   cdata_type : type_constant;
@@ -121,7 +116,7 @@ struct
     id, (DirPath.repr dir)
 end
 
-type tacref =
+type tacref = Tac2expr.tacref =
 | TacConstant of ltac_constant
 | TacConstructor of ltac_constructor
 

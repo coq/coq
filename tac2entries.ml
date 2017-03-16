@@ -243,7 +243,7 @@ let register_ltac ?(local = false) isrec tactics =
     | Anonymous -> None
     | Name id ->
       let qid = Libnames.qualid_of_ident id in
-      let e = CTacLet (Loc.ghost, true, bindings, CTacRef (loc, qid)) in
+      let e = CTacLet (Loc.ghost, true, bindings, CTacRef (RelId (loc, qid))) in
       let (e, t) = intern e in
       let e = match e with
       | GTacLet (true, _, e) -> assert false

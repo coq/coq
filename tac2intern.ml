@@ -190,7 +190,8 @@ let push_name id t env = match id with
 
 let loc_of_tacexpr = function
 | CTacAtm (loc, _) -> loc
-| CTacRef (loc, _) -> loc
+| CTacRef (RelId (loc, _)) -> loc
+| CTacRef (AbsKn _) -> Loc.ghost
 | CTacFun (loc, _, _) -> loc
 | CTacApp (loc, _, _) -> loc
 | CTacLet (loc, _, _, _) -> loc
@@ -230,9 +231,10 @@ let rec subst_type subst (t : 'a glb_typexpr) = match t with
 let rec intern_type env (t : raw_typexpr) : UF.elt glb_typexpr = match t with
 | CTypVar (loc, Name id) -> GTypVar (get_alias (loc, id) env)
 | CTypVar (_, Anonymous) -> GTypVar (fresh_id env)
-| CTypRef (_, (loc, qid), args) ->
-  let (dp, id) = repr_qualid qid in
-  let (kn, nparams) =
+| CTypRef (loc, rel, args) ->
+  let (kn, nparams) = match rel with
+  | RelId (loc, qid) ->
+    let (dp, id) = repr_qualid qid in
     if DirPath.is_empty dp && Id.Map.mem id env.env_rec then
       Id.Map.find id env.env_rec
     else
@@ -243,10 +245,17 @@ let rec intern_type env (t : raw_typexpr) : UF.elt glb_typexpr = match t with
       in
       let (nparams, _) = Tac2env.interp_type kn in
       (kn, nparams)
+  | AbsKn kn ->
+    let (nparams, _) = Tac2env.interp_type kn in
+    (kn, nparams)
   in
   let nargs = List.length args in
   let () =
     if not (Int.equal nparams nargs) then
+      let loc, qid = match rel with
+      | RelId lid -> lid
+      | AbsKn kn -> loc, shortest_qualid_of_type kn
+      in
       user_err ~loc (strbrk "The type constructor " ++ pr_qualid qid ++
         strbrk " expects " ++ int nparams ++ strbrk " argument(s), but is here \
         applied to " ++ int nargs ++ strbrk "argument(s)")
@@ -467,7 +476,8 @@ let check_redundant_clause = function
 | [] -> ()
 | (p, _) :: _ -> warn_redundant_clause ~loc:(loc_of_patexpr p) ()
 
-let get_variable env (loc, qid) =
+let get_variable env var = match var with
+| RelId (loc, qid) ->
   let (dp, id) = repr_qualid qid in
   if DirPath.is_empty dp && Id.Map.mem id env.env_var then ArgVar (loc, id)
   else
@@ -477,10 +487,12 @@ let get_variable env (loc, qid) =
         CErrors.user_err ~loc (str "Unbound value " ++ pr_qualid qid)
     in
     ArgArg kn
+| AbsKn kn -> ArgArg kn
 
-let get_constructor env (loc, qid) =
+let get_constructor env var = match var with
+| RelId (loc, qid) ->
   let c = try Some (Tac2env.locate_ltac qid) with Not_found -> None in
-  match c with
+  begin match c with
   | Some (TacConstructor knc) ->
     let kn = Tac2env.interp_constructor knc in
     ArgArg (kn, knc)
@@ -491,11 +503,18 @@ let get_constructor env (loc, qid) =
     let (dp, id) = repr_qualid qid in
     if DirPath.is_empty dp then ArgVar (loc, id)
     else CErrors.user_err ~loc (str "Unbound constructor " ++ pr_qualid qid)
+  end
+| AbsKn knc ->
+  let kn = Tac2env.interp_constructor knc in
+  ArgArg (kn, knc)
 
-let get_projection (loc, qid) =
+let get_projection var = match var with
+| RelId (loc, qid) ->
   let kn = try Tac2env.locate_projection qid with Not_found ->
     user_err ~loc (pr_qualid qid ++ str " is not a projection")
   in
+  Tac2env.interp_projection kn
+| AbsKn kn ->
   Tac2env.interp_projection kn
 
 let intern_atm env = function
@@ -526,8 +545,8 @@ let rec intern_patexpr env = function
   end
 | CPatRef (_, qid, pl) ->
   begin match get_constructor env qid with
-  | ArgVar (loc, _) ->
-    user_err ~loc (str "Unbound constructor " ++ pr_qualid (snd qid))
+  | ArgVar (loc, id) ->
+    user_err ~loc (str "Unbound constructor " ++ Nameops.pr_id id)
   | ArgArg (_, kn) -> GPatRef (kn, List.map (fun p -> intern_patexpr env p) pl)
   end
 | CPatTup (_, pl) ->
@@ -565,7 +584,7 @@ let is_constructor env qid = match get_variable env qid with
 
 let rec intern_rec env = function
 | CTacAtm (_, atm) -> intern_atm env atm
-| CTacRef qid ->
+| CTacRef qid as e ->
   begin match get_variable env qid with
   | ArgVar (_, id) ->
     let sch = Id.Map.find id env.env_var in
@@ -574,7 +593,8 @@ let rec intern_rec env = function
     let (_, _, sch) = Tac2env.interp_global kn in
     (GTacRef kn, fresh_type_scheme env sch)
   | ArgArg (TacConstructor kn) ->
-    intern_constructor env (fst qid) kn []
+    let loc = loc_of_tacexpr e in
+    intern_constructor env loc kn []
   end
 | CTacFun (loc, bnd, e) ->
   let fold (env, bnd, tl) ((_, na), t) =
@@ -590,12 +610,13 @@ let rec intern_rec env = function
   let (e, t) = intern_rec env e in
   let t = List.fold_left (fun accu t -> GTypArrow (t, accu)) t tl in
   (GTacFun (bnd, e), t)
-| CTacApp (loc, CTacRef qid, args) when is_constructor env qid ->
+| CTacApp (loc, CTacRef qid, args) as e when is_constructor env qid ->
   let kn = match get_variable env qid with
   | ArgArg (TacConstructor kn) -> kn
   | _ -> assert false
   in
-  intern_constructor env (fst qid) kn args
+  let loc = loc_of_tacexpr e in
+  intern_constructor env loc kn args
 | CTacApp (loc, f, args) ->
   let (f, ft) = intern_rec env f in
   let fold arg (args, t) =
@@ -687,7 +708,10 @@ let rec intern_rec env = function
   let pinfo = get_projection proj in
   let () =
     if not pinfo.pdata_mutb then
-      let (loc, _) = proj in
+      let loc = match proj with
+      | RelId (loc, _) -> loc
+      | AbsKn _ -> Loc.ghost
+      in
       user_err ~loc (str "Field is not mutable")
   in
   let subst = Array.init pinfo.pdata_prms (fun _ -> fresh_id env) in
@@ -974,8 +998,12 @@ and intern_constructor env loc kn args =
     error_nargs_mismatch loc nargs (List.length args)
 
 and intern_record env loc fs =
-  let map ((loc, qid), e) =
-    let proj = get_projection (loc, qid) in
+  let map (proj, e) =
+    let loc = match proj with
+    | RelId (loc, _) -> loc
+    | AbsKn _ -> Loc.ghost
+    in
+    let proj = get_projection proj in
     (loc, proj, e)
   in
   let fs = List.map map fs in
