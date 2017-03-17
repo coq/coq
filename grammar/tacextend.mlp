@@ -82,14 +82,14 @@ let make_var = function
   | ExtNonTerminal (_, p) -> Some p
   | _ -> assert false
 
-let declare_tactic loc s c cl = match cl with
+let declare_tactic loc tacname ~level classification clause = match clause with
 | [(ExtTerminal name) :: rem, _, tac] when List.for_all is_constr_gram rem ->
   (** The extension is only made of a name followed by constr entries: we do not
       add any grammar nor printing rule and add it as a true Ltac definition. *)
   let patt = make_patt rem in
   let vars = List.map make_var rem in
   let vars = mlexpr_of_list (mlexpr_of_name mlexpr_of_ident) vars in
-  let entry = mlexpr_of_string s in
+  let entry = mlexpr_of_string tacname in
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let ml = <:expr< { Tacexpr.mltac_name = $se$; Tacexpr.mltac_index = 0 } >> in
   let name = mlexpr_of_string name in
@@ -117,13 +117,14 @@ let declare_tactic loc s c cl = match cl with
 | _ ->
   (** Otherwise we add parsing and printing rules to generate a call to a
       TacML tactic. *)
-  let entry = mlexpr_of_string s in
+  let entry = mlexpr_of_string tacname in
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
-  let gl = mlexpr_of_clause cl in
-  let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ $gl$ >> in
+  let gl = mlexpr_of_clause clause in
+  let level = mlexpr_of_int level in
+  let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ $level$ $gl$ >> in
   declare_str_items loc
     [ <:str_item< do {
-        Tacenv.register_ml_tactic $se$ (Array.of_list $make_fun_clauses loc s cl$);
+        Tacenv.register_ml_tactic $se$ (Array.of_list $make_fun_clauses loc tacname clause$);
         Mltop.declare_cache_obj $obj$ $plugin_name$; } >>
     ]
 
@@ -134,20 +135,17 @@ EXTEND
   GLOBAL: str_item;
   str_item:
     [ [ "TACTIC"; "EXTEND"; s = tac_name;
+        level = OPT [ "AT"; "LEVEL"; level = INT -> level ];
         c = OPT [ "CLASSIFIED"; "BY"; c = LIDENT -> <:expr< $lid:c$ >> ];
         OPT "|"; l = LIST1 tacrule SEP "|";
         "END" ->
-         declare_tactic loc s c l ] ]
+        let level = match level with Some i -> int_of_string i | None -> 0 in
+         declare_tactic loc s ~level c l ] ]
   ;
   tacrule:
     [ [ "["; l = LIST1 tacargs; "]";
         c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> c ];
-        "->"; "["; e = Pcaml.expr; "]" ->
-	(match l with
-	  | ExtNonTerminal _ :: _ ->
-	    (* En attendant la syntaxe de tacticielles *)
-	    failwith "Tactic syntax must start with an identifier"
-	  | _ -> (l,c,e))
+        "->"; "["; e = Pcaml.expr; "]" -> (l,c,e)
     ] ]
   ;
   tacargs:

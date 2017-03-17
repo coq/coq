@@ -302,9 +302,9 @@ let cons_production_parameter = function
 | TacTerm _ -> None
 | TacNonTerm (_, _, id) -> Some id
 
-let add_glob_tactic_notation local n prods forml ids tac =
+let add_glob_tactic_notation local ~level prods forml ids tac =
   let parule = {
-    tacgram_level = n;
+    tacgram_level = level;
     tacgram_prods = prods;
   } in
   let tacobj = {
@@ -360,7 +360,7 @@ let extend_atomic_tactic name entries =
   in
   List.iteri add_atomic entries
 
-let add_ml_tactic_notation name prods =
+let add_ml_tactic_notation name ~level prods =
   let len = List.length prods in
   let iter i prods =
     let open Tacexpr in
@@ -372,10 +372,12 @@ let add_ml_tactic_notation name prods =
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
     let map id = Reference (Misctypes.ArgVar (Loc.ghost, id)) in
     let tac = TacML (Loc.ghost, entry, List.map map ids) in
-    add_glob_tactic_notation false 0 prods true ids tac
+    add_glob_tactic_notation false ~level prods true ids tac
   in
   List.iteri iter (List.rev prods);
-  extend_atomic_tactic name prods
+  (** We call [extend_atomic_tactic] only for "basic tactics" (the ones at
+  tactic_expr level 0) *)
+  if Int.equal level 0 then extend_atomic_tactic name prods
 
 (**********************************************************************)
 (** Ltac quotations                                                   *)
