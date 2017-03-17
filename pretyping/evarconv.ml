@@ -500,8 +500,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
   (* Evar must be undefined since we have flushed evars *)
   let () = if !debug_unification then
 	     let open Pp in
-	     Feedback.msg_notice (v 0 (pr_state appr1 ++ cut () ++ pr_state appr2 ++ cut ()) 
-		 ++ fnl ()) in
+	     Feedback.msg_notice (v 0 (pr_state appr1 ++ cut () ++ pr_state appr2 ++ cut ())) in
   match (flex_kind_of_term (fst ts) env evd term1 sk1, 
 	 flex_kind_of_term (fst ts) env evd term2 sk2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
@@ -1129,6 +1128,10 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let t2 = apprec_nohdbeta ts env evd (whd_head_evar evd t2) in
   let (term1,l1 as appr1) = try destApp t1 with DestKO -> (t1, [||]) in
   let (term2,l2 as appr2) = try destApp t2 with DestKO -> (t2, [||]) in
+  let () = if !debug_unification then
+	     let open Pp in
+	     Feedback.msg_notice (v 0 (str "Heuristic:" ++ spc () ++ print_constr t1
+                                       ++ cut () ++ print_constr t2 ++ cut ())) in
   let app_empty = Array.is_empty l1 && Array.is_empty l2 in
   match kind_of_term term1, kind_of_term term2 with
   | Evar (evk1,args1), (Rel _|Var _) when app_empty
