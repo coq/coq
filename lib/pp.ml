@@ -25,16 +25,24 @@ type block_type =
   | Pp_hvbox  of int
   | Pp_hovbox of int
 
-type std_ppcmds =
+type doc_view =
   | Ppcmd_empty
   | Ppcmd_string of string
-  | Ppcmd_glue of std_ppcmds list
-  | Ppcmd_box  of block_type * std_ppcmds
-  | Ppcmd_tag of pp_tag * std_ppcmds
+  | Ppcmd_glue of doc_view list
+  | Ppcmd_box  of block_type * doc_view
+  | Ppcmd_tag of pp_tag * doc_view
   (* Are those redundant? *)
   | Ppcmd_print_break of int * int
   | Ppcmd_force_newline
   | Ppcmd_comment of string list
+
+(* Following discussion on #390, we play on the safe side and make the
+   internal representation opaque here. *)
+type t = doc_view
+type std_ppcmds = t
+
+let repr x = x
+let unrepr x = x
 
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)

@@ -10,17 +10,17 @@
 
 (** Pretty printing guidelines ******************************************)
 (*                                                                      *)
-(* std_ppcmds is the main pretty printing datatype in he Coq. Documents *)
-(* are composed laying out boxes, and users can add arbitrary metadata  *)
-(* that backends are free to interpret.                                 *)
+(* `Pp.t` or `Pp.std_ppcmds` is the main pretty printing document type  *)
+(* in the Coq system. Documents are composed laying out boxes, and      *)
+(* users can add arbitrary tag metadata that backends are free          *)
 (*                                                                      *)
-(* The datatype is public to allow serialization or advanced uses,      *)
-(* regular users are _strongly_ encouraged to use the top-level         *)
-(* functions to manipulate the type.                                    *)
+(* The datatype has a public view to allow serialization or advanced    *)
+(* uses, however regular users are _strongly_ warned againt its use,    *)
+(* they should instead rely on the available functions below.           *)
 (*                                                                      *)
-(* Box order and number is indeed an important factor. Users should try *)
-(* to create a proper amount of boxes. Also, the ++ operator provides   *)
-(* "efficient" concatenation, but directly using a list is preferred.   *)
+(* Box order and number is indeed an important factor. Try to create    *)
+(* a proper amount of boxes. The `++` operator provides "efficient"     *)
+(* concatenation, but using the list constructors is usually preferred. *)
 (*                                                                      *)
 (* That is to say, this:                                                *)
 (*                                                                      *)
@@ -35,22 +35,30 @@
 (* XXX: Improve and add attributes *)
 type pp_tag = string
 
+(* Following discussion on #390, we play on the safe side and make the
+   internal representation opaque here. *)
+type t
+type std_ppcmds = t
+
 type block_type =
   | Pp_hbox   of int
   | Pp_vbox   of int
   | Pp_hvbox  of int
   | Pp_hovbox of int
 
-type std_ppcmds =
+type doc_view =
   | Ppcmd_empty
   | Ppcmd_string of string
-  | Ppcmd_glue of std_ppcmds list
-  | Ppcmd_box  of block_type * std_ppcmds
-  | Ppcmd_tag  of pp_tag * std_ppcmds
+  | Ppcmd_glue of t list
+  | Ppcmd_box  of block_type * t
+  | Ppcmd_tag  of pp_tag * t
   (* Are those redundant? *)
   | Ppcmd_print_break of int * int
   | Ppcmd_force_newline
   | Ppcmd_comment of string list
+
+val repr   : std_ppcmds -> doc_view
+val unrepr : doc_view -> std_ppcmds
 
 (** {6 Formatting commands} *)
 

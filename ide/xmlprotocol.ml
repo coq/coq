@@ -110,7 +110,7 @@ let to_box = let open Pp in
       | x        -> raise (Marshal_error("*ppbox",PCData x))
     )
 
-let rec of_pp (pp : Pp.std_ppcmds) = let open Pp in match pp with
+let rec of_pp (pp : Pp.std_ppcmds) = let open Pp in match Pp.repr pp with
     | Ppcmd_empty         -> constructor "ppdoc" "emtpy"  []
     | Ppcmd_string s      -> constructor "ppdoc" "string" [of_string s]
     | Ppcmd_glue sl       -> constructor "ppdoc" "glue"   [of_list of_pp sl]
@@ -123,6 +123,7 @@ let rec of_pp (pp : Pp.std_ppcmds) = let open Pp in match pp with
 
 
 let rec to_pp xpp = let open Pp in
+  Pp.unrepr @@
   do_match "ppdoc" (fun s args -> match s with
     | "empty"     -> Ppcmd_empty
     | "string"    -> Ppcmd_string (to_string (singleton args))

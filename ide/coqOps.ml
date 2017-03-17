@@ -166,7 +166,7 @@ let flags_to_color f =
   else `NAME Preferences.processed_color#get
 
 (* Move to utils? *)
-let rec validate (s : Pp.std_ppcmds) = match s with
+let rec validate (s : Pp.std_ppcmds) = match Pp.repr s with
   | Pp.Ppcmd_empty
   | Pp.Ppcmd_print_break _
   | Pp.Ppcmd_force_newline  -> true
