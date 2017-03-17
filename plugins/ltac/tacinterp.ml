@@ -1422,7 +1422,14 @@ and tactic_of_value ist vle =
         extra = TacStore.set ist.extra f_trace []; } in
       let tac = name_if_glob appl (eval_tactic ist t) in
       Profile_ltac.do_profile "tactic_of_value" trace (catch_error_tac trace tac)
-  | (VFun _|VRec _) -> Tacticals.New.tclZEROMSG (str "A fully applied tactic is expected.")
+  | VFun (_, _, _,vars,_) ->
+    let numargs = List.length vars in
+    Tacticals.New.tclZEROMSG
+      (str "A fully applied tactic is expected:" ++ spc() ++ Pp.str "missing " ++
+       Pp.str (String.plural numargs "argument") ++ Pp.str " for " ++
+       Pp.str (String.plural numargs "variable") ++ Pp.str " " ++
+       pr_enum pr_name vars ++ Pp.str ".")
+  | VRec _ -> Tacticals.New.tclZEROMSG (str "A fully applied tactic is expected.")
   else if has_type vle (topwit wit_tactic) then
     let tac = out_gen (topwit wit_tactic) vle in
     tactic_of_value ist tac
