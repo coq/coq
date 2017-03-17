@@ -97,6 +97,15 @@ let coqide_cmd_checks (loc,ast) =
 let add ((s,eid),(sid,verbose)) =
   let newid, rc = Stm.add ~ontop:sid verbose ~check:coqide_cmd_checks eid s in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
+  (* TODO: the "" parameter is a leftover of the times the protocol
+   * used to include stderr/stdout output.
+   *
+   * Currently, we force all the output meant for the to go via the
+   * feedback mechanism, and we don't manipulate stderr/stdout, which
+   * are left to the client's discrection. The parameter is still there
+   * as not to break the core protocol for this minor change, but it should
+   * be removed in the next version of the protocol.
+   *)
   newid, (rc, "")
 
 let edit_at id =
@@ -104,6 +113,15 @@ let edit_at id =
   | `NewTip -> CSig.Inl ()
   | `Focus { Stm.start; stop; tip} -> CSig.Inr (start, (stop, tip))
 
+(* TODO: the "" parameter is a leftover of the times the protocol
+ * used to include stderr/stdout output.
+ *
+ * Currently, we force all the output meant for the to go via the
+ * feedback mechanism, and we don't manipulate stderr/stdout, which
+ * are left to the client's discrection. The parameter is still there
+ * as not to break the core protocol for this minor change, but it should
+ * be removed in the next version of the protocol.
+ *)
 let query (s,id) = Stm.query ~at:id s; ""
 
 let annotate phrase =
@@ -379,6 +397,15 @@ let interp ((_raw, verbose), s) =
       | Some ast -> ast)
     () in
   Stm.interp verbose (vernac_parse s);
+  (* TODO: the "" parameter is a leftover of the times the protocol
+   * used to include stderr/stdout output.
+   *
+   * Currently, we force all the output meant for the to go via the
+   * feedback mechanism, and we don't manipulate stderr/stdout, which
+   * are left to the client's discrection. The parameter is still there
+   * as not to break the core protocol for this minor change, but it should
+   * be removed in the next version of the protocol.
+   *)
   Stm.get_current_state (), CSig.Inl ""
 
 (** When receiving the Quit call, we don't directly do an [exit 0],

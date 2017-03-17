@@ -127,9 +127,13 @@ type ('a, 'b) union = ('a, 'b) Util.union
 (**  [add ((s,eid),(sid,v))] adds the phrase [s] with edit id [eid]
      on top of the current edit position (that is asserted to be [sid])
      verbosely if [v] is true.  The response [(id,(rc,s)] is the new state
-     [id] assigned to the phrase, some output [s].  [rc] is [Inl] if the new
+     [id] assigned to the phrase. [rc] is [Inl] if the new
      state id is the tip of the edit point, or [Inr tip] if the new phrase
-     closes a focus and [tip] is the new edit tip *)
+     closes a focus and [tip] is the new edit tip
+
+     [s] used to contain Coq's console output and has been deprecated
+     in favor of sending feedback, it will be removed in a future
+     version of the protocol.  *)
 type add_sty = (string * edit_id) * (state_id * verbose)
 type add_rty = state_id * ((unit, state_id) union * string)
 
@@ -142,8 +146,12 @@ type add_rty = state_id * ((unit, state_id) union * string)
 type edit_at_sty = state_id
 type edit_at_rty = (unit, state_id * (state_id * state_id)) union
 
-(** [query s id] executes [s] at state [id] and does not record any state
-    change but for the printings that are sent in response *)
+(** [query s id] executes [s] at state [id].
+
+    query used to reply with the contents of Coq's console output, and
+    has been deprecated in favor of sending the query answers as
+    feedback. It will be removed in a future version of the protocol.
+*)
 type query_sty = string * state_id
 type query_rty = string
 
