@@ -128,3 +128,10 @@ Notation " |- {{ a }} b" := (a=b) (no associativity, at level 10).
 Goal True.
 {{ exact I. }}
 Qed.
+
+(* Check that we can have notations without any symbol iff they are "only printing". *)
+Fail Notation "" := (@nil).
+Notation "" := (@nil) (only printing).
+
+(* Check that a notation cannot be neither parsing nor printing. *)
+Fail Notation "'foobarkeyword'" := (@nil) (only parsing, only printing).
