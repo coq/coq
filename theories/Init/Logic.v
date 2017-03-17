@@ -572,7 +572,8 @@ Proof.
   intros A P (x & Hp & Huniq); split.
   - intro; exists x; auto.
   - intros (x0 & HPx0 & HQx0) x1 HPx1.
-    replace x1 with x0 by (transitivity x; [symmetry|]; auto).
+    assert (H : x0 = x1) by (transitivity x; [symmetry|]; auto).
+    destruct H.
     assumption.
 Qed.   
 
