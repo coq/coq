@@ -34,7 +34,12 @@ val inline_entry_side_effects :
 val empty_seff : side_effects
 val add_seff : side_effect -> side_effects -> side_effects
 val concat_seff : side_effects -> side_effects -> side_effects
+(** [concat_seff e1 e2] adds the side-effects of [e1] to [e2], i.e. effects in
+    [e1] must be more recent than those of [e2]. *)
 val uniq_seff : side_effects -> side_effect list
+(** Return the list of individual side-effects in the order of their
+    creation. *)
+
 val equal_eff : side_effect -> side_effect -> bool
 
 val translate_constant :
