@@ -106,10 +106,10 @@ let extend_label_table needed =
 
 let backpatch (pos, orig) =
   let displ = (!out_position - orig) asr 2 in
-  !out_buffer.[pos]   <- Char.unsafe_chr displ;
-  !out_buffer.[pos+1] <- Char.unsafe_chr (displ asr 8);
-  !out_buffer.[pos+2] <- Char.unsafe_chr (displ asr 16);
-  !out_buffer.[pos+3] <- Char.unsafe_chr (displ asr 24)
+  Bytes.set !out_buffer  pos    @@ Char.unsafe_chr displ;
+  Bytes.set !out_buffer (pos+1) @@ Char.unsafe_chr (displ asr 8);
+  Bytes.set !out_buffer (pos+2) @@ Char.unsafe_chr (displ asr 16);
+  Bytes.set !out_buffer (pos+3) @@ Char.unsafe_chr (displ asr 24)
 
 let define_label lbl =
   if lbl >= Array.length !label_table then extend_label_table lbl;

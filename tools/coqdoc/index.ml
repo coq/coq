@@ -205,17 +205,17 @@ let prepare_entry s = function
       while !j <= l do
 	if not !quoted then begin
 	  (match s.[!j] with
-	  | '_' -> ntn.[!k] <- ' '; incr k
-	  | 'x' -> ntn.[!k] <- '_'; incr k
+	  | '_' -> Bytes.set ntn !k ' '; incr k
+	  | 'x' -> Bytes.set ntn !k '_'; incr k
 	  | '\'' -> quoted := true
 	  | _ -> assert false)
 	end
 	else
 	  if s.[!j] = '\'' then
 	    if (!j = l || s.[!j+1] = '_') then quoted := false
-	    else (incr j; ntn.[!k] <- s.[!j]; incr k)
+	    else (incr j; Bytes.set ntn !k s.[!j]; incr k)
 	  else begin
-	    ntn.[!k] <- s.[!j];
+	    Bytes.set ntn !k s.[!j];
 	    incr k
 	  end;
 	incr j
