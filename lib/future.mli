@@ -113,8 +113,9 @@ val is_exn : 'a computation -> bool
 val peek_val : 'a computation -> 'a option
 val uuid : 'a computation -> UUID.t
 
-(* [chain greedy pure c f] chains computation [c] with [f].
- * The [greedy] and [pure] parameters are tricky:
+(* [chain pure c f] chains computation [c] with [f].
+ * [chain] forces immediately the new computation if the old one is_over (Exn or Val).
+ * The [pure] parameter is tricky:
  * [pure]:
  *   When pure is true, the returned computation will not keep a copy
  *   of the global state.
@@ -124,10 +125,8 @@ val uuid : 'a computation -> UUID.t
  *   one forces c' and then c''.
  *   [join c; chain ~pure:false c g] is invalid and fails at runtime.
  *   [force c; chain ~pure:false c g] is correct.
- * [greedy]:
- *   The [greedy] parameter forces immediately the new computation if
- *   the old one is_over (Exn or Val). Defaults to true. *)
-val chain : ?greedy:bool -> pure:bool ->
+ *)
+val chain : pure:bool ->
   'a computation -> ('a -> 'b) -> 'b computation
 
 (* Forcing a computation *)
@@ -143,9 +142,9 @@ val join : 'a computation -> 'a
 val sink : 'a computation -> unit
 
 (*** Utility functions ************************************************* ***)
-val split2 : ?greedy:bool ->
+val split2 :
   ('a * 'b) computation -> 'a computation * 'b computation
-val map2 : ?greedy:bool ->
+val map2 :
   ('a computation -> 'b -> 'c) ->
      'a list computation -> 'b list -> 'c list
 

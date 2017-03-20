@@ -191,9 +191,9 @@ let transactify f x =
 let purify_future f x = if is_over x then f x else purify f x
 let compute x = purify_future (compute ~pure:false) x
 let force ~pure x = purify_future (force ~pure) x
-let chain ?(greedy=true) ~pure x f =
+let chain ~pure x f =
   let y = chain ~pure x f in
-  if is_over x && greedy then ignore(force ~pure y);
+  if is_over x then ignore(force ~pure y);
   y
 let force x = force ~pure:false x
 
@@ -204,13 +204,13 @@ let join kx =
 
 let sink kx = if is_val kx then ignore(join kx)
 
-let split2 ?greedy x =
-  chain ?greedy ~pure:true x (fun x -> fst x),
-  chain ?greedy ~pure:true x (fun x -> snd x)
+let split2 x =
+  chain ~pure:true x (fun x -> fst x),
+  chain ~pure:true x (fun x -> snd x)
 
-let map2 ?greedy f x l =
+let map2 f x l =
   CList.map_i (fun i y ->
-    let xi = chain ?greedy ~pure:true x (fun x ->
+    let xi = chain ~pure:true x (fun x ->
         try List.nth x i
         with Failure _ | Invalid_argument _ ->
           CErrors.anomaly (Pp.str "Future.map2 length mismatch")) in

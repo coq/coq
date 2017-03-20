@@ -136,7 +136,7 @@ let dump (otab,_) =
   let disch_table = Array.make n a_discharge in
   let f2t_map = ref FMap.empty in
   Int.Map.iter (fun n (d,cu) ->
-    let c, u = Future.split2 ~greedy:true cu in
+    let c, u = Future.split2 cu in
     Future.sink u;
     Future.sink c;
     opaque_table.(n) <- c;
