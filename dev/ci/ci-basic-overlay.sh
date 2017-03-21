@@ -68,7 +68,7 @@
 : ${Coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot.git}
 
 ########################################################################
-# Coquelicot
+# CompCert
 ########################################################################
 : ${CompCert_CI_BRANCH:=master}
 : ${CompCert_CI_GITURL:=https://github.com/AbsInt/CompCert.git}
