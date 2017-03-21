@@ -22,6 +22,7 @@ env:
   - NJOBS=2
   # system is == 4.02.3
   - COMPILER="system"
+  - CAMLP5_VER="6.14"
   # Main test suites
   matrix:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
@@ -81,6 +82,7 @@ matrix:
     - env:
       - TEST_TARGET="test-suite"
       - COMPILER="4.04.0"
+      - CAMLP5_VER="6.17"
       - EXTRA_CONF="-coqide opt -with-doc yes"
       - EXTRA_OPAM="lablgtk-extras hevea"
       addons:
@@ -106,8 +108,8 @@ matrix:
 install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
 - eval $(opam config env)
-- opam config var root
-- opam install -j ${NJOBS} -y camlp5 ocamlfind ${EXTRA_OPAM}
+- opam config list
+- opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${EXTRA_OPAM}
 - opam list
 
 script:
