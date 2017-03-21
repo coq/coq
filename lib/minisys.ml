@@ -44,11 +44,13 @@ let ok_dirname f =
 (* Check directory can be opened *)
 
 let exists_dir dir =
+  (* See BZ#5391 on windows failing on a trailing (back)slash *)
   let rec strip_trailing_slash dir =
     let len = String.length dir in
     if len > 0 && (dir.[len-1] = '/' || dir.[len-1] = '\\')
     then strip_trailing_slash (String.sub dir 0 (len-1)) else dir in
-  try Sys.is_directory (strip_trailing_slash dir) with Sys_error _ -> false
+  let dir = if Sys.os_type = "Win32" then strip_trailing_slash dir else dir in
+  try Sys.is_directory dir with Sys_error _ -> false
 
 let apply_subdir f path name =
   (* we avoid all files and subdirs starting by '.' (e.g. .svn) *)
