@@ -221,7 +221,8 @@ struct
 
   let terminal = function
     | (DRel | DSort | DNil | DRef _) -> true
-    | _ -> false
+    | DLambda _ | DApp _ | DCase _ | DFix _ | DCoFix _ | DCtx _ | DCons _ ->
+      false
 
   let compare t1 t2 = compare dummy_cmp t1 t2
 
