@@ -2,6 +2,12 @@
 = CHANGES BETWEEN COQ V8.6 AND COQ V8.7 =
 =========================================
 
+* Ocaml *
+
+Coq is compiled with -safe-string enabled and requires plugins to do
+the same. This means that code using `String` in an imperative way
+will fail to compile now. They should switch to `Bytes.t`
+
 * ML API *
 
 We renamed the following functions:
