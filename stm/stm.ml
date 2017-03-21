@@ -2994,16 +2994,25 @@ let query ~doc ~at ~route s =
   stm_purify (fun s ->
     if Stateid.equal at Stateid.dummy then ignore(finish ~doc:dummy_doc)
     else Reach.known_state ~cache:`Yes at;
-    let loc, ast = parse_sentence ~doc at s in
-    let indentation, strlen = compute_indentation ?loc at in
-    CWarnings.set_current_loc loc;
-    let clas = Vernac_classifier.classify_vernac ast in
-    let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
-    match clas with
-    | VtMeta , _ -> (* TODO: can this still happen ? *)
-       ignore(process_transaction ~part_of_script:false aast (VtMeta,VtNow))
-    | _ ->
-       ignore(process_transaction aast (VtQuery (false, route), VtNow)))
+    try
+      while true do
+        let loc, ast            = parse_sentence ~doc at s in
+        let indentation, strlen = compute_indentation ?loc at in
+        CWarnings.set_current_loc loc;
+        let clas = Vernac_classifier.classify_vernac ast in
+        let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
+        match clas with
+        | VtMeta , _ -> (* TODO: can this still happen ? *)
+          ignore(process_transaction ~part_of_script:false aast (VtMeta,VtNow))
+        | _ ->
+          ignore(process_transaction aast (VtQuery (false,route), VtNow))
+      done;
+    with
+    | End_of_input -> ()
+    | exn ->
+      let iexn = CErrors.push exn in
+      Exninfo.iraise iexn
+    )
   s
 
 let edit_at ~doc id =
