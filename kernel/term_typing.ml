@@ -164,6 +164,10 @@ let infer_declaration ~trust env kn dcl =
       let t = hcons_constr (Vars.subst_univs_level_constr usubst c) in
 	Undef nl, RegularArity t, None, poly, univs, false, ctx
 
+  (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
+      so we delay the typing and hash consing of its body.
+      Remark: when the universe quantification is given explicitly, we could
+      delay even in the polymorphic case.  *)
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
 		       const_entry_polymorphic = false} as c) ->
@@ -192,6 +196,7 @@ let infer_declaration ~trust env kn dcl =
 	c.const_entry_universes,
 	c.const_entry_inline_code, c.const_entry_secctx
 
+  (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
