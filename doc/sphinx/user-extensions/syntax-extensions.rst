@@ -1372,6 +1372,50 @@ Abbreviations
    denoted expression is performed at definition time. Type checking is
    done only at the time of use of the abbreviation.
 
+
+Numeral notations
+-----------------
+
+Starting with version 8.9, the following command allows to customize
+the way numeral literals are parsed and printed:
+
+.. cmd:: Numeral Notation @ty @pa @pr : @scope.
+
+In the previous line, `ty` should be the name of an inductive type,
+while `pa` and `pr` should be the names of two parsing and printing
+functions.
+The parsing function `pa` should have one of the following types:
+
+  * :g:`Decimal.int -> ty`
+  * :g:`Decimal.int -> option ty`
+  * :g:`Decimal.uint -> ty`
+  * :g:`Decimal.uint -> option ty`
+  * :g:`Z -> ty`
+  * :g:`Z -> option ty`
+
+And the printing function `pr` should have one of the following types:
+
+  * :g:`ty -> Decimal.int`
+  * :g:`ty -> option Decimal.int`
+  * :g:`ty -> Decimal.uint`
+  * :g:`ty -> option Decimal.uint`
+  * :g:`ty -> Z`
+  * :g:`ty -> option Z`
+
+.. cmdv:: Numeral Notation @ty @pa @pr : @scope (warning after @n).
+
+When a literal larger than `n` is parsed, a warning message about
+possible stack overflow will be displayed.
+
+.. cmdv:: Numeral Notation @ty @pa @pr : @scope (abstract after @n).
+
+When a literal `m` larger than `n` is parsed, the result will be
+:g:`(pa m)`, without reduction of this application to a normal form.
+Here `m` will be a ``Decimal.int`` or ``Decimal.uint`` or ``Z``,
+depending on the type of the parsing function `pa`. This allows a more
+compact representation of literals in types such as ``nat``, and
+limits parse failures due to stack overflow.
+
 .. _TacticNotation:
 
 Tactic Notations
