@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -xe
 
@@ -8,20 +8,34 @@ export PATH=`pwd`/bin:$PATH
 
 ls `pwd`/bin
 
-# Maybe we should just use Ruby...
-mathcomp_CI_BRANCH=master
-mathcomp_CI_GITURL=https://github.com/math-comp/math-comp.git
+# Where we clone and build external developments
+CI_BUILD_DIR=`pwd`/_build_ci
 
-# git_checkout branch
+source ${ci_dir}/ci-user-overlay.sh
+source ${ci_dir}/ci-basic-overlay.sh
+
+mathcomp_CI_DIR=${CI_BUILD_DIR}/math-comp
+
+# git_checkout branch url dest will create a git repository
+# in <dest> (if it does not exist already) and checkout the
+# remote branch <branch> from <url>
 git_checkout()
 {
   local _BRANCH=${1}
   local _URL=${2}
   local _DEST=${3}
 
-  echo "Checking out ${_DEST}"
-  git clone --depth 1 -b ${_BRANCH} ${_URL} ${_DEST}
-  ( cd ${3} && echo "${_DEST}: `git log -1 --format='%s | %H | %cd | %aN'`" )
+  # Allow an optional 4th argument for the commit
+  local _COMMIT=${4:-FETCH_HEAD}
+  local _DEPTH=${5:-1}
+
+  mkdir -p ${_DEST}
+  ( cd ${_DEST}                                                && \
+    if [ ! -d .git ] ; then git clone --depth ${_DEPTH} ${_URL} . ; fi && \
+    echo "Checking out ${_DEST}"                               && \
+    git fetch ${_URL} ${_BRANCH}                               && \
+    git checkout ${_COMMIT}                                    && \
+    echo "${_DEST}: `git log -1 --format='%s | %H | %cd | %aN'`" )
 }
 
 checkout_mathcomp()
@@ -34,8 +48,8 @@ install_ssreflect()
 {
   echo 'Installing ssreflect' && echo -en 'travis_fold:start:ssr.install\\r'
 
-  checkout_mathcomp math-comp
-  ( cd math-comp/mathcomp            && \
+  checkout_mathcomp ${mathcomp_CI_DIR}
+  ( cd ${mathcomp_CI_DIR}/mathcomp   && \
     sed -i.bak '/ssrtest/d'     Make && \
     sed -i.bak '/odd_order/d'   Make && \
     sed -i.bak '/all\/all.v/d'  Make && \

@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-git_checkout master https://gforge.inria.fr/git/tlc/tlc.git tlc
+tlc_CI_DIR=${CI_BUILD_DIR}/tlc
 
-( cd tlc && make -j ${NJOBS} )
+git_checkout ${tlc_CI_BRANCH} ${tlc_CI_GITURL} ${tlc_CI_DIR}
+
+( cd ${tlc_CI_DIR} && make -j ${NJOBS} )

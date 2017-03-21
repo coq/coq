@@ -1,5 +1,5 @@
 CI_TARGETS=ci-all ci-hott ci-math-comp ci-compcert ci-sf ci-cpdt \
-           ci-color ci-math-classes ci-tlc ci-fiat-crypto \
+           ci-color ci-math-classes ci-tlc ci-fiat-crypto ci-fiat-parsers \
            ci-coquelicot ci-flocq ci-iris-coq ci-metacoq ci-geocoq \
            ci-unimath
 
