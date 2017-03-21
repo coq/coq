@@ -887,8 +887,8 @@ let alpha_items menu_name item_name l =
     | [] -> ()
     | [s] -> mk_item s
     | s::_ as ll ->
-      let name = item_name^" "^(String.make 1 s.[0]) in
-      let label = "_@..." in label.[1] <- s.[0];
+      let name = Printf.sprintf "%s %c" item_name s.[0] in
+      let label = Printf.sprintf "_%c..." s.[0] in
       item name ~label menu_name;
       List.iter mk_item ll
   in

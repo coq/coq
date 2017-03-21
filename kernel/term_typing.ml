@@ -76,8 +76,7 @@ let inline_side_effects env body ctx side_eff =
     let cbl = List.filter not_exists cbl in
     let cname c = 
       let name = string_of_con c in
-      for i = 0 to String.length name - 1 do
-        if name.[i] == '.' || name.[i] == '#' then name.[i] <- '_' done;
+      let name = String.map (fun c -> if c == '.' || c == '#' then '_' else c) name in
       Name (id_of_string name) in
     let rec sub c i x = match kind_of_term x with
       | Const (c', _) when eq_constant c c' -> mkRel i

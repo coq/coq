@@ -24,33 +24,45 @@ type reloc_info =
 type patch = reloc_info * int
 
 let patch_char4 buff pos c1 c2 c3 c4 = 
-  String.unsafe_set buff pos       c1;
-  String.unsafe_set buff (pos + 1) c2;
-  String.unsafe_set buff (pos + 2) c3;
-  String.unsafe_set buff (pos + 3) c4 
+  Bytes.unsafe_set buff pos       c1;
+  Bytes.unsafe_set buff (pos + 1) c2;
+  Bytes.unsafe_set buff (pos + 2) c3;
+  Bytes.unsafe_set buff (pos + 3) c4 
   
 let patch buff (pos, n) =
   patch_char4 buff pos 
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
 
+(* val patch_int : emitcodes -> ((\*pos*\)int * int) list -> emitcodes *)
 let patch_int buff patches =
   (* copy code *before* patching because of nested evaluations:
      the code we are patching might be called (and thus "concurrently" patched)
      and results in wrong results. Side-effects... *)
-  let buff = String.copy buff in
+  let buff = Bytes.of_string buff in
   let () = List.iter (fun p -> patch buff p) patches in
-  buff
+  (* Note: we follow the apporach suggested by Gabriel Scherer in
+     PR#136 here, and use unsafe as we own buff.
+
+     The crux of the question that avoids defining emitcodes just as a
+     Byte.t is the call to hcons in to_memory below. Even if disabling
+     this optimization has no visible time impact, test data shows
+     that the optimization is indeed triggered quite often so we
+     choose ugliness over altering the semantics.
+
+     Handle with care.
+  *)
+  Bytes.unsafe_to_string buff
 
 (* Buffering of bytecode *)
 
-let out_buffer = ref(String.create 1024)
+let out_buffer = ref(Bytes.create 1024)
 and out_position = ref 0
 
 let out_word b1 b2 b3 b4 =
   let p = !out_position in
-  if p >= String.length !out_buffer then begin
-    let len = String.length !out_buffer in
+  if p >= Bytes.length !out_buffer then begin
+    let len = Bytes.length !out_buffer in
     let new_len =
       if len <= Sys.max_string_length / 2
       then 2 * len
@@ -58,8 +70,8 @@ let out_word b1 b2 b3 b4 =
 	if len = Sys.max_string_length
 	then invalid_arg "String.create"  (* Pas la bonne exception .... *)
 	else Sys.max_string_length in
-    let new_buffer = String.create new_len in
-    String.blit !out_buffer 0 new_buffer 0 len;
+    let new_buffer = Bytes.create new_len in
+    Bytes.blit !out_buffer 0 new_buffer 0 len;
     out_buffer := new_buffer
   end;
   patch_char4 !out_buffer p (Char.unsafe_chr b1)
@@ -94,10 +106,10 @@ let extend_label_table needed =
 
 let backpatch (pos, orig) =
   let displ = (!out_position - orig) asr 2 in
-  !out_buffer.[pos]   <- Char.unsafe_chr displ;
-  !out_buffer.[pos+1] <- Char.unsafe_chr (displ asr 8);
-  !out_buffer.[pos+2] <- Char.unsafe_chr (displ asr 16);
-  !out_buffer.[pos+3] <- Char.unsafe_chr (displ asr 24)
+  Bytes.set !out_buffer  pos    @@ Char.unsafe_chr displ;
+  Bytes.set !out_buffer (pos+1) @@ Char.unsafe_chr (displ asr 8);
+  Bytes.set !out_buffer (pos+2) @@ Char.unsafe_chr (displ asr 16);
+  Bytes.set !out_buffer (pos+3) @@ Char.unsafe_chr (displ asr 24)
 
 let define_label lbl =
   if lbl >= Array.length !label_table then extend_label_table lbl;
@@ -305,7 +317,7 @@ let init () =
   label_table := Array.make 16 (Label_undefined []);
   reloc_info := []
 
-type emitcodes = string
+type emitcodes = String.t
 
 let length = String.length
 
@@ -369,9 +381,8 @@ let to_memory (init_code, fun_code, fv) =
   init();
   emit init_code;
   emit fun_code;
-  let code = String.create !out_position in
-  String.unsafe_blit !out_buffer 0 code 0 !out_position;
   (** Later uses of this string are all purely functional *)
+  let code = Bytes.sub_string !out_buffer 0 !out_position in
   let code = CString.hcons code in
   let reloc = List.rev !reloc_info in
   Array.iter (fun lbl ->

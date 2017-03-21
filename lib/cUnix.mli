@@ -46,7 +46,7 @@ val file_readable_p : string -> bool
     is called on each elements read on stdout or stderr. *)
 
 val run_command :
-  ?hook:(string->unit) -> string -> Unix.process_status * string
+  ?hook:(bytes->unit) -> string -> Unix.process_status * string
 
 (** [sys_command] launches program [prog] with arguments [args].
     It behaves like [Sys.command], except that we rely on
