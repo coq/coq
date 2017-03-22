@@ -359,8 +359,8 @@ let push_modtype vis sp kn =
 let push_dir vis dir dir_ref =
   the_dirtab := DirTab.push vis dir dir_ref !the_dirtab;
   match dir_ref with
-      DirModule (_,(mp,_)) -> the_modrevtab := MPmap.add mp dir !the_modrevtab
-    | _ -> ()
+  | DirModule { obj_mp; _ } -> the_modrevtab := MPmap.add obj_mp dir !the_modrevtab
+  | _ -> ()
 
 
 (* Locate functions *******************************************************)
@@ -386,17 +386,17 @@ let locate_dir qid = DirTab.locate qid !the_dirtab
 
 let locate_module qid =
   match locate_dir qid with
-    | DirModule (_,(mp,_)) -> mp
+    | DirModule { obj_mp ; _} -> obj_mp
     | _ -> raise Not_found
 
 let full_name_module qid =
   match locate_dir qid with
-    | DirModule (dir,_) -> dir
+    | DirModule { obj_dir ; _} -> obj_dir
     | _ -> raise Not_found
 
 let locate_section qid =
   match locate_dir qid with
-    | DirOpenSection (dir, _)
+    | DirOpenSection { obj_dir; _ } -> obj_dir
     | DirClosedSection dir -> dir
     | _ -> raise Not_found
 

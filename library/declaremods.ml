@@ -180,16 +180,16 @@ let compute_visibility exists i =
 
 (** Iterate some function [iter_objects] on all components of a module *)
 
-let do_module exists iter_objects i dir mp sobjs kobjs =
-  let prefix = (dir,(mp,DirPath.empty)) in
+let do_module exists iter_objects i obj_dir obj_mp sobjs kobjs =
+  let prefix = { obj_dir ; obj_mp; obj_sec = DirPath.empty } in
   let dirinfo = DirModule prefix in
-  consistency_checks exists dir dirinfo;
-  Nametab.push_dir (compute_visibility exists i) dir dirinfo;
-  ModSubstObjs.set mp sobjs;
+  consistency_checks exists obj_dir dirinfo;
+  Nametab.push_dir (compute_visibility exists i) obj_dir dirinfo;
+  ModSubstObjs.set obj_mp sobjs;
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
     let objs = expand_sobjs sobjs in
-    ModObjs.set mp (prefix,objs,kobjs);
+    ModObjs.set obj_mp (prefix,objs,kobjs);
     iter_objects (i+1) prefix objs;
     iter_objects (i+1) prefix kobjs
   end
@@ -222,20 +222,20 @@ let cache_keep _ = anomaly (Pp.str "This module should not be cached!")
 
 let load_keep i ((sp,kn),kobjs) =
   (* Invariant : seg isn't empty *)
-  let dir = dir_of_sp sp and mp = mp_of_kn kn in
-  let prefix = (dir,(mp,DirPath.empty)) in
+  let obj_dir = dir_of_sp sp and obj_mp  = mp_of_kn kn in
+  let prefix = { obj_dir ; obj_mp; obj_sec = DirPath.empty } in
   let prefix',sobjs,kobjs0 =
-    try ModObjs.get mp
+    try ModObjs.get obj_mp
     with Not_found -> assert false (* a substobjs should already be loaded *)
   in
   assert (eq_op prefix' prefix);
   assert (List.is_empty kobjs0);
-  ModObjs.set mp (prefix,sobjs,kobjs);
+  ModObjs.set obj_mp (prefix,sobjs,kobjs);
   Lib.load_objects i prefix kobjs
 
 let open_keep i ((sp,kn),kobjs) =
-  let dir = dir_of_sp sp and mp = mp_of_kn kn in
-  let prefix = (dir,(mp,DirPath.empty)) in
+  let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
+  let prefix = { obj_dir; obj_mp; obj_sec = DirPath.empty } in
   Lib.open_objects i prefix kobjs
 
 let in_modkeep : Lib.lib_objects -> obj =
@@ -284,9 +284,9 @@ let (in_modtype : substitutive_objects -> obj),
 (** {6 Declaration of substitutive objects for Include} *)
 
 let do_include do_load do_open i ((sp,kn),aobjs) =
-  let dir = Libnames.dirpath sp in
-  let mp = KerName.modpath kn in
-  let prefix = (dir,(mp,DirPath.empty)) in
+  let obj_dir = Libnames.dirpath sp in
+  let obj_mp = KerName.modpath kn in
+  let prefix = { obj_dir; obj_mp; obj_sec = DirPath.empty } in
   let o = expand_aobjs aobjs in
   if do_load then Lib.load_objects i prefix o;
   if do_open then Lib.open_objects i prefix o
@@ -577,7 +577,7 @@ let start_module interp_modast export id args res fs =
   in
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
-  Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
+  Nametab.push_dir (Nametab.Until 1) (prefix.obj_dir) (DirOpenModule prefix);
   mp
 
 let end_module () =
@@ -684,7 +684,7 @@ let start_modtype interp_modast id args mtys fs =
   let sub_mty_l = build_subtypes interp_modast env mp arg_entries_r mtys in
   openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
-  Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
+  Nametab.push_dir (Nametab.Until 1) (prefix.obj_dir) (DirOpenModtype prefix);
   mp
 
 let end_modtype () =

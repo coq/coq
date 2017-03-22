@@ -46,9 +46,9 @@ We changed the type of the following functions:
 
 - `Global.body_of_constant`: same as above.
 
-We renamed the following datatypes:
+We have changed the representation of the following types:
 
-- `Pp.std_ppcmds` -> `Pp.t`
+- `Lib.object_prefix` is now a record instead of a nested tuple.
 
 Some tactics and related functions now support static configurability, e.g.:
 

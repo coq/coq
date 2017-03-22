@@ -359,10 +359,10 @@ let pr_located_qualid = function
       str "Notation" ++ spc () ++ pr_path (Nametab.path_of_syndef kn)
   | Dir dir ->
       let s,dir = match dir with
-	| DirOpenModule (dir,_) -> "Open Module", dir
-	| DirOpenModtype (dir,_) -> "Open Module Type", dir
-	| DirOpenSection (dir,_) -> "Open Section", dir
-	| DirModule (dir,_) -> "Module", dir
+        | DirOpenModule { obj_dir ; _ } -> "Open Module", obj_dir
+        | DirOpenModtype { obj_dir ; _ } -> "Open Module Type", obj_dir
+        | DirOpenSection { obj_dir ; _ } -> "Open Section", obj_dir
+        | DirModule { obj_dir ; _ } -> "Module", obj_dir
 	| DirClosedSection dir -> "Closed Section", dir
       in
       str s ++ spc () ++ DirPath.print dir
@@ -409,7 +409,7 @@ let locate_term qid =
 let locate_module qid =
   let all = Nametab.locate_extended_all_dir qid in
   let map dir = match dir with
-  | DirModule (_, (mp, _)) -> Some (Dir dir, Nametab.shortest_qualid_of_module mp)
+  | DirModule { obj_mp ; _ } -> Some (Dir dir, Nametab.shortest_qualid_of_module obj_mp)
   | DirOpenModule _ -> Some (Dir dir, qid)
   | _ -> None
   in
@@ -645,8 +645,8 @@ let gallina_print_library_entry env sigma with_values ent =
         Some (str " >>>>>>> Section " ++ pr_name oname)
     | (oname,Lib.ClosedSection _) ->
         Some (str " >>>>>>> Closed Section " ++ pr_name oname)
-    | (_,Lib.CompilingLibrary (dir,_)) ->
-        Some (str " >>>>>>> Library " ++ DirPath.print dir)
+    | (_,Lib.CompilingLibrary { obj_dir; _ }) ->
+        Some (str " >>>>>>> Library " ++ DirPath.print obj_dir)
     | (oname,Lib.OpenedModule _) ->
 	Some (str " >>>>>>> Module " ++ pr_name oname)
     | (oname,Lib.ClosedModule _) ->
@@ -775,8 +775,8 @@ let read_sec_context r =
     with Not_found ->
       user_err ?loc ~hdr:"read_sec_context" (str "Unknown section.") in
   let rec get_cxt in_cxt = function
-    | (_,Lib.OpenedSection ((dir',_),_) as hd)::rest ->
-        if DirPath.equal dir dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
+    | (_,Lib.OpenedSection ({obj_dir;_},_) as hd)::rest ->
+        if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | (_,Lib.ClosedSection _)::rest ->
         user_err Pp.(str "Cannot print the contents of a closed section.")
 	(* LEM: Actually, we could if we wanted to. *)
@@ -798,7 +798,7 @@ let print_any_name env sigma = function
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp
   | Term (VarRef sp) -> print_section_variable env sigma sp
   | Syntactic kn -> print_syntactic_def env kn
-  | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
+  | Dir (DirModule { obj_dir; obj_mp; _ } ) -> print_module (printable_body obj_dir) obj_mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
   | Other (obj, info) -> info.print obj

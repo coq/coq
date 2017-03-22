@@ -237,10 +237,10 @@ let print_kn locals kn =
 	with
 	    Not_found -> print_modpath locals kn
 
-let nametab_register_dir mp =
+let nametab_register_dir obj_mp =
   let id = mk_fake_top () in
-  let dir = DirPath.make [id] in
-  Nametab.push_dir (Nametab.Until 1) dir (DirModule (dir,(mp,DirPath.empty)))
+  let obj_dir = DirPath.make [id] in
+  Nametab.push_dir (Nametab.Until 1) obj_dir (DirModule { obj_dir; obj_mp; obj_sec = DirPath.empty })
 
 (** Nota: the [global_reference] we register in the nametab below
     might differ from internal ones, since we cannot recreate here
