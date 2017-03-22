@@ -22,24 +22,6 @@ open Entries
 open Typeops
 open Fast_typeops
 
-let constrain_type env j poly subst = function
-  | `None -> 
-    if not poly then (* Old-style polymorphism *)
-      make_polymorphic_if_constant_for_ind env j
-    else RegularArity (Vars.subst_univs_level_constr subst j.uj_type)
-  | `Some t ->
-      let tj = infer_type env t in
-      let _ = judge_of_cast env j DEFAULTcast tj in
-	assert (eq_constr t tj.utj_val);
-	RegularArity (Vars.subst_univs_level_constr subst t)
-  | `SomeWJ (t, tj) ->
-      let tj = infer_type env t in
-      let _ = judge_of_cast env j DEFAULTcast tj in
-	assert (eq_constr t tj.utj_val);
-	RegularArity (Vars.subst_univs_level_constr subst t)
-
-let map_option_typ = function None -> `None | Some x -> `Some x
-
 (* Insertion of constants and parameters in environment. *)
 
 let mk_pure_proof c = (c, Univ.ContextSet.empty), []
@@ -182,6 +164,10 @@ let infer_declaration ~trust env kn dcl =
       let t = hcons_constr (Vars.subst_univs_level_constr usubst c) in
 	Undef nl, RegularArity t, None, poly, univs, false, ctx
 
+  (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
+      so we delay the typing and hash consing of its body.
+      Remark: when the universe quantification is given explicitly, we could
+      delay even in the polymorphic case.  *)
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
 		       const_entry_polymorphic = false} as c) ->
@@ -193,15 +179,16 @@ let infer_declaration ~trust env kn dcl =
           let body, uctx, signatures =
             inline_side_effects env body uctx side_eff in
           let valid_signatures = check_signatures trust signatures in
-	  let env' = push_context_set uctx env in
+	  let env = push_context_set uctx env in
           let j =
-            let body,env',ectx = skip_trusted_seff valid_signatures body env' in
-            let j = infer env' body in
+            let body,env,ectx = skip_trusted_seff valid_signatures body env in
+            let j = infer env body in
             unzip ectx j in
           let j = hcons_j j in
 	  let subst = Univ.LMap.empty in
-          let _typ = constrain_type env' j c.const_entry_polymorphic subst
-	    (`SomeWJ (typ,tyj)) in
+          let _ = judge_of_cast env j DEFAULTcast tyj in
+          assert (eq_constr typ tyj.utj_val);
+          let _typ = RegularArity (Vars.subst_univs_level_constr subst typ) in
           feedback_completion_typecheck feedback_id;
           j.uj_val, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
@@ -209,6 +196,7 @@ let infer_declaration ~trust env kn dcl =
 	c.const_entry_universes,
 	c.const_entry_inline_code, c.const_entry_secctx
 
+  (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
@@ -221,7 +209,17 @@ let infer_declaration ~trust env kn dcl =
       let usubst, univs =
 	Univ.abstract_universes abstract (Univ.ContextSet.to_context ctx) in      
       let j = infer env body in
-      let typ = constrain_type env j c.const_entry_polymorphic usubst (map_option_typ typ) in
+      let typ = match typ with
+        | None ->
+           if not c.const_entry_polymorphic then (* Old-style polymorphism *)
+             make_polymorphic_if_constant_for_ind env j
+           else RegularArity (Vars.subst_univs_level_constr usubst j.uj_type)
+        | Some t ->
+           let tj = infer_type env t in
+           let _ = judge_of_cast env j DEFAULTcast tj in
+           assert (eq_constr t tj.utj_val);
+           RegularArity (Vars.subst_univs_level_constr usubst t)
+      in
       let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = 
 	if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
