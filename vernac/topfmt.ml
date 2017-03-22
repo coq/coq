@@ -136,6 +136,7 @@ let  dbg_hdr = tag Tag.debug   (str "Debug:")   ++ spc ()
 let info_hdr = mt ()
 let warn_hdr = tag Tag.warning (str "Warning:") ++ spc ()
 let  err_hdr = tag Tag.error   (str "Error:")   ++ spc ()
+let  ann_hdr = tag Tag.error   (str "Anomaly:") ++ spc ()
 
 let make_body quoter info ?loc s =
   let loc = Option.cata Pp.pr_loc (Pp.mt ()) loc in

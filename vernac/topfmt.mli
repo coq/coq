@@ -38,6 +38,7 @@ val get_margin : unit -> int option
 
 (** Headers for tagging *)
 val err_hdr : Pp.std_ppcmds
+val ann_hdr : Pp.std_ppcmds
 
 (** Console display of feedback *)
 val std_logger : ?loc:Loc.t -> Feedback.level -> Pp.std_ppcmds -> unit
