@@ -135,7 +135,7 @@ EXTEND
   GLOBAL: str_item;
   str_item:
     [ [ "TACTIC"; "EXTEND"; s = tac_name;
-        level = OPT [ "AT"; "LEVEL"; level = INT -> level ];
+        level = OPT [ "AT"; UIDENT "LEVEL"; level = INT -> level ];
         c = OPT [ "CLASSIFIED"; "BY"; c = LIDENT -> <:expr< $lid:c$ >> ];
         OPT "|"; l = LIST1 tacrule SEP "|";
         "END" ->
