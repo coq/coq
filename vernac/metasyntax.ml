@@ -932,8 +932,8 @@ let find_precedence lev etyps symbols =
   let first_symbol =
     let rec aux = function
       | Break _ :: t -> aux t
-      | h :: t -> h
-      | [] -> assert false (* rule is known to be productive *) in
+      | h :: t -> Some h
+      | [] -> None in
     aux symbols in
   let last_is_terminal () =
     let rec aux b = function
@@ -943,7 +943,8 @@ let find_precedence lev etyps symbols =
       | [] -> b in
     aux false symbols in
   match first_symbol with
-  | NonTerminal x ->
+  | None -> [],0
+  | Some (NonTerminal x) ->
       (try match List.assoc x etyps with
 	| ETConstr _ ->
 	    error "The level of the leftmost non-terminal cannot be changed."
@@ -966,11 +967,11 @@ let find_precedence lev etyps symbols =
 	if Option.is_empty lev then
 	  error "A left-recursive notation must have an explicit level."
 	else [],Option.get lev)
-  | Terminal _ when last_is_terminal () ->
+  | Some (Terminal _) when last_is_terminal () ->
       if Option.is_empty lev then
 	([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."], 0)
       else [],Option.get lev
-  | _ ->
+  | Some _ ->
       if Option.is_empty lev then error "Cannot determine the level.";
       [],Option.get lev
 
@@ -1049,6 +1050,9 @@ let compute_syntax_data df modifiers =
   let open SynData in
   let open NotationMods in
   let mods = interp_modifiers modifiers in
+  let onlyprint = mods.only_printing in
+  let onlyparse = mods.only_parsing in
+  if onlyprint && onlyparse then error "A notation cannot be both 'only printing' and 'only parsing'.";
   let assoc = Option.append mods.assoc (Some NonA) in
   let toks = split_notation_string df in
   let recvars,mainvars,symbols = analyze_notation_tokens toks in
@@ -1058,7 +1062,7 @@ let compute_syntax_data df modifiers =
   let ntn_for_interp = make_notation_key symbols in
   let symbols' = remove_curly_brackets symbols in
   let ntn_for_grammar = make_notation_key symbols' in
-  check_rule_productivity symbols';
+  if not onlyprint then check_rule_productivity symbols';
 
   (* Misc *)
   let need_squash = not (List.equal Notation.symbol_eq symbols symbols') in

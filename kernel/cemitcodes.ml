@@ -274,41 +274,44 @@ let emit_instr = function
   | Kstop ->
       out opSTOP
 
-(* Emission of a list of instructions. Include some peephole optimization. *)
+(* Emission of a current list and remaining lists of instructions. Include some peephole optimization. *)
 
-let rec emit = function
-  | [] -> ()
+let rec emit insns remaining = match insns with
+  | [] -> 
+     (match remaining with 
+       [] -> () 
+     | (first::rest) -> emit first rest)
   (* Peephole optimizations *)
   | Kpush :: Kacc n :: c ->
       if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
-      emit c
+      emit c remaining
   | Kpush :: Kenvacc n :: c ->
       if n >= 1 && n <= 4
       then out(opPUSHENVACC1 + n - 1)
       else (out opPUSHENVACC; out_int n);
-      emit c
+      emit c remaining
   | Kpush :: Koffsetclosure ofs :: c ->
       if Int.equal ofs (-2) || Int.equal ofs 0 || Int.equal ofs 2
       then out(opPUSHOFFSETCLOSURE0 + ofs / 2)
       else (out opPUSHOFFSETCLOSURE; out_int ofs);
-      emit c
+      emit c remaining
   | Kpush :: Kgetglobal id :: c ->
-      out opPUSHGETGLOBAL; slot_for_getglobal id; emit c
+      out opPUSHGETGLOBAL; slot_for_getglobal id; emit c remaining
   | Kpush :: Kconst (Const_b0 i) :: c ->
       if i >= 0 && i <= 3
       then out (opPUSHCONST0 + i)
       else (out opPUSHCONSTINT; out_int i);
-      emit c
+      emit c remaining
   | Kpush :: Kconst const :: c ->
       out opPUSHGETGLOBAL; slot_for_const const;
-      emit c
+      emit c remaining
   | Kpop n :: Kjump :: c ->
-      out opRETURN; out_int n; emit c
+      out opRETURN; out_int n; emit c remaining
   | Ksequence(c1,c2)::c ->
-      emit c1; emit c2;emit c
+      emit c1 (c2::c::remaining)
   (* Default case *)
   | instr :: c ->
-      emit_instr instr; emit c
+      emit_instr instr; emit c remaining
 
 (* Initialization *)
 
@@ -379,8 +382,8 @@ let repr_body_code = function
 
 let to_memory (init_code, fun_code, fv) =
   init();
-  emit init_code;
-  emit fun_code;
+  emit init_code [];
+  emit fun_code [];
   (** Later uses of this string are all purely functional *)
   let code = Bytes.sub_string !out_buffer 0 !out_position in
   let code = CString.hcons code in

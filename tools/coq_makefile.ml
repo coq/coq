@@ -673,6 +673,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "VO=vo\n";
       print "VOFILES:=$(VFILES:.v=.$(VO))\n";
       classify_files_by_root "VOFILES" l inc;
+      classify_files_by_root "VFILES" l inc;
       print "GLOBFILES:=$(VFILES:.v=.glob)\n";
       print "GFILES:=$(VFILES:.v=.g)\n";
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
