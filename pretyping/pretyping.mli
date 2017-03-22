@@ -129,13 +129,13 @@ val type_uconstr :
    [pending], however, it can contain more evars than the pending ones. *)
 
 val solve_remaining_evars : inference_flags ->
-  env -> (* initial map *) evar_map -> (* map to solve *) pending -> evar_map
+  env -> (* current map *) evar_map -> (* initial map *) evar_map -> evar_map
 
 (** Checking evars and pending conversion problems are all solved,
     reporting an appropriate error message *)
 
 val check_evars_are_solved :
-  env -> (* current map: *) evar_map -> (* map to check: *) pending -> unit
+  env -> (* current map: *) evar_map -> (* initial map: *) evar_map -> unit
 
 (** [check_evars env initial_sigma extended_sigma c] fails if some
    new unresolved evar remains in [c] *)

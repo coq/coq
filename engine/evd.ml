@@ -1157,10 +1157,6 @@ let set_extra_data extras evd = { evd with extras }
 
 (*******************************************************************)
 
-type pending = (* before: *) evar_map * (* after: *) evar_map
-
-type pending_constr = pending * constr
-
 type open_constr = evar_map * constr
 
 (*******************************************************************)

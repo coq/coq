@@ -1787,7 +1787,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (TacLetTac(na,c,clp,b,eqpat))
 	    (Tacticals.New.tclWITHHOLES false (*in hope of a future "eset/epose"*)
                (let_pat_tac b (interp_name ist env sigma na)
-                  ((sigma,sigma'),c) clp eqpat) sigma')
+                  (sigma,c) clp eqpat) sigma')
       end }
 
   (* Derived basic tactics *)

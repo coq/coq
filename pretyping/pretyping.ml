@@ -333,8 +333,8 @@ let check_evars_are_solved env current_sigma frozen pending =
 
 (* Try typeclasses, hooks, unification heuristics ... *)
 
-let solve_remaining_evars flags env current_sigma pending =
-  let frozen,pending = frozen_and_pending_holes pending in
+let solve_remaining_evars flags env current_sigma init_sigma =
+  let frozen,pending = frozen_and_pending_holes (init_sigma, current_sigma) in
   let evdref = ref current_sigma in
   if flags.use_typeclasses then apply_typeclasses env evdref frozen false;
   if Option.has_some flags.use_hook then
@@ -343,12 +343,12 @@ let solve_remaining_evars flags env current_sigma pending =
   if flags.fail_evar then check_evars_are_solved env !evdref frozen pending;
   !evdref
 
-let check_evars_are_solved env current_sigma pending =
-  let frozen,pending = frozen_and_pending_holes pending in
+let check_evars_are_solved env current_sigma init_sigma =
+  let frozen,pending = frozen_and_pending_holes (init_sigma, current_sigma) in
   check_evars_are_solved env current_sigma frozen pending
 
 let process_inference_flags flags env initial_sigma (sigma,c) =
-  let sigma = solve_remaining_evars flags env sigma (initial_sigma, sigma) in
+  let sigma = solve_remaining_evars flags env sigma initial_sigma in
   let c = if flags.expand_evars then nf_evar sigma c else c in
   sigma,c
 

@@ -71,11 +71,11 @@ exception PatternNotFound
 type prefix_of_inductive_support_flag = bool
 
 type abstraction_request =
-| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Names.Name.t * pending_constr * Locus.clause * bool
+| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Names.Name.t * (evar_map * constr) * Locus.clause * bool
 | AbstractExact of Names.Name.t * constr * types option * Locus.clause * bool
 
 val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
-  env -> 'r Sigma.t -> pending_constr -> (constr, 'r) Sigma.sigma
+  env -> 'r Sigma.t -> (evar_map * constr) -> (constr, 'r) Sigma.sigma
 
 type 'r abstraction_result =
   Names.Id.t * named_context_val *

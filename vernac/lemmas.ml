@@ -463,7 +463,7 @@ let start_proof_com ?inference_hook kind thms hook =
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
     let flags = all_and_fail_flags in
     let flags = { flags with use_hook = inference_hook } in
-    evdref := solve_remaining_evars flags env !evdref (Evd.empty,!evdref);
+    evdref := solve_remaining_evars flags env !evdref Evd.empty;
     let ids = List.map RelDecl.get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
