@@ -266,9 +266,9 @@ let ensure_bname src tgt =
   let src, tgt = Filename.basename src, Filename.basename tgt in
   let src, tgt = chop_extension src, chop_extension tgt in
   if src <> tgt then begin
-    Feedback.msg_error (str "Source and target file names must coincide, directories can differ");
-    Feedback.msg_error (str "Source: " ++ str src);
-    Feedback.msg_error (str "Target: " ++ str tgt);
+    Feedback.msg_error (str "Source and target file names must coincide, directories can differ" ++ fnl () ++
+                        str "Source: " ++ str src                                                ++ fnl () ++
+                        str "Target: " ++ str tgt);
     flush_all ();
     exit 1
   end
