@@ -195,9 +195,9 @@ let check_no_pending_proof () =
   if not (there_are_pending_proofs ()) then
     ()
   else begin
-    CErrors.error (Pp.string_of_ppcmds
+    CErrors.user_err
       (str"Proof editing in progress" ++ msg_proofs () ++ fnl() ++
-       str"Use \"Abort All\" first or complete proof(s)."))
+       str"Use \"Abort All\" first or complete proof(s).")
   end
 
 let discard_gen id =

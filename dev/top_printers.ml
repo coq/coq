@@ -29,7 +29,7 @@ let _ = set_bool_option_value ["Printing";"Matching"] false
 let _ = Detyping.set_detype_anonymous (fun _ _ -> raise Not_found)
 
 (* std_ppcmds *)
-let pp   x = Pp.pp_with !Pp_control.std_ft x
+let pp   x = Pp.pp_with !Topfmt.std_ft x
 
 (** Future printer *)
 

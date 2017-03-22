@@ -16,4 +16,4 @@ Tactic failure: Already an intensional equality.
 The command has indeed failed with message:
 In nested Ltac calls to "extensionality in (var)" and
 "clearbody (ne_var_list)", last call failed.
-Error: Hypothesis e depends on the body of H'
+Hypothesis e depends on the body of H'

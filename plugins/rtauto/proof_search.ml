@@ -505,12 +505,12 @@ let pp_mapint map =
 		pp_form obj ++ str " => " ++
 				 pp_list (fun (i,f) -> pp_form f) l ++
 				 cut ()) ) map;
-    str "{ " ++ vb 0 ++  (!pp) ++ str " }" ++ close ()
+    str "{ " ++ hv 0 (!pp ++ str " }")
 
 let pp_connect (i,j,f1,f2) = pp_form f1 ++ str " => " ++ pp_form f2
 
 let pp_gl gl= cut () ++
-  str "{ " ++ vb 0 ++
+  str "{ " ++ hv 0 (
 	      begin
 		match gl.abs with
 		    None -> str ""
@@ -520,7 +520,7 @@ let pp_gl gl= cut () ++
   str "norev =" ++ pp_intmap gl.norev_hyps ++ cut () ++
   str "arrows=" ++ pp_mapint gl.right ++ cut () ++
   str "cnx   =" ++ pp_list pp_connect gl.cnx ++ cut () ++
-  str "goal  =" ++ pp_form gl.gl ++ str " }" ++ close ()
+  str "goal  =" ++ pp_form gl.gl ++ str " }")
 
 let pp =
   function

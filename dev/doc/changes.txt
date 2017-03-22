@@ -70,6 +70,58 @@ work for EXTEND macros though.
 
 - The header parameter to `user_err` has been made optional.
 
+** Pretty printing **
+
+Some functions have been removed, see pretty printing below for more
+details.
+
+* Pretty Printing and XML protocol *
+
+The type std_cmdpps has been reworked and made the canonical "Coq rich
+document type". This allows for a more uniform handling of printing
+(specially in IDEs). The main consequences are:
+
+ - Richpp has been confined to IDE use. Most of previous uses of the
+   `richpp` type should be replaced now by `Pp.std_cmdpps`. Main API
+   has been updated.
+
+ - The XML protocol will send a new message type of `pp`, which should
+   be rendered client-wise.
+
+ - `Set Printing Width` is deprecated, now width is controlled
+   client-side.
+
+ - `Pp_control` has removed. The new module `Topfmt` implements
+   console control for the toplevel.
+
+ - The impure tag system in Pp has been removed. This also does away
+   with the printer signatures and functors. Now printers tag
+   unconditionally.
+
+ - The following functions have been removed from `Pp`:
+
+   val stras : int * string -> std_ppcmds
+   val tbrk  : int * int -> std_ppcmds
+   val tab   : unit -> std_ppcmds
+   val pifb  : unit -> std_ppcmds
+   val comment  : int -> std_ppcmds
+   val comments : ((int * int) * string) list ref
+   val eval_ppcmds : std_ppcmds -> std_ppcmds
+   val is_empty : std_ppcmds -> bool
+   val t : std_ppcmds -> std_ppcmds
+   val hb : int -> std_ppcmds
+   val vb : int -> std_ppcmds
+   val hvb : int -> std_ppcmds
+   val hovb : int -> std_ppcmds
+   val tb : unit -> std_ppcmds
+   val close : unit -> std_ppcmds
+   val tclose : unit -> std_ppcmds
+   val open_tag : Tag.t -> std_ppcmds
+   val close_tag : unit -> std_ppcmds
+   val msg_with  : ...
+
+   module Tag
+
 =========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================

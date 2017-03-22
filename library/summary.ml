@@ -107,8 +107,10 @@ let unfreeze_summaries fs =
     try fold id decl state
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
-      Printf.eprintf "Error unfrezing summay %s\n%s\n%!"
-        (name_of_summary id) (Pp.string_of_ppcmds (CErrors.iprint e));
+      Feedback.msg_error
+        Pp.(seq [str "Error unfrezing summay %s\n%s\n%!";
+                 str (name_of_summary id);
+                 CErrors.iprint e]);
       iraise e
   in
   (** We rely on the order of the frozen list, and the order of folding *)

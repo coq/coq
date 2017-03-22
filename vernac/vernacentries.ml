@@ -39,8 +39,9 @@ module NamedDecl = Context.Named.Declaration
 let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
 
 let debug = false
-let prerr_endline x =
-  if debug then prerr_endline (x ()) else ()
+(* XXX Should move to a common library *)
+let vernac_pperr_endline pp =
+  if debug then Format.eprintf "@[%a@]@\n%!" Pp.pp_with (pp ()) else ()
 
 (* Misc *)
 
@@ -1448,8 +1449,8 @@ let _ =
       optdepr  = false;
       optname  = "the printing depth";
       optkey   = ["Printing";"Depth"];
-      optread  = Pp_control.get_depth_boxes;
-      optwrite = Pp_control.set_depth_boxes }
+      optread  = Topfmt.get_depth_boxes;
+      optwrite = Topfmt.set_depth_boxes }
 
 let _ =
   declare_int_option
@@ -1457,8 +1458,8 @@ let _ =
       optdepr  = false;
       optname  = "the printing width";
       optkey   = ["Printing";"Width"];
-      optread  = Pp_control.get_margin;
-      optwrite = Pp_control.set_margin }
+      optread  = Topfmt.get_margin;
+      optwrite = Topfmt.set_margin }
 
 let _ =
   declare_bool_option
@@ -1933,7 +1934,7 @@ let vernac_load interp fname =
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
 let interp ?proof ~loc locality poly c =
-  prerr_endline (fun () -> "interpreting: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac c));
+  vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac c);
   match c with
   (* The below vernac are candidates for removal from the main type
      and to be put into a new doc_command datatype: *)
@@ -2193,7 +2194,7 @@ let with_fail b f =
            | e ->
               let e = CErrors.push e in
               raise (HasFailed (CErrors.iprint
-                (ExplainErr.process_vernac_interp_error ~allow_uncaught:false ~with_header:false e))))
+                (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e))))
         ()
     with e when CErrors.noncritical e ->
       let (e, _) = CErrors.push e in
@@ -2226,7 +2227,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
     | VernacRedirect (s, (_,v)) ->
-         Feedback.with_output_to_file s (aux false) v
+         Topfmt.with_output_to_file s (aux false) v
     | VernacTime (_,v) ->
         System.with_time !Flags.time
           (aux ?locality ?polymorphism isprogcmd) v;

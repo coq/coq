@@ -19,16 +19,11 @@ open Constrexpr
 open Constrexpr_ops
 open Decl_kinds
 
-module Make
-  (Ppconstr : Ppconstrsig.Pp)
-  (Taggers  : sig
-    val tag_keyword : std_ppcmds -> std_ppcmds
-    val tag_vernac  : vernac_expr -> std_ppcmds -> std_ppcmds
-  end)
-= struct
-
-  open Taggers
   open Ppconstr
+
+  let do_not_tag _ x = x
+  let tag_keyword = do_not_tag ()
+  let tag_vernac  = do_not_tag
 
   let keyword s = tag_keyword (str s)
 
@@ -526,7 +521,7 @@ module Make
   let pr_using e = str (Proof_using.to_string e)
 
   let rec pr_vernac_body v =
-    let return = Taggers.tag_vernac v in
+    let return = tag_vernac v in
     match v with
       | VernacPolymorphic (poly, v) ->
         let s = if poly then keyword "Polymorphic" else keyword "Monomorphic" in
@@ -1244,23 +1239,3 @@ module Make
   let pr_vernac v =
     try pr_vernac_body v ++ sep_end v
     with e -> CErrors.print e
-
-end
-
-include Make (Ppconstr) (struct
-  let do_not_tag _ x = x
-  let tag_keyword = do_not_tag ()
-  let tag_vernac  = do_not_tag
-end)
-
-module Richpp = struct
-
-  include Make
-    (Ppconstr.Richpp)
-    (struct
-      open Ppannotation
-      let tag_keyword s = Pp.tag (Pp.Tag.inj AKeyword tag) s
-      let tag_vernac v s = Pp.tag (Pp.Tag.inj (AVernac v) tag) s
-     end)
-
-end

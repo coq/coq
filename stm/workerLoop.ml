@@ -6,15 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module type Pp = sig
+let rec parse = function
+  | "--xml_format=Ppcmds" :: rest -> parse rest
+  | x :: rest -> x :: parse rest
+  | [] -> []
 
-  (** Prints a fixpoint body *)
-  val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.std_ppcmds
-
-  (** Prints a vernac expression *)
-  val pr_vernac_body : Vernacexpr.vernac_expr -> Pp.std_ppcmds
-
-  (** Prints a vernac expression and closes it with a dot. *)
-  val pr_vernac : Vernacexpr.vernac_expr -> Pp.std_ppcmds
-
-end
+let loop init args =
+  let args = parse args in
+  Flags.make_silent true;
+  init ();
+  CoqworkmgrApi.init !Flags.async_proofs_worker_priority;
+  args

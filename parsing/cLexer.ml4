@@ -105,7 +105,7 @@ module Error = struct
              Printf.sprintf "Unsupported Unicode character (0x%x)" x)
 
   (* Require to fix the Camlp4 signature *)
-  let print ppf x = Pp.pp_with ~pp_tag:Ppstyle.pp_tag ppf (Pp.str (to_string x))
+  let print ppf x = Pp.pp_with ppf (Pp.str (to_string x))
 
 end
 open Error

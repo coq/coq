@@ -5,6 +5,7 @@ TQueue
 WorkerPool
 Vernac_classifier
 CoqworkmgrApi
+WorkerLoop
 AsyncTaskQueue
 Stm
 ProofBlockDelimiter

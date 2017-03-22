@@ -32,6 +32,8 @@ val set_prompt : (unit -> string) -> unit
 
 val print_toplevel_error : Exninfo.iexn -> std_ppcmds
 
+val coqloop_feed : Feedback.feedback -> unit
+
 (** Parse and execute one vernac command. *)
 
 val do_vernac : unit -> unit

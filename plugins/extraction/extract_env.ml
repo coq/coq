@@ -472,13 +472,14 @@ let formatter dry file =
     if dry then Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ())
     else
       match file with
-	| Some f -> Pp_control.with_output_to f
+	| Some f -> Topfmt.with_output_to f
 	| None -> Format.formatter_of_buffer buf
   in
+  (* XXX: Fixme, this shouldn't depend on Topfmt *)
   (* We never want to see ellipsis ... in extracted code *)
   Format.pp_set_max_boxes ft max_int;
   (* We reuse the width information given via "Set Printing Width" *)
-  (match Pp_control.get_margin () with
+  (match Topfmt.get_margin () with
     | None -> ()
     | Some i ->
       Format.pp_set_margin ft i;
@@ -518,8 +519,10 @@ let print_structure_to_file (fn,si,mo) dry struc =
     set_phase Impl;
     pp_with ft (d.preamble mo comment opened unsafe_needs);
     pp_with ft (d.pp_struct struc);
+    Format.pp_print_flush ft ();
     Option.iter close_out cout;
   with reraise ->
+    Format.pp_print_flush ft ();
     Option.iter close_out cout; raise reraise
   end;
   if not dry then Option.iter info_file fn;
@@ -532,8 +535,10 @@ let print_structure_to_file (fn,si,mo) dry struc =
 	 set_phase Intf;
 	 pp_with ft (d.sig_preamble mo comment opened unsafe_needs);
 	 pp_with ft (d.pp_sig (signature_of_structure struc));
+         Format.pp_print_flush ft ();
 	 close_out cout;
        with reraise ->
+         Format.pp_print_flush ft ();
 	 close_out cout; raise reraise
        end;
        info_file si)

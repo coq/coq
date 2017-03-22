@@ -32,24 +32,6 @@ let init_signal_handler () =
   let f _ = if !catch_break then raise Sys.Break else Control.interrupt := true in
   Sys.set_signal Sys.sigint (Sys.Signal_handle f)
 
-
-(** Redirection of standard output to a printable buffer *)
-
-let init_stdout, read_stdout =
-  let out_buff = Buffer.create 100 in
-  let out_ft = Format.formatter_of_buffer out_buff in
-  let deep_out_ft = Format.formatter_of_buffer out_buff in
-  let _ = Pp_control.set_gp deep_out_ft Pp_control.deep_gp in
-  (fun () ->
-     flush_all ();
-     Pp_control.std_ft := out_ft;
-     Pp_control.err_ft := out_ft;
-     Pp_control.deep_ft := deep_out_ft;
-  ),
-  (fun () -> Format.pp_print_flush out_ft ();
-             let r = Buffer.contents out_buff in
-             Buffer.clear out_buff; r)
-
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let pr_error s = pr_with_pid s
@@ -115,24 +97,40 @@ let coqide_cmd_checks (loc,ast) =
 let add ((s,eid),(sid,verbose)) =
   let newid, rc = Stm.add ~ontop:sid verbose ~check:coqide_cmd_checks eid s in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
-  newid, (rc, read_stdout ())
+  (* TODO: the "" parameter is a leftover of the times the protocol
+   * used to include stderr/stdout output.
+   *
+   * Currently, we force all the output meant for the to go via the
+   * feedback mechanism, and we don't manipulate stderr/stdout, which
+   * are left to the client's discrection. The parameter is still there
+   * as not to break the core protocol for this minor change, but it should
+   * be removed in the next version of the protocol.
+   *)
+  newid, (rc, "")
 
 let edit_at id =
   match Stm.edit_at id with
   | `NewTip -> CSig.Inl ()
   | `Focus { Stm.start; stop; tip} -> CSig.Inr (start, (stop, tip))
 
-let query (s,id) = Stm.query ~at:id s; read_stdout ()
+(* TODO: the "" parameter is a leftover of the times the protocol
+ * used to include stderr/stdout output.
+ *
+ * Currently, we force all the output meant for the to go via the
+ * feedback mechanism, and we don't manipulate stderr/stdout, which
+ * are left to the client's discrection. The parameter is still there
+ * as not to break the core protocol for this minor change, but it should
+ * be removed in the next version of the protocol.
+ *)
+let query (s,id) = Stm.query ~at:id s; ""
 
 let annotate phrase =
   let (loc, ast) =
     let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
     Vernac.parse_sentence (pa,None)
   in
-  let (_, xml) =
-    Richprinter.richpp_vernac ast
-  in
-  xml
+  (* XXX: Width should be a parameter of annotate... *)
+  Richpp.richpp_of_pp 78 (Ppvernac.pr_vernac ast)
 
 (** Goal display *)
 
@@ -192,13 +190,13 @@ let process_goal sigma g =
   let id = Goal.uid g in
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
-    Richpp.richpp_of_pp (pr_goal_concl_style_env env sigma norm_constr)
+    pr_goal_concl_style_env env sigma norm_constr
   in
   let process_hyp d (env,l) =
     let d = CompactedDecl.map_constr (Reductionops.nf_evar sigma) d in
     let d' = CompactedDecl.to_named_context d in
       (List.fold_right Environ.push_named d' env,
-       (Richpp.richpp_of_pp (pr_compacted_decl env sigma d)) :: l) in
+       (pr_compacted_decl env sigma d) :: l) in
   let (_env, hyps) =
     Context.Compacted.fold process_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
@@ -214,8 +212,6 @@ let export_pre_goals pgs =
 
 let goals () =
   Stm.finish ();
-  let s = read_stdout () in
-  if not (String.is_empty s) then Feedback.msg_info (str s);
   try
     let pfts = Proof_global.give_me_the_proof () in
     Some (export_pre_goals (Proof.map_structured_proof pfts process_goal))
@@ -224,8 +220,6 @@ let goals () =
 let evars () =
   try
     Stm.finish ();
-    let s = read_stdout () in
-    if not (String.is_empty s) then Feedback.msg_info (str s);
     let pfts = Proof_global.give_me_the_proof () in
     let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
     let exl = Evar.Map.bindings (Evarutil.non_instantiated sigma) in
@@ -257,8 +251,6 @@ let status force =
       and display the other parts (opened sections and modules) *)
   Stm.finish ();
   if force then Stm.join ();
-  let s = read_stdout () in
-  if not (String.is_empty s) then Feedback.msg_info (str s);
   let path =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
@@ -281,7 +273,7 @@ let status force =
 let export_coq_object t = {
   Interface.coq_object_prefix = t.Search.coq_object_prefix;
   Interface.coq_object_qualid = t.Search.coq_object_qualid;
-  Interface.coq_object_object = t.Search.coq_object_object
+  Interface.coq_object_object = Pp.string_of_ppcmds (pr_lconstr_env (Global.env ()) Evd.empty t.Search.coq_object_object)
 }
 
 let pattern_of_string ?env s =
@@ -364,14 +356,10 @@ let handle_exn (e, info) =
   let loc_of e = match Loc.get_loc e with
     | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
     | _ -> None in
-  let mk_msg () =
-    let msg = read_stdout () in
-    let msg = str msg ++ fnl () ++ CErrors.print ~info e in
-    Richpp.richpp_of_pp msg
-  in
+  let mk_msg () = CErrors.print ~info e in
   match e with
-  | CErrors.Drop -> dummy, None, Richpp.richpp_of_string "Drop is not allowed by coqide!"
-  | CErrors.Quit -> dummy, None, Richpp.richpp_of_string "Quit is not allowed by coqide!"
+  | CErrors.Drop -> dummy, None, Pp.str "Drop is not allowed by coqide!"
+  | CErrors.Quit -> dummy, None, Pp.str "Quit is not allowed by coqide!"
   | e ->
       match Stateid.get info with
       | Some (valid, _) -> valid, loc_of info, mk_msg ()
@@ -409,7 +397,16 @@ let interp ((_raw, verbose), s) =
       | Some ast -> ast)
     () in
   Stm.interp verbose (vernac_parse s);
-  Stm.get_current_state (), CSig.Inl (read_stdout ())
+  (* TODO: the "" parameter is a leftover of the times the protocol
+   * used to include stderr/stdout output.
+   *
+   * Currently, we force all the output meant for the to go via the
+   * feedback mechanism, and we don't manipulate stderr/stdout, which
+   * are left to the client's discrection. The parameter is still there
+   * as not to break the core protocol for this minor change, but it should
+   * be removed in the next version of the protocol.
+   *)
+  Stm.get_current_state (), CSig.Inl ""
 
 (** When receiving the Quit call, we don't directly do an [exit 0],
     but rather set this reference, in order to send a final answer
@@ -428,14 +425,12 @@ let print_ast id =
 
 (** Grouping all call handlers together + error handling *)
 
-let eval_call xml_oc log c =
+let eval_call c =
   let interruptible f x =
     catch_break := true;
     Control.check_for_interrupt ();
     let r = f x in
     catch_break := false;
-    let out = read_stdout () in
-    if not (String.is_empty out) then log (str out);
     r
   in
   let handler = {
@@ -473,16 +468,8 @@ let print_xml =
     try Xml_printer.print oc xml; Mutex.unlock m
     with e -> let e = CErrors.push e in Mutex.unlock m; iraise e
 
-
-let slave_logger xml_oc ?loc level message =
-  (* convert the message into XML *)
-  let msg = hov 0 message in
-  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg))         in
-  let xml = Xmlprotocol.of_message level loc (Richpp.richpp_of_pp message) in
-  print_xml xml_oc xml
-
-let slave_feeder xml_oc msg =
-  let xml = Xmlprotocol.of_feedback msg in
+let slave_feeder fmt xml_oc msg =
+  let xml = Xmlprotocol.(of_feedback fmt msg) in
   print_xml xml_oc xml
 
 (** The main loop *)
@@ -491,17 +478,22 @@ let slave_feeder xml_oc msg =
     messages by [handle_exn] above. Otherwise, we die badly, without
     trying to answer malformed requests. *)
 
+let msg_format = ref (fun () ->
+    let margin = Option.default 72 (Topfmt.get_margin ()) in
+    Xmlprotocol.Richpp margin
+)
+
 let loop () =
   init_signal_handler ();
   catch_break := false;
-  let in_ch, out_ch = Spawned.get_channels () in
-  let xml_oc = Xml_printer.make (Xml_printer.TChannel out_ch) in
-  let in_lb = Lexing.from_function (fun s len ->
-    CThread.thread_friendly_read in_ch s ~off:0 ~len) in
-  let xml_ic = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
+  let in_ch, out_ch = Spawned.get_channels ()                        in
+  let xml_oc        = Xml_printer.make (Xml_printer.TChannel out_ch) in
+  let in_lb         = Lexing.from_function (fun s len ->
+                      CThread.thread_friendly_read in_ch s ~off:0 ~len) in
+  (* SEXP parser make *)
+  let xml_ic        = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
-  Feedback.set_logger (slave_logger xml_oc);
-  Feedback.add_feeder (slave_feeder xml_oc);
+  ignore (Feedback.add_feeder (slave_feeder (!msg_format ()) xml_oc));
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
@@ -511,10 +503,10 @@ let loop () =
 (*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
       let Xmlprotocol.Unknown q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r = eval_call xml_oc (slave_logger xml_oc Feedback.Notice) q in
+      let r  = eval_call q in
       let () = pr_debug_answer q r in
 (*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
-      print_xml xml_oc (Xmlprotocol.of_answer q r);
+      print_xml xml_oc Xmlprotocol.(of_answer (!msg_format ()) q r);
       flush out_ch
     with
       | Xml_parser.Error (Xml_parser.Empty, _) ->
@@ -536,16 +528,19 @@ let loop () =
 let rec parse = function
   | "--help-XML-protocol" :: rest ->
         Xmlprotocol.document Xml_printer.to_string_fmt; exit 0
+  | "--xml_format=Ppcmds" :: rest ->
+        msg_format := (fun () -> Xmlprotocol.Ppcmds); parse rest
   | x :: rest -> x :: parse rest
   | [] -> []
 
 let () = Coqtop.toploop_init := (fun args ->
         let args = parse args in
         Flags.make_silent true;
-        init_stdout ();
         CoqworkmgrApi.(init Flags.High);
         args)
 
 let () = Coqtop.toploop_run := loop
 
-let () = Usage.add_to_usage "coqidetop" "  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"
+let () = Usage.add_to_usage "coqidetop"
+"  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format
+  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"

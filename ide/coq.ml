@@ -205,7 +205,7 @@ type handle = {
   proc : CoqTop.process;
   xml_oc : Xml_printer.t;
   mutable alive : bool;
-  mutable waiting_for : (ccb * logger) option; (* last call + callback + log *)
+  mutable waiting_for : ccb option; (* last call + callback *)
 }
 
 (** Coqtop process status :
@@ -290,18 +290,6 @@ let rec check_errors = function
 | `NVAL :: _ -> raise (TubeError "NVAL")
 | `OUT :: _ -> raise (TubeError "OUT")
 
-let handle_intermediate_message handle level content =
-  let logger  = match handle.waiting_for with
-    | Some (_, l) -> l
-    | None -> function
-        | Feedback.Error   -> fun s -> Minilib.log ~level:`ERROR   (xml_to_string s)
-        | Feedback.Info    -> fun s -> Minilib.log ~level:`INFO    (xml_to_string s)
-        | Feedback.Notice  -> fun s -> Minilib.log ~level:`NOTICE  (xml_to_string s)
-        | Feedback.Warning -> fun s -> Minilib.log ~level:`WARNING (xml_to_string s)
-        | Feedback.Debug   -> fun s -> Minilib.log ~level:`DEBUG   (xml_to_string s)
-  in
-  logger level content
-
 let handle_feedback feedback_processor xml =
   let feedback = Xmlprotocol.to_feedback xml in
   feedback_processor feedback
@@ -310,7 +298,7 @@ let handle_final_answer handle xml =
   let () = Minilib.log "Handling coqtop answer" in
   let ccb = match handle.waiting_for with
     | None -> raise (AnswerWithoutRequest (Xml_printer.to_string_fmt xml))
-    | Some (c, _) -> c in
+    | Some c -> c in
   let () = handle.waiting_for <- None in
   with_ccb ccb { bind_ccb = fun (c, f) -> f (Xmlprotocol.to_answer c xml) }
 
@@ -332,18 +320,13 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
     let l_end = Lexing.lexeme_end lex in
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
-    match Xmlprotocol.is_message xml with
-    | Some (lvl, _loc, msg) ->
-      handle_intermediate_message handle lvl msg;
+    if Xmlprotocol.is_feedback xml then begin
+      handle_feedback feedback_processor xml;
       loop ()
-    | None ->
-      if Xmlprotocol.is_feedback xml then begin
-        handle_feedback feedback_processor xml;
-        loop ()
-      end else
-        begin
-          ignore (handle_final_answer handle xml)
-        end
+    end else
+      begin
+        ignore (handle_final_answer handle xml)
+      end
   in
   try loop ()
   with Xml_parser.Error _ as e ->
@@ -383,7 +366,7 @@ let bind_self_as f =
 (** This launches a fresh handle from its command line arguments. *)
 let spawn_handle args respawner feedback_processor =
   let prog = coqtop_path () in
-  let args = Array.of_list ("-async-proofs" :: "on" :: "-ideslave" :: args) in
+  let args = Array.of_list ("--xml_format=Ppcmds" :: "-async-proofs" :: "on" :: "-ideslave" :: args) in
   let env =
     match !Flags.ideslave_coqtop_flags with
     | None -> None
@@ -493,20 +476,20 @@ let init_coqtop coqtop task =
 
 type 'a query = 'a Interface.value task
 
-let eval_call ?(logger=default_logger) call handle k =
+let eval_call call handle k =
   (** Send messages to coqtop and prepare the decoding of the answer *)
   Minilib.log ("Start eval_call " ^ Xmlprotocol.pr_call call);
   assert (handle.alive && handle.waiting_for = None);
-  handle.waiting_for <- Some (mk_ccb (call,k), logger);
+  handle.waiting_for <- Some (mk_ccb (call,k));
   Xml_printer.print handle.xml_oc (Xmlprotocol.of_call call);
   Minilib.log "End eval_call";
   Void
 
-let add ?(logger=default_logger) x = eval_call ~logger (Xmlprotocol.add x)
+let add x = eval_call (Xmlprotocol.add x)
 let edit_at i = eval_call (Xmlprotocol.edit_at i)
-let query ?(logger=default_logger) x = eval_call ~logger (Xmlprotocol.query x)
+let query x = eval_call (Xmlprotocol.query x)
 let mkcases s = eval_call (Xmlprotocol.mkcases s)
-let status ?logger force = eval_call ?logger (Xmlprotocol.status force)
+let status force = eval_call (Xmlprotocol.status force)
 let hints x = eval_call (Xmlprotocol.hints x)
 let search flags = eval_call (Xmlprotocol.search flags)
 let init x = eval_call (Xmlprotocol.init x)
@@ -566,18 +549,11 @@ struct
 
   let _ = reset ()
 
-  (** Integer option *)
-
-  let width = ["Printing"; "Width"]
-  let width_state = ref None
-  let set_printing_width w = width_state := Some w
-
   (** Transmitting options to coqtop *)
 
   let enforce h k =
     let mkopt o v acc = (o, Interface.BoolValue v) :: acc in
     let opts = Hashtbl.fold mkopt current_state [] in
-    let opts = (width, Interface.IntValue !width_state) :: opts in
     eval_call (Xmlprotocol.set_options opts) h
       (function
 	| Interface.Good () -> k ()
@@ -585,8 +561,8 @@ struct
 
 end
 
-let goals ?logger x h k =
-  PrintOpt.enforce h (fun () -> eval_call ?logger (Xmlprotocol.goals x) h k)
+let goals x h k =
+  PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.goals x) h k)
 
 let evars x h k =
   PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.evars x) h k)

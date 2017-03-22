@@ -16,14 +16,15 @@ type 'annotation located = {
   endpos     : int
 }
 
-(** [rich_pp get_annotations ppcmds] returns the interpretation
+(* XXX: The width parameter should be moved to a `formatter_property`
+   record shared with Topfmt *)
+
+(** [rich_pp width ppcmds] returns the interpretation
     of [ppcmds] as a semi-structured document
     that represents (located) annotations of this string.
     The [get_annotations] function is used to convert tags into the desired
-    annotation. *)
-val rich_pp :
-  (Pp.Tag.t -> 'annotation option) -> Pp.std_ppcmds ->
-  'annotation located Xml_datatype.gxml
+    annotation. [width] sets the printing witdh of the formatter. *)
+val rich_pp : int -> Pp.std_ppcmds -> Pp.pp_tag located Xml_datatype.gxml
 
 (** [annotations_positions ssdoc] returns a list associating each
     annotations with its position in the string from which [ssdoc] is
@@ -42,23 +43,9 @@ val xml_of_rich_pp :
 
 (** {5 Enriched text} *)
 
-type richpp
+type richpp = Xml_datatype.xml
+
 (** Type of text with style annotations *)
 
-val richpp_of_pp : Pp.std_ppcmds -> richpp
+val richpp_of_pp : int -> Pp.std_ppcmds -> richpp
 (** Extract style information from formatted text *)
-
-val richpp_of_xml : Xml_datatype.xml -> richpp
-(** Do not use outside of dedicated areas *)
-
-val richpp_of_string : string -> richpp
-(** Make a styled text out of a normal string *)
-
-val repr : richpp -> Xml_datatype.xml
-(** Observe the styled text as XML *)
-
-(** {5 Debug/Compat} *)
-
-(** Represent the semi-structured document as a string, dropping any additional
-    information. *)
-val raw_print : richpp -> string

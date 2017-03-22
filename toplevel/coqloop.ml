@@ -13,7 +13,8 @@ open Flags
 open Vernac
 open Pcoq
 
-let top_stderr x = msg_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft x
+let top_stderr x =
+  Format.fprintf !Topfmt.err_ft "@[%a@]%!" pp_with x
 
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
@@ -251,7 +252,8 @@ let print_toplevel_error (e, info) =
       else mt ()
     else print_location_in_file loc
   in
-  locmsg ++ CErrors.iprint (e, info)
+  let hdr msg = hov 0 (Topfmt.err_hdr ++ msg) in
+  locmsg ++ hdr (CErrors.iprint (e, info))
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
@@ -283,6 +285,33 @@ let read_sentence input =
     discard_to_dot ();
     iraise reraise
 
+(** Coqloop Console feedback handler *)
+let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
+  match fb.contents with
+  | Processed   -> ()
+  | Incomplete  -> ()
+  | Complete    -> ()
+  | ProcessingIn _ -> ()
+  | InProgress _ -> ()
+  | WorkerStatus (_,_) -> ()
+  | AddedAxiom  -> ()
+  | GlobRef (_,_,_,_,_) -> ()
+  | GlobDef (_,_,_,_) -> ()
+  | FileDependency (_,_) -> ()
+  | FileLoaded (_,_) -> ()
+  | Custom (_,_,_) -> ()
+  | Message (Error,loc,msg) ->
+    (* We ignore errors here as we (still) have a different error
+       printer for the toplevel. It is hard to solve due the many
+       error paths presents, and the different compromise of feedback
+       error forwaring in the stm depending on the mode *)
+    ()
+  | Message (lvl,loc,msg) ->
+    if !Flags.print_emacs then
+      Topfmt.emacs_logger ?loc lvl msg
+    else
+      Topfmt.std_logger ?loc lvl msg
+
 (** [do_vernac] reads and executes a toplevel phrase, and print error
     messages when an exception is raised, except for the following:
     - Drop: kill the Coq toplevel, going down to the Caml toplevel if it exists.
@@ -305,12 +334,13 @@ let do_vernac () =
         top_stderr (fnl ()); raise CErrors.Quit
     | CErrors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise CErrors.Drop
-        else Feedback.msg_error (str"There is no ML toplevel.")
+        else top_stderr (str "There is no ML toplevel.")
     | any ->
+        (** Main error printer, note that this didn't it the "emacs"
+            legacy path. *)
         let any = CErrors.push any in
         let msg = print_toplevel_error any ++ fnl () in
-        pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;
-        Format.pp_print_flush !Pp_control.std_ft ()
+        top_stderr msg
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
@@ -318,22 +348,13 @@ let do_vernac () =
     exit the loop are Drop and Quit. Any other exception there indicates
     an issue with [print_toplevel_error] above. *)
 
-(*
-let feed_emacs = function
-  | { Interface.id = Interface.State id;
-      Interface.content = Interface.GlobRef (_,a,_,c,_) }  -> 
-    prerr_endline ("<info>" ^"<id>"^Stateid.to_string id ^"</id>"
-		   ^a^" "^c^ "</info>")
-  | _  -> ()
-*)
-
 (* Flush in a compatible order with 8.5 *)
 (* This mimics the semantics of the old Pp.flush_all *)
 let loop_flush_all () =
   Pervasives.flush stderr;
   Pervasives.flush stdout;
-  Format.pp_print_flush !Pp_control.std_ft ();
-  Format.pp_print_flush !Pp_control.err_ft ()
+  Format.pp_print_flush !Topfmt.std_ft ();
+  Format.pp_print_flush !Topfmt.err_ft ()
 
 let rec loop () =
   Sys.catch_break true;
@@ -346,9 +367,9 @@ let rec loop () =
     | CErrors.Drop -> ()
     | CErrors.Quit -> exit 0
     | any ->
-      Feedback.msg_error (str"Anomaly: main loop exited with exception: " ++
-                str (Printexc.to_string any) ++
-                fnl() ++
-                str"Please report" ++
-                strbrk" at " ++ str Coq_config.wwwbugtracker ++ str ".");
+      top_stderr (str"Anomaly: main loop exited with exception: " ++
+                  str (Printexc.to_string any) ++
+                  fnl() ++
+                  str"Please report" ++
+                  strbrk" at " ++ str Coq_config.wwwbugtracker ++ str ".");
       loop ()

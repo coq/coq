@@ -367,7 +367,7 @@ let interface_search =
     let answer = {
       coq_object_prefix = prefix;
       coq_object_qualid = qualid;
-      coq_object_object = string_of_ppcmds (pr_lconstr_env env Evd.empty constr);
+      coq_object_object = constr;
     } in
     ans := answer :: !ans;
   in

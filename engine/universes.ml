@@ -416,10 +416,9 @@ let constr_of_global gr =
 	(* Should be an error as we might forget constraints, allow for now
 	   to make firstorder work with "using" clauses *)
 	c
-      else raise (Invalid_argument 
-		    ("constr_of_global: globalization of polymorphic reference " ^ 
-			Pp.string_of_ppcmds (Nametab.pr_global_env Id.Set.empty gr) ^
-			" would forget universes."))
+      else CErrors.user_err ~hdr:"constr_of_global"
+          Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
+	      str " would forget universes.")
     else c
 
 let constr_of_reference = constr_of_global

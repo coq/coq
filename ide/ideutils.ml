@@ -43,7 +43,7 @@ let xml_to_string xml =
   | Element (_, _, children) ->
     List.iter iter children
   in
-  let () = iter (Richpp.repr xml) in
+  let () = iter xml in
   Buffer.contents buf
 
 let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
@@ -75,7 +75,7 @@ let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
     let tags = try tag t :: tags with Not_found -> tags in
     List.iter (fun xml -> insert tags xml) children
   in
-  let () = try insert tags (Richpp.repr msg) with _ -> () in
+  let () = try insert tags msg with _ -> () in
   buf#delete_mark rmark
 
 let set_location = ref  (function s -> failwith "not ready")
@@ -327,7 +327,7 @@ let textview_width (view : #GText.view_skel) =
   let char_width = GPango.to_pixels metrics#approx_char_width in
   pixel_width / char_width
 
-type logger = Feedback.level -> Richpp.richpp -> unit
+type logger = Feedback.level -> Pp.std_ppcmds -> unit
 
 let default_logger level message =
   let level = match level with
@@ -337,7 +337,7 @@ let default_logger level message =
   | Feedback.Warning -> `WARNING
   | Feedback.Error -> `ERROR
   in
-  Minilib.log ~level (xml_to_string message)
+  Minilib.log_pp ~level message
 
 
 (** {6 File operations} *)

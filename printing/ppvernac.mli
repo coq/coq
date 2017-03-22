@@ -9,12 +9,11 @@
 (** This module implements pretty-printers for vernac_expr syntactic
     objects and their subcomponents. *)
 
-(** The default pretty-printers produce {!Pp.std_ppcmds} that are
-    interpreted as raw strings. *)
-include Ppvernacsig.Pp
+(** Prints a fixpoint body *)
+val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.std_ppcmds
 
-(** The rich pretty-printers produce {!Pp.std_ppcmds} that are
-    interpreted as annotated strings. The annotations can be
-    retrieved using {!RichPp.rich_pp}. Their definitions are
-    located in {!Ppannotation.t}. *)
-module Richpp : Ppvernacsig.Pp
+(** Prints a vernac expression *)
+val pr_vernac_body : Vernacexpr.vernac_expr -> Pp.std_ppcmds
+
+(** Prints a vernac expression and closes it with a dot. *)
+val pr_vernac : Vernacexpr.vernac_expr -> Pp.std_ppcmds

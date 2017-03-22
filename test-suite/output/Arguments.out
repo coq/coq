@@ -97,8 +97,8 @@ Expands to: Constant Top.f
 forall w : r, w 3 true = tt
      : Prop
 The command has indeed failed with message:
-Error: Unknown interpretation for notation "$".
+Unknown interpretation for notation "$".
 w 3 true = tt
      : Prop
 The command has indeed failed with message:
-Error: Extra arguments: _, _.
+Extra arguments: _, _.

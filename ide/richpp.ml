@@ -24,10 +24,6 @@ type 'a context = {
   (** Pending opened nodes *)
   mutable offset : int;
   (** Quantity of characters printed so far *)
-  mutable annotations : 'a option Int.Map.t;
-  (** Map associating annotations to indexes *)
-  mutable index : int;
-  (** Current index of annotations *)
 }
 
 (** We use Format to introduce tags inside the pretty-printed document.
@@ -38,22 +34,12 @@ type 'a context = {
     marking functions. As those functions are called when actually writing to
     the device, the resulting tree is correct.
 *)
-let rich_pp annotate ppcmds =
+let rich_pp width ppcmds =
 
   let context = {
     stack = Leaf;
     offset = 0;
-    annotations = Int.Map.empty;
-    index = (-1);
   } in
-
-  let pp_tag obj =
-    let index = context.index + 1 in
-    let () = context.index <- index in
-    let obj = annotate obj in
-    let () = context.annotations <- Int.Map.add index obj context.annotations in
-    string_of_int index
-  in
 
   let pp_buffer = Buffer.create 180 in
 
@@ -81,12 +67,8 @@ let rich_pp annotate ppcmds =
     | Leaf -> assert false
     | Node (node, child, pos, ctx) ->
       let () = assert (String.equal tag node) in
-      let annotation =
-        try Int.Map.find (int_of_string node) context.annotations
-        with _ -> None
-      in
       let annotation = {
-        annotation = annotation;
+        annotation = Some tag;
         startpos = pos;
         endpos = context.offset;
       } in
@@ -113,18 +95,20 @@ let rich_pp annotate ppcmds =
   pp_set_formatter_tag_functions ft tag_functions;
   pp_set_mark_tags ft true;
 
-  (* Set formatter width. This is currently a hack and duplicate code
-     with Pp_control. Hopefully it will be fixed better in Coq 8.7 *)
-  let w = pp_get_margin str_formatter () in
-  let m = max (64 * w / 100) (w-30) in
-  pp_set_margin ft w;
+  (* Setting the formatter *)
+  pp_set_margin ft width;
+  let m = max (64 * width / 100) (width-30) in
   pp_set_max_indent ft m;
+  pp_set_max_boxes ft 50 ;
+  pp_set_ellipsis_text ft "...";
 
   (** The whole output must be a valid document. To that
       end, we nest the document inside <pp> tags. *)
+  pp_open_box ft 0;
   pp_open_tag ft "pp";
-  Pp.(pp_with ~pp_tag ft ppcmds);
+  Pp.(pp_with ft ppcmds);
   pp_close_tag ft ();
+  pp_close_box ft ();
 
   (** Get the resulting XML tree. *)
   let () = pp_print_flush ft () in
@@ -172,32 +156,14 @@ let xml_of_rich_pp tag_of_annotation attributes_of_annotation xml =
 
 type richpp = xml
 
-let repr xml = xml
-let richpp_of_xml xml = xml
-let richpp_of_string s = PCData s
-
-let richpp_of_pp pp =
-  let annotate t = match Pp.Tag.prj t Ppstyle.tag with
-  | None -> None
-  | Some key -> Some (Ppstyle.repr key)
-  in
+let richpp_of_pp width pp =
   let rec drop = function
   | PCData s -> [PCData s]
   | Element (_, annotation, cs) ->
     let cs = List.concat (List.map drop cs) in
     match annotation.annotation with
     | None -> cs
-    | Some s -> [Element (String.concat "." s, [], cs)]
+    | Some s -> [Element (s, [], cs)]
   in
-  let xml = rich_pp annotate pp in
+  let xml = rich_pp width pp in
   Element ("_", [], drop xml)
-
-let raw_print xml =
-  let buf = Buffer.create 1024 in
-  let rec print = function
-  | PCData s -> Buffer.add_string buf s
-  | Element (_, _, cs) -> List.iter print cs
-  in
-  let () = print xml in
-  Buffer.contents buf
-
