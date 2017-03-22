@@ -407,8 +407,7 @@ Proof.
                       generalize
                         (Rplus_lt_compat (R_dist (f x2) l) eps (R_dist (f x2) l') eps H H0);
                         unfold R_dist; intros; rewrite (Rabs_minus_sym (f x2) l) in H1;
-                          rewrite (Rmult_comm 2 eps); rewrite (Rmult_plus_distr_l eps 1 1);
-                            elim (Rmult_ne eps); intros a b; rewrite a; clear a b;
+                          rewrite (Rmult_comm 2 eps); replace (eps *2) with (eps + eps) by ring;
                               generalize (R_dist_tri l l' (f x2)); unfold R_dist;
                                 intros;
                                   apply

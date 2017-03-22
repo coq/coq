@@ -359,107 +359,22 @@ Lemma Rsqr_sol_eq_0_1 :
     x = sol_x1 a b c \/ x = sol_x2 a b c -> a * Rsqr x + b * x + c = 0.
 Proof.
   intros; elim H0; intro.
-  unfold sol_x1 in H1; unfold Delta in H1; rewrite H1; unfold Rdiv;
-    repeat rewrite Rsqr_mult; rewrite Rsqr_plus; rewrite <- Rsqr_neg;
-      rewrite Rsqr_sqrt.
-  rewrite Rsqr_inv.
-  unfold Rsqr; repeat rewrite Rinv_mult_distr.
-  repeat rewrite Rmult_assoc; rewrite (Rmult_comm a).
-  repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; rewrite Rmult_plus_distr_r.
-  repeat rewrite Rmult_assoc.
-  pattern 2 at 2; rewrite (Rmult_comm 2).
-  repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  rewrite
-    (Rmult_plus_distr_r (- b) (sqrt (b * b - 2 * (2 * (a * c)))) (/ 2 * / a))
-    .
-  rewrite Rmult_plus_distr_l; repeat rewrite Rplus_assoc.
-  replace
-  (- b * (sqrt (b * b - 2 * (2 * (a * c))) * (/ 2 * / a)) +
-    (b * (- b * (/ 2 * / a)) +
-      (b * (sqrt (b * b - 2 * (2 * (a * c))) * (/ 2 * / a)) + c))) with
-  (b * (- b * (/ 2 * / a)) + c).
-  unfold Rminus; repeat rewrite <- Rplus_assoc.
-  replace (b * b + b * b) with (2 * (b * b)).
-  rewrite Rmult_plus_distr_r; repeat rewrite Rmult_assoc.
-  rewrite (Rmult_comm 2); repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  rewrite Ropp_mult_distr_l_reverse; repeat rewrite Rmult_assoc;
-    rewrite (Rmult_comm 2).
-  repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; rewrite (Rmult_comm (/ 2)); repeat rewrite Rmult_assoc;
-    rewrite (Rmult_comm 2).
-  repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; repeat rewrite Rmult_assoc.
-  rewrite (Rmult_comm a); rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; rewrite <- Rmult_opp_opp.
-  ring.
-  apply (cond_nonzero a).
-  discrR.
-  discrR.
-  discrR.
-  ring.
-  ring.
-  discrR.
-  apply (cond_nonzero a).
-  discrR.
-  apply (cond_nonzero a).
-  apply prod_neq_R0; [ discrR | apply (cond_nonzero a) ].
-  apply prod_neq_R0; [ discrR | apply (cond_nonzero a) ].
-  apply prod_neq_R0; [ discrR | apply (cond_nonzero a) ].
-  assumption.
-  unfold sol_x2 in H1; unfold Delta in H1; rewrite H1; unfold Rdiv;
-    repeat rewrite Rsqr_mult; rewrite Rsqr_minus; rewrite <- Rsqr_neg;
-      rewrite Rsqr_sqrt.
-  rewrite Rsqr_inv.
-  unfold Rsqr; repeat rewrite Rinv_mult_distr;
-    repeat rewrite Rmult_assoc.
-  rewrite (Rmult_comm a); repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; unfold Rminus; rewrite Rmult_plus_distr_r.
-  rewrite Ropp_mult_distr_l_reverse; repeat rewrite Rmult_assoc;
-    pattern 2 at 2; rewrite (Rmult_comm 2).
-  repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r;
-    rewrite
-      (Rmult_plus_distr_r (- b) (- sqrt (b * b + - (2 * (2 * (a * c)))))
-        (/ 2 * / a)).
-  rewrite Rmult_plus_distr_l; repeat rewrite Rplus_assoc.
-  rewrite Ropp_mult_distr_l_reverse; rewrite Ropp_involutive.
-  replace
-  (b * (sqrt (b * b + - (2 * (2 * (a * c)))) * (/ 2 * / a)) +
-    (b * (- b * (/ 2 * / a)) +
-      (b * (- sqrt (b * b + - (2 * (2 * (a * c)))) * (/ 2 * / a)) + c))) with
-  (b * (- b * (/ 2 * / a)) + c).
-  repeat rewrite <- Rplus_assoc; replace (b * b + b * b) with (2 * (b * b)).
-  rewrite Rmult_plus_distr_r; repeat rewrite Rmult_assoc;
-    rewrite (Rmult_comm 2); repeat rewrite Rmult_assoc;
-      rewrite <- Rinv_l_sym.
-  rewrite Ropp_mult_distr_l_reverse; repeat rewrite Rmult_assoc.
-  rewrite (Rmult_comm 2); repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; rewrite (Rmult_comm (/ 2)); repeat rewrite Rmult_assoc.
-  rewrite (Rmult_comm 2); repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; repeat rewrite Rmult_assoc; rewrite (Rmult_comm a);
-    rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; rewrite <- Rmult_opp_opp; ring.
-  apply (cond_nonzero a).
-  discrR.
-  discrR.
-  discrR.
-  ring.
-  ring.
-  discrR.
-  apply (cond_nonzero a).
-  discrR.
-  discrR.
-  apply (cond_nonzero a).
-  apply prod_neq_R0; discrR || apply (cond_nonzero a).
-  apply prod_neq_R0; discrR || apply (cond_nonzero a).
-  apply prod_neq_R0; discrR || apply (cond_nonzero a).
-  assumption.
+  rewrite H1.
+  unfold sol_x1, Delta, Rsqr.
+  field_simplify.
+  rewrite <- (Rsqr_pow2 (sqrt _)), Rsqr_sqrt.
+  field.
+  apply a.
+  apply H.
+  apply a.
+  rewrite H1.
+  unfold sol_x2, Delta, Rsqr.
+  field_simplify.
+  rewrite <- (Rsqr_pow2 (sqrt _)), Rsqr_sqrt.
+  field.
+  apply a.
+  apply H.
+  apply a.
 Qed.
 
 Lemma Rsqr_sol_eq_0_0 :
@@ -505,10 +420,10 @@ Proof.
   rewrite (Rmult_comm (/ a)).
   rewrite Rmult_assoc.
   rewrite <- Rinv_mult_distr.
-  replace (2 * (2 * a) * a) with (Rsqr (2 * a)).
+  replace (4 * a * a) with (Rsqr (2 * a)).
   reflexivity.
   ring_Rsqr.
-  rewrite <- Rmult_assoc; apply prod_neq_R0;
+  apply prod_neq_R0;
     [ discrR | apply (cond_nonzero a) ].
   apply (cond_nonzero a).
   assumption.

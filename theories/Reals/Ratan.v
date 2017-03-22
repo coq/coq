@@ -132,7 +132,7 @@ intros [ | N] Npos n decr to0 cv nN.
     unfold Rminus; apply Rplus_le_compat_l, Ropp_le_contravar.
     solve[apply Rge_le, (growing_prop _ _ _ (CV_ALT_step0 f decr) dist)].
    unfold Rminus; rewrite tech5, Ropp_plus_distr, <- Rplus_assoc.
-   unfold tg_alt at 2; rewrite pow_1_odd, Ropp_mult_distr_l_reverse; fourier.
+   unfold tg_alt at 2; rewrite pow_1_odd; fourier.
  rewrite Nodd; destruct (alternated_series_ineq _ _ p decr to0 cv) as [B _].
  destruct (alternated_series_ineq _ _ (S p) decr to0 cv) as [_ C].
  assert (keep : (2 * S p = S (S ( 2 * p)))%nat) by ring.
@@ -161,7 +161,6 @@ clear WLOG; intros Hyp [ | n] decr to0 cv _.
  generalize (alternated_series_ineq f l 0 decr to0 cv).
  unfold R_dist, tg_alt; simpl; rewrite !Rmult_1_l, !Rmult_1_r.
  assert (f 1%nat <= f 0%nat) by apply decr.
- rewrite Ropp_mult_distr_l_reverse.
  intros [A B]; rewrite Rabs_pos_eq; fourier.
 apply Rle_trans with (f 1%nat).
  apply (Hyp 1%nat (le_n 1) (S n) decr to0 cv).
@@ -320,31 +319,12 @@ apply PI2_lower_bound;[split; fourier | ].
 destruct (pre_cos_bound (3/2) 1) as [t _]; [fourier | fourier | ].
 apply Rlt_le_trans with (2 := t); clear t.
 unfold cos_approx; simpl; unfold cos_term.
-simpl mult; replace ((-1)^ 0) with 1 by ring; replace ((-1)^2) with 1 by ring;
- replace ((-1)^4) with 1 by ring; replace ((-1)^1) with (-1) by ring;
- replace ((-1)^3) with (-1) by ring; replace 3 with (IZR 3) by (simpl; ring);
- replace 2 with (IZR 2) by (simpl; ring); simpl Z.of_nat;
- rewrite !INR_IZR_INZ, Ropp_mult_distr_l_reverse, Rmult_1_l.
-match goal with |- _ < ?a =>
-replace a with ((- IZR 3 ^ 6 * IZR (Z.of_nat (fact 0)) * IZR (Z.of_nat (fact 2)) *
-    IZR (Z.of_nat (fact 4)) +
-    IZR 3 ^ 4 * IZR 2 ^ 2 * IZR (Z.of_nat (fact 0)) * IZR (Z.of_nat (fact 2)) *
-    IZR (Z.of_nat (fact 6)) -
-    IZR 3 ^ 2 * IZR 2 ^ 4 * IZR (Z.of_nat (fact 0)) * IZR (Z.of_nat (fact 4)) *
-    IZR (Z.of_nat (fact 6)) +
-    IZR 2 ^ 6 * IZR (Z.of_nat (fact 2)) * IZR (Z.of_nat (fact 4)) *
-    IZR (Z.of_nat (fact 6))) /
-   (IZR 2 ^ 6 * IZR (Z.of_nat (fact 0)) * IZR (Z.of_nat (fact 2)) *
-    IZR (Z.of_nat (fact 4)) * IZR (Z.of_nat (fact 6))));[ | field;
-    repeat apply conj;((rewrite <- INR_IZR_INZ; apply INR_fact_neq_0) ||
-         (apply Rgt_not_eq; apply (IZR_lt 0); reflexivity)) ]
-end.
-rewrite !fact_simpl, !Nat2Z.inj_mul; simpl Z.of_nat.
-unfold Rdiv; apply Rmult_lt_0_compat.
-unfold Rminus; rewrite !pow_IZR, <- !opp_IZR, <- !mult_IZR, <- !opp_IZR, 
-  <- !plus_IZR; apply (IZR_lt 0); reflexivity.
-apply Rinv_0_lt_compat; rewrite !pow_IZR, <- !mult_IZR; apply (IZR_lt 0).
-reflexivity.
+rewrite !INR_IZR_INZ.
+simpl.
+field_simplify.
+unfold Rdiv.
+rewrite Rmult_0_l.
+apply Rdiv_lt_0_compat ; now apply IZR_lt.
 Qed.
 
 Lemma PI2_1 : 1 < PI/2.
@@ -502,11 +482,11 @@ split.
   rewrite (Rmult_comm (-1)); simpl ((/(Rabs y + 1)) ^ 0).
   unfold Rdiv; rewrite Rinv_1, !Rmult_assoc, <- !Rmult_plus_distr_l.
   apply tmp;[assumption | ].
-  rewrite Rplus_assoc, Rmult_1_l; pattern 1 at 3; rewrite <- Rplus_0_r.
+  rewrite Rplus_assoc, Rmult_1_l; pattern 1 at 2; rewrite <- Rplus_0_r.
   apply Rplus_lt_compat_l.
   rewrite <- Rmult_assoc.
   match goal with |- (?a * (-1)) + _ < 0 =>
-   rewrite <- (Rplus_opp_l a), Ropp_mult_distr_r_reverse, Rmult_1_r
+   rewrite <- (Rplus_opp_l a); change (-1) with (-(1)); rewrite Ropp_mult_distr_r_reverse, Rmult_1_r
   end.
   apply Rplus_lt_compat_l.
   assert (0 < u ^ 2) by (apply pow_lt; assumption).
@@ -853,6 +833,8 @@ intros x Hx eps Heps.
    apply Rlt_trans with (2 := H).
    apply Rinv_0_lt_compat.
    exact Heps.
+   unfold N.
+   rewrite INR_IZR_INZ, positive_nat_Z.
    exact HN.
    apply lt_INR.
    omega.
@@ -1076,8 +1058,9 @@ apply Rlt_not_eq; apply Rle_lt_trans with 0;[ | apply Rlt_0_1].
 assert (t := pow2_ge_0 x); fourier.
 replace (1 + x ^ 2) with (1 - - (x ^ 2)) by ring; rewrite <- (tech3 _ n dif).
 apply sum_eq; unfold tg_alt, Datan_seq; intros i _.
-rewrite pow_mult, <- Rpow_mult_distr, Ropp_mult_distr_l_reverse, Rmult_1_l.
-reflexivity.
+rewrite pow_mult, <- Rpow_mult_distr.
+f_equal.
+ring.
 Qed.
 
 Lemma Datan_seq_increasing : forall x y n, (n > 0)%nat -> 0 <= x < y -> Datan_seq x n < Datan_seq y n.
@@ -1165,6 +1148,7 @@ assert (tool : forall a b, a / b - /b = (-1 + a) /b).
  reflexivity.
 set (u := 1 + x ^ 2); rewrite tool; unfold Rminus; rewrite <- Rplus_assoc.
 unfold Rdiv, u.
+change (-1) with (-(1)).
 rewrite Rplus_opp_l, Rplus_0_l, Ropp_mult_distr_l_reverse, Rabs_Ropp.
 rewrite Rabs_mult; clear tool u.
 assert (tool : forall k, Rabs ((-x ^ 2) ^ k) = Rabs ((x ^ 2) ^ k)).

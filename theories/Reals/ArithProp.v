@@ -143,7 +143,7 @@ Proof.
   assert (H0 := archimed (x / y)); rewrite <- Z_R_minus; simpl;
     cut (0 < y).
   intro; unfold Rminus;
-    replace (- ((IZR (up (x / y)) + -1) * y)) with ((1 - IZR (up (x / y))) * y);
+    replace (- ((IZR (up (x / y)) + -(1)) * y)) with ((1 - IZR (up (x / y))) * y);
       [ idtac | ring ].
   split.
   apply Rmult_le_reg_l with (/ y).

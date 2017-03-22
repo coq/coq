@@ -78,7 +78,7 @@ Proof.
   ring.
   discrR.
   discrR.
-  pattern 1 at 3; replace 1 with (/ 1);
+  replace 1 with (/ 1);
     [ apply tech7; discrR | apply Rinv_1 ].
   replace (An (S x)) with (An (S x + 0)%nat).
   apply (tech6 (fun i:nat => An (S x + i)%nat) (/ 2)).
