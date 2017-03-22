@@ -610,11 +610,6 @@ plugins: $(PLUGINSVO) $(PLUGINSCMO)
 
 .PHONY: coqlib theories plugins
 
-# One of the .v files is macro-generated
-
-theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_gen.ml
-	$(OCAML) $< $(TOTARGET)
-
 # The .vo files in Init are built with the -noinit option
 
 theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP)
@@ -636,7 +631,7 @@ endif
 
 # Dependencies of .v files
 
-%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENVFILES)
+%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP    $<'
 	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) "$<" $(TOTARGET)
 

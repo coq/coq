@@ -224,7 +224,6 @@ through the <tt>Require Import</tt> command.</p>
     <dd>
     theories/Numbers/BinNums.v
     theories/Numbers/NumPrelude.v
-    theories/Numbers/BigNumPrelude.v
     theories/Numbers/NaryFunctions.v
     </dd>
 
@@ -256,16 +255,7 @@ through the <tt>Require Import</tt> command.</p>
     <dd>
     theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
     theories/Numbers/Cyclic/Abstract/NZCyclic.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleAdd.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleBase.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleCyclic.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleDiv.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleDivn1.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleLift.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleMul.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleSqrt.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleSub.v
-    theories/Numbers/Cyclic/DoubleCyclic/DoubleType.v
+    theories/Numbers/Cyclic/Abstract/DoubleType.v
     theories/Numbers/Cyclic/Int31/Cyclic31.v
     theories/Numbers/Cyclic/Int31/Ring31.v
     theories/Numbers/Cyclic/Int31/Int31.v
@@ -298,12 +288,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NProperties.v
     theories/Numbers/Natural/Binary/NBinary.v
     theories/Numbers/Natural/Peano/NPeano.v
-    theories/Numbers/Natural/SpecViaZ/NSig.v
-    theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
-    theories/Numbers/Natural/BigN/BigN.v
-    theories/Numbers/Natural/BigN/Nbasic.v
-    theories/Numbers/Natural/BigN/NMake.v
-    theories/Numbers/Natural/BigN/NMake_gen.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;Integer</b>:
@@ -331,19 +315,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Integer/Abstract/ZDivTrunc.v
     theories/Numbers/Integer/Binary/ZBinary.v
     theories/Numbers/Integer/NatPairs/ZNatPairs.v
-    theories/Numbers/Integer/SpecViaZ/ZSig.v
-    theories/Numbers/Integer/SpecViaZ/ZSigZAxioms.v
-    theories/Numbers/Integer/BigZ/BigZ.v
-    theories/Numbers/Integer/BigZ/ZMake.v
-    </dd>
-
-    <dt><b>&nbsp;&nbsp;Rational</b>:
-       Abstract and 31-bits-words-based rational arithmetic
-    </dt>
-    <dd>
-    theories/Numbers/Rational/SpecViaQ/QSig.v
-    theories/Numbers/Rational/BigQ/BigQ.v
-    theories/Numbers/Rational/BigQ/QMake.v
     </dd>
     </dl>
   </dd>

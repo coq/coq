@@ -50,6 +50,10 @@ Standard Library
   and, consequently, choice of representatives in equivalence classes.
   Various proof-theoretic characterizations of choice over setoids in
   file ChoiceFacts.v.
+- The BigN, BigZ, BigZ libraries are not part anymore of Coq standard
+  library, they are now provided by a separate repository
+    https://github.com/coq/bignums
+  The split has been done just after the Int31 library.
 
 - IZR (Reals) has been changed to produce a compact representation of
   integers. As a consequence, IZR is no longer convertible to INR and
