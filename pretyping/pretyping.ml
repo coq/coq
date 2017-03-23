@@ -263,7 +263,7 @@ type frozen =
       but the actual data of the map is not used, only keys matter. All
       functions operating on this type must have the same behaviour on
       [FrozenId map] and [FrozenProgress (Evar.Map.domain map, Evar.Set.empty)] *)
-| FrozenProgress of Evar.Set.t * Evar.Set.t
+| FrozenProgress of (Evar.Set.t * Evar.Set.t) Lazy.t
   (** Proper partition of the evar map as described above. *)
 
 let frozen_and_pending_holes (sigma, sigma') =
@@ -272,17 +272,20 @@ let frozen_and_pending_holes (sigma, sigma') =
   if undefined0 == Evd.undefined_map sigma' then
     FrozenId undefined0
   else
+    let data = lazy begin
     let add_derivative_of evk evi acc =
       match advance sigma' evk with None -> acc | Some evk' -> Evar.Set.add evk' acc in
     let frozen = Evar.Map.fold add_derivative_of undefined0 Evar.Set.empty in
     let fold evk _ accu = if not (Evar.Set.mem evk frozen) then Evar.Set.add evk accu else accu in
     let pending = Evd.fold_undefined fold sigma' Evar.Set.empty in
-    FrozenProgress (frozen, pending)
+    (frozen, pending)
+    end in
+    FrozenProgress data
 
 let apply_typeclasses env evdref frozen fail_evar =
   let filter_frozen = match frozen with
   | FrozenId map -> fun evk -> Evar.Map.mem evk map
-  | FrozenProgress (frozen, _) -> fun evk -> Evar.Set.mem evk frozen
+  | FrozenProgress (lazy (frozen, _)) -> fun evk -> Evar.Set.mem evk frozen
   in
   evdref := Typeclasses.resolve_typeclasses
      ~filter:(if Flags.is_program_mode () 
@@ -295,7 +298,7 @@ let apply_typeclasses env evdref frozen fail_evar =
 
 let apply_inference_hook hook evdref frozen = match frozen with
 | FrozenId _ -> ()
-| FrozenProgress (_, pending) ->
+| FrozenProgress (lazy (_, pending)) ->
   evdref := Evar.Set.fold (fun evk sigma ->
     if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
@@ -320,7 +323,7 @@ let check_typeclasses_instances_are_solved env current_sigma frozen =
 
 let check_extra_evars_are_solved env current_sigma frozen = match frozen with
 | FrozenId _ -> ()
-| FrozenProgress (_, pending) ->
+| FrozenProgress (lazy (_, pending)) ->
   Evar.Set.iter
     (fun evk ->
       if not (Evd.is_defined current_sigma evk) then
