@@ -3023,7 +3023,7 @@ let warn_unused_intro_pattern =
 	 (fun c -> Printer.pr_constr (fst (run_delayed (Global.env()) Evd.empty c)))) names)
 
 let check_unused_names names =
-  if not (List.is_empty names) && Flags.is_verbose () then
+  if not (List.is_empty names) then
     warn_unused_intro_pattern names
 
 let intropattern_of_name gl avoid = function
