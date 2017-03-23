@@ -9,14 +9,18 @@ Iris_CI_DIR=${CI_BUILD_DIR}/iris-coq
 
 install_ssreflect
 
-# Setup stdpp
+# Setup Iris first, as it is needed to compute the dependencies
 
-git_checkout ${stdpp_CI_BRANCH} ${stdpp_CI_GITURL} ${stdpp_CI_DIR}
+git_checkout ${Iris_CI_BRANCH} ${Iris_CI_GITURL} ${Iris_CI_DIR}
+read -a IRIS_DEP < ${Iris_CI_DIR}/opam.pins
+
+# Setup stdpp
+stdpp_CI_GITURL=${IRIS_DEP[1]}.git
+stdpp_CI_COMMIT=${IRIS_DEP[2]}
+
+git_checkout ${stdpp_CI_BRANCH} ${stdpp_CI_GITURL} ${stdpp_CI_DIR} ${stdpp_CI_COMMIT}
 
 ( cd ${stdpp_CI_DIR} && make -j ${NJOBS} && make install )
 
-# Setup Iris
-
-git_checkout ${Iris_CI_BRANCH} ${Iris_CI_GITURL} ${Iris_CI_DIR}
-
+# Build iris now
 ( cd ${Iris_CI_DIR} && make -j ${NJOBS} )
