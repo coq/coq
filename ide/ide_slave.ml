@@ -79,23 +79,23 @@ let is_undo cmd = match cmd with
   | VernacUndo _ | VernacUndoTo _ -> true
   | _ -> false
 
-(** Check whether a command is forbidden by CoqIDE *)
+(** Check whether a command is forbidden in the IDE *)
 
-let coqide_cmd_checks (loc,ast) =
+let ide_cmd_checks (loc,ast) =
   let user_error s = CErrors.user_err ~loc ~hdr:"CoqIde" (str s) in
   if is_debug ast then
-    user_error "Debug mode not available within CoqIDE";
+    user_error "Debug mode not available in the IDE";
   if is_known_option ast then
-    Feedback.msg_warning (strbrk"This will not work. Use CoqIDE view menu instead");
+    Feedback.msg_warning (strbrk "Set this option from the IDE menu instead");
   if Vernac.is_navigation_vernac ast || is_undo ast then
-    Feedback.msg_warning (strbrk "Rather use CoqIDE navigation instead");
+    Feedback.msg_warning (strbrk "Use IDE navigation instead");
   if is_query ast then
     Feedback.msg_warning (strbrk "Query commands should not be inserted in scripts")
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
 let add ((s,eid),(sid,verbose)) =
-  let newid, rc = Stm.add ~ontop:sid verbose ~check:coqide_cmd_checks eid s in
+  let newid, rc = Stm.add ~ontop:sid verbose ~check:ide_cmd_checks eid s in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
   (* TODO: the "" parameter is a leftover of the times the protocol
    * used to include stderr/stdout output.
