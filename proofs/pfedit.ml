@@ -233,10 +233,10 @@ let declare_implicit_tactic tac = implicit_tactic := Some tac
 
 let clear_implicit_tactic () = implicit_tactic := None
 
-let solve_by_implicit_tactic env sigma evk =
+let apply_implicit_tactic tac = (); fun env sigma evk ->
   let evi = Evd.find_undefined sigma evk in
-  match (!implicit_tactic, snd (evar_source evk sigma)) with
-  | Some tac, (Evar_kinds.ImplicitArg _ | Evar_kinds.QuestionMark _)
+  match snd (evar_source evk sigma) with
+  | (Evar_kinds.ImplicitArg _ | Evar_kinds.QuestionMark _)
       when
 	Context.Named.equal (Environ.named_context_of_val evi.evar_hyps)
 	(Environ.named_context env) ->
@@ -250,3 +250,9 @@ let solve_by_implicit_tactic env sigma evk =
         sigma, ans
        with e when Logic.catchable_exception e -> raise Exit)
   | _ -> raise Exit
+
+let solve_by_implicit_tactic () = match !implicit_tactic with
+| None -> None
+| Some tac -> Some (apply_implicit_tactic tac)
+
+
