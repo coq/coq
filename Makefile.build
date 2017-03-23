@@ -635,6 +635,16 @@ endif
 	$(SHOW)'COQDEP    $<'
 	$(HIDE)$(COQDEPBOOT) -boot $(DEPNATDYN) "$<" $(TOTARGET)
 
+# Below we provide those dependecies that are not discovered {coq,ocaml}dep programs.
+
+plugins/micromega/micromega.cmi \
+plugins/micromega/micromega.cmo \
+plugins/micromega/micromega.cmx \
+$(patsubst %.ml,%.ml.d,$(wildcard plugins/micromega/*.ml)) \
+$(patsubst %.mli,%.mli.d,$(wildcard plugins/micromega/*.mli)) \
+plugins/micromega/micromega_plugin.mlpack.d \
+   : plugins/micromega/MExtraction.vo
+
 ###########################################################################
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
