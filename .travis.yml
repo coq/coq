@@ -40,6 +40,7 @@ env:
   - TEST_TARGET="ci-math-comp"
   - TEST_TARGET="ci-sf"
   - TEST_TARGET="ci-unimath"
+  - TEST_TARGET="ci-vst"
   # Not ready yet for 8.7
   # - TEST_TARGET="ci-cpdt"
   # - TEST_TARGET="ci-metacoq"
@@ -49,6 +50,7 @@ matrix:
 
   allow_failures:
   - env: TEST_TARGET="ci-geocoq"
+  - env: TEST_TARGET="ci-vst"
 
   # Full Coq test-suite with two compilers
   # [TODO: use yaml refs and avoid duplication for packages list]
