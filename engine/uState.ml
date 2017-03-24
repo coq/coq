@@ -148,7 +148,7 @@ let process_universe_constraints ctx cstrs =
         instantiate_variable l' r vars
       else if is_local r' then
         instantiate_variable r' l vars
-      else if not (UGraph.check_eq univs l r) then
+      else if not (UGraph.check_eq_level univs l' r') then
         (* Two rigid/global levels, none of them being local,
             one of them being Prop/Set, disallow *)
         if Univ.Level.is_small l' || Univ.Level.is_small r' then
