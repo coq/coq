@@ -17,9 +17,8 @@ read -a IRIS_DEP < ${Iris_CI_DIR}/opam.pins
 # Setup stdpp
 stdpp_CI_GITURL=${IRIS_DEP[1]}.git
 stdpp_CI_COMMIT=${IRIS_DEP[2]}
-stdpp_CI_DEPTH="1000"
 
-git_checkout ${stdpp_CI_BRANCH} ${stdpp_CI_GITURL} ${stdpp_CI_DIR} ${stdpp_CI_COMMIT} ${stdpp_CI_DEPTH}
+git_checkout ${stdpp_CI_BRANCH} ${stdpp_CI_GITURL} ${stdpp_CI_DIR} ${stdpp_CI_COMMIT}
 
 ( cd ${stdpp_CI_DIR} && make -j ${NJOBS} && make install )
 
