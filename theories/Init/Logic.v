@@ -406,6 +406,19 @@ End EqNotations.
 
 Import EqNotations.
 
+Section equality_dep.
+  Variable A : Type.
+  Variable B : A -> Type.
+  Variable f : forall x, B x.
+  Variables x y : A.
+
+  Theorem f_equal_dep : forall (H: x = y), rew H in f x = f y.
+  Proof.
+    destruct H; reflexivity.
+  Defined.
+
+End equality_dep.
+
 Lemma rew_opp_r : forall A (P:A->Type) (x y:A) (H:x=y) (a:P y), rew H in rew <- H in a = a.
 Proof.
 intros.
