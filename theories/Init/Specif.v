@@ -154,6 +154,10 @@ Section Projections.
 
 End Projections.
 
+Local Notation "( x ; y )" := (existT _ x y) (at level 0, format "( x ;  '/  ' y )").
+Local Notation "x .1" := (projT1 x) (at level 1, left associativity, format "x .1").
+Local Notation "x .2" := (projT2 x) (at level 1, left associativity, format "x .2").
+
 (** [sigT2] of a predicate can be projected to a [sigT].
 
     This allows [projT1] and [projT2] to be usable with [sigT2].
@@ -231,6 +235,7 @@ Proof.
 Qed.
 
 (** Equality of sigma types *)
+
 Import EqNotations.
 Local Notation "'rew' 'dependent' H 'in' H'"
   := (match H with
@@ -244,18 +249,18 @@ Section sigT.
   Local Unset Implicit Arguments.
   (** Projecting an equality of a pair to equality of the first components *)
   Definition projT1_eq {A} {P : A -> Type} {u v : { a : A & P a }} (p : u = v)
-    : projT1 u = projT1 v
-    := f_equal (@projT1 _ _) p.
+    : u.1 = v.1
+    := f_equal (fun x => x.1) p.
 
   (** Projecting an equality of a pair to equality of the second components *)
   Definition projT2_eq {A} {P : A -> Type} {u v : { a : A & P a }} (p : u = v)
-    : rew projT1_eq p in projT2 u = projT2 v
+    : rew projT1_eq p in u.2 = v.2
     := rew dependent p in eq_refl.
 
   (** Equality of [sigT] is itself a [sigT] (forwards-reasoning version) *)
   Definition eq_existT_uncurried {A : Type} {P : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
              (pq : { p : u1 = v1 & rew p in u2 = v2 })
-    : existT _ u1 u2 = existT _ v1 v2.
+    : (u1; u2) = (v1; v2).
   Proof.
     destruct pq as [p q].
     destruct q; simpl in *.
@@ -264,23 +269,55 @@ Section sigT.
 
   (** Equality of [sigT] is itself a [sigT] (backwards-reasoning version) *)
   Definition eq_sigT_uncurried {A : Type} {P : A -> Type} (u v : { a : A & P a })
-             (pq : { p : projT1 u = projT1 v & rew p in projT2 u = projT2 v })
+             (pq : { p : u.1 = v.1 & rew p in u.2 = v.2 })
     : u = v.
   Proof.
     destruct u as [u1 u2], v as [v1 v2]; simpl in *.
     apply eq_existT_uncurried; exact pq.
   Defined.
 
+  Lemma eq_existT_curried {A : Type} {P : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+             (p : u1 = v1) (q : rew p in u2 = v2) : (u1; u2) = (v1; v2).
+  Proof.
+    destruct p, q. reflexivity.
+  Defined.
+
+  Local Notation "(= u ; v )" := (eq_existT_curried u v) (at level 0, format "(= u ;  '/  ' v )").
+
+  Lemma eq_existT_curried_map {A A' P P'} (f:A -> A') (g:forall u:A, P u -> P' (f u))
+    {u1 v1 : A} {u2 : P u1} {v2 : P v1} (p : u1 = v1) (q : rew p in u2 = v2) :
+    f_equal (fun x => (f x.1; g x.1 x.2)) (= p; q) =
+    (= f_equal f p; f_equal_dep2 f g p q).
+  Proof.
+    destruct p, q. reflexivity.
+  Defined.
+
+  Lemma eq_existT_curried_trans {A P} {u1 v1 w1 : A} {u2 : P u1} {v2 : P v1} {w2 : P w1}
+    (p : u1 = v1) (q : rew p in u2 = v2)
+    (p' : v1 = w1) (q': rew p' in v2 = w2) :
+    eq_trans (= p; q) (= p'; q') =
+      (= eq_trans p p'; eq_trans_map p p' q q').
+  Proof.
+    destruct p', q'. reflexivity.
+  Defined.
+
+  Theorem eq_existT_curried_congr {A P} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+    {p p' : u1 = v1} {q : rew p in u2 = v2} {q': rew p' in u2 = v2}
+    (r : p = p') : rew [fun H => rew H in u2 = v2] r in q = q' -> (= p; q) = (= p'; q').
+  Proof.
+    destruct r, 1. reflexivity.
+  Qed.
+
   (** Curried version of proving equality of sigma types *)
   Definition eq_sigT {A : Type} {P : A -> Type} (u v : { a : A & P a })
-             (p : projT1 u = projT1 v) (q : rew p in projT2 u = projT2 v)
+             (p : u.1 = v.1) (q : rew p in u.2 = v.2)
     : u = v
     := eq_sigT_uncurried u v (existT _ p q).
 
   (** Equality of [sigT] when the property is an hProp *)
   Definition eq_sigT_hprop {A P} (P_hprop : forall (x : A) (p q : P x), p = q)
              (u v : { a : A & P a })
-             (p : projT1 u = projT1 v)
+             (p : u.1 = v.1)
     : u = v
     := eq_sigT u v p (P_hprop _ _ _).
 
@@ -289,7 +326,7 @@ Section sigT.
       but for simplicity, we don't. *)
   Definition eq_sigT_uncurried_iff {A P}
              (u v : { a : A & P a })
-    : u = v <-> { p : projT1 u = projT1 v & rew p in projT2 u = projT2 v }.
+    : u = v <-> { p : u.1 = v.1 & rew p in u.2 = v.2 }.
   Proof.
     split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sigT_uncurried ].
   Defined.
@@ -305,12 +342,12 @@ Section sigT.
   (** Equivalence of equality of [sigT] involving hProps with equality of the first components *)
   Definition eq_sigT_hprop_iff {A P} (P_hprop : forall (x : A) (p q : P x), p = q)
              (u v : { a : A & P a })
-    : u = v <-> (projT1 u = projT1 v)
+    : u = v <-> (u.1 = v.1)
     := conj (fun p => f_equal (@projT1 _ _) p) (eq_sigT_hprop P_hprop u v).
 
   (** Non-dependent classification of equality of [sigT] *)
   Definition eq_sigT_nondep {A B : Type} (u v : { a : A & B })
-             (p : projT1 u = projT1 v) (q : projT2 u = projT2 v)
+             (p : u.1 = v.1) (q : u.2 = v.2)
     : u = v
     := @eq_sigT _ _ u v p (eq_trans (rew_const _ _) q).
 
@@ -319,8 +356,8 @@ Section sigT.
     : rew [fun a => { p : P a & Q a p }] H in u
       = existT
           (Q y)
-          (rew H in projT1 u)
-          (rew dependent H in (projT2 u)).
+          (rew H in u.1)
+          (rew dependent H in (u.2)).
   Proof.
     destruct H, u; reflexivity.
   Defined.
@@ -416,12 +453,12 @@ Section sigT2.
     : u = v :> { a : A & P a }
     := f_equal _ p.
   Definition projT1_of_sigT2_eq {A} {P Q : A -> Type} {u v : { a : A & P a & Q a }} (p : u = v)
-    : projT1 u = projT1 v
+    : u.1 = v.1
     := projT1_eq (sigT_of_sigT2_eq p).
 
   (** Projecting an equality of a pair to equality of the second components *)
   Definition projT2_of_sigT2_eq {A} {P Q : A -> Type} {u v : { a : A & P a & Q a }} (p : u = v)
-    : rew projT1_of_sigT2_eq p in projT2 u = projT2 v
+    : rew projT1_of_sigT2_eq p in u.2 = v.2
     := rew dependent p in eq_refl.
 
   (** Projecting an equality of a pair to equality of the third components *)
@@ -443,8 +480,8 @@ Section sigT2.
 
   (** Equality of [sigT2] is itself a [sigT2] (backwards-reasoning version) *)
   Definition eq_sigT2_uncurried {A : Type} {P Q : A -> Type} (u v : { a : A & P a & Q a })
-             (pqr : { p : projT1 u = projT1 v
-                    & rew p in projT2 u = projT2 v & rew p in projT3 u = projT3 v })
+             (pqr : { p : u.1 = v.1
+                    & rew p in u.2 = v.2 & rew p in projT3 u = projT3 v })
     : u = v.
   Proof.
     destruct u as [u1 u2 u3], v as [v1 v2 v3]; simpl in *.
@@ -453,8 +490,8 @@ Section sigT2.
 
   (** Curried version of proving equality of sigma types *)
   Definition eq_sigT2 {A : Type} {P Q : A -> Type} (u v : { a : A & P a & Q a })
-             (p : projT1 u = projT1 v)
-             (q : rew p in projT2 u = projT2 v)
+             (p : u.1 = v.1)
+             (q : rew p in u.2 = v.2)
              (r : rew p in projT3 u = projT3 v)
     : u = v
     := eq_sigT2_uncurried u v (existT2 _ _ p q r).
@@ -472,8 +509,8 @@ Section sigT2.
   Definition eq_sigT2_uncurried_iff {A P Q}
              (u v : { a : A & P a & Q a })
     : u = v
-      <-> { p : projT1 u = projT1 v
-          & rew p in projT2 u = projT2 v & rew p in projT3 u = projT3 v }.
+      <-> { p : u.1 = v.1
+          & rew p in u.2 = v.2 & rew p in projT3 u = projT3 v }.
   Proof.
     split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sigT2_uncurried ].
   Defined.
@@ -498,7 +535,7 @@ Section sigT2.
 
   (** Non-dependent classification of equality of [sigT] *)
   Definition eq_sigT2_nondep {A B C : Type} (u v : { a : A & B & C })
-             (p : projT1 u = projT1 v) (q : projT2 u = projT2 v) (r : projT3 u = projT3 v)
+             (p : u.1 = v.1) (q : u.2 = v.2) (r : projT3 u = projT3 v)
     : u = v
     := @eq_sigT2 _ _ _ u v p (eq_trans (rew_const _ _) q) (eq_trans (rew_const _ _) r).
 
@@ -510,8 +547,8 @@ Section sigT2.
       = existT2
           (Q y)
           (R y)
-          (rew H in projT1 u)
-          (rew dependent H in projT2 u)
+          (rew H in u.1)
+          (rew dependent H in u.2)
           (rew dependent H in projT3 u).
   Proof.
     destruct H, u; reflexivity.

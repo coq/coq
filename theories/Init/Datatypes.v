@@ -216,6 +216,14 @@ Definition prod_uncurry (A B C:Type) (f:A * B -> C)
 Definition prod_curry (A B C:Type) (f:A -> B -> C)
   (p:A * B) : C := match p with (x, y) => f x y end.
 
+Import EqNotations.
+
+Lemma rew_pair : forall A (P Q : A->Type) x1 x2 (y1:P x1) (y2:Q x1) (H:x1=x2),
+  (rew H in y1, rew H in y2) = rew [fun x => (P x * Q x)%type] H in (y1,y2).
+Proof.
+  destruct H. reflexivity.
+Defined.
+
 (** Polymorphic lists and some operations *)
 
 Inductive list (A : Type) : Type :=

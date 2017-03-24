@@ -419,6 +419,24 @@ Section equality_dep.
 
 End equality_dep.
 
+Section equality_dep2.
+
+  Variable A A' : Type.
+  Variable B : A -> Type.
+  Variable B' : A' -> Type.
+  Variable f : A -> A'.
+  Variable g : forall a:A, B a -> B' (f a).
+  Variables x y : A.
+
+  Lemma f_equal_dep2 : forall {A A' B B'} (f : A -> A') (g : forall a:A, B a -> B' (f a))
+  {x1 x2 : A} {y1 : B x1} {y2 : B x2} (H : x1 = x2),
+  rew H in y1 = y2 -> rew f_equal f H in g x1 y1 = g x2 y2.
+  Proof.
+    destruct H, 1. reflexivity.
+  Defined.
+
+End equality_dep2.
+
 Lemma rew_opp_r : forall A (P:A->Type) (x y:A) (H:x=y) (a:P y), rew H in rew <- H in a = a.
 Proof.
 intros.
@@ -503,6 +521,42 @@ Theorem eq_trans_assoc : forall A (x y z t:A) (e:x=y) (e':y=z) (e'':z=t),
   eq_trans e (eq_trans e' e'') = eq_trans (eq_trans e e') e''.
 Proof.
   destruct e''; reflexivity.
+Defined.
+
+Theorem rew_map : forall A B (P:B->Type) (f:A->B) x1 x2 (H:x1=x2) (y:P (f x1)),
+  rew [fun x => P (f x)] H in y = rew f_equal f H in y.
+Proof.
+  destruct H; reflexivity.
+Defined.
+
+Theorem eq_trans_map : forall {A B} {x1 x2 x3:A} {y1:B x1} {y2:B x2} {y3:B x3},
+  forall (H1:x1=x2) (H2:x2=x3) (H1': rew H1 in y1 = y2) (H2': rew H2 in y2 = y3),
+  rew eq_trans H1 H2 in y1 = y3.
+Proof.
+  intros. destruct H2. exact (eq_trans H1' H2').
+Defined.
+
+Lemma map_subst : forall {A} {P Q:A->Type} (f : forall x, P x -> Q x) {x y} (H:x=y) (z:P x),
+  rew H in f x z = f y (rew H in z).
+Proof.
+  destruct H. reflexivity.
+Defined.
+
+Lemma map_subst_map : forall {A B} {P:A->Type} {Q:B->Type} (f:A->B) (g : forall x, P x -> Q (f x)),
+  forall {x y} (H:x=y) (z:P x), rew f_equal f H in g x z = g y (rew H in z).
+Proof.
+  destruct H. reflexivity.
+Defined.
+
+Lemma rew_swap : forall A (P:A->Type) x1 x2 (H:x1=x2) (y1:P x1) (y2:P x2), rew H in y1 = y2 -> y1 = rew <- H in y2.
+Proof.
+  destruct H. trivial.
+Defined.
+
+Lemma rew_compose : forall A (P:A->Type) x1 x2 x3 (H1:x1=x2) (H2:x2=x3) (y:P x1),
+  rew H2 in rew H1 in y = rew (eq_trans H1 H2) in y.
+Proof.
+  destruct H2. reflexivity.
 Defined.
 
 (** Extra properties of equality *)
