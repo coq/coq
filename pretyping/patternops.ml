@@ -153,7 +153,7 @@ let pattern_of_constr env sigma t =
     | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
     | Proj (p, c) -> 
-      pattern_of_constr env (EConstr.to_constr sigma (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
+      pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
     | Evar (evk,ctxt as ev) ->
       (match snd (Evd.evar_source evk sigma) with
       | Evar_kinds.MatchingVar (b,id) ->
@@ -218,7 +218,7 @@ let instantiate_pattern env sigma lvar c =
               ctx
           in
 	  let c = substl inst c in
-	  pattern_of_constr env sigma (EConstr.to_constr sigma c)
+	  pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
 	with Not_found (* List.index failed *) ->
 	  let vars =
 	    List.map_filter (function Name id -> Some id | _ -> None) vars in
