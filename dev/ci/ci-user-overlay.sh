@@ -20,3 +20,12 @@
 #   the name of the branch from which the PR originated. "" if the
 #   current job is a push build.
 
+echo $TRAVIS_PULL_REQUEST_BRANCH
+echo $TRAVIS_PULL_REQUEST
+echo $TRAVIS_BRANCH
+echo $TRAVIS_COMMIT
+
+if [ $TRAVIS_PULL_REQUEST == "379" ] || [ $TRAVIS_BRANCH == "pr379" ]; then
+    mathcomp_CI_BRANCH=econstr
+    mathcomp_CI_GITURL=https://github.com/maximedenes/math-comp.git
+fi
