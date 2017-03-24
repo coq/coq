@@ -889,14 +889,14 @@ let rec match_cases_pattern_binders metas acc pat1 pat2 =
 let glue_letin_with_decls = true
 
 let rec match_iterated_binders islambda decls = function
-  | GLambda (loc,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b)]))
+  | GLambda (loc,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,ids,[cp],b)]))
       when islambda && Id.equal p e ->
-      match_iterated_binders islambda (GLocalPattern (loc,(cp,[](*dummy*)),p,bk,t)::decls) b
+      match_iterated_binders islambda (GLocalPattern (loc,(cp,ids),p,bk,t)::decls) b
   | GLambda (loc,na,bk,t,b) when islambda ->
       match_iterated_binders islambda (GLocalAssum (loc,na,bk,t)::decls) b
-  | GProd (loc,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b)]))
+  | GProd (loc,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,ids,[cp],b)]))
       when not islambda && Id.equal p e ->
-      match_iterated_binders islambda (GLocalPattern (loc,(cp,[](*dummy*)),p,bk,t)::decls) b
+      match_iterated_binders islambda (GLocalPattern (loc,(cp,ids),p,bk,t)::decls) b
   | GProd (loc,(Name _ as na),bk,t,b) when not islambda ->
       match_iterated_binders islambda (GLocalAssum (loc,na,bk,t)::decls) b
   | GLetIn (loc,na,c,t,b) when glue_letin_with_decls ->
@@ -978,9 +978,9 @@ let rec match_ inner u alp metas sigma a1 a2 =
       match_termlist (match_hd u alp) alp metas sigma r1 x y iter termin lassoc
 
   (* "λ p, let 'cp = p in t" -> "λ 'cp, t" *)
-  | GLambda (loc,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b1)])),
+  | GLambda (loc,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,ids,[cp],b1)])),
     NBinderList (x,_,NLambda (Name _id2,_,b2),termin) when Id.equal p e ->
-      let (decls,b) = match_iterated_binders true [GLocalPattern(loc,(cp,[](*dummy*)),p,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders true [GLocalPattern(loc,(cp,ids),p,bk,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
 
@@ -992,9 +992,9 @@ let rec match_ inner u alp metas sigma a1 a2 =
       match_in u alp metas sigma b termin
 
   (* "∀ p, let 'cp = p in t" -> "∀ 'cp, t" *)
-  | GProd (loc,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b1)])),
+  | GProd (loc,Name p,bk,t1,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,ids,[cp],b1)])),
     NBinderList (x,_,NProd (Name _id2,_,b2),(NVar v as termin)) when Id.equal p e ->
-      let (decls,b) = match_iterated_binders true [GLocalPattern (loc,(cp,[](*dummy*)),p,bk,t1)] b1 in
+      let (decls,b) = match_iterated_binders true [GLocalPattern (loc,(cp,ids),p,bk,t1)] b1 in
       let alp,sigma = bind_bindinglist_env alp sigma x decls in
       match_in u alp metas sigma b termin
 
@@ -1009,10 +1009,10 @@ let rec match_ inner u alp metas sigma a1 a2 =
       match_binderlist_with_app (match_hd u) alp metas sigma r x y iter termin
 
   (* Matching individual binders as part of a recursive pattern *)
-  | GLambda (loc,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,_,[cp],b1)])),
+  | GLambda (loc,Name p,bk,t,GCases (_,LetPatternStyle,None,[(GVar(_,e),_)],[(_,ids,[cp],b1)])),
     NLambda (Name id,_,b2)
       when is_bindinglist_meta id metas ->
-      let alp,sigma = bind_bindinglist_env alp sigma id [GLocalPattern (loc,(cp,[](*dummy*)),p,bk,t)] in
+      let alp,sigma = bind_bindinglist_env alp sigma id [GLocalPattern (loc,(cp,ids),p,bk,t)] in
       match_in u alp metas sigma b1 b2
   | GLambda (loc,na,bk,t,b1), NLambda (Name id,_,b2)
       when is_bindinglist_meta id metas ->
