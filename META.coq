@@ -252,6 +252,33 @@ package "highparsing" (
 
 )
 
+package "idetop" (
+
+  description = "Coq IDE Libraries"
+  version     = "8.7"
+
+  requires    = "coq.toplevel"
+  directory   = "ide"
+
+  archive(byte)    = "coqidetop.cma"
+  archive(native)  = "coqidetop.cmxa"
+
+)
+
+package "ide" (
+
+  description = "Coq IDE Libraries"
+  version     = "8.7"
+
+# XXX Add GTK
+  requires    = "coq.toplevel"
+  directory   = "ide"
+
+  archive(byte)    = "ide.cma"
+  archive(native)  = "ide.cmxa"
+
+)
+
 package "ltac" (
 
   description = "Coq LTAC Plugin"
