@@ -2510,6 +2510,20 @@ sig
    and closed_glob_constr = Glob_term.closed_glob_constr = {
        closure: closure;
        term: glob_constr }
+
+  type var_map = Pattern.constr_under_binders Names.Id.Map.t
+  type uconstr_var_map = Glob_term.closed_glob_constr Names.Id.Map.t
+  type unbound_ltac_var_map = Geninterp.Val.t Names.Id.Map.t
+  type ltac_var_map = Glob_term.ltac_var_map = {
+        ltac_constrs : var_map;
+        (** Ltac variables bound to constrs *)
+        ltac_uconstrs : uconstr_var_map;
+        (** Ltac variables bound to untyped constrs *)
+        ltac_idents: Names.Id.t Names.Id.Map.t;
+        (** Ltac variables bound to identifiers *)
+        ltac_genargs : unbound_ltac_var_map;
+        (** Ltac variables bound to other kinds of arguments *)
+      }
 end
 
 module Libnames :
@@ -2875,10 +2889,6 @@ sig
                          | IsType
                          | WithoutTypeConstraint
 
-  type var_map = Pattern.constr_under_binders Names.Id.Map.t
-  type uconstr_var_map = Glob_term.closed_glob_constr Names.Id.Map.t
-  type unbound_ltac_var_map = Geninterp.Val.t Names.Id.Map.t
-
   type inference_hook = Environ.env -> Evd.evar_map -> Evar.t -> Evd.evar_map * EConstr.constr
   type inference_flags = Pretyping.inference_flags = {
       use_typeclasses : bool;
@@ -2888,22 +2898,11 @@ sig
       expand_evars : bool
     }
 
-  type ltac_var_map = Pretyping.ltac_var_map = {
-        ltac_constrs : var_map;
-        (** Ltac variables bound to constrs *)
-        ltac_uconstrs : uconstr_var_map;
-        (** Ltac variables bound to untyped constrs *)
-        ltac_idents: Names.Id.t Names.Id.Map.t;
-        (** Ltac variables bound to identifiers *)
-        ltac_genargs : unbound_ltac_var_map;
-        (** Ltac variables bound to other kinds of arguments *)
-      }                                                 
   type pure_open_constr = Evd.evar_map * EConstr.constr
-  type glob_constr_ltac_closure = ltac_var_map * Glob_term.glob_constr
+  type glob_constr_ltac_closure = Glob_term.ltac_var_map * Glob_term.glob_constr
 
-  val empty_lvar : ltac_var_map
   val understand_ltac : inference_flags ->
-                        Environ.env -> Evd.evar_map -> ltac_var_map ->
+                        Environ.env -> Evd.evar_map -> Glob_term.ltac_var_map ->
                         typing_constraint -> Glob_term.glob_constr -> pure_open_constr
   val understand_tcc : ?flags:inference_flags -> Environ.env -> Evd.evar_map ->
                        ?expected_type:typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
@@ -2917,11 +2916,11 @@ sig
   val interp_elimination_sort : Misctypes.glob_sort -> Sorts.family
   val register_constr_interp0 :
     ('r, 'g, 't) Genarg.genarg_type ->
-    (unbound_ltac_var_map -> Environ.env -> Evd.evar_map -> EConstr.types -> 'g -> EConstr.constr * Evd.evar_map) -> unit
+    (Glob_term.unbound_ltac_var_map -> Environ.env -> Evd.evar_map -> EConstr.types -> 'g -> EConstr.constr * Evd.evar_map) -> unit
   val all_and_fail_flags : inference_flags
   val ise_pretype_gen :
     inference_flags -> Environ.env -> Evd.evar_map ->
-    ltac_var_map -> typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
+    Glob_term.ltac_var_map -> typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
 end
 
 module Evarconv :
@@ -3746,6 +3745,7 @@ sig
   val cases_pattern_of_glob_constr : Names.Name.t -> Glob_term.glob_constr -> Glob_term.cases_pattern
   val map_glob_constr :
     (Glob_term.glob_constr -> Glob_term.glob_constr) -> Glob_term.glob_constr -> Glob_term.glob_constr
+  val empty_lvar : Glob_term.ltac_var_map
 end
 
 module Indrec :

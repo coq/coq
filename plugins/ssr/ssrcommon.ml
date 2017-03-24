@@ -226,8 +226,8 @@ let isAppInd gl c =
 
 let interp_refine ist gl rc =
   let constrvars = Tacinterp.extract_ltac_constr_values ist (pf_env gl) in
-  let vars = { Pretyping.empty_lvar with
-    Pretyping.ltac_constrs = constrvars; ltac_genargs = ist.Tacinterp.lfun
+  let vars = { Glob_ops.empty_lvar with
+    Glob_term.ltac_constrs = constrvars; ltac_genargs = ist.Tacinterp.lfun
   } in
   let kind = Pretyping.OfType (pf_concl gl) in
   let flags = {

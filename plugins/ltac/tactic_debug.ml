@@ -366,7 +366,7 @@ let explain_ltac_call_trace last trace loc =
   | Tacexpr.LtacAtomCall te ->
       quote (Pptactic.pr_glob_tactic (Global.env())
               (Tacexpr.TacAtom (Loc.tag te)))
-  | Tacexpr.LtacConstrInterp (c, { Pretyping.ltac_constrs = vars }) ->
+  | Tacexpr.LtacConstrInterp (c, { Glob_term.ltac_constrs = vars }) ->
       quote (Printer.pr_glob_constr_env (Global.env()) c) ++
         (if not (Id.Map.is_empty vars) then
           strbrk " (with " ++

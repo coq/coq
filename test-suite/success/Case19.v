@@ -17,3 +17,22 @@ Fail exists (fun x =>
         with
         | eq_refl => eq_refl
         end).
+Abort.
+
+(* Some tests with ltac matching on building "if" and "let" *)
+
+Goal forall b c d, (if negb b then c else d) = 0.
+intros.
+match goal with
+|- (if ?b then ?c else ?d) = 0 => transitivity (if b then d else c)
+end.
+Abort.
+
+Definition swap {A} {B} '((x,y):A*B) := (y,x).
+
+Goal forall p, (let '(x,y) := swap p in x + y) = 0.
+intros.
+match goal with
+|- (let '(x,y) := ?p in x + y) = 0 => transitivity (let (x,y) := p in x+y)
+end.
+Abort.
