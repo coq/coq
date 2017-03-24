@@ -153,7 +153,7 @@ proof.
       thus ~= (IZR (Zneg z) * IZR (Zneg z)).
   end cases.
 end proof.
-Qed.
+Admitted.
 
 Definition irrational (x:R):Prop :=
   forall (p:Z) (q:nat),q<>0%nat -> x<> (IZR p/INR q).

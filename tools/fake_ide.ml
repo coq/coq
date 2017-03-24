@@ -12,24 +12,15 @@ let error s =
   prerr_endline ("fake_id: error: "^s);
   exit 1
 
+let pperr_endline pp = Format.eprintf "@[%a@]\n%!" Pp.pp_with pp
+
 type coqtop = {
   xml_printer : Xml_printer.t;
   xml_parser : Xml_parser.t;
 }
 
-let print_xml chan xml =
-  let rec print = function
-  | Xml_datatype.PCData s -> output_string chan s
-  | Xml_datatype.Element (_, _, children) -> List.iter print children
-  in
-  print xml
-
-let error_xml s =
-  Printf.eprintf "fake_id: error: %a\n%!" print_xml s;
-  exit 1
-
-let logger level content =
-  Printf.eprintf "%a\n%! " print_xml (Richpp.repr content)
+let print_error msg =
+  Format.eprintf "fake_id: error: @[%a@]\n%!" Pp.pp_with msg
 
 let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   if print then prerr_endline (Xmlprotocol.pr_call call);
@@ -37,20 +28,15 @@ let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   Xml_printer.print coqtop.xml_printer xml_query;
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
-    match Xmlprotocol.is_message xml with
-    | Some (level, _loc, content) ->
-      logger level content;
+    if Xmlprotocol.is_feedback xml then
       loop ()
-    | None ->
-      if Xmlprotocol.is_feedback xml then
-        loop ()
-      else Xmlprotocol.to_answer call xml
+    else Xmlprotocol.to_answer call xml
   in
   let res = loop () in
   if print then prerr_endline (Xmlprotocol.pr_full_value call res);
   match res with
-  | Interface.Fail (_,_,s) when fail -> error_xml (Richpp.repr s)
-  | Interface.Fail (_,_,s) as x -> Printf.eprintf "%a\n%!" print_xml (Richpp.repr s); x
+  | Interface.Fail (_,_,s) when fail -> print_error s; exit 1
+  | Interface.Fail (_,_,s) as x      -> print_error s; x
   | x -> x
 
 let eval_call c q = ignore(base_eval_call c q)
@@ -186,7 +172,7 @@ let print_document () =
           Str.global_replace (Str.regexp "^[\n ]*") ""
       (if String.length s > 20 then String.sub s 0 17 ^ "..."
        else s) in
-  prerr_endline (Pp.string_of_ppcmds
+  pperr_endline (
     (Document.print doc
       (fun b state_id { name; text } ->
         Pp.str (Printf.sprintf "%s[%10s, %3s] %s"
@@ -199,7 +185,7 @@ let print_document () =
 module GUILogic = struct
 
   let after_add = function
-    | Interface.Fail (_,_,s) -> error_xml (Richpp.repr s)
+    | Interface.Fail (_,_,s) -> print_error s; exit 1
     | Interface.Good (id, (Util.Inl (), _)) ->
         Document.assign_tip_id doc id
     | Interface.Good (id, (Util.Inr tip, _)) ->
@@ -211,7 +197,7 @@ module GUILogic = struct
   let at id id' _ = Stateid.equal id' id
   
   let after_edit_at (id,need_unfocus) = function
-    | Interface.Fail (_,_,s) -> error_xml (Richpp.repr s)
+    | Interface.Fail (_,_,s) -> print_error s; exit 1
     | Interface.Good (Util.Inl ()) ->
         if need_unfocus then Document.unfocus doc;
         ignore(Document.cut_at doc id);
@@ -310,11 +296,12 @@ let main =
   Sys.set_signal Sys.sigpipe
     (Sys.Signal_handle
        (fun _ -> prerr_endline "Broken Pipe (coqtop died ?)"; exit 1));
+  let def_args = ["--xml_format=Ppcmds"; "-ideslave"] in
   let coqtop_name, coqtop_args, input_file = match Sys.argv with
-    | [| _; f |] -> "coqtop",[|"-ideslave"|], f
+    | [| _; f |] -> "coqtop", Array.of_list def_args, f
     | [| _; f; ct |] ->
         let ct = Str.split (Str.regexp " ") ct in
-        List.hd ct, Array.of_list ("-ideslave" :: List.tl ct), f
+        List.hd ct, Array.of_list (def_args @ List.tl ct), f
     | _ -> usage () in
   let inc = if input_file = "-" then stdin else open_in input_file in
   let coq =
@@ -334,7 +321,7 @@ let main =
   let finish () =
     match base_eval_call (Xmlprotocol.status true) coq with
     | Interface.Good _ -> exit 0
-    | Interface.Fail (_,_,s) -> error_xml (Richpp.repr s) in
+    | Interface.Fail (_,_,s) -> print_error s; exit 1 in
   (* The main loop *)
   init ();
   while true do

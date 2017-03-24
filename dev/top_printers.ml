@@ -29,7 +29,7 @@ let _ = set_bool_option_value ["Printing";"Matching"] false
 let _ = Detyping.set_detype_anonymous (fun _ _ -> raise Not_found)
 
 (* std_ppcmds *)
-let pp   x = Pp.pp_with !Pp_control.std_ft x
+let pp   x = Pp.pp_with !Topfmt.std_ft x
 
 (** Future printer *)
 
@@ -235,7 +235,7 @@ let ppenvwithcst e = pp
    str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]" ++ spc() ++
    str "{" ++ Cmap_env.fold (fun a _ s -> pr_con a ++ spc () ++ s) (Obj.magic e).Pre_env.env_globals.Pre_env.env_constants (mt ()) ++ str "}")
 
-let pptac = (fun x -> pp(Pptactic.pr_glob_tactic (Global.env()) x))
+let pptac = (fun x -> pp(Ltac_plugin.Pptactic.pr_glob_tactic (Global.env()) x))
 
 let ppobj obj = Format.print_string (Libobject.object_tag obj)
 

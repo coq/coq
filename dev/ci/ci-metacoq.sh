@@ -1,16 +1,19 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# $0 is not the safest way, but...
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-# MetaCoq + UniCoq
+unicoq_CI_DIR=${CI_BUILD_DIR}/unicoq
+metacoq_CI_DIR=${CI_BUILD_DIR}/MetaCoq
 
-git clone --depth 1 https://github.com/unicoq/unicoq.git
+# Setup UniCoq
 
-( cd unicoq && coq_makefile -f Make -o Makefile && make -j ${NJOBS} && make install )
+git_checkout ${unicoq_CI_BRANCH} ${unicoq_CI_GITURL} ${unicoq_CI_DIR}
 
-git clone --depth 1 https://github.com/MetaCoq/MetaCoq.git
+( cd ${unicoq_CI_DIR} && coq_makefile -f Make -o Makefile && make -j ${NJOBS} && make install )
 
-( cd MetaCoq && coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} )
+# Setup MetaCoq
 
+git_checkout ${metacoq_CI_BRANCH} ${metacoq_CI_GITURL} ${metacoq_CI_DIR}
+
+( cd ${metacoq_CI_DIR} && coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} )

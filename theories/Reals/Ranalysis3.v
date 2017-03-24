@@ -201,8 +201,8 @@ Proof.
   apply Rabs_pos_lt.
   unfold Rdiv, Rsqr; repeat rewrite Rmult_assoc.
   repeat apply prod_neq_R0; try assumption.
-  red; intro; rewrite H15 in H6; elim (Rlt_irrefl _ H6).
-  apply Rinv_neq_0_compat; repeat apply prod_neq_R0; discrR || assumption.
+  now apply Rgt_not_eq.
+  apply Rinv_neq_0_compat; apply prod_neq_R0; [discrR | assumption].
   apply H13.
   split.
   apply D_x_no_cond; assumption.
@@ -213,8 +213,7 @@ Proof.
   red; intro; rewrite H11 in H6; elim (Rlt_irrefl _ H6).
   assumption.
   assumption.
-  apply Rinv_neq_0_compat; repeat apply prod_neq_R0;
-    [ discrR | discrR | discrR | assumption ].
+  apply Rinv_neq_0_compat; apply prod_neq_R0; [discrR | assumption].
 (***********************************)
 (*        Third case               *)
 (*     (f1 x)<>0  l1=0  l2=0       *)
@@ -224,11 +223,11 @@ Proof.
   elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x))));
     [ idtac
       | apply Rabs_pos_lt; unfold Rdiv, Rsqr; repeat rewrite Rmult_assoc;
-        repeat apply prod_neq_R0;
+        repeat apply prod_neq_R0 ;
           [ assumption
             | assumption
-            | red; intro; rewrite H11 in H6; elim (Rlt_irrefl _ H6)
-            | apply Rinv_neq_0_compat; repeat apply prod_neq_R0; discrR || assumption ] ].
+            | now apply Rgt_not_eq
+            | apply Rinv_neq_0_compat; apply prod_neq_R0; discrR || assumption ] ].
   intros alp_f2d H12.
   cut (0 < Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d alp_f2d)).
   intro.
@@ -295,8 +294,10 @@ Proof.
   elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x))));
     [ idtac
       | apply Rabs_pos_lt; unfold Rsqr, Rdiv;
-        repeat rewrite Rinv_mult_distr; repeat apply prod_neq_R0;
-          try assumption || discrR ].
+        repeat apply prod_neq_R0 ;
+          [ assumption..
+            | now apply Rgt_not_eq
+            | apply Rinv_neq_0_compat; apply prod_neq_R0; discrR || assumption ] ].
   intros alp_f2d H11.
   assert (H12 := derivable_continuous_pt _ _ X).
   unfold continuity_pt in H12.
@@ -380,14 +381,8 @@ Proof.
   repeat apply prod_neq_R0; try assumption.
   red; intro H18; rewrite H18 in H6; elim (Rlt_irrefl _ H6).
   apply Rinv_neq_0_compat; discrR.
-  apply Rinv_neq_0_compat; discrR.
-  apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; assumption.
   apply Rinv_neq_0_compat; assumption.
-  discrR.
-  discrR.
-  discrR.
-  discrR.
   discrR.
   apply prod_neq_R0; [ discrR | assumption ].
   elim H13; intros.
@@ -408,16 +403,9 @@ Proof.
   repeat apply prod_neq_R0; try assumption.
   red; intro H13; rewrite H13 in H6; elim (Rlt_irrefl _ H6).
   apply Rinv_neq_0_compat; discrR.
-  apply Rinv_neq_0_compat; discrR.
-  apply Rinv_neq_0_compat; discrR.
   apply Rinv_neq_0_compat; assumption.
   apply Rinv_neq_0_compat; assumption.
   apply prod_neq_R0; [ discrR | assumption ].
-  red; intro H11; rewrite H11 in H6; elim (Rlt_irrefl _ H6).
-  apply Rinv_neq_0_compat; discrR.
-  apply Rinv_neq_0_compat; discrR.
-  apply Rinv_neq_0_compat; discrR.
-  apply Rinv_neq_0_compat; assumption.
 (***********************************)
 (*         Fifth case              *)
 (*    (f1 x)<>0  l1<>0  l2=0       *)

@@ -1743,24 +1743,40 @@ Proof.
   intros z; idtac; apply Z_of_nat_complete; assumption.
 Qed.
 
+Lemma INR_IPR : forall p, INR (Pos.to_nat p) = IPR p.
+Proof.
+  assert (H: forall p, 2 * INR (Pos.to_nat p) = IPR_2 p).
+    induction p as [p|p|] ; simpl IPR_2.
+    rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- IHp.
+    now rewrite (Rplus_comm (2 * _)).
+    now rewrite Pos2Nat.inj_xO, mult_INR, <- IHp.
+    apply Rmult_1_r.
+  intros [p|p|] ; unfold IPR.
+  rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- H.
+  apply Rplus_comm.
+  now rewrite Pos2Nat.inj_xO, mult_INR, <- H.
+  easy.
+Qed.
+
 (**********)
 Lemma INR_IZR_INZ : forall n:nat, INR n = IZR (Z.of_nat n).
 Proof.
-  simple induction n; auto with real.
-  intros; simpl; rewrite SuccNat2Pos.id_succ;
-    auto with real.
+  intros [|n].
+  easy.
+  simpl Z.of_nat. unfold IZR.
+  now rewrite <- INR_IPR, SuccNat2Pos.id_succ.
 Qed.
 
 Lemma plus_IZR_NEG_POS :
   forall p q:positive, IZR (Zpos p + Zneg q) = IZR (Zpos p) + IZR (Zneg q).
 Proof.
   intros p q; simpl. rewrite Z.pos_sub_spec.
-  case Pos.compare_spec; intros H; simpl.
+  case Pos.compare_spec; intros H; unfold IZR.
   subst. ring.
-  rewrite Pos2Nat.inj_sub by trivial.
+  rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
   rewrite minus_INR by (now apply lt_le_weak, Pos2Nat.inj_lt).
   ring.
-  rewrite Pos2Nat.inj_sub by trivial.
+  rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
   rewrite minus_INR by (now apply lt_le_weak, Pos2Nat.inj_lt).
   ring.
 Qed.
@@ -1769,26 +1785,18 @@ Qed.
 Lemma plus_IZR : forall n m:Z, IZR (n + m) = IZR n + IZR m.
 Proof.
   intro z; destruct z; intro t; destruct t; intros; auto with real.
-  simpl; intros; rewrite Pos2Nat.inj_add; auto with real.
+  simpl. unfold IZR. rewrite <- 3!INR_IPR, Pos2Nat.inj_add. apply plus_INR.
   apply plus_IZR_NEG_POS.
   rewrite Z.add_comm; rewrite Rplus_comm; apply plus_IZR_NEG_POS.
-  simpl; intros; rewrite Pos2Nat.inj_add; rewrite plus_INR;
-    auto with real.
+  simpl. unfold IZR. rewrite <- 3!INR_IPR, Pos2Nat.inj_add, plus_INR.
+  apply Ropp_plus_distr.
 Qed.
 
 (**********)
 Lemma mult_IZR : forall n m:Z, IZR (n * m) = IZR n * IZR m.
 Proof.
-  intros z t; case z; case t; simpl; auto with real.
-  intros t1 z1; rewrite Pos2Nat.inj_mul; auto with real.
-  intros t1 z1; rewrite Pos2Nat.inj_mul; auto with real.
-  rewrite Rmult_comm.
-  rewrite Ropp_mult_distr_l_reverse; auto with real.
-  apply Ropp_eq_compat; rewrite mult_comm; auto with real.
-  intros t1 z1; rewrite Pos2Nat.inj_mul; auto with real.
-  rewrite Ropp_mult_distr_l_reverse; auto with real.
-  intros t1 z1; rewrite Pos2Nat.inj_mul; auto with real.
-  rewrite Rmult_opp_opp; auto with real.
+  intros z t; case z; case t; simpl; auto with real;
+    unfold IZR; intros m n; rewrite <- 3!INR_IPR, Pos2Nat.inj_mul, mult_INR; ring.
 Qed.
 
 Lemma pow_IZR : forall z n, pow (IZR z) n = IZR (Z.pow z (Z.of_nat n)).
@@ -1804,13 +1812,13 @@ Qed.
 (**********)
 Lemma succ_IZR : forall n:Z, IZR (Z.succ n) = IZR n + 1.
 Proof.
-  intro; change 1 with (IZR 1); unfold Z.succ; apply plus_IZR.
+  intro; unfold Z.succ; apply plus_IZR.
 Qed.
 
 (**********)
 Lemma opp_IZR : forall n:Z, IZR (- n) = - IZR n.
 Proof.
-  intro z; case z; simpl; auto with real.
+  intros [|z|z]; unfold IZR; simpl; auto with real.
 Qed.
 
 Definition Ropp_Ropp_IZR := opp_IZR.
@@ -1833,10 +1841,12 @@ Qed.
 Lemma lt_0_IZR : forall n:Z, 0 < IZR n -> (0 < n)%Z.
 Proof.
   intro z; case z; simpl; intros.
-  absurd (0 < 0); auto with real.
-  unfold Z.lt; simpl; trivial.
-  case Rlt_not_le with (1 := H).
-  replace 0 with (-0); auto with real.
+  elim (Rlt_irrefl _ H).
+  easy.
+  elim (Rlt_not_le _ _ H).
+  unfold IZR.
+  rewrite <- INR_IPR.
+  auto with real.
 Qed.
 
 (**********)
@@ -1852,9 +1862,12 @@ Qed.
 Lemma eq_IZR_R0 : forall n:Z, IZR n = 0 -> n = 0%Z.
 Proof.
   intro z; destruct z; simpl; intros; auto with zarith.
-  case (Rlt_not_eq 0 (INR (Pos.to_nat p))); auto with real.
-  case (Rlt_not_eq (- INR (Pos.to_nat p)) 0); auto with real.
-  apply Ropp_lt_gt_0_contravar. unfold Rgt; apply pos_INR_nat_of_P.
+  elim Rgt_not_eq with (2 := H).
+  unfold IZR. rewrite <- INR_IPR.
+  apply lt_0_INR, Pos2Nat.is_pos.
+  elim Rlt_not_eq with (2 := H).
+  unfold IZR. rewrite <- INR_IPR.
+  apply Ropp_lt_gt_0_contravar, lt_0_INR, Pos2Nat.is_pos.
 Qed.
 
 (**********)
@@ -2003,6 +2016,31 @@ Proof.
   [ apply not_0_INR; discriminate | unfold INR; ring ].
 Qed.
 
+Lemma R_rm : ring_morph
+  R0 R1 Rplus Rmult Rminus Ropp eq
+  0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool IZR.
+Proof.
+constructor ; try easy.
+exact plus_IZR.
+exact minus_IZR.
+exact mult_IZR.
+exact opp_IZR.
+intros x y H.
+apply f_equal.
+now apply Zeq_bool_eq.
+Qed.
+
+Lemma Zeq_bool_IZR x y :
+  IZR x = IZR y -> Zeq_bool x y = true.
+Proof.
+intros H.
+apply Zeq_is_eq_bool.
+now apply eq_IZR.
+Qed.
+
+Add Field RField : Rfield
+  (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).
+
 (*********************************************************)
 (** ** Other rules about < and <=                        *)
 (*********************************************************)
@@ -2017,42 +2055,18 @@ Qed.
 Lemma le_epsilon :
   forall r1 r2, (forall eps:R, 0 < eps -> r1 <= r2 + eps) -> r1 <= r2.
 Proof.
-  intros x y; intros; elim (Rtotal_order x y); intro.
-  left; assumption.
-  elim H0; intro.
-  right; assumption.
-  clear H0; generalize (Rgt_minus x y H1); intro H2; change (0 < x - y) in H2.
-  cut (0 < 2).
-  intro.
-  generalize (Rmult_lt_0_compat (x - y) (/ 2) H2 (Rinv_0_lt_compat 2 H0));
-    intro H3; generalize (H ((x - y) * / 2) H3);
-      replace (y + (x - y) * / 2) with ((y + x) * / 2).
-  intro H4;
-    generalize (Rmult_le_compat_l 2 x ((y + x) * / 2) (Rlt_le 0 2 H0) H4);
-      rewrite <- (Rmult_comm ((y + x) * / 2)); rewrite Rmult_assoc;
-        rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; replace (2 * x) with (x + x).
-  rewrite (Rplus_comm y); intro H5; apply Rplus_le_reg_l with x; assumption.
-  ring.
-  replace 2 with (INR 2); [ apply not_0_INR; discriminate | reflexivity ].
-  pattern y at 2; replace y with (y / 2 + y / 2).
-  unfold Rminus, Rdiv.
-  repeat rewrite Rmult_plus_distr_r.
-  ring.
-  cut (forall z:R, 2 * z = z + z).
-  intro.
-  rewrite <- (H4 (y / 2)).
-  unfold Rdiv.
-  rewrite <- Rmult_assoc; apply Rinv_r_simpl_m.
-  replace 2 with (INR 2).
-  apply not_0_INR.
-  discriminate.
-  unfold INR; reflexivity.
-  intro; ring.
-  cut (0%nat <> 2%nat);
-    [ intro H0; generalize (lt_0_INR 2 (neq_O_lt 2 H0)); unfold INR;
-      intro; assumption
-      | discriminate ].
+  intros x y H.
+  destruct (Rle_or_lt x y) as [H1|H1].
+  exact H1.
+  apply Rplus_le_reg_r with x.
+  replace (y + x) with (2 * (y + (x - y) * / 2)) by field.
+  replace (x + x) with (2 * x) by ring.
+  apply Rmult_le_compat_l.
+  now apply (IZR_le 0 2).
+  apply H.
+  apply Rmult_lt_0_compat.
+  now apply Rgt_minus.
+  apply Rinv_0_lt_compat, Rlt_0_2.
 Qed.
 
 (**********)

@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-git clone --depth 3 -b mz-8.6 https://github.com/ejgallego/HoTT.git
+HoTT_CI_DIR=${CI_BUILD_DIR}/HoTT
 
-( cd HoTT && ./autogen.sh && ./configure && make -j ${NJOBS} )
+git_checkout ${HoTT_CI_BRANCH} ${HoTT_CI_GITURL} ${HoTT_CI_DIR}
+
+( cd ${HoTT_CI_DIR} && ./autogen.sh && ./configure && make -j ${NJOBS} )

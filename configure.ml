@@ -261,9 +261,13 @@ module Prefs = struct
   let withdoc = ref false
   let geoproof = ref false
   let byteonly = ref false
-  let debug = ref false
+  let debug = ref true
   let profile = ref false
   let annotate = ref false
+  (* Note, disabling this should be OK, but be careful with the
+     sharing invariants.
+  *)
+  let safe_string = ref true
   let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
   let coqwebsite = ref "http://coq.inria.fr/"
   let force_caml_version = ref false
@@ -336,7 +340,9 @@ let args_options = Arg.align [
   "-byteonly", Arg.Set Prefs.byteonly,
     " Compiles only bytecode version of Coq";
   "-debug", Arg.Set Prefs.debug,
-    " Add debugging information in the Coq executables";
+    " Deprecated";
+  "-nodebug", Arg.Clear Prefs.debug,
+    " Do not add debugging information in the Coq executables";
   "-profile", Arg.Set Prefs.profile,
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Set Prefs.annotate,
@@ -383,6 +389,9 @@ let coq_annotate_flag =
   if !Prefs.annotate
   then if program_in_path "ocamlmerlin" then "-bin-annot" else "-annot"
   else ""
+
+let coq_safe_string =
+  if !Prefs.safe_string then "-safe-string" else ""
 
 let cflags = "-Wall -Wno-unused -g -O2"
 
@@ -924,7 +933,7 @@ let config_runtime () =
   | _ ->
     let ld="CAML_LD_LIBRARY_PATH" in
     build_loadpath := sprintf "export %s:='%s/kernel/byterun':$(%s)" ld coqtop ld;
-    ["-dllib";"-lcoqrun";"-dllpath";libdir]
+    ["-dllib";"-lcoqrun";"-dllpath";libdir/"kernel/byterun"]
 
 let vmbyteflags = config_runtime ()
 
@@ -1116,7 +1125,7 @@ let write_makefile f =
   pr "CAMLHLIB=%S\n\n" camllib;
   pr "# Caml link command and Caml make top command\n";
   pr "# Caml flags\n";
-  pr "CAMLFLAGS=-rectypes %s\n" coq_annotate_flag;
+  pr "CAMLFLAGS=-rectypes %s %s\n" coq_annotate_flag coq_safe_string;
   pr "# User compilation flag\n";
   pr "USERFLAGS=\n\n";
   pr "# Flags for GCC\n";

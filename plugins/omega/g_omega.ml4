@@ -17,6 +17,7 @@
 
 DECLARE PLUGIN "omega_plugin"
 
+open Ltac_plugin
 open Names
 open Coq_omega
 open Stdarg

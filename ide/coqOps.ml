@@ -128,6 +128,9 @@ end = struct
 end
 open SentenceId
 
+let log_pp msg : unit task =
+  Coq.lift (fun () -> Minilib.log_pp msg)
+
 let log msg : unit task =
   Coq.lift (fun () -> Minilib.log msg)
 
@@ -162,13 +165,16 @@ let flags_to_color f =
   else if List.mem `INCOMPLETE f then `NAME "gray"
   else `NAME Preferences.processed_color#get
 
-let validate s =
-  let open Xml_datatype in
-  let rec validate = function
-  | PCData s -> Glib.Utf8.validate s
-  | Element (_, _, children) -> List.for_all validate children
-  in
-  validate (Richpp.repr s)
+(* Move to utils? *)
+let rec validate (s : Pp.std_ppcmds) = match Pp.repr s with
+  | Pp.Ppcmd_empty
+  | Pp.Ppcmd_print_break _
+  | Pp.Ppcmd_force_newline  -> true
+  | Pp.Ppcmd_glue l    -> List.for_all validate l
+  | Pp.Ppcmd_string s  -> Glib.Utf8.validate s
+  | Pp.Ppcmd_box (_,s)
+  | Pp.Ppcmd_tag (_,s) -> validate s
+  | Pp.Ppcmd_comment s -> List.for_all Glib.Utf8.validate s
 
 module Doc = Document
 
@@ -305,7 +311,7 @@ object(self)
 
   method private print_stack =
     Minilib.log "document:";
-    Minilib.log (Pp.string_of_ppcmds (Doc.print document (dbg_to_string buffer)))
+    Minilib.log_pp (Doc.print document (dbg_to_string buffer))
 
   method private enter_focus start stop =
     let at id id' _ = Stateid.equal id' id in
@@ -337,7 +343,6 @@ object(self)
     buffer#get_iter_at_mark `INSERT
 
   method private show_goals_aux ?(move_insert=false) () =
-    Coq.PrintOpt.set_printing_width proof#width;
     if move_insert then begin
       let dest = self#get_start_of_input in
       if (buffer#get_iter_at_mark `INSERT)#compare dest <= 0 then begin
@@ -345,7 +350,7 @@ object(self)
         script#recenter_insert
       end
     end;
-    Coq.bind (Coq.goals ~logger:messages#push ()) (function
+    Coq.bind (Coq.goals ()) (function
     | Fail x -> self#handle_failure_aux ~move_insert x
     | Good goals ->
       Coq.bind (Coq.evars ()) (function
@@ -368,7 +373,7 @@ object(self)
       else messages#add s;
     in
     let query =
-      Coq.query ~logger:messages#push (phrase,Stateid.dummy) in
+      Coq.query (phrase,Stateid.dummy) in
     let next = function
     | Fail (_, _, err) -> display_error err; Coq.return ()
     | Good msg ->
@@ -377,8 +382,7 @@ object(self)
     Coq.bind (Coq.seq action query) next
 
   method private mark_as_needed sentence =
-    Minilib.log("Marking " ^
-      Pp.string_of_ppcmds (dbg_to_string buffer false None sentence));
+    Minilib.log_pp Pp.(str "Marking " ++ dbg_to_string buffer false None sentence);
     let start = buffer#get_iter_at_mark sentence.start in
     let stop = buffer#get_iter_at_mark sentence.stop in
     let to_process = Tags.Script.to_process in
@@ -418,9 +422,10 @@ object(self)
     | _ -> false
 
   method private enqueue_feedback msg =
+    (* Minilib.log ("Feedback received: " ^ Xml_printer.to_string_fmt (Xmlprotocol.of_feedback msg)); *)
     let id = msg.id in
     if self#is_dummy_id id then () else Queue.add msg feedbacks
-    
+
   method private process_feedback () =
     let rec eat_feedback n =
       if n = 0 then true else
@@ -434,9 +439,11 @@ object(self)
           | _ -> None in
         try Some (Doc.find_map document finder)
         with Not_found -> None in
-      let log s state_id =
-        Minilib.log ("Feedback " ^ s ^ " on " ^ Stateid.to_string
-          (Option.default Stateid.dummy state_id)) in
+      let log_pp s state_id =
+        Minilib.log_pp Pp.(seq
+                [str "Feedback "; s; str " on ";
+                 str (Stateid.to_string (Option.default Stateid.dummy state_id))]) in
+      let log s state_id = log_pp (Pp.str s) state_id in
       begin match msg.contents, sentence with
       | AddedAxiom, Some (id,sentence) ->
           log "AddedAxiom" id;
@@ -466,22 +473,24 @@ object(self)
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | Message(Error, loc, msg), Some (id,sentence) ->
           let loc = Option.default Loc.ghost loc in
-          let msg = Richpp.raw_print msg         in
-          log "ErrorMsg" id;
+          log_pp Pp.(str "ErrorMsg" ++ msg) id;
           remove_flag sentence `PROCESSING;
-          add_flag sentence (`ERROR (loc, msg));
+          let rmsg = Pp.string_of_ppcmds msg     in
+          add_flag sentence (`ERROR (loc, rmsg));
           self#mark_as_needed sentence;
-          self#attach_tooltip sentence loc msg;
+          self#attach_tooltip sentence loc rmsg;
           if not (Loc.is_ghost loc) then
             self#position_error_tag_at_sentence sentence (Some (Loc.unloc loc))
       | Message(Warning, loc, msg), Some (id,sentence) ->
           let loc = Option.default Loc.ghost loc in
-          let msg = Richpp.raw_print msg         in
-          log "WarningMsg" id;
-          add_flag sentence (`WARNING (loc, msg));
-          self#attach_tooltip sentence loc msg;
-          self#position_warning_tag_at_sentence sentence loc
-      | Message((Info|Notice|Debug as lvl), _, msg), _ ->
+          log_pp Pp.(str "WarningMsg" ++ msg) id;
+          let rmsg = Pp.string_of_ppcmds msg     in
+          add_flag sentence (`WARNING (loc, rmsg));
+          self#attach_tooltip sentence loc rmsg;
+          self#position_warning_tag_at_sentence sentence loc;
+          messages#push Warning msg
+      | Message(lvl, loc, msg), Some (id,sentence) ->
+          log_pp Pp.(str "Msg" ++ msg) id;
           messages#push lvl msg
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
@@ -628,10 +637,9 @@ object(self)
         if Queue.is_empty queue then conclude topstack else
         match Queue.pop queue, topstack with
         | `Skip(start,stop), [] ->
-
-            logger Feedback.Error (Richpp.richpp_of_string "You must close the proof with Qed or Admitted");
+            logger Feedback.Error (Pp.str "You must close the proof with Qed or Admitted");
             self#discard_command_queue queue;
-            conclude [] 
+            conclude []
         | `Skip(start,stop), (_,s) :: topstack ->
             assert(start#equal (buffer#get_iter_at_mark s.start));
             assert(stop#equal (buffer#get_iter_at_mark s.stop));
@@ -641,11 +649,11 @@ object(self)
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
             let _, _, phrase = self#get_sentence sentence in
-            let coq_query = Coq.add ~logger ((phrase,edit_id),(tip,verbose)) in
+            let coq_query = Coq.add ((phrase,edit_id),(tip,verbose)) in
             let handle_answer = function
               | Good (id, (Util.Inl (* NewTip *) (), msg)) ->
                   Doc.assign_tip_id document id;
-                  logger Feedback.Notice (Richpp.richpp_of_string msg);
+                  logger Feedback.Notice (Pp.str msg);
                   self#commit_queue_transaction sentence;
                   loop id []
               | Good (id, (Util.Inr (* Unfocus *) tip, msg)) ->
@@ -653,7 +661,7 @@ object(self)
                   let topstack, _ = Doc.context document in
                   self#exit_focus;
                   self#cleanup (Doc.cut_at document tip);
-                  logger Feedback.Notice (Richpp.richpp_of_string msg);
+                  logger Feedback.Notice (Pp.str msg);
                   self#mark_as_needed sentence;
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
@@ -672,10 +680,10 @@ object(self)
    let next = function
      | Good _ ->
          messages#clear;
-         messages#push Feedback.Info (Richpp.richpp_of_string "All proof terms checked by the kernel");
+         messages#push Feedback.Info (Pp.str "All proof terms checked by the kernel");
          Coq.return ()
      | Fail x -> self#handle_failure x in
-   Coq.bind (Coq.status ~logger:messages#push true) next
+   Coq.bind (Coq.status true) next
 
   method stop_worker n =
     Coq.bind (Coq.stop_worker n) (fun _ -> Coq.return ())
@@ -859,7 +867,7 @@ object(self)
       let next = function
       | Fail (_, l, str) -> (* FIXME: check *)
         display_error (l, str);
-        messages#add (Richpp.richpp_of_string ("Unsuccessfully tried: "^phrase));
+        messages#add (Pp.str ("Unsuccessfully tried: "^phrase));
         more
       | Good msg ->
         messages#add_string msg;
@@ -905,7 +913,7 @@ object(self)
     let get_initial_state =
       let next = function
       | Fail (_, _, message) ->
-        let message = "Couldn't initialize coqtop\n\n" ^ (Richpp.raw_print message) in
+        let message = "Couldn't initialize coqtop\n\n" ^ (Pp.string_of_ppcmds message) in
         let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok ~message_type:`ERROR ~message () in
         ignore (popup#run ()); exit 1
       | Good id -> initial_state <- id; Coq.return () in

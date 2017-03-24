@@ -8,9 +8,9 @@
 (************************************************************************)
 
 (** Diaconescu showed that the Axiom of Choice entails Excluded-Middle
-   in topoi [Diaconescu75]. Lacas and Werner adapted the proof to show
+   in topoi [[Diaconescu75]]. Lacas and Werner adapted the proof to show
    that the axiom of choice in equivalence classes entails
-   Excluded-Middle in Type Theory [LacasWerner99].
+   Excluded-Middle in Type Theory [[LacasWerner99]].
 
    Three variants of Diaconescu's result in type theory are shown below.
 
@@ -23,22 +23,22 @@
       Benjamin Werner)
 
    C. A proof that extensional Hilbert epsilon's description operator
-      entails excluded-middle (taken from Bell [Bell93])
+      entails excluded-middle (taken from Bell [[Bell93]])
 
-   See also [Carlström] for a discussion of the connection between the
+   See also [[Carlström04]] for a discussion of the connection between the
    Extensional Axiom of Choice and Excluded-Middle
 
-   [Diaconescu75] Radu Diaconescu, Axiom of Choice and Complementation,
+   [[Diaconescu75]] Radu Diaconescu, Axiom of Choice and Complementation,
    in Proceedings of AMS, vol 51, pp 176-178, 1975.
 
-   [LacasWerner99] Samuel Lacas, Benjamin Werner, Which Choices imply
+   [[LacasWerner99]] Samuel Lacas, Benjamin Werner, Which Choices imply
    the excluded middle?, preprint, 1999.
 
-   [Bell93] John L. Bell, Hilbert's epsilon operator and classical
+   [[Bell93]] John L. Bell, Hilbert's epsilon operator and classical
    logic, Journal of Philosophical Logic, 22: 1-18, 1993
 
-   [Carlström04] Jesper Carlström, EM + Ext_ + AC_int <-> AC_ext,
-   Mathematical Logic Quaterly, vol 50(3), pp 236-240, 2004.
+   [[Carlström04]] Jesper Carlström, EM + Ext_ + AC_int is equivalent
+   to AC_ext, Mathematical Logic Quaterly, vol 50(3), pp 236-240, 2004.
 *)
 
 (**********************************************************************)
@@ -263,7 +263,7 @@ End ProofIrrel_RelChoice_imp_EqEM.
 (**********************************************************************)
 (** * Extensional Hilbert's epsilon description operator -> Excluded-Middle *)
 
-(** Proof sketch from Bell [Bell93] (with thanks to P. Castéran) *)
+(** Proof sketch from Bell [[Bell93]] (with thanks to P. Castéran) *)
 
 Local Notation inhabited A := A (only parsing).
 

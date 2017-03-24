@@ -97,21 +97,30 @@ let segment_of_objects prefix =
 
 let initial_prefix = default_library,(Names.initial_path,Names.DirPath.empty)
 
-let lib_stk = ref ([] : library_segment)
+type lib_state = {
+  comp_name   : Names.DirPath.t option;
+  lib_stk     : library_segment;
+  path_prefix : Names.DirPath.t * (Names.module_path * Names.DirPath.t);
+}
 
-let comp_name = ref None
+let initial_lib_state = {
+  comp_name   = None;
+  lib_stk     = [];
+  path_prefix = initial_prefix;
+}
+
+let lib_state = ref initial_lib_state
 
 let library_dp () =
-  match !comp_name with Some m -> m | None -> default_library
+  match !lib_state.comp_name with Some m -> m | None -> default_library
 
 (* [path_prefix] is a pair of absolute dirpath and a pair of current
    module path and relative section path *)
-let path_prefix = ref initial_prefix
 
-let cwd () = fst !path_prefix
-let current_prefix () = snd !path_prefix
-let current_mp () = fst (snd !path_prefix)
-let current_sections () = snd (snd !path_prefix)
+let cwd () = fst !lib_state.path_prefix
+let current_prefix () = snd !lib_state.path_prefix
+let current_mp () = fst (snd !lib_state.path_prefix)
+let current_sections () = snd (snd !lib_state.path_prefix)
 
 let sections_depth () = List.length (Names.DirPath.repr (current_sections ()))
 let sections_are_opened () = not (Names.DirPath.is_empty (current_sections ()))
@@ -132,7 +141,7 @@ let make_kn id =
   let mp,dir = current_prefix () in
   Names.make_kn mp dir (Names.Label.of_id id)
 
-let make_oname id = Libnames.make_oname !path_prefix id
+let make_oname id = Libnames.make_oname !lib_state.path_prefix id
 
 let recalc_path_prefix () =
   let rec recalc = function
@@ -142,18 +151,18 @@ let recalc_path_prefix () =
     | _::l -> recalc l
     | [] -> initial_prefix
   in
-  path_prefix := recalc !lib_stk
+  lib_state := { !lib_state with path_prefix = recalc !lib_state.lib_stk }
 
 let pop_path_prefix () =
-  let dir,(mp,sec) = !path_prefix in
-  path_prefix := pop_dirpath dir, (mp, pop_dirpath sec)
+  let dir,(mp,sec) = !lib_state.path_prefix in
+  lib_state := { !lib_state with path_prefix = pop_dirpath dir, (mp, pop_dirpath sec)}
 
 let find_entry_p p =
   let rec find = function
     | [] -> raise Not_found
     | ent::l -> if p ent then ent else find l
   in
-  find !lib_stk
+  find !lib_state.lib_stk
 
 let split_lib_gen test =
   let rec collect after equal = function
@@ -174,7 +183,7 @@ let split_lib_gen test =
 		| _ -> findeq (hd::after) before)
     | [] -> None
   in
-    match findeq [] !lib_stk with
+    match findeq [] !lib_state.lib_stk with
       | None -> error "no such entry"
       | Some r -> r
 
@@ -199,10 +208,10 @@ let split_lib_at_opening sp =
 (* Adding operations. *)
 
 let add_entry sp node =
-  lib_stk := (sp,node) :: !lib_stk
+  lib_state := { !lib_state with lib_stk = (sp,node) :: !lib_state.lib_stk }
 
 let pull_to_head oname =
-  lib_stk := (oname,List.assoc oname !lib_stk) :: List.remove_assoc oname !lib_stk
+  lib_state := { !lib_state with lib_stk = (oname,List.assoc oname !lib_state.lib_stk) :: List.remove_assoc oname !lib_state.lib_stk }
 
 let anonymous_id =
   let n = ref 0 in
@@ -277,7 +286,7 @@ let start_mod is_type export id mp fs =
   if exists then
     user_err ~hdr:"open_module" (pr_id id ++ str " already exists");
   add_entry (make_oname id) (OpenedModule (is_type,export,prefix,fs));
-  path_prefix := prefix;
+  lib_state := { !lib_state with path_prefix = prefix} ;
   prefix
 
 let start_module = start_mod false
@@ -299,16 +308,16 @@ let end_mod is_type =
     with Not_found -> error "No opened modules."
   in
   let (after,mark,before) = split_lib_at_opening oname in
-  lib_stk := before;
+  lib_state := { !lib_state with lib_stk = before };
   add_entry oname (ClosedModule (List.rev (mark::after)));
-  let prefix = !path_prefix in
+  let prefix = !lib_state.path_prefix in
   recalc_path_prefix ();
   (oname, prefix, fs, after)
 
 let end_module () = end_mod false
 let end_modtype () = end_mod true
 
-let contents () = !lib_stk
+let contents () = !lib_state.lib_stk
 
 let contents_after sp = let (after,_,_) = split_lib sp in after
 
@@ -316,14 +325,14 @@ let contents_after sp = let (after,_,_) = split_lib sp in after
 
 (* TODO: use check_for_module ? *)
 let start_compilation s mp =
-  if !comp_name != None then
+  if !lib_state.comp_name != None then
     error "compilation unit is already started";
   if not (Names.DirPath.is_empty (current_sections ())) then
     error "some sections are already opened";
   let prefix = s, (mp, Names.DirPath.empty) in
   let () = add_anonymous_entry (CompilingLibrary prefix) in
-  comp_name := Some s;
-  path_prefix := prefix
+  lib_state := { !lib_state with comp_name = Some s;
+                                 path_prefix = prefix }
 
 let end_compilation_checks dir =
   let _ =
@@ -344,7 +353,7 @@ let end_compilation_checks dir =
     with Not_found -> anomaly (Pp.str "No module declared")
   in
   let _ =
-    match !comp_name with
+    match !lib_state.comp_name with
       | None -> anomaly (Pp.str "There should be a module name...")
       | Some m ->
 	  if not (Names.DirPath.equal m dir) then anomaly
@@ -355,8 +364,8 @@ let end_compilation_checks dir =
 
 let end_compilation oname =
   let (after,mark,before) = split_lib_at_opening oname in
-  comp_name := None;
-  !path_prefix,after
+  lib_state := { !lib_state with comp_name = None };
+  !lib_state.path_prefix,after
 
 (* Returns true if we are inside an opened module or module type *)
 
@@ -514,7 +523,7 @@ let (f_xml_open_section, xml_open_section) = Hook.make ~default:ignore ()
 let (f_xml_close_section, xml_close_section) = Hook.make ~default:ignore ()
 
 let open_section id =
-  let olddir,(mp,oldsec) = !path_prefix in
+  let olddir,(mp,oldsec) = !lib_state.path_prefix in
   let dir = add_dirpath_suffix olddir id in
   let prefix = dir, (mp, add_dirpath_suffix oldsec id) in
   if Nametab.exists_section dir then
@@ -523,7 +532,7 @@ let open_section id =
   add_entry (make_oname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
-  path_prefix := prefix;
+  lib_state := { !lib_state with path_prefix = prefix };
   if !Flags.xml_export then Hook.get f_xml_open_section id;
   add_section ()
 
@@ -549,8 +558,8 @@ let close_section () =
       error "No opened section."
   in
   let (secdecls,mark,before) = split_lib_at_opening oname in
-  lib_stk := before;
-  let full_olddir = fst !path_prefix in
+  lib_state := { !lib_state with lib_stk = before };
+  let full_olddir = fst !lib_state.path_prefix in
   pop_path_prefix ();
   add_entry oname (ClosedSection (List.rev (mark::secdecls)));
   if !Flags.xml_export then Hook.get f_xml_close_section (basename (fst oname));
@@ -561,7 +570,7 @@ let close_section () =
 
 (* State and initialization. *)
 
-type frozen = Names.DirPath.t option * library_segment
+type frozen = lib_state
 
 let freeze ~marshallable =
   match marshallable with
@@ -578,18 +587,15 @@ let freeze ~marshallable =
                Some(n,OpenedSection(op,Summary.empty_frozen))
         | n, ClosedSection _ -> Some (n,ClosedSection [])
         | _, FrozenState _ -> None)
-      !lib_stk in
-    !comp_name, lib_stk
+      !lib_state.lib_stk in
+    { !lib_state with lib_stk }
   | _ ->
-    !comp_name, !lib_stk
+    !lib_state
 
-let unfreeze (mn,stk) =
-  comp_name := mn;
-  lib_stk := stk;
-  recalc_path_prefix ()
+let unfreeze st = lib_state := st
 
 let init () =
-  unfreeze (None,[]);
+  unfreeze initial_lib_state;
   Summary.init_summaries ();
   add_frozen_state () (* Stores e.g. the keywords declared in g_*.ml4 *)
 

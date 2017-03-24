@@ -1830,24 +1830,37 @@ let find_matching_clause unifier clause =
     with NotExtensibleClause -> failwith "Cannot apply"
   in find clause
 
+exception UnableToApply
+
 let progress_with_clause flags innerclause clause =
   let ordered_metas = List.rev (clenv_independent clause) in
-  if List.is_empty ordered_metas then error "Statement without assumptions.";
+  if List.is_empty ordered_metas then raise UnableToApply;
   let f mv =
     try Some (find_matching_clause (clenv_fchain ~with_univs:false mv ~flags clause) innerclause)
     with Failure _ -> None
   in
   try List.find_map f ordered_metas
-  with Not_found -> error "Unable to unify."
+  with Not_found -> raise UnableToApply
 
-let apply_in_once_main flags innerclause env sigma (d,lbind) =
+let explain_unable_to_apply_lemma loc env sigma thm innerclause =
+  user_err ~loc (hov 0
+    (Pp.str "Unable to apply lemma of type" ++ brk(1,1) ++
+     Pp.quote (Printer.pr_leconstr_env env sigma thm) ++ spc() ++
+     str "on hypothesis of type" ++ brk(1,1) ++
+     Pp.quote (Printer.pr_leconstr_env innerclause.env innerclause.evd (clenv_type innerclause)) ++
+     str "."))
+
+let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
   let thm = nf_betaiota sigma (Retyping.get_type_of env sigma d) in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
+    let e' = CErrors.push e in
     try aux (clenv_push_prod clause)
-    with NotExtensibleClause -> iraise e
+    with NotExtensibleClause ->
+      match e with
+      | UnableToApply -> explain_unable_to_apply_lemma loc env sigma thm innerclause
+      | _ -> iraise e'
   in
   aux (make_clenv_binding env sigma (d,thm) lbind)
 
@@ -1867,7 +1880,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     try
-      let clause = apply_in_once_main flags innerclause env sigma (c,lbind) in
+      let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
       clenv_refine_in ~sidecond_first with_evars targetid id sigma clause
         (fun id ->
           Tacticals.New.tclTHENLIST [
@@ -2487,7 +2500,7 @@ and intro_pattern_action loc with_evars b style pat thin destopt tac id =
       intro_decomp_eq loc l' thin tac id
   | IntroRewrite l2r ->
       rewrite_hyp_then style with_evars thin l2r id (fun thin -> tac thin None [])
-  | IntroApplyOn (f,(loc,pat)) ->
+  | IntroApplyOn ((loc',f),(loc,pat)) ->
       let naming,tac_ipat =
         prepare_intros_loc loc with_evars (IntroIdentifier id) destopt pat in
       let doclear =
@@ -2499,7 +2512,7 @@ and intro_pattern_action loc with_evars b style pat thin destopt tac id =
         let Sigma (c, sigma, p) = f.delayed env sigma in
         Sigma ((c, NoBindings), sigma, p)
       } in
-      apply_in_delayed_once false true true with_evars naming id (None,(loc,f))
+      apply_in_delayed_once false true true with_evars naming id (None,(loc',f))
         (fun id -> Tacticals.New.tclTHENLIST [doclear; tac_ipat id; tac thin None []])
 
 and prepare_intros_loc loc with_evars dft destopt = function
@@ -3044,7 +3057,7 @@ let warn_unused_intro_pattern =
 	 (fun c -> Printer.pr_econstr (fst (run_delayed (Global.env()) Evd.empty c)))) names)
 
 let check_unused_names names =
-  if not (List.is_empty names) && Flags.is_verbose () then
+  if not (List.is_empty names) then
     warn_unused_intro_pattern names
 
 let intropattern_of_name gl avoid = function

@@ -61,15 +61,15 @@ let init_color () =
     match colors with
     | None ->
       (** Default colors *)
-      Feedback.init_color_output ()
+      Topfmt.init_color_output ()
     | Some "" ->
       (** No color output *)
       ()
     | Some s ->
       (** Overwrite all colors *)
-      Ppstyle.clear_styles ();
-      Ppstyle.parse_config s;
-      Feedback.init_color_output ()
+      Topfmt.clear_styles ();
+      Topfmt.parse_color_config s;
+      Topfmt.init_color_output ()
   end
 
 let toploop_init = ref begin fun x ->
@@ -78,15 +78,27 @@ let toploop_init = ref begin fun x ->
   x
   end
 
-let toploop_run = ref (fun () ->
+(* Feedback received in the init stage, this is different as the STM
+   will not be generally be initialized, thus stateid, etc... may be
+   bogus. For now we just print to the console too *)
+let coqtop_init_feed = Coqloop.coqloop_feed
+
+(* Default toplevel loop *)
+let console_toploop_run () =
+  (* We initialize the console only if we run the toploop_run *)
+  let tl_feed = Feedback.add_feeder Coqloop.coqloop_feed in
   if Dumpglob.dump () then begin
     if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
   end;
   Coqloop.loop();
+  (* We remove the feeder but it could be ok not to do so *)
+  Feedback.del_feeder tl_feed;
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
-  Mltop.ocaml_toploop())
+  Mltop.ocaml_toploop()
+
+let toploop_run = ref console_toploop_run
 
 let output_context = ref false
 
@@ -122,11 +134,10 @@ let engage () =
 let set_batch_mode () = batch_mode := true
 
 let toplevel_default_name = DirPath.make [Id.of_string "Top"]
-let toplevel_name = ref (Some toplevel_default_name)
+let toplevel_name = ref toplevel_default_name
 let set_toplevel_name dir =
   if DirPath.is_empty dir then error "Need a non empty toplevel module name";
-  toplevel_name := Some dir
-let unset_toplevel_name () = toplevel_name := None
+  toplevel_name := dir
 
 let remove_top_ml () = Mltop.remove ()
 
@@ -228,7 +239,6 @@ let compile_files () =
   if !compile_list == [] then ()
   else
     let init_state = States.freeze ~marshallable:`No in
-    Feedback.(add_feeder debug_feeder);
     List.iter (fun vf ->
         States.unfreeze init_state;
         compile_file vf)
@@ -240,7 +250,6 @@ let set_emacs () =
   if not (Option.is_empty !toploop) then
     error "Flag -emacs is incompatible with a custom toplevel loop";
   Flags.print_emacs := true;
-  Feedback.(set_logger emacs_logger);
   Vernacentries.qed_display_script := false;
   color := `OFF
 
@@ -298,24 +307,16 @@ let usage () =
 
 let print_style_tags () =
   let () = init_color () in
-  let tags = Ppstyle.dump () in
+  let tags = Topfmt.dump_tags () in
   let iter (t, st) =
-    let st = match st with Some st -> st | None -> Terminal.make () in
-    let opt =
-      Terminal.eval st ^
-      String.concat "." (Ppstyle.repr t) ^
-      Terminal.reset ^ "\n"
-    in
+    let opt = Terminal.eval st ^ t ^ Terminal.reset ^ "\n" in
     print_string opt
   in
-  let make (t, st) = match st with
-  | None -> None
-  | Some st ->
+  let make (t, st) =
     let tags = List.map string_of_int (Terminal.repr st) in
-    let t = String.concat "." (Ppstyle.repr t) in
-    Some (t ^ "=" ^ String.concat ";" tags)
+    (t ^ "=" ^ String.concat ";" tags)
   in
-  let repr = List.map_filter make tags in
+  let repr = List.map make tags in
   let () = Printf.printf "COQ_COLORS=\"%s\"\n" (String.concat ":" repr) in
   let () = List.iter iter tags in
   flush_all ()
@@ -430,6 +431,13 @@ let get_native_name s =
     String.concat "/" [Filename.dirname s;
       Nativelib.output_dir; Library.native_name_from_filename s]
   with _ -> ""
+
+(** Prints info which is either an error or an anomaly and then exits
+    with the appropriate error code *)
+let fatal_error info anomaly =
+  let msg = info ++ fnl () in
+  Format.fprintf !Topfmt.err_ft "@[%a@]%!" pp_with msg;
+  exit (if anomaly then 129 else 1)
 
 let parse_args arglist =
   let args = ref arglist in
@@ -556,7 +564,6 @@ let parse_args arglist =
       if Coq_config.no_native_compiler then
 	warning "Native compilation was disabled at configure time."
       else native_compiler := true
-    |"-notop" -> unset_toplevel_name ()
     |"-output-context" -> output_context := true
     |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> no_load_rc ()
@@ -595,16 +602,15 @@ let parse_args arglist =
     parse ()
   with
     | UserError(_, s) as e ->
-      if is_empty s then exit 1
+      if ismt s then exit 1
       else fatal_error (CErrors.print e) false
     | any -> fatal_error (CErrors.print any) (CErrors.is_anomaly any)
 
 let init_toplevel arglist =
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
+  let init_feeder = Feedback.add_feeder coqtop_init_feed in
   Lib.init();
-  (* Default Proofb Mode starts with an alternative default. *)
-  Goptions.set_string_option_value ["Default";"Proof";"Mode"] "Classic";
   begin
     try
       let extras = parse_args arglist in
@@ -630,7 +636,7 @@ let init_toplevel arglist =
       engage ();
       if (not !batch_mode || List.is_empty !compile_list)
          && Global.env_is_initial ()
-      then Option.iter Declaremods.start_library !toplevel_name;
+      then Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();
       require ();
@@ -658,7 +664,8 @@ let init_toplevel arglist =
       Feedback.msg_notice (with_option raw_print Prettyp.print_full_pure_context () ++ fnl ());
     Profile.print_profile ();
     exit 0
-  end
+  end;
+  Feedback.del_feeder init_feeder
 
 let start () =
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in

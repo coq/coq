@@ -28,7 +28,7 @@ and pr_intro_pattern_action prc = function
   | IntroInjection pl ->
       str "[=" ++ hv 0 (prlist_with_sep spc (pr_intro_pattern prc) pl) ++
       str "]"
-  | IntroApplyOn (c,pat) -> pr_intro_pattern prc pat ++ str "%" ++ prc c
+  | IntroApplyOn ((_,c),pat) -> pr_intro_pattern prc pat ++ str "%" ++ prc c
   | IntroRewrite true -> str "->"
   | IntroRewrite false -> str "<-"
 

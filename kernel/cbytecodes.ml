@@ -299,7 +299,7 @@ and pp_bytecodes c =
   | Ksequence (l1, l2) :: c ->
       pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
   | i :: c ->
-      tab () ++ pp_instr i ++ fnl () ++ pp_bytecodes c
+      pp_instr i ++ fnl () ++ pp_bytecodes c
 
 (*spiwack: moved this type in this file  because I needed it for
   retroknowledge which can't depend from cbytegen *)

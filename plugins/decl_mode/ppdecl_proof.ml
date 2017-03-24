@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Ltac_plugin
 open CErrors
 open Pp
 open Decl_expr

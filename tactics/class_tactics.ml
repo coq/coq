@@ -1614,11 +1614,15 @@ let is_ground c gl =
   if Evarutil.is_ground_term (project gl) c then tclIDTAC gl
   else tclFAIL 0 (str"Not ground") gl
 
-let autoapply c i = Proofview.Goal.enter { enter = begin fun gl ->
+let autoapply c i =
+  let open Proofview.Notations in
+  Proofview.Goal.enter { enter = begin fun gl ->
   let flags = auto_unif_flags Evar.Set.empty
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
   let cty = Tacmach.New.pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
-  (unify_e_resolve false flags).enter gl
-    ((c,cty,Univ.ContextSet.empty),0,ce)
-end }
+    (unify_e_resolve false flags).enter gl
+                                 ((c,cty,Univ.ContextSet.empty),0,ce) <*>
+      Proofview.tclEVARMAP >>= (fun sigma ->
+      let sigma = Typeclasses.mark_unresolvables ~filter:Typeclasses.all_goals sigma in
+      Proofview.Unsafe.tclEVARS sigma) end }

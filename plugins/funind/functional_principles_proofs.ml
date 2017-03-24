@@ -1228,7 +1228,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
     let mk_fixes : tactic =
       let pre_info,infos = list_chop fun_num infos in
       match pre_info,infos with
-	| [],[] -> tclIDTAC
+	| _,[] -> tclIDTAC
 	| _, this_fix_info::others_infos ->
 	    let other_fix_infos =
 	      List.map
@@ -1244,7 +1244,6 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	    else
 	      Proofview.V82.of_tactic (Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
 		other_fix_infos 0)
-	| _ -> anomaly (Pp.str "Not a valid information")
     in
     let first_tac : tactic = (* every operations until fix creations *)
       tclTHENSEQ

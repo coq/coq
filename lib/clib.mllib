@@ -15,7 +15,6 @@ Store
 Exninfo
 Backtrace
 IStream
-Pp_control
 Flags
 Control
 Loc
@@ -28,8 +27,6 @@ CStack
 Util
 Stateid
 Pp
-Ppstyle
-Richpp
 Feedback
 CUnix
 Envars

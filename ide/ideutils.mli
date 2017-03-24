@@ -52,8 +52,6 @@ val pop_info : unit -> unit
 val clear_info : unit -> unit
 val flash_info : ?delay:int -> string -> unit
 
-val xml_to_string : Richpp.richpp -> string
-
 val insert_xml : ?mark:GText.mark -> ?tags:GText.tag list ->
   #GText.buffer_skel -> Richpp.richpp -> unit
 
@@ -69,7 +67,7 @@ val requote : string -> string
 val textview_width : #GText.view_skel -> int
 (** Returns an approximate value of the character width of a textview *)
 
-type logger = Feedback.level -> Richpp.richpp -> unit
+type logger = Feedback.level -> Pp.std_ppcmds -> unit
 
 val default_logger : logger
 (** Default logger. It logs messages that the casual user should not see. *)

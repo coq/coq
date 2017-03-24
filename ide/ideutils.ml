@@ -43,7 +43,7 @@ let xml_to_string xml =
   | Element (_, _, children) ->
     List.iter iter children
   in
-  let () = iter (Richpp.repr xml) in
+  let () = iter xml in
   Buffer.contents buf
 
 let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
@@ -75,7 +75,7 @@ let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
     let tags = try tag t :: tags with Not_found -> tags in
     List.iter (fun xml -> insert tags xml) children
   in
-  let () = try insert tags (Richpp.repr msg) with _ -> () in
+  let () = try insert tags msg with _ -> () in
   buf#delete_mark rmark
 
 let set_location = ref  (function s -> failwith "not ready")
@@ -294,18 +294,20 @@ let coqtop_path () =
       match cmd_coqtop#get with
 	| Some s -> s
 	| None ->
-	  let prog = String.copy Sys.executable_name in
 	  try
-	    let pos = String.length prog - 6 in
-	    let i = Str.search_backward (Str.regexp_string "coqide") prog pos
+            let old_prog = Sys.executable_name in
+            let pos = String.length old_prog - 6 in
+            let i = Str.search_backward (Str.regexp_string "coqide") old_prog pos
             in
-	    String.blit "coqtop" 0 prog i 6;
-	    if Sys.file_exists prog then prog
+            let new_prog = Bytes.of_string old_prog in
+            Bytes.blit_string "coqtop" 0 new_prog i 6;
+            let new_prog = Bytes.to_string new_prog in
+            if Sys.file_exists new_prog then new_prog
 	    else
 	      let in_macos_bundle =
 		Filename.concat
-		  (Filename.dirname prog)
-		  (Filename.concat "../Resources/bin" (Filename.basename prog))
+		  (Filename.dirname new_prog)
+		  (Filename.concat "../Resources/bin" (Filename.basename new_prog))
 	      in if Sys.file_exists in_macos_bundle then in_macos_bundle
 		 else "coqtop"
 	  with Not_found -> "coqtop"
@@ -325,7 +327,7 @@ let textview_width (view : #GText.view_skel) =
   let char_width = GPango.to_pixels metrics#approx_char_width in
   pixel_width / char_width
 
-type logger = Feedback.level -> Richpp.richpp -> unit
+type logger = Feedback.level -> Pp.std_ppcmds -> unit
 
 let default_logger level message =
   let level = match level with
@@ -335,7 +337,7 @@ let default_logger level message =
   | Feedback.Warning -> `WARNING
   | Feedback.Error -> `ERROR
   in
-  Minilib.log ~level (xml_to_string message)
+  Minilib.log_pp ~level message
 
 
 (** {6 File operations} *)
@@ -357,7 +359,7 @@ let stat f =
 
 let maxread = 4096
 
-let read_string = String.create maxread
+let read_string = Bytes.create maxread
 let read_buffer = Buffer.create maxread
 
 (** Read the content of file [f] and add it to buffer [b].
@@ -368,7 +370,7 @@ let read_file name buf =
   let len = ref 0 in
   try
     while len := input ic read_string 0 maxread; !len > 0 do
-      Buffer.add_substring buf read_string 0 !len
+      Buffer.add_subbytes buf read_string 0 !len
     done;
     close_in ic
   with e -> close_in ic; raise e
@@ -381,8 +383,9 @@ let read_file name buf =
 let io_read_all chan =
   Buffer.clear read_buffer;
   let read_once () =
-    let len = Glib.Io.read_chars ~buf:read_string ~pos:0 ~len:maxread chan in
-    Buffer.add_substring read_buffer read_string 0 len
+    (* XXX: Glib.Io must be converted to bytes / -safe-string upstream *)
+    let len = Glib.Io.read_chars ~buf:(Bytes.unsafe_to_string read_string) ~pos:0 ~len:maxread chan in
+    Buffer.add_subbytes read_buffer read_string 0 len
   in
   begin
     try while true do read_once () done

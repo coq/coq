@@ -91,16 +91,8 @@ let declare_object_full odecl =
 			     dyn_rebuild_function = rebuild };
   (infun,outfun)
 
-(* The "try .. with .. " allows for correct printing when calling
-   declare_object a loading time.
-*)
-
-let declare_object odecl =
-  try fst (declare_object_full odecl)
-  with e -> CErrors.fatal_error (CErrors.print e) (CErrors.is_anomaly e)
-let declare_object_full odecl =
-  try declare_object_full odecl
-  with e -> CErrors.fatal_error (CErrors.print e) (CErrors.is_anomaly e)
+let declare_object odecl = fst (declare_object_full odecl)
+let declare_object_full odecl = declare_object_full odecl
 
 (* this function describes how the cache, load, open, and export functions
    are triggered. *)

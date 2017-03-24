@@ -318,7 +318,7 @@ let export kind sn =
         local_cd f ^ cmd_coqdoc#get ^ " --" ^ kind ^ " -o " ^
         (Filename.quote output) ^ " " ^ (Filename.quote basef) ^ " 2>&1"
       in
-      sn.messages#set (Richpp.richpp_of_string ("Running: "^cmd));
+      sn.messages#set (Pp.str ("Running: "^cmd));
       let finally st = flash_info (cmd ^ pr_exit_status st)
       in
       run_command (fun msg -> sn.messages#add_string msg) finally cmd
@@ -431,7 +431,7 @@ let compile sn =
 	^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
       let buf = Buffer.create 1024 in
-      sn.messages#set (Richpp.richpp_of_string ("Running: "^cmd));
+      sn.messages#set (Pp.str ("Running: "^cmd));
       let display s =
         sn.messages#add_string s;
         Buffer.add_string buf s
@@ -441,8 +441,8 @@ let compile sn =
           flash_info (f ^ " successfully compiled")
         else begin
           flash_info (f ^ " failed to compile");
-          sn.messages#set (Richpp.richpp_of_string "Compilation output:\n");
-          sn.messages#add (Richpp.richpp_of_string (Buffer.contents buf));
+          sn.messages#set (Pp.str "Compilation output:\n");
+          sn.messages#add (Pp.str (Buffer.contents buf));
         end
       in
       run_command display finally cmd
@@ -464,7 +464,7 @@ let make sn =
     |Some f ->
       File.saveall ();
       let cmd = local_cd f ^ cmd_make#get ^ " 2>&1" in
-      sn.messages#set (Richpp.richpp_of_string "Compilation output:\n");
+      sn.messages#set (Pp.str "Compilation output:\n");
       Buffer.reset last_make_buf;
       last_make := "";
       last_make_index := 0;
@@ -508,11 +508,11 @@ let next_error sn =
     let stopi = b#get_iter_at_byte ~line:(line-1) stop in
     b#apply_tag Tags.Script.error ~start:starti ~stop:stopi;
     b#place_cursor ~where:starti;
-    sn.messages#set (Richpp.richpp_of_string error_msg);
+    sn.messages#set (Pp.str error_msg);
     sn.script#misc#grab_focus ()
   with Not_found ->
     last_make_index := 0;
-    sn.messages#set (Richpp.richpp_of_string "No more errors.\n")
+    sn.messages#set (Pp.str "No more errors.\n")
 
 let next_error = cb_on_current_term next_error
 
@@ -536,7 +536,7 @@ let update_status sn =
     display ("Ready"^ (if nanoPG#get then ", [μPG]" else "") ^ path ^ name);
     Coq.return ()
   in
-  Coq.bind (Coq.status ~logger:sn.messages#push false) next
+  Coq.bind (Coq.status false) next
 
 let find_next_occurrence ~backward sn =
   (** go to the next occurrence of the current word, forward or backward *)
@@ -789,7 +789,7 @@ let coqtop_arguments sn =
         let args = String.concat " " args in
         let msg = Printf.sprintf "Invalid arguments: %s" args in
         let () = sn.messages#clear in
-        sn.messages#push Feedback.Error (Richpp.richpp_of_string msg)
+        sn.messages#push Feedback.Error (Pp.str msg)
     else dialog#destroy ()
   in
   let _ = entry#connect#activate ok_cb in
@@ -887,8 +887,8 @@ let alpha_items menu_name item_name l =
     | [] -> ()
     | [s] -> mk_item s
     | s::_ as ll ->
-      let name = item_name^" "^(String.make 1 s.[0]) in
-      let label = "_@..." in label.[1] <- s.[0];
+      let name = Printf.sprintf "%s %c" item_name s.[0] in
+      let label = Printf.sprintf "_%c..." s.[0] in
       item name ~label menu_name;
       List.iter mk_item ll
   in

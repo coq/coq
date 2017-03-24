@@ -197,7 +197,7 @@ let prepare_entry s = function
       let h = try String.index_from s 0 ':' with _ -> err () in
       let i = try String.index_from s (h+1) ':' with _ -> err () in
       let sc = String.sub s (h+1) (i-h-1) in
-      let ntn = String.make (String.length s - i) ' ' in
+      let ntn = Bytes.make (String.length s - i) ' ' in
       let k = ref 0 in
       let j = ref (i+1) in
       let quoted = ref false in
@@ -205,22 +205,22 @@ let prepare_entry s = function
       while !j <= l do
 	if not !quoted then begin
 	  (match s.[!j] with
-	  | '_' -> ntn.[!k] <- ' '; incr k
-	  | 'x' -> ntn.[!k] <- '_'; incr k
+	  | '_' -> Bytes.set ntn !k ' '; incr k
+	  | 'x' -> Bytes.set ntn !k '_'; incr k
 	  | '\'' -> quoted := true
 	  | _ -> assert false)
 	end
 	else
 	  if s.[!j] = '\'' then
 	    if (!j = l || s.[!j+1] = '_') then quoted := false
-	    else (incr j; ntn.[!k] <- s.[!j]; incr k)
+	    else (incr j; Bytes.set ntn !k s.[!j]; incr k)
 	  else begin
-	    ntn.[!k] <- s.[!j];
+	    Bytes.set ntn !k s.[!j];
 	    incr k
 	  end;
 	incr j
       done;
-      let ntn = String.sub ntn 0 !k in
+      let ntn = Bytes.sub_string ntn 0 !k in
       if sc = "" then ntn else ntn ^ " (" ^ sc ^ ")"
   | _ ->
       s

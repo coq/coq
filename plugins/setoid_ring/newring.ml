@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Ltac_plugin
 open Pp
 open CErrors
 open Util
@@ -128,7 +129,7 @@ let closed_term_ast l =
     mltac_index = 0;
   } in
   let l = List.map (fun gr -> ArgArg(Loc.ghost,gr)) l in
-  TacFun([Some(Id.of_string"t")],
+  TacFun([Name(Id.of_string"t")],
   TacML(Loc.ghost,tacname,
   [TacGeneric (Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (GVar(Loc.ghost,Id.of_string"t"),None));
    TacGeneric (Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)]))
@@ -213,7 +214,7 @@ let exec_tactic env evd n f args =
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
   let get_res = TacML (Loc.ghost, get_res, [TacGeneric n]) in
-  let getter = Tacexp (TacFun (List.map (fun id -> Some id) lid, get_res)) in
+  let getter = Tacexp (TacFun (List.map (fun n -> Name n) lid, get_res)) in
   (** Evaluate the whole result *)
   let gl = dummy_goal env evd in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
@@ -331,14 +332,16 @@ let _ = add_map "ring"
   (map_with_eq
     [coq_cons,(function -1->Eval|2->Rec|_->Prot);
     coq_nil, (function -1->Eval|_ -> Prot);
+    my_reference "IDphi", (function _->Eval);
+    my_reference "gen_phiZ", (function _->Eval);
     (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
     pol_cst "Pphi_dev", (function -1|8|9|10|11|12|14->Eval|13->Rec|_->Prot);
     pol_cst "Pphi_pow",
-          (function -1|8|9|10|11|13|15|17->Eval|16->Rec|_->Prot);
+          (function -1|8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function -1|7|9|12->Eval|11->Rec|_->Prot)])
+    pol_cst "PEeval", (function -1|8|10|13->Eval|12->Rec|_->Prot)])
 
 (****************************************************************************)
 (* Ring database *)
@@ -742,8 +745,8 @@ let ltac_ring_structure e =
   let pow_tac = tacarg e.ring_pow_tac in
   let lemma1 = carg e.ring_lemma1 in
   let lemma2 = carg e.ring_lemma2 in
-  let pretac = tacarg (TacFun([None],e.ring_pre_tac)) in
-  let posttac = tacarg (TacFun([None],e.ring_post_tac)) in
+  let pretac = tacarg (TacFun([Anonymous],e.ring_pre_tac)) in
+  let posttac = tacarg (TacFun([Anonymous],e.ring_post_tac)) in
   [req;sth;ext;morph;th;cst_tac;pow_tac;
    lemma1;lemma2;pretac;posttac]
 
@@ -775,12 +778,14 @@ let _ = add_map "field"
   (map_with_eq
     [coq_cons,(function -1->Eval|2->Rec|_->Prot);
     coq_nil, (function -1->Eval|_ -> Prot);
+    my_reference "IDphi", (function _->Eval);
+    my_reference "gen_phiZ", (function _->Eval);
     (* display_linear: evaluate polynomials and coef operations, protect
        field operations and make recursive call on the var map *)
     my_reference "display_linear",
       (function -1|9|10|11|12|13|15|16->Eval|14->Rec|_->Prot);
     my_reference "display_pow_linear",
-     (function -1|9|10|11|12|13|14|16|18|19->Eval|17->Rec|_->Prot);
+     (function -1|9|10|11|14|16|18|19->Eval|12|17->Rec|_->Prot);
    (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
     pol_cst "Pphi_dev", (function -1|8|9|10|11|12|14->Eval|13->Rec|_->Prot);
@@ -788,19 +793,20 @@ let _ = add_map "field"
           (function -1|8|9|10|11|13|15|17->Eval|16->Rec|_->Prot);
     (* PEeval: evaluate morphism and polynomial, protect ring
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function -1|7|9|12->Eval|11->Rec|_->Prot);
+    pol_cst "PEeval", (function -1|8|10|13->Eval|12->Rec|_->Prot);
     (* FEeval: evaluate morphism, protect field
        operations and make recursive call on the var map *)
-    my_reference "FEeval", (function -1|8|9|10|11|14->Eval|13->Rec|_->Prot)]);;
+    my_reference "FEeval", (function -1|10|12|15->Eval|14->Rec|_->Prot)]);;
 
 let _ = add_map "field_cond"
   (map_without_eq
     [coq_cons,(function -1->Eval|2->Rec|_->Prot);
      coq_nil, (function -1->Eval|_ -> Prot);
-    (* PCond: evaluate morphism and denum list, protect ring
+     my_reference "IDphi", (function _->Eval);
+     my_reference "gen_phiZ", (function _->Eval);
+    (* PCond: evaluate denum list, protect ring
        operations and make recursive call on the var map *)
-     my_reference "PCond", (function -1|9|11|14->Eval|13->Rec|_->Prot)]);;
-(*                       (function -1|9|11->Eval|10->Rec|_->Prot)]);;*)
+     my_reference "PCond", (function -1|11|14->Eval|9|13->Rec|_->Prot)]);;
 
 
 let _ = Redexpr.declare_reduction "simpl_field_expr"
@@ -1025,8 +1031,8 @@ let ltac_field_structure e =
   let field_simpl_eq_ok = carg e.field_simpl_eq_ok in
   let field_simpl_eq_in_ok = carg e.field_simpl_eq_in_ok in
   let cond_ok = carg e.field_cond in
-  let pretac = tacarg (TacFun([None],e.field_pre_tac)) in
-  let posttac = tacarg (TacFun([None],e.field_post_tac)) in
+  let pretac = tacarg (TacFun([Anonymous],e.field_pre_tac)) in
+  let posttac = tacarg (TacFun([Anonymous],e.field_post_tac)) in
   [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
    field_simpl_eq_in_ok;cond_ok;pretac;posttac]
 

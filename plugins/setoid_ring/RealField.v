@@ -59,11 +59,12 @@ Notation Rset := (Eqsth R).
 Notation Rext := (Eq_ext Rplus Rmult Ropp).
 
 Lemma Rlt_0_2 : 0 < 2.
+Proof.
 apply Rlt_trans with (0 + 1).
  apply Rlt_n_Sn.
  rewrite Rplus_comm.
    apply Rplus_lt_compat_l.
-    replace 1 with (0 + 1).
+    replace R1 with (0 + 1).
   apply Rlt_n_Sn.
   apply Rplus_0_l.
 Qed.
@@ -126,9 +127,17 @@ Ltac Rpow_tac t :=
   | _ => constr:(N.of_nat t)
   end.
 
+Ltac IZR_tac t :=
+  match t with
+  | R0 => constr:(0%Z)
+  | R1 => constr:(1%Z)
+  | IZR ?u =>
+    match isZcst u with
+    | true => u
+    | _ => constr:(InitialRing.NotConstant)
+    end
+  | _ => constr:(InitialRing.NotConstant)
+  end.
+
 Add Field RField : Rfield
-   (completeness Zeq_bool_complete, power_tac R_power_theory [Rpow_tac]).
-
-
-
-
+   (completeness Zeq_bool_complete, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).

@@ -15,7 +15,7 @@ open Pp
 
 type input_buffer = {
   mutable prompt : unit -> string;
-  mutable str : string; (** buffer of already read characters *)
+  mutable str : Bytes.t; (** buffer of already read characters *)
   mutable len : int;    (** number of chars in the buffer *)
   mutable bols : int list; (** offsets in str of begining of lines *)
   mutable tokens : Pcoq.Gram.coq_parsable; (** stream of tokens *)
@@ -31,6 +31,8 @@ val set_prompt : (unit -> string) -> unit
   meaning we get out of the Coq loop. *)
 
 val print_toplevel_error : Exninfo.iexn -> std_ppcmds
+
+val coqloop_feed : Feedback.feedback -> unit
 
 (** Parse and execute one vernac command. *)
 

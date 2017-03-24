@@ -1,4 +1,7 @@
 dist: trusty
+# Travis builds are slower using sudo: false (the container-based
+# infrastructure) as of March 2017; see
+# https://github.com/coq/coq/pull/467 for some discussion.
 sudo: required
 # Until Ocaml becomes a language, we set a known one.
 language: c
@@ -27,23 +30,27 @@ env:
   - TEST_TARGET="ci-color"
   - TEST_TARGET="ci-compcert"
   - TEST_TARGET="ci-coquelicot"
-  - TEST_TARGET="ci-cpdt"
   - TEST_TARGET="ci-geocoq"
   - TEST_TARGET="ci-fiat-crypto"
+  - TEST_TARGET="ci-fiat-parsers"
   - TEST_TARGET="ci-flocq"
   - TEST_TARGET="ci-hott"
   - TEST_TARGET="ci-iris-coq"
   - TEST_TARGET="ci-math-classes"
   - TEST_TARGET="ci-math-comp"
   - TEST_TARGET="ci-sf"
+  - TEST_TARGET="ci-unimath"
+  - TEST_TARGET="ci-vst"
   # Not ready yet for 8.7
+  # - TEST_TARGET="ci-cpdt"
   # - TEST_TARGET="ci-metacoq"
   # - TEST_TARGET="ci-tlc"
 
 matrix:
 
   allow_failures:
-  - env: TEST_TARGET="ci-cpdt"
+  - env: TEST_TARGET="ci-geocoq"
+  - env: TEST_TARGET="ci-vst"
 
   # Full Coq test-suite with two compilers
   # [TODO: use yaml refs and avoid duplication for packages list]

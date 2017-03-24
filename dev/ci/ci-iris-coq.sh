@@ -1,35 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# $0 is not the safest way, but...
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-# XXX: Refactor into install-ssreflect
-git clone --depth 1 https://github.com/math-comp/math-comp.git
+stdpp_CI_DIR=${CI_BUILD_DIR}/coq-stdpp
 
-# coquelicot just needs mathcomp
-( cd math-comp/mathcomp && \
-  sed -i.bak '/ssrtest/d'     Make && \
-  sed -i.bak '/odd_order/d'   Make && \
-  sed -i.bak '/all\/all.v/d'  Make && \
-  sed -i.bak '/character/d'   Make && \
-  sed -i.bak '/real_closed/d' Make && \
-  sed -i.bak '/solvable/d'    Make && \
-  sed -i.bak '/field/d'       Make && \
-  sed -i.bak '/fingroup/d'    Make && \
-  sed -i.bak '/algebra/d'     Make && \
-  make -j ${NJOBS} && make install )
+Iris_CI_DIR=${CI_BUILD_DIR}/iris-coq
 
-# Setup ssr = This doesn't work as coq_makefile will pass -q to coqc :S :S
-# echo "Add ML Path \"`pwd`/math-comp/mathcomp/\"." > ${HOME}/.coqrc
-# echo "Add LoadPath \"`pwd`/math-comp/mathcomp/\" as mathcomp." >> ${HOME}/.coqrc
+install_ssreflect
+
+# Setup Iris first, as it is needed to compute the dependencies
+
+git_checkout ${Iris_CI_BRANCH} ${Iris_CI_GITURL} ${Iris_CI_DIR}
+read -a IRIS_DEP < ${Iris_CI_DIR}/opam.pins
 
 # Setup stdpp
-git clone --depth 1 https://gitlab.mpi-sws.org/robbertkrebbers/coq-stdpp.git
+stdpp_CI_GITURL=${IRIS_DEP[1]}.git
+stdpp_CI_COMMIT=${IRIS_DEP[2]}
 
-( cd coq-stdpp && make -j ${NJOBS} && make install )
+git_checkout ${stdpp_CI_BRANCH} ${stdpp_CI_GITURL} ${stdpp_CI_DIR} ${stdpp_CI_COMMIT}
 
-# Setup Iris
-git clone --depth 1 https://gitlab.mpi-sws.org/FP/iris-coq.git
+( cd ${stdpp_CI_DIR} && make -j ${NJOBS} && make install )
 
-( cd iris-coq && make -j ${NJOBS} )
+# Build iris now
+( cd ${Iris_CI_DIR} && make -j ${NJOBS} )

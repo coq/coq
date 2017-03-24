@@ -2,6 +2,12 @@
 = CHANGES BETWEEN COQ V8.6 AND COQ V8.7 =
 =========================================
 
+* Ocaml *
+
+Coq is compiled with -safe-string enabled and requires plugins to do
+the same. This means that code using `String` in an imperative way
+will fail to compile now. They should switch to `Bytes.t`
+
 * ML API *
 
 We renamed the following functions:
@@ -39,6 +45,26 @@ important things:
   instead
 - Some printing functions were moved from Pptactic to Pputils
 - A part of Tacexpr has been moved to Tactypes
+- The TacFun tactic expression constructor now takes a `Name.t list` for the 
+  variable list rather than an `Id.t option list`.
+
+The folder itself has been turned into a plugin. This does not change much,
+but because it is a packed plugin, it may wreak havoc for third-party plugins
+depending on any module defined in the ltac/ directory. Namely, even if
+everything looks OK at compile time, a plugin can fail to load at link time
+because it mistakenly looks for a module Foo instead of Ltac_plugin.Foo, with
+an error of the form:
+
+Error: while loading myplugin.cmxs, no implementation available for Foo.
+
+In particular, most EXTEND macros will trigger this problem even if they
+seemingly do not use any Ltac module, as their expansion do.
+
+The solution is simple, and consists in adding a statement "open Ltac_plugin"
+in each file using a Ltac module, before such a module is actually called. An
+alternative solution would be to fully qualify Ltac modules, e.g. turning any
+call to Tacinterp into Ltac_plugin.Tacinterp. Note that this solution does not
+work for EXTEND macros though.
 
 ** Error handling **
 
@@ -49,6 +75,58 @@ important things:
 - `errorlabstrm` has been removed in favor of `user_err`.
 
 - The header parameter to `user_err` has been made optional.
+
+** Pretty printing **
+
+Some functions have been removed, see pretty printing below for more
+details.
+
+* Pretty Printing and XML protocol *
+
+The type std_cmdpps has been reworked and made the canonical "Coq rich
+document type". This allows for a more uniform handling of printing
+(specially in IDEs). The main consequences are:
+
+ - Richpp has been confined to IDE use. Most of previous uses of the
+   `richpp` type should be replaced now by `Pp.std_cmdpps`. Main API
+   has been updated.
+
+ - The XML protocol will send a new message type of `pp`, which should
+   be rendered client-wise.
+
+ - `Set Printing Width` is deprecated, now width is controlled
+   client-side.
+
+ - `Pp_control` has removed. The new module `Topfmt` implements
+   console control for the toplevel.
+
+ - The impure tag system in Pp has been removed. This also does away
+   with the printer signatures and functors. Now printers tag
+   unconditionally.
+
+ - The following functions have been removed from `Pp`:
+
+   val stras : int * string -> std_ppcmds
+   val tbrk  : int * int -> std_ppcmds
+   val tab   : unit -> std_ppcmds
+   val pifb  : unit -> std_ppcmds
+   val comment  : int -> std_ppcmds
+   val comments : ((int * int) * string) list ref
+   val eval_ppcmds : std_ppcmds -> std_ppcmds
+   val is_empty : std_ppcmds -> bool
+   val t : std_ppcmds -> std_ppcmds
+   val hb : int -> std_ppcmds
+   val vb : int -> std_ppcmds
+   val hvb : int -> std_ppcmds
+   val hovb : int -> std_ppcmds
+   val tb : unit -> std_ppcmds
+   val close : unit -> std_ppcmds
+   val tclose : unit -> std_ppcmds
+   val open_tag : Tag.t -> std_ppcmds
+   val close_tag : unit -> std_ppcmds
+   val msg_with  : ...
+
+   module Tag
 
 =========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =

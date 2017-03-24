@@ -53,7 +53,7 @@ assert (-(PI/4) <= atan x).
  destruct xm1 as [xm1 | xm1].
   rewrite <- atan_1, <- atan_opp; apply Rlt_le, atan_increasing.
   assumption.
- solve[rewrite <- xm1, atan_opp, atan_1; apply Rle_refl].
+ solve[rewrite <- xm1; change (-1) with (-(1)); rewrite atan_opp, atan_1; apply Rle_refl].
 assert (-(PI/4) < atan y).
  rewrite <- atan_1, <- atan_opp; apply atan_increasing.
  assumption.

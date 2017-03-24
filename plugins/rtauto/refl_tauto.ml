@@ -8,6 +8,7 @@
 
 module Search = Explore.Make(Proof_search)
 
+open Ltac_plugin
 open CErrors
 open Util
 open Term

@@ -4,8 +4,8 @@ Vcs
 TQueue
 WorkerPool
 Vernac_classifier
-Lemmas
 CoqworkmgrApi
+WorkerLoop
 AsyncTaskQueue
 Stm
 ProofBlockDelimiter

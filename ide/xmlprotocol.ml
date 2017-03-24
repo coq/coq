@@ -12,6 +12,9 @@
 
 let protocol_version = "20150913"
 
+type msg_format = Richpp of int | Ppcmds
+let msg_format = ref (Richpp 72)
+
 (** * Interface of calls to Coq by CoqIde *)
 
 open Util
@@ -92,10 +95,57 @@ let to_stateid = function
 
 let of_stateid i = Element ("state_id",["val",string_of_int (Stateid.to_int i)],[])
 
-let of_richpp x = Element ("richpp", [], [Richpp.repr x])
-let to_richpp xml = match xml with
-  | Element ("richpp", [], [x]) -> Richpp.richpp_of_xml x
-  | x -> raise Serialize.(Marshal_error("richpp",x))
+let of_box (ppb : Pp.block_type) = let open Pp in match ppb with
+  | Pp_hbox   i -> constructor "ppbox" "hbox"   [of_int i]
+  | Pp_vbox   i -> constructor "ppbox" "vbox"   [of_int i]
+  | Pp_hvbox  i -> constructor "ppbox" "hvbox"  [of_int i]
+  | Pp_hovbox i -> constructor "ppbox" "hovbox" [of_int i]
+
+let to_box = let open Pp in
+  do_match "ppbox" (fun s args -> match s with
+      | "hbox"   -> Pp_hbox   (to_int (singleton args))
+      | "vbox"   -> Pp_vbox   (to_int (singleton args))
+      | "hvbox"  -> Pp_hvbox  (to_int (singleton args))
+      | "hovbox" -> Pp_hovbox (to_int (singleton args))
+      | x        -> raise (Marshal_error("*ppbox",PCData x))
+    )
+
+let rec of_pp (pp : Pp.std_ppcmds) = let open Pp in match Pp.repr pp with
+    | Ppcmd_empty         -> constructor "ppdoc" "emtpy"  []
+    | Ppcmd_string s      -> constructor "ppdoc" "string" [of_string s]
+    | Ppcmd_glue sl       -> constructor "ppdoc" "glue"   [of_list of_pp sl]
+    | Ppcmd_box (bt,s)    -> constructor "ppdoc" "box"    [of_pair of_box of_pp (bt,s)]
+    | Ppcmd_tag (t,s)     -> constructor "ppdoc" "tag"    [of_pair of_string of_pp (t,s)]
+    | Ppcmd_print_break (i,j)
+                          -> constructor "ppdoc" "break"     [of_pair of_int of_int (i,j)]
+    | Ppcmd_force_newline -> constructor "ppdoc" "newline"   []
+    | Ppcmd_comment cmd   -> constructor "ppdoc" "comment" [of_list of_string cmd]
+
+
+let rec to_pp xpp = let open Pp in
+  Pp.unrepr @@
+  do_match "ppdoc" (fun s args -> match s with
+    | "empty"     -> Ppcmd_empty
+    | "string"    -> Ppcmd_string (to_string (singleton args))
+    | "glue"      -> Ppcmd_glue (to_list to_pp (singleton args))
+    | "box"       -> let (bt,s) = to_pair to_box to_pp (singleton args) in
+                     Ppcmd_box(bt,s)
+    | "tag"       -> let (tg,s) = to_pair to_string to_pp (singleton args) in
+                     Ppcmd_tag(tg,s)
+    | "break"     -> let (i,j)   = to_pair to_int to_int (singleton args) in
+                     Ppcmd_print_break(i, j)
+    | "newline"   -> Ppcmd_force_newline
+    | "comment"   -> Ppcmd_comment (to_list to_string (singleton args))
+    | x           -> raise (Marshal_error("*ppdoc",PCData x))
+  ) xpp
+
+let of_richpp x = Element ("richpp", [], [x])
+
+(* Run-time Selectable *)
+let of_pp (pp : Pp.std_ppcmds) =
+  match !msg_format with
+  | Richpp margin -> of_richpp (Richpp.richpp_of_pp margin pp)
+  | Ppcmds        -> of_pp pp
 
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
@@ -104,7 +154,7 @@ let of_value f = function
   | None -> []
   | Some (s, e) -> [("loc_s", string_of_int s); ("loc_e", string_of_int e)] in
   let id = of_stateid id in
-  Element ("value", ["val", "fail"] @ loc, [id; of_richpp msg])
+  Element ("value", ["val", "fail"] @ loc, [id; of_pp msg])
 
 let to_value f = function
 | Element ("value", attrs, l) ->
@@ -120,7 +170,7 @@ let to_value f = function
     in
     let (id, msg) = match l with [id; msg] -> (id, msg) | _ -> raise (Marshal_error("val",PCData "no id attribute")) in
     let id = to_stateid id in
-    let msg = to_richpp msg in
+    let msg = to_pp msg    in
     Fail (id, loc, msg)
   else raise (Marshal_error("good or fail",PCData ans))
 | x -> raise (Marshal_error("value",x))
@@ -147,15 +197,15 @@ let to_evar = function
   | x -> raise (Marshal_error("evar",x))
 
 let of_goal g =
-  let hyp = of_list of_richpp g.goal_hyp in
-  let ccl = of_richpp g.goal_ccl in
+  let hyp = of_list of_pp g.goal_hyp in
+  let ccl = of_pp g.goal_ccl in
   let id = of_string g.goal_id in
   Element ("goal", [], [id; hyp; ccl])
 let to_goal = function
   | Element ("goal", [], [id; hyp; ccl]) ->
-    let hyp = to_list to_richpp hyp in
-    let ccl = to_richpp ccl in
-    let id = to_string id in
+    let hyp = to_list to_pp hyp in
+    let ccl = to_pp ccl         in
+    let id  = to_string id      in
     { goal_hyp = hyp; goal_ccl = ccl; goal_id = id; }
   | x -> raise (Marshal_error("goal",x))
 
@@ -344,8 +394,8 @@ end = struct
         Printf.sprintf "Still focussed: [%a]." pr_focus g.bg_goals
     else
       let pr_goal { goal_hyp = hyps; goal_ccl = goal } =
-        "[" ^ String.concat "; " (List.map Richpp.raw_print hyps) ^ " |- " ^
-            Richpp.raw_print goal ^ "]" in
+        "[" ^ String.concat "; " (List.map Pp.string_of_ppcmds hyps) ^ " |- " ^
+            Pp.string_of_ppcmds goal ^ "]" in
       String.concat " " (List.map pr_goal g.fg_goals)
   let pr_evar (e : evar) = "[" ^ e.evar_info ^ "]"
   let pr_status (s : status) =
@@ -631,6 +681,9 @@ let of_answer : type a. a call -> a value -> xml = function
   | PrintAst _   -> of_value (of_value_type print_ast_rty_t  )
   | Annotate _   -> of_value (of_value_type annotate_rty_t   )
 
+let of_answer msg_fmt =
+  msg_format := msg_fmt; of_answer
+
 let to_answer : type a. a call -> xml -> a value = function
   | Add _        -> to_value (to_value_type add_rty_t        )
   | Edit_at _    -> to_value (to_value_type edit_at_rty_t    )
@@ -701,10 +754,10 @@ let to_call : xml -> unknown_call =
 
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
-  | Fail (id,None,str) -> "FAIL "^Stateid.to_string id^" ["^Richpp.raw_print str^"]"
+  | Fail (id,None,str) -> "FAIL "^Stateid.to_string id^" ["^ Pp.string_of_ppcmds str ^ "]"
   | Fail (id,Some(i,j),str) ->
       "FAIL "^Stateid.to_string id^
-        " ("^string_of_int i^","^string_of_int j^")["^Richpp.raw_print str^"]"
+        " ("^string_of_int i^","^string_of_int j^")["^Pp.string_of_ppcmds str^"]"
 let pr_value v = pr_value_gen (fun _ -> "FIXME") v
 let pr_full_value : type a. a call -> a value -> string = fun call value -> match call with
   | Add _        -> pr_value_gen (print add_rty_t        ) value
@@ -760,7 +813,7 @@ let document to_string_fmt =
     (to_string_fmt (of_value (fun _ -> PCData "b") (Good ())));
   Printf.printf "or:\n\n%s\n\nwhere the attributes loc_s and loc_c are optional.\n"
     (to_string_fmt (of_value (fun _ -> PCData "b")
-      (Fail (Stateid.initial,Some (15,34),Richpp.richpp_of_string "error message"))));
+      (Fail (Stateid.initial,Some (15,34), Pp.str "error message"))));
   document_type_encoding to_string_fmt
 
 (* Moved from feedback.mli : This is IDE specific and we don't want to
@@ -787,19 +840,13 @@ let to_message_level =
 let of_message lvl loc msg =
   let lvl     = of_message_level lvl in
   let xloc    = of_option of_loc loc in
-  let content = of_richpp msg        in
+  let content = of_pp msg            in
   Xml_datatype.Element ("message", [], [lvl; xloc; content])
 
 let to_message xml = match xml with
   | Xml_datatype.Element ("message", [], [lvl; xloc; content]) ->
-      Message(to_message_level lvl, to_option to_loc xloc, to_richpp content)
+      Message(to_message_level lvl, to_option to_loc xloc, to_pp content)
   | x -> raise (Marshal_error("message",x))
-
-let is_message xml =
-  try begin match to_message xml with
-    | Message(l,c,m) -> Some (l,c,m)
-    | _              -> None
-  end with | Marshal_error _ -> None
 
 let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "addedaxiom", _ -> AddedAxiom
@@ -869,6 +916,9 @@ let of_feedback msg =
   let obj, id = of_edit_or_state_id msg.id in
   let route = string_of_int msg.route in
   Element ("feedback", obj @ ["route",route], [id;content])
+
+let of_feedback msg_fmt =
+  msg_format := msg_fmt; of_feedback
 
 let to_feedback xml = match xml with
   | Element ("feedback", ["object","edit";"route",route], [id;content]) -> {

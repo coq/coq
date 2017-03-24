@@ -267,6 +267,7 @@ module Prim =
     let integer = gec_gen "integer"
     let bigint = Gram.entry_create "Prim.bigint"
     let string = gec_gen "string"
+    let lstring = Gram.entry_create "Prim.lstring"
     let reference = make_gen_entry uprim "reference"
     let by_notation = Gram.entry_create "by_notation"
     let smart_global = Gram.entry_create "smart_global"

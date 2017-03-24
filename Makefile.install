@@ -104,11 +104,12 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES) $(PLUGINS)
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
+	$(MKDIR) $(FULLCOQLIB)/kernel/byterun
 ifndef CUSTOM
-	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
+	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)/kernel/byterun
 endif
 ifeq ($(BEST),opt)
-	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
+	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)/kernel/byterun
 	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINSOPT)
 endif
 # csdpcert is not meant to be directly called by the user; we install

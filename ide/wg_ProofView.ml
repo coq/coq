@@ -18,7 +18,6 @@ class type proof_view =
     method clear : unit -> unit
     method set_goals : Interface.goals option -> unit
     method set_evars : Interface.evar list option -> unit
-    method width : int
   end
 
 (* tag is the tag to be hooked, item is the item covered by this tag, make_menu
@@ -74,6 +73,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
       | None -> [], []
       | Some (hl, h) -> (hl, h)
       in
+      let width = Ideutils.textview_width proof in
       let rec insert_hyp hints hs = match hs with
       | [] -> ()
       | hyp :: hs ->
@@ -84,7 +84,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
           let () = hook_tag_cb tag hint sel_cb on_hover in
           [tag], hints
         in
-        let () = insert_xml ~tags proof#buffer hyp in
+        let () = insert_xml ~tags proof#buffer (Richpp.richpp_of_pp width hyp) in
         proof#buffer#insert "\n";
         insert_hyp rem_hints hs
       in
@@ -98,13 +98,13 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
           else []
         in
         proof#buffer#insert (goal_str 1 goals_cnt);
-        insert_xml proof#buffer cur_goal;
+        insert_xml proof#buffer (Richpp.richpp_of_pp width cur_goal);
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
       let fold_goal i _ { Interface.goal_ccl = g } =
         proof#buffer#insert (goal_str i goals_cnt);
-        insert_xml proof#buffer g;
+        insert_xml proof#buffer (Richpp.richpp_of_pp width g);
         proof#buffer#insert "\n"
       in
       let () = Util.List.fold_left_i fold_goal 2 () rem_goals in
@@ -122,6 +122,7 @@ let rec flatten = function
 
 let display mode (view : #GText.view_skel) goals hints evars =
   let () = view#buffer#set_text "" in
+  let width = Ideutils.textview_width view in
   match goals with
   | None -> ()
     (* No proof in progress *)
@@ -144,7 +145,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       (* The proof is finished, with the exception of given up goals. *)
       view#buffer#insert "No more subgoals, but there are some goals you gave up:\n\n";
       let iter goal =
-        insert_xml view#buffer goal.Interface.goal_ccl;
+        insert_xml view#buffer (Richpp.richpp_of_pp width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
       in
       List.iter iter given_up_goals;
@@ -153,7 +154,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       (* All the goals have been resolved but those on the shelf. *)
       view#buffer#insert "All the remaining goals are on the shelf:\n\n";
       let iter goal =
-        insert_xml view#buffer goal.Interface.goal_ccl;
+        insert_xml view#buffer (Richpp.richpp_of_pp width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
       in
       List.iter iter shelved_goals
@@ -166,7 +167,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       view#buffer#insert "This subproof is complete, but there are some unfocused goals:\n\n";
       let iter i goal =
         let () = view#buffer#insert (goal_str (succ i)) in
-        insert_xml view#buffer goal.Interface.goal_ccl;
+        insert_xml view#buffer (Richpp.richpp_of_pp width goal.Interface.goal_ccl);
         view#buffer#insert "\n"
       in
       List.iteri iter bg
@@ -192,7 +193,7 @@ let proof_view () =
   let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
   stick text_font view cb;
 
-  object
+  let pf = object
     inherit GObj.widget view#as_widget
     val mutable goals = None
     val mutable evars = None
@@ -207,9 +208,11 @@ let proof_view () =
 
     method refresh () =
       let dummy _ () = () in
-      display (mode_tactic dummy) (view :> GText.view_skel) goals None evars
-
-    method width = Ideutils.textview_width (view :> GText.view_skel)
+      display (mode_tactic dummy) view goals None evars
   end
-
-(*     ignore (proof_buffer#add_selection_clipboard cb); *)
+  in
+  (* Is there a better way to connect the signal ? *)
+  (* Can this be done in the object constructor? *)
+  let w_cb _ = pf#refresh () in
+  ignore (view#misc#connect#size_allocate w_cb);
+  pf

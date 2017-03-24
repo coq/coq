@@ -14,7 +14,6 @@ class type proof_view =
     method clear : unit -> unit
     method set_goals : Interface.goals option -> unit
     method set_evars : Interface.evar list option -> unit
-    method width : int
   end
 
 val proof_view : unit -> proof_view

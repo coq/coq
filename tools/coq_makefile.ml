@@ -50,9 +50,9 @@ let section s =
 let lib_dirs =
   ["kernel"; "lib"; "library"; "parsing";
    "pretyping"; "interp"; "printing"; "intf";
-   "proofs"; "tactics"; "tools"; "ltacprof";
-   "toplevel"; "stm"; "grammar"; "config";
-   "ltac"; "engine"]
+   "proofs"; "tactics"; "tools";
+   "vernac"; "stm"; "toplevel"; "grammar"; "config";
+   "engine"]
 
 
 let usage () =
@@ -125,12 +125,9 @@ let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in
   let pdir =
     if le >= 0 && ldir.[le] = '.' then String.sub ldir 0 (le - 1)
-    else String.copy ldir
+    else ldir
   in
-  for i = 0 to le - 1 do
-    if pdir.[i] = '.' then pdir.[i] <- '/';
-  done;
-  pdir
+  String.map (fun c -> if c = '.' then '/' else c) pdir
 
 let standard opt =
   print "byte:\n";
@@ -524,10 +521,10 @@ let variables is_install opt (args,defs) =
     List.iter (fun c -> print " \\
   -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
-    print "CAMLC?=$(OCAMLFIND) ocamlc -c -rectypes -thread\n";
-    print "CAMLOPTC?=$(OCAMLFIND) opt -c -rectypes -thread\n";
-    print "CAMLLINK?=$(OCAMLFIND) ocamlc -rectypes -thread\n";
-    print "CAMLOPTLINK?=$(OCAMLFIND) opt -rectypes -thread\n";
+    print "CAMLC?=$(OCAMLFIND) ocamlc -c -rectypes -thread -safe-string\n";
+    print "CAMLOPTC?=$(OCAMLFIND) opt -c -rectypes -thread -safe-string\n";
+    print "CAMLLINK?=$(OCAMLFIND) ocamlc -rectypes -thread -safe-string\n";
+    print "CAMLOPTLINK?=$(OCAMLFIND) opt -rectypes -thread -safe-string\n";
     print "CAMLDEP?=$(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack\n";
     print "CAMLLIB?=$(shell $(OCAMLFIND) printconf stdlib)\n";
     print "GRAMMARS?=grammar.cma\n";
@@ -676,6 +673,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "VO=vo\n";
       print "VOFILES:=$(VFILES:.v=.$(VO))\n";
       classify_files_by_root "VOFILES" l inc;
+      classify_files_by_root "VFILES" l inc;
       print "GLOBFILES:=$(VFILES:.v=.glob)\n";
       print "GFILES:=$(VFILES:.v=.g)\n";
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
@@ -767,9 +765,9 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
     begin
       print "mlihtml: $(MLIFILES:.mli=.cmi)\n";
       print "\t mkdir $@ || rm -rf $@/*\n";
-      print "\t$(OCAMLFIND) ocamldoc -html -rectypes -d $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
+      print "\t$(OCAMLFIND) ocamldoc -html -safe-string -rectypes -d $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
       print "all-mli.tex: $(MLIFILES:.mli=.cmi)\n";
-      print "\t$(OCAMLFIND) ocamldoc -latex -rectypes -o $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
+      print "\t$(OCAMLFIND) ocamldoc -latex -safe-string -rectypes -o $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
     end;
   if !some_vfile then
     begin
@@ -885,7 +883,7 @@ let check_overlapping_include (_,inc_i,inc_r) =
  *)
 let merlin targets (ml_inc,_,_) =
   print ".merlin:\n";
-  print "\t@echo 'FLG -rectypes' > .merlin\n" ;
+  print "\t@echo 'FLG -rectypes -safe-string' > .merlin\n" ;
   List.iter (fun c ->
       printf "\t@echo \"B $(COQLIB)%s\" >> .merlin\n" c)
     lib_dirs ;

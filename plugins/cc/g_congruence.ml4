@@ -8,6 +8,7 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+open Ltac_plugin
 open Cctac
 open Stdarg
 

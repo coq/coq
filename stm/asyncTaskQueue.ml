@@ -10,9 +10,9 @@ open CErrors
 open Pp
 open Util
 
-let pr_err s = Printf.eprintf "%s] %s\n" (System.process_id ()) s; flush stderr
+let stm_pr_err pp = Format.eprintf "%s] @[%a@]%!\n" (System.process_id ()) Pp.pp_with pp
 
-let prerr_endline s = if !Flags.debug then begin pr_err s end else ()
+let stm_prerr_endline s = if !Flags.debug then begin stm_pr_err (str s) end else ()
 
 type 'a worker_status = [ `Fresh | `Old of 'a ]
 
@@ -147,23 +147,23 @@ module Make(T : Task) = struct
     let stop_waiting = ref false in
     let expiration_date = ref (ref false) in
     let pick_task () =
-      prerr_endline "waiting for a task";
+      stm_prerr_endline "waiting for a task";
       let pick age (t, c) = not !c && T.task_match age t in
       let task, task_expiration =
         TQueue.pop ~picky:(pick !worker_age) ~destroy:stop_waiting queue in
       expiration_date := task_expiration;
       last_task := Some task;
-      prerr_endline ("got task: "^T.name_of_task task);
+      stm_prerr_endline ("got task: " ^ T.name_of_task task);
       task in
     let add_tasks l =
       List.iter (fun t -> TQueue.push queue (t,!expiration_date)) l in
     let get_exec_token () =
       ignore(CoqworkmgrApi.get 1);
       got_token := true;
-      prerr_endline ("got execution token") in
+      stm_prerr_endline ("got execution token") in
     let kill proc =
       Worker.kill proc;
-      prerr_endline ("Worker exited: " ^
+      stm_prerr_endline ("Worker exited: " ^
         match Worker.wait proc with
         | Unix.WEXITED 0x400 -> "exit code unavailable"
         | Unix.WEXITED i -> Printf.sprintf "exit(%d)" i
@@ -196,7 +196,7 @@ module Make(T : Task) = struct
       report_status ~id "Idle";
       let task = pick_task () in
       match T.request_of_task !worker_age task with
-      | None -> prerr_endline ("Task expired: " ^ T.name_of_task task)
+      | None -> stm_prerr_endline ("Task expired: " ^ T.name_of_task task)
       | Some req ->
       try
         get_exec_token ();
@@ -222,8 +222,7 @@ module Make(T : Task) = struct
           raise e (* we pass the exception to the external handler *)
       | MarshalError s -> T.on_marshal_error s task; raise Die
       | e ->
-          pr_err ("Uncaught exception in worker manager: "^
-            string_of_ppcmds (print e));
+          stm_pr_err Pp.(seq [str "Uncaught exception in worker manager: "; print e]);
           flush_all (); raise Die
     done with
     | (Die | TQueue.BeingDestroyed) ->
@@ -261,7 +260,7 @@ module Make(T : Task) = struct
   let broadcast { queue } = TQueue.broadcast queue
 
   let enqueue_task { queue; active } (t, _ as item) =
-    prerr_endline ("Enqueue task "^T.name_of_task t);
+    stm_prerr_endline ("Enqueue task "^T.name_of_task t);
     TQueue.push queue item
 
   let cancel_worker { active } n = Pool.cancel n active
@@ -298,18 +297,11 @@ module Make(T : Task) = struct
   let slave_handshake () =
     Pool.worker_handshake (Option.get !slave_ic) (Option.get !slave_oc)
 
-  let pp_pid pp = 
-    (* Breaking all abstraction barriers... very nice *)
-    let get_xml pp = match Richpp.repr pp with
-      | Xml_datatype.Element("_", [], xml) -> xml
-      | _ -> assert false in
-    Richpp.richpp_of_xml (Xml_datatype.Element("_", [],
-      get_xml (Richpp.richpp_of_pp Pp.(str (System.process_id ()^ " "))) @
-      get_xml pp))
+  let pp_pid pp = Pp.(str (System.process_id () ^ " ") ++ pp)
 
   let debug_with_pid = Feedback.(function
     | { contents = Message(Debug, loc, pp) } as fb ->
-       { fb with contents = Message(Debug,loc,pp_pid pp) }
+       { fb with contents = Message(Debug,loc, pp_pid pp) }
     | x -> x)
 
   let main_loop () =
@@ -317,7 +309,6 @@ module Make(T : Task) = struct
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback (debug_with_pid fb)) []; flush oc in
     Feedback.add_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
-    Feedback.set_logger Feedback.feedback_logger;
     (* We ask master to allocate universe identifiers *)
     Universes.set_remote_new_univ_level (bufferize (fun () ->
       marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
@@ -337,11 +328,11 @@ module Make(T : Task) = struct
         CEphemeron.clear ()
       with
       | MarshalError s ->
-        pr_err ("Fatal marshal error: " ^ s); flush_all (); exit 2
+        stm_pr_err Pp.(prlist str ["Fatal marshal error: "; s]); flush_all (); exit 2
       | End_of_file ->
-        prerr_endline "connection lost"; flush_all (); exit 2
+        stm_prerr_endline "connection lost"; flush_all (); exit 2
       | e ->
-        pr_err ("Slave: critical exception: " ^ Pp.string_of_ppcmds (print e));
+        stm_pr_err Pp.(seq [str "Slave: critical exception: "; print e]);
         flush_all (); exit 1
     done
 

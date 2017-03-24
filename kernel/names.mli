@@ -43,6 +43,7 @@ sig
   (** Check that a string may be converted to an identifier.
   @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
+  val of_bytes : bytes -> t
   val of_string : string -> t
   (** Converts a string into an identifier.
       @raise UserError if the string is not valid, or echo a warning if it contains invalid identifier characters.

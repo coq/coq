@@ -368,6 +368,7 @@ struct
     [["Coq";"Reals" ; "Rdefinitions"];
      ["Coq";"Reals" ; "Rpow_def"] ;
      ["Coq";"Reals" ; "Raxioms"] ;
+     ["Coq";"QArith"; "Qreals"] ;
     ]
 
   let z_modules = [["Coq";"ZArith";"BinInt"]]
@@ -388,7 +389,6 @@ struct
   let coq_and = lazy (init_constant "and")
   let coq_or = lazy (init_constant "or")
   let coq_not = lazy (init_constant "not")
-  let coq_not_gl_ref = (Nametab.locate (  Libnames.qualid_of_string "Coq.Init.Logic.not"))
 
   let coq_iff = lazy (init_constant "iff")
   let coq_True = lazy (init_constant "True")
@@ -485,7 +485,7 @@ struct
   let coq_Rinv = lazy (r_constant "Rinv")
   let coq_Rpower = lazy (r_constant "pow")
   let coq_IZR    = lazy (r_constant "IZR")
-  let coq_IQR    = lazy (constant "IQR")
+  let coq_IQR    = lazy (r_constant "Q2R")
 
 
   let coq_PEX = lazy (constant "PEX" )

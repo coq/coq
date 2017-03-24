@@ -1,5 +1,3 @@
-DECLARE PLUGIN "nsatz_plugin"
-
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
@@ -9,6 +7,9 @@ DECLARE PLUGIN "nsatz_plugin"
 (************************************************************************)
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
+
+open Ltac_plugin
+open Names
 
 DECLARE PLUGIN "nsatz_plugin"
 

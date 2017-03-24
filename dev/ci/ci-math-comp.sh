@@ -1,13 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # $0 is not the safest way, but...
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-git clone --depth 3 https://github.com/math-comp/math-comp.git
+mathcomp_CI_DIR=${CI_BUILD_DIR}/math-comp
+
+checkout_mathcomp ${mathcomp_CI_DIR}
 
 # odd_order takes too much time for travis.
-( cd math-comp/mathcomp                              && \
-     sed -i.bak '/PFsection/d'                  Make && \
-     sed -i.bak '/stripped_odd_order_theorem/d' Make && \
-     make Makefile.coq && make -f Makefile.coq -j ${NJOBS} all )
+( cd ${mathcomp_CI_DIR}/mathcomp                  && \
+  sed -i.bak '/PFsection/d'                  Make && \
+  sed -i.bak '/stripped_odd_order_theorem/d' Make && \
+  make Makefile.coq && make -f Makefile.coq -j ${NJOBS} all )

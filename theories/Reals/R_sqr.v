@@ -296,56 +296,9 @@ Lemma canonical_Rsqr :
     a * Rsqr (x + b / (2 * a)) + (4 * a * c - Rsqr b) / (4 * a).
 Proof.
   intros.
-  rewrite Rsqr_plus.
-  repeat rewrite Rmult_plus_distr_l.
-  repeat rewrite Rplus_assoc.
-  apply Rplus_eq_compat_l.
-  unfold Rdiv, Rminus.
-  replace (2 * 1 + 2 * 1) with 4; [ idtac | ring ].
-  rewrite (Rmult_plus_distr_r (4 * a * c) (- Rsqr b) (/ (4 * a))).
-  rewrite Rsqr_mult.
-  repeat rewrite Rinv_mult_distr.
-  repeat rewrite (Rmult_comm a).
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  rewrite (Rmult_comm 2).
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  rewrite (Rmult_comm (/ 2)).
-  rewrite (Rmult_comm 2).
-  repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  rewrite (Rmult_comm a).
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  rewrite (Rmult_comm 2).
-  repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  repeat rewrite Rplus_assoc.
-  rewrite (Rplus_comm (Rsqr b * (Rsqr (/ a * / 2) * a))).
-  repeat rewrite Rplus_assoc.
-  rewrite (Rmult_comm x).
-  apply Rplus_eq_compat_l.
-  rewrite (Rmult_comm (/ a)).
-  unfold Rsqr; repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  ring.
-  apply (cond_nonzero a).
-  discrR.
-  apply (cond_nonzero a).
-  discrR.
-  discrR.
-  apply (cond_nonzero a).
-  discrR.
-  discrR.
-  discrR.
-  apply (cond_nonzero a).
-  discrR.
-  apply (cond_nonzero a).
+  unfold Rsqr.
+  field.
+  apply a.
 Qed.
 
 Lemma Rsqr_eq : forall x y:R, Rsqr x = Rsqr y -> x = y \/ x = - y.

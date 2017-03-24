@@ -6,19 +6,65 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Pretty-printers. *)
+(** Coq document type. *)
 
-type std_ppcmds
+(** Pretty printing guidelines ******************************************)
+(*                                                                      *)
+(* `Pp.t` or `Pp.std_ppcmds` is the main pretty printing document type  *)
+(* in the Coq system. Documents are composed laying out boxes, and      *)
+(* users can add arbitrary tag metadata that backends are free          *)
+(*                                                                      *)
+(* The datatype has a public view to allow serialization or advanced    *)
+(* uses, however regular users are _strongly_ warned againt its use,    *)
+(* they should instead rely on the available functions below.           *)
+(*                                                                      *)
+(* Box order and number is indeed an important factor. Try to create    *)
+(* a proper amount of boxes. The `++` operator provides "efficient"     *)
+(* concatenation, but using the list constructors is usually preferred. *)
+(*                                                                      *)
+(* That is to say, this:                                                *)
+(*                                                                      *)
+(* `hov [str "Term"; hov (pr_term t); str "is defined"]`                *)
+(*                                                                      *)
+(* is preferred to:                                                     *)
+(*                                                                      *)
+(* `hov (str "Term" ++ hov (pr_term t) ++ str "is defined")`            *)
+(*                                                                      *)
+(************************************************************************)
+
+(* XXX: Improve and add attributes *)
+type pp_tag = string
+
+(* Following discussion on #390, we play on the safe side and make the
+   internal representation opaque here. *)
+type t
+type std_ppcmds = t
+
+type block_type =
+  | Pp_hbox   of int
+  | Pp_vbox   of int
+  | Pp_hvbox  of int
+  | Pp_hovbox of int
+
+type doc_view =
+  | Ppcmd_empty
+  | Ppcmd_string of string
+  | Ppcmd_glue of t list
+  | Ppcmd_box  of block_type * t
+  | Ppcmd_tag  of pp_tag * t
+  (* Are those redundant? *)
+  | Ppcmd_print_break of int * int
+  | Ppcmd_force_newline
+  | Ppcmd_comment of string list
+
+val repr   : std_ppcmds -> doc_view
+val unrepr : doc_view -> std_ppcmds
 
 (** {6 Formatting commands} *)
 
 val str   : string -> std_ppcmds
-val stras : int * string -> std_ppcmds
 val brk   : int * int -> std_ppcmds
-val tbrk  : int * int -> std_ppcmds
-val tab   : unit -> std_ppcmds
 val fnl   : unit -> std_ppcmds
-val pifb  : unit -> std_ppcmds
 val ws    : int -> std_ppcmds
 val mt    : unit -> std_ppcmds
 val ismt  : std_ppcmds -> bool
@@ -30,14 +76,11 @@ val comment  : string list -> std_ppcmds
 val app : std_ppcmds -> std_ppcmds -> std_ppcmds
 (** Concatenation. *)
 
+val seq : std_ppcmds list -> std_ppcmds
+(** Multi-Concatenation. *)
+
 val (++) : std_ppcmds -> std_ppcmds -> std_ppcmds
 (** Infix alias for [app]. *)
-
-val eval_ppcmds : std_ppcmds -> std_ppcmds
-(** Force computation. *)
-
-val is_empty : std_ppcmds -> bool
-(** Test emptyness. *)
 
 (** {6 Derived commands} *)
 
@@ -58,46 +101,10 @@ val h : int -> std_ppcmds -> std_ppcmds
 val v : int -> std_ppcmds -> std_ppcmds
 val hv : int -> std_ppcmds -> std_ppcmds
 val hov : int -> std_ppcmds -> std_ppcmds
-val t : std_ppcmds -> std_ppcmds
 
-(** {6 Opening and closing of boxes} *)
+(** {6 Tagging} *)
 
-val hb : int -> std_ppcmds
-val vb : int -> std_ppcmds
-val hvb : int -> std_ppcmds
-val hovb : int -> std_ppcmds
-val tb : unit -> std_ppcmds
-val close : unit -> std_ppcmds
-val tclose : unit -> std_ppcmds
-
-(** {6 Opening and closing of tags} *)
-
-module Tag :
-sig
-  type t
-  (** Type of tags. Tags are dynamic types comparable to {Dyn.t}. *)
-
-  type 'a key
-  (** Keys used to inject tags *)
-
-  val create : string -> 'a key
-  (** Create a key with the given name. Two keys cannot share the same name, if
-      ever this is the case this function raises an assertion failure. *)
-
-  val inj : 'a -> 'a key -> t
-  (** Inject an object into a tag. *)
-
-  val prj : t -> 'a key -> 'a option
-  (** Project an object from a tag. *)
-end
-
-val tag : Tag.t -> std_ppcmds -> std_ppcmds
-val open_tag : Tag.t -> std_ppcmds
-val close_tag : unit -> std_ppcmds
-
-(** {6 Utilities} *)
-
-val string_of_ppcmds : std_ppcmds -> string
+val tag : pp_tag -> std_ppcmds -> std_ppcmds
 
 (** {6 Printing combinators} *)
 
@@ -164,16 +171,11 @@ val surround : std_ppcmds -> std_ppcmds
 (** Surround with parenthesis. *)
 
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
-
 val pr_loc : Loc.t -> std_ppcmds
 
-(** {6 Low-level pretty-printing functions with and without flush} *)
+(** {6 Main renderers, to formatter and to string } *)
 
-(** FIXME: These ignore the logging settings and call [Format] directly *)
-type tag_handler = Tag.t -> Format.tag
+(** [pp_with fmt pp] Print [pp] to [fmt] and don't flush [fmt]  *)
+val pp_with          : Format.formatter -> std_ppcmds -> unit
 
-(** [msg_with ?pp_tag fmt pp] Print [pp] to [fmt] and flush [fmt]  *)
-val msg_with : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
-
-(** [msg_with ?pp_tag fmt pp] Print [pp] to [fmt] and don't flush [fmt]  *)
-val pp_with  : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
+val string_of_ppcmds : std_ppcmds -> string

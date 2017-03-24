@@ -24,27 +24,7 @@ open Typeops
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let constrain_type env j poly subst = function
-  | `None -> 
-    if not poly then (* Old-style polymorphism *)
-      make_polymorphic_if_constant_for_ind env j
-    else RegularArity (Vars.subst_univs_level_constr subst j.uj_type)
-  | `Some t ->
-      let tj = infer_type env t in
-      let _ = judge_of_cast env j DEFAULTcast tj in
-	assert (eq_constr t tj.utj_val);
-	RegularArity (Vars.subst_univs_level_constr subst t)
-  | `SomeWJ (t, tj) ->
-      let tj = infer_type env t in
-      let _ = judge_of_cast env j DEFAULTcast tj in
-	assert (eq_constr t tj.utj_val);
-	RegularArity (Vars.subst_univs_level_constr subst t)
-
-let map_option_typ = function None -> `None | Some x -> `Some x
-
 (* Insertion of constants and parameters in environment. *)
-
-let mk_pure_proof c = (c, Univ.ContextSet.empty), []
 
 let equal_eff e1 e2 =
   let open Entries in
@@ -57,13 +37,54 @@ let equal_eff e1 e2 =
           cl1 cl2
   | _ -> false
 
-let rec uniq_seff = function
-  | [] -> []
-  | x :: xs -> x :: uniq_seff (List.filter (fun y -> not (equal_eff x y)) xs)
-(* The list of side effects is in reverse order (most recent first).
- * To keep the "topological" order between effects we have to uniq-ize from
- * the tail *)
-let uniq_seff l = List.rev (uniq_seff (List.rev l))
+module SideEffects :
+sig
+  type t
+  val repr : t -> side_effect list
+  val empty : t
+  val add : side_effect -> t -> t
+  val concat : t -> t -> t
+end =
+struct
+
+let compare_seff e1 e2 = match e1, e2 with
+| SEsubproof (c1, _, _), SEsubproof (c2, _, _) -> Constant.CanOrd.compare c1 c2
+| SEscheme (cl1, _), SEscheme (cl2, _) ->
+  let cmp (_, c1, _, _) (_, c2, _, _) = Constant.CanOrd.compare c1 c2 in
+  CList.compare cmp cl1 cl2
+| SEsubproof _, SEscheme _ -> -1
+| SEscheme _, SEsubproof _ -> 1
+
+module SeffOrd = struct
+type t = side_effect
+let compare e1 e2 = compare_seff e1.eff e2.eff
+end
+
+module SeffSet = Set.Make(SeffOrd)
+
+type t = { seff : side_effect list; elts : SeffSet.t }
+(** Invariant: [seff] is a permutation of the elements of [elts] *)
+
+let repr eff = eff.seff
+let empty = { seff = []; elts = SeffSet.empty }
+let add x es =
+  if SeffSet.mem x es.elts then es
+  else { seff = x :: es.seff; elts = SeffSet.add x es.elts }
+let concat xes yes =
+  List.fold_right add xes.seff yes
+
+end
+
+type side_effects = SideEffects.t
+
+let uniq_seff_rev = SideEffects.repr
+let uniq_seff l = List.rev (SideEffects.repr l)
+
+let empty_seff = SideEffects.empty
+let add_seff = SideEffects.add
+let concat_seff = SideEffects.concat
+
+let mk_pure_proof c = (c, Univ.ContextSet.empty), empty_seff
 
 let inline_side_effects env body ctx side_eff =
   let handle_sideff (t,ctx,sl) { eff = se; from_env = mb } =
@@ -76,8 +97,7 @@ let inline_side_effects env body ctx side_eff =
     let cbl = List.filter not_exists cbl in
     let cname c = 
       let name = string_of_con c in
-      for i = 0 to String.length name - 1 do
-        if name.[i] == '.' || name.[i] == '#' then name.[i] <- '_' done;
+      let name = String.map (fun c -> if c == '.' || c == '#' then '_' else c) name in
       Name (id_of_string name) in
     let rec sub c i x = match kind_of_term x with
       | Const (c', _) when eq_constant c c' -> mkRel i
@@ -117,7 +137,7 @@ let inline_side_effects env body ctx side_eff =
     t, ctx, (mb,List.length cbl) :: sl
   in
   (* CAVEAT: we assure a proper order *)
-  List.fold_left handle_sideff (body,ctx,[]) (uniq_seff side_eff)
+  List.fold_left handle_sideff (body,ctx,[]) (uniq_seff_rev side_eff)
 
 (* Given the list of signatures of side effects, checks if they match.
  * I.e. if they are ordered descendants of the current revstruct *)
@@ -184,6 +204,10 @@ let infer_declaration ~trust env kn dcl =
       let t = hcons_constr (Vars.subst_univs_level_constr usubst c) in
 	Undef nl, RegularArity t, None, poly, univs, false, ctx
 
+  (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
+      so we delay the typing and hash consing of its body.
+      Remark: when the universe quantification is given explicitly, we could
+      delay even in the polymorphic case.  *)
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
 		       const_entry_polymorphic = false} as c) ->
@@ -191,19 +215,20 @@ let infer_declaration ~trust env kn dcl =
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
-        Future.chain ~greedy:true ~pure:true body (fun ((body,uctx),side_eff) ->
+        Future.chain ~pure:true body (fun ((body,uctx),side_eff) ->
           let body, uctx, signatures =
             inline_side_effects env body uctx side_eff in
           let valid_signatures = check_signatures trust signatures in
-	  let env' = push_context_set uctx env in
+	  let env = push_context_set uctx env in
           let j =
-            let body,env',ectx = skip_trusted_seff valid_signatures body env' in
-            let j = infer env' body in
+            let body,env,ectx = skip_trusted_seff valid_signatures body env in
+            let j = infer env body in
             unzip ectx j in
           let j = hcons_j j in
 	  let subst = Univ.LMap.empty in
-          let _typ = constrain_type env' j c.const_entry_polymorphic subst
-	    (`SomeWJ (typ,tyj)) in
+          let _ = judge_of_cast env j DEFAULTcast tyj in
+          assert (eq_constr typ tyj.utj_val);
+          let _typ = RegularArity (Vars.subst_univs_level_constr subst typ) in
           feedback_completion_typecheck feedback_id;
           j.uj_val, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
@@ -211,6 +236,7 @@ let infer_declaration ~trust env kn dcl =
 	c.const_entry_universes,
 	c.const_entry_inline_code, c.const_entry_secctx
 
+  (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
@@ -223,7 +249,17 @@ let infer_declaration ~trust env kn dcl =
       let usubst, univs =
 	Univ.abstract_universes abstract (Univ.ContextSet.to_context ctx) in      
       let j = infer env body in
-      let typ = constrain_type env j c.const_entry_polymorphic usubst (map_option_typ typ) in
+      let typ = match typ with
+        | None ->
+           if not c.const_entry_polymorphic then (* Old-style polymorphism *)
+             make_polymorphic_if_constant_for_ind env j
+           else RegularArity (Vars.subst_univs_level_constr usubst j.uj_type)
+        | Some t ->
+           let tj = infer_type env t in
+           let _ = judge_of_cast env j DEFAULTcast tj in
+           assert (eq_constr t tj.utj_val);
+           RegularArity (Vars.subst_univs_level_constr usubst t)
+      in
       let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = 
 	if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
@@ -383,7 +419,7 @@ let constant_entry_of_side_effect cb u =
     | Def b, `Nothing -> Mod_subst.force_constr b, Univ.ContextSet.empty
     | _ -> assert false in
   DefinitionEntry {
-    const_entry_body = Future.from_val (pt, []);
+    const_entry_body = Future.from_val (pt, empty_seff);
     const_entry_secctx = None;
     const_entry_feedback = None;
     const_entry_type =
@@ -416,8 +452,8 @@ let export_side_effects mb env ce =
       let { const_entry_body = body } = c in
       let _, eff = Future.force body in
       let ce = DefinitionEntry { c with
-        const_entry_body = Future.chain ~greedy:true ~pure:true body
-          (fun (b_ctx, _) -> b_ctx, []) } in
+        const_entry_body = Future.chain ~pure:true body
+          (fun (b_ctx, _) -> b_ctx, empty_seff) } in
       let not_exists (c,_,_,_) =
         try ignore(Environ.lookup_constant c env); false
         with Not_found -> true in 
@@ -429,7 +465,7 @@ let export_side_effects mb env ce =
         let cbl = List.filter not_exists cbl in
         if cbl = [] then acc, sl
         else cbl :: acc, (mb,List.length cbl) :: sl in
-      let seff, signatures = List.fold_left aux ([],[]) (uniq_seff eff) in
+      let seff, signatures = List.fold_left aux ([],[]) (uniq_seff_rev eff) in
       let trusted = check_signatures mb signatures in
       let push_seff env = function
         | kn, cb, `Nothing, _ ->
@@ -498,10 +534,10 @@ let translate_local_def mb env id centry =
 let translate_mind env kn mie = Indtypes.check_inductive env kn mie
 
 let inline_entry_side_effects env ce = { ce with
-  const_entry_body = Future.chain ~greedy:true ~pure:true
+  const_entry_body = Future.chain ~pure:true
     ce.const_entry_body (fun ((body, ctx), side_eff) ->
       let body, ctx',_ = inline_side_effects env body ctx side_eff in
-      (body, ctx'), []);
+      (body, ctx'), empty_seff);
 }
 
 let inline_side_effects env body side_eff =

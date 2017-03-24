@@ -103,7 +103,7 @@ Definition sig_of_sig2 (A : Type) (P Q : A -> Prop) (X : sig2 P Q) : sig P
     of an [a] of type [A], a of a proof [h] that [a] satisfies [P],
     and a proof [h'] that [a] satisfies [Q].  Then
     [(proj1_sig (sig_of_sig2 y))] is the witness [a],
-    [(proj2_sig (sig_of_sig2 y))] is the proof of [(P a)], and 
+    [(proj2_sig (sig_of_sig2 y))] is the proof of [(P a)], and
     [(proj3_sig y)] is the proof of [(Q a)]. *)
 
 Section Subset_projections2.
@@ -190,6 +190,23 @@ Definition sig2_of_sigT2 (A : Type) (P Q : A -> Prop) (X : sigT2 P Q) : sig2 P Q
 Definition sigT2_of_sig2 (A : Type) (P Q : A -> Prop) (X : sig2 P Q) : sigT2 P Q
   := existT2 P Q (proj1_sig (sig_of_sig2 X)) (proj2_sig (sig_of_sig2 X)) (proj3_sig X).
 
+(** η Principles *)
+Definition sigT_eta {A P} (p : { a : A & P a })
+  : p = existT _ (projT1 p) (projT2 p).
+Proof. destruct p; reflexivity. Defined.
+
+Definition sig_eta {A P} (p : { a : A | P a })
+  : p = exist _ (proj1_sig p) (proj2_sig p).
+Proof. destruct p; reflexivity. Defined.
+
+Definition sigT2_eta {A P Q} (p : { a : A & P a & Q a })
+  : p = existT2 _ _ (projT1 (sigT_of_sigT2 p)) (projT2 (sigT_of_sigT2 p)) (projT3 p).
+Proof. destruct p; reflexivity. Defined.
+
+Definition sig2_eta {A P Q} (p : { a : A | P a & Q a })
+  : p = exist2 _ _ (proj1_sig (sig_of_sig2 p)) (proj2_sig (sig_of_sig2 p)) (proj3_sig p).
+Proof. destruct p; reflexivity. Defined.
+
 (** [sumbool] is a boolean type equipped with the justification of
     their value *)
 
@@ -263,10 +280,10 @@ Section Dependent_choice_lemmas.
     (forall x:X, {y | R x y}) ->
     forall x0, {f : nat -> X | f O = x0 /\ forall n, R (f n) (f (S n))}.
   Proof.
-    intros H x0. 
+    intros H x0.
     set (f:=fix f n := match n with O => x0 | S n' => proj1_sig (H (f n')) end).
     exists f.
-    split. reflexivity. 
+    split. reflexivity.
     induction n; simpl; apply proj2_sig.
   Defined.
 

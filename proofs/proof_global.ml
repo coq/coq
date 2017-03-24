@@ -195,9 +195,9 @@ let check_no_pending_proof () =
   if not (there_are_pending_proofs ()) then
     ()
   else begin
-    CErrors.error (Pp.string_of_ppcmds
+    CErrors.user_err
       (str"Proof editing in progress" ++ msg_proofs () ++ fnl() ++
-       str"Use \"Abort All\" first or complete proof(s)."))
+       str"Use \"Abort All\" first or complete proof(s).")
   end
 
 let discard_gen id =
@@ -317,7 +317,10 @@ let constrain_variables init uctx =
   let cstrs = UState.constrain_variables levels uctx in
   Univ.ContextSet.add_constraints cstrs (UState.context_set uctx)
 
-let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
+type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
+
+let close_proof ~keep_body_ucst_separate ?feedback_id ~now
+                (fpl : closed_proof_output Future.computation) =
   let { pid; section_vars; strength; proof; terminator; universe_binders } =
     cur_pstate () in
   let poly = pi2 strength (* Polymorphic *) in
@@ -395,8 +398,6 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
   { id = pid; entries = entries; persistence = strength;
     universes = (universes, binders) },
   fun pr_ending -> CEphemeron.get terminator pr_ending
-
-type closed_proof_output = (Term.constr * Safe_typing.private_constants) list * Evd.evar_universe_context
 
 let return_proof ?(allow_partial=false) () =
  let { pid; proof; strength = (_,poly,_) } = cur_pstate () in

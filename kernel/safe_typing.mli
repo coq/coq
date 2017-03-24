@@ -47,11 +47,18 @@ type private_constant_role =
   | Schema of inductive * string
 
 val side_effects_of_private_constants :
-  private_constants -> Entries.side_effects
+  private_constants -> Entries.side_effect list
+(** Return the list of individual side-effects in the order of their
+    creation. *)
 
 val empty_private_constants : private_constants
 val add_private : private_constant -> private_constants -> private_constants
+(** Add a constant to a list of private constants. The former must be more
+    recent than all constants appearing in the latter, i.e. one should not
+    create a dependency cycle. *)
 val concat_private : private_constants -> private_constants -> private_constants
+(** [concat_private e1 e2] adds the constants of [e1] to [e2], i.e. constants in
+    [e1] must be more recent than those of [e2]. *)
 
 val private_con_of_con : safe_environment -> constant -> private_constant
 val private_con_of_scheme : kind:string -> safe_environment -> (inductive * constant) list -> private_constant

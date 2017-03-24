@@ -18,9 +18,10 @@ class type message_view =
     inherit GObj.widget
     method connect : message_view_signals
     method clear : unit
-    method add : Richpp.richpp -> unit
+    method add : Pp.std_ppcmds -> unit
     method add_string : string -> unit
-    method set : Richpp.richpp -> unit
+    method set : Pp.std_ppcmds -> unit
+    method refresh : bool -> unit
     method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer

@@ -36,7 +36,7 @@ let really_read_fd fd s off len =
 let really_read_fd_2_oc fd oc len =
   let i = ref 0 in
   let size = 4096 in
-  let s = String.create size in
+  let s = Bytes.create size in
   while !i < len do
     let len = len - !i in
     let r = thread_friendly_read_fd fd s ~off:0 ~len:(min len size) in
@@ -55,11 +55,13 @@ let thread_friendly_really_read_line ic =
   try
     let fd = Unix.descr_of_in_channel ic in
     let b = Buffer.create 1024 in
-    let s = String.make 1 '\000' in
-    while s <> "\n" do
+    let s = Bytes.make 1 '\000' in
+    let endl = Bytes.of_string "\n" in
+    (* Bytes.equal is in 4.03.0 *)
+    while Bytes.compare s endl <> 0 do
       let n = thread_friendly_read_fd fd s ~off:0 ~len:1 in
       if n = 0 then raise End_of_file;
-      if s <> "\n" then Buffer.add_string b s;
+      if Bytes.compare s endl <> 0 then Buffer.add_bytes b s;
     done;
     Buffer.contents b
   with Unix.Unix_error _ -> raise End_of_file
@@ -67,15 +69,15 @@ let thread_friendly_really_read_line ic =
 let thread_friendly_input_value ic =
   try
     let fd = Unix.descr_of_in_channel ic in
-    let header = String.create Marshal.header_size in
+    let header = Bytes.create Marshal.header_size in
     really_read_fd fd header 0 Marshal.header_size;
     let body_size = Marshal.data_size header 0 in
     let desired_size = body_size + Marshal.header_size in
     if desired_size <= Sys.max_string_length then begin
-      let msg = String.create desired_size in
-      String.blit header 0 msg 0 Marshal.header_size;
+      let msg = Bytes.create desired_size in
+      Bytes.blit header 0 msg 0 Marshal.header_size;
       really_read_fd fd msg Marshal.header_size body_size;
-      Marshal.from_string msg 0
+      Marshal.from_bytes msg 0
     end else begin
       (* Workaround for 32 bit systems and data > 16M *)
       let name, oc =

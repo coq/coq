@@ -61,7 +61,7 @@ let make_ident sa = function
         if c < code_of_0 || c > code_of_9 then sa ^ (string_of_int n)
         else sa ^ "_" ^ (string_of_int n) in
       Id.of_string s
-  | None -> Id.of_string (String.copy sa)
+  | None -> Id.of_string sa
 
 let root_of_id id =
   let suffixstart = cut_ident true id in
@@ -92,20 +92,20 @@ let increment_subscript id =
 	add (carrypos-1)
       end
       else begin
-	let newid = String.copy id in
-	String.fill newid (carrypos+1) (len-1-carrypos) '0';
-	newid.[carrypos] <- Char.chr (Char.code c + 1);
+	let newid = Bytes.of_string id in
+	Bytes.fill newid (carrypos+1) (len-1-carrypos) '0';
+	Bytes.set newid carrypos (Char.chr (Char.code c + 1));
 	newid
       end
     else begin
-      let newid = id^"0" in
+      let newid = Bytes.of_string (id^"0") in
       if carrypos < len-1 then begin
-	String.fill newid (carrypos+1) (len-1-carrypos) '0';
-	newid.[carrypos+1] <- '1'
+	Bytes.fill newid (carrypos+1) (len-1-carrypos) '0';
+	Bytes.set newid (carrypos+1) '1'
       end;
       newid
     end
-  in Id.of_string (add (len-1))
+  in Id.of_bytes (add (len-1))
 
 let has_subscript id =
   let id = Id.to_string id in
@@ -113,9 +113,9 @@ let has_subscript id =
 
 let forget_subscript id =
   let numstart = cut_ident false id in
-  let newid = String.make (numstart+1) '0' in
+  let newid = Bytes.make (numstart+1) '0' in
   String.blit (Id.to_string id) 0 newid 0 numstart;
-  (Id.of_string newid)
+  (Id.of_bytes newid)
 
 let add_suffix id s = Id.of_string (Id.to_string id ^ s)
 let add_prefix s id = Id.of_string (s ^ Id.to_string id)

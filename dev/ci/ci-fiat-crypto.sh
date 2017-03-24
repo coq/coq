@@ -1,12 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# $0 is not the safest way, but...
 ci_dir="$(dirname "$0")"
 source ${ci_dir}/ci-common.sh
 
-git clone --depth 3 https://github.com/mit-plv/fiat-crypto.git
+fiat_crypto_CI_DIR=${CI_BUILD_DIR}/fiat-crypto
 
-( cd fiat-crypto && make -j ${NJOBS} )
+git_checkout ${fiat_crypto_CI_BRANCH} ${fiat_crypto_CI_GITURL} ${fiat_crypto_CI_DIR}
 
-# ( cd corn && make -j ${NJOBS} )
-
+( cd ${fiat_crypto_CI_DIR} && make -j ${NJOBS} )

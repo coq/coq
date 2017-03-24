@@ -72,10 +72,13 @@ let really_read_fd fd s off len =
 let raw_input_line fd =
   try
     let b = Buffer.create 80 in
-    let s = String.make 1 '\000' in
-    while s <> "\n" do
+    let s = Bytes.make 1 '\000' in
+    let endl = Bytes.of_string "\n" in
+    let endr = Bytes.of_string "\r" in
+    while Bytes.compare s endl <> 0 do
       really_read_fd fd s 0 1;
-      if s <> "\n" && s <> "\r" then Buffer.add_string b s;
+      if Bytes.compare s endl <> 0 && Bytes.compare s endr <> 0
+      then Buffer.add_bytes b s;
     done;
     Buffer.contents b
   with Unix.Unix_error _ -> raise End_of_file

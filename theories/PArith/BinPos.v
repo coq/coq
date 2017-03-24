@@ -813,6 +813,34 @@ Proof.
   rewrite compare_cont_spec. unfold ge. destruct (p ?= q); easy'.
 Qed.
 
+Lemma compare_cont_Lt_not_Lt p q :
+  compare_cont Lt p q <> Lt <-> p > q.
+Proof.
+  rewrite compare_cont_Lt_Lt.
+  unfold gt, le, compare.
+  now destruct compare_cont; split; try apply comparison_eq_stable.
+Qed.
+
+Lemma compare_cont_Lt_not_Gt p q :
+  compare_cont Lt p q <> Gt <-> p <= q.
+Proof.
+  apply not_iff_compat, compare_cont_Lt_Gt.
+Qed.
+
+Lemma compare_cont_Gt_not_Lt p q :
+  compare_cont Gt p q <> Lt <-> p >= q.
+Proof.
+  apply not_iff_compat, compare_cont_Gt_Lt.
+Qed.
+
+Lemma compare_cont_Gt_not_Gt p q :
+  compare_cont Gt p q <> Gt <-> p < q.
+Proof.
+  rewrite compare_cont_Gt_Gt.
+  unfold ge, lt, compare.
+  now destruct compare_cont; split; try apply comparison_eq_stable.
+Qed.
+
 (** We can express recursive equations for [compare] *)
 
 Lemma compare_xO_xO p q : (p~0 ?= q~0) = (p ?= q).

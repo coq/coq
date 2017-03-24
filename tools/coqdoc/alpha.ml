@@ -26,12 +26,7 @@ let norm_char c =
   if !latin1 then norm_char_latin1 c else
   Char.uppercase c
 
-let norm_string s =
-  let u = String.copy s in
-  for i = 0 to String.length s - 1 do
-    u.[i] <- norm_char s.[i]
-  done;
-  u
+let norm_string = String.map (fun s -> norm_char s)
 
 let compare_char c1 c2 = match norm_char c1, norm_char c2 with
   | ('A'..'Z' as c1), ('A'..'Z' as c2) -> compare c1 c2

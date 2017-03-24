@@ -105,10 +105,10 @@ let verbose_phrase verbch loc =
   match verbch with
     | Some ch ->
 	let len = snd loc - fst loc in
-	let s = String.create len in
+	let s = Bytes.create len in
         seek_in ch (fst loc);
         really_input ch s 0 len;
-        Feedback.msg_notice (str s)
+        Feedback.msg_notice (str (Bytes.to_string s))
     | None -> ()
 
 exception End_of_input
@@ -126,7 +126,7 @@ let chan_beautify = ref stdout
 let beautify_suffix = ".beautified"
 
 let set_formatter_translator ch =
-  let out s b e = output ch s b e in
+  let out s b e = output_substring ch s b e in
   Format.set_formatter_output_functions out (fun () -> flush ch);
   Format.set_max_boxes max_int
 
@@ -143,7 +143,8 @@ let pr_new_syntax_in_context loc chan_beautify ocom =
       | None -> mt() in
     let after = comment (CLexer.extract_comments (snd loc)) in
     if !beautify_file then
-      Pp.msg_with !Pp_control.std_ft (hov 0 (before ++ com ++ after))
+      (Pp.pp_with !Topfmt.std_ft (hov 0 (before ++ com ++ after));
+       Format.pp_print_flush !Topfmt.std_ft ())
     else
       Feedback.msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
     States.unfreeze fs;
@@ -161,13 +162,11 @@ let pr_new_syntax po loc chan_beautify ocom =
 
 let pp_cmd_header loc com =
   let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
-  let noblank s =
-    for i = 0 to String.length s - 1 do
-      match s.[i] with
-	| ' ' | '\n' | '\t' | '\r' -> s.[i] <- '~'
-	| _ -> ()
-    done;
-    s
+  let noblank s = String.map (fun c ->
+      match c with
+	| ' ' | '\n' | '\t' | '\r' -> '~'
+	| x -> x
+      ) s
   in
   let (start,stop) = Loc.unloc loc in
   let safe_pr_vernac x =
@@ -180,9 +179,10 @@ let pp_cmd_header loc com =
 (* This is a special case where we assume we are in console batch mode
    and take control of the console.
  *)
+(* FIXME *)
 let print_cmd_header loc com =
-  Pp.pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft (pp_cmd_header loc com);
-  Format.pp_print_flush !Pp_control.std_ft ()
+  Pp.pp_with !Topfmt.std_ft (pp_cmd_header loc com);
+  Format.pp_print_flush !Topfmt.std_ft ()
 
 let rec interp_vernac po chan_beautify checknav (loc,com) =
   let interp = function
@@ -343,7 +343,7 @@ let compile verbosely f =
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
       Library.save_library_raw lfdv sum lib univs proofs
 
-let compile v f = 
+let compile v f =
   ignore(CoqworkmgrApi.get 1);
   compile v f;
   CoqworkmgrApi.giveback 1

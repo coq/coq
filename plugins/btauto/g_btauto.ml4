@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma"  i*)
 
+open Ltac_plugin
+
 DECLARE PLUGIN "btauto_plugin"
 
 TACTIC EXTEND btauto

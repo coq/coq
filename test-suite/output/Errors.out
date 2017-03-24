@@ -7,4 +7,4 @@ In nested Ltac calls to "f" and "apply x", last call failed.
 Unable to unify "nat" with "True".
 The command has indeed failed with message:
 Ltac call to "instantiate ( (ident) := (lglob) )" failed.
-Error: Instance is not well-typed in the environment of ?x.
+Instance is not well-typed in the environment of ?x.

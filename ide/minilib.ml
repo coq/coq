@@ -30,7 +30,7 @@ let debug = ref false
    print in the response buffer.
 *)
 
-let log ?(level = `DEBUG) msg =
+let log_pp ?(level = `DEBUG) msg =
   let prefix = match level with
   | `DEBUG -> "DEBUG"
   | `INFO -> "INFO"
@@ -40,9 +40,11 @@ let log ?(level = `DEBUG) msg =
   | `FATAL -> "FATAL"
   in
   if !debug then begin
-    try Printf.eprintf "[%s] %s\n%!" prefix msg
+    try Format.eprintf "[%s] @[%a@]\n%!" prefix Pp.pp_with msg
     with _ -> ()
   end
+
+let log ?level str = log_pp ?level (Pp.str str)
 
 let coqify d = Filename.concat d "coq"
 

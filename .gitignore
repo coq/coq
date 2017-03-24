@@ -43,6 +43,7 @@ TAGS
 .DS_Store
 .pc
 bin/
+_build_ci
 _build
 myocamlbuild_config.ml
 config/Makefile
@@ -122,10 +123,10 @@ g_*.ml
 ide/project_file.ml
 parsing/compat.ml
 parsing/cLexer.ml
-ltac/coretactics.ml
-ltac/extratactics.ml
-ltac/extraargs.ml
-ltac/profile_ltac_tactics.ml
+plugins/ltac/coretactics.ml
+plugins/ltac/extratactics.ml
+plugins/ltac/extraargs.ml
+plugins/ltac/profile_ltac_tactics.ml
 ide/coqide_main.ml
 plugins/ssrmatching/ssrmatching.ml
 
