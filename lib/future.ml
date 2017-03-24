@@ -151,8 +151,8 @@ let chain ~pure ck f =
   create ~uuid ~name fix_exn (match !c with
   | Closure _ | Delegated _ -> Closure (fun () -> f (force ~pure ck))
   | Exn _ as x -> x
-  | Val (v, None) when pure -> Closure (fun () -> f v)
-  | Val (v, Some _) when pure -> Closure (fun () -> f v)
+  | Val (v, None)   when pure -> Val (f v, None)
+  | Val (v, Some _) when pure -> Val (f v, None)
   | Val (v, Some state) -> Closure (fun () -> !unfreeze state; f v)
   | Val (v, None) ->
       match !ck with

@@ -113,5 +113,3 @@ type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;
   eff      : side_eff;
 }
-
-type side_effects = side_effect list

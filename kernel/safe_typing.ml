@@ -208,19 +208,19 @@ let get_opaque_body env cbo =
          Opaqueproof.force_constraints (Environ.opaque_tables env) opaque)
 
 type private_constant = Entries.side_effect
-type private_constants = private_constant list
+type private_constants = Term_typing.side_effects
 
 type private_constant_role = Term_typing.side_effect_role =
   | Subproof
   | Schema of inductive * string
 
-let empty_private_constants = []
-let add_private x xs = if List.mem_f Term_typing.equal_eff x xs then xs else x :: xs
-let concat_private xs ys = List.fold_right add_private xs ys
+let empty_private_constants = Term_typing.empty_seff
+let add_private = Term_typing.add_seff
+let concat_private = Term_typing.concat_seff
 let mk_pure_proof = Term_typing.mk_pure_proof
 let inline_private_constants_in_constr = Term_typing.inline_side_effects
 let inline_private_constants_in_definition_entry = Term_typing.inline_entry_side_effects
-let side_effects_of_private_constants x = Term_typing.uniq_seff (List.rev x)
+let side_effects_of_private_constants = Term_typing.uniq_seff
 
 let private_con_of_con env c =
   let cbo = Environ.lookup_constant c env.env in
@@ -250,7 +250,7 @@ let universes_of_private eff =
      | Entries.SEsubproof (c, cb, e) ->
 	if cb.const_polymorphic then acc
 	else Univ.ContextSet.of_context cb.const_universes :: acc)
-   [] eff
+   [] (Term_typing.uniq_seff eff)
 
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
