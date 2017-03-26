@@ -186,7 +186,8 @@ let rec unzip ctx j =
       unzip ctx { j with uj_val = mkApp (mkLambda (n,ty,j.uj_val),arg) }
 
 let hcons_j j =
-  { uj_val = hcons_constr j.uj_val; uj_type = hcons_constr j.uj_type} 
+  (** Do not hashcons type: it is not used by the callers of this function. *)
+  { uj_val = hcons_constr j.uj_val; uj_type = j.uj_type} 
 
 let feedback_completion_typecheck =
   let open Feedback in
@@ -507,7 +508,9 @@ let translate_local_assum env t =
     t
 
 let translate_recipe env kn r =
-  build_constant_declaration kn env (Cooking.cook_constant env r)
+  let (_, dir, _) = Constant.repr3 kn in
+  let hcons = DirPath.is_empty dir in
+  build_constant_declaration kn env (Cooking.cook_constant ~hcons env r)
 
 let translate_local_def mb env id centry =
   let def,typ,proj,poly,univs,inline_code,ctx =

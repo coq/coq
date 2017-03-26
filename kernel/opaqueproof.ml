@@ -48,7 +48,10 @@ let turn_indirect dp o (prfs,odp) = match o with
       then CErrors.anomaly (Pp.str "Indirect in a different table")
       else CErrors.anomaly (Pp.str "Already an indirect opaque")
   | Direct (d,cu) ->
-      let cu = Future.chain ~pure:true cu (fun (c, u) -> hcons_constr c, u) in
+      (** Uncomment to check dynamically that all terms turned into
+          indirections are hashconsed. *)
+(* let check_hcons c = let c' = hcons_constr c in assert (c' == c); c in *)
+(* let cu = Future.chain ~pure:true cu (fun (c, u) -> check_hcons c; c, u) in *)
       let id = Int.Map.cardinal prfs in
       let prfs = Int.Map.add id (d,cu) prfs in
       let ndp =
