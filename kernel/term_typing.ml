@@ -139,6 +139,12 @@ let inline_side_effects env body ctx side_eff =
   (* CAVEAT: we assure a proper order *)
   List.fold_left handle_sideff (body,ctx,[]) (uniq_seff_rev side_eff)
 
+let rec is_nth_suffix n l suf =
+  if Int.equal n 0 then l == suf
+  else match l with
+  | [] -> false
+  | _ :: l -> is_nth_suffix (pred n) l suf
+
 (* Given the list of signatures of side effects, checks if they match.
  * I.e. if they are ordered descendants of the current revstruct *)
 let check_signatures curmb sl =
@@ -151,7 +157,7 @@ let check_signatures curmb sl =
           match sl with
           | None -> sl, None
           | Some n ->
-              if List.length mb >= how_many && CList.skipn how_many mb == curmb
+              if is_nth_suffix how_many mb curmb
               then Some (n + how_many), Some mb
               else None, None
         with CEphemeron.InvalidKey -> None, None in
