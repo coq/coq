@@ -1121,10 +1121,17 @@ variables that appear in the term constructed by \texttt{\tacexpr}.
 \begin{Variants}
 \item \texttt{abstract {\tacexpr} using {\ident}}.\\
   Give explicitly the name of the auxiliary lemma.
+  Use this feature at your own risk; explicitly named and reused subterms
+  don't play well with asynchronous proofs.
 \item \texttt{transparent\_abstract {\tacexpr}}.\\
   Save the subproof in a transparent lemma rather than an opaque one.
+  Use this feature at your own risk; building computationally relevant terms
+  with tactics is fragile.
 \item \texttt{transparent\_abstract {\tacexpr} using {\ident}}.\\
   Give explicitly the name of the auxiliary transparent lemma.
+  Use this feature at your own risk; building computationally relevant terms
+  with tactics is fragile, and explicitly named and reused subterms
+  don't play well with asynchronous proofs.
 \end{Variants}
 
 \ErrMsg \errindex{Proof is not complete}
