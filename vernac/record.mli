@@ -26,7 +26,8 @@ val declare_projections :
 
 val declare_structure :
   Decl_kinds.recursivity_kind ->
-  bool (** polymorphic?*) -> Univ.universe_context ->
+  bool (** polymorphic?*) ->
+  (Univ.universe_context * Univ.universe_context) (** universe and subtyping constraints *) ->
   Id.t -> Id.t ->
   manual_explicitation list -> Context.Rel.t -> (** params *) constr -> (** arity *)
   bool (** template arity ? *) ->

@@ -86,6 +86,13 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
 	inst, Univ.UContext.make (inst, Univ.subst_instance_constraints inst cstrs)
     else Univ.Instance.empty, mib.mind_universes
   in
+  let substsbt, univssbt = 
+    if mib.mind_polymorphic then 
+      let inst = Univ.UContext.instance mib.mind_subtyping in
+      let cstrs = Univ.UContext.constraints mib.mind_subtyping in
+	inst, Univ.UContext.make (inst, Univ.subst_instance_constraints inst cstrs)
+    else Univ.Instance.empty, Univ.UContext.empty
+  in
   let inds =
     Array.map_to_list
       (fun mip ->
@@ -116,5 +123,5 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
     mind_entry_inds = inds';
     mind_entry_polymorphic = mib.mind_polymorphic;
     mind_entry_private = mib.mind_private;
-    mind_entry_universes = univs;
+    mind_entry_universes = (univs, univssbt);
   }

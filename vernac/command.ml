@@ -656,7 +656,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
     mind_entry_inds = entries;
     mind_entry_polymorphic = poly;
     mind_entry_private = if prv then Some false else None;
-    mind_entry_universes = uctx;
+    mind_entry_universes = (uctx, Univ.UContext.empty);
   },
     pl, impls
 

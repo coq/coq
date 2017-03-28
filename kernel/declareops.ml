@@ -261,6 +261,7 @@ let subst_mind_body sub mib =
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_polymorphic = mib.mind_polymorphic;
     mind_universes = mib.mind_universes;
+    mind_subtyping = mib.mind_subtyping;
     mind_private = mib.mind_private;
     mind_typing_flags = mib.mind_typing_flags;
   }

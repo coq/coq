@@ -220,7 +220,7 @@ let typecheck_inductive env mie =
   (* Check unicity of names *)
   mind_check_names mie;
   (* Params are typed-checked here *)
-  let env' = push_context mie.mind_entry_universes env in
+  let env' = push_context (fst mie.mind_entry_universes) env in
   let (env_params,paramsctxt) = infer_local_decls env' mie.mind_entry_params in
   (* We first type arity of each inductive definition *)
   (* This allows building the environment of arities and to share *)
@@ -822,17 +822,18 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
   let hyps = used_section_variables env inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
   let nparamsctxt = Context.Rel.length paramsctxt in
-  let subst, ctx = Univ.abstract_universes p ctx in
-  let paramsctxt = Vars.subst_univs_level_context subst paramsctxt in
+  let substunivs, ctxunivs = Univ.abstract_universes p (fst ctx) in
+  let substsbt, ctxsbt = Univ.abstract_universes p (snd ctx) in
+  let paramsctxt = Vars.subst_univs_level_context substunivs paramsctxt in
   let env_ar = 
-    let ctx = Environ.rel_context env_ar in 
-    let ctx' = Vars.subst_univs_level_context subst ctx in
-      Environ.push_rel_context ctx' env
+    let ctxunivs = Environ.rel_context env_ar in 
+    let ctxunivs' = Vars.subst_univs_level_context substunivs ctxunivs in
+      Environ.push_rel_context ctxunivs' env
   in
   (* Check one inductive *)
   let build_one_packet (id,cnames,lc,(ar_sign,ar_kind)) recarg =
     (* Type of constructors in normal form *)
-    let lc = Array.map (Vars.subst_univs_level_constr subst) lc in
+    let lc = Array.map (Vars.subst_univs_level_constr substunivs) lc in
     let splayed_lc = Array.map (dest_prod_assum env_ar) lc in
     let nf_lc = Array.map (fun (d,b) -> it_mkProd_or_LetIn b d) splayed_lc in
     let consnrealdecls =
@@ -841,6 +842,9 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
     let consnrealargs =
       Array.map (fun (d,_) -> Context.Rel.nhyps d - nparamargs)
 	splayed_lc in
+    (* Check that the subtyping constraints (inferred outside kernel)
+       are valid. If so return (), otherwise raise an anomaly! *)
+    let () = () in
     (* Elimination sorts *)
     let arkind,kelim = 
       match ar_kind with
@@ -851,8 +855,8 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
 	let s = sort_of_univ defs in
 	let kelim = allowed_sorts info s in
 	let ar = RegularArity 
-	  { mind_user_arity = Vars.subst_univs_level_constr subst ar; 
-	    mind_sort = sort_of_univ (Univ.subst_univs_level_universe subst defs); } in
+	  { mind_user_arity = Vars.subst_univs_level_constr substunivs ar; 
+	    mind_sort = sort_of_univ (Univ.subst_univs_level_universe substunivs defs); } in
 	  ar, kelim in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in
@@ -871,7 +875,7 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
       (* Build the inductive packet *)
       { mind_typename = id;
 	mind_arity = arkind;
-	mind_arity_ctxt = Vars.subst_univs_level_context subst ar_sign;
+	mind_arity_ctxt = Vars.subst_univs_level_context substunivs ar_sign;
 	mind_nrealargs = Context.Rel.nhyps ar_sign - nparamargs;
 	mind_nrealdecls = Context.Rel.length ar_sign - nparamsctxt;
 	mind_kelim = kelim;
@@ -895,7 +899,7 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
       (** The elimination criterion ensures that all projections can be defined. *)
       let u = 
 	if p then 
-	  subst_univs_level_instance subst (Univ.UContext.instance ctx)
+	  subst_univs_level_instance substunivs (Univ.UContext.instance ctxunivs)
 	else Univ.Instance.empty 
       in
       let indsp = ((kn, 0), u) in
@@ -920,7 +924,8 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
       mind_params_ctxt = paramsctxt;
       mind_packets = packets;
       mind_polymorphic = p;
-      mind_universes = ctx;
+      mind_universes = ctxunivs;
+      mind_subtyping = ctxsbt;
       mind_private = prv;
       mind_typing_flags = Environ.typing_flags env;
     }

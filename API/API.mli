@@ -1094,6 +1094,7 @@ sig
         mind_params_ctxt : Context.Rel.t;
         mind_polymorphic : bool;
         mind_universes : Univ.UContext.t;
+        mind_subtyping : Univ.universe_context;
         mind_private : bool option;
         mind_typing_flags : Declarations.typing_flags;
       }

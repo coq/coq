@@ -50,7 +50,9 @@ type mutual_inductive_entry = {
   mind_entry_params : (Id.t * local_entry) list;
   mind_entry_inds : one_inductive_entry list;
   mind_entry_polymorphic : bool; 
-  mind_entry_universes : Univ.universe_context;
+  mind_entry_universes : Univ.universe_context * Univ.universe_context;
+  (* universe constraints and the constraints for subtyping of
+     inductive types in the block. *)
   mind_entry_private : bool option;
 }
 

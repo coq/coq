@@ -466,7 +466,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
       in
       cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
-       let ind = declare_structure BiFinite poly ctx (snd id) idbuild paramimpls
+       let ind = declare_structure BiFinite poly (ctx, Univ.UContext.empty) (snd id) idbuild paramimpls
 	  params arity template fieldimpls fields
 	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
        in
@@ -571,7 +571,7 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits
 	    (succ (List.length params)) impls) implfs in
-	let ind = declare_structure finite poly ctx idstruc
+	let ind = declare_structure finite poly (ctx, Univ.UContext.empty) idstruc
 	  idbuild implpars params arity template implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
 	IndRef ind
