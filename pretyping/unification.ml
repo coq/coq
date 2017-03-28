@@ -64,6 +64,18 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> debug_unification:=a);
 }
 
+(** Making this unification algorithm correct w.r.t. the evar-map abstraction
+    breaks too much stuff. So we redefine incorrect functions here. *)
+
+let unsafe_occur_meta_or_existential c =
+  let c = EConstr.Unsafe.to_constr c in
+  let rec occrec c = match kind_of_term c with
+    | Evar _ -> raise Occur
+    | Meta _ -> raise Occur
+    | _ -> iter_constr occrec c
+  in try occrec c; false with Occur -> true
+
+
 let occur_meta_or_undefined_evar evd c =
   (** This is performance-critical. Using the evar-insensitive API changes the
       resulting heuristic. *)
@@ -1880,7 +1892,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
       else
         let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
         let flags =
-          if occur_meta_or_existential evd op || !keyed_unification then
+          if unsafe_occur_meta_or_existential op || !keyed_unification then
 	    (* This is up to delta for subterms w/o metas ... *)
             flags
           else
