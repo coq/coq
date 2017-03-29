@@ -14,7 +14,7 @@ class type proof_view =
   object
     inherit GObj.widget
     method buffer : GText.buffer
-    method refresh : unit -> unit
+    method refresh : force:bool -> unit
     method clear : unit -> unit
     method set_goals : Interface.goals option -> unit
     method set_evars : Interface.evar list option -> unit
@@ -197,6 +197,7 @@ let proof_view () =
     inherit GObj.widget view#as_widget
     val mutable goals = None
     val mutable evars = None
+    val mutable last_width = -1
 
     method buffer = text_buffer
 
@@ -206,13 +207,24 @@ let proof_view () =
 
     method set_evars evs = evars <- evs
 
-    method refresh () =
-      let dummy _ () = () in
-      display (mode_tactic dummy) view goals None evars
+    method refresh ~force =
+      (* We need to block updates here due to the following race:
+         insertion of messages may create a vertical scrollbar, this
+         will trigger a width change, calling refresh again and
+         going into an infinite loop. *)
+      let width = Ideutils.textview_width view  in
+      (* Could still this method race if the scrollbar changes the
+         textview_width ?? *)
+      let needed = force || last_width <> width in
+      if needed then begin
+        last_width <- width;
+        let dummy _ () = () in
+        display (mode_tactic dummy) view goals None evars
+      end
   end
   in
   (* Is there a better way to connect the signal ? *)
   (* Can this be done in the object constructor? *)
-  let w_cb _ = pf#refresh () in
+  let w_cb _ = pf#refresh ~force:false in
   ignore (view#misc#connect#size_allocate w_cb);
   pf
