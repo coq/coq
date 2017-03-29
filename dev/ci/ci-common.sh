@@ -27,11 +27,11 @@ git_checkout()
 
   # Allow an optional 4th argument for the commit
   local _COMMIT=${4:-FETCH_HEAD}
-  local _DEPTH=${5:-1}
+  local _DEPTH=$(if [ -z "${4}" ]; then echo "--depth 1"; fi)
 
   mkdir -p ${_DEST}
   ( cd ${_DEST}                                                && \
-    if [ ! -d .git ] ; then git clone --depth ${_DEPTH} ${_URL} . ; fi && \
+    if [ ! -d .git ] ; then git clone ${_DEPTH} ${_URL} . ; fi && \
     echo "Checking out ${_DEST}"                               && \
     git fetch ${_URL} ${_BRANCH}                               && \
     git checkout ${_COMMIT}                                    && \
