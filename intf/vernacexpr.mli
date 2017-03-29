@@ -283,14 +283,9 @@ type bullet =
     | Plus of int
 
 (** {6 Types concerning Stm} *)
-type 'a stm_vernac =
+type stm_vernac =
   | JoinDocument
-  | Finish
   | Wait
-  | PrintDag
-  | Observe of Stateid.t
-  | Command of 'a (* An out of flow command not to be recorded by Stm *)
-  | PGLast of 'a (* To ease the life of PG *)
 
 (** {6 Types concerning the module layer} *)
 
@@ -450,8 +445,9 @@ type vernac_expr =
   | VernacRegister of lident * register_kind
   | VernacComments of comment list
 
-  (* Stm backdoor *)
-  | VernacStm of vernac_expr stm_vernac
+  (* Stm backdoor: used in fake_id, will be removed when fake_ide
+     becomes aware of feedback about completed jobs. *)
+  | VernacStm of stm_vernac
 
   (* Proof management *)
   | VernacGoal of constr_expr
@@ -509,16 +505,11 @@ and report_with = Stateid.t * Feedback.route_id (* feedback on id/route *)
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list
-and vernac_is_alias = bool
 and vernac_part_of_script = bool
 and vernac_control =
-  | VtFinish
   | VtWait
   | VtJoinDocument
-  | VtPrintDag
-  | VtObserve of Stateid.t
   | VtBack of Stateid.t
-  | VtPG
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
