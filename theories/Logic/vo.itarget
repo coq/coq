@@ -27,6 +27,7 @@ IndefiniteDescription.vo
 JMeq.vo
 ProofIrrelevanceFacts.vo
 ProofIrrelevance.vo
+PropFacts.vo
 PropExtensionality.vo
 RelationalChoice.vo
 SetIsType.vo
