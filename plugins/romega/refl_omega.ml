@@ -8,6 +8,7 @@
 
 open Pp
 open Util
+open Proofview.Notations
 open Const_omega
 module OmegaSolver = Omega_plugin.Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
@@ -16,13 +17,12 @@ open OmegaSolver
 (* Especially useful debugging functions *)
 let debug = ref false
 
-let show_goal gl =
-  if !debug then (); Tacticals.tclIDTAC gl
+let show_goal = Tacticals.New.tclIDTAC
 
 let pp i = print_int i; print_newline (); flush stdout
 
 (* More readable than the prefix notation *)
-let (>>) = Tacticals.tclTHEN
+let (>>) = Tacticals.New.tclTHEN
 
 let mkApp = Term.mkApp
 
@@ -739,7 +739,7 @@ and oproposition_of_constr env ((negated,depends,origin,path) as ctxt) gl c =
 (* Destructuration des hypothèses et de la conclusion *)
 
 let reify_gl env gl =
-  let concl = Tacmach.pf_concl gl in
+  let concl = Tacmach.New.pf_concl gl in
   let concl = EConstr.Unsafe.to_constr concl in
   let t_concl =
     Pnot (oproposition_of_constr env (true,[],id_concl,[O_mono]) gl concl) in
@@ -760,7 +760,7 @@ let reify_gl env gl =
     | [] ->
 	if !debug then print_env_reification env;
 	[] in
-  let t_lhyps = loop (Tacmach.pf_hyps_types gl) in
+  let t_lhyps = loop (Tacmach.New.pf_hyps_types gl) in
   (id_concl,t_concl) :: t_lhyps
 
 let rec destructurate_pos_hyp orig list_equations list_depends = function
@@ -1283,21 +1283,22 @@ let resolution env full_reified_goal systems_list =
     CCHyp{o_hyp=id_concl;o_path=[]} :: hyp_stated_vars @ initial_context in
   let decompose_tactic = decompose_tree env context solution_tree in
 
-  Proofview.V82.of_tactic (Tactics.generalize
-    (l_generalize_arg @ List.map EConstr.mkVar (List.tl l_hyps))) >>
-  Proofview.V82.of_tactic (Tactics.change_concl reified) >>
-  Proofview.V82.of_tactic (Tactics.apply (EConstr.of_constr (app coq_do_omega [|decompose_tactic; normalization_trace|]))) >>
+  Tactics.generalize
+    (l_generalize_arg @ List.map EConstr.mkVar (List.tl l_hyps)) >>
+  Tactics.change_concl reified >>
+  Tactics.apply (EConstr.of_constr (app coq_do_omega [|decompose_tactic; normalization_trace|])) >>
   show_goal >>
-  Proofview.V82.of_tactic (Tactics.normalise_vm_in_concl) >>
+  Tactics.normalise_vm_in_concl >>
   (*i Alternatives to the previous line:
    - Normalisation without VM:
       Tactics.normalise_in_concl
    - Skip the conversion check and rely directly on the QED:
       Tacmach.convert_concl_no_check (Lazy.force coq_True) Term.VMcast >>
   i*)
-  Proofview.V82.of_tactic (Tactics.apply (EConstr.of_constr (Lazy.force coq_I)))
+  Tactics.apply (EConstr.of_constr (Lazy.force coq_I))
 
-let total_reflexive_omega_tactic gl =
+let total_reflexive_omega_tactic =
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
   Coqlib.check_required_library ["Coq";"romega";"ROmega"];
   rst_omega_eq ();
   rst_omega_var ();
@@ -1306,9 +1307,9 @@ let total_reflexive_omega_tactic gl =
   let full_reified_goal = reify_gl env gl in
   let systems_list = destructurate_hyps full_reified_goal in
   if !debug then display_systems systems_list;
-  resolution env full_reified_goal systems_list gl
+  resolution env full_reified_goal systems_list
   with NO_CONTRADICTION -> CErrors.error "ROmega can't solve this system"
-
+  end }
 
 (*i let tester = Tacmach.hide_atomic_tactic "TestOmega" test_tactic i*)
 
