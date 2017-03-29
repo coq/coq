@@ -699,6 +699,9 @@ module State : sig
   val proof_part_of_frozen : frozen_state -> proof_part
   val assign : Stateid.t -> partial_state -> unit
 
+  (* Only for internal use to catch problems in parse_sentence, should
+     be removed in the state handling refactoring.  *)
+  val cur_id : Stateid.t ref
 end = struct (* {{{ *)
 
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
@@ -2669,9 +2672,19 @@ let parse_sentence sid pa =
      proper state makes the error resilience code fail *)
   (* Reach.known_state ~cache:`Yes sid; *)
   let cur_tip = VCS.cur_tip () in
+  let real_tip = !State.cur_id in
   if not (Stateid.equal sid cur_tip) then
     user_err ~hdr:"Stm.parse_sentence"
-      (str "Currently, the parsing api only supports parsing at the tip of the document.");
+      (str "Currently, the parsing api only supports parsing at the tip of the document." ++ fnl () ++
+       str "You wanted to parse at: "  ++ str (Stateid.to_string sid) ++
+       str " but the current tip is: " ++ str (Stateid.to_string cur_tip)) ;
+  if not (Stateid.equal sid real_tip) then
+    Feedback.msg_debug
+      (str "Warning, the real tip doesn't match the current tip." ++
+       str "You wanted to parse at: "  ++ str (Stateid.to_string sid) ++
+       str " but the real tip is: " ++ str (Stateid.to_string real_tip) ++ fnl () ++
+       str "This is usually due to use of Stm.observe to evaluate a state different than the tip. " ++
+       str "All is good if not parsing changes occur between the two states, however if they do, a problem might occur.");
   Flags.with_option Flags.we_are_parsing (fun () ->
       try
         match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
@@ -2721,7 +2734,8 @@ let add ~ontop ?newtip verb (loc, ast) =
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
     user_err ~hdr:"Stm.add"
-      (str "You used Stm.add on a different state than the tip" ++ fnl () ++
+      (str "Stm.add called for a different state (" ++ str (Stateid.to_string ontop) ++
+       str ") than the tip: " ++ str (Stateid.to_string cur_tip) ++ str "." ++ fnl () ++
        str "This is not supported yet, sorry.");
   let indentation, strlen = compute_indentation ontop loc in
   CWarnings.set_current_loc loc;

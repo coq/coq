@@ -148,7 +148,7 @@ document type". This allows for a more uniform handling of printing
 
 - The main parsing entry point has also been moved to the
   `Stm`. Parsing is considered a synchronous operation so it will
-  either succeed of emit an exception.
+  either succeed or raise an exception.
 
 - `Feedback` is now only emitted for asynchronous operations. As a
   consequence, it always carries a valid stateid and the type has
@@ -167,7 +167,7 @@ document type". This allows for a more uniform handling of printing
 
 ** XML Protocol **
 
-- The legacy `interp` call has been turned into a noop.
+- The legacy `Interp` call has been turned into a noop.
 
 =========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
