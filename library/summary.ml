@@ -108,7 +108,7 @@ let unfreeze_summaries fs =
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
       Feedback.msg_error
-        Pp.(seq [str "Error unfrezing summay %s\n%s\n%!";
+        Pp.(seq [str "Error unfreezing summary %s\n%s\n%!";
                  str (name_of_summary id);
                  CErrors.iprint e]);
       iraise e

@@ -67,8 +67,7 @@ let show_node () =
       could, possibly, be cleaned away. (Feb. 2010) *)
   ()
 
-let show_thesis () =
-     Feedback.msg_error (anomaly (Pp.str "TODO") )
+let show_thesis () = CErrors.anomaly (Pp.str "Show Thesis: TODO")
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
