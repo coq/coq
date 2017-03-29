@@ -334,8 +334,10 @@ let meta_free_prefix sigma a =
   with Stop acc -> Array.rev_of_list acc
 
 let goal_type_of env sigma c =
-  if !check then EConstr.Unsafe.to_constr (unsafe_type_of env sigma (EConstr.of_constr c))
-  else EConstr.Unsafe.to_constr (Retyping.get_type_of env sigma (EConstr.of_constr c))
+  if !check then
+    let (sigma,t) = type_of env sigma (EConstr.of_constr c) in
+    (sigma, EConstr.Unsafe.to_constr t)
+  else (sigma, EConstr.Unsafe.to_constr (Retyping.get_type_of env sigma (EConstr.of_constr c)))
 
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = Goal.V82.env sigma goal in
@@ -418,7 +420,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
       | _ ->
 	if occur_meta sigma (EConstr.of_constr trm) then
 	  anomaly (Pp.str "refiner called with a meta in non app/case subterm");
-	let t'ty = goal_type_of env sigma trm in
+	let (sigma, t'ty) = goal_type_of env sigma trm in
 	let sigma = check_conv_leq_goal env sigma trm t'ty conclty in
           (goalacc,t'ty,sigma, trm)
 
@@ -478,7 +480,8 @@ and mk_hdgoals sigma goal goalacc trm =
     | _ ->
 	if !check && occur_meta sigma (EConstr.of_constr trm) then
 	  anomaly (Pp.str "refine called with a dependent meta");
-	goalacc, goal_type_of env sigma trm, sigma, trm
+        let (sigma, ty) = goal_type_of env sigma trm in
+	goalacc, ty, sigma, trm
 
 and mk_arggoals sigma goal goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
