@@ -100,8 +100,12 @@ GEXTEND Gram
     [ [ IDENT "Resolve"; lc = LIST1 reference_or_constr; info = hint_info ->
           HintsResolve (List.map (fun x -> (info, true, x)) lc)
       | IDENT "Immediate"; lc = LIST1 reference_or_constr -> HintsImmediate lc
-      | IDENT "Transparent"; lc = LIST1 global -> HintsTransparency (lc, true)
-      | IDENT "Opaque"; lc = LIST1 global -> HintsTransparency (lc, false)
+      | IDENT "Variables"; IDENT "Transparent" -> HintsTransparency (HintsVariables, true)
+      | IDENT "Variables"; IDENT "Opaque" -> HintsTransparency (HintsVariables, false)
+      | IDENT "Constants"; IDENT "Transparent" -> HintsTransparency (HintsConstants, true)
+      | IDENT "Constants"; IDENT "Opaque" -> HintsTransparency (HintsConstants, false)
+      | IDENT "Transparent"; lc = LIST1 global -> HintsTransparency (HintsReferences lc, true)
+      | IDENT "Opaque"; lc = LIST1 global -> HintsTransparency (HintsReferences lc, false)
       | IDENT "Mode"; l = global; m = mode -> HintsMode (l, m)
       | IDENT "Unfold"; lqid = LIST1 global -> HintsUnfold lqid
       | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc ] ]

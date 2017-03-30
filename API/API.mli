@@ -3768,11 +3768,16 @@ sig
 
   type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
 
+  type 'a hints_transparency_target =
+    | HintsVariables
+    | HintsConstants
+    | HintsReferences of 'a list
+
   type hints_expr =
     | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
     | HintsImmediate of reference_or_constr list
     | HintsUnfold of Libnames.reference list
-    | HintsTransparency of Libnames.reference list * bool
+    | HintsTransparency of Libnames.reference hints_transparency_target * bool
     | HintsMode of Libnames.reference * hint_mode list
     | HintsConstructors of Libnames.reference list
     | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
@@ -5380,7 +5385,7 @@ sig
     | HintsImmediateEntry of (hints_path_atom * Decl_kinds.polymorphic * hint_term) list
     | HintsCutEntry of hints_path
     | HintsUnfoldEntry of Names.evaluable_global_reference list
-    | HintsTransparencyEntry of Names.evaluable_global_reference list * bool
+    | HintsTransparencyEntry of Names.evaluable_global_reference Vernacexpr.hints_transparency_target * bool
     | HintsModeEntry of Globnames.global_reference * Vernacexpr.hint_mode list
     | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 
