@@ -515,7 +515,10 @@ let loop () =
       | Xml_parser.Error (err, loc) ->
         pr_error ("XML syntax error: " ^ Xml_parser.error_msg err)
       | Stateid.Invalid_state_id id ->
-        pr_error ("Invalid state id: " ^ (string_of_int id))
+        let errmsg = "Invalid state id: " ^ (string_of_int id) ^ ", which likely indicates a bug in your Coq client."
+        in
+        pr_error errmsg;
+        Feedback.msg_error (strbrk errmsg)
       | Serialize.Marshal_error (msg,node) ->
         pr_error "Unexpected XML message";
         pr_error ("Expected XML node: " ^ msg);
