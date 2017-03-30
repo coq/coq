@@ -1288,17 +1288,20 @@ let do_build_inductive
        let t = EConstr.Unsafe.to_constr t in
        evd,
        Environ.push_named (LocalAssum (id,t))
-			   (* try *)
-			   (*   Typing.e_type_of env evd (mkConstU c) *)
-			   (* with Not_found -> *)
-			   (*   raise (UserError("do_build_inductive", str "Cannot handle partial fixpoint")) *)
 			 env
       )
       funnames
       (Array.of_list funconstants)
       (evd,Global.env ())
   in
-  let resa = Array.map (build_entry_lc env  funnames_as_set []) rta in
+  (* we solve and replace the implicits *)
+  let rta =
+    Array.mapi (fun i rt ->
+        let _,t = Typing.type_of env evd (EConstr.of_constr (mkConstU ((Array.of_list funconstants).(i)))) in
+        resolve_and_replace_implicits ~expected_type:(Pretyping.OfType t) env evd rt
+      ) rta
+  in
+  let resa = Array.map (build_entry_lc env funnames_as_set []) rta in
   let env_with_graphs =
     let rel_arity i funargs =  (* Rebuilding arities (with parameters) *)
       let rel_first_args :(Name.t * Glob_term.glob_constr * Glob_term.glob_constr option ) list  =
