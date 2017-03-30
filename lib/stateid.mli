@@ -8,6 +8,8 @@
 
 type t
 
+exception Invalid_state_id of int
+  
 val equal : t -> t -> bool
 val compare : t -> t -> int
 

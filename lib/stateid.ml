@@ -7,6 +7,9 @@
 (************************************************************************)
 
 type t = int
+
+exception Invalid_state_id of int
+
 let initial = 1
 let dummy = 0
 let fresh, in_range =
@@ -16,7 +19,8 @@ let to_string = string_of_int
 let of_int id =
   (* Coqide too to parse ids too, but cannot check if they are valid.
    * Hence we check for validity only if we are an ide slave. *)
-  if !Flags.ide_slave then assert (in_range id);
+  if !Flags.ide_slave && not (in_range id) then 
+    raise (Invalid_state_id id);
   id
 let to_int id = id
 let newer_than id1 id2 = id1 > id2
