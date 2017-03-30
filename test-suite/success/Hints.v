@@ -183,3 +183,33 @@ End HintCut.
 Goal forall (m : nat), exists n, m = n /\ m = n.
   intros m; eexists; split; [trivial | reflexivity].
 Qed.
+
+Section HintTransparent.
+
+  Definition fn (x : nat) := S x.
+
+  Create HintDb trans.
+
+  Hint Resolve eq_refl | (_ = _) : trans.
+
+  (* No reduction *)
+  Hint Variables Opaque : trans.  Hint Constants Opaque : trans.
+
+  Goal forall x : nat, fn x = S x.
+  Proof.
+    intros.
+    Fail typeclasses eauto with trans.
+    unfold fn.
+    typeclasses eauto with trans.
+  Qed.
+
+  (** Now allow unfolding fn *)
+  Hint Constants Transparent : trans.
+
+  Goal forall x : nat, fn x = S x.
+  Proof.
+    intros.
+    typeclasses eauto with trans.
+  Qed.
+
+End HintTransparent.

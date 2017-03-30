@@ -52,6 +52,9 @@ Vernacular Commands
 - Nested proofs may be enabled through the option `Nested Proofs Allowed`.
   By default, they are disabled and produce an error. The deprecation
   warning which used to occur when using nested proofs has been removed.
+- New Set Hint Variables/Constants Opaque/Transparent commands for setting
+  globally the opacity flag of variables and constants in hint databases,
+  overwritting the opacity set of the hint database.
 
 Coq binaries and process model
 
