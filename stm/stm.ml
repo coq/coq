@@ -6,13 +6,16 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* enable in case of stm problems  *)
+let stm_debug = false
+
 let stm_pr_err s  = Printf.eprintf "%s] %s\n"     (System.process_id ()) s; flush stderr
 let stm_pp_err pp = Format.eprintf "%s] @[%a@]\n" (System.process_id ()) Pp.pp_with pp; flush stderr
 
-let stm_prerr_endline s = if false then begin stm_pr_err (s ()) end else ()
-let stm_prerr_debug s = if !Flags.debug then begin stm_pr_err (s ()) end else ()
+let stm_prerr_endline s = if stm_debug then begin stm_pr_err (s ()) end else ()
+let stm_pperr_endline s = if stm_debug then begin stm_pp_err (s ()) end else ()
 
-let stm_pperr_endline s = if false then begin stm_pp_err (s ()) end else ()
+let stm_prerr_debug   s = if !Flags.debug then begin stm_pr_err (s ()) end else ()
 
 open Vernacexpr
 open CErrors
@@ -2678,7 +2681,7 @@ let parse_sentence sid pa =
       (str "Currently, the parsing api only supports parsing at the tip of the document." ++ fnl () ++
        str "You wanted to parse at: "  ++ str (Stateid.to_string sid) ++
        str " but the current tip is: " ++ str (Stateid.to_string cur_tip)) ;
-  if not (Stateid.equal sid real_tip) then
+  if not (Stateid.equal sid real_tip) && !Flags.debug && stm_debug then
     Feedback.msg_debug
       (str "Warning, the real tip doesn't match the current tip." ++
        str "You wanted to parse at: "  ++ str (Stateid.to_string sid) ++
