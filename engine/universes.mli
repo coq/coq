@@ -227,3 +227,14 @@ val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
 
 val solve_constraints_system : universe option array -> universe array -> universe array ->
   universe array
+
+(** Operations for universe_info_ind *)
+
+(** Given a universe context representing constraints of an inductive
+    this function produces a UInfoInd.t that with the trivial subtyping relation. *)
+val univ_inf_ind_from_universe_context : universe_context -> universe_info_ind
+
+(** This function adds universe constraints to the universe
+    constraints of the given universe_info_ind. However one must be
+    CAUTIOUS as it resets the subtyping constraints to equality. *)
+val univ_inf_ind_union : universe_info_ind -> universe_context -> universe_info_ind

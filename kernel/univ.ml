@@ -1028,6 +1028,83 @@ end
 type universe_context = UContext.t
 let hcons_universe_context = UContext.hcons
 
+(** Universe info for inductive types: A context of universe levels
+    with universe constraints, representing local universe variables
+    and constraints, together with a context of universe levels with
+    universe constraints, representing conditions for subtyping used
+    for inductive types.
+
+    This data structure maintains the invariant that the context for
+    subtyping constraints is exactly twice as big as the context for
+    universe constraints. *)
+module UInfoInd =
+struct
+  type t = universe_context * universe_context
+
+  let make x =
+    if (Instance.length (UContext.instance (snd x))) =
+       (Instance.length (UContext.instance (fst x))) * 2 then x
+    else anomaly (Pp.str "Invalid subtyping information encountered!")
+
+  let empty = (UContext.empty, UContext.empty)
+  let is_empty (univcst, subtypcst) = UContext.is_empty univcst && UContext.is_empty subtypcst
+
+  let halve_context (ctx : Instance.t) : Instance.t * Instance.t =
+    let len = Array.length (Instance.to_array ctx) in
+    let halflen = len / 2 in
+    (Instance.of_array (Array.sub (Instance.to_array ctx) 0 halflen),
+     Instance.of_array (Array.sub (Instance.to_array ctx) halflen len))
+
+  let pr prl (univcst, subtypcst) =
+    if UContext.is_empty univcst then mt() else
+      let (ctx, ctx') = halve_context (UContext.instance subtypcst) in
+      (UContext.pr prl univcst) ++
+      h 0 (str "~@{" ++ Instance.pr prl ctx ++ str "} <= ~@{" ++ Instance.pr prl ctx' ++ str "}")
+           ++ h 0 (v 0 (Constraint.pr prl (UContext.constraints subtypcst)))
+
+  let hcons (univcst, subtypcst) =
+    (UContext.hcons univcst, UContext.hcons subtypcst)
+
+  let univ_context (univcst, subtypcst) = univcst
+  let subtyp_context (univcst, subtypcst) = subtypcst
+
+  let create_trivial_subtyping ctx ctx' =
+    CArray.fold_left_i
+      (fun i cst l -> Constraint.add (l, Eq, Array.get ctx' i) cst)
+      Constraint.empty (Instance.to_array ctx)
+
+  (** This function takes a universe context representing constraints
+      of an inductive and a Instance.t of fresh universe names for the
+      subtyping (with the same length as the context in the given
+      universe context) and produces a UInfoInd.t that with the
+      trivial subtyping relation. *)
+  let from_universe_context univcst freshunivs =
+    let inst = (UContext.instance univcst) in
+    assert (Instance.length freshunivs = Instance.length inst);
+    (univcst, UContext.make (Instance.append inst freshunivs,
+                             create_trivial_subtyping inst freshunivs))
+
+  (** This function adds universe constraints to the universe
+      constraints of the given universe_info_ind. However one must be
+      CAUTIOUS as it resets the subtyping constraints to equality. It
+      also requires fresh universes for the newly introduced
+      universes *)
+  let union (univcst, _) univcst' freshunivs =
+    assert (Instance.length freshunivs = Instance.length (UContext.instance univcst'));
+    let (ctx, ctx') = halve_context (UContext.instance univcst) in
+    let newctx' = Instance.append ctx' freshunivs in
+    let univcstunion = UContext.union univcst univcst' in
+    (univcstunion, subtyp_context (from_universe_context univcstunion newctx'))
+
+  let dest x = x
+
+  let size ((x,_), _) = Instance.length x
+
+end
+
+type universe_info_ind = UInfoInd.t
+let hcons_universe_info_ind = UInfoInd.hcons
+
 (** A set of universes with universe constraints.
     We linearize the set to a list after typechecking. 
     Beware, representation could change.
@@ -1203,6 +1280,10 @@ let subst_instance_constraints s csts =
 let instantiate_univ_context (ctx, csts) = 
   (ctx, subst_instance_constraints ctx csts)
 
+(** Substitute instance inst for ctx in universe constraints and subtyping constraints *)
+let instantiate_univ_info_ind (univcst, subtpcst) = 
+  (instantiate_univ_context univcst, instantiate_univ_context subtpcst)
+
 let instantiate_univ_constraints u (_, csts) = 
   subst_instance_constraints u csts
 
@@ -1234,6 +1315,8 @@ let abstract_universes poly ctx =
 let pr_constraints prl = Constraint.pr prl
 
 let pr_universe_context = UContext.pr
+
+let pr_universe_info_ind = UInfoInd.pr
 
 let pr_universe_context_set = ContextSet.pr
 

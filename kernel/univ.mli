@@ -315,6 +315,49 @@ end
 
 type universe_context = UContext.t
 
+(** Universe info for inductive types: A context of universe levels
+    with universe constraints, representing local universe variables
+    and constraints, together with a context of universe levels with
+    universe constraints, representing conditions for subtyping used
+    for inductive types.
+
+    This data structure maintains the invariant that the context for
+    subtyping constraints is exactly twice as big as the context for
+    universe constraints. *)
+module UInfoInd :
+sig
+  type t
+
+  val make : universe_context * universe_context -> t
+
+  val empty : t
+  val is_empty : t -> bool
+
+  val univ_context : t -> universe_context
+  val subtyp_context : t -> universe_context
+
+  val dest : t -> universe_context * universe_context
+
+  (** This function takes a universe context representing constraints
+      of an inductive and a Instance.t of fresh universe names for the
+      subtyping (with the same length as the context in the given
+      universe context) and produces a UInfoInd.t that with the
+      trivial subtyping relation. *)
+  val from_universe_context : universe_context -> universe_instance -> t
+
+  (** This function adds universe constraints to the universe
+      constraints of the given universe_info_ind. However one must be
+      CAUTIOUS as it resets the subtyping constraints to equality. It
+      also requires fresh universes for the newly introduced
+      universes *)
+  val union : t -> universe_context -> universe_instance -> t
+
+  val size : t -> int
+
+end
+
+type universe_info_ind = UInfoInd.t
+
 (** Universe contexts (as sets) *)
 
 module ContextSet :
@@ -389,6 +432,9 @@ val abstract_universes : bool -> universe_context -> universe_level_subst * univ
 (** Get the instantiated graph. *)
 val instantiate_univ_context : universe_context -> universe_context
 
+(** Get the instantiated graphs for both universe constraints and subtyping constraints. *)
+val instantiate_univ_info_ind : universe_info_ind -> universe_info_ind
+
 val instantiate_univ_constraints : universe_instance -> universe_context -> constraints
 
 (** {6 Pretty-printing of universes. } *)
@@ -396,6 +442,7 @@ val instantiate_univ_constraints : universe_instance -> universe_context -> cons
 val pr_constraint_type : constraint_type -> Pp.std_ppcmds
 val pr_constraints : (Level.t -> Pp.std_ppcmds) -> constraints -> Pp.std_ppcmds
 val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> universe_context -> Pp.std_ppcmds
+val pr_universe_info_ind : (Level.t -> Pp.std_ppcmds) -> universe_info_ind -> Pp.std_ppcmds
 val pr_universe_context_set : (Level.t -> Pp.std_ppcmds) -> universe_context_set -> Pp.std_ppcmds
 val explain_universe_inconsistency : (Level.t -> Pp.std_ppcmds) -> 
   univ_inconsistency -> Pp.std_ppcmds
@@ -410,6 +457,7 @@ val hcons_constraints : constraints -> constraints
 val hcons_universe_set : universe_set -> universe_set
 val hcons_universe_context : universe_context -> universe_context
 val hcons_universe_context_set : universe_context_set -> universe_context_set 
+val hcons_universe_info_ind : universe_info_ind -> universe_info_ind
 
 (******)
 
