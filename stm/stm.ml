@@ -2136,10 +2136,13 @@ let known_state ?(redefine_qed=false) ~cache id =
 	    if eff then update_global_env ()
           ), (if eff then `Yes else cache), true
       | `Cmd { cast = x; ceff = eff } -> (fun () ->
-            resilient_command reach view.next;
-            vernac_interp id x;
-	    if eff then update_global_env ()
-          ), (if eff then `Yes else cache), true
+          (match !Flags.async_proofs_mode with
+           | Flags.APon | Flags.APonLazy ->
+             resilient_command reach view.next
+           | Flags.APoff -> reach view.next);
+          vernac_interp id x;
+          if eff then update_global_env ()
+        ), (if eff then `Yes else cache), true
       | `Fork ((x,_,_,_), None) -> (fun () ->
             resilient_command reach view.next;
             vernac_interp id x;
