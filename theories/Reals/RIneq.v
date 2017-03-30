@@ -2017,7 +2017,7 @@ Proof.
 Qed.
 
 Lemma R_rm : ring_morph
-  R0 R1 Rplus Rmult Rminus Ropp eq
+  0%R 1%R Rplus Rmult Rminus Ropp eq
   0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool IZR.
 Proof.
 constructor ; try easy.
