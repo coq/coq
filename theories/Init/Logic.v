@@ -29,6 +29,13 @@ Definition not (A:Prop) := A -> False.
 
 Notation "~ x" := (not x) : type_scope.
 
+(** Create the "core" hint database, and set its transparent state for
+  variables and constants explicitely. *)
+
+Create HintDb core.
+Hint Variables Opaque : core.
+Hint Constants Opaque : core.
+
 Hint Unfold not: core.
 
   (** [and A B], written [A /\ B], is the conjunction of [A] and [B]

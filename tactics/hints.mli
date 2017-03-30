@@ -81,12 +81,17 @@ type hint_mode =
   | ModeNoHeadEvar (* No evar at the head *)
   | ModeOutput (* Anything *)
 
+type 'a hints_transparency_target =
+  | HintsVariables
+  | HintsConstants
+  | HintsReferences of 'a list
+
 type hints_expr =
   | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
   | HintsResolveIFF of bool * Libnames.reference list * int option
   | HintsImmediate of reference_or_constr list
   | HintsUnfold of Libnames.reference list
-  | HintsTransparency of Libnames.reference list * bool
+  | HintsTransparency of Libnames.reference hints_transparency_target * bool
   | HintsMode of Libnames.reference * hint_mode list
   | HintsConstructors of Libnames.reference list
   | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
@@ -173,7 +178,7 @@ type hints_entry =
   | HintsImmediateEntry of (hints_path_atom * polymorphic * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
-  | HintsTransparencyEntry of evaluable_global_reference list * bool
+  | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
   | HintsModeEntry of GlobRef.t * hint_mode list
   | HintsExternEntry of hint_info * Genarg.glob_generic_argument
 

@@ -3435,6 +3435,13 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
 
       Declares each :n:`@ident` as a transparent or opaque constant.
 
+   .. cmdv:: Hint %( Variables %| Constants %) %( Transparent %| Opaque %)}
+      :name: Hint ( Variables | Constants )
+
+      This sets the transparency flag used during unification of
+      hints in the database for all constants or all variables,
+      overwritting the existing settings of opacity.
+
    .. cmdv:: Hint Extern @num {? @pattern} => @tactic
       :name: Hint Extern
 

@@ -121,12 +121,17 @@ type 'a hint_info_gen = 'a Typeclasses.hint_info_gen =
 type hint_info_expr = Hints.hint_info_expr
 [@@ocaml.deprecated "Please use [Hints.hint_info_expr]"]
 
+type 'a hints_transparency_target = 'a Hints.hints_transparency_target =
+  | HintsVariables
+  | HintsConstants
+  | HintsReferences of 'a list
+
 type hints_expr = Hints.hints_expr =
   | HintsResolve of (Hints.hint_info_expr * bool * Hints.reference_or_constr) list
   | HintsResolveIFF of bool * reference list * int option
   | HintsImmediate of Hints.reference_or_constr list
   | HintsUnfold of reference list
-  | HintsTransparency of reference list * bool
+  | HintsTransparency of reference hints_transparency_target * bool
   | HintsMode of reference * Hints.hint_mode list
   | HintsConstructors of reference list
   | HintsExtern of int * constr_expr option * Genarg.raw_generic_argument
