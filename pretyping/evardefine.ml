@@ -91,7 +91,7 @@ let define_pure_evar_as_product evd evk =
     let newenv = push_named (LocalAssum (id, dom)) evenv in
     let src = evar_source evk evd1 in
     let filter = Filter.extend 1 (evar_filter evi) in
-      if is_prop_sort s then
+      if is_prop_sort (ESorts.kind evd1 s) then
        (* Impredicative product, conclusion must fall in [Prop]. *)
         new_evar_unsafe newenv evd1 concl ~src ~filter
       else
@@ -102,7 +102,7 @@ let define_pure_evar_as_product evd evk =
           (Sigma.to_evar_map evd3, e)
         in
 	let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
-	let evd3 = Evd.set_leq_sort evenv evd3 (Type prods) s in
+	let evd3 = Evd.set_leq_sort evenv evd3 (Type prods) (ESorts.kind evd1 s) in
 	  evd3, rng
   in
   let prod = mkProd (Name id, dom, subst_var id rng) in
@@ -174,7 +174,7 @@ let define_evar_as_sort env evd (ev,args) =
   let concl = Reductionops.whd_all (evar_env evi) evd (EConstr.of_constr evi.evar_concl) in
   let sort = destSort evd concl in
   let evd' = Evd.define ev (Constr.mkSort s) evd in
-  Evd.set_leq_sort env evd' (Type (Univ.super u)) sort, s
+  Evd.set_leq_sort env evd' (Type (Univ.super u)) (ESorts.kind evd' sort), s
 
 (* Propagation of constraints through application and abstraction:
    Given a type constraint on a functional term, returns the type

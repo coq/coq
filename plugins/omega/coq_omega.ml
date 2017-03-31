@@ -1714,7 +1714,7 @@ let onClearedName2 id tac =
     end })
 
 let rec is_Prop sigma c = match EConstr.kind sigma c with
-  | Sort (Prop Null) -> true
+  | Sort s -> Sorts.is_prop (ESorts.kind sigma s)
   | Cast (c,_,_) -> is_Prop sigma c
   | _ -> false
 

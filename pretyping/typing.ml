@@ -46,7 +46,7 @@ let inductive_type_knowing_parameters env sigma (ind,u) jl =
 
 let e_type_judgment env evdref j =
   match EConstr.kind !evdref (whd_all env !evdref j.uj_type) with
-    | Sort s -> {utj_val = j.uj_val; utj_type = s }
+    | Sort s -> {utj_val = j.uj_val; utj_type = ESorts.kind !evdref s }
     | Evar ev ->
         let (evd,s) = Evardefine.define_evar_as_sort env !evdref ev in
         evdref := evd; { utj_val = j.uj_val; utj_type = s }
@@ -102,6 +102,7 @@ let e_is_correct_arity env evdref c pj ind specif params =
         if not (Evarconv.e_cumul env evdref a1 a1') then error ();
         srec (push_rel (LocalAssum (na1,a1)) env) t ar'
     | Sort s, [] ->
+        let s = ESorts.kind !evdref s in
         if not (Sorts.List.mem (Sorts.family s) allowed_sorts)
         then error ()
     | Evar (ev,_), [] ->
@@ -161,7 +162,7 @@ let check_type_fixpoint loc env evdref lna lar vdefj =
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
   let pj = Retyping.get_judgment_of env sigma p in
-  let ksort = family_of_sort (sort_of_arity env sigma pj.uj_type) in
+  let ksort = family_of_sort (ESorts.kind sigma (sort_of_arity env sigma pj.uj_type)) in
   let specif = Global.lookup_inductive (fst ind) in
   let sorts = elim_sorts specif in
   if not (List.exists ((==) ksort) sorts) then
@@ -288,11 +289,13 @@ let rec execute env evdref cstr =
         check_cofix env !evdref cofix;
 	make_judge (mkCoFix cofix) tys.(i)
 
-    | Sort (Prop c) ->
-	judge_of_prop_contents c
-
-    | Sort (Type u) ->
+    | Sort s ->
+      begin match ESorts.kind !evdref s with
+      | Prop c ->
+        judge_of_prop_contents c
+      | Type u ->
         judge_of_type u
+      end
 
     | Proj (p, c) -> 
         let cj = execute env evdref c in

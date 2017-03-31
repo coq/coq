@@ -28,9 +28,26 @@ type rel_declaration = (constr, types) Context.Rel.Declaration.pt
 type named_context = (constr, types) Context.Named.pt
 type rel_context = (constr, types) Context.Rel.pt
 
+(** {5 Universe variables} *)
+
+module ESorts :
+sig
+  type t
+  (** Type of sorts up-to universe unification. Essentially a wrapper around
+      Sorts.t so that normalization is ensured statically. *)
+
+  val make : Sorts.t -> t
+  (** Turn a sort into an up-to sort. *)
+
+  val kind : Evd.evar_map -> t -> Sorts.t
+  (** Returns the view into the current sort. Note that the kind of a variable
+      may change if the unification state of the evar map changes. *)
+
+end
+
 (** {5 Destructors} *)
 
-val kind : Evd.evar_map -> t -> (t, t, Sorts.t, Univ.Instance.t) Constr.kind_of_term
+val kind : Evd.evar_map -> t -> (t, t, ESorts.t, Univ.Instance.t) Constr.kind_of_term
 (** Same as {!Constr.kind} except that it expands evars and normalizes
     universes on the fly. *)
 
@@ -43,7 +60,7 @@ val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
 
 (** {5 Constructors} *)
 
-val of_kind : (t, t, Sorts.t, Univ.Instance.t) Constr.kind_of_term -> t
+val of_kind : (t, t, ESorts.t, Univ.Instance.t) Constr.kind_of_term -> t
 (** Construct a term from a view. *)
 
 val of_constr : Constr.t -> t
@@ -123,7 +140,7 @@ val isRelN : Evd.evar_map -> int -> t -> bool
 val destRel : Evd.evar_map -> t -> int
 val destMeta : Evd.evar_map -> t -> metavariable
 val destVar : Evd.evar_map -> t -> Id.t
-val destSort : Evd.evar_map -> t -> Sorts.t
+val destSort : Evd.evar_map -> t -> ESorts.t
 val destCast : Evd.evar_map -> t -> t * cast_kind * t
 val destProd : Evd.evar_map -> t -> Name.t * types * types
 val destLambda : Evd.evar_map -> t -> Name.t * types * t
@@ -241,6 +258,9 @@ sig
 
   val to_named_decl : (t, types) Context.Named.Declaration.pt -> (Constr.t, Constr.types) Context.Named.Declaration.pt
   (** Physical identity. Does not care for defined evars. *)
+
+  val to_sorts : ESorts.t -> Sorts.t
+  (** Physical identity. Does not care for normalization. *)
 
   val eq : (t, Constr.t) eq
   (** Use for transparent cast between types. *)

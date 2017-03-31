@@ -1181,14 +1181,19 @@ let base_sort_cmp pb s0 s1 =
     | _ -> false
 
 let rec is_Prop sigma c = match EConstr.kind sigma c with
-  | Sort (Prop Null) -> true
+  | Sort u ->
+    begin match EConstr.ESorts.kind sigma u with
+    | Prop Null -> true
+    | _ -> false
+    end
   | Cast (c,_,_) -> is_Prop sigma c
   | _ -> false
 
 (* eq_constr extended with universe erasure *)
 let compare_constr_univ sigma f cv_pb t1 t2 =
+  let open EConstr in
   match EConstr.kind sigma t1, EConstr.kind sigma t2 with
-      Sort s1, Sort s2 -> base_sort_cmp cv_pb s1 s2
+      Sort s1, Sort s2 -> base_sort_cmp cv_pb (ESorts.kind sigma s1) (ESorts.kind sigma s2)
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
 	f Reduction.CONV t1 t2 && f cv_pb c1 c2
     | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2

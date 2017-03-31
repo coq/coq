@@ -199,7 +199,7 @@ and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
     in
       match (EConstr.kind !evdref x, EConstr.kind !evdref y) with
       | Sort s, Sort s' ->
-        (match s, s' with
+        (match ESorts.kind !evdref s, ESorts.kind !evdref s' with
 	| Prop x, Prop y when x == y -> None
 	| Prop _, Type _ -> None
 	| Type x, Type y when Univ.Universe.equal x y -> None (* false *)
@@ -406,7 +406,7 @@ let inh_app_fun resolve_tc env evd j =
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
-    | Sort s -> {utj_val = j.uj_val; utj_type = s }
+    | Sort s -> {utj_val = j.uj_val; utj_type = ESorts.kind sigma s }
     | _ -> error_not_a_type env sigma j
 
 let inh_tosort_force loc env evd j =
@@ -421,7 +421,7 @@ let inh_tosort_force loc env evd j =
 let inh_coerce_to_sort loc env evd j =
   let typ = whd_all env evd j.uj_type in
     match EConstr.kind evd typ with
-    | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
+    | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = ESorts.kind evd s })
     | Evar ev ->
 	let (evd',s) = Evardefine.define_evar_as_sort env evd ev in
 	  (evd',{ utj_val = j.uj_val; utj_type = s })

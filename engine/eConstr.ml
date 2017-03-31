@@ -16,12 +16,19 @@ open Evd
 
 module API :
 sig
+module ESorts :
+sig
 type t
-val kind : Evd.evar_map -> t -> (t, t, Sorts.t, Univ.Instance.t) Constr.kind_of_term
+val make : Sorts.t -> t
+val kind : Evd.evar_map -> t -> Sorts.t
+val unsafe_to_sorts : t -> Sorts.t
+end
+type t
+val kind : Evd.evar_map -> t -> (t, t, ESorts.t, Univ.Instance.t) Constr.kind_of_term
 val kind_upto : Evd.evar_map -> constr -> (constr, types, Sorts.t, Univ.Instance.t) Constr.kind_of_term
 val kind_of_type : Evd.evar_map -> t -> (t, t) kind_of_type
 val whd_evar : Evd.evar_map -> t -> t
-val of_kind : (t, t, Sorts.t, Univ.Instance.t) Constr.kind_of_term -> t
+val of_kind : (t, t, ESorts.t, Univ.Instance.t) Constr.kind_of_term -> t
 val of_constr : Constr.t -> t
 val to_constr : evar_map -> t -> Constr.t
 val unsafe_to_constr : t -> Constr.t
@@ -32,6 +39,16 @@ val unsafe_to_rel_decl : (t, t) Context.Rel.Declaration.pt -> (Constr.t, Constr.
 val of_rel_decl : (Constr.t, Constr.types) Context.Rel.Declaration.pt -> (t, t) Context.Rel.Declaration.pt
 end =
 struct
+
+module ESorts =
+struct
+  type t = Sorts.t
+  let make s = s
+  let kind sigma = function
+  | Type u -> sort_of_univ (Evd.normalize_universe sigma u)
+  | s -> s
+  let unsafe_to_sorts s = s
+end
 
 type t = Constr.t
 
@@ -46,9 +63,6 @@ let rec whd_evar sigma c =
     | Some c -> whd_evar sigma c
     | None -> c
     end
-  | Sort (Type u) ->
-    let u' = Evd.normalize_universe sigma u in
-    if u' == u then c else mkSort (Sorts.sort_of_univ u')
   | Const (c', u) when not (Univ.Instance.is_empty u) ->
     let u' = Evd.normalize_universe_instance sigma u in
     if u' == u then c else mkConstU (c', u')
@@ -82,8 +96,25 @@ let of_constr c = c
 let unsafe_to_constr c = c
 let unsafe_eq = Refl
 
-let rec to_constr sigma t =
-  Constr.map (fun t -> to_constr sigma t) (whd_evar sigma t)
+let rec to_constr sigma c = match Constr.kind c with
+| Evar ev ->
+  begin match safe_evar_value sigma ev with
+  | Some c -> to_constr sigma c
+  | None -> Constr.map (fun c -> to_constr sigma c) c
+  end
+| Sort (Type u) ->
+  let u' = Evd.normalize_universe sigma u in
+  if u' == u then c else mkSort (Sorts.sort_of_univ u')
+| Const (c', u) when not (Univ.Instance.is_empty u) ->
+  let u' = Evd.normalize_universe_instance sigma u in
+  if u' == u then c else mkConstU (c', u')
+| Ind (i, u) when not (Univ.Instance.is_empty u) ->
+  let u' = Evd.normalize_universe_instance sigma u in
+  if u' == u then c else mkIndU (i, u')
+| Construct (co, u) when not (Univ.Instance.is_empty u) ->
+  let u' = Evd.normalize_universe_instance sigma u in
+  if u' == u then c else mkConstructU (co, u')
+| _ -> Constr.map (fun c -> to_constr sigma c) c
 
 let of_named_decl d = d
 let unsafe_to_named_decl d = d
@@ -108,14 +139,14 @@ type rel_context = (constr, types) Context.Rel.pt
 
 let in_punivs a = (a, Univ.Instance.empty)
 
-let mkProp = of_kind (Sort Sorts.prop)
-let mkSet = of_kind (Sort Sorts.set)
-let mkType u = of_kind (Sort (Sorts.Type u))
+let mkProp = of_kind (Sort (ESorts.make Sorts.prop))
+let mkSet = of_kind (Sort (ESorts.make Sorts.set))
+let mkType u = of_kind (Sort (ESorts.make (Sorts.Type u)))
 let mkRel n = of_kind (Rel n)
 let mkVar id = of_kind (Var id)
 let mkMeta n = of_kind (Meta n)
 let mkEvar e = of_kind (Evar e)
-let mkSort s = of_kind (Sort s)
+let mkSort s = of_kind (Sort (ESorts.make s))
 let mkCast (b, k, t) = of_kind (Cast (b, k, t))
 let mkProd (na, t, u) = of_kind (Prod (na, t, u))
 let mkLambda (na, t, c) = of_kind (Lambda (na, t, c))
@@ -730,6 +761,7 @@ let fresh_global ?loc ?rigid ?names env sigma reference =
 
 module Unsafe =
 struct
+let to_sorts = ESorts.unsafe_to_sorts
 let to_constr = unsafe_to_constr
 let to_rel_decl = unsafe_to_rel_decl
 let to_named_decl = unsafe_to_named_decl

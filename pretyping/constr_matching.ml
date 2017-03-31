@@ -205,11 +205,14 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 
       | PRel n1, Rel n2 when Int.equal n1 n2 -> subst
 
-      | PSort GProp, Sort (Prop Null) -> subst
+      | PSort ps, Sort s ->
 
-      | PSort GSet, Sort (Prop Pos) -> subst
-
-      | PSort (GType _), Sort (Type _) -> subst
+        begin match ps, ESorts.kind sigma s with
+        | GProp, Prop Null -> subst
+        | GSet, Prop Pos -> subst
+        | GType _, Type _ -> subst
+        | _ -> raise PatternMatchingFailure
+        end
 
       | PApp (p, [||]), _ -> sorec ctx env subst p t
 

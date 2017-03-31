@@ -50,6 +50,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   let modified = ref false in
   (* direction: true for fresh universes lower than the existing ones *)
   let refresh_sort status ~direction s =
+    let s = ESorts.kind !evdref s in
     let s' = evd_comb0 (new_sort_variable status) evdref in
     let evd = 
       if direction then set_leq_sort env !evdref s' s
@@ -59,7 +60,9 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   in
   let rec refresh ~onlyalg status ~direction t =
     match EConstr.kind !evdref t with
-    | Sort (Type u as s) ->
+    | Sort s ->
+      begin match ESorts.kind !evdref s with
+      | Type u ->
        (match Univ.universe_level u with
 	| None -> refresh_sort status ~direction s
 	| Some l ->
@@ -71,10 +74,12 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 	       if onlyalg && alg then
 	         (evdref := Evd.make_flexible_variable !evdref false l; t)
 	       else t))
-    | Sort (Prop Pos as s) when refreshset && not direction ->
+      | Prop Pos when refreshset && not direction ->
        (* Cannot make a universe "lower" than "Set",
           only refreshing when we want higher universes. *)
        refresh_sort status ~direction s
+      | _ -> t
+      end
     | Prod (na,u,v) -> 
       mkProd (na, u, refresh ~onlyalg status ~direction v)
     | _ -> t

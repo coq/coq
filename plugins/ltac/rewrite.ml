@@ -434,7 +434,7 @@ module TypeGlobal = struct
 end
 
 let sort_of_rel env evm rel =
-  Reductionops.sort_of_arity env evm (Retyping.get_type_of env evm rel)
+  ESorts.kind evm (Reductionops.sort_of_arity env evm (Retyping.get_type_of env evm rel))
 
 let is_applied_rewrite_relation = PropGlobal.is_applied_rewrite_relation
 

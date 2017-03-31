@@ -780,6 +780,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| Sort s1, Sort s2 ->
 	    (try 
+              let s1 = ESorts.kind sigma s1 in
+              let s2 = ESorts.kind sigma s2 in
 	       let sigma' = 
 		 if pb == CUMUL
 		 then Evd.set_leq_sort curenv sigma s1 s2 

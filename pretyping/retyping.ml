@@ -77,7 +77,7 @@ let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env n ar args =
     match EConstr.kind sigma (whd_all env sigma ar), args with
     | Prod (na, t, b), h::l -> concl_of_arity (push_rel (LocalDef (na, lift n h, t)) env) (n + 1) b l
-    | Sort s, [] -> s
+    | Sort s, [] -> ESorts.kind sigma s
     | _ -> retype_error NotASort
   in concl_of_arity env 0 ft (Array.to_list args)
 
@@ -87,8 +87,10 @@ let type_of_var env id =
 
 let decomp_sort env sigma t =
   match EConstr.kind sigma (whd_all env sigma t) with
-  | Sort s -> s
+  | Sort s -> ESorts.kind sigma s
   | _ -> retype_error NotASort
+
+let destSort sigma s = ESorts.kind sigma (destSort sigma s)
 
 let retype ?(polyprop=true) sigma =
   let rec type_of env cstr =
@@ -142,8 +144,11 @@ let retype ?(polyprop=true) sigma =
   and sort_of env t =
     match EConstr.kind sigma t with
     | Cast (c,_, s) when isSort sigma s -> destSort sigma s
-    | Sort (Prop c) -> type1_sort
-    | Sort (Type u) -> Type (Univ.super u)
+    | Sort s ->
+      begin match ESorts.kind sigma s with
+      | Prop _ -> type1_sort
+      | Type u -> Type (Univ.super u)
+      end
     | Prod (name,t,c2) ->
         (match (sort_of env t, sort_of (push_rel (LocalAssum (name,t)) env) c2) with
 	  | _, (Prop Null as s) -> s
@@ -163,8 +168,7 @@ let retype ?(polyprop=true) sigma =
   and sort_family_of env t =
     match EConstr.kind sigma t with
     | Cast (c,_, s) when isSort sigma s -> family_of_sort (destSort sigma s)
-    | Sort (Prop c) -> InType
-    | Sort (Type u) -> InType
+    | Sort _ -> InType
     | Prod (name,t,c2) ->
 	let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
 	if not (is_impredicative_set env) &&

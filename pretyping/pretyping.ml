@@ -1071,7 +1071,11 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
 and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
   | GHole (loc, knd, naming, None) ->
       let rec is_Type c = match EConstr.kind !evdref c with
-      | Sort (Type _) -> true
+      | Sort s ->
+        begin match ESorts.kind !evdref s with
+        | Type _ -> true
+        | Prop _ -> false
+        end
       | Cast (c, _, _) -> is_Type c
       | _ -> false
       in
@@ -1081,7 +1085,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
 	     let sigma =  !evdref in
 	     let t = Retyping.get_type_of env.ExtraEnv.env sigma v in
 	       match EConstr.kind sigma (whd_all env.ExtraEnv.env sigma t) with
-               | Sort s -> s
+               | Sort s -> ESorts.kind sigma s
                | Evar ev when is_Type (existential_type sigma ev) ->
 		   evd_comb1 (define_evar_as_sort env.ExtraEnv.env) evdref ev
                | _ -> anomaly (Pp.str "Found a type constraint which is not a type")

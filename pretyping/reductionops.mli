@@ -215,8 +215,8 @@ val hnf_lam_applist  : env ->  evar_map -> constr -> constr list -> constr
 
 val splay_prod : env ->  evar_map -> constr -> (Name.t * constr) list * constr
 val splay_lam : env ->  evar_map -> constr -> (Name.t * constr) list * constr
-val splay_arity : env ->  evar_map -> constr -> (Name.t * constr) list * sorts
-val sort_of_arity : env -> evar_map -> constr -> sorts
+val splay_arity : env ->  evar_map -> constr -> (Name.t * constr) list * ESorts.t
+val sort_of_arity : env -> evar_map -> constr -> ESorts.t
 val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_prod_assum :
@@ -232,7 +232,7 @@ type 'a miota_args = {
 val reducible_mind_case : evar_map -> constr -> bool
 val reduce_mind_case : evar_map -> constr miota_args -> constr
 
-val find_conclusion : env -> evar_map -> constr -> (constr, constr, Sorts.t, Univ.Instance.t) kind_of_term
+val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, Univ.Instance.t) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 

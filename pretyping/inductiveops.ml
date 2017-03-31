@@ -617,6 +617,7 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
   | RegularArity s -> sigma, EConstr.of_constr (subst_instance_constr u s.mind_user_arity)
   | TemplateArity ar ->
     let _,scl = splay_arity env sigma conclty in
+    let scl = EConstr.ESorts.kind sigma scl in
     let ctx = List.rev mip.mind_arity_ctxt in
     let evdref = ref sigma in
     let ctx =

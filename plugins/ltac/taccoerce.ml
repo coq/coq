@@ -164,7 +164,7 @@ let id_of_name = function
 	  basename
        | Sort s ->
 	  begin
-	    match s with
+	    match ESorts.kind sigma s with
 	    | Prop _ -> Label.to_id (Label.make "Prop")
 	    | Type _ -> Label.to_id (Label.make "Type")
 	  end

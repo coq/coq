@@ -123,7 +123,7 @@ let hdchar env sigma c =
     | Ind (x,_) -> lowercase_first_char (basename_of_global (IndRef x))
     | Construct (x,_) -> lowercase_first_char (basename_of_global (ConstructRef x))
     | Var id  -> lowercase_first_char id
-    | Sort s -> sort_hdchar s
+    | Sort s -> sort_hdchar (ESorts.kind sigma s)
     | Rel n ->
 	(if n<=k then "p" (* the initial term is flexible product/function *)
 	 else

@@ -512,7 +512,11 @@ let pr_depth l = prlist_with_sep (next_sep debug_seps) int (List.rev l)
 let is_Prop env sigma concl =
   let ty = Retyping.get_type_of env sigma concl in
   match EConstr.kind sigma ty with
-  | Sort (Prop Null) -> true
+  | Sort s ->
+    begin match ESorts.kind sigma s with
+    | Prop Null -> true
+    | _ -> false
+    end
   | _ -> false
 
 let is_unique env sigma concl =

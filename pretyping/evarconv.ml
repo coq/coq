@@ -150,6 +150,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
 	    (Stack.append_app [|a;pop b|] Stack.empty)
           else raise Not_found
       | Sort s ->
+        let s = ESorts.kind sigma s in
 	lookup_canonical_conversion
 	  (proji, Sort_cs (family_of_sort s)),[]
       | _ ->
@@ -775,6 +776,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 
 	| Sort s1, Sort s2 when app_empty ->
 	    (try
+              let s1 = ESorts.kind evd s1 in
+              let s2 = ESorts.kind evd s2 in
 	       let evd' =
 		 if pbty == CONV
 		 then Evd.set_eq_sort env evd s1 s2

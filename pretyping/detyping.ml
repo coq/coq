@@ -457,7 +457,7 @@ let rec detype flags avoid env sigma t =
     | Var id ->
 	(try let _ = Global.lookup_named id in GRef (dl, VarRef id, None)
 	 with Not_found -> GVar (dl, id))
-    | Sort s -> GSort (dl,detype_sort sigma s)
+    | Sort s -> GSort (dl,detype_sort sigma (ESorts.kind sigma s))
     | Cast (c1,REVERTcast,c2) when not !Flags.raw_print ->
         detype flags avoid env sigma c1
     | Cast (c1,k,c2) ->
