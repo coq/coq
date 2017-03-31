@@ -1588,7 +1588,7 @@ let prove_principle_for_gen
     match !tcc_lemma_ref with
      | Undefined -> error "No tcc proof !!"
      | Value lemma -> lemma
-     | Not_needed -> Coqlib.build_coq_True ()
+     | Not_needed -> Coqlib.build_coq_I ()
   in
 (*   let rec list_diff del_list check_list = *)
 (*     match del_list with *)
