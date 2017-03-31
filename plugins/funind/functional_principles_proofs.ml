@@ -1388,8 +1388,8 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 
 let prove_with_tcc tcc_lemma_constr eqs : tactic =
   match !tcc_lemma_constr with
-    | None -> anomaly (Pp.str "No tcc proof !!")
-    | Some lemma ->
+  | Undefined -> anomaly (Pp.str "No tcc proof !!")
+  | Value lemma ->
 	fun gls ->
 (* 	  let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in *)
 (* 	  let ids = hid::pf_ids_of_hyps gls in  *)
@@ -1407,7 +1407,7 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
 	      Proofview.V82.of_tactic (Eauto.gen_eauto (false,5) [] (Some []))
 	    ]
 	    gls
-
+  | Not_needed -> tclIDTAC
 
 let backtrack_eqs_until_hrec hrec eqs : tactic =
   fun gls ->
@@ -1586,8 +1586,9 @@ let prove_principle_for_gen
   let args_ids = List.map (fun decl -> Nameops.out_name (get_name decl)) princ_info.args in
   let lemma =
     match !tcc_lemma_ref with
-     | None -> error "No tcc proof !!"
-     | Some lemma -> lemma
+     | Undefined -> error "No tcc proof !!"
+     | Value lemma -> lemma
+     | Not_needed -> Coqlib.build_coq_True ()
   in
 (*   let rec list_diff del_list check_list = *)
 (*     match del_list with *)
