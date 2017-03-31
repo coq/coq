@@ -41,10 +41,11 @@ let safe_evar_value sigma ev =
 
 let rec whd_evar sigma c =
   match Constr.kind c with
-  | Evar (evk, args) ->
-    (match safe_evar_value sigma (evk, args) with
-        Some c -> whd_evar sigma c
-      | None -> c)
+  | Evar ev ->
+    begin match safe_evar_value sigma ev with
+    | Some c -> whd_evar sigma c
+    | None -> c
+    end
   | Sort (Type u) ->
     let u' = Evd.normalize_universe sigma u in
     if u' == u then c else mkSort (Sorts.sort_of_univ u')
@@ -63,6 +64,13 @@ let rec whd_evar sigma c =
     begin match safe_evar_value sigma ev with
     | None -> c
     | Some f -> whd_evar sigma (mkApp (f, args))
+    end
+  | Cast (c0, k, t) when isEvar c0 ->
+    (** Enforce smart constructor invariant on casts. *)
+    let ev = destEvar c0 in
+    begin match safe_evar_value sigma ev with
+    | None -> c
+    | Some c -> whd_evar sigma (mkCast (c, k, t))
     end
   | _ -> c
 
