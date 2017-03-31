@@ -41,8 +41,8 @@ let safe_evar_value sigma ev =
 
 let rec whd_evar sigma c =
   match Constr.kind c with
-  | Evar ev ->
-    (match safe_evar_value sigma ev with
+  | Evar (evk, args) ->
+    (match safe_evar_value sigma (evk, args) with
         Some c -> whd_evar sigma c
       | None -> c)
   | Sort (Type u) ->
@@ -57,58 +57,16 @@ let rec whd_evar sigma c =
   | Construct (co, u) when not (Univ.Instance.is_empty u) ->
     let u' = Evd.normalize_universe_instance sigma u in
     if u' == u then c else mkConstructU (co, u')
-  | App (f, args) ->
+  | App (f, args) when isEvar f ->
     (** Enforce smart constructor invariant on applications *)
-    begin match Constr.kind f with
-    | Evar ev ->
-      begin match safe_evar_value sigma ev with
-      | None -> c
-      | Some f -> whd_evar sigma (mkApp (f, args))
-      end
-    | _ -> c
+    let ev = destEvar f in
+    begin match safe_evar_value sigma ev with
+    | None -> c
+    | Some f -> whd_evar sigma (mkApp (f, args))
     end
   | _ -> c
 
-(** Loop unrolling to ensure efficiency *)
-let kind sigma c =
-  let c = Constr.kind c in
-  match c with
-  | Evar ev ->
-    begin match safe_evar_value sigma ev with
-    | Some c -> Constr.kind (whd_evar sigma c)
-    | None -> c
-    end
-  | Sort (Type u) ->
-    let u' = Evd.normalize_universe sigma u in
-    if u' == u then c else Sort (Sorts.sort_of_univ u')
-  | Const (c', u) ->
-    if Univ.Instance.is_empty u then c
-    else
-      let u' = Evd.normalize_universe_instance sigma u in
-      if u' == u then c else Const (c', u')
-  | Ind (i, u) ->
-    if Univ.Instance.is_empty u then c
-    else
-      let u' = Evd.normalize_universe_instance sigma u in
-      if u' == u then c else Ind (i, u')
-  | Construct (co, u) ->
-    if Univ.Instance.is_empty u then c
-    else
-      let u' = Evd.normalize_universe_instance sigma u in
-      if u' == u then c else Construct (co, u')
-  | App (f, args) ->
-    (** Enforce smart constructor invariant on applications *)
-    begin match Constr.kind f with
-    | Evar ev ->
-      begin match safe_evar_value sigma ev with
-      | None -> c
-      | Some f -> Constr.kind (whd_evar sigma (mkApp (f, args)))
-      end
-    | _ -> c
-    end
-  | c -> c
-[@@ocaml.inline]
-
+let kind sigma c = Constr.kind (whd_evar sigma c)
 let kind_upto = kind
 let kind_of_type sigma c = Term.kind_of_type (whd_evar sigma c)
 let of_kind = Constr.of_kind
