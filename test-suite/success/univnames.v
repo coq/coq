@@ -21,6 +21,17 @@ Inductive bla@{l k} : Type@{k} := blaI : Type@{l} -> bla.
 Inductive blacopy@{k l} : Type@{k} := blacopyI : Type@{l} -> blacopy.
 
 
+Class Wrap A := wrap : A.
+
+Fail Instance bad@{} : Wrap Type := Type.
+
+Instance bad@{} : Wrap Type.
+Fail Proof Type.
+Abort.
+
+Instance bar@{u} : Wrap@{u} Set. Proof nat.
+
+
 Monomorphic Universe g.
 
 Inductive blacopy'@{l} : Type@{g} := blacopy'I : Type@{l} -> blacopy'.
