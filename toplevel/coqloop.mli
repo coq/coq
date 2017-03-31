@@ -26,12 +26,7 @@ type input_buffer = {
 val top_buffer : input_buffer
 val set_prompt : (unit -> string) -> unit
 
-(** Toplevel error explanation, dealing with locations, Drop, Ctrl-D
-  May raise only the following exceptions: [Drop] and [End_of_input],
-  meaning we get out of the Coq loop. *)
-
-val print_toplevel_error : Exninfo.iexn -> std_ppcmds
-
+(** Toplevel feedback printer. *)
 val coqloop_feed : Feedback.feedback -> unit
 
 (** Parse and execute one vernac command. *)

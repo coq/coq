@@ -171,7 +171,6 @@ val surround : std_ppcmds -> std_ppcmds
 (** Surround with parenthesis. *)
 
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
-val pr_loc : Loc.t -> std_ppcmds
 
 (** {6 Main renderers, to formatter and to string } *)
 
