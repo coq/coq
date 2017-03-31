@@ -178,7 +178,8 @@ val flush_and_check_evars :  evar_map -> constr -> Constr.constr
 (** Like {!Constr.kind} except that [kind_of_term sigma t] exposes [t]
     as an evar [e] only if [e] is uninstantiated in [sigma]. Otherwise the
     value of [e] in [sigma] is (recursively) used. *)
-val kind_of_term_upto : evar_map -> Constr.constr -> (Constr.constr,Constr.types) kind_of_term
+val kind_of_term_upto : evar_map -> Constr.constr ->
+  (Constr.constr, Constr.types, Sorts.t, Univ.Instance.t) kind_of_term
 
 (** [eq_constr_univs_test sigma1 sigma2 t u] tests equality of [t] and
     [u] up to existential variable instantiation and equalisable

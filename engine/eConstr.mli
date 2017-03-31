@@ -30,11 +30,11 @@ type rel_context = (constr, types) Context.Rel.pt
 
 (** {5 Destructors} *)
 
-val kind : Evd.evar_map -> t -> (t, t) Constr.kind_of_term
+val kind : Evd.evar_map -> t -> (t, t, Sorts.t, Univ.Instance.t) Constr.kind_of_term
 (** Same as {!Constr.kind} except that it expands evars and normalizes
     universes on the fly. *)
 
-val kind_upto : Evd.evar_map -> Constr.t -> (Constr.t, Constr.t) Constr.kind_of_term
+val kind_upto : Evd.evar_map -> Constr.t -> (Constr.t, Constr.t, Sorts.t, Univ.Instance.t) Constr.kind_of_term
 
 val to_constr : Evd.evar_map -> t -> Constr.t
 (** Returns the evar-normal form of the argument. See {!Evarutil.nf_evar}. *)
@@ -43,7 +43,7 @@ val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
 
 (** {5 Constructors} *)
 
-val of_kind : (t, t) Constr.kind_of_term -> t
+val of_kind : (t, t, Sorts.t, Univ.Instance.t) Constr.kind_of_term -> t
 (** Construct a term from a view. *)
 
 val of_constr : Constr.t -> t

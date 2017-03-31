@@ -81,27 +81,27 @@ type pconstructor = constructor puniverses
 
 (* [Var] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
-type ('constr, 'types) kind_of_term =
+type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Rel       of int
   | Var       of Id.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
-  | Sort      of Sorts.t
+  | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
   | Prod      of Name.t * 'types * 'types
   | Lambda    of Name.t * 'types * 'constr
   | LetIn     of Name.t * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of pconstant
-  | Ind       of pinductive
-  | Construct of pconstructor
+  | Const     of (constant * 'univs)
+  | Ind       of (inductive * 'univs)
+  | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of projection * 'constr
 (* constr is the fixpoint of the previous type. Requires option
    -rectypes of the Caml compiler to be set *)
-type t = (t,t) kind_of_term
+type t = (t, t, Sorts.t, Instance.t) kind_of_term
 type constr = t
 
 type existential = existential_key * constr array

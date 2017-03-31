@@ -232,7 +232,7 @@ type 'a miota_args = {
 val reducible_mind_case : evar_map -> constr -> bool
 val reduce_mind_case : evar_map -> constr miota_args -> constr
 
-val find_conclusion : env -> evar_map -> constr -> (constr,constr) kind_of_term
+val find_conclusion : env -> evar_map -> constr -> (constr, constr, Sorts.t, Univ.Instance.t) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 

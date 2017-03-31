@@ -188,7 +188,7 @@ type ('constr, 'types) pfixpoint =
 type ('constr, 'types) pcofixpoint =
     int * ('constr, 'types) prec_declaration
 
-type ('constr, 'types) kind_of_term =
+type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Rel       of int                                  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
 
   | Var       of Id.t                                 (** Gallina-variable that was introduced by Vernacular-command that extends
@@ -197,7 +197,7 @@ type ('constr, 'types) kind_of_term =
 
   | Meta      of metavariable
   | Evar      of 'constr pexistential
-  | Sort      of Sorts.t
+  | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
   | Prod      of Name.t * 'types * 'types             (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)
   | Lambda    of Name.t * 'types * 'constr            (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
@@ -208,11 +208,11 @@ type ('constr, 'types) kind_of_term =
                                                           - [F] itself is not {!App}
                                                           - and [[|P1;..;Pn|]] is not empty. *)
 
-  | Const     of constant puniverses                  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
+  | Const     of (constant * 'univs)                  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
                                                           (i.e. [Parameter], or [Axiom], or [Definition], or [Theorem] etc.) *)
 
-  | Ind       of inductive puniverses                 (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
-  | Construct of constructor puniverses               (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
+  | Ind       of (inductive * 'univs)                 (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
+  | Construct of (constructor * 'univs)              (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
@@ -222,8 +222,8 @@ type ('constr, 'types) kind_of_term =
    least one argument and the function is not itself an applicative
    term *)
 
-val kind : constr -> (constr, types) kind_of_term
-val of_kind : (constr, types) kind_of_term -> constr
+val kind : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
+val of_kind : (constr, types, Sorts.t, Univ.Instance.t) kind_of_term -> constr
 
 (** [equal a b] is true if [a] equals [b] modulo alpha, casts,
    and application grouping *)
@@ -312,8 +312,8 @@ val compare_head_gen : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
   constr -> constr -> bool
 
 val compare_head_gen_leq_with :
-  (constr -> (constr,types) kind_of_term) ->
-  (constr -> (constr,types) kind_of_term) ->
+  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
+  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
   (Sorts.t -> Sorts.t -> bool) ->
   (constr -> constr -> bool) ->
@@ -325,8 +325,8 @@ val compare_head_gen_leq_with :
     is used,rather than {!kind}, to expose the immediate subterms of
     [c1] (resp. [c2]). *)
 val compare_head_gen_with :
-  (constr -> (constr,types) kind_of_term) ->
-  (constr -> (constr,types) kind_of_term) ->
+  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
+  (constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term) ->
   (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
   (Sorts.t -> Sorts.t -> bool) ->
   (constr -> constr -> bool) ->

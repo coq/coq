@@ -17,11 +17,11 @@ open Evd
 module API :
 sig
 type t
-val kind : Evd.evar_map -> t -> (t, t) Constr.kind_of_term
-val kind_upto : Evd.evar_map -> constr -> (constr, types) Constr.kind_of_term
+val kind : Evd.evar_map -> t -> (t, t, Sorts.t, Univ.Instance.t) Constr.kind_of_term
+val kind_upto : Evd.evar_map -> constr -> (constr, types, Sorts.t, Univ.Instance.t) Constr.kind_of_term
 val kind_of_type : Evd.evar_map -> t -> (t, t) kind_of_type
 val whd_evar : Evd.evar_map -> t -> t
-val of_kind : (t, t) Constr.kind_of_term -> t
+val of_kind : (t, t, Sorts.t, Univ.Instance.t) Constr.kind_of_term -> t
 val of_constr : Constr.t -> t
 val to_constr : evar_map -> t -> Constr.t
 val unsafe_to_constr : t -> Constr.t
