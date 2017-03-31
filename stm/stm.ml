@@ -269,6 +269,9 @@ module VCS : sig
 
   val init : id -> unit
 
+  (* For internal nodes *)
+  val new_internal_id : unit -> Stateid.t
+
   val current_branch : unit -> Branch.t
   val checkout : Branch.t -> unit
   val branches : unit -> Branch.t list
@@ -321,6 +324,9 @@ end = struct (* {{{ *)
   exception Expired = Vcs_aux.Expired
 
   open Printf
+
+  let node_counter = ref 0
+  let new_internal_id () = decr node_counter; Stateid.of_int !node_counter
 
   let print_dag vcs () =
 
@@ -459,7 +465,11 @@ end = struct (* {{{ *)
   let branches () = branches !vcs
   let get_branch head = get_branch !vcs head
   let get_branch_pos head = (get_branch head).pos
-  let new_node ?(id=Stateid.fresh ()) () =
+  let new_node ?id () =
+    let id = match id with
+      | None -> new_internal_id ()
+      | Some id -> id
+    in
     assert(Vcs_.get_info !vcs id = None);
     vcs := set_info !vcs id (default_info ());
     id
@@ -2474,8 +2484,7 @@ let snapshot_vio ldir long_f_dot_vo =
 let reset_task_queue = Slaves.reset_task_queue
 
 (* Document building *)
-let process_transaction ?(newtip=Stateid.fresh ())
-  ({ verbose; loc; expr } as x) c =
+let process_transaction newtip ({ verbose; loc; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
   try
@@ -2681,7 +2690,14 @@ let parse_sentence sid pa =
   (* Reach.known_state ~cache:`Yes sid; *)
   let cur_tip = VCS.cur_tip () in
   let real_tip = !State.cur_id in
-  if not (Stateid.equal sid cur_tip) then
+
+  if Stateid.(to_int cur_tip < 0) then
+    Feedback.msg_debug
+      (str "Warning, the STM created an internal node!" ++ spc () ++
+       str "We will parse on top of that new state instead of your requested node," ++ spc () ++
+       str "but that should be fixed in Coq.")
+
+  else if not (Stateid.equal sid cur_tip) then
     user_err ~hdr:"Stm.parse_sentence"
       (str "Currently, the parsing api only supports parsing at the tip of the document." ++ fnl () ++
        str "You wanted to parse at: "  ++ str (Stateid.to_string sid) ++
@@ -2692,7 +2708,9 @@ let parse_sentence sid pa =
        str "You wanted to parse at: "  ++ str (Stateid.to_string sid) ++
        str " but the real tip is: " ++ str (Stateid.to_string real_tip) ++ fnl () ++
        str "This is usually due to use of Stm.observe to evaluate a state different than the tip. " ++
-       str "All is good if not parsing changes occur between the two states, however if they do, a problem might occur.");
+       str "All is good if not parsing changes occur between the two states, however if they do, a problem might occur." ++
+       str "Usually this is ensured by static analysis by the \"vernac classifier\".");
+
   Flags.with_option Flags.we_are_parsing (fun () ->
       try
         match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
@@ -2738,21 +2756,30 @@ let compute_indentation sid loc =
     eff_indent, len
 
 
-let add ~ontop ?newtip verb (loc, ast) =
+let add ?(verbose=false) ~ontop ~newtip (loc, ast) =
   let cur_tip = VCS.cur_tip () in
-  if not (Stateid.equal ontop cur_tip) then
-    user_err ~hdr:"Stm.add"
-      (str "Stm.add called for a different state (" ++ str (Stateid.to_string ontop) ++
-       str ") than the tip: " ++ str (Stateid.to_string cur_tip) ++ str "." ++ fnl () ++
-       str "This is not supported yet, sorry.");
+  let ontop =
+    if Stateid.(to_int cur_tip < 0) then begin
+      Feedback.msg_debug
+        (str "Warning, the STM created an internal node!" ++ spc () ++
+         str "We will add on top of that new state instead of your requested node," ++ spc () ++
+         str "but that should be fixed in Coq.");
+      cur_tip
+    end else if not (Stateid.equal ontop cur_tip) then
+      user_err ~hdr:"Stm.add"
+        (str "Stm.add called for a different state (" ++ str (Stateid.to_string ontop) ++
+         str ") than the tip: " ++ str (Stateid.to_string cur_tip) ++ str "." ++ fnl () ++
+         str "This is not supported yet, sorry.")
+    else ontop
+  in
   let indentation, strlen = compute_indentation ontop loc in
   CWarnings.set_current_loc loc;
   (* XXX: Classifiy vernac should be moved inside process transaction *)
   let clas = classify_vernac ast in
-  let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
-  match process_transaction ?newtip aast clas with
-  | `Ok -> VCS.cur_tip (), `NewTip
-  | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
+  let aast = { verbose; indentation; strlen; loc; expr = ast } in
+  match process_transaction newtip aast clas with
+  | `Ok -> `NewTip
+  | `Unfocus qed_id -> `Unfocus (VCS.cur_tip ())
 
 let set_perspective id_list = Slaves.set_perspective id_list
 
@@ -2773,9 +2800,9 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
     let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
     match clas with
     | VtStm (w,_), _ ->
-       ignore(process_transaction aast (VtStm (w,false), VtNow))
+       ignore(process_transaction (VCS.new_internal_id ()) aast (VtStm (w,false), VtNow))
     | _ ->
-       ignore(process_transaction aast (VtQuery (false,report_with), VtNow)))
+       ignore(process_transaction (VCS.new_internal_id ()) aast (VtQuery (false,report_with), VtNow)))
   s
 
 let edit_at id =

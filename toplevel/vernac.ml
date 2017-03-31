@@ -116,10 +116,12 @@ let rec interp_vernac sid po (loc,com) =
         load_vernac verbosely sid f
     | v ->
       try
-        let nsid, ntip = Stm.add sid (Flags.is_verbose()) (loc,v) in
+        let newtip = Stateid.(of_int (to_int sid + 1)) in
+        let verbose = Flags.is_verbose () in
+        let focus_st = Stm.add ~verbose ~ontop:sid ~newtip (loc,v) in
 
         (* Main STM interaction *)
-        if ntip <> `NewTip then
+        if focus_st <> `NewTip then
           anomaly (str "vernac.ml: We got an unfocus operation on the toplevel!");
         (* Due to bug #5363 we cannot use observe here as we should,
            it otherwise reveals bugs *)
@@ -132,7 +134,7 @@ let rec interp_vernac sid po (loc,com) =
                          not (Proof_global.there_are_pending_proofs ()) in
 
         if not hide_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
-        nsid
+        newtip
 
       with exn when CErrors.noncritical exn ->
         ignore(Stm.edit_at sid);

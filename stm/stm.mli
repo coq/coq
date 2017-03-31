@@ -23,15 +23,14 @@ val parse_sentence : Stateid.t -> Pcoq.Gram.coq_parsable ->
 
 exception End_of_input
 
-(* [add ~ontop ?newtip verbose cmd] adds a new command [cmd] ontop of
-   the state [ontop].
+(* [add ?verbose ~ontop ~newtip cmd] adds a new command [cmd] ontop of
+   the state [ontop] with stateid [newtip].
    The [ontop] parameter just asserts that the GUI is on
    sync, but it will eventually call edit_at on the fly if needed.
-   If [newtip] is provided, then the returned state id is guaranteed
-   to be [newtip] *)
-val add : ontop:Stateid.t -> ?newtip:Stateid.t ->
-  bool -> Vernacexpr.vernac_expr Loc.located ->
-  Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
+*)
+val add : ?verbose:bool -> ontop:Stateid.t -> newtip:Stateid.t ->
+  Vernacexpr.vernac_expr Loc.located ->
+  [ `NewTip | `Unfocus of Stateid.t ]
 
 (* [query at ?report_with cmd] Executes [cmd] at a given state [at],
    throwing away side effects except messages. Feedback will
