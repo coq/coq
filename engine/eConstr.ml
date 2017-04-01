@@ -63,7 +63,9 @@ module EInstance =
 struct
   type t = Univ.Instance.t
   let make i = i
-  let kind sigma i = Evd.normalize_universe_instance sigma i
+  let kind sigma i =
+    if Univ.Instance.is_empty i then i
+    else Evd.normalize_universe_instance sigma i
   let empty = Univ.Instance.empty
   let is_empty = Univ.Instance.is_empty
   let unsafe_to_instance t = t
