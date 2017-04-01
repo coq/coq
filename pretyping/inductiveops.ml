@@ -74,6 +74,7 @@ let substnl_ind_type l n = map_inductive_type (EConstr.Vars.substnl l n)
 
 let mkAppliedInd (IndType ((ind,params), realargs)) =
   let open EConstr in
+  let ind = on_snd EInstance.make ind in
   applist (mkIndU ind, (List.map EConstr.of_constr params)@realargs)
 
 (* Does not consider imbricated or mutually recursive types *)
@@ -471,11 +472,12 @@ let find_rectype env sigma c =
   let open EConstr in
   let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
-    | Ind (ind,u as indu) ->
+    | Ind (ind,u) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
         if mib.mind_nparams > List.length l then raise Not_found;
         let l = List.map EConstr.Unsafe.to_constr l in
         let (par,rargs) = List.chop mib.mind_nparams l in
+        let indu = (ind, EInstance.kind sigma u) in
         IndType((indu, par),List.map EConstr.of_constr rargs)
     | _ -> raise Not_found
 

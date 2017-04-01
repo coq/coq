@@ -179,9 +179,10 @@ let build_beq_scheme mode kn =
     *)
     let compute_A_equality rel_list nlist eqA ndx t =
       let lifti = ndx in
+      let sigma = Evd.empty (** FIXME *) in
       let rec aux c =
 	let (c,a) = Reductionops.whd_betaiota_stack Evd.empty c in
-	match EConstr.kind Evd.empty (** FIXME *) c with
+	match EConstr.kind sigma c with
         | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
         | Var x ->
           let eid = id_of_string ("eq_"^(string_of_id x)) in
@@ -215,9 +216,10 @@ let build_beq_scheme mode kn =
         | Prod _ -> raise InductiveWithProduct
         | Lambda _-> raise (EqUnknown "abstraction")
         | LetIn _ -> raise (EqUnknown "let-in")
-        | Const kn ->
-	    (match Environ.constant_opt_value_in env kn with
-	      | None -> raise (ParameterWithoutEquality (ConstRef (fst kn)))
+        | Const (kn, u) ->
+            let u = EConstr.EInstance.kind sigma u in
+	    (match Environ.constant_opt_value_in env (kn, u) with
+	      | None -> raise (ParameterWithoutEquality (ConstRef kn))
 	      | Some c -> aux (EConstr.applist (EConstr.of_constr c,a)))
         | Proj _ -> raise (EqUnknown "projection")
         | Construct _ -> raise (EqUnknown "constructor")
@@ -373,7 +375,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
     let u,v = destruct_ind sigma type_of_pq
     in let lb_type_of_p =
         try
-          let c, eff = find_scheme ~mode lb_scheme_key (out_punivs u) (*FIXME*) in
+          let c, eff = find_scheme ~mode lb_scheme_key (fst u) (*FIXME*) in
           Proofview.tclUNIT (mkConst c, eff)
         with Not_found ->
           (* spiwack: the format of this error message should probably
@@ -445,7 +447,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
              else (
                let bl_t1, eff =
                try 
-                 let c, eff = find_scheme bl_scheme_key (out_punivs u) (*FIXME*) in
+                 let c, eff = find_scheme bl_scheme_key (fst u) (*FIXME*) in
                  mkConst c, eff
                with Not_found ->
 		 (* spiwack: the format of this error message should probably
@@ -485,13 +487,13 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   begin try Proofview.tclUNIT (destApp sigma rgt)
     with DestKO -> Tacticals.New.tclZEROMSG (str "replace failed.")
   end >>= fun (ind2,ca2) ->
-  begin try Proofview.tclUNIT (out_punivs (destInd sigma ind1))
+  begin try Proofview.tclUNIT (fst (destInd sigma ind1))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind1)))
         with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp1,i1) ->
-  begin try Proofview.tclUNIT (out_punivs (destInd sigma ind2))
+  begin try Proofview.tclUNIT (fst (destInd sigma ind2))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind2)))
         with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
@@ -664,7 +666,7 @@ let make_bl_scheme mode mind =
   let side_eff = side_effect_of_mode mode in
   let bl_goal = EConstr.of_constr bl_goal in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx bl_goal
-    (compute_bl_tact mode (!bl_scheme_kind_aux()) (ind, Univ.Instance.empty) lnamesparrec nparrec)
+    (compute_bl_tact mode (!bl_scheme_kind_aux()) (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx), eff
 

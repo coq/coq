@@ -124,7 +124,7 @@ val fix_empty_or_and_pattern : int ->
   delayed_open_constr or_and_intro_pattern_expr ->
   delayed_open_constr or_and_intro_pattern_expr
 
-val compute_constructor_signatures : rec_flag -> pinductive -> bool list array
+val compute_constructor_signatures : rec_flag -> inductive * 'a -> bool list array
 
 (** Useful for [as intro_pattern] modifier *)
 val compute_induction_names :
@@ -256,11 +256,11 @@ module New : sig
 
   val case_then_using :
     or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
-    constr option -> pinductive -> constr * types -> unit Proofview.tactic
+    constr option -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
 
   val case_nodep_then_using :
     or_and_intro_pattern option -> (branch_args -> unit Proofview.tactic) ->
-    constr option -> pinductive -> constr * types -> unit Proofview.tactic
+    constr option -> inductive * EInstance.t -> constr * types -> unit Proofview.tactic
 
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
   val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic

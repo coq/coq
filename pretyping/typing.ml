@@ -35,11 +35,13 @@ let meta_type evd mv =
   let ty = Evd.map_fl EConstr.of_constr ty in
   meta_instance evd ty
 
-let constant_type_knowing_parameters env sigma cst jl =
+let constant_type_knowing_parameters env sigma (cst, u) jl =
+  let u = Unsafe.to_instance u in
   let paramstyp = Array.map (fun j -> lazy (EConstr.to_constr sigma j.uj_type)) jl in
-  EConstr.of_constr (type_of_constant_knowing_parameters_in env cst paramstyp)
+  EConstr.of_constr (type_of_constant_knowing_parameters_in env (cst, u) paramstyp)
 
 let inductive_type_knowing_parameters env sigma (ind,u) jl =
+  let u = Unsafe.to_instance u in
   let mspec = lookup_mind_specif env ind in
   let paramstyp = Array.map (fun j -> lazy (EConstr.to_constr sigma j.uj_type)) jl in
   EConstr.of_constr (Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp)
@@ -140,9 +142,10 @@ let e_type_case_branches env evdref (ind,largs) pj c =
   (lc, ty)
 
 let e_judge_of_case env evdref ci pj cj lfj =
-  let indspec =
+  let ((ind, u), spec) =
     try find_mrectype env !evdref cj.uj_type
     with Not_found -> error_case_not_inductive env !evdref cj in
+  let indspec = ((ind, EInstance.kind !evdref u), spec) in
   let _ = check_case_info env (fst indspec) ci in
   let (bty,rslty) = e_type_case_branches env evdref indspec pj cj.uj_val in
   e_check_branch_types env evdref (fst indspec) cj (lfj,bty);
@@ -224,6 +227,7 @@ let judge_of_projection env sigma p cj =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj
   in
+  let u = EInstance.kind sigma u in
     let ty = EConstr.of_constr (CVars.subst_instance_constr u pb.Declarations.proj_type) in
     let ty = substl (cj.uj_val :: List.rev args) ty in
       {uj_val = EConstr.mkProj (p,cj.uj_val);
@@ -262,14 +266,17 @@ let rec execute env evdref cstr =
     | Var id ->
         judge_of_variable env id
 
-    | Const c ->
-        make_judge cstr (EConstr.of_constr (rename_type_of_constant env c))
+    | Const (c, u) ->
+        let u = EInstance.kind !evdref u in
+        make_judge cstr (EConstr.of_constr (rename_type_of_constant env (c, u)))
 
-    | Ind ind ->
-	make_judge cstr (EConstr.of_constr (rename_type_of_inductive env ind))
+    | Ind (ind, u) ->
+        let u = EInstance.kind !evdref u in
+	make_judge cstr (EConstr.of_constr (rename_type_of_inductive env (ind, u)))
 
-    | Construct cstruct ->
-	make_judge cstr (EConstr.of_constr (rename_type_of_constructor env cstruct))
+    | Construct (cstruct, u) ->
+        let u = EInstance.kind !evdref u in
+	make_judge cstr (EConstr.of_constr (rename_type_of_constructor env (cstruct, u)))
 
     | Case (ci,p,c,lf) ->
         let cj = execute env evdref c in
@@ -305,14 +312,14 @@ let rec execute env evdref cstr =
         let jl = execute_array env evdref args in
 	let j =
 	  match EConstr.kind !evdref f with
-	    | Ind ind when Environ.template_polymorphic_pind ind env ->
+	    | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
-		  (inductive_type_knowing_parameters env !evdref ind jl)
-	    | Const cst when Environ.template_polymorphic_pconstant cst env ->
+		  (inductive_type_knowing_parameters env !evdref (ind, u) jl)
+	    | Const (cst, u) when EInstance.is_empty u && Environ.template_polymorphic_constant cst env ->
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
-		  (constant_type_knowing_parameters env !evdref cst jl)
+		  (constant_type_knowing_parameters env !evdref (cst, u) jl)
 	    | _ ->
 		execute env evdref f
 	in

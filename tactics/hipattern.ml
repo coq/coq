@@ -144,6 +144,7 @@ let match_with_tuple sigma t =
   let t = match_with_one_constructor sigma None false true t in
   Option.map (fun (hd,l) ->
     let ind = destInd sigma hd in
+    let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
     let (mib,mip) = Global.lookup_pinductive ind in
     let isrec = mis_is_recursive (fst ind,mib,mip) in
     (hd,l,isrec)) t
@@ -200,8 +201,8 @@ let is_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
 let match_with_empty_type sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-    | Ind ind ->
-        let (mib,mip) = Global.lookup_pinductive ind in
+    | Ind (ind, _) ->
+        let (mib,mip) = Global.lookup_inductive ind in
         let nconstr = Array.length mip.mind_consnames in
 	if Int.equal nconstr 0 then Some hdapp else None
     | _ ->  None
@@ -214,8 +215,8 @@ let is_empty_type sigma t = op2bool (match_with_empty_type sigma t)
 let match_with_unit_or_eq_type sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-    | Ind ind  ->
-        let (mib,mip) = Global.lookup_pinductive ind in
+    | Ind (ind , _) ->
+        let (mib,mip) = Global.lookup_inductive ind in
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
         let zero_args c = Int.equal (nb_prod sigma (EConstr.of_constr c)) mib.mind_nparams in
@@ -369,8 +370,8 @@ let is_forall_term sigma c = op2bool (match_with_forall_term sigma c)
 let match_with_nodep_ind sigma t =
   let (hdapp,args) = decompose_app sigma t in
     match EConstr.kind sigma hdapp with
-      | Ind ind  ->
-          let (mib,mip) = Global.lookup_pinductive ind in
+      | Ind (ind, _)  ->
+          let (mib,mip) = Global.lookup_inductive ind in
 	    if Array.length (mib.mind_packets)>1 then None else
 	      let nodep_constr c = has_nodep_prod_after mib.mind_nparams sigma (EConstr.of_constr c) in
 		if Array.for_all nodep_constr mip.mind_nf_lc then
@@ -387,8 +388,8 @@ let is_nodep_ind sigma t = op2bool (match_with_nodep_ind sigma t)
 let match_with_sigma_type sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-    | Ind ind  ->
-        let (mib,mip) = Global.lookup_pinductive ind in
+    | Ind (ind, _) ->
+        let (mib,mip) = Global.lookup_inductive ind in
           if Int.equal (Array.length (mib.mind_packets)) 1 &&
 	    (Int.equal mip.mind_nrealargs 0) &&
 	    (Int.equal (Array.length mip.mind_consnames)1) &&

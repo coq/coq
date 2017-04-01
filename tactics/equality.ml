@@ -746,6 +746,7 @@ let find_positions env sigma t1 t2 =
 	    let _,rargs2 = List.chop nparams args2 in
             let (mib,mip) = lookup_mind_specif env ind1 in
             let params1 = List.map EConstr.Unsafe.to_constr params1 in
+            let u1 = EInstance.kind sigma u1 in
             let ctxt = (get_constructor ((ind1,u1),mib,mip,params1) i1).cs_args in
             let adjust i = CVars.adjust_rel_to_rel_context ctxt (i+1) - 1 in
             List.flatten
@@ -1324,19 +1325,19 @@ let inject_if_homogenous_dependent_pair ty =
         hd2,ar2 = decompose_app_vect sigma t2 in
     if not (Termops.is_global sigma (existTconstr()) hd1) then raise Exit;
     if not (Termops.is_global sigma (existTconstr()) hd2) then raise Exit;
-    let ind,_ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise Exit in
+    let (ind, _), _ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise Exit in
     (* check if the user has declared the dec principle *)
     (* and compare the fst arguments of the dep pair *)
     (* Note: should work even if not an inductive type, but the table only *)
     (* knows inductive types *)
-    if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) (fst ind) &&
+    if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) ind &&
       pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
     Coqlib.check_required_library ["Coq";"Logic";"Eqdep_dec"];
     let new_eq_args = [|pf_unsafe_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
     let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
       ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
     let inj2 = EConstr.of_constr inj2 in
-    let c, eff = find_scheme (!eq_dec_scheme_kind_name()) (Univ.out_punivs ind) in
+    let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in
     (* cut with the good equality and prove the requested goal *)
     tclTHENLIST
       [Proofview.tclEFFECTS eff;
@@ -1783,6 +1784,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
     let select_equation_name decl =
       try
         let lbeq,u,(_,x,y) = find_eq_data_decompose (NamedDecl.get_type decl) in
+        let u = EInstance.kind sigma u in
         let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match EConstr.kind sigma x, EConstr.kind sigma y with
@@ -1834,6 +1836,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
   let test (_,c) =
     try
       let lbeq,u,(_,x,y) = find_eq_data_decompose c in
+      let u = EInstance.kind sigma u in
       let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
       if flags.only_leibniz then restrict_to_eq_and_identity eq;
       (* J.F.: added to prevent failure on goal containing x=x as an hyp *)

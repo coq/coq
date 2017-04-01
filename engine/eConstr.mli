@@ -45,9 +45,21 @@ sig
 
 end
 
+module EInstance :
+sig
+  type t
+  (** Type of universe instances up-to universe unification. Similar to
+      {ESorts.t} for {Univ.Instance.t}. *)
+
+  val make : Univ.Instance.t -> t
+  val kind : Evd.evar_map -> t -> Univ.Instance.t
+  val empty : t
+  val is_empty : t -> bool
+end
+
 (** {5 Destructors} *)
 
-val kind : Evd.evar_map -> t -> (t, t, ESorts.t, Univ.Instance.t) Constr.kind_of_term
+val kind : Evd.evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_term
 (** Same as {!Constr.kind} except that it expands evars and normalizes
     universes on the fly. *)
 
@@ -60,7 +72,7 @@ val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
 
 (** {5 Constructors} *)
 
-val of_kind : (t, t, ESorts.t, Univ.Instance.t) Constr.kind_of_term -> t
+val of_kind : (t, t, ESorts.t, EInstance.t) Constr.kind_of_term -> t
 (** Construct a term from a view. *)
 
 val of_constr : Constr.t -> t
@@ -89,13 +101,13 @@ val mkLambda : Name.t * t * t -> t
 val mkLetIn : Name.t * t * t * t -> t
 val mkApp : t * t array -> t
 val mkConst : constant -> t
-val mkConstU : pconstant -> t
+val mkConstU : constant * EInstance.t -> t
 val mkProj : (projection * t) -> t
 val mkInd : inductive -> t
-val mkIndU : pinductive -> t
+val mkIndU : inductive * EInstance.t -> t
 val mkConstruct : constructor -> t
-val mkConstructU : pconstructor -> t
-val mkConstructUi : pinductive * int -> t
+val mkConstructU : constructor * EInstance.t -> t
+val mkConstructUi : (inductive * EInstance.t) * int -> t
 val mkCase : case_info * t * t * t array -> t
 val mkFix : (t, t) pfixpoint -> t
 val mkCoFix : (t, t) pcofixpoint -> t
@@ -146,10 +158,10 @@ val destProd : Evd.evar_map -> t -> Name.t * types * types
 val destLambda : Evd.evar_map -> t -> Name.t * types * t
 val destLetIn : Evd.evar_map -> t -> Name.t * t * types * t
 val destApp : Evd.evar_map -> t -> t * t array
-val destConst : Evd.evar_map -> t -> constant puniverses
+val destConst : Evd.evar_map -> t -> constant * EInstance.t
 val destEvar : Evd.evar_map -> t -> t pexistential
-val destInd : Evd.evar_map -> t -> inductive puniverses
-val destConstruct : Evd.evar_map -> t -> constructor puniverses
+val destInd : Evd.evar_map -> t -> inductive * EInstance.t
+val destConstruct : Evd.evar_map -> t -> constructor * EInstance.t
 val destCase : Evd.evar_map -> t -> case_info * t * t * t array
 val destProj : Evd.evar_map -> t -> projection * t
 val destFix : Evd.evar_map -> t -> (t, t) pfixpoint
@@ -260,6 +272,9 @@ sig
   (** Physical identity. Does not care for defined evars. *)
 
   val to_sorts : ESorts.t -> Sorts.t
+  (** Physical identity. Does not care for normalization. *)
+
+  val to_instance : EInstance.t -> Univ.Instance.t
   (** Physical identity. Does not care for normalization. *)
 
   val eq : (t, Constr.t) eq

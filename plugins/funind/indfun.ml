@@ -249,7 +249,8 @@ let derive_inversion fix_names =
 	   Evd.fresh_global
 	     (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident id)) in 
         let c = EConstr.of_constr c in
-	 evd, destConst evd c::l
+        let (cst, u) = destConst evd c in
+	 evd, (cst, EInstance.kind evd u) :: l
 	)
 	fix_names
 	(evd',[])
@@ -412,7 +413,9 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	      Evd.fresh_global
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
             let c = EConstr.of_constr c in
-	    evd,((destConst evd c)::l)
+            let (cst, u) = destConst evd c in
+            let u = EInstance.kind evd u in
+            evd,((cst, u) :: l)
 	   )
 	   (Evd.from_env (Global.env ()),[])
 	   fixpoint_exprl
@@ -427,7 +430,9 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	      Evd.fresh_global
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
             let c = EConstr.of_constr c in
-	    evd,((destConst evd c)::l)
+            let (cst, u) = destConst evd c in
+            let u = EInstance.kind evd u in
+            evd,((cst, u) :: l)
 	   )
 	   (Evd.from_env (Global.env ()),[])
 	   fixpoint_exprl

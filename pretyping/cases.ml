@@ -279,6 +279,7 @@ let rec find_row_ind = function
 let inductive_template evdref env tmloc ind =
   let indu = evd_comb1 (Evd.fresh_inductive_instance env) evdref ind in
   let arsign = inductive_alldecls_env env indu in
+  let indu = on_snd EInstance.make indu in
   let hole_source i = match tmloc with
     | Some loc -> (loc, Evar_kinds.TomatchTypeParameter (ind,i))
     | None -> (Loc.ghost, Evar_kinds.TomatchTypeParameter (ind,i)) in
@@ -1314,7 +1315,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
       let cur_alias = lift const_info.cs_nargs current in
       let ind =
         mkApp (
-          applist (mkIndU (inductive_of_constructor (fst const_info.cs_cstr), snd const_info.cs_cstr),
+          applist (mkIndU (inductive_of_constructor (fst const_info.cs_cstr), EInstance.make (snd const_info.cs_cstr)),
                    List.map (EConstr.of_constr %> lift const_info.cs_nargs) const_info.cs_params),
           Array.map EConstr.of_constr const_info.cs_concl_realargs) in
       Alias (initial,(aliasname,cur_alias,(ci,ind))) in
@@ -2104,7 +2105,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	let args = List.rev args in
 	let patargs = List.rev patargs in
 	let pat' = PatCstr (l, cstr, patargs, alias) in
-	let cstr = mkConstructU ci.cs_cstr in
+	let cstr = mkConstructU (on_snd EInstance.make ci.cs_cstr) in
 	let app = applist (cstr, List.map (lift (List.length sign)) params) in
 	let app = applist (app, args) in
 	let apptype = Retyping.get_type_of env ( !evdref) app in

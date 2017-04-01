@@ -1073,7 +1073,7 @@ let decompose l c =
   Proofview.Goal.enter { enter = begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let to_ind c =
-      if isInd sigma c then Univ.out_punivs (destInd sigma c)
+      if isInd sigma c then fst (destInd sigma c)
       else error "not an inductive type"
     in
     let l = List.map to_ind l in

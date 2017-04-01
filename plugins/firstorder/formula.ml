@@ -91,6 +91,7 @@ let kind_of_formula gl term =
 		  Some (i,l,n)->
                     let l = List.map EConstr.Unsafe.to_constr l in
 		    let ind,u=EConstr.destInd (project gl) i in
+		    let u = EConstr.EInstance.kind (project gl) u in
 		    let (mib,mip) = Global.lookup_inductive ind in
 		    let nconstr=Array.length mip.mind_consnames in
 		      if Int.equal nconstr 0 then
@@ -112,7 +113,10 @@ let kind_of_formula gl term =
 			      Or((ind,u),l,is_trivial)
 		| _ ->
 		    match match_with_sigma_type (project gl) (EConstr.of_constr cciterm) with
-			Some (i,l)-> Exists((EConstr.destInd (project gl) i),List.map EConstr.Unsafe.to_constr l)
+			Some (i,l)->
+                          let (ind, u) = EConstr.destInd (project gl) i in
+                          let u = EConstr.EInstance.kind (project gl) u in
+                          Exists((ind, u), List.map EConstr.Unsafe.to_constr l)
 		      |_-> Atom (normalize cciterm)
 
 type atoms = {positive:constr list;negative:constr list}

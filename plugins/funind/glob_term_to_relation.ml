@@ -1275,8 +1275,9 @@ let do_build_inductive
   let open Context.Named.Declaration in
   let evd,env =
     Array.fold_right2
-      (fun id c (evd,env) ->
-       let evd,t = Typing.type_of env evd (EConstr.mkConstU c) in
+      (fun id (c, u) (evd,env) ->
+       let u = EConstr.EInstance.make u in
+       let evd,t = Typing.type_of env evd (EConstr.mkConstU (c, u)) in
        let t = EConstr.Unsafe.to_constr t in
        evd,
        Environ.push_named (LocalAssum (id,t))

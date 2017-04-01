@@ -1150,7 +1150,7 @@ let global_of_constr sigma c =
   | Const (c, u) -> ConstRef c, u
   | Ind (i, u) -> IndRef i, u
   | Construct (c, u) -> ConstructRef c, u
-  | Var id -> VarRef id, Univ.Instance.empty
+  | Var id -> VarRef id, EConstr.EInstance.empty
   | _ -> raise Not_found
 
 let is_global sigma c t =
@@ -1169,8 +1169,12 @@ let isGlobalRef sigma c =
 
 let is_template_polymorphic env sigma f =
   match EConstr.kind sigma f with
-  | Ind ind -> Environ.template_polymorphic_pind ind env
-  | Const c -> Environ.template_polymorphic_pconstant c env
+  | Ind (ind, u) ->
+    if not (EConstr.EInstance.is_empty u) then false
+    else Environ.template_polymorphic_ind ind env
+  | Const (cst, u) ->
+    if not (EConstr.EInstance.is_empty u) then false
+    else Environ.template_polymorphic_constant cst env
   | _ -> false
 
 let base_sort_cmp pb s0 s1 =
@@ -1453,8 +1457,8 @@ let global_app_of_constr sigma c =
   | Const (c, u) -> (ConstRef c, u), None
   | Ind (i, u) -> (IndRef i, u), None
   | Construct (c, u) -> (ConstructRef c, u), None
-  | Var id -> (VarRef id, Instance.empty), None
-  | Proj (p, c) -> (ConstRef (Projection.constant p), Instance.empty), Some c
+  | Var id -> (VarRef id, EConstr.EInstance.empty), None
+  | Proj (p, c) -> (ConstRef (Projection.constant p), EConstr.EInstance.empty), Some c
   | _ -> raise Not_found
 
 let prod_applist sigma c l =

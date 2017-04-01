@@ -250,7 +250,7 @@ val clear_named_body : Id.t -> env -> env
 val global_vars : env -> Evd.evar_map -> constr -> Id.t list
 val global_vars_set : env -> Evd.evar_map -> constr -> Id.Set.t
 val global_vars_set_of_decl : env -> Evd.evar_map -> named_declaration -> Id.Set.t
-val global_app_of_constr : Evd.evar_map -> constr -> Globnames.global_reference puniverses * constr option
+val global_app_of_constr : Evd.evar_map -> constr -> (Globnames.global_reference * EInstance.t) * constr option
 
 (** Gives an ordered list of hypotheses, closed by dependencies,
    containing a given set *)
@@ -259,7 +259,7 @@ val dependency_closure : env -> Evd.evar_map -> named_context -> Id.Set.t -> Id.
 (** Test if an identifier is the basename of a global reference *)
 val is_section_variable : Id.t -> bool
 
-val global_of_constr : Evd.evar_map -> constr -> Globnames.global_reference puniverses
+val global_of_constr : Evd.evar_map -> constr -> Globnames.global_reference * EInstance.t
 
 val is_global : Evd.evar_map -> Globnames.global_reference -> constr -> bool
 

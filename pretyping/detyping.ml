@@ -438,6 +438,7 @@ let detype_level sigma l =
   GType (Some (dl, Pp.string_of_ppcmds (Termops.pr_evd_level sigma l)))
 
 let detype_instance sigma l = 
+  let l = EInstance.kind sigma l in
   if Univ.Instance.is_empty l then None
   else Some (List.map (detype_level sigma) (Array.to_list (Univ.Instance.to_array l)))
 
@@ -507,6 +508,7 @@ let rec detype flags avoid env sigma t =
 	      let ty = Retyping.get_type_of (snd env) sigma c in
 	      let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma ty in
 	      let body' = strip_lam_assum body in
+	      let u = EInstance.kind sigma u in
 	      let body' = CVars.subst_instance_constr u body' in
 	      let body' = EConstr.of_constr body' in
 		substl (c :: List.rev args) body'

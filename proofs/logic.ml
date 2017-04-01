@@ -505,9 +505,10 @@ and mk_casegoals sigma goal goalacc p c =
   let (acc',ct,sigma,c') = mk_hdgoals sigma goal goalacc c in
   let ct = EConstr.of_constr ct in
   let (acc'',pt,sigma,p') = mk_hdgoals sigma goal acc' p in
-  let indspec =
+  let ((ind, u), spec) =
     try Tacred.find_hnf_rectype env sigma ct
     with Not_found -> anomaly (Pp.str "mk_casegoals") in
+  let indspec = ((ind, EConstr.EInstance.kind sigma u), spec) in
   let (lbrty,conclty) = type_case_branches_with_names env sigma indspec p c in
   (acc'',lbrty,conclty,sigma,p',c')
 

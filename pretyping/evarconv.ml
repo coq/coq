@@ -51,9 +51,9 @@ let unfold_projection env evd ts p c =
       
 let eval_flexible_term ts env evd c =
   match EConstr.kind evd c with
-  | Const (c,u as cu) ->
+  | Const (c, u) ->
       if is_transparent_constant ts c
-      then Option.map EConstr.of_constr (constant_opt_value_in env cu)
+      then Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u))
       else None
   | Rel n ->
       (try match lookup_rel n env with

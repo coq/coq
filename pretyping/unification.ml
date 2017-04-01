@@ -535,6 +535,7 @@ let key_of env sigma b flags f =
   | Const (cst, u) when is_transparent env (ConstKey cst) &&
       (Cpred.mem cst (snd flags.modulo_delta)
        || Environ.is_projection cst env) ->
+      let u = EInstance.kind sigma u in
       Some (IsKey (ConstKey (cst, u)))
   | Var id when is_transparent env (VarKey id) && 
       Id.Pred.mem id (fst flags.modulo_delta) ->

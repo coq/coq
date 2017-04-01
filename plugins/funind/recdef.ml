@@ -86,9 +86,10 @@ let def_of_const t =
 
 let type_of_const sigma t =
    match (EConstr.kind sigma t) with
-   | Const sp ->
+   | Const (sp, u) ->
+      let u = EInstance.kind sigma u in
       (* FIXME discarding universe constraints *)
-      Typeops.type_of_constant_in (Global.env()) sp
+      Typeops.type_of_constant_in (Global.env()) (sp, u)
     |_ -> assert false
 
 let constr_of_global x = 

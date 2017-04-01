@@ -606,6 +606,7 @@ module New = struct
       isrec allnames tac predicate ind (c, t) =
     Proofview.Goal.enter { enter = begin fun gl ->
     let sigma, elim = (mk_elim ind).enter gl in
+    let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Proofview.Goal.enter { enter = begin fun gl ->
     let indclause = mk_clenv_from gl (c, t) in
@@ -680,17 +681,19 @@ module New = struct
     (sigma, EConstr.of_constr c)
   end }
 
-  let gl_make_case_dep ind = { enter = begin fun gl ->
+  let gl_make_case_dep (ind, u) = { enter = begin fun gl ->
     let sigma = Sigma.Unsafe.of_evar_map (project gl) in
-    let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind true
+    let u = EInstance.kind (project gl) u in
+    let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma (ind, u) true
       (elimination_sort_of_goal gl)
     in
     (Sigma.to_evar_map sigma, EConstr.of_constr r)
   end }
 
-  let gl_make_case_nodep ind = { enter = begin fun gl ->
+  let gl_make_case_nodep (ind, u) = { enter = begin fun gl ->
     let sigma = Sigma.Unsafe.of_evar_map (project gl) in
-    let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind false
+    let u = EInstance.kind (project gl) u in
+    let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma (ind, u) false
       (elimination_sort_of_goal gl)
     in
     (Sigma.to_evar_map sigma, EConstr.of_constr r)

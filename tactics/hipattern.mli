@@ -122,19 +122,19 @@ val match_with_equation:
 (** Match terms [eq A t u], [identity A t u] or [JMeq A t A u] 
    Returns associated lemmas and [A,t,u] or fails PatternMatchingFailure *)
 val find_eq_data_decompose : ('a, 'r) Proofview.Goal.t -> constr ->
-      coq_eq_data * Univ.universe_instance * (types * constr * constr)
+      coq_eq_data * EInstance.t * (types * constr * constr)
 
 (** Idem but fails with an error message instead of PatternMatchingFailure *)
 val find_this_eq_data_decompose : ('a, 'r) Proofview.Goal.t -> constr ->
-      coq_eq_data * Univ.universe_instance * (types * constr * constr)
+      coq_eq_data * EInstance.t * (types * constr * constr)
 
 (** A variant that returns more informative structure on the equality found *)
-val find_eq_data : evar_map -> constr -> coq_eq_data * Univ.universe_instance * equation_kind
+val find_eq_data : evar_map -> constr -> coq_eq_data * EInstance.t * equation_kind
 
 (** Match a term of the form [(existT A P t p)] 
    Returns associated lemmas and [A,P,t,p] *)
 val find_sigma_data_decompose : evar_map -> constr ->
-  coq_sigma_data * (Univ.universe_instance * constr * constr * constr * constr)
+  coq_sigma_data * (EInstance.t * constr * constr * constr * constr)
 
 (** Match a term of the form [{x:A|P}], returns [A] and [P] *)
 val match_sigma : evar_map -> constr -> constr * constr

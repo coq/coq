@@ -783,7 +783,8 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
   assert (funs <> []);
   assert (graphs <> []);
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
-  let funs_constr = Array.map mkConstU funs  in
+  let map (c, u) = mkConstU (c, EInstance.make u) in
+  let funs_constr = Array.map map funs  in
   States.with_state_protection_on_exception
     (fun () ->
      let env = Global.env () in
@@ -882,7 +883,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	(Indrec.build_mutual_induction_scheme (Global.env ()) !evd
 	   (Array.to_list
 	      (Array.mapi
-		 (fun i _ -> ((kn,i),u(* Univ.Instance.empty *)),true,InType)
+		 (fun i _ -> ((kn,i), EInstance.kind !evd u),true,InType)
 		 mib.Declarations.mind_packets
 	      )
 	   )

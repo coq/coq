@@ -23,12 +23,21 @@ val make : Sorts.t -> t
 val kind : Evd.evar_map -> t -> Sorts.t
 val unsafe_to_sorts : t -> Sorts.t
 end
+module EInstance :
+sig
 type t
-val kind : Evd.evar_map -> t -> (t, t, ESorts.t, Univ.Instance.t) Constr.kind_of_term
+val make : Univ.Instance.t -> t
+val kind : Evd.evar_map -> t -> Univ.Instance.t
+val empty : t
+val is_empty : t -> bool
+val unsafe_to_instance : t -> Univ.Instance.t
+end
+type t
+val kind : Evd.evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_term
 val kind_upto : Evd.evar_map -> constr -> (constr, types, Sorts.t, Univ.Instance.t) Constr.kind_of_term
 val kind_of_type : Evd.evar_map -> t -> (t, t) kind_of_type
 val whd_evar : Evd.evar_map -> t -> t
-val of_kind : (t, t, ESorts.t, Univ.Instance.t) Constr.kind_of_term -> t
+val of_kind : (t, t, ESorts.t, EInstance.t) Constr.kind_of_term -> t
 val of_constr : Constr.t -> t
 val to_constr : evar_map -> t -> Constr.t
 val unsafe_to_constr : t -> Constr.t
@@ -50,6 +59,16 @@ struct
   let unsafe_to_sorts s = s
 end
 
+module EInstance =
+struct
+  type t = Univ.Instance.t
+  let make i = i
+  let kind sigma i = Evd.normalize_universe_instance sigma i
+  let empty = Univ.Instance.empty
+  let is_empty = Univ.Instance.is_empty
+  let unsafe_to_instance t = t
+end
+
 type t = Constr.t
 
 let safe_evar_value sigma ev =
@@ -63,15 +82,6 @@ let rec whd_evar sigma c =
     | Some c -> whd_evar sigma c
     | None -> c
     end
-  | Const (c', u) when not (Univ.Instance.is_empty u) ->
-    let u' = Evd.normalize_universe_instance sigma u in
-    if u' == u then c else mkConstU (c', u')
-  | Ind (i, u) when not (Univ.Instance.is_empty u) ->
-    let u' = Evd.normalize_universe_instance sigma u in
-    if u' == u then c else mkIndU (i, u')
-  | Construct (co, u) when not (Univ.Instance.is_empty u) ->
-    let u' = Evd.normalize_universe_instance sigma u in
-    if u' == u then c else mkConstructU (co, u')
   | App (f, args) when isEvar f ->
     (** Enforce smart constructor invariant on applications *)
     let ev = destEvar f in
@@ -137,7 +147,7 @@ type rel_declaration = (constr, types) Context.Rel.Declaration.pt
 type named_context = (constr, types) Context.Named.pt
 type rel_context = (constr, types) Context.Rel.pt
 
-let in_punivs a = (a, Univ.Instance.empty)
+let in_punivs a = (a, EInstance.empty)
 
 let mkProp = of_kind (Sort (ESorts.make Sorts.prop))
 let mkSet = of_kind (Sort (ESorts.make Sorts.set))
@@ -762,6 +772,7 @@ let fresh_global ?loc ?rigid ?names env sigma reference =
 module Unsafe =
 struct
 let to_sorts = ESorts.unsafe_to_sorts
+let to_instance = EInstance.unsafe_to_instance
 let to_constr = unsafe_to_constr
 let to_rel_decl = unsafe_to_rel_decl
 let to_named_decl = unsafe_to_named_decl

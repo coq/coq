@@ -66,6 +66,7 @@ let rec decompose_term env sigma t=
 	      decompose_term env sigma b)
     | Construct c ->
 	let (((mind,i_ind),i_con),u)= c in 
+	let u = EInstance.kind sigma u in
 	let canon_mind = mind_of_kn (canonical_mind mind) in
 	let canon_ind = canon_mind,i_ind in
 	let (oib,_)=Global.lookup_inductive (canon_ind) in
@@ -75,9 +76,11 @@ let rec decompose_term env sigma t=
 		       ci_nhyps=nargs-oib.mind_nparams}
     | Ind c -> 
 	let (mind,i_ind),u = c in 
+	let u = EInstance.kind sigma u in
 	let canon_mind = mind_of_kn (canonical_mind mind) in
 	let canon_ind = canon_mind,i_ind in  (Symb (Constr.mkIndU (canon_ind,u)))
     | Const (c,u) -> 
+	let u = EInstance.kind sigma u in
 	let canon_const = constant_of_kn (canonical_con c) in 
 	  (Symb (Constr.mkConstU (canon_const,u)))
     | Proj (p, c) -> 
@@ -408,7 +411,8 @@ let build_term_to_complete uf meta pac =
   let real_args = List.map (fun i -> constr_of_term (term uf i)) pac.args in
   let dummy_args = List.rev (List.init pac.arity meta) in
   let all_args = List.rev_append real_args dummy_args in
-    applist (mkConstructU cinfo.ci_constr, all_args)
+  let (kn, u) = cinfo.ci_constr in
+    applist (mkConstructU (kn, EInstance.make u), all_args)
 
 let cc_tactic depth additionnal_terms =
   Proofview.Goal.enter { enter = begin fun gl ->

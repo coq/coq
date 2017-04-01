@@ -193,15 +193,16 @@ let coercion_exists coe = CoeTypMap.mem coe !coercion_tab
 (* find_class_type : evar_map -> constr -> cl_typ * universe_list * constr list *)
 
 let find_class_type sigma t =
+  let open EConstr in
   let t', args = Reductionops.whd_betaiotazeta_stack sigma t in
   match EConstr.kind sigma t' with
-    | Var id -> CL_SECVAR id, Univ.Instance.empty, args
+    | Var id -> CL_SECVAR id, EInstance.empty, args
     | Const (sp,u) -> CL_CONST sp, u, args
     | Proj (p, c) when not (Projection.unfolded p) ->
-      CL_PROJ (Projection.constant p), Univ.Instance.empty, (c :: args)
+      CL_PROJ (Projection.constant p), EInstance.empty, (c :: args)
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
-    | Prod (_,_,_) -> CL_FUN, Univ.Instance.empty, []
-    | Sort _ -> CL_SORT, Univ.Instance.empty, []
+    | Prod (_,_,_) -> CL_FUN, EInstance.empty, []
+    | Sort _ -> CL_SORT, EInstance.empty, []
     |  _ -> raise Not_found
 
 

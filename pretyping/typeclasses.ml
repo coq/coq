@@ -303,6 +303,7 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
 	   | Some (Forward, info) ->
 	     let proj = Option.get proj in
 	     let rels = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) rels in
+	     let u = EConstr.EInstance.kind sigma u in
 	     let body = it_mkLambda_or_LetIn (mkApp (mkConstU (proj,u), projargs)) rels in
 	       if check && check_instance env sigma (EConstr.of_constr body) then None
 	       else 

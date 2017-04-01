@@ -61,13 +61,13 @@ val class_info : global_reference -> typeclass (** raises a UserError if not a c
 (** These raise a UserError if not a class.
     Caution: the typeclass structures is not instantiated w.r.t. the universe instance.
     This is done separately by typeclass_univ_instance. *)
-val dest_class_app : env -> evar_map -> EConstr.constr -> typeclass puniverses * constr list
+val dest_class_app : env -> evar_map -> EConstr.constr -> (typeclass * EConstr.EInstance.t) * constr list
 
 (** Get the instantiated typeclass structure for a given universe instance. *)
 val typeclass_univ_instance : typeclass puniverses -> typeclass puniverses
 
 (** Just return None if not a class *)
-val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * (typeclass puniverses * constr list)) option
+val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option
   
 val instance_impl : instance -> global_reference
 

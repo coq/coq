@@ -102,10 +102,10 @@ let retype ?(polyprop=true) sigma =
 	let ty = RelDecl.get_type (lookup_rel n env) in
         lift n ty
     | Var id -> type_of_var env id
-    | Const cst -> EConstr.of_constr (rename_type_of_constant env cst)
+    | Const (cst, u) -> EConstr.of_constr (rename_type_of_constant env (cst, EInstance.kind sigma u))
     | Evar ev -> existential_type sigma ev
-    | Ind ind -> EConstr.of_constr (rename_type_of_inductive env ind)
-    | Construct cstr -> EConstr.of_constr (rename_type_of_constructor env cstr)
+    | Ind (ind, u) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
+    | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
     | Case (_,p,c,lf) ->
         let Inductiveops.IndType(indf,realargs) =
           let t = type_of env c in
@@ -186,16 +186,20 @@ let retype ?(polyprop=true) sigma =
     let argtyps =
       Array.map (fun c -> lazy (EConstr.to_constr sigma (type_of env c))) args in
     match EConstr.kind sigma c with
-    | Ind ind ->
-      let mip = lookup_mind_specif env (fst ind) in
+    | Ind (ind, u) ->
+      let u = EInstance.kind sigma u in
+      let mip = lookup_mind_specif env ind in
 	EConstr.of_constr (try Inductive.type_of_inductive_knowing_parameters
-	       ~polyprop env (mip,snd ind) argtyps
+	       ~polyprop env (mip, u) argtyps
 	 with Reduction.NotArity -> retype_error NotAnArity)
-    | Const cst ->
-	EConstr.of_constr (try Typeops.type_of_constant_knowing_parameters_in env cst argtyps
+    | Const (cst, u) ->
+        let u = EInstance.kind sigma u in
+	EConstr.of_constr (try Typeops.type_of_constant_knowing_parameters_in env (cst, u) argtyps
 	 with Reduction.NotArity -> retype_error NotAnArity)
     | Var id -> type_of_var env id
-    | Construct cstr -> EConstr.of_constr (type_of_constructor env cstr)
+    | Construct (cstr, u) ->
+      let u = EInstance.kind sigma u in
+      EConstr.of_constr (type_of_constructor env (cstr, u))
     | _ -> assert false
 
   in type_of, sort_of, sort_family_of,
@@ -212,13 +216,13 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
   match EConstr.kind sigma c with
     | Ind (ind,u) ->
         let spec = Inductive.lookup_mind_specif env ind in
-          type_of_inductive_knowing_conclusion env sigma (spec,u) conclty
-    | Const cst ->
-        let t = constant_type_in env cst in
+          type_of_inductive_knowing_conclusion env sigma (spec, EInstance.kind sigma u) conclty
+    | Const (cst, u) ->
+        let t = constant_type_in env (cst, EInstance.kind sigma u) in
         (* TODO *)
           sigma, EConstr.of_constr (Typeops.type_of_constant_type_knowing_parameters env t [||])
     | Var id -> sigma, type_of_var env id
-    | Construct cstr -> sigma, EConstr.of_constr (type_of_constructor env cstr)
+    | Construct (cstr, u) -> sigma, EConstr.of_constr (type_of_constructor env (cstr, EInstance.kind sigma u))
     | _ -> assert false
 
 (* Profiling *)

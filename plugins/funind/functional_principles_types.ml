@@ -300,7 +300,8 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
       hook
   ;
     (*       let _tim1 = System.get_time ()  in *)
-      ignore (Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map EConstr.mkConstU funs) mutr_nparams)));
+      let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
+      ignore (Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams)));
     (*       let _tim2 =  System.get_time ()  in *)
     (* 	begin *)
     (* 	  let dur1 = System.time_difference tim1 tim2 in *)

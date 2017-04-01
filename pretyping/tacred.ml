@@ -60,6 +60,7 @@ let is_evaluable env = function
 let value_of_evaluable_ref env evref u =
   match evref with
   | EvalConstRef con -> 
+    let u = Unsafe.to_instance u in
     EConstr.of_constr (try constant_value_in env (con,u)
     with NotEvaluableConst IsProj -> 
       raise (Invalid_argument "value_of_evaluable_ref"))
@@ -103,9 +104,9 @@ let isEvalRef env sigma c = match EConstr.kind sigma c with
 
 let destEvalRefU sigma c = match EConstr.kind sigma c with
   | Const (cst,u) ->  EvalConst cst, u
-  | Var id  -> (EvalVar id, Univ.Instance.empty)
-  | Rel n -> (EvalRel n, Univ.Instance.empty)
-  | Evar ev -> (EvalEvar ev, Univ.Instance.empty)
+  | Var id  -> (EvalVar id, EInstance.empty)
+  | Rel n -> (EvalRel n, EInstance.empty)
+  | Evar ev -> (EvalEvar ev, EInstance.empty)
   | _ -> anomaly (Pp.str "Not an unfoldable reference")
 
 let unsafe_reference_opt_value env sigma eval =
@@ -125,7 +126,9 @@ let unsafe_reference_opt_value env sigma eval =
 
 let reference_opt_value env sigma eval u = 
   match eval with
-  | EvalConst cst -> Option.map EConstr.of_constr (constant_opt_value_in env (cst,u))
+  | EvalConst cst ->
+    let u = EInstance.kind sigma u in
+    Option.map EConstr.of_constr (constant_opt_value_in env (cst,u))
   | EvalVar id ->
       env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
@@ -519,13 +522,13 @@ let reduce_mind_case_use_function func env sigma mia =
 		       mutual inductive, try to reuse the global name if
 		       the block was indeed initially built as a global
 		       definition *)
-		    let kn = map_puniverses (fun x -> con_with_label x (Label.of_id id))
-		      (destConst sigma func)
-		    in
-		    try match constant_opt_value_in env kn with
+                    let (kn, u) = destConst sigma func in
+                    let kn = con_with_label kn (Label.of_id id) in
+                    let cst = (kn, EInstance.kind sigma u) in
+		    try match constant_opt_value_in env cst with
 		      | None -> None
                           (* TODO: check kn is correct *)
-		      | Some _ -> Some (minargs,mkConstU kn)
+		      | Some _ -> Some (minargs,mkConstU (kn, u))
 		    with Not_found -> None
 	  else
 	    fun _ -> None in
@@ -539,14 +542,15 @@ let match_eval_ref env sigma constr =
   match EConstr.kind sigma constr with
   | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
       Some (EvalConst sp, u)
-  | Var id when is_evaluable env (EvalVarRef id) -> Some (EvalVar id, Univ.Instance.empty)
-  | Rel i -> Some (EvalRel i, Univ.Instance.empty)
-  | Evar ev -> Some (EvalEvar ev, Univ.Instance.empty)
+  | Var id when is_evaluable env (EvalVarRef id) -> Some (EvalVar id, EInstance.empty)
+  | Rel i -> Some (EvalRel i, EInstance.empty)
+  | Evar ev -> Some (EvalEvar ev, EInstance.empty)
   | _ -> None
 
 let match_eval_ref_value env sigma constr = 
   match EConstr.kind sigma constr with
   | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
+    let u = EInstance.kind sigma u in
     Some (EConstr.of_constr (constant_value_in env (sp, u)))
   | Var id when is_evaluable env (EvalVarRef id) -> 
      env |> lookup_named id |> NamedDecl.get_value
@@ -628,8 +632,9 @@ let whd_nothing_for_iota env sigma s =
       | Meta ev ->
 	(try whrec (EConstr.of_constr (Evd.meta_value sigma ev), stack)
 	with Not_found -> s)
-      | Const const when is_transparent_constant full_transparent_state (fst const) ->
-	  (match constant_opt_value_in env const with
+      | Const (const, u) when is_transparent_constant full_transparent_state const ->
+          let u = EInstance.kind sigma u in
+	  (match constant_opt_value_in env (const, u) with
 	     | Some  body -> whrec (EConstr.of_constr body, stack)
 	     | None -> s)
       | LetIn (_,b,_,c) -> stacklam whrec [b] sigma c stack
@@ -955,7 +960,7 @@ let simpl env sigma c = strong whd_simpl env sigma c
 let matches_head env sigma c t =
   match EConstr.kind sigma t with
     | App (f,_) -> Constr_matching.matches env sigma c f
-    | Proj (p, _) -> Constr_matching.matches env sigma c (mkConstU (Projection.constant p, Univ.Instance.empty))
+    | Proj (p, _) -> Constr_matching.matches env sigma c (mkConstU (Projection.constant p, EInstance.empty))
     | _ -> raise Constr_matching.PatternMatchingFailure
 
 (** FIXME: Specific function to handle projections: it ignores what happens on the
@@ -1039,7 +1044,7 @@ let contextually byhead occs f env sigma t =
 let match_constr_evaluable_ref sigma c evref = 
   match EConstr.kind sigma c, evref with
   | Const (c,u), EvalConstRef c' when eq_constant c c' -> Some u
-  | Var id, EvalVarRef id' when id_eq id id' -> Some Univ.Instance.empty
+  | Var id, EvalVarRef id' when id_eq id id' -> Some EInstance.empty
   | _, _ -> None
 
 let substlin env sigma evalref n (nowhere_except_in,locs) c =

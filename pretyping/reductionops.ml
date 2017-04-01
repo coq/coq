@@ -550,7 +550,7 @@ struct
 
   let constr_of_cst_member f sk =
     match f with
-    | Cst_const (c, u) -> mkConstU (c,u), sk
+    | Cst_const (c, u) -> mkConstU (c, EInstance.make u), sk
     | Cst_proj p -> 
       match decomp sk with
       | Some (hd, sk) -> mkProj (p, hd), sk
@@ -703,7 +703,7 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
             csts Univ.LMap.empty
           in
           let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
-          mkConstU (cst,inst)
+          mkConstU (cst, EInstance.make inst)
         | None -> bd
         end
     with
@@ -856,7 +856,8 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       | Some body -> whrec cst_l (EConstr.of_constr body, stack)
       | None -> fold ())
     | Const (c,u as const) when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) ->
-       (match constant_opt_value_in env const with
+        let u' = EInstance.kind sigma u in
+       (match constant_opt_value_in env (fst const, u') with
 	| None -> fold ()
 	| Some body ->
           let body = EConstr.of_constr body in
@@ -895,7 +896,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 		    | None -> fold ()
 		    | Some (bef,arg,s') ->
 		      whrec Cst_stack.empty 
-			(arg,Stack.Cst(Stack.Cst_const const,curr,remains,bef,cst_l)::s')
+			(arg,Stack.Cst(Stack.Cst_const (fst const, u'),curr,remains,bef,cst_l)::s')
        )
     | Proj (p, c) when CClosure.RedFlags.red_projection flags p ->
       (let pb = lookup_projection p env in
@@ -998,6 +999,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 	      (match constant_opt_value_in env const with
 	      | None -> fold ()
 	      | Some body ->
+                let const = (fst const, EInstance.make (snd const)) in
                 let body = EConstr.of_constr body in
 		whrec (if refold then Cst_stack.add_cst (mkConstU const) cst_l else cst_l)
 		  (body, s' @ (Stack.append_app [|x'|] s'')))
@@ -1657,12 +1659,13 @@ let meta_reducible_instance evd b =
 
 
 let head_unfold_under_prod ts env sigma c =
-  let unfold (cst,u as cstu) =
+  let unfold (cst,u) =
+    let cstu = (cst, EInstance.kind sigma u) in
     if Cpred.mem cst (snd ts) then
       match constant_opt_value_in env cstu with
 	| Some c -> EConstr.of_constr c
-	| None -> mkConstU cstu
-    else mkConstU cstu in
+	| None -> mkConstU (cst, u)
+    else mkConstU (cst, u) in
   let rec aux c =
     match EConstr.kind sigma c with
       | Prod (n,t,c) -> mkProd (n,aux t, aux c)
