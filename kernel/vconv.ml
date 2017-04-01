@@ -93,7 +93,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
         if Environ.polymorphic_ind ind1 env
         then
           let mib = Environ.lookup_mind mi env in
-	  let ulen = Univ.UContext.size mib.Declarations.mind_universes in
+	  let ulen = Univ.UContext.size (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) in
           match stk1 , stk2 with
 	  | [], [] -> assert (Int.equal ulen 0); cu
 	  | Zapp args1 :: stk1' , Zapp args2 :: stk2' ->

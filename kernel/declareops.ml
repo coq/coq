@@ -261,19 +261,18 @@ let subst_mind_body sub mib =
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_polymorphic = mib.mind_polymorphic;
     mind_universes = mib.mind_universes;
-    mind_subtyping = mib.mind_subtyping;
     mind_private = mib.mind_private;
     mind_typing_flags = mib.mind_typing_flags;
   }
 
 let inductive_instance mib =
   if mib.mind_polymorphic then
-    Univ.UContext.instance mib.mind_universes
+    Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes)
   else Univ.Instance.empty
 
 let inductive_context mib =
   if mib.mind_polymorphic then 
-    Univ.instantiate_univ_context mib.mind_universes 
+    Univ.instantiate_univ_context (Univ.UInfoInd.univ_context mib.mind_universes)
   else Univ.UContext.empty
 
 (** {6 Hash-consing of inductive declarations } *)
@@ -306,7 +305,7 @@ let hcons_mind mib =
   { mib with
     mind_packets = Array.smartmap hcons_mind_packet mib.mind_packets;
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
-    mind_universes = Univ.hcons_universe_context mib.mind_universes }
+    mind_universes = Univ.hcons_universe_info_ind mib.mind_universes }
 
 (** {6 Stm machinery } *)
 

@@ -1053,14 +1053,14 @@ struct
     let len = Array.length (Instance.to_array ctx) in
     let halflen = len / 2 in
     (Instance.of_array (Array.sub (Instance.to_array ctx) 0 halflen),
-     Instance.of_array (Array.sub (Instance.to_array ctx) halflen len))
+     Instance.of_array (Array.sub (Instance.to_array ctx) halflen halflen))
 
   let pr prl (univcst, subtypcst) =
     if UContext.is_empty univcst then mt() else
       let (ctx, ctx') = halve_context (UContext.instance subtypcst) in
-      (UContext.pr prl univcst) ++
-      h 0 (str "~@{" ++ Instance.pr prl ctx ++ str "} <= ~@{" ++ Instance.pr prl ctx' ++ str "}")
-           ++ h 0 (v 0 (Constraint.pr prl (UContext.constraints subtypcst)))
+      (UContext.pr prl univcst) ++ fnl () ++ fnl () ++
+        h 0 (str "~@{" ++ Instance.pr prl ctx ++ str "} <= ~@{" ++ Instance.pr prl ctx' ++ str "} iff ")
+         ++ fnl () ++ h 0 (v 0 (Constraint.pr prl (UContext.constraints subtypcst)))
 
   let hcons (univcst, subtypcst) =
     (UContext.hcons univcst, UContext.hcons subtypcst)

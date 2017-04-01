@@ -97,6 +97,7 @@ val pr_sort                : evar_map -> sorts -> std_ppcmds
 val pr_polymorphic         : bool -> std_ppcmds
 val pr_universe_instance   : evar_map -> Univ.universe_context -> std_ppcmds
 val pr_universe_ctx        : evar_map -> Univ.universe_context -> std_ppcmds
+val pr_universe_info_ind   : evar_map -> Univ.universe_info_ind -> std_ppcmds
 
 (** Printing global references using names as short as possible *)
 

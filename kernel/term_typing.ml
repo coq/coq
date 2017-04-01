@@ -313,7 +313,7 @@ let infer_declaration ~trust env kn dcl =
     in
     let term, typ = pb.proj_eta in
       Def (Mod_subst.from_val (hcons_constr term)), RegularArity typ, Some pb,
-      mib.mind_polymorphic, mib.mind_universes, false, None
+      mib.mind_polymorphic, Univ.UInfoInd.univ_context mib.mind_universes, false, None
 
 let global_vars_set_constant_type env = function
   | RegularArity t -> global_vars_set env t

@@ -261,6 +261,13 @@ let pr_universe_ctx sigma c =
   else
     mt()
 
+let pr_universe_info_ind sigma uii =
+  if !Detyping.print_universes && not (Univ.UInfoInd.is_empty uii) then
+    fnl()++pr_in_comment (fun uii -> v 0
+      (Univ.pr_universe_info_ind (Termops.pr_evd_level sigma) uii)) uii
+  else
+    mt()
+
 (**********************************************************************)
 (* Global references *)
 

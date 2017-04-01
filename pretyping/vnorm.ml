@@ -174,7 +174,7 @@ and nf_whd env sigma whd typ =
   | Vatom_stk(Aind ((mi,i) as ind), stk) ->
      let mib = Environ.lookup_mind mi env in
      let nb_univs =
-       if mib.mind_polymorphic then Univ.UContext.size mib.mind_universes
+       if mib.mind_polymorphic then Univ.UContext.size (Univ.UInfoInd.univ_context mib.mind_universes)
        else 0
      in
      let mk u =

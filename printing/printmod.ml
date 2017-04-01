@@ -89,7 +89,7 @@ let build_ind_type env mip =
 
 let print_one_inductive env sigma mib ((_,i) as ind) =
   let u = if mib.mind_polymorphic then 
-      Univ.UContext.instance mib.mind_universes 
+      Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes)
     else Univ.Instance.empty in
   let mip = mib.mind_packets.(i) in
   let params = Inductive.inductive_paramdecls (mib,u) in
@@ -100,7 +100,7 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
   let envpar = push_rel_context params env in
   let inst =
     if mib.mind_polymorphic then
-      Printer.pr_universe_instance sigma mib.mind_universes
+      Printer.pr_universe_instance sigma (Univ.UInfoInd.univ_context mib.mind_universes)
     else mt ()
   in
   hov 0 (
@@ -124,7 +124,7 @@ let print_mutual_inductive env mind mib =
     def keyword ++ spc () ++
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
       (print_one_inductive env sigma mib) inds ++
-      Printer.pr_universe_ctx sigma (Univ.instantiate_univ_context mib.mind_universes))
+      Printer.pr_universe_info_ind sigma (Univ.instantiate_univ_info_ind mib.mind_universes))
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -142,7 +142,7 @@ let get_fields =
 let print_record env mind mib =
   let u = 
     if mib.mind_polymorphic then 
-      Univ.UContext.instance mib.mind_universes 
+      Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes)
     else Univ.Instance.empty 
   in
   let mip = mib.mind_packets.(0) in
@@ -175,7 +175,7 @@ let print_record env mind mib =
         (fun (id,b,c) ->
           pr_id id ++ str (if b then " : " else " := ") ++
           Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }" ++
-      Printer.pr_universe_ctx sigma (Univ.instantiate_univ_context mib.mind_universes))
+      Printer.pr_universe_info_ind sigma (Univ.instantiate_univ_info_ind mib.mind_universes))
 
 let pr_mutual_inductive_body env mind mib =
   if mib.mind_record <> None && not !Flags.raw_print then

@@ -86,6 +86,8 @@ sig
   type universe_context = UContext.t
   [@@ocaml.deprecated "alias of API.Names.UContext.t"]
 
+  type universe_info_ind = Univ.UInfoInd.t
+
   module LSet : module type of struct include Univ.LSet end
   module ContextSet : 
   sig
@@ -1093,8 +1095,7 @@ sig
         mind_nparams_rec : int;
         mind_params_ctxt : Context.Rel.t;
         mind_polymorphic : bool;
-        mind_universes : Univ.UContext.t;
-        mind_subtyping : Univ.universe_context;
+        mind_universes : Univ.universe_info_ind;
         mind_private : bool option;
         mind_typing_flags : Declarations.typing_flags;
       }

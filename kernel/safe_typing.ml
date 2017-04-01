@@ -429,7 +429,7 @@ let globalize_mind_universes mb =
   if mb.mind_polymorphic then
     [Now (true, Univ.ContextSet.empty)]
   else
-    [Now (false, Univ.ContextSet.of_context mb.mind_universes)]
+    [Now (false, Univ.ContextSet.of_context (Univ.UInfoInd.univ_context mb.mind_universes))]
 
 let constraints_of_sfb env sfb = 
   match sfb with

@@ -81,17 +81,10 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
   let nparams = mib.mind_nparams in
   let subst, univs = 
     if mib.mind_polymorphic then 
-      let inst = Univ.UContext.instance mib.mind_universes in
-      let cstrs = Univ.UContext.constraints mib.mind_universes in
+      let inst = Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes) in
+      let cstrs = Univ.UContext.constraints (Univ.UInfoInd.univ_context mib.mind_universes) in
 	inst, Univ.UContext.make (inst, Univ.subst_instance_constraints inst cstrs)
-    else Univ.Instance.empty, mib.mind_universes
-  in
-  let substsbt, univssbt = 
-    if mib.mind_polymorphic then 
-      let inst = Univ.UContext.instance mib.mind_subtyping in
-      let cstrs = Univ.UContext.constraints mib.mind_subtyping in
-	inst, Univ.UContext.make (inst, Univ.subst_instance_constraints inst cstrs)
-    else Univ.Instance.empty, Univ.UContext.empty
+    else Univ.Instance.empty, (Univ.UInfoInd.univ_context mib.mind_universes)
   in
   let inds =
     Array.map_to_list
@@ -112,6 +105,7 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
   let (params',inds') = abstract_inductive sechyps' nparams inds in
   let abs_ctx = Univ.instantiate_univ_context abs_ctx in
   let univs = Univ.UContext.union abs_ctx univs in
+  let univ_info_ind = Universes.univ_inf_ind_from_universe_context univs in (* Here we must re-infer subtyping constraints. For now we just revert to trivial subtyping. *)
   let record = match mib.mind_record with
     | Some (Some (id, _, _)) -> Some (Some id)
     | Some None -> Some None
@@ -123,5 +117,5 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
     mind_entry_inds = inds';
     mind_entry_polymorphic = mib.mind_polymorphic;
     mind_entry_private = mib.mind_private;
-    mind_entry_universes = (univs, univssbt);
+    mind_entry_universes = univ_info_ind
   }

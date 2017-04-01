@@ -268,7 +268,7 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
   let u = Declareops.inductive_instance mib in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let poly = mib.mind_polymorphic in
-  let ctx = Univ.instantiate_univ_context mib.mind_universes in
+  let ctx = Univ.instantiate_univ_context (Univ.UInfoInd.univ_context mib.mind_universes) in
   let indu = indsp, u in
   let r = mkIndU (indsp,u) in
   let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
@@ -466,7 +466,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
       in
       cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
-       let ind = declare_structure BiFinite poly (ctx, Univ.UContext.empty) (snd id) idbuild paramimpls
+       let ind = declare_structure BiFinite poly (Universes.univ_inf_ind_from_universe_context ctx) (snd id) idbuild paramimpls
 	  params arity template fieldimpls fields
 	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
        in
@@ -515,7 +515,7 @@ let add_inductive_class ind =
   let mind, oneind = Global.lookup_inductive ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
-    let inst = Univ.UContext.instance mind.mind_universes in
+    let inst = Univ.UContext.instance (Univ.UInfoInd.univ_context mind.mind_universes) in
     let ty = Inductive.type_of_inductive
       (push_rel_context ctx (Global.env ()))
       ((mind,oneind),inst)
@@ -571,7 +571,7 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits
 	    (succ (List.length params)) impls) implfs in
-	let ind = declare_structure finite poly (ctx, Univ.UContext.empty) idstruc
+	let ind = declare_structure finite poly (Universes.univ_inf_ind_from_universe_context ctx) idstruc
 	  idbuild implpars params arity template implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
 	IndRef ind

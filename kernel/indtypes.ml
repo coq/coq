@@ -220,7 +220,7 @@ let typecheck_inductive env mie =
   (* Check unicity of names *)
   mind_check_names mie;
   (* Params are typed-checked here *)
-  let env' = push_context (fst mie.mind_entry_universes) env in
+  let env' = push_context (Univ.UInfoInd.univ_context mie.mind_entry_universes) env in
   let (env_params,paramsctxt) = infer_local_decls env' mie.mind_entry_params in
   (* We first type arity of each inductive definition *)
   (* This allows building the environment of arities and to share *)
@@ -822,10 +822,10 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
   let hyps = used_section_variables env inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
   let nparamsctxt = Context.Rel.length paramsctxt in
-  let substunivs, ctxunivs = Univ.abstract_universes p (fst ctx) in
-  let substsbt, ctxsbt = Univ.abstract_universes p (snd ctx) in
+  let substunivs, ctxunivs = Univ.abstract_universes p (Univ.UInfoInd.univ_context ctx) in
+  let substsubtyp, ctxsubtyp = Univ.abstract_universes p (Univ.UInfoInd.subtyp_context ctx) in
   let paramsctxt = Vars.subst_univs_level_context substunivs paramsctxt in
-  let env_ar = 
+  let env_ar =
     let ctxunivs = Environ.rel_context env_ar in 
     let ctxunivs' = Vars.subst_univs_level_context substunivs ctxunivs in
       Environ.push_rel_context ctxunivs' env
@@ -842,9 +842,6 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
     let consnrealargs =
       Array.map (fun (d,_) -> Context.Rel.nhyps d - nparamargs)
 	splayed_lc in
-    (* Check that the subtyping constraints (inferred outside kernel)
-       are valid. If so return (), otherwise raise an anomaly! *)
-    let () = () in
     (* Elimination sorts *)
     let arkind,kelim = 
       match ar_kind with
@@ -924,8 +921,7 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
       mind_params_ctxt = paramsctxt;
       mind_packets = packets;
       mind_polymorphic = p;
-      mind_universes = ctxunivs;
-      mind_subtyping = ctxsbt;
+      mind_universes = Univ.UInfoInd.make (ctxunivs, ctxsubtyp);
       mind_private = prv;
       mind_typing_flags = Environ.typing_flags env;
     }

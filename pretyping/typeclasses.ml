@@ -123,7 +123,7 @@ let typeclass_univ_instance (cl,u') =
 	  else Univ.Instance.empty
       | IndRef c ->
          let mib,oib = Global.lookup_inductive c in
-	  if mib.mind_polymorphic then Univ.UContext.instance mib.mind_universes
+	  if mib.mind_polymorphic then Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes)
 	  else Univ.Instance.empty
       | _ -> Univ.Instance.empty
     in Array.fold_left2 (fun subst u u' -> Univ.LMap.add u u' subst) 

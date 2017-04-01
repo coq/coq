@@ -55,7 +55,7 @@ let inductive_paramdecls (mib,u) =
 
 let instantiate_inductive_constraints mib u =
   if mib.mind_polymorphic then
-    Univ.subst_instance_constraints u (Univ.UContext.constraints mib.mind_universes)
+    Univ.subst_instance_constraints u (Univ.UContext.constraints (Univ.UInfoInd.univ_context mib.mind_universes))
   else Univ.Constraint.empty
 
 

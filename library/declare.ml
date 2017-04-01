@@ -352,7 +352,7 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_finite = Decl_kinds.BiFinite;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds;
   mind_entry_polymorphic = false;
-  mind_entry_universes = (Univ.UContext.empty, Univ.UContext.empty);
+  mind_entry_universes = Univ.UInfoInd.empty;
   mind_entry_private = None;
 })
 

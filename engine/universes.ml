@@ -338,14 +338,14 @@ let fresh_constant_instance env c inst =
 let fresh_inductive_instance env ind inst = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
     if mib.Declarations.mind_polymorphic then
-      let inst, ctx = fresh_instance_from mib.Declarations.mind_universes inst in
+      let inst, ctx = fresh_instance_from (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) inst in
 	((ind,inst), ctx)
     else ((ind,Instance.empty), ContextSet.empty)
 
 let fresh_constructor_instance env (ind,i) inst = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
     if mib.Declarations.mind_polymorphic then
-      let inst, ctx = fresh_instance_from mib.Declarations.mind_universes inst in
+      let inst, ctx = fresh_instance_from (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) inst in
 	(((ind,i),inst), ctx)
     else (((ind,i),Instance.empty), ContextSet.empty)
 
@@ -360,14 +360,14 @@ let unsafe_constant_instance env c =
 let unsafe_inductive_instance env ind = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
     if mib.Declarations.mind_polymorphic then
-      let inst, ctx = unsafe_instance_from mib.Declarations.mind_universes in
+      let inst, ctx = unsafe_instance_from (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) in
 	((ind,inst), ctx)
     else ((ind,Instance.empty), UContext.empty)
 
 let unsafe_constructor_instance env (ind,i) = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
     if mib.Declarations.mind_polymorphic then
-      let inst, ctx = unsafe_instance_from mib.Declarations.mind_universes in
+      let inst, ctx = unsafe_instance_from (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) in
 	(((ind,i),inst), ctx)
     else (((ind,i),Instance.empty), UContext.empty)
 
@@ -460,7 +460,7 @@ let type_of_reference env r =
   | IndRef ind ->
      let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
        if mib.mind_polymorphic then
-	 let inst, ctx = fresh_instance_from mib.mind_universes None in
+	 let inst, ctx = fresh_instance_from (Univ.UInfoInd.univ_context mib.mind_universes) None in
 	 let ty = Inductive.type_of_inductive env (specif, inst) in
 	   ty, ctx
        else
@@ -469,7 +469,7 @@ let type_of_reference env r =
   | ConstructRef cstr ->
      let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
        if mib.mind_polymorphic then
-	 let inst, ctx = fresh_instance_from mib.mind_universes None in
+	 let inst, ctx = fresh_instance_from (Univ.UInfoInd.univ_context mib.mind_universes) None in
 	   Inductive.type_of_constructor (cstr,inst) specif, ctx
        else Inductive.type_of_constructor (cstr,Instance.empty) specif, ContextSet.empty
 
