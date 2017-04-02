@@ -253,7 +253,7 @@ let add_rewrite_hint bases ort t lcsr =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let poly = Flags.use_polymorphic_flag () in
-  let f ce = 
+  let f (p, ce) =
     let c, ctx = Constrintern.interp_constr env sigma ce in
     let ctx =
       let ctx = UState.context_set ctx in
@@ -263,22 +263,38 @@ let add_rewrite_hint bases ort t lcsr =
 	  (Declare.declare_universe_context false ctx;
            Univ.ContextSet.empty)
     in
-      Loc.tag ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
+    let p =
+      let pat p =
+        snd (Patternops.pattern_of_glob_constr (Constrintern.intern_constr env p))
+      in Option.map pat p
+    in
+    Loc.tag ?loc:(Constrexpr_ops.constr_loc ce) (p, (c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t)
+  in
   let eqs = List.map f lcsr in
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
 
 let classify_hint _ = Vernacexpr.VtSideff [], Vernacexpr.VtLater
 
+let pr_rewrite_hint prc _prlc _prt (p,c) =
+  match p with
+  | None -> prc c
+  | Some p -> str"[" ++ prc p ++ str"]" ++ prc c
+
+ARGUMENT EXTEND rewrite_hint TYPED AS (constr option * constr) PRINTED BY pr_rewrite_hint
+  | [ "[" uconstr(p) "]" uconstr(c) ] -> [ ((Some p), c) ]
+  | [ uconstr(c) ] -> [ (None, c) ]
+END
+
 VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY classify_hint
-  [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
+  [ "Hint" "Rewrite" orient(o) ne_rewrite_hint_list(l) ":" preident_list(bl) ] ->
   [ add_rewrite_hint bl o None l ]
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
+| [ "Hint" "Rewrite" orient(o) ne_rewrite_hint_list(l) "using" tactic(t)
     ":" preident_list(bl) ] ->
   [ add_rewrite_hint bl o (Some t) l ]
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
+| [ "Hint" "Rewrite" orient(o) ne_rewrite_hint_list(l) ] ->
   [ add_rewrite_hint ["core"] o None l ]
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
+| [ "Hint" "Rewrite" orient(o) ne_rewrite_hint_list(l) "using" tactic(t) ] ->
   [ add_rewrite_hint ["core"] o (Some t) l ]
 END
 

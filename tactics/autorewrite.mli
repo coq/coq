@@ -12,7 +12,7 @@ open Term
 open Equality
 
 (** Rewriting rules before tactic interpretation *)
-type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) Loc.located
+type raw_rew_rule = (Pattern.constr_pattern option * constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) Loc.located
 
 (** To add rewriting rules to a base *)
 val add_rew_rules : string -> raw_rew_rule list -> unit
@@ -27,7 +27,8 @@ val autorewrite_in : ?conds:conditions -> Names.Id.t -> unit Proofview.tactic ->
 (** Rewriting rules *)
 type rew_rule = { rew_lemma: constr;
 		  rew_type: types;
-		  rew_pat: constr;
+                  rew_constr: constr;
+		  rew_pat: Pattern.constr_pattern option;
 		  rew_ctx: Univ.universe_context_set;
 		  rew_l2r: bool;
 		  rew_tac: Genarg.glob_generic_argument option }
