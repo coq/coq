@@ -5527,11 +5527,12 @@ module Autorewrite :
 sig
   type rew_rule = { rew_lemma: Constr.t;
                     rew_type: Term.types;
-                    rew_pat: Constr.t;
+                    rew_constr: Constr.t;
+                    rew_pat : Pattern.constr_pattern option;
                     rew_ctx: Univ.ContextSet.t;
                     rew_l2r: bool;
                     rew_tac: Genarg.glob_generic_argument option }
-  type raw_rew_rule = (Constr.t Univ.in_universe_context_set * bool *
+  type raw_rew_rule = (Pattern.constr_pattern option * Constr.t Univ.in_universe_context_set * bool *
                          Genarg.raw_generic_argument option)
                         Loc.located
   val auto_multi_rewrite : ?conds:Equality.conditions -> string list -> Locus.clause -> unit Proofview.tactic
