@@ -1155,7 +1155,7 @@ let interp_fixpoint l ntns =
 
 let interp_cofixpoint l ntns =
   let (env,_,pl,evd),fix,info = interp_recursive false l ntns in
-  check_recursive false  env evd fix;
+  check_recursive false env evd fix;
   (fix,pl,Evd.evar_universe_context evd,info)
     
 let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
