@@ -354,13 +354,15 @@ let get_new_edges g to_merge =
       UMap.empty to_merge
   in
   let ltle =
-    UMap.fold (fun _ n acc ->
-      UMap.merge (fun _ strict1 strict2 ->
-        match strict1, strict2 with
-        | Some true, _ | _, Some true -> Some true
-        | _, _ -> Some false)
-        acc n.ltle)
-      to_merge_lvl UMap.empty
+    let fold _ n acc =
+      let fold u strict acc =
+        if strict then UMap.add u strict acc
+        else if UMap.mem u acc then acc
+        else UMap.add u false acc
+      in
+      UMap.fold fold n.ltle acc
+    in
+    UMap.fold fold to_merge_lvl UMap.empty
   in
   let ltle, _ = clean_ltle g ltle in
   let ltle =
