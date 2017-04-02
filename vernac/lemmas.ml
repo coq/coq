@@ -451,7 +451,7 @@ let start_proof_com ?inference_hook kind thms hook =
     let ids = List.map RelDecl.get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
-       (ids, imps @ lift_implicits (List.length ids) imps'))))
+       (ids, imps @ lift_implicits (Context.Rel.nhyps ctx) imps'))))
     thms in
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in

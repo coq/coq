@@ -95,7 +95,7 @@ let interp_definition pl bl p red_option c ctypopt =
   let ctx = Evd.make_evar_universe_context env pl in
   let evdref = ref (Evd.from_ctx ctx) in
   let impls, ((env_bl, ctx), imps1) = interp_context_evars env evdref bl in
-  let nb_args = List.length ctx in
+  let nb_args = Context.Rel.nhyps ctx in
   let imps,pl,ce =
     match ctypopt with
       None ->
@@ -838,7 +838,7 @@ type structured_fixpoint_expr = {
 let interp_fix_context env evdref isfix fix =
   let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
   let impl_env, ((env', ctx), imps) = interp_context_evars env evdref before in
-  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env ~shift:(List.length before) env' evdref after in
+  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env ~shift:(Context.Rel.nhyps ctx) env' evdref after in
   let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
     ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 
@@ -1100,7 +1100,7 @@ let interp_recursive isfix fixl notations =
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (nf_evar !evdref) fixtypes in
   let fiximps = List.map3
-    (fun ctximps cclimps (_,ctx) -> ctximps@(Impargs.lift_implicits (List.length ctx) cclimps))
+    (fun ctximps cclimps (_,ctx) -> ctximps@(Impargs.lift_implicits (Context.Rel.nhyps ctx) cclimps))
     fixctximps fixcclimps fixctxs in
   let rec_sign =
     List.fold_left2
