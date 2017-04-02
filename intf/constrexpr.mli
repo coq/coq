@@ -19,7 +19,7 @@ open Decl_kinds
 type notation = string
 
 type explicitation =
-  | ExplByPos of int * Id.t option
+  | ExplByPos of int * Id.t option (* a reference to the n-th product starting from left *)
   | ExplByName of Id.t
 
 type binder_kind =
