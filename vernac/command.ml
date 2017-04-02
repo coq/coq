@@ -867,8 +867,10 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
 
 (* Jump over let-bindings. *)
 
-let compute_possible_guardness_evidences (ids,_,na) =
-  match na with
+let compute_possible_guardness_evidences (ctx,_,recindex) =
+  (* A recursive index is characterized by the number of lambdas to
+     skip before finding the relevant inductive argument *)
+  match recindex with
   | Some i -> [i]
   | None ->
       (* If recursive argument was not given by user, we try all args.
@@ -876,7 +878,7 @@ let compute_possible_guardness_evidences (ids,_,na) =
 	 but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
-      List.interval 0 (List.length ids - 1)
+      List.interval 0 (Context.Rel.nhyps ctx - 1)
 
 type recursive_preentry =
   Id.t list * constr option list * types list
@@ -1136,10 +1138,10 @@ let interp_recursive isfix fixl notations =
   let evd, nf = nf_evars_and_universes evd in
   let fixdefs = List.map (Option.map nf) fixdefs in
   let fixtypes = List.map nf fixtypes in
-  let fixctxnames = List.map (fun (_,ctx) -> List.map RelDecl.get_name ctx) fixctxs in
+  let fixctxs = List.map (fun (_,ctx) -> ctx) fixctxs in
 
   (* Build the fix declaration block *)
-  (env,rec_sign,all_universes,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots
+  (env,rec_sign,all_universes,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
   check_evars_are_solved env evd Evd.empty;
@@ -1162,7 +1164,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      List.map3 (fun id t (len,imps,_) -> ((id,pl),(t,(len,imps))))
+      List.map3 (fun id t (ctx,imps,_) -> ((id,pl),(t,(List.map RelDecl.get_name ctx,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
@@ -1199,7 +1201,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      List.map3 (fun id t (len,imps,_) -> ((id,pl),(t,(len,imps))))
+      List.map3 (fun id t (ctx,imps,_) -> ((id,pl),(t,(List.map RelDecl.get_name ctx,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)

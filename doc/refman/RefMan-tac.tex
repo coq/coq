@@ -2618,9 +2618,9 @@ as the ones described in Section~\ref{Tac-induction}.
 In the syntax of the tactic, the identifier {\ident} is the name given
 to the induction hypothesis. The natural number {\num} tells on which
 premise of the current goal the induction acts, starting
-from 1 and counting both dependent and non dependent
-products. Especially, the current lemma must be composed of at least
-{\num} products.
+from 1, counting both dependent and non dependent
+products, but skipping local definitions. Especially, the current
+lemma must be composed of at least {\num} products.
 
 Like in a {\tt fix} expression, the induction
 hypotheses have to be used on structurally smaller arguments.

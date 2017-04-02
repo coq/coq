@@ -100,10 +100,10 @@ let find_mutually_recursive_statements thms =
           match kind_of_term t with
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
-                mind.mind_finite <> Decl_kinds.CoFinite && is_local_assum decl ->
+                mind.mind_finite <> Decl_kinds.CoFinite ->
               [ind,x,i]
           | _ ->
-              []) 0 (List.rev whnf_hyp_hds)) in
+              []) 0 (List.rev (List.filter RelDecl.is_local_assum whnf_hyp_hds))) in
       let ind_ccl =
         let cclenv = push_rel_context hyps (Global.env()) in
         let whnf_ccl,_ = whd_all_stack cclenv Evd.empty ccl in
