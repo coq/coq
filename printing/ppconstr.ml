@@ -703,7 +703,7 @@ let tag_var = tag Tag.variable
       | CEvar (_,n,l) ->
         return (pr_evar (pr mt) n l, latom)
       | CPatVar (_,p) ->
-        return (str "?" ++ pr_patvar p, latom)
+        return (str "@?" ++ pr_patvar p, latom)
       | CSort (_,s) ->
         return (pr_glob_sort s, latom)
       | CCast (_,a,b) ->
