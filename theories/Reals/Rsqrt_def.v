@@ -648,7 +648,7 @@ Proof.
 Qed.
 
 (** We can now define the square root function as the reciprocal
-   transformation of the square root function *)
+   transformation of the square function *)
 Lemma Rsqrt_exists :
   forall y:R, 0 <= y -> { z:R | 0 <= z /\ y = Rsqr z }.
 Proof.
