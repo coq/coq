@@ -99,24 +99,22 @@ Proof.
   apply Rle_trans with 20.
   apply Rle_trans with 16.
   replace 16 with (Rsqr 4); [ idtac | ring_Rsqr ].
-  replace (a * a) with (Rsqr a); [ idtac | reflexivity ].
   apply Rsqr_incr_1.
   assumption.
   assumption.
-  left; prove_sup0.
-  rewrite <- (Rplus_0_r 16); replace 20 with (16 + 4);
-    [ apply Rplus_le_compat_l; left; prove_sup0 | ring ].
-  rewrite <- (Rplus_comm 20); pattern 20 at 1; rewrite <- Rplus_0_r;
-    apply Rplus_le_compat_l.
+  now apply IZR_le.
+  now apply IZR_le.
+  rewrite <- (Rplus_0_l 20) at 1;
+    apply Rplus_le_compat_r.
   apply Rplus_le_le_0_compat.
-  repeat apply Rmult_le_pos.
-  left; prove_sup0.
-  left; prove_sup0.
-  replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
-  replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
   apply Rmult_le_pos.
-  left; prove_sup0.
-  replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
+  apply Rmult_le_pos.
+  now apply IZR_le.
+  apply pos_INR.
+  apply pos_INR.
+  apply Rmult_le_pos.
+  now apply IZR_le.
+  apply pos_INR.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   simpl; ring.
@@ -182,16 +180,14 @@ Proof.
   replace (- sum_f_R0 (tg_alt Un) (S (2 * n))) with
   (-1 * sum_f_R0 (tg_alt Un) (S (2 * n))); [ rewrite scal_sum | ring ].
   apply sum_eq; intros; unfold sin_term, Un, tg_alt;
-    replace ((-1) ^ S i) with (-1 * (-1) ^ i).
+    change ((-1) ^ S i) with (-1 * (-1) ^ i).
   unfold Rdiv; ring.
-  reflexivity.
   replace (- sum_f_R0 (tg_alt Un) (2 * n)) with
   (-1 * sum_f_R0 (tg_alt Un) (2 * n)); [ rewrite scal_sum | ring ].
   apply sum_eq; intros.
   unfold sin_term, Un, tg_alt;
-    replace ((-1) ^ S i) with (-1 * (-1) ^ i).
+    change ((-1) ^ S i) with (-1 * (-1) ^ i).
   unfold Rdiv; ring.
-  reflexivity.
   replace (2 * (n + 1))%nat with (S (S (2 * n))).
   reflexivity.
   ring.
@@ -279,26 +275,23 @@ Proof.
     with (4 * INR n1 * INR n1 + 14 * INR n1 + 12); [ idtac | ring ].
   apply Rle_trans with 12.
   apply Rle_trans with 4.
-  replace 4 with (Rsqr 2); [ idtac | ring_Rsqr ].
-  replace (a0 * a0) with (Rsqr a0); [ idtac | reflexivity ].
+  change 4 with (Rsqr 2).
   apply Rsqr_incr_1.
   assumption.
-  discrR.
   assumption.
-  left; prove_sup0.
-  pattern 4 at 1; rewrite <- Rplus_0_r; replace 12 with (4 + 8);
-    [ apply Rplus_le_compat_l; left; prove_sup0 | ring ].
-  rewrite <- (Rplus_comm 12); pattern 12 at 1; rewrite <- Rplus_0_r;
-    apply Rplus_le_compat_l.
+  now apply IZR_le.
+  now apply IZR_le.
+  rewrite <- (Rplus_0_l 12) at 1;
+    apply Rplus_le_compat_r.
   apply Rplus_le_le_0_compat.
-  repeat apply Rmult_le_pos.
-  left; prove_sup0.
-  left; prove_sup0.
-  replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
-  replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
   apply Rmult_le_pos.
-  left; prove_sup0.
-  replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
+  apply Rmult_le_pos.
+  now apply IZR_le.
+  apply pos_INR.
+  apply pos_INR.
+  apply Rmult_le_pos.
+  now apply IZR_le.
+  apply pos_INR.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   simpl; ring.
@@ -351,15 +344,13 @@ Proof.
   replace (- sum_f_R0 (tg_alt Un) (S (2 * n0))) with
   (-1 * sum_f_R0 (tg_alt Un) (S (2 * n0))); [ rewrite scal_sum | ring ].
   apply sum_eq; intros; unfold cos_term, Un, tg_alt;
-    replace ((-1) ^ S i) with (-1 * (-1) ^ i).
+    change ((-1) ^ S i) with (-1 * (-1) ^ i).
   unfold Rdiv; ring.
-  reflexivity.
   replace (- sum_f_R0 (tg_alt Un) (2 * n0)) with
   (-1 * sum_f_R0 (tg_alt Un) (2 * n0)); [ rewrite scal_sum | ring ];
   apply sum_eq; intros; unfold cos_term, Un, tg_alt;
-    replace ((-1) ^ S i) with (-1 * (-1) ^ i).
+    change ((-1) ^ S i) with (-1 * (-1) ^ i).
   unfold Rdiv; ring.
-  reflexivity.
   replace (2 * (n0 + 1))%nat with (S (S (2 * n0))).
   reflexivity.
   ring.

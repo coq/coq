@@ -339,51 +339,24 @@ Proof.
   symmetry ; apply S_pred with 0%nat.
   assumption.
   apply Rle_lt_trans with (/ INR (2 * N)).
-  apply Rmult_le_reg_l with (INR (2 * N)).
+  apply Rinv_le_contravar.
   rewrite mult_INR; apply Rmult_lt_0_compat;
     [ simpl; prove_sup0 | apply lt_INR_0; assumption ].
-  rewrite <- Rinv_r_sym.
-  apply Rmult_le_reg_l with (INR (2 * n)).
-  rewrite mult_INR; apply Rmult_lt_0_compat;
-    [ simpl; prove_sup0 | apply lt_INR_0; assumption ].
-  rewrite (Rmult_comm (INR (2 * n))); rewrite Rmult_assoc;
-    rewrite <- Rinv_l_sym.
-  do 2 rewrite Rmult_1_r; apply le_INR.
-  apply (fun m n p:nat => mult_le_compat_l p n m); assumption.
-  replace n with (S (pred n)).
-  apply not_O_INR; discriminate.
-  symmetry ; apply S_pred with 0%nat.
-  assumption.
-  replace N with (S (pred N)).
-  apply not_O_INR; discriminate.
-  symmetry ; apply S_pred with 0%nat.
-  assumption.
+  apply le_INR.
+  now apply mult_le_compat_l.
   rewrite mult_INR.
-  rewrite Rinv_mult_distr.
-  replace (INR 2) with 2; [ idtac | reflexivity ].
-  apply Rmult_lt_reg_l with 2.
-  prove_sup0.
-  rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym; [ idtac | discrR ].
-  rewrite Rmult_1_l; apply Rmult_lt_reg_l with (INR N).
-  apply lt_INR_0; assumption.
-  rewrite <- Rinv_r_sym.
-  apply Rmult_lt_reg_l with (/ (2 * eps)).
-  apply Rinv_0_lt_compat; assumption.
-  rewrite Rmult_1_r;
-    replace (/ (2 * eps) * (INR N * (2 * eps))) with
-      (INR N * (2 * eps * / (2 * eps))); [ idtac | ring ].
-  rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_r; replace (INR N) with (IZR (Z.of_nat N)).
-  rewrite <- H4.
-  elim H1; intros; assumption.
-  symmetry ; apply INR_IZR_INZ.
-  apply prod_neq_R0;
-    [ discrR | red; intro; rewrite H8 in H; elim (Rlt_irrefl _ H) ].
-  apply not_O_INR.
-  red; intro; rewrite H8 in H5; elim (lt_irrefl _ H5).
-  replace (INR 2) with 2; [ discrR | reflexivity ].
-  apply not_O_INR.
-  red; intro; rewrite H8 in H5; elim (lt_irrefl _ H5).
+  apply Rmult_lt_reg_l with (INR N / eps).
+  apply Rdiv_lt_0_compat with (2 := H).
+  now apply (lt_INR 0).
+  replace (_ */ _) with (/(2 * eps)).
+  replace (_ / _ * _) with (INR N).
+  rewrite INR_IZR_INZ.
+  now rewrite <- H4.
+  field.
+  now apply Rgt_not_eq.
+  simpl (INR 2); field; split.
+  now apply Rgt_not_eq, (lt_INR 0).
+  now apply Rgt_not_eq.
   apply Rle_ge; apply PI_tg_pos.
   apply lt_le_trans with N; assumption.
   elim H1; intros H5 _.
@@ -395,7 +368,6 @@ Proof.
   elim (Rlt_irrefl _ (Rlt_trans _ _ _ H6 H5)).
   elim (lt_n_O _ H6).
   apply le_IZR.
-  simpl.
   left; apply Rlt_trans with (/ (2 * eps)).
   apply Rinv_0_lt_compat; assumption.
   elim H1; intros; assumption.

@@ -456,7 +456,7 @@ Proof.
   unfold Rpower; auto.
   rewrite Rpower_mult.
   rewrite Rinv_l.
-  replace 1 with (INR 1); auto.
+  change 1 with (INR 1).
   repeat rewrite Rpower_pow; simpl.
   pattern x at 1; rewrite <- (sqrt_sqrt x (Rlt_le _ _ H)).
   ring.

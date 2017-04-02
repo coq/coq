@@ -15,7 +15,8 @@ Definition Q2R (x : Q) : R := (IZR (Qnum x) * / IZR (QDen x))%R.
 
 Lemma IZR_nz : forall p : positive, IZR (Zpos p) <> 0%R.
 Proof.
-intros; apply not_O_IZR; auto with qarith.
+intros.
+now apply not_O_IZR.
 Qed.
 
 Hint Resolve IZR_nz Rmult_integral_contrapositive.
@@ -48,8 +49,7 @@ assert ((X1 * Y2)%R = (Y1 * X2)%R).
  apply IZR_eq; auto.
 clear H.
 field_simplify_eq; auto.
-ring_simplify X1 Y2 (Y2 * X1)%R.
-rewrite H0;  ring.
+rewrite H0; ring.
 Qed.
 
 Lemma Rle_Qle : forall x y : Q, (Q2R x <= Q2R y)%R -> x<=y.
@@ -66,10 +66,8 @@ replace (X1 * Y2)%R with (X1 * / X2 * (X2 * Y2))%R; try (field; auto).
 replace (Y1 * X2)%R with (Y1 * / Y2 * (X2 * Y2))%R; try (field; auto).
 apply Rmult_le_compat_r; auto.
 apply Rmult_le_pos.
-unfold X2; replace 0%R with (IZR 0); auto; apply IZR_le;
- auto with zarith.
-unfold Y2; replace 0%R with (IZR 0); auto; apply IZR_le;
- auto with zarith.
+now apply IZR_le.
+now apply IZR_le.
 Qed.
 
 Lemma Qle_Rle : forall x y : Q, x<=y -> (Q2R x <= Q2R y)%R.
@@ -88,10 +86,8 @@ replace (X1 * / X2)%R with (X1 * Y2 * (/ X2 * / Y2))%R; try (field; auto).
 replace (Y1 * / Y2)%R with (Y1 * X2 * (/ X2 * / Y2))%R; try (field; auto).
 apply Rmult_le_compat_r; auto.
 apply Rmult_le_pos; apply Rlt_le; apply Rinv_0_lt_compat.
-unfold X2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
- auto with zarith.
-unfold Y2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
- auto with zarith.
+now apply IZR_lt.
+now apply IZR_lt.
 Qed.
 
 Lemma Rlt_Qlt : forall x y : Q, (Q2R x < Q2R y)%R -> x<y.
@@ -108,10 +104,8 @@ replace (X1 * Y2)%R with (X1 * / X2 * (X2 * Y2))%R; try (field; auto).
 replace (Y1 * X2)%R with (Y1 * / Y2 * (X2 * Y2))%R; try (field; auto).
 apply Rmult_lt_compat_r; auto.
 apply Rmult_lt_0_compat.
-unfold X2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
- auto with zarith.
-unfold Y2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
- auto with zarith.
+now apply IZR_lt.
+now apply IZR_lt.
 Qed.
 
 Lemma Qlt_Rlt : forall x y : Q, x<y -> (Q2R x < Q2R y)%R.
@@ -130,10 +124,8 @@ replace (X1 * / X2)%R with (X1 * Y2 * (/ X2 * / Y2))%R; try (field; auto).
 replace (Y1 * / Y2)%R with (Y1 * X2 * (/ X2 * / Y2))%R; try (field; auto).
 apply Rmult_lt_compat_r; auto.
 apply Rmult_lt_0_compat; apply Rinv_0_lt_compat.
-unfold X2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
- auto with zarith.
-unfold Y2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
- auto with zarith.
+now apply IZR_lt.
+now apply IZR_lt.
 Qed.
 
 Lemma Q2R_plus : forall x y : Q, Q2R (x+y) = (Q2R x + Q2R y)%R.

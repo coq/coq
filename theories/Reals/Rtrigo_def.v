@@ -157,7 +157,7 @@ Proof.
   apply Rinv_0_lt_compat; assumption.
   rewrite H3 in H0; assumption.
   apply lt_le_trans with 1%nat; [ apply lt_O_Sn | apply le_max_r ].
-  apply le_IZR; replace (IZR 0) with 0; [ idtac | reflexivity ]; left;
+  apply le_IZR; left;
     apply Rlt_trans with (/ eps);
       [ apply Rinv_0_lt_compat; assumption | assumption ].
   assert (H0 := archimed (/ eps)).
@@ -194,30 +194,27 @@ Proof.
   elim H1; intros; assumption.
   apply lt_le_trans with (S n).
   unfold ge in H2; apply le_lt_n_Sm; assumption.
-  replace (2 * n + 1)%nat with (S (2 * n)); [ idtac | ring ].
+  replace (2 * n + 1)%nat with (S (2 * n)) by ring.
   apply le_n_S; apply le_n_2n.
   apply Rmult_lt_reg_l with (INR (2 * S n)).
   apply lt_INR_0; replace (2 * S n)%nat with (S (S (2 * n))).
   apply lt_O_Sn.
-  replace (S n) with (n + 1)%nat; [ idtac | ring ].
+  replace (S n) with (n + 1)%nat by ring.
   ring.
   rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_r; replace 1 with (INR 1); [ apply lt_INR | reflexivity ].
+  rewrite Rmult_1_r.
+  apply (lt_INR 1).
   replace (2 * S n)%nat with (S (S (2 * n))).
   apply lt_n_S; apply lt_O_Sn.
-  replace (S n) with (n + 1)%nat; [ ring | ring ].
+  ring.
   apply not_O_INR; discriminate.
   apply not_O_INR; discriminate.
   replace (2 * n + 1)%nat with (S (2 * n));
   [ apply not_O_INR; discriminate | ring ].
   apply Rle_ge; left; apply Rinv_0_lt_compat.
   apply lt_INR_0.
-  replace (2 * S n * (2 * n + 1))%nat with (S (S (4 * (n * n) + 6 * n))).
+  replace (2 * S n * (2 * n + 1))%nat with (2 + (4 * (n * n) + 6 * n))%nat by ring.
   apply lt_O_Sn.
-  apply INR_eq.
-  repeat rewrite S_INR; rewrite plus_INR; repeat rewrite mult_INR;
-    rewrite plus_INR; rewrite mult_INR; repeat rewrite S_INR;
-      replace (INR 0) with 0; [ ring | reflexivity ].
 Qed.
 
 Lemma cosn_no_R0 : forall n:nat, cos_n n <> 0.
@@ -318,28 +315,25 @@ Proof.
   elim H1; intros; assumption.
   apply lt_le_trans with (S n).
   unfold ge in H2; apply le_lt_n_Sm; assumption.
-  replace (2 * S n + 1)%nat with (S (2 * S n)); [ idtac | ring ].
+  replace (2 * S n + 1)%nat with (S (2 * S n)) by ring.
   apply le_S; apply le_n_2n.
   apply Rmult_lt_reg_l with (INR (2 * S n)).
   apply lt_INR_0; replace (2 * S n)%nat with (S (S (2 * n)));
-    [ apply lt_O_Sn | replace (S n) with (n + 1)%nat; [ idtac | ring ]; ring ].
+    [ apply lt_O_Sn | ring ].
   rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_r; replace 1 with (INR 1); [ apply lt_INR | reflexivity ].
+  rewrite Rmult_1_r.
+  apply (lt_INR 1).
   replace (2 * S n)%nat with (S (S (2 * n))).
   apply lt_n_S; apply lt_O_Sn.
-  replace (S n) with (n + 1)%nat; [ ring | ring ].
+  ring.
   apply not_O_INR; discriminate.
   apply not_O_INR; discriminate.
   apply not_O_INR; discriminate.
-  left; change (0 < / INR ((2 * S n + 1) * (2 * S n)));
-    apply Rinv_0_lt_compat.
+  left; apply Rinv_0_lt_compat.
   apply lt_INR_0.
   replace ((2 * S n + 1) * (2 * S n))%nat with
-  (S (S (S (S (S (S (4 * (n * n) + 10 * n))))))).
+  (6 + (4 * (n * n) + 10 * n))%nat by ring.
   apply lt_O_Sn.
-  apply INR_eq; repeat rewrite S_INR; rewrite plus_INR; repeat rewrite mult_INR;
-    rewrite plus_INR; rewrite mult_INR; repeat rewrite S_INR;
-      replace (INR 0) with 0; [ ring | reflexivity ].
 Qed.
 
 Lemma sin_no_R0 : forall n:nat, sin_n n <> 0.

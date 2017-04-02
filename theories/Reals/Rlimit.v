@@ -29,59 +29,28 @@ Qed.
 Lemma eps2 : forall eps:R, eps * / 2 + eps * / 2 = eps.
 Proof.
   intro esp.
-  assert (H := double_var esp).
-  unfold Rdiv in H.
-  symmetry ; exact H.
+  apply eq_sym, double_var.
 Qed.
 
 (*********)
 Lemma eps4 : forall eps:R, eps * / (2 + 2) + eps * / (2 + 2) = eps * / 2.
 Proof.
   intro eps.
-  replace (2 + 2) with 4.
-  pattern eps at 3; rewrite double_var.
-  rewrite (Rmult_plus_distr_r (eps / 2) (eps / 2) (/ 2)).
-  unfold Rdiv.
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_mult_distr.
-  reflexivity.
-  discrR.
-  discrR.
-  ring.
+  field.
 Qed.
 
 (*********)
 Lemma Rlt_eps2_eps : forall eps:R, eps > 0 -> eps * / 2 < eps.
 Proof.
   intros.
-  pattern eps at 2; rewrite <- Rmult_1_r.
-  repeat rewrite (Rmult_comm eps).
-  apply Rmult_lt_compat_r.
-  exact H.
-  apply Rmult_lt_reg_l with 2.
   fourier.
-  rewrite Rmult_1_r; rewrite <- Rinv_r_sym.
-  fourier.
-  discrR.
 Qed.
 
 (*********)
 Lemma Rlt_eps4_eps : forall eps:R, eps > 0 -> eps * / (2 + 2) < eps.
 Proof.
   intros.
-  replace (2 + 2) with 4.
-  pattern eps at 2; rewrite <- Rmult_1_r.
-  repeat rewrite (Rmult_comm eps).
-  apply Rmult_lt_compat_r.
-  exact H.
-  apply Rmult_lt_reg_l with 4.
-  replace 4 with 4.
-  apply Rmult_lt_0_compat; fourier.
-  ring.
-  rewrite Rmult_1_r; rewrite <- Rinv_r_sym.
   fourier.
-  discrR.
-  ring.
 Qed.
 
 (*********)

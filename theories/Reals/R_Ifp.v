@@ -42,28 +42,23 @@ Qed.
 Lemma up_tech :
   forall (r:R) (z:Z), IZR z <= r -> r < IZR (z + 1) -> (z + 1)%Z = up r.
 Proof.
-  intros; generalize (Rplus_le_compat_l 1 (IZR z) r H); intro; clear H;
-    rewrite (Rplus_comm 1 (IZR z)) in H1; rewrite (Rplus_comm 1 r) in H1;
-      cut (1 = IZR 1); auto with zarith real.
-  intro; generalize H1; pattern 1 at 1; rewrite H; intro; clear H H1;
-    rewrite <- (plus_IZR z 1) in H2; apply (tech_up r (z + 1));
-      auto with zarith real.
+  intros.
+  apply tech_up with (1 := H0).
+  rewrite plus_IZR.
+  now apply Rplus_le_compat_r.
 Qed.
 
 (**********)
 Lemma fp_R0 : frac_part 0 = 0.
 Proof.
-  unfold frac_part; unfold Int_part; elim (archimed 0); intros;
-    unfold Rminus; elim (Rplus_ne (- IZR (up 0 - 1)));
-      intros a b; rewrite b; clear a b; rewrite <- Z_R_minus;
-        cut (up 0 = 1%Z).
-  intro; rewrite H1;
-    rewrite (Rminus_diag_eq (IZR 1) (IZR 1) (eq_refl (IZR 1)));
-      apply Ropp_0.
-  elim (archimed 0); intros; clear H2; unfold Rgt in H1;
-    rewrite (Rminus_0_r (IZR (up 0))) in H0; generalize (lt_O_IZR (up 0) H1);
-      intro; clear H1; generalize (le_IZR_R1 (up 0) H0);
-        intro; clear H H0; omega.
+  unfold frac_part, Int_part.
+  replace (up 0) with 1%Z.
+  now rewrite <- minus_IZR.
+  destruct (archimed 0) as [H1 H2].
+  apply lt_IZR in H1.
+  rewrite <- minus_IZR in H2.
+  apply le_IZR in H2.
+  omega.
 Qed.
 
 (**********)
@@ -229,8 +224,7 @@ Proof.
                                                                                                               rewrite (Rplus_opp_r (IZR (Int_part r1) - IZR (Int_part r2))) in H;
                                                                                                                 elim (Rplus_ne (r1 - r2)); intros a b; rewrite b in H;
                                                                                                                   clear a b; rewrite (Z_R_minus (Int_part r1) (Int_part r2)) in H0;
-                                                                                                                    rewrite (Z_R_minus (Int_part r1) (Int_part r2)) in H;
-                                                                                                                      cut (1 = IZR 1); auto with zarith real.
+                                                                                                                    rewrite (Z_R_minus (Int_part r1) (Int_part r2)) in H.
     rewrite <- (plus_IZR (Int_part r1 - Int_part r2) 1) in H;
       generalize (up_tech (r1 - r2) (Int_part r1 - Int_part r2) H0 H);
         intros; clear H H0; unfold Int_part at 1;
@@ -497,8 +491,7 @@ Proof.
                                                                 in H0; rewrite (Rplus_opp_r (IZR (Int_part r1) + IZR (Int_part r2))) in H0;
                                                                   elim (Rplus_ne (IZR (Int_part r1) + IZR (Int_part r2)));
                                                                     intros a b; rewrite a in H0; clear a b; elim (Rplus_ne (r1 + r2));
-                                                                      intros a b; rewrite b in H0; clear a b; cut (1 = IZR 1);
-                                                                        auto with zarith real.
+                                                                      intros a b; rewrite b in H0; clear a b.
     rewrite <- (plus_IZR (Int_part r1) (Int_part r2)) in H0;
       rewrite <- (plus_IZR (Int_part r1) (Int_part r2)) in H1;
         rewrite <- (plus_IZR (Int_part r1 + Int_part r2) 1) in H1;

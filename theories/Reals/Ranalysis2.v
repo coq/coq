@@ -423,10 +423,7 @@ Proof.
   intro; rewrite H11 in H10; assert (H12 := Rmult_lt_compat_l 2 _ _ Hyp H10);
     rewrite Rmult_1_r in H12; rewrite <- Rinv_r_sym in H12;
       [ idtac | discrR ].
-  cut (IZR 1 < IZR 2).
-  unfold IZR; unfold INR, Pos.to_nat; simpl; intro;
-    elim (Rlt_irrefl 1 (Rlt_trans _ _ _ H13 H12)).
-  apply IZR_lt; omega.
+  now apply lt_IZR in H12.
   unfold Rabs; case (Rcase_abs (/ 2)) as [Hlt|Hge].
   assert (Hyp : 0 < 2).
   prove_sup0.

@@ -289,11 +289,9 @@ Proof.
   apply INR_fact_lt_0.
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r.
-  replace 1 with (INR 1).
-  apply le_INR.
+  apply (le_INR 1).
   apply lt_le_S.
   apply INR_lt; apply INR_fact_lt_0.
-  reflexivity.
   apply INR_fact_neq_0.
   apply Rmult_le_reg_l with (INR (fact (S (N + n)))).
   apply INR_fact_lt_0.
@@ -576,11 +574,9 @@ Proof.
   apply INR_fact_lt_0.
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r.
-  replace 1 with (INR 1).
-  apply le_INR.
+  apply (le_INR 1).
   apply lt_le_S.
   apply INR_lt; apply INR_fact_lt_0.
-  reflexivity.
   apply INR_fact_neq_0.
   apply Rmult_le_reg_l with (INR (fact (S (S (N + n))))).
   apply INR_fact_lt_0.
