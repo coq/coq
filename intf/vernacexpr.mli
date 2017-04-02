@@ -209,7 +209,7 @@ type one_inductive_expr =
   plident * local_binder_expr list * constr_expr option * constructor_expr list
 
 type proof_expr =
-  plident option * (local_binder_expr list * constr_expr * (lident option * recursion_order_expr) option)
+  plident option * (local_binder_expr list * constr_expr)
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level

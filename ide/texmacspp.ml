@@ -553,7 +553,7 @@ let rec tmpp v loc =
       let str_dk = Kindops.string_of_definition_kind (l, false, dk) in
       let str_id = Id.to_string id in
       (xmlDef str_dk str_id loc [pp_expr e])
-  | VernacStartTheoremProof (tk, [ Some ((_,id),_), ([], statement, None) ], b) ->
+  | VernacStartTheoremProof (tk, [ Some ((_,id),_), ([], statement) ], b) ->
       let str_tk = Kindops.string_of_theorem_kind tk in
       let str_id = Id.to_string id in
       (xmlThm str_tk str_id loc [pp_expr statement])

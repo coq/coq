@@ -88,25 +88,9 @@ let adjust_guardness_conditions const = function
 
 let find_mutually_recursive_statements thms =
     let n = List.length thms in
-    let inds = List.map (fun (id,(t,impls,annot)) ->
+    let inds = List.map (fun (id,(t,impls)) ->
       let (hyps,ccl) = decompose_prod_assum t in
       let x = (id,(t,impls)) in
-      match annot with
-      (* Explicit fixpoint decreasing argument is given *)
-      | Some (Some (_,id),CStructRec) ->
-          let i,b,typ = lookup_rel_id id hyps in
-          (match kind_of_term t with
-          | Ind ((kn,_ as ind), u) when
-              let mind = Global.lookup_mind kn in
-              mind.mind_finite == Decl_kinds.Finite && Option.is_empty b ->
-              [ind,x,i],[]
-          | _ ->
-              error "Decreasing argument is not an inductive assumption.")
-      (* Unsupported cases *)
-      | Some (_,(CWfRec _|CMeasureRec _)) ->
-          error "Only structural decreasing is supported for mutual statements."
-      (* Cofixpoint or fixpoint w/o explicit decreasing argument *)
-      | None | Some (None, CStructRec) ->
       let whnf_hyp_hds = map_rel_context_in_env
         (fun env c -> fst (whd_all_stack env Evd.empty c))
         (Global.env()) hyps in
@@ -178,7 +162,7 @@ let find_mutually_recursive_statements thms =
     (finite,guard,None), ordered_inds
 
 let look_for_possibly_mutual_statements = function
-  | [id,(t,impls,None)] ->
+  | [id,(t,impls)] ->
       (* One non recursively proved theorem *)
       None,[id,(t,impls)],None
   | _::_ as thms ->
@@ -458,7 +442,7 @@ let start_proof_com ?inference_hook kind thms hook =
 		    | None -> Evd.from_env env0
 		    | Some l -> Evd.from_ctx (Evd.make_evar_universe_context env0 l))
   in
-  let thms = List.map (fun (sopt,(bl,t,guard)) ->
+  let thms = List.map (fun (sopt,(bl,t)) ->
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
     let flags = all_and_fail_flags in
@@ -467,8 +451,7 @@ let start_proof_com ?inference_hook kind thms hook =
     let ids = List.map RelDecl.get_name ctx in
       (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
-       (ids, imps @ lift_implicits (List.length ids) imps'),
-       guard)))
+       (ids, imps @ lift_implicits (List.length ids) imps'))))
     thms in
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in

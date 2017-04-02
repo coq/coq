@@ -386,13 +386,12 @@ open Decl_kinds
     ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) def
     ++ prlist (pr_decl_notation pr_constr) ntn
 
-  let pr_statement head (idpl,(bl,c,guard)) =
+  let pr_statement head (idpl,(bl,c)) =
     assert (not (Option.is_empty idpl));
     let id, pl = Option.get idpl in
     hov 2
       (head ++ spc() ++ pr_lident id ++ pr_univs pl ++ spc() ++
          (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
-         pr_opt (pr_guard_annot pr_lconstr_expr bl) guard ++
          str":" ++ pr_spc_lconstr c)
 
   let pr_priority = function
