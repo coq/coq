@@ -594,43 +594,45 @@ let addS x l =    l @ [x] (* oblige de mettre en queue sinon le certificat decon
 (***********************************************************************
  critical pairs/s-polynomials
  *)
-    
+
 let ordcpair ((i1,j1),m1) ((i2,j2),m2) =
   compare_mon m1 m2 
 
-let sortcpairs lcp = 
-  List.sort ordcpair lcp
+module CPair =
+struct
+type t = (int * int) * Monomial.t
+let compare ((i1, j1), m1) ((i2, j2), m2) = compare_mon m2 m1
+end
 
-let mergecpairs l1 l2 =
-  let rec merge l1 l2 accu = match l1, l2 with
-  | [], [] -> List.rev accu
-  | l, [] | [], l -> List.rev_append accu l
-  | x1 :: t1, x2 :: t2 ->
-    if ordcpair x1 x2 <= 0 then
-      merge t1 l2 (x1 :: accu)
-    else
-      merge l1 t2 (x2 :: accu)
-  in
-  merge l1 l2 []
+module Heap :
+sig
+  type elt = (int * int) * Monomial.t
+  type t
+  val length : t -> int
+  val empty : t
+  val add : elt -> t -> t
+  val pop : t -> (elt * t) option
+end =
+struct
+  include Heap.Functional(CPair)
+  let length h = fold (fun _ accu -> accu + 1) h 0
+  let pop h = try Some (maximum h, remove h) with Heap.EmptyHeap -> None
+end
 
 let ord i j =
   if i<j then (i,j) else (j,i)
     
-let cpair p q =
-  if etrangers (ppol p) (ppol q)
-  then []
-  else [(ord p.num q.num,
-	 ppcm_mon (lm p) (lm q))]
-      
-let cpairs1 p lq =
-  sortcpairs (List.fold_left (fun r q -> r @ (cpair p q)) [] lq)
-    
-let cpairs lp =
-  let rec aux l =
-    match l with
-      []|[_] -> []
-    |p::l1 -> mergecpairs (cpairs1 p l1) (aux l1)
-  in aux lp
+let cpair p q accu =
+  if etrangers (ppol p) (ppol q) then accu
+  else Heap.add (ord p.num q.num, ppcm_mon (lm p) (lm q)) accu
+
+let cpairs1 p lq accu =
+  List.fold_left (fun r q -> cpair p q r) accu lq
+
+let rec cpairs l accu = match l with
+| [] | [_] -> accu
+| p :: l ->
+  cpairs l (cpairs1 p l accu)
 
 let critere3 table ((i,j),m) lp lcp =
   List.exists
@@ -647,11 +649,8 @@ let critere3 table ((i,j),m) lp lcp =
 		   (lm h))))
     lp
 
-let add_cpairs p lp lcp =
-  mergecpairs (cpairs1 p lp) lcp 
-
 let infobuch p q =
-  (info (fun () -> Printf.sprintf "[%i,%i]" (List.length p) (List.length q)))
+  (info (fun () -> Printf.sprintf "[%i,%i]" (List.length p) (Heap.length q)))
 
 (* in lp new polynomials are at the end *)
 
@@ -724,10 +723,10 @@ let pbuchf table metadata cur_pb homogeneous (lp, lpc) p =
   let len0 = List.length lp in
   let rec pbuchf cur_pb (lp, lpc) =
       infobuch lp lpc;
-      match lpc with
-        [] ->
+      match Heap.pop lpc with
+      | None ->
 	  test_dans_ideal cur_pb table metadata p lp len0
-      | ((i,j),m) :: lpc2 ->
+      | Some (((i, j), m), lpc2) ->
 	  if critere3 table ((i,j),m) lp lpc2
 	  then (sinfo "c"; pbuchf cur_pb (lp, lpc2))
 	  else    
@@ -756,7 +755,7 @@ let pbuchf table metadata cur_pb homogeneous (lp, lpc) p =
                   let nlp = addS a0 lp in
 		  try test_dans_ideal cur_pb table metadata p nlp len0
 		  with NotInIdealUpdate cur_pb ->
-		    let newlpc = add_cpairs a0 lp lpc2 in
+		    let newlpc = cpairs1 a0 lp lpc2 in
 		    pbuchf cur_pb (nlp, newlpc)
   in pbuchf cur_pb (lp, lpc)
     
@@ -801,9 +800,9 @@ let in_ideal metadata d lp p =
   } in
 
   let cert =
-    try pbuchf table metadata cur_pb homogeneous (lp, []) p
+    try pbuchf table metadata cur_pb homogeneous (lp, Heap.empty) p
     with NotInIdealUpdate cur_pb ->
-      try pbuchf table metadata cur_pb homogeneous (lp, (cpairs lp)) p
+      try pbuchf table metadata cur_pb homogeneous (lp, cpairs lp Heap.empty) p
       with NotInIdealUpdate _ -> raise NotInIdeal
     in
   sinfo "computed";
