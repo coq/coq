@@ -217,7 +217,7 @@ let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : Ter
          try 
            basic_check env typ'; Environ.push_rel typ typ_env
          with NotConvertible -> 
-           anomaly ~label:"bad inductive subtyping relation" (Pp.str "Invalid subtyping relation!")
+           anomaly ~label:"bad inductive subtyping relation" (Pp.str "Invalid subtyping relation")
        end
      | _ -> anomaly (Pp.str "")
   in
