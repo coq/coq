@@ -1,0 +1,144 @@
+Unification compatibility.
+
+TODO:
+
+  1 - Reorder commits to have changes to evarconv/clenv/clenvtac first.
+  2 - First apply changes
+  3 - Tactic changes
+  4 - rewrite changes.
+
+  5 - Rebase on current master.
+
+  6 - Copy old code in a plugin for compat and dispatch based on version.
+  
+  7 - Cleanup intf of new code, removing unification.ml and
+    metas (some thinking needed for patterns).
+
+  8 - Profit.
+
+Tactic refinements:
+
+  - apply should have two variants: one for triggering higher-order unification
+  and one without. apply_ho is much more powerful but can also produce meaningless
+  abstractions.
+
+
+- eapply could shelve subgoals before.
+
+  Two cases: forall e : Equiv, Reflexive (equiv e) applied to Reflexive ?X
+  -> Equiv becomes a subgoal even if dependent
+
+  ?X := equiv ?e
+
+  Proper (respectful (relprod ?R ?S) ?S) (snd t) applied to Proper (respectful ?R' eq) (@snd t t)
+
+  -> ?R does not become a subgoal, ?R dependent
+
+  No difference? ?MR is an initial _meta_ of the lemma, with ?R' :=
+  relprod ?R' ?S with ?MR := ?R', an evar.  ?Me is an initial meta of
+  the lemma with ?X := equiv ?e'.  ?Me := e'
+
+  Here ?R is a meta instantiated by an evar and unify_resolve succeeds
+  without seeing that evar is left around, as clenv_pose_dependent_evars
+  was just looking at the meta substitution which contains no meta
+  without instance.
+
+
+- eapply in eauto now shelves any dependent subgoals.  One fix in the
+  standard library (instances of Reflexive equiv, Symmetric equiv and
+  Transitive equiv).
+
+
+- rewrite uses a syntactic pattern to filter subterms on which
+  unification with conversion is applied.  + Evars appear in the pattern
+  and have to match syntactically (source of incompatibility).
+
+- apply's unification first-order heuristic is a bit strange in the
+  sense that it does not subsitute existing solutions to previous evars
+  eagerly, allowing to unify (fun x y => S) u v with ?X ?U ?V even if ?X
+  was already instantiated with a lambda. Evarconv reduces in this case.
+  One example in FMapFacts/cardinal_2 where a "change" was used to
+  produce a dummy beta-redex changed to use explicit with bindings
+  instead.
+
+- sometimes the user writes an explicit pattern for HO unification,
+  which we obey instead of resorting to ho unification even if the
+  tactic explicitly uses it, e.g. elim. This ambiguity is a source of
+  non-uniform behavior. We use a heuristic to decide if the user
+  provided a pattern himself, and sometimes this is not the intention of
+  the user, see failure/rewrite_in_hyp2.
+
+- simple apply's unification does conversion only on closed subterms,
+  but these are not recognized the same way in evarconv (unification.ml
+  can solve subproblems f ?X = g t using conversion on f and g but not
+  on ?X and t). Evarconv is uniform with respect to this (no "subterm"
+  restriction).  To re-establish compatibility in this case we make
+  (e)auto's apply unfold local variables, using a new Hint Variables
+  Transparent directive on the "core" hint database.  TODO: cleanup in
+  auto.ml, we now always use flags from the database.  See
+  e.g. FMapFacts/Partition_cardinal's eauto.
+
+- rewrite does not simplify goals w.r.t. zeta to find occurrences anymore,
+  requiring explicit simplifications instead.
+
+- When checking which arguments are dependent or not for apply/exists/transitivity etc...
+  with bindings.
+  The current strategy is hard to reproduce.
+
+  - Most of the time, the bindings are resolved before the tactic does
+  anything with its argument. e.g. in apply, with bindings are processed
+  before unification of the conclusion happens
+
+  - For [exists t] however, t is passed as an ImplicitBinding and [t]
+  must be provided _after_ unifiying with the conclusion to have enought
+  type information.
+
+  - With metas, the clenv could postpone an unification that failed to
+  be tried again _after_ the unification with the conclusion. However the
+  criterion was fuzzy: see bug #4813.
+
+  We now do a kind of best effort, trying the unification of bindings
+  before the unification with the conclusion, and if that fails, also after.
+
+- Closed bugs:
+
+ 
+
+- Closed bugs which required some work:
+
+  2830: cannot define evar twice: due to evar_define doing the check_evar_instance
+  before the Evd.define, now inverted.
+
+  3263: suddenly back to the very slow behaviors of before
+
+  3513, 4095: canonical structure creates an unsolvable typeclass constraint that makes a latter proof-search
+  diverge. Creating the evar with unresolvable store during unification does not help...
+  Actually this uses w_unify_to_subterm which uses the old w_unify code. Need to adapt this.
+  
+  Previously, unification through w_unify.ml created a meta during the canonical structure resolution,
+  which prevented the simple apply of typeclass resolution from succeeding, as there was an unsolved
+  dependent meta. This is not the case currently, unless we make the evar unresolvable in evarconv
+  during canonical structure resolution, and propagate unresolvability in Evd.restrict as well,
+  and check unresolvability in goals created by application of a hint during resolution.
+  But that's not correct either, because we do want to launch resolution on the "unresolvable" subgoals
+  actually.
+  Phew !
+
+  bug 2830: with not done at the right time, should be delayed. Actually no,
+  it was the use of higher-order before regular unification.
+
+  3258: typeclass resolution issue: the [apply reflexivity] hint is way too strong now,
+  with HO unification baked in apply, resulting in diverging proof search.
+  Also setoid_rewrite still calls w_unify which was allowing HO matching of the redex with the
+  subterm, too strong as well.
+
+  3485: proper treatment of frozen_evars, necessary when we move from metas
+  which did much less instantiation of evars. Propagate frozen_evars everywhere.
+
+  3539: required improvement of occur_rigidly, to avoid postponing an impossible constraint.
+
+  4782: with done too early, needing conclusion's unification -> now backtracking
+  4813: with done too early, needing conclusion's unification -> now backtracking
+  
+  HoTT_coq_091: HO unif failing eliminating a dependent equality, due to cumulativity, now fixed.
+
