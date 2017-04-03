@@ -1049,7 +1049,7 @@ struct
   let empty = (UContext.empty, UContext.empty)
   let is_empty (univcst, subtypcst) = UContext.is_empty univcst && UContext.is_empty subtypcst
 
-  let halve_context (ctx : Instance.t) : Instance.t * Instance.t =
+  let halve_context ctx =
     let len = Array.length (Instance.to_array ctx) in
     let halflen = len / 2 in
     (Instance.of_array (Array.sub (Instance.to_array ctx) 0 halflen),
@@ -1084,17 +1084,9 @@ struct
     (univcst, UContext.make (Instance.append inst freshunivs,
                              create_trivial_subtyping inst freshunivs))
 
-  (** This function adds universe constraints to the universe
-      constraints of the given universe_info_ind. However one must be
-      CAUTIOUS as it resets the subtyping constraints to equality. It
-      also requires fresh universes for the newly introduced
-      universes *)
-  let union (univcst, _) univcst' freshunivs =
-    assert (Instance.length freshunivs = Instance.length (UContext.instance univcst'));
-    let (ctx, ctx') = halve_context (UContext.instance univcst) in
-    let newctx' = Instance.append ctx' freshunivs in
-    let univcstunion = UContext.union univcst univcst' in
-    (univcstunion, subtyp_context (from_universe_context univcstunion newctx'))
+  let subtyping_susbst (univcst, subtypcst) = 
+      let (ctx, ctx') = (halve_context (UContext.instance subtypcst))in
+      Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
 
   let dest x = x
 

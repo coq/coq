@@ -1129,12 +1129,3 @@ let univ_inf_ind_from_universe_context univcst =
       (Array.map (fun _ -> new_univ_level ())
          (Instance.to_array (UContext.instance univcst)))
   in UInfoInd.from_universe_context univcst freshunivs
-
-(** This function adds universe constraints to the universe
-    constraints of the given universe_info_ind. However one must be
-    CAUTIOUS as it resets the subtyping constraints to equality. *)
-let univ_inf_ind_union uinfind univcst' =
-  let freshunivs = Instance.of_array
-      (Array.map (fun _ -> new_univ_level ())
-         (Instance.to_array (UContext.instance univcst')))
-  in UInfoInd.union uinfind univcst' freshunivs

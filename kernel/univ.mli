@@ -345,12 +345,7 @@ sig
       trivial subtyping relation. *)
   val from_universe_context : universe_context -> universe_instance -> t
 
-  (** This function adds universe constraints to the universe
-      constraints of the given universe_info_ind. However one must be
-      CAUTIOUS as it resets the subtyping constraints to equality. It
-      also requires fresh universes for the newly introduced
-      universes *)
-  val union : t -> universe_context -> universe_instance -> t
+  val subtyping_susbst : t -> universe_level_subst
 
   val size : t -> int
 

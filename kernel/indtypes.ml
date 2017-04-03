@@ -207,6 +207,24 @@ let param_ccls paramsctxt =
   in
   List.fold_left fold [] paramsctxt
 
+(* Check arities and constructors *)
+let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : Term.types) is_arity =
+  let basic_check ev tp = conv_leq ev tp (subst tp) in
+  let check_typ typ typ_env =
+   match typ with
+     | LocalAssum (_, typ') ->
+       begin
+         try 
+           basic_check env typ'; Environ.push_rel typ typ_env
+         with NotConvertible -> 
+           anomaly ~label:"bad inductive subtyping relation" (Pp.str "Invalid subtyping relation!")
+       end
+     | _ -> anomaly (Pp.str "")
+  in
+  let typs, codom = dest_prod env arcn in
+  let last_env = Context.Rel.fold_outside check_typ typs ~init:env in
+  if not is_arity then basic_check last_env codom else ()
+
 (* Type-check an inductive definition. Does not check positivity
    conditions. *)
 (* TODO check that we don't overgeneralize construcors/inductive arities with
@@ -345,6 +363,22 @@ let typecheck_inductive env mie =
       in
 	(id,cn,lc,(sign,arity)))
     inds
+  in
+  (* Check that the subtyping information inferred for inductive types in the block is correct. *)
+  (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
+  let () =
+    let sbsubst = UInfoInd.subtyping_susbst mie.mind_entry_universes in
+    let dosubst = subst_univs_level_constr sbsubst in
+    let envsb = push_context (UInfoInd.subtyp_context mie.mind_entry_universes) env_ar_par in
+    (* process individual inductive types: *)
+    Array.iter (fun (id,cn,lc,(sign,arity)) ->
+      match arity with
+        | RegularArity (_, full_arity, _) ->
+           check_subtyping_arity_constructor envsb dosubst full_arity true;
+           Array.iter (fun cnt -> check_subtyping_arity_constructor envsb dosubst cnt true) lc
+        | TemplateArity _ -> ()
+          (* TODO: When disabling template polumorphism raise anomaly if this constructor is not removed from the code base *)
+    ) inds
   in (env_arities, env_ar_par, paramsctxt, inds)
 
 (************************************************************************)
