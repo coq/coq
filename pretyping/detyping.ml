@@ -162,7 +162,7 @@ let _ = declare_bool_option
 	    optread  = reverse_matching;
 	    optwrite = (:=) reverse_matching_value }
 
-let print_primproj_params_value = ref true
+let print_primproj_params_value = ref false
 let print_primproj_params () = !print_primproj_params_value
 
 let _ = declare_bool_option
