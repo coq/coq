@@ -55,7 +55,7 @@ let rec under_binders env sigma f n c =
 
 let rec complete_conclusion a cs = function
   | CProdN (loc,bl,c) -> CProdN (loc,bl,complete_conclusion a cs c)
-  | CLetIn (loc,b,t,c) -> CLetIn (loc,b,t,complete_conclusion a cs c)
+  | CLetIn (loc,na,b,t,c) -> CLetIn (loc,na,b,t,complete_conclusion a cs c)
   | CHole (loc, k, _, _) ->
       let (has_no_args,name,params) = a in
       if not has_no_args then
@@ -370,7 +370,7 @@ type structured_one_inductive_expr = {
 }
 
 type structured_inductive_expr =
-  local_binder list * structured_one_inductive_expr list
+  local_binder_expr list * structured_one_inductive_expr list
 
 let minductive_message warn = function
   | []  -> error "No inductive definition."
@@ -416,7 +416,7 @@ let rec check_anonymous_type ind =
     match ind with
     | GSort (_, GType []) -> true
     | GProd (_, _, _, _, e) 
-    | GLetIn (_, _, _, e)
+    | GLetIn (_, _, _, _, e)
     | GLambda (_, _, _, _, e)
     | GApp (_, e, _)
     | GCast (_, e, _) -> check_anonymous_type e
@@ -560,10 +560,10 @@ let check_named (loc, na) = match na with
 
 
 let check_param = function
-| LocalRawDef (na, _) -> check_named na
-| LocalRawAssum (nas, Default _, _) -> List.iter check_named nas
-| LocalRawAssum (nas, Generalized _, _) -> ()
-| LocalPattern _ -> assert false
+| CLocalDef (na, _, _) -> check_named na
+| CLocalAssum (nas, Default _, _) -> List.iter check_named nas
+| CLocalAssum (nas, Generalized _, _) -> ()
+| CLocalPattern _ -> assert false
 
 let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   check_all_names_different indl;
@@ -830,7 +830,7 @@ type structured_fixpoint_expr = {
   fix_name : Id.t;
   fix_univs : lident list option;
   fix_annot : Id.t Loc.located option;
-  fix_binders : local_binder list;
+  fix_binders : local_binder_expr list;
   fix_body : constr_expr option;
   fix_type : constr_expr
 }

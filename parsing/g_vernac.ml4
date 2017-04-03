@@ -243,7 +243,7 @@ GEXTEND Gram
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
         let ((bl, c), tyo) =
-          if List.exists (function LocalPattern _ -> true | _ -> false) bl
+          if List.exists (function CLocalPattern _ -> true | _ -> false) bl
           then
             let c = CCast (!@loc, c, CastConv t) in
             (expand_pattern_binders mkCLambdaN bl c, None)
@@ -334,8 +334,8 @@ GEXTEND Gram
   binder_nodef:
     [ [ b = binder_let ->
       (match b with
-          LocalRawAssum(l,ty) -> (l,ty)
-        | LocalRawDef _ ->
+          CLocalAssum(l,ty) -> (l,ty)
+        | CLocalDef _ ->
             Util.user_err_loc
               (loc,"fix_param",Pp.str"defined binder not allowed here.")) ] ]
   ;

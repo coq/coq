@@ -175,15 +175,15 @@ type plident = lident * lident list option
 type sort_expr = glob_sort
 
 type definition_expr =
-  | ProveBody of local_binder list * constr_expr
-  | DefineBody of local_binder list * Genredexpr.raw_red_expr option * constr_expr
+  | ProveBody of local_binder_expr list * constr_expr
+  | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
       * constr_expr option
 
 type fixpoint_expr =
-    plident * (Id.t located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr option
+    plident * (Id.t located option * recursion_order_expr) * local_binder_expr list * constr_expr * constr_expr option
 
 type cofixpoint_expr =
-    plident * local_binder list * constr_expr * constr_expr option
+    plident * local_binder_expr list * constr_expr * constr_expr option
 
 type local_decl_expr =
   | AssumExpr of lname * constr_expr
@@ -202,14 +202,14 @@ type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
 type inductive_expr =
-  plident with_coercion * local_binder list * constr_expr option * inductive_kind *
+  plident with_coercion * local_binder_expr list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
-  plident * local_binder list * constr_expr option * constructor_expr list
+  plident * local_binder_expr list * constr_expr option * constructor_expr list
 
 type proof_expr =
-  plident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)
+  plident option * (local_binder_expr list * constr_expr * (lident option * recursion_order_expr) option)
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
@@ -365,12 +365,12 @@ type vernac_expr =
   (* Type classes *)
   | VernacInstance of
       bool * (* abstract instance *)
-      local_binder list * (* super *)
+      local_binder_expr list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
 	(bool * constr_expr) option * (* props *)
 	hint_info_expr
 
-  | VernacContext of local_binder list
+  | VernacContext of local_binder_expr list
 
   | VernacDeclareInstances of
     (reference * hint_info_expr) list (* instances names, priorities and patterns *)

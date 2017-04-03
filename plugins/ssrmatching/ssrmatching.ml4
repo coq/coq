@@ -156,7 +156,7 @@ let mkCHole loc = CHole (loc, None, IntroAnonymous, None)
 let mkCLambda loc name ty t = 
    CLambdaN (loc, [[loc, name], Default Explicit, ty], t)
 let mkCLetIn loc name bo t = 
-   CLetIn (loc, (loc, name), bo, t)
+   CLetIn (loc, (loc, name), bo, None, t)
 let mkCCast loc t ty = CCast (loc,t, dC ty)
 (** Constructors for rawconstr *)
 let mkRHole = GHole (dummy_loc, InternalHole, IntroAnonymous, None)
@@ -1193,7 +1193,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   pp(lazy(str"typed as: " ++ pr_pattern_w_ids red));
   let mkXLetIn loc x (a,(g,c)) = match c with
   | Some b -> a,(g,Some (mkCLetIn loc x (mkCHole loc) b))
-  | None -> a,(GLetIn (loc,x,(GHole (loc, BinderType x, IntroAnonymous, None)), g), None) in
+  | None -> a,(GLetIn (loc,x,(GHole (loc, BinderType x, IntroAnonymous, None)), None, g), None) in
   match red with
   | T t -> let sigma, t = interp_term ist gl t in sigma, T t
   | In_T t -> let sigma, t = interp_term ist gl t in sigma, In_T t
