@@ -208,8 +208,12 @@ let param_ccls paramsctxt =
   List.fold_left fold [] paramsctxt
 
 (* Check arities and constructors *)
-let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : Term.types) is_arity =
-  let basic_check ev tp = conv_leq ev tp (subst tp) in
+let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : Term.types) numparams is_arity =
+  let numchecked = ref 0 in
+  let basic_check ev tp =
+    if !numchecked < numparams then () else conv_leq ev tp (subst tp);
+    numchecked := !numchecked + 1
+  in
   let check_typ typ typ_env =
    match typ with
      | LocalAssum (_, typ') ->
@@ -367,15 +371,22 @@ let typecheck_inductive env mie =
   (* Check that the subtyping information inferred for inductive types in the block is correct. *)
   (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
   let () =
+    let numparams = List.length paramsctxt in
     let sbsubst = UInfoInd.subtyping_susbst mie.mind_entry_universes in
     let dosubst = subst_univs_level_constr sbsubst in
-    let envsb = push_context (UInfoInd.subtyp_context mie.mind_entry_universes) env_ar_par in
+    let uctx = UInfoInd.univ_context mie.mind_entry_universes in
+    let instance_other = Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) in
+    let constraints_other = Univ.subst_univs_level_constraints sbsubst (Univ.UContext.constraints uctx) in
+    let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
+    let env' = Environ.push_context uctx env_ar_par in
+    let env'' = Environ.push_context uctx_other env' in
+    let envsb = push_context (UInfoInd.subtyp_context mie.mind_entry_universes) env'' in
     (* process individual inductive types: *)
     Array.iter (fun (id,cn,lc,(sign,arity)) ->
       match arity with
         | RegularArity (_, full_arity, _) ->
-           check_subtyping_arity_constructor envsb dosubst full_arity true;
-           Array.iter (fun cnt -> check_subtyping_arity_constructor envsb dosubst cnt false) lc
+           check_subtyping_arity_constructor envsb dosubst full_arity numparams true;
+           Array.iter (fun cnt -> check_subtyping_arity_constructor envsb dosubst cnt numparams false) lc
         | TemplateArity _ -> ()
           (* TODO: When disabling template polumorphism raise anomaly if this constructor is not removed from the code base *)
     ) inds
