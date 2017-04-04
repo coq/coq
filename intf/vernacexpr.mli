@@ -175,15 +175,15 @@ type plident = lident * lident list option
 type sort_expr = glob_sort
 
 type definition_expr =
-  | ProveBody of local_binder list * constr_expr
-  | DefineBody of local_binder list * Genredexpr.raw_red_expr option * constr_expr
+  | ProveBody of local_binder_expr list * constr_expr
+  | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
       * constr_expr option
 
 type fixpoint_expr =
-    plident * (Id.t located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr option
+    plident * (Id.t located option * recursion_order_expr) * local_binder_expr list * constr_expr * constr_expr option
 
 type cofixpoint_expr =
-    plident * local_binder list * constr_expr * constr_expr option
+    plident * local_binder_expr list * constr_expr * constr_expr option
 
 type local_decl_expr =
   | AssumExpr of lname * constr_expr
@@ -202,14 +202,14 @@ type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
 type inductive_expr =
-  plident with_coercion * local_binder list * constr_expr option * inductive_kind *
+  plident with_coercion * local_binder_expr list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
-  plident * local_binder list * constr_expr option * constructor_expr list
+  plident * local_binder_expr list * constr_expr option * constructor_expr list
 
 type proof_expr =
-  plident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)
+  plident option * (local_binder_expr list * constr_expr * (lident option * recursion_order_expr) option)
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
@@ -283,14 +283,9 @@ type bullet =
     | Plus of int
 
 (** {6 Types concerning Stm} *)
-type 'a stm_vernac =
+type stm_vernac =
   | JoinDocument
-  | Finish
   | Wait
-  | PrintDag
-  | Observe of Stateid.t
-  | Command of 'a (* An out of flow command not to be recorded by Stm *)
-  | PGLast of 'a (* To ease the life of PG *)
 
 (** {6 Types concerning the module layer} *)
 
@@ -370,12 +365,12 @@ type vernac_expr =
   (* Type classes *)
   | VernacInstance of
       bool * (* abstract instance *)
-      local_binder list * (* super *)
+      local_binder_expr list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
 	(bool * constr_expr) option * (* props *)
 	hint_info_expr
 
-  | VernacContext of local_binder list
+  | VernacContext of local_binder_expr list
 
   | VernacDeclareInstances of
     (reference * hint_info_expr) list (* instances names, priorities and patterns *)
@@ -450,8 +445,9 @@ type vernac_expr =
   | VernacRegister of lident * register_kind
   | VernacComments of comment list
 
-  (* Stm backdoor *)
-  | VernacStm of vernac_expr stm_vernac
+  (* Stm backdoor: used in fake_id, will be removed when fake_ide
+     becomes aware of feedback about completed jobs. *)
+  | VernacStm of stm_vernac
 
   (* Proof management *)
   | VernacGoal of constr_expr
@@ -509,16 +505,11 @@ and report_with = Stateid.t * Feedback.route_id (* feedback on id/route *)
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list
-and vernac_is_alias = bool
 and vernac_part_of_script = bool
 and vernac_control =
-  | VtFinish
   | VtWait
   | VtJoinDocument
-  | VtPrintDag
-  | VtObserve of Stateid.t
   | VtBack of Stateid.t
-  | VtPG
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)

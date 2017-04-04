@@ -28,7 +28,7 @@ let global_of_extended_global_head = function
         | NRef ref -> ref
         | NApp (rc, _) -> head_of rc
         | NCast (rc, _) -> head_of rc
-        | NLetIn (_, _, rc) -> head_of rc
+        | NLetIn (_, _, _, rc) -> head_of rc
         | _ -> raise Not_found in
       head_of syn_def
 

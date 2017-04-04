@@ -83,11 +83,10 @@ Proof.
   cut (x = INR (pred x0)).
   intro H19; rewrite H19; apply le_INR; apply lt_le_S; apply INR_lt; rewrite H18;
     rewrite <- H19; assumption.
-  rewrite H10; rewrite H8; rewrite <- INR_IZR_INZ; replace 1 with (INR 1);
-    [ idtac | reflexivity ]; rewrite <- minus_INR.
-  replace (x0 - 1)%nat with (pred x0);
-  [ reflexivity
-    | case x0; [ reflexivity | intro; simpl; apply minus_n_O ] ].
+  rewrite H10; rewrite H8; rewrite <- INR_IZR_INZ;
+    rewrite <- (minus_INR _ 1).
+  apply f_equal;
+    case x0; [ reflexivity | intro; apply sym_eq, minus_n_O ].
   induction x0 as [|x0 Hrecx0].
     rewrite H8 in H3. rewrite <- INR_IZR_INZ in H3; simpl in H3.
       elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H6 H3)).

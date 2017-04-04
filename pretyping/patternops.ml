@@ -44,8 +44,9 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
   Name.equal v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
 | PProd (v1, t1, b1), PProd (v2, t2, b2) ->
   Name.equal v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
-| PLetIn (v1, t1, b1), PLetIn (v2, t2, b2) ->
-  Name.equal v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
+| PLetIn (v1, b1, t1, c1), PLetIn (v2, b2, t2, c2) ->
+  Name.equal v1 v2 && constr_pattern_eq b1 b2 &&
+  Option.equal constr_pattern_eq t1 t2 && constr_pattern_eq c1 c2
 | PSort s1, PSort s2 -> Miscops.glob_sort_eq s1 s2
 | PMeta m1, PMeta m2 -> Option.equal Id.equal m1 m2
 | PIf (t1, l1, r1), PIf (t2, l2, r2) ->
@@ -85,7 +86,8 @@ let rec occur_meta_pattern = function
   | PProj (_,arg) -> occur_meta_pattern arg
   | PLambda (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
   | PProd (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
-  | PLetIn (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
+  | PLetIn (na,b,t,c)  ->
+     Option.fold_left (fun b t -> b || occur_meta_pattern t) (occur_meta_pattern b) t || (occur_meta_pattern c)
   | PIf (c,c1,c2)  ->
       (occur_meta_pattern c) ||
       (occur_meta_pattern c1) || (occur_meta_pattern c2)
@@ -101,7 +103,7 @@ exception BoundPattern;;
 let rec head_pattern_bound t =
   match t with
     | PProd (_,_,b)  -> head_pattern_bound b
-    | PLetIn (_,_,b) -> head_pattern_bound b
+    | PLetIn (_,_,_,b) -> head_pattern_bound b
     | PApp (c,args)  -> head_pattern_bound c
     | PIf (c,_,_)  -> head_pattern_bound c
     | PCase (_,p,c,br) -> head_pattern_bound c
@@ -132,7 +134,7 @@ let pattern_of_constr env sigma t =
     | Sort (Prop Pos) -> PSort GSet
     | Sort (Type _) -> PSort (GType [])
     | Cast (c,_,_)      -> pattern_of_constr env c
-    | LetIn (na,c,t,b) -> PLetIn (na,pattern_of_constr env c,
+    | LetIn (na,c,t,b) -> PLetIn (na,pattern_of_constr env c,Some (pattern_of_constr env t),
 				  pattern_of_constr (push_rel (LocalDef (na,c,t)) env) b)
     | Prod (na,c,b)   -> PProd (na,pattern_of_constr env c,
 				pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
@@ -185,7 +187,7 @@ let map_pattern_with_binders g f l = function
   | PSoApp (n,pl) -> PSoApp (n, List.map (f l) pl)
   | PLambda (n,a,b) -> PLambda (n,f l a,f (g n l) b)
   | PProd (n,a,b) -> PProd (n,f l a,f (g n l) b)
-  | PLetIn (n,a,b) -> PLetIn (n,f l a,f (g n l) b)
+  | PLetIn (n,a,t,b) -> PLetIn (n,f l a,Option.map (f l) t,f (g n l) b)
   | PIf (c,b1,b2) -> PIf (f l c,f l b1,f l b2)
   | PCase (ci,po,p,pl) ->
     PCase (ci,f l po,f l p, List.map (fun (i,n,c) -> (i,n,f l c)) pl)
@@ -272,11 +274,12 @@ let rec subst_pattern subst pat =
       let c2' = subst_pattern subst c2 in
 	if c1' == c1 && c2' == c2 then pat else
 	  PProd (name,c1',c2')
-  | PLetIn (name,c1,c2) ->
+  | PLetIn (name,c1,t,c2) ->
       let c1' = subst_pattern subst c1 in
+      let t' = Option.smartmap (subst_pattern subst) t in
       let c2' = subst_pattern subst c2 in
-	if c1' == c1 && c2' == c2 then pat else
-	  PLetIn (name,c1',c2')
+	if c1' == c1 && t' == t && c2' == c2 then pat else
+	  PLetIn (name,c1',t',c2')
   | PSort _
   | PMeta _ -> pat
   | PIf (c,c1,c2) ->
@@ -341,9 +344,10 @@ let rec pat_of_raw metas vars = function
       name_iter (fun n -> metas := n::!metas) na;
       PProd (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
-  | GLetIn (_,na,c1,c2) ->
+  | GLetIn (_,na,c1,t,c2) ->
       name_iter (fun n -> metas := n::!metas) na;
       PLetIn (na, pat_of_raw metas vars c1,
+               Option.map (pat_of_raw metas vars) t,
 	       pat_of_raw metas (na::vars) c2)
   | GSort (_,s) ->
       PSort s

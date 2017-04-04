@@ -532,7 +532,7 @@ Proof.
   apply Rmult_le_reg_l with (INR (fact (div2 (pred n)))).
   apply INR_fact_lt_0.
   rewrite Rmult_1_r; rewrite <- Rinv_r_sym.
-  replace 1 with (INR 1); [ apply le_INR | reflexivity ].
+  apply (le_INR 1).
   apply lt_le_S.
   apply INR_lt.
   apply INR_fact_lt_0.

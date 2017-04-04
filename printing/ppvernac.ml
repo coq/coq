@@ -534,18 +534,8 @@ open Decl_kinds
       (* Stm *)
       | VernacStm JoinDocument ->
         return (keyword "Stm JoinDocument")
-      | VernacStm PrintDag ->
-        return (keyword "Stm PrintDag")
-      | VernacStm Finish ->
-        return (keyword "Stm Finish")
       | VernacStm Wait ->
         return (keyword "Stm Wait")
-      | VernacStm (Observe id) ->
-        return (keyword "Stm Observe " ++ str(Stateid.to_string id))
-      | VernacStm (Command v) ->
-        return (keyword "Stm Command " ++ pr_vernac_body v)
-      | VernacStm (PGLast v) ->
-        return (keyword "Stm PGLast " ++ pr_vernac_body v)
 
       (* Proof management *)
       | VernacAbortAll ->

@@ -205,6 +205,11 @@ let print_opacity ref =
               str "transparent (with minimal expansion weight)"]
 
 (*******************)
+
+let print_if_is_coercion ref =
+  if Classops.coercion_exists ref then [pr_global ref ++ str " is a coercion"] else []
+
+(*******************)
 (* *)
 
 let print_polymorphism ref =
@@ -258,7 +263,8 @@ let print_name_infos ref =
   type_info_for_implicit @
   print_renames_list (mt()) renames @
   print_impargs_list (mt()) impls @
-  print_argument_scopes (mt()) scopes
+  print_argument_scopes (mt()) scopes @
+  print_if_is_coercion ref
 
 let print_id_args_data test pr id l =
   if List.exists test l then

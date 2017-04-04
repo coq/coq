@@ -30,7 +30,7 @@ type notation_constr =
   | NLambda of Name.t * notation_constr * notation_constr
   | NProd of Name.t * notation_constr * notation_constr
   | NBinderList of Id.t * Id.t * notation_constr * notation_constr
-  | NLetIn of Name.t * notation_constr * notation_constr
+  | NLetIn of Name.t * notation_constr * notation_constr option * notation_constr
   | NCases of case_style * notation_constr option *
       (notation_constr * (Name.t * (inductive * Name.t list) option)) list *
       (cases_pattern list * notation_constr) list

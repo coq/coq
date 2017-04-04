@@ -1,0 +1,6 @@
+bar@{u} = nat
+     : Wrap@{u} Set
+(* u |= Set < u
+         *)
+
+bar is universe polymorphic

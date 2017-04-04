@@ -338,7 +338,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
                      the refinement manually.*)
 		let gls = List.rev (Evd.future_goals evm) in
                 let evm = Evd.reset_future_goals evm in
-                Lemmas.start_proof id kind evm (EConstr.of_constr termtype)
+                Lemmas.start_proof id ?pl kind evm (EConstr.of_constr termtype)
 		(Lemmas.mk_hook
                   (fun _ -> instance_hook k pri global imps ?hook));
                  (* spiwack: I don't know what to do with the status here. *)

@@ -1167,7 +1167,7 @@ Proof.
   assert (H6 := archimed (Rabs x)); fold M in H6; elim H6; intros.
   rewrite H4 in H7; rewrite <- INR_IZR_INZ in H7.
   simpl in H7; elim (Rlt_irrefl _ (Rlt_trans _ _ _ H2 H7)).
-  replace 1 with (INR 1); [ apply le_INR | reflexivity ]; apply le_n_S;
+  apply (le_INR 1); apply le_n_S;
     apply le_O_n.
   apply le_IZR; simpl; left; apply Rlt_trans with (Rabs x).
   assumption.

@@ -512,14 +512,14 @@ let rec merge_app c1 c2 id1 id2 shift filter_shift_stable =
         let args = filter_shift_stable lnk (arr1 @ arr2) in
         GApp (Loc.ghost,GVar (Loc.ghost,shift.ident) , args)
     | GApp(_,f1, arr1), GApp(_,f2,arr2)  -> raise NoMerge
-    | GLetIn(_,nme,bdy,trm) , _ ->
+    | GLetIn(_,nme,bdy,typ,trm) , _ ->
         let _ = prstr "\nICI2!\n" in
         let newtrm = merge_app trm c2 id1 id2 shift filter_shift_stable in
-        GLetIn(Loc.ghost,nme,bdy,newtrm)
-    | _, GLetIn(_,nme,bdy,trm) ->
+        GLetIn(Loc.ghost,nme,bdy,typ,newtrm)
+    | _, GLetIn(_,nme,bdy,typ,trm) ->
         let _ = prstr "\nICI3!\n" in
         let newtrm = merge_app c1 trm id1 id2 shift filter_shift_stable in
-        GLetIn(Loc.ghost,nme,bdy,newtrm)
+        GLetIn(Loc.ghost,nme,bdy,typ,newtrm)
     | _ -> let _ = prstr "\nICI4!\n" in
            raise NoMerge
 
@@ -530,14 +530,14 @@ let rec merge_app_unsafe c1 c2 shift filter_shift_stable =
         let args = filter_shift_stable lnk (arr1 @ arr2) in
         GApp (Loc.ghost,GVar(Loc.ghost,shift.ident) , args)
           (* FIXME: what if the function appears in the body of the let? *)
-    | GLetIn(_,nme,bdy,trm) , _ ->
+    | GLetIn(_,nme,bdy,typ,trm) , _ ->
       let _ = prstr "\nICI2 '!\n" in
         let newtrm = merge_app_unsafe trm c2 shift filter_shift_stable in
-        GLetIn(Loc.ghost,nme,bdy,newtrm)
-    | _, GLetIn(_,nme,bdy,trm) ->
+        GLetIn(Loc.ghost,nme,bdy,typ,newtrm)
+    | _, GLetIn(_,nme,bdy,typ,trm) ->
         let _ = prstr "\nICI3 '!\n" in
         let newtrm = merge_app_unsafe c1 trm shift filter_shift_stable in
-        GLetIn(Loc.ghost,nme,bdy,newtrm)
+        GLetIn(Loc.ghost,nme,bdy,typ,newtrm)
     | _ -> let _ = prstr "\nICI4 '!\n" in raise NoMerge
 
 
@@ -825,7 +825,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let _ = prNamedRConstr (string_of_name nme) tp in
         let _ = prstr "  ;  " in
         let typ = glob_constr_to_constr_expr tp in
-        LocalRawAssum ([(Loc.ghost,nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
+        CLocalAssum ([(Loc.ghost,nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
       [] params in
   let concl = Constrextern.extern_constr false (Global.env()) Evd.empty concl in
   let arity,_ =

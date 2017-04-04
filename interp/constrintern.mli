@@ -75,8 +75,6 @@ type ltac_sign = {
 
 val empty_ltac_sign : ltac_sign
 
-type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
-
 (** {6 Internalization performs interpretation of global names and notations } *)
 
 val intern_constr : env -> constr_expr -> glob_constr
@@ -90,7 +88,7 @@ val intern_gen : typing_constraint -> env ->
 val intern_pattern : env -> cases_pattern_expr ->
   Id.t list * (Id.t Id.Map.t * cases_pattern) list
 
-val intern_context : bool -> env -> internalization_env -> local_binder list -> internalization_env * glob_binder list
+val intern_context : bool -> env -> internalization_env -> local_binder_expr list -> internalization_env * glob_decl list
 
 (** {6 Composing internalization with type inference (pretyping) } *)
 
@@ -159,16 +157,16 @@ val interp_binder_evars : env -> evar_map ref -> Name.t -> constr_expr -> EConst
 
 val interp_context_evars :
   ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
-  env -> evar_map ref -> local_binder list ->
+  env -> evar_map ref -> local_binder_expr list ->
   internalization_env * ((env * EConstr.rel_context) * Impargs.manual_implicits)
 
 (* val interp_context_gen : (env -> glob_constr -> unsafe_type_judgment Evd.in_evar_universe_context) -> *)
 (*   (env -> Evarutil.type_constraint -> glob_constr -> unsafe_judgment Evd.in_evar_universe_context) -> *)
 (*   ?global_level:bool -> ?impl_env:internalization_env -> *)
-(*   env -> evar_map -> local_binder list -> internalization_env * ((env * Evd.evar_universe_context * rel_context * sorts list) * Impargs.manual_implicits) *)
+(*   env -> evar_map -> local_binder_expr list -> internalization_env * ((env * Evd.evar_universe_context * rel_context * sorts list) * Impargs.manual_implicits) *)
   
 (* val interp_context : ?global_level:bool -> ?impl_env:internalization_env -> *)
-(*   env -> evar_map -> local_binder list ->  *)
+(*   env -> evar_map -> local_binder_expr list ->  *)
 (*   internalization_env *  *)
 (*   ((env * Evd.evar_universe_context * rel_context * sorts list) * Impargs.manual_implicits) *)
 

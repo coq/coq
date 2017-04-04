@@ -233,11 +233,11 @@ type (_, _) entry =
 | TTName : ('self, Name.t Loc.located) entry
 | TTReference : ('self, reference) entry
 | TTBigint : ('self, Bigint.bigint) entry
-| TTBinder : ('self, local_binder list) entry
+| TTBinder : ('self, local_binder_expr list) entry
 | TTConstr : prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : prod_info * Tok.t list * 'r target -> ('r, 'r list) entry
-| TTBinderListT : ('self, local_binder list) entry
-| TTBinderListF : Tok.t list -> ('self, local_binder list list) entry
+| TTBinderListT : ('self, local_binder_expr list) entry
+| TTBinderListF : Tok.t list -> ('self, local_binder_expr list list) entry
 
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
@@ -324,7 +324,7 @@ let cases_pattern_expr_of_name (loc,na) = match na with
 type 'r env = {
   constrs : 'r list;
   constrlists : 'r list list;
-  binders : (local_binder list * bool) list;
+  binders : (local_binder_expr list * bool) list;
 }
 
 let push_constr subst v = { subst with constrs = v :: subst.constrs }

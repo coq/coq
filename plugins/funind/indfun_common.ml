@@ -70,8 +70,8 @@ let chop_rlambda_n  =
       then List.rev acc,rt
       else
 	match rt with
-	  | Glob_term.GLambda(_,name,k,t,b) -> chop_lambda_n ((name,t,false)::acc) (n-1) b
-	  | Glob_term.GLetIn(_,name,v,b) -> chop_lambda_n ((name,v,true)::acc) (n-1) b
+	  | Glob_term.GLambda(_,name,k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
+	  | Glob_term.GLetIn(_,name,v,t,b) -> chop_lambda_n ((name,v,t)::acc) (n-1) b
 	  | _ ->
 	      raise (CErrors.UserError(Some "chop_rlambda_n",
 				    str "chop_rlambda_n: Not enough Lambdas"))

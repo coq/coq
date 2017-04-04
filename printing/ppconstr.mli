@@ -19,12 +19,12 @@ open Names
 open Misctypes
 
 val extract_lam_binders :
-  constr_expr -> local_binder list * constr_expr
+  constr_expr -> local_binder_expr list * constr_expr
 val extract_prod_binders :
-  constr_expr -> local_binder list * constr_expr
+  constr_expr -> local_binder_expr list * constr_expr
 val split_fix :
   int -> constr_expr -> constr_expr ->
-  local_binder list *  constr_expr * constr_expr
+  local_binder_expr list *  constr_expr * constr_expr
 
 val prec_less : int -> int * Ppextend.parenRelation -> bool
 
@@ -50,12 +50,12 @@ val pr_patvar : patvar -> std_ppcmds
 val pr_glob_level : glob_level -> std_ppcmds
 val pr_glob_sort : glob_sort -> std_ppcmds
 val pr_guard_annot : (constr_expr -> std_ppcmds) ->
-  local_binder list ->
+  local_binder_expr list ->
   ('a * Names.Id.t) option * recursion_order_expr ->
   std_ppcmds
 
 val pr_record_body : (reference * constr_expr) list -> std_ppcmds
-val pr_binders : local_binder list -> std_ppcmds
+val pr_binders : local_binder_expr list -> std_ppcmds
 val pr_constr_pattern_expr : constr_pattern_expr -> std_ppcmds
 val pr_lconstr_pattern_expr : constr_pattern_expr -> std_ppcmds
 val pr_constr_expr : constr_expr -> std_ppcmds

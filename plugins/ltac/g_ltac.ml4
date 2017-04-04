@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+DECLARE PLUGIN "ltac_plugin"
+
 open Util
 open Pp
 open Compat

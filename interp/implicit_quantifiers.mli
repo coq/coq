@@ -25,7 +25,7 @@ val free_vars_of_constr_expr : constr_expr -> ?bound:Id.Set.t ->
   Id.t list -> Id.t list
 
 val free_vars_of_binders :
-  ?bound:Id.Set.t -> Id.t list -> local_binder list -> Id.Set.t * Id.t list
+  ?bound:Id.Set.t -> Id.t list -> local_binder_expr list -> Id.Set.t * Id.t list
 
 (** Returns the generalizable free ids in left-to-right
    order with the location of their first occurrence *)

@@ -358,7 +358,7 @@ object(self)
         | Good evs ->
           proof#set_goals goals;
           proof#set_evars evs;
-          proof#refresh ();
+          proof#refresh ~force:true;
           Coq.return ()
         )
       )

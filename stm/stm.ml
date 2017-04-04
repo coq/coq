@@ -2235,10 +2235,13 @@ let known_state ?(redefine_qed=false) ~cache id =
 	    if eff then update_global_env ()
           ), (if eff then `Yes else cache), true
       | `Cmd { cast = x; ceff = eff } -> (fun () ->
-            resilient_command reach view.next;
-            stm_vernac_interp id x;
-	    if eff then update_global_env ()
-          ), (if eff then `Yes else cache), true
+          (match !Flags.async_proofs_mode with
+           | Flags.APon | Flags.APonLazy ->
+             resilient_command reach view.next
+           | Flags.APoff -> reach view.next);
+          stm_vernac_interp id x;
+          if eff then update_global_env ()
+        ), (if eff then `Yes else cache), true
       | `Fork ((x,_,_,_), None) -> (fun () ->
             resilient_command reach view.next;
             stm_vernac_interp id x;
@@ -2528,20 +2531,12 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
       stm_prerr_endline (fun () ->
         "  classified as: " ^ string_of_vernac_classification c);
       match c with
-      (* PG stuff *)    
-      | VtStm(VtPG,false), VtNow -> stm_vernac_interp Stateid.dummy x; `Ok
-      | VtStm(VtPG,_), _ -> anomaly(str "PG command in script or VtLater")
       (* Joining various parts of the document *)
       | VtStm (VtJoinDocument, b), VtNow -> join (); `Ok
-      | VtStm (VtFinish, b),       VtNow -> finish (); `Ok
-      | VtStm (VtWait, b),     VtNow -> finish (); wait (); `Ok
-      | VtStm (VtPrintDag, b), VtNow ->
-          VCS.print ~now:true (); `Ok
-      | VtStm (VtObserve id, b),   VtNow -> observe id; `Ok
-      | VtStm ((VtObserve _ | VtFinish | VtJoinDocument
-                |VtPrintDag |VtWait),_), VtLater ->
+      | VtStm (VtWait, b),         VtNow -> finish (); wait (); `Ok
+      | VtStm ((VtJoinDocument|VtWait),_), VtLater ->
           anomaly(str"classifier: join actions cannot be classified as VtLater")
-      
+
       (* Back *)
       | VtStm (VtBack oid, true), w ->
           let id = VCS.new_node ~id:newtip () in
@@ -2704,15 +2699,6 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty
       | VtUnknown, VtLater ->
           anomaly(str"classifier: VtUnknown must imply VtNow")
     end in
-    (* Proof General *)
-    begin match expr with 
-      | VernacStm (PGLast _) ->
-        if not (VCS.Branch.equal head VCS.Branch.master) then
-          stm_vernac_interp Stateid.dummy
-            { verbose = true; loc = Loc.ghost; indentation = 0; strlen = 0;
-              expr = VernacShow (ShowGoal OpenSubgoals) }
-      | _ -> ()
-    end;
     stm_prerr_endline (fun () -> "processed }}}");
     VCS.print ();
     rc

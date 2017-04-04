@@ -275,7 +275,11 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 	  sorec ((na1,na2,c2)::ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
-      | PLetIn (na1,c1,d1), LetIn(na2,c2,t2,d2) ->
+      | PLetIn (na1,c1,Some t1,d1), LetIn(na2,c2,t2,d2) ->
+	  sorec ((na1,na2,t2)::ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
+            (add_binders na1 na2 binding_vars (sorec ctx env (sorec ctx env subst c1 c2) t1 t2)) d1 d2
+
+      | PLetIn (na1,c1,None,d1), LetIn(na2,c2,t2,d2) ->
 	  sorec ((na1,na2,t2)::ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 

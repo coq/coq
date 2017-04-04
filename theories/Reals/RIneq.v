@@ -1629,7 +1629,7 @@ Hint Resolve lt_INR: real.
 
 Lemma lt_1_INR : forall n:nat, (1 < n)%nat -> 1 < INR n.
 Proof.
-  intros; replace 1 with (INR 1); auto with real.
+  apply lt_INR.
 Qed.
 Hint Resolve lt_1_INR: real.
 
@@ -1653,17 +1653,16 @@ Hint Resolve pos_INR: real.
 
 Lemma INR_lt : forall n m:nat, INR n < INR m -> (n < m)%nat.
 Proof.
-  double induction n m; intros.
-  simpl; exfalso; apply (Rlt_irrefl 0); auto.
-  auto with arith.
-  generalize (pos_INR (S n0)); intro; cut (INR 0 = 0);
-    [ intro H2; rewrite H2 in H0; idtac | simpl; trivial ].
-  generalize (Rle_lt_trans 0 (INR (S n0)) 0 H1 H0); intro; exfalso;
-    apply (Rlt_irrefl 0); auto.
-  do 2 rewrite S_INR in H1; cut (INR n1 < INR n0).
-  intro H2; generalize (H0 n0 H2); intro; auto with arith.
-  apply (Rplus_lt_reg_l 1 (INR n1) (INR n0)).
-  rewrite Rplus_comm; rewrite (Rplus_comm 1 (INR n0)); trivial.
+  intros n m. revert n.
+  induction m ; intros n H.
+  - elim (Rlt_irrefl 0).
+    apply Rle_lt_trans with (2 := H).
+    apply pos_INR.
+  - destruct n as [|n].
+    apply Nat.lt_0_succ.
+    apply lt_n_S, IHm.
+    rewrite 2!S_INR in H.
+    apply Rplus_lt_reg_r with (1 := H).
 Qed.
 Hint Resolve INR_lt: real.
 
@@ -1707,14 +1706,10 @@ Hint Resolve not_INR: real.
 
 Lemma INR_eq : forall n m:nat, INR n = INR m -> n = m.
 Proof.
-  intros; case (le_or_lt n m); intros H1.
-  case (le_lt_or_eq _ _ H1); intros H2; auto.
-  cut (n <> m).
-  intro H3; generalize (not_INR n m H3); intro H4; exfalso; auto.
-  omega.
-  symmetry ; cut (m <> n).
-  intro H3; generalize (not_INR m n H3); intro H4; exfalso; auto.
-  omega.
+  intros n m HR.
+  destruct (dec_eq_nat n m) as [H|H].
+  exact H.
+  now apply not_INR in H.
 Qed.
 Hint Resolve INR_eq: real.
 
@@ -1728,7 +1723,8 @@ Hint Resolve INR_le: real.
 
 Lemma not_1_INR : forall n:nat, n <> 1%nat -> INR n <> 1.
 Proof.
-  replace 1 with (INR 1); auto with real.
+  intros n.
+  apply not_INR.
 Qed.
 Hint Resolve not_1_INR: real.
 
@@ -1905,8 +1901,8 @@ Qed.
 (**********)
 Lemma le_IZR_R1 : forall n:Z, IZR n <= 1 -> (n <= 1)%Z.
 Proof.
-  pattern 1 at 1; replace 1 with (IZR 1); intros; auto.
-  apply le_IZR; trivial.
+  intros n.
+  apply le_IZR.
 Qed.
 
 (**********)
@@ -1935,7 +1931,7 @@ Proof.
   intros z [H1 H2].
   apply Z.le_antisymm.
   apply Z.lt_succ_r; apply lt_IZR; trivial.
-  replace 0%Z with (Z.succ (-1)); trivial.
+  change 0%Z with (Z.succ (-1)).
   apply Z.le_succ_l; apply lt_IZR; trivial.
 Qed.
 
@@ -2012,12 +2008,11 @@ Lemma double_var : forall r1, r1 = r1 / 2 + r1 / 2.
 Proof.
   intro; rewrite <- double; unfold Rdiv; rewrite <- Rmult_assoc;
     symmetry ; apply Rinv_r_simpl_m.
-  replace 2 with (INR 2);
-  [ apply not_0_INR; discriminate | unfold INR; ring ].
+  now apply not_0_IZR.
 Qed.
 
 Lemma R_rm : ring_morph
-  R0 R1 Rplus Rmult Rminus Ropp eq
+  0%R 1%R Rplus Rmult Rminus Ropp eq
   0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool IZR.
 Proof.
 constructor ; try easy.
