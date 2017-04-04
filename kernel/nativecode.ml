@@ -1849,9 +1849,10 @@ and apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml =
 
 and compile_rel env sigma univ auxdefs n =
   let open Context.Rel in
-  let n = length env.env_rel_context - n in
   let open Declaration in
-  match lookup n env.env_rel_context with
+  let decl = lookup n env.env_rel_context in
+  let n = length env.env_rel_context - n in
+  match decl with
   | LocalDef (_,t,_) ->
       let code = lambda_of_constr env sigma t in
       let auxdefs,code = compile_with_fv env sigma univ auxdefs None code in
