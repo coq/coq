@@ -252,7 +252,9 @@ let print_toplevel_error (e, info) =
       else mt ()
     else print_location_in_file loc
   in
-  let hdr msg = hov 0 (Topfmt.err_hdr ++ msg) in
+  let hdr_text =
+    if CErrors.is_anomaly e then Topfmt.ann_hdr else Topfmt.err_hdr in
+  let hdr msg = hov 0 (hdr_text ++ msg) in
   locmsg ++ hdr (CErrors.iprint (e, info))
 
 (* Read the input stream until a dot is encountered *)
