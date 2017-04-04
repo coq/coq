@@ -87,57 +87,86 @@ let concat_seff = SideEffects.concat
 let mk_pure_proof c = (c, Univ.ContextSet.empty), empty_seff
 
 let inline_side_effects env body ctx side_eff =
-  let handle_sideff (t,ctx,sl) { eff = se; from_env = mb } =
+  (** First step: remove the constants that are still in the environment *)
+  let filter { eff = se; from_env = mb } =
     let cbl = match se with
-      | SEsubproof (c,cb,b) -> [c,cb,b]
-      | SEscheme (cl,_) -> List.map (fun (_,c,cb,b) -> c,cb,b) cl in
+    | SEsubproof (c, cb, b) -> [c, cb, b]
+    | SEscheme (cl,_) ->
+      List.map (fun (_, c, cb, b) -> c, cb, b) cl
+    in
     let not_exists (c,_,_) =
       try ignore(Environ.lookup_constant c env); false
       with Not_found -> true in 
     let cbl = List.filter not_exists cbl in
-    let cname c = 
-      let name = string_of_con c in
-      let name = String.map (fun c -> if c == '.' || c == '#' then '_' else c) name in
-      Name (id_of_string name) in
-    let rec sub c i x = match kind_of_term x with
-      | Const (c', _) when eq_constant c c' -> mkRel i
-      | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub c i x) i x in
-    let rec sub_body c u b i x = match kind_of_term x with
-      | Const (c',u') when eq_constant c c' -> 
-	Vars.subst_instance_constr u' b
-      | _ -> map_constr_with_binders ((+) 1) (sub_body c u b) i x in
-    let fix_body (c,cb,b) (t,ctx) =
-      match cb.const_body, b with
-      | Def b, _ ->
-          let b = Mod_subst.force_constr b in
-	  let poly = cb.const_polymorphic in
-	    if not poly then
-              let b_ty = Typeops.type_of_constant_type env cb.const_type in
-              let t = sub c 1 (Vars.lift 1 t) in
-	        mkLetIn (cname c, b, b_ty, t),
-		Univ.ContextSet.union ctx
-		  (Univ.ContextSet.of_context cb.const_universes)
-	    else 
-	      let univs = cb.const_universes in
-		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t), ctx
-      | OpaqueDef _, `Opaque (b,_) -> 
-	  let poly = cb.const_polymorphic in
-	    if not poly then
-              let b_ty = Typeops.type_of_constant_type env cb.const_type in
-              let t = sub c 1 (Vars.lift 1 t) in
-	        mkApp (mkLambda (cname c, b_ty, t), [|b|]),
-		Univ.ContextSet.union ctx
-		  (Univ.ContextSet.of_context cb.const_universes)
-	    else
-	      let univs = cb.const_universes in
-		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t), ctx
-      | _ -> assert false
-    in
-    let t, ctx = List.fold_right fix_body cbl (t,ctx) in
-    t, ctx, (mb,List.length cbl) :: sl
+    (cbl, mb)
   in
-  (* CAVEAT: we assure a proper order *)
-  List.fold_left handle_sideff (body,ctx,[]) (uniq_seff_rev side_eff)
+  (* CAVEAT: we assure that most recent effects come first *)
+  let side_eff = List.map filter (uniq_seff_rev side_eff) in
+  let sigs = List.rev_map (fun (cbl, mb) -> mb, List.length cbl) side_eff in
+  let side_eff = List.fold_left (fun accu (cbl, _) -> cbl @ accu) [] side_eff in
+  let side_eff = List.rev side_eff in
+  (** Most recent side-effects first in side_eff *)
+  if List.is_empty side_eff then (body, ctx, sigs)
+  else
+    (** Second step: compute the lifts and substitutions to apply *)
+    let cname c =
+      let name = Constant.to_string c in
+      let map c = if c == '.' || c == '#' then '_' else c in
+      let name = String.map map name in
+      Name (Id.of_string name)
+    in
+    let fold (subst, var, ctx, args) (c, cb, b) =
+      let (b, opaque) = match cb.const_body, b with
+      | Def b, _ -> (Mod_subst.force_constr b, false)
+      | OpaqueDef _, `Opaque (b,_) -> (b, true)
+      | _ -> assert false
+      in
+      if cb.const_polymorphic then
+        (** Inline the term to emulate universe polymorphism *)
+        let data = (Univ.UContext.instance cb.const_universes, b) in
+        let subst = Cmap_env.add c (Inl data) subst in
+        (subst, var, ctx, args)
+      else
+        (** Abstract over the term at the top of the proof *)
+        let ty = Typeops.type_of_constant_type env cb.const_type in
+        let subst = Cmap_env.add c (Inr var) subst in
+        let univs = Univ.ContextSet.of_context cb.const_universes in
+        let ctx = Univ.ContextSet.union ctx univs in
+        (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
+    in
+    let (subst, len, ctx, args) = List.fold_left fold (Cmap_env.empty, 1, ctx, []) side_eff in
+    (** Third step: inline the definitions *)
+    let rec subst_const i k t = match Constr.kind t with
+    | Const (c, u) ->
+      let data = try Some (Cmap_env.find c subst) with Not_found -> None in
+      begin match data with
+      | None -> t
+      | Some (Inl (inst, b)) ->
+        (** [b] is closed but may refer to other constants *)
+        subst_const i k (Vars.subst_instance_constr u b)
+      | Some (Inr n) ->
+        mkRel (k + n - i)
+      end
+    | Rel n ->
+      (** Lift free rel variables *)
+      if n <= k then t
+      else mkRel (n + len - i - 1)
+    | _ -> map_constr_with_binders ((+) 1) (fun k t -> subst_const i k t) k t
+    in
+    let map_args i (na, b, ty, opaque) =
+      (** Both the type and the body may mention other constants *)
+      let ty = subst_const (len - i - 1) 0 ty in
+      let b = subst_const (len - i - 1) 0 b in
+      (na, b, ty, opaque)
+    in
+    let args = List.mapi map_args args in
+    let body = subst_const 0 0 body in
+    let fold_arg (na, b, ty, opaque) accu =
+      if opaque then mkApp (mkLambda (na, ty, accu), [|b|])
+      else mkLetIn (na, b, ty, accu)
+    in
+    let body = List.fold_right fold_arg args body in
+    (body, ctx, sigs)
 
 (* Given the list of signatures of side effects, checks if they match.
  * I.e. if they are ordered descendants of the current revstruct *)
