@@ -540,7 +540,16 @@ let mk_clos e t =
     | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _) ->
         {norm = Red; term = FCLOS(t,e)}
 
-let mk_clos_vect env v = CArray.Fun1.map mk_clos env v
+(** Hand-unrolling of the map function to bypass the call to the generic array
+    allocation *)
+let mk_clos_vect env v = match v with
+| [||] -> [||]
+| [|v0|] -> [|mk_clos env v0|]
+| [|v0; v1|] -> [|mk_clos env v0; mk_clos env v1|]
+| [|v0; v1; v2|] -> [|mk_clos env v0; mk_clos env v1; mk_clos env v2|]
+| [|v0; v1; v2; v3|] ->
+  [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
+| v -> CArray.Fun1.map mk_clos env v
 
 (* Translate the head constructor of t from constr to fconstr. This
    function is parameterized by the function to apply on the direct
