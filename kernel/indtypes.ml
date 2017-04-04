@@ -375,7 +375,7 @@ let typecheck_inductive env mie =
       match arity with
         | RegularArity (_, full_arity, _) ->
            check_subtyping_arity_constructor envsb dosubst full_arity true;
-           Array.iter (fun cnt -> check_subtyping_arity_constructor envsb dosubst cnt true) lc
+           Array.iter (fun cnt -> check_subtyping_arity_constructor envsb dosubst cnt false) lc
         | TemplateArity _ -> ()
           (* TODO: When disabling template polumorphism raise anomaly if this constructor is not removed from the code base *)
     ) inds
