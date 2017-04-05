@@ -58,7 +58,9 @@ let rec cases_pattern_fold_names f a = function
   | CPatDelimiters (_,_,pat) -> cases_pattern_fold_names f a pat
   | CPatAtom (_,Some (Ident (_,id))) when not (is_constructor id) -> f id a
   | CPatPrim _ | CPatAtom _ -> a
-  | CPatCast _ -> assert false
+  | CPatCast (loc,_,_) ->
+     CErrors.user_err_loc (loc, "cases_pattern_fold_names",
+                           Pp.strbrk "Casts are not supported here.")
 
 let ids_of_pattern =
   cases_pattern_fold_names Id.Set.add Id.Set.empty
