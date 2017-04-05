@@ -65,9 +65,6 @@ val new_type_evar :
 
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 
-val restrict_evar : evar_map -> Evar.t -> Filter.t ->
-  ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * Evar.t
-
 (** Polymorphic constants *)
 
 val new_global : evar_map -> GlobRef.t -> evar_map * constr
@@ -224,8 +221,17 @@ raise OccurHypInSimpleClause if the removal breaks dependencies *)
 type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
 | EvarTypingBreak of Constr.existential
+| NoCandidatesLeft of Evar.t
 
 exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t option
+
+(** Restrict an undefined evar according to a (sub)filter and candidates.
+    The evar will be defined if there is only one candidate left,
+@raise ClearDependencyError NoCandidatesLeft if the filter turns the candidates
+  into an empty list. *)
+
+val restrict_evar : evar_map -> Evar.t -> Filter.t ->
+  ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * Evar.t
 
 val clear_hyps_in_evi : env -> evar_map -> named_context_val -> types ->
   Id.Set.t -> evar_map * named_context_val * types

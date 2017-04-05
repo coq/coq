@@ -426,10 +426,6 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
 
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
-let restrict_evar evd evk filter ?src candidates =
-  let evd, evk' = Evd.restrict evk filter ?candidates ?src evd in
-  Evd.declare_future_goal evk' evd, evk'
-
 let new_pure_evar_full evd evi =
   let (evd, evk) = Evd.new_evar evd evi in
   let evd = Evd.declare_future_goal evk evd in
@@ -532,10 +528,32 @@ let generalize_evar_over_rels sigma (ev,args) =
 type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
 | EvarTypingBreak of existential
+| NoCandidatesLeft of Evar.t
 
 exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t option
 
 exception Depends of Id.t
+
+let set_of_evctx l =
+  List.fold_left (fun s decl -> Id.Set.add (NamedDecl.get_id decl) s) Id.Set.empty l
+
+let filter_effective_candidates evd evi filter candidates =
+  let ids = set_of_evctx (Filter.filter_list filter (evar_context evi)) in
+  List.filter (fun a -> Id.Set.subset (collect_vars evd a) ids) candidates
+
+let restrict_evar evd evk filter ?src candidates =
+  let evar_info = Evd.find_undefined evd evk in
+  let candidates = Option.map (filter_effective_candidates evd evar_info filter) candidates in
+  match candidates with
+  | Some [] -> raise (ClearDependencyError (*FIXME*)(Id.of_string "blah", (NoCandidatesLeft evk), None))
+  | _ ->
+     let evd, evk' = Evd.restrict evk filter ?candidates ?src evd in
+     (** Mark new evar as future goal, removing previous one,
+         circumventing Proofview.advance but making Proof.run_tactic catch these. *)
+     let future_goals = Evd.save_future_goals evd in
+     let future_goals = Evd.filter_future_goals (fun evk' -> not (Evar.equal evk evk')) future_goals in
+     let evd = Evd.restore_future_goals evd future_goals in
+     (Evd.declare_future_goal evk' evd, evk')
 
 let rec check_and_clear_in_constr env evdref err ids global c =
   (* returns a new constr where all the evars have been 'cleaned'
@@ -606,7 +624,9 @@ let rec check_and_clear_in_constr env evdref err ids global c =
               let origfilter = Evd.evar_filter evi in
               let filter = Evd.Filter.apply_subfilter origfilter filter in
               let evd = !evdref in
-              let (evd,_) = restrict_evar evd evk filter None in
+              let candidates = Evd.evar_candidates evi in
+              let candidates = Option.map (List.map EConstr.of_constr) candidates in
+              let (evd,_) = restrict_evar evd evk filter candidates in
               evdref := evd;
               Evd.existential_value0 !evdref ev
 
