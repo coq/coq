@@ -1746,12 +1746,13 @@ end = struct (* {{{ *)
     { indentation; verbose; loc; expr = e; strlen }
   =
     let e, time, fail =
-      let rec find time fail = function
-        | VernacTime (_,e) | VernacRedirect (_,(_,e)) -> find true fail e
-        | VernacFail e -> find time true e
-        | _ -> e, time, fail in find false false e in
+      let rec find ~time ~fail = function
+        | VernacTime (_,e) -> find ~time:true ~fail e
+        | VernacRedirect (_,(_,e)) -> find ~time ~fail e
+        | VernacFail e -> find ~time ~fail:true e
+        | e -> e, time, fail in find ~time:false ~fail:false e in
     Hooks.call Hooks.with_fail fail (fun () ->
-    (if time then System.with_time false else (fun x -> x)) (fun () ->
+    (if time then System.with_time !Flags.time else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
     Proof_global.with_current_proof (fun _ p ->
       let goals, _, _, _, _ = Proof.proof p in

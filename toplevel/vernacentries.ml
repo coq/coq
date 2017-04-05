@@ -2218,7 +2218,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
     | VernacRedirect (s, (_,v)) ->
-         Feedback.with_output_to_file s (aux false) v
+         Feedback.with_output_to_file s (aux ?locality ?polymorphism isprogcmd) v
     | VernacTime (_,v) ->
         System.with_time !Flags.time
           (aux ?locality ?polymorphism isprogcmd) v;
