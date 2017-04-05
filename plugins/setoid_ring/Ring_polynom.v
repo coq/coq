@@ -1138,8 +1138,9 @@ Section POWER.
          interp_PElist l lpe -> MPcond (mk_monpol_list lpe) l.
  Proof.
    induction lpe;simpl. trivial.
-   destruct a;simpl;intros.
-   assert (HH:=mon_of_pol_ok (norm_subst 0 nil  p));
+   (* MS: This script relied on automatic renaming of branches *)
+   destruct a as [p q];simpl;intros.
+   assert (HH:=mon_of_pol_ok (norm_subst 0 nil p));
      destruct  (mon_of_pol (norm_subst 0 nil p)).
    split.
    rewrite <- norm_subst_spec by exact I.
