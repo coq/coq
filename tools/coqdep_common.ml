@@ -31,6 +31,8 @@ let option_noglob = ref false
 let option_natdynlk = ref true
 let option_boot = ref false
 let option_mldep = ref None
+let option_mod_dep = ref None
+let option_from = ref None
 
 let norec_dirs = ref StrSet.empty
 
@@ -351,6 +353,31 @@ module VData = struct
 end
 
 module VCache = Set.Make(VData)
+
+let simple_qualid_split qualid = CString.split '.' qualid
+
+let one_module_dependency () =
+  let mod_id = match !option_mod_dep with
+      | Some s -> simple_qualid_split s
+      | None -> assert false
+  in
+  let from_id = match !option_from with
+      | None -> None
+      | Some s -> Some (simple_qualid_split s)
+  in
+  try
+    printf "%s%s\n"
+	   (safe_assoc from_id true "-module-str option" mod_id)
+	   !suffixe
+  with Not_found ->
+    if not (is_in_coqlib ?from:from_id mod_id) then
+      let str =
+  	match from_id with
+  	  | None -> mod_id
+  	  | Some pth -> pth @ mod_id
+      in
+      eprintf "*** Warning: library %s cannot be found in the loadpath!\n%!"
+  	      (String.concat "." str)
 
 let rec traite_fichier_Coq suffixe verbose f =
   try
