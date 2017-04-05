@@ -2871,6 +2871,7 @@ sig
   type clear_dependency_error =
     | OccurHypInSimpleClause of Names.Id.t option
     | EvarTypingBreak of Constr.existential
+    | NoCandidatesLeft of Evar.t
 
   exception ClearDependencyError of Names.Id.t * clear_dependency_error
   val undefined_evars_of_term : Evd.evar_map -> EConstr.constr -> Evar.Set.t

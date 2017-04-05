@@ -56,9 +56,6 @@ val e_new_type_evar : env -> evar_map ref ->
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
 
-val restrict_evar : evar_map -> existential_key -> Filter.t ->
-  ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * existential_key
-
 (** Polymorphic constants *)
 
 val new_global : evar_map -> Globnames.global_reference -> evar_map * constr
@@ -124,6 +121,7 @@ val advance : evar_map -> evar -> evar option
 
 val undefined_evars_of_term : evar_map -> constr -> Evar.Set.t
 val undefined_evars_of_named_context : evar_map -> Context.Named.t -> Evar.Set.t
+val undefined_evars_of_econstr_named_context : evar_map -> EConstr.named_context -> Evar.Set.t
 val undefined_evars_of_evar_info : evar_map -> evar_info -> Evar.Set.t
 
 (** [occur_evar_upto sigma k c] returns [true] if [k] appears in
@@ -194,8 +192,17 @@ raise OccurHypInSimpleClause if the removal breaks dependencies *)
 type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
 | EvarTypingBreak of Constr.existential
+| NoCandidatesLeft of existential_key
 
 exception ClearDependencyError of Id.t * clear_dependency_error
+
+(** Restrict an undefined evar according to a (sub)filter and candidates.
+    The evar will be defined if there is only one candidate left,
+@raise ClearDependencyError NoCandidatesLeft is the filter turns the candidates
+  into an empty list. *)
+
+val restrict_evar : evar_map -> existential_key -> Filter.t ->
+  ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * existential_key
 
 (* spiwack: marks an evar that has been "defined" by clear.
     used by [Goal] and (indirectly) [Proofview] to handle the clear tactic gracefully*)

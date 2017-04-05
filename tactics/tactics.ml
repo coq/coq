@@ -250,6 +250,9 @@ let clear_dependency_msg env sigma id = function
       str "Cannot remove " ++ pr_id id ++
       strbrk " without breaking the typing of " ++
       Printer.pr_existential env sigma ev ++ str"."
+  | Evarutil.NoCandidatesLeft ev ->
+      str "Cannot remove " ++ pr_id id ++ str " as it would leave the existential " ++
+      Printer.pr_existential_key sigma ev ++ str" without candidates."
 
 let error_clear_dependency env sigma id err =
   user_err  (clear_dependency_msg env sigma id err)
@@ -264,6 +267,9 @@ let replacing_dependency_msg env sigma id = function
       str "Cannot change " ++ pr_id id ++
       strbrk " without breaking the typing of " ++
       Printer.pr_existential env sigma ev ++ str"."
+  | Evarutil.NoCandidatesLeft ev ->
+      str "Cannot change " ++ pr_id id ++ str " as it would leave the existential " ++
+      Printer.pr_existential_key sigma ev ++ str" without candidates."
 
 let error_replacing_dependency env sigma id err =
   user_err  (replacing_dependency_msg env sigma id err)

@@ -234,7 +234,6 @@ val closed0 : Evd.evar_map -> t -> bool
 val subst_univs_level_constr : Univ.universe_level_subst -> t -> t
 val subst_of_rel_context_instance : rel_context -> t list -> t list
 
-
 end
 
 (** {5 Environment handling} *)
