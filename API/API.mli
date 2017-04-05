@@ -5454,6 +5454,7 @@ sig
   val run_hint : hint ->
     (raw_hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val typeclasses_db : hint_db_name
+  val rewrite_db : hint_db_name
   val add_hints_init : (unit -> unit) -> unit
   val create_hint_db : bool -> hint_db_name -> Names.transparent_state -> bool -> unit
   val empty_hint_info : 'a Vernacexpr.hint_info_gen

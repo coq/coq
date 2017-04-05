@@ -260,20 +260,20 @@ let add_inversion_lemma_exn na com comsort bool tac =
 (* ================================= *)
 
 let lemInv id c =
-  Proofview.Goal.enter begin fun gls ->
-  try
-    let clause = mk_clenv_from_env (pf_env gls) (project gls) None (c, pf_unsafe_type_of gls c) in
-    let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
-    Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
-  with
-    | NoSuchBinding ->
-	user_err 
-	  (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
-    | UserError (a,b) ->
-	 user_err ~hdr:"LemInv"
-	   (str "Cannot refine current goal with the lemma " ++
-	      pr_leconstr_env (pf_env gls) (project gls) c)
-  end
+  let open Tacmach.New in
+  Proofview.Goal.enter begin fun gl ->
+      let ty = pf_apply Retyping.get_type_of gl c in
+      let flags = Unification.elim_flags () in
+      Clenvtac.with_clause (c,ty) (fun clause ->
+      Proofview.tclIFCATCH (Clenvtac.clenv_chain_last (EConstr.mkVar id) clause)
+        (fun () ->
+          Clenvtac.clenv_refine2 clause ~flags ~with_evars:false)
+        (fun ((e, _) as ex) ->
+          match e with
+          | NoSuchBinding ->
+	     user_err (hov 0 (pr_econstr_env (pf_env gl) (project gl) c ++ spc () ++ str "does not refer to an inversion lemma."))
+          | _ -> catch_failerror ex))
+         end
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id
 

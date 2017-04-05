@@ -89,7 +89,7 @@ let make_inv_predicate env evd indf realargs id status concl =
 		let sort = get_sort_family_of env !evd concl in
 		let sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd sort in
 		let p = make_arity env !evd true indf sort in
-		let evd',(p,ptyp) = Unification.abstract_list_all env
+		let evd',p = Unification.abstract_list_all_with_dependencies env
                   !evd p concl (realargs@[mkVar id])
 		in evd := evd'; p in
 	  let hyps,bodypred = decompose_lam_n_assum !evd (nrealargs+1) pred in

@@ -99,6 +99,9 @@ val pose_all_metas_as_evars : env -> evar_map -> constr -> evar_map * constr
 val abstract_list_all :
   env -> evar_map -> constr -> constr -> constr list -> evar_map * (constr * types)
 
+val abstract_list_all_with_dependencies :
+  env -> evar_map -> constr -> constr -> constr list -> evar_map * constr
+
 (* For tracing *)
 
 type metabinding = (metavariable * constr * (instance_constraint * instance_typing_status))
