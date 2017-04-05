@@ -655,3 +655,68 @@ let control_only_guard env c =
     iter_constr_with_full_binders push_rel iter env c
   in
   iter env c
+
+(* inference of subtyping condition for inductive types *)
+
+let infer_inductive_subtyping_arity_constructor
+  (env, evd, csts) (subst : constr -> constr) (arcn : Term.types) is_arity =
+  let update_contexts (env, evd, csts) csts' =
+    (Environ.add_constraints csts' env, Evd.add_constraints evd csts', Univ.Constraint.union csts csts')
+  in
+  let basic_check (env, evd, csts) tp =
+    let csts' =
+      Reduction.infer_conv_leq ~evars:(Evd.existential_opt_value evd) env (Evd.universes evd) tp (subst tp)
+    in update_contexts (env, evd, csts) csts'
+  in
+  let infer_typ typ ctxs =
+   match typ with
+     | LocalAssum (_, typ') ->
+       begin
+         try
+           let (env, evd, csts) = basic_check ctxs typ' in (Environ.push_rel typ env, evd, csts)
+         with Reduction.NotConvertible -> 
+           anomaly ~label:"inference of record/inductive subtyping relation failed"
+             (Pp.str "Can't infer subtyping for record/inductive type")
+       end
+     | _ -> anomaly (Pp.str "")
+  in
+  let typs, codom = Reduction.dest_prod env arcn in
+  let last_contexts = Context.Rel.fold_outside infer_typ typs ~init:(env, evd, csts) in
+  if not is_arity then basic_check last_contexts codom else last_contexts
+
+let infer_inductive_subtyping env evd mind_ent =
+  let { Entries.mind_entry_inds = entries;
+        Entries.mind_entry_polymorphic = poly;
+        Entries.mind_entry_universes = ground_uinfind;
+      } = mind_ent
+  in
+  let uinfind =
+    if poly then
+    begin
+      let uctx = Univ.UInfoInd.univ_context ground_uinfind in
+      let sbsubst = Univ.UInfoInd.subtyping_susbst ground_uinfind in
+      let dosubst = subst_univs_level_constr sbsubst in
+      let instance_other = Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) in
+      let constraints_other = Univ.subst_univs_level_constraints sbsubst (Univ.UContext.constraints uctx) in
+      let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
+      let env' = Environ.push_context uctx env in
+      let env' = Environ.push_context uctx_other env' in
+      let evd' = Evd.merge_universe_context evd (UState.of_context_set (Univ.ContextSet.of_context uctx_other)) in
+      let (_, _, subtyp_constraints) =
+        List.fold_left
+         (fun ctxs indentry ->
+            let ctxs' = infer_inductive_subtyping_arity_constructor
+                          ctxs dosubst indentry.Entries.mind_entry_arity true
+            in
+            List.fold_left
+             (fun ctxs cons ->
+                infer_inductive_subtyping_arity_constructor ctxs dosubst cons false)
+             ctxs' indentry.Entries.mind_entry_lc
+         ) (env', evd', Univ.Constraint.empty) entries
+      in Univ.UInfoInd.make (Univ.UInfoInd.univ_context ground_uinfind,
+           Univ.UContext.make
+             (Univ.UContext.instance (Univ.UInfoInd.subtyp_context ground_uinfind),
+               subtyp_constraints))
+    end
+    else ground_uinfind
+  in {mind_ent with Entries.mind_entry_universes = uinfind;}

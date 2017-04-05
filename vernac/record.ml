@@ -405,6 +405,18 @@ let declare_structure finite poly ctx id idbuild paramimpls params arity templat
       mind_entry_universes = ctx;
     }
   in
+  let mie =
+    if poly then
+      begin
+        let env = Global.env () in
+        let env' = Environ.push_context (Univ.UInfoInd.univ_context ctx) env in
+        let env'' = Environ.push_rel_context params env' in
+        let evd = Evd.from_env env'' in
+        Inductiveops.infer_inductive_subtyping env'' evd mie
+      end
+    else
+       mie
+  in
   let kn = Command.declare_mutual_inductive_with_eliminations mie [] [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
