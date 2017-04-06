@@ -348,8 +348,9 @@ and my_find_search_nodelta sigma db_list local_db secvars hdc concl =
     (List.map_append (hintmap_of sigma secvars hdc concl) (local_db::db_list))
 
 and my_find_search mod_delta =
-  if mod_delta then my_find_search_delta
-  else my_find_search_nodelta
+  (* if mod_delta then my_find_search_delta *)
+  (* else my_find_search_nodelta *)
+  my_find_search_delta
 
 and my_find_search_delta sigma db_list local_db secvars hdc concl =
   let f = hintmap_of sigma secvars hdc concl in
