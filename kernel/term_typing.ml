@@ -139,6 +139,12 @@ let inline_side_effects env body ctx side_eff =
   (* CAVEAT: we assure a proper order *)
   List.fold_left handle_sideff (body,ctx,[]) (uniq_seff_rev side_eff)
 
+let rec is_nth_suffix n l suf =
+  if Int.equal n 0 then l == suf
+  else match l with
+  | [] -> false
+  | _ :: l -> is_nth_suffix (pred n) l suf
+
 (* Given the list of signatures of side effects, checks if they match.
  * I.e. if they are ordered descendants of the current revstruct *)
 let check_signatures curmb sl =
@@ -151,7 +157,7 @@ let check_signatures curmb sl =
           match sl with
           | None -> sl, None
           | Some n ->
-              if List.length mb >= how_many && CList.skipn how_many mb == curmb
+              if is_nth_suffix how_many mb curmb
               then Some (n + how_many), Some mb
               else None, None
         with CEphemeron.InvalidKey -> None, None in
@@ -184,9 +190,6 @@ let rec unzip ctx j =
       unzip ctx { j with uj_val = mkLetIn (n,c,ty,j.uj_val) }
   | `Cut (n,ty,arg) :: ctx ->
       unzip ctx { j with uj_val = mkApp (mkLambda (n,ty,j.uj_val),arg) }
-
-let hcons_j j =
-  { uj_val = hcons_constr j.uj_val; uj_type = hcons_constr j.uj_type} 
 
 let feedback_completion_typecheck =
   let open Feedback in
@@ -224,13 +227,13 @@ let infer_declaration ~trust env kn dcl =
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
             let j = infer env body in
             unzip ectx j in
-          let j = hcons_j j in
 	  let subst = Univ.LMap.empty in
           let _ = judge_of_cast env j DEFAULTcast tyj in
           assert (eq_constr typ tyj.utj_val);
+          let c = hcons_constr j.uj_val in
           let _typ = RegularArity (Vars.subst_univs_level_constr subst typ) in
           feedback_completion_typecheck feedback_id;
-          j.uj_val, uctx) in
+          c, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
       def, RegularArity typ, None, c.const_entry_polymorphic, 
 	c.const_entry_universes,
@@ -507,7 +510,11 @@ let translate_local_assum env t =
     t
 
 let translate_recipe env kn r =
-  build_constant_declaration kn env (Cooking.cook_constant env r)
+  (** We only hashcons the term when outside of a section, otherwise this would
+      be useless. It is detected by the dirpath of the constant being empty. *)
+  let (_, dir, _) = Constant.repr3 kn in
+  let hcons = DirPath.is_empty dir in
+  build_constant_declaration kn env (Cooking.cook_constant ~hcons env r)
 
 let translate_local_def mb env id centry =
   let def,typ,proj,poly,univs,inline_code,ctx =

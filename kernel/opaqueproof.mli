@@ -28,8 +28,9 @@ val empty_opaquetab : opaquetab
 (** From a [proofterm] to some [opaque]. *)
 val create : proofterm -> opaque
 
-(** Turn a direct [opaque] into an indirect one, also hashconses constr.
- *  The integer is an hint of the maximum id used so far *)
+(** Turn a direct [opaque] into an indirect one. It is your responsibility to
+  hashcons the inner term beforehand. The integer is an hint of the maximum id
+  used so far *)
 val turn_indirect : DirPath.t -> opaque -> opaquetab -> opaque * opaquetab
 
 (** From a [opaque] back to a [constr]. This might use the
