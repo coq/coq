@@ -211,8 +211,8 @@ let extend_with_auto_hints env sigma l seq =
   let seqref=ref seq in
   let f p_a_t =
     match repr_hint p_a_t.code with
-	Res_pf (c,_) | Give_exact (c,_)
-      | Res_pf_THEN_trivial_fail (c,_) ->
+	Res_pf c | Give_exact c
+      | Res_pf_THEN_trivial_fail c ->
           let (c, _, _) = c in
 	  (try
 	     let (gr, _) = Termops.global_of_constr sigma c in

@@ -112,14 +112,22 @@ open Auto
 
 let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 
-let unify_e_resolve poly flags (c,clenv) =
-  Proofview.Goal.enter begin fun gl ->
-      let clenv', c = connect_hint_clenv poly c clenv gl in
-      let clenv' = clenv_unique_resolver ~flags clenv' gl in
-      Proofview.tclTHEN
-        (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
-        (Tactics.Simple.eapply c)
-    end
+let unify_e_resolve poly flags c =
+  let open Proofview in
+  make_clenv poly c begin fun clenv' ->
+    try
+        Clenvtac.clenv_refine2 ~with_evars:true ~shelve_subgoals:true ~flags clenv'
+	(** MS: compat, was eapply who would do shelve_unifiable *)
+	(* (Tactics.Simple.eapply c) *)
+      with Evarconv.UnableToUnify (evm, err) ->
+        Proofview.Goal.nf_enter begin fun gl ->
+	let env = Proofview.Goal.env gl in
+	let concl = Proofview.Goal.concl gl in
+	let sigma = Proofview.Goal.sigma gl in
+	let exn = Pretype_errors.CannotUnify (concl, (clenv_concl clenv'), Some err) in
+	let exn = Pretype_errors.PretypeError (env, sigma, exn) in
+        tclZERO exn end
+  end
 
 let hintmap_of sigma secvars hdc concl =
   match hdc with
@@ -130,13 +138,17 @@ let hintmap_of sigma secvars hdc concl =
      else (fun db -> Hint_db.map_auto sigma ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
-let e_exact poly flags (c,clenv) =
+let e_exact poly flags c =
   Proofview.Goal.enter begin fun gl ->
-    let clenv', c = connect_hint_clenv poly c clenv gl in
+    let evd, clenv' = make_hint_clenv poly c gl in
     Tacticals.New.tclTHEN
-    (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
-    (e_give_exact c)
+    (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context evd))
+    (e_give_exact clenv'.cl_val)
   end
+  
+(* let e_exact poly flags (c,clenv) = *)
+(*   connect_clenv poly c clenv *)
+(*     begin fun (clenv', c) -> e_give_exact c end *)
 
 let rec e_trivial_fail_db db_list local_db =
   let next = Proofview.Goal.enter begin fun gl ->
@@ -169,11 +181,11 @@ and e_my_find_search sigma db_list local_db secvars hdc concl =
       in
       (b,
         let tac = function
-        | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
-        | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
-        | Give_exact (c,cl) -> e_exact poly st (c,cl)
-        | Res_pf_THEN_trivial_fail (term,cl) ->
-          Tacticals.New.tclTHEN (unify_e_resolve poly st (term,cl))
+        | Res_pf c -> unify_e_resolve poly st c
+        | ERes_pf c -> unify_e_resolve poly st c
+        | Give_exact c -> e_exact poly st c
+        | Res_pf_THEN_trivial_fail c ->
+          Tacticals.New.tclTHEN (unify_e_resolve poly st c)
             (e_trivial_fail_db db_list local_db)
         | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
         | Extern tacast -> conclPattern concl p tacast
