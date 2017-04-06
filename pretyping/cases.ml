@@ -427,7 +427,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
                 let () = Option.iter ((:=) pb.evdref) (cumul pb.env !(pb.evdref) indt typ) in
 		current
 	      else
-		(evd_comb2 (Coercion.inh_conv_coerce_to true pb.env)
+                (evd_comb2 (fun evd uj -> Coercion.inh_conv_coerce_to true pb.env evd uj)
 		  pb.evdref (make_judge current typ) indt).uj_val in
 	    let sigma =  !(pb.evdref) in
 	    (current,try_find_ind pb.env sigma indt names))
@@ -1683,9 +1683,12 @@ let abstract_tycon ?loc env evdref subst tycon extenv t =
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
         let ev' = evd_comb1 (Evarutil.new_evar env ~src) evdref ty in
-        begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,substl inst ev') with
-        | Success evd -> evdref := evd
-        | UnifFailure _ -> assert false
+          begin
+            let flags = (default_flags_of full_transparent_state) in
+            let conv = conv_fun evar_conv_x flags in
+              match solve_simple_eqn flags conv env !evdref (None,ev,substl inst ev') with
+              | Success evd -> evdref := evd
+              | UnifFailure _ -> assert false
         end;
         ev'
     | _ ->
@@ -1929,7 +1932,8 @@ let extract_arity_signature ?(dolift=true) env0 lvar tomatchl tmsign =
 let inh_conv_coerce_to_tycon ?loc env evdref j tycon =
   match tycon with
     | Some p ->
-      evd_comb2 (Coercion.inh_conv_coerce_to ?loc true env) evdref j p
+      evd_comb2 (Coercion.inh_conv_coerce_to ?loc true env
+                   ~flags:(default_flags_of full_transparent_state)) evdref j p
     | None -> j
 
 (* We put the tycon inside the arity signature, possibly discovering dependencies. *)

@@ -455,7 +455,7 @@ let inh_coerce_to_prod ?loc env evd t =
       !evdref, typ'
   else (evd, t)
 
-let inh_coerce_to_fail env evd rigidonly v t c1 =
+let inh_coerce_to_fail flags env evd rigidonly v t c1 =
   if rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr c1) && Heads.is_rigid env (EConstr.Unsafe.to_constr t))
   then
     raise NoCoercion
@@ -472,13 +472,16 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
 	  | None -> evd, None, t
       with Not_found -> raise NoCoercion
     in
-      try (the_conv_x_leq env t' c1 evd, v')
+      try (unify_leq flags env evd t' c1, v')
       with UnableToUnify _ -> raise NoCoercion
 
-let rec inh_conv_coerce_to_fail ?loc env evd rigidonly v t c1 =
-  try (the_conv_x_leq env t c1 evd, v)
+let default_flags_of env =
+  default_flags_of full_transparent_state
+
+let rec inh_conv_coerce_to_fail ?loc env evd ?(flags=default_flags_of env) rigidonly v t c1 =
+  try (unify_leq flags env evd t c1, v)
   with UnableToUnify (best_failed_evd,e) ->
-    try inh_coerce_to_fail env evd rigidonly v t c1
+    try inh_coerce_to_fail flags env evd rigidonly v t c1
     with NoCoercion ->
       match
       EConstr.kind evd (whd_all env evd t),
@@ -509,10 +512,10 @@ let rec inh_conv_coerce_to_fail ?loc env evd rigidonly v t c1 =
       | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen ?loc resolve_tc rigidonly env evd cj t =
+let inh_conv_coerce_to_gen ?loc resolve_tc rigidonly flags env evd cj t =
   let (evd', val') =
     try
-      inh_conv_coerce_to_fail ?loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
+      inh_conv_coerce_to_fail ?loc env evd ~flags rigidonly (Some cj.uj_val) cj.uj_type t
     with NoCoercionNoUnifier (best_failed_evd,e) ->
       try
 	if Flags.is_program_mode () then
@@ -534,9 +537,10 @@ let inh_conv_coerce_to_gen ?loc resolve_tc rigidonly env evd cj t =
   let val' = match val' with Some v -> v | None -> assert(false) in
     (evd',{ uj_val = val'; uj_type = t })
 
-let inh_conv_coerce_to ?loc resolve_tc = inh_conv_coerce_to_gen ?loc resolve_tc false
-
-let inh_conv_coerce_rigid_to ?loc resolve_tc = inh_conv_coerce_to_gen resolve_tc ?loc true
+let inh_conv_coerce_to ?loc resolve_tc env evd ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc resolve_tc false flags env evd
+let inh_conv_coerce_rigid_to ?loc resolve_tc env evd ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc resolve_tc true flags env evd
 
 let inh_conv_coerces_to ?loc env evd t t' =
   try

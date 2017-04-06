@@ -38,7 +38,7 @@ let define_and_solve_constraints evk c env evd =
   match
     List.fold_left
       (fun p (pbty,env,t1,t2) -> match p with
-        | Success evd -> Evarconv.evar_conv_x full_transparent_state env evd pbty t1 t2
+        | Success evd -> Evarconv.evar_conv_x (Evarconv.default_flags_of full_transparent_state) env evd pbty t1 t2
 	| UnifFailure _ as x -> x) (Success evd)
       pbs
   with

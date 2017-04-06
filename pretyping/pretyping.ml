@@ -316,7 +316,7 @@ let apply_inference_hook hook evdref frozen = match frozen with
 let apply_heuristics env evdref fail_evar =
   (* Resolve eagerly, potentially making wrong choices *)
   try evdref := solve_unif_constraints_with_heuristics
-	~ts:(Typeclasses.classes_transparent_state ()) env !evdref
+        ~flags:(default_flags_of (Typeclasses.classes_transparent_state ())) env !evdref
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in if fail_evar then iraise e
 
@@ -395,7 +395,7 @@ let adjust_evar_source evdref na c =
 let inh_conv_coerce_to_tycon ?loc resolve_tc env evdref j = function
   | None -> j
   | Some t ->
-      evd_comb2 (Coercion.inh_conv_coerce_to ?loc resolve_tc env.ExtraEnv.env) evdref j t
+      evd_comb2 (fun evd uj -> Coercion.inh_conv_coerce_to ?loc resolve_tc env.ExtraEnv.env evd uj) evdref j t
 
 let check_instance loc subst = function
   | [] -> ()
