@@ -356,6 +356,21 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_private = None;
 })
 
+(* reinfer subtyping constraints for inductive after section is dischared. *)
+let infer_inductive_subtyping (pth, mind_ent) = 
+  if mind_ent.mind_entry_polymorphic then
+    begin
+      let env = Global.env () in
+      let env' =
+        Environ.push_context (Univ.UInfoInd.univ_context mind_ent.mind_entry_universes) env
+      in
+      let (env'', typed_params) = Typeops.infer_local_decls env' (mind_ent.mind_entry_params) in
+      let evd = Evd.from_env env'' in
+        (pth, Inductiveops.infer_inductive_subtyping env'' evd mind_ent)
+    end
+  else (pth, mind_ent)
+
+
 type inductive_obj = Dischargedhypsmap.discharged_hyps * mutual_inductive_entry
 
 let inInductive : inductive_obj -> obj =
@@ -365,7 +380,8 @@ let inInductive : inductive_obj -> obj =
     open_function = open_inductive;
     classify_function = (fun a -> Substitute (dummy_inductive_entry a));
     subst_function = ident_subst_function;
-    discharge_function = discharge_inductive }
+    discharge_function = discharge_inductive;
+    rebuild_function = infer_inductive_subtyping }
 
 let declare_projections mind =
   let spec,_ = Inductive.lookup_mind_specif (Global.env ()) (mind,0) in

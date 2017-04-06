@@ -111,24 +111,12 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
     | Some None -> Some None
     | None -> None
   in
-  let mind_ent =
-    { mind_entry_record = record;
-      mind_entry_finite = mib.mind_finite;
-      mind_entry_params = params';
-      mind_entry_inds = inds';
-      mind_entry_polymorphic = mib.mind_polymorphic;
-      mind_entry_private = mib.mind_private;
-      mind_entry_universes = univ_info_ind
-    }
-  in
-  if mib.mind_polymorphic then
-    begin
-      let env = Global.env () in
-      let env' = Environ.push_context univs env in
-      let (env'', typed_params) = Typeops.infer_local_decls env' params' in
-      let evd = Evd.from_env env'' in
-      Inductiveops.infer_inductive_subtyping env'' evd mind_ent
-    end
-  else
-    mind_ent
+  { mind_entry_record = record;
+    mind_entry_finite = mib.mind_finite;
+    mind_entry_params = params';
+    mind_entry_inds = inds';
+    mind_entry_polymorphic = mib.mind_polymorphic;
+    mind_entry_private = mib.mind_private;
+    mind_entry_universes = univ_info_ind
+  }
 

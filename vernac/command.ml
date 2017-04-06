@@ -660,7 +660,10 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
       mind_entry_private = if prv then Some false else None;
       mind_entry_universes = ground_uinfind;
     }
-  in (Inductiveops.infer_inductive_subtyping env_ar_params evd mind_ent), pl, impls
+  in
+  (if poly then
+      Inductiveops.infer_inductive_subtyping env_ar_params evd mind_ent
+   else mind_ent), pl, impls
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
