@@ -223,7 +223,7 @@ let interp_universe ?loc evd = function
 	(evd', Univ.sup u (Univ.Universe.make l)))
     (evd, Univ.Universe.type0m) l
 
-let interp_universe_level loc evd = function
+let interp_level_info loc evd : Misctypes.level_info -> _ = function
   | None -> new_univ_level_variable ~loc univ_rigid evd
   | Some (loc,s) -> interp_universe_level_name evd (loc,s)
 
@@ -464,11 +464,10 @@ let evar_kind_of_term sigma c =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let interp_universe_level_name loc evd l =
-  match l with
+let interp_glob_level loc evd : Misctypes.glob_level -> _ = function
   | GProp -> evd, Univ.Level.prop
   | GSet -> evd, Univ.Level.set
-  | GType s -> interp_universe_level loc evd s
+  | GType s -> interp_level_info loc evd s
 
 let pretype_global loc rigid env evd gr us = 
   let evd, instance = 
@@ -483,7 +482,7 @@ let pretype_global loc rigid env evd gr us =
 		       (str "Universe instance should have length " ++ int len)
        else
 	 let evd, l' = List.fold_left (fun (evd, univs) l -> 
-	    let evd, l = interp_universe_level_name loc evd l in
+	    let evd, l = interp_glob_level loc evd l in
 	      (evd, l :: univs)) (evd, []) l
 	 in
 	 if List.exists (fun l -> Univ.Level.is_prop l) l' then
