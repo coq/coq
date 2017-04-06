@@ -422,7 +422,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 		let _ = e_cumul pb.env pb.evdref indt typ in
 		current
 	      else
-		(evd_comb2 (Coercion.inh_conv_coerce_to true pb.env)
+		(evd_comb2 (fun evd uj -> Coercion.inh_conv_coerce_to true pb.env evd uj)
 		  pb.evdref (make_judge current typ) indt).uj_val in
 	    let sigma =  !(pb.evdref) in
 	    (current,try_find_ind pb.env sigma indt names))
@@ -1678,7 +1678,10 @@ let abstract_tycon ?loc env evdref subst tycon extenv t =
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
         let ev' = e_new_evar env evdref ~src ty in
-        begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,substl inst ev') with
+        begin
+          let flags = (default_flags_of full_transparent_state) in
+          let conv = conv_fun evar_conv_x flags in
+          match solve_simple_eqn flags conv env !evdref (None,ev,substl inst ev') with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
         end;
