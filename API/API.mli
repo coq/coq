@@ -3383,6 +3383,15 @@ end
 
 module Evarsolve :
 sig
+  type unify_flags = {
+  modulo_betaiota : bool;
+  open_ts : Names.transparent_state;
+  closed_ts : Names.transparent_state;
+  subterm_ts : Names.transparent_state;
+  frozen_evars : Evar.Set.t;
+  allow_K_at_toplevel : bool;
+  with_cs : bool}
+
   val refresh_universes :
     ?status:Evd.rigid -> ?onlyalg:bool -> ?refreshset:bool -> bool option ->
     Environ.env -> Evd.evar_map -> EConstr.types -> Evd.evar_map * EConstr.types
@@ -3413,10 +3422,26 @@ end
 
 module Evarconv :
 sig
+  type unify_flags = Evarsolve.unify_flags
+  type occurrence_match_test =
+    Environ.env -> Evd.evar_map -> EConstr.constr -> (* Used to precompute the local tests *)
+    Environ.env -> Evd.evar_map -> int -> EConstr.constr -> EConstr.constr -> bool * Evd.evar_map
+  type prefer_abstraction = bool
+  type occurrence_selection =
+    | AtOccurrences of Locus.occurrences
+    | Unspecified of prefer_abstraction
+  val default_occurrence_selection : occurrence_selection
+  type occurrences_selection =
+    occurrence_match_test * occurrence_selection list
+
   val e_conv : Environ.env -> ?ts:Names.transparent_state -> Evd.evar_map ref -> EConstr.constr -> EConstr.constr -> bool
   val the_conv_x : Environ.env -> ?ts:Names.transparent_state -> EConstr.constr -> EConstr.constr -> Evd.evar_map -> Evd.evar_map
   val the_conv_x_leq : Environ.env -> ?ts:Names.transparent_state -> EConstr.constr -> EConstr.constr -> Evd.evar_map -> Evd.evar_map
-  val solve_unif_constraints_with_heuristics : Environ.env -> ?ts:Names.transparent_state -> Evd.evar_map -> Evd.evar_map
+  val solve_unif_constraints_with_heuristics : Environ.env -> ?flags:unify_flags -> ?with_ho:bool ->
+                                               Evd.evar_map -> Evd.evar_map
+  (** @raises a PretypeError if it cannot unify *)
+  val unify_with_heuristics : unify_flags -> with_ho:bool ->
+     Environ.env -> Evd.evar_map -> Reduction.conv_pb -> EConstr.constr -> EConstr.constr -> Evd.evar_map
 end
 
 module Typing :
