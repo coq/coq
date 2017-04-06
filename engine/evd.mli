@@ -601,10 +601,6 @@ val e_eq_constr_univs : evar_map ref -> constr -> constr -> bool
 (* constr with holes and pending resolution of classes, conversion  *)
 (* problems, candidates, etc.                                       *)
 
-type pending = (* before: *) evar_map * (* after: *) evar_map
-
-type pending_constr = pending * constr
-
 type open_constr = evar_map * constr (* Special case when before is empty *)
 
 (** Partially constructed constrs. *)

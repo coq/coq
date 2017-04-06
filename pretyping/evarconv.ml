@@ -1196,20 +1196,22 @@ let check_problems_are_solved env evd =
   | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb t1 t2
   | _ -> ()
 
+exception MaxUndefined of (Evar.t * evar_info * constr list)
+
 let max_undefined_with_candidates evd =
-  (* If evar were ordered with highest index first, fold_undefined
-     would be going decreasingly and we could use fold_undefined to
-     find the undefined evar of maximum index (alternatively,
-     max_bindings from ocaml 3.12 could be used); instead we traverse
-     the whole map *)
-  let l = Evd.fold_undefined
-    (fun evk ev_info evars ->
-        match ev_info.evar_candidates with
-        | None -> evars
-        | Some l -> (evk,ev_info,l)::evars) evd [] in
-  match l with
-  | [] -> None
-  | a::l -> Some (List.last (a::l))
+  let fold evk evi () = match evi.evar_candidates with
+  | None -> ()
+  | Some l -> raise (MaxUndefined (evk, evi, l))
+  in
+  (** [fold_right] traverses the undefined map in decreasing order of indices.
+  The evar with candidates of maximum index is thus the first evar with
+  candidates found by a [fold_right] traversal. This has a significant impact on
+  performance. *)
+  try
+    let () = Evar.Map.fold_right fold (Evd.undefined_map evd) () in
+    None
+  with MaxUndefined ans ->
+    Some ans
 
 let rec solve_unconstrained_evars_with_candidates ts evd =
   (* max_undefined is supposed to return the most recent, hence
