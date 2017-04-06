@@ -5456,12 +5456,12 @@ sig
   val glob_hints_path :
     Libnames.reference hints_path_gen -> Globnames.global_reference hints_path_gen
   val run_hint : hint ->
-    ((raw_hint * Clenv.clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
+    (raw_hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val typeclasses_db : hint_db_name
   val add_hints_init : (unit -> unit) -> unit
   val create_hint_db : bool -> hint_db_name -> Names.transparent_state -> bool -> unit
   val empty_hint_info : 'a Vernacexpr.hint_info_gen
-  val repr_hint : hint -> (raw_hint * Clenv.clausenv) hint_ast
+  val repr_hint : hint -> raw_hint hint_ast
   val pr_hint_db : Hint_db.t -> Pp.t
 end
 
