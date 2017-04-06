@@ -1087,10 +1087,14 @@ END
 (** library/keys *)
 
 VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF
-| [ "Declare" "Equivalent" "Keys" constr(c) constr(c') ] -> [ 
-  let it c = EConstr.Unsafe.to_constr (snd (Constrintern.interp_open_constr (Global.env ()) Evd.empty c)) in 
-  let k1 = Keys.constr_key (it c) in
-  let k2 = Keys.constr_key (it c') in
+| [ "Declare" "Equivalent" "Keys" constr(c) constr(c') ] -> [
+  let get_key c =
+    let (evd, c) = Constrintern.interp_open_constr (Global.env ()) Evd.empty c in
+    let kind c = EConstr.kind evd c in
+    Keys.constr_key kind c
+  in
+  let k1 = get_key c in
+  let k2 = get_key c' in
     match k1, k2 with
     | Some k1, Some k2 -> Keys.declare_equiv_keys k1 k2
     | _ -> () ]
