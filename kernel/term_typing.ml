@@ -191,10 +191,6 @@ let rec unzip ctx j =
   | `Cut (n,ty,arg) :: ctx ->
       unzip ctx { j with uj_val = mkApp (mkLambda (n,ty,j.uj_val),arg) }
 
-let hcons_j j =
-  (** Do not hashcons type: it is not used by the callers of this function. *)
-  { uj_val = hcons_constr j.uj_val; uj_type = j.uj_type} 
-
 let feedback_completion_typecheck =
   let open Feedback in
   Option.iter (fun state_id ->
@@ -231,13 +227,13 @@ let infer_declaration ~trust env kn dcl =
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
             let j = infer env body in
             unzip ectx j in
-          let j = hcons_j j in
 	  let subst = Univ.LMap.empty in
           let _ = judge_of_cast env j DEFAULTcast tyj in
           assert (eq_constr typ tyj.utj_val);
+          let c = hcons_constr j.uj_val in
           let _typ = RegularArity (Vars.subst_univs_level_constr subst typ) in
           feedback_completion_typecheck feedback_id;
-          j.uj_val, uctx) in
+          c, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
       def, RegularArity typ, None, c.const_entry_polymorphic, 
 	c.const_entry_universes,
