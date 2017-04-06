@@ -108,7 +108,7 @@ end
 
 type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
 
-let msgnl_with fmt strm =
+let msgnl_with ?pre_hdr fmt strm =
   pp_with fmt (strm ++ fnl ());
   Format.pp_print_flush fmt ()
 
@@ -138,19 +138,17 @@ let warn_hdr = tag Tag.warning (str "Warning:") ++ spc ()
 let  err_hdr = tag Tag.error   (str "Error:")   ++ spc ()
 let  ann_hdr = tag Tag.error   (str "Anomaly:") ++ spc ()
 
-let make_body quoter info ?loc s =
-  let loc = Option.cata Pp.pr_loc (Pp.mt ()) loc in
-  quoter (hov 0 (loc ++ info ++ s))
+let make_body quoter info ?pre_hdr s =
+  pr_opt_no_spc (fun x -> x ++ fnl ()) pre_hdr ++ quoter (hov 0 (info ++ s))
 
 (* Generic logger *)
-let gen_logger dbg err ?loc level msg = match level with
-  | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_hdr ?loc msg)
-  | Info    -> msgnl_with !std_ft (make_body dbg info_hdr ?loc msg)
-  (* XXX: What to do with loc here? *)
-  | Notice  -> msgnl_with !std_ft msg
+let gen_logger dbg err ?pre_hdr level msg = match level with
+  | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_hdr ?pre_hdr msg)
+  | Info    -> msgnl_with !std_ft (make_body dbg info_hdr ?pre_hdr msg)
+  | Notice  -> msgnl_with !std_ft (make_body dbg info_hdr ?pre_hdr msg)
   | Warning -> Flags.if_warn (fun () ->
-               msgnl_with !err_ft (make_body err warn_hdr ?loc msg)) ()
-  | Error   -> msgnl_with !err_ft (make_body err  err_hdr ?loc msg)
+               msgnl_with !err_ft (make_body err warn_hdr ?pre_hdr msg)) ()
+  | Error   -> msgnl_with !err_ft (make_body err  err_hdr ?pre_hdr msg)
 
 (** Standard loggers *)
 
@@ -159,8 +157,8 @@ let gen_logger dbg err ?loc level msg = match level with
 *)
 let std_logger_cleanup = ref (fun () -> ())
 
-let std_logger ?loc level msg =
-  gen_logger (fun x -> x) (fun x -> x) ?loc level msg;
+let std_logger ?pre_hdr level msg =
+  gen_logger (fun x -> x) (fun x -> x) ?pre_hdr level msg;
   !std_logger_cleanup ()
 
 (** Color logging. Moved from Ppstyle, it may need some more refactoring  *)
