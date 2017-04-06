@@ -322,3 +322,33 @@ Fail Definition bad : False := TypeNeqSmallType.paradox (unwrap' Type (wrap _
 Type)) eq_refl.
 
 End Hurkens'.
+
+Module Anonymous.
+  Set Universe Polymorphism.
+
+  Definition defaultid := (fun x => x) : Type -> Type.
+  Definition collapseid := defaultid@{_ _}.
+  Check collapseid@{_}.
+
+  Definition anonid := (fun x => x) : Type -> Type@{_}.
+  Check anonid@{_}.
+
+  Definition defaultalg := Type : Type.
+  Definition usedefaultalg := defaultalg@{_ _}.
+  Check usedefaultalg@{_ _}.
+
+  Definition anonalg := (fun x => x) (Type : Type@{_}).
+  Check anonalg@{_}.
+
+  Definition unrelated@{i j} := nat.
+  Definition useunrelated := unrelated@{_ _}.
+  Check useunrelated@{_ _}.
+
+  Definition inthemiddle@{i j k} :=
+    let _ := defaultid@{i j} in
+    defaultalg@{k j}.
+  (* i <= j < k *)
+  Definition collapsethemiddle := inthemiddle@{i _ j}.
+  Check collapsethemiddle@{_ _}.
+
+End Anonymous.
