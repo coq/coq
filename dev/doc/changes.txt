@@ -44,6 +44,13 @@ The following constructors have been renamed:
   LocalRawAssum -> CLocalAssum
   LocalPattern -> CLocalPattern
 
+In Constrexpr_ops:
+
+  Deprecating abstract_constr_expr in favor of mkCLambdaN, and
+  prod_constr_expr in favor of mkCProdN. Note: the first ones were
+  interpreting "(x y z:_)" as "(x:_) (y:_) (z:_)" while the second
+  ones were preserving the original sharing of the type.
+
 ** Ltac API **
 
 Many Ltac specific API has been moved in its own ltac/ folder. Amongst other

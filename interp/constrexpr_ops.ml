@@ -303,83 +303,51 @@ let add_name_in_env env n =
 
 let (fresh_var, fresh_var_hook) = Hook.make ~default:(fun _ _ -> assert false) ()
 
-let expand_pattern_binders mkC bl c =
-  let rec loop bl c =
+let expand_binders mkC loc bl c =
+  let rec loop loc bl c =
     match bl with
-    | [] -> ([], [], c)
+    | [] -> ([], c)
     | b :: bl ->
-        let (env, bl, c) = loop bl c in
         match b with
-        | CLocalDef (n, _, _) ->
+        | CLocalDef ((loc1,_) as n, oty, b) ->
+            let env, c = loop (Loc.merge loc1 loc) bl c in
             let env = add_name_in_env env n in
-            (env, b :: bl, c)
-        | CLocalAssum (nl, _, _) ->
+            (env, CLetIn (loc,n,oty,b,c))
+        | CLocalAssum ((loc1,_)::_ as nl, bk, t) ->
+            let env, c = loop (Loc.merge loc1 loc) bl c in
             let env = List.fold_left add_name_in_env env nl in
-            (env, b :: bl, c)
-        | CLocalPattern (loc, p, ty) ->
+            (env, mkC loc (nl,bk,t) c)
+        | CLocalAssum ([],_,_) -> loop loc bl c
+        | CLocalPattern (loc1, p, ty) ->
+            let env, c = loop (Loc.merge loc1 loc) bl c in
             let ni = Hook.get fresh_var env c in
-            let id = (loc, Name ni) in
-            let b =
-              CLocalAssum
-                ([id], Default Explicit,
-                 match ty with
+            let id = (loc1, Name ni) in
+            let ty = match ty with
                  | Some ty -> ty
-                 | None -> CHole (loc, None, IntroAnonymous, None))
+                 | None -> CHole (loc1, None, IntroAnonymous, None)
             in
-            let e = CRef (Libnames.Ident (loc, ni), None) in
+            let e = CRef (Libnames.Ident (loc1, ni), None) in
             let c =
               CCases
                 (loc, LetPatternStyle, None, [(e,None,None)],
-                 [(loc, [(loc,[p])], mkC loc bl c)])
+                 [(loc1, [(loc1,[p])], c)])
             in
-            (ni :: env, [b], c)
+            (ni :: env, mkC loc ([id],Default Explicit,ty) c)
   in
-  let (_, bl, c) = loop bl c in
-  (bl, c)
+  let (_, c) = loop loc bl c in
+  c
 
 let mkCProdN loc bll c =
-  let rec loop loc bll c =
-    match bll with
-    | CLocalAssum ((loc1,_)::_ as idl,bk,t) :: bll ->
-        CProdN (loc,[idl,bk,t],loop (Loc.merge loc1 loc) bll c)
-    | CLocalDef ((loc1,_) as id,b,t) :: bll ->
-        CLetIn (loc,id,b,t,loop (Loc.merge loc1 loc) bll c)
-    | [] -> c
-    | CLocalAssum ([],_,_) :: bll -> loop loc bll c
-    | CLocalPattern (loc,p,ty) :: bll -> assert false
-  in
-  let (bll, c) = expand_pattern_binders loop bll c in
-  loop loc bll c
+  let mk loc b c = CProdN (loc,[b],c) in
+  expand_binders mk loc bll c
 
 let mkCLambdaN loc bll c =
-  let rec loop loc bll c =
-    match bll with
-    | CLocalAssum ((loc1,_)::_ as idl,bk,t) :: bll ->
-        CLambdaN (loc,[idl,bk,t],loop (Loc.merge loc1 loc) bll c)
-    | CLocalDef ((loc1,_) as id,b,t) :: bll ->
-        CLetIn (loc,id,b,t,loop (Loc.merge loc1 loc) bll c)
-    | [] -> c
-    | CLocalAssum ([],_,_) :: bll -> loop loc bll c
-    | CLocalPattern (loc,p,ty) :: bll -> assert false
-  in
-  let (bll, c) = expand_pattern_binders loop bll c in
-  loop loc bll c
+  let mk loc b c = CLambdaN (loc,[b],c) in
+  expand_binders mk loc bll c
 
-let rec abstract_constr_expr c = function
-  | [] -> c
-  | CLocalDef (x,b,t)::bl -> mkLetInC(x,b,t,abstract_constr_expr c bl)
-  | CLocalAssum (idl,bk,t)::bl ->
-      List.fold_right (fun x b -> mkLambdaC([x],bk,t,b)) idl
-      (abstract_constr_expr c bl)
-  | CLocalPattern _::_ -> assert false
-
-let rec prod_constr_expr c = function
-  | [] -> c
-  | CLocalDef (x,b,t)::bl -> mkLetInC(x,b,t,prod_constr_expr c bl)
-  | CLocalAssum (idl,bk,t)::bl ->
-      List.fold_right (fun x b -> mkProdC([x],bk,t,b)) idl
-      (prod_constr_expr c bl)
-  | CLocalPattern _::_ -> assert false
+(* Deprecated *)
+let abstract_constr_expr c bl = mkCLambdaN (local_binders_loc bl) bl c
+let prod_constr_expr c bl =  mkCProdN (local_binders_loc bl) bl c
 
 let coerce_reference_to_id = function
   | Ident (_,id) -> id

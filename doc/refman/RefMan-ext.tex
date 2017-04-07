@@ -29,8 +29,8 @@ construction allows defining ``signatures''.
 {\recordkw} & ::= &
    {\tt Record} $|$ {\tt Inductive} $|$ {\tt CoInductive}\\
   & & \\
-{\field} & ::= & {\name} \zeroone{\binders} : {\type} [ {\tt where} {\it notation} ] \\
- & $|$ & {\name} \zeroone{\binders} {\typecstr} := {\term}
+{\field} & ::= & {\name} \zeroone{\binders} : {\type} \zeroone{{\tt where} {\it notation}} \\
+ & $|$ & {\name} \zeroone{\binders} {\typecstrtype} := {\term}\\
 \end{tabular}
 \end{centerframe}
 \caption{Syntax for the definition of {\tt Record}}
@@ -213,7 +213,21 @@ Record point := { x : nat; y : nat }.
 Definition a := Build_point 5 3.
 \end{coq_example}
 
-The following syntax allows creating objects by using named fields. The
+\begin{figure}[t]
+\begin{centerframe}
+\begin{tabular}{lcl}
+{\term} & ++= &
+         \verb!{|! \zeroone{\nelist{\fielddef}{;}} \verb!|}! \\
+  & & \\
+{\fielddef} & ::= & {\name} \zeroone{\binders} := {\term} \\
+\end{tabular}
+\end{centerframe}
+\caption{Syntax for constructing elements of a \texttt{Record} using named fields}
+\label{fig:fieldsyntax}
+\end{figure}
+
+A syntax is available for creating objects by using named fields, as
+shown on Figure~\ref{fig:fieldsyntax}. The
 fields do not have to be in any particular order, nor do they have to be all
 present if the missing ones can be inferred or prompted for (see
 Section~\ref{Program}).
@@ -252,7 +266,7 @@ Eval compute in (
 Reset Initial.
 \end{coq_eval}
 
-\Rem An experimental syntax for projections based on a dot notation is
+\Rem A syntax for projections based on a dot notation is
 available. The command to activate it is
 \optindex{Printing Projections}
 \begin{quote}
@@ -267,7 +281,7 @@ available. The command to activate it is
  & $|$ & {\term} {\tt .(} {@}{\qualid} \nelist{\term}{} {\tt )}
 \end{tabular}
 \end{centerframe}
-\caption{Syntax of \texttt{Record} projections}
+\caption{Syntax for \texttt{Record} projections}
 \label{fig:projsyntax}
 \end{figure}
 

@@ -37,3 +37,5 @@ fun '(x, y) '(z, t) => swap (x, y) = (z, t)
      : A * B -> B * A -> Prop
 forall '(x, y) '(z, t), swap (x, y) = (z, t)
      : Prop
+fun (pat : nat) '(x, y) => x + y = pat
+     : nat -> nat * nat -> Prop

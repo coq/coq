@@ -49,19 +49,19 @@ val mkLambdaC : Name.t located list * binder_kind * constr_expr * constr_expr ->
 val mkLetInC : Name.t located * constr_expr * constr_expr option * constr_expr -> constr_expr
 val mkProdC : Name.t located list * binder_kind * constr_expr * constr_expr -> constr_expr
 
-val abstract_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
-val prod_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
-
 val mkCLambdaN : Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
 (** Same as [abstract_constr_expr], with location *)
 
 val mkCProdN : Loc.t -> local_binder_expr list -> constr_expr -> constr_expr
 (** Same as [prod_constr_expr], with location *)
 
+(** @deprecated variant of mkCLambdaN *)
+val abstract_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
+
+(** @deprecated variant of mkCProdN *)
+val prod_constr_expr : constr_expr -> local_binder_expr list -> constr_expr
+
 val fresh_var_hook : (Names.Id.t list -> Constrexpr.constr_expr -> Names.Id.t) Hook.t
-val expand_pattern_binders :
-  (Loc.t -> local_binder_expr list -> constr_expr -> constr_expr) ->
-  local_binder_expr list -> constr_expr -> local_binder_expr list * constr_expr
 
 (** {6 Destructors}*)
 

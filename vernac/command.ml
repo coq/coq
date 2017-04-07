@@ -266,7 +266,7 @@ match local with
     (gr,inst,Lib.is_modtype_strict ())
 
 let interp_assumption evdref env impls bl c =
-  let c = prod_constr_expr c bl in
+  let c = mkCProdN (local_binders_loc bl) bl c in
   let ty, impls = interp_type_evars_impls env evdref ~impls c in
   let ty = EConstr.Unsafe.to_constr ty in
   (ty, impls)
