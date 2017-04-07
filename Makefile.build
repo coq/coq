@@ -70,6 +70,29 @@ include Makefile.ide      ## provides the 'coqide' rule
 include Makefile.install
 include Makefile.dev      ## provides the 'printers' and 'revision' rules
 
+###########################################################################
+# Adding missing pieces of information not discovered by ocamldep
+# due to the fact that:
+# - plugins/micromega/micromega_plugin.ml
+# - plugins/micromega/micromega_plugin.mli
+# are generated (and not yet present when we run "ocamldep").
+###########################################################################
+
+plugins/micromega/micromega_plugin.cmo : plugins/micromega/micromega.cmo
+plugins/micromega/micromega_plugin.cmx : plugins/micromega/micromega.cmx
+
+plugins/micromega/certificate.cmo plugins/micromega/coq_micromega.cmo plugins/micromega/csdpcert.cmo plugins/micromega/mfourier.cmo plugins/micromega/mutils.cmo plugins/micromega/polynomial.cmo : plugins/micromega/micromega.cmo
+
+plugins/micromega/certificate.cmx plugins/micromega/coq_micromega.cmx plugins/micromega/csdpcert.cmx plugins/micromega/mfourier.cmx plugins/micromega/mutils.cmx plugins/micromega/polynomial.cmx : plugins/micromega/micromega.cmx
+
+plugins/micromega/micromega.cmx plugins/micromega/micromega.cmo : plugins/micromega/micromega.cmi
+plugins/micromega/micromega.cmi : plugins/micromega/micromega.mli
+
+plugins/micromega/micromega.mli plugins/micromega/micromega.ml : plugins/micromega/MExtraction.vo
+	@:
+
+###########################################################################
+
 # This include below will lauch the build of all .d.
 # The - at front is for disabling warnings about currently missing ones.
 # For creating the missing .d, make will recursively build things like
@@ -79,6 +102,8 @@ DEPENDENCIES := \
  $(addsuffix .d, $(MLFILES) $(MLIFILES) $(MLLIBFILES) $(CFILES) $(VFILES))
 
 -include $(DEPENDENCIES)
+
+plugins/micromega/micromega_FORPACK:= -for-pack Micromega_plugin
 
 # All dependency includes must be declared secondary, otherwise make will
 # delete them if it decided to build them by dependency instead of because
@@ -634,16 +659,6 @@ endif
 %.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
 	$(HIDE)$(COQDEPBOOT) -boot $(DEPNATDYN) "$<" $(TOTARGET)
-
-# Below we provide those dependecies that are not discovered {coq,ocaml}dep programs.
-
-plugins/micromega/micromega.cmi \
-plugins/micromega/micromega.cmo \
-plugins/micromega/micromega.cmx \
-$(patsubst %.ml,%.ml.d,$(wildcard plugins/micromega/*.ml)) \
-$(patsubst %.mli,%.mli.d,$(wildcard plugins/micromega/*.mli)) \
-plugins/micromega/micromega_plugin.mlpack.d \
-   : plugins/micromega/MExtraction.vo
 
 ###########################################################################
 
