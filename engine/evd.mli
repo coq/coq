@@ -584,10 +584,6 @@ val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env -
 (* constr with holes and pending resolution of classes, conversion  *)
 (* problems, candidates, etc.                                       *)
 
-type pending = (* before: *) evar_map * (* after: *) evar_map
-
-type pending_constr = pending * constr
-
 type open_constr = evar_map * constr (* Special case when before is empty *)
 
 (** Partially constructed constrs. *)

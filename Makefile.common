@@ -61,7 +61,7 @@ PLUGINDIRS:=\
   omega		romega 		micromega 	quote \
   setoid_ring 	extraction 	fourier \
   cc 		funind 		firstorder 	derive \
-  rtauto 	nsatz           syntax          decl_mode	btauto \
+  rtauto 	nsatz           syntax          btauto \
   ssrmatching	ltac
 
 SRCDIRS:=\
@@ -117,12 +117,11 @@ OTHERSYNTAXCMO:=$(addprefix plugins/syntax/, \
         r_syntax_plugin.cmo \
 	ascii_syntax_plugin.cmo \
         string_syntax_plugin.cmo )
-DECLMODECMO:=plugins/decl_mode/decl_mode_plugin.cmo
 DERIVECMO:=plugins/derive/derive_plugin.cmo
 LTACCMO:=plugins/ltac/ltac_plugin.cmo
 SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
 
-PLUGINSCMO:=$(LTACCMO) $(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) $(DECLMODECMO) \
+PLUGINSCMO:=$(LTACCMO) $(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) \
         $(QUOTECMO) $(RINGCMO) \
         $(FOURIERCMO) $(EXTRACTIONCMO) \
         $(CCCMO)  $(FOCMO) $(RTAUTOCMO) $(BTAUTOCMO) \

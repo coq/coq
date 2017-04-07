@@ -143,7 +143,7 @@ let interp_definition pl bl p red_option c ctypopt =
   red_constant_entry (Context.Rel.length ctx) ce !evdref red_option, !evdref, pl, imps
 
 let check_definition (ce, evd, _, imps) =
-  check_evars_are_solved (Global.env ()) evd (Evd.empty,evd);
+  check_evars_are_solved (Global.env ()) evd Evd.empty;
   ce
 
 let warn_local_declaration =
@@ -305,7 +305,7 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
       ((env,ienv),((is_coe,idl),t,imps))) 
     (env,empty_internalization_env) l
   in
-  let evd = solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref) in
+  let evd = solve_remaining_evars all_and_fail_flags env !evdref Evd.empty in
   (* The universe constraints come from the whole telescope. *)
   let evd = Evd.nf_constraints evd in
   let ctx = Evd.universe_context_set evd in
@@ -614,7 +614,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
      () in
 
   (* Try further to solve evars, and instantiate them *)
-  let sigma = solve_remaining_evars all_and_fail_flags env_params !evdref (Evd.empty,!evdref) in
+  let sigma = solve_remaining_evars all_and_fail_flags env_params !evdref Evd.empty in
   evdref := sigma;
   (* Compute renewed arities *)
   let nf,_ = e_nf_evars_and_universes evdref in
@@ -1174,7 +1174,7 @@ let interp_recursive isfix fixl notations =
   (env,rec_sign,all_universes,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
-  check_evars_are_solved env evd (Evd.empty,evd);
+  check_evars_are_solved env evd Evd.empty;
   if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
     check_mutuality env evd isfix (List.combine fixnames fixdefs)

@@ -642,32 +642,32 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   Proofview.NonLogical.run (db_constr (curr_debug ist) env evd c);
   (evd,c)
 
-let constr_flags = {
+let constr_flags () = {
   use_typeclasses = true;
   solve_unification_constraints = true;
-  use_hook = Some solve_by_implicit_tactic;
+  use_hook = solve_by_implicit_tactic ();
   fail_evar = true;
   expand_evars = true }
 
 (* Interprets a constr; expects evars to be solved *)
 let interp_constr_gen kind ist env sigma c =
-  interp_gen kind ist false constr_flags env sigma c
+  interp_gen kind ist false (constr_flags ()) env sigma c
 
 let interp_constr = interp_constr_gen WithoutTypeConstraint
 
 let interp_type = interp_constr_gen IsType
 
-let open_constr_use_classes_flags = {
+let open_constr_use_classes_flags () = {
   use_typeclasses = true;
   solve_unification_constraints = true;
-  use_hook = Some solve_by_implicit_tactic;
+  use_hook = solve_by_implicit_tactic ();
   fail_evar = false;
   expand_evars = true }
 
-let open_constr_no_classes_flags = {
+let open_constr_no_classes_flags () = {
   use_typeclasses = false;
   solve_unification_constraints = true;
-  use_hook = Some solve_by_implicit_tactic;
+  use_hook = solve_by_implicit_tactic ();
   fail_evar = false;
   expand_evars = true }
 
@@ -679,11 +679,11 @@ let pure_open_constr_flags = {
   expand_evars = false }
 
 (* Interprets an open constr *)
-let interp_open_constr ?(expected_type=WithoutTypeConstraint) ist =
+let interp_open_constr ?(expected_type=WithoutTypeConstraint) ist env sigma c =
   let flags =
-    if expected_type == WithoutTypeConstraint then open_constr_no_classes_flags
-    else open_constr_use_classes_flags in
-  interp_gen expected_type ist false flags
+    if expected_type == WithoutTypeConstraint then open_constr_no_classes_flags ()
+    else open_constr_use_classes_flags () in
+  interp_gen expected_type ist false flags env sigma c
 
 let interp_pure_open_constr ist =
   interp_gen WithoutTypeConstraint ist false pure_open_constr_flags
@@ -1789,7 +1789,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (TacLetTac(na,c,clp,b,eqpat))
 	    (Tacticals.New.tclWITHHOLES false (*in hope of a future "eset/epose"*)
                (let_pat_tac b (interp_name ist env sigma na)
-                  ((sigma,sigma'),c) clp eqpat) sigma')
+                  (sigma,c) clp eqpat) sigma')
       end }
 
   (* Derived basic tactics *)

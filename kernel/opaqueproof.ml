@@ -21,8 +21,18 @@ type proofterm = (constr * Univ.universe_context_set) Future.computation
 type opaque =
   | Indirect of substitution list * DirPath.t * int (* subst, lib, index *)
   | Direct of cooking_info list * proofterm
-type opaquetab = (cooking_info list * proofterm) Int.Map.t * DirPath.t
-let empty_opaquetab = Int.Map.empty, DirPath.initial
+type opaquetab = {
+  opaque_val : (cooking_info list * proofterm) Int.Map.t;
+  (** Actual proof terms *)
+  opaque_len : int;
+  (** Size of the above map *)
+  opaque_dir : DirPath.t;
+}
+let empty_opaquetab = {
+  opaque_val = Int.Map.empty;
+  opaque_len = 0;
+  opaque_dir = DirPath.initial;
+}
 
 (* hooks *)
 let default_get_opaque dp _ =
@@ -42,21 +52,25 @@ let set_indirect_univ_accessor f = (get_univ := f)
 
 let create cu = Direct ([],cu)
 
-let turn_indirect dp o (prfs,odp) = match o with
+let turn_indirect dp o tab = match o with
   | Indirect (_,_,i) ->
-      if not (Int.Map.mem i prfs)
+      if not (Int.Map.mem i tab.opaque_val)
       then CErrors.anomaly (Pp.str "Indirect in a different table")
       else CErrors.anomaly (Pp.str "Already an indirect opaque")
   | Direct (d,cu) ->
-      let cu = Future.chain ~pure:true cu (fun (c, u) -> hcons_constr c, u) in
-      let id = Int.Map.cardinal prfs in
-      let prfs = Int.Map.add id (d,cu) prfs in
-      let ndp =
-        if DirPath.equal dp odp then odp
-        else if DirPath.equal odp DirPath.initial then dp
+      (** Uncomment to check dynamically that all terms turned into
+          indirections are hashconsed. *)
+(* let check_hcons c = let c' = hcons_constr c in assert (c' == c); c in *)
+(* let cu = Future.chain ~pure:true cu (fun (c, u) -> check_hcons c; c, u) in *)
+      let id = tab.opaque_len in
+      let opaque_val = Int.Map.add id (d,cu) tab.opaque_val in
+      let opaque_dir =
+        if DirPath.equal dp tab.opaque_dir then tab.opaque_dir
+        else if DirPath.equal tab.opaque_dir DirPath.initial then dp
         else CErrors.anomaly
           (Pp.str "Using the same opaque table for multiple dirpaths") in
-      Indirect ([],dp,id), (prfs, ndp)
+      let ntab = { opaque_val; opaque_dir; opaque_len = id + 1 } in
+      Indirect ([],dp,id), ntab
 
 let subst_opaque sub = function
   | Indirect (s,dp,i) -> Indirect (sub::s,dp,i)
@@ -72,21 +86,21 @@ let discharge_direct_opaque ~cook_constr ci = function
   | Direct (d,cu) ->
       Direct (ci::d,Future.chain ~pure:true cu (fun (c, u) -> cook_constr c, u))
 
-let join_opaque (prfs,odp) = function
+let join_opaque { opaque_val = prfs; opaque_dir = odp } = function
   | Direct (_,cu) -> ignore(Future.join cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp then
         let fp = snd (Int.Map.find i prfs) in
         ignore(Future.join fp)
 
-let uuid_opaque (prfs,odp) = function
+let uuid_opaque { opaque_val = prfs; opaque_dir = odp } = function
   | Direct (_,cu) -> Some (Future.uuid cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then Some (Future.uuid (snd (Int.Map.find i prfs)))
       else None
 
-let force_proof (prfs,odp) = function
+let force_proof { opaque_val = prfs; opaque_dir = odp } = function
   | Direct (_,cu) ->
       fst(Future.force cu)
   | Indirect (l,dp,i) ->
@@ -97,7 +111,7 @@ let force_proof (prfs,odp) = function
       let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
 
-let force_constraints (prfs,odp) = function
+let force_constraints { opaque_val = prfs; opaque_dir = odp } = function
   | Direct (_,cu) -> snd(Future.force cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
@@ -106,14 +120,14 @@ let force_constraints (prfs,odp) = function
         | None -> Univ.ContextSet.empty
         | Some u -> Future.force u
 
-let get_constraints (prfs,odp) = function
+let get_constraints { opaque_val = prfs; opaque_dir = odp } = function
   | Direct (_,cu) -> Some(Future.chain ~pure:true cu snd)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then Some(Future.chain ~pure:true (snd (Int.Map.find i prfs)) snd)
       else !get_univ dp i
 
-let get_proof (prfs,odp) = function
+let get_proof { opaque_val = prfs; opaque_dir = odp } = function
   | Direct (_,cu) -> Future.chain ~pure:true cu fst
   | Indirect (l,dp,i) ->
       let pt =
@@ -129,8 +143,7 @@ let a_constr = Future.from_val (Term.mkRel 1)
 let a_univ = Future.from_val Univ.ContextSet.empty
 let a_discharge : cooking_info list = []
 
-let dump (otab,_) =
-  let n = Int.Map.cardinal otab in
+let dump { opaque_val = otab; opaque_len = n } =
   let opaque_table = Array.make n a_constr in
   let univ_table = Array.make n a_univ in
   let disch_table = Array.make n a_discharge in

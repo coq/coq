@@ -21,7 +21,7 @@ type result =
     bool * constant_universes * inline
     * Context.Named.t option
 
-val cook_constant : env -> recipe -> result
+val cook_constant : hcons:bool -> env -> recipe -> result
 val cook_constr : Opaqueproof.cooking_info -> Term.constr -> Term.constr
 
 (** {6 Utility functions used in module [Discharge]. } *)

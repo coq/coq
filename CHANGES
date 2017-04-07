@@ -22,6 +22,10 @@ Standard Library
 - Real constants are now represented using IZR rather than R0 and R1;
   this might cause rewriting rules to fail to apply to constants.
 
+Plugins
+
+- The mathematical proof language (also known as declarative mode) was removed.
+
 Changes from V8.6beta1 to V8.6
 ==============================
 

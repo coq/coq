@@ -1151,7 +1151,7 @@ let run_delayed env sigma c =
 let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
   Pretyping.solve_unification_constraints = true;
-  Pretyping.use_hook = Some solve_by_implicit_tactic;
+  Pretyping.use_hook = solve_by_implicit_tactic ();
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
 
@@ -1159,10 +1159,9 @@ let tactic_infer_flags with_evar = {
 let onOpenInductionArg env sigma tac = function
   | clear_flag,ElimOnConstr f ->
       let (cbl, sigma') = run_delayed env sigma f in
-      let pending = (sigma,sigma') in
       Tacticals.New.tclTHEN
         (Proofview.Unsafe.tclEVARS sigma')
-        (tac clear_flag (pending,cbl))
+        (tac clear_flag (sigma,cbl))
   | clear_flag,ElimOnAnonHyp n ->
       Tacticals.New.tclTHEN
         (intros_until_n n)
@@ -1170,8 +1169,7 @@ let onOpenInductionArg env sigma tac = function
            (fun c ->
              Proofview.Goal.enter { enter = begin fun gl ->
              let sigma = Tacmach.New.project gl in
-             let pending = (sigma,sigma) in
-             tac clear_flag (pending,(c,NoBindings))
+             tac clear_flag (sigma,(c,NoBindings))
              end }))
   | clear_flag,ElimOnIdent (_,id) ->
       (* A quantified hypothesis *)
@@ -1179,8 +1177,7 @@ let onOpenInductionArg env sigma tac = function
         (try_intros_until_id_check id)
         (Proofview.Goal.enter { enter = begin fun gl ->
          let sigma = Tacmach.New.project gl in
-         let pending = (sigma,sigma) in
-         tac clear_flag (pending,(mkVar id,NoBindings))
+         tac clear_flag (sigma,(mkVar id,NoBindings))
         end })
 
 let onInductionArg tac = function
@@ -1203,10 +1200,9 @@ let map_destruction_arg f sigma = function
 
 let finish_delayed_evar_resolution with_evars env sigma f =
   let ((c, lbind), sigma') = run_delayed env sigma f in
-  let pending = (sigma,sigma') in
   let sigma' = Sigma.Unsafe.of_evar_map sigma' in
   let flags = tactic_infer_flags with_evars in
-  let Sigma (c, sigma', _) = finish_evar_resolution ~flags env sigma' (pending,c) in
+  let Sigma (c, sigma', _) = finish_evar_resolution ~flags env sigma' (sigma,c) in
   (Sigma.to_evar_map sigma', (c, lbind))
 
 let with_no_bindings (c, lbind) =
@@ -4579,11 +4575,11 @@ let induction_destruct isrec with_evars (lc,elim) =
 
 let induction ev clr c l e =
   induction_gen clr true ev e 
-    (((Evd.empty,Evd.empty),(c,NoBindings)),(None,l)) None
+    ((Evd.empty,(c,NoBindings)),(None,l)) None
 
 let destruct ev clr c l e =
   induction_gen clr false ev e
-    (((Evd.empty,Evd.empty),(c,NoBindings)),(None,l)) None
+    ((Evd.empty,(c,NoBindings)),(None,l)) None
 
 (* The registered tactic, which calls the default elimination
  * if no elimination constant is provided. *)

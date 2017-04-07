@@ -38,11 +38,11 @@ val get_margin : unit -> int option
 
 (** Headers for tagging *)
 val err_hdr : Pp.std_ppcmds
+val ann_hdr : Pp.std_ppcmds
 
-(** Console display of feedback *)
-val std_logger : ?loc:Loc.t -> Feedback.level -> Pp.std_ppcmds -> unit
-
-val emacs_logger : ?loc:Loc.t -> Feedback.level -> Pp.std_ppcmds -> unit
+(** Console display of feedback, we may add some location information *)
+val std_logger   : ?pre_hdr:Pp.std_ppcmds -> Feedback.level -> Pp.std_ppcmds -> unit
+val emacs_logger : ?pre_hdr:Pp.std_ppcmds -> Feedback.level -> Pp.std_ppcmds -> unit
 
 val init_color_output : unit -> unit
 val clear_styles : unit -> unit

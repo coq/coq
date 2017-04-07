@@ -191,15 +191,19 @@ let lift_univs cb subst =
       subst, Univ.UContext.make (inst,cstrs')
   else subst, cb.const_universes
 
-let cook_constant env { from = cb; info } =
+let cook_constant ~hcons env { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
   let usubst, univs = lift_univs cb usubst in
   let expmod = expmod_constr_subst cache modlist usubst in
   let hyps = Context.Named.map expmod abstract in
+  let map c =
+    let c = abstract_constant_body (expmod c) hyps in
+    if hcons then hcons_constr c else c
+  in
   let body = on_body modlist (hyps, usubst, abs_ctx)
-    (fun c -> abstract_constant_body (expmod c) hyps)
+    map
     cb.const_body
   in
   let const_hyps =

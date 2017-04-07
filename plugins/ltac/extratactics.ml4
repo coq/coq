@@ -38,7 +38,7 @@ let with_delayed_uconstr ist c tac =
   let flags = {
     Pretyping.use_typeclasses = false;
     solve_unification_constraints = true;
-    use_hook = Some Pfedit.solve_by_implicit_tactic;
+    use_hook = Pfedit.solve_by_implicit_tactic ();
     fail_evar = false;
     expand_evars = true
   } in
@@ -348,10 +348,10 @@ END
 open EConstr
 open Vars
 
-let constr_flags = {
+let constr_flags () = {
   Pretyping.use_typeclasses = true;
   Pretyping.solve_unification_constraints = true;
-  Pretyping.use_hook = Some Pfedit.solve_by_implicit_tactic;
+  Pretyping.use_hook = Pfedit.solve_by_implicit_tactic ();
   Pretyping.fail_evar = false;
   Pretyping.expand_evars = true }
 
@@ -360,7 +360,7 @@ let refine_tac ist simple with_classes c =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags =
-      { constr_flags with Pretyping.use_typeclasses = with_classes } in
+      { constr_flags () with Pretyping.use_typeclasses = with_classes } in
     let expected_type = Pretyping.OfType concl in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
     let update = { run = fun sigma ->

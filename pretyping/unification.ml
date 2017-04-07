@@ -1571,7 +1571,7 @@ let default_matching_merge_flags sigma =
     use_pattern_unification = true;
 }
 
-let default_matching_flags (sigma,_) =
+let default_matching_flags sigma =
   let flags = default_matching_core_flags sigma in {
   core_unify_flags = flags;
   merge_unify_flags = default_matching_merge_flags sigma;
@@ -1709,10 +1709,8 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
 
 type prefix_of_inductive_support_flag = bool
 
-type pending_constr = Evd.pending * constr
-
 type abstraction_request =
-| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * pending_constr * clause * bool
+| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * (evar_map * constr) * clause * bool
 | AbstractExact of Name.t * constr * types option * clause * bool
 
 type 'r abstraction_result =
