@@ -147,9 +147,6 @@ open Refiner
 open Tacmach
 open Tactic_debug
 
-open Decl_proof_instr
-open Decl_mode
-
 open Hints
 open Auto
 open Autorewrite
