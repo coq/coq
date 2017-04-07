@@ -17,14 +17,11 @@ let stm_pperr_endline s = if stm_debug then begin stm_pp_err (s ()) end else ()
 
 let stm_prerr_debug   s = if !Flags.debug then begin stm_pr_err (s ()) end else ()
 
-open Vernacexpr
-open CErrors
 open Pp
-open Names
-open Util
-open Ppvernac
-open Vernac_classifier
+open CErrors
 open Feedback
+open Vernacexpr
+open Vernac_classifier
 
 let execution_error state_id loc msg =
     feedback ~id:state_id
@@ -80,7 +77,7 @@ type aast = {
   strlen : int;
   mutable expr : vernac_expr; (* mutable: Proof using hinted by aux file *)
 }
-let pr_ast { expr; indentation } = int indentation ++ str " " ++ pr_vernac expr
+let pr_ast { expr; indentation } = Pp.(int indentation ++ str " " ++ Ppvernac.pr_vernac expr)
 
 let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
 
@@ -115,13 +112,13 @@ type cmd_t = {
   ctac : bool; (* is a tactic *)
   ceff : bool; (* is a side-effecting command in the middle of a proof *)
   cast : aast;
-  cids : Id.t list;
+  cids : Names.Id.t list;
   cblock : proof_block_name option;
   cqueue : [ `MainQueue
            | `TacQueue of solving_tac * anon_abstracting_tac * cancel_switch
            | `QueryQueue of cancel_switch
            | `SkipQueue ] }
-type fork_t = aast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Id.t list
+type fork_t = aast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Names.Id.t list
 type qed_t = {
   qast : aast;
   keep : vernac_qed_type;
@@ -210,7 +207,7 @@ end = struct (* {{{ *)
 
   let proof_nesting vcs =
     List.fold_left max 0
-      (List.map_filter
+      (CList.map_filter
         (function
          | { Vcs_.kind = `Proof (_,n) } -> Some n
          | { Vcs_.kind = `Edit _ } -> Some 1
@@ -346,7 +343,7 @@ end = struct (* {{{ *)
       | Sideff None -> "EnvChange"
       | Noop -> " "
       | Alias (id,_) -> sprintf "Alias(%s)" (Stateid.to_string id)
-      | Qed { qast } -> string_of_ppcmds (pr_ast qast) in
+      | Qed { qast } -> Pp.string_of_ppcmds (pr_ast qast) in
     let is_green id = 
       match get_info vcs id with
       | Some { state = Valid _ } -> true
@@ -476,8 +473,8 @@ end = struct (* {{{ *)
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
     (match x with
-    | VernacDefinition (_,((_,i),_),_) -> string_of_id i
-    | VernacStartTheoremProof (_,[Some ((_,i),_),_],_) -> string_of_id i
+    | VernacDefinition (_,((_,i),_),_) -> Names.string_of_id i
+    | VernacStartTheoremProof (_,[Some ((_,i),_),_],_) -> Names.string_of_id i
     | _ -> "branch")
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind
@@ -533,7 +530,7 @@ end = struct (* {{{ *)
       | { next = n; step = `Alias x } -> (id,Alias x) :: aux n
       | { next = n; step = `Sideff (`Ast (x,_)) } ->
            (id,Sideff (Some x)) :: aux n
-      | _ -> anomaly(str("Cannot slice from "^ Stateid.to_string block_start ^
+      | _ -> anomaly Pp.(str("Cannot slice from "^ Stateid.to_string block_start ^
                          " to "^Stateid.to_string block_stop))
     in aux block_stop
 
@@ -586,11 +583,11 @@ end = struct (* {{{ *)
       l
 
   let create_proof_task_box l ~qed ~block_start:lemma =
-    if not (topo_invariant l) then anomaly (str "overlapping boxes");
+    if not (topo_invariant l) then anomaly Pp.(str "overlapping boxes");
     vcs := create_property !vcs l (ProofTask { qed; lemma })
   let create_proof_block ({ block_start; block_stop} as decl) name =
     let l = nodes_in_slice ~block_start ~block_stop in
-    if not (topo_invariant l) then anomaly (str "overlapping boxes");
+    if not (topo_invariant l) then anomaly Pp.(str "overlapping boxes");
     vcs := create_property !vcs l (ProofBlock (decl, name))
   let box_of id = List.map Dag.Property.data (property_of !vcs id)
   let delete_boxes_of id =
@@ -601,7 +598,7 @@ end = struct (* {{{ *)
     with
     | [] -> None
     | [x] -> Some x
-    | _ -> anomaly (str "node with more than 1 proof task box")
+    | _ -> anomaly Pp.(str "node with more than 1 proof task box")
 
   let gc () =
     let old_vcs = !vcs in
@@ -682,14 +679,14 @@ module State : sig
     ?safe_id:Stateid.t ->
     ?redefine:bool -> ?cache:Summary.marshallable ->
     ?feedback_processed:bool -> (unit -> unit) -> Stateid.t -> unit
-  val fix_exn_ref : (iexn -> iexn) ref
+  val fix_exn_ref : (Exninfo.iexn -> Exninfo.iexn) ref
 
   val install_cached : Stateid.t -> unit
   val is_cached : ?cache:Summary.marshallable -> Stateid.t -> bool
   val is_cached_and_valid : ?cache:Summary.marshallable -> Stateid.t -> bool
 
 
-  val exn_on : Stateid.t -> valid:Stateid.t -> iexn -> iexn
+  val exn_on : Stateid.t -> valid:Stateid.t -> Exninfo.iexn -> Exninfo.iexn
   (* to send states across worker/master *)
   type frozen_state
   val get_cached : Stateid.t -> frozen_state
@@ -765,13 +762,13 @@ end = struct (* {{{ *)
     | _ ->
         (* coqc has a 1 slot cache and only for valid states *)
         if interactive () = `No && Stateid.equal id !cur_id then ()
-        else anomaly (str "installing a non cached state")
+        else anomaly Pp.(str "installing a non cached state")
 
   let get_cached id =
     try match VCS.get_info id with
     | { state = Valid s } -> s
-    | _ -> anomaly (str "not a cached state")
-    with VCS.Expired -> anomaly (str "not a cached state (expired)")
+    | _ -> anomaly Pp.(str "not a cached state")
+    with VCS.Expired -> anomaly Pp.(str "not a cached state (expired)")
 
   let assign id what =
     if VCS.get_state id <> Empty then () else
@@ -822,7 +819,7 @@ end = struct (* {{{ *)
     feedback ~id:id (ProcessingIn !Flags.async_proofs_worker_id);
     let str_id = Stateid.to_string id in
     if is_cached id && not redefine then
-      anomaly (str"defining state "++str str_id++str" twice");
+      anomaly Pp.(str"defining state "++str str_id++str" twice");
     try
       stm_prerr_endline (fun () -> "defining "^str_id^" (cache="^
         if cache = `Yes then "Y)" else if cache = `Shallow then "S)" else "N)");
@@ -897,9 +894,9 @@ let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
     | VernacBullet _ -> pred ind, nl, beginend
     | _ -> ind, nl, beginend
   in
-  let pp =
+  let pp = Pp.(
     (if nl then fnl () else mt ()) ++
-    (hov (ind+1) (str (String.make ind ' ') ++ Ppvernac.pr_vernac cmd))
+    (hov (ind+1) (str (String.make ind ' ') ++ Ppvernac.pr_vernac cmd)))
   in
   (new_ngl, new_nl, new_beginend, pp :: ppl)
 
@@ -939,7 +936,7 @@ let show_script ?proof () =
       List.fold_left indent_script_item ((1,[]),false,[],[]) cmds
     in
     let indented_cmds = List.rev (indented_cmds) in
-    msg_notice (v 0 (prlist_with_sep fnl (fun x -> x) indented_cmds))
+    msg_notice Pp.(v 0 (prlist_with_sep fnl (fun x -> x) indented_cmds))
   with Vcs_aux.Expired -> ()
 
 end
@@ -966,15 +963,15 @@ let stm_vernac_interp ?proof id ?route { verbose; loc; expr } =
   in
   let aux_interp cmd =
   if is_filtered_command cmd then
-    stm_pperr_endline Pp.(fun () -> str "ignoring " ++ pr_vernac expr)
+    stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr)
   else match cmd with
   | VernacShow ShowScript -> ShowScript.show_script ()
   | expr ->
-    stm_pperr_endline Pp.(fun () -> str "interpreting " ++ pr_vernac expr);
+    stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
     try Vernacentries.interp ?verbosely:(Some verbose) ?proof (loc, expr)
     with e ->
       let e = CErrors.push e in
-      iraise Hooks.(call_process_error_once e)
+      Exninfo.iraise Hooks.(call_process_error_once e)
   in aux_interp expr
 
 (****************************** CRUFT *****************************************)
@@ -1013,7 +1010,7 @@ end = struct (* {{{ *)
     let info = VCS.get_info oid in
     match info.vcs_backup with
     | None, _ ->
-       anomaly(str"Backtrack.backto "++str(Stateid.to_string oid)++
+       anomaly Pp.(str"Backtrack.backto "++str(Stateid.to_string oid)++
                str": a state with no vcs_backup")
     | Some vcs, _ -> VCS.restore vcs
 
@@ -1021,8 +1018,8 @@ end = struct (* {{{ *)
     let info = VCS.get_info id in
     match info.vcs_backup with
     | _, None ->
-       anomaly(str"Backtrack.branches_of "++str(Stateid.to_string id)++
-               str": a state with no vcs_backup")
+       anomaly Pp.(str"Backtrack.branches_of "++str(Stateid.to_string id)++
+                   str": a state with no vcs_backup")
     | _, Some x -> x
 
   let rec fold_until f acc id =
@@ -1083,7 +1080,7 @@ end = struct (* {{{ *)
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let vcs =
             match (VCS.get_info id).vcs_backup with 
-            | None, _ -> anomaly(str"Backtrack: tip with no vcs_backup")
+            | None, _ -> anomaly Pp.(str"Backtrack: tip with no vcs_backup")
             | Some vcs, _ -> vcs in
           let cb, _ =
             try Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs)
@@ -1107,7 +1104,7 @@ end = struct (* {{{ *)
     with
     | Not_found ->
        CErrors.user_err ~hdr:"undo_vernac_classifier"
-        (str "Cannot undo")
+        Pp.(str "Cannot undo")
 
 end (* }}} *)
 
@@ -1139,7 +1136,7 @@ let record_pb_time proof_name loc time =
     hints := Aux_file.set !hints Loc.ghost proof_name proof_build_time
   end
  
-exception RemoteException of std_ppcmds
+exception RemoteException of Pp.std_ppcmds
 let _ = CErrors.register_handler (function
   | RemoteException ppcmd -> ppcmd
   | _ -> raise Unhandled)
@@ -1174,7 +1171,7 @@ let proof_block_delimiters = ref []
 
 let register_proof_block_delimiter name static dynamic =
   if List.mem_assoc name !proof_block_delimiters then
-    CErrors.user_err ~hdr:"STM" (str "Duplicate block delimiter " ++ str name);
+    CErrors.user_err ~hdr:"STM" Pp.(str "Duplicate block delimiter " ++ str name);
   proof_block_delimiters := (name, (static,dynamic)) :: !proof_block_delimiters
 
 let mk_doc_node id = function
@@ -1210,7 +1207,7 @@ let detect_proof_block id name =
       end
     with Not_found ->
       CErrors.user_err ~hdr:"STM"
-        (str "Unknown proof block delimiter " ++ str name)
+        Pp.(str "Unknown proof block delimiter " ++ str name)
   )
 (****************************** THE SCHEDULER *********************************)
 (******************************************************************************)
@@ -1277,7 +1274,7 @@ end = struct (* {{{ *)
   type error = {
     e_error_at    : Stateid.t;
     e_safe_id     : Stateid.t;
-    e_msg         : std_ppcmds;
+    e_msg         : Pp.std_ppcmds;
     e_safe_states : Stateid.t list }
 
   type response =
@@ -1350,9 +1347,9 @@ end = struct (* {{{ *)
     | Some (BuildProof { t_start = start; t_assign }) ->
         let s = "Worker dies or task expired" in
         let info = Stateid.add ~valid:start Exninfo.null start in
-        let e = (RemoteException (strbrk s), info) in
+        let e = (RemoteException (Pp.strbrk s), info) in
         t_assign (`Exn e);
-        execution_error start Loc.ghost (strbrk s);
+        execution_error start Loc.ghost (Pp.strbrk s);
         feedback (InProgress ~-1)
 
   let build_proof_here ~drop_pt (id,valid) loc eop =
@@ -1433,7 +1430,7 @@ end = struct (* {{{ *)
         when is_tac expr && State.same_env o n -> (* A pure tactic *)
           Some (id, `Proof (prev, State.proof_part_of_frozen n))
       | Some _, Some s ->
-          msg_debug (str "STM: sending back a fat state");
+          msg_debug (Pp.str "STM: sending back a fat state");
           Some (id, `Full s)
       | _, Some s -> Some (id, `Full s) in
     let rec aux seen = function
@@ -1449,10 +1446,10 @@ end = struct (* {{{ *)
     | ReqStates sl -> RespStates (perform_states sl)
 
   let on_marshal_error s = function
-    | States _ -> msg_error(strbrk("Marshalling error: "^s^". "^
+    | States _ -> msg_error(Pp.strbrk("Marshalling error: "^s^". "^
         "The system state could not be sent to the master process."))
     | BuildProof { t_exn_info; t_stop; t_assign; t_loc; t_drop = drop_pt } ->
-      msg_error(strbrk("Marshalling error: "^s^". "^
+      msg_error(Pp.strbrk("Marshalling error: "^s^". "^
         "The system state could not be sent to the worker process. "^
         "Falling back to local, lazy, evaluation."));
       t_assign(`Comp(build_proof_here ~drop_pt t_exn_info t_loc t_stop));
@@ -1505,7 +1502,7 @@ end = struct (* {{{ *)
   let check_task_aux extra name l i =
     let { Stateid.stop; document; loc; name = r_name }, drop = List.nth l i in
     Flags.if_verbose msg_info
-      (str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
+      Pp.(str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
     VCS.restore document;
     let start =
       let rec aux cur =
@@ -1536,7 +1533,7 @@ end = struct (* {{{ *)
       let (e, info) = CErrors.push e in
       (try match Stateid.get info with
       | None ->
-          msg_error (
+          msg_error Pp.(
             str"File " ++ str name ++ str ": proof of " ++ str r_name ++
             spc () ++ iprint (e, info))
       | Some (_, cur) ->
@@ -1546,16 +1543,16 @@ end = struct (* {{{ *)
           | { step = `Qed ( { qast = { loc } }, _) } 
           | { step = `Sideff (`Ast ( { loc }, _)) } ->
               let start, stop = Loc.unloc loc in
-              msg_error (
+              msg_error Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 str ": chars " ++ int start ++ str "-" ++ int stop ++
                 spc () ++ iprint (e, info))
           | _ ->
-              msg_error (
+              msg_error Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 spc () ++ iprint (e, info))
     with e ->
-      msg_error (str"unable to print error message: " ++
+      msg_error Pp.(str"unable to print error message: " ++
                     str (Printexc.to_string e)));
       if drop then `ERROR_ADMITTED else `ERROR
 
@@ -1714,7 +1711,7 @@ end = struct (* {{{ *)
 
   type response =
     | RespBuiltSubProof of output
-    | RespError of std_ppcmds
+    | RespError of Pp.std_ppcmds
     | RespNoProgress
   exception NoProgress
 
@@ -1773,7 +1770,7 @@ end = struct (* {{{ *)
          List.for_all (Context.Named.Declaration.for_all (Evarutil.is_ground_term sigma0))
                       Evd.(evar_context g))
        then
-         CErrors.user_err ~hdr:"STM" (strbrk("the par: goal selector supports ground "^
+         CErrors.user_err ~hdr:"STM" Pp.(strbrk("the par: goal selector supports ground "^
            "goals only"))
        else begin
         let (i, ast) = r_ast in
@@ -1786,7 +1783,7 @@ end = struct (* {{{ *)
             let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
               RespBuiltSubProof (t, Evd.evar_universe_context sigma)
-            else CErrors.user_err ~hdr:"STM" (str"The solution is not ground")
+            else CErrors.user_err ~hdr:"STM" Pp.(str"The solution is not ground")
        end) ()
     with e when CErrors.noncritical e -> RespError (CErrors.print e)
 
@@ -1974,7 +1971,7 @@ let collect_proof keep cur hd brkind id =
  let no_name = "" in
  let name = function
    | [] -> no_name
-   | id :: _ -> Id.to_string id in
+   | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).loc in
  let is_defined = function
    | _, { expr = VernacEndProof (Proved ((Transparent|Opaque (Some _)),_)) } ->
@@ -2095,13 +2092,13 @@ let known_state ?(redefine_qed=false) ~cache id =
           Some (decl, name)
       | _ -> None) boxes in
     assert(List.length valid_boxes < 2);
-    if valid_boxes = [] then iraise exn
+    if valid_boxes = [] then Exninfo.iraise exn
     else
       let decl, name = List.hd valid_boxes in
       try
         let _, dynamic_check = List.assoc name !proof_block_delimiters in
         match dynamic_check decl with
-        | `Leaks -> iraise exn
+        | `Leaks -> Exninfo.iraise exn
         | `ValidBlock { base_state; goals_to_admit; recovery_command } -> begin
            let tac =
              let open Proofview.Notations in
@@ -2215,7 +2212,7 @@ let known_state ?(redefine_qed=false) ~cache id =
             with e when CErrors.noncritical e ->
               let (e, info) = CErrors.push e in
               let info = Stateid.add info ~valid:prev id in
-              iraise (e, info));
+              Exninfo.iraise (e, info));
             wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes, true
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
@@ -2298,9 +2295,9 @@ let known_state ?(redefine_qed=false) ~cache id =
           | `MaybeASync (start, pua, nodes, name, delegate) -> (fun () ->
                 reach ~cache:`Shallow start;
                 (* no sections *)
-                if List.is_empty (Environ.named_context (Global.env ()))
-                then pi1 (aux (`ASync (start, pua, nodes, name, delegate))) ()
-                else pi1 (aux (`Sync (name, pua, `NoPU_NoHint_NoES))) ()
+                if CList.is_empty (Environ.named_context (Global.env ()))
+                then Util.pi1 (aux (`ASync (start, pua, nodes, name, delegate))) ()
+                else Util.pi1 (aux (`Sync (name, pua, `NoPU_NoHint_NoES))) ()
               ), (if redefine_qed then `No else `Yes), true
           in
           aux (collect_proof keep (view.next, x) brname brinfo eop)
@@ -2354,7 +2351,7 @@ let observe id =
     let e = CErrors.push e in
     VCS.print ();
     VCS.restore vcs;
-    iraise e
+    Exninfo.iraise e
 
 let finish () =
   let head = VCS.current_branch () in
@@ -2441,12 +2438,12 @@ let merge_proof_branch ~valid ?id qast keep brname =
       VCS.checkout VCS.Branch.master;
       `Unfocus qed_id
   | { VCS.kind = `Master } ->
-       iraise (State.exn_on ~valid Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
+       Exninfo.iraise (State.exn_on ~valid Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
 
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
 let handle_failure (e, info) vcs =
-  if e = CErrors.Drop then iraise (e, info) else
+  if e = CErrors.Drop then Exninfo.iraise (e, info) else
   match Stateid.get info with
   | None ->
       VCS.restore vcs;
@@ -2457,7 +2454,7 @@ let handle_failure (e, info) vcs =
       stm_prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
       VCS.restore vcs;
       VCS.print ();
-      iraise (e, info)
+      Exninfo.iraise (e, info)
 
 let snapshot_vio ldir long_f_dot_vo =
   finish ();
@@ -2519,7 +2516,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
           (try stm_vernac_interp report_id ~route x
            with e ->
              let e = CErrors.push e in
-             iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
+             Exninfo.iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
       | VtQuery (true,(report_id,_)), w ->
           assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in
@@ -2695,7 +2692,7 @@ let parse_sentence sid pa =
         | Some com -> com
       with e when CErrors.noncritical e ->
         let (e, info) = CErrors.push e in
-        iraise (e, info))
+        Exninfo.iraise (e, info))
     ()
 
 (* You may need to know the len + indentation of previous command to compute
@@ -2894,7 +2891,7 @@ let edit_at id =
         stm_prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
         VCS.restore vcs;
         VCS.print ();
-        iraise (e, info)
+        Exninfo.iraise (e, info)
 
 let backup () = VCS.backup ()
 let restore d = VCS.restore d
@@ -2924,7 +2921,7 @@ let proofname b = match VCS.get_branch b with
   | _ -> None
 
 let get_all_proof_names () =
-  List.map unmangle (List.map_filter proofname (VCS.branches ()))
+  List.map unmangle (CList.map_filter proofname (VCS.branches ()))
 
 (* Export hooks *)
 let state_computed_hook = Hooks.state_computed_hook

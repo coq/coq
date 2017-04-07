@@ -8,11 +8,8 @@
 
 open Pp
 open CErrors
-open Util
 open Flags
-open Names
 open Libnames
-open States
 open Coqinit
 
 let () = at_exit flush_all
@@ -133,10 +130,10 @@ let engage () =
 
 let set_batch_mode () = batch_mode := true
 
-let toplevel_default_name = DirPath.make [Id.of_string "Top"]
+let toplevel_default_name = Names.(DirPath.make [Id.of_string "Top"])
 let toplevel_name = ref toplevel_default_name
 let set_toplevel_name dir =
-  if DirPath.is_empty dir then error "Need a non empty toplevel module name";
+  if Names.DirPath.is_empty dir then error "Need a non empty toplevel module name";
   toplevel_name := dir
 
 let remove_top_ml () = Mltop.remove ()
@@ -150,9 +147,9 @@ let set_inputstate s =
   warn_deprecated_inputstate ();
   inputstate:=s
 let inputstate () =
-  if not (String.is_empty !inputstate) then
+  if not (CString.is_empty !inputstate) then
     let fname = Loadpath.locate_file (CUnix.make_suffix !inputstate ".coq") in
-    intern_state fname
+    States.intern_state fname
 
 let warn_deprecated_outputstate =
   CWarnings.create ~name:"deprecated-outputstate" ~category:"deprecated"
@@ -164,9 +161,9 @@ let set_outputstate s =
   warn_deprecated_outputstate ();
   outputstate:=s
 let outputstate () =
-  if not (String.is_empty !outputstate) then
+  if not (CString.is_empty !outputstate) then
     let fname = CUnix.make_suffix !outputstate ".coq" in
-    extern_state fname
+    States.extern_state fname
 
 let set_include d p implicit =
   let p = dirpath_of_string p in
@@ -379,7 +376,7 @@ let get_host_port opt s =
 let get_error_resilience opt = function
   | "on" | "all" | "yes" -> `All
   | "off" | "no" -> `None
-  | s -> `Only (String.split ',' s)
+  | s -> `Only (CString.split ',' s)
 
 let get_task_list s = List.map int_of_string (Str.split (Str.regexp ",") s)
 
@@ -624,7 +621,7 @@ let init_toplevel arglist =
       init_load_path ();
       Option.iter Mltop.load_ml_object_raw !toploop;
       let extras = !toploop_init extras in
-      if not (List.is_empty extras) then begin
+      if not (CList.is_empty extras) then begin
         prerr_endline ("Don't know what to do with "^String.concat " " extras);
         prerr_endline "See -help for the list of supported options";
         exit 1
@@ -633,7 +630,7 @@ let init_toplevel arglist =
       inputstate ();
       Mltop.init_known_plugins ();
       engage ();
-      if (not !batch_mode || List.is_empty !compile_list)
+      if (not !batch_mode || CList.is_empty !compile_list)
          && Global.env_is_initial ()
       then Declaremods.start_library !toplevel_name;
       init_library_roots ();
