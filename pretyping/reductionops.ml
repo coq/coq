@@ -1361,9 +1361,24 @@ let sigma_compare_instances ~flex i0 i1 sigma =
      | Univ.UniverseInconsistency _ ->
 	raise Reduction.NotConvertible
 
+let sigma_leq_inductives ~flex uinfind i0 i1 sigma =
+  let ind_instance = Univ.UContext.instance (Univ.UInfoInd.univ_context uinfind) in
+  let ind_sbcst = Univ.UContext.constraints (Univ.UInfoInd.subtyp_context uinfind) in
+  if not ((Univ.Instance.length ind_instance = Univ.Instance.length i0) &&
+          (Univ.Instance.length ind_instance = Univ.Instance.length i1)) then
+     anomaly (Pp.str "Invalid inductive subtyping encountered!")
+  else
+     let comp_subst = (Univ.Instance.append i0 i1) in
+     let comp_cst = Univ.subst_instance_constraints comp_subst ind_sbcst in
+     try Evd.add_constraints sigma comp_cst
+     with Evd.UniversesDiffer
+        | Univ.UniverseInconsistency _ ->
+	    raise Reduction.NotConvertible
+
 let sigma_univ_state = 
   { Reduction.compare = sigma_compare_sorts;
-    Reduction.compare_instances = sigma_compare_instances }
+    Reduction.compare_instances = sigma_compare_instances;
+    Reduction.leq_inductives = sigma_leq_inductives }
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =

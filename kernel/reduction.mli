@@ -40,6 +40,8 @@ type 'a universe_compare =
     compare : env -> conv_pb -> sorts -> sorts -> 'a -> 'a;
     compare_instances: flex:bool -> 
 		       Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+    leq_inductives : flex:bool -> Univ.UInfoInd.t ->
+                     Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
   } 
 
 type 'a universe_state = 'a * 'a universe_compare
