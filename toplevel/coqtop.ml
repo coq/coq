@@ -206,7 +206,8 @@ let require () =
 let add_compat_require v =
   match v with
   | Flags.V8_5 -> add_require "Coq.Compat.Coq85"
-  | _ -> ()
+  | Flags.V8_6 -> add_require "Coq.Compat.Coq86"
+  | Flags.VOld | Flags.Current -> ()
 
 let compile_list = ref ([] : (bool * string) list)
 
