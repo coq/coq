@@ -787,10 +787,10 @@ module V85 = struct
              let fk' =
                (fun e ->
                  let do_backtrack =
-                   if unique then occur_existential s' concl
+                   if unique then occur_existential tacgl.sigma concl
                    else if info.unique then true
                    else if List.is_empty gls' then
-                     needs_backtrack env s' info.is_evar concl
+                     needs_backtrack env tacgl.sigma info.is_evar concl
                    else true
                  in
                  let e' = match foundone with None -> e
