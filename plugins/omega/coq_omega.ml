@@ -1884,6 +1884,7 @@ let destructure_goal =
 		                         (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |]))))
 	        intro
 	    with Undecidable -> Tactics.elim_type (Lazy.force coq_False)
+	    | e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 	  in
 	  Tacticals.New.tclTHEN goal_tac destructure_hyps
     in
