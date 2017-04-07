@@ -106,32 +106,36 @@ let we_are_parsing = ref false
 (* Current means no particular compatibility consideration.
    For correct comparisons, this constructor should remain the last one. *)
 
-type compat_version = V8_2 | V8_3 | V8_4 | V8_5 | V8_6 | Current
+type compat_version = VOld | V8_2 | V8_3 | V8_4 | V8_5 | V8_6 | Current
 
 let compat_version = ref Current
 
 let version_compare v1 v2 = match v1, v2 with
-| V8_2, V8_2 -> 0
-| V8_2, (V8_3 | V8_4 | V8_5 | V8_6 | Current) -> -1
-| V8_3, V8_2 -> 1
-| V8_3, V8_3 -> 0
-| V8_3, (V8_4 | V8_5 | V8_6 | Current) -> -1
-| V8_4, (V8_2 | V8_3) -> 1
-| V8_4, V8_4 -> 0
-| V8_4, (V8_5 | V8_6 | Current) -> -1
-| V8_5, (V8_2 | V8_3 | V8_4) -> 1
-| V8_5, V8_5 -> 0
-| V8_5, (V8_6 | Current) -> -1
-| V8_6, (V8_2 | V8_3 | V8_4 | V8_5) -> 1
-| V8_6, V8_6 -> 0
-| V8_6, Current -> -1
-| Current, Current -> 0
-| Current, (V8_2 | V8_3 | V8_4 | V8_5 | V8_6) -> 1
+  | VOld, VOld -> 0
+  | VOld, _ -> -1
+  | _, VOld -> 1
+  | V8_2, V8_2 -> 0
+  | V8_2, _ -> -1
+  | _, V8_2 -> 1
+  | V8_3, V8_3 -> 0
+  | V8_3, _ -> -1
+  | _, V8_3 -> 1
+  | V8_4, V8_4 -> 0
+  | V8_4, _ -> -1
+  | _, V8_4 -> 1
+  | V8_5, V8_5 -> 0
+  | V8_5, _ -> -1
+  | _, V8_5 -> 1
+  | V8_6, V8_6 -> 0
+  | V8_6, _ -> -1
+  | _, V8_6 -> 1
+  | Current, Current -> 0
 
 let version_strictly_greater v = version_compare !compat_version v > 0
 let version_less_or_equal v = not (version_strictly_greater v)
 
 let pr_version = function
+  | VOld -> "old"
   | V8_2 -> "8.2"
   | V8_3 -> "8.3"
   | V8_4 -> "8.4"

@@ -126,7 +126,7 @@ let init_ocaml_path () =
     Mltop.add_ml_dir (Envars.coqlib ());
     List.iter add_subdir Coq_config.all_src_dirs
 
-let get_compat_version = function
+let get_compat_version ?(allow_old = true) = function
   | "8.7" -> Flags.Current
   | "8.6" -> Flags.V8_6
   | "8.5" -> Flags.V8_5
@@ -134,6 +134,7 @@ let get_compat_version = function
   | "8.3" -> Flags.V8_3
   | "8.2" -> Flags.V8_2
   | ("8.1" | "8.0") as s ->
+    if allow_old then Flags.VOld else
     CErrors.user_err ~hdr:"get_compat_version"
       (str "Compatibility with version " ++ str s ++ str " not supported.")
   | s -> CErrors.user_err ~hdr:"get_compat_version"
