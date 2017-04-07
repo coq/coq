@@ -22,11 +22,6 @@ Proof.
 intros; rewrite H; reflexivity.
 Qed.
 
-Lemma IZR_neq : forall z1 z2:Z, z1 <> z2 -> IZR z1 <> IZR z2.
-Proof.
-intros; red; intro; elim H; apply eq_IZR; assumption.
-Qed.
-
 Ltac discrR :=
   try
    match goal with
