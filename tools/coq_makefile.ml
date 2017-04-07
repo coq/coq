@@ -528,11 +528,7 @@ let variables is_install opt (args,defs) =
     print "CAMLDEP?=$(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack\n";
     print "CAMLLIB?=$(shell $(OCAMLFIND) printconf stdlib)\n";
     print "GRAMMARS?=grammar.cma\n";
-    print "ifeq ($(CAMLP4),camlp5)
-CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo
-else
-CAMLP4EXTEND=
-endif\n";
+    print "CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo\n";
     print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I $(COQLIB)/grammar compat5.cmo \\
   $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
     end;

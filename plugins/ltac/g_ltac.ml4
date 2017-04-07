@@ -12,7 +12,6 @@ DECLARE PLUGIN "ltac_plugin"
 
 open Util
 open Pp
-open Compat
 open Constrexpr
 open Tacexpr
 open Misctypes
@@ -68,9 +67,9 @@ let _ =
 let test_bracket_ident =
   Gram.Entry.of_parser "test_bracket_ident"
     (fun strm ->
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
         | KEYWORD "[" ->
-            (match get_tok (stream_nth 1 strm) with
+            (match stream_nth 1 strm with
               | IDENT _ -> ()
 	      | _ -> raise Stream.Failure)
 	| _ -> raise Stream.Failure)

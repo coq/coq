@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Compat
 open CErrors
 open Util
 open Names
@@ -407,7 +406,7 @@ let only_starredidentrefs =
   Gram.Entry.of_parser "test_only_starredidentrefs"
     (fun strm ->
       let rec aux n =
-      match get_tok (Util.stream_nth n strm) with
+      match Util.stream_nth n strm with
         | KEYWORD "." -> ()
         | KEYWORD ")" -> ()
         | (IDENT _ | KEYWORD "Type" | KEYWORD "*") -> aux (n+1)

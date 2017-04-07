@@ -62,8 +62,6 @@ let echo       = ref false
 let no_start   = ref false
 
 let is_ocaml4 = Coq_config.caml_version.[0] <> '3'
-let is_camlp5 = Coq_config.camlp4 = "camlp5"
-
 
 (** {6 Includes options} *)
 
@@ -106,7 +104,7 @@ let incl_all_subdirs dir opts =
 (** OCaml + CamlpX libraries *)
 
 let ocaml_libs = ["str.cma";"unix.cma";"nums.cma";"dynlink.cma";"threads.cma"]
-let camlp4_libs = if is_camlp5 then ["gramlib.cma"] else ["camlp4lib.cma"]
+let camlp4_libs = ["gramlib.cma"]
 let libobjs = ocaml_libs @ camlp4_libs
 
 (** Toplevel objects *)
@@ -117,14 +115,7 @@ let ocaml_topobjs =
   else
     ["toplevellib.cma"]
 
-let camlp4_topobjs =
-  if is_camlp5 then
-    ["camlp5_top.cma"; "pa_o.cmo"; "pa_extend.cmo"]
-  else
-    [ "Camlp4Top.cmo";
-      "Camlp4Parsers/Camlp4OCamlRevisedParser.cmo";
-      "Camlp4Parsers/Camlp4OCamlParser.cmo";
-      "Camlp4Parsers/Camlp4GrammarParser.cmo" ]
+let camlp4_topobjs = ["camlp5_top.cma"; "pa_o.cmo"; "pa_extend.cmo"]
 
 let topobjs = ocaml_topobjs @ camlp4_topobjs
 

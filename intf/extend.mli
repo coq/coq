@@ -8,7 +8,7 @@
 
 (** Entry keys for constr notations *)
 
-type 'a entry = 'a Compat.GrammarMake(CLexer).entry
+type 'a entry = 'a Grammar.GMake(CLexer).Entry.e
 
 type side = Left | Right
 

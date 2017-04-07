@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open GramCompat (* necessary for camlp4 *)
-
 type argument_type =
 | ListArgType of argument_type
 | OptArgType of argument_type

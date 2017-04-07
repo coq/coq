@@ -7,10 +7,12 @@
 (************************************************************************)
 
 open Q_util
-open GramCompat
 
-let loc = CompatLoc.ghost
+let loc = Ploc.dummy
 let default_loc = <:expr< Loc.ghost >>
+
+let declare_str_items loc l =
+  MLast.StDcl (loc, Ploc.VaVal l) (* correspond to <:str_item< declare $list:l'$ end >> *)
 
 let mk_extraarg loc s = <:expr< $lid:"wit_"^s$ >>
 
@@ -185,7 +187,6 @@ let declare_vernac_argument loc s pr cl =
       >> ]
 
 open Pcaml
-open PcamlSig (* necessary for camlp4 *)
 
 EXTEND
   GLOBAL: str_item;

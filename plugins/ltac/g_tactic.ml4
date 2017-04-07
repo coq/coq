@@ -14,7 +14,6 @@ open Genredexpr
 open Constrexpr
 open Libnames
 open Tok
-open Compat
 open Misctypes
 open Locus
 open Decl_kinds
@@ -34,11 +33,11 @@ let err () = raise Stream.Failure
 let test_lpar_id_coloneq =
   Gram.Entry.of_parser "lpar_id_coloneq"
     (fun strm ->
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
         | KEYWORD "(" ->
-            (match get_tok (stream_nth 1 strm) with
+            (match stream_nth 1 strm with
               | IDENT _ ->
-                  (match get_tok (stream_nth 2 strm) with
+                  (match stream_nth 2 strm with
 	            | KEYWORD ":=" -> ()
 	            | _ -> err ())
 	      | _ -> err ())
@@ -48,11 +47,11 @@ let test_lpar_id_coloneq =
 let test_lpar_id_rpar =
   Gram.Entry.of_parser "lpar_id_coloneq"
     (fun strm ->
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
         | KEYWORD "(" ->
-            (match get_tok (stream_nth 1 strm) with
+            (match stream_nth 1 strm with
               | IDENT _ ->
-                  (match get_tok (stream_nth 2 strm) with
+                  (match stream_nth 2 strm with
 	            | KEYWORD ")" -> ()
 	            | _ -> err ())
 	      | _ -> err ())
@@ -62,11 +61,11 @@ let test_lpar_id_rpar =
 let test_lpar_idnum_coloneq =
   Gram.Entry.of_parser "test_lpar_idnum_coloneq"
     (fun strm ->
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
         | KEYWORD "(" ->
-            (match get_tok (stream_nth 1 strm) with
+            (match stream_nth 1 strm with
               | IDENT _ | INT _ ->
-                  (match get_tok (stream_nth 2 strm) with
+                  (match stream_nth 2 strm with
                     | KEYWORD ":=" -> ()
                     | _ -> err ())
               | _ -> err ())
@@ -76,11 +75,11 @@ let test_lpar_idnum_coloneq =
 let test_lpar_id_colon =
   Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
         | KEYWORD "(" ->
-            (match get_tok (stream_nth 1 strm) with
+            (match stream_nth 1 strm with
               | IDENT _ ->
-                  (match get_tok (stream_nth 2 strm) with
+                  (match stream_nth 2 strm with
                     | KEYWORD ":" -> ()
                     | _ -> err ())
               | _ -> err ())
@@ -91,30 +90,30 @@ let check_for_coloneq =
   Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
       let rec skip_to_rpar p n =
-	match get_tok (List.last (Stream.npeek n strm)) with
+	match List.last (Stream.npeek n strm) with
         | KEYWORD "(" -> skip_to_rpar (p+1) (n+1)
         | KEYWORD ")" -> if Int.equal p 0 then n+1 else skip_to_rpar (p-1) (n+1)
 	| KEYWORD "." -> err ()
 	| _ -> skip_to_rpar p (n+1) in
       let rec skip_names n =
-	match get_tok (List.last (Stream.npeek n strm)) with
+	match List.last (Stream.npeek n strm) with
         | IDENT _ | KEYWORD "_" -> skip_names (n+1)
 	| KEYWORD ":" -> skip_to_rpar 0 (n+1) (* skip a constr *)
 	| _ -> err () in
       let rec skip_binders n =
-	match get_tok (List.last (Stream.npeek n strm)) with
+	match List.last (Stream.npeek n strm) with
         | KEYWORD "(" -> skip_binders (skip_names (n+1))
         | IDENT _ | KEYWORD "_" -> skip_binders (n+1)
 	| KEYWORD ":=" -> ()
 	| _ -> err () in
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
       | KEYWORD "(" -> skip_binders 2
       | _ -> err ())
 
 let lookup_at_as_comma =
   Gram.Entry.of_parser "lookup_at_as_comma"
     (fun strm ->
-      match get_tok (stream_nth 0 strm) with
+      match stream_nth 0 strm with
 	| KEYWORD (","|"at"|"as") -> ()
 	| _ -> err ())
 

@@ -146,14 +146,10 @@ $(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) $(LINKMETADATA) -o $@ $(1) $(addsuffix .cm
 $(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
 
-# Camlp4 / Camlp5 settings
+# Camlp5 settings
 
 CAMLP4DEPS:=grammar/compat5.cmo grammar/grammar.cma
-ifeq ($(CAMLP4),camlp5)
 CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
-else
-CAMLP4USE=-D$(CAMLVERSION)
-endif
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo)
 
@@ -162,11 +158,7 @@ SYSCMA:=$(addsuffix .cma,$(SYSMOD))
 SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD))
 
 # We do not repeat the dependencies already in SYSMOD here
-ifeq ($(CAMLP4),camlp5)
 P4CMA:=gramlib.cma
-else
-P4CMA:=camlp4lib.cma
-endif
 
 ###########################################################################
 # Infrastructure for the rest of the Makefile
@@ -243,26 +235,6 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 	$(HIDE)$(OCAMLC) -ccopt "-MM -MQ $@ -MQ $(<:.c=.o) -isystem $(CAMLHLIB)" $< $(TOTARGET)
 
 ###########################################################################
-### Special rules (Camlp5 / Camlp4)
-###########################################################################
-
-# Special rule for the compatibility-with-camlp5 extension for camlp4
-#
-# - grammar/compat5.cmo changes 'GEXTEND' into 'EXTEND'. Safe, always loaded
-# - grammar/compat5b.cmo changes 'EXTEND' into 'EXTEND Gram'. Interact badly with
-#    syntax such that 'VERNAC EXTEND', we only load it in grammar/
-
-ifeq ($(CAMLP4),camlp4)
-grammar/compat5.cmo: grammar/compat5.mlp
-	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -I $(MYCAMLP4LIB) -impl' -impl $<
-grammar/compat5b.cmo: grammar/compat5b.mlp
-	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -I $(MYCAMLP4LIB) -impl' -impl $<
-else
-grammar/compat5.cmo: grammar/compat5.ml
-	$(OCAMLC) -c $<
-endif
-
-###########################################################################
 #  grammar/grammar.cma
 ###########################################################################
 
@@ -272,11 +244,10 @@ endif
 
 ## Explicit dependencies for grammar stuff
 
-GRAMBASEDEPS := grammar/gramCompat.cmo grammar/q_util.cmi
-GRAMCMO := grammar/gramCompat.cmo grammar/q_util.cmo \
+GRAMBASEDEPS := grammar/q_util.cmi
+GRAMCMO := grammar/q_util.cmo \
  grammar/argextend.cmo grammar/tacextend.cmo grammar/vernacextend.cmo
 
-grammar/q_util.cmi : grammar/gramCompat.cmo
 grammar/argextend.cmo : $(GRAMBASEDEPS)
 grammar/q_util.cmo : $(GRAMBASEDEPS)
 grammar/tacextend.cmo : $(GRAMBASEDEPS) grammar/argextend.cmo
@@ -300,15 +271,9 @@ grammar/grammar.cma : $(GRAMCMO)
 
 ## Support of Camlp5 and Camlp5
 
-ifeq ($(CAMLP4),camlp4)
- COMPATCMO:=grammar/compat5.cmo grammar/compat5b.cmo
- GRAMP4USE:=$(COMPATCMO) -D$(CAMLVERSION)
- GRAMPP:=$(CAMLP4O) -I $(MYCAMLP4LIB) $(GRAMP4USE) $(CAMLP4COMPAT) -impl
-else
- COMPATCMO:=
- GRAMP4USE:=$(COMPATCMO) pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
- GRAMPP:=$(CAMLP4O) -I $(MYCAMLP4LIB) $(GRAMP4USE) $(CAMLP4COMPAT) -impl
-endif
+COMPATCMO:=
+GRAMP4USE:=$(COMPATCMO) pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
+GRAMPP:=$(CAMLP4O) -I $(MYCAMLP4LIB) $(GRAMP4USE) $(CAMLP4COMPAT) -impl
 
 ## Rules for standard .mlp and .mli files in grammar/
 
@@ -598,7 +563,7 @@ plugins/%.cmx: plugins/%.ml
 	$(HIDE)$(OCAMLLEX) -o $@ "$*.mll"
 
 %.ml: %.ml4 $(CAMLP4DEPS)
-	$(SHOW)'CAMLP4O   $<'
+	$(SHOW)'CAMLP5O   $<'
 	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $(PR_O) \
 	  $(CAMLP4DEPS) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
 

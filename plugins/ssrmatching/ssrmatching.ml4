@@ -10,7 +10,7 @@
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
-let frozen_lexer = CLexer.freeze () ;;
+let frozen_lexer = CLexer.get_keyword_state () ;;
 
 (*i camlp4use: "pa_extend.cmo" i*)
 (*i camlp4deps: "grammar/grammar.cma" i*)
@@ -1040,7 +1040,7 @@ let interp_open_constr ist gl gc =
 let pf_intern_term ist gl (_, c) = glob_constr ist (pf_env gl) c
 let interp_term ist gl (_, c) = (interp_open_constr ist gl c)
 let pr_ssrterm _ _ _ = pr_term
-let input_ssrtermkind strm = match Compat.get_tok (stream_nth 0 strm) with
+let input_ssrtermkind strm = match stream_nth 0 strm with
   | Tok.KEYWORD "(" -> '('
   | Tok.KEYWORD "@" -> '@'
   | _ -> ' '
@@ -1056,8 +1056,6 @@ ARGUMENT EXTEND cpattern
      GLOB_PRINTED BY pr_ssrterm
 | [ "Qed" constr(c) ] -> [ mk_lterm c ]
 END
-
-let (!@) = Compat.to_coqloc
 
 GEXTEND Gram
   GLOBAL: cpattern;
@@ -1444,6 +1442,6 @@ END
 (* The user is supposed to Require Import ssreflect or Require ssreflect   *)
 (* and Import ssreflect.SsrSyntax to obtain these keywords and as a         *)
 (* consequence the extended ssreflect grammar.                             *)
-let () = CLexer.unfreeze frozen_lexer ;;
+let () = CLexer.set_keyword_state frozen_lexer ;;
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

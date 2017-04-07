@@ -44,4 +44,4 @@ B tools/coqdoc
 S dev
 B dev
 
-PKG threads.posix
+PKG threads.posix camlp5

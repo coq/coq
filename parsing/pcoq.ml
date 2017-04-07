@@ -7,31 +7,203 @@
 (************************************************************************)
 
 open Pp
-open Compat
 open CErrors
 open Util
 open Extend
 open Genarg
 
+let curry f x y = f (x, y)
+let uncurry f (x,y) = f x y
+
+(** Location Utils  *)
+let to_coqloc loc =
+  { Loc.fname = Ploc.file_name loc;
+    Loc.line_nb = Ploc.line_nb loc;
+    Loc.bol_pos = Ploc.bol_pos loc;
+    Loc.bp = Ploc.first_pos loc;
+    Loc.ep = Ploc.last_pos loc;
+    Loc.line_nb_last = Ploc.line_nb_last loc;
+    Loc.bol_pos_last = Ploc.bol_pos_last loc; }
+
+let (!@) = to_coqloc
+
 (** The parser of Coq *)
+module G : sig
 
-module G = GrammarMake (CLexer)
+  include Grammar.S with type te = Tok.t
 
-let warning_verbose = Compat.warning_verbose
+(* where Grammar.S
+
+module type S =
+  sig
+    type te = 'x;
+    type parsable = 'x;
+    value parsable : Stream.t char -> parsable;
+    value tokens : string -> list (string * int);
+    value glexer : Plexing.lexer te;
+    value set_algorithm : parse_algorithm -> unit;
+    module Entry :
+      sig
+        type e 'a = 'y;
+        value create : string -> e 'a;
+        value parse : e 'a -> parsable -> 'a;
+        value parse_token : e 'a -> Stream.t te -> 'a;
+        value name : e 'a -> string;
+        value of_parser : string -> (Stream.t te -> 'a) -> e 'a;
+        value print : Format.formatter -> e 'a -> unit;
+        external obj : e 'a -> Gramext.g_entry te = "%identity";
+      end
+    ;
+    module Unsafe :
+      sig
+        value gram_reinit : Plexing.lexer te -> unit;
+        value clear_entry : Entry.e 'a -> unit;
+      end
+    ;
+    value extend :
+      Entry.e 'a -> option Gramext.position ->
+        list
+          (option string * option Gramext.g_assoc *
+           list (list (Gramext.g_symbol te) * Gramext.g_action)) ->
+        unit;
+    value delete_rule : Entry.e 'a -> list (Gramext.g_symbol te) -> unit;
+  end
+  *)
+
+  type 'a entry = 'a Entry.e
+  type internal_entry = Tok.t Gramext.g_entry
+  type symbol = Tok.t Gramext.g_symbol
+  type action = Gramext.g_action
+  type production_rule = symbol list * action
+  type single_extend_statment =
+      string option * Gramext.g_assoc option * production_rule list
+  type extend_statment =
+      Gramext.position option * single_extend_statment list
+  type coq_parsable
+
+  val parsable : ?file:string -> char Stream.t -> coq_parsable
+  val action : 'a -> action
+  val entry_create : string -> 'a entry
+  val entry_parse : 'a entry -> coq_parsable -> 'a
+  val entry_print : Format.formatter -> 'a entry -> unit
+  val with_parsable : coq_parsable -> ('a -> 'b) -> 'a -> 'b
+  val srules' : production_rule list -> symbol
+  val parse_tokens_after_filter : 'a entry -> Tok.t Stream.t -> 'a
+
+end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
+
+  include Grammar.GMake(CLexer)
+
+  type 'a entry = 'a Entry.e
+  type internal_entry = Tok.t Gramext.g_entry
+  type symbol = Tok.t Gramext.g_symbol
+  type action = Gramext.g_action
+  type production_rule = symbol list * action
+  type single_extend_statment =
+      string option * Gramext.g_assoc option * production_rule list
+  type extend_statment =
+      Gramext.position option * single_extend_statment list
+  type coq_parsable = parsable * CLexer.lexer_state ref
+
+  let parsable ?file c =
+    let state = ref (CLexer.init_lexer_state file) in
+    CLexer.set_lexer_state !state;
+    let a = parsable c in
+    state := CLexer.release_lexer_state ();
+    (a,state)
+
+  let action = Gramext.action
+  let entry_create = Entry.create
+
+  let entry_parse e (p,state) =
+    CLexer.set_lexer_state !state;
+    try
+      let c = Entry.parse e p in
+      state := CLexer.release_lexer_state ();
+      c
+    with Ploc.Exc (loc,e) ->
+      CLexer.drop_lexer_state ();
+      let loc' = Loc.get_loc (Exninfo.info e) in
+      let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
+      Loc.raise ~loc e
+
+  let with_parsable (p,state) f x =
+    CLexer.set_lexer_state !state;
+    try
+      let a = f x in
+      state := CLexer.release_lexer_state ();
+      a
+    with e ->
+      CLexer.drop_lexer_state ();
+      raise e
+
+  let entry_print ft x = Entry.print ft x
+
+  (* Not used *)
+  let srules' = Gramext.srules
+  let parse_tokens_after_filter = Entry.parse_token
+
+end
+
+
+let warning_verbose = Gramext.warning_verbose
 
 let of_coq_assoc = function
-| Extend.RightA -> CompatGramext.RightA
-| Extend.LeftA -> CompatGramext.LeftA
-| Extend.NonA -> CompatGramext.NonA
+| Extend.RightA -> Gramext.RightA
+| Extend.LeftA -> Gramext.LeftA
+| Extend.NonA -> Gramext.NonA
 
 let of_coq_position = function
-| Extend.First -> CompatGramext.First
-| Extend.Last -> CompatGramext.Last
-| Extend.Before s -> CompatGramext.Before s
-| Extend.After s -> CompatGramext.After s
-| Extend.Level s -> CompatGramext.Level s
+| Extend.First -> Gramext.First
+| Extend.Last -> Gramext.Last
+| Extend.Before s -> Gramext.Before s
+| Extend.After s -> Gramext.After s
+| Extend.Level s -> Gramext.Level s
 
-module Symbols = GramextMake(G)
+module Symbols : sig
+  val stoken : Tok.t -> G.symbol
+  val sself : G.symbol
+  val snext : G.symbol
+  val slist0 : G.symbol -> G.symbol
+  val slist0sep : G.symbol * G.symbol -> G.symbol
+  val slist1 : G.symbol -> G.symbol
+  val slist1sep : G.symbol * G.symbol -> G.symbol
+  val sopt : G.symbol -> G.symbol
+  val snterml : G.internal_entry * string -> G.symbol
+  val snterm : G.internal_entry -> G.symbol
+  val snterml_level : G.symbol -> string
+end = struct
+
+  let stoken tok =
+    let pattern = match tok with
+    | Tok.KEYWORD s -> "", s
+    | Tok.IDENT s -> "IDENT", s
+    | Tok.PATTERNIDENT s -> "PATTERNIDENT", s
+    | Tok.FIELD s -> "FIELD", s
+    | Tok.INT s -> "INT", s
+    | Tok.STRING s -> "STRING", s
+    | Tok.LEFTQMARK -> "LEFTQMARK", ""
+    | Tok.BULLET s -> "BULLET", s
+    | Tok.EOI -> "EOI", ""
+    in
+    Gramext.Stoken pattern
+
+     let slist0sep (x, y) = Gramext.Slist0sep (x, y, false)
+     let slist1sep (x, y) = Gramext.Slist1sep (x, y, false)
+
+  let snterml (x, y) = Gramext.Snterml (x, y)
+  let snterm x = Gramext.Snterm x
+  let sself = Gramext.Sself
+  let snext = Gramext.Snext
+  let slist0 x = Gramext.Slist0 x
+  let slist1 x = Gramext.Slist1 x
+  let sopt x = Gramext.Sopt x
+
+  let snterml_level = function
+  | Gramext.Snterml (_, l) -> l
+  | _ -> failwith "snterml_level"
+
+end
 
 let camlp4_verbosity silent f x =
   let a = !warning_verbose in
@@ -55,7 +227,7 @@ let camlp4_verbose f x = camlp4_verbosity (Flags.is_verbose ()) f x
 (** Binding general entry keys to symbol *)
 
 let rec of_coq_action : type a r. (r, a, Loc.t -> r) Extend.rule -> a -> G.action = function
-| Stop -> fun f -> G.action (fun loc -> f (to_coqloc loc))
+| Stop -> fun f -> G.action (fun loc -> f (!@ loc))
 | Next (r, _) -> fun f -> G.action (fun x -> of_coq_action r (f x))
 
 let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> _ = function
@@ -121,10 +293,10 @@ let grammar_delete e reinit (pos,rls) =
     let a = of_coq_assoc a in
     let ext = of_coq_position ext in
     let lev = match pos with
-    | Some (CompatGramext.Level n) -> n
+    | Some (Gramext.Level n) -> n
     | _ -> assert false
     in
-    maybe_uncurry (G.extend e) (Some ext, [Some lev,Some a,[]])
+    (G.extend e) (Some ext) [Some lev,Some a,[]]
   | None -> ()
 
 (** Extension *)
@@ -132,13 +304,13 @@ let grammar_delete e reinit (pos,rls) =
 let grammar_extend e reinit ext =
   let ext = of_coq_extend_statement ext in
   let undo () = grammar_delete e reinit ext in
-  let redo () = camlp4_verbosity false (maybe_uncurry (G.extend e)) ext in
+  let redo () = camlp4_verbosity false (uncurry (G.extend e)) ext in
   camlp4_state := ByEXTEND (undo, redo) :: !camlp4_state;
   redo ()
 
 let grammar_extend_sync e reinit ext =
   camlp4_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp4_state;
-  camlp4_verbosity false (maybe_uncurry (G.extend e)) (of_coq_extend_statement ext)
+  camlp4_verbosity false (uncurry (G.extend e)) (of_coq_extend_statement ext)
 
 (** The apparent parser of Coq; encapsulate G to keep track
     of the extensions. *)
@@ -147,13 +319,13 @@ module Gram =
   struct
     include G
     let extend e =
-      maybe_curry
+      curry
 	(fun ext ->
 	   camlp4_state :=
 	     (ByEXTEND ((fun () -> grammar_delete e None ext),
-			(fun () -> maybe_uncurry (G.extend e) ext)))
+			(fun () -> uncurry (G.extend e) ext)))
 	   :: !camlp4_state;
-	   maybe_uncurry (G.extend e) ext)
+	   uncurry (G.extend e) ext)
     let delete_rule e pil =
       (* spiwack: if you use load an ML module which contains GDELETE_RULE
 	  in a section, God kills a kitty. As it would corrupt remove_grammars.
@@ -194,14 +366,14 @@ let eoi_entry en =
   let e = Gram.entry_create ((Gram.Entry.name en) ^ "_eoi") in
   let symbs = [Symbols.snterm (Gram.Entry.obj en); Symbols.stoken Tok.EOI] in
   let act = Gram.action (fun _ x loc -> x) in
-  maybe_uncurry (Gram.extend e) (None, make_rule [symbs, act]);
+  uncurry (Gram.extend e) (None, make_rule [symbs, act]);
   e
 
 let map_entry f en =
   let e = Gram.entry_create ((Gram.Entry.name en) ^ "_map") in
   let symbs = [Symbols.snterm (Gram.Entry.obj en)] in
   let act = Gram.action (fun x loc -> f x) in
-  maybe_uncurry (Gram.extend e) (None, make_rule [symbs, act]);
+  uncurry (Gram.extend e) (None, make_rule [symbs, act]);
   e
 
 (* Parse a string, does NOT check if the entire string was read
@@ -345,13 +517,13 @@ module Vernac_ =
     let noedit_mode = gec_vernac "noedit_command"
 
     let () =
-      let act_vernac = Gram.action (fun v loc -> Some (!@loc, v)) in
+      let act_vernac = Gram.action (fun v loc -> Some (to_coqloc loc, v)) in
       let act_eoi = Gram.action (fun _ loc -> None) in
       let rule = [
         ([ Symbols.stoken Tok.EOI ], act_eoi);
         ([ Symbols.snterm (Gram.Entry.obj vernac) ], act_vernac );
       ] in
-      maybe_uncurry (Gram.extend main_entry) (None, make_rule rule)
+      uncurry (Gram.extend main_entry) (None, make_rule rule)
 
     let command_entry_ref = ref noedit_mode
     let command_entry =
@@ -369,7 +541,7 @@ let epsilon_value f e =
   let r = Rule (Next (Stop, e), fun x _ -> f x) in
   let ext = of_coq_extend_statement (None, [None, None, [r]]) in
   let entry = G.entry_create "epsilon" in
-  let () = maybe_uncurry (G.extend entry) ext in
+  let () = uncurry (G.extend entry) ext in
   try Some (parse_string entry "") with _ -> None
 
 (** Synchronized grammar extensions *)
@@ -418,9 +590,9 @@ let extend_dyn_grammar (GrammarCommand.Dyn (tag, g)) = extend_grammar_command ta
 (* Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
-type frozen_t = (int * GrammarCommand.t * GramState.t) list * CLexer.frozen_t
+type frozen_t = (int * GrammarCommand.t * GramState.t) list * CLexer.keyword_state
 
-let freeze _ : frozen_t = (!grammar_stack, CLexer.freeze ())
+let freeze _ : frozen_t = (!grammar_stack, CLexer.get_keyword_state ())
 
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
@@ -435,7 +607,7 @@ let unfreeze (grams, lex) =
   let n = number_of_entries undo in
   remove_grammars n;
   grammar_stack := common;
-  CLexer.unfreeze lex;
+  CLexer.set_keyword_state lex;
   List.iter extend_dyn_grammar (List.rev_map pi2 redo)
 
 (** No need to provide an init function : the grammar state is
