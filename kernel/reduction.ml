@@ -492,24 +492,28 @@ and eqappr env cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         if eq_ind ind1 ind2
 	then
         begin
+          let fall_back () =
+            let cuniv = convert_instances ~flex:false u1 u2 cuniv in
+            convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+          in
           let mind = Environ.lookup_mind (fst ind1) env in
           if mind.Declarations.mind_polymorphic then
           begin
             let num_param_arity =
               Context.Rel.length (mind.Declarations.mind_packets.(snd ind1).Declarations.mind_arity_ctxt)
             in
-            (if not (num_param_arity = CClosure.stack_args_size v1 && num_param_arity = CClosure.stack_args_size v2) then
-               raise NotConvertible else ());
-            let uinfind = mind.Declarations.mind_universes in
-	    let cuniv = compare_leq_inductives ~flex:false uinfind u1 u2 cuniv in
-            let cuniv = if cv_pb = CONV then compare_leq_inductives ~flex:false uinfind u2 u1 cuniv else cuniv in
-            convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+            if not (num_param_arity = CClosure.stack_args_size v1 && num_param_arity = CClosure.stack_args_size v2) then
+              fall_back ()
+            else
+            begin
+              let uinfind = mind.Declarations.mind_universes in
+              let cuniv = compare_leq_inductives ~flex:false uinfind u1 u2 cuniv in
+              let cuniv = if cv_pb = CONV then compare_leq_inductives ~flex:false uinfind u2 u1 cuniv else cuniv in
+              convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+            end
           end
           else
-          begin
-            let cuniv = convert_instances ~flex:false u1 u2 cuniv in
-            convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
-          end
+            fall_back ()
         end
         else raise NotConvertible
 
