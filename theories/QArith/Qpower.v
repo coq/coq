@@ -205,6 +205,8 @@ setoid_replace (0+ - a) with (-a) in A by ring.
 apply Qmult_le_0_compat; assumption.
 Qed.
 
+Hint Opaque Pos.mul : rewrite.
+
 Theorem Qpower_decomp p x y :
   Qpower_positive (x#y) p = x ^ Zpos p # (y ^ p).
 Proof.

@@ -986,7 +986,8 @@ Proof.
  (* a < 0 *)
  rewrite <- (Pos.iter_swap_gen _ _ _ Pos.div2_up) by trivial.
  rewrite 2 testbit_Zneg, H; trivial. f_equal.
- rewrite (Pos.iter_swap_gen _ _ _ _ N.div2) by exact N.pred_div2_up.
+ (** Not a unique solution to the unification problem without Pos.pred_N specification *)
+ rewrite (Pos.iter_swap_gen _ _ Pos.pred_N _ N.div2) by exact N.pred_div2_up.
  exact (N.shiftr_spec' (Pos.pred_N a) (N.pos n) (to_N m)).
 Qed.
 

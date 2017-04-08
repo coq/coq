@@ -209,7 +209,7 @@ Proof.
   unfold normalise, xnormalise; cbn -[padd]; intros env t.
   rewrite Zeval_formula_compat.
   unfold eval_cnf, eval_clause.
-  destruct t as [lhs o rhs]; case_eq o; cbn -[padd];
+  destruct t as [lhs o rhs]; case_eq o; cbn -[padd]; fold eval_pol;
     repeat rewrite eval_pol_sub;
       repeat rewrite eval_pol_add;
       repeat rewrite <- eval_pol_norm ; simpl in *;
@@ -245,7 +245,7 @@ Proof.
   rewrite Zeval_formula_compat.
   unfold negate, xnegate  ; simpl.
   unfold eval_cnf,eval_clause.
-  destruct t as [lhs o rhs]; case_eq o; simpl;
+  destruct t as [lhs o rhs]; case_eq o; simpl; fold eval_pol;
     repeat rewrite eval_pol_sub;
       repeat rewrite eval_pol_add;
       repeat rewrite <- eval_pol_norm ; simpl in *;
@@ -536,8 +536,8 @@ Lemma Zgcd_pol_correct_lt : forall p env g c, Zgcd_pol p = (g,c) -> 0 < g -> eva
 Proof.
   intros.
   rewrite <- Zdiv_pol_correct ; auto.
-  rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
-  unfold eval_pol. ring.
+  unfold eval_pol. rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
+  ring.
   (**)
   apply Zgcd_pol_div ; auto.
 Qed.

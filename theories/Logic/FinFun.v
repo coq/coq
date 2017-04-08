@@ -281,7 +281,9 @@ Qed.
 Lemma extend_n2f n f x (h:x<n) : n2f (extend_ok f h) = f (n2f h).
 Proof.
  generalize (extend_ok f h). unfold extend in *. break_dec h. intros h'.
- rewrite <- n2f_f2n. now apply n2f_ext.
+ (* MS: selection bug in rewrite before, selecting the wrong occurrence *)
+ rewrite <- (n2f_f2n (f (n2f h))) at 2.
+ now apply n2f_ext.
 Qed.
 
 Lemma restrict_f2n n f hf (x:Fin.t n) :

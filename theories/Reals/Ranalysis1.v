@@ -144,7 +144,7 @@ Proof.
     intros; apply (limit_mul (fun x:R => a) f (D_x no_cond x0) a (f x0) x0).
   unfold limit1_in; unfold limit_in; intros; exists 1; split.
   apply Rlt_0_1.
-  intros; rewrite R_dist_eq; assumption.
+  intros; simpl; rewrite R_dist_eq; assumption.
   assumption.
 Qed.
 

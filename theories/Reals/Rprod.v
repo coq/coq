@@ -77,6 +77,8 @@ Proof.
     split; assumption.
 Qed.
 
+Hint Opaque fact mult : rewrite.
+
 (** Application to factorial *)
 Lemma fact_prodSO :
   forall n:nat, INR (fact n) = prod_f_R0 (fun k:nat =>

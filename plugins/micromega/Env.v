@@ -30,6 +30,8 @@ Section S.
 
   Definition tail (e:Env) := jump 1 e.
 
+  Hint Opaque jump : rewrite.
+
   Lemma jump_add i j l x : jump (i + j) l x = jump i (jump j l) x.
   Proof.
     unfold jump. f_equal. apply Pos.add_assoc.
@@ -89,6 +91,8 @@ Section S.
   Qed.
 
 End S.
+
+Global Hint Opaque jump : rewrite.
 
 Ltac jump_simpl :=
   repeat

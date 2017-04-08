@@ -141,7 +141,8 @@ apply pred_extensionality with (1 := Hequiv).
 apply diff_true_false.
 rewrite <- H0.
 rewrite <- H1.
-rewrite <- H0''. reflexivity.
+(** MS: incompatibility, was finding b1 first (probably ?P ?b' ~= b0 = b1 using first-order unif) *)
+rewrite <- (H0'' b1). reflexivity.
 rewrite Heq.
 assumption.
 
