@@ -1246,15 +1246,16 @@ let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * glob_
   in
   List.rev !l
 
-let rec rebuild_return_type (loc, rt) =
-  match rt with
+let rec rebuild_return_type rt =
+  let loc = rt.CAst.loc in
+  match rt.CAst.v with
     | Constrexpr.CProdN(n,t') ->
-        Loc.tag ?loc @@ Constrexpr.CProdN(n,rebuild_return_type t')
+        CAst.make ?loc @@ Constrexpr.CProdN(n,rebuild_return_type t')
     | Constrexpr.CLetIn(na,v,t,t') ->
-	Loc.tag ?loc @@ Constrexpr.CLetIn(na,v,t,rebuild_return_type t')
-    | _ -> Loc.tag ?loc @@ Constrexpr.CProdN([[Loc.tag Anonymous],
-				       Constrexpr.Default Decl_kinds.Explicit,Loc.tag ?loc rt],
-			    Loc.tag @@ Constrexpr.CSort(GType []))
+	CAst.make ?loc @@ Constrexpr.CLetIn(na,v,t,rebuild_return_type t')
+    | _ -> CAst.make ?loc @@ Constrexpr.CProdN([[Loc.tag Anonymous],
+				       Constrexpr.Default Decl_kinds.Explicit, rt],
+			    CAst.make @@ Constrexpr.CSort(GType []))
 
 let do_build_inductive
       evd (funconstants: Term.pconstant list) (funsargs: (Name.t * glob_constr * glob_constr option) list list)
@@ -1305,11 +1306,11 @@ let do_build_inductive
 	(fun (n,t,typ) acc ->
           match typ with
           | Some typ ->
-	     Loc.tag @@ Constrexpr.CLetIn((Loc.tag n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
+	     CAst.make @@ Constrexpr.CLetIn((Loc.tag n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
                               Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
 			      acc)
 	  | None ->
-	     Loc.tag @@ Constrexpr.CProdN
+	     CAst.make @@ Constrexpr.CProdN
 	       ([[(Loc.tag n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
 		acc
 	       )
@@ -1372,11 +1373,11 @@ let do_build_inductive
       (fun (n,t,typ) acc ->
          match typ with
          | Some typ ->
-	   Loc.tag @@ Constrexpr.CLetIn((Loc.tag n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
+	   CAst.make @@ Constrexpr.CLetIn((Loc.tag n),with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t,
                               Some (with_full_print (Constrextern.extern_glob_constr Id.Set.empty) typ),
 			    acc)
 	 | None ->
-           Loc.tag @@ Constrexpr.CProdN
+           CAst.make @@ Constrexpr.CProdN
 	   ([[(Loc.tag n)],Constrexpr_ops.default_binder_kind,with_full_print (Constrextern.extern_glob_constr Id.Set.empty) t],
 	    acc
 	   )

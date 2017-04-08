@@ -340,7 +340,7 @@ type 'a extra_genarg_printer =
 
   let strip_prod_binders_expr n ty =
     let rec strip_ty acc n ty =
-      match snd ty with
+      match ty.CAst.v with
           Constrexpr.CProdN(bll,a) ->
             let nb =
               List.fold_left (fun i (nal,_,_) -> i + List.length nal) 0 bll in

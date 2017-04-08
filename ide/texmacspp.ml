@@ -218,8 +218,8 @@ let rec pp_bindlist bl =
               (List.map
                 (fun (loc, name) ->
                   xmlCst ?loc (string_of_name name)) loc_names) in
-            match e with
-              | _, CHole _ -> names
+            match e.CAst.v with
+              | CHole _ -> names
               | _ -> names @ [pp_expr e])
           bl) in
   match tlist with
@@ -232,7 +232,7 @@ and pp_local_binder lb = (* don't know what it is for now *)
   | CLocalDef ((loc, nam), ce, ty) ->
       let attrs = ["name", string_of_name nam] in
       let value = match ty with
-          Some t -> Loc.tag ?loc:(Loc.merge_opt (constr_loc ce) (constr_loc t)) @@ CCast (ce, CastConv t)
+          Some t -> CAst.make ?loc:(Loc.merge_opt (constr_loc ce) (constr_loc t)) @@ CCast (ce, CastConv t)
         | None -> ce in
       pp_expr ~attr:attrs value
   | CLocalAssum (namll, _, ce) ->
@@ -302,7 +302,7 @@ and pp_cofixpoint_expr (((loc, id), pl), lbl, ce, ceo) = (* cofixpoint_expr *)
   end
 and pp_lident (loc, id) = xmlCst ?loc (Id.to_string id)
 and pp_simple_binder (idl, ce) = List.map pp_lident idl @ [pp_expr ce]
-and pp_cases_pattern_expr (loc, cpe) =
+and pp_cases_pattern_expr {loc ; CAst.v = cpe} =
   match cpe with
   | CPatAlias (cpe, id) ->
       xmlApply ?loc
@@ -390,7 +390,7 @@ and pp_local_binder_list lbl =
 and pp_const_expr_list cel =
   let l = List.map pp_expr cel in
   Element ("recurse", (backstep_loc l), l)
-and pp_expr ?(attr=[]) (loc, e) =
+and pp_expr ?(attr=[]) { loc; CAst.v = e } =
   match e with
   | CRef (r, _) ->
       xmlCst ?loc:(Libnames.loc_of_reference r) ~attr (Libnames.string_of_reference r)
@@ -469,13 +469,13 @@ and pp_expr ?(attr=[]) (loc, e) =
            [pp_branch_expr_list bel]))
   | CRecord _ -> assert false
   | CLetIn ((varloc, var), value, typ, body) ->
-      let (loc, value) = match typ with
+      let value = match typ with
         | Some t ->
-          Loc.tag ?loc:(Loc.merge_opt (constr_loc value) (constr_loc t)) (CCast (value, CastConv t))
+          CAst.make ?loc:(Loc.merge_opt (constr_loc value) (constr_loc t)) (CCast (value, CastConv t))
         | None -> value in
       xmlApply ?loc
         (xmlOperator ?loc "let" ::
-         [xmlCst ?loc:varloc (string_of_name var) ; pp_expr (Loc.tag ?loc value); pp_expr body])
+         [xmlCst ?loc:varloc (string_of_name var) ; pp_expr value; pp_expr body])
   | CLambdaN (bl, e) ->
       xmlApply ?loc
         (xmlOperator ?loc "lambda" :: [pp_bindlist bl] @ [pp_expr e])

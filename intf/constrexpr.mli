@@ -42,7 +42,7 @@ type raw_cases_pattern_expr_r =
   (** [CPatCstr (_, c, l1, l2)] represents ((@c l1) l2) *)
   | RCPatAtom of Id.t option
   | RCPatOr of raw_cases_pattern_expr list
-and raw_cases_pattern_expr = raw_cases_pattern_expr_r Loc.located
+and raw_cases_pattern_expr = raw_cases_pattern_expr_r CAst.ast
 
 type instance_expr = Misctypes.glob_level list
 
@@ -61,7 +61,7 @@ type cases_pattern_expr_r =
   | CPatRecord of (reference * cases_pattern_expr) list
   | CPatDelimiters of string * cases_pattern_expr
   | CPatCast   of cases_pattern_expr * constr_expr
-and cases_pattern_expr = cases_pattern_expr_r Loc.located
+and cases_pattern_expr = cases_pattern_expr_r CAst.ast
 
 and cases_pattern_notation_substitution =
     cases_pattern_expr list *     (** for constr subterms *)
@@ -98,7 +98,7 @@ and constr_expr_r =
   | CGeneralization of binding_kind * abstraction_kind option * constr_expr
   | CPrim of prim_token
   | CDelimiters of string * constr_expr
-and constr_expr = constr_expr_r Loc.located
+and constr_expr = constr_expr_r CAst.ast
 
 and case_expr = constr_expr                 (* expression that is being matched *)
 	      * Name.t Loc.located option   (* as-clause *)

@@ -313,11 +313,11 @@ let interp_entry forpat e = match e with
 | ETBinderList (true, _) -> assert false
 | ETBinderList (false, tkl) -> TTAny (TTBinderListF tkl)
 
-let constr_expr_of_name (loc,na) = Loc.tag ?loc @@ match na with
+let constr_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
   | Anonymous -> CHole (None,Misctypes.IntroAnonymous,None)
   | Name id   -> CRef (Ident (Loc.tag ?loc id), None)
 
-let cases_pattern_expr_of_name (loc,na) = Loc.tag ?loc @@ match na with
+let cases_pattern_expr_of_name (loc,na) = CAst.make ?loc @@ match na with
   | Anonymous -> CPatAtom None
   | Name id   -> CPatAtom (Some (Ident (Loc.tag ?loc id)))
 
@@ -342,13 +342,13 @@ match e with
 | TTBinderListF _ -> { subst with binders = (List.flatten v, false) :: subst.binders }
 | TTBigint ->
   begin match forpat with
-  | ForConstr ->  push_constr subst (Loc.tag @@ CPrim (Numeral v))
-  | ForPattern -> push_constr subst (Loc.tag @@ CPatPrim (Numeral v))
+  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral v))
+  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Numeral v))
   end
 | TTReference ->
   begin match forpat with
-  | ForConstr  -> push_constr subst (Loc.tag @@ CRef (v, None))
-  | ForPattern -> push_constr subst (Loc.tag @@ CPatAtom (Some v))
+  | ForConstr  -> push_constr subst (CAst.make @@ CRef (v, None))
+  | ForPattern -> push_constr subst (CAst.make @@ CPatAtom (Some v))
   end
 | TTConstrList _ -> { subst with constrlists = v :: subst.constrlists }
 
@@ -431,12 +431,12 @@ let rec pure_sublevels : type a b c. int option -> (a, b, c) rule -> int list = 
 let make_act : type r. r target -> _ -> r gen_eval = function
 | ForConstr -> fun notation loc env ->
   let env = (env.constrs, env.constrlists, List.map fst env.binders) in
-  Loc.tag ~loc @@ CNotation (notation , env)
+  CAst.make ~loc @@ CNotation (notation , env)
 | ForPattern -> fun notation loc env ->
   let invalid = List.exists (fun (_, b) -> not b) env.binders in
   let () = if invalid then Topconstr.error_invalid_pattern_notation ~loc () in
   let env = (env.constrs, env.constrlists) in
-  Loc.tag ~loc @@ CPatNotation (notation, env, [])
+  CAst.make ~loc @@ CPatNotation (notation, env, [])
 
 let extend_constr state forpat ng =
   let n = ng.notgram_level in

@@ -59,9 +59,9 @@ let explicitation_eq ex1 ex2 = match ex1, ex2 with
 
 let eq_located f (_, x) (_, y) = f x y
 
-let rec cases_pattern_expr_eq (l1, p1) (l2, p2) =
-  if p1 == p2 then true
-  else match p1, p2 with
+let rec cases_pattern_expr_eq p1 p2 =
+  if CAst.(p1.v == p2.v) then true
+  else match CAst.(p1.v, p2.v) with
   | CPatAlias(a1,i1), CPatAlias(a2,i2) ->
       Id.equal i1 i2 && cases_pattern_expr_eq a1 a2
   | CPatCstr(c1,a1,b1), CPatCstr(c2,a2,b2) ->
@@ -97,9 +97,9 @@ let eq_universes u1 u2 =
   | Some l, Some l' -> l = l'
   | _, _ -> false
 
-let rec constr_expr_eq (_loc1, e1) (_loc2, e2) =
-  if e1 == e2 then true
-  else match e1, e2 with
+let rec constr_expr_eq e1 e2 =
+  if CAst.(e1.v == e2.v) then true
+  else match CAst.(e1.v, e2.v) with
   | CRef (r1,u1), CRef (r2,u2) -> eq_reference r1 r2 && eq_universes u1 u2
   | CFix(id1,fl1), CFix(id2,fl2) ->
       eq_located Id.equal id1 id2 &&
@@ -228,11 +228,11 @@ and constr_notation_substitution_eq (e1, el1, bl1) (e2, el2, bl2) =
 and instance_eq (x1,c1) (x2,c2) =
   Id.equal x1 x2 && constr_expr_eq c1 c2
 
-let constr_loc (l,_) = l
+let constr_loc c = CAst.(c.loc)
 
-let cases_pattern_expr_loc (l,_) = l
+let cases_pattern_expr_loc cp = CAst.(cp.loc)
 
-let raw_cases_pattern_expr_loc (l, _) = l
+let raw_cases_pattern_expr_loc pe = CAst.(pe.loc)
 
 let local_binder_loc = function
   | CLocalAssum ((loc,_)::_,_,t)
@@ -247,18 +247,18 @@ let local_binders_loc bll = match bll with
 
 (** Pseudo-constructors *)
 
-let mkIdentC id   = Loc.tag @@ CRef (Ident (Loc.tag id),None)
-let mkRefC r      = Loc.tag @@ CRef (r,None)
-let mkCastC (a,k) = Loc.tag @@ CCast (a,k)
-let mkLambdaC (idl,bk,a,b) = Loc.tag @@ CLambdaN ([idl,bk,a],b)
-let mkLetInC  (id,a,t,b)   = Loc.tag @@ CLetIn (id,a,t,b)
-let mkProdC   (idl,bk,a,b) = Loc.tag @@ CProdN ([idl,bk,a],b)
+let mkIdentC id   = CAst.make @@ CRef (Ident (Loc.tag id),None)
+let mkRefC r      = CAst.make @@ CRef (r,None)
+let mkCastC (a,k) = CAst.make @@ CCast (a,k)
+let mkLambdaC (idl,bk,a,b) = CAst.make @@ CLambdaN ([idl,bk,a],b)
+let mkLetInC  (id,a,t,b)   = CAst.make @@ CLetIn (id,a,t,b)
+let mkProdC   (idl,bk,a,b) = CAst.make @@ CProdN ([idl,bk,a],b)
 
 let mkAppC (f,l) =
   let l = List.map (fun x -> (x,None)) l in
-  match f with
-  | _loc, CApp (g,l') -> Loc.tag @@ CApp (g, l' @ l)
-  | _                 -> Loc.tag @@ CApp ((None, f), l)
+  match CAst.(f.v) with
+  | CApp (g,l') -> CAst.make @@ CApp (g, l' @ l)
+  | _           -> CAst.make @@ CApp ((None, f), l)
 
 let add_name_in_env env n =
   match snd n with
@@ -276,7 +276,7 @@ let expand_binders ?loc mkC bl c =
         | CLocalDef ((loc1,_) as n, oty, b) ->
             let env, c = loop ?loc:(Loc.merge_opt loc1 loc) bl c in
             let env = add_name_in_env env n in
-            (env, Loc.tag ?loc @@ CLetIn (n,oty,b,c))
+            (env, CAst.make ?loc @@ CLetIn (n,oty,b,c))
         | CLocalAssum ((loc1,_)::_ as nl, bk, t) ->
             let env, c = loop ?loc:(Loc.merge_opt loc1 loc) bl c in
             let env = List.fold_left add_name_in_env env nl in
@@ -288,10 +288,10 @@ let expand_binders ?loc mkC bl c =
             let id = (loc1, Name ni) in
             let ty = match ty with
                  | Some ty -> ty
-                 | None -> Loc.tag ?loc:loc1 @@ CHole (None, IntroAnonymous, None)
+                 | None -> CAst.make ?loc:loc1 @@ CHole (None, IntroAnonymous, None)
             in
-            let e = Loc.tag @@ CRef (Libnames.Ident (loc1, ni), None) in
-            let c = Loc.tag ?loc @@
+            let e = CAst.make @@ CRef (Libnames.Ident (loc1, ni), None) in
+            let c = CAst.make ?loc @@
               CCases
                 (LetPatternStyle, None, [(e,None,None)],
                  [(Loc.tag ?loc:loc1 ([(loc1,[p])], c))])
@@ -302,11 +302,11 @@ let expand_binders ?loc mkC bl c =
   c
 
 let mkCProdN ?loc bll c =
-  let mk ?loc b c = Loc.tag ?loc @@ CProdN ([b],c) in
+  let mk ?loc b c = CAst.make ?loc @@ CProdN ([b],c) in
   expand_binders ?loc mk bll c
 
 let mkCLambdaN ?loc bll c =
-  let mk ?loc b c = Loc.tag ?loc @@ CLambdaN ([b],c) in
+  let mk ?loc b c = CAst.make ?loc @@ CLambdaN ([b],c) in
   expand_binders ?loc mk bll c
 
 (* Deprecated *)
@@ -320,14 +320,13 @@ let coerce_reference_to_id = function
         (str "This expression should be a simple identifier.")
 
 let coerce_to_id = function
-  | _loc, CRef (Ident (loc,id),_) -> (loc,id)
-  | a -> CErrors.user_err ?loc:(constr_loc a)
+  | { CAst.v = CRef (Ident (loc,id),_); _ } -> (loc,id)
+  | { CAst.loc; _ } -> CErrors.user_err ?loc
        ~hdr:"coerce_to_id"
          (str "This expression should be a simple identifier.")
 
 let coerce_to_name = function
-  | _loc, CRef (Ident (loc,id),_) -> (loc,Name id)
-  | loc, CHole (_,_,_) -> (loc,Anonymous)
-  | a -> CErrors.user_err
-         ?loc:(constr_loc a) ~hdr:"coerce_to_name"
-         (str "This expression should be a name.")
+  | { CAst.v = CRef (Ident (loc,id),_) } -> (loc,Name id)
+  | { CAst.loc; CAst.v = CHole (_,_,_) } -> (loc,Anonymous)
+  | { CAst.loc; _ } -> CErrors.user_err ?loc ~hdr:"coerce_to_name"
+                         (str "This expression should be a name.")

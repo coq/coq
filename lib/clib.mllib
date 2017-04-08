@@ -18,6 +18,7 @@ IStream
 Flags
 Control
 Loc
+CAst
 CList
 CString
 Deque

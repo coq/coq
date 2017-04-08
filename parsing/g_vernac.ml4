@@ -233,14 +233,14 @@ GEXTEND Gram
 	DefineBody ([], red, c, None)
       else
         (match c with
-        | _, CCast(c, CastConv t) -> DefineBody (bl, red, c, Some t)
+        | { CAst.v = CCast(c, CastConv t) } -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
         let ((bl, c), tyo) =
           if List.exists (function CLocalPattern _ -> true | _ -> false) bl
           then
             (* FIXME: "red" will be applied to types in bl and Cast with remain *)
-            let c = Loc.tag ~loc:!@loc @@ CCast (c, CastConv t) in
+            let c = CAst.make ~loc:!@loc @@ CCast (c, CastConv t) in
             (([],mkCLambdaN ~loc:!@loc bl c), None)
           else ((bl, c), Some t)
         in
@@ -305,7 +305,7 @@ GEXTEND Gram
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c
-      | -> Loc.tag ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None) ] ]
+      | -> CAst.make ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None) ] ]
   ;
   (* Inductive schemes *)
   scheme:
@@ -354,14 +354,14 @@ GEXTEND Gram
          t = lconstr; ":="; b = lconstr -> fun id ->
 	   (oc,DefExpr (id,mkCLambdaN ~loc:!@loc l b,Some (mkCProdN ~loc:!@loc l t)))
       | l = binders; ":="; b = lconstr -> fun id ->
-         match snd b with
+         match b.CAst.v with
 	 | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
 	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b',Some (mkCProdN ~loc:!@loc l t)))
          | _ ->
 	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b,None)) ] ]
   ;
   record_binder:
-    [ [ id = name -> (None,AssumExpr(id, Loc.tag ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))
+    [ [ id = name -> (None,AssumExpr(id, CAst.make ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))
       | id = name; f = record_binder_body -> f id ] ]
   ;
   assum_list:
@@ -380,7 +380,7 @@ GEXTEND Gram
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
 	            fun l id -> (not (Option.is_empty coe),(id,mkCProdN ~loc:!@loc l c))
             |  ->
-		 fun l id -> (false,(id,mkCProdN ~loc:!@loc l (Loc.tag ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))) ]
+		 fun l id -> (false,(id,mkCProdN ~loc:!@loc l (CAst.make ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))) ]
 	 -> t l
      ]]
 ;

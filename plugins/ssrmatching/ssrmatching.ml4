@@ -148,15 +148,15 @@ let add_genarg tag pr =
 (** Constructors for cast type *)
 let dC t = CastConv t
 (** Constructors for constr_expr *)
-let isCVar   = function _loc, CRef (Ident _, _) -> true | _ -> false
-let destCVar = function _loc, CRef (Ident (_, id), _) -> id | _ ->
+let isCVar   = function { CAst.v = CRef (Ident _, _) } -> true | _ -> false
+let destCVar = function { CAst.v = CRef (Ident (_, id), _) } -> id | _ ->
   CErrors.anomaly (str"not a CRef")
-let mkCHole ~loc = Loc.tag ?loc @@ CHole (None, IntroAnonymous, None)
-let mkCLambda ?loc name ty t = Loc.tag ?loc @@
+let mkCHole ~loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)
+let mkCLambda ?loc name ty t = CAst.make ?loc @@
    CLambdaN ([[Loc.tag ?loc name], Default Explicit, ty], t)
-let mkCLetIn ?loc name bo t = Loc.tag ?loc @@
+let mkCLetIn ?loc name bo t = CAst.make ?loc @@
    CLetIn ((Loc.tag ?loc name), bo, None, t)
-let mkCCast ?loc t ty = Loc.tag ?loc @@ CCast (t, dC ty)
+let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, dC ty)
 (** Constructors for rawconstr *)
 let mkRHole = Loc.tag @@ GHole (InternalHole, IntroAnonymous, None)
 let mkRApp f args = if args = [] then f else Loc.tag @@ GApp (f, args)
@@ -951,7 +951,7 @@ let glob_cpattern gs p =
   | _, (_, None) as x -> x
   | k, (v, Some t) as orig ->
      if k = 'x' then glob_ssrterm gs ('(', (v, Some t)) else
-     match snd (Loc.to_pair t) with
+     match t.CAst.v with
      | CNotation("( _ in _ )", ([t1; t2], [], [])) ->
          (try match glob t1, glob t2 with
          | (r1, None), (r2, None) -> encode k "In" [r1;r2]
@@ -1019,9 +1019,9 @@ let pr_rpattern = pr_pattern
 type pattern = Evd.evar_map * (constr, constr) ssrpattern
 
 
-let id_of_cpattern = function
-  | _,(_,Some (_loc, CRef (Ident (_, x), _))) -> Some x
-  | _,(_,Some (_loc, CAppExpl ((_, Ident (_, x), _), []))) -> Some x
+let id_of_cpattern = let open CAst in function
+  | _,(_,Some { v = CRef (Ident (_, x), _) } ) -> Some x
+  | _,(_,Some { v = CAppExpl ((_, Ident (_, x), _), []) } ) -> Some x
   | _,((_, GRef (VarRef x, _)) ,None) -> Some x
   | _ -> None
 let id_of_Cterm t = match id_of_cpattern t with
@@ -1377,7 +1377,7 @@ let pf_fill_occ_term gl occ t =
 let cpattern_of_id id = ' ', (Loc.tag @@ GRef (VarRef  id, None), None)
 
 let is_wildcard : cpattern -> bool = function
-  | _,(_,Some (_, CHole _)| (_, GHole _),None) -> true
+  | _,(_,Some { CAst.v = CHole _ } | (_, GHole _),None) -> true
   | _ -> false
 
 (* "ssrpattern" *)

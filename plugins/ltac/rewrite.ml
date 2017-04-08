@@ -1787,18 +1787,18 @@ let rec strategy_of_ast = function
 
 (* By default the strategy for "rewrite_db" is top-down *)
 
-let mkappc s l = Loc.tag @@ CAppExpl ((None,(Libnames.Ident (Loc.tag @@ Id.of_string s)),None),l)
+let mkappc s l = CAst.make @@ CAppExpl ((None,(Libnames.Ident (Loc.tag @@ Id.of_string s)),None),l)
 
 let declare_an_instance n s args =
   (((Loc.tag @@ Name n),None), Explicit,
-  Loc.tag @@ CAppExpl ((None, Qualid (Loc.tag @@  qualid_of_string s),None),
+  CAst.make @@ CAppExpl ((None, Qualid (Loc.tag @@  qualid_of_string s),None),
 	   args))
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance global binders instance fields =
   new_instance (Flags.is_universe_polymorphism ()) 
-    binders instance (Some (true, Loc.tag @@ CRecord (fields)))
+    binders instance (Some (true, CAst.make @@ CRecord (fields)))
     ~global ~generalize:false ~refine:false Hints.empty_hint_info
 
 let declare_instance_refl global binders a aeq n lemma =
@@ -1859,7 +1859,7 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	     (Ident (Loc.tag @@ Id.of_string "Equivalence_Symmetric"), lemma2);
 	     (Ident (Loc.tag @@ Id.of_string "Equivalence_Transitive"), lemma3)])
 
-let cHole = Loc.tag @@ CHole (None, Misctypes.IntroAnonymous, None)
+let cHole = CAst.make @@ CHole (None, Misctypes.IntroAnonymous, None)
 
 let proper_projection sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in
@@ -2012,13 +2012,13 @@ let add_morphism glob binders m s n =
   let instance_id = add_suffix n "_Proper" in
   let instance =
     (((Loc.tag @@ Name instance_id),None), Explicit,
-    Loc.tag @@ CAppExpl (
+    CAst.make @@ CAppExpl (
 	     (None, Qualid (Loc.tag @@ Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper"),None),
 	     [cHole; s; m]))
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
     ignore(new_instance ~global:glob poly binders instance 
-	     (Some (true, Loc.tag @@ CRecord []))
+	     (Some (true, CAst.make @@ CRecord []))
 	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info)
 
 (** Bind to "rewrite" too *)

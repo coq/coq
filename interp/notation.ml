@@ -471,7 +471,7 @@ let interp_prim_token =
 
 (** [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
 
-let rec rcp_of_glob looked_for gt = Loc.map (function
+let rec rcp_of_glob looked_for gt = CAst.map_from_loc (fun ?loc -> function
   | GVar id       -> RCPatAtom (Some id)
   | GHole (_,_,_) -> RCPatAtom None
   | GRef (g,_)    -> looked_for g; RCPatCstr (g,[],[])

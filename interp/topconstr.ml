@@ -43,7 +43,7 @@ let is_constructor id =
            (Nametab.locate_extended (qualid_of_ident id)))
   with Not_found -> false
 
-let rec cases_pattern_fold_names f a pt = match snd pt with
+let rec cases_pattern_fold_names f a pt = match CAst.(pt.v) with
   | CPatRecord l ->
       List.fold_left (fun acc (r, cp) -> cases_pattern_fold_names f acc cp) a l
   | CPatAlias (pat,id) -> f id a
@@ -58,7 +58,7 @@ let rec cases_pattern_fold_names f a pt = match snd pt with
   | CPatDelimiters (_,pat) -> cases_pattern_fold_names f a pat
   | CPatAtom (Some (Ident (_,id))) when not (is_constructor id) -> f id a
   | CPatPrim _ | CPatAtom _ -> a
-  | CPatCast ((loc,_),_) ->
+  | CPatCast ({CAst.loc},_) ->
      CErrors.user_err ?loc ~hdr:"cases_pattern_fold_names"
                       (Pp.strbrk "Casts are not supported here.")
 
@@ -103,7 +103,7 @@ let rec fold_local_binders g f n acc b = function
   | [] ->
       f n acc b
 
-let fold_constr_expr_with_binders g f n acc = Loc.with_loc (fun ?loc -> function
+let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
   | CAppExpl ((_,_,_),l) -> List.fold_left (f n) acc l
   | CApp ((_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (l,b) | CLambdaN (l,b) -> fold_constr_expr_binders g f n acc b l
@@ -115,7 +115,7 @@ let fold_constr_expr_with_binders g f n acc = Loc.with_loc (fun ?loc -> function
       (* The following is an approximation: we don't know exactly if
          an ident is binding nor to which subterms bindings apply *)
       let acc = List.fold_left (f n) acc (l@List.flatten ll) in
-      List.fold_left (fun acc bl -> fold_local_binders g f n acc (Loc.tag @@ CHole (None,IntroAnonymous,None)) bl) acc bll
+      List.fold_left (fun acc bl -> fold_local_binders g f n acc (CAst.make @@ CHole (None,IntroAnonymous,None)) bl) acc bll
   | CGeneralization (_,_,c) -> f n acc c
   | CDelimiters (_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
@@ -146,7 +146,7 @@ let fold_constr_expr_with_binders g f n acc = Loc.with_loc (fun ?loc -> function
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
-  | _loc, CRef (Ident (_,id),_) -> if Id.List.mem id bdvars then l else Id.Set.add id l
+  | { CAst.v = CRef (Ident (_,id),_) } -> if Id.List.mem id bdvars then l else Id.Set.add id l
   | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux [] Id.Set.empty c
 
@@ -210,7 +210,7 @@ let map_local_binders f g e bl =
   let (e,rbl) = List.fold_left h (e,[]) bl in
   (e, List.rev rbl)
 
-let map_constr_expr_with_binders g f e = Loc.map (function
+let map_constr_expr_with_binders g f e = CAst.map (function
   | CAppExpl (r,l) -> CAppExpl (r,List.map (f e) l)
   | CApp ((p,a),l) ->
       CApp ((p,f e a),List.map (fun (a,i) -> (f e a,i)) l)
@@ -263,8 +263,8 @@ let map_constr_expr_with_binders g f e = Loc.map (function
 
 (* Used in constrintern *)
 let rec replace_vars_constr_expr l = function
-  | loc, CRef (Ident (loc_id,id),us) as x ->
-      (try loc, CRef (Ident (loc_id,Id.Map.find id l),us) with Not_found -> x)
+  | { CAst.loc; v = CRef (Ident (loc_id,id),us) } as x ->
+      (try CAst.make ?loc @@ CRef (Ident (loc_id,Id.Map.find id l),us) with Not_found -> x)
   | c -> map_constr_expr_with_binders Id.Map.remove
            replace_vars_constr_expr l c
 

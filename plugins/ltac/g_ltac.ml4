@@ -187,7 +187,7 @@ GEXTEND Gram
   (* Tactic arguments to the right of an application *)
   tactic_arg_compat:
     [ [ a = tactic_arg -> a
-      | c = Constr.constr -> (match c with _loc, CRef (r,None) -> Reference r | c -> ConstrMayEval (ConstrTerm c))
+      | c = Constr.constr -> (match c with { CAst.v = CRef (r,None) } -> Reference r | c -> ConstrMayEval (ConstrTerm c))
       (* Unambiguous entries: tolerated w/o "ltac:" modifier *)
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
@@ -255,10 +255,10 @@ GEXTEND Gram
 	  let t, ty =
 	    match mpv with
 	    | Term t -> (match t with
-	      | _loc, CCast (t, (CastConv ty | CastVM ty | CastNative ty)) -> Term t, Some (Term ty)
+	      | { CAst.v = CCast (t, (CastConv ty | CastVM ty | CastNative ty)) } -> Term t, Some (Term ty)
 	      | _ -> mpv, None)
 	    | _ -> mpv, None
-	  in Def (na, t, Option.default (Term (Loc.tag @@ CHole (None, IntroAnonymous, None))) ty)
+	  in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty)
     ] ]
   ;
   match_context_rule:
@@ -353,7 +353,7 @@ GEXTEND Gram
   operconstr: LEVEL "0"
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.tactic_expr; ")" ->
           let arg = Genarg.in_gen (Genarg.rawwit Tacarg.wit_tactic) tac in
-          Loc.tag ~loc:!@loc @@ CHole (None, IntroAnonymous, Some arg) ] ]
+          CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, Some arg) ] ]
   ;
   END
 

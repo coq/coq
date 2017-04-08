@@ -469,7 +469,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
   in
   let unbounded_eq =
     let f_app_args =
-      Loc.tag @@ Constrexpr.CAppExpl(
+      CAst.make @@ Constrexpr.CAppExpl(
 	 (None,(Ident (Loc.tag fname)),None) ,
 	 (List.map
 	    (function
@@ -480,7 +480,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 )
 	)
     in
-    Loc.tag @@ Constrexpr.CApp ((None,Constrexpr_ops.mkRefC (Qualid (Loc.tag (qualid_of_string "Logic.eq")))),
+    CAst.make @@ Constrexpr.CApp ((None,Constrexpr_ops.mkRefC (Qualid (Loc.tag (qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Constrexpr_ops.mkCProdN args unbounded_eq in
@@ -588,12 +588,12 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	  | [], _ -> (List.rev aux,replace_vars_constr_expr assoc typ,assoc)
 	  | (Constrexpr.CLocalAssum(nal,bk,_))::bl',typ ->
 	     rebuild_nal (aux,assoc) bk bl' nal (List.length nal) typ
-	  | (Constrexpr.CLocalDef(na,_,_))::bl',(_loc, Constrexpr.CLetIn(_,nat,ty,typ')) ->
+	  | (Constrexpr.CLocalDef(na,_,_))::bl',{ CAst.v = Constrexpr.CLetIn(_,nat,ty,typ') } ->
 	    rebuild_bl ((Constrexpr.CLocalDef(na,replace_vars_constr_expr assoc nat,Option.map (replace_vars_constr_expr assoc) ty (* ??? *))::aux),assoc)
 	      bl' typ'
 	  | _ -> assert false
       and rebuild_nal (aux,assoc) bk bl' nal lnal typ = 
-	match nal, snd typ with 
+	match nal, typ.CAst.v with 
 	  | [], _ -> rebuild_bl (aux,assoc) bl' typ
 	  | _,CProdN([],typ) -> rebuild_nal (aux,assoc) bk bl' nal lnal typ
 	  | _,CProdN((nal',bk',nal't)::rest,typ') -> 
@@ -606,7 +606,7 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	      rebuild_bl ((assum :: aux), nassoc) bl' 
 		(if List.is_empty new_nal' && List.is_empty rest
 		 then typ'
-		 else Loc.tag @@ if List.is_empty new_nal'
+		 else CAst.make @@ if List.is_empty new_nal'
 		 then CProdN(rest,typ')
 		 else CProdN(((new_nal',bk',nal't)::rest),typ'))
 	    else 
@@ -614,7 +614,7 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	      let nassoc = make_assoc assoc nal' captured_nal in
 	      let assum = CLocalAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't) in
 	      rebuild_nal ((assum :: aux), nassoc)
-		bk bl' non_captured_nal (lnal - lnal') (Loc.tag @@ CProdN(rest,typ'))
+		bk bl' non_captured_nal (lnal - lnal') (CAst.make @@ CProdN(rest,typ'))
 	  | _ -> assert false
 
 let rebuild_bl (aux,assoc) bl typ = rebuild_bl (aux,assoc) bl typ
@@ -725,7 +725,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
   in
   ()
 
-let rec add_args id new_args = Loc.map (function
+let rec add_args id new_args = CAst.map (function
   | CRef (r,_) as b ->
       begin match r with
 	| Libnames.Ident(loc,fname) when Id.equal fname id ->
@@ -794,7 +794,7 @@ let rec chop_n_arrow n t =
   if n <= 0
   then t (* If we have already removed all the arrows then return the type *)
   else (* If not we check the form of [t] *)
-    match snd t with
+    match t.CAst.v with
       | Constrexpr.CProdN(nal_ta',t') -> (* If we have a forall, to result are possible :
 					     either we need to discard more than the number of arrows contained
 					     in this product declaration then we just recall [chop_n_arrow] on
@@ -813,7 +813,7 @@ let rec chop_n_arrow n t =
 		    then
 		      aux (n - nal_l) nal_ta'
 		    else
-		      let new_t' = Loc.tag @@
+		      let new_t' = CAst.make @@
 			Constrexpr.CProdN(
 					((snd (List.chop n nal)),k,t'')::nal_ta',t')
 		      in
@@ -829,7 +829,7 @@ let rec chop_n_arrow n t =
 
 let rec get_args b t : Constrexpr.local_binder_expr list *
     Constrexpr.constr_expr * Constrexpr.constr_expr =
-  match snd b with
+  match b.CAst.v with
     | Constrexpr.CLambdaN ((nal_ta), b') ->
 	begin
 	  let n =
@@ -869,7 +869,7 @@ let make_graph (f_ref:global_reference) =
 	 in
 	 let (nal_tas,b,t)  = get_args extern_body extern_type in
 	 let expr_list =
-	   match snd b with
+	   match b.CAst.v with
 	     | Constrexpr.CFix(l_id,fixexprl) ->
 		 let l =
 		   List.map
@@ -882,7 +882,7 @@ let make_graph (f_ref:global_reference) =
 				  | Constrexpr.CLocalDef (na,_,_)-> []
 				  | Constrexpr.CLocalAssum (nal,_,_) ->
 				      List.map
-					(fun (loc,n) -> Loc.tag ?loc @@ 
+					(fun (loc,n) -> CAst.make ?loc @@ 
 					   CRef(Libnames.Ident(loc, Nameops.out_name n),None))
 					nal
                                   | Constrexpr.CLocalPattern _ -> assert false
