@@ -506,3 +506,9 @@ let list_rewrite (rev:bool) (eqs: (constr*bool) list) =
     (List.fold_right
        (fun (eq,b) i -> tclORELSE (Proofview.V82.of_tactic ((if b then Equality.rewriteLR else Equality.rewriteRL) eq)) i)
        (if rev then (List.rev eqs) else eqs) (tclFAIL 0 (mt())));;
+
+                                                          
+type tcc_lemma_value = 
+  | Undefined
+  | Value of Constr.constr
+  | Not_needed
