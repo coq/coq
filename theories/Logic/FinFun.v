@@ -327,7 +327,8 @@ Proof.
  - intros hf x y hx hy Eq.
    rewrite <- (f2n_n2f hx), <- (f2n_n2f hy). f_equal.
    apply hf.
-   rewrite <- 2 extend_n2f.
+   (* MS: FIXME regression *)
+   rewrite <- 2 (extend_n2f f).
    generalize (extend_ok f hx) (extend_ok f hy).
    rewrite Eq. apply n2f_ext.
 Qed.
