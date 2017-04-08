@@ -32,10 +32,6 @@ val unloc : t -> int * int
 val make_loc : int * int -> t
 (** Make a location out of its start and end position *)
 
-val internal_ghost : t
-
-(** Test whether the location is meaningful *)
-
 val merge : t -> t -> t
 val merge_opt : t option -> t option -> t option
 

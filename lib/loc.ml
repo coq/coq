@@ -55,10 +55,6 @@ let unloc loc = (loc.bp, loc.ep)
 
 let join_loc = merge
 
-let internal_ghost = {
-  fname = ""; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
-  bp = 0; ep = 0; }
-
 (** Located type *)
 type 'a located = t option * 'a
 

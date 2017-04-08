@@ -180,8 +180,7 @@ let add_tactic_entry (kn, ml, tg) state =
   | TacTerm s -> GramTerminal s
   | TacNonTerm (loc, (s, _)) ->
     let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
-    let loc = Option.default Loc.internal_ghost loc in
-    GramNonTerminal (loc, typ, e)
+    GramNonTerminal (Loc.tag ?loc (typ, e))
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
