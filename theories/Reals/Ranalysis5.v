@@ -970,7 +970,7 @@ intros f g lb ub x lb_lt_ub x_encad f_incr g_wf f_eq_g.
  assert (Temp:= f_incr_implies_g_incr_interv f g lb ub lb_lt_ub f_incr f_eq_g g_wf).
  assert (Left_inv := leftinv_is_rightinv_interv f g lb ub f_incr f_eq_g g_wf).
  unfold comp, id in Left_inv.
- split ; [rewrite <- Left_inv with (x:=lb) | rewrite <- Left_inv ].
+ split ; [rewrite <- Left_inv with (x:=lb) | rewrite <- (Left_inv ub) ].
  apply Temp ; intuition.
  intuition.
  apply Temp ; intuition.
@@ -1094,7 +1094,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
     replace (-1 * (h * derive_pt (fn N) c (pr1 c P))) with (-h * derive_pt (fn N) c (pr1 c P)) by field.
     replace (-1 * (fn N (x + h) - fn N x)) with (- (fn N (x + h) - fn N x)) by field.
     replace (-h) with (id x - id (x + h)) by (unfold id; field).
-    rewrite <- Rmult_1_r ; replace 1 with (derive_pt id c (pr2 c P)) by reg.
+    rewrite <- (Rmult_1_r (- (_ - _))). replace 1 with (derive_pt id c (pr2 c P)) by reg.
     replace (- (fn N (x + h) - fn N x)) with (fn N x - fn N (x + h)) by field.
     assumption.
   now apply Rlt_not_eq, IZR_lt.
@@ -1202,7 +1202,7 @@ assert (Main : Rabs ((f (x+h) - fn N (x+h)) - (f x - fn N x) + (fn N (x+h) - fn 
   destruct (MVT (fn N) id x (x+h) pr1 pr2 xh_x pr3 pr4) as [c [P Hc]].
   assert (Hc' : h * derive_pt (fn N) c (pr1 c P) = fn N (x+h) - fn N x).
     pattern h at 1; replace h with (id (x + h) - id x) by (unfold id; field).
-    rewrite <- Rmult_1_r ; replace 1 with (derive_pt id c (pr2 c P)) by reg.
+    rewrite <- (Rmult_1_r (fn _ _ - _)); replace 1 with (derive_pt id c (pr2 c P)) by reg.
     assumption.
   rewrite <- Hc'; clear Hc Hc'.
   replace (derive_pt (fn N) c (pr1 c P)) with (fn' N c).

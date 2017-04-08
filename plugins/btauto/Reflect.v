@@ -269,7 +269,8 @@ destruct (poly_of_formula_valid_compat fl) as [nl Hl].
 destruct (poly_of_formula_valid_compat fr) as [nr Hr].
 rewrite <- (reduce_eval_compat nl (poly_of_formula fl)); auto.
 rewrite <- (reduce_eval_compat nr (poly_of_formula fr)); auto.
-rewrite <- xorb_false_l; change false with (eval var (Cst false)).
+rewrite <- (xorb_false_l (eval _ (reduce (poly_of_formula fr)))).
+change false with (eval var (Cst false)).
 rewrite <- poly_add_compat, <- Heq.
 repeat rewrite poly_add_compat.
 rewrite (reduce_eval_compat nl); [|assumption].

@@ -321,13 +321,13 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
 
   (** Additional lemmas for mem  *)
 
-  Lemma mem_Leaf: forall x, mem x Leaf = false.
+  Lemma mem_empty: forall x, mem x empty = false.
   Proof. destruct x; trivial. Qed.
 
   (** Specification of [empty] *)
 
   Lemma empty_spec : Empty empty.
-  Proof. unfold Empty, In. intro. rewrite mem_Leaf. discriminate. Qed.
+  Proof. unfold Empty, In. intro. rewrite mem_empty. discriminate. Qed.
 
   (** Specification of node  *)
 
@@ -632,7 +632,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     unfold In. intros s x y; revert x y s.
     induction x; intros [y|y|] [|l o r]; simpl mem;
-    try (rewrite IHx; clear IHx); rewrite ?mem_Leaf; intuition congruence.
+    try (rewrite IHx; clear IHx); rewrite ?mem_empty; intuition congruence.
   Qed.
 
   (** Specification of [remove] *)
@@ -641,7 +641,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     unfold In. intros s x y; revert x y s.
     induction x; intros [y|y|] [|l o r]; simpl remove; rewrite ?mem_node;
-     simpl mem; try (rewrite IHx; clear IHx); rewrite ?mem_Leaf;
+     simpl mem; try (rewrite IHx; clear IHx); rewrite ?mem_empty;
      intuition congruence.
   Qed.
 
@@ -650,7 +650,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma singleton_spec : forall x y, In y (singleton x) <-> y=x.
   Proof.
     unfold singleton. intros x y. rewrite add_spec. intuition.
-    unfold In in *. rewrite mem_Leaf in *. discriminate.
+    unfold In in *. rewrite mem_empty in *. discriminate.
   Qed.
 
   (** Specification of [union] *)
@@ -726,7 +726,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     intro f. unfold In.
     induction s as [|l IHl o r IHr]; intros x i; simpl xfilter.
-     rewrite mem_Leaf. intuition discriminate.
+     rewrite mem_empty. intuition discriminate.
      rewrite mem_node. destruct x; simpl.
        rewrite IHr. reflexivity.
        rewrite IHl. reflexivity.

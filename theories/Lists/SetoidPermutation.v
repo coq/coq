@@ -113,7 +113,9 @@ Lemma NoDupA_equivlistA_PermutationA l₁ l₂ :
    equivlistA eqA l₁ l₂ -> PermutationA l₁ l₂.
 Proof.
   intros Pl₁. revert l₂. induction Pl₁ as [|x l₁ E1].
-  - intros l₂ _ H₂. symmetry in H₂. now rewrite (equivlistA_nil_eq eqA).
+  - intros l₂ _ H₂. symmetry in H₂.
+    (* MS: incompatibility, was finding l₂ instead of the first occurrence nil *)
+    now rewrite (equivlistA_nil_eq eqA l₂).
   - intros l₂ Pl₂ E2.
     destruct (@InA_split _ eqA l₂ x) as [l₂h [y [l₂t [E3 ?]]]].
     { rewrite <-E2. intuition. }

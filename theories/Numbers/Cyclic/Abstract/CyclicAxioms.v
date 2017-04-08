@@ -392,7 +392,7 @@ Lemma add_opp_r : forall x y, x + - y == x-y.
 Proof.
 intros. zify. rewrite <- Zminus_mod_idemp_r. unfold Z.sub.
 destruct (Z.eq_dec ([|y|] mod wB) 0) as [EQ|NEQ].
-rewrite Z_mod_zero_opp_full, EQ, 2 Z.add_0_r; auto.
+rewrite Z_mod_zero_opp_full, EQ, Z.add_0_r; auto.
 rewrite Z_mod_nz_opp_full by auto.
 rewrite <- Zplus_mod_idemp_r, <- Zminus_mod_idemp_l.
 rewrite Z_mod_same_full. simpl. now rewrite Zplus_mod_idemp_r.

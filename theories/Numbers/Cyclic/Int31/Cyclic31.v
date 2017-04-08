@@ -2028,7 +2028,8 @@ Section Int31_Specs.
    (1 * 2 + (([|j|] - 2) + [|i|] / [|j|])) by ring.
    rewrite Z_div_plus_full_l; auto with zarith.
    assert (0 <= [|i|]/ [|j|]) by auto with zarith.
-   assert (0 <= ([|j|] - 2 + [|i|] / [|j|]) / [|2|]); auto with zarith.
+   assert (0 <= ([|j|] - 2 + [|i|] / [|j|]) / [|2|]). auto with zarith.
+   change 2 with ([|2|]) at 2. auto with zarith.
  - rewrite <- Hj, Zdiv_1_r.
    replace (1 + [|i|]) with (1 * 2 + ([|i|] - 1)) by ring.
    rewrite Z_div_plus_full_l; auto with zarith.
