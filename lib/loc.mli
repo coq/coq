@@ -51,8 +51,11 @@ val raise : ?loc:t -> exn -> 'a
 type 'a located = t option * 'a
 (** Embed a location in a type *)
 
-(** Warning, this API is experimental  *)
+(* We would like in the future:
+ * type 'a located = private { tag: t option; obj: 'a; }
+ *)
 
+(** Warning, this API is experimental  *)
 val to_pair : 'a located -> t option * 'a
 val tag : ?loc:t -> 'a -> 'a located
 val obj : 'a located -> 'a
