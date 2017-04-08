@@ -205,7 +205,6 @@ let require () =
 
 let add_compat_require v =
   match v with
-  | Flags.V8_4 -> add_require "Coq.Compat.Coq84"
   | Flags.V8_5 -> add_require "Coq.Compat.Coq85"
   | _ -> ()
 

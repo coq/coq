@@ -141,7 +141,6 @@ let bracketing_last_or_and_intro_pattern = ref true
 
 let use_bracketing_last_or_and_intro_pattern () =
   !bracketing_last_or_and_intro_pattern
-  && Flags.version_strictly_greater Flags.V8_4
 
 let _ =
   declare_bool_option

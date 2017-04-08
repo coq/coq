@@ -63,9 +63,7 @@ let _ =
 
 let injection_pattern_l2r_order = ref true
 
-let use_injection_pattern_l2r_order () =
-  !injection_pattern_l2r_order
-  && Flags.version_strictly_greater Flags.V8_4
+let use_injection_pattern_l2r_order () = !injection_pattern_l2r_order
 
 let _ =
   declare_bool_option
