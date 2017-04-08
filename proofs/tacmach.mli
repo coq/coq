@@ -129,7 +129,7 @@ val refiner                   : rule -> tactic
 val internal_cut_no_check     : bool -> Id.t -> types -> tactic
 [@@ocaml.deprecated]
 val refine_no_check           : constr -> tactic
-[@@ocaml.deprecated]
+[@@ocaml.deprecated "See dev/doc/proof-engine.md."]
 
 (** {6 The most primitive tactics with consistency and type checking } *)
 
@@ -138,7 +138,7 @@ val internal_cut     : bool -> Id.t -> types -> tactic
 val internal_cut_rev : bool -> Id.t -> types -> tactic
 [@@ocaml.deprecated]
 val refine           : constr -> tactic
-[@@ocaml.deprecated]
+[@@ocaml.deprecated "See dev/doc/proof-engine.md."]
 
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : goal sigma -> Pp.std_ppcmds
