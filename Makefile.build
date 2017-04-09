@@ -187,7 +187,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 #   TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
 COQOPTS=$(NATIVECOMPUTE)
-BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
+BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -w "-generated-names" -compile
 
 LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
