@@ -1181,8 +1181,8 @@ let try_intros_until tac = function
 
 let rec intros_move = function
   | [] -> Proofview.tclUNIT ()
-  | (hyp,destopt) :: rest ->
-      Tacticals.New.tclTHEN (intro_gen (NamingMustBe (Loc.tag hyp,false)) destopt false false)
+  | (hyp,isprivate,destopt) :: rest ->
+      Tacticals.New.tclTHEN (intro_gen (NamingMustBe (Loc.tag hyp,isprivate)) destopt false false)
 	(intros_move rest)
 
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
@@ -3173,7 +3173,7 @@ let rec consume_pattern avoid na isdep gl = function
 let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
   let tophyp = match tophyp with None -> MoveLast | Some hyp -> MoveAfter hyp in
   let newlstatus = (* if some IH has taken place at the top of hyps *)
-    List.map (function (hyp,MoveLast) -> (hyp,tophyp) | x -> x) lstatus
+    List.map (function (hyp,isprivate,MoveLast) -> (hyp,isprivate,tophyp) | x -> x) lstatus
   in
   Tacticals.New.tclTHEN
     (intros_move rstatus)
@@ -3426,6 +3426,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
   let lstatus = ref [] in
   let before = ref true in
   let maindep = ref false in
+  let private_ids = named_context_private_ids (named_context_val env) in
   let seek_deps env decl isprivate rhyp =
     let decl = map_named_decl EConstr.of_constr decl in
     let hyp = NamedDecl.get_id decl in
@@ -3457,7 +3458,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
         maindep := dephyp0 || !maindep;
 	if !before then begin
           toclear := hyp::!toclear;
-	  rstatus := (hyp,rhyp)::!rstatus
+	  rstatus := (hyp,isprivate,rhyp)::!rstatus
         end
 	else begin
 	  toclear := hyp::!toclear;
@@ -3474,7 +3475,8 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
     if (match hyp0_opt with Some hyp0 -> Id.equal hyp hyp0 | _ -> false) then
       raise (Shunt lhyp);
     if Id.List.mem hyp !ldeps then begin
-      lstatus := (hyp,lhyp)::!lstatus;
+      let isprivate = Idset.mem hyp private_ids in
+      lstatus := (hyp,isprivate,lhyp)::!lstatus;
       lhyp
     end else
       if Id.List.mem hyp !toclear then lhyp else MoveAfter hyp
