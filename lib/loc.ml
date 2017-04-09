@@ -53,31 +53,17 @@ let merge_opt l1 l2 = match l1, l2 with
 
 let unloc loc = (loc.bp, loc.ep)
 
-let join_loc = merge
-
 (** Located type *)
 type 'a located = t option * 'a
 
-let to_pair x = x
 let tag ?loc x = loc, x
-let obj (_,x) = x
-
-let with_loc   f (loc, x) = f ?loc x
-let with_unloc f (_,x) = f x
-
 let map f (l,x) = (l, f x)
-let map_with_loc f (loc, x) = (loc, f ?loc x)
-
-let located_fold_left f x (_,a) = f x a
-let located_iter2 f (_,a) (_,b) = f a b
-let down_located f (_,a) = f a
 
 (** Exceptions *)
 
 let location : t Exninfo.t = Exninfo.make ()
 
 let add_loc e loc = Exninfo.add e location loc
-
 let get_loc e = Exninfo.get e location
 
 let raise ?loc e =
@@ -86,3 +72,10 @@ let raise ?loc e =
   | Some loc ->
     let info = Exninfo.add Exninfo.null location loc in
     Exninfo.iraise (e, info)
+
+(** Deprecated *)
+let located_fold_left f x (_,a) = f x a
+let located_iter2 f (_,a) (_,b) = f a b
+let down_located f (_,a) = f a
+
+

@@ -34,6 +34,7 @@ val make_loc : int * int -> t
 
 val merge : t -> t -> t
 val merge_opt : t option -> t option -> t option
+(** Merge locations, usually generating the largest possible span *)
 
 (** {5 Located exceptions} *)
 
@@ -49,27 +50,20 @@ val raise : ?loc:t -> exn -> 'a
 (** {5 Objects with location information } *)
 
 type 'a located = t option * 'a
+
+val tag : ?loc:t -> 'a -> 'a located
 (** Embed a location in a type *)
 
-(* We would like in the future:
- * type 'a located = private { tag: t option; obj: 'a; }
- *)
-
-(** Warning, this API is experimental  *)
-val to_pair : 'a located -> t option * 'a
-val tag : ?loc:t -> 'a -> 'a located
-val obj : 'a located -> 'a
-
-val with_loc : (?loc:t -> 'a -> 'b) -> 'a located -> 'b
-val with_unloc : ('a -> 'b) -> 'a located -> 'b
-
 val map : ('a -> 'b) -> 'a located -> 'b located
-val map_with_loc : (?loc:t -> 'a -> 'b) -> 'a located -> 'b located
+(** Modify an object carrying a location *)
 
+(** Deprecated functions  *)
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
+ [@@ocaml.deprecated "use pattern matching"]
+
 val down_located : ('a -> 'b) -> 'a located -> 'b
+ [@@ocaml.deprecated "use pattern matching"]
 
-(* Currently not used *)
 val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
+ [@@ocaml.deprecated "use pattern matching"]
 
-(** Projects out a located object *)

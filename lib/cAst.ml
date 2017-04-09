@@ -16,8 +16,8 @@ let make ?loc v = { v; loc }
 
 let map f n = { n with v = f n.v }
 let map_with_loc f n = { n with v = f ?loc:n.loc n.v }
-let map_from_loc f n =
-  let loc, v = Loc.to_pair n in
+let map_from_loc f l =
+  let loc, v = l in
   { v = f ?loc v ; loc }
 
 let with_val f n = f n.v
