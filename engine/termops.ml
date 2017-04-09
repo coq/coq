@@ -173,12 +173,15 @@ let pr_meta_map evd =
   in
   prlist pr_meta_binding (meta_list evd)
 
-let pr_decl (decl,ok) =
+let pr_id_with_privacy isprivate id =
+  if isprivate then str "~" ++ pr_id id else pr_id id
+
+let pr_decl (decl,ok,isprivate) =
   let open NamedDecl in
   let print_constr = print_kconstr in
   match decl with
-  | LocalAssum (id,_) -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
-  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
+  | LocalAssum (id,_) -> if ok then pr_id_with_privacy isprivate id else (str "{" ++ pr_id_with_privacy isprivate id ++ str "}")
+  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id_with_privacy isprivate id ++ str ":=" ++
                            print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_source = function
@@ -210,12 +213,14 @@ let pr_evar_source = function
 let pr_evar_info evi =
   let open Evd in
   let print_constr = print_kconstr in
+  let private_ids = named_context_private_ids (named_context_val (evar_filtered_env evi)) in
   let phyps =
     try
       let decls = match Filter.repr (evar_filter evi) with
       | None -> List.map (fun c -> (c, true)) (evar_context evi)
       | Some filter -> List.combine (evar_context evi) filter
       in
+      let decls = List.map (fun (c,b) -> (c,b,Idset.mem (NamedDecl.get_id c) private_ids)) decls in
       prlist_with_sep spc pr_decl (List.rev decls)
     with Invalid_argument _ -> str "Ill-formed filtered context" in
   let pty = print_constr evi.evar_concl in
