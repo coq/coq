@@ -318,10 +318,10 @@ for the usual defined ones.
   % - [pattern x at n], [rewrite x at n] and in general abstraction and selection
   %   of occurrences may fail due to the disappearance of parameters.
 
-For compatibility, the parameters still appear to the user when printing terms
+The internally omitted parameters can be reconstructed at printing time
 even though they are absent in the actual AST manipulated by the kernel. This
-can be changed by unsetting the {\tt Printing Primitive Projection Parameters}
-flag. Further compatibility printing can be deactivated thanks to the
+can be obtained by setting the {\tt Printing Primitive Projection Parameters}
+flag. Another compatibility printing can be activated thanks to the
 {\tt Printing Primitive Projection Compatibility} option which governs the
 printing of pattern-matching over primitive records.
 
