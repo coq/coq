@@ -188,15 +188,15 @@ let (value_f:Constr.constr list -> global_reference -> Constr.constr) =
     in
     let env = Environ.push_rel_context context (Global.env ()) in
     let glob_body =
-      Loc.tag @@
+      CAst.make @@
        GCases
 	(RegularStyle,None,
-	 [Loc.tag @@ GApp(Loc.tag @@ GRef(fterm,None), List.rev_map (fun x_id -> Loc.tag @@ GVar x_id) rev_x_id_l),
+	 [CAst.make @@ GApp(CAst.make @@ GRef(fterm,None), List.rev_map (fun x_id -> CAst.make @@ GVar x_id) rev_x_id_l),
 	  (Anonymous,None)],
-	 [Loc.tag ([v_id], [Loc.tag @@ PatCstr ((destIndRef (delayed_force coq_sig_ref),1),
-			   [Loc.tag @@ PatVar(Name v_id); Loc.tag @@ PatVar Anonymous],
+	 [Loc.tag ([v_id], [CAst.make @@ PatCstr ((destIndRef (delayed_force coq_sig_ref),1),
+			   [CAst.make @@ PatVar(Name v_id); CAst.make @@ PatVar Anonymous],
                            Anonymous)],
-	    Loc.tag @@ GVar v_id)])
+	    CAst.make @@ GVar v_id)])
     in
     let body = fst (understand env (Evd.from_env env) glob_body)(*FIXME*) in
     it_mkLambda_or_LetIn body context

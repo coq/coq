@@ -125,7 +125,7 @@ let add_name_to_ids set na =
   | Name id -> Id.Set.add id set
 
 let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.empty) =
-  let rec vars bound vs (loc, t) = match t with
+  let rec vars bound vs { loc; CAst.v = t } = match t with
     | GVar id ->
 	if is_freevar bound (Global.env ()) id then
 	  if Id.List.mem_assoc_sym id vs then vs
@@ -314,7 +314,7 @@ let implicits_of_glob_constr ?(with_products=true) l =
     (ExplByPos (i, name), (true, true, true)) :: l
   | _ -> l
   in
-  let rec aux i (loc, c) =
+  let rec aux i { loc; CAst.v = c } =
     let abs na bk b =
       add_impl i na bk (aux (succ i) b)
     in

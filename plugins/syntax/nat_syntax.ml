@@ -36,11 +36,11 @@ let warn_large_nat =
 let nat_of_int ?loc n =
   if is_pos_or_zero n then begin
       if less_than threshold n then warn_large_nat ();
-      let ref_O = Loc.tag ?loc @@ GRef (glob_O, None) in
-      let ref_S = Loc.tag ?loc @@ GRef (glob_S, None) in
+      let ref_O = CAst.make ?loc @@ GRef (glob_O, None) in
+      let ref_S = CAst.make ?loc @@ GRef (glob_S, None) in
       let rec mk_nat acc n =
 	if n <> zero then
-	  mk_nat (Loc.tag ?loc @@ GApp (ref_S, [acc])) (sub_1 n)
+	  mk_nat (CAst.make ?loc @@ GApp (ref_S, [acc])) (sub_1 n)
 	else
 	  acc
       in
@@ -55,8 +55,8 @@ let nat_of_int ?loc n =
 
 exception Non_closed_number
 
-let rec int_of_nat x = Loc.with_unloc (function
-  | GApp ((_, GRef (s,_)),[a]) when Globnames.eq_gr s glob_S -> add_1 (int_of_nat a)
+let rec int_of_nat x = CAst.with_val (function
+  | GApp ({ CAst.v = GRef (s,_) } ,[a]) when Globnames.eq_gr s glob_S -> add_1 (int_of_nat a)
   | GRef (z,_) when Globnames.eq_gr z glob_O -> zero
   | _ -> raise Non_closed_number
   ) x
@@ -74,4 +74,4 @@ let _ =
   Notation.declare_numeral_interpreter "nat_scope"
     (nat_path,datatypes_module_name)
     nat_of_int
-    ([Loc.tag @@ GRef (glob_S,None); Loc.tag @@ GRef (glob_O,None)], uninterp_nat, true)
+    ([CAst.make @@ GRef (glob_S,None); CAst.make @@ GRef (glob_O,None)], uninterp_nat, true)

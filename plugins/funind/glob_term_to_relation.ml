@@ -345,10 +345,10 @@ let raw_push_named (na,raw_value,raw_typ) env =
 
 
 let add_pat_variables pat typ env : Environ.env =
-  let rec add_pat_variables env (loc, pat) typ  : Environ.env =
+  let rec add_pat_variables env pat typ  : Environ.env =
     observe (str "new rel env := " ++ Printer.pr_rel_context_of env (Evd.from_env env));
 
-    match pat with
+    match pat.CAst.v with
       | PatVar na -> Environ.push_rel (RelDecl.LocalAssum (na,typ)) env
       | PatCstr(c,patl,na) ->
 	  let Inductiveops.IndType(indf,indargs) =
@@ -398,7 +398,7 @@ let add_pat_variables pat typ env : Environ.env =
 
 
 
-let rec pattern_to_term_and_type env typ  = Loc.with_unloc (function
+let rec pattern_to_term_and_type env typ  = CAst.with_val (function
   | PatVar Anonymous -> assert false
   | PatVar (Name id) ->
 	mkGVar id
@@ -466,11 +466,12 @@ let rec pattern_to_term_and_type env typ  = Loc.with_unloc (function
 
 let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
   observe (str " Entering : " ++ Printer.pr_glob_constr rt);
-  match rt with
-    | _, GRef _ | _, GVar _ | _, GEvar _ | _, GPatVar _     | _, GSort _  | _, GHole _  ->
+  let open CAst in
+  match rt.v with
+    | GRef _ | GVar _ | GEvar _ | GPatVar _ | GSort _  | GHole _ ->
 	(* do nothing (except changing type of course) *)
 	mk_result [] rt avoid
-    | _, GApp(_,_) ->
+    | GApp(_,_) ->
 	let f,args = glob_decompose_app rt in
 	let args_res : (glob_constr list) build_entry_return =
 	  List.fold_right (* create the arguments lists of constructors and combine them *)
@@ -482,14 +483,14 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	    (mk_result [] [] avoid)
 	in
 	begin
-	  match Loc.obj f with
+	  match f.v with
 	    | GLambda _  -> 
 		let rec aux t l = 
 		  match l with 
 		    | [] -> t
-		    | u::l -> Loc.tag @@
-			match t with 
-			  | loc, GLambda(na,_,nat,b) -> 
+		    | u::l -> CAst.make @@
+			match t.v with 
+			  | GLambda(na,_,nat,b) -> 
 			      GLetIn(na,u,None,aux b l)
 			  | _ -> 
 			      GApp(t,l)
@@ -550,7 +551,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 			let new_b =
 			  replace_var_by_term
 			    id
-			    (Loc.tag @@ GVar id)
+			    (CAst.make @@ GVar id)
 			    b
 			in
 			(Name new_id,new_b,new_avoid)
@@ -579,7 +580,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	    | GProd _ -> error "Cannot apply a type"
 	end (* end of the application treatement *)
 
-    | _, GLambda(n,_,t,b) ->
+    | GLambda(n,_,t,b) ->
 	(* we first compute the list of constructor
 	   corresponding to the body of the function,
 	   then the one corresponding to the type
@@ -594,7 +595,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	let new_env = raw_push_named (new_n,None,t) env in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_lam new_n) t_res b_res
-    | _, GProd(n,_,t,b) ->
+    | GProd(n,_,t,b) ->
 	(* we first compute the list of constructor
 	   corresponding to the body of the function,
 	   then the one corresponding to the type
@@ -604,13 +605,13 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	let new_env = raw_push_named (n,None,t) env in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_prod n) t_res b_res
-    | loc, GLetIn(n,v,typ,b) ->
+    | GLetIn(n,v,typ,b) ->
 	(* we first compute the list of constructor
 	   corresponding to the body of the function,
 	   then the one corresponding to the value [t]
 	   and combine the two result
 	*)
-        let v = match typ with None -> v | Some t -> Loc.tag ?loc @@ GCast (v,CastConv t) in
+        let v = match typ with None -> v | Some t -> CAst.make ?loc:rt.loc @@ GCast (v,CastConv t) in
 	let v_res = build_entry_lc env funnames avoid v in
 	let v_as_constr,ctx = Pretyping.understand env (Evd.from_env env) v in
 	let v_type = Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr v_as_constr) in
@@ -622,13 +623,13 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_letin n) v_res b_res
-    | _, GCases(_,_,el,brl) ->
+    | GCases(_,_,el,brl) ->
 	(* we create the discrimination function
 	   and treat the case itself
 	*)
 	let make_discr = make_discr_match brl in
 	build_entry_lc_from_case env funnames make_discr el brl avoid
-    | _, GIf(b,(na,e_option),lhs,rhs) ->
+    | GIf(b,(na,e_option),lhs,rhs) ->
 	let b_as_constr,ctx = Pretyping.understand env (Evd.from_env env) b in
 	let b_typ = Typing.unsafe_type_of env (Evd.from_env env) (EConstr.of_constr b_as_constr) in
 	let (ind,_) =
@@ -651,7 +652,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	in
 	(* 		Pp.msgnl (str "new case := " ++ Printer.pr_glob_constr match_expr); *)
 	build_entry_lc env funnames avoid match_expr
-    | _, GLetTuple(nal,_,b,e) ->
+    | GLetTuple(nal,_,b,e) ->
 	begin
 	  let nal_as_glob_constr =
 	    List.map
@@ -677,8 +678,8 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  build_entry_lc env funnames avoid match_expr
 
 	end
-    | _, GRec _ -> error "Not handled GRec"
-    | _, GCast(b,_) ->
+    | GRec _ -> error "Not handled GRec"
+    | GCast(b,_) ->
 	build_entry_lc env funnames  avoid b
 and build_entry_lc_from_case env funname make_discr
     (el:tomatch_tuples)
@@ -860,8 +861,8 @@ let is_res id =
 
 
 
-let same_raw_term (_,rt1) (_,rt2) = 
-  match rt1,rt2 with 
+let same_raw_term rt1 rt2 = 
+  match CAst.(rt1.v, rt2.v) with 
     | GRef(r1,_), GRef (r2,_) -> Globnames.eq_gr r1 r2
     | GHole _, GHole _ -> true
     | _ -> false
@@ -894,16 +895,17 @@ exception Continue
 let rec rebuild_cons env nb_args relname args crossed_types depth rt =
   observe (str "rebuilding : " ++ pr_glob_constr rt);
   let open Context.Rel.Declaration in
-  match rt with
-    | _, GProd(n,k,t,b) ->
+  let open CAst in
+  match rt.v with
+    | GProd(n,k,t,b) ->
 	let not_free_in_t id = not (is_free_in id t) in
 	let new_crossed_types = t::crossed_types in
 	begin
 	  match t with
-	    | _, GApp(((_, GVar(res_id)) as res_rt),args') when is_res res_id ->
+	    | { v = GApp(({ v = GVar res_id } as res_rt),args') } when is_res res_id ->
 		begin
 		  match args' with
-		    | (_, (GVar this_relname))::args' ->
+		    | { v = GVar this_relname }::args' ->
 			(*i The next call to mk_rel_id is
 			  valid since we are constructing the graph
 			  Ensures by: obvious
@@ -925,7 +927,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    | _ -> (* the first args is the name of the function! *)
 			assert false
 		end
-	    | loc1, GApp((loc2, GRef(eq_as_ref,_)),[ty;(loc3, GVar id);rt])
+	    | { loc = loc1; v = GApp({ loc = loc2; v = GRef(eq_as_ref,_) },[ty; { loc = loc3; v = GVar id};rt]) }
 		when Globnames.eq_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref)  && n == Anonymous
 		  ->
 		begin
@@ -962,8 +964,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    let params,arg' =
 		      ((Util.List.chop nparam args'))
 		    in
-		    let rt_typ = Loc.tag @@
-		       GApp(Loc.tag @@ GRef (Globnames.IndRef (fst ind),None),
+		    let rt_typ = CAst.make @@
+		       GApp(CAst.make @@ GRef (Globnames.IndRef (fst ind),None),
 			    (List.map
 			      (fun p -> Detyping.detype false []
 				 env (Evd.from_env env)
@@ -973,7 +975,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 					 (mkGHole ()))))
 		    in
 		    let eq' =
-		      Loc.tag ?loc:loc1 @@ GApp(Loc.tag ?loc:loc2 @@GRef(jmeq,None),[ty;Loc.tag ?loc:loc3 @@ GVar id;rt_typ;rt])
+		      CAst.make ?loc:loc1 @@ GApp(CAst.make ?loc:loc2 @@GRef(jmeq,None),[ty;CAst.make ?loc:loc3 @@ GVar id;rt_typ;rt])
 		    in
 		    observe (str "computing new type for jmeq : " ++ pr_glob_constr eq');
 		    let eq'_as_constr,ctx = Pretyping.understand env (Evd.from_env env) eq' in
@@ -1042,7 +1044,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		     mkGProd(n,t,new_b),id_to_exclude
 		     else new_b, Id.Set.add id id_to_exclude
 		  *)
-	    | loc1, GApp((loc2, GRef(eq_as_ref,_)),[ty;rt1;rt2])
+	    | { loc = loc1; v = GApp({ loc = loc2; v = GRef(eq_as_ref,_) },[ty;rt1;rt2]) }
 		when Globnames.eq_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref) && n == Anonymous
 		  ->
 	      begin
@@ -1093,7 +1095,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			(Id.Set.filter not_free_in_t id_to_exclude)
 		  | _ -> mkGProd(n,t,new_b),Id.Set.filter not_free_in_t id_to_exclude
 	end
-    | _, GLambda(n,k,t,b) ->
+    | GLambda(n,k,t,b) ->
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let new_crossed_types = t :: crossed_types in
@@ -1112,14 +1114,14 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		then
 		  new_b, Id.Set.remove id (Id.Set.filter not_free_in_t id_to_exclude)
 		else
-		  Loc.tag @@ GProd(n,k,t,new_b),Id.Set.filter not_free_in_t id_to_exclude
+		  CAst.make @@ GProd(n,k,t,new_b),Id.Set.filter not_free_in_t id_to_exclude
 	    | _ -> anomaly (Pp.str "Should not have an anonymous function here")
 		(* We have renamed all the anonymous functions during alpha_renaming phase *)
 
 	end
-    | loc, GLetIn(n,v,t,b) ->
+    | GLetIn(n,v,t,b) ->
 	begin
-          let t = match t with None -> v | Some t -> Loc.tag ?loc @@ GCast (v,CastConv t) in
+          let t = match t with None -> v | Some t -> CAst.make ?loc:rt.loc @@ GCast (v,CastConv t) in
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let evd = (Evd.from_env env) in
 	  let t',ctx = Pretyping.understand env evd t in
@@ -1135,10 +1137,10 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	  match n with
 	    | Name id when Id.Set.mem id id_to_exclude && depth >= nb_args  ->
 		new_b,Id.Set.remove id (Id.Set.filter not_free_in_t id_to_exclude)
-	    | _ -> Loc.tag @@ GLetIn(n,t,None,new_b), (* HOPING IT WOULD WORK *)
+	    | _ -> CAst.make @@ GLetIn(n,t,None,new_b), (* HOPING IT WOULD WORK *)
 		Id.Set.filter not_free_in_t id_to_exclude
 	end
-    | _, GLetTuple(nal,(na,rto),t,b) ->
+    | GLetTuple(nal,(na,rto),t,b) ->
 	assert (Option.is_empty rto);
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
@@ -1161,7 +1163,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 (* 	    | Name id when Id.Set.mem id id_to_exclude ->  *)
 (* 		new_b,Id.Set.remove id (Id.Set.filter not_free_in_t id_to_exclude) *)
 (* 	    | _ -> *)
-	  Loc.tag @@ GLetTuple(nal,(na,None),t,new_b),
+	  CAst.make @@ GLetTuple(nal,(na,None),t,new_b),
 		Id.Set.filter not_free_in_t (Id.Set.union id_to_exclude id_to_exclude')
 
 	end
@@ -1187,9 +1189,9 @@ let rebuild_cons env nb_args relname args crossed_types rt =
 
    TODO: Find a valid way to deal with implicit arguments here!
 *)
-let rec compute_cst_params relnames params gt = Loc.with_unloc (function
+let rec compute_cst_params relnames params gt = CAst.with_val (function
   | GRef _ | GVar _ | GEvar _ | GPatVar _ -> params
-  | GApp((_, GVar relname'),rtl) when Id.Set.mem relname' relnames ->
+  | GApp({ CAst.v = GVar relname' },rtl) when Id.Set.mem relname' relnames ->
       compute_cst_params_from_app [] (params,rtl)
   | GApp(f,args) ->
       List.fold_left (compute_cst_params relnames) params (f::args)
@@ -1211,7 +1213,7 @@ let rec compute_cst_params relnames params gt = Loc.with_unloc (function
 and compute_cst_params_from_app acc (params,rtl) =
   match params,rtl with
     | _::_,[] -> assert false (* the rel has at least nargs + 1 arguments ! *)
-    | ((Name id,_,None) as param)::params',(_, GVar id')::rtl'
+    | ((Name id,_,None) as param)::params', { CAst.v = GVar id' }::rtl'
 	when Id.compare id id' == 0 ->
 	compute_cst_params_from_app (param::acc) (params',rtl')
     | _  -> List.rev acc

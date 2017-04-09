@@ -108,12 +108,12 @@ let intern_ltac_variable ist = function
 
 let intern_constr_reference strict ist = function
   | Ident (_,id) as r when not strict && find_hyp id ist ->
-      (Loc.tag @@ GVar id), Some (CAst.make @@ CRef (r,None))
+      (CAst.make @@ GVar id), Some (CAst.make @@ CRef (r,None))
   | Ident (_,id) as r when find_var id ist ->
-      (Loc.tag @@ GVar id), if strict then None else Some (CAst.make @@ CRef (r,None))
+      (CAst.make @@ GVar id), if strict then None else Some (CAst.make @@ CRef (r,None))
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
-      Loc.tag @@ GRef (locate_global_with_alias lqid,None), 
+      CAst.make @@ GRef (locate_global_with_alias lqid,None), 
 	if strict then None else Some (CAst.make @@ CRef (r,None))
 
 let intern_move_location ist = function
@@ -272,7 +272,7 @@ let intern_destruction_arg ist = function
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
 	match intern_constr ist (CAst.make @@ CRef (Ident (Loc.tag id), None)) with
-	| (loc, GVar id), _ -> clear,ElimOnIdent (loc,id)
+	| {loc; CAst.v = GVar id}, _ -> clear,ElimOnIdent (loc,id)
 	| c -> clear,ElimOnConstr (c,NoBindings)
       else
 	clear,ElimOnIdent (loc,id)
@@ -350,7 +350,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       | _ -> Qualid (loc,qualid_of_path (path_of_global (smart_global r))) in
       let sign = { Constrintern.ltac_vars = ist.ltacvars; Constrintern.ltac_bound = Id.Set.empty } in
       let c = Constrintern.interp_reference sign r in
-      match Loc.obj c with
+      match c.CAst.v with
       | GRef (r,None) ->
           Inl (ArgArg (evaluable_of_global_reference ist.genv r,None))
       | GVar id ->

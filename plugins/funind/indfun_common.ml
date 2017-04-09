@@ -69,7 +69,7 @@ let chop_rlambda_n  =
       if n == 0
       then List.rev acc,rt
       else
-	match Loc.obj rt with
+	match rt.CAst.v with
 	  | Glob_term.GLambda(name,k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
 	  | Glob_term.GLetIn(name,v,t,b) -> chop_lambda_n ((name,v,t)::acc) (n-1) b
 	  | _ ->
@@ -83,7 +83,7 @@ let chop_rprod_n  =
       if n == 0
       then List.rev acc,rt
       else
-	match Loc.obj rt with
+	match rt.CAst.v with
 	  | Glob_term.GProd(name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
 	  | _ -> raise (CErrors.UserError(Some "chop_rprod_n",str "chop_rprod_n: Not enough products"))
   in

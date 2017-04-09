@@ -149,4 +149,4 @@ type module_ast_r =
   | CMident of qualid
   | CMapply of module_ast * module_ast
   | CMwith  of module_ast * with_declaration_ast
-and module_ast = module_ast_r Loc.located
+and module_ast = module_ast_r CAst.ast

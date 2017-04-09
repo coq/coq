@@ -41,9 +41,9 @@ let interp_ascii ?loc p =
   let rec aux n p =
      if Int.equal n 0 then [] else
      let mp = p mod 2 in
-     (Loc.tag ?loc @@ GRef ((if Int.equal mp 0 then glob_false else glob_true),None))
+     (CAst.make ?loc @@ GRef ((if Int.equal mp 0 then glob_false else glob_true),None))
      :: (aux (n-1) (p/2)) in
-  Loc.tag ?loc @@ GApp (Loc.tag ?loc @@ GRef(force glob_Ascii,None), aux 8 p)
+  CAst.make ?loc @@ GApp (CAst.make ?loc @@ GRef(force glob_Ascii,None), aux 8 p)
 
 let interp_ascii_string ?loc s =
   let p =
@@ -59,12 +59,12 @@ let interp_ascii_string ?loc s =
 let uninterp_ascii r =
   let rec uninterp_bool_list n = function
     | [] when Int.equal n 0 -> 0
-    | (_, GRef (k,_))::l when Globnames.eq_gr k glob_true  -> 1+2*(uninterp_bool_list (n-1)  l)
-    | (_, GRef (k,_))::l when Globnames.eq_gr k glob_false -> 2*(uninterp_bool_list (n-1) l)
+    | { CAst.v = GRef (k,_)}::l when Globnames.eq_gr k glob_true  -> 1+2*(uninterp_bool_list (n-1)  l)
+    | { CAst.v = GRef (k,_)}::l when Globnames.eq_gr k glob_false -> 2*(uninterp_bool_list (n-1) l)
     | _ -> raise Non_closed_ascii in
   try
     let aux = function
-    | _, GApp ((_, GRef (k,_)),l) when Globnames.eq_gr k (force glob_Ascii) -> uninterp_bool_list 8 l
+    | { CAst.v = GApp ({ CAst.v = GRef (k,_)},l) } when Globnames.eq_gr k (force glob_Ascii) -> uninterp_bool_list 8 l
     | _ -> raise Non_closed_ascii in
     Some (aux r)
   with
@@ -80,4 +80,4 @@ let _ =
   Notation.declare_string_interpreter "char_scope"
     (ascii_path,ascii_module)
     interp_ascii_string
-    ([Loc.tag @@ GRef (static_glob_Ascii,None)], uninterp_ascii_string, true)
+    ([CAst.make @@ GRef (static_glob_Ascii,None)], uninterp_ascii_string, true)

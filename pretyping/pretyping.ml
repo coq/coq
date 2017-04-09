@@ -567,12 +567,13 @@ let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
 (* in environment [env], with existential variables [evdref] and *)
 (* the type constraint tycon *)
 
-let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdref (lvar : ltac_var_map) (loc, t) =
+let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdref (lvar : ltac_var_map) t =
   let inh_conv_coerce_to_tycon ?loc = inh_conv_coerce_to_tycon ?loc resolve_tc in
   let pretype_type = pretype_type k0 resolve_tc in
   let pretype = pretype k0 resolve_tc in
   let open Context.Rel.Declaration in
-  match t with
+  let loc = t.CAst.loc in
+  match t.CAst.v with
   | GRef (ref,u) ->
       inh_conv_coerce_to_tycon ?loc env evdref
 	(pretype_ref ?loc evdref env ref u)
@@ -1097,7 +1098,7 @@ and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
 and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
-  | loc, GHole (knd, naming, None) ->
+  | { loc; CAst.v = GHole (knd, naming, None) } ->
       let rec is_Type c = match EConstr.kind !evdref c with
       | Sort s ->
         begin match ESorts.kind !evdref s with

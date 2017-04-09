@@ -511,11 +511,11 @@ GEXTEND Gram
   (* Module expressions *)
   module_expr:
     [ [ me = module_expr_atom -> me
-      | me1 = module_expr; me2 = module_expr_atom -> Loc.tag ~loc:!@loc @@ CMapply (me1,me2)
+      | me1 = module_expr; me2 = module_expr_atom -> CAst.make ~loc:!@loc @@ CMapply (me1,me2)
       ] ]
   ;
   module_expr_atom:
-    [ [ qid = qualid -> Loc.tag ~loc:!@loc @@ CMident (snd qid) | "("; me = module_expr; ")" -> me ] ]
+    [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (snd qid) | "("; me = module_expr; ")" -> me ] ]
   ;
   with_declaration:
     [ [ "Definition"; fqid = fullyqualid; ":="; c = Constr.lconstr ->
@@ -525,12 +525,12 @@ GEXTEND Gram
       ] ]
   ;
   module_type:
-    [ [ qid = qualid -> Loc.tag ~loc:!@loc @@ CMident (snd qid)
+    [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (snd qid)
       | "("; mt = module_type; ")" -> mt
       | mty = module_type; me = module_expr_atom ->
-          Loc.tag ~loc:!@loc @@ CMapply (mty,me)
+          CAst.make ~loc:!@loc @@ CMapply (mty,me)
       | mty = module_type; "with"; decl = with_declaration ->
-          Loc.tag ~loc:!@loc @@ CMwith (mty,decl)
+          CAst.make ~loc:!@loc @@ CMwith (mty,decl)
       ] ]
   ;
   (* Proof using *)

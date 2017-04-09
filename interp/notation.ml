@@ -264,16 +264,16 @@ let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
 let prim_token_key_table = ref KeyMap.empty
 
 let glob_prim_constr_key = function
-  | _, GApp ((_, GRef (ref,_)),_) | _, GRef (ref,_) -> RefKey (canonical_gr ref)
+  | { CAst.v = GApp ({ CAst.v = GRef (ref,_) } ,_) } | { CAst.v = GRef (ref,_) } -> RefKey (canonical_gr ref)
   | _ -> Oth
 
 let glob_constr_keys = function
-  | _, GApp ((_, GRef (ref,_)),_) -> [RefKey (canonical_gr ref); Oth]
-  | _, GRef (ref,_) -> [RefKey (canonical_gr ref)]
+  | { CAst.v = GApp ({ CAst.v = GRef (ref,_) },_) } -> [RefKey (canonical_gr ref); Oth]
+  | { CAst.v = GRef (ref,_) } -> [RefKey (canonical_gr ref)]
   | _ -> [Oth]
 
 let cases_pattern_key = function
-  | _, PatCstr (ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
+  | { CAst.v = PatCstr (ref,_,_) } -> RefKey (canonical_gr (ConstructRef ref))
   | _ -> Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
@@ -471,14 +471,14 @@ let interp_prim_token =
 
 (** [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
 
-let rec rcp_of_glob looked_for gt = CAst.map_from_loc (fun ?loc -> function
+let rec rcp_of_glob looked_for = CAst.map (function
   | GVar id       -> RCPatAtom (Some id)
   | GHole (_,_,_) -> RCPatAtom None
   | GRef (g,_)    -> looked_for g; RCPatCstr (g,[],[])
-  | GApp ((_, GRef (g,_)),l) ->
+  | GApp ({ CAst.v = GRef (g,_)},l) ->
     looked_for g; RCPatCstr (g, List.map (rcp_of_glob looked_for) l,[])
   | _ -> raise Not_found
-  ) gt
+  )
 
 let interp_prim_token_cases_pattern_expr ?loc looked_for p =
   interp_prim_token_gen (rcp_of_glob looked_for) ?loc p
@@ -522,8 +522,8 @@ let uninterp_prim_token_ind_pattern ind args =
     if not b then raise Notation_ops.No_match;
     let args' = List.map
       (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
-    let ref = Loc.tag @@ GRef (ref,None) in
-    match numpr (Loc.tag @@ GApp (ref,args')) with
+    let ref = CAst.make @@ GRef (ref,None) in
+    match numpr (CAst.make @@ GApp (ref,args')) with
       | None -> raise Notation_ops.No_match
       | Some n -> (sc,n)
   with Not_found -> raise Notation_ops.No_match

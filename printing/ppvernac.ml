@@ -201,19 +201,19 @@ open Decl_kinds
       keyword "Module" ++ spc() ++ pr_lfqid id ++ str" := " ++
         pr_located pr_qualid qid
 
-  let rec pr_module_ast leading_space pr_c = function
-    | loc, CMident qid ->
+  let rec pr_module_ast leading_space pr_c = let open CAst in function
+    | { loc ; v = CMident qid } ->
       if leading_space then
         spc () ++ pr_located pr_qualid (loc, qid)
       else
         pr_located pr_qualid (loc,qid)
-    | _loc, CMwith (mty,decl) ->
+    | { v = CMwith (mty,decl) } ->
       let m = pr_module_ast leading_space pr_c mty in
       let p = pr_with_declaration pr_c decl in
       m ++ spc() ++ keyword "with" ++ spc() ++ p
-    | _loc, CMapply (me1,(_, CMident _ as me2)) ->
+    | { v = CMapply (me1, ( { v = CMident _ } as me2 ) ) } ->
       pr_module_ast leading_space pr_c me1 ++ spc() ++ pr_module_ast false pr_c me2
-    | _loc, CMapply (me1,me2) ->
+    | { v = CMapply (me1,me2) } ->
       pr_module_ast leading_space pr_c me1 ++ spc() ++
         hov 1 (str"(" ++ pr_module_ast false pr_c me2 ++ str")")
 

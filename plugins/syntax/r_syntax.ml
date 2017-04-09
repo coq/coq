@@ -42,13 +42,13 @@ let glob_xO = ConstructRef path_of_xO
 let glob_xH = ConstructRef path_of_xH
 
 let pos_of_bignat ?loc x =
-  let ref_xI = Loc.tag @@ GRef (glob_xI, None) in
-  let ref_xH = Loc.tag @@ GRef (glob_xH, None) in
-  let ref_xO = Loc.tag @@ GRef (glob_xO, None) in
+  let ref_xI = CAst.make @@ GRef (glob_xI, None) in
+  let ref_xH = CAst.make @@ GRef (glob_xH, None) in
+  let ref_xO = CAst.make @@ GRef (glob_xO, None) in
   let rec pos_of x =
     match div2_with_rest x with
-      | (q,false) -> Loc.tag @@ GApp (ref_xO,[pos_of q])
-      | (q,true) when not (Bigint.equal q zero) -> Loc.tag @@ GApp (ref_xI,[pos_of q])
+      | (q,false) -> CAst.make @@ GApp (ref_xO,[pos_of q])
+      | (q,true) when not (Bigint.equal q zero) -> CAst.make @@ GApp (ref_xI,[pos_of q])
       | (q,true) -> ref_xH
   in
   pos_of x
@@ -58,9 +58,9 @@ let pos_of_bignat ?loc x =
 (**********************************************************************)
 
 let rec bignat_of_pos = function
-  | _, GApp ((_, GRef (b,_)),[a]) when Globnames.eq_gr b glob_xO -> mult_2(bignat_of_pos a)
-  | _, GApp ((_, GRef (b,_)),[a]) when Globnames.eq_gr b glob_xI -> add_1(mult_2(bignat_of_pos a))
-  | _, GRef (a, _) when Globnames.eq_gr a glob_xH -> Bigint.one
+  | { CAst.v = GApp ({ CAst.v = GRef (b,_)},[a]) } when Globnames.eq_gr b glob_xO -> mult_2(bignat_of_pos a)
+  | { CAst.v = GApp ({ CAst.v = GRef (b,_)},[a]) } when Globnames.eq_gr b glob_xI -> add_1(mult_2(bignat_of_pos a))
+  | { CAst.v = GRef (a, _) } when Globnames.eq_gr a glob_xH -> Bigint.one
   | _ -> raise Non_closed_number
 
 (**********************************************************************)
@@ -81,18 +81,18 @@ let z_of_int ?loc n =
   if not (Bigint.equal n zero) then
     let sgn, n =
       if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
-    Loc.tag @@ GApp(Loc.tag @@ GRef (sgn,None), [pos_of_bignat ?loc n])
+    CAst.make @@ GApp(CAst.make @@ GRef (sgn,None), [pos_of_bignat ?loc n])
   else
-    Loc.tag @@ GRef (glob_ZERO, None)
+    CAst.make @@ GRef (glob_ZERO, None)
 
 (**********************************************************************)
 (* Printing Z via scopes                                              *)
 (**********************************************************************)
 
 let bigint_of_z = function
-  | _, GApp ((_, GRef (b,_)),[a]) when Globnames.eq_gr b glob_POS -> bignat_of_pos a
-  | _, GApp ((_, GRef (b,_)),[a]) when Globnames.eq_gr b glob_NEG -> Bigint.neg (bignat_of_pos a)
-  | _, GRef (a, _) when Globnames.eq_gr a glob_ZERO -> Bigint.zero
+  | { CAst.v = GApp ({ CAst.v = GRef (b,_)},[a]) } when Globnames.eq_gr b glob_POS -> bignat_of_pos a
+  | { CAst.v = GApp ({ CAst.v = GRef (b,_)},[a]) } when Globnames.eq_gr b glob_NEG -> Bigint.neg (bignat_of_pos a)
+  | { CAst.v = GRef (a, _) } when Globnames.eq_gr a glob_ZERO -> Bigint.zero
   | _ -> raise Non_closed_number
 
 (**********************************************************************)
@@ -108,14 +108,14 @@ let make_path dir id = Globnames.encode_con dir (Id.of_string id)
 let glob_IZR = ConstRef (make_path (make_dir rdefinitions) "IZR")
 
 let r_of_int ?loc z =
-  Loc.tag @@ GApp (Loc.tag @@ GRef(glob_IZR,None), [z_of_int ?loc z])
+  CAst.make @@ GApp (CAst.make @@ GRef(glob_IZR,None), [z_of_int ?loc z])
 
 (**********************************************************************)
 (* Printing R via scopes                                              *)
 (**********************************************************************)
 
 let bigint_of_r = function
-  | _, GApp ((_, GRef (o,_)), [a]) when Globnames.eq_gr o glob_IZR ->
+  | { CAst.v = GApp ({ CAst.v = GRef (o,_) }, [a]) } when Globnames.eq_gr o glob_IZR ->
       bigint_of_z a
   | _ -> raise Non_closed_number
 
@@ -128,6 +128,6 @@ let uninterp_r p =
 let _ = Notation.declare_numeral_interpreter "R_scope"
   (r_path,["Coq";"Reals";"Rdefinitions"])
   r_of_int
-  ([Loc.tag @@ GRef (glob_IZR, None)],
+  ([CAst.make @@ GRef (glob_IZR, None)],
     uninterp_r,
     false)

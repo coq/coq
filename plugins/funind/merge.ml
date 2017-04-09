@@ -66,7 +66,7 @@ let string_of_name = id_of_name %> Id.to_string
 (** [isVarf f x] returns [true] if term [x] is of the form [(Var f)]. *)
 let isVarf f x =
     match x with
-      | _, GVar x -> Id.equal x f
+      | { CAst.v = GVar x } -> Id.equal x f
       | _ -> false
 
 (** [ident_global_exist id] returns true if identifier [id] is linked
@@ -504,40 +504,40 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
 
 exception NoMerge
 
-let rec merge_app (loc1, c1) (loc2, c2) id1 id2 shift filter_shift_stable =
+let rec merge_app c1 c2 id1 id2 shift filter_shift_stable =
   let lnk = Array.append shift.lnk1 shift.lnk2 in
-  match c1, c2 with
+  match CAst.(c1.v, c2.v) with
     | GApp(f1, arr1), GApp(f2,arr2) when isVarf id1 f1 && isVarf id2 f2 ->
         let _ = prstr "\nICI1!\n" in
         let args = filter_shift_stable lnk (arr1 @ arr2) in
-        Loc.tag @@ GApp ((Loc.tag @@ GVar shift.ident) , args)
+        CAst.make @@ GApp ((CAst.make @@ GVar shift.ident) , args)
     | GApp(f1, arr1), GApp(f2,arr2)  -> raise NoMerge
     | GLetIn(nme,bdy,typ,trm) , _ ->
         let _ = prstr "\nICI2!\n" in
-        let newtrm = merge_app trm (loc2, c2) id1 id2 shift filter_shift_stable in
-        Loc.tag @@ GLetIn(nme,bdy,typ,newtrm)
+        let newtrm = merge_app trm c2 id1 id2 shift filter_shift_stable in
+        CAst.make @@ GLetIn(nme,bdy,typ,newtrm)
     | _, GLetIn(nme,bdy,typ,trm) ->
         let _ = prstr "\nICI3!\n" in
-        let newtrm = merge_app (loc1, c1) trm id1 id2 shift filter_shift_stable in
-        Loc.tag @@ GLetIn(nme,bdy,typ,newtrm)
+        let newtrm = merge_app c1 trm id1 id2 shift filter_shift_stable in
+        CAst.make @@ GLetIn(nme,bdy,typ,newtrm)
     | _ -> let _ = prstr "\nICI4!\n" in
            raise NoMerge
 
-let rec merge_app_unsafe (l1, c1) (l2, c2) shift filter_shift_stable =
+let rec merge_app_unsafe c1 c2 shift filter_shift_stable =
   let lnk = Array.append shift.lnk1 shift.lnk2 in
-  match c1 , c2 with
+  match CAst.(c1.v, c2.v) with
     | GApp(f1, arr1), GApp(f2,arr2) ->
         let args = filter_shift_stable lnk (arr1 @ arr2) in
-        Loc.tag @@ GApp (Loc.tag @@ GVar shift.ident, args)
+        CAst.make @@ GApp (CAst.make @@ GVar shift.ident, args)
           (* FIXME: what if the function appears in the body of the let? *)
     | GLetIn(nme,bdy,typ,trm) , _ ->
       let _ = prstr "\nICI2 '!\n" in
-        let newtrm = merge_app_unsafe trm (l2, c2) shift filter_shift_stable in
-        Loc.tag @@ GLetIn(nme,bdy,typ,newtrm)
+        let newtrm = merge_app_unsafe trm c2 shift filter_shift_stable in
+        CAst.make @@ GLetIn(nme,bdy,typ,newtrm)
     | _, GLetIn(nme,bdy,typ,trm) ->
         let _ = prstr "\nICI3 '!\n" in
-        let newtrm = merge_app_unsafe (l1, c1) trm shift filter_shift_stable in
-        Loc.tag @@ GLetIn(nme,bdy,typ,newtrm)
+        let newtrm = merge_app_unsafe c1 trm shift filter_shift_stable in
+        CAst.make @@ GLetIn(nme,bdy,typ,newtrm)
     | _ -> let _ = prstr "\nICI4 '!\n" in raise NoMerge
 
 
@@ -550,14 +550,14 @@ let rec merge_rec_hyps shift accrec
     filter_shift_stable : (Name.t * glob_constr option * glob_constr option) list =
   let mergeonehyp t reldecl =
     match reldecl with
-      | (nme,x,Some (_, GApp(i,args) as ind))
+      | (nme,x,Some ({ CAst.v = GApp(i,args)} as ind))
         -> nme,x, Some (merge_app_unsafe ind t shift filter_shift_stable)
       | (nme,Some _,None) -> error "letins with recursive calls not treated yet"
       | (nme,None,Some _) -> assert false
       | (nme,None,None) | (nme,Some _,Some _) -> assert false in
   match ltyp with
     | [] -> []
-    | (nme,None,Some (_, GApp(f, largs) as t)) :: lt when isVarf ind2name f ->
+    | (nme,None,Some ({ CAst. v = GApp(f, largs) } as t)) :: lt when isVarf ind2name f ->
         let rechyps = List.map (mergeonehyp t) accrec in
         rechyps @ merge_rec_hyps shift accrec lt filter_shift_stable
     | e::lt -> e :: merge_rec_hyps shift accrec lt filter_shift_stable
@@ -573,7 +573,7 @@ let find_app (nme:Id.t) ltyp =
       (List.map
           (fun x ->
             match x with
-              | _,None,Some (_, GApp(f,_)) when isVarf nme f -> raise (Found 0)
+              | _,None,Some { CAst.v = GApp(f,_)} when isVarf nme f -> raise (Found 0)
               | _ -> ())
           ltyp);
     false
@@ -632,8 +632,8 @@ let rec merge_types shift accrec1
 
           rechyps , concl
       | (nme,None, Some t1)as e ::lt1 ->
-          (match t1 with
-            | _, GApp(f,carr) when isVarf ind1name f ->
+          (match t1.CAst.v with
+            | GApp(f,carr) when isVarf ind1name f ->
                 merge_types shift (e::accrec1) lt1 concl1 ltyp2 concl2
             | _ ->
                 let recres, recconcl2 =
@@ -864,7 +864,7 @@ let mkProd_reldecl (rdecl:Context.Rel.Declaration.t) (t2:glob_constr) =
     | LocalAssum (nme,t) ->
         let t = EConstr.of_constr t in
         let traw = Detyping.detype false [] (Global.env()) Evd.empty t in
-        Loc.tag @@ GProd (nme,Explicit,traw,t2)
+        CAst.make @@ GProd (nme,Explicit,traw,t2)
     | LocalDef _ -> assert false
 
 

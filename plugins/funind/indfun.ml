@@ -190,7 +190,7 @@ let build_newrecursive l =
 let is_rec names =
   let names = List.fold_right Id.Set.add names Id.Set.empty in
   let check_id id names =  Id.Set.mem id names in
-  let rec lookup names (loc, gt) = match gt with
+  let rec lookup names gt = match gt.CAst.v with
     | GVar(id) -> check_id id names
     | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
     | GCast(b,_) -> lookup names b
