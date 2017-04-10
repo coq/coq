@@ -4365,6 +4365,16 @@ let has_generic_occurrences_but_goal cls id env ccl =
   (* TODO: whd_evar of goal *)
   (cls.concl_occs != NoOccurrences || not (occur_var env id ccl))
 
+let look_like_section_variable env sigma id =
+  try
+    let d = Context.Named.lookup id (Global.named_context ()) in
+    let d' = Context.Named.lookup id (named_context env) in
+    is_conv env sigma (get_type d) (get_type d')
+    && Option.equal (is_conv env sigma) (get_value d) (get_value d')
+  with
+    | Not_found -> false
+    | e when noncritical e -> false
+
 let induction_gen clear_flag isrec with_evars elim
     ((_pending,(c,lbind)),(eqname,names) as arg) cls =
   let inhyps = match cls with
@@ -4377,7 +4387,7 @@ let induction_gen clear_flag isrec with_evars elim
   let cls = Option.default allHypsAndConcl cls in
   let t = typ_of env sigma c in
   let is_arg_pure_hyp =
-    isVar c && not (mem_named_context_val (destVar c) (Global.named_context_val ()))
+    isVar c && not (look_like_section_variable env (Sigma.to_evar_map sigma) (destVar c))
     && lbind == NoBindings && not with_evars && Option.is_empty eqname
     && clear_flag == None
     && has_generic_occurrences_but_goal cls (destVar c) env ccl in
