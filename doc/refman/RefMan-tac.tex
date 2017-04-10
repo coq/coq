@@ -3591,19 +3591,11 @@ Note that {\tt ex\_intro} should be declared as a hint.
 \tacindex{bfs\_eauto}
 \label{bfseauto}
  
-This tactic is the same as {\tt eauto}, but it always uses a
-breadth-first search strategy. The options for {\tt bfs\_eauto} are
-the same as for {\tt eauto}, except that it always takes a single
+This tactic is the same as {\tt eauto}, but uses a breadth-first search strategy.
+The options for {\tt bfs\_eauto} are
+the same as for {\tt eauto}, except that it takes exactly one 
 number indicating the search depth limit.
 
-\begin{Variants}
-
-\item {\tt bfs\_eauto \num} \zeroone{{\tt using} \nterm{lemma}$_1$
-  {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
-  \ident$_1$ {\ldots} \ident$_n$}
-
-\end{Variants}
-  
 \subsection{\tt autounfold with \ident$_1$ \mbox{\dots} \ident$_n$}
 \tacindex{autounfold}
 \label{autounfold}
