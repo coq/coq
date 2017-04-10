@@ -62,7 +62,7 @@ let explain_coercion_error g = function
 (* Verifications pour l'ajout d'une classe *)
 
 let check_reference_arity ref =
-  if not (Reductionops.is_arity (Global.env()) Evd.empty (Global.type_of_global_unsafe ref)) then
+  if not (Reductionops.is_arity (Global.env()) Evd.empty (EConstr.of_constr (Global.type_of_global_unsafe ref))) (** FIXME *) then
     raise (CoercionError (NotAClass ref))
 
 let check_arity = function
@@ -81,12 +81,13 @@ let check_target clt = function
 
 (* condition d'heritage uniforme *)
 
-let uniform_cond nargs lt =
+let uniform_cond sigma nargs lt =
+  let open EConstr in
   let rec aux = function
     | (0,[]) -> true
     | (n,t::l) ->
-      let t = strip_outer_cast t in
-      isRel t && Int.equal (destRel t) n && aux ((n-1),l)
+      let t = strip_outer_cast sigma t in
+      isRel sigma t && Int.equal (destRel sigma t) n && aux ((n-1),l)
     | _ -> false
   in
   aux (nargs,lt)
@@ -120,7 +121,7 @@ let get_source lp source =
 	let (cl1,u1,lv1) =
           match lp with
 	    | [] -> raise Not_found
-            | t1::_ -> find_class_type Evd.empty t1
+            | t1::_ -> find_class_type Evd.empty (EConstr.of_constr t1)
         in
 	(cl1,u1,lv1,1)
     | Some cl ->
@@ -128,7 +129,7 @@ let get_source lp source =
 	  | [] -> raise Not_found
 	  | t1::lt ->
 	      try
-		let cl1,u1,lv1 = find_class_type Evd.empty t1 in
+		let cl1,u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
 		if cl_typ_eq cl cl1 then cl1,u1,lv1,(List.length lt+1)
 		else raise Not_found
               with Not_found -> aux lt
@@ -138,7 +139,7 @@ let get_target t ind =
   if (ind > 1) then
     CL_FUN
   else
-    match pi1 (find_class_type Evd.empty t) with
+    match pi1 (find_class_type Evd.empty (EConstr.of_constr t)) with
     | CL_CONST p when Environ.is_projection p (Global.env ()) -> 
       CL_PROJ p
     | x -> x
@@ -193,20 +194,20 @@ let build_id_coercion idf_opt source poly =
   let val_f =
     it_mkLambda_or_LetIn
       (mkLambda (Name Namegen.default_dependent_ident,
-		 applistc vs (Context.Rel.to_extended_list 0 lams),
+		 applistc vs (Context.Rel.to_extended_list mkRel 0 lams),
 		 mkRel 1))
        lams
   in
   let typ_f =
-    it_mkProd_wo_LetIn
-      (mkProd (Anonymous, applistc vs (Context.Rel.to_extended_list 0 lams), lift 1 t))
+    List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d)
+      (mkProd (Anonymous, applistc vs (Context.Rel.to_extended_list mkRel 0 lams), lift 1 t))
       lams
   in
   (* juste pour verification *)
   let _ =
     if not
       (Reductionops.is_conv_leq env sigma
-	(Typing.unsafe_type_of env sigma val_f) typ_f)
+	(Typing.unsafe_type_of env sigma (EConstr.of_constr val_f)) (EConstr.of_constr typ_f))
     then
       user_err  (strbrk
 	"Cannot be defined as coercion (maybe a bad number of arguments).")
@@ -215,7 +216,7 @@ let build_id_coercion idf_opt source poly =
     match idf_opt with
       | Some idf -> idf
       | None ->
-	  let cl,u,_ = find_class_type sigma t in
+	  let cl,u,_ = find_class_type sigma (EConstr.of_constr t) in
 	  Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
                         (ident_key_of_class cl))
   in
@@ -263,7 +264,7 @@ let add_new_coercion_core coef stre poly source target isid =
       raise (CoercionError (NoSource source))
   in
   check_source (Some cls);
-  if not (uniform_cond (llp-ind) lvs) then
+  if not (uniform_cond Evd.empty (** FIXME *) (llp-ind) lvs) then
     warn_uniform_inheritance coef;
   let clt =
     try

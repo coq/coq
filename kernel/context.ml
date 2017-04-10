@@ -37,9 +37,11 @@ struct
   module Declaration =
   struct
     (* local declaration *)
-    type t =
-      | LocalAssum of Name.t * Constr.t            (** name, type *)
-      | LocalDef of Name.t * Constr.t * Constr.t   (** name, value, type *)
+    type ('constr, 'types) pt =
+      | LocalAssum of Name.t * 'types            (** name, type *)
+      | LocalDef of Name.t * 'constr * 'types   (** name, value, type *)
+
+    type t = (Constr.constr, Constr.types) pt
 
     (** Return the name bound by a given declaration. *)
     let get_name = function
@@ -87,12 +89,12 @@ struct
       | LocalDef (_, v, ty) -> f v && f ty
 
     (** Check whether the two given declarations are equal. *)
-    let equal decl1 decl2 =
+    let equal eq decl1 decl2 =
       match decl1, decl2 with
       | LocalAssum (n1,ty1), LocalAssum (n2, ty2) ->
-          Name.equal n1 n2 && Constr.equal ty1 ty2
+          Name.equal n1 n2 && eq ty1 ty2
       | LocalDef (n1,v1,ty1), LocalDef (n2,v2,ty2) ->
-          Name.equal n1 n2 && Constr.equal v1 v2 && Constr.equal ty1 ty2
+          Name.equal n1 n2 && eq v1 v2 && eq ty1 ty2
       | _ ->
           false
 
@@ -152,6 +154,7 @@ struct
   (** Rel-context is represented as a list of declarations.
       Inner-most declarations are at the beginning of the list.
       Outer-most declarations are at the end of the list. *)
+  type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
   type t = Declaration.t list
 
   (** empty rel-context *)
@@ -166,14 +169,14 @@ struct
   (** [extended_rel_list n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
       with n = |Δ| and with the local definitions of [Γ] skipped in
       [args]. Example: for [x:T,y:=c,z:U] and [n]=2, it gives [Rel 5, Rel 3]. *)
-  let nhyps =
+  let nhyps ctx =
     let open Declaration in
     let rec nhyps acc = function
       | [] -> acc
       | LocalAssum _ :: hyps -> nhyps (succ acc) hyps
       | LocalDef _ :: hyps -> nhyps acc hyps
     in
-    nhyps 0
+    nhyps 0 ctx
 
   (** Return a declaration designated by a given de Bruijn index.
       @raise Not_found if the designated de Bruijn index is not present in the designated rel-context. *)
@@ -184,7 +187,7 @@ struct
     | _, []        -> raise Not_found
 
   (** Check whether given two rel-contexts are equal. *)
-  let equal = List.equal Declaration.equal
+  let equal eq l = List.equal (fun c -> Declaration.equal eq c) l
 
   (** Map all terms in a given rel-context. *)
   let map f = List.smartmap (Declaration.map_constr f)
@@ -202,26 +205,26 @@ struct
 
   (** Map a given rel-context to a list where each {e local assumption} is mapped to [true]
       and each {e local definition} is mapped to [false]. *)
-  let to_tags =
+  let to_tags l =
     let rec aux l = function
       | [] -> l
       | Declaration.LocalDef _ :: ctx -> aux (true::l) ctx
       | Declaration.LocalAssum _ :: ctx -> aux (false::l) ctx
-    in aux []
+    in aux [] l
 
   (** [extended_list n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
       with n = |Δ| and with the {e local definitions} of [Γ] skipped in
       [args]. Example: for [x:T, y:=c, z:U] and [n]=2, it gives [Rel 5, Rel 3]. *)
-  let to_extended_list n =
+  let to_extended_list mk n l =
     let rec reln l p = function
-      | Declaration.LocalAssum _ :: hyps -> reln (Constr.mkRel (n+p) :: l) (p+1) hyps
+      | Declaration.LocalAssum _ :: hyps -> reln (mk (n+p) :: l) (p+1) hyps
       | Declaration.LocalDef _ :: hyps -> reln l (p+1) hyps
       | [] -> l
     in
-    reln [] 1
+    reln [] 1 l
 
   (** [extended_vect n Γ] does the same, returning instead an array. *)
-  let to_extended_vect n hyps = Array.of_list (to_extended_list n hyps)
+  let to_extended_vect mk n hyps = Array.of_list (to_extended_list mk n hyps)
 end
 
 (** This module represents contexts that can capture non-anonymous variables.
@@ -232,9 +235,11 @@ struct
   module Declaration =
   struct
     (** local declaration *)
-    type t =
-      | LocalAssum of Id.t * Constr.t             (** identifier, type *)
-      | LocalDef of Id.t * Constr.t * Constr.t    (** identifier, value, type *)
+    type ('constr, 'types) pt =
+      | LocalAssum of Id.t * 'types             (** identifier, type *)
+      | LocalDef of Id.t * 'constr * 'types    (** identifier, value, type *)
+
+    type t = (Constr.constr, Constr.types) pt
 
     (** Return the identifier bound by a given declaration. *)
     let get_id = function
@@ -282,12 +287,12 @@ struct
       | LocalDef (_, v, ty) -> f v && f ty
 
     (** Check whether the two given declarations are equal. *)
-    let equal decl1 decl2 =
+    let equal eq decl1 decl2 =
       match decl1, decl2 with
       | LocalAssum (id1, ty1), LocalAssum (id2, ty2) ->
-          Id.equal id1 id2 && Constr.equal ty1 ty2
+          Id.equal id1 id2 && eq ty1 ty2
       | LocalDef (id1, v1, ty1), LocalDef (id2, v2, ty2) ->
-          Id.equal id1 id2 && Constr.equal v1 v2 && Constr.equal ty1 ty2
+          Id.equal id1 id2 && eq v1 v2 && eq ty1 ty2
       | _ ->
           false
 
@@ -362,6 +367,7 @@ struct
   (** Named-context is represented as a list of declarations.
       Inner-most declarations are at the beginning of the list.
       Outer-most declarations are at the end of the list. *)
+  type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
   type t = Declaration.t list
 
   (** empty named-context *)
@@ -380,7 +386,7 @@ struct
     | [] -> raise Not_found
 
   (** Check whether given two named-contexts are equal. *)
-  let equal = List.equal Declaration.equal
+  let equal eq l = List.equal (fun c -> Declaration.equal eq c) l
 
   (** Map all terms in a given named-context. *)
   let map f = List.smartmap (Declaration.map_constr f)
@@ -397,28 +403,30 @@ struct
   let fold_outside f l ~init = List.fold_right f l init
 
   (** Return the set of all identifiers bound in a given named-context. *)
-  let to_vars =
-    List.fold_left (fun accu decl -> Id.Set.add (Declaration.get_id decl) accu) Id.Set.empty
+  let to_vars l =
+    List.fold_left (fun accu decl -> Id.Set.add (Declaration.get_id decl) accu) Id.Set.empty l
 
   (** [instance_from_named_context Ω] builds an instance [args] such
       that [Ω ⊢ args:Ω] where [Ω] is a named context and with the local
       definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
       gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
-  let to_instance =
+  let to_instance mk l =
     let filter = function
-      | Declaration.LocalAssum (id, _) -> Some (Constr.mkVar id)
+      | Declaration.LocalAssum (id, _) -> Some (mk id)
       | _ -> None
     in
-    List.map_filter filter
+    List.map_filter filter l
 end
 
 module Compacted =
   struct
     module Declaration =
       struct
-        type t =
-          | LocalAssum of Id.t list * Constr.t
-          | LocalDef of Id.t list * Constr.t * Constr.t
+        type ('constr, 'types) pt =
+          | LocalAssum of Id.t list * 'types
+          | LocalDef of Id.t list * 'constr * 'types
+
+        type t = (Constr.constr, Constr.types) pt
 
         let map_constr f = function
           | LocalAssum (ids, ty) as decl ->
@@ -442,6 +450,7 @@ module Compacted =
              List.map (fun id -> Named.Declaration.LocalDef (id,v,t)) ids
       end
 
+    type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
     type t = Declaration.t list
 
     let fold f l ~init = List.fold_right f l init

@@ -258,7 +258,6 @@ type evar_universe_context = UState.t
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
 let empty_evar_universe_context = UState.empty
-let is_empty_evar_universe_context = UState.is_empty
 let union_evar_universe_context = UState.union
 let evar_universe_context_set = UState.context_set
 let evar_universe_context_constraints = UState.constraints
@@ -366,7 +365,7 @@ open Misctypes
 type t
 
 val empty : t
-val add_name_undefined : intro_pattern_naming_expr -> Evar.t -> evar_info -> t -> t
+val add_name_undefined : Id.t option -> Evar.t -> evar_info -> t -> t
 val remove_name_defined : Evar.t -> t -> t
 val rename : Evar.t -> Id.t -> t -> t
 val reassign_name_defined : Evar.t -> Evar.t -> t -> t
@@ -380,20 +379,13 @@ type t = Id.t EvMap.t * existential_key Idmap.t
 
 let empty = (EvMap.empty, Idmap.empty)
 
-let add_name_newly_undefined naming evk evi (evtoid, idtoev as names) =
-  let id = match naming with
-  | Misctypes.IntroAnonymous -> None
-  | Misctypes.IntroIdentifier id ->
-    if Idmap.mem id idtoev then
-    user_err  (str "Already an existential evar of name " ++ pr_id id);
-    Some id
-  | Misctypes.IntroFresh id ->
-    let id = Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
-    Some id
-  in
+let add_name_newly_undefined id evk evi (evtoid, idtoev as names) =
   match id with
   | None -> names
-  | Some id -> (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
+  | Some id ->
+    if Idmap.mem id idtoev then
+      user_err  (str "Already an existential evar of name " ++ pr_id id);
+    (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
 
 let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =
   if EvMap.mem evk evtoid then
@@ -463,9 +455,9 @@ type evar_map = {
 let rename evk id evd =
   { evd with evar_names = EvNames.rename evk id evd.evar_names }
 
-let add_with_name ?(naming = Misctypes.IntroAnonymous) d e i = match i.evar_body with
+let add_with_name ?name d e i = match i.evar_body with
 | Evar_empty ->
-  let evar_names = EvNames.add_name_undefined naming e i d.evar_names in
+  let evar_names = EvNames.add_name_undefined name e i d.evar_names in
   { d with undf_evars = EvMap.add e i d.undf_evars; evar_names }
 | Evar_defined _ ->
   let evar_names = EvNames.remove_name_defined e d.evar_names in
@@ -482,9 +474,9 @@ let new_untyped_evar =
   let evar_ctr = Summary.ref 0 ~name:evar_counter_summary_name in
   fun () -> incr evar_ctr; Evar.unsafe_of_int !evar_ctr
 
-let new_evar evd ?naming evi =
+let new_evar evd ?name evi =
   let evk = new_untyped_evar () in
-  let evd = add_with_name evd ?naming evk evi in
+  let evd = add_with_name evd ?name evk evi in
   (evd, evk)
 
 let remove d e =
@@ -504,15 +496,6 @@ let find d e =
 let find_undefined d e = EvMap.find e d.undf_evars
 
 let mem d e = EvMap.mem e d.undf_evars || EvMap.mem e d.defn_evars
-
-(* spiwack: this function loses information from the original evar_map
-   it might be an idea not to export it. *)
-let to_list d =
-  (* Workaround for change in Map.fold behavior in ocaml 3.08.4 *)
-  let l = ref [] in
-  EvMap.iter (fun evk x -> l := (evk,x)::!l) d.defn_evars;
-  EvMap.iter (fun evk x -> l := (evk,x)::!l) d.undf_evars;
-  !l
 
 let undefined_map d = d.undf_evars
 
@@ -732,13 +715,6 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
 
 (* excluding defined evars *)
 
-let evar_list c =
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (evk, _ as ev) -> ev :: acc
-    | _ -> Term.fold_constr evrec acc c in
-  evrec [] c
-
 let evars_of_term c =
   let rec evrec acc c =
     match kind_of_term c with
@@ -776,7 +752,6 @@ let evar_universe_context d = d.universes
 
 let universe_context_set d = UState.context_set d.universes
 
-let pr_uctx_level = UState.pr_uctx_level
 let universe_context ?names evd = UState.universe_context ?names evd.universes
 
 let restrict_universe_context evd vars =
@@ -958,36 +933,7 @@ let universes evd = UState.ugraph evd.universes
 let update_sigma_env evd env =
   { evd with universes = UState.update_sigma_env evd.universes env }
 
-(* Conversion w.r.t. an evar map and its local universes. *)
-
-let test_conversion_gen env evd pb t u =
-  match pb with 
-  | Reduction.CONV -> 
-    Reduction.conv env
-      ~evars:((existential_opt_value evd), (UState.ugraph evd.universes))
-      t u
-  | Reduction.CUMUL -> Reduction.conv_leq env
-      ~evars:((existential_opt_value evd), (UState.ugraph evd.universes))
-      t u
-
-let test_conversion env d pb t u =
-  try test_conversion_gen env d pb t u; true
-  with _ -> false
-
 exception UniversesDiffer = UState.UniversesDiffer
-
-let eq_constr_univs evd t u =
-  let fold cstr sigma =
-    try Some (add_universe_constraints sigma cstr)
-    with Univ.UniverseInconsistency _ | UniversesDiffer -> None
-  in
-  match Universes.eq_constr_univs_infer (UState.ugraph evd.universes) fold t u evd with
-  | None -> evd, false
-  | Some evd -> evd, true
-
-let e_eq_constr_univs evdref t u =
-  let evd, b = eq_constr_univs !evdref t u in
-    evdref := evd; b
 
 (**********************************************************)
 (* Side effects *)
@@ -1220,281 +1166,3 @@ module Monad =
 (* Failure explanation *)
 
 type unsolvability_explanation = SeveralInstancesFound of int
-
-(**********************************************************)
-(* Pretty-printing *)
-
-let pr_evar_suggested_name evk sigma =
-  let base_id evk' evi =
-  match evar_ident evk' sigma with
-  | Some id -> id
-  | None -> match evi.evar_source with
-  | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
-  | _,Evar_kinds.VarInstance id -> id
-  | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
-  | _ ->
-      let env = reset_with_named_context evi.evar_hyps (Global.env()) in
-      Namegen.id_of_name_using_hdchar env evi.evar_concl Anonymous
-  in
-  let names = EvMap.mapi base_id sigma.undf_evars in
-  let id = EvMap.find evk names in
-  let fold evk' id' (seen, n) =
-    if seen then (seen, n)
-    else if Evar.equal evk evk' then (true, n)
-    else if Id.equal id id' then (seen, succ n)
-    else (seen, n)
-  in
-  let (_, n) = EvMap.fold fold names (false, 0) in
-  if n = 0 then id else Nameops.add_suffix id (string_of_int (pred n))
-
-let pr_existential_key sigma evk = match evar_ident evk sigma with
-| None ->
-  str "?" ++ pr_id (pr_evar_suggested_name evk sigma)
-| Some id ->
-  str "?" ++ pr_id id
-
-let pr_instance_status (sc,typ) =
-  begin match sc with
-  | IsSubType -> str " [or a subtype of it]"
-  | IsSuperType -> str " [or a supertype of it]"
-  | Conv -> mt ()
-  end ++
-  begin match typ with
-  | CoerceToType -> str " [up to coercion]"
-  | TypeNotProcessed -> mt ()
-  | TypeProcessed -> str " [type is checked]"
-  end
-
-let protect f x =
-  try f x
-  with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
-
-let (f_print_constr, print_constr_hook) = Hook.make ()
-
-let print_constr a = protect (fun c -> Hook.get f_print_constr (Global.env ()) c) a
-
-let pr_meta_map mmap =
-  let pr_name = function
-      Name id -> str"[" ++ pr_id id ++ str"]"
-    | _ -> mt() in
-  let pr_meta_binding = function
-    | (mv,Cltyp (na,b)) ->
-      	hov 0
-	  (pr_meta mv ++ pr_name na ++ str " : " ++
-           print_constr b.rebus ++ fnl ())
-    | (mv,Clval(na,(b,s),t)) ->
-      	hov 0
-	  (pr_meta mv ++ pr_name na ++ str " := " ++
-           print_constr b.rebus ++
-	   str " : " ++ print_constr t.rebus ++
-	   spc () ++ pr_instance_status s ++ fnl ())
-  in
-  prlist pr_meta_binding (metamap_to_list mmap)
-
-let pr_decl (decl,ok) =
-  match decl with
-  | LocalAssum (id,_) -> if ok then pr_id id else (str "{" ++ pr_id id ++ str "}")
-  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
-                           print_constr c ++ str (if ok then ")" else "}")
-
-let pr_evar_source = function
-  | Evar_kinds.NamedHole id -> pr_id id
-  | Evar_kinds.QuestionMark _ -> str "underscore"
-  | Evar_kinds.CasesType false -> str "pattern-matching return predicate"
-  | Evar_kinds.CasesType true ->
-      str "subterm of pattern-matching return predicate"
-  | Evar_kinds.BinderType (Name id) -> str "type of " ++ Nameops.pr_id id
-  | Evar_kinds.BinderType Anonymous -> str "type of anonymous binder"
-  | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
-      let id = Option.get ido in
-      str "parameter " ++ pr_id id ++ spc () ++ str "of" ++
-      spc () ++ print_constr (printable_constr_of_global c)
-  | Evar_kinds.InternalHole -> str "internal placeholder"
-  | Evar_kinds.TomatchTypeParameter (ind,n) ->
-      pr_nth n ++ str " argument of type " ++ print_constr (mkInd ind)
-  | Evar_kinds.GoalEvar -> str "goal evar"
-  | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
-  | Evar_kinds.MatchingVar _ -> str "matching variable"
-  | Evar_kinds.VarInstance id -> str "instance of " ++ pr_id id
-  | Evar_kinds.SubEvar evk ->
-      str "subterm of " ++ str (string_of_existential evk)
-
-let pr_evar_info evi =
-  let phyps =
-    try
-      let decls = match Filter.repr (evar_filter evi) with
-      | None -> List.map (fun c -> (c, true)) (evar_context evi)
-      | Some filter -> List.combine (evar_context evi) filter
-      in
-      prlist_with_sep spc pr_decl (List.rev decls)
-    with Invalid_argument _ -> str "Ill-formed filtered context" in
-  let pty = print_constr evi.evar_concl in
-  let pb =
-    match evi.evar_body with
-      | Evar_empty -> mt ()
-      | Evar_defined c -> spc() ++ str"=> "  ++ print_constr c
-  in
-  let candidates =
-    match evi.evar_body, evi.evar_candidates with
-      | Evar_empty, Some l ->
-           spc () ++ str "{" ++
-           prlist_with_sep (fun () -> str "|") print_constr l ++ str "}"
-      | _ ->
-          mt ()
-  in
-  let src = str "(" ++ pr_evar_source (snd evi.evar_source) ++ str ")" in
-  hov 2
-    (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]" ++
-       candidates ++ spc() ++ src)
-
-let compute_evar_dependency_graph (sigma : evar_map) =
-  (* Compute the map binding ev to the evars whose body depends on ev *)
-  let fold evk evi acc =
-    let fold_ev evk' acc =
-      let tab =
-        try EvMap.find evk' acc
-        with Not_found -> Evar.Set.empty
-      in
-      EvMap.add evk' (Evar.Set.add evk tab) acc
-    in
-    match evar_body evi with
-    | Evar_empty -> assert false
-    | Evar_defined c -> Evar.Set.fold fold_ev (evars_of_term c) acc
-  in
-  EvMap.fold fold sigma.defn_evars EvMap.empty
-
-let evar_dependency_closure n sigma =
-  (** Create the DAG of depth [n] representing the recursive dependencies of
-      undefined evars. *)
-  let graph = compute_evar_dependency_graph sigma in
-  let rec aux n curr accu =
-    if Int.equal n 0 then Evar.Set.union curr accu
-    else
-      let fold evk accu =
-        try
-          let deps = EvMap.find evk graph in
-          Evar.Set.union deps accu
-        with Not_found -> accu
-      in
-      (** Consider only the newly added evars *)
-      let ncurr = Evar.Set.fold fold curr Evar.Set.empty in
-      (** Merge the others *)
-      let accu = Evar.Set.union curr accu in
-      aux (n - 1) ncurr accu
-  in
-  let undef = EvMap.domain (undefined_map sigma) in
-  aux n undef Evar.Set.empty
-
-let evar_dependency_closure n sigma =
-  let deps = evar_dependency_closure n sigma in
-  let map = EvMap.bind (fun ev -> find sigma ev) deps in
-  EvMap.bindings map
-
-let has_no_evar sigma =
-  EvMap.is_empty sigma.defn_evars && EvMap.is_empty sigma.undf_evars
-
-let pr_evd_level evd = pr_uctx_level evd.universes
-
-let pr_evar_universe_context ctx =
-  let prl = pr_uctx_level ctx in
-  if is_empty_evar_universe_context ctx then mt ()
-  else
-    (str"UNIVERSES:"++brk(0,1)++ 
-       h 0 (Univ.pr_universe_context_set prl (evar_universe_context_set ctx)) ++ fnl () ++
-     str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
-     h 0 (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
-     str"UNDEFINED UNIVERSES:"++brk(0,1)++
-       h 0 (Universes.pr_universe_opt_subst (UState.subst ctx)) ++ fnl())
-
-let print_env_short env =
-  let pr_rel_decl = function
-    | RelDecl.LocalAssum (n,_) -> pr_name n
-    | RelDecl.LocalDef (n,b,_) -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")"
-  in
-  let pr_named_decl = NamedDecl.to_rel_decl %> pr_rel_decl in
-  let nc = List.rev (named_context env) in
-  let rc = List.rev (rel_context env) in
-    str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++
-    str "[" ++ pr_sequence pr_rel_decl rc ++ str "]"
-
-let pr_evar_constraints pbs =
-  let pr_evconstr (pbty, env, t1, t2) =
-    let env =
-      (** We currently allow evar instances to refer to anonymous de
-          Bruijn indices, so we protect the error printing code in this
-          case by giving names to every de Bruijn variable in the
-          rel_context of the conversion problem. MS: we should rather
-          stop depending on anonymous variables, they can be used to
-          indicate independency. Also, this depends on a strategy for
-          naming/renaming. *)
-      Namegen.make_all_name_different env
-    in
-    print_env_short env ++ spc () ++ str "|-" ++ spc () ++
-      Hook.get f_print_constr env t1 ++ spc () ++
-      str (match pbty with
-            | Reduction.CONV -> "=="
-            | Reduction.CUMUL -> "<=") ++
-      spc () ++ Hook.get f_print_constr env t2
-  in
-  prlist_with_sep fnl pr_evconstr pbs
-
-let pr_evar_map_gen with_univs pr_evars sigma =
-  let { universes = uvs } = sigma in
-  let evs = if has_no_evar sigma then mt () else pr_evars sigma ++ fnl ()
-  and svs = if with_univs then pr_evar_universe_context uvs else mt ()
-  and cstrs =
-    if List.is_empty sigma.conv_pbs then mt ()
-    else
-    str "CONSTRAINTS:" ++ brk (0, 1) ++
-      pr_evar_constraints sigma.conv_pbs ++ fnl ()
-  and metas =
-    if Metamap.is_empty sigma.metas then mt ()
-    else
-      str "METAS:" ++ brk (0, 1) ++ pr_meta_map sigma.metas
-  in
-  evs ++ svs ++ cstrs ++ metas
-
-let pr_evar_list sigma l =
-  let pr (ev, evi) =
-    h 0 (str (string_of_existential ev) ++
-      str "==" ++ pr_evar_info evi ++
-      (if evi.evar_body == Evar_empty
-       then str " {" ++  pr_existential_key sigma ev ++ str "}"
-       else mt ()))
-  in
-  h 0 (prlist_with_sep fnl pr l)
-
-let pr_evar_by_depth depth sigma = match depth with
-| None ->
-  (* Print all evars *)
-  str"EVARS:"++brk(0,1)++pr_evar_list sigma (to_list sigma)++fnl()
-| Some n ->
-  (* Print all evars *)
-  str"UNDEFINED EVARS:"++
-  (if Int.equal n 0 then mt() else str" (+level "++int n++str" closure):")++
-  brk(0,1)++
-  pr_evar_list sigma (evar_dependency_closure n sigma)++fnl()
-
-let pr_evar_by_filter filter sigma =
-  let defined = Evar.Map.filter filter sigma.defn_evars in
-  let undefined = Evar.Map.filter filter sigma.undf_evars in
-  let prdef =
-    if Evar.Map.is_empty defined then mt ()
-    else str "DEFINED EVARS:" ++ brk (0, 1) ++
-      pr_evar_list sigma (Evar.Map.bindings defined)
-  in
-  let prundef =
-    if Evar.Map.is_empty undefined then mt ()
-    else str "UNDEFINED EVARS:" ++ brk (0, 1) ++
-      pr_evar_list sigma (Evar.Map.bindings undefined)
-  in
-  prdef ++ prundef
-
-let pr_evar_map ?(with_univs=true) depth sigma =
-  pr_evar_map_gen with_univs (fun sigma -> pr_evar_by_depth depth sigma) sigma
-
-let pr_evar_map_filter ?(with_univs=true) filter sigma =
-  pr_evar_map_gen with_univs (fun sigma -> pr_evar_by_filter filter sigma) sigma
-
-let pr_metaset metas =
-  str "[" ++ pr_sequence pr_meta (Metaset.elements metas) ++ str "]"

@@ -105,7 +105,7 @@ let mkFullInd (ind,u) n =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   if nparrec > 0
     then mkApp (mkIndU (ind,u),
-      Array.of_list(Context.Rel.to_extended_list (nparrec+n) lnamesparrec))
+      Array.of_list(Context.Rel.to_extended_list mkRel (nparrec+n) lnamesparrec))
     else mkIndU (ind,u)
 
 let check_bool_is_defined () =
@@ -140,7 +140,7 @@ let build_beq_scheme mode kn =
         | Name s -> Id.of_string ("eq_"^(Id.to_string s))
         | Anonymous -> Id.of_string "eq_A"
     in
-    let ext_rel_list = Context.Rel.to_extended_list 0 lnamesparrec in
+    let ext_rel_list = Context.Rel.to_extended_list mkRel 0 lnamesparrec in
       let lift_cnt = ref 0 in
       let eqs_typ = List.map (fun aa ->
                                 let a = lift !lift_cnt aa in
@@ -179,9 +179,10 @@ let build_beq_scheme mode kn =
     *)
     let compute_A_equality rel_list nlist eqA ndx t =
       let lifti = ndx in
+      let sigma = Evd.empty (** FIXME *) in
       let rec aux c =
 	let (c,a) = Reductionops.whd_betaiota_stack Evd.empty c in
-	match kind_of_term c with
+	match EConstr.kind sigma c with
         | Rel x -> mkRel (x-nlist+ndx), Safe_typing.empty_private_constants
         | Var x ->
           let eid = id_of_string ("eq_"^(string_of_id x)) in
@@ -190,7 +191,7 @@ let build_beq_scheme mode kn =
             with Not_found -> raise (ParameterWithoutEquality (VarRef x))
           in
           mkVar eid, Safe_typing.empty_private_constants
-        | Cast (x,_,_) -> aux (applist (x,a))
+        | Cast (x,_,_) -> aux (EConstr.applist (x,a))
         | App _ -> assert false
         | Ind ((kn',i as ind'),u) (*FIXME: universes *) -> 
             if eq_mind kn kn' then mkRel(eqA-nlist-i+nb_ind-1), Safe_typing.empty_private_constants
@@ -206,7 +207,7 @@ let build_beq_scheme mode kn =
                   in
                 let args =
                   Array.append 
-                    (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
+                    (Array.of_list (List.map (fun x -> lift lifti (EConstr.Unsafe.to_constr x)) a)) eqa in
                 if Int.equal (Array.length args) 0 then eq, eff
                 else mkApp (eq, args), eff
               with Not_found -> raise(EqNotFound (ind', fst ind))
@@ -215,10 +216,11 @@ let build_beq_scheme mode kn =
         | Prod _ -> raise InductiveWithProduct
         | Lambda _-> raise (EqUnknown "abstraction")
         | LetIn _ -> raise (EqUnknown "let-in")
-        | Const kn ->
-	    (match Environ.constant_opt_value_in env kn with
-	      | None -> raise (ParameterWithoutEquality (ConstRef (fst kn)))
-	      | Some c -> aux (applist (c,a)))
+        | Const (kn, u) ->
+            let u = EConstr.EInstance.kind sigma u in
+	    (match Environ.constant_opt_value_in env (kn, u) with
+	      | None -> raise (ParameterWithoutEquality (ConstRef kn))
+	      | Some c -> aux (EConstr.applist (EConstr.of_constr c,a)))
         | Proj _ -> raise (EqUnknown "projection")
         | Construct _ -> raise (EqUnknown "constructor")
         | Case _ -> raise (EqUnknown "match")
@@ -242,7 +244,7 @@ let build_beq_scheme mode kn =
                Cn => match Y with ... end |]  part *)
     let ci = make_case_info env (fst ind) MatchStyle in
     let constrs n = get_constructors env (make_ind_family (ind,
-      Context.Rel.to_extended_list (n+nb_ind-1) mib.mind_params_ctxt)) in
+      Context.Rel.to_extended_list mkRel (n+nb_ind-1) mib.mind_params_ctxt)) in
     let constrsi = constrs (3+nparrec) in
     let n = Array.length constrsi in
     let ar = Array.make n (Lazy.force ff) in
@@ -262,7 +264,7 @@ let build_beq_scheme mode kn =
                                           nparrec
                                           (nparrec+3+2*nb_cstr_args)
                                           (nb_cstr_args+ndx+1)
-                                          cc
+                                          (EConstr.of_constr cc)
                           in
                           eff := Safe_typing.concat_private eff' !eff;
                           Array.set eqs ndx
@@ -324,11 +326,12 @@ let _ = beq_scheme_kind_aux := fun () -> beq_scheme_kind
 (* This function tryies to get the [inductive] between a constr
   the constr should be Ind i or App(Ind i,[|args|])
 *)
-let destruct_ind c =
-    try let u,v =  destApp c in
-          let indc = destInd u in
+let destruct_ind sigma c =
+  let open EConstr in
+    try let u,v =  destApp sigma c in
+          let indc = destInd sigma u in
             indc,v
-    with DestKO -> let indc = destInd c in
+    with DestKO -> let indc = destInd sigma c in
             indc,[||]
 
 (*
@@ -341,11 +344,12 @@ so from Ai we can find the the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
 let do_replace_lb mode lb_scheme_key aavoid narg p q =
+  let open EConstr in
   let avoid = Array.of_list aavoid in
-  let do_arg v offset =
+  let do_arg sigma v offset =
   try
     let x = narg*offset in
-    let s = destVar v in
+    let s = destVar sigma v in
     let n = Array.length avoid in
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
@@ -358,19 +362,20 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
       (* if this happen then the args have to be already declared as a
               Parameter*)
       (
-        let mp,dir,lbl = repr_con (fst (destConst v)) in
+        let mp,dir,lbl = repr_con (fst (destConst sigma v)) in
           mkConst (make_con mp dir (mk_label (
           if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
                        else ((Label.to_string lbl)^"_lb")
         )))
       )
   in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let type_of_pq = Tacmach.New.of_old (fun gl -> pf_unsafe_type_of gl p) gl in
-    let u,v = destruct_ind type_of_pq
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let type_of_pq = Tacmach.New.pf_unsafe_type_of gl p in
+    let sigma = Tacmach.New.project gl in
+    let u,v = destruct_ind sigma type_of_pq
     in let lb_type_of_p =
         try
-          let c, eff = find_scheme ~mode lb_scheme_key (out_punivs u) (*FIXME*) in
+          let c, eff = find_scheme ~mode lb_scheme_key (fst u) (*FIXME*) in
           Proofview.tclUNIT (mkConst c, eff)
         with Not_found ->
           (* spiwack: the format of this error message should probably
@@ -379,17 +384,18 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
 	    (str "Leibniz->boolean:" ++
              str "You have to declare the" ++
 	     str "decidability over " ++
-	     Printer.pr_constr type_of_pq ++
+	     Printer.pr_econstr type_of_pq ++
 	     str " first.")
           in
           Tacticals.New.tclZEROMSG err_msg
        in
        lb_type_of_p >>= fun (lb_type_of_p,eff) ->
+       Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
                           (Array.map (fun x -> x) v)
-                          (Array.map (fun x -> do_arg x 1) v))
-                          (Array.map (fun x -> do_arg x 2) v)
-        in let app =  if Array.equal eq_constr lb_args [||]
+                          (Array.map (fun x -> do_arg sigma x 1) v))
+                          (Array.map (fun x -> do_arg sigma x 2) v)
+        in let app =  if Array.is_empty lb_args
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
            Tacticals.New.tclTHENLIST [
@@ -399,11 +405,12 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
 
 (* used in the bool -> leib side *)
 let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
+  let open EConstr in
   let avoid = Array.of_list aavoid in
-  let do_arg v offset =
+  let do_arg sigma v offset =
   try
     let x = narg*offset in
-    let s = destVar v in
+    let s = destVar sigma v in
     let n = Array.length avoid in
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
@@ -416,7 +423,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
       (* if this happen then the args have to be already declared as a
          Parameter*)
       (
-        let mp,dir,lbl = repr_con (fst (destConst v)) in
+        let mp,dir,lbl = repr_con (fst (destConst sigma v)) in
           mkConst (make_con mp dir (mk_label (
           if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
                        else ((Label.to_string lbl)^"_bl")
@@ -429,9 +436,10 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     | (t1::q1,t2::q2) ->
         Proofview.Goal.enter { enter = begin fun gl ->
         let tt1 = Tacmach.New.pf_unsafe_type_of gl t1 in
-        if eq_constr t1 t2 then aux q1 q2
+        let sigma = Tacmach.New.project gl in
+        if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (
-          let u,v = try  destruct_ind tt1
+          let u,v = try  destruct_ind sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]
           in if eq_ind (fst u) ind
@@ -439,7 +447,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
              else (
                let bl_t1, eff =
                try 
-                 let c, eff = find_scheme bl_scheme_key (out_punivs u) (*FIXME*) in
+                 let c, eff = find_scheme bl_scheme_key (fst u) (*FIXME*) in
                  mkConst c, eff
                with Not_found ->
 		 (* spiwack: the format of this error message should probably
@@ -448,17 +456,17 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
 	                                (str "boolean->Leibniz:" ++
                                          str "You have to declare the" ++
 			   	         str "decidability over " ++
-				         Printer.pr_constr tt1 ++
+				         Printer.pr_econstr tt1 ++
 				         str " first.")
 		 in
 		 user_err err_msg
                in let bl_args =
                         Array.append (Array.append
                           (Array.map (fun x -> x) v)
-                          (Array.map (fun x -> do_arg x 1) v))
-                          (Array.map (fun x -> do_arg x 2) v )
+                          (Array.map (fun x -> do_arg sigma x 1) v))
+                          (Array.map (fun x -> do_arg sigma x 2) v )
                 in
-                let app =  if Array.equal eq_constr bl_args [||]
+                let app =  if Array.is_empty bl_args
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
                 Tacticals.New.tclTHENLIST [
@@ -472,21 +480,22 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     | ([],[]) -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclZEROMSG (str "Both side of the equality must have the same arity.")
   in
-  begin try Proofview.tclUNIT (destApp lft)
+  Proofview.tclEVARMAP >>= fun sigma ->
+  begin try Proofview.tclUNIT (destApp sigma lft)
     with DestKO -> Tacticals.New.tclZEROMSG (str "replace failed.")
   end >>= fun (ind1,ca1) ->
-  begin try Proofview.tclUNIT (destApp rgt)
+  begin try Proofview.tclUNIT (destApp sigma rgt)
     with DestKO -> Tacticals.New.tclZEROMSG (str "replace failed.")
   end >>= fun (ind2,ca2) ->
-  begin try Proofview.tclUNIT (out_punivs (destInd ind1))
+  begin try Proofview.tclUNIT (fst (destInd sigma ind1))
     with DestKO ->
-      begin try Proofview.tclUNIT (fst (fst (destConstruct ind1)))
+      begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind1)))
         with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp1,i1) ->
-  begin try Proofview.tclUNIT (out_punivs (destInd ind2))
+  begin try Proofview.tclUNIT (fst (destInd sigma ind2))
     with DestKO ->
-      begin try Proofview.tclUNIT (fst (fst (destConstruct ind2)))
+      begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind2)))
         with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp2,i2) ->
@@ -518,7 +527,7 @@ let eqI ind l =
     try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
     with Not_found -> user_err ~hdr:"AutoIndDecl.eqI"
       (str "The boolean equality on " ++ pr_mind (fst ind) ++ str " is needed.");
-  in (if Array.equal eq_constr eA [||] then e else mkApp(e,eA)), eff
+  in (if Array.equal Term.eq_constr eA [||] then e else mkApp(e,eA)), eff
 
 (**********************************************************************)
 (* Boolean->Leibniz *)
@@ -573,12 +582,10 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
       in
       let fresh_id s gl =
-        Tacmach.New.of_old begin fun gsig ->
-          let fresh = fresh_id (!avoid) s gsig in
+          let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
           avoid := fresh::(!avoid); fresh
-        end gl
       in
-      Proofview.Goal.nf_enter { enter = begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
       let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
       let freshn = fresh_id (Id.of_string "x") gl in
       let freshm = fresh_id (Id.of_string "y") gl in
@@ -586,9 +593,9 @@ let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
   (* try with *)
       Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
                      intro_using freshn ;
-                     induct_on (mkVar freshn);
+                     induct_on (EConstr.mkVar freshn);
                      intro_using freshm;
-                     destruct_on (mkVar freshm);
+                     destruct_on (EConstr.mkVar freshm);
                      intro_using freshz;
                      intros;
                      Tacticals.New.tclTRY (
@@ -600,10 +607,10 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
                     Tacticals.New.tclREPEAT (
                       Tacticals.New.tclTHENLIST [
-                         Simple.apply_in freshz (andb_prop());
-                         Proofview.Goal.nf_enter { enter = begin fun gl ->
+                         Simple.apply_in freshz (EConstr.of_constr (andb_prop()));
+                         Proofview.Goal.enter { enter = begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
-                            destruct_on_as (mkVar freshz)
+                            destruct_on_as (EConstr.mkVar freshz)
                                   (IntroOrPattern [[dl,IntroNaming (IntroIdentifier fresht);
                                     dl,IntroNaming (IntroIdentifier freshz)]])
                          end }
@@ -612,11 +619,12 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
 *)
-                      Proofview.Goal.nf_enter { enter = begin fun gls ->
-                        let gl = Proofview.Goal.concl gls in
-                        match (kind_of_term gl) with
+                      Proofview.Goal.enter { enter = begin fun gl ->
+                        let concl = Proofview.Goal.concl gl in
+                        let sigma = Tacmach.New.project gl in
+                        match EConstr.kind sigma concl with
                         | App (c,ca) -> (
-                          match (kind_of_term c) with
+                          match EConstr.kind sigma c with
                           | Ind (indeq, u) ->
                               if eq_gr (IndRef indeq) Coqlib.glob_eq
                               then
@@ -656,8 +664,9 @@ let make_bl_scheme mode mind =
   let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
   let ctx = Evd.make_evar_universe_context (Global.env ()) None in
   let side_eff = side_effect_of_mode mode in
+  let bl_goal = EConstr.of_constr bl_goal in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx bl_goal
-    (compute_bl_tact mode (!bl_scheme_kind_aux()) (ind, Univ.Instance.empty) lnamesparrec nparrec)
+    (compute_bl_tact mode (!bl_scheme_kind_aux()) (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx), eff
 
@@ -709,6 +718,7 @@ let compute_lb_goal ind lnamesparrec nparrec =
         ))), eff
 
 let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
+  let open EConstr in
   let list_id = list_id lnamesparrec in
     let avoid = ref [] in
       let first_intros =
@@ -717,12 +727,10 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,_,slb) -> slb) list_id )
       in
       let fresh_id s gl =
-        Tacmach.New.of_old begin fun gsig ->
-          let fresh = fresh_id (!avoid) s gsig in
+          let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
           avoid := fresh::(!avoid); fresh
-        end gl
       in
-      Proofview.Goal.nf_enter { enter = begin fun gl ->
+      Proofview.Goal.enter { enter = begin fun gl ->
       let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
       let freshn = fresh_id (Id.of_string "x") gl in
       let freshm = fresh_id (Id.of_string "y") gl in
@@ -730,26 +738,27 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
   (* try with *)
       Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
                      intro_using freshn ;
-                     induct_on (mkVar freshn);
+                     induct_on (EConstr.mkVar freshn);
                      intro_using freshm;
-                     destruct_on (mkVar freshm);
+                     destruct_on (EConstr.mkVar freshm);
                      intro_using freshz;
                      intros;
                      Tacticals.New.tclTRY (
                       Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     Equality.inj None false None (mkVar freshz,NoBindings);
+                     Equality.inj None false None (EConstr.mkVar freshz,NoBindings);
 		     intros; simpl_in_concl;
                      Auto.default_auto;
                      Tacticals.New.tclREPEAT (
-                      Tacticals.New.tclTHENLIST [apply (andb_true_intro());
+                      Tacticals.New.tclTHENLIST [apply (EConstr.of_constr (andb_true_intro()));
                                   simplest_split ;Auto.default_auto ]
                       );
-                      Proofview.Goal.nf_enter { enter = begin fun gls ->
-                        let gl = Proofview.Goal.concl gls in
+                      Proofview.Goal.enter { enter = begin fun gls ->
+                        let concl = Proofview.Goal.concl gls in
+                        let sigma = Tacmach.New.project gl in
                         (* assume the goal to be eq (eq_type ...) = true *)
-                        match (kind_of_term gl) with
-                        | App(c,ca) -> (match (kind_of_term ca.(1)) with
+                        match EConstr.kind sigma concl with
+                        | App(c,ca) -> (match (EConstr.kind sigma ca.(1)) with
                           | App(c',ca') ->
                               let n = Array.length ca' in
                               do_replace_lb mode lb_scheme_key
@@ -780,6 +789,7 @@ let make_lb_scheme mode mind =
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
   let ctx = Evd.make_evar_universe_context (Global.env ()) None in
   let side_eff = side_effect_of_mode mode in
+  let lb_goal = EConstr.of_constr lb_goal in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx lb_goal
     (compute_lb_tact mode (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
   in
@@ -865,12 +875,10 @@ let compute_dec_tact ind lnamesparrec nparrec =
       ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
   let fresh_id s gl =
-    Tacmach.New.of_old begin fun gsig ->
-      let fresh = fresh_id (!avoid) s gsig in
+      let fresh = fresh_id_in_env (!avoid) s (Proofview.Goal.env gl) in
       avoid := fresh::(!avoid); fresh
-    end gl
   in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let fresh_first_intros = List.map (fun id -> fresh_id id gl) first_intros in
   let freshn = fresh_id (Id.of_string "x") gl in
   let freshm = fresh_id (Id.of_string "y") gl in
@@ -896,24 +904,24 @@ let compute_dec_tact ind lnamesparrec nparrec =
         intros_using fresh_first_intros;
         intros_using [freshn;freshm];
 	(*we do this so we don't have to prove the same goal twice *)
-        assert_by (Name freshH) (
+        assert_by (Name freshH) (EConstr.of_constr (
           mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
-	)
-	  (Tacticals.New.tclTHEN (destruct_on eqbnm) Auto.default_auto);
+	))
+	  (Tacticals.New.tclTHEN (destruct_on (EConstr.of_constr eqbnm)) Auto.default_auto);
 
-        Proofview.Goal.nf_enter { enter = begin fun gl ->
+        Proofview.Goal.enter { enter = begin fun gl ->
           let freshH2 = fresh_id (Id.of_string "H") gl in
-	  Tacticals.New.tclTHENS (destruct_on_using (mkVar freshH) freshH2) [
+	  Tacticals.New.tclTHENS (destruct_on_using (EConstr.mkVar freshH) freshH2) [
 	    (* left *)
 	    Tacticals.New.tclTHENLIST [
 	      simplest_left;
-              apply (mkApp(blI,Array.map(fun x->mkVar x) xargs));
+              apply (EConstr.of_constr (mkApp(blI,Array.map(fun x->mkVar x) xargs)));
               Auto.default_auto
             ]
             ;
 
 	    (*right *)
-            Proofview.Goal.nf_enter { enter = begin fun gl ->
+            Proofview.Goal.enter { enter = begin fun gl ->
             let freshH3 = fresh_id (Id.of_string "H") gl in
             Tacticals.New.tclTHENLIST [
 	      simplest_right ;
@@ -921,15 +929,15 @@ let compute_dec_tact ind lnamesparrec nparrec =
               intro;
               Equality.subst_all ();
               assert_by (Name freshH3)
-		(mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|]))
+		(EConstr.of_constr (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|])))
 		(Tacticals.New.tclTHENLIST [
-		  apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs));
+		  apply (EConstr.of_constr (mkApp(lbI,Array.map (fun x->mkVar x) xargs)));
                   Auto.default_auto
 		]);
 	      Equality.general_rewrite_bindings_in true
 	                      Locus.AllOccurrences true false
                               (List.hd !avoid)
-                              ((mkVar (List.hd (List.tl !avoid))),
+                              ((EConstr.mkVar (List.hd (List.tl !avoid))),
                                 NoBindings
                               )
                               true;
@@ -954,7 +962,7 @@ let make_eq_decidability mode mind =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let side_eff = side_effect_of_mode mode in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx
-    (compute_dec_goal (ind,u) lnamesparrec nparrec)
+    (EConstr.of_constr (compute_dec_goal (ind,u) lnamesparrec nparrec))
     (compute_dec_tact ind lnamesparrec nparrec)
   in
   ([|ans|], ctx), Safe_typing.empty_private_constants

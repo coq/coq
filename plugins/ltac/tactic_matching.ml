@@ -23,8 +23,8 @@ module NamedDecl = Context.Named.Declaration
     substitution mapping corresponding to matched hypotheses. *)
 type 'a t = {
   subst : Constr_matching.bound_ident_map * Pattern.extended_patvar_map ;
-  context : Term.constr Id.Map.t;
-  terms : Term.constr Id.Map.t;
+  context : EConstr.constr Id.Map.t;
+  terms : EConstr.constr Id.Map.t;
   lhs : 'a;
 }
 
@@ -285,7 +285,7 @@ module PatternMatching (E:StaticEnvironment) = struct
     let id = NamedDecl.get_id decl in
     let refresh = is_local_def decl in
     pattern_match_term refresh pat (NamedDecl.get_type decl) () <*>
-    put_terms (id_map_try_add_name hypname (Term.mkVar id) empty_term_subst) <*>
+    put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
     return id
 
   (** [hyp_match_type hypname bodypat typepat hyps] matches a single
@@ -297,7 +297,7 @@ module PatternMatching (E:StaticEnvironment) = struct
       | LocalDef (id,body,hyp) ->
           pattern_match_term false bodypat body () <*>
           pattern_match_term true typepat hyp () <*>
-          put_terms (id_map_try_add_name hypname (Term.mkVar id) empty_term_subst) <*>
+          put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
           return id
       | LocalAssum (id,hyp) -> fail
 

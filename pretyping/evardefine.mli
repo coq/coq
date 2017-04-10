@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open EConstr
 open Evd
 open Environ
 
@@ -42,5 +43,5 @@ val define_evar_as_sort : env -> evar_map -> existential -> evar_map * sorts
 
 (** {6 debug pretty-printer:} *)
 
-val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
+val pr_tycon : env -> evar_map -> type_constraint -> Pp.std_ppcmds
 

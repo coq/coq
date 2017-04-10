@@ -21,7 +21,13 @@ exception UFAIL of constr*constr
    to the equation set. Raises UFAIL with a pair of  terms
 *)
 
+let strip_outer_cast t =
+  EConstr.Unsafe.to_constr (strip_outer_cast Evd.empty (EConstr.of_constr t)) (** FIXME *)
+
+let pop t = Vars.lift (-1) t
+
 let unif t1 t2=
+  let evd = Evd.empty in (** FIXME *)
   let bige=Queue.create ()
   and sigma=ref [] in
   let bind i t=
@@ -38,8 +44,8 @@ let unif t1 t2=
     Queue.add (t1,t2) bige;
     try while true do
       let t1,t2=Queue.take bige in
-      let nt1=head_reduce (whd_betaiotazeta Evd.empty t1)
-      and nt2=head_reduce (whd_betaiotazeta Evd.empty t2) in
+      let nt1=head_reduce (EConstr.Unsafe.to_constr (whd_betaiotazeta evd (EConstr.of_constr t1)))
+      and nt2=head_reduce (EConstr.Unsafe.to_constr (whd_betaiotazeta evd (EConstr.of_constr t2))) in
 	match (kind_of_term nt1),(kind_of_term nt2) with
 	    Meta i,Meta j->
 	      if not (Int.equal i j) then
@@ -47,13 +53,13 @@ let unif t1 t2=
 		else bind i nt2
 	  | Meta i,_ ->
 	      let t=subst_meta !sigma nt2 in
-		if Int.Set.is_empty (free_rels t) &&
-		  not (occur_term (mkMeta i) t) then
+		if Int.Set.is_empty (free_rels evd (EConstr.of_constr t)) &&
+		  not (occur_term evd (EConstr.mkMeta i) (EConstr.of_constr t)) then
 		    bind i t else raise (UFAIL(nt1,nt2))
 	  | _,Meta i ->
 	      let t=subst_meta !sigma nt1 in
-		if Int.Set.is_empty (free_rels t) &&
-		  not (occur_term (mkMeta i) t) then
+		if Int.Set.is_empty (free_rels evd (EConstr.of_constr t)) &&
+		  not (occur_term evd (EConstr.mkMeta i) (EConstr.of_constr t)) then
 		    bind i t else raise (UFAIL(nt1,nt2))
 	  | Cast(_,_,_),_->Queue.add (strip_outer_cast nt1,nt2) bige
  	  | _,Cast(_,_,_)->Queue.add (nt1,strip_outer_cast nt2) bige

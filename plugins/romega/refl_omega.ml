@@ -740,6 +740,7 @@ and oproposition_of_constr env ((negated,depends,origin,path) as ctxt) gl c =
 
 let reify_gl env gl =
   let concl = Tacmach.pf_concl gl in
+  let concl = EConstr.Unsafe.to_constr concl in
   let t_concl =
     Pnot (oproposition_of_constr env (true,[],id_concl,[O_mono]) gl concl) in
   if !debug then begin
@@ -748,6 +749,7 @@ let reify_gl env gl =
   end;
   let rec loop = function
       (i,t) :: lhyps ->
+        let t = EConstr.Unsafe.to_constr t in
 	let t' = oproposition_of_constr env (false,[],i,[]) gl t in
 	if !debug then begin
 	  Printf.printf "  %s: " (Names.Id.to_string i);
@@ -1222,7 +1224,7 @@ let resolution env full_reified_goal systems_list =
   (* variables a introduire *)
   let to_introduce = add_stated_equations env solution_tree in
   let stated_vars =  List.map (fun (v,_,_,_) -> v) to_introduce in
-  let l_generalize_arg = List.map (fun (_,t,_,_) -> t) to_introduce in
+  let l_generalize_arg = List.map (fun (_,t,_,_) -> EConstr.of_constr t) to_introduce in
   let hyp_stated_vars = List.map (fun (_,_,_,id) -> CCEqua id) to_introduce in
   (* L'environnement de base se construit en deux morceaux :
      - les variables des équations utiles (et de la conclusion)
@@ -1258,6 +1260,7 @@ let resolution env full_reified_goal systems_list =
   let reified =
     app coq_interp_sequent
        [| reified_concl;env_props_reified;env_terms_reified;reified_goal|] in
+  let reified = EConstr.of_constr reified in
   let normalize_equation e =
     let rec loop = function
 	[] -> app (if e.e_negated then coq_p_invert else coq_p_step)
@@ -1281,9 +1284,9 @@ let resolution env full_reified_goal systems_list =
   let decompose_tactic = decompose_tree env context solution_tree in
 
   Proofview.V82.of_tactic (Tactics.generalize
-    (l_generalize_arg @ List.map Term.mkVar (List.tl l_hyps))) >>
+    (l_generalize_arg @ List.map EConstr.mkVar (List.tl l_hyps))) >>
   Proofview.V82.of_tactic (Tactics.change_concl reified) >>
-  Proofview.V82.of_tactic (Tactics.apply (app coq_do_omega [|decompose_tactic; normalization_trace|])) >>
+  Proofview.V82.of_tactic (Tactics.apply (EConstr.of_constr (app coq_do_omega [|decompose_tactic; normalization_trace|]))) >>
   show_goal >>
   Proofview.V82.of_tactic (Tactics.normalise_vm_in_concl) >>
   (*i Alternatives to the previous line:
@@ -1292,7 +1295,7 @@ let resolution env full_reified_goal systems_list =
    - Skip the conversion check and rely directly on the QED:
       Tacmach.convert_concl_no_check (Lazy.force coq_True) Term.VMcast >>
   i*)
-  Proofview.V82.of_tactic (Tactics.apply (Lazy.force coq_I))
+  Proofview.V82.of_tactic (Tactics.apply (EConstr.of_constr (Lazy.force coq_I)))
 
 let total_reflexive_omega_tactic gl =
   Coqlib.check_required_library ["Coq";"romega";"ROmega"];

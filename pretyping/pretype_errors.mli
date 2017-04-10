@@ -9,6 +9,7 @@
 open Names
 open Term
 open Environ
+open EConstr
 open Type_errors
 
 (** {6 The type of errors raised by the pretyper } *)
@@ -31,6 +32,8 @@ type position = (Id.t * Locus.hyp_location_flag) option
 type position_reporting = (position * int) * constr
 
 type subterm_unification_error = bool * position_reporting * position_reporting * (constr * constr * unification_error) option
+
+type type_error = (constr, types) ptype_error
 
 type pretype_error =
   (** Old Case *)
@@ -68,13 +71,16 @@ val error_actual_type :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr ->
       unification_error -> 'b
 
+val error_actual_type_core :
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr -> 'b
+
 val error_cant_apply_not_functional :
   ?loc:Loc.t -> env -> Evd.evar_map ->
-      unsafe_judgment -> unsafe_judgment list -> 'b
+      unsafe_judgment -> unsafe_judgment array -> 'b
 
 val error_cant_apply_bad_type :
   ?loc:Loc.t -> env -> Evd.evar_map -> int * constr * constr ->
-      unsafe_judgment -> unsafe_judgment list -> 'b
+      unsafe_judgment -> unsafe_judgment array -> 'b
 
 val error_case_not_inductive :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
@@ -91,7 +97,15 @@ val error_ill_typed_rec_body :
   ?loc:Loc.t -> env -> Evd.evar_map ->
       int -> Name.t array -> unsafe_judgment array -> types array -> 'b
 
+val error_elim_arity :
+  ?loc:Loc.t -> env -> Evd.evar_map ->
+      pinductive -> sorts_family list -> constr ->
+      unsafe_judgment -> (sorts_family * sorts_family * arity_error) option -> 'b
+
 val error_not_a_type :
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
+
+val error_assumption :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
 
 val error_cannot_coerce : env -> Evd.evar_map -> constr * constr -> 'b

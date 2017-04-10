@@ -344,18 +344,19 @@ struct
     ) (pr_dconstr pr_term_pattern) p*)
 
   let search_pat cpat dpat dn =
-    let whole_c = cpat in
+    let whole_c = EConstr.of_constr cpat in
     (* if we are at the root, add an empty context *)
     let dpat = under_prod (empty_ctx dpat) in
     TDnet.Idset.fold
       (fun id acc ->
 	 let c_id = Opt.reduce (Ident.constr_of id) in
+	 let c_id = EConstr.of_constr c_id in
 	 let (ctx,wc) =
-	   try Termops.align_prod_letin whole_c c_id
+	   try Termops.align_prod_letin Evd.empty whole_c c_id (** FIXME *)
 	   with Invalid_argument _ -> [],c_id in
 	 let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
 	 try
-          let _ = Termops.filtering ctx Reduction.CUMUL wc whole_c in
+          let _ = Termops.filtering Evd.empty ctx Reduction.CUMUL wc whole_c in
           id :: acc
 	 with Termops.CannotFilter -> (* msgnl(str"recon "++Termops.print_constr_env (Global.env()) wc); *) acc
       ) (TDnet.find_match dpat dn) []

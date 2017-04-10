@@ -114,11 +114,11 @@ let inKeys : key_obj -> obj =
 let declare_equiv_keys ref ref' =
   Lib.add_anonymous_leaf (inKeys (ref,ref'))
 
-let constr_key c =
+let constr_key kind c =
   let open Globnames in 
   try 
     let rec aux k = 
-      match kind_of_term k with
+      match kind k with
       | Const (c, _) -> KGlob (ConstRef c)
       | Ind (i, u) -> KGlob (IndRef i)
       | Construct (c,u) -> KGlob (ConstructRef c)

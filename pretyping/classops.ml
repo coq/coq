@@ -51,6 +51,7 @@ type coe_info_typ = {
   coe_param : int }
 
 let coe_info_typ_equal c1 c2 =
+  let eq_constr c1 c2 = Termops.eq_constr Evd.empty (EConstr.of_constr c1) (EConstr.of_constr c2) in
   eq_constr c1.coe_value c2.coe_value &&
     eq_constr c1.coe_type c2.coe_type &&
     c1.coe_local == c2.coe_local &&
@@ -192,15 +193,16 @@ let coercion_exists coe = CoeTypMap.mem coe !coercion_tab
 (* find_class_type : evar_map -> constr -> cl_typ * universe_list * constr list *)
 
 let find_class_type sigma t =
+  let open EConstr in
   let t', args = Reductionops.whd_betaiotazeta_stack sigma t in
-  match kind_of_term t' with
-    | Var id -> CL_SECVAR id, Univ.Instance.empty, args
+  match EConstr.kind sigma t' with
+    | Var id -> CL_SECVAR id, EInstance.empty, args
     | Const (sp,u) -> CL_CONST sp, u, args
     | Proj (p, c) when not (Projection.unfolded p) ->
-      CL_PROJ (Projection.constant p), Univ.Instance.empty, c :: args
+      CL_PROJ (Projection.constant p), EInstance.empty, (c :: args)
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
-    | Prod (_,_,_) -> CL_FUN, Univ.Instance.empty, []
-    | Sort _ -> CL_SORT, Univ.Instance.empty, []
+    | Prod (_,_,_) -> CL_FUN, EInstance.empty, []
+    | Sort _ -> CL_SORT, EInstance.empty, []
     |  _ -> raise Not_found
 
 
@@ -214,7 +216,7 @@ let subst_cl_typ subst ct = match ct with
   | CL_CONST c ->
       let c',t = subst_con_kn subst c in
 	if c' == c then ct else
-         pi1 (find_class_type Evd.empty t)
+         pi1 (find_class_type Evd.empty (EConstr.of_constr t))
   | CL_IND i ->
       let i' = subst_ind subst i in
 	if i' == i then ct else CL_IND i'
@@ -297,9 +299,9 @@ let lookup_path_to_sort_from env sigma s =
 
 let get_coercion_constructor env coe =
   let c, _ =
-    Reductionops.whd_all_stack env Evd.empty coe.coe_value
+    Reductionops.whd_all_stack env Evd.empty (EConstr.of_constr coe.coe_value)
   in
-  match kind_of_term c with
+  match EConstr.kind Evd.empty (** FIXME *) c with
   | Construct (cstr,u) ->
       (cstr, Inductiveops.constructor_nrealargs cstr -1)
   | _ ->
@@ -317,7 +319,7 @@ let coercion_value { coe_value = c; coe_type = t; coe_context = ctx;
   let subst, ctx = Universes.fresh_universe_context_set_instance ctx in
   let c' = Vars.subst_univs_level_constr subst c 
   and t' = Vars.subst_univs_level_constr subst t in
-    (make_judge c' t', b, b'), ctx
+    (make_judge (EConstr.of_constr c') (EConstr.of_constr t'), b, b'), ctx
 
 (* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)
@@ -403,7 +405,7 @@ type coercion = {
 
 let reference_arity_length ref =
   let t = Universes.unsafe_type_of_global ref in
-  List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty t))
+  List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty (EConstr.of_constr t))) (** FIXME *)
 
 let projection_arity_length p =
   let len = reference_arity_length (ConstRef p) in
@@ -440,7 +442,8 @@ let cache_coercion (_, c) =
   let is, _ = class_info c.coercion_source in
   let it, _ = class_info c.coercion_target in
   let value, ctx = Universes.fresh_global_instance (Global.env()) c.coercion_type in
-  let typ = Retyping.get_type_of (Global.env ()) Evd.empty value in
+  let typ = Retyping.get_type_of (Global.env ()) Evd.empty (EConstr.of_constr value) in
+  let typ = EConstr.Unsafe.to_constr typ in
   let xf =
     { coe_value = value;
       coe_type = typ;

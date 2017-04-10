@@ -10,6 +10,7 @@
 open Names
 open Term
 open Evd
+open EConstr
 open Environ
 open Ind_tables
 open Locus

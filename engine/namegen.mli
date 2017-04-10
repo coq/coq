@@ -11,6 +11,8 @@
 open Names
 open Term
 open Environ
+open Evd
+open EConstr
 
 (*********************************************************************
    Conventional default names *)
@@ -26,27 +28,27 @@ val default_dependent_ident : Id.t     (* "x" *)
 
 val lowercase_first_char : Id.t -> string
 val sort_hdchar : sorts -> string
-val hdchar : env -> types -> string
-val id_of_name_using_hdchar : env -> types -> Name.t -> Id.t
-val named_hd : env -> types -> Name.t -> Name.t
-val head_name : types -> Id.t option
+val hdchar : env -> evar_map -> types -> string
+val id_of_name_using_hdchar : env -> evar_map -> types -> Name.t -> Id.t
+val named_hd : env -> evar_map -> types -> Name.t -> Name.t
+val head_name : evar_map -> types -> Id.t option
 
-val mkProd_name : env -> Name.t * types * types -> types
-val mkLambda_name : env -> Name.t * types * constr -> constr
+val mkProd_name : env -> evar_map -> Name.t * types * types -> types
+val mkLambda_name : env -> evar_map -> Name.t * types * constr -> constr
 
 (** Deprecated synonyms of [mkProd_name] and [mkLambda_name] *)
-val prod_name : env -> Name.t * types * types -> types
-val lambda_name : env -> Name.t * types * constr -> constr
+val prod_name : env -> evar_map -> Name.t * types * types -> types
+val lambda_name : env -> evar_map -> Name.t * types * constr -> constr
 
-val prod_create : env -> types * types -> constr
-val lambda_create : env -> types * constr -> constr
-val name_assumption : env -> Context.Rel.Declaration.t -> Context.Rel.Declaration.t
-val name_context : env -> Context.Rel.t -> Context.Rel.t
+val prod_create : env -> evar_map -> types * types -> constr
+val lambda_create : env -> evar_map -> types * constr -> constr
+val name_assumption : env -> evar_map -> rel_declaration -> rel_declaration
+val name_context : env -> evar_map -> rel_context -> rel_context
 
-val mkProd_or_LetIn_name : env -> types -> Context.Rel.Declaration.t -> types
-val mkLambda_or_LetIn_name : env -> constr -> Context.Rel.Declaration.t -> constr
-val it_mkProd_or_LetIn_name   : env -> types -> Context.Rel.t -> types
-val it_mkLambda_or_LetIn_name : env -> constr -> Context.Rel.t -> constr
+val mkProd_or_LetIn_name : env -> evar_map -> types -> rel_declaration -> types
+val mkLambda_or_LetIn_name : env -> evar_map -> constr -> rel_declaration -> constr
+val it_mkProd_or_LetIn_name   : env -> evar_map -> types -> rel_context -> types
+val it_mkLambda_or_LetIn_name : env -> evar_map -> constr -> rel_context -> constr
 
 (*********************************************************************
    Fresh names *)
@@ -98,16 +100,16 @@ type renaming_flags =
   | RenamingForGoal (** avoid all globals (as in intro) *)
   | RenamingElsewhereFor of (Name.t list * constr)
 
-val make_all_name_different : env -> env
+val make_all_name_different : env -> evar_map -> env
 
 val compute_displayed_name_in :
-  renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
+  evar_map -> renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
 val compute_and_force_displayed_name_in :
-  renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
+  evar_map -> renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
 val compute_displayed_let_name_in :
-  renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
+  evar_map -> renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
 val rename_bound_vars_as_displayed :
-  Id.t list -> Name.t list -> types -> types
+  evar_map -> Id.t list -> Name.t list -> types -> types
 
 (**********************************************************************)
 (* Naming strategy for arguments in Prop when eliminating inductive types *)

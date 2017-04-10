@@ -67,19 +67,18 @@ let l_E_Or = lazy (constant "E_Or")
 let l_D_Or = lazy (constant "D_Or")
 
 
-let special_whd gl=
-  let infos=CClosure.create_clos_infos CClosure.all (pf_env gl) in
-    (fun t -> CClosure.whd_val infos (CClosure.inject t))
+let special_whd gl c =
+  Reductionops.clos_whd_flags CClosure.all (pf_env gl) (Tacmach.project gl) c
 
-let special_nf gl=
-  let infos=CClosure.create_clos_infos CClosure.betaiotazeta (pf_env gl) in
-    (fun t -> CClosure.norm_val infos (CClosure.inject t))
+let special_nf gl c =
+  Reductionops.clos_norm_flags CClosure.betaiotazeta (pf_env gl) (Tacmach.project gl) c
 
 type atom_env=
     {mutable next:int;
      mutable env:(constr*int) list}
 
 let make_atom atom_env term=
+  let term = EConstr.Unsafe.to_constr term in
   try
     let (_,i)=
       List.find (fun (t,_)-> eq_constr term t) atom_env.env
@@ -91,13 +90,17 @@ let make_atom atom_env term=
       Atom i
 
 let rec make_form atom_env gls term =
+  let open EConstr in
+  let open Vars in
   let normalize=special_nf gls in
   let cciterm=special_whd gls term  in
-    match kind_of_term cciterm with
+  let sigma = Tacmach.project gls in
+  let inj = EConstr.Unsafe.to_constr in
+    match EConstr.kind sigma cciterm with
 	Prod(_,a,b) ->
-	  if not (Termops.dependent (mkRel 1) b) &&
+	  if noccurn sigma 1 b &&
 	    Retyping.get_sort_family_of
-	    (pf_env gls) (Tacmach.project gls) a == InProp
+	    (pf_env gls) sigma a == InProp
 	  then
 	    let fa=make_form atom_env gls a in
 	    let fb=make_form atom_env gls b in
@@ -114,7 +117,7 @@ let rec make_form atom_env gls term =
       | App(hd,argv) when Int.equal (Array.length argv) 2 ->
 	  begin
 	    try
-	      let ind, _ = destInd hd in
+	      let ind, _ = destInd sigma hd in
 		if Names.eq_ind ind (fst (Lazy.force li_and)) then
 		  let fa=make_form atom_env gls argv.(0) in
 		  let fb=make_form atom_env gls argv.(1) in
@@ -135,7 +138,7 @@ let rec make_hyps atom_env gls lenv = function
   | LocalAssum (id,typ)::rest ->
       let hrec=
 	make_hyps atom_env gls (typ::lenv) rest in
-	if List.exists (Termops.dependent (mkVar id)) lenv ||
+	if List.exists (fun c -> Termops.local_occur_var Evd.empty (** FIXME *) id c) lenv ||
 	  (Retyping.get_sort_family_of
 	     (pf_env gls) (Tacmach.project gls) typ != InProp)
 	then
@@ -313,6 +316,7 @@ let rtauto_tac gls=
 	     str "Giving proof term to Coq ... ")
     end in
   let tac_start_time = System.get_time () in
+  let term = EConstr.of_constr term in
   let result=
     if !check then
       Proofview.V82.of_tactic (Tactics.exact_check term) gls

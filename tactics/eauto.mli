@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open Proof_type
 open Hints
 open Tactypes

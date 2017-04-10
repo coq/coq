@@ -43,7 +43,7 @@ type refiner_error =
   | CannotApply of constr * constr
   | NotWellTyped of constr
   | NonLinearProof of constr
-  | MetaInType of constr
+  | MetaInType of EConstr.constr
 
   (*i Errors raised by the tactics i*)
   | IntroNeedsProduct
@@ -55,7 +55,7 @@ exception RefinerError of refiner_error
 val catchable_exception : exn -> bool
 
 val convert_hyp : bool -> Environ.named_context_val -> evar_map ->
-  Context.Named.Declaration.t -> Environ.named_context_val
+  EConstr.named_declaration -> Environ.named_context_val
 
-val move_hyp_in_named_context : Id.t -> Id.t Misctypes.move_location ->
+val move_hyp_in_named_context : Evd.evar_map -> Id.t -> Id.t Misctypes.move_location ->
   Environ.named_context_val -> Environ.named_context_val

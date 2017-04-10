@@ -11,6 +11,7 @@ open CErrors
 open Util
 open Names
 open Term
+open EConstr
 open Termops
 open Declarations
 open Tacmach
@@ -83,7 +84,7 @@ let nLastDecls n gl =
   try List.firstn n (pf_hyps gl)
   with Failure _ -> error "Not enough hypotheses in the goal."
 
-let nLastHypsId n gl = List.map NamedDecl.get_id (nLastDecls n gl)
+let nLastHypsId n gl = List.map (NamedDecl.get_id) (nLastDecls n gl)
 let nLastHyps n gl   = List.map mkVar (nLastHypsId n gl)
 
 let onNthDecl m tac gl  = tac (nthDecl m gl) gl
@@ -157,7 +158,7 @@ type branch_args = {
 
 type branch_assumptions = {
   ba        : branch_args;       (* the branch args *)
-  assums    : Context.Named.t}   (* the list of assumptions introduced *)
+  assums    : named_context}   (* the list of assumptions introduced *)
 
 open Misctypes
 
@@ -226,6 +227,7 @@ let compute_induction_names = compute_induction_names_gen true
 
 (* Compute the let-in signature of case analysis or standard induction scheme *)
 let compute_constructor_signatures isrec ((_,k as ity),u) =
+  let open Term in
   let rec analrec c recargs =
     match kind_of_term c, recargs with
     | Prod (_,_,c), recarg::rest ->
@@ -263,40 +265,7 @@ let pf_with_evars glsev k gls =
     tclTHEN (Refiner.tclEVARS evd) (k a) gls
 
 let pf_constr_of_global gr k =
-  pf_with_evars (fun gls -> pf_apply Evd.fresh_global gls gr) k
-
-(* computing the case/elim combinators *)
-
-let gl_make_elim ind gl =
-  let gr = Indrec.lookup_eliminator (fst ind) (elimination_sort_of_goal gl) in
-    pf_apply Evd.fresh_global gl gr
-
-let gl_make_case_dep ind gl =
-  let sigma = Sigma.Unsafe.of_evar_map (Tacmach.project gl) in
-  let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind true
-    (elimination_sort_of_goal gl)
-  in
-  (Sigma.to_evar_map sigma, r)
-
-let gl_make_case_nodep ind gl =
-  let sigma = Sigma.Unsafe.of_evar_map (Tacmach.project gl) in
-  let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma ind false
-    (elimination_sort_of_goal gl)
-  in
-  (Sigma.to_evar_map sigma, r)
-
-let make_elim_branch_assumptions ba gl =
-  let assums =
-    try List.rev (List.firstn ba.nassums (pf_hyps gl))
-    with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions") in
-  { ba = ba; assums = assums }
-
-let elim_on_ba tac ba gl = tac (make_elim_branch_assumptions ba gl) gl
-
-let make_case_branch_assumptions = make_elim_branch_assumptions
-
-let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl
-
+  pf_with_evars (fun gls -> on_snd EConstr.of_constr (pf_apply Evd.fresh_global gls gr)) k
 
 (** Tacticals of Ltac defined directly in term of Proofview *)
 module New = struct
@@ -544,7 +513,7 @@ module New = struct
         Proofview.Unsafe.tclEVARS sigma <*> tac >>= check_evars_if
 
   let tclDELAYEDWITHHOLES check x tac =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
       let Sigma (x, sigma, _) = x.delayed env sigma in
@@ -588,13 +557,13 @@ module New = struct
   let onLastHyp   = onNthHyp 1
 
   let onNthDecl m tac =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
       Proofview.tclUNIT (nthDecl m gl) >>= tac
     end }
   let onLastDecl  = onNthDecl 1
 
   let ifOnHyp pred tac1 tac2 id =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
     let typ = Tacmach.New.pf_get_hyp_typ id gl in
     if pred (id,typ) then
       tac1 id
@@ -602,7 +571,7 @@ module New = struct
       tac2 id
     end }
 
-  let onHyps find tac = Proofview.Goal.nf_enter { enter = begin fun gl -> tac (find.enter gl) end }
+  let onHyps find tac = Proofview.Goal.enter { enter = begin fun gl -> tac (find.enter gl) end }
 
   let afterHyp id tac =
     Proofview.Goal.enter { enter = begin fun gl ->
@@ -635,25 +604,26 @@ module New = struct
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
       isrec allnames tac predicate ind (c, t) =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
+    Proofview.Goal.enter { enter = begin fun gl ->
+    let sigma, elim = (mk_elim ind).enter gl in
+    let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
+    (Proofview.Goal.enter { enter = begin fun gl ->
+    let indclause = mk_clenv_from gl (c, t) in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_unsafe_type_of gl elim)) gl in
+    let elimclause = mk_clenv_from gl (elim,Tacmach.New.pf_unsafe_type_of gl elim)  in
     let indmv =
-      match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
+      match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
       | _         -> anomaly (str"elimination")
     in
     let pmv =
-      let p, _ = decompose_app elimclause.templtyp.Evd.rebus in
-      match kind_of_term p with
+      let p, _ = decompose_app elimclause.evd elimclause.templtyp.Evd.rebus in
+      match EConstr.kind elimclause.evd p with
       | Meta p -> p
       | _ ->
 	  let name_elim =
-	    match kind_of_term elim with
+	    match EConstr.kind sigma elim with
 	    | Const (kn, _) -> string_of_con kn
 	    | Var id -> string_of_id id
 	    | _ -> "\b"
@@ -670,9 +640,9 @@ module New = struct
       | None   -> elimclause'
       | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
     in
-    let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags elimclause') gl in
+    let clenv' = clenv_unique_resolver ~flags elimclause' gl in
     let after_tac i =
-      let (hd,largs) = decompose_app clenv'.templtyp.Evd.rebus in
+      let (hd,largs) = decompose_app clenv'.evd clenv'.templtyp.Evd.rebus in
       let ba = { branchsign = branchsigns.(i);
                  branchnames = brnames.(i);
                  nassums = List.length branchsigns.(i);
@@ -689,8 +659,66 @@ module New = struct
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
     end }) end }
 
+  let elimination_sort_of_goal gl =
+    (** Retyping will expand evars anyway. *)
+    let c = Proofview.Goal.concl (Goal.assume gl) in
+    pf_apply Retyping.get_sort_family_of gl c
+
+  let elimination_sort_of_hyp id gl =
+    (** Retyping will expand evars anyway. *)
+    let c = pf_get_hyp_typ id (Goal.assume gl) in
+    pf_apply Retyping.get_sort_family_of gl c
+
+  let elimination_sort_of_clause id gl = match id with
+  | None -> elimination_sort_of_goal gl
+  | Some id -> elimination_sort_of_hyp id gl
+
+  (* computing the case/elim combinators *)
+
+  let gl_make_elim ind = { enter = begin fun gl ->
+    let gr = Indrec.lookup_eliminator (fst ind) (elimination_sort_of_goal gl) in
+    let (sigma, c) = pf_apply Evd.fresh_global gl gr in
+    (sigma, EConstr.of_constr c)
+  end }
+
+  let gl_make_case_dep (ind, u) = { enter = begin fun gl ->
+    let sigma = Sigma.Unsafe.of_evar_map (project gl) in
+    let u = EInstance.kind (project gl) u in
+    let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma (ind, u) true
+      (elimination_sort_of_goal gl)
+    in
+    (Sigma.to_evar_map sigma, EConstr.of_constr r)
+  end }
+
+  let gl_make_case_nodep (ind, u) = { enter = begin fun gl ->
+    let sigma = Sigma.Unsafe.of_evar_map (project gl) in
+    let u = EInstance.kind (project gl) u in
+    let Sigma (r, sigma, _) = Indrec.build_case_analysis_scheme (pf_env gl) sigma (ind, u) false
+      (elimination_sort_of_goal gl)
+    in
+    (Sigma.to_evar_map sigma, EConstr.of_constr r)
+  end }
+
+  let make_elim_branch_assumptions ba hyps =
+    let assums =
+      try List.rev (List.firstn ba.nassums hyps)
+      with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions") in
+    { ba = ba; assums = assums }
+
+  let elim_on_ba tac ba =
+    Proofview.Goal.enter { enter = begin fun gl ->
+    let branches = make_elim_branch_assumptions ba (Proofview.Goal.hyps gl) in
+    tac branches
+    end }
+
+  let case_on_ba tac ba = 
+    Proofview.Goal.enter { enter = begin fun gl ->
+    let branches = make_elim_branch_assumptions ba (Proofview.Goal.hyps gl) in
+    tac branches
+    end }
+
   let elimination_then tac c =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
     let (ind,t) = pf_reduce_to_quantified_ind gl (pf_unsafe_type_of gl c) in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
@@ -706,37 +734,12 @@ module New = struct
   let case_nodep_then_using =
     general_elim_then_using gl_make_case_nodep false
 
-  let elim_on_ba tac ba =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let branches = Tacmach.New.of_old (make_elim_branch_assumptions ba) gl in
-    tac branches
-    end }
-
-  let case_on_ba tac ba = 
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let branches = Tacmach.New.of_old (make_case_branch_assumptions ba) gl in
-    tac branches
-    end }
-
-  let elimination_sort_of_goal gl =
-    (** Retyping will expand evars anyway. *)
-    let c = Proofview.Goal.concl (Goal.assume gl) in
-    pf_apply Retyping.get_sort_family_of gl c
-
-  let elimination_sort_of_hyp id gl =
-    (** Retyping will expand evars anyway. *)
-    let c = pf_get_hyp_typ id (Goal.assume gl) in
-    pf_apply Retyping.get_sort_family_of gl c
-
-  let elimination_sort_of_clause id gl = match id with
-  | None -> elimination_sort_of_goal gl
-  | Some id -> elimination_sort_of_hyp id gl
-
   let pf_constr_of_global ref tac =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
       let (sigma, c) = Evd.fresh_global env sigma ref in
+      let c = EConstr.of_constr c in
       Proofview.Unsafe.tclEVARS sigma <*> (tac c)
     end }
 

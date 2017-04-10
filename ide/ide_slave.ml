@@ -193,7 +193,7 @@ let process_goal sigma g =
     pr_goal_concl_style_env env sigma norm_constr
   in
   let process_hyp d (env,l) =
-    let d = CompactedDecl.map_constr (Reductionops.nf_evar sigma) d in
+    let d = CompactedDecl.map_constr (fun c -> EConstr.Unsafe.to_constr (Reductionops.nf_evar sigma (EConstr.of_constr c))) d in
     let d' = CompactedDecl.to_named_context d in
       (List.fold_right Environ.push_named d' env,
        (pr_compacted_decl env sigma d) :: l) in

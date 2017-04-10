@@ -42,8 +42,8 @@ type object_pr = {
   print_named_decl          : Context.Named.Declaration.t -> std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
-  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> Term.constr * Term.types -> Pp.std_ppcmds;
-  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> unsafe_judgment -> std_ppcmds;
+  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.std_ppcmds;
+  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> std_ppcmds;
 }
 
 let gallina_print_module  = print_module
@@ -71,10 +71,11 @@ let print_basename sp = pr_global (ConstRef sp)
 
 let print_ref reduce ref =
   let typ = Global.type_of_global_unsafe ref in
+  let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
       let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty typ
-      in it_mkProd_or_LetIn ccl ctx
+      in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
   let env = Global.env () in
@@ -84,7 +85,7 @@ let print_ref reduce ref =
     if Global.is_polymorphic ref then Printer.pr_universe_instance sigma univs
     else mt ()
   in
-  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_ltype_env env sigma typ ++ 
+  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++ 
   	   Printer.pr_universe_ctx sigma univs)
 
 (********************************)
@@ -438,8 +439,8 @@ let print_located_qualid ref = print_located_qualid "object" [`TERM; `LTAC; `MOD
 (****  Gallina layer                  *****)
 
 let gallina_print_typed_value_in_env env sigma (trm,typ) =
-  (pr_lconstr_env env sigma trm ++ fnl () ++
-     str "     : " ++ pr_ltype_env env sigma typ)
+  (pr_leconstr_env env sigma trm ++ fnl () ++
+     str "     : " ++ pr_letype_env env sigma typ)
 
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside pr_lconstr, so that
@@ -647,6 +648,8 @@ let print_judgment env sigma {uj_val=trm;uj_type=typ} =
 let print_safe_judgment env sigma j =
   let trm = Safe_typing.j_val j in
   let typ = Safe_typing.j_type j in
+  let trm = EConstr.of_constr trm in
+  let typ = EConstr.of_constr typ in
   print_typed_value_in_env env sigma (trm, typ)
 
 (*********************)
@@ -766,7 +769,9 @@ let print_opaque_name qid =
     | IndRef (sp,_) ->
         print_inductive sp
     | ConstructRef cstr as gr ->
+        let open EConstr in
 	let ty = Universes.unsafe_type_of_global gr in
+	let ty = EConstr.of_constr ty in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
         env |> lookup_named id |> NamedDecl.set_id id |> print_named_decl

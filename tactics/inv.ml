@@ -12,10 +12,11 @@ open Util
 open Names
 open Nameops
 open Term
-open Vars
 open Termops
-open Namegen
 open Environ
+open EConstr
+open Vars
+open Namegen
 open Inductiveops
 open Printer
 open Retyping
@@ -32,8 +33,9 @@ module NamedDecl = Context.Named.Declaration
 
 let var_occurs_in_pf gl id =
   let env = Proofview.Goal.env gl in
-  occur_var env id (Proofview.Goal.concl gl) ||
-  List.exists (occur_var_in_decl env id) (Proofview.Goal.hyps gl)
+  let sigma = project gl in
+  occur_var env sigma id (Proofview.Goal.concl gl) ||
+  List.exists (occur_var_in_decl env sigma id) (Proofview.Goal.hyps gl)
 
 (* [make_inv_predicate (ity,args) C]
 
@@ -73,9 +75,10 @@ let make_inv_predicate env evd indf realargs id status concl =
       | NoDep ->
 	  (* We push the arity and leave concl unchanged *)
 	  let hyps_arity,_ = get_arity env indf in
+	  let hyps_arity = List.map (fun d -> map_rel_decl EConstr.of_constr d) hyps_arity in
 	    (hyps_arity,concl)
       | Dep dflt_concl ->
-	  if not (occur_var env id concl) then
+	  if not (occur_var env !evd id concl) then
 	    user_err ~hdr:"make_inv_predicate"
               (str "Current goal does not depend on " ++ pr_id id ++ str".");
           (* We abstract the conclusion of goal with respect to
@@ -87,11 +90,11 @@ let make_inv_predicate env evd indf realargs id status concl =
               | None ->
 		let sort = get_sort_family_of env !evd concl in
 		let sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd sort in
-		let p = make_arity env true indf sort in
+		let p = make_arity env !evd true indf sort in
 		let evd',(p,ptyp) = Unification.abstract_list_all env
                   !evd p concl (realargs@[mkVar id])
 		in evd := evd'; p in
-	  let hyps,bodypred = decompose_lam_n_assum (nrealargs+1) pred in
+	  let hyps,bodypred = decompose_lam_n_assum !evd (nrealargs+1) pred in
 	  (* We lift to make room for the equations *)
 	  (hyps,lift nrealargs bodypred)
   in
@@ -109,7 +112,7 @@ let make_inv_predicate env evd indf realargs id status concl =
         let ai = lift nhyps ai in
         let (xi, ti) = compute_eqn env' !evd nhyps n ai in
         let (lhs,eqnty,rhs) =
-          if closed0 ti then
+          if closed0 !evd ti then
 	    (xi,ti,ai)
           else
 	    let sigma, res = make_iterated_tuple env' !evd ai (xi,ti) in
@@ -117,17 +120,19 @@ let make_inv_predicate env evd indf realargs id status concl =
 	in
         let eq_term = eqdata.Coqlib.eq in
 	let eq = Evarutil.evd_comb1 (Evd.fresh_global env) evd eq_term in
+        let eq = EConstr.of_constr eq in
         let eqn = applist (eq,[eqnty;lhs;rhs]) in
         let eqns = (Anonymous, lift n eqn) :: eqns in
         let refl_term = eqdata.Coqlib.refl in
 	let refl_term = Evarutil.evd_comb1 (Evd.fresh_global env) evd refl_term in
+	let refl_term = EConstr.of_constr refl_term in
         let refl = mkApp (refl_term, [|eqnty; rhs|]) in
 	let _ = Evarutil.evd_comb1 (Typing.type_of env) evd refl in
         let args = refl :: args in
         build_concl eqns args (succ n) restlist
   in
   let (newconcl, args) = build_concl [] [] 0 realargs in
-  let predicate = it_mkLambda_or_LetIn_name env newconcl hyps in
+  let predicate = it_mkLambda_or_LetIn newconcl (name_context env !evd hyps) in
   let _ = Evarutil.evd_comb1 (Typing.type_of env) evd predicate in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)
@@ -183,7 +188,7 @@ let dependent_hyps env id idlist gl =
     | d::l ->
 	(* Update the type of id1: it may have been subject to rewriting *)
 	let d = pf_get_hyp (NamedDecl.get_id d) gl in
-	if occur_var_in_decl env id d
+	if occur_var_in_decl env (project gl) id d
         then d :: dep_rec l
         else dep_rec l
   in
@@ -268,7 +273,7 @@ Nota: with Inversion_clear, only four useless hypotheses
 
 let generalizeRewriteIntros as_mode tac depids id =
   Proofview.tclENV >>= fun env ->
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let dids = dependent_hyps env id depids gl in
   let reintros = if as_mode then intros_replacing else intros_possibly_replacing in
   (tclTHENLIST
@@ -283,7 +288,7 @@ let error_too_many_names pats =
   tclZEROMSG ~loc (
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
-    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (fst (run_delayed env Evd.empty c)))) pats ++
+    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (EConstr.Unsafe.to_constr (fst (run_delayed env Evd.empty c))))) pats ++
     str ".")
 
 let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
@@ -333,15 +338,16 @@ let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
 
 let projectAndApply as_mode thin avoid id eqname names depids =
   let subst_hyp l2r id =
-    tclTHEN (tclTRY(rewriteInConcl l2r (mkVar id)))
+    tclTHEN (tclTRY(rewriteInConcl l2r (EConstr.mkVar id)))
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
+    let sigma = project gl in
     (** We only look at the type of hypothesis "id" *)
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
     let (t,t1,t2) = Hipattern.dest_nf_eq gl hyp in
-    match (kind_of_term t1, kind_of_term t2) with
+    match (EConstr.kind sigma t1, EConstr.kind sigma t2) with
     | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
     | _, Var id2 -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2
     | _ -> tac id
@@ -368,11 +374,11 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     (* and apply a trailer which again try to substitute *)
     (fun id ->
       dEqThen false (deq_trailer id)
-	(Some (None,ElimOnConstr (mkVar id,NoBindings))))
+	(Some (None,ElimOnConstr (EConstr.mkVar id,NoBindings))))
     id
 
 let nLastDecls i tac =
-  Proofview.Goal.nf_enter { enter = begin fun gl -> tac (nLastDecls gl i) end }
+  Proofview.Goal.enter { enter = begin fun gl -> tac (nLastDecls gl i) end }
 
 (* Introduction of the equations on arguments
    othin: discriminates Simple Inversion, Inversion and Inversion_clear
@@ -380,7 +386,7 @@ let nLastDecls i tac =
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
 let rewrite_equations as_mode othin neqns names ba =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let first_eq = ref MoveLast in
   let avoid = if as_mode then List.map NamedDecl.get_id nodepids else [] in
@@ -430,7 +436,7 @@ let rewrite_equations_tac as_mode othin id neqns names ba =
     tac
 
 let raw_inversion inv_kind id status names =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let sigma = Sigma.to_evar_map sigma in
     let env = Proofview.Goal.env gl in
@@ -448,11 +454,11 @@ let raw_inversion inv_kind id status names =
       make_inv_predicate env evdref indf realargs id status concl in
     let sigma = !evdref in
     let (cut_concl,case_tac) =
-      if status != NoDep && (dependent c concl) then
-        Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
+      if status != NoDep && (dependent sigma c concl) then
+        Reductionops.beta_applist sigma (elim_predicate, realargs@[c]),
         case_then_using
       else
-        Reduction.beta_appvect elim_predicate (Array.of_list realargs),
+        Reductionops.beta_applist sigma (elim_predicate, realargs),
         case_nodep_then_using
     in
     let refined id =
@@ -467,7 +473,7 @@ let raw_inversion inv_kind id status names =
         [case_tac names
             (introCaseAssumsThen false (* ApplyOn not supported by inversion *)
                (rewrite_equations_tac as_mode inv_kind id neqns))
-            (Some elim_predicate) ind (c, t);
+            (Some elim_predicate) ind (c,t);
         onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
     in
     Sigma.Unsafe.of_pair (tac, sigma)
@@ -511,15 +517,17 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
  * back to their places in the hyp-list. *)
 
 let invIn k names ids id =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let concl = Proofview.Goal.concl gl in
-    let nb_prod_init = nb_prod concl in
+    let sigma = project gl in
+    let nb_prod_init = nb_prod sigma concl in
     let intros_replace_ids =
       Proofview.Goal.enter { enter = begin fun gl ->
-        let concl = pf_nf_concl gl in
+        let concl = pf_concl gl in
+        let sigma = project gl in
         let nb_of_new_hyp =
-          nb_prod concl - (List.length hyps + nb_prod_init)
+          nb_prod sigma concl - (List.length hyps + nb_prod_init)
         in
         if nb_of_new_hyp < 1 then
           intros_replacing ids

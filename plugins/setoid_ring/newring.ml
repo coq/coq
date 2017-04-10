@@ -12,6 +12,7 @@ open CErrors
 open Util
 open Names
 open Term
+open EConstr
 open Vars
 open CClosure
 open Environ
@@ -43,9 +44,9 @@ let tag_arg tag_rec map subs i c =
     | Prot -> mk_atom c
     | Rec -> if Int.equal i (-1) then mk_clos subs c else tag_rec c
 
-let global_head_of_constr c = 
-  let f, args = decompose_app c in
-    try global_of_constr f
+let global_head_of_constr sigma c = 
+  let f, args = decompose_app sigma c in
+    try fst (Termops.global_of_constr sigma f)
     with Not_found -> anomaly (str "global_head_of_constr")
 
 let global_of_constr_nofail c = 
@@ -53,6 +54,7 @@ let global_of_constr_nofail c =
   with Not_found -> VarRef (Id.of_string "dummy")
 
 let rec mk_clos_but f_map subs t =
+  let open Term in
   match f_map (global_of_constr_nofail t) with
     | Some map -> tag_arg (mk_clos_but f_map subs) map subs (-1) t
     | None ->
@@ -62,6 +64,7 @@ let rec mk_clos_but f_map subs t =
           | _ -> mk_atom t)
 
 and mk_clos_app_but f_map subs f args n =
+  let open Term in
   if n >= Array.length args then mk_atom(mkApp(f, args))
   else
     let fargs, args' = Array.chop n args in
@@ -82,9 +85,11 @@ let lookup_map map =
   with Not_found ->
     user_err ~hdr:"lookup_map" (str"map "++qs map++str"not found")
 
-let protect_red map env sigma c =
-  kl (create_clos_infos all env)
-    (mk_clos_but (lookup_map map c) (Esubst.subs_id 0) c);;
+let protect_red map env sigma c0 =
+  let evars ev = Evarutil.safe_evar_value sigma ev in
+  let c = EConstr.Unsafe.to_constr c0 in
+  EConstr.of_constr (kl (create_clos_infos ~evars all env)
+    (mk_clos_but (lookup_map map sigma c0) (Esubst.subs_id 0) c));;
 
 let protect_tac map =
   Tactics.reduct_option (protect_red map,DEFAULTcast) None
@@ -97,9 +102,10 @@ let protect_tac_in map id =
 
 let closed_term t l =
   let open Quote_plugin in
+  Proofview.tclEVARMAP >>= fun sigma ->
   let l = List.map Universes.constr_of_global l in
   let cs = List.fold_right Quote.ConstrSet.add l Quote.ConstrSet.empty in
-  if Quote.closed_under cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
+  if Quote.closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
 
 (* TACTIC EXTEND echo
 | [ "echo" constr(t) ] ->
@@ -136,14 +142,16 @@ let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 let ic c =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  Constrintern.interp_open_constr env sigma c
+  let sigma, c = Constrintern.interp_open_constr env sigma c in
+  (sigma, c)
 
 let ic_unsafe c = (*FIXME remove *)
   let env = Global.env() in
   let sigma = Evd.from_env env in
-    fst (Constrintern.interp_constr env sigma c)
+    EConstr.of_constr (fst (Constrintern.interp_constr env sigma c))
 
 let decl_constant na ctx c =
+  let open Constr in
   let vars = Universes.universes_of_constr c in
   let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context ctx) vars in
   mkConst(declare_constant (Id.of_string na) 
@@ -172,11 +180,11 @@ let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
 
 let dummy_goal env sigma =
   let (gl,_,sigma) = 
-    Goal.V82.mk_goal sigma (named_context_val env) mkProp Evd.Store.empty in
+    Goal.V82.mk_goal sigma (named_context_val env) EConstr.mkProp Evd.Store.empty in
   {Evd.it = gl; Evd.sigma = sigma}
 
 let constr_of v = match Value.to_constr v with
-  | Some c -> c
+  | Some c -> EConstr.Unsafe.to_constr c
   | None -> failwith "Ring.exec_tactic: anomaly"
 
 let tactic_res = ref [||]
@@ -211,7 +219,8 @@ let exec_tactic env evd n f args =
   let gl = dummy_goal env evd in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
   let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
-    Array.map (fun x -> nf (constr_of x)) !tactic_res, snd (Evd.universe_context evd)
+  let nf c = nf (constr_of c) in
+  Array.map nf !tactic_res, snd (Evd.universe_context evd)
 
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];
@@ -221,7 +230,7 @@ let stdlib_modules =
   ]
 
 let coq_constant c =
-  lazy (Coqlib.gen_constant_in_modules "Ring" stdlib_modules c)
+  lazy (EConstr.of_constr (Coqlib.gen_constant_in_modules "Ring" stdlib_modules c))
 let coq_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" stdlib_modules c)
 
@@ -239,19 +248,19 @@ let plapp evd f args =
   let fc = Evarutil.e_new_global evd (Lazy.force f) in
     mkApp(fc,args)
 
-let dest_rel0 t =
-  match kind_of_term t with
+let dest_rel0 sigma t =
+  match EConstr.kind sigma t with
   | App(f,args) when Array.length args >= 2 ->
       let rel = mkApp(f,Array.sub args 0 (Array.length args - 2)) in
-      if closed0 rel then
+      if closed0 sigma rel then
         (rel,args.(Array.length args - 2),args.(Array.length args - 1))
       else error "ring: cannot find relation (not closed)"
   | _ -> error "ring: cannot find relation"
 
-let rec dest_rel t =
-  match kind_of_term t with
-  | Prod(_,_,c) -> dest_rel c
-  | _ -> dest_rel0 t
+let rec dest_rel sigma t =
+  match EConstr.kind sigma t with
+  | Prod(_,_,c) -> dest_rel sigma c
+  | _ -> dest_rel0 sigma t
 
 (****************************************************************************)
 (* Library linking *)
@@ -266,7 +275,7 @@ let plugin_modules =
     ]
 
 let my_constant c =
-  lazy (Coqlib.gen_constant_in_modules "Ring" plugin_modules c)
+  lazy (EConstr.of_constr (Coqlib.gen_constant_in_modules "Ring" plugin_modules c))
 let my_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" plugin_modules c)
 
@@ -310,13 +319,13 @@ let coq_mkhypo = my_reference "mkhypo"
 let coq_hypo = my_reference "hypo"
 
 (* Equality: do not evaluate but make recursive call on both sides *)
-let map_with_eq arg_map c =
-  let (req,_,_) = dest_rel c in
+let map_with_eq arg_map sigma c =
+  let (req,_,_) = dest_rel sigma c in
   interp_map
-    ((global_head_of_constr req,(function -1->Prot|_->Rec))::
+    ((global_head_of_constr sigma req,(function -1->Prot|_->Rec))::
     List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
 
-let map_without_eq arg_map _ =
+let map_without_eq arg_map _ _ =
   interp_map (List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
 
 let _ = add_map "ring"
@@ -337,6 +346,8 @@ let _ = add_map "ring"
 (****************************************************************************)
 (* Ring database *)
 
+let pr_constr c = pr_econstr c
+
 module Cmap = Map.Make(Constr)
 
 let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
@@ -355,7 +366,7 @@ let find_ring_structure env sigma l =
               (str"arguments of ring_simplify do not have all the same type")
         in
         List.iter check cl';
-        (try ring_for_carrier ty
+        (try ring_for_carrier (EConstr.to_constr sigma ty)
         with Not_found ->
           user_err ~hdr:"ring"
             (str"cannot find a declared ring structure over"++
@@ -382,7 +393,7 @@ let subst_th (subst,th) =
   let posttac'= Tacsubst.subst_tactic subst th.ring_post_tac in
   if c' == th.ring_carrier &&
      eq' == th.ring_req &&
-     eq_constr set' th.ring_setoid &&
+     Term.eq_constr set' th.ring_setoid &&
      ext' == th.ring_ext &&
      morph' == th.ring_morph &&
      th' == th.ring_th &&
@@ -488,8 +499,8 @@ let op_smorph r add mul req m1 m2 =
 (*         (setoid,op_morph) *)
 
 let ring_equality env evd (r,add,mul,opp,req) =
-  match kind_of_term req with
-    | App (f, [| _ |]) when eq_constr_nounivs f (Lazy.force coq_eq) ->
+  match EConstr.kind !evd req with
+    | App (f, [| _ |]) when eq_constr_nounivs !evd f (Lazy.force coq_eq) ->
 	let setoid = plapp evd coq_eq_setoid [|r|] in
 	let op_morph =
 	  match opp with
@@ -543,15 +554,15 @@ let build_setoid_params env evd r add mul opp req eqth =
 
 let dest_ring env sigma th_spec =
   let th_typ = Retyping.get_type_of env sigma th_spec in
-  match kind_of_term th_typ with
+  match EConstr.kind sigma th_typ with
       App(f,[|r;zero;one;add;mul;sub;opp;req|])
-        when eq_constr_nounivs f (Lazy.force coq_almost_ring_theory) ->
+        when eq_constr_nounivs sigma f (Lazy.force coq_almost_ring_theory) ->
           (None,r,zero,one,add,mul,Some sub,Some opp,req)
     | App(f,[|r;zero;one;add;mul;req|])
-        when eq_constr_nounivs f (Lazy.force coq_semi_ring_theory) ->
+        when eq_constr_nounivs sigma f (Lazy.force coq_semi_ring_theory) ->
         (Some true,r,zero,one,add,mul,None,None,req)
     | App(f,[|r;zero;one;add;mul;sub;opp;req|])
-        when eq_constr_nounivs f (Lazy.force coq_ring_theory) ->
+        when eq_constr_nounivs sigma f (Lazy.force coq_ring_theory) ->
         (Some false,r,zero,one,add,mul,Some sub,Some opp,req)
     | _ -> error "bad ring structure"
 
@@ -584,6 +595,7 @@ let make_hyp_list env evd lH =
       (plapp evd coq_nil [|carrier|])
   in 
   let l' = Typing.e_solve_evars env evd l in
+  let l' = EConstr.Unsafe.to_constr l' in
     Evarutil.nf_evars_universes !evd l'
 
 let interp_power env evd pow =
@@ -619,7 +631,7 @@ let interp_div env evd div =
       plapp evd coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
-let add_theory name (sigma,rth) eqth morphth cst_tac (pre,post) power sign div =
+let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div =
   check_required_library (cdir@["Ring_base"]);
   let env = Global.env() in
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
@@ -649,6 +661,9 @@ let add_theory name (sigma,rth) eqth morphth cst_tac (pre,post) power sign div =
     match post with
         Some t -> Tacintern.glob_tactic t
       | _ -> TacId [] in
+  let r = EConstr.to_constr sigma r in
+  let req = EConstr.to_constr sigma req in
+  let sth = EConstr.to_constr sigma sth in
   let _ =
     Lib.add_leaf name
       (theory_to_obj
@@ -696,13 +711,18 @@ let process_ring_mods l =
   let k = match !kind with Some k -> k | None -> Abstract in
   (k, !set, !cst_tac, !pre, !post, !power, !sign, !div)
 
+let add_theory id rth l =
+  let (sigma, rth) = ic rth in
+  let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
+  add_theory0 id (sigma, rth) set k cst (pre,post) power sign div
+
 (*****************************************************************************)
 (* The tactics consist then only in a lookup in the ring database and
    call the appropriate ltac. *)
 
-let make_args_list rl t =
+let make_args_list sigma rl t =
   match rl with
-  | [] -> let (_,t1,t2) = dest_rel0 t in [t1;t2]
+  | [] -> let (_,t1,t2) = dest_rel0 sigma t in [t1;t2]
   | _ -> rl
 
 let make_term_list env evd carrier rl =
@@ -711,7 +731,7 @@ let make_term_list env evd carrier rl =
     (plapp evd coq_nil [|carrier|])
   in Typing.e_solve_evars env evd l
 
-let carg = Tacinterp.Value.of_constr
+let carg c = Tacinterp.Value.of_constr (EConstr.of_constr c)
 let tacarg expr =
   Tacinterp.Value.of_closure (Tacinterp.default_ist ()) expr
 
@@ -735,10 +755,10 @@ let ring_lookup (f : Value.t) lH rl t =
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     try (* find_ring_strucure can raise an exception *)
+      let rl = make_args_list sigma rl t in
       let evdref = ref sigma in
-      let rl = make_args_list rl t in
       let e = find_ring_structure env sigma rl in
-      let rl = carg (make_term_list env evdref e.ring_carrier rl) in
+      let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.ring_carrier) rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let ring = ltac_ring_structure e in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (ring@[lH;rl]))
@@ -801,21 +821,22 @@ let af_ar = my_reference"AF_AR"
 let f_r = my_reference"F_R"
 let sf_sr = my_reference"SF_SR"
 let dest_field env evd th_spec =
+  let open Termops in
   let th_typ = Retyping.get_type_of env !evd th_spec in
-  match kind_of_term th_typ with
+  match EConstr.kind !evd th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when is_global (Lazy.force afield_theory) f ->
+        when is_global !evd (Lazy.force afield_theory) f ->
         let rth = plapp evd af_ar
           [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (None,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when is_global (Lazy.force field_theory) f ->
+        when is_global !evd (Lazy.force field_theory) f ->
         let rth =
           plapp evd f_r
             [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (Some false,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;div;inv;req|])
-        when is_global (Lazy.force sfield_theory) f ->
+        when is_global !evd (Lazy.force sfield_theory) f ->
         let rth = plapp evd sf_sr
           [|r;zero;one;add;mul;div;inv;req;th_spec|] in
         (Some true,r,zero,one,add,mul,None,None,div,inv,req,rth)
@@ -838,7 +859,7 @@ let find_field_structure env sigma l =
               (str"arguments of field_simplify do not have all the same type")
         in
         List.iter check cl';
-        (try field_for_carrier ty
+        (try field_for_carrier (EConstr.to_constr sigma ty)
         with Not_found ->
           user_err ~hdr:"field"
             (str"cannot find a declared field structure over"++
@@ -895,9 +916,11 @@ let ftheory_to_obj : field_info -> obj =
       classify_function = (fun x -> Substitute x) }
 
 let field_equality evd r inv req =
-  match kind_of_term req with
-    | App (f, [| _ |]) when eq_constr_nounivs f (Lazy.force coq_eq) ->
-        mkApp(Universes.constr_of_global (Coqlib.build_coq_eq_data()).congr,[|r;r;inv|])
+  match EConstr.kind !evd req with
+    | App (f, [| _ |]) when eq_constr_nounivs !evd f (Lazy.force coq_eq) ->
+        let c = Universes.constr_of_global (Coqlib.build_coq_eq_data()).congr in
+        let c = EConstr.of_constr c in
+        mkApp(c,[|r;r;inv|])
     | _ ->
 	let _setoid = setoid_of_relation (Global.env ()) evd r req in
 	let signature = [Some (r,Some req)],Some(r,Some req) in
@@ -907,15 +930,17 @@ let field_equality evd r inv req =
             error "field inverse should be declared as a morphism" in
 	  inv_m_lem
 
-let add_field_theory name (sigma,fth) eqth morphth cst_tac inj (pre,post) power sign odiv =
+let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
+  let open Constr in
   check_required_library (cdir@["Field_tac"]);
+  let (sigma,fth) = ic fth in
   let env = Global.env() in
   let evd = ref sigma in
   let (kind,r,zero,one,add,mul,sub,opp,div,inv,req,rth) =
     dest_field env evd fth in
   let (sth,ext) = build_setoid_params env evd r add mul opp req eqth in
   let eqth = Some(sth,ext) in
-  let _ = add_theory name (!evd,rth) eqth morphth cst_tac (None,None) power sign odiv in
+  let _ = add_theory0 name (!evd,rth) eqth morphth cst_tac (None,None) power sign odiv in
   let (pow_tac, pspec) = interp_power env evd power in
   let sspec = interp_sign env evd sign in
   let dspec = interp_div env evd odiv in
@@ -930,7 +955,7 @@ let add_field_theory name (sigma,fth) eqth morphth cst_tac inj (pre,post) power 
   let lemma4 = params.(6) in
   let cond_lemma =
     match inj with
-      | Some thm -> mkApp(params.(8),[|thm|])
+      | Some thm -> mkApp(params.(8),[|EConstr.to_constr sigma thm|])
       | None -> params.(7) in
   let lemma1 = decl_constant (Id.to_string name^"_field_lemma1")
     ctx lemma1 in
@@ -952,6 +977,8 @@ let add_field_theory name (sigma,fth) eqth morphth cst_tac inj (pre,post) power 
     match post with
         Some t -> Tacintern.glob_tactic t
       | _ -> TacId [] in
+  let r = EConstr.to_constr sigma r in
+  let req = EConstr.to_constr sigma req in
   let _ =
     Lib.add_leaf name
       (ftheory_to_obj
@@ -991,6 +1018,10 @@ let process_field_mods l =
   let k = match !kind with Some k -> k | None -> Abstract in
   (k, !set, !inj, !cst_tac, !pre, !post, !power, !sign, !div)
 
+let add_field_theory id t mods =
+  let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods mods in
+  add_field_theory0 id t set k cst_tac inj (pre,post) power sign div
+
 let ltac_field_structure e =
   let req = carg e.field_req in
   let cst_tac = tacarg e.field_cst_tac in
@@ -1010,10 +1041,10 @@ let field_lookup (f : Value.t) lH rl t =
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     try
+      let rl = make_args_list sigma rl t in
       let evdref = ref sigma in
-      let rl = make_args_list rl t in
       let e = find_field_structure env sigma rl in
-      let rl = carg (make_term_list env evdref e.field_carrier rl) in
+      let rl = Value.of_constr (make_term_list env evdref (EConstr.of_constr e.field_carrier) rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let field = ltac_field_structure e in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (field@[lH;rl]))

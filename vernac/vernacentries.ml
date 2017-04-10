@@ -60,7 +60,7 @@ let show_proof () =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   let p = Proof_global.give_me_the_proof () in
   let pprf = Proof.partial_proof p in
-  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
+  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_econstr pprf)
 
 let show_node () =
   (* spiwack: I'm have little clue what this function used to do. I deactivated it, 
@@ -81,8 +81,8 @@ let show_universes () =
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
   let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
-    Feedback.msg_notice (Evd.pr_evar_universe_context (Evd.evar_universe_context sigma));
-    Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Evd.pr_evd_level sigma) ctx)
+    Feedback.msg_notice (Termops.pr_evar_universe_context (Evd.evar_universe_context sigma));
+    Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
 
 let show_prooftree () =
   (* Spiwack: proof tree is currently not working *)
@@ -103,11 +103,12 @@ let try_print_subgoals () =
   (* Simulate the Intro(s) tactic *)
 
 let show_intro all =
+  let open EConstr in
   let pf = get_pftreestate() in
   let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
   if not (List.is_empty gls) then begin
     let gl = {Evd.it=List.hd gls ; sigma = sigma; } in
-    let l,_= decompose_prod_assum (Termops.strip_outer_cast (pf_concl gl)) in
+    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (pf_concl gl)) in
     if all then
       let lid = Tactics.find_intro_names l gl in
       Feedback.msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
@@ -457,11 +458,12 @@ let start_proof_and_print k l hook =
         let env = Evd.evar_filtered_env evi in
         try
           let concl = Evarutil.nf_evars_universes sigma evi.Evd.evar_concl in
+          let concl = EConstr.of_constr concl in
           if Evarutil.has_undefined_evars sigma concl then raise Exit;
           let c, _, ctx =
             Pfedit.build_by_tactic env (Evd.evar_universe_context sigma)
                                    concl (Tacticals.New.tclCOMPLETE tac)
-          in Evd.set_universe_context sigma ctx, c
+          in Evd.set_universe_context sigma ctx, EConstr.of_constr c
         with Logic_monad.TacticFailure e when Logic.catchable_exception e ->
           error "The statement obligations could not be resolved \
                  automatically, write a statement definition first."
@@ -869,6 +871,7 @@ let vernac_set_used_variables e =
   let env = Global.env () in
   let tys =
     List.map snd (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
+  let tys = List.map EConstr.Unsafe.to_constr tys in
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
   List.iter (fun id -> 
@@ -1230,7 +1233,7 @@ let vernac_reserve bl =
     let env = Global.env() in
     let sigma = Evd.from_env env in
     let t,ctx = Constrintern.interp_type env sigma c in
-    let t = Detyping.detype false [] env (Evd.from_ctx ctx) t in
+    let t = Detyping.detype false [] env (Evd.from_ctx ctx) (EConstr.of_constr t) in
     let t,_ = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
@@ -1567,6 +1570,7 @@ let get_current_context_of_args = function
 let vernac_check_may_eval redexp glopt rc =
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr env sigma rc in
+  let c = EConstr.Unsafe.to_constr c in
   let sigma' = Evarconv.solve_unif_constraints_with_heuristics env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
@@ -1574,14 +1578,16 @@ let vernac_check_may_eval redexp glopt rc =
   let env = Environ.push_context uctx (Evarutil.nf_env_evar sigma' env) in
   let c = nf c in
   let j =
-    if Evarutil.has_undefined_evars sigma' c then
-      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c)
+    if Evarutil.has_undefined_evars sigma' (EConstr.of_constr c) then
+      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' (EConstr.of_constr c))
     else
       (* OK to call kernel which does not support evars *)
-      Arguments_renaming.rename_typing env c in
+      Termops.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
+  in
   match redexp with
     | None ->
-        let l = Evar.Set.union (Evd.evars_of_term j.Environ.uj_val) (Evd.evars_of_term j.Environ.uj_type) in
+        let evars_of_term c = Evarutil.undefined_evars_of_term sigma' c in
+        let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
 	Feedback.msg_notice (print_judgment env sigma' j ++
                     pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
@@ -1641,7 +1647,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    v 0 (pr_id id ++ str":" ++ pr_constr (NamedDecl.get_type decl) ++ fnl() ++ fnl()
+    v 0 (pr_id id ++ str":" ++ pr_econstr (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
     | NoHyp | Not_found -> print_about ref_or_by_not
@@ -1893,7 +1899,7 @@ let vernac_check_guard () =
     try
       let { Evd.it=gl ; sigma=sigma } = Proof.V82.top_goal pts in
       Inductiveops.control_only_guard (Goal.V82.env sigma gl)
-	pfterm;
+	(EConstr.Unsafe.to_constr pfterm);
       (str "The condition holds up to here")
     with UserError(_,s) ->
       (str ("Condition violated: ") ++s)

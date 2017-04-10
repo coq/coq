@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open EConstr
 open Environ
 open CClosure
 open Esubst
@@ -23,6 +24,9 @@ val cbv_norm         : cbv_infos -> constr -> constr
 
 (***********************************************************************
   i This is for cbv debug *)
+
+open Term
+
 type cbv_value =
   | VAL of int * constr
   | STACK of int * cbv_value * cbv_stack

@@ -452,8 +452,9 @@ and applist_projection c l =
       applistc (mkProj (p, hd)) tl)
   | _ -> applistc c l
 
-let rec canonize_name c =
-  let func =  canonize_name in
+let rec canonize_name sigma c =
+  let c = EConstr.Unsafe.to_constr c in
+  let func c = canonize_name sigma (EConstr.of_constr c) in
     match kind_of_term c with
       | Const (kn,u) ->
 	  let canon_const = constant_of_kn (canonical_con kn) in 
@@ -497,10 +498,10 @@ let rec inst_pattern subst = function
 	   args t
 
 let pr_idx_term uf i = str "[" ++ int i ++ str ":=" ++
-  Termops.print_constr (constr_of_term (term uf i)) ++ str "]"
+  Termops.print_constr (EConstr.of_constr (constr_of_term (term uf i))) ++ str "]"
 
 let pr_term t = str "[" ++
-  Termops.print_constr (constr_of_term t) ++ str "]"
+  Termops.print_constr (EConstr.of_constr (constr_of_term t)) ++ str "]"
 
 let rec add_term state t=
   let uf=state.uf in
@@ -508,8 +509,8 @@ let rec add_term state t=
 	Not_found ->
 	  let b=next uf in
           let trm = constr_of_term t in
-	  let typ = pf_unsafe_type_of state.gls trm in
-	  let typ = canonize_name typ in
+	  let typ = pf_unsafe_type_of state.gls (EConstr.of_constr trm) in
+	  let typ = canonize_name (project state.gls) typ in
 	  let new_node=
 	    match t with
 		Symb _ | Product (_,_) ->
@@ -615,7 +616,7 @@ let add_inst state (inst,int_subst) =
 	      begin
 		debug (fun () ->
 		   (str "Adding new equality, depth="++ int state.rew_depth) ++ fnl () ++
-	          (str "  [" ++ Termops.print_constr prf ++ str " : " ++
+	          (str "  [" ++ Termops.print_constr (EConstr.of_constr prf) ++ str " : " ++
 			   pr_term s ++ str " == " ++ pr_term t ++ str "]"));
 		add_equality state prf s t
 	      end
@@ -623,7 +624,7 @@ let add_inst state (inst,int_subst) =
 	      begin
 		debug (fun () ->
 		   (str "Adding new disequality, depth="++ int state.rew_depth) ++ fnl () ++
-	          (str "  [" ++ Termops.print_constr prf ++ str " : " ++
+	          (str "  [" ++ Termops.print_constr (EConstr.of_constr prf) ++ str " : " ++
 			   pr_term s ++ str " <> " ++ pr_term t ++ str "]"));
 		add_disequality state (Hyp prf) s t
 	      end
@@ -832,7 +833,8 @@ let complete_one_class state i=
 	    let id = new_state_var etyp state in
 		app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
 	let _c = pf_unsafe_type_of state.gls
-	  (constr_of_term (term state.uf pac.cnode)) in
+	  (EConstr.of_constr (constr_of_term (term state.uf pac.cnode))) in
+        let _c = EConstr.Unsafe.to_constr _c in
 	let _args =
 	  List.map (fun i -> constr_of_term (term state.uf  i))
 	    pac.args in

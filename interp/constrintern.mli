@@ -99,7 +99,7 @@ val interp_constr : env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> constr Evd.in_evar_universe_context
 
 val interp_casted_constr : env -> evar_map -> ?impls:internalization_env ->
-  constr_expr -> types -> constr Evd.in_evar_universe_context
+  constr_expr -> EConstr.types -> constr Evd.in_evar_universe_context
 
 val interp_type : env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> types Evd.in_evar_universe_context
@@ -107,32 +107,32 @@ val interp_type : env -> evar_map -> ?impls:internalization_env ->
 (** Main interpretation function expecting all postponed problems to
     be resolved, but possibly leaving evars. *)
 
-val interp_open_constr : env -> evar_map -> constr_expr -> evar_map * constr
+val interp_open_constr : env -> evar_map -> constr_expr -> evar_map * EConstr.constr
 
 (** Accepting unresolved evars *)
 
 val interp_constr_evars : env -> evar_map ref ->
-  ?impls:internalization_env -> constr_expr -> constr
+  ?impls:internalization_env -> constr_expr -> EConstr.constr
 
 val interp_casted_constr_evars : env -> evar_map ref ->
-  ?impls:internalization_env -> constr_expr -> types -> constr
+  ?impls:internalization_env -> constr_expr -> types -> EConstr.constr
 
 val interp_type_evars : env -> evar_map ref ->
-  ?impls:internalization_env -> constr_expr -> types
+  ?impls:internalization_env -> constr_expr -> EConstr.types
 
 (** Accepting unresolved evars and giving back the manual implicit arguments *)
 
 val interp_constr_evars_impls : env -> evar_map ref ->
   ?impls:internalization_env -> constr_expr ->
-  constr * Impargs.manual_implicits
+  EConstr.constr * Impargs.manual_implicits
 
 val interp_casted_constr_evars_impls : env -> evar_map ref ->
-  ?impls:internalization_env -> constr_expr -> types ->
-  constr * Impargs.manual_implicits
+  ?impls:internalization_env -> constr_expr -> EConstr.types ->
+  EConstr.constr * Impargs.manual_implicits
 
 val interp_type_evars_impls : env -> evar_map ref ->
   ?impls:internalization_env -> constr_expr ->
-  types * Impargs.manual_implicits
+  EConstr.types * Impargs.manual_implicits
 
 (** Interprets constr patterns *)
 
@@ -151,14 +151,14 @@ val interp_reference : ltac_sign -> reference -> glob_constr
 val interp_binder  : env -> evar_map -> Name.t -> constr_expr -> 
   types Evd.in_evar_universe_context
 
-val interp_binder_evars : env -> evar_map ref -> Name.t -> constr_expr -> types
+val interp_binder_evars : env -> evar_map ref -> Name.t -> constr_expr -> EConstr.types
 
 (** Interpret contexts: returns extended env and context *)
 
 val interp_context_evars :
   ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
   env -> evar_map ref -> local_binder_expr list ->
-  internalization_env * ((env * Context.Rel.t) * Impargs.manual_implicits)
+  internalization_env * ((env * EConstr.rel_context) * Impargs.manual_implicits)
 
 (* val interp_context_gen : (env -> glob_constr -> unsafe_type_judgment Evd.in_evar_universe_context) -> *)
 (*   (env -> Evarutil.type_constraint -> glob_constr -> unsafe_judgment Evd.in_evar_universe_context) -> *)
@@ -175,7 +175,7 @@ val interp_context_evars :
 
 val locate_reference :  Libnames.qualid -> Globnames.global_reference
 val is_global : Id.t -> bool
-val construct_reference : Context.Named.t -> Id.t -> constr
+val construct_reference : ('c, 't) Context.Named.pt -> Id.t -> constr
 val global_reference : Id.t -> constr
 val global_reference_in_absolute_module : DirPath.t -> Id.t -> constr
 

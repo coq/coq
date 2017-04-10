@@ -92,7 +92,7 @@ type raw_rew_rule = Loc.t * constr Univ.in_universe_context_set * bool * Genarg.
 let one_base general_rewrite_maybe_in tac_main bas =
   let lrul = find_rewrites bas in
   let try_rewrite dir ctx c tc =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
     let c' = Vars.subst_univs_level_constr subst c in
@@ -122,7 +122,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
        Tacticals.New.tclTHEN tac
         (one_base (fun dir c tac ->
 	  let tac = (tac, conds) in
-	    general_rewrite dir AllOccurrences true false ~tac c)
+	    general_rewrite dir AllOccurrences true false ~tac (EConstr.of_constr c))
 	  tac_main bas))
       (Proofview.tclUNIT()) lbas))
 
@@ -165,7 +165,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
           | _ -> assert false) (* there must be at least an hypothesis *)
      | _ -> assert false (* rewriting cannot complete a proof *)
  in
- let general_rewrite_in x y z w = Proofview.V82.tactic (general_rewrite_in x y z w) in
+ let general_rewrite_in x y z w = Proofview.V82.tactic (general_rewrite_in x y (EConstr.of_constr z) w) in
  Tacticals.New.tclMAP (fun id ->
   Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS
     (List.fold_left (fun tac bas ->
@@ -257,12 +257,12 @@ type hypinfo = {
 
 let decompose_applied_relation metas env sigma c ctype left2right =
   let find_rel ty =
-    let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ty) in
+    let eqclause = Clenv.mk_clenv_from_env env sigma None (EConstr.of_constr c,ty) in
     let eqclause =
       if metas then eqclause
       else clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)
     in
-    let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
+    let (equiv, args) = decompose_app (EConstr.Unsafe.to_constr (Clenv.clenv_type eqclause)) in
     let rec split_last_two = function
       | [c1;c2] -> [],(c1, c2)
       | x::y::z ->
@@ -272,11 +272,13 @@ let decompose_applied_relation metas env sigma c ctype left2right =
       try
 	let others,(c1,c2) = split_last_two args in
 	let ty1, ty2 =
-	  Typing.unsafe_type_of env eqclause.evd c1, Typing.unsafe_type_of env eqclause.evd c2
+	  Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c1), Typing.unsafe_type_of env eqclause.evd (EConstr.of_constr c2)
 	in
+	let ty = EConstr.Unsafe.to_constr ty in
+	let ty1 = EConstr.Unsafe.to_constr ty1 in
 (* 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
 (* 	  else *)
-	    Some { hyp_cl=eqclause; hyp_prf=(Clenv.clenv_value eqclause); hyp_ty = ty;
+	    Some { hyp_cl=eqclause; hyp_prf=EConstr.Unsafe.to_constr (Clenv.clenv_value eqclause); hyp_ty = ty;
 		   hyp_car=ty1; hyp_rel=mkApp (equiv, Array.of_list others);
 		   hyp_l2r=left2right; hyp_left=c1; hyp_right=c2; }
       with Not_found -> None
@@ -290,12 +292,12 @@ let decompose_applied_relation metas env sigma c ctype left2right =
 	| None -> None
 
 let find_applied_relation metas loc env sigma c left2right =
-  let ctype = Typing.unsafe_type_of env sigma c in
+  let ctype = Typing.unsafe_type_of env sigma (EConstr.of_constr c) in
     match decompose_applied_relation metas env sigma c ctype left2right with
     | Some c -> c
     | None ->
 	user_err ~loc ~hdr:"decompose_applied_relation"
-		    (str"The type" ++ spc () ++ Printer.pr_constr_env env sigma ctype ++
+		    (str"The type" ++ spc () ++ Printer.pr_econstr_env env sigma ctype ++
 		       spc () ++ str"of this term does not end with an applied relation.")
 
 (* To add rewriting rules to a base *)

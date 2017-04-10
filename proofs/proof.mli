@@ -66,9 +66,9 @@ val map_structured_proof : proof -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre
 
 (*** General proof functions ***)
 
-val start : Evd.evar_map -> (Environ.env * Term.types) list -> proof
+val start : Evd.evar_map -> (Environ.env * EConstr.types) list -> proof
 val dependent_start : Proofview.telescope -> proof
-val initial_goals : proof -> (Term.constr * Term.types) list
+val initial_goals : proof -> (EConstr.constr * EConstr.types) list
 val initial_euctx : proof -> Evd.evar_universe_context
 
 (* Returns [true] if the considered proof is completed, that is if no goal remain
@@ -79,7 +79,7 @@ val is_done : proof -> bool
 val is_complete : proof -> bool
 
 (* Returns the list of partial proofs to initial goals. *)
-val partial_proof : proof -> Term.constr list
+val partial_proof : proof -> EConstr.constr list
 
 val compact : proof -> proof
 

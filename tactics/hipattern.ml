@@ -12,6 +12,7 @@ open Util
 open Names
 open Term
 open Termops
+open EConstr
 open Inductiveops
 open Constr_matching
 open Coqlib
@@ -31,9 +32,9 @@ module RelDecl = Context.Rel.Declaration
 
   -- Eduardo (6/8/97). *)
 
-type 'a matching_function = constr -> 'a option
+type 'a matching_function = Evd.evar_map -> EConstr.constr -> 'a option
 
-type testing_function  = constr -> bool
+type testing_function  = Evd.evar_map -> EConstr.constr -> bool
 
 let mkmeta n = Nameops.make_ident "X" (Some n)
 let meta1 = mkmeta 1
@@ -43,11 +44,11 @@ let meta4 = mkmeta 4
 
 let op2bool = function Some _ -> true | None -> false
 
-let match_with_non_recursive_type t =
-  match kind_of_term t with
+let match_with_non_recursive_type sigma t =
+  match EConstr.kind sigma t with
     | App _ ->
-        let (hdapp,args) = decompose_app t in
-        (match kind_of_term hdapp with
+        let (hdapp,args) = decompose_app sigma t in
+        (match EConstr.kind sigma hdapp with
            | Ind (ind,u) ->
                if (Global.lookup_mind (fst ind)).mind_finite == Decl_kinds.CoFinite then
 		 Some (hdapp,args)
@@ -56,21 +57,21 @@ let match_with_non_recursive_type t =
            | _ -> None)
     | _ -> None
 
-let is_non_recursive_type t = op2bool (match_with_non_recursive_type t)
+let is_non_recursive_type sigma t = op2bool (match_with_non_recursive_type sigma t)
 
 (* Test dependencies *)
 
 (* NB: we consider also the let-in case in the following function,
    since they may appear in types of inductive constructors (see #2629) *)
 
-let rec has_nodep_prod_after n c =
-  match kind_of_term c with
+let rec has_nodep_prod_after n sigma c =
+  match EConstr.kind sigma c with
     | Prod (_,_,b) | LetIn (_,_,_,b) ->
-	( n>0 || not (dependent (mkRel 1) b))
-	&& (has_nodep_prod_after (n-1) b)
+	( n>0 || Vars.noccurn sigma 1 b)
+	&& (has_nodep_prod_after (n-1) sigma b)
     | _            -> true
 
-let has_nodep_prod = has_nodep_prod_after 0
+let has_nodep_prod sigma c = has_nodep_prod_after 0 sigma c
 
 (* A general conjunctive type is a non-recursive with-no-indices inductive
    type with only one constructor and no dependencies between argument;
@@ -87,9 +88,11 @@ let is_lax_conjunction = function
 | Some false -> true
 | _ -> false
 
-let match_with_one_constructor style onlybinary allow_rec t =
-  let (hdapp,args) = decompose_app t in
-  let res = match kind_of_term hdapp with
+let prod_assum sigma t = fst (decompose_prod_assum sigma t)
+
+let match_with_one_constructor sigma style onlybinary allow_rec t =
+  let (hdapp,args) = decompose_app sigma t in
+  let res = match EConstr.kind sigma hdapp with
   | Ind ind ->
       let (mib,mip) = Global.lookup_inductive (fst ind) in
       if Int.equal (Array.length mip.mind_consnames) 1
@@ -98,21 +101,21 @@ let match_with_one_constructor style onlybinary allow_rec t =
       then
 	if is_strict_conjunction style (* strict conjunction *) then
 	  let ctx =
-	    (prod_assum (snd
-	      (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))) in
+	    (prod_assum sigma (snd
+	      (decompose_prod_n_assum sigma mib.mind_nparams (EConstr.of_constr mip.mind_nf_lc.(0))))) in
 	  if
 	    List.for_all
 	      (fun decl -> let c = RelDecl.get_type decl in
 	                   is_local_assum decl &&
-			   isRel c &&
-                           Int.equal (destRel c) mib.mind_nparams) ctx
+			   isRel sigma c &&
+                           Int.equal (destRel sigma c) mib.mind_nparams) ctx
 	  then
 	    Some (hdapp,args)
 	  else None
 	else
-	  let ctyp = prod_applist mip.mind_nf_lc.(0) args in
-	  let cargs = List.map RelDecl.get_type (prod_assum ctyp) in
-	  if not (is_lax_conjunction style) || has_nodep_prod ctyp then
+	  let ctyp = Termops.prod_applist sigma (EConstr.of_constr mip.mind_nf_lc.(0)) args in
+	  let cargs = List.map RelDecl.get_type (prod_assum sigma ctyp) in
+	  if not (is_lax_conjunction style) || has_nodep_prod sigma ctyp then
 	    (* Record or non strict conjunction *)
 	    Some (hdapp,List.rev cargs)
 	  else
@@ -125,28 +128,29 @@ let match_with_one_constructor style onlybinary allow_rec t =
   | Some (hdapp, [_; _]) -> res
   | _ -> None
 
-let match_with_conjunction ?(strict=false) ?(onlybinary=false) t =
-  match_with_one_constructor (Some strict) onlybinary false t
+let match_with_conjunction ?(strict=false) ?(onlybinary=false) sigma t =
+  match_with_one_constructor sigma (Some strict) onlybinary false t
 
-let match_with_record t =
-  match_with_one_constructor None false false t
+let match_with_record sigma t =
+  match_with_one_constructor sigma None false false t
 
-let is_conjunction ?(strict=false) ?(onlybinary=false) t =
-  op2bool (match_with_conjunction ~strict ~onlybinary t)
+let is_conjunction ?(strict=false) ?(onlybinary=false) sigma t =
+  op2bool (match_with_conjunction sigma ~strict ~onlybinary t)
 
-let is_record t =
-  op2bool (match_with_record t)
+let is_record sigma t =
+  op2bool (match_with_record sigma t)
 
-let match_with_tuple t =
-  let t = match_with_one_constructor None false true t in
+let match_with_tuple sigma t =
+  let t = match_with_one_constructor sigma None false true t in
   Option.map (fun (hd,l) ->
-    let ind = destInd hd in
+    let ind = destInd sigma hd in
+    let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
     let (mib,mip) = Global.lookup_pinductive ind in
     let isrec = mis_is_recursive (fst ind,mib,mip) in
     (hd,l,isrec)) t
 
-let is_tuple t =
-  op2bool (match_with_tuple t)
+let is_tuple sigma t =
+  op2bool (match_with_tuple sigma t)
 
 (* A general disjunction type is a non-recursive with-no-indices inductive
    type with of which all constructors have a single argument;
@@ -154,14 +158,15 @@ let is_tuple t =
    "Inductive I A1 ... An := C1 (_:A1) | ... | Cn : (_:An)" *)
 
 let test_strict_disjunction n lc =
+  let open Term in
   Array.for_all_i (fun i c ->
     match (prod_assum (snd (decompose_prod_n_assum n c))) with
     | [LocalAssum (_,c)] -> isRel c && Int.equal (destRel c) (n - i)
     | _ -> false) 0 lc
 
-let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
-  let (hdapp,args) = decompose_app t in
-  let res = match kind_of_term hdapp with
+let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
+  let (hdapp,args) = decompose_app sigma t in
+  let res = match EConstr.kind sigma hdapp with
   | Ind (ind,u)  ->
       let car = constructors_nrealargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
@@ -176,7 +181,7 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
 	    None
 	else
 	  let cargs =
-	    Array.map (fun ar -> pi2 (destProd (prod_applist ar args)))
+	    Array.map (fun ar -> pi2 (destProd sigma (prod_applist sigma (EConstr.of_constr ar) args)))
 	      mip.mind_nf_lc in
 	  Some (hdapp,Array.to_list cargs)
       else
@@ -187,48 +192,48 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
   | Some (hdapp,[_; _]) -> res
   | _ -> None
 
-let is_disjunction ?(strict=false) ?(onlybinary=false) t =
-  op2bool (match_with_disjunction ~strict ~onlybinary t)
+let is_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
+  op2bool (match_with_disjunction ~strict ~onlybinary sigma t)
 
 (* An empty type is an inductive type, possible with indices, that has no
    constructors *)
 
-let match_with_empty_type t =
-  let (hdapp,args) = decompose_app t in
-  match (kind_of_term hdapp) with
-    | Ind ind ->
-        let (mib,mip) = Global.lookup_pinductive ind in
+let match_with_empty_type sigma t =
+  let (hdapp,args) = decompose_app sigma t in
+  match EConstr.kind sigma hdapp with
+    | Ind (ind, _) ->
+        let (mib,mip) = Global.lookup_inductive ind in
         let nconstr = Array.length mip.mind_consnames in
 	if Int.equal nconstr 0 then Some hdapp else None
     | _ ->  None
 
-let is_empty_type t = op2bool (match_with_empty_type t)
+let is_empty_type sigma t = op2bool (match_with_empty_type sigma t)
 
 (* This filters inductive types with one constructor with no arguments;
    Parameters and indices are allowed *)
 
-let match_with_unit_or_eq_type t =
-  let (hdapp,args) = decompose_app t in
-  match (kind_of_term hdapp) with
-    | Ind ind  ->
-        let (mib,mip) = Global.lookup_pinductive ind in
+let match_with_unit_or_eq_type sigma t =
+  let (hdapp,args) = decompose_app sigma t in
+  match EConstr.kind sigma hdapp with
+    | Ind (ind , _) ->
+        let (mib,mip) = Global.lookup_inductive ind in
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
-        let zero_args c = Int.equal (nb_prod c) mib.mind_nparams in
+        let zero_args c = Int.equal (nb_prod sigma (EConstr.of_constr c)) mib.mind_nparams in
 	if Int.equal nconstr 1 && zero_args constr_types.(0) then
 	  Some hdapp
 	else
 	  None
     | _ -> None
 
-let is_unit_or_eq_type t = op2bool (match_with_unit_or_eq_type t)
+let is_unit_or_eq_type sigma t = op2bool (match_with_unit_or_eq_type sigma t)
 
 (* A unit type is an inductive type with no indices but possibly
    (useless) parameters, and that has no arguments in its unique
    constructor *)
 
-let is_unit_type t =
-  match match_with_conjunction t with
+let is_unit_type sigma t =
+  match match_with_conjunction sigma t with
   | Some (_,[]) -> true
   | _ -> false
 
@@ -276,13 +281,13 @@ let coq_refl_jm_pattern       =
 
 open Globnames
 
-let is_matching x y = is_matching (Global.env ()) Evd.empty x y
-let matches x y = matches (Global.env ()) Evd.empty x y
+let is_matching sigma x y = is_matching (Global.env ()) sigma x y
+let matches sigma x y = matches (Global.env ()) sigma x y
 
-let match_with_equation t =
-  if not (isApp t) then raise NoEquationFound;
-  let (hdapp,args) = destApp t in
-  match kind_of_term hdapp with
+let match_with_equation sigma t =
+  if not (isApp sigma t) then raise NoEquationFound;
+  let (hdapp,args) = destApp sigma t in
+  match EConstr.kind sigma hdapp with
   | Ind (ind,u) ->
       if eq_gr (IndRef ind) glob_eq then
 	Some (build_coq_eq_data()),hdapp,
@@ -298,11 +303,11 @@ let match_with_equation t =
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
 	if Int.equal nconstr 1 then
-          if is_matching coq_refl_leibniz1_pattern constr_types.(0) then
+          if is_matching sigma coq_refl_leibniz1_pattern (EConstr.of_constr constr_types.(0)) then
 	    None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
-	  else if is_matching coq_refl_leibniz2_pattern constr_types.(0) then
+	  else if is_matching sigma coq_refl_leibniz2_pattern (EConstr.of_constr constr_types.(0)) then
 	    None, hdapp, PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-	  else if is_matching coq_refl_jm_pattern constr_types.(0) then
+	  else if is_matching sigma coq_refl_jm_pattern (EConstr.of_constr constr_types.(0)) then
 	    None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
 	  else raise NoEquationFound
         else raise NoEquationFound
@@ -318,57 +323,57 @@ let is_inductive_equality ind =
   let nconstr = Array.length mip.mind_consnames in
   Int.equal nconstr 1 && Int.equal (constructor_nrealargs (ind,1)) 0
 
-let match_with_equality_type t =
-  let (hdapp,args) = decompose_app t in
-  match (kind_of_term hdapp) with
+let match_with_equality_type sigma t =
+  let (hdapp,args) = decompose_app sigma t in
+  match EConstr.kind sigma hdapp with
   | Ind (ind,_) when is_inductive_equality ind -> Some (hdapp,args)
   | _ -> None
 
-let is_equality_type t = op2bool (match_with_equality_type t)
+let is_equality_type sigma t = op2bool (match_with_equality_type sigma t)
 
 (* Arrows/Implication/Negation *)
 
 (** X1 -> X2 **)
 let coq_arrow_pattern = mkPattern (mkGArrow (mkGPatVar "X1") (mkGPatVar "X2"))
 
-let match_arrow_pattern t =
-  let result = matches coq_arrow_pattern t in
+let match_arrow_pattern sigma t =
+  let result = matches sigma coq_arrow_pattern t in
   match Id.Map.bindings result with
     | [(m1,arg);(m2,mind)] ->
       assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
     | _ -> anomaly (Pp.str "Incorrect pattern matching")
 
-let match_with_imp_term c=
-  match kind_of_term c with
-    | Prod (_,a,b) when not (dependent (mkRel 1) b) ->Some (a,b)
+let match_with_imp_term sigma c =
+  match EConstr.kind sigma c with
+    | Prod (_,a,b) when Vars.noccurn sigma 1 b -> Some (a,b)
     | _              -> None
 
-let is_imp_term c = op2bool (match_with_imp_term c)
+let is_imp_term sigma c = op2bool (match_with_imp_term sigma c)
 
-let match_with_nottype t =
+let match_with_nottype sigma t =
   try
-    let (arg,mind) = match_arrow_pattern t in
-    if is_empty_type mind then Some (mind,arg) else None
+    let (arg,mind) = match_arrow_pattern sigma t in
+    if is_empty_type sigma mind then Some (mind,arg) else None
   with PatternMatchingFailure -> None
 
-let is_nottype t = op2bool (match_with_nottype t)
+let is_nottype sigma t = op2bool (match_with_nottype sigma t)
 
 (* Forall *)
 
-let match_with_forall_term c=
-  match kind_of_term c with
+let match_with_forall_term sigma c=
+  match EConstr.kind sigma c with
     | Prod (nam,a,b) -> Some (nam,a,b)
     | _            -> None
 
-let is_forall_term c = op2bool (match_with_forall_term c)
+let is_forall_term sigma c = op2bool (match_with_forall_term sigma c)
 
-let match_with_nodep_ind t =
-  let (hdapp,args) = decompose_app t in
-    match (kind_of_term hdapp) with
-      | Ind ind  ->
-          let (mib,mip) = Global.lookup_pinductive ind in
+let match_with_nodep_ind sigma t =
+  let (hdapp,args) = decompose_app sigma t in
+    match EConstr.kind sigma hdapp with
+      | Ind (ind, _)  ->
+          let (mib,mip) = Global.lookup_inductive ind in
 	    if Array.length (mib.mind_packets)>1 then None else
-	      let nodep_constr = has_nodep_prod_after mib.mind_nparams in
+	      let nodep_constr c = has_nodep_prod_after mib.mind_nparams sigma (EConstr.of_constr c) in
 		if Array.for_all nodep_constr mip.mind_nf_lc then
 		  let params=
 		    if Int.equal mip.mind_nrealargs 0 then args else
@@ -378,24 +383,24 @@ let match_with_nodep_ind t =
 		  None
       | _ -> None
 
-let is_nodep_ind t=op2bool (match_with_nodep_ind t)
+let is_nodep_ind sigma t = op2bool (match_with_nodep_ind sigma t)
 
-let match_with_sigma_type t=
-  let (hdapp,args) = decompose_app t in
-  match (kind_of_term hdapp) with
-    | Ind ind  ->
-        let (mib,mip) = Global.lookup_pinductive ind in
+let match_with_sigma_type sigma t =
+  let (hdapp,args) = decompose_app sigma t in
+  match EConstr.kind sigma hdapp with
+    | Ind (ind, _) ->
+        let (mib,mip) = Global.lookup_inductive ind in
           if Int.equal (Array.length (mib.mind_packets)) 1 &&
 	    (Int.equal mip.mind_nrealargs 0) &&
 	    (Int.equal (Array.length mip.mind_consnames)1) &&
-	    has_nodep_prod_after (mib.mind_nparams+1) mip.mind_nf_lc.(0) then
+	    has_nodep_prod_after (mib.mind_nparams+1) sigma (EConstr.of_constr mip.mind_nf_lc.(0)) then
 	      (*allowing only 1 existential*)
 	      Some (hdapp,args)
 	  else
 	    None
     | _ -> None
 
-let is_sigma_type t=op2bool (match_with_sigma_type t)
+let is_sigma_type sigma t = op2bool (match_with_sigma_type sigma t)
 
 (***** Destructing patterns bound to some theory *)
 
@@ -408,17 +413,17 @@ let rec first_match matcher = function
 
 (*** Equality *)
 
-let match_eq eqn (ref, hetero) =
+let match_eq sigma eqn (ref, hetero) =
   let ref =
     try Lazy.force ref
     with e when CErrors.noncritical e -> raise PatternMatchingFailure
   in
-  match kind_of_term eqn with
+  match EConstr.kind sigma eqn with
   | App (c, [|t; x; y|]) ->
-    if not hetero && is_global ref c then PolymorphicLeibnizEq (t, x, y)
+    if not hetero && Termops.is_global sigma ref c then PolymorphicLeibnizEq (t, x, y)
     else raise PatternMatchingFailure
   | App (c, [|t; x; t'; x'|]) ->
-    if hetero && is_global ref c then HeterogenousEq (t, x, t', x')
+    if hetero && Termops.is_global sigma ref c then HeterogenousEq (t, x, t', x')
     else raise PatternMatchingFailure
   | _ -> raise PatternMatchingFailure
 
@@ -430,9 +435,9 @@ let equalities =
    (coq_jmeq_ref, true), check_jmeq_loaded, build_coq_jmeq_data;
    (coq_identity_ref, false), no_check, build_coq_identity_data]
 
-let find_eq_data eqn = (* fails with PatternMatchingFailure *)
-  let d,k = first_match (match_eq eqn) equalities in
-  let hd,u = destInd (fst (destApp eqn)) in
+let find_eq_data sigma eqn = (* fails with PatternMatchingFailure *)
+  let d,k = first_match (match_eq sigma eqn) equalities in
+  let hd,u = destInd sigma (fst (destApp sigma eqn)) in
     d,u,k
 
 let extract_eq_args gl = function
@@ -444,13 +449,13 @@ let extract_eq_args gl = function
       else raise PatternMatchingFailure
 
 let find_eq_data_decompose gl eqn =
-  let (lbeq,u,eq_args) = find_eq_data eqn in
+  let (lbeq,u,eq_args) = find_eq_data (project gl) eqn in
   (lbeq,u,extract_eq_args gl eq_args)
 
 let find_this_eq_data_decompose gl eqn =
   let (lbeq,u,eq_args) =
     try (*first_match (match_eq eqn) inversible_equalities*)
-      find_eq_data eqn
+      find_eq_data (project gl) eqn
     with PatternMatchingFailure ->
       user_err  (str "No primitive equality found.") in
   let eq_args =
@@ -477,12 +482,12 @@ let dest_nf_eq gls eqn =
 
 (*** Sigma-types *)
 
-let match_sigma ex =
-  match kind_of_term ex with
-  | App (f, [| a; p; car; cdr |]) when is_global (Lazy.force coq_exist_ref) f -> 
-      build_sigma (), (snd (destConstruct f), a, p, car, cdr)
-  | App (f, [| a; p; car; cdr |]) when is_global (Lazy.force coq_existT_ref) f -> 
-    build_sigma_type (), (snd (destConstruct f), a, p, car, cdr)
+let match_sigma sigma ex =
+  match EConstr.kind sigma ex with
+  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_exist_ref) f -> 
+      build_sigma (), (snd (destConstruct sigma f), a, p, car, cdr)
+  | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_existT_ref) f -> 
+    build_sigma_type (), (snd (destConstruct sigma f), a, p, car, cdr)
   | _ -> raise PatternMatchingFailure
     
 let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
@@ -492,12 +497,12 @@ let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
 let coq_sig_pattern =
   lazy (mkPattern (mkGAppRef coq_sig_ref [mkGPatVar "X1"; mkGPatVar "X2"]))
 
-let match_sigma t =
-  match Id.Map.bindings (matches (Lazy.force coq_sig_pattern) t) with
+let match_sigma sigma t =
+  match Id.Map.bindings (matches sigma (Lazy.force coq_sig_pattern) t) with
     | [(_,a); (_,p)] -> (a,p)
     | _ -> anomaly (Pp.str "Unexpected pattern")
 
-let is_matching_sigma t = is_matching (Lazy.force coq_sig_pattern) t
+let is_matching_sigma sigma t = is_matching sigma (Lazy.force coq_sig_pattern) t
 
 (*** Decidable equalities *)
 
@@ -529,26 +534,26 @@ let coq_eqdec_rev_pattern = coq_eqdec ~sum:coq_or_ref ~rev:true
 let op_or = coq_or_ref
 let op_sum = coq_sumbool_ref
 
-let match_eqdec t =
+let match_eqdec sigma t =
   let eqonleft,op,subst =
-    try true,op_sum,matches (Lazy.force coq_eqdec_inf_pattern) t
+    try true,op_sum,matches sigma (Lazy.force coq_eqdec_inf_pattern) t
     with PatternMatchingFailure ->
-    try false,op_sum,matches (Lazy.force coq_eqdec_inf_rev_pattern) t
+    try false,op_sum,matches sigma (Lazy.force coq_eqdec_inf_rev_pattern) t
     with PatternMatchingFailure ->
-    try true,op_or,matches (Lazy.force coq_eqdec_pattern) t
+    try true,op_or,matches sigma (Lazy.force coq_eqdec_pattern) t
     with PatternMatchingFailure ->
-        false,op_or,matches (Lazy.force coq_eqdec_rev_pattern) t in
+        false,op_or,matches sigma (Lazy.force coq_eqdec_rev_pattern) t in
   match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
-      eqonleft, Universes.constr_of_global (Lazy.force op), c1, c2, typ
+      eqonleft, EConstr.of_constr (Universes.constr_of_global (Lazy.force op)), c1, c2, typ
   | _ -> anomaly (Pp.str "Unexpected pattern")
 
 (* Patterns "~ ?" and "? -> False" *)
 let coq_not_pattern = lazy (mkPattern (mkGAppRef coq_not_ref [mkGHole]))
 let coq_imp_False_pattern = lazy (mkPattern (mkGArrow mkGHole (mkGRef coq_False_ref)))
 
-let is_matching_not t = is_matching (Lazy.force coq_not_pattern) t
-let is_matching_imp_False t = is_matching (Lazy.force coq_imp_False_pattern) t
+let is_matching_not sigma t = is_matching sigma (Lazy.force coq_not_pattern) t
+let is_matching_imp_False sigma t = is_matching sigma (Lazy.force coq_imp_False_pattern) t
 
 (* Remark: patterns that have references to the standard library must
    be evaluated lazily (i.e. at the time they are used, not a the time

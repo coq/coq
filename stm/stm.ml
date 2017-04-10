@@ -1800,9 +1800,10 @@ end = struct (* {{{ *)
       Future.purify (fun () ->
        let _,_,_,_,sigma0 = Proof.proof (Proof_global.give_me_the_proof ()) in
        let g = Evd.find sigma0 r_goal in
+       let is_ground c = Evarutil.is_ground_term sigma0 (EConstr.of_constr c) in
        if not (
-         Evarutil.is_ground_term sigma0 Evd.(evar_concl g) &&
-         List.for_all (Context.Named.Declaration.for_all (Evarutil.is_ground_term sigma0))
+         is_ground Evd.(evar_concl g) &&
+         List.for_all (Context.Named.Declaration.for_all is_ground)
                       Evd.(evar_context g))
        then
          CErrors.user_err ~hdr:"STM" (strbrk("the par: goal selector supports ground "^
@@ -1815,8 +1816,10 @@ end = struct (* {{{ *)
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> RespNoProgress
         | Evd.Evar_defined t ->
+            let t = EConstr.of_constr t in
             let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
+              let t = EConstr.Unsafe.to_constr t in
               RespBuiltSubProof (t, Evd.evar_universe_context sigma)
             else CErrors.user_err ~hdr:"STM" (str"The solution is not ground")
        end) ()
@@ -1885,10 +1888,10 @@ end = struct (* {{{ *)
             stm_pperr_endline (fun () -> hov 0 (
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
-              str"uc=" ++ Evd.pr_evar_universe_context uc));
+              str"uc=" ++ Termops.pr_evar_universe_context uc));
             (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
               (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
-              Tactics.exact_no_check pt)
+              Tactics.exact_no_check (EConstr.of_constr pt))
           with TacTask.NoProgress ->
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
         })

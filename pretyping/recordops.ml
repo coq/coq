@@ -179,7 +179,7 @@ let cs_pattern_of_constr t =
           with e when CErrors.noncritical e -> raise Not_found
 	end
     | Rel n -> Default_cs, Some n, []
-    | Prod (_,a,b) when not (Termops.dependent (mkRel 1) b) -> Prod_cs, None, [a; Termops.pop b]
+    | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
     | Sort s -> Sort_cs (family_of_sort s), None, []
     | _ ->
 	begin
@@ -191,7 +191,7 @@ let warn_projection_no_head_constant =
   CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
          (fun (t,con_pp,proji_sp_pp) ->
           strbrk "Projection value has no head constant: "
-          ++ Termops.print_constr t ++ strbrk " in canonical instance "  
+          ++ Termops.print_constr (EConstr.of_constr t) ++ strbrk " in canonical instance "  
           ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it.")
 
 (* Intended to always succeed *)
@@ -202,8 +202,9 @@ let compute_canonical_projections warn (con,ind) =
   let v = (mkConstU (con,u)) in
   let ctx = Univ.ContextSet.of_context ctx in
   let c = Environ.constant_value_in env (con,u) in
-  let lt,t = Reductionops.splay_lam env Evd.empty c in
-  let lt = List.rev_map snd lt in
+  let lt,t = Reductionops.splay_lam env Evd.empty (EConstr.of_constr c) in
+  let t = EConstr.Unsafe.to_constr t in
+  let lt = List.rev_map (snd %> EConstr.Unsafe.to_constr) lt in
   let args = snd (decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
     lookup_structure ind in
@@ -255,8 +256,8 @@ let add_canonical_structure warn o =
       in match ocs with
         | None -> object_table := Refmap.add proj ((pat,s)::l) !object_table;
         | Some (c, cs) ->
-              let old_can_s = (Termops.print_constr cs.o_DEF)
-              and new_can_s = (Termops.print_constr s.o_DEF) in
+              let old_can_s = (Termops.print_constr (EConstr.of_constr cs.o_DEF))
+              and new_can_s = (Termops.print_constr (EConstr.of_constr s.o_DEF)) in
               let prj = (Nametab.pr_global_env Id.Set.empty proj)
               and hd_val = (pr_cs_pattern cs_pat) in
               if warn then warn_redundant_canonical_projection (hd_val,prj,new_can_s,old_can_s))
@@ -302,7 +303,8 @@ let check_and_decompose_canonical_structure ref =
   let vc = match Environ.constant_opt_value_in env (sp, u) with
     | Some vc -> vc
     | None -> error_not_structure ref in
-  let body = snd (splay_lam (Global.env()) Evd.empty vc) in
+  let body = snd (splay_lam (Global.env()) Evd.empty (EConstr.of_constr vc)) (** FIXME *) in
+  let body = EConstr.Unsafe.to_constr body in
   let f,args = match kind_of_term body with
     | App (f,args) -> f,args
     | _ -> error_not_structure ref in
@@ -322,14 +324,15 @@ let lookup_canonical_conversion (proj,pat) =
   assoc_pat pat (Refmap.find proj !object_table)
 
 let is_open_canonical_projection env sigma (c,args) =
+  let open EConstr in
   try
-    let ref = global_of_constr c in
+    let (ref, _) = Termops.global_of_constr sigma c in
     let n = find_projection_nparams ref in
     (** Check if there is some canonical projection attached to this structure *)
     let _ = Refmap.find ref !object_table in
     try
       let arg = whd_all env sigma (Stack.nth args n) in
-      let hd = match kind_of_term arg with App (hd, _) -> hd | _ -> arg in
-      not (isConstruct hd)
+      let hd = match EConstr.kind sigma arg with App (hd, _) -> hd | _ -> arg in
+      not (isConstruct sigma hd)
     with Failure _ -> false
   with Not_found -> false

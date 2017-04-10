@@ -73,13 +73,27 @@ let build_dependent_inductive ind (mib,mip) =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   applist
     (mkIndU ind,
-       Context.Rel.to_extended_list mip.mind_nrealdecls mib.mind_params_ctxt
-       @ Context.Rel.to_extended_list 0 realargs)
+       Context.Rel.to_extended_list mkRel mip.mind_nrealdecls mib.mind_params_ctxt
+       @ Context.Rel.to_extended_list mkRel 0 realargs)
+
+let named_hd env t na = named_hd env Evd.empty (EConstr.of_constr t) na
+let name_assumption env = function
+| LocalAssum (na,t) -> LocalAssum (named_hd env t na, t)
+| LocalDef (na,c,t) -> LocalDef (named_hd env c na, c, t)
+
+let name_context env hyps =
+  snd
+    (List.fold_left
+       (fun (env,hyps) d ->
+	  let d' = name_assumption env d in (push_rel d' env, d' :: hyps))
+       (env,[]) (List.rev hyps))
 
 let my_it_mkLambda_or_LetIn s c = it_mkLambda_or_LetIn c s
-let my_it_mkProd_or_LetIn s c = it_mkProd_or_LetIn c s
+let my_it_mkProd_or_LetIn s c = Term.it_mkProd_or_LetIn c s
 let my_it_mkLambda_or_LetIn_name s c =
-  it_mkLambda_or_LetIn_name (Global.env()) c s
+  let env = Global.env () in
+  let mkLambda_or_LetIn_name d b = mkLambda_or_LetIn (name_assumption env d) b in
+  List.fold_left (fun c d -> mkLambda_or_LetIn_name d c) c s
 
 let get_coq_eq ctx =
   try
@@ -120,7 +134,7 @@ let get_sym_eq_data env (ind,u) =
   let paramsctxt = Vars.subst_instance_context u mib.mind_params_ctxt in
   let paramsctxt1,_ =
     List.chop (mib.mind_nparams-mip.mind_nrealargs) paramsctxt in
-  if not (List.equal eq_constr params2 constrargs) then
+  if not (List.equal Term.eq_constr params2 constrargs) then
     error "Constructors arguments must repeat the parameters.";
   (* nrealargs_ctxt and nrealargs are the same here *)
   (specif,mip.mind_nrealargs,realsign,paramsctxt,paramsctxt1)
@@ -172,7 +186,7 @@ let build_sym_scheme env ind =
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env indu in
   let cstr n =
-    mkApp (mkConstructUi(indu,1),Context.Rel.to_extended_vect n mib.mind_params_ctxt) in
+    mkApp (mkConstructUi(indu,1),Context.Rel.to_extended_vect mkRel n mib.mind_params_ctxt) in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
@@ -185,7 +199,7 @@ let build_sym_scheme env ind =
      my_it_mkLambda_or_LetIn_name
        (lift_rel_context (nrealargs+1) realsign_ind)
        (mkApp (mkIndU indu,Array.concat
-	  [Context.Rel.to_extended_vect (3*nrealargs+2) paramsctxt1;
+	  [Context.Rel.to_extended_vect mkRel (3*nrealargs+2) paramsctxt1;
 	   rel_vect 1 nrealargs;
 	   rel_vect (2*nrealargs+2) nrealargs])),
      mkRel 1 (* varH *),
@@ -226,13 +240,13 @@ let build_sym_involutive_scheme env ind =
     get_sym_eq_data env indu in
   let eq,eqrefl,ctx = get_coq_eq ctx in
   let sym, ctx, eff = const_of_scheme sym_scheme_kind env ind ctx in
-  let cstr n = mkApp (mkConstructUi (indu,1),Context.Rel.to_extended_vect n paramsctxt) in
+  let cstr n = mkApp (mkConstructUi (indu,1),Context.Rel.to_extended_vect mkRel n paramsctxt) in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_C =
     mkApp
       (mkIndU indu, Array.append
-         (Context.Rel.to_extended_vect (nrealargs+1) mib.mind_params_ctxt)
+         (Context.Rel.to_extended_vect mkRel (nrealargs+1) mib.mind_params_ctxt)
          (rel_vect (nrealargs+1) nrealargs)) in
   let realsign_ind =
     name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
@@ -246,15 +260,15 @@ let build_sym_involutive_scheme env ind =
 	       (mkApp (eq,[|
 	       mkApp
 	       (mkIndU indu, Array.concat
-	       [Context.Rel.to_extended_vect (3*nrealargs+2) paramsctxt1;
+	       [Context.Rel.to_extended_vect mkRel (3*nrealargs+2) paramsctxt1;
 		rel_vect (2*nrealargs+2) nrealargs;
 		rel_vect 1 nrealargs]);
                mkApp (sym,Array.concat
-	       [Context.Rel.to_extended_vect (3*nrealargs+2) paramsctxt1;
+	       [Context.Rel.to_extended_vect mkRel (3*nrealargs+2) paramsctxt1;
 		rel_vect 1 nrealargs;
 		rel_vect (2*nrealargs+2) nrealargs;
 		[|mkApp (sym,Array.concat
-		[Context.Rel.to_extended_vect (3*nrealargs+2) paramsctxt1;
+		[Context.Rel.to_extended_vect mkRel (3*nrealargs+2) paramsctxt1;
 		 rel_vect (2*nrealargs+2) nrealargs;
 		 rel_vect 1 nrealargs;
 		 [|mkRel 1|]])|]]);
@@ -337,7 +351,7 @@ let build_l2r_rew_scheme dep env ind kind =
   let eq,eqrefl,ctx = get_coq_eq ctx in
   let cstr n p =
     mkApp (mkConstructUi(indu,1),
-      Array.concat [Context.Rel.to_extended_vect n paramsctxt1;
+      Array.concat [Context.Rel.to_extended_vect mkRel n paramsctxt1;
                     rel_vect p nrealargs]) in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let varHC = fresh env (Id.of_string "HC") in
@@ -345,12 +359,12 @@ let build_l2r_rew_scheme dep env ind kind =
   let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_P =
     mkApp (mkIndU indu, Array.concat
-       [Context.Rel.to_extended_vect (3*nrealargs) paramsctxt1;
+       [Context.Rel.to_extended_vect mkRel (3*nrealargs) paramsctxt1;
         rel_vect 0 nrealargs;
         rel_vect nrealargs nrealargs]) in
   let applied_ind_G =
     mkApp (mkIndU indu, Array.concat
-       [Context.Rel.to_extended_vect (3*nrealargs+3) paramsctxt1;
+       [Context.Rel.to_extended_vect mkRel (3*nrealargs+3) paramsctxt1;
         rel_vect (nrealargs+3) nrealargs;
         rel_vect 0 nrealargs]) in
   let realsign_P = lift_rel_context nrealargs realsign in
@@ -361,10 +375,10 @@ let build_l2r_rew_scheme dep env ind kind =
                       lift_rel_context (nrealargs+3) realsign) in
   let applied_sym_C n =
      mkApp(sym,
-       Array.append (Context.Rel.to_extended_vect n mip.mind_arity_ctxt) [|mkVar varH|]) in
+       Array.append (Context.Rel.to_extended_vect mkRel n mip.mind_arity_ctxt) [|mkVar varH|]) in
   let applied_sym_G =
      mkApp(sym,
-       Array.concat [Context.Rel.to_extended_vect (nrealargs*3+4) paramsctxt1;
+       Array.concat [Context.Rel.to_extended_vect mkRel (nrealargs*3+4) paramsctxt1;
                      rel_vect (nrealargs+4) nrealargs;
                      rel_vect 1 nrealargs;
 		     [|mkRel 1|]]) in
@@ -374,7 +388,7 @@ let build_l2r_rew_scheme dep env ind kind =
   let ci = make_case_info (Global.env()) ind RegularStyle in
   let cieq = make_case_info (Global.env()) (fst (destInd eq)) RegularStyle in
   let applied_PC =
-    mkApp (mkVar varP,Array.append (Context.Rel.to_extended_vect 1 realsign)
+    mkApp (mkVar varP,Array.append (Context.Rel.to_extended_vect mkRel 1 realsign)
            (if dep then [|cstr (2*nrealargs+1) 1|] else [||])) in
   let applied_PG =
     mkApp (mkVar varP,Array.append (rel_vect 1 nrealargs)
@@ -384,11 +398,11 @@ let build_l2r_rew_scheme dep env ind kind =
            (if dep then [|mkRel 2|] else [||])) in
   let applied_sym_sym =
          mkApp (sym,Array.concat
-	   [Context.Rel.to_extended_vect (2*nrealargs+4) paramsctxt1;
+	   [Context.Rel.to_extended_vect mkRel (2*nrealargs+4) paramsctxt1;
             rel_vect 4 nrealargs;
             rel_vect (nrealargs+4) nrealargs;
             [|mkApp (sym,Array.concat
-	      [Context.Rel.to_extended_vect (2*nrealargs+4) paramsctxt1;
+	      [Context.Rel.to_extended_vect mkRel (2*nrealargs+4) paramsctxt1;
 	       rel_vect (nrealargs+4) nrealargs;
 	       rel_vect 4 nrealargs;
 	       [|mkRel 2|]])|]]) in
@@ -411,7 +425,7 @@ let build_l2r_rew_scheme dep env ind kind =
                    mkApp (eq,[|lift 4 applied_ind;applied_sym_sym;mkRel 1|]),
                    applied_PR)),
        mkApp (sym_involutive,
-         Array.append (Context.Rel.to_extended_vect 3 mip.mind_arity_ctxt) [|mkVar varH|]),
+         Array.append (Context.Rel.to_extended_vect mkRel 3 mip.mind_arity_ctxt) [|mkVar varH|]),
        [|main_body|])
    else
      main_body))))))
@@ -450,7 +464,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     get_sym_eq_data env indu in
   let cstr n p =
     mkApp (mkConstructUi(indu,1),
-      Array.concat [Context.Rel.to_extended_vect n paramsctxt1;
+      Array.concat [Context.Rel.to_extended_vect mkRel n paramsctxt1;
                     rel_vect p nrealargs]) in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let varHC = fresh env (Id.of_string "HC") in
@@ -458,12 +472,12 @@ let build_l2r_forward_rew_scheme dep env ind kind =
   let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_P =
     mkApp (mkIndU indu, Array.concat
-       [Context.Rel.to_extended_vect (4*nrealargs+2) paramsctxt1;
+       [Context.Rel.to_extended_vect mkRel (4*nrealargs+2) paramsctxt1;
         rel_vect 0 nrealargs;
         rel_vect (nrealargs+1) nrealargs]) in
   let applied_ind_P' =
     mkApp (mkIndU indu, Array.concat
-       [Context.Rel.to_extended_vect (3*nrealargs+1) paramsctxt1;
+       [Context.Rel.to_extended_vect mkRel (3*nrealargs+1) paramsctxt1;
         rel_vect 0 nrealargs;
         rel_vect (2*nrealargs+1) nrealargs]) in
   let realsign_P n = lift_rel_context (nrealargs*n+n) realsign in
@@ -541,7 +555,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let ((mib,mip as specif),constrargs,realsign,paramsctxt,nrealargs) =
     get_non_sym_eq_data env indu in
   let cstr n =
-    mkApp (mkConstructUi(indu,1),Context.Rel.to_extended_vect n mib.mind_params_ctxt) in
+    mkApp (mkConstructUi(indu,1),Context.Rel.to_extended_vect mkRel n mib.mind_params_ctxt) in
   let constrargs_cstr = constrargs@[cstr 0] in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let varHC = fresh env (Id.of_string "HC") in
@@ -557,8 +571,8 @@ let build_r2l_forward_rew_scheme dep env ind kind =
     applist (mkVar varP,if dep then constrargs_cstr else constrargs) in
   let applied_PG =
     mkApp (mkVar varP,
-           if dep then Context.Rel.to_extended_vect 0 realsign_ind
-	   else Context.Rel.to_extended_vect 1 realsign) in
+           if dep then Context.Rel.to_extended_vect mkRel 0 realsign_ind
+	   else Context.Rel.to_extended_vect mkRel 1 realsign) in
   let c = 
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign_ind
@@ -596,7 +610,8 @@ let build_r2l_forward_rew_scheme dep env ind kind =
 (**********************************************************************)
 
 let fix_r2l_forward_rew_scheme (c, ctx') =
-  let t = Retyping.get_type_of (Global.env()) Evd.empty c in
+  let t = Retyping.get_type_of (Global.env()) Evd.empty (EConstr.of_constr c) in
+  let t = EConstr.Unsafe.to_constr t in
   let ctx,_ = decompose_prod_assum t in
   match ctx with
   | hp :: p :: ind :: indargs ->
@@ -605,9 +620,9 @@ let fix_r2l_forward_rew_scheme (c, ctx') =
         (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 1) p)
 	  (mkLambda_or_LetIn (RelDecl.map_constr (liftn (-1) 2) hp)
 	    (mkLambda_or_LetIn (RelDecl.map_constr (lift 2) ind)
-	      (Reductionops.whd_beta Evd.empty
-		(applist (c,
-	          Context.Rel.to_extended_list 3 indargs @ [mkRel 1;mkRel 3;mkRel 2]))))))
+	      (EConstr.Unsafe.to_constr (Reductionops.whd_beta Evd.empty
+		(EConstr.of_constr (applist (c,
+	          Context.Rel.to_extended_list mkRel 3 indargs @ [mkRel 1;mkRel 3;mkRel 2]))))))))
       in c', ctx'
   | _ -> anomaly (Pp.str "Ill-formed non-dependent left-to-right rewriting scheme")
 
@@ -762,8 +777,8 @@ let build_congr env (eq,refl,ctx) ind =
      (mkNamedLambda varH
         (applist
            (mkIndU indu,
-	    Context.Rel.to_extended_list (mip.mind_nrealargs+2) paramsctxt @
-	    Context.Rel.to_extended_list 0 realsign))
+	    Context.Rel.to_extended_list mkRel (mip.mind_nrealargs+2) paramsctxt @
+	    Context.Rel.to_extended_list mkRel 0 realsign))
      (mkCase (ci,
        my_it_mkLambda_or_LetIn_name
 	 (lift_rel_context (mip.mind_nrealargs+3) realsign)
@@ -771,9 +786,9 @@ let build_congr env (eq,refl,ctx) ind =
            (Anonymous,
             applist
              (mkIndU indu,
-	        Context.Rel.to_extended_list (2*mip.mind_nrealdecls+3)
+	        Context.Rel.to_extended_list mkRel (2*mip.mind_nrealdecls+3)
 		  paramsctxt
-	        @ Context.Rel.to_extended_list 0 realsign),
+	        @ Context.Rel.to_extended_list mkRel 0 realsign),
             mkApp (eq,
 	      [|mkVar varB;
                 mkApp (mkVar varf, [|lift (2*mip.mind_nrealdecls+4) b|]);

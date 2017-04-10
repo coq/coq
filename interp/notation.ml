@@ -585,7 +585,7 @@ let scope_class_compare : scope_class -> scope_class -> int =
   cl_typ_ord
 
 let compute_scope_class t =
-  let (cl,_,_) = find_class_type Evd.empty t in
+  let (cl,_,_) = find_class_type Evd.empty (EConstr.of_constr t) in
   cl
 
 module ScopeClassOrd =
@@ -615,7 +615,7 @@ let find_scope_class_opt = function
 (* Special scopes associated to arguments of a global reference *)
 
 let rec compute_arguments_classes t =
-  match kind_of_term (Reductionops.whd_betaiotazeta Evd.empty t) with
+  match kind_of_term (EConstr.Unsafe.to_constr (Reductionops.whd_betaiotazeta Evd.empty (EConstr.of_constr t))) with
     | Prod (_,t,u) ->
 	let cl = try Some (compute_scope_class t) with Not_found -> None in
 	cl :: compute_arguments_classes u

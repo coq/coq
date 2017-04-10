@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open Environ
 open Evd
 
@@ -79,7 +80,7 @@ val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
 
 type 'r abstraction_result =
   Names.Id.t * named_context_val *
-    Context.Named.Declaration.t list * Names.Id.t option *
+    named_declaration list * Names.Id.t option *
     types * (constr, 'r) Sigma.sigma option
 
 val make_abstraction : env -> 'r Sigma.t -> constr ->
@@ -97,28 +98,29 @@ val abstract_list_all :
 
 (* For tracing *)
 
-val w_merge : env -> bool -> core_unify_flags -> evar_map *
-  (metavariable * constr * (instance_constraint * instance_typing_status)) list *
-  (env * types pexistential * types) list -> evar_map
+type metabinding = (metavariable * constr * (instance_constraint * instance_typing_status))
+
+type subst0 =
+  (evar_map *
+    metabinding list *
+      (Environ.env * existential * t) list)
+
+val w_merge : env -> bool -> core_unify_flags -> subst0 -> evar_map
 
 val unify_0 :            Environ.env ->
            Evd.evar_map ->
            Evd.conv_pb ->
            core_unify_flags ->
-           Term.types ->
-           Term.types ->
-           Evd.evar_map * Evd.metabinding list *
-           (Environ.env * Term.types Term.pexistential * Term.constr) list
+           types ->
+           types ->
+           subst0
 
 val unify_0_with_initial_metas : 
-           Evd.evar_map * Evd.metabinding list *
-           (Environ.env * Term.types Term.pexistential * Term.constr) list ->
+           subst0 ->
            bool ->
            Environ.env ->
            Evd.conv_pb ->
            core_unify_flags ->
-           Term.types ->
-           Term.types ->
-           Evd.evar_map * Evd.metabinding list *
-           (Environ.env * Term.types Term.pexistential * Term.constr) list
-
+           types ->
+           types ->
+           subst0

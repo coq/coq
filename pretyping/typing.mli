@@ -6,8 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Names
 open Term
 open Environ
+open EConstr
 open Evd
 
 (** This module provides the typing machine with existential variables
@@ -44,3 +46,10 @@ val check_allowed_sort : env -> evar_map -> pinductive -> constr -> constr ->
     expected ones *)
 val check_type_fixpoint : Loc.t -> env -> evar_map ref ->
   Names.Name.t array -> types array -> unsafe_judgment array -> unit
+
+val judge_of_prop : unsafe_judgment
+val judge_of_set : unsafe_judgment
+val judge_of_abstraction : Environ.env -> Name.t ->
+  unsafe_type_judgment -> unsafe_judgment -> unsafe_judgment
+val judge_of_product : Environ.env -> Name.t ->
+  unsafe_type_judgment -> unsafe_type_judgment -> unsafe_judgment

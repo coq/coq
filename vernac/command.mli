@@ -170,7 +170,7 @@ val do_cofixpoint :
 
 (** Utils *)
 
-val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
+val check_mutuality : Environ.env -> Evd.evar_map -> bool -> (Id.t * types) list -> unit
 
 val declare_fix : ?opaque:bool -> definition_kind -> Universes.universe_binders -> Univ.universe_context -> Id.t ->
   Safe_typing.private_constants Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference

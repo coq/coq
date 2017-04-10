@@ -66,7 +66,8 @@ let interp_fields_evars env evars impls_env nots l =
   List.fold_left2
     (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
       let t', impl = interp_type_evars_impls env evars ~impls t in
-      let b' = Option.map (fun x -> fst (interp_casted_constr_evars_impls env evars ~impls x t')) b in
+      let b' = Option.map (fun x -> EConstr.Unsafe.to_constr (fst (interp_casted_constr_evars_impls env evars ~impls x t'))) b in
+      let t' = EConstr.Unsafe.to_constr t' in
       let impls =
 	match i with
 	| Anonymous -> impls
@@ -84,7 +85,7 @@ let compute_constructor_level evars env l =
   List.fold_right (fun d (env, univ) ->
     let univ = 
       if is_local_assum d then
-	let s = Retyping.get_sort_of env evars (RelDecl.get_type d) in
+	let s = Retyping.get_sort_of env evars (EConstr.of_constr (RelDecl.get_type d)) in
 	  Univ.sup (univ_of_sort s) univ 
       else univ
     in (push_rel d env, univ)) 
@@ -114,6 +115,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
               Loc.raise ~loc (Stream.Error "pattern with quote not allowed in record parameters.")) ps
   in 
   let impls_env, ((env1,newps), imps) = interp_context_evars env0 evars ps in
+  let newps = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) newps in
   let t', template = match t with 
     | Some t -> 
        let env = push_rel_context newps env0 in
@@ -122,6 +124,8 @@ let typecheck_params_and_fields def id pl t ps nots fs =
          | CSort (_, Misctypes.GType []) -> true | _ -> false in
        let s = interp_type_evars env evars ~impls:empty_internalization_env t in
        let sred = Reductionops.whd_all env !evars s in
+       let s = EConstr.Unsafe.to_constr s in
+       let sred = EConstr.Unsafe.to_constr sred in
 	 (match kind_of_term sred with
 	 | Sort s' -> 
 	    (if poly then
@@ -164,7 +168,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
   let evars, nf = Evarutil.nf_evars_and_universes evars in
   let newps = Context.Rel.map nf newps in
   let newfs = Context.Rel.map nf newfs in
-  let ce t = Pretyping.check_evars env0 Evd.empty evars t in
+  let ce t = Pretyping.check_evars env0 Evd.empty evars (EConstr.of_constr t) in
     List.iter (iter_constr ce) (List.rev newps);
     List.iter (iter_constr ce) (List.rev newfs);
     Evd.universe_context ?names:pl evars, nf arity, template, imps, newps, impls, newfs
@@ -271,8 +275,8 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
   let ctx = Univ.instantiate_univ_context mib.mind_universes in
   let indu = indsp, u in
   let r = mkIndU (indsp,u) in
-  let rp = applist (r, Context.Rel.to_extended_list 0 paramdecls) in
-  let paramargs = Context.Rel.to_extended_list 1 paramdecls in (*def in [[params;x:rp]]*)
+  let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
+  let paramargs = Context.Rel.to_extended_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
   let x = Name binder_name in
   let fields = instantiate_possibly_recursive_type indu paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
@@ -365,17 +369,17 @@ let structure_signature ctx =
       | [decl] ->
         let env = Environ.empty_named_context_val in
         let evm = Sigma.Unsafe.of_evar_map evm in
-        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm (RelDecl.get_type decl) in
+        let Sigma (_, evm, _) = Evarutil.new_pure_evar env evm (EConstr.of_constr (RelDecl.get_type decl)) in
         let evm = Sigma.to_evar_map evm in
         evm
       | decl::tl ->
           let env = Environ.empty_named_context_val in
           let evm = Sigma.Unsafe.of_evar_map evm in
-          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm (RelDecl.get_type decl) in
+          let Sigma (ev, evm, _) = Evarutil.new_pure_evar env evm (EConstr.of_constr (RelDecl.get_type decl)) in
           let evm = Sigma.to_evar_map evm in
 	  let new_tl = Util.List.map_i
 	    (fun pos decl ->
-	       RelDecl.map_type (fun t -> Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) decl) 1 tl in
+	       RelDecl.map_type (fun t -> EConstr.Unsafe.to_constr (Termops.replace_term evm (EConstr.mkRel pos) (EConstr.mkEvar(ev,[||])) (EConstr.of_constr t))) decl) 1 tl in
 	  deps_to_evar evm new_tl in
   deps_to_evar Evd.empty (List.rev ctx)
 
@@ -384,7 +388,7 @@ open Typeclasses
 let declare_structure finite poly ctx id idbuild paramimpls params arity template 
     fieldimpls fields ?(kind=StructureComponent) ?name is_coe coers sign =
   let nparams = List.length params and nfields = List.length fields in
-  let args = Context.Rel.to_extended_list nfields params in
+  let args = Context.Rel.to_extended_list mkRel nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
   let type_constructor = it_mkProd_or_LetIn ind fields in
   let binder_name = 
@@ -485,7 +489,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
   in
   let ctx_context =
     List.map (fun decl ->
-      match Typeclasses.class_of_constr (RelDecl.get_type decl) with
+      match Typeclasses.class_of_constr Evd.empty (EConstr.of_constr (RelDecl.get_type decl)) with
       | Some (_, ((cl,_), _)) -> Some (cl.cl_impl, true)
       | None -> None)
       params, params

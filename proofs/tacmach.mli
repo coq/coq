@@ -9,6 +9,7 @@
 open Names
 open Term
 open Environ
+open EConstr
 open Evd
 open Proof_type
 open Redexpr
@@ -33,18 +34,18 @@ val apply_sig_tac :
 
 val pf_concl              : goal sigma -> types
 val pf_env                : goal sigma -> env
-val pf_hyps               : goal sigma -> Context.Named.t
+val pf_hyps               : goal sigma -> named_context
 (*i val pf_untyped_hyps       : goal sigma -> (Id.t * constr) list i*)
 val pf_hyps_types         : goal sigma -> (Id.t * types) list
 val pf_nth_hyp_id         : goal sigma -> int -> Id.t
-val pf_last_hyp           : goal sigma -> Context.Named.Declaration.t
+val pf_last_hyp           : goal sigma -> named_declaration
 val pf_ids_of_hyps        : goal sigma -> Id.t list
 val pf_global             : goal sigma -> Id.t -> constr
 val pf_unsafe_type_of            : goal sigma -> constr -> types
 val pf_type_of            : goal sigma -> constr -> evar_map * types
 val pf_hnf_type_of        : goal sigma -> constr -> types
 
-val pf_get_hyp            : goal sigma -> Id.t -> Context.Named.Declaration.t
+val pf_get_hyp            : goal sigma -> Id.t -> named_declaration
 val pf_get_hyp_typ        : goal sigma -> Id.t -> types
 
 val pf_get_new_id  : Id.t      -> goal sigma -> Id.t
@@ -67,8 +68,8 @@ val pf_whd_all       : goal sigma -> constr -> constr
 val pf_hnf_constr              : goal sigma -> constr -> constr
 val pf_nf                      : goal sigma -> constr -> constr
 val pf_nf_betaiota             : goal sigma -> constr -> constr
-val pf_reduce_to_quantified_ind : goal sigma -> types -> pinductive * types
-val pf_reduce_to_atomic_ind     : goal sigma -> types -> pinductive * types
+val pf_reduce_to_quantified_ind : goal sigma -> types -> (inductive * EInstance.t) * types
+val pf_reduce_to_atomic_ind     : goal sigma -> types -> (inductive * EInstance.t) * types
 val pf_compute                 : goal sigma -> constr -> constr
 val pf_unfoldn    : (occurrences * evaluable_global_reference) list
   -> goal sigma -> constr -> constr
@@ -106,31 +107,31 @@ module New : sig
 
   val project : ('a, 'r) Proofview.Goal.t -> Evd.evar_map
   val pf_env : ('a, 'r) Proofview.Goal.t -> Environ.env
-  val pf_concl : ([ `NF ], 'r) Proofview.Goal.t -> types
+  val pf_concl : ('a, 'r) Proofview.Goal.t -> types
 
   (** WRONG: To be avoided at all costs, it typechecks the term entirely but
      forgets the universe constraints necessary to retypecheck it *)
-  val pf_unsafe_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.types
+  val pf_unsafe_type_of : ('a, 'r) Proofview.Goal.t -> constr -> types
 
   (** This function does no type inference and expects an already well-typed term.
       It recomputes its type in the fastest way possible (no conversion is ever involved) *)
-  val pf_get_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.types
+  val pf_get_type_of : ('a, 'r) Proofview.Goal.t -> constr -> types
 
   (** This function entirely type-checks the term and computes its type
       and the implied universe constraints. *)
-  val pf_type_of : ('a, 'r) Proofview.Goal.t -> Term.constr -> evar_map * Term.types
-  val pf_conv_x : ('a, 'r) Proofview.Goal.t -> Term.constr -> Term.constr -> bool
+  val pf_type_of : ('a, 'r) Proofview.Goal.t -> constr -> evar_map * types
+  val pf_conv_x : ('a, 'r) Proofview.Goal.t -> t -> t -> bool
 
-  val pf_get_new_id  : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> identifier
+  val pf_get_new_id  : identifier -> ('a, 'r) Proofview.Goal.t -> identifier
   val pf_ids_of_hyps : ('a, 'r) Proofview.Goal.t -> identifier list
   val pf_hyps_types : ('a, 'r) Proofview.Goal.t -> (identifier * types) list
 
-  val pf_get_hyp : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> Context.Named.Declaration.t
-  val pf_get_hyp_typ        : identifier -> ([ `NF ], 'r) Proofview.Goal.t -> types
-  val pf_last_hyp           : ([ `NF ], 'r) Proofview.Goal.t -> Context.Named.Declaration.t
+  val pf_get_hyp : identifier -> ('a, 'r) Proofview.Goal.t -> named_declaration
+  val pf_get_hyp_typ        : identifier -> ('a, 'r) Proofview.Goal.t -> types
+  val pf_last_hyp           : ('a, 'r) Proofview.Goal.t -> named_declaration
 
   val pf_nf_concl : ([ `LZ ], 'r) Proofview.Goal.t -> types
-  val pf_reduce_to_quantified_ind : ('a, 'r) Proofview.Goal.t -> types -> pinductive * types
+  val pf_reduce_to_quantified_ind : ('a, 'r) Proofview.Goal.t -> types -> (inductive * EInstance.t) * types
 
   val pf_hnf_constr : ('a, 'r) Proofview.Goal.t -> constr -> types
   val pf_hnf_type_of : ('a, 'r) Proofview.Goal.t -> constr -> types

@@ -9,6 +9,7 @@
 open Names
 open Constr
 open Environ
+open EConstr
 open Constrexpr
 open Tacexpr
 open Misctypes
@@ -74,7 +75,7 @@ val cl_rewrite_clause :
   bool -> Locus.occurrences -> Id.t option -> unit Proofview.tactic
 
 val is_applied_rewrite_relation :
-  env -> evar_map -> Context.Rel.t -> constr -> types option
+  env -> evar_map -> rel_context -> constr -> types option
 
 val declare_relation :
   ?binders:local_binder_expr list -> constr_expr -> constr_expr -> Id.t ->
@@ -112,6 +113,6 @@ val apply_strategy :
   strategy ->
   Environ.env ->
   Names.Id.t list ->
-  Term.constr ->
-  bool * Term.constr ->
+  constr ->
+  bool * constr ->
   evars -> rewrite_result

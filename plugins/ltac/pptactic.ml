@@ -79,8 +79,8 @@ type 'a glob_extra_genarg_printer =
     'a -> std_ppcmds
 
 type 'a extra_genarg_printer =
-    (Term.constr -> std_ppcmds) ->
-    (Term.constr -> std_ppcmds) ->
+    (EConstr.constr -> std_ppcmds) ->
+    (EConstr.constr -> std_ppcmds) ->
     (tolerability -> Val.t -> std_ppcmds) ->
     'a -> std_ppcmds
 
@@ -1153,23 +1153,24 @@ type 'a extra_genarg_printer =
   let pr_glob_tactic env = pr_glob_tactic_level env ltop
 
   let strip_prod_binders_constr n ty =
+    let ty = EConstr.Unsafe.to_constr ty in
     let rec strip_ty acc n ty =
-      if n=0 then (List.rev acc, ty) else
+      if n=0 then (List.rev acc, EConstr.of_constr ty) else
         match Term.kind_of_term ty with
             Term.Prod(na,a,b) ->
-              strip_ty (([Loc.ghost,na],a)::acc) (n-1) b
+              strip_ty (([Loc.ghost,na],EConstr.of_constr a)::acc) (n-1) b
           | _ -> error "Cannot translate fix tactic: not enough products" in
     strip_ty [] n ty
 
-  let pr_atomic_tactic_level env n t =
+  let pr_atomic_tactic_level env sigma n t =
     let prtac n (t:atomic_tactic_expr) =
       let pr = {
         pr_tactic = (fun _ _ -> str "<tactic>");
-        pr_constr = pr_constr_env env Evd.empty;
+        pr_constr = (fun c -> pr_econstr_env env sigma c);
         pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
-        pr_lconstr = pr_lconstr_env env Evd.empty;
-        pr_pattern = pr_constr_pattern_env env Evd.empty;
-        pr_lpattern = pr_lconstr_pattern_env env Evd.empty;
+        pr_lconstr = (fun c -> pr_leconstr_env env sigma c);
+        pr_pattern = pr_constr_pattern_env env sigma;
+        pr_lpattern = pr_lconstr_pattern_env env sigma;
         pr_constant = pr_evaluable_reference_env env;
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
@@ -1200,7 +1201,7 @@ type 'a extra_genarg_printer =
   let pr_extend pr lev ml args =
     pr_extend_gen pr lev ml args
 
-  let pr_atomic_tactic env = pr_atomic_tactic_level env ltop
+  let pr_atomic_tactic env sigma c = pr_atomic_tactic_level env sigma ltop c
 
 let declare_extra_genarg_pprule wit
   (f : 'a raw_extra_genarg_printer)
@@ -1217,7 +1218,7 @@ let declare_extra_genarg_pprule wit
   in
   let h x =
     let env = Global.env () in
-    h (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty) (fun _ _ -> str "<tactic>") x
+    h (pr_econstr_env env Evd.empty) (pr_leconstr_env env Evd.empty) (fun _ _ -> str "<tactic>") x
   in
   Genprint.register_print0 wit f g h
 
@@ -1247,7 +1248,7 @@ let () =
     wit_intro_pattern
     (Miscprint.pr_intro_pattern pr_constr_expr)
     (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr c))
-    (Miscprint.pr_intro_pattern (fun c -> pr_constr (fst (run_delayed c))));
+    (Miscprint.pr_intro_pattern (fun c -> pr_econstr (fst (run_delayed c))));
   Genprint.register_print0
     wit_clause_dft_concl
     (pr_clauses (Some true) pr_lident)
@@ -1258,7 +1259,7 @@ let () =
     wit_constr
     Ppconstr.pr_constr_expr
     (fun (c, _) -> Printer.pr_glob_constr c)
-    Printer.pr_constr
+    Printer.pr_econstr
   ;
   Genprint.register_print0
     wit_uconstr
@@ -1270,25 +1271,25 @@ let () =
     wit_open_constr
     Ppconstr.pr_constr_expr
     (fun (c, _) -> Printer.pr_glob_constr c)
-    Printer.pr_constr
+    Printer.pr_econstr
   ;
   Genprint.register_print0 wit_red_expr
     (pr_red_expr (pr_constr_expr, pr_lconstr_expr, pr_or_by_notation pr_reference, pr_constr_pattern_expr))
     (pr_red_expr (pr_and_constr_expr pr_glob_constr, pr_and_constr_expr pr_lglob_constr, pr_or_var (pr_and_short_name pr_evaluable_reference), pr_pat_and_constr_expr pr_glob_constr))
-    (pr_red_expr (pr_constr, pr_lconstr, pr_evaluable_reference, pr_constr_pattern));
+    (pr_red_expr (pr_econstr, pr_leconstr, pr_evaluable_reference, pr_constr_pattern));
   Genprint.register_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
   Genprint.register_print0 wit_bindings
     (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_bindings_no_with pr_constr pr_lconstr (fst (run_delayed it)));
+    (fun it -> pr_bindings_no_with pr_econstr pr_leconstr (fst (run_delayed it)));
   Genprint.register_print0 wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_with_bindings pr_constr pr_lconstr (fst (run_delayed it)));
+    (fun it -> pr_with_bindings pr_econstr pr_leconstr (fst (run_delayed it)));
   Genprint.register_print0 Tacarg.wit_destruction_arg
     (pr_destruction_arg pr_constr_expr pr_lconstr_expr)
     (pr_destruction_arg (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_destruction_arg pr_constr pr_lconstr (run_delayed_destruction_arg it));
+    (fun it -> pr_destruction_arg pr_econstr pr_leconstr (run_delayed_destruction_arg it));
   Genprint.register_print0 Stdarg.wit_int int int int;
   Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
   Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;

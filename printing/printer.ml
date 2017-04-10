@@ -60,7 +60,10 @@ let pr_constr_goal_style_env env = pr_constr_core true env
 let pr_open_lconstr_env env sigma (_,c) = pr_lconstr_env env sigma c
 let pr_open_constr_env env sigma (_,c) = pr_constr_env env sigma c
 
-  (* NB do not remove the eta-redexes! Global.env() has side-effects... *)
+let pr_leconstr_env env sigma c = pr_lconstr_env env sigma (EConstr.to_constr sigma c)
+let pr_econstr_env env sigma c = pr_constr_env env sigma (EConstr.to_constr sigma c)
+
+(* NB do not remove the eta-redexes! Global.env() has side-effects... *)
 let pr_lconstr t =
   let (sigma, env) = get_current_context () in
   pr_lconstr_env env sigma t
@@ -71,6 +74,9 @@ let pr_constr t =
 let pr_open_lconstr (_,c) = pr_lconstr c
 let pr_open_constr (_,c) = pr_constr c
 
+let pr_leconstr c = pr_lconstr (EConstr.Unsafe.to_constr c)
+let pr_econstr c = pr_constr (EConstr.Unsafe.to_constr c)
+
 let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
   (* Warning: clashes can occur with variables of same name in env but *)
   (* we also need to preserve the actual names of the patterns *)
@@ -78,8 +84,8 @@ let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
   let assums = List.map (fun id -> (Name id,(* dummy *) mkProp)) ids in
   pr (Termops.push_rels_assum assums env) sigma c
 
-let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_constr_env
-let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_lconstr_env
+let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
+let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_leconstr_env
 
 let pr_constr_under_binders c =
   let (sigma, env) = get_current_context () in
@@ -93,7 +99,6 @@ let pr_type_core goal_concl_style env sigma t =
 let pr_ltype_core goal_concl_style env sigma t =
   pr_lconstr_expr (extern_type goal_concl_style env sigma t)
 
-let pr_goal_concl_style_env env = pr_ltype_core true env
 let pr_ltype_env env = pr_ltype_core false env
 let pr_type_env env = pr_type_core false env
 
@@ -104,8 +109,13 @@ let pr_type t =
     let (sigma, env) = get_current_context () in
     pr_type_env env sigma t
 
+let pr_etype_env env sigma c = pr_type_env env sigma (EConstr.to_constr sigma c)
+let pr_letype_env env sigma c = pr_ltype_env env sigma (EConstr.to_constr sigma c)
+let pr_goal_concl_style_env env sigma c =
+  pr_ltype_core true env sigma (EConstr.to_constr sigma c)
+
 let pr_ljudge_env env sigma j =
-  (pr_lconstr_env env sigma j.uj_val, pr_lconstr_env env sigma j.uj_type)
+  (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
 
 let pr_ljudge j =
   let (sigma, env) = get_current_context () in
@@ -147,7 +157,7 @@ let pr_constr_pattern t =
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
 let _ = Termops.set_print_constr 
-  (fun env t -> pr_lconstr_expr (extern_constr ~lax:true false env Evd.empty t))
+  (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma (EConstr.Unsafe.to_constr t)))
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 
@@ -213,7 +223,7 @@ let safe_pr_constr t =
 let pr_universe_ctx sigma c =
   if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
     fnl()++pr_in_comment (fun c -> v 0 
-      (Univ.pr_universe_context (Evd.pr_evd_level sigma) c)) c
+      (Univ.pr_universe_context (Termops.pr_evd_level sigma) c)) c
   else
     mt()
 
@@ -230,7 +240,7 @@ let pr_puniverses f env (c,u) =
    else mt ())
 
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
-let pr_existential_key = Evd.pr_existential_key
+let pr_existential_key = Termops.pr_existential_key
 let pr_existential env sigma ev = pr_lconstr_env env sigma (mkEvar ev)
 let pr_inductive env ind = pr_lconstr_env env Evd.empty (mkInd ind)
 let pr_constructor env cstr = pr_lconstr_env env Evd.empty (mkConstruct cstr)
@@ -496,15 +506,15 @@ let print_evar_constraints gl sigma =
     | Some g ->
        let env = Goal.V82.env sigma g in fun e' ->
        begin
-         if Context.Named.equal (named_context env) (named_context e') then
-           if Context.Rel.equal (rel_context env) (rel_context e') then mt ()
+         if Context.Named.equal Constr.equal (named_context env) (named_context e') then
+           if Context.Rel.equal Constr.equal (rel_context env) (rel_context e') then mt ()
            else pr_rel_context_of e' sigma ++ str " |-" ++ spc ()
          else pr_context_of e' sigma ++ str " |-" ++ spc ()
        end
   in
   let pr_evconstr (pbty,env,t1,t2) =
-    let t1 = Evarutil.nf_evar sigma t1
-    and t2 = Evarutil.nf_evar sigma t2 in
+    let t1 = Evarutil.nf_evar sigma (EConstr.of_constr t1)
+    and t2 = Evarutil.nf_evar sigma (EConstr.of_constr t2) in
     let env =
       (** We currently allow evar instances to refer to anonymous de Bruijn
           indices, so we protect the error printing code in this case by giving
@@ -512,13 +522,13 @@ let print_evar_constraints gl sigma =
           problem. MS: we should rather stop depending on anonymous variables, they
           can be used to indicate independency. Also, this depends on a strategy for 
           naming/renaming *)
-      Namegen.make_all_name_different env in
+      Namegen.make_all_name_different env sigma in
     str" " ++
-      hov 2 (pr_env env ++ pr_lconstr_env env sigma t1 ++ spc () ++
+      hov 2 (pr_env env ++ pr_leconstr_env env sigma t1 ++ spc () ++
              str (match pbty with
                   | Reduction.CONV -> "=="
                   | Reduction.CUMUL -> "<=") ++
-             spc () ++ pr_lconstr_env env sigma t2)
+             spc () ++ pr_leconstr_env env sigma t2)
   in
   let pr_candidate ev evi (candidates,acc) =
     if Option.has_some evi.evar_candidates then
@@ -767,7 +777,8 @@ let pr_prim_rule = function
         str ";[" ++ cl ++ str"intro " ++ pr_id id ++ str"|idtac]")
 
   | Refine c ->
-      str(if Termops.occur_meta c then "refine " else "exact ") ++
+      (** FIXME *)
+      str(if Termops.occur_meta Evd.empty (EConstr.of_constr c) then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole pr_constr c
 
 (* Backwards compatibility *)
@@ -918,4 +929,4 @@ let pr_polymorphic b =
 
 let pr_universe_instance evd ctx =
   let inst = Univ.UContext.instance ctx in
-    str"@{" ++ Univ.Instance.pr (Evd.pr_evd_level evd) inst ++ str"}"
+    str"@{" ++ Univ.Instance.pr (Termops.pr_evd_level evd) inst ++ str"}"

@@ -14,4 +14,4 @@
 
 val decideEqualityGoal : unit Proofview.tactic
 
-val compare : Constr.t -> Constr.t -> unit Proofview.tactic
+val compare : EConstr.t -> EConstr.t -> unit Proofview.tactic

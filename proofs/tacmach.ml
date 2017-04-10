@@ -41,11 +41,14 @@ let project  = Refiner.project
 let pf_env   = Refiner.pf_env
 let pf_hyps  = Refiner.pf_hyps
 
+let test_conversion env sigma pb c1 c2 =
+  Reductionops.check_conv ~pb env sigma c1 c2
+
 let pf_concl gls = Goal.V82.concl (project gls) (sig_it gls)
 let pf_hyps_types gls  =
   let sign = Environ.named_context (pf_env gls) in
   List.map (function LocalAssum (id,x)
-                   | LocalDef (id,_,x) -> id, x)
+                   | LocalDef (id,_,x) -> id, EConstr.of_constr x)
            sign
 
 let pf_nth_hyp_id gls n = List.nth (pf_hyps gls) (n-1) |> NamedDecl.get_id
@@ -72,7 +75,7 @@ let pf_get_new_ids ids gls =
     (fun id acc -> (next_ident_away id (acc@avoid))::acc)
     ids []
 
-let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
+let pf_global gls id = EConstr.of_constr (Constrintern.construct_reference (pf_hyps gls) id)
 
 let pf_reduction_of_red_expr gls re c =
   let (redfun, _) = reduction_of_red_expr (pf_env gls) re in
@@ -98,15 +101,15 @@ let pf_get_type_of               = pf_reduce Retyping.get_type_of
 
 let pf_conv_x gl                = pf_reduce test_conversion gl Reduction.CONV
 let pf_conv_x_leq gl            = pf_reduce test_conversion gl Reduction.CUMUL
-let pf_const_value              = pf_reduce (fun env _ -> constant_value_in env)
+let pf_const_value              = pf_reduce (fun env _ c -> EConstr.of_constr (constant_value_in env c))
 
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
 let pf_hnf_type_of gls          = pf_get_type_of gls %> pf_whd_all gls
 
-let pf_is_matching              = pf_apply Constr_matching.is_matching_conv
-let pf_matches                  = pf_apply Constr_matching.matches_conv
+let pf_is_matching gl p c       = pf_apply Constr_matching.is_matching_conv gl p c
+let pf_matches gl p c           = pf_apply Constr_matching.matches_conv gl p c
 
 (********************************************)
 (* Definition of the most primitive tactics *)
@@ -115,12 +118,15 @@ let pf_matches                  = pf_apply Constr_matching.matches_conv
 let refiner = refiner
 
 let internal_cut_no_check replace id t gl =
+  let t = EConstr.Unsafe.to_constr t in
   refiner (Cut (true,replace,id,t)) gl
 
 let internal_cut_rev_no_check replace id t gl =
+  let t = EConstr.Unsafe.to_constr t in
   refiner (Cut (false,replace,id,t)) gl
 
 let refine_no_check c gl =
+  let c = EConstr.Unsafe.to_constr c in
   refiner (Refine c) gl
 
 (* Versions with consistency checks *)
@@ -136,7 +142,7 @@ open Pp
 let db_pr_goal sigma g =
   let env = Goal.V82.env sigma g in
   let penv = print_named_context env in
-  let pc = print_constr_env env (Goal.V82.concl sigma g) in
+  let pc = print_constr_env env sigma (Goal.V82.concl sigma g) in
   str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()
@@ -165,7 +171,7 @@ module New = struct
     (** We only check for the existence of an [id] in [hyps] *)
     let gl = Proofview.Goal.assume gl in
     let hyps = Proofview.Goal.hyps gl in
-    Constrintern.construct_reference hyps id
+    EConstr.of_constr (Constrintern.construct_reference hyps id)
 
   let pf_env = Proofview.Goal.env
   let pf_concl = Proofview.Goal.concl
@@ -194,7 +200,7 @@ module New = struct
   let pf_get_hyp id gl =
     let hyps = Proofview.Goal.env gl in
     let sign =
-      try Environ.lookup_named id hyps
+      try EConstr.lookup_named id hyps
       with Not_found -> raise (RefinerError (NoSuchHyp id))
     in
     sign
@@ -206,7 +212,7 @@ module New = struct
     let env = Proofview.Goal.env gl in
     let sign = Environ.named_context env in
     List.map (function LocalAssum (id,x)
-                     | LocalDef (id,_,x) -> id, x)
+                     | LocalDef (id,_,x) -> id, EConstr.of_constr x)
              sign
 
   let pf_last_hyp gl =

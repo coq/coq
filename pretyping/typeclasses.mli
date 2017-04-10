@@ -61,13 +61,13 @@ val class_info : global_reference -> typeclass (** raises a UserError if not a c
 (** These raise a UserError if not a class.
     Caution: the typeclass structures is not instantiated w.r.t. the universe instance.
     This is done separately by typeclass_univ_instance. *)
-val dest_class_app : env -> constr -> typeclass puniverses * constr list
+val dest_class_app : env -> evar_map -> EConstr.constr -> (typeclass * EConstr.EInstance.t) * constr list
 
 (** Get the instantiated typeclass structure for a given universe instance. *)
 val typeclass_univ_instance : typeclass puniverses -> typeclass puniverses
 
 (** Just return None if not a class *)
-val class_of_constr : constr -> (Context.Rel.t * (typeclass puniverses * constr list)) option
+val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option
   
 val instance_impl : instance -> global_reference
 
@@ -99,11 +99,11 @@ val mark_unresolvables : ?filter:evar_filter -> evar_map -> evar_map
 val mark_resolvables   : ?filter:evar_filter -> evar_map -> evar_map
 val mark_resolvable : evar_info -> evar_info
 val is_class_evar : evar_map -> evar_info -> bool
-val is_class_type : evar_map -> types -> bool
+val is_class_type : evar_map -> EConstr.types -> bool
 
 val resolve_typeclasses : ?fast_path:bool -> ?filter:evar_filter -> ?unique:bool ->
   ?split:bool -> ?fail:bool -> env -> evar_map -> evar_map
-val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> types -> open_constr
+val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
 
 val set_typeclass_transparency_hook : (evaluable_global_reference -> bool (*local?*) -> bool -> unit) Hook.t
 val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> unit
@@ -120,7 +120,7 @@ val add_instance_hint : global_reference_or_constr -> global_reference list ->
 val remove_instance_hint : global_reference -> unit
 
 val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
-val solve_one_instance_hook : (env -> evar_map -> types -> bool -> open_constr) Hook.t
+val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) Hook.t
 
 val declare_instance : Vernacexpr.hint_info_expr option -> bool -> global_reference -> unit
 

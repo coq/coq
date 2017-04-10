@@ -8,8 +8,9 @@
 
 open Names
 open Term
-open Evd
 open Environ
+open EConstr
+open Evd
 open Mod_subst
 
 (** {6 This is the type of class kinds } *)
@@ -59,7 +60,7 @@ val class_info_from_index : cl_index -> cl_typ * cl_info_typ
 
 (** [find_class_type env sigma c] returns the head reference of [c],
     its universe instance and its arguments *)
-val find_class_type : evar_map -> types -> cl_typ * Univ.universe_instance * constr list
+val find_class_type : evar_map -> types -> cl_typ * EInstance.t * constr list
 
 (** raises [Not_found] if not convertible to a class *)
 val class_of : env -> evar_map -> types -> types * cl_index
@@ -104,7 +105,7 @@ val install_path_printer :
 val string_of_class : cl_typ -> string
 val pr_class : cl_typ -> std_ppcmds
 val pr_cl_index : cl_index -> std_ppcmds
-val get_coercion_value : coe_index -> constr
+val get_coercion_value : coe_index -> Constr.t
 val inheritance_graph : unit -> ((cl_index * cl_index) * inheritance_path) list
 val classes : unit -> cl_typ list
 val coercions : unit -> coe_index list

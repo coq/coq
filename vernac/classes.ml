@@ -49,7 +49,7 @@ let set_typeclass_transparency c local b =
 let _ =
   Hook.set Typeclasses.add_instance_hint_hook
     (fun inst path local info poly ->
-     let inst' = match inst with IsConstr c -> Hints.IsConstr (c, Univ.ContextSet.empty)
+     let inst' = match inst with IsConstr c -> Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty)
        | IsGlobal gr -> Hints.IsGlobRef gr
      in
      let info =
@@ -74,7 +74,7 @@ let existing_instance glob g info =
   let info = Option.default Hints.empty_hint_info info in
   let instance = Global.type_of_global_unsafe c in
   let _, r = decompose_prod_assum instance in
-    match class_of_constr r with
+    match class_of_constr Evd.empty (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob
   (*FIXME*) (Flags.use_polymorphic_flag ()) c)
       | None -> user_err ~loc:(loc_of_reference g)
@@ -92,7 +92,7 @@ let type_ctx_instance evars env ctx inst subst =
       let t' = substl subst (RelDecl.get_type decl) in
       let c', l =
 	match decl with
-	| LocalAssum _ -> interp_casted_constr_evars env evars (List.hd l) t', List.tl l
+	| LocalAssum _ -> EConstr.Unsafe.to_constr (interp_casted_constr_evars env evars (List.hd l) t'), List.tl l
 	| LocalDef (_,b,_) -> substl subst b, l
       in
       let d = RelDecl.get_name decl, Some c', t' in
@@ -159,13 +159,16 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
   in
   let k, u, cty, ctx', ctx, len, imps, subst =
     let impls, ((env', ctx), imps) = interp_context_evars env evars ctx in
+    let ctx = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) ctx in
     let c', imps' = interp_type_evars_impls ~impls env' evars tclass in
+    let c' = EConstr.Unsafe.to_constr c' in
     let len = List.length ctx in
     let imps = imps @ Impargs.lift_implicits len imps' in
     let ctx', c = decompose_prod_assum c' in
     let ctx'' = ctx' @ ctx in
-    let k, args = Typeclasses.dest_class_app (push_rel_context ctx'' env) c in
-    let cl, u = Typeclasses.typeclass_univ_instance k in
+    let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) !evars (EConstr.of_constr c) in
+    let u = EConstr.EInstance.kind !evars u in
+    let cl, u = Typeclasses.typeclass_univ_instance (k, u) in
     let _, args = 
       List.fold_right (fun decl (args, args') ->
 	match decl with
@@ -189,7 +192,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
   let env' = push_rel_context ctx env in
   evars := Evarutil.nf_evar_map !evars;
   evars := resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env !evars;
-  let subst = List.map (Evarutil.nf_evar !evars) subst in
+  let subst = List.map (fun c -> EConstr.Unsafe.to_constr (Evarutil.nf_evar !evars (EConstr.of_constr c))) subst in
     if abstract then
       begin
 	let subst = List.fold_left2
@@ -202,7 +205,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
 	    nf t
 	in
-	Pretyping.check_evars env Evd.empty !evars termtype;
+	Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr termtype);
 	let pl, ctx = Evd.universe_context ?names:pl !evars in
 	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
 	  (ParameterEntry 
@@ -228,6 +231,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	| None -> if List.is_empty k.cl_props then Some (Inl subst) else None
 	| Some (Inr term) ->
 	    let c = interp_casted_constr_evars env' evars term cty in
+	    let c = EConstr.Unsafe.to_constr c in
 	      Some (Inr (c, subst))
 	| Some (Inl props) ->
 	    let get_id =
@@ -298,7 +302,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
       let evm, nf = Evarutil.nf_evar_map_universes !evars in
       let termtype = nf termtype in
       let _ = (* Check that the type is free of evars now. *)
-	Pretyping.check_evars env Evd.empty evm termtype
+	Pretyping.check_evars env Evd.empty evm (EConstr.of_constr termtype)
       in
       let term = Option.map nf term in
 	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
@@ -334,14 +338,14 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
                      the refinement manually.*)
 		let gls = List.rev (Evd.future_goals evm) in
                 let evm = Evd.reset_future_goals evm in
-                Lemmas.start_proof id ?pl kind evm termtype
+                Lemmas.start_proof id ?pl kind evm (EConstr.of_constr termtype)
 		(Lemmas.mk_hook
                   (fun _ -> instance_hook k pri global imps ?hook));
                  (* spiwack: I don't know what to do with the status here. *)
 		if not (Option.is_empty term) then
                   let init_refine =
                     Tacticals.New.tclTHENLIST [
-                      Refine.refine { run = fun evm -> Sigma (Option.get term, evm, Sigma.refl) };
+                      Refine.refine { run = fun evm -> Sigma (EConstr.of_constr (Option.get term), evm, Sigma.refl) };
                       Proofview.Unsafe.tclNEWGOALS gls;
                       Tactics.New.reduce_after_refine;
                     ]
@@ -370,9 +374,10 @@ let context poly l =
   let env = Global.env() in
   let evars = ref (Evd.from_env env) in
   let _, ((env', fullctx), impls) = interp_context_evars env evars l in
+  let fullctx = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) fullctx in
   let subst = Evarutil.evd_comb0 Evarutil.nf_evars_and_universes evars in
   let fullctx = Context.Rel.map subst fullctx in
-  let ce t = Pretyping.check_evars env Evd.empty !evars t in
+  let ce t = Pretyping.check_evars env Evd.empty !evars (EConstr.of_constr t) in
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) fullctx in
   let ctx =
     try named_of_rel_context fullctx
@@ -387,7 +392,7 @@ let context poly l =
       let () = uctx := Univ.ContextSet.empty in
       let decl = (ParameterEntry (None,poly,(t,ctx),None), IsAssumption Logical) in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
-	match class_of_constr t with
+	match class_of_constr !evars (EConstr.of_constr t) with
 	| Some (rels, ((tc,_), args) as _cl) ->
 	    add_instance (Typeclasses.new_instance tc Hints.empty_hint_info false (*FIXME*)
 			    poly (ConstRef cst));

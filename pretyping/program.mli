@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
+open EConstr
 open Globnames
 
 (** A bunch of Coq constants used by Progam *)

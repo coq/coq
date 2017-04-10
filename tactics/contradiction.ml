@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open Hipattern
 open Tactics
 open Coqlib
@@ -19,6 +20,7 @@ module NamedDecl = Context.Named.Declaration
 (* Absurd *)
 
 let mk_absurd_proof t =
+  let build_coq_not () = EConstr.of_constr (build_coq_not ()) in
   let id = Namegen.default_dependent_ident in
   mkLambda (Names.Name id,mkApp(build_coq_not (),[|t|]),
     mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
@@ -33,7 +35,7 @@ let absurd c =
     let t = j.Environ.utj_val in
     let tac =
     Tacticals.New.tclTHENLIST [
-      elim_type (build_coq_False ());
+      elim_type (EConstr.of_constr (build_coq_False ()));
       Simple.apply (mk_absurd_proof t)
     ] in
     Sigma.Unsafe.of_pair (tac, sigma)
@@ -66,18 +68,18 @@ let contradiction_context =
           let id = NamedDecl.get_id d in
           let typ = nf_evar sigma (NamedDecl.get_type d) in
 	  let typ = whd_all env sigma typ in
-	  if is_empty_type typ then
+	  if is_empty_type sigma typ then
 	    simplest_elim (mkVar id)
-	  else match kind_of_term typ with
-	  | Prod (na,t,u) when is_empty_type u ->
+	  else match EConstr.kind sigma typ with
+	  | Prod (na,t,u) when is_empty_type sigma u ->
              let is_unit_or_eq =
-               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type t
+               if use_negated_unit_or_eq_type () then match_with_unit_or_eq_type sigma t
                else None in
 	     Tacticals.New.tclORELSE
                (match is_unit_or_eq with
                | Some _ ->
-                   let hd,args = decompose_app t in
-                   let (ind,_ as indu) = destInd hd in
+                   let hd,args = decompose_app sigma t in
+                   let (ind,_ as indu) = destInd sigma hd in
                    let nparams = Inductiveops.inductive_nparams_env env ind in
                    let params = Util.List.firstn nparams args in
                    let p = applist ((mkConstructUi (indu,1)), params) in
@@ -102,20 +104,19 @@ let contradiction_context =
   end }
 
 let is_negation_of env sigma typ t =
-  match kind_of_term (whd_all env sigma t) with
+  match EConstr.kind sigma (whd_all env sigma t) with
     | Prod (na,t,u) ->
-      let u = nf_evar sigma u in
-      is_empty_type u && is_conv_leq env sigma typ t
+      is_empty_type sigma u && is_conv_leq env sigma typ t
     | _ -> false
 
 let contradiction_term (c,lbind as cl) =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let typ = type_of c in
     let _, ccl = splay_prod env sigma typ in
-    if is_empty_type ccl then
+    if is_empty_type sigma ccl then
       Tacticals.New.tclTHEN
         (elim false None cl None)
         (Tacticals.New.tclTRY assumption)
@@ -123,7 +124,7 @@ let contradiction_term (c,lbind as cl) =
       Proofview.tclORELSE
         begin
           if lbind = NoBindings then
-            filter_hyp (is_negation_of env sigma typ)
+            filter_hyp (fun c -> is_negation_of env sigma typ c)
               (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
           else
             Proofview.tclZERO Not_found

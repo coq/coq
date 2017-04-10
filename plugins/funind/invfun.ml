@@ -13,6 +13,7 @@ open CErrors
 open Util
 open Names
 open Term
+open EConstr
 open Vars
 open Pp
 open Globnames
@@ -109,11 +110,11 @@ let thin ids gl = Proofview.V82.of_tactic (Tactics.clear ids) gl
 
 let make_eq () =
   try
-    Universes.constr_of_global (Coqlib.build_coq_eq ())
+    EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq ()))
   with _ -> assert false 
 let make_eq_refl () =
   try
-    Universes.constr_of_global (Coqlib.build_coq_eq_refl ())
+    EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq_refl ()))
   with _ -> assert false
 
 	  
@@ -132,11 +133,12 @@ let make_eq_refl () =
 let generate_type evd g_to_f f graph i =
   (*i we deduce the number of arguments of the function and its returned type from the graph i*)
   let evd',graph =
-    Evd.fresh_global  (Global.env ()) !evd  (Globnames.IndRef (fst (destInd graph)))
+    Evd.fresh_global  (Global.env ()) !evd  (Globnames.IndRef (fst (destInd !evd graph)))
   in
+  let graph = EConstr.of_constr graph in
   evd:=evd';
   let graph_arity = Typing.e_type_of (Global.env ()) evd graph in
-  let ctxt,_ = decompose_prod_assum graph_arity in
+  let ctxt,_ = decompose_prod_assum !evd graph_arity in
   let fun_ctxt,res_type =
     match ctxt with
       | [] | [_] -> anomaly (Pp.str "Not a valid context")
@@ -194,7 +196,7 @@ let generate_type evd g_to_f f graph i =
    WARNING: while convertible, [type_of body] and [type] can be non equal
 *)
 let find_induction_principle evd f =
-  let f_as_constant,u =  match kind_of_term f with
+  let f_as_constant,u =  match EConstr.kind !evd f with
     | Const c' -> c'
     | _ -> error "Must be used with a function"
   in
@@ -203,6 +205,7 @@ let find_induction_principle evd f =
     | None -> raise Not_found
     | Some rect_lemma ->
        let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (Globnames.ConstRef rect_lemma) in
+       let rect_lemma = EConstr.of_constr rect_lemma in
        let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' rect_lemma in
        evd:=evd';
        rect_lemma,typ
@@ -247,15 +250,15 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
        \[fun (x_1:t_1)\ldots(x_n:t_n)=> fun  fv => fun res => res = fv \rightarrow graph\ x_1\ldots x_n\ res\]
     *)
     (* we the get the definition of the graphs block *)
-    let graph_ind,u = destInd graphs_constr.(i) in
+    let graph_ind,u = destInd evd graphs_constr.(i) in
     let kn = fst graph_ind in
     let mib,_ = Global.lookup_inductive graph_ind in
     (* and the principle to use in this lemma in $\zeta$ normal form *)
     let f_principle,princ_type = schemes.(i) in
     let princ_type =  nf_zeta princ_type in
-    let princ_infos = Tactics.compute_elim_sig princ_type in
+    let princ_infos = Tactics.compute_elim_sig evd princ_type in
     (* The number of args of the function is then easily computable *)
-    let nb_fun_args = nb_prod (pf_concl g)  - 2  in
+    let nb_fun_args = nb_prod (project g) (pf_concl g) - 2 in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
     (* Since we cannot ensure that the functional principle is defined in the
@@ -272,13 +275,13 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	(fun decl ->
 	   List.map
 	     (fun id -> Loc.ghost, IntroNaming (IntroIdentifier id))
-	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum (RelDecl.get_type decl)))))
+	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum evd (RelDecl.get_type decl)))))
 	)
 	branches
     in
     (* before building the full intro pattern for the principle *)
     let eq_ind = make_eq () in
-    let eq_construct = mkConstructUi (destInd eq_ind, 1) in
+    let eq_construct = mkConstructUi (destInd evd eq_ind, 1) in
     (* The next to referencies will be used to find out which constructor to apply in each branch *)
     let ind_number = ref 0
     and min_constr_number = ref 0 in
@@ -307,17 +310,18 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	List.fold_right 
 	  (fun hid acc ->
 	     let type_of_hid = pf_unsafe_type_of g (mkVar hid) in
-	     match kind_of_term type_of_hid with
+	     let sigma = project g in
+	     match EConstr.kind sigma type_of_hid with
 	       | Prod(_,_,t') ->
 		   begin
-		     match kind_of_term t' with
+		     match EConstr.kind sigma t' with
 		       | Prod(_,t'',t''') ->
 			   begin
-			     match kind_of_term t'',kind_of_term t''' with
+			     match EConstr.kind sigma t'',EConstr.kind sigma t''' with
 			       | App(eq,args), App(graph',_)
 				   when
-				     (eq_constr eq eq_ind) &&
-				       Array.exists  (Constr.eq_constr_nounivs graph') graphs_constr ->
+				     (EConstr.eq_constr sigma eq eq_ind) &&
+				       Array.exists  (EConstr.eq_constr_nounivs sigma graph') graphs_constr ->
 				   (args.(2)::(mkApp(mkVar hid,[|args.(2);(mkApp(eq_construct,[|args.(0);args.(2)|]))|]))
 				    ::acc)
 			       | _ -> mkVar hid ::  acc
@@ -400,8 +404,8 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	   match ctxt with
 	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context")
 	     | hres::res::decl::ctxt ->
-		let res = Termops.it_mkLambda_or_LetIn
-			    (Termops.it_mkProd_or_LetIn concl [hres;res])
+		let res = EConstr.it_mkLambda_or_LetIn
+			    (EConstr.it_mkProd_or_LetIn concl [hres;res])
 			    (LocalAssum (RelDecl.get_name decl, RelDecl.get_type decl) :: ctxt)
 		in
 		res
@@ -468,7 +472,7 @@ let generalize_dependent_of x hyp g =
   tclMAP
     (function
        | LocalAssum (id,t) when not (Id.equal id hyp) &&
-	   (Termops.occur_var (pf_env g) x t) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (thin [id])
+	   (Termops.occur_var (pf_env g) (project g) x t) -> tclTHEN (Proofview.V82.of_tactic (Tactics.generalize [mkVar id])) (thin [id])
        | _ -> tclIDTAC
     )
     (pf_hyps g)
@@ -492,43 +496,44 @@ let  rec intros_with_rewrite g =
 and intros_with_rewrite_aux : tactic =
   fun g ->
     let eq_ind = make_eq () in
-    match kind_of_term (pf_concl g) with
+    let sigma = project g in
+    match EConstr.kind sigma (pf_concl g) with
 	  | Prod(_,t,t') ->
 	      begin
-		match kind_of_term t with
-		  | App(eq,args) when (eq_constr eq eq_ind)  ->
+		match EConstr.kind sigma t with
+		  | App(eq,args) when (EConstr.eq_constr sigma eq eq_ind)  ->
  		      if Reductionops.is_conv (pf_env g) (project g) args.(1) args.(2)
 		      then
 			let id = pf_get_new_id (Id.of_string "y") g  in
 			tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id); thin [id]; intros_with_rewrite ] g
-		      else if isVar args.(1) && (Environ.evaluable_named (destVar args.(1)) (pf_env g)) 
+		      else if isVar sigma args.(1) && (Environ.evaluable_named (destVar sigma args.(1)) (pf_env g)) 
 		      then tclTHENSEQ[
-			Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(1)))]);
-			tclMAP (fun id -> tclTRY(Proofview.V82.of_tactic (unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(1)))] ((destVar args.(1)),Locus.InHyp) )))
+			Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar sigma args.(1)))]);
+			tclMAP (fun id -> tclTRY(Proofview.V82.of_tactic (unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar sigma args.(1)))] ((destVar sigma args.(1)),Locus.InHyp) )))
 			  (pf_ids_of_hyps g);
 			intros_with_rewrite
 		      ] g
-		      else if isVar args.(2) && (Environ.evaluable_named (destVar args.(2)) (pf_env g)) 
+		      else if isVar sigma args.(2) && (Environ.evaluable_named (destVar sigma args.(2)) (pf_env g)) 
 		      then tclTHENSEQ[
-			Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(2)))]);
-			tclMAP (fun id -> tclTRY(Proofview.V82.of_tactic (unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(2)))] ((destVar args.(2)),Locus.InHyp) )))
+			Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar sigma args.(2)))]);
+			tclMAP (fun id -> tclTRY(Proofview.V82.of_tactic (unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar sigma args.(2)))] ((destVar sigma args.(2)),Locus.InHyp) )))
 			  (pf_ids_of_hyps g);
 			intros_with_rewrite
 		      ] g
-		      else if isVar args.(1)
+		      else if isVar sigma args.(1)
 		      then
 			let id = pf_get_new_id (Id.of_string "y") g  in
 			tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id);
-				     generalize_dependent_of (destVar args.(1)) id;
+				     generalize_dependent_of (destVar sigma args.(1)) id;
 				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar id)));
 				     intros_with_rewrite
 				   ]
 			  g
-		      else if isVar args.(2) 
+		      else if isVar sigma args.(2) 
 		      then 
 			let id = pf_get_new_id (Id.of_string "y") g  in
 			tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id);
-				     generalize_dependent_of (destVar args.(2)) id;
+				     generalize_dependent_of (destVar sigma args.(2)) id;
 				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteRL (mkVar id)));
 				     intros_with_rewrite
 				   ]
@@ -542,7 +547,7 @@ and intros_with_rewrite_aux : tactic =
 			    intros_with_rewrite
 			  ] g
 			end
-		  | Ind _ when eq_constr t (Coqlib.build_coq_False ()) ->
+		  | Ind _ when EConstr.eq_constr sigma t (EConstr.of_constr (Coqlib.build_coq_False ())) ->
 		      Proofview.V82.of_tactic tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[
@@ -580,7 +585,7 @@ and intros_with_rewrite_aux : tactic =
 let rec reflexivity_with_destruct_cases g =
   let destruct_case () =
     try
-      match kind_of_term (snd (destApp (pf_concl g))).(2) with
+      match EConstr.kind (project g) (snd (destApp (project g) (pf_concl g))).(2) with
 	| Case(_,_,v,_) ->
 	    tclTHENSEQ[
 	      Proofview.V82.of_tactic (simplest_case v);
@@ -597,8 +602,8 @@ let rec reflexivity_with_destruct_cases g =
 	 match sc with
 	     None -> tclIDTAC g
 	   | Some id ->
-	       match kind_of_term  (pf_unsafe_type_of g (mkVar id)) with
-		 | App(eq,[|_;t1;t2|]) when eq_constr eq eq_ind ->
+	       match EConstr.kind (project g) (pf_unsafe_type_of g (mkVar id)) with
+		 | App(eq,[|_;t1;t2|]) when EConstr.eq_constr (project g) eq eq_ind ->
 		     if Equality.discriminable (pf_env g) (project g) t1 t2
 		     then Proofview.V82.of_tactic (Equality.discrHyp id) g
 		     else if Equality.injectable (pf_env g) (project g) t1 t2
@@ -656,18 +661,18 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     *)
     let lemmas =
       Array.map
-	(fun (_,(ctxt,concl)) -> nf_zeta (Termops.it_mkLambda_or_LetIn concl ctxt))
+	(fun (_,(ctxt,concl)) -> nf_zeta (EConstr.it_mkLambda_or_LetIn concl ctxt))
 	lemmas_types_infos
     in
     (* We get the constant and the principle corresponding to this lemma *)
     let f = funcs.(i) in
-    let graph_principle = nf_zeta schemes.(i)  in
+    let graph_principle = nf_zeta (EConstr.of_constr schemes.(i))  in
     let princ_type = pf_unsafe_type_of g graph_principle in
-    let princ_infos = Tactics.compute_elim_sig princ_type in
+    let princ_infos = Tactics.compute_elim_sig (project g) princ_type in
     (* Then we get the number of argument of the function
        and compute a fresh name for each of them
     *)
-    let nb_fun_args = nb_prod (pf_concl g)  - 2  in
+    let nb_fun_args = nb_prod (project g) (pf_concl g) - 2 in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
     (* and fresh names for res H and the principle (cf bug bug #1174) *)
@@ -685,7 +690,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(fun decl ->
 	   List.map
 	     (fun id -> id)
-	     (generate_fresh_id (Id.of_string "y") ids (nb_prod (RelDecl.get_type decl)))
+	     (generate_fresh_id (Id.of_string "y") ids (nb_prod (project g) (RelDecl.get_type decl)))
 	)
 	branches
     in
@@ -696,7 +701,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     let rewrite_tac j ids : tactic =
       let graph_def = graphs.(j) in
       let infos =
-        try find_Function_infos (fst (destConst funcs.(j)))
+        try find_Function_infos (fst (destConst (project g) funcs.(j)))
         with Not_found ->  error "No graph found"
       in
       if infos.is_general
@@ -722,7 +727,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  thin ids
 	]
       else
-        Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (fst (destConst f)))])
+        Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (fst (destConst (project g) f)))])
     in
     (* The proof of each branche itself *)
     let ind_number = ref 0 in
@@ -753,6 +758,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	g
     in
     let params_names = fst (List.chop princ_infos.nparams args_names) in
+    let open EConstr in
     let params = List.map mkVar params_names in
     tclTHENSEQ
       [ tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) (args_names@[res;hres]);
@@ -777,7 +783,8 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
   assert (funs <> []);
   assert (graphs <> []);
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
-  let funs_constr = Array.map mkConstU funs  in
+  let map (c, u) = mkConstU (c, EInstance.make u) in
+  let funs_constr = Array.map map funs  in
   States.with_state_protection_on_exception
     (fun () ->
      let env = Global.env () in
@@ -792,10 +799,10 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 in
 	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
 	 graphs_constr.(i) <- graph;
-	 let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
+	 let type_of_lemma = EConstr.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
 	 let _ = Typing.e_type_of (Global.env ()) evd type_of_lemma in 
 	   let type_of_lemma = nf_zeta type_of_lemma in
-	   observe (str "type_of_lemma := " ++ Printer.pr_lconstr_env (Global.env ()) !evd type_of_lemma);
+	   observe (str "type_of_lemma := " ++ Printer.pr_leconstr_env (Global.env ()) !evd type_of_lemma);
 	   type_of_lemma,type_info
 	)
 	funs_constr
@@ -814,7 +821,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	  Array.of_list
 	    (List.map
 	       (fun entry ->
-		  (fst (fst(Future.force entry.Entries.const_entry_body)), Option.get entry.Entries.const_entry_type )
+		  (EConstr.of_constr (fst (fst(Future.force entry.Entries.const_entry_body))), EConstr.of_constr (Option.get entry.Entries.const_entry_type ))
 	       )
 	       (make_scheme evd (Array.map_to_list (fun const -> const,GType []) funs))
 	    )
@@ -845,7 +852,8 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 (* let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in *)
 	 let _,lem_cst_constr = Evd.fresh_global
 				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
-	 let (lem_cst,_) = destConst lem_cst_constr in
+        let lem_cst_constr = EConstr.of_constr lem_cst_constr in
+	 let (lem_cst,_) = destConst !evd lem_cst_constr in
 	 update_Function {finfo with correctness_lemma = Some lem_cst};
 
       )
@@ -859,23 +867,23 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
 	 graphs_constr.(i) <- graph;
 	 let type_of_lemma =
-	   Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
+	   EConstr.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
 	 in
 	 let type_of_lemma = nf_zeta type_of_lemma in
-	 observe (str "type_of_lemma := " ++ Printer.pr_lconstr type_of_lemma);
+	 observe (str "type_of_lemma := " ++ Printer.pr_leconstr type_of_lemma);
 	 type_of_lemma,type_info
 	)
 	funs_constr
 	graphs_constr
     in
 
-    let (kn,_) as graph_ind,u  = (destInd graphs_constr.(0)) in
+    let (kn,_) as graph_ind,u  = (destInd !evd graphs_constr.(0)) in
     let mib,mip = Global.lookup_inductive graph_ind in
     let sigma, scheme = 
 	(Indrec.build_mutual_induction_scheme (Global.env ()) !evd
 	   (Array.to_list
 	      (Array.mapi
-		 (fun i _ -> ((kn,i),u(* Univ.Instance.empty *)),true,InType)
+		 (fun i _ -> ((kn,i), EInstance.kind !evd u),true,InType)
 		 mib.Declarations.mind_packets
 	      )
 	   )
@@ -905,7 +913,8 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 let finfo = find_Function_infos (fst f_as_constant) in
 	 let _,lem_cst_constr = Evd.fresh_global
 				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
-	 let (lem_cst,_) = destConst lem_cst_constr in
+         let lem_cst_constr = EConstr.of_constr lem_cst_constr in
+	 let (lem_cst,_) = destConst !evd lem_cst_constr in
 	 update_Function {finfo with completeness_lemma = Some lem_cst}
       )
       funs)
@@ -920,10 +929,11 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
    if the type of hypothesis has not this form or if we cannot find the completeness lemma then we do nothing
 *)
 let revert_graph kn post_tac hid g =
+    let sigma = project g in
     let typ = pf_unsafe_type_of g (mkVar hid) in
-    match kind_of_term typ with
-      | App(i,args) when isInd i ->
-	  let ((kn',num) as ind'),u = destInd i in
+    match EConstr.kind sigma typ with
+      | App(i,args) when isInd sigma i ->
+	  let ((kn',num) as ind'),u = destInd sigma i in
 	  if MutInd.equal kn kn'
 	  then (* We have generated a graph hypothesis so that we must change it if we can *)
 	    let info =
@@ -971,14 +981,15 @@ let revert_graph kn post_tac hid g =
 let functional_inversion kn hid fconst f_correct : tactic =
   fun g ->
     let old_ids = List.fold_right Id.Set.add  (pf_ids_of_hyps g) Id.Set.empty in
+    let sigma = project g in
     let type_of_h = pf_unsafe_type_of g (mkVar hid) in
-    match kind_of_term type_of_h with
-      | App(eq,args) when eq_constr eq (make_eq ())  ->
+    match EConstr.kind sigma type_of_h with
+      | App(eq,args) when EConstr.eq_constr sigma eq (make_eq ())  ->
 	  let pre_tac,f_args,res =
-	    match kind_of_term args.(1),kind_of_term args.(2) with
-	      | App(f,f_args),_ when eq_constr f fconst ->
+	    match EConstr.kind sigma args.(1),EConstr.kind sigma args.(2) with
+	      | App(f,f_args),_ when EConstr.eq_constr sigma f fconst ->
 		  ((fun hid -> Proofview.V82.of_tactic (intros_symmetry (Locusops.onHyp hid))),f_args,args.(2))
-	      |_,App(f,f_args) when eq_constr f fconst ->
+	      |_,App(f,f_args) when EConstr.eq_constr sigma f fconst ->
 		 ((fun hid -> tclIDTAC),f_args,args.(1))
 	      | _ -> (fun hid -> tclFAIL 1 (mt ())),[||],args.(2)
 	  in
@@ -1023,23 +1034,24 @@ let invfun qhyp f g =
        Proofview.V82.of_tactic begin
 	Tactics.try_intros_until
 	  (fun hid -> Proofview.V82.tactic begin fun g ->
+            let sigma = project g in
 	     let hyp_typ = pf_unsafe_type_of g (mkVar hid)  in
-	     match kind_of_term hyp_typ with
-	       | App(eq,args) when eq_constr eq (make_eq ()) ->
+	     match EConstr.kind sigma hyp_typ with
+	       | App(eq,args) when EConstr.eq_constr sigma eq (make_eq ()) ->
 		   begin
-		     let f1,_ = decompose_app args.(1) in
+		     let f1,_ = decompose_app sigma args.(1) in
 		     try
-		       if not (isConst f1) then failwith "";
-		       let finfos = find_Function_infos (fst (destConst f1)) in
+		       if not (isConst sigma f1) then failwith "";
+		       let finfos = find_Function_infos (fst (destConst sigma f1)) in
 		       let f_correct = mkConst(Option.get finfos.correctness_lemma)
 		       and kn = fst finfos.graph_ind
 		       in
 		       functional_inversion kn hid f1 f_correct g
 		     with | Failure "" | Option.IsNone | Not_found ->
 		       try
-			 let f2,_ = decompose_app args.(2) in
-			 if not (isConst f2) then failwith "";
-			 let finfos = find_Function_infos (fst (destConst f2)) in
+			 let f2,_ = decompose_app sigma args.(2) in
+			 if not (isConst sigma f2) then failwith "";
+			 let finfos = find_Function_infos (fst (destConst sigma f2)) in
 			 let f_correct = mkConst(Option.get finfos.correctness_lemma)
 			 and kn = fst finfos.graph_ind
 			 in

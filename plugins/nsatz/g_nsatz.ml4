@@ -14,5 +14,5 @@ open Names
 DECLARE PLUGIN "nsatz_plugin"
 
 TACTIC EXTEND nsatz_compute
-| [ "nsatz_compute"  constr(lt) ] -> [ Nsatz.nsatz_compute lt ]
+| [ "nsatz_compute"  constr(lt) ] -> [ Nsatz.nsatz_compute (EConstr.Unsafe.to_constr lt) ]
 END

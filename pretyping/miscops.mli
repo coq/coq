@@ -27,3 +27,8 @@ val intro_pattern_naming_eq :
 
 val map_red_expr_gen : ('a -> 'd) -> ('b -> 'e) -> ('c -> 'f) ->
   ('a,'b,'c) red_expr_gen -> ('d,'e,'f) red_expr_gen
+
+(** Mapping bindings *)
+
+val map_bindings : ('a -> 'b) -> 'a bindings -> 'b bindings
+val map_with_bindings : ('a -> 'b) -> 'a with_bindings -> 'b with_bindings

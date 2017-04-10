@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open EConstr
 open Environ
 open Reductionops
 open Evd
@@ -46,18 +47,18 @@ val check_problems_are_solved : env -> evar_map -> unit
 (** Check if a canonical structure is applicable *)
 
 val check_conv_record : env -> evar_map -> 
-  constr * types Stack.t -> constr * types Stack.t ->
+  state -> state ->
   Univ.universe_context_set * (constr * constr) 
   * constr * constr list * (constr Stack.t * constr Stack.t) *
-    (constr Stack.t * types Stack.t) *
-    (constr Stack.t * types Stack.t) * constr *
+    (constr Stack.t * constr Stack.t) *
+    (constr Stack.t * constr Stack.t) * constr *
     (int option * constr)
 
 (** Try to solve problems of the form ?x[args] = c by second-order
     matching, using typing to select occurrences *)
 
 val second_order_matching : transparent_state -> env -> evar_map ->
-  existential -> occurrences option list -> constr -> evar_map * bool
+  EConstr.existential -> occurrences option list -> constr -> evar_map * bool
 
 (** Declare function to enforce evars resolution by using typing constraints *)
 

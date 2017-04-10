@@ -10,6 +10,7 @@ open Pp
 open Util
 open Names
 open Term
+open EConstr
 open Environ
 open Globnames
 open Decl_kinds
@@ -24,11 +25,11 @@ open Vernacexpr
 
 exception Bound
 
-val decompose_app_bound : constr -> global_reference * constr array
+val decompose_app_bound : evar_map -> constr -> global_reference * constr array
 
 type debug = Debug | Info | Off
 
-val secvars_of_hyps : Context.Named.t -> Id.Pred.t
+val secvars_of_hyps : ('c, 't) Context.Named.pt -> Id.Pred.t
 
 val empty_hint_info : 'a hint_info_gen
 
@@ -110,16 +111,16 @@ module Hint_db :
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments, _not_ using the discrimination net. *)
-    val map_existential : secvars:Id.Pred.t ->
+    val map_existential : evar_map -> secvars:Id.Pred.t ->
       (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments and using the discrimination net. *)
-    val map_eauto : secvars:Id.Pred.t -> (global_reference * constr array) -> constr -> t -> full_hint list
+    val map_eauto : evar_map -> secvars:Id.Pred.t -> (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments. *)
-    val map_auto : secvars:Id.Pred.t ->
+    val map_auto : evar_map -> secvars:Id.Pred.t ->
        (global_reference * constr array) -> constr -> t -> full_hint list
 
     val add_one : env -> evar_map -> hint_entry -> t -> t
@@ -182,7 +183,7 @@ val add_hints : locality_flag -> hint_db_name list -> hints_entry -> unit
 
 val prepare_hint : bool (* Check no remaining evars *) ->
   (bool * bool) (* polymorphic or monomorphic, local or global *) ->
-  env -> evar_map -> open_constr -> hint_term
+  env -> evar_map -> evar_map * constr -> hint_term
 
 (** [make_exact_entry info (c, ctyp, ctx)].
    [c] is the term given as an exact proof to solve the goal;
@@ -231,7 +232,7 @@ val make_resolves :
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
 val make_resolve_hyp :
-  env -> evar_map -> Context.Named.Declaration.t -> hint_entry list
+  env -> evar_map -> named_declaration -> hint_entry list
 
 (** [make_extern pri pattern tactic_expr] *)
 

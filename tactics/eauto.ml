@@ -13,6 +13,7 @@ open Names
 open Nameops
 open Term
 open Termops
+open EConstr
 open Proof_type
 open Tacticals
 open Tacmach
@@ -32,7 +33,8 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
   Proofview.Goal.enter { enter = begin fun gl ->
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t2 = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
-  if occur_existential t1 || occur_existential t2 then
+  let sigma = Tacmach.New.project gl in
+  if occur_existential sigma t1 || occur_existential sigma t2 then
      Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
   else exact_check c
   end }
@@ -86,7 +88,7 @@ let rec prolog l n gl =
 
 let out_term = function
   | IsConstr (c, _) -> c
-  | IsGlobRef gr -> fst (Universes.fresh_global_instance (Global.env ()) gr)
+  | IsGlobRef gr -> EConstr.of_constr (fst (Universes.fresh_global_instance (Global.env ()) gr))
 
 let prolog_tac l n =
   Proofview.V82.tactic begin fun gl ->
@@ -110,22 +112,21 @@ open Auto
 let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 
 let unify_e_resolve poly flags (c,clenv) =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
       let clenv', c = connect_hint_clenv poly c clenv gl in
-      Proofview.V82.tactic
-	(fun gls ->
-	 let clenv' = clenv_unique_resolver ~flags clenv' gls in
-	 tclTHEN (Refiner.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
-		 (Proofview.V82.of_tactic (Tactics.Simple.eapply c)) gls)
+      let clenv' = clenv_unique_resolver ~flags clenv' gl in
+      Proofview.tclTHEN
+        (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
+        (Tactics.Simple.eapply c)
     end }
 
-let hintmap_of secvars hdc concl =
+let hintmap_of sigma secvars hdc concl =
   match hdc with
   | None -> fun db -> Hint_db.map_none ~secvars db
   | Some hdc ->
-     if occur_existential concl then
-       (fun db -> Hint_db.map_existential ~secvars hdc concl db)
-     else (fun db -> Hint_db.map_auto ~secvars hdc concl db)
+     if occur_existential sigma concl then
+       (fun db -> Hint_db.map_existential sigma ~secvars hdc concl db)
+     else (fun db -> Hint_db.map_auto sigma ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
 let e_exact poly flags (c,clenv) =
@@ -137,7 +138,7 @@ let e_exact poly flags (c,clenv) =
   end }
 
 let rec e_trivial_fail_db db_list local_db =
-  let next = Proofview.Goal.nf_enter { enter = begin fun gl ->
+  let next = Proofview.Goal.enter { enter = begin fun gl ->
     let d = Tacmach.New.pf_last_hyp gl in
     let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Tacmach.New.project gl) d in
     e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) (Tacmach.New.project gl) hintl local_db)
@@ -147,13 +148,13 @@ let rec e_trivial_fail_db db_list local_db =
   let tacl =
     registered_e_assumption ::
     (Tacticals.New.tclTHEN Tactics.intro next) ::
-    (List.map fst (e_trivial_resolve db_list local_db secvars (Tacmach.New.pf_nf_concl gl)))
+    (List.map fst (e_trivial_resolve (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_concl gl)))
   in
   Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
   end }
 
-and e_my_find_search db_list local_db secvars hdc concl =
-  let hint_of_db = hintmap_of secvars hdc concl in
+and e_my_find_search sigma db_list local_db secvars hdc concl =
+  let hint_of_db = hintmap_of sigma secvars hdc concl in
   let hintl =
       List.map_append (fun db ->
 	let flags = auto_flags_of_state (Hint_db.transparent_state db) in
@@ -181,15 +182,15 @@ and e_my_find_search db_list local_db secvars hdc concl =
   in
   List.map tac_of_hint hintl
 
-and e_trivial_resolve db_list local_db secvars gl =
-  let hd = try Some (decompose_app_bound gl) with Bound -> None in
-  try priority (e_my_find_search db_list local_db secvars hd gl)
+and e_trivial_resolve sigma db_list local_db secvars gl =
+  let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
+  try priority (e_my_find_search sigma db_list local_db secvars hd gl)
   with Not_found -> []
 
-let e_possible_resolve db_list local_db secvars gl =
-  let hd = try Some (decompose_app_bound gl) with Bound -> None in
+let e_possible_resolve sigma db_list local_db secvars gl =
+  let hd = try Some (decompose_app_bound sigma gl) with Bound -> None in
   try List.map (fun (b, (tac, pp)) -> (tac, b, pp))
-               (e_my_find_search db_list local_db secvars hd gl)
+               (e_my_find_search sigma db_list local_db secvars hd gl)
   with Not_found -> []
 
 let find_first_goal gls =
@@ -287,9 +288,9 @@ module SearchProblem = struct
       in
       let rec_tacs =
 	let l =
-          let concl = Reductionops.nf_evar (project g)(pf_concl g) in
+          let concl = Reductionops.nf_evar (project g) (pf_concl g) in
 	  filter_tactics s.tacres
-                         (e_possible_resolve s.dblist (List.hd s.localdb) secvars concl)
+                         (e_possible_resolve (project g) s.dblist (List.hd s.localdb) secvars concl)
 	in
 	List.map
 	  (fun (lgls, cost, pp) ->
@@ -464,18 +465,19 @@ let autounfold_tac db cls =
   in
   autounfold dbs cls
 
-let unfold_head env (ids, csts) c = 
+let unfold_head env sigma (ids, csts) c =
   let rec aux c = 
-    match kind_of_term c with
+    match EConstr.kind sigma c with
     | Var id when Id.Set.mem id ids ->
 	(match Environ.named_body id env with
-	| Some b -> true, b
+	| Some b -> true, EConstr.of_constr b
 	| None -> false, c)
-    | Const (cst,u as c) when Cset.mem cst csts ->
-	true, Environ.constant_value_in env c
+    | Const (cst, u) when Cset.mem cst csts ->
+        let u = EInstance.kind sigma u in
+	true, EConstr.of_constr (Environ.constant_value_in env (cst, u))
     | App (f, args) ->
 	(match aux f with
-	| true, f' -> true, Reductionops.whd_betaiota Evd.empty (mkApp (f', args))
+	| true, f' -> true, Reductionops.whd_betaiota sigma (mkApp (f', args))
 	| false, _ -> 
 	    let done_, args' = 
 	      Array.fold_left_i (fun i (done_, acc) arg -> 
@@ -489,7 +491,7 @@ let unfold_head env (ids, csts) c =
 	      else false, c)
     | _ -> 
 	let done_ = ref false in
-	let c' = map_constr (fun c -> 
+	let c' = EConstr.map sigma (fun c -> 
 	  if !done_ then c else 
 	    let x, c' = aux c in
 	      done_ := x; c') c
@@ -497,8 +499,9 @@ let unfold_head env (ids, csts) c =
   in aux c
 
 let autounfold_one db cl =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
+  let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
   let st =
     List.fold_left (fun (i,c) dbname -> 
@@ -508,7 +511,7 @@ let autounfold_one db cl =
       let (ids, csts) = Hint_db.unfolds db in
 	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
   in
-  let did, c' = unfold_head env st 
+  let did, c' = unfold_head env sigma st 
     (match cl with Some (id, _) -> Tacmach.New.pf_get_hyp_typ id gl | None -> concl) 
   in
     if did then

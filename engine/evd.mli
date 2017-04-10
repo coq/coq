@@ -149,7 +149,7 @@ val has_undefined : evar_map -> bool
     there are uninstantiated evars in [sigma]. *)
 
 val new_evar : evar_map ->
-  ?naming:Misctypes.intro_pattern_naming_expr -> evar_info -> evar_map * evar
+  ?name:Id.t -> evar_info -> evar_map * evar
 (** Creates a fresh evar mapping to the given information. *)
 
 val add : evar_map -> evar -> evar_info -> evar_map
@@ -420,10 +420,6 @@ val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t
     contained in the object; need the term to be evar-normal otherwise
     defined evars are returned too. *)
 
-val evar_list : constr -> existential list
-  (** excluding evars in instances of evars and collected with
-     redundancies from right to left (used by tactic "instantiate") *)
-
 val evars_of_term : constr -> Evar.Set.t
   (** including evars in instances of evars *)
 
@@ -584,19 +580,6 @@ val fresh_constructor_instance : ?loc:Loc.t -> env -> evar_map -> constructor ->
 val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env ->
   evar_map -> Globnames.global_reference -> evar_map * constr
 
-(********************************************************************
-  Conversion w.r.t. an evar map, not unifying universes. See 
-  [Reductionops.infer_conv] for conversion up-to universes. *)
-
-val test_conversion : env -> evar_map -> conv_pb -> constr -> constr -> bool
-(** WARNING: This does not allow unification of universes *)
-
-val eq_constr_univs : evar_map -> constr -> constr -> evar_map * bool
-(** Syntactic equality up to universes, recording the associated constraints *)
-
-val e_eq_constr_univs : evar_map ref -> constr -> constr -> bool
-(** Syntactic equality up to universes. *)
-
 (********************************************************************)
 (* constr with holes and pending resolution of classes, conversion  *)
 (* problems, candidates, etc.                                       *)
@@ -607,22 +590,6 @@ type open_constr = evar_map * constr (* Special case when before is empty *)
 
 type unsolvability_explanation = SeveralInstancesFound of int
 (** Failure explanation. *)
-
-val pr_existential_key : evar_map -> evar -> Pp.std_ppcmds
-
-val pr_evar_suggested_name : existential_key -> evar_map -> Id.t
-
-(** {5 Debug pretty-printers} *)
-
-val print_constr_hook : (Environ.env -> constr -> Pp.std_ppcmds) Hook.t
-val pr_evar_info : evar_info -> Pp.std_ppcmds
-val pr_evar_constraints : evar_constraint list -> Pp.std_ppcmds
-val pr_evar_map : ?with_univs:bool -> int option -> evar_map -> Pp.std_ppcmds
-val pr_evar_map_filter : ?with_univs:bool -> (Evar.t -> evar_info -> bool) ->
-  evar_map -> Pp.std_ppcmds
-val pr_metaset : Metaset.t -> Pp.std_ppcmds
-val pr_evar_universe_context : evar_universe_context -> Pp.std_ppcmds
-val pr_evd_level : evar_map -> Univ.Level.t -> Pp.std_ppcmds
 
 (** {5 Deprecated functions} *)
 

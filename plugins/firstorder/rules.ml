@@ -38,14 +38,14 @@ let wrap n b continue seq gls=
 	  []->anomaly (Pp.str "Not the expected number of hyps")
 	| nd::q->
             let id = NamedDecl.get_id nd in
-	    if occur_var env id (pf_concl gls) ||
-	      List.exists (occur_var_in_decl env id) ctx then
+	    if occur_var env (project gls) id (pf_concl gls) ||
+	      List.exists (occur_var_in_decl env (project gls)  id) ctx then
 		(aux (i-1) q (nd::ctx))
 	    else
-	      add_formula Hyp (VarRef id) (NamedDecl.get_type nd) (aux (i-1) q (nd::ctx)) gls in
+	      add_formula Hyp (VarRef id) (EConstr.Unsafe.to_constr (NamedDecl.get_type nd)) (aux (i-1) q (nd::ctx)) gls in
   let seq1=aux n nc [] in
   let seq2=if b then
-    add_formula Concl dummy_id (pf_concl gls) seq1 gls else seq1 in
+    add_formula Concl dummy_id (EConstr.Unsafe.to_constr (pf_concl gls)) seq1 gls else seq1 in
     continue seq2 gls
 
 let basename_of_global=function
@@ -63,12 +63,13 @@ let axiom_tac t seq=
   with Not_found->tclFAIL 0 (Pp.str "No axiom link")
 
 let ll_atom_tac a backtrack id continue seq=
+  let open EConstr in
   tclIFTHENELSE
     (try
       tclTHENLIST
 	[pf_constr_of_global (find_left a seq) (fun left ->
 	  pf_constr_of_global id (fun id -> 
-	    Proofview.V82.of_tactic (generalize [mkApp(id, [|left|])])));
+	    Proofview.V82.of_tactic (generalize [(mkApp(id, [|left|]))])));
 	 clear_global id;
 	 Proofview.V82.of_tactic intro]
     with Not_found->tclFAIL 0 (Pp.str "No link"))
@@ -131,9 +132,9 @@ let ll_ind_tac (ind,u as indu) largs backtrack id continue seq gl=
        let vars=Array.init p (fun j->mkRel (p-j)) in
        let capply=mkApp ((lift p cstr),vars) in
        let head=mkApp ((lift p idc),[|capply|]) in
-         it_mkLambda_or_LetIn head rc in
+         EConstr.of_constr (it_mkLambda_or_LetIn head rc) in
        let lp=Array.length rcs in
-       let newhyps idc =List.init lp (myterm idc) in
+       let newhyps idc =List.init lp (myterm (EConstr.Unsafe.to_constr idc)) in
 	 tclIFTHENELSE
 	   (tclTHENLIST
 	      [pf_constr_of_global id (fun idc -> Proofview.V82.of_tactic (generalize (newhyps idc)));
@@ -142,8 +143,13 @@ let ll_ind_tac (ind,u as indu) largs backtrack id continue seq gl=
 	   (wrap lp false continue seq) backtrack gl
 
 let ll_arrow_tac a b c backtrack id continue seq=
+  let open EConstr in
+  let open Vars in
+  let a = EConstr.of_constr a in
+  let b = EConstr.of_constr b in
+  let c = EConstr.of_constr c in
   let cc=mkProd(Anonymous,a,(lift 1 b)) in
-  let d idc =mkLambda (Anonymous,b,
+  let d idc = mkLambda (Anonymous,b,
 		  mkApp (idc, [|mkLambda (Anonymous,(lift 1 a),(mkRel 2))|])) in
     tclORELSE
       (tclTHENS (Proofview.V82.of_tactic (cut c))
@@ -186,11 +192,12 @@ let left_exists_tac ind backtrack id continue seq gls=
 
 let ll_forall_tac prod backtrack id continue seq=
   tclORELSE
-    (tclTHENS (Proofview.V82.of_tactic (cut prod))
+    (tclTHENS (Proofview.V82.of_tactic (cut (EConstr.of_constr prod)))
        [tclTHENLIST
 	  [Proofview.V82.of_tactic intro;
            pf_constr_of_global id (fun idc ->
 	   (fun gls->
+              let open EConstr in
 	      let id0=pf_nth_hyp_id gls 1 in
               let term=mkApp(idc,[|mkVar(id0)|]) in
 		tclTHEN (Proofview.V82.of_tactic (generalize [term])) (Proofview.V82.of_tactic (clear [id0])) gls));

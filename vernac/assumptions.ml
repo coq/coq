@@ -144,6 +144,27 @@ let label_of = function
   | ConstructRef ((kn,_),_) -> pi3 (repr_mind kn)
   | VarRef id -> Label.of_id id
 
+let fold_constr_with_full_binders g f n acc c =
+  let open Context.Rel.Declaration in
+  match kind_of_term c with
+  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _ -> acc
+  | Cast (c,_, t) -> f n (f n acc c) t
+  | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
+  | App (c,l) -> Array.fold_left (f n) (f n acc c) l
+  | Proj (p,c) -> f n acc c
+  | Evar (_,l) -> Array.fold_left (f n) acc l
+  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
+  | Fix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n,t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | CoFix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n,t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+
 let rec traverse current ctx accu t = match kind_of_term t with
 | Var id ->
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
@@ -166,10 +187,10 @@ let rec traverse current ctx accu t = match kind_of_term t with
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
     | _ ->
-        Termops.fold_constr_with_full_binders
+        fold_constr_with_full_binders
           Context.Rel.add (traverse current) ctx accu t
     end
-| _ -> Termops.fold_constr_with_full_binders
+| _ -> fold_constr_with_full_binders
           Context.Rel.add (traverse current) ctx accu t
 
 and traverse_object ?inhabits (curr, data, ax2ty) body obj =

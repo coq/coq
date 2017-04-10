@@ -38,6 +38,13 @@ val safe_pr_lconstr             : constr -> std_ppcmds
 val safe_pr_constr_env          : env -> evar_map -> constr -> std_ppcmds
 val safe_pr_constr              : constr -> std_ppcmds
 
+val pr_econstr_env     : env -> evar_map -> EConstr.t -> std_ppcmds
+val pr_econstr         : EConstr.t -> std_ppcmds
+val pr_leconstr_env     : env -> evar_map -> EConstr.t -> std_ppcmds
+val pr_leconstr         : EConstr.t -> std_ppcmds
+
+val pr_etype_env           : env -> evar_map -> EConstr.types -> std_ppcmds
+val pr_letype_env           : env -> evar_map -> EConstr.types -> std_ppcmds
 
 val pr_open_constr_env     : env -> evar_map -> open_constr -> std_ppcmds
 val pr_open_constr         : open_constr -> std_ppcmds
@@ -51,7 +58,7 @@ val pr_constr_under_binders      : constr_under_binders -> std_ppcmds
 val pr_lconstr_under_binders_env : env -> evar_map -> constr_under_binders -> std_ppcmds
 val pr_lconstr_under_binders     : constr_under_binders -> std_ppcmds
 
-val pr_goal_concl_style_env : env -> evar_map -> types -> std_ppcmds
+val pr_goal_concl_style_env : env -> evar_map -> EConstr.types -> std_ppcmds
 val pr_ltype_env           : env -> evar_map -> types -> std_ppcmds
 val pr_ltype               : types -> std_ppcmds
 
@@ -61,8 +68,8 @@ val pr_type                : types -> std_ppcmds
 val pr_closed_glob_env     : env -> evar_map -> closed_glob_constr -> std_ppcmds
 val pr_closed_glob         : closed_glob_constr -> std_ppcmds
 
-val pr_ljudge_env          : env -> evar_map -> unsafe_judgment -> std_ppcmds * std_ppcmds
-val pr_ljudge              : unsafe_judgment -> std_ppcmds * std_ppcmds
+val pr_ljudge_env          : env -> evar_map -> EConstr.unsafe_judgment -> std_ppcmds * std_ppcmds
+val pr_ljudge              : EConstr.unsafe_judgment -> std_ppcmds * std_ppcmds
 
 val pr_lglob_constr_env      : env -> glob_constr -> std_ppcmds
 val pr_lglob_constr          : glob_constr -> std_ppcmds

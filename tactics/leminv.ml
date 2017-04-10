@@ -11,15 +11,16 @@ open CErrors
 open Util
 open Names
 open Term
-open Vars
 open Termops
+open Environ
+open EConstr
+open Vars
 open Namegen
 open Evd
 open Printer
 open Reductionops
 open Entries
 open Inductiveops
-open Environ
 open Tacmach.New
 open Clenv
 open Declare
@@ -33,7 +34,7 @@ module NamedDecl = Context.Named.Declaration
 
 let no_inductive_inconstr env sigma constr =
   (str "Cannot recognize an inductive predicate in " ++
-     pr_lconstr_env env sigma constr ++
+     pr_leconstr_env env sigma constr ++
      str "." ++ spc () ++ str "If there is one, may be the structure of the arity" ++
      spc () ++ str "or of the type of constructors" ++ spc () ++
      str "is hidden by constant definitions.")
@@ -116,13 +117,13 @@ let max_prefix_sign lid sign =
     | id::l -> snd (max_rec (id, sign_prefix id sign) l)
 *)
 let rec add_prods_sign env sigma t =
-  match kind_of_term (whd_all env sigma t) with
+  match EConstr.kind sigma (whd_all env sigma t) with
     | Prod (na,c1,b) ->
-	let id = id_of_name_using_hdchar env t na in
+	let id = id_of_name_using_hdchar env sigma t na in
 	let b'= subst1 (mkVar id) b in
         add_prods_sign (push_named (LocalAssum (id,c1)) env) sigma b'
     | LetIn (na,c1,t1,b) ->
-	let id = id_of_name_using_hdchar env t na in
+	let id = id_of_name_using_hdchar env sigma t na in
 	let b'= subst1 (mkVar id) b in
         add_prods_sign (push_named (LocalDef (id,c1,t1)) env) sigma b'
     | _ -> (env,t)
@@ -146,7 +147,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
   let p = next_ident_away (Id.of_string "P") allvars in
   let pty,goal =
     if dep_option  then
-      let pty = make_arity env true indf sort in
+      let pty = make_arity env sigma true indf sort in
       let goal =
 	mkProd
 	  (Anonymous, mkAppliedInd ind, applist(mkVar p,realargs@[mkRel 1]))
@@ -154,10 +155,11 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       pty,goal
     else
       let i = mkAppliedInd ind in
-      let ivars = global_vars env i in
+      let ivars = global_vars env sigma i in
       let revargs,ownsign =
 	fold_named_context
 	  (fun env d (revargs,hyps) ->
+            let d = map_named_decl EConstr.of_constr d in
              let id = NamedDecl.get_id d in
              if Id.List.mem id ivars then
 	       ((mkVar id)::revargs, Context.Named.add d hyps)
@@ -192,7 +194,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   in
   assert
     (List.subset
-       (global_vars env invGoal)
+       (global_vars env sigma invGoal)
        (ids_of_named_context (named_context invEnv)));
   (*
     user_err ~hdr:"lemma_inversion"
@@ -208,6 +210,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let ownSign = ref begin
     fold_named_context
       (fun env d sign ->
+        let d = map_named_decl EConstr.of_constr d in
          if mem_named_context_val (NamedDecl.get_id d) global_named_context then sign
 	 else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
@@ -216,18 +219,19 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let { sigma=sigma } = Proof.V82.subgoals pf in
   let sigma = Evd.nf_constraints sigma in
   let rec fill_holes c =
-    match kind_of_term c with
+    match EConstr.kind sigma c with
     | Evar (e,args) ->
 	let h = next_ident_away (Id.of_string "H") !avoid in
 	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
 	avoid := h::!avoid;
 	ownSign := Context.Named.add (LocalAssum (h,ty)) !ownSign;
 	applist (mkVar h, inst)
-    | _ -> Constr.map fill_holes c
+    | _ -> EConstr.map sigma fill_holes c
   in
   let c = fill_holes pfterm in
   (* warning: side-effect on ownSign *)
   let invProof = it_mkNamedLambda_or_LetIn c !ownSign in
+  let invProof = EConstr.Unsafe.to_constr invProof in
   let p = Evarutil.nf_evars_universes sigma invProof in
     p, Evd.universe_context sigma
 
@@ -258,26 +262,28 @@ let add_inversion_lemma_exn na com comsort bool tac =
 
 let lemInv id c gls =
   try
-    let clause = mk_clenv_type_of gls c in
-    let clause = clenv_constrain_last_binding (mkVar id) clause in
+    let open Tacmach in
+    let clause = mk_clenv_from_env (pf_env gls) (project gls) None (c, pf_unsafe_type_of gls c) in
+    let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
     Proofview.V82.of_tactic (Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false) gls
   with
     | NoSuchBinding ->
 	user_err 
-	  (hov 0 (pr_constr c ++ spc () ++ str "does not refer to an inversion lemma."))
+	  (hov 0 (pr_econstr_env (Refiner.pf_env gls) (Refiner.project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
     | UserError (a,b) ->
 	 user_err ~hdr:"LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
-	      pr_lconstr_env (Refiner.pf_env gls) (Refiner.project gls) c)
+	      pr_leconstr_env (Refiner.pf_env gls) (Refiner.project gls) c)
 
 let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv id c)) id
 
 let lemInvIn id c ids =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in
-      let nb_of_new_hyp  = nb_prod concl - List.length ids in
+      let sigma = project gl in
+      let nb_of_new_hyp = nb_prod sigma concl - List.length ids in
       if nb_of_new_hyp < 1  then
         intros_replacing ids
       else

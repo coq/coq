@@ -71,20 +71,21 @@ type pconstant = constant puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
-type ('constr, 'types) kind_of_term = ('constr, 'types) Constr.kind_of_term =
+type ('constr, 'types, 'sort, 'univs) kind_of_term =
+  ('constr, 'types, 'sort, 'univs) Constr.kind_of_term =
   | Rel       of int
   | Var       of Id.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
-  | Sort      of sorts
+  | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
   | Prod      of Name.t * 'types * 'types
   | Lambda    of Name.t * 'types * 'constr
   | LetIn     of Name.t * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of pconstant
-  | Ind       of pinductive
-  | Construct of pconstructor
+  | Const     of (constant * 'univs)
+  | Ind       of (inductive * 'univs)
+  | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
@@ -179,8 +180,6 @@ let destMeta c = match kind_of_term c with
   | _ -> raise DestKO
 
 let isMeta c = match kind_of_term c with Meta _ -> true | _ -> false
-let isMetaOf mv c =
-  match kind_of_term c with Meta mv' -> Int.equal mv mv' | _ -> false
 
 (* Destructs a variable *)
 let destVar c = match kind_of_term c with

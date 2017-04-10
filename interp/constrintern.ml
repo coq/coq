@@ -1831,7 +1831,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 		  (add_name match_acc (loc,x)) ((loc,x)::var_acc)
 	      | (LocalAssum (cano_name,ty) | LocalDef (cano_name,_,ty)) :: t, c::tt ->
 		let fresh =
-		  Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names ty in
+		  Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names (EConstr.of_constr ty) in
 		canonize_args t tt (fresh::forbidden_names)
 		  ((fresh,c)::match_acc) ((cases_pattern_loc c,Name fresh)::var_acc)
 	      | _ -> assert false in
@@ -1925,7 +1925,7 @@ let extract_ids env =
 
 let scope_of_type_kind = function
   | IsType -> Notation.current_type_scope_name ()
-  | OfType typ -> compute_type_scope typ
+  | OfType typ -> compute_type_scope (EConstr.Unsafe.to_constr typ)
   | WithoutTypeConstraint -> None
 
 let empty_ltac_sign = {
@@ -2004,7 +2004,7 @@ let interp_constr_evars env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen env evdref WithoutTypeConstraint ~impls c
 
 let interp_casted_constr_evars env evdref ?(impls=empty_internalization_env) c typ =
-  interp_constr_evars_gen env evdref ~impls (OfType typ) c
+  interp_constr_evars_gen env evdref ~impls (OfType (EConstr.of_constr typ)) c
 
 let interp_type_evars env evdref ?(impls=empty_internalization_env) c =
   interp_constr_evars_gen env evdref IsType ~impls c
@@ -2064,6 +2064,7 @@ let intern_context global_level env impl_env binders =
     user_err ~loc ~hdr:"internalize" (explain_internalization_error e)
 
 let interp_rawcontext_evars env evdref k bl =
+  let open EConstr in
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->

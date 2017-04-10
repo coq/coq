@@ -58,3 +58,16 @@ let map_red_expr_gen f g h = function
   | CbvNative occs_o -> CbvNative (Option.map (map_occs (map_union g h)) occs_o)
   | Cbn flags -> Cbn (map_flags g flags)
   | ExtraRedExpr _ | Red _ | Hnf as x -> x
+
+(** Mapping bindings *)
+
+let map_explicit_bindings f l =
+  let map (loc, hyp, x) = (loc, hyp, f x) in
+  List.map map l
+
+let map_bindings f = function
+| ImplicitBindings l -> ImplicitBindings (List.map f l)
+| ExplicitBindings expl -> ExplicitBindings (map_explicit_bindings f expl)
+| NoBindings -> NoBindings
+
+let map_with_bindings f (x, bl) = (f x, map_bindings f bl)

@@ -10,6 +10,7 @@
 
 open Term
 open Clenv
+open EConstr
 open Unification
 open Misctypes
 

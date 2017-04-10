@@ -11,6 +11,7 @@ open CErrors
 open Util
 open Names
 open Term
+open EConstr
 open Declarations
 open Globnames
 open Genredexpr
@@ -25,9 +26,7 @@ open Misctypes
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env sigma c =
   let ctyp = Retyping.get_type_of env sigma c in
-  if Termops.occur_meta_or_existential c then
-    error "vm_compute does not support existential variables.";
-  Vnorm.cbv_vm env c ctyp
+  Vnorm.cbv_vm env sigma c ctyp
 
 let warn_native_compute_disabled =
   CWarnings.create ~name:"native-compute-disabled" ~category:"native-compiler"
@@ -45,7 +44,8 @@ let cbv_native env sigma c =
 let whd_cbn flags env sigma t =
   let (state,_) =
     (whd_state_gen true true flags env sigma (t,Reductionops.Stack.empty))
-  in Reductionops.Stack.zip ~refold:true state
+  in
+  Reductionops.Stack.zip ~refold:true sigma state
 
 let strong_cbn flags =
   strong (whd_cbn flags)
@@ -254,9 +254,12 @@ let reduction_of_red_expr env =
   in
     reduction_of_red_expr
 
+let subst_mps subst c =
+  EConstr.of_constr (Mod_subst.subst_mps subst (EConstr.Unsafe.to_constr c))
+
 let subst_red_expr subs =
   Miscops.map_red_expr_gen
-    (Mod_subst.subst_mps subs)
+    (subst_mps subs)
     (Mod_subst.subst_evaluable_reference subs)
     (Patternops.subst_pattern subs)
 

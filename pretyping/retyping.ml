@@ -10,13 +10,14 @@ open Pp
 open CErrors
 open Util
 open Term
-open Vars
 open Inductive
 open Inductiveops
 open Names
 open Reductionops
 open Environ
 open Termops
+open EConstr
+open Vars
 open Arguments_renaming
 open Context.Rel.Declaration
 
@@ -50,11 +51,11 @@ let anomaly_on_error f x =
  with RetypeError e -> anomaly ~label:"retyping" (print_retype_error e)
 
 let get_type_from_constraints env sigma t =
-  if isEvar (fst (decompose_app t)) then
+  if isEvar sigma (fst (decompose_app_vect sigma t)) then
     match
       List.map_filter (fun (pbty,env,t1,t2) ->
-        if is_fconv Reduction.CONV env sigma t t1 then Some t2
-        else if is_fconv Reduction.CONV env sigma t t2 then Some t1
+        if is_fconv Reduction.CONV env sigma t (EConstr.of_constr t1) then Some t2
+        else if is_fconv Reduction.CONV env sigma t (EConstr.of_constr t2) then Some t1
         else None)
         (snd (Evd.extract_all_conv_pbs sigma))
     with
@@ -65,7 +66,7 @@ let get_type_from_constraints env sigma t =
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
-      match kind_of_term (whd_all env sigma typ) with
+      match EConstr.kind sigma (whd_all env sigma typ) with
         | Prod (na,c1,c2) -> subst_type env sigma (subst1 h c2) rest
         | _ -> retype_error NonFunctionalConstruction
 
@@ -74,9 +75,9 @@ let rec subst_type env sigma typ = function
 
 let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env n ar args =
-    match kind_of_term (whd_all env sigma ar), args with
+    match EConstr.kind sigma (whd_all env sigma ar), args with
     | Prod (na, t, b), h::l -> concl_of_arity (push_rel (LocalDef (na, lift n h, t)) env) (n + 1) b l
-    | Sort s, [] -> s
+    | Sort s, [] -> ESorts.kind sigma s
     | _ -> retype_error NotASort
   in concl_of_arity env 0 ft (Array.to_list args)
 
@@ -85,37 +86,39 @@ let type_of_var env id =
   with Not_found -> retype_error (BadVariable id)
 
 let decomp_sort env sigma t =
-  match kind_of_term (whd_all env sigma t) with
-  | Sort s -> s
+  match EConstr.kind sigma (whd_all env sigma t) with
+  | Sort s -> ESorts.kind sigma s
   | _ -> retype_error NotASort
+
+let destSort sigma s = ESorts.kind sigma (destSort sigma s)
 
 let retype ?(polyprop=true) sigma =
   let rec type_of env cstr =
-    match kind_of_term cstr with
+    match EConstr.kind sigma cstr with
     | Meta n ->
-      (try strip_outer_cast (Evd.meta_ftype sigma n).Evd.rebus
+      (try strip_outer_cast sigma (EConstr.of_constr (Evd.meta_ftype sigma n).Evd.rebus)
        with Not_found -> retype_error (BadMeta n))
     | Rel n ->
 	let ty = RelDecl.get_type (lookup_rel n env) in
         lift n ty
     | Var id -> type_of_var env id
-    | Const cst -> rename_type_of_constant env cst
-    | Evar ev -> Evd.existential_type sigma ev
-    | Ind ind -> rename_type_of_inductive env ind
-    | Construct cstr -> rename_type_of_constructor env cstr
+    | Const (cst, u) -> EConstr.of_constr (rename_type_of_constant env (cst, EInstance.kind sigma u))
+    | Evar ev -> existential_type sigma ev
+    | Ind (ind, u) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
+    | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
     | Case (_,p,c,lf) ->
         let Inductiveops.IndType(indf,realargs) =
           let t = type_of env c in
           try Inductiveops.find_rectype env sigma t
           with Not_found ->
           try
-            let t = get_type_from_constraints env sigma t in
+            let t = EConstr.of_constr (get_type_from_constraints env sigma t) in
             Inductiveops.find_rectype env sigma t
           with Not_found -> retype_error BadRecursiveType
         in
         let n = inductive_nrealdecls_env env (fst (fst (dest_ind_family indf))) in
         let t = betazetaevar_applist sigma n p realargs in
-        (match kind_of_term (whd_all env sigma (type_of env t)) with
+        (match EConstr.kind sigma (whd_all env sigma (type_of env t)) with
           | Prod _ -> whd_beta sigma (applist (t, [c]))
           | _ -> t)
     | Lambda (name,c1,c2) ->
@@ -124,25 +127,28 @@ let retype ?(polyprop=true) sigma =
          subst1 b (type_of (push_rel (LocalDef (name,b,c1)) env) c2)
     | Fix ((_,i),(_,tys,_)) -> tys.(i)
     | CoFix (i,(_,tys,_)) -> tys.(i)
-    | App(f,args) when is_template_polymorphic env f ->
+    | App(f,args) when is_template_polymorphic env sigma f ->
 	let t = type_of_global_reference_knowing_parameters env f args in
-        strip_outer_cast (subst_type env sigma t (Array.to_list args))
+        strip_outer_cast sigma (subst_type env sigma t (Array.to_list args))
     | App(f,args) ->
-        strip_outer_cast
+        strip_outer_cast sigma
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | Proj (p,c) ->
        let ty = type_of env c in
-       (try
+       EConstr.of_constr (try
 	   Inductiveops.type_of_projection_knowing_arg env sigma p c ty
 	 with Invalid_argument _ -> retype_error BadRecursiveType)
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
 
   and sort_of env t =
-    match kind_of_term t with
-    | Cast (c,_, s) when isSort s -> destSort s
-    | Sort (Prop c) -> type1_sort
-    | Sort (Type u) -> Type (Univ.super u)
+    match EConstr.kind sigma t with
+    | Cast (c,_, s) when isSort sigma s -> destSort sigma s
+    | Sort s ->
+      begin match ESorts.kind sigma s with
+      | Prop _ -> type1_sort
+      | Type u -> Type (Univ.super u)
+      end
     | Prod (name,t,c2) ->
         (match (sort_of env t, sort_of (push_rel (LocalAssum (name,t)) env) c2) with
 	  | _, (Prop Null as s) -> s
@@ -152,7 +158,7 @@ let retype ?(polyprop=true) sigma =
 	  | Prop Pos, (Type u2) -> Type (Univ.sup Univ.type0_univ u2)
 	  | Prop Null, (Type _ as s) -> s
 	  | Type u1, Type u2 -> Type (Univ.sup u1 u2))
-    | App(f,args) when is_template_polymorphic env f ->
+    | App(f,args) when is_template_polymorphic env sigma f ->
       let t = type_of_global_reference_knowing_parameters env f args in
         sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
@@ -160,15 +166,14 @@ let retype ?(polyprop=true) sigma =
     | _ -> decomp_sort env sigma (type_of env t)
 
   and sort_family_of env t =
-    match kind_of_term t with
-    | Cast (c,_, s) when isSort s -> family_of_sort (destSort s)
-    | Sort (Prop c) -> InType
-    | Sort (Type u) -> InType
+    match EConstr.kind sigma t with
+    | Cast (c,_, s) when isSort sigma s -> family_of_sort (destSort sigma s)
+    | Sort _ -> InType
     | Prod (name,t,c2) ->
 	let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
 	if not (is_impredicative_set env) &&
 	   s2 == InSet && sort_family_of env t == InType then InType else s2
-    | App(f,args) when is_template_polymorphic env f ->
+    | App(f,args) when is_template_polymorphic env sigma f ->
 	let t = type_of_global_reference_knowing_parameters env f args in
         family_of_sort (sort_of_atomic_type env sigma t args)
     | App(f,args) ->
@@ -179,18 +184,22 @@ let retype ?(polyprop=true) sigma =
 
   and type_of_global_reference_knowing_parameters env c args =
     let argtyps =
-      Array.map (fun c -> lazy (nf_evar sigma (type_of env c))) args in
-    match kind_of_term c with
-    | Ind ind ->
-      let mip = lookup_mind_specif env (fst ind) in
-	(try Inductive.type_of_inductive_knowing_parameters
-	       ~polyprop env (mip,snd ind) argtyps
+      Array.map (fun c -> lazy (EConstr.to_constr sigma (type_of env c))) args in
+    match EConstr.kind sigma c with
+    | Ind (ind, u) ->
+      let u = EInstance.kind sigma u in
+      let mip = lookup_mind_specif env ind in
+	EConstr.of_constr (try Inductive.type_of_inductive_knowing_parameters
+	       ~polyprop env (mip, u) argtyps
 	 with Reduction.NotArity -> retype_error NotAnArity)
-    | Const cst ->
-	(try Typeops.type_of_constant_knowing_parameters_in env cst argtyps
+    | Const (cst, u) ->
+        let u = EInstance.kind sigma u in
+	EConstr.of_constr (try Typeops.type_of_constant_knowing_parameters_in env (cst, u) argtyps
 	 with Reduction.NotArity -> retype_error NotAnArity)
     | Var id -> type_of_var env id
-    | Construct cstr -> type_of_constructor env cstr
+    | Construct (cstr, u) ->
+      let u = EInstance.kind sigma u in
+      EConstr.of_constr (type_of_constructor env (cstr, u))
     | _ -> assert false
 
   in type_of, sort_of, sort_family_of,
@@ -204,17 +213,16 @@ let type_of_global_reference_knowing_parameters env sigma c args =
   let _,_,_,f = retype sigma in anomaly_on_error (f env c) args
 
 let type_of_global_reference_knowing_conclusion env sigma c conclty =
-  let conclty = nf_evar sigma conclty in
-  match kind_of_term c with
+  match EConstr.kind sigma c with
     | Ind (ind,u) ->
         let spec = Inductive.lookup_mind_specif env ind in
-          type_of_inductive_knowing_conclusion env sigma (spec,u) conclty
-    | Const cst ->
-        let t = constant_type_in env cst in
+          type_of_inductive_knowing_conclusion env sigma (spec, EInstance.kind sigma u) conclty
+    | Const (cst, u) ->
+        let t = constant_type_in env (cst, EInstance.kind sigma u) in
         (* TODO *)
-          sigma, Typeops.type_of_constant_type_knowing_parameters env t [||]
+          sigma, EConstr.of_constr (Typeops.type_of_constant_type_knowing_parameters env t [||])
     | Var id -> sigma, type_of_var env id
-    | Construct cstr -> sigma, type_of_constructor env cstr
+    | Construct (cstr, u) -> sigma, EConstr.of_constr (type_of_constructor env (cstr, EInstance.kind sigma u))
     | _ -> assert false
 
 (* Profiling *)

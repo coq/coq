@@ -5,7 +5,8 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-open Term
+
+open EConstr
 open Environ
 open Evd
 

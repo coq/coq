@@ -14,6 +14,7 @@
 
 open Util
 open Term
+open EConstr
 
 (** Main state of tactics *)
 type proofview
@@ -43,7 +44,7 @@ val compact : entry -> proofview -> entry * proofview
     empty [evar_map] (indeed a proof can be triggered by an incomplete
     pretyping), [init] takes an additional argument to represent the
     initial [evar_map]. *)
-val init : Evd.evar_map -> (Environ.env * Term.types) list -> entry * proofview
+val init : Evd.evar_map -> (Environ.env * types) list -> entry * proofview
 
 (** A [telescope] is a list of environment and conclusion like in
     {!init}, except that each element may depend on the previous
@@ -52,7 +53,7 @@ val init : Evd.evar_map -> (Environ.env * Term.types) list -> entry * proofview
     [evar_map] is threaded in state passing style. *)
 type telescope =
   | TNil of Evd.evar_map
-  | TCons of Environ.env * Evd.evar_map * Term.types * (Evd.evar_map -> Term.constr -> telescope)
+  | TCons of Environ.env * Evd.evar_map * types * (Evd.evar_map -> constr -> telescope)
 
 (** Like {!init}, but goals are allowed to be dependent on one
     another. Dependencies between goals is represented with the type
@@ -484,15 +485,11 @@ module Goal : sig
       respectively the conclusion of [gl], the hypotheses of [gl], the
       environment of [gl] (i.e. the global environment and the
       hypotheses) and the current evar map. *)
-  val concl : ([ `NF ], 'r) t -> Term.constr
-  val hyps : ([ `NF ], 'r) t -> Context.Named.t
+  val concl : ('a, 'r) t -> constr
+  val hyps : ('a, 'r) t -> named_context
   val env : ('a, 'r) t -> Environ.env
   val sigma : ('a, 'r) t -> 'r Sigma.t
   val extra : ('a, 'r) t -> Evd.Store.t
-
-  (** Returns the goal's conclusion even if the goal is not
-      normalised. *)
-  val raw_concl : ('a, 'r) t -> Term.constr
 
   type ('a, 'b) enter =
     { enter : 'r. ('a, 'r) t -> 'b }

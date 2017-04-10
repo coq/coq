@@ -11,6 +11,7 @@ open Names
 open Term
 open Termops
 open Evd
+open EConstr
 open Refiner
 open Logic
 open Reduction
@@ -26,19 +27,19 @@ open Proofview.Notations
 
 let clenv_cast_meta clenv =
   let rec crec u =
-    match kind_of_term u with
+    match EConstr.kind clenv.evd u with
       | App _ | Case _ -> crec_hd u
-      | Cast (c,_,_) when isMeta c -> u
+      | Cast (c,_,_) when isMeta clenv.evd c -> u
       | Proj (p, c) -> mkProj (p, crec_hd c)
-      | _  -> map_constr crec u
+      | _  -> EConstr.map clenv.evd crec u
 
   and crec_hd u =
-    match kind_of_term (strip_outer_cast u) with
+    match EConstr.kind clenv.evd (strip_outer_cast clenv.evd u) with
       | Meta mv ->
 	  (try
             let b = Typing.meta_type clenv.evd mv in
-	    assert (not (occur_meta b));
-	    if occur_meta b then u
+	    assert (not (occur_meta clenv.evd b));
+	    if occur_meta clenv.evd b then u
             else mkCast (mkMeta mv, DEFAULTcast, b)
 	  with Not_found -> u)
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
@@ -104,8 +105,8 @@ let dft = default_unify_flags
 
 let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter { enter = begin fun gl ->
-    let clenv gl = clenv_unique_resolver ~flags clenv gl in
-    clenv_refine with_evars ~with_classes (Tacmach.New.of_old clenv (Proofview.Goal.assume gl))
+    let clenv = clenv_unique_resolver ~flags clenv gl in
+    clenv_refine with_evars ~with_classes clenv
   end }
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en

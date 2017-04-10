@@ -6,6 +6,17 @@ Tactics
 - New tactic "extensionality in H" which applies (possibly dependent)
   functional extensionality in H supposed to be a quantified equality
   until giving a bare equality.
+- New representation of terms that statically ensure stability by
+  evar-expansion. This has several consequences.
+  * In terms of performance, this adds a cost to every term destructuration,
+    but at the same time most eager evar normalizations were removed, which
+    couterbalances this drawback and even sometimes outperforms the old
+    implementation. For instance, many operations that would require O(n)
+    normalization of the term are now O(1) in tactics. YMMV.
+  * This triggers small changes in unification, which was not evar-insensitive.
+    Most notably, the new implementation recognizes Miller patterns that were
+    missed before because of a missing normalization step. Hopefully this should
+    be fairly uncommon.
 
 Standard Library
 

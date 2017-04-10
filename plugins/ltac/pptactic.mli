@@ -36,8 +36,8 @@ type 'a glob_extra_genarg_printer =
     'a -> std_ppcmds
 
 type 'a extra_genarg_printer =
-    (Term.constr -> std_ppcmds) ->
-    (Term.constr -> std_ppcmds) ->
+    (EConstr.t -> std_ppcmds) ->
+    (EConstr.t -> std_ppcmds) ->
     (tolerability -> Val.t -> std_ppcmds) ->
     'a -> std_ppcmds
 
@@ -100,7 +100,7 @@ val pr_raw_tactic_level : tolerability -> raw_tactic_expr -> std_ppcmds
 
 val pr_glob_tactic : env -> glob_tactic_expr -> std_ppcmds
 
-val pr_atomic_tactic : env -> atomic_tactic_expr -> std_ppcmds
+val pr_atomic_tactic : env -> Evd.evar_map -> atomic_tactic_expr -> std_ppcmds
 
 val pr_hintbases : string list option -> std_ppcmds
 

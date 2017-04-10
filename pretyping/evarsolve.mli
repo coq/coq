@@ -7,8 +7,13 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open Evd
 open Environ
+
+type alias
+
+val of_alias : alias -> EConstr.t
 
 type unification_result =
   | Success of evar_map
@@ -18,7 +23,7 @@ val is_success : unification_result -> bool
 
 (** Replace the vars and rels that are aliases to other vars and rels by 
    their representative that is most ancient in the context *)
-val expand_vars_in_term : env -> constr -> constr
+val expand_vars_in_term : env -> evar_map -> constr -> constr
 
 (** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
    possibly solving related unification problems, possibly leaving open
@@ -60,12 +65,12 @@ val reconsider_conv_pbs : conv_fun -> evar_map -> unification_result
 (** @deprecated Alias for [reconsider_unif_constraints] *)
 
 val is_unification_pattern_evar : env -> evar_map -> existential -> constr list ->
-  constr -> constr list option
+  constr -> alias list option
 
 val is_unification_pattern : env * int -> evar_map -> constr -> constr list ->
-  constr -> constr list option
+  constr -> alias list option
 
-val solve_pattern_eqn : env -> constr list -> constr -> constr
+val solve_pattern_eqn : env -> evar_map -> alias list -> constr -> constr
 
 val noccur_evar : env -> evar_map -> Evar.t -> constr -> bool
 
@@ -76,7 +81,7 @@ val check_evar_instance :
   evar_map -> existential_key -> constr -> conv_fun -> evar_map
 
 val remove_instance_local_defs :
-  evar_map -> existential_key -> constr array -> constr list
+  evar_map -> existential_key -> 'a array -> 'a list
 
 val get_type_of_refresh : 
   ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * types

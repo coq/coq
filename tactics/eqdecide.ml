@@ -16,6 +16,7 @@ open Util
 open Names
 open Namegen
 open Term
+open EConstr
 open Declarations
 open Tactics
 open Tacticals.New
@@ -25,6 +26,7 @@ open Misctypes
 open Tactypes
 open Hipattern
 open Pretyping
+open Proofview.Notations
 open Tacmach.New
 open Coqlib
 
@@ -50,7 +52,9 @@ open Coqlib
    Eduardo Gimenez (30/3/98).
 *)
 
-let clear_last = (onLastHyp (fun c -> (clear [destVar c])))
+let clear_last =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  (onLastHyp (fun c -> (clear [destVar sigma c])))
 
 let choose_eq eqonleft =
   if eqonleft then
@@ -73,7 +77,7 @@ let mkBranches c1 c2 =
      intros]
 
 let discrHyp id =
-  let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
+  let c = { delayed = fun env sigma -> Sigma.here (mkVar id, NoBindings) sigma } in
   let tac c = Equality.discr_tac false (Some (None, ElimOnConstr c)) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
@@ -85,7 +89,9 @@ let solveNoteqBranch side =
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
 let make_eq () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
+(*FIXME*) EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq ()))
+let build_coq_not () = EConstr.of_constr (build_coq_not ())
+let build_coq_sumbool () = EConstr.of_constr (build_coq_sumbool ())
 
 let mkDecideEqGoal eqonleft op rectype c1 c2 =
   let equality    = mkApp(make_eq(), [|rectype; c1; c2|]) in
@@ -121,7 +127,7 @@ let eqCase tac =
   tclTHEN intro (onLastHypId tac)
 
 let injHyp id =
-  let c = { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma } in
+  let c = { delayed = fun env sigma -> Sigma.here (mkVar id, NoBindings) sigma } in
   let tac c = Equality.injClause None false (Some (None, ElimOnConstr c)) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
@@ -141,8 +147,8 @@ open Proofview.Notations
 
 (* spiwack: a small wrapper around [Hipattern]. *)
 
-let match_eqdec c =
-  try Proofview.tclUNIT (match_eqdec c)
+let match_eqdec sigma c =
+  try Proofview.tclUNIT (match_eqdec sigma c)
   with PatternMatchingFailure -> Proofview.tclZERO PatternMatchingFailure
 
 (* /spiwack *)
@@ -170,11 +176,12 @@ let solveEqBranch rectype =
   Proofview.tclORELSE
     begin
       Proofview.Goal.enter { enter = begin fun gl ->
-        let concl = pf_nf_concl gl in
-        match_eqdec concl >>= fun (eqonleft,op,lhs,rhs,_) ->
+        let concl = pf_concl gl in
+        let sigma = project gl in
+        match_eqdec sigma concl >>= fun (eqonleft,op,lhs,rhs,_) ->
           let (mib,mip) = Global.lookup_inductive rectype in
           let nparams   = mib.mind_nparams in
-          let getargs l = List.skipn nparams (snd (decompose_app l)) in
+          let getargs l = List.skipn nparams (snd (decompose_app sigma l)) in
           let rargs   = getargs rhs
           and largs   = getargs lhs in
           solveArg [] eqonleft op largs rargs
@@ -187,7 +194,7 @@ let solveEqBranch rectype =
 
 (* The tactic Decide Equality *)
 
-let hd_app c = match kind_of_term c with
+let hd_app sigma c = match EConstr.kind sigma c with
   | App (h,_) -> h
   | _ -> c
 
@@ -195,10 +202,11 @@ let decideGralEquality =
   Proofview.tclORELSE
     begin
       Proofview.Goal.enter { enter = begin fun gl ->
-        let concl = pf_nf_concl gl in
-        match_eqdec concl >>= fun (eqonleft,_,c1,c2,typ) ->
-        let headtyp = hd_app (pf_compute gl typ) in
-        begin match kind_of_term headtyp with
+        let concl = pf_concl gl in
+        let sigma = project gl in
+        match_eqdec sigma concl >>= fun (eqonleft,_,c1,c2,typ) ->
+        let headtyp = hd_app sigma (pf_compute gl typ) in
+        begin match EConstr.kind sigma headtyp with
         | Ind (mi,_) -> Proofview.tclUNIT mi
         | _ -> tclZEROMSG (Pp.str"This decision procedure only works for inductive objects.")
         end >>= fun rectype ->

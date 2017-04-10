@@ -107,7 +107,7 @@ let mk_open_instance id idc gl m t=
       let typ=pf_unsafe_type_of gl idc in
 	(* since we know we will get a product,
 	   reduction is not too expensive *)
-      let (nam,_,_)=destProd (whd_all env evmap typ) in
+      let (nam,_,_)=destProd (EConstr.Unsafe.to_constr (whd_all env evmap typ)) in
 	match nam with
 	    Name id -> id
 	  | Anonymous ->  dummy_bvid in
@@ -119,19 +119,20 @@ let mk_open_instance id idc gl m t=
       let Sigma ((c, _), evmap, _) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
       let evmap = Sigma.to_evar_map evmap in
       let decl = LocalAssum (Name nid, c) in
-	aux (n-1) (nid::avoid) (Environ.push_rel decl env) evmap (decl::decls) in
+	aux (n-1) (nid::avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
   let evmap, decls = aux m [] env evmap [] in
     evmap, decls, revt
 
 (* tactics   *)
 
 let left_instance_tac (inst,id) continue seq=
+  let open EConstr in
   match inst with
       Phantom dom->
 	if lookup (id,None) seq then
 	  tclFAIL 0 (Pp.str "already done")
 	else
-	  tclTHENS (Proofview.V82.of_tactic (cut dom))
+	  tclTHENS (Proofview.V82.of_tactic (cut (EConstr.of_constr dom)))
 	    [tclTHENLIST
 	       [Proofview.V82.of_tactic introf;
                 pf_constr_of_global id (fun idc ->
@@ -151,6 +152,7 @@ let left_instance_tac (inst,id) continue seq=
 	      pf_constr_of_global id (fun idc ->
 		fun gl->
 		  let evmap,rc,ot = mk_open_instance id idc gl m t in
+		  let ot = EConstr.of_constr ot in
 		  let gt=
 		    it_mkLambda_or_LetIn
 		      (mkApp(idc,[|ot|])) rc in
@@ -160,6 +162,7 @@ let left_instance_tac (inst,id) continue seq=
 		      error "Untypable instance, maybe higher-order non-prenex quantification" in
 		    tclTHEN (Refiner.tclEVARS evmap) (Proofview.V82.of_tactic (generalize [gt])) gl)
 	    else
+              let t = EConstr.of_constr t in
 	      pf_constr_of_global id (fun idc ->
 		Proofview.V82.of_tactic (generalize [mkApp(idc,[|t|])]))
 	  in
@@ -172,16 +175,16 @@ let left_instance_tac (inst,id) continue seq=
 let right_instance_tac inst continue seq=
   match inst with
       Phantom dom ->
-	tclTHENS (Proofview.V82.of_tactic (cut dom))
+	tclTHENS (Proofview.V82.of_tactic (cut (EConstr.of_constr dom)))
 	[tclTHENLIST
 	   [Proofview.V82.of_tactic introf;
 	    (fun gls->
 	       Proofview.V82.of_tactic (split (ImplicitBindings
-			[mkVar (Tacmach.pf_nth_hyp_id gls 1)])) gls);
+			[EConstr.mkVar (Tacmach.pf_nth_hyp_id gls 1)])) gls);
 	    tclSOLVE [wrap 0 true continue (deepen seq)]];
 	 tclTRY (Proofview.V82.of_tactic assumption)]
     | Real ((0,t),_) ->
-	(tclTHEN (Proofview.V82.of_tactic (split (ImplicitBindings [t])))
+	(tclTHEN (Proofview.V82.of_tactic (split (ImplicitBindings [EConstr.of_constr t])))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
 	tclFAIL 0 (Pp.str "not implemented ... yet")

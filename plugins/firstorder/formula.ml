@@ -54,7 +54,7 @@ let construct_nhyps ind gls =
 let ind_hyps nevar ind largs gls=
   let types= Inductiveops.arities_of_constructors (pf_env gls) ind in
   let myhyps t =
-    let t1=prod_applist t largs in
+    let t1=Term.prod_applist t largs in
     let t2=snd (decompose_prod_n_assum nevar t1) in
       fst (decompose_prod_assum t2) in
     Array.map myhyps types
@@ -76,18 +76,22 @@ type kind_of_formula=
   | Forall of constr*constr
   | Atom of constr
 
+let pop t = Vars.lift (-1) t
+
 let kind_of_formula gl term =
   let normalize=special_nf gl in
   let cciterm=special_whd gl term in
-    match match_with_imp_term cciterm with
-	Some (a,b)-> Arrow(a,(pop b))
+    match match_with_imp_term (project gl) (EConstr.of_constr cciterm) with
+	Some (a,b)-> Arrow(EConstr.Unsafe.to_constr a,(pop (EConstr.Unsafe.to_constr b)))
       |_->
-	 match match_with_forall_term cciterm with
-	     Some (_,a,b)-> Forall(a,b)
+	 match match_with_forall_term (project gl) (EConstr.of_constr cciterm) with
+	     Some (_,a,b)-> Forall(EConstr.Unsafe.to_constr a,EConstr.Unsafe.to_constr b)
 	   |_->
-	      match match_with_nodep_ind cciterm with
+	      match match_with_nodep_ind (project gl) (EConstr.of_constr cciterm) with
 		  Some (i,l,n)->
-		    let ind,u=destInd i in
+                    let l = List.map EConstr.Unsafe.to_constr l in
+		    let ind,u=EConstr.destInd (project gl) i in
+		    let u = EConstr.EInstance.kind (project gl) u in
 		    let (mib,mip) = Global.lookup_inductive ind in
 		    let nconstr=Array.length mip.mind_consnames in
 		      if Int.equal nconstr 0 then
@@ -96,7 +100,7 @@ let kind_of_formula gl term =
 			let has_realargs=(n>0) in
 			let is_trivial=
 			  let is_constant c =
-			    Int.equal (nb_prod c) mib.mind_nparams in
+			    Int.equal (nb_prod (project gl) (EConstr.of_constr c)) mib.mind_nparams in
 			    Array.exists is_constant mip.mind_nf_lc in
 			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
 			    (has_realargs && not is_trivial)
@@ -108,8 +112,11 @@ let kind_of_formula gl term =
 			    else
 			      Or((ind,u),l,is_trivial)
 		| _ ->
-		    match match_with_sigma_type cciterm with
-			Some (i,l)-> Exists((destInd i),l)
+		    match match_with_sigma_type (project gl) (EConstr.of_constr cciterm) with
+			Some (i,l)->
+                          let (ind, u) = EConstr.destInd (project gl) i in
+                          let u = EConstr.EInstance.kind (project gl) u in
+                          Exists((ind, u), List.map EConstr.Unsafe.to_constr l)
 		      |_-> Atom (normalize cciterm)
 
 type atoms = {positive:constr list;negative:constr list}

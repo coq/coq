@@ -10,6 +10,7 @@ open Names
 open Term
 open Evd
 open Environ
+open EConstr
 
 (** This module provides useful higher-level functions for evar manipulation. *)
 
@@ -76,9 +77,9 @@ val new_evar_instance :
   ?principal:bool ->
   constr list -> (constr, 'r) Sigma.sigma
 
-val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
+val make_pure_subst : evar_info -> 'a array -> (Id.t * 'a) list
 
-val safe_evar_value : evar_map -> existential -> constr option
+val safe_evar_value : evar_map -> Constr.existential -> Constr.constr option
 
 (** {6 Evars/Metas switching...} *)
 
@@ -88,7 +89,7 @@ val non_instantiated : evar_map -> evar_info Evar.Map.t
 
 (** [head_evar c] returns the head evar of [c] if any *)
 exception NoHeadEvar
-val head_evar : constr -> existential_key (** may raise NoHeadEvar *)
+val head_evar : evar_map -> constr -> existential_key (** may raise NoHeadEvar *)
 
 (* Expand head evar if any *)
 val whd_head_evar :  evar_map -> constr -> constr
@@ -128,7 +129,7 @@ val undefined_evars_of_evar_info : evar_map -> evar_info -> Evar.Set.t
 (** [occur_evar_upto sigma k c] returns [true] if [k] appears in
     [c]. It looks up recursively in [sigma] for the value of existential
     variables. *)
-val occur_evar_upto : evar_map -> Evar.t -> Constr.t -> bool
+val occur_evar_upto : evar_map -> Evar.t -> constr -> bool
 
 (** {6 Value/Type constraints} *)
 
@@ -150,7 +151,7 @@ val tj_nf_evar :
    evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
 val nf_named_context_evar : evar_map -> Context.Named.t -> Context.Named.t
-val nf_rel_context_evar : evar_map -> Context.Rel.t -> Context.Rel.t
+val nf_rel_context_evar : evar_map -> rel_context -> rel_context
 val nf_env_evar : evar_map -> env -> env
 
 val nf_evar_info : evar_map -> evar_info -> evar_info
@@ -159,39 +160,40 @@ val nf_evar_map_undefined : evar_map -> evar_map
 
 (** Presenting terms without solved evars *)
 
-val nf_evars_universes : evar_map -> constr -> constr
+val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
 
-val nf_evars_and_universes : evar_map -> evar_map * (constr -> constr)
-val e_nf_evars_and_universes : evar_map ref -> (constr -> constr) * Universes.universe_opt_subst
+val nf_evars_and_universes : evar_map -> evar_map * (Constr.constr -> Constr.constr)
+val e_nf_evars_and_universes : evar_map ref -> (Constr.constr -> Constr.constr) * Universes.universe_opt_subst
 
 (** Normalize the evar map w.r.t. universes, after simplification of constraints.
     Return the substitution function for constrs as well. *)
-val nf_evar_map_universes : evar_map -> evar_map * (constr -> constr)
+val nf_evar_map_universes : evar_map -> evar_map * (Constr.constr -> Constr.constr)
 
 (** Replacing all evars, possibly raising [Uninstantiated_evar] *)
 exception Uninstantiated_evar of existential_key
-val flush_and_check_evars :  evar_map -> constr -> constr
+val flush_and_check_evars :  evar_map -> constr -> Constr.constr
 
 (** {6 Term manipulation up to instantiation} *)
 
 (** Like {!Constr.kind} except that [kind_of_term sigma t] exposes [t]
     as an evar [e] only if [e] is uninstantiated in [sigma]. Otherwise the
     value of [e] in [sigma] is (recursively) used. *)
-val kind_of_term_upto : evar_map -> constr -> (constr,types) kind_of_term
+val kind_of_term_upto : evar_map -> Constr.constr ->
+  (Constr.constr, Constr.types, Sorts.t, Univ.Instance.t) kind_of_term
 
 (** [eq_constr_univs_test sigma1 sigma2 t u] tests equality of [t] and
     [u] up to existential variable instantiation and equalisable
     universes. The term [t] is interpreted in [sigma1] while [u] is
     interpreted in [sigma2]. The universe constraints in [sigma2] are
     assumed to be an extention of those in [sigma1]. *)
-val eq_constr_univs_test : evar_map -> evar_map -> constr -> constr -> bool
+val eq_constr_univs_test : evar_map -> evar_map -> Constr.constr -> Constr.constr -> bool
 
 (** {6 Removing hyps in evars'context}
 raise OccurHypInSimpleClause if the removal breaks dependencies *)
 
 type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
-| EvarTypingBreak of existential
+| EvarTypingBreak of Constr.existential
 
 exception ClearDependencyError of Id.t * clear_dependency_error
 
@@ -208,16 +210,16 @@ val clear_hyps2_in_evi : env -> evar_map ref -> named_context_val -> types -> ty
 type csubst
 
 val empty_csubst : csubst
-val csubst_subst : csubst -> Constr.t -> Constr.t
+val csubst_subst : csubst -> constr -> constr
 
 type ext_named_context =
-  csubst * (Id.t * Constr.constr) list *
-  Id.Set.t * Context.Named.t
+  csubst * (Id.t * constr) list *
+  Id.Set.t * named_context
 
 val push_rel_decl_to_named_context :
-  Context.Rel.Declaration.t -> ext_named_context -> ext_named_context
+  evar_map -> rel_declaration -> ext_named_context -> ext_named_context
 
-val push_rel_context_to_named_context : Environ.env -> types ->
+val push_rel_context_to_named_context : Environ.env -> evar_map -> types ->
   named_context_val * types * constr list * csubst * (identifier*constr) list
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list

@@ -70,9 +70,10 @@ let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
 (* term printers *)
 let rawdebug = ref false
 let ppevar evk = pp (str (Evd.string_of_existential evk))
-let ppconstr x = pp (Termops.print_constr x)
+let ppconstr x = pp (Termops.print_constr (EConstr.of_constr x))
+let ppeconstr x = pp (Termops.print_constr x)
 let ppconstr_expr x = pp (Ppconstr.pr_constr_expr x)
-let ppconstrdb x = pp(Flags.with_option rawdebug Termops.print_constr x)
+let ppconstrdb x = pp(Flags.with_option rawdebug Termops.print_constr (EConstr.of_constr x))
 let ppterm = ppconstr
 let ppsconstr x = ppconstr (Mod_subst.force_constr x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
@@ -97,9 +98,9 @@ let ppidmap pr l = pp (pridmap pr l)
 
 let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
   hov 0
-  (Termops.print_constr c ++
+  (Termops.print_constr (EConstr.of_constr c) ++
    (match copt with None -> mt () | Some c -> spc () ++ str "<expanded: " ++
-    Termops.print_constr c ++ str">") ++
+    Termops.print_constr (EConstr.of_constr c) ++ str">") ++
    (if id = id0 then mt ()
     else spc () ++ str "<canonical: " ++ pr_id id ++ str ">"))))
 
@@ -158,15 +159,15 @@ let prdelta s = pp (Mod_subst.debug_pr_delta s)
 let pp_idpred s = pp (pr_idpred s)
 let pp_cpred s = pp (pr_cpred s)
 let pp_transparent_state s = pp (pr_transparent_state s)
-let pp_stack_t n = pp (Reductionops.Stack.pr Termops.print_constr n)
+let pp_stack_t n = pp (Reductionops.Stack.pr (EConstr.of_constr %> Termops.print_constr) n)
 let pp_cst_stack_t n = pp (Reductionops.Cst_stack.pr n)
 let pp_state_t n = pp (Reductionops.pr_state n)
 
 (* proof printers *)
 let pr_evar ev = Pp.int (Evar.repr ev)
-let ppmetas metas = pp(pr_metaset metas)
-let ppevm evd = pp(pr_evar_map ~with_univs:!Flags.univ_print (Some 2) evd)
-let ppevmall evd = pp(pr_evar_map ~with_univs:!Flags.univ_print None evd)
+let ppmetas metas = pp(Termops.pr_metaset metas)
+let ppevm evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print (Some 2) evd)
+let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print None evd)
 let pr_existentialset evars =
   prlist_with_sep spc pr_evar (Evar.Set.elements evars)
 let ppexistentialset evars =
@@ -177,14 +178,14 @@ let ppexistentialfilter filter = match Evd.Filter.repr filter with
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoalgoal gl = pp(Goal.pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)
-let ppgoalsigma g = pp(Printer.pr_goal g ++ pr_evar_map None (Refiner.project g))
+let ppgoalsigma g = pp(Printer.pr_goal g ++ Termops.pr_evar_map None (Refiner.project g))
 let pphintdb db = pp(Hints.pr_hint_db db)
 let ppproofview p =
   let gls,sigma = Proofview.proofview p in
-  pp(pr_enum Goal.pr_goal gls ++ fnl () ++ pr_evar_map (Some 1) sigma)
+  pp(pr_enum Goal.pr_goal gls ++ fnl () ++ Termops.pr_evar_map (Some 1) sigma)
 
 let ppopenconstr (x : Evd.open_constr) =
-  let (evd,c) = x in pp (pr_evar_map (Some 2) evd ++ pr_constr c)
+  let (evd,c) = x in pp (Termops.pr_evar_map (Some 2) evd ++ pr_constr c)
 (* spiwack: deactivated until a replacement is found
 let pppftreestate p = pp(print_pftreestate p)
 *)
@@ -215,7 +216,7 @@ let ppuniverse_context_set l = pp (pr_universe_context_set prlev l)
 let ppuniverse_subst l = pp (Univ.pr_universe_subst l)
 let ppuniverse_opt_subst l = pp (Universes.pr_universe_opt_subst l)
 let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst l)
-let ppevar_universe_context l = pp (Evd.pr_evar_universe_context l)
+let ppevar_universe_context l = pp (Termops.pr_evar_universe_context l)
 let ppconstraints c = pp (pr_constraints Level.pr c)
 let ppuniverseconstraints c = pp (Universes.Constraints.pr c)
 let ppuniverse_context_future c = 

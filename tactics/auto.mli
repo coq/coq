@@ -10,6 +10,7 @@
 
 open Names
 open Term
+open EConstr
 open Clenv
 open Pattern
 open Decl_kinds

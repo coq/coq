@@ -98,7 +98,8 @@ ARGUMENT EXTEND with_names TYPED AS intropattern_opt PRINTED BY pr_intro_as_pat
 | []  ->[ None ]
 END
 
-
+let functional_induction b c x pat =
+  Proofview.V82.tactic (functional_induction true c x (Option.map out_disjunctive pat))
 
 
 TACTIC EXTEND newfunind
@@ -107,9 +108,9 @@ TACTIC EXTEND newfunind
        let c = match cl with
 	 | [] -> assert false
 	 | [c] -> c
-	 | c::cl -> applist(c,cl)
+	 | c::cl -> EConstr.applist(c,cl)
        in
-       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction true c x (Option.map out_disjunctive pat))) princl ]
+       Extratactics.onSomeWithHoles (fun x -> functional_induction true c x pat) princl ]
 END
 (***** debug only ***)
 TACTIC EXTEND snewfunind
@@ -118,9 +119,9 @@ TACTIC EXTEND snewfunind
        let c = match cl with
 	 | [] -> assert false
 	 | [c] -> c
-	 | c::cl -> applist(c,cl)
+	 | c::cl -> EConstr.applist(c,cl)
        in
-       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction false c x (Option.map out_disjunctive pat))) princl ]
+       Extratactics.onSomeWithHoles (fun x -> functional_induction false c x pat) princl ]
 END
 
 

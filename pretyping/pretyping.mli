@@ -16,6 +16,7 @@ open Names
 open Term
 open Environ
 open Evd
+open EConstr
 open Glob_term
 open Evarutil
 open Misctypes
@@ -76,7 +77,7 @@ val allow_anonymous_refs : bool ref
     evar_map is modified explicitly or by side-effect. *)
 
 val understand_tcc : ?flags:inference_flags -> env -> evar_map ->
-  ?expected_type:typing_constraint -> glob_constr -> open_constr
+  ?expected_type:typing_constraint -> glob_constr -> evar_map * constr
 
 val understand_tcc_evars : ?flags:inference_flags -> env -> evar_map ref ->
   ?expected_type:typing_constraint -> glob_constr -> constr
@@ -105,7 +106,7 @@ val understand_ltac : inference_flags ->
     unresolved evar remains, expanding evars. *)
 
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
-  env -> evar_map -> glob_constr -> constr Evd.in_evar_universe_context
+  env -> evar_map -> glob_constr -> Constr.constr Evd.in_evar_universe_context
 
 (** Idem but returns the judgment of the understood term *)
 

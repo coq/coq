@@ -177,20 +177,20 @@ let prioritize_search seq fn =
 
 (** This function tries to see whether the conclusion matches a pattern. *)
 (** FIXME: this is quite dummy, we may find a more efficient algorithm. *)
-let rec pattern_filter pat ref env typ =
-  let typ = Termops.strip_outer_cast typ in
-  if Constr_matching.is_matching env Evd.empty pat typ then true
-  else match kind_of_term typ with
+let rec pattern_filter pat ref env sigma typ =
+  let typ = Termops.strip_outer_cast sigma typ in
+  if Constr_matching.is_matching env sigma pat typ then true
+  else match EConstr.kind sigma typ with
   | Prod (_, _, typ)
-  | LetIn (_, _, _, typ) -> pattern_filter pat ref env typ
+  | LetIn (_, _, _, typ) -> pattern_filter pat ref env sigma typ
   | _ -> false
 
-let rec head_filter pat ref env typ =
-  let typ = Termops.strip_outer_cast typ in
-  if Constr_matching.is_matching_head env Evd.empty pat typ then true
-  else match kind_of_term typ with
+let rec head_filter pat ref env sigma typ =
+  let typ = Termops.strip_outer_cast sigma typ in
+  if Constr_matching.is_matching_head env sigma pat typ then true
+  else match EConstr.kind sigma typ with
   | Prod (_, _, typ)
-  | LetIn (_, _, _, typ) -> head_filter pat ref env typ
+  | LetIn (_, _, _, typ) -> head_filter pat ref env sigma typ
   | _ -> false
 
 let full_name_of_reference ref =
@@ -217,7 +217,7 @@ let name_of_reference ref = Id.to_string (basename_of_global ref)
 
 let search_about_filter query gr env typ = match query with
 | GlobSearchSubPattern pat ->
-  Constr_matching.is_matching_appsubterm ~closed:false env Evd.empty pat typ
+  Constr_matching.is_matching_appsubterm ~closed:false env Evd.empty pat (EConstr.of_constr typ)
 | GlobSearchString s ->
   String.string_contains ~where:(name_of_reference gr) ~what:s
 
@@ -228,7 +228,7 @@ let search_pattern gopt pat mods pr_search =
   let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     module_filter mods ref env typ &&
-    pattern_filter pat ref env typ &&
+    pattern_filter pat ref env Evd.empty (* FIXME *) (EConstr.of_constr typ) &&
     blacklist_filter ref env typ
   in
   let iter ref env typ =
@@ -252,8 +252,8 @@ let search_rewrite gopt pat mods pr_search =
   let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     module_filter mods ref env typ &&
-    (pattern_filter pat1 ref env typ ||
-       pattern_filter pat2 ref env typ) &&
+    (pattern_filter pat1 ref env Evd.empty (* FIXME *) (EConstr.of_constr typ) ||
+       pattern_filter pat2 ref env Evd.empty (EConstr.of_constr typ)) &&
     blacklist_filter ref env typ
   in
   let iter ref env typ =
@@ -267,7 +267,7 @@ let search_by_head gopt pat mods pr_search =
   let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     module_filter mods ref env typ &&
-    head_filter pat ref env typ &&
+    head_filter pat ref env Evd.empty (* FIXME *) (EConstr.of_constr typ) &&
     blacklist_filter ref env typ
   in
   let iter ref env typ =
@@ -331,12 +331,12 @@ let interface_search =
       toggle (Str.string_match regexp id 0) flag
     in
     let match_type (pat, flag) =
-      toggle (Constr_matching.is_matching env Evd.empty pat constr) flag
+      toggle (Constr_matching.is_matching env Evd.empty pat (EConstr.of_constr constr)) flag
     in
     let match_subtype (pat, flag) =
       toggle
         (Constr_matching.is_matching_appsubterm ~closed:false 
-	   env Evd.empty pat constr) flag
+	   env Evd.empty pat (EConstr.of_constr constr)) flag
     in
     let match_module (mdl, flag) =
       toggle (Libnames.is_dirpath_prefix_of mdl path) flag

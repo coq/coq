@@ -49,7 +49,7 @@ module V82 = struct
   (* Access to ".evar_concl" *)
   let concl evars gl =
     let evi = Evd.find evars gl in
-    evi.Evd.evar_concl
+    EConstr.of_constr evi.Evd.evar_concl
 
   (* Access to ".evar_extra" *)
   let extra evars gl =
@@ -62,6 +62,7 @@ module V82 = struct
        be shelved. It must not appear as a future_goal, so the future
        goals are restored to their initial value after the evar is
        created. *)
+    let concl = EConstr.Unsafe.to_constr concl in
     let prev_future_goals = Evd.future_goals evars in
     let prev_principal_goal = Evd.principal_future_goal evars in
     let evi = { Evd.evar_hyps = hyps;
@@ -78,8 +79,8 @@ module V82 = struct
     let evars = Sigma.to_evar_map evars in
     let evars = Evd.restore_future_goals evars prev_future_goals prev_principal_goal in
     let ctxt = Environ.named_context_of_val hyps in
-    let inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
-    let ev = Term.mkEvar (evk,inst) in
+    let inst = Array.map_of_list (NamedDecl.get_id %> EConstr.mkVar) ctxt in
+    let ev = EConstr.mkEvar (evk,inst) in
     (evk, ev, evars)
 
   (* Instantiates a goal with an open term *)
@@ -89,7 +90,7 @@ module V82 = struct
       if not (Evarutil.occur_evar_upto sigma evk c) then ()
       else Pretype_errors.error_occur_check Environ.empty_env sigma evk c
     in
-    Evd.define evk c sigma
+    Evd.define evk (EConstr.Unsafe.to_constr c) sigma
 
   (* Instantiates a goal with an open term, using name of goal for evk' *)
   let partial_solution_to sigma evk evk' c =
@@ -145,6 +146,7 @@ module V82 = struct
 
   (* Goal represented as a type, doesn't take into account section variables *)
   let abstract_type sigma gl =
+    let open EConstr in
     let (gl,sigma) = nf_evar sigma gl in
     let env = env sigma gl in
     let genv = Global.env () in
@@ -153,6 +155,7 @@ module V82 = struct
       with Not_found -> true in
     Environ.fold_named_context_reverse (fun t decl ->
 					  if is_proof_var decl then
+                                            let decl = Termops.map_named_decl EConstr.of_constr decl in
 					    mkNamedProd_or_LetIn decl t
 					  else
 					    t

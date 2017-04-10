@@ -18,9 +18,10 @@ open CErrors
 open Util
 open Names
 open Term
+open Environ
+open EConstr
 open Vars
 open Reductionops
-open Environ
 open Typeops
 open Pretype_errors
 open Classops
@@ -52,7 +53,7 @@ let apply_coercion_args env evd check isproj argl funj =
   let rec apply_rec acc typ = function
     | [] ->
       if isproj then
-	let cst = fst (destConst (j_val funj)) in
+	let cst = fst (destConst !evdref (j_val funj)) in
 	let p = Projection.make cst false in
 	let pb = lookup_projection p env in
 	let args = List.skipn pb.Declarations.proj_npars argl in
@@ -63,9 +64,9 @@ let apply_coercion_args env evd check isproj argl funj =
 	{ uj_val = applist (j_val funj,argl);
 	  uj_type = typ }
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
-      match kind_of_term (whd_all env evd typ) with
+      match EConstr.kind !evdref (whd_all env !evdref typ) with
       | Prod (_,c1,c2) ->
-        if check && not (e_cumul env evdref (Retyping.get_type_of env evd h) c1) then
+        if check && not (e_cumul env evdref (Retyping.get_type_of env !evdref h) c1) then
 	  raise NoCoercion;
         apply_rec (h::acc) (subst1 h c2) restl
       | _ -> anomaly (Pp.str "apply_coercion_args")
@@ -99,10 +100,10 @@ let app_opt env evdref f t =
 
 let pair_of_array a = (a.(0), a.(1))
 
-let disc_subset x =
-  match kind_of_term x with
+let disc_subset sigma x =
+  match EConstr.kind sigma x with
   | App (c, l) ->
-      (match kind_of_term c with
+      (match EConstr.kind sigma c with
        Ind (i,_) ->
 	 let len = Array.length l in
 	 let sigty = delayed_force sig_typ in
@@ -129,7 +130,7 @@ let lift_args n sign =
 let mu env evdref t =
   let rec aux v =
     let v' = hnf env !evdref v in
-      match disc_subset v' with
+      match disc_subset !evdref v' with
       | Some (u, p) ->
 	let f, ct = aux u in
 	let p = hnf_nodelta env !evdref p in
@@ -140,8 +141,8 @@ let mu env evdref t =
       | None -> (None, v)
   in aux t
 
-and coerce loc env evdref (x : Term.constr) (y : Term.constr)
-    : (Term.constr -> Term.constr) option
+and coerce loc env evdref (x : EConstr.constr) (y : EConstr.constr)
+    : (EConstr.constr -> EConstr.constr) option
     =
   let open Context.Rel.Declaration in
   let rec coerce_unify env x y =
@@ -150,11 +151,11 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	evdref := the_conv_x_leq env x y !evdref;
 	None
       with UnableToUnify _ -> coerce' env x y
-  and coerce' env x y : (Term.constr -> Term.constr) option =
+  and coerce' env x y : (EConstr.constr -> EConstr.constr) option =
     let subco () = subset_coerce env evdref x y in
     let dest_prod c =
-      match Reductionops.splay_prod_n env ( !evdref) 1 c with
-      | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na,t), c
+      match Reductionops.splay_prod_n env (!evdref) 1 c with
+      | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na, t), c
       | _ -> raise NoSubtacCoercion
     in
     let coerce_application typ typ' c c' l l' =
@@ -174,12 +175,12 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		with UnableToUnify _ -> raise NoSubtacCoercion
 	      in
 		(* Disallow equalities on arities *)
-		if Reduction.is_arity env eqT then raise NoSubtacCoercion;
+		if Reductionops.is_arity env !evdref eqT then raise NoSubtacCoercion;
 		let restargs = lift_args 1
 		  (List.rev (Array.to_list (Array.sub l (succ i) (len - (succ i)))))
 		in
 		let args = List.rev (restargs @ mkRel 1 :: List.map (lift 1) tele) in
-		let pred = mkLambda (n, eqT, applistc (lift 1 c) args) in
+		let pred = mkLambda (n, eqT, applist (lift 1 c, args)) in
 		let eq = papp evdref coq_eq_ind [| eqT; hdx; hdy |] in
 		let evar = make_existential loc env evdref eq in
 		let eq_app x = papp evdref coq_eq_rect
@@ -191,14 +192,14 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	  let term = co x in
 	    Typing.e_solve_evars env evdref term)
       in
-	if isEvar c || isEvar c' || not (Program.is_program_generalized_coercion ()) then
+	if isEvar !evdref c || isEvar !evdref c' || not (Program.is_program_generalized_coercion ()) then
 	  (* Second-order unification needed. *)
 	  raise NoSubtacCoercion;
 	aux [] typ typ' 0 (fun x -> x)
     in
-      match (kind_of_term x, kind_of_term y) with
+      match (EConstr.kind !evdref x, EConstr.kind !evdref y) with
       | Sort s, Sort s' ->
-        (match s, s' with
+        (match ESorts.kind !evdref s, ESorts.kind !evdref s' with
 	| Prop x, Prop y when x == y -> None
 	| Prop _, Type _ -> None
 	| Type x, Type y when Univ.Universe.equal x y -> None (* false *)
@@ -224,7 +225,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 				  (mkApp (lift 1 f, [| coec1 |])))))
 
       | App (c, l), App (c', l') ->
-	  (match kind_of_term c, kind_of_term c' with
+	  (match EConstr.kind !evdref c, EConstr.kind !evdref c' with
 	   Ind (i, u), Ind (i', u') -> (* Inductive types *)
 	     let len = Array.length l in
 	     let sigT = delayed_force sigT_typ in
@@ -241,16 +242,15 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		     in
 		     let c1 = coerce_unify env a a' in
 		     let remove_head a c =
-		       match kind_of_term c with
+		       match EConstr.kind !evdref c with
 		       | Lambda (n, t, t') -> c, t'
 		       | Evar (k, args) ->
 			   let (evs, t) = Evardefine.define_evar_as_lambda env !evdref (k,args) in
 			     evdref := evs;
-			     let (n, dom, rng) = destLambda t in
-			     let dom = whd_evar !evdref dom in
-			       if isEvar dom then
-				 let (domk, args) = destEvar dom in
-				   evdref := define domk a !evdref;
+			     let (n, dom, rng) = destLambda !evdref t in
+			       if isEvar !evdref dom then
+				 let (domk, args) = destEvar !evdref dom in
+				   evdref := define domk (EConstr.Unsafe.to_constr a) !evdref;
 			       else ();
 			       t, rng
 		       | _ -> raise NoSubtacCoercion
@@ -301,7 +301,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 			  coerce_application typ typ' c c' l l')
 		 else
 		   subco ()
-	   | x, y when Constr.equal c c' ->
+	   | x, y when EConstr.eq_constr !evdref c c' ->
 	       if Int.equal (Array.length l) (Array.length l') then
 		 let evm =  !evdref in
 		 let lam_type = Typing.unsafe_type_of env evm c in
@@ -312,14 +312,14 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
       | _, _ ->  subco ()
 
   and subset_coerce env evdref x y =
-    match disc_subset x with
+    match disc_subset !evdref x with
     Some (u, p) ->
       let c = coerce_unify env u y in
       let f x =
 	app_opt env evdref c (papp evdref sig_proj1 [| u; p; x |])
       in Some f
     | None ->
-	match disc_subset y with
+	match disc_subset !evdref y with
 	Some (u, p) ->
 	  let c = coerce_unify env x u in
 	    Some
@@ -374,7 +374,7 @@ let apply_coercion env sigma p hj typ_cl =
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core env evd j =
   let t = whd_all env evd j.uj_type in
-    match kind_of_term t with
+    match EConstr.kind evd t with
     | Prod (_,_,_) -> (evd,j)
     | Evar ev ->
 	let (evd',t) = Evardefine.define_evar_as_product evd ev in
@@ -404,20 +404,25 @@ let inh_app_fun resolve_tc env evd j =
     try inh_app_fun_core env (saturate_evd env evd) j
     with NoCoercion -> (evd, j)
 
+let type_judgment env sigma j =
+  match EConstr.kind sigma (whd_all env sigma j.uj_type) with
+    | Sort s -> {utj_val = j.uj_val; utj_type = ESorts.kind sigma s }
+    | _ -> error_not_a_type env sigma j
+
 let inh_tosort_force loc env evd j =
   try
     let t,p = lookup_path_to_sort_from env evd j.uj_type in
     let evd,j1 = apply_coercion env evd p j t in
     let j2 = on_judgment_type (whd_evar evd) j1 in
-      (evd,type_judgment env j2)
+      (evd,type_judgment env evd j2)
   with Not_found | NoCoercion ->
     error_not_a_type ~loc env evd j
 
 let inh_coerce_to_sort loc env evd j =
   let typ = whd_all env evd j.uj_type in
-    match kind_of_term typ with
-    | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
-    | Evar ev when not (is_defined evd (fst ev)) ->
+    match EConstr.kind evd typ with
+    | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = ESorts.kind evd s })
+    | Evar ev ->
 	let (evd',s) = Evardefine.define_evar_as_sort env evd ev in
 	  (evd',{ utj_val = j.uj_val; utj_type = s })
     | _ ->
@@ -428,7 +433,7 @@ let inh_coerce_to_base loc env evd j =
     let evdref = ref evd in
     let ct, typ' = mu env evdref j.uj_type in
     let res =
-      { uj_val = app_coercion env evdref ct j.uj_val;
+      { uj_val = (app_coercion env evdref ct j.uj_val);
 	uj_type = typ' }
     in !evdref, res
   else (evd, j)
@@ -441,7 +446,7 @@ let inh_coerce_to_prod loc env evd t =
   else (evd, t)
 
 let inh_coerce_to_fail env evd rigidonly v t c1 =
-  if rigidonly && not (Heads.is_rigid env c1 && Heads.is_rigid env t)
+  if rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr c1) && Heads.is_rigid env (EConstr.Unsafe.to_constr t))
   then
     raise NoCoercion
   else
@@ -466,8 +471,8 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
       match
-      kind_of_term (whd_all env evd t),
-      kind_of_term (whd_all env evd c1)
+      EConstr.kind evd (whd_all env evd t),
+      EConstr.kind evd (whd_all env evd c1)
       with
       | Prod (name,t1,t2), Prod (_,u1,u2) ->
           (* Conversion did not work, we may succeed with a coercion. *)
@@ -485,9 +490,9 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
 	    inh_conv_coerce_to_fail loc env1 evd rigidonly
               (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in
           let v1 = Option.get v1 in
-	  let v2 = Option.map (fun v -> beta_applist (lift 1 v,[v1])) v in
+	  let v2 = Option.map (fun v -> beta_applist evd' (lift 1 v,[v1])) v in
 	  let t2 = match v2 with
-	    | None -> subst_term v1 t2
+	    | None -> subst_term evd' v1 t2
 	    | Some v2 -> Retyping.get_type_of env1 evd' v2 in
 	  let (evd'',v2') = inh_conv_coerce_to_fail loc env1 evd' rigidonly v2 t2 u2 in
 	    (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')

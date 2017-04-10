@@ -42,11 +42,11 @@ let none = Evd.empty
 
 let type_of env c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_type_of ~polyprop env none (strip_outer_cast c)
+  EConstr.Unsafe.to_constr (Retyping.get_type_of ~polyprop env none (strip_outer_cast none (EConstr.of_constr c)))
 
 let sort_of env c =
   let polyprop = (lang() == Haskell) in
-  Retyping.get_sort_family_of ~polyprop env none (strip_outer_cast c)
+  Retyping.get_sort_family_of ~polyprop env none (strip_outer_cast none (EConstr.of_constr c))
 
 (*S Generation of flags and signatures. *)
 
@@ -70,11 +70,17 @@ type scheme = TypeScheme | Default
 
 type flag = info * scheme
 
+let whd_all env t =
+  EConstr.Unsafe.to_constr (whd_all env none (EConstr.of_constr t))
+
+let whd_betaiotazeta t =
+  EConstr.Unsafe.to_constr (whd_betaiotazeta none (EConstr.of_constr t))
+
 (*s [flag_of_type] transforms a type [t] into a [flag].
   Really important function. *)
 
 let rec flag_of_type env t : flag =
-  let t = whd_all env none t in
+  let t = whd_all env t in
   match kind_of_term t with
     | Prod (x,t,c) -> flag_of_type (push_rel (LocalAssum (x,t)) env) c
     | Sort s when Sorts.is_prop s -> (Logic,TypeScheme)
@@ -99,17 +105,20 @@ let is_info_scheme env t = match flag_of_type env t with
 | (Info, TypeScheme) -> true
 | _ -> false
 
+let push_rel_assum (n, t) env =
+  Environ.push_rel (LocalAssum (n, t)) env
+
 (*s [type_sign] gernerates a signature aimed at treating a type application. *)
 
 let rec type_sign env c =
-  match kind_of_term (whd_all env none c) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	(if is_info_scheme env t then Keep else Kill Kprop)
 	:: (type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
 let rec type_scheme_nb_args env c =
-  match kind_of_term (whd_all env none c) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	let n = type_scheme_nb_args (push_rel_assum (n,t) env) d in
 	if is_info_scheme env t then n+1 else n
@@ -135,7 +144,7 @@ let make_typvar n vl =
   next_ident_away id' vl
 
 let rec type_sign_vl env c =
-  match kind_of_term (whd_all env none c) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	let s,vl = type_sign_vl (push_rel_assum (n,t) env) d in
 	if not (is_info_scheme env t) then Kill Kprop::s, vl
@@ -143,7 +152,7 @@ let rec type_sign_vl env c =
     | _ -> [],[]
 
 let rec nb_default_params env c =
-  match kind_of_term (whd_all env none c) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	let n = nb_default_params (push_rel_assum (n,t) env) d in
 	if is_default env t then n+1 else n
@@ -214,7 +223,7 @@ let parse_ind_args si args relmax =
 
 
 let rec extract_type env db j c args =
-  match kind_of_term (whd_betaiotazeta Evd.empty c) with
+  match kind_of_term (whd_betaiotazeta c) with
     | App (d, args') ->
 	(* We just accumulate the arguments. *)
 	extract_type env db j d (Array.to_list args' @ args)
@@ -297,7 +306,7 @@ and extract_type_app env db (r,s) args =
   let ml_args =
     List.fold_right
       (fun (b,c) a -> if b == Keep then
-	 let p = List.length (fst (splay_prod env none (type_of env c))) in
+	 let p = List.length (fst (splay_prod env none (EConstr.of_constr (type_of env c)))) in
          let db = iterate (fun l -> 0 :: l) p db in
          (extract_type_scheme env db c p) :: a
        else a)
@@ -316,12 +325,13 @@ and extract_type_app env db (r,s) args =
 and extract_type_scheme env db c p =
   if Int.equal p 0 then extract_type env db 0 c []
   else
-    let c = whd_betaiotazeta Evd.empty c in
+    let c = whd_betaiotazeta c in
     match kind_of_term c with
       | Lambda (n,t,d) ->
           extract_type_scheme (push_rel_assum (n,t) env) db d (p-1)
       | _ ->
-          let rels = fst (splay_prod env none (type_of env c)) in
+          let rels = fst (splay_prod env none (EConstr.of_constr (type_of env c))) in
+          let rels = List.map (on_snd EConstr.Unsafe.to_constr) rels in
           let env = push_rels_assum rels env in
           let eta_args = List.rev_map mkRel (List.interval 1 p) in
           extract_type env db 0 (lift p c) eta_args
@@ -488,7 +498,7 @@ and extract_really_ind env kn mib =
 *)
 
 and extract_type_cons env db dbmap c i =
-  match kind_of_term (whd_all env none c) with
+  match kind_of_term (whd_all env c) with
     | Prod (n,t,d) ->
 	let env' = push_rel_assum (n,t) env in
 	let db' = (try Int.Map.find i dbmap with Not_found -> 0) :: db in
@@ -595,7 +605,8 @@ let rec extract_term env mle mlt c args =
     | Construct (cp,_) ->
 	extract_cons_app env mle mlt cp args
     | Proj (p, c) ->
-        let term = Retyping.expand_projection env (Evd.from_env env) p c [] in
+        let term = Retyping.expand_projection env (Evd.from_env env) p (EConstr.of_constr c) [] in
+        let term = EConstr.Unsafe.to_constr term in
 	  extract_term env mle mlt term args
     | Rel n ->
 	(* As soon as the expected [mlt] for the head is known, *)
@@ -846,8 +857,8 @@ and extract_fix env mle i (fi,ti,ci as recd) mlt =
    and decompose the term [c] in [n] lambdas, with eta-expansion if needed. *)
 
 let decomp_lams_eta_n n m env c t =
-  let rels = fst (splay_prod_n env none n t) in
-  let rels = List.map (fun (LocalAssum (id,c) | LocalDef (id,_,c)) -> (id,c)) rels in
+  let rels = fst (splay_prod_n env none n (EConstr.of_constr t)) in
+  let rels = List.map (fun (LocalAssum (id,c) | LocalDef (id,_,c)) -> (id,EConstr.Unsafe.to_constr c)) rels in
   let rels',c = decompose_lam c in
   let d = n - m in
   (* we'd better keep rels' as long as possible. *)
@@ -887,7 +898,7 @@ let extract_std_constant env kn body typ =
      break user's clever let-ins and partial applications). *)
   let rels, c =
     let n = List.length s
-    and m = nb_lam body in
+    and m = nb_lam Evd.empty (EConstr.of_constr body) (** FIXME *) in
     if n <= m then decompose_lam_n n body
     else
       let s,s' = List.chop m s in

@@ -238,18 +238,21 @@ val keep_hyps : env -> Id.Set.t -> Context.Named.t
   actually only a datatype to store a term with its type and the type of its
   type. *)
 
-type unsafe_judgment = {
-  uj_val  : constr;
-  uj_type : types }
+type ('constr, 'types) punsafe_judgment = {
+  uj_val : 'constr;
+  uj_type : 'types }
 
-val make_judge : constr -> types -> unsafe_judgment
-val j_val  : unsafe_judgment -> constr
-val j_type : unsafe_judgment -> types
+type unsafe_judgment = (constr, types) punsafe_judgment
 
-type unsafe_type_judgment = {
-  utj_val  : constr;
+val make_judge : 'constr -> 'types -> ('constr, 'types) punsafe_judgment
+val j_val  : ('constr, 'types) punsafe_judgment -> 'constr
+val j_type : ('constr, 'types) punsafe_judgment -> 'types
+
+type 'types punsafe_type_judgment = {
+  utj_val : 'types;
   utj_type : sorts }
 
+type unsafe_type_judgment = types punsafe_type_judgment
 
 (** {6 Compilation of global declaration } *)
 

@@ -23,16 +23,19 @@ let observe s =
   if do_observe ()
   then Feedback.msg_debug s
 
+let pop t = Vars.lift (-1) t
+
 (*
    Transform an inductive induction principle into
    a functional one
 *)
 let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
-  let princ_type_info = compute_elim_sig princ_type in
+  let princ_type = EConstr.of_constr princ_type in
+  let princ_type_info = compute_elim_sig Evd.empty princ_type (** FIXME *) in
   let env = Global.env () in
-  let env_with_params = Environ.push_rel_context princ_type_info.params env in
+  let env_with_params = EConstr.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in
-  let rec change_predicates_names (avoid:Id.t list) (predicates:Context.Rel.t)  : Context.Rel.t =
+  let rec change_predicates_names (avoid:Id.t list) (predicates:EConstr.rel_context)  : EConstr.rel_context =
     match predicates with
     | [] -> []
     | decl :: predicates ->
@@ -53,14 +56,14 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 (*   observe (str "princ_infos : " ++ pr_elim_scheme princ_type_info); *)
   let change_predicate_sort i decl =
     let new_sort = sorts.(i) in
-    let args,_ = decompose_prod (RelDecl.get_type decl) in
+    let args,_ = decompose_prod (EConstr.Unsafe.to_constr (RelDecl.get_type decl)) in
     let real_args =
       if princ_type_info.indarg_in_concl
       then List.tl args
       else args
     in
     Context.Named.Declaration.LocalAssum (Nameops.out_name (Context.Rel.Declaration.get_name decl),
-                                          compose_prod real_args (mkSort new_sort))
+                                          Term.compose_prod real_args (mkSort new_sort))
   in
   let new_predicates =
     List.map_i
@@ -84,6 +87,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| _ -> false
   in
   let pre_princ =
+    let open EConstr in
     it_mkProd_or_LetIn
       (it_mkProd_or_LetIn
 	 (Option.fold_right
@@ -95,6 +99,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       )
       princ_type_info.branches
   in
+  let pre_princ = EConstr.Unsafe.to_constr pre_princ in
   let pre_princ = substl (List.map mkVar ptes_vars) pre_princ in
   let is_dom c =
     match kind_of_term c with
@@ -110,7 +115,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   let dummy_var = mkVar (Id.of_string "________") in
   let mk_replacement c i args =
-    let res = mkApp(rel_to_fun.(i), Array.map Termops.pop (array_get_start args)) in
+    let res = mkApp(rel_to_fun.(i), Array.map pop (array_get_start args)) in
     observe (str "replacing " ++ pr_lconstr c ++ str " by "  ++ pr_lconstr res);
     res
   in
@@ -168,25 +173,25 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_env = Environ.push_rel (LocalAssum (x,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	 if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
-	 then (Termops.pop new_b), filter_map (eq_constr (mkRel 1)) Termops.pop binders_to_remove_from_b
+	 then (pop new_b), filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
 	 else
 	   (
 	     bind_fun(new_x,new_t,new_b),
 	     list_union_eq
 	       eq_constr
 	       binders_to_remove_from_t
-	       (List.map Termops.pop binders_to_remove_from_b)
+	       (List.map pop binders_to_remove_from_b)
 	   )
 
        with
 	 | Toberemoved ->
 (* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
-	    new_b, List.map Termops.pop binders_to_remove_from_b
+	    new_b, List.map pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
 (* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
-	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map Termops.pop binders_to_remove_from_b)
+	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
     end
   and compute_new_princ_type_for_letin remove env x v t b =
     begin
@@ -197,25 +202,25 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_env = Environ.push_rel (LocalDef (x,v,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
-	then (Termops.pop new_b),filter_map (eq_constr (mkRel 1)) Termops.pop binders_to_remove_from_b
+	then (pop new_b),filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
 	else
 	  (
 	    mkLetIn(new_x,new_v,new_t,new_b),
 	    list_union_eq
 	      eq_constr
 	      (list_union_eq eq_constr binders_to_remove_from_t binders_to_remove_from_v)
-	      (List.map Termops.pop binders_to_remove_from_b)
+	      (List.map pop binders_to_remove_from_b)
 	  )
 
       with
 	| Toberemoved ->
 (* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
-	    new_b, List.map Termops.pop binders_to_remove_from_b
+	    new_b, List.map pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
 (* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
-	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map Termops.pop binders_to_remove_from_b)
+	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
     end
   and  compute_new_princ_type_with_acc remove env e (c_acc,to_remove_acc)  =
     let new_e,to_remove_from_e = compute_new_princ_type remove env e
@@ -237,20 +242,21 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
                                  | Context.Named.Declaration.LocalDef (id,t,b) -> LocalDef (Name (Hashtbl.find tbl id), t, b))
           	      new_predicates)
     )
-    princ_type_info.params
+    (List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) princ_type_info.params)
 
 
 
 let change_property_sort evd toSort princ princName =
   let open Context.Rel.Declaration in
-  let princ_info = compute_elim_sig princ in
+  let princ = EConstr.of_constr princ in
+  let princ_info = compute_elim_sig evd princ in
   let change_sort_in_predicate decl =
     LocalAssum
     (get_name decl,
-     let args,ty = decompose_prod (get_type decl) in
+     let args,ty = decompose_prod (EConstr.Unsafe.to_constr (get_type decl)) in
      let s = destSort ty in
        Global.add_constraints (Univ.enforce_leq (univ_of_sort toSort) (univ_of_sort s) Univ.Constraint.empty);
-       compose_prod args (mkSort toSort)
+       Term.compose_prod args (mkSort toSort)
     )
   in
   let evd,princName_as_constr =
@@ -266,11 +272,11 @@ let change_property_sort evd toSort princ princName =
     (it_mkLambda_or_LetIn init
        (List.map change_sort_in_predicate princ_info.predicates)
     )
-    princ_info.params
+    (List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) princ_info.params)
 
 let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_princ_type sorts funs i proof_tac hook =
   (* First we get the type of the old graph principle *)
-  let mutr_nparams = (compute_elim_sig old_princ_type).nparams in
+  let mutr_nparams = (compute_elim_sig !evd (EConstr.of_constr old_princ_type)).nparams in
   (*   let time1 = System.get_time ()  in *)
   let new_principle_type =
     compute_new_princ_type_from_rel
@@ -283,18 +289,19 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   let new_princ_name =
     next_ident_away_in_goal (Id.of_string "___________princ_________") []
   in
-  let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd new_principle_type in
+  let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr new_principle_type) in
   let hook = Lemmas.mk_hook (hook new_principle_type) in
   begin
     Lemmas.start_proof
       new_princ_name
       (Decl_kinds.Global,Flags.is_universe_polymorphism (),(Decl_kinds.Proof Decl_kinds.Theorem))
       !evd
-      new_principle_type
+      (EConstr.of_constr new_principle_type)
       hook
   ;
     (*       let _tim1 = System.get_time ()  in *)
-      ignore (Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map mkConstU funs) mutr_nparams)));
+      let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
+      ignore (Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams)));
     (*       let _tim2 =  System.get_time ()  in *)
     (* 	begin *)
     (* 	  let dur1 = System.time_difference tim1 tim2 in *)
@@ -337,7 +344,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 	let evd',s = Evd.fresh_sort_in_family env evd' fam_sort in
 	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
 	let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
-	let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' value) in
+	let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
 	(* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
 	let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs:(snd (Evd.universe_context evd')) value in
 	ignore(
@@ -405,8 +412,9 @@ let get_funs_constant mp dp =
 	      (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 	      (Global.env ())
 	      (Evd.from_env (Global.env ()))
-	      body
+	      (EConstr.of_constr body)
 	    in
+	    let body = EConstr.Unsafe.to_constr body in
 	    body
 	| None -> error ( "Cannot define a principle over an axiom ")
     in
@@ -488,7 +496,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
   in
   let _ = evd := sigma in 
   let l_schemes =
-    List.map (Typing.unsafe_type_of env sigma) schemes
+    List.map (EConstr.of_constr %> Typing.unsafe_type_of env sigma %> EConstr.Unsafe.to_constr) schemes
   in
   let i = ref (-1) in
   let sorts =
@@ -616,7 +624,7 @@ let build_scheme fas =
 	    in
 	    let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
             let _ = evd := evd' in 
-	    let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd f in 
+	    let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr f) in 
 	    (destConst f,sort)
 	 )
 	 fas
@@ -666,7 +674,7 @@ let build_case_scheme fa =
       Indrec.build_case_analysis_scheme_default env sigma ind sf
   in
   let sigma = Sigma.to_evar_map sigma in
-  let scheme_type =  (Typing.unsafe_type_of env sigma ) scheme in
+  let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
   let sorts =
     (fun (_,_,x) ->
        Universes.new_sort_in_family (Pretyping.interp_elimination_sort x)

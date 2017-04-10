@@ -68,20 +68,21 @@ type ('constr, 'types) prec_declaration =
 type ('constr, 'types) pfixpoint = ('constr, 'types) Constr.pfixpoint
 type ('constr, 'types) pcofixpoint = ('constr, 'types) Constr.pcofixpoint
 
-type ('constr, 'types) kind_of_term = ('constr, 'types) Constr.kind_of_term =
+type ('constr, 'types, 'sort, 'univs) kind_of_term =
+  ('constr, 'types, 'sort, 'univs) Constr.kind_of_term =
   | Rel       of int
   | Var       of Id.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
-  | Sort      of sorts
+  | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
   | Prod      of Name.t * 'types * 'types
   | Lambda    of Name.t * 'types * 'constr
   | LetIn     of Name.t * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of constant puniverses
-  | Ind       of inductive puniverses
-  | Construct of constructor puniverses
+  | Const     of (constant * 'univs)
+  | Ind       of (inductive * 'univs)
+  | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
@@ -98,7 +99,6 @@ val isVarId : Id.t -> constr -> bool
 val isInd  : constr -> bool
 val isEvar : constr -> bool
 val isMeta : constr -> bool
-val isMetaOf : metavariable -> constr -> bool
 val isEvar_or_Meta : constr -> bool
 val isSort : constr -> bool
 val isCast : constr -> bool
@@ -444,7 +444,7 @@ val leq_constr_univs : constr UGraph.check_function
    application grouping and ignoring universe instances. *)
 val eq_constr_nounivs : constr -> constr -> bool
 
-val kind_of_term : constr -> (constr, types) kind_of_term
+val kind_of_term : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
 (** Alias for [Constr.kind] *)
 
 val constr_ord : constr -> constr -> int

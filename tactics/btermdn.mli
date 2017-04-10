@@ -33,7 +33,7 @@ sig
   val add : transparent_state option -> t -> (constr_pattern * Z.t) -> t
   val rmv : transparent_state option -> t -> (constr_pattern * Z.t) -> t
 
-  val lookup : transparent_state option -> t -> constr -> Z.t list
+  val lookup : Evd.evar_map -> transparent_state option -> t -> EConstr.constr -> Z.t list
   val app : (Z.t -> unit) -> t -> unit
 end
 

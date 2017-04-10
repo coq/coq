@@ -118,7 +118,7 @@ END
 
 let discrHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  discr_main { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
+  discr_main { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma }
 
 let injection_main with_evars c =
  elimOnConstrWithHoles (injClause None) with_evars c
@@ -150,7 +150,7 @@ END
 
 let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  injection_main false { delayed = fun env sigma -> Sigma.here (Term.mkVar id, NoBindings) sigma }
+  injection_main false { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma }
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
@@ -290,6 +290,7 @@ END
 (* Hint Resolve                                                       *)
 
 open Term
+open EConstr
 open Vars
 open Coqlib
 
@@ -298,22 +299,25 @@ let project_hint pri l2r r =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, c = Evd.fresh_global env sigma gr in
+  let c = EConstr.of_constr c in
   let t = Retyping.get_type_of env sigma c in
   let t =
     Tacred.reduce_to_quantified_ref env sigma (Lazy.force coq_iff_ref) t in
-  let sign,ccl = decompose_prod_assum t in
-  let (a,b) = match snd (decompose_app ccl) with
+  let sign,ccl = decompose_prod_assum sigma t in
+  let (a,b) = match snd (decompose_app sigma ccl) with
     | [a;b] -> (a,b)
     | _ -> assert false in
   let p =
     if l2r then build_coq_iff_left_proj () else build_coq_iff_right_proj () in
-  let c = Reductionops.whd_beta Evd.empty (mkApp (c, Context.Rel.to_extended_vect 0 sign)) in
+  let p = EConstr.of_constr p in
+  let c = Reductionops.whd_beta sigma (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
   let id =
     Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
   in
   let ctx = Evd.universe_context_set sigma in
+  let c = EConstr.to_constr sigma c in
   let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id (c,ctx) in
   let info = {Vernacexpr.hint_priority = pri; hint_pattern = None} in
     (info,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
@@ -341,6 +345,9 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
+open EConstr
+open Vars
+
 let constr_flags () = {
   Pretyping.use_typeclasses = true;
   Pretyping.solve_unification_constraints = true;
@@ -349,14 +356,17 @@ let constr_flags () = {
   Pretyping.expand_evars = true }
 
 let refine_tac ist simple with_classes c =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags =
       { constr_flags () with Pretyping.use_typeclasses = with_classes } in
     let expected_type = Pretyping.OfType concl in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
-    let update = { run = fun sigma -> c.delayed env sigma } in
+    let update = { run = fun sigma ->
+      let Sigma (c, sigma, p) = c.delayed env sigma in
+      Sigma (c, sigma, p)
+    } in
     let refine = Refine.refine ~unsafe:true update in
     if simple then refine
     else refine <*>
@@ -411,8 +421,6 @@ VERNAC COMMAND EXTEND DeriveInversionClear
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => [ seff na ]
   -> [ add_inversion_lemma_exn na c GProp false inv_clear_tac ]
 END
-
-open Term
 
 VERNAC COMMAND EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
@@ -492,6 +500,7 @@ let transitivity_left_table = Summary.ref [] ~name:"transitivity-steps-l"
 let step left x tac =
   let l =
     List.map (fun lem ->
+      let lem = EConstr.of_constr lem in
       Tacticals.New.tclTHENLAST
         (apply_with_bindings (lem, ImplicitBindings [x]))
         tac)
@@ -509,7 +518,7 @@ let cache_transitivity_lemma (_,(left,lem)) =
 
 let subst_transitivity_lemma (subst,(b,ref)) = (b,subst_mps subst ref)
 
-let inTransitivity : bool * constr -> obj =
+let inTransitivity : bool * Constr.constr -> obj =
   declare_object {(default_object "TRANSITIVITY-STEPS") with
     cache_function = cache_transitivity_lemma;
     open_function = (fun i o -> if Int.equal i 1 then cache_transitivity_lemma o);
@@ -656,7 +665,7 @@ let subst_hole_with_term occ tc t =
 open Tacmach
 
 let hResolve id c occ t =
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let sigma = Sigma.to_evar_map sigma in
   let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
@@ -674,6 +683,7 @@ let hResolve id c occ t =
           resolve_hole (subst_hole_with_term (fst (Loc.unloc loc)) c_raw t_hole)
   in
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
+  let t_constr = EConstr.of_constr t_constr in
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
   let tac =
@@ -701,21 +711,8 @@ END
    hget_evar
 *)
 
-let hget_evar n =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let sigma = Tacmach.New.project gl in
-  let concl = Proofview.Goal.concl gl in
-  let evl = evar_list concl in
-  if List.length evl < n then
-    error "Not enough uninstantiated existential variables.";
-  if n <= 0 then error "Incorrect existential variable index.";
-  let ev = List.nth evl (n-1) in
-  let ev_type = existential_type sigma ev in
-  change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,concl))
-  end }
-
 TACTIC EXTEND hget_evar
-| [ "hget_evar" int_or_var(n) ] -> [ hget_evar n ]
+| [ "hget_evar" int_or_var(n) ] -> [ Evar_tactics.hget_evar n ]
 END
 
 (**********************************************************************)
@@ -731,7 +728,7 @@ END
 exception Found of unit Proofview.tactic
 
 let rewrite_except h =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
       Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
@@ -750,11 +747,11 @@ let refl_equal =
   should be replaced by a call to the tactic but I don't know how to
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g a) gl in
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let type_of_a = Tacmach.New.pf_unsafe_type_of gl a in
        Tacticals.New.tclTHENLIST
-         [Tactics.generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])];
-          Proofview.Goal.nf_enter { enter = begin fun gl ->
+         [Tactics.generalize [(mkApp(EConstr.of_constr (delayed_force refl_equal), [| type_of_a; a|]))];
+          Proofview.Goal.enter { enter = begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
             (** FIXME: this looks really wrong. Does anybody really use this tactic? *)
@@ -766,16 +763,16 @@ let  mkCaseEq a  : unit Proofview.tactic =
 
 
 let case_eq_intros_rewrite x =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let n = nb_prod (Proofview.Goal.concl gl) in
+  Proofview.Goal.enter { enter = begin fun gl ->
+  let n = nb_prod (Tacmach.New.project gl) (Proofview.Goal.concl gl) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.enter { enter = begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let hyps = Tacmach.New.pf_ids_of_hyps gl in
-      let n' = nb_prod concl in
-      let h = Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) gl in
+      let n' = nb_prod (Tacmach.New.project gl) concl in
+      let h = fresh_id_in_env hyps (Id.of_string "heq") (Proofview.Goal.env gl)  in
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;
 		    introduction h;
@@ -784,36 +781,37 @@ let case_eq_intros_rewrite x =
   ]
   end }
 
-let rec find_a_destructable_match t =
+let rec find_a_destructable_match sigma t =
   let cl = induction_arg_of_quantified_hyp (NamedHyp (Id.of_string "x")) in
   let cl = [cl, (None, None), None], None in
   let dest = TacAtom (Loc.ghost, TacInductionDestruct(false, false, cl)) in
-  match kind_of_term t with
-    | Case (_,_,x,_) when closed0 x ->
-	if isVar x then
+  match EConstr.kind sigma t with
+    | Case (_,_,x,_) when closed0 sigma x ->
+	if isVar sigma x then
 	  (* TODO check there is no rel n. *)
 	  raise (Found (Tacinterp.eval_tactic dest))
 	else
 	  (* let _ = Pp.msgnl (Printer.pr_lconstr x)  in *)
 	  raise (Found (case_eq_intros_rewrite x))
-    | _ -> iter_constr find_a_destructable_match t
+    | _ -> EConstr.iter sigma (fun c -> find_a_destructable_match sigma c) t
 	
 
 let destauto t =
-  try find_a_destructable_match t;
+  Proofview.tclEVARMAP >>= fun sigma ->
+  try find_a_destructable_match sigma t;
     Tacticals.New.tclZEROMSG (str "No destructable match found")
   with Found tac -> tac
 
 let destauto_in id = 
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let ctype = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g (mkVar id)) gl in
+  Proofview.Goal.enter { enter = begin fun gl ->
+  let ctype = Tacmach.New.pf_unsafe_type_of gl (mkVar id) in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype
   end }
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ Proofview.Goal.nf_enter { enter = begin fun gl -> destauto (Proofview.Goal.concl gl) end } ]
+| [ "destauto" ] -> [ Proofview.Goal.enter { enter = begin fun gl -> destauto (Proofview.Goal.concl gl) end } ]
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 
@@ -823,8 +821,9 @@ END
 let eq_constr x y = 
   Proofview.Goal.enter { enter = begin fun gl ->
     let evd = Tacmach.New.project gl in
-      if Evarutil.eq_constr_univs_test evd evd x y then Proofview.tclUNIT () 
-      else Tacticals.New.tclFAIL 0 (str "Not equal")
+      match EConstr.eq_constr_universes evd x y with
+      | Some _ -> Proofview.tclUNIT () 
+      | None -> Tacticals.New.tclFAIL 0 (str "Not equal")
   end }
 
 TACTIC EXTEND constr_eq
@@ -833,21 +832,22 @@ END
 
 TACTIC EXTEND constr_eq_nounivs
 | [ "constr_eq_nounivs" constr(x) constr(y) ] -> [
-    if eq_constr_nounivs x y then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "Not equal") ]
+    Proofview.tclEVARMAP >>= fun sigma ->
+    if eq_constr_nounivs sigma x y then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "Not equal") ]
 END
 
 TACTIC EXTEND is_evar
-| [ "is_evar" constr(x) ] ->
-    [ Proofview.tclBIND Proofview.tclEVARMAP begin fun sigma ->
-      match Evarutil.kind_of_term_upto sigma x with
-        | Evar _ -> Proofview.tclUNIT ()
-        | _ -> Tacticals.New.tclFAIL 0 (str "Not an evar")
-      end
+| [ "is_evar" constr(x) ] -> [
+    Proofview.tclEVARMAP >>= fun sigma ->
+    match EConstr.kind sigma x with
+      | Evar _ -> Proofview.tclUNIT ()
+      | _ -> Tacticals.New.tclFAIL 0 (str "Not an evar")
     ]
 END
 
+let has_evar sigma c =
 let rec has_evar x =
-  match kind_of_term x with
+  match EConstr.kind sigma x with
     | Evar _ -> true
     | Rel _ | Var _ | Meta _ | Sort _ | Const _ | Ind _ | Construct _ ->
       false
@@ -866,57 +866,68 @@ and has_evar_array x =
   Array.exists has_evar x
 and has_evar_prec (_, ts1, ts2) =
   Array.exists has_evar ts1 || Array.exists has_evar ts2
+in
+has_evar c
 
 TACTIC EXTEND has_evar
-| [ "has_evar" constr(x) ] ->
-    [ if has_evar x then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "No evars") ]
+| [ "has_evar" constr(x) ] -> [
+  Proofview.tclEVARMAP >>= fun sigma ->
+  if has_evar sigma x then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "No evars")
+]
 END
 
 TACTIC EXTEND is_hyp
-| [ "is_var" constr(x) ] ->
-  [ match kind_of_term x with
+| [ "is_var" constr(x) ] -> [
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
     | Var _ ->  Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (str "Not a variable or hypothesis") ]
 END
 
 TACTIC EXTEND is_fix
-| [ "is_fix" constr(x) ] ->
-  [ match kind_of_term x with
+| [ "is_fix" constr(x) ] -> [
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
     | Fix _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a fix definition") ]
 END;;
 
 TACTIC EXTEND is_cofix
-| [ "is_cofix" constr(x) ] ->
-  [ match kind_of_term x with
+| [ "is_cofix" constr(x) ] -> [
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
     | CoFix _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a cofix definition") ]
 END;;
 
 TACTIC EXTEND is_ind
-| [ "is_ind" constr(x) ] ->
-  [ match kind_of_term x with
+| [ "is_ind" constr(x) ] -> [
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
     | Ind _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not an (co)inductive datatype") ]
 END;;
 
 TACTIC EXTEND is_constructor
-| [ "is_constructor" constr(x) ] ->
-  [ match kind_of_term x with
+| [ "is_constructor" constr(x) ] -> [
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
     | Construct _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constructor") ]
 END;;
 
 TACTIC EXTEND is_proj
-| [ "is_proj" constr(x) ] ->
-  [ match kind_of_term x with
+| [ "is_proj" constr(x) ] -> [
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
     | Proj _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a primitive projection") ]
 END;;
 
 TACTIC EXTEND is_const
-| [ "is_const" constr(x) ] ->
-  [ match kind_of_term x with
+| [ "is_const" constr(x) ] -> [
+  Proofview.tclEVARMAP >>= fun sigma ->
+  match EConstr.kind sigma x with
     | Const _ -> Proofview.tclUNIT ()
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constant") ]
 END;;
@@ -1060,8 +1071,9 @@ END
 
 let decompose l c =
   Proofview.Goal.enter { enter = begin fun gl ->
+    let sigma = Tacmach.New.project gl in
     let to_ind c =
-      if isInd c then Univ.out_punivs (destInd c)
+      if isInd sigma c then fst (destInd sigma c)
       else error "not an inductive type"
     in
     let l = List.map to_ind l in
@@ -1075,10 +1087,14 @@ END
 (** library/keys *)
 
 VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF
-| [ "Declare" "Equivalent" "Keys" constr(c) constr(c') ] -> [ 
-  let it c = snd (Constrintern.interp_open_constr (Global.env ()) Evd.empty c) in 
-  let k1 = Keys.constr_key (it c) in
-  let k2 = Keys.constr_key (it c') in
+| [ "Declare" "Equivalent" "Keys" constr(c) constr(c') ] -> [
+  let get_key c =
+    let (evd, c) = Constrintern.interp_open_constr (Global.env ()) Evd.empty c in
+    let kind c = EConstr.kind evd c in
+    Keys.constr_key kind c
+  in
+  let k1 = get_key c in
+  let k2 = get_key c' in
     match k1, k2 with
     | Some k1, Some k2 -> Keys.declare_equiv_keys k1 k2
     | _ -> () ]
