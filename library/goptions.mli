@@ -175,6 +175,14 @@ type option_value =
   | StringValue of string
   | StringOptValue of string option
 
+
+(* For use in tactics: to be used in pairs *)
+type previous_option_value
+val override_option_value    : option_name -> option_value -> previous_option_value
+val restore_option_value : option_name -> previous_option_value -> unit
+
+val with_option_value : option_name -> option_value -> ('a -> 'b) -> 'a -> 'b
+
 (** Summary of an option status *)
 type option_state = {
   opt_sync  : bool;
