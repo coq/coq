@@ -23,7 +23,6 @@ exception NotInIdeal
    Global options
 *)
 let lexico = ref false
-let use_hmon = ref false
 
 (* division of tail monomials *)
 
@@ -33,31 +32,30 @@ let reduire_les_queues = false
 
 let nouveaux_pol_en_tete = false
 
-(***********************************************************************
-   Functor
-*)
+type metadata = {
+  name_var : string list;
+}
 
-module Make (P:Polynom.S) = struct
-
-  type coef = P.t
-  let coef0 = P.of_num (Num.Int 0)
-  let coef1 = P.of_num (Num.Int 1)
-  let coefm1 = P.of_num (Num.Int (-1))
-  let string_of_coef c = "["^(P.to_string c)^"]"
-
-(***********************************************************************
-   Monomials
- array of integers, first is the degree
-*)
-
-type mon = int array
-type deg = int
-type poly = (coef * mon) list
-type polynom = 
-   {pol : poly ref;
-    num : int;
-    sugar : int}
-
+module Monomial :
+sig
+type t
+val repr : t -> int array
+val make : int array -> t
+val deg : t -> int
+val nvar : t -> int
+val var_mon : int -> int -> t
+val mult_mon : t -> t -> t
+val compare_mon : t -> t -> int
+val div_mon : t -> t -> t
+val div_mon_test : t -> t -> bool
+val ppcm_mon : t -> t -> t
+val const_mon : int -> t
+end =
+struct
+type t = int array
+type mon = t
+let repr m = m
+let make m = m
 let nvar (m : mon) =  Array.length m - 1
 
 let deg (m : mon) = m.(0)
@@ -104,9 +102,6 @@ let div_mon m m' =
   done;
   m''
 
-let div_pol_coef p c =
-  List.map (fun (a,m) -> (P.divP a c,m)) p
-
 (* m' divides m  *)
 let div_mon_test m m' =
   let d = nvar m in
@@ -135,7 +130,46 @@ let ppcm_mon m m' =
   done;
   set_deg m''
 
+(* returns a constant polynom ial with d variables *)
+let const_mon d =
+  let m = Array.make (d+1) 0 in
+  let m = set_deg m in 
+  m
 
+let var_mon d i =
+  let m = Array.make (d+1) 0 in
+  m.(i) <- 1;
+  let m = set_deg m in 
+  m
+
+end
+
+(***********************************************************************
+   Functor
+*)
+
+module Make (P:Polynom.S) = struct
+
+  type coef = P.t
+  let coef0 = P.of_num (Num.Int 0)
+  let coef1 = P.of_num (Num.Int 1)
+  let coefm1 = P.of_num (Num.Int (-1))
+  let string_of_coef c = "["^(P.to_string c)^"]"
+
+(***********************************************************************
+   Monomials
+ array of integers, first is the degree
+*)
+
+open Monomial
+
+type mon = Monomial.t
+type deg = int
+type poly = (coef * mon) list
+type polynom = {
+  pol : poly;
+  num : int;
+}
 
 (**********************************************************************
   Polynomials
@@ -179,8 +213,8 @@ let string_of_pol zeroP hdP tlP coefterm monterm string_of_coef
     for i=1 to (dimmon m) do
       (match (string_of_exp m i) with
         "0" -> ()
-      | "1" -> s:= (!s) @ [(getvar !lvar (i-1))]
-      | e -> s:= (!s) @ [((getvar !lvar (i-1)) ^ "^" ^ e)]);
+      | "1" -> s:= (!s) @ [(getvar lvar (i-1))]
+      | e -> s:= (!s) @ [((getvar lvar (i-1)) ^ "^" ^ e)]);
     done;
     (match !s with
       [] -> if coefone 
@@ -228,8 +262,8 @@ let print_pol zeroP hdP tlP coefterm monterm string_of_coef
     for i=1 to (dimmon m) do
       (match (string_of_exp m i) with
         "0" -> ()
-      | "1" -> s:= (!s) @ [(getvar !lvar (i-1))]
-      | e -> s:= (!s) @ [((getvar !lvar (i-1)) ^ "^" ^ e)]);
+      | "1" -> s:= (!s) @ [(getvar lvar (i-1))]
+      | e -> s:= (!s) @ [((getvar lvar (i-1)) ^ "^" ^ e)]);
     done;
     (match !s with
       [] -> if coefone 
@@ -271,9 +305,7 @@ let print_pol zeroP hdP tlP coefterm monterm string_of_coef
   print_flush()
 
 
-let name_var= ref []
-
-let stringP p =
+let stringP metadata (p : poly) =
   string_of_pol 
     (fun p -> match p with [] -> true | _ -> false)
     (fun p -> match p with (t::p) -> t |_ -> failwith "print_pol dans dansideal")
@@ -281,46 +313,21 @@ let stringP p =
     (fun (a,m) -> a)
     (fun (a,m) -> m)
     string_of_coef
-    (fun m -> (Array.length m)-1)
-    (fun m i -> (string_of_int (m.(i))))
-    name_var
+    (fun m -> (Array.length (Monomial.repr m))-1)
+    (fun m i -> (string_of_int ((Monomial.repr m).(i))))
+    metadata.name_var
     p
 
-let nsP2 = ref max_int
+let nsP2 = 10
 
-let stringPcut p =
+let stringPcut metadata (p : poly) =
   (*Polynomesrec.nsP1:=20;*)
-  nsP2:=10;
   let res =
-    if (List.length p)> !nsP2
-    then (stringP [List.hd p])^" + "^(string_of_int (List.length p))^" terms"
-    else  stringP p in
+    if (List.length p)> nsP2
+    then (stringP metadata [List.hd p])^" + "^(string_of_int (List.length p))^" terms"
+    else  stringP metadata p in
   (*Polynomesrec.nsP1:= max_int;*)
-  nsP2:= max_int;
   res
-
-let rec lstringP l =
-  match l with
-    [] -> ""
-  |p::l -> (stringP p)^("\n")^(lstringP l)
-
-let printP = print_pol 
-    (fun p -> match p with [] -> true | _ -> false)
-    (fun p -> match p with (t::p) -> t |_ -> failwith "print_pol dans dansideal")
-    (fun p -> match p with (t::p) -> p |_ -> failwith "print_pol dans dansideal")
-    (fun (a,m) -> a)
-    (fun (a,m) -> m)
-    string_of_coef
-    (fun m -> (Array.length m)-1)
-    (fun m i -> (string_of_int (m.(i))))
-    name_var
-
-
-let rec lprintP l =
-  match l with
-    [] -> ()
-  |p::l -> printP p;print_string "\n"; lprintP l
-
 
 (* Operations *)
 
@@ -328,8 +335,7 @@ let zeroP = []
 
 (* returns a constant polynom ial with d variables *)
 let polconst d c =
-  let m = Array.make (d+1) 0 in
-  let m = set_deg m in 
+  let m = const_mon d in
   [(c,m)]
 
 let plusP p q =
@@ -357,9 +363,7 @@ let coef_of_int x = P.of_num (Num.Int x)
 
 (* variable i *)
 let gen d i =
-  let m = Array.make (d+1) 0 in
-  m.(i) <- 1;
-  let m = set_deg m in 
+  let m = var_mon d i in 
   [((coef_of_int 1),m)]
 
 let oppP p =
@@ -390,7 +394,7 @@ let puisP p n=
   |_ ->
     if n = 0 then
       let d = nvar (snd (List.hd p)) in
-      [coef1, Array.make (d+1) 0]
+      [coef1, const_mon d]
     else
       let rec puisP p n =
         if n = 1 then p
@@ -400,49 +404,34 @@ let puisP p n=
           if n mod 2 = 0 then q else multP p q
       in puisP p n
 	
-let rec contentP p =
-  match p with
-  |[] -> coef1
-  |[a,m] -> a
-  |(a,m)::p1 ->
-      if P.equal a coef1 || P.equal a coefm1
-      then a
-      else P.pgcdP a (contentP p1)
-
-let contentPlist lp =
-  match lp with
-  |[] -> coef1
-  |p::l1 ->
-      List.fold_left
-	(fun r q ->
-	  if P.equal r coef1 || P.equal r coefm1
-	  then r
-	  else P.pgcdP r (contentP q))
-	(contentP p) l1
-	
 (***********************************************************************
    Division of polynomials
  *)
 
+type table = {
+  hmon : (mon, poly) Hashtbl.t option;
+  (* coefficients of polynomials when written with initial polynomials *)
+  coefpoldep : ((int * int), poly) Hashtbl.t;
+  mutable nallpol : int;
+  mutable allpol : polynom array;
+  (* list of initial polynomials *)
+}
+
 let pgcdpos a b  = P.pgcdP a b
 
-let polynom0 =  {pol = ref []; num = 0; sugar = 0}
+let polynom0 = { pol = []; num = 0 }
    
-let ppol p = !(p.pol)
+let ppol p = p.pol
 
 let lm p = snd (List.hd (ppol p))
 
-let nallpol = ref 0
-
-let allpol = ref (Array.make 1000 polynom0)
-
-let new_allpol p s =
-  nallpol := !nallpol + 1;
-  if !nallpol >= Array.length !allpol
+let new_allpol table p =
+  table.nallpol <- table.nallpol + 1;
+  if table.nallpol >= Array.length table.allpol
   then
-    allpol := Array.append !allpol (Array.make !nallpol polynom0);
-  let p = {pol = ref p; num = !nallpol; sugar = s} in
-  !allpol.(!nallpol)<- p;
+    table.allpol <- Array.append table.allpol (Array.make table.nallpol polynom0);
+  let p = { pol = p; num = table.nallpol } in
+  table.allpol.(table.nallpol) <- p;
   p
 
 (* returns a polynomial of l whose head monomial divides m, else [] *)
@@ -456,43 +445,42 @@ let rec selectdiv m l =
     |false -> selectdiv m r
 
 let div_pol p q a b m = 
-(*  info ".";*)
   plusP (emultP a p) (mult_t_pol b m q)
 
-let hmon = Hashtbl.create 1000
+let find_hmon table m = match table.hmon with
+| None -> raise Not_found
+| Some hmon -> Hashtbl.find hmon m
 
-let use_hmon = ref false
+let add_hmon table m q =
+match table.hmon with
+| None -> ()
+| Some hmon -> Hashtbl.add hmon m q
 
-let find_hmon m =
-  if !use_hmon
-  then Hashtbl.find hmon m
-  else raise Not_found
-
-let add_hmon m q =
-  if !use_hmon
-  then Hashtbl.add hmon m q
-  else ()
+let selectdiv table m l =
+  try find_hmon table m
+  with Not_found ->
+    let q = selectdiv m l in
+    let q = ppol q in
+    match q with
+    | [] -> q
+    | _ :: _ ->
+      let () = add_hmon table m q in
+      q
 
 let div_coef a b = P.divP a b
 
 
 (* remainder r of the division of p by polynomials of l, returns (c,r) where c is the coefficient for pseudo-division : c p = sum_i q_i p_i + r *)
 
-let reduce2 p l =
+let reduce2 table p l =
   let l = if nouveaux_pol_en_tete then List.rev l else l in
   let rec reduce p =
     match p with
       [] -> (coef1,[])
     |t::p' ->
 	let (a,m)=t in
-      let q = (try find_hmon m 
-      with Not_found -> 
-	let q = selectdiv m l in
-	match (ppol q) with 
-          t'::q' -> (add_hmon m q;
-		     q)
-	|[] -> q) in
-      match (ppol q) with
+      let q = selectdiv table m l in
+      match q with
 	[] -> if reduire_les_queues
 	then
 	  let (c,r)=(reduce p') in
@@ -508,37 +496,19 @@ let reduce2 p l =
   in let (c,r) = reduce p in
   (c,r)
 
-(* trace of divisions *)
-
-(* list of initial polynomials *)
-let poldep = ref [] 
-let poldepcontent = ref []
-
-(* coefficients of polynomials when written with initial polynomials *)
-let coefpoldep = Hashtbl.create 51
-
 (* coef of q in p = sum_i c_i*q_i *)
-let coefpoldep_find p q =
-  try (Hashtbl.find coefpoldep (p.num,q.num))
+let coefpoldep_find table p q =
+  try (Hashtbl.find table.coefpoldep (p.num,q.num))
   with Not_found -> []
 
-let coefpoldep_remove p q =
-  Hashtbl.remove coefpoldep (p.num,q.num)
-
-let coefpoldep_set p q c =
-  Hashtbl.add coefpoldep (p.num,q.num) c
-
-let initcoefpoldep d lp =
-  poldep:=lp;
-  poldepcontent:= List.map (fun p -> contentP (ppol p)) lp;
-  List.iter
-    (fun p -> coefpoldep_set p p (polconst d (coef_of_int 1)))
-    lp
+let coefpoldep_set table p q c =
+  Hashtbl.add table.coefpoldep (p.num,q.num) c
 
 (* keeps trace in coefpoldep 
    divides without pseudodivisions *)
 
-let reduce2_trace p l lcp =
+let reduce2_trace table p l lcp =
+  let lp = l in
   let l = if nouveaux_pol_en_tete then List.rev l else l in
   (* rend (lq,r), ou r = p + sum(lq) *)
   let rec reduce p =
@@ -546,15 +516,8 @@ let reduce2_trace p l lcp =
       [] -> ([],[])
     |t::p' ->
 	let (a,m)=t in
-      let q =
-	(try find_hmon m 
-	with Not_found -> 
-	  let q = selectdiv m l in
-	  match (ppol q) with 
-            t'::q' -> (add_hmon m q;
-		       q)
-          |[] -> q) in
-      match (ppol q) with
+      let q = selectdiv table m l in
+      match q with
 	[] ->
 	  if reduire_les_queues
 	  then
@@ -568,19 +531,12 @@ let reduce2_trace p l lcp =
           let (lq,r)=reduce p1 in
           ((b',m'',q)::lq, r)
   in let (lq,r) = reduce p in
-  (*info "reduce2_trace:\n";
-     iter
-     (fun (a,m,s) ->
-     let x = mult_t_pol a m s in
-     info ((stringP x)^"\n"))
-     lq;
-     info "ok\n";*)
   (List.map2
      (fun c0 q ->
        let c =
 	 List.fold_left
 	   (fun x (a,m,s) ->
-	     if equal (ppol s) (ppol q)
+	     if equal s (ppol q)
 	     then
 	       plusP x (mult_t_pol a m (polconst (nvar m) (coef_of_int 1)))
 	     else x)
@@ -588,25 +544,14 @@ let reduce2_trace p l lcp =
 	   lq in
        c)
      lcp
-     !poldep,
+     lp,
    r)     
-
-let homogeneous = ref false
-let pol_courant = ref polynom0
 
 (***********************************************************************
    Completion
  *)
 
-let sugar_flag = ref true
-
-let compute_sugar p =
-  List.fold_left (fun s (a,m) -> max s m.(0)) 0 p
-
-let mk_polynom p = 
-  new_allpol p (compute_sugar p)
-
-let spol ps qs=
+let spol0 ps qs=
   let p = ppol ps in
   let q = ppol qs in
   let m = snd (List.hd p) in
@@ -628,14 +573,9 @@ let spol ps qs=
 	 (P.oppP (div_coef a c))
          m2 q') in
   let sp = fsp p' q' in
-  let sps =
-    new_allpol
-      sp
-      (max (m1.(0) + ps.sugar) (m2.(0) + qs.sugar)) in
-  coefpoldep_set sps ps (fsp (polconst (nvar m) (coef_of_int 1)) []);
-  coefpoldep_set sps qs (fsp [] (polconst (nvar m) (coef_of_int 1)));
-  sps
-  
+  let p0 = fsp (polconst (nvar m) (coef_of_int 1)) [] in
+  let q0 = fsp [] (polconst (nvar m) (coef_of_int 1)) in
+  (sp, p0, q0)
 
 let etrangers p p'=
   let m = snd (List.hd p) in
@@ -644,301 +584,186 @@ let etrangers p p'=
   let res=ref true in
   let i=ref 1 in
   while (!res) && (!i<=d) do
-    res:= (m.(!i) = 0) || (m'.(!i)=0);
+    res:= ((Monomial.repr m).(!i) = 0) || ((Monomial.repr m').(!i)=0);
       i:=!i+1;
   done;
   !res
 
-(* teste if head monomial of p'' divides lcm of lhead monomials of p and p' *)
-
-let div_ppcm p p' p'' =
-  let m = snd (List.hd p) in
-  let m'= snd (List.hd p') in
-  let m''= snd (List.hd p'') in
-  let d = nvar m in
-  let res=ref true in
-  let i=ref 1 in
-  while (!res) && (!i<=d) do
-    res:= ((max m.(!i) m'.(!i)) >= m''.(!i));
-    i:=!i+1;
-  done;
-  !res
-
-(* code from extraction of Laurent Théry Coq program *)
-
-type 'poly cpRes =
-    Keep of ('poly list)
-  | DontKeep of ('poly list)
-
-let list_rec f0 f1 =
-  let rec f2 = function
-      [] -> f0
-    | a0::l0 -> f1 a0 l0 (f2 l0)
-  in f2
-
-let addRes i = function
-    Keep h'0 -> Keep (i::h'0)
-  | DontKeep h'0 -> DontKeep (i::h'0)
-
-let slice i a q =
-  list_rec
-    (match etrangers (ppol i) (ppol a) with
-      true -> DontKeep []
-    | false -> Keep [])
-    (fun b q1 rec_ren ->
-      match div_ppcm (ppol i) (ppol a) (ppol b) with
-	true ->  DontKeep (b::q1)
-      | false ->
-          (match div_ppcm (ppol i) (ppol b) (ppol a) with
-            true -> rec_ren
-          | false -> addRes b rec_ren)) q
-
-(* sugar strategy *)
-
 let addS x l =    l @ [x] (* oblige de mettre en queue sinon le certificat deconne *)
-			  
-let addSsugar x l =
-  if !sugar_flag
-  then 
-    let sx = x.sugar in
-    let rec insere l  =
-      match l with
-      | [] -> [x]
-      | y::l1 ->
-	  if sx <= y.sugar
-	  then x::l
-	  else y::(insere l1)
-    in insere l
-  else addS x l
 
-(* ajoute les spolynomes de i avec la liste de polynomes aP, 
-   a la liste q *)
-
-let genPcPf i aP q =
-  (let rec genPc aP0 =
-    match aP0 with
-      [] -> (fun r -> r)
-    | a::l1 -> 
-	(fun l ->
-          (match slice i a l1 with
-            Keep l2 -> addSsugar (spol i a) (genPc l2 l)
-          | DontKeep l2 -> genPc l2 l))
-  in genPc aP) q
-
-let genOCPf h' =
-  list_rec [] (fun a l rec_ren ->
-    genPcPf a l rec_ren) h'
-    
 (***********************************************************************
  critical pairs/s-polynomials
  *)
-    
-let ordcpair ((i1,j1),m1) ((i2,j2),m2) =
-(*  let s1 = (max
-	      (!allpol.(i1).sugar + m1.(0)
-		   - (snd (hd (ppol !allpol.(i1)))).(0))
-	      (!allpol.(j1).sugar + m1.(0)
-		   - (snd (hd (ppol !allpol.(j1)))).(0))) in 
-  let s2 = (max
-	      (!allpol.(i2).sugar + m2.(0)
-		   - (snd (hd (ppol !allpol.(i2)))).(0))
-	      (!allpol.(j2).sugar + m2.(0)
-		   - (snd (hd (ppol !allpol.(j2)))).(0))) in 
-  match compare s1 s2 with
-  | 1 -> 1
-  |(-1) -> -1
-  |0 ->  compare_mon m1 m2*)
 
+let ordcpair ((i1,j1),m1) ((i2,j2),m2) =
   compare_mon m1 m2 
 
-let sortcpairs lcp = 
-  List.sort ordcpair lcp
+module CPair =
+struct
+type t = (int * int) * Monomial.t
+let compare ((i1, j1), m1) ((i2, j2), m2) = compare_mon m2 m1
+end
 
-let mergecpairs l1 l2 =
-  List.merge ordcpair l1 l2 
+module Heap :
+sig
+  type elt = (int * int) * Monomial.t
+  type t
+  val length : t -> int
+  val empty : t
+  val add : elt -> t -> t
+  val pop : t -> (elt * t) option
+end =
+struct
+  include Heap.Functional(CPair)
+  let length h = fold (fun _ accu -> accu + 1) h 0
+  let pop h = try Some (maximum h, remove h) with Heap.EmptyHeap -> None
+end
 
 let ord i j =
   if i<j then (i,j) else (j,i)
     
-let cpair p q =
-  if etrangers (ppol p) (ppol q)
-  then []
-  else [(ord p.num q.num,
-	 ppcm_mon (lm p) (lm q))]
-      
-let cpairs1 p lq =
-  sortcpairs (List.fold_left (fun r q -> r @ (cpair p q)) [] lq)
-    
-let cpairs lp =
-  let rec aux l =
-    match l with
-      []|[_] -> []
-    |p::l1 -> mergecpairs (cpairs1 p l1) (aux l1)
-  in aux lp
-    
-    
-let critere2 ((i,j),m) lp lcp =
-  List.exists
-    (fun h ->
-      h.num <> i && h.num <> j
-        && (div_mon_test m (lm h))
-	&& (let c1 = ord i h.num in
-	not (List.exists (fun (c,_) -> c1 = c) lcp))
-	&& (let c1 = ord j h.num in
-	not (List.exists (fun (c,_) -> c1 = c) lcp)))
-    lp
+let cpair p q accu =
+  if etrangers (ppol p) (ppol q) then accu
+  else Heap.add (ord p.num q.num, ppcm_mon (lm p) (lm q)) accu
 
-let critere3 ((i,j),m) lp lcp =
+let cpairs1 p lq accu =
+  List.fold_left (fun r q -> cpair p q r) accu lq
+
+let rec cpairs l accu = match l with
+| [] | [_] -> accu
+| p :: l ->
+  cpairs l (cpairs1 p l accu)
+
+let critere3 table ((i,j),m) lp lcp =
   List.exists
     (fun h ->
       h.num <> i && h.num <> j
         && (div_mon_test m (lm h))
 	&& (h.num < j
 	   || not (m = ppcm_mon 
-		   (lm (!allpol.(i)))
+		   (lm (table.allpol.(i)))
 		   (lm h)))
 	&& (h.num < i
 	  || not (m = ppcm_mon 
-		   (lm (!allpol.(j)))
+		   (lm (table.allpol.(j)))
 		   (lm h))))
     lp
 
-let add_cpairs p lp lcp =
-  mergecpairs (cpairs1 p lp) lcp 
-
-let step = ref 0
-
 let infobuch p q =
-  if !step = 0 
-  then (info ("[" ^ (string_of_int (List.length p))
-              ^ "," ^  (string_of_int (List.length q))
-              ^ "]"))
+  (info (fun () -> Printf.sprintf "[%i,%i]" (List.length p) (Heap.length q)))
 
 (* in lp new polynomials are at the end *)
-
-let coef_courant = ref coef1
 
 type certificate =
     { coef : coef; power : int;
       gb_comb : poly list list; last_comb : poly list }
 
-let test_dans_ideal p lp lp0 =
-  let (c,r) = reduce2 (ppol !pol_courant) lp in
-  info ("remainder: "^(stringPcut r)^"\n");
-  coef_courant:= P.multP !coef_courant c;
-  pol_courant:= mk_polynom r;
-  if r=[]
-  then (info "polynomial reduced to 0\n";
-	let lcp = List.map (fun q -> []) !poldep in
-	let c = !coef_courant in
-	let (lcq,r) = reduce2_trace (emultP c p) lp lcp in
-	info "r ok\n";
-	info ("r: "^(stringP r)^"\n");
-        let res=ref  (emultP c p) in
-	List.iter2
-	  (fun cq q -> res:=plusP (!res) (multP cq (ppol q));
-	  )
-	  lcq !poldep;
-	info ("verif sum: "^(stringP (!res))^"\n");
-	info ("coefficient: "^(stringP (polconst 1 c))^"\n");
-	let rec aux lp =
-	  match lp with
-	  |[] -> []
-	  |p::lp ->
-	      (List.map
-		 (fun q -> coefpoldep_find p q)
-		 lp)::(aux lp)
-	in
-	let coefficient_multiplicateur = c in
-	let liste_polynomes_de_depart = List.rev lp0 in
-	let polynome_a_tester = p in
-	let liste_des_coefficients_intermediaires =
-	  (let lci = List.rev (aux (List.rev lp)) in
-	  let lci = ref lci (* (map rev lci) *) in
-	  List.iter (fun x -> lci := List.tl (!lci)) lp0;
-	  !lci) in
-	let liste_des_coefficients =
-	  List.map
-	    (fun cq -> emultP (coef_of_int (-1)) cq)
-	    (List.rev lcq) in
-	(liste_polynomes_de_depart,
-	 polynome_a_tester,
-	 {coef = coefficient_multiplicateur;
-	  power = 1;
-	  gb_comb = liste_des_coefficients_intermediaires;
-	  last_comb = liste_des_coefficients})
-       )
-  else ((*info "polynomial not reduced to 0\n";
-	   info ("\nremainder: "^(stringPcut r)^"\n");*)
-    raise NotInIdeal)
-      
-let divide_rem_with_critical_pair = ref false
+type current_problem = {
+  cur_poly : poly;
+  cur_coef : coef;
+}
 
-let list_diff l x =
-  List.filter (fun y -> y <> x) l
+exception NotInIdealUpdate of current_problem
+
+let test_dans_ideal cur_pb table metadata p lp len0 =
+  (** Invariant: [lp] is [List.tl (Array.to_list table.allpol)] *)
+  let (c,r) = reduce2 table cur_pb.cur_poly lp in
+  info (fun () -> "remainder: "^(stringPcut metadata r));
+  let cur_pb = {
+    cur_coef = P.multP cur_pb.cur_coef c;
+    cur_poly = r;
+  } in
+  match r with
+  | [] ->
+    sinfo "polynomial reduced to 0";
+    let lcp = List.map (fun q -> []) lp in
+    let c = cur_pb.cur_coef in
+    let (lcq,r) = reduce2_trace table (emultP c p) lp lcp in
+    sinfo "r ok";
+    info (fun () -> "r: "^(stringP metadata r));
+    info (fun () ->
+      let fold res cq q = plusP res (multP cq (ppol q)) in
+      let res = List.fold_left2 fold (emultP c p) lcq lp in
+      "verif sum: "^(stringP metadata res)
+    );
+    info (fun () -> "coefficient: "^(stringP metadata (polconst 1 c)));
+    let coefficient_multiplicateur = c in
+    let liste_des_coefficients_intermediaires =
+      let rec aux accu lp =
+        match lp with
+        | [] -> accu
+        | p :: lp ->
+          let elt = List.map (fun q -> coefpoldep_find table p q) lp in
+          aux (elt :: accu) lp
+      in
+      let lci = aux [] (List.rev lp) in
+      CList.skipn len0 lci
+    in
+    let liste_des_coefficients =
+      List.rev_map (fun cq -> emultP (coef_of_int (-1)) cq) lcq
+    in
+      {coef = coefficient_multiplicateur;
+      power = 1;
+      gb_comb = liste_des_coefficients_intermediaires;
+      last_comb = liste_des_coefficients}
+  | _ -> raise (NotInIdealUpdate cur_pb)
 
 let deg_hom p =
   match p with
   | [] -> -1
-  | (a,m)::_ -> m.(0)
+  | (a,m)::_ -> Monomial.deg m
 
-let pbuchf pq p lp0=
-  info "computation of the Groebner basis\n";
-  step:=0;
-  Hashtbl.clear hmon;
-  let rec pbuchf (lp, lpc) =
+let pbuchf table metadata cur_pb homogeneous (lp, lpc) p =
+  (** Invariant: [lp] is [List.tl (Array.to_list table.allpol)] *)
+  sinfo "computation of the Groebner basis";
+  let () = match table.hmon with
+  | None -> ()
+  | Some hmon -> Hashtbl.clear hmon
+  in
+  let len0 = List.length lp in
+  let rec pbuchf cur_pb (lp, lpc) =
       infobuch lp lpc;
-(*      step:=(!step+1)mod 10;*)
-      match lpc with
-        [] ->
-	  
-	 (* info ("List of polynomials:\n"^(fold_left (fun r p -> r^(stringP p)^"\n") "" lp));
-	  info "--------------------\n";*)
-	  test_dans_ideal (ppol p) lp lp0
-      | ((i,j),m) :: lpc2 ->
-(*          info "choosen pair\n";*)
-	  if critere3 ((i,j),m) lp lpc2
-	  then (info "c"; pbuchf (lp, lpc2))
+      match Heap.pop lpc with
+      | None ->
+	  test_dans_ideal cur_pb table metadata p lp len0
+      | Some (((i, j), m), lpc2) ->
+	  if critere3 table ((i,j),m) lp lpc2
+	  then (sinfo "c"; pbuchf cur_pb (lp, lpc2))
 	  else    
-	    let a = spol !allpol.(i) !allpol.(j) in
-	    if !homogeneous && (ppol a)<>[] && deg_hom (ppol a)
-		> deg_hom (ppol !pol_courant)
-	    then (info "h"; pbuchf (lp, lpc2))
+	    let (a0, p0, q0) = spol0 table.allpol.(i) table.allpol.(j) in
+	    if homogeneous && a0 <>[] && deg_hom a0 > deg_hom cur_pb.cur_poly
+	    then (sinfo "h"; pbuchf cur_pb (lp, lpc2))
 	    else
 (*	      let sa = a.sugar in*)
-              let (ca,a0)= reduce2 (ppol a) lp in
-              match a0 with
-		[] -> info "0";pbuchf (lp, lpc2)
-              | _ ->
+              match reduce2 table a0 lp with
+		_, [] -> sinfo "0";pbuchf cur_pb (lp, lpc2)
+              | ca, _ :: _ ->
 (*		info "pair reduced\n";*)
-		  a.pol := emultP ca (ppol a);
-		  let (lca,a0) = reduce2_trace (ppol a) lp
-		      (List.map (fun q -> emultP ca (coefpoldep_find a q))
-			 !poldep) in
+                  let map q =
+                    let r =
+                      if q.num == i then p0 else if q.num == j then q0 else []
+                    in
+                    emultP ca r
+                  in
+                  let lcp = List.map map lp in
+                  let (lca, a0) = reduce2_trace table (emultP ca a0) lp lcp in
 (*		info "paire re-reduced";*)
-		  a.pol := a0;
-(*		  let a0 = new_allpol a0 sa in*)
-		  List.iter2 (fun c q ->
-		    coefpoldep_remove a q;
-		    coefpoldep_set a q c) lca !poldep;
+                  let a = new_allpol table a0 in
+		  List.iter2 (fun c q -> coefpoldep_set table a q c) lca lp;
 		  let a0 = a in
-		  info ("\nnew polynomial: "^(stringPcut (ppol a0))^"\n");
-		  let ct = coef1 (* contentP a0 *) in
-		  (*info ("content: "^(string_of_coef ct)^"\n");*)
-		  poldep:=addS a0 lp;
-		  poldepcontent:=addS ct (!poldepcontent);
-		  
-		  try test_dans_ideal (ppol p) (addS a0 lp) lp0
-		  with NotInIdeal ->
-		    let newlpc = add_cpairs a0 lp lpc2 in
-		    pbuchf (((addS a0 lp), newlpc))
-  in pbuchf pq
+		  info (fun () -> "new polynomial: "^(stringPcut metadata (ppol a0)));
+                  let nlp = addS a0 lp in
+		  try test_dans_ideal cur_pb table metadata p nlp len0
+		  with NotInIdealUpdate cur_pb ->
+		    let newlpc = cpairs1 a0 lp lpc2 in
+		    pbuchf cur_pb (nlp, newlpc)
+  in pbuchf cur_pb (lp, lpc)
     
 let is_homogeneous p =
   match p with
   | [] -> true
-  | (a,m)::p1 -> let d = m.(0) in
-    List.for_all (fun (b,m') -> m'.(0)=d) p1
+  | (a,m)::p1 -> let d = deg m in
+    List.for_all (fun (b,m') -> deg m' =d) p1
     
 (* returns
    c
@@ -955,33 +780,33 @@ let is_homogeneous p =
    where pn+k = a(n+k,n+k-1)*pn+k-1 + ... + a(n+k,1)* p1
  *)
 
-let in_ideal d lp p =
-  Hashtbl.clear hmon;
-  Hashtbl.clear coefpoldep;
-  nallpol := 0;
-  allpol := Array.make 1000 polynom0;
-  homogeneous := List.for_all is_homogeneous (p::lp);
-  if !homogeneous then info "homogeneous polynomials\n";
-  info ("p: "^(stringPcut p)^"\n");
-  info ("lp:\n"^(List.fold_left (fun r p -> r^(stringPcut p)^"\n") "" lp));
-  (*info ("p: "^(stringP p)^"\n");
-  info ("lp:\n"^(fold_left (fun r p -> r^(stringP p)^"\n") "" lp));*)
+let in_ideal metadata d lp p =
+  let table = {
+    hmon = None;
+    coefpoldep = Hashtbl.create 51;
+    nallpol = 0;
+    allpol = Array.make 1000 polynom0;
+  } in
+  let homogeneous = List.for_all is_homogeneous (p::lp) in
+  if homogeneous then sinfo "homogeneous polynomials";
+  info (fun () -> "p: "^(stringPcut metadata p));
+  info (fun () -> "lp:\n"^(List.fold_left (fun r p -> r^(stringPcut metadata p)^"\n") "" lp));
 
-  let lp = List.map mk_polynom lp in
-  let p = mk_polynom p in
-  initcoefpoldep d lp;
-  coef_courant:=coef1;
-  pol_courant:=p;
+  let lp = List.map (fun c -> new_allpol table c) lp in
+  List.iter (fun p -> coefpoldep_set table p p (polconst d (coef_of_int 1))) lp;
+  let cur_pb = {
+    cur_poly = p;
+    cur_coef = coef1;
+  } in
 
-  let (lp1,p1,cert) =
-    try test_dans_ideal (ppol p) lp lp
-    with NotInIdeal -> pbuchf (lp, (cpairs lp)) p lp in
-  info "computed\n";
+  let cert =
+    try pbuchf table metadata cur_pb homogeneous (lp, Heap.empty) p
+    with NotInIdealUpdate cur_pb ->
+      try pbuchf table metadata cur_pb homogeneous (lp, cpairs lp Heap.empty) p
+      with NotInIdealUpdate _ -> raise NotInIdeal
+    in
+  sinfo "computed";
 
-  (List.map ppol lp1, p1, cert)
-    
-(* *)
+  cert
+
 end
-
-	
-

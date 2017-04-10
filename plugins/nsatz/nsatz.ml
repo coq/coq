@@ -257,21 +257,19 @@ let rec parse_request lp =
 	(parse_term p)::(parse_request lp1)
     |_-> assert false
 
-let nvars = ref 0
-
-let set_nvars_term t =
-  let rec aux t =
+let set_nvars_term nvars t =
+  let rec aux t nvars =
     match t with
-    | Zero -> ()
-    | Const r -> ()
+    | Zero -> nvars
+    | Const r -> nvars
     | Var v -> let n = int_of_string v in
-      nvars:= max (!nvars) n
-    | Opp t1 -> aux t1
-    | Add (t1,t2) -> aux t1; aux t2
-    | Sub (t1,t2) -> aux t1; aux t2
-    | Mul (t1,t2) -> aux t1; aux t2
-    | Pow (t1,n) ->  aux t1
-  in aux t
+      max nvars n
+    | Opp t1 -> aux t1 nvars
+    | Add (t1,t2) -> aux t2 (aux t1 nvars)
+    | Sub (t1,t2) -> aux t2 (aux t1 nvars)
+    | Mul (t1,t2) -> aux t2 (aux t1 nvars)
+    | Pow (t1,n) ->  aux t1 nvars
+  in aux t nvars
 
 let string_of_term p =
   let rec aux p =
@@ -301,8 +299,8 @@ open PIdeal
    varaibles <=np are in the coefficients
 *)
 
-let term_pol_sparse np t=
-  let d = !nvars in
+let term_pol_sparse nvars np t=
+  let d = nvars in
   let rec aux t =
 (*    info ("conversion de: "^(string_of_term t)^"\n");*)
     let res =
@@ -336,14 +334,8 @@ let polrec_to_term p =
   match p with
    |Poly.Pint n -> const (Coef.to_num n)
    |Poly.Prec (v,coefs) ->
-     let res = ref Zero in
-     Array.iteri
-      (fun i c ->
-	 res:=add(!res, mul(aux c,
-			    pow (Var (string_of_int v),
-				 i))))
-      coefs;
-     !res
+    let fold i c res = add (res, mul (aux c, pow (Var (string_of_int v), i))) in
+    Array.fold_right_i fold coefs Zero
   in aux p
 
 (* approximation of the Horner form used in the tactic ring *)
@@ -355,9 +347,11 @@ let pol_sparse_to_term n2 p =
     match p with
       [] -> const (num_of_string "0")
     | (a,m)::p1 ->
+      let m = Ideal.Monomial.repr m in
       let n = (Array.length m)-1 in
       let (i0,e0) =
 	List.fold_left (fun (r,d) (a,m) ->
+              let m = Ideal.Monomial.repr m in
 	      let i0= ref 0 in
 	      for k=1 to n do
 		if m.(k)>0
@@ -374,44 +368,27 @@ let pol_sparse_to_term n2 p =
 	  p in
       if Int.equal i0 0
       then
-	let mp = ref (polrec_to_term a) in
-        if List.is_empty p1
-	then !mp
-	else add(!mp,aux p1)
-      else (
-	let p1=ref [] in
-	let p2=ref [] in
-	List.iter
-	  (fun (a,m) ->
-	     if m.(i0)>=e0
-	     then (m.(i0)<-m.(i0)-e0;
-		   p1:=(a,m)::(!p1))
-	     else p2:=(a,m)::(!p2))
-	  p;
+	let mp = polrec_to_term a in
+        if List.is_empty p1 then mp else add (mp, aux p1)
+      else
+        let fold (p1, p2) (a, m) =
+          if (Ideal.Monomial.repr m).(i0) >= e0 then begin
+            let m0 = Array.copy (Ideal.Monomial.repr m) in
+            let () = m0.(i0) <- m0.(i0) - e0 in
+            let m0 = Ideal.Monomial.make m0 in
+            ((a, m0) :: p1, p2)
+          end else
+            (p1, (a, m) :: p2)
+        in
+        let (p1, p2) = List.fold_left fold ([], []) p in
 	let vm =
 	  if Int.equal e0 1
 	  then Var (string_of_int (i0))
 	  else pow (Var (string_of_int (i0)),e0) in
-	add(mul(vm, aux (List.rev (!p1))), aux (List.rev (!p2))))
+	add (mul(vm, aux (List.rev p1)), aux (List.rev p2))
   in   (*info "-> pol_sparse_to_term\n";*)
   aux p
 
-
-let remove_list_tail l i =
-  let rec aux l i =
-    if List.is_empty l
-    then []
-    else if i<0
-    then l
-    else if Int.equal i 0
-    then List.tl l
-    else
-      match l with
-      |(a::l1) ->
-	  a::(aux l1 (i-1))
-      |_ -> assert false
-  in
-  List.rev (aux (List.rev l) i)
 
 (*
    lq = [cn+m+1 n+m ...cn+m+1 1]
@@ -422,49 +399,35 @@ let remove_list_tail l i =
    removes intermediate polynomials not useful to compute the last one.
  *)
 
-let remove_zeros zero lci =
-  let n = List.length (List.hd lci) in
-  let m=List.length lci in
+let remove_zeros lci =
+  let m = List.length lci in
   let u = Array.make m false in
   let rec utiles k =
-    if k>=m
-    then ()
-    else (
-      u.(k)<-true;
+    (** TODO: Find a more reasonable implementation of this traversal. *)
+    if k >= m || u.(k) then ()
+    else
+      let () = u.(k) <- true in
       let lc = List.nth lci k in
-      for i=0 to List.length lc - 1 do
-	if not (zero (List.nth lc i))
-	then utiles (i+k+1);
-      done)
-  in utiles 0;
-  let lr = ref [] in
-  for i=0 to m-1 do
-    if u.(i)
-    then lr:=(List.nth lci i)::(!lr)
-  done;
-  let lr=List.rev !lr in
-  let lr = List.map
-      (fun lc ->
-	let lcr=ref lc in
-	for i=0 to m-1 do
-	  if not u.(i)
-	  then lcr:=remove_list_tail !lcr (m-i+(n-m))
-	done;
-	!lcr)
-      lr in
-  info ("useless spolynomials: "
-	^string_of_int (m-List.length lr)^"\n");
-  info ("useful spolynomials: "
-	^string_of_int (List.length lr)^"\n");
+      let iter i c = if not (PIdeal.equal c zeroP) then utiles (i + k + 1) in
+      List.iteri iter lc
+  in
+  let () = utiles 0 in
+  let filter i l =
+    let f j l = if m <= i + j + 1 then true else u.(i + j + 1) in
+    if u.(i) then Some (List.filteri f l)
+    else None
+  in
+  let lr = CList.map_filter_i filter lci in
+  info (fun () -> Printf.sprintf "useless spolynomials: %i" (m-List.length lr));
+  info (fun () -> Printf.sprintf "useful spolynomials: %i " (List.length lr));
   lr
 
-let theoremedeszeros lpol p =
+let theoremedeszeros metadata nvars lpol p =
   let t1 = Unix.gettimeofday() in
-  let m = !nvars in
-  let (lp0,p,cert) = in_ideal m lpol p in
-  let lpc = List.rev !poldepcontent in
-  info ("time: "^Format.sprintf "@[%10.3f@]s\n" (Unix.gettimeofday ()-.t1));
-  (cert,lp0,p,lpc)
+  let m = nvars in
+  let cert = in_ideal metadata m lpol p in
+  info (fun () -> Printf.sprintf "time: @[%10.3f@]s" (Unix.gettimeofday ()-.t1));
+  cert
 
 open Ideal
 
@@ -507,51 +470,33 @@ let expand_pol lb lp =
   in List.rev (aux lb (List.rev lp))
 
 let theoremedeszeros_termes lp =
-  nvars:=0;(* mise a jour par term_pol_sparse *)
-  List.iter set_nvars_term  lp;
+  let nvars = List.fold_left set_nvars_term 0 lp in
   match lp with
   | Const (Int sugarparam)::Const (Int nparam)::lp ->
       ((match sugarparam with
-      |0 -> info "computation without sugar\n";
+      |0 -> sinfo "computation without sugar";
 	  lexico:=false;
-	  sugar_flag := false;
-	  divide_rem_with_critical_pair := false
-      |1 -> info "computation with sugar\n";
+      |1 -> sinfo "computation with sugar";
 	  lexico:=false;
-	  sugar_flag := true;
-	  divide_rem_with_critical_pair := false
-      |2 -> info "ordre lexico computation without sugar\n";
+      |2 -> sinfo "ordre lexico computation without sugar";
 	  lexico:=true;
-	  sugar_flag := false;
-	  divide_rem_with_critical_pair := false
-      |3 -> info "ordre lexico computation with sugar\n";
+      |3 -> sinfo "ordre lexico computation with sugar";
 	  lexico:=true;
-	  sugar_flag := true;
-	  divide_rem_with_critical_pair := false
-      |4 -> info "computation without sugar, division by pairs\n";
+      |4 -> sinfo "computation without sugar, division by pairs";
 	  lexico:=false;
-	  sugar_flag := false;
-	  divide_rem_with_critical_pair := true
-      |5 -> info "computation with sugar, division by pairs\n";
+      |5 -> sinfo "computation with sugar, division by pairs";
 	  lexico:=false;
-	  sugar_flag := true;
-	  divide_rem_with_critical_pair := true
-      |6 -> info "ordre lexico computation without sugar, division by pairs\n";
+      |6 -> sinfo "ordre lexico computation without sugar, division by pairs";
 	  lexico:=true;
-	  sugar_flag := false;
-	  divide_rem_with_critical_pair := true
-      |7 -> info "ordre lexico computation with sugar, division by pairs\n";
+      |7 -> sinfo "ordre lexico computation with sugar, division by pairs";
 	  lexico:=true;
-	  sugar_flag := true;
-	  divide_rem_with_critical_pair := true
       | _ -> error "nsatz: bad parameter"
        );
-      let m= !nvars in
-      let lvar=ref [] in
-      for i=m downto 1 do lvar:=["x"^(string_of_int i)^""]@(!lvar); done;
-      lvar:=["a";"b";"c";"d";"e";"f";"g";"h";"i";"j";"k";"l";"m";"n";"o";"p";"q";"r";"s";"t";"u";"v";"w";"x";"y";"z"] @ (!lvar); (* pour macaulay *)
-      name_var:=!lvar;
-      let lp = List.map (term_pol_sparse nparam) lp in
+      let lvar = List.init nvars (fun i -> Printf.sprintf "x%i" (i + 1)) in
+      let lvar = ["a";"b";"c";"d";"e";"f";"g";"h";"i";"j";"k";"l";"m";"n";"o";"p";"q";"r";"s";"t";"u";"v";"w";"x";"y";"z"] @ lvar in
+      (* pour macaulay *)
+      let metadata = { name_var = lvar } in
+      let lp = List.map (term_pol_sparse nvars nparam) lp in
       match lp with
       | [] -> assert false
       | p::lp1 ->
@@ -561,16 +506,16 @@ let theoremedeszeros_termes lp =
              lb is kept in order to fix the certificate in the post-processing 
           *)
 	  let lpol, lb  = clean_pol lpol in
-	  let (cert,lp0,p,_lct) = theoremedeszeros lpol p in
-          info "cert ok\n";
+	  let cert = theoremedeszeros metadata nvars lpol p in
+          sinfo "cert ok";
 	  let lc = cert.last_comb::List.rev cert.gb_comb in
-	  match remove_zeros (fun x -> equal x zeroP) lc with
+	  match remove_zeros lc with
 	  | [] -> assert false
 	  | (lq::lci) ->
               (* post-processing : we apply the correction for the last line *)
               let lq = expand_pol lb lq in
 	      (* lci commence par les nouveaux polynomes *)
-	      let m = !nvars in
+	      let m = nvars in
 	      let c = pol_sparse_to_term m (polconst m cert.coef) in
 	      let r = Pow(Zero,cert.power) in
 	      let lci = List.rev lci in
@@ -578,8 +523,8 @@ let theoremedeszeros_termes lp =
 	      let lci = List.map (expand_pol lb) lci in
 	      let lci = List.map (List.map (pol_sparse_to_term m)) lci in
 	      let lq = List.map (pol_sparse_to_term m) lq in
-	      info ("number of parameters: "^string_of_int nparam^"\n");
-	      info "term computed\n";
+	      info (fun () -> Printf.sprintf "number of parameters: %i" nparam);
+	      sinfo "term computed";
 	      (c,r,lci,lq)
       )
   |_ -> assert false
@@ -619,7 +564,7 @@ let nsatz lpol =
 	 mkt_app lcons [tlp ();ltterm;r])
       res
       (mkt_app lnil [tlp ()]) in
-  info "term computed\n";
+  sinfo "term computed";
   res
 
 let return_term t =
@@ -634,5 +579,3 @@ let nsatz_compute t =
     with Ideal.NotInIdeal ->
       error "nsatz cannot solve this problem" in
   return_term lpol
-
-

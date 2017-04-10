@@ -11,8 +11,8 @@ let prt0 s = () (* print_string s;flush(stdout)*)
 let prt s =
   if !Flags.debug then (print_string (s^"\n");flush(stdout)) else ()
 
-let info s =
-  Flags.if_verbose prerr_string s
+let sinfo s = if !Flags.debug then Feedback.msg_debug (Pp.str s)
+let info s = if !Flags.debug then Feedback.msg_debug (Pp.str (s ()))
 
 (* Lists *)
 
