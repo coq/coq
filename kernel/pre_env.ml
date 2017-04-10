@@ -161,7 +161,19 @@ let map_named_val f ctxt =
   else { env_named_ctx = ctx; env_named_map = map }
 
 let push_named d env =
-  {env with env_named_context = push_named_context_val d env.env_named_context}
+(*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
+  assert (env.env_rel_context = []); *)
+  { env_globals = env.env_globals;
+    env_named_context = push_named_context_val d env.env_named_context;
+    env_rel_context = env.env_rel_context;
+    env_rel_val = env.env_rel_val;
+    env_nb_rel = env.env_nb_rel;
+    env_stratification = env.env_stratification;
+    env_typing_flags = env.env_typing_flags;
+    env_conv_oracle = env.env_conv_oracle;
+    retroknowledge = env.retroknowledge;
+    indirect_pterms = env.indirect_pterms;
+  }
 
 let lookup_named id env =
   fst (Id.Map.find id env.env_named_context.env_named_map)
