@@ -109,9 +109,9 @@ end
 
 type state = constr * constr Stack.t
 
-type local_reduction_function = evar_map -> constr -> constr
-type contextual_reduction_function = env -> local_reduction_function
+type contextual_reduction_function = env -> evar_map -> constr -> constr
 type reduction_function = contextual_reduction_function
+type local_reduction_function = evar_map -> constr -> constr
 
 type e_reduction_function = { e_redfun : 'r. env -> 'r Sigma.t -> constr -> (constr, 'r) Sigma.sigma }
 
