@@ -403,10 +403,9 @@ object(self)
     List.iter (fun t -> buffer#remove_tag t ~start ~stop) all_tags;
     List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags
 
-  method private attach_tooltip sentence loc text =
+  method private attach_tooltip ?loc sentence text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
-    let pre_chars, post_chars =
-      if Loc.is_ghost loc then 0, String.length phrase else Loc.unloc loc in
+    let pre_chars, post_chars = Option.cata Loc.unloc (0, String.length phrase) loc in
     let pre = b2c phrase pre_chars in
     let post = b2c phrase post_chars in
     let start = start_sentence#forward_chars pre in
@@ -469,25 +468,24 @@ object(self)
           self#mark_as_needed sentence
       | GlobRef(loc, filepath, modpath, ident, ty), Some (id,sentence) ->
           log "GlobRef" id;
-          self#attach_tooltip sentence loc
+          self#attach_tooltip ~loc sentence
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | Message(Error, loc, msg), Some (id,sentence) ->
-          let loc = Option.default Loc.ghost loc in
+          let uloc = Option.default Loc.ghost loc in
           log_pp Pp.(str "ErrorMsg" ++ msg) id;
           remove_flag sentence `PROCESSING;
           let rmsg = Pp.string_of_ppcmds msg     in
-          add_flag sentence (`ERROR (loc, rmsg));
+          add_flag sentence (`ERROR (uloc, rmsg));
           self#mark_as_needed sentence;
-          self#attach_tooltip sentence loc rmsg;
-          if not (Loc.is_ghost loc) then
-            self#position_error_tag_at_sentence sentence (Some (Loc.unloc loc))
+          self#attach_tooltip sentence ?loc rmsg;
+          self#position_tag_at_sentence ?loc Tags.Script.error sentence
       | Message(Warning, loc, msg), Some (id,sentence) ->
-          let loc = Option.default Loc.ghost loc in
+          let uloc = Option.default Loc.ghost loc in
           log_pp Pp.(str "WarningMsg" ++ msg) id;
           let rmsg = Pp.string_of_ppcmds msg     in
-          add_flag sentence (`WARNING (loc, rmsg));
-          self#attach_tooltip sentence loc rmsg;
-          self#position_warning_tag_at_sentence sentence loc;
+          add_flag sentence (`WARNING (uloc, rmsg));
+          self#attach_tooltip sentence ?loc rmsg;
+          self#position_tag_at_sentence ?loc Tags.Script.warning sentence;
           messages#push Warning msg
       | Message(lvl, loc, msg), Some (id,sentence) ->
           log_pp Pp.(str "Msg" ++ msg) id;
@@ -522,28 +520,18 @@ object(self)
     let stop = buffer#get_iter_at_mark sentence.stop in
     buffer#move_mark ~where:stop (`NAME "start_of_input");
 
-  method private position_error_tag_at_iter iter phrase = function
-    | None -> ()
-    | Some (start, stop) ->
-        buffer#apply_tag Tags.Script.error
-          ~start:(iter#forward_chars (b2c phrase start))
-          ~stop:(iter#forward_chars (b2c phrase stop))
+  method private position_tag_at_iter ?loc iter_start iter_stop tag phrase = match loc with
+    | None ->
+      buffer#apply_tag tag ~start:iter_start ~stop:iter_stop
+    | Some loc ->
+      let start, stop = Loc.unloc loc in
+      buffer#apply_tag tag
+        ~start:(iter_start#forward_chars (b2c phrase start))
+        ~stop:(iter_start#forward_chars (b2c phrase stop))
 
-  method private position_error_tag_at_sentence sentence loc =
-    let start, _, phrase = self#get_sentence sentence in
-    self#position_error_tag_at_iter start phrase loc
-
-  method private position_warning_tag_at_iter iter_start iter_stop phrase loc =
-    if Loc.is_ghost loc then
-        buffer#apply_tag Tags.Script.warning ~start:iter_start ~stop:iter_stop
-    else
-      buffer#apply_tag Tags.Script.warning
-	  ~start:(iter_start#forward_chars (b2c phrase loc.Loc.bp))
-          ~stop:(iter_stop#forward_chars (b2c phrase loc.Loc.ep))
-
-  method private position_warning_tag_at_sentence sentence loc =
+  method private position_tag_at_sentence ?loc tag sentence =
     let start, stop, phrase = self#get_sentence sentence in
-    self#position_warning_tag_at_iter start stop phrase loc
+    self#position_tag_at_iter ?loc start stop tag phrase
 
   method private process_interp_error queue sentence loc msg tip id =
     Coq.bind (Coq.return ()) (function () ->
@@ -552,7 +540,7 @@ object(self)
     self#discard_command_queue queue;
     pop_info ();
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
-      self#position_error_tag_at_iter start phrase loc;
+      self#position_tag_at_iter ~loc start stop Tags.Script.error phrase;
       buffer#place_cursor ~where:stop;
       messages#clear;
       messages#push Feedback.Error msg;
@@ -666,6 +654,7 @@ object(self)
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
+                  let loc = Option.cata Loc.make_loc Loc.ghost loc in
                   let sentence = Doc.pop document in
                   self#process_interp_error queue sentence loc msg tip id in
             Coq.bind coq_query handle_answer
