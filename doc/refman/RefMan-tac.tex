@@ -3575,16 +3575,35 @@ Note that {\tt ex\_intro} should be declared as a hint.
 
 \begin{Variants}
 
-\item {\tt \zeroone{info\_}eauto \zeroone{\num}} \zeroone{{\tt using} \nterm{lemma}$_1$
+\item {\tt \zeroone{info\_}eauto \zeroone{\num} \zeroone{\num}} \zeroone{{\tt using} \nterm{lemma}$_1$
   {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
   \ident$_1$ {\ldots} \ident$_n$}
 
-  The various options for eauto are the same as for auto.
+  The various options for eauto are mostly the same as for {\tt auto}. If two numbers are provided,
+  the second number provides a depth limit for breadth-first search, 
+  while the first number is ignored. That usage is deprecated; new code should use {\tt bfs\_eauto}.
 
 \end{Variants}
 
 \SeeAlso Section~\ref{Hints-databases}
 
+\subsection{\tt bfs\_eauto}
+\tacindex{bfs\_eauto}
+\label{bfseauto}
+ 
+This tactic is the same as {\tt eauto}, but it always uses a
+breadth-first search strategy. The options for {\tt bfs\_eauto} are
+the same as for {\tt eauto}, except that it always takes a single
+number indicating the search depth limit.
+
+\begin{Variants}
+
+\item {\tt bfs\_eauto \num} \zeroone{{\tt using} \nterm{lemma}$_1$
+  {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$} \zeroone{{\tt with}
+  \ident$_1$ {\ldots} \ident$_n$}
+
+\end{Variants}
+  
 \subsection{\tt autounfold with \ident$_1$ \mbox{\dots} \ident$_n$}
 \tacindex{autounfold}
 \label{autounfold}

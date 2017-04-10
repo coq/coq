@@ -133,10 +133,10 @@ TACTIC EXTEND info_eauto
     [ Eauto.gen_eauto ~debug:Info (Eauto.make_dimension n p) (eval_uconstrs ist lems) db ]
 END
 
-TACTIC EXTEND dfs_eauto
-| [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems)
+TACTIC EXTEND bfs_eauto
+| [ "bfs_eauto" int_or_var_opt(p) auto_using(lems)
       hintbases(db) ] ->
-    [ Eauto.gen_eauto (Eauto.make_dimension p None) (eval_uconstrs ist lems) db ]
+    [ Eauto.gen_eauto (Eauto.make_dimension None p) (eval_uconstrs ist lems) db ]
 END
 
 TACTIC EXTEND autounfold
