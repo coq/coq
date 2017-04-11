@@ -175,6 +175,19 @@ let cofixp_reducible flgs _ stk =
   else
     false
 
+let debug_cbv = ref false
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname = "cbv visited constants display";
+  Goptions.optkey = ["Debug";"Cbv"];
+  Goptions.optread = (fun () -> !debug_cbv);
+  Goptions.optwrite = (fun a -> debug_cbv:=a);
+}
+
+let pr_key = function
+  | ConstKey (sp,_) -> Names.Constant.print sp
+  | VarKey id -> Names.Id.print id
+  | RelKey n -> Pp.(str "REL_" ++ int n)
 
 (* The main recursive functions
  *
@@ -254,9 +267,17 @@ let rec norm_head info env t stack =
 and norm_head_ref k info env stack normt =
   if red_set_ref (info_flags info) normt then
     match ref_value_cache info normt with
-      | Some body -> strip_appl (shift_value k body) stack
-      | None -> (VAL(0,make_constr_ref k normt),stack)
-  else (VAL(0,make_constr_ref k normt),stack)
+      | Some body ->
+         if !debug_cbv then Feedback.msg_debug Pp.(str "Unfolding " ++ pr_key normt);
+         strip_appl (shift_value k body) stack
+      | None ->
+         if !debug_cbv then Feedback.msg_debug Pp.(str "Not unfolding " ++ pr_key normt);
+         (VAL(0,make_constr_ref k normt),stack)
+  else
+    begin
+      if !debug_cbv then Feedback.msg_debug Pp.(str "Not unfolding " ++ pr_key normt);
+      (VAL(0,make_constr_ref k normt),stack)
+    end
 
 (* cbv_stack_term performs weak reduction on constr t under the subs
  * env, with context stack, i.e. ([env]t stack).  First computes weak
