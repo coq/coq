@@ -5008,7 +5008,7 @@ let tclABSTRACT ?(opaque=true) name_op tac =
   let s, gk = if opaque
     then name_op_to_name name_op (Proof Theorem) "_subproof"
     else name_op_to_name name_op (DefinitionBody Definition) "_subterm" in
-  abstract_subproof ~opaque:opaque s gk tac
+  abstract_subproof ~opaque s gk tac
 
 let unify ?(state=full_transparent_state) x y =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
