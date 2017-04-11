@@ -4986,7 +4986,7 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   end }
 
 let abstract_subproof ~opaque id gk tac =
-  cache_term_by_tactic_then ~opaque:opaque id gk tac (fun lem args -> exact_no_check (applist (lem, args)))
+  cache_term_by_tactic_then ~opaque id gk tac (fun lem args -> exact_no_check (applist (lem, args)))
 
 let anon_id = Id.of_string "anonymous"
 
