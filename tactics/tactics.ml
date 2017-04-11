@@ -4907,7 +4907,7 @@ let shrink_entry sign const =
   } in
   (const, args)
 
-let cache_term_by_tactic_then id gk ?(opaque=true) tac tacK =
+let cache_term_by_tactic_then id gk ?(opaque=true) ?(goal_type=None) tac tacK =
   let open Tacticals.New in
   let open Tacmach.New in
   let open Proofview.Notations in
@@ -4927,7 +4927,10 @@ let cache_term_by_tactic_then id gk ?(opaque=true) tac tacK =
 	else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, empty_named_context_val) in
   let id = next_global_ident_away id (pf_ids_of_hyps gl) in
-  let concl = it_mkNamedProd_or_LetIn (Proofview.Goal.concl gl) sign in
+  let concl = match goal_type with
+              | None ->  Proofview.Goal.concl gl
+              | Some ty -> ty in
+  let concl = it_mkNamedProd_or_LetIn concl sign in
   let concl =
     try flush_and_check_evars !evdref concl
     with Uninstantiated_evar _ ->

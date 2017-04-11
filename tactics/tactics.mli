@@ -401,7 +401,7 @@ val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -
 
 val unify           : ?state:Names.transparent_state -> constr -> constr -> unit Proofview.tactic
 
-val cache_term_by_tactic_then : Id.t -> Decl_kinds.goal_kind -> ?opaque:bool -> unit Proofview.tactic -> (constr -> constr list -> unit Proofview.tactic) -> unit Proofview.tactic
+val cache_term_by_tactic_then : Id.t -> Decl_kinds.goal_kind -> ?opaque:bool -> ?goal_type:(constr option) -> unit Proofview.tactic -> (constr -> constr list -> unit Proofview.tactic) -> unit Proofview.tactic
 
 val tclABSTRACT : ?opaque:bool -> Id.t option -> unit Proofview.tactic -> unit Proofview.tactic
 
