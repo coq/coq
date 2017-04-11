@@ -168,16 +168,10 @@ INSTALLATION PROCEDURE FOR ADVANCED USERS.
    Then compile the sources as described in step 5 above. The resulting
    binaries will reside in the subdirectory bin/.
 
-   If you want to compile the sources for debugging (i.e. with the option
-   -g of the Caml compiler) then add the -debug option at configuration
-   step :
-
-	./configure -debug <other options>
-
-   and then compile the sources (step 5). Then you must make a Coq toplevel
-   including your own tactics, which must be compiled with -g, with coqmktop.
-   See the chapter 16 of the Coq Reference Manual for details about how
-   to use coqmktop and the Objective Caml debugger with Coq.
+   Unless you pass the -nodebug option to ./configure, the -g option of the
+   OCaml compiler will be used during compilation to allow debugging.
+   See the debugging file in dev/doc and the chapter 15 of the Coq Reference
+   Manual for details about how to use the OCaml debugger with Coq.
 
 
 THE AVAILABLE COMMANDS.
