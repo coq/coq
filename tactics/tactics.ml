@@ -4907,7 +4907,7 @@ let shrink_entry sign const =
   } in
   (const, args)
 
-let cache_term_by_tactic_then id gk ?(opaque=true) ?(goal_type=None) tac tacK =
+let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let open Tacticals.New in
   let open Tacmach.New in
   let open Proofview.Notations in
@@ -4985,8 +4985,8 @@ let cache_term_by_tactic_then id gk ?(opaque=true) ?(goal_type=None) tac tacK =
   Sigma.Unsafe.of_pair (tac, evd)
   end }
 
-let abstract_subproof id gk tac ?(opaque=true) =
-  cache_term_by_tactic_then id gk ~opaque:opaque tac (fun lem args -> exact_no_check (applist (lem, args)))
+let abstract_subproof ~opaque id gk tac =
+  cache_term_by_tactic_then ~opaque:opaque id gk tac (fun lem args -> exact_no_check (applist (lem, args)))
 
 let anon_id = Id.of_string "anonymous"
 
@@ -5008,7 +5008,7 @@ let tclABSTRACT ?(opaque=true) name_op tac =
   let s, gk = if opaque
     then name_op_to_name name_op (Proof Theorem) "_subproof"
     else name_op_to_name name_op (DefinitionBody Definition) "_subterm" in
-  abstract_subproof s gk tac ~opaque:opaque
+  abstract_subproof ~opaque:opaque s gk tac
 
 let unify ?(state=full_transparent_state) x y =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
