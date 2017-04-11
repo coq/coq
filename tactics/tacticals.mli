@@ -263,5 +263,5 @@ module New : sig
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
   val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
 
-  val pf_constr_of_global : Globnames.global_reference -> (constr -> unit Proofview.tactic) -> unit Proofview.tactic
+  val pf_constr_of_global : Globnames.global_reference -> constr Proofview.tactic
 end

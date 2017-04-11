@@ -245,7 +245,7 @@ let app_global f args k =
   Tacticals.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
 
 let new_app_global f args k =
-  Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
+  Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc -> k (mkApp (fc, args))
 
 let new_refine c = Proofview.V82.tactic (refine c)
 let refine c = refine c
@@ -492,7 +492,7 @@ let congruence_tac depth l =
 *)
 
 let mk_eq f c1 c2 k =
-  Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc ->
+  Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc ->
   Proofview.Goal.enter { enter = begin fun gl ->
     let open Tacmach.New in
     let evm, ty = pf_apply type_of gl c1 in
@@ -501,7 +501,7 @@ let mk_eq f c1 c2 k =
     let evm, _ =  type_of (pf_env gl) evm term in
     Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm))
 			  (k term)
-    end })
+    end }
 
 let f_equal =
   Proofview.Goal.enter { enter = begin fun gl ->

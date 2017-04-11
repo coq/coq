@@ -658,8 +658,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   | Some evd ->
     let e = build_coq_eq () in
     let sym = build_coq_eq_sym () in
-    Tacticals.New.pf_constr_of_global sym (fun sym ->
-    Tacticals.New.pf_constr_of_global e (fun e ->
+    Tacticals.New.pf_constr_of_global sym >>= fun sym ->
+    Tacticals.New.pf_constr_of_global e >>= fun e ->
     let eq = applist (e, [t1;c1;c2]) in
     tclTHENLAST
       (replace_core clause l2r eq)
@@ -667,7 +667,7 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
          [assumption;
           tclTHEN (apply sym) assumption;
           try_prove_eq
-         ])))
+         ])
   end }
 
 let replace c1 c2 =
