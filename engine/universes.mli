@@ -223,7 +223,7 @@ val refresh_constraints : UGraph.t -> universe_context_set -> universe_context_s
 
 val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
 
-(** {6 Support for old-style sort-polymorphism } *)
+(** {6 Support for template polymorphism } *)
 
 val solve_constraints_system : universe option array -> universe array -> universe array ->
   universe array

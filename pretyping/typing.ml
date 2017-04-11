@@ -313,14 +313,13 @@ let rec execute env evdref cstr =
 	let j =
 	  match EConstr.kind !evdref f with
 	    | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
-		(* Sort-polymorphism of inductive types *)
 		make_judge f
 		  (inductive_type_knowing_parameters env !evdref (ind, u) jl)
 	    | Const (cst, u) when EInstance.is_empty u && Environ.template_polymorphic_constant cst env ->
-		(* Sort-polymorphism of inductive types *)
 		make_judge f
 		  (constant_type_knowing_parameters env !evdref (cst, u) jl)
 	    | _ ->
+                (* No template polymorphism *)
 		execute env evdref f
 	in
 	e_judge_of_apply env evdref j jl
