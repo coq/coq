@@ -229,7 +229,7 @@ let interp_universe ?loc evd = function
 	(evd', Univ.sup u (Univ.Universe.make l)))
     (evd, Univ.Universe.type0m) l
 
-let interp_universe_level loc evd = function
+let interp_level_info loc evd : Misctypes.level_info -> _ = function
   | None -> new_univ_level_variable ~loc univ_rigid evd
   | Some (loc,s) -> interp_universe_level_name evd (loc,s)
 
@@ -489,11 +489,28 @@ let pretype_id pretype k0 loc env evdref lvar id =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let interp_universe_level_name loc evd l =
-  match l with
+let interp_glob_level loc evd : Misctypes.glob_level -> _ = function
   | GProp -> evd, Univ.Level.prop
   | GSet -> evd, Univ.Level.set
-  | GType s -> interp_universe_level loc evd s
+  | GType s -> interp_level_info loc evd s
+
+let interp_instance loc evd ~len l =
+  if len != List.length l then
+    user_err ~loc ~hdr:"pretype"
+      (str "Universe instance should have length " ++ int len)
+  else
+    let evd, l' =
+      List.fold_left
+        (fun (evd, univs) l ->
+	  let evd, l = interp_glob_level loc evd l in
+	  (evd, l :: univs)) (evd, [])
+        l
+    in
+    if List.exists (fun l -> Univ.Level.is_prop l) l' then
+      user_err ~loc ~hdr:"pretype"
+	(str "Universe instances cannot contain Prop, polymorphic" ++
+	   str " universe instances must be greater or equal to Set.");
+    evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
 
 let pretype_global loc rigid env evd gr us = 
   let evd, instance = 
@@ -501,21 +518,8 @@ let pretype_global loc rigid env evd gr us =
     | None -> evd, None
     | Some l -> 
        let _, ctx = Universes.unsafe_constr_of_global gr in
-       let arr = Univ.Instance.to_array (Univ.UContext.instance ctx) in
-       let len = Array.length arr in
-       if len != List.length l then
-	 user_err ~loc ~hdr:"pretype"
-		       (str "Universe instance should have length " ++ int len)
-       else
-	 let evd, l' = List.fold_left (fun (evd, univs) l -> 
-	    let evd, l = interp_universe_level_name loc evd l in
-	      (evd, l :: univs)) (evd, []) l
-	 in
-	 if List.exists (fun l -> Univ.Level.is_prop l) l' then
-	   user_err ~loc ~hdr:"pretype"
-		 (str "Universe instances cannot contain Prop, polymorphic" ++
-		   str " universe instances must be greater or equal to Set.");
-	 evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
+       let len = Univ.UContext.size ctx in
+       interp_instance loc evd ~len l
   in
   let (sigma, c) = Evd.fresh_global ~loc ~rigid ?names:instance env.ExtraEnv.env evd gr in
   (sigma, EConstr.of_constr c)
