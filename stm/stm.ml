@@ -2731,7 +2731,9 @@ let add ~ontop ?newtip ?(check=ignore) verb eid s =
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
     (* For now, arbitrary edits should be announced with edit_at *)
-    anomaly(str"Not yet implemented, the GUI should not try this");
+    anomaly(str "Expected to add statement at current tip = " ++
+	      str (Stateid.to_string cur_tip) ++
+	      str ", got state id = " ++ str (Stateid.to_string ontop));
   let indentation, strlen, loc, ast =
     vernac_parse ~indlen_prev:(fun () -> ind_len_of ontop) ?newtip eid s in
   CWarnings.set_current_loc loc;
