@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open Globnames
 
 val qflag : bool ref
@@ -23,10 +24,10 @@ type ('a,'b) sum = Left of 'a | Right of 'b
 
 type counter = bool -> metavariable
 
-val construct_nhyps : pinductive -> Proof_type.goal Tacmach.sigma -> int array
+val construct_nhyps : Environ.env -> pinductive -> int array
 
-val ind_hyps : int -> pinductive -> constr list ->
-  Proof_type.goal Tacmach.sigma -> Context.Rel.t array
+val ind_hyps : Environ.env -> Evd.evar_map -> int -> pinductive ->
+  constr list -> EConstr.rel_context array
 
 type atoms = {positive:constr list;negative:constr list}
 
@@ -34,7 +35,7 @@ type side = Hyp | Concl | Hint
 
 val dummy_id: global_reference
 
-val build_atoms : Proof_type.goal Tacmach.sigma -> counter ->
+val build_atoms : Environ.env -> Evd.evar_map -> counter ->
   side -> constr -> bool * atoms
 
 type right_pattern =
@@ -69,6 +70,6 @@ type t={id: global_reference;
 
 (*exception Is_atom of constr*)
 
-val build_formula : side -> global_reference -> types ->
-  Proof_type.goal Tacmach.sigma -> counter -> (t,types) sum
+val build_formula : Environ.env -> Evd.evar_map -> side -> global_reference -> types ->
+  counter -> (t,types) sum
 
