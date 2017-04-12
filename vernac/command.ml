@@ -1198,11 +1198,8 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
       List.map3 (fun id t (len,imps,_) -> ((id,pl),(t,(len,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
-      Some (List.map (Option.cata (EConstr.of_constr %> Tacmach.refine_no_check) Tacticals.tclIDTAC)
+      Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
         fixdefs) in
-    let init_tac =
-      Option.map (List.map Proofview.V82.tactic) init_tac
-    in
     let evd = Evd.from_ctx ctx in
     Lemmas.start_proof_with_initialization (Global,poly,DefinitionBody Fixpoint)
       evd (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
@@ -1235,11 +1232,8 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
       List.map3 (fun id t (len,imps,_) -> ((id,pl),(t,(len,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
-      Some (List.map (Option.cata (EConstr.of_constr %> Tacmach.refine_no_check) Tacticals.tclIDTAC)
+      Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
         fixdefs) in
-    let init_tac =
-      Option.map (List.map Proofview.V82.tactic) init_tac
-    in
     let evd = Evd.from_ctx ctx in
       Lemmas.start_proof_with_initialization (Global,poly, DefinitionBody CoFixpoint)
       evd (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
