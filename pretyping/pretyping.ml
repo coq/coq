@@ -229,7 +229,8 @@ let interp_universe ?loc evd = function
 	    evd, Univ.Universe.make l
   | l ->
     List.fold_left (fun (evd, u) l -> 
-        let evd', l = interp_universe_level_name ~anon_rigidity:univ_flexible_alg evd l in
+        (* [univ_flexible_alg] can produce algebraic universes in terms *)
+        let evd', l = interp_universe_level_name ~anon_rigidity:univ_flexible evd l in
 	(evd', Univ.sup u (Univ.Universe.make l)))
     (evd, Univ.Universe.type0m) l
 

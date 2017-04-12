@@ -333,12 +333,12 @@ Module Anonymous.
   Definition anonid := (fun x => x) : Type -> Type@{_}.
   Check anonid@{_}.
 
-  Definition defaultalg := Type : Type.
-  Definition usedefaultalg := defaultalg@{_ _}.
+  Definition defaultalg := (fun x : Type => x) (Type : Type).
+  Definition usedefaultalg := defaultalg@{_ _ _}.
   Check usedefaultalg@{_ _}.
 
-  Definition anonalg := (fun x => x) (Type : Type@{_}).
-  Check anonalg@{_}.
+  Definition anonalg := (fun x : Type@{_} => x) (Type : Type).
+  Check anonalg@{_ _}.
 
   Definition unrelated@{i j} := nat.
   Definition useunrelated := unrelated@{_ _}.
@@ -346,7 +346,7 @@ Module Anonymous.
 
   Definition inthemiddle@{i j k} :=
     let _ := defaultid@{i j} in
-    defaultalg@{k j}.
+    anonalg@{k j}.
   (* i <= j < k *)
   Definition collapsethemiddle := inthemiddle@{i _ j}.
   Check collapsethemiddle@{_ _}.
