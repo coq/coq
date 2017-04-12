@@ -1195,8 +1195,6 @@ open Pputils
             keyword "using" ++ spc() ++ pr_using e ++ spc() ++
             keyword "with" ++ spc() ++ Pputils.pr_raw_generic (Global.env ()) te
         )
-      | VernacProofMode s ->
-        return (keyword "Proof Mode" ++ str s)
       | VernacBullet b ->
         (* XXX: Redundant with Proof_bullet.print *)
         return (let open Proof_bullet in begin match b with

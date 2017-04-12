@@ -51,13 +51,11 @@ val standard_proof_terminator :
   Proof_global.lemma_possible_guards -> unit declaration_hook ->
     Proof_global.proof_terminator
 
-val fresh_name_for_anonymous_theorem : unit -> Id.t
-
-(* Prepare global named context for proof session: remove proofs of
-   opaque section definitions and remove vm-compiled code *)
-
 val initialize_named_context_for_proof : unit -> Environ.named_context_val
 
 (** {6 ... } *)
 
 val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
+
+(** Default proof mode set by `start_proof` *)
+val default_proof_mode : string ref

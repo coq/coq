@@ -55,15 +55,8 @@ let new_entry name =
 let toplevel_selector = new_entry "vernac:toplevel_selector"
 let tacdef_body = new_entry "tactic:tacdef_body"
 
-(* Registers the Classic Proof Mode (which uses [tactic_mode] as a parser for
-    proof editing and changes nothing else). Then sets it as the default proof mode. *)
-let _ =
-  let mode = {
-    Proof_global.name = "Classic";
-    set = (fun () -> Pvernac.set_command_entry tactic_mode);
-    reset = (fun () -> Pvernac.(set_command_entry noedit_mode));
-  } in
-  Proof_global.register_proof_mode mode
+(* Registers [tactic_mode] as a parser for proof editing *)
+let _ = Pcoq.add_proof_tactic_entry "Classic" tactic_mode
 
 (* Hack to parse "[ id" without dropping [ *)
 let test_bracket_ident =

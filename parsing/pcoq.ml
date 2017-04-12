@@ -620,15 +620,37 @@ let find_grammars_by_name name =
     in
     EntryDataMap.fold fold !camlp5_entries []
 
-(** Summary functions: the state of the lexer is included in that of the parser.
+(* Tactic parsing modes *)
+let add_proof_tactic_entry p e = Hashtbl.add tactic_entry p e
+
+let push_proof_tactic_entry p =
+  if !Flags.debug then
+    Feedback.msg_info
+      Pp.(str "entry: " ++ str p ++ str " in stack [" ++ pr_sequence str (snd !Vernac_.command_entry_ref) ++ str "]");
+  try
+    let pentry = Hashtbl.find tactic_entry p in
+    Vernac_.(command_entry_ref := (pentry, p :: (snd !command_entry_ref)))
+  with Not_found -> CErrors.anomaly Pp.(str "tactic entry not found: " ++ str p)
+
+let select_pentry l =
+  match l with [] -> Vernac_.noedit_mode | p :: _ -> Hashtbl.find tactic_entry p
+
+let pop_proof_tactic_entry () =
+  if !Flags.debug then
+    Feedback.msg_info
+      Pp.(str "pop from: [" ++ pr_sequence str (snd !Vernac_.command_entry_ref) ++ str "]");
+  match (snd !Vernac_.command_entry_ref) with
+  | []     -> CErrors.anomaly Pp.(str "closing a proof tactic entry in an empty context.")
+  | p :: l -> Vernac_.(command_entry_ref := (select_pentry l, l)); p
+
+let get_proof_tactic_entry_stack () = snd !Vernac_.command_entry_ref
+
+(* Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
-type frozen_t =
-  (grammar_entry * GramState.t) list *
-  CLexer.keyword_state
+type frozen_t = (grammar_entry * GramState.t) list * CLexer.keyword_state * string list
 
-let freeze _ : frozen_t =
-  (!grammar_stack, CLexer.get_keyword_state ())
+let freeze _ : frozen_t = (!grammar_stack, CLexer.get_keyword_state (), snd !Vernac_.command_entry_ref)
 
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
@@ -640,13 +662,14 @@ let rec number_of_entries accu = function
 | ((GramExt (p, _) | EntryExt (p, _, _)), _) :: rem ->
   number_of_entries (p + accu) rem
 
-let unfreeze (grams, lex) =
+let unfreeze (grams, lex, t_entry) =
   let (undo, redo, common) = factorize_grams !grammar_stack grams in
   let n = number_of_entries 0 undo in
   remove_grammars n;
   grammar_stack := common;
   CLexer.set_keyword_state lex;
-  List.iter extend_dyn_grammar (List.rev redo)
+  List.iter extend_dyn_grammar (List.rev redo);
+  Vernac_.(command_entry_ref := (select_pentry t_entry, t_entry))
 
 (** No need to provide an init function : the grammar state is
     statically available, and already empty initially, while
@@ -680,3 +703,4 @@ let () =
   Grammar.register0 wit_sort_family (Constr.sort_family);
   Grammar.register0 wit_constr (Constr.constr);
   ()
+

@@ -14,7 +14,11 @@ open Pp
 open CAst
 open Vernacexpr
 
+<<<<<<< HEAD
 let default_proof_mode () = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"]
+=======
+let string_of_in_script b = if b then " (inside script)" else ""
+>>>>>>> [proof] Rework `proof_mode` handling.
 
 let string_of_parallel = function
   | `Yes (solve,abs) ->
@@ -31,9 +35,14 @@ let string_of_vernac_type = function
   | VtProofStep { parallel; proof_block_detection } ->
       "ProofStep " ^ string_of_parallel parallel ^
         Option.default "" proof_block_detection
+<<<<<<< HEAD
   | VtProofMode s -> "ProofMode " ^ s
   | VtQuery -> "Query"
   | VtMeta -> "Meta "
+=======
+  | VtQuery (b, route) -> "Query " ^ string_of_in_script b ^ " route " ^ string_of_int route
+  | VtBack (b, _) -> "Stm Back " ^ string_of_in_script b
+>>>>>>> [proof] Rework `proof_mode` handling.
 
 let string_of_vernac_when = function
   | VtLater -> "Later"
@@ -47,7 +56,15 @@ let idents_of_name : Names.Name.t -> Names.Id.t list =
   | Names.Anonymous -> []
   | Names.Name n -> [n]
 
+<<<<<<< HEAD
 let stm_allow_nested_proofs_option_name = ["Nested";"Proofs";"Allowed"]
+=======
+let make_polymorphic (a, b as x) =
+  match a with
+  | VtStartProof (_, ids) ->
+      VtStartProof (Doesn'tGuaranteeOpacity, ids), b
+  | _ -> x
+>>>>>>> [proof] Rework `proof_mode` handling.
 
 let options_affecting_stm_scheduling =
   [ Vernacentries.universe_polymorphism_option_name;
@@ -58,10 +75,32 @@ let classify_vernac e =
     (* Univ poly compatibility: we run it now, so that we can just
      * look at Flags in stm.ml.  Would be nicer to have the stm
      * look at the entire dag to detect this option. *)
+<<<<<<< HEAD
     | ( VernacSetOption (_, l,_) | VernacUnsetOption (_, l))
       when CList.exists (CList.equal String.equal l)
         options_affecting_stm_scheduling ->
        VtSideff [], VtNow
+=======
+    | VernacSetOption (["Universe"; "Polymorphism"],_)
+    | VernacUnsetOption (["Universe"; "Polymorphism"]) -> VtSideff [], VtNow
+    (* Nested vernac exprs *)
+    | VernacProgram e -> classify_vernac e
+    | VernacLocal (_,e) -> classify_vernac e
+    | VernacPolymorphic (b, e) -> 
+      if b || Flags.is_universe_polymorphism () (* Ok or not? *) then
+	make_polymorphic (classify_vernac e)
+      else classify_vernac e
+    | VernacTimeout (_,e) -> classify_vernac e
+    | VernacTime (_,e) | VernacRedirect (_, (_,e)) -> classify_vernac e
+    | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
+        (match classify_vernac e with
+        | ( VtQuery _ | VtProofStep _ | VtSideff _
+          | VtBack _ ), _ as x -> x
+        | VtQed _, _ ->
+            VtProofStep { parallel = `No; proof_block_detection = None },
+            VtNow
+        | (VtStartProof _ | VtUnknown), _ -> VtUnknown, VtNow)
+>>>>>>> [proof] Rework `proof_mode` handling.
     (* Qed *)
     | VernacAbort _ -> VtQed VtDrop, VtLater
     | VernacEndProof Admitted -> VtQed VtKeepAsAxiom, VtLater
@@ -88,6 +127,7 @@ let classify_vernac e =
     | VernacUnsetOption (_, ["Default";"Proof";"Using"])
     | VernacSetOption (_, ["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
+<<<<<<< HEAD
     | VernacDefinition ((Decl_kinds.DoDischarge,_),({v=i},_),ProveBody _) ->
       VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity, idents_of_name i), VtLater
 
@@ -103,11 +143,28 @@ let classify_vernac e =
          if discharge = Decl_kinds.DoDischarge || poly then Doesn'tGuaranteeOpacity
          else GuaranteesOpacity
        in
+=======
+    | VernacDefinition (
+       (Some Decl_kinds.Discharge,Decl_kinds.Definition),((_,i),_),ProveBody _) ->
+        VtStartProof(Doesn'tGuaranteeOpacity,[i]), VtLater
+    | VernacDefinition (_,((_,i),_),ProveBody _) ->
+        VtStartProof(GuaranteesOpacity,[i]), VtLater
+    | VernacStartTheoremProof (_,l) ->
+        let ids = 
+          CList.map_filter (function (Some ((_,i),pl), _) -> Some i | _ -> None) l in
+        VtStartProof (GuaranteesOpacity,ids), VtLater
+    | VernacGoal _ -> VtStartProof (GuaranteesOpacity,[]), VtLater
+    | VernacFixpoint (_,l) ->
+>>>>>>> [proof] Rework `proof_mode` handling.
         let ids, open_proof =
           List.fold_left (fun (l,b) ((({v=id},_),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
+<<<<<<< HEAD
         then VtStartProof (default_proof_mode (),guarantee,ids), VtLater
+=======
+        then VtStartProof (GuaranteesOpacity,ids), VtLater
+>>>>>>> [proof] Rework `proof_mode` handling.
         else VtSideff ids, VtLater
     | VernacCoFixpoint (discharge,l) ->
        let guarantee =
@@ -118,7 +175,11 @@ let classify_vernac e =
           List.fold_left (fun (l,b) ((({v=id},_),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
+<<<<<<< HEAD
         then VtStartProof (default_proof_mode (),guarantee,ids), VtLater
+=======
+        then VtStartProof (GuaranteesOpacity,ids), VtLater
+>>>>>>> [proof] Rework `proof_mode` handling.
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->
@@ -176,9 +237,12 @@ let classify_vernac e =
     | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *)
+<<<<<<< HEAD
     | VernacProofMode _ -> VtSideff [], VtNow
+=======
+>>>>>>> [proof] Rework `proof_mode` handling.
     (* These are ambiguous *)
-    | VernacInstance _ -> VtUnknown, VtNow
+    | VernacInstance (_,_,_,_,_) -> VtUnknown, VtNow
     (* Stm will install a new classifier to handle these *)
     | VernacBack _ | VernacAbortAll
     | VernacUndoTo _ | VernacUndo _

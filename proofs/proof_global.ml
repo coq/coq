@@ -22,50 +22,6 @@ open Names
 
 module NamedDecl = Context.Named.Declaration
 
-(*** Proof Modes ***)
-
-(* Type of proof modes :
-    - A function [set] to set it *from standard mode*
-    - A function [reset] to reset the *standard mode* from it *)
-type proof_mode_name = string
-type proof_mode = {
-  name : proof_mode_name ;
-  set : unit -> unit ;
-  reset : unit -> unit
-}
-
-let proof_modes = Hashtbl.create 6
-let find_proof_mode n =
-  try Hashtbl.find proof_modes n
-  with Not_found ->
-    CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." n))
-
-let register_proof_mode ({name = n} as m) =
-  Hashtbl.add proof_modes n (CEphemeron.create m)
-
-(* initial mode: standard mode *)
-let standard = { name = "No" ; set = (fun ()->()) ; reset = (fun () -> ()) }
-let _ = register_proof_mode standard
-
-(* Default proof mode, to be set at the beginning of proofs. *)
-let default_proof_mode = ref (find_proof_mode "No")
-
-let get_default_proof_mode_name () =
-  (CEphemeron.default !default_proof_mode standard).name
-
-let _ =
-  Goptions.(declare_string_option {
-    optdepr = false;
-    optname = "default proof mode" ;
-    optkey = ["Default";"Proof";"Mode"] ;
-    optread = begin fun () ->
-      (CEphemeron.default !default_proof_mode standard).name
-    end;
-    optwrite = begin fun n ->
-      default_proof_mode := find_proof_mode n
-    end
-  })
-
 (*** Proof Global Environment ***)
 
 (* Extra info on proofs. *)
@@ -96,7 +52,6 @@ type pstate = {
   section_vars : Constr.named_context option;
   proof : Proof.t;
   strength : Decl_kinds.goal_kind;
-  mode : proof_mode CEphemeron.key;
   universe_decl: UState.universe_decl;
 }
 
@@ -109,23 +64,8 @@ let apply_terminator f = f
    to be resumed when the current proof is closed or aborted. *)
 let pstates = ref ([] : pstate list)
 
-(* Current proof_mode, for bookkeeping *)
-let current_proof_mode = ref !default_proof_mode
-
-(* combinators for proof modes *)
-let update_proof_mode () =
-  match !pstates with
-  | { mode = m } :: _ ->
-      CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
-      current_proof_mode := m;
-      CEphemeron.iter_opt !current_proof_mode (fun x -> x.set ())
-  | _ ->
-      CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
-      current_proof_mode := find_proof_mode "No"
-
 (* combinators for the current_proof lists *)
-let push a l = l := a::!l;
-  update_proof_mode ()
+let push a l = l := a::!l
 
 exception NoSuchProof
 let _ = CErrors.register_handler begin function
@@ -218,24 +158,8 @@ let discard {CAst.loc;v=id} =
 
 let discard_current () =
   if List.is_empty !pstates then raise NoCurrentProof else pstates := List.tl !pstates
-
 let discard_all () = pstates := []
 
-(* [set_proof_mode] sets the proof mode to be used after it's called. It is
-    typically called by the Proof Mode command. *)
-let set_proof_mode m id =
-  pstates :=
-    List.map (function { pid = id' } as p ->
-      if Id.equal id' id then { p with mode = m } else p) !pstates;
-  update_proof_mode ()
-
-let set_proof_mode mn =
-  set_proof_mode (find_proof_mode mn) (get_current_proof_name ())
-
-let activate_proof_mode mode =
-  CEphemeron.iter_opt (find_proof_mode mode) (fun x -> x.set ())
-let disactivate_current_proof_mode () =
-  CEphemeron.iter_opt !current_proof_mode (fun x -> x.reset ())
 
 (** [start_proof sigma id pl str goals terminator] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
@@ -253,10 +177,10 @@ let start_proof sigma id ?(pl=UState.default_univ_decl) str goals terminator =
     endline_tactic = None;
     section_vars = None;
     strength = str;
-    mode = find_proof_mode "No";
     universe_decl = pl } in
   push initial_state pstates
 
+(* Only used by plugins/derive.ml *)
 let start_dependent_proof id ?(pl=UState.default_univ_decl) str goals terminator =
   let initial_state = {
     pid = id;
@@ -265,7 +189,6 @@ let start_dependent_proof id ?(pl=UState.default_univ_decl) str goals terminator
     endline_tactic = None;
     section_vars = None;
     strength = str;
-    mode = find_proof_mode "No";
     universe_decl = pl } in
   push initial_state pstates
 
@@ -467,7 +390,7 @@ let freeze ~marshallable =
       CErrors.anomaly (Pp.str"full marshalling of proof state not supported.")
   | `Shallow -> !pstates
   | `No -> !pstates
-let unfreeze s = pstates := s; update_proof_mode ()
+let unfreeze s = pstates := s
 let proof_of_state = function { proof }::_ -> proof | _ -> raise NoCurrentProof
 let copy_terminators ~src ~tgt =
   assert(List.length src = List.length tgt);
