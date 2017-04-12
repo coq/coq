@@ -1,12 +1,19 @@
-#Coq XML Protocol#
+#Coq XML Protocol for Coq 8.5#
 
-This documentation aims to provide a "hands on" description of the XML protocol that coqtop and CoqIDE use to communicate.
+This document is based on documentation originally written by CJ Bell
+for his [vscoq](https://github.com/siegebell/vscoq/) project.
 
-A somewhat out-of-date description of the async state machine is [documented here](https://github.com/ejgallego/jscoq/blob/master/etc/notes/coq-notes.md).
-Typings for the protocol can be [found here](https://github.com/coq/coq/blob/trunk/ide/interface.mli#L222).
+Here, the aim is to provide a "hands on" description of the XML
+protocol that coqtop and IDEs use to communicate. The protocol first appeared 
+with Coq 8.5, and is used by CoqIDE. It will also be used in upcoming 
+versions of Proof General.
 
+A somewhat out-of-date description of the async state machine is
+[documented here](https://github.com/ejgallego/jscoq/blob/master/etc/notes/coq-notes.md).
+OCaml types for the protocol can be [found here](https://github.com/coq/coq/blob/v8.5/ide/interface.mli).
 
 * [Commands](#commands)
+  - [About](#command-about)
   - [Add](#command-add)
   - [EditAt](#command-editAt)
   - [Init](#command-init)
@@ -34,14 +41,13 @@ Typings for the protocol can be [found here](https://github.com/coq/coq/blob/tru
   - [WorkerStatus](#feedback-workerstatus)
   - [File Dependencies](#feedback-filedependencies)
   - [File Loaded](#feedback-fileloaded)
+  - [ErrorMessage](#feedback-errormessage)
   - [Message](#feedback-message)
   - [Custom](#feedback-custom)
-  - [LtacProf](#feedback-ltacprof)
 
-
-Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
+Sentences: each command sent to Coqtop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
 Examples: "Lemma a: True.", "(* asdf *) Qed.", "auto; reflexivity."
-In practice, the command sentences sent to CoqTop are terminated at the "." and start with any previous whitespace.
+In practice, the command sentences sent to Coqtop are terminated at the "." and start with any previous whitespace.
 Each sentence is assigned a unique stateId after being sent to Coq (via Add).
 States:
   * Processing: has been received by Coq and has no obvious syntax error (that would prevent future parsing)
@@ -49,13 +55,34 @@ States:
   * InProgress:
   * Incomplete: the validity of the sentence cannot be checked due to a prior error
   * Complete:
-  * Error: the sentence has an error error
+  * Error: the sentence has an error
 
-State ID 0 is reserved as 'null' or 'default' state. (The 'query' command suggests that it might also refer to the currently-focused state, but I have not tested this yet). The first command should be added to state ID 0. Queries are typically performed w.r.t. state ID 0.
+State ID 0 is reserved as a 'dummy' state.
 
 --------------------------
 
 ## <a name="commands">Commands</a>
+
+### <a name="command-about">**About(unit)**</a>
+Returns information about the protocol and build dates for Coqtop.
+```
+<call val="About">
+  <unit/>
+</call>
+```
+#### *Returns*
+```html
+ <value val="good">
+   <coq_info><string>8.5</string>
+     <string>20140312</string>
+     <string>April 2014</string>
+     <string>April 15 2014 16:16:30</string>
+   </coq_info>
+</value>
+```
+The string fields are the Coq version, the protocol version, the release date, and the compile time of Coqtop.
+The protocol version is a date in YYYYMMDD format, where "20140312" corresponds to Coq 8.5. An IDE that wishes 
+to support multiple Coq versions can use the protocol version information to know how to handle output from Coqtop.
 
 ### <a name="command-add">**Add(stateId: integer, command: string, verbose: boolean)**</a>
 Adds a toplevel command (e.g. vernacular, definition, tactic) to the given state.
@@ -103,24 +130,24 @@ state that should become the next tip.
 </value>
 ```
 * Failure:
-  - Syntax error. Error offsets are with respect to the start of the sentence.
+  - Syntax error. Error offsets are byte offsets (not character offsets) with respect to the start of the sentence, starting at 0.
   ```html
   <value val="fail"
       loc_s="${startOffsetOfError}"
       loc_e="${endOffsetOfError}">
     <state_id val="${stateId}"/>
-    ${errorMessage}
+    <string>${errorMessage}</string>
   </value>
   ```
-  - Another error (e.g. Qed before goal complete)
+  - Another kind of error, for example, Qed with a pending goal.	
   ```html
-  <value val="fail"><state_id val="${stateId}"/>${errorMessage}</value>
+  <value val="fail"><state_id val="${stateId}"/><string>${errorMessage}</string></value>
   ```
 
 -------------------------------
 
 ### <a name="command-editAt">**EditAt(stateId: integer)**</a>
-Move focus to `${stateId}`, such that commands may be added to the new state ID.
+Moves current tip to `${stateId}`, such that commands may be added to the new state ID.
 ```html
 <call val="Edit_at"><state_id val="${stateId}"/></call>
 ```
@@ -161,7 +188,10 @@ Move focus to `${stateId}`, such that commands may be added to the new state ID.
 ```html
 <call val="Init"><option val="none"/></call>
 ```
-* With options. Looking at [ide_slave.ml](https://github.com/coq/coq/blob/c5d0aa889fa80404f6c291000938e443d6200e5b/ide/ide_slave.ml#L355), it seems that `options` is just the name of a *.v file, whose path is added via `Add LoadPath` to the initial state.
+* With options. Looking at
+  [ide_slave.ml](https://github.com/coq/coq/blob/c5d0aa889fa80404f6c291000938e443d6200e5b/ide/ide_slave.ml#L355),
+  it seems that `options` is just the name of a script file, whose path
+  is added via `Add LoadPath` to the initial state.
 ```html
 <call val="Init">
   <option val="some">
@@ -169,6 +199,10 @@ Move focus to `${stateId}`, such that commands may be added to the new state ID.
   </option>
 </call>
 ```
+Providing the script file enables Coq to use .aux files created during
+compilation. Those file contain timing information that allow Coq to
+choose smartly between asynchronous and synchronous processing of
+proofs.
 
 #### *Returns*
 * The initial stateId (not associated with a sentence)
@@ -586,6 +620,9 @@ Feedback messages are issued out-of-band,
   giving updates on the current state of sentences/stateIds,
   worker-thread status, etc.
 
+In the descriptions of feedback syntax below, wherever a `state_id`
+tag may occur, there may instead be an `edit_id` tag.
+
 * <a name="feedback-addedaxiom">Added Axiom</a>: in response to `Axiom`, `admit`, `Admitted`, etc.
 ```html
 <feedback object="state" route="0">
@@ -621,15 +658,6 @@ Feedback messages are issued out-of-band,
 * <a name="feedback-globref">GlobRef</a>
 * <a name="feedback-error">Error</a>. Issued, for example, when a processed tactic has failed or is unknown.
 The error offsets may both be 0 if there is no particular syntax involved.
-```html
-<feedback object="state" route="0">
-  <state_id val="${stateId}"/>
-  <feedback_content val="errormsg">
-    <loc start="${sentenceOffsetBegin}" stop="${sentenceOffsetEnd}"/>
-    <string>${errorMessage}</string>
-  </feedback_content>
-</feedback>
-```
 * <a name="feedback-inprogress">InProgress</a>
 ```html
 <feedback object="state" route="0">
@@ -685,20 +713,18 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 </feedback>
 ```
 
-* <a name="feedback-message">Message</a>. `level` is one of `{info,warning,notice,error,debug}`. E.g. in response to an <a href="#command-add">add</a> `"Axiom foo: nat."` with `verbose=true`, message `foo is assumed` will be emitted in response.
+* <a name="feedback-errormessage">Error Message</a>. 
 ```xml
 <feedback object="state" route="0">
   <state_id val="${stateId}"/>
   <feedback_content val="message">
-    <message>
-      <message_level val="${level}"/>
-      <string>${message}</string>
-    </message>
+    <loc start=${startPos} stop=${stopPos} />
+    <string>${errorMessage"</string>
   </feedback_content>
 </feedback>
 ```
 
-* <a name="feedback-custom">Custom</a>. A feedback message that Coq plugins can use to return structured results. Optionally, `startPos` and `stopPos` define a range of offsets in the document that the message refers to; otherwise, they will be 0. `customTag` is indended as a unique string that identifies what kind of payload is contained in `customXML`.
+* <a name="feedback-custom">Custom</a>. A feedback message that Coq plugins can use to return structured results, including results from Ltac profiling. Optionally, `startPos` and `stopPos` define a range of offsets in the document that the message refers to; otherwise, they will be 0. `customTag` is intended as a unique string that identifies what kind of payload is contained in `customXML`.
 ```xml
 <feedback object="state" route="0">
   <state_id val="${stateId}"/>
@@ -710,19 +736,3 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 </feedback>
 ```
 
-* <a name="feedback-ltacprof">LtacProf</a>. As of 8.6, the ltac profiler (LtacProf) will generate an additional feedback message in response to "Show Ltac Profile" with the *full*, *structured* profiling results. `<ltacprof_tactic />` forms a tree of tactic invocations and their profiling results. When a tactic has multiple invocations of e.g. tactic "foo",  the profiling results for "foo" under the tactic will be combined together. Each tactic entry in `<ltacprof/>` represents a tactic that was run at the top level, where multiple invocations of the same tactic are combined together. `totalTimeSec` is total time taken by all of the tactics. `tacticName` is the name of the tactic that the entry corresponds to. `totalSec` is the total time taken be a tactic over all invocations made by its parent tactic. `selfSec` is the portion of the time running the tactic itself, as opposed to running subtactics. `num_calls` is the number of invocations of the tactic that have been made by its parent. `max_total` is the maximum time spent in the tactic by a single invocation from its parent.
-```xml
-<feedback object="state" route="0">
-  <state_id val="${stateId}"/>
-  <feedback_content val="custom">
-    <loc start="0" stop="0"/>
-    <string>ltacprof_results</string>
-    <ltacprof total_time="${totalTimeSec}">
-      <ltacprof_tactic name="${tacticName1}" total="${totalSec1}" self="${selfSec1}" num_calls="${num_calls1}" max_total="${max_totalSec1}">
-        <ltacprof_tactic ... />...
-      </ltacprof_tactic>
-      ...
-    </ltacprof>
-  </feedback_content>
-</feedback>
-```
