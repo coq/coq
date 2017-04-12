@@ -260,22 +260,23 @@ let add_inversion_lemma_exn na com comsort bool tac =
 (* Applying a given inversion lemma  *)
 (* ================================= *)
 
-let lemInv id c gls =
+let lemInv id c =
+  Proofview.Goal.enter { enter = begin fun gls ->
   try
-    let open Tacmach in
     let clause = mk_clenv_from_env (pf_env gls) (project gls) None (c, pf_unsafe_type_of gls c) in
     let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
-    Proofview.V82.of_tactic (Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false) gls
+    Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with
     | NoSuchBinding ->
 	user_err 
-	  (hov 0 (pr_econstr_env (Refiner.pf_env gls) (Refiner.project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
+	  (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
     | UserError (a,b) ->
 	 user_err ~hdr:"LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
-	      pr_leconstr_env (Refiner.pf_env gls) (Refiner.project gls) c)
+	      pr_leconstr_env (pf_env gls) (project gls) c)
+  end }
 
-let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv id c)) id
+let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id
 
 let lemInvIn id c ids =
   Proofview.Goal.enter { enter = begin fun gl ->
@@ -289,7 +290,7 @@ let lemInvIn id c ids =
       else
         (tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids))
     in
-    ((tclTHEN (tclTHEN (bring_hyps hyps) (Proofview.V82.tactic (lemInv id c)))
+    ((tclTHEN (tclTHEN (bring_hyps hyps) (lemInv id c))
         (intros_replace_ids)))
   end }
 
