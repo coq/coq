@@ -1913,10 +1913,14 @@ let collect_proof keep cur hd brkind id =
    | [] -> no_name
    | id :: _ -> Id.to_string id in
  let loc = (snd cur).loc in
- let is_defined = function
-   | _, { expr = VernacEndProof (Proved ((Transparent|Opaque (Some _)),_)) } ->
-      true
+ let rec is_defined_expr = function
+   | VernacEndProof (Proved ((Transparent|Opaque (Some _)),_)) -> true
+   | VernacTime (_, e) -> is_defined_expr e
+   | VernacRedirect (_, (_, e)) -> is_defined_expr e
+   | VernacTimeout (_, e) -> is_defined_expr e
    | _ -> false in
+ let is_defined = function
+   | _, { expr = e } -> is_defined_expr e in
  let proof_using_ast = function
    | Some (_, ({ expr = VernacProof(_,Some _) } as v)) -> Some v
    | _ -> None in
