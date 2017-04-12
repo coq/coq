@@ -374,7 +374,7 @@ let data = ref SM.empty
 
 let _ =
   Feedback.(add_feeder (function
-    | { id = State s; contents = Custom (_, "ltacprof_results", xml) } ->
+    | { id = s; contents = Custom (_, "ltacprof_results", xml) } ->
         let results = to_ltacprof_results xml in
         let other_results = (* Multi success can cause this *)
           try SM.find s !data

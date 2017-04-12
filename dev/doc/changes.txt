@@ -146,6 +146,36 @@ document type". This allows for a more uniform handling of printing
 
    module Tag
 
+** Stm API **
+
+- We have streamlined the `Stm` API, now `add` and `query` take a
+  `coq_parsable` instead a `string` so clients can have more control
+  over their input stream. As a consequence, their types have been
+  modified.
+
+- The main parsing entry point has also been moved to the
+  `Stm`. Parsing is considered a synchronous operation so it will
+  either succeed or raise an exception.
+
+- `Feedback` is now only emitted for asynchronous operations. As a
+  consequence, it always carries a valid stateid and the type has
+  changed to accommodate that.
+
+- A few unused hooks were removed due to cleanups, no clients known.
+
+** Toplevel and Vernacular API **
+
+- The components related to vernacular interpretation have been moved
+  to their own folder `vernac/` whereas toplevel now contains the
+  proper toplevel shell and compiler.
+
+- Coq's toplevel has been ported to directly use the common `Stm`
+  API. The signature of a few functions has changed as a result.
+
+** XML Protocol **
+
+- The legacy `Interp` call has been turned into a noop.
+
 =========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================

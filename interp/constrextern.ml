@@ -85,6 +85,20 @@ let without_specific_symbols l f =
 (**********************************************************************)
 (* Control printing of records *)
 
+(* Set Record Printing flag *)
+let record_print = ref true
+
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "record printing";
+      optkey   = ["Printing";"Records"];
+      optread  = (fun () -> !record_print);
+      optwrite = (fun b -> record_print := b) }
+
+
 let is_record indsp =
   try
     let _ = Recordops.lookup_structure indsp in
@@ -658,7 +672,7 @@ let rec extern inctx scopes vars r =
                    ()
                  else if PrintingConstructor.active (fst cstrsp) then
                    raise Exit
-                 else if not !Flags.record_print then
+                 else if not !record_print then
                    raise Exit;
 		 let projs = struc.Recordops.s_PROJ in
 		 let locals = struc.Recordops.s_PROJKIND in

@@ -84,24 +84,10 @@ let show_universes () =
     Feedback.msg_notice (Termops.pr_evar_universe_context (Evd.evar_universe_context sigma));
     Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
 
-let show_prooftree () =
-  (* Spiwack: proof tree is currently not working *)
-  ()
+(* Spiwack: proof tree is currently not working *)
+let show_prooftree () = ()
 
-let enable_goal_printing = ref true
-
-let print_subgoals () =
-  if !enable_goal_printing && is_verbose ()
-  then begin
-    Feedback.msg_notice (pr_open_subgoals ())
-  end
-
-let try_print_subgoals () =
-  try print_subgoals () with Proof_global.NoCurrentProof | UserError _ -> ()
-
-
-  (* Simulate the Intro(s) tactic *)
-
+(* Simulate the Intro(s) tactic *)
 let show_intro all =
   let open EConstr in
   let pf = get_pftreestate() in
@@ -512,8 +498,6 @@ let vernac_start_proof locality p kind l lettop =
       user_err ~hdr:"Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
   start_proof_and_print (local, p, Proof kind) l no_hook
-
-let qed_display_script = ref true
 
 let vernac_end_proof ?proof = function
   | Admitted          -> save_proof ?proof Admitted
@@ -1381,15 +1365,6 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "record printing";
-      optkey   = ["Printing";"Records"];
-      optread  = (fun () -> !Flags.record_print);
-      optwrite = (fun b -> Flags.record_print := b) }
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
       optname  = "use of the program extension";
       optkey   = ["Program";"Mode"];
       optread  = (fun () -> !Flags.program_mode);
@@ -1435,15 +1410,6 @@ let _ =
       optkey   = ["Undo"];
       optread  = (fun _ -> None);
       optwrite = (fun _ -> ()) }
-
-let _ =
-  declare_int_option
-    { optsync  = false;
-      optdepr  = false;
-      optname  = "the hypotheses limit";
-      optkey   = ["Hyps";"Limit"];
-      optread  = Flags.print_hyps_limit;
-      optwrite = Flags.set_print_hyps_limit }
 
 let _ =
   declare_int_option

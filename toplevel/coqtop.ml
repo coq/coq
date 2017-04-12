@@ -8,11 +8,8 @@
 
 open Pp
 open CErrors
-open Util
 open Flags
-open Names
 open Libnames
-open States
 open Coqinit
 
 let () = at_exit flush_all
@@ -133,10 +130,10 @@ let engage () =
 
 let set_batch_mode () = batch_mode := true
 
-let toplevel_default_name = DirPath.make [Id.of_string "Top"]
+let toplevel_default_name = Names.(DirPath.make [Id.of_string "Top"])
 let toplevel_name = ref toplevel_default_name
 let set_toplevel_name dir =
-  if DirPath.is_empty dir then error "Need a non empty toplevel module name";
+  if Names.DirPath.is_empty dir then error "Need a non empty toplevel module name";
   toplevel_name := dir
 
 let remove_top_ml () = Mltop.remove ()
@@ -150,9 +147,9 @@ let set_inputstate s =
   warn_deprecated_inputstate ();
   inputstate:=s
 let inputstate () =
-  if not (String.is_empty !inputstate) then
+  if not (CString.is_empty !inputstate) then
     let fname = Loadpath.locate_file (CUnix.make_suffix !inputstate ".coq") in
-    intern_state fname
+    States.intern_state fname
 
 let warn_deprecated_outputstate =
   CWarnings.create ~name:"deprecated-outputstate" ~category:"deprecated"
@@ -164,9 +161,9 @@ let set_outputstate s =
   warn_deprecated_outputstate ();
   outputstate:=s
 let outputstate () =
-  if not (String.is_empty !outputstate) then
+  if not (CString.is_empty !outputstate) then
     let fname = CUnix.make_suffix !outputstate ".coq" in
-    extern_state fname
+    States.extern_state fname
 
 let set_include d p implicit =
   let p = dirpath_of_string p in
@@ -175,15 +172,15 @@ let set_include d p implicit =
 let load_vernacular_list = ref ([] : (string * bool) list)
 let add_load_vernacular verb s =
   load_vernacular_list := ((CUnix.make_suffix s ".v"),verb) :: !load_vernacular_list
-let load_vernacular () =
-  List.iter
-    (fun (s,b) ->
+let load_vernacular sid =
+  List.fold_left
+    (fun sid (s,v) ->
       let s = Loadpath.locate_file s in
       if !Flags.beautify then
-	with_option beautify_file (Vernac.load_vernac b) s
+	with_option beautify_file (Vernac.load_vernac v sid) s
       else
-	Vernac.load_vernac b s)
-    (List.rev !load_vernacular_list)
+	Vernac.load_vernac v sid s)
+    sid (List.rev !load_vernacular_list)
 
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
@@ -250,7 +247,6 @@ let set_emacs () =
   if not (Option.is_empty !toploop) then
     error "Flag -emacs is incompatible with a custom toplevel loop";
   Flags.print_emacs := true;
-  Vernacentries.qed_display_script := false;
   color := `OFF
 
 (** Options for CoqIDE *)
@@ -380,7 +376,7 @@ let get_host_port opt s =
 let get_error_resilience opt = function
   | "on" | "all" | "yes" -> `All
   | "off" | "no" -> `None
-  | s -> `Only (String.split ',' s)
+  | s -> `Only (CString.split ',' s)
 
 let get_task_list s = List.map int_of_string (Str.split (Str.regexp ",") s)
 
@@ -625,7 +621,7 @@ let init_toplevel arglist =
       init_load_path ();
       Option.iter Mltop.load_ml_object_raw !toploop;
       let extras = !toploop_init extras in
-      if not (List.is_empty extras) then begin
+      if not (CList.is_empty extras) then begin
         prerr_endline ("Don't know what to do with "^String.concat " " extras);
         prerr_endline "See -help for the list of supported options";
         exit 1
@@ -634,15 +630,16 @@ let init_toplevel arglist =
       inputstate ();
       Mltop.init_known_plugins ();
       engage ();
-      if (not !batch_mode || List.is_empty !compile_list)
+      if (not !batch_mode || CList.is_empty !compile_list)
          && Global.env_is_initial ()
       then Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();
       require ();
       Stm.init ();
-      load_rcfile();
-      load_vernacular ();
+      let sid  = load_rcfile (Stm.get_current_state ()) in
+      (* XXX: We ignore this for now, but should be threaded to the toplevels *)
+      let _sid = load_vernacular sid in
       compile_files ();
       schedule_vio_checking ();
       schedule_vio_compilation ();

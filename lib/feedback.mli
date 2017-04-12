@@ -16,11 +16,8 @@ type level =
   | Warning
   | Error
 
-(** Coq "semantic" infos obtained during parsing/execution *)
-type edit_id = int
-type state_id = Stateid.t
-type edit_or_state_id = Edit of edit_id | State of state_id
 
+(** Coq "semantic" infos obtained during execution *)
 type route_id = int
 
 val default_route : route_id
@@ -46,17 +43,16 @@ type feedback_content =
   | Message of level * Loc.t option * Pp.std_ppcmds
 
 type feedback = {
-  id       : edit_or_state_id;  (* The document part concerned *)
-  contents : feedback_content;  (* The payload *)
+  id       : Stateid.t;         (* The document part concerned *)
   route    : route_id;          (* Extra routing info *)
+  contents : feedback_content;  (* The payload *)
 }
 
 (** {6 Feedback sent, even asynchronously, to the user interface} *)
-(* Morally the parser gets a string and an edit_id, and gives back an AST.
- * Feedbacks during the parsing phase are attached to this edit_id.
- * The interpreter assignes an exec_id to the ast, and feedbacks happening
- * during interpretation are attached to the exec_id.
- * Only one among state_id and edit_id can be provided. *)
+
+(* The interpreter assignes an state_id to the ast, and feedbacks happening
+ * during interpretation are attached to it.
+ *)
 
 (** [add_feeder f] adds a feeder listiner [f], returning its id *)
 val add_feeder : (feedback -> unit) -> int
@@ -67,11 +63,10 @@ val del_feeder : int -> unit
 (** [feedback ?id ?route fb] produces feedback fb, with [route] and
     [id] set appropiatedly, if absent, it will use the defaults set by
     [set_id_for_feedback] *)
-val feedback :
-  ?id:edit_or_state_id -> ?route:route_id -> feedback_content -> unit
+val feedback : ?id:Stateid.t -> ?route:route_id -> feedback_content -> unit
 
 (** [set_id_for_feedback route id] Set the defaults for feedback *)
-val set_id_for_feedback : ?route:route_id -> edit_or_state_id -> unit
+val set_id_for_feedback : ?route:route_id -> Stateid.t -> unit
 
 (** {6 output functions}
 

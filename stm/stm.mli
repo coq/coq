@@ -13,24 +13,31 @@ open Loc
 
 (** state-transaction-machine interface *)
 
-(* [add ontop check vebose eid s] adds a new command [s] on the state [ontop]
-   having edit id [eid].  [check] is called on the AST.
-   The [ontop] parameter is just for asserting the GUI is on sync, but
-   will eventually call edit_at on the fly if needed.
-   The sentence [s] is parsed in the state [ontop].
-   If [newtip] is provided, then the returned state id is guaranteed to be
-   [newtip] *)
-val add :
-  ontop:Stateid.t -> ?newtip:Stateid.t ->
-  ?check:(vernac_expr located -> unit) ->
-  bool -> edit_id -> string ->
-    Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
+(* [parse_sentence sid pa] Reads a sentence from [pa] with parsing
+   state [sid] Returns [End_of_input] if the stream ends *)
+val parse_sentence : Stateid.t -> Pcoq.Gram.coq_parsable ->
+  Vernacexpr.vernac_expr Loc.located
 
-(* parses and executes a command at a given state, throws away its side effects
-   but for the printings.  Feedback is sent with report_with (defaults to dummy
-   state id)  *)
+(* Reminder: A parsable [pa] is constructed using
+   [Pcoq.Gram.coq_parsable stream], where [stream : char Stream.t]. *)
+
+exception End_of_input
+
+(* [add ~ontop ?newtip verbose cmd] adds a new command [cmd] ontop of
+   the state [ontop].
+   The [ontop] parameter just asserts that the GUI is on
+   sync, but it will eventually call edit_at on the fly if needed.
+   If [newtip] is provided, then the returned state id is guaranteed
+   to be [newtip] *)
+val add : ontop:Stateid.t -> ?newtip:Stateid.t ->
+  bool -> Vernacexpr.vernac_expr Loc.located ->
+  Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
+
+(* [query at ?report_with cmd] Executes [cmd] at a given state [at],
+   throwing away side effects except messages. Feedback will
+   be sent with [report_with], which defaults to the dummy state id *)
 val query :
-  at:Stateid.t -> ?report_with:(Stateid.t * Feedback.route_id) -> string -> unit
+  at:Stateid.t -> ?report_with:(Stateid.t * Feedback.route_id) -> Pcoq.Gram.coq_parsable -> unit
 
 (* [edit_at id] is issued to change the editing zone.  [`NewTip] is returned if
    the requested id is the new document tip hence the document portion following
@@ -182,14 +189,10 @@ val register_proof_block_delimiter :
  * the name of the Task(s) above) *)
 
 val state_computed_hook : (Stateid.t -> in_cache:bool -> unit) Hook.t
-val parse_error_hook :
-  (Feedback.edit_or_state_id -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val unreachable_state_hook : (Stateid.t -> Exninfo.iexn -> unit) Hook.t
+
 (* ready means that master has it at hand *)
 val state_ready_hook : (Stateid.t -> unit) Hook.t
-(* called with true before and with false after a tactic explicitly
- * in the document is run *)
-val tactic_being_run_hook : (bool -> unit) Hook.t
 
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
@@ -202,16 +205,6 @@ type state = {
 val state_of_id :
   Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
 
-(** read-eval-print loop compatible interface ****************************** **)
-
-(* Adds a new line to the document.  It replaces the core of Vernac.interp.
-   [finish] is called as the last bit of this function if the system
-   is running interactively (-emacs or coqtop). *)
-val interp : bool -> vernac_expr located -> unit
-
 (* Queries for backward compatibility *)
 val current_proof_depth : unit -> int
 val get_all_proof_names : unit -> Id.t list
-
-(* Hooks to be set by other Coq components in order to break file cycles *)
-val process_error_hook : Future.fix_exn Hook.t

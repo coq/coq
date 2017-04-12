@@ -907,9 +907,7 @@ let of_feedback_content = function
         of_string filename ]
   | Message (l,loc,m) -> constructor "feedback_content" "message" [ of_message l loc m ]
 
-let of_edit_or_state_id = function
-  | Edit id -> ["object","edit"], of_edit_id id
-  | State id -> ["object","state"], of_stateid id
+let of_edit_or_state_id id = ["object","state"], of_stateid id
 
 let of_feedback msg =
   let content = of_feedback_content msg.contents in
@@ -921,12 +919,8 @@ let of_feedback msg_fmt =
   msg_format := msg_fmt; of_feedback
 
 let to_feedback xml = match xml with
-  | Element ("feedback", ["object","edit";"route",route], [id;content]) -> {
-      id = Edit(to_edit_id id);
-      route = int_of_string route;
-      contents = to_feedback_content content }
   | Element ("feedback", ["object","state";"route",route], [id;content]) -> { 
-      id = State(to_stateid id);
+      id = to_stateid id;
       route = int_of_string route;
       contents = to_feedback_content content }
   | x -> raise (Marshal_error("feedback",x))

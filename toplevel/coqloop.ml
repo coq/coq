@@ -7,11 +7,6 @@
 (************************************************************************)
 
 open Pp
-open CErrors
-open Util
-open Flags
-open Vernac
-open Pcoq
 
 let top_stderr x =
   Format.fprintf !Topfmt.err_ft "@[%a@]%!" pp_with x
@@ -24,7 +19,7 @@ type input_buffer = {
   mutable str : Bytes.t; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)
   mutable bols : int list; (* offsets in str of beginning of lines *)
-  mutable tokens : Gram.coq_parsable; (* stream of tokens *)
+  mutable tokens : Pcoq.Gram.coq_parsable; (* stream of tokens *)
   mutable start : int } (* stream count of the first char of the buffer *)
 
 (* Double the size of the buffer. *)
@@ -61,7 +56,7 @@ let prompt_char ic ibuf count =
     | ll::_ -> Int.equal ibuf.len ll
     | [] -> Int.equal ibuf.len 0
   in
-  if bol && not !print_emacs then top_stderr (str (ibuf.prompt()));
+  if bol && not !Flags.print_emacs then top_stderr (str (ibuf.prompt()));
   try
     let c = input_char ic in
     if c == '\n' then ibuf.bols <- (ibuf.len+1) :: ibuf.bols;
@@ -78,7 +73,7 @@ let reset_input_buffer ic ibuf =
   ibuf.str <- Bytes.empty;
   ibuf.len <- 0;
   ibuf.bols <- [];
-  ibuf.tokens <- Gram.parsable (Stream.from (prompt_char ic ibuf));
+  ibuf.tokens <- Pcoq.Gram.parsable (Stream.from (prompt_char ic ibuf));
   ibuf.start <- 0
 
 (* Functions to print underlined locations from an input buffer. *)
@@ -89,7 +84,7 @@ module TopErr = struct
 
 let get_bols_of_loc ibuf (bp,ep) =
   let add_line (b,e) lines =
-    if b < 0 || e < b then anomaly (Pp.str "Bad location");
+    if b < 0 || e < b then CErrors.anomaly (Pp.str "Bad location");
     match lines with
       | ([],None) -> ([], Some (b,e))
       | (fl,oe) -> ((b,e)::fl, oe)
@@ -174,7 +169,7 @@ let error_info_for_buffer ?loc buf =
       let fname = loc.Loc.fname in
       let hl, loc =
         (* We are in the toplevel *)
-        if String.equal fname "" then
+        if CString.equal fname "" then
           let nloc = adjust_loc_buf buf loc in
           if valid_buffer_loc buf loc then
             (fnl () ++ print_highlight_location buf nloc, nloc)
@@ -223,7 +218,7 @@ let make_emacs_prompt() =
   let pending = Stm.get_all_proof_names() in
   let pendingprompt =
     List.fold_left
-      (fun acc x -> acc ^ (if String.is_empty acc then "" else "|") ^ Names.Id.to_string x)
+      (fun acc x -> acc ^ (if CString.is_empty acc then "" else "|") ^ Names.Id.to_string x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
   if !Flags.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
@@ -243,7 +238,7 @@ let top_buffer =
     str = Bytes.empty;
     len = 0;
     bols = [];
-    tokens = Gram.parsable (Stream.of_list []);
+    tokens = Pcoq.Gram.parsable (Stream.of_list []);
     start = 0 }
 
 let set_prompt prompt =
@@ -257,10 +252,10 @@ let set_prompt prompt =
 let parse_to_dot =
   let rec dot st = match Stream.next st with
     | Tok.KEYWORD ("."|"...") -> ()
-    | Tok.EOI -> raise End_of_input
+    | Tok.EOI -> raise Stm.End_of_input
     | _ -> dot st
   in
-  Gram.Entry.of_parser "Coqtoplevel.dot" dot
+  Pcoq.Gram.Entry.of_parser "Coqtoplevel.dot" dot
 
 (* If an error occurred while parsing, we try to read the input until a dot
    token is encountered.
@@ -268,21 +263,19 @@ let parse_to_dot =
 
 let rec discard_to_dot () =
   try
-    Gram.entry_parse parse_to_dot top_buffer.tokens
+    Pcoq.Gram.entry_parse parse_to_dot top_buffer.tokens
   with
     | Token.Error _ | CLexer.Error.E _ -> discard_to_dot ()
-    | End_of_input -> raise End_of_input
+    | Stm.End_of_input -> raise Stm.End_of_input
     | e when CErrors.noncritical e -> ()
 
-let read_sentence input =
-  try
-    let (loc, _ as r) = Vernac.parse_sentence input in
-    CWarnings.set_current_loc loc; r
+let read_sentence sid input =
+  try Stm.parse_sentence sid input
   with reraise ->
     let reraise = CErrors.push reraise in
     discard_to_dot ();
     TopErr.print_toplevel_parse_error reraise top_buffer;
-    iraise reraise
+    Exninfo.iraise reraise
 
 (** Coqloop Console feedback handler *)
 let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
@@ -312,25 +305,24 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
     is caught and handled (i.e. not re-raised).
 *)
 
-let do_vernac () =
+let do_vernac sid =
   top_stderr (fnl());
-  if !print_emacs then top_stderr (str (top_buffer.prompt()));
+  if !Flags.print_emacs then top_stderr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.process_expr top_buffer.tokens (read_sentence input)
+    Vernac.process_expr sid top_buffer.tokens (read_sentence sid (fst input))
   with
-    | End_of_input | CErrors.Quit ->
+    | Stm.End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
     | CErrors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise CErrors.Drop
-        else Feedback.msg_error (str "There is no ML toplevel.")
+        else (Feedback.msg_error (str "There is no ML toplevel."); sid)
     (* Exception printing is done now by the feedback listener. *)
     (* XXX: We need this hack due to the side effects of the exception
        printer and the reliance of Stm.define on attaching crutial
        state to exceptions *)
-    | any -> ignore (CErrors.(iprint (push any)))
-
+    | any -> ignore (CErrors.(iprint (push any))); sid
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
@@ -348,11 +340,16 @@ let loop_flush_all () =
 
 let rec loop () =
   Sys.catch_break true;
-  if !Flags.print_emacs then Vernacentries.qed_display_script := false;
-  Flags.coqtop_ui := true;
   try
     reset_input_buffer stdin top_buffer;
-    while true do do_vernac(); loop_flush_all () done
+    (* Be careful to keep this loop tail-recursive *)
+    let rec vernac_loop sid =
+      let nsid = do_vernac sid in
+      loop_flush_all ();
+      vernac_loop nsid
+    (* We recover the current stateid, threading from the caller is
+       not possible due exceptions. *)
+    in vernac_loop (Stm.get_current_state ())
   with
     | CErrors.Drop -> ()
     | CErrors.Quit -> exit 0
