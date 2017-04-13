@@ -536,7 +536,7 @@ let traverse_binder (terms,_,_ as subst) avoid (renaming,env) = function
   try
     (* Binders bound in the notation are considered first-order objects *)
     let _,na = coerce_to_name (fst (Id.Map.find id terms)) in
-    (renaming,{env with ids = name_fold Id.Set.add na env.ids}), na
+    (renaming,{env with ids = Name.fold_right Id.Set.add na env.ids}), na
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
@@ -1660,7 +1660,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
     | CCases (sty, rtnpo, tms, eqns) ->
         let as_in_vars = List.fold_left (fun acc (_,na,inb) ->
 	  Option.fold_left (fun acc tt -> Id.Set.union (ids_of_cases_indtype tt) acc)
-            (Option.fold_left (fun acc (_,y) -> name_fold Id.Set.add y acc) acc na)
+            (Option.fold_left (fun acc (_,y) -> Name.fold_right Id.Set.add y acc) acc na)
 	    inb) Id.Set.empty tms in
         (* as, in & return vars *)
         let forbidden_vars = Option.cata free_vars_of_constr_expr as_in_vars rtnpo in

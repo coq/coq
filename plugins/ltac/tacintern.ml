@@ -718,7 +718,7 @@ let split_ltac_fun = function
   | TacFun (l,t) -> (l,t)
   | t -> ([],t)
 
-let pr_ltac_fun_arg n = spc () ++ pr_name n
+let pr_ltac_fun_arg n = spc () ++ Name.print n
 
 let print_ltac id =
  try

@@ -51,6 +51,12 @@ In Constrexpr_ops:
   interpreting "(x y z:_)" as "(x:_) (y:_) (z:_)" while the second
   ones were preserving the original sharing of the type.
 
+In Nameops:
+
+  The API has been made more uniform. New combinators added in the
+  "Name" space name. Function "out_name" now fails with IsAnonymous
+  rather than with Failure "Nameops.out_name".
+
 Location handling and AST attributes:
 
   Location handling has been reworked. First, Loc.ghost has been

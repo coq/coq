@@ -215,20 +215,20 @@ let fold_glob_constr f acc = CAst.with_val (function
   )
 
 let fold_return_type_with_binders f g v acc (na,tyopt) =
-  Option.fold_left (f (name_fold g na v)) acc tyopt
+  Option.fold_left (f (Name.fold_right g na v)) acc tyopt
 
 let fold_glob_constr_with_binders g f v acc = CAst.(with_val (function
   | GVar _ -> acc
   | GApp (c,args) -> List.fold_left (f v) (f v acc c) args
   | GLambda (na,_,b,c) | GProd (na,_,b,c) ->
-    f (name_fold g na v) (f v acc b) c
+    f (Name.fold_right g na v) (f v acc b) c
   | GLetIn (na,b,t,c) ->
-    f (name_fold g na v) (Option.fold_left (f v) (f v acc b) t) c
+    f (Name.fold_right g na v) (Option.fold_left (f v) (f v acc b) t) c
   | GCases (_,rtntypopt,tml,pl) ->
     let fold_pattern acc (_,(idl,p,c)) = f (List.fold_right g idl v) acc c in
     let fold_tomatch (v',acc) (tm,(na,onal)) =
-      (Option.fold_left (fun v'' (_,(_,nal)) -> List.fold_right (name_fold g) nal v'')
-                        (name_fold g na v') onal,
+      (Option.fold_left (fun v'' (_,(_,nal)) -> List.fold_right (Name.fold_right g) nal v'')
+                        (Name.fold_right g na v') onal,
        f v acc tm) in
     let (v',acc) = List.fold_left fold_tomatch (v,acc) tml in
     let acc = Option.fold_left (f v') acc rtntypopt in
@@ -242,7 +242,7 @@ let fold_glob_constr_with_binders g f v acc = CAst.(with_val (function
       let v,acc =
 	List.fold_left
 	  (fun (v,acc) (na,k,bbd,bty) ->
-            (name_fold g na v, f v (Option.fold_left (f v) acc bbd) bty))
+            (Name.fold_right g na v, f v (Option.fold_left (f v) acc bbd) bty))
           (v,acc)
           bll.(i) in
       f (Array.fold_right g idl v) (f v acc tyl.(i)) (bv.(i)) in
@@ -371,12 +371,12 @@ let loc_of_glob_constr c = c.CAst.loc
 
 let collide_id l id = List.exists (fun (id',id'') -> Id.equal id id' || Id.equal id id'') l
 let test_id l id = if collide_id l id then raise Not_found
-let test_na l na = name_iter (test_id l) na
+let test_na l na = Name.iter (test_id l) na
 
 let update_subst na l =
   let in_range id l = List.exists (fun (_,id') -> Id.equal id id') l in
-  let l' = name_fold Id.List.remove_assoc na l in
-  name_fold
+  let l' = Name.fold_right Id.List.remove_assoc na l in
+  Name.fold_right
     (fun id _ ->
      if in_range id l' then
        let id' = Namegen.next_ident_away_from id (fun id' -> in_range id' l') in

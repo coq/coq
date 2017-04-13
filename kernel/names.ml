@@ -104,8 +104,12 @@ struct
     | _ -> false
 
   let hash = function
-  | Anonymous -> 0
-  | Name id -> Id.hash id
+    | Anonymous -> 0
+    | Name id -> Id.hash id
+
+  let print = function
+    | Anonymous -> str "_"
+    | Name id -> Id.print id
 
   module Self_Hashcons =
     struct

@@ -56,7 +56,7 @@ open Decl_kinds
 
   let pr_lname = function
     | (loc,Name id) -> pr_lident (loc,id)
-    | lna -> pr_located pr_name lna
+    | lna -> pr_located Name.print lna
 
   let pr_smart_global = Pputils.pr_or_by_notation pr_reference
 
@@ -1022,13 +1022,13 @@ open Decl_kinds
                   | n, { name = id; recarg_like = k;
                          notation_scope = s;
                          implicit_status = imp } :: tl ->
-                    spc() ++ pr_br imp (pr_if k (str"!") ++ pr_name id ++ pr_s s) ++
+                    spc() ++ pr_br imp (pr_if k (str"!") ++ Name.print id ++ pr_s s) ++
                       print_arguments (Option.map pred n) tl
               in
               let rec print_implicits = function
                 | [] -> mt ()
                 | (name, impl) :: rest ->
-                   spc() ++ pr_br impl (pr_name name) ++ print_implicits rest
+                   spc() ++ pr_br impl (Name.print name) ++ print_implicits rest
               in
               print_arguments nargs args ++
                 if not (List.is_empty more_implicits) then

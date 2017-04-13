@@ -83,13 +83,13 @@ let ids_of_cases_tomatch tms =
     (fun (_, ona, indnal) l ->
       Option.fold_right (fun t ids -> cases_pattern_fold_names Id.Set.add ids t)
       indnal
-        (Option.fold_right (down_located (name_fold Id.Set.add)) ona l))
+        (Option.fold_right (down_located (Name.fold_right Id.Set.add)) ona l))
     tms Id.Set.empty
 
 let rec fold_constr_expr_binders g f n acc b = function
   | (nal,bk,t)::l ->
       let nal = snd (List.split nal) in
-      let n' = List.fold_right (name_fold g) nal n in
+      let n' = List.fold_right (Name.fold_right g) nal n in
       f n (fold_constr_expr_binders g f n' acc b l) t
   | [] ->
       f n acc b
@@ -97,10 +97,10 @@ let rec fold_constr_expr_binders g f n acc b = function
 let rec fold_local_binders g f n acc b = function
   | CLocalAssum (nal,bk,t)::l ->
       let nal = snd (List.split nal) in
-      let n' = List.fold_right (name_fold g) nal n in
+      let n' = List.fold_right (Name.fold_right g) nal n in
       f n (fold_local_binders g f n' acc b l) t
   | CLocalDef ((_,na),c,t)::l ->
-      Option.fold_left (f n) (f n (fold_local_binders g f (name_fold g na n) acc b l) c) t
+      Option.fold_left (f n) (f n (fold_local_binders g f (Name.fold_right g na n) acc b l) c) t
   | CLocalPattern (_,(pat,t))::l ->
       let acc = fold_local_binders g f (cases_pattern_fold_names g n pat) acc b l in
       Option.fold_left (f n) acc t
@@ -112,7 +112,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
   | CApp ((_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (l,b) | CLambdaN (l,b) -> fold_constr_expr_binders g f n acc b l
   | CLetIn (na,a,t,b) ->
-     f (name_fold g (snd na) n) (Option.fold_left (f n) (f n acc a) t) b
+     f (Name.fold_right g (snd na) n) (Option.fold_left (f n) (f n acc a) t) b
   | CCast (a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
   | CCast (a,CastCoerce) -> f n acc a
   | CNotation (_,(l,ll,bll)) ->
@@ -133,12 +133,12 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
 	let ids = ids_of_pattern_list patl in
 	f (Id.Set.fold g ids n) acc rhs) bl acc
   | CLetTuple (nal,(ona,po),b,c) ->
-      let n' = List.fold_right (down_located (name_fold g)) nal n in
-      f (Option.fold_right (down_located (name_fold g)) ona n') (f n acc b) c
+      let n' = List.fold_right (down_located (Name.fold_right g)) nal n in
+      f (Option.fold_right (down_located (Name.fold_right g)) ona n') (f n acc b) c
   | CIf (c,(ona,po),b1,b2) ->
       let acc = f n (f n (f n acc b1) b2) c in
       Option.fold_left
-	(f (Option.fold_right (down_located (name_fold g)) ona n)) acc po
+	(f (Option.fold_right (down_located (Name.fold_right g)) ona n)) acc po
   | CFix (_,l) ->
       let n' = List.fold_right (fun ((_,id),_,_,_,_) -> g id) l n in
       List.fold_right (fun (_,(_,o),lb,t,c) acc ->
@@ -198,7 +198,7 @@ let split_at_annot bl na =
 
 (* Used in correctness and interface *)
 
-let map_binder g e nal = List.fold_right (down_located (name_fold g)) nal e
+let map_binder g e nal = List.fold_right (down_located (Name.fold_right g)) nal e
 
 let map_binders f g e bl =
   (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
@@ -212,7 +212,7 @@ let map_local_binders f g e bl =
       CLocalAssum(nal,k,ty) ->
         (map_binder g e nal, CLocalAssum(nal,k,f e ty)::bl)
     | CLocalDef((loc,na),c,ty) ->
-        (name_fold g na e, CLocalDef((loc,na),f e c,Option.map (f e) ty)::bl)
+        (Name.fold_right g na e, CLocalDef((loc,na),f e c,Option.map (f e) ty)::bl)
     | CLocalPattern (loc,(pat,t)) ->
         let ids = ids_of_pattern pat in
         (Id.Set.fold g ids e, CLocalPattern (loc,(pat,Option.map (f e) t))::bl) in
@@ -228,7 +228,7 @@ let map_constr_expr_with_binders g f e = CAst.map (function
   | CLambdaN (bl,b) ->
       let (e,bl) = map_binders f g e bl in CLambdaN (bl,f e b)
   | CLetIn (na,a,t,b) ->
-      CLetIn (na,f e a,Option.map (f e) t,f (name_fold g (snd na) e) b)
+      CLetIn (na,f e a,Option.map (f e) t,f (Name.fold_right g (snd na) e) b)
   | CCast (a,c) -> CCast (f e a, Miscops.map_cast_type (f e) c)
   | CNotation (n,(l,ll,bll)) ->
       (* This is an approximation because we don't know what binds what *)
@@ -247,11 +247,11 @@ let map_constr_expr_with_binders g f e = CAst.map (function
       let po = Option.map (f (Id.Set.fold g ids e)) rtnpo in
       CCases (sty, po, List.map (fun (tm,x,y) -> f e tm,x,y) a,bl)
   | CLetTuple (nal,(ona,po),b,c) ->
-      let e' = List.fold_right (down_located (name_fold g)) nal e in
-      let e'' = Option.fold_right (down_located (name_fold g)) ona e in
+      let e' = List.fold_right (down_located (Name.fold_right g)) nal e in
+      let e'' = Option.fold_right (down_located (Name.fold_right g)) ona e in
       CLetTuple (nal,(ona,Option.map (f e'') po),f e b,f e' c)
   | CIf (c,(ona,po),b1,b2) ->
-      let e' = Option.fold_right (down_located (name_fold g)) ona e in
+      let e' = Option.fold_right (down_located (Name.fold_right g)) ona e in
       CIf (f e c,(ona,Option.map (f e') po),f e b1,f e b2)
   | CFix (id,dl) ->
       CFix (id,List.map (fun (id,n,bl,t,d) ->

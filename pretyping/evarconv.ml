@@ -638,7 +638,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     (fun i ->
 	       let b = nf_evar i b1 in
 	       let t = nf_evar i t1 in
-               let na = Nameops.name_max na1 na2 in
+               let na = Nameops.Name.pick na1 na2 in
 	       evar_conv_x ts (push_rel (RelDecl.LocalDef (na,b,t)) env) i pbty c'1 c'2);
 	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
 	and f2 i =
@@ -755,7 +755,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
           [(fun i -> evar_conv_x ts env i CONV c1 c2);
            (fun i ->
 	     let c = nf_evar i c1 in
-             let na = Nameops.name_max na1 na2 in
+             let na = Nameops.Name.pick na1 na2 in
 	     evar_conv_x ts (push_rel (RelDecl.LocalAssum (na,c)) env) i CONV c'1 c'2)]
 
     | Flexible ev1, Rigid -> flex_rigid true ev1 appr1 appr2
@@ -816,7 +816,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
               [(fun i -> evar_conv_x ts env i CONV c1 c2);
                (fun i ->
  	         let c = nf_evar i c1 in
-                 let na = Nameops.name_max n1 n2 in
+                 let na = Nameops.Name.pick n1 n2 in
 	         evar_conv_x ts (push_rel (RelDecl.LocalAssum (na,c)) env) i pbty c'1 c'2)]
 
 	| Rel x1, Rel x2 ->

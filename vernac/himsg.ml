@@ -682,12 +682,12 @@ let explain_wrong_abstraction_type env sigma na abs expected result =
 
 let explain_abstraction_over_meta _ m n =
   strbrk "Too complex unification problem: cannot find a solution for both " ++
-  pr_name m ++ spc () ++ str "and " ++ pr_name n ++ str "."
+  Name.print m ++ spc () ++ str "and " ++ Name.print n ++ str "."
 
 let explain_non_linear_unification env sigma m t =
   let t = EConstr.to_constr sigma t in
   strbrk "Cannot unambiguously instantiate " ++
-  pr_name m ++ str ":" ++
+  Name.print m ++ str ":" ++
   strbrk " which would require to abstract twice on " ++
   pr_lconstr_env env sigma t ++ str "."
 
@@ -1055,7 +1055,7 @@ let explain_refiner_bad_type arg ty conclty =
 let explain_refiner_unresolved_bindings l =
   str "Unable to find an instance for the " ++
   str (String.plural (List.length l) "variable") ++ spc () ++
-  prlist_with_sep pr_comma pr_name l ++ str"."
+  prlist_with_sep pr_comma Name.print l ++ str"."
 
 let explain_refiner_cannot_apply t harg =
   str "In refiner, a term of type" ++ brk(1,1) ++

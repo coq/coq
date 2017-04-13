@@ -2975,7 +2975,7 @@ let specialize (c,lbind) ipat =
       if occur_meta clause.evd term then
 	user_err  (str "Cannot infer an instance for " ++
 
-          pr_name (meta_name clause.evd (List.hd (collect_metas clause.evd term))) ++
+          Name.print (meta_name clause.evd (List.hd (collect_metas clause.evd term))) ++
 	  str ".");
       clause.evd, term in
   let typ = Retyping.get_type_of env sigma term in

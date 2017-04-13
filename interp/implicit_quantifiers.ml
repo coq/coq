@@ -264,7 +264,7 @@ let implicits_of_glob_constr ?(with_products=true) l =
             let () = match bk with
             | Implicit ->
 	       Feedback.msg_warning (strbrk "Ignoring implicit status of product binder " ++ 
-			      pr_name na ++ strbrk " and following binders")
+			      Name.print na ++ strbrk " and following binders")
             | _ -> ()
             in []
       | GLambda (na, bk, t, b) -> abs na bk b

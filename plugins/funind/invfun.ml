@@ -421,7 +421,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       let params_bindings,avoid =
 	List.fold_left2
 	  (fun (bindings,avoid) decl p ->
-	     let id = Namegen.next_ident_away (Nameops.out_name (RelDecl.get_name decl)) avoid in
+	     let id = Namegen.next_ident_away (Nameops.Name.get_id (RelDecl.get_name decl)) avoid in
 	     p::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
@@ -431,7 +431,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       let lemmas_bindings =
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) decl p ->
-	     let id = Namegen.next_ident_away (Nameops.out_name (RelDecl.get_name decl)) avoid in
+	     let id = Namegen.next_ident_away (Nameops.Name.get_id (RelDecl.get_name decl)) avoid in
 	     (nf_zeta p)::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
