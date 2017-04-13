@@ -11,8 +11,14 @@ open Q_util
 let loc = Ploc.dummy
 let default_loc = <:expr< Loc.ghost >>
 
+IFDEF STRICT THEN
+  let ploc_vala x = Ploc.VaVal x
+ELSE
+  let ploc_vala x = x
+END
+
 let declare_str_items loc l =
-  MLast.StDcl (loc, Ploc.VaVal l) (* correspond to <:str_item< declare $list:l'$ end >> *)
+  MLast.StDcl (loc, ploc_vala l) (* correspond to <:str_item< declare $list:l'$ end >> *)
 
 let mk_extraarg loc s = <:expr< $lid:"wit_"^s$ >>
 
