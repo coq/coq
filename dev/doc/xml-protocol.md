@@ -1,4 +1,4 @@
-#Coq XML Protocol for Coq 8.5#
+#Coq XML Protocol for Coq 8.6#
 
 This document is based on documentation originally written by CJ Bell
 for his [vscoq](https://github.com/siegebell/vscoq/) project.
@@ -11,6 +11,12 @@ versions of Proof General.
 A somewhat out-of-date description of the async state machine is
 [documented here](https://github.com/ejgallego/jscoq/blob/master/etc/notes/coq-notes.md).
 OCaml types for the protocol can be found in the [`ide/interface.mli` file](/ide/interface.mli).
+
+# CHANGES
+## Changes from 8.5:
+ * In several places, flat text wrapped in <string> tags now appears as structured text inside <richpp> tags 
+ * The "errormsg" feedback has been replaced by a "message" feedback which contains
+    <feedback\_content> tag, with a message_level attribute of "error"
 
 * [Commands](#commands)
   - [About](#command-about)
@@ -41,7 +47,6 @@ OCaml types for the protocol can be found in the [`ide/interface.mli` file](/ide
   - [WorkerStatus](#feedback-workerstatus)
   - [File Dependencies](#feedback-filedependencies)
   - [File Loaded](#feedback-fileloaded)
-  - [ErrorMessage](#feedback-errormessage)
   - [Message](#feedback-message)
   - [Custom](#feedback-custom)
 
@@ -73,15 +78,15 @@ Returns information about the protocol and build dates for Coqtop.
 #### *Returns*
 ```html
  <value val="good">
-   <coq_info><string>8.5</string>
-     <string>20140312</string>
-     <string>April 2014</string>
-     <string>April 15 2014 16:16:30</string>
+   <coq_info><string>8.6</string>
+     <string>20150913</string>
+     <string>December 2016</string>
+     <string>Dec 23 2016 16:16:30</string>
    </coq_info>
 </value>
 ```
 The string fields are the Coq version, the protocol version, the release date, and the compile time of Coqtop.
-The protocol version is a date in YYYYMMDD format, where "20140312" corresponds to Coq 8.5. An IDE that wishes 
+The protocol version is a date in YYYYMMDD format, where "20150913" corresponds to Coq 8.6. An IDE that wishes 
 to support multiple Coq versions can use the protocol version information to know how to handle output from Coqtop.
 
 ### <a name="command-add">**Add(stateId: integer, command: string, verbose: boolean)**</a>
@@ -136,12 +141,12 @@ state that should become the next tip.
       loc_s="${startOffsetOfError}"
       loc_e="${endOffsetOfError}">
     <state_id val="${stateId}"/>
-    <string>${errorMessage}</string>
+    <richpp>${errorMessage}</richpp>
   </value>
   ```
   - Another kind of error, for example, Qed with a pending goal.	
   ```html
-  <value val="fail"><state_id val="${stateId}"/><string>${errorMessage}</string></value>
+  <value val="fail"><state_id val="${stateId}"/><richpp>${errorMessage}</richpp></value>
   ```
 
 -------------------------------
@@ -230,11 +235,11 @@ proofs.
       <goal>
         <string>3</string>
         <list>
-          <string>${hyp1}</string>
+          <richpp>${hyp1}</richpp>
           ...
-          <string>${hypN}</string>
+          <richpp>${hypN}</richpp>
         </list>
-        <string>${goal}</string>
+        <richpp>${goal}</richpp>
       </goal>
       ...
       ${goalN}
@@ -713,13 +718,15 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 </feedback>
 ```
 
-* <a name="feedback-errormessage">Error Message</a>. 
+* <a name="feedback-message">Message</a>. `level` is one of `{info,warning,notice,error,debug}`. For example, in response to an <a href="#command-add">add</a> `"Axiom foo: nat."` with `verbose=true`, message `foo is assumed` will be emitted in response.
 ```xml
 <feedback object="state" route="0">
   <state_id val="${stateId}"/>
   <feedback_content val="message">
-    <loc start=${startPos} stop=${stopPos} />
-    <string>${errorMessage"</string>
+    <message>
+      <message_level val="${level}"/>
+      <string>${message}</string>
+    </message>
   </feedback_content>
 </feedback>
 ```
