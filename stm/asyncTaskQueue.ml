@@ -308,7 +308,7 @@ module Make(T : Task) = struct
     (* We pass feedback to master *)
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback (debug_with_pid fb)) []; flush oc in
-    Feedback.add_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
+    ignore (Feedback.add_feeder (fun x -> slave_feeder (Option.get !slave_oc) x));
     (* We ask master to allocate universe identifiers *)
     Universes.set_remote_new_univ_level (bufferize (fun () ->
       marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;

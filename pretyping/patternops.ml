@@ -156,7 +156,7 @@ let pattern_of_constr env sigma t =
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
     | Proj (p, c) -> 
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
-    | Evar (evk,ctxt as ev) ->
+    | Evar (evk,ctxt) ->
       (match snd (Evd.evar_source evk sigma) with
       | Evar_kinds.MatchingVar (b,id) ->
         assert (not b); PMeta (Some id)

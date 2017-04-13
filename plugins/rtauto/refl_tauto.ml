@@ -95,7 +95,6 @@ let rec make_form atom_env gls term =
   let normalize=special_nf gls in
   let cciterm=special_whd gls term  in
   let sigma = Tacmach.project gls in
-  let inj = EConstr.Unsafe.to_constr in
     match EConstr.kind sigma cciterm with
 	Prod(_,a,b) ->
 	  if noccurn sigma 1 b &&
