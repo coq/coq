@@ -755,7 +755,7 @@ let contract_fix ?env ?reference ((recindices,bodynum),(names,types,bodies as ty
     context" in contract_fix *)
 let reduce_and_refold_fix recfun env refold cst_l fix sk =
   let raw_answer =
-    let env = if refold then None else Some env in
+    let env = if refold then Some env else None in
     contract_fix ?env ?reference:(Cst_stack.reference cst_l) fix in
   apply_subst
     (fun x (t,sk') ->
