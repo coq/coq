@@ -2071,7 +2071,7 @@ let intern_context global_level env impl_env binders =
   with InternalizationError (loc,e) ->
     user_err ?loc ~hdr:"internalize" (explain_internalization_error e)
 
-let interp_rawcontext_evars env evdref k bl =
+let interp_glob_context_evars env evdref k bl =
   let open EConstr in
   let (env, par, _, impls) =
     List.fold_left
@@ -2100,6 +2100,6 @@ let interp_rawcontext_evars env evdref k bl =
 
 let interp_context_evars ?(global_level=false) ?(impl_env=empty_internalization_env) ?(shift=0) env evdref params =
   let int_env,bl = intern_context global_level env impl_env params in
-  let x = interp_rawcontext_evars env evdref shift bl in
+  let x = interp_glob_context_evars env evdref shift bl in
   int_env, x
 
