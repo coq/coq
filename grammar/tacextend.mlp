@@ -14,11 +14,11 @@ open Argextend
 (** Quotation difference for match clauses *)
 
 let default_patt loc =
-  (<:patt< _ >>, Ploc.VaVal None, <:expr< failwith "Extension: cannot occur" >>)
+  (<:patt< _ >>, ploc_vala None, <:expr< failwith "Extension: cannot occur" >>)
 
 let make_fun loc cl =
   let l = cl @ [default_patt loc] in
-  MLast.ExFun (loc, Ploc.VaVal l)  (* correspond to <:expr< fun [ $list:l$ ] >> *)
+  MLast.ExFun (loc, ploc_vala l)  (* correspond to <:expr< fun [ $list:l$ ] >> *)
 
 let dloc = <:expr< Loc.ghost >>
 
@@ -49,7 +49,7 @@ let rec make_let raw e = function
 
 let make_clause (pt,_,e) =
   (make_patt pt,
-   Ploc.VaVal None,
+   ploc_vala None,
    make_let false e pt)
 
 let make_fun_clauses loc s l =
@@ -108,7 +108,7 @@ let declare_tactic loc tacname ~level classification clause = match clause with
         whole-prof tactics like [shelve_unifiable]. *)
       <:expr< fun _ $lid:"ist"$ -> $tac$ >>
   | _ ->
-      let f = make_fun loc [patt, Ploc.VaVal None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
+      let f = make_fun loc [patt, ploc_vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
       <:expr< Tacinterp.lift_constr_tac_to_ml_tac $vars$ $f$ >>
   in
   (** Arguments are not passed directly to the ML tactic in the TacML node,
