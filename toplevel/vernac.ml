@@ -126,11 +126,12 @@ let rec interp_vernac sid po (loc,com) =
         (* Stm.observe nsid; *)
         Stm.finish ();
 
-        (* We could use a more refined criteria depending on the
+        (* We could use a more refined criteria that depends on the
            vernac. For now we imitate the old approach. *)
-        let print_goals = not (!Flags.batch_mode || is_query v) in
+        let hide_goals = !Flags.batch_mode || is_query v ||
+                         not (Proof_global.there_are_pending_proofs ()) in
 
-        if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
+        if not hide_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
         nsid
 
       with exn when CErrors.noncritical exn ->
