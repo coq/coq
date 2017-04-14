@@ -515,11 +515,35 @@ let read_recursive_format sl fmt =
   let slfmt, fmt = get_head fmt in
   slfmt, get_tail (slfmt, fmt)
 
+let warn_skip_spaces_curly =
+  CWarnings.create ~name:"skip-spaces-curly" ~category:"parsing"
+      (fun () ->strbrk "Skipping spaces inside curly brackets")
+
+let rec drop_spacing = function
+  | UnpCut _ as u :: fmt -> warn_skip_spaces_curly (); drop_spacing fmt
+  | UnpTerminal s' :: fmt when String.equal s' (String.make (String.length s') ' ') -> warn_skip_spaces_curly (); drop_spacing fmt
+  | fmt -> fmt
+
+let has_closing_curly_brace symbs fmt =
+  (* TODO: recognize and fail in case a box overlaps a pair of curly braces *)
+  let fmt = drop_spacing fmt in
+  match symbs, fmt with
+  | NonTerminal s :: symbs, (UnpTerminal s' as u) :: fmt when Id.equal s (Id.of_string s') ->
+     let fmt = drop_spacing fmt in
+     (match fmt with
+     | UnpTerminal "}" :: fmt -> Some (u :: fmt)
+     | _ -> None)
+  | _ -> None
+
 let hunks_of_format (from,(vars,typs)) symfmt =
+  let a = ref None in
   let rec aux = function
   | symbs, (UnpTerminal s' as u) :: fmt
       when String.equal s' (String.make (String.length s') ' ') ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
+  | symbs, (UnpTerminal "{") :: fmt when (a := has_closing_curly_brace symbs fmt; !a <> None) ->
+      let newfmt = Option.get !a in
+      aux (symbs,newfmt)
   | Terminal s :: symbs, (UnpTerminal s') :: fmt
       when String.equal s (String.drop_simple_quotes s') ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
@@ -951,10 +975,6 @@ let check_curly_brackets_notation_exists () =
   with Not_found ->
     error "Notations involving patterns of the form \"{ _ }\" are treated \n\
 specially and require that the notation \"{ _ }\" is already reserved."
-
-let warn_skip_spaces_curly =
-  CWarnings.create ~name:"skip-spaces-curly" ~category:"parsing"
-      (fun () ->strbrk "Skipping spaces inside curly brackets")
 
 (* Remove patterns of the form "{ _ }", unless it is the "{ _ }" notation *)
 let remove_curly_brackets l =
