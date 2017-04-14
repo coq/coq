@@ -219,8 +219,8 @@ let rec classify_vernac e =
     (* What are these? *)
     | VernacToplevelControl _
     | VernacRestoreState _
-    | VernacWriteState _ -> VtUnknown, VtNow
-    | VernacError _ -> assert false
+    | VernacWriteState _
+    | VernacError _ -> VtUnknown, VtNow
     (* Plugins should classify their commands *)
     | VernacExtend (s,l) ->
         try List.assoc s !classifiers l ()
