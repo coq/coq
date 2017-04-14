@@ -809,6 +809,15 @@ let check_useless_entry_types recvars mainvars etyps =
                   (pr_id x ++ str " is unbound in the notation.")
   | _ -> ()
 
+let check_binder_type recvars etyps =
+  let l1,l2 = List.split recvars in
+  let l = l1@l2 in
+  List.iter (function
+    | (x,ETBinder b) when not (List.mem x l) ->
+       errorlabstrm "" (str (if b then "binder" else "closed binder") ++
+                 strbrk " is only for use in recursive notations for binders.")
+    | _ -> ()) etyps
+
 let not_a_syntax_modifier = function
 | SetOnlyParsing -> true
 | SetOnlyPrinting -> true
@@ -1009,6 +1018,7 @@ let compute_syntax_data df modifiers =
   let toks = split_notation_string df in
   let (recvars,mainvars,symbols) = analyze_notation_tokens toks in
   let _ = check_useless_entry_types recvars mainvars etyps in
+  let _ = check_binder_type recvars etyps in
   let ntn_for_interp = make_notation_key symbols in
   let symbols' = remove_curly_brackets symbols in
   let need_squash = not (List.equal Notation.symbol_eq symbols symbols') in
