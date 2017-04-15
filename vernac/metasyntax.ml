@@ -522,11 +522,35 @@ let read_recursive_format sl fmt =
   let slfmt, fmt = get_head fmt in
   slfmt, get_tail (slfmt, fmt)
 
+let warn_skip_spaces_curly =
+  CWarnings.create ~name:"skip-spaces-curly" ~category:"parsing"
+      (fun () ->strbrk "Skipping spaces inside curly brackets")
+
+let rec drop_spacing = function
+  | UnpCut _ as u :: fmt -> warn_skip_spaces_curly (); drop_spacing fmt
+  | UnpTerminal s' :: fmt when String.equal s' (String.make (String.length s') ' ') -> warn_skip_spaces_curly (); drop_spacing fmt
+  | fmt -> fmt
+
+let has_closing_curly_brace symbs fmt =
+  (* TODO: recognize and fail in case a box overlaps a pair of curly braces *)
+  let fmt = drop_spacing fmt in
+  match symbs, fmt with
+  | NonTerminal s :: symbs, (UnpTerminal s' as u) :: fmt when Id.equal s (Id.of_string s') ->
+     let fmt = drop_spacing fmt in
+     (match fmt with
+     | UnpTerminal "}" :: fmt -> Some (u :: fmt)
+     | _ -> None)
+  | _ -> None
+
 let hunks_of_format (from,(vars,typs)) symfmt =
+  let a = ref None in
   let rec aux = function
   | symbs, (UnpTerminal s' as u) :: fmt
       when String.equal s' (String.make (String.length s') ' ') ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
+  | symbs, (UnpTerminal "{") :: fmt when (a := has_closing_curly_brace symbs fmt; !a <> None) ->
+      let newfmt = Option.get !a in
+      aux (symbs,newfmt)
   | Terminal s :: symbs, (UnpTerminal s') :: fmt
       when String.equal s (String.drop_simple_quotes s') ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
@@ -814,6 +838,15 @@ let check_useless_entry_types recvars mainvars etyps =
                   (pr_id x ++ str " is unbound in the notation.")
   | _ -> ()
 
+let check_binder_type recvars etyps =
+  let l1,l2 = List.split recvars in
+  let l = l1@l2 in
+  List.iter (function
+    | (x,ETBinder b) when not (List.mem x l) ->
+       CErrors.user_err (str (if b then "binder" else "closed binder") ++
+                 strbrk " is only for use in recursive notations for binders.")
+    | _ -> ()) etyps
+
 let not_a_syntax_modifier = function
 | SetOnlyParsing -> true
 | SetOnlyPrinting -> true
@@ -981,10 +1014,6 @@ let check_curly_brackets_notation_exists () =
     error "Notations involving patterns of the form \"{ _ }\" are treated \n\
 specially and require that the notation \"{ _ }\" is already reserved."
 
-let warn_skip_spaces_curly =
-  CWarnings.create ~name:"skip-spaces-curly" ~category:"parsing"
-      (fun () ->strbrk "Skipping spaces inside curly brackets")
-
 (* Remove patterns of the form "{ _ }", unless it is the "{ _ }" notation *)
 let remove_curly_brackets l =
   let rec skip_break acc = function
@@ -1057,9 +1086,10 @@ let compute_syntax_data df modifiers =
   let toks = split_notation_string df in
   let recvars,mainvars,symbols = analyze_notation_tokens toks in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
+  let _ = check_binder_type recvars mods.etyps in
 
   (* Notations for interp and grammar  *)
-  let ntn_for_interp = make_notation_key symbols in
+let ntn_for_interp = make_notation_key symbols in
   let symbols' = remove_curly_brackets symbols in
   let ntn_for_grammar = make_notation_key symbols' in
   if not onlyprint then check_rule_productivity symbols';

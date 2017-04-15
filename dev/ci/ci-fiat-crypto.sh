@@ -7,4 +7,4 @@ fiat_crypto_CI_DIR=${CI_BUILD_DIR}/fiat-crypto
 
 git_checkout ${fiat_crypto_CI_BRANCH} ${fiat_crypto_CI_GITURL} ${fiat_crypto_CI_DIR}
 
-( cd ${fiat_crypto_CI_DIR} && make -j ${NJOBS} )
+( cd ${fiat_crypto_CI_DIR} && make -j ${NJOBS} lite )

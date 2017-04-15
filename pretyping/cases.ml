@@ -563,31 +563,30 @@ let dependencies_in_rhs sigma nargs current tms eqns =
    declarations [d(i+1);...;dn] the term [tmi] is dependent in.
 
    [find_dependencies_signature (used1,...,usedn) ((tm1,d1),...,(tmn,dn))]
-   returns [(deps1,...,depsn)] where [depsi] is a subset of n,..,i+1
+   returns [(deps1,...,depsn)] where [depsi] is a subset of tm(i+1),..,tmn
    denoting in which of the d(i+1)...dn, the term tmi is dependent.
-   Dependencies are expressed by index, e.g. in dependency list
-   [n-2;1], [1] points to [dn] and [n-2] to [d3]
 *)
 
 let rec find_dependency_list sigma tmblock = function
   | [] -> []
-  | (used,tdeps,d)::rest ->
+  | (used,tdeps,tm,d)::rest ->
       let deps = find_dependency_list sigma tmblock rest in
       if used && List.exists (fun x -> dependent_decl sigma x d) tmblock
       then
-        List.add_set Int.equal
-          (List.length rest + 1) (List.union Int.equal deps tdeps)
+        match EConstr.kind sigma tm with
+        | Rel n -> List.add_set Int.equal n (List.union Int.equal deps tdeps)
+        | _ -> List.union Int.equal deps tdeps
       else deps
 
 let find_dependencies sigma is_dep_or_cstr_in_rhs (tm,(_,tmtypleaves),d) nextlist =
   let deps = find_dependency_list sigma (tm::tmtypleaves) nextlist in
   if is_dep_or_cstr_in_rhs || not (List.is_empty deps)
-  then ((true ,deps,d)::nextlist)
-  else ((false,[]  ,d)::nextlist)
+  then ((true ,deps,tm,d)::nextlist)
+  else ((false,[]  ,tm,d)::nextlist)
 
 let find_dependencies_signature sigma deps_in_rhs typs =
   let l = List.fold_right2 (find_dependencies sigma) deps_in_rhs typs [] in
-  List.map (fun (_,deps,_) -> deps) l
+  List.map (fun (_,deps,_,_) -> deps) l
 
 (* Assume we had terms t1..tq to match in a context xp:Tp,...,x1:T1 |-
    and xn:Tn has just been regeneralized into x:Tn so that the terms

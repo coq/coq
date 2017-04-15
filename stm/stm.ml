@@ -1810,12 +1810,13 @@ end = struct (* {{{ *)
     { indentation; verbose; loc; expr = e; strlen }
   =
     let e, time, fail =
-      let rec find time fail = function
-        | VernacTime (_,e) | VernacRedirect (_,(_,e)) -> find true fail e
-        | VernacFail e -> find time true e
-        | _ -> e, time, fail in find false false e in
+      let rec find ~time ~fail = function
+        | VernacTime (_,e) -> find ~time:true ~fail e
+        | VernacRedirect (_,(_,e)) -> find ~time ~fail e
+        | VernacFail e -> find ~time ~fail:true e
+        | e -> e, time, fail in find ~time:false ~fail:false e in
     Vernacentries.with_fail fail (fun () ->
-    (if time then System.with_time false else (fun x -> x)) (fun () ->
+    (if time then System.with_time !Flags.time else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
     Proof_global.with_current_proof (fun _ p ->
       let goals, _, _, _, _ = Proof.proof p in
@@ -1976,10 +1977,14 @@ let collect_proof keep cur hd brkind id =
    | [] -> no_name
    | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).loc in
- let is_defined = function
-   | _, { expr = VernacEndProof (Proved ((Transparent|Opaque (Some _)),_)) } ->
-      true
+ let rec is_defined_expr = function
+   | VernacEndProof (Proved ((Transparent|Opaque (Some _)),_)) -> true
+   | VernacTime (_, e) -> is_defined_expr e
+   | VernacRedirect (_, (_, e)) -> is_defined_expr e
+   | VernacTimeout (_, e) -> is_defined_expr e
    | _ -> false in
+ let is_defined = function
+   | _, { expr = e } -> is_defined_expr e in
  let proof_using_ast = function
    | Some (_, ({ expr = VernacProof(_,Some _) } as v)) -> Some v
    | _ -> None in

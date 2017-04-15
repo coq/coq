@@ -108,6 +108,8 @@ let string_get s i =
   try Proofview.NonLogical.return (String.get s i)
   with e -> Proofview.NonLogical.raise e
 
+let run_invalid_arg () = Proofview.NonLogical.raise (Invalid_argument "run_com")
+
 (* Gives the number of steps or next breakpoint of a run command *)
 let run_com inst =
   let open Proofview.NonLogical in
@@ -118,14 +120,14 @@ let run_com inst =
       let s = String.sub inst i (String.length inst - i) in
       if inst.[0] >= '0' && inst.[0] <= '9' then
         int_of_string s >>= fun num ->
-        (if num<0 then invalid_arg "run_com" else return ()) >>
+        (if num<0 then run_invalid_arg () else return ()) >>
         (skip:=num) >> (skipped:=0)
       else
         breakpoint:=Some (possibly_unquote s)
     else
-      invalid_arg "run_com"
+      run_invalid_arg ()
   else
-    invalid_arg "run_com"
+    run_invalid_arg ()
 
 (* Prints the run counter *)
 let run ini =
