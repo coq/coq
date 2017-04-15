@@ -190,8 +190,8 @@ let rec classify_vernac e =
     | VernacSyntacticDefinition _
     | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _
-    | VernacContext _ (* TASSI: unsure *)
     | VernacProofMode _ 
+    | VernacContext _ -> VtSideff [], VtNow
     (* These are ambiguous *)
     | VernacInstance _ -> VtUnknown, VtNow
     (* Stm will install a new classifier to handle these *)
