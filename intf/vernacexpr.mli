@@ -71,7 +71,7 @@ type printable =
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option
-  | PrintAbout of reference or_by_notation*int option
+  | PrintAbout of reference or_by_notation * goal_selector option
   | PrintImplicit of reference or_by_notation
   | PrintAssumptions of bool * bool * reference or_by_notation
   | PrintStrategy of reference or_by_notation option
@@ -316,7 +316,6 @@ type vernac_expr =
   | VernacRedirect of string * vernac_expr located
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr
-  | VernacError of exn (* always fails *)
 
   (* Syntax *)
   | VernacSyntaxExtension of
@@ -436,11 +435,11 @@ type vernac_expr =
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list
   | VernacPrintOption of Goptions.option_name
-  | VernacCheckMayEval of Genredexpr.raw_red_expr option * int option * constr_expr
+  | VernacCheckMayEval of Genredexpr.raw_red_expr option * goal_selector option * constr_expr
   | VernacGlobalCheck of constr_expr
   | VernacDeclareReduction of string * Genredexpr.raw_red_expr
   | VernacPrint of printable
-  | VernacSearch of searchable * int option * search_restriction
+  | VernacSearch of searchable * goal_selector option * search_restriction
   | VernacLocate of locatable
   | VernacRegister of lident * register_kind
   | VernacComments of comment list

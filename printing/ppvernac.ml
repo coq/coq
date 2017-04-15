@@ -107,7 +107,7 @@ open Decl_kinds
         | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
   let pr_search a gopt b pr_p =
-    pr_opt (fun g -> int g ++ str ":"++ spc()) gopt
+    pr_opt (fun g -> Proof_global.pr_goal_selector g ++ str ":"++ spc()) gopt
     ++
       match a with
       | SearchHead c -> keyword "SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
@@ -497,7 +497,7 @@ open Decl_kinds
     | PrintVisibility s ->
       keyword "Print Visibility" ++ pr_opt str s
     | PrintAbout (qid,gopt) ->
-       pr_opt (fun g -> int g ++ str ":"++ spc()) gopt
+       pr_opt (fun g -> Proof_global.pr_goal_selector g ++ str ":"++ spc()) gopt
        ++ keyword "About" ++ spc()  ++ pr_smart_global qid
     | PrintImplicit qid ->
       keyword "Print Implicit" ++ spc()  ++ pr_smart_global qid
@@ -619,8 +619,6 @@ open Decl_kinds
         return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac_body v)
       | VernacFail v ->
         return (keyword "Fail" ++ spc() ++ pr_vernac_body v)
-      | VernacError _ ->
-        return (keyword "No-parsing-rule for VernacError")
 
     (* Syntax *)
       | VernacOpenCloseScope (_,(opening,sc)) ->
@@ -1140,7 +1138,8 @@ open Decl_kinds
                      spc() ++ keyword "in" ++ spc () ++ pr_lconstr c)
           | None -> hov 2 (keyword "Check" ++ spc() ++ pr_lconstr c)
         in
-        let pr_i = match io with None -> mt () | Some i -> int i ++ str ": " in
+        let pr_i = match io with None -> mt ()
+                               | Some i -> Proof_global.pr_goal_selector i ++ str ": " in
         return (pr_i ++ pr_mayeval r c)
       | VernacGlobalCheck c ->
         return (hov 2 (keyword "Type" ++ pr_constrarg c))

@@ -504,7 +504,6 @@ let rec tmpp v loc =
       xmlApply loc (Element("timeout",["val",string_of_int s],[]) ::
                     [tmpp e loc])
   | VernacFail e -> xmlApply loc (Element("fail",[],[]) :: [tmpp e loc])
-  | VernacError _ -> xmlWithLoc loc "error" [] []
 
   (* Syntax *)
   | VernacSyntaxExtension (_, ((_, name), sml)) ->

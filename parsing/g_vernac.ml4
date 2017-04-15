@@ -40,7 +40,6 @@ let def_body = Gram.entry_create "vernac:def_body"
 let decl_notation = Gram.entry_create "vernac:decl_notation"
 let record_field = Gram.entry_create "vernac:record_field"
 let of_type_with_opt_coercion = Gram.entry_create "vernac:of_type_with_opt_coercion"
-let subgoal_command = Gram.entry_create "proof_mode:subgoal_command"
 let instance_name = Gram.entry_create "vernac:instance_name"
 let section_subset_expr = Gram.entry_create "vernac:section_subset_expr"
 
@@ -53,7 +52,7 @@ let make_bullet s =
   | _ -> assert false
 
 GEXTEND Gram
-  GLOBAL: vernac gallina_ext noedit_mode subprf subgoal_command;
+  GLOBAL: vernac gallina_ext noedit_mode subprf;
   vernac: FIRST
     [ [ IDENT "Time"; c = located_vernac -> VernacTime c
       | IDENT "Redirect"; s = ne_string; c = located_vernac -> VernacRedirect (s, c)
@@ -92,7 +91,7 @@ GEXTEND Gram
     [ [ prfcom = command_entry -> prfcom ] ]
   ;
   noedit_mode:
-    [ [ c = subgoal_command -> c None] ]
+    [ [ c = query_command -> c None] ]
   ;
 
   subprf:
@@ -102,15 +101,6 @@ GEXTEND Gram
     ] ]
   ;
 
-  subgoal_command:
-    [ [ c = query_command; "." ->
-                  begin function
-                    | Some (SelectNth g) -> c (Some g)
-                    | None -> c None
-                    | _ ->
-                        VernacError (UserError (None,str"Typing and evaluation commands, cannot be used with the \"all:\" selector."))
-                  end ] ]
-  ;
   located_vernac:
     [ [ v = vernac -> !@loc, v ] ]
   ;
@@ -918,29 +908,30 @@ GEXTEND Gram
 	  VernacRemoveOption ([table], v) ]] 
   ;
   query_command: (* TODO: rapprocher Eval et Check *)
-    [ [ IDENT "Eval"; r = red_expr; "in"; c = lconstr ->
+    [ [ IDENT "Eval"; r = red_expr; "in"; c = lconstr; "." ->
           fun g -> VernacCheckMayEval (Some r, g, c)
-      | IDENT "Compute"; c = lconstr ->
+      | IDENT "Compute"; c = lconstr; "." ->
 	  fun g -> VernacCheckMayEval (Some (Genredexpr.CbvVm None), g, c)
-      | IDENT "Check"; c = lconstr ->
+      | IDENT "Check"; c = lconstr; "." ->
 	 fun g -> VernacCheckMayEval (None, g, c)
       (* Searching the environment *)
-      | IDENT "About"; qid = smart_global ->
+      | IDENT "About"; qid = smart_global; "." ->
 	 fun g -> VernacPrint (PrintAbout (qid,g))
-      | IDENT "SearchHead"; c = constr_pattern; l = in_or_out_modules ->
+      | IDENT "SearchHead"; c = constr_pattern; l = in_or_out_modules; "." ->
 	  fun g -> VernacSearch (SearchHead c,g, l)
-      | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules ->
+      | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules; "." ->
 	  fun g -> VernacSearch (SearchPattern c,g, l)
-      | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->
+      | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules; "." ->
 	  fun g -> VernacSearch (SearchRewrite c,g, l)
-      | IDENT "Search"; s = searchabout_query; l = searchabout_queries ->
+      | IDENT "Search"; s = searchabout_query; l = searchabout_queries; "." ->
 	  let (sl,m) = l in fun g -> VernacSearch (SearchAbout (s::sl),g, m)
       (* compatibility: SearchAbout *)
-      | IDENT "SearchAbout"; s = searchabout_query; l = searchabout_queries ->
+      | IDENT "SearchAbout"; s = searchabout_query; l = searchabout_queries; "." ->
 	  fun g -> let (sl,m) = l in VernacSearch (SearchAbout (s::sl),g, m)
       (* compatibility: SearchAbout with "[ ... ]" *)
       | IDENT "SearchAbout"; "["; sl = LIST1 searchabout_query; "]";
-	  l = in_or_out_modules -> fun g -> VernacSearch (SearchAbout sl,g, l)
+	l = in_or_out_modules; "." ->
+         fun g -> VernacSearch (SearchAbout sl,g, l)
       ] ]
   ;
   printable:

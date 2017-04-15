@@ -671,16 +671,18 @@ let _ =
 let default_goal_selector = ref (Vernacexpr.SelectNth 1)
 let get_default_goal_selector () = !default_goal_selector
 
-let print_range_selector (i, j) =
-  if i = j then string_of_int i
-  else string_of_int i ^ "-" ^ string_of_int j
+let pr_range_selector (i, j) =
+  if i = j then int i
+  else int i ++ str "-" ++ int j
 
-let print_goal_selector = function
-  | Vernacexpr.SelectAll -> "all"
-  | Vernacexpr.SelectNth i -> string_of_int i
-  | Vernacexpr.SelectList l -> "[" ^
-      String.concat ", " (List.map print_range_selector l) ^ "]"
-  | Vernacexpr.SelectId id -> Id.to_string id
+let pr_goal_selector = function
+  | Vernacexpr.SelectAll -> str "all"
+  | Vernacexpr.SelectNth i -> int i
+  | Vernacexpr.SelectList l ->
+     str "["
+     ++ prlist_with_sep pr_comma pr_range_selector l
+     ++ str "]"
+  | Vernacexpr.SelectId id -> Id.print id
 
 let parse_goal_selector = function
   | "all" -> Vernacexpr.SelectAll
@@ -699,7 +701,10 @@ let _ =
                                   optdepr = false;
                                   optname = "default goal selector" ;
                                   optkey = ["Default";"Goal";"Selector"] ;
-                                  optread = begin fun () -> print_goal_selector !default_goal_selector end;
+                                  optread = begin fun () ->
+                                            string_of_ppcmds
+                                              (pr_goal_selector !default_goal_selector)
+                                            end;
                                   optwrite = begin fun n ->
                                     default_goal_selector := parse_goal_selector n
                                   end
