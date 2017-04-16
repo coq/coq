@@ -85,7 +85,7 @@ TACTIC EXTEND not_evar
 END
 
 TACTIC EXTEND is_ground
-  [ "is_ground" constr(ty) ] -> [ Proofview.V82.tactic (is_ground ty) ]
+  [ "is_ground" constr(ty) ] -> [ is_ground ty ]
 END
 
 TACTIC EXTEND autoapply
