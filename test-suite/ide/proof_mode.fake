@@ -1,0 +1,26 @@
+ADD { Declare ML Module "proof_mode_plugin". }
+ADD { Lemma foo : True. }
+ADD { 	Proof. }
+ADD { 	idtac. }
+ADD { 	Proof Mode "test". }
+ADD { 	test. }
+ADD { 	Proof Mode "Classic". }
+ADD { 	idtac. }
+ADD { 	trivial. }
+ADD { Qed. }
+ADD { Lemma bar : True. }
+ADD { 	Proof. }
+ADD { 	idtac. }
+ADD { 	Proof Mode "test". }
+ADD { 	test. }
+ADD {          Lemma baz : True. }
+ADD {          idtac. }
+ADD {          idtac. }
+ADD {          trivial. }
+ADD {          Qed. }
+ADD {   test. }
+ADD { 	Proof Mode "Classic". }
+ADD { 	idtac. }
+ADD { 	trivial. }
+ADD { Qed. }
+JOIN

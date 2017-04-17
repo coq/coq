@@ -128,6 +128,7 @@ plugins/ltac/extraargs.ml
 plugins/ltac/profile_ltac_tactics.ml
 ide/coqide_main.ml
 plugins/ssrmatching/ssrmatching.ml
+plugins/test_suite/proof_mode.ml
 
 # other auto-generated files
 

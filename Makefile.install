@@ -95,14 +95,14 @@ install-devfiles:
 	$(INSTALLBIN) $(COQMKTOP) $(FULLBINDIR)
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMO) $(GRAMMARCMA)
-	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
+	$(INSTALLSH)  $(FULLCOQLIB) $(filter-out plugins/test_suite/%,$(INSTALLCMI))
 ifeq ($(BEST),opt)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
 endif
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES) $(PLUGINS)
+	$(INSTALLSH) $(FULLCOQLIB) $(filter-out plugins/test_suite/%,$(LIBFILES)) $(filter-out plugins/test_suite%,$(PLUGINS))
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	$(MKDIR) $(FULLCOQLIB)/kernel/byterun
 ifndef CUSTOM
@@ -110,7 +110,7 @@ ifndef CUSTOM
 endif
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)/kernel/byterun
-	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINSOPT)
+	$(INSTALLSH) $(FULLCOQLIB) $(filter-out plugins/test_suite/%,$(PLUGINSOPT))
 endif
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
