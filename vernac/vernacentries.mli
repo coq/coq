@@ -10,6 +10,11 @@
 
 val dump_global : Libnames.qualid Constrexpr.or_by_notation -> unit
 
+(** Default proof mode set by `start_proof` *)
+val get_default_proof_mode : unit -> Pvernac.proof_mode
+
+val proof_mode_opt_name : string list
+
 (** Vernacular entries *)
 val vernac_require :
   Libnames.qualid option -> bool option -> Libnames.qualid list -> unit

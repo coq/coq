@@ -45,15 +45,15 @@ type vernac_type =
       parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
       proof_block_detection : proof_block_name option
     }
-  (* To be removed *)
-  | VtProofMode of string
   (* Queries are commands assumed to be "pure", that is to say, they
      don't modify the interpretation state. *)
   | VtQuery
+  (* Commands that change the current proof mode *)
+  | VtProofMode of string
   (* To be removed *)
   | VtMeta
   | VtUnknown
-and vernac_start = string * opacity_guarantee * Names.Id.t list
+and vernac_start = opacity_guarantee * Names.Id.t list
 and vernac_sideff_type = Names.Id.t list
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)

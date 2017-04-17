@@ -439,7 +439,6 @@ module Module =
     let module_expr = Entry.create "module_expr"
     let module_type = Entry.create "module_type"
   end
-
 let epsilon_value f e =
   let r = G.production (G.r_next G.r_stop (symbol_of_prod_entry_key e), (fun x _ -> f x)) in
   let ext = [None, None, [r]] in

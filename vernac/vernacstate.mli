@@ -8,10 +8,21 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module Parser : sig
+  type state
+
+  val init : unit -> state
+  val cur_state : unit -> state
+
+  val parse : state -> 'a Pcoq.Entry.t -> Pcoq.Parsable.t -> 'a
+
+end
+
 type t = {
-  system  : States.state;        (* summary + libstack *)
-  proof   : Proof_global.t;      (* proof state *)
-  shallow : bool                 (* is the state trimmed down (libstack) *)
+  parsing: Parser.state;
+  system : States.state; (* summary + libstack *)
+  proof : Proof_global.t; (* proof state *)
+  shallow : bool; (* is the state trimmed down (libstack) *)
 }
 
 val freeze_interp_state : marshallable:bool -> t

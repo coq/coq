@@ -18,7 +18,7 @@ DECLARE PLUGIN "derive_plugin"
 
 {
 
-let classify_derive_command _ = Vernacextend.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]),VtLater)
+let classify_derive_command _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpacity,[]),VtLater)
 
 }
 

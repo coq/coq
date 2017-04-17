@@ -93,15 +93,16 @@ val init_core : unit -> unit
 (** [new_doc opt] Creates a new document with options [opt] *)
 val new_doc  : stm_init_options -> doc * Stateid.t
 
-(** [parse_sentence sid pa] Reads a sentence from [pa] with parsing
-   state [sid] Returns [End_of_input] if the stream ends *)
-val parse_sentence : doc:doc -> Stateid.t -> Pcoq.Parsable.t ->
-  Vernacexpr.vernac_control CAst.t
+(** [parse_sentence sid entry pa] Reads a sentence from [pa] with parsing state
+    [sid] and non terminal [entry]. [entry] receives in input the current proof
+    mode. [sid] should be associated with a valid parsing state (which may not
+    be the case if an error was raised at parsing time). *)
+val parse_sentence :
+  doc:doc -> Stateid.t ->
+  entry:(Pvernac.proof_mode option -> 'a Pcoq.Entry.t) -> Pcoq.Parsable.t -> 'a
 
 (* Reminder: A parsable [pa] is constructed using
    [Pcoq.Parsable.t stream], where [stream : char Stream.t]. *)
-
-exception End_of_input
 
 (* [add ~ontop ?newtip verbose cmd] adds a new command [cmd] ontop of
    the state [ontop].

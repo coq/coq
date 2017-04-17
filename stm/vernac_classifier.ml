@@ -15,8 +15,6 @@ open CAst
 open Vernacextend
 open Vernacexpr
 
-let default_proof_mode () = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"]
-
 let string_of_parallel = function
   | `Yes (solve,abs) ->
        "par" ^ if solve then "solve" else "" ^ if abs then "abs" else ""
@@ -32,9 +30,9 @@ let string_of_vernac_type = function
   | VtProofStep { parallel; proof_block_detection } ->
       "ProofStep " ^ string_of_parallel parallel ^
         Option.default "" proof_block_detection
-  | VtProofMode s -> "ProofMode " ^ s
   | VtQuery -> "Query"
   | VtMeta -> "Meta "
+  | VtProofMode _ -> "Proof Mode"
 
 let string_of_vernac_when = function
   | VtLater -> "Later"
@@ -57,7 +55,7 @@ let stm_allow_nested_proofs_option_name = ["Nested";"Proofs";"Allowed"]
 let options_affecting_stm_scheduling =
   [ Attributes.universe_polymorphism_option_name;
     stm_allow_nested_proofs_option_name;
-    Proof_global.proof_mode_opt_name;
+    Vernacentries.proof_mode_opt_name;
   ]
 
 let classify_vernac e =
@@ -97,15 +95,15 @@ let classify_vernac e =
     | VernacSetOption (_, ["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
     | VernacDefinition ((Decl_kinds.DoDischarge,_),({v=i},_),ProveBody _) ->
-      VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity, idents_of_name i), VtLater
+      VtStartProof(Doesn'tGuaranteeOpacity, idents_of_name i), VtLater
 
     | VernacDefinition (_,({v=i},_),ProveBody _) ->
        let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-        VtStartProof(default_proof_mode (),guarantee, idents_of_name i), VtLater
+        VtStartProof(guarantee, idents_of_name i), VtLater
     | VernacStartTheoremProof (_,l) ->
         let ids = List.map (fun (({v=i}, _), _) -> i) l in
        let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-        VtStartProof (default_proof_mode (),guarantee,ids), VtLater
+        VtStartProof (guarantee,ids), VtLater
     | VernacFixpoint (discharge,l) ->
        let guarantee =
          if discharge = Decl_kinds.DoDischarge || poly then Doesn'tGuaranteeOpacity
@@ -115,7 +113,7 @@ let classify_vernac e =
           List.fold_left (fun (l,b) ((({v=id},_),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof (default_proof_mode (),guarantee,ids), VtLater
+        then VtStartProof (guarantee,ids), VtLater
         else VtSideff ids, VtLater
     | VernacCoFixpoint (discharge,l) ->
        let guarantee =
@@ -126,7 +124,7 @@ let classify_vernac e =
           List.fold_left (fun (l,b) ((({v=id},_),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof (default_proof_mode (),guarantee,ids), VtLater
+        then VtStartProof (guarantee,ids), VtLater
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->
@@ -184,8 +182,8 @@ let classify_vernac e =
     | VernacSyntacticDefinition _
     | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _
-    | VernacContext _ (* TASSI: unsure *)
-    | VernacProofMode _ -> VtSideff [], VtNow
+    | VernacContext _ (* TASSI: unsure *) -> VtSideff [], VtNow
+    | VernacProofMode pm -> VtProofMode pm, VtNow
     (* These are ambiguous *)
     | VernacInstance _ -> VtUnknown, VtNow
     (* Stm will install a new classifier to handle these *)
@@ -211,10 +209,10 @@ let classify_vernac e =
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match static_control_classifier e with
         | ( VtQuery | VtProofStep _ | VtSideff _
-          | VtProofMode _ | VtMeta), _ as x -> x
+          | VtMeta), _ as x -> x
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
-            VtNow
-        | (VtStartProof _ | VtUnknown), _ -> VtQuery, VtLater)
+            VtLater
+        | (VtStartProof _ | VtUnknown | VtProofMode _), _ -> VtQuery, VtLater)
   in
   static_control_classifier e
