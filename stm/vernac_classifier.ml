@@ -10,8 +10,6 @@ open Vernacexpr
 open CErrors
 open Pp
 
-let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
-
 let string_of_in_script b = if b then " (inside script)" else ""
 
 let string_of_parallel = function
@@ -29,7 +27,6 @@ let string_of_vernac_type = function
   | VtProofStep { parallel; proof_block_detection } ->
       "ProofStep " ^ string_of_parallel parallel ^
         Option.default "" proof_block_detection
-  | VtProofMode s -> "ProofMode " ^ s
   | VtQuery (b,(id,route)) ->
       "Query " ^ string_of_in_script b ^ " report " ^ Stateid.to_string id ^
       " route " ^ string_of_int route
@@ -52,8 +49,8 @@ let declare_vernac_classifier
 
 let make_polymorphic (a, b as x) =
   match a with
-  | VtStartProof (x, _, ids) ->
-      VtStartProof (x, Doesn'tGuaranteeOpacity, ids), b
+  | VtStartProof (_, ids) ->
+      VtStartProof (Doesn'tGuaranteeOpacity, ids), b
   | _ -> x
 
 let undo_classifier = ref (fun _ -> assert false)
@@ -81,7 +78,7 @@ let rec classify_vernac e =
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _
-          | VtStm _ | VtProofMode _ ), _ as x -> x
+          | VtStm _ ), _ as x -> x
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
             VtNow
@@ -115,27 +112,27 @@ let rec classify_vernac e =
     (* StartProof *)
     | VernacDefinition (
        (Some Decl_kinds.Discharge,Decl_kinds.Definition),((_,i),_),ProveBody _) ->
-        VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity,[i]), VtLater
+        VtStartProof(Doesn'tGuaranteeOpacity,[i]), VtLater
     | VernacDefinition (_,((_,i),_),ProveBody _) ->
-        VtStartProof(default_proof_mode (),GuaranteesOpacity,[i]), VtLater
+        VtStartProof(GuaranteesOpacity,[i]), VtLater
     | VernacStartTheoremProof (_,l,_) ->
         let ids = 
           CList.map_filter (function (Some ((_,i),pl), _) -> Some i | _ -> None) l in
-        VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
-    | VernacGoal _ -> VtStartProof (default_proof_mode (),GuaranteesOpacity,[]), VtLater
+        VtStartProof (GuaranteesOpacity,ids), VtLater
+    | VernacGoal _ -> VtStartProof (GuaranteesOpacity,[]), VtLater
     | VernacFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) ((((_,id),_),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
+        then VtStartProof (GuaranteesOpacity,ids), VtLater
         else VtSideff ids, VtLater
     | VernacCoFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) ((((_,id),_),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
-        then VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
+        then VtStartProof (GuaranteesOpacity,ids), VtLater
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->

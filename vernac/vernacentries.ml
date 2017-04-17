@@ -1881,13 +1881,9 @@ exception End_of_input
    without a considerable amount of refactoring.
  *)
 let vernac_load interp fname =
-  let interp x =
-    let proof_mode = Proof_global.get_default_proof_mode_name () in
-    Proof_global.activate_proof_mode proof_mode;
-    interp x in
   let parse_sentence = Flags.with_option Flags.we_are_parsing
     (fun po ->
-    match Pcoq.Gram.entry_parse Pcoq.main_entry po with
+    match Pcoq.(Gram.entry_parse main_entry po) with
       | Some x -> x
       | None -> raise End_of_input) in
   let fname =
@@ -1899,6 +1895,7 @@ let vernac_load interp fname =
     Pcoq.Gram.parsable ~file:longfname (Stream.of_channel in_chan) in
   try while true do interp (snd (parse_sentence input)) done
   with End_of_input -> ()
+let vernac_proof_mode mode = Pcoq.set_tactic_entry mode
 
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
@@ -2069,7 +2066,7 @@ let interp ?proof ~loc locality poly c =
   | VernacProof (Some tac, Some l) -> 
       Aux_file.record_in_aux_at loc "VernacProof" "tac:yes using:yes";
       vernac_set_end_tac tac; vernac_set_used_variables l
-  | VernacProofMode mn -> Proof_global.set_proof_mode mn
+  | VernacProofMode mn -> vernac_proof_mode mn
 
   (* Extensions *)
   | VernacExtend (opn,args) -> Vernacinterp.call ?locality (opn,args)

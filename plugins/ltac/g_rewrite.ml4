@@ -247,11 +247,11 @@ VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
     => [ Vernacexpr.VtUnknown, Vernacexpr.VtNow ]
     -> [ add_morphism_infer (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) m n ]
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
-    => [ Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) ]
+    => [ Vernacexpr.(VtStartProof(GuaranteesOpacity,[n]), VtLater) ]
     -> [ add_morphism (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) [] m s n ]
   | [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
         "with" "signature" lconstr(s) "as" ident(n) ]
-    => [ Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) ]
+    => [ Vernacexpr.(VtStartProof(GuaranteesOpacity,[n]), VtLater) ]
     -> [ add_morphism (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) binders m s n ]
 END
 

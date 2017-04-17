@@ -365,12 +365,29 @@ let universe_proof_terminator compute_guard hook =
 let standard_proof_terminator compute_guard hook =
   universe_proof_terminator compute_guard (fun _ -> hook)
 
+(* Default proof mode, to be set at the beginning of proofs for
+   programs that cannot be statically classified. *)
+let default_proof_mode = ref "No"
+let get_default_proof_mode () = !default_proof_mode
+let set_default_proof_mode mn = default_proof_mode := mn
+
+let _ =
+  Goptions.declare_string_option {Goptions.
+    optsync = true ;
+    optdepr = false;
+    optname = "default proof mode" ;
+    optkey = ["Default";"Proof";"Mode"] ;
+    optread = get_default_proof_mode;
+    optwrite = set_default_proof_mode;
+  }
+
+
 let start_proof id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = match terminator with
   | None -> standard_proof_terminator compute_guard hook
   | Some terminator -> terminator compute_guard hook
   in
-  let sign = 
+  let sign =
     match sign with
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
@@ -555,4 +572,4 @@ let save_proof ?proof = function
 
 let get_current_context () =
   Pfedit.get_current_context ()
-           
+

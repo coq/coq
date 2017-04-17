@@ -58,7 +58,6 @@ val standard_proof_terminator :
 
 (** A hook the next three functions pass to cook_proof *)
 val set_save_hook : (Proof.proof -> unit) -> unit
-
 val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
 
 
@@ -67,3 +66,6 @@ val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> uni
    and the current global env *)
 
 val get_current_context : unit -> Evd.evar_map * Environ.env
+
+(** Default proof mode set by `start_proof` *)
+val default_proof_mode : string ref

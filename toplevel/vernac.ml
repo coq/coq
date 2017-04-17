@@ -121,10 +121,9 @@ let rec interp_vernac sid po (loc,com) =
         (* Main STM interaction *)
         if ntip <> `NewTip then
           anomaly (str "vernac.ml: We got an unfocus operation on the toplevel!");
-        (* Due to bug #5363 we cannot use observe here as we should,
-           it otherwise reveals bugs *)
-        (* Stm.observe nsid; *)
-        Stm.finish ();
+
+        (* Force the command  *)
+        Stm.observe nsid;
 
         (* We could use a more refined criteria depending on the
            vernac. For now we imitate the old approach. *)

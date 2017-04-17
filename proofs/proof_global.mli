@@ -10,26 +10,6 @@
      toplevel. In particular it defines the global proof
      environment. *)
 
-(** Type of proof modes :
-    - A name
-    - A function [set] to set it *from standard mode*
-    - A function [reset] to reset the *standard mode* from it 
-
-*)
-type proof_mode_name = string
-type proof_mode = {
-  name : proof_mode_name ;
-  set : unit -> unit ;
-  reset : unit -> unit
-}
-
-(** Registers a new proof mode which can then be adressed by name
-    in [set_default_proof_mode].
-    One mode is already registered - the standard mode - named "No",
-    It corresponds to Coq default setting are they are set when coqtop starts. *)
-val register_proof_mode : proof_mode -> unit
-val get_default_proof_mode_name : unit -> proof_mode_name
-
 val there_are_pending_proofs : unit -> bool
 val check_no_pending_proof : unit -> unit
 
@@ -39,10 +19,6 @@ val get_all_proof_names : unit -> Names.Id.t list
 val discard : Names.Id.t Loc.located -> unit
 val discard_current : unit -> unit
 val discard_all : unit -> unit
-
-(** [set_proof_mode] sets the proof mode to be used after it's called. It is
-    typically called by the Proof Mode command. *)
-val set_proof_mode : proof_mode_name -> unit
 
 exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof
@@ -144,16 +120,6 @@ val set_used_variables :
 val get_used_variables : unit -> Context.Named.t option
 
 val get_universe_binders : unit -> universe_binders option
-
-(**********************************************************)
-(*                                                        *)
-(*                            Proof modes                 *)
-(*                                                        *)
-(**********************************************************)
-
-
-val activate_proof_mode : proof_mode_name -> unit
-val disactivate_current_proof_mode : unit -> unit
 
 (**********************************************************)
 (*                                                        *)
