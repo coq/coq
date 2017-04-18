@@ -25,6 +25,14 @@ echo $TRAVIS_PULL_REQUEST
 echo $TRAVIS_BRANCH
 echo $TRAVIS_COMMIT
 
+if [ $TRAVIS_PULL_REQUEST == "402" ] || [ $TRAVIS_BRANCH == "located_switch" ]; then
+    mathcomp_CI_BRANCH=located_switch
+    mathcomp_CI_GITURL=https://github.com/ejgallego/math-comp.git
+
+    fiat_parsers_CI_BRANCH=located_switch
+    fiat_parsers_CI_GITURL=https://github.com/ejgallego/fiat.git
+fi
+
 if [ $TRAVIS_PULL_REQUEST == "461" ] || [ $TRAVIS_BRANCH == "stm+remove_compat_parsing" ]; then
     mathcomp_CI_BRANCH=no_camlp4_compat
     mathcomp_CI_GITURL=https://github.com/ejgallego/math-comp.git
