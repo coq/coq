@@ -141,11 +141,13 @@ let  ann_hdr = tag Tag.error   (str "Anomaly:") ++ spc ()
 let make_body quoter info ?pre_hdr s =
   pr_opt_no_spc (fun x -> x ++ fnl ()) pre_hdr ++ quoter (hov 0 (info ++ s))
 
+(* The empty quoter *)
+let noq x = x
 (* Generic logger *)
 let gen_logger dbg err ?pre_hdr level msg = match level with
   | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_hdr ?pre_hdr msg)
   | Info    -> msgnl_with !std_ft (make_body dbg info_hdr ?pre_hdr msg)
-  | Notice  -> msgnl_with !std_ft (make_body dbg info_hdr ?pre_hdr msg)
+  | Notice  -> msgnl_with !std_ft (make_body noq info_hdr ?pre_hdr msg)
   | Warning -> Flags.if_warn (fun () ->
                msgnl_with !err_ft (make_body err warn_hdr ?pre_hdr msg)) ()
   | Error   -> msgnl_with !err_ft (make_body err  err_hdr ?pre_hdr msg)
