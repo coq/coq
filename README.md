@@ -7,15 +7,17 @@ mathematical definitions, executable algorithms and theorems together with an
 environment for semi-interactive development of machine-checked proofs.
 
 ## Installation
-See the file `INSTALL` for installation procedure.
+Go to the [download page](https://coq.inria.fr/download) for Windows and MacOS packages;
+read the [help page](https://coq.inria.fr/opam/www/using.html) on how to install Coq with OPAM;
+or refer to the [`INSTALL` file](/INSTALL) for the procedure to install from source.
 
 ## Documentation
 The documentation is part of the archive in directory doc. The
 documentation of the last released version is available on the Coq
-web site at [coq.inria.fr/doc](http://coq.inria.fr/doc).
+web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
 
 ## Changes
-There is a file named `CHANGES` that explains the differences and the
+There is a file named [`CHANGES`](/CHANGES) that explains the differences and the
 incompatibilities since last versions. If you upgrade Coq, please read
 it carefully.
 
