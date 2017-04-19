@@ -220,6 +220,8 @@ let instantiate_pattern env sigma lvar c =
               ctx
           in
 	  let c = substl inst c in
+	  (** FIXME: Stupid workaround to pattern_of_constr being evar sensitive *)
+	  let c = Evarutil.nf_evar sigma c in
 	  pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
 	with Not_found (* List.index failed *) ->
 	  let vars =
