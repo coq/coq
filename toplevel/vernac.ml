@@ -162,7 +162,17 @@ and load_vernac verbosely sid file =
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
-      let loc, ast = Stm.parse_sentence !rsid in_pa in
+      let loc, ast =
+        try Stm.parse_sentence !rsid in_pa
+        with
+        | Stm.End_of_input -> raise Stm.End_of_input
+        | any ->
+          let (e, info) = CErrors.push any in
+          let loc = Loc.get_loc info in
+          let msg = CErrors.iprint (e, info) in
+          Feedback.msg_error ?loc msg;
+          iraise (e, info)
+      in
 
       (* Printing of vernacs *)
       if !beautify then pr_new_syntax in_pa chan_beautify loc (Some ast);
