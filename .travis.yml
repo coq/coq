@@ -27,6 +27,8 @@ env:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
   - TEST_TARGET="validate"                           TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
+  - TEST_TARGET="ci-bedrock-src"
+  - TEST_TARGET="ci-bedrock-facade"
   - TEST_TARGET="ci-color"
   - TEST_TARGET="ci-compcert"
   - TEST_TARGET="ci-coquelicot"
