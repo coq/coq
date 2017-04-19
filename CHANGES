@@ -17,6 +17,7 @@ Tactics
     Most notably, the new implementation recognizes Miller patterns that were
     missed before because of a missing normalization step. Hopefully this should
     be fairly uncommon.
+- "auto with real" can now discharge comparisons of literals
 
 Standard Library
 
