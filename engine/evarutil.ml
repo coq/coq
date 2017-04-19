@@ -900,8 +900,12 @@ let eq_constr_univs_test sigma1 sigma2 t u =
   let t = EConstr.Unsafe.to_constr t
   and u = EConstr.Unsafe.to_constr u in
   let fold cstr sigma =
-    try Some (add_universe_constraints sigma cstr)
-    with Univ.UniverseInconsistency _ | UniversesDiffer -> None
+    try
+      (try Some (add_universe_constraints sigma cstr)
+       with UniversesDiffer ->
+         let cstrs = UnivProblem.to_constraints ~force_weak:false (universes sigma) cstr in
+         Some (add_constraints sigma cstrs))
+    with Univ.UniverseInconsistency _ -> None
   in
   let ans =
     UnivProblem.eq_constr_univs_infer_with

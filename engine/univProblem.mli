@@ -42,7 +42,12 @@ type 'a constraint_function = 'a -> 'a -> Set.t -> Set.t
 
 val enforce_eq_instances_univs : bool -> Instance.t constraint_function
 
-(** With [force_weak] UWeak constraints are turned into equalities,
+(** Transform universe constraints into regular constraints, forcing equalities of
+    instances of constants.
+    @raise Invalid_argument if the universe constraints contain ill-formed algebraic
+      constraints.
+
+   With [force_weak] UWeak constraints are turned into equalities,
    otherwise they're forgotten. *)
 val to_constraints : force_weak:bool -> UGraph.t -> Set.t -> Constraint.t
 
