@@ -60,3 +60,5 @@ fun x : J => let '{{n, m, p}} := x in n + m + p
      : J -> nat
 fun x : J => let 'D n m p q := x in n + m + p + q
      : J -> nat
+The command has indeed failed with message:
+The constructor D (in type J) expects 3 arguments.
