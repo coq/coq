@@ -41,7 +41,7 @@ open Eauto
 open Indfun_common
 open Sigma.Notations
 open Context.Rel.Declaration
-
+       
 
 (* Ugly things which should not be here *)
 
@@ -1296,7 +1296,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 	| _ -> anomaly ~label:"equation_lemma" (Pp.str "not a constant")
     in
     let lemma = mkConst (Names.Constant.make1 (Lib.make_kn na)) in
-    ref_ := Some lemma ;
+    ref_ := Value lemma ;
     let lid = ref [] in
     let h_num = ref (-1) in
     let env = Global.env () in
@@ -1412,6 +1412,7 @@ let com_terminate
       (new_goal_type);
   with Failure "empty list of subgoals!" ->
     (* a non recursive function declared with measure ! *)
+    tcc_lemma_ref := Not_needed;
     defined ()
 
 
@@ -1484,7 +1485,6 @@ let (com_eqn : int -> Id.t ->
 (*      Pp.msgnl (str "eqn finished"); *)
     );;
 
-
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
     generate_induction_principle using_lemmas : unit =
   let env = Global.env() in
@@ -1524,7 +1524,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   in
   let evm = Evd.from_ctx evuctx in
   let tcc_lemma_name = add_suffix function_name "_tcc" in
-  let tcc_lemma_constr = ref None in
+  let tcc_lemma_constr = ref Undefined in
   (* let _ = Pp.msgnl (str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
   let hook _ _ = 
     let term_ref = Nametab.locate (qualid_of_ident term_id) in

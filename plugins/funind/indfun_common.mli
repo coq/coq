@@ -114,3 +114,10 @@ val acc_rel : Term.constr Util.delayed
 val well_founded : Term.constr Util.delayed
 val evaluable_of_global_reference : Globnames.global_reference -> Names.evaluable_global_reference
 val list_rewrite : bool -> (Term.constr*bool) list -> Proof_type.tactic
+
+
+                                                        
+type tcc_lemma_value = 
+  | Undefined
+  | Value of Constr.constr
+  | Not_needed
