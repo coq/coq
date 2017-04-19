@@ -649,7 +649,7 @@ let init_toplevel arglist =
       let any = CErrors.push any in
       flush_all();
       let msg =
-        if !batch_mode then mt ()
+        if !batch_mode && not Stateid.(equal (Stm.get_current_state ()) dummy) then mt ()
         else str "Error during initialization: " ++ CErrors.iprint any ++ fnl ()
       in
       let is_anomaly e = CErrors.is_anomaly e || not (CErrors.handled e) in
