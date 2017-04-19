@@ -15,6 +15,7 @@ Require Import RiemannInt.
 Require Import SeqProp.
 Require Import Max.
 Require Import Omega.
+Require Import Lra.
 Local Open Scope R_scope.
 
 (** * Preliminaries lemmas *)
@@ -245,14 +246,8 @@ Lemma IVT_interv_prelim0 : forall (x y:R) (P:R->bool) (N:nat),
        x <= Dichotomy_ub x y P N <= y /\ x <= Dichotomy_lb x y P N <= y.
 Proof.
 assert (Sublemma : forall x y lb ub, lb <= x <= ub /\ lb <= y <= ub -> lb <= (x+y) / 2 <= ub).
- intros x y lb ub Hyp.
-  split.
-  replace lb with ((lb + lb) * /2) by field.
-  unfold Rdiv ; apply Rmult_le_compat_r ; intuition.
-  now apply Rlt_le, Rinv_0_lt_compat, IZR_lt.
-  replace ub with ((ub + ub) * /2) by field.
-  unfold Rdiv ; apply Rmult_le_compat_r ; intuition.
-  now apply Rlt_le, Rinv_0_lt_compat, IZR_lt.
+  intros x y lb ub Hyp.
+  lra.
 intros x y P N x_lt_y.
 induction N.
  simpl ; intuition.
@@ -1029,10 +1024,7 @@ Qed.
 Lemma ub_lt_2_pos : forall x ub lb, lb < x -> x < ub -> 0 < (ub-lb)/2.
 Proof.
 intros x ub lb lb_lt_x x_lt_ub.
- assert (T : 0 < ub - lb).
-  fourier.
- unfold Rdiv ; apply Rlt_mult_inv_pos ; intuition.
-now apply IZR_lt.
+lra.
 Qed.
 
 Definition mkposreal_lb_ub (x lb ub:R) (lb_lt_x:lb<x) (x_lt_ub:x<ub) : posreal.

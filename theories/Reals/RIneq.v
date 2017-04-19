@@ -1926,6 +1926,17 @@ Proof.
   omega.
 Qed.
 
+Lemma IZR_neq : forall z1 z2:Z, z1 <> z2 -> IZR z1 <> IZR z2.
+Proof.
+intros; red; intro; elim H; apply eq_IZR; assumption.
+Qed.
+
+Hint Extern 0 (IZR _ <= IZR _) => apply IZR_le, Zle_bool_imp_le, eq_refl : real.
+Hint Extern 0 (IZR _ >= IZR _) => apply Rle_ge, IZR_le, Zle_bool_imp_le, eq_refl : real.
+Hint Extern 0 (IZR _ <  IZR _) => apply IZR_lt, eq_refl : real.
+Hint Extern 0 (IZR _ >  IZR _) => apply IZR_lt, eq_refl : real.
+Hint Extern 0 (IZR _ <> IZR _) => apply IZR_neq, Zeq_bool_neq, eq_refl : real.
+
 Lemma one_IZR_lt1 : forall n:Z, -1 < IZR n < 1 -> n = 0%Z.
 Proof.
   intros z [H1 H2].
