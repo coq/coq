@@ -8,7 +8,7 @@
 
 open Preferences
 
-class command_window name coqtop =
+class command_window name coqtop coqops =
   let frame = Wg_Detachable.detachable
     ~title:(Printf.sprintf "Query pane (%s)" name) () in
   let _ = frame#hide in
@@ -25,6 +25,11 @@ object(self)
   val frame = frame
 
   val notebook = notebook
+
+  (* We need access to coqops in order to place queries in the proper
+     document stint. This should remove access from this module to the
+     low-level Coq one. *)
+  val coqops = coqops
 
   method pack_in (f : GObj.widget -> unit) = f frame#coerce
 
@@ -101,7 +106,10 @@ object(self)
         else com ^ " " ^ arg ^" . "
       in
       let process =
-	Coq.bind (Coq.query (phrase,Stateid.dummy)) (function
+        (* We need to adapt this to route_id and redirect to the result buffer below *)
+        coqops#raw_coq_query phrase
+        (*
+	Coq.bind (Coq.query (phrase,sid)) (function
           | Interface.Fail (_,l,str) ->
             let width = Ideutils.textview_width result in
             Ideutils.insert_xml result#buffer (Richpp.richpp_of_pp width str);
@@ -111,6 +119,7 @@ object(self)
             result#buffer#insert res;
             notebook#set_page ~tab_label:(new_tab_lbl arg) frame#coerce;
 	    Coq.return ())
+         *)
       in
       result#buffer#set_text ("Result for command " ^ phrase ^ ":\n");
       Coq.try_grab coqtop process ignore

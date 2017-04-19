@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-class command_window : string -> Coq.coqtop ->
+class command_window : string -> Coq.coqtop -> CoqOps.coqops ->
   object
     method new_query : ?command:string -> ?term:string -> unit -> unit
     method pack_in : (GObj.widget -> unit) -> unit
