@@ -462,6 +462,11 @@ try (try apply Rsth;
 exact Rplus_opp_r.
 Defined.
 
+Class can_compute_Z (z : Z) := dummy_can_compute_Z : True.
+Hint Extern 0 (can_compute_Z ?v) =>
+  match isZcst v with true => exact I end : typeclass_instances.
+Instance reify_IZR z lvar {_ : can_compute_Z z} : reify (PEc z) lvar (IZR z).
+
 Lemma R_one_zero: 1%R <> 0%R.
 discrR.
 Qed.
