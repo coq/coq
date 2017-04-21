@@ -651,22 +651,6 @@ let drop_parameters depth n argstk =
 
 (** Projections and eta expansion *)
 
-let rec get_parameters depth n argstk =
-  match argstk with
-      Zapp args::s ->
-        let q = Array.length args in
-        if n > q then Array.append args (get_parameters depth (n-q) s)
-        else if Int.equal n q then [||]
-        else Array.sub args 0 n
-    | Zshift(k)::s -> 
-      get_parameters (depth-k) n s
-    | [] -> (* we know that n < stack_args_size(argstk) (if well-typed term) *)
-	if Int.equal n 0 then [||]
-	else raise Not_found (* Trying to eta-expand a partial application..., should do 
-				eta expansion first? *)
-    | _ -> assert false
-	(* strip_update_shift_app only produces Zapp and Zshift items *)
-
 let eta_expand_ind_stack env ind m s (f, s') =
   let mib = lookup_mind (fst ind) env in
     match mib.mind_record with

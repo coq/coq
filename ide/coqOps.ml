@@ -128,9 +128,6 @@ end = struct
 end
 open SentenceId
 
-let log_pp msg : unit task =
-  Coq.lift (fun () -> Minilib.log_pp msg)
-
 let log msg : unit task =
   Coq.lift (fun () -> Minilib.log msg)
 

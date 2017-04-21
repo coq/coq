@@ -1141,10 +1141,6 @@ let term_of_binder = function
   | Name id -> GVar (Loc.ghost,id)
   | Anonymous -> GHole (Loc.ghost,Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None)
 
-type glob_decl2 =
-    (name, cases_pattern) Util.union * Decl_kinds.binding_kind *
-      glob_constr option * glob_constr
-
 let match_notation_constr u c (metas,pat) =
   let terms,binders,termlists,binderlists =
     match_ false u ([],[]) metas ([],[],[],[]) c pat in

@@ -32,7 +32,6 @@ let compare = Int.compare
 module Self = struct
  type t = int
  let compare = compare
- let equal = equal
 end
 
 module Set = Set.Make(Self)

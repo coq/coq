@@ -114,9 +114,6 @@ module Error = struct
          | UnsupportedUnicode x ->
              Printf.sprintf "Unsupported Unicode character (0x%x)" x)
 
-  (* Require to fix the Camlp4 signature *)
-  let print ppf x = Pp.pp_with ppf (Pp.str (to_string x))
-
 end
 open Error
 
@@ -152,10 +149,6 @@ let bump_loc_line_last loc bol_pos =
 		  (Ploc.first_pos loc + 1, Ploc.last_pos loc + 1) (Ploc.comment loc)
   in
   Ploc.encl loc loc'
-
-let set_loc_file loc fname =
-  Ploc.make_loc fname (Ploc.line_nb loc) (Ploc.bol_pos loc)
-		(Ploc.first_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
 
 (* For some reason, the [Ploc.after] function of Camlp5 does not update line
    numbers, so we define our own function that does it. *)
@@ -434,7 +427,6 @@ let push_char c =
     real_push_char c
 
 let push_string s = Buffer.add_string current_comment s
-let push_bytes s = Buffer.add_bytes current_comment s
 
 let null_comment s =
   let rec null i =

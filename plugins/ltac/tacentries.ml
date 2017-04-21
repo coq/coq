@@ -88,9 +88,6 @@ let rec parse_user_entry s sep =
   else
     Uentry s
 
-let arg_list = function Rawwit t -> Rawwit (ListArg t)
-let arg_opt = function Rawwit t -> Rawwit (OptArg t)
-
 let interp_entry_name interp symb =
   let rec eval = function
   | Ulist1 e -> Ulist1 (eval e)

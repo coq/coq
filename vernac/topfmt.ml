@@ -106,8 +106,6 @@ module Tag = struct
 
 end
 
-type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
-
 let msgnl_with ?pre_hdr fmt strm =
   pp_with fmt (strm ++ fnl ());
   Format.pp_print_flush fmt ()
@@ -282,16 +280,6 @@ let print_err_exn ?extra any =
   let pre_hdr = pr_opt_no_spc (fun x -> x) extra ++ msg_loc in
   let msg = CErrors.iprint (e, info) ++ fnl () in
   std_logger ~pre_hdr Feedback.Error msg
-
-(* Output to file, used only in extraction so a candidate for removal *)
-let ft_logger old_logger ft ?loc level mesg =
-  let id x = x in
-  match level with
-  | Debug   -> msgnl_with ft (make_body id  dbg_hdr mesg)
-  | Info    -> msgnl_with ft (make_body id info_hdr mesg)
-  | Notice  -> msgnl_with ft mesg
-  | Warning -> old_logger ?loc level mesg
-  | Error   -> old_logger ?loc level mesg
 
 let with_output_to_file fname func input =
   (* XXX FIXME: redirect std_ft  *)

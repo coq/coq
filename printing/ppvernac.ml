@@ -395,10 +395,6 @@ open Decl_kinds
          pr_opt (pr_guard_annot pr_lconstr_expr bl) guard ++
          str":" ++ pr_spc_lconstr c)
 
-  let pr_priority = function
-    | None -> mt ()
-    | Some i -> spc () ++ str "|" ++ spc () ++ int i
-
 (**************************************)
 (* Pretty printer for vernac commands *)
 (**************************************)

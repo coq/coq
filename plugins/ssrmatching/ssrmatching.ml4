@@ -90,8 +90,6 @@ let pp s = !pp_ref s
 let env_size env = List.length (Environ.named_context env)
 let safeDestApp c =
   match kind_of_term c with App (f, a) -> f, a | _ -> c, [| |]
-let get_index = function ArgArg i -> i | _ ->
-  CErrors.anomaly (str"Uninterpreted index")
 (* Toplevel constr must be globalized twice ! *)
 let glob_constr ist genv = function
   | _, Some ce ->
@@ -304,8 +302,6 @@ let unif_EQ_args env sigma pa a =
 
 let unif_HO env ise p c = Evarconv.the_conv_x env p c ise
 
-let unif_HOtype env ise p c = Evarconv.the_conv_x_leq env p c ise
-
 let unif_HO_args env ise0 pa i ca =
   let n = Array.length pa in
   let rec loop ise j =
@@ -371,11 +367,6 @@ let unif_end env sigma0 ise0 pt ok =
     let s, uc', t = nf_open_term sigma0 ise2 t in
     s, Evd.union_evar_universe_context uc uc', t
 
-let pf_unif_HO gl sigma pt p c =
-  let env = pf_env gl in
-  let ise = unif_HO env (create_evar_defs sigma) p c in
-  unif_end env (project gl) ise pt (fun _ -> true)
-
 let unify_HO env sigma0 t1 t2 =
   let sigma = unif_HO env sigma0 t1 t2 in
   let sigma, uc, _ = unif_end env sigma0 sigma t2 (fun _ -> true) in
@@ -439,10 +430,6 @@ let all_ok _ _ = true
 
 let proj_nparams c =
   try 1 + Recordops.find_projection_nparams (ConstRef c) with _ -> 0
-
-let isFixed c = match kind_of_term c with
-  | Var _ | Ind _ | Construct _ | Const _ | Proj _ -> true
-  | _ -> false
 
 let isRigid c = match kind_of_term c with
   | Prod _ | Sort _ | Lambda _ | Case _ | Fix _ | CoFix _ -> true
@@ -917,13 +904,6 @@ let pp_pattern (sigma, p) =
 let pr_cpattern = pr_term
 let pr_rpattern _ _ _ = pr_pattern
 
-let pr_option f = function None -> mt() | Some x -> f x
-let pr_ssrpattern _ _ _ = pr_option pr_pattern
-let pr_pattern_squarep = pr_option (fun r -> str "[" ++ pr_pattern r ++ str "]")
-let pr_ssrpattern_squarep _ _ _ = pr_pattern_squarep
-let pr_pattern_roundp = pr_option (fun r -> str "(" ++ pr_pattern r ++ str ")")
-let pr_ssrpattern_roundp  _ _ _ = pr_pattern_roundp
-
 let wit_rpatternty = add_genarg "rpatternty" pr_pattern
 
 let glob_ssrterm gs = function
@@ -1045,7 +1025,6 @@ let interp_wit wit ist gl x =
   let arg = interp_genarg ist globarg in
   let (sigma, arg) = of_ftactic arg gl in
   sigma, Value.cast (topwit wit) arg
-let interp_constr = interp_wit wit_constr
 let interp_open_constr ist gl gc =
   interp_wit wit_open_constr ist gl gc
 let pf_intern_term ist gl (_, c) = glob_constr ist (pf_env gl) c

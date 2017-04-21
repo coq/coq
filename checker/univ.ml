@@ -87,7 +87,6 @@ module HList = struct
     val exists : (elt -> bool) -> t -> bool
     val for_all : (elt -> bool) -> t -> bool
     val for_all2 : (elt -> elt -> bool) -> t -> t -> bool
-    val remove : elt -> t -> t
     val to_list : t -> elt list
   end
 
@@ -127,12 +126,6 @@ module HList = struct
   let rec to_list = function
   | Nil -> []
   | Cons (x, _, l) -> x :: to_list l
-
-  let rec remove x = function
-  | Nil -> nil
-  | Cons (y, _, l) ->
-    if H.eq x y then l
-    else cons y (remove x l)
 
   end
 end

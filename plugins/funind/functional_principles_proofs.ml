@@ -19,12 +19,6 @@ open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 
-let local_assum (na, t) =
-  RelDecl.LocalAssum (na, EConstr.Unsafe.to_constr t)
-
-let local_def (na, b, t) =
-  RelDecl.LocalDef (na, EConstr.Unsafe.to_constr b, EConstr.Unsafe.to_constr t)
-
 (* let msgnl = Pp.msgnl *)
 
 (*

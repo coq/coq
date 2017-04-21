@@ -28,8 +28,6 @@ open Proofview.Notations
 
 module RelDecl = Context.Rel.Declaration
 
-let out_punivs = Univ.out_punivs
-
 (**********************************************************************)
 (* Generic synthesis of boolean equality *)
 

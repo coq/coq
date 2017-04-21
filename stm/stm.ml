@@ -1041,13 +1041,6 @@ end = struct (* {{{ *)
         | `Stop x -> x
         | `Cont acc -> next acc
  
-  let back_safe () =
-    let id =
-      fold_until (fun n (id,_,_,_,_) ->
-        if n >= 0 && State.is_cached_and_valid id then `Stop id else `Cont (succ n))
-        0 (VCS.get_branch_pos (VCS.current_branch ())) in
-    backto id
-
   let undo_vernac_classifier v =
     try
       match v with

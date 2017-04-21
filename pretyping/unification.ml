@@ -1535,9 +1535,6 @@ let indirectly_dependent sigma c d decls =
        way to see that the second hypothesis depends indirectly over 2 *)
     List.exists (fun d' -> dependent_in_decl sigma (EConstr.mkVar (NamedDecl.get_id d')) d) decls
 
-let indirect_dependency sigma d decls =
-  decls  |>  List.filter (fun d' -> dependent_in_decl sigma (EConstr.mkVar (NamedDecl.get_id d')) d)  |>  List.hd  |>  NamedDecl.get_id
-
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
   let current_sigma = Sigma.to_evar_map current_sigma in
   let sigma = Pretyping.solve_remaining_evars flags env current_sigma pending in

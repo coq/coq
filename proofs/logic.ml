@@ -97,11 +97,6 @@ let check_typability env sigma c =
    (instead of iterating on the list of identifier to be removed, which
    forces the user to give them in order). *)
 
-let clear_hyps env sigma ids sign cl =
-  let evdref = ref (Evd.clear_metas sigma) in
-  let (hyps,cl) = Evarutil.clear_hyps_in_evi env evdref sign cl ids in
-  (hyps, cl, !evdref)
-
 let clear_hyps2 env sigma ids sign t cl =
   let evdref = ref (Evd.clear_metas sigma) in
   let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in

@@ -35,17 +35,6 @@ let flash_info =
   let flash_context = status#new_context ~name:"Flash" in
     (fun ?(delay=5000) s -> flash_context#flash ~delay s)
 
-let xml_to_string xml =
-  let open Xml_datatype in
-  let buf = Buffer.create 1024 in
-  let rec iter = function
-  | PCData s -> Buffer.add_string buf s
-  | Element (_, _, children) ->
-    List.iter iter children
-  in
-  let () = iter xml in
-  Buffer.contents buf
-
 let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
   (** FIXME: LablGTK2 does not export the C insert_with_tags function, so that
       it has to reimplement its own helper function. Unluckily, it relies on

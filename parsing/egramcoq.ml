@@ -80,10 +80,6 @@ let create_pos = function
   | None -> Extend.First
   | Some lev -> Extend.After (constr_level lev)
 
-type gram_level =
-  gram_position option * gram_assoc option * string option *
-  (** for reinitialization: *) gram_reinit option
-
 let find_position_gen current ensure assoc lev =
   match lev with
   | None ->
