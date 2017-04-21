@@ -590,7 +590,7 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
 				       info.Vernacexpr.hint_pattern }
 	      in
 	      make_resolves env sigma ~name:(PathHints path)
-                  (true,false,Flags.is_verbose()) info false
+                  (true,false,not !Flags.quiet) info false
                  (IsConstr (EConstr.of_constr c,Univ.ContextSet.empty)))
                hints)
         else []

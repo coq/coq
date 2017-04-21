@@ -234,7 +234,7 @@ match local with
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
   let () =
-    if is_verbose () && Pfedit.refining () then
+    if not !Flags.quiet && Pfedit.refining () then
     Feedback.msg_info (str"Variable" ++ spc () ++ pr_id ident ++
     strbrk " is not visible from current goals")
   in

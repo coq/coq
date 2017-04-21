@@ -1590,8 +1590,8 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       and eq_ref = destConst (constr_of_global eq_ref) in
       generate_induction_principle f_ref tcc_lemma_constr
 	functional_ref eq_ref rec_arg_num (EConstr.of_constr rec_arg_type) (nb_prod evm (EConstr.of_constr res)) (EConstr.of_constr relation);
-      if Flags.is_verbose ()
-      then msgnl (h 1 (Ppconstr.pr_id function_name ++
+      Flags.if_verbose
+        msgnl (h 1 (Ppconstr.pr_id function_name ++
 			 spc () ++ str"is defined" )++ fnl () ++
 		    h 1 (Ppconstr.pr_id equation_id ++
 			   spc () ++ str"is defined" )

@@ -13,7 +13,7 @@ let rec parse = function
 
 let loop init args =
   let args = parse args in
-  Flags.make_silent true;
+  Flags.quiet := true;
   init ();
   CoqworkmgrApi.init !Flags.async_proofs_worker_priority;
   args

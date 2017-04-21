@@ -780,7 +780,7 @@ let vernac_require from import qidl =
   in
   let locate (loc, qid) =
     try
-      let warn = Flags.is_verbose () in
+      let warn = not !Flags.quiet in
       let (_, dir, f) = Library.locate_qualified_library ?root ~warn qid in
       (dir, f)
     with
@@ -1232,8 +1232,8 @@ let _ =
       optdepr  = false;
       optname  = "silent";
       optkey   = ["Silent"];
-      optread  = is_silent;
-      optwrite = make_silent }
+      optread  = (fun () -> !Flags.quiet);
+      optwrite = ((:=) Flags.quiet) }
 
 let _ =
   declare_bool_option
@@ -2173,7 +2173,7 @@ let with_fail b f =
       | HasNotFailed ->
           user_err ~hdr:"Fail" (str "The command has not failed!")
       | HasFailed msg ->
-          if is_verbose () || !test_mode || !ide_slave then Feedback.msg_info
+          if not !Flags.quiet || !test_mode || !ide_slave then Feedback.msg_info
             (str "The command has indeed failed with message:" ++ fnl () ++ msg)
       | _ -> assert false
   end
