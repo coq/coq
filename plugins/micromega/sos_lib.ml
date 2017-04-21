@@ -525,7 +525,7 @@ let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
   and isalnum c = Array.get ctable (charcode c) >= 16 in
   isspace,issep,isbra,issymb,isalpha,isnum,isalnum;;
 
-let (||) parser1 parser2 input =
+let parser_or parser1 parser2 input =
   try parser1 input
   with Noparse -> parser2 input;;
 
