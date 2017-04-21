@@ -127,8 +127,9 @@ type qed_t = {
   brname : Vcs_.Branch.t;
   brinfo : branch_type Vcs_.branch_info
 }
-type seff_t = aast option
+type seff_t = Ast of aast | Virtual
 type alias_t = Stateid.t * aast
+
 type transaction =
   | Cmd    of cmd_t
   | Fork   of fork_t
@@ -140,7 +141,7 @@ type step =
   [ `Cmd    of cmd_t
   | `Fork   of fork_t * Stateid.t option
   | `Qed    of qed_t * Stateid.t
-  | `Sideff of [ `Ast of aast * Stateid.t | `Id of Stateid.t ]
+  | `Sideff of seff_t * Stateid.t
   | `Alias  of alias_t ]
 type visit = { step : step; next : Stateid.t }
 
@@ -239,11 +240,11 @@ end = struct (* {{{ *)
       | [p, Noop; n, Fork x] -> { step = `Fork (x,Some p); next = n }
       | [n, Qed x; p, Noop]
       | [p, Noop; n, Qed x] -> { step = `Qed (x,p); next = n }
-      | [n, Sideff None; p, Noop]
-      | [p, Noop; n, Sideff None]-> { step = `Sideff (`Id p); next = n }
-      | [n, Sideff (Some x); p, Noop]
-      | [p, Noop; n, Sideff (Some x)]-> { step = `Sideff(`Ast (x,p)); next = n }
-      | [n, Sideff (Some x)]-> {step = `Sideff(`Ast (x,Stateid.dummy)); next=n}
+      | [n, Sideff Virtual; p, Noop]
+      | [p, Noop; n, Sideff Virtual]-> { step = `Sideff (Virtual, p); next = n }
+      | [n, Sideff (Ast x); p, Noop]
+      | [p, Noop; n, Sideff (Ast x)]-> { step = `Sideff(Ast x,p); next = n }
+      | [n, Sideff (Ast x)]-> {step = `Sideff(Ast x, Stateid.dummy); next=n}
       | _ -> anomaly (Pp.str ("Malformed VCS at node "^Stateid.to_string id))
     with Not_found -> raise Expired
 
@@ -305,7 +306,7 @@ module VCS : sig
 
   val proof_nesting : unit -> int
   val checkout_shallowest_proof_branch : unit -> unit
-  val propagate_sideff : replay:aast option -> unit
+  val propagate_sideff : replay:seff_t -> unit
 
   val gc : unit -> unit
 
@@ -338,10 +339,10 @@ end = struct (* {{{ *)
     let string_of_transaction = function
       | Cmd { cast = t } | Fork (t, _,_,_) ->
           (try Pp.string_of_ppcmds (pr_ast t) with _ -> "ERR")
-      | Sideff (Some t) ->
+      | Sideff (Ast t) ->
           sprintf "Sideff(%s)"
             (try Pp.string_of_ppcmds (pr_ast t) with _ -> "ERR")
-      | Sideff None -> "EnvChange"
+      | Sideff Virtual -> "EnvChange"
       | Noop -> " "
       | Alias (id,_) -> sprintf "Alias(%s)" (Stateid.to_string id)
       | Qed { qast } -> Pp.string_of_ppcmds (pr_ast qast) in
@@ -529,8 +530,8 @@ end = struct (* {{{ *)
       match visit id with
       | { next = n; step = `Cmd x } -> (id,Cmd x) :: aux n
       | { next = n; step = `Alias x } -> (id,Alias x) :: aux n
-      | { next = n; step = `Sideff (`Ast (x,_)) } ->
-           (id,Sideff (Some x)) :: aux n
+      | { next = n; step = `Sideff (Ast x,_) } ->
+           (id,Sideff (Ast x)) :: aux n
       | _ -> anomaly Pp.(str("Cannot slice from "^ Stateid.to_string block_start ^
                          " to "^Stateid.to_string block_stop))
     in aux block_stop
@@ -913,9 +914,9 @@ let get_script prf =
     match view.step with
     | `Fork((_,_,_,ns), _) when test ns -> acc
     | `Qed (qed, proof) -> find [qed.qast.expr, (VCS.get_info id).n_goals] proof
-    | `Sideff (`Ast (x,_)) ->
+    | `Sideff (Ast x,_) ->
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
-    | `Sideff (`Id id)  -> find acc id
+    | `Sideff (Virtual, id)  -> find acc id
     | `Cmd {cast = x; ctac} when ctac -> (* skip non-tactics *)
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
     | `Cmd _ -> find acc view.next
@@ -1171,7 +1172,7 @@ let register_proof_block_delimiter name static dynamic =
 let mk_doc_node id = function
   | { step = `Cmd { ctac; cast = { indentation; expr }}; next } when ctac ->
        Some { indentation; ast = expr; id }
-  | { step = `Sideff (`Ast ({ indentation; expr }, _)); next } ->
+  | { step = `Sideff (Ast { indentation; expr }, _); next } ->
        Some { indentation; ast = expr; id }
   | _ -> None
 let prev_node { id } =
@@ -1537,7 +1538,7 @@ end = struct (* {{{ *)
           | { step = `Cmd { cast = { loc } } }
           | { step = `Fork (( { loc }, _, _, _), _) } 
           | { step = `Qed ( { qast = { loc } }, _) } 
-          | { step = `Sideff (`Ast ( { loc }, _)) } ->
+          | { step = `Sideff (Ast { loc }, _) } ->
               let start, stop = Option.cata Loc.unloc (0,0) loc in
               msg_error Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
@@ -2003,10 +2004,10 @@ let collect_proof keep cur hd brkind id =
  let rec collect last accn id =
     let view = VCS.visit id in
     match view.step with
-    | (`Sideff (`Ast(x,_)) | `Cmd { cast = x })
+    | (`Sideff (Ast x,_) | `Cmd { cast = x })
       when too_complex_to_delegate x -> `Sync(no_name,None,`Print)
     | `Cmd { cast = x } -> collect (Some (id,x)) (id::accn) view.next
-    | `Sideff (`Ast(x,_)) -> collect (Some (id,x)) (id::accn) view.next
+    | `Sideff (Ast x,_) -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
     | `Alias _ -> `Sync (no_name,None,`Alias)
     | `Fork((_,_,_,_::_::_), _) ->
@@ -2305,10 +2306,10 @@ let known_state ?(redefine_qed=false) ~cache id =
               ), (if redefine_qed then `No else `Yes), true
           in
           aux (collect_proof keep (view.next, x) brname brinfo eop)
-      | `Sideff (`Ast (x,_)) -> (fun () ->
+      | `Sideff (Ast x,_) -> (fun () ->
             reach view.next; stm_vernac_interp id x; update_global_env ()
           ), cache, true
-      | `Sideff (`Id origin) -> (fun () ->
+      | `Sideff (Virtual, origin) -> (fun () ->
             reach view.next;
             inject_non_pstate (pure_cherry_pick_non_pstate view.next origin);
           ), cache, true
@@ -2429,7 +2430,7 @@ let merge_proof_branch ~valid ?id qast keep brname =
       let id = VCS.new_node ?id () in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.delete_branch brname;
-      VCS.propagate_sideff ~replay:None;
+      VCS.propagate_sideff ~replay:Virtual;
       `Ok
   | { VCS.kind = `Edit (mode, qed_id, master_id, _,_) } ->
       let ofp =
@@ -2601,8 +2602,8 @@ let process_transaction ?(newtip=Stateid.fresh ())
           (* We can't replay a Definition since universes may be differently
            * inferred.  This holds in Coq >= 8.5 *)
 	  let replay = match x.expr with
-	    | VernacDefinition(_, _, DefineBody _) -> None
-	    | _ -> Some x in
+	    | VernacDefinition(_, _, DefineBody _) -> Virtual
+	    | _ -> Ast x in
 	  VCS.propagate_sideff ~replay;
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish (); `Ok
@@ -2634,7 +2635,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
             end else begin
               VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
               (* We hope it can be replayed, but we can't really know *)
-              VCS.propagate_sideff ~replay:(Some x);
+              VCS.propagate_sideff ~replay:(Ast x);
               VCS.checkout_shallowest_proof_branch ();
             end in
           State.define ~safe_id:head_id ~cache:`Yes step id;
@@ -2811,7 +2812,7 @@ let edit_at id =
       if Stateid.equal tip Stateid.initial then tip else
       match VCS.visit tip with
       | { step = (`Fork _ | `Qed _) } -> tip
-      | { step = `Sideff (`Ast(_,id)) } -> id
+      | { step = `Sideff (Ast _,id) } -> id
       | { step = `Sideff _ } -> tip
       | { next } -> master_for_br root next in
   let reopen_branch start at_id mode qed_id tip old_branch =
