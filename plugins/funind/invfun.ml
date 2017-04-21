@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Ltac_plugin
-open Tacexpr
 open Declarations
 open CErrors
 open Util

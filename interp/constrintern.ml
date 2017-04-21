@@ -2045,8 +2045,6 @@ let interp_binder_evars env evdref na t =
   let t' = locate_if_hole (loc_of_glob_constr t) na t in
   understand_tcc_evars env evdref ~expected_type:IsType t'
 
-open Environ
-
 let my_intern_constr env lvar acc c =
   internalize env acc false lvar c
 

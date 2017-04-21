@@ -21,30 +21,21 @@ open Pp
 open Pcoq
 open Genarg
 open Stdarg
-open Tacarg
 open Term
 open Vars
-open Topconstr
 open Libnames
 open Tactics
 open Tacticals
 open Termops
-open Namegen
 open Recordops
 open Tacmach
-open Coqlib
 open Glob_term
 open Util
 open Evd
-open Extend
-open Goptions
 open Tacexpr
-open Proofview.Notations
 open Tacinterp
 open Pretyping
 open Constr
-open Pltac
-open Extraargs
 open Ppconstr
 open Printer
 
@@ -54,14 +45,9 @@ open Decl_kinds
 open Evar_kinds
 open Constrexpr
 open Constrexpr_ops
-open Notation_term
-open Notation_ops
-open Locus
-open Locusops
 
 DECLARE PLUGIN "ssrmatching_plugin"
 
-type loc = Loc.t
 let dummy_loc = Loc.ghost
 let errorstrm = CErrors.user_err ~hdr:"ssrmatching"
 let loc_error loc msg = CErrors.user_err ~loc ~hdr:msg (str msg)

@@ -15,7 +15,6 @@ open Genarg
 open Extend
 open Pcoq
 open Egramml
-open Egramcoq
 open Vernacexpr
 open Libnames
 open Nameops

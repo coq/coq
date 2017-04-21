@@ -331,7 +331,6 @@ module M =
 struct
 
   open Coqlib
-  open Term
   open Constr
   open EConstr
 

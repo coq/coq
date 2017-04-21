@@ -9,7 +9,6 @@
 open Pp
 open Util
 open Names
-open Term
 open EConstr
 open Environ
 open Globnames

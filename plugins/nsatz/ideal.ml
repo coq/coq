@@ -196,8 +196,6 @@ module Hashpol = Hashtbl.Make(
 
 (* A pretty printer for polynomials, with Maple-like syntax. *)
 
-open Format
-
 let getvar lv i =
   try (List.nth lv i)
   with Failure _ -> (List.fold_left (fun r x -> r^" "^x) "lv= " lv)

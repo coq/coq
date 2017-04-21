@@ -33,7 +33,6 @@ open EConstr
 open Vars
 open Reductionops
 open Type_errors
-open Typeops
 open Typing
 open Globnames
 open Nameops

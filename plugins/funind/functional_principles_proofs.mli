@@ -1,5 +1,4 @@
 open Names
-open Term
 
 val prove_princ_for_struct :
   Evd.evar_map ref ->

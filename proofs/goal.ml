@@ -8,7 +8,6 @@
 
 open Util
 open Pp
-open Term
 open Sigma.Notations
 
 module NamedDecl = Context.Named.Declaration

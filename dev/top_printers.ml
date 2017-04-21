@@ -503,7 +503,6 @@ VERNAC COMMAND EXTEND PrintConstr
 END
 *)
 
-open Pcoq
 open Genarg
 open Stdarg
 open Egramml

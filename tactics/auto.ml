@@ -12,7 +12,6 @@ open Pp
 open Util
 open CErrors
 open Names
-open Vars
 open Termops
 open EConstr
 open Environ

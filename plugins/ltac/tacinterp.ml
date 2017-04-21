@@ -25,7 +25,6 @@ open Refiner
 open Tacmach.New
 open Tactic_debug
 open Constrexpr
-open Term
 open Termops
 open Tacexpr
 open Genarg

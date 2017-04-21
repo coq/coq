@@ -1427,7 +1427,6 @@ let dependency_closure env sigma sign hyps =
     List.rev lh
 
 let global_app_of_constr sigma c =
-  let open Univ in
   let open Globnames in
   match EConstr.kind sigma c with
   | Const (c, u) -> (ConstRef c, u), None

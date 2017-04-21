@@ -21,7 +21,6 @@ open Tacexpr
 open Glob_ops
 open CErrors
 open Util
-open Evd
 open Termops
 open Equality
 open Misctypes

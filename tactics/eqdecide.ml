@@ -25,7 +25,6 @@ open Constr_matching
 open Misctypes
 open Tactypes
 open Hipattern
-open Pretyping
 open Proofview.Notations
 open Tacmach.New
 open Coqlib

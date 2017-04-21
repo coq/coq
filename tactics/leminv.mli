@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Term
 open EConstr
 open Constrexpr
 open Misctypes

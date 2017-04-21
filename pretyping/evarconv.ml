@@ -21,7 +21,6 @@ open Recordops
 open Evarutil
 open Evardefine
 open Evarsolve
-open Globnames
 open Evd
 open Pretype_errors
 open Sigma.Notations

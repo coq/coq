@@ -9,7 +9,6 @@
 open Util
 open Names
 open Term
-open EConstr
 open CErrors
 open Evar_refiner
 open Tacmach

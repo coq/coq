@@ -6,14 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Constrexpr
-open Notation_term
-open Pcoq
-open Extend
-open Genarg
-open Egramml
-
 (** Mapping of grammar productions to camlp4 actions *)
 
 (** This is the part specific to Coq-level Notation and Tactic Notation.

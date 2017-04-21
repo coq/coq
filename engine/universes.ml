@@ -13,7 +13,6 @@ open Term
 open Environ
 open Univ
 open Globnames
-open Decl_kinds
 
 let pr_with_global_universes l = 
   try Nameops.pr_id (LMap.find l (snd (Global.global_universe_names ())))

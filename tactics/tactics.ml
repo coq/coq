@@ -5037,8 +5037,6 @@ end
 
 (** Tacticals defined directly in term of Proofview *)
 module New = struct
-  open Proofview.Notations
-
   open Genredexpr
   open Locus
 

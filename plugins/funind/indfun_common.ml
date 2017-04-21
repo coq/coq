@@ -508,7 +508,6 @@ let list_rewrite (rev:bool) (eqs: (EConstr.constr*bool) list) =
        (if rev then (List.rev eqs) else eqs) (tclFAIL 0 (mt())));;
 
 let decompose_lam_n sigma n =
-  let open EConstr in
   if n < 0 then CErrors.error "decompose_lam_n: integer parameter must be positive";
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c

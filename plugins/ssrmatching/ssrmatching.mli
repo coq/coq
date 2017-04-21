@@ -4,7 +4,6 @@
 open Genarg
 open Tacexpr
 open Environ
-open Tacmach
 open Evd
 open Proof_type
 open Term

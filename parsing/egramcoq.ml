@@ -10,7 +10,6 @@ open CErrors
 open Util
 open Pcoq
 open Constrexpr
-open Notation
 open Notation_term
 open Extend
 open Libnames

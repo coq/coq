@@ -17,7 +17,6 @@ open Tacmach.New
 open Tactics
 open Tacticals.New
 open Proofview.Notations
-open Termops
 open Reductionops
 open Formula
 open Sequent

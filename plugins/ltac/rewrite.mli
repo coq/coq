@@ -14,7 +14,6 @@ open Constrexpr
 open Tacexpr
 open Misctypes
 open Evd
-open Proof_type
 open Tacinterp
 
 (** TODO: document and clean me! *)

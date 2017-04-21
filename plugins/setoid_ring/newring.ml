@@ -19,7 +19,6 @@ open Environ
 open Libnames
 open Globnames
 open Glob_term
-open Tacticals
 open Tacexpr
 open Coqlib
 open Mod_subst

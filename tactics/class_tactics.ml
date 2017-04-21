@@ -18,7 +18,6 @@ open Names
 open Term
 open Termops
 open EConstr
-open Reduction
 open Proof_type
 open Tacticals
 open Tacmach
@@ -1219,7 +1218,6 @@ module Search = struct
 
   let intro_tac info kont gl =
     let open Proofview in
-    let open Proofview.Notations in
     let env = Goal.env gl in
     let sigma = Goal.sigma gl in
     let s = Sigma.to_evar_map sigma in
@@ -1257,7 +1255,6 @@ module Search = struct
   let search_tac_gl ?st only_classes dep hints depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
-    let open Proofview.Notations in
     if false (* In 8.6, still allow non-class goals only_classes && not (is_class_type sigma (Goal.concl gl)) *) then
       Tacticals.New.tclZEROMSG (str"Not a subgoal for a class")
     else

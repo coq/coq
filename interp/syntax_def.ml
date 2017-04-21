@@ -106,5 +106,3 @@ let search_syntactic_definition kn =
   let def = out_pat pat in
   verbose_compat kn def v;
   def
-
-open Goptions

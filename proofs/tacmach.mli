@@ -15,7 +15,6 @@ open Proof_type
 open Redexpr
 open Pattern
 open Locus
-open Misctypes
 
 (** Operations for handling terms under a local typing context. *)
 

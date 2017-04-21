@@ -22,7 +22,6 @@ open Environ
 open EConstr
 open Vars
 open Reductionops
-open Typeops
 open Pretype_errors
 open Classops
 open Evarutil
