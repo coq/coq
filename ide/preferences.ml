@@ -360,7 +360,7 @@ object
     ~name:["doc_url"] ~init:Coq_config.wwwrefman ~repr:Repr.(string)
     as super
 
-  method set v =
+  method! set v =
     if not (Flags.is_standard_doc_url v) &&
       v <> use_default_doc_url &&
       (* Extra hack to support links to last released doc version *)
