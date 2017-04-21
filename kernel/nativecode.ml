@@ -16,6 +16,8 @@ open Nativeinstr
 open Nativelambda
 open Pre_env
 
+[@@@ocaml.warning "-32-37"]
+
 (** This file defines the mllambda code generation phase of the native
 compiler. mllambda represents a fragment of ML, and can easily be printed
 to OCaml code. *)

@@ -6,6 +6,7 @@ open Term
 (** Substitutions, code imported from kernel/mod_subst *)
 
 module Deltamap = struct
+  [@@@ocaml.warning "-32-34"]
   type t = delta_resolver
   let empty = MPmap.empty, KNmap.empty
   let is_empty (mm, km) = MPmap.is_empty mm && KNmap.is_empty km
@@ -25,6 +26,7 @@ end
 let empty_delta_resolver = Deltamap.empty
 
 module Umap = struct
+  [@@@ocaml.warning "-32-34"]
   type 'a t = 'a umap_t
   let empty = MPmap.empty, MBImap.empty
   let is_empty (m1,m2) = MPmap.is_empty m1 && MBImap.is_empty m2

@@ -16,6 +16,9 @@ open Nativeinstr
 
 module RelDecl = Context.Rel.Declaration
 
+(* I'm not messing with this stuff. *)
+[@@@ocaml.warning "-32"]
+
 (** This file defines the lambda code generation phase of the native compiler *)
 
 exception NotClosed

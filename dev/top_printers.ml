@@ -7,6 +7,7 @@
 (************************************************************************)
 
 (* Printers for the ocaml toplevel. *)
+[@@@ocaml.warning "-32"]
 
 open Util
 open Pp
