@@ -435,8 +435,6 @@ let isRigid c = match kind_of_term c with
   | Prod _ | Sort _ | Lambda _ | Case _ | Fix _ | CoFix _ -> true
   | _ -> false
 
-exception UndefPat
-
 let hole_var = mkVar (id_of_string "_")
 let pr_constr_pat c0 =
   let rec wipe_evar c =

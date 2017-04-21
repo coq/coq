@@ -1274,7 +1274,6 @@ end = struct (* {{{ *)
     | RespBuiltProof of Proof_global.closed_proof_output * float
     | RespError of error
     | RespStates of (Stateid.t * State.partial_state) list
-    | RespDone
 
   let name = ref "proofworker"
   let extra_env () = !async_proofs_workers_extra_env

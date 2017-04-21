@@ -99,7 +99,6 @@ module Error = struct
     | Unterminated_string
     | Undefined_token
     | Bad_token of string
-    | UnsupportedUnicode of int
 
   exception E of t
 
@@ -110,9 +109,7 @@ module Error = struct
          | Unterminated_comment -> "Unterminated comment"
          | Unterminated_string -> "Unterminated string"
          | Undefined_token -> "Undefined token"
-         | Bad_token tok -> Format.sprintf "Bad token %S" tok
-         | UnsupportedUnicode x ->
-             Printf.sprintf "Unsupported Unicode character (0x%x)" x)
+         | Bad_token tok -> Format.sprintf "Bad token %S" tok)
 
 end
 open Error
