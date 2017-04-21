@@ -258,7 +258,7 @@ match local with
   let () = Universes.register_universe_binders gr pl in
   let () = assumption_message ident in
   let () = Typeclasses.declare_instance None false gr in
-  let () = if is_coe then Class.try_add_new_coercion gr local p in
+  let () = if is_coe then Class.try_add_new_coercion gr ~local p in
   let inst = 
     if p (* polymorphic *) then Univ.UContext.instance ctx 
     else Univ.Instance.empty
@@ -752,7 +752,7 @@ let do_mutual_inductive indl poly prv finite =
   (* Declare the possible notations of inductive types *)
   List.iter Metasyntax.add_notation_interpretation ntns;
   (* Declare the coercions *)
-  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) false poly) coes;
+  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) ~local:false poly) coes;
   (* If positivity is assumed declares itself as unsafe. *)
   if Environ.deactivated_guard (Global.env ()) then Feedback.feedback Feedback.AddedAxiom else ()
 

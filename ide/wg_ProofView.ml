@@ -188,8 +188,8 @@ let proof_view () =
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
   let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
-  let _ = background_color#connect#changed cb in
-  let _ = view#misc#connect#realize (fun () -> cb background_color#get) in
+  let _ = background_color#connect#changed ~callback:cb in
+  let _ = view#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
   let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
   stick text_font view cb;
 
@@ -226,5 +226,5 @@ let proof_view () =
   (* Is there a better way to connect the signal ? *)
   (* Can this be done in the object constructor? *)
   let w_cb _ = pf#refresh ~force:false in
-  ignore (view#misc#connect#size_allocate w_cb);
+  ignore (view#misc#connect#size_allocate ~callback:w_cb);
   pf

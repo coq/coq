@@ -345,13 +345,13 @@ let rec string loc ~comm_level bp len = parser
       if esc then string loc ~comm_level bp (store len '"') s else (loc, len)
   | [< ''('; s >] ->
       (parser
-        | [< ''*'; s >] ->
-            string loc
-              (Option.map succ comm_level)
+      | [< ''*'; s >] ->
+        let comm_level = Option.map succ comm_level in
+            string loc ~comm_level
               bp (store (store len '(') '*')
               s
         | [< >] ->
-            string loc comm_level bp (store len '(') s) s
+            string loc ~comm_level bp (store len '(') s) s
   | [< ''*'; s >] ->
       (parser
         | [< '')'; s >] ->
@@ -361,9 +361,9 @@ let rec string loc ~comm_level bp len = parser
             | _ -> ()
             in
             let comm_level = Option.map pred comm_level in
-            string loc comm_level bp (store (store len '*') ')') s
+            string loc ~comm_level bp (store (store len '*') ')') s
         | [< >] ->
-            string loc comm_level bp (store len '*') s) s
+            string loc ~comm_level bp (store len '*') s) s
   | [< ''\n' as c; s >] ep ->
      (* If we are parsing a comment, the string if not part of a token so we
      update the first line of the location. Otherwise, we update the last
@@ -372,8 +372,8 @@ let rec string loc ~comm_level bp len = parser
        if Option.has_some comm_level then bump_loc_line loc ep
        else bump_loc_line_last loc ep
      in
-     string loc comm_level bp (store len c) s
-  | [< 'c; s >] -> string loc comm_level bp (store len c) s
+     string loc ~comm_level bp (store len c) s
+  | [< 'c; s >] -> string loc ~comm_level bp (store len c) s
   | [< _ = Stream.empty >] ep ->
      let loc = set_loc_pos loc bp ep in
      err loc Unterminated_string
@@ -613,7 +613,7 @@ let rec next_token loc = parser bp
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
       comment_stop bp;
       (INT (get_buff len), set_loc_pos loc bp ep)
-  | [< ''\"'; (loc,len) = string loc None bp 0 >] ep ->
+  | [< ''\"'; (loc,len) = string loc ~comm_level:None bp 0 >] ep ->
       comment_stop bp;
       (STRING (get_buff len), set_loc_pos loc bp ep)
   | [< ' ('(' as c);

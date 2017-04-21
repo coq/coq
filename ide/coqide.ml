@@ -792,11 +792,11 @@ let coqtop_arguments sn =
         sn.messages#push Feedback.Error (Pp.str msg)
     else dialog#destroy ()
   in
-  let _ = entry#connect#activate ok_cb in
-  let _ = ok#connect#clicked ok_cb in
+  let _ = entry#connect#activate ~callback:ok_cb in
+  let _ = ok#connect#clicked ~callback:ok_cb in
   let cancel = GButton.button ~stock:`CANCEL ~packing:box#add () in
   let cancel_cb () = dialog#destroy () in
-  let _ = cancel#connect#clicked cancel_cb in
+  let _ = cancel#connect#clicked ~callback:cancel_cb in
   dialog#show ()
 
 let coqtop_arguments = cb_on_current_term coqtop_arguments
@@ -1274,8 +1274,8 @@ let build_ui () =
     if b then toolbar#misc#show () else toolbar#misc#hide ()
   in
   stick show_toolbar toolbar refresh_toolbar;
-  let _ = source_style#connect#changed refresh_style in
-  let _ = source_language#connect#changed refresh_language in
+  let _ = source_style#connect#changed ~callback:refresh_style in
+  let _ = source_language#connect#changed ~callback:refresh_language in
 
   (* Color configuration *)
   Tags.Script.incomplete#set_property

@@ -154,7 +154,7 @@ object (self)
     let () = store#clear () in
     let iter prop =
       let iter = store#append () in
-      store#set iter column prop
+      store#set ~row:iter ~column prop
     in
     let () = current_completion <- (pref, props) in
     Proposals.iter iter props
@@ -267,7 +267,7 @@ object (self)
     (** Position of view w.r.t. window *)
     let (ux, uy) = Gdk.Window.get_position view#misc#window in
     (** Relative buffer position to view *)
-    let (dx, dy) = view#window_to_buffer_coords `WIDGET 0 0 in
+    let (dx, dy) = view#window_to_buffer_coords ~tag:`WIDGET ~x:0 ~y:0 in
     (** Iter position *)
     let iter = view#buffer#get_iter pos in
     let coords = view#get_iter_location iter in
@@ -397,11 +397,11 @@ object (self)
     let () = self#select_first () in
     let () = obj#misc#show () in
     let () = self#manage_scrollbar () in
-    obj#resize 1 1
+    obj#resize ~width:1 ~height:1
 
   method private start_callback off =
     let (x, y, w, h) = self#coordinates (`OFFSET off) in
-    let () = obj#move x (y + 3 * h / 2) in
+    let () = obj#move ~x ~y:(y + 3 * h / 2) in
     ()
 
   method private update_callback (off, word, props) =
@@ -433,21 +433,21 @@ object (self)
       else false
     in
     (** Style handling *)
-    let _ = view#misc#connect#style_set self#refresh_style in
+    let _ = view#misc#connect#style_set ~callback:self#refresh_style in
     let _ = self#refresh_style () in
     let _ = data#set_resize_mode `PARENT in
     let _ = frame#set_resize_mode `PARENT in
     (** Callback to model *)
-    let _ = model#connect#start_completion self#start_callback in
-    let _ = model#connect#update_completion self#update_callback in
-    let _ = model#connect#end_completion self#end_callback in
+    let _ = model#connect#start_completion ~callback:self#start_callback in
+    let _ = model#connect#update_completion ~callback:self#update_callback in
+    let _ = model#connect#end_completion ~callback:self#end_callback in
     (** Popup interaction *)
-    let _ = view#event#connect#key_press key_cb in
+    let _ = view#event#connect#key_press ~callback:key_cb in
     (** Hiding the popup when necessary*)
-    let _ = view#misc#connect#hide obj#misc#hide in
-    let _ = view#event#connect#button_press (fun _ -> self#hide (); false) in
-    let _ = view#connect#move_cursor move_cb in
-    let _ = view#event#connect#focus_out (fun _ -> self#hide (); false) in
+    let _ = view#misc#connect#hide ~callback:obj#misc#hide in
+    let _ = view#event#connect#button_press ~callback:(fun _ -> self#hide (); false) in
+    let _ = view#connect#move_cursor ~callback:move_cb in
+    let _ = view#event#connect#focus_out ~callback:(fun _ -> self#hide (); false) in
     ()
 
 end

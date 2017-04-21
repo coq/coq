@@ -357,12 +357,12 @@ let shelve_dependencies gls =
 
 let hintmap_of sigma hdc secvars concl =
   match hdc with
-  | None -> fun db -> Hint_db.map_none secvars db
+  | None -> fun db -> Hint_db.map_none ~secvars db
   | Some hdc ->
      fun db ->
      if Hint_db.use_dn db then (* Using dnet *)
-       Hint_db.map_eauto sigma secvars hdc concl db
-     else Hint_db.map_existential sigma secvars hdc concl db
+       Hint_db.map_eauto sigma ~secvars hdc concl db
+     else Hint_db.map_existential sigma ~secvars hdc concl db
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 let rec e_trivial_fail_db only_classes db_list local_db secvars =

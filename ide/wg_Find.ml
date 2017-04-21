@@ -186,8 +186,8 @@ class finder name (view : GText.view) =
       in
       let find_cb = generic_cb self#hide self#find_forward in
       let replace_cb = generic_cb self#hide self#replace in
-      let _ = find_entry#event#connect#key_press find_cb in
-      let _ = replace_entry#event#connect#key_press replace_cb in
+      let _ = find_entry#event#connect#key_press ~callback:find_cb in
+      let _ = replace_entry#event#connect#key_press ~callback:replace_cb in
 
       (** TextView interaction *)
       let view_cb ev =
@@ -197,7 +197,7 @@ class finder name (view : GText.view) =
           else false
         else false
       in
-      let _ = view#event#connect#key_press view_cb in
+      let _ = view#event#connect#key_press ~callback:view_cb in
       ()
 
   end

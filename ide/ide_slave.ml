@@ -82,7 +82,7 @@ let add ((s,eid),(sid,verbose)) =
   let loc_ast = Stm.parse_sentence sid pa in
   let newid, rc = Stm.add ~ontop:sid verbose loc_ast in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
-  ide_cmd_checks newid loc_ast;
+  ide_cmd_checks ~id:newid loc_ast;
   (* TODO: the "" parameter is a leftover of the times the protocol
    * used to include stderr/stdout output.
    *

@@ -1196,7 +1196,7 @@ let inNotation : notation_obj -> obj =
 (**********************************************************************)
 
 let with_lib_stk_protection f x =
-  let fs = Lib.freeze `No in
+  let fs = Lib.freeze ~marshallable:`No in
   try let a = f x in Lib.unfreeze fs; a
   with reraise ->
     let reraise = CErrors.push reraise in

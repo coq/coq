@@ -1435,7 +1435,7 @@ let pr_hints_db (name,db,hintlist) =
 let pr_hint_list_for_head c =
   let dbs = current_db () in
   let validate (name, db) =
-    let hints = List.map (fun v -> 0, v) (Hint_db.map_all Id.Pred.full c db) in
+    let hints = List.map (fun v -> 0, v) (Hint_db.map_all ~secvars:Id.Pred.full c db) in
     (name, db, hints)
   in
   let valid_dbs = List.map validate dbs in

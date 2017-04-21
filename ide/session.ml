@@ -249,8 +249,8 @@ let make_table_widget ?sort cd cb =
   let () = data#set_headers_visible true in
   let () = data#set_headers_clickable true in
   let refresh clr = data#misc#modify_base [`NORMAL, `NAME clr] in
-  let _ = background_color#connect#changed refresh in
-  let _ = data#misc#connect#realize (fun () -> refresh background_color#get) in
+  let _ = background_color#connect#changed ~callback:refresh in
+  let _ = data#misc#connect#realize ~callback:(fun () -> refresh background_color#get) in
   let mk_rend c = GTree.cell_renderer_text [], ["text",c] in
   let cols =
     List.map2 (fun (_,c) (_,n,v) ->
@@ -308,8 +308,8 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
         !callback errs;
 	List.iter (fun (lno, msg) -> access (fun columns store ->
           let line = store#append () in
-          store#set line (find_int_col "Line" columns) lno;
-          store#set line (find_string_col "Error message" columns) msg))
+          store#set ~row:line ~column:(find_int_col "Line" columns) lno;
+          store#set ~row:line ~column:(find_string_col "Error message" columns) msg))
           errs
       end
     method on_update ~callback:cb = callback := cb
@@ -348,8 +348,8 @@ let create_jobpage coqtop coqops : jobpage =
               else false)
           else
             let line = store#append () in
-            store#set line column id;
-            store#set line (find_string_col "Job name" columns) job))
+            store#set ~row:line ~column id;
+            store#set ~row:line ~column:(find_string_col "Job name" columns) job))
           jobs
       end
     method on_update ~callback:cb = callback := cb

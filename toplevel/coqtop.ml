@@ -292,7 +292,7 @@ let init_gc () =
     between coqtop and coqc. *)
 
 let usage () =
-  Envars.set_coqlib CErrors.error;
+  Envars.set_coqlib ~fail:CErrors.error;
   init_load_path ();
   if !batch_mode then Usage.print_usage_coqc ()
   else begin
@@ -609,7 +609,7 @@ let init_toplevel arglist =
       (* If we have been spawned by the Spawn module, this has to be done
        * early since the master waits us to connect back *)
       Spawned.init_channels ();
-      Envars.set_coqlib CErrors.error;
+      Envars.set_coqlib ~fail:CErrors.error;
       if !print_where then (print_endline(Envars.coqlib ()); exit(exitcode ()));
       if !print_config then (Usage.print_config (); exit (exitcode ()));
       if !print_tags then (print_style_tags (); exit (exitcode ()));

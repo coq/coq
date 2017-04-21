@@ -58,7 +58,7 @@ let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
     let () = buf#insert ~iter:(buf#get_iter_at_mark mark) text in
     let start = buf#get_iter_at_mark mark in
     let stop = buf#get_iter_at_mark rmark in
-    let iter tag = buf#apply_tag tag start stop in
+    let iter tag = buf#apply_tag tag ~start ~stop in
     List.iter iter tags
 
 let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =

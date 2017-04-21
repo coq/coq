@@ -91,8 +91,8 @@ object(self)
     let result = GText.view ~packing:r_bin#add () in
     views <- (frame#coerce, result, combo#entry) :: views;
     let cb clr = result#misc#modify_base [`NORMAL, `NAME clr] in
-    let _ = background_color#connect#changed cb in
-    let _ = result#misc#connect#realize (fun () -> cb background_color#get) in
+    let _ = background_color#connect#changed ~callback:cb in
+    let _ = result#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
     let cb ft = result#misc#modify_font (Pango.Font.from_string ft) in
     stick text_font result cb;
     result#misc#set_can_focus true; (* false causes problems for selection *)
@@ -165,7 +165,7 @@ object(self)
     self#new_page_maker;
     self#new_query_aux ~grab_now:false ();
     frame#misc#hide ();
-    let _ = background_color#connect#changed self#refresh_color in
+    let _ = background_color#connect#changed ~callback:self#refresh_color in
     self#refresh_color background_color#get;
     ignore(notebook#event#connect#key_press ~callback:(fun ev ->
       if GdkEvent.Key.keyval ev = GdkKeysyms._Escape then (self#hide; true)

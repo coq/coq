@@ -82,7 +82,7 @@ let set_all_warnings_status status =
 
 let set_category_status ~name status =
   let names = Hashtbl.find categories name in
-  List.iter (fun name -> set_warning_status name status) names
+  List.iter (fun name -> set_warning_status ~name status) names
 
 let is_all_keyword name = CString.equal name "all"
 let is_none_keyword s = CString.equal s "none"

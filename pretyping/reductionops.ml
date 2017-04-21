@@ -1117,7 +1117,9 @@ let local_whd_state_gen flags sigma =
   whrec
 
 let raw_whd_state_gen flags env =
-  let f sigma s = fst (whd_state_gen (get_refolding_in_reduction ()) false flags env sigma s) in
+  let f sigma s = fst (whd_state_gen ~refold:(get_refolding_in_reduction ())
+                         ~tactic_mode:false
+                         flags env sigma s) in
   f
 
 let stack_red_of_state_red f =
@@ -1127,7 +1129,7 @@ let stack_red_of_state_red f =
 (* Drops the Cst_stack *)
 let iterate_whd_gen refold flags env sigma s =
   let rec aux t =
-  let (hd,sk),_ = whd_state_gen refold false flags env sigma (t,Stack.empty) in
+  let (hd,sk),_ = whd_state_gen ~refold ~tactic_mode:false flags env sigma (t,Stack.empty) in
   let whd_sk = Stack.map aux sk in
   Stack.zip sigma ~refold (hd,whd_sk)
   in aux s

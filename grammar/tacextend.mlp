@@ -129,7 +129,7 @@ let declare_tactic loc tacname ~level classification clause = match clause with
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let gl = mlexpr_of_clause clause in
   let level = mlexpr_of_int level in
-  let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ $level$ $gl$ >> in
+  let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ ~{ level = $level$ } $gl$ >> in
   declare_str_items loc
     [ <:str_item< do {
         Tacenv.register_ml_tactic $se$ (Array.of_list $make_fun_clauses loc tacname clause$);

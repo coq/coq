@@ -1380,7 +1380,7 @@ end = struct (* {{{ *)
       if not drop then begin
         let checked_proof = Future.chain ~pure:false future_proof (fun p ->
           let pobject, _ =
-            Proof_global.close_future_proof stop (Future.from_val ~fix_exn p) in
+            Proof_global.close_future_proof ~feedback_id:stop (Future.from_val ~fix_exn p) in
           let terminator = (* The one sent by master is an InvalidKey *)
             Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
           stm_vernac_interp stop
@@ -2432,7 +2432,7 @@ let merge_proof_branch ~valid ?id qast keep brname =
       let id = VCS.new_node ?id () in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.delete_branch brname;
-      VCS.propagate_sideff None;
+      VCS.propagate_sideff ~replay:None;
       `Ok
   | { VCS.kind = `Edit (mode, qed_id, master_id, _,_) } ->
       let ofp =

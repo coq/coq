@@ -320,7 +320,7 @@ let add_tactic_notation local n prods e =
   let ids = List.map_filter cons_production_parameter prods in
   let prods = List.map interp_prod_item prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
-  add_glob_tactic_notation local n prods false ids tac
+  add_glob_tactic_notation local ~level:n prods false ids tac
 
 (**********************************************************************)
 (* ML Tactic entries                                                  *)
