@@ -63,25 +63,26 @@ let is_known_option cmd = match cmd with
 
 (** Check whether a command is forbidden in the IDE *)
 
-let ide_cmd_checks (loc,ast) =
+let ide_cmd_checks ~id (loc,ast) =
   let user_error s = CErrors.user_err ~loc ~hdr:"CoqIde" (str s) in
+  let warn msg = Feedback.(feedback ~id (Message (Warning, Some loc, strbrk msg))) in
   if is_debug ast then
     user_error "Debug mode not available in the IDE";
   if is_known_option ast then
-    Feedback.msg_warning ~loc (strbrk "Set this option from the IDE menu instead");
+    warn "Set this option from the IDE menu instead";
   if is_navigation_vernac ast || is_undo ast then
-    Feedback.msg_warning ~loc (strbrk "Use IDE navigation instead");
+    warn "Use IDE navigation instead";
   if is_query ast then
-    Feedback.msg_warning ~loc (strbrk "Query commands should not be inserted in scripts")
+    warn "Query commands should not be inserted in scripts"
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
 let add ((s,eid),(sid,verbose)) =
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   let loc_ast = Stm.parse_sentence sid pa in
-  ide_cmd_checks loc_ast;
   let newid, rc = Stm.add ~ontop:sid verbose loc_ast in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
+  ide_cmd_checks newid loc_ast;
   (* TODO: the "" parameter is a leftover of the times the protocol
    * used to include stderr/stdout output.
    *
