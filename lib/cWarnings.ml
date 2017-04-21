@@ -166,7 +166,7 @@ let normalize_flags_string s =
     let flags = normalize_flags ~silent:false flags in
     string_of_flags flags
 
-let rec parse_warnings items =
+let parse_warnings items =
   CList.iter (fun (status, name) -> set_status ~name status) items
 
 (* For compatibility, we accept "none" *)

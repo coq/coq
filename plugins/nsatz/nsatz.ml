@@ -437,7 +437,7 @@ open Ideal
    that has the same size than lp and where true indicates an
    element that has been removed
  *)
-let rec clean_pol lp =
+let clean_pol lp =
   let t = Hashpol.create 12 in
   let find p = try Hashpol.find t p 
                with 

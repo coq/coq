@@ -221,7 +221,7 @@ let where = function
 | Some s ->
   if !Flags.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
-let rec explain_exn = function
+let explain_exn = function
   | Stream.Failure ->
       hov 0 (anomaly_string () ++ str "uncaught Stream.Failure.")
   | Stream.Error txt ->

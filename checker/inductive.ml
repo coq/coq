@@ -149,7 +149,7 @@ let remember_subst u subst =
 
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)
-let rec make_subst env =
+let make_subst env =
   let rec make subst = function
     | LocalDef _ :: sign, exp, args ->
         make subst (sign, exp, args)
