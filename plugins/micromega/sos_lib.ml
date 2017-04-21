@@ -571,7 +571,7 @@ let finished input =
 
 (* ------------------------------------------------------------------------- *)
 
-let temp_path = ref Filename.temp_dir_name;;
+let temp_path = Filename.get_temp_dir_name ();;
 
 (* ------------------------------------------------------------------------- *)
 (* Convenient conversion between files and (lists of) strings.               *)
