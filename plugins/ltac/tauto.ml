@@ -242,7 +242,7 @@ let tauto_uniform_unit_flags = {
 }
 
 (* This is the compatibility mode (not used) *)
-let tauto_legacy_flags = {
+let _tauto_legacy_flags = {
   binary_mode = true;
   binary_mode_bugged_detection = true;
   strict_in_contravariant_hyp = true;
