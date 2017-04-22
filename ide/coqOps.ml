@@ -497,8 +497,11 @@ object(self)
           else if Doc.is_empty document then ()
           else
             try
+              (* Warning, this is specific to the sid generation
+                 strategy of ide_slave *)
+              let st_newer s1 s2 = Stateid.(to_int s1 > to_int s2) in
               match id, Doc.tip document with
-              | id1, id2 when Stateid.newer_than id2 id1 -> ()
+              | id1, id2 when st_newer id2 id1 -> ()
               | _ -> Queue.add msg feedbacks
             with Doc.Empty | Invalid_argument _ -> Queue.add msg feedbacks 
       end;

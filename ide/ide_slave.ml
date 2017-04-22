@@ -75,12 +75,15 @@ let ide_cmd_checks (loc,ast) =
     Feedback.msg_warning ~loc (strbrk "Query commands should not be inserted in scripts")
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
+let node_counter  = ref 1
+let fresh_stateid () = incr node_counter; Stateid.(of_int (!node_counter + 1))
 
 let add ((s,eid),(sid,verbose)) =
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   let loc_ast = Stm.parse_sentence sid pa in
   ide_cmd_checks loc_ast;
-  let newid, rc = Stm.add ~ontop:sid verbose loc_ast in
+  let newtip = fresh_stateid () in
+  let rc = Stm.add ~verbose ~ontop:sid ~newtip loc_ast in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
   (* TODO: the "" parameter is a leftover of the times the protocol
    * used to include stderr/stdout output.
@@ -91,7 +94,7 @@ let add ((s,eid),(sid,verbose)) =
    * as not to break the core protocol for this minor change, but it should
    * be removed in the next version of the protocol.
    *)
-  newid, (rc, "")
+  newtip, (rc, "")
 
 let edit_at id =
   match Stm.edit_at id with
@@ -364,12 +367,14 @@ let init =
      | Some file ->
          let dir = Filename.dirname file in
          let open Loadpath in let open CUnix in
-         let initial_id, _ =
+         let initial_id =
            if not (is_in_load_paths (physical_path_of_string dir)) then begin
              let pa = Pcoq.Gram.parsable (Stream.of_string (Printf.sprintf "Add LoadPath \"%s\". " dir)) in
              let loc_ast = Stm.parse_sentence init_sid pa in
-             Stm.add false ~ontop:init_sid loc_ast
-           end else init_sid, `NewTip in
+             let newtip = fresh_stateid () in
+             ignore(Stm.add ~ontop:init_sid ~newtip loc_ast);
+             newtip
+           end else init_sid in
          if Filename.check_suffix file ".v" then
            Stm.set_compilation_hints file;
          Stm.finish ();
