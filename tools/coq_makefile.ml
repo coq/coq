@@ -56,48 +56,48 @@ let lib_dirs =
 
 
 let usage () =
-  output_string stderr "Usage summary:
-
-coq_makefile .... [file.v] ... [file.ml[i4]?] ... [file.ml{lib,pack}]
-  ... [any] ... [-extra[-phony] result dependencies command]
-  ... [-I dir] ... [-R physicalpath logicalpath]
-  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]
-  ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]
-  [-h] [--help]
-
-[file.v]: Coq file to be compiled
-[file.ml[i4]?]: Objective Caml file to be compiled
-[file.ml{lib,pack}]: ocamlbuild file that describes a Objective Caml
-  library/module
-[any] : subdirectory that should be \"made\" and has a Makefile itself
-  to do so. Very fragile and discouraged.
-[-extra result dependencies command]: add target \"result\" with command
-  \"command\" and dependencies \"dependencies\". If \"result\" is not
-  generic (do not contains a %), \"result\" is built by _make all_ and
-  deleted by _make clean_.
-[-extra-phony result dependencies command]: add a PHONY target \"result\"
- with command \"command\" and dependencies \"dependencies\". Note that
- _-extra-phony foo bar \"\"_ is a regular way to add the target \"bar\" as
- as a dependencies of an already defined target \"foo\".
-[-I dir]: look for Objective Caml dependencies in \"dir\"
-[-R physicalpath logicalpath]: look for Coq dependencies resursively
-  starting from \"physicalpath\". The logical path associated to the
-  physical path is \"logicalpath\".
-[-Q physicalpath logicalpath]: look for Coq dependencies starting from
-  \"physicalpath\". The logical path associated to the physical path
-  is \"logicalpath\".
-[VARIABLE = value]: Add the variable definition \"VARIABLE=value\"
-[-byte]: compile with byte-code version of coq
-[-opt]: compile with native-code version of coq
-[-arg opt]: send option \"opt\" to coqc
-[-install opt]: where opt is \"user\" to force install into user directory,
-  \"none\" to build a makefile with no install target or
-  \"global\" to force install in $COQLIB directory
-[-f file]: take the contents of file as arguments
-[-o file]: output should go in file file
-	Output file outside the current directory is forbidden.
-[-h]: print this usage summary
-[--help]: equivalent to [-h]\n";
+  output_string stderr "Usage summary:\
+\n\
+\ncoq_makefile .... [file.v] ... [file.ml[i4]?] ... [file.ml{lib,pack}]\
+\n  ... [any] ... [-extra[-phony] result dependencies command]\
+\n  ... [-I dir] ... [-R physicalpath logicalpath]\
+\n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
+\n  ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]\
+\n  [-h] [--help]\
+\n\
+\n[file.v]: Coq file to be compiled\
+\n[file.ml[i4]?]: Objective Caml file to be compiled\
+\n[file.ml{lib,pack}]: ocamlbuild file that describes a Objective Caml\
+\n  library/module\
+\n[any] : subdirectory that should be \"made\" and has a Makefile itself\
+\n  to do so. Very fragile and discouraged.\
+\n[-extra result dependencies command]: add target \"result\" with command\
+\n  \"command\" and dependencies \"dependencies\". If \"result\" is not\
+\n  generic (do not contains a %), \"result\" is built by _make all_ and\
+\n  deleted by _make clean_.\
+\n[-extra-phony result dependencies command]: add a PHONY target \"result\"\
+\n with command \"command\" and dependencies \"dependencies\". Note that\
+\n _-extra-phony foo bar \"\"_ is a regular way to add the target \"bar\" as\
+\n as a dependencies of an already defined target \"foo\".\
+\n[-I dir]: look for Objective Caml dependencies in \"dir\"\
+\n[-R physicalpath logicalpath]: look for Coq dependencies resursively\
+\n  starting from \"physicalpath\". The logical path associated to the\
+\n  physical path is \"logicalpath\".\
+\n[-Q physicalpath logicalpath]: look for Coq dependencies starting from\
+\n  \"physicalpath\". The logical path associated to the physical path\
+\n  is \"logicalpath\".\
+\n[VARIABLE = value]: Add the variable definition \"VARIABLE=value\"\
+\n[-byte]: compile with byte-code version of coq\
+\n[-opt]: compile with native-code version of coq\
+\n[-arg opt]: send option \"opt\" to coqc\
+\n[-install opt]: where opt is \"user\" to force install into user directory,\
+\n  \"none\" to build a makefile with no install target or\
+\n  \"global\" to force install in $COQLIB directory\
+\n[-f file]: take the contents of file as arguments\
+\n[-o file]: output should go in file file\
+\n	Output file outside the current directory is forbidden.\
+\n[-h]: print this usage summary\
+\n[--help]: equivalent to [-h]\n";
   exit 1
 
 let is_genrule r = (* generic rule (like bar%foo: ...) *)
@@ -264,8 +264,8 @@ let where_put_doc = function
       then
 	physical_dir_of_logical_dir pr
       else
-	let () = prerr_string "Warning: -Q options don't have a correct common prefix,
- install-doc will put anything in $INSTALLDEFAULTROOT\n" in
+	let () = prerr_string ("Warning: -Q options don't have a correct common prefix,"
+                        ^ " install-doc will put anything in $INSTALLDEFAULTROOT\n") in
 	"$(INSTALLDEFAULTROOT)"
     |_,inc_i,((_,lp,_)::q as inc_r) ->
       let pr = List.fold_left (fun a (_,b,_) -> string_prefix a b) lp q in
@@ -277,8 +277,8 @@ let where_put_doc = function
       then
 	physical_dir_of_logical_dir pr
       else
-	let () = prerr_string "Warning: -R/-Q options don't have a correct common prefix,
- install-doc will put anything in $INSTALLDEFAULTROOT\n" in
+	let () = prerr_string ("Warning: -R/-Q options don't have a correct common prefix,"
+                        ^ " install-doc will put anything in $INSTALLDEFAULTROOT\n") in
 	"$(INSTALLDEFAULTROOT)"
 
 let install (vfiles,(mlis,ml4s,mls,mllibs,mlpacks),_,sds) inc = function
@@ -518,8 +518,8 @@ let variables is_install opt (args,defs) =
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
     print "COQSRCLIBS?=" ;
     List.iter (fun c -> print "-I \"$(COQLIB)"; print c ; print "\" \\\n") lib_dirs ;
-    List.iter (fun c -> print " \\
-  -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
+    List.iter (fun c -> print " \\\
+\n  -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
     print "CAMLC?=$(OCAMLFIND) ocamlc -c -rectypes -thread -safe-string\n";
     print "CAMLOPTC?=$(OCAMLFIND) opt -c -rectypes -thread -safe-string\n";
@@ -529,8 +529,8 @@ let variables is_install opt (args,defs) =
     print "CAMLLIB?=$(shell $(OCAMLFIND) printconf stdlib)\n";
     print "GRAMMARS?=grammar.cma\n";
     print "CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo\n";
-    print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I $(COQLIB)/grammar compat5.cmo \\
-  $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
+    print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I $(COQLIB)/grammar compat5.cmo \\\
+\n  $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
     end;
     match is_install with
       | Project_file.NoInstall -> ()
@@ -816,14 +816,14 @@ let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
 
 let banner () =
   print (Printf.sprintf
-"#############################################################################
-##  v      #                   The Coq Proof Assistant                     ##
-## <O___,, #                INRIA - CNRS - LIX - LRI - PPS                 ##
-##   \\VV/  #                                                               ##
-##    //   #  Makefile automagically generated by coq_makefile V%s ##
-#############################################################################
-
-" (Coq_config.version ^ String.make (10 - String.length Coq_config.version) ' '))
+"#############################################################################\
+\n##  v      #                   The Coq Proof Assistant                     ##\
+\n## <O___,, #                INRIA - CNRS - LIX - LRI - PPS                 ##\
+\n##   \\VV/  #                                                               ##\
+\n##    //   #  Makefile automagically generated by coq_makefile V%s ##\
+\n#############################################################################\
+\n\n"
+(Coq_config.version ^ String.make (10 - String.length Coq_config.version) ' '))
 
 let warning () =
   print "# WARNING\n#\n";

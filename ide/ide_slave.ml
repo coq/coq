@@ -512,5 +512,5 @@ let () = Coqtop.toploop_init := (fun args ->
 let () = Coqtop.toploop_run := loop
 
 let () = Usage.add_to_usage "coqidetop"
-"  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format
-  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"
+"  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
+\n  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"

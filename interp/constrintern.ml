@@ -855,9 +855,9 @@ let intern_qualid loc qid intern env lvar us args =
       | Some _, GApp (loc, GRef (loc', ref, None), arg) ->
          GApp (loc, GRef (loc', ref, us), arg)
       | Some _, _ ->
-        user_err ~loc  (str "Notation " ++ pr_qualid qid ++
-          str " cannot have a universe instance, its expanded head
-               does not start with a reference")
+        user_err ~loc  (str "Notation " ++ pr_qualid qid
+                        ++ str " cannot have a universe instance,"
+                        ++ str " its expanded head does not start with a reference")
       in
       c, projapp, args2
 
