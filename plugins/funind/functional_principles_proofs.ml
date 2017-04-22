@@ -299,7 +299,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	 Can be safely replaced by the next comment for Ocaml >= 3.08.4
       *)
       let sub = Int.Map.bindings sub in
-      List.fold_left (fun end_of_type (i,t)  -> lift 1 (substnl  [t] (i-1) end_of_type))
+      List.fold_left (fun end_of_type (i,t)  -> liftn 1 i (substnl  [t] (i-1) end_of_type))
 	end_of_type_with_pop
 	sub
     in
@@ -1401,8 +1401,8 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 
 let prove_with_tcc tcc_lemma_constr eqs : tactic =
   match !tcc_lemma_constr with
-    | None -> anomaly (Pp.str "No tcc proof !!")
-    | Some lemma ->
+  | Undefined -> anomaly (Pp.str "No tcc proof !!")
+  | Value lemma ->
 	fun gls ->
 (* 	  let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in *)
 (* 	  let ids = hid::pf_ids_of_hyps gls in  *)
@@ -1420,7 +1420,7 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
 	      Proofview.V82.of_tactic (Eauto.gen_eauto (false,5) [] (Some []))
 	    ]
 	    gls
-
+  | Not_needed -> tclIDTAC
 
 let backtrack_eqs_until_hrec hrec eqs : tactic =
   fun gls ->
@@ -1599,8 +1599,9 @@ let prove_principle_for_gen
   let args_ids = List.map (get_name %> Nameops.out_name) princ_info.args in
   let lemma =
     match !tcc_lemma_ref with
-     | None -> error "No tcc proof !!"
-     | Some lemma -> EConstr.of_constr lemma
+     | Undefined -> error "No tcc proof !!"
+     | Value lemma -> EConstr.of_constr lemma
+     | Not_needed -> EConstr.of_constr (Coqlib.build_coq_I ())
   in
 (*   let rec list_diff del_list check_list = *)
 (*     match del_list with *)

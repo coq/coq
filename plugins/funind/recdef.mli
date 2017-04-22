@@ -13,7 +13,7 @@ bool ->
            Constrexpr.constr_expr ->
            Constrexpr.constr_expr ->
            int -> Constrexpr.constr_expr -> (Term.pconstant ->
-            Term.constr option ref ->
+            Indfun_common.tcc_lemma_value ref ->
             Term.pconstant ->
             Term.pconstant -> int -> EConstr.types -> int -> EConstr.constr -> 'a) -> Constrexpr.constr_expr list -> unit
 

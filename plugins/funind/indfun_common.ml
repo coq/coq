@@ -543,3 +543,8 @@ let prodn n env b =
 
 (* compose_prod [xn:Tn;..;x1:T1] b = (x1:T1)..(xn:Tn)b *)
 let compose_prod l b = prodn (List.length l) l b
+
+type tcc_lemma_value = 
+  | Undefined
+  | Value of Constr.constr
+  | Not_needed
