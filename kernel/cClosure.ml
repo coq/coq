@@ -856,6 +856,9 @@ let contract_fix_vect fix =
   in
   (subs_cons(Array.init nfix make_body, env), thisbody)
 
+let push_proj p pb =
+  Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, Projection.constant p)
+
 (*********************************************************************)
 (* A machine that inspects the head of a term until it finds an
    atom or a subterm that may produce a redex (abstraction,
@@ -874,15 +877,13 @@ let rec knh info m stk =
            | (None, stk') -> (m,stk'))
     | FCast(t,_,_) -> knh info t stk
     | FProj (p,c) ->
-      let unf = Projection.unfolded p in
-        if unf || red_set info.i_flags (fCONST (Projection.constant p)) then
-          (match try Some (lookup_projection p (info_env info)) with Not_found -> None with
+       if red_projection info.i_flags p then
+         (match try Some (lookup_projection p (info_env info))
+                with Not_found -> None
+          (* FIXME: is this needed anymore ? It can hide bugs in environment handling. *) with
 	  | None -> (m, stk)
-	  | Some pb ->
-	     knh info c (Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg,
-				Projection.constant p)
-			 :: zupdate m stk))
-	else (m,stk)
+	  | Some pb -> knh info c (push_proj p pb :: zupdate m stk))
+       else (m,stk)
 
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|
@@ -899,7 +900,12 @@ and knht info e t stk =
     | Fix _ -> knh info (mk_clos2 e t) stk
     | Cast(a,_,_) -> knht info e a stk
     | Rel n -> knh info (clos_rel e n) stk
-    | Proj (p,c) -> knh info (mk_clos2 e t) stk
+    | Proj (p,c) ->
+       if red_projection info.i_flags p then
+         (match try Some (lookup_projection p (info_env info)) with Not_found -> None with
+	  | None -> knh info (mk_clos2 e t) stk
+	  | Some pb -> knht info e c (push_proj p pb :: stk))
+       else knh info (mk_clos2 e t) stk
     | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
        LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->
         (mk_clos2 e t, stk)
