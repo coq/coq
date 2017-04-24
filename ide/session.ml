@@ -386,12 +386,12 @@ let create file coqtop_args =
   let proof = create_proof () in
   let messages = create_messages () in
   let segment = new Wg_Segment.segment () in
-  let command = new Wg_Command.command_window basename coqtop in
   let finder = new Wg_Find.finder basename (script :> GText.view) in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
   let cops =
     new CoqOps.coqops script proof messages segment coqtop (fun () -> fops#filename) in
+  let command = new Wg_Command.command_window basename coqtop cops in
   let errpage = create_errpage script in
   let jobpage = create_jobpage coqtop cops in
   let _ = set_buffer_handlers (buffer :> GText.buffer) script cops coqtop in
