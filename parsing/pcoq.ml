@@ -211,7 +211,7 @@ let camlp4_verbosity silent f x =
   f x;
   warning_verbose := a
 
-let camlp4_verbose f x = camlp4_verbosity (Flags.is_verbose ()) f x
+let camlp4_verbose f x = camlp4_verbosity (not !Flags.quiet) f x
 
 (** Grammar extensions *)
 

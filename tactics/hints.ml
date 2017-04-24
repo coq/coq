@@ -1160,7 +1160,7 @@ let add_resolves env sigma clist local dbnames =
     (fun dbname ->
       let r =
         List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
-          make_resolves env sigma (true,hnf,Flags.is_verbose()) 
+          make_resolves env sigma (true,hnf,not !Flags.quiet)
             pri poly ~name:path gr) clist)
       in
       let hint = make_hint ~local dbname (AddHints r) in

@@ -85,15 +85,21 @@ val pr_version : compat_version -> string
 val beautify : bool ref
 val beautify_file : bool ref
 
-(* Silent/verbose, both actually controlled by a single flag so they
-   are mutually exclusive *)
-val make_silent : bool -> unit
-val is_silent : unit -> bool
-val is_verbose : unit -> bool
+(* Coq quiet mode. Note that normal mode is called "verbose" here,
+   whereas [quiet] supresses normal output such as goals in coqtop *)
+val quiet : bool ref
 val silently : ('a -> 'b) -> 'a -> 'b
 val verbosely : ('a -> 'b) -> 'a -> 'b
 val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
+
+(* Deprecated *)
+val make_silent : bool -> unit
+[@@ocaml.deprecated "Please use Flags.quiet"]
+val is_silent : unit -> bool
+[@@ocaml.deprecated "Please use Flags.quiet"]
+val is_verbose : unit -> bool
+[@@ocaml.deprecated "Please use Flags.quiet"]
 
 (* Miscellaneus flags for vernac *)
 val make_auto_intros : bool -> unit

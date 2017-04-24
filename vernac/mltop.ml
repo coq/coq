@@ -138,7 +138,7 @@ let dir_ml_load s =
   match !load with
     | WithTop _ -> ml_load s
     | WithoutTop ->
-        let warn = Flags.is_verbose() in
+        let warn = not !Flags.quiet in
         let _,gname = find_file_in_path ~warn !coq_mlpath_copy s in
         ml_load gname
 
@@ -365,7 +365,7 @@ let trigger_ml_object verb cache reinit ?path name =
   else begin
     let file = file_of_name (Option.default name path) in
     let path =
-      if_verbose_load (verb && is_verbose ()) load_ml_object name ?path file in
+      if_verbose_load (verb && not !quiet) load_ml_object name ?path file in
     add_loaded_module name (Some path);
     if cache then perform_cache_obj name
   end

@@ -113,5 +113,5 @@ let expand_path ?root dir =
 let locate_file fname =
   let paths = List.map physical !load_paths in
   let _,longfname =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
+    System.find_file_in_path ~warn:(not !Flags.quiet) paths fname in
   longfname

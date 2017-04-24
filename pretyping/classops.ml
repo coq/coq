@@ -388,7 +388,7 @@ let add_coercion_in_graph (ic,source,target) =
       old_inheritance_graph
   end;
   let is_ambig = match !ambig_paths with [] -> false | _ -> true in
-  if is_ambig && is_verbose () then
+  if is_ambig && not !quiet then
     Feedback.msg_info (message_ambig !ambig_paths)
 
 type coercion = {

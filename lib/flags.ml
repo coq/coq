@@ -143,16 +143,16 @@ let beautify = ref false
 let beautify_file = ref false
 
 (* Silent / Verbose *)
-let silent = ref false
-let make_silent flag = silent := flag; ()
-let is_silent () = !silent
-let is_verbose () = not !silent
+let quiet = ref false
+let silently f x = with_option quiet f x
+let verbosely f x = without_option quiet f x
 
-let silently f x = with_option silent f x
-let verbosely f x = without_option silent f x
+let if_silent f x = if !quiet then f x
+let if_verbose f x = if not !quiet then f x
 
-let if_silent f x = if !silent then f x
-let if_verbose f x = if not !silent then f x
+let make_silent flag = quiet := flag
+let is_silent () = !quiet
+let is_verbose () = not !quiet
 
 let auto_intros = ref true
 let make_auto_intros flag = auto_intros := flag

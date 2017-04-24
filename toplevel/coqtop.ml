@@ -215,7 +215,7 @@ let glob_opt = ref false
 
 let add_compile verbose s =
   set_batch_mode ();
-  Flags.make_silent true;
+  Flags.quiet := true;
   if not !glob_opt then Dumpglob.dump_to_dotglob ();
   (** make the file name explicit; needed not to break up Coq loadpath stuff. *)
   let s =
@@ -384,7 +384,7 @@ let vio_tasks = ref []
 
 let add_vio_task f =
   set_batch_mode ();
-  Flags.make_silent true;
+  Flags.quiet := true;
   vio_tasks := f :: !vio_tasks
 
 let check_vio_tasks () =
@@ -398,7 +398,7 @@ let vio_files_j = ref 0
 let vio_checking = ref false
 let add_vio_file f =
   set_batch_mode ();
-  Flags.make_silent true;
+  Flags.quiet := true;
   vio_files := f :: !vio_files
 
 let set_vio_checking_j opt j =
@@ -563,7 +563,7 @@ let parse_args arglist =
     |"-output-context" -> output_context := true
     |"-profile-ltac" -> Flags.profile_ltac := true
     |"-q" -> no_load_rc ()
-    |"-quiet"|"-silent" -> Flags.make_silent true; Flags.make_warn false
+    |"-quiet"|"-silent" -> Flags.quiet := true; Flags.make_warn false
     |"-quick" -> Flags.compilation_mode := BuildVio
     |"-list-tags" -> print_tags := true
     |"-time" -> Flags.time := true

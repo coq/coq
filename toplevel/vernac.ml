@@ -116,7 +116,7 @@ let rec interp_vernac sid po (loc,com) =
         load_vernac verbosely sid f
     | v ->
       try
-        let nsid, ntip = Stm.add sid (Flags.is_verbose()) (loc,v) in
+        let nsid, ntip = Stm.add sid (not !Flags.quiet) (loc,v) in
 
         (* Main STM interaction *)
         if ntip <> `NewTip then
@@ -128,7 +128,7 @@ let rec interp_vernac sid po (loc,com) =
 
         (* We could use a more refined criteria that depends on the
            vernac. For now we imitate the old approach. *)
-        let hide_goals = !Flags.batch_mode || is_query v ||
+        let hide_goals = !Flags.batch_mode || is_query v || !Flags.quiet ||
                          not (Proof_global.there_are_pending_proofs ()) in
 
         if not hide_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
