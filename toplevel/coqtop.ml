@@ -430,10 +430,10 @@ let get_native_name s =
 
 (** Prints info which is either an error or an anomaly and then exits
     with the appropriate error code *)
-let fatal_error info anomaly =
-  let msg = info ++ fnl () in
-  Format.fprintf !Topfmt.err_ft "@[%a@]%!" pp_with msg;
-  exit (if anomaly then 129 else 1)
+let fatal_error ?extra exn =
+  Topfmt.print_err_exn ?extra exn;
+  let exit_code = if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1 in
+  exit exit_code
 
 let parse_args arglist =
   let args = ref arglist in
@@ -596,11 +596,7 @@ let parse_args arglist =
   in
   try
     parse ()
-  with
-    | UserError(_, s) as e ->
-      if ismt s then exit 1
-      else fatal_error (CErrors.print e) false
-    | any -> fatal_error (CErrors.print any) (CErrors.is_anomaly any)
+  with any -> fatal_error any
 
 let init_toplevel arglist =
   init_gc ();
@@ -646,14 +642,13 @@ let init_toplevel arglist =
       check_vio_tasks ();
       outputstate ()
     with any ->
-      let any = CErrors.push any in
       flush_all();
-      let msg =
-        if !batch_mode && not Stateid.(equal (Stm.get_current_state ()) dummy) then mt ()
-        else str "Error during initialization: " ++ CErrors.iprint any ++ fnl ()
+      let extra =
+        if !batch_mode && not Stateid.(equal (Stm.get_current_state ()) dummy)
+        then None
+        else Some (str "Error during initialization: ")
       in
-      let is_anomaly e = CErrors.is_anomaly e || not (CErrors.handled e) in
-      fatal_error msg (is_anomaly (fst any))
+      fatal_error ?extra any
   end;
   if !batch_mode then begin
     flush_all();

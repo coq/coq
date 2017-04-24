@@ -107,6 +107,16 @@ let pr_open_cur_subgoals () =
   try Printer.pr_open_subgoals ()
   with Proof_global.NoCurrentProof -> Pp.str ""
 
+let vernac_error msg =
+  Format.fprintf !Topfmt.err_ft "@[%a@]%!" Pp.pp_with msg;
+  flush_all ();
+  exit 1
+
+(* Reenable when we get back to feedback printing *)
+(* let is_end_of_input any = match any with *)
+(*     Stm.End_of_input -> true *)
+(*   | _ -> false *)
+
 let rec interp_vernac sid po (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
@@ -161,17 +171,25 @@ and load_vernac verbosely sid file =
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc, ast =
+          Stm.parse_sentence !rsid in_pa
+        (* If an error in parsing occurs, we propagate the exception
+           so the caller of load_vernac will take care of it. However,
+           in the future it could be possible that we want to handle
+           all the errors as feedback events, thus in this case we
+           should relay the exception here for convenience. A
+           possibility is shown below, however we may want to refactor
+           this code:
+
         try Stm.parse_sentence !rsid in_pa
         with
-        | Stm.End_of_input -> raise Stm.End_of_input
-        | any ->
+        | any when not is_end_of_input any ->
           let (e, info) = CErrors.push any in
           let loc = Loc.get_loc info in
           let msg = CErrors.iprint (e, info) in
           Feedback.msg_error ?loc msg;
           iraise (e, info)
+       *)
       in
-
       (* Printing of vernacs *)
       if !beautify then pr_new_syntax in_pa chan_beautify loc (Some ast);
       Option.iter (vernac_echo loc) in_echo;
@@ -231,13 +249,10 @@ let chop_extension f =
 let ensure_bname src tgt =
   let src, tgt = Filename.basename src, Filename.basename tgt in
   let src, tgt = chop_extension src, chop_extension tgt in
-  if src <> tgt then begin
-    Feedback.msg_error (str "Source and target file names must coincide, directories can differ" ++ fnl () ++
-                        str "Source: " ++ str src                                                ++ fnl () ++
-                        str "Target: " ++ str tgt);
-    flush_all ();
-    exit 1
-  end
+  if src <> tgt then
+    vernac_error (str "Source and target file names must coincide, directories can differ" ++ fnl () ++
+                  str "Source: " ++ str src                                                ++ fnl () ++
+                  str "Target: " ++ str tgt)
 
 let ensure ext src tgt = ensure_bname src tgt; ensure_ext ext tgt
 
@@ -246,17 +261,15 @@ let ensure_vo v vo = ensure ".vo" v vo
 let ensure_vio v vio = ensure ".vio" v vio
 
 let ensure_exists f =
-  if not (Sys.file_exists f) then begin
-    Feedback.msg_error (hov 0 (str "Can't find file" ++ spc () ++ str f));
-    exit 1
-  end
+  if not (Sys.file_exists f) then
+    vernac_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
 
 (* Compile a vernac file *)
 let compile verbosely f =
   let check_pending_proofs () =
     let pfs = Pfedit.get_all_proof_names () in
-    if not (List.is_empty pfs) then
-      (Feedback.msg_error (str "There are pending proofs"); flush_all (); exit 1) in
+    if not (List.is_empty pfs) then vernac_error (str "There are pending proofs")
+  in
   match !Flags.compilation_mode with
   | BuildVo ->
       let long_f_dot_v = ensure_v f in
@@ -311,5 +324,8 @@ let compile verbosely f =
 
 let compile v f =
   ignore(CoqworkmgrApi.get 1);
-  compile v f;
+  begin
+    try compile v f
+    with any -> Topfmt.print_err_exn any
+  end;
   CoqworkmgrApi.giveback 1
