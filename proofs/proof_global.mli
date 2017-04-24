@@ -198,6 +198,7 @@ end
 (*                                                        *)
 (**********************************************************)
 
+val pr_goal_selector : Vernacexpr.goal_selector -> Pp.std_ppcmds
 val get_default_goal_selector : unit -> Vernacexpr.goal_selector
 
 module V82 : sig

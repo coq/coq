@@ -335,7 +335,7 @@ GEXTEND Gram
     |   IDENT "all"; ":" -> SelectAll ] ]
   ;
   tactic_mode:
-    [ [ g = OPT toplevel_selector; tac = G_vernac.subgoal_command -> tac g ] ]
+    [ [ g = OPT toplevel_selector; tac = G_vernac.query_command -> tac g ] ]
   ;
   command:
     [ [ IDENT "Proof"; "with"; ta = Pltac.tactic; 

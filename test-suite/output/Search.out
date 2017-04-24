@@ -98,6 +98,14 @@ h: n <> newdef n
 h': newdef n <> n
 h: n <> newdef n
 h: n <> newdef n
+h: n <> newdef n
+h': newdef n <> n
+The command has indeed failed with message:
+No such goal.
+The command has indeed failed with message:
+Query commands only support the single numbered goal selector.
+The command has indeed failed with message:
+Query commands only support the single numbered goal selector.
 h: P n
 h': ~ P n
 h: P n
