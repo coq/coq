@@ -19,7 +19,7 @@ open Util
 (** [find_reference caller_message [dir;subdir;...] s] returns a global
    reference to the name dir.subdir.(...).s; the corresponding module
    must have been required or in the process of being compiled so that
-   it must be used lazyly; it raises an anomaly with the given message
+   it must be used lazily; it raises an anomaly with the given message
    if not found *)
 
 type message = string

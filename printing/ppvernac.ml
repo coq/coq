@@ -1221,7 +1221,7 @@ open Decl_kinds
         | Egramml.GramTerminal s :: rl, cl -> str s :: aux rl cl
         | [], [] -> []
         | _ -> assert false in
-      hov 1 (pr_sequence (fun x -> x) (aux rl cl))
+      hov 1 (pr_sequence identity (aux rl cl))
     with Not_found ->
       hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
 

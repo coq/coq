@@ -77,7 +77,7 @@ type typing_flags = {
 }
 
 (* some contraints are in constant_constraints, some other may be in
- * the OpaueDef *)
+ * the OpaqueDef *)
 type constant_body = {
     const_hyps : Context.Named.t; (** New: younger hyp at top *)
     const_body : constant_def;

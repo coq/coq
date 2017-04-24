@@ -162,21 +162,8 @@ module DirPath =
 struct
   type t = module_ident list
 
-  let rec compare (p1 : t) (p2 : t) =
-    if p1 == p2 then 0
-    else begin match p1, p2 with
-    | [], [] -> 0
-    | [], _ -> -1
-    | _, [] -> 1
-    | id1 :: p1, id2 :: p2 ->
-      let c = Id.compare id1 id2 in
-      if Int.equal c 0 then compare p1 p2 else c
-    end
-
-  let rec equal p1 p2 = p1 == p2 || match p1, p2 with
-  | [], [] -> true
-  | id1 :: p1, id2 :: p2 -> Id.equal id1 id2 && equal p1 p2
-  | _ -> false
+  let compare = List.compare Id.compare
+  let equal = List.equal Id.equal
 
   let rec hash accu = function
   | [] -> accu
@@ -191,7 +178,7 @@ struct
 
   let empty = []
 
-  let is_empty d = match d with [] -> true | _ -> false
+  let is_empty = List.is_empty
 
   let to_string = function
     | [] -> "<>"
