@@ -123,7 +123,9 @@ let rec interp_vernac sid po (loc,com) =
       (* Due to bug #5363 we cannot use observe here as we should,
          it otherwise reveals bugs *)
       (* Stm.observe nsid; *)
-      Stm.finish ();
+
+      let check_proof = Flags.(!compilation_mode = BuildVo || not !batch_mode) in
+      if check_proof then Stm.finish ();
 
       (* We could use a more refined criteria that depends on the
          vernac. For now we imitate the old approach. *)
