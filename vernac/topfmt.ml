@@ -112,25 +112,22 @@ let msgnl_with ?pre_hdr fmt strm =
   pp_with fmt (strm ++ fnl ());
   Format.pp_print_flush fmt ()
 
-(* XXX: This is really painful! *)
 module Emacs = struct
 
   (* Special chars for emacs, to detect warnings inside goal output *)
-  let emacs_quote_start = String.make 1 (Char.chr 254)
-  let emacs_quote_end   = String.make 1 (Char.chr 255)
+  let quote_warning_start = "<warning>"
+  let quote_warning_end = "</warning>"
 
-  let emacs_quote_err g =
-    hov 0 (str emacs_quote_start ++ g ++ str emacs_quote_end)
+  let quote_info_start = "<infomsg>"
+  let quote_info_end = "</infomsg>"
 
-  let emacs_quote_info_start = "<infomsg>"
-  let emacs_quote_info_end = "</infomsg>"
+  let quote_emacs q_start q_end msg =
+    hov 0 (seq [str q_start; brk(0,0); msg; brk(0,0); str q_end])
 
-  let emacs_quote_info g =
-    hov 0 (str emacs_quote_info_start++ brk(0,0) ++ g ++ brk(0,0) ++ str emacs_quote_info_end)
+  let quote_warning = quote_emacs quote_warning_start quote_warning_end
+  let quote_info = quote_emacs quote_info_start quote_info_end
 
 end
-
-open Emacs
 
 let  dbg_hdr = tag Tag.debug   (str "Debug:")   ++ spc ()
 let info_hdr = mt ()
@@ -144,13 +141,13 @@ let make_body quoter info ?pre_hdr s =
 (* The empty quoter *)
 let noq x = x
 (* Generic logger *)
-let gen_logger dbg err ?pre_hdr level msg = match level with
+let gen_logger dbg warn ?pre_hdr level msg = match level with
   | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_hdr ?pre_hdr msg)
   | Info    -> msgnl_with !std_ft (make_body dbg info_hdr ?pre_hdr msg)
   | Notice  -> msgnl_with !std_ft (make_body noq info_hdr ?pre_hdr msg)
   | Warning -> Flags.if_warn (fun () ->
-               msgnl_with !err_ft (make_body err warn_hdr ?pre_hdr msg)) ()
-  | Error   -> msgnl_with !err_ft (make_body err  err_hdr ?pre_hdr msg)
+               msgnl_with !err_ft (make_body warn warn_hdr ?pre_hdr msg)) ()
+  | Error   -> msgnl_with !err_ft (make_body noq   err_hdr ?pre_hdr msg)
 
 (** Standard loggers *)
 
@@ -261,7 +258,7 @@ let init_color_output () =
    - Warning/Error: emacs_quote_err
    - Notice: unquoted
  *)
-let emacs_logger = gen_logger emacs_quote_info emacs_quote_err
+let emacs_logger = gen_logger Emacs.quote_info Emacs.quote_warning
 
 (* Output to file, used only in extraction so a candidate for removal *)
 let ft_logger old_logger ft ?loc level mesg =
