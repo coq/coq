@@ -115,28 +115,23 @@ let rec interp_vernac sid po (loc,com) =
         let f = Loadpath.locate_file fname in
         load_vernac verbosely sid f
     | v ->
-      try
-        let nsid, ntip = Stm.add sid (not !Flags.quiet) (loc,v) in
+      let nsid, ntip = Stm.add sid (not !Flags.quiet) (loc,v) in
 
-        (* Main STM interaction *)
-        if ntip <> `NewTip then
-          anomaly (str "vernac.ml: We got an unfocus operation on the toplevel!");
-        (* Due to bug #5363 we cannot use observe here as we should,
-           it otherwise reveals bugs *)
-        (* Stm.observe nsid; *)
-        Stm.finish ();
+      (* Main STM interaction *)
+      if ntip <> `NewTip then
+        anomaly (str "vernac.ml: We got an unfocus operation on the toplevel!");
+      (* Due to bug #5363 we cannot use observe here as we should,
+         it otherwise reveals bugs *)
+      (* Stm.observe nsid; *)
+      Stm.finish ();
 
-        (* We could use a more refined criteria that depends on the
-           vernac. For now we imitate the old approach. *)
-        let hide_goals = !Flags.batch_mode || is_query v || !Flags.quiet ||
-                         not (Proof_global.there_are_pending_proofs ()) in
+      (* We could use a more refined criteria that depends on the
+         vernac. For now we imitate the old approach. *)
+      let hide_goals = !Flags.batch_mode || is_query v || !Flags.quiet ||
+                       not (Proof_global.there_are_pending_proofs ()) in
 
-        if not hide_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
-        nsid
-
-      with exn when CErrors.noncritical exn ->
-        ignore(Stm.edit_at sid);
-        raise exn
+      if not hide_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
+      nsid
   in
     try
       (* The -time option is only supported from console-based
@@ -145,6 +140,7 @@ let rec interp_vernac sid po (loc,com) =
       let com = if !Flags.time then VernacTime (loc,com) else com in
       interp com
     with reraise ->
+      ignore(Stm.edit_at sid);
       let (reraise, info) = CErrors.push reraise in
       let loc' = Option.default Loc.ghost (Loc.get_loc info) in
       if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
