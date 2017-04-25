@@ -128,6 +128,10 @@ val gather_dependent_evars : evar_map -> Evar.t list -> (Evar.Set.t option) Evar
     solved. *)
 val advance : evar_map -> Evar.t -> Evar.t option
 
+(** [reachable_from_evars sigma seeds] computes the descendents of
+    evars in [seeds] by restriction or evar-evar unifications in [sigma]. *)
+val reachable_from_evars : evar_map -> Evar.Set.t -> Evar.Set.t
+
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
     This is roughly a combination of the previous functions and
@@ -250,8 +254,8 @@ exception ClearDependencyError of Id.t * clear_dependency_error * GlobRef.t opti
 
 (** Restrict an undefined evar according to a (sub)filter and candidates.
     The evar will be defined if there is only one candidate left,
-@raise ClearDependencyError NoCandidatesLeft if the filter turns the candidates
-  into an empty list. *)
+    @raise ClearDependencyError NoCandidatesLeft if the filter turns the candidates
+    into an empty list. *)
 
 val restrict_evar : evar_map -> Evar.t -> Filter.t ->
   ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * Evar.t

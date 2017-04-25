@@ -428,7 +428,7 @@ type goal_kind = ToShelve | ToGiveUp
 
 type evar_flags =
   { obligation_evars : Evar.Set.t;
-    restricted_evars : Evar.t Evar.Map.t;
+    aliased_evars : Evar.t Evar.Map.t;
     typeclass_evars : Evar.Set.t }
 
 type side_effect_role =
@@ -495,7 +495,7 @@ let add_with_name ?name ?(typeclass_candidate = true) d e i = match i.evar_body 
     associated to an evar, so we prevent registering its typeclass status. *)
 let add d e i = add_with_name ~typeclass_candidate:false d e i
 
-(*** Evar flags: typeclasses, restricted or obligation flag *)
+(*** Evar flags: typeclasses, aliased or obligation flag *)
 
 let get_typeclass_evars evd = evd.evar_flags.typeclass_evars
 
@@ -523,29 +523,28 @@ let is_obligation_evar evd evk =
 let inherit_evar_flags evar_flags evk evk' =
   let evk_typeclass = Evar.Set.mem evk evar_flags.typeclass_evars in
   let evk_obligation = Evar.Set.mem evk evar_flags.obligation_evars in
-  if not (evk_obligation || evk_typeclass) then evar_flags
-  else
-    let typeclass_evars =
-      if evk_typeclass then
-        let typeclass_evars = Evar.Set.remove evk evar_flags.typeclass_evars in
-        Evar.Set.add evk' typeclass_evars
-      else evar_flags.typeclass_evars
-    in
-    let obligation_evars =
-      if evk_obligation then
-        let obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars in
-        Evar.Set.add evk' obligation_evars
-      else evar_flags.obligation_evars
-    in
-    { evar_flags with obligation_evars; typeclass_evars }
+  let aliased_evars = Evar.Map.add evk evk' evar_flags.aliased_evars in
+  let typeclass_evars =
+    if evk_typeclass then
+      let typeclass_evars = Evar.Set.remove evk evar_flags.typeclass_evars in
+      Evar.Set.add evk' typeclass_evars
+    else evar_flags.typeclass_evars
+  in
+  let obligation_evars =
+    if evk_obligation then
+      let obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars in
+      Evar.Set.add evk' obligation_evars
+    else evar_flags.obligation_evars
+  in
+  { obligation_evars; aliased_evars; typeclass_evars }
 
 (** Removal: in all other cases of definition *)
 
 let remove_evar_flags evk evar_flags =
   { typeclass_evars = Evar.Set.remove evk evar_flags.typeclass_evars;
     obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars;
-    (* Restriction information is kept. *)
-    restricted_evars = evar_flags.restricted_evars }
+    (* Aliasing information is kept. *)
+    aliased_evars = evar_flags.aliased_evars }
 
 (** New evars *)
 
@@ -678,7 +677,7 @@ let create_evar_defs sigma = { sigma with
 
 let empty_evar_flags =
   { obligation_evars = Evar.Set.empty;
-    restricted_evars = Evar.Map.empty;
+    aliased_evars = Evar.Map.empty;
     typeclass_evars = Evar.Set.empty }
 
 let empty_side_effects = {
@@ -772,14 +771,13 @@ let define_with_evar evk body evd =
   let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
   define_gen evk body evd evar_flags
 
-let is_restricted_evar evd evk =
-  try Some (Evar.Map.find evk evd.evar_flags.restricted_evars)
+let get_aliased_evars evd = evd.evar_flags.aliased_evars
+
+let is_aliased_evar evd evk =
+  try Some (Evar.Map.find evk evd.evar_flags.aliased_evars)
   with Not_found -> None
 
-let declare_restricted_evar evar_flags evk evk' =
-  { evar_flags with restricted_evars = Evar.Map.add evk evk' evar_flags.restricted_evars }
-
-(* In case of restriction, we declare the restriction and inherit the obligation
+(* In case of restriction, we declare the aliasing and inherit the obligation
    and typeclass flags. *)
 
 let restrict evk filter ?candidates ?src evd =
@@ -797,8 +795,7 @@ let restrict evk filter ?candidates ?src evd =
   let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
-  let evar_flags = declare_restricted_evar evd.evar_flags evk evk' in
-  let evar_flags = inherit_evar_flags evar_flags evk evk' in
+  let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
     defn_evars; last_mods; evar_names; evar_flags }, evk'
 

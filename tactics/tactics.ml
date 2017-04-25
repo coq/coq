@@ -5055,14 +5055,14 @@ end
 
 (** Tacticals defined directly in term of Proofview *)
 module New = struct
-  open Genredexpr
-  open Locus
-
   let reduce_after_refine =
-    reduce
-      (Lazy {rBeta=true;rMatch=true;rFix=true;rCofix=true;
-             rZeta=false;rDelta=false;rConst=[]})
-      {onhyps = Some []; concl_occs = AllOccurrences }
+    (* For backward compatibility reasons, we do not contract let-ins, but we unfold them. *)
+    let redfun env t =
+      let open CClosure in
+      let flags = RedFlags.red_add_transparent allnolet TransparentState.empty in
+      clos_norm_flags flags env t
+    in
+    reduct_in_concl ~check:false (redfun,DEFAULTcast)
 
   let refine ~typecheck c =
     Refine.refine ~typecheck c <*>
