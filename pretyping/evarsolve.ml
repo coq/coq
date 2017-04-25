@@ -1252,6 +1252,8 @@ let solve_evar_evar_l2r force f g env evd aliases pbty ev1 (evk2,_ as ev2) =
   try
     let evd,body = project_evar_on_evar force g env evd aliases 0 pbty ev1 ev2 in
     let evd' = Evd.define evk2 body evd in
+    let evi = Evd.find evd' evk2 in
+    let evd' = Evd.add evd' evk2 {evi with evar_extra = Store.set evi.evar_extra Evarutil.evar_evar_solution true} in
     let evd' = update_evar_source (fst (destEvar evd body)) evk2 evd' in
       check_evar_instance evd' evk2 body g
   with EvarSolvedOnTheFly (evd,c) ->
