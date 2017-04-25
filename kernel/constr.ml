@@ -978,28 +978,6 @@ module Hcaseinfo = Hashcons.Make(CaseinfoHash)
 
 let case_info_hash = CaseinfoHash.hash
 
-module Hsorts =
-  Hashcons.Make(
-    struct
-      open Sorts
-
-      type t = Sorts.t
-      type u = universe -> universe
-      let hashcons huniv = function
-          Prop c -> Prop c
-        | Type u -> Type (huniv u)
-      let eq s1 s2 =
-        s1 == s2 ||
-	  match (s1,s2) with
-            (Prop c1, Prop c2) -> c1 == c2
-          | (Type u1, Type u2) -> u1 == u2
-          |_ -> false
-      let hash = function
-	| Prop Null -> 0 | Prop Pos -> 1
-	| Type u -> 2 + Universe.hash u
-    end)
-
-(* let hcons_sorts = Hashcons.simple_hcons Hsorts.generate hcons_univ *)
 let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate Hcaseinfo.hcons hcons_ind
 
 let hcons =

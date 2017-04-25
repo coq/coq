@@ -10,7 +10,6 @@ open Term
 open EConstr
 open Hipattern
 open Names
-open Pp
 open Geninterp
 open Misctypes
 open Tacexpr

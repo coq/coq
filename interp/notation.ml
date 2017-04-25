@@ -22,7 +22,6 @@ open Glob_ops
 open Ppextend
 open Context.Named.Declaration
 
-module NamedDecl = Context.Named.Declaration
 (*i*)
 
 (*s A scope is a set of notations; it includes

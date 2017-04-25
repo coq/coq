@@ -81,8 +81,11 @@ module Stack : sig
   val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
 
   val compare_shape : 'a t -> 'a t -> bool
+
+  exception IncompatibleFold2
   (** [fold2 f x sk1 sk2] folds [f] on any pair of term in [(sk1,sk2)].
-      @return the result and the lifts to apply on the terms *)
+      @return the result and the lifts to apply on the terms
+      @raise IncompatibleFold2 when [sk1] and [sk2] have incompatible shapes *)
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
     constr t -> constr t -> 'a * int * int
   val map : ('a -> 'a) -> 'a t -> 'a t

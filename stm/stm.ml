@@ -1205,6 +1205,8 @@ let detect_proof_block id name =
 (****************************** THE SCHEDULER *********************************)
 (******************************************************************************)
 
+(* Unused module warning doesn't understand [module rec] *)
+[@@@ocaml.warning "-60"]
 module rec ProofTask : sig
  
   type competence = Stateid.t list
@@ -2318,6 +2320,7 @@ let known_state ?(redefine_qed=false) ~cache id =
   reach ~redefine_qed id
 
 end (* }}} *)
+[@@@ocaml.warning "+60"]
 
 (********************************* STM API ************************************)
 (******************************************************************************)

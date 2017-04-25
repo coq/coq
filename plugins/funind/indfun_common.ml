@@ -21,12 +21,9 @@ let get_name avoid ?(default="H") = function
   | Name n -> Name n
 
 let array_get_start a =
-  try
-    Array.init
-      (Array.length a - 1)
-      (fun i -> a.(i))
-  with Invalid_argument "index out of bounds" ->
-    invalid_arg "array_get_start"
+  Array.init
+    (Array.length a - 1)
+    (fun i -> a.(i))
 
 let id_of_name = function
     Name id -> id

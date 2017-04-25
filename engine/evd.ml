@@ -15,7 +15,7 @@ open Term
 open Vars
 open Environ
 
-module RelDecl = Context.Rel.Declaration
+(* module RelDecl = Context.Rel.Declaration *)
 module NamedDecl = Context.Named.Declaration
 
 (** Generic filters *)
