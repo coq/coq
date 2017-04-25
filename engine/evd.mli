@@ -284,8 +284,11 @@ val restrict : Evar.t-> Filter.t -> ?candidates:econstr list ->
     possibly limiting the instances to a set of candidates (candidates
     are filtered according to the filter) *)
 
-val is_restricted_evar : evar_map -> Evar.t -> Evar.t option
-(** Tell if an evar comes from restriction of another evar, and if yes, which *)
+val get_aliased_evars : evar_map -> Evar.t Evar.Map.t
+(** The map of aliased evars *)
+
+val is_aliased_evar : evar_map -> Evar.t -> Evar.t option
+(** Tell if an evar has been aliased to another evar, and if yes, which *)
 
 val set_typeclass_evars : evar_map -> Evar.Set.t -> evar_map
 (** Mark the given set of evars as available for resolution.
@@ -387,7 +390,6 @@ val push_future_goals : evar_map -> evar_map
 val pop_future_goals : evar_map -> FutureGoals.t * evar_map
 
 val fold_future_goals : (evar_map -> Evar.t -> evar_map) -> evar_map -> evar_map
-
 
 val remove_future_goal : evar_map -> Evar.t -> evar_map
 
