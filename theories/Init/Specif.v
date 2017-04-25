@@ -220,12 +220,12 @@ Qed.
 
 (** Equality of sigma types *)
 Import EqNotations.
-Local Notation "'rew' 'dependent' [ Q ] H 'in' H'"
-  := (match H as p in (_ = y) return Q y (rew p in _) with
+Local Notation "'rew' 'dependent' H 'in' H'"
+  := (match H with
       | eq_refl => H'
       end)
        (at level 10, H' at level 10,
-        format "'[' 'rew'  'dependent'  [ Q ]  '/    ' H  in  '/' H' ']'").
+        format "'[' 'rew'  'dependent'  '/    ' H  in  '/' H' ']'").
 
 (** Equality for [sigT] *)
 Section sigT.
@@ -309,7 +309,7 @@ Section sigT.
     = existT
         (Q y)
         (rew H in projT1 u)
-        (rew dependent [Q] H in (projT2 u)).
+        (rew dependent H in (projT2 u)).
   Proof.
     destruct H, u; reflexivity.
   Defined.
@@ -380,7 +380,7 @@ Section sig.
     = exist
         (Q y)
         (rew H in proj1_sig u)
-        (rew dependent [Q] H in proj2_sig u).
+        (rew dependent H in proj2_sig u).
   Proof.
     destruct H, u; reflexivity.
   Defined.
@@ -494,8 +494,8 @@ Section sigT2.
         (Q y)
         (R y)
         (rew H in projT1 u)
-        (rew dependent [Q] H in projT2 u)
-        (rew dependent [R] H in projT3 u).
+        (rew dependent H in projT2 u)
+        (rew dependent H in projT3 u).
   Proof.
     destruct H, u; reflexivity.
   Defined.
@@ -609,8 +609,8 @@ Section sig2.
         (Q y)
         (R y)
         (rew H in proj1_sig u)
-        (rew dependent [Q] H in proj2_sig u)
-        (rew dependent [R] H in proj3_sig u).
+        (rew dependent H in proj2_sig u)
+        (rew dependent H in proj3_sig u).
   Proof.
     destruct H, u; reflexivity.
   Defined.
