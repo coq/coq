@@ -505,7 +505,7 @@ let rec parse = function
 
 let () = Coqtop.toploop_init := (fun args ->
         let args = parse args in
-        Flags.make_silent true;
+        Flags.quiet := true;
         CoqworkmgrApi.(init Flags.High);
         args)
 

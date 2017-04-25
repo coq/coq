@@ -354,7 +354,7 @@ let parse_args argv =
     | "-norec" :: [] -> usage ()
 
     | "-silent" :: rem ->
-        Flags.make_silent true; parse rem
+        Flags.quiet := true; parse rem
 
     | s :: _ when s<>"" && s.[0]='-' ->
         fatal_error (str "Unknown option " ++ str s) false
