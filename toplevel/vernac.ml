@@ -117,7 +117,7 @@ let vernac_error msg =
 (*     Stm.End_of_input -> true *)
 (*   | _ -> false *)
 
-let rec interp_vernac sid po (loc,com) =
+let rec interp_vernac sid (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
@@ -195,7 +195,7 @@ and load_vernac verbosely sid file =
       Option.iter (vernac_echo loc) in_echo;
 
       checknav_simple (loc, ast);
-      let nsid = Flags.silently (interp_vernac !rsid in_pa) (loc, ast) in
+      let nsid = Flags.silently (interp_vernac !rsid) (loc, ast) in
       rsid := nsid
     done;
     !rsid
@@ -221,9 +221,9 @@ and load_vernac verbosely sid file =
    of a new state label). An example of state-preserving command is one coming
    from the query panel of Coqide. *)
 
-let process_expr sid po loc_ast =
+let process_expr sid loc_ast =
   checknav_deep loc_ast;
-  interp_vernac sid po loc_ast
+  interp_vernac sid loc_ast
 
 (* XML output hooks *)
 let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()

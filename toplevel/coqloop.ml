@@ -300,7 +300,7 @@ let do_vernac sid =
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.process_expr sid top_buffer.tokens (read_sentence sid (fst input))
+    Vernac.process_expr sid (read_sentence sid (fst input))
   with
     | Stm.End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
