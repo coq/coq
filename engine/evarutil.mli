@@ -114,6 +114,10 @@ val gather_dependent_evars : evar_map -> evar list -> (Evar.Set.t option) Evar.M
     solved. *)
 val advance : evar_map -> evar -> evar option
 
+(** [reachable_from_evars sigma seeds ev] computes if [ev] is a descendent
+    of an evar of [seeds] by restriction or evar-evar unifications in [sigma]. *)
+val reachable_from_evars : evar_map -> Evar.Set.t -> existential_key -> bool
+
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
     This is roughly a combination of the previous functions and
@@ -215,6 +219,9 @@ val restrict_evar : evar_map -> existential_key -> Filter.t ->
 (* spiwack: marks an evar that has been "defined" by clear.
     used by [Goal] and (indirectly) [Proofview] to handle the clear tactic gracefully*)
 val cleared : bool Store.field
+(** Marks an evar that has been defined by another evar by projection.
+    Used to handle checking of created goals correctly. *)
+val evar_evar_solution : bool Store.field
 
 val clear_hyps_in_evi : env -> evar_map ref -> named_context_val -> types ->
   Id.Set.t -> named_context_val * types

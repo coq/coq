@@ -489,6 +489,7 @@ type clear_dependency_error =
 exception ClearDependencyError of Id.t * clear_dependency_error
 
 let cleared = Store.field ()
+let evar_evar_solution = Store.field ()
 
 exception Depends of Id.t
 
@@ -703,6 +704,29 @@ let rec advance sigma evk =
         advance sigma evk
       else
         None
+
+let reachable_from_evars current_sigma evars evk =
+  let rec search evk' visited =
+    if Evar.Set.mem evk' visited then visited
+    else
+      let visited = Evar.Set.add evk' visited in
+      let evi = Evd.find current_sigma evk' in
+      match Evd.evar_body evi with
+      | Evd.Evar_empty -> visited
+      | Evd.Evar_defined c ->
+         if Option.default false (Evd.Store.get evi.evar_extra cleared) ||
+            Option.default false (Evd.Store.get evi.evar_extra evar_evar_solution)
+         then
+           match Term.kind_of_term c with
+           | Term.Evar (evk',l) -> if Evar.equal evk' evk then raise Exit
+                                   else search evk' visited
+           | _ -> visited
+         else visited
+  in
+  try
+    let _ = Evar.Set.fold (fun evk' visited -> search evk' visited) evars Evar.Set.empty in
+    false
+  with Exit -> true
 
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
