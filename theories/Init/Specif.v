@@ -237,14 +237,21 @@ Section sigT.
   Defined.
 
   (** Equality of [sigT] is itself a [sigT] *)
+  Definition eq_existT_uncurried {A : Type} {P : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+             (pq : { p : u1 = v1 & rew p in u2 = v2 })
+  : existT _ u1 u2 = existT _ v1 v2.
+  Proof.
+    destruct pq as [p q].
+    destruct q; simpl in *.
+    destruct p; reflexivity.
+  Defined.
+
   Definition eq_sigT_uncurried {A : Type} {P : A -> Type} (u v : { a : A & P a })
              (pq : { p : projT1 u = projT1 v & rew p in projT2 u = projT2 v })
   : u = v.
   Proof.
     destruct u as [u1 u2], v as [v1 v2]; simpl in *.
-    destruct pq as [p q].
-    destruct q; simpl in *.
-    destruct p; reflexivity.
+    apply eq_existT_uncurried; exact pq.
   Defined.
 
   (** Curried version of proving equality of sigma types *)
@@ -317,14 +324,21 @@ Section sig.
     destruct p; reflexivity.
   Defined.
 
+  Definition eq_exist_uncurried {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+             (pq : { p : u1 = v1 | rew p in u2 = v2 })
+  : exist _ u1 u2 = exist _ v1 v2.
+  Proof.
+    destruct pq as [p q].
+    destruct q; simpl in *.
+    destruct p; reflexivity.
+  Defined.
+
   Definition eq_sig_uncurried {A : Type} {P : A -> Prop} (u v : { a : A | P a })
              (pq : { p : proj1_sig u = proj1_sig v | rew p in proj2_sig u = proj2_sig v })
   : u = v.
   Proof.
     destruct u as [u1 u2], v as [v1 v2]; simpl in *.
-    destruct pq as [p q].
-    destruct q; simpl in *.
-    destruct p; reflexivity.
+    apply eq_exist_uncurried; exact pq.
   Defined.
 
   Definition eq_sig {A : Type} {P : A -> Prop} (u v : { a : A | P a })
@@ -398,15 +412,24 @@ Section sigT2.
   Defined.
 
   (** Equality of [sigT2] is itself a [sigT2] *)
+  Definition eq_existT2_uncurried {A : Type} {P Q : A -> Type}
+             {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
+             (pqr : { p : u1 = v1
+                    & rew p in u2 = v2 & rew p in u3 = v3 })
+  : existT2 _ _ u1 u2 u3 = existT2 _ _ v1 v2 v3.
+  Proof.
+    destruct pqr as [p q r].
+    destruct r, q, p; simpl.
+    reflexivity.
+  Defined.
+
   Definition eq_sigT2_uncurried {A : Type} {P Q : A -> Type} (u v : { a : A & P a & Q a })
              (pqr : { p : projT1 u = projT1 v
                     & rew p in projT2 u = projT2 v & rew p in projT3 u = projT3 v })
   : u = v.
   Proof.
     destruct u as [u1 u2 u3], v as [v1 v2 v3]; simpl in *.
-    destruct pqr as [p q r].
-    destruct r, q, p; simpl.
-    reflexivity.
+    apply eq_existT2_uncurried; exact pqr.
   Defined.
 
   (** Curried version of proving equality of sigma types *)
@@ -508,15 +531,24 @@ Section sig2.
   Defined.
 
   (** Equality of [sig2] is itself a [sig2] *)
+  Definition eq_exist2_uncurried {A} {P Q : A -> Prop}
+             {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
+             (pqr : { p : u1 = v1
+                    | rew p in u2 = v2 & rew p in u3 = v3 })
+    : exist2 _ _ u1 u2 u3 = exist2 _ _ v1 v2 v3.
+  Proof.
+    destruct pqr as [p q r].
+    destruct r, q, p; simpl.
+    reflexivity.
+  Defined.
+
   Definition eq_sig2_uncurried {A} {P Q : A -> Prop} (u v : { a : A | P a & Q a })
              (pqr : { p : proj1_sig u = proj1_sig v
                     | rew p in proj2_sig u = proj2_sig v & rew p in proj3_sig u = proj3_sig v })
     : u = v.
   Proof.
     destruct u as [u1 u2 u3], v as [v1 v2 v3]; simpl in *.
-    destruct pqr as [p q r].
-    destruct r, q, p; simpl.
-    reflexivity.
+    apply eq_exist2_uncurried; exact pqr.
   Defined.
 
   (** Curried version of proving equality of sigma types *)
