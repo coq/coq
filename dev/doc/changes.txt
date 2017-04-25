@@ -51,13 +51,55 @@ In Constrexpr_ops:
   interpreting "(x y z:_)" as "(x:_) (y:_) (z:_)" while the second
   ones were preserving the original sharing of the type.
 
-Location handling has been reworked, Loc.ghost has been removed in
-favor of an option type. All objects carrying a source code location
-have been switched to `'a Loc.located == Loc.t option * a'`, which
-should be treated as private (that is, ok to match against, but
-forbidden to manually build), and is mandatory to use for objects with
-location. This policy has been implemented in the whole code base,
-including all the ASTs for vernacular, gallina, and tactics.
+Location handling and AST attributes:
+
+  Location handling has been reworked. First, Loc.ghost has been
+  removed in favor of an option type, all objects carrying an optional
+  source code location have been switched to use `Loc.t option`.
+
+  Storage of location information has been also refactored. The main
+  datatypes representing Coq AST (constrexpr, glob_expr) have been
+  switched to a generic "node with attributes" representation `'a
+  CAst.ast`, which is a record of the form:
+
+```ocaml
+type 'a ast = private {
+  v   : 'a;
+  loc : Loc.t option;
+  ...
+}
+```
+  consumers of AST nodes are recommended to use accessor-based pattern
+  matching `{ v; loc }` to destruct `ast` object. Creation is done
+  with `CAst.make ?loc obj`, where the attributes are optional. Some
+  convenient combinators are provided in the module. A typical match:
+```
+| CCase(loc, a1) -> CCase(loc, f a1)
+```
+  is now done as:
+```
+| { v = CCase(a1); loc } -> CAst.make ?loc @@ CCase(f a1)
+```
+  or even better, if plan to preserve the attributes you can wrap your
+  top-level function in `CAst.map` to have:
+
+```
+| CCase(a1) -> CCase(f a1)
+```
+
+  This scheme based on records enables easy extensibility of the AST
+  node type without breaking compatibility.
+
+  Not all objects carrying a location have been converted to the
+  generic node representation, some of them may be converted in the
+  future, for some others the abstraction is not just worth it.
+
+  Thus, we still maintain a `'a Loc.located == Loc.t option * a'`,
+  tuple type which should be treated as private datatype (ok to match
+  against, but forbidden to manually build), and it is mandatory to
+  use it for objects that carry a location. This policy has been
+  implemented in the whole code base. Matching a located object hasn't
+  changed, however, `Loc.tag ?loc obj` must be used to build one.
 
 ** Ltac API **
 
