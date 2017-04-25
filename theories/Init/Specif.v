@@ -261,9 +261,8 @@ Section sigT.
     := eq_sigT u v p (P_hprop _ _ _).
 
   (** Equivalence of equality of [sigT] with a [sigT] of equality *)
-  (** We could actually use [IsIso] here, but for simplicity, we
-      don't.  If we wanted to deal with proofs of equality of Σ types
-      in dependent positions, we'd need it. *)
+  (** We could actually prove an isomorphism here, and not just [<->],
+      but for simplicity, we don't. *)
   Definition eq_sigT_uncurried_iff {A P}
              (u v : { a : A & P a })
     : u = v <-> (sigT (fun p : projT1 u = projT1 v => rew p in projT2 u = projT2 v)).
@@ -426,9 +425,8 @@ Section sigT2.
     := eq_sigT2 u v (projT1_eq p) (projT2_eq p) (Q_hprop _ _ _).
 
   (** Equivalence of equality of [sigT2] with a [sigT2] of equality *)
-  (** We could actually use [IsIso] here, but for simplicity, we
-      don't.  If we wanted to deal with proofs of equality of Σ types
-      in dependent positions, we'd need it. *)
+  (** We could actually prove an isomorphism here, and not just [<->],
+      but for simplicity, we don't. *)
   Definition eq_sigT2_uncurried_iff {A P Q}
              (u v : { a : A & P a & Q a })
     : u = v
@@ -537,9 +535,8 @@ Section sig2.
     := eq_sig2 u v (proj1_sig_eq p) (proj2_sig_eq p) (Q_hprop _ _ _).
 
   (** Equivalence of equality of [sig2] with a [sig2] of equality *)
-  (** We could actually use [IsIso] here, but for simplicity, we
-      don't.  If we wanted to deal with proofs of equality of Σ types
-      in dependent positions, we'd need it. *)
+  (** We could actually prove an isomorphism here, and not just [<->],
+      but for simplicity, we don't. *)
   Definition eq_sig2_uncurried_iff {A P Q}
              (u v : { a : A | P a & Q a })
     : u = v
