@@ -242,7 +242,7 @@ Section sigT.
     destruct p; reflexivity.
   Defined.
 
-  (** Equality of [sigT] is itself a [sigT] *)
+  (** Equality of [sigT] is itself a [sigT] (forwards-reasoning version) *)
   Definition eq_existT_uncurried {A : Type} {P : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
              (pq : { p : u1 = v1 & rew p in u2 = v2 })
   : existT _ u1 u2 = existT _ v1 v2.
@@ -252,6 +252,7 @@ Section sigT.
     destruct p; reflexivity.
   Defined.
 
+  (** Equality of [sigT] is itself a [sigT] (backwards-reasoning version) *)
   Definition eq_sigT_uncurried {A : Type} {P : A -> Type} (u v : { a : A & P a })
              (pq : { p : projT1 u = projT1 v & rew p in projT2 u = projT2 v })
   : u = v.
@@ -318,16 +319,19 @@ End sigT.
 (** Equality for [sig] *)
 Section sig.
   Local Unset Implicit Arguments.
+  (** Projecting an equality of a pair to equality of the first components *)
   Definition proj1_sig_eq {A} {P : A -> Prop} {u v : { a : A | P a }} (p : u = v)
   : proj1_sig u = proj1_sig v
     := f_equal (@proj1_sig _ _) p.
 
+  (** Projecting an equality of a pair to equality of the second components *)
   Definition proj2_sig_eq {A} {P : A -> Prop} {u v : { a : A | P a }} (p : u = v)
   : rew proj1_sig_eq p in proj2_sig u = proj2_sig v.
   Proof.
     destruct p; reflexivity.
   Defined.
 
+  (** Equality of [sig] is itself a [sig] (forwards-reasoning version) *)
   Definition eq_exist_uncurried {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
              (pq : { p : u1 = v1 | rew p in u2 = v2 })
   : exist _ u1 u2 = exist _ v1 v2.
@@ -337,6 +341,7 @@ Section sig.
     destruct p; reflexivity.
   Defined.
 
+  (** Equality of [sig] is itself a [sig] (backwards-reasoning version) *)
   Definition eq_sig_uncurried {A : Type} {P : A -> Prop} (u v : { a : A | P a })
              (pq : { p : proj1_sig u = proj1_sig v | rew p in proj2_sig u = proj2_sig v })
   : u = v.
@@ -345,11 +350,13 @@ Section sig.
     apply eq_exist_uncurried; exact pq.
   Defined.
 
+  (** Curried version of proving equality of sigma types *)
   Definition eq_sig {A : Type} {P : A -> Prop} (u v : { a : A | P a })
              (p : proj1_sig u = proj1_sig v) (q : rew p in proj2_sig u = proj2_sig v)
   : u = v
     := eq_sig_uncurried u v (exist _ p q).
 
+  (** Induction principle for [@eq (sig _)] *)
   Definition eq_sig_rect {A P} {u v : { a : A | P a }} (Q : u = v -> Type)
              (f : forall p q, Q (eq_sig u v p q))
     : forall p, Q p.
@@ -357,12 +364,16 @@ Section sig.
   Definition eq_sig_rec {A P u v} (Q : u = v :> { a : A | P a } -> Set) := eq_sig_rect Q.
   Definition eq_sig_ind {A P u v} (Q : u = v :> { a : A | P a } -> Prop) := eq_sig_rec Q.
 
+  (** Equality of [sig] when the property is an hProp *)
   Definition eq_sig_hprop {A} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
              (u v : { a : A | P a })
              (p : proj1_sig u = proj1_sig v)
     : u = v
     := eq_sig u v p (P_hprop _ _ _).
 
+  (** Equivalence of equality of [sig] with a [sig] of equality *)
+  (** We could actually prove an isomorphism here, and not just [<->],
+      but for simplicity, we don't. *)
   Definition eq_sig_uncurried_iff {A} {P : A -> Prop}
              (u v : { a : A | P a })
     : u = v <-> { p : proj1_sig u = proj1_sig v | rew p in proj2_sig u = proj2_sig v }.
@@ -370,6 +381,7 @@ Section sig.
     split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sig_uncurried ].
   Defined.
 
+  (** Equivalence of equality of [sig] involving hProps with equality of the first components *)
   Definition eq_sig_hprop_iff {A} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
              (u v : { a : A | P a })
     : u = v <-> (proj1_sig u = proj1_sig v)
@@ -413,7 +425,7 @@ Section sigT2.
     destruct p; reflexivity.
   Defined.
 
-  (** Equality of [sigT2] is itself a [sigT2] *)
+  (** Equality of [sigT2] is itself a [sigT2] (forwards-reasoning version) *)
   Definition eq_existT2_uncurried {A : Type} {P Q : A -> Type}
              {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
              (pqr : { p : u1 = v1
@@ -425,6 +437,7 @@ Section sigT2.
     reflexivity.
   Defined.
 
+  (** Equality of [sigT2] is itself a [sigT2] (backwards-reasoning version) *)
   Definition eq_sigT2_uncurried {A : Type} {P Q : A -> Type} (u v : { a : A & P a & Q a })
              (pqr : { p : projT1 u = projT1 v
                     & rew p in projT2 u = projT2 v & rew p in projT3 u = projT3 v })
@@ -528,7 +541,7 @@ Section sig2.
     destruct p; reflexivity.
   Defined.
 
-  (** Equality of [sig2] is itself a [sig2] *)
+  (** Equality of [sig2] is itself a [sig2] (fowards-reasoning version) *)
   Definition eq_exist2_uncurried {A} {P Q : A -> Prop}
              {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
              (pqr : { p : u1 = v1
@@ -540,6 +553,7 @@ Section sig2.
     reflexivity.
   Defined.
 
+  (** Equality of [sig2] is itself a [sig2] (backwards-reasoning version) *)
   Definition eq_sig2_uncurried {A} {P Q : A -> Prop} (u v : { a : A | P a & Q a })
              (pqr : { p : proj1_sig u = proj1_sig v
                     | rew p in proj2_sig u = proj2_sig v & rew p in proj3_sig u = proj3_sig v })
