@@ -265,7 +265,7 @@ Section sigT.
       but for simplicity, we don't. *)
   Definition eq_sigT_uncurried_iff {A P}
              (u v : { a : A & P a })
-    : u = v <-> (sigT (fun p : projT1 u = projT1 v => rew p in projT2 u = projT2 v)).
+    : u = v <-> { p : projT1 u = projT1 v & rew p in projT2 u = projT2 v }.
   Proof.
     split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sigT_uncurried ].
   Defined.
