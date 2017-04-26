@@ -96,6 +96,7 @@ let parse_args () =
       |"-impredicative-set"|"-vm"|"-native-compiler"
       |"-indices-matter"|"-quick"|"-type-in-type"
       |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
+      |"-stm-debug"
       as o) :: rem ->
 	parse (cfiles,o::args) rem
 

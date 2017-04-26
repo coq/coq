@@ -49,6 +49,9 @@ val debug : bool ref
 val in_debugger : bool ref
 val in_toplevel : bool ref
 
+(** Enable STM debugging *)
+val stm_debug : bool ref
+
 val profile : bool
 
 (* Legacy flags *)

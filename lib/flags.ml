@@ -80,6 +80,8 @@ let async_proofs_is_master () =
 let async_proofs_delegation_threshold = ref 0.03
 
 let debug = ref false
+let stm_debug = ref false
+
 let in_debugger = ref false
 let in_toplevel = ref false
 

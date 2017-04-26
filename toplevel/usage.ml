@@ -69,6 +69,7 @@ let print_usage_channel co command =
 \n  -boot                  boot mode (implies -q and -batch)\
 \n  -bt                    print backtraces (requires configure debug flag)\
 \n  -debug                 debug mode (implies -bt)\
+\n  -stm-debug             STM debug mode (will trace every transaction) \
 \n  -emacs                 tells Coq it is executed under Emacs\
 \n  -noglob                do not dump globalizations\
 \n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
