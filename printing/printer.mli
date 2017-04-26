@@ -18,6 +18,11 @@ open Glob_term
 
 (** These are the entry points for printing terms, context, tac, ... *)
 
+
+val enable_unfocused_goal_printing: bool ref
+val enable_goal_tags_printing      : bool ref
+val enable_goal_names_printing     : bool ref
+
 (** Terms *)
 
 val pr_lconstr_env         : env -> evar_map -> constr -> std_ppcmds
@@ -135,7 +140,19 @@ val pr_transparent_state   : transparent_state -> std_ppcmds
 (** Proofs *)
 
 val pr_goal                : goal sigma -> std_ppcmds
-val pr_subgoals            : ?pr_first:bool -> std_ppcmds option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> std_ppcmds
+
+(** [pr_subgoals ~pr_first pp sigma seeds shelf focus_stack unfocused goals]
+   prints the goals of the list [goals] followed by the goals in
+   [unfocused], in a short way (typically only the conclusion) except
+   for the first goal if [pr_first] is true. This function can be
+   replaced by another one by calling [set_printer_pr] (see below),
+   typically by plugin writers. The default printer prints only the
+   focused goals unless the conrresponding option
+   [enable_unfocused_goal_printing] is set. [seeds] is for printing
+   dependent evars (mainly for emacs proof tree mode). *)
+val pr_subgoals            : ?pr_first:bool -> std_ppcmds option -> evar_map -> evar list -> Goal.goal list -> int list
+                             -> goal list -> goal list -> std_ppcmds
+
 val pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds
 val pr_concl               : int -> evar_map -> goal -> std_ppcmds
 
@@ -190,7 +207,7 @@ val pr_goal_by_id : Id.t -> std_ppcmds
 val pr_goal_by_uid : string -> std_ppcmds
 
 type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> std_ppcmds option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> std_ppcmds;
+ pr_subgoals            : ?pr_first:bool -> std_ppcmds option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> goal list -> std_ppcmds;
  pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds;
  pr_goal                : goal sigma -> std_ppcmds;
 };;

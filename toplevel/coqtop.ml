@@ -247,6 +247,7 @@ let set_emacs () =
   if not (Option.is_empty !toploop) then
     error "Flag -emacs is incompatible with a custom toplevel loop";
   Flags.print_emacs := true;
+  Printer.enable_goal_tags_printing := true;
   color := `OFF
 
 (** Options for CoqIDE *)
