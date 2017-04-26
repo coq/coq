@@ -589,7 +589,7 @@ let interp_uconstr ist env sigma = function
       } in
       { closure ; term =  intern_gen WithoutTypeConstraint ~ltacvars env ce }
 
-let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
+let interp_gen kind ist pattern_mode flags env sigma (c,ce) =
   let constrvars = extract_ltac_constr_context ist env sigma in
   let vars = {
     Pretyping.ltac_constrs = constrvars.typed;
@@ -617,7 +617,7 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
       } in
       let kind_for_intern =
         match kind with OfType _ -> WithoutTypeConstraint | _ -> kind in
-      intern_gen kind_for_intern ~allow_patvar ~ltacvars env c
+      intern_gen kind_for_intern ~pattern_mode ~ltacvars env c
   in
   (* Jason Gross: To avoid unnecessary modifications to tacinterp, as
       suggested by Arnaud Spiwack, we run push_trace immediately.  We do
