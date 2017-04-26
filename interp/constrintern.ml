@@ -1516,7 +1516,7 @@ let extract_explicit_arg imps args =
 (**********************************************************************)
 (* Main loop                                                          *)
 
-let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
+let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   let rec intern env = function
     | CRef (ref,us) as x ->
 	let (c,imp,subscopes,l),_ =
@@ -1747,9 +1747,9 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
         in
 	GHole (loc, k, naming, solve)
     (* Parsing pattern variables *)
-    | CPatVar (loc, n) when allow_patvar ->
+    | CPatVar (loc, n) when pattern_mode ->
 	GPatVar (loc, (true,n))
-    | CEvar (loc, n, []) when allow_patvar ->
+    | CEvar (loc, n, []) when pattern_mode ->
 	GPatVar (loc, (false,n))
     (* end *)
     (* Parsing existential variables *)
@@ -1934,13 +1934,13 @@ let empty_ltac_sign = {
 }
 
 let intern_gen kind env
-               ?(impls=empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=empty_ltac_sign)
+               ?(impls=empty_internalization_env) ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
                c =
   let tmp_scope = scope_of_type_kind kind in
   internalize env {ids = extract_ids env; unb = false;
 		         tmp_scope = tmp_scope; scopes = [];
 			 impls = impls}
-    allow_patvar (ltacvars, Id.Map.empty) c
+    pattern_mode (ltacvars, Id.Map.empty) c
 
 let intern_constr env c = intern_gen WithoutTypeConstraint env c
 
@@ -2013,7 +2013,7 @@ let interp_type_evars env evdref ?(impls=empty_internalization_env) c =
 
 let intern_constr_pattern env ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
   let c = intern_gen (if as_type then IsType else WithoutTypeConstraint)
-            ~allow_patvar:true ~ltacvars env c in
+            ~pattern_mode:true ~ltacvars env c in
   pattern_of_glob_constr c
 
 let interp_notation_constr ?(impls=empty_internalization_env) nenv a =

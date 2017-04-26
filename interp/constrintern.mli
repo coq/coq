@@ -82,7 +82,7 @@ val intern_constr : env -> constr_expr -> glob_constr
 val intern_type : env -> constr_expr -> glob_constr
 
 val intern_gen : typing_constraint -> env ->
-  ?impls:internalization_env -> ?allow_patvar:bool -> ?ltacvars:ltac_sign ->
+  ?impls:internalization_env -> ?pattern_mode:bool -> ?ltacvars:ltac_sign ->
   constr_expr -> glob_constr
 
 val intern_pattern : env -> cases_pattern_expr ->

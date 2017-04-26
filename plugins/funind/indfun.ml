@@ -142,7 +142,7 @@ let rec abstract_glob_constr c = function
 
 let interp_casted_constr_with_implicits env sigma impls c  =
   Constrintern.intern_gen Pretyping.WithoutTypeConstraint env ~impls
-    ~allow_patvar:false c
+    c
 
 (*
    Construct a fixpoint as a Glob_term
