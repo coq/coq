@@ -316,6 +316,26 @@ Module Hurkens'.
 
 Polymorphic Record box (X : Type) (T := Type) : Type := wrap { unwrap : T }.
 
+Section test_letin_subtyping.
+  Universe i j k i' j' k'.
+  Constraint j < j'.
+
+  Context (W : Type) (X : box@{i j k} W).
+  Definition Y := X : box@{i' j' k'} W.
+
+  Universe i1 j1 k1 i2 j2 k2.
+  Constraint i1 < i2, k2 < k1.
+  Definition Z : box@{i1 j1 k1} W := {| unwrap := W |}.
+  Definition Z' : box@{i2 j2 k2} W := {| unwrap := W |}.
+  Lemma ZZ' : @eq (box@{i2 j2 k2} W) Z Z'.
+  Proof.
+    Set Printing All. Set Printing Universes.
+    cbv.
+    reflexivity.
+  Qed.
+
+End test_letin_subtyping.
+
 Definition unwrap' := fun (X : Type) (b : box X) => let (unw) := b in unw.
 
 Fail Definition bad : False := TypeNeqSmallType.paradox (unwrap' Type (wrap _

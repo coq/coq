@@ -494,7 +494,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
             if mind.Declarations.mind_polymorphic then
               begin
                 let num_param_arity =
-                  Context.Rel.length (mind.Declarations.mind_packets.(snd ind).Declarations.mind_arity_ctxt)
+                  mind.Declarations.mind_nparams + mind.Declarations.mind_packets.(snd ind).Declarations.mind_nrealargs
                 in
                 if not (num_param_arity = nparamsaplied && num_param_arity = nparamsaplied') then
                   UnifFailure (evd, NotSameHead)
@@ -520,7 +520,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
           if mind.Declarations.mind_polymorphic then
             begin
               let num_cnstr_args =
-                let nparamsctxt = Context.Rel.length mind.Declarations.mind_params_ctxt in
+                let nparamsctxt =
+                  mind.Declarations.mind_nparams + mind.Declarations.mind_packets.(snd ind).Declarations.mind_nrealargs
+                in
                 nparamsctxt + mind.Declarations.mind_packets.(snd ind).Declarations.mind_consnrealargs.(j - 1)
               in
               if not (num_cnstr_args = nparamsaplied && num_cnstr_args = nparamsaplied') then

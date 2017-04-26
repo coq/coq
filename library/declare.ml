@@ -364,9 +364,9 @@ let infer_inductive_subtyping (pth, mind_ent) =
       let env' =
         Environ.push_context (Univ.UInfoInd.univ_context mind_ent.mind_entry_universes) env
       in
-      let (env'', typed_params) = Typeops.infer_local_decls env' (mind_ent.mind_entry_params) in
-      let evd = Evd.from_env env'' in
-        (pth, Inductiveops.infer_inductive_subtyping env'' evd mind_ent)
+      (* let (env'', typed_params) = Typeops.infer_local_decls env' (mind_ent.mind_entry_params) in *)
+      let evd = Evd.from_env env' in
+        (pth, Inductiveops.infer_inductive_subtyping env' evd mind_ent)
     end
   else (pth, mind_ent)
 

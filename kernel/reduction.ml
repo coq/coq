@@ -500,7 +500,7 @@ and eqappr env cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           if mind.Declarations.mind_polymorphic then
             begin
               let num_param_arity =
-                Context.Rel.length (mind.Declarations.mind_packets.(snd ind1).Declarations.mind_arity_ctxt)
+                mind.Declarations.mind_nparams + mind.Declarations.mind_packets.(snd ind1).Declarations.mind_nrealargs
               in
               if not (num_param_arity = CClosure.stack_args_size v1 && num_param_arity = CClosure.stack_args_size v2) then
                 fall_back ()
@@ -535,7 +535,7 @@ and eqappr env cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
               if not (num_cnstr_args = CClosure.stack_args_size v1 && num_cnstr_args = CClosure.stack_args_size v2) then
                 fall_back ()
               else
-                begin (* we don't consider subtyping for constructors. *)
+                begin (* we consider subtyping for constructors. *)
                   let uinfind = mind.Declarations.mind_universes in
                   let cuniv = compare_leq_inductives ~flex:false uinfind u1 u2 cuniv in
                   let cuniv = compare_leq_inductives ~flex:false uinfind u2 u1 cuniv in

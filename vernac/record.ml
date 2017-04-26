@@ -410,9 +410,9 @@ let declare_structure finite poly ctx id idbuild paramimpls params arity templat
       begin
         let env = Global.env () in
         let env' = Environ.push_context (Univ.UInfoInd.univ_context ctx) env in
-        let env'' = Environ.push_rel_context params env' in
-        let evd = Evd.from_env env'' in
-        Inductiveops.infer_inductive_subtyping env'' evd mie
+        (* let env'' = Environ.push_rel_context params env' in *)
+        let evd = Evd.from_env env' in
+        Inductiveops.infer_inductive_subtyping env' evd mie
       end
     else
        mie

@@ -662,7 +662,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
     }
   in
   (if poly then
-      Inductiveops.infer_inductive_subtyping env_ar_params evd mind_ent
+      Inductiveops.infer_inductive_subtyping env_ar evd mind_ent
    else mind_ent), pl, impls
 
 (* Very syntactical equality *)
