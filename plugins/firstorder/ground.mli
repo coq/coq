@@ -6,6 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-val ground_tac:     Tacmach.tactic ->
-  (Proof_type.goal Tacmach.sigma -> Sequent.t * Proof_type.goal Tacmach.sigma) -> Tacmach.tactic
+val ground_tac: unit Proofview.tactic ->
+  ((Sequent.t -> unit Proofview.tactic) -> unit Proofview.tactic) -> unit Proofview.tactic
 

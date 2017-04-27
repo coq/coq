@@ -33,7 +33,7 @@ val head_of_constr : Id.t -> constr -> unit Proofview.tactic
 
 val not_evar : constr -> unit Proofview.tactic
 
-val is_ground : constr -> tactic
+val is_ground : constr -> unit Proofview.tactic
 
 val autoapply : constr -> Hints.hint_db_name -> unit Proofview.tactic
 

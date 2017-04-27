@@ -25,7 +25,7 @@ echo $TRAVIS_PULL_REQUEST
 echo $TRAVIS_BRANCH
 echo $TRAVIS_COMMIT
 
-if [ $TRAVIS_PULL_REQUEST == "461" ] || [ $TRAVIS_BRANCH == "stm+remove_compat_parsing" ]; then
-    mathcomp_CI_BRANCH=no_camlp4_compat
-    mathcomp_CI_GITURL=https://github.com/ejgallego/math-comp.git
+if [ $TRAVIS_PULL_REQUEST == "568" ] || [ $TRAVIS_BRANCH == "remove-tactic-compat" ]; then
+    fiat_parsers_CI_BRANCH=fix-ml
+    fiat_parsers_CI_GITURL=https://github.com/ppedrot/fiat.git
 fi

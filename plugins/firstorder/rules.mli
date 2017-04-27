@@ -7,9 +7,12 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open Tacmach
 open Names
 open Globnames
+
+type tactic = unit Proofview.tactic
 
 type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 

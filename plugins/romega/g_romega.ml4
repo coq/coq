@@ -38,7 +38,7 @@ let romega_tactic l =
           we'd better leave as little as possible in the conclusion,
           for an easier decidability argument. *)
        (Tactics.intros)
-       (Proofview.V82.tactic total_reflexive_omega_tactic))
+       (total_reflexive_omega_tactic))
 
 
 TACTIC EXTEND romega

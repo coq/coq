@@ -51,6 +51,15 @@ In Constrexpr_ops:
   interpreting "(x y z:_)" as "(x:_) (y:_) (z:_)" while the second
   ones were preserving the original sharing of the type.
 
+** Tactic API **
+
+- pf_constr_of_global now returns a tactic instead of taking a continuation.
+  Thus it only generates one instance of the global reference, and it is the
+  caller's responsibility to perform a focus on the goal.
+
+- The tclWEAK_PROGRESS and tclNOTSAMEGOAL tacticals were removed. Their usecase
+  was very specific. Use tclPROGRESS instead.
+
 ** Ltac API **
 
 Many Ltac specific API has been moved in its own ltac/ folder. Amongst other

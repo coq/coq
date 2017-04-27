@@ -221,18 +221,22 @@ let auto_unif_flags freeze st =
     resolve_evars = false
 }
 
-let e_give_exact flags poly (c,clenv) gl =
+let e_give_exact flags poly (c,clenv) =
+  let open Tacmach.New in
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+  let sigma = project gl in
   let (c, _, _) = c in
-  let c, gl =
+  let c, sigma =
     if poly then
       let clenv', subst = Clenv.refresh_undefined_univs clenv in
-      let evd = evars_reset_evd ~with_conv_pbs:true gl.sigma clenv'.evd in
+      let evd = evars_reset_evd ~with_conv_pbs:true sigma clenv'.evd in
       let c = Vars.subst_univs_level_constr subst c in
-        c, {gl with sigma = evd}
-    else c, gl
+        c, evd
+    else c, sigma
   in
-  let t1 = pf_unsafe_type_of gl c in
-  Proofview.V82.of_tactic (Clenvtac.unify ~flags t1 <*> exact_no_check c) gl
+  let (sigma, t1) = Typing.type_of (pf_env gl) sigma c in
+  Sigma.Unsafe.of_pair (Clenvtac.unify ~flags t1 <*> exact_no_check c, sigma)
+  end }
 
 let unify_e_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
   let clenv', c = connect_hint_clenv poly c clenv gls in
@@ -455,15 +459,14 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes sigma co
                    { enter = fun gl -> unify_resolve_refine poly flags gl (c,None,clenv) } in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
-             Proofview.V82.tactic (e_give_exact flags poly (c,clenv))
+             e_give_exact flags poly (c,clenv)
       | Res_pf_THEN_trivial_fail (term,cl) ->
          let fst = with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
          let snd = if complete then Tacticals.New.tclIDTAC
                    else e_trivial_fail_db only_classes db_list local_db secvars in
          Tacticals.New.tclTHEN fst snd
       | Unfold_nth c ->
-         let tac = Proofview.V82.of_tactic (unfold_in_concl [AllOccurrences,c]) in
-         Proofview.V82.tactic (tclWEAK_PROGRESS tac)
+         Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
       | Extern tacast -> conclPattern concl p tacast
       in
       let tac = run_hint t tac in
@@ -1614,9 +1617,11 @@ let not_evar c =
   | Evar _ -> Tacticals.New.tclFAIL 0 (str"Evar")
   | _ -> Proofview.tclUNIT ()
 
-let is_ground c gl =
-  if Evarutil.is_ground_term (project gl) c then tclIDTAC gl
-  else tclFAIL 0 (str"Not ground") gl
+let is_ground c =
+  let open Tacticals.New in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  if Evarutil.is_ground_term sigma c then tclIDTAC
+  else tclFAIL 0 (str"Not ground")
 
 let autoapply c i =
   let open Proofview.Notations in

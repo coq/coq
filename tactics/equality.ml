@@ -97,9 +97,6 @@ let _ =
 
 (* Rewriting tactics *)
 
-let tclNOTSAMEGOAL tac =
-  Proofview.V82.tactic (Tacticals.tclNOTSAMEGOAL (Proofview.V82.of_tactic tac))
-
 type dep_proof_flag = bool (* true = support rewriting dependent proofs *)
 type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
 
@@ -266,6 +263,25 @@ let rewrite_elim with_evars frzevars cls c e =
 	      then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
   let flags = make_flags frzevars (Tacmach.New.project gl) flags c in
   general_elim_clause with_evars flags cls c e
+  end }
+
+let tclNOTSAMEGOAL tac =
+  let goal gl = Proofview.Goal.goal (Proofview.Goal.assume gl) in
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
+    let sigma = project gl in
+    let ev = goal gl in
+    tac >>= fun () ->
+    Proofview.Goal.goals >>= fun gls ->
+    let check accu gl' =
+      gl' >>= fun gl' ->
+      let accu = accu || Goal.V82.same_goal sigma ev (project gl') (goal gl') in
+      Proofview.tclUNIT accu
+    in
+    Proofview.Monad.List.fold_left check false gls >>= fun has_same ->
+    if has_same then
+      tclZEROMSG (str"Tactic generated a subgoal identical to the original goal.")
+    else
+      Proofview.tclUNIT ()
   end }
 
 (* Ad hoc asymmetric general_elim_clause *)
@@ -642,8 +658,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   | Some evd ->
     let e = build_coq_eq () in
     let sym = build_coq_eq_sym () in
-    Tacticals.New.pf_constr_of_global sym (fun sym ->
-    Tacticals.New.pf_constr_of_global e (fun e ->
+    Tacticals.New.pf_constr_of_global sym >>= fun sym ->
+    Tacticals.New.pf_constr_of_global e >>= fun e ->
     let eq = applist (e, [t1;c1;c2]) in
     tclTHENLAST
       (replace_core clause l2r eq)
@@ -651,7 +667,7 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
          [assumption;
           tclTHEN (apply sym) assumption;
           try_prove_eq
-         ])))
+         ])
   end }
 
 let replace c1 c2 =
