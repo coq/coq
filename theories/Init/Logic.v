@@ -223,7 +223,7 @@ Proof.
 Qed.
 
 (** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
-    either [P] and [Q], or [~P] and [Q] *)
+    either [P] and [Q], or [~P] and [R] *)
 
 Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 
