@@ -526,7 +526,7 @@ let vernac_assumption locality poly (local, kind) l nl =
   let status = do_assumptions kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_record k poly finite struc binders sort nameopt cfs =
+let vernac_record cum k poly finite struc binders sort nameopt cfs =
   let const = match nameopt with
     | None -> add_prefix "Build_" (snd (fst (snd struc)))
     | Some (_,id as lid) ->
@@ -537,13 +537,13 @@ let vernac_record k poly finite struc binders sort nameopt cfs =
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
-    ignore(Record.definition_structure (k,poly,finite,struc,binders,cfs,const,sort))
+    ignore(Record.definition_structure (k,cum,poly,finite,struc,binders,cfs,const,sort))
 
 (** When [poly] is true the type is declared polymorphic. When [lo] is true,
     then the type is declared private (as per the [Private] keyword). [finite]
     indicates whether the type is inductive, co-inductive or
     neither. *)
-let vernac_inductive poly lo finite indl =
+let vernac_inductive cum poly lo finite indl =
   if Dumpglob.dump () then
     List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
@@ -559,14 +559,14 @@ let vernac_inductive poly lo finite indl =
   | [ (_ , _ , _ ,Variant, RecordDecl _),_ ] ->
       user_err Pp.(str "The Variant keyword does not support syntax { ... }.")
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
-      vernac_record (match b with Class _ -> Class false | _ -> b)
+      vernac_record cum (match b with Class _ -> Class false | _ -> b)
        poly finite id bl c oc fs
   | [ ( id , bl , c , Class _, Constructors [l]), [] ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
 	let coe' = if coe then Some true else None in
   	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
-      in vernac_record (Class true) poly finite id bl c None [f]
+      in vernac_record cum (Class true) poly finite id bl c None [f]
   | [ ( _ , _, _, Class _, Constructors _), [] ] ->
       user_err Pp.(str "Inductive classes not supported")
   | [ ( id , bl , c , Class _, _), _ :: _ ] ->
@@ -580,7 +580,7 @@ let vernac_inductive poly lo finite indl =
       | _ -> user_err Pp.(str "Cannot handle mutually (co)inductive records.")
     in
     let indl = List.map unpack indl in
-    do_mutual_inductive indl poly lo finite
+    do_mutual_inductive indl cum poly lo finite
 
 let vernac_fixpoint locality poly local l =
   let local = enforce_locality_exp locality local in
@@ -1365,6 +1365,14 @@ let _ =
       optwrite = Flags.make_universe_polymorphism }
 
 let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "inductive cumulativity";
+      optkey   = ["Inductive"; "Cumulativity"];
+      optread  = Flags.is_universe_polymorphism;
+      optwrite = Flags.make_universe_polymorphism }
+
+let _ =
   declare_int_option
     { optdepr  = false;
       optname  = "the level of inlining during functor application";
@@ -1933,7 +1941,7 @@ let interp ?proof ?loc locality poly c =
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
-  | VernacInductive (priv,finite,l) -> vernac_inductive poly priv finite l
+  | VernacInductive (cum, priv,finite,l) -> vernac_inductive cum poly priv finite l
   | VernacFixpoint (local, l) -> vernac_fixpoint locality poly local l
   | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality poly local l
   | VernacScheme l -> vernac_scheme l
@@ -2082,6 +2090,12 @@ let check_vernac_supports_polymorphism c p =
 let enforce_polymorphism = function
   | None -> Flags.is_universe_polymorphism ()
   | Some b -> Flags.make_polymorphic_flag b; b
+
+let check_vernac_supports_cumulativity c p =
+  match p, c with
+  | None, _ -> ()
+  | Some _, (VernacInductive _ ) -> ()
+  | Some _, _ -> CErrors.error "This command does not support Cumulativity"
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)

@@ -119,6 +119,10 @@ val is_universe_polymorphism : unit -> bool
 val make_polymorphic_flag : bool -> unit
 val use_polymorphic_flag : unit -> bool
 
+(** Global inductive cumulativity flag. *)
+val make_inductive_cumulativity : bool -> unit
+val is_inductive_cumulativity : unit -> bool
+
 val warn : bool ref
 val make_warn : bool -> unit
 val if_warn : ('a -> unit) -> 'a -> unit

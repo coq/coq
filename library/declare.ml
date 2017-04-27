@@ -352,13 +352,14 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_finite = Decl_kinds.BiFinite;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds;
   mind_entry_polymorphic = false;
+  mind_entry_cumulative = false;
   mind_entry_universes = Univ.UInfoInd.empty;
   mind_entry_private = None;
 })
 
 (* reinfer subtyping constraints for inductive after section is dischared. *)
 let infer_inductive_subtyping (pth, mind_ent) = 
-  if mind_ent.mind_entry_polymorphic then
+  if mind_ent.mind_entry_polymorphic && mind_ent.mind_entry_cumulative then
     begin
       let env = Global.env () in
       let env' =
@@ -369,7 +370,6 @@ let infer_inductive_subtyping (pth, mind_ent) =
         (pth, Inductiveops.infer_inductive_subtyping env' evd mind_ent)
     end
   else (pth, mind_ent)
-
 
 type inductive_obj = Dischargedhypsmap.discharged_hyps * mutual_inductive_entry
 

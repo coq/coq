@@ -1095,6 +1095,7 @@ sig
         mind_nparams_rec : int;
         mind_params_ctxt : Context.Rel.t;
         mind_polymorphic : bool;
+        mind_cumulative : bool;
         mind_universes : Univ.universe_info_ind;
         mind_private : bool option;
         mind_typing_flags : Declarations.typing_flags;
@@ -1907,6 +1908,7 @@ end
 module Decl_kinds :
 sig
   type polymorphic = bool
+  type cumulative_inductive_flag = bool
   type recursivity_kind = Decl_kinds.recursivity_kind =
     | Finite
     | CoFinite
@@ -2388,7 +2390,7 @@ sig
   | VernacExactProof of Constrexpr.constr_expr
   | VernacAssumption of (Decl_kinds.locality option * Decl_kinds.assumption_object_kind) *
       inline * (plident list * Constrexpr.constr_expr) with_coercion list
-  | VernacInductive of Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of Decl_kinds.cumulative_inductive_flag * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       Decl_kinds.locality option * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of
@@ -4743,7 +4745,9 @@ sig
   type one_inductive_impls = Command.one_inductive_impls
 
   val do_mutual_inductive :
-    (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list -> Decl_kinds.polymorphic -> 
+    (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list ->
+    Decl_kinds.cumulative_inductive_flag -> 
+    Decl_kinds.polymorphic -> 
     Decl_kinds.private_flag -> Decl_kinds.recursivity_kind -> unit
 
   val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.lident list option ->
@@ -4767,7 +4771,9 @@ sig
     structured_inductive_expr * Libnames.qualid list * Vernacexpr.decl_notation list
 
   val interp_mutual_inductive :
-    structured_inductive_expr -> Vernacexpr.decl_notation list -> Decl_kinds.polymorphic ->
+    structured_inductive_expr -> Vernacexpr.decl_notation list ->
+    Decl_kinds.cumulative_inductive_flag ->
+    Decl_kinds.polymorphic ->
     Decl_kinds.private_flag -> Decl_kinds.recursivity_kind ->
     Entries.mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
 

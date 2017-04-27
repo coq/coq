@@ -1361,24 +1361,68 @@ let sigma_compare_instances ~flex i0 i1 sigma =
      | Univ.UniverseInconsistency _ ->
 	raise Reduction.NotConvertible
 
-let sigma_leq_inductives ~flex uinfind i0 i1 sigma =
+let sigma_check_inductive_instances cv_pb uinfind u u' sigma =
   let ind_instance = Univ.UContext.instance (Univ.UInfoInd.univ_context uinfind) in
   let ind_sbcst = Univ.UContext.constraints (Univ.UInfoInd.subtyp_context uinfind) in
-  if not ((Univ.Instance.length ind_instance = Univ.Instance.length i0) &&
-          (Univ.Instance.length ind_instance = Univ.Instance.length i1)) then
+  if not ((Univ.Instance.length ind_instance = Univ.Instance.length u) &&
+          (Univ.Instance.length ind_instance = Univ.Instance.length u')) then
      anomaly (Pp.str "Invalid inductive subtyping encountered!")
   else
-     let comp_subst = (Univ.Instance.append i0 i1) in
-     let comp_cst = Univ.subst_instance_constraints comp_subst ind_sbcst in
-     try Evd.add_constraints sigma comp_cst
-     with Evd.UniversesDiffer
-        | Univ.UniverseInconsistency _ ->
-	    raise Reduction.NotConvertible
+    let comp_cst =
+      let comp_subst = (Univ.Instance.append u u') in
+      Univ.subst_instance_constraints comp_subst ind_sbcst
+    in
+    let comp_cst =
+      match cv_pb with
+        Reduction.CONV -> 
+        let comp_subst = (Univ.Instance.append u' u) in
+        let comp_cst' = (Univ.subst_instance_constraints comp_subst ind_sbcst) in
+        Univ.Constraint.union comp_cst comp_cst'
+      | Reduction.CUMUL -> comp_cst
+    in
+    try Evd.add_constraints sigma comp_cst
+    with Evd.UniversesDiffer
+       | Univ.UniverseInconsistency _ ->
+      raise Reduction.NotConvertible
+
+let sigma_conv_inductives
+    cv_pb (mind, ind) u1 sv1 u2 sv2 sigma =
+  try sigma_compare_instances ~flex:false u1 u2 sigma with
+    Reduction.NotConvertible ->
+    if mind.Declarations.mind_polymorphic then
+      let num_param_arity =
+        mind.Declarations.mind_nparams + mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
+      in
+      if not (num_param_arity = sv1 && num_param_arity = sv2) then
+        raise Reduction.NotConvertible
+      else
+        let uinfind = mind.Declarations.mind_universes in
+        sigma_check_inductive_instances cv_pb uinfind u1 u2 sigma
+    else raise Reduction.NotConvertible
+
+let sigma_conv_constructors
+    (mind, ind, cns) u1 sv1 u2 sv2 sigma =
+  try sigma_compare_instances ~flex:false u1 u2 sigma with
+    Reduction.NotConvertible ->
+    if mind.Declarations.mind_polymorphic then
+      let num_cnstr_args =
+        let nparamsctxt =
+          mind.Declarations.mind_nparams + mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
+          (* Context.Rel.length mind.Declarations.mind_params_ctxt *) in
+        nparamsctxt + mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(cns - 1)
+      in
+      if not (num_cnstr_args = sv1 && num_cnstr_args = sv2) then
+        raise Reduction.NotConvertible
+      else
+        let uinfind = mind.Declarations.mind_universes in
+        sigma_check_inductive_instances Reduction.CONV uinfind u1 u2 sigma
+    else raise Reduction.NotConvertible
 
 let sigma_univ_state = 
   { Reduction.compare = sigma_compare_sorts;
     Reduction.compare_instances = sigma_compare_instances;
-    Reduction.leq_inductives = sigma_leq_inductives }
+    Reduction.conv_inductives = sigma_conv_inductives;
+    Reduction.conv_constructors = sigma_conv_constructors}
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=full_transparent_state) env sigma x y =

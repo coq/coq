@@ -49,7 +49,8 @@ type mutual_inductive_entry = {
   mind_entry_finite : Decl_kinds.recursivity_kind;
   mind_entry_params : (Id.t * local_entry) list;
   mind_entry_inds : one_inductive_entry list;
-  mind_entry_polymorphic : bool; 
+  mind_entry_polymorphic : bool;
+  mind_entry_cumulative : bool;
   mind_entry_universes : Univ.universe_info_ind;
   (* universe constraints and the constraints for subtyping of
      inductive types in the block. *)

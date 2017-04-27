@@ -392,7 +392,7 @@ let typecheck_inductive env mie =
   in
   (* Check that the subtyping information inferred for inductive types in the block is correct. *)
   (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
-  let () = check_subtyping mie paramsctxt env_arities inds
+  let () = if mie.mind_entry_cumulative then check_subtyping mie paramsctxt env_arities inds
   in (env_arities, env_ar_par, paramsctxt, inds)
 
 (************************************************************************)
@@ -864,7 +864,7 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
     Array.of_list (List.rev kns),
     Array.of_list (List.rev pbs)
 
-let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nmr recargs =
+let build_inductive env cum p prv ctx env_ar paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env inds in
@@ -969,6 +969,7 @@ let build_inductive env p prv ctx env_ar paramsctxt kn isrecord isfinite inds nm
       mind_params_ctxt = paramsctxt;
       mind_packets = packets;
       mind_polymorphic = p;
+      mind_cumulative = cum;
       mind_universes = Univ.UInfoInd.make (ctxunivs, ctxsubtyp);
       mind_private = prv;
       mind_typing_flags = Environ.typing_flags env;
@@ -984,7 +985,7 @@ let check_inductive env kn mie =
   let chkpos = (Environ.typing_flags env).check_guarded in
   let (nmr,recargs) = check_positivity ~chkpos kn env_ar_par paramsctxt mie.mind_entry_finite inds in
   (* Build the inductive packets *)
-    build_inductive env mie.mind_entry_polymorphic mie.mind_entry_private
+    build_inductive env mie.mind_entry_cumulative mie.mind_entry_polymorphic mie.mind_entry_private
       mie.mind_entry_universes
       env_ar paramsctxt kn mie.mind_entry_record mie.mind_entry_finite
       inds nmr recargs

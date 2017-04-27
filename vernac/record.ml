@@ -377,7 +377,7 @@ let structure_signature ctx =
 
 open Typeclasses
 
-let declare_structure finite poly ctx id idbuild paramimpls params arity template 
+let declare_structure finite cum poly ctx id idbuild paramimpls params arity template 
     fieldimpls fields ?(kind=StructureComponent) ?name is_coe coers sign =
   let nparams = List.length params and nfields = List.length fields in
   let args = Context.Rel.to_extended_list mkRel nfields params in
@@ -401,6 +401,7 @@ let declare_structure finite poly ctx id idbuild paramimpls params arity templat
       mind_entry_finite = finite;
       mind_entry_inds = [mie_ind];
       mind_entry_polymorphic = poly;
+      mind_entry_cumulative = cum;
       mind_entry_private = None;
       mind_entry_universes = ctx;
     }
@@ -435,7 +436,7 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class finite def poly ctx id idbuild paramimpls params arity 
+let declare_class finite def cum poly ctx id idbuild paramimpls params arity 
     template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities sign =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -478,7 +479,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
       in
       cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
-       let ind = declare_structure BiFinite poly (Universes.univ_inf_ind_from_universe_context ctx) (snd id) idbuild paramimpls
+       let ind = declare_structure BiFinite cum poly (Universes.univ_inf_ind_from_universe_context ctx) (snd id) idbuild paramimpls
 	  params arity template fieldimpls fields
 	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
        in
@@ -552,7 +553,7 @@ open Vernacexpr
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions 
    or subinstances. *)
-let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,idbuild,s) =
+let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,idbuild,s) =
   let cfs,notations = List.split cfs in
   let cfs,priorities = List.split cfs in
   let coers,fs = List.split cfs in
@@ -576,14 +577,14 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
   let gr = match kind with
   | Class def ->
      let priorities = List.map (fun id -> {hint_priority = id; hint_pattern = None}) priorities in
-     let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
+     let gr = declare_class finite def cum poly ctx (loc,idstruc) idbuild
 	  implpars params arity template implfs fields is_coe coers priorities sign in
 	gr
     | _ ->
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits
 	    (succ (List.length params)) impls) implfs in
-	let ind = declare_structure finite poly (Universes.univ_inf_ind_from_universe_context ctx) idstruc
+	let ind = declare_structure Finite cum poly (Universes.univ_inf_ind_from_universe_context ctx) idstruc
 	  idbuild implpars params arity template implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
 	IndRef ind
