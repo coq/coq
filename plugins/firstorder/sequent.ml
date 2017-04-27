@@ -12,7 +12,6 @@ open CErrors
 open Util
 open Formula
 open Unify
-open Tacmach
 open Globnames
 open Pp
 

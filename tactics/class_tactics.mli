@@ -10,7 +10,6 @@
 
 open Names
 open EConstr
-open Tacmach
 
 val catchable : exn -> bool
 

@@ -10,7 +10,6 @@ open Unify
 open Rules
 open CErrors
 open Util
-open Term
 open EConstr
 open Vars
 open Tacmach.New

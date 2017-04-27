@@ -131,7 +131,6 @@ let  dbg_hdr = tag Tag.debug   (str "Debug:")   ++ spc ()
 let info_hdr = mt ()
 let warn_hdr = tag Tag.warning (str "Warning:") ++ spc ()
 let  err_hdr = tag Tag.error   (str "Error:")   ++ spc ()
-let  ann_hdr = tag Tag.error   (str "Anomaly:") ++ spc ()
 
 let make_body quoter info ?pre_hdr s =
   pr_opt_no_spc (fun x -> x ++ fnl ()) pre_hdr ++ quoter (hov 0 (info ++ s))

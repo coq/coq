@@ -9,7 +9,6 @@
 open CErrors
 open Util
 open Names
-open Term
 open EConstr
 open Vars
 open Tacmach.New

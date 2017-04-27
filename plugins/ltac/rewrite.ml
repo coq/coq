@@ -17,7 +17,6 @@ open EConstr
 open Vars
 open Reduction
 open Tacticals.New
-open Tacmach
 open Tactics
 open Pretype_errors
 open Typeclasses

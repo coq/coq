@@ -12,7 +12,6 @@ open Term
 open EConstr
 open Vars
 open Termops
-open Tacmach
 open Util
 open Declarations
 open Globnames

@@ -19,7 +19,6 @@ open Term
 open Termops
 open EConstr
 open Proof_type
-open Tacticals
 open Tacmach
 open Tactics
 open Clenv
