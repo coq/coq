@@ -473,6 +473,20 @@ Proof.
   apply exp_Ropp.
 Qed.
 
+Lemma powerRZ_Rpower x z : (0 < x)%R -> powerRZ x z = Rpower x (IZR z).
+Proof.
+  intros Hx.
+  assert (x <> 0)%R
+    by now intros Habs; rewrite Habs in Hx; apply (Rlt_irrefl 0).
+  destruct (intP z).
+  - now rewrite Rpower_O.
+  - rewrite <- pow_powerRZ, <- Rpower_pow by assumption.
+    now rewrite INR_IZR_INZ.
+  - rewrite opp_IZR, Rpower_Ropp.
+    rewrite powerRZ_neg, powerRZ_inv by assumption.
+    now rewrite <- pow_powerRZ, <- INR_IZR_INZ, Rpower_pow.
+Qed.
+
 Theorem Rle_Rpower :
   forall e n m:R, 1 < e -> 0 <= n -> n <= m -> e ^R n <= e ^R m.
 Proof.
