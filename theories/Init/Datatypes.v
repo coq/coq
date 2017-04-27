@@ -65,7 +65,7 @@ Infix "&&" := andb : bool_scope.
 
 Lemma andb_prop : forall a b:bool, andb a b = true -> a = true /\ b = true.
 Proof.
-  destruct a; destruct b; intros; split; try (reflexivity || discriminate).
+  destruct a, b; repeat split; assumption.
 Qed.
 Hint Resolve andb_prop: bool.
 
