@@ -42,7 +42,10 @@ let display_cmd_header loc com =
     s
   in
   let (start,stop) = (*Comapt.*)unloc loc in
-  let cmd = noblank (shorten (string_of_ppcmds ((*Ppvernac.*)pr_vernac com)))
+  let safe_pr_vernac x =
+    try States.with_state_protection (fun () -> pr_vernac x) ()
+    with e -> str (Printexc.to_string e) in
+  let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
   in
   Pp.pp (str "Chars " ++ int start ++ str " - " ++ int stop ++
 	 str (" ["^cmd^"] "));
