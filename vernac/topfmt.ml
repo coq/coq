@@ -260,6 +260,29 @@ let init_color_output () =
  *)
 let emacs_logger = gen_logger Emacs.quote_info Emacs.quote_warning
 
+
+(* This is specific to the toplevel *)
+let pr_loc loc =
+  if Loc.is_ghost loc then str"<unknown>"
+  else
+    let fname = loc.Loc.fname in
+    if CString.equal fname "" then
+      Loc.(str"Toplevel input, characters " ++ int loc.bp ++
+	   str"-" ++ int loc.ep ++ str":")
+    else
+      Loc.(str"File " ++ str "\"" ++ str fname ++ str "\"" ++
+	   str", line " ++ int loc.line_nb ++ str", characters " ++
+	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++
+	   str":")
+
+let print_err_exn ?extra any =
+  let (e, info) = CErrors.push any in
+  let loc = Loc.get_loc info in
+  let msg_loc = pr_loc (Option.default Loc.ghost loc) in
+  let pre_hdr = pr_opt_no_spc (fun x -> x) extra ++ msg_loc in
+  let msg = CErrors.iprint (e, info) ++ fnl () in
+  std_logger ~pre_hdr Feedback.Error msg
+
 (* Output to file, used only in extraction so a candidate for removal *)
 let ft_logger old_logger ft ?loc level mesg =
   let id x = x in
