@@ -102,7 +102,7 @@ let dummy_bvid=Id.of_string "x"
 let mk_open_instance env evmap id idc m t =
   let var_id=
     if id==dummy_id then dummy_bvid else
-      let typ=Typing.unsafe_type_of env evmap idc in
+      let evmap, typ = Typing.type_of env evmap idc in
 	(* since we know we will get a product,
 	   reduction is not too expensive *)
       let (nam,_,_)=destProd evmap (whd_all env evmap typ) in

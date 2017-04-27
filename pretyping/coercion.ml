@@ -295,16 +295,18 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		   let evm = !evdref in
 		     (try subco ()
 		      with NoSubtacCoercion ->
-			let typ = Typing.unsafe_type_of env evm c in
-			let typ' = Typing.unsafe_type_of env evm c' in
+			let evm, typ = Typing.type_of env evm c in
+			let evm, typ' = Typing.type_of env evm c' in
+			let () = evdref := evm in
 			  coerce_application typ typ' c c' l l')
 		 else
 		   subco ()
 	   | x, y when EConstr.eq_constr !evdref c c' ->
 	       if Int.equal (Array.length l) (Array.length l') then
 		 let evm =  !evdref in
-		 let lam_type = Typing.unsafe_type_of env evm c in
-		 let lam_type' = Typing.unsafe_type_of env evm c' in
+		 let evm, lam_type = Typing.type_of env evm c in
+		 let evm, lam_type' = Typing.type_of env evm c' in
+                 let () = evdref := evm in
 		   coerce_application lam_type lam_type' c c' l l'
 	       else subco ()
 	   | _ -> subco ())

@@ -375,8 +375,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
       )
   in
   Proofview.Goal.enter begin fun gl ->
-    let type_of_pq = Tacmach.New.pf_unsafe_type_of gl p in
-    let sigma = Tacmach.New.project gl in
+    let sigma, type_of_pq = Tacmach.New.pf_type_of gl p in
     let env = Tacmach.New.pf_env gl in
     let u,v = destruct_ind sigma type_of_pq
     in let lb_type_of_p =
@@ -395,6 +394,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
           in
           Tacticals.New.tclZEROMSG err_msg
        in
+       Proofview.Unsafe.tclEVARS sigma <*>
        lb_type_of_p >>= fun (lb_type_of_p,eff) ->
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
@@ -441,8 +441,8 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
         Proofview.Goal.enter begin fun gl ->
-        let tt1 = Tacmach.New.pf_unsafe_type_of gl t1 in
-        let sigma = Tacmach.New.project gl in
+        let sigma, tt1 = Tacmach.New.pf_type_of gl t1 in
+        Proofview.Unsafe.tclEVARS sigma <*>
         let env = Tacmach.New.pf_env gl in
         if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (

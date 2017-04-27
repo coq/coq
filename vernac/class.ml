@@ -197,9 +197,9 @@ let build_id_coercion idf_opt source poly =
   in
   (* juste pour verification *)
   let _ =
+    let sigma, t = Typing.type_of env sigma (EConstr.of_constr val_f) in
     if not
-      (Reductionops.is_conv_leq env sigma
-	(Typing.unsafe_type_of env sigma (EConstr.of_constr val_f)) (EConstr.of_constr typ_f))
+      (Reductionops.is_conv_leq env sigma t (EConstr.of_constr typ_f))
     then
       user_err  (strbrk
 	"Cannot be defined as coercion (maybe a bad number of arguments).")

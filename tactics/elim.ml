@@ -78,9 +78,9 @@ let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = pf_unsafe_type_of gl in
   let sigma = project gl in
-  let typc = type_of c in
+  let sigma, typc = Typing.type_of (pf_env gl) sigma c in
+  Proofview.Unsafe.tclEVARS sigma <*>
   tclTHENS (cut typc)
     [ tclTHEN (intro_using tmphyp_name)
          (onLastHypId
@@ -133,8 +133,9 @@ let induction_trailer abs_i abs_j bargs =
     (onLastHypId
        (fun id ->
           Proofview.Goal.enter begin fun gl ->
-	  let idty = pf_unsafe_type_of gl (mkVar id) in
-	  let fvty = global_vars (pf_env gl) (project gl) idty in
+          let sigma = project gl in
+	  let sigma, idty = Typing.type_of (pf_env gl) sigma (mkVar id) in
+	  let fvty = global_vars (pf_env gl) sigma idty in
 	  let possible_bring_hyps =
 	    (List.tl (nLastDecls gl (abs_j - abs_i))) @ bargs.Tacticals.assums
           in
@@ -148,6 +149,7 @@ let induction_trailer abs_i abs_j bargs =
 	      ([],fvty) possible_bring_hyps
 	  in
           let ids = List.rev (ids_of_named_context hyps) in
+          Proofview.Unsafe.tclEVARS sigma <*>
 	  (tclTHENLIST
             [revert ids; simple_elimination (mkVar id)])
           end

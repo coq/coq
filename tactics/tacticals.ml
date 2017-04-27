@@ -606,9 +606,12 @@ module New = struct
     let ind = on_snd (fun u -> EInstance.kind sigma u) ind in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Proofview.Goal.enter begin fun gl ->
-    let indclause = mk_clenv_from gl (c, t) in
+    let env = pf_env gl in
+    let sigma = project gl in
+    let indclause = mk_clenv_from_env env sigma None (c, t) in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from gl (elim,Tacmach.New.pf_unsafe_type_of gl elim)  in
+    let (sigma, ty) = Typing.type_of env sigma elim in
+    let elimclause = mk_clenv_from_env env sigma None (elim, ty)  in
     let indmv =
       match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
@@ -716,7 +719,10 @@ module New = struct
 
   let elimination_then tac c =
     Proofview.Goal.enter begin fun gl ->
-    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_unsafe_type_of gl c) in
+    let env = pf_env gl in
+    let sigma = project gl in
+    let sigma, t = Typing.type_of env sigma c in
+    let (ind,t) = Tacred.reduce_to_quantified_ind env sigma t in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
       | None -> true,gl_make_elim

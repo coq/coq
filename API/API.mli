@@ -4953,6 +4953,7 @@ sig
     val pf_apply : (Environ.env -> Evd.evar_map -> 'a) -> 'b Proofview.Goal.t -> 'a
     val project : 'a Proofview.Goal.t -> Evd.evar_map
     val pf_unsafe_type_of : 'a Proofview.Goal.t -> EConstr.constr -> EConstr.types
+    val pf_type_of : 'a Proofview.Goal.t -> EConstr.constr -> Evd.evar_map * EConstr.types
     val of_old : (Goal.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
 
     val pf_env : 'a Proofview.Goal.t -> Environ.env

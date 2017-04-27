@@ -210,7 +210,7 @@ let extend_with_auto_hints env sigma l seq =
           let (c, _, _) = c in
 	  (try
 	     let (gr, _) = Termops.global_of_constr sigma c in
-	     let typ=(Typing.unsafe_type_of env sigma c) in
+	     let sigma, typ = Typing.type_of env sigma c in
 	       seqref:=add_formula env sigma Hint gr typ !seqref
 	   with Not_found->())
       | _-> () in

@@ -1626,11 +1626,15 @@ let is_ground c =
 
 let autoapply c i =
   let open Proofview.Notations in
+  let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
+  let env = pf_env gl in
+  let sigma = project gl in
   let flags = auto_unif_flags Evar.Set.empty
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
-  let cty = Tacmach.New.pf_unsafe_type_of gl c in
-  let ce = mk_clenv_from gl (c,cty) in
+  let sigma, cty = Typing.type_of env sigma c in
+  let ce = mk_clenv_from_env env sigma None (c,cty) in
+    Proofview.Unsafe.tclEVARS sigma <*>
     unify_e_resolve false flags gl
                                  ((c,cty,Univ.ContextSet.empty),0,ce) <*>
       Proofview.tclEVARMAP >>= (fun sigma ->

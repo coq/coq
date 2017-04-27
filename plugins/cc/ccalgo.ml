@@ -509,7 +509,8 @@ let rec add_term state t=
 	Not_found ->
 	  let b=next uf in
           let trm = constr_of_term t in
-	  let typ = pf_unsafe_type_of state.gls (EConstr.of_constr trm) in
+	  let sigma, typ = pf_type_of state.gls (EConstr.of_constr trm) in
+	  let state = { state with gls = { state.gls with sigma } } in
 	  let typ = canonize_name (project state.gls) typ in
 	  let new_node=
 	    match t with

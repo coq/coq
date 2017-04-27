@@ -439,8 +439,9 @@ let raw_inversion inv_kind id status names =
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
+    let sigma, t = Typing.type_of env sigma c in
     let (ind, t) =
-      try pf_apply Tacred.reduce_to_atomic_ind gl (pf_unsafe_type_of gl c)
+      try Tacred.reduce_to_atomic_ind env sigma t
       with UserError _ ->
         let msg = str "The type of " ++ Id.print id ++ str " is not inductive." in
         CErrors.user_err  msg
