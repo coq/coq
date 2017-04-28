@@ -584,7 +584,7 @@ let definition_structure (kind,cum,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cf
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits
 	    (succ (List.length params)) impls) implfs in
-	let ind = declare_structure Finite cum poly (Universes.univ_inf_ind_from_universe_context ctx) idstruc
+	let ind = declare_structure finite cum poly (Universes.univ_inf_ind_from_universe_context ctx) idstruc
 	  idbuild implpars params arity template implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
 	IndRef ind

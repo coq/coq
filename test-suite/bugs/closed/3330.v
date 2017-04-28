@@ -1072,10 +1072,8 @@ Section Adjunction.
   Variable F : Functor C D.
   Variable G : Functor D C.
 
-(*  Let Adjunction_Type := 
-    Eval simpl in (hom_functor D) o (F^op, 1) <~=~> (hom_functor C) o (1, G).*)
-
-  Set Printing All. Set Printing Universes.
+ Let Adjunction_Type := 
+    Eval simpl in (hom_functor D) o (F^op, 1) <~=~> (hom_functor C) o (1, G).
 
   Record AdjunctionHom :=
     {

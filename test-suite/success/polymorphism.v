@@ -360,7 +360,7 @@ End F.
 
 Set Universe Polymorphism.
 
-Record box (X : Type) (T := Type) : Type := wrap { unwrap : T }.
+Cumulative Record box (X : Type) (T := Type) : Type := wrap { unwrap : T }.
 
 Section test_letin_subtyping.
   Universe i j k i' j' k'.
