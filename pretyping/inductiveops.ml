@@ -697,11 +697,12 @@ let infer_inductive_subtyping env evd mind_ent =
   let { Entries.mind_entry_params = params;
         Entries.mind_entry_inds = entries;
         Entries.mind_entry_polymorphic = poly;
+        Entries.mind_entry_cumulative = cum;
         Entries.mind_entry_universes = ground_uinfind;
       } = mind_ent
   in
   let uinfind =
-    if poly then
+    if poly && cum then
     begin
       let uctx = Univ.UInfoInd.univ_context ground_uinfind in
       let sbsubst = Univ.UInfoInd.subtyping_susbst ground_uinfind in
@@ -709,9 +710,9 @@ let infer_inductive_subtyping env evd mind_ent =
       let instance_other = Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) in
       let constraints_other = Univ.subst_univs_level_constraints sbsubst (Univ.UContext.constraints uctx) in
       let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
-      let env' = Environ.push_context uctx env in
-      let env' = Environ.push_context uctx_other env' in
-      let evd' = Evd.merge_universe_context evd (UState.of_context_set (Univ.ContextSet.of_context uctx_other)) in
+      let env = Environ.push_context uctx env in
+      let env = Environ.push_context uctx_other env in
+      let evd = Evd.merge_universe_context evd (UState.of_context_set (Univ.ContextSet.of_context uctx_other)) in
       let (_, _, subtyp_constraints) =
         List.fold_left
           (fun ctxs indentry ->
@@ -723,7 +724,7 @@ let infer_inductive_subtyping env evd mind_ent =
                (fun ctxs cons ->
                   infer_inductive_subtyping_arity_constructor ctxs dosubst cons false params)
                ctxs' indentry.Entries.mind_entry_lc
-          ) (env', evd', Univ.Constraint.empty) entries
+          ) (env, evd, Univ.Constraint.empty) entries
       in Univ.UInfoInd.make (Univ.UInfoInd.univ_context ground_uinfind,
            Univ.UContext.make
              (Univ.UContext.instance (Univ.UInfoInd.subtyp_context ground_uinfind),
