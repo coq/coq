@@ -1748,9 +1748,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	GHole (loc, k, naming, solve)
     (* Parsing pattern variables *)
     | CPatVar (loc, n) when pattern_mode ->
-	GPatVar (loc, Evar_kinds.SecondOrderPatVar n)
+	GPatVar (loc, (true,n))
     | CEvar (loc, n, []) when pattern_mode ->
-	GPatVar (loc, Evar_kinds.FirstOrderPatVar n)
+	GPatVar (loc, (false,n))
     (* end *)
     (* Parsing existential variables *)
     | CEvar (loc, n, l) ->
