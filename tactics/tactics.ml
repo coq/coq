@@ -512,6 +512,9 @@ let rec check_mutind env sigma k cl = match EConstr.kind sigma (strip_outer_cast
   else
     let open Context.Rel.Declaration in
     check_mutind (push_rel (LocalAssum (na, c1)) env) sigma (pred k) b
+| LetIn (na, c1, t, b) ->
+    let open Context.Rel.Declaration in
+    check_mutind (push_rel (LocalDef (na, c1, t)) env) sigma k b
 | _ -> error "Not enough products."
 
 (* Refine as a fixpoint *)

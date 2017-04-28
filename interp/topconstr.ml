@@ -178,7 +178,12 @@ let split_at_annot bl na =
               in
               (List.rev ans, CLocalAssum (r, k, t) :: rest)
             end
-	| CLocalDef _ as x :: rest -> aux (x :: acc) rest
+	| CLocalDef ((_,na),_,_) as x :: rest ->
+           if Name.equal (Name id) na then
+             user_err ~loc
+               (Nameops.pr_id id ++ str" must be a proper parameter and not a local definition.")
+           else
+             aux (x :: acc) rest
         | CLocalPattern (loc,_,_) :: rest ->
             Loc.raise ~loc (Stream.Error "pattern with quote not allowed after fix")
 	| [] ->
