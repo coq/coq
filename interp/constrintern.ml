@@ -1751,10 +1751,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     (* Parsing pattern variables *)
     | CPatVar n when pattern_mode ->
 	CAst.make ?loc @@
-	GPatVar (true,n)
+	GPatVar (Evar_kinds.SecondOrderPatVar n)
     | CEvar (n, []) when pattern_mode ->
 	CAst.make ?loc @@
-	GPatVar (false,n)
+	GPatVar (Evar_kinds.FirstOrderPatVar n)
     (* end *)
     (* Parsing existential variables *)
     | CEvar (n, l) ->
