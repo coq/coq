@@ -893,7 +893,7 @@ type raw_cases_pattern_expr_r =
   (** [RCPatCstr (loc, c, l1, l2)] represents ((@c l1) l2) *)
   | RCPatAtom  of Id.t option
   | RCPatOr    of raw_cases_pattern_expr list
-and raw_cases_pattern_expr = raw_cases_pattern_expr_r CAst.ast
+and raw_cases_pattern_expr = raw_cases_pattern_expr_r CAst.t
 
 (** {6 Elementary bricks } *)
 let apply_scope_env env = function

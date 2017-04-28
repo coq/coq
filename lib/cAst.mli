@@ -7,16 +7,16 @@
 (************************************************************************)
 
 (** The ast type contains generic metadata for AST nodes *)
-type 'a ast = private {
+type 'a t = private {
   v   : 'a;
   loc : Loc.t option;
 }
 
-val make : ?loc:Loc.t -> 'a -> 'a ast
+val make : ?loc:Loc.t -> 'a -> 'a t
 
-val map : ('a -> 'b) -> 'a ast -> 'b ast
-val map_with_loc : (?loc:Loc.t -> 'a -> 'b) -> 'a ast -> 'b ast
-val map_from_loc : (?loc:Loc.t -> 'a -> 'b) -> 'a Loc.located -> 'b ast
+val map : ('a -> 'b) -> 'a t -> 'b t
+val map_with_loc : (?loc:Loc.t -> 'a -> 'b) -> 'a t -> 'b t
+val map_from_loc : (?loc:Loc.t -> 'a -> 'b) -> 'a Loc.located -> 'b t
 
-val with_val : ('a -> 'b) -> 'a ast -> 'b
-val with_loc_val : (?loc:Loc.t -> 'a -> 'b) -> 'a ast -> 'b
+val with_val : ('a -> 'b) -> 'a t -> 'b
+val with_loc_val : (?loc:Loc.t -> 'a -> 'b) -> 'a t -> 'b

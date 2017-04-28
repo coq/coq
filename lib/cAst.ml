@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (** The ast type contains generic metadata for AST nodes. *)
-type 'a ast = {
+type 'a t = {
   v   : 'a;
   loc : Loc.t option;
 }
