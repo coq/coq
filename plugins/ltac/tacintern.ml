@@ -198,7 +198,7 @@ let intern_binding_name ist x =
      and if a term w/o ltac vars, check the name is indeed quantified *)
   x
 
-let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env} c =
+let intern_constr_gen allow_patvar isarity {ltacvars=lfun; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
   let ltacvars = {
@@ -206,7 +206,7 @@ let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env} c =
     ltac_bound = Id.Set.empty;
   } in
   let c' =
-    warn (Constrintern.intern_gen scope ~pattern_mode ~ltacvars env) c
+    warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars env) c
   in
   (c',if !strict_check then None else Some c)
 
