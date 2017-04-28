@@ -38,7 +38,7 @@ type glob_constr =
       (** An identifier that cannot be regarded as "GRef".
           Bound variables are typically represented this way. *)
   | GEvar of Loc.t * existential_name * (Id.t * glob_constr) list
-  | GPatVar of Loc.t * (bool * patvar) (** Used for patterns only *)
+  | GPatVar of Loc.t * Evar_kinds.matching_var_kind (** Used for patterns only *)
   | GApp of Loc.t * glob_constr * glob_constr list
   | GLambda of Loc.t * Name.t * binding_kind *  glob_constr * glob_constr
   | GProd of Loc.t * Name.t * binding_kind * glob_constr * glob_constr

@@ -261,7 +261,7 @@ let mkGProd id c1 c2 =
 let mkGArrow c1 c2 =
   GProd (Loc.ghost, Anonymous, Explicit, c1, c2)
 let mkGVar id = GVar (Loc.ghost, Id.of_string id)
-let mkGPatVar id = GPatVar(Loc.ghost, (false, Id.of_string id))
+let mkGPatVar id = GPatVar(Loc.ghost, Evar_kinds.FirstOrderPatVar (Id.of_string id))
 let mkGRef r = GRef (Loc.ghost, Lazy.force r, None)
 let mkGAppRef r args = mkGApp (mkGRef r) args
 

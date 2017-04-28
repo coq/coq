@@ -12,6 +12,7 @@ open Nameops
 open Globnames
 open Misctypes
 open Glob_term
+open Evar_kinds
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
 
@@ -61,14 +62,18 @@ let cast_type_eq eq t1 t2 = match t1, t2 with
 | CastNative t1, CastNative t2 -> eq t1 t2
 | _ -> false
 
+let matching_var_kind_eq k1 k2 = match k1, k2 with
+| FirstOrderPatVar ido1, FirstOrderPatVar ido2 -> Id.equal ido1 ido2
+| SecondOrderPatVar id1, SecondOrderPatVar id2 -> Id.equal id1 id2
+| _ -> false
+
 let rec glob_constr_eq c1 c2 = match c1, c2 with
 | GRef (_, gr1, _), GRef (_, gr2, _) -> eq_gr gr1 gr2
 | GVar (_, id1), GVar (_, id2) -> Id.equal id1 id2
 | GEvar (_, id1, arg1), GEvar (_, id2, arg2) ->
   Id.equal id1 id2 &&
   List.equal instance_eq arg1 arg2
-| GPatVar (_, (b1, pat1)), GPatVar (_, (b2, pat2)) ->
-  (b1 : bool) == b2 && Id.equal pat1 pat2
+| GPatVar (_, k1), GPatVar (_, k2) -> matching_var_kind_eq k1 k2
 | GApp (_, f1, arg1), GApp (_, f2, arg2) ->
   glob_constr_eq f1 f2 && List.equal glob_constr_eq arg1 arg2
 | GLambda (_, na1, bk1, t1, c1), GLambda (_, na2, bk2, t2, c2) ->
