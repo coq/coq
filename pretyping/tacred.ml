@@ -784,7 +784,7 @@ and whd_simpl_stack env sigma =
              let rec is_case x = match EConstr.kind sigma x with
                | Lambda (_,_, x) | LetIn (_,_,_, x) | Cast (x, _,_) -> is_case x
                | App (hd, _) -> is_case hd
-               | Case _ -> true
+               | Case _ | Fix _ | CoFix _ -> true
                | _ -> false in
                if nocase && is_case hd then raise Redelimination
                else s''
