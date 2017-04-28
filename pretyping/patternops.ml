@@ -159,7 +159,9 @@ let pattern_of_constr env sigma t =
 	let ty = Evarutil.nf_evar sigma (existential_type sigma ev) in
 	let () = ignore (pattern_of_constr env ty) in
         assert (not b); PMeta (Some id)
-      | Evar_kinds.GoalEvar -> 
+      | Evar_kinds.GoalEvar | Evar_kinds.VarInstance _ ->
+        (* These are the two evar kinds used for existing goals *)
+        (* see Proofview.mark_in_evm *)
 	PEvar (evk,Array.map (pattern_of_constr env) ctxt)
       | _ -> 
 	let ty = Evarutil.nf_evar sigma (existential_type sigma ev) in
