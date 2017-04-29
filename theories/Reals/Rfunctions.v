@@ -704,7 +704,7 @@ Lemma powerRZ_ind (P : Z -> R -> R -> Prop) :
   forall x (m : Z), P m x (powerRZ x m)%R.
 Proof.
   intros ? ? ? x m.
-  destruct (intP m) as [n Hm| n Hm|n Hm].
+  destruct (intP m) as [Hm|n Hm|n Hm].
   - easy.
   - now rewrite <- pow_powerRZ.
   - unfold powerRZ.
