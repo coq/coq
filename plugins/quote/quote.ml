@@ -402,7 +402,10 @@ let quote_terms ivs lc =
       match l with
         | (lhs, rhs)::tail ->
             begin try
-              let s1 = Id.Map.bindings (matches (Global.env ()) Evd.empty rhs c) in
+              let s1 =
+                Id.Map.bindings (let (_sigma,r) (* FIXME *) =
+                                   matches (Global.env ()) Evd.empty rhs c in r)
+              in
               let s2 = List.map (fun (i,c_i) -> (coerce_meta_out i,aux c_i)) s1
 	      in
               Termops.subst_meta s2 lhs

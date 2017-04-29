@@ -113,7 +113,6 @@ let imatching_error = (matching_error, Exninfo.null)
     {!equal_instances}. *)
 module type StaticEnvironment = sig
   val env : Environ.env
-  val sigma : Evd.evar_map
 end
 module PatternMatching (E:StaticEnvironment) = struct
 
@@ -136,10 +135,10 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** Composes two substitutions using {!verify_metas_coherence}. It
       must be a monoid with neutral element {!empty_subst}. Raises
       [Not_coherent_metas] when composition cannot be achieved. *)
-  let subst_prod s1 s2 =
+  let subst_prod sigma s1 s2 =
     if is_empty_subst s1 then s2
     else if is_empty_subst s2 then s1
-    else verify_metas_coherence E.env E.sigma s1 s2
+    else verify_metas_coherence E.env sigma s1 s2
 
   (** The empty context substitution. *)
   let empty_context_subst = Id.Map.empty
@@ -156,9 +155,9 @@ module PatternMatching (E:StaticEnvironment) = struct
   let term_subst_prod = id_map_right_biased_union
 
   (** Merge two writers (and ignore the first value component). *)
-  let merge m1 m2 =
+  let merge sigma m1 m2 =
     try Some {
-      subst = subst_prod m1.subst m2.subst;
+      subst = subst_prod sigma m1.subst m2.subst;
       context = context_subst_prod m1.context m2.context;
       terms = term_subst_prod m1.terms m2.terms;
       lhs = m2.lhs;
@@ -202,17 +201,30 @@ module PatternMatching (E:StaticEnvironment) = struct
   let pick l = pick l imatching_error
 
   (** Declares a subsitution, a context substitution and a term substitution. *)
-  let put subst context terms : unit m =
-    let s = { subst ; context ; terms ; lhs = () } in
-    { stream = fun k ctx -> match merge s ctx with None -> Proofview.tclZERO matching_error | Some s -> k () s }
+  let put subst_tac context terms : unit m =
+    { stream = fun k ctx ->
+               let open Proofview.Notations in
+               Proofview.(subst_tac >>= fun subst ->
+                 let s = { subst ; context ; terms ; lhs = () } in
+                 tclEVARMAP >>= fun sigma ->
+                 match merge sigma s ctx with
+                 | None -> tclZERO matching_error
+                 | Some s -> k () s)
+    }
 
   (** Declares a substitution. *)
   let put_subst subst : unit m = put subst empty_context_subst empty_term_subst
 
   (** Declares a term substitution. *)
-  let put_terms terms : unit m = put empty_subst empty_context_subst terms
+  let put_terms terms : unit m = put (Proofview.tclUNIT empty_subst) empty_context_subst terms
 
-
+  let extended_matches p term : (Constr_matching.bound_ident_map * Pattern.extended_patvar_map) tac =
+    Proofview.(tclBIND tclEVARMAP (fun sigma ->
+      try
+        let (sigma, subst) = Constr_matching.extended_matches E.env sigma p term in
+        tclTHEN (Unsafe.tclEVARS sigma) (tclUNIT subst)
+      with Constr_matching.PatternMatchingFailure -> Proofview.tclZERO matching_error
+    ))
 
   (** {6 Pattern-matching} *)
 
@@ -225,39 +237,37 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** [pattern_match_term refresh pat term lhs] returns the possible
       matchings of [term] with the pattern [pat => lhs]. If refresh is
       true, refreshes the universes of [term]. *)
-  let pattern_match_term refresh pat term lhs = 
+  let pattern_match_term sigma refresh pat term lhs =
 (*     let term = if refresh then Termops.refresh_universes_strict term else term in *)
     match pat with
     | Term p ->
-        begin 
-          try
-            put_subst (Constr_matching.extended_matches E.env E.sigma p term) <*>
-            return lhs
-          with Constr_matching.PatternMatchingFailure -> fail
-        end
+       return (extended_matches p term) >>=
+         put_subst <*>
+         return lhs
+
     | Subterm (with_app_context,id_ctxt,p) ->
 
       let rec map s (e, info) =
         { stream = fun k ctx -> match IStream.peek s with
           | IStream.Nil -> Proofview.tclZERO ~info e
-          | IStream.Cons ({ Constr_matching.m_sub ; m_ctx }, s) ->
+          | IStream.Cons ({ Constr_matching.m_sub ; m_evarmap; m_ctx }, s) ->
             let subst = adjust m_sub in
             let context = id_map_try_add id_ctxt m_ctx Id.Map.empty in
             let terms = empty_term_subst in
             let nctx = { subst ; context ; terms ; lhs = () } in
-            match merge ctx nctx with
+            match merge m_evarmap ctx nctx with
             | None -> (map s (e, info)).stream k ctx
             | Some nctx -> Proofview.tclOR (k lhs nctx) (fun e -> (map s e).stream k ctx)
         }
       in
-      map (Constr_matching.match_subterm_gen E.env E.sigma with_app_context p term) imatching_error
+      map (Constr_matching.match_subterm_gen E.env sigma with_app_context p term) imatching_error
 
 
   (** [rule_match_term term rule] matches the term [term] with the
       matching rule [rule]. *)
-  let rule_match_term term = function
+  let rule_match_term sigma term = function
     | All lhs -> wildcard_match_term lhs
-    | Pat ([],pat,lhs) -> pattern_match_term false pat term lhs
+    | Pat ([],pat,lhs) -> pattern_match_term sigma false pat term lhs
     | Pat _ ->
         (** Rules with hypotheses, only work in match goal. *)
         fail
@@ -268,7 +278,9 @@ module PatternMatching (E:StaticEnvironment) = struct
   | [] -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
   | r :: rules ->
     { stream = fun k ctx ->
-      let head = rule_match_term term r in
+      let open Proofview.Notations in
+      Proofview.tclEVARMAP >>= fun sigma ->
+      let head = rule_match_term sigma term r in
       let tail e = match_term e term rules in
       Proofview.tclOR (head.stream k ctx) (fun e -> (tail e).stream k ctx)
     }
@@ -278,11 +290,11 @@ module PatternMatching (E:StaticEnvironment) = struct
       hypothesis pattern [hypname:pat] against the hypotheses in
       [hyps]. Tries the hypotheses in order. For each success returns
       the name of the matched hypothesis. *)
-  let hyp_match_type hypname pat hyps =
+  let hyp_match_type sigma hypname pat hyps =
     pick hyps >>= fun decl ->
     let id = get_id decl in
     let refresh = is_local_def decl in
-    pattern_match_term refresh pat (get_type decl) () <*>
+    pattern_match_term sigma refresh pat (get_type decl) () <*>
     put_terms (id_map_try_add_name hypname (Term.mkVar id) empty_term_subst) <*>
     return id
 
@@ -290,11 +302,11 @@ module PatternMatching (E:StaticEnvironment) = struct
       hypothesis pattern [hypname := bodypat : typepat] against the
       hypotheses in [hyps].Tries the hypotheses in order. For each
       success returns the name of the matched hypothesis. *)
-  let hyp_match_body_and_type hypname bodypat typepat hyps =
+  let hyp_match_body_and_type sigma hypname bodypat typepat hyps =
     pick hyps >>= function
       | LocalDef (id,body,hyp) ->
-          pattern_match_term false bodypat body () <*>
-          pattern_match_term true typepat hyp () <*>
+          pattern_match_term sigma false bodypat body () <*>
+          pattern_match_term sigma true typepat hyp () <*>
           put_terms (id_map_try_add_name hypname (Term.mkVar id) empty_term_subst) <*>
           return id
       | LocalAssum (id,hyp) -> fail
@@ -302,38 +314,38 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** [hyp_match pat hyps] dispatches to
       {!hyp_match_type} or {!hyp_match_body_and_type} depending on whether
       [pat] is [Hyp _] or [Def _]. *)
-  let hyp_match pat hyps =
+  let hyp_match sigma pat hyps =
     match pat with
     | Hyp ((_,hypname),typepat) ->
-        hyp_match_type hypname typepat hyps
+        hyp_match_type sigma hypname typepat hyps
     | Def ((_,hypname),bodypat,typepat) ->
-        hyp_match_body_and_type hypname bodypat typepat hyps
+        hyp_match_body_and_type sigma hypname bodypat typepat hyps
 
   (** [hyp_pattern_list_match pats hyps lhs], matches the list of
       patterns [pats] against the hypotheses in [hyps], and eventually
       returns [lhs]. *)
-  let rec hyp_pattern_list_match pats hyps lhs =
+  let rec hyp_pattern_list_match sigma pats hyps lhs =
     match pats with
     | pat::pats ->
-        hyp_match pat hyps >>= fun matched_hyp ->
+        hyp_match sigma pat hyps >>= fun matched_hyp ->
         (* spiwack: alternatively it is possible to return the list
            with the matched hypothesis removed directly in
            [hyp_match]. *)
         let select_matched_hyp decl = Id.equal (get_id decl) matched_hyp in
         let hyps = CList.remove_first select_matched_hyp hyps in
-        hyp_pattern_list_match pats hyps lhs
+        hyp_pattern_list_match sigma pats hyps lhs
     | [] -> return lhs
 
   (** [rule_match_goal hyps concl rule] matches the rule [rule]
       against the goal [hyps|-concl]. *)
-  let rule_match_goal hyps concl = function
+  let rule_match_goal sigma hyps concl = function
     | All lhs -> wildcard_match_term lhs
     | Pat (hyppats,conclpat,lhs) ->
         (* the rules are applied from the topmost one (in the concrete
            syntax) to the bottommost. *)
         let hyppats = List.rev hyppats in
-        pattern_match_term false conclpat concl () <*>
-        hyp_pattern_list_match hyppats hyps lhs
+        pattern_match_term sigma false conclpat concl () <*>
+        hyp_pattern_list_match sigma hyppats hyps lhs
 
   (** [match_goal hyps concl rules] matches the goal [hyps|-concl]
       with the set of matching rules [rules]. *)
@@ -341,35 +353,33 @@ module PatternMatching (E:StaticEnvironment) = struct
   | [] -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
   | r :: rules ->
     { stream = fun k ctx ->
-      let head = rule_match_goal hyps concl r in
+      let open Proofview.Notations in
+      Proofview.tclEVARMAP >>= fun sigma ->
+      let head = rule_match_goal sigma hyps concl r in
       let tail e = match_goal e hyps concl rules in
       Proofview.tclOR (head.stream k ctx) (fun e -> (tail e).stream k ctx)
     }
 
 end
 
-(** [match_term env sigma term rules] matches the term [term] with the
-    set of matching rules [rules]. The environment [env] and the
-    evar_map [sigma] are not currently used, but avoid code
-    duplication. *)
-let match_term env sigma term rules =
+(** [match_term env sigma term rules] matches the term [term] with the set of
+    matching rules [rules]. The environment [env] is not currently used, but
+    avoids code duplication. *)
+let match_term env term rules =
   let module E = struct
     let env = env
-    let sigma = sigma
   end in
   let module M = PatternMatching(E) in
   M.run (M.match_term imatching_error term rules)
 
 
-(** [match_goal env sigma hyps concl rules] matches the goal
-    [hyps|-concl] with the set of matching rules [rules]. The
-    environment [env] and the evar_map [sigma] are used to check
-    convertibility for pattern variables shared between hypothesis
-    patterns or the conclusion pattern. *)
-let match_goal env sigma hyps concl rules =
+(** [match_goal env sigma hyps concl rules] matches the goal [hyps|-concl] with
+    the set of matching rules [rules]. The environment [env] and the current
+    evar_map are used to check convertibility for pattern variables shared
+    between hypothesis patterns or the conclusion pattern. *)
+let match_goal env hyps concl rules =
   let module E = struct
     let env = env
-    let sigma = sigma
   end in
   let module M = PatternMatching(E) in
   M.run (M.match_goal imatching_error hyps concl rules)

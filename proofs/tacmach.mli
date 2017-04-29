@@ -77,7 +77,7 @@ val pf_const_value : goal sigma -> pconstant -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
 val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
 
-val pf_matches     : goal sigma -> constr_pattern -> constr -> patvar_map
+val pf_matches     : goal sigma -> constr_pattern -> constr -> evar_map * patvar_map
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
 
@@ -138,7 +138,7 @@ module New : sig
   val pf_whd_all : ('a, 'r) Proofview.Goal.t -> constr -> constr
   val pf_compute : ('a, 'r) Proofview.Goal.t -> constr -> constr
 
-  val pf_matches : ('a, 'r) Proofview.Goal.t -> constr_pattern -> constr -> patvar_map
+  val pf_matches : ('a, 'r) Proofview.Goal.t -> constr_pattern -> constr -> evar_map * patvar_map
 
   val pf_nf_evar : ('a, 'r) Proofview.Goal.t -> constr -> constr
 

@@ -24,25 +24,21 @@ type 'a t = {
 }
 
 
-(** [match_term env sigma term rules] matches the term [term] with the
-    set of matching rules [rules]. The environment [env] and the
-    evar_map [sigma] are not currently used, but avoid code
-    duplication. *)
+(** [match_term env sigma term rules] matches the term [term] with the set of
+    matching rules [rules]. The environment [env] is not currently used, but
+    avoids code duplication. *)
 val match_term :
   Environ.env ->
-  Evd.evar_map ->
   Term.constr ->
   (Tacexpr.binding_bound_vars * Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->
   Tacexpr.glob_tactic_expr t Proofview.tactic
 
-(** [match_goal env sigma hyps concl rules] matches the goal
-    [hyps|-concl] with the set of matching rules [rules]. The
-    environment [env] and the evar_map [sigma] are used to check
-    convertibility for pattern variables shared between hypothesis
-    patterns or the conclusion pattern. *)
+(** [match_goal env sigma hyps concl rules] matches the goal [hyps|-concl] with
+    the set of matching rules [rules]. The environment [env] and the current
+    evar_map are used to check convertibility for pattern variables shared
+    between hypothesis patterns or the conclusion pattern. *)
 val match_goal:
   Environ.env ->
-  Evd.evar_map ->
   Context.Named.t ->
   Term.constr ->
   (Tacexpr.binding_bound_vars * Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->

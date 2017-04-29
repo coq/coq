@@ -275,7 +275,9 @@ let coq_refl_jm_pattern       =
 open Globnames
 
 let is_matching x y = is_matching (Global.env ()) Evd.empty x y
-let matches x y = matches (Global.env ()) Evd.empty x y
+let matches x y =
+  let (_sigma, subst) = matches (Global.env ()) Evd.empty x y (* FIXME *) in
+  subst
 
 let match_with_equation t =
   if not (isApp t) then raise NoEquationFound;
@@ -330,8 +332,7 @@ let is_equality_type t = op2bool (match_with_equality_type t)
 let coq_arrow_pattern = mkPattern (mkGArrow (mkGPatVar "X1") (mkGPatVar "X2"))
 
 let match_arrow_pattern t =
-  let result = matches coq_arrow_pattern t in
-  match Id.Map.bindings result with
+  match Id.Map.bindings (matches coq_arrow_pattern t) with
     | [(m1,arg);(m2,mind)] ->
       assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
     | _ -> anomaly (Pp.str "Incorrect pattern matching")
@@ -461,7 +462,8 @@ let match_eq_nf gls eqn (ref, hetero) =
   let n = if hetero then 4 else 3 in
   let args = List.init n (fun i -> mkGPatVar ("X" ^ string_of_int (i + 1))) in
   let pat = mkPattern (mkGAppRef ref args) in
-  match Id.Map.bindings (pf_matches gls pat eqn) with
+  let (_sigma (* FIXME *) , subst) = pf_matches gls pat eqn in
+  match Id.Map.bindings subst with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
 	(t,pf_whd_all gls x,pf_whd_all gls y)

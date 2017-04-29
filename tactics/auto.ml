@@ -140,8 +140,11 @@ let conclPattern concl pat tac =
     | None -> Proofview.tclUNIT Id.Map.empty
     | Some pat ->
 	try
-	  Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
-	with Constr_matching.PatternMatchingFailure ->
+          let (_sigma, matches) = (* FIXME *)
+            Constr_matching.matches env sigma pat concl
+          in
+          Proofview.tclUNIT matches
+        with Constr_matching.PatternMatchingFailure ->
           Tacticals.New.tclZEROMSG (str "conclPattern")
   in
   Proofview.Goal.enter { enter = begin fun gl ->

@@ -1228,6 +1228,7 @@ let solve_unconstrained_impossible_cases env evd =
   Evd.fold_undefined (fun evk ev_info evd' ->
     match ev_info.evar_source with
     | loc,Evar_kinds.ImpossibleCase ->
+       (* Why does this ad-hoc code have to be here instead of cases.ml? *)
       let j, ctx = coq_unit_judge () in
       let evd' = Evd.merge_context_set Evd.univ_flexible_alg ~loc evd' ctx in
       let ty = j_type j in

@@ -1525,7 +1525,7 @@ and interp_match ist lz constr lmr =
     let sigma = project gl in
     let env = Proofview.Goal.env gl in
     let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
-    interp_match_successes lz ist (Tactic_matching.match_term env sigma constr ilr)
+    interp_match_successes lz ist (Tactic_matching.match_term env constr ilr)
   end }
 
 (* Interprets the Match Context expressions *)
@@ -1537,7 +1537,7 @@ and interp_match_goal ist lz lr lmr =
       let hyps = if lr then List.rev hyps else hyps in
       let concl = Proofview.Goal.concl gl in
       let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
-      interp_match_successes lz ist (Tactic_matching.match_goal env sigma hyps concl ilr)
+      interp_match_successes lz ist (Tactic_matching.match_goal env hyps concl ilr)
     end }
 
 (* Interprets extended tactic generic arguments *)
