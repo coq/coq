@@ -41,6 +41,7 @@ env:
   - TEST_TARGET="ci-math-classes"
   - TEST_TARGET="ci-math-comp"
   - TEST_TARGET="ci-sf"
+  - TEST_TARGET="ci-formal-topology"
   - TEST_TARGET="ci-unimath"
   - TEST_TARGET="ci-vst"
   # Not ready yet for 8.7

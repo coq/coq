@@ -107,6 +107,12 @@
 : ${bedrock_facade_CI_GITURL:=https://github.com/JasonGross/bedrock.git}
 
 ########################################################################
+# formal-topology
+########################################################################
+: ${formal_topology_CI_BRANCH:=ci}
+: ${formal_topology_CI_GITURL:=https://github.com/bmsherman/topology.git}
+
+########################################################################
 # CoLoR
 ########################################################################
 : ${Color_CI_SVNURL:=https://scm.gforge.inria.fr/anonscm/svn/color/trunk/color}
