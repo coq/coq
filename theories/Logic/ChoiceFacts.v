@@ -760,6 +760,39 @@ Proof.
   destruct Heq using eq_indd; trivial.
 Qed.
 
+(** Functional choice can be reformulated as a property on [inhabited] *)
+
+Definition InhabitedForallCommute_on (A : Type) (B : A -> Type) :=
+  (forall x, inhabited (B x)) -> inhabited (forall x, B x).
+
+Notation InhabitedForallCommute :=
+  (forall A (B : A -> Type), InhabitedForallCommute_on B).
+
+Theorem functional_choice_to_inhabited_forall_commute :
+  FunctionalChoice -> InhabitedForallCommute.
+Proof.
+  intros choose0 A B Hinhab.
+  pose proof (non_dep_dep_functional_choice choose0) as choose;clear choose0.
+  assert (Hexists : forall x, exists _ : B x, True).
+  { intros x;apply inhabited_sig_to_exists.
+    refine (inhabited_covariant _ (Hinhab x)).
+    intros y;exists y;exact I. }
+  apply choose in Hexists.
+  destruct Hexists as [f _].
+  exact (inhabits f).
+Qed.
+
+Theorem inhabited_forall_commute_to_functional_choice :
+  InhabitedForallCommute -> FunctionalChoice.
+Proof.
+  intros choose A B R Hexists.
+  assert (Hinhab : forall x, inhabited {y : B | R x y}).
+  { intros x;apply exists_to_inhabited_sig;trivial. }
+  apply choose in Hinhab. destruct Hinhab as [f].
+  exists (fun x => proj1_sig (f x)).
+  exact (fun x => proj2_sig (f x)).
+Qed.
+
 (** ** Reification of dependent and non dependent functional relation  are equivalent *)
 
 Definition DependentFunctionalRelReification_on (A:Type) (B:A -> Type) :=

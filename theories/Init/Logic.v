@@ -609,6 +609,11 @@ Proof.
   destruct 1; auto.
 Qed.
 
+Lemma inhabited_covariant (A B : Type) : (A -> B) -> inhabited A -> inhabited B.
+Proof.
+  intros f [x];exact (inhabits (f x)).
+Qed.
+
 (** Declaration of stepl and stepr for eq and iff *)
 
 Lemma eq_stepl : forall (A : Type) (x y z : A), x = y -> x = z -> z = y.
