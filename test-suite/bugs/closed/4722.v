@@ -1,1 +1,1 @@
-(* -*- coq-prog-args: ("-emacs" "-R" "4722" "Foo") -*- *)
+(* -*- coq-prog-args: ("-R" "4722" "Foo") -*- *)

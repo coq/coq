@@ -20,7 +20,7 @@ while it is expected to have type "IsHProp (* Top.17 *) Empty"
 Defined.
 
 Module B.
-(* -*- coq-prog-args: ("-emacs" "-indices-matter") -*- *)
+(* -*- coq-prog-args: ("-indices-matter") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 7725 lines to 78 lines, then from 51 lines to 13 lines *)
 Set Universe Polymorphism.
 Inductive paths {A} (a : A) : A -> Type := idpath : paths a a where "x = y" := (@paths _ x y) : type_scope.

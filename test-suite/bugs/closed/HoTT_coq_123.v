@@ -1,5 +1,5 @@
 Require Import TestSuite.admit.
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") *)
+(* -*- mode: coq; coq-prog-args: ("-indices-matter") *)
 (* File reduced by coq-bug-finder from original input, then from 4988 lines to 856 lines, then from 648 lines to 398 lines, then from 401 lines to 332 lines, then from 287 lines to 250 lines, then from 257 lines to 241 lines, then from 223 lines to 175 lines *)
 Set Universe Polymorphism.
 Set Asymmetric Patterns.

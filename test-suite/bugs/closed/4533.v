@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-nois" "-indices-matter" "-R" "." "Top" "-top" "bug_lex_wrong_rewrite_02") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-nois" "-indices-matter" "-R" "." "Top" "-top" "bug_lex_wrong_rewrite_02") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 1125 lines to 
 346 lines, then from 360 lines to 346 lines, then from 822 lines to 271 lines, 
 then from 285 lines to 271 lines *)
