@@ -52,7 +52,8 @@ FIND_VCS_CLAUSE:='(' \
   -name '.bzr' -o \
   -name 'debian' -o \
   -name "$${GIT_DIR}" -o \
-  -name '_build' \
+  -name '_build' -o \
+  -name '_build_ci' \
 ')' -prune -o
 
 define find
