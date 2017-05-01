@@ -188,3 +188,14 @@ Proof.
   apply idpath.
   apply idpath.
 Defined.
+
+(* An example where it is necessary to evar-normalize the instance of
+   an evar to evaluate if it is a pattern *)
+
+Check
+  let a := ?[P] in
+  fun (H : forall y (P : nat -> Prop), y = 0 -> P y)
+      x (p:x=0) =>
+    H ?[y] a p : x = 0.
+(* We have to solve "?P ?y[x] == x = 0" knowing from
+   "p : (x=0) == (?y[x] = 0)" that "?y := x" *)
