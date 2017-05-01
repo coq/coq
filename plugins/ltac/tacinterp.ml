@@ -1565,7 +1565,7 @@ and interp_genarg ist x : Val.t Ftactic.t =
     independently of goals. *)
 
 and interp_genarg_constr_list ist x =
-  Ftactic.nf_s_enter { s_enter = begin fun gl ->
+  Ftactic.s_enter { s_enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   let lc = Genarg.out_gen (glbwit (wit_list wit_constr)) x in
@@ -1697,7 +1697,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacMutualFix (id,n,l) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual fix>") begin
-      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+      Proofview.Goal.s_enter { s_enter = begin fun gl ->
         let env = pf_env gl in
         let f sigma (id,n,c) =
           let (sigma,c_interp) = interp_type ist env sigma c in
@@ -1712,7 +1712,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacMutualCofix (id,l) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual cofix>") begin
-      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+      Proofview.Goal.s_enter { s_enter = begin fun gl ->
         let env = pf_env gl in
         let f sigma (id,c) =
 	  let (sigma,c_interp) = interp_type ist env sigma c in
@@ -1790,7 +1790,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacInductionDestruct (isrec,ev,(l,el)) ->
       (* spiwack: some unknown part of destruct needs the goal to be
          prenormalised. *)
-      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+      Proofview.Goal.s_enter { s_enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let sigma,l =
@@ -1818,7 +1818,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
 
   (* Conversion *)
   | TacReduce (r,cl) ->
-      Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+      Proofview.Goal.s_enter { s_enter = begin fun gl ->
         let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
         Sigma.Unsafe.of_pair (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl), sigma)
       end }
@@ -2028,7 +2028,7 @@ let lift f = (); fun ist x -> Ftactic.enter { enter = begin fun gl ->
   Ftactic.return (f ist env sigma x)
 end }
 
-let lifts f = (); fun ist x -> Ftactic.nf_s_enter { s_enter = begin fun gl ->
+let lifts f = (); fun ist x -> Ftactic.s_enter { s_enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   let (sigma, v) = f ist env sigma x in

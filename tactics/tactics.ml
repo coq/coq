@@ -2847,7 +2847,7 @@ let generalize_goal gl i ((occs,c,b),na as o) (cl,sigma) =
 let generalize_dep ?(with_let=false) c =
   let open Tacmach.New in
   let open Tacticals.New in
-  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl ->
   let env = pf_env gl in
   let sign = Proofview.Goal.hyps gl in
   let sigma = project gl in
