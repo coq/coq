@@ -70,7 +70,7 @@ type types = constr
 
 (** {6 Term constructors. } *)
 
-(** Constructs a DeBrujin index (DB indices begin at 1) *)
+(** Constructs a DeBruijn index (DB indices begin at 1) *)
 val mkRel : int -> constr
 
 (** Constructs a Variable *)

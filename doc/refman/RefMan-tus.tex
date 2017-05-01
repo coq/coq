@@ -299,7 +299,7 @@ vector of terms $vt$.
 \end{itemize}
 
 In this meta-language, bound variables are represented using the
-so-called deBrujin's indexes. In this representation, an occurrence of
+so-called deBruijn's indexes. In this representation, an occurrence of
 a bound variable is denoted by an integer, meaning the number of
 binders that must be traversed to reach its own
 binder\footnote{Actually, $(\texttt{Rel}\;n)$ means that $(n-1)$ binders
@@ -482,7 +482,7 @@ following constructor functions:
 
 \begin{description}
 \fun{val Term.mkRel          : int -> constr}
-    {$(\texttt{mkRel}\;n)$ represents deBrujin's index $n$.}
+    {$(\texttt{mkRel}\;n)$ represents deBruijn's index $n$.}
 
 \fun{val Term.mkVar : identifier -> constr} 
     {$(\texttt{mkVar}\;id)$
@@ -545,7 +545,7 @@ following constructor functions:
 
 \fun{val Term.mkProd : name ->constr ->constr -> constr}
     {$(\texttt{mkProd}\;x\;A\;B)$ represents the product $(x:A)B$.
-     The free ocurrences of $x$ in $B$ are represented by deBrujin's
+     The free ocurrences of $x$ in $B$ are represented by deBruijn's
      indexes.}
 
 \fun{val Term.mkNamedProd : identifier -> constr -> constr -> constr}
@@ -553,14 +553,14 @@ following constructor functions:
      but the bound occurrences of $x$ in $B$ are denoted by 
      the identifier $(\texttt{mkVar}\;x)$. The function automatically 
      changes each occurrences of this identifier into the corresponding 
-     deBrujin's index.}
+     deBruijn's index.}
 
 \fun{val Term.mkArrow : constr -> constr -> constr}
     {$(\texttt{arrow}\;A\;B)$ represents the type $(A\rightarrow B)$.}
 
 \fun{val Term.mkLambda       : name -> constr -> constr -> constr}
     {$(\texttt{mkLambda}\;x\;A\;b)$ represents the lambda abstraction 
-     $[x:A]b$. The free ocurrences of $x$ in $B$ are represented by deBrujin's
+     $[x:A]b$. The free ocurrences of $x$ in $B$ are represented by deBruijn's
      indexes.}
 
 \fun{val Term.mkNamedLambda : identifier -> constr -> constr -> constr}
@@ -666,7 +666,7 @@ use the primitive \textsl{Case} described in Chapter \ref{Cic}
 \item Restoring type coercions and synthesizing the implicit arguments
 (the one denoted by question marks in
 {\Coq} syntax: see Section~\ref{Coercions}).
-\item Transforming the named bound variables into deBrujin's indexes.
+\item Transforming the named bound variables into deBruijn's indexes.
 \item Classifying the global names into the different classes of
 constants (defined constants, constructors, inductive types, etc).
 \end{enumerate}
