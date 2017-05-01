@@ -72,11 +72,18 @@ val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map 
 val interp_hyp : interp_sign -> Environ.env -> Evd.evar_map ->
   Id.t Loc.located -> Id.t
 
+val interp_glob_closure : interp_sign -> Environ.env -> Evd.evar_map ->
+  ?kind:Pretyping.typing_constraint -> ?allow_patvar:bool -> glob_constr_and_expr ->
+  Glob_term.closed_glob_constr
+
+val interp_uconstr : interp_sign -> Environ.env -> Evd.evar_map ->
+  glob_constr_and_expr -> Glob_term.closed_glob_constr
+
 val interp_constr_gen : Pretyping.typing_constraint -> interp_sign ->
   Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Evd.evar_map * constr
 
 val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
- glob_constr_and_expr bindings -> Evd.evar_map * constr bindings
+  glob_constr_and_expr bindings -> Evd.evar_map * constr bindings
 
 val interp_open_constr : ?expected_type:Pretyping.typing_constraint ->
   interp_sign -> Environ.env -> Evd.evar_map ->

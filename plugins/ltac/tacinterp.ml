@@ -577,57 +577,47 @@ let extract_ltac_constr_context ist env sigma =
 
 (** Significantly simpler than [interp_constr], to interpret an
     untyped constr, it suffices to adjoin a closure environment. *)
-let interp_uconstr ist env sigma = function
-  | (term,None) ->
-      { closure = extract_ltac_constr_context ist env sigma; term }
-  | (_,Some ce) ->
-      let ( {typed ; untyped } as closure) = extract_ltac_constr_context ist env sigma in
-      let ltacvars = {
-        Constrintern.ltac_vars = Id.(Set.union (Map.domain typed) (Map.domain untyped));
-        ltac_bound = Id.Map.domain ist.lfun;
-        ltac_extra = Genintern.Store.empty;
-      } in
-      { closure ; term =  intern_gen WithoutTypeConstraint ~ltacvars env ce }
-
-let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
-  let constrvars = extract_ltac_constr_context ist env sigma in
-  let vars = {
-    Pretyping.ltac_constrs = constrvars.typed;
-    Pretyping.ltac_uconstrs = constrvars.untyped;
-    Pretyping.ltac_idents = constrvars.idents;
-    Pretyping.ltac_genargs = ist.lfun;
-  } in
-  let c = match ce with
-  | None -> c
-    (* If at toplevel (ce<>None), the error can be due to an incorrect
-       context at globalization time: we retype with the now known
-       intros/lettac/inversion hypothesis names *)
-  | Some c ->
+let interp_glob_closure ist env sigma ?(kind=WithoutTypeConstraint) ?(allow_patvar=false) (term,term_expr_opt) =
+  let closure = extract_ltac_constr_context ist env sigma in
+  match term_expr_opt with
+  | None -> { closure ; term }
+  | Some term_expr ->
+     (* If at toplevel (term_expr_opt<>None), the error can be due to
+       an incorrect context at globalization time: we retype with the
+       now known intros/lettac/inversion hypothesis names *)
       let constr_context =
         Id.Set.union
-          (Id.Map.domain constrvars.typed)
-       (Id.Set.union
-          (Id.Map.domain constrvars.untyped)
-          (Id.Map.domain constrvars.idents))
+          (Id.Map.domain closure.typed)
+          (Id.Map.domain closure.untyped)
       in
       let ltacvars = {
         ltac_vars = constr_context;
         ltac_bound = Id.Map.domain ist.lfun;
         ltac_extra = Genintern.Store.empty;
       } in
-      let kind_for_intern =
-        match kind with OfType _ -> WithoutTypeConstraint | _ -> kind in
-      intern_gen kind_for_intern ~allow_patvar ~ltacvars env c
-  in
+      { closure ; term = intern_gen kind ~allow_patvar ~ltacvars env term_expr }
+
+let interp_uconstr ist env sigma c = interp_glob_closure ist env sigma c
+
+let interp_gen kind ist allow_patvar flags env sigma c =
+  let kind_for_intern = match kind with OfType _ -> WithoutTypeConstraint | _ -> kind in
+  let { closure = constrvars ; term } =
+    interp_glob_closure ist env sigma ~kind:kind_for_intern ~allow_patvar c in
+  let vars = {
+    Pretyping.ltac_constrs = constrvars.typed;
+    Pretyping.ltac_uconstrs = constrvars.untyped;
+    Pretyping.ltac_idents = constrvars.idents;
+    Pretyping.ltac_genargs = ist.lfun;
+  } in
   (* Jason Gross: To avoid unnecessary modifications to tacinterp, as
       suggested by Arnaud Spiwack, we run push_trace immediately.  We do
       this with the kludge of an empty proofview, and rely on the
       invariant that running the tactic returned by push_trace does
       not modify sigma. *)
   let (_, dummy_proofview) = Proofview.init sigma [] in
-  let (trace,_,_,_) = Proofview.apply env (push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist) dummy_proofview in
+  let (trace,_,_,_) = Proofview.apply env (push_trace (loc_of_glob_constr term,LtacConstrInterp (term,vars)) ist) dummy_proofview in
   let (evd,c) =
-    catch_error trace (understand_ltac flags env sigma vars kind) c
+    catch_error trace (understand_ltac flags env sigma vars kind) term
   in
   (* spiwack: to avoid unnecessary modifications of tacinterp, as this
      function already use effect, I call [run] hoping it doesn't mess
