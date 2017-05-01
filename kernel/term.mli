@@ -127,7 +127,7 @@ val is_small : sorts -> bool
 
 exception DestKO
 
-(** Destructs a DeBruijn index *)
+(** Destructs a de Bruijn index *)
 val destRel : constr -> int
 
 (** Destructs an existential variable *)

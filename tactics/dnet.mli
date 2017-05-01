@@ -26,7 +26,7 @@
    distincts, or you'll get unexpected behaviours.
 
    Warning 2: This structure is perfect, i.e. the set of candidates
-   returned is equal to the set of solutions. Beware of DeBruijn
+   returned is equal to the set of solutions. Beware of de Bruijn
    shifts and sorts subtyping though (which makes the comparison not
    symmetric, see term_dnet.ml).
 

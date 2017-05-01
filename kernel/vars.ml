@@ -27,7 +27,7 @@ let closedn n c =
   in
   try closed_rec n c; true with LocalOccur -> false
 
-(* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
+(* [closed0 M] is true iff [M] is a (de Bruijn) closed term *)
 
 let closed0 c = closedn 0 c
 

@@ -141,7 +141,7 @@ let native_conv_gen pb sigma env univs t1 t2 =
         let t1 = Sys.time () in
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
-        (* TODO change 0 when we can have deBruijn *)
+        (* TODO change 0 when we can have de Bruijn *)
         fst (conv_val env pb 0 !rt1 !rt2 univs)
       end
   | _ -> anomaly (Pp.str "Compilation failure") 
