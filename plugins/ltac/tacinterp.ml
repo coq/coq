@@ -673,10 +673,10 @@ let pure_open_constr_flags = {
 
 (* Interprets an open constr *)
 let interp_open_constr ?(expected_type=WithoutTypeConstraint) ist env sigma c =
-  let flags =
-    if expected_type == WithoutTypeConstraint then open_constr_no_classes_flags ()
-    else open_constr_use_classes_flags () in
-  interp_gen expected_type ist false flags env sigma c
+  interp_gen expected_type ist false (open_constr_no_classes_flags ()) env sigma c
+
+let interp_open_constr_with_classes ?(expected_type=WithoutTypeConstraint) ist env sigma c =
+  interp_gen expected_type ist false (open_constr_use_classes_flags ()) env sigma c
 
 let interp_pure_open_constr ist =
   interp_gen WithoutTypeConstraint ist false pure_open_constr_flags

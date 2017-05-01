@@ -78,6 +78,14 @@ val interp_constr_gen : Pretyping.typing_constraint -> interp_sign ->
 val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
  glob_constr_and_expr bindings -> Evd.evar_map * constr bindings
 
+val interp_open_constr : ?expected_type:Pretyping.typing_constraint ->
+  interp_sign -> Environ.env -> Evd.evar_map ->
+  glob_constr_and_expr -> Evd.evar_map * EConstr.constr
+
+val interp_open_constr_with_classes : ?expected_type:Pretyping.typing_constraint ->
+  interp_sign -> Environ.env -> Evd.evar_map ->
+  glob_constr_and_expr -> Evd.evar_map * EConstr.constr
+
 val interp_open_constr_with_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
   glob_constr_and_expr with_bindings -> Evd.evar_map * EConstr.constr with_bindings
 
