@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module CVars = Vars
-
 open Pp
 open Util
 open CErrors
