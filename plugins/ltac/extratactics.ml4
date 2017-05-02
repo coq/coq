@@ -39,7 +39,7 @@ let with_delayed_uconstr ist c tac =
     solve_unification_constraints = true;
     use_hook = Pfedit.solve_by_implicit_tactic ();
     fail_evar = false;
-    expand_evars = true
+    expand_evars = false
   } in
   let c = Pretyping.type_uconstr ~flags ist c in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
@@ -351,7 +351,7 @@ let constr_flags () = {
   Pretyping.solve_unification_constraints = true;
   Pretyping.use_hook = Pfedit.solve_by_implicit_tactic ();
   Pretyping.fail_evar = false;
-  Pretyping.expand_evars = true }
+  Pretyping.expand_evars = false }
 
 let refine_tac ist simple with_classes c =
   Proofview.Goal.enter { enter = begin fun gl ->
