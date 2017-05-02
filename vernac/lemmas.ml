@@ -28,10 +28,8 @@ open Pretyping
 open Termops
 open Namegen
 open Reductionops
-open Constrexpr
 open Constrintern
 open Impargs
-open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
