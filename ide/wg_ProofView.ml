@@ -47,7 +47,7 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
                      hover_cb start stop; false
                  | _ -> false))
 
-let mode_tactic sel_cb (proof : #GText.view_skel) goals unfoc_goals hints = match goals with
+let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = match goals with
   | [] -> assert false
   | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: rem_goals ->
       let on_hover sel_start sel_stop =
@@ -65,7 +65,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals unfoc_goals hints = matc
       let head_str = Printf.sprintf
         "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "s" else "")
       in
-      let goal_str shownum index total =
+      let goal_str ?(shownum=false) index total =
         if shownum then Printf.sprintf
                           "______________________________________(%d/%d)\n" index total
         else Printf.sprintf
@@ -100,17 +100,17 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals unfoc_goals hints = matc
           [tag]
           else []
         in
-        proof#buffer#insert (goal_str true 1 goals_cnt);
+        proof#buffer#insert (goal_str ~shownum:true 1 goals_cnt);
         insert_xml proof#buffer (Richpp.richpp_of_pp width cur_goal);
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
-      let fold_goal shownum i _ { Interface.goal_ccl = g } =
-        proof#buffer#insert (goal_str shownum i goals_cnt);
+      let fold_goal ?(shownum=false) i _ { Interface.goal_ccl = g } =
+        proof#buffer#insert (goal_str ~shownum i goals_cnt);
         insert_xml proof#buffer (Richpp.richpp_of_pp width g);
         proof#buffer#insert "\n"
       in
-      let () = Util.List.fold_left_i (fold_goal true) 2 () rem_goals in
+      let () = Util.List.fold_left_i (fold_goal ~shownum:true) 2 () rem_goals in
       (* show unfocused goal if option set *)
       (* Insert remaining goals (no hypotheses) *)
       if Coq.PrintOpt.printing_unfocused () then
@@ -120,7 +120,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals unfoc_goals hints = matc
           if unfoc<>[] then
             begin
               proof#buffer#insert "\nUnfocused Goals:\n";
-              Util.List.fold_left_i (fold_goal false) 0 () unfoc
+              Util.List.fold_left_i (fold_goal ~shownum:false) 0 () unfoc
             end
         end;
       ignore(proof#buffer#place_cursor
@@ -187,7 +187,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       List.iteri iter bg
     end
   | Some { Interface.fg_goals = fg; bg_goals = bg } ->
-    mode view fg bg hints
+    mode view fg ~unfoc_goals:bg hints
 
 
 let proof_view () =

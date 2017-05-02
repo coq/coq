@@ -688,7 +688,7 @@ let default_pr_subgoals ?(pr_first=true)
   let print_multiple_goals g l =
     if pr_first then
       default_pr_goal { it = g ; sigma = sigma; }
-      ++ (if l=[] then str"" else cut ())
+      ++ (if l=[] then mt () else cut ())
       ++ pr_rec 2 l
     else 
       pr_rec 1 (g::l)
