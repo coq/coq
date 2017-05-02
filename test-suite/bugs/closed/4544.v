@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-nois" "-indices-matter" "-R" "." "Top" "-top" "bug_oog_looping_rewrite_01") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-nois" "-indices-matter" "-R" "." "Top" "-top" "bug_oog_looping_rewrite_01") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 2553 lines to 1932 lines, then from 1946 lines to 1932 lines, then from 2467 lines to 1002 lines, then from 1016 lines to 1002 lines *)
 (* coqc version 8.5 (January 2016) compiled on Jan 23 2016 16:15:22 with OCaml 4.01.0
    coqtop version 8.5 (January 2016) *)

@@ -1,5 +1,5 @@
 Require Import TestSuite.admit.
-(* -*- coq-prog-args: ("-emacs" "-indices-matter") -*- *)
+(* -*- coq-prog-args: ("-indices-matter") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 8760 lines to 7519 lines, then from 7050 lines to 909 lines, then from 846 lines to 578 lines, then from 497 lines to 392 lines, then from 365 lines to 322 lines, then from 252 lines to 205 lines, then from 215 lines to 204 lines, then from 210 lines to 182 lines, then from 175 lines to 157 lines *)
 Set Universe Polymorphism.
 Axiom admit : forall {T}, T.

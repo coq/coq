@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs" "-compat" "8.4") -*- *)
+(* -*- coq-prog-args: ("-compat" "8.4") -*- *)
 
 Require Import Equality List.
 Inductive Foo (I : Type -> Type) (A : Type) : Type :=

@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter"); mode: visual-line -*- *)
+(* -*- mode: coq; coq-prog-args: ("-indices-matter"); mode: visual-line -*- *)
 Set Universe Polymorphism.
 Set Primitive Projections.
 Close Scope nat_scope.

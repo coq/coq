@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs" "-require" "Coq.Compat.Coq84" "-compat" "8.4") -*- *)
+(* -*- coq-prog-args: ("-require" "Coq.Compat.Coq84" "-compat" "8.4") -*- *)
 Require Import Coq.Lists.List Coq.Logic.JMeq Program.Equality.
 Set Printing Universes.
 Inductive Foo (I : Type -> Type) (A : Type) : Type :=

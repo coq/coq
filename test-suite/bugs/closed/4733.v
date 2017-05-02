@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs" "-compat" "8.4") -*- *)
+(* -*- coq-prog-args: ("-compat" "8.4") -*- *)
 (*Suppose a user wants to declare a new list-like notation with support for singletons in both 8.4 and 8.5.  If they use*)
 Require Import Coq.Lists.List.
 Require Import Coq.Vectors.Vector.

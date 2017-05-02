@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-indices-matter") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 11678 lines to 11330 lines, then from 10721 lines to 9544 lines, then from 9549 lines to 794 lines, then from 810 lines to 785 lines, then from 628 lines to 246 lines, then from 220 lines to 89 lines, then from 80 lines to 47 lines *)
 (* coqc version trunk (August 2014) compiled on Aug 22 2014 4:17:28 with OCaml 4.01.0
    coqtop version cagnode17:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (a67cc6941434124465f20b14a1256f2ede31a60e) *)
