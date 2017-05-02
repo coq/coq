@@ -123,7 +123,6 @@ let normalize_evaluables=
 	   unfold_in_hyp (Lazy.force defined_connectives)
 	   (Tacexpr.InHypType id)) *)
 
-open Pp
 open Genarg
 open Ppconstr
 open Printer

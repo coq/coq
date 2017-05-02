@@ -212,10 +212,6 @@ let tag_var = tag Tag.variable
       | Some (_,ExplByName id) ->
         str "(" ++ pr_id id ++ str ":=" ++ pr ltop a ++ str ")"
 
-  let pr_opt_type pr = function
-    | CHole (_,_,Misctypes.IntroAnonymous,_) -> mt ()
-    | t -> cut () ++ str ":" ++ pr t
-
   let pr_opt_type_spc pr = function
     | CHole (_,_,Misctypes.IntroAnonymous,_) -> mt ()
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t

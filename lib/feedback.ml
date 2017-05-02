@@ -40,8 +40,6 @@ type feedback = {
   contents : feedback_content;
 }
 
-let default_route = 0
-
 (** Feeders *)
 let feeders : (int, feedback -> unit) Hashtbl.t = Hashtbl.create 7
 

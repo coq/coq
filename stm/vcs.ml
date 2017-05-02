@@ -74,8 +74,6 @@ module Dag = Dag.Make(OT)
 
 type id = OT.t
 
-module NodeSet = Dag.NodeSet
-
 module Branch =
 struct
   type t = string

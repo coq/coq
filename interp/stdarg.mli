@@ -10,7 +10,6 @@
 
 open Loc
 open Names
-open Term
 open EConstr
 open Libnames
 open Globnames

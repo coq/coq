@@ -1095,7 +1095,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       let app = mkApp (c, Array.rev_of_list ks) in
       (* let substn = unirec_rec curenvnb pb b false substn t cN in *)
 	unirec_rec curenvnb pb opt' substn c1 app
-      with Invalid_argument "Reductionops.Stack.fold2" ->
+      with Reductionops.Stack.IncompatibleFold2 ->
 	error_cannot_unify (fst curenvnb) sigma (cM,cN)
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
   in
@@ -1534,9 +1534,6 @@ let indirectly_dependent sigma c d decls =
        "forall H:0=2, H=H:>(0=1+1) -> 0=2." where there is now obvious
        way to see that the second hypothesis depends indirectly over 2 *)
     List.exists (fun d' -> dependent_in_decl sigma (EConstr.mkVar (NamedDecl.get_id d')) d) decls
-
-let indirect_dependency sigma d decls =
-  decls  |>  List.filter (fun d' -> dependent_in_decl sigma (EConstr.mkVar (NamedDecl.get_id d')) d)  |>  List.hd  |>  NamedDecl.get_id
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
   let current_sigma = Sigma.to_evar_map current_sigma in

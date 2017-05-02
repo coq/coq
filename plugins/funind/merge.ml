@@ -19,7 +19,6 @@ open Pp
 open Names
 open Term
 open Vars
-open Termops
 open Declarations
 open Glob_term
 open Glob_termops

@@ -525,7 +525,7 @@ let isspace,issep,isbra,issymb,isalpha,isnum,isalnum =
   and isalnum c = Array.get ctable (charcode c) >= 16 in
   isspace,issep,isbra,issymb,isalpha,isnum,isalnum;;
 
-let (||) parser1 parser2 input =
+let parser_or parser1 parser2 input =
   try parser1 input
   with Noparse -> parser2 input;;
 
@@ -571,7 +571,7 @@ let finished input =
 
 (* ------------------------------------------------------------------------- *)
 
-let temp_path = ref Filename.temp_dir_name;;
+let temp_path = Filename.get_temp_dir_name ();;
 
 (* ------------------------------------------------------------------------- *)
 (* Convenient conversion between files and (lists of) strings.               *)

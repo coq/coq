@@ -6,10 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Vernacexpr
 open Names
-open Feedback
-open Loc
 
 (** state-transaction-machine interface *)
 

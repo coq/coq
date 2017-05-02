@@ -8,7 +8,6 @@
 
 open Libnames
 open Pp
-open Util
 
 module Dyn = Dyn.Make(struct end)
 

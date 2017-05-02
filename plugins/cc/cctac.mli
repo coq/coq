@@ -8,7 +8,6 @@
 (************************************************************************)
 
 open EConstr
-open Proof_type
 
 val proof_tac: Ccproof.proof -> unit Proofview.tactic
 

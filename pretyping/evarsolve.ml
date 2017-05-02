@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module CVars = Vars
 open Util
 open CErrors
 open Names

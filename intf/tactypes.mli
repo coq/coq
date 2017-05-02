@@ -13,7 +13,6 @@
 open Loc
 open Names
 open Constrexpr
-open Glob_term
 open Pattern
 open Misctypes
 

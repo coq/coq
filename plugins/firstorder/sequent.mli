@@ -6,10 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
 open EConstr
 open Formula
-open Tacmach
 open Globnames
 
 module OrderedConstr: Set.OrderedType with type t=Constr.t

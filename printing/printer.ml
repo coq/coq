@@ -370,11 +370,6 @@ let pr_context_limit_compact ?n env sigma =
       env ~init:(mt ()) in
   (sign_env ++ db_env)
 
-(* compact printing an env (variables and de Bruijn). Separator: three
-   spaces between simple hyps, and newline otherwise *)
-let pr_context_unlimited_compact env sigma =
-  pr_context_limit_compact env sigma
-
 (* The number of printed hypothesis in a goal *)
 (* If [None], no limit *)
 let print_hyps_limit = ref (None : int option)

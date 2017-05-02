@@ -33,7 +33,6 @@ open EConstr
 open Vars
 open Reductionops
 open Type_errors
-open Typeops
 open Typing
 open Globnames
 open Nameops
@@ -195,7 +194,7 @@ let _ =
 (** Miscellaneous interpretation functions *)
 let interp_universe_level_name evd (loc,s) =
   let names, _ = Global.global_universe_names () in
-    if CString.string_contains s "." then
+    if CString.string_contains ~where:s ~what:"." then
       match List.rev (CString.split '.' s) with
       | [] -> anomaly (str"Invalid universe name " ++ str s)
       | n :: dp -> 

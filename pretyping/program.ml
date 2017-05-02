@@ -10,7 +10,6 @@ open Pp
 open CErrors
 open Util
 open Names
-open Term
 
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 

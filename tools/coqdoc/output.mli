@@ -64,7 +64,6 @@ val keyword : string -> loc -> unit
 val ident : string -> loc option -> unit
 val sublexer : char -> loc -> unit
 val sublexer_in_doc : char -> unit
-val initialize : unit -> unit
 
 val proofbox : unit -> unit
 

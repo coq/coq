@@ -18,7 +18,6 @@ open Glob_term
 open Geninterp
 open Extraargs
 open Tacmach
-open Tacticals
 open Proofview.Notations
 open Rewrite
 open Stdarg

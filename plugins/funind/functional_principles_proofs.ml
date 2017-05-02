@@ -19,12 +19,6 @@ open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 
-let local_assum (na, t) =
-  RelDecl.LocalAssum (na, EConstr.Unsafe.to_constr t)
-
-let local_def (na, b, t) =
-  RelDecl.LocalDef (na, EConstr.Unsafe.to_constr b, EConstr.Unsafe.to_constr t)
-
 (* let msgnl = Pp.msgnl *)
 
 (*
@@ -235,12 +229,13 @@ let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta
   Reductionops.clos_norm_flags CClosure.betaiotazeta  Environ.empty_env Evd.empty
 
 
+exception NoChange
 
 let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
   let nochange ?t' msg  =
     begin
       observe (str ("Not treating ( "^msg^" )") ++ pr_leconstr t  ++ str "    " ++ match t' with None -> str "" | Some t -> Printer.pr_leconstr t );
-      failwith "NoChange";
+      raise NoChange;
     end
   in
   let eq_constr c1 c2 = Evarconv.e_conv env (ref sigma) c1 c2 in
@@ -542,7 +537,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	      tclTHEN
 		tac
 		(scan_type new_context new_t')
-	    with Failure "NoChange" ->
+	    with NoChange ->
 	      (* Last thing todo : push the rel in the context and continue *)
 	      scan_type (LocalAssum (x,t_x) :: context) t'
 	  end

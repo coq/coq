@@ -487,14 +487,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FInd (ind1,u1), FInd (ind2,u2)) ->
         if eq_ind ind1 ind2
 	then
-	  (let cuniv = convert_instances false u1 u2 cuniv in
+	  (let cuniv = convert_instances ~flex:false u1 u2 cuniv in
              convert_stacks l2r infos lft1 lft2 v1 v2 cuniv)
         else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
 	if Int.equal j1 j2 && eq_ind ind1 ind2
 	then
-	  (let cuniv = convert_instances false u1 u2 cuniv in
+	  (let cuniv = convert_instances ~flex:false u1 u2 cuniv in
            convert_stacks l2r infos lft1 lft2 v1 v2 cuniv)
         else raise NotConvertible
 	  

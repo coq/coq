@@ -85,9 +85,6 @@ let type_of_constant_knowing_parameters env cst paramtyps =
 let type_of_constant_type env t =
   type_of_constant_type_knowing_parameters env t [||]
 
-let type_of_constant env cst =
-  type_of_constant_knowing_parameters env cst [||]
-
 let judge_of_constant_knowing_parameters env (kn,u as cst) paramstyp =
   let _cb =
     try lookup_constant kn env

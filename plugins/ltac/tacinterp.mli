@@ -8,7 +8,6 @@
 
 open Names
 open Tactic_debug
-open Term
 open EConstr
 open Tacexpr
 open Genarg

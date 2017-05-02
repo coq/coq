@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-
 (** The Coq toplevel loop. *)
 
 (** A buffer for the character read from a channel. We store the command

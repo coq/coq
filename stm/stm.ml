@@ -1041,13 +1041,6 @@ end = struct (* {{{ *)
         | `Stop x -> x
         | `Cont acc -> next acc
  
-  let back_safe () =
-    let id =
-      fold_until (fun n (id,_,_,_,_) ->
-        if n >= 0 && State.is_cached_and_valid id then `Stop id else `Cont (succ n))
-        0 (VCS.get_branch_pos (VCS.current_branch ())) in
-    backto id
-
   let undo_vernac_classifier v =
     try
       match v with
@@ -1212,6 +1205,8 @@ let detect_proof_block id name =
 (****************************** THE SCHEDULER *********************************)
 (******************************************************************************)
 
+(* Unused module warning doesn't understand [module rec] *)
+[@@@ocaml.warning "-60"]
 module rec ProofTask : sig
  
   type competence = Stateid.t list
@@ -1281,7 +1276,6 @@ end = struct (* {{{ *)
     | RespBuiltProof of Proof_global.closed_proof_output * float
     | RespError of error
     | RespStates of (Stateid.t * State.partial_state) list
-    | RespDone
 
   let name = ref "proofworker"
   let extra_env () = !async_proofs_workers_extra_env
@@ -1380,7 +1374,7 @@ end = struct (* {{{ *)
       if not drop then begin
         let checked_proof = Future.chain ~pure:false future_proof (fun p ->
           let pobject, _ =
-            Proof_global.close_future_proof stop (Future.from_val ~fix_exn p) in
+            Proof_global.close_future_proof ~feedback_id:stop (Future.from_val ~fix_exn p) in
           let terminator = (* The one sent by master is an InvalidKey *)
             Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
           stm_vernac_interp stop
@@ -2326,6 +2320,7 @@ let known_state ?(redefine_qed=false) ~cache id =
   reach ~redefine_qed id
 
 end (* }}} *)
+[@@@ocaml.warning "+60"]
 
 (********************************* STM API ************************************)
 (******************************************************************************)
@@ -2432,7 +2427,7 @@ let merge_proof_branch ~valid ?id qast keep brname =
       let id = VCS.new_node ?id () in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.delete_branch brname;
-      VCS.propagate_sideff None;
+      VCS.propagate_sideff ~replay:None;
       `Ok
   | { VCS.kind = `Edit (mode, qed_id, master_id, _,_) } ->
       let ofp =

@@ -17,7 +17,6 @@ open Nametab
 open Environ
 open Libobject
 open Term
-open Termops
 open Mod_subst
 
 (* usage qque peu general: utilise aussi dans record *)

@@ -41,7 +41,6 @@ let vernac_echo loc in_chan = let open Loc in
 (* vernac parses the given stream, executes interpfun on the syntax tree it
  * parses, and is verbose on "primitives" commands if verbosely is true *)
 
-let chan_beautify = ref stdout
 let beautify_suffix = ".beautified"
 
 let set_formatter_translator ch =
@@ -125,7 +124,7 @@ let rec interp_vernac sid (loc,com) =
         let f = Loadpath.locate_file fname in
         load_vernac verbosely sid f
     | v ->
-      let nsid, ntip = Stm.add sid (not !Flags.quiet) (loc,v) in
+      let nsid, ntip = Stm.add ~ontop:sid (not !Flags.quiet) (loc,v) in
 
       (* Main STM interaction *)
       if ntip <> `NewTip then

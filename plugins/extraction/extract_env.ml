@@ -657,7 +657,7 @@ let extraction_library is_rec m =
   let l = List.rev (environment_until (Some dir_m)) in
   let select l (mp,struc) =
     if Visit.needed_mp mp
-    then (mp, extract_structure env mp no_delta true struc) :: l
+    then (mp, extract_structure env mp no_delta ~all:true struc) :: l
     else l
   in
   let struc = List.fold_left select [] l in

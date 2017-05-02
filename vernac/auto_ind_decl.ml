@@ -9,7 +9,6 @@
 (* This file is about the automatic generation of schemes about
    decidable equality, created by Vincent Siles, Oct 2007 *)
 
-open Tacmach
 open CErrors
 open Util
 open Pp
@@ -27,8 +26,6 @@ open Misctypes
 open Proofview.Notations
 
 module RelDecl = Context.Rel.Declaration
-
-let out_punivs = Univ.out_punivs
 
 (**********************************************************************)
 (* Generic synthesis of boolean equality *)
@@ -718,7 +715,6 @@ let compute_lb_goal ind lnamesparrec nparrec =
         ))), eff
 
 let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
-  let open EConstr in
   let list_id = list_id lnamesparrec in
     let avoid = ref [] in
       let first_intros =

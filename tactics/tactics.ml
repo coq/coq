@@ -5040,10 +5040,6 @@ end
 
 (** Tacticals defined directly in term of Proofview *)
 module New = struct
-  open Proofview.Notations
-
-  let exact_proof c = exact_proof c
-
   open Genredexpr
   open Locus
 

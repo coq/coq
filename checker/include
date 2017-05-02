@@ -116,7 +116,7 @@ let prsub s =
 #install_printer prsub;;*)
 
 Checker.init_with_argv [|"";"-coqlib";"."|];;
-Flags.make_silent false;;
+Flags.quiet := false;;
 Flags.debug := true;;
 Sys.catch_break true;;
 

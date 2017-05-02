@@ -66,8 +66,6 @@ let _ =
   Hook.set Typeclasses.classes_transparent_state_hook
     (fun () -> Hints.Hint_db.transparent_state (Hints.searchtable_map typeclasses_db))
 
-open Vernacexpr
-
 (** TODO: add subinstances *)
 let existing_instance glob g info =
   let c = global g in

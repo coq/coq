@@ -6,6 +6,7 @@ open Term
 (** Substitutions, code imported from kernel/mod_subst *)
 
 module Deltamap = struct
+  [@@@ocaml.warning "-32-34"]
   type t = delta_resolver
   let empty = MPmap.empty, KNmap.empty
   let is_empty (mm, km) = MPmap.is_empty mm && KNmap.is_empty km
@@ -25,6 +26,7 @@ end
 let empty_delta_resolver = Deltamap.empty
 
 module Umap = struct
+  [@@@ocaml.warning "-32-34"]
   type 'a t = 'a umap_t
   let empty = MPmap.empty, MBImap.empty
   let is_empty (m1,m2) = MPmap.is_empty m1 && MBImap.is_empty m2
@@ -461,13 +463,6 @@ let is_opaque cb = match cb.const_body with
 
 let opaque_univ_context cb = force_lazy_constr_univs cb.const_body
 
-let subst_rel_declaration sub (id,copt,t as x) =
-  let copt' = Option.smartmap (subst_mps sub) copt in
-  let t' = subst_mps sub t in
-  if copt == copt' && t == t' then x else (id,copt',t')
-
-let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
-
 let subst_recarg sub r = match r with
   | Norec  -> r
   | (Mrec(kn,i)|Imbr (kn,i)) -> let kn' = subst_ind sub kn in
@@ -514,10 +509,6 @@ let subst_decl_arity f g sub ar =
     let x' = g sub x in 
       if x' == x then ar
       else TemplateArity x'
-
-let map_decl_arity f g = function
-  | RegularArity a -> RegularArity (f a)
-  | TemplateArity a -> TemplateArity (g a)
 
 let subst_rel_declaration sub =
   Term.map_rel_decl (subst_mps sub)

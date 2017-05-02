@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Locus
-open Term
 open Evd
 open Pretype_errors
 open Environ

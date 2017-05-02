@@ -9,9 +9,7 @@
 (** This files implements typeclasses eauto *)
 
 open Names
-open Constr
 open EConstr
-open Tacmach
 
 val catchable : exn -> bool
 

@@ -8,7 +8,6 @@
 
 open Evd
 open Names
-open Term
 open Environ
 open EConstr
 open Glob_term

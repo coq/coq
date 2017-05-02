@@ -20,7 +20,6 @@ open Mod_subst
 open Misctypes
 open Decl_kinds
 open Pattern
-open Evd
 open Environ
 
 let case_info_pattern_eq i1 i2 =

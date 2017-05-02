@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Names
 open Term
-open Environ
 open EConstr
 open Vars
 open Inductiveops

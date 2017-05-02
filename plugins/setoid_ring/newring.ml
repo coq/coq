@@ -19,7 +19,6 @@ open Environ
 open Libnames
 open Globnames
 open Glob_term
-open Tacticals
 open Tacexpr
 open Coqlib
 open Mod_subst
@@ -279,8 +278,6 @@ let my_constant c =
 let my_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" plugin_modules c)
 
-let new_ring_path =
-  DirPath.make (List.map Id.of_string ["Ring_tac";plugin_dir;"Coq"])
 let znew_ring_path =
   DirPath.make (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
 let zltac s =

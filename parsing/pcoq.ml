@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open CErrors
 open Util
 open Extend
@@ -171,7 +170,6 @@ module Symbols : sig
   val sopt : G.symbol -> G.symbol
   val snterml : G.internal_entry * string -> G.symbol
   val snterm : G.internal_entry -> G.symbol
-  val snterml_level : G.symbol -> string
 end = struct
 
   let stoken tok =
@@ -199,10 +197,6 @@ end = struct
   let slist1 x = Gramext.Slist1 x
   let sopt x = Gramext.Sopt x
 
-  let snterml_level = function
-  | Gramext.Snterml (_, l) -> l
-  | _ -> failwith "snterml_level"
-
 end
 
 let camlp4_verbosity silent f x =
@@ -210,8 +204,6 @@ let camlp4_verbosity silent f x =
   warning_verbose := silent;
   f x;
   warning_verbose := a
-
-let camlp4_verbose f x = camlp4_verbosity (not !Flags.quiet) f x
 
 (** Grammar extensions *)
 

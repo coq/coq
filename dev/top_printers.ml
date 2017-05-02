@@ -7,6 +7,7 @@
 (************************************************************************)
 
 (* Printers for the ocaml toplevel. *)
+[@@@ocaml.warning "-32"]
 
 open Util
 open Pp
@@ -502,7 +503,6 @@ VERNAC COMMAND EXTEND PrintConstr
 END
 *)
 
-open Pcoq
 open Genarg
 open Stdarg
 open Egramml

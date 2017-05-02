@@ -14,11 +14,9 @@ open Declarations
 open Libobject
 open Environ
 open Pattern
-open Printer
 open Libnames
 open Globnames
 open Nametab
-open Goptions
 
 module NamedDecl = Context.Named.Declaration
 

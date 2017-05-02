@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Ltac_plugin
-open Tacexpr
 open Declarations
 open CErrors
 open Util
@@ -1026,7 +1025,7 @@ let invfun qhyp f  =
     | Not_found ->  error "No graph found"
     | Option.IsNone  -> error "Cannot use equivalence with graph!"
 
-
+exception NoFunction
 let invfun qhyp f g =
   match f with
     | Some f -> invfun qhyp f g
@@ -1041,23 +1040,23 @@ let invfun qhyp f g =
 		   begin
 		     let f1,_ = decompose_app sigma args.(1) in
 		     try
-		       if not (isConst sigma f1) then failwith "";
+		       if not (isConst sigma f1) then raise NoFunction;
 		       let finfos = find_Function_infos (fst (destConst sigma f1)) in
 		       let f_correct = mkConst(Option.get finfos.correctness_lemma)
 		       and kn = fst finfos.graph_ind
 		       in
 		       functional_inversion kn hid f1 f_correct g
-		     with | Failure "" | Option.IsNone | Not_found ->
+		     with | NoFunction | Option.IsNone | Not_found ->
 		       try
 			 let f2,_ = decompose_app sigma args.(2) in
-			 if not (isConst sigma f2) then failwith "";
+			 if not (isConst sigma f2) then raise NoFunction;
 			 let finfos = find_Function_infos (fst (destConst sigma f2)) in
 			 let f_correct = mkConst(Option.get finfos.correctness_lemma)
 			 and kn = fst finfos.graph_ind
 			 in
 			 functional_inversion kn hid  f2 f_correct g
 		       with
-			 | Failure "" ->
+			 | NoFunction ->
 			     user_err  (str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
 			 | Option.IsNone  ->
 			     if do_observe ()

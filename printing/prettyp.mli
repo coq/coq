@@ -8,7 +8,6 @@
 
 open Pp
 open Names
-open Term
 open Environ
 open Reductionops
 open Libnames

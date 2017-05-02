@@ -394,10 +394,6 @@ open Decl_kinds
          (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
          str":" ++ pr_spc_lconstr c)
 
-  let pr_priority = function
-    | None -> mt ()
-    | Some i -> spc () ++ str "|" ++ spc () ++ int i
-
 (**************************************)
 (* Pretty printer for vernac commands *)
 (**************************************)

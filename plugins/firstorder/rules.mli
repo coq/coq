@@ -8,7 +8,6 @@
 
 open Term
 open EConstr
-open Tacmach
 open Names
 open Globnames
 

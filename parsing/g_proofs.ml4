@@ -9,7 +9,6 @@
 open Constrexpr
 open Vernacexpr
 open Misctypes
-open Tok
 
 open Pcoq
 open Pcoq.Prim

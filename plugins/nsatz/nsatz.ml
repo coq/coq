@@ -22,7 +22,6 @@ open Utile
 let num_0 = Int 0
 and num_1 = Int 1
 and num_2 = Int 2
-and num_10 = Int 10
 
 let numdom r =
   let r' = Ratio.normalize_ratio (ratio_of_num r) in
@@ -35,7 +34,6 @@ module BigInt = struct
   type t = big_int
   let of_int = big_int_of_int
   let coef0 = of_int 0
-  let coef1 = of_int 1
   let of_num = Num.big_int_of_num
   let to_num = Num.num_of_big_int
   let equal = eq_big_int
@@ -49,7 +47,6 @@ module BigInt = struct
   let div = div_big_int
   let modulo = mod_big_int
   let to_string = string_of_big_int
-  let to_int x = int_of_big_int x
   let hash x =
     try (int_of_big_int x)
     with Failure _ -> 1
@@ -61,15 +58,6 @@ module BigInt = struct
     then a
     else if lt a b then pgcd b a else pgcd b (modulo a b)
 
-
-  (* signe du pgcd = signe(a)*signe(b) si non nuls. *)
-  let pgcd2 a b =
-    if equal a coef0 then b
-    else if equal b coef0 then a
-    else let c = pgcd (abs a) (abs b) in
-    if ((lt coef0 a)&&(lt b coef0))
-      ||((lt coef0 b)&&(lt a coef0))
-    then opp c else c
 end
 
 (*
@@ -145,8 +133,6 @@ let mul = function
   | (p,Const n) when eq_num n num_1 -> p
   | (Const n,q) when eq_num n num_1 -> q
   | (p,q) -> Mul(p,q)
-
-let unconstr = mkRel 1
 
 let tpexpr =
   lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PExpr")
@@ -270,20 +256,6 @@ let set_nvars_term nvars t =
     | Mul (t1,t2) -> aux t2 (aux t1 nvars)
     | Pow (t1,n) ->  aux t1 nvars
   in aux t nvars
-
-let string_of_term p =
-  let rec aux p =
-    match p with
-    | Zero -> "0"
-    | Const r -> string_of_num r
-    | Var v -> "x"^v
-    | Opp t1 -> "(-"^(aux t1)^")"
-    | Add (t1,t2) -> "("^(aux t1)^"+"^(aux t2)^")"
-    | Sub (t1,t2) ->  "("^(aux t1)^"-"^(aux t2)^")"
-    | Mul (t1,t2) ->  "("^(aux t1)^"*"^(aux t2)^")"
-    | Pow (t1,n) ->  (aux t1)^"^"^(string_of_int n)
-  in aux p
-
 
 (***********************************************************************
    Coefficients: recursive polynomials
@@ -437,7 +409,7 @@ open Ideal
    that has the same size than lp and where true indicates an
    element that has been removed
  *)
-let rec clean_pol lp =
+let clean_pol lp =
   let t = Hashpol.create 12 in
   let find p = try Hashpol.find t p 
                with 

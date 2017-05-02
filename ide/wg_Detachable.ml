@@ -26,8 +26,8 @@ class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
     val mutable attached_cb = (fun _ -> ())
 
     method child = frame#child
-    method add = frame#add
-    method pack ?from ?expand ?fill ?padding w =
+    method! add = frame#add
+    method! pack ?from ?expand ?fill ?padding w =
       if frame#all_children = [] then self#add w
       else raise (Invalid_argument "detachable#pack")
 

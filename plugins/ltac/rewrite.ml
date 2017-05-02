@@ -17,7 +17,6 @@ open EConstr
 open Vars
 open Reduction
 open Tacticals.New
-open Tacmach
 open Tactics
 open Pretype_errors
 open Typeclasses
@@ -39,7 +38,7 @@ open Proofview.Notations
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
-module RelDecl = Context.Rel.Declaration
+(* module RelDecl = Context.Rel.Declaration *)
 
 (** Typeclass-based generalized rewriting. *)
 

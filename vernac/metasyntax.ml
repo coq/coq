@@ -527,7 +527,7 @@ let warn_skip_spaces_curly =
       (fun () ->strbrk "Skipping spaces inside curly brackets")
 
 let rec drop_spacing = function
-  | UnpCut _ as u :: fmt -> warn_skip_spaces_curly (); drop_spacing fmt
+  | UnpCut _ :: fmt -> warn_skip_spaces_curly (); drop_spacing fmt
   | UnpTerminal s' :: fmt when String.equal s' (String.make (String.length s') ' ') -> warn_skip_spaces_curly (); drop_spacing fmt
   | fmt -> fmt
 
@@ -1196,7 +1196,7 @@ let inNotation : notation_obj -> obj =
 (**********************************************************************)
 
 let with_lib_stk_protection f x =
-  let fs = Lib.freeze `No in
+  let fs = Lib.freeze ~marshallable:`No in
   try let a = f x in Lib.unfreeze fs; a
   with reraise ->
     let reraise = CErrors.push reraise in

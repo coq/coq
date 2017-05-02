@@ -311,7 +311,7 @@ let add_coercion_hook poly local ref =
   | Global -> false
   | Discharge -> assert false
   in
-  let () = try_add_new_coercion ref stre poly in
+  let () = try_add_new_coercion ref ~local:stre poly in
   let msg = pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
   Flags.if_verbose Feedback.msg_info msg
 
@@ -324,6 +324,6 @@ let add_subclass_hook poly local ref =
   | Discharge -> assert false
   in
   let cl = class_of_global ref in
-  try_add_new_coercion_subclass cl stre poly
+  try_add_new_coercion_subclass cl ~local:stre poly
 
 let add_subclass_hook poly = Lemmas.mk_hook (add_subclass_hook poly)

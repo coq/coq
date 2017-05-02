@@ -250,7 +250,7 @@ type 'a extra_genarg_printer =
   let pr_alias_key key =
     try
       let prods = (KNmap.find key !prnotation_tab).pptac_prods in
-      let rec pr = function
+      let pr = function
       | TacTerm s -> primitive s
       | TacNonTerm (_, symb, _) -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
       in
@@ -314,7 +314,7 @@ type 'a extra_genarg_printer =
   | Extend.Uentry _ | Extend.Uentryl _ ->
     str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
 
-  let rec pr_targ prtac symb arg = match symb with
+  let pr_targ prtac symb arg = match symb with
   | Extend.Uentry tag when is_genarg tag (ArgumentType wit_tactic) ->
     prtac (1, Any) arg
   | Extend.Uentryl (_, l) -> prtac (l, Any) arg

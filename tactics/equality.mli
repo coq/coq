@@ -8,7 +8,6 @@
 
 (*i*)
 open Names
-open Term
 open Evd
 open EConstr
 open Environ

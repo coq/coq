@@ -61,3 +61,6 @@ val pr_universes : (Level.t -> Pp.std_ppcmds) -> universes -> Pp.std_ppcmds
 val dump_universes :
   (constraint_type -> string -> string -> unit) ->
   universes -> unit
+
+(** {6 Debugging} *)
+val check_universes_invariants : universes -> unit

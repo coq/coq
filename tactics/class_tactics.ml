@@ -18,9 +18,7 @@ open Names
 open Term
 open Termops
 open EConstr
-open Reduction
 open Proof_type
-open Tacticals
 open Tacmach
 open Tactics
 open Clenv
@@ -357,12 +355,12 @@ let shelve_dependencies gls =
 
 let hintmap_of sigma hdc secvars concl =
   match hdc with
-  | None -> fun db -> Hint_db.map_none secvars db
+  | None -> fun db -> Hint_db.map_none ~secvars db
   | Some hdc ->
      fun db ->
      if Hint_db.use_dn db then (* Using dnet *)
-       Hint_db.map_eauto sigma secvars hdc concl db
-     else Hint_db.map_existential sigma secvars hdc concl db
+       Hint_db.map_eauto sigma ~secvars hdc concl db
+     else Hint_db.map_existential sigma ~secvars hdc concl db
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 let rec e_trivial_fail_db only_classes db_list local_db secvars =
@@ -1219,7 +1217,6 @@ module Search = struct
 
   let intro_tac info kont gl =
     let open Proofview in
-    let open Proofview.Notations in
     let env = Goal.env gl in
     let sigma = Goal.sigma gl in
     let s = Sigma.to_evar_map sigma in
@@ -1257,7 +1254,6 @@ module Search = struct
   let search_tac_gl ?st only_classes dep hints depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
-    let open Proofview.Notations in
     if false (* In 8.6, still allow non-class goals only_classes && not (is_class_type sigma (Goal.concl gl)) *) then
       Tacticals.New.tclZEROMSG (str"Not a subgoal for a class")
     else

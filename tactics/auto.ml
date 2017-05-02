@@ -10,16 +10,12 @@ module CVars = Vars
 
 open Pp
 open Util
-open CErrors
 open Names
-open Vars
 open Termops
 open EConstr
 open Environ
-open Tacmach
 open Genredexpr
 open Tactics
-open Tacticals
 open Clenv
 open Locus
 open Proofview.Notations

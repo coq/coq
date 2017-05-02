@@ -542,7 +542,6 @@ module KerPair = struct
   end
 
   module SyntacticOrd = struct
-    type t = kernel_pair
     let compare x y = match x, y with
       | Same knx, Same kny -> KerName.compare knx kny
       | Dual (knux,kncx), Dual (knuy,kncy) ->
@@ -865,7 +864,6 @@ struct
   let hash (c, b) = (if b then 0 else 1) + Constant.hash c
 
   module SyntacticOrd = struct
-    type t = constant * bool
     let compare (c, b) (c', b') =
       if b = b' then Constant.SyntacticOrd.compare c c' else -1
     let equal (c, b as x) (c', b' as x') =

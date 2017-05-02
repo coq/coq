@@ -40,7 +40,6 @@ let mkmeta n = Nameops.make_ident "X" (Some n)
 let meta1 = mkmeta 1
 let meta2 = mkmeta 2
 let meta3 = mkmeta 3
-let meta4 = mkmeta 4
 
 let op2bool = function Some _ -> true | None -> false
 

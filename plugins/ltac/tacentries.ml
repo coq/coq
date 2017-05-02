@@ -15,7 +15,6 @@ open Genarg
 open Extend
 open Pcoq
 open Egramml
-open Egramcoq
 open Vernacexpr
 open Libnames
 open Nameops
@@ -87,9 +86,6 @@ let rec parse_user_entry s sep =
     Uentryl ("tactic", n)
   else
     Uentry s
-
-let arg_list = function Rawwit t -> Rawwit (ListArg t)
-let arg_opt = function Rawwit t -> Rawwit (OptArg t)
 
 let interp_entry_name interp symb =
   let rec eval = function
@@ -320,7 +316,7 @@ let add_tactic_notation local n prods e =
   let ids = List.map_filter cons_production_parameter prods in
   let prods = List.map interp_prod_item prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
-  add_glob_tactic_notation local n prods false ids tac
+  add_glob_tactic_notation local ~level:n prods false ids tac
 
 (**********************************************************************)
 (* ML Tactic entries                                                  *)

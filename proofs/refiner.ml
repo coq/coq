@@ -10,7 +10,6 @@ open Pp
 open CErrors
 open Util
 open Evd
-open Environ
 open Proof_type
 open Logic
 

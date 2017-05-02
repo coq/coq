@@ -13,7 +13,6 @@ open Term
 open Environ
 open Univ
 open Globnames
-open Decl_kinds
 
 let pr_with_global_universes l = 
   try Nameops.pr_id (LMap.find l (snd (Global.global_universe_names ())))
@@ -732,7 +731,7 @@ let instantiate_with_lbound u lbound lower alg enforce (ctx, us, algs, insts, cs
 
 type constraints_map = (Univ.constraint_type * Univ.LMap.key) list Univ.LMap.t
 
-let pr_constraints_map cmap =
+let _pr_constraints_map (cmap:constraints_map) =
   LMap.fold (fun l cstrs acc -> 
     Level.pr l ++ str " => " ++ 
       prlist_with_sep spc (fun (d,r) -> pr_constraint_type d ++ Level.pr r) cstrs ++

@@ -15,13 +15,11 @@ open Declarations
 open Term
 open EConstr
 open Vars
-open Tacmach
 open Tactics
 open Typing
 open Ccalgo
 open Ccproof
 open Pp
-open CErrors
 open Util
 open Proofview.Notations
 

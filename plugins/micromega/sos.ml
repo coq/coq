@@ -21,8 +21,6 @@ let debugging = ref false;;
 
 exception Sanity;;
 
-exception Unsolvable;;
-
 (* ------------------------------------------------------------------------- *)
 (* Turn a rational into a decimal string with d sig digits.                  *)
 (* ------------------------------------------------------------------------- *)
@@ -99,27 +97,10 @@ let vector_const c n =
   if c =/ Int 0 then vector_0 n
   else (n,itlist (fun k -> k |-> c) (1--n) undefined :vector);;
 
-let vector_1 = vector_const (Int 1);;
-
 let vector_cmul c (v:vector) =
   let n = dim v in
   if c =/ Int 0 then vector_0 n
   else n,mapf (fun x -> c */ x) (snd v)
-
-let vector_neg (v:vector) = (fst v,mapf minus_num (snd v) :vector);;
-
-let vector_add (v1:vector) (v2:vector) =
-  let m = dim v1 and n = dim v2 in
-  if m <> n then failwith "vector_add: incompatible dimensions" else
-  (n,combine (+/) (fun x -> x =/ Int 0) (snd v1) (snd v2) :vector);;
-
-let vector_sub v1 v2 = vector_add v1 (vector_neg v2);;
-
-let vector_dot (v1:vector) (v2:vector) =
-  let m = dim v1 and n = dim v2 in
-  if m <> n then failwith "vector_add: incompatible dimensions" else
-  foldl (fun a i x -> x +/ a) (Int 0)
-        (combine ( */ ) (fun x -> x =/ Int 0) (snd v1) (snd v2));;
 
 let vector_of_list l =
   let n = List.length l in
@@ -133,13 +114,6 @@ let matrix_0 (m,n) = ((m,n),undefined:matrix);;
 
 let dimensions (m:matrix) = fst m;;
 
-let matrix_const c (m,n as mn) =
-  if m <> n then failwith "matrix_const: needs to be square"
-  else if c =/ Int 0 then matrix_0 mn
-  else (mn,itlist (fun k -> (k,k) |-> c) (1--n) undefined :matrix);;
-
-let matrix_1 = matrix_const (Int 1);;
-
 let matrix_cmul c (m:matrix) =
   let (i,j) = dimensions m in
   if c =/ Int 0 then matrix_0 (i,j)
@@ -151,8 +125,6 @@ let matrix_add (m1:matrix) (m2:matrix) =
   let d1 = dimensions m1 and d2 = dimensions m2 in
   if d1 <> d2 then failwith "matrix_add: incompatible dimensions"
   else (d1,combine (+/) (fun x -> x =/ Int 0) (snd m1) (snd m2) :matrix);;
-
-let matrix_sub m1 m2 = matrix_add m1 (matrix_neg m2);;
 
 let row k (m:matrix) =
   let i,j = dimensions m in
@@ -166,19 +138,9 @@ let column k (m:matrix) =
    foldl (fun a (i,j) c -> if j = k then (i |-> c) a else a) undefined (snd m)
    : vector);;
 
-let transp (m:matrix) =
-  let i,j = dimensions m in
-  ((j,i),foldl (fun a (i,j) c -> ((j,i) |-> c) a) undefined (snd m) :matrix);;
-
 let diagonal (v:vector) =
   let n = dim v in
   ((n,n),foldl (fun a i c -> ((i,i) |-> c) a) undefined (snd v) : matrix);;
-
-let matrix_of_list l =
-  let m = List.length l in
-  if m = 0 then matrix_0 (0,0) else
-  let n = List.length (List.hd l) in
-  (m,n),itern 1 l (fun v i -> itern 1 v (fun c j -> (i,j) |-> c)) undefined;;
 
 (* ------------------------------------------------------------------------- *)
 (* Monomials.                                                                *)
@@ -195,23 +157,7 @@ let monomial_var x = (x |=> 1 :monomial);;
 let (monomial_mul:monomial->monomial->monomial) =
   combine (+) (fun x -> false);;
 
-let monomial_pow (m:monomial) k =
-  if k = 0 then monomial_1
-  else mapf (fun x -> k * x) m;;
-
-let monomial_divides (m1:monomial) (m2:monomial) =
-  foldl (fun a x k -> tryapplyd m2 x 0 >= k && a) true m1;;
-
-let monomial_div (m1:monomial) (m2:monomial) =
-  let m = combine (+) (fun x -> x = 0) m1 (mapf (fun x -> -x) m2) in
-  if foldl (fun a x k -> k >= 0 && a) true m then m
-  else failwith "monomial_div: non-divisible";;
-
 let monomial_degree x (m:monomial) = tryapplyd m x 0;;
-
-let monomial_lcm (m1:monomial) (m2:monomial) =
-  (itlist (fun x -> x |-> max (monomial_degree x m1) (monomial_degree x m2))
-          (union (dom m1) (dom m2)) undefined :monomial);;
 
 let monomial_multidegree (m:monomial) = foldl (fun a x k -> k + a) 0 m;;
 
@@ -252,12 +198,6 @@ let poly_cmmul (c,m) (p:poly) =
 let poly_mul (p1:poly) (p2:poly) =
   foldl (fun a m c -> poly_add (poly_cmmul (c,m) p2) a) poly_0 p1;;
 
-let poly_div (p1:poly) (p2:poly) =
-  if not(poly_isconst p2) then failwith "poly_div: non-constant" else
-  let c = eval undefined p2 in
-  if c =/ Int 0 then failwith "poly_div: division by zero"
-  else poly_cmul (Int 1 // c) p1;;
-
 let poly_square p = poly_mul p p;;
 
 let rec poly_pow p k =
@@ -265,10 +205,6 @@ let rec poly_pow p k =
   else if k = 1 then p
   else let q = poly_square(poly_pow p (k / 2)) in
        if k mod 2 = 1 then poly_mul p q else q;;
-
-let poly_exp p1 p2 =
-  if not(poly_isconst p2) then failwith "poly_exp: not a constant" else
-  poly_pow p1 (Num.int_of_num (eval undefined p2));;
 
 let degree x (p:poly) = foldl (fun a m c -> max (monomial_degree x m) a) 0 p;;
 
@@ -282,14 +218,14 @@ let poly_variables (p:poly) =
 (* Order monomials for human presentation.                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let humanorder_varpow (x1,k1) (x2,k2) = x1 < x2 or x1 = x2 && k1 > k2;;
+let humanorder_varpow (x1,k1) (x2,k2) = x1 < x2 || x1 = x2 && k1 > k2;;
 
 let humanorder_monomial =
   let rec ord l1 l2 = match (l1,l2) with
     _,[] -> true
   | [],_ -> false
-  | h1::t1,h2::t2 -> humanorder_varpow h1 h2 or h1 = h2 && ord t1 t2 in
-  fun m1 m2 -> m1 = m2 or
+  | h1::t1,h2::t2 -> humanorder_varpow h1 h2 || h1 = h2 && ord t1 t2 in
+  fun m1 m2 -> m1 = m2 ||
                ord (sort humanorder_varpow (graph m1))
                    (sort humanorder_varpow (graph m2));;
 
@@ -297,41 +233,7 @@ let humanorder_monomial =
 (* Conversions to strings.                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let string_of_vector min_size max_size (v:vector) =
-  let n_raw = dim v in
-  if n_raw = 0 then "[]" else
-  let n = max min_size (min n_raw max_size) in
-  let xs = List.map ((o) string_of_num (element v)) (1--n) in
-  "[" ^ end_itlist (fun s t -> s ^ ", " ^ t) xs ^
-  (if n_raw > max_size then ", ...]" else "]");;
-
-let string_of_matrix max_size (m:matrix) =
-  let i_raw,j_raw = dimensions m in
-  let i = min max_size i_raw and j = min max_size j_raw in
-  let rstr = List.map (fun k -> string_of_vector j j (row k m)) (1--i) in
-  "["^end_itlist(fun s t -> s^";\n "^t) rstr ^
-  (if j > max_size then "\n ...]" else "]");;
-
 let string_of_vname (v:vname): string = (v: string);;
-
-let rec string_of_term t =
-  match t with
-  Opp t1 -> "(- " ^ string_of_term t1 ^ ")"
-| Add (t1, t2) ->
-   "(" ^ (string_of_term t1) ^ " + " ^ (string_of_term t2) ^ ")"
-| Sub (t1, t2) ->
-   "(" ^ (string_of_term t1) ^ " - " ^ (string_of_term t2) ^ ")"
-| Mul (t1, t2) ->
-   "(" ^ (string_of_term t1) ^ " * " ^ (string_of_term t2) ^ ")"
-| Inv t1 -> "(/ " ^ string_of_term t1 ^ ")"
-| Div (t1, t2) ->
-   "(" ^ (string_of_term t1) ^ " / " ^ (string_of_term t2) ^ ")"
-| Pow (t1, n1) ->
-   "(" ^ (string_of_term t1) ^ " ^ " ^ (string_of_int n1) ^ ")"
-| Zero -> "0"
-| Var v -> "x" ^ (string_of_vname v)
-| Const x -> string_of_num x;;
-
 
 let string_of_varpow x k =
   if k = 1 then string_of_vname x else string_of_vname x^"^"^string_of_int k;;
@@ -363,6 +265,7 @@ let string_of_poly (p:poly) =
 (* Printers.                                                                 *)
 (* ------------------------------------------------------------------------- *)
 
+(*
 let print_vector v = Format.print_string(string_of_vector 0 20 v);;
 
 let print_matrix m = Format.print_string(string_of_matrix 20 m);;
@@ -371,7 +274,6 @@ let print_monomial m = Format.print_string(string_of_monomial m);;
 
 let print_poly m = Format.print_string(string_of_poly m);;
 
-(*
 #install_printer print_vector;;
 #install_printer print_matrix;;
 #install_printer print_monomial;;
@@ -409,19 +311,6 @@ let sdpa_of_vector (v:vector) =
   let n = dim v in
   let strs = List.map (o (decimalize 20)  (element v)) (1--n) in
   end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
-
-(* ------------------------------------------------------------------------- *)
-(* String for block diagonal matrix numbered k.                              *)
-(* ------------------------------------------------------------------------- *)
-
-let sdpa_of_blockdiagonal k m =
-  let pfx = string_of_int k ^" " in
-  let ents =
-    foldl (fun a (b,i,j) c -> if i > j then a else ((b,i,j),c)::a) [] m in
-  let entss = sort (increasing fst) ents in
-  itlist (fun ((b,i,j),c) a ->
-     pfx ^ string_of_int b ^ " " ^ string_of_int i ^ " " ^ string_of_int j ^
-     " " ^ decimalize 20 c ^ "\n" ^ a) entss "";;
 
 (* ------------------------------------------------------------------------- *)
 (* String for a matrix numbered k, in SDPA sparse format.                    *)
@@ -466,6 +355,7 @@ let token s =
   >> (fun ((_,t),_) -> t);;
 
 let decimal =
+  let (||) = parser_or in
   let numeral = some isnum in
   let decimalint = atleast 1 numeral >> ((o) Num.num_of_string  implode) in
   let decimalfrac = atleast 1 numeral
@@ -485,13 +375,12 @@ let mkparser p s =
   let x,rst = p(explode s) in
   if rst = [] then x else failwith "mkparser: unparsed input";;
 
-let parse_decimal = mkparser decimal;;
-
 (* ------------------------------------------------------------------------- *)
 (* Parse back a vector.                                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let parse_sdpaoutput,parse_csdpoutput =
+let _parse_sdpaoutput, parse_csdpoutput =
+  let (||) = parser_or in
   let vector =
     token "{" ++ listof decimal (token ",") "decimal" ++ token "}"
                >> (fun ((_,v),_) -> vector_of_list v) in
@@ -508,23 +397,10 @@ let parse_sdpaoutput,parse_csdpoutput =
   mkparser sdpaoutput,mkparser csdpoutput;;
 
 (* ------------------------------------------------------------------------- *)
-(* Also parse the SDPA output to test success (CSDP yields a return code).   *)
-(* ------------------------------------------------------------------------- *)
-
-let sdpa_run_succeeded =
-   let rec skipupto dscr prs inp =
-      (dscr ++ prs >> snd
-    || some (fun c -> true) ++ skipupto dscr prs >> snd) inp in
-  let prs = skipupto (word "phase.value" ++ token "=")
-                     (possibly (a "p") ++ possibly (a "d") ++
-                      (word "OPT" || word "FEAS")) in
-  fun s -> try ignore (prs (explode s)); true with Noparse -> false;;
-
-(* ------------------------------------------------------------------------- *)
 (* The default parameters. Unfortunately this goes to a fixed file.          *)
 (* ------------------------------------------------------------------------- *)
 
-let sdpa_default_parameters =
+let _sdpa_default_parameters =
 "100     unsigned int maxIteration;\
 \n1.0E-7  double 0.0 < epsilonStar;\
 \n1.0E2   double 0.0 < lambdaStar;\
@@ -555,7 +431,7 @@ let sdpa_alt_parameters =
 \n1.0E-7  double 0.0 < epsilonDash;\
 \n";;
 
-let sdpa_params = sdpa_alt_parameters;;
+let _sdpa_params = sdpa_alt_parameters;;
 
 (* ------------------------------------------------------------------------- *)
 (* CSDP parameters; so far I'm sticking with the defaults.                   *)
@@ -588,10 +464,10 @@ let run_csdp dbg obj mats =
   let input_file = Filename.temp_file "sos" ".dat-s" in
   let output_file =
     String.sub input_file 0 (String.length input_file - 6) ^ ".out"
-  and params_file = Filename.concat (!temp_path) "param.csdp" in
+  and params_file = Filename.concat temp_path "param.csdp" in
   file_of_string input_file (sdpa_of_problem "" obj mats);
   file_of_string params_file csdp_params;
-  let rv = Sys.command("cd "^(!temp_path)^"; csdp "^input_file ^
+  let rv = Sys.command("cd "^temp_path^"; csdp "^input_file ^
                         " " ^ output_file ^
                        (if dbg then "" else "> /dev/null")) in
   let op = string_of_file output_file in
@@ -599,16 +475,6 @@ let run_csdp dbg obj mats =
   ((if dbg then ()
     else (Sys.remove input_file; Sys.remove output_file));
     rv,res);;
-
-let csdp obj mats =
-  let rv,res = run_csdp (!debugging) obj mats in
-  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
-   else if rv = 3 then ()
-    (* Format.print_string "csdp warning: Reduced accuracy";
-     Format.print_newline() *)
-   else if rv <> 0 then failwith("csdp: error "^string_of_int rv)
-   else ());
-  res;;
 
 (* ------------------------------------------------------------------------- *)
 (* Try some apparently sensible scaling first. Note that this is purely to   *)
@@ -653,21 +519,7 @@ let linear_program_basic a =
   let mats =  List.map (fun j -> diagonal (column j a)) (1--n)
   and obj = vector_const (Int 1) m in
   let rv,res = run_csdp false obj mats in
-  if rv = 1 or rv = 2 then false
-  else if rv = 0 then true
-  else failwith "linear_program: An error occurred in the SDP solver";;
-
-(* ------------------------------------------------------------------------- *)
-(* Alternative interface testing A x >= b for matrix A, vector b.            *)
-(* ------------------------------------------------------------------------- *)
-
-let linear_program a b =
-  let m,n = dimensions a in
-  if dim b <> m then failwith "linear_program: incompatible dimensions" else
-  let mats = diagonal b :: List.map (fun j -> diagonal (column j a)) (1--n)
-  and obj = vector_const (Int 1) m in
-  let rv,res = run_csdp false obj mats in
-  if rv = 1 or rv = 2 then false
+  if rv = 1 || rv = 2 then false
   else if rv = 0 then true
   else failwith "linear_program: An error occurred in the SDP solver";;
 
@@ -716,40 +568,6 @@ let equation_eval assig eq =
   foldl (fun a v c -> a +/ value(v) */ c) (Int 0) eq;;
 
 (* ------------------------------------------------------------------------- *)
-(* Eliminate among linear equations: return unconstrained variables and      *)
-(* assignments for the others in terms of them. We give one pseudo-variable  *)
-(* "one" that's used for a constant term.                                    *)
-(* ------------------------------------------------------------------------- *)
-
-let failstore = ref [];;
-
-let eliminate_equations =
-  let rec extract_first p l =
-    match l with
-      [] -> failwith "extract_first"
-    | h::t -> if p(h) then h,t else
-              let k,s = extract_first p t in
-              k,h::s in
-  let rec eliminate vars dun eqs =
-    match vars with
-      [] -> if forall is_undefined eqs then dun
-            else (failstore := [vars,dun,eqs]; raise Unsolvable)
-    | v::vs ->
-            try let eq,oeqs = extract_first (fun e -> defined e v) eqs in
-                let a = apply eq v in
-                let eq' = equation_cmul (Int(-1) // a) (undefine v eq) in
-                let elim e =
-                  let b = tryapplyd e v (Int 0) in
-                  if b =/ Int 0 then e else
-                  equation_add e (equation_cmul (minus_num b // a) eq) in
-                eliminate vs ((v |-> eq') (mapf elim dun)) (List.map elim oeqs)
-            with Failure _ -> eliminate vs dun eqs in
-  fun one vars eqs ->
-    let assig = eliminate vars undefined eqs in
-    let vs = foldl (fun a x f -> subtract (dom f) [one] @ a) [] assig in
-    setify vs,assig;;
-
-(* ------------------------------------------------------------------------- *)
 (* Eliminate all variables, in an essentially arbitrary order.               *)
 (* ------------------------------------------------------------------------- *)
 
@@ -778,18 +596,6 @@ let eliminate_all_equations one =
     let assig = eliminate undefined eqs in
     let vs = foldl (fun a x f -> subtract (dom f) [one] @ a) [] assig in
     setify vs,assig;;
-
-(* ------------------------------------------------------------------------- *)
-(* Solve equations by assigning arbitrary numbers.                           *)
-(* ------------------------------------------------------------------------- *)
-
-let solve_equations one eqs =
-  let vars,assigs = eliminate_all_equations one eqs in
-  let vfn = itlist (fun v -> (v |-> Int 0)) vars (one |=> Int(-1)) in
-  let ass =
-    combine (+/) (fun c -> false) (mapf (equation_eval vfn) assigs) vfn in
-  if forall (fun e -> equation_eval ass e =/ Int 0) eqs
-  then undefine one ass else raise Sanity;;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence produce the "relevant" monomials: those whose squares lie in the    *)
@@ -898,19 +704,6 @@ let epoly_pmul p q acc =
                  a q) acc p;;
 
 (* ------------------------------------------------------------------------- *)
-(* Usual operations on equation-parametrized poly.                           *)
-(* ------------------------------------------------------------------------- *)
-
-let epoly_cmul c l =
-  if c =/ Int 0 then undefined else mapf (equation_cmul c) l;;
-
-let epoly_neg = epoly_cmul (Int(-1));;
-
-let epoly_add = combine equation_add is_undefined;;
-
-let epoly_sub p q = epoly_add p (epoly_neg q);;
-
-(* ------------------------------------------------------------------------- *)
 (* Convert regular polynomial. Note that we treat (0,0,0) as -1.             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -953,11 +746,11 @@ let run_csdp dbg nblocks blocksizes obj mats =
   let input_file = Filename.temp_file "sos" ".dat-s" in
   let output_file =
     String.sub input_file 0 (String.length input_file - 6) ^ ".out"
-  and params_file = Filename.concat (!temp_path) "param.csdp" in
+  and params_file = Filename.concat temp_path "param.csdp" in
   file_of_string input_file
    (sdpa_of_blockproblem "" nblocks blocksizes obj mats);
   file_of_string params_file csdp_params;
-  let rv = Sys.command("cd "^(!temp_path)^"; csdp "^input_file ^
+  let rv = Sys.command("cd "^temp_path^"; csdp "^input_file ^
                         " " ^ output_file ^
                        (if dbg then "" else "> /dev/null")) in
   let op = string_of_file output_file in
@@ -968,7 +761,7 @@ let run_csdp dbg nblocks blocksizes obj mats =
 
 let csdp nblocks blocksizes obj mats =
   let rv,res = run_csdp (!debugging) nblocks blocksizes obj mats in
-  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+  (if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
    else if rv = 3 then ()
     (*Format.print_string "csdp warning: Reduced accuracy";
      Format.print_newline() *)
@@ -987,8 +780,6 @@ let bmatrix_cmul c bm =
   else mapf (fun x -> c */ x) bm;;
 
 let bmatrix_neg = bmatrix_cmul (Int(-1));;
-
-let bmatrix_sub m1 m2 = bmatrix_add m1 (bmatrix_neg m2);;
 
 (* ------------------------------------------------------------------------- *)
 (* Smash a block matrix into components.                                     *)
@@ -1102,15 +893,6 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   cfs,List.map (fun (a,b) -> snd a,b) msq;;
 
 (* ------------------------------------------------------------------------- *)
-(* Iterative deepening.                                                      *)
-(* ------------------------------------------------------------------------- *)
-
-let rec deepen f n =
-  try print_string "Searching with depth limit ";
-      print_int n; print_newline(); f n
-  with Failure _ -> deepen f (n + 1);;
-
-(* ------------------------------------------------------------------------- *)
 (* The ordering so we can create canonical HOL polynomials.                  *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1135,10 +917,6 @@ let monomial_order =
     and deg2 = itlist ((o) (+) snd) mon2 0 in
     if deg1 < deg2 then false else if deg1 > deg2 then true
     else lexorder mon1 mon2;;
-
-let dest_poly p =
-  List.map (fun (m,c) -> c,dest_monomial m)
-      (sort (fun (m1,_) (m2,_) -> monomial_order m1 m2) (graph p));;
 
 (* ------------------------------------------------------------------------- *)
 (* Map back polynomials and their composites to HOL.                         *)
@@ -1373,9 +1151,6 @@ let rec allpermutations l =
   itlist (fun h acc -> List.map (fun t -> h::t)
                 (allpermutations (subtract l [h])) @ acc) l [];;
 
-let allvarorders l =
-  List.map (fun vlis x -> index x vlis) (allpermutations l);;
-
 let changevariables_monomial zoln (m:monomial) =
   foldl (fun a x k -> (List.assoc x zoln |-> k) a) monomial_1 m;;
 
@@ -1391,15 +1166,6 @@ let sdpa_of_vector (v:vector) =
   let n = dim v in
   let strs = List.map (o (decimalize 20) (element v)) (1--n) in
   end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
-
-let sdpa_of_blockdiagonal k m =
-  let pfx = string_of_int k ^" " in
-  let ents =
-    foldl (fun a (b,i,j) c -> if i > j then a else ((b,i,j),c)::a) [] m in
-  let entss = sort (increasing fst) ents in
-  itlist (fun ((b,i,j),c) a ->
-     pfx ^ string_of_int b ^ " " ^ string_of_int i ^ " " ^ string_of_int j ^
-     " " ^ decimalize 20 c ^ "\n" ^ a) entss "";;
 
 let sdpa_of_matrix k (m:matrix) =
   let pfx = string_of_int k ^ " 1 " in
@@ -1425,10 +1191,10 @@ let run_csdp dbg obj mats =
   let input_file = Filename.temp_file "sos" ".dat-s" in
   let output_file =
     String.sub input_file 0 (String.length input_file - 6) ^ ".out"
-  and params_file = Filename.concat (!temp_path) "param.csdp" in
+  and params_file = Filename.concat temp_path "param.csdp" in
   file_of_string input_file (sdpa_of_problem "" obj mats);
   file_of_string params_file csdp_params;
-  let rv = Sys.command("cd "^(!temp_path)^"; csdp "^input_file ^
+  let rv = Sys.command("cd "^temp_path^"; csdp "^input_file ^
                        " " ^ output_file ^
                        (if dbg then "" else "> /dev/null")) in
   let op = string_of_file output_file in
@@ -1439,7 +1205,7 @@ let run_csdp dbg obj mats =
 
 let csdp obj mats =
   let rv,res = run_csdp (!debugging) obj mats in
-  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+  (if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
     else if rv = 3 then ()
 (*    (Format.print_string "csdp warning: Reduced accuracy";
      Format.print_newline()) *)

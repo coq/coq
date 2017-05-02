@@ -136,7 +136,6 @@ let feedback_results results =
 let format_sec x = (Printf.sprintf "%.3fs" x)
 let format_ratio x = (Printf.sprintf "%.1f%%" (100. *. x))
 let padl n s = ws (max 0 (n - utf8_length s)) ++ str s
-let padr n s = str s ++ ws (max 0 (n - utf8_length s))
 let padr_with c n s =
   let ulength = utf8_length s in
   str (utf8_sub s 0 n) ++ str (String.make (max 0 (n - ulength)) c)

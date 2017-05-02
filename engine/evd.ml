@@ -14,10 +14,8 @@ open Nameops
 open Term
 open Vars
 open Environ
-open Globnames
-open Context.Named.Declaration
 
-module RelDecl = Context.Rel.Declaration
+(* module RelDecl = Context.Rel.Declaration *)
 module NamedDecl = Context.Named.Declaration
 
 (** Generic filters *)
@@ -359,8 +357,6 @@ module EvMap = Evar.Map
 
 module EvNames :
 sig
-
-open Misctypes
 
 type t
 
