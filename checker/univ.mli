@@ -71,6 +71,8 @@ type 'a check_function = universes -> 'a -> 'a -> bool
 val check_leq : universe check_function
 val check_eq : universe check_function
 
+
+
 (** The initial graph of universes: Prop < Set *)
 val initial_universes : universes
 
@@ -170,6 +172,12 @@ sig
 
   val check_eq : t check_function
   (** Check equality of instances w.r.t. a universe graph *)
+
+  val length : t -> int
+  (** Compute the length of the instance  *)
+
+  val append : t -> t -> t
+  (** Append two universe instances *)
 end
 
 type universe_instance = Instance.t
@@ -190,6 +198,27 @@ sig
 
 end
 
+type universe_context = UContext.t
+
+module UInfoInd :
+sig
+  type t
+
+  val make : universe_context * universe_context -> t
+
+  val empty : t
+
+  val univ_context : t -> universe_context
+  val subtyp_context : t -> universe_context
+
+  val from_universe_context : universe_context -> universe_instance -> t
+
+  val subtyping_susbst : t -> universe_level_subst
+
+end
+
+type universe_info_ind = UInfoInd.t
+
 module ContextSet :
   sig 
     type t
@@ -198,7 +227,6 @@ module ContextSet :
     val constraints : t -> constraints
   end
 
-type universe_context = UContext.t
 type universe_context_set = ContextSet.t
 
 val merge_context : bool -> universe_context -> universes -> universes
@@ -210,6 +238,8 @@ val is_empty_level_subst : universe_level_subst -> bool
 (** Substitution of universes. *)
 val subst_univs_level_level : universe_level_subst -> universe_level -> universe_level
 val subst_univs_level_universe : universe_level_subst -> universe -> universe
+val subst_univs_level_instance : universe_level_subst -> universe_instance -> universe_instance
+val subst_univs_level_constraints : universe_level_subst -> constraints -> constraints
 
 (** Level to universe substitutions. *)
 

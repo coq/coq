@@ -1368,9 +1368,9 @@ let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "inductive cumulativity";
-      optkey   = ["Inductive"; "Cumulativity"];
-      optread  = Flags.is_universe_polymorphism;
-      optwrite = Flags.make_universe_polymorphism }
+      optkey   = ["Ind"; "Cumulativity"];
+      optread  = Flags.is_inductive_cumulativity;
+      optwrite = Flags.make_inductive_cumulativity }
 
 let _ =
   declare_int_option

@@ -97,8 +97,8 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   let u = 
     check bool_equal (fun x -> x.mind_polymorphic);
     if mib1.mind_polymorphic then (
-      check Univ.Instance.equal (fun x -> Univ.UContext.instance x.mind_universes);
-      Univ.UContext.instance mib1.mind_universes)
+      check Univ.Instance.equal (fun x -> Univ.UContext.instance (Univ.UInfoInd.univ_context x.mind_universes));
+      Univ.UContext.instance (Univ.UInfoInd.univ_context mib1.mind_universes))
     else Univ.Instance.empty
   in
   let eq_projection_body p1 p2 =

@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 6466d8cc443b5896cb905776df0cc49e  checker/cic.mli
+MD5 6153d4f8fb414a8f14797636ab10f55e  checker/cic.mli
 
 *)
 
@@ -272,7 +272,8 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     Int;
     v_rctxt;
     v_bool;
-    v_context;
+    v_bool;
+    v_tuple "universes" [|v_context; v_context|];
     Opt v_bool;
     v_typing_flags|]
 

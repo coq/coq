@@ -56,7 +56,7 @@ let inductive_params (mib,_) = mib.mind_nparams
 
 let inductive_instance mib =
   if mib.mind_polymorphic then
-    UContext.instance mib.mind_universes
+    UContext.instance (UInfoInd.univ_context mib.mind_universes)
   else Instance.empty
 
 (************************************************************************)
