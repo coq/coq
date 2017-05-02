@@ -124,7 +124,7 @@ type types = constr
 (* Term constructors *)
 (*********************)
 
-(* Constructs a DeBrujin index with number n *)
+(* Constructs a de Bruijn index with number n *)
 let rels =
   [|Rel  1;Rel  2;Rel  3;Rel  4;Rel  5;Rel  6;Rel  7; Rel  8;
     Rel  9;Rel 10;Rel 11;Rel 12;Rel 13;Rel 14;Rel 15; Rel 16|]

@@ -8,7 +8,7 @@ open Declare
 (**
    - Get types of existentials ;
    - Flatten dependency tree (prefix order) ;
-   - Replace existentials by De Bruijn indices in term, applied to the right arguments ;
+   - Replace existentials by de Bruijn indices in term, applied to the right arguments ;
    - Apply term prefixed by quantification on "existentials".
 *)
 
@@ -51,7 +51,7 @@ type oblinfo =
     ev_tac: unit Proofview.tactic option;
     ev_deps: Int.Set.t }
 
-(** Substitute evar references in t using De Bruijn indices,
+(** Substitute evar references in t using de Bruijn indices,
   where n binders were passed through. *)
 
 let subst_evar_constr evs n idf t =
@@ -102,7 +102,7 @@ let subst_evar_constr evs n idf t =
     t', !seen, !transparent
 
 
-(** Substitute variable references in t using De Bruijn indices,
+(** Substitute variable references in t using de Bruijn indices,
   where n binders were passed through. *)
 let subst_vars acc n t =
   let var_index id = Util.List.index Id.equal id acc in

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* This module instantiates the structure of generic deBruijn terms to Coq *)
+(* This module instantiates the structure of generic de Bruijn terms to Coq *)
 
 open CErrors
 open Util
@@ -94,7 +94,7 @@ let closedn n c =
   in
   try closed_rec n c; true with LocalOccur -> false
 
-(* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
+(* [closed0 M] is true iff [M] is a (de Bruijn) closed term *)
 
 let closed0 = closedn 0
 

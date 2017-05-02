@@ -462,7 +462,7 @@ let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?nami
   ev
 
 (* This assumes an evar with identity instance and generalizes it over only
-   the De Bruijn part of the context *)
+   the de Bruijn part of the context *)
 let generalize_evar_over_rels sigma (ev,args) =
   let open EConstr in
   let evi = Evd.find sigma ev in
