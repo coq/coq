@@ -336,8 +336,6 @@ sig
   val univ_context : t -> universe_context
   val subtyp_context : t -> universe_context
 
-  val dest : t -> universe_context * universe_context
-
   (** This function takes a universe context representing constraints
       of an inductive and a Instance.t of fresh universe names for the
       subtyping (with the same length as the context in the given
@@ -346,8 +344,6 @@ sig
   val from_universe_context : universe_context -> universe_instance -> t
 
   val subtyping_susbst : t -> universe_level_subst
-
-  val size : t -> int
 
 end
 

@@ -1091,10 +1091,6 @@ struct
       let (ctx, ctx') = (halve_context (UContext.instance subtypcst))in
       Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
 
-  let dest x = x
-
-  let size ((x,_), _) = Instance.length x
-
 end
 
 type universe_info_ind = UInfoInd.t
