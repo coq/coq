@@ -499,15 +499,15 @@ let is_instance = function
    Nota: we will only check the resolvability status of undefined evars.
  *)
 
-let resolvable = Proofview.Unsafe.typeclass_resolvable
+let unresolvable = Proofview.Unsafe.typeclass_unresolvable
 
 let set_resolvable s b =
-  if b then Store.remove s resolvable
-  else Store.set s resolvable ()
+  if b then Store.remove s unresolvable
+  else Store.set s unresolvable ()
 
 let is_resolvable evi =
   assert (match evi.evar_body with Evar_empty -> true | _ -> false);
-  Option.is_empty (Store.get evi.evar_extra resolvable)
+  Option.is_empty (Store.get evi.evar_extra unresolvable)
 
 let mark_resolvability_undef b evi =
   if is_resolvable evi == (b : bool) then evi

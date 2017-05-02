@@ -86,3 +86,7 @@ val remove_instance_local_defs :
 
 val get_type_of_refresh : 
   ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * types
+
+(** Support for program obligations *)
+
+val obligation_store : Evd.Store.t

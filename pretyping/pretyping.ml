@@ -91,7 +91,7 @@ let push_rel_context sigma ctx env = {
 
 let lookup_named id env = lookup_named id env.env
 
-let e_new_evar env evdref ?src ?naming typ =
+let e_new_evar env evdref ?src ?naming ?store typ =
   let open Context.Named.Declaration in
   let inst_vars = List.map (get_id %> mkVar) (named_context env.env) in
   let inst_rels = List.rev (rel_list 0 (nb_rel env.env)) in
@@ -100,7 +100,7 @@ let e_new_evar env evdref ?src ?naming typ =
   let instance = inst_rels @ inst_vars in
   let sign = val_of_named_context nc in
   let sigma = !evdref in
-  let (sigma, e) = new_evar_instance sign sigma typ' ?src ?naming instance in
+  let (sigma, e) = new_evar_instance sign sigma typ' ?src ?naming ?store instance in
   evdref := sigma;
   e
 
@@ -632,8 +632,16 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
         match tycon with
         | Some ty -> ty
         | None ->
-          new_type_evar env evdref loc in
-        { uj_val = e_new_evar env evdref ~src:(loc,k) ~naming ty; uj_type = ty }
+           new_type_evar env evdref loc in
+      let store =
+        if Flags.is_program_mode () then
+          match k with
+          | Evar_kinds.QuestionMark _
+          | Evar_kinds.ImplicitArg (_, _, false) -> Evarsolve.obligation_store
+          | _ -> Evd.Store.empty
+        else Evd.Store.empty
+      in
+        { uj_val = e_new_evar env evdref ~src:(loc,k) ~naming ~store ty; uj_type = ty }
 
   | GHole (k, _naming, Some arg) ->
       let env = ltac_interp_name_env k0 lvar env !evdref in

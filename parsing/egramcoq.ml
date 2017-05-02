@@ -463,7 +463,7 @@ let extend_constr state forpat ng =
   in
   List.fold_left fold ([], state) ng.notgram_prods
 
-let constr_levels = GramState.field ()
+let constr_levels = GramState.field GramState.default_merge_field
 
 let extend_constr_notation ng state =
   let levels = match GramState.get state constr_levels with
