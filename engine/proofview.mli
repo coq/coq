@@ -463,6 +463,9 @@ module Unsafe : sig
   (** Make an evar unresolvable for type classes. *)
   val mark_as_unresolvable : proofview -> Evar.t -> proofview
 
+  (** An [Evd.evar_extra] field for unresolvability of an evar *)
+  val typeclass_unresolvable : unit Evd.Store.field
+
   (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
       the current avatar of [g] (for instance [g] was changed by [clear]
       into [g']). It returns [None] if [g] has been (partially)
@@ -474,9 +477,6 @@ module Unsafe : sig
       defined *)
   val undefined : Evd.evar_map -> Proofview_monad.goal_with_state list ->
     Proofview_monad.goal_with_state list
-
-  val typeclass_resolvable : unit Evd.Store.field
-
 end
 
 (** This module gives access to the innards of the monad. Its use is

@@ -60,12 +60,28 @@ type telescope =
   | TNil of Evd.evar_map
   | TCons of Environ.env * Evd.evar_map * EConstr.types * (Evd.evar_map -> EConstr.constr -> telescope)
 
-let typeclass_resolvable = Evd.Store.field ()
+(** This will be called in evar-evar unifications to set the resolvable flag
+    of the undefined evar, given the resolvable flag of the "to be defined" evar first.
+    If one of those is marked [resolvable] then the undefined evar becomes resolvable. *)
+let merge_typeclass_unresolvable x y =
+  match x, y with
+  | None, None -> None
+  | Some _, None -> y
+  | None, Some _ -> x
+  | Some _, Some _ -> x
+
+let typeclass_unresolvable = Evd.Store.field merge_typeclass_unresolvable
+
+let set_typeclass_unresolvable store =
+  Evd.Store.set store typeclass_unresolvable ()
+
+let get_typeclass_unresolvable store =
+  Evd.Store.get store typeclass_unresolvable
 
 let dependent_init =
   (* Goals are created with a store which marks them as unresolvable
      for type classes. *)
-  let store = Evd.Store.set Evd.Store.empty typeclass_resolvable () in
+  let store = set_typeclass_unresolvable Evd.Store.empty in
   (* Goals don't have a source location. *)
   let src = Loc.tag @@ Evar_kinds.GoalEvar in
   (* Main routine *)
@@ -760,9 +776,9 @@ let mark_in_evm ~goal evd content =
             | loc,_ -> loc,Evar_kinds.GoalEvar }
     else info
   in
-  let info = match Evd.Store.get info.Evd.evar_extra typeclass_resolvable with
-  | None -> { info with Evd.evar_extra = Evd.Store.set info.Evd.evar_extra typeclass_resolvable () }
-  | Some () -> info
+  let info = match get_typeclass_unresolvable info.Evd.evar_extra with
+  | None -> { info with Evd.evar_extra = set_typeclass_unresolvable info.Evd.evar_extra }
+  | Some _ -> info
   in
   Evd.add evd content info
 
@@ -1045,7 +1061,7 @@ module Unsafe = struct
   let mark_as_unresolvable p gl =
     { p with solution = mark_in_evm ~goal:false p.solution gl }
 
-  let typeclass_resolvable = typeclass_resolvable
+  let typeclass_unresolvable = typeclass_unresolvable
 
 end
 
