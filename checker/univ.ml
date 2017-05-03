@@ -1194,8 +1194,7 @@ struct
                              create_trivial_subtyping inst freshunivs))
 
   let subtyping_susbst (univcst, subtypcst) =
-      let (ctx, ctx') = (halve_context (UContext.instance subtypcst)) in
-      Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
+      let (_, ctx') = (halve_context (UContext.instance subtypcst)) in ctx'
 
 end
 
@@ -1231,22 +1230,6 @@ let subst_univs_level_universe subst u =
   let u' = Universe.smartmap f u in
     if u == u' then u
     else Universe.sort u'
-
-let subst_univs_level_instance subst i =
-  let i' = Instance.subst_fn (subst_univs_level_level subst) i in
-    if i == i' then i
-    else i'
-
-let subst_univs_level_constraint subst (u,d,v) =
-  let u' = subst_univs_level_level subst u 
-  and v' = subst_univs_level_level subst v in
-    if d != Lt && Level.equal u' v' then None
-    else Some (u',d,v')
-
-let subst_univs_level_constraints subst csts =
-  Constraint.fold 
-    (fun c -> Option.fold_right Constraint.add (subst_univs_level_constraint subst c))
-    csts Constraint.empty 
 
 (** Substitute instance inst for ctx in csts *)
 

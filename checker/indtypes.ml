@@ -551,10 +551,10 @@ let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : con
 let check_subtyping mib paramsctxt env_ar inds =
     let numparams = rel_context_nhyps paramsctxt in
     let sbsubst = Univ.UInfoInd.subtyping_susbst mib.mind_universes in
-    let dosubst = subst_univs_level_constr sbsubst in
+    let dosubst = subst_instance_constr sbsubst in
     let uctx = Univ.UInfoInd.univ_context mib.mind_universes in
-    let instance_other = Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) in
-    let constraints_other = Univ.subst_univs_level_constraints sbsubst (Univ.UContext.constraints uctx) in
+    let instance_other = Univ.subst_instance_instance sbsubst (Univ.UContext.instance uctx) in
+    let constraints_other = Univ.subst_instance_constraints sbsubst (Univ.UContext.constraints uctx) in
     let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
     let env' = Environ.push_context uctx env_ar in
     let env'' = Environ.push_context uctx_other env' in

@@ -213,7 +213,7 @@ sig
 
   val from_universe_context : universe_context -> universe_instance -> t
 
-  val subtyping_susbst : t -> universe_level_subst
+  val subtyping_susbst : t -> universe_instance
 
 end
 
@@ -238,8 +238,6 @@ val is_empty_level_subst : universe_level_subst -> bool
 (** Substitution of universes. *)
 val subst_univs_level_level : universe_level_subst -> universe_level -> universe_level
 val subst_univs_level_universe : universe_level_subst -> universe -> universe
-val subst_univs_level_instance : universe_level_subst -> universe_instance -> universe_instance
-val subst_univs_level_constraints : universe_level_subst -> constraints -> constraints
 
 (** Level to universe substitutions. *)
 
