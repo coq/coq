@@ -1413,6 +1413,24 @@ let _ =
 
 let _ =
   declare_int_option
+    { optsync  = false;
+      optdepr  = false;
+      optname  = "the hypotheses limit";
+      optkey   = ["Hyps";"Limit"];
+      optread  = Flags.print_hyps_limit;
+      optwrite = Flags.set_print_hyps_limit }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "display compact goal contexts";
+      optkey   = ["Printing";"Compact";"Contexts"];
+      optread  = (fun () -> Printer.get_compact_context());
+      optwrite = (fun b -> Printer.set_compact_context b) }
+
+let _ =
+  declare_int_option
     { optsync  = true;
       optdepr  = false;
       optname  = "the printing depth";
