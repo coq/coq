@@ -236,3 +236,10 @@ Tactic Notation "clear" "dependent" hyp(h) :=
 
 Tactic Notation "revert" "dependent" hyp(h) :=
  generalize dependent h.
+
+(** Provide an error message for dependent induction that reports an import is
+required to use it. Importing Coq.Program.Equality will shadow this notation
+with the actual [dependent induction] tactic. *)
+
+Tactic Notation "dependent" "induction" ident(H) :=
+  fail "To use dependent induction, first [Require Import Coq.Program.Equality.]".
