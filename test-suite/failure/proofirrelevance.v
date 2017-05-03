@@ -1,6 +1,5 @@
-(* This was working in version 8.1beta (bug in the Sort-polymorphism
-   of inductive types), but this is inconsistent with classical logic
-   in Prop *)
+(* This was working in version 8.1beta (bug in template polymorphism),
+   but this is inconsistent with classical logic in Prop *)
 
 Inductive bool_in_prop : Type := hide : bool -> bool_in_prop
 with bool : Type := true : bool | false : bool.

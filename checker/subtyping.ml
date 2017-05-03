@@ -113,7 +113,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   in
   let check_inductive_type env t1 t2 =
 
-    (* Due to sort-polymorphism in inductive types, the conclusions of
+    (* Due to template polymorphism, the conclusions of
        t1 and t2, if in Type, are generated as the least upper bounds
        of the types of the constructors.
 

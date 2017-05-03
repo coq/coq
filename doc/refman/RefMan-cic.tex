@@ -79,8 +79,8 @@ An algebraic universe $u$ is either a variable (a qualified
 identifier with a number) or a successor of an algebraic universe (an
 expression $u+1$), or an upper bound of algebraic universes (an
 expression $max(u_1,...,u_n)$), or the base universe (the expression
-$0$) which corresponds, in the arity of sort-polymorphic inductive
-types (see Section \ref{Sort-polymorphism-inductive}),
+$0$) which corresponds, in the arity of template polymorphic inductive
+types (see Section \ref{Template-polymorphism}),
 to the predicative sort {\Set}. A graph of constraints between
 the universe variables is maintained globally. To ensure the existence
 of a mapping of the universes to the positive integers, the graph of
@@ -977,8 +977,8 @@ Inductive exType (P:Type->Prop) : Type :=
 %is recursive or not.  We shall write the type $(x:_R T)C$ if it is 
 %a recursive argument and $(x:_P T)C$ if the argument is not recursive.
 
-\paragraph[Sort-polymorphism of inductive types.]{Sort-polymorphism of inductive types.\index{Sort-polymorphism of inductive types}}
-\label{Sort-polymorphism-inductive}
+\paragraph[Template polymorphism.]{Template polymorphism.\index{Template polymorphism}}
+\label{Template-polymorphism}
 
 Inductive types declared in {\Type} are
 polymorphic over their arguments in {\Type}.
@@ -1119,6 +1119,10 @@ Check (fun A:Prop => prod A A).
 Check (fun (A:Prop) (B:Set) => prod A B).
 Check (fun (A:Type) (B:Prop) => prod A B).
 \end{coq_example}
+
+\Rem Template polymorphism used to be called ``sort-polymorphism of
+inductive types'' before universe polymorphism (see
+Chapter~\ref{Universes-full}) was introduced.
 
 \subsection{Destructors}
 The specification of inductive definitions with arities and
