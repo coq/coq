@@ -1275,15 +1275,18 @@ in the list of subgoals remaining to prove.
 
 \item{\tt assert ( {\ident} := {\term} )}
 
-  This behaves as {\tt assert ({\ident} :\ {\type});[exact
-      {\term}|idtac]} where {\type} is the type of {\term}. This is
-  deprecated in favor of {\tt pose proof}.
+  This behaves as {\tt assert ({\ident} :\ {\type}) by exact {\term}}
+  where {\type} is the type of {\term}. This is deprecated in favor of
+  {\tt pose proof}.
+
+  If the head of {\term} is {\ident}, the tactic behaves as
+  {\tt specialize \term}.
 
   \ErrMsg \errindex{Variable {\ident} is already declared}
 
-\item \texttt{pose proof {\term} as {\intropattern}\tacindex{pose proof}}
+\item \texttt{pose proof {\term} \zeroone{as {\intropattern}}\tacindex{pose proof}}
 
-  This tactic behaves like \texttt{assert T as {\intropattern} by
+  This tactic behaves like \texttt{assert T \zeroone{as {\intropattern}} by
   exact {\term}} where \texttt{T} is the type of {\term}.
 
   In particular, \texttt{pose proof {\term} as {\ident}} behaves as
@@ -1326,8 +1329,8 @@ in the list of subgoals remaining to prove.
   following subgoals: {\tt U -> T} and \texttt{U}.  The subgoal {\tt U
     -> T} comes first in the list of remaining subgoal to prove.
 
-\item {\tt specialize ({\ident} \term$_1$ \dots\ \term$_n$)\tacindex{specialize}} \\
-      {\tt specialize {\ident} with \bindinglist}
+\item {\tt specialize ({\ident} \term$_1$ \dots\ \term$_n$)\tacindex{specialize} \zeroone{as \intropattern}}\\
+      {\tt specialize {\ident} with {\bindinglist} \zeroone{as \intropattern}}
 
       The tactic {\tt specialize} works on local hypothesis \ident.
       The premises of this hypothesis (either universal
@@ -1338,14 +1341,19 @@ in the list of subgoals remaining to prove.
       second form, all instantiation elements must be given, whereas
       in the first form the application to \term$_1$ {\ldots}
       \term$_n$ can be partial. The first form is equivalent to
-      {\tt assert (\ident' := {\ident} {\term$_1$} \dots\ \term$_n$);
-           clear \ident; rename \ident' into \ident}.
+      {\tt assert ({\ident} := {\ident} {\term$_1$} \dots\ \term$_n$)}.
+
+      With the {\tt as} clause, the local hypothesis {\ident} is left
+      unchanged and instead, the modified hypothesis is introduced as
+      specified by the {\intropattern}.
 
       The name {\ident} can also refer to a global lemma or
       hypothesis. In this case, for compatibility reasons, the
       behavior of {\tt specialize} is close to that of {\tt
         generalize}: the instantiated statement becomes an additional
-      premise of the goal.
+      premise of the goal. The {\tt as} clause is especially useful
+      in this case to immediately introduce the instantiated statement
+      as a local hypothesis.
 
   \begin{ErrMsgs}
   \item \errindexbis{{\ident} is used in hypothesis \ident'}{is used in hypothesis}
