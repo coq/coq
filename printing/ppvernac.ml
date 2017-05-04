@@ -759,8 +759,10 @@ open Decl_kinds
                        | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
                        | Class _ -> "Class" | Variant -> "Variant"
           in
-          let cm = if cum then "Cumulative" else "NonCumulative" in
-          cm ^ " " ^ kind
+          if p then
+            let cm = if cum then "Cumulative" else "NonCumulative" in
+            cm ^ " " ^ kind
+          else kind
         in
         return (
           hov 1 (pr_oneind key (List.hd l)) ++
