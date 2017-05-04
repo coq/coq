@@ -28,8 +28,6 @@ module CompactedDecl = Context.Compacted.Declaration
 
 let emacs_str s =
   if !Flags.print_emacs then s else ""
-let delayed_emacs_cmd s =
-  if !Flags.print_emacs then s () else str ""
 
 let get_current_context () =
   Pfedit.get_current_context ()
