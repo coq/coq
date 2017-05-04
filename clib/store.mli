@@ -16,7 +16,11 @@ sig
   type t
   (** Type of stores *)
 
-  type 'a merge_field = 'a option -> 'a option -> 'a option
+  type 'a merge_arg =
+    | One of 'a
+    | Both of 'a * 'a
+
+  type 'a merge_field = 'a merge_arg -> 'a option
   (** Type of merging function when merging two stores potentially
       having values for the same field (used in [merge] only). *)
 

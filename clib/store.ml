@@ -19,7 +19,12 @@
 module type S =
 sig
   type t
-  type 'a merge_field = 'a option -> 'a option -> 'a option
+
+  type 'a merge_arg =
+    | One of 'a
+    | Both of 'a * 'a
+
+  type 'a merge_field = 'a merge_arg -> 'a option
   type 'a field
   val empty : t
   val set : t -> 'a field -> 'a -> t
@@ -43,7 +48,12 @@ struct
   (** Store are represented as arrays. For small values, which is typicial,
       is slightly quicker than other implementations. *)
 
-  type 'a merge_field = 'a option -> 'a option -> 'a option
+
+  type 'a merge_arg =
+    | One of 'a
+    | Both of 'a * 'a
+
+  type 'a merge_field = 'a merge_arg -> 'a option
 
   type 'a field = int
 
@@ -86,7 +96,11 @@ let merge (s1 : t) (s2 : t) : t =
   let merge i x y =
     let fn = Array.unsafe_get !merge_fns i in
     let fn : 'a merge_field = Obj.magic fn in
-    fn x y
+    match x, y with
+    | Some x, Some y -> fn (Both (x, y))
+    | Some x, None -> fn (One x)
+    | None, Some y -> fn (One y)
+    | None, None -> None
   in
   for i = 0 to pred nlen do
     let v1 = if i < len1 then Array.unsafe_get s1 i else None in
@@ -111,10 +125,8 @@ let field merge =
   Array.set !merge_fns i (Obj.magic merge);
   i
 
-let default_merge_field x y =
-  match x, y with
-  | None, None -> None
-  | Some _, _ -> x
-  | _, Some _ -> y
+let default_merge_field xy =
+  match xy with
+  | One x | Both (x, _) -> Some x
 
 end

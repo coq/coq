@@ -635,7 +635,7 @@ let evar_key id evd = EvNames.key id evd.evar_names
 (** This will be called in evar-evar unifications to set the restricted flag
     of the defined evar, given the restricted flag of the "to be defined" evar first.
     Only defined evars can have the restricted flag, so this returns None. *)
-let merge_restricted x y = None
+let merge_restricted xy = None
 
 let restricted = Store.field merge_restricted
 
