@@ -60,15 +60,15 @@ type telescope =
   | TNil of Evd.evar_map
   | TCons of Environ.env * Evd.evar_map * EConstr.types * (Evd.evar_map -> EConstr.constr -> telescope)
 
-(** This will be called in evar-evar unifications to set the resolvable flag
-    of the undefined evar, given the resolvable flag of the "to be defined" evar first.
-    If one of those is marked [resolvable] then the undefined evar becomes resolvable. *)
-let merge_typeclass_unresolvable x y =
-  match x, y with
-  | None, None -> None
-  | Some _, None -> y
-  | None, Some _ -> x
-  | Some _, Some _ -> x
+(** This will be called in evar-evar unifications to set the resolvable
+    flag of the undefined evar, given the resolvable flag of the "to be
+    defined" evar first.  If at least one of those is not marked
+    [unresolvable] then the undefined evar becomes resolvable. *)
+let merge_typeclass_unresolvable xy =
+  let open Evd.Store in
+  match xy with
+  | One () -> None
+  | Both (x, y) -> Some x
 
 let typeclass_unresolvable = Evd.Store.field merge_typeclass_unresolvable
 
@@ -778,7 +778,7 @@ let mark_in_evm ~goal evd content =
   in
   let info = match get_typeclass_unresolvable info.Evd.evar_extra with
   | None -> { info with Evd.evar_extra = set_typeclass_unresolvable info.Evd.evar_extra }
-  | Some _ -> info
+  | Some () -> info
   in
   Evd.add evd content info
 
