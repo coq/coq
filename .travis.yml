@@ -65,7 +65,7 @@ matrix:
         apt:
           sources:
           - avsm
-          packages:
+          packages: &extra-packages
           - opam
           - aspcud
           - libgtk2.0-dev
@@ -90,21 +90,7 @@ matrix:
         apt:
           sources:
           - avsm
-          packages:
-          - opam
-          - aspcud
-          - libgtk2.0-dev
-          - libgtksourceview2.0-dev
-          - texlive-latex-base
-          - texlive-latex-recommended
-          - texlive-latex-extra
-          - texlive-math-extra
-          - texlive-fonts-recommended
-          - texlive-fonts-extra
-          - latex-xcolor
-          - ghostscript
-          - transfig
-          - imagemagick
+          packages: *extra-packages
 
 install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
