@@ -519,6 +519,7 @@ struct
   let all_basic = ["Printing"; "All"]
   let existential = ["Printing"; "Existential"; "Instances"]
   let universes = ["Printing"; "Universes"]
+  let unfocused = ["Printing"; "Unfocused"]
 
   type bool_descr = { opts : t list; init : bool; label : string }
 
@@ -534,7 +535,8 @@ struct
       label = "Display _existential variable instances" };
     { opts = [universes]; init = false; label = "Display _universe levels" };
     { opts = [all_basic;existential;universes]; init = false;
-      label = "Display all _low-level contents" }
+      label = "Display all _low-level contents" };
+    { opts = [unfocused]; init = false; label = "Display _unfocused goals" }
   ]
 
   (** The current status of the boolean options *)
@@ -548,6 +550,8 @@ struct
     List.iter init_descr bool_items
 
   let _ = reset ()
+
+  let printing_unfocused () = Hashtbl.find current_state unfocused
 
   (** Transmitting options to coqtop *)
 

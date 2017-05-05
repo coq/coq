@@ -85,6 +85,7 @@ let init () =
 \n    <menuitem action='Display existential variable instances' />\
 \n    <menuitem action='Display universe levels' />\
 \n    <menuitem action='Display all low-level contents' />\
+\n    <menuitem action='Display unfocused goals' />\
 \n  </menu>\
 \n  <menu action='Navigation'>\
 \n    <menuitem action='Forward' />\
