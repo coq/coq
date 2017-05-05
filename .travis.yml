@@ -115,6 +115,7 @@ install:
 
 script:
 
+- set -e
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
 - ./configure -local -usecamlp5 -native-compiler yes ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'
@@ -126,6 +127,7 @@ script:
 - echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
 - ${TW} make -j ${NJOBS} ${TEST_TARGET}
 - echo -en 'travis_fold:end:coq.test\\r'
+- set +e
 
 # Testing Gitter webhook
 notifications:
