@@ -207,6 +207,17 @@ Definition sig2_eta {A P Q} (p : { a : A | P a & Q a })
   : p = exist2 _ _ (proj1_sig (sig_of_sig2 p)) (proj2_sig (sig_of_sig2 p)) (proj3_sig p).
 Proof. destruct p; reflexivity. Defined.
 
+(** [exists x : A, B] is equivalent to [inhabited {x : A | B}] *)
+Lemma exists_to_inhabited_sig {A P} : (exists x : A, P x) -> inhabited {x : A | P x}.
+Proof.
+  intros [x y]. exact (inhabits (exist _ x y)).
+Qed.
+
+Lemma inhabited_sig_to_exists {A P} : inhabited {x : A | P x} -> exists x : A, P x.
+Proof.
+  intros [[x y]];exists x;exact y.
+Qed.
+
 (** [sumbool] is a boolean type equipped with the justification of
     their value *)
 

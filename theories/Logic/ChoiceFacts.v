@@ -8,94 +8,9 @@
 (************************************************************************)
 
 (** Some facts and definitions concerning choice and description in
-       intuitionistic logic.
-
-We investigate the relations between the following choice and
-description principles
-
-- AC_rel  = relational form of the (non extensional) axiom of choice
-            (a "set-theoretic" axiom of choice)
-- AC_fun  = functional form of the (non extensional) axiom of choice
-            (a "type-theoretic" axiom of choice)
-- DC_fun  = functional form of the dependent axiom of choice
-- ACw_fun = functional form of the countable axiom of choice
-- AC!     = functional relation reification
-            (known as axiom of unique choice in topos theory,
-             sometimes called principle of definite description in
-             the context of constructive type theory, sometimes
-             called axiom of no choice)
-
-- AC_fun_repr          = functional choice of a representative in an equivalence class
-- AC_fun_setoid_gen    = functional form of the general form of the (so-called
-                          extensional) axiom of choice over setoids
-- AC_fun_setoid        = functional form of the (so-called extensional) axiom of
-                         choice from setoids
-- AC_fun_setoid_simple = functional form of the (so-called extensional) axiom of
-                         choice from setoids on locally compatible relations
-
-- GAC_rel = guarded relational form of the (non extensional) axiom of choice
-- GAC_fun = guarded functional form of the (non extensional) axiom of choice
-- GAC!    = guarded functional relation reification
-
-- OAC_rel = "omniscient" relational form of the (non extensional) axiom of choice
-- OAC_fun = "omniscient" functional form of the (non extensional) axiom of choice
-            (called AC* in Bell [[Bell]])
-- OAC!
-
-- ID_iota    = intuitionistic definite description
-- ID_epsilon = intuitionistic indefinite description
-
-- D_iota     = (weakly classical) definite description principle
-- D_epsilon  = (weakly classical) indefinite description principle
-
-- PI      = proof irrelevance
-- IGP     = independence of general premises
-            (an unconstrained generalisation of the constructive principle of
-             independence of premises)
-- Drinker = drinker's paradox (small form)
-            (called Ex in Bell [[Bell]])
-- EM      = excluded-middle
-
-- Ext_pred_repr     = choice of a representative among extensional predicates
-- Ext_pred          = extensionality of predicates
-- Ext_fun_prop_repr = choice of a representative among extensional functions to Prop
-
-We let also
-
-- IPL_2   = 2nd-order impredicative minimal predicate logic (with ex. quant.)
-- IPL^2   = 2nd-order functional minimal predicate logic (with ex. quant.)
-- IPL_2^2 = 2nd-order impredicative, 2nd-order functional minimal pred. logic (with ex. quant.)
-
-with no prerequisite on the non-emptiness of domains
-
-Table of contents
-
-1. Definitions
-
-2. IPL_2^2 |- AC_rel + AC! = AC_fun
-
-3.1. typed IPL_2 + Sigma-types + PI |- AC_rel = GAC_rel  and  IPL_2 |- AC_rel + IGP -> GAC_rel and IPL_2 |- GAC_rel = OAC_rel
-
-3.2. IPL^2 |- AC_fun + IGP = GAC_fun = OAC_fun = AC_fun + Drinker
-
-3.3. D_iota -> ID_iota  and  D_epsilon <-> ID_epsilon + Drinker
-
-4. Derivability of choice for decidable relations with well-ordered codomain
-
-5. Equivalence of choices on dependent or non dependent functional types
-
-6. Non contradiction of constructive descriptions wrt functional choices
-
-7. Definite description transports classical logic to the computational world
-
-8. Choice -> Dependent choice -> Countable choice
-
-9.1. AC_fun_ext = AC_fun + Ext_fun_repr + EM
-
-9.2. AC_fun_ext = AC_fun + Ext_prop_fun_repr + PI
-
-References:
-
+       intuitionistic logic. *)
+(** * References: *)
+(**
 [[Bell]] John L. Bell, Choice principles in intuitionistic set theory,
 unpublished.
 
@@ -133,47 +48,75 @@ Variable P:A->Prop.
 
 (** ** Constructive choice and description *)
 
-(** AC_rel *)
+(** AC_rel = relational form of the (non extensional) axiom of choice
+             (a "set-theoretic" axiom of choice) *)
 
 Definition RelationalChoice_on :=
   forall R:A->B->Prop,
     (forall x : A, exists y : B, R x y) ->
     (exists R' : A->B->Prop, subrelation R' R /\ forall x, exists! y, R' x y).
 
-(** AC_fun *)
+(** AC_fun = functional form of the (non extensional) axiom of choice
+             (a "type-theoretic" axiom of choice) *)
 
 (* Note: This is called Type-Theoretic Description Axiom (TTDA) in
    [[Werner97]] (using a non-standard meaning of "description"). This
    is called intensional axiom of choice (AC_int) in [[Carlström04]] *)
+
+Definition FunctionalChoice_on_rel (R:A->B->Prop) :=
+  (forall x:A, exists y : B, R x y) ->
+  exists f : A -> B, (forall x:A, R x (f x)).
 
 Definition FunctionalChoice_on :=
   forall R:A->B->Prop,
     (forall x : A, exists y : B, R x y) ->
     (exists f : A->B, forall x : A, R x (f x)).
 
-(** DC_fun *)
+(** AC_fun_dep = functional form of the (non extensional) axiom of
+                 choice, with dependent functions *)
+Definition DependentFunctionalChoice_on (A:Type) (B:A -> Type) :=
+  forall R:forall x:A, B x -> Prop,
+    (forall x:A, exists y : B x, R x y) ->
+    (exists f : (forall x:A, B x), forall x:A, R x (f x)).
+
+(** AC_trunc = axiom of choice for propositional truncations
+               (truncation and quantification commute) *)
+Definition InhabitedForallCommute_on (A : Type) (B : A -> Type) :=
+  (forall x, inhabited (B x)) -> inhabited (forall x, B x).
+
+(** DC_fun = functional form of the dependent axiom of choice *)
 
 Definition FunctionalDependentChoice_on :=
   forall (R:A->A->Prop),
     (forall x, exists y, R x y) -> forall x0,
     (exists f : nat -> A, f 0 = x0 /\ forall n, R (f n) (f (S n))).
 
-(** ACw_fun *)
+(** ACw_fun = functional form of the countable axiom of choice *)
 
 Definition FunctionalCountableChoice_on :=
   forall (R:nat->A->Prop),
     (forall n, exists y, R n y) ->
     (exists f : nat -> A, forall n, R n (f n)).
 
-(** AC! or Functional Relation Reification (known as Axiom of Unique Choice
-    in topos theory; also called principle of definite description *)
+(** AC! = functional relation reification
+          (known as axiom of unique choice in topos theory,
+           sometimes called principle of definite description in
+           the context of constructive type theory, sometimes
+           called axiom of no choice) *)
 
 Definition FunctionalRelReification_on :=
   forall R:A->B->Prop,
     (forall x : A, exists! y : B, R x y) ->
     (exists f : A->B, forall x : A, R x (f x)).
 
-(** AC_fun_repr *)
+(** AC_dep! = functional relation reification, with dependent functions
+              see AC! *)
+Definition DependentFunctionalRelReification_on (A:Type) (B:A -> Type) :=
+  forall (R:forall x:A, B x -> Prop),
+    (forall x:A, exists! y : B x, R x y) ->
+    (exists f : (forall x:A, B x), forall x:A, R x (f x)).
+
+(** AC_fun_repr = functional choice of a representative in an equivalence class *)
 
 (* Note: This is called Type-Theoretic Choice Axiom (TTCA) in
    [[Werner97]] (by reference to the extensional set-theoretic
@@ -187,7 +130,8 @@ Definition RepresentativeFunctionalChoice_on :=
     (Equivalence R) ->
     (exists f : A->A, forall x : A, (R x (f x)) /\ forall x', R x x' -> f x = f x').
 
-(** AC_fun_setoid *)
+(** AC_fun_setoid = functional form of the (so-called extensional) axiom of
+                    choice from setoids *)
 
 Definition SetoidFunctionalChoice_on :=
   forall R : A -> A -> Prop,
@@ -197,7 +141,8 @@ Definition SetoidFunctionalChoice_on :=
   (forall x, exists y, T x y) ->
   exists f : A -> B, forall x : A, T x (f x) /\ (forall x' : A, R x x' -> f x = f x').
 
-(** AC_fun_setoid_gen *)
+(** AC_fun_setoid_gen = functional form of the general form of the (so-called
+                        extensional) axiom of choice over setoids *)
 
 (* Note: This is called extensional axiom of choice (AC_ext) in
    [[Carlström04]]. *)
@@ -213,7 +158,8 @@ Definition GeneralizedSetoidFunctionalChoice_on :=
   exists f : A -> B,
     forall x : A, T x (f x) /\ (forall x' : A, R x x' -> S (f x) (f x')).
 
-(** AC_fun_setoid_simple *)
+(** AC_fun_setoid_simple = functional form of the (so-called extensional) axiom of
+                           choice from setoids on locally compatible relations *)
 
 Definition SimpleSetoidFunctionalChoice_on A B :=
   forall R : A -> A -> Prop,
@@ -222,19 +168,19 @@ Definition SimpleSetoidFunctionalChoice_on A B :=
   (forall x, exists y, forall x', R x x' -> T x' y) ->
   exists f : A -> B, forall x : A, T x (f x) /\ (forall x' : A, R x x' -> f x = f x').
 
-(** ID_epsilon (constructive version of indefinite description;
-    combined with proof-irrelevance, it may be connected to
-    Carlström's type theory with a constructive indefinite description
-    operator) *)
+(** ID_epsilon = constructive version of indefinite description;
+                 combined with proof-irrelevance, it may be connected to
+                 Carlström's type theory with a constructive indefinite description
+                 operator *)
 
 Definition ConstructiveIndefiniteDescription_on :=
   forall P:A->Prop,
     (exists x, P x) -> { x:A | P x }.
 
-(** ID_iota (constructive version of definite description; combined
-    with proof-irrelevance, it may be connected to Carlström's and
-    Stenlund's type theory with a constructive definite description
-    operator) *)
+(** ID_iota = constructive version of definite description;
+              combined with proof-irrelevance, it may be connected to
+              Carlström's and Stenlund's type theory with a
+              constructive definite description operator) *)
 
 Definition ConstructiveDefiniteDescription_on :=
   forall P:A->Prop,
@@ -242,7 +188,7 @@ Definition ConstructiveDefiniteDescription_on :=
 
 (** ** Weakly classical choice and description *)
 
-(** GAC_rel *)
+(** GAC_rel = guarded relational form of the (non extensional) axiom of choice *)
 
 Definition GuardedRelationalChoice_on :=
   forall P : A->Prop, forall R : A->B->Prop,
@@ -250,7 +196,7 @@ Definition GuardedRelationalChoice_on :=
     (exists R' : A->B->Prop,
       subrelation R' R /\ forall x, P x -> exists! y, R' x y).
 
-(** GAC_fun *)
+(** GAC_fun = guarded functional form of the (non extensional) axiom of choice *)
 
 Definition GuardedFunctionalChoice_on :=
   forall P : A->Prop, forall R : A->B->Prop,
@@ -258,7 +204,7 @@ Definition GuardedFunctionalChoice_on :=
     (forall x : A, P x -> exists y : B, R x y) ->
     (exists f : A->B, forall x, P x -> R x (f x)).
 
-(** GFR_fun *)
+(** GAC! = guarded functional relation reification *)
 
 Definition GuardedFunctionalRelReification_on :=
   forall P : A->Prop, forall R : A->B->Prop,
@@ -266,27 +212,28 @@ Definition GuardedFunctionalRelReification_on :=
     (forall x : A, P x -> exists! y : B, R x y) ->
     (exists f : A->B, forall x : A, P x -> R x (f x)).
 
-(** OAC_rel *)
+(** OAC_rel = "omniscient" relational form of the (non extensional) axiom of choice *)
 
 Definition OmniscientRelationalChoice_on :=
   forall R : A->B->Prop,
     exists R' : A->B->Prop,
       subrelation R' R /\ forall x : A, (exists y : B, R x y) -> exists! y, R' x y.
 
-(** OAC_fun *)
+(** OAC_fun = "omniscient" functional form of the (non extensional) axiom of choice
+              (called AC* in Bell [[Bell]]) *)
 
 Definition OmniscientFunctionalChoice_on :=
   forall R : A->B->Prop,
     inhabited B ->
     exists f : A->B, forall x : A, (exists y : B, R x y) -> R x (f x).
 
-(** D_epsilon *)
+(** D_epsilon = (weakly classical) indefinite description principle *)
 
 Definition EpsilonStatement_on :=
   forall P:A->Prop,
     inhabited A -> { x:A | (exists x, P x) -> P x }.
 
-(** D_iota *)
+(** D_iota = (weakly classical) definite description principle *)
 
 Definition IotaStatement_on :=
   forall P:A->Prop,
@@ -300,14 +247,20 @@ Notation RelationalChoice :=
   (forall A B : Type, RelationalChoice_on A B).
 Notation FunctionalChoice :=
   (forall A B : Type, FunctionalChoice_on A B).
-Definition FunctionalDependentChoice :=
+Notation DependentFunctionalChoice :=
+  (forall A (B:A->Type), DependentFunctionalChoice_on B).
+Notation InhabitedForallCommute :=
+  (forall A (B : A -> Type), InhabitedForallCommute_on B).
+Notation FunctionalDependentChoice :=
   (forall A : Type, FunctionalDependentChoice_on A).
-Definition FunctionalCountableChoice :=
+Notation FunctionalCountableChoice :=
   (forall A : Type, FunctionalCountableChoice_on A).
 Notation FunctionalChoiceOnInhabitedSet :=
   (forall A B : Type, inhabited B -> FunctionalChoice_on A B).
 Notation FunctionalRelReification :=
   (forall A B : Type, FunctionalRelReification_on A B).
+Notation DependentFunctionalRelReification :=
+  (forall A (B:A->Type), DependentFunctionalRelReification_on B).
 Notation RepresentativeFunctionalChoice :=
   (forall A : Type, RepresentativeFunctionalChoice_on A).
 Notation SetoidFunctionalChoice :=
@@ -341,37 +294,86 @@ Notation EpsilonStatement :=
 
 (** Subclassical schemes *)
 
+(** PI = proof irrelevance *)
 Definition ProofIrrelevance :=
   forall (A:Prop) (a1 a2:A), a1 = a2.
 
+(** IGP = independence of general premises
+          (an unconstrained generalisation of the constructive principle of
+           independence of premises) *)
 Definition IndependenceOfGeneralPremises :=
   forall (A:Type) (P:A -> Prop) (Q:Prop),
     inhabited A ->
     (Q -> exists x, P x) -> exists x, Q -> P x.
 
+(** Drinker = drinker's paradox (small form)
+              (called Ex in Bell [[Bell]]) *)
 Definition SmallDrinker'sParadox :=
   forall (A:Type) (P:A -> Prop), inhabited A ->
     exists x, (exists x, P x) -> P x.
 
+(** EM = excluded-middle *)
 Definition ExcludedMiddle :=
   forall P:Prop, P \/ ~ P.
 
 (** Extensional schemes *)
 
+(** Ext_prop_repr = choice of a representative among extensional propositions *)
 Local Notation ExtensionalPropositionRepresentative :=
   (forall (A:Type),
    exists h : Prop -> Prop,
    forall P : Prop, (P <-> h P) /\ forall Q, (P <-> Q) -> h P = h Q).
 
+(** Ext_pred_repr = choice of a representative among extensional predicates *)
 Local Notation ExtensionalPredicateRepresentative :=
   (forall (A:Type),
    exists h : (A->Prop) -> (A->Prop),
    forall (P : A -> Prop), (forall x, P x <-> h P x) /\ forall Q, (forall x, P x <-> Q x) -> h P = h Q).
 
+(** Ext_fun_repr = choice of a representative among extensional functions *)
 Local Notation ExtensionalFunctionRepresentative :=
   (forall (A B:Type),
    exists h : (A->B) -> (A->B),
    forall (f : A -> B), (forall x, f x = h f x) /\ forall g, (forall x, f x = g x) -> h f = h g).
+
+(** We let also
+
+- IPL_2   = 2nd-order impredicative minimal predicate logic (with ex. quant.)
+- IPL^2   = 2nd-order functional minimal predicate logic (with ex. quant.)
+- IPL_2^2 = 2nd-order impredicative, 2nd-order functional minimal pred. logic (with ex. quant.)
+
+with no prerequisite on the non-emptiness of domains
+*)
+
+(**********************************************************************)
+(** * Table of contents *)
+
+(* This is very fragile. *)
+(**
+1. Definitions
+
+2. IPL_2^2 |- AC_rel + AC! = AC_fun
+
+3.1. typed IPL_2 + Sigma-types + PI |- AC_rel = GAC_rel  and  IPL_2 |- AC_rel + IGP -> GAC_rel and IPL_2 |- GAC_rel = OAC_rel
+
+3.2. IPL^2 |- AC_fun + IGP = GAC_fun = OAC_fun = AC_fun + Drinker
+
+3.3. D_iota -> ID_iota  and  D_epsilon <-> ID_epsilon + Drinker
+
+4. Derivability of choice for decidable relations with well-ordered codomain
+
+5. AC_fun = AC_fun_dep = AC_trunc
+
+6. Non contradiction of constructive descriptions wrt functional choices
+
+7. Definite description transports classical logic to the computational world
+
+8. Choice -> Dependent choice -> Countable choice
+
+9.1. AC_fun_setoid = AC_fun + Ext_fun_repr + EM
+
+9.2. AC_fun_setoid = AC_fun + Ext_pred_repr + PI
+ *)
 
 (**********************************************************************)
 (** * AC_rel + AC! = AC_fun
@@ -400,9 +402,6 @@ Proof.
   apply HR'R; assumption.
 Qed.
 
-Notation description_rel_choice_imp_funct_choice :=
-  functional_rel_reification_and_rel_choice_imp_fun_choice (compat "8.6").
-
 Lemma fun_choice_imp_rel_choice :
   forall A B : Type, FunctionalChoice_on A B -> RelationalChoice_on A B.
 Proof.
@@ -415,8 +414,6 @@ Proof.
     reflexivity.
     trivial.
 Qed.
-
-Notation funct_choice_imp_rel_choice := fun_choice_imp_rel_choice (compat "8.6").
 
 Lemma fun_choice_imp_functional_rel_reification :
   forall A B : Type, FunctionalChoice_on A B -> FunctionalRelReification_on A B.
@@ -431,8 +428,6 @@ Proof.
   exists f; exact H0.
 Qed.
 
-Notation funct_choice_imp_description := fun_choice_imp_functional_rel_reification (compat "8.6").
-
 Corollary fun_choice_iff_rel_choice_and_functional_rel_reification :
   forall A B : Type, FunctionalChoice_on A B <->
     RelationalChoice_on A B /\ FunctionalRelReification_on A B.
@@ -444,8 +439,6 @@ Proof.
   intros [H H0]; exact (functional_rel_reification_and_rel_choice_imp_fun_choice H0 H).
 Qed.
 
-Notation FunChoice_Equiv_RelChoice_and_ParamDefinDescr :=
- fun_choice_iff_rel_choice_and_functional_rel_reification (compat "8.6").
 (**********************************************************************)
 (** * Connection between the guarded, non guarded and omniscient choices *)
 
@@ -687,10 +680,6 @@ Qed.
 Require Import Wf_nat.
 Require Import Decidable.
 
-Definition FunctionalChoice_on_rel (A B:Type) (R:A->B->Prop) :=
-  (forall x:A, exists y : B, R x y) ->
-  exists f : A -> B, (forall x:A, R x (f x)).
-
 Lemma classical_denumerable_description_imp_fun_choice :
   forall A:Type,
     FunctionalRelReification_on A nat ->
@@ -712,17 +701,9 @@ Proof.
 Qed.
 
 (**********************************************************************)
-(** * Choice on dependent and non dependent function types are equivalent *)
+(** * AC_fun = AC_fun_dep = AC_trunc *)
 
 (** ** Choice on dependent and non dependent function types are equivalent *)
-
-Definition DependentFunctionalChoice_on (A:Type) (B:A -> Type) :=
-  forall R:forall x:A, B x -> Prop,
-    (forall x:A, exists y : B x, R x y) ->
-    (exists f : (forall x:A, B x), forall x:A, R x (f x)).
-
-Notation DependentFunctionalChoice :=
-  (forall A (B:A->Type), DependentFunctionalChoice_on B).
 
 (** The easy part *)
 
@@ -760,15 +741,34 @@ Proof.
   destruct Heq using eq_indd; trivial.
 Qed.
 
+(** ** Functional choice and truncation choice are equivalent *)
+
+Theorem functional_choice_to_inhabited_forall_commute :
+  FunctionalChoice -> InhabitedForallCommute.
+Proof.
+  intros choose0 A B Hinhab.
+  pose proof (non_dep_dep_functional_choice choose0) as choose;clear choose0.
+  assert (Hexists : forall x, exists _ : B x, True).
+  { intros x;apply inhabited_sig_to_exists.
+    refine (inhabited_covariant _ (Hinhab x)).
+    intros y;exists y;exact I. }
+  apply choose in Hexists.
+  destruct Hexists as [f _].
+  exact (inhabits f).
+Qed.
+
+Theorem inhabited_forall_commute_to_functional_choice :
+  InhabitedForallCommute -> FunctionalChoice.
+Proof.
+  intros choose A B R Hexists.
+  assert (Hinhab : forall x, inhabited {y : B | R x y}).
+  { intros x;apply exists_to_inhabited_sig;trivial. }
+  apply choose in Hinhab. destruct Hinhab as [f].
+  exists (fun x => proj1_sig (f x)).
+  exact (fun x => proj2_sig (f x)).
+Qed.
+
 (** ** Reification of dependent and non dependent functional relation  are equivalent *)
-
-Definition DependentFunctionalRelReification_on (A:Type) (B:A -> Type) :=
-  forall (R:forall x:A, B x -> Prop),
-    (forall x:A, exists! y : B x, R x y) ->
-    (exists f : (forall x:A, B x), forall x:A, R x (f x)).
-
-Notation DependentFunctionalRelReification :=
-  (forall A (B:A->Type), DependentFunctionalRelReification_on B).
 
 (** The easy part *)
 
@@ -1304,3 +1304,15 @@ Proof.
        apply repr_fun_choice_imp_excluded_middle.
        now apply setoid_fun_choice_imp_repr_fun_choice.
 Qed.
+
+(**********************************************************************)
+(** * Compatibility notations *)
+Notation description_rel_choice_imp_funct_choice :=
+  functional_rel_reification_and_rel_choice_imp_fun_choice (compat "8.6").
+
+Notation funct_choice_imp_rel_choice := fun_choice_imp_rel_choice (compat "8.6").
+
+Notation FunChoice_Equiv_RelChoice_and_ParamDefinDescr :=
+ fun_choice_iff_rel_choice_and_functional_rel_reification (compat "8.6").
+
+Notation funct_choice_imp_description := fun_choice_imp_functional_rel_reification (compat "8.6").
