@@ -192,45 +192,51 @@ let _ =
 	    optwrite = (:=) Universes.set_minimization })
 						  
 (** Miscellaneous interpretation functions *)
-let interp_universe_level_name evd (loc,s) =
-  let names, _ = Global.global_universe_names () in
-    if CString.string_contains ~where:s ~what:"." then
-      match List.rev (CString.split '.' s) with
-      | [] -> anomaly (str"Invalid universe name " ++ str s)
-      | n :: dp -> 
-	 let num = int_of_string n in
-	 let dp = DirPath.make (List.map Id.of_string dp) in
-	 let level = Univ.Level.make dp num in
-	 let evd =
-	   try Evd.add_global_univ evd level
-	   with UGraph.AlreadyDeclared -> evd
-	 in evd, level
-    else 
-      try
-	let level = Evd.universe_of_name evd s in
-	evd, level
-      with Not_found ->
-	try 
-	  let id = try Id.of_string s with _ -> raise Not_found in
-          evd, snd (Idmap.find id names)
-	with Not_found -> 
-	  if not (is_strict_universe_declarations ()) then
-  	    new_univ_level_variable ~loc ~name:s univ_rigid evd
-	  else user_err ~loc ~hdr:"interp_universe_level_name"
-			     (Pp.(str "Undeclared universe: " ++ str s))
+let interp_universe_level_name ~anon_rigidity evd (loc,s) =
+  match s with
+  | Anonymous ->
+     new_univ_level_variable ~loc anon_rigidity evd
+  | Name s ->
+     let s = Id.to_string s in
+     let names, _ = Global.global_universe_names () in
+     if CString.string_contains ~where:s ~what:"." then
+       match List.rev (CString.split '.' s) with
+       | [] -> anomaly (str"Invalid universe name " ++ str s)
+       | n :: dp ->
+	  let num = int_of_string n in
+	  let dp = DirPath.make (List.map Id.of_string dp) in
+	  let level = Univ.Level.make dp num in
+	  let evd =
+	    try Evd.add_global_univ evd level
+	    with UGraph.AlreadyDeclared -> evd
+	  in evd, level
+     else
+       try
+	 let level = Evd.universe_of_name evd s in
+	 evd, level
+       with Not_found ->
+	 try
+	   let id = try Id.of_string s with _ -> raise Not_found in
+           evd, snd (Idmap.find id names)
+	 with Not_found ->
+	   if not (is_strict_universe_declarations ()) then
+  	     new_univ_level_variable ~loc ~name:s univ_rigid evd
+	   else user_err ~loc ~hdr:"interp_universe_level_name"
+		  (Pp.(str "Undeclared universe: " ++ str s))
 
 let interp_universe ?loc evd = function
   | [] -> let evd, l = new_univ_level_variable ?loc univ_rigid evd in
 	    evd, Univ.Universe.make l
   | l ->
     List.fold_left (fun (evd, u) l -> 
-      let evd', l = interp_universe_level_name evd l in
+        (* [univ_flexible_alg] can produce algebraic universes in terms *)
+        let evd', l = interp_universe_level_name ~anon_rigidity:univ_flexible evd l in
 	(evd', Univ.sup u (Univ.Universe.make l)))
     (evd, Univ.Universe.type0m) l
 
 let interp_level_info loc evd : Misctypes.level_info -> _ = function
   | None -> new_univ_level_variable ~loc univ_rigid evd
-  | Some (loc,s) -> interp_universe_level_name evd (loc,s)
+  | Some (loc,s) -> interp_universe_level_name ~anon_rigidity:univ_flexible evd (loc,s)
 
 let interp_sort ?loc evd = function
   | GProp -> evd, Prop Null
