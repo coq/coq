@@ -232,9 +232,9 @@ GEXTEND Gram
 	r = universe_level -> (l, ord, r) ] ]
   ;
   finite_token:
-    [ [ "Inductive" -> (Inductive_kw,Finite)
-      | "CoInductive" -> (CoInductive,CoFinite)
-      | "Variant" -> (Variant,BiFinite)
+    [ [ IDENT "Inductive" -> (Inductive_kw,Finite)
+      | IDENT "CoInductive" -> (CoInductive,CoFinite)
+      | IDENT "Variant" -> (Variant,BiFinite)
       | IDENT "Record" -> (Record,BiFinite)
       | IDENT "Structure" -> (Structure,BiFinite)
       | IDENT "Class" -> (Class true,BiFinite) ] ]

@@ -1,5 +1,5 @@
 Set Universe Polymorphism.
-Set Ind Cumulativity.
+Set Inductive Cumulativity.
 Set Printing Universes.
 
 Inductive List (A: Type) := nil | cons : A -> List A -> List A.
