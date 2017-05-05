@@ -19,7 +19,6 @@ open Typeclasses_errors
 open Pp
 open Libobject
 open Nameops
-open Misctypes
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -118,11 +117,6 @@ let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr li
     | CLocalPattern _ :: tl -> assert false
     | [] -> bdvars, l
   in aux bound l binders
-
-let add_name_to_ids set na =
-  match na with
-  | Anonymous -> set
-  | Name id -> Id.Set.add id set
 
 let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.empty) =
   let rec vars bound vs = function
