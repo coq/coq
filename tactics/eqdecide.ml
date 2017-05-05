@@ -67,7 +67,6 @@ let choose_noteq eqonleft =
     left_with_bindings false Misctypes.NoBindings
 
 open Sigma.Notations
-open Context.Rel.Declaration
 
 (* A surgical generalize which selects the right occurrences by hand *)
 (* This prevents issues where c2 is also a subterm of c1 (see e.g. #5449) *)
