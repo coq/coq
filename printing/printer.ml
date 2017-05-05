@@ -359,14 +359,14 @@ let rec should_compact env sigma typ =
     match kind_of_term typ with
     | Rel _ | Var _ | Sort _ | Const _ | Ind _ -> true
     | App (c,args) ->
-       let _,type_of_c = Typing.type_of env sigma c in
-       let _,type_of_typ = Typing.type_of env sigma typ in
-       not (is_Prop type_of_typ)
+       let _,type_of_c = Typing.type_of env sigma (EConstr.of_constr c) in
+       let _,type_of_typ = Typing.type_of env sigma (EConstr.of_constr typ) in
+       not (is_Prop (EConstr.to_constr sigma type_of_typ))
        && (* These two more tests detect rare cases of non-Prop-sorted
              dependent hypothesis:  *)
-       let lnamedtyp , _ = decompose_prod type_of_c in
+       let lnamedtyp , _ = EConstr.decompose_prod sigma type_of_c in
        (* c has a non dependent type *)
-       List.for_all (fun (_,typarg) -> isSort typarg) lnamedtyp
+       List.for_all (fun (_,typarg) -> EConstr.isSort sigma typarg) lnamedtyp
        && (* and real arguments are recursively elligible to compaction. *)
        Array.for_all (should_compact env sigma) args
     | _ -> false
@@ -389,7 +389,7 @@ let rec bld_sign_env env sigma ctxt pps =
 and bld_sign_env_id env sigma ctxt pps is_start =
   match ctxt with
   | [] -> pps,ctxt
-  | CompactedDecl.LocalAssum(ids,typ) as d :: ctxt' when should_compact env sigma typ ->
+ | CompactedDecl.LocalAssum(ids,typ) as d :: ctxt' when should_compact env sigma typ ->
     let pidt = pr_var_list_decl env sigma d in
     let pps' = pps ++ (if not is_start then brk (3,0) else (mt ())) ++ pidt in
     bld_sign_env_id env sigma ctxt' pps' false
