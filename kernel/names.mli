@@ -46,11 +46,12 @@ sig
   val of_bytes : bytes -> t
   val of_string : string -> t
   (** Converts a string into an identifier.
-      @raise UserError if the string is not valid, or echo a warning if it contains invalid identifier characters.
+      @raise UserError if the string is invalid as an identifier.
       @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val of_string_soft : string -> t
-  (** Same as {!of_string} except that no warning is ever issued.
+  (** Same as {!of_string} except that any string made of supported UTF-8 characters is accepted.
+      @raise UserError if the string is invalid as an UTF-8 string.
       @raise Unicode.Unsupported if the provided string contains unsupported UTF-8 characters. *)
 
   val to_string : t -> string
