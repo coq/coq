@@ -166,13 +166,13 @@ GEXTEND Gram
                   GlobalNonCumulativity
 	  in
           VernacInductive (cum, priv,f,indl)
-      | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+      | IDENT "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (None, recs)
-      | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+      | IDENT "Let"; IDENT "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (Some Discharge, recs)
-      | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+      | IDENT "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
           VernacCoFixpoint (None, corecs)
-      | IDENT "Let"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+      | IDENT "Let"; IDENT "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
           VernacCoFixpoint (Some Discharge, corecs)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
@@ -186,7 +186,7 @@ GEXTEND Gram
   ;
 
   thm_token:
-    [ [ "Theorem" -> Theorem
+    [ [ IDENT "Theorem" -> Theorem
       | IDENT "Lemma" -> Lemma
       | IDENT "Fact" -> Fact
       | IDENT "Remark" -> Remark
@@ -195,15 +195,15 @@ GEXTEND Gram
       | IDENT "Property" -> Property ] ]
   ;
   def_token:
-    [ [ "Definition" -> (None, Definition)
+    [ [ IDENT "Definition" -> (None, Definition)
       | IDENT "Example" -> (None, Example)
       | IDENT "SubClass" -> (None, SubClass) ] ]
   ;
   assumption_token:
-    [ [ "Hypothesis" -> (Some Discharge, Logical)
-      | "Variable" -> (Some Discharge, Definitional)
-      | "Axiom" -> (None, Logical)
-      | "Parameter" -> (None, Definitional)
+    [ [ IDENT "Hypothesis" -> (Some Discharge, Logical)
+      | IDENT "Variable" -> (Some Discharge, Definitional)
+      | IDENT "Axiom" -> (None, Logical)
+      | IDENT "Parameter" -> (None, Definitional)
       | IDENT "Conjecture" -> (None, Conjectural) ] ]
   ;
   assumptions_token:
@@ -547,7 +547,7 @@ GEXTEND Gram
     [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (snd qid) | "("; me = module_expr; ")" -> me ] ]
   ;
   with_declaration:
-    [ [ "Definition"; fqid = fullyqualid; ":="; c = Constr.lconstr ->
+    [ [ IDENT "Definition"; fqid = fullyqualid; ":="; c = Constr.lconstr ->
           CWith_Definition (fqid,c)
       | IDENT "Module"; fqid = fullyqualid; ":="; qid = qualid ->
 	  CWith_Module (fqid,qid)
@@ -719,7 +719,7 @@ GEXTEND Gram
       | IDENT "Generalizable"; 
 	   gen = [IDENT "All"; IDENT "Variables" -> Some []
 	     | IDENT "No"; IDENT "Variables" -> None
-	     | ["Variable" | IDENT "Variables"];
+	     | [IDENT "Variable" | IDENT "Variables"];
 		  idl = LIST1 identref -> Some idl ] ->
 	     VernacGeneralizable gen ] ]
   ;
