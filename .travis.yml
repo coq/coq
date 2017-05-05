@@ -91,6 +91,34 @@ matrix:
           sources:
           - avsm
           packages: *extra-packages
+    - env:
+      - TEST_TARGET="coqocaml"
+      - EXTRA_CONF="-coqide opt -warn-error"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      # dummy target
+      - BUILD_TARGET="clean"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages: &coqide-packages
+          - opam
+          - aspcud
+          - libgtk2.0-dev
+          - libgtksourceview2.0-dev
+    - env:
+      - TEST_TARGET="coqocaml"
+      - COMPILER="4.04.1"
+      - CAMLP5_VER="6.17"
+      - EXTRA_CONF="-coqide opt -warn-error"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      # dummy target
+      - BUILD_TARGET="clean"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages: *coqide-packages
 
 install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
