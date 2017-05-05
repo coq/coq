@@ -9,8 +9,6 @@
 open Equality
 open Names
 open Pp
-open Tacticals
-open Tactics
 open Term
 open Termops
 open CErrors
