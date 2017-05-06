@@ -182,7 +182,7 @@ and load_vernac verbosely sid file =
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout in
   let in_chan = open_utf8_file_in file in
   let in_echo = if verbosely then Some (open_utf8_file_in file) else None in
-  let in_pa   = Pcoq.Gram.parsable ~file (Stream.of_channel in_chan) in
+  let in_pa   = Pcoq.Gram.parsable ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
   let rsid = ref sid in
   try
     (* we go out of the following infinite loop when a End_of_input is

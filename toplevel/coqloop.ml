@@ -155,14 +155,16 @@ let error_info_for_buffer ?loc buf =
       let fname = loc.Loc.fname in
       let hl, loc =
         (* We are in the toplevel *)
-        if CString.equal fname "" then
+        match fname with
+        | Loc.ToplevelInput ->
           let nloc = adjust_loc_buf buf loc in
           if valid_buffer_loc buf loc then
             (fnl () ++ print_highlight_location buf nloc, nloc)
             (* in the toplevel, but not a valid buffer *)
           else (mt (), nloc)
           (* we are in batch mode, don't adjust location *)
-        else (mt (), loc)
+        | Loc.InFile _ ->
+           (mt (), loc)
       in Topfmt.pr_loc loc ++ hl
     ) loc
 

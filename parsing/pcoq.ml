@@ -15,8 +15,11 @@ let curry f x y = f (x, y)
 let uncurry f (x,y) = f x y
 
 (** Location Utils  *)
+let coq_file_of_ploc_file s =
+  if s = "" then Loc.ToplevelInput else Loc.InFile s
+
 let to_coqloc loc =
-  { Loc.fname = Ploc.file_name loc;
+  { Loc.fname = coq_file_of_ploc_file (Ploc.file_name loc);
     Loc.line_nb = Ploc.line_nb loc;
     Loc.bol_pos = Ploc.bol_pos loc;
     Loc.bp = Ploc.first_pos loc;
@@ -80,7 +83,7 @@ module type S =
       Gramext.position option * single_extend_statment list
   type coq_parsable
 
-  val parsable : ?file:string -> char Stream.t -> coq_parsable
+  val parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
   val action : 'a -> action
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> coq_parsable -> 'a
@@ -104,7 +107,7 @@ end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
       Gramext.position option * single_extend_statment list
   type coq_parsable = parsable * CLexer.lexer_state ref
 
-  let parsable ?file c =
+  let parsable ?(file=Loc.ToplevelInput) c =
     let state = ref (CLexer.init_lexer_state file) in
     CLexer.set_lexer_state !state;
     let a = parsable c in
