@@ -13,11 +13,9 @@ val subst_patch : Mod_subst.substitution -> patch -> patch
 
 type emitcodes
 
-val copy : emitcodes -> emitcodes
-
 val length : emitcodes -> int
 
-val patch_int : emitcodes -> (*pos*)int -> int -> unit
+val patch_int : emitcodes -> ((*pos*)int * int) list -> emitcodes
 
 type to_patch = emitcodes * (patch list) * fv
 
