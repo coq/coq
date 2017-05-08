@@ -33,6 +33,7 @@ LIB := $(shell cd ..; pwd)
 coqtop := $(BIN)coqtop -boot -q -batch -test-mode -R prerequisite TestSuite
 bincoqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
 bincoqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
+coqtopbyte := $(BIN)coqtop.byte
 
 command := $(coqtop) -top Top -async-proofs-cache force -load-vernac-source
 coqc := $(coqtop) -compile
@@ -405,7 +406,7 @@ modules/%.vo: modules/%.v
 # Miscellaneous tests
 #######################################################################
 
-misc: misc/deps-order.log misc/universes.log misc/deps-checksum.log
+misc: misc/deps-order.log misc/universes.log misc/deps-checksum.log misc/printers.log misc/exitstatus.log
 
 # Check that both coqdep and coqtop/coqc supports -R
 # Check that both coqdep and coqtop/coqc takes the later -R
@@ -477,6 +478,33 @@ misc/universes.log: misc/universes/all_stdlib.v
 misc/universes/all_stdlib.v:
 	cd .. && $(MAKE) test-suite/$@
 
+misc/printers.log:
+	@echo "TEST      printers"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  printf "Drop. #use\"include\";; #quit;;" | $(coqtopbyte) 2>&1 | grep Unbound; R=$$?; times; \
+	  if [ $$R != 0 ]; then \
+	    echo $(log_success); \
+	    echo "    misc/printers...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    misc/printers...Error!"; \
+	  fi; \
+	} > "$@"
+
+misc/exitstatus.log:
+	@echo "TEST      exitstatus"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  $(coqc) misc/exitstatus/illtyped.v 2>&1; R=$$?; times; \
+	  if [ $$R != 0 ]; then \
+	    echo $(log_success); \
+	    echo "    misc/exitstatus...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    misc/exitstatus...Error!"; \
+	  fi; \
+	} > "$@"
 
 # IDE : some tests of backtracking for coqtop -ideslave
 
