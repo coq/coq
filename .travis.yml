@@ -36,12 +36,12 @@ env:
   - TEST_TARGET="ci-fiat-crypto"
   - TEST_TARGET="ci-fiat-parsers"
   - TEST_TARGET="ci-flocq"
+  - TEST_TARGET="ci-formal-topology"
   - TEST_TARGET="ci-hott"
   - TEST_TARGET="ci-iris-coq"
   - TEST_TARGET="ci-math-classes"
   - TEST_TARGET="ci-math-comp"
   - TEST_TARGET="ci-sf"
-  - TEST_TARGET="ci-formal-topology"
   - TEST_TARGET="ci-unimath"
   - TEST_TARGET="ci-vst"
   # Not ready yet for 8.7
