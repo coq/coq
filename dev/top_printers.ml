@@ -7,7 +7,6 @@
 (************************************************************************)
 
 (* Printers for the ocaml toplevel. *)
-[@@@ocaml.warning "-32"]
 
 open Util
 open Pp
@@ -51,14 +50,6 @@ let ppsp sp = pp(pr_path sp)
 let ppqualid qid = pp(pr_qualid qid)
 let ppclindex cl = pp(Classops.pr_cl_index cl)
 let ppscheme k = pp (Ind_tables.pr_scheme_kind k)
-
-let pprecarg = function
-  | Declarations.Norec -> str "Norec"
-  | Declarations.Mrec (mind,i) ->
-     str "Mrec[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-  | Declarations.Imbr (mind,i) ->
-     str "Imbr[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
 
 let pprecarg = function
   | Declarations.Norec -> str "Norec"
@@ -457,8 +448,6 @@ let print_pure_constr csr =
     with e ->
 	print_string (Printexc.to_string e);print_flush ();
 	raise e
-
-let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
 let pploc x = let (l,r) = Loc.unloc x in
   print_string"(";print_int l;print_string",";print_int r;print_string")"
