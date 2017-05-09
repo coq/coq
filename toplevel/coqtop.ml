@@ -292,9 +292,17 @@ let init_gc () =
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
     between coqtop and coqc. *)
 
+let usage_no_coqlib = CWarnings.create ~name:"usage-no-coqlib" ~category:"filesystem"
+    (fun () -> Pp.str "cannot guess a path for Coq libraries; dynaminally loaded flags will not be mentioned")
+
+exception NoCoqLib
 let usage () =
-  Envars.set_coqlib ~fail:CErrors.error;
+  begin
+  try
+  Envars.set_coqlib ~fail:(fun x -> raise NoCoqLib);
   init_load_path ();
+  with NoCoqLib -> usage_no_coqlib ()
+  end;
   if !batch_mode then Usage.print_usage_coqc ()
   else begin
     Mltop.load_ml_objects_raw_rex

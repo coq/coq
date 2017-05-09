@@ -30,6 +30,7 @@ let print_usage_channel co command =
 \n  -R dir coqdir          recursively map physical dir to logical coqdir\
 \n  -Q dir coqdir          map physical dir to logical coqdir\
 \n  -top coqdir            set the toplevel name to be coqdir instead of Top\
+\n  -coqlib dir            set the coq standard library directory\
 \n  -exclude-dir f         exclude subdirectories named f for option -R\
 \n\
 \n  -noinit                start without loading the Init library\
