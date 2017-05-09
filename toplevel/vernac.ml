@@ -160,7 +160,9 @@ let pr_new_syntax po loc chan_beautify ocom =
    and a glimpse of the executed command *)
 
 let pp_cmd_header loc com =
-  let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
+  let shorten s =
+    if Unicode.utf8_length s > 33 then (Unicode.utf8_sub s 0 30) ^ "..." else s
+  in
   let noblank s =
     for i = 0 to String.length s - 1 do
       match s.[i] with
