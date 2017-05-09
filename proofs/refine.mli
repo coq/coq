@@ -27,7 +27,7 @@ val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit 
     for the current goal (refine is a goal-dependent tactic), the
     new holes created by [t] become the new subgoals. Exceptions
     raised during the interpretation of [t] are caught and result in
-    tactic failures. If [unsafe] is [false] (default is [true]) [t] is
+    tactic failures. If [unsafe] is [false] (which is the default) [t] is
     type-checked beforehand. *)
 
 val refine_one : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * ('a * EConstr.t)) -> 'a tactic

@@ -69,7 +69,7 @@ let add_side_effect env = function
 let add_side_effects env effects =
   List.fold_left (fun env eff -> add_side_effect env eff) env effects
 
-let generic_refine ?(unsafe = true) f gl =
+let generic_refine ?(unsafe = false) f gl =
   let gl = Proofview.Goal.assume gl in
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
@@ -134,10 +134,10 @@ let lift c =
 
 let make_refine_enter ?unsafe f gl = generic_refine ?unsafe (lift f) gl
 
-let refine_one ?(unsafe = true) f =
+let refine_one ?(unsafe = false) f =
   Proofview.Goal.enter_one (make_refine_enter ~unsafe f)
 
-let refine ?(unsafe = true) f =
+let refine ?(unsafe = false) f =
   let f evd =
     let (evd,c) = f evd in (evd,((), c))
   in
