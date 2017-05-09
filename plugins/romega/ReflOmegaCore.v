@@ -941,8 +941,7 @@ Inductive p_step : Set :=
   | P_LEFT : p_step -> p_step
   | P_RIGHT : p_step -> p_step
   | P_INVERT : step -> p_step
-  | P_STEP : step -> p_step
-  | P_NOP : p_step.
+  | P_STEP : step -> p_step.
 
 (* List of normalizations to perform : if the type [p_step] had a constructor
    that indicated visiting both left and right branches, we would be able to
@@ -2806,7 +2805,6 @@ Fixpoint p_rewrite (s : p_step) : proposition -> proposition :=
   | P_RIGHT s => p_apply_right (p_rewrite s)
   | P_STEP s => move_right s
   | P_INVERT s => p_invert (move_right s)
-  | P_NOP => fun p : proposition => p
   end.
 
 Theorem p_rewrite_stable : forall s : p_step, prop_stable (p_rewrite s).
@@ -2816,7 +2814,6 @@ Proof.
  - intros; apply p_apply_right_stable; trivial.
  - intros; apply p_invert_stable; apply move_right_stable.
  - apply move_right_stable.
- - unfold prop_stable; simpl; intros; split; auto.
 Qed.
 
 Fixpoint normalize_hyps (l : list h_step) (lh : hyps) {struct l} : hyps :=
