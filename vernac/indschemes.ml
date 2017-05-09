@@ -453,13 +453,8 @@ let fold_left' f = function
     [] -> invalid_arg "fold_left'"
   | hd :: tl -> List.fold_left f hd tl
 
-let new_global sigma gr =
-  let open Sigma in
-  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map sigma) gr
-  in Sigma.to_evar_map sigma, c
-
-let mk_coq_and sigma = new_global sigma (Coqlib.build_coq_and ())
-let mk_coq_conj sigma = new_global sigma (Coqlib.build_coq_conj ())
+let mk_coq_and sigma = Evarutil.new_global sigma (Coqlib.build_coq_and ())
+let mk_coq_conj sigma = Evarutil.new_global sigma (Coqlib.build_coq_conj ())
              
 let build_combined_scheme env schemes =
   let evdref = ref (Evd.from_env env) in

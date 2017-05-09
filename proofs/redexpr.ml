@@ -201,7 +201,7 @@ let out_arg = function
 let out_with_occurrences (occs,c) =
   (Locusops.occurrences_map (List.map out_arg) occs, c)
 
-let e_red f = { e_redfun = fun env evm c -> Sigma.here (f env (Sigma.to_evar_map evm) c) evm }
+let e_red f env evm c = evm, f env evm c
 
 let head_style = false (* Turn to true to have a semantics where simpl
    only reduce at the head when an evaluable reference is given, e.g.

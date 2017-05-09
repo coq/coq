@@ -16,7 +16,6 @@
 open Pp
 open Util
 open Proofview_monad
-open Sigma.Notations
 open Context.Named.Declaration
 
 (** Main state of tactics *)
@@ -71,10 +70,8 @@ let dependent_init =
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }
   | TCons (env, sigma, typ, t) ->
-    let sigma = Sigma.Unsafe.of_evar_map sigma in
-    let Sigma (econstr, sigma, _) = Evarutil.new_evar env sigma ~src ~store typ in
-    let (gl, _) = EConstr.destEvar (Sigma.to_evar_map sigma) econstr in
-    let sigma = Sigma.to_evar_map sigma in
+    let (sigma, econstr) = Evarutil.new_evar env sigma ~src ~store typ in
+    let (gl, _) = EConstr.destEvar sigma econstr in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let entry = (econstr, typ) :: ret in
     entry, { solution = sol; comb = gl :: comb; shelf = [] }
@@ -1012,20 +1009,17 @@ let catchable_exception = function
 
 module Goal = struct
 
-  type ('a, 'r) t = {
+  type 'a t = {
     env : Environ.env;
     sigma : Evd.evar_map;
     concl : EConstr.constr ;
     self : Evar.t ; (* for compatibility with old-style definitions *)
   }
 
-  type ('a, 'b) enter =
-    { enter : 'r. ('a, 'r) t -> 'b }
-
-  let assume (gl : ('a, 'r) t) = (gl :> ([ `NF ], 'r) t)
+  let assume (gl : 'a t) = (gl :> [ `NF ] t)
 
   let env {env} = env
-  let sigma {sigma} = Sigma.Unsafe.of_evar_map sigma
+  let sigma {sigma} = sigma
   let hyps {env} = EConstr.named_context env
   let concl {concl} = concl
   let extra {sigma; self} = goal_extra sigma self
@@ -1048,7 +1042,7 @@ module Goal = struct
       tclEVARMAP >>= fun sigma ->
       try
         let (gl, sigma) = nf_gmake env sigma goal in
-        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f.enter gl))
+        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
       with e when catchable_exception e ->
         let (e, info) = CErrors.push e in
         tclZERO ~info e
@@ -1066,7 +1060,7 @@ module Goal = struct
     gmake_with info env sigma goal
 
   let enter f =
-    let f gl = InfoL.tag (Info.DBranch) (f.enter gl) in
+    let f gl = InfoL.tag (Info.DBranch) (f gl) in
     InfoL.tag (Info.Dispatch) begin
     iter_goal begin fun goal ->
       Env.get >>= fun env ->
@@ -1091,47 +1085,12 @@ module Goal = struct
     | [goal] -> begin
        Env.get >>= fun env ->
        tclEVARMAP >>= fun sigma ->
-       try f.enter (gmake env sigma goal)
+       try f (gmake env sigma goal)
        with e when catchable_exception e ->
          let (e, info) = CErrors.push e in
          tclZERO ~info e
       end
     | _ -> tclZERO NotExactlyOneSubgoal
-
-  type ('a, 'b) s_enter =
-    { s_enter : 'r. ('a, 'r) t -> ('b, 'r) Sigma.sigma }
-
-  let s_enter f =
-    InfoL.tag (Info.Dispatch) begin
-    iter_goal begin fun goal ->
-      Env.get >>= fun env ->
-      tclEVARMAP >>= fun sigma ->
-      try
-        let gl = gmake env sigma goal in
-        let Sigma (tac, sigma, _) = f.s_enter gl in
-        let sigma = Sigma.to_evar_map sigma in
-        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) tac)
-      with e when catchable_exception e ->
-        let (e, info) = CErrors.push e in
-        tclZERO ~info e
-    end
-    end
-
-  let nf_s_enter f =
-    InfoL.tag (Info.Dispatch) begin
-    iter_goal begin fun goal ->
-      Env.get >>= fun env ->
-      tclEVARMAP >>= fun sigma ->
-      try
-        let (gl, sigma) = nf_gmake env sigma goal in
-        let Sigma (tac, sigma, _) = f.s_enter gl in
-        let sigma = Sigma.to_evar_map sigma in
-        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) tac)
-      with e when catchable_exception e ->
-        let (e, info) = CErrors.push e in
-        tclZERO ~info e
-    end
-    end
 
   let goals =
     Pv.get >>= fun step ->
@@ -1155,8 +1114,6 @@ module Goal = struct
 
   (* compatibility *)
   let goal { self=self } = self
-
-  let lift (gl : ('a, 'r) t) _ = (gl :> ('a, 's) t)
 
 end
 
@@ -1281,8 +1238,4 @@ module Notations = struct
   let (>>=) = tclBIND
   let (<*>) = tclTHEN
   let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
-  type ('a, 'b) enter = ('a, 'b) Goal.enter =
-    { enter : 'r. ('a, 'r) Goal.t -> 'b }
-  type ('a, 'b) s_enter = ('a, 'b) Goal.s_enter =
-    { s_enter : 'r. ('a, 'r) Goal.t -> ('b, 'r) Sigma.sigma }
 end

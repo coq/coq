@@ -31,7 +31,6 @@ open Redexpr
 open Lemmas
 open Misctypes
 open Locality
-open Sigma.Notations
 
 module NamedDecl = Context.Named.Declaration
 
@@ -1550,8 +1549,7 @@ let vernac_check_may_eval ?loc redexp glopt rc =
         let (sigma',r_interp) = Hook.get f_interp_redexp env sigma' r in
 	let redfun env evm c =
           let (redfun, _) = reduction_of_red_expr env r_interp in
-          let evm = Sigma.Unsafe.of_evar_map evm in
-          let Sigma (c, _, _) = redfun.Reductionops.e_redfun env evm c in
+          let (_, c) = redfun env evm c in
           c
         in
 	Feedback.msg_notice (print_eval redfun env sigma' rc j)

@@ -15,7 +15,6 @@ open Ground
 open Goptions
 open Tacmach.New
 open Tacticals.New
-open Proofview.Notations
 open Tacinterp
 open Libnames
 open Stdarg
@@ -84,24 +83,24 @@ let fail_solver=tclFAIL 0 (Pp.str "GTauto failed")
 let gen_ground_tac flag taco ids bases =
   let backup= !qflag in
   Proofview.tclOR begin
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
       qflag:=flag;
       let solver=
 	match taco with
 	    Some tac-> tac
 	  | None-> snd (default_solver ()) in
       let startseq k =
-        Proofview.Goal.s_enter { s_enter = begin fun gl ->
+        Proofview.Goal.enter begin fun gl ->
 	let seq=empty_seq !ground_depth in
         let seq, sigma = extend_with_ref_list (pf_env gl) (project gl) ids seq in
         let seq, sigma = extend_with_auto_hints (pf_env gl) (project gl) bases seq in
-        Sigma.Unsafe.of_pair (k seq, sigma)
-        end }
+        tclTHEN (Proofview.Unsafe.tclEVARS sigma) (k seq)
+        end
       in
       let result=ground_tac solver startseq in
       qflag := backup;
       result
-  end }
+  end
   end
   (fun (e, info) -> qflag := backup; Proofview.tclZERO ~info e)
 

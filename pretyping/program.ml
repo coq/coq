@@ -41,13 +41,8 @@ let coq_JMeq_refl = init_reference ["Logic";"JMeq"] "JMeq_refl"
 let coq_not = init_reference ["Init";"Logic"] "not"
 let coq_and = init_reference ["Init";"Logic"] "and"
 
-let new_global sigma gr =
-  let open Sigma in
-  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map sigma) gr
-  in Sigma.to_evar_map sigma, c
-
 let mk_coq_not sigma x =
-  let sigma, notc = new_global sigma (coq_not ()) in
+  let sigma, notc = Evarutil.new_global sigma (coq_not ()) in
   sigma, EConstr.mkApp (notc, [| x |])
 
 let unsafe_fold_right f = function
@@ -55,7 +50,7 @@ let unsafe_fold_right f = function
   | [] -> invalid_arg "unsafe_fold_right"
 
 let mk_coq_and sigma l =
-  let sigma, and_typ = new_global sigma (coq_and ()) in
+  let sigma, and_typ = Evarutil.new_global sigma (coq_and ()) in
   sigma, unsafe_fold_right
       (fun c conj ->
 	 EConstr.mkApp (and_typ, [| c ; conj |]))

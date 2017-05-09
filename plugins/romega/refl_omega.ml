@@ -8,7 +8,6 @@
 
 open Pp
 open Util
-open Proofview.Notations
 open Const_omega
 module OmegaSolver = Omega_plugin.Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
@@ -1029,7 +1028,7 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
   Tactics.apply (EConstr.of_constr (Lazy.force coq_I))
 
 let total_reflexive_omega_tactic unsafe =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   Coqlib.check_required_library ["Coq";"romega";"ROmega"];
   rst_omega_eq ();
   rst_omega_var ();
@@ -1043,4 +1042,5 @@ let total_reflexive_omega_tactic unsafe =
   if !debug then display_systems systems_list;
   resolution unsafe env reified_goal systems_list
   with NO_CONTRADICTION -> CErrors.user_err Pp.(str "ROmega can't solve this system")
-  end }
+  end
+

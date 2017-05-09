@@ -35,7 +35,6 @@ open Evarconv
 open Indschemes
 open Misctypes
 open Vernacexpr
-open Sigma.Notations
 open Context.Rel.Declaration
 open Entries
 
@@ -78,8 +77,7 @@ let red_constant_entry n ce sigma = function
       let env = Global.env () in
       let (redfun, _) = reduction_of_red_expr env red in
       let redfun env sigma c =
-        let sigma = Sigma.Unsafe.of_evar_map sigma in
-        let Sigma (c, _, _) = redfun.e_redfun env sigma c in
+        let (_, c) = redfun env sigma c in
         EConstr.Unsafe.to_constr c
       in
       { ce with const_entry_body = Future.chain ~pure:true proof_out
@@ -908,9 +906,8 @@ let tactics_module = subtac_dir @ ["Tactics"]
 
 let init_reference dir s () = Coqlib.coq_reference "Command" dir s
 let init_constant  dir s evdref =
-  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map !evdref)
-                                                (Coqlib.coq_reference "Command" dir s)
-  in evdref := Sigma.to_evar_map sigma; c
+  let (sigma, c) = Evarutil.new_global !evdref (Coqlib.coq_reference "Command" dir s)
+  in evdref := sigma; c
 
 let make_ref l s = init_reference l s
 let fix_proto = init_constant tactics_module "fix_proto"

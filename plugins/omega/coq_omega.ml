@@ -28,7 +28,6 @@ open Globnames
 open Nametab
 open Contradiction
 open Misctypes
-open Proofview.Notations
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
@@ -38,12 +37,12 @@ open OmegaSolver
 (* Added by JCF, 09/03/98 *)
 
 let elim_id id =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     simplest_elim (mkVar id)
-  end }
-let resolve_id id = Proofview.Goal.enter { enter = begin fun gl ->
+  end
+let resolve_id id = Proofview.Goal.enter begin fun gl ->
   apply (mkVar id)
-end }
+end
 
 let timing timer_name f arg = f arg
 
@@ -580,10 +579,10 @@ let abstract_path sigma typ path t =
 
 let focused_simpl path =
   let open Tacmach.New in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let newc = context (project gl) (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
   convert_concl_no_check newc DEFAULTcast
-  end }
+  end
 
 let focused_simpl path = focused_simpl path
 
@@ -643,17 +642,16 @@ let decompile af =
 
 (** Backward compat to emulate the old Refine: normalize the goal conclusion *)
 let new_hole env sigma c =
-  let c = Reductionops.nf_betaiota (Sigma.to_evar_map sigma) c in
+  let c = Reductionops.nf_betaiota sigma c in
   Evarutil.new_evar env sigma c
 
 let clever_rewrite_base_poly typ p result theorem =
   let open Tacmach.New in
-  let open Sigma in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let full = pf_concl gl in
   let env = pf_env gl in
   let (abstracted,occ) = abstract_path (project gl) typ (List.rev p) full in
-  Refine.refine { run = begin fun sigma ->
+  Refine.refine begin fun sigma ->
   let t =
     applist
       (mkLambda
@@ -667,10 +665,10 @@ let clever_rewrite_base_poly typ p result theorem =
        [abstracted])
   in
   let argt = mkApp (abstracted, [|result|]) in
-  let Sigma (hole, sigma, p) = new_hole env sigma argt in
-  Sigma (applist (t, [hole]), sigma, p)
-  end }
-  end }
+  let (sigma, hole) = new_hole env sigma argt in
+  (sigma, applist (t, [hole]))
+  end
+  end
 
 let clever_rewrite_base p result theorem =
   clever_rewrite_base_poly (Lazy.force coq_Z) p result theorem
@@ -689,26 +687,25 @@ let clever_rewrite_gen_nat p result (t,args) =
 (** Solve using the term the term [t _] *)
 let refine_app gl t =
   let open Tacmach.New in
-  let open Sigma in
-  Refine.refine { run = begin fun sigma ->
+  Refine.refine begin fun sigma ->
   let env = pf_env gl in
-  let ht = match EConstr.kind (Sigma.to_evar_map sigma) (pf_get_type_of gl t) with
+  let ht = match EConstr.kind sigma (pf_get_type_of gl t) with
   | Prod (_, t, _) -> t
   | _ -> assert false
   in
-  let Sigma (hole, sigma, p) = new_hole env sigma ht in
-  Sigma (applist (t, [hole]), sigma, p)
-  end }
+  let (sigma, hole) = new_hole env sigma ht in
+  (sigma, applist (t, [hole]))
+  end
 
 let clever_rewrite p vpath t =
   let open Tacmach.New in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let full = pf_concl gl in
   let (abstracted,occ) = abstract_path (project gl) (Lazy.force coq_Z) (List.rev p) full in
   let vargs = List.map (fun p -> occurrence (project gl) p occ) vpath in
   let t' = applist(t, (vargs @ [abstracted])) in
   refine_app gl t'
-  end }
+  end
 
 let rec shuffle p (t1,t2) =
   match t1,t2 with
@@ -1466,7 +1463,7 @@ let reintroduce id =
 open Proofview.Notations
 
 let coq_omega =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   clear_constr_tables ();
   let hyps_types = Tacmach.New.pf_hyps_types gl in
   let destructure_omega = destructure_omega gl in
@@ -1514,12 +1511,12 @@ let coq_omega =
       tclTHEN prelude (replay_history tactic_normalisation path)
     with NO_CONTRADICTION -> tclZEROMSG (Pp.str"Omega can't solve this system")
   end
-  end }
+  end
 
 let coq_omega = coq_omega
 
 let nat_inject =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let is_conv = Tacmach.New.pf_apply Reductionops.is_conv gl in
   let rec explore p t : unit Proofview.tactic =
     Proofview.tclEVARMAP >>= fun sigma ->
@@ -1655,7 +1652,7 @@ let nat_inject =
   in
   let hyps_types = Tacmach.New.pf_hyps_types gl in
   loop (List.rev hyps_types)
-  end }
+  end
 
 let dec_binop = function
   | Zne -> coq_dec_Zne
@@ -1729,19 +1726,19 @@ let onClearedName id tac =
   (* so renaming may be necessary *)
   tclTHEN
     (tclTRY (clear [id]))
-    (Proofview.Goal.nf_enter { enter = begin fun gl ->
+    (Proofview.Goal.nf_enter begin fun gl ->
      let id = fresh_id [] id gl in
      tclTHEN (introduction id) (tac id)
-    end })
+    end)
 
 let onClearedName2 id tac =
   tclTHEN
     (tclTRY (clear [id]))
-    (Proofview.Goal.nf_enter { enter = begin fun gl ->
+    (Proofview.Goal.nf_enter begin fun gl ->
      let id1 = fresh_id [] (add_suffix id "_left") gl in
      let id2 = fresh_id [] (add_suffix id "_right") gl in
       tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
-    end })
+    end)
 
 let rec is_Prop sigma c = match EConstr.kind sigma c with
   | Sort s -> Sorts.is_prop (ESorts.kind sigma s)
@@ -1749,7 +1746,7 @@ let rec is_Prop sigma c = match EConstr.kind sigma c with
   | _ -> false
 
 let destructure_hyps =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let type_of = Tacmach.New.pf_unsafe_type_of gl in
   let decidability = decidability gl in
   let pf_nf = pf_nf gl in
@@ -1888,10 +1885,10 @@ let destructure_hyps =
     in
     let hyps = Proofview.Goal.hyps gl in
     loop hyps
-  end }
+  end
 
 let destructure_goal =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let decidability = decidability gl in
     let rec loop t =
@@ -1910,9 +1907,9 @@ let destructure_goal =
 	    try
 	      let dec = decidability t in
 	      tclTHEN
-                (Proofview.Goal.nf_enter { enter = begin fun gl ->
+                (Proofview.Goal.nf_enter begin fun gl ->
 		                         refine_app gl (mkApp (Lazy.force coq_dec_not_not, [| t; dec |]))
-		                         end })
+		                         end)
 	        intro
 	    with Undecidable -> Tactics.elim_type (Lazy.force coq_False)
 	    | e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
@@ -1920,7 +1917,7 @@ let destructure_goal =
 	  tclTHEN goal_tac destructure_hyps
     in
     (loop concl)
-  end }
+  end
 
 let destructure_goal = destructure_goal
 

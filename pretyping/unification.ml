@@ -31,7 +31,6 @@ open Recordops
 open Locus
 open Locusops
 open Find_subterm
-open Sigma.Notations
 
 type metabinding = (metavariable * EConstr.constr * (instance_constraint * instance_typing_status))
 
@@ -145,9 +144,7 @@ let set_occurrences_of_last_arg args =
   Some AllOccurrences :: List.tl (Array.map_to_list (fun _ -> None) args)
 
 let abstract_list_all_with_dependencies env evd typ c l =
-  let evd = Sigma.Unsafe.of_evar_map evd in
-  let Sigma (ev, evd, _) = new_evar env evd typ in
-  let evd = Sigma.to_evar_map evd in
+  let (evd, ev) = new_evar env evd typ in
   let evd,ev' = evar_absorb_arguments env evd (destEvar evd ev) l in
   let n = List.length l in
   let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
@@ -1239,20 +1236,19 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
  * close it off.  But this might not always work,
  * since other metavars might also need to be resolved. *)
 
-let applyHead env (type r) (evd : r Sigma.t) n c =
-  let rec apprec : type s. _ -> _ -> _ -> (r, s) Sigma.le -> s Sigma.t -> (constr, r) Sigma.sigma =
-    fun n c cty p evd ->
+let applyHead env evd n c  =
+  let rec apprec n c cty evd =
     if Int.equal n 0 then
-      Sigma (c, evd, p)
+      (evd, c)
     else
-      let sigma = Sigma.to_evar_map evd in
-      match EConstr.kind sigma (whd_all env sigma cty) with
+      match EConstr.kind evd (whd_all env evd cty) with
       | Prod (_,c1,c2) ->
-        let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.tag Evar_kinds.GoalEvar) c1 in
-	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
+        let (evd',evar) =
+      Evarutil.new_evar env evd ~src:(Loc.tag Evar_kinds.GoalEvar) c1 in
+      apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
       | _ -> user_err Pp.(str "Apply_Head_Then")
   in
-    apprec n c (Typing.unsafe_type_of env (Sigma.to_evar_map evd) c) Sigma.refl evd
+    apprec n c (Typing.unsafe_type_of env evd c) evd
 
 let is_mimick_head sigma ts f =
   match EConstr.kind sigma f with
@@ -1416,9 +1412,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
   and mimick_undefined_evar evd flags hdc nargs sp =
     let ev = Evd.find_undefined evd sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
-    let evd = Sigma.Unsafe.of_evar_map evd in
-    let Sigma (c, evd', _) = applyHead sp_env evd nargs hdc in
-    let evd' = Sigma.to_evar_map evd' in
+    let (evd', c) = applyHead sp_env evd nargs hdc in
     let (evd'',mc,ec) =
       unify_0 sp_env evd' CUMUL flags
         (get_type_of sp_env evd' c) (EConstr.of_constr ev.evar_concl) in
@@ -1534,10 +1528,9 @@ let indirectly_dependent sigma c d decls =
     List.exists (fun d' -> dependent_in_decl sigma (EConstr.mkVar (NamedDecl.get_id d')) d) decls
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
-  let current_sigma = Sigma.to_evar_map current_sigma in
   let sigma = Pretyping.solve_remaining_evars flags env current_sigma pending in
   let sigma, subst = nf_univ_variables sigma in
-  Sigma.Unsafe.of_pair (EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr (nf_evar sigma c))), sigma)
+  (sigma, EConstr.of_constr (CVars.subst_univs_constr subst (EConstr.Unsafe.to_constr (nf_evar sigma c))))
 
 let default_matching_core_flags sigma =
   let ts = Names.full_transparent_state in {
@@ -1684,7 +1677,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
       if List.is_empty depdecls then None else Some (NamedDecl.get_id (List.last depdecls)) in
     let res = match out test with
     | None -> None
-    | Some (sigma, c) -> Some (Sigma.Unsafe.of_pair (c, sigma))
+    | Some (sigma, c) -> Some (sigma,c)
     in
     (id,sign,depdecls,lastlhyp,ccl,res)
   with
@@ -1711,10 +1704,9 @@ type abstraction_request =
 type 'r abstraction_result =
   Names.Id.t * named_context_val *
     named_declaration list * Names.Id.t option *
-    types * (constr, 'r) Sigma.sigma option
+    types * (evar_map * constr) option
 
 let make_abstraction env evd ccl abs =
-  let evd = Sigma.to_evar_map evd in
   match abs with
   | AbstractPattern (from_prefix,check,name,c,occs,check_occs) ->
       make_abstraction_core name

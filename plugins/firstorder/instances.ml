@@ -21,7 +21,6 @@ open Formula
 open Sequent
 open Names
 open Misctypes
-open Sigma.Notations
 open Context.Rel.Declaration
 
 let compare_instance inst1 inst2=
@@ -114,9 +113,7 @@ let mk_open_instance env evmap id idc m t =
   let rec aux n avoid env evmap decls =
     if Int.equal n 0 then evmap, decls else
       let nid=(fresh_id_in_env avoid var_id env) in
-      let evmap = Sigma.Unsafe.of_evar_map evmap in
-      let Sigma ((c, _), evmap, _) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
-      let evmap = Sigma.to_evar_map evmap in
+      let (evmap, (c, _)) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
       let decl = LocalAssum (Name nid, c) in
 	aux (n-1) (nid::avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
   let evmap, decls = aux m [] env evmap [] in
@@ -126,7 +123,7 @@ let mk_open_instance env evmap id idc m t =
 
 let left_instance_tac (inst,id) continue seq=
   let open EConstr in
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let sigma = project gl in
   match inst with
       Phantom dom->
@@ -137,10 +134,10 @@ let left_instance_tac (inst,id) continue seq=
 	    [tclTHENLIST
 	       [introf;
                 (pf_constr_of_global id >>= fun idc ->
-                Proofview.Goal.enter { enter = begin fun gl ->
+                Proofview.Goal.enter begin fun gl ->
                   let id0 = List.nth (pf_ids_of_hyps gl) 0 in
                   generalize [mkApp(idc, [|mkVar id0|])]
-                end });
+                end);
 		introf;
 		tclSOLVE [wrap 1 false continue
 			    (deepen (record (id,None) seq))]];
@@ -153,7 +150,7 @@ let left_instance_tac (inst,id) continue seq=
 	  let special_generalize=
 	    if m>0 then
 	      (pf_constr_of_global id >>= fun idc ->
-		Proofview.Goal.s_enter { s_enter = begin fun gl->
+		Proofview.Goal.enter begin fun gl->
 		  let (evmap, rc, ot) = mk_open_instance (pf_env gl) (project gl) id idc m t in
 		  let gt=
 		    it_mkLambda_or_LetIn
@@ -162,8 +159,9 @@ let left_instance_tac (inst,id) continue seq=
 		    try Typing.type_of (pf_env gl) evmap gt
 		    with e when CErrors.noncritical e ->
 		      user_err Pp.(str "Untypable instance, maybe higher-order non-prenex quantification") in
-		    Sigma.Unsafe.of_pair (generalize [gt], evmap)
-                end })
+                  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evmap)
+		    (generalize [gt])
+                end)
 	    else
 	      pf_constr_of_global id >>= fun idc -> generalize [mkApp(idc,[|t|])]
 	  in
@@ -172,20 +170,20 @@ let left_instance_tac (inst,id) continue seq=
 	       introf;
 	       tclSOLVE
 		 [wrap 1 false continue (deepen (record (id,Some c) seq))]]
-  end }
+  end
 
 let right_instance_tac inst continue seq=
   let open EConstr in
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   match inst with
       Phantom dom ->
 	tclTHENS (cut dom)
 	[tclTHENLIST
 	   [introf;
-            Proofview.Goal.enter { enter = begin fun gl ->
+            Proofview.Goal.enter begin fun gl ->
               let id0 = List.nth (pf_ids_of_hyps gl) 0 in
               split (ImplicitBindings [mkVar id0])
-            end };
+            end;
 	    tclSOLVE [wrap 0 true continue (deepen seq)]];
 	 tclTRY assumption]
     | Real ((0,t),_) ->
@@ -193,7 +191,7 @@ let right_instance_tac inst continue seq=
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
 	tclFAIL 0 (Pp.str "not implemented ... yet")
-  end }
+  end
 
 let instance_tac inst=
   if (snd inst)==dummy_id then
@@ -202,9 +200,9 @@ let instance_tac inst=
     left_instance_tac inst
 
 let quantified_tac lf backtrack continue seq =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let insts=give_instances (project gl) lf seq in
     tclORELSE
       (tclFIRST (List.map (fun inst->instance_tac inst continue seq) insts))
       backtrack
-  end }
+  end
