@@ -652,7 +652,7 @@ let clever_rewrite_base_poly typ p result theorem =
   let full = pf_concl gl in
   let env = pf_env gl in
   let (abstracted,occ) = abstract_path (project gl) typ (List.rev p) full in
-  Refine.refine begin fun sigma ->
+  Refine.refine ~unsafe:true begin fun sigma ->
   let t =
     applist
       (mkLambda
@@ -688,7 +688,7 @@ let clever_rewrite_gen_nat p result (t,args) =
 (** Solve using the term the term [t _] *)
 let refine_app gl t =
   let open Tacmach.New in
-  Refine.refine begin fun sigma ->
+  Refine.refine ~unsafe:true begin fun sigma ->
   let env = pf_env gl in
   let ht = match EConstr.kind sigma (pf_get_type_of gl t) with
   | Prod (_, t, _) -> t

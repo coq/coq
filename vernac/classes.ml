@@ -341,7 +341,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 		if not (Option.is_empty term) then
                   let init_refine =
                     Tacticals.New.tclTHENLIST [
-                      Refine.refine (fun evm -> (evm,EConstr.of_constr (Option.get term)));
+                      Refine.refine ~unsafe:true (fun evm -> (evm,EConstr.of_constr (Option.get term)));
                       Proofview.Unsafe.tclNEWGOALS gls;
                       Tactics.New.reduce_after_refine;
                     ]

@@ -527,7 +527,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
     mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
-  Refine.refine begin fun sigma ->
+  Refine.refine ~unsafe:true begin fun sigma ->
     let (sigma, evs) = mk_holes nenv sigma (List.map pi3 all) in
     let ids = List.map pi1 all in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
@@ -579,7 +579,7 @@ let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
     mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
-  Refine.refine begin fun sigma ->
+  Refine.refine ~unsafe:true begin fun sigma ->
     let (ids, types) = List.split all in
     let (sigma, evs) = mk_holes nenv sigma types in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
@@ -1914,7 +1914,7 @@ let cut_and_apply c =
       | Prod (_,c1,c2) when Vars.noccurn sigma 1 c2 ->
         let concl = Proofview.Goal.concl gl in
         let env = Tacmach.New.pf_env gl in
-        Refine.refine begin fun sigma ->
+        Refine.refine ~unsafe:true begin fun sigma ->
           let typ = mkProd (Anonymous, c2, concl) in
           let (sigma, f) = Evarutil.new_evar env sigma typ in
           let (sigma, x) = Evarutil.new_evar env sigma c1 in
@@ -1959,7 +1959,7 @@ let native_cast_no_check c = cast_no_check Term.NATIVEcast c
 let exact_proof c =
   let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
-  Refine.refine begin fun sigma ->
+  Refine.refine ~unsafe:true begin fun sigma ->
     let (c, ctx) = Constrintern.interp_casted_constr (pf_env gl) sigma c (pf_concl gl) in
     let c = EConstr.of_constr c in
     let sigma = Evd.merge_universe_context sigma ctx in
@@ -2128,7 +2128,7 @@ let apply_type newcl args =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
-    Refine.refine begin fun sigma ->
+    Refine.refine ~unsafe:true begin fun sigma ->
       let newcl = nf_betaiota sigma newcl (* As in former Logic.refine *) in
       let (sigma, ev) =
         Evarutil.new_evar env sigma ~principal:true ~store newcl in
@@ -2149,7 +2149,7 @@ let bring_hyps hyps =
       let concl = Tacmach.New.pf_concl gl in
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
       let args = Array.of_list (Context.Named.to_instance mkVar hyps) in
-      Refine.refine begin fun sigma ->
+      Refine.refine ~unsafe:true begin fun sigma ->
         let (sigma, ev) =
           Evarutil.new_evar env sigma ~principal:true ~store newcl in
         (sigma, mkApp (ev, args))
@@ -2888,7 +2888,7 @@ let new_generalize_gen_let lconstr =
 	0 lconstr (concl, sigma, [])
     in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-	(Refine.refine begin fun sigma ->
+	(Refine.refine ~unsafe:true begin fun sigma ->
           let (sigma, ev) = Evarutil.new_evar env sigma ~principal:true newcl in
           (sigma, applist (ev, args))
 	 end)
@@ -3598,7 +3598,7 @@ let mk_term_eq homogeneous env sigma ty t ty' t' =
 
 let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
   let open Context.Rel.Declaration in
-  Refine.refine begin fun sigma ->
+  Refine.refine ~unsafe:true begin fun sigma ->
   let eqslen = List.length eqs in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
   let sigma, abshypeq, abshypt =
