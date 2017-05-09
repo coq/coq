@@ -14,6 +14,8 @@ module OmegaSolver = Omega_plugin.Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
 
 module Id = Names.Id
+module IntSet = Int.Set
+module IntHtbl = Hashtbl.Make(Int)
 
 (* \section{Useful functions and flags} *)
 (* Especially useful debugging functions *)
@@ -39,10 +41,6 @@ type direction = Left of int | Right of int
    a path *)
 type occ_step = O_left | O_right | O_mono
 type occ_path = occ_step list
-
-let occ_step_eq s1 s2 = match s1, s2 with
-| O_left, O_left | O_right, O_right | O_mono, O_mono -> true
-| _ -> false
 
 (* chemin identifiant une proposition sous forme du nom de l'hypothèse et
    d'une liste de pas à partir de la racine de l'hypothèse *)
@@ -110,19 +108,19 @@ type environment = {
   mutable om_vars : (oformula * int) list;
   (* Traduction des indices utilisés ici en les indices finaux utilisés par
    * la tactique Omega après dénombrement des variables utiles *)
-  real_indices : (int,int) Hashtbl.t;
+  real_indices : int IntHtbl.t;
   mutable cnt_connectors : int;
-  equations : (int,oequation) Hashtbl.t;
-  constructors : (int, occurrence) Hashtbl.t
+  equations : oequation IntHtbl.t;
+  constructors : occurrence IntHtbl.t
 }
 
 (* \subsection{Solution tree}
    Définition d'une solution trouvée par Omega sous la forme d'un identifiant,
    d'un ensemble d'équation dont dépend la solution et d'une trace *)
-(* La liste des dépendances est triée et sans redondance *)
+
 type solution = {
   s_index : int;
-  s_equa_deps : int list;
+  s_equa_deps : IntSet.t;
   s_trace : action list }
 
 (* Arbre de solution résolvant complètement un ensemble de systèmes *)
@@ -141,6 +139,26 @@ type context_content =
     CCHyp of occurrence
   | CCEqua of int
 
+(** Some dedicated equality tests *)
+
+let occ_step_eq s1 s2 = match s1, s2 with
+| O_left, O_left | O_right, O_right | O_mono, O_mono -> true
+| _ -> false
+
+let rec oform_eq f f' = match f,f' with
+  | Oint i, Oint i' -> Bigint.equal i i'
+  | Oplus (f1,f2), Oplus (f1',f2')
+  | Omult (f1,f2), Omult (f1',f2')
+  | Ominus (f1,f2), Ominus (f1',f2') -> oform_eq f1 f1' && oform_eq f2 f2'
+  | Oopp f, Oopp f' -> oform_eq f f'
+  | Oatom a, Oatom a' -> Int.equal a a'
+  | Oufo f, Oufo f' -> oform_eq f f'
+  | _ -> false
+
+let dir_eq d d' = match d, d' with
+  | Left i, Left i' | Right i, Right i' -> Int.equal i i'
+  | _ -> false
+
 (* \section{Specific utility functions to handle base types} *)
 (* Nom arbitraire de l'hypothèse codant la négation du but final *)
 let id_concl = Id.of_string "__goal__"
@@ -148,9 +166,9 @@ let id_concl = Id.of_string "__goal__"
 (* Initialisation de l'environnement de réification de la tactique *)
 let new_environment () = {
   terms = []; props = []; om_vars = []; cnt_connectors = 0;
-  real_indices = Hashtbl.create 7;
-  equations = Hashtbl.create 7;
-  constructors = Hashtbl.create 7;
+  real_indices = IntHtbl.create 7;
+  equations = IntHtbl.create 7;
+  constructors = IntHtbl.create 7;
 }
 
 (* Génération d'un nom d'équation *)
@@ -200,11 +218,10 @@ let display_omega_var i = Printf.sprintf "OV%d" i
    le terme d'un monome (le plus souvent un atome) *)
 
 let intern_omega env t =
-  begin try List.assoc_f Pervasives.(=) t env.om_vars (* FIXME *)
+  try List.assoc_f oform_eq t env.om_vars
   with Not_found ->
     let v = new_omega_var () in
     env.om_vars <- (t,v) :: env.om_vars; v
-  end
 
 (* Ajout forcé d'un lien entre un terme et une variable  Cas où la
    variable est créée par Omega et où il faut la lier après coup à un atome
@@ -214,8 +231,8 @@ let intern_omega_force env t v = env.om_vars <- (t,v) :: env.om_vars
 (* Récupère le terme associé à une variable *)
 let unintern_omega env id =
   let rec loop = function
-	[] -> failwith "unintern"
-      | ((t,j)::l) -> if Int.equal id j then t else loop l in
+    | [] -> failwith "unintern"
+    | ((t,j)::l) -> if Int.equal id j then t else loop l in
   loop env.om_vars
 
 (* \subsection{Gestion des environnements de variable pour la réflexion}
@@ -248,12 +265,11 @@ let get_prop v env =
 (* Ajout d'une equation dans l'environnement de reification *)
 let add_equation env e =
   let id = e.e_omega.id in
-  try let _ = Hashtbl.find env.equations id in ()
-  with Not_found -> Hashtbl.add env.equations id e
+  if IntHtbl.mem env.equations id then () else IntHtbl.add env.equations id e
 
 (* accès a une equation *)
 let get_equation env id =
-  try Hashtbl.find env.equations id
+  try IntHtbl.find env.equations id
   with Not_found as e ->
     Printf.printf "Omega Equation %d non trouvée\n" id; raise e
 
@@ -337,10 +353,10 @@ let coq_of_formula env t =
 (* \subsection{Oformula vers COQ reifié} *)
 
 let reified_of_atom env i =
-  try Hashtbl.find env.real_indices i
+  try IntHtbl.find env.real_indices i
   with Not_found ->
     Printf.printf "Atome %d non trouvé\n" i;
-    Hashtbl.iter (fun k v -> Printf.printf "%d -> %d\n" k v) env.real_indices;
+    IntHtbl.iter (fun k v -> Printf.printf "%d -> %d\n" k v) env.real_indices;
     raise Not_found
 
 let rec reified_of_formula env = function
@@ -417,19 +433,19 @@ pour faire des opérations de normalisation sur les équations.  *)
 (* Extraction des variables d'une équation. *)
 (* Chaque fonction retourne une liste triée sans redondance *)
 
-let (@@) = List.merge_uniq compare
+let (@@) = IntSet.union
 
 let rec vars_of_formula = function
-  | Oint _ -> []
+  | Oint _ -> IntSet.empty
   | Oplus (e1,e2) -> (vars_of_formula e1) @@ (vars_of_formula e2)
   | Omult (e1,e2) -> (vars_of_formula e1) @@ (vars_of_formula e2)
   | Ominus (e1,e2) -> (vars_of_formula e1) @@ (vars_of_formula e2)
   | Oopp e -> vars_of_formula e
-  | Oatom i -> [i]
-  | Oufo _ -> []
+  | Oatom i -> IntSet.singleton i
+  | Oufo _ -> IntSet.empty
 
 let rec vars_of_equations = function
-  | [] -> []
+  | [] -> IntSet.empty
   | e::l ->
       (vars_of_formula e.e_left) @@
       (vars_of_formula e.e_right) @@
@@ -441,7 +457,7 @@ let rec vars_of_prop = function
   | Por(_,p1,p2) -> (vars_of_prop p1) @@ (vars_of_prop p2)
   | Pand(_,p1,p2) -> (vars_of_prop p1) @@ (vars_of_prop p2)
   | Pimp(_,p1,p2) -> (vars_of_prop p1) @@ (vars_of_prop p2)
-  | Pprop _ | Ptrue | Pfalse -> []
+  | Pprop _ | Ptrue | Pfalse -> IntSet.empty
 
 (* \subsection{Multiplication par un scalaire} *)
 
@@ -694,7 +710,7 @@ and binprop env (neg2,depends,origin,path)
   let depends1 = if add_to_depends then Left i::depends else depends in
   let depends2 = if add_to_depends then Right i::depends else depends in
   if add_to_depends then
-    Hashtbl.add env.constructors i {o_hyp = origin; o_path = List.rev path};
+    IntHtbl.add env.constructors i {o_hyp = origin; o_path = List.rev path};
   let t1' =
     oproposition_of_constr env (neg1,depends1,origin,O_left::path) gl t1 in
   let t2' =
@@ -754,14 +770,14 @@ let reify_gl env gl =
   let hyps = Tacmach.New.pf_hyps_types gl in
   let hyps = List.map (fun (i,t) -> (i,EConstr.Unsafe.to_constr t)) hyps in
   let t_concl =
-    Pnot (oproposition_of_constr env (true,[],id_concl,[O_mono]) gl concl) in
+    oproposition_of_constr env (true,[],id_concl,[O_mono]) gl concl in
   let t_lhyps =
     List.map
       (fun (i,t) -> i,oproposition_of_constr env (false,[],i,[]) gl t)
       hyps
   in
   let () = if !debug then display_gl env t_concl t_lhyps in
-  (id_concl,t_concl) :: t_lhyps
+  t_concl, t_lhyps
 
 let rec destruct_pos_hyp eqns = function
   | Pequa (_,e) -> [e :: eqns]
@@ -841,38 +857,35 @@ let display_systems syst_list =
    calcul des hypothèses *)
 
 let rec hyps_used_in_trace = function
+  | [] -> IntSet.empty
   | act :: l ->
-      begin match act with
-	| HYP e -> [e.id] @@ (hyps_used_in_trace l)
-	| SPLIT_INEQ (_,(_,act1),(_,act2)) ->
-	    hyps_used_in_trace act1 @@ hyps_used_in_trace act2
-	| _ -> hyps_used_in_trace l
-      end
-  | [] -> []
+     match act with
+     | HYP e -> IntSet.add e.id (hyps_used_in_trace l)
+     | SPLIT_INEQ (_,(_,act1),(_,act2)) ->
+        hyps_used_in_trace act1 @@ hyps_used_in_trace act2
+     | _ -> hyps_used_in_trace l
 
 (* Extraction des variables déclarées dans une équation. Permet ensuite
    de les déclarer dans l'environnement de la procédure réflexive et
    éviter les créations de variable au vol *)
 
 let rec variable_stated_in_trace = function
-  | act :: l ->
-      begin match act with
-	| STATE action ->
-	    (*i nlle_equa: afine, def: afine, eq_orig: afine, i*)
-            (*i coef: int, var:int                            i*)
-	    action :: variable_stated_in_trace l
-	| SPLIT_INEQ (_,(_,act1),(_,act2)) ->
-	    variable_stated_in_trace act1 @ variable_stated_in_trace act2
-	| _ -> variable_stated_in_trace l
-      end
   | [] -> []
-;;
+  | act :: l ->
+     match act with
+     | STATE action ->
+        (*i nlle_equa: afine, def: afine, eq_orig: afine, i*)
+        (*i coef: int, var:int                            i*)
+        action :: variable_stated_in_trace l
+     | SPLIT_INEQ (_,(_,act1),(_,act2)) ->
+        variable_stated_in_trace act1 @ variable_stated_in_trace act2
+     | _ -> variable_stated_in_trace l
 
 let add_stated_equations env tree =
   (* Il faut trier les variables par ordre d'introduction pour ne pas risquer
      de définir dans le mauvais ordre *)
   let stated_equations =
-    let cmpvar x y = Pervasives.(-) x.st_var y.st_var in
+    let cmpvar x y = Int.compare x.st_var y.st_var in
     let rec loop = function
       | Tree(_,t1,t2) -> List.merge cmpvar (loop t1) (loop t2)
       | Leaf s -> List.sort cmpvar (variable_stated_in_trace s.s_trace)
@@ -904,22 +917,22 @@ let add_stated_equations env tree =
    arg, then second arg), unless you know what you're doing. *)
 
 let rec get_eclatement env = function
-    i :: r ->
-      let l = try (get_equation env i).e_depends with Not_found -> [] in
-      List.union Pervasives.(=) (List.rev l) (get_eclatement env r)
   | [] -> []
+  | i :: r ->
+     let l = try (get_equation env i).e_depends with Not_found -> [] in
+     List.union dir_eq (List.rev l) (get_eclatement env r)
 
 let select_smaller l =
-  let comp (_,x) (_,y) = Pervasives.(-) (List.length x) (List.length y) in
+  let comp (_,x) (_,y) = Int.compare (List.length x) (List.length y) in
   try List.hd (List.sort comp l) with Failure _ -> failwith "select_smaller"
 
 let filter_compatible_systems required systems =
   let rec select = function
-      (x::l) ->
-	if List.mem x required then select l
-	else if List.mem (barre x) required then raise Exit
-	else x :: select l
     | [] -> []
+    | (x::l) ->
+       if List.mem_f dir_eq x required then select l
+       else if List.mem_f dir_eq (barre x) required then raise Exit
+       else x :: select l
   in
   List.map_filter
     (function (sol, splits) ->
@@ -935,46 +948,45 @@ let rec equas_of_solution_tree = function
    to be undecidable in ReflOmegaCore.concl_to_hyp, whereas for instance
    Pfalse is decidable. So should not be used on conclusion (??) *)
 
-let really_useful_prop l_equa c =
-  let rec real_of = function
-      Pequa(t,_) -> t
-    | Ptrue ->  app  coq_True [||]
-    | Pfalse -> app  coq_False [||]
-    | Pnot t1 -> app coq_not [|real_of t1|]
-    | Por(_,t1,t2) -> app coq_or [|real_of t1; real_of t2|]
-    | Pand(_,t1,t2) -> app coq_and [|real_of t1; real_of t2|]
-    (* Attention : implications sur le lifting des variables à comprendre ! *)
-    | Pimp(_,t1,t2) -> Term.mkArrow (real_of t1) (real_of t2)
-    | Pprop t -> t in
-  let rec loop c =
-    match c with
-      Pequa(_,e) ->
-	if List.mem e.e_omega.id l_equa then Some c else None
-    | Ptrue -> None
-    | Pfalse -> None
+let rec coq_of_oprop = function
+  | Pequa(t,_) -> t
+  | Ptrue -> app coq_True [||]
+  | Pfalse -> app coq_False [||]
+  | Pnot t1 -> app coq_not [|coq_of_oprop t1|]
+  | Por(_,t1,t2) -> app coq_or [|coq_of_oprop t1; coq_of_oprop t2|]
+  | Pand(_,t1,t2) -> app coq_and [|coq_of_oprop t1; coq_of_oprop t2|]
+  (* Attention : implications sur le lifting des variables à comprendre ! *)
+  | Pimp(_,t1,t2) -> Term.mkArrow (coq_of_oprop t1) (coq_of_oprop t2)
+  | Pprop t -> t
+
+let really_useful_prop equas c =
+  let rec loop c = match c with
+    | Pequa(_,e) -> if IntSet.mem e.e_omega.id equas then Some c else None
     | Pnot t1 ->
-	begin match loop t1 with None -> None | Some t1' -> Some (Pnot t1') end
+       begin match loop t1 with None -> None | Some t1' -> Some (Pnot t1') end
     | Por(i,t1,t2) -> binop (fun (t1,t2) -> Por(i,t1,t2)) t1 t2
     | Pand(i,t1,t2) -> binop (fun (t1,t2) -> Pand(i,t1,t2)) t1 t2
     | Pimp(i,t1,t2) -> binop (fun (t1,t2) -> Pimp(i,t1,t2)) t1 t2
-    | Pprop t -> None
+    | Ptrue | Pfalse | Pprop _ -> None
   and binop f t1 t2 =
     begin match loop t1, loop t2 with
       None, None -> None
     | Some t1',Some t2' -> Some (f(t1',t2'))
-    | Some t1',None -> Some (f(t1',Pprop (real_of t2)))
-    | None,Some t2' -> Some (f(Pprop (real_of t1),t2'))
-    end in
+    | Some t1',None -> Some (f(t1',Pprop (coq_of_oprop t2)))
+    | None,Some t2' -> Some (f(Pprop (coq_of_oprop t1),t2'))
+    end
+  in
   match loop c with
-    None -> Pprop (real_of c)
+  | None -> Pprop (coq_of_oprop c)
   | Some t -> t
 
 let rec display_solution_tree ch = function
     Leaf t ->
       output_string ch
        (Printf.sprintf "%d[%s]"
-	 t.s_index
-         (String.concat " " (List.map string_of_int t.s_equa_deps)))
+         t.s_index
+         (String.concat " " (List.map string_of_int
+                                      (IntSet.elements t.s_equa_deps))))
   | Tree(i,t1,t2) ->
       Printf.fprintf ch "S%d(%a,%a)" i
 	display_solution_tree t1 display_solution_tree t2
@@ -1024,8 +1036,11 @@ let mk_direction_list l =
 (* \section{Rejouer l'historique} *)
 
 let get_hyp env_hyp i =
-  try List.index0 Pervasives.(=) (CCEqua i) env_hyp
-  with Not_found -> failwith (Printf.sprintf "get_hyp %d" i)
+  let rec loop count = function
+    | [] -> failwith (Printf.sprintf "get_hyp %d" i)
+    | CCEqua i' :: _ when Int.equal i i' -> count
+    | _ :: l -> loop (succ count) l
+  in loop 0 env_hyp
 
 let replay_history env env_hyp =
   let rec loop env_hyp t =
@@ -1120,7 +1135,7 @@ let replay_history env env_hyp =
 let rec decompose_tree env ctxt = function
    Tree(i,left,right) ->
      let org =
-       try Hashtbl.find env.constructors i
+       try IntHtbl.find env.constructors i
        with Not_found ->
 	 failwith (Printf.sprintf "Cannot find constructor %d" i) in
      let (index,path) = find_path org ctxt in
@@ -1132,12 +1147,12 @@ let rec decompose_tree env ctxt = function
 	  decompose_tree env (left_hyp::ctxt) left;
 	  decompose_tree env (right_hyp::ctxt) right |]
   | Leaf s ->
-      decompose_tree_hyps s.s_trace env ctxt  s.s_equa_deps
+      decompose_tree_hyps s.s_trace env ctxt (IntSet.elements s.s_equa_deps)
 and decompose_tree_hyps trace env ctxt = function
     [] -> app coq_e_solve [| replay_history env ctxt trace |]
   | (i::l) ->
       let equation =
-        try Hashtbl.find env.equations i
+        try IntHtbl.find env.equations i
         with Not_found ->
 	  failwith (Printf.sprintf "Cannot find equation %d" i) in
       let (index,path) = find_path equation.e_origin ctxt in
@@ -1157,7 +1172,7 @@ l'extraction d'un ensemble minimal de solutions permettant la
 résolution globale du système et enfin construit la trace qui permet
 de faire rejouer cette solution par la tactique réflexive. *)
 
-let resolution env full_reified_goal systems_list =
+let resolution env (reified_concl,reified_hyps) systems_list =
   let num = ref 0 in
   let solve_system list_eq =
     let index = !num in
@@ -1166,14 +1181,14 @@ let resolution env full_reified_goal systems_list =
       simplify_strong
 	(new_omega_eq,new_omega_var,display_omega_var)
 	system in
-    (* calcule les hypotheses utilisées pour la solution *)
+    (* Hypotheses used for this solution *)
     let vars = hyps_used_in_trace trace in
-    let splits = get_eclatement env vars in
+    let splits = get_eclatement env (IntSet.elements vars) in
     if !debug then begin
       Printf.printf "SYSTEME %d\n" index;
       display_action display_omega_var trace;
       print_string "\n  Depend :";
-      List.iter (fun i -> Printf.printf " %d" i) vars;
+      IntSet.iter (fun i -> Printf.printf " %d" i) vars;
       print_string "\n  Split points :";
       List.iter display_depend splits;
       Printf.printf "\n------------------------------------\n"
@@ -1187,23 +1202,21 @@ let resolution env full_reified_goal systems_list =
     display_solution_tree stdout solution_tree;
     print_newline()
   end;
-  (* calcule la liste de toutes les hypothèses utilisées dans l'arbre de solution *)
-  let useful_equa_id = equas_of_solution_tree solution_tree in
-  (* recupere explicitement ces equations *)
-  let equations = List.map (get_equation env) useful_equa_id in
-  let l_hyps' = List.uniquize (List.map (fun e -> e.e_origin.o_hyp) equations) in
-  let l_hyps = id_concl :: List.remove Id.equal id_concl l_hyps' in
-  let useful_hyps =
-    List.map
-      (fun id -> List.assoc_f Id.equal id full_reified_goal) l_hyps
+  (* Collect all hypotheses used in the solution tree *)
+  let useful_equa_ids = equas_of_solution_tree solution_tree in
+  let equations = List.map (get_equation env) (IntSet.elements useful_equa_ids)
   in
-  let useful_vars =
-    let really_useful_vars = vars_of_equations equations in
-    let concl_vars =
-      vars_of_prop (List.assoc_f Id.equal id_concl full_reified_goal)
-    in
-    really_useful_vars @@ concl_vars
+  let hyps_of_eqns =
+    List.fold_left (fun s e -> Id.Set.add e.e_origin.o_hyp s) Id.Set.empty in
+  let hyps = hyps_of_eqns equations in
+  let useful_hypnames = Id.Set.elements (Id.Set.remove id_concl hyps) in
+  let all_names = id_concl :: useful_hypnames in
+  let useful_hyptypes =
+    List.map (fun id -> List.assoc_f Id.equal id reified_hyps) useful_hypnames
   in
+  let useful_vars = vars_of_equations equations @@ vars_of_prop reified_concl
+  in
+
   (* variables a introduire *)
   let to_introduce = add_stated_equations env solution_tree in
   let stated_vars =  List.map (fun (v,_,_,_) -> v) to_introduce in
@@ -1212,13 +1225,14 @@ let resolution env full_reified_goal systems_list =
   (* L'environnement de base se construit en deux morceaux :
      - les variables des équations utiles (et de la conclusion)
      - les nouvelles variables declarées durant les preuves *)
-  let all_vars_env = useful_vars @ stated_vars in
+  let all_vars_env = (IntSet.elements useful_vars) @ stated_vars in
   let basic_env =
     let rec loop i = function
-	var :: l ->
-	  let t = get_reified_atom env var in
-	  Hashtbl.add env.real_indices var i; t :: loop (succ i) l
-      |	[] -> [] in
+      | [] -> []
+      | var :: l ->
+         let t = get_reified_atom env var in
+         IntHtbl.add env.real_indices var i; t :: loop (succ i) l
+    in
     loop 0 all_vars_env in
   let env_terms_reified = mk_list (Lazy.force Z.typ) basic_env in
   (* On peut maintenant généraliser le but : env est a jour *)
@@ -1227,15 +1241,13 @@ let resolution env full_reified_goal systems_list =
                  app coq_p_eq [| reified_of_formula env l;
                                  reified_of_formula env r |])
               to_introduce in
-  let reified_concl =
-    match useful_hyps with
-      (Pnot p) :: _ -> reified_of_proposition env p
-    | _ ->  reified_of_proposition env Pfalse in
+  let reified_concl = reified_of_proposition env reified_concl in
   let l_reified_terms =
-    (List.map
+    List.map
       (fun p ->
-         reified_of_proposition env (really_useful_prop useful_equa_id p))
-      (List.tl useful_hyps)) in
+        reified_of_proposition env (really_useful_prop useful_equa_ids p))
+      useful_hyptypes
+  in
   let env_props_reified = mk_plist env.props in
   let reified_goal =
     mk_list (Lazy.force coq_proposition)
@@ -1251,7 +1263,7 @@ let resolution env full_reified_goal systems_list =
       |	((O_left | O_mono) :: l) -> app coq_p_left [| loop l |]
       |	(O_right :: l) -> app coq_p_right [| loop l |] in
     let correct_index =
-      let i = List.index0 Id.equal e.e_origin.o_hyp l_hyps in
+      let i = List.index0 Id.equal e.e_origin.o_hyp all_names in
       (* PL: it seems that additionally introduced hyps are in the way during
              normalization, hence this index shifting... *)
       if Int.equal i 0 then 0 else Pervasives.(+) i (List.length to_introduce)
@@ -1261,13 +1273,13 @@ let resolution env full_reified_goal systems_list =
     mk_list (Lazy.force coq_h_step) (List.map normalize_equation equations) in
 
   let initial_context =
-    List.map (fun id -> CCHyp{o_hyp=id;o_path=[]}) (List.tl l_hyps) in
+    List.map (fun id -> CCHyp{o_hyp=id;o_path=[]}) useful_hypnames in
   let context =
     CCHyp{o_hyp=id_concl;o_path=[]} :: hyp_stated_vars @ initial_context in
   let decompose_tactic = decompose_tree env context solution_tree in
 
   Tactics.generalize
-    (l_generalize_arg @ List.map EConstr.mkVar (List.tl l_hyps)) >>
+    (l_generalize_arg @ List.map EConstr.mkVar useful_hypnames) >>
   Tactics.change_concl reified >>
   Tactics.apply (EConstr.of_constr (app coq_do_omega [|decompose_tactic; normalization_trace|])) >>
   show_goal >>
@@ -1287,10 +1299,11 @@ let total_reflexive_omega_tactic =
   rst_omega_var ();
   try
   let env = new_environment () in
-  let full_reified_goal = reify_gl env gl in
+  let (concl,hyps) as reified_goal = reify_gl env gl in
+  let full_reified_goal = (id_concl,Pnot concl) :: hyps in
   let systems_list = destructurate_hyps full_reified_goal in
   if !debug then display_systems systems_list;
-  resolution env full_reified_goal systems_list
+  resolution env reified_goal systems_list
   with NO_CONTRADICTION -> CErrors.error "ROmega can't solve this system"
   end }
 
