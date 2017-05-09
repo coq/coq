@@ -144,6 +144,9 @@ In Coqlib / reference location:
 - The tclWEAK_PROGRESS and tclNOTSAMEGOAL tacticals were removed. Their usecase
   was very specific. Use tclPROGRESS instead.
 
+- The Refine.refine function and its variants now have the unsafe flag turned
+  down by default.
+
 ** Ltac API **
 
 Many Ltac specific API has been moved in its own ltac/ folder. Amongst other
