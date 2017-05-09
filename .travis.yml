@@ -36,6 +36,7 @@ env:
   - TEST_TARGET="ci-fiat-crypto"
   - TEST_TARGET="ci-fiat-parsers"
   - TEST_TARGET="ci-flocq"
+  - TEST_TARGET="ci-formal-topology"
   - TEST_TARGET="ci-hott"
   - TEST_TARGET="ci-iris-coq"
   - TEST_TARGET="ci-math-classes"
