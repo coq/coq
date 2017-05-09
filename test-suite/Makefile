@@ -406,103 +406,23 @@ modules/%.vo: modules/%.v
 # Miscellaneous tests
 #######################################################################
 
-misc: misc/deps-order.log misc/universes.log misc/deps-checksum.log misc/printers.log misc/exitstatus.log
+misc: $(patsubst %.sh,%.log,$(wildcard misc/*.sh))
 
-# Check that both coqdep and coqtop/coqc supports -R
-# Check that both coqdep and coqtop/coqc takes the later -R
-# See bugs 2242, 2337, 2339
-deps-order: misc/deps-order.log
-misc/deps-order.log:
-	@echo "TEST      misc/deps-order"
-	$(HIDE){ \
-	  echo $(call log_intro,deps-order); \
-	  rm -f misc/deps/*/*.vo; \
-	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
-	  $(coqdep) -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/bar.v 2>&1 \
-	    | head -n 1 > $$tmpoutput; \
-	  diff -u misc/deps/deps.out $$tmpoutput 2>&1; R=$$?; times; \
-	  $(coqc) -R misc/deps/lib lib misc/deps/lib/foo.v 2>&1; \
-	  $(coqc) -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/foo.v 2>&1; \
-	  $(coqtop) -R misc/deps/lib lib -R misc/deps/client client -load-vernac-source misc/deps/client/bar.v 2>&1; \
-	  S=$$?; times; \
-	  if [ $$R = 0 -a $$S = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    misc/deps-order...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    misc/deps-order...Error! (unexpected order)"; \
-	  fi; \
-	  rm $$tmpoutput; \
-	} > "$@"
-
-deps-checksum: misc/deps-checksum.log
-misc/deps-checksum.log:
-	@echo "TEST      misc/deps-checksum"
-	$(HIDE){ \
-	  echo $(call log_intro,deps-checksum); \
-	  rm -f misc/deps/*/*.vo; \
-	  $(coqc) -R misc/deps/A A misc/deps/A/A.v; \
-	  $(coqc) -R misc/deps/B A misc/deps/B/A.v; \
-	  $(coqc) -R misc/deps/B A misc/deps/B/B.v; \
-	  $(coqtop) -R misc/deps/B A -R misc/deps/A A -load-vernac-source misc/deps/checksum.v 2>&1; \
-	  if [ $$? = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    misc/deps-checksum...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    misc/deps-checksum...Error!"; \
-	  fi; \
-	} > "$@"
-
-
-# Sort universes for the whole standard library
-EXPECTED_UNIVERSES := 4 # Prop is not counted
-universes: misc/universes.log
-misc/universes.log: misc/universes/all_stdlib.v
-	@echo "TEST      misc/universes"
-	$(HIDE){ \
-	  $(coqc) -R misc/universes Universes misc/universes/all_stdlib 2>&1; \
-	  $(coqc) -R misc/universes Universes misc/universes/universes 2>&1; \
-	  mv universes.txt misc/universes; \
-	  N=`awk '{print $$3}' misc/universes/universes.txt | sort -u | wc -l`; \
-	  times; \
-	  if [ "$$N" -eq $(EXPECTED_UNIVERSES) ]; then \
-	    echo $(log_success); \
-	    echo "    misc/universes...Ok ($(EXPECTED_UNIVERSES) universes)"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    misc/universes...Error! ($$N/$(EXPECTED_UNIVERSES) universes)"; \
-	  fi; \
-	} > "$@"
-
-misc/universes/all_stdlib.v:
-	cd .. && $(MAKE) test-suite/$@
-
-misc/printers.log:
-	@echo "TEST      printers"
+$(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
+	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  printf "Drop. #use\"include\";; #quit;;" | $(coqtopbyte) 2>&1 | grep Unbound; R=$$?; times; \
-	  if [ $$R != 0 ]; then \
+	  export coqc="$(coqc)"; \
+	  export coqtop="$(coqtop)"; \
+	  export coqdep="$(coqdep)"; \
+	  export coqtopbyte="$(coqtopbyte)"; \
+	  "$<" 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
-	    echo "    misc/printers...Ok"; \
+	    echo "    $<...Ok"; \
 	  else \
 	    echo $(log_failure); \
-	    echo "    misc/printers...Error!"; \
-	  fi; \
-	} > "$@"
-
-misc/exitstatus.log:
-	@echo "TEST      exitstatus"
-	$(HIDE){ \
-	  echo $(call log_intro,$<); \
-	  $(coqc) misc/exitstatus/illtyped.v 2>&1; R=$$?; times; \
-	  if [ $$R != 0 ]; then \
-	    echo $(log_success); \
-	    echo "    misc/exitstatus...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    misc/exitstatus...Error!"; \
+	    echo "    $<...Error!"; \
 	  fi; \
 	} > "$@"
 
