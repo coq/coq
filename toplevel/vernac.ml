@@ -323,8 +323,5 @@ let compile verbosely f =
 
 let compile v f =
   ignore(CoqworkmgrApi.get 1);
-  begin
-    try compile v f
-    with any -> Topfmt.print_err_exn any
-  end;
+  compile v f;
   CoqworkmgrApi.giveback 1
