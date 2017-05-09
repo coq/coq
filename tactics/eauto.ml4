@@ -355,13 +355,13 @@ let mk_eauto_dbg d =
   else Off
 
 let pr_info_nop = function
-  | Info -> msg_debug (str "idtac.")
+  | Info -> msg_info (str "idtac.")
   | _ -> ()
 
 let pr_dbg_header = function
   | Off -> ()
   | Debug -> msg_debug (str "(* debug eauto : *)")
-  | Info -> msg_debug (str "(* info eauto : *)")
+  | Info -> msg_info (str "(* info eauto : *)")
 
 let pr_info dbg s =
   if dbg != Info then ()
@@ -372,7 +372,7 @@ let pr_info dbg s =
 	| State sp ->
 	  let mindepth = loop sp in
 	  let indent = String.make (mindepth - sp.depth) ' ' in
-	  msg_debug (str indent ++ Lazy.force s.last_tactic ++ str ".");
+	  msg_info (str indent ++ Lazy.force s.last_tactic ++ str ".");
 	  mindepth
     in
     ignore (loop s)

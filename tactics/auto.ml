@@ -254,19 +254,19 @@ let pr_info_atom (d,pp) =
 
 let pr_info_trace = function
   | (Info,_,{contents=(d,Some pp)::l}) ->
-      msg_debug (prlist_with_sep fnl pr_info_atom (cleanup_info_trace d [(d,pp)] l))
+      msg_info (prlist_with_sep fnl pr_info_atom (cleanup_info_trace d [(d,pp)] l))
   | _ -> ()
 
 let pr_info_nop = function
-  | (Info,_,_) -> msg_debug (str "idtac.")
+  | (Info,_,_) -> msg_info (str "idtac.")
   | _ -> ()
 
 let pr_dbg_header = function
   | (Off,_,_) -> ()
   | (Debug,0,_) -> msg_debug (str "(* debug trivial : *)")
   | (Debug,_,_) -> msg_debug (str "(* debug auto : *)")
-  | (Info,0,_) -> msg_debug (str "(* info trivial : *)")
-  | (Info,_,_) -> msg_debug (str "(* info auto : *)")
+  | (Info,0,_) -> msg_info (str "(* info trivial : *)")
+  | (Info,_,_) -> msg_info (str "(* info auto : *)")
 
 let tclTRY_dbg d tac =
   let delay f = Proofview.tclUNIT () >>= fun () -> f () in
