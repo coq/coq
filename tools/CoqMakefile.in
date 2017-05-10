@@ -333,8 +333,7 @@ beautify: $(BEAUTYFILES)
 # There rules can be extended in @LOCAL_FILE@
 # Extensions can't assume when they run.
 
-install::
-	@# Extension point
+install: install-extra
 	$(HIDE)for f in $(FILESTOINSTALL); do\
 	 df="`$(COQMF_MAKEFILE) -destination-of "$$f" $(COQLIBS)`";\
 	 if [ -z "$$df" ]; then\
@@ -345,7 +344,9 @@ install::
 	   echo INSTALL "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df";\
 	 fi;\
 	done
-.PHONY: install
+install-extra::
+	@# Extension point
+.PHONY: install install-extra
 
 install-doc:: html mlihtml
 	@# Extension point

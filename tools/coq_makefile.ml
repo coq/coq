@@ -181,7 +181,7 @@ let generate_conf_subdirs oc sds =
   List.iter (fprintf oc "post-all::\n\tcd \"%s\" && $(MAKE) all\n") sds;
   List.iter (fprintf oc "clean::\n\tcd \"%s\" && $(MAKE) clean\n") sds;
   List.iter (fprintf oc "archclean::\n\tcd \"%s\" && $(MAKE) archclean\n") sds;
-  List.iter (fprintf oc "install::\n\tcd \"%s\" && $(MAKE) install\n") sds
+  List.iter (fprintf oc "install-extra::\n\tcd \"%s\" && $(MAKE) install\n") sds
    
 
 let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
