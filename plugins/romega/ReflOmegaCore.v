@@ -2879,6 +2879,10 @@ Proof.
  red. intros. now apply H.
 Qed.
 
+(** Attempt to shorten error messages if romega goes rogue...
+    NB: [interp_list_goal _ _ BUG = False /\ True]. *)
+Definition BUG : lhyps := nil :: nil.
+
 Fixpoint decompose_solve (s : e_step) (h : hyps) {struct s} : lhyps :=
   match s with
   | E_SPLIT i dl s1 s2 =>
@@ -2889,12 +2893,12 @@ Fixpoint decompose_solve (s : e_step) (h : hyps) {struct s} : lhyps :=
           then
            decompose_solve s1 (Tnot x :: h) ++
            decompose_solve s2 (Tnot y :: h)
-          else h :: nil
+          else BUG
       | Timp x y =>
           if decidability x then
             decompose_solve s1 (Tnot x :: h) ++ decompose_solve s2 (y :: h)
-          else h::nil
-      | _ => h :: nil
+          else BUG
+      | _ => BUG
       end
   | E_EXTRACT i dl s1 =>
       decompose_solve s1 (extract_hyp_pos dl (nth_hyps i h) :: h)
@@ -2939,9 +2943,9 @@ Definition valid_lhyps (f : lhyps -> lhyps) :=
 
 Fixpoint reduce_lhyps (lp : lhyps) : lhyps :=
   match lp with
+  | nil => nil
   | (FalseTerm :: nil) :: lp' => reduce_lhyps lp'
-  | x :: lp' => x :: reduce_lhyps lp'
-  | nil => nil (A:=hyps)
+  | x :: lp' => BUG
   end.
 
 Theorem reduce_lhyps_valid : valid_lhyps reduce_lhyps.
