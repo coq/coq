@@ -327,13 +327,6 @@ Module IntProperties (I:Int).
  now rewrite <- mult_plus_distr_l, plus_opp_l, mult_comm, mult_0_l, plus_0_l.
  Qed.
 
- Lemma OMEGA15 :
-  forall v c1 c2 l1 l2 k2 : int,
-  v * c1 + l1 + (v * c2 + l2) * k2 = v * (c1 + c2 * k2) + (l1 + l2 * k2).
- Proof.
-  intros; autorewrite with int; f_equal; now rewrite plus_permute.
- Qed.
-
  Lemma OMEGA16 : forall v c l k : int, (v * c + l) * k = v * (c * k) + l * k.
  Proof.
   intros; now autorewrite with int.
@@ -1520,20 +1513,6 @@ Proof.
  apply OMEGA13.
 Qed.
 
-Definition T_OMEGA15 (t : term) :=
-  match t with
-  | (v * Tint c1 + l1 + (v' * Tint c2 + l2) * Tint k2)%term =>
-      if eq_term v v'
-      then (v * Tint (c1 + c2 * k2)%I + (l1 + l2 * Tint k2))%term
-      else t
-  | _ => t
-  end.
-
-Theorem T_OMEGA15_stable : term_stable T_OMEGA15.
-Proof.
- prove_stable T_OMEGA15 OMEGA15.
-Qed.
-
 Definition T_OMEGA16 (t : term) :=
   match t with
   | ((v * Tint c + l) * Tint k)%term => (v * Tint (c * k) + l * Tint k)%term
@@ -1803,20 +1782,6 @@ Proof.
        * apply apply_right_stable; assumption.
        * exact T_OMEGA12_stable.
 Qed.
-
-(* \paragraph{Fusion de deux équations dont une sans coefficient} *)
-
-Definition fusion_right (trace : list t_fusion) (t : term) : term :=
-  match trace with
-  | nil => reduce t (* Il faut mettre un compute *)
-  | step :: trace' =>
-      match step with
-      | F_equal => apply_right (fusion trace') (T_OMEGA15 t)
-      | F_cancel => fusion trace' (Tred_factor5 (T_OMEGA15 t))
-      | F_left => apply_right (fusion trace') (Tplus_assoc_r t)
-      | F_right => apply_right (fusion trace') (T_OMEGA12 t)
-      end
-  end.
 
 (* \paragraph{Fusion avec annihilation} *)
 (* Normalement le résultat est une constante *)
@@ -2349,7 +2314,7 @@ Proof.
 Qed.
 
 
-(* \subsection{La fonction de rejeu de la trace} *)
+(* \subsection{Replaying the resolution trace} *)
 
 Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
   match t with
@@ -2437,266 +2402,6 @@ Definition move_right (s : step) (p : proposition) :=
   | NeqTerm t1 t2 => NeqTerm (Tint 0) (t_rewrite s (t1 + - t2)%term)
   | p => p
   end.
-
-Theorem move_right_valid : forall s : step, valid1 (move_right s).
-Proof.
- unfold valid1, move_right; intros s ep e p; Simplify; simpl;
- elim (t_rewrite_stable s e); simpl.
- - symmetry ; apply egal_left; assumption.
- - intro; apply le_left; assumption.
- - intro; apply le_left; rewrite <- ge_le_iff; assumption.
- - intro; apply lt_left; rewrite <- gt_lt_iff; assumption.
- - intro; apply lt_left; assumption.
- - intro; apply ne_left_2; assumption.
-Qed.
-
-Definition do_normalize (i : nat) (s : step) := apply_oper_1 i (move_right s).
-
-Theorem do_normalize_valid :
- forall (i : nat) (s : step), valid_hyps (do_normalize i s).
-Proof.
- intros; unfold do_normalize; apply apply_oper_1_valid;
- apply move_right_valid.
-Qed.
-
-Fixpoint do_normalize_list (l : list step) (i : nat)
- (h : hyps) {struct l} : hyps :=
-  match l with
-  | s :: l' => do_normalize_list l' (S i) (do_normalize i s h)
-  | nil => h
-  end.
-
-Theorem do_normalize_list_valid :
- forall (l : list step) (i : nat), valid_hyps (do_normalize_list l i).
-Proof.
- simple induction l; simpl; unfold valid_hyps.
- - auto.
- - intros a l' Hl' i ep e lp H; unfold valid_hyps in Hl'; apply Hl';
-    apply (do_normalize_valid i a ep e lp); assumption.
-Qed.
-
-Theorem normalize_goal :
- forall (s : list step) (ep : list Prop) (env : list int) (l : hyps),
- interp_goal ep env (do_normalize_list s 0 l) -> interp_goal ep env l.
-Proof.
- intros; apply valid_goal with (2 := H); apply do_normalize_list_valid.
-Qed.
-
-(* \subsubsection{Exécution de la trace} *)
-
-Theorem execute_goal :
- forall (tr : t_omega) (ep : list Prop) (env : list int) (l : hyps),
- interp_list_goal ep env (execute_omega tr l) -> interp_goal ep env l.
-Proof.
- intros; apply (goal_valid (execute_omega tr) (omega_valid tr) ep env l H).
-Qed.
-
-
-Theorem append_goal :
- forall (ep : list Prop) (e : list int) (l1 l2 : lhyps),
- interp_list_goal ep e l1 /\ interp_list_goal ep e l2 ->
- interp_list_goal ep e (l1 ++ l2).
-Proof.
- intros ep e; induction l1; simpl.
- - intros l2 (H1, H2); assumption.
- - intros l2 ((H1, H2), H3); split; auto.
-Qed.
-
-(* A simple decidability checker : if the proposition belongs to the
-   simple grammar describe below then it is decidable. Proof is by
-   induction and uses well known theorem about arithmetic and propositional
-   calculus *)
-
-Fixpoint decidability (p : proposition) : bool :=
-  match p with
-  | EqTerm _ _ => true
-  | LeqTerm _ _ => true
-  | GeqTerm _ _ => true
-  | GtTerm _ _ => true
-  | LtTerm _ _ => true
-  | NeqTerm _ _ => true
-  | FalseTerm => true
-  | TrueTerm => true
-  | Tnot t => decidability t
-  | Tand t1 t2 => decidability t1 && decidability t2
-  | Timp t1 t2 => decidability t1 && decidability t2
-  | Tor t1 t2 => decidability t1 && decidability t2
-  | Tprop _ => false
-  end.
-
-Theorem decidable_correct :
- forall (ep : list Prop) (e : list int) (p : proposition),
- decidability p = true -> decidable (interp_proposition ep e p).
-Proof.
- simple induction p; simpl; intros.
- - apply dec_eq.
- - apply dec_le.
- - left; auto.
- - right; unfold not; auto.
- - apply dec_not; auto.
- - apply dec_ge.
- - apply dec_gt.
- - apply dec_lt.
- - apply dec_ne.
- - apply dec_or; elim andb_prop with (1 := H1); auto.
- - apply dec_and; elim andb_prop with (1 := H1); auto.
- - apply dec_imp; elim andb_prop with (1 := H1); auto.
- - discriminate H.
-Qed.
-
-(* An interpretation function for a complete goal with an explicit
-   conclusion. We use an intermediate fixpoint. *)
-
-Fixpoint interp_full_goal (envp : list Prop) (env : list int)
- (c : proposition) (l : hyps) {struct l} : Prop :=
-  match l with
-  | nil => interp_proposition envp env c
-  | p' :: l' =>
-      interp_proposition envp env p' -> interp_full_goal envp env c l'
-  end.
-
-Definition interp_full (ep : list Prop) (e : list int)
-  (lc : hyps * proposition) : Prop :=
-  match lc with
-  | (l, c) => interp_full_goal ep e c l
-  end.
-
-(* Relates the interpretation of a complete goal with the interpretation
-   of its hypothesis and conclusion *)
-
-Theorem interp_full_false :
- forall (ep : list Prop) (e : list int) (l : hyps) (c : proposition),
- (interp_hyps ep e l -> interp_proposition ep e c) -> interp_full ep e (l, c).
-Proof.
- simple induction l; unfold interp_full; simpl.
- - auto.
- - intros a l1 H1 c H2 H3; apply H1; auto.
-Qed.
-
-(* Push the conclusion in the list of hypothesis using a double negation
-   If the decidability cannot be "proven", then just forget about the
-   conclusion (equivalent of replacing it with false) *)
-
-Definition to_contradict (lc : hyps * proposition) :=
-  match lc with
-  | (l, c) => if decidability c then Tnot c :: l else l
-  end.
-
-(* The previous operation is valid in the sense that the new list of
-   hypothesis implies the original goal *)
-
-Theorem to_contradict_valid :
- forall (ep : list Prop) (e : list int) (lc : hyps * proposition),
- interp_goal ep e (to_contradict lc) -> interp_full ep e lc.
-Proof.
- intros ep e (l,c); simpl.
- destruct decidability eqn:H; simpl;
-  intros H1; apply interp_full_false; intros H2.
- - apply not_not.
-    + now apply decidable_correct.
-    + intro; apply hyps_to_goal with (2 := H2); auto.
- - now elim hyps_to_goal with (1 := H1).
-Qed.
-
-(* [map_cons x l] adds [x] at the head of each list in [l] (which is a list
-   of lists *)
-
-Fixpoint map_cons (A : Set) (x : A) (l : list (list A)) {struct l} :
- list (list A) :=
-  match l with
-  | nil => nil
-  | l :: ll => (x :: l) :: map_cons A x ll
-  end.
-
-(* This function breaks up a list of hypothesis in a list of simpler
-   list of hypothesis that together implie the original one. The goal
-   of all this is to transform the goal in a list of solvable problems.
-   Note that :
-	- we need a way to drive the analysis as some hypotheis may not
-          require a split.
-        - this procedure must be perfectly mimicked by the ML part otherwise
-          hypothesis will get desynchronised and this will be a mess.
- *)
-
-Fixpoint destructure_hyps (nn : nat) (ll : hyps) {struct nn} : lhyps :=
-  match nn with
-  | O => ll :: nil
-  | S n =>
-      match ll with
-      | nil => nil :: nil
-      | Tor p1 p2 :: l =>
-          destructure_hyps n (p1 :: l) ++ destructure_hyps n (p2 :: l)
-      | Tand p1 p2 :: l => destructure_hyps n (p1 :: p2 :: l)
-      | Timp p1 p2 :: l =>
-          if decidability p1
-          then
-           destructure_hyps n (Tnot p1 :: l) ++ destructure_hyps n (p2 :: l)
-          else map_cons _ (Timp p1 p2) (destructure_hyps n l)
-      | Tnot p :: l =>
-          match p with
-          | Tnot p1 =>
-              if decidability p1
-              then destructure_hyps n (p1 :: l)
-              else map_cons _ (Tnot (Tnot p1)) (destructure_hyps n l)
-          | Tor p1 p2 => destructure_hyps n (Tnot p1 :: Tnot p2 :: l)
-          | Tand p1 p2 =>
-              if decidability p1
-              then
-               destructure_hyps n (Tnot p1 :: l) ++
-               destructure_hyps n (Tnot p2 :: l)
-              else map_cons _ (Tnot p) (destructure_hyps n l)
-          | _ => map_cons _ (Tnot p) (destructure_hyps n l)
-          end
-      | x :: l => map_cons _ x (destructure_hyps n l)
-      end
-  end.
-
-Theorem map_cons_val :
- forall (ep : list Prop) (e : list int) (p : proposition) (l : lhyps),
- interp_proposition ep e p ->
- interp_list_hyps ep e l -> interp_list_hyps ep e (map_cons _ p l).
-Proof.
- induction l; simpl; intuition.
-Qed.
-
-Hint Resolve map_cons_val append_valid decidable_correct.
-
-Theorem destructure_hyps_valid :
- forall n : nat, valid_list_hyps (destructure_hyps n).
-Proof.
- simple induction n.
- - unfold valid_list_hyps; simpl; auto.
- - unfold valid_list_hyps at 2; intros n1 H ep e lp; case lp.
-    + simpl; auto.
-    + intros p l; case p;
-       try
-        (simpl; intros; apply map_cons_val; simpl; elim H0;
-          auto).
-       * intro p'; case p'; simpl;
-          try
-           (simpl; intros; apply map_cons_val; simpl; elim H0;
-             auto).
-          { simpl; intros p1 (H1, H2).
-            destruct decidability eqn:H3; auto.
-            apply H; simpl; split; auto.
-            apply not_not; auto. }
-          { simpl; intros p1 p2 (H1, H2); apply H; simpl;
-             elim not_or with (1 := H1); auto. }
-          { simpl; intros p1 p2 (H1, H2).
-            destruct decidability eqn:H3; auto.
-            apply append_valid; elim not_and with (2 := H1); auto.
-            - intro; left; apply H; simpl; auto.
-            - intro; right; apply H; simpl; auto. }
-       * simpl; intros p1 p2 (H1, H2); apply append_valid;
-          (elim H1; intro H3; simpl; [ left | right ]);
-          apply H; simpl; auto.
-       * simpl; intros; apply H; simpl; tauto.
-       * simpl; intros p1 p2 (H1, H2).
-         destruct decidability eqn:H3; auto.
-         apply append_valid; elim imp_simp with (2 := H1); auto.
-         { intro; left; simpl; apply H; simpl; auto. }
-         { intro; right; simpl; apply H; simpl; auto. }
-Qed.
 
 Definition prop_stable (f : proposition -> proposition) :=
   forall (ep : list Prop) (e : list int) (p : proposition),
@@ -2841,6 +2546,48 @@ Proof.
  intros; apply valid_goal with (2 := H); apply normalize_hyps_valid.
 Qed.
 
+(* A simple decidability checker : if the proposition belongs to the
+   simple grammar describe below then it is decidable. Proof is by
+   induction and uses well known theorem about arithmetic and propositional
+   calculus *)
+
+Fixpoint decidability (p : proposition) : bool :=
+  match p with
+  | EqTerm _ _ => true
+  | LeqTerm _ _ => true
+  | GeqTerm _ _ => true
+  | GtTerm _ _ => true
+  | LtTerm _ _ => true
+  | NeqTerm _ _ => true
+  | FalseTerm => true
+  | TrueTerm => true
+  | Tnot t => decidability t
+  | Tand t1 t2 => decidability t1 && decidability t2
+  | Timp t1 t2 => decidability t1 && decidability t2
+  | Tor t1 t2 => decidability t1 && decidability t2
+  | Tprop _ => false
+  end.
+
+Theorem decidable_correct :
+ forall (ep : list Prop) (e : list int) (p : proposition),
+ decidability p = true -> decidable (interp_proposition ep e p).
+Proof.
+ simple induction p; simpl; intros.
+ - apply dec_eq.
+ - apply dec_le.
+ - left; auto.
+ - right; unfold not; auto.
+ - apply dec_not; auto.
+ - apply dec_ge.
+ - apply dec_gt.
+ - apply dec_lt.
+ - apply dec_ne.
+ - apply dec_or; elim andb_prop with (1 := H1); auto.
+ - apply dec_and; elim andb_prop with (1 := H1); auto.
+ - apply dec_imp; elim andb_prop with (1 := H1); auto.
+ - discriminate H.
+Qed.
+
 Fixpoint extract_hyp_pos (s : list direction) (p : proposition) :
  proposition :=
   match p, s with
@@ -2863,8 +2610,7 @@ Fixpoint extract_hyp_pos (s : list direction) (p : proposition) :
   end.
 
 Theorem extract_valid :
- forall s : list direction,
- valid1 (extract_hyp_pos s).
+ forall s : list direction, valid1 (extract_hyp_pos s).
 Proof.
  assert (forall p s ep e,
          (interp_proposition ep e p ->
@@ -2873,8 +2619,8 @@ Proof.
           interp_proposition ep e (extract_hyp_neg s p))).
  { induction p; destruct s; simpl; auto; split; try destruct d; try easy;
    intros; (apply IHp || apply IHp1 || apply IHp2 || idtac); simpl; try tauto;
-   destruct decidability eqn:D; intros; auto;
-   pose proof (decidable_correct ep e _ D); unfold decidable in *;
+   destruct decidability eqn:D; auto;
+   apply (decidable_correct ep e) in D; unfold decidable in D;
    (apply IHp || apply IHp1); tauto. }
  red. intros. now apply H.
 Qed.
@@ -2905,34 +2651,30 @@ Fixpoint decompose_solve (s : e_step) (h : hyps) {struct s} : lhyps :=
   | E_SOLVE t => execute_omega t h
   end.
 
-Theorem decompose_solve_valid :
- forall s : e_step, valid_list_goal (decompose_solve s).
+Theorem decompose_solve_valid (s : e_step) :
+ valid_list_goal (decompose_solve s).
 Proof.
- intro s; apply goal_valid; unfold valid_list_hyps; elim s;
- simpl; intros.
- - cut (interp_proposition ep e1 (extract_hyp_pos l (nth_hyps n lp))).
-    + case (extract_hyp_pos l (nth_hyps n lp)); simpl; auto.
-       * intro p; case p; simpl; auto; intros p1 p2 H2.
-          destruct decidability eqn:H3.
-          { generalize (decidable_correct ep e1 p1 H3); intro H4;
-            apply append_valid; elim H4; intro H5.
-             - right; apply H0; simpl; tauto.
-             - left; apply H; simpl; tauto. }
-          { simpl; auto. }
-       * intros p1 p2 H2; apply append_valid; simpl; elim H2.
-          { intros H3; left; apply H; simpl; auto. }
-          { intros H3; right; apply H0; simpl; auto. }
-       * intros p1 p2 H2;
-         destruct decidability eqn:H3.
-          { generalize (decidable_correct ep e1 p1 H3); intro H4;
-             apply append_valid; elim H4; intro H5.
-             - right; apply H0; simpl; tauto.
-             - left; apply H; simpl; tauto. }
-          { simpl; auto. }
-    + apply extract_valid, nth_valid; auto.
- - intros; apply H; simpl; split; auto.
-   apply extract_valid, nth_valid; auto.
- - apply omega_valid with (1 := H).
+ apply goal_valid. red. induction s; simpl; intros ep e lp H.
+ - assert (H' : interp_proposition ep e (extract_hyp_pos l (nth_hyps n lp))).
+   { now apply extract_valid, nth_valid. }
+   destruct extract_hyp_pos; simpl in *; auto.
+   + destruct p; simpl; auto.
+     destruct decidability eqn:D; [ | simpl; auto].
+     apply (decidable_correct ep e) in D.
+     apply append_valid. simpl in *. destruct D.
+     * right. apply IHs2. simpl; auto.
+     * left. apply IHs1. simpl; auto.
+   + apply append_valid. destruct H'.
+     * left. apply IHs1. simpl; auto.
+     * right. apply IHs2. simpl; auto.
+   + destruct decidability eqn:D; [ | simpl; auto].
+     apply (decidable_correct ep e) in D.
+     apply append_valid. destruct D.
+     * right. apply IHs2. simpl; auto.
+     * left. apply IHs1. simpl; auto.
+ - apply IHs; simpl; split; auto.
+   now apply extract_valid, nth_valid.
+ - now apply omega_valid.
 Qed.
 
 (* \subsection{La dernière étape qui élimine tous les séquents inutiles} *)
@@ -2974,13 +2716,12 @@ Definition do_concl_to_hyp :
   interp_goal envp env (concl_to_hyp c :: l) ->
   interp_goal_concl c envp env l.
 Proof.
- simpl; intros envp env c l; induction l as [| a l Hrecl].
- - simpl; unfold concl_to_hyp;
-    destruct decidability eqn:H.
-    + generalize (decidable_correct envp env c H);
-      unfold decidable; simpl; tauto.
-    + simpl; intros H2; elim H2; trivial.
- - simpl; tauto.
+ induction l; simpl.
+ - unfold concl_to_hyp; simpl.
+   destruct decidability eqn:D; [ | simpl; tauto ].
+   apply (decidable_correct envp env) in D. unfold decidable in D.
+   simpl. tauto.
+ - simpl in *; tauto.
 Qed.
 
 Definition omega_tactic (t1 : e_step) (t2 : list h_step)
