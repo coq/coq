@@ -135,11 +135,13 @@ Qed.
 (* Magaud #240 *)
 
 Lemma test_romega_8 : forall x y:Z, x*x<y*y-> ~ y*y <= x*x.
+Proof.
 intros.
 romega.
 Qed.
 
 Lemma test_romega_8b : forall x y:Z, x*x<y*y-> ~ y*y <= x*x.
+Proof.
 intros x y.
 romega.
 Qed.
@@ -147,6 +149,20 @@ Qed.
 (* Besson #1298 *)
 
 Lemma test_romega9 : forall z z':Z, z<>z' -> z'=z -> False.
+Proof.
 intros.
 romega.
+Qed.
+
+(* Letouzey, May 2017 *)
+
+Lemma test_romega10 : forall x a a' b b',
+ a' <= b ->
+ a <= b' ->
+ b < b' ->
+ a < a' ->
+ a <= x < b' <-> a <= x < b \/ a' <= x < b'.
+Proof.
+ intros.
+ romega.
 Qed.

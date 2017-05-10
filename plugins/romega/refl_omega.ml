@@ -1029,8 +1029,11 @@ let find_path {o_hyp=id;o_path=p} env =
 
 let mk_direction_list l =
   let trans = function
-      O_left -> coq_d_left | O_right -> coq_d_right | O_mono -> coq_d_mono in
-  mk_list (Lazy.force coq_direction) (List.map (fun d-> Lazy.force(trans d)) l)
+    | O_left -> Some (Lazy.force coq_d_left)
+    | O_right -> Some (Lazy.force coq_d_right)
+    | O_mono -> None (* No more [D_mono] constructor now *)
+  in
+  mk_list (Lazy.force coq_direction) (List.map_filter trans l)
 
 
 (* \section{Rejouer l'historique} *)
@@ -1156,13 +1159,10 @@ and decompose_tree_hyps trace env ctxt = function
         with Not_found ->
 	  failwith (Printf.sprintf "Cannot find equation %d" i) in
       let (index,path) = find_path equation.e_origin ctxt in
-      let full_path = if equation.e_negated then path @ [O_mono] else path in
       let cont =
 	decompose_tree_hyps trace env
 	   (CCEqua equation.e_omega.id :: ctxt) l in
-      app coq_e_extract [|mk_nat index;
-			  mk_direction_list full_path;
-			  cont |]
+      app coq_e_extract [|mk_nat index; mk_direction_list path; cont |]
 
 (* \section{La fonction principale} *)
  (* Cette fonction construit la

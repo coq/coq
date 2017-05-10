@@ -99,7 +99,6 @@ val coq_s_negate_contradict_inv : Term.constr lazy_t
 val coq_direction : Term.constr lazy_t
 val coq_d_left : Term.constr lazy_t
 val coq_d_right : Term.constr lazy_t
-val coq_d_mono : Term.constr lazy_t
 
 val coq_e_split : Term.constr lazy_t
 val coq_e_extract : Term.constr lazy_t

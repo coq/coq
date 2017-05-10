@@ -165,7 +165,6 @@ let coq_s_negate_contradict_inv =lazy (constant  "O_NEGATE_CONTRADICT_INV")
 let coq_direction = lazy  (constant  "direction")
 let coq_d_left = lazy  (constant  "D_left")
 let coq_d_right = lazy  (constant  "D_right")
-let coq_d_mono = lazy  (constant  "D_mono")
 
 let coq_e_split = lazy  (constant  "E_SPLIT")
 let coq_e_extract = lazy  (constant  "E_EXTRACT")
