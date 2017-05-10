@@ -668,25 +668,21 @@ let negate_oper = function
     Eq -> Neq | Neq -> Eq | Leq -> Gt | Geq -> Lt | Lt -> Geq | Gt -> Leq
 
 let normalize_equation env (negated,depends,origin,path) (oper,t1,t2) =
-  let mk_step t1 t2 f kind =
-    let t = f t1 t2 in
+  let mk_step t1 t2 t kind =
     let trace, oterm = normalize_linear_term env t in
     let equa = omega_of_oformula env kind oterm in
     { e_comp = oper; e_left = t1; e_right = t2;
       e_negated = negated; e_depends = depends;
       e_origin = { o_hyp = origin; o_path = List.rev path };
-      e_trace = trace; e_omega = equa } in
+      e_trace = trace; e_omega = equa }
+  in
   try match (if negated then (negate_oper oper) else oper) with
-    | Eq  -> mk_step t1 t2 (fun o1 o2 -> Oplus (o1,Oopp o2)) EQUA
-    | Neq -> mk_step t1 t2 (fun o1 o2 -> Oplus (o1,Oopp o2)) DISE
-    | Leq -> mk_step t1 t2 (fun o1 o2 -> Oplus (o2,Oopp o1)) INEQ
-    | Geq -> mk_step t1 t2 (fun o1 o2 -> Oplus (o1,Oopp o2)) INEQ
-    | Lt  ->
-        mk_step t1 t2 (fun o1 o2 -> Oplus (Oplus(o2,Oint negone),Oopp o1))
-	  INEQ
-    | Gt ->
-        mk_step t1 t2 (fun o1 o2 -> Oplus (Oplus(o1,Oint negone),Oopp o2))
-	  INEQ
+    | Eq  -> mk_step t1 t2 (Oplus (t1,Oopp t2)) EQUA
+    | Neq -> mk_step t1 t2 (Oplus (t1,Oopp t2)) DISE
+    | Leq -> mk_step t1 t2 (Oplus (t2,Oopp t1)) INEQ
+    | Geq -> mk_step t1 t2 (Oplus (t1,Oopp t2)) INEQ
+    | Lt  -> mk_step t1 t2 (Oplus (Oplus(t2,Oint negone),Oopp t1)) INEQ
+    | Gt -> mk_step t1 t2 (Oplus (Oplus(t1,Oint negone),Oopp t2)) INEQ
   with e when Logic.catchable_exception e -> raise e
 
 (* \section{Compilation des hypothèses} *)
