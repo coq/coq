@@ -18,6 +18,11 @@ Tactics
     missed before because of a missing normalization step. Hopefully this should
     be fairly uncommon.
 - "auto with real" can now discharge comparisons of literals
+- The types of variables in patterns of "match" are now
+  beta-iota-reduced after type-checking. This has an impact on the
+  type of the variables that the tactic "refine" introduces in the
+  context, producing types a priori closer to the expectations.
+
 
 Standard Library
 
