@@ -62,7 +62,8 @@ VERBOSE ?=
 
 # Time the Coq process (set to non empty), and how (see default value)
 TIMED?=
-TIMECMD?=/usr/bin/time -f "$* (user: %U mem: %M ko)"
+TIMECMD?=
+STDTIME?=/usr/bin/time -f "$* (user: %U mem: %M ko)"
 
 # Coq binaries
 COQC     ?= $(TIMER) "$(COQBIN)coqc"
@@ -111,7 +112,7 @@ COQDEBUG ?=
 SHOW := $(if $(VERBOSE),@true "",@echo "")
 HIDE := $(if $(VERBOSE),,@)
 
-TIMER=$(if $(TIMED), $(TIMECMD),)
+TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 
 OPT?=
 
