@@ -960,6 +960,22 @@ time of writing this documentation, the default value is 50).
 \subsection[\tt Test Printing Depth.]{\tt Test Printing Depth.\optindex{Printing Depth}}
 This command displays the current nesting depth used for display.
 
+\subsection[\tt Unset Printing Compact Contexts.]{\tt Unset Printing Compact Contexts.\optindex{Printing Compact Contexts}}
+This command resets the displaying of goals contexts to non compact
+mode (default at the time of writing this documentation). Non compact
+means that consecutive variables of different types are printed on
+different lines.
+
+\subsection[\tt Set Printing Compact Contexts.]{\tt Set Printing Compact Contexts.\optindex{Printing Compact Contexts}}
+This command sets the displaying of goals contexts to compact mode.
+The printer tries to reduce the vertical size of goals contexts by
+putting several variables (even if of different types) on the same
+line provided it does not exceed the printing width (See {\tt Set
+  Printing Width} above).
+
+\subsection[\tt Test Printing Compact Contexts.]{\tt Test Printing Compact Contexts.\optindex{Printing Compact Contexts}}
+This command displays the current state of compaction of goal d'isolat.
+
 \subsection[\tt Set Printing Dependent Evars Line.]{\tt Set Printing Dependent Evars Line.\optindex{Printing Dependent Evars Line}}
 This command enables the printing of the ``{\tt (dependent evars: \ldots)}''
 line when {\tt -emacs} is passed.

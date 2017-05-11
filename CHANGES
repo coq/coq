@@ -19,6 +19,12 @@ Tactics
     be fairly uncommon.
 - "auto with real" can now discharge comparisons of literals
 
+Vernacular Commands
+
+- Goals context can be printed in a more compact way when "Set
+  Printing Compact Contexts" is activated.
+
+
 Standard Library
 
 - New file PropExtensionality.v to explicitly work in the axiomatic
