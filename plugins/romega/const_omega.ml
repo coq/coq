@@ -274,6 +274,30 @@ let parse_logic_rel c =
    | _ -> Rother
  with e when Logic.catchable_exception e -> Rother
 
+(* Binary numbers *)
+
+let coq_xH = lazy (bin_constant "xH")
+let coq_xO = lazy (bin_constant "xO")
+let coq_xI = lazy (bin_constant "xI")
+let coq_Z0 = lazy (bin_constant "Z0")
+let coq_Zpos = lazy (bin_constant "Zpos")
+let coq_Zneg = lazy (bin_constant "Zneg")
+let coq_N0 = lazy (bin_constant "N0")
+let coq_Npos = lazy (bin_constant "Npos")
+
+let rec mk_positive n =
+  if Bigint.equal n Bigint.one then Lazy.force coq_xH
+  else
+    let (q,r) = Bigint.euclid n Bigint.two in
+    Term.mkApp
+      ((if Bigint.equal r Bigint.zero
+        then Lazy.force coq_xO else Lazy.force coq_xI),
+       [| mk_positive q |])
+
+let mk_N = function
+  | 0 -> Lazy.force coq_N0
+  | n -> Term.mkApp (Lazy.force coq_Npos,
+                     [| mk_positive (Bigint.of_int n) |])
 
 module type Int = sig
   val typ : Term.constr Lazy.t
@@ -297,13 +321,6 @@ let mult = lazy (z_constant  "Z.mul")
 let opp = lazy (z_constant "Z.opp")
 let minus = lazy (z_constant "Z.sub")
 
-let coq_xH = lazy (bin_constant "xH")
-let coq_xO = lazy (bin_constant "xO")
-let coq_xI = lazy (bin_constant "xI")
-let coq_Z0 = lazy (bin_constant "Z0")
-let coq_Zpos = lazy (bin_constant "Zpos")
-let coq_Zneg = lazy (bin_constant "Zneg")
-
 let recognize t =
   let rec loop t =
     let f,l = dest_const_apply t in
@@ -319,16 +336,8 @@ let recognize t =
       | "Z0",[] -> Bigint.zero
       | _ -> failwith "not a number";;
 
-let rec mk_positive n =
-  if n=Bigint.one then Lazy.force coq_xH
-  else
-    let (q,r) = Bigint.euclid n Bigint.two in
-    Term.mkApp
-      ((if r = Bigint.zero then Lazy.force coq_xO else Lazy.force coq_xI),
-       [| mk_positive q |])
-
 let mk_Z n =
-  if n = Bigint.zero then Lazy.force coq_Z0
+  if Bigint.equal n Bigint.zero then Lazy.force coq_Z0
   else if Bigint.is_strictly_pos n then
     Term.mkApp (Lazy.force coq_Zpos, [| mk_positive n |])
   else

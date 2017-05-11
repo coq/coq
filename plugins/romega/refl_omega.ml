@@ -371,7 +371,7 @@ let rec reified_of_formula env = function
       app coq_t_mult [| reified_of_formula env t1; reified_of_formula env t2 |]
   | Oint v ->  app coq_t_int [| Z.mk v |]
   | Oufo t -> reified_of_formula env t
-  | Oatom i -> app coq_t_var [| mk_nat (reified_of_atom env i) |]
+  | Oatom i -> app coq_t_var [| mk_N (reified_of_atom env i) |]
   | Ominus(t1,t2) ->
       app coq_t_minus [| reified_of_formula env t1; reified_of_formula env t2 |]
 

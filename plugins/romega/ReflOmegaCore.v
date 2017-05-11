@@ -796,7 +796,7 @@ Inductive term : Set :=
   | Tmult : term -> term -> term
   | Tminus : term -> term -> term
   | Topp : term -> term
-  | Tvar : nat -> term.
+  | Tvar : N -> term.
 
 Delimit Scope romega_scope with term.
 Arguments Tint _%I.
@@ -980,7 +980,7 @@ Fixpoint eq_term (t1 t2 : term) {struct t2} : bool :=
   | (st11 * st12), (st21 * st22) => eq_term st11 st21 && eq_term st12 st22
   | (st11 - st12), (st21 - st22) => eq_term st11 st21 && eq_term st12 st22
   | (- st1), (- st2) => eq_term st1 st2
-  | [st1], [st2] => beq_nat st1 st2
+  | [st1], [st2] => N.eqb st1 st2
   | _, _ => false
   end.
 
@@ -990,7 +990,7 @@ Theorem eq_term_iff (t t' : term) :
  eq_term t t' = true <-> t = t'.
 Proof.
  revert t'. induction t; destruct t'; simpl in *;
- rewrite ?andb_true_iff, ?beq_iff, ?Nat.eqb_eq, ?IHt, ?IHt1, ?IHt2;
+ rewrite ?andb_true_iff, ?beq_iff, ?N.eqb_eq, ?IHt, ?IHt1, ?IHt2;
   intuition congruence.
 Qed.
 
@@ -1002,6 +1002,13 @@ Qed.
 (* \subsection{Interprétations}
    \subsubsection{Interprétation des termes dans Z} *)
 
+Fixpoint Nnth {A} (n:N)(l:list A)(default:A) :=
+ match n, l with
+   | _, nil => default
+   | 0%N, x::_ => x
+   | _, _::l => Nnth (N.pred n) l default
+ end.
+
 Fixpoint interp_term (env : list int) (t : term) {struct t} : int :=
   match t with
   | Tint x => x
@@ -1009,7 +1016,7 @@ Fixpoint interp_term (env : list int) (t : term) {struct t} : int :=
   | (t1 * t2)%term => interp_term env t1 * interp_term env t2
   | (t1 - t2)%term => interp_term env t1 - interp_term env t2
   | (- t)%term => - interp_term env t
-  | [n]%term => nth n env 0
+  | [n]%term => Nnth n env 0
   end.
 
 (* \subsubsection{Interprétation des prédicats} *)

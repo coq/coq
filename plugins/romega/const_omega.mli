@@ -116,6 +116,8 @@ val do_seq : Term.constr -> Term.constr -> Term.constr
 val do_list : Term.constr list -> Term.constr
 
 val mk_nat : int -> Term.constr
+val mk_N : int -> Term.constr
+
 (** Precondition: the type of the list is in Set *)
 val mk_list : Term.constr -> Term.constr list -> Term.constr
 val mk_plist : Term.types list -> Term.types
