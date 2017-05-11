@@ -327,11 +327,6 @@ Module IntProperties (I:Int).
  now rewrite <- mult_plus_distr_l, plus_opp_l, mult_comm, mult_0_l, plus_0_l.
  Qed.
 
- Lemma OMEGA16 : forall v c l k : int, (v * c + l) * k = v * (c * k) + l * k.
- Proof.
-  intros; now autorewrite with int.
- Qed.
-
  Lemma sum1 : forall a b c d : int, 0 = a -> 0 = b -> 0 = a * c + b * d.
  Proof.
  intros; elim H; elim H0; simpl; auto.
@@ -911,18 +906,18 @@ Inductive t_omega : Set :=
   | O_CONSTANT_NOT_NUL : nat -> t_omega
   | O_CONSTANT_NEG : nat -> t_omega
   (* division and approximation of an equation *)
-  | O_DIV_APPROX : int -> int -> term -> nat -> t_omega -> nat -> t_omega
+  | O_DIV_APPROX : int -> int -> term -> t_omega -> nat -> t_omega
   (* no solution because no exact division *)
-  | O_NOT_EXACT_DIVIDE : int -> int -> term -> nat -> nat -> t_omega
+  | O_NOT_EXACT_DIVIDE : int -> int -> term -> nat -> t_omega
   (* exact division *)
-  | O_EXACT_DIVIDE : int -> term -> nat -> t_omega -> nat -> t_omega
+  | O_EXACT_DIVIDE : int -> term -> t_omega -> nat -> t_omega
   | O_SUM : int -> nat -> int -> nat -> list t_fusion -> t_omega -> t_omega
-  | O_CONTRADICTION : nat -> nat -> nat -> t_omega
-  | O_MERGE_EQ : nat -> nat -> nat -> t_omega -> t_omega
-  | O_SPLIT_INEQ : nat -> nat -> t_omega -> t_omega -> t_omega
+  | O_CONTRADICTION : nat -> nat -> t_omega
+  | O_MERGE_EQ : nat -> nat -> t_omega -> t_omega
+  | O_SPLIT_INEQ : nat -> t_omega -> t_omega -> t_omega
   | O_CONSTANT_NUL : nat -> t_omega
   | O_NEGATE_CONTRADICT : nat -> nat -> t_omega
-  | O_NEGATE_CONTRADICT_INV : nat -> nat -> nat -> t_omega
+  | O_NEGATE_CONTRADICT_INV : nat -> nat -> t_omega
   | O_STATE : int -> step -> nat -> nat -> t_omega -> t_omega.
 
 (* \subsubsection{Rules for normalizing the hypothesis} *)
@@ -1498,33 +1493,6 @@ Proof.
  prove_stable T_OMEGA12 OMEGA12.
 Qed.
 
-Definition T_OMEGA13 (t : term) :=
-  match t with
-  | (v * Tint x + l1 + (v' * Tint x' + l2))%term =>
-      if eq_term v v' && beq x (-x')
-      then (l1+l2)%term
-      else t
-  | _ => t
-  end.
-
-Theorem T_OMEGA13_stable : term_stable T_OMEGA13.
-Proof.
- unfold term_stable, T_OMEGA13; intros; Simplify; simpl;
- apply OMEGA13.
-Qed.
-
-Definition T_OMEGA16 (t : term) :=
-  match t with
-  | ((v * Tint c + l) * Tint k)%term => (v * Tint (c * k) + l * Tint k)%term
-  | _ => t
-  end.
-
-
-Theorem T_OMEGA16_stable : term_stable T_OMEGA16.
-Proof.
- prove_stable T_OMEGA16 OMEGA16.
-Qed.
-
 Definition Tred_factor5 (t : term) :=
   match t with
   | (x * Tint c + y)%term => if beq c 0 then y else t
@@ -1786,68 +1754,67 @@ Qed.
 (* \paragraph{Fusion avec annihilation} *)
 (* Normalement le résultat est une constante *)
 
-Fixpoint fusion_cancel (trace : nat) (t : term) {struct trace} : term :=
-  match trace with
-  | O => reduce t
-  | S trace' => fusion_cancel trace' (T_OMEGA13 t)
+Fixpoint fusion_cancel (t1 t2 : term) : term :=
+  match t1, t2 with
+  | (v1 * Tint x1 + l1)%term, (v2 * Tint x2 + l2)%term =>
+    if eq_term v1 v2 && beq x1 (-x2)
+    then fusion_cancel l1 l2
+    else (t1+t2)%term (* should not happen *)
+  | Tint x1, Tint x2 => Tint (x1+x2)
+  | _, _ => (t1+t2)%term (* should not happen *)
   end.
 
-Theorem fusion_cancel_stable : forall t : nat, term_stable (fusion_cancel t).
+Theorem fusion_cancel_stable e t1 t2 :
+ interp_term e (t1+t2)%term = interp_term e (fusion_cancel t1 t2).
 Proof.
- unfold term_stable, fusion_cancel; intros trace e; elim trace.
- - exact (reduce_stable e).
- - intros n H t; elim H; exact (T_OMEGA13_stable e t).
+ revert t2. induction t1; destruct t2; simpl; Simplify; auto.
+ simpl in *.
+ rewrite <- IHt1_2.
+ apply OMEGA13.
 Qed.
 
 (* \subsubsection{Opérations affines sur une équation} *)
 (* \paragraph{Multiplication scalaire et somme d'une constante} *)
 
-Fixpoint scalar_norm_add (trace : nat) (t : term) {struct trace} : term :=
-  match trace with
-  | O => reduce t
-  | S trace' => apply_right (scalar_norm_add trace') (T_OMEGA11 t)
+Fixpoint scalar_norm_add (t : term) (k1 k2 : int) : term :=
+  match t with
+  | (v1 * Tint x1 + l1)%term =>
+    (v1 * Tint (x1 * k1) + scalar_norm_add l1 k1 k2)%term
+  | Tint x => Tint (x * k1 + k2)
+  | _ => (t * Tint k1 + Tint k2)%term (* shouldn't happen *)
   end.
 
-Theorem scalar_norm_add_stable :
- forall t : nat, term_stable (scalar_norm_add t).
+Theorem scalar_norm_add_stable e t k1 k2 :
+ interp_term e (t * Tint k1 + Tint k2)%term =
+ interp_term e (scalar_norm_add t k1 k2).
 Proof.
- unfold term_stable, scalar_norm_add; intros trace; elim trace.
- - exact reduce_stable.
- - intros n H e t; elim apply_right_stable.
-   + exact (T_OMEGA11_stable e t).
-   + exact H.
+ induction t; simpl; Simplify; simpl; auto.
+ rewrite <- IHt2. simpl. apply OMEGA11.
 Qed.
 
 (* \paragraph{Multiplication scalaire} *)
-Fixpoint scalar_norm (trace : nat) (t : term) {struct trace} : term :=
-  match trace with
-  | O => reduce t
-  | S trace' => apply_right (scalar_norm trace') (T_OMEGA16 t)
-  end.
+Definition scalar_norm (t : term) (k : int) := scalar_norm_add t k 0.
 
-Theorem scalar_norm_stable : forall t : nat, term_stable (scalar_norm t).
+Theorem scalar_norm_stable e t k :
+ interp_term e (t * Tint k)%term = interp_term e (scalar_norm t k).
 Proof.
- unfold term_stable, scalar_norm; intros trace; elim trace.
- - exact reduce_stable.
- - intros n H e t; elim apply_right_stable.
-   + exact (T_OMEGA16_stable e t).
-   + exact H.
+ unfold scalar_norm. rewrite <- scalar_norm_add_stable. simpl.
+ symmetry. apply plus_0_r.
 Qed.
 
 (* \paragraph{Somme d'une constante} *)
-Fixpoint add_norm (trace : nat) (t : term) {struct trace} : term :=
-  match trace with
-  | O => reduce t
-  | S trace' => apply_right (add_norm trace') (Tplus_assoc_r t)
+Fixpoint add_norm (t : term) (k : int) : term :=
+  match t with
+  | (m + l)%term => (m + add_norm l k)%term
+  | Tint x => Tint (x + k)
+  | _ => (t + Tint k)%term
   end.
 
-Theorem add_norm_stable : forall t : nat, term_stable (add_norm t).
+Theorem add_norm_stable e t k :
+ interp_term e (t + Tint k)%term = interp_term e (add_norm t k).
 Proof.
- unfold term_stable, add_norm; intros trace; elim trace.
- - exact reduce_stable.
- - intros n H e t; elim apply_right_stable.
-   + exact (Tplus_assoc_r_stable e t).
-   + exact H.
+ induction t; simpl; Simplify; simpl; auto.
+ rewrite <- IHt2. simpl. symmetry. apply plus_assoc.
 Qed.
 
 (* \subsection{La fonction de normalisation des termes (moteur de réécriture)} *)
@@ -1953,11 +1920,11 @@ Qed.
 
 (* \paragraph{[NOT_EXACT_DIVIDE]} *)
 Definition not_exact_divide (k1 k2 : int) (body : term)
-  (t i : nat) (l : hyps) :=
+  (i : nat) (l : hyps) :=
   match nth_hyps i l with
   | EqTerm (Tint Nul) b =>
       if beq Nul 0 &&
-         eq_term (scalar_norm_add t (body * Tint k1 + Tint k2)%term) b &&
+         eq_term (scalar_norm_add body k1 k2) b &&
          bgt k2 0 &&
          bgt k1 k2
       then absurd
@@ -1966,13 +1933,13 @@ Definition not_exact_divide (k1 k2 : int) (body : term)
   end.
 
 Theorem not_exact_divide_valid :
- forall (k1 k2 : int) (body : term) (t0 i : nat),
- valid_hyps (not_exact_divide k1 k2 body t0 i).
+ forall (k1 k2 : int) (body : term) (i : nat),
+ valid_hyps (not_exact_divide k1 k2 body i).
 Proof.
- unfold valid_hyps, not_exact_divide; intros;
+ unfold valid_hyps, not_exact_divide; intros.
  generalize (nth_valid ep e i lp); Simplify.
- rewrite (scalar_norm_add_stable t0 e), <-H1.
- do 2 rewrite <- scalar_norm_add_stable; simpl in *; intros.
+ rewrite <-H1, <-scalar_norm_add_stable. simpl.
+ intros.
  absurd (interp_term e body * k1 + k2 = 0).
  - now apply OMEGA4.
  - symmetry; auto.
@@ -1980,12 +1947,12 @@ Qed.
 
 (* \paragraph{[O_CONTRADICTION]} *)
 
-Definition contradiction (t i j : nat) (l : hyps) :=
+Definition contradiction (i j : nat) (l : hyps) :=
   match nth_hyps i l with
   | LeqTerm (Tint Nul) b1 =>
       match nth_hyps j l with
       | LeqTerm (Tint Nul') b2 =>
-          match fusion_cancel t (b1 + b2)%term with
+          match fusion_cancel b1 b2 with
           | Tint k => if beq Nul 0 && beq Nul' 0 && bgt 0 k
                       then absurd
                       else l
@@ -1996,10 +1963,9 @@ Definition contradiction (t i j : nat) (l : hyps) :=
   | _ => l
   end.
 
-Theorem contradiction_valid :
- forall t i j : nat, valid_hyps (contradiction t i j).
+Theorem contradiction_valid (i j : nat) : valid_hyps (contradiction i j).
 Proof.
- unfold valid_hyps, contradiction; intros t i j ep e l H.
+ unfold valid_hyps, contradiction; intros ep e l H.
  generalize (nth_valid _ _ i _ H) (nth_valid _ _ j _ H).
  case (nth_hyps i l); trivial. intros t1 t2.
  case t1; trivial. clear t1; intros x1.
@@ -2037,13 +2003,13 @@ Definition negate_contradict (i1 i2 : nat) (h : hyps) :=
   | _ => h
   end.
 
-Definition negate_contradict_inv (t i1 i2 : nat) (h : hyps) :=
+Definition negate_contradict_inv (i1 i2 : nat) (h : hyps) :=
   match nth_hyps i1 h with
   | EqTerm (Tint Nul) b1 =>
       match nth_hyps i2 h with
       | NeqTerm (Tint Nul') b2 =>
           if beq Nul 0 && beq Nul' 0 &&
-             eq_term b1 (scalar_norm t (b2 * Tint (-(1)))%term)
+             eq_term b1 (scalar_norm b2 (-(1)))
           then absurd
           else h
       | _ => h
@@ -2052,7 +2018,7 @@ Definition negate_contradict_inv (t i1 i2 : nat) (h : hyps) :=
       match nth_hyps i2 h with
       | EqTerm (Tint Nul') b2 =>
           if beq Nul 0 && beq Nul' 0 &&
-             eq_term b1 (scalar_norm t (b2 * Tint (-(1)))%term)
+             eq_term b1 (scalar_norm b2 (-(1)))
           then absurd
           else h
       | _ => h
@@ -2072,9 +2038,9 @@ Proof.
 Qed.
 
 Theorem negate_contradict_inv_valid :
- forall t i j : nat, valid_hyps (negate_contradict_inv t i j).
+ forall i j : nat, valid_hyps (negate_contradict_inv i j).
 Proof.
- unfold valid_hyps, negate_contradict_inv; intros t i j ep e l H;
+ unfold valid_hyps, negate_contradict_inv; intros i j ep e l H;
  generalize (nth_valid _ _ i _ H) (nth_valid _ _ j _ H);
  case (nth_hyps i l); auto; intros t1 t2; case t1;
  auto; intros z; auto; case (nth_hyps j l);
@@ -2156,18 +2122,17 @@ Qed.
 (* \paragraph{[O_EXACT_DIVIDE]}
    c'est une oper1 valide mais on préfère une substitution a ce point la *)
 
-Definition exact_divide (k : int) (body : term) (t : nat)
-  (prop : proposition) :=
+Definition exact_divide (k : int) (body : term) (prop : proposition) :=
   match prop with
   | EqTerm (Tint Null) b =>
       if beq Null 0 &&
-         eq_term (scalar_norm t (body * Tint k)%term) b &&
+         eq_term (scalar_norm body k) b &&
          negb (beq k 0)
       then EqTerm (Tint 0) body
       else TrueTerm
   | NeqTerm (Tint Null) b =>
       if beq Null 0 &&
-         eq_term (scalar_norm t (body * Tint k)%term) b &&
+         eq_term (scalar_norm body k) b &&
          negb (beq k 0)
       then NeqTerm (Tint 0) body
       else TrueTerm
@@ -2175,9 +2140,9 @@ Definition exact_divide (k : int) (body : term) (t : nat)
   end.
 
 Theorem exact_divide_valid :
- forall (k : int) (t : term) (n : nat), valid1 (exact_divide k t n).
+ forall (k : int) (t : term), valid1 (exact_divide k t).
 Proof.
- unfold valid1, exact_divide; intros k1 k2 t ep e p1;
+ unfold valid1, exact_divide; intros k t ep e p1;
  Simplify; simpl; auto; subst;
  rewrite <- scalar_norm_stable; simpl; intros.
  - destruct (mult_integral _ _ (eq_sym H0)); intuition.
@@ -2190,11 +2155,11 @@ Qed.
   est sur une opération de type valid1 et non sur une opération terminale. *)
 
 Definition divide_and_approx (k1 k2 : int) (body : term)
-  (t : nat) (prop : proposition) :=
+  (prop : proposition) :=
   match prop with
   | LeqTerm (Tint Null) b =>
       if beq Null 0 &&
-         eq_term (scalar_norm_add t (body * Tint k1 + Tint k2)%term) b &&
+         eq_term (scalar_norm_add body k1 k2) b &&
          bgt k1 0 &&
          bgt k1 k2
       then LeqTerm (Tint 0) body
@@ -2203,24 +2168,24 @@ Definition divide_and_approx (k1 k2 : int) (body : term)
   end.
 
 Theorem divide_and_approx_valid :
- forall (k1 k2 : int) (body : term) (t : nat),
- valid1 (divide_and_approx k1 k2 body t).
+ forall (k1 k2 : int) (body : term),
+ valid1 (divide_and_approx k1 k2 body).
 Proof.
  unfold valid1, divide_and_approx.
- intros k1 k2 body t ep e p1. Simplify. subst.
- elim (scalar_norm_add_stable t e). simpl.
- intro H2; apply mult_le_approx with (3 := H2); assumption.
+ intros k1 k2 body ep e p1. Simplify. subst.
+ rewrite <- scalar_norm_add_stable. simpl.
+ intro H; now apply mult_le_approx with (3 := H).
 Qed.
 
 (* \paragraph{[MERGE_EQ]} *)
 
-Definition merge_eq (t : nat) (prop1 prop2 : proposition) :=
+Definition merge_eq (prop1 prop2 : proposition) :=
   match prop1 with
   | LeqTerm (Tint Null) b1 =>
       match prop2 with
       | LeqTerm (Tint Null') b2 =>
           if beq Null 0 && beq Null' 0 &&
-             eq_term b1 (scalar_norm t (b2 * Tint (-(1)))%term)
+             eq_term b1 (scalar_norm b2 (-(1)))
           then EqTerm (Tint 0) b1
           else TrueTerm
       | _ => TrueTerm
@@ -2228,15 +2193,14 @@ Definition merge_eq (t : nat) (prop1 prop2 : proposition) :=
   | _ => TrueTerm
   end.
 
-Theorem merge_eq_valid : forall n : nat, valid2 (merge_eq n).
+Theorem merge_eq_valid : valid2 merge_eq.
 Proof.
- unfold valid2, merge_eq; intros n ep e p1 p2; Simplify; simpl;
- auto; elim (scalar_norm_stable n e); simpl;
+ unfold valid2, merge_eq; intros ep e p1 p2; Simplify; simpl; auto.
+ rewrite <- scalar_norm_stable. simpl.
  intros; symmetry ; apply OMEGA8 with (2 := H0).
  - assumption.
  - elim opp_eq_mult_neg_1; trivial.
 Qed.
-
 
 
 (* \paragraph{[O_CONSTANT_NUL]} *)
@@ -2281,33 +2245,30 @@ Qed.
    \paragraph{[O_SPLIT_INEQ]}
    La seule pour le moment (tant que la normalisation n'est pas réfléchie). *)
 
-Definition split_ineq (i t : nat) (f1 f2 : hyps -> lhyps)
-  (l : hyps) :=
+Definition split_ineq (i : nat) (f1 f2 : hyps -> lhyps) (l : hyps) :=
   match nth_hyps i l with
   | NeqTerm (Tint Null) b1 =>
       if beq Null 0 then
-      f1 (LeqTerm (Tint 0) (add_norm t (b1 + Tint (-(1)))%term) :: l) ++
-      f2
-        (LeqTerm (Tint 0)
-           (scalar_norm_add t (b1 * Tint (-(1)) + Tint (-(1)))%term) :: l)
-       else l :: nil
+       f1 (LeqTerm (Tint 0) (add_norm b1 (-(1))) :: l) ++
+       f2 (LeqTerm (Tint 0) (scalar_norm_add b1 (-(1)) (-(1))) :: l)
+      else l :: nil
   | _ => l :: nil
   end.
 
 Theorem split_ineq_valid :
- forall (i t : nat) (f1 f2 : hyps -> lhyps),
+ forall (i : nat) (f1 f2 : hyps -> lhyps),
  valid_list_hyps f1 ->
- valid_list_hyps f2 -> valid_list_hyps (split_ineq i t f1 f2).
+ valid_list_hyps f2 -> valid_list_hyps (split_ineq i f1 f2).
 Proof.
- unfold valid_list_hyps, split_ineq; intros i t f1 f2 H1 H2 ep e lp H;
+ unfold valid_list_hyps, split_ineq; intros i f1 f2 H1 H2 ep e lp H;
  generalize (nth_valid _ _ i _ H); case (nth_hyps i lp);
  simpl; auto; intros t1 t2; case t1; simpl;
  auto; intros z; simpl; auto; intro H3.
  Simplify.
  apply append_valid; elim (OMEGA19 (interp_term e t2)).
- - intro H4; left; apply H1; simpl; elim (add_norm_stable t);
+ - intro H4; left; apply H1; simpl; rewrite <- add_norm_stable;
     simpl; auto.
- - intro H4; right; apply H2; simpl; elim (scalar_norm_add_stable t);
+ - intro H4; right; apply H2; simpl; rewrite <- scalar_norm_add_stable;
     simpl; auto.
  - generalize H3; unfold not; intros E1 E2; apply E1;
     symmetry ; trivial.
@@ -2320,23 +2281,23 @@ Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
   match t with
   | O_CONSTANT_NOT_NUL n => singleton (constant_not_nul n l)
   | O_CONSTANT_NEG n => singleton (constant_neg n l)
-  | O_DIV_APPROX k1 k2 body t cont n =>
-      execute_omega cont (apply_oper_1 n (divide_and_approx k1 k2 body t) l)
-  | O_NOT_EXACT_DIVIDE k1 k2 body t i =>
-      singleton (not_exact_divide k1 k2 body t i l)
-  | O_EXACT_DIVIDE k body t cont n =>
-      execute_omega cont (apply_oper_1 n (exact_divide k body t) l)
+  | O_DIV_APPROX k1 k2 body cont n =>
+      execute_omega cont (apply_oper_1 n (divide_and_approx k1 k2 body) l)
+  | O_NOT_EXACT_DIVIDE k1 k2 body i =>
+      singleton (not_exact_divide k1 k2 body i l)
+  | O_EXACT_DIVIDE k body cont n =>
+      execute_omega cont (apply_oper_1 n (exact_divide k body) l)
   | O_SUM k1 i1 k2 i2 t cont =>
       execute_omega cont (apply_oper_2 i1 i2 (sum k1 k2 t) l)
-  | O_CONTRADICTION t i j => singleton (contradiction t i j l)
-  | O_MERGE_EQ t i1 i2 cont =>
-      execute_omega cont (apply_oper_2 i1 i2 (merge_eq t) l)
-  | O_SPLIT_INEQ t i cont1 cont2 =>
-      split_ineq i t (execute_omega cont1) (execute_omega cont2) l
+  | O_CONTRADICTION i j => singleton (contradiction i j l)
+  | O_MERGE_EQ i1 i2 cont =>
+      execute_omega cont (apply_oper_2 i1 i2 merge_eq l)
+  | O_SPLIT_INEQ i cont1 cont2 =>
+      split_ineq i (execute_omega cont1) (execute_omega cont2) l
   | O_CONSTANT_NUL i => singleton (constant_nul i l)
   | O_NEGATE_CONTRADICT i j => singleton (negate_contradict i j l)
-  | O_NEGATE_CONTRADICT_INV t i j =>
-      singleton (negate_contradict_inv t i j l)
+  | O_NEGATE_CONTRADICT_INV i j =>
+      singleton (negate_contradict_inv i j l)
   | O_STATE m s i1 i2 cont =>
       execute_omega cont (apply_oper_2 i1 i2 (state m s) l)
   end.
@@ -2349,40 +2310,40 @@ Proof.
  - unfold valid_list_hyps; simpl; intros; left;
     apply (constant_neg_valid n ep e lp H).
  - unfold valid_list_hyps, valid_hyps;
-    intros k1 k2 body n t' Ht' m ep e lp H; apply Ht';
+    intros k1 k2 body t' Ht' m ep e lp H; apply Ht';
     apply
-     (apply_oper_1_valid m (divide_and_approx k1 k2 body n)
-        (divide_and_approx_valid k1 k2 body n) ep e lp H).
+     (apply_oper_1_valid m (divide_and_approx k1 k2 body)
+        (divide_and_approx_valid k1 k2 body) ep e lp H).
  - unfold valid_list_hyps; simpl; intros; left;
-    apply (not_exact_divide_valid _ _ _ _ _ ep e lp H).
+    apply (not_exact_divide_valid _ _ _ _ ep e lp H).
  - unfold valid_list_hyps, valid_hyps;
-    intros k body n t' Ht' m ep e lp H; apply Ht';
+    intros k body t' Ht' m ep e lp H; apply Ht';
     apply
-     (apply_oper_1_valid m (exact_divide k body n)
-        (exact_divide_valid k body n) ep e lp H).
+     (apply_oper_1_valid m (exact_divide k body)
+        (exact_divide_valid k body) ep e lp H).
  - unfold valid_list_hyps, valid_hyps;
     intros k1 i1 k2 i2 trace t' Ht' ep e lp H; apply Ht';
     apply
      (apply_oper_2_valid i1 i2 (sum k1 k2 trace) (sum_valid k1 k2 trace) ep e
         lp H).
- - unfold valid_list_hyps; simpl; intros; left;
-    apply (contradiction_valid n n0 n1 ep e lp H).
+ - unfold valid_list_hyps; simpl; intros; left.
+    apply (contradiction_valid n n0 ep e lp H).
  - unfold valid_list_hyps, valid_hyps;
-    intros trace i1 i2 t' Ht' ep e lp H; apply Ht';
+    intros i1 i2 t' Ht' ep e lp H; apply Ht';
     apply
-     (apply_oper_2_valid i1 i2 (merge_eq trace) (merge_eq_valid trace) ep e
+     (apply_oper_2_valid i1 i2 merge_eq merge_eq_valid ep e
         lp H).
- - intros t' i k1 H1 k2 H2; unfold valid_list_hyps; simpl;
+ - intros i k1 H1 k2 H2; unfold valid_list_hyps; simpl;
     intros ep e lp H;
     apply
-     (split_ineq_valid i t' (execute_omega k1) (execute_omega k2) H1 H2 ep e
+     (split_ineq_valid i (execute_omega k1) (execute_omega k2) H1 H2 ep e
         lp H).
  - unfold valid_list_hyps; simpl; intros i ep e lp H; left;
     apply (constant_nul_valid i ep e lp H).
  - unfold valid_list_hyps; simpl; intros i j ep e lp H; left;
     apply (negate_contradict_valid i j ep e lp H).
- - unfold valid_list_hyps; simpl; intros n i j ep e lp H;
-    left; apply (negate_contradict_inv_valid n i j ep e lp H).
+ - unfold valid_list_hyps; simpl; intros i j ep e lp H;
+    left; apply (negate_contradict_inv_valid i j ep e lp H).
  - unfold valid_list_hyps, valid_hyps;
     intros m s i1 i2 t' Ht' ep e lp H; apply Ht';
     apply (apply_oper_2_valid i1 i2 (state m s) (state_valid m s) ep e lp H).

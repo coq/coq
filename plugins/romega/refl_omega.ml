@@ -1050,15 +1050,13 @@ let replay_history env env_hyp =
   let rec loop env_hyp t =
     match t with
       | CONTRADICTION (e1,e2) :: l ->
-	  let trace = mk_nat (List.length e1.body) in
-	  mkApp (Lazy.force coq_s_contradiction,
-		 [| trace ; mk_nat (get_hyp env_hyp e1.id);
-		    mk_nat (get_hyp env_hyp e2.id) |])
+         mkApp (Lazy.force coq_s_contradiction,
+                [| mk_nat (get_hyp env_hyp e1.id);
+                   mk_nat (get_hyp env_hyp e2.id) |])
       | DIVIDE_AND_APPROX (e1,e2,k,d) :: l ->
 	  mkApp (Lazy.force coq_s_div_approx,
 		 [| Z.mk k; Z.mk d;
 		    reified_of_omega env e2.body e2.constant;
-		    mk_nat (List.length e2.body);
 		    loop env_hyp l; mk_nat (get_hyp env_hyp e1.id) |])
       | NOT_EXACT_DIVIDE (e1,k) :: l ->
 	  let e2_constant = floor_div e1.constant k in
@@ -1067,7 +1065,6 @@ let replay_history env env_hyp =
           mkApp (Lazy.force coq_s_not_exact_divide,
 		 [|Z.mk k; Z.mk d;
 		   reified_of_omega env e2_body e2_constant;
-		   mk_nat (List.length e2_body);
 		   mk_nat (get_hyp env_hyp e1.id)|])
       | EXACT_DIVIDE (e1,k) :: l ->
 	  let e2_body =
@@ -1076,13 +1073,11 @@ let replay_history env env_hyp =
           mkApp (Lazy.force coq_s_exact_divide,
 		 [|Z.mk k;
 		   reified_of_omega env e2_body e2_constant;
-		   mk_nat (List.length e2_body);
 		   loop env_hyp l; mk_nat (get_hyp env_hyp e1.id)|])
       | (MERGE_EQ(e3,e1,e2)) :: l ->
 	  let n1 = get_hyp env_hyp e1.id and n2 = get_hyp env_hyp e2 in
           mkApp (Lazy.force coq_s_merge_eq,
-		 [| mk_nat (List.length e1.body);
-		    mk_nat n1; mk_nat n2;
+		 [| mk_nat n1; mk_nat n2;
 		    loop (CCEqua e3:: env_hyp) l |])
       | SUM(e3,(k1,e1),(k2,e2)) :: l ->
 	  let n1 = get_hyp env_hyp e1.id
@@ -1121,15 +1116,14 @@ let replay_history env env_hyp =
 		     mk_nat (get_hyp env_hyp e2.id) |])
       |	NEGATE_CONTRADICT(e1,e2,false) :: l ->
 	  mkApp (Lazy.force coq_s_negate_contradict_inv,
-		 [|  mk_nat (List.length e2.body);
-		     mk_nat (get_hyp env_hyp e1.id);
+		 [|  mk_nat (get_hyp env_hyp e1.id);
 		     mk_nat (get_hyp env_hyp e2.id) |])
       | SPLIT_INEQ(e,(e1,l1),(e2,l2)) :: l ->
 	  let i =  get_hyp env_hyp e.id in
 	  let r1 = loop (CCEqua e1 :: env_hyp) l1 in
 	  let r2 = loop (CCEqua e2 :: env_hyp) l2 in
 	  mkApp (Lazy.force coq_s_split_ineq,
-                  [| mk_nat (List.length e.body); mk_nat i; r1 ; r2 |])
+                  [| mk_nat i; r1 ; r2 |])
       |	(FORGET_C _ | FORGET _ | FORGET_I _) :: l ->
 	  loop env_hyp l
       | (WEAKEN  _ ) :: l -> failwith "not_treated"
