@@ -5004,7 +5004,6 @@ let name_op_to_name name_op object_kind suffix =
       add_suffix name suffix, gk
 
 let tclABSTRACT ?(opaque=true) name_op tac =
-  let open Proof_global in
   let s, gk = if opaque
     then name_op_to_name name_op (Proof Theorem) "_subproof"
     else name_op_to_name name_op (DefinitionBody Definition) "_subterm" in
