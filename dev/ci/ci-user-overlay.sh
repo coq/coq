@@ -25,10 +25,8 @@ echo $TRAVIS_PULL_REQUEST
 echo $TRAVIS_BRANCH
 echo $TRAVIS_COMMIT
 
-if [ $TRAVIS_PULL_REQUEST == "678" ] || [ $TRAVIS_BRANCH == "coqlib-part-02" ]; then
-
-    mathcomp_CI_BRANCH=coqlib-part-02
-    mathcomp_CI_GITURL=https://github.com/ejgallego/math-comp.git
-
+if [ $TRAVIS_PULL_REQUEST == "590" ] || [ $TRAVIS_BRANCH == "trunk+algebraic-matchingvar" ]; then
+    mathcomp_CI_BRANCH=trunk+pr590-patvar
+    mathcomp_CI_GITURL=https://github.com/herbelin/math-comp.git
 fi
 
