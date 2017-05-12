@@ -17,6 +17,29 @@ specialize (eq_trans (x:=a)(y:=b)). intros _.
 specialize (eq_trans H H0). intros _.
 specialize (eq_trans H0 (z:=b)). intros _.
 
+(* incomplete bindings: y is left quantified and z is instantiated. *)
+specialize eq_trans with (x:=a)(z:=c).
+intro h.
+(* y can be instantiated now *)
+specialize h with (y:=b).
+(* z was instantiated above so this must fail. *)
+Fail specialize h with (z:=c).
+clear h.
+
+(* incomplete bindings: 1st dep hyp is instantiated thus A, x and y
+   instantiated too. *)
+specialize eq_trans with (1:=H).
+intro h.
+(* 2nd dep hyp can be instantiated now, which instatiates z too. *)
+specialize h with (1:=H0).
+(* checking that there is no more products in h. *)
+match type of h with
+| _ = _ => idtac
+| _ => fail "specialize test failed: hypothesis h should be an equality at this point"
+end.
+clear h.
+
+
 (* local "in place" specialization *)
 assert (Eq:=eq_trans).
 
@@ -31,6 +54,27 @@ specialize (Eq _ a b c). Undo.
 specialize (Eq _ _ _ _ H H0). Undo.
 specialize (Eq _ _ _ b H0). Undo.
 
+(* incomplete binding *)
+specialize Eq with (y:=b).
+(* A and y have been instantiated so this works *)
+specialize (Eq _ _ H H0).
+Undo 2.
+
+(* incomplete binding (dependent) *)
+specialize Eq with (1:=H).
+(* A, x and y have been instantiated so this works *)
+specialize (Eq _ H0).
+Undo 2.
+
+(* incomplete binding (dependent) *)
+specialize Eq with (1:=H) (2:=H0).
+(* A, x and y have been instantiated so this works *)
+match type of Eq with
+| _ = _ => idtac
+| _ => fail "specialize test failed: hypothesis Eq should be an equality at this point"
+end.
+Undo 2.
+
 (*
 (** strange behavior to inspect more precisely *)
 
@@ -40,7 +84,7 @@ specialize (Eq _ _ _ b H0). Undo.
 (* 2) echoue moins lorsque zero premise de mangé *)
 specialize eq_trans with (1:=Eq).  (* mal typé !! *)
 
-(* 3) *)
+(* 3) Seems fixed.*)
 specialize eq_trans with _ a b c. intros _.
 (* Anomaly: Evar ?88 was not declared. Please report. *)
 *)

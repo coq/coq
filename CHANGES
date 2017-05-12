@@ -6,6 +6,9 @@ Tactics
 - New tactic "extensionality in H" which applies (possibly dependent)
   functional extensionality in H supposed to be a quantified equality
   until giving a bare equality.
+- Tactic "specialize with ..." now accepts any partial bindings.
+  Missing bindings are either solved by unification or left quantified
+  in the hypothesis.
 - New representation of terms that statically ensure stability by
   evar-expansion. This has several consequences.
   * In terms of performance, this adds a cost to every term destructuration,
