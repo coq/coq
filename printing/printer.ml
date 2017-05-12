@@ -349,27 +349,12 @@ let pr_ne_context_of header env sigma =
     List.is_empty (Environ.named_context env)  then (mt ())
   else let penv = pr_context_unlimited env sigma in (header ++ penv ++ fnl ())
 
-(* Heuristic for horizontalizing hypothesis:
-   Detecting variable which type is a simple id or of the form (t x y ...)
-   where t is a product or only sorts (typically [Type -> Type -> ...]
-   and not [nat -> nat -> ...] ).
-   + Special case for non-Prop dependent terms. *)
-let rec should_compact env sigma typ =
+(* Heuristic for horizontalizing hypothesis that the user probably
+   considers as "variables": An hypothesis H:T where T:S and S<>Prop. *)
+let should_compact env sigma typ =
   get_compact_context() &&
-    match kind_of_term typ with
-    | Rel _ | Var _ | Sort _ | Const _ | Ind _ -> true
-    | App (c,args) ->
-       let _,type_of_c = Typing.type_of env sigma (EConstr.of_constr c) in
-       let _,type_of_typ = Typing.type_of env sigma (EConstr.of_constr typ) in
-       not (is_Prop (EConstr.to_constr sigma type_of_typ))
-       && (* These two more tests detect rare cases of non-Prop-sorted
-             dependent hypothesis:  *)
-       let lnamedtyp , _ = EConstr.decompose_prod sigma type_of_c in
-       (* c has a non dependent type *)
-       List.for_all (fun (_,typarg) -> EConstr.isSort sigma typarg) lnamedtyp
-       && (* and real arguments are recursively elligible to compaction. *)
-       Array.for_all (should_compact env sigma) args
-    | _ -> false
+    let type_of_typ = Retyping.get_type_of env sigma (EConstr.of_constr typ) in
+    not (is_Prop (EConstr.to_constr sigma type_of_typ))
 
 
 (* If option Compact Contexts is set, we pack "simple" hypothesis in a
