@@ -858,37 +858,43 @@ let unix = os_type_cygwin || not arch_is_win32
 
 (** Variable name, description, ref in Prefs, default dir, prefix-relative *)
 
+type path_style =
+  | Absolute of string (* Should start with a "/" *)
+  | Relative of string (* Should not start with a "/" *)
+
 let install = [
   "BINDIR", "the Coq binaries", Prefs.bindir,
-    (if unix then "/usr/local/bin" else "C:/coq/bin"),
-    "/bin";
+    Relative "bin", Relative "bin";
   "COQLIBINSTALL", "the Coq library", Prefs.libdir,
-    (if unix then "/usr/local/lib/coq" else "C:/coq/lib"),
-    (if arch_is_win32 then "/lib" else "/lib/coq");
+    Relative "lib", Relative "lib/coq";
   "CONFIGDIR", "the Coqide configuration files", Prefs.configdir,
-    (if unix then "/etc/xdg/coq" else "C:/coq/config"),
-    (if arch_is_win32 then "/config" else "/etc/xdg/coq");
+    Relative "config", Absolute "/etc/xdg/coq";
   "DATADIR", "the Coqide data files", Prefs.datadir,
-    (if unix then "/usr/local/share/coq" else "C:/coq/share"),
-    (if arch_is_win32 then "/share" else "/share/coq");
+    Relative "share", Relative "share/coq";
   "MANDIR", "the Coq man pages", Prefs.mandir,
-    (if unix then "/usr/local/share/man" else "C:/coq/man"),
-    (if arch_is_win32 then "/man" else "/share/man");
+    Relative "man", Relative "share/man";
   "DOCDIR", "the Coq documentation", Prefs.docdir,
-    (if unix then "/usr/local/share/doc/coq" else "C:/coq/doc"),
-    (if arch_is_win32 then "/doc" else "/share/doc/coq");
+    Relative "doc", Relative "share/doc/coq";
   "EMACSLIB", "the Coq Emacs mode", Prefs.emacslib,
-    (if unix then "/usr/local/share/emacs/site-lisp" else "C:/coq/emacs"),
-    (if arch_is_win32 then "/emacs" else "/share/emacs/site-lisp");
+    Relative "emacs", Relative "share/emacs/site-lisp";
   "COQDOCDIR", "the Coqdoc LaTeX files", Prefs.coqdocdir,
-    (if unix then "/usr/local/share/texmf/tex/latex/misc" else "C:/coq/latex"),
-    (if arch_is_win32 then "/latex" else "/share/texmf/tex/latex/misc");
+    Relative "latex", Relative "share/texmf/tex/latex/misc";
  ]
 
-let do_one_instdir (var,msg,r,dflt,suff) =
-  let dir = match !r, !Prefs.prefix with
+let use_suffix prefix = function
+  | Relative suff -> prefix ^ "/" ^ suff
+  | Absolute path -> path
+
+let relativize = function
+  (* Turn a global layout based on some prefix to a relative layout *)
+  | Relative _ as suffix -> suffix
+  | Absolute path -> Relative (String.sub path 1 (String.length path - 1))
+
+let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout) =
+  let dflt = if unix then use_suffix "/usr/local" unixlayout else use_suffix "C:/coq" selfcontainedlayout in
+  let dir = match !uservalue, !Prefs.prefix with
     | Some d, _ -> d
-    | _, Some p -> p^suff
+    | _, Some p -> use_suffix p (if arch_is_win32 then selfcontainedlayout else relativize unixlayout)
     | _ ->
       let () = printf "Where should I install %s [%s]? " msg dflt in
       let line = read_line () in
