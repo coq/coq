@@ -1337,11 +1337,15 @@ in the list of subgoals remaining to prove.
       quantifications or non-dependent implications) are instantiated
       by concrete terms coming either from arguments \term$_1$
       $\ldots$ \term$_n$ or from a bindings list (see
-      Section~\ref{Binding-list} for more about bindings lists). In the
-      second form, all instantiation elements must be given, whereas
-      in the first form the application to \term$_1$ {\ldots}
+      Section~\ref{Binding-list} for more about bindings lists). 
+      In the first form the application to \term$_1$ {\ldots}
       \term$_n$ can be partial. The first form is equivalent to
       {\tt assert ({\ident} := {\ident} {\term$_1$} \dots\ \term$_n$)}.
+
+      In the second form, instantiation elements can also be partial.
+      In this case the uninstantiated arguments are inferred by
+      unification if possible or left quantified in the hypothesis
+      otherwise.
 
       With the {\tt as} clause, the local hypothesis {\ident} is left
       unchanged and instead, the modified hypothesis is introduced as
