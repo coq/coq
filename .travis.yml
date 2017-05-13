@@ -82,7 +82,7 @@ matrix:
           - imagemagick
     - env:
       - TEST_TARGET="test-suite"
-      - COMPILER="4.04.0"
+      - COMPILER="4.04.1"
       - CAMLP5_VER="6.17"
       - EXTRA_CONF="-coqide opt -with-doc yes"
       - EXTRA_OPAM="lablgtk-extras hevea"
