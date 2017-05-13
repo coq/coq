@@ -3,7 +3,7 @@
 ## This micro-configure shell script is here only to
 ## launch the real configuration via ocaml
 
-cmd=ocaml
+ocaml=ocaml
 script=./configure.ml
 
 if [ ! -f $script ]; then
@@ -16,10 +16,11 @@ fi
 ## Parse the args, only looking for -camldir
 ## We avoid using shift to keep "$@" intact
 
+cmd=$ocaml
 last=
 for i; do
    case $last in
-       -camldir|--camldir) cmd="$i/ocaml"; break;;
+       -camldir) cmd="$i/$ocaml"; break;;
    esac
    last=$i
 done
