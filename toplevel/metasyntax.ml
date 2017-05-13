@@ -520,7 +520,7 @@ let warn_skip_spaces_curly =
       (fun () ->strbrk "Skipping spaces inside curly brackets")
 
 let rec drop_spacing = function
-  | UnpCut _ as u :: fmt -> warn_skip_spaces_curly (); drop_spacing fmt
+  | UnpCut _ :: fmt -> warn_skip_spaces_curly (); drop_spacing fmt
   | UnpTerminal s' :: fmt when String.equal s' (String.make (String.length s') ' ') -> warn_skip_spaces_curly (); drop_spacing fmt
   | fmt -> fmt
 
