@@ -53,7 +53,6 @@ matrix:
 
   allow_failures:
   - env: TEST_TARGET="ci-geocoq"
-  - env: TEST_TARGET="ci-vst"
 
   # Full Coq test-suite with two compilers
   # [TODO: use yaml refs and avoid duplication for packages list]
