@@ -349,6 +349,8 @@ let args_options = Arg.align [
     " URL of the coq website";
   "-force-caml-version", Arg.Set Prefs.force_caml_version,
     " Force OCaml version";
+  "-camldir", Arg.String (fun _ -> ()),
+    "<dir> Specifies path to ocaml for running configure script";
 ]
 
 let parse_args () =
