@@ -432,31 +432,6 @@ let intern_assumption intern lvar env nal bk ty =
      let env, b = intern_generalized_binder intern_type lvar env (List.hd nal) b b' t ty in
      env, b
 
-let rec free_vars_of_pat il =
-  function
-  | CPatCstr (loc, c, l1, l2) ->
-      let il = List.fold_left free_vars_of_pat il (Option.default [] l1) in
-      List.fold_left free_vars_of_pat il l2
-  | CPatAtom (loc, ro) ->
-      begin match ro with
-      | Some (Ident (loc, i)) -> (loc, i) :: il
-      | Some _ | None -> il
-      end
-  | CPatNotation (loc, n, l1, l2) ->
-      let il = List.fold_left free_vars_of_pat il (fst l1) in
-      List.fold_left (List.fold_left free_vars_of_pat) il (snd l1)
-  | _ -> anomaly (str "free_vars_of_pat")
-
-let intern_local_pattern intern lvar env p =
-  List.fold_left
-    (fun env (loc, i) ->
-       let bk = Default Implicit in
-       let ty = CHole (loc, None, Misctypes.IntroAnonymous, None) in
-       let n = Name i in
-       let env, _ = intern_assumption intern lvar env [(loc, n)] bk ty in
-       env)
-    env (free_vars_of_pat [] p)
-
 type binder_data =
   | BDRawDef of (Loc.t * glob_binder)
   | BDPattern of
@@ -490,13 +465,15 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
         | Some ty -> ty
         | None -> CHole(loc,None,Misctypes.IntroAnonymous,None)
       in
-      let env = intern_local_pattern intern lvar env p in
-      let cp =
+      let il,cp =
         match !intern_cases_pattern_fwd (None,env.scopes) p with
-        | (_, [(_, cp)]) -> cp
+        | (il, [(subst,cp)]) ->
+           if not (Id.Map.equal Id.equal subst Id.Map.empty) then
+             user_err_loc (loc,"",str "Unsupported nested \"as\" clause.");
+           il,cp
         | _ -> assert false
       in
-      let il = List.map snd (free_vars_of_pat [] p) in
+      let env = {env with ids = List.fold_right Id.Set.add il env.ids} in
       (env, BDPattern(loc,(cp,il),lvar,env,tyc) :: bl)
 
 let intern_generalization intern env lvar loc bk ak c =
