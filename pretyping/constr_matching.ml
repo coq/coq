@@ -84,7 +84,6 @@ let rec build_lambda vars ctx m = match vars with
 | n :: vars ->
   (* change [ x1 ... xn y z1 ... zm |- t ] into
      [ x1 ... xn z1 ... zm |- lam y. t ] *)
-  let len = List.length ctx in
   let pre, suf = List.chop (pred n) ctx in
   let (na, t, suf) = match suf with
   | [] -> assert false
