@@ -525,6 +525,8 @@ let camltag = match caml_version_list with
   | x::y::_ -> "OCAML"^x^y
   | _ -> assert false
 
+let coq_warn_flag =
+  if caml_version_nums > [4;2;3] then "-w -3-52-56" else ""
 
 (** * CamlpX configuration *)
 
@@ -1140,7 +1142,7 @@ let write_makefile f =
   pr "CAMLLINK=%S\n" camlexec.byte;
   pr "CAMLOPTLINK=%S\n\n" camlexec.opt;
   pr "# Caml flags\n";
-  pr "CAMLFLAGS=-rectypes %s\n" coq_annotate_flag;
+  pr "CAMLFLAGS=-rectypes %s %s\n" coq_annotate_flag coq_warn_flag;
   pr "# User compilation flag\n";
   pr "USERFLAGS=\n\n";
   pr "# Flags for GCC\n";
