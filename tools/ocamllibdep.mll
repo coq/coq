@@ -11,13 +11,13 @@
 
   let syntax_error lexbuf =
     raise (Syntax_error (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))
+
 }
 
 let space = [' ' '\t' '\n' '\r']
-let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255']
-let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let lowercase = ['a'-'z']
+let uppercase = ['A'-'Z']
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
 let caml_up_ident = uppercase identchar*
 let caml_low_ident = lowercase identchar*
 
