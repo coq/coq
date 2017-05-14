@@ -900,6 +900,21 @@ let interp_reference vars r =
 (**********************************************************************)
 (** {5 Cases }                                                        *)
 
+(** Private internalization patterns *)
+type raw_cases_pattern_expr =
+  | RCPatAlias of Loc.t * raw_cases_pattern_expr * Id.t
+  | RCPatCstr  of Loc.t * Globnames.global_reference
+    * raw_cases_pattern_expr list * raw_cases_pattern_expr list
+  (** [RCPatCstr (loc, c, l1, l2)] represents ((@c l1) l2) *)
+  | RCPatAtom  of Loc.t * Id.t option
+  | RCPatOr    of Loc.t * raw_cases_pattern_expr list
+
+let raw_cases_pattern_expr_loc = function
+  | RCPatAlias (loc,_,_) -> loc
+  | RCPatCstr (loc,_,_,_) -> loc
+  | RCPatAtom (loc,_) -> loc
+  | RCPatOr (loc,_) -> loc
+
 (** {6 Elemtary bricks } *)
 let apply_scope_env env = function
   | [] -> {env with tmp_scope = None}, []
@@ -1198,8 +1213,8 @@ let rec subst_pat_iterator y t p = match p with
   | RCPatAtom (_,id) ->
     begin match id with Some x when Id.equal x y -> t | _ -> p end
   | RCPatCstr (loc,id,l1,l2) ->
-     RCPatCstr (loc,id,List.map (subst_pat_iterator y t) l1,
-	       List.map (subst_pat_iterator y t) l2)
+    RCPatCstr (loc,id,List.map (subst_pat_iterator y t) l1,
+ 	       List.map (subst_pat_iterator y t) l2)
   | RCPatAlias (l,p,a) -> RCPatAlias (l,subst_pat_iterator y t p,a)
   | RCPatOr (l,pl) -> RCPatOr (l,List.map (subst_pat_iterator y t) pl)
 
@@ -1215,6 +1230,14 @@ let drop_notations_pattern looked_for =
   in
   let test_kind top =
     if top then looked_for else function ConstructRef _ -> () | _ -> raise Not_found
+  in
+  (** [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
+  let rec rcp_of_glob = function
+    | GVar (loc,id) -> RCPatAtom (loc,Some id)
+    | GHole (loc,_,_,_) -> RCPatAtom (loc,None)
+    | GRef (loc,g,_) -> RCPatCstr (loc, g,[],[])
+    | GApp (loc,GRef (_,g,_),l) -> RCPatCstr (loc, g, List.map rcp_of_glob l,[])
+    | _ -> CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr ")
   in
   let rec drop_syndef top scopes re pats =
     let (loc,qid) = qualid_of_reference re in
@@ -1285,8 +1308,9 @@ let drop_notations_pattern looked_for =
         let (argscs1,_) = find_remaining_scopes expl_pl pl g in
         RCPatCstr (loc, g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat false scopes) pl, [])
     | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]),[])
-	when Bigint.is_strictly_pos p ->
-      fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false loc) (Numeral (Bigint.neg p)) scopes)
+      when Bigint.is_strictly_pos p ->
+      let (pat, _df) = Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false loc) (Numeral (Bigint.neg p)) scopes in
+      rcp_of_glob pat
     | CPatNotation (_,"( _ )",([a],[]),[]) ->
       in_pat top scopes a
     | CPatNotation (loc, ntn, fullargs,extrargs) ->
@@ -1299,7 +1323,9 @@ let drop_notations_pattern looked_for =
       in_not top loc scopes (subst,substlist) extrargs c
     | CPatDelimiters (loc, key, e) ->
       in_pat top (None,find_delimiters_scope loc key::snd scopes) e
-    | CPatPrim (loc,p) -> fst (Notation.interp_prim_token_cases_pattern_expr loc (test_kind false) p scopes)
+    | CPatPrim (loc,p) ->
+      let (pat, _df) = Notation.interp_prim_token_cases_pattern_expr loc (test_kind false) p scopes in
+      rcp_of_glob pat
     | CPatAtom (loc, Some id) ->
       begin
 	match drop_syndef top scopes id [] with
