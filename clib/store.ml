@@ -117,7 +117,7 @@ let field merge =
     let len = Array.length init in
     if i < len then ()
     else begin
-      let arr = allocate (len + 1) in
+      let arr = allocate (len * 2) in
       Array.blit init 0 arr 0 len;
       merge_fns := arr
     end
