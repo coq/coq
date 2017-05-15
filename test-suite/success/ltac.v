@@ -317,3 +317,9 @@ let T := constr:(fun a b : nat => a) in
   end.
 exact (eq_refl n).
 Qed.
+
+(* Test evar syntax *)
+
+Goal True.
+evar (0=0).
+Abort.
