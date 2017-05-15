@@ -31,12 +31,9 @@ let succfix (depth, fixrels) =
 let check_evars env evm =
   Evar.Map.iter
   (fun key evi ->
-   let (loc,k) = evar_source key evm in
-     match k with
-     | Evar_kinds.QuestionMark _
-     | Evar_kinds.ImplicitArg (_,_,false) -> ()
-     | _ ->
-       Pretype_errors.error_unsolvable_implicit ?loc env evm key None)
+    if not (Evarsolve.is_obligation evi.Evd.evar_extra) then
+      let (loc,k) = evi.evar_source in
+      Pretype_errors.error_unsolvable_implicit ?loc env evm key None)
   (Evd.undefined_map evm)
 
 type oblinfo =
