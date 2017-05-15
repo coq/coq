@@ -10,10 +10,10 @@ let module_refl_name = "ReflOmegaCore"
 let module_refl_path = ["Coq"; "romega"; module_refl_name]
 
 type result =
-   Kvar of string
- | Kapp of string * Term.constr list
- | Kimp of Term.constr * Term.constr
- | Kufo;;
+  | Kvar of string
+  | Kapp of string * Term.constr list
+  | Kimp of Term.constr * Term.constr
+  | Kufo
 
 let meaningful_submodule = [ "Z"; "N"; "Pos" ]
 
@@ -30,19 +30,17 @@ let string_of_global r =
 let destructurate t =
   let c, args = Term.decompose_app t in
   match Term.kind_of_term c, args with
-    | Term.Const (sp,_), args ->
-	Kapp (string_of_global (Globnames.ConstRef sp), args)
-    | Term.Construct (csp,_) , args ->
-	Kapp (string_of_global (Globnames.ConstructRef csp), args)
-    | Term.Ind (isp,_), args ->
-	Kapp (string_of_global (Globnames.IndRef isp), args)
-    | Term.Var id,[] -> Kvar(Names.Id.to_string id)
-    | Term.Prod (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
-    | Term.Prod (Names.Name _,_,_),[] ->
-	CErrors.error "Omega: Not a quantifier-free goal"
-    | _ -> Kufo
+  | Term.Const (sp,_), args ->
+     Kapp (string_of_global (Globnames.ConstRef sp), args)
+  | Term.Construct (csp,_) , args ->
+     Kapp (string_of_global (Globnames.ConstructRef csp), args)
+  | Term.Ind (isp,_), args ->
+     Kapp (string_of_global (Globnames.IndRef isp), args)
+  | Term.Var id, [] -> Kvar(Names.Id.to_string id)
+  | Term.Prod (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
+  | _ -> Kufo
 
-exception Destruct
+exception DestConstApp
 
 let dest_const_apply t =
   let f,args = Term.decompose_app t in
@@ -51,8 +49,8 @@ let dest_const_apply t =
     | Term.Const (sp,_)      -> Globnames.ConstRef sp
     | Term.Construct (csp,_) -> Globnames.ConstructRef csp
     | Term.Ind (isp,_)       -> Globnames.IndRef isp
-    | _ -> raise Destruct
-  in  Nametab.basename_of_global ref, args
+    | _ -> raise DestConstApp
+  in Nametab.basename_of_global ref, args
 
 let logic_dir = ["Coq";"Logic";"Decidable"]
 
@@ -262,17 +260,15 @@ type parse_rel =
   | Riff of Term.constr * Term.constr
   | Rother
 
-let parse_logic_rel c =
- try match destructurate c with
-   | Kapp("True",[]) -> Rtrue
-   | Kapp("False",[]) -> Rfalse
-   | Kapp("not",[t]) -> Rnot t
-   | Kapp("or",[t1;t2]) -> Ror (t1,t2)
-   | Kapp("and",[t1;t2]) -> Rand (t1,t2)
-   | Kimp(t1,t2) -> Rimp (t1,t2)
-   | Kapp("iff",[t1;t2]) -> Riff (t1,t2)
-   | _ -> Rother
- with e when Logic.catchable_exception e -> Rother
+let parse_logic_rel c = match destructurate c with
+  | Kapp("True",[]) -> Rtrue
+  | Kapp("False",[]) -> Rfalse
+  | Kapp("not",[t]) -> Rnot t
+  | Kapp("or",[t1;t2]) -> Ror (t1,t2)
+  | Kapp("and",[t1;t2]) -> Rand (t1,t2)
+  | Kimp(t1,t2) -> Rimp (t1,t2)
+  | Kapp("iff",[t1;t2]) -> Riff (t1,t2)
+  | _ -> Rother
 
 (* Binary numbers *)
 
@@ -321,20 +317,26 @@ let mult = lazy (z_constant  "Z.mul")
 let opp = lazy (z_constant "Z.opp")
 let minus = lazy (z_constant "Z.sub")
 
-let recognize t =
+let recognize_pos t =
   let rec loop t =
     let f,l = dest_const_apply t in
     match Names.Id.to_string f,l with
-       "xI",[t] -> Bigint.add Bigint.one (Bigint.mult Bigint.two (loop t))
-     | "xO",[t] -> Bigint.mult Bigint.two (loop t)
-     | "xH",[] -> Bigint.one
-     | _ -> failwith "not a number" in
-  let f,l = dest_const_apply t in
+    | "xI",[t] -> Bigint.add Bigint.one (Bigint.mult Bigint.two (loop t))
+    | "xO",[t] -> Bigint.mult Bigint.two (loop t)
+    | "xH",[] -> Bigint.one
+    | _ -> raise DestConstApp
+  in
+  try Some (loop t) with DestConstApp -> None
+
+let recognize_Z t =
+  try
+    let f,l = dest_const_apply t in
     match Names.Id.to_string f,l with
-        "Zpos",[t] -> loop t
-      | "Zneg",[t] -> Bigint.neg (loop t)
-      | "Z0",[] -> Bigint.zero
-      | _ -> failwith "not a number";;
+    | "Zpos",[t] -> recognize_pos t
+    | "Zneg",[t] -> Option.map Bigint.neg (recognize_pos t)
+    | "Z0",[] -> Some Bigint.zero
+    | _ -> None
+  with DestConstApp -> None
 
 let mk_Z n =
   if Bigint.equal n Bigint.zero then Lazy.force coq_Z0
@@ -346,38 +348,39 @@ let mk_Z n =
 let mk = mk_Z
 
 let parse_term t =
-  try match destructurate t with
-    | Kapp("Z.add",[t1;t2]) -> Tplus (t1,t2)
-    | Kapp("Z.sub",[t1;t2]) -> Tminus (t1,t2)
-    | Kapp("Z.mul",[t1;t2]) -> Tmult (t1,t2)
-    | Kapp("Z.opp",[t]) -> Topp t
-    | Kapp("Z.succ",[t]) -> Tsucc t
-    | Kapp("Z.pred",[t]) -> Tplus(t, mk_Z (Bigint.neg Bigint.one))
-    | Kapp(("Zpos"|"Zneg"|"Z0"),_) ->
-	(try Tnum (recognize t) with e when CErrors.noncritical e -> Tother)
-    | _ -> Tother
-  with e when Logic.catchable_exception e -> Tother
+  match destructurate t with
+  | Kapp("Z.add",[t1;t2]) -> Tplus (t1,t2)
+  | Kapp("Z.sub",[t1;t2]) -> Tminus (t1,t2)
+  | Kapp("Z.mul",[t1;t2]) -> Tmult (t1,t2)
+  | Kapp("Z.opp",[t]) -> Topp t
+  | Kapp("Z.succ",[t]) -> Tsucc t
+  | Kapp("Z.pred",[t]) -> Tplus(t, mk_Z (Bigint.neg Bigint.one))
+  | Kapp(("Zpos"|"Zneg"|"Z0"),_) ->
+     (match recognize_Z t with Some t -> Tnum t | None -> Tother)
+  | _ -> Tother
 
-let pf_nf gl c = Tacmach.New.pf_apply Tacred.simpl gl c
+let pf_nf gl c =
+  EConstr.Unsafe.to_constr
+    (Tacmach.New.pf_apply Tacred.simpl gl (EConstr.of_constr c))
 
 let parse_rel gl t =
-  try match destructurate t with
-    | Kapp("eq",[typ;t1;t2])
-      when destructurate (EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr typ))) = Kapp("Z",[]) -> Req (t1,t2)
-    | Kapp("Zne",[t1;t2]) -> Rne (t1,t2)
-    | Kapp("Z.le",[t1;t2]) -> Rle (t1,t2)
-    | Kapp("Z.lt",[t1;t2]) -> Rlt (t1,t2)
-    | Kapp("Z.ge",[t1;t2]) -> Rge (t1,t2)
-    | Kapp("Z.gt",[t1;t2]) -> Rgt (t1,t2)
-    | _ -> parse_logic_rel t
-  with e when Logic.catchable_exception e -> Rother
+  match destructurate t with
+  | Kapp("eq",[typ;t1;t2]) ->
+     (match destructurate (pf_nf gl typ) with
+      | Kapp("Z",[]) -> Req (t1,t2)
+      | _ -> Rother)
+  | Kapp("Zne",[t1;t2]) -> Rne (t1,t2)
+  | Kapp("Z.le",[t1;t2]) -> Rle (t1,t2)
+  | Kapp("Z.lt",[t1;t2]) -> Rlt (t1,t2)
+  | Kapp("Z.ge",[t1;t2]) -> Rge (t1,t2)
+  | Kapp("Z.gt",[t1;t2]) -> Rgt (t1,t2)
+  | _ -> parse_logic_rel t
 
-let is_scalar t =
-  let rec aux t = match destructurate t with
-    | Kapp(("Z.add"|"Z.sub"|"Z.mul"),[t1;t2]) -> aux t1 && aux t2
-    | Kapp(("Z.opp"|"Z.succ"|"Z.pred"),[t]) -> aux t
-    | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> let _ = recognize t in true
-    | _ -> false in
-  try aux t with e when CErrors.noncritical e -> false
+let rec is_scalar t =
+  match destructurate t with
+  | Kapp(("Z.add"|"Z.sub"|"Z.mul"),[t1;t2]) -> is_scalar t1 && is_scalar t2
+  | Kapp(("Z.opp"|"Z.succ"|"Z.pred"),[t]) -> is_scalar t
+  | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> Option.has_some (recognize_Z t)
+  | _ -> false
 
 end
