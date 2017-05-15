@@ -197,10 +197,17 @@ let eterm_obligations env name evm fs ?status t ty =
   let evl = List.map (fun (id, ev, _) -> id, ev) sevl in
   let evn =
     let i = ref (-1) in
-      List.rev_map (fun (id, ev) -> incr i;
-		      (id, (!i, Id.of_string
-			      (Id.to_string name ^ "_obligation_" ^ string_of_int (succ !i))),
-		       ev)) evl
+    List.rev_map
+      (fun (id, ev) ->
+        incr i;
+        let name = match Evd.evar_ident id evm with
+        | None -> Nameops.add_suffix name ("_obligation_" ^ string_of_int (succ !i))
+        | Some id -> id
+        in
+        if exists_name name then
+          user_err ~loc:(fst ev.Evd.evar_source)
+                   (Nameops.pr_id name ++ str " already exists")
+        else (id, (!i, name), ev)) evl
   in
   let evts =
     (* Remove existential variables in types and build the corresponding products *)
@@ -1059,19 +1066,21 @@ let show_obligations_of_prg ?(msg=true) prg =
   let n = prg.prg_name in
   let obls, rem = prg.prg_obligations in
   let showed = ref 5 in
-    if msg then Feedback.msg_info (int rem ++ str " obligation(s) remaining: ");
-    Array.iteri (fun i x ->
-		   match x.obl_body with
-		   | None ->
-		       if !showed > 0 then (
-		         decr showed;
-			 let x = subst_deps_obl obls x in
-			 Feedback.msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
-				   str "of" ++ spc() ++ Id.print n ++ str ":" ++ spc () ++
-				   hov 1 (Printer.pr_constr_env (Global.env ()) Evd.empty x.obl_type ++
-					    str "." ++ fnl ())))
-		   | Some _ -> ())
-      obls
+  if msg then Feedback.msg_info (int rem ++ str " obligation(s) remaining: ");
+  let show i x =
+    match x.obl_body with
+    | None ->
+       if !showed > 0 then (
+         decr showed;
+         let x = subst_deps_obl obls x in
+         Feedback.msg_info
+           (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
+	    str "of" ++ spc() ++ Id.print n ++ str":" ++ spc () ++
+            Id.print x.obl_name ++ spc () ++ str ":" ++ spc () ++
+	    hov 1 (Printer.pr_constr_env (Global.env ()) Evd.empty x.obl_type ++
+	             str "." ++ fnl ())))
+    | Some _ -> ()
+  in Array.iteri show obls
 
 let show_obligations ?(msg=true) n =
   let progs = match n with

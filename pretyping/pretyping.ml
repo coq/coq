@@ -636,6 +636,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let store =
         if Flags.is_program_mode () then
           match k with
+          | Evar_kinds.NamedHole _
           | Evar_kinds.QuestionMark _
           | Evar_kinds.ImplicitArg (_, _, false) -> Evarsolve.obligation_store
           | _ -> Evd.Store.empty
