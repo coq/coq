@@ -33,7 +33,7 @@ type typ_level =
 let pr_typref kn =
   Libnames.pr_qualid (Tac2env.shortest_qualid_of_type kn)
 
-let rec pr_glbtype_gen pr lvl c =
+let pr_glbtype_gen pr lvl c =
   let rec pr_glbtype lvl = function
   | GTypVar n -> str "'" ++ str (pr n)
   | GTypRef (kn, []) -> pr_typref kn
@@ -88,7 +88,7 @@ let pr_constructor kn =
 let pr_projection kn =
   Libnames.pr_qualid (Tac2env.shortest_qualid_of_projection kn)
 
-type exp_level =
+type exp_level = Tac2expr.exp_level =
 | E5
 | E4
 | E3

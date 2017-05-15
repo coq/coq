@@ -12,13 +12,22 @@ open Tac2expr
 
 (** {5 Printing types} *)
 
+type typ_level =
+| T5_l
+| T5_r
+| T2
+| T1
+| T0
+
 val pr_typref : type_constant -> std_ppcmds
+val pr_glbtype_gen : ('a -> string) -> typ_level -> 'a glb_typexpr -> std_ppcmds
 val pr_glbtype : ('a -> string) -> 'a glb_typexpr -> std_ppcmds
 
 (** {5 Printing expressions} *)
 
 val pr_constructor : ltac_constructor -> std_ppcmds
 val pr_projection : ltac_projection -> std_ppcmds
+val pr_glbexpr_gen : exp_level -> glb_tacexpr -> std_ppcmds
 val pr_glbexpr : glb_tacexpr -> std_ppcmds
 
 (** {5 Utilities} *)

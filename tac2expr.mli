@@ -129,7 +129,23 @@ type glb_tacexpr =
 | GTacExt of glob_generic_argument
 | GTacPrm of ml_tactic_name * glb_tacexpr list
 
-(** Toplevel statements *)
+(** {5 Parsing & Printing} *)
+
+type exp_level =
+| E5
+| E4
+| E3
+| E2
+| E1
+| E0
+
+type sexpr =
+| SexprStr of string located
+| SexprInt of int located
+| SexprRec of Loc.t * Id.t option located * sexpr list
+
+(** {5 Toplevel statements} *)
+
 type strexpr =
 | StrVal of rec_flag * (Name.t located * raw_tacexpr) list
   (** Term definition *)
@@ -137,6 +153,9 @@ type strexpr =
   (** Type definition *)
 | StrPrm of Id.t located * raw_typexpr * ml_tactic_name
   (** External definition *)
+| StrSyn of sexpr list * int option * raw_tacexpr
+  (** Syntactic extensions *)
+
 
 (** {5 Dynamic semantics} *)
 

@@ -16,11 +16,12 @@ open Misctypes
 open Tac2expr
 open Ltac_plugin
 
-let tac2expr = Gram.entry_create "tactic:tac2expr"
+let tac2expr = Tac2entries.Pltac.tac2expr
 let tac2type = Gram.entry_create "tactic:tac2type"
 let tac2def_val = Gram.entry_create "tactic:tac2def_val"
 let tac2def_typ = Gram.entry_create "tactic:tac2def_typ"
 let tac2def_ext = Gram.entry_create "tactic:tac2def_ext"
+let tac2def_syn = Gram.entry_create "tactic:tac2def_syn"
 let tac2mode = Gram.entry_create "vernac:ltac2_command"
 
 let inj_wit wit loc x = CTacExt (loc, Genarg.in_gen (Genarg.rawwit wit) x)
@@ -29,7 +30,7 @@ let inj_open_constr loc c = inj_wit Stdarg.wit_open_constr loc c
 let inj_ident loc c = inj_wit Stdarg.wit_ident loc c
 
 GEXTEND Gram
-  GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext;
+  GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext tac2def_syn;
   tac2pat:
     [ "1" LEFTA
       [ id = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" -> CPatRef (!@loc, RelId id, pl)
@@ -194,6 +195,30 @@ GEXTEND Gram
         StrPrm (id, t, ml)
     ] ]
   ;
+  syn_node:
+    [ [ "_" -> (!@loc, None)
+      | id = Prim.ident -> (!@loc, Some id)
+    ] ]
+  ;
+  sexpr:
+    [ [ s = Prim.string -> SexprStr (!@loc, s)
+      | n = Prim.integer -> SexprInt (!@loc, n)
+      | id = syn_node -> SexprRec (!@loc, id, [])
+      | id = syn_node; "("; tok = LIST1 sexpr SEP "," ; ")" ->
+        SexprRec (!@loc, id, tok)
+    ] ]
+  ;
+  syn_level:
+    [ [ -> None
+      | ":"; n = Prim.integer -> Some n
+    ] ]
+  ;
+  tac2def_syn:
+    [ [ "Notation"; toks = LIST1 sexpr; n = syn_level; ":=";
+        e = tac2expr ->
+        StrSyn (toks, n, e)
+    ] ]
+  ;
 END
 
 GEXTEND Gram
@@ -212,6 +237,7 @@ PRINTED BY pr_ltac2entry
 | [ tac2def_val(v) ] -> [ v ]
 | [ tac2def_typ(t) ] -> [ t ]
 | [ tac2def_ext(e) ] -> [ e ]
+| [ tac2def_syn(e) ] -> [ e ]
 END
 
 VERNAC COMMAND EXTEND VernacDeclareTactic2Definition CLASSIFIED AS SIDEFF
@@ -250,3 +276,4 @@ open Stdarg
 VERNAC COMMAND EXTEND Ltac2Print CLASSIFIED AS SIDEFF
 | [ "Print" "Ltac2" reference(tac) ] -> [ Tac2entries.print_ltac tac ]
 END
+

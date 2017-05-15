@@ -476,10 +476,10 @@ let check_redundant_clause = function
 | [] -> ()
 | (p, _) :: _ -> warn_redundant_clause ~loc:(loc_of_patexpr p) ()
 
-let get_variable env var = match var with
+let get_variable0 mem var = match var with
 | RelId (loc, qid) ->
   let (dp, id) = repr_qualid qid in
-  if DirPath.is_empty dp && Id.Map.mem id env.env_var then ArgVar (loc, id)
+  if DirPath.is_empty dp && mem id then ArgVar (loc, id)
   else
     let kn =
       try Tac2env.locate_ltac qid
@@ -488,6 +488,10 @@ let get_variable env var = match var with
     in
     ArgArg kn
 | AbsKn kn -> ArgArg kn
+
+let get_variable env var =
+  let mem id = Id.Map.mem id env.env_var in
+  get_variable0 mem var
 
 let get_constructor env var = match var with
 | RelId (loc, qid) ->
@@ -1106,6 +1110,104 @@ let intern_open_type t =
   let t = normalize env (count, vars) t in
   (!count, t)
 
+(** Globalization *)
+
+let add_name accu = function
+| Name id -> Id.Set.add id accu
+| Anonymous -> accu
+
+let get_projection0 var = match var with
+| RelId (loc, qid) ->
+  let kn = try Tac2env.locate_projection qid with Not_found ->
+    user_err ~loc (pr_qualid qid ++ str " is not a projection")
+  in
+  kn
+| AbsKn kn -> kn
+
+let rec globalize ids e = match e with
+| CTacAtm _ -> e
+| CTacRef ref ->
+  let mem id = Id.Set.mem id ids in
+  begin match get_variable0 mem ref with
+  | ArgVar _ -> e
+  | ArgArg kn -> CTacRef (AbsKn kn)
+  end
+| CTacFun (loc, bnd, e) ->
+  let fold accu ((_, na), _) = add_name accu na in
+  let ids = List.fold_left fold ids bnd in
+  let e = globalize ids e in
+  CTacFun (loc, bnd, e)
+| CTacApp (loc, e, el) ->
+  let e = globalize ids e in
+  let el = List.map (fun e -> globalize ids e) el in
+  CTacApp (loc, e, el)
+| CTacLet (loc, isrec, bnd, e) ->
+  let fold accu ((_, na), _, _) = add_name accu na in
+  let ext = List.fold_left fold Id.Set.empty bnd in
+  let eids = Id.Set.union ext ids in
+  let e = globalize eids e in
+  let map (qid, t, e) =
+    let ids = if isrec then eids else ids in
+    (qid, t, globalize ids e)
+  in
+  let bnd = List.map map bnd in
+  CTacLet (loc, isrec, bnd, e)
+| CTacTup (loc, el) ->
+  let el = List.map (fun e -> globalize ids e) el in
+  CTacTup (loc, el)
+| CTacArr (loc, el) ->
+  let el = List.map (fun e -> globalize ids e) el in
+  CTacArr (loc, el)
+| CTacLst (loc, el) ->
+  let el = List.map (fun e -> globalize ids e) el in
+  CTacLst (loc, el)
+| CTacCnv (loc, e, t) ->
+  let e = globalize ids e in
+  CTacCnv (loc, e, t)
+| CTacSeq (loc, e1, e2) ->
+  let e1 = globalize ids e1 in
+  let e2 = globalize ids e2 in
+  CTacSeq (loc, e1, e2)
+| CTacCse (loc, e, bl) ->
+  let e = globalize ids e in
+  let bl = List.map (fun b -> globalize_case ids b) bl in
+  CTacCse (loc, e, bl)
+| CTacRec (loc, r) ->
+  let map (p, e) =
+    let p = get_projection0 p in
+    let e = globalize ids e in
+    (AbsKn p, e)
+  in
+  CTacRec (loc, List.map map r)
+| CTacPrj (loc, e, p) ->
+  let e = globalize ids e in
+  let p = get_projection0 p in
+  CTacPrj (loc, e, AbsKn p)
+| CTacSet (loc, e, p, e') ->
+  let e = globalize ids e in
+  let p = get_projection0 p in
+  let e' = globalize ids e' in
+  CTacSet (loc, e, AbsKn p, e')
+| CTacExt (loc, arg) ->
+  let arg = pr_argument_type (genarg_tag arg) in
+  CErrors.user_err ~loc (str "Cannot globalize generic arguments of type" ++ spc () ++ arg)
+
+and globalize_case ids (p, e) =
+  (globalize_pattern ids p, globalize ids e)
+
+and globalize_pattern ids p = match p with
+| CPatAny _ -> p
+| CPatRef (loc, cst, pl) ->
+  let cst = match get_constructor () cst with
+  | ArgVar _ -> cst
+  | ArgArg (_, knc) -> AbsKn knc
+  in
+  let pl = List.map (fun p -> globalize_pattern ids p) pl in
+  CPatRef (loc, cst, pl)
+| CPatTup (loc, pl) ->
+  let pl = List.map (fun p -> globalize_pattern ids p) pl in
+  CPatTup (loc, pl)
+
 (** Kernel substitution *)
 
 open Mod_subst
@@ -1212,6 +1314,128 @@ let subst_quant_typedef subst (prm, def as qdef) =
 let subst_type_scheme subst (prm, t as sch) =
   let t' = subst_type subst t in
   if t' == t then sch else (prm, t')
+
+let subst_or_relid subst ref = match ref with
+| RelId _ -> ref
+| AbsKn kn ->
+  let kn' = subst_kn subst kn in
+  if kn' == kn then ref else AbsKn kn'
+
+let rec subst_rawtype subst t = match t with
+| CTypVar _ -> t
+| CTypArrow (loc, t1, t2) ->
+  let t1' = subst_rawtype subst t1 in
+  let t2' = subst_rawtype subst t2 in
+  if t1' == t1 && t2' == t2 then t else CTypArrow (loc, t1', t2')
+| CTypTuple (loc, tl) ->
+  let tl' = List.smartmap (fun t -> subst_rawtype subst t) tl in
+  if tl' == tl then t else CTypTuple (loc, tl')
+| CTypRef (loc, ref, tl) ->
+  let ref' = subst_or_relid subst ref in
+  let tl' = List.smartmap (fun t -> subst_rawtype subst t) tl in
+  if ref' == ref && tl' == tl then t else CTypRef (loc, ref', tl')
+
+let subst_tacref subst ref = match ref with
+| RelId _ -> ref
+| AbsKn (TacConstant kn) ->
+  let kn' = subst_kn subst kn in
+  if kn' == kn then ref else AbsKn (TacConstant kn')
+| AbsKn (TacConstructor kn) ->
+  let kn' = subst_kn subst kn in
+  if kn' == kn then ref else AbsKn (TacConstructor kn')
+
+let subst_projection subst prj = match prj with
+| RelId _ -> prj
+| AbsKn kn ->
+  let kn' = subst_kn subst kn in
+  if kn' == kn then prj else AbsKn kn'
+
+let rec subst_rawpattern subst p = match p with
+| CPatAny _ -> p
+| CPatRef (loc, c, pl) ->
+  let pl' = List.smartmap (fun p -> subst_rawpattern subst p) pl in
+  let c' = match c with
+  | RelId _ -> c
+  | AbsKn kn ->
+    let kn' = subst_kn subst kn in
+    if kn' == kn then c else AbsKn kn'
+  in
+  if pl' == pl && c' == c then p else CPatRef (loc, c', pl')
+| CPatTup (loc, pl) ->
+  let pl' = List.smartmap (fun p -> subst_rawpattern subst p) pl in
+  if pl' == pl then p else CPatTup (loc, pl')
+
+(** Used for notations *)
+let rec subst_rawexpr subst t = match t with
+| CTacAtm _ -> t
+| CTacRef ref ->
+  let ref' = subst_tacref subst ref in
+  if ref' == ref then t else CTacRef ref'
+| CTacFun (loc, bnd, e) ->
+  let map (na, t as p) =
+    let t' = Option.smartmap (fun t -> subst_rawtype subst t) t in
+    if t' == t then p else (na, t')
+  in
+  let bnd' = List.smartmap map bnd in
+  let e' = subst_rawexpr subst e in
+  if bnd' == bnd && e' == e then t else CTacFun (loc, bnd', e')
+| CTacApp (loc, e, el) ->
+  let e' = subst_rawexpr subst e in
+  let el' = List.smartmap (fun e -> subst_rawexpr subst e) el in
+  if e' == e && el' == el then t else CTacApp (loc, e', el')
+| CTacLet (loc, isrec, bnd, e) ->
+  let map (na, t, e as p) =
+    let t' = Option.smartmap (fun t -> subst_rawtype subst t) t in
+    let e' = subst_rawexpr subst e in
+    if t' == t && e' == e then p else (na, t', e')
+  in
+  let bnd' = List.smartmap map bnd in
+  let e' = subst_rawexpr subst e in
+  if bnd' == bnd && e' == e then t else CTacLet (loc, isrec, bnd', e')
+| CTacTup (loc, el) ->
+  let el' = List.smartmap (fun e -> subst_rawexpr subst e) el in
+  if el' == el then t else CTacTup (loc, el')
+| CTacArr (loc, el) ->
+  let el' = List.smartmap (fun e -> subst_rawexpr subst e) el in
+  if el' == el then t else CTacArr (loc, el')
+| CTacLst (loc, el) ->
+  let el' = List.smartmap (fun e -> subst_rawexpr subst e) el in
+  if el' == el then t else CTacLst (loc, el')
+| CTacCnv (loc, e, c) ->
+  let e' = subst_rawexpr subst e in
+  let c' = subst_rawtype subst c in
+  if c' == c && e' == e then t else CTacCnv (loc, e', c')
+| CTacSeq (loc, e1, e2) ->
+  let e1' = subst_rawexpr subst e1 in
+  let e2' = subst_rawexpr subst e2 in
+  if e1' == e1 && e2' == e2 then t else CTacSeq (loc, e1', e2')
+| CTacCse (loc, e, bl) ->
+  let map (p, e as x) =
+    let p' = subst_rawpattern subst p in
+    let e' = subst_rawexpr subst e in
+    if p' == p && e' == e then x else (p', e')
+  in
+  let e' = subst_rawexpr subst e in
+  let bl' = List.smartmap map bl in
+  if e' == e && bl' == bl then t else CTacCse (loc, e', bl')
+| CTacRec (loc, el) ->
+  let map (prj, e as p) =
+    let prj' = subst_projection subst prj in
+    let e' = subst_rawexpr subst e in
+    if prj' == prj && e' == e then p else (prj', e')
+  in
+  let el' = List.smartmap map el in
+  if el' == el then t else CTacRec (loc, el')
+| CTacPrj (loc, e, prj) ->
+    let prj' = subst_projection subst prj in
+    let e' = subst_rawexpr subst e in
+    if prj' == prj && e' == e then t else CTacPrj (loc, e', prj')
+| CTacSet (loc, e, prj, r) ->
+    let prj' = subst_projection subst prj in
+    let e' = subst_rawexpr subst e in
+    let r' = subst_rawexpr subst r in
+    if prj' == prj && e' == e && r' == r then t else CTacSet (loc, e', prj', r')
+| CTacExt _ -> assert false (** Should not be generated by gloabalization *)
 
 (** Registering *)
 

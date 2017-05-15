@@ -24,6 +24,22 @@ val register_primitive : ?local:bool ->
 
 val register_struct : ?local:bool -> strexpr -> unit
 
+val register_notation : ?local:bool -> sexpr list -> int option ->
+  raw_tacexpr -> unit
+
+(** {5 Notations} *)
+
+type scope_rule =
+| ScopeRule : (raw_tacexpr, 'a) Extend.symbol * ('a -> raw_tacexpr) -> scope_rule
+
+type scope_interpretation = sexpr list -> scope_rule
+
+val register_scope : Id.t -> scope_interpretation -> unit
+(** Create a new scope with the provided name *)
+
+val parse_scope : sexpr -> scope_rule
+(** Use this to interpret the subscopes for interpretation functions *)
+
 (** {5 Inspecting} *)
 
 val print_ltac : Libnames.reference -> unit
@@ -32,3 +48,10 @@ val print_ltac : Libnames.reference -> unit
 
 (** Evaluate a tactic expression in the current environment *)
 val call : default:bool -> raw_tacexpr -> unit
+
+(** {5 Parsing entries} *)
+
+module Pltac :
+sig
+val tac2expr : raw_tacexpr Pcoq.Gram.entry
+end

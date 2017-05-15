@@ -48,9 +48,13 @@ let t_unit = coq_core "unit"
 let t_list = coq_core "list"
 let t_constr = coq_core "constr"
 let t_ident = coq_core "ident"
+let t_option = coq_core "option"
 
 let c_nil = coq_core "[]"
 let c_cons = coq_core "::"
+
+let c_none = coq_core "None"
+let c_some = coq_core "Some"
 
 end
 
@@ -464,7 +468,6 @@ let interp_constr flags ist (c, _) =
   end
 
 let () =
-  let open Pretyping in
   let interp ist c = interp_constr (constr_flags ()) ist c in
   let obj = {
     ml_type = t_constr;
@@ -473,7 +476,6 @@ let () =
   define_ml_object Stdarg.wit_constr obj
 
 let () =
-  let open Pretyping in
   let interp ist c = interp_constr (open_constr_no_classes_flags ()) ist c in
   let obj = {
     ml_type = t_constr;
@@ -502,3 +504,71 @@ let () =
     (EConstr.of_constr c, sigma)
   in
   Pretyping.register_constr_interp0 wit_ltac2 interp
+
+(** Built-in notation scopes *)
+
+let add_scope s f =
+  Tac2entries.register_scope (Id.of_string s) f
+
+let scope_fail () = CErrors.user_err (str "Invalid parsing token")
+
+let rthunk e =
+  let loc = Tac2intern.loc_of_tacexpr e in
+  let var = [(loc, Anonymous), Some (CTypRef (loc, AbsKn Core.t_unit, []))] in
+  CTacFun (loc, var, e)
+
+let add_generic_scope s entry arg =
+  let parse = function
+  | [] ->
+    let scope = Extend.Aentry entry in
+    let act x = rthunk (CTacExt (Loc.ghost, in_gen (rawwit arg) x)) in
+    Tac2entries.ScopeRule (scope, act)
+  | _ -> scope_fail ()
+  in
+  add_scope s parse
+
+let () = add_scope "list0" begin function
+| [tok] ->
+  let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
+  let scope = Extend.Alist0 scope in
+  let act l =
+    let l = List.map act l in
+    CTacLst (Loc.ghost, l)
+  in
+  Tac2entries.ScopeRule (scope, act)
+| [tok; SexprStr (_, str)] ->
+  let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
+  let sep = Extend.Atoken (CLexer.terminal str) in
+  let scope = Extend.Alist0sep (scope, sep) in
+  let act l =
+    let l = List.map act l in
+    CTacLst (Loc.ghost, l)
+  in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
+let () = add_scope "opt" begin function
+| [tok] ->
+  let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
+  let scope = Extend.Aopt scope in
+  let act opt = match opt with
+  | None ->
+    CTacRef (AbsKn (TacConstructor Core.c_none))
+  | Some x ->
+    CTacApp (Loc.ghost, CTacRef (AbsKn (TacConstructor Core.c_some)), [act x])
+  in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
+let () = add_scope "self" begin function
+| [] ->
+  let scope = Extend.Aself in
+  let act tac = rthunk tac in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
+let () = add_generic_scope "ident" Pcoq.Prim.ident Stdarg.wit_ident
+let () = add_generic_scope "constr" Pcoq.Constr.constr Stdarg.wit_constr

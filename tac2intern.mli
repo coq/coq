@@ -27,6 +27,14 @@ val subst_expr : substitution -> glb_tacexpr -> glb_tacexpr
 val subst_quant_typedef : substitution -> glb_quant_typedef -> glb_quant_typedef
 val subst_type_scheme : substitution -> type_scheme -> type_scheme
 
+val subst_rawexpr : substitution -> raw_tacexpr -> raw_tacexpr
+
+(** {5 Notations} *)
+
+val globalize : Id.Set.t -> raw_tacexpr -> raw_tacexpr
+(** Replaces all qualified identifiers by their corresponding kernel name. The
+    set represents bound variables in the context. *)
+
 (** Errors *)
 
 val error_nargs_mismatch : Loc.t -> int -> int -> 'a

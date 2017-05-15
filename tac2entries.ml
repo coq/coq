@@ -19,6 +19,13 @@ open Tac2print
 open Tac2intern
 open Vernacexpr
 
+(** Grammar entries *)
+
+module Pltac =
+struct
+let tac2expr = Pcoq.Gram.entry_create "tactic:tac2expr"
+end
+
 (** Tactic definition *)
 
 type tacdef = {
@@ -97,8 +104,6 @@ let next i =
   let ans = !i in
   let () = incr i in
   ans
-
-let dummy_var i = Id.of_string (Printf.sprintf "_%i" i)
 
 let define_typedef kn (params, def as qdef) = match def with
 | GTydDef _ ->
@@ -435,10 +440,147 @@ let register_type ?local isrec types = match types with
   let types = List.map map types in
   register_typedef ?local isrec types
 
+(** Parsing *)
+
+type 'a token =
+| TacTerm of string
+| TacNonTerm of Name.t * 'a
+
+type scope_rule =
+| ScopeRule : (raw_tacexpr, 'a) Extend.symbol * ('a -> raw_tacexpr) -> scope_rule
+
+type scope_interpretation = sexpr list -> scope_rule
+
+let scope_table : scope_interpretation Id.Map.t ref = ref Id.Map.empty
+
+let register_scope id s =
+  scope_table := Id.Map.add id s !scope_table
+
+module ParseToken =
+struct
+
+let loc_of_token = function
+| SexprStr (loc, _) -> loc
+| SexprInt (loc, _) -> loc
+| SexprRec (loc, _, _) -> loc
+
+let parse_scope = function
+| SexprRec (_, (loc, Some id), toks) ->
+  if Id.Map.mem id !scope_table then
+    Id.Map.find id !scope_table toks
+  else
+    CErrors.user_err ~loc (str "Unknown scope" ++ spc () ++ Nameops.pr_id id)
+| tok ->
+  let loc = loc_of_token tok in
+  CErrors.user_err ~loc (str "Invalid parsing token")
+
+let parse_token = function
+| SexprStr (_, s) -> TacTerm s
+| SexprRec (_, (_, na), [tok]) ->
+  let na = match na with None -> Anonymous | Some id -> Name id in
+  let scope = parse_scope tok in
+  TacNonTerm (na, scope)
+| tok ->
+  let loc = loc_of_token tok in
+  CErrors.user_err ~loc (str "Invalid parsing token")
+
+end
+
+let parse_scope = ParseToken.parse_scope
+
+type synext = {
+  synext_tok : sexpr list;
+  synext_exp : raw_tacexpr;
+  synext_lev : int option;
+  synext_loc : bool;
+}
+
+type krule =
+| KRule :
+  (raw_tacexpr, 'act, Loc.t -> raw_tacexpr) Extend.rule *
+  ((Loc.t -> (Name.t * raw_tacexpr) list -> raw_tacexpr) -> 'act) -> krule
+
+let rec get_rule (tok : scope_rule token list) : krule = match tok with
+| [] -> KRule (Extend.Stop, fun k loc -> k loc [])
+| TacNonTerm (na, ScopeRule (scope, inj)) :: tok ->
+  let KRule (rule, act) = get_rule tok in
+  let rule = Extend.Next (rule, scope) in
+  let act k e = act (fun loc acc -> k loc ((na, inj e) :: acc)) in
+  KRule (rule, act)
+| TacTerm t :: tok ->
+  let KRule (rule, act) = get_rule tok in
+  let rule = Extend.Next (rule, Extend.Atoken (CLexer.terminal t)) in
+  let act k _ = act k in
+  KRule (rule, act)
+
+let perform_notation syn st =
+  let tok = List.rev_map ParseToken.parse_token syn.synext_tok in
+  let KRule (rule, act) = get_rule tok in
+  let mk loc args =
+    let map (na, e) =
+      let loc = loc_of_tacexpr e in
+      ((loc, na), None, e)
+    in
+    let bnd = List.map map args in
+    CTacLet (loc, false, bnd, syn.synext_exp)
+  in
+  let rule = Extend.Rule (rule, act mk) in
+  let lev = match syn.synext_lev with
+  | None -> None
+  | Some lev -> Some (string_of_int lev)
+  in
+  let rule = (lev, None, [rule]) in
+  ([Pcoq.ExtendRule (Pltac.tac2expr, None, (None, [rule]))], st)
+
+let ltac2_notation =
+  Pcoq.create_grammar_command "ltac2-notation" perform_notation
+
+let cache_synext (_, syn) =
+  Pcoq.extend_grammar_command ltac2_notation syn
+
+let open_synext i (_, syn) =
+  if Int.equal i 1 then Pcoq.extend_grammar_command ltac2_notation syn
+
+let subst_synext (subst, syn) =
+  let e = Tac2intern.subst_rawexpr subst syn.synext_exp in
+  if e == syn.synext_exp then syn else { syn with synext_exp = e }
+
+let classify_synext o =
+  if o.synext_loc then Dispose else Substitute o
+
+let inTac2Notation : synext -> obj =
+  declare_object {(default_object "TAC2-NOTATION") with
+     cache_function  = cache_synext;
+     open_function   = open_synext;
+     subst_function = subst_synext;
+     classify_function = classify_synext}
+
+let register_notation ?(local = false) tkn lev body =
+  (** Check that the tokens make sense *)
+  let entries = List.map ParseToken.parse_token tkn in
+  let fold accu tok = match tok with
+  | TacTerm _ -> accu
+  | TacNonTerm (Name id, _) -> Id.Set.add id accu
+  | TacNonTerm (Anonymous, _) -> accu
+  in
+  let ids = List.fold_left fold Id.Set.empty entries in
+  (** Globalize so that names are absolute *)
+  let body = Tac2intern.globalize ids body in
+  let ext = {
+    synext_tok = tkn;
+    synext_exp = body;
+    synext_lev = lev;
+    synext_loc = local;
+  } in
+  Lib.add_anonymous_leaf (inTac2Notation ext)
+
+(** Toplevel entries *)
+
 let register_struct ?local str = match str with
 | StrVal (isrec, e) -> register_ltac ?local isrec e
 | StrTyp (isrec, t) -> register_type ?local isrec t
 | StrPrm (id, t, ml) -> register_primitive ?local id t ml
+| StrSyn (tok, lev, e) -> register_notation ?local tok lev e
 
 (** Printing *)
 
