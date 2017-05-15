@@ -21,7 +21,7 @@ open Ppextend
 
 type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string
-| TacNonTerm of Loc.t * 'a * Names.Id.t
+| TacNonTerm of Loc.t * 'a * Names.Id.t option
 
 type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) ->
