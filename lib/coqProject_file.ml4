@@ -105,6 +105,8 @@ let parse f =
 ;;
 
 let process_cmd_line orig_dir proj args =
+  let orig_dir = (* avoids turning foo.v in ./foo.v *)
+    if orig_dir = "." then "" else orig_dir in
   let error s = Feedback.msg_error (Pp.str (s^".")); exit 1 in
   let mk_path d =
     let p = CUnix.correct_path d orig_dir in

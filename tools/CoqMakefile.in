@@ -168,7 +168,6 @@ vo_to_obj = $(addsuffix .o,\
   $(filter-out Warning: Error:,\
   $(shell $(COQBIN)coqtop -q -noinit -batch -quiet -print-mod-uid $(1))))
 strip_dotslash = $(patsubst ./%,%,$(1))
-uniform_dotslash = $(addprefix ./,$(call strip_dotslash,$(1)))
 VO = vo
 
 VOFILES = $(VFILES:.v=.$(VO))
@@ -200,13 +199,13 @@ CMXSFILES = \
 
 # files that are packed into a plugin (no extension)
 PACKEDFILES = \
-	$(call uniform_dotslash, \
+	$(call strip_dotslash, \
 	  $(foreach lib, \
             $(call strip_dotslash, \
 	       $(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES)),$($(lib))))
 # files that are archived into a .cma (mllib)
 LIBEDFILES = \
-	$(call uniform_dotslash, \
+	$(call strip_dotslash, \
 	  $(foreach lib, \
             $(call strip_dotslash, \
 	       $(MLLIBFILES:.mllib=_MLLIB_DEPENDENCIES)),$($(lib))))
