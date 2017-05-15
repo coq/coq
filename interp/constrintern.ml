@@ -900,7 +900,7 @@ let interp_reference vars r =
 (**********************************************************************)
 (** {5 Cases }                                                        *)
 
-(** {6 Elemtary bricks } *)
+(** {6 Elementary bricks } *)
 let apply_scope_env env = function
   | [] -> {env with tmp_scope = None}, []
   | sc::scl -> {env with tmp_scope = sc}, scl
