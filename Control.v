@@ -28,6 +28,11 @@ Ltac2 @ external focus : int -> int -> (unit -> 'a) -> 'a := "ltac2" "focus".
 Ltac2 @ external shelve : unit -> unit := "ltac2" "shelve".
 Ltac2 @ external shelve_unifiable : unit -> unit := "ltac2" "shelve_unifiable".
 
+Ltac2 @ external new_goal : evar -> unit := "ltac2" "new_goal".
+(** Adds the given evar to the list of goals as the last one. If it is
+    already defined in the current state, don't do anything. Panics if the
+    evar is not in the current state. *)
+
 (** Goal inspection *)
 
 Ltac2 @ external goal : unit -> constr := "ltac2" "goal".

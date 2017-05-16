@@ -136,6 +136,9 @@ let err_notfocussed =
 let err_outofbounds =
   LtacError (coq_core "Out_of_bounds", [||])
 
+let err_notfound =
+  LtacError (coq_core "Not_found", [||])
+
 (** Helper functions *)
 
 let thaw f = interp_app f [v_unit]
@@ -270,6 +273,31 @@ let prm_string_get : ml_tactic = function
   else wrap (fun () -> Value.of_char (Bytes.get s n))
 | _ -> assert false
 
+(** Terms *)
+
+(** constr -> constr *)
+let prm_constr_type : ml_tactic = function
+| [c] ->
+  let c = Value.to_constr c in
+  let get_type env sigma =
+  Proofview.V82.wrap_exceptions begin fun () ->
+    let (sigma, t) = Typing.type_of env sigma c in
+    let t = Value.of_constr t in
+    Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
+  end in
+  pf_apply get_type
+| _ -> assert false
+
+(** constr -> constr *)
+let prm_constr_equal : ml_tactic = function
+| [c1; c2] ->
+  let c1 = Value.to_constr c1 in
+  let c2 = Value.to_constr c2 in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let b = EConstr.eq_constr sigma c1 c2 in
+  Proofview.tclUNIT (Value.of_bool b)
+| _ -> assert false
+
 (** Error *)
 
 let prm_throw : ml_tactic = function
@@ -342,6 +370,15 @@ let prm_shelve_unifiable : ml_tactic = function
 | [_] -> Proofview.shelve_unifiable >>= fun () -> return v_unit
 | _ -> assert false
 
+let prm_new_goal : ml_tactic = function
+| [ev] ->
+  let ev = Evar.unsafe_of_int (Value.to_int ev) in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  if Evd.mem sigma ev then
+    Proofview.Unsafe.tclNEWGOALS [ev] <*> Proofview.tclUNIT v_unit
+  else throw err_notfound
+| _ -> assert false
+
 (** unit -> constr *)
 let prm_goal : ml_tactic = function
 | [_] ->
@@ -391,6 +428,9 @@ let () = Tac2env.define_primitive (pname "string_length") prm_string_length
 let () = Tac2env.define_primitive (pname "string_get") prm_string_get
 let () = Tac2env.define_primitive (pname "string_set") prm_string_set
 
+let () = Tac2env.define_primitive (pname "constr_type") prm_constr_type
+let () = Tac2env.define_primitive (pname "constr_equal") prm_constr_equal
+
 let () = Tac2env.define_primitive (pname "int_equal") prm_int_equal
 let () = Tac2env.define_primitive (pname "int_compare") prm_int_compare
 let () = Tac2env.define_primitive (pname "int_neg") prm_int_neg
@@ -410,6 +450,7 @@ let () = Tac2env.define_primitive (pname "enter") prm_enter
 let () = Tac2env.define_primitive (pname "focus") prm_focus
 let () = Tac2env.define_primitive (pname "shelve") prm_shelve
 let () = Tac2env.define_primitive (pname "shelve_unifiable") prm_shelve_unifiable
+let () = Tac2env.define_primitive (pname "new_goal") prm_new_goal
 let () = Tac2env.define_primitive (pname "goal") prm_goal
 let () = Tac2env.define_primitive (pname "hyp") prm_hyp
 let () = Tac2env.define_primitive (pname "refine") prm_refine

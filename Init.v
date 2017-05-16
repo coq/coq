@@ -15,10 +15,20 @@ Global Set Default Proof Mode "Ltac2".
 Ltac2 Type int.
 Ltac2 Type string.
 Ltac2 Type char.
-
-Ltac2 Type evar.
-Ltac2 Type constr.
 Ltac2 Type ident.
+
+(** Constr-specific built-in types *)
+Ltac2 Type meta.
+Ltac2 Type evar.
+Ltac2 Type sort.
+Ltac2 Type cast.
+Ltac2 Type instance.
+Ltac2 Type constant.
+Ltac2 Type inductive.
+Ltac2 Type constructor.
+Ltac2 Type projection.
+Ltac2 Type constr.
+
 Ltac2 Type message.
 Ltac2 Type exn := [ .. ].
 Ltac2 Type 'a array.
