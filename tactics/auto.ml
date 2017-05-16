@@ -139,7 +139,7 @@ let conclPattern concl pat tac =
 	try
 	  Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
 	with Constr_matching.PatternMatchingFailure ->
-          Tacticals.New.tclZEROMSG (str "conclPattern")
+          Tacticals.New.tclZEROMSG (str "pattern-matching failed")
   in
   Proofview.Goal.enter { enter = begin fun gl ->
      let env = Proofview.Goal.env gl in
