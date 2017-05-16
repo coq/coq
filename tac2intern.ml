@@ -39,7 +39,6 @@ type 'a t
 val equal : elt -> elt -> bool
 val create : unit -> 'a t
 val fresh : 'a t -> elt
-val size : 'a t -> int
 val find : elt -> 'a t -> (elt * 'a option)
 val union : elt -> elt -> 'a t -> unit
 val set : elt -> 'a -> 'a t -> unit
@@ -68,8 +67,6 @@ type 'a t = {
   mutable uf_data : 'a node array;
   mutable uf_size : int;
 }
-
-let size p = p.uf_size
 
 let resize p =
   if Int.equal (Array.length p.uf_data) p.uf_size then begin

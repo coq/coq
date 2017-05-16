@@ -8,7 +8,6 @@
 
 open CErrors
 open Util
-open Genarg
 open Names
 open Libnames
 open Tac2expr

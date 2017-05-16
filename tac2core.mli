@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Names
 open Tac2env
 open Tac2expr
 
@@ -17,6 +18,11 @@ sig
 val t_list : type_constant
 val c_nil : ltac_constant
 val c_cons : ltac_constant
+
+val t_int : type_constant
+val t_option : type_constant
+val t_string : type_constant
+val t_array : type_constant
 
 end
 
@@ -49,5 +55,8 @@ val to_constr : valexpr -> EConstr.t
 
 val of_exn : Exninfo.iexn -> valexpr
 val to_exn : valexpr -> Exninfo.iexn
+
+val of_ident : Id.t -> valexpr
+val to_ident : valexpr -> Id.t
 
 end

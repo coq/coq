@@ -8,7 +8,6 @@
 
 open CSig
 open Pp
-open CErrors
 open Names
 open Genarg
 open Geninterp
@@ -20,10 +19,6 @@ open Proofview.Notations
 (** Standard values *)
 
 let coq_core n = KerName.make2 Tac2env.coq_prefix (Label.of_id (Id.of_string_soft n))
-let stdlib_prefix md =
-  MPfile (DirPath.make (List.map Id.of_string [md; "ltac2"; "Coq"]))
-let coq_stdlib md n =
-  KerName.make2 (stdlib_prefix md) (Label.of_id (Id.of_string n))
 
 let val_tag t = match val_tag t with
 | Val.Base t -> t
@@ -141,9 +136,6 @@ let err_notfocussed =
 let err_outofbounds =
   LtacError (coq_core "Out_of_bounds", [||])
 
-let err_notfound =
-  LtacError (coq_core "Not_found", [||])
-
 (** Helper functions *)
 
 let thaw f = interp_app f [v_unit]
@@ -157,10 +149,6 @@ let wrap f =
 
 let wrap_unit f =
   return () >>= fun () -> f (); return v_unit
-
-let wrap_exn f err =
-  return () >>= fun () ->
-    try return (f ()) with e when CErrors.noncritical e -> err
 
 let pf_apply f =
   Proofview.Goal.goals >>= function

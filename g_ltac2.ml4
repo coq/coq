@@ -8,7 +8,6 @@
 
 open Pp
 open Util
-open Genarg
 open Names
 open Pcoq
 open Constrexpr

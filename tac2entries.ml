@@ -13,7 +13,6 @@ open Names
 open Libnames
 open Libobject
 open Nametab
-open Tac2env
 open Tac2expr
 open Tac2print
 open Tac2intern
