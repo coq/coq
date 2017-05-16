@@ -933,6 +933,22 @@ in
       ignore (auto (Some prg.prg_name) None deps)
   end
 
+type obligation_reference =
+  | OblNumber of int
+  | OblName of Id.t
+
+let get_obligation_index prg obl =
+  let obls, rem = prg.prg_obligations in
+  match obl with
+  | OblNumber user_num ->
+     let num = pred user_num in
+     if num < Array.length obls then num
+     else error (sprintf "Unknown obligation number %i" (succ num))
+  | OblName na ->
+     match Array.findi (fun _ a -> Id.equal na a.obl_name) obls with
+     | Some i -> i
+     | None -> error (sprintf "Unknown obligation %s" (Id.to_string na))
+
 let rec solve_obligation prg num tac =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
@@ -958,19 +974,16 @@ let rec solve_obligation prg num tac =
   let _ = Pfedit.by !default_tactic in
   Option.iter (fun tac -> Proof_global.set_endline_tactic tac) tac
 
-and obligation (user_num, name, typ) tac =
-  let num = pred user_num in
+and obligation (oblname, name, typ) tac =
   let prg = get_prog_err name in
-  let obls, rem = prg.prg_obligations in
-    if num < Array.length obls then
-      let obl = obls.(num) in
-	match obl.obl_body with
-	    None -> solve_obligation prg num tac
-	  | Some r -> error "Obligation already solved"
-    else error (sprintf "Unknown obligation number %i" (succ num))
+  let num = get_obligation_index prg oblname in
+  let obl = (fst prg.prg_obligations).(num) in
+  match obl.obl_body with
+    None -> solve_obligation prg num tac
+  | Some r -> error "Obligation already solved"
 
-
-and solve_obligation_by_tac prg obls i tac =
+and solve_obligation_by_tac prg obls na tac =
+  let i = get_obligation_index prg na in
   let obl = obls.(i) in
     match obl.obl_body with
     | Some _ -> None
@@ -1028,7 +1041,7 @@ and solve_prg_obligations prg ?oblset tac =
   let _ =
     Array.iteri (fun i x ->
       if p i then
-        match solve_obligation_by_tac !prgref obls' i tac with
+        match solve_obligation_by_tac !prgref obls' (OblNumber (succ i)) tac with
 	| None -> ()
  	| Some prg' ->
 	   prgref := prg';

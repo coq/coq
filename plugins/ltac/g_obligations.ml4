@@ -58,6 +58,7 @@ let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
 
 let withtac = Pcoq.create_generic_entry Pcoq.utactic "withtac" (Genarg.rawwit wit_withtac)
 
+
 GEXTEND Gram
   GLOBAL: withtac;
 
@@ -81,25 +82,37 @@ let next_obligation obl tac = with_tac (fun t -> Obligations.next_obligation obl
 
 let classify_obbl _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]), VtLater)
 
+
+let pr_obligation_reference _prc _prlc _prt = function
+  | OblNumber i -> Pp.int i
+  | OblName id -> Nameops.pr_id id
+
+open Pcoq.Prim
+
+ARGUMENT EXTEND obligation_reference PRINTED BY pr_obligation_reference
+| [ integer(num) ] -> [ OblNumber num ]
+| [ ident(name) ] -> [ OblName name ]
+END
+
 VERNAC COMMAND EXTEND Obligations CLASSIFIED BY classify_obbl
-| [ "Obligation" integer(num) "of" ident(name) ":" lglob(t) withtac(tac) ] ->
-    [ obligation (num, Some name, Some t) tac ]
-| [ "Obligation" integer(num) "of" ident(name) withtac(tac) ] ->
-    [ obligation (num, Some name, None) tac ]
-| [ "Obligation" integer(num) ":" lglob(t) withtac(tac) ] ->
-    [ obligation (num, None, Some t) tac ]
-| [ "Obligation" integer(num) withtac(tac) ] ->
-    [ obligation (num, None, None) tac ]
+| [ "Obligation" obligation_reference(obl) "of" ident(name) ":" lglob(t) withtac(tac) ] ->
+    [ obligation (obl, Some name, Some t) tac ]
+| [ "Obligation" obligation_reference(obl) "of" ident(name) withtac(tac) ] ->
+    [ obligation (obl, Some name, None) tac ]
+| [ "Obligation" obligation_reference(obl) ":" lglob(t) withtac(tac) ] ->
+    [ obligation (obl, None, Some t) tac ]
+| [ "Obligation" obligation_reference(obl) withtac(tac) ] ->
+    [ obligation (obl, None, None) tac ]
 | [ "Next" "Obligation" "of" ident(name) withtac(tac) ] ->
     [ next_obligation (Some name) tac ]
 | [ "Next" "Obligation" withtac(tac) ] -> [ next_obligation None tac ]
 END
 
 VERNAC COMMAND EXTEND Solve_Obligation CLASSIFIED AS SIDEFF
-| [ "Solve" "Obligation" integer(num) "of" ident(name) "with" tactic(t) ] ->
-    [ try_solve_obligation num (Some name) (Some (Tacinterp.interp t)) ]
-| [ "Solve" "Obligation" integer(num) "with" tactic(t) ] ->
-    [ try_solve_obligation num None (Some (Tacinterp.interp t)) ]
+| [ "Solve" "Obligation" obligation_reference(obl) "of" ident(name) "with" tactic(t) ] ->
+    [ try_solve_obligation obl (Some name) (Some (Tacinterp.interp t)) ]
+| [ "Solve" "Obligation" obligation_reference(num) "with" tactic(t) ] ->
+    [ try_solve_obligation obl None (Some (Tacinterp.interp t)) ]
 END
 
 VERNAC COMMAND EXTEND Solve_Obligations CLASSIFIED AS SIDEFF

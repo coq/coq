@@ -81,7 +81,11 @@ val add_mutual_definitions :
   notations ->
   fixpoint_kind -> unit
 
-val obligation : int * Names.Id.t option * Constrexpr.constr_expr option ->
+type obligation_reference =
+  | OblNumber of int
+  | OblName of Id.t
+
+val obligation : obligation_reference * Names.Id.t option * Constrexpr.constr_expr option ->
   Genarg.glob_generic_argument option -> unit
 
 val next_obligation : Names.Id.t option -> Genarg.glob_generic_argument option -> unit
@@ -91,7 +95,7 @@ val solve_obligations : Names.Id.t option -> unit Proofview.tactic option -> pro
 
 val solve_all_obligations : unit Proofview.tactic option -> unit
 
-val try_solve_obligation : int -> Names.Id.t option -> unit Proofview.tactic option -> unit
+val try_solve_obligation : obligation_reference -> Names.Id.t option -> unit Proofview.tactic option -> unit
 
 val try_solve_obligations : Names.Id.t option -> unit Proofview.tactic option -> unit
 
