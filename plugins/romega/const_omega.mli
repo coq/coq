@@ -19,12 +19,6 @@ val coq_False : Term.constr lazy_t
 val coq_I : Term.constr lazy_t
 
 (* from ReflOmegaCore/ZOmega *)
-val coq_h_step : Term.constr lazy_t
-val coq_pair_step : Term.constr lazy_t
-val coq_p_left : Term.constr lazy_t
-val coq_p_right : Term.constr lazy_t
-val coq_p_invert : Term.constr lazy_t
-val coq_p_step : Term.constr lazy_t
 
 val coq_t_int : Term.constr lazy_t
 val coq_t_plus : Term.constr lazy_t
@@ -47,40 +41,6 @@ val coq_p_or : Term.constr lazy_t
 val coq_p_and : Term.constr lazy_t
 val coq_p_imp : Term.constr lazy_t
 val coq_p_prop : Term.constr lazy_t
-
-val coq_f_equal : Term.constr lazy_t
-val coq_f_cancel : Term.constr lazy_t
-val coq_f_left : Term.constr lazy_t
-val coq_f_right : Term.constr lazy_t
-
-val coq_c_do_both : Term.constr lazy_t
-val coq_c_do_left : Term.constr lazy_t
-val coq_c_do_right : Term.constr lazy_t
-val coq_c_do_seq : Term.constr lazy_t
-val coq_c_nop : Term.constr lazy_t
-val coq_c_opp_plus : Term.constr lazy_t
-val coq_c_opp_opp : Term.constr lazy_t
-val coq_c_opp_mult_r : Term.constr lazy_t
-val coq_c_opp_one : Term.constr lazy_t
-val coq_c_reduce : Term.constr lazy_t
-val coq_c_mult_plus_distr : Term.constr lazy_t
-val coq_c_opp_left : Term.constr lazy_t
-val coq_c_mult_assoc_r : Term.constr lazy_t
-val coq_c_plus_assoc_r : Term.constr lazy_t
-val coq_c_plus_assoc_l : Term.constr lazy_t
-val coq_c_plus_permute : Term.constr lazy_t
-val coq_c_plus_comm : Term.constr lazy_t
-val coq_c_red0 : Term.constr lazy_t
-val coq_c_red1 : Term.constr lazy_t
-val coq_c_red2 : Term.constr lazy_t
-val coq_c_red3 : Term.constr lazy_t
-val coq_c_red4 : Term.constr lazy_t
-val coq_c_red5 : Term.constr lazy_t
-val coq_c_red6 : Term.constr lazy_t
-val coq_c_mult_opp_left : Term.constr lazy_t
-val coq_c_mult_assoc_reduced : Term.constr lazy_t
-val coq_c_minus : Term.constr lazy_t
-val coq_c_mult_comm : Term.constr lazy_t
 
 val coq_s_constant_not_nul : Term.constr lazy_t
 val coq_s_constant_neg : Term.constr lazy_t
@@ -107,21 +67,12 @@ val coq_e_solve : Term.constr lazy_t
 val coq_interp_sequent : Term.constr lazy_t
 val coq_do_omega : Term.constr lazy_t
 
-(** Building expressions *)
-
-val do_left : Term.constr -> Term.constr
-val do_right : Term.constr -> Term.constr
-val do_both : Term.constr -> Term.constr -> Term.constr
-val do_seq : Term.constr -> Term.constr -> Term.constr
-val do_list : Term.constr list -> Term.constr
-
 val mk_nat : int -> Term.constr
 val mk_N : int -> Term.constr
 
 (** Precondition: the type of the list is in Set *)
 val mk_list : Term.constr -> Term.constr list -> Term.constr
 val mk_plist : Term.types list -> Term.types
-val mk_shuffle_list : Term.constr list -> Term.constr
 
 (** Analyzing a coq term *)
 
@@ -171,7 +122,7 @@ module type Int =
     (* parsing a relation expression, including = < <= >= > *)
     val parse_rel : ([ `NF ], 'r) Proofview.Goal.t -> Term.constr -> parse_rel
     (* Is a particular term only made of numbers and + * - ? *)
-    val is_scalar : Term.constr -> bool
+    val get_scalar : Term.constr -> Bigint.bigint option
   end
 
 (* Currently, we only use Z numbers *)

@@ -16,6 +16,8 @@ Module Type Int.
 
   Parameter t : Set.
 
+  Bind Scope Int_scope with t.
+
   Parameter zero : t.
   Parameter one : t.
   Parameter plus : t -> t -> t.
@@ -177,7 +179,7 @@ Module IntProperties (I:Int).
  Lemma plus_reg_l : forall x y z, x+y = x+z -> y = z.
  Proof.
   intros.
-  rewrite (plus_0_r_reverse y), (plus_0_r_reverse z), <-(opp_def x).
+  rewrite <- (plus_0_r y), <- (plus_0_r z), <-(opp_def x).
   now rewrite plus_permute, plus_assoc, H, <- plus_assoc, plus_permute.
  Qed.
 
@@ -193,16 +195,23 @@ Module IntProperties (I:Int).
   apply mult_plus_distr_r.
  Qed.
 
- Lemma mult_0_l : forall x, 0*x = 0.
+ Lemma mult_0_l x : 0*x = 0.
  Proof.
-  intros.
-  generalize (mult_plus_distr_r 0 1 x).
-  rewrite plus_0_l, mult_1_l, plus_comm; intros.
+  assert (H := mult_plus_distr_r 0 1 x).
+  rewrite plus_0_l, mult_1_l, plus_comm in H.
   apply plus_reg_l with x.
-  rewrite <- H.
-  apply plus_0_r_reverse.
+  now rewrite <- H, plus_0_r.
  Qed.
 
+ Lemma mult_0_r x : x*0 = 0.
+ Proof.
+   rewrite mult_comm. apply mult_0_l.
+ Qed.
+
+ Lemma mult_1_r x : x*1 = x.
+ Proof.
+   rewrite mult_comm. apply mult_1_l.
+ Qed.
 
  (* More facts about opp *)
 
@@ -252,6 +261,13 @@ Module IntProperties (I:Int).
  Lemma egal_left : forall n m, n=m -> n+-m = 0.
  Proof. intros; subst; apply opp_def. Qed.
 
+ Lemma egal_left_iff n m : n = m <-> 0 = n + - m.
+ Proof.
+  split. intros. symmetry. now apply egal_left.
+  intros. apply plus_reg_l with (-m).
+  rewrite plus_comm, <- H. symmetry. apply plus_opp_l.
+ Qed.
+
  Lemma ne_left_2 : forall x y : int, x<>y -> 0<>(x + - y).
  Proof.
  intros; contradict H.
@@ -262,7 +278,7 @@ Module IntProperties (I:Int).
  (* Special lemmas for factorisation. *)
 
  Lemma red_factor0 : forall n, n = n*1.
- Proof. symmetry; rewrite mult_comm; apply mult_1_l. Qed.
+ Proof. symmetry; apply mult_1_r. Qed.
 
  Lemma red_factor1 : forall n, n+n = n*2.
  Proof.
@@ -273,7 +289,7 @@ Module IntProperties (I:Int).
  Lemma red_factor2 : forall n m, n + n*m = n * (1+m).
  Proof.
   intros; rewrite mult_plus_distr_l.
-  f_equal; now rewrite mult_comm, mult_1_l.
+  now rewrite mult_1_r.
  Qed.
 
  Lemma red_factor3 : forall n m, n*m + n = n*(1+m).
@@ -450,6 +466,11 @@ Module IntProperties (I:Int).
   generalize (lt_trans _ _ _ H C); intuition.
  Qed.
 
+ Lemma not_eq (a b:int) : ~ a <> b <-> a = b.
+ Proof.
+  destruct (eq_dec a b); intuition.
+ Qed.
+
  (* order and operations *)
 
  Lemma le_0_neg : forall n, 0 <= n <-> -n <= 0.
@@ -600,13 +621,15 @@ Module IntProperties (I:Int).
  apply lt_0_1.
  Qed.
 
- Lemma le_left : forall n m, n <= m -> 0 <= m + - n.
+ Lemma le_left n m : n <= m <-> 0 <= m + - n.
  Proof.
-  intros.
-  rewrite <- (opp_def m).
-  apply plus_le_compat.
-  apply le_refl.
-  apply opp_le_compat; auto.
+  split; intros.
+  - rewrite <- (opp_def m).
+    apply plus_le_compat.
+    apply le_refl.
+    apply opp_le_compat; auto.
+  - apply plus_le_reg_r with (-n).
+    now rewrite plus_opp_r.
  Qed.
 
  Lemma OMEGA2 : forall x y, 0 <= x -> 0 <= y -> 0 <= x + y.
@@ -662,7 +685,7 @@ Module IntProperties (I:Int).
 
  Lemma lt_left : forall n m, n < m -> 0 <= m + -(1) + - n.
  Proof.
- intros; apply le_left.
+ intros. rewrite <- le_left.
  now rewrite <- le_lt_int.
  Qed.
 
@@ -735,7 +758,7 @@ Module IntProperties (I:Int).
  rewrite le_lt_int.
  apply le_trans with (n+-(1)); [ now apply le_lt_int | ].
  apply plus_le_compat; [ | apply le_refl ].
- rewrite <- (mult_1_l n) at 1. rewrite mult_comm.
+ rewrite <- (mult_1_r n) at 1.
  apply mult_le_compat_l; auto using lt_le_weak.
  Qed.
 
@@ -798,6 +821,7 @@ Inductive term : Set :=
   | Topp : term -> term
   | Tvar : N -> term.
 
+Bind Scope romega_scope with term.
 Delimit Scope romega_scope with term.
 Arguments Tint _%I.
 Arguments Tplus (_ _)%term.
@@ -845,58 +869,6 @@ Notation singleton := (fun a : hyps => a :: nil).
 (* an absurd goal *)
 Definition absurd := FalseTerm :: nil.
 
-(* \subsubsection{Traces for merging equations}
-   This inductive type describes how the monomial of two equations should be
-   merged when the equations are added.
-
-   For [F_equal], both equations have the same head variable and coefficient
-   must be added, furthermore if coefficients are opposite, [F_cancel] should
-   be used to collapse the term. [F_left] and [F_right] indicate which monomial
-   should be put first in the result *)
-
-Inductive t_fusion : Set :=
-  | F_equal : t_fusion
-  | F_cancel : t_fusion
-  | F_left : t_fusion
-  | F_right : t_fusion.
-
-(* \subsubsection{Rewriting steps to normalize terms} *)
-Inductive step : Set :=
-  (* apply the rewriting steps to both subterms of an operation *)
-  | C_DO_BOTH : step -> step -> step
-  (* apply the rewriting step to the first branch *)
-  | C_LEFT : step -> step
-  (* apply the rewriting step to the second branch *)
-  | C_RIGHT : step -> step
-  (* apply two steps consecutively to a term *)
-  | C_SEQ : step -> step -> step
-  (* empty step *)
-  | C_NOP : step
-  (* the following operations correspond to actual rewriting *)
-  | C_OPP_PLUS : step
-  | C_OPP_OPP : step
-  | C_OPP_MULT_R : step
-  | C_OPP_ONE : step
-  (* This is a special step that reduces the term (computation) *)
-  | C_REDUCE : step
-  | C_MULT_PLUS_DISTR : step
-  | C_MULT_OPP_LEFT : step
-  | C_MULT_ASSOC_R : step
-  | C_PLUS_ASSOC_R : step
-  | C_PLUS_ASSOC_L : step
-  | C_PLUS_PERMUTE : step
-  | C_PLUS_COMM : step
-  | C_RED0 : step
-  | C_RED1 : step
-  | C_RED2 : step
-  | C_RED3 : step
-  | C_RED4 : step
-  | C_RED5 : step
-  | C_RED6 : step
-  | C_MULT_ASSOC_REDUCED : step
-  | C_MINUS : step
-  | C_MULT_COMM : step.
-
 (* \subsubsection{Omega steps} *)
 (* The following inductive type describes steps as they can be found in
    the trace coming from the decision procedure Omega. *)
@@ -906,40 +878,19 @@ Inductive t_omega : Set :=
   | O_CONSTANT_NOT_NUL : nat -> t_omega
   | O_CONSTANT_NEG : nat -> t_omega
   (* division and approximation of an equation *)
-  | O_DIV_APPROX : int -> int -> term -> t_omega -> nat -> t_omega
+  | O_DIV_APPROX : nat -> int -> int -> term -> t_omega -> t_omega
   (* no solution because no exact division *)
-  | O_NOT_EXACT_DIVIDE : int -> int -> term -> nat -> t_omega
+  | O_NOT_EXACT_DIVIDE : nat -> int -> int -> term -> t_omega
   (* exact division *)
-  | O_EXACT_DIVIDE : int -> term -> t_omega -> nat -> t_omega
-  | O_SUM : int -> nat -> int -> nat -> list t_fusion -> t_omega -> t_omega
+  | O_EXACT_DIVIDE : nat -> int -> term -> t_omega -> t_omega
+  | O_SUM : int -> nat -> int -> nat -> t_omega -> t_omega
   | O_CONTRADICTION : nat -> nat -> t_omega
   | O_MERGE_EQ : nat -> nat -> t_omega -> t_omega
   | O_SPLIT_INEQ : nat -> t_omega -> t_omega -> t_omega
   | O_CONSTANT_NUL : nat -> t_omega
   | O_NEGATE_CONTRADICT : nat -> nat -> t_omega
   | O_NEGATE_CONTRADICT_INV : nat -> nat -> t_omega
-  | O_STATE : int -> step -> nat -> nat -> t_omega -> t_omega.
-
-(* \subsubsection{Rules for normalizing the hypothesis} *)
-(* These rules indicate how to normalize useful propositions
-   of each useful hypothesis before the decomposition of hypothesis.
-   Negation nodes could be traversed by either [P_LEFT] or [P_RIGHT].
-   The rules include the inversion phase for negation removal. *)
-
-Inductive p_step : Set :=
-  | P_LEFT : p_step -> p_step
-  | P_RIGHT : p_step -> p_step
-  | P_INVERT : step -> p_step
-  | P_STEP : step -> p_step.
-
-(* List of normalizations to perform : if the type [p_step] had a constructor
-   that indicated visiting both left and right branches, we would be able to
-   restrict ourselves to the case of only one normalization by hypothesis.
-   And since all hypothesis are useful (otherwise they wouldn't be included),
-   we would be able to replace [h_step] by a simple list. *)
-
-Inductive h_step : Set :=
-    pair_step : nat -> p_step -> h_step.
+  | O_STATE : int -> nat -> nat -> t_omega -> t_omega.
 
 (* \subsubsection{Rules for decomposing the hypothesis} *)
 (* This type allows navigation in the logical constructors that
@@ -971,8 +922,6 @@ Inductive e_step : Set :=
 
 (* \subsubsection{Reified terms} *)
 
-Open Scope romega_scope.
-
 Fixpoint eq_term (t1 t2 : term) {struct t2} : bool :=
   match t1, t2 with
   | Tint st1, Tint st2 => beq st1 st2
@@ -982,9 +931,7 @@ Fixpoint eq_term (t1 t2 : term) {struct t2} : bool :=
   | (- st1), (- st2) => eq_term st1 st2
   | [st1], [st2] => N.eqb st1 st2
   | _, _ => false
-  end.
-
-Close Scope romega_scope.
+  end%term.
 
 Theorem eq_term_iff (t t' : term) :
  eq_term t t' = true <-> t = t'.
@@ -1258,93 +1205,6 @@ Proof.
        * apply Hrec; assumption.
 Qed.
 
-(* \subsubsection{Manipulations de termes} *)
-(* Les fonctions suivantes permettent d'appliquer une fonction de
-   réécriture sur un sous terme du terme principal. Avec la composition,
-   cela permet de construire des réécritures complexes proches des
-   tactiques de conversion *)
-
-Definition apply_left (f : term -> term) (t : term) :=
-  match t with
-  | (x + y)%term => (f x + y)%term
-  | (x * y)%term => (f x * y)%term
-  | (- x)%term => (- f x)%term
-  | x => x
-  end.
-
-Definition apply_right (f : term -> term) (t : term) :=
-  match t with
-  | (x + y)%term => (x + f y)%term
-  | (x * y)%term => (x * f y)%term
-  | x => x
-  end.
-
-Definition apply_both (f g : term -> term) (t : term) :=
-  match t with
-  | (x + y)%term => (f x + g y)%term
-  | (x * y)%term => (f x * g y)%term
-  | x => x
-  end.
-
-(* Les théorèmes suivants montrent la stabilité (conditionnée) des
-   fonctions. *)
-
-Theorem apply_left_stable :
- forall f : term -> term, term_stable f -> term_stable (apply_left f).
-Proof.
- unfold term_stable; intros f H e t; case t; auto; simpl;
- intros; elim H; trivial.
-Qed.
-
-Theorem apply_right_stable :
- forall f : term -> term, term_stable f -> term_stable (apply_right f).
-Proof.
- unfold term_stable; intros f H e t; case t; auto; simpl;
- intros t0 t1; elim H; trivial.
-Qed.
-
-Theorem apply_both_stable :
- forall f g : term -> term,
- term_stable f -> term_stable g -> term_stable (apply_both f g).
-Proof.
- unfold term_stable; intros f g H1 H2 e t; case t; auto; simpl;
- intros t0 t1; elim H1; elim H2; trivial.
-Qed.
-
-Theorem compose_term_stable :
- forall f g : term -> term,
- term_stable f -> term_stable g -> term_stable (fun t : term => f (g t)).
-Proof.
- unfold term_stable; intros f g Hf Hg e t; elim Hf; apply Hg.
-Qed.
-
-(* \subsection{Les règles de réécriture} *)
-(* Chacune des règles de réécriture est accompagnée par sa preuve de
-   stabilité. Toutes ces preuves ont la même forme : il faut analyser
-   suivant la forme du terme (élimination de chaque Case). On a besoin d'une
-   élimination uniquement dans les cas d'utilisation d'égalité décidable.
-
-   Cette tactique itère la décomposition des Case. Elle est
-   constituée de deux fonctions s'appelant mutuellement :
-   \begin{itemize}
-    \item une fonction d'enrobage qui lance la recherche sur le but,
-    \item une fonction récursive qui décompose ce but. Quand elle a trouvé un
-          Case, elle l'élimine.
-   \end{itemize}
-   Les motifs sur les cas sont très imparfaits et dans certains cas, il
-   semble que cela ne marche pas. On aimerait plutot un motif de la
-   forme [ Case (?1 :: T) of _ end ] permettant de s'assurer que l'on
-   utilise le bon type.
-
-   Chaque élimination introduit correctement exactement le nombre d'hypothèses
-   nécessaires et conserve dans le cas d'une égalité la connaissance du
-   résultat du test en faisant la réécriture. Pour un test de comparaison,
-   on conserve simplement le résultat.
-
-   Cette fonction déborde très largement la résolution des réécritures
-   simples et fait une bonne partie des preuves des pas de Omega.
-*)
-
 (* \subsubsection{La tactique pour prouver la stabilité} *)
 
 Ltac loop t :=
@@ -1379,6 +1239,8 @@ Ltac loop t :=
       try (rewrite H in *; clear H); simpl; auto; Simplify
   | (if _ && _ then _ else _) => rewrite andb_if; Simplify
   | (if negb _ then _ else _) => rewrite negb_if; Simplify
+  | match N.compare ?X1 ?X2 with _ => _ end =>
+    destruct (N.compare_spec X1 X2); Simplify
   | match ?X1 with _ => _ end => destruct X1; auto; Simplify
   | _ => fail
   end
@@ -1388,374 +1250,128 @@ with Simplify := match goal with
   | _ => idtac
   end.
 
-Ltac prove_stable x th :=
-  match constr:(x) with
-  | ?X1 =>
-      unfold term_stable, X1; intros; Simplify; simpl;
-       apply th
-  end.
+(* \subsubsection{Opérations affines sur une équation} *)
 
-(* \subsubsection{Les règles elle mêmes} *)
-Definition Tplus_assoc_l (t : term) :=
+(* \paragraph{Multiplication scalaire et somme d'une constante} *)
+
+(* invariant: k1<>0 *)
+
+Fixpoint scalar_norm_add (t : term) (k1 k2 : int) : term :=
   match t with
-  | (n + (m + p))%term => (n + m + p)%term
-  | _ => t
+  | (v1 * Tint x1 + l1)%term =>
+    (v1 * Tint (x1 * k1) + scalar_norm_add l1 k1 k2)%term
+  | Tint x => Tint (x * k1 + k2)
+  | _ => (t * Tint k1 + Tint k2)%term (* shouldn't happen *)
   end.
 
-Theorem Tplus_assoc_l_stable : term_stable Tplus_assoc_l.
+Theorem scalar_norm_add_stable e t k1 k2 :
+ interp_term e (t * Tint k1 + Tint k2)%term =
+ interp_term e (scalar_norm_add t k1 k2).
 Proof.
- prove_stable Tplus_assoc_l (ring.(Radd_assoc)).
+ induction t; simpl; Simplify; simpl; auto.
+ rewrite <- IHt2. simpl. apply OMEGA11.
 Qed.
 
-Definition Tplus_assoc_r (t : term) :=
+(* \paragraph{Multiplication scalaire} *)
+
+Definition scalar_norm (t : term) (k : int) := scalar_norm_add t k 0.
+
+Theorem scalar_norm_stable e t k :
+ interp_term e (t * Tint k)%term = interp_term e (scalar_norm t k).
+Proof.
+ unfold scalar_norm. rewrite <- scalar_norm_add_stable. simpl.
+ symmetry. apply plus_0_r.
+Qed.
+
+(* \paragraph{Somme d'une constante} *)
+
+Fixpoint add_norm (t : term) (k : int) : term :=
   match t with
-  | (n + m + p)%term => (n + (m + p))%term
-  | _ => t
+  | (m + l)%term => (m + add_norm l k)%term
+  | Tint x => Tint (x + k)
+  | _ => (t + Tint k)%term
   end.
 
-Theorem Tplus_assoc_r_stable : term_stable Tplus_assoc_r.
+Theorem add_norm_stable e t k :
+ interp_term e (t + Tint k)%term = interp_term e (add_norm t k).
 Proof.
- prove_stable Tplus_assoc_r plus_assoc_reverse.
-Qed.
-
-Definition Tmult_assoc_r (t : term) :=
-  match t with
-  | (n * m * p)%term => (n * (m * p))%term
-  | _ => t
-  end.
-
-Theorem Tmult_assoc_r_stable : term_stable Tmult_assoc_r.
-Proof.
- prove_stable Tmult_assoc_r mult_assoc_reverse.
-Qed.
-
-Definition Tplus_permute (t : term) :=
-  match t with
-  | (n + (m + p))%term => (m + (n + p))%term
-  | _ => t
-  end.
-
-Theorem Tplus_permute_stable : term_stable Tplus_permute.
-Proof.
- prove_stable Tplus_permute plus_permute.
-Qed.
-
-Definition Tplus_comm (t : term) :=
-  match t with
-  | (x + y)%term => (y + x)%term
-  | _ => t
-  end.
-
-Theorem Tplus_comm_stable : term_stable Tplus_comm.
-Proof.
- prove_stable Tplus_comm plus_comm.
-Qed.
-
-Definition Tmult_comm (t : term) :=
-  match t with
-  | (x * y)%term => (y * x)%term
-  | _ => t
-  end.
-
-Theorem Tmult_comm_stable : term_stable Tmult_comm.
-Proof.
- prove_stable Tmult_comm mult_comm.
-Qed.
-
-Definition T_OMEGA10 (t : term) :=
-  match t with
-  | ((v * Tint c1 + l1) * Tint k1 + (v' * Tint c2 + l2) * Tint k2)%term =>
-      if eq_term v v'
-      then (v * Tint (c1 * k1 + c2 * k2)%I + (l1 * Tint k1 + l2 * Tint k2))%term
-      else t
-  | _ => t
-  end.
-
-Theorem T_OMEGA10_stable : term_stable T_OMEGA10.
-Proof.
- prove_stable T_OMEGA10 OMEGA10.
-Qed.
-
-Definition T_OMEGA11 (t : term) :=
-  match t with
-  | ((v1 * Tint c1 + l1) * Tint k1 + l2)%term =>
-      (v1 * Tint (c1 * k1) + (l1 * Tint k1 + l2))%term
-  | _ => t
-  end.
-
-Theorem T_OMEGA11_stable : term_stable T_OMEGA11.
-Proof.
- prove_stable T_OMEGA11 OMEGA11.
-Qed.
-
-Definition T_OMEGA12 (t : term) :=
-  match t with
-  | (l1 + (v2 * Tint c2 + l2) * Tint k2)%term =>
-      (v2 * Tint (c2 * k2) + (l1 + l2 * Tint k2))%term
-  | _ => t
-  end.
-
-Theorem T_OMEGA12_stable : term_stable T_OMEGA12.
-Proof.
- prove_stable T_OMEGA12 OMEGA12.
-Qed.
-
-Definition Tred_factor5 (t : term) :=
-  match t with
-  | (x * Tint c + y)%term => if beq c 0 then y else t
-  | _ => t
-  end.
-
-Theorem Tred_factor5_stable : term_stable Tred_factor5.
-Proof.
- prove_stable Tred_factor5 red_factor5.
-Qed.
-
-Definition Topp_plus (t : term) :=
-  match t with
-  | (- (x + y))%term => (- x + - y)%term
-  | _ => t
-  end.
-
-Theorem Topp_plus_stable : term_stable Topp_plus.
-Proof.
- prove_stable Topp_plus opp_plus_distr.
-Qed.
-
-
-Definition Topp_opp (t : term) :=
-  match t with
-  | (- - x)%term => x
-  | _ => t
-  end.
-
-Theorem Topp_opp_stable : term_stable Topp_opp.
-Proof.
- prove_stable Topp_opp opp_involutive.
-Qed.
-
-Definition Topp_mult_r (t : term) :=
-  match t with
-  | (- (x * Tint k))%term => (x * Tint (- k))%term
-  | _ => t
-  end.
-
-Theorem Topp_mult_r_stable : term_stable Topp_mult_r.
-Proof.
- prove_stable Topp_mult_r opp_mult_distr_r.
-Qed.
-
-Definition Topp_one (t : term) :=
-  match t with
-  | (- x)%term => (x * Tint (-(1)))%term
-  | _ => t
-  end.
-
-Theorem Topp_one_stable : term_stable Topp_one.
-Proof.
- prove_stable Topp_one opp_eq_mult_neg_1.
-Qed.
-
-Definition Tmult_plus_distr (t : term) :=
-  match t with
-  | ((n + m) * p)%term => (n * p + m * p)%term
-  | _ => t
-  end.
-
-Theorem Tmult_plus_distr_stable : term_stable Tmult_plus_distr.
-Proof.
- prove_stable Tmult_plus_distr mult_plus_distr_r.
-Qed.
-
-Definition Tmult_opp_left (t : term) :=
-  match t with
-  | (- x * Tint y)%term => (x * Tint (- y))%term
-  | _ => t
-  end.
-
-Theorem Tmult_opp_left_stable : term_stable Tmult_opp_left.
-Proof.
- prove_stable Tmult_opp_left mult_opp_comm.
-Qed.
-
-Definition Tmult_assoc_reduced (t : term) :=
-  match t with
-  | (n * Tint m * Tint p)%term => (n * Tint (m * p))%term
-  | _ => t
-  end.
-
-Theorem Tmult_assoc_reduced_stable : term_stable Tmult_assoc_reduced.
-Proof.
- prove_stable Tmult_assoc_reduced mult_assoc_reverse.
-Qed.
-
-Definition Tred_factor0 (t : term) := (t * Tint 1)%term.
-
-Theorem Tred_factor0_stable : term_stable Tred_factor0.
-Proof.
- prove_stable Tred_factor0 red_factor0.
-Qed.
-
-Definition Tred_factor1 (t : term) :=
-  match t with
-  | (x + y)%term =>
-      if eq_term x y
-      then (x * Tint 2)%term
-      else t
-  | _ => t
-  end.
-
-Theorem Tred_factor1_stable : term_stable Tred_factor1.
-Proof.
- prove_stable Tred_factor1 red_factor1.
-Qed.
-
-Definition Tred_factor2 (t : term) :=
-  match t with
-  | (x + y * Tint k)%term =>
-      if eq_term x y
-      then (x * Tint (1 + k))%term
-      else t
-  | _ => t
-  end.
-
-Theorem Tred_factor2_stable : term_stable Tred_factor2.
-Proof.
- prove_stable Tred_factor2 red_factor2.
-Qed.
-
-Definition Tred_factor3 (t : term) :=
-  match t with
-  | (x * Tint k + y)%term =>
-      if eq_term x y
-      then (x * Tint (1 + k))%term
-      else t
-  | _ => t
-  end.
-
-Theorem Tred_factor3_stable : term_stable Tred_factor3.
-Proof.
- prove_stable Tred_factor3 red_factor3.
-Qed.
-
-
-Definition Tred_factor4 (t : term) :=
-  match t with
-  | (x * Tint k1 + y * Tint k2)%term =>
-      if eq_term x y
-      then (x * Tint (k1 + k2))%term
-      else t
-  | _ => t
-  end.
-
-Theorem Tred_factor4_stable : term_stable Tred_factor4.
-Proof.
- prove_stable Tred_factor4 red_factor4.
-Qed.
-
-Definition Tred_factor6 (t : term) := (t + Tint 0)%term.
-
-Theorem Tred_factor6_stable : term_stable Tred_factor6.
-Proof.
- prove_stable Tred_factor6 red_factor6.
-Qed.
-
-Definition Tminus_def (t : term) :=
-  match t with
-  | (x - y)%term => (x + - y)%term
-  | _ => t
-  end.
-
-Theorem Tminus_def_stable : term_stable Tminus_def.
-Proof.
- prove_stable Tminus_def minus_def.
-Qed.
-
-(* \subsection{Fonctions de réécriture complexes} *)
-
-(* \subsubsection{Fonction de réduction} *)
-(* Cette fonction réduit un terme dont la forme normale est un entier. Il
-   suffit pour cela d'échanger le constructeur [Tint] avec les opérateurs
-   réifiés. La réduction est ``gratuite''.  *)
-
-Fixpoint reduce (t : term) : term :=
-  match t with
-  | (x + y)%term =>
-      match reduce x with
-      | Tint xi as xr =>
-          match reduce y with
-          | Tint yi => Tint (xi + yi)
-          | yr => (xr + yr)%term
-          end
-      | xr => (xr + reduce y)%term
-      end
-  | (x * y)%term =>
-      match reduce x with
-      | Tint xi as xr =>
-          match reduce y with
-          | Tint yi => Tint (xi * yi)
-          | yr => (xr * yr)%term
-          end
-      | xr => (xr * reduce y)%term
-      end
-  | (x - y)%term =>
-      match reduce x with
-      | Tint xi as xr =>
-          match reduce y with
-          | Tint yi => Tint (xi - yi)
-          | yr => (xr - yr)%term
-          end
-      | xr => (xr - reduce y)%term
-      end
-  | (- x)%term =>
-      match reduce x with
-      | Tint xi => Tint (- xi)
-      | xr => (- xr)%term
-      end
-  | _ => t
-  end.
-
-Theorem reduce_stable : term_stable reduce.
-Proof.
- red. intros e t; induction t; simpl; auto;
-  do 2 destruct reduce; simpl; f_equal; auto.
+ induction t; simpl; Simplify; simpl; auto.
+ rewrite <- IHt2. simpl. symmetry. apply plus_assoc.
 Qed.
 
 (* \subsubsection{Fusions}
     \paragraph{Fusion de deux équations} *)
 (* On donne une somme de deux équations qui sont supposées normalisées.
    Cette fonction prend une trace de fusion en argument et transforme
-   le terme en une équation normalisée. C'est une version très simplifiée
-   du moteur de réécriture [rewrite]. *)
+   le terme en une équation normalisée. *)
+(* Invariant : k1 and k2 non-null *)
 
-Fixpoint fusion (trace : list t_fusion) (t : term) {struct trace} : term :=
-  match trace with
-  | nil => reduce t
-  | step :: trace' =>
-      match step with
-      | F_equal => apply_right (fusion trace') (T_OMEGA10 t)
-      | F_cancel => fusion trace' (Tred_factor5 (T_OMEGA10 t))
-      | F_left => apply_right (fusion trace') (T_OMEGA11 t)
-      | F_right => apply_right (fusion trace') (T_OMEGA12 t)
-      end
+Fixpoint fusion (t1 t2 : term) (k1 k2 : int) : term :=
+  match t1 with
+  | ([v1] * Tint x1 + l1)%term =>
+    (fix fusion_t1 t2 : term :=
+       match t2 with
+         | ([v2] * Tint x2 + l2)%term =>
+           match N.compare v1 v2 with
+             | Eq =>
+               let k := x1 * k1 + x2 * k2 in
+               if beq k 0 then fusion l1 l2 k1 k2
+               else ([v1] * Tint k + fusion l1 l2 k1 k2)%term
+             | Lt => ([v2] * Tint (x2 * k2) + fusion_t1 l2)%term
+             | Gt => ([v1] * Tint (x1 * k1) + fusion l1 t2 k1 k2)%term
+           end
+         | Tint x2 => ([v1] * Tint (x1 * k1) + fusion l1 t2 k1 k2)%term
+         | _ => (t1 * Tint k1 + t2 * Tint k2)%term
+       end) t2
+  | Tint x1 => scalar_norm_add t2 k2 (x1 * k1)
+  | _ => (t1 * Tint k1 + t2 * Tint k2)%term (* shouldn't happen *)
   end.
 
-Theorem fusion_stable : forall trace : list t_fusion, term_stable (fusion trace).
+Theorem fusion_stable e t1 t2 k1 k2 :
+ interp_term e (t1 * Tint k1 + t2 * Tint k2)%term =
+ interp_term e (fusion t1 t2 k1 k2).
 Proof.
- simple induction trace; simpl.
- - exact reduce_stable.
- - intros stp l H; case stp.
-    + apply compose_term_stable.
-       * apply apply_right_stable; assumption.
-       * exact T_OMEGA10_stable.
-    + unfold term_stable; intros e t1; rewrite T_OMEGA10_stable;
-       rewrite Tred_factor5_stable; apply H.
-    + apply compose_term_stable.
-       * apply apply_right_stable; assumption.
-       * exact T_OMEGA11_stable.
-    + apply compose_term_stable.
-       * apply apply_right_stable; assumption.
-       * exact T_OMEGA12_stable.
+ revert t2; induction t1; simpl; Simplify; simpl; auto.
+ - intros; rewrite <- scalar_norm_add_stable. simpl. apply plus_comm.
+ - intros. Simplify. induction t2; simpl; Simplify; simpl; auto.
+   + rewrite <- IHt1_2. simpl. apply OMEGA11.
+   + rewrite <- IHt1_2. simpl. subst n0. rewrite OMEGA10, H0.
+     now rewrite mult_comm, mult_0_l, plus_0_l.
+   + rewrite <- IHt1_2. simpl. subst n0. apply OMEGA10.
+   + rewrite <- IHt2_2. simpl. apply OMEGA12.
+   + rewrite <- IHt1_2. simpl. apply OMEGA11.
+Qed.
+
+(* Main function of term normalization.
+   Precondition: all [Tmult] should be on at least one [Tint].
+   Postcondition: [([v1]*Tint k1 + ([v2]*Tint k2 + (... + Tint cst)))]
+    with [v1>v2>...] and [ki<>0].
+ *)
+
+Fixpoint normalize t :=
+  match t with
+  | Tint n => Tint n
+  | [n]%term => ([n] * Tint 1 + Tint 0)%term
+  | (t + t')%term => fusion (normalize t) (normalize t') 1 1
+  | (- t)%term => scalar_norm (normalize t) (-(1))
+  | (t - t')%term => fusion (normalize t) (normalize t') 1 (-(1))
+  | (Tint k * t)%term | (t * Tint k)%term =>
+    if beq k 0 then Tint 0
+    else scalar_norm (normalize t) k
+  | (t1 * t2)%term => (t1 * t2)%term (* shouldn't happen *)
+  end.
+
+Theorem normalize_stable : term_stable normalize.
+Proof.
+ intros e t.
+ induction t; simpl; Simplify; simpl;
+ rewrite <- ?scalar_norm_stable; simpl in *; rewrite <- ?IHt1;
+ rewrite <- ?fusion_stable; simpl;
+ rewrite ?mult_0_l, ?mult_0_r, ?mult_1_l, ?mult_1_r, ?plus_0_r; auto.
+ - now f_equal.
+ - rewrite mult_comm. now f_equal.
+ - rewrite <- opp_eq_mult_neg_1, <-minus_def. now f_equal.
+ - rewrite <- opp_eq_mult_neg_1. now f_equal.
 Qed.
 
 (* \paragraph{Fusion avec annihilation} *)
@@ -1778,116 +1394,6 @@ Proof.
  simpl in *.
  rewrite <- IHt1_2.
  apply OMEGA13.
-Qed.
-
-(* \subsubsection{Opérations affines sur une équation} *)
-(* \paragraph{Multiplication scalaire et somme d'une constante} *)
-
-Fixpoint scalar_norm_add (t : term) (k1 k2 : int) : term :=
-  match t with
-  | (v1 * Tint x1 + l1)%term =>
-    (v1 * Tint (x1 * k1) + scalar_norm_add l1 k1 k2)%term
-  | Tint x => Tint (x * k1 + k2)
-  | _ => (t * Tint k1 + Tint k2)%term (* shouldn't happen *)
-  end.
-
-Theorem scalar_norm_add_stable e t k1 k2 :
- interp_term e (t * Tint k1 + Tint k2)%term =
- interp_term e (scalar_norm_add t k1 k2).
-Proof.
- induction t; simpl; Simplify; simpl; auto.
- rewrite <- IHt2. simpl. apply OMEGA11.
-Qed.
-
-(* \paragraph{Multiplication scalaire} *)
-Definition scalar_norm (t : term) (k : int) := scalar_norm_add t k 0.
-
-Theorem scalar_norm_stable e t k :
- interp_term e (t * Tint k)%term = interp_term e (scalar_norm t k).
-Proof.
- unfold scalar_norm. rewrite <- scalar_norm_add_stable. simpl.
- symmetry. apply plus_0_r.
-Qed.
-
-(* \paragraph{Somme d'une constante} *)
-Fixpoint add_norm (t : term) (k : int) : term :=
-  match t with
-  | (m + l)%term => (m + add_norm l k)%term
-  | Tint x => Tint (x + k)
-  | _ => (t + Tint k)%term
-  end.
-
-Theorem add_norm_stable e t k :
- interp_term e (t + Tint k)%term = interp_term e (add_norm t k).
-Proof.
- induction t; simpl; Simplify; simpl; auto.
- rewrite <- IHt2. simpl. symmetry. apply plus_assoc.
-Qed.
-
-(* \subsection{La fonction de normalisation des termes (moteur de réécriture)} *)
-
-
-Fixpoint t_rewrite (s : step) : term -> term :=
-  match s with
-  | C_DO_BOTH s1 s2 => apply_both (t_rewrite s1) (t_rewrite s2)
-  | C_LEFT s => apply_left (t_rewrite s)
-  | C_RIGHT s => apply_right (t_rewrite s)
-  | C_SEQ s1 s2 => fun t : term => t_rewrite s2 (t_rewrite s1 t)
-  | C_NOP => fun t : term => t
-  | C_OPP_PLUS => Topp_plus
-  | C_OPP_OPP => Topp_opp
-  | C_OPP_MULT_R => Topp_mult_r
-  | C_OPP_ONE => Topp_one
-  | C_REDUCE => reduce
-  | C_MULT_PLUS_DISTR => Tmult_plus_distr
-  | C_MULT_OPP_LEFT => Tmult_opp_left
-  | C_MULT_ASSOC_R => Tmult_assoc_r
-  | C_PLUS_ASSOC_R => Tplus_assoc_r
-  | C_PLUS_ASSOC_L => Tplus_assoc_l
-  | C_PLUS_PERMUTE => Tplus_permute
-  | C_PLUS_COMM => Tplus_comm
-  | C_RED0 => Tred_factor0
-  | C_RED1 => Tred_factor1
-  | C_RED2 => Tred_factor2
-  | C_RED3 => Tred_factor3
-  | C_RED4 => Tred_factor4
-  | C_RED5 => Tred_factor5
-  | C_RED6 => Tred_factor6
-  | C_MULT_ASSOC_REDUCED => Tmult_assoc_reduced
-  | C_MINUS => Tminus_def
-  | C_MULT_COMM => Tmult_comm
-  end.
-
-Theorem t_rewrite_stable : forall s : step, term_stable (t_rewrite s).
-Proof.
- simple induction s; simpl.
- - intros; apply apply_both_stable; auto.
- - intros; apply apply_left_stable; auto.
- - intros; apply apply_right_stable; auto.
- - unfold term_stable; intros; elim H0; apply H.
- - unfold term_stable; auto.
- - exact Topp_plus_stable.
- - exact Topp_opp_stable.
- - exact Topp_mult_r_stable.
- - exact Topp_one_stable.
- - exact reduce_stable.
- - exact Tmult_plus_distr_stable.
- - exact Tmult_opp_left_stable.
- - exact Tmult_assoc_r_stable.
- - exact Tplus_assoc_r_stable.
- - exact Tplus_assoc_l_stable.
- - exact Tplus_permute_stable.
- - exact Tplus_comm_stable.
- - exact Tred_factor0_stable.
- - exact Tred_factor1_stable.
- - exact Tred_factor2_stable.
- - exact Tred_factor3_stable.
- - exact Tred_factor4_stable.
- - exact Tred_factor5_stable.
- - exact Tred_factor6_stable.
- - exact Tmult_assoc_reduced_stable.
- - exact Tminus_def_stable.
- - exact Tmult_comm_stable.
 Qed.
 
 (* \subsection{tactiques de résolution d'un but omega normalisé}
@@ -1926,8 +1432,8 @@ Proof.
 Qed.
 
 (* \paragraph{[NOT_EXACT_DIVIDE]} *)
-Definition not_exact_divide (k1 k2 : int) (body : term)
-  (i : nat) (l : hyps) :=
+Definition not_exact_divide (i : nat) (k1 k2 : int) (body : term)
+  (l : hyps) :=
   match nth_hyps i l with
   | EqTerm (Tint Nul) b =>
       if beq Nul 0 &&
@@ -1940,8 +1446,8 @@ Definition not_exact_divide (k1 k2 : int) (body : term)
   end.
 
 Theorem not_exact_divide_valid :
- forall (k1 k2 : int) (body : term) (i : nat),
- valid_hyps (not_exact_divide k1 k2 body i).
+ forall (i : nat)(k1 k2 : int) (body : term),
+ valid_hyps (not_exact_divide i k1 k2 body).
 Proof.
  unfold valid_hyps, not_exact_divide; intros.
  generalize (nth_valid ep e i lp); Simplify.
@@ -2068,19 +1574,17 @@ Qed.
  preuve un peu compliquée. On utilise quelques lemmes qui sont des
  généralisations des théorèmes utilisés par OMEGA. *)
 
-Definition sum (k1 k2 : int) (trace : list t_fusion)
-  (prop1 prop2 : proposition) :=
+Definition sum (k1 k2 : int) (prop1 prop2 : proposition) :=
   match prop1 with
   | EqTerm (Tint Null) b1 =>
       match prop2 with
       | EqTerm (Tint Null') b2 =>
           if beq Null 0 && beq Null' 0
-          then EqTerm (Tint 0) (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
+          then EqTerm (Tint 0) (fusion b1 b2 k1 k2)
           else TrueTerm
       | LeqTerm (Tint Null') b2 =>
           if beq Null 0 && beq Null' 0 && bgt k2 0
-          then LeqTerm (Tint 0)
-                (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
+          then LeqTerm (Tint 0) (fusion b1 b2 k1 k2)
           else TrueTerm
       | _ => TrueTerm
       end
@@ -2089,13 +1593,11 @@ Definition sum (k1 k2 : int) (trace : list t_fusion)
       then match prop2 with
           | EqTerm (Tint Null') b2 =>
               if beq Null' 0 then
-              LeqTerm (Tint 0)
-                (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
+              LeqTerm (Tint 0) (fusion b1 b2 k1 k2)
               else TrueTerm
           | LeqTerm (Tint Null') b2 =>
               if beq Null' 0 && bgt k2 0
-              then LeqTerm (Tint 0)
-                    (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
+              then LeqTerm (Tint 0) (fusion b1 b2 k1 k2)
               else TrueTerm
           | _ => TrueTerm
           end
@@ -2104,8 +1606,7 @@ Definition sum (k1 k2 : int) (trace : list t_fusion)
       match prop2 with
       | EqTerm (Tint Null') b2 =>
           if beq Null 0 && beq Null' 0 && (negb (beq k1 0))
-          then NeqTerm (Tint 0)
-                 (fusion trace (b1 * Tint k1 + b2 * Tint k2)%term)
+          then NeqTerm (Tint 0) (fusion b1 b2 k1 k2)
           else TrueTerm
       | _ => TrueTerm
       end
@@ -2114,11 +1615,11 @@ Definition sum (k1 k2 : int) (trace : list t_fusion)
 
 
 Theorem sum_valid :
- forall (k1 k2 : int) (t : list t_fusion), valid2 (sum k1 k2 t).
+ forall (k1 k2 : int), valid2 (sum k1 k2).
 Proof.
  unfold valid2; intros k1 k2 t ep e p1 p2; unfold sum;
- Simplify; simpl; auto; try elim (fusion_stable t);
- simpl; intros.
+ Simplify; simpl; rewrite <- ?fusion_stable;
+ simpl; intros; auto.
  - apply sum1; assumption.
  - apply sum2; try assumption; apply sum4; assumption.
  - rewrite plus_comm; apply sum2; try assumption; apply sum4; assumption.
@@ -2227,25 +1728,25 @@ Qed.
 
 (* \paragraph{[O_STATE]} *)
 
-Definition state (m : int) (s : step) (prop1 prop2 : proposition) :=
+Definition state (m : int) (prop1 prop2 : proposition) :=
   match prop1 with
   | EqTerm (Tint Null) b1 =>
       match prop2 with
-      | EqTerm b2 b3 =>
-          if beq Null 0
-          then EqTerm (Tint 0) (t_rewrite s (b1 + (- b3 + b2) * Tint m)%term)
+      | EqTerm (Tint Null') b2 =>
+          if beq Null 0 && beq Null' 0
+          then EqTerm (Tint 0) (fusion b1 b2 1 m)
           else TrueTerm
       | _ => TrueTerm
       end
   | _ => TrueTerm
   end.
 
-Theorem state_valid : forall (m : int) (s : step), valid2 (state m s).
+Theorem state_valid : forall (m : int), valid2 (state m).
 Proof.
- unfold valid2; intros m s ep e p1 p2; unfold state; Simplify;
- simpl; auto; elim (t_rewrite_stable s e); simpl;
- intros H1 H2; elim H1.
- now rewrite H2, plus_opp_l, plus_0_l, mult_0_l.
+ unfold valid2; intros m ep e p1 p2.
+ unfold state; Simplify; simpl; auto.
+ rewrite <- fusion_stable. simpl in *. intros H H'.
+ rewrite <- H, <- H'. now rewrite !mult_0_l, plus_0_l.
 Qed.
 
 (* \subsubsection{Tactiques générant plusieurs but}
@@ -2288,14 +1789,14 @@ Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
   match t with
   | O_CONSTANT_NOT_NUL n => singleton (constant_not_nul n l)
   | O_CONSTANT_NEG n => singleton (constant_neg n l)
-  | O_DIV_APPROX k1 k2 body cont n =>
+  | O_DIV_APPROX n k1 k2 body cont =>
       execute_omega cont (apply_oper_1 n (divide_and_approx k1 k2 body) l)
-  | O_NOT_EXACT_DIVIDE k1 k2 body i =>
-      singleton (not_exact_divide k1 k2 body i l)
-  | O_EXACT_DIVIDE k body cont n =>
+  | O_NOT_EXACT_DIVIDE i k1 k2 body =>
+      singleton (not_exact_divide i k1 k2 body l)
+  | O_EXACT_DIVIDE n k body cont =>
       execute_omega cont (apply_oper_1 n (exact_divide k body) l)
-  | O_SUM k1 i1 k2 i2 t cont =>
-      execute_omega cont (apply_oper_2 i1 i2 (sum k1 k2 t) l)
+  | O_SUM k1 i1 k2 i2 cont =>
+      execute_omega cont (apply_oper_2 i1 i2 (sum k1 k2) l)
   | O_CONTRADICTION i j => singleton (contradiction i j l)
   | O_MERGE_EQ i1 i2 cont =>
       execute_omega cont (apply_oper_2 i1 i2 merge_eq l)
@@ -2305,8 +1806,8 @@ Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
   | O_NEGATE_CONTRADICT i j => singleton (negate_contradict i j l)
   | O_NEGATE_CONTRADICT_INV i j =>
       singleton (negate_contradict_inv i j l)
-  | O_STATE m s i1 i2 cont =>
-      execute_omega cont (apply_oper_2 i1 i2 (state m s) l)
+  | O_STATE m i1 i2 cont =>
+      execute_omega cont (apply_oper_2 i1 i2 (state m) l)
   end.
 
 Theorem omega_valid : forall tr : t_omega, valid_list_hyps (execute_omega tr).
@@ -2317,21 +1818,21 @@ Proof.
  - unfold valid_list_hyps; simpl; intros; left;
     apply (constant_neg_valid n ep e lp H).
  - unfold valid_list_hyps, valid_hyps;
-    intros k1 k2 body t' Ht' m ep e lp H; apply Ht';
+    intros m k1 k2 body t' Ht' ep e lp H; apply Ht';
     apply
      (apply_oper_1_valid m (divide_and_approx k1 k2 body)
         (divide_and_approx_valid k1 k2 body) ep e lp H).
  - unfold valid_list_hyps; simpl; intros; left;
     apply (not_exact_divide_valid _ _ _ _ ep e lp H).
  - unfold valid_list_hyps, valid_hyps;
-    intros k body t' Ht' m ep e lp H; apply Ht';
+    intros m k body t' Ht' ep e lp H; apply Ht';
     apply
      (apply_oper_1_valid m (exact_divide k body)
         (exact_divide_valid k body) ep e lp H).
  - unfold valid_list_hyps, valid_hyps;
-    intros k1 i1 k2 i2 trace t' Ht' ep e lp H; apply Ht';
+    intros k1 i1 k2 i2 t' Ht' ep e lp H; apply Ht';
     apply
-     (apply_oper_2_valid i1 i2 (sum k1 k2 trace) (sum_valid k1 k2 trace) ep e
+     (apply_oper_2_valid i1 i2 (sum k1 k2) (sum_valid k1 k2) ep e
         lp H).
  - unfold valid_list_hyps; simpl; intros; left.
     apply (contradiction_valid n n0 ep e lp H).
@@ -2352,164 +1853,98 @@ Proof.
  - unfold valid_list_hyps; simpl; intros i j ep e lp H;
     left; apply (negate_contradict_inv_valid i j ep e lp H).
  - unfold valid_list_hyps, valid_hyps;
-    intros m s i1 i2 t' Ht' ep e lp H; apply Ht';
-    apply (apply_oper_2_valid i1 i2 (state m s) (state_valid m s) ep e lp H).
+    intros m i1 i2 t' Ht' ep e lp H; apply Ht';
+    apply (apply_oper_2_valid i1 i2 (state m) (state_valid m) ep e lp H).
 Qed.
-
 
 (* \subsection{Les opérations globales sur le but}
    \subsubsection{Normalisation} *)
 
-Definition move_right (s : step) (p : proposition) :=
+Fixpoint normalize_prop (negated:bool)(p:proposition) :=
   match p with
-  | EqTerm t1 t2 => EqTerm (Tint 0) (t_rewrite s (t1 + - t2)%term)
-  | LeqTerm t1 t2 => LeqTerm (Tint 0) (t_rewrite s (t2 + - t1)%term)
-  | GeqTerm t1 t2 => LeqTerm (Tint 0) (t_rewrite s (t1 + - t2)%term)
-  | LtTerm t1 t2 => LeqTerm (Tint 0) (t_rewrite s (t2 + Tint (-(1)) + - t1)%term)
-  | GtTerm t1 t2 => LeqTerm (Tint 0) (t_rewrite s (t1 + Tint (-(1)) + - t2)%term)
-  | NeqTerm t1 t2 => NeqTerm (Tint 0) (t_rewrite s (t1 + - t2)%term)
-  | p => p
+  | EqTerm t1 t2 =>
+    if negated then Tnot (NeqTerm (Tint 0) (normalize (t1-t2)))
+    else EqTerm (Tint 0) (normalize (t1-t2))
+  | NeqTerm t1 t2 =>
+    if negated then Tnot (EqTerm (Tint 0) (normalize (t1-t2)))
+    else NeqTerm (Tint 0) (normalize (t1-t2))
+  | LeqTerm t1 t2 =>
+    if negated then Tnot (LeqTerm (Tint 0) (normalize (t1-t2+Tint (-(1)))))
+    else LeqTerm (Tint 0) (normalize (t2-t1))
+  | GeqTerm t1 t2 =>
+    if negated then Tnot (LeqTerm (Tint 0) (normalize (t2-t1+Tint (-(1)))))
+    else LeqTerm (Tint 0) (normalize (t1-t2))
+  | LtTerm t1 t2 =>
+    if negated then Tnot (LeqTerm (Tint 0) (normalize (t1-t2)))
+    else LeqTerm (Tint 0) (normalize (t2-t1+Tint (-(1))))
+  | GtTerm t1 t2 =>
+    if negated then Tnot (LeqTerm (Tint 0) (normalize (t2-t1)))
+    else LeqTerm (Tint 0) (normalize (t1-t2+Tint (-(1))))
+  | Tnot p => Tnot (normalize_prop (negb negated) p)
+  | Tor p p' => Tor (normalize_prop negated p) (normalize_prop negated p')
+  | Tand p p' => Tand (normalize_prop negated p) (normalize_prop negated p')
+  | Timp p p' => Timp (normalize_prop (negb negated) p)
+                      (normalize_prop negated p')
+  | Tprop _ | TrueTerm | FalseTerm => p
   end.
 
-Definition prop_stable (f : proposition -> proposition) :=
-  forall (ep : list Prop) (e : list int) (p : proposition),
-  interp_proposition ep e p <-> interp_proposition ep e (f p).
+Definition normalize_hyps := List.map (normalize_prop false).
 
-Definition p_apply_left (f : proposition -> proposition)
-  (p : proposition) :=
-  match p with
-  | Timp x y => Timp (f x) y
-  | Tor x y => Tor (f x) y
-  | Tand x y => Tand (f x) y
-  | Tnot x => Tnot (f x)
-  | x => x
-  end.
+Opaque normalize.
 
-Theorem p_apply_left_stable :
- forall f : proposition -> proposition,
- prop_stable f -> prop_stable (p_apply_left f).
+Theorem normalize_prop_valid b e ep p :
+  interp_proposition e ep p <->
+  interp_proposition e ep (normalize_prop b p).
 Proof.
- unfold prop_stable; intros f H ep e p; split;
- (case p; simpl; auto; intros p1; elim (H ep e p1); tauto).
+ revert b.
+ induction p; intros; simpl; try tauto.
+ - destruct b; simpl;
+   rewrite <- ?normalize_stable; simpl; rewrite ?minus_def.
+   + rewrite not_eq. apply egal_left_iff.
+   + apply egal_left_iff.
+ - destruct b; simpl;
+   rewrite <- ? normalize_stable; simpl; rewrite ?minus_def.
+   + rewrite le_lt_iff. apply not_iff_compat.
+     rewrite le_lt_int. rewrite le_left.
+     rewrite <- !plus_assoc. now rewrite (plus_comm (-(1))).
+   + apply le_left.
+ - now rewrite <- IHp.
+ - destruct b; simpl;
+   rewrite <- ? normalize_stable; simpl; rewrite ?minus_def.
+   + rewrite ge_le_iff, le_lt_iff. apply not_iff_compat.
+     rewrite le_lt_int. rewrite le_left.
+     rewrite <- !plus_assoc. now rewrite (plus_comm (-(1))).
+   + rewrite ge_le_iff. apply le_left.
+ - destruct b; simpl;
+   rewrite <- ? normalize_stable; simpl; rewrite ?minus_def.
+   + rewrite gt_lt_iff, lt_le_iff. apply not_iff_compat.
+     apply le_left.
+   + rewrite gt_lt_iff. rewrite le_lt_int. rewrite le_left.
+     rewrite <- !plus_assoc. now rewrite (plus_comm (-(1))).
+ - destruct b; simpl;
+   rewrite <- ? normalize_stable; simpl; rewrite ?minus_def.
+   + rewrite lt_le_iff. apply not_iff_compat.
+     apply le_left.
+   + rewrite le_lt_int, le_left.
+     rewrite <- !plus_assoc. now rewrite (plus_comm (-(1))).
+ - destruct b; simpl;
+   rewrite <- ? normalize_stable; simpl; rewrite ?minus_def;
+   apply not_iff_compat, egal_left_iff.
+ - now rewrite <- IHp1, <- IHp2.
+ - now rewrite <- IHp1, <- IHp2.
+ - now rewrite <- IHp1, <- IHp2.
 Qed.
 
-Definition p_apply_right (f : proposition -> proposition)
-  (p : proposition) :=
-  match p with
-  | Timp x y => Timp x (f y)
-  | Tor x y => Tor x (f y)
-  | Tand x y => Tand x (f y)
-  | Tnot x => Tnot (f x)
-  | x => x
-  end.
+Transparent normalize.
 
-Theorem p_apply_right_stable :
- forall f : proposition -> proposition,
- prop_stable f -> prop_stable (p_apply_right f).
+Theorem normalize_hyps_valid : valid_hyps normalize_hyps.
 Proof.
- unfold prop_stable; intros f H ep e p.
- case p; simpl; try tauto.
- - intros p1; rewrite (H ep e p1); tauto.
- - intros p1 p2; elim (H ep e p2); tauto.
- - intros p1 p2; elim (H ep e p2); tauto.
- - intros p1 p2; elim (H ep e p2); tauto.
+ intros e ep l. induction l; simpl; intuition.
+ now rewrite <- normalize_prop_valid.
 Qed.
 
-Definition p_invert (f : proposition -> proposition)
-  (p : proposition) :=
-  match p with
-  | EqTerm x y => Tnot (f (NeqTerm x y))
-  | LeqTerm x y => Tnot (f (GtTerm x y))
-  | GeqTerm x y => Tnot (f (LtTerm x y))
-  | GtTerm x y => Tnot (f (LeqTerm x y))
-  | LtTerm x y => Tnot (f (GeqTerm x y))
-  | NeqTerm x y => Tnot (f (EqTerm x y))
-  | x => x
-  end.
-
-Theorem p_invert_stable :
- forall f : proposition -> proposition,
- prop_stable f -> prop_stable (p_invert f).
-Proof.
- unfold prop_stable; intros f H ep e p.
- case p; simpl; try tauto; intros t1 t2; rewrite <- (H ep e); simpl.
- - generalize (dec_eq (interp_term e t1) (interp_term e t2));
-   unfold decidable; try tauto.
- - generalize (dec_gt (interp_term e t1) (interp_term e t2));
-   unfold decidable; rewrite le_lt_iff, <- gt_lt_iff; tauto.
- - generalize (dec_lt (interp_term e t1) (interp_term e t2));
-   unfold decidable; rewrite ge_le_iff, le_lt_iff; tauto.
- - generalize (dec_gt (interp_term e t1) (interp_term e t2));
-   unfold decidable; rewrite ?le_lt_iff, ?gt_lt_iff; tauto.
- - generalize (dec_lt (interp_term e t1) (interp_term e t2));
-   unfold decidable; rewrite ?ge_le_iff, ?le_lt_iff; tauto.
- - reflexivity.
-Qed.
-
-Theorem move_right_stable : forall s : step, prop_stable (move_right s).
-Proof.
- unfold move_right, prop_stable; intros s ep e p; split.
- - Simplify; simpl; elim (t_rewrite_stable s e); simpl.
-    + symmetry ; apply egal_left; assumption.
-    + intro; apply le_left; assumption.
-    + intro; apply le_left; rewrite <- ge_le_iff; assumption.
-    + intro; apply lt_left; rewrite <- gt_lt_iff; assumption.
-    + intro; apply lt_left; assumption.
-    + intro; apply ne_left_2; assumption.
- - case p; simpl; intros; auto; generalize H; elim (t_rewrite_stable s);
-   simpl; intro H1.
-   + rewrite (plus_0_r_reverse (interp_term e t1)); rewrite H1;
-     now rewrite plus_permute, plus_opp_r, plus_0_r.
-   + apply (fun a b => plus_le_reg_r a b (- interp_term e t0));
-     rewrite plus_opp_r; assumption.
-   + rewrite ge_le_iff;
-     apply (fun a b => plus_le_reg_r a b (- interp_term e t1));
-     rewrite plus_opp_r; assumption.
-   + rewrite gt_lt_iff; apply lt_left_inv; assumption.
-   + apply lt_left_inv; assumption.
-   + unfold not; intro H2; apply H1;
-     rewrite H2, plus_opp_r; trivial.
-Qed.
-
-
-Fixpoint p_rewrite (s : p_step) : proposition -> proposition :=
-  match s with
-  | P_LEFT s => p_apply_left (p_rewrite s)
-  | P_RIGHT s => p_apply_right (p_rewrite s)
-  | P_STEP s => move_right s
-  | P_INVERT s => p_invert (move_right s)
-  end.
-
-Theorem p_rewrite_stable : forall s : p_step, prop_stable (p_rewrite s).
-Proof.
- simple induction s; simpl.
- - intros; apply p_apply_left_stable; trivial.
- - intros; apply p_apply_right_stable; trivial.
- - intros; apply p_invert_stable; apply move_right_stable.
- - apply move_right_stable.
-Qed.
-
-Fixpoint normalize_hyps (l : list h_step) (lh : hyps) {struct l} : hyps :=
-  match l with
-  | nil => lh
-  | pair_step i s :: r => normalize_hyps r (apply_oper_1 i (p_rewrite s) lh)
-  end.
-
-Theorem normalize_hyps_valid :
- forall l : list h_step, valid_hyps (normalize_hyps l).
-Proof.
- simple induction l; unfold valid_hyps; simpl.
- - auto.
- - intros n_s r; case n_s; intros n s H ep e lp H1; apply H;
-    apply apply_oper_1_valid.
-    + unfold valid1; intros ep1 e1 p1 H2;
-       elim (p_rewrite_stable s ep1 e1 p1); auto.
-    + assumption.
-Qed.
-
-Theorem normalize_hyps_goal :
- forall (s : list h_step) (ep : list Prop) (env : list int) (l : hyps),
- interp_goal ep env (normalize_hyps s l) -> interp_goal ep env l.
+Theorem normalize_hyps_goal (ep : list Prop) (env : list int) (l : hyps) :
+ interp_goal ep env (normalize_hyps l) -> interp_goal ep env l.
 Proof.
  intros; apply valid_goal with (2 := H); apply normalize_hyps_valid.
 Qed.
@@ -2692,19 +2127,20 @@ Proof.
  - simpl in *; tauto.
 Qed.
 
-Definition omega_tactic (t1 : e_step) (t2 : list h_step)
-  (c : proposition) (l : hyps) :=
-  reduce_lhyps (decompose_solve t1 (normalize_hyps t2 (concl_to_hyp c :: l))).
+Definition omega_tactic (t1 : e_step) (c : proposition) (l : hyps) :=
+  reduce_lhyps (decompose_solve t1 (normalize_hyps (concl_to_hyp c :: l))).
 
 Theorem do_omega :
- forall (t1 : e_step) (t2 : list h_step) (envp : list Prop)
+ forall (t : e_step) (envp : list Prop)
    (env : list int) (c : proposition) (l : hyps),
- interp_list_goal envp env (omega_tactic t1 t2 c l) ->
+ interp_list_goal envp env (omega_tactic t c l) ->
  interp_goal_concl c envp env l.
 Proof.
- unfold omega_tactic; intros; apply do_concl_to_hyp;
- apply (normalize_hyps_goal t2); apply (decompose_solve_valid t1);
- apply do_reduce_lhyps; assumption.
+ unfold omega_tactic; intros t ep e c l H.
+ apply do_concl_to_hyp.
+ apply normalize_hyps_goal.
+ apply (decompose_solve_valid t).
+ now apply do_reduce_lhyps.
 Qed.
 
 End IntOmega.

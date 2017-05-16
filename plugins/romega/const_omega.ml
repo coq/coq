@@ -79,13 +79,6 @@ let coq_I = lazy(init_constant "I")
 
 (* ReflOmegaCore/ZOmega *)
 
-let coq_h_step = lazy (constant "h_step")
-let coq_pair_step = lazy (constant  "pair_step")
-let coq_p_left = lazy (constant  "P_LEFT")
-let coq_p_right = lazy (constant  "P_RIGHT")
-let coq_p_invert = lazy (constant  "P_INVERT")
-let coq_p_step = lazy (constant  "P_STEP")
-
 let coq_t_int = lazy (constant  "Tint")
 let coq_t_plus = lazy (constant  "Tplus")
 let coq_t_mult = lazy (constant  "Tmult")
@@ -107,43 +100,6 @@ let coq_p_or = lazy (constant  "Tor")
 let coq_p_and = lazy (constant  "Tand")
 let coq_p_imp = lazy (constant  "Timp")
 let coq_p_prop = lazy (constant  "Tprop")
-
-(* Constructors for shuffle tactic *)
-let coq_t_fusion =  lazy (constant  "t_fusion")
-let coq_f_equal =  lazy (constant  "F_equal")
-let coq_f_cancel =  lazy (constant  "F_cancel")
-let coq_f_left =  lazy (constant  "F_left")
-let coq_f_right =  lazy (constant  "F_right")
-
-(* Constructors for reordering tactics *)
-let coq_c_do_both = lazy (constant  "C_DO_BOTH")
-let coq_c_do_left = lazy (constant  "C_LEFT")
-let coq_c_do_right = lazy (constant  "C_RIGHT")
-let coq_c_do_seq = lazy (constant  "C_SEQ")
-let coq_c_nop = lazy (constant  "C_NOP")
-let coq_c_opp_plus = lazy (constant  "C_OPP_PLUS")
-let coq_c_opp_opp = lazy (constant  "C_OPP_OPP")
-let coq_c_opp_mult_r = lazy (constant  "C_OPP_MULT_R")
-let coq_c_opp_one = lazy (constant  "C_OPP_ONE")
-let coq_c_reduce = lazy (constant  "C_REDUCE")
-let coq_c_mult_plus_distr = lazy (constant  "C_MULT_PLUS_DISTR")
-let coq_c_opp_left = lazy (constant  "C_MULT_OPP_LEFT")
-let coq_c_mult_assoc_r = lazy (constant  "C_MULT_ASSOC_R")
-let coq_c_plus_assoc_r = lazy (constant  "C_PLUS_ASSOC_R")
-let coq_c_plus_assoc_l = lazy (constant  "C_PLUS_ASSOC_L")
-let coq_c_plus_permute = lazy (constant  "C_PLUS_PERMUTE")
-let coq_c_plus_comm = lazy (constant  "C_PLUS_COMM")
-let coq_c_red0 = lazy (constant  "C_RED0")
-let coq_c_red1 = lazy (constant  "C_RED1")
-let coq_c_red2 = lazy (constant  "C_RED2")
-let coq_c_red3 = lazy (constant  "C_RED3")
-let coq_c_red4 = lazy (constant  "C_RED4")
-let coq_c_red5 = lazy (constant  "C_RED5")
-let coq_c_red6 = lazy (constant  "C_RED6")
-let coq_c_mult_opp_left = lazy (constant  "C_MULT_OPP_LEFT")
-let coq_c_mult_assoc_reduced = lazy (constant  "C_MULT_ASSOC_REDUCED")
-let coq_c_minus = lazy (constant  "C_MINUS")
-let coq_c_mult_comm = lazy (constant  "C_MULT_COMM")
 
 let coq_s_constant_not_nul = lazy (constant  "O_CONSTANT_NOT_NUL")
 let coq_s_constant_neg = lazy (constant  "O_CONSTANT_NEG")
@@ -170,31 +126,6 @@ let coq_e_solve = lazy  (constant  "E_SOLVE")
 
 let coq_interp_sequent = lazy (constant  "interp_goal_concl")
 let coq_do_omega = lazy (constant  "do_omega")
-
-(* \subsection{Construction d'expressions} *)
-
-let do_left t =
-  if Term.eq_constr t (Lazy.force coq_c_nop) then Lazy.force coq_c_nop
-  else Term.mkApp (Lazy.force coq_c_do_left, [|t |] )
-
-let do_right t =
-  if Term.eq_constr t (Lazy.force coq_c_nop) then Lazy.force coq_c_nop
-  else Term.mkApp (Lazy.force coq_c_do_right, [|t |])
-
-let do_both t1 t2 =
-  if Term.eq_constr t1 (Lazy.force coq_c_nop) then do_right t2
-  else if Term.eq_constr t2 (Lazy.force coq_c_nop) then do_left t1
-  else Term.mkApp (Lazy.force coq_c_do_both , [|t1; t2 |])
-
-let do_seq t1 t2 =
-  if Term.eq_constr t1 (Lazy.force coq_c_nop) then t2
-  else if Term.eq_constr t2 (Lazy.force coq_c_nop) then t1
-  else Term.mkApp (Lazy.force coq_c_do_seq, [|t1; t2 |])
-
-let rec do_list = function
-  | [] -> Lazy.force coq_c_nop
-  | [x] -> x
-  | (x::l) -> do_seq x (do_list l)
 
 (* Nat *)
 
@@ -232,8 +163,6 @@ let mk_plist =
     fun l -> mk_list type1lev Term.mkProp l
 
 let mk_list = mk_list Univ.Level.set
-let mk_shuffle_list l = mk_list (Lazy.force coq_t_fusion) l
-
 
 type parse_term =
   | Tplus of Term.constr * Term.constr
@@ -306,7 +235,7 @@ module type Int = sig
   val parse_term : Term.constr -> parse_term
   val parse_rel : ([ `NF ], 'r) Proofview.Goal.t -> Term.constr -> parse_rel
   (* check whether t is built only with numbers and + * - *)
-  val is_scalar : Term.constr -> bool
+  val get_scalar : Term.constr -> Bigint.bigint option
 end
 
 module Z : Int = struct
@@ -376,11 +305,18 @@ let parse_rel gl t =
   | Kapp("Z.gt",[t1;t2]) -> Rgt (t1,t2)
   | _ -> parse_logic_rel t
 
-let rec is_scalar t =
+let rec get_scalar t =
   match destructurate t with
-  | Kapp(("Z.add"|"Z.sub"|"Z.mul"),[t1;t2]) -> is_scalar t1 && is_scalar t2
-  | Kapp(("Z.opp"|"Z.succ"|"Z.pred"),[t]) -> is_scalar t
-  | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> Option.has_some (recognize_Z t)
-  | _ -> false
+  | Kapp("Z.add", [t1;t2]) ->
+     Option.lift2 Bigint.add (get_scalar t1) (get_scalar t2)
+  | Kapp ("Z.sub",[t1;t2]) ->
+     Option.lift2 Bigint.sub (get_scalar t1) (get_scalar t2)
+  | Kapp ("Z.mul",[t1;t2]) ->
+     Option.lift2 Bigint.mult (get_scalar t1) (get_scalar t2)
+  | Kapp("Z.opp", [t]) -> Option.map Bigint.neg (get_scalar t)
+  | Kapp("Z.succ", [t]) -> Option.map Bigint.add_1 (get_scalar t)
+  | Kapp("Z.pred", [t]) -> Option.map Bigint.sub_1 (get_scalar t)
+  | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> recognize_Z t
+  | _ -> None
 
 end
