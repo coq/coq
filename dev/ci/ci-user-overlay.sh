@@ -29,3 +29,9 @@ if [ $TRAVIS_PULL_REQUEST == "568" ] || [ $TRAVIS_BRANCH == "remove-tactic-compa
     fiat_parsers_CI_BRANCH=fix-ml
     fiat_parsers_CI_GITURL=https://github.com/ppedrot/fiat.git
 fi
+
+if [ $TRAVIS_PULL_REQUEST == "406" ] || [ $TRAVIS_BRANCH == "feature/coq_makefile2" ]; then
+    UniMath_CI_BRANCH=master
+    UniMath_CI_GITURL=https://github.com/gares/UniMath.git
+fi
+
