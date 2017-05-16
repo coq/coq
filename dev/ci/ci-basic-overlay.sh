@@ -98,13 +98,13 @@
 # bedrock_src
 ########################################################################
 : ${bedrock_src_CI_BRANCH:=master}
-: ${bedrock_src_CI_GITURL:=https://github.com/JasonGross/bedrock.git}
+: ${bedrock_src_CI_GITURL:=https://github.com/mit-plv/bedrock.git}
 
 ########################################################################
 # bedrock_facade
 ########################################################################
 : ${bedrock_facade_CI_BRANCH:=master}
-: ${bedrock_facade_CI_GITURL:=https://github.com/JasonGross/bedrock.git}
+: ${bedrock_facade_CI_GITURL:=https://github.com/mit-plv/bedrock.git}
 
 ########################################################################
 # formal-topology
