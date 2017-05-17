@@ -116,6 +116,9 @@ val pr_pconstructor        : env -> pconstructor -> std_ppcmds
 
 
 (** Contexts *)
+(** Display compact contexts of goals (simple hyps on the same line) *)
+val set_compact_context : bool -> unit
+val get_compact_context : unit -> bool
 
 val pr_context_unlimited   : env -> evar_map -> std_ppcmds
 val pr_ne_context_of       : std_ppcmds -> env -> evar_map -> std_ppcmds
@@ -137,7 +140,7 @@ val pr_cpred               : Cpred.t -> std_ppcmds
 val pr_idpred              : Id.Pred.t -> std_ppcmds
 val pr_transparent_state   : transparent_state -> std_ppcmds
 
-(** Proofs *)
+(** Proofs, these functions obey [Hyps Limit] and [Compact contexts]. *)
 
 val pr_goal                : goal sigma -> std_ppcmds
 

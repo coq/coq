@@ -303,6 +303,13 @@ let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t*)
 (**********************************************************************)
 (* Contexts and declarations                                          *)
 
+
+(* Flag for compact display of goals *)
+
+let get_compact_context,set_compact_context =
+  let compact_context = ref false in
+  (fun () -> !compact_context),(fun b  -> compact_context := b)
+
 let pr_compacted_decl env sigma decl =
   let ids, pbody, typ = match decl with
     | CompactedDecl.LocalAssum (ids, typ) ->
@@ -383,15 +390,40 @@ let pr_ne_context_of header env sigma =
     List.is_empty (Environ.named_context env)  then (mt ())
   else let penv = pr_context_unlimited env sigma in (header ++ penv ++ fnl ())
 
+(* Heuristic for horizontalizing hypothesis that the user probably
+   considers as "variables": An hypothesis H:T where T:S and S<>Prop. *)
+let should_compact env sigma typ =
+  get_compact_context() &&
+    let type_of_typ = Retyping.get_type_of env sigma (EConstr.of_constr typ) in
+    not (is_Prop (EConstr.to_constr sigma type_of_typ))
+
+
+(* If option Compact Contexts is set, we pack "simple" hypothesis in a
+   hov box (with three sapaces as a separator), the global box being a
+   v box *)
 let rec bld_sign_env env sigma ctxt pps =
   match ctxt with
   | [] -> pps
+  | CompactedDecl.LocalAssum (ids,typ)::ctxt' when should_compact env sigma typ ->
+    let pps',ctxt' = bld_sign_env_id env sigma ctxt (mt ()) true in
+    (* putting simple hyps in a more horizontal flavor *)
+    bld_sign_env env sigma ctxt' (pps ++ brk (0,0) ++ hov 0 pps')
   | d:: ctxt' ->
-     let pidt = pr_var_list_decl env sigma d in
-     let pps' = pps ++ brk (0,0) ++ pidt in
-     bld_sign_env env sigma ctxt' pps'
+    let pidt = pr_var_list_decl env sigma d in
+    let pps' = pps ++ brk (0,0) ++ pidt in
+    bld_sign_env env sigma ctxt' pps'
+and bld_sign_env_id env sigma ctxt pps is_start =
+  match ctxt with
+  | [] -> pps,ctxt
+ | CompactedDecl.LocalAssum(ids,typ) as d :: ctxt' when should_compact env sigma typ ->
+    let pidt = pr_var_list_decl env sigma d in
+    let pps' = pps ++ (if not is_start then brk (3,0) else (mt ())) ++ pidt in
+    bld_sign_env_id env sigma ctxt' pps' false
+  | _ -> pps,ctxt
 
 
+(* compact printing an env (variables and de Bruijn). Separator: three
+   spaces between simple hyps, and newline otherwise *)
 let pr_context_limit_compact ?n env sigma =
   let ctxt = Termops.compact_named_context (named_context env) in
   let lgth = List.length ctxt in
@@ -401,15 +433,14 @@ let pr_context_limit_compact ?n env sigma =
     | Some n when n > lgth -> lgth
     | Some n -> n in
   let ctxt_chopped,ctxt_hidden = Util.List.chop n_capped ctxt in
-  (* a dot line hinting the number of hiden hyps. *)
+  (* a dot line hinting the number of hidden hyps. *)
   let hidden_dots = String.make (List.length ctxt_hidden) '.' in
   let sign_env = v 0 (str hidden_dots ++ (mt ())
                  ++ bld_sign_env env sigma (List.rev ctxt_chopped) (mt ())) in
   let db_env =
-    fold_rel_context
-      (fun env d pps -> pps ++ fnl () ++ pr_rel_decl env sigma d)
+    fold_rel_context (fun env d pps -> pps ++ fnl () ++ pr_rel_decl env sigma d)
       env ~init:(mt ()) in
-  (sign_env ++ db_env)
+  sign_env ++ db_env
 
 (* The number of printed hypothesis in a goal *)
 (* If [None], no limit *)
