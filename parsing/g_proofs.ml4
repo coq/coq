@@ -48,7 +48,6 @@ GEXTEND Gram
       | IDENT "Qed" -> VernacEndProof (Proved (Opaque None,None))
       | IDENT "Qed"; IDENT "exporting"; l = LIST0 identref SEP "," ->
           VernacEndProof (Proved (Opaque (Some l),None))
-      | IDENT "Save" -> VernacEndProof (Proved (Opaque None,None))
       | IDENT "Save"; tok = thm_token; id = identref ->
 	  VernacEndProof (Proved (Opaque None,Some (id,Some tok)))
       | IDENT "Save"; id = identref ->

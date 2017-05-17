@@ -385,13 +385,11 @@ apply H; [ assumption | apply H0; assumption ].
 
 Let us now save lemma \verb:distr_impl::
 \begin{coq_example}
-Save.
+Qed.
 \end{coq_example}
 
-Here \verb:Save: needs no argument, since we gave the name \verb:distr_impl: 
-in advance;
-it is however possible to override the given name by giving a different 
-argument to command \verb:Save:.
+Here \verb:Qed: needs no argument, since we gave the name \verb:distr_impl: 
+in advance.
 
 Actually, such an easy combination of tactics \verb:intro:, \verb:apply:
 and \verb:assumption: may be found completely automatically by an automatic

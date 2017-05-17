@@ -105,8 +105,7 @@ let commands = [
    "Reset Extraction Inline";
    "Restore State";
    ];
-  [  "Save.";
-     "Scheme";
+  [  "Scheme";
      "Section";
      "Set Extraction AutoInline";
      "Set Extraction Optimize";

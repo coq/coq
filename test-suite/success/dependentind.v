@@ -15,7 +15,7 @@ Proof.
   intros n H.
   dependent destruction H.
   assumption.
-Save.
+Qed.
 
 Require Import ProofIrrelevance.
 
@@ -25,7 +25,7 @@ Proof.
   dependent destruction v.
   exists v ; exists a.
   reflexivity.
-Save.
+Qed.
 
 (* Extraction Unnamed_thm. *)
 

@@ -390,7 +390,7 @@
     ("Corollary" "cor" "Corollary # : #.\nProof.\n#\nQed." t "Corollary")
     ("Declare Module :" "dmi" "Declare Module # : #.\n#\nEnd #." t)
     ("Declare Module <:" "dmi2" "Declare Module # <: #.\n#\nEnd #." t)
-    ("Definition goal" "defg" "Definition #:#.\n#\nSave." t);; careful
+    ("Definition goal" "defg" "Definition #:#.\n#\nQed." t);; careful
     ("Fact" "fct" "Fact # : #." t "Fact")
     ("Goal" nil "Goal #." t "Goal")
     ("Lemma" "l" "Lemma # : #.\nProof.\n#\nQed." t "Lemma")
@@ -492,7 +492,6 @@
      ("Require" nil "Require #." t "Require")
      ("Reserved Notation" nil "Reserved Notation" nil "Reserved\\s-+Notation")
      ("Reset Extraction Inline" nil "Reset Extraction Inline." t "Reset\\s-+Extraction\\s-+Inline")
-     ("Save" nil "Save." t "Save")
      ("Search" nil "Search #" nil "Search")
      ("SearchAbout" nil "SearchAbout #" nil "SearchAbout")
      ("SearchPattern" nil "SearchPattern #" nil "SearchPattern")
@@ -710,7 +709,6 @@ Used by `coq-goal-command-p'"
 
 (defvar coq-keywords-save-strict
   '("Defined"
-    "Save"
     "Qed"
     "End"
     "Admitted"

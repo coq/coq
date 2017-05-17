@@ -9,5 +9,5 @@ End D.
 
 Module D' (M:S).
   Import M.
-  Definition empty:Set. exact nat. Save.
+  Definition empty:Set. exact nat. Qed.
 End D'.
