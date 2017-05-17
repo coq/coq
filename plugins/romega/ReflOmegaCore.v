@@ -1170,7 +1170,7 @@ Fixpoint scalar_norm_add (t : term) (k1 k2 : int) : term :=
   match t with
   | (v1 * Tint x1 + l1)%term =>
     (v1 * Tint (x1 * k1) + scalar_norm_add l1 k1 k2)%term
-  | Tint x => Tint (x * k1 + k2)
+  | Tint x => Tint (k1 * x + k2)
   | _ => (t * Tint k1 + Tint k2)%term (* shouldn't happen *)
   end.
 
@@ -1178,7 +1178,7 @@ Theorem scalar_norm_add_stable e t k1 k2 :
  interp_term e (t * Tint k1 + Tint k2)%term =
  interp_term e (scalar_norm_add t k1 k2).
 Proof.
- induction t; simpl; Simplify; simpl; auto.
+ induction t; simpl; Simplify; simpl; auto. f_equal. apply mult_comm.
  rewrite <- IHt2. simpl. apply OMEGA11.
 Qed.
 
@@ -1224,16 +1224,16 @@ Fixpoint fusion (t1 t2 : term) (k1 k2 : int) : term :=
          | ([v2] * Tint x2 + l2)%term =>
            match N.compare v1 v2 with
              | Eq =>
-               let k := x1 * k1 + x2 * k2 in
+               let k := k1 * x1 + k2 * x2 in
                if beq k 0 then fusion l1 l2 k1 k2
                else ([v1] * Tint k + fusion l1 l2 k1 k2)%term
-             | Lt => ([v2] * Tint (x2 * k2) + fusion_t1 l2)%term
-             | Gt => ([v1] * Tint (x1 * k1) + fusion l1 t2 k1 k2)%term
+             | Lt => ([v2] * Tint (k2 * x2) + fusion_t1 l2)%term
+             | Gt => ([v1] * Tint (k1 * x1) + fusion l1 t2 k1 k2)%term
            end
-         | Tint x2 => ([v1] * Tint (x1 * k1) + fusion l1 t2 k1 k2)%term
+         | Tint x2 => ([v1] * Tint (k1 * x1) + fusion l1 t2 k1 k2)%term
          | _ => (t1 * Tint k1 + t2 * Tint k2)%term (* shouldn't happen *)
        end) t2
-  | Tint x1 => scalar_norm_add t2 k2 (x1 * k1)
+  | Tint x1 => scalar_norm_add t2 k2 (k1 * x1)
   | _ => (t1 * Tint k1 + t2 * Tint k2)%term (* shouldn't happen *)
   end.
 
@@ -1242,14 +1242,18 @@ Theorem fusion_stable e t1 t2 k1 k2 :
  interp_term e (fusion t1 t2 k1 k2).
 Proof.
  revert t2; induction t1; simpl; Simplify; simpl; auto.
- - intros; rewrite <- scalar_norm_add_stable. simpl. apply plus_comm.
+ - intros; rewrite <- scalar_norm_add_stable. simpl.
+   rewrite plus_comm. f_equal. apply mult_comm.
  - intros. Simplify. induction t2; simpl; Simplify; simpl; auto.
-   + rewrite <- IHt1_2. simpl. apply OMEGA11.
-   + rewrite <- IHt1_2. simpl. subst n0. rewrite OMEGA10, H0.
-     now rewrite mult_comm, mult_0_l, plus_0_l.
-   + rewrite <- IHt1_2. simpl. subst n0. apply OMEGA10.
-   + rewrite <- IHt2_2. simpl. apply OMEGA12.
-   + rewrite <- IHt1_2. simpl. apply OMEGA11.
+   + rewrite <- IHt1_2. simpl. rewrite (mult_comm k1); apply OMEGA11.
+   + rewrite <- IHt1_2. simpl. subst n0.
+     rewrite (mult_comm k1), (mult_comm k2) in H0.
+     rewrite OMEGA10, H0.
+     now rewrite mult_0_r, plus_0_l.
+   + rewrite <- IHt1_2. simpl. subst n0.
+     rewrite (mult_comm k1), (mult_comm k2); apply OMEGA10.
+   + rewrite <- IHt2_2. simpl. rewrite (mult_comm k2); apply OMEGA12.
+   + rewrite <- IHt1_2. simpl. rewrite (mult_comm k1); apply OMEGA11.
 Qed.
 
 (** Term normalization.
