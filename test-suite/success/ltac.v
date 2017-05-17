@@ -330,3 +330,10 @@ Fail match goal with
      end
 end.
 Abort.
+
+(* Test evar syntax *)
+
+Goal True.
+evar (0=0).
+Abort.
+

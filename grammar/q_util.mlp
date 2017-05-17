@@ -25,7 +25,7 @@ type user_symbol =
 
 type extend_token =
 | ExtTerminal of string
-| ExtNonTerminal of user_symbol * string
+| ExtNonTerminal of user_symbol * string option
 
 let mlexpr_of_list f l =
   List.fold_right

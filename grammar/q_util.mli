@@ -23,7 +23,7 @@ type user_symbol =
 
 type extend_token =
 | ExtTerminal of string
-| ExtNonTerminal of user_symbol * string
+| ExtNonTerminal of user_symbol * string option
 
 val mlexpr_of_list :  ('a -> MLast.expr) -> 'a list -> MLast.expr
 
