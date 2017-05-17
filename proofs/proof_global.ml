@@ -82,7 +82,7 @@ type proof_object = {
 type proof_ending =
   | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * proof_universes
   | Proved of Vernacexpr.opacity_flag *
-             (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
+              Vernacexpr.lident option *
               proof_object
 type proof_terminator = proof_ending -> unit
 type closed_proof = proof_object * proof_terminator

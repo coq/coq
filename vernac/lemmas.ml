@@ -280,13 +280,6 @@ let save_anonymous ?export_seff proof save_ident =
   check_anonymity id save_ident;
   save ?export_seff save_ident const cstrs pl do_guard persistence hook
 
-let save_anonymous_with_strength ?export_seff proof kind save_ident =
-  let id,const,(cstrs,pl),do_guard,_,hook = proof in
-  check_anonymity id save_ident;
-  (* we consider that non opaque behaves as local for discharge *)
-  save ?export_seff save_ident const cstrs pl do_guard
-      (Global, const.const_entry_polymorphic, Proof kind) hook
-
 (* Admitted *)
 
 let warn_let_as_axiom =
@@ -337,9 +330,7 @@ let universe_proof_terminator compute_guard hook =
 	(hook (Some (fst proof.Proof_global.universes))) is_opaque in
       begin match idopt with
       | None -> save_named ~export_seff proof
-      | Some ((_,id),None) -> save_anonymous ~export_seff proof id
-      | Some ((_,id),Some kind) -> 
-          save_anonymous_with_strength ~export_seff proof kind id
+      | Some (_,id) -> save_anonymous ~export_seff proof id
       end;
       check_exist exports
   end

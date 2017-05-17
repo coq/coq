@@ -28,6 +28,8 @@ Vernacular Commands
 - Goals context can be printed in a more compact way when "Set
   Printing Compact Contexts" is activated.
 
+- The deprecated `Save` vernacular and its form `Save Theorem id` to
+  close proofs have been removed from the syntax. Please use `Qed`.
 
 Standard Library
 
