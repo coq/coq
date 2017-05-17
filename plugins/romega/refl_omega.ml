@@ -855,87 +855,69 @@ let mk_direction_list l =
 
 (* \section{Rejouer l'historique} *)
 
-let get_hyp env_hyp i =
+let hyp_idx env_hyp i =
   let rec loop count = function
     | [] -> failwith (Printf.sprintf "get_hyp %d" i)
-    | CCEqua i' :: _ when Int.equal i i' -> count
+    | CCEqua i' :: _ when Int.equal i i' -> mk_nat count
     | _ :: l -> loop (succ count) l
   in loop 0 env_hyp
 
-let replay_history env env_hyp =
-  let rec loop env_hyp t =
-    match t with
-      | CONTRADICTION (e1,e2) :: l ->
-         mkApp (Lazy.force coq_s_contradiction,
-                [| mk_nat (get_hyp env_hyp e1.id);
-                   mk_nat (get_hyp env_hyp e2.id) |])
-      | DIVIDE_AND_APPROX (e1,e2,k,d) :: l ->
-         mkApp (Lazy.force coq_s_div_approx,
-                [| mk_nat (get_hyp env_hyp e1.id); Z.mk k; Z.mk d;
-                   reified_of_omega env e2.body e2.constant;
-                   loop env_hyp l |])
-      | NOT_EXACT_DIVIDE (e1,k) :: l ->
-         let e2_constant = floor_div e1.constant k in
-         let d = e1.constant - e2_constant * k in
-         let e2_body = map_eq_linear (fun c -> c / k) e1.body in
-         mkApp (Lazy.force coq_s_not_exact_divide,
-                [| mk_nat (get_hyp env_hyp e1.id); Z.mk k; Z.mk d;
-                   reified_of_omega env e2_body e2_constant |])
-      | EXACT_DIVIDE (e1,k) :: l ->
-         let e2_body = map_eq_linear (fun c -> c / k) e1.body in
-         let e2_constant = floor_div e1.constant k in
-         mkApp (Lazy.force coq_s_exact_divide,
-                [| mk_nat (get_hyp env_hyp e1.id); Z.mk k;
-                   reified_of_omega env e2_body e2_constant;
-                   loop env_hyp l |])
-      | (MERGE_EQ(e3,e1,e2)) :: l ->
-	  let n1 = get_hyp env_hyp e1.id and n2 = get_hyp env_hyp e2 in
-          mkApp (Lazy.force coq_s_merge_eq,
-		 [| mk_nat n1; mk_nat n2;
-		    loop (CCEqua e3:: env_hyp) l |])
-      | SUM(e3,(k1,e1),(k2,e2)) :: l ->
-         let n1 = get_hyp env_hyp e1.id
-         and n2 = get_hyp env_hyp e2.id in
-         mkApp (Lazy.force coq_s_sum,
-                [| Z.mk k1; mk_nat n1; Z.mk k2;
-                   mk_nat n2; (loop (CCEqua e3 :: env_hyp) l) |])
-      | CONSTANT_NOT_NUL(e,k) :: l ->
-          mkApp (Lazy.force coq_s_constant_not_nul,
-		 [|  mk_nat (get_hyp env_hyp e) |])
-      | CONSTANT_NEG(e,k) :: l ->
-          mkApp (Lazy.force coq_s_constant_neg,
-		 [|  mk_nat (get_hyp env_hyp e) |])
-      | STATE {st_new_eq=new_eq; st_def =def;
-               st_orig=orig; st_coef=m;
-               st_var=sigma } :: l ->
-         let n1 = get_hyp env_hyp orig.id
-         and n2 = get_hyp env_hyp def.id in
-         mkApp (Lazy.force coq_s_state,
-                [| Z.mk m; mk_nat n1; mk_nat n2;
-                   loop (CCEqua new_eq.id :: env_hyp) l |])
-      |	HYP _ :: l -> loop env_hyp l
-      |	CONSTANT_NUL e :: l ->
-	  mkApp (Lazy.force coq_s_constant_nul,
-		 [|  mk_nat (get_hyp env_hyp e) |])
-      |	NEGATE_CONTRADICT(e1,e2,true) :: l ->
-	  mkApp (Lazy.force coq_s_negate_contradict,
-		 [|  mk_nat (get_hyp env_hyp e1.id);
-		     mk_nat (get_hyp env_hyp e2.id) |])
-      |	NEGATE_CONTRADICT(e1,e2,false) :: l ->
-	  mkApp (Lazy.force coq_s_negate_contradict_inv,
-		 [|  mk_nat (get_hyp env_hyp e1.id);
-		     mk_nat (get_hyp env_hyp e2.id) |])
-      | SPLIT_INEQ(e,(e1,l1),(e2,l2)) :: l ->
-	  let i =  get_hyp env_hyp e.id in
-	  let r1 = loop (CCEqua e1 :: env_hyp) l1 in
-	  let r2 = loop (CCEqua e2 :: env_hyp) l2 in
-	  mkApp (Lazy.force coq_s_split_ineq,
-                  [| mk_nat i; r1 ; r2 |])
-      |	(FORGET_C _ | FORGET _ | FORGET_I _) :: l ->
-	  loop env_hyp l
-      | (WEAKEN  _ ) :: l -> failwith "not_treated"
-      |	[] -> failwith "no contradiction"
-  in loop env_hyp
+let rec reify_trace env env_hyp = function
+  | CONSTANT_NOT_NUL(e,_) :: []
+  | CONSTANT_NEG(e,_) :: []
+  | CONSTANT_NUL e :: [] ->
+     mkApp (Lazy.force coq_s_bad_constant,[| hyp_idx env_hyp e |])
+  | NEGATE_CONTRADICT(e1,e2,direct) :: [] ->
+     let c = if direct then coq_s_negate_contradict
+             else coq_s_negate_contradict_inv
+     in
+     mkApp (Lazy.force c, [| hyp_idx env_hyp e1.id; hyp_idx env_hyp e2.id |])
+  | CONTRADICTION (e1,e2) :: [] ->
+     mkApp (Lazy.force coq_s_contradiction,
+            [| hyp_idx env_hyp e1.id; hyp_idx env_hyp e2.id |])
+  | NOT_EXACT_DIVIDE (e1,k) :: [] ->
+     let e2_constant = floor_div e1.constant k in
+     let d = e1.constant - e2_constant * k in
+     let e2_body = map_eq_linear (fun c -> c / k) e1.body in
+     mkApp (Lazy.force coq_s_not_exact_divide,
+            [| hyp_idx env_hyp e1.id; Z.mk k; Z.mk d;
+               reified_of_omega env e2_body e2_constant |])
+  | DIVIDE_AND_APPROX (e1,e2,k,d) :: l ->
+     mkApp (Lazy.force coq_s_div_approx,
+            [| hyp_idx env_hyp e1.id; Z.mk k; Z.mk d;
+               reified_of_omega env e2.body e2.constant;
+               reify_trace env env_hyp l |])
+  | EXACT_DIVIDE (e1,k) :: l ->
+     let e2_body = map_eq_linear (fun c -> c / k) e1.body in
+     let e2_constant = floor_div e1.constant k in
+     mkApp (Lazy.force coq_s_exact_divide,
+            [| hyp_idx env_hyp e1.id; Z.mk k;
+               reified_of_omega env e2_body e2_constant;
+               reify_trace env env_hyp l |])
+  | MERGE_EQ(e3,e1,e2) :: l ->
+     mkApp (Lazy.force coq_s_merge_eq,
+            [| hyp_idx env_hyp e1.id; hyp_idx env_hyp e2;
+               reify_trace env (CCEqua e3:: env_hyp) l |])
+  | SUM(e3,(k1,e1),(k2,e2)) :: l ->
+     mkApp (Lazy.force coq_s_sum,
+            [| Z.mk k1; hyp_idx env_hyp e1.id;
+               Z.mk k2; hyp_idx env_hyp e2.id;
+               reify_trace env (CCEqua e3 :: env_hyp) l |])
+  | STATE {st_new_eq=new_eq; st_def =def;
+           st_orig=orig; st_coef=m;
+           st_var=sigma } :: l ->
+     mkApp (Lazy.force coq_s_state,
+            [| Z.mk m; hyp_idx env_hyp orig.id; hyp_idx env_hyp def.id;
+               reify_trace env (CCEqua new_eq.id :: env_hyp) l |])
+  | HYP _ :: l -> reify_trace env env_hyp l
+  | SPLIT_INEQ(e,(e1,l1),(e2,l2)) :: _ ->
+     let r1 = reify_trace env (CCEqua e1 :: env_hyp) l1 in
+     let r2 = reify_trace env (CCEqua e2 :: env_hyp) l2 in
+     mkApp (Lazy.force coq_s_split_ineq,
+            [| hyp_idx env_hyp e.id; r1 ; r2 |])
+  | (FORGET_C _ | FORGET _ | FORGET_I _) :: l -> reify_trace env env_hyp l
+  | WEAKEN  _ :: l -> failwith "not_treated"
+  | _ -> failwith "bad history"
 
 let rec decompose_tree env ctxt = function
    Tree(i,left,right) ->
@@ -954,7 +936,7 @@ let rec decompose_tree env ctxt = function
   | Leaf s ->
       decompose_tree_hyps s.s_trace env ctxt (IntSet.elements s.s_equa_deps)
 and decompose_tree_hyps trace env ctxt = function
-    [] -> app coq_e_solve [| replay_history env ctxt trace |]
+    [] -> app coq_e_solve [| reify_trace env ctxt trace |]
   | (i::l) ->
       let equation =
         try IntHtbl.find env.equations i

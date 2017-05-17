@@ -1454,20 +1454,17 @@ Qed.
    [0<>...] or inequations [0<=...].
 
    First, the final steps leading to a contradiction:
-   - [O_CONSTANT_NOT_NUL i] :
-     equation i is [0=k] with a non-nul constant [k].
-   - [O_CONSTANT_NUL i] : disequation i is [0<>0].
-   - [O_CONSTANT_NEG i] :
-     inequation i is [0<=k] with a negative constant [k].
+   - [O_BAD_CONSTANT i] : hypothesis i has a constant body
+     and this constant is not compatible with the kind of i.
    - [O_CONTRADICTION i j] :
      inequations i and j have a sum which is a negative constant.
-     Shortcut for [(O_SUM 1 i 1 j (O_CONSTANT_NEG 0))].
+     Shortcut for [(O_SUM 1 i 1 j (O_BAD_CONSTANT 0))].
    - [O_NEGATE_CONTRADICT i j] :
      equation i and disequation j (or vice-versa) have the same body.
-     Shortcut for [(O_SUM 1 i (-1) j (O_CONSTANT_NUL 0))].
+     Shortcut for [(O_SUM 1 i (-1) j (O_BAD_CONSTANT 0))].
    - [O_NEGATE_CONTRADICT_INV i j] :
      equation i and disequation j (or vice-versa) have opposite bodies.
-     Shortcut for [(O_SUM 1 i 1 j (O_CONSTANT_NUL 0))].
+     Shortcut for [(O_SUM 1 i 1 j (O_BAD_CONSTANT 0))].
    - [O_NOT_EXACT_DIVIDE i k1 k2 t] :
      equation i has a body equivalent to [k1*t+k2] with [0<k2<k1].
 
@@ -1493,9 +1490,7 @@ Qed.
 Definition idx := nat. (** Index of an hypothesis in the list *)
 
 Inductive t_omega : Set :=
-  | O_CONSTANT_NOT_NUL : idx -> t_omega
-  | O_CONSTANT_NUL : idx -> t_omega
-  | O_CONSTANT_NEG : idx -> t_omega
+  | O_BAD_CONSTANT : idx -> t_omega
   | O_CONTRADICTION : idx -> idx -> t_omega
   | O_NEGATE_CONTRADICT : idx -> idx -> t_omega
   | O_NEGATE_CONTRADICT_INV : idx -> idx -> t_omega
@@ -1512,51 +1507,21 @@ Inductive t_omega : Set :=
 
 (** First, the final steps, leading to a contradiction *)
 
-(** [O_CONSTANT_NOT_NUL] *)
+(** [O_BAD_CONSTANT] *)
 
-Definition constant_not_nul (i : nat) (h : hyps) :=
+Definition bad_constant (i : nat) (h : hyps) :=
   match nth_hyps i h with
-  | EqTerm (Tint Nul) (Tint n) =>
-      if beq n Nul then h else absurd
+  | EqTerm (Tint Nul) (Tint n) => if beq n Nul then h else absurd
+  | NeqTerm (Tint Nul) (Tint n) => if beq n Nul then absurd else h
+  | LeqTerm (Tint Nul) (Tint n) => if bgt Nul n then absurd else h
   | _ => h
   end.
 
-Theorem constant_not_nul_valid :
- forall i : nat, valid_hyps (constant_not_nul i).
+Theorem bad_constant_valid i : valid_hyps (bad_constant i).
 Proof.
- unfold valid_hyps, constant_not_nul; intros i ep e lp H.
+ unfold valid_hyps, bad_constant; intros ep e lp H.
  generalize (nth_valid ep e i lp H); Simplify.
-Qed.
-
-(** [O_CONSTANT_NUL] *)
-
-Definition constant_nul (i : nat) (h : hyps) :=
-  match nth_hyps i h with
-  | NeqTerm (Tint Null) (Tint Null') =>
-      if beq Null Null' then absurd else h
-  | _ => h
-  end.
-
-Theorem constant_nul_valid : forall i : nat, valid_hyps (constant_nul i).
-Proof.
- unfold valid_hyps, constant_nul; intros;
- generalize (nth_valid ep e i lp); Simplify; simpl; intuition.
-Qed.
-
-(** [O_CONSTANT_NEG] *)
-
-Definition constant_neg (i : nat) (h : hyps) :=
-  match nth_hyps i h with
-  | LeqTerm (Tint Nul) (Tint Neg) =>
-     if bgt Nul Neg then absurd else h
-  | _ => h
-  end.
-
-Theorem constant_neg_valid : forall i : nat, valid_hyps (constant_neg i).
-Proof.
- unfold valid_hyps, constant_neg. intros.
- generalize (nth_valid ep e i lp). Simplify; simpl.
- rewrite gt_lt_iff in *; rewrite le_lt_iff; intuition.
+ rewrite gt_lt_iff in *. rewrite le_lt_iff. intuition.
 Qed.
 
 (** [O_CONTRADICTION] *)
@@ -1889,9 +1854,7 @@ Qed.
 
 Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
   match t with
-  | O_CONSTANT_NOT_NUL n => singleton (constant_not_nul n l)
-  | O_CONSTANT_NUL i => singleton (constant_nul i l)
-  | O_CONSTANT_NEG n => singleton (constant_neg n l)
+  | O_BAD_CONSTANT i => singleton (bad_constant i l)
   | O_CONTRADICTION i j => singleton (contradiction i j l)
   | O_NEGATE_CONTRADICT i j => singleton (negate_contradict i j l)
   | O_NEGATE_CONTRADICT_INV i j =>
@@ -1915,9 +1878,7 @@ Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
 Theorem omega_valid : forall tr : t_omega, valid_list_hyps (execute_omega tr).
 Proof.
  simple induction tr; unfold valid_list_hyps, valid_hyps; simpl.
- - intros; left; now apply constant_not_nul_valid.
- - intros; left; now apply constant_nul_valid.
- - intros; left; now apply constant_neg_valid.
+ - intros; left; now apply bad_constant_valid.
  - intros; left; now apply contradiction_valid.
  - intros; left; now apply negate_contradict_valid.
  - intros; left; now apply negate_contradict_inv_valid.

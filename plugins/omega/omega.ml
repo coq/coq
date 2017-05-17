@@ -587,10 +587,6 @@ let rec depend relie_on accu = function
       end
   | [] -> relie_on, accu
 
-let solve (new_eq_id,new_eq_var,print_var) system =
-  try let _ = simplify new_eq_id false system in failwith "no contradiction"
-  with UNSOLVABLE -> display_action print_var (snd (depend [] [] (history ())))
-
 let negation (eqs,ineqs) =
   let diseq,_ = List.partition (fun e -> e.kind = DISE) ineqs in
   let normal = function

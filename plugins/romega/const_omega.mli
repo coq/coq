@@ -42,8 +42,7 @@ val coq_p_and : Term.constr lazy_t
 val coq_p_imp : Term.constr lazy_t
 val coq_p_prop : Term.constr lazy_t
 
-val coq_s_constant_not_nul : Term.constr lazy_t
-val coq_s_constant_neg : Term.constr lazy_t
+val coq_s_bad_constant : Term.constr lazy_t
 val coq_s_div_approx : Term.constr lazy_t
 val coq_s_not_exact_divide : Term.constr lazy_t
 val coq_s_exact_divide : Term.constr lazy_t
@@ -52,7 +51,6 @@ val coq_s_state : Term.constr lazy_t
 val coq_s_contradiction : Term.constr lazy_t
 val coq_s_merge_eq : Term.constr lazy_t
 val coq_s_split_ineq : Term.constr lazy_t
-val coq_s_constant_nul : Term.constr lazy_t
 val coq_s_negate_contradict : Term.constr lazy_t
 val coq_s_negate_contradict_inv : Term.constr lazy_t
 
