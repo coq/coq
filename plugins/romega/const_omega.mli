@@ -48,11 +48,8 @@ val coq_s_not_exact_divide : Term.constr lazy_t
 val coq_s_exact_divide : Term.constr lazy_t
 val coq_s_sum : Term.constr lazy_t
 val coq_s_state : Term.constr lazy_t
-val coq_s_contradiction : Term.constr lazy_t
 val coq_s_merge_eq : Term.constr lazy_t
 val coq_s_split_ineq : Term.constr lazy_t
-val coq_s_negate_contradict : Term.constr lazy_t
-val coq_s_negate_contradict_inv : Term.constr lazy_t
 
 val coq_direction : Term.constr lazy_t
 val coq_d_left : Term.constr lazy_t

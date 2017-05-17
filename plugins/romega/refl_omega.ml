@@ -862,19 +862,25 @@ let hyp_idx env_hyp i =
     | _ :: l -> loop (succ count) l
   in loop 0 env_hyp
 
+
+(* We now expand NEGATE_CONTRADICT and CONTRADICTION into
+   a O_SUM followed by a O_BAD_CONSTANT *)
+
+let sum_bad inv i1 i2 =
+  mkApp (Lazy.force coq_s_sum,
+         [| Z.mk Bigint.one; i1;
+            Z.mk (if inv then negone else Bigint.one); i2;
+            mkApp (Lazy.force coq_s_bad_constant, [| mk_nat 0 |])|])
+
 let rec reify_trace env env_hyp = function
   | CONSTANT_NOT_NUL(e,_) :: []
   | CONSTANT_NEG(e,_) :: []
   | CONSTANT_NUL e :: [] ->
      mkApp (Lazy.force coq_s_bad_constant,[| hyp_idx env_hyp e |])
   | NEGATE_CONTRADICT(e1,e2,direct) :: [] ->
-     let c = if direct then coq_s_negate_contradict
-             else coq_s_negate_contradict_inv
-     in
-     mkApp (Lazy.force c, [| hyp_idx env_hyp e1.id; hyp_idx env_hyp e2.id |])
+     sum_bad direct (hyp_idx env_hyp e1.id) (hyp_idx env_hyp e2.id)
   | CONTRADICTION (e1,e2) :: [] ->
-     mkApp (Lazy.force coq_s_contradiction,
-            [| hyp_idx env_hyp e1.id; hyp_idx env_hyp e2.id |])
+     sum_bad false (hyp_idx env_hyp e1.id) (hyp_idx env_hyp e2.id)
   | NOT_EXACT_DIVIDE (e1,k) :: [] ->
      let e2_constant = floor_div e1.constant k in
      let d = e1.constant - e2_constant * k in

@@ -302,16 +302,6 @@ Module IntProperties (I:Int).
   intros; autorewrite with int; now rewrite plus_permute.
  Qed.
 
- Lemma OMEGA13 :
-  forall v l1 l2 x : int,
-  v * -x + l1 + (v * x + l2) = l1 + l2.
- Proof.
- intros; autorewrite with int.
- rewrite plus_permute; f_equal.
- rewrite plus_assoc.
- now rewrite <- mult_plus_distr_l, plus_opp_l, mult_comm, mult_0_l, plus_0_l.
- Qed.
-
  Lemma sum1 : forall a b c d : int, 0 = a -> 0 = b -> 0 = a * c + b * d.
  Proof.
  intros; elim H; elim H0; simpl; auto.
@@ -599,14 +589,6 @@ Module IntProperties (I:Int).
     apply opp_le_compat; auto.
   - apply plus_le_reg_r with (-n).
     now rewrite plus_opp_r.
- Qed.
-
- Lemma OMEGA2 : forall x y, 0 <= x -> 0 <= y -> 0 <= x + y.
- Proof.
- intros.
- replace 0 with (0+0).
- apply plus_le_compat; auto.
- rewrite plus_0_l; auto.
  Qed.
 
  Lemma OMEGA8 : forall x y, 0 <= x -> 0 <= y -> x = - y -> x = 0.
@@ -1288,29 +1270,6 @@ Proof.
  - rewrite <- opp_eq_mult_neg_1. now f_equal.
 Qed.
 
-(** Fusion by cancellation.
-    Particular case of [fusion] where the final result should
-    be a constant. *)
-
-Fixpoint fusion_cancel (t1 t2 : term) : term :=
-  match t1, t2 with
-  | (v1 * Tint x1 + l1)%term, (v2 * Tint x2 + l2)%term =>
-    if eq_term v1 v2 && beq x1 (-x2)
-    then fusion_cancel l1 l2
-    else (t1+t2)%term (* should not happen *)
-  | Tint x1, Tint x2 => Tint (x1+x2)
-  | _, _ => (t1+t2)%term (* should not happen *)
-  end.
-
-Theorem fusion_cancel_stable e t1 t2 :
- interp_term e (t1+t2)%term = interp_term e (fusion_cancel t1 t2).
-Proof.
- revert t2. induction t1; destruct t2; simpl; Simplify; auto.
- simpl in *.
- rewrite <- IHt1_2.
- apply OMEGA13.
-Qed.
-
 (** ** Normalization of a proposition.
 
     The only basic facts left after normalization are
@@ -1456,15 +1415,6 @@ Qed.
    First, the final steps leading to a contradiction:
    - [O_BAD_CONSTANT i] : hypothesis i has a constant body
      and this constant is not compatible with the kind of i.
-   - [O_CONTRADICTION i j] :
-     inequations i and j have a sum which is a negative constant.
-     Shortcut for [(O_SUM 1 i 1 j (O_BAD_CONSTANT 0))].
-   - [O_NEGATE_CONTRADICT i j] :
-     equation i and disequation j (or vice-versa) have the same body.
-     Shortcut for [(O_SUM 1 i (-1) j (O_BAD_CONSTANT 0))].
-   - [O_NEGATE_CONTRADICT_INV i j] :
-     equation i and disequation j (or vice-versa) have opposite bodies.
-     Shortcut for [(O_SUM 1 i 1 j (O_BAD_CONSTANT 0))].
    - [O_NOT_EXACT_DIVIDE i k1 k2 t] :
      equation i has a body equivalent to [k1*t+k2] with [0<k2<k1].
 
@@ -1491,9 +1441,6 @@ Definition idx := nat. (** Index of an hypothesis in the list *)
 
 Inductive t_omega : Set :=
   | O_BAD_CONSTANT : idx -> t_omega
-  | O_CONTRADICTION : idx -> idx -> t_omega
-  | O_NEGATE_CONTRADICT : idx -> idx -> t_omega
-  | O_NEGATE_CONTRADICT_INV : idx -> idx -> t_omega
   | O_NOT_EXACT_DIVIDE : idx -> int -> int -> term -> t_omega
 
   | O_EXACT_DIVIDE : idx -> int -> term -> t_omega -> t_omega
@@ -1522,117 +1469,6 @@ Proof.
  unfold valid_hyps, bad_constant; intros ep e lp H.
  generalize (nth_valid ep e i lp H); Simplify.
  rewrite gt_lt_iff in *. rewrite le_lt_iff. intuition.
-Qed.
-
-(** [O_CONTRADICTION] *)
-
-Definition contradiction (i j : nat) (l : hyps) :=
-  match nth_hyps i l with
-  | LeqTerm (Tint Nul) b1 =>
-      match nth_hyps j l with
-      | LeqTerm (Tint Nul') b2 =>
-          match fusion_cancel b1 b2 with
-          | Tint k => if beq Nul 0 && beq Nul' 0 && bgt 0 k
-                      then absurd
-                      else l
-          | _ => l
-          end
-      | _ => l
-      end
-  | _ => l
-  end.
-
-Theorem contradiction_valid (i j : nat) : valid_hyps (contradiction i j).
-Proof.
- unfold valid_hyps, contradiction; intros ep e l H.
- generalize (nth_valid _ _ i _ H) (nth_valid _ _ j _ H).
- case (nth_hyps i l); trivial. intros t1 t2.
- case t1; trivial. clear t1; intros x1.
- case (nth_hyps j l); trivial. intros t3 t4.
- case t3; trivial. clear t3; intros x3.
- destruct fusion_cancel as [ t0 | | | | | ] eqn:E; trivial.
- change t0 with (interp_term e (Tint t0)).
- rewrite <- E, <- fusion_cancel_stable.
- Simplify.
- intros H1 H2.
- generalize (OMEGA2 _ _ H1 H2).
- rewrite gt_lt_iff in *; rewrite le_lt_iff. intuition.
-Qed.
-
-(** [O_NEGATE_CONTRADICT] *)
-
-Definition negate_contradict (i1 i2 : nat) (h : hyps) :=
-  match nth_hyps i1 h with
-  | EqTerm (Tint Nul) b1 =>
-      match nth_hyps i2 h with
-      | NeqTerm (Tint Nul') b2 =>
-          if beq Nul 0 && beq Nul' 0 && eq_term b1 b2
-          then absurd
-          else h
-      | _ => h
-      end
-  | NeqTerm (Tint Nul) b1 =>
-      match nth_hyps i2 h with
-      | EqTerm (Tint Nul') b2 =>
-          if beq Nul 0 && beq Nul' 0 && eq_term b1 b2
-          then absurd
-          else h
-      | _ => h
-      end
-  | _ => h
-  end.
-
-Theorem negate_contradict_valid :
- forall i j : nat, valid_hyps (negate_contradict i j).
-Proof.
- unfold valid_hyps, negate_contradict; intros i j ep e l H;
- generalize (nth_valid _ _ i _ H) (nth_valid _ _ j _ H);
- case (nth_hyps i l); auto; intros t1 t2; case t1;
- auto; intros z; auto; case (nth_hyps j l);
- auto; intros t3 t4; case t3; auto; intros z';
- auto; simpl; intros; Simplify.
-Qed.
-
-(** [O_NEGATE_CONTRADICT_INV] *)
-
-Definition negate_contradict_inv (i1 i2 : nat) (h : hyps) :=
-  match nth_hyps i1 h with
-  | EqTerm (Tint Nul) b1 =>
-      match nth_hyps i2 h with
-      | NeqTerm (Tint Nul') b2 =>
-          if beq Nul 0 && beq Nul' 0 &&
-             eq_term b1 (scalar_norm b2 (-(1)))
-          then absurd
-          else h
-      | _ => h
-      end
-  | NeqTerm (Tint Nul) b1 =>
-      match nth_hyps i2 h with
-      | EqTerm (Tint Nul') b2 =>
-          if beq Nul 0 && beq Nul' 0 &&
-             eq_term b1 (scalar_norm b2 (-(1)))
-          then absurd
-          else h
-      | _ => h
-      end
-  | _ => h
-  end.
-
-Theorem negate_contradict_inv_valid :
- forall i j : nat, valid_hyps (negate_contradict_inv i j).
-Proof.
- unfold valid_hyps, negate_contradict_inv; intros i j ep e l H;
- generalize (nth_valid _ _ i _ H) (nth_valid _ _ j _ H);
- case (nth_hyps i l); auto; intros t1 t2; case t1;
- auto; intros z; auto; case (nth_hyps j l);
- auto; intros t3 t4; case t3; auto; intros z';
- auto; simpl; intros H1 H2; Simplify.
- - rewrite <- scalar_norm_stable in H1; simpl in *;
-   elim (mult_integral (interp_term e t4) (-(1))); intuition;
-   elim minus_one_neq_zero; auto.
- - elim H1; clear H1;
-   rewrite <- scalar_norm_stable; simpl in *;
-   now rewrite <- H2, mult_0_l.
 Qed.
 
 (** [NOT_EXACT_DIVIDE] *)
@@ -1852,13 +1688,9 @@ Qed.
 
 (** ** Replaying the resolution trace *)
 
-Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
+Fixpoint execute_omega (t : t_omega) (l : hyps) : lhyps :=
   match t with
   | O_BAD_CONSTANT i => singleton (bad_constant i l)
-  | O_CONTRADICTION i j => singleton (contradiction i j l)
-  | O_NEGATE_CONTRADICT i j => singleton (negate_contradict i j l)
-  | O_NEGATE_CONTRADICT_INV i j =>
-      singleton (negate_contradict_inv i j l)
   | O_NOT_EXACT_DIVIDE i k1 k2 body =>
       singleton (not_exact_divide i k1 k2 body l)
   | O_EXACT_DIVIDE n k body cont =>
@@ -1879,9 +1711,6 @@ Theorem omega_valid : forall tr : t_omega, valid_list_hyps (execute_omega tr).
 Proof.
  simple induction tr; unfold valid_list_hyps, valid_hyps; simpl.
  - intros; left; now apply bad_constant_valid.
- - intros; left; now apply contradiction_valid.
- - intros; left; now apply negate_contradict_valid.
- - intros; left; now apply negate_contradict_inv_valid.
  - intros; left; now apply not_exact_divide_valid.
 
  - intros m k body t' Ht' ep e lp H; apply Ht';
