@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs" "-time") -*- *)
+(* -*- coq-prog-args: ("-time") -*- *)
 Definition foo : True.
 Proof.
 Abort. (* Toplevel input, characters 15-21:

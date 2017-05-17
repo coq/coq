@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-R" "." "Fiat" "-top" "BooleanRecognizerMin" "-R" "." "Top") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-R" "." "Fiat" "-top" "BooleanRecognizerMin" "-R" "." "Top") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 2475 lines to 729 lines, then from 746 lines to 658 lines, then from 675 lines to 658 lines *)
 (* coqc version 8.5beta3 (November 2015) compiled on Nov 11 2015 18:23:0 with OCaml 4.01.0
    coqtop version 8.5beta3 (November 2015) *)

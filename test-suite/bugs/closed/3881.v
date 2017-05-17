@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs" "-nois" "-R" "../theories" "Coq") -*- *)
+(* -*- coq-prog-args: ("-nois" "-R" "../theories" "Coq") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 2236 lines to 1877 lines, then from 1652 lines to 160 lines, then from 102 lines to 34 lines *)
 (* coqc version trunk (December 2014) compiled on Dec 23 2014 22:6:43 with OCaml 4.01.0
    coqtop version cagnode15:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (90ed6636dea41486ddf2cc0daead83f9f0788163) *)

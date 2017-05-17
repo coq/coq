@@ -1,6 +1,6 @@
 Unset Strict Universe Declaration.
 Require Import TestSuite.admit.
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-indices-matter") -*- *)
 (* File reduced by coq-bug-finder from 5012 lines to 4659 lines, then from 4220 lines to 501 lines, then from 513 lines to 495 lines, then from 513 lines to 495 lines, then from 412 lines to 79 lines, then from 412 lines to 79 lines. *)
 Set Universe Polymorphism.
 Definition admit {T} : T.

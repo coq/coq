@@ -159,7 +159,9 @@ let pattern_of_constr env sigma t =
       (match snd (Evd.evar_source evk sigma) with
       | Evar_kinds.MatchingVar (b,id) ->
         assert (not b); PMeta (Some id)
-      | Evar_kinds.GoalEvar -> 
+      | Evar_kinds.GoalEvar | Evar_kinds.VarInstance _ ->
+        (* These are the two evar kinds used for existing goals *)
+        (* see Proofview.mark_in_evm *)
 	PEvar (evk,Array.map (pattern_of_constr env) ctxt)
       | _ -> 
 	 PMeta None)

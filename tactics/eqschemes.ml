@@ -105,6 +105,12 @@ let get_coq_eq ctx =
   with Not_found ->
     error "eq not found."
 
+let univ_of_eq env eq =
+  let eq = EConstr.of_constr eq in
+  match kind_of_term (EConstr.Unsafe.to_constr (Retyping.get_type_of env Evd.empty eq)) with
+  | Prod (_,t,_) -> (match kind_of_term t with Sort (Type u) -> u | _ -> assert false)
+  | _ -> assert false
+
 (**********************************************************************)
 (* Check if an inductive type [ind] has the form                      *)
 (*                                                                    *)
@@ -761,7 +767,7 @@ let build_congr env (eq,refl,ctx) ind =
   let ty = RelDecl.get_type (lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity) in
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
-  if Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt) then
+  if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments";
   let b = List.nth constrargs (i + mib.mind_nparams - 1) in
   let varB = fresh env (Id.of_string "B") in
@@ -769,6 +775,7 @@ let build_congr env (eq,refl,ctx) ind =
   let varf = fresh env (Id.of_string "f") in
   let ci = make_case_info (Global.env()) ind RegularStyle in
   let uni, ctx = Universes.extend_context (Universes.new_global_univ ()) ctx in
+  let ctx = (fst ctx, Univ.enforce_leq uni (univ_of_eq env eq) (snd ctx)) in
   let c = 
   my_it_mkLambda_or_LetIn paramsctxt
      (mkNamedLambda varB (mkSort (Type uni))
