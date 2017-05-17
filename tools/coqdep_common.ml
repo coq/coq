@@ -544,13 +544,6 @@ let add_rec_dir_no_import add_file phys_dir log_dir =
 let add_rec_dir_import add_file phys_dir log_dir =
   add_directory true (add_file true) phys_dir log_dir
 
-(** -R semantic but only on immediate capitalized subdirs *)
-
-let add_rec_uppercase_subdirs add_file phys_dir log_dir =
-  process_subdirectories (fun phys_dir f ->
-    add_directory true (add_file true) phys_dir (log_dir@[String.capitalize f]))
-    phys_dir
-
 (** -I semantic: do not go in subdirs. *)
 let add_caml_dir phys_dir =
   add_directory false add_caml_known phys_dir []

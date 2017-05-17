@@ -8,7 +8,7 @@
 
 (* The `Quote' tactic *)
 
-(* The basic idea is to automatize the inversion of interpetation functions
+(* The basic idea is to automatize the inversion of interpretation functions
    in 2-level approach
 
    Examples are given in \texttt{theories/DEMOS/DemoQuote.v}
