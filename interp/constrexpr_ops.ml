@@ -263,12 +263,6 @@ let cases_pattern_expr_loc = function
   | CPatDelimiters (loc,_,_) -> loc
   | CPatCast(loc,_,_) -> loc
 
-let raw_cases_pattern_expr_loc = function
-  | RCPatAlias (loc,_,_) -> loc
-  | RCPatCstr (loc,_,_,_) -> loc
-  | RCPatAtom (loc,_) -> loc
-  | RCPatOr (loc,_) -> loc
-
 let local_binder_loc = function
   | CLocalAssum ((loc,_)::_,_,t)
   | CLocalDef ((loc,_),t,None) -> Loc.merge loc (constr_loc t)

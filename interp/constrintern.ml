@@ -900,6 +900,21 @@ let interp_reference vars r =
 (**********************************************************************)
 (** {5 Cases }                                                        *)
 
+(** Private internalization patterns *)
+type raw_cases_pattern_expr =
+  | RCPatAlias of Loc.t * raw_cases_pattern_expr * Id.t
+  | RCPatCstr  of Loc.t * Globnames.global_reference
+    * raw_cases_pattern_expr list * raw_cases_pattern_expr list
+  (** [RCPatCstr (loc, c, l1, l2)] represents ((@c l1) l2) *)
+  | RCPatAtom  of Loc.t * Id.t option
+  | RCPatOr    of Loc.t * raw_cases_pattern_expr list
+
+let raw_cases_pattern_expr_loc = function
+  | RCPatAlias (loc,_,_) -> loc
+  | RCPatCstr (loc,_,_,_) -> loc
+  | RCPatAtom (loc,_) -> loc
+  | RCPatOr (loc,_) -> loc
+
 (** {6 Elementary bricks } *)
 let apply_scope_env env = function
   | [] -> {env with tmp_scope = None}, []
@@ -1198,8 +1213,8 @@ let rec subst_pat_iterator y t p = match p with
   | RCPatAtom (_,id) ->
     begin match id with Some x when Id.equal x y -> t | _ -> p end
   | RCPatCstr (loc,id,l1,l2) ->
-     RCPatCstr (loc,id,List.map (subst_pat_iterator y t) l1,
-	       List.map (subst_pat_iterator y t) l2)
+    RCPatCstr (loc,id,List.map (subst_pat_iterator y t) l1,
+ 	       List.map (subst_pat_iterator y t) l2)
   | RCPatAlias (l,p,a) -> RCPatAlias (l,subst_pat_iterator y t p,a)
   | RCPatOr (l,pl) -> RCPatOr (l,List.map (subst_pat_iterator y t) pl)
 
@@ -1215,6 +1230,14 @@ let drop_notations_pattern looked_for =
   in
   let test_kind top =
     if top then looked_for else function ConstructRef _ -> () | _ -> raise Not_found
+  in
+  (** [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
+  let rec rcp_of_glob = function
+    | GVar (loc,id) -> RCPatAtom (loc,Some id)
+    | GHole (loc,_,_,_) -> RCPatAtom (loc,None)
+    | GRef (loc,g,_) -> RCPatCstr (loc, g,[],[])
+    | GApp (loc,GRef (_,g,_),l) -> RCPatCstr (loc, g, List.map rcp_of_glob l,[])
+    | _ -> CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr ")
   in
   let rec drop_syndef top scopes re pats =
     let (loc,qid) = qualid_of_reference re in
@@ -1285,8 +1308,9 @@ let drop_notations_pattern looked_for =
         let (argscs1,_) = find_remaining_scopes expl_pl pl g in
         RCPatCstr (loc, g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat false scopes) pl, [])
     | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]),[])
-	when Bigint.is_strictly_pos p ->
-      fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false loc) (Numeral (Bigint.neg p)) scopes)
+      when Bigint.is_strictly_pos p ->
+      let (pat, _df) = Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false loc) (Numeral (Bigint.neg p)) scopes in
+      rcp_of_glob pat
     | CPatNotation (_,"( _ )",([a],[]),[]) ->
       in_pat top scopes a
     | CPatNotation (loc, ntn, fullargs,extrargs) ->
@@ -1299,7 +1323,9 @@ let drop_notations_pattern looked_for =
       in_not top loc scopes (subst,substlist) extrargs c
     | CPatDelimiters (loc, key, e) ->
       in_pat top (None,find_delimiters_scope loc key::snd scopes) e
-    | CPatPrim (loc,p) -> fst (Notation.interp_prim_token_cases_pattern_expr loc (test_kind false) p scopes)
+    | CPatPrim (loc,p) ->
+      let (pat, _df) = Notation.interp_prim_token_cases_pattern_expr loc (test_kind false) p scopes in
+      rcp_of_glob pat
     | CPatAtom (loc, Some id) ->
       begin
 	match drop_syndef top scopes id [] with
@@ -1309,8 +1335,21 @@ let drop_notations_pattern looked_for =
     | CPatAtom (loc,None) -> RCPatAtom (loc,None)
     | CPatOr (loc, pl) ->
       RCPatOr (loc,List.map (in_pat top scopes) pl)
-    | CPatCast _ ->
-      assert false
+    | CPatCast (loc,_,_) ->
+      (* We raise an error if the pattern contains a cast, due to
+         current restrictions on casts in patterns. Cast in patterns
+         are supportted only in local binders and only at top
+         level. In fact, they are currently eliminated by the
+         parser. The only reason why they are in the
+         [cases_pattern_expr] type is that the parser needs to factor
+         the "(c : t)" notation with user defined notations (such as
+         the pair). In the long term, we will try to support such
+         casts everywhere, and use them to print the domains of
+         lambdas in the encoding of match in constr. This check is
+         here and not in the parser because it would require
+         duplicating the levels of the [pattern] rule. *)
+      CErrors.user_err ~loc ~hdr:"drop_notations_pattern"
+                            (Pp.strbrk "Casts are not supported in this pattern.")
   and in_pat_sc scopes x = in_pat false (x,snd scopes)
   and in_not top loc scopes (subst,substlist as fullsubst) args = function
     | NVar id ->
@@ -1392,40 +1431,7 @@ let rec intern_pat genv aliases pat =
       check_or_pat_variables loc ids (List.tl idsl);
       (ids,List.flatten pl')
 
-(* [check_no_patcast p] raises an error if [p] contains a cast. This code is a
-   bit ad-hoc, and is due to current restrictions on casts in patterns. We
-   support them only in local binders and only at top level. In fact, they are
-   currently eliminated by the parser. The only reason why they are in the
-   [cases_pattern_expr] type is that the parser needs to factor the "(c : t)"
-   notation with user defined notations (such as the pair). In the long term, we
-   will try to support such casts everywhere, and use them to print the domains
-   of lambdas in the encoding of match in constr. We put this check here and not
-   in the parser because it would require to duplicate the levels of the
-   [pattern] rule. *)
-let rec check_no_patcast = function
-  | CPatCast (loc,_,_) ->
-     CErrors.user_err ~loc ~hdr:"check_no_patcast"
-                           (Pp.strbrk "Casts are not supported here.")
-  | CPatDelimiters(_,_,p)
-  | CPatAlias(_,p,_) -> check_no_patcast p
-  | CPatCstr(_,_,opl,pl) ->
-     Option.iter (List.iter check_no_patcast) opl;
-     List.iter check_no_patcast pl
-  | CPatOr(_,pl) ->
-     List.iter check_no_patcast pl
-  | CPatNotation(_,_,subst,pl) ->
-     check_no_patcast_subst subst;
-     List.iter check_no_patcast pl
-  | CPatRecord(_,prl) ->
-     List.iter (fun (_,p) -> check_no_patcast p) prl
-  | CPatAtom _ | CPatPrim _ -> ()
-
-and check_no_patcast_subst (pl,pll) =
-  List.iter check_no_patcast pl;
-  List.iter (List.iter check_no_patcast) pll
-
 let intern_cases_pattern genv scopes aliases pat =
-  check_no_patcast pat;
   intern_pat genv aliases
     (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) scopes pat)
 
@@ -1434,7 +1440,6 @@ let _ =
     fun scopes p -> intern_cases_pattern (Global.env ()) scopes empty_alias p
 
 let intern_ind_pattern genv scopes pat =
-  check_no_patcast pat;
   let no_not =
     try
       drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) scopes pat
