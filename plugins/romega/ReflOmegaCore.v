@@ -1175,7 +1175,11 @@ Proof.
  symmetry. apply plus_0_r.
 Qed.
 
-(** Adding a constant *)
+(** Adding a constant
+
+    Instead of using [scalar_norm_add t 1 k], the following
+    definition spares some computations.
+ *)
 
 Fixpoint add_norm (t : term) (k : int) : term :=
   match t with
@@ -1434,7 +1438,6 @@ Qed.
      with one these bodies.
    - [O_SPLIT_INEQ i cont1 cont2] :
      disequation i is split into a disjonction of inequations.
-   - [O_STATE k i j cont] : now shortcut for [O_SUM 1 i k j cont].
 *)
 
 Definition idx := nat. (** Index of an hypothesis in the list *)
@@ -1447,8 +1450,7 @@ Inductive t_omega : Set :=
   | O_DIV_APPROX : idx -> int -> int -> term -> t_omega -> t_omega
   | O_SUM : int -> idx -> int -> idx -> t_omega -> t_omega
   | O_MERGE_EQ : idx -> idx -> t_omega -> t_omega
-  | O_SPLIT_INEQ : idx -> t_omega -> t_omega -> t_omega
-  | O_STATE : int -> idx -> idx -> t_omega -> t_omega.
+  | O_SPLIT_INEQ : idx -> t_omega -> t_omega -> t_omega.
 
 (** ** Actual resolution steps of an omega normalized goal *)
 
@@ -1662,30 +1664,6 @@ Proof.
     symmetry ; trivial.
 Qed.
 
-
-(** [O_STATE] *)
-
-Definition state (m : int) (prop1 prop2 : proposition) :=
-  match prop1 with
-  | EqTerm (Tint Null) b1 =>
-      match prop2 with
-      | EqTerm (Tint Null') b2 =>
-          if beq Null 0 && beq Null' 0
-          then EqTerm (Tint 0) (fusion b1 b2 1 m)
-          else TrueTerm
-      | _ => TrueTerm
-      end
-  | _ => TrueTerm
-  end.
-
-Theorem state_valid : forall (m : int), valid2 (state m).
-Proof.
- unfold valid2; intros m ep e p1 p2.
- unfold state; Simplify; simpl; auto.
- rewrite <- fusion_stable. simpl in *. intros H H'.
- rewrite <- H, <- H'. now rewrite !mult_0_l, plus_0_l.
-Qed.
-
 (** ** Replaying the resolution trace *)
 
 Fixpoint execute_omega (t : t_omega) (l : hyps) : lhyps :=
@@ -1703,8 +1681,6 @@ Fixpoint execute_omega (t : t_omega) (l : hyps) : lhyps :=
       execute_omega cont (apply_oper_2 i1 i2 merge_eq l)
   | O_SPLIT_INEQ i cont1 cont2 =>
       split_ineq i (execute_omega cont1) (execute_omega cont2) l
-  | O_STATE m i1 i2 cont =>
-      execute_omega cont (apply_oper_2 i1 i2 (state m) l)
   end.
 
 Theorem omega_valid : forall tr : t_omega, valid_list_hyps (execute_omega tr).
@@ -1712,7 +1688,6 @@ Proof.
  simple induction tr; unfold valid_list_hyps, valid_hyps; simpl.
  - intros; left; now apply bad_constant_valid.
  - intros; left; now apply not_exact_divide_valid.
-
  - intros m k body t' Ht' ep e lp H; apply Ht';
     apply
      (apply_oper_1_valid m (exact_divide k body)
@@ -1733,8 +1708,6 @@ Proof.
     apply
      (split_ineq_valid i (execute_omega k1) (execute_omega k2) H1 H2 ep e
         lp H).
- - intros m i1 i2 t' Ht' ep e lp H; apply Ht';
-    apply (apply_oper_2_valid i1 i2 (state m) (state_valid m) ep e lp H).
 Qed.
 
 

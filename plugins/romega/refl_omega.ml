@@ -214,17 +214,15 @@ let new_omega_var, rst_omega_var =
 
 let display_omega_var i = Printf.sprintf "OV%d" i
 
-(* Register a new internal variable corresponding to some oformula
-   (normally an [Oatom]). *)
+(* Register an internal variable corresponding to some oformula
+   (normally an [Oatom]). This omega variable could be a new one,
+   or one already created during the omega resolution (cf. STATE). *)
 
-let add_omega_var env t =
-  let v = new_omega_var () in
-  env.om_vars <- (v,t) :: env.om_vars
-
-(* Ajout forcé d'un lien entre un terme et une variable  Cas où la
-   variable est créée par Omega et où il faut la lier après coup à un atome
-   réifié introduit de force *)
-let force_omega_var env t v =
+let add_omega_var env t ov =
+  let v = match ov with
+    | None -> new_omega_var ()
+    | Some v -> v
+  in
   env.om_vars <- (v,t) :: env.om_vars
 
 (* Récupère le terme associé à une variable omega *)
@@ -238,12 +236,12 @@ let unintern_omega env v =
    l'environnement initial contenant tout. Il faudra le réduire après
    calcul des variables utiles. *)
 
-let add_reified_atom sync t env =
+let add_reified_atom opt_omega_var t env =
   try List.index0 Term.eq_constr t env.terms
   with Not_found ->
     let i = List.length env.terms in
     (* synchronize atom indexes and omega variables *)
-    let () = if sync then add_omega_var env (Oatom i) in
+    add_omega_var env (Oatom i) opt_omega_var;
     env.terms <- env.terms @ [t]; i
 
 let get_reified_atom env =
@@ -514,11 +512,11 @@ let rec oformula_of_constr env t =
         | None ->
            match Z.get_scalar t2 with
            | Some n -> Omult (oformula_of_constr env t1, Oint n)
-           | None -> Oatom (add_reified_atom true t env))
+           | None -> Oatom (add_reified_atom None t env))
     | Topp t -> Oopp(oformula_of_constr env t)
     | Tsucc t -> Oplus(oformula_of_constr env t, Oint one)
     | Tnum n -> Oint n
-    | Tother -> Oatom (add_reified_atom true t env)
+    | Tother -> Oatom (add_reified_atom None t env)
 
 and binop env c t1 t2 =
   let t1' = oformula_of_constr env t1 in
@@ -713,14 +711,12 @@ let add_stated_equations env tree =
     (* Notez que si l'ordre de création des variables n'est pas respecté,
      * ca va planter *)
     let coq_v = coq_of_formula env v_def in
-    let v = add_reified_atom false coq_v env in
+    let v = add_reified_atom (Some st.st_var) coq_v env in
     (* Le terme qu'il va falloir introduire *)
     let term_to_generalize = app coq_refl_equal [|Lazy.force Z.typ; coq_v|] in
     (* sa représentation sous forme d'équation mais non réifié car on n'a pas
      * l'environnement pour le faire correctement *)
     let term_to_reify = (v_def,Oatom v) in
-    (* enregistre le lien entre la variable omega et la variable Coq *)
-    force_omega_var env (Oatom v) st.st_var;
     (v, term_to_generalize,term_to_reify,st.st_def.id) in
  List.map add_env stated_equations
 
@@ -909,12 +905,12 @@ let rec reify_trace env env_hyp = function
             [| Z.mk k1; hyp_idx env_hyp e1.id;
                Z.mk k2; hyp_idx env_hyp e2.id;
                reify_trace env (CCEqua e3 :: env_hyp) l |])
-  | STATE {st_new_eq=new_eq; st_def =def;
-           st_orig=orig; st_coef=m;
-           st_var=sigma } :: l ->
-     mkApp (Lazy.force coq_s_state,
-            [| Z.mk m; hyp_idx env_hyp orig.id; hyp_idx env_hyp def.id;
-               reify_trace env (CCEqua new_eq.id :: env_hyp) l |])
+  | STATE {st_new_eq; st_def; st_orig; st_coef } :: l ->
+     (* we now produce a [O_SUM] here *)
+     mkApp (Lazy.force coq_s_sum,
+            [| Z.mk Bigint.one; hyp_idx env_hyp st_orig.id;
+               Z.mk st_coef; hyp_idx env_hyp st_def.id;
+               reify_trace env (CCEqua st_new_eq.id :: env_hyp) l |])
   | HYP _ :: l -> reify_trace env env_hyp l
   | SPLIT_INEQ(e,(e1,l1),(e2,l2)) :: _ ->
      let r1 = reify_trace env (CCEqua e1 :: env_hyp) l1 in

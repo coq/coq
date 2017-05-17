@@ -106,7 +106,6 @@ let coq_s_div_approx = lazy (constant  "O_DIV_APPROX")
 let coq_s_not_exact_divide = lazy (constant  "O_NOT_EXACT_DIVIDE")
 let coq_s_exact_divide = lazy (constant  "O_EXACT_DIVIDE")
 let coq_s_sum = lazy (constant  "O_SUM")
-let coq_s_state = lazy (constant  "O_STATE")
 let coq_s_merge_eq = lazy (constant  "O_MERGE_EQ")
 let coq_s_split_ineq =lazy (constant  "O_SPLIT_INEQ")
 
