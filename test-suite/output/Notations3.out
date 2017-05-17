@@ -98,3 +98,7 @@ fun n : nat => foo4 n (fun _ y : nat => ETA z : nat, (fun _ : nat => y = 0))
      : nat -> Prop
 tele (t : Type) '(y, z) (x : t0) := tt
      : forall t : Type, nat * nat -> t -> fpack
+fun x : ?A => x === x
+     : forall x : ?A, x = x
+where
+?A : [x : ?A |- Type] (x cannot be used)
