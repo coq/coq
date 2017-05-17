@@ -1868,3 +1868,8 @@ Definition transport {A} (P : A->Type) {x y : A} (p : x=y) (u : P x) : P y :=
 Check match eq_refl 0 in _=O return O=O with eq_refl => eq_refl end.
 
 Check match niln in listn O return O=O with niln => eq_refl end.
+
+(* A test about nested "as" clauses *)
+(* (was failing up to May 2017) *)
+
+Check fun x => match x with (y,z) as t as w => (y+z,t) = (0,w) end.

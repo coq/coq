@@ -432,31 +432,6 @@ let intern_assumption intern lvar env nal bk ty =
      let env, b = intern_generalized_binder intern_type lvar env (List.hd nal) b b' t ty in
      env, b
 
-let rec free_vars_of_pat il =
-  function
-  | CPatCstr (loc, c, l1, l2) ->
-      let il = List.fold_left free_vars_of_pat il (Option.default [] l1) in
-      List.fold_left free_vars_of_pat il l2
-  | CPatAtom (loc, ro) ->
-      begin match ro with
-      | Some (Ident (loc, i)) -> (loc, i) :: il
-      | Some _ | None -> il
-      end
-  | CPatNotation (loc, n, l1, l2) ->
-      let il = List.fold_left free_vars_of_pat il (fst l1) in
-      List.fold_left (List.fold_left free_vars_of_pat) il (snd l1)
-  | _ -> anomaly (str "free_vars_of_pat")
-
-let intern_local_pattern intern lvar env p =
-  List.fold_left
-    (fun env (loc, i) ->
-       let bk = Default Implicit in
-       let ty = CHole (loc, None, Misctypes.IntroAnonymous, None) in
-       let n = Name i in
-       let env, _ = intern_assumption intern lvar env [(loc, n)] bk ty in
-       env)
-    env (free_vars_of_pat [] p)
-
 type binder_data =
   | BDRawDef of (Loc.t * glob_binder)
   | BDPattern of
@@ -490,13 +465,15 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
         | Some ty -> ty
         | None -> CHole(loc,None,Misctypes.IntroAnonymous,None)
       in
-      let env = intern_local_pattern intern lvar env p in
-      let cp =
+      let il,cp =
         match !intern_cases_pattern_fwd (None,env.scopes) p with
-        | (_, [(_, cp)]) -> cp
+        | (il, [(subst,cp)]) ->
+           if not (Id.Map.equal Id.equal subst Id.Map.empty) then
+             user_err_loc (loc,"",str "Unsupported nested \"as\" clause.");
+           il,cp
         | _ -> assert false
       in
-      let il = List.map snd (free_vars_of_pat [] p) in
+      let env = {env with ids = List.fold_right Id.Set.add il env.ids} in
       (env, BDPattern(loc,(cp,il),lvar,env,tyc) :: bl)
 
 let intern_generalization intern env lvar loc bk ak c =
@@ -947,17 +924,6 @@ let find_remaining_scopes pl1 pl2 ref =
   in ((try List.firstn len_pl1 allscs with Failure _ -> simple_adjust_scopes len_pl1 allscs),
       simple_adjust_scopes len_pl2 (aux (impl_list,scope_list)))
 
-let merge_subst s1 s2 = Id.Map.fold Id.Map.add s1 s2
-
-let product_of_cases_patterns ids idspl =
-  List.fold_right (fun (ids,pl) (ids',ptaill) ->
-    (ids @ ids',
-     (* Cartesian prod of the or-pats for the nth arg and the tail args *)
-     List.flatten (
-       List.map (fun (subst,p) ->
-	 List.map (fun (subst',ptail) -> (merge_subst subst subst',p::ptail)) ptaill) pl)))
-    idspl (ids,[Id.Map.empty,[]])
-
 (* @return the first variable that occurs twice in a pattern
 
 naive n^2 algo *)
@@ -1212,6 +1178,17 @@ let alias_of als = match als.alias_ids with
 
 *)
 
+let merge_subst s1 s2 = Id.Map.fold Id.Map.add s1 s2
+
+let product_of_cases_patterns aliases idspl =
+  List.fold_right (fun (ids,pl) (ids',ptaill) ->
+    (ids @ ids',
+     (* Cartesian prod of the or-pats for the nth arg and the tail args *)
+     List.flatten (
+       List.map (fun (subst,p) ->
+	 List.map (fun (subst',ptail) -> (merge_subst subst subst',p::ptail)) ptaill) pl)))
+    idspl (aliases.alias_ids,[aliases.alias_map,[]])
+
 let rec subst_pat_iterator y t p = match p with
   | RCPatAtom (_,id) ->
     begin match id with Some x when Id.equal x y -> t | _ -> p end
@@ -1376,7 +1353,7 @@ let drop_notations_pattern looked_for =
 let rec intern_pat genv aliases pat =
   let intern_cstr_with_all_args loc c with_letin idslpl1 pl2 =
     let idslpl2 = List.map (intern_pat genv empty_alias) pl2 in
-    let (ids',pll) = product_of_cases_patterns aliases.alias_ids (idslpl1@idslpl2) in
+    let (ids',pll) = product_of_cases_patterns aliases (idslpl1@idslpl2) in
     let pl' = List.map (fun (asubst,pl) ->
       (asubst, PatCstr (loc,c,chop_params_pattern loc (fst c) pl with_letin,alias_of aliases))) pll in
     ids',pl' in
@@ -1466,7 +1443,7 @@ let intern_ind_pattern genv scopes pat =
       let idslpl1 = List.rev_map (intern_pat genv empty_alias) expl_pl in
       let idslpl2 = List.map (intern_pat genv empty_alias) pl2 in
       (with_letin,
-       match product_of_cases_patterns [] (List.rev_append idslpl1 idslpl2) with
+       match product_of_cases_patterns empty_alias (List.rev_append idslpl1 idslpl2) with
        | _,[_,pl] -> (c,chop_params_pattern loc c pl with_letin)
        | _ -> error_bad_inductive_type loc)
     | x -> error_bad_inductive_type (raw_cases_pattern_expr_loc x)
@@ -1796,7 +1773,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
   and intern_multiple_pattern env n (loc,pl) =
     let idsl_pll = List.map (intern_cases_pattern globalenv (None,env.scopes) empty_alias) pl in
     check_number_of_pattern loc n pl;
-    product_of_cases_patterns [] idsl_pll
+    product_of_cases_patterns empty_alias idsl_pll
 
   (* Expands a disjunction of multiple pattern *)
   and intern_disjunctive_multiple_pattern env loc n mpl =
