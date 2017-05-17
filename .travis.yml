@@ -65,7 +65,7 @@ matrix:
         apt:
           sources:
           - avsm
-          packages:
+          packages: &extra-packages
           - opam
           - aspcud
           - libgtk2.0-dev
@@ -90,21 +90,35 @@ matrix:
         apt:
           sources:
           - avsm
-          packages:
+          packages: *extra-packages
+    - env:
+      - TEST_TARGET="coqocaml"
+      - EXTRA_CONF="-coqide opt -warn-error"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      # dummy target
+      - BUILD_TARGET="clean"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages: &coqide-packages
           - opam
           - aspcud
           - libgtk2.0-dev
           - libgtksourceview2.0-dev
-          - texlive-latex-base
-          - texlive-latex-recommended
-          - texlive-latex-extra
-          - texlive-math-extra
-          - texlive-fonts-recommended
-          - texlive-fonts-extra
-          - latex-xcolor
-          - ghostscript
-          - transfig
-          - imagemagick
+    - env:
+      - TEST_TARGET="coqocaml"
+      - COMPILER="4.04.1"
+      - CAMLP5_VER="6.17"
+      - EXTRA_CONF="-coqide opt -warn-error"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      # dummy target
+      - BUILD_TARGET="clean"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages: *coqide-packages
 
 install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
@@ -115,6 +129,7 @@ install:
 
 script:
 
+- set -e
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
 - ./configure -local -usecamlp5 -native-compiler yes ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'
@@ -126,6 +141,7 @@ script:
 - echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
 - ${TW} make -j ${NJOBS} ${TEST_TARGET}
 - echo -en 'travis_fold:end:coq.test\\r'
+- set +e
 
 # Testing Gitter webhook
 notifications:
