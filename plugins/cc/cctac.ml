@@ -397,33 +397,18 @@ let convert_to_hyp_tac c1 t1 c2 t2 p =
        simplest_elim false_t]
   end }
 
-let discriminate_tac (cstr,u as cstru) p =
+(* Essentially [assert (Heq : lhs = rhs) by proof_tac p; discriminate Heq] *)
+let discriminate_tac cstru p =
   Proofview.Goal.enter { enter = begin fun gl ->
-    let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
+    let lhs=constr_of_term p.p_lhs and rhs=constr_of_term p.p_rhs in
     let env = Proofview.Goal.env gl in
-    let concl = Proofview.Goal.concl gl in
-    let xid = Tacmach.New.pf_get_new_id (Id.of_string "X") gl in
-    let identity = Universes.constr_of_global (Lazy.force _I) in
-    let identity = EConstr.of_constr identity in
-    let trivial = Universes.constr_of_global (Lazy.force _True) in
-    let trivial = EConstr.of_constr trivial in
     let evm = Tacmach.New.project gl in
-    let evm, intype = refresh_type env evm (Tacmach.New.pf_unsafe_type_of gl t1) in
-    let evm, outtype = Evd.new_sort_variable Evd.univ_flexible evm in
-    let outtype = mkSort outtype in
-    let pred = mkLambda(Name xid,outtype,mkRel 1) in
+    let evm, intype = refresh_type env evm (Tacmach.New.pf_unsafe_type_of gl lhs) in
     let hid = Tacmach.New.pf_get_new_id (Id.of_string "Heq") gl in
-    let proj = build_projection intype cstru trivial concl gl in
-    let injt = app_global _f_equal
-			[|intype;outtype;proj;t1;t2;mkVar hid|] in
-    let endt k =
-      injt (fun injt ->
-            app_global _eq_rect
-		       [|outtype;trivial;pred;identity;concl;injt|] k) in
-    let neweq = app_global _eq [|intype;t1;t2|] in
+    let neweq=app_global _eq [|intype;lhs;rhs|] in
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evm)
 			  (Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
-      [proof_tac p; endt refine_exact_check])
+      [proof_tac p; Equality.discrHyp hid])
   end }
 
 (* wrap everything *)
