@@ -174,7 +174,9 @@ val shortest_qualid_of_tactic : ltac_constant -> qualid
 val extended_locate : qualid -> extended_global_reference (*= locate_extended *)
 val absolute_reference : full_path -> global_reference (** = global_of_path *)
 
-(** Generic name handling *)
+(** {5 Generic name handling} *)
+
+(** NOT FOR PUBLIC USE YET. Plugin writers, please do not rely on this API. *)
 
 module type UserName = sig
   type t
