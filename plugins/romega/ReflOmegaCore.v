@@ -167,12 +167,6 @@ Module IntProperties (I:Int).
  Lemma plus_0_r : forall x, x+0 = x.
  Proof. intros; rewrite plus_comm; apply plus_0_l. Qed.
 
- Lemma plus_0_r_reverse : forall x, x = x+0.
- Proof. intros; symmetry; apply plus_0_r. Qed.
-
- Lemma plus_assoc_reverse : forall x y z, x+y+z = x+(y+z).
- Proof. intros; symmetry; apply plus_assoc. Qed.
-
  Lemma plus_permute : forall x y z, x+(y+z) = y+(x+z).
  Proof. intros; do 2 rewrite plus_assoc; f_equal; apply plus_comm. Qed.
 
@@ -184,9 +178,6 @@ Module IntProperties (I:Int).
  Qed.
 
  (** More facts about [mult] *)
-
- Lemma mult_assoc_reverse : forall x y z, x*y*z = x*(y*z).
- Proof. intros; symmetry; apply mult_assoc. Qed.
 
  Lemma mult_plus_distr_l : forall x y z, x*(y+z)=x*y+x*z.
  Proof.
@@ -258,21 +249,12 @@ Module IntProperties (I:Int).
   now rewrite opp_def, <-mult_plus_distr_r, opp_def, mult_0_l.
  Qed.
 
- Lemma egal_left : forall n m, n=m -> n+-m = 0.
- Proof. intros; subst; apply opp_def. Qed.
-
- Lemma egal_left_iff n m : n = m <-> 0 = n + - m.
+ Lemma egal_left n m : 0 = n+-m <-> n = m.
  Proof.
-  split. intros. symmetry. now apply egal_left.
-  intros. apply plus_reg_l with (-m).
-  rewrite plus_comm, <- H. symmetry. apply plus_opp_l.
- Qed.
-
- Lemma ne_left_2 : forall x y : int, x<>y -> 0<>(x + - y).
- Proof.
- intros; contradict H.
- apply (plus_reg_l (-y)).
- now rewrite plus_opp_l, plus_comm, H.
+  split; intros.
+  - apply plus_reg_l with (-m).
+    rewrite plus_comm, <- H. symmetry. apply plus_opp_l.
+  - symmetry. subst; apply opp_def.
  Qed.
 
  (** Specialized distributivities *)
@@ -280,32 +262,30 @@ Module IntProperties (I:Int).
  Hint Rewrite mult_plus_distr_l mult_plus_distr_r mult_assoc : int.
  Hint Rewrite <- plus_assoc : int.
 
- Lemma OMEGA10 :
-  forall v c1 c2 l1 l2 k1 k2 : int,
-  (v * c1 + l1) * k1 + (v * c2 + l2) * k2 =
-  v * (c1 * k1 + c2 * k2) + (l1 * k1 + l2 * k2).
+ Hint Rewrite plus_0_l plus_0_r mult_0_l mult_0_r mult_1_l mult_1_r : int.
+
+ Lemma OMEGA10 v c1 c2 l1 l2 k1 k2 :
+  v * (c1 * k1 + c2 * k2) + (l1 * k1 + l2 * k2) =
+  (v * c1 + l1) * k1 + (v * c2 + l2) * k2.
  Proof.
-  intros; autorewrite with int; f_equal; now rewrite plus_permute.
+  autorewrite with int; f_equal; now rewrite plus_permute.
  Qed.
 
- Lemma OMEGA11 :
-  forall v1 c1 l1 l2 k1 : int,
-  (v1 * c1 + l1) * k1 + l2 = v1 * (c1 * k1) + (l1 * k1 + l2).
+ Lemma OMEGA11 v1 c1 l1 l2 k1 :
+  v1 * (c1 * k1) + (l1 * k1 + l2) = (v1 * c1 + l1) * k1 + l2.
  Proof.
-  intros; now autorewrite with int.
+  now autorewrite with int.
  Qed.
 
- Lemma OMEGA12 :
-  forall v2 c2 l1 l2 k2 : int,
-  l1 + (v2 * c2 + l2) * k2 = v2 * (c2 * k2) + (l1 + l2 * k2).
+ Lemma OMEGA12 v2 c2 l1 l2 k2 :
+   v2 * (c2 * k2) + (l1 + l2 * k2) = l1 + (v2 * c2 + l2) * k2.
  Proof.
-  intros; autorewrite with int; now rewrite plus_permute.
+  autorewrite with int; now rewrite plus_permute.
  Qed.
 
- Lemma sum1 : forall a b c d : int, 0 = a -> 0 = b -> 0 = a * c + b * d.
+ Lemma sum1 a b c d : 0 = a -> 0 = b -> 0 = a * c + b * d.
  Proof.
- intros; elim H; elim H0; simpl; auto.
- now rewrite mult_0_l, mult_0_l, plus_0_l.
+ intros; subst. now autorewrite with int.
  Qed.
 
 
@@ -376,12 +356,14 @@ Module IntProperties (I:Int).
 
  Definition beq i j := match compare i j with Eq => true | _ => false end.
 
- Lemma beq_iff i j : beq i j = true <-> i=j.
+ Infix "=?" := beq : Int_scope.
+
+ Lemma beq_iff i j : (i =? j) = true <-> i=j.
  Proof.
  unfold beq. rewrite <- (compare_Eq i j). now destruct compare.
  Qed.
 
- Lemma beq_reflect i j : reflect (i=j) (beq i j).
+ Lemma beq_reflect i j : reflect (i=j) (i =? j).
  Proof.
  apply iff_reflect. symmetry. apply beq_iff.
  Qed.
@@ -391,16 +373,18 @@ Module IntProperties (I:Int).
   intros n m; generalize (beq_iff n m); destruct beq; [left|right]; intuition.
  Qed.
 
- Definition bgt i j := match compare i j with Gt => true | _ => false end.
+ Definition blt i j := match compare i j with Lt => true | _ => false end.
 
- Lemma bgt_iff i j : bgt i j = true <-> i>j.
+ Infix "<?" := blt : Int_scope.
+
+ Lemma blt_iff i j : (i <? j) = true <-> i<j.
  Proof.
- unfold bgt. rewrite <- (compare_Gt i j). now destruct compare.
+ unfold blt. rewrite <- (compare_Lt i j). now destruct compare.
  Qed.
 
- Lemma bgt_reflect i j : reflect (i>j) (bgt i j).
+ Lemma blt_reflect i j : reflect (i<j) (i <? j).
  Proof.
- apply iff_reflect. symmetry. apply bgt_iff.
+ apply iff_reflect. symmetry. apply blt_iff.
  Qed.
 
  Lemma le_is_lt_or_eq : forall n m, n<=m -> { n<m } + { n=m }.
@@ -432,20 +416,14 @@ Module IntProperties (I:Int).
 
  (** Order and operations *)
 
- Lemma le_0_neg : forall n, 0 <= n <-> -n <= 0.
+ Lemma le_0_neg n : n <= 0 <-> 0 <= -n.
  Proof.
- intros.
  rewrite <- (mult_0_l (-(1))) at 2.
  rewrite <- opp_eq_mult_neg_1.
  split; intros.
- - apply opp_le_compat; auto.
+ - now apply opp_le_compat.
  - rewrite <-(opp_involutive 0), <-(opp_involutive n).
-   apply opp_le_compat; auto.
- Qed.
-
- Lemma le_0_neg' : forall n, n <= 0 <-> 0 <= -n.
- Proof.
- intros; rewrite le_0_neg, opp_involutive; intuition.
+   now apply opp_le_compat.
  Qed.
 
  Lemma plus_le_reg_r : forall n m p, n + p <= m + p -> n <= m.
@@ -487,20 +465,14 @@ Module IntProperties (I:Int).
  apply opp_le_compat; auto.
  Qed.
 
- Lemma lt_0_neg : forall n, 0 < n <-> -n < 0.
+ Lemma lt_0_neg n : n < 0 <-> 0 < -n.
  Proof.
- intros.
  rewrite <- (mult_0_l (-(1))) at 2.
  rewrite <- opp_eq_mult_neg_1.
  split; intros.
- - apply opp_lt_compat; auto.
+ - now apply opp_lt_compat.
  - rewrite <-(opp_involutive 0), <-(opp_involutive n).
-   apply opp_lt_compat; auto.
- Qed.
-
- Lemma lt_0_neg' : forall n, n < 0 <-> 0 < -n.
- Proof.
- intros; rewrite lt_0_neg, opp_involutive; intuition.
+   now apply opp_lt_compat.
  Qed.
 
  Lemma mult_lt_0_compat : forall n m, 0 < n -> 0 < m -> 0 < n*m.
@@ -517,7 +489,7 @@ Module IntProperties (I:Int).
  - generalize (mult_lt_0_compat _ _ Hn Hm).
    rewrite H.
    exact (lt_irrefl 0).
- - rewrite lt_0_neg' in Hm.
+ - rewrite lt_0_neg in Hm.
    generalize (mult_lt_0_compat _ _ Hn Hm).
    rewrite <- opp_mult_distr_r, opp_eq_mult_neg_1, H, mult_0_l.
    exact (lt_irrefl 0).
@@ -530,7 +502,7 @@ Module IntProperties (I:Int).
  - right; apply (mult_integral_r n m); trivial.
  - now left.
  - right; apply (mult_integral_r (-n) m).
-   + now apply lt_0_neg'.
+   + now apply lt_0_neg.
    + rewrite mult_comm, <- opp_mult_distr_r, mult_comm, H.
      now rewrite opp_eq_mult_neg_1, mult_0_l.
  Qed.
@@ -556,28 +528,10 @@ Module IntProperties (I:Int).
    now apply le_trans with k.
  Qed.
 
- Lemma sum5 :
- forall a b c d : int, c <> 0 -> 0 <> a -> 0 = b -> 0 <> a * c + b * d.
+ Lemma sum5 a b c d : 0 <> c -> 0 <> a -> 0 = b -> 0 <> a * c + b * d.
  Proof.
- intros.
- subst b; rewrite mult_0_l, plus_0_r.
- contradict H.
- symmetry in H; destruct (mult_integral _ _ H); congruence.
- Qed.
-
- Lemma one_neq_zero : 1 <> 0.
- Proof.
- red; intro.
- symmetry in H.
- apply (lt_not_eq 0 1); auto.
- apply lt_0_1.
- Qed.
-
- Lemma minus_one_neq_zero : -(1) <> 0.
- Proof.
- apply lt_not_eq.
- rewrite <- lt_0_neg.
- apply lt_0_1.
+ intros Hc Ha <-. autorewrite with int. contradict Hc.
+ symmetry in Hc. destruct (mult_integral _ _ Hc); congruence.
  Qed.
 
  Lemma le_left n m : n <= m <-> 0 <= m + - n.
@@ -591,7 +545,7 @@ Module IntProperties (I:Int).
     now rewrite plus_opp_r.
  Qed.
 
- Lemma OMEGA8 : forall x y, 0 <= x -> 0 <= y -> x = - y -> x = 0.
+ Lemma OMEGA8 x y : 0 <= x -> 0 <= y -> x = - y -> x = 0.
  Proof.
  intros.
  assert (y=-x).
@@ -605,17 +559,15 @@ Module IntProperties (I:Int).
  elim (lt_not_eq _ _ H1); auto.
  Qed.
 
- Lemma sum2 :
- forall a b c d : int, 0 <= d -> 0 = a -> 0 <= b -> 0 <= a * c + b * d.
+ Lemma sum2 a b c d :
+   0 <= d -> 0 = a -> 0 <= b -> 0 <= a * c + b * d.
  Proof.
- intros.
- subst a; rewrite mult_0_l, plus_0_l.
+ intros Hd <- Hb. autorewrite with int.
  rewrite <- (mult_0_l 0).
  apply mult_le_compat; auto; apply le_refl.
  Qed.
 
- Lemma sum3 :
- forall a b c d : int,
+ Lemma sum3 a b c d :
   0 <= c -> 0 <= d -> 0 <= a -> 0 <= b -> 0 <= a * c + b * d.
  Proof.
  intros.
@@ -627,56 +579,39 @@ Module IntProperties (I:Int).
  apply mult_le_compat; auto; apply le_refl.
  Qed.
 
- Lemma sum4 : forall k : int, k>0 -> 0 <= k.
- Proof.
- intros k; rewrite gt_lt_iff; apply lt_le_weak.
- Qed.
-
  (** Lemmas specific to integers (they use [le_lt_int]) *)
 
- Lemma lt_left : forall n m, n < m -> 0 <= m + -(1) + - n.
+ Lemma lt_left n m : n < m <-> 0 <= m + -n + -(1).
  Proof.
- intros. rewrite <- le_left.
- now rewrite <- le_lt_int.
+ rewrite <- plus_assoc, (plus_comm (-n)), plus_assoc.
+ rewrite <- le_left.
+ apply le_lt_int.
  Qed.
 
- Lemma lt_left_inv : forall x y, 0 <= y + -(1) + - x -> x < y.
+ Lemma OMEGA4 x y z : 0 < x -> x < y -> z * y + x <> 0.
  Proof.
- intros.
- generalize (plus_le_compat _ _ _ _ H (le_refl x)); clear H.
- now rewrite plus_0_l, <-plus_assoc, plus_opp_l, plus_0_r, le_lt_int.
- Qed.
-
- Lemma OMEGA4 : forall x y z, x > 0 -> y > x -> z * y + x <> 0.
- Proof.
- intros.
- intro H'.
- rewrite gt_lt_iff in H,H0.
+ intros H H0 H'.
+ assert (0 < y) by now apply lt_trans with x.
  destruct (lt_eq_lt_dec z 0) as [[G|G]|G].
 
- - rewrite lt_0_neg' in G.
-   generalize (plus_le_lt_compat _ _ _ _ (le_refl (z*y)) H0).
+ - generalize (plus_le_lt_compat _ _ _ _ (le_refl (z*y)) H0).
    rewrite H'.
    rewrite <-(mult_1_l y) at 2. rewrite <-mult_plus_distr_r.
-   intros.
-   rewrite le_lt_int in G.
-   rewrite <- opp_plus_distr in G.
-   assert (0 < y) by (apply lt_trans with x; auto).
-   generalize (mult_le_compat _ _ _ _ G (lt_le_weak _ _ H2) (le_refl 0) (le_refl 0)).
-   rewrite mult_0_l, mult_comm, <- opp_mult_distr_r, mult_comm, <-le_0_neg', le_lt_iff.
-   intuition.
+   apply le_lt_iff.
+   rewrite mult_comm. rewrite <- (mult_0_r y).
+   apply mult_le_compat_l; auto using lt_le_weak.
+   apply le_0_neg. rewrite opp_plus_distr.
+   apply le_lt_int. now apply lt_0_neg.
 
- - subst; rewrite mult_0_l, plus_0_l in H'; subst.
-   apply (lt_not_eq _ _ H); auto.
+ - apply (lt_not_eq 0 (z*y+x)); auto.
+   subst. now autorewrite with int.
 
  - apply (lt_not_eq 0 (z*y+x)); auto.
    rewrite <- (plus_0_l 0).
-   apply plus_lt_compat; auto.
-   apply mult_lt_0_compat; auto.
-   apply lt_trans with x; auto.
+   auto using plus_lt_compat, mult_lt_0_compat.
  Qed.
 
- Lemma OMEGA19 : forall x, x<>0 -> 0 <= x + -(1) \/ 0 <= x * -(1) + -(1).
+ Lemma OMEGA19 x : x<>0 -> 0 <= x + -(1) \/ 0 <= x * -(1) + -(1).
  Proof.
  intros.
  do 2 rewrite <- le_lt_int.
@@ -689,23 +624,14 @@ Module IntProperties (I:Int).
  apply opp_lt_compat; auto.
  Qed.
 
- Lemma pos_ge_1 n : 0 < n -> 1 <= n.
- Proof.
- intros. apply plus_le_reg_r with (-(1)). rewrite opp_def.
- now apply le_lt_int.
- Qed.
-
  Lemma mult_le_approx n m p :
-  n > 0 -> n > p -> 0 <= m * n + p -> 0 <= m.
+  0 < n -> p < n -> 0 <= m * n + p -> 0 <= m.
  Proof.
- do 2 rewrite gt_lt_iff.
  do 2 rewrite le_lt_iff; intros Hn Hpn H Hm. destruct H.
- apply lt_0_neg', pos_ge_1 in Hm.
- rewrite lt_0_neg'.
+ apply lt_0_neg, le_lt_int, le_left in Hm.
+ rewrite lt_0_neg.
  rewrite opp_plus_distr, mult_comm, opp_mult_distr_r.
- rewrite le_lt_int.
- rewrite <- plus_assoc, (plus_comm (-p)), plus_assoc.
- apply lt_left.
+ rewrite le_lt_int. apply lt_left.
  rewrite le_lt_int.
  apply le_trans with (n+-(1)); [ now apply le_lt_int | ].
  apply plus_le_compat; [ | apply le_refl ].
@@ -830,7 +756,7 @@ Definition absurd := FalseTerm :: nil.
 
 Fixpoint eq_term (t1 t2 : term) {struct t2} : bool :=
   match t1, t2 with
-  | Tint i1, Tint i2 => beq i1 i2
+  | Tint i1, Tint i2 => i1 =? i2
   | (t11 + t12), (t21 + t22) => eq_term t11 t21 && eq_term t12 t22
   | (t11 * t12), (t21 * t22) => eq_term t11 t21 && eq_term t12 t22
   | (t11 - t12), (t21 - t22) => eq_term t11 t21 && eq_term t12 t22
@@ -839,15 +765,17 @@ Fixpoint eq_term (t1 t2 : term) {struct t2} : bool :=
   | _, _ => false
   end%term.
 
+Infix "=?" := eq_term : romega_scope.
+
 Theorem eq_term_iff (t t' : term) :
- eq_term t t' = true <-> t = t'.
+ (t =? t')%term = true <-> t = t'.
 Proof.
  revert t'. induction t; destruct t'; simpl in *;
  rewrite ?andb_true_iff, ?beq_iff, ?N.eqb_eq, ?IHt, ?IHt1, ?IHt2;
   intuition congruence.
 Qed.
 
-Theorem eq_term_reflect (t t' : term) : reflect (t=t') (eq_term t t').
+Theorem eq_term_reflect (t t' : term) : reflect (t=t') (t =? t')%term.
 Proof.
  apply iff_reflect. symmetry. apply eq_term_iff.
 Qed.
@@ -1107,13 +1035,13 @@ Ltac loop t :=
   | (- ?X1)%term => loop X1
   | (Tint ?X1) => loop X1
   (* Eliminations *)
-  | (if beq ?X1 ?X2 then _ else _) =>
+  | (if ?X1 =? ?X2 then _ else _) =>
       let H := fresh "H" in
       case (beq_reflect X1 X2); intro H;
       try (rewrite H in *; clear H); simpl; auto; Simplify
-  | (if bgt ?X1 ?X2 then _ else _) =>
-      case (bgt_reflect X1 X2); intro; simpl; auto; Simplify
-  | (if eq_term ?X1 ?X2 then _ else _) =>
+  | (if ?X1 <? ?X2 then _ else _) =>
+      case (blt_reflect X1 X2); intro; simpl; auto; Simplify
+  | (if (?X1 =? ?X2)%term then _ else _) =>
       let H := fresh "H" in
       case (eq_term_reflect X1 X2); intro H;
       try (rewrite H in *; clear H); simpl; auto; Simplify
@@ -1148,31 +1076,32 @@ with Simplify := match goal with
 
 (** Multiplication and sum by two constants. Invariant: [k1<>0]. *)
 
-Fixpoint scalar_norm_add (t : term) (k1 k2 : int) : term :=
+Fixpoint scalar_mult_add (t : term) (k1 k2 : int) : term :=
   match t with
-  | (v1 * Tint x1 + l1)%term =>
-    (v1 * Tint (x1 * k1) + scalar_norm_add l1 k1 k2)%term
+  | v1 * Tint x1 + l1 =>
+    v1 * Tint (x1 * k1) + scalar_mult_add l1 k1 k2
   | Tint x => Tint (k1 * x + k2)
-  | _ => (t * Tint k1 + Tint k2)%term (* shouldn't happen *)
-  end.
+  | _ => t * Tint k1 + Tint k2 (* shouldn't happen *)
+  end%term.
 
-Theorem scalar_norm_add_stable e t k1 k2 :
- interp_term e (t * Tint k1 + Tint k2)%term =
- interp_term e (scalar_norm_add t k1 k2).
+Theorem scalar_mult_add_stable e t k1 k2 :
+ interp_term e (scalar_mult_add t k1 k2) =
+ interp_term e (t * Tint k1 + Tint k2).
 Proof.
  induction t; simpl; Simplify; simpl; auto. f_equal. apply mult_comm.
- rewrite <- IHt2. simpl. apply OMEGA11.
+ rewrite IHt2. simpl. apply OMEGA11.
 Qed.
 
 (** Multiplication by a (non-nul) constant. *)
 
-Definition scalar_norm (t : term) (k : int) := scalar_norm_add t k 0.
+Definition scalar_mult (t : term) (k : int) := scalar_mult_add t k 0.
 
-Theorem scalar_norm_stable e t k :
- interp_term e (t * Tint k)%term = interp_term e (scalar_norm t k).
+Theorem scalar_mult_stable e t k :
+ interp_term e (scalar_mult t k) =
+ interp_term e (t * Tint k).
 Proof.
- unfold scalar_norm. rewrite <- scalar_norm_add_stable. simpl.
- symmetry. apply plus_0_r.
+ unfold scalar_mult. rewrite scalar_mult_add_stable. simpl.
+ apply plus_0_r.
 Qed.
 
 (** Adding a constant
@@ -1181,18 +1110,18 @@ Qed.
     definition spares some computations.
  *)
 
-Fixpoint add_norm (t : term) (k : int) : term :=
+Fixpoint scalar_add (t : term) (k : int) : term :=
   match t with
-  | (m + l)%term => (m + add_norm l k)%term
+  | m + l => m + scalar_add l k
   | Tint x => Tint (x + k)
-  | _ => (t + Tint k)%term
-  end.
+  | _ => t + Tint k
+  end%term.
 
-Theorem add_norm_stable e t k :
- interp_term e (t + Tint k)%term = interp_term e (add_norm t k).
+Theorem scalar_add_stable e t k :
+ interp_term e (scalar_add t k) = interp_term e (t + Tint k).
 Proof.
  induction t; simpl; Simplify; simpl; auto.
- rewrite <- IHt2. simpl. symmetry. apply plus_assoc.
+ rewrite IHt2. simpl. apply plus_assoc.
 Qed.
 
 (** Fusion of two equations.
@@ -1204,42 +1133,41 @@ Qed.
 
 Fixpoint fusion (t1 t2 : term) (k1 k2 : int) : term :=
   match t1 with
-  | ([v1] * Tint x1 + l1)%term =>
+  | [v1] * Tint x1 + l1 =>
     (fix fusion_t1 t2 : term :=
        match t2 with
-         | ([v2] * Tint x2 + l2)%term =>
+         | [v2] * Tint x2 + l2 =>
            match N.compare v1 v2 with
              | Eq =>
-               let k := k1 * x1 + k2 * x2 in
-               if beq k 0 then fusion l1 l2 k1 k2
-               else ([v1] * Tint k + fusion l1 l2 k1 k2)%term
-             | Lt => ([v2] * Tint (k2 * x2) + fusion_t1 l2)%term
-             | Gt => ([v1] * Tint (k1 * x1) + fusion l1 t2 k1 k2)%term
+               let k := (k1 * x1 + k2 * x2)%I in
+               if (k =? 0)%I then fusion l1 l2 k1 k2
+               else [v1] * Tint k + fusion l1 l2 k1 k2
+             | Lt => [v2] * Tint (k2 * x2) + fusion_t1 l2
+             | Gt => [v1] * Tint (k1 * x1) + fusion l1 t2 k1 k2
            end
-         | Tint x2 => ([v1] * Tint (k1 * x1) + fusion l1 t2 k1 k2)%term
-         | _ => (t1 * Tint k1 + t2 * Tint k2)%term (* shouldn't happen *)
+         | Tint x2 => [v1] * Tint (k1 * x1) + fusion l1 t2 k1 k2
+         | _ => t1 * Tint k1 + t2 * Tint k2 (* shouldn't happen *)
        end) t2
-  | Tint x1 => scalar_norm_add t2 k2 (k1 * x1)
-  | _ => (t1 * Tint k1 + t2 * Tint k2)%term (* shouldn't happen *)
-  end.
+  | Tint x1 => scalar_mult_add t2 k2 (k1 * x1)
+  | _ => t1 * Tint k1 + t2 * Tint k2 (* shouldn't happen *)
+  end%term.
 
 Theorem fusion_stable e t1 t2 k1 k2 :
- interp_term e (t1 * Tint k1 + t2 * Tint k2)%term =
- interp_term e (fusion t1 t2 k1 k2).
+ interp_term e (fusion t1 t2 k1 k2) =
+ interp_term e (t1 * Tint k1 + t2 * Tint k2).
 Proof.
  revert t2; induction t1; simpl; Simplify; simpl; auto.
- - intros; rewrite <- scalar_norm_add_stable. simpl.
+ - intros; rewrite scalar_mult_add_stable. simpl.
    rewrite plus_comm. f_equal. apply mult_comm.
  - intros. Simplify. induction t2; simpl; Simplify; simpl; auto.
-   + rewrite <- IHt1_2. simpl. rewrite (mult_comm k1); apply OMEGA11.
-   + rewrite <- IHt1_2. simpl. subst n0.
+   + rewrite IHt1_2. simpl. rewrite (mult_comm k1); apply OMEGA11.
+   + rewrite IHt1_2. simpl. subst n0.
      rewrite (mult_comm k1), (mult_comm k2) in H0.
-     rewrite OMEGA10, H0.
-     now rewrite mult_0_r, plus_0_l.
-   + rewrite <- IHt1_2. simpl. subst n0.
+     rewrite <- OMEGA10, H0. now autorewrite with int.
+   + rewrite IHt1_2. simpl. subst n0.
      rewrite (mult_comm k1), (mult_comm k2); apply OMEGA10.
-   + rewrite <- IHt2_2. simpl. rewrite (mult_comm k2); apply OMEGA12.
-   + rewrite <- IHt1_2. simpl. rewrite (mult_comm k1); apply OMEGA11.
+   + rewrite IHt2_2. simpl. rewrite (mult_comm k2); apply OMEGA12.
+   + rewrite IHt1_2. simpl. rewrite (mult_comm k1); apply OMEGA11.
 Qed.
 
 (** Term normalization.
@@ -1253,11 +1181,10 @@ Fixpoint normalize t :=
   | Tint n => Tint n
   | [n]%term => ([n] * Tint 1 + Tint 0)%term
   | (t + t')%term => fusion (normalize t) (normalize t') 1 1
-  | (- t)%term => scalar_norm (normalize t) (-(1))
+  | (- t)%term => scalar_mult (normalize t) (-(1))
   | (t - t')%term => fusion (normalize t) (normalize t') 1 (-(1))
   | (Tint k * t)%term | (t * Tint k)%term =>
-    if beq k 0 then Tint 0
-    else scalar_norm (normalize t) k
+    if k =? 0 then Tint 0 else scalar_mult (normalize t) k
   | (t1 * t2)%term => (t1 * t2)%term (* shouldn't happen *)
   end.
 
@@ -1265,9 +1192,8 @@ Theorem normalize_stable : term_stable normalize.
 Proof.
  intros e t.
  induction t; simpl; Simplify; simpl;
- rewrite <- ?scalar_norm_stable; simpl in *; rewrite <- ?IHt1;
- rewrite <- ?fusion_stable; simpl;
- rewrite ?mult_0_l, ?mult_0_r, ?mult_1_l, ?mult_1_r, ?plus_0_r; auto.
+ rewrite ?scalar_mult_stable; simpl in *; rewrite <- ?IHt1;
+ rewrite ?fusion_stable; simpl; autorewrite with int; auto.
  - now f_equal.
  - rewrite mult_comm. now f_equal.
  - rewrite <- opp_eq_mult_neg_1, <-minus_def. now f_equal.
@@ -1315,57 +1241,49 @@ Fixpoint normalize_prop (negated:bool)(p:proposition) :=
 
 Definition normalize_hyps := List.map (normalize_prop false).
 
-Opaque normalize.
+Local Ltac simp := cbn -[normalize].
 
 Theorem normalize_prop_valid b e ep p :
-  interp_prop e ep p <->
-  interp_prop e ep (normalize_prop b p).
+  interp_prop e ep (normalize_prop b p) <-> interp_prop e ep p.
 Proof.
  revert b.
- induction p; intros; simpl; try tauto.
- - destruct b; simpl;
+ induction p; intros; simp; try tauto.
+ - destruct b; simp;
    rewrite <- ?normalize_stable; simpl; rewrite ?minus_def.
-   + rewrite not_eq. apply egal_left_iff.
-   + apply egal_left_iff.
- - destruct b; simpl;
-   rewrite <- ? normalize_stable; simpl; rewrite ?minus_def;
-   apply not_iff_compat, egal_left_iff.
- - destruct b; simpl;
+   + rewrite not_eq. apply egal_left.
+   + apply egal_left.
+ - destruct b; simp;
+   rewrite <- ?normalize_stable; simpl; rewrite ?minus_def;
+   apply not_iff_compat, egal_left.
+ - destruct b; simp;
    rewrite <- ? normalize_stable; simpl; rewrite ?minus_def.
-   + rewrite le_lt_iff. apply not_iff_compat.
-     rewrite le_lt_int. rewrite le_left.
-     rewrite <- !plus_assoc. now rewrite (plus_comm (-(1))).
-   + apply le_left.
- - destruct b; simpl;
+   + symmetry. rewrite le_lt_iff. apply not_iff_compat, lt_left.
+   + now rewrite <- le_left.
+ - destruct b; simp;
    rewrite <- ? normalize_stable; simpl; rewrite ?minus_def.
-   + rewrite ge_le_iff, le_lt_iff. apply not_iff_compat.
-     rewrite le_lt_int. rewrite le_left.
-     rewrite <- !plus_assoc. now rewrite (plus_comm (-(1))).
-   + rewrite ge_le_iff. apply le_left.
- - destruct b; simpl;
+   + symmetry. rewrite ge_le_iff, le_lt_iff.
+     apply not_iff_compat, lt_left.
+   + rewrite ge_le_iff. now rewrite <- le_left.
+ - destruct b; simp;
    rewrite <- ? normalize_stable; simpl; rewrite ?minus_def.
    + rewrite gt_lt_iff, lt_le_iff. apply not_iff_compat.
-     apply le_left.
-   + rewrite gt_lt_iff. rewrite le_lt_int. rewrite le_left.
-     rewrite <- !plus_assoc. now rewrite (plus_comm (-(1))).
- - destruct b; simpl;
+     now rewrite <- le_left.
+   + symmetry. rewrite gt_lt_iff. apply lt_left.
+ - destruct b; simp;
    rewrite <- ? normalize_stable; simpl; rewrite ?minus_def.
    + rewrite lt_le_iff. apply not_iff_compat.
-     apply le_left.
-   + rewrite le_lt_int, le_left.
-     rewrite <- !plus_assoc. now rewrite (plus_comm (-(1))).
- - now rewrite <- IHp.
- - now rewrite <- IHp1, <- IHp2.
- - now rewrite <- IHp1, <- IHp2.
- - now rewrite <- IHp1, <- IHp2.
+     now rewrite <- le_left.
+   + symmetry. apply lt_left.
+ - now rewrite IHp.
+ - now rewrite IHp1, IHp2.
+ - now rewrite IHp1, IHp2.
+ - now rewrite IHp1, IHp2.
 Qed.
-
-Transparent normalize.
 
 Theorem normalize_hyps_valid : valid_hyps normalize_hyps.
 Proof.
  intros e ep l. induction l; simpl; intuition.
- now rewrite <- normalize_prop_valid.
+ now rewrite normalize_prop_valid.
 Qed.
 
 Theorem normalize_hyps_goal (ep : list Prop) (env : list int) (l : hyps) :
@@ -1460,9 +1378,9 @@ Inductive t_omega : Set :=
 
 Definition bad_constant (i : nat) (h : hyps) :=
   match nth_hyps i h with
-  | EqTerm (Tint Nul) (Tint n) => if beq n Nul then h else absurd
-  | NeqTerm (Tint Nul) (Tint n) => if beq n Nul then absurd else h
-  | LeqTerm (Tint Nul) (Tint n) => if bgt Nul n then absurd else h
+  | EqTerm (Tint Nul) (Tint n) => if n =? Nul then h else absurd
+  | NeqTerm (Tint Nul) (Tint n) => if n =? Nul then absurd else h
+  | LeqTerm (Tint Nul) (Tint n) => if n <? Nul then absurd else h
   | _ => h
   end.
 
@@ -1470,7 +1388,7 @@ Theorem bad_constant_valid i : valid_hyps (bad_constant i).
 Proof.
  unfold valid_hyps, bad_constant; intros ep e lp H.
  generalize (nth_valid ep e i lp H); Simplify.
- rewrite gt_lt_iff in *. rewrite le_lt_iff. intuition.
+ rewrite le_lt_iff. intuition.
 Qed.
 
 (** [NOT_EXACT_DIVIDE] *)
@@ -1479,10 +1397,10 @@ Definition not_exact_divide (i : nat) (k1 k2 : int) (body : term)
   (l : hyps) :=
   match nth_hyps i l with
   | EqTerm (Tint Nul) b =>
-      if beq Nul 0 &&
-         eq_term (scalar_norm_add body k1 k2) b &&
-         bgt k2 0 &&
-         bgt k1 k2
+      if (Nul =? 0) &&
+         (scalar_mult_add body k1 k2 =? b)%term &&
+         (0 <? k2) &&
+         (k2 <? k1)
       then absurd
       else l
   | _ => l
@@ -1494,7 +1412,7 @@ Theorem not_exact_divide_valid :
 Proof.
  unfold valid_hyps, not_exact_divide; intros.
  generalize (nth_valid ep e i lp); Simplify.
- rewrite <-H1, <-scalar_norm_add_stable. simpl.
+ rewrite <-H1, scalar_mult_add_stable. simpl.
  intros.
  absurd (interp_term e body * k1 + k2 = 0).
  - now apply OMEGA4.
@@ -1507,12 +1425,12 @@ Qed.
 
 Definition exact_divide (k : int) (body : term) (prop : proposition) :=
   match prop with
-  | EqTerm (Tint Null) b =>
-    if beq Null 0 && eq_term (scalar_norm body k) b && negb (beq k 0)
+  | EqTerm (Tint o) b =>
+    if (o =? 0) && (scalar_mult body k =? b)%term && negb (k =? 0)
     then EqTerm (Tint 0) body
     else TrueTerm
-  | NeqTerm (Tint Null) b =>
-    if beq Null 0 && eq_term (scalar_norm body k) b && negb (beq k 0)
+  | NeqTerm (Tint o) b =>
+    if (o =? 0) && (scalar_mult body k =? b)%term && negb (k =? 0)
     then NeqTerm (Tint 0) body
     else TrueTerm
   | _ => TrueTerm
@@ -1523,7 +1441,7 @@ Theorem exact_divide_valid :
 Proof.
  unfold valid1, exact_divide; intros k t ep e p1;
  Simplify; simpl; auto; subst;
- rewrite <- scalar_norm_stable; simpl; intros.
+ rewrite scalar_mult_stable; simpl; intros.
  - destruct (mult_integral _ _ (eq_sym H0)); intuition.
  - contradict H0; rewrite <- H0, mult_0_l; auto.
 Qed.
@@ -1533,11 +1451,11 @@ Qed.
 Definition divide_and_approx (k1 k2 : int) (body : term)
   (prop : proposition) :=
   match prop with
-  | LeqTerm (Tint Null) b =>
-      if beq Null 0 &&
-         eq_term (scalar_norm_add body k1 k2) b &&
-         bgt k1 0 &&
-         bgt k1 k2
+  | LeqTerm (Tint o) b =>
+      if (o =? 0) &&
+         (scalar_mult_add body k1 k2 =? b)%term &&
+         (0 <? k1) &&
+         (k2 <? k1)
       then LeqTerm (Tint 0) body
       else prop
   | _ => prop
@@ -1549,7 +1467,7 @@ Theorem divide_and_approx_valid :
 Proof.
  unfold valid1, divide_and_approx.
  intros k1 k2 body ep e p1. Simplify. subst.
- rewrite <- scalar_norm_add_stable. simpl.
+ rewrite scalar_mult_add_stable. simpl.
  intro H; now apply mult_le_approx with (3 := H).
 Qed.
 
@@ -1557,40 +1475,40 @@ Qed.
 
 Definition sum (k1 k2 : int) (prop1 prop2 : proposition) :=
   match prop1 with
-  | EqTerm (Tint Null) b1 =>
+  | EqTerm (Tint o) b1 =>
       match prop2 with
-      | EqTerm (Tint Null') b2 =>
-          if beq Null 0 && beq Null' 0
+      | EqTerm (Tint o') b2 =>
+          if (o =? 0) && (o' =? 0)
           then EqTerm (Tint 0) (fusion b1 b2 k1 k2)
           else TrueTerm
-      | LeqTerm (Tint Null') b2 =>
-          if beq Null 0 && beq Null' 0 && bgt k2 0
+      | LeqTerm (Tint o') b2 =>
+          if (o =? 0) && (o' =? 0) && (0 <? k2)
           then LeqTerm (Tint 0) (fusion b1 b2 k1 k2)
           else TrueTerm
-      | NeqTerm (Tint Null') b2 =>
-          if beq Null 0 && beq Null' 0 && negb (beq k2 0)
+      | NeqTerm (Tint o') b2 =>
+          if (o =? 0) && (o' =? 0) && negb (k2 =? 0)
           then NeqTerm (Tint 0) (fusion b1 b2 k1 k2)
           else TrueTerm
       | _ => TrueTerm
       end
-  | LeqTerm (Tint Null) b1 =>
-      if beq Null 0 && bgt k1 0
+  | LeqTerm (Tint o) b1 =>
+      if (o =? 0) && (0 <? k1)
       then match prop2 with
-          | EqTerm (Tint Null') b2 =>
-              if beq Null' 0 then
+          | EqTerm (Tint o') b2 =>
+              if o' =? 0 then
               LeqTerm (Tint 0) (fusion b1 b2 k1 k2)
               else TrueTerm
-          | LeqTerm (Tint Null') b2 =>
-              if beq Null' 0 && bgt k2 0
+          | LeqTerm (Tint o') b2 =>
+              if (o' =? 0) && (0 <? k2)
               then LeqTerm (Tint 0) (fusion b1 b2 k1 k2)
               else TrueTerm
           | _ => TrueTerm
           end
       else TrueTerm
-  | NeqTerm (Tint Null) b1 =>
+  | NeqTerm (Tint o) b1 =>
       match prop2 with
-      | EqTerm (Tint Null') b2 =>
-          if beq Null 0 && beq Null' 0 && negb (beq k1 0)
+      | EqTerm (Tint o') b2 =>
+          if (o =? 0) && (o' =? 0) && negb (k1 =? 0)
           then NeqTerm (Tint 0) (fusion b1 b2 k1 k2)
           else TrueTerm
       | _ => TrueTerm
@@ -1602,21 +1520,25 @@ Theorem sum_valid :
  forall (k1 k2 : int), valid2 (sum k1 k2).
 Proof.
  unfold valid2; intros k1 k2 t ep e p1 p2; unfold sum;
- Simplify; simpl; rewrite <- ?fusion_stable;
- simpl; intros; auto using sum1, sum2, sum3, sum4, sum5.
- - rewrite plus_comm. now apply sum5.
- - rewrite plus_comm. apply sum2; trivial; now apply sum4.
+ Simplify; simpl; rewrite ?fusion_stable;
+ simpl; intros; auto.
+ - apply sum1; auto.
+ - rewrite plus_comm. apply sum5; auto.
+ - apply sum2; auto using lt_le_weak.
+ - apply sum5; auto.
+ - rewrite plus_comm. apply sum2; auto using lt_le_weak.
+ - apply sum3; auto using lt_le_weak.
 Qed.
 
 (** [MERGE_EQ] *)
 
 Definition merge_eq (prop1 prop2 : proposition) :=
   match prop1 with
-  | LeqTerm (Tint Null) b1 =>
+  | LeqTerm (Tint o) b1 =>
       match prop2 with
-      | LeqTerm (Tint Null') b2 =>
-          if beq Null 0 && beq Null' 0 &&
-             eq_term b1 (scalar_norm b2 (-(1)))
+      | LeqTerm (Tint o') b2 =>
+          if (o =? 0) && (o' =? 0) &&
+             (b1 =? scalar_mult b2 (-(1)))%term
           then EqTerm (Tint 0) b1
           else TrueTerm
       | _ => TrueTerm
@@ -1627,7 +1549,7 @@ Definition merge_eq (prop1 prop2 : proposition) :=
 Theorem merge_eq_valid : valid2 merge_eq.
 Proof.
  unfold valid2, merge_eq; intros ep e p1 p2; Simplify; simpl; auto.
- rewrite <- scalar_norm_stable. simpl.
+ rewrite scalar_mult_stable. simpl.
  intros; symmetry ; apply OMEGA8 with (2 := H0).
  - assumption.
  - elim opp_eq_mult_neg_1; trivial.
@@ -1637,10 +1559,10 @@ Qed.
 
 Definition split_ineq (i : nat) (f1 f2 : hyps -> lhyps) (l : hyps) :=
   match nth_hyps i l with
-  | NeqTerm (Tint Null) b1 =>
-      if beq Null 0 then
-       f1 (LeqTerm (Tint 0) (add_norm b1 (-(1))) :: l) ++
-       f2 (LeqTerm (Tint 0) (scalar_norm_add b1 (-(1)) (-(1))) :: l)
+  | NeqTerm (Tint o) b1 =>
+      if o =? 0 then
+       f1 (LeqTerm (Tint 0) (scalar_add b1 (-(1))) :: l) ++
+       f2 (LeqTerm (Tint 0) (scalar_mult_add b1 (-(1)) (-(1))) :: l)
       else l :: nil
   | _ => l :: nil
   end.
@@ -1656,9 +1578,9 @@ Proof.
  auto; intros z; simpl; auto; intro H3.
  Simplify.
  apply append_valid; elim (OMEGA19 (interp_term e t2)).
- - intro H4; left; apply H1; simpl; rewrite <- add_norm_stable;
+ - intro H4; left; apply H1; simpl; rewrite scalar_add_stable;
     simpl; auto.
- - intro H4; right; apply H2; simpl; rewrite <- scalar_norm_add_stable;
+ - intro H4; right; apply H2; simpl; rewrite scalar_mult_add_stable;
     simpl; auto.
  - generalize H3; unfold not; intros E1 E2; apply E1;
     symmetry ; trivial.
