@@ -9,4 +9,4 @@ coq_bug_minimizer_CI_DIR=${CI_BUILD_DIR}/coq-bug-minimizer
 
 git_checkout ${coq_bug_minimizer_CI_BRANCH} ${coq_bug_minimizer_CI_GITURL} ${coq_bug_minimizer_CI_DIR}
 
-( cd ${coq_bug_minimizer_CI_DIR} && make -j ${NJOBS} check CAT_ALL_LOGS=1 )
+( cd ${coq_bug_minimizer_CI_DIR} && make check CAT_ALL_LOGS=1 )
