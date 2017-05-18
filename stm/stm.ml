@@ -66,7 +66,7 @@ end
 
 (* During interactive use we cache more states so that Undoing is fast *)
 let interactive () =
-  if !Flags.ide_slave || !Flags.print_emacs || not !Flags.batch_mode then `Yes
+  if !Flags.ide_slave || not !Flags.batch_mode then `Yes
   else `No
 
 let async_proofs_workers_extra_env = ref [||]
@@ -1094,7 +1094,7 @@ end = struct (* {{{ *)
           VtStm (VtBack oid, true), VtLater
       | VernacBacktrack (id,_,_)
       | VernacBackTo id ->
-          VtStm (VtBack (Stateid.of_int id), not !Flags.print_emacs), VtNow
+          VtStm (VtBack (Stateid.of_int id), not !Flags.batch_mode), VtNow
       | _ -> VtUnknown, VtNow
     with
     | Not_found ->

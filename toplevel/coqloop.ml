@@ -8,6 +8,8 @@
 
 open Pp
 
+let print_emacs = ref false
+
 let top_stderr x =
   Format.fprintf !Topfmt.err_ft "@[%a@]%!" pp_with x
 
@@ -45,9 +47,8 @@ let resynch_buffer ibuf =
 
 (* emacs special prompt tag for easy detection. No special character,
    to avoid interfering with utf8. Compatibility code removed. *)
-
-let emacs_prompt_startstring() = Printer.emacs_str "<prompt>"
-let emacs_prompt_endstring() = Printer.emacs_str "</prompt>"
+let emacs_prompt_startstring () = if !print_emacs then "<prompt>"  else ""
+let emacs_prompt_endstring   () = if !print_emacs then "</prompt>" else ""
 
 (* Read a char in an input channel, displaying a prompt at every
    beginning of line. *)
@@ -56,7 +57,7 @@ let prompt_char ic ibuf count =
     | ll::_ -> Int.equal ibuf.len ll
     | [] -> Int.equal ibuf.len 0
   in
-  if bol && not !Flags.print_emacs then top_stderr (str (ibuf.prompt()));
+  if bol && not !print_emacs then top_stderr (str (ibuf.prompt()));
   try
     let c = input_char ic in
     if c == '\n' then ibuf.bols <- (ibuf.len+1) :: ibuf.bols;
@@ -168,7 +169,7 @@ let error_info_for_buffer ?loc buf =
 (* Actual printing routine *)
 let print_error_for_buffer ?loc lvl msg buf =
   let pre_hdr = error_info_for_buffer ?loc buf in
-  if !Flags.print_emacs
+  if !print_emacs
   then Topfmt.emacs_logger ?pre_hdr lvl msg
   else Topfmt.std_logger   ?pre_hdr lvl msg
 
@@ -207,7 +208,7 @@ let make_emacs_prompt() =
       (fun acc x -> acc ^ (if CString.is_empty acc then "" else "|") ^ Names.Id.to_string x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
-  if !Flags.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
+  if !print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
   else ""
 
 (* A buffer to store the current command read on stdin. It is
@@ -299,7 +300,7 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
 
 let do_vernac sid =
   top_stderr (fnl());
-  if !Flags.print_emacs then top_stderr (str (top_buffer.prompt()));
+  if !print_emacs then top_stderr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in

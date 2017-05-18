@@ -8,5 +8,3 @@ subgoal 2 (ID 35) is:
  1 = S (S m')
 subgoal 3 (ID 22) is:
  S (S n') = S m
-
-(dependent evars: (printing disabled) )

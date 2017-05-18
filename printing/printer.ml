@@ -26,9 +26,6 @@ module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 module CompactedDecl = Context.Compacted.Declaration
 
-let emacs_str s =
-  if !Flags.print_emacs then s else ""
-
 let get_current_context () =
   Pfedit.get_current_context ()
 
@@ -656,9 +653,6 @@ let print_dependent_evars gl sigma seeds =
     in
     cut () ++ cut () ++
     str "(dependent evars:" ++ evars ++ str ")"
-    else if !Flags.print_emacs then
-      (* IDEs prefer something dummy instead of nothing *)
-      cut () ++ cut () ++ str "(dependent evars: (printing disabled) )"
     else mt ()
   in
   constraints ++ evars ()
