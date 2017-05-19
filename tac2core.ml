@@ -577,6 +577,27 @@ let () = add_scope "list0" begin function
 | _ -> scope_fail ()
 end
 
+let () = add_scope "list1" begin function
+| [tok] ->
+  let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
+  let scope = Extend.Alist1 scope in
+  let act l =
+    let l = List.map act l in
+    CTacLst (Loc.ghost, l)
+  in
+  Tac2entries.ScopeRule (scope, act)
+| [tok; SexprStr (_, str)] ->
+  let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
+  let sep = Extend.Atoken (CLexer.terminal str) in
+  let scope = Extend.Alist1sep (scope, sep) in
+  let act l =
+    let l = List.map act l in
+    CTacLst (Loc.ghost, l)
+  in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
 let () = add_scope "opt" begin function
 | [tok] ->
   let Tac2entries.ScopeRule (scope, act) = Tac2entries.parse_scope tok in
@@ -594,6 +615,28 @@ end
 let () = add_scope "self" begin function
 | [] ->
   let scope = Extend.Aself in
+  let act tac = rthunk tac in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
+let () = add_scope "next" begin function
+| [] ->
+  let scope = Extend.Anext in
+  let act tac = rthunk tac in
+  Tac2entries.ScopeRule (scope, act)
+| _ -> scope_fail ()
+end
+
+let () = add_scope "tactic" begin function
+| [] ->
+  (** Default to level 5 parsing *)
+  let scope = Extend.Aentryl (Tac2entries.Pltac.tac2expr, 5) in
+  let act tac = rthunk tac in
+  Tac2entries.ScopeRule (scope, act)
+| [SexprInt (loc, n)] ->
+  let () = if n < 0 || n > 5 then scope_fail () in
+  let scope = Extend.Aentryl (Tac2entries.Pltac.tac2expr, n) in
   let act tac = rthunk tac in
   Tac2entries.ScopeRule (scope, act)
 | _ -> scope_fail ()
