@@ -668,6 +668,9 @@ module Vars =
 struct
 exception LocalOccur
 let to_constr = unsafe_to_constr
+let to_rel_decl = unsafe_to_rel_decl
+
+type substl = t list
 
 (** Operations that commute with evar-normalization *)
 let lift n c = of_constr (Vars.lift n (to_constr c))
@@ -676,6 +679,10 @@ let liftn n m c = of_constr (Vars.liftn n m (to_constr c))
 let substnl subst n c = of_constr (Vars.substnl (cast_list unsafe_eq subst) n (to_constr c))
 let substl subst c = of_constr (Vars.substl (cast_list unsafe_eq subst) (to_constr c))
 let subst1 c r = of_constr (Vars.subst1 (to_constr c) (to_constr r))
+
+let substnl_decl subst n d = of_rel_decl (Vars.substnl_decl (cast_list unsafe_eq subst) n (to_rel_decl d))
+let substl_decl subst d = of_rel_decl (Vars.substl_decl (cast_list unsafe_eq subst) (to_rel_decl d))
+let subst1_decl c d = of_rel_decl (Vars.subst1_decl (to_constr c) (to_rel_decl d))
 
 let replace_vars subst c =
   of_constr (Vars.replace_vars (cast_list_snd unsafe_eq subst) (to_constr c))
