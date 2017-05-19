@@ -106,8 +106,6 @@ type environment = {
   mutable terms : Term.constr list;
   (* La meme chose pour les propositions *)
   mutable props : Term.constr list;
-  (* Les variables introduites par omega *)
-  mutable om_vars : (int * oformula) list;
   (* Traduction des indices utilisés ici en les indices finaux utilisés par
    * la tactique Omega après dénombrement des variables utiles *)
   real_indices : int IntHtbl.t;
@@ -166,7 +164,7 @@ let id_concl = Id.of_string "__goal__"
 
 (* Initialisation de l'environnement de réification de la tactique *)
 let new_environment () = {
-  terms = []; props = []; om_vars = []; cnt_connectors = 0;
+  terms = []; props = []; cnt_connectors = 0;
   real_indices = IntHtbl.create 7;
   equations = IntHtbl.create 7;
   constructors = IntHtbl.create 7;
@@ -205,30 +203,15 @@ let new_omega_eq, rst_omega_eq =
 
 (* generation d'identifiant de variable pour Omega *)
 
-let new_omega_var, rst_omega_var =
+let new_omega_var, rst_omega_var, set_omega_maxvar =
   let cpt = ref (-1) in
   (function () -> incr cpt; !cpt),
-  (function () -> cpt:=(-1))
+  (function () -> cpt:=(-1)),
+  (function n -> cpt:=n)
 
 (* Affichage des variables d'un système *)
 
 let display_omega_var i = Printf.sprintf "OV%d" i
-
-(* Register an internal variable corresponding to some oformula
-   (normally an [Oatom]). This omega variable could be a new one,
-   or one already created during the omega resolution (cf. STATE). *)
-
-let add_omega_var env t ov =
-  let v = match ov with
-    | None -> new_omega_var ()
-    | Some v -> v
-  in
-  env.om_vars <- (v,t) :: env.om_vars
-
-(* Récupère le terme associé à une variable omega *)
-let unintern_omega env v =
-  try List.assoc_f Int.equal v env.om_vars
-  with Not_found -> failwith "unintern_omega"
 
 (* \subsection{Gestion des environnements de variable pour la réflexion}
    Gestion des environnements de traduction entre termes des constructions
@@ -236,16 +219,21 @@ let unintern_omega env v =
    l'environnement initial contenant tout. Il faudra le réduire après
    calcul des variables utiles. *)
 
-let add_reified_atom opt_omega_var t env =
+let add_reified_atom t env =
   try List.index0 Term.eq_constr t env.terms
   with Not_found ->
     let i = List.length env.terms in
-    (* synchronize atom indexes and omega variables *)
-    add_omega_var env (Oatom i) opt_omega_var;
     env.terms <- env.terms @ [t]; i
 
 let get_reified_atom env =
   try List.nth env.terms with Invalid_argument _ -> failwith "get_reified_atom"
+
+(** When the omega resolution has created a variable [v], we re-sync
+    the environment with this new variable. To be done in the right order. *)
+
+let set_reified_atom v t env =
+  assert (Int.equal v (List.length env.terms));
+  env.terms <- env.terms @ [t]
 
 (* \subsection{Gestion de l'environnement de proposition pour Omega} *)
 (* ajout d'une proposition *)
@@ -296,9 +284,9 @@ let rec pprint ch = function
 
 (* \subsection{Omega vers Oformula} *)
 
-let oformula_of_omega env af =
+let oformula_of_omega af =
   let rec loop = function
-    | ({v=v; c=n}::r) -> Oplus(Omult(unintern_omega env v,Oint n),loop r)
+    | ({v=v; c=n}::r) -> Oplus(Omult(Oatom v,Oint n),loop r)
     | [] -> Oint af.constant
   in
   loop af.body
@@ -382,8 +370,8 @@ let reified_of_omega env body constant =
   let mk_coeff {c=c; v=v} t =
     let coef =
       app coq_t_mult
-	[| reified_of_formula env (unintern_omega env v);
-	   app coq_t_int [| Z.mk c |] |] in
+          [| reified_of_formula env (Oatom v);
+             app coq_t_int [| Z.mk c |] |] in
     app coq_t_plus [|coef; t |] in
   List.fold_right mk_coeff body coeff_constant
 
@@ -512,11 +500,11 @@ let rec oformula_of_constr env t =
         | None ->
            match Z.get_scalar t2 with
            | Some n -> Omult (oformula_of_constr env t1, Oint n)
-           | None -> Oatom (add_reified_atom None t env))
+           | None -> Oatom (add_reified_atom t env))
     | Topp t -> Oopp(oformula_of_constr env t)
     | Tsucc t -> Oplus(oformula_of_constr env t, Oint one)
     | Tnum n -> Oint n
-    | Tother -> Oatom (add_reified_atom None t env)
+    | Tother -> Oatom (add_reified_atom t env)
 
 and binop env c t1 t2 =
   let t1' = oformula_of_constr env t1 in
@@ -707,17 +695,17 @@ let add_stated_equations env tree =
   in
   let add_env st =
     (* On retransforme la définition de v en formule reifiée *)
-    let v_def = oformula_of_omega env st.st_def in
+    let v_def = oformula_of_omega st.st_def in
     (* Notez que si l'ordre de création des variables n'est pas respecté,
      * ca va planter *)
     let coq_v = coq_of_formula env v_def in
-    let v = add_reified_atom (Some st.st_var) coq_v env in
+    set_reified_atom st.st_var coq_v env;
     (* Le terme qu'il va falloir introduire *)
     let term_to_generalize = app coq_refl_equal [|Lazy.force Z.typ; coq_v|] in
     (* sa représentation sous forme d'équation mais non réifié car on n'a pas
      * l'environnement pour le faire correctement *)
-    let term_to_reify = (v_def,Oatom v) in
-    (v, term_to_generalize,term_to_reify,st.st_def.id) in
+    let term_to_reify = (v_def,Oatom st.st_var) in
+    (st.st_var, term_to_generalize,term_to_reify,st.st_def.id) in
  List.map add_env stated_equations
 
 (* Calcule la liste des éclatements à réaliser sur les hypothèses
@@ -1071,6 +1059,8 @@ let total_reflexive_omega_tactic unsafe =
   try
   let env = new_environment () in
   let (concl,hyps) as reified_goal = reify_gl env gl in
+  (* Register all atom indexes created during reification as omega vars *)
+  set_omega_maxvar (pred (List.length env.terms));
   let full_reified_goal = (id_concl,Pnot concl) :: hyps in
   let systems_list = destructurate_hyps full_reified_goal in
   if !debug then display_systems systems_list;
