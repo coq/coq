@@ -1,3 +1,10 @@
+Potential sources of incompatibilities between Coq V8.6 and V8.7
+----------------------------------------------------------------
+
+- Extra superfluous names in introduction patterns may now raise an
+  error rather than a warning when the superfluous name is already in
+  use. The easy fix is to remove the superfluous name.
+
 Potential sources of incompatibilities between Coq V8.5 and V8.6
 ----------------------------------------------------------------
 

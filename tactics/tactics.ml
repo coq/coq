@@ -2395,6 +2395,29 @@ let rec explicit_intro_names = function
      explicit_intro_names l
 | [] -> []
 
+let rec check_name_unicity env ok seen = function
+| (_, IntroForthcoming _) :: l -> check_name_unicity env ok seen l
+| (loc, IntroNaming (IntroIdentifier id)) :: l ->
+   (try
+      ignore (if List.mem_f Id.equal id ok then raise Not_found else lookup_named id env);
+      user_err ~loc (pr_id id ++ str" is already used.")
+   with Not_found ->
+     if List.mem_f Id.equal id seen then
+       user_err ~loc (pr_id id ++ str" is used twice.")
+     else
+       check_name_unicity env ok (id::seen) l)
+| (_, IntroAction (IntroOrAndPattern l)) :: l' ->
+    let ll = match l with IntroAndPattern l -> [l] | IntroOrPattern ll -> ll in
+    List.iter (fun l -> check_name_unicity env ok seen (l@l')) ll
+| (_, IntroAction (IntroInjection l)) :: l' ->
+    check_name_unicity env ok seen (l@l')
+| (_, IntroAction (IntroApplyOn (c,pat))) :: l' ->
+    check_name_unicity env ok seen (pat::l')
+| (_, (IntroNaming (IntroAnonymous | IntroFresh _)
+     | IntroAction (IntroWildcard | IntroRewrite _))) :: l ->
+     check_name_unicity env ok seen l
+| [] -> ()
+
 let wild_id = Id.of_string "_tmp"
 
 let rec list_mem_assoc_right id = function
@@ -2530,13 +2553,21 @@ and prepare_intros_loc loc with_evars dft destopt = function
   | IntroForthcoming _ -> user_err ~loc 
       (str "Introduction pattern for one hypothesis expected.")
 
+let intro_patterns_head_core with_evars b destopt bound pat =
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    check_name_unicity env [] [] pat;
+    intro_patterns_core with_evars b [] [] [] destopt
+      bound 0 (fun _ l -> clear_wildcards l) pat
+  end }
+
 let intro_patterns_bound_to with_evars n destopt =
-  intro_patterns_core with_evars true [] [] [] destopt
-    (Some (true,n)) 0 (fun _ l -> clear_wildcards l)
+  intro_patterns_head_core with_evars true destopt
+    (Some (true,n))
 
 let intro_patterns_to with_evars destopt =
-  intro_patterns_core with_evars (use_bracketing_last_or_and_intro_pattern ())
-    [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
+  intro_patterns_head_core with_evars (use_bracketing_last_or_and_intro_pattern ())
+    destopt None
 
 let intro_pattern_to with_evars destopt pat =
   intro_patterns_to with_evars destopt [dloc,pat]
@@ -4191,6 +4222,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
       let f (_,is_not_let,_,_) = is_not_let in
       Array.map (fun (_,l) -> List.map f l) indsign in
     let names = compute_induction_names branchletsigns names in
+    Array.iter (check_name_unicity env toclear []) names;
     let tac =
     (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
       (Tacticals.New.tclTHENLIST [

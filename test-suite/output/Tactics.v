@@ -11,3 +11,13 @@ Print Ltac f.
 
 Ltac g := match goal with |- context [if ?X then _ else _ ] => case X end.
 Print Ltac g.
+
+(* Test an error message (#5390) *)
+Lemma myid (P : Prop) : P <-> P.
+Proof. split; auto. Qed.
+
+Goal True -> (True /\ True) -> True.
+Proof.
+intros H.
+Fail intros [H%myid ?].
+Fail destruct 1 as [H%myid ?].
