@@ -96,7 +96,7 @@ type afine = {
 
 type state_action = {
   st_new_eq : afine;
-  st_def    : afine;
+  st_def    : afine; (* /!\ this represents [st_def = st_var] *)
   st_orig   : afine;
   st_coef   : bigint;
   st_var    : int }

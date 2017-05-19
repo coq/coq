@@ -89,7 +89,7 @@ and oequation = {
     e_depends: direction list;		(* liste des points de disjonction dont
 					   dépend l'accès à l'équation avec la
 					   direction (branche) pour y accéder *)
-    e_omega: afine		(* la fonction normalisée *)
+    e_omega: OmegaSolver.afine (* normalized formula *)
   }
 
 (* \subsection{Proof context}
@@ -121,7 +121,7 @@ type environment = {
 type solution = {
   s_index : int;
   s_equa_deps : IntSet.t;
-  s_trace : action list }
+  s_trace : OmegaSolver.action list }
 
 (* Arbre de solution résolvant complètement un ensemble de systèmes *)
 type solution_tree =
@@ -362,12 +362,15 @@ let reified_of_proposition env f =
   try reified_of_oprop env f
   with reraise -> pprint stderr f; raise reraise
 
+let reified_of_eq env (l,r) =
+  app coq_p_eq [| reified_of_formula env l; reified_of_formula env r |]
+
 (* \subsection{Omega vers COQ réifié} *)
 
 let reified_of_omega env body constant =
   let coeff_constant =
     app coq_t_int [| Z.mk constant |] in
-  let mk_coeff {c=c; v=v} t =
+  let mk_coeff {c;v} t =
     let coef =
       app coq_t_mult
           [| reified_of_formula env (Oatom v);
@@ -422,8 +425,8 @@ let rec vars_of_prop = function
 *)
 
 type nformula =
-  { coefs : (atom_index * bigint) list;
-    cst : bigint }
+  { coefs : (atom_index * Bigint.bigint) list;
+    cst : Bigint.bigint }
 
 let scale n { coefs; cst } =
   { coefs = List.map (fun (v,k) -> (v,k*n)) coefs;
@@ -667,46 +670,53 @@ let rec hyps_used_in_trace = function
         hyps_used_in_trace act1 @@ hyps_used_in_trace act2
      | _ -> hyps_used_in_trace l
 
-(* Extraction des variables déclarées dans une équation. Permet ensuite
-   de les déclarer dans l'environnement de la procédure réflexive et
-   éviter les créations de variable au vol *)
+(** Retreive variables declared as extra equations during resolution
+    and declare them into the environment.
+    We should consider these variables in their introduction order,
+    otherwise really bad things will happen. *)
 
-let rec variable_stated_in_trace = function
-  | [] -> []
-  | act :: l ->
-     match act with
-     | STATE action ->
-        (*i nlle_equa: afine, def: afine, eq_orig: afine, i*)
-        (*i coef: int, var:int                            i*)
-        action :: variable_stated_in_trace l
-     | SPLIT_INEQ (_,(_,act1),(_,act2)) ->
-        variable_stated_in_trace act1 @ variable_stated_in_trace act2
-     | _ -> variable_stated_in_trace l
+let state_cmp x y = Int.compare x.st_var y.st_var
 
-let add_stated_equations env tree =
-  (* Il faut trier les variables par ordre d'introduction pour ne pas risquer
-     de définir dans le mauvais ordre *)
-  let stated_equations =
-    let cmpvar x y = Int.compare x.st_var y.st_var in
-    let rec loop = function
-      | Tree(_,t1,t2) -> List.merge cmpvar (loop t1) (loop t2)
-      | Leaf s -> List.sort cmpvar (variable_stated_in_trace s.s_trace)
-    in loop tree
-  in
-  let add_env st =
-    (* On retransforme la définition de v en formule reifiée *)
+module StateSet =
+  Set.Make (struct type t = state_action let compare = state_cmp end)
+
+let rec stated_in_trace = function
+  | [] -> StateSet.empty
+  | [SPLIT_INEQ (_,(_,t1),(_,t2))] ->
+     StateSet.union (stated_in_trace t1) (stated_in_trace t2)
+  | STATE action :: l -> StateSet.add action (stated_in_trace l)
+  | _ :: l -> stated_in_trace l
+
+let rec stated_in_tree = function
+  | Tree(_,t1,t2) -> StateSet.union (stated_in_tree t1) (stated_in_tree t2)
+  | Leaf s -> stated_in_trace s.s_trace
+
+let digest_stated_equations env tree =
+  let do_equation st (vars,gens,eqns,ids) =
+    (** We turn the definition of [v]
+        - into a reified formula : *)
     let v_def = oformula_of_omega st.st_def in
-    (* Notez que si l'ordre de création des variables n'est pas respecté,
-     * ca va planter *)
+    (** - into a concrete Coq formula
+          (this uses only older vars already in env) : *)
     let coq_v = coq_of_formula env v_def in
+    (** We then update the environment *)
     set_reified_atom st.st_var coq_v env;
-    (* Le terme qu'il va falloir introduire *)
-    let term_to_generalize = app coq_refl_equal [|Lazy.force Z.typ; coq_v|] in
-    (* sa représentation sous forme d'équation mais non réifié car on n'a pas
-     * l'environnement pour le faire correctement *)
+    (** The term we'll introduce *)
+    let term_to_generalize =
+      EConstr.of_constr (app coq_refl_equal [|Lazy.force Z.typ; coq_v|])
+    in
+    (** Its representation as equation (but not reified yet,
+        we lack the proper env to do that). *)
     let term_to_reify = (v_def,Oatom st.st_var) in
-    (st.st_var, term_to_generalize,term_to_reify,st.st_def.id) in
- List.map add_env stated_equations
+    (st.st_var::vars,
+     term_to_generalize::gens,
+     term_to_reify::eqns,
+     CCEqua st.st_def.id :: ids)
+  in
+  let (vars,gens,eqns,ids) =
+    StateSet.fold do_equation (stated_in_tree tree) ([],[],[],[])
+  in
+  (List.rev vars, List.rev gens, List.rev eqns, List.rev ids)
 
 (* Calcule la liste des éclatements à réaliser sur les hypothèses
    nécessaires pour extraire une liste d'équations donnée *)
@@ -740,46 +750,43 @@ let filter_compatible_systems required systems =
     systems
 
 let rec equas_of_solution_tree = function
-    Tree(_,t1,t2) -> (equas_of_solution_tree t1)@@(equas_of_solution_tree t2)
+  | Tree(_,t1,t2) ->
+     (equas_of_solution_tree t1)@@(equas_of_solution_tree t2)
   | Leaf s -> s.s_equa_deps
 
-(* [really_useful_prop] pushes useless props in a new Pprop variable *)
-(* Things get shorter, but may also get wrong, since a Prop is considered
-   to be undecidable in ReflOmegaCore.concl_to_hyp, whereas for instance
-   Pfalse is decidable. So should not be used on conclusion (??) *)
+(** [maximize_prop] pushes useless props in a new Pprop atom.
+  The reified formulas get shorter, but be careful with decidabilities.
+  For instance, anything that contains a Pprop is considered to be
+  undecidable in [ReflOmegaCore], whereas a Pfalse for instance at
+  the same spot will lead to a decidable formula.
+  In particular, do not use this function on the conclusion.
+  Even in hypotheses, we could probably build pathological examples
+  that romega won't handle correctly, but they should be pretty rare.
+*)
 
-let rec coq_of_oprop = function
-  | Pequa(t,_) -> t
-  | Ptrue -> app coq_True [||]
-  | Pfalse -> app coq_False [||]
-  | Pnot t1 -> app coq_not [|coq_of_oprop t1|]
-  | Por(_,t1,t2) -> app coq_or [|coq_of_oprop t1; coq_of_oprop t2|]
-  | Pand(_,t1,t2) -> app coq_and [|coq_of_oprop t1; coq_of_oprop t2|]
-  | Pimp(_,t1,t2) ->
-     (* No lifting here, since Omega only works on closed propositions. *)
-     Term.mkArrow (coq_of_oprop t1) (coq_of_oprop t2)
-  | Pprop t -> t
-
-let really_useful_prop equas c =
+let maximize_prop equas c =
   let rec loop c = match c with
-    | Pequa(_,e) -> if IntSet.mem e.e_omega.id equas then Some c else None
-    | Pnot t1 ->
-       begin match loop t1 with None -> None | Some t1' -> Some (Pnot t1') end
-    | Por(i,t1,t2) -> binop (fun (t1,t2) -> Por(i,t1,t2)) t1 t2
-    | Pand(i,t1,t2) -> binop (fun (t1,t2) -> Pand(i,t1,t2)) t1 t2
-    | Pimp(i,t1,t2) -> binop (fun (t1,t2) -> Pimp(i,t1,t2)) t1 t2
-    | Ptrue | Pfalse | Pprop _ -> None
-  and binop f t1 t2 =
-    begin match loop t1, loop t2 with
-      None, None -> None
-    | Some t1',Some t2' -> Some (f(t1',t2'))
-    | Some t1',None -> Some (f(t1',Pprop (coq_of_oprop t2)))
-    | None,Some t2' -> Some (f(Pprop (coq_of_oprop t1),t2'))
-    end
-  in
-  match loop c with
-  | None -> Pprop (coq_of_oprop c)
-  | Some t -> t
+    | Pequa(t,e) -> if IntSet.mem e.e_omega.id equas then c else Pprop t
+    | Pnot t ->
+       (match loop t with
+        | Pprop p -> Pprop (app coq_not [|p|])
+        | t' -> Pnot t')
+    | Por(i,t1,t2) ->
+       (match loop t1, loop t2 with
+        | Pprop p1, Pprop p2 -> Pprop (app coq_or [|p1;p2|])
+        | t1', t2' -> Por(i,t1',t2'))
+    | Pand(i,t1,t2) ->
+       (match loop t1, loop t2 with
+        | Pprop p1, Pprop p2 -> Pprop (app coq_and [|p1;p2|])
+        | t1', t2' -> Pand(i,t1',t2'))
+    | Pimp(i,t1,t2) ->
+       (match loop t1, loop t2 with
+        | Pprop p1, Pprop p2 -> Pprop (Term.mkArrow p1 p2) (* no lift (closed) *)
+        | t1', t2' -> Pimp(i,t1',t2'))
+    | Ptrue -> Pprop (app coq_True [||])
+    | Pfalse -> Pprop (app coq_False [||])
+    | Pprop _ -> c
+  in loop c
 
 let rec display_solution_tree ch = function
     Leaf t ->
@@ -938,6 +945,28 @@ and decompose_tree_hyps trace env ctxt = function
 	   (CCEqua equation.e_omega.id :: ctxt) l in
       app coq_e_extract [|mk_nat index; mk_direction_list path; cont |]
 
+let solve_system env index list_eq =
+  let system = List.map (fun eq -> eq.e_omega) list_eq in
+  let trace =
+    OmegaSolver.simplify_strong
+      (new_omega_eq,new_omega_var,display_omega_var)
+      system
+  in
+  (* Hypotheses used for this solution *)
+  let vars = hyps_used_in_trace trace in
+  let splits = get_eclatement env (IntSet.elements vars) in
+  if !debug then
+    begin
+      Printf.printf "SYSTEME %d\n" index;
+      display_action display_omega_var trace;
+      print_string "\n  Depend :";
+      IntSet.iter (fun i -> Printf.printf " %d" i) vars;
+      print_string "\n  Split points :";
+      List.iter display_depend splits;
+      Printf.printf "\n------------------------------------\n"
+    end;
+  {s_index = index; s_trace = trace; s_equa_deps = vars}, splits
+
 (* \section{La fonction principale} *)
  (* Cette fonction construit la
 trace pour la procédure de décision réflexive.  A partir des résultats
@@ -947,36 +976,14 @@ résolution globale du système et enfin construit la trace qui permet
 de faire rejouer cette solution par la tactique réflexive. *)
 
 let resolution unsafe env (reified_concl,reified_hyps) systems_list =
-  let num = ref 0 in
-  let solve_system list_eq =
-    let index = !num in
-    let system = List.map (fun eq -> eq.e_omega) list_eq in
-    let trace =
-      simplify_strong
-	(new_omega_eq,new_omega_var,display_omega_var)
-	system in
-    (* Hypotheses used for this solution *)
-    let vars = hyps_used_in_trace trace in
-    let splits = get_eclatement env (IntSet.elements vars) in
-    if !debug then begin
-      Printf.printf "SYSTEME %d\n" index;
-      display_action display_omega_var trace;
-      print_string "\n  Depend :";
-      IntSet.iter (fun i -> Printf.printf " %d" i) vars;
-      print_string "\n  Split points :";
-      List.iter display_depend splits;
-      Printf.printf "\n------------------------------------\n"
-    end;
-    incr num;
-    {s_index = index; s_trace = trace; s_equa_deps = vars}, splits  in
   if !debug then Printf.printf "\n====================================\n";
-  let all_solutions = List.map solve_system systems_list in
+  let all_solutions = List.mapi (solve_system env) systems_list in
   let solution_tree = solve_with_constraints all_solutions [] in
   if !debug then  begin
     display_solution_tree stdout solution_tree;
     print_newline()
   end;
-  (* Collect all hypotheses used in the solution tree *)
+  (** Collect all hypotheses used in the solution tree *)
   let useful_equa_ids = equas_of_solution_tree solution_tree in
   let equations = List.map (get_equation env) (IntSet.elements useful_equa_ids)
   in
@@ -990,37 +997,35 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
   let useful_vars = vars_of_equations equations @@ vars_of_prop reified_concl
   in
 
-  (* variables a introduire *)
-  let to_introduce = add_stated_equations env solution_tree in
-  let stated_vars =  List.map (fun (v,_,_,_) -> v) to_introduce in
-  let l_generalize_arg = List.map (fun (_,t,_,_) -> EConstr.of_constr t) to_introduce in
-  let hyp_stated_vars = List.map (fun (_,_,_,id) -> CCEqua id) to_introduce in
-  (* L'environnement de base se construit en deux morceaux :
-     - les variables des équations utiles (et de la conclusion)
-     - les nouvelles variables declarées durant les preuves *)
-  let all_vars_env = (IntSet.elements useful_vars) @ stated_vars in
-  let basic_env =
+  (** Parts coming from equations introduced by omega: *)
+  let stated_vars, l_generalize_arg, to_reify_stated, hyp_stated_vars =
+    digest_stated_equations env solution_tree
+  in
+  (** The final variables are either coming from:
+     - useful hypotheses (and conclusion)
+     - equations introduced during resolution *)
+  let all_vars_env = (IntSet.elements useful_vars) @ stated_vars
+  in
+  (** We prepare the renumbering from all variables to useful ones.
+      Since [all_var_env] is sorted, this renumbering will preserve
+      order: this way, the equations in ReflOmegaCore will have
+      the same normal forms as here. *)
+  let reduced_term_env =
     let rec loop i = function
       | [] -> []
       | var :: l ->
          let t = get_reified_atom env var in
          IntHtbl.add env.real_indices var i; t :: loop (succ i) l
     in
-    loop 0 all_vars_env in
-  (* Since [all_vars_env] is sorted, this renumbering of variables
-     should have preserved order *)
-  let env_terms_reified = mk_list (Lazy.force Z.typ) basic_env in
-  (* On peut maintenant généraliser le but : env est a jour *)
-  let l_reified_stated =
-     List.map (fun (_,_,(l,r),_) ->
-                 app coq_p_eq [| reified_of_formula env l;
-                                 reified_of_formula env r |])
-              to_introduce in
+    mk_list (Lazy.force Z.typ) (loop 0 all_vars_env)
+  in
+  (** The environment [env] (and especially [env.real_indices]) is now
+      ready for the coming reifications: *)
+  let l_reified_stated = List.map (reified_of_eq env) to_reify_stated in
   let reified_concl = reified_of_proposition env reified_concl in
   let l_reified_terms =
     List.map
-      (fun p ->
-        reified_of_proposition env (really_useful_prop useful_equa_ids p))
+      (fun p -> reified_of_proposition env (maximize_prop useful_equa_ids p))
       useful_hyptypes
   in
   let env_props_reified = mk_plist env.props in
@@ -1029,7 +1034,7 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
             (l_reified_stated @ l_reified_terms) in
   let reified =
     app coq_interp_sequent
-       [| reified_concl;env_props_reified;env_terms_reified;reified_goal|]
+       [| reified_concl;env_props_reified;reduced_term_env;reified_goal|]
   in
   let initial_context =
     List.map (fun id -> CCHyp{o_hyp=id;o_path=[]}) useful_hypnames in
@@ -1067,7 +1072,3 @@ let total_reflexive_omega_tactic unsafe =
   resolution unsafe env reified_goal systems_list
   with NO_CONTRADICTION -> CErrors.error "ROmega can't solve this system"
   end }
-
-(*i let tester = Tacmach.hide_atomic_tactic "TestOmega" test_tactic i*)
-
-
