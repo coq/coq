@@ -136,6 +136,8 @@ type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 type ('a, 'b) eq = ('a, 'b) CSig.eq = Refl : ('a, 'a) eq
 
+let sym : type a b. (a, b) eq -> (b, a) eq = fun Refl -> Refl
+
 module Union =
 struct
   let map f g = function

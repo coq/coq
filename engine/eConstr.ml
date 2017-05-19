@@ -731,8 +731,6 @@ let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d 
 open Context
 open Environ
 
-let sym : type a b. (a, b) eq -> (b, a) eq = fun Refl -> Refl
-
 let cast_rel_decl :
   type a b. (a,b) eq -> (a, a) Rel.Declaration.pt -> (b, b) Rel.Declaration.pt =
   fun Refl x -> x
