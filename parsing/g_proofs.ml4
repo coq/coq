@@ -45,11 +45,9 @@ GEXTEND Gram
       | IDENT "Existential"; n = natural; c = constr_body ->
 	  VernacSolveExistential (n,c)
       | IDENT "Admitted" -> VernacEndProof Admitted
-      | IDENT "Qed" -> VernacEndProof (Proved (Opaque None,None))
-      | IDENT "Qed"; IDENT "exporting"; l = LIST0 identref SEP "," ->
-          VernacEndProof (Proved (Opaque (Some l),None))
+      | IDENT "Qed" -> VernacEndProof (Proved (Opaque,None))
       | IDENT "Save"; id = identref ->
-	  VernacEndProof (Proved (Opaque None, Some id))
+	  VernacEndProof (Proved (Opaque, Some id))
       | IDENT "Defined" -> VernacEndProof (Proved (Transparent,None))
       |	IDENT "Defined"; id=identref ->
 	  VernacEndProof (Proved (Transparent,Some id))

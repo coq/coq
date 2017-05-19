@@ -718,10 +718,7 @@ open Decl_kinds
         match o with
           | None -> (match opac with
               | Transparent -> keyword "Defined"
-              | Opaque None -> keyword "Qed"
-              | Opaque (Some l) ->
-                  keyword "Qed" ++ spc() ++ str"export" ++
-                    prlist_with_sep (fun () -> str", ") pr_lident l)
+              | Opaque      -> keyword "Qed")
           | Some id -> (if opac <> Transparent then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
       )
       | VernacExactProof c ->

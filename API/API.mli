@@ -3670,7 +3670,7 @@ sig
   type lname = Names.Name.t Loc.located
   type lident = Names.Id.t Loc.located
   type opacity_flag =
-                    | Opaque of lident list option
+                    | Opaque
                     | Transparent
   type locality_flag = bool
   type inductive_kind =
