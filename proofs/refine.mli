@@ -12,7 +12,6 @@
     in Ltac which is actually based on the one below. *)
 
 open Proofview
-open Proofview.Notations
 
 (** {6 The refine tactic} *)
 
