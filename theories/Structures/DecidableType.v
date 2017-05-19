@@ -86,7 +86,7 @@ Module KeyDecidableType(D:DecidableType).
 
   Lemma InA_eqk : forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
   Proof.
-   intros; apply InA_eqA with p; auto with *. 
+   intros; apply InA_eqA with p; auto using eqk_equiv.
   Qed.
 
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
@@ -109,7 +109,7 @@ Module KeyDecidableType(D:DecidableType).
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
   Proof.
-  intros; unfold MapsTo in *; apply InA_eqA with (x,e); eauto with *.
+    intros; unfold MapsTo in *; apply InA_eqA with (x,e); auto using eqke_equiv.
   Qed.
 
   Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.

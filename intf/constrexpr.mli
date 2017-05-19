@@ -36,14 +36,6 @@ type prim_token =
   | Numeral of Bigint.bigint (** representation of integer literals that appear in Coq scripts. *)
   | String of string
 
-type raw_cases_pattern_expr =
-  | RCPatAlias of Loc.t * raw_cases_pattern_expr * Id.t
-  | RCPatCstr of Loc.t * Globnames.global_reference
-    * raw_cases_pattern_expr list * raw_cases_pattern_expr list
-  (** [CPatCstr (_, c, l1, l2)] represents ((@c l1) l2) *)
-  | RCPatAtom of Loc.t * Id.t option
-  | RCPatOr of Loc.t * raw_cases_pattern_expr list
-
 type instance_expr = Misctypes.glob_level list
 
 type cases_pattern_expr =

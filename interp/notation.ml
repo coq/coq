@@ -444,16 +444,20 @@ let notation_of_prim_token = function
   | Numeral n -> "- "^(to_string (neg n))
   | String _ -> raise Not_found
 
-let find_prim_token g loc p sc =
+let find_prim_token check_allowed loc p sc =
   (* Try for a user-defined numerical notation *)
   try
     let (_,c),df = find_notation (notation_of_prim_token p) sc in
-    g (Notation_ops.glob_constr_of_notation_constr loc c),df
+    let pat = Notation_ops.glob_constr_of_notation_constr loc c in
+    check_allowed pat;
+    pat, df
   with Not_found ->
   (* Try for a primitive numerical notation *)
   let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc loc p in
   check_required_module loc sc spdir;
-  g (interp ()), ((dirpath (fst spdir),DirPath.empty),"")
+  let pat = interp () in
+  check_allowed pat;
+  pat, ((dirpath (fst spdir),DirPath.empty),"")
 
 let interp_prim_token_gen g loc p local_scopes =
   let scopes = make_current_scopes local_scopes in
@@ -466,20 +470,17 @@ let interp_prim_token_gen g loc p local_scopes =
       | String s -> str "No interpretation for string " ++ qs s) ++ str ".")
 
 let interp_prim_token =
-  interp_prim_token_gen (fun x -> x)
+  interp_prim_token_gen (fun _ -> ())
 
-(** [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
-
-let rec rcp_of_glob looked_for = function
-  | GVar (loc,id) -> RCPatAtom (loc,Some id)
-  | GHole (loc,_,_,_) -> RCPatAtom (loc,None)
-  | GRef (loc,g,_) -> looked_for g; RCPatCstr (loc, g,[],[])
+let rec check_allowed_ref_in_pat looked_for = function
+  | GVar _ | GHole _ -> ()
+  | GRef (_,g,_) -> looked_for g
   | GApp (loc,GRef (_,g,_),l) ->
-    looked_for g; RCPatCstr (loc, g, List.map (rcp_of_glob looked_for) l,[])
+    looked_for g; List.iter (check_allowed_ref_in_pat looked_for) l
   | _ -> raise Not_found
 
 let interp_prim_token_cases_pattern_expr loc looked_for p =
-  interp_prim_token_gen (rcp_of_glob looked_for) loc p
+  interp_prim_token_gen (check_allowed_ref_in_pat looked_for) loc p
 
 let interp_notation loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in

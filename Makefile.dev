@@ -97,7 +97,10 @@ minibyte: $(COQTOPBYTE) pluginsbyte
 pluginsopt: $(PLUGINSOPT)
 pluginsbyte: $(PLUGINS)
 
-.PHONY: coqlight states miniopt minibyte pluginsopt pluginsbyte
+# This should build all the ocaml code but not (most of) the .v files
+coqocaml: tools coqbinaries pluginsopt coqide printers
+
+.PHONY: coqlight states miniopt minibyte pluginsopt pluginsbyte coqocaml
 
 ##########################
 ### 2) core ML components

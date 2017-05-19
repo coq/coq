@@ -317,3 +317,23 @@ let T := constr:(fun a b : nat => a) in
   end.
 exact (eq_refl n).
 Qed.
+
+(* A variant of #2602 which was wrongly succeeding because "a", bound to
+   "?m", was then internally turned into a "_" in the second matching *)
+
+Goal exists m, S m > 0.
+eexists.
+Fail match goal with
+ | |- context [ S ?a ] =>
+     match goal with
+       | |- S a > a => idtac
+     end
+end.
+Abort.
+
+(* Test evar syntax *)
+
+Goal True.
+evar (0=0).
+Abort.
+

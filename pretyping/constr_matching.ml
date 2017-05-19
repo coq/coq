@@ -361,6 +361,8 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 
       |	PFix c1, Fix _ when eq_constr sigma (mkFix (to_fix c1)) cT -> subst
       |	PCoFix c1, CoFix _ when eq_constr sigma (mkCoFix (to_fix c1)) cT -> subst
+      | PEvar (c1,args1), Evar (c2,args2) when Evar.equal c1 c2 ->
+         Array.fold_left2 (sorec ctx env) subst args1 args2
       | _ -> raise PatternMatchingFailure
 
   in

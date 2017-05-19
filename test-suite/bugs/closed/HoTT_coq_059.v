@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-indices-matter") -*- *)
 Set Universe Polymorphism.
 
 Inductive eq {A} (x : A) : A -> Type := eq_refl : eq x x.

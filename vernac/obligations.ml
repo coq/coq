@@ -1088,7 +1088,7 @@ let add_definition n ?term t ctx ?pl ?(implicits=[]) ?(kind=Global,false,Definit
       Defined cst)
   else (
     let len = Array.length obls in
-    let _ = Flags.if_verbose Feedback.msg_info (info ++ str ", generating " ++ int len ++ str " obligation(s)") in
+    let _ = Flags.if_verbose Feedback.msg_info (info ++ str ", generating " ++ int len ++ str (String.plural len " obligation")) in
       progmap_add n (CEphemeron.create prg);
       let res = auto_solve_obligations (Some n) tactic in
 	match res with

@@ -697,8 +697,8 @@ which can be any valid path.
 
 \subsection[\tt Add LoadPath {\str} as {\dirpath}.]{\tt Add LoadPath {\str} as {\dirpath}.\comindex{Add LoadPath}\label{AddLoadPath}}
 
-This command is equivalent to the command line option {\tt -Q {\dirpath}
-  {\str}}. It adds the physical directory {\str} to the current {\Coq}
+This command is equivalent to the command line option {\tt -Q {\str}
+  {\dirpath}}. It adds the physical directory {\str} to the current {\Coq}
 loadpath and maps it to the logical directory {\dirpath}.
 
 \begin{Variants}
@@ -707,8 +707,8 @@ Performs as {\tt Add LoadPath {\str} as {\dirpath}} but for the empty directory 
 \end{Variants}
 
 \subsection[\tt Add Rec LoadPath {\str} as {\dirpath}.]{\tt Add Rec LoadPath {\str} as {\dirpath}.\comindex{Add Rec LoadPath}\label{AddRecLoadPath}}
-This command is equivalent to the command line option {\tt -R {\dirpath}
-  {\str}}. It adds the physical directory {\str} and all its
+This command is equivalent to the command line option {\tt -R {\str}
+  {\dirpath}}. It adds the physical directory {\str} and all its
 subdirectories to the current {\Coq} loadpath.
 
 \begin{Variants}
@@ -959,6 +959,22 @@ time of writing this documentation, the default value is 50).
 
 \subsection[\tt Test Printing Depth.]{\tt Test Printing Depth.\optindex{Printing Depth}}
 This command displays the current nesting depth used for display.
+
+\subsection[\tt Unset Printing Compact Contexts.]{\tt Unset Printing Compact Contexts.\optindex{Printing Compact Contexts}}
+This command resets the displaying of goals contexts to non compact
+mode (default at the time of writing this documentation). Non compact
+means that consecutive variables of different types are printed on
+different lines.
+
+\subsection[\tt Set Printing Compact Contexts.]{\tt Set Printing Compact Contexts.\optindex{Printing Compact Contexts}}
+This command sets the displaying of goals contexts to compact mode.
+The printer tries to reduce the vertical size of goals contexts by
+putting several variables (even if of different types) on the same
+line provided it does not exceed the printing width (See {\tt Set
+  Printing Width} above).
+
+\subsection[\tt Test Printing Compact Contexts.]{\tt Test Printing Compact Contexts.\optindex{Printing Compact Contexts}}
+This command displays the current state of compaction of goal d'isolat.
 
 \subsection[\tt Set Printing Dependent Evars Line.]{\tt Set Printing Dependent Evars Line.\optindex{Printing Dependent Evars Line}}
 This command enables the printing of the ``{\tt (dependent evars: \ldots)}''

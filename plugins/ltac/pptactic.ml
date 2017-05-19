@@ -51,7 +51,7 @@ let pr_global x = Nametab.pr_global_env Id.Set.empty x
 
 type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string
-| TacNonTerm of Loc.t * 'a * Names.Id.t
+| TacNonTerm of Loc.t * 'a * Names.Id.t option
 
 type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
 
@@ -264,8 +264,9 @@ type 'a extra_genarg_printer =
       let rec pack prods args = match prods, args with
       | [], [] -> []
       | TacTerm s :: prods, args -> TacTerm s :: pack prods args
-      | TacNonTerm (loc, symb, id) :: prods, arg :: args ->
-        TacNonTerm (loc, (symb, arg), id) :: pack prods args
+      | TacNonTerm (_, _, None) :: prods, args -> pack prods args
+      | TacNonTerm (loc, symb, (Some _ as ido)) :: prods, arg :: args ->
+        TacNonTerm (loc, (symb, arg), ido) :: pack prods args
       | _ -> raise Not_found
       in
       let prods = pack pp.pptac_prods l in

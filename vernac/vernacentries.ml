@@ -1412,6 +1412,15 @@ let _ =
       optwrite = (fun _ -> ()) }
 
 let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "display compact goal contexts";
+      optkey   = ["Printing";"Compact";"Contexts"];
+      optread  = (fun () -> Printer.get_compact_context());
+      optwrite = (fun b -> Printer.set_compact_context b) }
+
+let _ =
   declare_int_option
     { optsync  = true;
       optdepr  = false;

@@ -173,12 +173,13 @@ let print_error_for_buffer ?loc lvl msg buf =
   then Topfmt.emacs_logger ?pre_hdr lvl msg
   else Topfmt.std_logger   ?pre_hdr lvl msg
 
+(*
 let print_toplevel_parse_error (e, info) buf =
   let loc = Loc.get_loc info in
   let lvl = Feedback.Error in
   let msg = CErrors.iprint (e, info) in
   print_error_for_buffer ?loc lvl msg buf
-
+*)
 end
 
 (*s The Coq prompt is the name of the focused proof, if any, and "Coq"
@@ -260,7 +261,10 @@ let read_sentence sid input =
   with reraise ->
     let reraise = CErrors.push reraise in
     discard_to_dot ();
-    TopErr.print_toplevel_parse_error reraise top_buffer;
+    (* The caller of read_sentence does the error printing now, this
+       should be re-enabled once we rely on the feedback error
+       printer again *)
+    (* TopErr.print_toplevel_parse_error reraise top_buffer; *)
     Exninfo.iraise reraise
 
 (** Coqloop Console feedback handler *)

@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-quick") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-quick") -*- *)
 Section S.
   Definition foo := nonexistent.
 End S.

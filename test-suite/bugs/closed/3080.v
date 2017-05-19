@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs" "-nois") -*- *)
+(* -*- coq-prog-args: ("-nois") -*- *)
 Delimit Scope type_scope with type.
 Delimit Scope function_scope with function.
 

@@ -274,6 +274,26 @@ ARGUMENT EXTEND in_clause
 | [ in_clause'(cl) ] -> [ cl ]
 END
 
+let local_test_lpar_id_colon =
+  let err () = raise Stream.Failure in
+  Pcoq.Gram.Entry.of_parser "lpar_id_colon"
+    (fun strm ->
+      match Util.stream_nth 0 strm with
+        | Tok.KEYWORD "(" ->
+            (match Util.stream_nth 1 strm with
+              | Tok.IDENT _ ->
+                  (match Util.stream_nth 2 strm with
+                    | Tok.KEYWORD ":" -> ()
+                    | _ -> err ())
+              | _ -> err ())
+        | _ -> err ())
+
+let pr_lpar_id_colon _ _ _ _ = mt ()
+
+ARGUMENT EXTEND test_lpar_id_colon TYPED AS unit PRINTED BY pr_lpar_id_colon
+| [ local_test_lpar_id_colon(x) ] -> [ () ]
+END
+
 (* spiwack: the print functions are incomplete, but I don't know what they are
 	used for *)
 let pr_r_nat_field natf =

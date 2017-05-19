@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs" "-compat" "8.5") -*- *)
+(* -*- coq-prog-args: ("-compat" "8.5") -*- *)
 Require Coq.Lists.List Coq.Vectors.Vector.
 Require Coq.Compat.Coq85.
 

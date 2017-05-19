@@ -21,7 +21,7 @@ open Nameops
 
 type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
 | TacTerm of string
-| TacNonTerm of Loc.t * 'a * Names.Id.t
+| TacNonTerm of Loc.t * 'a * Names.Id.t option
 
 type raw_argument = string * string option
 type argument = Genarg.ArgT.any Extend.user_symbol
@@ -174,9 +174,9 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let map = function
   | TacTerm s -> GramTerminal s
-  | TacNonTerm (loc, s, _) ->
+  | TacNonTerm (loc, s, ido) ->
     let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
-    GramNonTerminal (loc, typ, e)
+    GramNonTerminal (loc, Option.map (fun _ -> typ) ido, e)
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
@@ -202,7 +202,7 @@ let register_tactic_notation_entry name entry =
 
 let interp_prod_item = function
   | TacTerm s -> TacTerm s
-  | TacNonTerm (loc, (nt, sep), id) ->
+  | TacNonTerm (loc, (nt, sep), ido) ->
     let symbol = parse_user_entry nt sep in
     let interp s = function
     | None ->
@@ -220,7 +220,7 @@ let interp_prod_item = function
       end
     in
     let symbol = interp_entry_name interp symbol in
-    TacNonTerm (loc, symbol, id)
+    TacNonTerm (loc, symbol, ido)
 
 let make_fresh_key =
   let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
@@ -296,7 +296,7 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
 
 let cons_production_parameter = function
 | TacTerm _ -> None
-| TacNonTerm (_, _, id) -> Some id
+| TacNonTerm (_, _, ido) -> ido
 
 let add_glob_tactic_notation local ~level prods forml ids tac =
   let parule = {
@@ -362,7 +362,7 @@ let add_ml_tactic_notation name ~level prods =
     let open Tacexpr in
     let get_id = function
     | TacTerm s -> None
-    | TacNonTerm (_, _, id) -> Some id
+    | TacNonTerm (_, _, ido) -> ido
     in
     let ids = List.map_filter get_id prods in
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in

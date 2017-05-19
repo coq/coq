@@ -79,7 +79,9 @@ let pr_new_syntax po loc chan_beautify ocom =
    and a glimpse of the executed command *)
 
 let pp_cmd_header loc com =
-  let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
+  let shorten s =
+    if Unicode.utf8_length s > 33 then (Unicode.utf8_sub s 0 30) ^ "..." else s
+  in
   let noblank s = String.map (fun c ->
       match c with
 	| ' ' | '\n' | '\t' | '\r' -> '~'
@@ -323,8 +325,5 @@ let compile verbosely f =
 
 let compile v f =
   ignore(CoqworkmgrApi.get 1);
-  begin
-    try compile v f
-    with any -> Topfmt.print_err_exn any
-  end;
+  compile v f;
   CoqworkmgrApi.giveback 1

@@ -1,3 +1,0 @@
-Inductive [] nat : Set := O : nat | S : nat->nat.
-Check Construct nat 0 1.
-Check Construct nat 0 2.
