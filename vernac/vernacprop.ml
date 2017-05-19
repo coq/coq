@@ -37,7 +37,7 @@ let is_debug cmd = match cmd with
   | VernacSetOption (["Ltac";"Debug"], _) -> true
   | _ -> false
 
-let is_query cmd = match cmd with
+let rec is_query cmd = match cmd with
   | VernacChdir None
   | VernacMemOption _
   | VernacPrintOption _
@@ -46,6 +46,8 @@ let is_query cmd = match cmd with
   | VernacPrint _
   | VernacSearch _
   | VernacLocate _ -> true
+  | VernacTime (_,cmd')
+  | VernacTimeout (_,cmd') -> is_query cmd'
   | _ -> false
 
 let is_undo cmd = match cmd with
