@@ -126,6 +126,16 @@ let rec interp_vernac sid (loc,com) =
         let f = Loadpath.locate_file fname in
         load_vernac verbosely sid f
     | v ->
+
+      (* XXX: We need to run this before add as the classification is
+         highly dynamic and depends on the structure of the
+         document. Hopefully this is fixed when VtBack can be removed
+         and Undo etc... are just interpreted regularly. *)
+      let is_proof_step = match fst (Vernac_classifier.classify_vernac v) with
+        | VtProofStep _ | VtStm (VtBack _, _) | VtStartProof _ -> true
+        | _ -> false
+      in
+
       let nsid, ntip = Stm.add ~ontop:sid (not !Flags.quiet) (loc,v) in
 
       (* Main STM interaction *)
@@ -139,11 +149,12 @@ let rec interp_vernac sid (loc,com) =
       if check_proof then Stm.finish ();
 
       (* We could use a more refined criteria that depends on the
-         vernac. For now we imitate the old approach. *)
-      let hide_goals = !Flags.batch_mode || is_query v || !Flags.quiet ||
-                       not (Proof_global.there_are_pending_proofs ()) in
+         vernac. For now we imitate the old approach and rely on the
+         classification. *)
+      let print_goals = not !Flags.batch_mode && not !Flags.quiet &&
+                        is_proof_step && Proof_global.there_are_pending_proofs () in
 
-      if not hide_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
+      if print_goals then Feedback.msg_notice (pr_open_cur_subgoals ());
       nsid
   in
     try
