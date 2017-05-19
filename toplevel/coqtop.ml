@@ -641,6 +641,9 @@ let init_toplevel arglist =
       init_library_roots ();
       load_vernac_obj ();
       require ();
+      (* XXX: This is incorrect in batch mode, as we will initialize
+         the STM before having done Declaremods.start_library, thus
+         state 1 is invalid. This bug was present in 8.5/8.6. *)
       Stm.init ();
       let sid  = load_rcfile (Stm.get_current_state ()) in
       (* XXX: We ignore this for now, but should be threaded to the toplevels *)

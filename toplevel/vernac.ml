@@ -164,7 +164,9 @@ let rec interp_vernac sid (loc,com) =
       let com = if !Flags.time then VernacTime (loc,com) else com in
       interp com
     with reraise ->
-      ignore(Stm.edit_at sid);
+      (* XXX: In non-interactive mode edit_at seems to do very weird
+         things, so we better avoid it while we investigate *)
+      if not !Flags.batch_mode then ignore(Stm.edit_at sid);
       let (reraise, info) = CErrors.push reraise in
       let loc' = Option.default Loc.ghost (Loc.get_loc info) in
       if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
