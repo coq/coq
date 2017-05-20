@@ -22,31 +22,6 @@ open Notation_term
 (**********************************************************************)
 (* Utilities                                                          *)
 
-let on_true_do b f c = if b then (f c; b) else b
-
-let compare_glob_constr f add t1 t2 = match CAst.(t1.v,t2.v) with
-  | GRef (r1,_), GRef (r2,_) -> eq_gr r1 r2
-  | GVar v1, GVar v2 -> on_true_do (Id.equal v1 v2) add (Name v1)
-  | GApp (f1,l1), GApp (f2,l2) -> f f1 f2 && List.for_all2eq f l1 l2
-  | GLambda (na1,bk1,ty1,c1), GLambda (na2,bk2,ty2,c2)
-    when Name.equal na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
-    on_true_do (f ty1 ty2 && f c1 c2) add na1
-  | GProd (na1,bk1,ty1,c1), GProd (na2,bk2,ty2,c2)
-    when Name.equal na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
-      on_true_do (f ty1 ty2 && f c1 c2) add na1
-  | GHole _, GHole _ -> true
-  | GSort s1, GSort s2 -> Miscops.glob_sort_eq s1 s2
-  | GLetIn (na1,b1,t1,c1), GLetIn (na2,b2,t2,c2) when Name.equal na1 na2 ->
-      on_true_do (f b1 b2 && f c1 c2) add na1
-  | (GCases _ | GRec _
-    | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _),_
-  | _,(GCases _ | GRec _
-      | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _)
-      -> user_err Pp.(str "Unsupported construction in recursive notations.")
-  | (GRef _ | GVar _ | GApp _ | GLambda _ | GProd _
-    | GHole _ | GSort _ | GLetIn _), _
-      -> false
-
 let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
 | NRef gr1, NRef gr2 -> eq_gr gr1 gr2
 | NVar id1, NVar id2 -> Int.equal (List.index Id.equal id1 vars1) (List.index Id.equal id2 vars2)
@@ -296,7 +271,7 @@ let compare_recursive_parts found f f' (iterator,subc) =
       | Some _ -> false
       end
   | _ ->
-      compare_glob_constr aux (add_name found) c1 c2 in
+      mk_glob_constr_eq aux c1 c2 in
   if aux iterator subc then
     match !diff with
     | None ->
