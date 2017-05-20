@@ -27,3 +27,8 @@ Parameters (a:_) (b:a=0).
 Definition foo6 (x:=1) : forall {n:nat}, n=n := fun n => eq_refl.
 
 Fixpoint foo7 (x:=1) (n:nat) {p:nat} {struct n} : nat.
+
+(* Some example which should succeed with local implicit arguments *)
+
+Inductive A {P:forall m {n}, n=m -> Prop} := C : P 0 eq_refl -> A.
+Inductive B (P:forall m {n}, n=m -> Prop) := D : P 0 eq_refl -> B P.

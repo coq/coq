@@ -190,10 +190,10 @@ let compute_internalization_data env ty typ impl =
   let expls_impl = compute_explicitable_implicit impl ty in
   (ty, expls_impl, impl, compute_arguments_scope typ)
 
-let compute_internalization_env env ty =
+let compute_internalization_env env ?(impls=empty_internalization_env) ty =
   List.fold_left3
     (fun map id typ impl -> Id.Map.add id (compute_internalization_data env ty typ impl) map)
-    empty_internalization_env
+    impls
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
