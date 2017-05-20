@@ -1,14 +1,21 @@
 dist: trusty
+
 # Travis builds are slower using sudo: false (the container-based
 # infrastructure) as of March 2017; see
 # https://github.com/coq/coq/pull/467 for some discussion.
 sudo: required
+
 # Until Ocaml becomes a language, we set a known one.
 language: c
+
 cache:
   apt: true
   directories:
   - $HOME/.opam
+
+before_cache:
+  - rm -rf ~/.opam/log/
+
 addons:
   apt:
     sources:
@@ -17,6 +24,7 @@ addons:
     - opam
     - aspcud
     - gcc-multilib
+
 env:
   global:
   - NJOBS=2
@@ -55,9 +63,8 @@ matrix:
   allow_failures:
   - env: TEST_TARGET="ci-geocoq"
 
-  # Full Coq test-suite with two compilers
-  # [TODO: use yaml refs and avoid duplication for packages list]
   include:
+    # Full Coq test-suite with two compilers
     - env:
       - TEST_TARGET="test-suite"
       - EXTRA_CONF="-coqide opt -with-doc yes"
@@ -81,6 +88,7 @@ matrix:
           - ghostscript
           - transfig
           - imagemagick
+
     - env:
       - TEST_TARGET="test-suite"
       - COMPILER="4.04.1"
@@ -92,6 +100,8 @@ matrix:
           sources:
           - avsm
           packages: *extra-packages
+
+    # Ocaml warnings with two compilers
     - env:
       - TEST_TARGET="coqocaml"
       - EXTRA_CONF="-coqide opt -warn-error"
@@ -107,6 +117,7 @@ matrix:
           - aspcud
           - libgtk2.0-dev
           - libgtksourceview2.0-dev
+
     - env:
       - TEST_TARGET="coqocaml"
       - COMPILER="4.04.1"
