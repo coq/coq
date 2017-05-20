@@ -287,7 +287,7 @@ let compare_recursive_parts found f f' (iterator,subc) =
       | Some _ -> false
       end
   | GLambda (Name x,_,t_x,c), GLambda (Name y,_,t_y,term)
-  | GProd (Name x,_,t_x,c), GProd (Name y,_,t_y,term) ->
+  | GProd (Name x,_,t_x,c), GProd (Name y,_,t_y,term) when not (Id.equal x y) ->
       (* We found a binding position where it differs *)
       begin match !diff with
       | None ->
