@@ -139,3 +139,8 @@ Notation "'tele' x .. z := b" :=
   (at level 85, x binder, z binder).
 
 Check tele (t:Type) '((y,z):nat*nat) (x:t) := tt.
+
+(* Cyprien's part of bug #4765 *)
+
+Notation foo5 x T y := (fun x : T => y).
+Check foo5 x nat x.
