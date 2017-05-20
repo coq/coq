@@ -137,6 +137,9 @@ let typecheck_params_and_fields def id pl t ps nots fs =
   in
   let arity = EConstr.it_mkProd_or_LetIn typ newps in
   let env_ar = EConstr.push_rel_context newps (EConstr.push_rel (LocalAssum (Name id,arity)) env0) in
+  let assums = List.filter is_local_assum newps in
+  let params = List.map (RelDecl.get_name %> out_name) assums in
+  let impls_env = compute_internalization_env env0 ~impls:impls_env (Inductive params) [id] [EConstr.to_constr !evars arity] [imps] in
   let env2,impls,newfs,data =
     interp_fields_evars env_ar evars impls_env nots (binders_of_decls fs)
   in
