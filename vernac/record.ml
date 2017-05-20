@@ -63,29 +63,28 @@ let interp_fields_evars env evars impls_env nots l =
   List.fold_left2
     (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
       let t', impl = interp_type_evars_impls env evars ~impls t in
-      let b' = Option.map (fun x -> EConstr.Unsafe.to_constr (fst (interp_casted_constr_evars_impls env evars ~impls x t'))) b in
-      let t' = EConstr.Unsafe.to_constr t' in
+      let b' = Option.map (fun x -> fst (interp_casted_constr_evars_impls env evars ~impls x t')) b in
       let impls =
 	match i with
 	| Anonymous -> impls
-	| Name id -> Id.Map.add id (compute_internalization_data env Constrintern.Method t' impl) impls
+	| Name id -> Id.Map.add id (compute_internalization_data env Constrintern.Method (EConstr.to_constr !evars t') impl) impls
       in
       let d = match b' with
 	      | None -> LocalAssum (i,t')
 	      | Some b' -> LocalDef (i,b',t')
       in
       List.iter (Metasyntax.set_notation_for_interpretation impls) no;
-      (push_rel d env, impl :: uimpls, d::params, impls))
+      (EConstr.push_rel d env, impl :: uimpls, d::params, impls))
     (env, [], [], impls_env) nots l
 
 let compute_constructor_level evars env l =
   List.fold_right (fun d (env, univ) ->
     let univ = 
       if is_local_assum d then
-	let s = Retyping.get_sort_of env evars (EConstr.of_constr (RelDecl.get_type d)) in
+	let s = Retyping.get_sort_of env evars (RelDecl.get_type d) in
 	  Univ.sup (univ_of_sort s) univ 
       else univ
-    in (push_rel d env, univ)) 
+    in (EConstr.push_rel d env, univ))
     l (env, Univ.type0m_univ)
 
 let binder_of_decl = function
@@ -113,63 +112,59 @@ let typecheck_params_and_fields def id pl t ps nots fs =
               Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters.")) ps
   in 
   let impls_env, ((env1,newps), imps) = interp_context_evars env0 evars ps in
-  let newps = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) newps in
-  let t', template = match t with 
+  let typ, sort, template = match t with
     | Some t -> 
-       let env = push_rel_context newps env0 in
+       let env = EConstr.push_rel_context newps env0 in
        let poly =
          match t with
          | { CAst.v = CSort (Misctypes.GType []) } -> true | _ -> false in
        let s = interp_type_evars env evars ~impls:empty_internalization_env t in
        let sred = Reductionops.whd_all env !evars s in
-       let s = EConstr.Unsafe.to_constr s in
-       let sred = EConstr.Unsafe.to_constr sred in
-	 (match kind_of_term sred with
-	 | Sort s' -> 
+	 (match EConstr.kind !evars sred with
+	 | Sort s' ->
+            let s' = EConstr.ESorts.kind !evars s' in
 	    (if poly then
                match Evd.is_sort_variable !evars s' with
 	       | Some l -> evars := Evd.make_flexible_variable !evars true l; 
-	                  sred, true
-	       | None -> s, false
-             else s, false)
+	                  s, s', true
+	       | None -> s, s', false
+             else s, s', false)
 	 | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
     | None -> 
       let uvarkind = Evd.univ_flexible_alg in
-	mkSort (Evarutil.evd_comb0 (Evd.new_sort_variable uvarkind) evars), true
+      let s = Evarutil.evd_comb0 (Evd.new_sort_variable uvarkind) evars in
+      EConstr.mkSort s, s, true
   in
-  let fullarity = it_mkProd_or_LetIn t' newps in
-  let env_ar = push_rel_context newps (push_rel (LocalAssum (Name id,fullarity)) env0) in
+  let arity = EConstr.it_mkProd_or_LetIn typ newps in
+  let env_ar = EConstr.push_rel_context newps (EConstr.push_rel (LocalAssum (Name id,arity)) env0) in
   let env2,impls,newfs,data =
     interp_fields_evars env_ar evars impls_env nots (binders_of_decls fs)
   in
-  let sigma = 
+  let evars =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar !evars Evd.empty in
-  let evars, nf = Evarutil.nf_evars_and_universes sigma in
-  let arity = nf t' in
-  let arity, evars = 
+  let typ, evars =
     let _, univ = compute_constructor_level evars env_ar newfs in
-    let ctx, aritysort = Reduction.dest_arity env0 arity in
-      assert(List.is_empty ctx); (* Ensured by above analysis *)
-      if not def && (Sorts.is_prop aritysort || 
-	(Sorts.is_set aritysort && is_impredicative_set env0)) then
-	arity, evars
+      if not def && (Sorts.is_prop sort ||
+	(Sorts.is_set sort && is_impredicative_set env0)) then
+	typ, evars
       else
-	let evars = Evd.set_leq_sort env_ar evars (Type univ) aritysort in
+	let evars = Evd.set_leq_sort env_ar evars (Type univ) sort in
 	if Univ.is_small_univ univ &&
-	   Option.cata (Evd.is_flexible_level evars) false (Evd.is_sort_variable evars aritysort) then
+	   Option.cata (Evd.is_flexible_level evars) false (Evd.is_sort_variable evars sort) then
 	   (* We can assume that the level in aritysort is not constrained
 	       and clear it, if it is flexible *)
-	  mkArity (ctx, Sorts.sort_of_univ univ),
-	  Evd.set_eq_sort env_ar evars (Prop Pos) aritysort
-	else arity, evars
+	  EConstr.mkSort (Sorts.sort_of_univ univ),
+	  Evd.set_eq_sort env_ar evars (Prop Pos) sort
+	else typ, evars
   in
   let evars, nf = Evarutil.nf_evars_and_universes evars in
-  let newps = Context.Rel.map nf newps in
-  let newfs = Context.Rel.map nf newfs in
+  let newfs = List.map (EConstr.to_rel_decl evars) newfs in
+  let newps = List.map (EConstr.to_rel_decl evars) newps in
+  let typ = EConstr.to_constr evars typ in
   let ce t = Pretyping.check_evars env0 Evd.empty evars (EConstr.of_constr t) in
     List.iter (iter_constr ce) (List.rev newps);
     List.iter (iter_constr ce) (List.rev newfs);
-    Evd.universe_context ?names:pl evars, nf arity, template, imps, newps, impls, newfs
+    Evd.universe_context ?names:pl evars, typ, template, imps, newps, impls, newfs
 
 let degenerate_decl decl =
   let id = match RelDecl.get_name decl with
