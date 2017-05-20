@@ -388,14 +388,8 @@ let interp ((_raw, verbose), s) =
 
 let quit = ref false
 
-(** Serializes the output of Stm.get_ast  *)
-let print_ast id =
-  match Stm.get_ast id with
-  | Some (expr, loc) -> begin
-      try  Texmacspp.tmpp expr loc
-      with e -> Xml_datatype.PCData ("ERROR " ^ Printexc.to_string e)
-    end
-  | None     -> Xml_datatype.PCData "ERROR"
+(** Disabled *)
+let print_ast id = Xml_datatype.PCData "ERROR"
 
 (** Grouping all call handlers together + error handling *)
 
