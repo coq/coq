@@ -2187,32 +2187,24 @@ the given bindings to instantiate parameters or hypotheses of {\term}.
 \label{injection}
 \tacindex{injection}
 
-The {\tt injection} tactic is based on the fact that constructors of
-inductive sets are injections. That means that if $c$ is a constructor
-of an inductive set, and if $(c~\vec{t_1})$ and $(c~\vec{t_2})$ are two
-terms that are equal then $~\vec{t_1}$ and $~\vec{t_2}$ are equal
-too.
+The {\tt injection} tactic exploits the property that constructors of
+inductive types are injective, i.e. that if $c$ is a constructor
+of an inductive type and $c~\vec{t_1}$ and $c~\vec{t_2}$ are equal
+then $\vec{t_1}$ and $\vec{t_2}$ are equal too.
 
 If {\term} is a proof of a statement of conclusion
  {\tt {\term$_1$} = {\term$_2$}},
-then {\tt injection} applies injectivity as deep as possible to
-derive the equality of all the subterms of {\term$_1$} and {\term$_2$}
-placed in the same positions. For example, from {\tt (S
-  (S n))=(S (S (S m)))} we may derive {\tt n=(S m)}.  To use this
-tactic {\term$_1$} and {\term$_2$} should be elements of an inductive
-set and they should be neither explicitly equal, nor structurally
-different. We mean by this that, if {\tt n$_1$} and {\tt n$_2$} are
-their respective normal forms, then:
-\begin{itemize}
-\item {\tt n$_1$} and {\tt n$_2$} should not be syntactically equal,
-\item there must not exist any pair of subterms {\tt u} and {\tt w},
-  {\tt u} subterm of {\tt n$_1$} and {\tt w} subterm of {\tt n$_2$} ,
-  placed in the same positions and having different constructors as
-  head symbols.
-\end{itemize}
-If these conditions are satisfied, then, the tactic derives the
-equality of all the subterms of {\term$_1$} and {\term$_2$} placed in
-the same positions and puts them as antecedents of the current goal.
+then {\tt injection} applies the injectivity of constructors as deep as possible to
+derive the equality of all the subterms of {\term$_1$} and {\term$_2$} at positions
+where {\term$_1$} and {\term$_2$} start to differ.
+For example, from {\tt (S p, S n) = (q, S (S m)} we may derive {\tt S
+  p = q} and {\tt n = S m}. For this tactic to work, {\term$_1$} and
+{\term$_2$} should be typed with an inductive
+type and they should be neither convertible, nor having a different
+head constructor. If these conditions are satisfied, the tactic
+derives the equality of all the subterms of {\term$_1$} and
+{\term$_2$} at positions where they differ and adds them as
+antecedents to the conclusion of the current goal.
 
 \Example Consider the following goal:
 
@@ -2251,6 +2243,7 @@ context using \texttt{intros until \ident}.
 \item \errindex{Not a projectable equality but a discriminable one}
 \item \errindex{Nothing to do, it is an equality between convertible terms}
 \item \errindex{Not a primitive equality}
+\item \errindex{Nothing to inject}
 \end{ErrMsgs}
 
 \begin{Variants}
