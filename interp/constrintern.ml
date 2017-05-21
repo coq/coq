@@ -46,7 +46,7 @@ open Context.Rel.Declaration
    types and recursive definitions and of projection names in records *)
 
 type var_internalization_type =
-  | Inductive of Id.t list (* list of params *)
+  | Inductive of Id.t list (* list of params *) * bool (* true = check for possible capture *)
   | Recursive
   | Method
   | Variable
@@ -176,7 +176,7 @@ let parsing_explicit = ref false
 let empty_internalization_env = Id.Map.empty
 
 let compute_explicitable_implicit imps = function
-  | Inductive params ->
+  | Inductive (params,_) ->
       (* In inductive types, the parameters are fixed implicit arguments *)
       let sub_impl,_ = List.chop (List.length params) imps in
       let sub_impl' = List.filter is_status_implicit sub_impl in
@@ -358,12 +358,12 @@ let locate_if_hole ?loc na = function
 
 let reset_hidden_inductive_implicit_test env =
   { env with impls = Id.Map.map (function
-         | (Inductive _,b,c,d) -> (Inductive [],b,c,d)
+         | (Inductive (params,_),b,c,d) -> (Inductive (params,false),b,c,d)
          | x -> x) env.impls }
 
 let check_hidden_implicit_parameters id impls =
   if Id.Map.exists (fun _ -> function
-    | (Inductive indparams,_,_,_) -> Id.List.mem id indparams
+    | (Inductive (indparams,check),_,_,_) when check -> Id.List.mem id indparams
     | _ -> false) impls
   then
     user_err  (strbrk "A parameter of an inductive type " ++

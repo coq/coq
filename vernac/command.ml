@@ -603,7 +603,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   let indimpls = List.map (fun (_, _, impls) -> userimpls @ 
     lift_implicits (Context.Rel.nhyps ctx_params) impls) arities in
   let arities = List.map pi1 arities and aritypoly = List.map pi2 arities in
-  let impls = compute_internalization_env env0 ~impls (Inductive params) indnames fullarities indimpls in
+  let impls = compute_internalization_env env0 ~impls (Inductive (params,true)) indnames fullarities indimpls in
   let implsforntn = compute_internalization_env env0 Variable indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 

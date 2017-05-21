@@ -94,7 +94,7 @@ let binder_of_decl = function
 
 let binders_of_decls = List.map binder_of_decl
 
-let typecheck_params_and_fields def id pl t ps nots fs =
+let typecheck_params_and_fields finite def id pl t ps nots fs =
   let env0 = Global.env () in
   let ctx = Evd.make_evar_universe_context env0 pl in
   let evars = ref (Evd.from_ctx ctx) in
@@ -139,7 +139,8 @@ let typecheck_params_and_fields def id pl t ps nots fs =
   let env_ar = EConstr.push_rel_context newps (EConstr.push_rel (LocalAssum (Name id,arity)) env0) in
   let assums = List.filter is_local_assum newps in
   let params = List.map (RelDecl.get_name %> out_name) assums in
-  let impls_env = compute_internalization_env env0 ~impls:impls_env (Inductive params) [id] [EConstr.to_constr !evars arity] [imps] in
+  let ty = Inductive (params,(finite != BiFinite)) in
+  let impls_env = compute_internalization_env env0 ~impls:impls_env ty [id] [EConstr.to_constr !evars arity] [imps] in
   let env2,impls,newfs,data =
     interp_fields_evars env_ar evars impls_env nots (binders_of_decls fs)
   in
@@ -563,7 +564,7 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
   (* Now, younger decl in params and fields is on top *)
   let (pl, ctx), arity, template, implpars, params, implfs, fields =
     States.with_state_protection (fun () ->
-      typecheck_params_and_fields (kind = Class true) idstruc pl s ps notations fs) () in
+      typecheck_params_and_fields finite (kind = Class true) idstruc pl s ps notations fs) () in
   let sign = structure_signature (fields@params) in
   let gr = match kind with
   | Class def ->

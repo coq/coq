@@ -38,7 +38,7 @@ open Misctypes
    of [env] *)
 
 type var_internalization_type =
-  | Inductive of Id.t list (* list of params *)
+  | Inductive of Id.t list (* list of params *) * bool (* true = check for possible capture *)
   | Recursive
   | Method
   | Variable

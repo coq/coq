@@ -87,3 +87,8 @@ Record R : Type := {
   P (A : Type) : Prop := exists x : A -> A, x = x;
   Q A : P A -> P A
 }.
+
+(* We allow reusing an implicit parameter named in non-recursive types *)
+(* This is used in a couple of development such as UniMatch *)
+
+Record S {A:Type} := { a : A; b : forall A:Type, A }.
