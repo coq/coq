@@ -90,6 +90,7 @@ let check_conv_error error why cst poly u f env a1 a2 =
 	else error (IncompatiblePolymorphism (env, a1, a2))
       else Constraint.union cst cst'
   with NotConvertible -> error why
+     | Univ.UniverseInconsistency e -> error (IncompatibleUniverses e)
 
 (* for now we do not allow reorderings *)
 
@@ -302,6 +303,10 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 	  let ctx2 = Univ.instantiate_univ_context cb2.const_universes in
 	  let inst1, ctx1 = Univ.UContext.dest ctx1 in
 	  let inst2, ctx2 = Univ.UContext.dest ctx2 in
+          output_string stderr "\ninst1:\n";
+          output_string stderr (Pp.string_of_ppcmds (Univ.Instance.pr Univ.Level.pr inst1));
+          output_string stderr "\ninst2:\n";
+          output_string stderr (Pp.string_of_ppcmds (Univ.Instance.pr Univ.Level.pr inst2)); flush stderr;
 	    if not (Univ.Instance.length inst1 == Univ.Instance.length inst2) then
 	      error IncompatibleInstances
 	    else 

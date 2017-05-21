@@ -1124,6 +1124,11 @@ sig
                             | SFBmodtype of module_type_body
 end
 
+module Univops : sig
+  val universes_of_constr : Term.constr -> Univ.LSet.t
+  val restrict_universe_context : Univ.ContextSet.t -> Univ.LSet.t -> Univ.ContextSet.t
+end
+
 module Environ :
 sig
   type env = Prelude.env
@@ -2651,8 +2656,6 @@ sig
   val new_Type : Names.DirPath.t -> Term.types
   val unsafe_type_of_global : Globnames.global_reference -> Term.types
   val constr_of_global : Prelude.global_reference -> Term.constr
-  val universes_of_constr : Term.constr -> Univ.LSet.t
-  val restrict_universe_context : Univ.ContextSet.t -> Univ.LSet.t -> Univ.ContextSet.t
   val new_univ_level : Names.DirPath.t -> Univ.Level.t
   val unsafe_constr_of_global : Globnames.global_reference -> Term.constr Univ.in_universe_context
   val new_sort_in_family : Sorts.family -> Sorts.t

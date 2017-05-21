@@ -489,8 +489,8 @@ and eqappr env cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
     | (FInd (ind1,u1), FInd (ind2,u2)) ->
-        if eq_ind ind1 ind2
-	then
+      if eq_ind ind1 ind2
+      then
         begin
           let fall_back () =
             let cuniv = convert_instances ~flex:false u1 u2 cuniv in
@@ -498,31 +498,54 @@ and eqappr env cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           in
           let mind = Environ.lookup_mind (fst ind1) env in
           if mind.Declarations.mind_polymorphic then
-          begin
-            let num_param_arity =
-              Context.Rel.length (mind.Declarations.mind_packets.(snd ind1).Declarations.mind_arity_ctxt)
-            in
-            if not (num_param_arity = CClosure.stack_args_size v1 && num_param_arity = CClosure.stack_args_size v2) then
-              fall_back ()
-            else
             begin
-              let uinfind = mind.Declarations.mind_universes in
-              let cuniv = compare_leq_inductives ~flex:false uinfind u1 u2 cuniv in
-              let cuniv = if cv_pb = CONV then compare_leq_inductives ~flex:false uinfind u2 u1 cuniv else cuniv in
-              convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+              let num_param_arity =
+                Context.Rel.length (mind.Declarations.mind_packets.(snd ind1).Declarations.mind_arity_ctxt)
+              in
+              if not (num_param_arity = CClosure.stack_args_size v1 && num_param_arity = CClosure.stack_args_size v2) then
+                fall_back ()
+              else
+                begin
+                  let uinfind = mind.Declarations.mind_universes in
+                  let cuniv = compare_leq_inductives ~flex:false uinfind u1 u2 cuniv in
+                  let cuniv = if cv_pb = CONV then compare_leq_inductives ~flex:false uinfind u2 u1 cuniv else cuniv in
+                  convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+                end
             end
-          end
           else
             fall_back ()
         end
-        else raise NotConvertible
+      else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
-	if Int.equal j1 j2 && eq_ind ind1 ind2
-	then
-	  (let cuniv = convert_instances ~flex:false u1 u2 cuniv in
-           convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv)
-        else raise NotConvertible
+      if Int.equal j1 j2 && eq_ind ind1 ind2
+      then
+        begin
+          let fall_back () =
+            let cuniv = convert_instances ~flex:false u1 u2 cuniv in
+            convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+          in
+          let mind = Environ.lookup_mind (fst ind1) env in
+          if mind.Declarations.mind_polymorphic then
+            begin
+              let num_cnstr_args =
+                let nparamsctxt = Context.Rel.length mind.Declarations.mind_params_ctxt in
+                nparamsctxt + mind.Declarations.mind_packets.(snd ind1).Declarations.mind_consnrealargs.(j1 - 1)
+              in
+              if not (num_cnstr_args = CClosure.stack_args_size v1 && num_cnstr_args = CClosure.stack_args_size v2) then
+                fall_back ()
+              else
+                begin (* we don't consider subtyping for constructors. *)
+                  let uinfind = mind.Declarations.mind_universes in
+                  let cuniv = compare_leq_inductives ~flex:false uinfind u1 u2 cuniv in
+                  let cuniv = compare_leq_inductives ~flex:false uinfind u2 u1 cuniv in
+                  convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+                end
+            end
+          else
+            fall_back ()
+        end
+      else raise NotConvertible
 	  
     (* Eta expansion of records *)
     | (FConstruct ((ind1,j1),u1), _) ->
@@ -688,7 +711,12 @@ let infer_cmp_universes env pb s0 s1 univs =
         else univs
 
 let infer_convert_instances ~flex u u' (univs,cstrs) =
-  (univs, Univ.enforce_eq_instances u u' cstrs)
+  let cstrs' =
+    if flex then 
+      if UGraph.check_eq_instances univs u u' then cstrs
+      else raise NotConvertible
+    else Univ.enforce_eq_instances u u' cstrs
+  in (univs, cstrs')
 
 let infer_leq_inductives ~flex uinfind u u' (univs, cstrs) =
   let ind_instance = Univ.UContext.instance (Univ.UInfoInd.univ_context uinfind) in

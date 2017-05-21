@@ -1313,8 +1313,8 @@ let pb_equal = function
   | Reduction.CUMUL -> Reduction.CONV
   | Reduction.CONV -> Reduction.CONV
 
-let report_anomaly _ =
-  let e = UserError (None, Pp.str "Conversion test raised an anomaly") in
+let report_anomaly e =
+  let e = UserError (None, Pp.(str "Conversion test raised an anomaly" ++ print e)) in
   let e = CErrors.push e in
   iraise e
 

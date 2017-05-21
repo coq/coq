@@ -725,8 +725,11 @@ struct
       pp_std ++ prl u1 ++ pr_constraint_type op ++
 	prl u2 ++ fnl () )  c (str "")
 
+  let universes_of c =
+    fold (fun (u1, op, u2) unvs -> LSet.add u2 (LSet.add u1 unvs)) c LSet.empty
 end
 
+let universes_of_constraints = Constraint.universes_of
 let empty_constraint = Constraint.empty
 let union_constraint = Constraint.union
 let eq_constraint = Constraint.equal

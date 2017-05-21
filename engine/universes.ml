@@ -976,36 +976,6 @@ let normalize_context_set ctx us algs =
 (* let normalize_conkey = Profile.declare_profile "normalize_context_set" *)
 (* let normalize_context_set a b c = Profile.profile3 normalize_conkey normalize_context_set a b c *)
 
-let universes_of_constr c =
-  let rec aux s c = 
-    match kind_of_term c with
-    | Const (_, u) | Ind (_, u) | Construct (_, u) ->
-      LSet.fold LSet.add (Instance.levels u) s
-    | Sort u when not (Sorts.is_small u) -> 
-      let u = univ_of_sort u in
-      LSet.fold LSet.add (Universe.levels u) s
-    | _ -> fold_constr aux s c
-  in aux LSet.empty c
-
-let restrict_universe_context (univs,csts) s =
-  (* Universes that are not necessary to typecheck the term.
-     E.g. univs introduced by tactics and not used in the proof term. *)
-  let diff = LSet.diff univs s in
-  let rec aux diff candid univs ness = 
-    let (diff', candid', univs', ness') = 
-      Constraint.fold
-	(fun (l, d, r as c) (diff, candid, univs, csts) ->
-	  if not (LSet.mem l diff) then
-	    (LSet.remove r diff, candid, univs, Constraint.add c csts)
-	  else if not (LSet.mem r diff) then
-	    (LSet.remove l diff, candid, univs, Constraint.add c csts)
-	  else (diff, Constraint.add c candid, univs, csts))
-	candid (diff, Constraint.empty, univs, ness)
-    in
-      if ness' == ness then (LSet.diff univs diff', ness)
-      else aux diff' candid' univs' ness'
-  in aux diff csts univs Constraint.empty
-
 let simplify_universe_context (univs,csts) =
   let uf = UF.create () in
   let noneqs =

@@ -462,3 +462,6 @@ val eq_levels : universe_level -> universe_level -> bool
 
 (** deprecated: Equality of formal universe expressions. *)
 val equal_universes : universe -> universe -> bool
+
+(** Universes of constraints *)
+val universes_of_constraints : constraints -> universe_set

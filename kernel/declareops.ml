@@ -49,6 +49,11 @@ let instantiate cb c =
     Vars.subst_instance_constr (Univ.UContext.instance cb.const_universes) c
   else c
 
+let instantiate_constraints cb cst =
+  if cb.const_polymorphic then 
+    Univ.subst_instance_constraints (Univ.UContext.instance cb.const_universes) cst
+  else cst
+
 let body_of_constant otab cb = match cb.const_body with
   | Undef _ -> None
   | Def c -> Some (instantiate cb (force_constr c))
@@ -61,13 +66,15 @@ let type_of_constant cb =
       if t' == t then x else RegularArity t'
   | TemplateArity _ as x -> x
 
-let constraints_of_constant otab cb = Univ.Constraint.union 
-  (Univ.UContext.constraints cb.const_universes)
-  (match cb.const_body with
-  | Undef _ -> Univ.empty_constraint
-  | Def c -> Univ.empty_constraint
-  | OpaqueDef o ->
-      Univ.ContextSet.constraints (Opaqueproof.force_constraints otab o))
+let constraints_of_constant otab cb =
+  let cst = Univ.Constraint.union 
+    (Univ.UContext.constraints cb.const_universes)
+    (match cb.const_body with
+    | Undef _ -> Univ.empty_constraint
+    | Def c -> Univ.empty_constraint
+    | OpaqueDef o ->
+        Univ.ContextSet.constraints (Opaqueproof.force_constraints otab o))
+   in instantiate_constraints cb cst
 
 let universes_of_constant otab cb = 
   match cb.const_body with

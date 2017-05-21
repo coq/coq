@@ -284,7 +284,7 @@ let universe_context ?names ctx =
         in map, ctx
 
 let restrict ctx vars =
-  let uctx' = Universes.restrict_universe_context ctx.uctx_local vars in
+  let uctx' = Univops.restrict_universe_context ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
 
 type rigid = 
