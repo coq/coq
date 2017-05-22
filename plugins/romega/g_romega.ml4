@@ -21,7 +21,7 @@ let eval_tactic name =
   let tac = Tacenv.interp_ltac kn in
   Tacinterp.eval_tactic tac
 
-let romega_tactic l =
+let romega_tactic unsafe l =
   let tacs = List.map
     (function
        | "nat" -> eval_tactic "zify_nat"
@@ -38,15 +38,15 @@ let romega_tactic l =
           we'd better leave as little as possible in the conclusion,
           for an easier decidability argument. *)
        (Tactics.intros)
-       (total_reflexive_omega_tactic))
-
+       (total_reflexive_omega_tactic unsafe))
 
 TACTIC EXTEND romega
-|  [ "romega" ] -> [ romega_tactic [] ]
+|  [ "romega" ] -> [ romega_tactic false [] ]
+|  [ "unsafe_romega" ] -> [ romega_tactic true [] ]
 END
 
 TACTIC EXTEND romega'
 | [ "romega" "with" ne_ident_list(l) ] ->
-    [ romega_tactic (List.map Names.Id.to_string l) ]
-| [ "romega" "with" "*" ] -> [ romega_tactic ["nat";"positive";"N";"Z"] ]
+    [ romega_tactic false (List.map Names.Id.to_string l) ]
+| [ "romega" "with" "*" ] -> [ romega_tactic false ["nat";"positive";"N";"Z"] ]
 END

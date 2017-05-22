@@ -974,7 +974,7 @@ l'extraction d'un ensemble minimal de solutions permettant la
 résolution globale du système et enfin construit la trace qui permet
 de faire rejouer cette solution par la tactique réflexive. *)
 
-let resolution env (reified_concl,reified_hyps) systems_list =
+let resolution unsafe env (reified_concl,reified_hyps) systems_list =
   let num = ref 0 in
   let solve_system list_eq =
     let index = !num in
@@ -1070,16 +1070,16 @@ let resolution env (reified_concl,reified_hyps) systems_list =
   Tactics.change_concl (EConstr.of_constr reified) >>
   Tactics.apply (EConstr.of_constr (app coq_do_omega [|decompose_tactic|])) >>
   show_goal >>
-  Tactics.normalise_vm_in_concl >>
-  (*i Alternatives to the previous line:
-   - Normalisation without VM:
-      Tactics.normalise_in_concl
-   - Skip the conversion check and rely directly on the QED:
-      Tactics.convert_concl_no_check (Lazy.force coq_True) Term.VMcast >>
-  i*)
+  (if unsafe then
+     (* Trust the produced term. Faster, but might fail later at Qed.
+        Also handy when debugging, e.g. via a Show Proof after romega. *)
+     Tactics.convert_concl_no_check
+       (EConstr.of_constr (Lazy.force coq_True)) Term.VMcast
+   else
+     Tactics.normalise_vm_in_concl) >>
   Tactics.apply (EConstr.of_constr (Lazy.force coq_I))
 
-let total_reflexive_omega_tactic =
+let total_reflexive_omega_tactic unsafe =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
   Coqlib.check_required_library ["Coq";"romega";"ROmega"];
   rst_omega_eq ();
@@ -1090,7 +1090,7 @@ let total_reflexive_omega_tactic =
   let full_reified_goal = (id_concl,Pnot concl) :: hyps in
   let systems_list = destructurate_hyps full_reified_goal in
   if !debug then display_systems systems_list;
-  resolution env reified_goal systems_list
+  resolution unsafe env reified_goal systems_list
   with NO_CONTRADICTION -> CErrors.error "ROmega can't solve this system"
   end }
 
