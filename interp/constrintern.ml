@@ -361,13 +361,14 @@ let reset_hidden_inductive_implicit_test env =
          | (Inductive (params,_),b,c,d) -> (Inductive (params,false),b,c,d)
          | x -> x) env.impls }
 
-let check_hidden_implicit_parameters id impls =
+let check_hidden_implicit_parameters ?loc id impls =
   if Id.Map.exists (fun _ -> function
     | (Inductive (indparams,check),_,_,_) when check -> Id.List.mem id indparams
     | _ -> false) impls
   then
-    user_err  (strbrk "A parameter of an inductive type " ++
-    pr_id id ++ strbrk " is not allowed to be used as a bound variable in the type of its constructor.")
+    user_err ?loc (pr_id id ++ strbrk " is already used as name of " ++
+      strbrk "a parameter of the inductive type; bound variables in " ++
+      strbrk "the type of a constructor shall use a different name.")
 
 let push_name_env ?(global_level=false) ntnvars implargs env =
   function
@@ -376,7 +377,7 @@ let push_name_env ?(global_level=false) ntnvars implargs env =
 	user_err ?loc (str "Anonymous variables not allowed");
       env
   | loc,Name id ->
-      check_hidden_implicit_parameters id env.impls ;
+      check_hidden_implicit_parameters ?loc id env.impls ;
       if Id.Map.is_empty ntnvars && Id.equal id ldots_var
         then error_ldots_var ?loc;
       set_var_scope ?loc id false env ntnvars;
