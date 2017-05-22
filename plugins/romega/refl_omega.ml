@@ -13,6 +13,8 @@ open Const_omega
 module OmegaSolver = Omega_plugin.Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
 
+module Id = Names.Id
+
 (* \section{Useful functions and flags} *)
 (* Especially useful debugging functions *)
 let debug = ref false
@@ -44,7 +46,7 @@ let occ_step_eq s1 s2 = match s1, s2 with
 
 (* chemin identifiant une proposition sous forme du nom de l'hypothèse et
    d'une liste de pas à partir de la racine de l'hypothèse *)
-type occurrence = {o_hyp : Names.Id.t; o_path : occ_path}
+type occurrence = {o_hyp : Id.t; o_path : occ_path}
 
 (* \subsection{reifiable formulas} *)
 type oformula =
@@ -66,7 +68,7 @@ type comparaison = Eq | Leq | Geq | Gt | Lt | Neq
 (* Type des prédicats réifiés (fragment de calcul propositionnel. Les
  * quantifications sont externes au langage) *)
 type oproposition =
-    Pequa of Term.constr * oequation
+    Pequa of Term.constr * oequation (* constr = copy of the Coq formula *)
   | Ptrue
   | Pfalse
   | Pnot of oproposition
@@ -84,7 +86,7 @@ and oequation = {
     e_origin: occurrence;		(* l'hypothèse dont vient le terme *)
     e_negated: bool;			(* vrai si apparait en position nié
 					   après normalisation *)
-    e_depends: direction  list;		(* liste des points de disjonction dont
+    e_depends: direction list;		(* liste des points de disjonction dont
 					   dépend l'accès à l'équation avec la
 					   direction (branche) pour y accéder *)
     e_omega: afine		(* la fonction normalisée *)
@@ -141,7 +143,7 @@ type context_content =
 
 (* \section{Specific utility functions to handle base types} *)
 (* Nom arbitraire de l'hypothèse codant la négation du but final *)
-let id_concl = Names.Id.of_string "__goal__"
+let id_concl = Id.of_string "__goal__"
 
 (* Initialisation de l'environnement de réification de la tactique *)
 let new_environment () = {
@@ -265,13 +267,13 @@ let rec oprint ch = function
   | Oatom n -> Printf.fprintf ch "V%02d" n
   | Oufo x ->  Printf.fprintf ch "?"
 
+let print_comp = function
+  | Eq -> "=" | Leq -> "<=" | Geq -> ">="
+  | Gt -> ">" | Lt -> "<" | Neq -> "!="
+
 let rec pprint ch = function
     Pequa (_,{ e_comp=comp; e_left=t1; e_right=t2 })  ->
-      let connector =
-	match comp with
-	  Eq -> "=" | Leq -> "<=" | Geq -> ">="
-	| Gt -> ">" | Lt -> "<" | Neq -> "!=" in
-      Printf.fprintf ch "%a %s %a" oprint t1 connector oprint t2
+      Printf.fprintf ch "%a %s %a" oprint t1 (print_comp comp) oprint t2
   | Ptrue -> Printf.fprintf ch "TT"
   | Pfalse -> Printf.fprintf ch "FF"
   | Pnot t -> Printf.fprintf ch "not(%a)" pprint t
@@ -738,88 +740,69 @@ and oproposition_of_constr env ((negated,depends,origin,path) as ctxt) gl c =
 
 (* Destructuration des hypothèses et de la conclusion *)
 
+let display_gl env t_concl t_lhyps =
+  Printf.printf "REIFED PROBLEM\n\n";
+  Printf.printf "  CONCL: %a\n" pprint t_concl;
+  List.iter
+    (fun (i,t) -> Printf.printf "  %s: %a\n" (Id.to_string i) pprint t)
+    t_lhyps;
+  print_env_reification env
+
 let reify_gl env gl =
   let concl = Tacmach.New.pf_concl gl in
   let concl = EConstr.Unsafe.to_constr concl in
+  let hyps = Tacmach.New.pf_hyps_types gl in
+  let hyps = List.map (fun (i,t) -> (i,EConstr.Unsafe.to_constr t)) hyps in
   let t_concl =
     Pnot (oproposition_of_constr env (true,[],id_concl,[O_mono]) gl concl) in
-  if !debug then begin
-    Printf.printf "REIFED PROBLEM\n\n";
-    Printf.printf "  CONCL: "; pprint stdout t_concl; Printf.printf "\n"
-  end;
-  let rec loop = function
-      (i,t) :: lhyps ->
-        let t = EConstr.Unsafe.to_constr t in
-	let t' = oproposition_of_constr env (false,[],i,[]) gl t in
-	if !debug then begin
-	  Printf.printf "  %s: " (Names.Id.to_string i);
-	  pprint stdout t';
-	  Printf.printf "\n"
-	end;
-	(i,t') :: loop lhyps
-    | [] ->
-	if !debug then print_env_reification env;
-	[] in
-  let t_lhyps = loop (Tacmach.New.pf_hyps_types gl) in
+  let t_lhyps =
+    List.map
+      (fun (i,t) -> i,oproposition_of_constr env (false,[],i,[]) gl t)
+      hyps
+  in
+  let () = if !debug then display_gl env t_concl t_lhyps in
   (id_concl,t_concl) :: t_lhyps
 
-let rec destructurate_pos_hyp orig list_equations list_depends = function
-  | Pequa (_,e) -> [e :: list_equations]
-  | Ptrue | Pfalse | Pprop _ -> [list_equations]
-  | Pnot t -> destructurate_neg_hyp orig list_equations list_depends t
-  | Por (i,t1,t2) ->
-      let s1 =
-	destructurate_pos_hyp orig list_equations (i::list_depends) t1 in
-      let s2 =
-	destructurate_pos_hyp orig list_equations (i::list_depends) t2 in
+let rec destruct_pos_hyp eqns = function
+  | Pequa (_,e) -> [e :: eqns]
+  | Ptrue | Pfalse | Pprop _ -> [eqns]
+  | Pnot t -> destruct_neg_hyp eqns t
+  | Por (_,t1,t2) ->
+      let s1 = destruct_pos_hyp eqns t1 in
+      let s2 = destruct_pos_hyp eqns t2 in
       s1 @ s2
-  | Pand(i,t1,t2) ->
-      let list_s1 =
-	destructurate_pos_hyp orig list_equations (list_depends) t1 in
-      let rec loop = function
-	  le1 :: ll -> destructurate_pos_hyp orig le1 list_depends t2 @ loop ll
-	| [] -> [] in
-      loop list_s1
-  | Pimp(i,t1,t2) ->
-      let s1 =
-	destructurate_neg_hyp orig list_equations (i::list_depends) t1 in
-      let s2 =
-	destructurate_pos_hyp orig list_equations (i::list_depends) t2 in
+  | Pand(_,t1,t2) ->
+      List.map_append
+        (fun le1 -> destruct_pos_hyp le1 t2)
+        (destruct_pos_hyp eqns t1)
+  | Pimp(_,t1,t2) ->
+      let s1 = destruct_neg_hyp eqns t1 in
+      let s2 = destruct_pos_hyp eqns t2 in
       s1 @ s2
 
-and destructurate_neg_hyp orig list_equations list_depends = function
-  | Pequa (_,e) -> [e :: list_equations]
-  | Ptrue | Pfalse | Pprop _ -> [list_equations]
-  | Pnot t -> destructurate_pos_hyp orig list_equations list_depends t
-  | Pand (i,t1,t2) ->
-      let s1 =
-	destructurate_neg_hyp orig list_equations (i::list_depends) t1 in
-      let s2 =
-	destructurate_neg_hyp orig list_equations (i::list_depends) t2 in
+and destruct_neg_hyp eqns = function
+  | Pequa (_,e) -> [e :: eqns]
+  | Ptrue | Pfalse | Pprop _ -> [eqns]
+  | Pnot t -> destruct_pos_hyp eqns t
+  | Pand (_,t1,t2) ->
+      let s1 = destruct_neg_hyp eqns t1 in
+      let s2 = destruct_neg_hyp eqns t2 in
       s1 @ s2
   | Por(_,t1,t2) ->
-      let list_s1 =
-	destructurate_neg_hyp orig list_equations list_depends t1 in
-      let rec loop = function
-	  le1 :: ll -> destructurate_neg_hyp orig le1 list_depends t2 @ loop ll
-	| [] -> [] in
-      loop list_s1
+      List.map_append
+        (fun le1 -> destruct_neg_hyp le1 t2)
+        (destruct_neg_hyp eqns t1)
   | Pimp(_,t1,t2) ->
-      let list_s1 =
-	destructurate_pos_hyp orig list_equations list_depends t1 in
-      let rec loop = function
-	  le1 :: ll -> destructurate_neg_hyp orig le1 list_depends t2 @ loop ll
-	| [] -> [] in
-      loop list_s1
+      List.map_append
+        (fun le1 -> destruct_neg_hyp le1 t2)
+        (destruct_pos_hyp eqns t1)
 
-let destructurate_hyps syst =
-  let rec loop = function
-      (i,t) :: l ->
-	let l_syst1 = destructurate_pos_hyp i []  [] t in
-	let l_syst2 = loop l in
-	List.cartesian (@) l_syst1 l_syst2
-    | [] -> [[]] in
-  loop syst
+let rec destructurate_hyps = function
+  | [] -> [[]]
+  | (i,t) :: l ->
+     let l_syst1 = destruct_pos_hyp [] t in
+     let l_syst2 = destructurate_hyps l in
+     List.cartesian (@) l_syst1 l_syst2
 
 (* \subsection{Affichage d'un système d'équation} *)
 
@@ -846,7 +829,7 @@ let display_systems syst_list =
 	 (List.map (function O_left -> "L" | O_right -> "R" | O_mono -> "M")
 	    oformula_eq.e_origin.o_path));
     Printf.printf "\n  Origin: %s (negated : %s)\n\n"
-      (Names.Id.to_string oformula_eq.e_origin.o_hyp)
+      (Id.to_string oformula_eq.e_origin.o_hyp)
       (if oformula_eq.e_negated then "yes" else "no") in
 
   let display_system syst =
@@ -1023,7 +1006,7 @@ let find_path {o_hyp=id;o_path=p} env =
     | (x1::l1,x2::l2) when occ_step_eq x1 x2 -> loop_path (l1,l2)
     | _ -> None in
   let rec loop_id i = function
-      CCHyp{o_hyp=id';o_path=p'} :: l when Names.Id.equal id id' ->
+      CCHyp{o_hyp=id';o_path=p'} :: l when Id.equal id id' ->
 	begin match loop_path (p',p) with
 	  Some r -> i,r
 	| None -> loop_id (succ i) l
@@ -1209,15 +1192,15 @@ let resolution env full_reified_goal systems_list =
   (* recupere explicitement ces equations *)
   let equations = List.map (get_equation env) useful_equa_id in
   let l_hyps' = List.uniquize (List.map (fun e -> e.e_origin.o_hyp) equations) in
-  let l_hyps = id_concl :: List.remove Names.Id.equal id_concl l_hyps' in
+  let l_hyps = id_concl :: List.remove Id.equal id_concl l_hyps' in
   let useful_hyps =
     List.map
-      (fun id -> List.assoc_f Names.Id.equal id full_reified_goal) l_hyps
+      (fun id -> List.assoc_f Id.equal id full_reified_goal) l_hyps
   in
   let useful_vars =
     let really_useful_vars = vars_of_equations equations in
     let concl_vars =
-      vars_of_prop (List.assoc_f Names.Id.equal id_concl full_reified_goal)
+      vars_of_prop (List.assoc_f Id.equal id_concl full_reified_goal)
     in
     really_useful_vars @@ concl_vars
   in
@@ -1268,7 +1251,7 @@ let resolution env full_reified_goal systems_list =
       |	((O_left | O_mono) :: l) -> app coq_p_left [| loop l |]
       |	(O_right :: l) -> app coq_p_right [| loop l |] in
     let correct_index =
-      let i = List.index0 Names.Id.equal e.e_origin.o_hyp l_hyps in
+      let i = List.index0 Id.equal e.e_origin.o_hyp l_hyps in
       (* PL: it seems that additionally introduced hyps are in the way during
              normalization, hence this index shifting... *)
       if Int.equal i 0 then 0 else Pervasives.(+) i (List.length to_introduce)
