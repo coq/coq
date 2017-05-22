@@ -63,8 +63,11 @@ type oformula =
 (* Operators for comparison recognized by Omega *)
 type comparaison = Eq | Leq | Geq | Gt | Lt | Neq
 
-(* Type des prédicats réifiés (fragment de calcul propositionnel. Les
- * quantifications sont externes au langage) *)
+(* Representation of reified predicats (fragment of propositional calculus,
+   no quantifier here). *)
+(* Note : in [Pprop p], the non-reified constr [p] should be closed
+   (it could contains some [Term.Var] but no [Term.Rel]). So no need to
+   lift when breaking or creating arrows. *)
 type oproposition =
     Pequa of Term.constr * oequation (* constr = copy of the Coq formula *)
   | Ptrue
@@ -75,7 +78,7 @@ type oproposition =
   | Pimp of int * oproposition * oproposition
   | Pprop of Term.constr
 
-(* Les équations ou propositions atomiques utiles du calcul *)
+(* The equations *)
 and oequation = {
     e_comp: comparaison;		(* comparaison *)
     e_left: oformula;			(* formule brute gauche *)
@@ -314,12 +317,12 @@ let rec weight env = function
 let omega_of_oformula env kind =
   let rec loop accu = function
     | Oplus(Omult(v,Oint n),r) ->
-	loop ({v=intern_omega env v; c=n} :: accu) r
+       loop ({v=intern_omega env v; c=n} :: accu) r
     | Oint n ->
-	let id = new_omega_eq () in
-	(*i tag_equation name id; i*)
-	{kind = kind; body = List.rev accu;
-	 constant = n; id = id}
+       let id = new_omega_eq () in
+       (*i tag_equation name id; i*)
+       {kind = kind; body = List.rev accu;
+       constant = n; id = id}
     | t -> print_string "CO"; oprint stdout t; failwith "compile_equation" in
   loop []
 
@@ -327,9 +330,9 @@ let omega_of_oformula env kind =
 
 let oformula_of_omega env af =
   let rec loop = function
-    | ({v=v; c=n}::r) ->
-	Oplus(Omult(unintern_omega env v,Oint n),loop r)
-    | [] -> Oint af.constant in
+    | ({v=v; c=n}::r) -> Oplus(Omult(unintern_omega env v,Oint n),loop r)
+    | [] -> Oint af.constant
+  in
   loop af.body
 
 let app f v = mkApp(Lazy.force f,v)
@@ -750,8 +753,9 @@ and oproposition_of_constr env ((negated,depends,origin,path) as ctxt) gl c =
 	binprop env ctxt (not negated) (not negated) gl
 	  (fun i x y -> Pimp(i,x,y)) t1 t2
     | Riff (t1,t2) ->
-	binprop env ctxt negated negated gl
-	  (fun i x y -> Pand(i,x,y)) (Term.mkArrow t1 t2) (Term.mkArrow t2 t1)
+       (* No lifting here, since Omega only works on closed propositions. *)
+       binprop env ctxt negated negated gl
+          (fun i x y -> Pand(i,x,y)) (Term.mkArrow t1 t2) (Term.mkArrow t2 t1)
     | _ -> Pprop c
 
 (* Destructuration des hypothèses et de la conclusion *)
@@ -955,8 +959,9 @@ let rec coq_of_oprop = function
   | Pnot t1 -> app coq_not [|coq_of_oprop t1|]
   | Por(_,t1,t2) -> app coq_or [|coq_of_oprop t1; coq_of_oprop t2|]
   | Pand(_,t1,t2) -> app coq_and [|coq_of_oprop t1; coq_of_oprop t2|]
-  (* Attention : implications sur le lifting des variables à comprendre ! *)
-  | Pimp(_,t1,t2) -> Term.mkArrow (coq_of_oprop t1) (coq_of_oprop t2)
+  | Pimp(_,t1,t2) ->
+     (* No lifting here, since Omega only works on closed propositions. *)
+     Term.mkArrow (coq_of_oprop t1) (coq_of_oprop t2)
   | Pprop t -> t
 
 let really_useful_prop equas c =
@@ -1288,7 +1293,7 @@ let resolution env (reified_concl,reified_hyps) systems_list =
    - Normalisation without VM:
       Tactics.normalise_in_concl
    - Skip the conversion check and rely directly on the QED:
-      Tacmach.convert_concl_no_check (Lazy.force coq_True) Term.VMcast >>
+      Tactics.convert_concl_no_check (Lazy.force coq_True) Term.VMcast >>
   i*)
   Tactics.apply (EConstr.of_constr (Lazy.force coq_I))
 
