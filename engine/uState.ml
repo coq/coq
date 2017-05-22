@@ -131,84 +131,87 @@ let instantiate_variable l b v =
 exception UniversesDiffer
 
 let process_universe_constraints ctx cstrs =
+  let open Univ in
   let univs = ctx.uctx_universes in
   let vars = ref ctx.uctx_univ_variables in
   let normalize = Universes.normalize_universe_opt_subst vars in
-  let rec unify_universes fo l d r local =
+  let is_local l = Univ.LMap.mem l !vars in
+  let varinfo x =
+    match Univ.Universe.level x with
+    | None -> Inl x
+    | Some l -> Inr l
+  in
+  let equalize_variables fo l l' r r' local =
+    (** Assumes l = [l',0] and r = [r',0] *)
+    let () =
+      if is_local l' then
+        instantiate_variable l' r vars
+      else if is_local r' then
+        instantiate_variable r' l vars
+      else if not (UGraph.check_eq_level univs l' r') then
+        (* Two rigid/global levels, none of them being local,
+            one of them being Prop/Set, disallow *)
+        if Univ.Level.is_small l' || Univ.Level.is_small r' then
+          raise (Univ.UniverseInconsistency (Univ.Eq, l, r, None))
+        else if fo then
+          raise UniversesDiffer
+    in
+    Univ.enforce_eq_level l' r' local
+  in
+  let equalize_universes l r local = match varinfo l, varinfo r with
+  | Inr l', Inr r' -> equalize_variables false l l' r r' local
+  | Inr l, Inl r | Inl r, Inr l ->
+    let alg = Univ.LSet.mem l ctx.uctx_univ_algebraic in
+    let inst = Univ.univ_level_rem l r r in
+      if alg then (instantiate_variable l inst vars; local)
+      else
+        let lu = Univ.Universe.make l in
+        if Univ.univ_level_mem l r then
+          Univ.enforce_leq inst lu local
+        else raise (Univ.UniverseInconsistency (Univ.Eq, lu, r, None))
+  | Inl _, Inl _ (* both are algebraic *) ->
+    if UGraph.check_eq univs l r then local
+    else raise (Univ.UniverseInconsistency (Univ.Eq, l, r, None))
+  in
+  let unify_universes (l, d, r) local =
     let l = normalize l and r = normalize r in
       if Univ.Universe.equal l r then local
       else 
-        let varinfo x = 
-          match Univ.Universe.level x with
-          | None -> Inl x
-          | Some l -> Inr (l, Univ.LMap.mem l !vars, Univ.LSet.mem l ctx.uctx_univ_algebraic)
-        in
-          if d == Universes.ULe then
+          match d with
+          | Universes.ULe ->
             if UGraph.check_leq univs l r then
               (** Keep Prop/Set <= var around if var might be instantiated by prop or set
                   later. *)
-              if Univ.Universe.is_level l then 
-                match Univ.Universe.level r with
-                | Some r ->
-                  Univ.Constraint.add (Option.get (Univ.Universe.level l),Univ.Le,r) local
-                | _ -> local
-              else local
+              match Univ.Universe.level l, Univ.Universe.level r with
+              | Some l, Some r ->
+                Univ.Constraint.add (l, Univ.Le, r) local
+              | _ -> local
             else
-              match Univ.Universe.level r with
+              begin match Univ.Universe.level r with
               | None -> error ("Algebraic universe on the right")
-              | Some rl ->
-                if Univ.Level.is_small rl then
+              | Some r' ->
+                if Univ.Level.is_small r' then
                   let levels = Univ.Universe.levels l in
-                    Univ.LSet.fold (fun l local ->
-                      if Univ.Level.is_small l || Univ.LMap.mem l !vars then
-                        unify_universes fo (Univ.Universe.make l) Universes.UEq r local
-                      else raise (Univ.UniverseInconsistency (Univ.Le, Univ.Universe.make l, r, None)))
-                      levels local
+                  let fold l' local =
+                    let l = Univ.Universe.make l' in
+                    if Univ.Level.is_small l' || is_local l' then
+                      equalize_variables false l l' r r' local
+                    else raise (Univ.UniverseInconsistency (Univ.Le, l, r, None))
+                  in
+                  Univ.LSet.fold fold levels local
                 else
                   Univ.enforce_leq l r local
-          else if d == Universes.ULub then
-            match varinfo l, varinfo r with
-            | (Inr (l, true, _), Inr (r, _, _)) 
-            | (Inr (r, _, _), Inr (l, true, _)) -> 
-              instantiate_variable l (Univ.Universe.make r) vars; 
-              Univ.enforce_eq_level l r local
-            | Inr (_, _, _), Inr (_, _, _) ->
-              unify_universes true l Universes.UEq r local
+              end
+          | Universes.ULub ->
+            begin match Universe.level l, Universe.level r with
+            | Some l', Some r' ->
+              equalize_variables true l l' r r' local
             | _, _ -> assert false
-          else (* d = Universes.UEq *)
-            match varinfo l, varinfo r with
-            | Inr (l', lloc, _), Inr (r', rloc, _) ->
-              let () = 
-                if lloc then
-                  instantiate_variable l' r vars
-                else if rloc then 
-                  instantiate_variable r' l vars
-                else if not (UGraph.check_eq univs l r) then
-                  (* Two rigid/global levels, none of them being local,
-                     one of them being Prop/Set, disallow *)
-                  if Univ.Level.is_small l' || Univ.Level.is_small r' then
-                    raise (Univ.UniverseInconsistency (Univ.Eq, l, r, None))
-                  else
-                    if fo then 
-                      raise UniversesDiffer
-              in
-                Univ.enforce_eq_level l' r' local
-            | Inr (l, loc, alg), Inl r
-            | Inl r, Inr (l, loc, alg) ->
-               let inst = Univ.univ_level_rem l r r in
-                 if alg then (instantiate_variable l inst vars; local)
-                 else
-                   let lu = Univ.Universe.make l in
-                   if Univ.univ_level_mem l r then
-                     Univ.enforce_leq inst lu local
-                   else raise (Univ.UniverseInconsistency (Univ.Eq, lu, r, None))
-            | _, _ (* One of the two is algebraic or global *) -> 
-             if UGraph.check_eq univs l r then local
-             else raise (Univ.UniverseInconsistency (Univ.Eq, l, r, None))
+            end
+          | Universes.UEq -> equalize_universes l r local
   in
   let local = 
-    Universes.Constraints.fold (fun (l,d,r) local -> unify_universes false l d r local)
-      cstrs Univ.Constraint.empty
+    Universes.Constraints.fold unify_universes cstrs Univ.Constraint.empty
   in
     !vars, local
 
