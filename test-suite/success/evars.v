@@ -421,3 +421,63 @@ Goal exists n : nat, n = n -> True.
 eexists.
 set (H := _ = _).
 Abort.
+
+(* Check that new evars descending from pre-existing evars by evar-evar unification
+   are not considered fresh *)
+
+Goal exists n : nat, n = n -> n = n /\ True.
+  eexists.
+  intro H. split.
+  apply (@eq_sym nat ?[n'] ?n' H).
+  exact I.
+  Unshelve. exact 0.
+Qed.
+
+(* Check that new evars descending from pre-existing evars by evar-evar unification
+   and restriction are not considered fresh *)
+
+Goal forall k : nat, exists n : nat, n = n -> n = n /\ True.
+  eexists.
+  intro H. split.
+  unshelve evar(n':nat). clear k H. shelve. (* n' has a smaller env *)
+  apply (@eq_sym nat ?n' ?n' H).
+  exact I.
+  Unshelve. exact 0.
+Qed.
+
+(* Check that new evars descending from pre-existing evars by
+   restriction are not considered fresh *)
+Set Printing Existential Instances.
+Goal forall P : nat -> Prop, P 0 -> forall b : bool, (forall n, P n -> False) -> False.
+  intros P P0.
+  eassert(P ?[k]). shelve.
+  intros b.
+  intros H'.
+  apply H' in H. (* ?k stays, ?n := ?k *)
+  Show Existentials.
+  exact H.
+  Unshelve. 2:exact P0.
+Qed.
+
+Goal forall P : nat -> Prop, P 0 -> forall b : bool, (forall n, P n -> False) -> False.
+Proof.
+  intros P P0.
+  eassert(P ?[k]). shelve.
+  intros b. intros Hb.
+  apply (Hb ?[n]) in H. (* ?k gets instantiated, ?k := ?n *)
+  exact H. Show Existentials.
+  Unshelve. exact P0.
+Qed.
+
+(* Check that new evars descending from pre-existing evars by evar-term unification
+   are considered fresh *)
+
+Goal forall k : nat, exists n : nat, n = n -> n = n /\ True.
+  eexists.
+  intro H. split.
+  Fail apply (@eq_sym nat (S ?[n']) (S ?n') H).
+  (* n' is fresh, need eapply *)
+  eapply (@eq_sym nat (S ?[n']) (S ?n') H).
+  exact I.
+  Unshelve. exact 0.
+Qed.
