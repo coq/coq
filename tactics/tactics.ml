@@ -2966,6 +2966,9 @@ let specialize (c,lbind) ipat =
   let env = Proofview.Goal.env gl in
   let sigma = Sigma.to_evar_map (Proofview.Goal.sigma gl) in
   let sigma, term =
+    if lbind == NoBindings then
+      sigma, c
+    else
       let clause = make_clenv_binding env sigma (c,Retyping.get_type_of env sigma c) lbind in
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
