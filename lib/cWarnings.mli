@@ -10,7 +10,8 @@ type status = Disabled | Enabled | AsError
 
 val set_current_loc : Loc.t -> unit
 
-val create : name:string -> category:string -> ?default:status ->
+val create : name:string -> category:string ->
+             ?batch_default:status -> ?default:status ->
              ('a -> Pp.std_ppcmds) -> ?loc:Loc.t -> 'a -> unit
 
 val get_flags : unit -> string

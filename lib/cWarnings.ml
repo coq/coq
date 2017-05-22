@@ -14,7 +14,8 @@ type status =
 type t = {
   default : status;
   category : string;
-  status : status;
+  batch_status : status;
+  interactive_status : status;
 }
 
 let warnings : (string, t) Hashtbl.t = Hashtbl.create 97
@@ -39,13 +40,14 @@ let refine_loc = function
   | None when not (Loc.is_ghost !current_loc) -> Some !current_loc
   | loc -> loc
 
-let create ~name ~category ?(default=Enabled) pp =
-  Hashtbl.add warnings name { default; category; status = default };
+let create ~name ~category ?(batch_default=Enabled) ?(default=Enabled) pp =
+  let d = { default; category; batch_status = batch_default; interactive_status = default } in
+  Hashtbl.add warnings name d;
   add_warning_in_category ~name ~category;
   if default <> Disabled then
     add_warning_in_category ~name ~category:"default";
   fun ?loc x -> let w = Hashtbl.find warnings name in
-           match w.status with
+           match if !Flags.batch_mode then w.batch_status else w.interactive_status with
            | Disabled -> ()
            | AsError ->
               begin match refine_loc loc with
@@ -67,17 +69,17 @@ let warn_unknown_warning =
 let set_warning_status ~name status =
   try
     let w = Hashtbl.find warnings name in 
-    Hashtbl.replace warnings name { w with status = status }
+    Hashtbl.replace warnings name { w with batch_status = status; interactive_status = status }
   with Not_found -> ()
 
 let reset_default_warnings () =
   Hashtbl.iter (fun name w ->
-                Hashtbl.replace warnings name { w with status = w.default })
+                Hashtbl.replace warnings name { w with batch_status = w.default; interactive_status = w.default })
     warnings
 
 let set_all_warnings_status status =
   Hashtbl.iter (fun name w ->
-                Hashtbl.replace warnings name { w with status })
+                Hashtbl.replace warnings name { w with batch_status = status; interactive_status = status })
     warnings
 
 let set_category_status ~name status =
