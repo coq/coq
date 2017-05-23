@@ -365,23 +365,6 @@ let reified_of_proposition env f =
 let reified_of_eq env (l,r) =
   app coq_p_eq [| reified_of_formula env l; reified_of_formula env r |]
 
-(* \subsection{Omega vers COQ réifié} *)
-
-let reified_of_omega env body constant =
-  let coeff_constant =
-    app coq_t_int [| Z.mk constant |] in
-  let mk_coeff {c;v} t =
-    let coef =
-      app coq_t_mult
-          [| reified_of_formula env (Oatom v);
-             app coq_t_int [| Z.mk c |] |] in
-    app coq_t_plus [|coef; t |] in
-  List.fold_right mk_coeff body coeff_constant
-
-let reified_of_omega env body c  =
-  try reified_of_omega env body c
-  with reraise -> display_eq display_omega_var (body,c); raise reraise
-
 (* \section{Opérations sur les équations}
 Ces fonctions préparent les traces utilisées par la tactique réfléchie
 pour faire des opérations de normalisation sur les équations.  *)
@@ -873,23 +856,12 @@ let rec reify_trace env env_hyp = function
   | CONTRADICTION (e1,e2) :: [] ->
      sum_bad false (hyp_idx env_hyp e1.id) (hyp_idx env_hyp e2.id)
   | NOT_EXACT_DIVIDE (e1,k) :: [] ->
-     let e2_constant = floor_div e1.constant k in
-     let d = e1.constant - e2_constant * k in
-     let e2_body = map_eq_linear (fun c -> c / k) e1.body in
      mkApp (Lazy.force coq_s_not_exact_divide,
-            [| hyp_idx env_hyp e1.id; Z.mk k; Z.mk d;
-               reified_of_omega env e2_body e2_constant |])
-  | DIVIDE_AND_APPROX (e1,e2,k,d) :: l ->
-     mkApp (Lazy.force coq_s_div_approx,
-            [| hyp_idx env_hyp e1.id; Z.mk k; Z.mk d;
-               reified_of_omega env e2.body e2.constant;
-               reify_trace env env_hyp l |])
+            [| hyp_idx env_hyp e1.id; Z.mk k |])
+  | DIVIDE_AND_APPROX (e1,_,k,_) :: l
   | EXACT_DIVIDE (e1,k) :: l ->
-     let e2_body = map_eq_linear (fun c -> c / k) e1.body in
-     let e2_constant = floor_div e1.constant k in
-     mkApp (Lazy.force coq_s_exact_divide,
+     mkApp (Lazy.force coq_s_divide,
             [| hyp_idx env_hyp e1.id; Z.mk k;
-               reified_of_omega env e2_body e2_constant;
                reify_trace env env_hyp l |])
   | MERGE_EQ(e3,e1,e2) :: l ->
      mkApp (Lazy.force coq_s_merge_eq,

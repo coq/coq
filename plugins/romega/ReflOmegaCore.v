@@ -75,6 +75,18 @@ Module Type Int.
 
   (** Btw, lt_0_1 could be deduced from this last axiom *)
 
+  (** Now we also require a division function.
+      It is deliberately underspecified, since that's enough
+      for the proofs below. But the most appropriate variant
+      (and the one needed to stay in sync with the omega engine)
+      is "Floor" (the historical version of Coq's [Z.div]). *)
+
+  Parameter diveucl : t -> t -> t * t.
+  Notation "i / j" := (fst (diveucl i j)).
+  Notation "i 'mod' j" := (snd (diveucl i j)).
+  Axiom diveucl_spec :
+    forall i j, j<>0 -> i = j * (i/j) + (i mod j).
+
 End Int.
 
 
@@ -132,6 +144,9 @@ Module Z_as_Int <: Int.
   Proof. reflexivity. Qed.
 
   Definition le_lt_int := Z.lt_le_pred.
+
+  Definition diveucl := Z.div_eucl.
+  Definition diveucl_spec := Z.div_mod.
 
 End Z_as_Int.
 
@@ -1124,6 +1139,50 @@ Proof.
  rewrite IHt2. simpl. apply plus_assoc.
 Qed.
 
+(** Division by a constant
+
+    All the non-constant coefficients should be exactly dividable *)
+
+Fixpoint scalar_div (t : term) (k : int) : option (term * int) :=
+  match t with
+  | v * Tint x + l =>
+    let (q,r) := diveucl x k in
+    if (r =? 0)%I then
+      match scalar_div l k with
+      | None => None
+      | Some (u,c) => Some (v * Tint q + u, c)
+      end
+    else None
+  | Tint x =>
+    let (q,r) := diveucl x k in
+    Some (Tint q, r)
+  | _ => None
+  end%term.
+
+Lemma scalar_div_stable e t k u c : k<>0 ->
+  scalar_div t k = Some (u,c) ->
+  interp_term e (u * Tint k + Tint c) = interp_term e t.
+Proof.
+ revert u c.
+ induction t; simpl; Simplify; try easy.
+ - intros u c Hk. assert (H := diveucl_spec t0 k Hk).
+   simpl in H.
+   destruct diveucl as (q,r). simpl in H. rewrite H.
+   injection 1 as <- <-. simpl. f_equal. apply mult_comm.
+ - intros u c Hk.
+   destruct t1; simpl; Simplify; try easy.
+   destruct t1_2; simpl; Simplify; try easy.
+   assert (H := diveucl_spec t0 k Hk).
+   simpl in H.
+   destruct diveucl as (q,r). simpl in H. rewrite H.
+   case beq_reflect; [intros -> | easy].
+   destruct (scalar_div t2 k) as [(u',c')|] eqn:E; [|easy].
+   injection 1 as <- ->. simpl.
+   rewrite <- (IHt2 u' c Hk); simpl; auto.
+   rewrite plus_0_r , (mult_comm k q). symmetry. apply OMEGA11.
+Qed.
+
+
 (** Fusion of two equations.
 
     From two normalized equations, this fusion will produce
@@ -1337,16 +1396,15 @@ Qed.
    First, the final steps leading to a contradiction:
    - [O_BAD_CONSTANT i] : hypothesis i has a constant body
      and this constant is not compatible with the kind of i.
-   - [O_NOT_EXACT_DIVIDE i k1 k2 t] :
-     equation i has a body equivalent to [k1*t+k2] with [0<k2<k1].
+   - [O_NOT_EXACT_DIVIDE i k] :
+     equation i can be factorized as some [k*t+c] with [0<c<k].
 
    Now, the intermediate steps leading to a new hypothesis:
-   - [O_EXACT_DIVIDE i k1 t cont] :
-     (dis)equation i has a body equivalent to [k1*t] with [k1<>0],
-     we change it (in-place) for (dis)equation [0=t].
-   - [O_DIV_APPROX i k1 k2 t cont] :
-     inequation i has a body equivalent to [k1*t+k2] with [0<k1]
-     and [k2<k1], we change it (in-place) for inequation [0<=t].
+   - [O_DIVIDE i k cont] :
+     the body of hypothesis i could be factorized as [k*t+c]
+     with either [k<>0] and [c=0] for a (dis)equation, or
+     [0<k] and [c<k] for an inequation. We change in-place the
+     body of i for [t].
    - [O_SUM k1 i1 k2 i2 cont] : creates a new hypothesis whose
      kind depends on the kind of hypotheses [i1] and [i2], and
      whose body is [k1*body(i1) + k2*body(i2)]. Depending of the
@@ -1362,10 +1420,9 @@ Definition idx := nat. (** Index of an hypothesis in the list *)
 
 Inductive t_omega : Set :=
   | O_BAD_CONSTANT : idx -> t_omega
-  | O_NOT_EXACT_DIVIDE : idx -> int -> int -> term -> t_omega
+  | O_NOT_EXACT_DIVIDE : idx -> int -> t_omega
 
-  | O_EXACT_DIVIDE : idx -> int -> term -> t_omega -> t_omega
-  | O_DIV_APPROX : idx -> int -> int -> term -> t_omega -> t_omega
+  | O_DIVIDE : idx -> int -> t_omega -> t_omega
   | O_SUM : int -> idx -> int -> idx -> t_omega -> t_omega
   | O_MERGE_EQ : idx -> idx -> t_omega -> t_omega
   | O_SPLIT_INEQ : idx -> t_omega -> t_omega -> t_omega.
@@ -1391,84 +1448,84 @@ Proof.
  rewrite le_lt_iff. intuition.
 Qed.
 
-(** [NOT_EXACT_DIVIDE] *)
+(** [O_NOT_EXACT_DIVIDE] *)
 
-Definition not_exact_divide (i : nat) (k1 k2 : int) (body : term)
-  (l : hyps) :=
+Definition not_exact_divide (i : nat) (k : int) (l : hyps) :=
   match nth_hyps i l with
   | EqTerm (Tint Nul) b =>
-      if (Nul =? 0) &&
-         (scalar_mult_add body k1 k2 =? b)%term &&
-         (0 <? k2) &&
-         (k2 <? k1)
-      then absurd
+    match scalar_div b k with
+    | Some (body,c) =>
+      if (Nul =? 0) && (0 <? c) && (c <? k) then absurd
       else l
+    | None => l
+    end
   | _ => l
   end.
 
-Theorem not_exact_divide_valid :
- forall (i : nat)(k1 k2 : int) (body : term),
- valid_hyps (not_exact_divide i k1 k2 body).
+Theorem not_exact_divide_valid i k :
+ valid_hyps (not_exact_divide i k).
 Proof.
  unfold valid_hyps, not_exact_divide; intros.
- generalize (nth_valid ep e i lp); Simplify.
- rewrite <-H1, scalar_mult_add_stable. simpl.
- intros.
- absurd (interp_term e body * k1 + k2 = 0).
- - now apply OMEGA4.
- - symmetry; auto.
+ generalize (nth_valid ep e i lp).
+ destruct (nth_hyps i lp); simpl; auto.
+ destruct t0; auto.
+ destruct (scalar_div t1 k) as [(body,c)|] eqn:E; auto.
+ Simplify.
+ assert (k <> 0).
+ { intro. apply (lt_not_eq 0 k); eauto using lt_trans. }
+ apply (scalar_div_stable e) in E; auto. simpl in E.
+ intros H'; rewrite <- H' in E; auto.
+ exfalso. revert E. now apply OMEGA4.
 Qed.
 
 (** Now, the steps generating a new equation. *)
 
-(** [O_EXACT_DIVIDE] *)
+(** [O_DIVIDE] *)
 
-Definition exact_divide (k : int) (body : term) (prop : proposition) :=
+Definition divide (k : int) (prop : proposition) :=
   match prop with
   | EqTerm (Tint o) b =>
-    if (o =? 0) && (scalar_mult body k =? b)%term && negb (k =? 0)
-    then EqTerm (Tint 0) body
-    else TrueTerm
+    match scalar_div b k with
+    | Some (body,c) =>
+      if (o =? 0) && (c =? 0) && negb (k =? 0)
+      then EqTerm (Tint 0) body
+      else TrueTerm
+    | None => TrueTerm
+    end
   | NeqTerm (Tint o) b =>
-    if (o =? 0) && (scalar_mult body k =? b)%term && negb (k =? 0)
-    then NeqTerm (Tint 0) body
-    else TrueTerm
+    match scalar_div b k with
+    | Some (body,c) =>
+      if (o =? 0) && (c =? 0) && negb (k =? 0)
+      then NeqTerm (Tint 0) body
+      else TrueTerm
+    | None => TrueTerm
+    end
+  | LeqTerm (Tint o) b =>
+    match scalar_div b k with
+    | Some (body,c) =>
+      if (o =? 0) && (0 <? k) && (c <? k)
+      then LeqTerm (Tint 0) body
+      else prop
+    | None => prop
+    end
   | _ => TrueTerm
   end.
 
-Theorem exact_divide_valid :
- forall (k : int) (t : term), valid1 (exact_divide k t).
+Theorem divide_valid k : valid1 (divide k).
 Proof.
- unfold valid1, exact_divide; intros k t ep e p1;
- Simplify; simpl; auto; subst;
- rewrite scalar_mult_stable; simpl; intros.
- - destruct (mult_integral _ _ (eq_sym H0)); intuition.
- - contradict H0; rewrite <- H0, mult_0_l; auto.
-Qed.
-
-(** [O_DIV_APPROX] *)
-
-Definition divide_and_approx (k1 k2 : int) (body : term)
-  (prop : proposition) :=
-  match prop with
-  | LeqTerm (Tint o) b =>
-      if (o =? 0) &&
-         (scalar_mult_add body k1 k2 =? b)%term &&
-         (0 <? k1) &&
-         (k2 <? k1)
-      then LeqTerm (Tint 0) body
-      else prop
-  | _ => prop
-  end.
-
-Theorem divide_and_approx_valid :
- forall (k1 k2 : int) (body : term),
- valid1 (divide_and_approx k1 k2 body).
-Proof.
- unfold valid1, divide_and_approx.
- intros k1 k2 body ep e p1. Simplify. subst.
- rewrite scalar_mult_add_stable. simpl.
- intro H; now apply mult_le_approx with (3 := H).
+ unfold valid1, divide; intros ep e p;
+ destruct p; simpl; auto;
+ destruct t0; simpl; auto;
+ destruct scalar_div as [(body,c)|] eqn:E; simpl; Simplify; auto.
+ - apply (scalar_div_stable e) in E; auto. simpl in E.
+   intros H'; rewrite <- H' in E. rewrite plus_0_r in E.
+   apply mult_integral in E. intuition.
+ - apply (scalar_div_stable e) in E; auto. simpl in E.
+   intros H' H''. now rewrite <- H'', mult_0_l, plus_0_l in E.
+ - assert (k <> 0).
+   { intro. apply (lt_not_eq 0 k); eauto using lt_trans. }
+   apply (scalar_div_stable e) in E; auto. simpl in E. rewrite <- E.
+   intro H'. now apply mult_le_approx with (3 := H').
 Qed.
 
 (** [O_SUM]. Invariant: [k1] and [k2] non-nul. *)
@@ -1591,12 +1648,9 @@ Qed.
 Fixpoint execute_omega (t : t_omega) (l : hyps) : lhyps :=
   match t with
   | O_BAD_CONSTANT i => singleton (bad_constant i l)
-  | O_NOT_EXACT_DIVIDE i k1 k2 body =>
-      singleton (not_exact_divide i k1 k2 body l)
-  | O_EXACT_DIVIDE n k body cont =>
-      execute_omega cont (apply_oper_1 n (exact_divide k body) l)
-  | O_DIV_APPROX n k1 k2 body cont =>
-      execute_omega cont (apply_oper_1 n (divide_and_approx k1 k2 body) l)
+  | O_NOT_EXACT_DIVIDE i k => singleton (not_exact_divide i k l)
+  | O_DIVIDE i k cont =>
+      execute_omega cont (apply_oper_1 i (divide k) l)
   | O_SUM k1 i1 k2 i2 cont =>
       execute_omega cont (apply_oper_2 i1 i2 (sum k1 k2) l)
   | O_MERGE_EQ i1 i2 cont =>
@@ -1610,14 +1664,10 @@ Proof.
  simple induction tr; unfold valid_list_hyps, valid_hyps; simpl.
  - intros; left; now apply bad_constant_valid.
  - intros; left; now apply not_exact_divide_valid.
- - intros m k body t' Ht' ep e lp H; apply Ht';
+ - intros m k t' Ht' ep e lp H; apply Ht';
     apply
-     (apply_oper_1_valid m (exact_divide k body)
-        (exact_divide_valid k body) ep e lp H).
- - intros m k1 k2 body t' Ht' ep e lp H; apply Ht';
-    apply
-     (apply_oper_1_valid m (divide_and_approx k1 k2 body)
-        (divide_and_approx_valid k1 k2 body) ep e lp H).
+     (apply_oper_1_valid m (divide k)
+        (divide_valid k) ep e lp H).
  - intros k1 i1 k2 i2 t' Ht' ep e lp H; apply Ht';
     apply
      (apply_oper_2_valid i1 i2 (sum k1 k2) (sum_valid k1 k2) ep e

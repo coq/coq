@@ -43,9 +43,8 @@ val coq_p_imp : Term.constr lazy_t
 val coq_p_prop : Term.constr lazy_t
 
 val coq_s_bad_constant : Term.constr lazy_t
-val coq_s_div_approx : Term.constr lazy_t
+val coq_s_divide : Term.constr lazy_t
 val coq_s_not_exact_divide : Term.constr lazy_t
-val coq_s_exact_divide : Term.constr lazy_t
 val coq_s_sum : Term.constr lazy_t
 val coq_s_merge_eq : Term.constr lazy_t
 val coq_s_split_ineq : Term.constr lazy_t
