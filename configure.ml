@@ -328,7 +328,7 @@ let args_options = Arg.align [
   "-browser", arg_string_option Prefs.browser,
     "<command> Use <command> to open URL %s";
   "-nodoc", Arg.Clear Prefs.withdoc,
-    " Do not compile the documentation";
+    " Deprecated: use -with-doc no instead";
   "-with-doc", arg_bool Prefs.withdoc,
     "(yes|no) Compile the documentation or not";
   "-with-geoproof", arg_bool Prefs.geoproof,
