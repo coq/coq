@@ -264,8 +264,8 @@ Ltac zify_positive_op :=
   | |- context [ Zpos (Pos.max ?a ?b) ] => rewrite (Pos2Z.inj_max a b)
 
   (* Pos.sub -> Z.max 1 (Z.sub ... ...) *)
-  | H : context [ Zpos (Pos.sub ?a ?b) ] |- _ => rewrite (Pos2Z.inj_sub a b) in H
-  | |- context [ Zpos (Pos.sub ?a ?b) ] => rewrite (Pos2Z.inj_sub a b)
+  | H : context [ Zpos (Pos.sub ?a ?b) ] |- _ => rewrite (Pos2Z.inj_sub_max a b) in H
+  | |- context [ Zpos (Pos.sub ?a ?b) ] => rewrite (Pos2Z.inj_sub_max a b)
 
   (* Pos.succ -> Z.succ *)
   | H : context [ Zpos (Pos.succ ?a) ] |- _ => rewrite (Pos2Z.inj_succ a) in H
