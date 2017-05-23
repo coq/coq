@@ -132,6 +132,14 @@ as in {\tt make -f Makefile target} from another Makefile.
 	{\tt CoqMakefile.local}
 \end{itemize}
 
+\paragraph{Note: building a subset of the targets with -j}
+
+To build, say, two targets \texttt{foo.vo} and \texttt{bar.vo}
+in parallel one can use \texttt{make only TGTS="foo.vo bar.vo" -j}.
+
+Note that \texttt{make foo.vo bar.vo -j} has a different meaning for
+the make utility, in particular it may build a shared prerequisite twice.
+
 \section[Modules dependencies]{Modules dependencies\label{Dependencies}\index{Dependencies}
   \ttindex{coqdep}}
 

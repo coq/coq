@@ -278,6 +278,9 @@ validate: $(VOFILES)
 	$(COQCHK) $(COQCHKFLAGS) $(notdir $(^:.vo=))
 .PHONY: validate
 
+only: $(TGTS)
+.PHONY: only
+
 # Documentation targets #######################################################
 
 html: $(GLOBFILES) $(VFILES)
