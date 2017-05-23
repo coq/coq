@@ -326,3 +326,35 @@ let initial_atomic () =
       ]
 
 let () = Mltop.declare_cache_obj initial_atomic "coretactics"
+
+(* First-class Ltac access to primitive blocks *)
+
+let initial_name s = { mltac_plugin = "coretactics"; mltac_tactic = s; }
+let initial_entry s = { mltac_name = initial_name s; mltac_index = 0; }
+
+let register_list_tactical name f =
+  let tac args ist = match args with
+  | [v] ->
+    begin match Tacinterp.Value.to_list v with
+    | None -> Tacticals.New.tclZEROMSG (Pp.str "Expected a list")
+    | Some tacs ->
+      let tacs = List.map (fun tac -> Tacinterp.tactic_of_value ist tac) tacs in
+      f tacs
+    end
+  | _ -> assert false
+  in
+  Tacenv.register_ml_tactic (initial_name name) [|tac|]
+
+let () = register_list_tactical "first" Tacticals.New.tclFIRST
+let () = register_list_tactical "solve" Tacticals.New.tclSOLVE
+
+let initial_tacticals () =
+  let idn n = Id.of_string (Printf.sprintf "_%i" n) in
+  let varn n = Reference (ArgVar (None, idn n)) in
+  let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in
+  List.iter iter [
+    "first", TacFun ([Name (idn 0)], TacML (None, (initial_entry "first", [varn 0])));
+    "solve", TacFun ([Name (idn 0)], TacML (None, (initial_entry "solve", [varn 0])));
+  ]
+
+let () = Mltop.declare_cache_obj initial_tacticals "coretactics"
