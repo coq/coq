@@ -461,6 +461,13 @@ recursively convertible to $u'_1$, or, symmetrically, $u_2$ is $\lb
 x:T\mto u'_2$ and $u_1\,x$ is recursively convertible to $u'_2$.  We
 then write $\WTEGCONV{t_1}{t_2}$.
 
+Apart from this we consider two instances of polymorphic and cumulative (see Chapter~\ref{Universes-full}) inductive types (see below)
+convertible $\WTEGCONV{t\ w_1 \dots w_m}{t\ w_1' \dots w_m'}$ if we have subtypings (see below) in both directions, i.e.,
+$\WTEGLECONV{t\ w_1 \dots w_m}{t\ w_1' \dots w_m'}$ and $\WTEGLECONV{t\ w_1' \dots w_m'}{t\ w_1 \dots w_m}$.
+Furthermore, we consider $\WTEGCONV{c\ v_1 \dots v_m}{c'\ v_1' \dots v_m'}$ convertible if $\WTEGCONV{v_i}{v_i'}$
+and we have that $c$ and $c'$ are the same constructors of different instances the same inductive types (differing only in universe levels)
+such that $\WTEG{c\ v_1 \dots v_m}{t\ w_1 \dots w_m}$ and $\WTEG{c'\ v_1' \dots v_m'}{t'\ w_1' \dots w_m'}$ and we have $\WTEGCONV{t\ w_1 \dots w_m}{t\ w_1' \dots w_m'}$.
+
 The convertibility relation allows introducing a new typing rule
 which says that two convertible well-formed types have the same
 inhabitants.
@@ -480,6 +487,17 @@ convertibility into a {\em subtyping} relation inductively defined by:
 \item $\WTEGLECONV{\Prop}{\Set}$, hence, by transitivity,
   $\WTEGLECONV{\Prop}{\Type(i)}$, for any $i$
 \item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{\forall~x:T, T'}{\forall~x:U, U'}$.
+\item if $\Ind{}{p}{\Gamma_I}{\Gamma_C}$ is a universe polymorphic and cumulative (see Chapter~\ref{Universes-full})
+  inductive type (see below) and $(t : \forall\Gamma_P,\forall\Gamma_{\mathit{Arr}(t)}, \Sort)\in\Gamma_I$
+  and $(t' : \forall\Gamma_P',\forall\Gamma_{\mathit{Arr}(t)}', \Sort')\in\Gamma_I$
+  are two different instances of \emph{the same} inductive type (differing only in universe levels) with constructors
+  \[[c_1: \forall\Gamma_P,\forall T_{1,1} \dots T_{1,n_1},t\ v_{1,1} \dots v_{1,m}; \dots; c_k: \forall\Gamma_P,\forall T_{k, 1} \dots T_{k,n_k},t\ v_{n,1}\dots v_{n,m}]\]
+  and
+  \[[c_1: \forall\Gamma_P',\forall T_{1,1}' \dots T_{1,n_1}',t'\ v_{1,1}' \dots v_{1,m}'; \dots; c_k: \forall\Gamma_P',\forall T_{k, 1}' \dots T_{k,n_k}',t\ v_{n,1}'\dots v_{n,m}']\]
+  respectively then $\WTEGLECONV{t\ w_1 \dots w_m}{t\ w_1' \dots w_m'}$ (notice that $t$ and $t'$ are both fully applied, i.e., they have a sort as a type)
+  if $\WTEGCONV{w_i}{w_i'}$ for $1 \le i \le m$ and we have
+  \[ \WTEGLECONV{T_{i,j}}{T_{i,j}'} \text{ and } \WTEGLECONV{A_i}{A_i'}\]
+  where $\Gamma_{\mathit{Arr}(t)} = [a_1 : A_1; a_1 : A_l]$ and $\Gamma_{\mathit{Arr}(t)} = [a_1 : A_1'; a_1 : A_l']$.
 \end{enumerate}
 
 The conversion rule up to subtyping is now exactly:
@@ -530,8 +548,12 @@ Formally, we can represent any {\em inductive definition\index{definition!induct
 These inductive definitions, together with global assumptions and global definitions, then form the global environment.
 %
 Additionally, for any $p$ there always exists $\Gamma_P=[a_1:A_1;\dots;a_p:A_p]$
-such that each $(t:T)\in\Gamma_I\cup\Gamma_C$ can be written as:
+such that each $T$ in $(t:T)\in\Gamma_I\cup\Gamma_C$ can be written as:
 $\forall\Gamma_P, T^\prime$ where $\Gamma_P$ is called the {\em context of parameters\index{context of parameters}}.
+Furthermore, we must have that each $T$ in $(t:T)\in\Gamma_I$ can be written as:
+$\forall\Gamma_P,\forall\Gamma_{\mathit{Arr}(t)}, \Sort$ where $\Gamma_{\mathit{Arr}(t)}$ is called the
+{\em Arity} of the inductive type\index{arity of inductive type} $t$ and
+$\Sort$ is called the sort of the inductive type $t$.
 
 \paragraph{Examples}
 
