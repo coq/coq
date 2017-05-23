@@ -669,26 +669,30 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
 	make_letins letins res
       with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation"))
-    | NProd (Name id, NHole _, c') when option_mem_assoc id binderopt ->
+    | NProd (Name id,bk,NHole _, c') when option_mem_assoc id binderopt ->
+       (assert (bk = Explicit);
         let a,letins = snd (Option.get binderopt) in
         let e = make_letins letins (aux subst' infos c') in
-        let (loc,(na,bk,t)) = a in
-        GProd (loc,na,bk,t,e)
-    | NLambda (Name id,NHole _,c') when option_mem_assoc id binderopt ->
+        let (loc,(na,bk',t)) = a in
+        GProd (loc,na,bk',t,e))
+    | NLambda (Name id,bk,NHole _,c') when option_mem_assoc id binderopt ->
+       (assert (bk = Explicit);
         let a,letins = snd (Option.get binderopt) in
-        let (loc,(na,bk,t)) = a in
-        GLambda (loc,na,bk,t,make_letins letins (aux subst' infos c'))
+        let (loc,(na,bk',t)) = a in
+        GLambda (loc,na,bk',t,make_letins letins (aux subst' infos c')))
     (* Two special cases to keep binder name synchronous with BinderType *)
-    | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
+    | NProd (na,bk,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
+       (assert (bk = Explicit);
         let subinfos,na = traverse_binder subst avoid subinfos na in
         let ty = GHole (loc,Evar_kinds.BinderType na,naming,arg) in
-	GProd (loc,na,Explicit,ty,aux subst' subinfos c')
-    | NLambda (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
+	GProd (loc,na,Explicit,ty,aux subst' subinfos c'))
+    | NLambda (na,bk,NHole(Evar_kinds.BinderType na',naming,arg),c')
         when Name.equal na na' ->
-        let subinfos,na = traverse_binder subst avoid subinfos na in
-        let ty = GHole (loc,Evar_kinds.BinderType na,naming,arg) in
-	GLambda (loc,na,Explicit,ty,aux subst' subinfos c')
+       (assert (bk = Explicit);
+	let subinfos,na = traverse_binder subst avoid subinfos na in
+	let ty = GHole (loc,Evar_kinds.BinderType na,naming,arg) in
+	GLambda (loc,na,Explicit,ty,aux subst' subinfos c'))
     | t ->
       glob_constr_of_notation_constr_with_binders loc
         (traverse_binder subst avoid) (aux subst') subinfos t
