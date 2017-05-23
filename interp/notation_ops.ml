@@ -277,15 +277,18 @@ let compare_recursive_parts found f f' (iterator,subc) =
         true
       | Some _ -> false
       end
-  | GLambda (_,Name x,_,t_x,c), GLambda (_,Name y,_,t_y,term)
-  | GProd (_,Name x,_,t_x,c), GProd (_,Name y,_,t_y,term) ->
-      (* We found a binding position where it differs *)
-      begin match !diff with
-      | None ->
-        let () = diff := Some (x, y, RecursiveBinders (t_x,t_y)) in
-        aux c term
-      | Some _ -> false
-      end
+  | GLambda (_,Name x,bk1,t_x,c), GLambda (_,Name y,bk2,t_y,term)
+  | GProd (_,Name x,bk1,t_x,c), GProd (_,Name y,bk2,t_y,term) ->
+     if (bk1 = Implicit || bk2 = Implicit) then 
+       error "Implicit arguments found in recursive parts of a binder"
+     else 
+       (* We found a binding position where it differs *)
+       begin match !diff with
+       | None ->
+          let () = diff := Some (x, y, RecursiveBinders (t_x,t_y)) in
+          aux c term
+       | Some _ -> false
+       end
   | _ ->
       compare_glob_constr aux (add_name found) c1 c2 in
   if aux iterator subc then
