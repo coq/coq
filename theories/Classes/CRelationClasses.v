@@ -305,9 +305,7 @@ Section Binary.
     fun x y => sum (R x y) (R' x y).
   
   (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
-  
-  Set Automatic Introduction.
-  
+
   Global Instance relation_equivalence_equivalence :
     Equivalence relation_equivalence.
   Proof. split; red; unfold relation_equivalence, iffT. firstorder. 

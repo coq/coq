@@ -433,9 +433,7 @@ Section Binary.
     @predicate_union (A::A::Tnil) R R'.
   
   (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
-  
-  Set Automatic Introduction.
-  
+
   Global Instance relation_equivalence_equivalence :
     Equivalence relation_equivalence.
   Proof. exact (@predicate_equivalence_equivalence (A::A::Tnil)). Qed.
