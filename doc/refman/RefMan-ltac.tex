@@ -522,6 +522,19 @@ to have \emph{at least} one success.
 
 \ErrMsg \errindex{No applicable tactic}
 
+\variant {\tt first {\tacexpr}}
+
+This is an Ltac alias that gives a primitive access to the {\tt first} tactical
+as a Ltac definition without going through a parsing rule. It expects to be
+given a list of tactics through a {\tt Tactic Notation}, allowing to write
+notations of the following form.
+
+\Example
+
+\begin{quote}
+{\tt Tactic Notation "{foo}" tactic\_list(tacs) := first tacs.}
+\end{quote}
+
 \subsubsection[Left-biased branching]{Left-biased branching\tacindex{$\mid\mid$}
 \index{Tacticals!orelse@{\tt $\mid\mid$}}}
 
@@ -599,6 +612,11 @@ independently, if it doesn't solve the goal then it tries to apply
 $v_2$ and so on. It fails if there is no solving tactic.
 
 \ErrMsg \errindex{Cannot solve the goal}
+
+\variant {\tt solve {\tacexpr}}
+
+This is an Ltac alias that gives a primitive access to the {\tt solve} tactical.
+See the {\tt first} tactical for more information.
 
 \subsubsection[Identity]{Identity\label{ltac:idtac}\tacindex{idtac}
 \index{Tacticals!idtac@{\tt idtac}}}
