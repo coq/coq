@@ -48,10 +48,13 @@ Ltac zify_unop_var_or_term t thm a :=
  (remember a as za; zify_unop_core t thm za).
 
 Ltac zify_unop t thm a :=
- (* if a is a scalar, we can simply reduce the unop *)
+ (* If a is a scalar, we can simply reduce the unop. *)
+ (* Note that simpl wasn't enough to reduce [Z.max 0 0] (#5439) *)
  let isz := isZcst a in
  match isz with
-  | true => simpl (t a) in *
+  | true =>
+    let u := eval compute in (t a) in
+    change (t a) with u in *
   | _ => zify_unop_var_or_term t thm a
  end.
 
@@ -165,14 +168,16 @@ Ltac zify_nat_op :=
         rewrite (Nat2Z.inj_mul a b) in *
 
   (* O -> Z0 *)
-  | H : context [ Z.of_nat O ] |- _ => simpl (Z.of_nat O) in H
-  | |- context [ Z.of_nat O ] => simpl (Z.of_nat O)
+  | H : context [ Z.of_nat O ] |- _ => change (Z.of_nat O) with Z0 in H
+  | |- context [ Z.of_nat O ] => change (Z.of_nat O) with Z0
 
   (* S -> number or Z.succ *)
   | H : context [ Z.of_nat (S ?a) ] |- _ =>
      let isnat := isnatcst a in
      match isnat with
-      | true => simpl (Z.of_nat (S a)) in H
+      | true =>
+        let t := eval compute in (Z.of_nat (S a)) in
+        change (Z.of_nat (S a)) with t in H
       | _ => rewrite (Nat2Z.inj_succ a) in H
       | _ => (* if the [rewrite] fails (most likely a dependent occurence of [Z.of_nat (S a)]),
                 hide [Z.of_nat (S a)] in this one hypothesis *)
@@ -181,7 +186,9 @@ Ltac zify_nat_op :=
   | |- context [ Z.of_nat (S ?a) ] =>
      let isnat := isnatcst a in
      match isnat with
-      | true => simpl (Z.of_nat (S a))
+      | true =>
+        let t := eval compute in (Z.of_nat (S a)) in
+        change (Z.of_nat (S a)) with t
       | _ => rewrite (Nat2Z.inj_succ a)
       | _ => (* if the [rewrite] fails (most likely a dependent occurence of [Z.of_nat (S a)]),
                 hide [Z.of_nat (S a)] in the goal *)
