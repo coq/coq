@@ -526,10 +526,10 @@ $(GHTMLFILES): %.g.html: %.v %.glob
 # Dependency files ############################################################
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
- include $(ALLDFILES)
+ -include $(ALLDFILES)
 else
  ifeq ($(MAKECMDGOALS),)
-  include $(ALLDFILES)
+  -include $(ALLDFILES)
  endif
 endif
 
