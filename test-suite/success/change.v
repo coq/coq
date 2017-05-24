@@ -59,3 +59,12 @@ unfold x.
 (* check that n in 0+n is not interpreted as the n from "fun n" *)
 change n with (0+n).
 Abort.
+
+(* Check non-collision of non-normalized defined evars with pattern variables *)
+
+Goal exists x, 1=1 -> x=1/\x=1.
+eexists ?[n]; intros; split.
+eassumption.
+match goal with |- ?x=1 => change (x=1) with (0+x=1) end.
+match goal with |- 0+1=1 => trivial end.
+Qed.
