@@ -75,7 +75,7 @@ let set_all_warnings_status status =
 
 let set_category_status ~name status =
   let names = Hashtbl.find categories name in
-  List.iter (fun name -> set_warning_status name status) names
+  List.iter (fun name -> set_warning_status ~name status) names
 
 let is_all_keyword name = CString.equal name "all"
 let is_none_keyword s = CString.equal s "none"
@@ -159,7 +159,7 @@ let normalize_flags_string s =
     let flags = normalize_flags ~silent:false flags in
     string_of_flags flags
 
-let rec parse_warnings items =
+let parse_warnings items =
   CList.iter (fun (status, name) -> set_status ~name status) items
 
 (* For compatibility, we accept "none" *)

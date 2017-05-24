@@ -239,6 +239,7 @@ let process_channel ch =
   if !skip_header then read_header lb;
   spec lb
 
+[@@@ocaml.warning "-52"]
 let process_file f =
   try
     let ch = open_in f in
@@ -251,6 +252,7 @@ let process_file f =
 	flush stdout; eprintf "coqwc: %s: Is a directory\n" f; flush stderr
     | Sys_error s ->
 	flush stdout; eprintf "coqwc: %s\n" s; flush stderr
+[@@@ocaml.warning "+52"]
 
 (*s Parsing of the command line. *)
 

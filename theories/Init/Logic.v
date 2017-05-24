@@ -223,7 +223,7 @@ Proof.
 Qed.
 
 (** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
-    either [P] and [Q], or [~P] and [Q] *)
+    either [P] and [Q], or [~P] and [R] *)
 
 Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 
@@ -607,6 +607,11 @@ Lemma exists_inhabited : forall (A:Type) (P:A->Prop),
   (exists x, P x) -> inhabited A.
 Proof.
   destruct 1; auto.
+Qed.
+
+Lemma inhabited_covariant (A B : Type) : (A -> B) -> inhabited A -> inhabited B.
+Proof.
+  intros f [x];exact (inhabits (f x)).
 Qed.
 
 (** Declaration of stepl and stepr for eq and iff *)

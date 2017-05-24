@@ -239,6 +239,9 @@ sig
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
+
+  exception IncompatibleFold2
+
   val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
   val empty : 'a t
   val is_empty : 'a t -> bool
@@ -413,6 +416,7 @@ struct
       | (_,_) -> false in
     compare_rec 0 stk1 stk2
 
+  exception IncompatibleFold2
   let fold2 f o sk1 sk2 =
     let rec aux o lft1 sk1 lft2 sk2 =
       let fold_array =
@@ -442,7 +446,7 @@ struct
 	  aux o lft1 (List.rev params1) lft2 (List.rev params2)
 	in aux o' lft1' q1 lft2' q2
       | (((Update _|App _|Case _|Proj _|Fix _| Cst _) :: _|[]), _) ->
-	raise (Invalid_argument "Reductionops.Stack.fold2")
+	raise IncompatibleFold2
     in aux o 0 (List.rev sk1) 0 (List.rev sk2)
 
   let rec map f x = List.map (function
@@ -1117,7 +1121,9 @@ let local_whd_state_gen flags sigma =
   whrec
 
 let raw_whd_state_gen flags env =
-  let f sigma s = fst (whd_state_gen (get_refolding_in_reduction ()) false flags env sigma s) in
+  let f sigma s = fst (whd_state_gen ~refold:(get_refolding_in_reduction ())
+                         ~tactic_mode:false
+                         flags env sigma s) in
   f
 
 let stack_red_of_state_red f =
@@ -1127,7 +1133,7 @@ let stack_red_of_state_red f =
 (* Drops the Cst_stack *)
 let iterate_whd_gen refold flags env sigma s =
   let rec aux t =
-  let (hd,sk),_ = whd_state_gen refold false flags env sigma (t,Stack.empty) in
+  let (hd,sk),_ = whd_state_gen ~refold ~tactic_mode:false flags env sigma (t,Stack.empty) in
   let whd_sk = Stack.map aux sk in
   Stack.zip sigma ~refold (hd,whd_sk)
   in aux s

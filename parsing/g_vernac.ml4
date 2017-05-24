@@ -136,8 +136,8 @@ GEXTEND Gram
     [ [ thm = thm_token; id = pidentref; bl = binders; ":"; c = lconstr;
         l = LIST0
           [ "with"; id = pidentref; bl = binders; ":"; c = lconstr ->
-          (Some id,(bl,c,None)) ] ->
-          VernacStartTheoremProof (thm, (Some id,(bl,c,None))::l, false)
+          (Some id,(bl,c)) ] ->
+          VernacStartTheoremProof (thm, (Some id,(bl,c))::l, false)
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
       | (kwd,stre) = assumptions_token; nl = inline; bl = assum_list ->
@@ -755,11 +755,6 @@ GEXTEND Gram
            `Id { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
                  implicit_status = MaximallyImplicit}) items
-    ]
-  ];
-  name_or_bang: [
-       [ b = OPT "!"; id = name ->
-       not (Option.is_empty b), id
     ]
   ];
   (* Same as [argument_spec_block], but with only implicit status and names *)

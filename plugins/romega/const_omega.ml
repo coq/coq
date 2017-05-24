@@ -285,7 +285,7 @@ module type Int = sig
 
   val mk : Bigint.bigint -> Term.constr
   val parse_term : Term.constr -> parse_term
-  val parse_rel : Proof_type.goal Tacmach.sigma -> Term.constr -> parse_rel
+  val parse_rel : ([ `NF ], 'r) Proofview.Goal.t -> Term.constr -> parse_rel
   (* check whether t is built only with numbers and + * - *)
   val is_scalar : Term.constr -> bool
 end
@@ -350,10 +350,12 @@ let parse_term t =
     | _ -> Tother
   with e when Logic.catchable_exception e -> Tother
 
+let pf_nf gl c = Tacmach.New.pf_apply Tacred.simpl gl c
+
 let parse_rel gl t =
   try match destructurate t with
     | Kapp("eq",[typ;t1;t2])
-      when destructurate (EConstr.Unsafe.to_constr (Tacmach.pf_nf gl (EConstr.of_constr typ))) = Kapp("Z",[]) -> Req (t1,t2)
+      when destructurate (EConstr.Unsafe.to_constr (pf_nf gl (EConstr.of_constr typ))) = Kapp("Z",[]) -> Req (t1,t2)
     | Kapp("Zne",[t1;t2]) -> Rne (t1,t2)
     | Kapp("Z.le",[t1;t2]) -> Rle (t1,t2)
     | Kapp("Z.lt",[t1;t2]) -> Rlt (t1,t2)

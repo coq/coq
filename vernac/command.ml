@@ -97,7 +97,7 @@ let interp_definition pl bl p red_option c ctypopt =
   let evdref = ref (Evd.from_ctx ctx) in
   let impls, ((env_bl, ctx), imps1) = interp_context_evars env evdref bl in
   let ctx = List.map (fun d -> map_rel_decl EConstr.Unsafe.to_constr d) ctx in
-  let nb_args = List.length ctx in
+  let nb_args = Context.Rel.nhyps ctx in
   let imps,pl,ce =
     match ctypopt with
       None ->
@@ -259,7 +259,7 @@ match local with
   let () = Universes.register_universe_binders gr pl in
   let () = assumption_message ident in
   let () = Typeclasses.declare_instance None false gr in
-  let () = if is_coe then Class.try_add_new_coercion gr local p in
+  let () = if is_coe then Class.try_add_new_coercion gr ~local p in
   let inst = 
     if p (* polymorphic *) then Univ.UContext.instance ctx 
     else Univ.Instance.empty
@@ -753,7 +753,7 @@ let do_mutual_inductive indl poly prv finite =
   (* Declare the possible notations of inductive types *)
   List.iter Metasyntax.add_notation_interpretation ntns;
   (* Declare the coercions *)
-  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) false poly) coes;
+  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) ~local:false poly) coes;
   (* If positivity is assumed declares itself as unsafe. *)
   if Environ.deactivated_guard (Global.env ()) then Feedback.feedback Feedback.AddedAxiom else ()
 
@@ -850,7 +850,7 @@ type structured_fixpoint_expr = {
 let interp_fix_context env evdref isfix fix =
   let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
   let impl_env, ((env', ctx), imps) = interp_context_evars env evdref before in
-  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env ~shift:(List.length before) env' evdref after in
+  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env ~shift:(Context.Rel.nhyps ctx) env' evdref after in
   let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
     ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 
@@ -881,8 +881,10 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
 
 (* Jump over let-bindings. *)
 
-let compute_possible_guardness_evidences (ids,_,na) =
-  match na with
+let compute_possible_guardness_evidences (ctx,_,recindex) =
+  (* A recursive index is characterized by the number of lambdas to
+     skip before finding the relevant inductive argument *)
+  match recindex with
   | Some i -> [i]
   | None ->
       (* If recursive argument was not given by user, we try all args.
@@ -890,7 +892,7 @@ let compute_possible_guardness_evidences (ids,_,na) =
 	 but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
-      List.interval 0 (List.length ids - 1)
+      List.interval 0 (Context.Rel.nhyps ctx - 1)
 
 type recursive_preentry =
   Id.t list * constr option list * types list
@@ -1131,7 +1133,7 @@ let interp_recursive isfix fixl notations =
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (fun c -> nf_evar !evdref c) fixtypes in
   let fiximps = List.map3
-    (fun ctximps cclimps (_,ctx) -> ctximps@(Impargs.lift_implicits (List.length ctx) cclimps))
+    (fun ctximps cclimps (_,ctx) -> ctximps@(Impargs.lift_implicits (Context.Rel.nhyps ctx) cclimps))
     fixctximps fixcclimps fixctxs in
   let rec_sign =
     List.fold_left2
@@ -1170,10 +1172,10 @@ let interp_recursive isfix fixl notations =
   let fixdefs = List.map (fun c -> Option.map EConstr.Unsafe.to_constr c) fixdefs in
   let fixdefs = List.map (Option.map nf) fixdefs in
   let fixtypes = List.map nf fixtypes in
-  let fixctxnames = List.map (fun (_,ctx) -> List.map RelDecl.get_name ctx) fixctxs in
+  let fixctxs = List.map (fun (_,ctx) -> ctx) fixctxs in
 
   (* Build the fix declaration block *)
-  (env,rec_sign,all_universes,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots
+  (env,rec_sign,all_universes,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
   check_evars_are_solved env evd Evd.empty;
@@ -1189,21 +1191,18 @@ let interp_fixpoint l ntns =
 
 let interp_cofixpoint l ntns =
   let (env,_,pl,evd),fix,info = interp_recursive false l ntns in
-  check_recursive false  env evd fix;
+  check_recursive false env evd fix;
   (fix,pl,Evd.evar_universe_context evd,info)
     
 let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      List.map3 (fun id t (len,imps,_) -> ((id,pl),(t,(len,imps))))
+      List.map3 (fun id t (ctx,imps,_) -> ((id,pl),(t,(List.map RelDecl.get_name ctx,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
-      Some (List.map (Option.cata (EConstr.of_constr %> Tacmach.refine_no_check) Tacticals.tclIDTAC)
+      Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
         fixdefs) in
-    let init_tac =
-      Option.map (List.map Proofview.V82.tactic) init_tac
-    in
     let evd = Evd.from_ctx ctx in
     Lemmas.start_proof_with_initialization (Global,poly,DefinitionBody Fixpoint)
       evd (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
@@ -1233,14 +1232,11 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      List.map3 (fun id t (len,imps,_) -> ((id,pl),(t,(len,imps))))
+      List.map3 (fun id t (ctx,imps,_) -> ((id,pl),(t,(List.map RelDecl.get_name ctx,imps))))
 		fixnames fixtypes fiximps in
     let init_tac =
-      Some (List.map (Option.cata (EConstr.of_constr %> Tacmach.refine_no_check) Tacticals.tclIDTAC)
+      Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
         fixdefs) in
-    let init_tac =
-      Option.map (List.map Proofview.V82.tactic) init_tac
-    in
     let evd = Evd.from_ctx ctx in
       Lemmas.start_proof_with_initialization (Global,poly, DefinitionBody CoFixpoint)
       evd (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))

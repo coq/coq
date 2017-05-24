@@ -13,7 +13,6 @@
     state and returning a value of type ['a]. *)
 
 open Util
-open Term
 open EConstr
 
 (** Main state of tactics *)

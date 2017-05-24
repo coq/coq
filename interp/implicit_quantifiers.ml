@@ -19,7 +19,6 @@ open Typeclasses_errors
 open Pp
 open Libobject
 open Nameops
-open Misctypes
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -119,74 +118,14 @@ let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr li
     | [] -> bdvars, l
   in aux bound l binders
 
-let add_name_to_ids set na =
-  match na with
-  | Anonymous -> set
-  | Name id -> Id.Set.add id set
-
 let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.empty) =
-  let rec vars bound vs { loc; CAst.v = t } = match t with
-    | GVar id ->
+  let rec vars bound vs t = match t with
+    | { loc; CAst.v = GVar id } ->
 	if is_freevar bound (Global.env ()) id then
 	  if Id.List.mem_assoc_sym id vs then vs
 	  else (Loc.tag ?loc id) :: vs
 	else vs
-
-    | GApp (f,args) -> List.fold_left (vars bound) vs (f::args)
-    | GLambda (na,_,ty,c) | GProd (na,_,ty,c) ->
-	let vs' = vars bound vs ty in
-	let bound' = add_name_to_ids bound na in
-	vars bound' vs' c
-    | GLetIn (na,b,ty,c) ->
-	let vs' = vars bound vs b in
-	let vs'' = Option.fold_left (vars bound) vs' ty in
-	let bound' = add_name_to_ids bound na in
-	vars bound' vs'' c
-    | GCases (sty,rtntypopt,tml,pl) ->
-	let vs1 = vars_option bound vs rtntypopt in
-	let vs2 = List.fold_left (fun vs (tm,_) -> vars bound vs tm) vs1 tml in
-	List.fold_left (vars_pattern bound) vs2 pl
-    | GLetTuple (nal,rtntyp,b,c) ->
-	let vs1 = vars_return_type bound vs rtntyp in
-	let vs2 = vars bound vs1 b in
-	let bound' = List.fold_left add_name_to_ids bound nal in
-	vars bound' vs2 c
-    | GIf (c,rtntyp,b1,b2) ->
-	let vs1 = vars_return_type bound vs rtntyp in
-	let vs2 = vars bound vs1 c in
-	let vs3 = vars bound vs2 b1 in
-	vars bound vs3 b2
-    | GRec (fk,idl,bl,tyl,bv) ->
-	let bound' = Array.fold_right Id.Set.add idl bound in
-	let vars_fix i vs fid =
-	  let vs1,bound1 =
-	    List.fold_left
-	      (fun (vs,bound) (na,k,bbd,bty) ->
-		 let vs' = vars_option bound vs bbd in
-		 let vs'' = vars bound vs' bty in
-		 let bound' = add_name_to_ids bound na in
-		 (vs'',bound')
-	      )
-	      (vs,bound')
-	      bl.(i)
-	  in
-	  let vs2 = vars bound1 vs1 tyl.(i) in
-	  vars bound1 vs2 bv.(i)
-	in
-	Array.fold_left_i vars_fix vs idl
-    | GCast (c,k) -> let v = vars bound vs c in
-	(match k with CastConv t | CastVM t -> vars bound v t | _ -> v)
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
-
-  and vars_pattern bound vs (loc,(idl,p,c)) =
-    let bound' = List.fold_right Id.Set.add idl bound  in
-    vars bound' vs c
-
-  and vars_option bound vs = function None -> vs | Some p -> vars bound vs p
-
-  and vars_return_type bound vs (na,tyopt) =
-    let bound' = add_name_to_ids bound na in
-    vars_option bound' vs tyopt
+    | c -> Glob_ops.fold_glob_constr_with_binders Id.Set.add vars bound vs c
   in fun rt -> 
     let vars = List.rev (vars bound [] rt) in
       List.iter (fun (loc, id) ->

@@ -12,7 +12,6 @@ open Evd
 open Names
 open Pp
 open Globnames
-open Vernacexpr
 open Decl_kinds
 
 (** Forward declaration. *)

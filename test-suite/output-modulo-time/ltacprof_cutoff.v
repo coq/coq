@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs" "-profile-ltac") -*- *)
+(* -*- coq-prog-args: ("-profile-ltac") -*- *)
 Require Coq.ZArith.BinInt.
 Ltac sleep := do 50 (idtac; let sleep := (eval vm_compute in Coq.ZArith.BinInt.Z.div_eucl) in idtac).
 

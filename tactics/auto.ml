@@ -10,16 +10,12 @@ module CVars = Vars
 
 open Pp
 open Util
-open CErrors
 open Names
-open Vars
 open Termops
 open EConstr
 open Environ
-open Tacmach
 open Genredexpr
 open Tactics
-open Tacticals
 open Clenv
 open Locus
 open Proofview.Notations
@@ -380,7 +376,7 @@ and my_find_search_delta sigma db_list local_db secvars hdc concl =
 and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=dbname})) =
   let tactic = function
     | Res_pf (c,cl) -> unify_resolve_gen poly flags (c,cl)
-    | ERes_pf _ -> Proofview.V82.tactic (fun gl -> error "eres_pf")
+    | ERes_pf _ -> Proofview.Goal.enter { enter = fun gl -> Tacticals.New.tclZEROMSG (str "eres_pf") }
     | Give_exact (c, cl)  -> exact poly (c, cl)
     | Res_pf_THEN_trivial_fail (c,cl) ->
       Tacticals.New.tclTHEN
@@ -389,10 +385,11 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
 	   with "debug auto" we don't display the details of inner trivial *)
         (trivial_fail_db (no_dbg ()) (not (Option.is_empty flags)) db_list local_db)
     | Unfold_nth c ->
-      Proofview.V82.tactic (fun gl ->
-       if exists_evaluable_reference (pf_env gl) c then
-	 tclPROGRESS (Proofview.V82.of_tactic (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)) gl
-       else tclFAIL 0 (str"Unbound reference") gl)
+      Proofview.Goal.enter { enter = begin fun gl ->
+       if exists_evaluable_reference (Tacmach.New.pf_env gl) c then
+	 Tacticals.New.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
+       else Tacticals.New.tclFAIL 0 (str"Unbound reference")
+       end }
     | Extern tacast -> 
       conclPattern concl p tacast
   in

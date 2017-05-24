@@ -858,13 +858,11 @@ let tclPROGRESS t =
   let quick_test =
     initial.solution == final.solution && initial.comb == final.comb
   in
-  let exhaustive_test =
+  let test =
+    quick_test ||
     Util.List.for_all2eq begin fun i f ->
       Progress.goal_equal initial.solution i final.solution f
     end initial.comb final.comb
-  in
-  let test =
-    quick_test || exhaustive_test
   in
   if not test then
     tclUNIT res

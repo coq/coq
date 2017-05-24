@@ -1,4 +1,3 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs") -*- *)
 Inductive Empty : Prop := .
 
 Inductive paths {A : Type} (a : A) : A -> Type :=

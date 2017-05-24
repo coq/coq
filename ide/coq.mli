@@ -140,6 +140,8 @@ sig
 
   val set : t -> bool -> unit
 
+  val printing_unfocused: unit -> bool
+
   (** [enforce] transmits to coq the current option values.
       It is also called by [goals] and [evars] above. *)
 

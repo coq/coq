@@ -75,7 +75,7 @@ object (self)
         self#redraw ();
       end
     in
-    let _ = box#misc#connect#size_allocate cb in
+    let _ = box#misc#connect#size_allocate ~callback:cb in
     let clicked_cb ev = match model with
     | None -> true
     | Some md ->
@@ -86,7 +86,7 @@ object (self)
       let () = clicked#call idx in
       true
     in
-    let _ = eventbox#event#connect#button_press clicked_cb in
+    let _ = eventbox#event#connect#button_press ~callback:clicked_cb in
     let cb show = if show then self#misc#show () else self#misc#hide () in
     stick show_progress_bar self cb;
     (** Initial pixmap *)
@@ -102,7 +102,7 @@ object (self)
     | `SET (i, color) ->
       if self#misc#visible then self#fill_range color i (i + 1)
     in
-    md#changed changed_cb
+    md#changed ~callback:changed_cb
 
   method private fill_range color i j = match model with
   | None -> ()

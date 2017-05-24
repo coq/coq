@@ -1,5 +1,5 @@
 Require Import TestSuite.admit.
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-indices-matter") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 0 lines to 7171 lines, then from 7184 lines to 558 lines, then from 556 lines to 209 lines *)
 Generalizable All Variables.
 Set Universe Polymorphism.

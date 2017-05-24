@@ -7,11 +7,11 @@
 (************************************************************************)
 
 open Term
+open EConstr
 open CErrors
 open Util
 open Formula
 open Unify
-open Tacmach
 open Globnames
 open Pp
 
@@ -57,11 +57,11 @@ end
 
 module OrderedConstr=
 struct
-  type t=constr
+  type t=Constr.t
   let compare=constr_ord
 end
 
-type h_item = global_reference * (int*constr) option
+type h_item = global_reference * (int*Constr.t) option
 
 module Hitem=
 struct
@@ -81,13 +81,15 @@ module CM=Map.Make(OrderedConstr)
 
 module History=Set.Make(Hitem)
 
-let cm_add typ nam cm=
+let cm_add sigma typ nam cm=
+  let typ = EConstr.to_constr sigma typ in
   try
     let l=CM.find typ cm in CM.add typ (nam::l) cm
   with
       Not_found->CM.add typ [nam] cm
 
-let cm_remove typ nam cm=
+let cm_remove sigma typ nam cm=
+  let typ = EConstr.to_constr sigma typ in
   try
     let l=CM.find typ cm in
     let l0=List.filter (fun id-> not (Globnames.eq_gr id nam)) l in
@@ -112,19 +114,19 @@ let deepen seq={seq with depth=seq.depth-1}
 
 let record item seq={seq with history=History.add item seq.history}
 
-let lookup item seq=
+let lookup sigma item seq=
   History.mem item seq.history ||
   match item with
       (_,None)->false
-    | (id,Some ((m,t) as c))->
+    | (id,Some (m, t))->
 	let p (id2,o)=
 	  match o with
 	      None -> false
-	    | Some ((m2,t2) as c2)-> Globnames.eq_gr id id2 && m2>m && more_general c2 c in
+	    | Some (m2, t2)-> Globnames.eq_gr id id2 && m2>m && more_general sigma (m2, EConstr.of_constr t2) (m, EConstr.of_constr t) in
 	  History.exists p seq.history
 
-let add_formula side nam t seq gl=
-  match build_formula side nam t gl seq.cnt with
+let add_formula env sigma side nam t seq =
+  match build_formula env sigma side nam t seq.cnt with
       Left f->
 	begin
 	  match side with
@@ -136,7 +138,7 @@ let add_formula side nam t seq gl=
 	    | _ ->
 		{seq with
 		   redexes=HP.add f seq.redexes;
-		   context=cm_add f.constr nam seq.context}
+		   context=cm_add sigma f.constr nam seq.context}
 	end
     | Right t->
 	match side with
@@ -144,18 +146,18 @@ let add_formula side nam t seq gl=
 	      {seq with gl=t;glatom=Some t}
 	  | _ ->
 	      {seq with
-		 context=cm_add t nam seq.context;
+		 context=cm_add sigma t nam seq.context;
 		 latoms=t::seq.latoms}
 
-let re_add_formula_list lf seq=
+let re_add_formula_list sigma lf seq=
   let do_one f cm=
     if f.id == dummy_id then cm
-    else cm_add f.constr f.id cm in
+    else cm_add sigma f.constr f.id cm in
   {seq with
      redexes=List.fold_right HP.add lf seq.redexes;
      context=List.fold_right do_one lf seq.context}
 
-let find_left t seq=List.hd (CM.find t seq.context)
+let find_left sigma t seq=List.hd (CM.find (EConstr.to_constr sigma t) seq.context)
 
 (*let rev_left seq=
   try
@@ -164,7 +166,7 @@ let find_left t seq=List.hd (CM.find t seq.context)
   with Heap.EmptyHeap -> false
 *)
 
-let rec take_formula seq=
+let rec take_formula sigma seq=
   let hd=HP.maximum seq.redexes
   and hp=HP.remove seq.redexes in
     if hd.id == dummy_id then
@@ -172,11 +174,11 @@ let rec take_formula seq=
 	if seq.gl==hd.constr then
 	  hd,nseq
 	else
-	  take_formula nseq (* discarding deprecated goal *)
+	  take_formula sigma nseq (* discarding deprecated goal *)
     else
       hd,{seq with
 	    redexes=hp;
-	    context=cm_remove hd.constr hd.id seq.context}
+	    context=cm_remove sigma hd.constr hd.id seq.context}
 
 let empty_seq depth=
   {redexes=HP.empty;
@@ -196,18 +198,17 @@ let expand_constructor_hints =
     | gr ->
 	[gr])
 
-let extend_with_ref_list l seq gl =
+let extend_with_ref_list env sigma l seq =
   let l = expand_constructor_hints l in
-  let f gr (seq,gl) =
-    let gl, c = pf_eapply Evd.fresh_global gl gr in
-    let typ=(pf_unsafe_type_of gl (EConstr.of_constr c)) in
-    let typ = EConstr.Unsafe.to_constr typ in
-      (add_formula Hyp gr typ seq gl,gl) in
-    List.fold_right f l (seq,gl)
+  let f gr (seq, sigma) =
+    let sigma, c = Evd.fresh_global env sigma gr in
+    let sigma, typ= Typing.type_of env sigma (EConstr.of_constr c) in
+      (add_formula env sigma Hyp gr typ seq, sigma) in
+    List.fold_right f l (seq, sigma)
 
 open Hints
 
-let extend_with_auto_hints l seq gl=
+let extend_with_auto_hints env sigma l seq =
   let seqref=ref seq in
   let f p_a_t =
     match repr_hint p_a_t.code with
@@ -215,10 +216,9 @@ let extend_with_auto_hints l seq gl=
       | Res_pf_THEN_trivial_fail (c,_) ->
           let (c, _, _) = c in
 	  (try
-	     let (gr, _) = Termops.global_of_constr (project gl) c in
-	     let typ=(pf_unsafe_type_of gl c) in
-	     let typ = EConstr.Unsafe.to_constr typ in
-	       seqref:=add_formula Hint gr typ !seqref gl
+	     let (gr, _) = Termops.global_of_constr sigma c in
+	     let typ=(Typing.unsafe_type_of env sigma c) in
+	       seqref:=add_formula env sigma Hint gr typ !seqref
 	   with Not_found->())
       | _-> () in
   let g _ _ l = List.iter f l in
@@ -230,7 +230,7 @@ let extend_with_auto_hints l seq gl=
 	error ("Firstorder: "^dbname^" : No such Hint database") in
       Hint_db.iter g hdb in
     List.iter h l;
-    !seqref, gl (*FIXME: forgetting about universes*)
+    !seqref, sigma (*FIXME: forgetting about universes*)
 
 let print_cmap map=
   let print_entry c l s=

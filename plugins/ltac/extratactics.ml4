@@ -21,7 +21,6 @@ open Tacexpr
 open Glob_ops
 open CErrors
 open Util
-open Evd
 open Termops
 open Equality
 open Misctypes
@@ -51,8 +50,6 @@ let replace_in_clause_maybe_by ist c1 c2 cl tac =
 
 let replace_term ist dir_opt c cl =
   with_delayed_uconstr ist c (fun c -> replace_term dir_opt c cl)
-
-let clause = Pltac.clause_dft_concl
 
 TACTIC EXTEND replace
    ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
@@ -466,7 +463,7 @@ open Evar_tactics
 (* TODO: add support for some test similar to g_constr.name_colon so that
    expressions like "evar (list A)" do not raise a syntax error *)
 TACTIC EXTEND evar
-  [ "evar" "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name id) typ ]
+  [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name id) typ ]
 | [ "evar" constr(typ) ] -> [ let_evar Anonymous typ ]
 END
 
@@ -815,6 +812,19 @@ TACTIC EXTEND destauto
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 
+(**********************************************************************)
+
+(**********************************************************************)
+(* A version of abstract constructing transparent terms               *)
+(* Introduced by Jason Gross and Benjamin Delaware in June 2016       *)
+(**********************************************************************)
+
+TACTIC EXTEND transparent_abstract
+| [ "transparent_abstract" tactic3(t) ] -> [ Proofview.Goal.nf_enter { enter = fun gl ->
+      Tactics.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) } ]
+| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> [ Proofview.Goal.nf_enter { enter = fun gl ->
+      Tactics.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) } ]
+END
 
 (* ********************************************************************* *)
 

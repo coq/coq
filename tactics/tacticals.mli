@@ -44,10 +44,8 @@ val tclAT_LEAST_ONCE : tactic -> tactic
 val tclFAIL          : int -> std_ppcmds -> tactic
 val tclFAIL_lazy     : int -> std_ppcmds Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
-val tclWEAK_PROGRESS : tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic
-val tclNOTSAMEGOAL   : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
 
@@ -265,5 +263,5 @@ module New : sig
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
   val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
 
-  val pf_constr_of_global : Globnames.global_reference -> (constr -> unit Proofview.tactic) -> unit Proofview.tactic
+  val pf_constr_of_global : Globnames.global_reference -> constr Proofview.tactic
 end

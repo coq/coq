@@ -29,7 +29,7 @@ open Printer
 open Printmod
 open Context.Rel.Declaration
 
-module RelDecl = Context.Rel.Declaration
+(* module RelDecl = Context.Rel.Declaration *)
 module NamedDecl = Context.Named.Declaration
 
 type object_pr = {

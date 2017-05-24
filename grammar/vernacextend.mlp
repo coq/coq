@@ -27,7 +27,7 @@ type rule = {
 
 let rec make_let e = function
   | [] -> e
-  | ExtNonTerminal (g, p) :: l ->
+  | ExtNonTerminal (g, Some p) :: l ->
       let t = type_of_user_symbol g in
       let loc = MLast.loc_of_expr e in
       let e = make_let e l in
@@ -42,7 +42,7 @@ let make_clause { r_patt = pt; r_branch = e; } =
 (* To avoid warnings *)
 let mk_ignore c pt =
   let fold accu = function
-  | ExtNonTerminal (_, p) -> p :: accu
+  | ExtNonTerminal (_, Some p) -> p :: accu
   | _ -> accu
   in
   let names = List.fold_left fold [] pt in
@@ -101,10 +101,11 @@ let make_fun_classifiers loc s c l =
 
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
-  | ExtNonTerminal (g, id) ->
+  | ExtNonTerminal (g, ido) ->
     let nt = type_of_user_symbol g in
     let base s = <:expr< Pcoq.genarg_grammar ($mk_extraarg loc s$) >> in
-      <:expr< Egramml.GramNonTerminal ( Loc.tag ( $make_rawwit loc nt$ ,
+    let typ = match ido with None -> None | Some _ -> Some nt in
+      <:expr< Egramml.GramNonTerminal ( Loc.tag ( $mlexpr_of_option (make_rawwit loc) typ$ ,
       $mlexpr_of_prod_entry_key base g$ ) ) >>
 
 let mlexpr_of_clause cl =
@@ -178,10 +179,13 @@ EXTEND
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let e = parse_user_entry e "" in
-        ExtNonTerminal (e, s)
+        ExtNonTerminal (e, Some s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
-        ExtNonTerminal (e, s)
+        ExtNonTerminal (e, Some s)
+      | e = LIDENT ->
+        let e = parse_user_entry e "" in
+        ExtNonTerminal (e, None)
       | s = STRING ->
         ExtTerminal s
     ] ]

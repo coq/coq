@@ -149,7 +149,7 @@ let remember_subst u subst =
 
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)
-let rec make_subst env =
+let make_subst env =
   let rec make subst = function
     | LocalDef _ :: sign, exp, args ->
         make subst (sign, exp, args)
@@ -435,13 +435,6 @@ let eq_recarg r1 r2 = match r1, r2 with
 | _ -> false
 
 let eq_wf_paths = Rtree.equal eq_recarg
-
-let pp_recarg = function
-  | Norec -> Pp.str "Norec"
-  | Mrec i -> Pp.str ("Mrec "^MutInd.to_string (fst i))
-  | Imbr i -> Pp.str ("Imbr "^MutInd.to_string (fst i))
-
-let pp_wf_paths = Rtree.pp_tree pp_recarg
 
 let inter_recarg r1 r2 = match r1, r2 with
 | Norec, Norec -> Some r1

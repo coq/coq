@@ -221,7 +221,7 @@ let where = function
 | Some s ->
   if !Flags.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
-let rec explain_exn = function
+let explain_exn = function
   | Stream.Failure ->
       hov 0 (anomaly_string () ++ str "uncaught Stream.Failure.")
   | Stream.Error txt ->
@@ -354,7 +354,7 @@ let parse_args argv =
     | "-norec" :: [] -> usage ()
 
     | "-silent" :: rem ->
-        Flags.make_silent true; parse rem
+        Flags.quiet := true; parse rem
 
     | s :: _ when s<>"" && s.[0]='-' ->
         fatal_error (str "Unknown option " ++ str s) false

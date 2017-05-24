@@ -146,12 +146,12 @@ GEXTEND Gram
     [ [ "Set"  -> GSet
       | "Prop" -> GProp
       | "Type" -> GType []
-      | "Type"; "@{"; u = universe; "}" -> GType (List.map (fun (loc,x) -> (loc, Id.to_string x)) u)
+      | "Type"; "@{"; u = universe; "}" -> GType u
       ] ]
   ;
   universe:
-    [ [ IDENT "max"; "("; ids = LIST1 identref SEP ","; ")" -> ids
-      | id = identref -> [id]
+    [ [ IDENT "max"; "("; ids = LIST1 name SEP ","; ")" -> ids
+      | id = name -> [id]
       ] ]
   ;
   lconstr:
@@ -302,7 +302,7 @@ GEXTEND Gram
     [ [ "Set" -> GSet
       | "Prop" -> GProp
       | "Type" -> GType None
-      | id = identref -> GType (Some (fst id, Id.to_string (snd id)))
+      | id = name -> GType (Some id)
       ] ]
   ;
   fix_constr:

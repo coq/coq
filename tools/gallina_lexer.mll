@@ -105,7 +105,6 @@ and end_of_line = parse
   | _	  		{ print (Lexing.lexeme lexbuf) }
 
 and skip_proof = parse
-  | "Save."	{ end_of_line lexbuf }
   | "Save" space
                 { skip_until_point lexbuf }
   | "Qed."  	{ end_of_line lexbuf }

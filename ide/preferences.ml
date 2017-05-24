@@ -73,8 +73,8 @@ end
 let stick (pref : 'a preference) (obj : #GObj.widget as 'obj)
   (cb : 'a -> unit) =
   let _ = cb pref#get in
-  let p_id = pref#connect#changed (fun v -> cb v) in
-  let _ = obj#misc#connect#destroy (fun () -> pref#connect#disconnect p_id) in
+  let p_id = pref#connect#changed ~callback:(fun v -> cb v) in
+  let _ = obj#misc#connect#destroy ~callback:(fun () -> pref#connect#disconnect p_id) in
   ()
 
 (** Useful marshallers *)
@@ -314,7 +314,7 @@ let attach_modifiers (pref : string preference) prefix =
     in
     GtkData.AccelMap.foreach change
   in
-  pref#connect#changed cb
+  pref#connect#changed ~callback:cb
 
 let modifier_for_navigation =
   new preference ~name:["modifier_for_navigation"] ~init:"<Control>" ~repr:Repr.(string)
@@ -360,7 +360,7 @@ object
     ~name:["doc_url"] ~init:Coq_config.wwwrefman ~repr:Repr.(string)
     as super
 
-  method set v =
+  method! set v =
     if not (Flags.is_standard_doc_url v) &&
       v <> use_default_doc_url &&
       (* Extra hack to support links to last released doc version *)
@@ -408,10 +408,10 @@ let background_color =
   new preference ~name:["background_color"] ~init:"cornsilk" ~repr:Repr.(string)
 
 let attach_bg (pref : string preference) (tag : GText.tag) =
-  pref#connect#changed (fun c -> tag#set_property (`BACKGROUND c))
+  pref#connect#changed ~callback:(fun c -> tag#set_property (`BACKGROUND c))
 
 let attach_fg (pref : string preference) (tag : GText.tag) =
-  pref#connect#changed (fun c -> tag#set_property (`FOREGROUND c))
+  pref#connect#changed ~callback:(fun c -> tag#set_property (`FOREGROUND c))
 
 let processing_color =
   new preference ~name:["processing_color"] ~init:"light blue" ~repr:Repr.(string)
@@ -468,7 +468,7 @@ let create_tag name default =
   let iter table =
     let tag = GText.tag ~name () in
     table#add tag#as_tag;
-    ignore (pref#connect#changed (fun _ -> set_tag tag));
+    ignore (pref#connect#changed ~callback:(fun _ -> set_tag tag));
     set_tag tag;
   in
   List.iter iter [Tags.Script.table; Tags.Proof.table; Tags.Message.table];
@@ -601,8 +601,8 @@ object (self)
     box#pack italic#coerce;
     box#pack underline#coerce;
     let cb but obj = obj#set_sensitive (not but#active) in
-    let _ = fg_unset#connect#toggled (fun () -> cb fg_unset fg_color#misc) in
-    let _ = bg_unset#connect#toggled (fun () -> cb bg_unset bg_color#misc) in
+    let _ = fg_unset#connect#toggled ~callback:(fun () -> cb fg_unset fg_color#misc) in
+    let _ = bg_unset#connect#toggled ~callback:(fun () -> cb bg_unset bg_color#misc) in
     ()
 
 end
@@ -692,7 +692,7 @@ let configure ?(apply=(fun () -> ())) () =
         ~color:(Tags.color_of_string pref#get)
         ~packing:(table#attach ~left:1 ~top:i) ()
       in
-      let _ = button#connect#color_set begin fun () ->
+      let _ = button#connect#color_set ~callback:begin fun () ->
         pref#set (Tags.string_of_color button#color)
       end in
       let reset _ =
@@ -754,7 +754,7 @@ let configure ?(apply=(fun () -> ())) () =
     let button text (pref : bool preference) =
       let active = pref#get in
       let but = GButton.check_button ~label:text ~active ~packing:box#pack () in
-      ignore (but#connect#toggled (fun () -> pref#set but#active))
+      ignore (but#connect#toggled ~callback:(fun () -> pref#set but#active))
     in
     let () = button "Dynamic word wrap" dynamic_word_wrap in
     let () = button "Show line number" show_line_number in

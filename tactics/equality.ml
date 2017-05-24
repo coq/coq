@@ -14,7 +14,6 @@ open Names
 open Nameops
 open Term
 open Termops
-open Environ
 open EConstr
 open Vars
 open Namegen
@@ -96,9 +95,6 @@ let _ =
       optwrite = (fun b -> injection_in_context := b) }
 
 (* Rewriting tactics *)
-
-let tclNOTSAMEGOAL tac =
-  Proofview.V82.tactic (Tacticals.tclNOTSAMEGOAL (Proofview.V82.of_tactic tac))
 
 type dep_proof_flag = bool (* true = support rewriting dependent proofs *)
 type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
@@ -266,6 +262,25 @@ let rewrite_elim with_evars frzevars cls c e =
 	      then rewrite_keyed_unif_flags else rewrite_conv_closed_unif_flags in
   let flags = make_flags frzevars (Tacmach.New.project gl) flags c in
   general_elim_clause with_evars flags cls c e
+  end }
+
+let tclNOTSAMEGOAL tac =
+  let goal gl = Proofview.Goal.goal (Proofview.Goal.assume gl) in
+  Proofview.Goal.nf_enter { enter = begin fun gl ->
+    let sigma = project gl in
+    let ev = goal gl in
+    tac >>= fun () ->
+    Proofview.Goal.goals >>= fun gls ->
+    let check accu gl' =
+      gl' >>= fun gl' ->
+      let accu = accu || Goal.V82.same_goal sigma ev (project gl') (goal gl') in
+      Proofview.tclUNIT accu
+    in
+    Proofview.Monad.List.fold_left check false gls >>= fun has_same ->
+    if has_same then
+      tclZEROMSG (str"Tactic generated a subgoal identical to the original goal.")
+    else
+      Proofview.tclUNIT ()
   end }
 
 (* Ad hoc asymmetric general_elim_clause *)
@@ -642,8 +657,8 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   | Some evd ->
     let e = build_coq_eq () in
     let sym = build_coq_eq_sym () in
-    Tacticals.New.pf_constr_of_global sym (fun sym ->
-    Tacticals.New.pf_constr_of_global e (fun e ->
+    Tacticals.New.pf_constr_of_global sym >>= fun sym ->
+    Tacticals.New.pf_constr_of_global e >>= fun e ->
     let eq = applist (e, [t1;c1;c2]) in
     tclTHENLAST
       (replace_core clause l2r eq)
@@ -651,7 +666,7 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
          [assumption;
           tclTHEN (apply sym) assumption;
           try_prove_eq
-         ])))
+         ])
   end }
 
 let replace c1 c2 =
@@ -721,7 +736,7 @@ let _ =
       optread  = (fun () -> !keep_proof_equalities_for_injection) ;
       optwrite = (fun b -> keep_proof_equalities_for_injection := b) }
 
-let find_positions env sigma t1 t2 =
+let find_positions env sigma ~no_discr t1 t2 =
   let project env sorts posn t1 t2 =
     let ty1 = get_type_of env sigma t1 in
     let s = get_sort_family_of env sigma ty1 in
@@ -752,7 +767,7 @@ let find_positions env sigma t1 t2 =
             List.flatten
 	      (List.map2_i (fun i -> findrec sorts' ((sp1,adjust i)::posn))
 		0 rargs1 rargs2)
-	  else if Sorts.List.mem InType sorts'
+	  else if Sorts.List.mem InType sorts' && not no_discr
           then (* see build_discriminator *)
 	    raise (DiscrFound (List.rev posn,sp1,sp2))
 	  else 
@@ -776,13 +791,14 @@ let find_positions env sigma t1 t2 =
     Inl (path,c1,c2)
 
 let discriminable env sigma t1 t2 =
-  match find_positions env sigma t1 t2 with
+  match find_positions env sigma ~no_discr:false t1 t2 with
     | Inl _ -> true
     | _ -> false
 
 let injectable env sigma t1 t2 =
-    match find_positions env sigma t1 t2 with
-    | Inl _ | Inr [] | Inr [([],_,_)] -> false
+    match find_positions env sigma ~no_discr:true t1 t2 with
+    | Inl _ -> assert false
+    | Inr [] | Inr [([],_,_)] -> false
     | Inr _ -> true
 
 
@@ -1017,7 +1033,7 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   Proofview.Goal.enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
-    match find_positions env sigma t1 t2 with
+    match find_positions env sigma ~no_discr:false t1 t2 with
     | Inr _ ->
 	tclZEROMSG (str"Not a discriminable equality.")
     | Inl (cpath, (_,dirn), _) ->
@@ -1399,9 +1415,9 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
 let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   let env = eq_clause.env in
-  match find_positions env sigma t1 t2 with
+  match find_positions env sigma ~no_discr:true t1 t2 with
   | Inl _ ->
-     tclZEROMSG (strbrk"This equality is discriminable. You should use the discriminate tactic to solve the goal.")
+     assert false
   | Inr [] ->
      let suggestion =
          if !keep_proof_equalities_for_injection then
@@ -1468,7 +1484,7 @@ let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
   Proofview.Goal.enter { enter = begin fun gl ->
     let sigma =  clause.evd in
     let env = Proofview.Goal.env gl in
-      match find_positions env sigma t1 t2 with
+      match find_positions env sigma ~no_discr:false t1 t2 with
       | Inl (cpath, (_,dirn), _) ->
 	  discr_positions env sigma u clause cpath dirn
       | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)

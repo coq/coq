@@ -270,6 +270,7 @@ module Prefs = struct
   let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
   let coqwebsite = ref "http://coq.inria.fr/"
   let force_caml_version = ref false
+  let warn_error = ref false
 end
 
 (* TODO : earlier any option -foo was also available as --foo *)
@@ -327,7 +328,7 @@ let args_options = Arg.align [
   "-browser", arg_string_option Prefs.browser,
     "<command> Use <command> to open URL %s";
   "-nodoc", Arg.Clear Prefs.withdoc,
-    " Do not compile the documentation";
+    " Deprecated: use -with-doc no instead";
   "-with-doc", arg_bool Prefs.withdoc,
     "(yes|no) Compile the documentation or not";
   "-with-geoproof", arg_bool Prefs.geoproof,
@@ -352,6 +353,8 @@ let args_options = Arg.align [
     " URL of the coq website";
   "-force-caml-version", Arg.Set Prefs.force_caml_version,
     " Force OCaml version";
+  "-warn-error", Arg.Set Prefs.warn_error,
+    " Make OCaml warnings into errors";
 ]
 
 let parse_args () =
@@ -510,6 +513,32 @@ let coq_debug_flag_opt =
 let camltag = match caml_version_list with
   | x::y::_ -> "OCAML"^x^y
   | _ -> assert false
+
+(** Explanation of disabled warnings:
+    3: deprecated warning (not error for non minimum supported ocaml)
+    4: fragile pattern matching: too common in the code and too annoying to avoid in general
+    9: missing fields in a record pattern: too common in the code and not worth the bother
+    27: innocuous unused variable: innocuous
+    41: ambiguous constructor or label: too common
+    42: disambiguated counstructor or label: too common
+    44: "open" shadowing already defined identifier: too common, especially when some are aliases
+    45: "open" shadowing a label or constructor: see 44
+    48: implicit elimination of optional arguments: too common
+    50: unexpected documentation comment: too common and annoying to avoid
+    56: unreachable match case: the [_ -> .] syntax doesn't exist in 4.02.3
+*)
+let coq_warn_flags =
+  let warnings = "-w +a-4-9-27-41-42-44-45-48-50" in
+  let errors =
+    if !Prefs.warn_error
+    then "-warn-error +a"
+         ^ (if caml_version_nums > [4;2;3]
+            then "-3-56"
+            else "")
+    else ""
+  in
+  warnings ^ " " ^ errors
+
 
 
 (** * CamlpX configuration *)
@@ -1103,7 +1132,7 @@ let write_makefile f =
   pr "CAMLHLIB=%S\n\n" camllib;
   pr "# Caml link command and Caml make top command\n";
   pr "# Caml flags\n";
-  pr "CAMLFLAGS=-rectypes %s %s\n" coq_annotate_flag coq_safe_string;
+  pr "CAMLFLAGS=-rectypes %s %s %s\n" coq_warn_flags coq_annotate_flag coq_safe_string;
   pr "# User compilation flag\n";
   pr "USERFLAGS=\n\n";
   pr "# Flags for GCC\n";

@@ -90,25 +90,12 @@ memory overflow.
 
   Defines the proved term as a transparent constant.
 
-\item {\tt Save.}
-\comindex{Save}
-
-  This is a deprecated equivalent to {\tt Qed}.
-
 \item {\tt Save {\ident}.}
   
   Forces the name of the original goal to be {\ident}.  This command
   (and the following ones) can only be used if the original goal has
   been opened using the {\tt Goal} command.
 
-\item {\tt Save Theorem {\ident}.} \\
- {\tt Save Lemma {\ident}.} \\
- {\tt Save Remark {\ident}.}\\
- {\tt Save Fact {\ident}.}
- {\tt Save Corollary {\ident}.}
- {\tt Save Proposition {\ident}.}
-
-  Are equivalent to {\tt Save {\ident}.} 
 \end{Variants}
 
 \subsection[\tt Admitted.]{\tt Admitted.\comindex{Admitted}\label{Admitted}}
@@ -118,7 +105,7 @@ the current proof and declare the initial goal as an axiom.
 \subsection[\tt Proof {\term}.]{\tt Proof {\term}.\comindex{Proof}
 \label{BeginProof}}
 This command applies in proof editing mode. It is equivalent to {\tt
-  exact {\term}; Save.} That is, you have to give the full proof in
+  exact {\term}. Qed.} That is, you have to give the full proof in
 one gulp, as a proof term (see Section~\ref{exact}).
 
 \variant {\tt Proof.}

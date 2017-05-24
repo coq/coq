@@ -20,7 +20,7 @@ val register_ltac : locality_flag -> Tacexpr.tacdef_body list -> unit
 
 type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
 | TacTerm of string
-| TacNonTerm of ('a * Names.Id.t) Loc.located
+| TacNonTerm of ('a * Names.Id.t option) Loc.located
 
 type raw_argument = string * string option
 (** An argument type as provided in Tactic notations, i.e. a string like

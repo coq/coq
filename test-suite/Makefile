@@ -31,11 +31,12 @@ BIN := ../bin/
 LIB := $(shell cd ..; pwd)
 
 coqtop := $(BIN)coqtop -boot -q -batch -test-mode -R prerequisite TestSuite
-bincoqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
-bincoqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
+coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
+coqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
+coqtopbyte := $(BIN)coqtop.byte
 
-command := $(coqtop) -top Top -async-proofs-cache force -load-vernac-source
-coqc := $(coqtop) -compile
+coqtopload := $(coqtop) -top Top -async-proofs-cache force -load-vernac-source
+coqtopcompile := $(coqtop) -compile
 coqdep := $(BIN)coqdep -coqlib $(LIB)
 
 SHOW := $(if $(VERBOSE),@true,@echo)
@@ -52,7 +53,7 @@ get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_
 # get the command to use with this set of arguments; if there's -compile, use coqc, else use coqtop
 has_compile_flag = $(filter "-compile",$(call get_coq_prog_args,$(1)))
 has_profile_ltac_or_compile_flag = $(filter "-profile-ltac-cutoff" "-profile-ltac" "-compile",$(call get_coq_prog_args,$(1)))
-get_command_based_on_flags = $(if $(call has_profile_ltac_or_compile_flag,$(1)),$(coqc),$(command))
+get_command_based_on_flags = $(if $(call has_profile_ltac_or_compile_flag,$(1)),$(coqtopcompile),$(coqtopload))
 
 
 bogomips:=
@@ -219,7 +220,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(coqtopcompile) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be prepared" ; \
@@ -249,7 +250,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
+	  $(coqtopcompile) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
 	    $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
@@ -405,78 +406,30 @@ modules/%.vo: modules/%.v
 # Miscellaneous tests
 #######################################################################
 
-misc: misc/deps-order.log misc/universes.log misc/deps-checksum.log
+misc: $(patsubst %.sh,%.log,$(wildcard misc/*.sh))
 
-# Check that both coqdep and coqtop/coqc supports -R
-# Check that both coqdep and coqtop/coqc takes the later -R
-# See bugs 2242, 2337, 2339
-deps-order: misc/deps-order.log
-misc/deps-order.log:
-	@echo "TEST      misc/deps-order"
-	$(HIDE){ \
-	  echo $(call log_intro,deps-order); \
-	  rm -f misc/deps/*/*.vo; \
-	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
-	  $(coqdep) -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/bar.v 2>&1 \
-	    | head -n 1 > $$tmpoutput; \
-	  diff -u misc/deps/deps.out $$tmpoutput 2>&1; R=$$?; times; \
-	  $(bincoqc) -R misc/deps/lib lib misc/deps/lib/foo.v 2>&1; \
-	  $(bincoqc) -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/foo.v 2>&1; \
-	  $(coqtop) -R misc/deps/lib lib -R misc/deps/client client -load-vernac-source misc/deps/client/bar.v 2>&1; \
-	  S=$$?; times; \
-	  if [ $$R = 0 -a $$S = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    misc/deps-order...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    misc/deps-order...Error! (unexpected order)"; \
-	  fi; \
-	  rm $$tmpoutput; \
-	} > "$@"
-
-deps-checksum: misc/deps-checksum.log
-misc/deps-checksum.log:
-	@echo "TEST      misc/deps-checksum"
-	$(HIDE){ \
-	  echo $(call log_intro,deps-checksum); \
-	  rm -f misc/deps/*/*.vo; \
-	  $(bincoqc) -R misc/deps/A A misc/deps/A/A.v; \
-	  $(bincoqc) -R misc/deps/B A misc/deps/B/A.v; \
-	  $(bincoqc) -R misc/deps/B A misc/deps/B/B.v; \
-	  $(coqtop) -R misc/deps/B A -R misc/deps/A A -load-vernac-source misc/deps/checksum.v 2>&1; \
-	  if [ $$? = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    misc/deps-checksum...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    misc/deps-checksum...Error!"; \
-	  fi; \
-	} > "$@"
-
-
-# Sort universes for the whole standard library
-EXPECTED_UNIVERSES := 4 # Prop is not counted
-universes: misc/universes.log
 misc/universes.log: misc/universes/all_stdlib.v
-	@echo "TEST      misc/universes"
-	$(HIDE){ \
-	  $(bincoqc) -R misc/universes Universes misc/universes/all_stdlib 2>&1; \
-	  $(bincoqc) -R misc/universes Universes misc/universes/universes 2>&1; \
-	  mv universes.txt misc/universes; \
-	  N=`awk '{print $$3}' misc/universes/universes.txt | sort -u | wc -l`; \
-	  times; \
-	  if [ "$$N" -eq $(EXPECTED_UNIVERSES) ]; then \
-	    echo $(log_success); \
-	    echo "    misc/universes...Ok ($(EXPECTED_UNIVERSES) universes)"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    misc/universes...Error! ($$N/$(EXPECTED_UNIVERSES) universes)"; \
-	  fi; \
-	} > "$@"
 
 misc/universes/all_stdlib.v:
 	cd .. && $(MAKE) test-suite/$@
 
+$(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
+	@echo "TEST      $<"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  export coqc="$(coqc)"; \
+	  export coqtop="$(coqtop)"; \
+	  export coqdep="$(coqdep)"; \
+	  export coqtopbyte="$(coqtopbyte)"; \
+	  "$<" 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error!"; \
+	  fi; \
+	} > "$@"
 
 # IDE : some tests of backtracking for coqtop -ideslave
 
@@ -501,9 +454,9 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 %.vio.log:%.v
 	@echo "TEST      $<"
 	$(HIDE){ \
-	  $(bincoqc) -quick -R vio vio $* 2>&1 && \
+	  $(coqc) -quick -R vio vio $* 2>&1 && \
 	  $(coqtop) -R vio vio -vio2vo $*.vio 2>&1 && \
-	  $(bincoqchk) -R vio vio -norec $(subst /,.,$*) 2>&1; \
+	  $(coqchk) -R vio vio -norec $(subst /,.,$*) 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -518,8 +471,8 @@ coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 %.chk.log:%.v
 	@echo "TEST      $<"
 	$(HIDE){ \
-	  $(bincoqc) -R coqchk coqchk $* 2>&1 && \
-	  $(bincoqchk) -R coqchk coqchk -norec $(subst /,.,$*) 2>&1; \
+	  $(coqc) -R coqchk coqchk $* 2>&1 && \
+	  $(coqchk) -R coqchk coqchk -norec $(subst /,.,$*) 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

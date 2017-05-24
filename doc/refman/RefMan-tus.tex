@@ -288,8 +288,8 @@ constructors:
 \item $(\texttt{VAR}\;id)$, a reference to a global identifier called  $id$;
 \item $(\texttt{Rel}\;n)$, a bound variable, whose binder is the $nth$
       binder up in the term;
-\item $\texttt{DLAM}\;(x,t)$, a deBruijn's binder on the term $t$;
-\item $\texttt{DLAMV}\;(x,vt)$, a deBruijn's binder on all the terms of 
+\item $\texttt{DLAM}\;(x,t)$, a de Bruijn's binder on the term $t$;
+\item $\texttt{DLAMV}\;(x,vt)$, a de Bruijn's binder on all the terms of
       the vector $vt$;
 \item $(\texttt{DOP0}\;op)$, a unary operator $op$;
 \item $\texttt{DOP2}\;(op,t_1,t_2)$, the application of a binary
@@ -299,7 +299,7 @@ vector of terms $vt$.
 \end{itemize}
 
 In this meta-language, bound variables are represented using the
-so-called deBrujin's indexes. In this representation, an occurrence of
+so-called de Bruijn's indexes. In this representation, an occurrence of
 a bound variable is denoted by an integer, meaning the number of
 binders that must be traversed to reach its own
 binder\footnote{Actually, $(\texttt{Rel}\;n)$ means that $(n-1)$ binders
@@ -339,7 +339,7 @@ on the terms of the meta-language:
 \fun{val Generic.dependent : 'op term -> 'op term -> bool}
     {Returns true if the first term is a sub-term of the second.}
 %\fun{val Generic.subst\_var : identifier -> 'op term -> 'op term}
-%    { $(\texttt{subst\_var}\;id\;t)$ substitutes the deBruijn's index
+%    { $(\texttt{subst\_var}\;id\;t)$ substitutes the de Bruijn's index
 %     associated to $id$ to every occurrence of the term
 %    $(\texttt{VAR}\;id)$ in $t$.}
 \end{description}
@@ -482,7 +482,7 @@ following constructor functions:
 
 \begin{description}
 \fun{val Term.mkRel          : int -> constr}
-    {$(\texttt{mkRel}\;n)$ represents deBrujin's index $n$.}
+    {$(\texttt{mkRel}\;n)$ represents de Bruijn's index $n$.}
 
 \fun{val Term.mkVar : identifier -> constr} 
     {$(\texttt{mkVar}\;id)$
@@ -545,7 +545,7 @@ following constructor functions:
 
 \fun{val Term.mkProd : name ->constr ->constr -> constr}
     {$(\texttt{mkProd}\;x\;A\;B)$ represents the product $(x:A)B$.
-     The free ocurrences of $x$ in $B$ are represented by deBrujin's
+     The free ocurrences of $x$ in $B$ are represented by de Bruijn's
      indexes.}
 
 \fun{val Term.mkNamedProd : identifier -> constr -> constr -> constr}
@@ -553,14 +553,14 @@ following constructor functions:
      but the bound occurrences of $x$ in $B$ are denoted by 
      the identifier $(\texttt{mkVar}\;x)$. The function automatically 
      changes each occurrences of this identifier into the corresponding 
-     deBrujin's index.}
+     de Bruijn's index.}
 
 \fun{val Term.mkArrow : constr -> constr -> constr}
     {$(\texttt{arrow}\;A\;B)$ represents the type $(A\rightarrow B)$.}
 
 \fun{val Term.mkLambda       : name -> constr -> constr -> constr}
     {$(\texttt{mkLambda}\;x\;A\;b)$ represents the lambda abstraction 
-     $[x:A]b$. The free ocurrences of $x$ in $B$ are represented by deBrujin's
+     $[x:A]b$. The free ocurrences of $x$ in $B$ are represented by de Bruijn's
      indexes.}
 
 \fun{val Term.mkNamedLambda : identifier -> constr -> constr -> constr}
@@ -666,7 +666,7 @@ use the primitive \textsl{Case} described in Chapter \ref{Cic}
 \item Restoring type coercions and synthesizing the implicit arguments
 (the one denoted by question marks in
 {\Coq} syntax: see Section~\ref{Coercions}).
-\item Transforming the named bound variables into deBrujin's indexes.
+\item Transforming the named bound variables into de Bruijn's indexes.
 \item Classifying the global names into the different classes of
 constants (defined constants, constructors, inductive types, etc).
 \end{enumerate}
@@ -707,7 +707,7 @@ Once all the existential variables have been defined the derivation is
 completed, and a construction can be generated from the proof tree,
 replacing each of the existential variables by its definition.  This
 is exactly what happens when one of the commands
-\texttt{Qed}, \texttt{Save} or \texttt{Defined} is invoked
+\texttt{Qed} or \texttt{Defined} is invoked
 (see Section~\ref{Qed}). The saved theorem becomes a defined constant,
 whose body is the proof object generated.
 

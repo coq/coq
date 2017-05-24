@@ -138,24 +138,24 @@ type recursive_preentry =
 val interp_fixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
     recursive_preentry * lident list option * Evd.evar_universe_context * 
-    (Name.t list * Impargs.manual_implicits * int option) list
+    (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
 val interp_cofixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
     recursive_preentry * lident list option * Evd.evar_universe_context * 
-    (Name.t list * Impargs.manual_implicits * int option) list
+    (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
 (** Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
   locality -> polymorphic ->
   recursive_preentry * lident list option * Evd.evar_universe_context * 
-  (Name.t list * Impargs.manual_implicits * int option) list ->
+  (Context.Rel.t * Impargs.manual_implicits * int option) list ->
   lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint : locality -> polymorphic -> 
   recursive_preentry * lident list option * Evd.evar_universe_context * 
-  (Name.t list * Impargs.manual_implicits * int option) list ->
+  (Context.Rel.t * Impargs.manual_implicits * int option) list ->
   decl_notation list -> unit
 
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)

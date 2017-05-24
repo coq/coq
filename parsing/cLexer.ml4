@@ -99,7 +99,6 @@ module Error = struct
     | Unterminated_string
     | Undefined_token
     | Bad_token of string
-    | UnsupportedUnicode of int
 
   exception E of t
 
@@ -110,12 +109,7 @@ module Error = struct
          | Unterminated_comment -> "Unterminated comment"
          | Unterminated_string -> "Unterminated string"
          | Undefined_token -> "Undefined token"
-         | Bad_token tok -> Format.sprintf "Bad token %S" tok
-         | UnsupportedUnicode x ->
-             Printf.sprintf "Unsupported Unicode character (0x%x)" x)
-
-  (* Require to fix the Camlp4 signature *)
-  let print ppf x = Pp.pp_with ppf (Pp.str (to_string x))
+         | Bad_token tok -> Format.sprintf "Bad token %S" tok)
 
 end
 open Error
@@ -152,10 +146,6 @@ let bump_loc_line_last loc bol_pos =
 		  (Ploc.first_pos loc + 1, Ploc.last_pos loc + 1) (Ploc.comment loc)
   in
   Ploc.encl loc loc'
-
-let set_loc_file loc fname =
-  Ploc.make_loc fname (Ploc.line_nb loc) (Ploc.bol_pos loc)
-		(Ploc.first_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
 
 (* For some reason, the [Ploc.after] function of Camlp5 does not update line
    numbers, so we define our own function that does it. *)
@@ -345,13 +335,13 @@ let rec string loc ~comm_level bp len = parser
       if esc then string loc ~comm_level bp (store len '"') s else (loc, len)
   | [< ''('; s >] ->
       (parser
-        | [< ''*'; s >] ->
-            string loc
-              (Option.map succ comm_level)
+      | [< ''*'; s >] ->
+        let comm_level = Option.map succ comm_level in
+            string loc ~comm_level
               bp (store (store len '(') '*')
               s
         | [< >] ->
-            string loc comm_level bp (store len '(') s) s
+            string loc ~comm_level bp (store len '(') s) s
   | [< ''*'; s >] ->
       (parser
         | [< '')'; s >] ->
@@ -361,9 +351,9 @@ let rec string loc ~comm_level bp len = parser
             | _ -> ()
             in
             let comm_level = Option.map pred comm_level in
-            string loc comm_level bp (store (store len '*') ')') s
+            string loc ~comm_level bp (store (store len '*') ')') s
         | [< >] ->
-            string loc comm_level bp (store len '*') s) s
+            string loc ~comm_level bp (store len '*') s) s
   | [< ''\n' as c; s >] ep ->
      (* If we are parsing a comment, the string if not part of a token so we
      update the first line of the location. Otherwise, we update the last
@@ -372,8 +362,8 @@ let rec string loc ~comm_level bp len = parser
        if Option.has_some comm_level then bump_loc_line loc ep
        else bump_loc_line_last loc ep
      in
-     string loc comm_level bp (store len c) s
-  | [< 'c; s >] -> string loc comm_level bp (store len c) s
+     string loc ~comm_level bp (store len c) s
+  | [< 'c; s >] -> string loc ~comm_level bp (store len c) s
   | [< _ = Stream.empty >] ep ->
      let loc = set_loc_pos loc bp ep in
      err loc Unterminated_string
@@ -434,7 +424,6 @@ let push_char c =
     real_push_char c
 
 let push_string s = Buffer.add_string current_comment s
-let push_bytes s = Buffer.add_bytes current_comment s
 
 let null_comment s =
   let rec null i =
@@ -613,7 +602,7 @@ let rec next_token loc = parser bp
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
       comment_stop bp;
       (INT (get_buff len), set_loc_pos loc bp ep)
-  | [< ''\"'; (loc,len) = string loc None bp 0 >] ep ->
+  | [< ''\"'; (loc,len) = string loc ~comm_level:None bp 0 >] ep ->
       comment_stop bp;
       (STRING (get_buff len), set_loc_pos loc bp ep)
   | [< ' ('(' as c);

@@ -148,19 +148,6 @@ let print_highlight_location ib loc =
 let valid_buffer_loc ib loc =
   let (b,e) = Loc.unloc loc in b-ib.start >= 0 && e-ib.start < ib.len && b<=e
 
-(* This is specific to the toplevel *)
-let pr_loc ?loc = Option.default (fun loc ->
-    let fname = loc.Loc.fname in
-    if CString.equal fname "" then
-      Loc.(str"Toplevel input, characters " ++ int loc.bp ++
-	   str"-" ++ int loc.ep ++ str":")
-    else
-      Loc.(str"File " ++ str "\"" ++ str fname ++ str "\"" ++
-	   str", line " ++ int loc.line_nb ++ str", characters " ++
-	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++
-	   str":")
-  ) loc
-
 (* Toplevel error explanation. *)
 let error_info_for_buffer ?loc buf =
   Option.map (fun loc ->
@@ -175,7 +162,7 @@ let error_info_for_buffer ?loc buf =
           else (mt (), nloc)
           (* we are in batch mode, don't adjust location *)
         else (mt (), loc)
-      in pr_loc loc ++ hl
+      in Topfmt.pr_loc loc ++ hl
     ) loc
 
 (* Actual printing routine *)
@@ -185,12 +172,13 @@ let print_error_for_buffer ?loc lvl msg buf =
   then Topfmt.emacs_logger ?pre_hdr lvl msg
   else Topfmt.std_logger   ?pre_hdr lvl msg
 
+(*
 let print_toplevel_parse_error (e, info) buf =
   let loc = Loc.get_loc info in
   let lvl = Feedback.Error in
   let msg = CErrors.iprint (e, info) in
   print_error_for_buffer ?loc lvl msg buf
-
+*)
 end
 
 (*s The Coq prompt is the name of the focused proof, if any, and "Coq"
@@ -272,7 +260,10 @@ let read_sentence sid input =
   with reraise ->
     let reraise = CErrors.push reraise in
     discard_to_dot ();
-    TopErr.print_toplevel_parse_error reraise top_buffer;
+    (* The caller of read_sentence does the error printing now, this
+       should be re-enabled once we rely on the feedback error
+       printer again *)
+    (* TopErr.print_toplevel_parse_error reraise top_buffer; *)
     Exninfo.iraise reraise
 
 (** Coqloop Console feedback handler *)
@@ -290,6 +281,9 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
   | FileDependency (_,_) -> ()
   | FileLoaded (_,_) -> ()
   | Custom (_,_,_) -> ()
+  (* Re-enable when we switch back to feedback-based error printing *)
+  | Message (Error,loc,msg) -> ()
+  (* TopErr.print_error_for_buffer ?loc lvl msg top_buffer *)
   | Message (lvl,loc,msg) ->
     TopErr.print_error_for_buffer ?loc lvl msg top_buffer
 
@@ -309,18 +303,22 @@ let do_vernac sid =
   resynch_buffer top_buffer;
   try
     let input = (top_buffer.tokens, None) in
-    Vernac.process_expr sid top_buffer.tokens (read_sentence sid (fst input))
+    Vernac.process_expr sid (read_sentence sid (fst input))
   with
     | Stm.End_of_input | CErrors.Quit ->
         top_stderr (fnl ()); raise CErrors.Quit
     | CErrors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise CErrors.Drop
         else (Feedback.msg_error (str "There is no ML toplevel."); sid)
-    (* Exception printing is done now by the feedback listener. *)
-    (* XXX: We need this hack due to the side effects of the exception
-       printer and the reliance of Stm.define on attaching crutial
-       state to exceptions *)
-    | any -> ignore (CErrors.(iprint (push any))); sid
+    (* Exception printing should be done by the feedback listener,
+       however this is not yet ready so we rely on the exception for
+       now. *)
+    | any ->
+      let (e, info) = CErrors.push any in
+      let loc = Loc.get_loc info in
+      let msg = CErrors.iprint (e, info) in
+      TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer;
+      sid
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.

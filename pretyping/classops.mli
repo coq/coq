@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Term
 open Environ
 open EConstr
 open Evd

@@ -612,30 +612,6 @@ let adjust_app_array_size f1 l1 f2 l2 =
     let extras,restl1 = Array.chop (len1-len2) l1 in
     (mkApp (f1,extras), restl1, f2, l2)
 
-(* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
-   subterms of [c]; it carries an extra data [l] (typically a name
-   list) which is processed by [g na] (which typically cons [na] to
-   [l]) at each binder traversal (with name [na]); it is not recursive
-   and the order with which subterms are processed is not specified *)
-
-let map_constr_with_named_binders g f l c = match kind_of_term c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c
-  | Cast (c,k,t) -> mkCast (f l c, k, f l t)
-  | Prod (na,t,c) -> mkProd (na, f l t, f (g na l) c)
-  | Lambda (na,t,c) -> mkLambda (na, f l t, f (g na l) c)
-  | LetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g na l) c)
-  | App (c,al) -> mkApp (f l c, Array.map (f l) al)
-  | Proj (p,c) -> mkProj (p, f l c)
-  | Evar (e,al) -> mkEvar (e, Array.map (f l) al)
-  | Case (ci,p,c,bl) -> mkCase (ci, f l p, f l c, Array.map (f l) bl)
-  | Fix (ln,(lna,tl,bl)) ->
-      let l' = Array.fold_left (fun l na -> g na l) l lna in
-      mkFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
-  | CoFix(ln,(lna,tl,bl)) ->
-      let l' = Array.fold_left (fun l na -> g na l) l lna in
-      mkCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
-
 (* [map_constr_with_binders_left_to_right g f n c] maps [f n] on the
    immediate subterms of [c]; it carries an extra data [n] (typically
    a lift index) which is processed by [g] (which typically add 1 to
@@ -1451,7 +1427,6 @@ let dependency_closure env sigma sign hyps =
     List.rev lh
 
 let global_app_of_constr sigma c =
-  let open Univ in
   let open Globnames in
   match EConstr.kind sigma c with
   | Const (c, u) -> (ConstRef c, u), None

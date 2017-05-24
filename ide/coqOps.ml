@@ -117,7 +117,7 @@ end = struct
       (b#get_iter_at_mark s.start)#offset
       (b#get_iter_at_mark s.stop)#offset
       (ellipsize
-        ((b#get_iter_at_mark s.start)#get_slice (b#get_iter_at_mark s.stop)))
+        ((b#get_iter_at_mark s.start)#get_slice ~stop:(b#get_iter_at_mark s.stop)))
       (String.concat "," (List.map str_of_flag s.flags))
       (ellipsize
         (String.concat ","
@@ -127,9 +127,6 @@ end = struct
 
 end
 open SentenceId
-
-let log_pp msg : unit task =
-  Coq.lift (fun () -> Minilib.log_pp msg)
 
 let log msg : unit task =
   Coq.lift (fun () -> Minilib.log msg)
@@ -207,7 +204,7 @@ object (self)
     in
     List.iter (fun s -> set_index s (s.index + 1)) after;
     set_index s (document_length - List.length after);
-    ignore ((SentenceId.connect s)#changed self#on_changed);
+    ignore ((SentenceId.connect s)#changed ~callback:self#on_changed);
     document_length <- document_length + 1;
     List.iter (fun f -> f `INSERT) cbs
 
@@ -221,8 +218,8 @@ object (self)
     List.iter (fun f -> f `REMOVE) cbs
 
   initializer
-    let _ = (Doc.connect doc)#pushed self#on_push in
-    let _ = (Doc.connect doc)#popped self#on_pop in
+    let _ = (Doc.connect doc)#pushed ~callback:self#on_push in
+    let _ = (Doc.connect doc)#popped ~callback:self#on_pop in
     ()
 
 end
@@ -273,15 +270,15 @@ object(self)
         else iter
       in
       let iter = sentence_start iter in
-      script#buffer#place_cursor iter;
+      script#buffer#place_cursor ~where:iter;
       ignore (script#scroll_to_iter ~use_align:true ~yalign:0. iter)
     in
-    let _ = segment#connect#clicked on_click in
+    let _ = segment#connect#clicked ~callback:on_click in
     ()
 
   method private tooltip_callback ~x ~y ~kbd tooltip =
-    let x, y = script#window_to_buffer_coords `WIDGET x y in
-    let iter = script#get_iter_at_location x y in
+    let x, y = script#window_to_buffer_coords ~tag:`WIDGET ~x ~y in
+    let iter = script#get_iter_at_location ~x ~y in
     if iter#has_tag Tags.Script.tooltip then begin
       let s =
         let rec aux iter =

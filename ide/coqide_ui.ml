@@ -28,148 +28,149 @@ let list_queries menu li =
   res_buf
 
 let init () =
-  let theui = Printf.sprintf "<ui>
-<menubar name='CoqIde MenuBar'>
-  <menu action='File'>
-    <menuitem action='New' />
-    <menuitem action='Open' />
-    <menuitem action='Save' />
-    <menuitem action='Save as' />
-    <menuitem action='Save all' />
-    <menuitem action='Revert all buffers' />
-    <menuitem action='Close buffer' />
-    <menuitem action='Print...' />
-    <menu action='Export to'>
-      <menuitem action='Html' />
-      <menuitem action='Latex' />
-      <menuitem action='Dvi' />
-      <menuitem action='Pdf' />
-      <menuitem action='Ps' />
-    </menu>
-    <menuitem action='Rehighlight' />
-    %s
-  </menu>
-  <menu name='Edit' action='Edit'>
-    <menuitem action='Undo' />
-    <menuitem action='Redo' />
-    <separator />
-    <menuitem action='Cut' />
-    <menuitem action='Copy' />
-    <menuitem action='Paste' />
-    <separator />
-    <menuitem action='Find' />
-    <menuitem action='Find Next' />
-    <menuitem action='Find Previous' />
-    <menuitem action='Complete Word' />
-    <separator />
-    <menuitem action='External editor' />
-    <separator />
-    <menuitem name='Prefs' action='Preferences' />
-  </menu>
-  <menu name='View' action='View'>
-    <menuitem action='Previous tab' />
-    <menuitem action='Next tab' />
-    <separator/>
-    <menuitem action='Zoom in' />
-    <menuitem action='Zoom out' />
-    <menuitem action='Zoom fit' />
-    <separator/>
-    <menuitem action='Show Toolbar' />
-    <menuitem action='Query Pane' />
-    <separator/>
-    <menuitem action='Display implicit arguments' />
-    <menuitem action='Display coercions' />
-    <menuitem action='Display raw matching expressions' />
-    <menuitem action='Display notations' />
-    <menuitem action='Display all basic low-level contents' />
-    <menuitem action='Display existential variable instances' />
-    <menuitem action='Display universe levels' />
-    <menuitem action='Display all low-level contents' />
-  </menu>
-  <menu action='Navigation'>
-    <menuitem action='Forward' />
-    <menuitem action='Backward' />
-    <menuitem action='Go to' />
-    <menuitem action='Start' />
-    <menuitem action='End' />
-    <menuitem action='Interrupt' />
-    <menuitem action='Previous' />
-    <menuitem action='Next' />
-  </menu>
-  <menu action='Try Tactics'>
-    <menuitem action='auto' />
-    <menuitem action='auto with *' />
-    <menuitem action='eauto' />
-    <menuitem action='eauto with *' />
-    <menuitem action='intuition' />
-    <menuitem action='omega' />
-    <menuitem action='simpl' />
-    <menuitem action='tauto' />
-    <menuitem action='trivial' />
-    <menuitem action='Wizard' />
-    <separator />
-    %s
-  </menu>
-  <menu action='Templates'>
-    <menuitem action='Lemma' />
-    <menuitem action='Theorem' />
-    <menuitem action='Definition' />
-    <menuitem action='Inductive' />
-    <menuitem action='Fixpoint' />
-    <menuitem action='Scheme' />
-    <menuitem action='match' />
-    <separator />
-    %s
-  </menu>
-  <menu action='Queries'>
-    <menuitem action='Search' />
-    <menuitem action='Check' />
-    <menuitem action='Print' />
-    <menuitem action='About' />
-    <menuitem action='Locate' />
-    <menuitem action='Print Assumptions' />
-    <separator />
-    %s
-  </menu>
-  <menu name='Tools' action='Tools'>
-    <menuitem action='Comment' />
-    <menuitem action='Uncomment' />
-    <separator />
-    <menuitem action='Coqtop arguments' />
-  </menu>
-  <menu action='Compile'>
-    <menuitem action='Compile buffer' />
-    <menuitem action='Make' />
-    <menuitem action='Next error' />
-    <menuitem action='Make makefile' />
-  </menu>
-  <menu action='Windows'>
-    <menuitem action='Detach View' />
-  </menu>
-  <menu name='Help' action='Help'>
-    <menuitem action='Browse Coq Manual' />
-    <menuitem action='Browse Coq Library' />
-    <menuitem action='Help for keyword' />
-    <menuitem action='Help for μPG mode' />
-    <separator />
-    <menuitem name='Abt' action='About Coq' />
-  </menu>
-</menubar>
-<toolbar name='CoqIde ToolBar'>
-  <toolitem action='Save' />
-  <toolitem action='Close buffer' />
-  <toolitem action='Forward' />
-  <toolitem action='Backward' />
-  <toolitem action='Go to' />
-  <toolitem action='Start' />
-  <toolitem action='End' />
-  <toolitem action='Force' />
-  <toolitem action='Interrupt' />
-  <toolitem action='Previous' />
-  <toolitem action='Next' />
-  <toolitem action='Wizard' />
-</toolbar>
-</ui>"
+  let theui = Printf.sprintf "<ui>\
+\n<menubar name='CoqIde MenuBar'>\
+\n  <menu action='File'>\
+\n    <menuitem action='New' />\
+\n    <menuitem action='Open' />\
+\n    <menuitem action='Save' />\
+\n    <menuitem action='Save as' />\
+\n    <menuitem action='Save all' />\
+\n    <menuitem action='Revert all buffers' />\
+\n    <menuitem action='Close buffer' />\
+\n    <menuitem action='Print...' />\
+\n    <menu action='Export to'>\
+\n      <menuitem action='Html' />\
+\n      <menuitem action='Latex' />\
+\n      <menuitem action='Dvi' />\
+\n      <menuitem action='Pdf' />\
+\n      <menuitem action='Ps' />\
+\n    </menu>\
+\n    <menuitem action='Rehighlight' />\
+\n    %s\
+\n  </menu>\
+\n  <menu name='Edit' action='Edit'>\
+\n    <menuitem action='Undo' />\
+\n    <menuitem action='Redo' />\
+\n    <separator />\
+\n    <menuitem action='Cut' />\
+\n    <menuitem action='Copy' />\
+\n    <menuitem action='Paste' />\
+\n    <separator />\
+\n    <menuitem action='Find' />\
+\n    <menuitem action='Find Next' />\
+\n    <menuitem action='Find Previous' />\
+\n    <menuitem action='Complete Word' />\
+\n    <separator />\
+\n    <menuitem action='External editor' />\
+\n    <separator />\
+\n    <menuitem name='Prefs' action='Preferences' />\
+\n  </menu>\
+\n  <menu name='View' action='View'>\
+\n    <menuitem action='Previous tab' />\
+\n    <menuitem action='Next tab' />\
+\n    <separator/>\
+\n    <menuitem action='Zoom in' />\
+\n    <menuitem action='Zoom out' />\
+\n    <menuitem action='Zoom fit' />\
+\n    <separator/>\
+\n    <menuitem action='Show Toolbar' />\
+\n    <menuitem action='Query Pane' />\
+\n    <separator/>\
+\n    <menuitem action='Display implicit arguments' />\
+\n    <menuitem action='Display coercions' />\
+\n    <menuitem action='Display raw matching expressions' />\
+\n    <menuitem action='Display notations' />\
+\n    <menuitem action='Display all basic low-level contents' />\
+\n    <menuitem action='Display existential variable instances' />\
+\n    <menuitem action='Display universe levels' />\
+\n    <menuitem action='Display all low-level contents' />\
+\n    <menuitem action='Display unfocused goals' />\
+\n  </menu>\
+\n  <menu action='Navigation'>\
+\n    <menuitem action='Forward' />\
+\n    <menuitem action='Backward' />\
+\n    <menuitem action='Go to' />\
+\n    <menuitem action='Start' />\
+\n    <menuitem action='End' />\
+\n    <menuitem action='Interrupt' />\
+\n    <menuitem action='Previous' />\
+\n    <menuitem action='Next' />\
+\n  </menu>\
+\n  <menu action='Try Tactics'>\
+\n    <menuitem action='auto' />\
+\n    <menuitem action='auto with *' />\
+\n    <menuitem action='eauto' />\
+\n    <menuitem action='eauto with *' />\
+\n    <menuitem action='intuition' />\
+\n    <menuitem action='omega' />\
+\n    <menuitem action='simpl' />\
+\n    <menuitem action='tauto' />\
+\n    <menuitem action='trivial' />\
+\n    <menuitem action='Wizard' />\
+\n    <separator />\
+\n    %s\
+\n  </menu>\
+\n  <menu action='Templates'>\
+\n    <menuitem action='Lemma' />\
+\n    <menuitem action='Theorem' />\
+\n    <menuitem action='Definition' />\
+\n    <menuitem action='Inductive' />\
+\n    <menuitem action='Fixpoint' />\
+\n    <menuitem action='Scheme' />\
+\n    <menuitem action='match' />\
+\n    <separator />\
+\n    %s\
+\n  </menu>\
+\n  <menu action='Queries'>\
+\n    <menuitem action='Search' />\
+\n    <menuitem action='Check' />\
+\n    <menuitem action='Print' />\
+\n    <menuitem action='About' />\
+\n    <menuitem action='Locate' />\
+\n    <menuitem action='Print Assumptions' />\
+\n    <separator />\
+\n    %s\
+\n  </menu>\
+\n  <menu name='Tools' action='Tools'>\
+\n    <menuitem action='Comment' />\
+\n    <menuitem action='Uncomment' />\
+\n    <separator />\
+\n    <menuitem action='Coqtop arguments' />\
+\n  </menu>\
+\n  <menu action='Compile'>\
+\n    <menuitem action='Compile buffer' />\
+\n    <menuitem action='Make' />\
+\n    <menuitem action='Next error' />\
+\n    <menuitem action='Make makefile' />\
+\n  </menu>\
+\n  <menu action='Windows'>\
+\n    <menuitem action='Detach View' />\
+\n  </menu>\
+\n  <menu name='Help' action='Help'>\
+\n    <menuitem action='Browse Coq Manual' />\
+\n    <menuitem action='Browse Coq Library' />\
+\n    <menuitem action='Help for keyword' />\
+\n    <menuitem action='Help for μPG mode' />\
+\n    <separator />\
+\n    <menuitem name='Abt' action='About Coq' />\
+\n  </menu>\
+\n</menubar>\
+\n<toolbar name='CoqIde ToolBar'>\
+\n  <toolitem action='Save' />\
+\n  <toolitem action='Close buffer' />\
+\n  <toolitem action='Forward' />\
+\n  <toolitem action='Backward' />\
+\n  <toolitem action='Go to' />\
+\n  <toolitem action='Start' />\
+\n  <toolitem action='End' />\
+\n  <toolitem action='Force' />\
+\n  <toolitem action='Interrupt' />\
+\n  <toolitem action='Previous' />\
+\n  <toolitem action='Next' />\
+\n  <toolitem action='Wizard' />\
+\n</toolbar>\
+\n</ui>"
     (if Coq_config.gtk_platform <> `QUARTZ then "<menuitem action='Quit' />" else "")
     (Buffer.contents (list_items "Tactic" Coq_commands.tactics))
     (Buffer.contents (list_items "Template" Coq_commands.commands))

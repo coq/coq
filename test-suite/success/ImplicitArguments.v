@@ -21,3 +21,9 @@ Fixpoint app {A : Type} {n m : nat} (v : vector A n) (w : vector A m) : vector A
 (* Test sharing information between different hypotheses *)
 
 Parameters (a:_) (b:a=0).
+
+(* These examples were failing due to a lifting wrongly taking let-in into account *)
+
+Definition foo6 (x:=1) : forall {n:nat}, n=n := fun n => eq_refl.
+
+Fixpoint foo7 (x:=1) (n:nat) {p:nat} {struct n} : nat.

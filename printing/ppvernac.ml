@@ -384,18 +384,13 @@ open Decl_kinds
     ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) def
     ++ prlist (pr_decl_notation pr_constr) ntn
 
-  let pr_statement head (idpl,(bl,c,guard)) =
+  let pr_statement head (idpl,(bl,c)) =
     assert (not (Option.is_empty idpl));
     let id, pl = Option.get idpl in
     hov 2
       (head ++ spc() ++ pr_lident id ++ pr_univs pl ++ spc() ++
          (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
-         pr_opt (pr_guard_annot pr_lconstr_expr bl) guard ++
          str":" ++ pr_spc_lconstr c)
-
-  let pr_priority = function
-    | None -> mt ()
-    | Some i -> spc () ++ str "|" ++ spc () ++ int i
 
 (**************************************)
 (* Pretty printer for vernac commands *)
@@ -724,9 +719,7 @@ open Decl_kinds
               | Opaque (Some l) ->
                   keyword "Qed" ++ spc() ++ str"export" ++
                     prlist_with_sep (fun () -> str", ") pr_lident l)
-          | Some (id,th) -> (match th with
-              | None -> (if opac <> Transparent then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
-              | Some tok -> keyword "Save" ++ spc() ++ pr_thm_token tok ++ spc() ++ pr_lident id)
+          | Some id -> (if opac <> Transparent then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
       )
       | VernacExactProof c ->
         return (hov 2 (keyword "Proof" ++ pr_lconstrarg c))

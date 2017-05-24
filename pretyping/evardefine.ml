@@ -11,7 +11,6 @@ open Pp
 open Names
 open Term
 open Termops
-open Environ
 open EConstr
 open Vars
 open Namegen

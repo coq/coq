@@ -41,6 +41,7 @@ Compilation
 
 To produce all documentation about Coq, just run:
 
+   ./configure            (if you hadn't already)
    make doc
 
 
@@ -69,6 +70,10 @@ Alternatively, you can use some specific targets:
 
    make stdlib
         to produce all formats of the Coq standard library
+
+
+Also note the "-with-doc yes" option of ./configure to enable the
+build of the documentation as part of the default make target.
 
 
 Installation

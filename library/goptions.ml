@@ -235,7 +235,6 @@ with Not_found ->
   then error "Sorry, this option name is already used."
 
 open Libobject
-open Lib
 
 let warn_deprecated_option =
   CWarnings.create ~name:"deprecated-option" ~category:"deprecated"

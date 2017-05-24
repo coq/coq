@@ -13,7 +13,9 @@ open Formula
 open Sequent
 open Ground
 open Goptions
-open Tacticals
+open Tacmach.New
+open Tacticals.New
+open Proofview.Notations
 open Tacinterp
 open Libnames
 open Stdarg
@@ -81,21 +83,29 @@ END
 
 let fail_solver=tclFAIL 0 (Pp.str "GTauto failed")
 
-let gen_ground_tac flag taco ids bases gl=
+let gen_ground_tac flag taco ids bases =
   let backup= !qflag in
-    try
+  Proofview.tclOR begin
+  Proofview.Goal.enter { enter = begin fun gl ->
       qflag:=flag;
       let solver=
 	match taco with
 	    Some tac-> tac
 	  | None-> snd (default_solver ()) in
-      let startseq gl=
+      let startseq k =
+        Proofview.Goal.s_enter { s_enter = begin fun gl ->
 	let seq=empty_seq !ground_depth in
-        let seq,gl = extend_with_ref_list ids seq gl in
-        extend_with_auto_hints bases seq gl in
-      let result=ground_tac (Proofview.V82.of_tactic solver) startseq gl in
-	qflag:=backup;result
-    with reraise -> qflag:=backup;raise reraise
+        let seq, sigma = extend_with_ref_list (pf_env gl) (project gl) ids seq in
+        let seq, sigma = extend_with_auto_hints (pf_env gl) (project gl) bases seq in
+        Sigma.Unsafe.of_pair (k seq, sigma)
+        end }
+      in
+      let result=ground_tac solver startseq in
+      qflag := backup;
+      result
+  end }
+  end
+  (fun (e, info) -> qflag := backup; Proofview.tclZERO ~info e)
 
 (* special for compatibility with Intuition
 
@@ -113,7 +123,6 @@ let normalize_evaluables=
 	   unfold_in_hyp (Lazy.force defined_connectives)
 	   (Tacexpr.InHypType id)) *)
 
-open Pp
 open Genarg
 open Ppconstr
 open Printer
@@ -144,18 +153,15 @@ END
 
 TACTIC EXTEND firstorder
     [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) l []) ]
+      [ gen_ground_tac true (Option.map (tactic_of_value ist) t) l [] ]
 |   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) [] l) ]
+      [ gen_ground_tac true (Option.map (tactic_of_value ist) t) [] l ]
 |   [ "firstorder" tactic_opt(t) firstorder_using(l)
        "with" ne_preident_list(l') ] ->
-      [ Proofview.V82.tactic (gen_ground_tac true (Option.map (tactic_of_value ist) t) l l') ]
+      [ gen_ground_tac true (Option.map (tactic_of_value ist) t) l l' ]
 END
 
 TACTIC EXTEND gintuition
   [ "gintuition" tactic_opt(t) ] ->
-     [ Proofview.V82.tactic (gen_ground_tac false (Option.map (tactic_of_value ist) t) [] []) ]
+     [ gen_ground_tac false (Option.map (tactic_of_value ist) t) [] [] ]
 END
-
-open Proofview.Notations
-open Cc_plugin

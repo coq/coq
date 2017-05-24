@@ -99,7 +99,7 @@ module PSet = ISet
 module System = Hashtbl.Make(Vect)
 
 type proof =
-| Hyp of int
+| Assum of int
 | Elim of  var * proof * proof
 | And of proof * proof
 
@@ -134,7 +134,7 @@ exception SystemContradiction of proof
 let hyps prf =
   let rec hyps prf acc =
     match prf with
-      | Hyp i -> ISet.add i acc
+      | Assum i -> ISet.add i acc
       | Elim(_,prf1,prf2)
       | And(prf1,prf2) -> hyps prf1 (hyps prf2 acc) in
     hyps prf ISet.empty
@@ -143,7 +143,7 @@ let hyps prf =
 (** Pretty printing *)
   let rec pp_proof o prf =
     match prf with
-      | Hyp i -> Printf.fprintf o "H%i" i
+      | Assum i -> Printf.fprintf o "H%i" i
       | Elim(v, prf1,prf2) -> Printf.fprintf o "E(%i,%a,%a)" v pp_proof prf1 pp_proof prf2
       | And(prf1,prf2)   -> Printf.fprintf o "A(%a,%a)"  pp_proof prf1 pp_proof prf2
 
@@ -270,7 +270,7 @@ let norm_cstr {coeffs = v ; op = o ; cst = c} idx =
   (match o with
 	| Eq -> Some c , Some c
 	| Ge -> Some c , None) ;
-	    prf = Hyp idx }
+	    prf = Assum idx }
 
 
 (** [load_system l] takes a list of constraints of type [cstr_compat]
@@ -285,7 +285,7 @@ let load_system l =
 
   let vars = List.fold_left (fun vrs (cstr,i) ->
     match norm_cstr cstr i with
-      | Contradiction -> raise (SystemContradiction (Hyp i))
+      | Contradiction -> raise (SystemContradiction (Assum i))
       | Redundant      -> vrs
       | Cstr(vect,info) ->
 	  xadd_cstr  vect info sys ;
@@ -867,7 +867,7 @@ let  mk_proof hyps prf =
 
   let rec mk_proof prf =
     match prf with
-      | Hyp i -> [ ([i, Int 1] , List.nth hyps i) ]
+      | Assum i -> [ ([i, Int 1] , List.nth hyps i) ]
 
       | Elim(v,prf1,prf2) ->
           let prfsl = mk_proof prf1

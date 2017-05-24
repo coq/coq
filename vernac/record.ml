@@ -217,7 +217,7 @@ let warning_or_error coe indsp err =
               (pr_id fi ++ strbrk " cannot be defined because it is not typable.")
   in
   if coe then user_err ~hdr:"structure" st;
-  Flags.if_verbose Feedback.msg_info (hov 0 st)
+  warn_cannot_define_projection (hov 0 st)
 
 type field_status =
   | NoProjection of Name.t

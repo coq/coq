@@ -9,7 +9,6 @@
 open CSig
 open Names
 open Constr
-open Context
 open Environ
 
 type t

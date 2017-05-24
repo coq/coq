@@ -49,7 +49,7 @@ struct
     | DNil
 
   (* debug *)
-  let pr_dconstr f : 'a t -> std_ppcmds = function
+  let _pr_dconstr f : 'a t -> std_ppcmds = function
     | DRel -> str "*"
     | DSort -> str "Sort"
     | DRef _ -> str "Ref"

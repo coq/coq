@@ -143,6 +143,7 @@ type search_restriction =
 
 type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
+                           (*   list of idents for qed exporting           *)
 type opacity_flag   = Opaque of lident list option | Transparent
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
@@ -209,7 +210,7 @@ type one_inductive_expr =
   plident * local_binder_expr list * constr_expr option * constructor_expr list
 
 type proof_expr =
-  plident option * (local_binder_expr list * constr_expr * (lident option * recursion_order_expr) option)
+  plident option * (local_binder_expr list * constr_expr)
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
@@ -223,7 +224,8 @@ type syntax_modifier =
 
 type proof_end =
   | Admitted
-  | Proved of opacity_flag * (lident * theorem_kind option) option
+  (*                         name in `Save ident` when closing goal *)
+  | Proved of opacity_flag * lident option
 
 type scheme =
   | InductionScheme of bool * reference or_by_notation * sort_expr

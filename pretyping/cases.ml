@@ -1246,6 +1246,12 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   let typs = List.map2 RelDecl.set_name names cs_args
   in
 
+  (* Beta-iota-normalize types to better compatibility of refine with 8.4 behavior *)
+  (* This is a bit too strong I think, in the sense that what we would *)
+  (* really like is to have beta-iota reduction only at the positions where *)
+  (* parameters are substituted *)
+  let typs = List.map (map_type (nf_betaiota !(pb.evdref))) typs in
+
   (* We build the matrix obtained by expanding the matching on *)
   (* "C x1..xn as x" followed by a residual matching on eqn into *)
   (* a matching on "x1 .. xn eqn" *)

@@ -9,8 +9,6 @@
 open Equality
 open Names
 open Pp
-open Tacticals
-open Tactics
 open Term
 open Termops
 open CErrors
@@ -127,45 +125,13 @@ let autorewrite ?(conds=Naive) tac_main lbas =
       (Proofview.tclUNIT()) lbas))
 
 let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
- Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.enter { enter = begin fun gl ->
  (* let's check at once if id exists (to raise the appropriate error) *)
- let _ = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) idl in
- let general_rewrite_in id =
-  let id = ref id in
-  let to_be_cleared = ref false in
-   fun dir cstr tac gl ->
-    let last_hyp_id =
-     match Tacmach.pf_hyps gl with
-        d :: _ -> Context.Named.Declaration.get_id d
-      | _ -> (* even the hypothesis id is missing *)
-        raise (Logic.RefinerError (Logic.NoSuchHyp !id))
-    in
-    let gl' = Proofview.V82.of_tactic (general_rewrite_in dir AllOccurrences true ~tac:(tac, conds) false !id cstr false) gl in
-    let gls = gl'.Evd.it in
-    match gls with
-       g::_ ->
-        (match Environ.named_context_of_val (Goal.V82.hyps gl'.Evd.sigma g) with
-            d ::_ ->
-              let lastid = Context.Named.Declaration.get_id d in
-              if not (Id.equal last_hyp_id lastid) then
-               begin
-                let gl'' =
-                  if !to_be_cleared then
-                   tclTHEN (fun _ -> gl') (tclTRY (Proofview.V82.of_tactic (clear [!id]))) gl
-                  else gl' in
-                id := lastid ;
-                to_be_cleared := true ;
-                gl''
-               end
-              else
-               begin
-                to_be_cleared := false ;
-                gl'
-               end
-          | _ -> assert false) (* there must be at least an hypothesis *)
-     | _ -> assert false (* rewriting cannot complete a proof *)
- in
- let general_rewrite_in x y z w = Proofview.V82.tactic (general_rewrite_in x y (EConstr.of_constr z) w) in
+  let _ = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) idl in
+  let general_rewrite_in id dir cstr tac =
+    let cstr = EConstr.of_constr cstr in
+    general_rewrite_in dir AllOccurrences true ~tac:(tac, conds) false id cstr false
+  in
  Tacticals.New.tclMAP (fun id ->
   Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS
     (List.fold_left (fun tac bas ->

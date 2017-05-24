@@ -107,7 +107,16 @@ type constr = t
 type existential = existential_key * constr array
 type rec_declaration = Name.t array * constr array * constr array
 type fixpoint = (int array * int) * rec_declaration
+  (* The array of [int]'s tells for each component of the array of
+     mutual fixpoints the number of lambdas to skip before finding the
+     recursive argument (e.g., value is 2 in "fix f (x:A) (y:=t) (z:B)
+     (v:=u) (w:I) {struct w}"), telling to skip x and z and that w is
+     the recursive argument);
+     The second component [int] tells which component of the block is
+     returned *)
 type cofixpoint = int * rec_declaration
+  (* The component [int] tells which component of the block of
+     cofixpoint is returned *)
 
 type types = constr
 
@@ -115,7 +124,7 @@ type types = constr
 (* Term constructors *)
 (*********************)
 
-(* Constructs a DeBrujin index with number n *)
+(* Constructs a de Bruijn index with number n *)
 let rels =
   [|Rel  1;Rel  2;Rel  3;Rel  4;Rel  5;Rel  6;Rel  7; Rel  8;
     Rel  9;Rel 10;Rel 11;Rel 12;Rel 13;Rel 14;Rel 15; Rel 16|]
@@ -978,28 +987,6 @@ module Hcaseinfo = Hashcons.Make(CaseinfoHash)
 
 let case_info_hash = CaseinfoHash.hash
 
-module Hsorts =
-  Hashcons.Make(
-    struct
-      open Sorts
-
-      type t = Sorts.t
-      type u = universe -> universe
-      let hashcons huniv = function
-          Prop c -> Prop c
-        | Type u -> Type (huniv u)
-      let eq s1 s2 =
-        s1 == s2 ||
-	  match (s1,s2) with
-            (Prop c1, Prop c2) -> c1 == c2
-          | (Type u1, Type u2) -> u1 == u2
-          |_ -> false
-      let hash = function
-	| Prop Null -> 0 | Prop Pos -> 1
-	| Type u -> 2 + Universe.hash u
-    end)
-
-(* let hcons_sorts = Hashcons.simple_hcons Hsorts.generate hcons_univ *)
 let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate Hcaseinfo.hcons hcons_ind
 
 let hcons =

@@ -214,121 +214,64 @@ let fold_glob_constr f acc = CAst.with_val (function
   | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc
   )
 
+let fold_return_type_with_binders f g v acc (na,tyopt) =
+  Option.fold_left (f (name_fold g na v)) acc tyopt
+
+let fold_glob_constr_with_binders g f v acc = CAst.(with_val (function
+  | GVar _ -> acc
+  | GApp (c,args) -> List.fold_left (f v) (f v acc c) args
+  | GLambda (na,_,b,c) | GProd (na,_,b,c) ->
+    f (name_fold g na v) (f v acc b) c
+  | GLetIn (na,b,t,c) ->
+    f (name_fold g na v) (Option.fold_left (f v) (f v acc b) t) c
+  | GCases (_,rtntypopt,tml,pl) ->
+    let fold_pattern acc (_,(idl,p,c)) = f (List.fold_right g idl v) acc c in
+    let fold_tomatch (v',acc) (tm,(na,onal)) =
+      (Option.fold_left (fun v'' (_,(_,nal)) -> List.fold_right (name_fold g) nal v'')
+                        (name_fold g na v') onal,
+       f v acc tm) in
+    let (v',acc) = List.fold_left fold_tomatch (v,acc) tml in
+    let acc = Option.fold_left (f v') acc rtntypopt in
+    List.fold_left fold_pattern acc pl
+  | GLetTuple (nal,rtntyp,b,c) ->
+    f v (f v (fold_return_type_with_binders f g v acc rtntyp) b) c
+  | GIf (c,rtntyp,b1,b2) ->
+    f v (f v (f v (fold_return_type_with_binders f g v acc rtntyp) c) b1) b2
+  | GRec (_,idl,bll,tyl,bv) ->
+    let f' i acc fid =
+      let v,acc =
+	List.fold_left
+	  (fun (v,acc) (na,k,bbd,bty) ->
+            (name_fold g na v, f v (Option.fold_left (f v) acc bbd) bty))
+          (v,acc)
+          bll.(i) in
+      f (Array.fold_right g idl v) (f v acc tyl.(i)) (bv.(i)) in
+    Array.fold_left_i f' acc idl
+  | GCast (c,k) ->
+    let acc = match k with
+      | CastConv t | CastVM t | CastNative t -> f v acc t | CastCoerce -> acc in
+    f v acc c
+  | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc))
+
 let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 
-let same_id na id = match na with
-| Anonymous -> false
-| Name id' -> Id.equal id id'
-
 let occur_glob_constr id =
-  let rec occur gt = CAst.with_val (function
-    | GVar (id') -> Id.equal id id'
-    | GApp (f,args) -> (occur f) || (List.exists occur args)
-    | GLambda (na,bk,ty,c) ->
-      (occur ty) || (not (same_id na id) && (occur c))
-    | GProd (na,bk,ty,c) ->
-      (occur ty) || (not (same_id na id) && (occur c))
-    | GLetIn (na,b,t,c) ->
-      (Option.fold_left (fun b t -> occur t || b) (occur b) t) || (not (same_id na id) && (occur c))
-    | GCases (sty,rtntypopt,tml,pl) ->
-	(occur_option rtntypopt)
-        || (List.exists (fun (tm,_) -> occur tm) tml)
-	|| (List.exists occur_pattern pl)
-    | GLetTuple (nal,rtntyp,b,c) ->
-	occur_return_type rtntyp id
-        || (occur b) || (not (List.mem_f Name.equal (Name id) nal) && (occur c))
-    | GIf (c,rtntyp,b1,b2) ->
-	occur_return_type rtntyp id || (occur c) || (occur b1) || (occur b2)
-    | GRec (fk,idl,bl,tyl,bv) ->
-        not (Array.for_all4 (fun fid bl ty bd ->
-          let rec occur_fix = function
-              [] -> not (occur ty) && (Id.equal fid id || not(occur bd))
-            | (na,k,bbd,bty)::bl ->
-                not (occur bty) &&
-                (match bbd with
-                    Some bd -> not (occur bd)
-                  | _ -> true) &&
-                (match na with Name id' -> Id.equal id id' | _ -> not (occur_fix bl)) in
-          occur_fix bl)
-          idl bl tyl bv)
-    | GCast (c,k) -> (occur c) || (match k with CastConv t
-      | CastVM t | CastNative t -> occur t | CastCoerce -> false)
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> false
-    ) gt
-  and occur_pattern (loc,(idl,p,c)) = not (Id.List.mem id idl) && (occur c)
-
-  and occur_option = function None -> false | Some p -> occur p
-
-  and occur_return_type (na,tyopt) id = not (same_id na id) && occur_option tyopt
-
-  in occur
-
-
-let add_name_to_ids set na =
-  match na with
-    | Anonymous -> set
-    | Name id -> Id.Set.add id set
+  let open CAst in
+  let rec occur barred acc = function
+    | { loc ; v = GVar id' } -> Id.equal id id'
+    | c ->
+       (* [g] looks if [id] appears in a binding position, in which
+          case, we don't have to look in the corresponding subterm *)
+       let g id' barred = barred || Id.equal id id' in
+       let f barred acc c = acc || not barred && occur false acc c in
+       fold_glob_constr_with_binders g f barred acc c in
+  occur false false
 
 let free_glob_vars =
-  let rec vars bounded vs = CAst.with_val @@ (function
-    | GVar (id') -> if Id.Set.mem id' bounded then vs else Id.Set.add id' vs
-    | GApp (f,args) -> List.fold_left (vars bounded) vs (f::args)
-    | GLambda (na,_,ty,c) | GProd (na,_,ty,c) ->
-	let vs' = vars bounded vs ty in
-	let bounded' = add_name_to_ids bounded na in
-       vars bounded' vs' c
-    | GLetIn (na,b,ty,c) ->
-	let vs' = vars bounded vs b in
-	let vs'' = Option.fold_left (vars bounded) vs' ty in
-	let bounded' = add_name_to_ids bounded na in
-       vars bounded' vs'' c
-    | GCases (sty,rtntypopt,tml,pl) ->
-	let vs1 = vars_option bounded vs rtntypopt in
-	let vs2 = List.fold_left (fun vs (tm,_) -> vars bounded vs tm) vs1 tml in
-	List.fold_left (vars_pattern bounded) vs2 pl
-    | GLetTuple (nal,rtntyp,b,c) ->
-	let vs1 = vars_return_type bounded vs rtntyp in
-	let vs2 = vars bounded vs1 b in
-	let bounded' = List.fold_left add_name_to_ids bounded nal in
-	vars bounded' vs2 c
-    | GIf (c,rtntyp,b1,b2) ->
-	let vs1 = vars_return_type bounded vs rtntyp in
-	let vs2 = vars bounded vs1 c in
-	let vs3 = vars bounded vs2 b1 in
-	vars bounded vs3 b2
-    | GRec (fk,idl,bl,tyl,bv) ->
-	let bounded' = Array.fold_right Id.Set.add idl bounded in
-	let vars_fix i vs fid =
-	  let vs1,bounded1 =
-	    List.fold_left
-	      (fun (vs,bounded) (na,k,bbd,bty) ->
-		 let vs' = vars_option bounded vs bbd in
-		 let vs'' = vars bounded vs' bty in
-		 let bounded' = add_name_to_ids bounded na in
-		 (vs'',bounded')
-	      )
-	      (vs,bounded')
-	      bl.(i)
-	  in
-	  let vs2 = vars bounded1 vs1 tyl.(i) in
-	  vars bounded1 vs2 bv.(i)
-	in
-	Array.fold_left_i vars_fix vs idl
-    | GCast (c,k) -> let v = vars bounded vs c in
-	(match k with CastConv t | CastVM t | CastNative t -> vars bounded v t | _ -> v)
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
-    )
-
-  and vars_pattern bounded vs (loc,(idl,p,c)) =
-    let bounded' = List.fold_right Id.Set.add idl bounded  in
-    vars bounded' vs c
-
-  and vars_option bounded vs = function None -> vs | Some p -> vars bounded vs p
-
-  and vars_return_type bounded vs (na,tyopt) =
-    let bounded' = add_name_to_ids bounded na in
-    vars_option bounded' vs tyopt
-  in
+  let open CAst in
+  let rec vars bound vs = function
+    | { loc ; v = GVar id' } -> if Id.Set.mem id' bound then vs else Id.Set.add id' vs
+    | c -> fold_glob_constr_with_binders Id.Set.add vars bound vs c in
   fun rt ->
     let vs = vars Id.Set.empty Id.Set.empty rt in
     Id.Set.elements vs
@@ -354,57 +297,16 @@ let add_and_check_ident id set =
   Id.Set.add id set
 
 let bound_glob_vars =
-  let rec vars bound c = match c.CAst.v with
-    | GLambda (na,_,_,_) | GProd (na,_,_,_) | GLetIn (na,_,_,_) ->
-        let bound = name_fold add_and_check_ident na bound in
-        fold_glob_constr vars bound c
-    | GCases (sty,rtntypopt,tml,pl) ->
-	let bound = vars_option bound rtntypopt in
-	let bound =
-          List.fold_left (fun bound (tm,_) -> vars bound tm) bound tml in
-	List.fold_left vars_pattern bound pl
-    | GLetTuple (nal,rtntyp,b,c) ->
-	let bound = vars_return_type bound rtntyp in
-	let bound = vars bound b in
-	let bound = List.fold_right (name_fold add_and_check_ident) nal bound in
-	vars bound c
-    | GIf (c,rtntyp,b1,b2) ->
-	let bound = vars_return_type bound rtntyp in
-	let bound = vars bound c in
-	let bound = vars bound b1 in
-	vars bound b2
-    | GRec (fk,idl,bl,tyl,bv) ->
-	let bound = Array.fold_right Id.Set.add idl bound in
-	let vars_fix i bound fid =
-	  let bound =
-	    List.fold_left
-	      (fun bound (na,k,bbd,bty) ->
-		 let bound = vars_option bound bbd in
-		 let bound = vars bound bty in
-		 name_fold add_and_check_ident na bound
-	      )
-	      bound
-	      bl.(i)
-	  in
-	  let bound = vars bound tyl.(i) in
-	  vars bound bv.(i)
-	in
-	Array.fold_left_i vars_fix bound idl
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GVar _) -> bound
-    | GApp _ | GCast _ -> fold_glob_constr vars bound c
-
-  and vars_pattern bound (loc,(idl,p,c)) =
-    let bound = List.fold_right add_and_check_ident idl bound in
-    vars bound c
-
-  and vars_option bound = function None -> bound | Some p -> vars bound p
-
-  and vars_return_type bound (na,tyopt) =
-    let bound = name_fold add_and_check_ident na bound in
-    vars_option bound tyopt
+  let rec vars bound =
+    fold_glob_constr_with_binders
+      (fun id () -> bound := add_and_check_ident id !bound)
+      (fun () () -> vars bound)
+      () ()
   in
   fun rt ->
-    vars Id.Set.empty rt
+    let bound = ref Id.Set.empty in
+    vars bound rt;
+    !bound
 
 (** Mapping of names in binders *)
 

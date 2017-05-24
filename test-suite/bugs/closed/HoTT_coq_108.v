@@ -1,5 +1,5 @@
 Require Import TestSuite.admit.
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-indices-matter") -*- *)
 (* NOTE: This bug is only triggered with -load-vernac-source / in interactive mode. *)
 (* File reduced by coq-bug-finder from 139 lines to 124 lines. *)
 Set Universe Polymorphism.

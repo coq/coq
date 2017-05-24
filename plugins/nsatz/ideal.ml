@@ -153,7 +153,6 @@ module Make (P:Polynom.S) = struct
   type coef = P.t
   let coef0 = P.of_num (Num.Int 0)
   let coef1 = P.of_num (Num.Int 1)
-  let coefm1 = P.of_num (Num.Int (-1))
   let string_of_coef c = "["^(P.to_string c)^"]"
 
 (***********************************************************************
@@ -196,8 +195,6 @@ module Hashpol = Hashtbl.Make(
 
 
 (* A pretty printer for polynomials, with Maple-like syntax. *)
-
-open Format
 
 let getvar lv i =
   try (List.nth lv i)
@@ -251,59 +248,6 @@ let string_of_pol zeroP hdP tlP coefterm monterm string_of_coef
           (stringP (tlP p) false))
   in 
   (stringP p true)
-
-
-
-let print_pol zeroP hdP tlP coefterm monterm string_of_coef
-    dimmon string_of_exp lvar p =
-
-  let rec print_mon m coefone =
-    let s=ref [] in
-    for i=1 to (dimmon m) do
-      (match (string_of_exp m i) with
-        "0" -> ()
-      | "1" -> s:= (!s) @ [(getvar lvar (i-1))]
-      | e -> s:= (!s) @ [((getvar lvar (i-1)) ^ "^" ^ e)]);
-    done;
-    (match !s with
-      [] -> if coefone 
-      then print_string "1"
-      else ()
-    | l -> if coefone 
-    then print_string (String.concat "*" l)
-    else (print_string "*"; 
-          print_string (String.concat "*" l)))
-  and print_term t start = let a = coefterm t and m = monterm t in
-  match (string_of_coef a) with
-    "0" -> ()
-  | "1" ->(match start with
-      true -> print_mon m true
-    |false -> (print_string "+ ";
-               print_mon m true))
-  | "-1" ->(print_string "-";print_space();print_mon m true)
-  | c -> if (String.get c 0)='-'
-  then (print_string "- ";
-        print_string (String.sub c 1 
-                        ((String.length c)-1));
-        print_mon m false)
-  else (match start with
-    true -> (print_string c;print_mon m false)
-  |false -> (print_string "+ ";
-             print_string c;print_mon m false))
-  and printP p start = 
-    if (zeroP p)
-    then (if start 
-    then print_string("0")
-    else ())
-    else (print_term (hdP p) start;
-          if start then open_hovbox 0;
-          print_space();
-          print_cut();
-          printP (tlP p) false)
-  in open_hovbox 3;
-  printP p true;
-  print_flush()
-
 
 let stringP metadata (p : poly) =
   string_of_pol 
@@ -594,9 +538,6 @@ let addS x l =    l @ [x] (* oblige de mettre en queue sinon le certificat decon
 (***********************************************************************
  critical pairs/s-polynomials
  *)
-
-let ordcpair ((i1,j1),m1) ((i2,j2),m2) =
-  compare_mon m1 m2 
 
 module CPair =
 struct

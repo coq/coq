@@ -20,24 +20,24 @@ let has_some = function
   | _ -> true
 
 let is_empty = function
-| None -> true
-| Some _ -> false
+  | None -> true
+  | Some _ -> false
 
 (** Lifting equality onto option types. *)
 let equal f x y = match x, y with
-| None, None -> true
-| Some x, Some y -> f x y
-| _, _ -> false
+  | None, None -> true
+  | Some x, Some y -> f x y
+  | _, _ -> false
 
 let compare f x y = match x, y with
-| None, None -> 0
-| Some x, Some y -> f x y
-| None, Some _ -> -1
-| Some _, None -> 1
+  | None, None -> 0
+  | Some x, Some y -> f x y
+  | None, Some _ -> -1
+  | Some _, None -> 1
 
 let hash f = function
-| None -> 0
-| Some x -> f x
+  | None -> 0
+  | Some x -> f x
 
 exception IsNone
 
@@ -57,12 +57,10 @@ let init b x =
   else
     None
 
-
 (** [flatten x] is [Some y] if [x] is [Some (Some y)] and [None] otherwise. *)
 let flatten = function
   | Some (Some y) -> Some y
   | _ -> None
-
 
 (** [append x y] is the first element of the concatenation of [x] and
     [y] seen as lists. *)
@@ -134,6 +132,7 @@ let cata f a = function
   | Some c -> f c
   | None -> a
 
+
 (** {6 More Specific operations} ***)
 
 (** [default a x] is [y] if [x] is [Some y] and [a] otherwise. *)
@@ -165,7 +164,6 @@ let lift2 f x y =
   | _,_ -> None
 
 
-
 (** {6 Operations with Lists} *)
 
 module List =
@@ -183,9 +181,19 @@ module List =
     | [] -> []
 
   let rec find f = function
-    |[] -> None
-    |h :: t -> match f h with
-	 |None -> find f t
-	 |x -> x
+    | [] -> None
+    | h :: t -> match f h with
+	 | None -> find f t
+	 | x -> x
+
+  let map f l =
+    let rec aux f l = match l with
+    | [] -> []
+    | x :: l ->
+      match f x with
+      | None -> raise Exit
+      | Some y -> y :: aux f l
+    in
+    try Some (aux f l) with Exit -> None
 
 end

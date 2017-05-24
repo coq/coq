@@ -125,7 +125,7 @@
           id     ID     #REQUIRED
           sort   %sort; #REQUIRED>
 
-<!-- The substitutions are ordered by increasing DeBrujin  -->
+<!-- The substitutions are ordered by increasing de Bruijn  -->
 <!-- index. An empty substitution means that that index is -->
 <!-- not accessible.                                       -->
 <!ELEMENT META (substitution*)>

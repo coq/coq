@@ -8,13 +8,12 @@
 (************************************************************************)
 
 open EConstr
-open Proof_type
 
 val proof_tac: Ccproof.proof -> unit Proofview.tactic
 
 val cc_tactic : int -> constr list ->  unit Proofview.tactic
 
-val cc_fail : tactic
+val cc_fail : unit Proofview.tactic
 
 val congruence_tac : int -> constr list -> unit Proofview.tactic
 

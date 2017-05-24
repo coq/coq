@@ -477,7 +477,7 @@ let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
 	  start_proof_and_print (local,p,DefinitionBody k)
-	    [Some (lid,pl), (bl,t,None)] hook
+	    [Some (lid,pl), (bl,t)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None
@@ -1412,6 +1412,15 @@ let _ =
       optwrite = (fun _ -> ()) }
 
 let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "display compact goal contexts";
+      optkey   = ["Printing";"Compact";"Contexts"];
+      optread  = (fun () -> Printer.get_compact_context());
+      optwrite = (fun b -> Printer.set_compact_context b) }
+
+let _ =
   declare_int_option
     { optsync  = true;
       optdepr  = false;
@@ -2055,7 +2064,7 @@ let interp ?proof ?loc locality poly c =
   | VernacComments l -> if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t,None)] false
+  | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t)] false
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
   | VernacUnfocused -> vernac_unfocused ()

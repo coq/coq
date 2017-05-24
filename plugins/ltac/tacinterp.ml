@@ -25,7 +25,6 @@ open Refiner
 open Tacmach.New
 open Tactic_debug
 open Constrexpr
-open Term
 open Termops
 open Tacexpr
 open Genarg
@@ -433,12 +432,6 @@ let interp_hyp_list_as_list ist env sigma (loc,id as x) =
 
 let interp_hyp_list ist env sigma l =
   List.flatten (List.map (interp_hyp_list_as_list ist env sigma) l)
-
-let interp_move_location ist env sigma = function
-  | MoveAfter id -> MoveAfter (interp_hyp ist env sigma id)
-  | MoveBefore id -> MoveBefore (interp_hyp ist env sigma id)
-  | MoveFirst -> MoveFirst
-  | MoveLast -> MoveLast
 
 let interp_reference ist env sigma = function
   | ArgArg (_,r) -> r

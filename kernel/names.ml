@@ -34,16 +34,8 @@ struct
 
   let hash = String.hash
 
-  let warn_invalid_identifier =
-    CWarnings.create ~name:"invalid-identifier" ~category:"parsing"
-                     ~default:CWarnings.Disabled
-                     (fun s -> str s)
-
-  let check_soft ?(warn = true) x =
-    let iter (fatal, x) =
-      if fatal then CErrors.error x else
-        if warn then warn_invalid_identifier x
-    in
+  let check_valid ?(strict=true) x =
+    let iter (fatal, x) = if fatal || strict then CErrors.error x in
     Option.iter iter (Unicode.ident_refutation x)
 
   let is_valid s = match Unicode.ident_refutation s with
@@ -52,15 +44,15 @@ struct
 
   let of_bytes s =
     let s = Bytes.to_string s in
-    check_soft s;
+    check_valid s;
     String.hcons s
 
   let of_string s =
-    let () = check_soft s in
+    let () = check_valid s in
     String.hcons s
 
   let of_string_soft s =
-    let () = check_soft ~warn:false s in
+    let () = check_valid ~strict:false s in
     String.hcons s
 
   let to_string id = id
@@ -542,7 +534,6 @@ module KerPair = struct
   end
 
   module SyntacticOrd = struct
-    type t = kernel_pair
     let compare x y = match x, y with
       | Same knx, Same kny -> KerName.compare knx kny
       | Dual (knux,kncx), Dual (knuy,kncy) ->
@@ -865,7 +856,6 @@ struct
   let hash (c, b) = (if b then 0 else 1) + Constant.hash c
 
   module SyntacticOrd = struct
-    type t = constant * bool
     let compare (c, b) (c', b') =
       if b = b' then Constant.SyntacticOrd.compare c c' else -1
     let equal (c, b as x) (c', b' as x') =

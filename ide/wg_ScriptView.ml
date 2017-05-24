@@ -301,28 +301,28 @@ object (self)
       ~use_align:false ~yalign:0.75 ~within_margin:0.25 `INSERT
 
   (* HACK: missing gtksourceview features *)
-  method right_margin_position =
+  method! right_margin_position =
     let prop = {
       Gobject.name = "right-margin-position";
       conv = Gobject.Data.int;
     } in
     Gobject.get prop obj
 
-  method set_right_margin_position pos =
+  method! set_right_margin_position pos =
     let prop = {
       Gobject.name = "right-margin-position";
       conv = Gobject.Data.int;
     } in
     Gobject.set prop obj pos
 
-  method show_right_margin =
+  method! show_right_margin =
     let prop = {
       Gobject.name = "show-right-margin";
       conv = Gobject.Data.boolean;
     } in
     Gobject.get prop obj
 
-  method set_show_right_margin show =
+  method! set_show_right_margin show =
     let prop = {
       Gobject.name = "show-right-margin";
       conv = Gobject.Data.boolean;
@@ -460,8 +460,8 @@ object (self)
     let _ = GtkSignal.connect ~sgn:move_line_signal ~callback obj in
     (** Plug on preferences *)
     let cb clr = self#misc#modify_base [`NORMAL, `NAME clr] in
-    let _ = background_color#connect#changed cb in
-    let _ = self#misc#connect#realize (fun () -> cb background_color#get) in
+    let _ = background_color#connect#changed ~callback:cb in
+    let _ = self#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
 
     let cb b = self#set_wrap_mode (if b then `WORD else `NONE) in
     stick dynamic_word_wrap self cb;

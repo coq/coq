@@ -10,7 +10,6 @@ open Environ
 open Pattern
 open Names
 open Tacexpr
-open Term
 open EConstr
 open Evd
 

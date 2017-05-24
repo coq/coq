@@ -8,11 +8,15 @@
 
 (** Parsing of vernacular. *)
 
-(** Reads and executes vernac commands from a stream. *)
-val process_expr : Stateid.t -> Pcoq.Gram.coq_parsable -> Vernacexpr.vernac_expr Loc.located -> Stateid.t
+(** [process_expr sid cmd] Executes vernac command [cmd]. Callers are
+    expected to handle and print errors in form of exceptions, however
+    care is taken so the state machine is left in a consistent
+    state. *)
+val process_expr : Stateid.t -> Vernacexpr.vernac_expr Loc.located -> Stateid.t
 
 (** [load_vernac echo sid file] Loads [file] on top of [sid], will
-    echo the commands if [echo] is set. *)
+    echo the commands if [echo] is set. Callers are expected to handle
+    and print errors in form of exceptions. *)
 val load_vernac : bool -> Stateid.t -> string -> Stateid.t
 
 (** Compile a vernac file, (f is assumed without .v suffix) *)

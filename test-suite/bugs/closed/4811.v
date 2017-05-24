@@ -2,7 +2,7 @@
 
 (* Submitted by Jason Gross *)
 
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-R" "src" "Crypto" "-R" "Bedrock" "Bedrock" "-R" "coqprime-8.5/Coqprime" "Coqprime" "-top" "GF255192") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-R" "src" "Crypto" "-R" "Bedrock" "Bedrock" "-R" "coqprime-8.5/Coqprime" "Coqprime" "-top" "GF255192") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 162 lines to 23 lines, then from 245 lines to 95 lines, then from 198 lines to 101 lines, then from 654 lines to 452 lines, then from 591 lines to 505 lines, then from 1770 lines to 580 lines, then from 2238 lines to 1715 lines, then from 1776 lines to 1738 lines, then from 1750 lines to 1679 lines, then from 1693 lines to 1679 lines *)
 (* coqc version 8.5pl1 (April 2016) compiled on Apr 18 2016 14:48:5 with OCaml 4.02.3
    coqtop version 8.5pl1 (April 2016) *)

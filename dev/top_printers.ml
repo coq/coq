@@ -59,14 +59,6 @@ let pprecarg = function
      str "Imbr[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
 let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
 
-let pprecarg = function
-  | Declarations.Norec -> str "Norec"
-  | Declarations.Mrec (mind,i) ->
-     str "Mrec[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-  | Declarations.Imbr (mind,i) ->
-     str "Imbr[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
-let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
-
 (* term printers *)
 let rawdebug = ref false
 let ppevar evk = pp (str (Evd.string_of_existential evk))
@@ -457,8 +449,6 @@ let print_pure_constr csr =
 	print_string (Printexc.to_string e);print_flush ();
 	raise e
 
-let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
-
 let pploc x = let (l,r) = Loc.unloc x in
   print_string"(";print_int l;print_string",";print_int r;print_string")"
 
@@ -502,7 +492,6 @@ VERNAC COMMAND EXTEND PrintConstr
 END
 *)
 
-open Pcoq
 open Genarg
 open Stdarg
 open Egramml
@@ -521,7 +510,7 @@ let _ =
   extend_vernac_command_grammar ("PrintConstr", 0) None
     [GramTerminal "PrintConstr";
       GramNonTerminal
-        (Loc.tag (rawwit wit_constr,Extend.Aentry Pcoq.Constr.constr))]
+        (Loc.tag (Some (rawwit wit_constr),Extend.Aentry Pcoq.Constr.constr))]
 
 let _ =
   try
@@ -537,7 +526,7 @@ let _ =
   extend_vernac_command_grammar ("PrintPureConstr", 0) None
     [GramTerminal "PrintPureConstr";
       GramNonTerminal
-        (Loc.tag (rawwit wit_constr,Extend.Aentry Pcoq.Constr.constr))]
+        (Loc.tag (Some (rawwit wit_constr),Extend.Aentry Pcoq.Constr.constr))]
 
 (* Setting printer of unbound global reference *)
 open Names

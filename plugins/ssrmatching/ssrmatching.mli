@@ -4,7 +4,6 @@
 open Genarg
 open Tacexpr
 open Environ
-open Tacmach
 open Evd
 open Proof_type
 open Term
@@ -225,7 +224,6 @@ val tag_of_cpattern : cpattern -> char
 val loc_of_cpattern : cpattern -> Loc.t option
 val id_of_pattern : pattern -> Names.variable option
 val is_wildcard : cpattern -> bool
-val cpattern_of_id : Names.variable -> cpattern
 val cpattern_of_id : Names.variable -> cpattern
 val pr_constr_pat : constr -> Pp.std_ppcmds
 val pf_merge_uc : Evd.evar_universe_context -> goal Evd.sigma -> goal Evd.sigma

@@ -440,10 +440,6 @@ struct
     let set = make Level.set
     let type1 = hcons (Level.set, 1)
 
-    let is_prop = function
-      | (l,0) -> Level.is_prop l
-      | _ -> false
-	
     let is_small = function
       | (l,0) -> Level.is_small l
       | _ -> false

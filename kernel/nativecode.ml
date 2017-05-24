@@ -16,6 +16,8 @@ open Nativeinstr
 open Nativelambda
 open Pre_env
 
+[@@@ocaml.warning "-32-37"]
+
 (** This file defines the mllambda code generation phase of the native
 compiler. mllambda represents a fragment of ML, and can easily be printed
 to OCaml code. *)
@@ -39,8 +41,6 @@ module LNmap = Map.Make(LNord)
 module LNset = Set.Make(LNord)
 
 let lname_ctr = ref (-1)
-
-let reset_lname = lname_ctr := -1
 
 let fresh_lname n = 
   incr lname_ctr;
@@ -110,15 +110,11 @@ let gname_hash gn = match gn with
 
 let case_ctr = ref (-1)
 
-let reset_gcase () = case_ctr := -1
-
 let fresh_gcase l =
   incr case_ctr;
   Gcase (l,!case_ctr)
 
 let pred_ctr = ref (-1)
-
-let reset_gpred () = pred_ctr := -1
 
 let fresh_gpred l = 
   incr pred_ctr;
@@ -126,23 +122,17 @@ let fresh_gpred l =
 
 let fixtype_ctr = ref (-1)
 
-let reset_gfixtype () = fixtype_ctr := -1
-
 let fresh_gfixtype l =
   incr fixtype_ctr;
   Gfixtype (l,!fixtype_ctr)
 
 let norm_ctr = ref (-1)
 
-let reset_norm () = norm_ctr := -1
-
 let fresh_gnorm l =
   incr norm_ctr;
   Gnorm (l,!norm_ctr)
 
 let normtbl_ctr = ref (-1)
-
-let reset_normtbl () = normtbl_ctr := -1
 
 let fresh_gnormtbl l =
   incr normtbl_ctr;

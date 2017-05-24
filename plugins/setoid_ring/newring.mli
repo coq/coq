@@ -7,13 +7,10 @@
 (************************************************************************)
 
 open Names
-open Constr
 open EConstr
 open Libnames
 open Globnames
 open Constrexpr
-open Tacexpr
-open Proof_type
 open Newring_ast
 
 val protect_tac_in : string -> Id.t -> unit Proofview.tactic

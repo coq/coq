@@ -97,11 +97,6 @@ let check_typability env sigma c =
    (instead of iterating on the list of identifier to be removed, which
    forces the user to give them in order). *)
 
-let clear_hyps env sigma ids sign cl =
-  let evdref = ref (Evd.clear_metas sigma) in
-  let (hyps,cl) = Evarutil.clear_hyps_in_evi env evdref sign cl ids in
-  (hyps, cl, !evdref)
-
 let clear_hyps2 env sigma ids sign t cl =
   let evdref = ref (Evd.clear_metas sigma) in
   let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
@@ -379,7 +374,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	let (acc',hdty,sigma,applicand) =
 	  if is_template_polymorphic env sigma (EConstr.of_constr f) then
 	    let ty = 
-	      (* Template sort-polymorphism of definition and inductive types *)
+	      (* Template polymorphism of definitions and inductive types *)
 	      let firstmeta = Array.findi (fun i x -> occur_meta sigma (EConstr.of_constr x)) l in
 	      let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
 	        type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) (Array.map EConstr.of_constr args)

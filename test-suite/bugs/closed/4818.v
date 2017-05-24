@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-R" "." "Prob" "-top" "Product") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-R" "." "Prob" "-top" "Product") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 391 lines to 77 lines, then from 857 lines to 119 lines, then from 1584 lines to 126 lines, then from 362 lines to 135 lines, then from 149 lines to 135 lines *)
 (* coqc version 8.5pl1 (June 2016) compiled on Jun 9 2016 17:27:17 with OCaml 4.02.3
    coqtop version 8.5pl1 (June 2016) *)

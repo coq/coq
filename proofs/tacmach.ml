@@ -179,9 +179,6 @@ module New = struct
   let pf_unsafe_type_of gl t =
     pf_apply unsafe_type_of gl t
 
-  let pf_get_type_of gl t =
-    pf_apply (Retyping.get_type_of ~lax:true) gl t
-
   let pf_type_of gl t =
     pf_apply type_of gl t
 

@@ -229,10 +229,7 @@ and instance_eq (x1,c1) (x2,c2) =
   Id.equal x1 x2 && constr_expr_eq c1 c2
 
 let constr_loc c = CAst.(c.loc)
-
 let cases_pattern_expr_loc cp = CAst.(cp.loc)
-
-let raw_cases_pattern_expr_loc pe = CAst.(pe.loc)
 
 let local_binder_loc = function
   | CLocalAssum ((loc,_)::_,_,t)

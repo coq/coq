@@ -10,12 +10,12 @@ open Unify
 open Rules
 open CErrors
 open Util
-open Term
+open EConstr
 open Vars
-open Tacmach
+open Tacmach.New
 open Tactics
-open Tacticals
-open Termops
+open Tacticals.New
+open Proofview.Notations
 open Reductionops
 open Formula
 open Sequent
@@ -25,11 +25,12 @@ open Sigma.Notations
 open Context.Rel.Declaration
 
 let compare_instance inst1 inst2=
+        let cmp c1 c2 = OrderedConstr.compare (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
 	match inst1,inst2 with
 	    Phantom(d1),Phantom(d2)->
-	      (OrderedConstr.compare d1 d2)
+	      (cmp d1 d2)
 	  | Real((m1,c1),n1),Real((m2,c2),n2)->
-	      ((-) =? (-) ==? OrderedConstr.compare) m2 m1 n1 n2 c1 c2
+	      ((-) =? (-) ==? cmp) m2 m1 n1 n2 c1 c2
 	  | Phantom(_),Real((m,_),_)-> if Int.equal m 0 then -1 else 1
 	  | Real((m,_),_),Phantom(_)-> if Int.equal m 0 then 1 else -1
 
@@ -56,12 +57,12 @@ let make_simple_atoms seq=
       | None->[]
   in {negative=seq.latoms;positive=ratoms}
 
-let do_sequent setref triv id seq i dom atoms=
+let do_sequent sigma setref triv id seq i dom atoms=
   let flag=ref true in
   let phref=ref triv in
   let do_atoms a1 a2 =
     let do_pair t1 t2 =
-      match unif_atoms i dom t1 t2 with
+      match unif_atoms sigma i dom t1 t2 with
 	  None->()
 	| Some (Phantom _) ->phref:=true
 	| Some c ->flag:=false;setref:=IS.add (c,id) !setref in
@@ -71,26 +72,26 @@ let do_sequent setref triv id seq i dom atoms=
     do_atoms atoms (make_simple_atoms seq);
     !flag && !phref
 
-let match_one_quantified_hyp setref seq lf=
+let match_one_quantified_hyp sigma setref seq lf=
   match lf.pat with
       Left(Lforall(i,dom,triv))|Right(Rexists(i,dom,triv))->
-	if do_sequent setref triv lf.id seq i dom lf.atoms then
+	if do_sequent sigma setref triv lf.id seq i dom lf.atoms then
 	  setref:=IS.add ((Phantom dom),lf.id) !setref
     | _ -> anomaly (Pp.str "can't happen")
 
-let give_instances lf seq=
+let give_instances sigma lf seq=
   let setref=ref IS.empty in
-    List.iter (match_one_quantified_hyp setref seq) lf;
+    List.iter (match_one_quantified_hyp sigma setref seq) lf;
     IS.elements !setref
 
 (* collector for the engine *)
 
-let rec collect_quantified seq=
+let rec collect_quantified sigma seq=
   try
-    let hd,seq1=take_formula seq in
+    let hd,seq1=take_formula sigma seq in
       (match hd.pat with
 	   Left(Lforall(_,_,_)) | Right(Rexists(_,_,_)) ->
-	     let (q,seq2)=collect_quantified seq1 in
+	     let (q,seq2)=collect_quantified sigma seq1 in
 	       ((hd::q),seq2)
 	 | _->[],seq)
   with Heap.EmptyHeap -> [],seq
@@ -99,60 +100,61 @@ let rec collect_quantified seq=
 
 let dummy_bvid=Id.of_string "x"
 
-let mk_open_instance id idc gl m t=
-  let env=pf_env gl in
-  let evmap=Refiner.project gl in
+let mk_open_instance env evmap id idc m t =
   let var_id=
     if id==dummy_id then dummy_bvid else
-      let typ=pf_unsafe_type_of gl idc in
+      let typ=Typing.unsafe_type_of env evmap idc in
 	(* since we know we will get a product,
 	   reduction is not too expensive *)
-      let (nam,_,_)=destProd (EConstr.Unsafe.to_constr (whd_all env evmap typ)) in
+      let (nam,_,_)=destProd evmap (whd_all env evmap typ) in
 	match nam with
 	    Name id -> id
 	  | Anonymous ->  dummy_bvid in
   let revt=substl (List.init m (fun i->mkRel (m-i))) t in
   let rec aux n avoid env evmap decls =
     if Int.equal n 0 then evmap, decls else
-      let nid=(fresh_id avoid var_id gl) in
+      let nid=(fresh_id_in_env avoid var_id env) in
       let evmap = Sigma.Unsafe.of_evar_map evmap in
       let Sigma ((c, _), evmap, _) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
       let evmap = Sigma.to_evar_map evmap in
       let decl = LocalAssum (Name nid, c) in
 	aux (n-1) (nid::avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
   let evmap, decls = aux m [] env evmap [] in
-    evmap, decls, revt
+  (evmap, decls, revt)
 
 (* tactics   *)
 
 let left_instance_tac (inst,id) continue seq=
   let open EConstr in
+  Proofview.Goal.enter { enter = begin fun gl ->
+  let sigma = project gl in
   match inst with
       Phantom dom->
-	if lookup (id,None) seq then
+	if lookup sigma (id,None) seq then
 	  tclFAIL 0 (Pp.str "already done")
 	else
-	  tclTHENS (Proofview.V82.of_tactic (cut (EConstr.of_constr dom)))
+	  tclTHENS (cut dom)
 	    [tclTHENLIST
-	       [Proofview.V82.of_tactic introf;
-                pf_constr_of_global id (fun idc ->
-		(fun gls-> Proofview.V82.of_tactic (generalize
-		   [mkApp(idc,
-			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])]) gls));
-		Proofview.V82.of_tactic introf;
+	       [introf;
+                (pf_constr_of_global id >>= fun idc ->
+                Proofview.Goal.enter { enter = begin fun gl ->
+                  let id0 = List.nth (pf_ids_of_hyps gl) 0 in
+                  generalize [mkApp(idc, [|mkVar id0|])]
+                end });
+		introf;
 		tclSOLVE [wrap 1 false continue
 			    (deepen (record (id,None) seq))]];
-	    tclTRY (Proofview.V82.of_tactic assumption)]
-    | Real((m,t) as c,_)->
-	if lookup (id,Some c) seq then
+	    tclTRY assumption]
+    | Real((m,t),_)->
+        let c = (m, EConstr.to_constr sigma t) in
+	if lookup sigma (id,Some c) seq then
 	  tclFAIL 0 (Pp.str "already done")
 	else
 	  let special_generalize=
 	    if m>0 then
-	      pf_constr_of_global id (fun idc ->
-		fun gl->
-		  let evmap,rc,ot = mk_open_instance id idc gl m t in
-		  let ot = EConstr.of_constr ot in
+	      (pf_constr_of_global id >>= fun idc ->
+		Proofview.Goal.s_enter { s_enter = begin fun gl->
+		  let (evmap, rc, ot) = mk_open_instance (pf_env gl) (project gl) id idc m t in
 		  let gt=
 		    it_mkLambda_or_LetIn
 		      (mkApp(idc,[|ot|])) rc in
@@ -160,34 +162,38 @@ let left_instance_tac (inst,id) continue seq=
 		    try Typing.type_of (pf_env gl) evmap gt
 		    with e when CErrors.noncritical e ->
 		      error "Untypable instance, maybe higher-order non-prenex quantification" in
-		    tclTHEN (Refiner.tclEVARS evmap) (Proofview.V82.of_tactic (generalize [gt])) gl)
+		    Sigma.Unsafe.of_pair (generalize [gt], evmap)
+                end })
 	    else
-              let t = EConstr.of_constr t in
-	      pf_constr_of_global id (fun idc ->
-		Proofview.V82.of_tactic (generalize [mkApp(idc,[|t|])]))
+	      pf_constr_of_global id >>= fun idc -> generalize [mkApp(idc,[|t|])]
 	  in
 	    tclTHENLIST
 	      [special_generalize;
-	       Proofview.V82.of_tactic introf;
+	       introf;
 	       tclSOLVE
 		 [wrap 1 false continue (deepen (record (id,Some c) seq))]]
+  end }
 
 let right_instance_tac inst continue seq=
+  let open EConstr in
+  Proofview.Goal.enter { enter = begin fun gl ->
   match inst with
       Phantom dom ->
-	tclTHENS (Proofview.V82.of_tactic (cut (EConstr.of_constr dom)))
+	tclTHENS (cut dom)
 	[tclTHENLIST
-	   [Proofview.V82.of_tactic introf;
-	    (fun gls->
-	       Proofview.V82.of_tactic (split (ImplicitBindings
-			[EConstr.mkVar (Tacmach.pf_nth_hyp_id gls 1)])) gls);
+	   [introf;
+            Proofview.Goal.enter { enter = begin fun gl ->
+              let id0 = List.nth (pf_ids_of_hyps gl) 0 in
+              split (ImplicitBindings [mkVar id0])
+            end };
 	    tclSOLVE [wrap 0 true continue (deepen seq)]];
-	 tclTRY (Proofview.V82.of_tactic assumption)]
+	 tclTRY assumption]
     | Real ((0,t),_) ->
-	(tclTHEN (Proofview.V82.of_tactic (split (ImplicitBindings [EConstr.of_constr t])))
+	(tclTHEN (split (ImplicitBindings [t]))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
 	tclFAIL 0 (Pp.str "not implemented ... yet")
+  end }
 
 let instance_tac inst=
   if (snd inst)==dummy_id then
@@ -195,10 +201,10 @@ let instance_tac inst=
   else
     left_instance_tac inst
 
-let quantified_tac lf backtrack continue seq gl=
-  let insts=give_instances lf seq in
+let quantified_tac lf backtrack continue seq =
+  Proofview.Goal.enter { enter = begin fun gl ->
+  let insts=give_instances (project gl) lf seq in
     tclORELSE
       (tclFIRST (List.map (fun inst->instance_tac inst continue seq) insts))
-      backtrack gl
-
-
+      backtrack
+  end }

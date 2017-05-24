@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module CVars = Vars
 open Util
 open CErrors
 open Names
@@ -471,23 +470,13 @@ let free_vars_and_rels_up_alias_expansion sigma aliases c =
 (* Managing pattern-unification *)
 (********************************)
 
-let map_all f l =
-  let rec map_aux f l = match l with
-  | [] -> []
-  | x :: l ->
-    match f x with
-    | None -> raise Exit
-    | Some y -> y :: map_aux f l
-  in
-  try Some (map_aux f l) with Exit -> None
-
 let expand_and_check_vars sigma aliases l =
   let map a = match get_alias_chain_of sigma aliases a with
   | None, [] -> Some a
   | None, a :: _ -> Some a
   | Some _, _ -> None
   in
-  map_all map l
+  Option.List.map map l
 
 let alias_distinct l =
   let rec check (rels, vars) = function
@@ -541,7 +530,7 @@ let is_unification_pattern_meta env evd nb m l t =
   | Rel n -> if n <= nb then Some (RelAlias n) else None
   | _ -> None
   in
-  match map_all map l with
+  match Option.List.map map l with
   | Some l ->
     begin match find_unification_pattern_args env evd l t with
     | Some _ as x when not (dependent evd (mkMeta m) t) -> x
@@ -551,10 +540,10 @@ let is_unification_pattern_meta env evd nb m l t =
     None
 
 let is_unification_pattern_evar env evd (evk,args) l t =
-  match map_all (fun c -> to_alias evd c) l with
+  match Option.List.map (fun c -> to_alias evd c) l with
   | Some l when noccur_evar env evd evk t ->
     let args = remove_instance_local_defs evd evk args in
-    let args = map_all (fun c -> to_alias evd c) args in
+    let args = Option.List.map (fun c -> to_alias evd c) args in
     begin match args with
     | None -> None
     | Some args ->

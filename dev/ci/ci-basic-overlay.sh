@@ -95,6 +95,24 @@
 : ${fiat_crypto_CI_GITURL:=https://github.com/mit-plv/fiat-crypto.git}
 
 ########################################################################
+# bedrock_src
+########################################################################
+: ${bedrock_src_CI_BRANCH:=master}
+: ${bedrock_src_CI_GITURL:=https://github.com/mit-plv/bedrock.git}
+
+########################################################################
+# bedrock_facade
+########################################################################
+: ${bedrock_facade_CI_BRANCH:=master}
+: ${bedrock_facade_CI_GITURL:=https://github.com/mit-plv/bedrock.git}
+
+########################################################################
+# formal-topology
+########################################################################
+: ${formal_topology_CI_BRANCH:=ci}
+: ${formal_topology_CI_GITURL:=https://github.com/bmsherman/topology.git}
+
+########################################################################
 # CoLoR
 ########################################################################
 : ${Color_CI_SVNURL:=https://scm.gforge.inria.fr/anonscm/svn/color/trunk/color}
@@ -109,4 +127,3 @@
 ########################################################################
 : ${tlc_CI_BRANCH:=master}
 : ${tlc_CI_GITURL:=https://gforge.inria.fr/git/tlc/tlc.git}
-

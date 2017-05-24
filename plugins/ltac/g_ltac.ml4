@@ -460,7 +460,9 @@ END
 
 let pr_ltac_production_item = function
 | Tacentries.TacTerm s -> quote (str s)
-| Tacentries.TacNonTerm (_, ((arg, sep), id)) ->
+| Tacentries.TacNonTerm (_, ((arg, None), None)) -> str arg
+| Tacentries.TacNonTerm (_, ((arg, Some _), None)) -> assert false
+| Tacentries.TacNonTerm (_, ((arg, sep), Some id)) ->
   let sep = match sep with
   | None -> mt ()
   | Some sep -> str "," ++ spc () ++ quote (str sep)
@@ -470,7 +472,9 @@ let pr_ltac_production_item = function
 VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY pr_ltac_production_item
 | [ string(s) ] -> [ Tacentries.TacTerm s ]
 | [ ident(nt) "(" ident(p) ltac_production_sep_opt(sep) ")" ] ->
-  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Names.Id.to_string nt, sep), p)) ]
+  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Names.Id.to_string nt, sep), Some p)) ]
+| [ ident(nt) ] ->
+  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Names.Id.to_string nt, None), None)) ]
 END
 
 VERNAC COMMAND EXTEND VernacTacticNotation

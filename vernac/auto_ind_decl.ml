@@ -9,7 +9,6 @@
 (* This file is about the automatic generation of schemes about
    decidable equality, created by Vincent Siles, Oct 2007 *)
 
-open Tacmach
 open CErrors
 open Util
 open Pp
@@ -27,8 +26,6 @@ open Misctypes
 open Proofview.Notations
 
 module RelDecl = Context.Rel.Declaration
-
-let out_punivs = Univ.out_punivs
 
 (**********************************************************************)
 (* Generic synthesis of boolean equality *)
@@ -93,7 +90,7 @@ let destruct_on_using c id =
 let destruct_on_as c l =
   destruct false None c (Some (Loc.tag l)) None
 
-(* reconstruct the inductive with the correct deBruijn indexes *)
+(* reconstruct the inductive with the correct de Bruijn indexes *)
 let mkFullInd (ind,u) n =
   let mib = Global.lookup_mind (fst ind) in
   let nparams = mib.mind_nparams in
@@ -172,7 +169,7 @@ let build_beq_scheme mode kn =
     (* give a type A, this function tries to find the equality on A declared
        previously *)
     (*  nlist = the number of args (A , B , ... )
-        eqA   = the deBruijn index of the first eq param
+        eqA   = the de Bruijn index of the first eq param
         ndx   = how much to translate due to the 2nd Case
     *)
     let compute_A_equality rel_list nlist eqA ndx t =
@@ -716,7 +713,6 @@ let compute_lb_goal ind lnamesparrec nparrec =
         ))), eff
 
 let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
-  let open EConstr in
   let list_id = list_id lnamesparrec in
     let avoid = ref [] in
       let first_intros =

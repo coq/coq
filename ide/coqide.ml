@@ -792,11 +792,11 @@ let coqtop_arguments sn =
         sn.messages#push Feedback.Error (Pp.str msg)
     else dialog#destroy ()
   in
-  let _ = entry#connect#activate ok_cb in
-  let _ = ok#connect#clicked ok_cb in
+  let _ = entry#connect#activate ~callback:ok_cb in
+  let _ = ok#connect#clicked ~callback:ok_cb in
   let cancel = GButton.button ~stock:`CANCEL ~packing:box#add () in
   let cancel_cb () = dialog#destroy () in
-  let _ = cancel#connect#clicked cancel_cb in
+  let _ = cancel#connect#clicked ~callback:cancel_cb in
   dialog#show ()
 
 let coqtop_arguments = cb_on_current_term coqtop_arguments
@@ -1103,8 +1103,8 @@ let build_ui () =
 
   menu templates_menu [
     item "Templates" ~label:"Te_mplates";
-    template_item ("Lemma new_lemma : .\nProof.\n\nSave.\n", 6,9, "J");
-    template_item ("Theorem new_theorem : .\nProof.\n\nSave.\n", 8,11, "T");
+    template_item ("Lemma new_lemma : .\nProof.\n\nQed.\n", 6,9, "J");
+    template_item ("Theorem new_theorem : .\nProof.\n\nQed.\n", 8,11, "T");
     template_item ("Definition ident := .\n", 11,5, "E");
     template_item ("Inductive ident : :=\n  | : .\n", 10,5, "I");
     template_item ("Fixpoint ident (_ : _) {struct _} : _ :=\n.\n", 9,5, "F");
@@ -1274,8 +1274,8 @@ let build_ui () =
     if b then toolbar#misc#show () else toolbar#misc#hide ()
   in
   stick show_toolbar toolbar refresh_toolbar;
-  let _ = source_style#connect#changed refresh_style in
-  let _ = source_language#connect#changed refresh_language in
+  let _ = source_style#connect#changed ~callback:refresh_style in
+  let _ = source_language#connect#changed ~callback:refresh_language in
 
   (* Color configuration *)
   Tags.Script.incomplete#set_property

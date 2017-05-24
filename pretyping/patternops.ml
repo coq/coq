@@ -14,13 +14,11 @@ open Nameops
 open Term
 open Vars
 open Glob_term
-open Glob_ops
 open Pp
 open Mod_subst
 open Misctypes
 open Decl_kinds
 open Pattern
-open Evd
 open Environ
 
 let case_info_pattern_eq i1 i2 =
@@ -156,12 +154,15 @@ let pattern_of_constr env sigma t =
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
     | Proj (p, c) -> 
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
-    | Evar (evk,ctxt) ->
+    | Evar (evk,ctxt as ev) ->
       (match snd (Evd.evar_source evk sigma) with
       | Evar_kinds.MatchingVar (b,id) ->
         assert (not b); PMeta (Some id)
-      | Evar_kinds.GoalEvar -> 
-	PEvar (evk,Array.map (pattern_of_constr env) ctxt)
+      | Evar_kinds.GoalEvar | Evar_kinds.VarInstance _ ->
+        (* These are the two evar kinds used for existing goals *)
+        (* see Proofview.mark_in_evm *)
+         if Evd.is_defined sigma evk then pattern_of_constr env (Evd.existential_value sigma ev)
+         else PEvar (evk,Array.map (pattern_of_constr env) ctxt)
       | _ -> 
 	 PMeta None)
     | Case (ci,p,a,br) ->

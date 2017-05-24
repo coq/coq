@@ -514,11 +514,10 @@ let do_constraint poly l =
     match x with
     | GProp -> Loc.tag (false, Univ.Level.prop)
     | GSet  -> Loc.tag (false, Univ.Level.set)
-    | GType None ->
+    | GType None | GType (Some (_, Anonymous)) ->
        user_err ~hdr:"Constraint"
                      (str "Cannot declare constraints on anonymous universes")
-    | GType (Some (loc, id)) ->
-       let id = Id.of_string id in
+    | GType (Some (loc, Name id)) ->
        let names, _ = Global.global_universe_names () in
        try loc, Idmap.find id names
        with Not_found ->

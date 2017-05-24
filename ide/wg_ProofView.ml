@@ -47,7 +47,7 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
                      hover_cb start stop; false
                  | _ -> false))
 
-let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
+let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = match goals with
   | [] -> assert false
   | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: rem_goals ->
       let on_hover sel_start sel_stop =
@@ -65,8 +65,11 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
       let head_str = Printf.sprintf
         "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "s" else "")
       in
-      let goal_str index total = Printf.sprintf
-        "______________________________________(%d/%d)\n" index total
+      let goal_str ?(shownum=false) index total =
+        if shownum then Printf.sprintf
+                          "______________________________________(%d/%d)\n" index total
+        else Printf.sprintf
+               "______________________________________\n"
       in
       (* Insert current goal and its hypotheses *)
       let hyps_hints, goal_hints = match hints with
@@ -97,18 +100,29 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
           [tag]
           else []
         in
-        proof#buffer#insert (goal_str 1 goals_cnt);
+        proof#buffer#insert (goal_str ~shownum:true 1 goals_cnt);
         insert_xml proof#buffer (Richpp.richpp_of_pp width cur_goal);
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
-      let fold_goal i _ { Interface.goal_ccl = g } =
-        proof#buffer#insert (goal_str i goals_cnt);
+      let fold_goal ?(shownum=false) i _ { Interface.goal_ccl = g } =
+        proof#buffer#insert (goal_str ~shownum i goals_cnt);
         insert_xml proof#buffer (Richpp.richpp_of_pp width g);
         proof#buffer#insert "\n"
       in
-      let () = Util.List.fold_left_i fold_goal 2 () rem_goals in
-
+      let () = Util.List.fold_left_i (fold_goal ~shownum:true) 2 () rem_goals in
+      (* show unfocused goal if option set *)
+      (* Insert remaining goals (no hypotheses) *)
+      if Coq.PrintOpt.printing_unfocused () then
+        begin
+          ignore(proof#buffer#place_cursor ~where:(proof#buffer#end_iter));
+          let unfoc = List.flatten (List.rev (List.map (fun (x,y) -> x@y) unfoc_goals)) in
+          if unfoc<>[] then
+            begin
+              proof#buffer#insert "\nUnfocused Goals:\n";
+              Util.List.fold_left_i (fold_goal ~shownum:false) 0 () unfoc
+            end
+        end;
       ignore(proof#buffer#place_cursor
                ~where:(proof#buffer#end_iter#backward_to_tag_toggle
                          (Some Tags.Proof.goal)));
@@ -172,8 +186,9 @@ let display mode (view : #GText.view_skel) goals hints evars =
       in
       List.iteri iter bg
     end
-  | Some { Interface.fg_goals = fg } ->
-    mode view fg hints
+  | Some { Interface.fg_goals = fg; bg_goals = bg } ->
+    mode view fg ~unfoc_goals:bg hints
+
 
 let proof_view () =
   let buffer = GSourceView2.source_buffer
@@ -188,8 +203,8 @@ let proof_view () =
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
   let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
-  let _ = background_color#connect#changed cb in
-  let _ = view#misc#connect#realize (fun () -> cb background_color#get) in
+  let _ = background_color#connect#changed ~callback:cb in
+  let _ = view#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
   let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
   stick text_font view cb;
 
@@ -226,5 +241,5 @@ let proof_view () =
   (* Is there a better way to connect the signal ? *)
   (* Can this be done in the object constructor? *)
   let w_cb _ = pf#refresh ~force:false in
-  ignore (view#misc#connect#size_allocate w_cb);
+  ignore (view#misc#connect#size_allocate ~callback:w_cb);
   pf

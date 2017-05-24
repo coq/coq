@@ -1,14 +1,21 @@
 dist: trusty
+
 # Travis builds are slower using sudo: false (the container-based
 # infrastructure) as of March 2017; see
 # https://github.com/coq/coq/pull/467 for some discussion.
 sudo: required
+
 # Until Ocaml becomes a language, we set a known one.
 language: c
+
 cache:
   apt: true
   directories:
   - $HOME/.opam
+
+before_cache:
+  - rm -rf ~/.opam/log/
+
 addons:
   apt:
     sources:
@@ -17,6 +24,7 @@ addons:
     - opam
     - aspcud
     - gcc-multilib
+
 env:
   global:
   - NJOBS=2
@@ -28,6 +36,8 @@ env:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
   - TEST_TARGET="validate"                           TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
+  - TEST_TARGET="ci-bedrock-src"
+  - TEST_TARGET="ci-bedrock-facade"
   - TEST_TARGET="ci-color"
   - TEST_TARGET="ci-compcert"
   - TEST_TARGET="ci-coquelicot"
@@ -35,6 +45,7 @@ env:
   - TEST_TARGET="ci-fiat-crypto"
   - TEST_TARGET="ci-fiat-parsers"
   - TEST_TARGET="ci-flocq"
+  - TEST_TARGET="ci-formal-topology"
   - TEST_TARGET="ci-hott"
   - TEST_TARGET="ci-iris-coq"
   - TEST_TARGET="ci-math-classes"
@@ -51,11 +62,9 @@ matrix:
 
   allow_failures:
   - env: TEST_TARGET="ci-geocoq"
-  - env: TEST_TARGET="ci-vst"
 
-  # Full Coq test-suite with two compilers
-  # [TODO: use yaml refs and avoid duplication for packages list]
   include:
+    # Full Coq test-suite with two compilers
     - env:
       - TEST_TARGET="test-suite"
       - EXTRA_CONF="-coqide opt -with-doc yes"
@@ -64,7 +73,7 @@ matrix:
         apt:
           sources:
           - avsm
-          packages:
+          packages: &extra-packages
           - opam
           - aspcud
           - libgtk2.0-dev
@@ -79,9 +88,10 @@ matrix:
           - ghostscript
           - transfig
           - imagemagick
+
     - env:
       - TEST_TARGET="test-suite"
-      - COMPILER="4.04.0"
+      - COMPILER="4.04.1"
       - CAMLP5_VER="6.17"
       - EXTRA_CONF="-coqide opt -with-doc yes"
       - EXTRA_OPAM="lablgtk-extras hevea"
@@ -89,21 +99,38 @@ matrix:
         apt:
           sources:
           - avsm
-          packages:
+          packages: *extra-packages
+
+    # Ocaml warnings with two compilers
+    - env:
+      - TEST_TARGET="coqocaml"
+      - EXTRA_CONF="-coqide opt -warn-error"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      # dummy target
+      - BUILD_TARGET="clean"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages: &coqide-packages
           - opam
           - aspcud
           - libgtk2.0-dev
           - libgtksourceview2.0-dev
-          - texlive-latex-base
-          - texlive-latex-recommended
-          - texlive-latex-extra
-          - texlive-math-extra
-          - texlive-fonts-recommended
-          - texlive-fonts-extra
-          - latex-xcolor
-          - ghostscript
-          - transfig
-          - imagemagick
+
+    - env:
+      - TEST_TARGET="coqocaml"
+      - COMPILER="4.04.1"
+      - CAMLP5_VER="6.17"
+      - EXTRA_CONF="-coqide opt -warn-error"
+      - EXTRA_OPAM="lablgtk-extras hevea"
+      # dummy target
+      - BUILD_TARGET="clean"
+      addons:
+        apt:
+          sources:
+          - avsm
+          packages: *coqide-packages
 
 install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
@@ -114,6 +141,7 @@ install:
 
 script:
 
+- set -e
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
 - ./configure -local -usecamlp5 -native-compiler yes ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'
@@ -125,6 +153,7 @@ script:
 - echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
 - ${TW} make -j ${NJOBS} ${TEST_TARGET}
 - echo -en 'travis_fold:end:coq.test\\r'
+- set +e
 
 # Testing Gitter webhook
 notifications:

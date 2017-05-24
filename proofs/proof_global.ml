@@ -82,7 +82,7 @@ type proof_object = {
 type proof_ending =
   | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * proof_universes
   | Proved of Vernacexpr.opacity_flag *
-             (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
+              Vernacexpr.lident option *
               proof_object
 type proof_terminator = proof_ending -> unit
 type closed_proof = proof_object * proof_terminator
@@ -516,7 +516,7 @@ module Bullet = struct
       | NeedClosingBrace -> str"Try unfocusing with \"}\"."
       | NoBulletInUse -> assert false (* This should never raise an error. *)
       | ProofFinished -> str"No more subgoals."
-      | Suggest b -> str"Bullet " ++ pr_bullet b ++ str" is mandatory here."
+      | Suggest b -> str"Expecting " ++ pr_bullet b ++ str"."
       | Unfinished b -> str"Current bullet " ++ pr_bullet b ++ str" is not finished."
 
     exception FailedBullet of t * suggestion
@@ -525,7 +525,7 @@ module Bullet = struct
       CErrors.register_handler
 	(function
 	| FailedBullet (b,sugg) ->
-	  let prefix = str"Wrong bullet " ++ pr_bullet b ++ str" : " in
+	  let prefix = str"Wrong bullet " ++ pr_bullet b ++ str": " in
 	  CErrors.user_err ~hdr:"Focus" (prefix ++ suggest_on_error sugg)
 	| _ -> raise CErrors.Unhandled)
 

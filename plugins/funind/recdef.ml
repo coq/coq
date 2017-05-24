@@ -1221,6 +1221,7 @@ let get_current_subgoals_types () =
   let { Evd.it=sgs ; sigma=sigma } = Proof.V82.subgoals p in
     sigma, List.map (Goal.V82.abstract_type sigma) sgs
 
+exception EmptySubgoals
 let build_and_l sigma l =
   let and_constr =  Coqlib.build_coq_and () in
   let conj_constr = coq_conj () in
@@ -1242,7 +1243,7 @@ let build_and_l sigma l =
   in
   let l = List.sort compare l in 
   let rec f  = function
-    | [] -> failwith "empty list of subgoals!"
+    | [] -> raise EmptySubgoals
     | [p] -> p,tclIDTAC,1
     | p1::pl ->
 	let c,tac,nb = f pl in
@@ -1428,7 +1429,7 @@ let com_terminate
       using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
       (new_goal_type);
-  with Failure "empty list of subgoals!" ->
+  with EmptySubgoals ->
     (* a non recursive function declared with measure ! *)
     tcc_lemma_ref := Not_needed;
     defined ()

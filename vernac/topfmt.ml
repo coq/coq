@@ -106,9 +106,7 @@ module Tag = struct
 
 end
 
-type logger = ?loc:Loc.t -> level -> std_ppcmds -> unit
-
-let msgnl_with fmt strm =
+let msgnl_with ?pre_hdr fmt strm =
   pp_with fmt (strm ++ fnl ());
   Format.pp_print_flush fmt ()
 
@@ -133,7 +131,6 @@ let  dbg_hdr = tag Tag.debug   (str "Debug:")   ++ spc ()
 let info_hdr = mt ()
 let warn_hdr = tag Tag.warning (str "Warning:") ++ spc ()
 let  err_hdr = tag Tag.error   (str "Error:")   ++ spc ()
-let  ann_hdr = tag Tag.error   (str "Anomaly:") ++ spc ()
 
 let make_body quoter info ?pre_hdr s =
   pr_opt_no_spc (fun x -> x ++ fnl ()) pre_hdr ++ quoter (hov 0 (info ++ s))
@@ -260,15 +257,26 @@ let init_color_output () =
  *)
 let emacs_logger = gen_logger Emacs.quote_info Emacs.quote_warning
 
-(* Output to file, used only in extraction so a candidate for removal *)
-let ft_logger old_logger ft ?loc level mesg =
-  let id x = x in
-  match level with
-  | Debug   -> msgnl_with ft (make_body id  dbg_hdr mesg)
-  | Info    -> msgnl_with ft (make_body id info_hdr mesg)
-  | Notice  -> msgnl_with ft mesg
-  | Warning -> old_logger ?loc level mesg
-  | Error   -> old_logger ?loc level mesg
+
+(* This is specific to the toplevel *)
+let pr_loc loc =
+    let fname = loc.Loc.fname in
+    if CString.equal fname "" then
+      Loc.(str"Toplevel input, characters " ++ int loc.bp ++
+	   str"-" ++ int loc.ep ++ str":")
+    else
+      Loc.(str"File " ++ str "\"" ++ str fname ++ str "\"" ++
+	   str", line " ++ int loc.line_nb ++ str", characters " ++
+	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++
+	   str":")
+
+let print_err_exn ?extra any =
+  let (e, info) = CErrors.push any in
+  let loc = Loc.get_loc info in
+  let msg_loc = Option.cata pr_loc (mt ()) loc in
+  let pre_hdr = pr_opt_no_spc (fun x -> x) extra ++ msg_loc in
+  let msg = CErrors.iprint (e, info) ++ fnl () in
+  std_logger ~pre_hdr Feedback.Error msg
 
 let with_output_to_file fname func input =
   (* XXX FIXME: redirect std_ft  *)

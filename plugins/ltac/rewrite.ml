@@ -17,7 +17,6 @@ open EConstr
 open Vars
 open Reduction
 open Tacticals.New
-open Tacmach
 open Tactics
 open Pretype_errors
 open Typeclasses
@@ -39,7 +38,7 @@ open Proofview.Notations
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
-module RelDecl = Context.Rel.Declaration
+(* module RelDecl = Context.Rel.Declaration *)
 
 (** Typeclass-based generalized rewriting. *)
 
@@ -2196,7 +2195,8 @@ let setoid_transitivity c =
     (transitivity_red true c)
     
 let setoid_symmetry_in id =
-  Proofview.V82.tactic (fun gl ->
+  let open Tacmach.New in
+  Proofview.Goal.enter { enter = begin fun gl ->
   let sigma = project gl in
   let ctype = pf_unsafe_type_of gl (mkVar id) in
   let binders,concl = decompose_prod_assum sigma ctype in
@@ -2210,11 +2210,10 @@ let setoid_symmetry_in id =
   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
   let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
-   Proofview.V82.of_tactic
     (tclTHENLAST
       (Tactics.assert_after_replacing id new_hyp)
       (tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ]))
-      gl)
+  end }
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity
 let _ = Hook.set Tactics.setoid_symmetry setoid_symmetry

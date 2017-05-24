@@ -334,6 +334,7 @@ let l_or accu x y =
   if is_int x && is_int y then no_check_l_or x y
   else accu x y
 
+[@@@ocaml.warning "-37"]
 type coq_carry = 
   | Caccu of t
   | C0 of t
@@ -430,7 +431,7 @@ let addmuldiv accu x y z =
   if is_int x && is_int y && is_int z then no_check_addmuldiv x y z
   else accu x y z
 
-
+[@@@ocaml.warning "-34"]
 type coq_bool =
   | Baccu of t
   | Btrue

@@ -64,8 +64,5 @@ val add_rec_dir_no_import :
 val add_rec_dir_import :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
 
-val add_rec_uppercase_subdirs :
-  (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
-
 val treat_file : dir -> string -> unit
 val error_cannot_parse : string -> int * int -> 'a

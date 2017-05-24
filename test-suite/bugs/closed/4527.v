@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-nois" "-indices-matter" "-R" "." "Top" "-top" "bug_bad_univ_length_01") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-nois" "-indices-matter" "-R" "." "Top" "-top" "bug_bad_univ_length_01") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 1199 lines to 
 430 lines, then from 444 lines to 430 lines, then from 964 lines to 255 lines, 
 then from 269 lines to 255 lines *)

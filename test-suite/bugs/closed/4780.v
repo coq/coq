@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-R" "." "Top" "-top" "bug_bad_induction_01") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-R" "." "Top" "-top" "bug_bad_induction_01") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 1889 lines to 144 lines, then from 158 lines to 144 lines *)
 (* coqc version 8.5pl1 (April 2016) compiled on Apr 18 2016 14:48:5 with OCaml 4.02.3
    coqtop version 8.5pl1 (April 2016) *)

@@ -77,12 +77,12 @@ let parse_args () =
     | ("-v"|"--version") :: _ -> Usage.version 0
 
     | ("-where") :: _ ->
-        Envars.set_coqlib (fun x -> x);
+        Envars.set_coqlib ~fail:(fun x -> x);
         print_endline (Envars.coqlib ());
         exit 0
 
     | ("-config" | "--config") :: _ ->
-        Envars.set_coqlib (fun x -> x);
+        Envars.set_coqlib ~fail:(fun x -> x);
         Usage.print_config ();
         exit 0
 

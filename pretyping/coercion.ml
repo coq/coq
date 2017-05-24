@@ -22,7 +22,6 @@ open Environ
 open EConstr
 open Vars
 open Reductionops
-open Typeops
 open Pretype_errors
 open Classops
 open Evarutil
@@ -480,8 +479,8 @@ let rec inh_conv_coerce_to_fail ?loc env evd rigidonly v t c1 =
           (* We eta-expand (hence possibly modifying the original term!) *)
 	  (* and look for a coercion c:u1->t1 s.t. fun x:u1 => v' (c x)) *)
 	  (* has type forall (x:u1), u2 (with v' recursively obtained) *)
-          (* Note: we retype the term because sort-polymorphism may have *)
-          (* weaken its type *)
+          (* Note: we retype the term because template polymorphism may have *)
+          (* weakened its type *)
 	  let name = match name with
 	    | Anonymous -> Name Namegen.default_dependent_ident
 	    | _ -> name in

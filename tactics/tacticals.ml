@@ -51,10 +51,8 @@ let tclAT_LEAST_ONCE = Refiner.tclAT_LEAST_ONCE
 let tclFAIL          = Refiner.tclFAIL
 let tclFAIL_lazy     = Refiner.tclFAIL_lazy
 let tclDO            = Refiner.tclDO
-let tclWEAK_PROGRESS = Refiner.tclWEAK_PROGRESS
 let tclPROGRESS      = Refiner.tclPROGRESS
 let tclSHOWHYPS      = Refiner.tclSHOWHYPS
-let tclNOTSAMEGOAL   = Refiner.tclNOTSAMEGOAL
 let tclTHENTRY       = Refiner.tclTHENTRY
 let tclIFTHENELSE    = Refiner.tclIFTHENELSE
 let tclIFTHENSELSE   = Refiner.tclIFTHENSELSE
@@ -734,13 +732,11 @@ module New = struct
   let case_nodep_then_using =
     general_elim_then_using gl_make_case_nodep false
 
-  let pf_constr_of_global ref tac =
-    Proofview.Goal.enter { enter = begin fun gl ->
-      let env = Proofview.Goal.env gl in
-      let sigma = Tacmach.New.project gl in
-      let (sigma, c) = Evd.fresh_global env sigma ref in
-      let c = EConstr.of_constr c in
-      Proofview.Unsafe.tclEVARS sigma <*> (tac c)
-    end }
+  let pf_constr_of_global ref =
+    Proofview.tclEVARMAP >>= fun sigma ->
+    Proofview.tclENV >>= fun env ->
+    let (sigma, c) = Evd.fresh_global env sigma ref in
+    let c = EConstr.of_constr c in
+    Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT c
 
 end

@@ -67,6 +67,10 @@ val pr_by_arg_tac :
   (int * Ppextend.parenRelation -> raw_tactic_expr -> Pp.std_ppcmds) ->
   raw_tactic_expr option -> Pp.std_ppcmds
 
+val test_lpar_id_colon : unit Pcoq.Gram.entry
+
+val wit_test_lpar_id_colon : (unit, unit, unit) Genarg.genarg_type
+
 (** Spiwack: Primitive for retroknowledge registration *)
 
 val retroknowledge_field : Retroknowledge.field Pcoq.Gram.entry

@@ -36,7 +36,6 @@ val binder_kind_eq : binder_kind -> binder_kind -> bool
 
 val constr_loc : constr_expr -> Loc.t option
 val cases_pattern_expr_loc : cases_pattern_expr -> Loc.t option
-val raw_cases_pattern_expr_loc : raw_cases_pattern_expr -> Loc.t option
 val local_binders_loc : local_binder_expr list -> Loc.t option
 
 (** {6 Constructors}*)

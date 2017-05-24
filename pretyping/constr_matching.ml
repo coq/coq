@@ -83,32 +83,70 @@ let add_binders na1 na2 binding_vars (names, terms as subst) =
 
 let rec build_lambda sigma vars ctx m = match vars with
 | [] ->
-  let len = List.length ctx in
-  EConstr.Vars.lift (-1 * len) m
+  if Vars.closed0 sigma m then m else raise PatternMatchingFailure
 | n :: vars ->
-  let open EConstr in
   (* change [ x1 ... xn y z1 ... zm |- t ] into
      [ x1 ... xn z1 ... zm |- lam y. t ] *)
-  let len = List.length ctx in
-  let init i =
-    if i < pred n then mkRel (i + 2)
-    else if Int.equal i (pred n) then mkRel 1
-    else mkRel (i + 1)
-  in
-  let m = Vars.substl (List.init len init) m in
   let pre, suf = List.chop (pred n) ctx in
-  match suf with
+  let (na, t, suf) = match suf with
   | [] -> assert false
-  | (_, na, t) :: suf ->
-    let map i = if i > n then pred i else i in
-    let vars = List.map map vars in
-    (** Check that the abstraction is legal *)
-    let frels = free_rels sigma t in
-    let brels = List.fold_right Int.Set.add vars Int.Set.empty in
-    let () = if not (Int.Set.subset frels brels) then raise PatternMatchingFailure in
-    (** Create the abstraction *)
-    let m = mkLambda (na, t, m) in
-    build_lambda sigma vars (pre @ suf) m
+  | (_, na, t) :: suf -> (na, t, suf)
+  in
+  (** Check that the abstraction is legal by generating a transitive closure of
+      its dependencies. *)
+  let is_nondep t clear = match clear with
+  | [] -> true
+  | _ ->
+    let rels = free_rels sigma t in
+    let check i b = b || not (Int.Set.mem i rels) in
+    List.for_all_i check 1 clear
+  in
+  let fold (_, _, t) clear = is_nondep t clear :: clear in
+  (** Produce a list of booleans: true iff we keep the hypothesis *)
+  let clear = List.fold_right fold pre [false] in
+  let clear = List.drop_last clear in
+  (** If the conclusion depends on a variable we cleared, failure *)
+  let () = if not (is_nondep m clear) then raise PatternMatchingFailure in
+  (** Create the abstracted term *)
+  let fold (k, accu) keep =
+    if keep then
+      let k = succ k in
+      (k, Some k :: accu)
+    else (k, None :: accu)
+  in
+  let keep, shift = List.fold_left fold (0, []) clear in
+  let shift = List.rev shift in
+  let map = function
+  | None -> mkProp (** dummy term *)
+  | Some i -> mkRel (i + 1)
+  in
+  (** [x1 ... xn y z1 ... zm] -> [x1 ... xn f(z1) ... f(zm) y] *)
+  let subst =
+    List.map map shift @
+    mkRel 1 ::
+    List.mapi (fun i _ -> mkRel (i + keep + 2)) suf
+  in
+  let map i (id, na, c) =
+    let i = succ i in
+    let subst = List.skipn i subst in
+    let subst = List.map (fun c -> Vars.lift (- i) c) subst in
+    (id, na, substl subst c)
+  in
+  let pre = List.mapi map pre in
+  let pre = List.filter_with clear pre in
+  let m = substl subst m in
+  let map i =
+    if i > n then i - n + keep
+    else match List.nth shift (i - 1) with
+    | None ->
+      (** We cleared a variable that we wanted to abstract! *)
+      raise PatternMatchingFailure
+    | Some k -> k
+  in
+  let vars = List.map map vars in
+  (** Create the abstraction *)
+  let m = mkLambda (na, Vars.lift keep t, m) in
+  build_lambda sigma vars (pre @ suf) m
 
 let rec extract_bound_aux k accu frels ctx = match ctx with
 | [] -> accu
@@ -323,6 +361,8 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
 
       |	PFix c1, Fix _ when eq_constr sigma (mkFix (to_fix c1)) cT -> subst
       |	PCoFix c1, CoFix _ when eq_constr sigma (mkCoFix (to_fix c1)) cT -> subst
+      | PEvar (c1,args1), Evar (c2,args2) when Evar.equal c1 c2 ->
+         Array.fold_left2 (sorec ctx env) subst args1 args2
       | _ -> raise PatternMatchingFailure
 
   in

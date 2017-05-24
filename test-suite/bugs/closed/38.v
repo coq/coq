@@ -14,7 +14,7 @@ Definition same := fun (l m : liste) => forall (x : A), e x l <-> e x m.
 
 Definition same_refl (x:liste) : (same x x).
   unfold same; split; intros; trivial.
-Save.
+Qed.
 
 Goal forall (x:liste), (same x x).
   intro.

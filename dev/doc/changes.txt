@@ -101,6 +101,15 @@ type 'a ast = private {
   implemented in the whole code base. Matching a located object hasn't
   changed, however, `Loc.tag ?loc obj` must be used to build one.
 
+** Tactic API **
+
+- pf_constr_of_global now returns a tactic instead of taking a continuation.
+  Thus it only generates one instance of the global reference, and it is the
+  caller's responsibility to perform a focus on the goal.
+
+- The tclWEAK_PROGRESS and tclNOTSAMEGOAL tacticals were removed. Their usecase
+  was very specific. Use tclPROGRESS instead.
+
 ** Ltac API **
 
 Many Ltac specific API has been moved in its own ltac/ folder. Amongst other

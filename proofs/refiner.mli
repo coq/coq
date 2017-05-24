@@ -119,10 +119,8 @@ val tclAT_LEAST_ONCE : tactic -> tactic
 val tclFAIL          : int -> Pp.std_ppcmds -> tactic
 val tclFAIL_lazy     : int -> Pp.std_ppcmds Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
-val tclWEAK_PROGRESS : tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic
-val tclNOTSAMEGOAL   : tactic -> tactic
 
 (** [tclIFTHENELSE tac1 tac2 tac3 gls] first applies [tac1] to [gls] then,
    if it succeeds, applies [tac2] to the resulting subgoals,

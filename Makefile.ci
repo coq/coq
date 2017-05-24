@@ -1,11 +1,10 @@
 CI_TARGETS=ci-all ci-hott ci-math-comp ci-compcert ci-sf ci-cpdt \
            ci-color ci-math-classes ci-tlc ci-fiat-crypto ci-fiat-parsers \
            ci-coquelicot ci-flocq ci-iris-coq ci-metacoq ci-geocoq \
-           ci-unimath ci-vst
+           ci-unimath ci-vst ci-bedrock-src ci-bedrock-facade ci-formal-topology
 
 .PHONY: $(CI_TARGETS)
 
 # Generic rule, we use make to easy travis integraton with mixed rules
 $(CI_TARGETS): ci-%:
 	./dev/ci/ci-$*.sh
-

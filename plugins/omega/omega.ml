@@ -330,11 +330,13 @@ let omega_mod a b = a - b * floor_div (two * a + b) (two * b)
 let banerjee_step (new_eq_id,new_var_id,print_var) original l1 l2 =
   let e = original.body in
   let sigma = new_var_id () in
+  if e == [] then begin
+    display_system print_var [original] ; failwith "TL"
+    end;
   let smallest,var =
-    try
-      List.fold_left (fun (v,p) c ->  if v >? (abs c.c) then abs c.c,c.v else (v,p))
-              (abs (List.hd e).c, (List.hd e).v) (List.tl e)
-    with Failure "tl" -> display_system print_var [original] ; failwith "TL" in
+    List.fold_left (fun (v,p) c ->  if v >? (abs c.c) then abs c.c,c.v else (v,p))
+      (abs (List.hd e).c, (List.hd e).v) (List.tl e)
+  in
   let m = smallest + one in
   let new_eq =
     { constant = omega_mod original.constant m;

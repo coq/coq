@@ -151,8 +151,8 @@ let tag_var = tag Tag.variable
 
   let pr_univ l =
     match l with
-      | [_,x] -> str x
-      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") (fun x -> str (snd x)) l ++ str")"
+      | [_,x] -> pr_name x
+      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") (fun x -> pr_name (snd x)) l ++ str")"
 
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
@@ -166,7 +166,7 @@ let tag_var = tag Tag.variable
     | GProp -> tag_type (str "Prop")
     | GSet -> tag_type (str "Set")
     | GType None -> tag_type (str "Type")
-    | GType (Some (_, u)) -> tag_type (str u)
+    | GType (Some (_, u)) -> tag_type (pr_name u)
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
@@ -191,7 +191,7 @@ let tag_var = tag Tag.variable
       tag_type (str "Set")
     | GType u ->
       (match u with
-        | Some (_,u) -> str u
+        | Some (_,u) -> pr_name u
         | None -> tag_type (str "Type"))
 
   let pr_universe_instance l =
@@ -211,10 +211,6 @@ let tag_var = tag Tag.variable
         anomaly (Pp.str "Explicitation by position not implemented")
       | Some (_,ExplByName id) ->
         str "(" ++ pr_id id ++ str ":=" ++ pr ltop a ++ str ")"
-
-  let pr_opt_type pr = function
-    | _loc, CHole (_,Misctypes.IntroAnonymous,_) -> mt ()
-    | t -> cut () ++ str ":" ++ pr t
 
   let pr_opt_type_spc pr = function
     | { CAst.v = CHole (_,Misctypes.IntroAnonymous,_) } -> mt ()

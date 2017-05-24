@@ -11,9 +11,6 @@
 open Evd
 open Names
 open Term
-open Glob_term
-open Nametab
-open Misctypes
 
 (** This module defines the structure of proof tree and the tactic type. So, it
    is used by [Proof_tree] and [Refiner] *)

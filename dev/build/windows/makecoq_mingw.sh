@@ -1082,7 +1082,7 @@ function make_coq {
     copq_coq_gtk
     copy_coq_license
 
-    # make clean seems to br broken for 8.5pl2
+    # make clean seems to be broken for 8.5pl2
     # 1.) find | xargs fails on cygwin, can be fixed by sed -i 's|\| xargs rm -f|-exec rm -fv \{\} \+|' Makefile
     # 2.) clean of test suites fails with "cannot run complexity tests (no bogomips found)"
     # make clean

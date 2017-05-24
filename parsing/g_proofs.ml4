@@ -9,7 +9,6 @@
 open Constrexpr
 open Vernacexpr
 open Misctypes
-open Tok
 
 open Pcoq
 open Pcoq.Prim
@@ -49,14 +48,11 @@ GEXTEND Gram
       | IDENT "Qed" -> VernacEndProof (Proved (Opaque None,None))
       | IDENT "Qed"; IDENT "exporting"; l = LIST0 identref SEP "," ->
           VernacEndProof (Proved (Opaque (Some l),None))
-      | IDENT "Save" -> VernacEndProof (Proved (Opaque None,None))
-      | IDENT "Save"; tok = thm_token; id = identref ->
-	  VernacEndProof (Proved (Opaque None,Some (id,Some tok)))
       | IDENT "Save"; id = identref ->
-	  VernacEndProof (Proved (Opaque None,Some (id,None)))
+	  VernacEndProof (Proved (Opaque None, Some id))
       | IDENT "Defined" -> VernacEndProof (Proved (Transparent,None))
       |	IDENT "Defined"; id=identref ->
-	  VernacEndProof (Proved (Transparent,Some (id,None)))
+	  VernacEndProof (Proved (Transparent,Some id))
       | IDENT "Restart" -> VernacRestart
       | IDENT "Undo" -> VernacUndo 1
       | IDENT "Undo"; n = natural -> VernacUndo n

@@ -51,7 +51,7 @@ let pr_global x = Nametab.pr_global_env Id.Set.empty x
 
 type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string
-| TacNonTerm of ('a * Names.Id.t) Loc.located
+| TacNonTerm of ('a * Names.Id.t option) Loc.located
 
 type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
 
@@ -250,7 +250,7 @@ type 'a extra_genarg_printer =
   let pr_alias_key key =
     try
       let prods = (KNmap.find key !prnotation_tab).pptac_prods in
-      let rec pr = function
+      let pr = function
       | TacTerm s -> primitive s
       | TacNonTerm (_, (symb, _)) -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
       in
@@ -264,8 +264,9 @@ type 'a extra_genarg_printer =
       let rec pack prods args = match prods, args with
       | [], [] -> []
       | TacTerm s :: prods, args -> TacTerm s :: pack prods args
-      | TacNonTerm (loc, (symb, id)) :: prods, arg :: args ->
-        TacNonTerm (loc, ((symb, arg), id)) :: pack prods args
+      | TacNonTerm (_, (_, None)) :: prods, args -> pack prods args
+      | TacNonTerm (loc, (symb, (Some _ as ido))) :: prods, arg :: args ->
+        TacNonTerm (loc, ((symb, arg), ido)) :: pack prods args
       | _ -> raise Not_found
       in
       let prods = pack pp.pptac_prods l in
@@ -314,7 +315,7 @@ type 'a extra_genarg_printer =
   | Extend.Uentry _ | Extend.Uentryl _ ->
     str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
 
-  let rec pr_targ prtac symb arg = match symb with
+  let pr_targ prtac symb arg = match symb with
   | Extend.Uentry tag when is_genarg tag (ArgumentType wit_tactic) ->
     prtac (1, Any) arg
   | Extend.Uentryl (_, l) -> prtac (l, Any) arg

@@ -16,7 +16,6 @@ open Nativeinstr
 
 module RelDecl = Context.Rel.Declaration
 
-(** This file defines the lambda code generation phase of the native compiler *)
 
 exception NotClosed
 
@@ -161,10 +160,6 @@ let rec lam_exsubst subst lam =
   | Lrel(id,i) -> lam_subst_rel lam id i subst
   | _ -> map_lam_with_binders liftn lam_exsubst subst lam
 
-let lam_subst subst lam =
-  if is_subs_id subst then lam
-  else lam_exsubst subst lam
-
 let lam_subst_args subst args =
   if is_subs_id subst then args 
   else Array.smartmap (lam_exsubst subst) args
@@ -278,71 +273,6 @@ and reduce_lapp substf lids body substa largs =
       Llam(Array.of_list lids,  simplify (liftn (List.length lids) substf) body)
   | [], _::_ -> simplify_app substf body substa (Array.of_list largs)
 
-
-(* [occurrence kind k lam]:
-   If [kind] is [true] return [true] if the variable [k] does not appear in 
-   [lam], return [false] if the variable appear one time and not
-   under a lambda, a fixpoint, a cofixpoint; else raise Not_found.
-   If [kind] is [false] return [false] if the variable does not appear in [lam]
-   else raise [Not_found]
-*)
-
-let rec occurrence k kind lam =
-  match lam with
-  | Lrel (_,n) -> 
-      if Int.equal n k then 
-	if kind then false else raise Not_found
-      else kind
-  | Lvar _  | Lconst _  | Lproj _ | Luint _ | Lval _ | Lsort _ | Lind _
-  | Lconstruct _ | Llazy | Lforce | Lmeta _ | Levar _ -> kind
-  | Lprod(dom, codom) ->
-      occurrence k (occurrence k kind dom) codom
-  | Llam(ids,body) ->
-      let _ = occurrence (k+Array.length ids) false body in kind
-  | Llet(_,def,body) ->
-      occurrence (k+1) (occurrence k kind def) body
-  | Lapp(f, args) ->
-      occurrence_args k (occurrence k kind f) args
-  | Lprim(_,_,_,args) | Lmakeblock(_,_,_,args) ->
-      occurrence_args k kind args
-  | Lcase(_,t,a,br) ->
-      let kind = occurrence k (occurrence k kind t) a in
-      let r = ref kind in
-      Array.iter (fun (_,ids,c) -> 
-	r := occurrence (k+Array.length ids) kind c && !r) br;
-      !r 
-  | Lif (t, bt, bf) ->
-      let kind = occurrence k kind t in
-      kind && occurrence k kind bt && occurrence k kind bf
-  | Lfix(_,(ids,ltypes,lbodies)) 
-  | Lcofix(_,(ids,ltypes,lbodies)) ->
-      let kind = occurrence_args k kind ltypes in
-      let _ = occurrence_args (k+Array.length ids) false lbodies in
-      kind 
-
-and occurrence_args k kind args =
-  Array.fold_left (occurrence k) kind args
-    
-let occur_once lam = 
-  try let _ = occurrence 1 true lam in true
-  with Not_found -> false
-      
-(* [remove_let lam] remove let expression in [lam] if the variable is *)
-(* used at most once time in the body, and does not appear under      *)
-(* a lambda or a fix or a cofix                                       *)
-      
-let rec remove_let subst lam =
-  match lam with
-  | Lrel(id,i) -> lam_subst_rel lam id i subst 
-  | Llet(id,def,body) ->
-      let def' = remove_let subst def in
-      if occur_once body then remove_let (cons def' subst) body
-      else 
-	let body' = remove_let (lift subst) body in
-	if def == def' && body == body' then lam else Llet(id,def',body')
-  | _ -> map_lam_with_binders liftn remove_let subst lam
-
-
 (*s Translation from [constr] to [lambda] *)
 
 (* Translation of constructor *)
@@ -407,8 +337,6 @@ module Vect =
       size = 0;
     }
 
-    let length v = v.size
-
     let extend v =
       if Int.equal v.size (Array.length v.elems) then 
 	let new_size = min (2*v.size) Sys.max_array_length in
@@ -422,33 +350,15 @@ module Vect =
       v.elems.(v.size) <- a;
       v.size <- v.size + 1
 
-    let push_pos v a =
-      let pos = v.size in
-      push v a;
-      pos
-
     let popn v n =
       v.size <- max 0 (v.size - n)
 
     let pop v = popn v 1
 	
-    let get v n =
-      if v.size <= n then invalid_arg "Vect.get:index out of bounds";
-      v.elems.(n)
-
     let get_last v n =
       if v.size <= n then invalid_arg "Vect.get:index out of bounds";
       v.elems.(v.size - n - 1)
 
-
-    let last v =
-      if Int.equal v.size 0 then invalid_arg "Vect.last:index out of bounds";
-      v.elems.(v.size - 1)
-
-    let clear v = v.size <- 0
-
-    let to_array v = Array.sub v.elems 0 v.size
-      
   end
 
 let empty_args = [||]

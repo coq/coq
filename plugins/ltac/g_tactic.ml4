@@ -72,18 +72,7 @@ let test_lpar_idnum_coloneq =
         | _ -> err ())
 
 (* idem for (x:t) *)
-let test_lpar_id_colon =
-  Gram.Entry.of_parser "lpar_id_colon"
-    (fun strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "(" ->
-            (match stream_nth 1 strm with
-              | IDENT _ ->
-                  (match stream_nth 2 strm with
-                    | KEYWORD ":" -> ()
-                    | _ -> err ())
-              | _ -> err ())
-        | _ -> err ())
+open Extraargs
 
 (* idem for (x1..xn:t) [n^2 complexity but exceptional use] *)
 let check_for_coloneq =

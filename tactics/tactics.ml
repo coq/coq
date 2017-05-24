@@ -510,6 +510,9 @@ let rec check_mutind env sigma k cl = match EConstr.kind sigma (strip_outer_cast
   else
     let open Context.Rel.Declaration in
     check_mutind (push_rel (LocalAssum (na, c1)) env) sigma (pred k) b
+| LetIn (na, c1, t, b) ->
+    let open Context.Rel.Declaration in
+    check_mutind (push_rel (LocalDef (na, c1, t)) env) sigma k b
 | _ -> error "Not enough products."
 
 (* Refine as a fixpoint *)
@@ -2390,6 +2393,29 @@ let rec explicit_intro_names = function
      explicit_intro_names l
 | [] -> []
 
+let rec check_name_unicity env ok seen = function
+| (_, IntroForthcoming _) :: l -> check_name_unicity env ok seen l
+| (loc, IntroNaming (IntroIdentifier id)) :: l ->
+   (try
+      ignore (if List.mem_f Id.equal id ok then raise Not_found else lookup_named id env);
+      user_err ?loc (pr_id id ++ str" is already used.")
+   with Not_found ->
+     if List.mem_f Id.equal id seen then
+       user_err ?loc (pr_id id ++ str" is used twice.")
+     else
+       check_name_unicity env ok (id::seen) l)
+| (_, IntroAction (IntroOrAndPattern l)) :: l' ->
+    let ll = match l with IntroAndPattern l -> [l] | IntroOrPattern ll -> ll in
+    List.iter (fun l -> check_name_unicity env ok seen (l@l')) ll
+| (_, IntroAction (IntroInjection l)) :: l' ->
+    check_name_unicity env ok seen (l@l')
+| (_, IntroAction (IntroApplyOn (c,pat))) :: l' ->
+    check_name_unicity env ok seen (pat::l')
+| (_, (IntroNaming (IntroAnonymous | IntroFresh _)
+     | IntroAction (IntroWildcard | IntroRewrite _))) :: l ->
+     check_name_unicity env ok seen l
+| [] -> ()
+
 let wild_id = Id.of_string "_tmp"
 
 let rec list_mem_assoc_right id = function
@@ -2525,13 +2551,21 @@ and prepare_intros ?loc with_evars dft destopt = function
   | IntroForthcoming _ -> user_err ?loc 
       (str "Introduction pattern for one hypothesis expected.")
 
+let intro_patterns_head_core with_evars b destopt bound pat =
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    check_name_unicity env [] [] pat;
+    intro_patterns_core with_evars b [] [] [] destopt
+      bound 0 (fun _ l -> clear_wildcards l) pat
+  end }
+
 let intro_patterns_bound_to with_evars n destopt =
-  intro_patterns_core with_evars true [] [] [] destopt
-    (Some (true,n)) 0 (fun _ l -> clear_wildcards l)
+  intro_patterns_head_core with_evars true destopt
+    (Some (true,n))
 
 let intro_patterns_to with_evars destopt =
-  intro_patterns_core with_evars (use_bracketing_last_or_and_intro_pattern ())
-    [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
+  intro_patterns_head_core with_evars (use_bracketing_last_or_and_intro_pattern ())
+    destopt None
 
 let intro_pattern_to with_evars destopt pat =
   intro_patterns_to with_evars destopt [Loc.tag pat]
@@ -2809,20 +2843,18 @@ let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   mkProd_or_LetIn decl cl', sigma'
 
 let generalize_goal gl i ((occs,c,b),na as o) (cl,sigma) =
-  let env = Tacmach.pf_env gl in
-  let ids = Tacmach.pf_ids_of_hyps gl in
-  let sigma, t = Typing.type_of env sigma c in
-  generalize_goal_gen env sigma ids i o t cl
-
-let new_generalize_goal gl i ((occs,c,b),na as o) (cl,sigma) =
-  let env = Tacmach.New.pf_env gl in
-  let ids = Tacmach.New.pf_ids_of_hyps gl in
-  let sigma, t = Typing.type_of env sigma c in
-  generalize_goal_gen env sigma ids i o t cl
-
-let old_generalize_dep ?(with_let=false) c gl =
+  let open Tacmach.New in
   let env = pf_env gl in
-  let sign = pf_hyps gl in
+  let ids = pf_ids_of_hyps gl in
+  let sigma, t = Typing.type_of env sigma c in
+  generalize_goal_gen env sigma ids i o t cl
+
+let generalize_dep ?(with_let=false) c =
+  let open Tacmach.New in
+  let open Tacticals.New in
+  Proofview.Goal.nf_s_enter { s_enter = begin fun gl ->
+  let env = pf_env gl in
+  let sign = Proofview.Goal.hyps gl in
   let sigma = project gl in
   let init_ids = ids_of_named_context (Global.named_context()) in
   let seek (d:named_declaration) (toquant:named_context) =
@@ -2841,11 +2873,11 @@ let old_generalize_dep ?(with_let=false) c gl =
 	  -> id::tothin
       | _ -> tothin
   in
-  let cl' = it_mkNamedProd_or_LetIn (Tacmach.pf_concl gl) to_quantify in
+  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
   let body =
     if with_let then
       match EConstr.kind sigma c with
-      | Var id -> id |> Tacmach.pf_get_hyp gl |> NamedDecl.get_value
+      | Var id -> id |> (fun id -> pf_get_hyp id gl) |> NamedDecl.get_value
       | _ -> None
     else None
   in
@@ -2854,20 +2886,19 @@ let old_generalize_dep ?(with_let=false) c gl =
   (** Check that the generalization is indeed well-typed *)
   let (evd, _) = Typing.type_of env evd cl'' in
   let args = Context.Named.to_instance mkVar to_quantify_rev in
-  tclTHENLIST
-    [tclEVARS evd;
-     Proofview.V82.of_tactic (apply_type cl'' (if Option.is_empty body then c::args else args));
-     Proofview.V82.of_tactic (clear (List.rev tothin'))]
-    gl
-
-let generalize_dep ?(with_let = false) c =
-  Proofview.V82.tactic (old_generalize_dep ~with_let c)
+  let tac =
+    tclTHEN
+      (apply_type cl'' (if Option.is_empty body then c::args else args))
+      (clear (List.rev tothin'))
+  in
+  Sigma.Unsafe.of_pair (tac, evd)
+  end }
 
 (**  *)
 let generalize_gen_let lconstr = Proofview.Goal.s_enter { s_enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
   let newcl, evd =
-    List.fold_right_i (new_generalize_goal gl) 0 lconstr
+    List.fold_right_i (generalize_goal gl) 0 lconstr
       (Tacmach.New.pf_concl gl,Tacmach.New.project gl)
   in
   let (evd, _) = Typing.type_of env evd newcl in
@@ -4189,6 +4220,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
       let f (_,is_not_let,_,_) = is_not_let in
       Array.map (fun (_,l) -> List.map f l) indsign in
     let names = compute_induction_names branchletsigns names in
+    Array.iter (check_name_unicity env toclear []) names;
     let tac =
     (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
       (Tacticals.New.tclTHENLIST [
@@ -4722,7 +4754,7 @@ let symmetry_red allowred =
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
         (convert_concl_no_check concl DEFAULTcast)
-        (Tacticals.New.pf_constr_of_global eq_data.sym apply)
+        (Tacticals.New.pf_constr_of_global eq_data.sym >>= apply)
   | None,eq,eq_kind -> prove_symmetry eq eq_kind
   end }
 
@@ -4818,8 +4850,8 @@ let transitivity_red allowred t =
       Tacticals.New.tclTHEN
         (convert_concl_no_check concl DEFAULTcast)
         (match t with
-	  | None -> Tacticals.New.pf_constr_of_global eq_data.trans eapply
-	  | Some t -> Tacticals.New.pf_constr_of_global eq_data.trans (fun trans -> apply_list [trans;t]))
+	  | None -> Tacticals.New.pf_constr_of_global eq_data.trans >>= eapply
+	  | Some t -> Tacticals.New.pf_constr_of_global eq_data.trans >>= fun trans -> apply_list [trans; t])
    | None,eq,eq_kind ->
       match t with
       | None -> Tacticals.New.tclZEROMSG (str"etransitivity not supported for this relation.")
@@ -4905,7 +4937,7 @@ let shrink_entry sign const =
   } in
   (const, args)
 
-let abstract_subproof id gk tac =
+let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let open Tacticals.New in
   let open Tacmach.New in
   let open Proofview.Notations in
@@ -4925,7 +4957,10 @@ let abstract_subproof id gk tac =
 	else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, empty_named_context_val) in
   let id = next_global_ident_away id (pf_ids_of_hyps gl) in
-  let concl = it_mkNamedProd_or_LetIn (Proofview.Goal.concl gl) sign in
+  let concl = match goal_type with
+              | None ->  Proofview.Goal.concl gl
+              | Some ty -> ty in
+  let concl = it_mkNamedProd_or_LetIn concl sign in
   let concl =
     try flush_and_check_evars !evdref concl
     with Uninstantiated_evar _ ->
@@ -4955,8 +4990,8 @@ let abstract_subproof id gk tac =
     else (const, List.rev (Context.Named.to_instance Constr.mkVar sign))
   in
   let args = List.map EConstr.of_constr args in
-  let cd = Entries.DefinitionEntry const in
-  let decl = (cd, IsProof Lemma) in
+  let cd = Entries.DefinitionEntry { const with Entries.const_entry_opaque = opaque } in
+  let decl = (cd, if opaque then IsProof Lemma else IsDefinition Definition) in
   let cst () =
     (** do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in
@@ -4974,18 +5009,21 @@ let abstract_subproof id gk tac =
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =
     Proofview.tclEFFECTS effs <*>
-    exact_no_check (applist (lem, args))
+    tacK lem args
   in
   let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
   Sigma.Unsafe.of_pair (tac, evd)
   end }
 
+let abstract_subproof ~opaque id gk tac =
+  cache_term_by_tactic_then ~opaque id gk tac (fun lem args -> exact_no_check (applist (lem, args)))
+
 let anon_id = Id.of_string "anonymous"
 
-let tclABSTRACT name_op tac =
+let name_op_to_name name_op object_kind suffix =
   let open Proof_global in
-  let default_gk = (Global, false, Proof Theorem) in
-  let s, gk = match name_op with
+  let default_gk = (Global, false, object_kind) in
+  match name_op with
     | Some s ->
       (try let _, gk, _ = current_proof_statement () in s, gk
        with NoCurrentProof -> s, default_gk)
@@ -4993,9 +5031,13 @@ let tclABSTRACT name_op tac =
       let name, gk =
 	try let name, gk, _ = current_proof_statement () in name, gk
 	with NoCurrentProof -> anon_id, default_gk in
-      add_suffix name "_subproof", gk
-  in
-  abstract_subproof s gk tac
+      add_suffix name suffix, gk
+
+let tclABSTRACT ?(opaque=true) name_op tac =
+  let s, gk = if opaque
+    then name_op_to_name name_op (Proof Theorem) "_subproof"
+    else name_op_to_name name_op (DefinitionBody Definition) "_subterm" in
+  abstract_subproof ~opaque s gk tac
 
 let unify ?(state=full_transparent_state) x y =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
@@ -5038,10 +5080,6 @@ end
 
 (** Tacticals defined directly in term of Proofview *)
 module New = struct
-  open Proofview.Notations
-
-  let exact_proof c = exact_proof c
-
   open Genredexpr
   open Locus
 

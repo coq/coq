@@ -39,7 +39,8 @@ let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< (fun loc -> $act$) >>
-    | ExtNonTerminal (_, p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
+    | ExtNonTerminal (_, None) :: tl -> <:expr< (fun $lid:"_"$ -> $make tl$) >>
+    | ExtNonTerminal (_, Some p) :: tl -> <:expr< (fun $lid:p$ -> $make tl$) >>
     | ExtTerminal _ :: tl ->
 	<:expr< (fun _ -> $make tl$) >> in
   make (List.rev pil)
@@ -62,7 +63,7 @@ let is_ident x = function
 | _ -> false
 
 let make_extend loc s cl wit = match cl with
-| [[ExtNonTerminal (Uentry e, id)], act] when is_ident id act ->
+| [[ExtNonTerminal (Uentry e, Some id)], act] when is_ident id act ->
   (** Special handling of identity arguments by not redeclaring an entry *)
   <:str_item<
     value $lid:s$ =
@@ -245,10 +246,13 @@ EXTEND
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let e = parse_user_entry e "" in
-        ExtNonTerminal (e, s)
+        ExtNonTerminal (e, Some s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
-        ExtNonTerminal (e, s)
+        ExtNonTerminal (e, Some s)
+      | e = LIDENT ->
+        let e = parse_user_entry e "" in
+        ExtNonTerminal (e, None)
       | s = STRING -> ExtTerminal s
     ] ]
   ;

@@ -33,7 +33,6 @@ open EConstr
 open Vars
 open Reductionops
 open Type_errors
-open Typeops
 open Typing
 open Globnames
 open Nameops
@@ -191,47 +190,53 @@ let _ =
 	    optkey   = ["Universe";"Minimization";"ToSet"];
 	    optread  = Universes.is_set_minimization;
 	    optwrite = (:=) Universes.set_minimization })
-						  
+
 (** Miscellaneous interpretation functions *)
-let interp_universe_level_name evd (loc,s) =
-  let names, _ = Global.global_universe_names () in
-    if CString.string_contains s "." then
-      match List.rev (CString.split '.' s) with
-      | [] -> anomaly (str"Invalid universe name " ++ str s)
-      | n :: dp -> 
-	 let num = int_of_string n in
-	 let dp = DirPath.make (List.map Id.of_string dp) in
-	 let level = Univ.Level.make dp num in
-	 let evd =
-	   try Evd.add_global_univ evd level
-	   with UGraph.AlreadyDeclared -> evd
-	 in evd, level
-    else 
-      try
-	let level = Evd.universe_of_name evd s in
-	evd, level
-      with Not_found ->
-	try 
-	  let id = try Id.of_string s with _ -> raise Not_found in
-          evd, snd (Idmap.find id names)
-	with Not_found -> 
-	  if not (is_strict_universe_declarations ()) then
-  	    new_univ_level_variable ?loc ~name:s univ_rigid evd
-	  else user_err ?loc ~hdr:"interp_universe_level_name"
-			     (Pp.(str "Undeclared universe: " ++ str s))
+let interp_universe_level_name ~anon_rigidity evd (loc, s) =
+  match s with
+  | Anonymous ->
+     new_univ_level_variable ?loc anon_rigidity evd
+  | Name s ->
+     let s = Id.to_string s in
+     let names, _ = Global.global_universe_names () in
+     if CString.string_contains ~where:s ~what:"." then
+       match List.rev (CString.split '.' s) with
+       | [] -> anomaly (str"Invalid universe name " ++ str s)
+       | n :: dp ->
+	  let num = int_of_string n in
+	  let dp = DirPath.make (List.map Id.of_string dp) in
+	  let level = Univ.Level.make dp num in
+	  let evd =
+	    try Evd.add_global_univ evd level
+	    with UGraph.AlreadyDeclared -> evd
+	  in evd, level
+     else
+       try
+	 let level = Evd.universe_of_name evd s in
+	 evd, level
+       with Not_found ->
+	 try
+	   let id = try Id.of_string s with _ -> raise Not_found in
+           evd, snd (Idmap.find id names)
+	 with Not_found ->
+	   if not (is_strict_universe_declarations ()) then
+  	     new_univ_level_variable ?loc ~name:s univ_rigid evd
+	   else user_err ?loc ~hdr:"interp_universe_level_name"
+		  (Pp.(str "Undeclared universe: " ++ str s))
 
 let interp_universe ?loc evd = function
   | [] -> let evd, l = new_univ_level_variable ?loc univ_rigid evd in
 	    evd, Univ.Universe.make l
   | l ->
     List.fold_left (fun (evd, u) l -> 
-      let evd', l = interp_universe_level_name evd l in
+        (* [univ_flexible_alg] can produce algebraic universes in terms *)
+        let evd', l = interp_universe_level_name ~anon_rigidity:univ_flexible evd l in
 	(evd', Univ.sup u (Univ.Universe.make l)))
     (evd, Univ.Universe.type0m) l
 
 let interp_level_info ?loc evd : Misctypes.level_info -> _ = function
   | None -> new_univ_level_variable ?loc univ_rigid evd
-  | Some (loc,s) -> interp_universe_level_name evd (loc,s)
+  | Some (loc,s) -> interp_universe_level_name ~anon_rigidity:univ_flexible evd (Loc.tag ?loc s)
 
 let interp_sort ?loc evd = function
   | GProp -> evd, Prop Null
@@ -540,17 +545,17 @@ let pretype_ref ?loc evdref env ref us =
     let ty = unsafe_type_of env.ExtraEnv.env evd c in
       make_judge c ty
 
-let judge_of_Type loc evd s =
+let judge_of_Type ?loc evd s =
   let evd, s = interp_universe ?loc evd s in
   let judge = 
     { uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) }
   in
     evd, judge
 
-let pretype_sort loc evdref = function
+let pretype_sort ?loc evdref = function
   | GProp -> judge_of_prop
   | GSet -> judge_of_set
-  | GType s -> evd_comb1 (judge_of_Type loc) evdref s
+  | GType s -> evd_comb1 (judge_of_Type ?loc) evdref s
 
 let new_type_evar env evdref loc =
   let sigma = Sigma.Unsafe.of_evar_map !evdref in
@@ -713,7 +718,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	inh_conv_coerce_to_tycon ?loc env evdref fixj tycon
 
   | GSort s ->
-    let j = pretype_sort loc evdref s in
+    let j = pretype_sort ?loc evdref s in
       inh_conv_coerce_to_tycon ?loc env evdref j tycon
 
   | GApp (f,args) ->

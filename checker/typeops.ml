@@ -85,9 +85,6 @@ let type_of_constant_knowing_parameters env cst paramtyps =
 let type_of_constant_type env t =
   type_of_constant_type_knowing_parameters env t [||]
 
-let type_of_constant env cst =
-  type_of_constant_knowing_parameters env cst [||]
-
 let judge_of_constant_knowing_parameters env (kn,u as cst) paramstyp =
   let _cb =
     try lookup_constant kn env
@@ -278,13 +275,11 @@ let rec execute env cstr =
 	let j =
 	  match f with
 	    | Ind ind ->
-		(* Sort-polymorphism of inductive types *)
 		judge_of_inductive_knowing_parameters env ind jl
 	    | Const cst ->
-		(* Sort-polymorphism of constant *)
 		judge_of_constant_knowing_parameters env cst jl
 	    | _ ->
-		(* No sort-polymorphism *)
+		(* No template polymorphism *)
 		execute env f
 	in
         let jl = Array.map2 (fun c ty -> c,ty) args jl in

@@ -22,7 +22,6 @@ open Glob_ops
 open Ppextend
 open Context.Named.Declaration
 
-module NamedDecl = Context.Named.Declaration
 (*i*)
 
 (*s A scope is a set of notations; it includes
@@ -445,18 +444,22 @@ let notation_of_prim_token = function
   | Numeral n -> "- "^(to_string (neg n))
   | String _ -> raise Not_found
 
-let find_prim_token ?loc g p sc =
+let find_prim_token check_allowed ?loc p sc =
   (* Try for a user-defined numerical notation *)
   try
     let (_,c),df = find_notation (notation_of_prim_token p) sc in
-    g (Notation_ops.glob_constr_of_notation_constr ?loc c),df
+    let pat = Notation_ops.glob_constr_of_notation_constr ?loc c in
+    check_allowed pat;
+    pat, df
   with Not_found ->
   (* Try for a primitive numerical notation *)
-  let (spdir,interp) = (Hashtbl.find prim_token_interpreter_tab sc) ?loc p in
+  let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc ?loc p in
   check_required_module ?loc sc spdir;
-  g (interp ()), ((dirpath (fst spdir),DirPath.empty),"")
+  let pat = interp () in
+  check_allowed pat;
+  pat, ((dirpath (fst spdir),DirPath.empty),"")
 
-let interp_prim_token_gen g ?loc p local_scopes =
+let interp_prim_token_gen ?loc g p local_scopes =
   let scopes = make_current_scopes local_scopes in
   let p_as_ntn = try notation_of_prim_token p with Not_found -> "" in
   try find_interpretation p_as_ntn (find_prim_token ?loc g p) scopes
@@ -466,22 +469,18 @@ let interp_prim_token_gen g ?loc p local_scopes =
       | Numeral n -> str "No interpretation for numeral " ++ str (to_string n)
       | String s -> str "No interpretation for string " ++ qs s) ++ str ".")
 
-let interp_prim_token =
-  interp_prim_token_gen (fun x -> x)
+let interp_prim_token ?loc =
+  interp_prim_token_gen ?loc (fun _ -> ())
 
-(** [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
-
-let rec rcp_of_glob looked_for = CAst.map (function
-  | GVar id       -> RCPatAtom (Some id)
-  | GHole (_,_,_) -> RCPatAtom None
-  | GRef (g,_)    -> looked_for g; RCPatCstr (g,[],[])
-  | GApp ({ CAst.v = GRef (g,_)},l) ->
-    looked_for g; RCPatCstr (g, List.map (rcp_of_glob looked_for) l,[])
-  | _ -> raise Not_found
-  )
+let rec check_allowed_ref_in_pat looked_for = CAst.(with_val (function
+  | GVar _ | GHole _ -> ()
+  | GRef (g,_) -> looked_for g
+  | GApp ({ v = GRef (g,_) },l) ->
+    looked_for g; List.iter (check_allowed_ref_in_pat looked_for) l
+  | _ -> raise Not_found))
 
 let interp_prim_token_cases_pattern_expr ?loc looked_for p =
-  interp_prim_token_gen (rcp_of_glob looked_for) ?loc p
+  interp_prim_token_gen ?loc (check_allowed_ref_in_pat looked_for) p
 
 let interp_notation ?loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in

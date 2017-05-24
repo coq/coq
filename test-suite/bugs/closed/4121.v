@@ -1,5 +1,5 @@
 Unset Strict Universe Declaration.
-(* -*- coq-prog-args: ("-emacs" "-nois") -*- *)
+(* -*- coq-prog-args: ("-nois") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 830 lines to 47 lines, then from 25 lines to 11 lines *)
 (* coqc version 8.5beta1 (March 2015) compiled on Mar 11 2015 18:51:36 with OCaml 4.01.0
    coqtop version cagnode15:/afs/csail.mit.edu/u/j/jgross/coq-8.5,v8.5 (8dbfee5c5f897af8186cb1bdfb04fd4f88eca677) *)

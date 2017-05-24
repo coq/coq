@@ -169,7 +169,7 @@ let hcons_types = Constr.hcons
 
 exception DestKO
 
-(* Destructs a DeBrujin index *)
+(* Destructs a de Bruijn index *)
 let destRel c = match kind_of_term c with
   | Rel n -> n
   | _ -> raise DestKO

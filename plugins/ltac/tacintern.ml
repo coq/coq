@@ -116,12 +116,6 @@ let intern_constr_reference strict ist = function
       CAst.make @@ GRef (locate_global_with_alias lqid,None), 
 	if strict then None else Some (CAst.make @@ CRef (r,None))
 
-let intern_move_location ist = function
-  | MoveAfter id -> MoveAfter (intern_hyp ist id)
-  | MoveBefore id -> MoveBefore (intern_hyp ist id)
-  | MoveFirst -> MoveFirst
-  | MoveLast -> MoveLast
-
 (* Internalize an isolated reference in position of tactic *)
 
 let intern_isolated_global_tactic_reference r =

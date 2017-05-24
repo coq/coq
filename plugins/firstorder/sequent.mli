@@ -6,23 +6,22 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
+open EConstr
 open Formula
-open Tacmach
 open Globnames
 
-module OrderedConstr: Set.OrderedType with type t=constr
+module OrderedConstr: Set.OrderedType with type t=Constr.t
 
-module CM: CSig.MapS with type key=constr
+module CM: CSig.MapS with type key=Constr.t
 
-type h_item = global_reference * (int*constr) option
+type h_item = global_reference * (int*Constr.t) option
 
 module History: Set.S with type elt = h_item
 
-val cm_add : constr -> global_reference -> global_reference list CM.t ->
+val cm_add : Evd.evar_map -> constr -> global_reference -> global_reference list CM.t ->
   global_reference list CM.t
 
-val cm_remove : constr -> global_reference -> global_reference list CM.t ->
+val cm_remove : Evd.evar_map -> constr -> global_reference -> global_reference list CM.t ->
   global_reference list CM.t
 
 module HP: Heap.S with type elt=Formula.t
@@ -40,23 +39,22 @@ val deepen: t -> t
 
 val record: h_item -> t -> t
 
-val lookup: h_item -> t -> bool
+val lookup: Evd.evar_map -> h_item -> t -> bool
 
-val add_formula : side -> global_reference -> constr -> t ->
-  Proof_type.goal sigma -> t
+val add_formula : Environ.env -> Evd.evar_map -> side -> global_reference -> constr -> t -> t
 
-val re_add_formula_list : Formula.t list -> t -> t
+val re_add_formula_list : Evd.evar_map -> Formula.t list -> t -> t
 
-val find_left : constr -> t -> global_reference
+val find_left : Evd.evar_map -> constr -> t -> global_reference
 
-val take_formula : t -> Formula.t * t
+val take_formula : Evd.evar_map -> t -> Formula.t * t
 
 val empty_seq : int -> t
 
-val extend_with_ref_list : global_reference list ->
-  t -> Proof_type.goal sigma -> t * Proof_type.goal sigma
+val extend_with_ref_list : Environ.env -> Evd.evar_map -> global_reference list ->
+  t -> t * Evd.evar_map
 
-val extend_with_auto_hints : Hints.hint_db_name list ->
-  t -> Proof_type.goal sigma -> t * Proof_type.goal sigma
+val extend_with_auto_hints : Environ.env -> Evd.evar_map -> Hints.hint_db_name list ->
+  t -> t * Evd.evar_map
 
 val print_cmap: global_reference list CM.t -> Pp.std_ppcmds

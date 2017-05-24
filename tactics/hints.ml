@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module CVars = Vars
-
 open Pp
 open Util
 open CErrors
@@ -1238,18 +1236,15 @@ let prepare_hint check (poly,local) env init (sigma,c) =
   (* We re-abstract over uninstantiated evars and universes.
      It is actually a bit stupid to generalize over evars since the first
      thing make_resolves will do is to re-instantiate the products *)
-  let sigma, subst = Evd.nf_univ_variables sigma in
+  let sigma, _ = Evd.nf_univ_variables sigma in
   let c = Evarutil.nf_evar sigma c in
-  let c = EConstr.Unsafe.to_constr c in
-  let c = CVars.subst_univs_constr subst c in
-  let c = EConstr.of_constr c in
   let c = drop_extra_implicit_args sigma c in
   let vars = ref (collect_vars sigma c) in
   let subst = ref [] in
   let rec find_next_evar c = match EConstr.kind sigma c with
     | Evar (evk,args as ev) ->
       (* We skip the test whether args is the identity or not *)
-      let t = existential_type sigma ev in
+      let t = Evarutil.nf_evar sigma (existential_type sigma ev) in
       let t = List.fold_right (fun (e,id) c -> replace_term sigma e id c) !subst t in
       if not (closed0 sigma c) then
 	error "Hints with holes dependent on a bound variable not supported.";
@@ -1435,7 +1430,7 @@ let pr_hints_db (name,db,hintlist) =
 let pr_hint_list_for_head c =
   let dbs = current_db () in
   let validate (name, db) =
-    let hints = List.map (fun v -> 0, v) (Hint_db.map_all Id.Pred.full c db) in
+    let hints = List.map (fun v -> 0, v) (Hint_db.map_all ~secvars:Id.Pred.full c db) in
     (name, db, hints)
   in
   let valid_dbs = List.map validate dbs in

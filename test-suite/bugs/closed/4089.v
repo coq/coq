@@ -1,6 +1,6 @@
 Unset Strict Universe Declaration.
 Require Import TestSuite.admit.
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-indices-matter") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 6522 lines to 318 lines, then from 1139 lines to 361 lines *)
 (* coqc version 8.5beta1 (February 2015) compiled on Feb 23 2015 18:32:3 with OCaml 4.01.0
    coqtop version cagnode15:/afs/csail.mit.edu/u/j/jgross/coq-8.5,v8.5 (ebfc19d792492417b129063fb511aa423e9d9e08) *)

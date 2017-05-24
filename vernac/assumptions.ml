@@ -44,6 +44,11 @@ let rec search_cst_label lab = function
   | (l, SFBconst cb) :: _ when Label.equal l lab -> cb
   | _ :: fields -> search_cst_label lab fields
 
+let rec search_mind_label lab = function
+  | [] -> raise Not_found
+  | (l, SFBmind mind) :: _ when Label.equal l lab -> mind
+  | _ :: fields -> search_mind_label lab fields
+
 (* TODO: using [empty_delta_resolver] below is probably slightly incorrect. But:
     a) I don't see currently what should be used instead
     b) this shouldn't be critical for Print Assumption. At worse some
@@ -134,6 +139,18 @@ let lookup_constant cst =
     if Declareops.constant_has_body cb then cb
     else lookup_constant_in_impl cst (Some cb)
   with Not_found -> lookup_constant_in_impl cst None
+
+let lookup_mind_in_impl mind =
+  try
+    let mp,dp,lab = repr_kn (canonical_mind mind) in
+    let fields = memoize_fields_of_mp mp in
+      search_mind_label lab fields
+  with Not_found ->
+    anomaly (str "Print Assumption: unknown inductive " ++ MutInd.print mind)
+
+let lookup_mind mind =
+  try Global.lookup_mind mind
+  with Not_found -> lookup_mind_in_impl mind
 
 (** Graph traversal of an object, collecting on the way the dependencies of
     traversed objects *)
@@ -227,7 +244,7 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
       where I_0, I_1, ... are in the same mutual definition and c_ij
       are all their constructors. *)
    if Refmap_env.mem firstind_ref data then data, ax2ty else
-     let mib = Global.lookup_mind mind in
+     let mib = lookup_mind mind in
      (* Collects references of parameters *)
      let param_ctx = mib.mind_params_ctxt in
      let nparam = List.length param_ctx in
@@ -331,7 +348,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
     else
       accu
   | IndRef (m,_) | ConstructRef ((m,_),_) ->
-      let mind = Global.lookup_mind m in
+      let mind = lookup_mind m in
       if mind.mind_typing_flags.check_guarded then
         accu
       else

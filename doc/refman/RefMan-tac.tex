@@ -1275,15 +1275,18 @@ in the list of subgoals remaining to prove.
 
 \item{\tt assert ( {\ident} := {\term} )}
 
-  This behaves as {\tt assert ({\ident} :\ {\type});[exact
-      {\term}|idtac]} where {\type} is the type of {\term}. This is
-  deprecated in favor of {\tt pose proof}.
+  This behaves as {\tt assert ({\ident} :\ {\type}) by exact {\term}}
+  where {\type} is the type of {\term}. This is deprecated in favor of
+  {\tt pose proof}.
+
+  If the head of {\term} is {\ident}, the tactic behaves as
+  {\tt specialize \term}.
 
   \ErrMsg \errindex{Variable {\ident} is already declared}
 
-\item \texttt{pose proof {\term} as {\intropattern}\tacindex{pose proof}}
+\item \texttt{pose proof {\term} \zeroone{as {\intropattern}}\tacindex{pose proof}}
 
-  This tactic behaves like \texttt{assert T as {\intropattern} by
+  This tactic behaves like \texttt{assert T \zeroone{as {\intropattern}} by
   exact {\term}} where \texttt{T} is the type of {\term}.
 
   In particular, \texttt{pose proof {\term} as {\ident}} behaves as
@@ -1326,8 +1329,8 @@ in the list of subgoals remaining to prove.
   following subgoals: {\tt U -> T} and \texttt{U}.  The subgoal {\tt U
     -> T} comes first in the list of remaining subgoal to prove.
 
-\item {\tt specialize ({\ident} \term$_1$ \dots\ \term$_n$)\tacindex{specialize}} \\
-      {\tt specialize {\ident} with \bindinglist}
+\item {\tt specialize ({\ident} \term$_1$ \dots\ \term$_n$)\tacindex{specialize} \zeroone{as \intropattern}}\\
+      {\tt specialize {\ident} with {\bindinglist} \zeroone{as \intropattern}}
 
       The tactic {\tt specialize} works on local hypothesis \ident.
       The premises of this hypothesis (either universal
@@ -1338,14 +1341,19 @@ in the list of subgoals remaining to prove.
       second form, all instantiation elements must be given, whereas
       in the first form the application to \term$_1$ {\ldots}
       \term$_n$ can be partial. The first form is equivalent to
-      {\tt assert (\ident' := {\ident} {\term$_1$} \dots\ \term$_n$);
-           clear \ident; rename \ident' into \ident}.
+      {\tt assert ({\ident} := {\ident} {\term$_1$} \dots\ \term$_n$)}.
+
+      With the {\tt as} clause, the local hypothesis {\ident} is left
+      unchanged and instead, the modified hypothesis is introduced as
+      specified by the {\intropattern}.
 
       The name {\ident} can also refer to a global lemma or
       hypothesis. In this case, for compatibility reasons, the
       behavior of {\tt specialize} is close to that of {\tt
         generalize}: the instantiated statement becomes an additional
-      premise of the goal.
+      premise of the goal. The {\tt as} clause is especially useful
+      in this case to immediately introduce the instantiated statement
+      as a local hypothesis.
 
   \begin{ErrMsgs}
   \item \errindexbis{{\ident} is used in hypothesis \ident'}{is used in hypothesis}
@@ -2179,32 +2187,24 @@ the given bindings to instantiate parameters or hypotheses of {\term}.
 \label{injection}
 \tacindex{injection}
 
-The {\tt injection} tactic is based on the fact that constructors of
-inductive sets are injections. That means that if $c$ is a constructor
-of an inductive set, and if $(c~\vec{t_1})$ and $(c~\vec{t_2})$ are two
-terms that are equal then $~\vec{t_1}$ and $~\vec{t_2}$ are equal
-too.
+The {\tt injection} tactic exploits the property that constructors of
+inductive types are injective, i.e. that if $c$ is a constructor
+of an inductive type and $c~\vec{t_1}$ and $c~\vec{t_2}$ are equal
+then $\vec{t_1}$ and $\vec{t_2}$ are equal too.
 
 If {\term} is a proof of a statement of conclusion
  {\tt {\term$_1$} = {\term$_2$}},
-then {\tt injection} applies injectivity as deep as possible to
-derive the equality of all the subterms of {\term$_1$} and {\term$_2$}
-placed in the same positions. For example, from {\tt (S
-  (S n))=(S (S (S m)))} we may derive {\tt n=(S m)}.  To use this
-tactic {\term$_1$} and {\term$_2$} should be elements of an inductive
-set and they should be neither explicitly equal, nor structurally
-different. We mean by this that, if {\tt n$_1$} and {\tt n$_2$} are
-their respective normal forms, then:
-\begin{itemize}
-\item {\tt n$_1$} and {\tt n$_2$} should not be syntactically equal,
-\item there must not exist any pair of subterms {\tt u} and {\tt w},
-  {\tt u} subterm of {\tt n$_1$} and {\tt w} subterm of {\tt n$_2$} ,
-  placed in the same positions and having different constructors as
-  head symbols.
-\end{itemize}
-If these conditions are satisfied, then, the tactic derives the
-equality of all the subterms of {\term$_1$} and {\term$_2$} placed in
-the same positions and puts them as antecedents of the current goal.
+then {\tt injection} applies the injectivity of constructors as deep as possible to
+derive the equality of all the subterms of {\term$_1$} and {\term$_2$} at positions
+where {\term$_1$} and {\term$_2$} start to differ.
+For example, from {\tt (S p, S n) = (q, S (S m)} we may derive {\tt S
+  p = q} and {\tt n = S m}. For this tactic to work, {\term$_1$} and
+{\term$_2$} should be typed with an inductive
+type and they should be neither convertible, nor having a different
+head constructor. If these conditions are satisfied, the tactic
+derives the equality of all the subterms of {\term$_1$} and
+{\term$_2$} at positions where they differ and adds them as
+antecedents to the conclusion of the current goal.
 
 \Example Consider the following goal:
 
@@ -2243,6 +2243,7 @@ context using \texttt{intros until \ident}.
 \item \errindex{Not a projectable equality but a discriminable one}
 \item \errindex{Nothing to do, it is an equality between convertible terms}
 \item \errindex{Not a primitive equality}
+\item \errindex{Nothing to inject}
 \end{ErrMsgs}
 
 \begin{Variants}
@@ -2618,9 +2619,9 @@ as the ones described in Section~\ref{Tac-induction}.
 In the syntax of the tactic, the identifier {\ident} is the name given
 to the induction hypothesis. The natural number {\num} tells on which
 premise of the current goal the induction acts, starting
-from 1 and counting both dependent and non dependent
-products. Especially, the current lemma must be composed of at least
-{\num} products.
+from 1, counting both dependent and non dependent
+products, but skipping local definitions. Especially, the current
+lemma must be composed of at least {\num} products.
 
 Like in a {\tt fix} expression, the induction
 hypotheses have to be used on structurally smaller arguments.

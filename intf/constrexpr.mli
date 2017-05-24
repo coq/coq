@@ -18,7 +18,7 @@ open Decl_kinds
 type notation = string
 
 type explicitation =
-  | ExplByPos of int * Id.t option
+  | ExplByPos of int * Id.t option (* a reference to the n-th product starting from left *)
   | ExplByName of Id.t
 
 type binder_kind =
@@ -34,15 +34,6 @@ type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 type prim_token =
   | Numeral of Bigint.bigint (** representation of integer literals that appear in Coq scripts. *)
   | String of string
-
-type raw_cases_pattern_expr_r =
-  | RCPatAlias of raw_cases_pattern_expr * Id.t
-  | RCPatCstr  of Globnames.global_reference
-    * raw_cases_pattern_expr list * raw_cases_pattern_expr list
-  (** [CPatCstr (_, c, l1, l2)] represents ((@c l1) l2) *)
-  | RCPatAtom of Id.t option
-  | RCPatOr of raw_cases_pattern_expr list
-and raw_cases_pattern_expr = raw_cases_pattern_expr_r CAst.ast
 
 type instance_expr = Misctypes.glob_level list
 

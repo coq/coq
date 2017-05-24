@@ -19,7 +19,6 @@ open Environ
 open Libnames
 open Globnames
 open Glob_term
-open Tacticals
 open Tacexpr
 open Coqlib
 open Mod_subst
@@ -279,8 +278,6 @@ let my_constant c =
 let my_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" plugin_modules c)
 
-let new_ring_path =
-  DirPath.make (List.map Id.of_string ["Ring_tac";plugin_dir;"Coq"])
 let znew_ring_path =
   DirPath.make (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
 let zltac s =
@@ -336,12 +333,12 @@ let _ = add_map "ring"
     my_reference "gen_phiZ", (function _->Eval);
     (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function -1|8|9|10|11|12|14->Eval|13->Rec|_->Prot);
+    pol_cst "Pphi_dev", (function -1|8|9|10|12|14->Eval|11|13->Rec|_->Prot);
     pol_cst "Pphi_pow",
           (function -1|8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
-    (* PEeval: evaluate morphism and polynomial, protect ring
+    (* PEeval: evaluate polynomial, protect ring
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function -1|8|10|13->Eval|12->Rec|_->Prot)])
+    pol_cst "PEeval", (function -1|10|13->Eval|8|12->Rec|_->Prot)])
 
 (****************************************************************************)
 (* Ring database *)
@@ -783,20 +780,20 @@ let _ = add_map "field"
     (* display_linear: evaluate polynomials and coef operations, protect
        field operations and make recursive call on the var map *)
     my_reference "display_linear",
-      (function -1|9|10|11|12|13|15|16->Eval|14->Rec|_->Prot);
+      (function -1|9|10|11|13|15|16->Eval|12|14->Rec|_->Prot);
     my_reference "display_pow_linear",
      (function -1|9|10|11|14|16|18|19->Eval|12|17->Rec|_->Prot);
    (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
-    pol_cst "Pphi_dev", (function -1|8|9|10|11|12|14->Eval|13->Rec|_->Prot);
+    pol_cst "Pphi_dev", (function -1|8|9|10|12|14->Eval|11|13->Rec|_->Prot);
     pol_cst "Pphi_pow",
-          (function -1|8|9|10|11|13|15|17->Eval|16->Rec|_->Prot);
-    (* PEeval: evaluate morphism and polynomial, protect ring
+          (function -1|8|9|10|13|15|17->Eval|11|16->Rec|_->Prot);
+    (* PEeval: evaluate polynomial, protect ring
        operations and make recursive call on the var map *)
-    pol_cst "PEeval", (function -1|8|10|13->Eval|12->Rec|_->Prot);
-    (* FEeval: evaluate morphism, protect field
+    pol_cst "PEeval", (function -1|10|13->Eval|8|12->Rec|_->Prot);
+    (* FEeval: evaluate polynomial, protect field
        operations and make recursive call on the var map *)
-    my_reference "FEeval", (function -1|10|12|15->Eval|14->Rec|_->Prot)]);;
+    my_reference "FEeval", (function -1|12|15->Eval|10|14->Rec|_->Prot)]);;
 
 let _ = add_map "field_cond"
   (map_without_eq

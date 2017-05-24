@@ -331,7 +331,6 @@ module M =
 struct
 
   open Coqlib
-  open Term
   open Constr
   open EConstr
 
@@ -901,16 +900,13 @@ struct
    coq_Qeq, Mc.OpEq
   ]
 
-  let has_typ gl t1 typ = 
-   let ty = Retyping.get_type_of (Tacmach.pf_env gl) (Tacmach.project gl) t1 in
-   EConstr.eq_constr (Tacmach.project gl) ty typ
-
+  type gl = { env : Environ.env; sigma : Evd.evar_map }
 
   let is_convertible gl t1 t2 = 
-   Reductionops.is_conv (Tacmach.pf_env gl) (Tacmach.project gl) t1 t2
+   Reductionops.is_conv gl.env gl.sigma t1 t2
 
   let parse_zop gl (op,args) =
-    let sigma = Tacmach.project gl in
+    let sigma = gl.sigma in
     match EConstr.kind sigma op with
     | Const (x,_) -> (assoc_const sigma op zop_table, args.(0) , args.(1))
     | Ind((n,0),_) ->
@@ -920,7 +916,7 @@ struct
     |   _ -> failwith "parse_zop"
 
   let parse_rop gl (op,args) =
-    let sigma = Tacmach.project gl in
+    let sigma = gl.sigma in
     match EConstr.kind sigma op with
      | Const (x,_) -> (assoc_const sigma op rop_table, args.(0) , args.(1))
      | Ind((n,0),_) ->
@@ -930,7 +926,7 @@ struct
     |   _ -> failwith "parse_zop"
 
   let parse_qop gl (op,args) =
-    (assoc_const (Tacmach.project gl) op qop_table, args.(0) , args.(1))
+    (assoc_const gl.sigma op qop_table, args.(0) , args.(1))
 
   let is_constant sigma t = (* This is an approx *)
    match EConstr.kind sigma t with
@@ -1154,7 +1150,7 @@ struct
    rop_spec
 
   let  parse_arith parse_op parse_expr env cstr gl =
-    let sigma = Tacmach.project gl in
+    let sigma = gl.sigma in
    if debug
    then Feedback.msg_debug (Pp.str "parse_arith: " ++ Printer.pr_leconstr cstr ++ fnl ());
    match EConstr.kind sigma cstr with
@@ -1199,7 +1195,7 @@ struct
     *)
   
   let parse_formula gl parse_atom env tg term =
-    let sigma = Tacmach.project gl in
+    let sigma = gl.sigma in
 
     let parse_atom env tg t =
       try
@@ -1208,7 +1204,7 @@ struct
       with e when CErrors.noncritical e -> (X(t),env,tg) in
 
     let is_prop term =
-      let sort  = Retyping.get_sort_of (Tacmach.pf_env gl)  (Tacmach.project gl) term in 
+      let sort  = Retyping.get_sort_of gl.env gl.sigma term in 
      Sorts.is_prop sort in
      
     let rec xparse_formula env tg term =
@@ -1720,7 +1716,6 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
  let vm = dump_varmap (spec.typ) (vm_of_list env) in
  (* todo : directly generate the proof term - or generalize before conversion? *)
   Proofview.Goal.nf_enter { enter = begin fun gl -> 
-   let gl = Tacmach.New.of_old (fun x -> x) gl in
    Tacticals.New.tclTHENLIST
     [
      Tactics.change_concl
@@ -1730,7 +1725,7 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
        ("__varmap", vm, Term.mkApp(Lazy.force coq_VarMap, [|spec.typ|]));
        ("__wit", cert, cert_typ)
       ]
-      (Tacmach.pf_concl gl))
+      (Tacmach.New.pf_concl gl))
   ] 
   end }
 
@@ -1967,10 +1962,12 @@ let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 
     Some (ids,ff',res')
 
 
-
 (**
   * Parse the proof environment, and call micromega_tauto
   *)
+
+let fresh_id avoid id gl =
+  Tactics.fresh_id_in_env avoid id (Proofview.Goal.env gl)
 
 let micromega_gen
     parse_arith 
@@ -1979,17 +1976,17 @@ let micromega_gen
     unsat deduce 
     spec dumpexpr prover tac =
  Proofview.Goal.nf_enter { enter = begin fun gl -> 
-    let gl = Tacmach.New.of_old (fun x -> x) gl in
-    let sigma = Tacmach.project gl in
-    let concl = Tacmach.pf_concl gl in
-    let hyps  = Tacmach.pf_hyps_types gl in
+    let sigma = Tacmach.New.project gl in
+    let concl = Tacmach.New.pf_concl gl in
+    let hyps  = Tacmach.New.pf_hyps_types gl in
     try
-     let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
+     let gl0 = { env = Tacmach.New.pf_env gl; sigma } in
+     let (hyps,concl,env) = parse_goal gl0 parse_arith Env.empty hyps concl in
      let env = Env.elements env in
      let spec = Lazy.force spec in
      let dumpexpr = Lazy.force dumpexpr in
      
-     match micromega_tauto  negate normalise unsat deduce spec prover env hyps concl gl with
+     match micromega_tauto  negate normalise unsat deduce spec prover env hyps concl gl0 with
      | None -> Tacticals.New.tclFAIL 0 (Pp.str " Cannot find witness")
      | Some (ids,ff',res') -> 
        let (arith_goal,props,vars,ff_arith) = make_goal_of_formula sigma dumpexpr ff' in
@@ -1998,7 +1995,7 @@ let micromega_gen
        let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
        let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
        let ipat_of_name id = Some (Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id)) in
-       let goal_name = Tactics.fresh_id [] (Names.Id.of_string "__arith") gl in
+       let goal_name = fresh_id [] (Names.Id.of_string "__arith") gl in
        let env' = List.map (fun (id,i) -> Term.mkVar id,i) vars in 
 
        let tac_arith = Tacticals.New.tclTHENLIST [ intro_props ; intro_vars ; 
@@ -2057,7 +2054,6 @@ let micromega_order_changer cert env ff  =
   let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
   let vm = dump_varmap (typ) (vm_of_list env) in
   Proofview.Goal.nf_enter { enter = begin fun gl -> 
-    let gl = Tacmach.New.of_old (fun x -> x) gl in
     Tacticals.New.tclTHENLIST
      [
      (Tactics.change_concl
@@ -2069,7 +2065,7 @@ let micromega_order_changer cert env ff  =
 	    [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t"), [|typ|]));
          ("__wit", cert, cert_typ)
         ]
-        (Tacmach.pf_concl gl)));
+        (Tacmach.New.pf_concl gl)));
      (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
      ]
   end }
@@ -2088,20 +2084,20 @@ let micromega_genr prover tac =
     dump_proof = dump_psatz coq_Q dump_q
   } in
   Proofview.Goal.nf_enter { enter = begin fun gl -> 
-     let gl = Tacmach.New.of_old (fun x -> x) gl in
-     let sigma = Tacmach.project gl in
-     let concl = Tacmach.pf_concl gl in
-     let hyps  = Tacmach.pf_hyps_types gl in
+     let sigma = Tacmach.New.project gl in
+     let concl = Tacmach.New.pf_concl gl in
+     let hyps  = Tacmach.New.pf_hyps_types gl in
 
      try
-      let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
+      let gl0 = { env = Tacmach.New.pf_env gl; sigma } in
+      let (hyps,concl,env) = parse_goal gl0 parse_arith Env.empty hyps concl in
        let env = Env.elements env in
        let spec = Lazy.force spec in
        
        let hyps' = List.map (fun (n,f) -> (n, map_atoms (Micromega.map_Formula Micromega.q_of_Rcst) f)) hyps in
        let concl' = map_atoms (Micromega.map_Formula Micromega.q_of_Rcst) concl in
        
-       match micromega_tauto  negate normalise unsat deduce spec prover env hyps' concl' gl with
+       match micromega_tauto  negate normalise unsat deduce spec prover env hyps' concl' gl0 with
        | None -> Tacticals.New.tclFAIL 0 (Pp.str " Cannot find witness") 
        | Some (ids,ff',res') -> 
          let (ff,ids) = formula_hyps_concl 
@@ -2114,7 +2110,7 @@ let micromega_genr prover tac =
        let intro_vars = Tacticals.New.tclTHENLIST (List.map intro vars) in
        let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
        let ipat_of_name id = Some (Loc.tag @@ Misctypes.IntroNaming (Misctypes.IntroIdentifier id)) in
-       let goal_name = Tactics.fresh_id [] (Names.Id.of_string "__arith") gl in
+       let goal_name = fresh_id [] (Names.Id.of_string "__arith") gl in
        let env' = List.map (fun (id,i) -> Term.mkVar id,i) vars in 
        
        let tac_arith = Tacticals.New.tclTHENLIST [ intro_props ; intro_vars ; 

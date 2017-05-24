@@ -24,4 +24,4 @@ val recording : unit -> bool
 
 val record_in_aux_at : ?loc:Loc.t -> string -> string -> unit
 val record_in_aux : string -> string -> unit
-val record_in_aux_set_at : ?loc:Loc.t -> unit
+val record_in_aux_set_at : ?loc:Loc.t -> unit -> unit

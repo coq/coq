@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Misctypes
-open Tactypes
 open Genarg
 open Geninterp
 

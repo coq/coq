@@ -9,7 +9,6 @@
 (** This files implements auto and related automation tactics *)
 
 open Names
-open Term
 open EConstr
 open Clenv
 open Pattern

@@ -29,19 +29,19 @@ let mlexpr_of_ident id =
 
 let rec make_patt = function
   | [] -> <:patt< [] >>
-  | ExtNonTerminal (_, p) :: l ->
+  | ExtNonTerminal (_, Some p) :: l ->
       <:patt< [ $lid:p$ :: $make_patt l$ ] >>
   | _::l -> make_patt l
 
 let rec make_let raw e = function
   | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
-  | ExtNonTerminal (g, p) :: l ->
+  | ExtNonTerminal (g, Some p) :: l ->
       let t = type_of_user_symbol g in
       let loc = MLast.loc_of_expr e in
       let e = make_let raw e l in
       let v =
         if raw then <:expr< Genarg.out_gen $make_rawwit loc t$ $lid:p$ >>
-               else <:expr< Tacinterp.Value.cast $make_topwit    loc t$ $lid:p$ >> in
+               else <:expr< Tacinterp.Value.cast $make_topwit loc t$ $lid:p$ >> in
       <:expr< let $lid:p$ = $v$ in $e$ >>
   | _::l -> make_let raw e l
 
@@ -73,7 +73,7 @@ let rec mlexpr_of_symbol = function
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Tacentries.TacTerm $str:s$ >>
   | ExtNonTerminal (g, id) ->
-    <:expr< Tacentries.TacNonTerm (Loc.tag ( $mlexpr_of_symbol g$ , $mlexpr_of_ident id$ ) ) >>
+    <:expr< Tacentries.TacNonTerm (Loc.tag ( $mlexpr_of_symbol g$ , $mlexpr_of_option mlexpr_of_ident id$ ) ) >>
 
 let mlexpr_of_clause cl =
   mlexpr_of_list (fun (a,_,_) -> mlexpr_of_list make_prod_item a) cl
@@ -85,7 +85,7 @@ let is_constr_gram = function
 | _ -> false
 
 let make_var = function
-  | ExtNonTerminal (_, p) -> Some p
+  | ExtNonTerminal (_, p) -> p
   | _ -> assert false
 
 let declare_tactic loc tacname ~level classification clause = match clause with
@@ -127,7 +127,7 @@ let declare_tactic loc tacname ~level classification clause = match clause with
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let gl = mlexpr_of_clause clause in
   let level = mlexpr_of_int level in
-  let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ $level$ $gl$ >> in
+  let obj = <:expr< fun () -> Tacentries.add_ml_tactic_notation $se$ ~{ level = $level$ } $gl$ >> in
   declare_str_items loc
     [ <:str_item< do {
         Tacenv.register_ml_tactic $se$ (Array.of_list $make_fun_clauses loc tacname clause$);
@@ -156,10 +156,13 @@ EXTEND
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let e = parse_user_entry e "" in
-        ExtNonTerminal (e, s)
+        ExtNonTerminal (e, Some s)
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let e = parse_user_entry e sep in
-        ExtNonTerminal (e, s)
+        ExtNonTerminal (e, Some s)
+      | e = LIDENT ->
+        let e = parse_user_entry e "" in
+        ExtNonTerminal (e, None)
       | s = STRING ->
 	let () = if s = "" then failwith "Empty terminal." in
         ExtTerminal s

@@ -8,7 +8,6 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 open Ltac_plugin
 open Util
-open Term
 open Pp
 open Constrexpr
 open Indfun_common

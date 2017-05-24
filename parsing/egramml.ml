@@ -17,7 +17,7 @@ open Vernacexpr
 type 's grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal :
-      ('a raw_abstract_argument_type * ('s, 'a) symbol) Loc.located -> 's grammar_prod_item
+      ('a raw_abstract_argument_type option * ('s, 'a) symbol) Loc.located -> 's grammar_prod_item
 
 type 'a ty_arg = ('a -> raw_generic_argument)
 
@@ -38,7 +38,7 @@ let rec ty_rule_of_gram = function
   AnyTyRule r
 | GramNonTerminal (_, (t, tok)) :: rem ->
   let AnyTyRule rem = ty_rule_of_gram rem in
-  let inj = Some (fun obj -> Genarg.in_gen t obj) in
+  let inj = Option.map (fun t obj -> Genarg.in_gen t obj) t in
   let r = TyNext (rem, tok, inj) in
   AnyTyRule r
 

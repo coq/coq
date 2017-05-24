@@ -58,7 +58,7 @@ let record_in_aux_at ?loc key v =
 
 let current_loc : Loc.t option ref = ref None
 
-let record_in_aux_set_at ?loc = current_loc := loc
+let record_in_aux_set_at ?loc () = current_loc := loc
 
 let record_in_aux key v = record_in_aux_at ?loc:!current_loc key v
 

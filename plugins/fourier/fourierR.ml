@@ -617,9 +617,9 @@ let rec fourier () =
       			        [Tacticals.New.tclORELSE
                                    (* TODO : Ring.polynom []*) (Proofview.tclUNIT ())
                                    (Proofview.tclUNIT ());
-				 Tacticals.New.pf_constr_of_global (cget coq_sym_eqT) (fun symeq ->
+				 Tacticals.New.pf_constr_of_global (cget coq_sym_eqT) >>= fun symeq ->
 					  (Tacticals.New.tclTHEN (apply symeq)
-						(apply (get coq_Rinv_1))))]
+						(apply (get coq_Rinv_1)))]
 
 					 )
 				]));

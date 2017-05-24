@@ -10,7 +10,6 @@ open Pp
 open CErrors
 open Util
 open Evd
-open Environ
 open Proof_type
 open Logic
 
@@ -162,30 +161,10 @@ let tclMAP tacfun l =
 
 (* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
 the goal unchanged *)
-let tclWEAK_PROGRESS tac ptree =
-  let rslt = tac ptree in
-  if Goal.V82.weak_progress rslt ptree then rslt
-  else user_err ~hdr:"Refiner.WEAK_PROGRESS" (str"Failed to progress.")
-
-(* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
-the goal unchanged *)
 let tclPROGRESS tac ptree =
   let rslt = tac ptree in
   if Goal.V82.progress rslt ptree then rslt
   else user_err ~hdr:"Refiner.PROGRESS" (str"Failed to progress.")
-
-(* Same as tclWEAK_PROGRESS but fails also if tactics generates several goals,
-   one of them being identical to the original goal *)
-let tclNOTSAMEGOAL (tac : tactic) goal =
-  let same_goal gls1 evd2 gl2 =
-    Goal.V82.same_goal gls1.sigma gls1.it evd2 gl2
-  in
-  let rslt = tac goal in
-  let {it=gls;sigma=sigma} = rslt in
-  if List.exists (same_goal goal sigma) gls
-  then user_err ~hdr:"Refiner.tclNOTSAMEGOAL"
-      (str"Tactic generated a subgoal identical to the original goal.")
-  else rslt
 
 (* Execute tac, show the names of new hypothesis names created by tac
    in the "as" format and then forget everything. From the logical

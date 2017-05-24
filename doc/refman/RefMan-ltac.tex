@@ -1087,8 +1087,8 @@ Fail all:let n:= numgoals in guard n=2.
 Reset Initial.
 \end{coq_eval}
 
-\subsubsection[Proving a subgoal as a separate lemma]{Proving a subgoal as a separate lemma\tacindex{abstract}\comindex{Qed exporting}
-\index{Tacticals!abstract@{\tt abstract}}}
+\subsubsection[Proving a subgoal as a separate lemma]{Proving a subgoal as a separate lemma\tacindex{abstract}\tacindex{transparent\_abstract}\comindex{Qed exporting}
+\index{Tacticals!abstract@{\tt abstract}}\index{Tacticals!transparent\_abstract@{\tt transparent\_abstract}}}
 
 From the outside ``\texttt{abstract \tacexpr}'' is the same as
 {\tt solve \tacexpr}. Internally it saves an auxiliary lemma called
@@ -1114,13 +1114,24 @@ on. This can be obtained thanks to the option below.
 {\tt Set Shrink Abstract}
 \end{quote}
 
-When set, all lemmas generated through \texttt{abstract {\tacexpr}} are
-quantified only over the variables that appear in the term constructed by
-\texttt{\tacexpr}.
+When set, all lemmas generated through \texttt{abstract {\tacexpr}}
+and \texttt{transparent\_abstract {\tacexpr}} are quantified only over the
+variables that appear in the term constructed by \texttt{\tacexpr}.
 
 \begin{Variants}
 \item \texttt{abstract {\tacexpr} using {\ident}}.\\
   Give explicitly the name of the auxiliary lemma.
+  Use this feature at your own risk; explicitly named and reused subterms
+  don't play well with asynchronous proofs.
+\item \texttt{transparent\_abstract {\tacexpr}}.\\
+  Save the subproof in a transparent lemma rather than an opaque one.
+  Use this feature at your own risk; building computationally relevant terms
+  with tactics is fragile.
+\item \texttt{transparent\_abstract {\tacexpr} using {\ident}}.\\
+  Give explicitly the name of the auxiliary transparent lemma.
+  Use this feature at your own risk; building computationally relevant terms
+  with tactics is fragile, and explicitly named and reused subterms
+  don't play well with asynchronous proofs.
 \end{Variants}
 
 \ErrMsg \errindex{Proof is not complete}
@@ -1231,7 +1242,7 @@ This will automatically print the same trace as {\tt Info \num} at each tactic c
 
 The current value for the {\tt Info Level} option can be checked using the {\tt Test Info Level} command.
 
-\subsection[Interactive debugger]{Interactive debugger\optindex{Ltac Debug}}
+\subsection[Interactive debugger]{Interactive debugger\optindex{Ltac Debug}\optindex{Ltac Batch Debug}}
 
 The {\ltac} interpreter comes with a step-by-step debugger. The
 debugger can be activated using the command
@@ -1261,6 +1272,17 @@ s: & continue current evaluation without stopping\\
 r $n$: & advance $n$ steps further\\
 r {\qstring}: & advance up to the next call to ``{\tt idtac} {\qstring}''\\
 \end{tabular}
+
+A non-interactive mode for the debugger is available via the command
+
+\begin{quote}
+{\tt Set Ltac Batch Debug.}
+\end{quote}
+
+This option has the effect of presenting a newline at every prompt,
+when the debugger is on.  The debug log thus created, which does not
+require user input to generate when this option is set, can then be
+run through external tools such as \texttt{diff}.
 
 \subsection[Profiling {\ltac} tactics]{Profiling {\ltac} tactics\optindex{Ltac Profiling}\comindex{Show Ltac Profile}\comindex{Reset Ltac Profile}}
 

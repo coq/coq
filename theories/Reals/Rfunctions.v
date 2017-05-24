@@ -532,6 +532,36 @@ Qed.
 (*******************************)
 (*i Due to L.Thery i*)
 
+Section PowerRZ.
+
+Local Coercion Z_of_nat : nat >-> Z.
+
+(* the following section should probably be somewhere else, but not sure where *)
+Section Z_compl.
+
+Local Open Scope Z_scope.
+
+(* Provides a way to reason directly on Z in terms of nats instead of positive *)
+Inductive Z_spec (x : Z) : Z -> Type :=
+| ZintNull : x = 0 -> Z_spec x 0
+| ZintPos (n : nat) : x = n -> Z_spec x n
+| ZintNeg (n : nat) : x = - n -> Z_spec x (- n).
+
+Lemma intP (x : Z) : Z_spec x x.
+Proof.
+  destruct x as [|p|p].
+  - now apply ZintNull.
+  - rewrite <-positive_nat_Z at 2.
+    apply ZintPos.
+    now rewrite positive_nat_Z.
+  - rewrite <-Pos2Z.opp_pos.
+    rewrite <-positive_nat_Z at 2.
+    apply ZintNeg.
+    now rewrite positive_nat_Z.
+Qed.
+
+End Z_compl.
+
 Definition powerRZ (x:R) (n:Z) :=
   match n with
     | Z0 => 1
@@ -657,6 +687,74 @@ Proof.
   intros n1 H'; rewrite Rinv_mult_distr; try rewrite Rinv_1; try rewrite H';
     auto with real.
 Qed.
+
+Local Open Scope Z_scope.
+
+Lemma pow_powerRZ (r : R) (n : nat) :
+  (r ^ n)%R = powerRZ r (Z_of_nat n).
+Proof.
+  induction n; [easy|simpl].
+  now rewrite SuccNat2Pos.id_succ.
+Qed.
+
+Lemma powerRZ_ind (P : Z -> R -> R -> Prop) :
+  (forall x, P 0 x 1%R) ->
+  (forall x n, P (Z.of_nat n) x (x ^ n)%R) ->
+  (forall x n, P ((-(Z.of_nat n))%Z) x (Rinv (x ^ n))) ->
+  forall x (m : Z), P m x (powerRZ x m)%R.
+Proof.
+  intros ? ? ? x m.
+  destruct (intP m) as [Hm|n Hm|n Hm].
+  - easy.
+  - now rewrite <- pow_powerRZ.
+  - unfold powerRZ.
+    destruct n as [|n]; [ easy |].
+    rewrite Nat2Z.inj_succ, <- Zpos_P_of_succ_nat, Pos2Z.opp_pos.
+    now rewrite <- Pos2Z.opp_pos, <- positive_nat_Z.
+Qed.
+
+Lemma powerRZ_inv x alpha : (x <> 0)%R -> powerRZ (/ x) alpha = Rinv (powerRZ x alpha).
+Proof.
+  intros; destruct (intP alpha).
+  - now simpl; rewrite Rinv_1.
+  - now rewrite <-!pow_powerRZ, ?Rinv_pow, ?pow_powerRZ.
+  - unfold powerRZ.
+    destruct (- n).
+    + now rewrite Rinv_1.
+    + now rewrite Rinv_pow.
+    + now rewrite <-Rinv_pow.
+Qed.
+
+Lemma powerRZ_neg x : forall alpha, x <> R0 -> powerRZ x (- alpha) = powerRZ (/ x) alpha.
+Proof.
+  intros [|n|n] H ; simpl.
+  - easy.
+  - now rewrite Rinv_pow.
+  - rewrite Rinv_pow by now apply Rinv_neq_0_compat.
+    now rewrite Rinv_involutive.
+Qed.
+
+Lemma powerRZ_mult_distr :
+  forall m x y, ((0 <= m)%Z \/ (x * y <> 0)%R) ->
+           (powerRZ (x*y) m = powerRZ x m * powerRZ y m)%R.
+Proof.
+  intros m x0 y0 Hmxy.
+  destruct (intP m) as [ | | n Hm ].
+  - now simpl; rewrite Rmult_1_l.
+  - now rewrite <- !pow_powerRZ, Rpow_mult_distr.
+  - destruct Hmxy as [H|H].
+    + assert(m = 0) as -> by now omega.
+      now rewrite <- Hm, Rmult_1_l.
+    + assert(x0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_l.
+      assert(y0 <> 0)%R by now intros ->; apply H; rewrite Rmult_0_r.
+      rewrite !powerRZ_neg by assumption.
+      rewrite Rinv_mult_distr by assumption.
+      now rewrite <- !pow_powerRZ, Rpow_mult_distr.
+Qed.
+
+End PowerRZ.
+
+Local Infix "^Z" := powerRZ (at level 30, right associativity) : R_scope.
 
 (*******************************)
 (* For easy interface          *)

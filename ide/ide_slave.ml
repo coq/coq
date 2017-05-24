@@ -54,7 +54,8 @@ let coqide_known_option table = List.mem table [
   ["Printing";"All"];
   ["Printing";"Records"];
   ["Printing";"Existential";"Instances"];
-  ["Printing";"Universes"]]
+  ["Printing";"Universes"];
+  ["Printing";"Unfocused"]]
 
 let is_known_option cmd = match cmd with
   | VernacSetOption (o,BoolValue true)
@@ -82,7 +83,7 @@ let add ((s,eid),(sid,verbose)) =
   let loc_ast = Stm.parse_sentence sid pa in
   let newid, rc = Stm.add ~ontop:sid verbose loc_ast in
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
-  ide_cmd_checks newid loc_ast;
+  ide_cmd_checks ~id:newid loc_ast;
   (* TODO: the "" parameter is a leftover of the times the protocol
    * used to include stderr/stdout output.
    *
@@ -387,14 +388,8 @@ let interp ((_raw, verbose), s) =
 
 let quit = ref false
 
-(** Serializes the output of Stm.get_ast  *)
-let print_ast id =
-  match Stm.get_ast id with
-  | Some (loc, expr) -> begin
-      try  Texmacspp.tmpp ?loc expr
-      with e -> Xml_datatype.PCData ("ERROR " ^ Printexc.to_string e)
-    end
-  | None     -> Xml_datatype.PCData "ERROR"
+(** Disabled *)
+let print_ast id = Xml_datatype.PCData "ERROR"
 
 (** Grouping all call handlers together + error handling *)
 
@@ -505,12 +500,12 @@ let rec parse = function
 
 let () = Coqtop.toploop_init := (fun args ->
         let args = parse args in
-        Flags.make_silent true;
+        Flags.quiet := true;
         CoqworkmgrApi.(init Flags.High);
         args)
 
 let () = Coqtop.toploop_run := loop
 
 let () = Usage.add_to_usage "coqidetop"
-"  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format
-  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"
+"  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
+\n  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"
