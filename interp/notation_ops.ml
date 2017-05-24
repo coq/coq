@@ -1037,12 +1037,10 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
       List.fold_left2 (match_ may_use_eta u alp metas)
         (match_in u alp metas sigma f1 f2) l1 l2
-  | GLambda (_,na1,bk1,t1,b1), NLambda (na2,bk2,t2,b2) ->
-     (assert (bk1 = bk2);
-      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2)
-  | GProd (_,na1,bk1,t1,b1), NProd (na2,bk2,t2,b2) ->
-     (assert (bk1 = bk2);
-      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2)
+  | GLambda (_,na1,bk1,t1,b1), NLambda (na2,bk2,t2,b2) when Constrexpr_ops.binding_kind_eq bk1 bk2 ->
+      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
+  | GProd (_,na1,bk1,t1,b1), NProd (na2,bk2,t2,b2) when Constrexpr_ops.binding_kind_eq bk1 bk2 ->
+      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GLetIn (_,na1,t1,b1), NLetIn (na2,t2,b2) ->
      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GCases (_,sty1,rtno1,tml1,eqnl1), NCases (sty2,rtno2,tml2,eqnl2)
