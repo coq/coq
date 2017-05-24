@@ -555,8 +555,8 @@ let check_subtyping mib paramsctxt env_ar inds =
   let dosubst = subst_univs_level_constr sbsubst in
   let uctx = Univ.UInfoInd.univ_context mib.mind_universes in
   let uctx_other = Univ.UContext.make (other_instnace, Univ.UContext.constraints uctx) in
-  let env = Environ.push_context uctx env_ar in
-  let env = Environ.push_context uctx_other env in
+  let env = Environ.push_context (Univ.instantiate_univ_context uctx) env_ar in
+  let env = Environ.push_context (Univ.instantiate_univ_context uctx_other) env in
   let env = Environ.push_context (Univ.instantiate_univ_context (Univ.UInfoInd.subtyp_context mib.mind_universes)) env in
   (* process individual inductive types: *)
   Array.iter (fun { mind_user_lc = lc; mind_arity = arity } ->
