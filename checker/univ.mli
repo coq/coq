@@ -18,6 +18,9 @@ sig
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
 
+  val pr : t -> Pp.std_ppcmds
+  (** Pretty-printing *)
+  
   val equal : t -> t -> bool
 end
 
@@ -195,7 +198,8 @@ sig
   val make : universe_instance constrained -> t
   val instance : t -> Instance.t
   val constraints : t -> constraints
-
+  val is_empty : t -> bool
+    
 end
 
 type universe_context = UContext.t
@@ -213,7 +217,9 @@ sig
 
   val from_universe_context : universe_context -> universe_instance -> t
 
-  val subtyping_susbst : t -> universe_instance
+  val subtyping_other_instance : t -> universe_instance
+  
+  val subtyping_susbst : t -> universe_level_subst
 
 end
 
@@ -262,5 +268,9 @@ val instantiate_univ_constraints : universe_instance -> universe_context -> cons
 val make_abstract_instance : universe_context -> universe_instance
 									    
 (** {6 Pretty-printing of universes. } *)
+
+val pr_constraint_type : constraint_type -> Pp.std_ppcmds
+val pr_constraints : (Level.t -> Pp.std_ppcmds) -> constraints -> Pp.std_ppcmds
+val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> universe_context -> Pp.std_ppcmds
 
 val pr_universes : universes -> Pp.std_ppcmds

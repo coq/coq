@@ -968,7 +968,23 @@ struct
       else Level.compare v v'
 end
 
-module Constraint = Set.Make(UConstraintOrd)
+let pr_constraint_type op = 
+  let op_str = match op with
+    | Lt -> " < "
+    | Le -> " <= "
+    | Eq -> " = "
+  in str op_str
+
+module Constraint = 
+struct 
+  module S = Set.Make(UConstraintOrd)
+  include S
+
+  let pr prl c =
+    fold (fun (u1,op,u2) pp_std ->
+      pp_std ++ prl u1 ++ pr_constraint_type op ++
+	prl u2 ++ fnl () )  c (str "")
+end
 
 let empty_constraint = Constraint.empty
 let merge_constraints c g =
@@ -1159,6 +1175,11 @@ struct
   let make x = x
   let instance (univs, cst) = univs
   let constraints (univs, cst) = cst
+
+  let is_empty (univs, cst) = Instance.is_empty univs && Constraint.is_empty cst
+  let pr prl (univs, cst as ctx) =
+    if is_empty ctx then mt() else
+      h 0 (Instance.pr univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
 end
 
 type universe_context = UContext.t
@@ -1193,8 +1214,12 @@ struct
     (univcst, UContext.make (Array.append inst freshunivs,
                              create_trivial_subtyping inst freshunivs))
 
+  let subtyping_other_instance (univcst, subtypcst) =
+    let (_, ctx') = (halve_context (UContext.instance subtypcst)) in ctx'
+  
   let subtyping_susbst (univcst, subtypcst) =
-      let (_, ctx') = (halve_context (UContext.instance subtypcst)) in ctx'
+    let (ctx, ctx') = (halve_context (UContext.instance subtypcst)) in
+    Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
 
 end
 
@@ -1307,6 +1332,10 @@ let merge_context_set strict ctx g =
   in merge_constraints (ContextSet.constraints ctx) g
 
 (** Pretty-printing *)
+
+let pr_constraints prl = Constraint.pr prl
+    
+let pr_universe_context = UContext.pr
 
 let pr_arc = function
   | _, Canonical {univ=u; lt=[]; le=[]} ->

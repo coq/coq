@@ -549,25 +549,24 @@ let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : con
 (* Check that the subtyping information inferred for inductive types in the block is correct. *)
 (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
 let check_subtyping mib paramsctxt env_ar inds =
-    let numparams = rel_context_nhyps paramsctxt in
-    let sbsubst = Univ.UInfoInd.subtyping_susbst mib.mind_universes in
-    let dosubst = subst_instance_constr sbsubst in
-    let uctx = Univ.UInfoInd.univ_context mib.mind_universes in
-    let instance_other = Univ.subst_instance_instance sbsubst (Univ.UContext.instance uctx) in
-    let constraints_other = Univ.subst_instance_constraints sbsubst (Univ.UContext.constraints uctx) in
-    let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
-    let env' = Environ.push_context uctx env_ar in
-    let env'' = Environ.push_context uctx_other env' in
-    let envsb = push_context (Univ.UInfoInd.subtyp_context mib.mind_universes) env'' in
-    (* process individual inductive types: *)
-    Array.iter (fun { mind_user_lc = lc; mind_arity = arity } ->
+  let numparams = rel_context_nhyps paramsctxt in
+  let sbsubst = Univ.UInfoInd.subtyping_susbst mib.mind_universes in
+  let other_instnace = Univ.UInfoInd.subtyping_other_instance mib.mind_universes in
+  let dosubst = subst_univs_level_constr sbsubst in
+  let uctx = Univ.UInfoInd.univ_context mib.mind_universes in
+  let uctx_other = Univ.UContext.make (other_instnace, Univ.UContext.constraints uctx) in
+  let env = Environ.push_context uctx env_ar in
+  let env = Environ.push_context uctx_other env in
+  let env = Environ.push_context (Univ.instantiate_univ_context (Univ.UInfoInd.subtyp_context mib.mind_universes)) env in
+  (* process individual inductive types: *)
+  Array.iter (fun { mind_user_lc = lc; mind_arity = arity } ->
       match arity with
-        | RegularArity { mind_user_arity = full_arity} ->
-           check_subtyping_arity_constructor envsb dosubst full_arity numparams true;
-           Array.iter (fun cnt -> check_subtyping_arity_constructor envsb dosubst cnt numparams false) lc
-        | TemplateArity _ -> ()
+      | RegularArity { mind_user_arity = full_arity} ->
+        check_subtyping_arity_constructor env dosubst full_arity numparams true;
+        Array.iter (fun cnt -> check_subtyping_arity_constructor env dosubst cnt numparams false) lc
+      | TemplateArity _ -> ()
     ) inds
-
+    
 (************************************************************************)
 (************************************************************************)
 
@@ -592,7 +591,8 @@ let check_inductive env kn mib =
   (*  - check constructor types *)
   Array.iter (typecheck_one_inductive env_ar params mib) mib.mind_packets;
   (* check the inferred subtyping relation *)
-  (* check_subtyping mib params env_ar mib.mind_packets; *)
+  if mib.mind_cumulative then
+    check_subtyping mib params env_ar mib.mind_packets;
   (* check mind_nparams_rec: positivity condition *)
   check_positivity env_ar kn params mib.mind_nparams_rec mib.mind_packets;
   (* check mind_equiv... *)
