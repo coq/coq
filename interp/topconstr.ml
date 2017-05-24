@@ -34,6 +34,10 @@ let _ = Goptions.declare_bool_option {
 let error_invalid_pattern_notation ?loc () =
   user_err ?loc  (str "Invalid notation for pattern.")
 
+(* Legacy functions *)
+let down_located f (_l, x) = f x
+let located_fold_left f x (_l, y) = f x y
+
 (**********************************************************************)
 (* Functions on constr_expr *)
 
@@ -67,7 +71,7 @@ let ids_of_pattern =
 
 let ids_of_pattern_list =
   List.fold_left
-    (Loc.located_fold_left
+    (located_fold_left
       (List.fold_left (cases_pattern_fold_names Id.Set.add)))
     Id.Set.empty
 
@@ -79,7 +83,7 @@ let ids_of_cases_tomatch tms =
     (fun (_, ona, indnal) l ->
       Option.fold_right (fun t ids -> cases_pattern_fold_names Id.Set.add ids t)
       indnal
-        (Option.fold_right (Loc.down_located (name_fold Id.Set.add)) ona l))
+        (Option.fold_right (down_located (name_fold Id.Set.add)) ona l))
     tms Id.Set.empty
 
 let rec fold_constr_expr_binders g f n acc b = function
@@ -129,12 +133,12 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
 	let ids = ids_of_pattern_list patl in
 	f (Id.Set.fold g ids n) acc rhs) bl acc
   | CLetTuple (nal,(ona,po),b,c) ->
-      let n' = List.fold_right (Loc.down_located (name_fold g)) nal n in
-      f (Option.fold_right (Loc.down_located (name_fold g)) ona n') (f n acc b) c
+      let n' = List.fold_right (down_located (name_fold g)) nal n in
+      f (Option.fold_right (down_located (name_fold g)) ona n') (f n acc b) c
   | CIf (c,(ona,po),b1,b2) ->
       let acc = f n (f n (f n acc b1) b2) c in
       Option.fold_left
-	(f (Option.fold_right (Loc.down_located (name_fold g)) ona n)) acc po
+	(f (Option.fold_right (down_located (name_fold g)) ona n)) acc po
   | CFix (_,l) ->
       let n' = List.fold_right (fun ((_,id),_,_,_,_) -> g id) l n in
       List.fold_right (fun (_,(_,o),lb,t,c) acc ->
@@ -194,7 +198,7 @@ let split_at_annot bl na =
 
 (* Used in correctness and interface *)
 
-let map_binder g e nal = List.fold_right (Loc.down_located (name_fold g)) nal e
+let map_binder g e nal = List.fold_right (down_located (name_fold g)) nal e
 
 let map_binders f g e bl =
   (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
@@ -243,11 +247,11 @@ let map_constr_expr_with_binders g f e = CAst.map (function
       let po = Option.map (f (Id.Set.fold g ids e)) rtnpo in
       CCases (sty, po, List.map (fun (tm,x,y) -> f e tm,x,y) a,bl)
   | CLetTuple (nal,(ona,po),b,c) ->
-      let e' = List.fold_right (Loc.down_located (name_fold g)) nal e in
-      let e'' = Option.fold_right (Loc.down_located (name_fold g)) ona e in
+      let e' = List.fold_right (down_located (name_fold g)) nal e in
+      let e'' = Option.fold_right (down_located (name_fold g)) ona e in
       CLetTuple (nal,(ona,Option.map (f e'') po),f e b,f e' c)
   | CIf (c,(ona,po),b1,b2) ->
-      let e' = Option.fold_right (Loc.down_located (name_fold g)) ona e in
+      let e' = Option.fold_right (down_located (name_fold g)) ona e in
       CIf (f e c,(ona,Option.map (f e') po),f e b1,f e b2)
   | CFix (id,dl) ->
       CFix (id,List.map (fun (id,n,bl,t,d) ->
