@@ -6,26 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open CErrors
 open Util
-open Names
 
-let make_dir l = DirPath.make (List.rev_map Id.of_string l)
-
-let find_reference locstr dir s =
-  let dp = make_dir dir in
-  let sp = Libnames.make_path dp (Id.of_string s) in
-  try Nametab.global_of_path sp
-  with Not_found ->
-    user_err (str "Library " ++ Libnames.pr_dirpath dp ++
-      str " has to be required first.")
-
-let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
-let coq_constant locstr dir s = Universes.constr_of_global (coq_reference locstr dir s)
-
-let init_constant dir s () = coq_constant "Program" dir s
-let init_reference dir s () = coq_reference "Program" dir s
+let init_constant  dir s () = Universes.constr_of_global @@ Coqlib.coq_reference "Program" dir s
+let init_reference dir s () = Coqlib.coq_reference  "Program" dir s
 
 let papp evdref r args = 
   let open EConstr in

@@ -63,13 +63,13 @@ let coq_modules =
 let bin_module = [["Coq";"Numbers";"BinNums"]]
 let z_module = [["Coq";"ZArith";"BinInt"]]
 
-let init_constant = Coqlib.gen_constant_in_modules "Omega" Coqlib.init_modules
-let constant = Coqlib.gen_constant_in_modules "Omega" coq_modules
-let z_constant = Coqlib.gen_constant_in_modules "Omega" z_module
-let bin_constant = Coqlib.gen_constant_in_modules "Omega" bin_module
+let init_constant x = Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Omega" Coqlib.init_modules x
+let constant x = Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Omega" coq_modules x
+let z_constant x = Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Omega" z_module x
+let bin_constant x = Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Omega" bin_module x
 
 (* Logic *)
-let coq_refl_equal = lazy(init_constant  "eq_refl")
+let coq_refl_equal = lazy(init_constant "eq_refl")
 let coq_and = lazy(init_constant "and")
 let coq_not = lazy(init_constant "not")
 let coq_or = lazy(init_constant "or")

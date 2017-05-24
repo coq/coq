@@ -961,7 +961,6 @@ let expand_arg tms (p,ccl) ((_,t),_,na) =
   let k = length_of_tomatch_type_sign na t in
   (p+k,liftn_predicate (k-1) (p+1) ccl tms)
 
-
 let use_unit_judge evd =
   let j, ctx = coq_unit_judge () in
   let evd' = Evd.merge_context_set Evd.univ_flexible_alg evd ctx in

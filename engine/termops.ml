@@ -1468,25 +1468,3 @@ let env_rel_context_chop k env =
   let ctx1,ctx2 = List.chop k rels in
   push_rel_context ctx2 (reset_with_named_context (named_context_val env) env),
   ctx1
-
-(*******************************************)
-(* Functions to deal with impossible cases *)
-(*******************************************)
-let impossible_default_case = ref None
-
-let set_impossible_default_clause c = impossible_default_case := Some c
-
-let coq_unit_judge =
-  let make_judge c t = make_judge (EConstr.of_constr c) (EConstr.of_constr t) in
-  let na1 = Name (Id.of_string "A") in
-  let na2 = Name (Id.of_string "H") in
-  fun () ->
-    match !impossible_default_case with
-    | Some fn -> 
-        let (id,type_of_id), ctx = fn () in
-	  make_judge id type_of_id, ctx
-    | None ->
-	(* In case the constants id/ID are not defined *)
-	make_judge (mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1)))
-                 (mkProd (na1,mkProp,mkArrow (mkRel 1) (mkRel 2))), 
-       Univ.ContextSet.empty

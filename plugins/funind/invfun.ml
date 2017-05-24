@@ -546,7 +546,7 @@ and intros_with_rewrite_aux : tactic =
 			    intros_with_rewrite
 			  ] g
 			end
-		  | Ind _ when EConstr.eq_constr sigma t (EConstr.of_constr (Coqlib.build_coq_False ())) ->
+		  | Ind _ when EConstr.eq_constr sigma t (EConstr.of_constr (Universes.constr_of_global @@ Coqlib.build_coq_False ())) ->
 		      Proofview.V82.of_tactic tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[

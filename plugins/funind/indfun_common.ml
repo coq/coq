@@ -120,7 +120,8 @@ let def_of_const t =
     |_ -> assert false
 
 let coq_constant s =
-  Coqlib.gen_constant_in_modules "RecursiveDefinition"
+  Universes.constr_of_global @@
+  Coqlib.gen_reference_in_modules "RecursiveDefinition"
     Coqlib.init_modules s;;
 
 let find_reference sl s =

@@ -306,7 +306,7 @@ let project_hint pri l2r r =
     | _ -> assert false in
   let p =
     if l2r then build_coq_iff_left_proj () else build_coq_iff_right_proj () in
-  let p = EConstr.of_constr p in
+  let p = EConstr.of_constr @@ Universes.constr_of_global p in
   let c = Reductionops.whd_beta sigma (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
@@ -735,7 +735,8 @@ let rewrite_except h =
 
 let refl_equal = 
   let coq_base_constant s =
-    Coqlib.gen_constant_in_modules "RecursiveDefinition"
+    Universes.constr_of_global @@
+    Coqlib.gen_reference_in_modules "RecursiveDefinition"
       (Coqlib.init_modules @ [["Coq";"Arith";"Le"];["Coq";"Arith";"Lt"]]) s in
   function () -> (coq_base_constant "eq_refl")
 

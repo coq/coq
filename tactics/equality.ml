@@ -934,9 +934,9 @@ let build_selector env sigma dirn c ind special default =
   let ci = make_case_info env ind RegularStyle in
   mkCase (ci, p, c, Array.of_list brl)
 
-let build_coq_False () = EConstr.of_constr (build_coq_False ())
-let build_coq_True () = EConstr.of_constr (build_coq_True ())
-let build_coq_I () = EConstr.of_constr (build_coq_I ())
+let build_coq_False () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_False ())
+let build_coq_True () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_True ())
+let build_coq_I () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_I ())
 
 let rec build_discriminator env sigma dirn c = function
   | [] ->
