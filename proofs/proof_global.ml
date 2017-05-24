@@ -336,7 +336,6 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   let make_body =
     if poly || now then
       let make_body t (c, eff) =
-        let open Universes in
         let body = c in
 	let typ =
 	  if not (keep_body_ucst_separate || not (Safe_typing.empty_private_constants = eff)) then

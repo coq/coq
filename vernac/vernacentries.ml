@@ -2091,12 +2091,6 @@ let enforce_polymorphism = function
   | None -> Flags.is_universe_polymorphism ()
   | Some b -> Flags.make_polymorphic_flag b; b
 
-let check_vernac_supports_cumulativity c p =
-  match p, c with
-  | None, _ -> ()
-  | Some _, (VernacInductive _ ) -> ()
-  | Some _, _ -> CErrors.error "This command does not support Cumulativity"
-
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
 
