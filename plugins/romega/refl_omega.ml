@@ -547,22 +547,33 @@ let display_gl env t_concl t_lhyps =
   Printf.printf "REIFED PROBLEM\n\n";
   Printf.printf "  CONCL: %a\n" pprint t_concl;
   List.iter
-    (fun (i,t) -> Printf.printf "  %s: %a\n" (Id.to_string i) pprint t)
+    (fun (i,_,t) -> Printf.printf "  %s: %a\n" (Id.to_string i) pprint t)
     t_lhyps;
   print_env_reification env
+
+type defined = Defined | Assumed
+
+let reify_hyp env gl i =
+  let open Context.Named.Declaration in
+  let ctxt = (false,[],i,[]) in
+  match Tacmach.New.pf_get_hyp i gl with
+  | LocalDef (_,d,t) when Z.is_int_typ gl (EConstr.Unsafe.to_constr t) ->
+     let d = EConstr.Unsafe.to_constr d in
+     let dummy = Lazy.force coq_True in
+     let p = mk_equation env ctxt dummy Eq (Term.mkVar i) d in
+     i,Defined,p
+  | LocalDef (_,_,t) | LocalAssum (_,t) ->
+     let t = EConstr.Unsafe.to_constr t in
+     let p = oproposition_of_constr env ctxt gl t in
+     i,Assumed,p
 
 let reify_gl env gl =
   let concl = Tacmach.New.pf_concl gl in
   let concl = EConstr.Unsafe.to_constr concl in
-  let hyps = Tacmach.New.pf_hyps_types gl in
-  let hyps = List.map (fun (i,t) -> (i,EConstr.Unsafe.to_constr t)) hyps in
-  let t_concl =
-    oproposition_of_constr env (true,[],id_concl,[O_mono]) gl concl in
-  let t_lhyps =
-    List.map
-      (fun (i,t) -> i,oproposition_of_constr env (false,[],i,[]) gl t)
-      hyps
-  in
+  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  let ctxt_concl = (true,[],id_concl,[O_mono]) in
+  let t_concl = oproposition_of_constr env ctxt_concl gl concl in
+  let t_lhyps = List.map (reify_hyp env gl) hyps in
   let () = if !debug then display_gl env t_concl t_lhyps in
   t_concl, t_lhyps
 
@@ -602,7 +613,7 @@ and destruct_neg_hyp eqns = function
 
 let rec destructurate_hyps = function
   | [] -> [[]]
-  | (i,t) :: l ->
+  | (i,_,t) :: l ->
      let l_syst1 = destruct_pos_hyp [] t in
      let l_syst2 = destructurate_hyps l in
      List.cartesian (@) l_syst1 l_syst2
@@ -673,6 +684,9 @@ let rec stated_in_tree = function
   | Tree(_,t1,t2) -> StateSet.union (stated_in_tree t1) (stated_in_tree t2)
   | Leaf s -> stated_in_trace s.s_trace
 
+let mk_refl t =
+  EConstr.of_constr (app coq_refl_equal [|Lazy.force Z.typ; t|])
+
 let digest_stated_equations env tree =
   let do_equation st (vars,gens,eqns,ids) =
     (** We turn the definition of [v]
@@ -684,9 +698,7 @@ let digest_stated_equations env tree =
     (** We then update the environment *)
     set_reified_atom st.st_var coq_v env;
     (** The term we'll introduce *)
-    let term_to_generalize =
-      EConstr.of_constr (app coq_refl_equal [|Lazy.force Z.typ; coq_v|])
-    in
+    let term_to_generalize = mk_refl coq_v in
     (** Its representation as equation (but not reified yet,
         we lack the proper env to do that). *)
     let term_to_reify = (v_def,Oatom st.st_var) in
@@ -954,18 +966,19 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
     display_solution_tree stdout solution_tree;
     print_newline()
   end;
-  (** Collect all hypotheses used in the solution tree *)
+  (** Collect all hypotheses and variables used in the solution tree *)
   let useful_equa_ids = equas_of_solution_tree solution_tree in
-  let equations = List.map (get_equation env) (IntSet.elements useful_equa_ids)
+  let useful_hypnames, useful_vars =
+    IntSet.fold
+      (fun i (hyps,vars) ->
+        let e = get_equation env i in
+        Id.Set.add e.e_origin.o_hyp hyps,
+        vars_of_equations [e] @@ vars)
+      useful_equa_ids
+      (Id.Set.empty, vars_of_prop reified_concl)
   in
-  let hyps_of_eqns =
-    List.fold_left (fun s e -> Id.Set.add e.e_origin.o_hyp s) Id.Set.empty in
-  let hyps = hyps_of_eqns equations in
-  let useful_hypnames = Id.Set.elements (Id.Set.remove id_concl hyps) in
-  let useful_hyptypes =
-    List.map (fun id -> List.assoc_f Id.equal id reified_hyps) useful_hypnames
-  in
-  let useful_vars = vars_of_equations equations @@ vars_of_prop reified_concl
+  let useful_hypnames =
+    Id.Set.elements (Id.Set.remove id_concl useful_hypnames)
   in
 
   (** Parts coming from equations introduced by omega: *)
@@ -996,9 +1009,17 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
   let reified_concl = reified_of_proposition env reified_concl in
   let l_reified_terms =
     List.map
-      (fun p -> reified_of_proposition env (maximize_prop useful_equa_ids p))
-      useful_hyptypes
+      (fun id ->
+        match Id.Map.find id reified_hyps with
+        | Defined,p ->
+           reified_of_proposition env p, mk_refl (Term.mkVar id)
+        | Assumed,p ->
+           reified_of_proposition env (maximize_prop useful_equa_ids p),
+           EConstr.mkVar id
+        | exception Not_found -> assert false)
+      useful_hypnames
   in
+  let l_reified_terms, l_reified_hypnames = List.split l_reified_terms in
   let env_props_reified = mk_plist env.props in
   let reified_goal =
     mk_list (Lazy.force coq_proposition)
@@ -1007,14 +1028,14 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
     app coq_interp_sequent
        [| reified_concl;env_props_reified;reduced_term_env;reified_goal|]
   in
+  let mk_occ id = {o_hyp=id;o_path=[]} in
   let initial_context =
-    List.map (fun id -> CCHyp{o_hyp=id;o_path=[]}) useful_hypnames in
+    List.map (fun id -> CCHyp (mk_occ id)) useful_hypnames in
   let context =
-    CCHyp{o_hyp=id_concl;o_path=[]} :: hyp_stated_vars @ initial_context in
+    CCHyp (mk_occ id_concl) :: hyp_stated_vars @ initial_context in
   let decompose_tactic = decompose_tree env context solution_tree in
 
-  Tactics.generalize
-    (l_generalize_arg @ List.map EConstr.mkVar useful_hypnames) >>
+  Tactics.generalize (l_generalize_arg @ l_reified_hypnames) >>
   Tactics.convert_concl_no_check (EConstr.of_constr reified) Term.DEFAULTcast >>
   Tactics.apply (EConstr.of_constr (app coq_do_omega [|decompose_tactic|])) >>
   show_goal >>
@@ -1034,13 +1055,16 @@ let total_reflexive_omega_tactic unsafe =
   rst_omega_var ();
   try
   let env = new_environment () in
-  let (concl,hyps) as reified_goal = reify_gl env gl in
+  let (concl,hyps) = reify_gl env gl in
   (* Register all atom indexes created during reification as omega vars *)
   set_omega_maxvar (pred (List.length env.terms));
-  let full_reified_goal = (id_concl,Pnot concl) :: hyps in
+  let full_reified_goal = (id_concl,Assumed,Pnot concl) :: hyps in
   let systems_list = destructurate_hyps full_reified_goal in
+  let hyps =
+    List.fold_left (fun s (id,d,p) -> Id.Map.add id (d,p) s) Id.Map.empty hyps
+  in
   if !debug then display_systems systems_list;
-  resolution unsafe env reified_goal systems_list
+  resolution unsafe env (concl,hyps) systems_list
   with NO_CONTRADICTION -> CErrors.user_err Pp.(str "ROmega can't solve this system")
   end
 

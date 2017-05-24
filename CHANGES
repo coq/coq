@@ -15,6 +15,10 @@ Tactics
 - The tactic "omega" is now aware of the bodies of context variables
   such as "x := 5 : Z" (see bug #148). This could be disabled via
   Unset Omega UseLocalDefs.
+- The tactic "omega" is now aware of the bodies of context variables
+  such as "x := 5 : Z" (see bug #148). This could be disabled via
+  Unset Omega UseLocalDefs.
+- The tactic "romega" is also aware now of the bodies of context variables.
 
 Changes from 8.7+beta1 to 8.7.0
 ===============================
