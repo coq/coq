@@ -507,7 +507,7 @@ Defined.
 Lemma eq_refl_map_distr : forall A B x (f:A->B), f_equal f (eq_refl x) = eq_refl (f x).
 Proof.
   reflexivity.
-Defined.
+Qed.
 
 Lemma eq_trans_map_distr : forall A B x y z (f:A->B) (e:x=y) (e':y=z), f_equal f (eq_trans e e') = eq_trans (f_equal f e) (f_equal f e').
 Proof.
@@ -531,13 +531,13 @@ Lemma eq_trans_rew_distr : forall A (P:A -> Type) (x y z:A) (e:x=y) (e':y=z) (k:
     rew (eq_trans e e') in k = rew e' in rew e in k.
 Proof.
   destruct e, e'; reflexivity.
-Defined.
+Qed.
 
 Lemma rew_const : forall A P (x y:A) (e:x=y) (k:P),
     rew [fun _ => P] e in k = k.
 Proof.
   destruct e; reflexivity.
-Defined.
+Qed.
 
 
 (* Aliases *)
