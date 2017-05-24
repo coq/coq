@@ -2064,8 +2064,8 @@ let mk_JMeq evdref typ x typ' y =
 let mk_JMeq_refl evdref typ x = 
   papp evdref coq_JMeq_refl [| typ; x |]
 
-let hole = CAst.make @@
-  GHole (Evar_kinds.QuestionMark (Evar_kinds.Define false),
+let hole na = CAst.make @@
+  GHole (Evar_kinds.QuestionMark (Evar_kinds.Define false,na),
          Misctypes.IntroAnonymous, None)
 
 let constr_of_pat env evdref arsign pat avoid =
@@ -2168,7 +2168,7 @@ let vars_of_ctx sigma ctx =
 	    prev,
 	    (CAst.make @@ GApp (
 		(CAst.make @@ GRef (delayed_force coq_eq_refl_ref, None)), 
-		   [hole; CAst.make @@ GVar prev])) :: vars
+		   [hole na; CAst.make @@ GVar prev])) :: vars
 	| _ ->
 	    match RelDecl.get_name decl with
 		Anonymous -> invalid_arg "vars_of_ctx"
@@ -2301,7 +2301,7 @@ let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
 	       | l  -> CAst.make @@ GApp (bref, l)
 	 in
 	 let branch = match ineqs with
-	     Some _ -> CAst.make @@ GApp (branch, [ hole ])
+	     Some _ -> CAst.make @@ GApp (branch, [ hole Anonymous ])
 	   | None -> branch
 	 in
 	 incr i;

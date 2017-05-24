@@ -90,8 +90,8 @@ let inh_pattern_coerce_to ?loc env pat ind1 ind2 =
 
 open Program
 
-let make_existential ?loc ?(opaque = not (get_proofs_transparency ()))  env evdref c =
-  let src = Loc.tag ?loc (Evar_kinds.QuestionMark (Evar_kinds.Define opaque)) in
+let make_existential ?loc ?(opaque = not (get_proofs_transparency ())) na env evdref c =
+  let src = Loc.tag ?loc (Evar_kinds.QuestionMark (Evar_kinds.Define opaque,na)) in
   Evarutil.e_new_evar env evdref ~src c
 
 let app_opt env evdref f t =
@@ -181,7 +181,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		let args = List.rev (restargs @ mkRel 1 :: List.map (lift 1) tele) in
 		let pred = mkLambda (n, eqT, applist (lift 1 c, args)) in
 		let eq = papp evdref coq_eq_ind [| eqT; hdx; hdy |] in
-		let evar = make_existential ?loc env evdref eq in
+		let evar = make_existential ?loc n env evdref eq in
 		let eq_app x = papp evdref coq_eq_rect
 		  [| eqT; hdx; pred; x; hdy; evar|] 
 		in
@@ -324,7 +324,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	    Some
 	      (fun x ->
 		 let cx = app_opt env evdref c x in
-		 let evar = make_existential ?loc env evdref (mkApp (p, [| cx |]))
+		 let evar = make_existential ?loc Anonymous env evdref (mkApp (p, [| cx |]))
 		 in
 		   (papp evdref sig_intro [| u; p; cx; evar |]))
 	| None ->

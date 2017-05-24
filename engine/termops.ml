@@ -112,6 +112,7 @@ let pr_evar_suggested_name evk sigma =
   | None -> match evi.evar_source with
   | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
   | _,Evar_kinds.VarInstance id -> id
+  | _,Evar_kinds.QuestionMark (_,Name id) -> id
   | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
   | _ ->
       let env = reset_with_named_context evi.evar_hyps (Global.env()) in

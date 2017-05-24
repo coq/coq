@@ -57,7 +57,7 @@ val new_Type : ?rigid:rigid -> env -> 'r Sigma.t -> (constr, 'r) Sigma.sigma
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
 
 val restrict_evar : 'r Sigma.t -> existential_key -> Filter.t ->
-  constr list option -> (existential_key, 'r) Sigma.sigma
+  ?src:Evar_kinds.t Loc.located -> constr list option -> (existential_key, 'r) Sigma.sigma
 
 (** Polymorphic constants *)
 

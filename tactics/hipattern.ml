@@ -254,7 +254,7 @@ open Evar_kinds
 let mkPattern c = snd (Patternops.pattern_of_glob_constr c)
 let mkGApp f args = CAst.make @@ GApp (f, args)
 let mkGHole = CAst.make @@
-  GHole (QuestionMark (Define false), Misctypes.IntroAnonymous, None)
+  GHole (QuestionMark (Define false,Anonymous), Misctypes.IntroAnonymous, None)
 let mkGProd id c1 c2 = CAst.make @@
   GProd (Name (Id.of_string id), Explicit, c1, c2)
 let mkGArrow c1 c2 = CAst.make @@
