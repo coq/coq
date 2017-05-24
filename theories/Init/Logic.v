@@ -650,6 +650,13 @@ Qed.
 Declare Left Step iff_stepl.
 Declare Right Step iff_trans.
 
+Local Notation "'rew' 'dependent' H 'in' H'"
+  := (match H with
+      | eq_refl => H'
+      end)
+       (at level 10, H' at level 10,
+        format "'[' 'rew'  'dependent'  '/    ' H  in  '/' H' ']'").
+
 (** Equality for [ex] *)
 Section ex.
   Local Unset Implicit Arguments.
@@ -680,9 +687,7 @@ Section ex.
           => ex_intro
                (Q y)
                (rew H in u1)
-               match H in (_ = y) return Q y (rew H in u1) with
-                 | eq_refl => u2
-               end
+               (rew dependent H in u2)
       end.
   Proof.
     destruct H, u; reflexivity.
@@ -731,12 +736,8 @@ Section ex2.
                (Q y)
                (R y)
                (rew H in u1)
-               match H in (_ = y) return Q y (rew H in u1) with
-                 | eq_refl => u2
-               end
-               match H in (_ = y) return R y (rew H in u1) with
-                 | eq_refl => u3
-               end
+               (rew dependent H in u2)
+               (rew dependent H in u3)
       end.
   Proof.
     destruct H, u; reflexivity.
