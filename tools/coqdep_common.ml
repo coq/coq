@@ -38,6 +38,26 @@ let suffixe = ref ".vo"
 
 type dir = string option
 
+type origin =
+  | File of string
+  | Stdin of string
+
+let open_origin = function
+  | File f -> open_in f
+  | Stdin _ -> in_channel_of_descr Unix.stdin
+
+let string_of_origin = function
+  | File s -> sprintf "File \"%s\"" s
+  | Stdin _ -> "Standard input"
+
+let name_of_origin = function
+  | File s -> s
+  | Stdin s -> s
+
+let map_origin f = function
+  | File s -> File (f s)
+  | Stdin s -> Stdin (f s)
+
 (** [get_extension f l] checks whether [f] has one of the extensions
     listed in [l]. It returns [f] without its extension, alongside with
     the extension. When no extension match, [(f,"")] is returned *)
@@ -67,11 +87,11 @@ and mllibAccu = ref ([] : (string * dir) list)
 and mlpackAccu = ref ([] : (string * dir) list)
 
 (** Coq files specifies on the command line:
-    - first string is the full filename, with only its extension removed
+    - origin is the full filename, with only its extension removed
     - second string is the absolute version of the previous (via getcwd)
 *)
 
-let vAccu   = ref ([] : (string * string) list)
+let vAccu = ref ([] : (origin * string) list)
 
 (** Queue operations *)
 
@@ -157,20 +177,21 @@ let is_in_coqlib ?from s =
 
 let clash_v = ref (StrListMap.empty : string list StrListMap.t)
 
-let error_cannot_parse s (i,j) =
-  Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
+let error_cannot_parse origin (i,j) =
+  Printf.eprintf "%s, characters %i-%i: Syntax error\n"
+                 (string_of_origin origin) i j;
   exit 1
 
-let warning_module_notfound f s =
-  eprintf "*** Warning: in file %s, library %s is required and has not been found in the loadpath!\n%!"
-    f (String.concat "." s)
+let warning_module_notfound origin s =
+  eprintf "*** Warning: %s: library %s is required and has not been found in the loadpath!\n%!"
+    (string_of_origin origin) (String.concat "." s)
 
 let warning_declare f s =
   eprintf "*** Warning: in file %s, declared ML module " f;
   eprintf "%s has not been found!\n" s;
   flush stderr
 
-let warning_clash file dir =
+let warning_clash origin dir =
   match StrListMap.find dir !clash_v with
     (f1::f2::fl) ->
       let f = Filename.basename f1 in
@@ -178,8 +199,8 @@ let warning_clash file dir =
       let d2 = Filename.dirname f2 in
       let dl = List.rev_map Filename.dirname fl in
       eprintf
-        "*** Warning: in file %s, \n    required library %s matches several files in path\n    (found %s.v in "
-        file (String.concat "." dir) f;
+        "*** Warning: %s: \n    required library %s matches several files in path\n    (found %s.v in "
+        (string_of_origin origin) (String.concat "." dir) f;
       List.iter (fun s -> eprintf "%s, " s) dl;
       eprintf "%s and %s; used the latter)\n" d2 d1
   | _ -> assert false
@@ -188,8 +209,8 @@ let warning_cannot_open_dir dir =
   eprintf "*** Warning: cannot open %s\n" dir;
   flush stderr
 
-let safe_assoc from verbose file k =
-  if verbose && StrListMap.mem k !clash_v then warning_clash file k;
+let safe_assoc from verbose origin k =
+  if verbose && StrListMap.mem k !clash_v then warning_clash origin k;
   match search_v_known ?from k with
   | None -> raise Not_found
   | Some path -> path
@@ -302,7 +323,7 @@ let traite_fichier_modules md ext =
 	    | None -> a_faire) "" list
   with
     | Sys_error _ -> ""
-    | Syntax_error (i,j) -> error_cannot_parse (md^ext) (i,j)
+    | Syntax_error (i,j) -> error_cannot_parse (File (md^ext)) (i,j)
 
 (* Makefile's escaping rules are awful: $ is escaped by doubling and
    other special characters are escaped by backslash prefixing while
@@ -342,8 +363,8 @@ let compare_file f1 f2 =
 let canonize f =
   let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
   match List.filter (fun (_,full) -> f' = full) !vAccu with
-    | (f,_) :: _ -> escape f
-    | _ -> escape f
+    | (f,_) :: _ -> escape (name_of_origin f)
+    | _ -> escape f 
 
 module VData = struct
   type t = string list option * string list
@@ -352,70 +373,79 @@ end
 
 module VCache = Set.Make(VData)
 
-let rec traite_fichier_Coq suffixe verbose f =
+let rec v_file_deps ~verbose origin acc =
   try
-    let chan = open_in f in
+    let chan = open_origin origin in
     let buf = Lexing.from_channel chan in
     let deja_vu_v = ref VCache.empty in
     let deja_vu_ml = ref StrSet.empty in
-    try
-      while true do
-      	let tok = coq_action buf in
-	match tok with
-	  | Require (from, strl) ->
-	      List.iter (fun str ->
-		if not (VCache.mem (from, str) !deja_vu_v) then begin
-	          deja_vu_v := VCache.add (from, str) !deja_vu_v;
-                  try
-                    let file_str = safe_assoc from verbose f str in
-                    printf " %s%s" (canonize file_str) suffixe
-                  with Not_found ->
-		    if verbose && not (is_in_coqlib ?from str) then
-		      let str =
-			match from with
-			  | None -> str
-			  | Some pth -> pth @ str
-		      in
-                      warning_module_notfound f str
-       		end) strl
-	  | Declare sl ->
-	      let declare suff dir s =
-		let base = file_name s dir in
-		let opt = if !option_natdynlk then " "^base^".cmxs" else "" in
-		printf " %s%s%s" (escape base) suff opt
-	      in
-	      let decl str =
-                let s = basename_noext str in
-		if not (StrSet.mem s !deja_vu_ml) then begin
-		  deja_vu_ml := StrSet.add s !deja_vu_ml;
-		  match search_mllib_known s with
-		    | Some mldir -> declare ".cma" mldir s
-		    | None ->
-		      match search_mlpack_known s with
-			| Some mldir -> declare ".cmo" mldir s
-			| None ->
-			  match search_ml_known s with
-			    | Some mldir -> declare ".cmo" mldir s
-			    | None -> warning_declare f str
-		end
-	      in List.iter decl sl
-	  | Load str ->
-	      let str = Filename.basename str in
-	      if not (VCache.mem (None, [str]) !deja_vu_v) then begin
-	        deja_vu_v := VCache.add (None, [str]) !deja_vu_v;
-                try
-                  let (file_str, _) = Hashtbl.find vKnown [str] in
-                  let canon = canonize file_str in
-                  printf " %s.v" canon;
-                  traite_fichier_Coq suffixe true (canon ^ ".v")
-                with Not_found -> ()
-       	      end
-          | AddLoadPath _ | AddRecLoadPath _ -> (* TODO *) ()
-      done
-    with Fin_fichier -> close_in chan
-       | Syntax_error (i,j) -> close_in chan; error_cannot_parse f (i,j)
-  with Sys_error _ -> ()
+    let mark_v_done from acc str =
+      let seen = VCache.mem (from, str) !deja_vu_v in
+      if not seen then
+        let () = deja_vu_v := VCache.add (from, str) !deja_vu_v in
+        try
+          let file_str = safe_assoc from verbose origin str in
+          (canonize file_str, ".vio") :: acc
+        with Not_found ->
+          (if verbose && not (is_in_coqlib ?from str) then
+             let str =
+               match from with
+               | None -> str
+               | Some pth -> pth @ str
+             in
+             warning_module_notfound origin str); acc
+      else acc
+    in
+    let rec loop acc =
+      try
+        let token = coq_action buf in
+        let acc = match token with
+        | Require (from, strl) ->
+           List.fold_left (fun accu v -> mark_v_done from accu v) acc strl
+        | Declare sl ->
+           let declare suff dir s =
+             let base = file_name s dir in
+             let opt = if !option_natdynlk then " " ^ base ^ ".cmxs" else "" in
+             (escape base, suff ^ opt)
+           in
+           let decl acc str =
+             let s = basename_noext str in
+             if not (StrSet.mem s !deja_vu_ml) then
+               let () = deja_vu_ml := StrSet.add s !deja_vu_ml in
+               match search_mllib_known s with
+               | Some mldir -> declare ".cma" mldir s :: acc
+               | None ->
+                  match search_mlpack_known s with
+                  | Some mldir -> declare ".cmo" mldir s :: acc
+                  | None ->
+                     match search_ml_known s with
+                     | Some mldir -> declare ".cmo" mldir s :: acc
+                     | None -> acc
+             else acc
+           in
+           List.fold_left decl acc sl
+        | Load str ->
+           let str = Filename.basename str in
+           let seen = VCache.mem (None, [str]) !deja_vu_v in
+           if not seen then
+             let () = deja_vu_v := VCache.add (None, [str]) !deja_vu_v in
+             match search_v_known [str] with
+             | None -> acc
+             | Some file_str ->
+                let canon = canonize file_str in
+                let acc = (canon, ".v") :: acc in
+                v_file_deps ~verbose (File (canon ^ ".v")) acc
+           else acc
+        | AddLoadPath _ | AddRecLoadPath _ -> acc (** TODO *)
+        in
+        loop acc
+      with Fin_fichier -> close_in chan; acc
+         | Syntax_error (i,j) -> close_in chan; error_cannot_parse origin (i,j)
+    in
+    loop acc
+  with Sys_error _ -> acc
 
+let v_file_deps ~verbose origin = v_file_deps ~verbose origin []
 
 let mL_dependencies () =
   List.iter
@@ -459,16 +489,19 @@ let mL_dependencies () =
        flush stdout)
     (List.rev !mlpackAccu)
 
+let vio_to_v s = if String.equal s ".vio" then !suffixe else s
+
 let coq_dependencies () =
   List.iter
-    (fun (name,_) ->
-       let ename = escape name in
+    (fun (origin,_) ->
+       let ename = escape (name_of_origin origin) in
        let glob = if !option_noglob then "" else " "^ename^".glob" in
        printf "%s%s%s %s.v.beautified: %s.v" ename !suffixe glob ename ename;
-       traite_fichier_Coq !suffixe true (name ^ ".v");
+       let deps = v_file_deps ~verbose:true (map_origin (fun s -> s ^ ".v") origin) in
+       List.iter (fun (f,ext) -> printf " %s%s" f (vio_to_v ext)) deps;
        printf "\n";
        printf "%s.vio: %s.v" ename ename;
-       traite_fichier_Coq ".vio" true (name ^ ".v");
+       List.iter (fun (f,ext) -> printf " %s%s" f ext) deps;
        printf "\n";
        flush stdout)
     (List.rev !vAccu)
@@ -572,10 +605,14 @@ let rec treat_file old_dirname old_name =
 	   | (base,".v") ->
 	       let name = file_name base dirname
 	       and absname = absolute_file_name base dirname in
-	       addQueue vAccu (name, absname)
+	       addQueue vAccu (File name, absname)
 	   | (base,(".ml"|".ml4" as ext)) -> addQueue mlAccu (base,ext,dirname)
 	   | (base,".mli") -> addQueue mliAccu (base,dirname)
 	   | (base,".mllib") -> addQueue mllibAccu (base,dirname)
 	   | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
 	   | _ -> ())
     | _ -> ()
+
+let process_stdin name =
+  let (base,_ext) = get_extension name [".v"] in
+  addQueue vAccu (Stdin base, base)

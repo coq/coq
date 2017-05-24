@@ -8,6 +8,14 @@
 
 module StrSet : Set.S with type elt = string
 
+type origin =
+  | File of string
+  | Stdin of string
+
+val name_of_origin : origin -> string
+val open_origin : origin -> in_channel
+val map_origin : (string -> string) -> origin -> origin
+
 (** [find_dir_logpath dir] Return the logical path of directory [dir]
     if it has been given one. Raise [Not_found] otherwise. In
     particular we can check if "." has been attributed a logical path
@@ -29,7 +37,7 @@ val basename_noext : string -> string
 val mlAccu : (string * string * dir) list ref
 val mliAccu : (string * dir) list ref
 val mllibAccu : (string * dir) list ref
-val vAccu : (string * string) list ref
+val vAccu : (origin * string) list ref
 val addQueue : 'a list ref -> 'a -> unit
 val add_ml_known : string -> dir -> string -> unit
 val iter_ml_known : (string -> dir -> unit) -> unit
@@ -65,4 +73,9 @@ val add_rec_dir_import :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
 
 val treat_file : dir -> string -> unit
-val error_cannot_parse : string -> int * int -> 'a
+val error_cannot_parse : origin -> int * int -> 'a
+
+val v_file_deps : verbose : bool -> origin -> (string * string) list
+val vio_to_v : string -> string
+
+val process_stdin : string -> unit
