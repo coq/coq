@@ -55,6 +55,7 @@ val intern_genarg : glob_sign -> raw_generic_argument -> glob_generic_argument
 
 (** printing *)
 val print_ltac : Libnames.qualid -> std_ppcmds
+val print_ltac_signatures : unit -> std_ppcmds
 
 (** Reduction expressions *)
 

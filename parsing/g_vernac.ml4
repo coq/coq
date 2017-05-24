@@ -944,6 +944,7 @@ GEXTEND Gram
       | IDENT "TypeClasses" -> PrintTypeClasses
       | IDENT "Instances"; qid = smart_global -> PrintInstances qid
       | IDENT "Ltac"; qid = global -> PrintLtac qid
+      | IDENT "Ltac"; IDENT "Signatures" -> PrintLtacSignatures
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)

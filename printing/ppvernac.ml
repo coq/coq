@@ -475,6 +475,8 @@ module Make
         keyword "Print Instances" ++ spc () ++ pr_smart_global qid
       | PrintLtac qid ->
         keyword "Print Ltac" ++ spc() ++ pr_ltac_ref qid
+      | PrintLtacSignatures  ->
+        keyword "Print Ltac Signatures"
       | PrintCoercions ->
         keyword "Print Coercions"
       | PrintCoercionPaths (s,t) ->
