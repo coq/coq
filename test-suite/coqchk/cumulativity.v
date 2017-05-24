@@ -50,3 +50,12 @@ Section TpLower.
   Fail Definition LowerTp : Tp@{j} -> Tp@{i} := fun x => x.
 
 End TpLower.
+
+
+Section subtyping_test.
+  Universe i j.
+  Constraint i < j.
+
+  Inductive TP2 := tp2 : Type@{i} -> Type@{j} -> TP2.
+
+End subtyping_test.

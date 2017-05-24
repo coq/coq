@@ -573,7 +573,7 @@ let check_subtyping mib paramsctxt env_ar inds =
 let check_inductive env kn mib =
   Flags.if_verbose Feedback.msg_notice (str "  checking ind: " ++ MutInd.print kn);
   (* check mind_constraints: should be consistent with env *)
-  let env = Environ.push_context (Univ.instantiate_univ_context mib.mind_universes) env in
+  let env = Environ.push_context (Univ.instantiate_univ_context (Univ.UInfoInd.univ_context mib.mind_universes)) env in
   (* check mind_record : TODO ? check #constructor = 1 ? *)
   (* check mind_finite : always OK *)
   (* check mind_ntypes *)
