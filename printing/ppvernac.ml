@@ -512,6 +512,13 @@ open Decl_kinds
       keyword "Print Strategies"
     | PrintStrategy (Some qid) ->
       keyword "Print Strategy" ++ pr_smart_global qid
+    | PrintWarnings ->
+       keyword "Print Warnings"
+    | PrintCategoryWarnings(s) ->
+       keyword "Print Category Warnings" ++ spc () ++ str s
+    | PrintWarning(s) ->
+       keyword "Print Warning" ++ spc () ++ str s
+
 
   let pr_using e = str (Proof_using.to_string e)
 

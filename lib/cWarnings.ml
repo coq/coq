@@ -12,6 +12,7 @@ type status =
   Disabled | Enabled | AsError
 
 type t = {
+  name : string;
   default : status;
   category : string;
   status : status;
@@ -40,7 +41,7 @@ let refine_loc = function
   | loc -> loc
 
 let create ~name ~category ?(default=Enabled) pp =
-  Hashtbl.add warnings name { default; category; status = default };
+  Hashtbl.add warnings name { name; default; category; status = default };
   add_warning_in_category ~name ~category;
   if default <> Disabled then
     add_warning_in_category ~name ~category:"default";
@@ -186,3 +187,21 @@ let parse_flags s =
 
 let set_flags s =
   reset_default_warnings (); let s = parse_flags s in flags := s
+
+let get_categories () =
+  Hashtbl.fold (fun c _ l -> c :: l) categories []
+
+let get_category_warnings category =
+  try
+    let ws = Hashtbl.find categories category in
+    List.map (Hashtbl.find warnings) ws
+  with
+    Not_found ->
+    CErrors.user_err Pp.(str "Cannot find warning category " ++ quote (str category))
+
+let get_warning warning =
+  try
+    Hashtbl.find warnings warning
+  with
+    Not_found ->
+    CErrors.user_err Pp.(str "Cannot find warning " ++ quote (str warning))

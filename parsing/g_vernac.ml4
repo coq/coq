@@ -969,7 +969,10 @@ GEXTEND Gram
       | IDENT "Transparent"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (false, true, qid)
       | IDENT "All"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (true, true, qid)
       | IDENT "Strategy"; qid = smart_global -> PrintStrategy (Some qid)
-      | IDENT "Strategies" -> PrintStrategy None ] ]
+      | IDENT "Strategies" -> PrintStrategy None
+      | IDENT "Warnings" -> PrintWarnings
+      | IDENT "Category"; IDENT "Warnings"; s = STRING -> PrintCategoryWarnings(s)
+      | IDENT "Warning"; s = STRING -> PrintWarning(s) ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> FunClass
