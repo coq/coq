@@ -28,8 +28,9 @@ type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
    to print a goal that is out of focus (or already solved) it doesn't
    make sense to apply a tactic to it. Hence it the types may look very
    similar, they do not seem to mean the same thing. *)
-type goal_selector =
+type goal_selector = Tacexpr.goal_selector =
   | SelectNth of int
+  | SelectList of (int * int) list
   | SelectId of Id.t
   | SelectAll
   | SelectAllParallel

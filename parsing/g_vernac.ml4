@@ -79,8 +79,8 @@ let test_bracket_ident =
         | KEYWORD "[" ->
             (match get_tok (stream_nth 1 strm) with
               | IDENT _ -> ()
-	      | _ -> raise Stream.Failure)
-	| _ -> raise Stream.Failure)
+              | _ -> raise Stream.Failure)
+        | _ -> raise Stream.Failure)
 
 let default_command_entry =
   Gram.Entry.of_parser "command_entry"
@@ -138,15 +138,14 @@ GEXTEND Gram
     [ [ c = subgoal_command -> c None] ]
   ;
 
-  selector:
-    [ [ n=natural; ":" -> SelectNth n
-      | test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id
-      | IDENT "all" ; ":" -> SelectAll
+  vernac_selector:
+    [ [ s = Tactic.selector -> s
+      | test_bracket_ident ; "["; id = ident; "]"; ":" -> SelectId id
       | IDENT "par" ; ":" -> SelectAllParallel ] ]
   ;
 
   tactic_mode:
-  [ [ gln = OPT selector;
+  [ [ gln = OPT vernac_selector;
       tac = subgoal_command -> tac gln ] ]
   ;
 

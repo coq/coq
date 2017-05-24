@@ -842,7 +842,7 @@ let vernac_solve n info tcom b =
     error "Unknown command of the non proof-editing mode.";
   let status = Proof_global.with_current_proof (fun etac p ->
     let with_end_tac = if b then Some etac else None in
-    let global = match n with SelectAll -> true | _ -> false in
+    let global = match n with SelectAll | SelectList _ -> true | _ -> false in
     let info = Option.append info !print_info_trace in
     let (p,status) =
       solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p

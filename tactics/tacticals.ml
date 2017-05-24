@@ -463,6 +463,15 @@ module New = struct
   let tclPROGRESS t =
     Proofview.tclINDEPENDENT (Proofview.tclPROGRESS t)
 
+  (* Select a subset of the goals *)
+  let tclSELECT = function
+    | Tacexpr.SelectNth i -> Proofview.tclFOCUS i i
+    | Tacexpr.SelectList l -> Proofview.tclFOCUSLIST l
+    | Tacexpr.SelectId id -> Proofview.tclFOCUSID id
+    | Tacexpr.SelectAll -> fun tac -> tac
+    | Tacexpr.SelectAllParallel -> fun _ ->
+        tclZEROMSG (str"Parallel selector cannot be used inside a tactic.")
+
   (* Check that holes in arguments have been resolved *)
 
   let check_evars env sigma extsigma origsigma =

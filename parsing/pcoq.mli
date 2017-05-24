@@ -232,6 +232,7 @@ module Tactic :
     val tactic : raw_tactic_expr Gram.entry
     val tactic_eoi : raw_tactic_expr Gram.entry
     val tacdef_body : (reference * bool * raw_tactic_expr) Gram.entry
+    val selector : goal_selector Gram.entry
   end
 
 module Vernac_ :

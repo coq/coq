@@ -1205,6 +1205,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
            strbrk "There is an \"Info\" command to replace it." ++fnl () ++
 	   strbrk "Some specific verbose tactics may also exist, such as info_eauto.");
       eval_tactic ist tac
+  | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
   | TacAlias (loc,s,l) ->
       let body = Tacenv.interp_alias s in

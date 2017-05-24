@@ -47,6 +47,8 @@ sig
     ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list -> 'd list -> 'e list
   val filteri :
     (int -> 'a -> bool) -> 'a list -> 'a list
+  val partitioni :
+    (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
   val index : 'a eq -> 'a -> 'a list -> int
   val index0 : 'a eq -> 'a -> 'a list -> int
@@ -471,6 +473,15 @@ let filteri p =
     | x::l -> let l' = filter_i_rec (succ i) l in if p i x then x::l' else l'
   in
   filter_i_rec 0
+
+let partitioni p =
+  let rec aux i = function
+    | [] -> [], []
+    | x :: l ->
+        let (l1, l2) = aux (succ i) l in
+        if p i x then (x :: l1, l2)
+        else (l1, x :: l2)
+  in aux 0
 
 let rec sep_last = function
   | [] -> failwith "sep_last"

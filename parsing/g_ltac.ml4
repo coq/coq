@@ -33,7 +33,7 @@ let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
 
 GEXTEND Gram
   GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
-          constr_may_eval constr_eval;
+          constr_may_eval constr_eval selector;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
@@ -79,7 +79,8 @@ GEXTEND Gram
 (*To do: put Abstract in Refiner*)
       | IDENT "abstract"; tc = NEXT -> TacAbstract (tc,None)
       | IDENT "abstract"; tc = NEXT; "using";  s = ident ->
-          TacAbstract (tc,Some s) ]
+          TacAbstract (tc,Some s)
+      | sel = selector; ta = tactic_expr -> TacSelect (sel, ta) ]
 (*End of To do*)
     | "2" RIGHTA
       [ ta0 = tactic_expr; "+"; ta1 = binder_tactic -> TacOr (ta0,ta1)
@@ -256,5 +257,26 @@ GEXTEND Gram
   ;
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
+  ;
+
+  range_selector:
+    [ [ n = natural ; "-" ; m = natural -> (n, m)
+      | n = natural -> (n, n) ] ]
+  ;
+
+  (* We unfold a range selectors list once so that we can make a special case
+   * for a unique SelectNth selector. *)
+  range_selector_or_nth:
+    [ [ n = natural ; "-" ; m = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
+          SelectList ((n, m) :: Option.default [] l)
+      | n = natural;
+        l = OPT [","; l = LIST1 range_selector SEP "," -> l] ->
+          Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l ] ]
+  ;
+
+  selector:
+    [ [ l = range_selector_or_nth; ":" -> l
+      | IDENT "all" ; ":" -> SelectAll ] ]
   ;
   END

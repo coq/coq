@@ -660,6 +660,8 @@ and intern_tactic_seq onlytac ist = function
   | TacSolve l -> ist.ltacvars, TacSolve (List.map (intern_pure_tactic ist) l)
   | TacComplete tac -> ist.ltacvars, TacComplete (intern_pure_tactic ist tac)
   | TacArg (loc,a) -> ist.ltacvars, intern_tactic_as_arg loc onlytac ist a
+  | TacSelect (sel, tac) ->
+      ist.ltacvars, TacSelect (sel, intern_pure_tactic ist tac)
 
   (* For extensions *)
   | TacAlias (loc,s,l) ->
