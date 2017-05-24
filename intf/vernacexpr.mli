@@ -143,6 +143,7 @@ type search_restriction =
 
 type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
+                           (*   list of idents for qed exporting           *)
 type opacity_flag   = Opaque of lident list option | Transparent
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
@@ -223,7 +224,8 @@ type syntax_modifier =
 
 type proof_end =
   | Admitted
-  | Proved of opacity_flag * (lident * theorem_kind option) option
+  (*                         name in `Save ident` when closing goal *)
+  | Proved of opacity_flag * lident option
 
 type scheme =
   | InductionScheme of bool * reference or_by_notation * sort_expr

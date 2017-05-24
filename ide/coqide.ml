@@ -1103,8 +1103,8 @@ let build_ui () =
 
   menu templates_menu [
     item "Templates" ~label:"Te_mplates";
-    template_item ("Lemma new_lemma : .\nProof.\n\nSave.\n", 6,9, "J");
-    template_item ("Theorem new_theorem : .\nProof.\n\nSave.\n", 8,11, "T");
+    template_item ("Lemma new_lemma : .\nProof.\n\nQed.\n", 6,9, "J");
+    template_item ("Theorem new_theorem : .\nProof.\n\nQed.\n", 8,11, "T");
     template_item ("Definition ident := .\n", 11,5, "E");
     template_item ("Inductive ident : :=\n  | : .\n", 10,5, "I");
     template_item ("Fixpoint ident (_ : _) {struct _} : _ :=\n.\n", 9,5, "F");
