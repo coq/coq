@@ -237,10 +237,8 @@ Section sigT.
 
   (** Projecting an equality of a pair to equality of the second components *)
   Definition projT2_eq {A} {P : A -> Type} {u v : { a : A & P a }} (p : u = v)
-  : rew projT1_eq p in projT2 u = projT2 v.
-  Proof.
-    destruct p; reflexivity.
-  Defined.
+  : rew projT1_eq p in projT2 u = projT2 v
+    := rew dependent p in eq_refl.
 
   (** Equality of [sigT] is itself a [sigT] (forwards-reasoning version) *)
   Definition eq_existT_uncurried {A : Type} {P : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
@@ -326,10 +324,8 @@ Section sig.
 
   (** Projecting an equality of a pair to equality of the second components *)
   Definition proj2_sig_eq {A} {P : A -> Prop} {u v : { a : A | P a }} (p : u = v)
-  : rew proj1_sig_eq p in proj2_sig u = proj2_sig v.
-  Proof.
-    destruct p; reflexivity.
-  Defined.
+  : rew proj1_sig_eq p in proj2_sig u = proj2_sig v
+    := rew dependent p in eq_refl.
 
   (** Equality of [sig] is itself a [sig] (forwards-reasoning version) *)
   Definition eq_exist_uncurried {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
@@ -413,17 +409,13 @@ Section sigT2.
 
   (** Projecting an equality of a pair to equality of the second components *)
   Definition projT2_of_sigT2_eq {A} {P Q : A -> Type} {u v : { a : A & P a & Q a }} (p : u = v)
-  : rew projT1_of_sigT2_eq p in projT2 u = projT2 v.
-  Proof.
-    destruct p; reflexivity.
-  Defined.
+  : rew projT1_of_sigT2_eq p in projT2 u = projT2 v
+    := rew dependent p in eq_refl.
 
   (** Projecting an equality of a pair to equality of the third components *)
   Definition projT3_eq {A} {P Q : A -> Type} {u v : { a : A & P a & Q a }} (p : u = v)
-  : rew projT1_of_sigT2_eq p in projT3 u = projT3 v.
-  Proof.
-    destruct p; reflexivity.
-  Defined.
+  : rew projT1_of_sigT2_eq p in projT3 u = projT3 v
+    := rew dependent p in eq_refl.
 
   (** Equality of [sigT2] is itself a [sigT2] (forwards-reasoning version) *)
   Definition eq_existT2_uncurried {A : Type} {P Q : A -> Type}
@@ -529,17 +521,13 @@ Section sig2.
 
   (** Projecting an equality of a pair to equality of the second components *)
   Definition proj2_sig_of_sig2_eq {A} {P Q : A -> Prop} {u v : { a : A | P a & Q a }} (p : u = v)
-    : rew proj1_sig_of_sig2_eq p in proj2_sig u = proj2_sig v.
-  Proof.
-    destruct p; reflexivity.
-  Defined.
+    : rew proj1_sig_of_sig2_eq p in proj2_sig u = proj2_sig v
+    := rew dependent p in eq_refl.
 
   (** Projecting an equality of a pair to equality of the third components *)
   Definition proj3_sig_eq {A} {P Q : A -> Prop} {u v : { a : A | P a & Q a }} (p : u = v)
-    : rew proj1_sig_of_sig2_eq p in proj3_sig u = proj3_sig v.
-  Proof.
-    destruct p; reflexivity.
-  Defined.
+    : rew proj1_sig_of_sig2_eq p in proj3_sig u = proj3_sig v
+    := rew dependent p in eq_refl.
 
   (** Equality of [sig2] is itself a [sig2] (fowards-reasoning version) *)
   Definition eq_exist2_uncurried {A} {P Q : A -> Prop}
