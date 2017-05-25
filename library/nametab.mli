@@ -173,3 +173,38 @@ val shortest_qualid_of_tactic : ltac_constant -> qualid
 
 val extended_locate : qualid -> extended_global_reference (*= locate_extended *)
 val absolute_reference : full_path -> global_reference (** = global_of_path *)
+
+(** {5 Generic name handling} *)
+
+(** NOT FOR PUBLIC USE YET. Plugin writers, please do not rely on this API. *)
+
+module type UserName = sig
+  type t
+  val equal : t -> t -> bool
+  val to_string : t -> string
+  val repr : t -> Id.t * module_ident list
+end
+
+module type EqualityType =
+sig
+  type t
+  val equal : t -> t -> bool
+end
+
+module type NAMETREE = sig
+  type elt
+  type t
+  type user_name
+
+  val empty : t
+  val push : visibility -> user_name -> elt -> t -> t
+  val locate : qualid -> t -> elt
+  val find : user_name -> t -> elt
+  val exists : user_name -> t -> bool
+  val user_name : qualid -> t -> user_name
+  val shortest_qualid : Id.Set.t -> user_name -> t -> qualid
+  val find_prefixes : qualid -> t -> elt list
+end
+
+module Make (U : UserName) (E : EqualityType) :
+  NAMETREE with type user_name = U.t and type elt = E.t

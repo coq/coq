@@ -18,7 +18,9 @@ open Misctypes
 
 type glob_sign = Genintern.glob_sign = {
   ltacvars : Id.Set.t;
-  genv : Environ.env }
+  genv : Environ.env;
+  extra : Genintern.Store.t;
+}
 
 val fully_empty_glob_sign : glob_sign
 

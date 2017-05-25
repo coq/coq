@@ -31,7 +31,11 @@ val refine : ?unsafe:bool -> EConstr.t Sigma.run -> unit tactic
     type-checked beforehand. *)
 
 val refine_one : ?unsafe:bool -> ('a * EConstr.t) Sigma.run -> 'a tactic
-(** A generalization of [refine] which assumes exactly one goal under focus *)
+(** A variant of [refine] which assumes exactly one goal under focus *)
+
+val generic_refine : ?unsafe:bool -> ('a * EConstr.t) tactic ->
+  ([ `NF ], 'r) Proofview.Goal.t -> 'a tactic
+(** The general version of refine. *)
 
 (** {7 Helper functions} *)
 

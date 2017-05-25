@@ -271,7 +271,7 @@ let add_rew_rules base lrul =
   let counter = ref 0 in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let ist = { Genintern.ltacvars = Id.Set.empty; genv = Global.env () } in
+  let ist = Genintern.empty_glob_sign (Global.env ()) in
   let intern tac = snd (Genintern.generic_intern ist tac) in
   let lrul =
     List.fold_left

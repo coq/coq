@@ -31,7 +31,7 @@ let () =
   Obligations.default_tactic := tac
 
 let with_tac f tac =
-  let env = { Genintern.genv = Global.env (); ltacvars = Names.Id.Set.empty } in
+  let env = Genintern.empty_glob_sign (Global.env ()) in
   let tac = match tac with
   | None -> None
   | Some tac ->

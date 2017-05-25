@@ -10,9 +10,15 @@ open Names
 open Mod_subst
 open Genarg
 
+module Store : Store.S
+
 type glob_sign = {
   ltacvars : Id.Set.t;
-  genv : Environ.env }
+  genv : Environ.env;
+  extra : Store.t;
+}
+
+val empty_glob_sign : Environ.env -> glob_sign
 
 (** {5 Internalization functions} *)
 

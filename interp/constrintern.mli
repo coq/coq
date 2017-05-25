@@ -70,6 +70,8 @@ type ltac_sign = {
   (** Variables of Ltac which may be bound to a term *)
   ltac_bound : Id.Set.t;
   (** Other variables of Ltac *)
+  ltac_extra : Genintern.Store.t;
+  (** Arbitrary payload *)
 }
 
 val empty_ltac_sign : ltac_sign

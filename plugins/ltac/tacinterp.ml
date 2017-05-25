@@ -585,6 +585,7 @@ let interp_uconstr ist env sigma = function
       let ltacvars = {
         Constrintern.ltac_vars = Id.(Set.union (Map.domain typed) (Map.domain untyped));
         ltac_bound = Id.Map.domain ist.lfun;
+        ltac_extra = Genintern.Store.empty;
       } in
       { closure ; term =  intern_gen WithoutTypeConstraint ~ltacvars env ce }
 
@@ -612,6 +613,7 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
       let ltacvars = {
         ltac_vars = constr_context;
         ltac_bound = Id.Map.domain ist.lfun;
+        ltac_extra = Genintern.Store.empty;
       } in
       let kind_for_intern =
         match kind with OfType _ -> WithoutTypeConstraint | _ -> kind in
@@ -1964,8 +1966,7 @@ let interp_tac_gen lfun avoid_ids debug t =
   let ist = { lfun = lfun; extra = extra } in
   let ltacvars = Id.Map.domain lfun in
   interp_tactic ist
-    (intern_pure_tactic {
-      ltacvars; genv = env } t)
+    (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars } t)
   end }
 
 let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
@@ -1974,7 +1975,7 @@ let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
 (* [global] means that [t] should be internalized outside of goals. *)
 let hide_interp global t ot =
   let hide_interp env =
-    let ist = { ltacvars = Id.Set.empty; genv = env } in
+    let ist = Genintern.empty_glob_sign env in
     let te = intern_pure_tactic ist t in
     let t = eval_tactic te in
     match ot with
@@ -2097,17 +2098,13 @@ let interp_redexp env sigma r =
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
 let _ =
-  let eval ty env sigma lfun arg =
+  let eval lfun env sigma ty tac =
     let ist = { lfun = lfun; extra = TacStore.empty; } in
-    if Genarg.has_type arg (glbwit wit_tactic) then
-      let tac = Genarg.out_gen (glbwit wit_tactic) arg in
-      let tac = interp_tactic ist tac in
-      let (c, sigma) = Pfedit.refine_by_tactic env sigma ty tac in
-      (EConstr.of_constr c, sigma)
-    else
-      failwith "not a tactic"
+    let tac = interp_tactic ist tac in
+    let (c, sigma) = Pfedit.refine_by_tactic env sigma ty tac in
+    (EConstr.of_constr c, sigma)
   in
-  Hook.set Pretyping.genarg_interp_hook eval
+  Pretyping.register_constr_interp0 wit_tactic eval
 
 (** Used in tactic extension **)
 

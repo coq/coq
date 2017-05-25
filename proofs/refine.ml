@@ -70,8 +70,7 @@ let add_side_effect env = function
 let add_side_effects env effects =
   List.fold_left (fun env eff -> add_side_effect env eff) env effects
 
-let make_refine_enter ?(unsafe = true) f =
-  { enter = fun gl ->
+let generic_refine ?(unsafe = true) f gl =
   let gl = Proofview.Goal.assume gl in
   let sigma = Proofview.Goal.sigma gl in
   let sigma = Sigma.to_evar_map sigma in
@@ -82,7 +81,10 @@ let make_refine_enter ?(unsafe = true) f =
   let prev_future_goals = Evd.future_goals sigma in
   let prev_principal_goal = Evd.principal_future_goal sigma in
   (** Create the refinement term *)
-  let ((v,c), sigma) = Sigma.run (Evd.reset_future_goals sigma) f in
+  Proofview.Unsafe.tclEVARS (Evd.reset_future_goals sigma) >>= fun () ->
+  f >>= fun (v, c) ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.V82.wrap_exceptions begin fun () ->
   let evs = Evd.future_goals sigma in
   let evkmain = Evd.principal_future_goal sigma in
   (** Redo the effects in sigma in the monad's env *)
@@ -122,7 +124,18 @@ let make_refine_enter ?(unsafe = true) f =
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
   Proofview.tclUNIT v
-  }
+  end
+
+let lift c =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.V82.wrap_exceptions begin fun () ->
+  let Sigma (c, sigma, _) = c.run (Sigma.Unsafe.of_evar_map sigma) in
+  Proofview.Unsafe.tclEVARS (Sigma.to_evar_map sigma) >>= fun () ->
+  Proofview.tclUNIT c
+  end
+
+let make_refine_enter ?unsafe f =
+  { enter = fun gl -> generic_refine ?unsafe (lift f) gl }
 
 let refine_one ?(unsafe = true) f =
   Proofview.Goal.enter_one (make_refine_enter ~unsafe f)
