@@ -146,12 +146,8 @@ let coqpath =
 
 let exe s = s ^ Coq_config.exec_extension
 
-let guess_ocamlfind () = which (user_path ()) (exe "ocamlfind")
-
 let ocamlfind () =
-  if !Flags.ocamlfind_spec then !Flags.ocamlfind else
-    if !Flags.boot then Coq_config.ocamlfind else
-      try guess_ocamlfind () / "ocamlfind"  with Not_found -> Coq_config.ocamlfind
+  if !Flags.ocamlfind_spec then !Flags.ocamlfind else Coq_config.ocamlfind
 
 (** {2 Camlp4 paths} *)
 
@@ -207,3 +203,28 @@ let xdg_config_dirs warn =
 
 let xdg_dirs ~warn =
   List.filter Sys.file_exists (xdg_data_dirs warn)
+
+(* Print the configuration information *)
+
+let coq_src_subdirs = [ 
+   "config" ; "dev" ; "lib" ; "kernel" ; "library" ;
+   "engine" ; "pretyping" ; "interp" ; "parsing" ; "proofs" ;
+   "tactics" ; "toplevel" ; "printing" ; "intf" ;
+   "grammar" ; "ide" ; "stm"; "vernac" ] @
+   Coq_config.plugins_dirs
+  
+let print_config ?(prefix_var_name="") f =
+  let open Printf in 
+  fprintf f "%sLOCAL=%s\n" prefix_var_name (if Coq_config.local then "1" else "0");
+  fprintf f "%sCOQLIB=%s/\n" prefix_var_name (coqlib ());
+  fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
+  fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
+  fprintf f "%sCAMLP4=%s\n" prefix_var_name Coq_config.camlp4;
+  fprintf f "%sCAMLP4O=%s\n" prefix_var_name Coq_config.camlp4o;
+  fprintf f "%sCAMLP4BIN=%s/\n" prefix_var_name (camlp4bin ());
+  fprintf f "%sCAMLP4LIB=%s\n" prefix_var_name (camlp4lib ());
+  fprintf f "%sCAMLP4OPTIONS=%s\n" prefix_var_name Coq_config.camlp4compat;
+  fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
+    (if Coq_config.has_natdynlink then "true" else "false");
+  fprintf f "%sCOQ_SRC_SUBDIRS=%s\n" prefix_var_name (String.concat " " coq_src_subdirs)
+

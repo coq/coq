@@ -21,5 +21,3 @@ val add_to_usage : string -> string -> unit
 val print_usage_coqtop : unit -> unit
 val print_usage_coqc : unit -> unit
 
-(** {6 Prints the configuration information } *)
-val print_config : unit -> unit

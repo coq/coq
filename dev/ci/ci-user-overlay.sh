@@ -40,3 +40,9 @@ if [ $TRAVIS_PULL_REQUEST == "402" ] || [ $TRAVIS_BRANCH == "located_switch" ]; 
     bedrock_facade_CI_GITURL=https://github.com/ejgallego/bedrock.git
 
 fi
+
+if [ $TRAVIS_PULL_REQUEST == "406" ] || [ $TRAVIS_BRANCH == "feature/coq_makefile2" ]; then
+    UniMath_CI_BRANCH=master
+    UniMath_CI_GITURL=https://github.com/gares/UniMath.git
+fi
+

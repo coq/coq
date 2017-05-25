@@ -46,7 +46,7 @@ open Session
 
 (** The arguments that will be passed to coqtop. No quoting here, since
     no /bin/sh when using create_process instead of open_process. *)
-let custom_project_files = ref []
+let custom_project_file = ref None
 let sup_args = ref []
 
 let logfile = ref None
@@ -81,17 +81,27 @@ let pr_exit_status = function
   | Unix.WEXITED 0 -> " succeeded"
   | _ -> " failed"
 
-let make_coqtop_args = function
-  |None -> "", !sup_args
-  |Some the_file ->
-    let get_args f = Project_file.args_from_project f
-      !custom_project_files project_file_name#get
-    in
-    match read_project#get with
-      |Ignore_args -> "", !sup_args
-      |Append_args ->
-         let fname, args = get_args the_file in fname, args @ !sup_args
-      |Subst_args -> get_args the_file
+let make_coqtop_args fname =
+  let open CoqProject_file in
+  let base_args = match read_project#get with
+    | Ignore_args -> !sup_args
+    | Append_args -> !sup_args
+    | Subst_args -> [] in
+  if read_project#get = Ignore_args then "", base_args
+  else
+    match !custom_project_file, fname with
+    | Some (d,proj), _ -> d, coqtop_args_from_project proj @ base_args
+    | None, None -> "", base_args
+    | None, Some the_file ->
+       match
+         CoqProject_file.find_project_file
+           ~from:(Filename.dirname the_file)
+           ~projfile_name:project_file_name#get
+       with
+       | None -> "", base_args
+       | Some proj -> 
+           proj, coqtop_args_from_project (read_project_file proj) @ base_args
+;;
 
 (** Setting drag & drop on widgets *)
 
@@ -1345,9 +1355,11 @@ let read_coqide_args argv =
       if coqtop = None then filter_coqtop (Some prog) project_files out args
       else (output_string stderr "Error: multiple -coqtop options"; exit 1)
     |"-f" :: file :: args ->
+      if project_files <> None then
+        (output_string stderr "Error: multiple -f options"; exit 1);
       let d = CUnix.canonical_path_name (Filename.dirname file) in
-      let p = Project_file.read_project_file file in
-      filter_coqtop coqtop ((d,p) :: project_files) out args
+      let p = CoqProject_file.read_project_file file in
+      filter_coqtop coqtop (Some (d,p)) out args
     |"-f" :: [] ->
       output_string stderr "Error: missing project file name"; exit 1
     |"-coqtop" :: [] ->
@@ -1364,11 +1376,11 @@ let read_coqide_args argv =
       (* argument added by MacOS during .app launch *)
       filter_coqtop coqtop project_files out args
     |arg::args -> filter_coqtop coqtop project_files (arg::out) args
-    |[] -> (coqtop,List.rev project_files,List.rev out)
+    |[] -> (coqtop,project_files,List.rev out)
   in
-  let coqtop,project_files,argv = filter_coqtop None [] [] argv in
+  let coqtop,project_files,argv = filter_coqtop None None [] argv in
   Ideutils.custom_coqtop := coqtop;
-  custom_project_files := project_files;
+  custom_project_file := project_files;
   argv
 
 

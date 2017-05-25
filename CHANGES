@@ -54,6 +54,22 @@ Dependencies
 
 - Support for camlp4 has been removed.
 
+Tools
+
+- coq_makefile was completely redesigned to improve its maintainability and
+  the extensibility of generated Makefiles, and to make _CoqProject files
+  more palatable to IDEs.  Overview:
+  * _CoqProject files contain only Coq specific data (i.e. the list of
+    files, -R options, ...)
+  * coq_makefile translates _CoqProject to Makefile.conf and copies in the
+    desired location a standard Makefile (that reads Makefile.conf)
+  * Makefile extensions can be implemented in a Makefile.local file (read
+    by the main Makefile) by installing a hook in the extension points
+    provided by the standard Makefile
+  The current version contains code for retro compatibility that prints
+  warnings when a deprecated feature is used.  Please upgrade your _CoqProject
+  accordingly.
+
 Changes from V8.6beta1 to V8.6
 ==============================
 

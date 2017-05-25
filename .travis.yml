@@ -88,6 +88,7 @@ matrix:
           - ghostscript
           - transfig
           - imagemagick
+          - tipa
 
     - env:
       - TEST_TARGET="test-suite"

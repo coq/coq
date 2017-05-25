@@ -121,14 +121,10 @@ let init_library_roots () =
    find the "include" file in the *source* directory *)
 let init_ocaml_path () =
   let add_subdir dl =
-    Mltop.add_ml_dir (List.fold_left (/) Envars.coqroot dl)
+    Mltop.add_ml_dir (List.fold_left (/) Envars.coqroot [dl])
   in
     Mltop.add_ml_dir (Envars.coqlib ());
-    List.iter add_subdir
-      [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ];
-	[ "engine" ]; [ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
-	[ "tactics" ]; [ "toplevel" ]; [ "printing" ]; [ "intf" ];
-        [ "grammar" ]; [ "ide" ]; [ "ltac" ]; [ "vernac" ]; ]
+    List.iter add_subdir Envars.coq_src_subdirs
 
 let get_compat_version = function
   | "8.7" -> Flags.Current

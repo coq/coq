@@ -435,7 +435,7 @@ let usage () =
      ML Module\" commands in coq files.\n";  *)
   (* Does not work anymore: *)
   (* eprintf " -D : Prints the missing ocmal module names. No dependency computed.\n"; *)
-  eprintf "  -boot : For coq developpers, prints dependencies over coq library files (omitted by default).\n";
+  eprintf "  -boot : For coq developers, prints dependencies over coq library files (omitted by default).\n";
   eprintf "  -sort : output the given file name ordered by dependencies\n";
   eprintf "  -noglob | -no-glob : \n";
   eprintf "  -I dir -as logname : add (non recursively) dir to coq load path under logical name logname\n";

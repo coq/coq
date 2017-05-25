@@ -54,6 +54,7 @@ FIND_VCS_CLAUSE:='(' \
   -name "$${GIT_DIR}" -o \
   -name '_build' -o \
   -name '_build_ci' \
+  -name 'coq-makefile' \
 ')' -prune -o
 
 define find

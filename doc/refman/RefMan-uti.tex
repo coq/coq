@@ -51,6 +51,95 @@ arguments. In other cases, the debugger is simply called without additional
 arguments. Such a wrapper can be found in the \texttt{dev/}
 subdirectory of the sources.
 
+\section[Building a \Coq\ project with {\tt coq\_makefile}]
+{Building a \Coq\ project with {\tt coq\_makefile}
+\label{Makefile}
+\ttindex{Makefile}
+\ttindex{coq\_Makefile}
+\ttindex{\_CoqProject}}
+
+The majority of \Coq\ projects are very similar: a collection of {\tt .v}
+files and eventually some {\tt .ml} ones (a \Coq\ plugin).  The main piece
+of metadata needed in order to build the project are the command 
+line options to {\tt coqc} (e.g. {\tt -R, -I},
+\SeeAlso Section~\ref{coqoptions}). Collecting the list of files and
+options is the job of the {\tt \_CoqProject} file.
+
+A simple example of a {\tt \_CoqProject} file follows:
+
+\begin{verbatim}
+-R theories/ MyCode
+theories/foo.v
+theories/bar.v
+-I src/
+src/baz.ml4
+src/bazaux.ml
+src/qux_plugin.mlpack
+\end{verbatim}
+
+Currently, both \CoqIDE{} and Proof General (version $\geq$ 4.3pre) understand
+{\tt \_CoqProject} files and invoke \Coq\ with the desired options.
+
+The {\tt coq\_makefile} utility can be used to set up a build infrastructure
+for the \Coq\ project based on makefiles.  The recommended way of
+invoking {\tt coq\_makefile} is the following one:
+
+\begin{verbatim}
+coq_makefile -f _CoqProject -o CoqMakefile
+\end{verbatim}
+
+Such command generates the following files:
+\begin{description}
+	\item[{\tt CoqMakefile}] is a generic makefile for GNU Make that provides targets to build the project (both {\tt .v} and {\tt .ml*} files), to install it system-wide in the {\tt coq-contrib} directory (i.e. where \Coq\ is installed) as well as to invoke {\tt coqdoc} to generate html documentation.
+
+	\item[{\tt CoqMakefile.conf}] contains make variables assignments that reflect the contents of the {\tt \_CoqProject} file as well as the path relevant to \Coq{}.
+\end{description}
+
+An optional file {\bf {\tt CoqMakefile.local}} can be provided by the user in order to extend {\tt CoqMakefile}.  In particular one can declare custom actions to be performed before or after the build process. Similarly one can customize the install target or even provide new targets.  Extension points are documented in the {\tt CoqMakefile} file.
+
+The extensions of the files listed in {\tt \_CoqProject} is
+used in order to decide how to build them  In particular:
+
+\begin{itemize}
+\item {\Coq} files must use the \texttt{.v} extension
+\item {\ocaml} files must use the \texttt{.ml} or \texttt{.mli} extension
+\item {\ocaml} files that require pre processing for syntax extensions (like {\tt VERNAC EXTEND}) must use the \texttt{.ml4} extension
+\item In order to generate a plugin one has to list all {\ocaml} modules (i.e. ``Baz'' for ``baz.ml'') in a \texttt{.mlpack} file (or \texttt{.mllib} file).
+\end{itemize}
+
+The use of \texttt{.mlpack} files has to be preferred over \texttt{.mllib}
+files, since it results in a ``packed'' plugin: All auxiliary 
+modules (as {\tt Baz} and {\tt Bazaux}) are hidden inside
+the plugin's ``name space'' ({\tt Qux\_plugin}).
+This reduces the chances of begin unable to load two distinct plugins
+because of a clash in their auxiliary module names.
+
+\paragraph{Notes about including the generated Makefile}
+
+This practice is discouraged. The contents of this file, including variable names
+and status of rules shall change in the future.  Users are advised to
+include {\tt Makefile.conf} or call a target of the generated Makefile
+as in {\tt make -f Makefile target} from another Makefile.
+
+\paragraph{Notes for users of {\tt coq\_makefile} with version $<$ 8.7}
+
+\begin{itemize}
+\item Support for ``sub-directory'' is deprecated.  To perform actions before
+	or after the build (like invoking make on a subdirectory) one can
+	hook in {\tt pre-all} and {\tt post-all} extension points
+\item \texttt{-extra-phony} and \texttt{-extra} are deprecated.  To provide
+	additional target ({\tt .PHONY} or not) please use 
+	{\tt CoqMakefile.local}
+\end{itemize}
+
+\paragraph{Note: building a subset of the targets with -j}
+
+To build, say, two targets \texttt{foo.vo} and \texttt{bar.vo}
+in parallel one can use \texttt{make only TGTS="foo.vo bar.vo" -j}.
+
+Note that \texttt{make foo.vo bar.vo -j} has a different meaning for
+the make utility, in particular it may build a shared prerequisite twice.
+
 \section[Modules dependencies]{Modules dependencies\label{Dependencies}\index{Dependencies}
   \ttindex{coqdep}}
 
@@ -73,110 +162,9 @@ instead for the \ocaml\ modules dependencies.
 
 See the man page of {\tt coqdep} for more details and options.
 
-
-\section[Creating a {\tt Makefile} for \Coq\ modules]
-{Creating a {\tt Makefile} for \Coq\ modules
-\label{Makefile}
-\ttindex{Makefile}
-\ttindex{coq\_Makefile}
-\ttindex{\_CoqProject}}
-
-A project is a proof development split into several files, possibly
-including the sources of some {\ocaml} plugins, that are located (in
-various sub-directories of) a certain directory. The
-\texttt{coq\_makefile} command allows to generate generic and complete
-\texttt{Makefile} files, that can be used to compile the different
-components of the project. A \_CoqProject file
-specifies both the list of target files relevant to the project
-and the common options that should be passed to each executable at
-compilation times, for the IDE, etc.
-
-\paragraph{\_CoqProject file as an argument to  coq\_Makefile.}
-In particular, a \_CoqProject file contains the relevant
-arguments to be passed to the \texttt{coq\_makefile} makefile
-generator using for instance the command:
-
-\begin{quotation}
-\texttt{\% coq\_makefile -f \_CoqProject -o Makefile}
-\end{quotation}
-
-This command generates a file \texttt{Makefile} that can be used to
-compile all the sources of the current project. It follows the
-syntax described by the output of \texttt{\% coq\_makefile -{}-help}.
-Once the \texttt{Makefile} file has been generated a first time, it
-can be used by the \texttt{make} command to compile part or all of
-the project. Note that once it has been generated once, as soon as
-\texttt{\_CoqProject} file is updated, the \texttt{Makefile} file is
-automatically regenerated by an invocation of \texttt{make}.
-
-The following command generates a minimal example of
-\texttt{\_CoqProject} file:
-\begin{quotation}
-\texttt{\% ( echo "-R .\ }\textit{MyFancyLib}\texttt{" ; find .\ -name
-  "*.v" -print ) > \_CoqProject}
-\end{quotation}
-when executed at the root of the directory containing the
-project. Here the \texttt{\_CoqProject} lists all the \texttt{.v} files
-that are present in the current directory and its sub-directories. But no
-plugin sources is listed. If a \texttt{Makefile} is generated from
-this \texttt{\_CoqProject}, the command \texttt{make install} will
-install the compiled project in a sub-directory \texttt{MyFancyLib} of
-the \texttt{user-contrib} directory  (of the user's {\Coq} libraries
-location). This sub-directory is created if it does not already exist.
-
-\paragraph{\_CoqProject file as a configuration for IDEs.}
-
-A \texttt{\_CoqProject} file can also be used to configure the options
-of the \texttt{coqtop} process executed by a user interface. This
-allows to import the libraries of the project under a correct name,
-both as a developer of the project, working in the directory
-containing its sources, and as a user, using the project after
-the installation of its libraries. Currently, both \CoqIDE{} and Proof
-General (version $\geq$ 4.3pre) support configuration via
-\texttt{\_CoqProject} files.
-
-\paragraph{Remarks.}
-
-\begin{itemize}
-\item Every {\Coq} files must use a \texttt{.v} file extension.
- The {\ocaml} modules must use a \texttt{.ml4} file extension
- if they require camlp preprocessing (and in \texttt{.ml} otherwise).
- The {\ocaml} module signatures, library
- description and packing files must use respectively \texttt{.mli},
- \texttt{.mllib} and \texttt{.mlpack} file extension.
-
-\item Any argument that is not a valid option is considered as a
-  sub-directory. Any sub-directory specified in the list of targets must
-  itself contain a \texttt{Makefile}.
-
-\item The phony targets \texttt{all} and \texttt{clean} recursively
-  call their target in every sub-directory.
-
-\item \texttt{-R} and \texttt{-Q} options are for {\Coq} files, \texttt{-I}
-  for {\ocaml} ones. A same directory can be passed to both nature of
-  options, in the same \texttt{\_CoqProject}.
-
-\item Using \texttt{-R} or \texttt{-Q} is the appropriate way to
-  obtain both a correct logical path and a correct installation location to
-  the libraries of a given project.
-
-\item Dependencies on external libraries to the project must be
-  declared with care. If in the \texttt{\_CoqProject} file an external
-  library \texttt{foo} is passed to a \texttt{-Q} option, like in
-  \texttt{-Q foo}, the subsequent \textit{make clean} command can
-  erase \textit{foo}. It is hence safer to customize the
-  \texttt{COQPATH} variable (see \ref{envars}), to include the
-  location of the required external libraries.
-
-\item Using \texttt{-extra-phony} with no command adds extra
-  dependencies on already defined rules. For example the following
-  skeleton appends ``something'' to the \texttt{install} rule:
-\begin{quotation}
-\texttt{-extra-phony "install" "install-my-stuff" ""
-  -extra-phony "install-my-stuff" "" "something"}
-\end{quotation}
-\end{itemize}
-
+The build infrastructure generated by {\tt coq\_makefile}
+uses {\tt coqdep} to automatically compute the dependencies
+among the files part of the project.
 
 \section[Documenting \Coq\ files with coqdoc]{Documenting \Coq\ files with coqdoc\label{coqdoc}
 \ttindex{coqdoc}}

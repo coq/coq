@@ -1,0 +1,11 @@
+-R src/ test
+-R theories/ test
+-I src/
+
+src/test_plugin.mlpack
+src/test.ml4
+src/test.mli
+src/test_aux.ml
+src/test_aux.mli
+theories/test.v
+theories/sub/testsub.v
