@@ -150,6 +150,12 @@ alternative solution would be to fully qualify Ltac modules, e.g. turning any
 call to Tacinterp into Ltac_plugin.Tacinterp. Note that this solution does not
 work for EXTEND macros though.
 
+** Additional changes in tactic extensions **
+
+Entry "constr_with_bindings" has been renamed into
+"open_constr_with_bindings". New entry "constr_with_bindings" now
+uses type classes and rejects terms with unresolved holes.
+
 ** Error handling **
 
 - All error functions now take an optional parameter `?loc:Loc.t`. For
