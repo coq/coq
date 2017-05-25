@@ -177,7 +177,7 @@ let cofixp_reducible flgs _ stk =
 
 let debug_cbv = ref false
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optdepr = false;
   Goptions.optname = "cbv visited constants display";
   Goptions.optkey = ["Debug";"Cbv"];
   Goptions.optread = (fun () -> !debug_cbv);

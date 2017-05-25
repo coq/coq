@@ -70,8 +70,7 @@ let use_dependent_propositions_elimination () =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "dependent-propositions-elimination tactic";
       optkey   = ["Dependent";"Propositions";"Elimination"];
       optread  = (fun () -> !dependent_propositions_elimination) ;
@@ -79,8 +78,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "trigger bugged context matching compatibility";
       optkey   = ["Tactic";"Compat";"Context"];
       optread  = (fun () -> !Flags.tactic_context_compat) ;
@@ -88,7 +86,7 @@ let _ =
 
 let apply_solve_class_goals = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = true;
+  Goptions.optdepr = true;
   Goptions.optname =
     "Perform typeclass resolution on apply-generated subgoals.";
   Goptions.optkey = ["Typeclass";"Resolution";"After";"Apply"];
@@ -102,8 +100,7 @@ let use_clear_hyp_by_default () = !clear_hyp_by_default
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "default clearing of hypotheses after use";
       optkey   = ["Default";"Clearing";"Used";"Hypotheses"];
       optread  = (fun () -> !clear_hyp_by_default) ;
@@ -119,8 +116,7 @@ let accept_universal_lemma_under_conjunctions () =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "trivial unification in tactics applying under conjunctions";
       optkey   = ["Universal";"Lemma";"Under";"Conjunction"];
       optread  = (fun () -> !universal_lemma_under_conjunctions) ;
@@ -132,8 +128,7 @@ let shrink_abstract = ref true
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = true;
+    { optdepr  = true;
       optname  = "shrinking of abstracted proofs";
       optkey   = ["Shrink"; "Abstract"];
       optread  = (fun () -> !shrink_abstract) ;
@@ -153,8 +148,7 @@ let use_bracketing_last_or_and_intro_pattern () =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "bracketing last or-and introduction pattern";
       optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
       optread  = (fun () -> !bracketing_last_or_and_intro_pattern);

@@ -133,8 +133,7 @@ let wildcard_value = ref true
 let force_wildcard () = !wildcard_value
 
 let _ = declare_bool_option
-	  { optsync  = true;
-            optdepr  = false;
+	  { optdepr  = false;
 	    optname  = "forced wildcard";
 	    optkey   = ["Printing";"Wildcard"];
 	    optread  = force_wildcard;
@@ -144,8 +143,7 @@ let synth_type_value = ref true
 let synthetize_type () = !synth_type_value
 
 let _ = declare_bool_option
-	  { optsync  = true;
-            optdepr  = false;
+	  { optdepr  = false;
 	    optname  = "pattern matching return type synthesizability";
 	    optkey   = ["Printing";"Synth"];
 	    optread  = synthetize_type;
@@ -155,8 +153,7 @@ let reverse_matching_value = ref true
 let reverse_matching () = !reverse_matching_value
 
 let _ = declare_bool_option
-	  { optsync  = true;
-            optdepr  = false;
+	  { optdepr  = false;
 	    optname  = "pattern-matching reversibility";
 	    optkey   = ["Printing";"Matching"];
 	    optread  = reverse_matching;
@@ -166,8 +163,7 @@ let print_primproj_params_value = ref false
 let print_primproj_params () = !print_primproj_params_value
 
 let _ = declare_bool_option
-	  { optsync  = true;
-            optdepr  = false;
+	  { optdepr  = false;
 	    optname  = "printing of primitive projection parameters";
 	    optkey   = ["Printing";"Primitive";"Projection";"Parameters"];
 	    optread  = print_primproj_params;
@@ -177,8 +173,7 @@ let print_primproj_compatibility_value = ref false
 let print_primproj_compatibility () = !print_primproj_compatibility_value
 
 let _ = declare_bool_option
-	  { optsync  = true;
-            optdepr  = false;
+	  { optdepr  = false;
 	    optname  = "backwards-compatible printing of primitive projections";
 	    optkey   = ["Printing";"Primitive";"Projection";"Compatibility"];
 	    optread  = print_primproj_compatibility;

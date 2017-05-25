@@ -35,8 +35,7 @@ module RelDecl = Context.Rel.Declaration
 let primitive_flag = ref false
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "use of primitive projections";
       optkey   = ["Primitive";"Projections"];
       optread  = (fun () -> !primitive_flag) ;
@@ -45,8 +44,7 @@ let _ =
 let typeclasses_strict = ref false
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "strict typeclass resolution";
       optkey   = ["Typeclasses";"Strict";"Resolution"];
       optread  = (fun () -> !typeclasses_strict);
@@ -55,8 +53,7 @@ let _ =
 let typeclasses_unique = ref false
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "unique typeclass instances";
       optkey   = ["Typeclasses";"Unique";"Instances"];
       optread  = (fun () -> !typeclasses_unique);

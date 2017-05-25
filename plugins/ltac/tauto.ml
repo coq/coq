@@ -70,8 +70,7 @@ let unfold_iff () = !iff_unfolding || Flags.version_less_or_equal Flags.V8_2
 open Goptions
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "unfolding of not in intuition";
       optkey   = ["Intuition";"Negation";"Unfolding"];
       optread  = (fun () -> !negation_unfolding);
@@ -79,8 +78,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "unfolding of iff in intuition";
       optkey   = ["Intuition";"Iff";"Unfolding"];
       optread  = (fun () -> !iff_unfolding);

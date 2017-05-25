@@ -25,24 +25,8 @@ echo $TRAVIS_PULL_REQUEST
 echo $TRAVIS_BRANCH
 echo $TRAVIS_COMMIT
 
-if [ $TRAVIS_PULL_REQUEST == "402" ] || [ $TRAVIS_BRANCH == "located_switch" ]; then
-
-    mathcomp_CI_BRANCH=located_switch
+if [ $TRAVIS_PULL_REQUEST == "481" ] || [ $TRAVIS_BRANCH == "options+remove_non_sync" ]; then
+    mathcomp_CI_BRANCH=options+remove_non_sync
     mathcomp_CI_GITURL=https://github.com/ejgallego/math-comp.git
-
-    fiat_parsers_CI_BRANCH=located_switch
-    fiat_parsers_CI_GITURL=https://github.com/ejgallego/fiat.git
-
-    bedrock_src_CI_BRANCH=located_switch
-    bedrock_src_CI_GITURL=https://github.com/ejgallego/bedrock.git
-
-    bedrock_facade_CI_BRANCH=located_switch
-    bedrock_facade_CI_GITURL=https://github.com/ejgallego/bedrock.git
-
-fi
-
-if [ $TRAVIS_PULL_REQUEST == "406" ] || [ $TRAVIS_BRANCH == "feature/coq_makefile2" ]; then
-    UniMath_CI_BRANCH=master
-    UniMath_CI_GITURL=https://github.com/gares/UniMath.git
 fi
 

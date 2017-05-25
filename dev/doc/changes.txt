@@ -101,6 +101,13 @@ type 'a ast = private {
   implemented in the whole code base. Matching a located object hasn't
   changed, however, `Loc.tag ?loc obj` must be used to build one.
 
+In GOption:
+
+  Support for non-synchronous options has been removed. Now all
+  options are handled as a piece of normal document state, and thus
+  passed to workers, etc... As a consequence, the field
+  `Goptions.optsync` has been removed.
+
 ** Tactic API **
 
 - pf_constr_of_global now returns a tactic instead of taking a continuation.

@@ -44,8 +44,7 @@ let should_gname() = !enable_goal_names_printing
 let _ =
   let open Goptions in
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "printing of unfocused goal";
       optkey   = ["Printing";"Unfocused"];
       optread  = (fun () -> !enable_unfocused_goal_printing);
@@ -56,8 +55,7 @@ let _ =
 let _ =
   let open Goptions in
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "printing of goal tags";
       optkey   = ["Printing";"Goal";"Tags"];
       optread  = (fun () -> !enable_goal_tags_printing);
@@ -67,8 +65,7 @@ let _ =
 let _ =
   let open Goptions in
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "printing of goal names";
       optkey   = ["Printing";"Goal";"Names"];
       optread  = (fun () -> !enable_goal_names_printing);
@@ -449,8 +446,7 @@ let print_hyps_limit = ref (None : int option)
 let _ =
   let open Goptions in
   declare_int_option
-    { optsync  = false;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "the hypotheses limit";
       optkey   = ["Hyps";"Limit"];
       optread  = (fun () -> !print_hyps_limit);
@@ -635,8 +631,7 @@ let should_print_dependent_evars = ref false
 let _ =
   let open Goptions in
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "Printing Dependent Evars Line";
       optkey   = ["Printing";"Dependent";"Evars";"Line"];
       optread  = (fun () -> !should_print_dependent_evars);

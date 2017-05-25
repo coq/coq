@@ -32,7 +32,6 @@ open Entries
 let refine_instance = ref true
 
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync  = true;
   Goptions.optdepr  = false;
   Goptions.optname  = "definition of instances by refining";
   Goptions.optkey   = ["Refine";"Instance";"Mode"];

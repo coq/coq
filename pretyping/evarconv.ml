@@ -34,7 +34,7 @@ type unify_fun = transparent_state ->
 
 let debug_unification = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optdepr = false;
   Goptions.optname =
     "Print states sent to Evarconv unification";
   Goptions.optkey = ["Debug";"Unification"];

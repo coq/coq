@@ -465,8 +465,7 @@ let keep_admitted_vars = ref true
 let _ =
   let open Goptions in
   declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+    { optdepr  = false;
       optname  = "keep section variables in admitted proofs";
       optkey   = ["Keep"; "Admitted"; "Variables"];
       optread  = (fun () -> !keep_admitted_vars);

@@ -144,8 +144,7 @@ let value = ref false
 
 let _ =
   Goptions.declare_bool_option
-    { Goptions.optsync  = true;
-      Goptions.optdepr  = false;
+    { Goptions.optdepr  = false;
       Goptions.optname  = "suggest Proof using";
       Goptions.optkey   = ["Suggest";"Proof";"Using"];
       Goptions.optread  = (fun () -> !value);
@@ -159,8 +158,7 @@ let value = ref None
 
 let _ =
   Goptions.declare_stringopt_option
-    { Goptions.optsync  = true;
-      Goptions.optdepr  = false;
+    { Goptions.optdepr  = false;
       Goptions.optname  = "default value for Proof using";
       Goptions.optkey   = ["Default";"Proof";"Using"];
       Goptions.optread  = (fun () -> !value);

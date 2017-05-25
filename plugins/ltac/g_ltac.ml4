@@ -367,7 +367,6 @@ open Libnames
 let print_info_trace = ref None
 
 let _ = declare_int_option {
-  optsync = true;
   optdepr = false;
   optname = "print info trace";
   optkey = ["Info" ; "Level"];

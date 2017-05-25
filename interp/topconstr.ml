@@ -21,7 +21,7 @@ open Constrexpr_ops
 
 let asymmetric_patterns = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optdepr = false;
   Goptions.optname = "no parameters in constructors";
   Goptions.optkey = ["Asymmetric";"Patterns"];
   Goptions.optread = (fun () -> !asymmetric_patterns);

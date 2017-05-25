@@ -175,8 +175,7 @@ let is_strict_universe_declarations () = !strict_universe_declarations
 
 let _ =
   Goptions.(declare_bool_option
-	  { optsync  = true;
-            optdepr  = false;
+	  { optdepr  = false;
 	    optname  = "strict universe declaration";
 	    optkey   = ["Strict";"Universe";"Declaration"];
 	    optread  = is_strict_universe_declarations;
@@ -184,8 +183,7 @@ let _ =
 
 let _ =
   Goptions.(declare_bool_option
-	  { optsync  = true;
-            optdepr  = false;
+	  { optdepr  = false;
 	    optname  = "minimization to Set";
 	    optkey   = ["Universe";"Minimization";"ToSet"];
 	    optread  = Universes.is_set_minimization;

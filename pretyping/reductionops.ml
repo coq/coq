@@ -29,7 +29,7 @@ exception Elimconst
 
 let refolding_in_reduction = ref false
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optdepr = false;
   Goptions.optname =
     "Perform refolding of fixpoints/constants like cbn during reductions";
   Goptions.optkey = ["Refolding";"Reduction"];
@@ -811,7 +811,7 @@ let fix_recarg ((recindices,bodynum),_) stack =
 
 let debug_RAKAM = ref (false)
 let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optdepr = false;
   Goptions.optname =
     "Print states of the Reductionops abstract machine";
   Goptions.optkey = ["Debug";"RAKAM"];

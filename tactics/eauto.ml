@@ -331,8 +331,7 @@ let global_info_eauto = ref false
 
 let _ =
   Goptions.declare_bool_option
-    { Goptions.optsync  = true;
-      Goptions.optdepr  = false;
+    { Goptions.optdepr  = false;
       Goptions.optname  = "Debug Eauto";
       Goptions.optkey   = ["Debug";"Eauto"];
       Goptions.optread  = (fun () -> !global_debug_eauto);
@@ -340,8 +339,7 @@ let _ =
 
 let _ =
   Goptions.declare_bool_option
-    { Goptions.optsync  = true;
-      Goptions.optdepr  = false;
+    { Goptions.optdepr  = false;
       Goptions.optname  = "Info Eauto";
       Goptions.optkey   = ["Info";"Eauto"];
       Goptions.optread  = (fun () -> !global_info_eauto);

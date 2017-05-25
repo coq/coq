@@ -33,14 +33,13 @@ open Globnames
 let use_typeclasses_for_conversion = ref true
 
 let _ =
-  Goptions.declare_bool_option
-    { Goptions.optsync  = true;
-      optdepr  = false;
+  Goptions.(declare_bool_option
+    { optdepr  = false;
       optname  = "use typeclass resolution during conversion";
       optkey   = ["Typeclass"; "Resolution"; "For"; "Conversion"];
       optread  = (fun () -> !use_typeclasses_for_conversion);
       optwrite = (fun b -> use_typeclasses_for_conversion := b) }
-
+    )
 
 (* Typing operations dealing with coercions *)
 exception NoCoercion

@@ -40,7 +40,6 @@ module SearchBlacklist =
       let title = "Current search blacklist : "
       let member_message s b =
 	str "Search blacklist does " ++ (if b then mt () else str "not ") ++ str "include " ++ str s
-      let synchronous = true
      end)
 
 (* The functions iter_constructors and iter_declarations implement the behavior

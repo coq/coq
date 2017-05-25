@@ -52,8 +52,7 @@ let get_default_proof_mode_name () =
   (CEphemeron.default !default_proof_mode standard).name
 
 let _ =
-  Goptions.declare_string_option {Goptions.
-    optsync = true ;
+  Goptions.(declare_string_option {
     optdepr = false;
     optname = "default proof mode" ;
     optkey = ["Default";"Proof";"Mode"] ;
@@ -63,7 +62,7 @@ let _ =
     optwrite = begin fun n ->
       default_proof_mode := find_proof_mode n
     end
-  }
+  })
 
 (*** Proof Global Environment ***)
 
@@ -268,8 +267,7 @@ let get_universe_binders () = (cur_pstate ()).universe_binders
 
 let proof_using_auto_clear = ref false
 let _ = Goptions.declare_bool_option
-    { Goptions.optsync  = true;
-      Goptions.optdepr  = false;
+    { Goptions.optdepr  = false;
       Goptions.optname  = "Proof using Clear Unused";
       Goptions.optkey   = ["Proof";"Using";"Clear";"Unused"];
       Goptions.optread  = (fun () -> !proof_using_auto_clear);
@@ -628,8 +626,7 @@ module Bullet = struct
   let current_behavior = ref Strict.strict
 
   let _ =
-    Goptions.declare_string_option {Goptions.
-      optsync = true;
+    Goptions.(declare_string_option {
       optdepr = false;
       optname = "bullet behavior";
       optkey = ["Bullet";"Behavior"];
@@ -642,7 +639,7 @@ module Bullet = struct
           with Not_found ->
             CErrors.error ("Unknown bullet behavior: \"" ^ n ^ "\".")
       end
-    }
+    })
 
   let put p b =
     (!current_behavior).put p b
@@ -696,9 +693,7 @@ let parse_goal_selector = function
       end
 
 let _ =
-  Goptions.declare_string_option {Goptions.
-                                  optsync = true ;
-                                  optdepr = false;
+  Goptions.(declare_string_option{optdepr = false;
                                   optname = "default goal selector" ;
                                   optkey = ["Default";"Goal";"Selector"] ;
                                   optread = begin fun () ->
@@ -708,7 +703,7 @@ let _ =
                                   optwrite = begin fun n ->
                                     default_goal_selector := parse_goal_selector n
                                   end
-                                 }
+                                 })
 
 
 module V82 = struct
