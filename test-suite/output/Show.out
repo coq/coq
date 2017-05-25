@@ -1,0 +1,12 @@
+3 subgoals (ID 29)
+  
+  H : 0 = 0
+  ============================
+  1 = 1
+
+subgoal 2 (ID 33) is:
+ 1 = S (S m')
+subgoal 3 (ID 20) is:
+ S (S n') = S m
+
+(dependent evars: (printing disabled) )
