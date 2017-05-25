@@ -661,7 +661,8 @@ let evar_of_binder holes = function
 | NamedHyp s -> evar_with_name holes s
 | AnonHyp n ->
   try
-    let h = List.nth holes (pred n) in
+    let nondeps = List.filter (fun hole -> not hole.hole_deps) holes in
+    let h = List.nth nondeps (pred n) in
     h.hole_evar
   with e when CErrors.noncritical e ->
     errorlabstrm "" (str "No such binder.")
