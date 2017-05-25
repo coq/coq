@@ -21,11 +21,12 @@ open Vernacprop
 
 let checknav_simple (loc, cmd) =
   if is_navigation_vernac cmd && not (is_reset cmd) then
-    CErrors.user_err ~loc (str "Navigation commands forbidden in files.")
+    CErrors.user_err ?loc (str "Navigation commands forbidden in files.")
 
 let checknav_deep (loc, ast) =
   if is_deep_navigation_vernac ast then
-    CErrors.user_err ~loc (str "Navigation commands forbidden in nested commands.")
+    CErrors.user_err ?loc (str "Navigation commands forbidden in nested commands.")
+
 
 let disable_drop = function
   | Drop -> CErrors.error "Drop is forbidden."
@@ -33,10 +34,12 @@ let disable_drop = function
 
 (* Echo from a buffer based on position.
    XXX: Should move to utility file. *)
-let vernac_echo loc in_chan = let open Loc in
-  let len = loc.ep - loc.bp in
-  seek_in in_chan loc.bp;
-  Feedback.msg_notice @@ str @@ really_input_string in_chan len
+let vernac_echo ?loc in_chan = let open Loc in
+  Option.iter (fun loc ->
+      let len = loc.ep - loc.bp in
+      seek_in in_chan loc.bp;
+      Feedback.msg_notice @@ str @@ really_input_string in_chan len
+    ) loc
 
 (* vernac parses the given stream, executes interpfun on the syntax tree it
  * parses, and is verbose on "primitives" commands if verbosely is true *)
@@ -48,8 +51,8 @@ let set_formatter_translator ch =
   Format.set_formatter_output_functions out (fun () -> flush ch);
   Format.set_max_boxes max_int
 
-let pr_new_syntax_in_context loc chan_beautify ocom =
-  let loc = Loc.unloc loc in
+let pr_new_syntax_in_context ?loc chan_beautify ocom =
+  let loc = Option.cata Loc.unloc (0,0) loc in
   if !beautify_file then set_formatter_translator chan_beautify;
   let fs = States.freeze ~marshallable:`No in
   (* The content of this is not supposed to fail, but if ever *)
@@ -71,14 +74,14 @@ let pr_new_syntax_in_context loc chan_beautify ocom =
     States.unfreeze fs;
     Format.set_formatter_out_channel stdout
 
-let pr_new_syntax po loc chan_beautify ocom =
+let pr_new_syntax ?loc po chan_beautify ocom =
   (* Reinstall the context of parsing which includes the bindings of comments to locations *)
-  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context chan_beautify loc) ocom
+  Pcoq.Gram.with_parsable po (pr_new_syntax_in_context ?loc chan_beautify) ocom
 
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
 
-let pp_cmd_header loc com =
+let pp_cmd_header ?loc com =
   let shorten s =
     if Unicode.utf8_length s > 33 then (Unicode.utf8_sub s 0 30) ^ "..." else s
   in
@@ -88,7 +91,7 @@ let pp_cmd_header loc com =
 	| x -> x
       ) s
   in
-  let (start,stop) = Loc.unloc loc in
+  let (start,stop) = Option.cata Loc.unloc (0,0) loc in
   let safe_pr_vernac x =
     try Ppvernac.pr_vernac x
     with e -> str (Printexc.to_string e) in
@@ -99,9 +102,8 @@ let pp_cmd_header loc com =
 (* This is a special case where we assume we are in console batch mode
    and take control of the console.
  *)
-(* FIXME *)
-let print_cmd_header loc com =
-  Pp.pp_with !Topfmt.std_ft (pp_cmd_header loc com);
+let print_cmd_header ?loc com =
+  Pp.pp_with !Topfmt.std_ft (pp_cmd_header ?loc com);
   Format.pp_print_flush !Topfmt.std_ft ()
 
 let pr_open_cur_subgoals () =
@@ -160,7 +162,7 @@ let rec interp_vernac sid (loc,com) =
     try
       (* The -time option is only supported from console-based
          clients due to the way it prints. *)
-      if !Flags.time then print_cmd_header loc com;
+      if !Flags.time then print_cmd_header ?loc com;
       let com = if !Flags.time then VernacTime (loc,com) else com in
       interp com
     with reraise ->
@@ -168,9 +170,11 @@ let rec interp_vernac sid (loc,com) =
          things, so we better avoid it while we investigate *)
       if not !Flags.batch_mode then ignore(Stm.edit_at sid);
       let (reraise, info) = CErrors.push reraise in
-      let loc' = Option.default Loc.ghost (Loc.get_loc info) in
-      if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
-      else iraise (reraise, info)
+      let info = begin
+        match Loc.get_loc info with
+        | None   -> Option.cata (Loc.add_loc info) info loc
+        | Some _ -> info
+      end in iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
 and load_vernac verbosely sid file =
@@ -205,8 +209,8 @@ and load_vernac verbosely sid file =
        *)
       in
       (* Printing of vernacs *)
-      if !beautify then pr_new_syntax in_pa chan_beautify loc (Some ast);
-      Option.iter (vernac_echo loc) in_echo;
+      if !beautify then pr_new_syntax ?loc in_pa chan_beautify (Some ast);
+      Option.iter (vernac_echo ?loc) in_echo;
 
       checknav_simple (loc, ast);
       let nsid = Flags.silently (interp_vernac !rsid) (loc, ast) in
@@ -221,7 +225,7 @@ and load_vernac verbosely sid file =
       | Stm.End_of_input ->
           (* Is this called so comments at EOF are printed? *)
           if !beautify then
-            pr_new_syntax in_pa chan_beautify (Loc.make_loc (max_int,max_int)) None;
+            pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) in_pa chan_beautify None;
           if !Flags.beautify_file then close_out chan_beautify;
           !rsid
       | reraise ->
@@ -306,7 +310,7 @@ let compile verbosely f =
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
       Library.save_library_to ldir long_f_dot_vo (Global.opaque_tables ());
-      Aux_file.record_in_aux_at Loc.ghost "vo_compile_time"
+      Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
       if !Flags.xml_export then Hook.get f_xml_end_library ();

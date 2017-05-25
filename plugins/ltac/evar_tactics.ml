@@ -81,7 +81,7 @@ let instantiate_tac_by_name id c =
   end
 
 let let_evar name typ =
-  let src = (Loc.ghost,Evar_kinds.GoalEvar) in
+  let src = (Loc.tag Evar_kinds.GoalEvar) in
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in

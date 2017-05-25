@@ -130,7 +130,7 @@ val set_end_tac : Genarg.glob_generic_argument -> unit
 (** [set_used_variables l] declares that section variables [l] will be
     used in the proof *)
 val set_used_variables :
-  Id.t list -> Context.Named.t * (Loc.t * Names.Id.t) list
+  Id.t list -> Context.Named.t * Names.Id.t Loc.located list
 val get_used_variables : unit -> Context.Named.t option
 
 (** {6 Universe binders } *)

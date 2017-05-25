@@ -26,16 +26,16 @@ let error_not_a_module_loc kind loc qid =
     | ModType -> Modops.ModuleTypingError (Modops.NotAModuleType s)
     | ModAny -> ModuleInternalizationError (NotAModuleNorModtype s)
   in
-  Loc.raise ~loc e
+  Loc.raise ?loc e
 
 let error_application_to_not_path loc me =
-  Loc.raise ~loc (Modops.ModuleTypingError (Modops.ApplicationToNotPath me))
+  Loc.raise ?loc (Modops.ModuleTypingError (Modops.ApplicationToNotPath me))
 
 let error_incorrect_with_in_module loc =
-  Loc.raise ~loc (ModuleInternalizationError IncorrectWithInModule)
+  Loc.raise ?loc (ModuleInternalizationError IncorrectWithInModule)
 
 let error_application_to_module_type loc =
-  Loc.raise ~loc (ModuleInternalizationError IncorrectModuleApplication)
+  Loc.raise ?loc (ModuleInternalizationError IncorrectModuleApplication)
 
 (** Searching for a module name in the Nametab.
 
@@ -47,12 +47,12 @@ let lookup_module_or_modtype kind (loc,qid) =
   try
     if kind == ModType then raise Not_found;
     let mp = Nametab.locate_module qid in
-    Dumpglob.dump_modref loc mp "modtype"; (mp,Module)
+    Dumpglob.dump_modref ?loc mp "modtype"; (mp,Module)
   with Not_found ->
     try
       if kind == Module then raise Not_found;
       let mp = Nametab.locate_modtype qid in
-      Dumpglob.dump_modref loc mp "mod"; (mp,ModType)
+      Dumpglob.dump_modref ?loc mp "mod"; (mp,ModType)
     with Not_found -> error_not_a_module_loc kind loc qid
 
 let lookup_module lqid = fst (lookup_module_or_modtype Module lqid)
@@ -65,17 +65,16 @@ let transl_with_decl env = function
     let ctx = Evd.evar_context_universe_context ectx in
       WithDef (fqid,(c,ctx))
 
-let loc_of_module = function
-  | CMident (loc,_) | CMapply (loc,_,_) | CMwith (loc,_,_) -> loc
+let loc_of_module l = l.CAst.loc
 
 (* Invariant : the returned kind is never ModAny, and it is
    equal to the input kind when this one isn't ModAny. *)
 
-let rec interp_module_ast env kind = function
+let rec interp_module_ast env kind m = match m.CAst.v with
   | CMident qid ->
-      let (mp,kind) = lookup_module_or_modtype kind qid in
+      let (mp,kind) = lookup_module_or_modtype kind (m.CAst.loc,qid) in
       (MEident mp, kind)
-  | CMapply (_,me1,me2) ->
+  | CMapply (me1,me2) ->
       let me1',kind1 = interp_module_ast env kind me1 in
       let me2',kind2 = interp_module_ast env ModAny me2 in
       let mp2 = match me2' with
@@ -85,8 +84,8 @@ let rec interp_module_ast env kind = function
       if kind2 == ModType then
         error_application_to_module_type (loc_of_module me2);
       (MEapply (me1',mp2), kind1)
-  | CMwith (loc,me,decl) ->
+  | CMwith (me,decl) ->
       let me,kind = interp_module_ast env kind me in
-      if kind == Module then error_incorrect_with_in_module loc;
+      if kind == Module then error_incorrect_with_in_module m.CAst.loc;
       let decl = transl_with_decl env decl in
       (MEwith(me,decl), kind)

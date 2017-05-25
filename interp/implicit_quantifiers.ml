@@ -28,11 +28,11 @@ let generalizable_table = Summary.ref Id.Pred.empty ~name:"generalizable-ident"
 
 let declare_generalizable_ident table (loc,id) =
   if not (Id.equal id (root_of_id id)) then
-    user_err ~loc ~hdr:"declare_generalizable_ident"
+    user_err ?loc ~hdr:"declare_generalizable_ident"
     ((pr_id id ++ str
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
   if Id.Pred.mem id table then
-    user_err ~loc ~hdr:"declare_generalizable_ident"
+    user_err ?loc ~hdr:"declare_generalizable_ident"
 		((pr_id id++str" is already declared as a generalizable identifier"))
   else Id.Pred.add id table
 
@@ -79,7 +79,7 @@ let is_freevar ids env x =
 (* Auxiliary functions for the inference of implicitly quantified variables. *)
 
 let ungeneralizable loc id =
-  user_err ~loc ~hdr:"Generalization"
+  user_err ?loc ~hdr:"Generalization"
 	       (str "Unbound and ungeneralizable variable " ++ pr_id id)
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
@@ -91,11 +91,11 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
       else ungeneralizable loc id
     else l
   in
-  let rec aux bdvars l c = match c with
+  let rec aux bdvars l c = match CAst.(c.v) with
     | CRef (Ident (loc,id),_) -> found loc id bdvars l
-    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id),_) :: _, [], [])) when not (Id.Set.mem id bdvars) ->
+    | CNotation ("{ _ : _ | _ }", ({ CAst.v = CRef (Ident (_, id),_) } :: _, [], [])) when not (Id.Set.mem id bdvars) ->
 	Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add id bdvars) l c
-    | c -> Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c
+    | _ -> Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c
   in aux bound l c
 
 let ids_of_names l =
@@ -119,16 +119,16 @@ let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr li
   in aux bound l binders
 
 let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.empty) =
-  let rec vars bound vs = function
-    | GVar (loc,id) ->
+  let rec vars bound vs t = match t with
+    | { loc; CAst.v = GVar id } ->
 	if is_freevar bound (Global.env ()) id then
-	  if Id.List.mem_assoc id vs then vs
-	  else (id, loc) :: vs
+	  if Id.List.mem_assoc_sym id vs then vs
+	  else (Loc.tag ?loc id) :: vs
 	else vs
     | c -> Glob_ops.fold_glob_constr_with_binders Id.Set.add vars bound vs c
   in fun rt -> 
     let vars = List.rev (vars bound [] rt) in
-      List.iter (fun (id, loc) ->
+      List.iter (fun (loc, id) ->
 	if not (Id.Set.mem id allowed || find_generalizable_ident id) then 
 	  ungeneralizable loc id) vars;
       vars
@@ -151,7 +151,7 @@ let combine_params avoid fn applied needed =
             | Anonymous -> false
             in
 	    if not (List.exists is_id needed) then
-	      user_err ~loc  (str "Wrong argument name: " ++ Nameops.pr_id id);
+	      user_err ?loc  (str "Wrong argument name: " ++ Nameops.pr_id id);
 	    true
 	| _ -> false) applied
   in
@@ -185,31 +185,35 @@ let combine_params avoid fn applied needed =
 	    aux (t' :: ids) avoid' app need
 
       | (x,_) :: _, [] ->
-	  user_err ~loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
+	  user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
 let combine_params_freevar =
   fun avoid (_, decl) ->
     let id' = next_name_away_from (RelDecl.get_name decl) avoid in
-      (CRef (Ident (Loc.ghost, id'),None), Id.Set.add id' avoid)
+      (CAst.make @@ CRef (Ident (Loc.tag id'),None), Id.Set.add id' avoid)
 
 let destClassApp cl =
-  match cl with
-    | CApp (loc, (None, CRef (ref, inst)), l) -> loc, ref, List.map fst l, inst
-    | CAppExpl (loc, (None, ref, inst), l) -> loc, ref, l, inst
-    | CRef (ref, inst) -> loc_of_reference ref, ref, [], inst
+  let open CAst in
+  let loc = cl.loc in
+  match cl.v with
+    | CApp ((None, { v = CRef (ref, inst) }), l) -> Loc.tag ?loc (ref, List.map fst l, inst)
+    | CAppExpl ((None, ref, inst), l) -> Loc.tag ?loc (ref, l, inst)
+    | CRef (ref, inst) -> Loc.tag ?loc:(loc_of_reference ref) (ref, [], inst)
     | _ -> raise Not_found
 
 let destClassAppExpl cl =
-  match cl with
-    | CApp (loc, (None, CRef (ref, inst)), l) -> loc, ref, l, inst
-    | CRef (ref, inst) -> loc_of_reference ref, ref, [], inst
+  let open CAst in
+  let loc = cl.loc in
+  match cl.v with
+    | CApp ((None, { v = CRef (ref, inst) } ), l) -> Loc.tag ?loc (ref, l, inst)
+    | CRef (ref, inst) -> Loc.tag ?loc:(loc_of_reference ref) (ref, [], inst)
     | _ -> raise Not_found
 
 let implicit_application env ?(allow_partial=true) f ty =
   let is_class =
     try
-      let (_, r, _, _ as clapp) = destClassAppExpl ty in
+      let (_, (r, _, _) as clapp) = destClassAppExpl ty in
       let (loc, qid) = qualid_of_reference r in
       let gr = Nametab.locate qid in
 	if Typeclasses.is_class gr then Some (clapp, gr) else None
@@ -217,7 +221,7 @@ let implicit_application env ?(allow_partial=true) f ty =
   in
     match is_class with
     | None -> ty, env
-    | Some ((loc, id, par, inst), gr) ->
+    | Some ((loc, (id, par, inst)), gr) ->
 	let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
 	let c, avoid =
 	  let c = class_info gr in
@@ -235,7 +239,7 @@ let implicit_application env ?(allow_partial=true) f ty =
 	    end;
 	  let pars = List.rev (List.combine ci rd) in
 	  let args, avoid = combine_params avoid f par pars in
-	    CAppExpl (loc, (None, id, inst), args), avoid
+	    CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
 	in c, avoid
 
 let implicits_of_glob_constr ?(with_products=true) l =
@@ -249,12 +253,12 @@ let implicits_of_glob_constr ?(with_products=true) l =
     (ExplByPos (i, name), (true, true, true)) :: l
   | _ -> l
   in
-  let rec aux i c =
+  let rec aux i { loc; CAst.v = c } =
     let abs na bk b =
       add_impl i na bk (aux (succ i) b)
     in
       match c with
-      | GProd (loc, na, bk, t, b) ->
+      | GProd (na, bk, t, b) ->
 	  if with_products then abs na bk b
 	  else
             let () = match bk with
@@ -263,9 +267,9 @@ let implicits_of_glob_constr ?(with_products=true) l =
 			      pr_name na ++ strbrk " and following binders")
             | _ -> ()
             in []
-      | GLambda (loc, na, bk, t, b) -> abs na bk b
-      | GLetIn (loc, na, b, t, c) -> aux i c
-      | GRec (_, fix_kind, nas, args, tys, bds) ->
+      | GLambda (na, bk, t, b) -> abs na bk b
+      | GLetIn (na, b, t, c) -> aux i b
+      | GRec (fix_kind, nas, args, tys, bds) ->
        let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
        List.fold_left_i (fun i l (na,bk,_,_) -> add_impl i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)
       | _ -> []

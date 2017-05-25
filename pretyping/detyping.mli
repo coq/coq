@@ -35,14 +35,6 @@ val detype_names : bool -> Id.t list -> names_context -> env -> evar_map -> cons
 
 val detype : ?lax:bool -> bool -> Id.t list -> env -> evar_map -> constr -> glob_constr
 
-val detype_case :
-  bool -> (constr -> glob_constr) ->
-  (constructor array -> bool list array -> constr array ->
-    (Loc.t * Id.t list * cases_pattern list * glob_constr) list) ->
-  (constr -> bool list -> bool) ->
-  Id.t list -> inductive * case_style * bool list array * bool list ->
-    constr option -> constr -> constr array -> glob_constr
-
 val detype_sort : evar_map -> sorts -> glob_sort
 
 val detype_rel_context : ?lax:bool -> constr option -> Id.t list -> (names_context * env) -> 
@@ -54,7 +46,9 @@ val detype_closed_glob : ?lax:bool -> bool -> Id.t list -> env -> evar_map -> cl
 val lookup_name_as_displayed  : env -> evar_map -> constr -> Id.t -> int option
 val lookup_index_as_renamed : env -> evar_map -> constr -> int -> int option
 
-val set_detype_anonymous : (Loc.t -> int -> glob_constr) -> unit
+(* XXX: This is a hack and should go away *)
+val set_detype_anonymous : (?loc:Loc.t -> int -> glob_constr) -> unit
+
 val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool
 

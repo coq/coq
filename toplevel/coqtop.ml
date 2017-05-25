@@ -185,7 +185,7 @@ let load_vernacular sid =
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
 let load_vernac_obj () =
-  let map dir = Qualid (Loc.ghost, qualid_of_string dir) in
+  let map dir = Qualid (Loc.tag @@ qualid_of_string dir) in
   Vernacentries.vernac_require None None (List.rev_map map !load_vernacular_obj)
 
 let require_prelude () =
@@ -200,7 +200,7 @@ let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
   let () = if !load_init then silently require_prelude () in
-  let map dir = Qualid (Loc.ghost, qualid_of_string dir) in
+  let map dir = Qualid (Loc.tag @@ qualid_of_string dir) in
   Vernacentries.vernac_require None (Some false) (List.rev_map map !require_list)
 
 let add_compat_require v =

@@ -23,8 +23,8 @@ open Pltac
 DECLARE PLUGIN "recdef_plugin"
 
 let pr_binding prc = function
-  | loc, NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
-  | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
+  | loc, (NamedHyp id, c) -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
+  | loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
 
 let pr_bindings prc prlc = function
   | ImplicitBindings l ->
@@ -158,7 +158,7 @@ GEXTEND Gram
   GLOBAL: function_rec_definition_loc ;
 
   function_rec_definition_loc:
-    [ [ g = Vernac.rec_definition -> !@loc, g ]]
+    [ [ g = Vernac.rec_definition -> Loc.tag ~loc:!@loc g ]]
     ;
 
 END

@@ -65,8 +65,8 @@ let is_known_option cmd = match cmd with
 (** Check whether a command is forbidden in the IDE *)
 
 let ide_cmd_checks ~id (loc,ast) =
-  let user_error s = CErrors.user_err ~loc ~hdr:"CoqIde" (str s) in
-  let warn msg = Feedback.(feedback ~id (Message (Warning, Some loc, strbrk msg))) in
+  let user_error s = CErrors.user_err ?loc ~hdr:"CoqIde" (str s) in
+  let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
   if is_debug ast then
     user_error "Debug mode not available in the IDE";
   if is_known_option ast then
@@ -343,8 +343,8 @@ let about () = {
 let handle_exn (e, info) =
   let dummy = Stateid.dummy in
   let loc_of e = match Loc.get_loc e with
-    | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
-    | _ -> None in
+    | Some loc -> Some (Loc.unloc loc)
+    | _        -> None in
   let mk_msg () = CErrors.print ~info e in
   match e with
   | CErrors.Drop -> dummy, None, Pp.str "Drop is not allowed by coqide!"

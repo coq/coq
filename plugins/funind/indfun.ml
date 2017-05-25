@@ -156,7 +156,7 @@ let build_newrecursive
   let (rec_sign,rec_impls) =
     List.fold_left
       (fun (env,impls) (((_,recname),_),bl,arityc,_) ->
-        let arityc = Constrexpr_ops.mkCProdN Loc.ghost bl arityc in
+        let arityc = Constrexpr_ops.mkCProdN bl arityc in
         let arity,ctx = Constrintern.interp_type env0 sigma arityc in
 	let evdref = ref (Evd.from_env env0) in
 	let _, (_, impls') = Constrintern.interp_context_evars env evdref bl in
@@ -190,18 +190,18 @@ let build_newrecursive l =
 let is_rec names =
   let names = List.fold_right Id.Set.add names Id.Set.empty in
   let check_id id names =  Id.Set.mem id names in
-  let rec lookup names = function
-    | GVar(_,id) -> check_id id names
+  let rec lookup names gt = match gt.CAst.v with
+    | GVar(id) -> check_id id names
     | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
-    | GCast(_,b,_) -> lookup names b
+    | GCast(b,_) -> lookup names b
     | GRec _ -> error "GRec not handled"
-    | GIf(_,b,_,lhs,rhs) ->
+    | GIf(b,_,lhs,rhs) ->
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
-    | GProd(_,na,_,t,b) | GLambda(_,na,_,t,b) ->
+    | GProd(na,_,t,b) | GLambda(na,_,t,b) ->
 	lookup names t || lookup (Nameops.name_fold Id.Set.remove na names) b
-    | GLetIn(_,na,b,t,c) ->
+    | GLetIn(na,b,t,c) ->
 	lookup names b || Option.cata (lookup names) true t || lookup (Nameops.name_fold Id.Set.remove na names) c
-    | GLetTuple(_,nal,_,t,b) -> lookup names t ||
+    | GLetTuple(nal,_,t,b) -> lookup names t ||
 	lookup
 	  (List.fold_left
 	     (fun acc na -> Nameops.name_fold Id.Set.remove na acc)
@@ -209,11 +209,11 @@ let is_rec names =
 	     nal
 	  )
 	  b
-    | GApp(_,f,args) -> List.exists (lookup names) (f::args)
-    | GCases(_,_,_,el,brl) ->
+    | GApp(f,args) -> List.exists (lookup names) (f::args)
+    | GCases(_,_,el,brl) ->
 	List.exists (fun (e,_) -> lookup names e) el ||
 	  List.exists (lookup_br names) brl
-  and lookup_br names (_,idl,_,rt) =
+  and lookup_br names (_,(idl,_,rt)) =
     let new_names = List.fold_right Id.Set.remove idl names in
     lookup new_names rt
   in
@@ -355,7 +355,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 	(*i The next call to mk_rel_id is valid since we have just construct the graph
 	   Ensures by : do_built
 	i*)
-	let f_R_mut = Ident (Loc.ghost,mk_rel_id (List.nth names 0)) in
+	let f_R_mut = Ident (Loc.tag @@ mk_rel_id (List.nth names 0)) in
 	let ind_kn =
 	  fst (locate_with_msg
 		 (pr_reference f_R_mut++str ": Not an inductive type!")
@@ -453,7 +453,7 @@ let generate_correction_proof_wf f_ref tcc_lemma_ref
 let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas args ret_type body
     pre_hook
     =
-  let type_of_f = Constrexpr_ops.mkCProdN Loc.ghost args ret_type in
+  let type_of_f = Constrexpr_ops.mkCProdN args ret_type in
   let rec_arg_num =
     let names =
       List.map
@@ -469,9 +469,8 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
   in
   let unbounded_eq =
     let f_app_args =
-      Constrexpr.CAppExpl
-	(Loc.ghost,
-	 (None,(Ident (Loc.ghost,fname)),None) ,
+      CAst.make @@ Constrexpr.CAppExpl(
+	 (None,(Ident (Loc.tag fname)),None) ,
 	 (List.map
 	    (function
 	       | _,Anonymous -> assert false
@@ -481,10 +480,10 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 )
 	)
     in
-    Constrexpr.CApp (Loc.ghost,(None,Constrexpr_ops.mkRefC (Qualid (Loc.ghost,(qualid_of_string "Logic.eq")))),
+    CAst.make @@ Constrexpr.CApp ((None,Constrexpr_ops.mkRefC (Qualid (Loc.tag (qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
-  let eq = Constrexpr_ops.mkCProdN Loc.ghost args unbounded_eq in
+  let eq = Constrexpr_ops.mkCProdN args unbounded_eq in
   let hook ((f_ref,_) as fconst) tcc_lemma_ref (functional_ref,_) (eq_ref,_) rec_arg_num rec_arg_type
       nb_args relation =
     try
@@ -538,13 +537,13 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
       | None ->
 	  let ltof =
 	    let make_dir l = DirPath.make (List.rev_map Id.of_string l) in
-	    Libnames.Qualid (Loc.ghost,Libnames.qualid_of_path
+	    Libnames.Qualid (Loc.tag @@ Libnames.qualid_of_path
 			       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (Id.of_string "ltof")))
 	  in
 	  let fun_from_mes =
 	    let applied_mes =
 	      Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC wf_arg])    in
-	    Constrexpr_ops.mkLambdaC ([(Loc.ghost,Name wf_arg)],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
+	    Constrexpr_ops.mkLambdaC ([(Loc.tag @@ Name wf_arg)],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
 	  in
 	  let wf_rel_from_mes =
 	    Constrexpr_ops.mkAppC(Constrexpr_ops.mkRefC  ltof,[wf_arg_type;fun_from_mes])
@@ -555,7 +554,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	    let a = Names.Id.of_string "___a" in 
 	    let b = Names.Id.of_string "___b" in 
 	    Constrexpr_ops.mkLambdaC(
-	      [Loc.ghost,Name a;Loc.ghost,Name b],
+	      [Loc.tag @@ Name a;Loc.tag @@ Name b],
 	      Constrexpr.Default Explicit,
 	      wf_arg_type,
 	      Constrexpr_ops.mkAppC(wf_rel_expr,
@@ -589,15 +588,15 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	  | [], _ -> (List.rev aux,replace_vars_constr_expr assoc typ,assoc)
 	  | (Constrexpr.CLocalAssum(nal,bk,_))::bl',typ ->
 	     rebuild_nal (aux,assoc) bk bl' nal (List.length nal) typ
-	  | (Constrexpr.CLocalDef(na,_,_))::bl',Constrexpr.CLetIn(_,_,nat,ty,typ') ->
+	  | (Constrexpr.CLocalDef(na,_,_))::bl',{ CAst.v = Constrexpr.CLetIn(_,nat,ty,typ') } ->
 	    rebuild_bl ((Constrexpr.CLocalDef(na,replace_vars_constr_expr assoc nat,Option.map (replace_vars_constr_expr assoc) ty (* ??? *))::aux),assoc)
 	      bl' typ'
 	  | _ -> assert false
       and rebuild_nal (aux,assoc) bk bl' nal lnal typ = 
-	match nal,typ with 
+	match nal, typ.CAst.v with 
 	  | [], _ -> rebuild_bl (aux,assoc) bl' typ
-	  | _,CProdN(_,[],typ) -> rebuild_nal (aux,assoc) bk bl' nal lnal typ
-	  | _,CProdN(_,(nal',bk',nal't)::rest,typ') -> 
+	  | _,CProdN([],typ) -> rebuild_nal (aux,assoc) bk bl' nal lnal typ
+	  | _,CProdN((nal',bk',nal't)::rest,typ') -> 
 	    let lnal' = List.length nal' in 
 	    if lnal' >= lnal 
 	    then 
@@ -607,15 +606,15 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	      rebuild_bl ((assum :: aux), nassoc) bl' 
 		(if List.is_empty new_nal' && List.is_empty rest
 		 then typ'
-		 else if List.is_empty new_nal'
-		 then CProdN(Loc.ghost,rest,typ')
-		 else CProdN(Loc.ghost,((new_nal',bk',nal't)::rest),typ'))
+		 else CAst.make @@ if List.is_empty new_nal'
+		 then CProdN(rest,typ')
+		 else CProdN(((new_nal',bk',nal't)::rest),typ'))
 	    else 
 	      let captured_nal,non_captured_nal = List.chop lnal' nal in
 	      let nassoc = make_assoc assoc nal' captured_nal in
 	      let assum = CLocalAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't) in
 	      rebuild_nal ((assum :: aux), nassoc)
-		bk bl' non_captured_nal (lnal - lnal') (CProdN(Loc.ghost,rest,typ'))
+		bk bl' non_captured_nal (lnal - lnal') (CAst.make @@ CProdN(rest,typ'))
 	  | _ -> assert false
 
 let rebuild_bl (aux,assoc) bl typ = rebuild_bl (aux,assoc) bl typ
@@ -726,67 +725,65 @@ let do_generate_principle pconstants on_error register_built interactive_proof
   in
   ()
 
-let rec add_args id new_args b =
-  match b with
-  | CRef (r,_) ->
-      begin      match r with
+let rec add_args id new_args = CAst.map (function
+  | CRef (r,_) as b ->
+      begin match r with
 	| Libnames.Ident(loc,fname) when Id.equal fname id ->
-	    CAppExpl(Loc.ghost,(None,r,None),new_args)
+	    CAppExpl((None,r,None),new_args)
 	| _ -> b
       end
   | CFix  _  | CCoFix _ -> anomaly ~label:"add_args " (Pp.str "todo")
-  | CProdN(loc,nal,b1) ->
-      CProdN(loc,
-	     List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args b2)) nal,
+  | CProdN(nal,b1) ->
+        CProdN(List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args b2)) nal,
 	     add_args id new_args  b1)
-  | CLambdaN(loc,nal,b1) ->
-      CLambdaN(loc,
-	       List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args  b2)) nal,
+  | CLambdaN(nal,b1) ->
+      CLambdaN(List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args  b2)) nal,
 	       add_args id new_args  b1)
-  | CLetIn(loc,na,b1,t,b2) ->
-      CLetIn(loc,na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
-  | CAppExpl(loc,(pf,r,us),exprl) ->
+  | CLetIn(na,b1,t,b2) ->
+      CLetIn(na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
+  | CAppExpl((pf,r,us),exprl) ->
       begin
 	match r with
 	| Libnames.Ident(loc,fname) when Id.equal fname id ->
-	    CAppExpl(loc,(pf,r,us),new_args@(List.map (add_args id new_args) exprl))
-	| _ -> CAppExpl(loc,(pf,r,us),List.map (add_args id new_args) exprl)
+	    CAppExpl((pf,r,us),new_args@(List.map (add_args id new_args) exprl))
+	| _ -> CAppExpl((pf,r,us),List.map (add_args id new_args) exprl)
       end
-  | CApp(loc,(pf,b),bl) ->
-      CApp(loc,(pf,add_args id new_args b),
+  | CApp((pf,b),bl) ->
+      CApp((pf,add_args id new_args b),
 	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
-  | CCases(loc,sty,b_option,cel,cal) ->
-      CCases(loc,sty,Option.map (add_args id new_args) b_option,
+  | CCases(sty,b_option,cel,cal) ->
+      CCases(sty,Option.map (add_args id new_args) b_option,
 	     List.map (fun (b,na,b_option) ->
 			 add_args id new_args b,
 			 na, b_option) cel,
-	     List.map (fun (loc,cpl,e) -> (loc,cpl,add_args id new_args e)) cal
+	     List.map (fun (loc,(cpl,e)) -> Loc.tag ?loc @@ (cpl,add_args id new_args e)) cal
 	    )
-  | CLetTuple(loc,nal,(na,b_option),b1,b2) ->
-      CLetTuple(loc,nal,(na,Option.map (add_args id new_args) b_option),
+  | CLetTuple(nal,(na,b_option),b1,b2) ->
+      CLetTuple(nal,(na,Option.map (add_args id new_args) b_option),
 		add_args id new_args b1,
 		add_args id new_args b2
 	       )
 
-  | CIf(loc,b1,(na,b_option),b2,b3) ->
-      CIf(loc,add_args id new_args b1,
+  | CIf(b1,(na,b_option),b2,b3) ->
+      CIf(add_args id new_args b1,
 	  (na,Option.map (add_args id new_args) b_option),
 	  add_args id new_args b2,
 	  add_args id new_args b3
 	 )
-  | CHole _ -> b
-  | CPatVar _ -> b
-  | CEvar _ -> b
-  | CSort _ -> b
-  | CCast(loc,b1,b2)  ->
-      CCast(loc,add_args id new_args b1,
+  | CHole _
+  | CPatVar _
+  | CEvar _
+  | CPrim _
+  | CSort _ as b -> b
+  | CCast(b1,b2)  ->
+      CCast(add_args id new_args b1,
 	    Miscops.map_cast_type (add_args id new_args) b2)
-  | CRecord (loc, pars) ->
-      CRecord (loc, List.map (fun (e,o) -> e, add_args id new_args o) pars)
+  | CRecord pars ->
+      CRecord (List.map (fun (e,o) -> e, add_args id new_args o) pars)
   | CNotation _ -> anomaly ~label:"add_args " (Pp.str "CNotation")
   | CGeneralization _ -> anomaly ~label:"add_args " (Pp.str "CGeneralization")
-  | CPrim _ -> b
   | CDelimiters _ -> anomaly ~label:"add_args " (Pp.str "CDelimiters")
+  )
 exception Stop of  Constrexpr.constr_expr
 
 
@@ -797,8 +794,8 @@ let rec chop_n_arrow n t =
   if n <= 0
   then t (* If we have already removed all the arrows then return the type *)
   else (* If not we check the form of [t] *)
-    match t with
-      | Constrexpr.CProdN(_,nal_ta',t') -> (* If we have a forall, to result are possible :
+    match t.CAst.v with
+      | Constrexpr.CProdN(nal_ta',t') -> (* If we have a forall, to result are possible :
 					     either we need to discard more than the number of arrows contained
 					     in this product declaration then we just recall [chop_n_arrow] on
 					     the remaining number of arrow to chop and [t'] we discard it and
@@ -816,8 +813,8 @@ let rec chop_n_arrow n t =
 		    then
 		      aux (n - nal_l) nal_ta'
 		    else
-		      let new_t' =
-			Constrexpr.CProdN(Loc.ghost,
+		      let new_t' = CAst.make @@
+			Constrexpr.CProdN(
 					((snd (List.chop n nal)),k,t'')::nal_ta',t')
 		      in
 		      raise (Stop new_t')
@@ -832,8 +829,8 @@ let rec chop_n_arrow n t =
 
 let rec get_args b t : Constrexpr.local_binder_expr list *
     Constrexpr.constr_expr * Constrexpr.constr_expr =
-  match b with
-    | Constrexpr.CLambdaN (loc, (nal_ta), b') ->
+  match b.CAst.v with
+    | Constrexpr.CLambdaN ((nal_ta), b') ->
 	begin
 	  let n =
 	    (List.fold_left (fun n (nal,_,_) ->
@@ -872,8 +869,8 @@ let make_graph (f_ref:global_reference) =
 	 in
 	 let (nal_tas,b,t)  = get_args extern_body extern_type in
 	 let expr_list =
-	   match b with
-	     | Constrexpr.CFix(loc,l_id,fixexprl) ->
+	   match b.CAst.v with
+	     | Constrexpr.CFix(l_id,fixexprl) ->
 		 let l =
 		   List.map
 		     (fun (id,(n,recexp),bl,t,b) ->
@@ -885,7 +882,7 @@ let make_graph (f_ref:global_reference) =
 				  | Constrexpr.CLocalDef (na,_,_)-> []
 				  | Constrexpr.CLocalAssum (nal,_,_) ->
 				      List.map
-					(fun (loc,n) ->
+					(fun (loc,n) -> CAst.make ?loc @@ 
 					   CRef(Libnames.Ident(loc, Nameops.out_name n),None))
 					nal
                                   | Constrexpr.CLocalPattern _ -> assert false
@@ -894,14 +891,14 @@ let make_graph (f_ref:global_reference) =
 			    )
 			in
 			let b' = add_args (snd id) new_args b in
-			((((id,None), ( Some (Loc.ghost,rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
+			((((id,None), ( Some (Loc.tag rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
 		     )
 		     fixexprl
 		 in
 		 l
 	     | _ ->
 		let id = Label.to_id (con_label c) in
-		 [(((Loc.ghost,id),None),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
+		 [(((Loc.tag id),None),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
 	 let mp,dp,_ = repr_con c in
 	 do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list;

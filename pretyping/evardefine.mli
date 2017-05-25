@@ -31,7 +31,7 @@ val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
   evar_map * existential
 
 val split_tycon :
-  Loc.t -> env ->  evar_map -> type_constraint ->
+  ?loc:Loc.t -> env ->  evar_map -> type_constraint ->
     evar_map * (Name.t * type_constraint * type_constraint)
 
 val valcon_of_tycon : type_constraint -> val_constraint

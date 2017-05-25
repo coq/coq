@@ -9,7 +9,6 @@
 open Q_util
 
 let loc = Ploc.dummy
-let default_loc = <:expr< Loc.ghost >>
 
 IFDEF STRICT THEN
   let ploc_vala x = Ploc.VaVal x

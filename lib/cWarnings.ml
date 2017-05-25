@@ -20,10 +20,10 @@ type t = {
 let warnings : (string, t) Hashtbl.t = Hashtbl.create 97
 let categories : (string, string list) Hashtbl.t = Hashtbl.create 97
 
-let current_loc = ref Loc.ghost
+let current_loc = ref None
 let flags = ref ""
 
-let set_current_loc = (:=) current_loc
+let set_current_loc loc = current_loc := loc
 
 let get_flags () = !flags
 
@@ -35,29 +35,22 @@ let add_warning_in_category ~name ~category =
   in
   Hashtbl.replace categories category (name::ws)
 
-let refine_loc = function
-  | None when not (Loc.is_ghost !current_loc) -> Some !current_loc
-  | loc -> loc
-
 let create ~name ~category ?(default=Enabled) pp =
   Hashtbl.add warnings name { default; category; status = default };
   add_warning_in_category ~name ~category;
   if default <> Disabled then
     add_warning_in_category ~name ~category:"default";
-  fun ?loc x -> let w = Hashtbl.find warnings name in
+  fun ?loc x ->
+           let w = Hashtbl.find warnings name in
+           let loc = Option.append loc !current_loc in
            match w.status with
            | Disabled -> ()
-           | AsError ->
-              begin match refine_loc loc with
-              | Some loc -> CErrors.user_err ~loc (pp x)
-              | None -> CErrors.user_err (pp x)
-              end
+           | AsError -> CErrors.user_err ?loc (pp x)
            | Enabled ->
               let msg =
                 pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
                   str category ++ str "]"
               in
-              let loc = refine_loc loc in
               Feedback.msg_warning ?loc msg
 
 let warn_unknown_warning =

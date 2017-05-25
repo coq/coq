@@ -18,9 +18,6 @@ type t = {
   ep : int; (** end position *)
 }
 
-type 'a located = t * 'a
-(** Embed a location in a type *)
-
 (** {5 Location manipulation} *)
 
 (** This is inherited from CAMPL4/5. *)
@@ -35,13 +32,9 @@ val unloc : t -> int * int
 val make_loc : int * int -> t
 (** Make a location out of its start and end position *)
 
-val ghost : t
-(** Dummy location *)
-
-val is_ghost : t -> bool
-(** Test whether the location is meaningful *)
-
 val merge : t -> t -> t
+val merge_opt : t option -> t option -> t option
+(** Merge locations, usually generating the largest possible span *)
 
 (** {5 Located exceptions} *)
 
@@ -54,18 +47,23 @@ val get_loc : Exninfo.info -> t option
 val raise : ?loc:t -> exn -> 'a
 (** [raise loc e] is the same as [Pervasives.raise (add_loc e loc)]. *)
 
-(** {5 Location utilities} *)
+(** {5 Objects with location information } *)
 
+type 'a located = t option * 'a
+
+val tag : ?loc:t -> 'a -> 'a located
+(** Embed a location in a type *)
+
+val map : ('a -> 'b) -> 'a located -> 'b located
+(** Modify an object carrying a location *)
+
+(** Deprecated functions  *)
 val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
-val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
+ [@@ocaml.deprecated "use pattern matching"]
 
 val down_located : ('a -> 'b) -> 'a located -> 'b
-(** Projects out a located object *)
+ [@@ocaml.deprecated "use pattern matching"]
 
-(** {5 Backward compatibility} *)
+val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
+ [@@ocaml.deprecated "use pattern matching"]
 
-val dummy_loc : t
-(** Same as [ghost] *)
-
-val join_loc : t -> t -> t
-(** Same as [merge] *)

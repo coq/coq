@@ -46,19 +46,21 @@ let contents x = x
 
 let empty_aux_file = H.empty
 
-let get aux loc key = M.find key (H.find (Loc.unloc loc) aux)
+let get ?loc aux key = M.find key (H.find (Option.cata Loc.unloc (0,0) loc) aux)
 
-let record_in_aux_at loc key v =
+let record_in_aux_at ?loc key v =
   Option.iter (fun oc ->
-    let i, j = Loc.unloc loc in
-    Printf.fprintf oc "%d %d %s %S\n" i j key v)
-  !oc
+      match loc with
+      | Some loc -> let i, j = Loc.unloc loc in
+                    Printf.fprintf oc "%d %d %s %S\n" i j key v
+      | None     -> Printf.fprintf oc "--- %s %S\n" key v
+    ) !oc
 
-let current_loc = ref Loc.ghost
+let current_loc : Loc.t option ref = ref None
 
-let record_in_aux_set_at loc = current_loc := loc
+let record_in_aux_set_at ?loc () = current_loc := loc
 
-let record_in_aux key v = record_in_aux_at !current_loc key v
+let record_in_aux key v = record_in_aux_at ?loc:!current_loc key v
 
 let set h loc k v =
   let m = try H.find loc h with Not_found -> M.empty in
@@ -91,4 +93,4 @@ let load_aux_file_for vfile =
     Flags.if_verbose Feedback.msg_info Pp.(str"Loading file "++str aux_fname++str": "++str s);
      empty_aux_file
 
-let set h loc k v = set h (Loc.unloc loc) k v
+let set ?loc h k v = set h (Option.cata Loc.unloc (0,0) loc) k v

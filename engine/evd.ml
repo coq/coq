@@ -149,7 +149,7 @@ let make_evar hyps ccl = {
   evar_hyps = hyps;
   evar_body = Evar_empty;
   evar_filter = Filter.identity;
-  evar_source = (Loc.ghost,Evar_kinds.InternalHole);
+  evar_source = Loc.tag @@ Evar_kinds.InternalHole;
   evar_candidates = None;
   evar_extra = Store.empty
 }
@@ -704,7 +704,7 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
   | _ ->
   match kind_of_term (fst (decompose_app t2)) with
   | Evar (evk2,_) -> fst (evar_source evk2 evd)
-  | _ -> Loc.ghost
+  | _             -> None
 
 (** The following functions return the set of evars immediately
     contained in the object *)
@@ -790,7 +790,7 @@ let make_evar_universe_context e l =
   | Some us ->
       List.fold_left
         (fun uctx (loc,id) ->
-        fst (UState.new_univ_variable ~loc univ_rigid (Some (Id.to_string id)) uctx))
+        fst (UState.new_univ_variable ?loc univ_rigid (Some (Id.to_string id)) uctx))
         uctx us
 
 (****************************************)
@@ -1082,8 +1082,8 @@ let retract_coercible_metas evd =
 
 let evar_source_of_meta mv evd =
   match meta_name evd mv with
-  | Anonymous -> (Loc.ghost,Evar_kinds.GoalEvar)
-  | Name id -> (Loc.ghost,Evar_kinds.VarInstance id)
+  | Anonymous -> Loc.tag Evar_kinds.GoalEvar
+  | Name id   -> Loc.tag @@ Evar_kinds.VarInstance id
 
 let dependent_evar_ident ev evd =
   let evi = find evd ev in

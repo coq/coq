@@ -73,7 +73,7 @@ END
 
 let induction_arg_of_quantified_hyp = function
   | AnonHyp n -> None,ElimOnAnonHyp n
-  | NamedHyp id -> None,ElimOnIdent (Loc.ghost,id)
+  | NamedHyp id -> None,ElimOnIdent (Loc.tag id)
 
 (* Versions *_main must come first!! so that "1" is interpreted as a
    ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a
@@ -264,7 +264,7 @@ let add_rewrite_hint bases ort t lcsr =
 	  (Declare.declare_universe_context false ctx;
            Univ.ContextSet.empty)
     in
-      Constrexpr_ops.constr_loc ce, (c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t in
+      Loc.tag ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
   let eqs = List.map f lcsr in
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
@@ -628,15 +628,15 @@ let subst_var_with_hole occ tid t =
   let occref = if occ > 0 then ref occ else Find_subterm.error_invalid_occurrence [occ] in
   let locref = ref 0 in
   let rec substrec = function
-    | GVar (_,id) as x -> 
+    | { CAst.v = GVar id } as x -> 
         if Id.equal id tid 
         then
 	  (decr occref;
 	   if Int.equal !occref 0 then x
            else
 	     (incr locref;
-	      GHole (Loc.make_loc (!locref,0),
-		     Evar_kinds.QuestionMark(Evar_kinds.Define true),
+              CAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+	      GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true),
                      Misctypes.IntroAnonymous, None)))
         else x
     | c -> map_glob_constr_left_to_right substrec c in
@@ -648,13 +648,13 @@ let subst_hole_with_term occ tc t =
   let locref = ref 0 in
   let occref = ref occ in
   let rec substrec = function
-    | GHole (_,Evar_kinds.QuestionMark(Evar_kinds.Define true),Misctypes.IntroAnonymous,s) ->
+    | { CAst.v = GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true),Misctypes.IntroAnonymous,s) } ->
         decr occref;
         if Int.equal !occref 0 then tc
         else
 	  (incr locref;
-	   GHole (Loc.make_loc (!locref,0),
-		  Evar_kinds.QuestionMark(Evar_kinds.Define true),Misctypes.IntroAnonymous,s))
+           CAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+	   GHole (Evar_kinds.QuestionMark(Evar_kinds.Define true),Misctypes.IntroAnonymous,s))
     | c -> map_glob_constr_left_to_right substrec c
   in
   substrec t
@@ -676,8 +676,8 @@ let hResolve id c occ t =
     with
       | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
           let (e, info) = CErrors.push e in
-          let loc = match Loc.get_loc info with None -> Loc.ghost | Some loc -> loc in
-          resolve_hole (subst_hole_with_term (fst (Loc.unloc loc)) c_raw t_hole)
+          let loc_begin = Option.cata (fun l -> fst (Loc.unloc l)) 0 (Loc.get_loc info) in
+          resolve_hole (subst_hole_with_term loc_begin c_raw t_hole)
   in
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
   let t_constr = EConstr.of_constr t_constr in
@@ -781,7 +781,7 @@ let case_eq_intros_rewrite x =
 let rec find_a_destructable_match sigma t =
   let cl = induction_arg_of_quantified_hyp (NamedHyp (Id.of_string "x")) in
   let cl = [cl, (None, None), None], None in
-  let dest = TacAtom (Loc.ghost, TacInductionDestruct(false, false, cl)) in
+  let dest = TacAtom (Loc.tag @@ TacInductionDestruct(false, false, cl)) in
   match EConstr.kind sigma t with
     | Case (_,_,x,_) when closed0 sigma x ->
 	if isVar sigma x then

@@ -116,7 +116,7 @@ GEXTEND Gram
     ;
   constr_body:
     [ [ ":="; c = lconstr -> c
-      | ":"; t = lconstr; ":="; c = lconstr -> CCast(!@loc,c,CastConv t) ] ]
+      | ":"; t = lconstr; ":="; c = lconstr -> CAst.make ~loc:!@loc @@ CCast(c,CastConv t) ] ]
   ;
   mode:
     [ [ l = LIST1 [ "+" -> ModeInput

@@ -25,7 +25,18 @@ echo $TRAVIS_PULL_REQUEST
 echo $TRAVIS_BRANCH
 echo $TRAVIS_COMMIT
 
-if [ $TRAVIS_PULL_REQUEST == "568" ] || [ $TRAVIS_BRANCH == "remove-tactic-compat" ]; then
-    fiat_parsers_CI_BRANCH=fix-ml
-    fiat_parsers_CI_GITURL=https://github.com/ppedrot/fiat.git
+if [ $TRAVIS_PULL_REQUEST == "402" ] || [ $TRAVIS_BRANCH == "located_switch" ]; then
+
+    mathcomp_CI_BRANCH=located_switch
+    mathcomp_CI_GITURL=https://github.com/ejgallego/math-comp.git
+
+    fiat_parsers_CI_BRANCH=located_switch
+    fiat_parsers_CI_GITURL=https://github.com/ejgallego/fiat.git
+
+    bedrock_src_CI_BRANCH=located_switch
+    bedrock_src_CI_GITURL=https://github.com/ejgallego/bedrock.git
+
+    bedrock_facade_CI_BRANCH=located_switch
+    bedrock_facade_CI_GITURL=https://github.com/ejgallego/bedrock.git
+
 fi

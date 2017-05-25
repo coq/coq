@@ -51,7 +51,7 @@ let pr_global x = Nametab.pr_global_env Id.Set.empty x
 
 type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string
-| TacNonTerm of Loc.t * 'a * Names.Id.t option
+| TacNonTerm of ('a * Names.Id.t option) Loc.located
 
 type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
 
@@ -149,7 +149,7 @@ type 'a extra_genarg_printer =
 
   let pr_or_by_notation f = function
     | AN v -> f v
-    | ByNotation (_,s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
+    | ByNotation (_,(s,sc)) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
   let pr_located pr (loc,x) = pr x
 
@@ -162,8 +162,8 @@ type 'a extra_genarg_printer =
     | NamedHyp id -> pr_id id
 
   let pr_binding prc = function
-    | loc, NamedHyp id, c -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
-    | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
+    | loc, (NamedHyp id, c) -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
+    | loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
 
   let pr_bindings prc prlc = function
     | ImplicitBindings l ->
@@ -212,7 +212,7 @@ type 'a extra_genarg_printer =
   let rec tacarg_using_rule_token pr_gen = function
     | [] -> []
     | TacTerm s :: l -> keyword s :: tacarg_using_rule_token pr_gen l
-    | TacNonTerm (_, (symb, arg), _) :: l  ->
+    | TacNonTerm (_, ((symb, arg), _)) :: l  ->
       pr_gen symb arg :: tacarg_using_rule_token pr_gen l
 
   let pr_tacarg_using_rule pr_gen l =
@@ -252,7 +252,7 @@ type 'a extra_genarg_printer =
       let prods = (KNmap.find key !prnotation_tab).pptac_prods in
       let pr = function
       | TacTerm s -> primitive s
-      | TacNonTerm (_, symb, _) -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
+      | TacNonTerm (_, (symb, _)) -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
       in
       pr_sequence pr prods
     with Not_found ->
@@ -264,9 +264,9 @@ type 'a extra_genarg_printer =
       let rec pack prods args = match prods, args with
       | [], [] -> []
       | TacTerm s :: prods, args -> TacTerm s :: pack prods args
-      | TacNonTerm (_, _, None) :: prods, args -> pack prods args
-      | TacNonTerm (loc, symb, (Some _ as ido)) :: prods, arg :: args ->
-        TacNonTerm (loc, (symb, arg), ido) :: pack prods args
+      | TacNonTerm (_, (_, None)) :: prods, args -> pack prods args
+      | TacNonTerm (loc, (symb, (Some _ as ido))) :: prods, arg :: args ->
+        TacNonTerm (loc, ((symb, arg), ido)) :: pack prods args
       | _ -> raise Not_found
       in
       let prods = pack pp.pptac_prods l in
@@ -276,7 +276,7 @@ type 'a extra_genarg_printer =
       let pr arg = str "_" in
       KerName.print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
 
-  let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.ghost, arg))
+  let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.tag arg))
 
   let is_genarg tag wit =
     let ArgT.Any tag = tag in
@@ -332,17 +332,17 @@ type 'a extra_genarg_printer =
     pr_extend_gen (pr_farg prtac)
 
   let pr_raw_alias prc prlc prtac prpat lev key args =
-    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))) lev key args
+    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.tag a)))) lev key args
   let pr_glob_alias prc prlc prtac prpat lev key args =
-    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.ghost, a)))) lev key args
+    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.tag a)))) lev key args
 
   (**********************************************************************)
   (* The tactic printer                                                 *)
 
   let strip_prod_binders_expr n ty =
     let rec strip_ty acc n ty =
-      match ty with
-          Constrexpr.CProdN(_,bll,a) ->
+      match ty.CAst.v with
+          Constrexpr.CProdN(bll,a) ->
             let nb =
               List.fold_left (fun i (nal,_,_) -> i + List.length nal) 0 bll in
             let bll = List.map (fun (x, _, y) -> x, y) bll in
@@ -353,7 +353,7 @@ type 'a extra_genarg_printer =
 
   let pr_ltac_or_var pr = function
     | ArgArg x -> pr x
-    | ArgVar (loc,id) -> pr_with_comments loc (pr_id id)
+    | ArgVar (loc,id) -> pr_with_comments ?loc (pr_id id)
 
   let pr_ltac_constant kn =
     if !Flags.in_debugger then pr_kn kn
@@ -369,8 +369,8 @@ type 'a extra_genarg_printer =
 
   let pr_esubst prc l =
     let pr_qhyp = function
-    (_,AnonHyp n,c) -> str "(" ++ int n ++ str" := " ++ prc c ++ str ")"
-      | (_,NamedHyp id,c) ->
+    (_,(AnonHyp n,c)) -> str "(" ++ int n ++ str" := " ++ prc c ++ str ")"
+      | (_,(NamedHyp id,c)) ->
         str "(" ++ pr_id id ++ str" := " ++ prc c ++ str ")"
     in
     prlist_with_sep spc pr_qhyp l
@@ -417,7 +417,7 @@ type 'a extra_genarg_printer =
 
   let pr_as_name = function
     | Anonymous -> mt ()
-    | Name id -> spc () ++ keyword "as" ++ spc () ++ pr_lident (Loc.ghost,id)
+    | Name id -> spc () ++ keyword "as" ++ spc () ++ pr_lident (Loc.tag id)
 
   let pr_pose_as_style prc na c =
     spc() ++ prc c ++ pr_as_name na
@@ -508,7 +508,7 @@ type 'a extra_genarg_printer =
 
   let pr_core_destruction_arg prc prlc = function
     | ElimOnConstr c -> pr_with_bindings prc prlc c
-    | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
+    | ElimOnIdent (loc,id) -> pr_with_comments ?loc (pr_id id)
     | ElimOnAnonHyp n -> int n
 
   let pr_destruction_arg prc prlc (clear_flag,h) =
@@ -575,7 +575,7 @@ type 'a extra_genarg_printer =
 
   let pr_let_clause k pr (id,(bl,t)) =
     hov 0 (keyword k ++ spc () ++ pr_lident id ++ prlist pr_funvar bl ++
-             str " :=" ++ brk (1,1) ++ pr (TacArg (Loc.ghost,t)))
+             str " :=" ++ brk (1,1) ++ pr (TacArg (Loc.tag t)))
 
   let pr_let_clauses recflag pr = function
     | hd::tl ->
@@ -1038,7 +1038,7 @@ type 'a extra_genarg_printer =
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
             | TacAtom (loc,t) ->
-              pr_with_comments loc (hov 1 (pr_atom pr strip_prod_binders tag_atom t)), ltatom
+              pr_with_comments ?loc (hov 1 (pr_atom pr strip_prod_binders tag_atom t)), ltatom
             | TacArg(_,Tacexp e) ->
               pr.pr_tactic (latom,E) e, latom
             | TacArg(_,ConstrMayEval (ConstrTerm c)) ->
@@ -1049,19 +1049,19 @@ type 'a extra_genarg_printer =
               primitive "fresh" ++ pr_fresh_ids l, latom
             | TacArg(_,TacGeneric arg) ->
               pr.pr_generic arg, latom
-            | TacArg(_,TacCall(loc,f,[])) ->
+            | TacArg(_,TacCall(loc,(f,[]))) ->
               pr.pr_reference f, latom
-            | TacArg(_,TacCall(loc,f,l)) ->
-              pr_with_comments loc (hov 1 (
+            | TacArg(_,TacCall(loc,(f,l))) ->
+              pr_with_comments ?loc (hov 1 (
                 pr.pr_reference f ++ spc ()
                 ++ prlist_with_sep spc pr_tacarg l)),
               lcall
             | TacArg (_,a) ->
               pr_tacarg a, latom
-            | TacML (loc,s,l) ->
-              pr_with_comments loc (pr.pr_extend 1 s l), lcall
-            | TacAlias (loc,kn,l) ->
-              pr_with_comments loc (pr.pr_alias (level_of inherited) kn l), latom
+            | TacML (loc,(s,l)) ->
+              pr_with_comments ?loc (pr.pr_extend 1 s l), lcall
+            | TacAlias (loc,(kn,l)) ->
+              pr_with_comments ?loc (pr.pr_alias (level_of inherited) kn l), latom
           )
           in
           if prec_less prec inherited then strm
@@ -1079,16 +1079,16 @@ type 'a extra_genarg_printer =
           | TacNumgoals ->
             keyword "numgoals"
           | (TacCall _|Tacexp _ | TacGeneric _) as a ->
-            hov 0 (keyword "ltac:" ++ surround (pr_tac ltop (TacArg (Loc.ghost,a))))
+            hov 0 (keyword "ltac:" ++ surround (pr_tac ltop (TacArg (Loc.tag a))))
 
         in pr_tac
 
   let strip_prod_binders_glob_constr n (ty,_) =
     let rec strip_ty acc n ty =
       if Int.equal n 0 then (List.rev acc, (ty,None)) else
-        match ty with
-            Glob_term.GProd(loc,na,Explicit,a,b) ->
-              strip_ty (([Loc.ghost,na],(a,None))::acc) (n-1) b
+        match ty.CAst.v with
+            Glob_term.GProd(na,Explicit,a,b) ->
+              strip_ty (([Loc.tag na],(a,None))::acc) (n-1) b
           | _ -> error "Cannot translate fix tactic: not enough products" in
     strip_ty [] n ty
 
@@ -1159,7 +1159,7 @@ type 'a extra_genarg_printer =
       if n=0 then (List.rev acc, EConstr.of_constr ty) else
         match Term.kind_of_term ty with
             Term.Prod(na,a,b) ->
-              strip_ty (([Loc.ghost,na],EConstr.of_constr a)::acc) (n-1) b
+              strip_ty (([Loc.tag na],EConstr.of_constr a)::acc) (n-1) b
           | _ -> error "Cannot translate fix tactic: not enough products" in
     strip_ty [] n ty
 
@@ -1254,7 +1254,7 @@ let () =
     wit_clause_dft_concl
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) pr_lident)
-    (pr_clauses (Some true) (fun id -> pr_lident (Loc.ghost,id)))
+    (pr_clauses (Some true) (fun id -> pr_lident (Loc.tag id)))
   ;
   Genprint.register_print0
     wit_constr

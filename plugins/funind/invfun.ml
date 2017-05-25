@@ -30,8 +30,8 @@ module RelDecl = Context.Rel.Declaration
 
 let pr_binding prc  =
   function
-    | loc, NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
-    | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, (NamedHyp id, c) -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
 
 let pr_bindings prc prlc = function
   | ImplicitBindings l ->
@@ -273,7 +273,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       List.map
 	(fun decl ->
 	   List.map
-	     (fun id -> Loc.ghost, IntroNaming (IntroIdentifier id))
+	     (fun id -> Loc.tag @@ IntroNaming (IntroIdentifier id))
 	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum evd (RelDecl.get_type decl)))))
 	)
 	branches

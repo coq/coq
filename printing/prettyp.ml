@@ -539,7 +539,7 @@ let gallina_print_constant_with_infos sp =
 let gallina_print_syntactic_def kn =
   let qid = Nametab.shortest_qualid_of_syndef Id.Set.empty kn
   and (vars,a) = Syntax_def.search_syntactic_definition kn in
-  let c = Notation_ops.glob_constr_of_notation_constr Loc.ghost a in
+  let c = Notation_ops.glob_constr_of_notation_constr a in
   hov 2
     (hov 4
        (str "Notation " ++ pr_qualid qid ++
@@ -711,7 +711,7 @@ let read_sec_context r =
   let dir =
     try Nametab.locate_section qid
     with Not_found ->
-      user_err ~loc ~hdr:"read_sec_context" (str "Unknown section.") in
+      user_err ?loc ~hdr:"read_sec_context" (str "Unknown section.") in
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ((dir',_),_) as hd)::rest ->
         if DirPath.equal dir dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
@@ -750,9 +750,9 @@ let print_any_name = function
       ~hdr:"print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_name = function
-  | ByNotation (loc,ntn,sc) ->
+  | ByNotation (loc,(ntn,sc)) ->
       print_any_name
-        (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true)
+        (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc))
   | AN ref ->
       print_any_name (locate_any_name ref)
@@ -776,11 +776,11 @@ let print_opaque_name qid =
     | VarRef id ->
         env |> lookup_named id |> NamedDecl.set_id id |> print_named_decl
 
-let print_about_any loc k =
+let print_about_any ?loc k =
   match k with
   | Term ref ->
     let rb = Reductionops.ReductionBehaviour.print ref in
-    Dumpglob.add_glob loc ref;
+    Dumpglob.add_glob ?loc ref;
       pr_infos_list
        (print_ref false ref :: blankline ::
 	print_name_infos ref @
@@ -789,7 +789,7 @@ let print_about_any loc k =
 	[hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Syntactic kn ->
     let () = match Syntax_def.search_syntactic_definition kn with
-    | [],Notation_term.NRef ref -> Dumpglob.add_glob loc ref
+    | [],Notation_term.NRef ref -> Dumpglob.add_glob ?loc ref
     | _ -> () in
       v 0 (
       print_syntactic_def kn ++ fnl () ++
@@ -798,12 +798,12 @@ let print_about_any loc k =
       hov 0 (pr_located_qualid k)
 
 let print_about = function
-  | ByNotation (loc,ntn,sc) ->
-      print_about_any loc
-        (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true)
+  | ByNotation (loc,(ntn,sc)) ->
+      print_about_any ?loc
+        (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc))
   | AN ref ->
-      print_about_any (loc_of_reference ref) (locate_any_name ref)
+      print_about_any ?loc:(loc_of_reference ref) (locate_any_name ref)
 
 (* for debug *)
 let inspect depth =

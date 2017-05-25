@@ -442,11 +442,11 @@ let cc_tactic depth additionnal_terms =
             let open Glob_term in
             let env = Proofview.Goal.env gl in
             let terms_to_complete = List.map (build_term_to_complete uf) (epsilons uf) in
-            let hole = GHole (Loc.ghost, Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None) in
+            let hole = CAst.make @@ GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous, None) in
             let pr_missing (c, missing) =
               let c = Detyping.detype ~lax:true false [] env sigma c in
               let holes = List.init missing (fun _ -> hole) in
-              Printer.pr_glob_constr_env env (GApp (Loc.ghost, c, holes))
+              Printer.pr_glob_constr_env env (CAst.make @@ GApp (c, holes))
             in
 	    Feedback.msg_info
 	      (Pp.str "Goal is solvable by congruence but some arguments are missing.");

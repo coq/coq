@@ -366,7 +366,7 @@ let explain_ltac_call_trace last trace loc =
         Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
   | Tacexpr.LtacAtomCall te ->
       quote (Pptactic.pr_glob_tactic (Global.env())
-              (Tacexpr.TacAtom (Loc.ghost,te)))
+              (Tacexpr.TacAtom (Loc.tag te)))
   | Tacexpr.LtacConstrInterp (c, { Pretyping.ltac_constrs = vars }) ->
       quote (Printer.pr_glob_constr_env (Global.env()) c) ++
         (if not (Id.Map.is_empty vars) then
@@ -401,16 +401,16 @@ let skip_extensions trace =
   | [] -> [] in
   List.rev (aux (List.rev trace))
 
-let finer_loc loc1 loc2 = Loc.merge loc1 loc2 = loc2
+let finer_loc loc1 loc2 = Loc.merge_opt loc1 loc2 = loc2
 
-let extract_ltac_trace trace eloc =
+let extract_ltac_trace ?loc trace =
   let trace = skip_extensions trace in
-  let (loc,c),tail = List.sep_last trace in
+  let (tloc,c),tail = List.sep_last trace in
   if is_defined_ltac trace then
     (* We entered a user-defined tactic,
        we display the trace with location of the call *)
-    let msg = hov 0 (explain_ltac_call_trace c tail eloc ++ fnl()) in
-    Some msg, if finer_loc eloc loc then eloc else loc
+    let msg = hov 0 (explain_ltac_call_trace c tail loc ++ fnl()) in
+    (if finer_loc loc tloc then loc else tloc), Some msg
   else
     (* We entered a primitive tactic, we don't display trace but
        report on the finest location *)
@@ -418,21 +418,21 @@ let extract_ltac_trace trace eloc =
       (* trace is with innermost call coming first *)
       let rec aux best_loc = function
         | (loc,_)::tail ->
-           if Loc.is_ghost best_loc ||
-              not (Loc.is_ghost loc) && finer_loc loc best_loc
+           if Option.is_empty best_loc ||
+              not (Option.is_empty loc) && finer_loc loc best_loc
            then
              aux loc tail
            else
              aux best_loc tail
         | [] -> best_loc in
-        aux eloc trace in
-    None, best_loc
+        aux loc trace in
+    best_loc, None
 
 let get_ltac_trace (_, info) =
   let ltac_trace = Exninfo.get info ltac_trace_info in
-  let loc = Option.default Loc.ghost (Loc.get_loc info) in
+  let loc = Loc.get_loc info in
   match ltac_trace with
   | None -> None
-  | Some trace -> Some (extract_ltac_trace trace loc)
+  | Some trace -> Some (extract_ltac_trace ?loc trace)
 
 let () = ExplainErr.register_additional_error_info get_ltac_trace

@@ -33,12 +33,12 @@ val notation_constr_of_glob_constr : notation_interp_env ->
 
 (** Re-interpret a notation as a [glob_constr], taking care of binders *)
 
-val glob_constr_of_notation_constr_with_binders : Loc.t ->
+val glob_constr_of_notation_constr_with_binders : ?loc:Loc.t ->
   ('a -> Name.t -> 'a * Name.t) ->
   ('a -> notation_constr -> glob_constr) ->
   'a -> notation_constr -> glob_constr
 
-val glob_constr_of_notation_constr : Loc.t -> notation_constr -> glob_constr
+val glob_constr_of_notation_constr : ?loc:Loc.t -> notation_constr -> glob_constr
 
 (** {5 Matching a notation pattern against a [glob_constr]} *)
 

@@ -43,13 +43,13 @@ GEXTEND Gram
     [ [ LEFTQMARK; id = ident -> id ] ]
   ;
   pattern_identref:
-    [ [ id = pattern_ident -> (!@loc, id) ] ]
+    [ [ id = pattern_ident -> Loc.tag ~loc:!@loc id ] ]
   ;
   var: (* as identref, but interpret as a term identifier in ltac *)
-    [ [ id = ident -> (!@loc, id) ] ]
+    [ [ id = ident -> Loc.tag ~loc:!@loc id ] ]
   ;
   identref:
-    [ [ id = ident -> (!@loc, id) ] ]
+    [ [ id = ident -> Loc.tag ~loc:!@loc id ] ]
   ;
   field:
     [ [ s = FIELD -> Id.of_string s ] ]
@@ -60,8 +60,8 @@ GEXTEND Gram
       ] ]
   ;
   fullyqualid:
-    [ [ id = ident; (l,id')=fields -> !@loc,id::List.rev (id'::l)
-      | id = ident -> !@loc,[id]
+    [ [ id = ident; (l,id')=fields -> Loc.tag ~loc:!@loc @@ id::List.rev (id'::l)
+      | id = ident -> Loc.tag ~loc:!@loc [id]
       ] ]
   ;
   basequalid:
@@ -70,32 +70,32 @@ GEXTEND Gram
       ] ]
   ;
   name:
-    [ [ IDENT "_" -> (!@loc, Anonymous)
-      | id = ident -> (!@loc, Name id) ] ]
+    [ [ IDENT "_"  -> Loc.tag ~loc:!@loc Anonymous
+      | id = ident -> Loc.tag ~loc:!@loc @@ Name id ] ]
   ;
   reference:
     [ [ id = ident; (l,id') = fields ->
-        Qualid (!@loc, local_make_qualid (l@[id]) id')
-      | id = ident -> Ident (!@loc,id)
+        Qualid (Loc.tag ~loc:!@loc @@ local_make_qualid (l@[id]) id')
+      | id = ident -> Ident (Loc.tag ~loc:!@loc id)
       ] ]
   ;
   by_notation:
-    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> (!@loc, s, sc) ] ]
+    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> key ] -> Loc.tag ~loc:!@loc (s, sc) ] ]
   ;
   smart_global:
     [ [ c = reference -> Misctypes.AN c
       | ntn = by_notation -> Misctypes.ByNotation ntn ] ]
   ;
   qualid:
-    [ [ qid = basequalid -> !@loc, qid ] ]
+    [ [ qid = basequalid -> Loc.tag ~loc:!@loc qid ] ]
   ;
   ne_string:
     [ [ s = STRING ->
-        if s="" then CErrors.user_err ~loc:(!@loc) (Pp.str"Empty string."); s
+        if s="" then CErrors.user_err ~loc:!@loc (Pp.str"Empty string."); s
     ] ]
   ;
   ne_lstring:
-    [ [ s = ne_string -> (!@loc, s) ] ]
+    [ [ s = ne_string -> Loc.tag ~loc:!@loc s ] ]
   ;
   dirpath:
     [ [ id = ident; l = LIST0 field ->
@@ -105,7 +105,7 @@ GEXTEND Gram
     [ [ s = STRING -> s ] ]
   ;
   lstring:
-    [ [ s = string -> (!@loc, s) ] ]
+    [ [ s = string -> (Loc.tag ~loc:!@loc s) ] ]
   ;
   integer:
     [ [ i = INT      -> my_int_of_string (!@loc) i

@@ -228,11 +228,11 @@ ARGUMENT EXTEND hloc
   |  [ "in" "|-" "*" ] ->
     [ ConclLocation () ]
 | [ "in" ident(id) ] ->
-    [ HypLocation ((Loc.ghost,id),InHyp) ]
+    [ HypLocation ((Loc.tag id),InHyp) ]
 | [ "in" "(" "Type" "of" ident(id) ")" ] ->
-    [ HypLocation ((Loc.ghost,id),InHypTypeOnly) ]
+    [ HypLocation ((Loc.tag id),InHypTypeOnly) ]
 | [ "in" "(" "Value" "of" ident(id) ")" ] ->
-    [ HypLocation ((Loc.ghost,id),InHypValueOnly) ]
+    [ HypLocation ((Loc.tag id),InHypValueOnly) ]
 
  END
 

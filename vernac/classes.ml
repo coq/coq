@@ -75,7 +75,7 @@ let existing_instance glob g info =
     match class_of_constr Evd.empty (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob
   (*FIXME*) (Flags.use_polymorphic_flag ()) c)
-      | None -> user_err ~loc:(loc_of_reference g)
+      | None -> user_err ?loc:(loc_of_reference g)
                          ~hdr:"declare_instance"
                          (Pp.str "Constant does not build instances of a declared type class.")
 
@@ -145,14 +145,14 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	  (fun avoid (clname, _) ->
 	    match clname with
 	    | Some (cl, b) ->
-		let t = CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
+		let t = CAst.make @@ CHole (None, Misctypes.IntroAnonymous, None) in
 		  t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
 	  cl
     | Explicit -> cl, Id.Set.empty
   in
   let tclass = 
-    if generalize then CGeneralization (Loc.ghost, Implicit, Some AbsPi, tclass) 
+    if generalize then CAst.make @@ CGeneralization (Implicit, Some AbsPi, tclass) 
     else tclass 
   in
   let k, u, cty, ctx', ctx, len, imps, subst =
@@ -215,7 +215,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     else (
       let props =
 	match props with
-	| Some (true, CRecord (loc, fs)) ->
+	| Some (true, { CAst.v = CRecord fs }) ->
 	    if List.length fs > List.length k.cl_props then
 	      mismatched_props env' (List.map snd fs) k.cl_props;
 	    Some (Inl fs)
@@ -235,7 +235,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 	    let get_id =
 	      function
 		| Ident id' -> id'
-		| Qualid (loc,id') -> (loc, snd (repr_qualid id'))
+		| Qualid (loc,id') -> (Loc.tag ?loc @@ snd (repr_qualid id'))
 	    in
 	    let props, rest =
 	      List.fold_left
@@ -255,11 +255,11 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 		       let (loc, mid) = get_id loc_mid in
 			 List.iter (fun (n, _, x) -> 
 				      if Name.equal n (Name mid) then
-					Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) x)
+					Option.iter (fun x -> Dumpglob.add_glob ?loc (ConstRef x)) x)
 			   k.cl_projs;
 			 c :: props, rest'
 		     with Not_found ->
-		       (CHole (Loc.ghost, None(* Some Evar_kinds.GoalEvar *), Misctypes.IntroAnonymous, None) :: props), rest
+		       ((CAst.make @@ CHole (None(* Some Evar_kinds.GoalEvar *), Misctypes.IntroAnonymous, None)) :: props), rest
 		   else props, rest)
 		([], props) k.cl_props
 	    in
@@ -406,7 +406,7 @@ let context poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus =
         pi3 (Command.declare_assumption false decl (t, !uctx) [] [] impl
-          Vernacexpr.NoInline (Loc.ghost, id))
+          Vernacexpr.NoInline (Loc.tag id))
       in
       let () = uctx := Univ.ContextSet.empty in
 	status && nstatus

@@ -140,7 +140,7 @@ val set_endline_tactic : Genarg.glob_generic_argument -> unit
  * (w.r.t. type dependencies and let-ins covered by it) + a list of
  * ids to be cleared *)
 val set_used_variables :
-  Names.Id.t list -> Context.Named.t * (Loc.t * Names.Id.t) list
+  Names.Id.t list -> Context.Named.t * Names.Id.t Loc.located list
 val get_used_variables : unit -> Context.Named.t option
 
 val get_universe_binders : unit -> universe_binders option

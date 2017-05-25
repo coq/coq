@@ -1250,7 +1250,7 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
       let sigma = Sigma.to_evar_map evd in
       match EConstr.kind sigma (whd_all env sigma cty) with
       | Prod (_,c1,c2) ->
-        let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) c1 in
+        let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.tag Evar_kinds.GoalEvar) c1 in
 	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
       | _ -> error "Apply_Head_Then"
   in
@@ -1265,7 +1265,7 @@ let is_mimick_head sigma ts f =
 
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
-  let (evd',j') = inh_conv_coerce_rigid_to true Loc.ghost env evd j tycon in
+  let (evd',j') = inh_conv_coerce_rigid_to true env evd j tycon in
   let evd' = Evarconv.solve_unif_constraints_with_heuristics env evd' in
   let evd' = Evd.map_metas_fvalue (fun c -> EConstr.Unsafe.to_constr (nf_evar evd' (EConstr.of_constr c))) evd' in
     (evd',j'.uj_val)

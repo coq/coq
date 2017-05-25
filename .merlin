@@ -36,6 +36,8 @@ S toplevel
 B toplevel
 S vernac
 B vernac
+S plugins/ltac
+B plugins/ltac
 
 S tools
 B tools

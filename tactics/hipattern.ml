@@ -252,16 +252,16 @@ open Decl_kinds
 open Evar_kinds
 
 let mkPattern c = snd (Patternops.pattern_of_glob_constr c)
-let mkGApp f args = GApp (Loc.ghost, f, args)
-let mkGHole =
-  GHole (Loc.ghost, QuestionMark (Define false), Misctypes.IntroAnonymous, None)
-let mkGProd id c1 c2 =
-  GProd (Loc.ghost, Name (Id.of_string id), Explicit, c1, c2)
-let mkGArrow c1 c2 =
-  GProd (Loc.ghost, Anonymous, Explicit, c1, c2)
-let mkGVar id = GVar (Loc.ghost, Id.of_string id)
-let mkGPatVar id = GPatVar(Loc.ghost, (false, Id.of_string id))
-let mkGRef r = GRef (Loc.ghost, Lazy.force r, None)
+let mkGApp f args = CAst.make @@ GApp (f, args)
+let mkGHole = CAst.make @@
+  GHole (QuestionMark (Define false), Misctypes.IntroAnonymous, None)
+let mkGProd id c1 c2 = CAst.make @@
+  GProd (Name (Id.of_string id), Explicit, c1, c2)
+let mkGArrow c1 c2 = CAst.make @@
+  GProd (Anonymous, Explicit, c1, c2)
+let mkGVar id = CAst.make @@ GVar (Id.of_string id)
+let mkGPatVar id = CAst.make @@ GPatVar((false, Id.of_string id))
+let mkGRef r = CAst.make @@ GRef (Lazy.force r, None)
 let mkGAppRef r args = mkGApp (mkGRef r) args
 
 (** forall x : _, _ x x *)

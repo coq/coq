@@ -127,11 +127,11 @@ let closed_term_ast l =
     mltac_name = tacname;
     mltac_index = 0;
   } in
-  let l = List.map (fun gr -> ArgArg(Loc.ghost,gr)) l in
+  let l = List.map (fun gr -> ArgArg(Loc.tag gr)) l in
   TacFun([Name(Id.of_string"t")],
-  TacML(Loc.ghost,tacname,
-  [TacGeneric (Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (GVar(Loc.ghost,Id.of_string"t"),None));
-   TacGeneric (Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)]))
+  TacML(Loc.tag (tacname,
+  [TacGeneric (Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (CAst.make @@ GVar(Id.of_string"t"),None));
+   TacGeneric (Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)])))
 (*
 let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 *)
@@ -160,16 +160,16 @@ let decl_constant na ctx c =
 
 (* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =
-  TacArg(Loc.ghost,TacCall(Loc.ghost, ArgArg(Loc.ghost, Lazy.force tac),args))
+  TacArg(Loc.tag @@ TacCall (Loc.tag (ArgArg(Loc.tag @@ Lazy.force tac),args)))
 
 (* Calling a locally bound tactic *)
 let ltac_lcall tac args =
-  TacArg(Loc.ghost,TacCall(Loc.ghost, ArgVar(Loc.ghost, Id.of_string tac),args))
+  TacArg(Loc.tag @@ TacCall (Loc.tag (ArgVar(Loc.tag @@ Id.of_string tac),args)))
 
 let ltac_apply (f : Value.t) (args: Tacinterp.Value.t list) =
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
-    let x = Reference (ArgVar (Loc.ghost, id)) in
+    let x = Reference (ArgVar (Loc.tag id)) in
     (succ i, x :: vars, Id.Map.add id arg lfun)
   in
   let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
@@ -204,7 +204,7 @@ let get_res =
 let exec_tactic env evd n f args =
   let fold arg (i, vars, lfun) =
     let id = Id.of_string ("x" ^ string_of_int i) in
-    let x = Reference (ArgVar (Loc.ghost, id)) in
+    let x = Reference (ArgVar (Loc.tag id)) in
     (succ i, x :: vars, Id.Map.add id (Value.of_constr arg) lfun)
   in
   let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
@@ -212,7 +212,7 @@ let exec_tactic env evd n f args =
   (** Build the getter *)
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
-  let get_res = TacML (Loc.ghost, get_res, [TacGeneric n]) in
+  let get_res = TacML (Loc.tag (get_res, [TacGeneric n])) in
   let getter = Tacexp (TacFun (List.map (fun n -> Name n) lid, get_res)) in
   (** Evaluate the whole result *)
   let gl = dummy_goal env evd in
@@ -577,8 +577,8 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
     | Some (Closed lc) ->
         closed_term_ast (List.map Smartlocate.global_with_alias lc)
     | None ->
-        let t = ArgArg(Loc.ghost,Lazy.force ltac_inv_morph_nothing) in
-              TacArg(Loc.ghost,TacCall(Loc.ghost,t,[]))
+        let t = ArgArg(Loc.tag @@ Lazy.force ltac_inv_morph_nothing) in
+              TacArg(Loc.tag (TacCall(Loc.tag (t,[]))))
 
 let make_hyp env evd c =
   let t = Retyping.get_type_of env !evd c in
@@ -599,8 +599,8 @@ let interp_power env evd pow =
   let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
   match pow with
   | None ->
-      let t = ArgArg(Loc.ghost, Lazy.force ltac_inv_morph_nothing) in
-      (TacArg(Loc.ghost,TacCall(Loc.ghost,t,[])), plapp evd coq_None [|carrier|])
+      let t = ArgArg(Loc.tag (Lazy.force ltac_inv_morph_nothing)) in
+      (TacArg(Loc.tag (TacCall(Loc.tag (t,[])))), plapp evd coq_None [|carrier|])
   | Some (tac, spec) ->
       let tac =
         match tac with

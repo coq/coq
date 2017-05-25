@@ -22,13 +22,13 @@ val mk_new_meta : unit -> constr
 
 (** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
-  env -> 'r Sigma.t -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  env -> 'r Sigma.t -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> (constr, 'r) Sigma.sigma
 
 val new_pure_evar :
-  named_context_val -> 'r Sigma.t -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  named_context_val -> 'r Sigma.t -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> (evar, 'r) Sigma.sigma
@@ -37,7 +37,7 @@ val new_pure_evar_full : 'r Sigma.t -> evar_info -> (evar, 'r) Sigma.sigma
 
 (** the same with side-effects *)
 val e_new_evar :
-  env -> evar_map ref -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> constr
@@ -45,12 +45,12 @@ val e_new_evar :
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
-  env -> 'r Sigma.t -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  env -> 'r Sigma.t -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid ->
   (constr * sorts, 'r) Sigma.sigma
 
 val e_new_type_evar : env -> evar_map ref ->
-  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> constr * sorts
 
 val new_Type : ?rigid:rigid -> env -> 'r Sigma.t -> (constr, 'r) Sigma.sigma
@@ -72,7 +72,7 @@ val e_new_global : evar_map ref -> Globnames.global_reference -> constr
    as a telescope) is [sign] *)
 val new_evar_instance :
  named_context_val -> 'r Sigma.t -> types -> 
-  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> ?candidates:constr list ->
+  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
   ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool ->
   constr list -> (constr, 'r) Sigma.sigma

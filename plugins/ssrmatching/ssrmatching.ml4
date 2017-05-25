@@ -48,9 +48,8 @@ open Constrexpr_ops
 
 DECLARE PLUGIN "ssrmatching_plugin"
 
-let dummy_loc = Loc.ghost
 let errorstrm = CErrors.user_err ~hdr:"ssrmatching"
-let loc_error loc msg = CErrors.user_err ~loc ~hdr:msg (str msg)
+let loc_error loc msg = CErrors.user_err ?loc ~hdr:msg (str msg)
 let ppnl = Feedback.msg_info
 
 (* 0 cost pp function. Active only if env variable SSRDEBUG is set *)
@@ -133,20 +132,20 @@ let add_genarg tag pr =
 (** Constructors for cast type *)
 let dC t = CastConv t
 (** Constructors for constr_expr *)
-let isCVar = function CRef (Ident _, _) -> true | _ -> false
-let destCVar = function CRef (Ident (_, id), _) -> id | _ ->
+let isCVar   = function { CAst.v = CRef (Ident _, _) } -> true | _ -> false
+let destCVar = function { CAst.v = CRef (Ident (_, id), _) } -> id | _ ->
   CErrors.anomaly (str"not a CRef")
-let mkCHole loc = CHole (loc, None, IntroAnonymous, None)
-let mkCLambda loc name ty t = 
-   CLambdaN (loc, [[loc, name], Default Explicit, ty], t)
-let mkCLetIn loc name bo t = 
-   CLetIn (loc, (loc, name), bo, None, t)
-let mkCCast loc t ty = CCast (loc,t, dC ty)
+let mkCHole ~loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)
+let mkCLambda ?loc name ty t = CAst.make ?loc @@
+   CLambdaN ([[Loc.tag ?loc name], Default Explicit, ty], t)
+let mkCLetIn ?loc name bo t = CAst.make ?loc @@
+   CLetIn ((Loc.tag ?loc name), bo, None, t)
+let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, dC ty)
 (** Constructors for rawconstr *)
-let mkRHole = GHole (dummy_loc, InternalHole, IntroAnonymous, None)
-let mkRApp f args = if args = [] then f else GApp (dummy_loc, f, args)
-let mkRCast rc rt =  GCast (dummy_loc, rc, dC rt)
-let mkRLambda n s t = GLambda (dummy_loc, n, Explicit, s, t)
+let mkRHole = CAst.make @@ GHole (InternalHole, IntroAnonymous, None)
+let mkRApp f args = if args = [] then f else CAst.make @@ GApp (f, args)
+let mkRCast rc rt =  CAst.make @@ GCast (rc, dC rt)
+let mkRLambda n s t = CAst.make @@ GLambda (n, Explicit, s, t)
 
 (* ssrterm conbinators *)
 let combineCG t1 t2 f g = match t1, t2 with
@@ -908,16 +907,16 @@ let glob_cpattern gs p =
     let name = Name (id_of_string ("_ssrpat_" ^ s)) in
     k, (mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None) in
   let bind_in t1 t2 =
-    let d = dummy_loc in let n = Name (destCVar t1) in
-    fst (glob (mkCCast d (mkCHole d) (mkCLambda d n (mkCHole d) t2))) in
+    let mkCHole = mkCHole ~loc:None in let n = Name (destCVar t1) in
+    fst (glob (mkCCast mkCHole (mkCLambda n mkCHole t2))) in
   let check_var t2 = if not (isCVar t2) then
     loc_error (constr_loc t2) "Only identifiers are allowed here" in
   match p with
   | _, (_, None) as x -> x
   | k, (v, Some t) as orig ->
      if k = 'x' then glob_ssrterm gs ('(', (v, Some t)) else
-     match t with
-     | CNotation(_, "( _ in _ )", ([t1; t2], [], [])) ->
+     match t.CAst.v with
+     | CNotation("( _ in _ )", ([t1; t2], [], [])) ->
          (try match glob t1, glob t2 with
          | (r1, None), (r2, None) -> encode k "In" [r1;r2]
          | (r1, Some _), (r2, Some _) when isCVar t1 ->
@@ -925,11 +924,11 @@ let glob_cpattern gs p =
          | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
          | _ -> CErrors.anomaly (str"where are we?")
          with _ when isCVar t1 -> encode k "In" [bind_in t1 t2])
-     | CNotation(_, "( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
+     | CNotation("( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
          check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
-     | CNotation(_, "( _ as _ )", ([t1; t2], [], [])) ->
+     | CNotation("( _ as _ )", ([t1; t2], [], [])) ->
          encode k "As" [fst (glob t1); fst (glob t2)]
-     | CNotation(_, "( _ as _ in _ )", ([t1; t2; t3], [], [])) ->
+     | CNotation("( _ as _ in _ )", ([t1; t2; t3], [], [])) ->
          check_var t2; encode k "As" [fst (glob t1); bind_in t2 t3]
      | _ -> glob_ssrterm gs orig
 ;;
@@ -984,10 +983,10 @@ let pr_rpattern = pr_pattern
 type pattern = Evd.evar_map * (constr, constr) ssrpattern
 
 
-let id_of_cpattern = function
-  | _,(_,Some (CRef (Ident (_, x), _))) -> Some x
-  | _,(_,Some (CAppExpl (_, (_, Ident (_, x), _), []))) -> Some x
-  | _,(GRef (_, VarRef x, _) ,None) -> Some x
+let id_of_cpattern = let open CAst in function
+  | _,(_,Some { v = CRef (Ident (_, x), _) } ) -> Some x
+  | _,(_,Some { v = CAppExpl ((_, Ident (_, x), _), []) } ) -> Some x
+  | _,({ v = GRef (VarRef x, _)} ,None) -> Some x
   | _ -> None
 let id_of_Cterm t = match id_of_cpattern t with
   | Some x -> x
@@ -1035,7 +1034,7 @@ GEXTEND Gram
   GLOBAL: cpattern;
   cpattern: [[ k = ssrtermkind; c = constr ->
     let pattern = mk_term k c in
-    if loc_ofCG pattern <> !@loc && k = '(' then mk_term 'x' c else pattern ]];
+    if loc_ofCG pattern <> Some !@loc && k = '(' then mk_term 'x' c else pattern ]];
 END
 
 ARGUMENT EXTEND lcpattern
@@ -1052,7 +1051,7 @@ GEXTEND Gram
   GLOBAL: lcpattern;
   lcpattern: [[ k = ssrtermkind; c = lconstr ->
     let pattern = mk_term k c in
-    if loc_ofCG pattern <> !@loc && k = '(' then mk_term 'x' c else pattern ]];
+    if loc_ofCG pattern <> Some !@loc && k = '(' then mk_term 'x' c else pattern ]];
 END
 
 let thin id sigma goal =
@@ -1085,9 +1084,10 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   let eAsXInT e x t = E_As_X_In_T(e,x,t) in
   let mkG ?(k=' ') x = k,(x,None) in
   let decode ist t ?reccall f g =
+    let open CAst in
     try match (pf_intern_term ist gl t) with
-    | GCast(_,GHole _,CastConv(GLambda(_,Name x,_,_,c))) -> f x (' ',(c,None))
-    | GVar(_,id)
+    | { v = GCast({ v = GHole _},CastConv({ v = GLambda(Name x,_,_,c)})) } -> f x (' ',(c,None))
+    | { v = GVar id }
       when Id.Map.mem id ist.lfun &&
            not(Option.is_empty reccall) &&
            not(Option.is_empty wit_ssrpatternarg) ->
@@ -1128,18 +1128,18 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
         thin name sigma e)
       sigma new_evars in
     sigma in
-  let red = let rec decode_red (ist,red) = match red with
-    | T(k,(GCast (_,GHole _,(CastConv(GLambda (_,Name id,_,_,t)))),None))
+  let red = let rec decode_red (ist,red) = let open CAst in match red with
+    | T(k,({ v = GCast ({ v = GHole _ },CastConv({ v = GLambda (Name id,_,_,t)}))},None))
         when let id = string_of_id id in let len = String.length id in
         (len > 8 && String.sub id 0 8 = "_ssrpat_") ->
         let id = string_of_id id in let len = String.length id in
         (match String.sub id 8 (len - 8), t with
-        | "In", GApp(_, _, [t]) -> decodeG t xInT (fun x -> T x)
-        | "In", GApp(_, _, [e; t]) -> decodeG t (eInXInT (mkG e)) (bad_enc id)
-        | "In", GApp(_, _, [e; t; e_in_t]) ->
+        | "In", { v = GApp( _, [t]) } -> decodeG t xInT (fun x -> T x)
+        | "In", { v = GApp( _, [e; t]) } -> decodeG t (eInXInT (mkG e)) (bad_enc id)
+        | "In", { v = GApp( _, [e; t; e_in_t]) } ->
             decodeG t (eInXInT (mkG e))
               (fun _ -> decodeG e_in_t xInT (fun _ -> assert false))
-        | "As", GApp(_, _, [e; t]) -> decodeG t (eAsXInT (mkG e)) (bad_enc id)
+        | "As", { v = GApp(_, [e; t]) } -> decodeG t (eAsXInT (mkG e)) (bad_enc id)
         | _ -> bad_enc id ())
     | T t -> decode ist ~reccall:decode_red t xInT (fun x -> T x)
     | In_T t -> decode ist t inXInT inT
@@ -1151,27 +1151,27 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   pp(lazy(str"decoded as: " ++ pr_pattern_w_ids red));
   let red = match redty with None -> red | Some ty -> let ty = ' ', ty in
   match red with
-  | T t -> T (combineCG t ty (mkCCast (loc_ofCG t)) mkRCast)
+  | T t -> T (combineCG t ty (mkCCast ?loc:(loc_ofCG t)) mkRCast)
   | X_In_T (x,t) ->
       let ty = pf_intern_term ist gl ty in
       E_As_X_In_T (mkG (mkRCast mkRHole ty), x, t)
   | E_In_X_In_T (e,x,t) ->
       let ty = mkG (pf_intern_term ist gl ty) in
-      E_In_X_In_T (combineCG e ty (mkCCast (loc_ofCG t)) mkRCast, x, t)
+      E_In_X_In_T (combineCG e ty (mkCCast ?loc:(loc_ofCG t)) mkRCast, x, t)
   | E_As_X_In_T (e,x,t) ->
       let ty = mkG (pf_intern_term ist gl ty) in
-      E_As_X_In_T (combineCG e ty (mkCCast (loc_ofCG t)) mkRCast, x, t)
+      E_As_X_In_T (combineCG e ty (mkCCast ?loc:(loc_ofCG t)) mkRCast, x, t)
   | red -> red in
   pp(lazy(str"typed as: " ++ pr_pattern_w_ids red));
-  let mkXLetIn loc x (a,(g,c)) = match c with
-  | Some b -> a,(g,Some (mkCLetIn loc x (mkCHole loc) b))
-  | None -> a,(GLetIn (loc,x,(GHole (loc, BinderType x, IntroAnonymous, None)), None, g), None) in
+  let mkXLetIn ?loc x (a,(g,c)) = match c with
+  | Some b -> a,(g,Some (mkCLetIn ?loc x (mkCHole ~loc) b))
+  | None -> a,(CAst.make ?loc @@ GLetIn (x, CAst.make ?loc @@ GHole (BinderType x, IntroAnonymous, None), None, g), None) in
   match red with
   | T t -> let sigma, t = interp_term ist gl t in sigma, T t
   | In_T t -> let sigma, t = interp_term ist gl t in sigma, In_T t
   | X_In_T (x, rp) | In_X_In_T (x, rp) ->
     let mk x p = match red with X_In_T _ -> X_In_T(x,p) | _ -> In_X_In_T(x,p) in
-    let rp = mkXLetIn dummy_loc (Name x) rp in
+    let rp = mkXLetIn (Name x) rp in
     let sigma, rp = interp_term ist gl rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
@@ -1180,7 +1180,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
   | E_In_X_In_T(e, x, rp) | E_As_X_In_T (e, x, rp) ->
     let mk e x p =
       match red with E_In_X_In_T _ ->E_In_X_In_T(e,x,p)|_->E_As_X_In_T(e,x,p) in
-    let rp = mkXLetIn dummy_loc (Name x) rp in
+    let rp = mkXLetIn (Name x) rp in
     let sigma, rp = interp_term ist gl rp in
     let _, h, _, rp = destLetIn rp in
     let sigma = cleanup_XinE h x rp sigma in
@@ -1338,10 +1338,10 @@ let pf_fill_occ_term gl occ t =
   let cl,(_,t) = fill_occ_term env concl occ sigma0 t in
   cl, t
 
-let cpattern_of_id id = ' ', (GRef (dummy_loc, VarRef  id, None), None)
+let cpattern_of_id id = ' ', (CAst.make @@ GRef (VarRef  id, None), None)
 
-let is_wildcard = function
-  | _,(_,Some (CHole _)|GHole _,None) -> true
+let is_wildcard : cpattern -> bool = function
+  | _,(_,Some { CAst.v = CHole _ } | { CAst.v = GHole _ } ,None) -> true
   | _ -> false
 
 (* "ssrpattern" *)
@@ -1390,7 +1390,7 @@ let () =
   let () = Tacenv.register_ml_tactic name [|mltac|] in
   let tac =
     TacFun ([Name (Id.of_string "pattern")],
-      TacML (Loc.ghost, { mltac_name = name; mltac_index = 0 }, [])) in
+      TacML (Loc.tag ({ mltac_name = name; mltac_index = 0 }, []))) in
   let obj () =
     Tacenv.register_ltac true false (Id.of_string "ssrpattern") tac in
   Mltop.declare_cache_obj obj "ssrmatching_plugin"

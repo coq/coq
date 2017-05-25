@@ -84,7 +84,7 @@ val get_current_state : unit -> Stateid.t
 val init : unit -> unit
 
 (* This returns the node at that position *)
-val get_ast : Stateid.t -> (Vernacexpr.vernac_expr * Loc.t) option
+val get_ast : Stateid.t -> (Vernacexpr.vernac_expr Loc.located) option
 
 (* Filename *)
 val set_compilation_hints : string -> unit

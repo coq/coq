@@ -282,9 +282,9 @@ let generalizeRewriteIntros as_mode tac depids id =
   end }
 
 let error_too_many_names pats =
-  let loc = Loc.join_loc (fst (List.hd pats)) (fst (List.last pats)) in
+  let loc = Loc.merge_opt (fst (List.hd pats)) (fst (List.last pats)) in
   Proofview.tclENV >>= fun env ->
-  tclZEROMSG ~loc (
+  tclZEROMSG ?loc (
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
     str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (EConstr.Unsafe.to_constr (fst (run_delayed env Evd.empty c))))) pats ++

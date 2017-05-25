@@ -219,10 +219,10 @@ let remove_delimiters scope =
        with Not_found ->
          assert false (* A delimiter for scope [scope] should exist *)
 
-let find_delimiters_scope loc key =
+let find_delimiters_scope ?loc key =
   try String.Map.find key !delimiters_map
   with Not_found ->
-    user_err ~loc ~hdr:"find_delimiters"
+    user_err ?loc ~hdr:"find_delimiters"
       (str "Unknown scope delimiting key " ++ str key ++ str ".")
 
 (* Uninterpretation tables *)
@@ -263,16 +263,16 @@ let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
 let prim_token_key_table = ref KeyMap.empty
 
 let glob_prim_constr_key = function
-  | GApp (_,GRef (_,ref,_),_) | GRef (_,ref,_) -> RefKey (canonical_gr ref)
+  | { CAst.v = GApp ({ CAst.v = GRef (ref,_) } ,_) } | { CAst.v = GRef (ref,_) } -> RefKey (canonical_gr ref)
   | _ -> Oth
 
 let glob_constr_keys = function
-  | GApp (_,GRef (_,ref,_),_) -> [RefKey (canonical_gr ref); Oth]
-  | GRef (_,ref,_) -> [RefKey (canonical_gr ref)]
+  | { CAst.v = GApp ({ CAst.v = GRef (ref,_) },_) } -> [RefKey (canonical_gr ref); Oth]
+  | { CAst.v = GRef (ref,_) } -> [RefKey (canonical_gr ref)]
   | _ -> [Oth]
 
 let cases_pattern_key = function
-  | PatCstr (_,ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
+  | { CAst.v = PatCstr (ref,_,_) } -> RefKey (canonical_gr (ConstructRef ref))
   | _ -> Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
@@ -290,7 +290,7 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
 type required_module = full_path * string list
 
 type 'a prim_token_interpreter =
-    Loc.t -> 'a -> glob_constr
+    ?loc:Loc.t -> 'a -> glob_constr
 
 type cases_pattern_status = bool (* true = use prim token in patterns *)
 
@@ -298,7 +298,7 @@ type 'a prim_token_uninterpreter =
     glob_constr list * (glob_constr -> 'a option) * cases_pattern_status
 
 type internal_prim_token_interpreter =
-    Loc.t -> prim_token -> required_module * (unit -> glob_constr)
+    ?loc:Loc.t -> prim_token -> required_module * (unit -> glob_constr)
 
 let prim_token_interpreter_tab =
   (Hashtbl.create 7 : (scope_name, internal_prim_token_interpreter) Hashtbl.t)
@@ -308,7 +308,7 @@ let add_prim_token_interpreter sc interp =
     let cont = Hashtbl.find prim_token_interpreter_tab sc in
     Hashtbl.replace prim_token_interpreter_tab sc (interp cont)
   with Not_found ->
-    let cont = (fun _loc _p -> raise Not_found) in
+    let cont = (fun ?loc _p -> raise Not_found) in
     Hashtbl.add prim_token_interpreter_tab sc (interp cont)
 
 let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
@@ -324,22 +324,22 @@ let mkString = function
 | None -> None
 | Some s -> if Unicode.is_utf8 s then Some (String s) else None
 
-let delay dir int loc x = (dir, (fun () -> int loc x))
+let delay dir int ?loc x = (dir, (fun () -> int ?loc x))
 
 let declare_numeral_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
-    (fun cont loc -> function Numeral n-> delay dir interp loc n | p -> cont loc p)
+    (fun cont ?loc -> function Numeral n-> delay dir interp ?loc n | p -> cont ?loc p)
     (patl, (fun r -> Option.map mkNumeral (uninterp r)), inpat)
 
 let declare_string_interpreter sc dir interp (patl,uninterp,inpat) =
   declare_prim_token_interpreter sc
-    (fun cont loc -> function String s -> delay dir interp loc s | p -> cont loc p)
+    (fun cont ?loc -> function String s -> delay dir interp ?loc s | p -> cont ?loc p)
     (patl, (fun r -> mkString (uninterp r)), inpat)
 
-let check_required_module loc sc (sp,d) =
+let check_required_module ?loc sc (sp,d) =
   try let _ = Nametab.global_of_path sp in ()
   with Not_found ->
-    user_err ~loc ~hdr:"prim_token_interpreter"
+    user_err ?loc ~hdr:"prim_token_interpreter"
     (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++ str (List.last d) ++ str ".")
 
 (* Look if some notation or numeral printer in [scope] can be used in
@@ -444,49 +444,49 @@ let notation_of_prim_token = function
   | Numeral n -> "- "^(to_string (neg n))
   | String _ -> raise Not_found
 
-let find_prim_token check_allowed loc p sc =
+let find_prim_token check_allowed ?loc p sc =
   (* Try for a user-defined numerical notation *)
   try
     let (_,c),df = find_notation (notation_of_prim_token p) sc in
-    let pat = Notation_ops.glob_constr_of_notation_constr loc c in
+    let pat = Notation_ops.glob_constr_of_notation_constr ?loc c in
     check_allowed pat;
     pat, df
   with Not_found ->
   (* Try for a primitive numerical notation *)
-  let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc loc p in
-  check_required_module loc sc spdir;
+  let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc ?loc p in
+  check_required_module ?loc sc spdir;
   let pat = interp () in
   check_allowed pat;
   pat, ((dirpath (fst spdir),DirPath.empty),"")
 
-let interp_prim_token_gen g loc p local_scopes =
+let interp_prim_token_gen ?loc g p local_scopes =
   let scopes = make_current_scopes local_scopes in
   let p_as_ntn = try notation_of_prim_token p with Not_found -> "" in
-  try find_interpretation p_as_ntn (find_prim_token g loc p) scopes
+  try find_interpretation p_as_ntn (find_prim_token ?loc g p) scopes
   with Not_found ->
-    user_err ~loc ~hdr:"interp_prim_token"
+    user_err ?loc ~hdr:"interp_prim_token"
     ((match p with
       | Numeral n -> str "No interpretation for numeral " ++ str (to_string n)
       | String s -> str "No interpretation for string " ++ qs s) ++ str ".")
 
-let interp_prim_token =
-  interp_prim_token_gen (fun _ -> ())
+let interp_prim_token ?loc =
+  interp_prim_token_gen ?loc (fun _ -> ())
 
-let rec check_allowed_ref_in_pat looked_for = function
+let rec check_allowed_ref_in_pat looked_for = CAst.(with_val (function
   | GVar _ | GHole _ -> ()
-  | GRef (_,g,_) -> looked_for g
-  | GApp (loc,GRef (_,g,_),l) ->
+  | GRef (g,_) -> looked_for g
+  | GApp ({ v = GRef (g,_) },l) ->
     looked_for g; List.iter (check_allowed_ref_in_pat looked_for) l
-  | _ -> raise Not_found
+  | _ -> raise Not_found))
 
-let interp_prim_token_cases_pattern_expr loc looked_for p =
-  interp_prim_token_gen (check_allowed_ref_in_pat looked_for) loc p
+let interp_prim_token_cases_pattern_expr ?loc looked_for p =
+  interp_prim_token_gen ?loc (check_allowed_ref_in_pat looked_for) p
 
-let interp_notation loc ntn local_scopes =
+let interp_notation ?loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
   try find_interpretation ntn (find_notation ntn) scopes
   with Not_found ->
-    user_err ~loc 
+    user_err ?loc 
     (str "Unknown interpretation for notation \"" ++ str ntn ++ str "\".")
 
 let uninterp_notations c =
@@ -521,8 +521,8 @@ let uninterp_prim_token_ind_pattern ind args =
     if not b then raise Notation_ops.No_match;
     let args' = List.map
       (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
-    let ref = GRef (Loc.ghost,ref,None) in
-    match numpr (GApp (Loc.ghost,ref,args')) with
+    let ref = CAst.make @@ GRef (ref,None) in
+    match numpr (CAst.make @@ GApp (ref,args')) with
       | None -> raise Notation_ops.No_match
       | Some n -> (sc,n)
   with Not_found -> raise Notation_ops.No_match
@@ -540,7 +540,7 @@ let uninterp_prim_token_cases_pattern c =
 
 let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
-    try ignore (Hashtbl.find prim_token_interpreter_tab scope Loc.ghost n); true
+    try ignore ((Hashtbl.find prim_token_interpreter_tab scope) n); true
     with Not_found -> false in
   let scopes = make_current_scopes local_scopes in
   Option.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
@@ -822,7 +822,7 @@ let pr_scope_classes sc =
 
 let pr_notation_info prglob ntn c =
   str "\"" ++ str ntn ++ str "\" := " ++
-  prglob (Notation_ops.glob_constr_of_notation_constr Loc.ghost c)
+  prglob (Notation_ops.glob_constr_of_notation_constr c)
 
 let pr_named_scope prglob scope sc =
  (if String.equal scope default_scope then
@@ -890,25 +890,25 @@ let global_reference_of_notation test (ntn,(sc,c,_)) =
       Some (ntn,sc,ref)
   | _ -> None
 
-let error_ambiguous_notation loc _ntn =
-  user_err ~loc  (str "Ambiguous notation.")
+let error_ambiguous_notation ?loc _ntn =
+  user_err ?loc (str "Ambiguous notation.")
 
-let error_notation_not_reference loc ntn =
-  user_err ~loc 
+let error_notation_not_reference ?loc ntn =
+  user_err ?loc 
    (str "Unable to interpret " ++ quote (str ntn) ++
     str " as a reference.")
 
-let interp_notation_as_global_reference loc test ntn sc =
+let interp_notation_as_global_reference ?loc test ntn sc =
   let scopes = match sc with
   | Some sc ->
-      let scope = find_scope (find_delimiters_scope Loc.ghost sc) in
+      let scope = find_scope (find_delimiters_scope sc) in
       String.Map.add sc scope String.Map.empty
   | None -> !scope_map in
   let ntns = browse_notation true ntn scopes in
   let refs = List.map (global_reference_of_notation test) ntns in
   match Option.List.flatten refs with
   | [_,_,ref] -> ref
-  | [] -> error_notation_not_reference loc ntn
+  | [] -> error_notation_not_reference ?loc ntn
   | refs ->
       let f (ntn,sc,ref) =
         let def = find_default ntn !scope_stack in
@@ -918,8 +918,8 @@ let interp_notation_as_global_reference loc test ntn sc =
       in
       match List.filter f refs with
       | [_,_,ref] -> ref
-      | [] -> error_notation_not_reference loc ntn
-      | _ -> error_ambiguous_notation loc ntn
+      | [] -> error_notation_not_reference ?loc ntn
+      | _ -> error_ambiguous_notation ?loc ntn
 
 let locate_notation prglob ntn scope =
   let ntns = factorize_entries (browse_notation false ntn !scope_map) in

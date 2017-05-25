@@ -32,11 +32,10 @@ open Decl_kinds
   let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 
   let pr_lident (loc,id) =
-    if Loc.is_ghost loc then
-      let (b,_) = Loc.unloc loc in
-      pr_located pr_id (Loc.make_loc (b,b + String.length(Id.to_string id)),id)
-    else
-      pr_id id
+    match loc with
+    | None     -> pr_id id
+    | Some loc -> let (b,_) = Loc.unloc loc in
+                  pr_located pr_id @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (Id.to_string id))) id
 
   let pr_plident (lid, l) =
     pr_lident lid ++
@@ -50,11 +49,10 @@ open Decl_kinds
   let pr_fqid fqid = str (string_of_fqid fqid)
 
   let pr_lfqid (loc,fqid) =
-    if Loc.is_ghost loc then
-      let (b,_) = Loc.unloc loc in
-      pr_located pr_fqid (Loc.make_loc (b,b + String.length(string_of_fqid fqid)),fqid)
-    else
-      pr_fqid fqid
+    match loc with
+    | None     -> pr_fqid fqid
+    | Some loc -> let (b,_) = Loc.unloc loc in
+                  pr_located pr_fqid @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (string_of_fqid fqid))) fqid
 
   let pr_lname = function
     | (loc,Name id) -> pr_lident (loc,id)
@@ -203,19 +201,19 @@ open Decl_kinds
       keyword "Module" ++ spc() ++ pr_lfqid id ++ str" := " ++
         pr_located pr_qualid qid
 
-  let rec pr_module_ast leading_space pr_c = function
-    | CMident qid ->
+  let rec pr_module_ast leading_space pr_c = let open CAst in function
+    | { loc ; v = CMident qid } ->
       if leading_space then
-        spc () ++ pr_located pr_qualid qid
+        spc () ++ pr_located pr_qualid (loc, qid)
       else
-        pr_located pr_qualid qid
-    | CMwith (_,mty,decl) ->
+        pr_located pr_qualid (loc,qid)
+    | { v = CMwith (mty,decl) } ->
       let m = pr_module_ast leading_space pr_c mty in
       let p = pr_with_declaration pr_c decl in
       m ++ spc() ++ keyword "with" ++ spc() ++ p
-    | CMapply (_,me1,(CMident _ as me2)) ->
+    | { v = CMapply (me1, ( { v = CMident _ } as me2 ) ) } ->
       pr_module_ast leading_space pr_c me1 ++ spc() ++ pr_module_ast false pr_c me2
-    | CMapply (_,me1,me2) ->
+    | { v = CMapply (me1,me2) } ->
       pr_module_ast leading_space pr_c me1 ++ spc() ++
         hov 1 (str"(" ++ pr_module_ast false pr_c me2 ++ str")")
 
@@ -254,7 +252,7 @@ open Decl_kinds
     prlist_strict (pr_module_vardecls pr_c) l
 
   let pr_type_option pr_c = function
-    | CHole (loc, k, Misctypes.IntroAnonymous, _) -> mt()
+    | { CAst.v = CHole (k, Misctypes.IntroAnonymous, _) } -> mt()
     | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
 
   let pr_decl_notation prc ((loc,ntn),c,scopt) =
@@ -296,7 +294,7 @@ open Decl_kinds
 
   let begin_of_inductive = function
     | [] -> 0
-    | (_,((loc,_),_))::_ -> fst (Loc.unloc loc)
+    | (_,((loc,_),_))::_ -> Option.cata (fun loc -> fst (Loc.unloc loc)) 0 loc
 
   let pr_class_rawexpr = function
     | FunClass -> keyword "Funclass"
@@ -878,7 +876,7 @@ open Decl_kinds
               (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
               pr_constr cl ++ pr_hint_info pr_constr_pattern_expr info ++
               (match props with
-                | Some (true,CRecord (_,l)) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
+                | Some (true, { CAst.v = CRecord l}) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
                 | Some (true,_) -> assert false
                 | Some (false,p) -> spc () ++ str":=" ++ spc () ++ pr_constr p
                 | None -> mt()))

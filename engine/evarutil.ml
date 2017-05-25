@@ -365,7 +365,7 @@ let push_rel_context_to_named_context env sigma typ =
  * Entry points to define new evars   *
  *------------------------------------*)
 
-let default_source = (Loc.ghost,Evar_kinds.InternalHole)
+let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
 let restrict_evar evd evk filter candidates =
   let evd = Sigma.to_evar_map evd in

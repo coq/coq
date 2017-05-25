@@ -887,7 +887,7 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
 	    let test i = evar_conv_x trs env i CUMUL ty (substl ks b) in
 	      (i,t2::ks, m-1, test)
 	  else
-	    let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
+	    let dloc = Loc.tag Evar_kinds.InternalHole in
 	    let i = Sigma.Unsafe.of_evar_map i in
             let Sigma (ev, i', _) = Evarutil.new_evar env i ~src:dloc (substl ks b) in
             let i' = Sigma.to_evar_map i' in
@@ -1213,7 +1213,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
 
 let error_cannot_unify env evd pb ?reason t1 t2 =
   Pretype_errors.error_cannot_unify
-    ~loc:(loc_of_conv_pb evd pb) env
+    ?loc:(loc_of_conv_pb evd pb) env
     evd ?reason (t1, t2)
 
 let check_problems_are_solved env evd =
@@ -1267,7 +1267,7 @@ let solve_unconstrained_impossible_cases env evd =
     match ev_info.evar_source with
     | loc,Evar_kinds.ImpossibleCase ->
       let j, ctx = coq_unit_judge () in
-      let evd' = Evd.merge_context_set Evd.univ_flexible_alg ~loc evd' ctx in
+      let evd' = Evd.merge_context_set Evd.univ_flexible_alg ?loc evd' ctx in
       let ty = j_type j in
       let conv_algo = evar_conv_x full_transparent_state in
       let evd' = check_evar_instance evd' evk ty conv_algo in

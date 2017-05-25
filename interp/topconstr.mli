@@ -40,9 +40,9 @@ val map_constr_expr_with_binders :
       'a -> constr_expr -> constr_expr
 
 val ntn_loc :
-  Loc.t -> constr_notation_substitution -> string -> (int * int) list
+  ?loc:Loc.t -> constr_notation_substitution -> string -> (int * int) list
 val patntn_loc :
-  Loc.t -> cases_pattern_notation_substitution -> string -> (int * int) list
+  ?loc:Loc.t -> cases_pattern_notation_substitution -> string -> (int * int) list
 
 (** For cases pattern parsing errors *)
 

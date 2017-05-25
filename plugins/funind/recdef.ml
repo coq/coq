@@ -172,7 +172,6 @@ let simpl_iter clause =
 let (value_f:Constr.constr list -> global_reference -> Constr.constr) =
   let open Term in
   fun al fterm ->
-    let d0 = Loc.ghost in
     let rev_x_id_l =
       (
 	List.fold_left
@@ -189,16 +188,15 @@ let (value_f:Constr.constr list -> global_reference -> Constr.constr) =
     in
     let env = Environ.push_rel_context context (Global.env ()) in
     let glob_body =
-      GCases
-	(d0,RegularStyle,None,
-	 [GApp(d0, GRef(d0,fterm,None), List.rev_map (fun x_id -> GVar(d0, x_id)) rev_x_id_l),
+      CAst.make @@
+       GCases
+	(RegularStyle,None,
+	 [CAst.make @@ GApp(CAst.make @@ GRef(fterm,None), List.rev_map (fun x_id -> CAst.make @@ GVar x_id) rev_x_id_l),
 	  (Anonymous,None)],
-	 [d0, [v_id], [PatCstr(d0,(destIndRef
-				     (delayed_force coq_sig_ref),1),
-			       [PatVar(d0, Name v_id);
-				PatVar(d0, Anonymous)],
-			       Anonymous)],
-	  GVar(d0,v_id)])
+	 [Loc.tag ([v_id], [CAst.make @@ PatCstr ((destIndRef (delayed_force coq_sig_ref),1),
+			   [CAst.make @@ PatVar(Name v_id); CAst.make @@ PatVar Anonymous],
+                           Anonymous)],
+	    CAst.make @@ GVar v_id)])
     in
     let body = fst (understand env (Evd.from_env env) glob_body)(*FIXME*) in
     it_mkLambda_or_LetIn body context
@@ -884,9 +882,8 @@ let rec make_rewrite_list expr_info max = function
 	  Proofview.V82.of_tactic (general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
 	    (mkVar hp,
-	     ExplicitBindings[Loc.ghost,NamedHyp def,
-			      expr_info.f_constr;Loc.ghost,NamedHyp k,
-			      f_S max]) false) g) )
+	     ExplicitBindings[Loc.tag @@ (NamedHyp def, expr_info.f_constr);
+                              Loc.tag @@ (NamedHyp k, f_S max)]) false) g) )
       )
       [make_rewrite_list expr_info max l;
        observe_tclTHENLIST (str "make_rewrite_list")[ (* x < S max proof *)
@@ -912,9 +909,8 @@ let make_rewrite expr_info l hp max =
 	   (Proofview.V82.of_tactic (general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
 	    (mkVar hp,
-	     ExplicitBindings[Loc.ghost,NamedHyp def,
-			      expr_info.f_constr;Loc.ghost,NamedHyp k,
-			      f_S (f_S max)]) false)) g)
+	     ExplicitBindings[Loc.tag @@ (NamedHyp def, expr_info.f_constr);
+                              Loc.tag @@ (NamedHyp k, f_S (f_S max))]) false)) g)
        [observe_tac(str "make_rewrite finalize") (
 	 (* tclORELSE( h_reflexivity) *)
 	 (observe_tclTHENLIST (str "make_rewrite")[
@@ -1311,7 +1307,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
     CErrors.error "\"abstract\" cannot handle existentials";
   let hook _ _ =
     let opacity =
-      let na_ref = Libnames.Ident (Loc.ghost,na) in
+      let na_ref = Libnames.Ident (Loc.tag na) in
       let na_global = Smartlocate.global_with_alias na_ref in
       match na_global with
 	  ConstRef c -> is_opaque_constant c
@@ -1561,7 +1557,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let hook _ _ = 
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
-    let _ = Extraction_plugin.Table.extraction_inline true [Ident (Loc.ghost,term_id)] in
+    let _ = Extraction_plugin.Table.extraction_inline true [Ident (Loc.tag term_id)] in
     (*     message "start second proof"; *)
     let stop = 
       try com_eqn (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);

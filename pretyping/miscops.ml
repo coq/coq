@@ -62,7 +62,7 @@ let map_red_expr_gen f g h = function
 (** Mapping bindings *)
 
 let map_explicit_bindings f l =
-  let map (loc, hyp, x) = (loc, hyp, f x) in
+  let map (loc, (hyp, x)) = (loc, (hyp, f x)) in
   List.map map l
 
 let map_bindings f = function

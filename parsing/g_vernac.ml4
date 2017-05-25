@@ -102,7 +102,7 @@ GEXTEND Gram
   ;
 
   located_vernac:
-    [ [ v = vernac -> !@loc, v ] ]
+    [ [ v = vernac -> Loc.tag ~loc:!@loc v ] ]
   ;
 END
 
@@ -229,19 +229,19 @@ GEXTEND Gram
       if List.exists (function CLocalPattern _ -> true | _ -> false) bl
       then
         (* FIXME: "red" will be applied to types in bl and Cast with remain *)
-        let c = mkCLambdaN (!@loc) bl c in
+        let c = mkCLambdaN ~loc:!@loc bl c in
 	DefineBody ([], red, c, None)
       else
         (match c with
-        | CCast(_,c, CastConv t) -> DefineBody (bl, red, c, Some t)
+        | { CAst.v = CCast(c, CastConv t) } -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
         let ((bl, c), tyo) =
           if List.exists (function CLocalPattern _ -> true | _ -> false) bl
           then
             (* FIXME: "red" will be applied to types in bl and Cast with remain *)
-            let c = CCast (!@loc, c, CastConv t) in
-            (([],mkCLambdaN (!@loc) bl c), None)
+            let c = CAst.make ~loc:!@loc @@ CCast (c, CastConv t) in
+            (([],mkCLambdaN ~loc:!@loc bl c), None)
           else ((bl, c), Some t)
         in
 	DefineBody (bl, red, c, tyo)
@@ -305,7 +305,7 @@ GEXTEND Gram
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c
-      | -> CHole (!@loc, None, Misctypes.IntroAnonymous, None) ] ]
+      | -> CAst.make ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None) ] ]
   ;
   (* Inductive schemes *)
   scheme:
@@ -349,19 +349,19 @@ GEXTEND Gram
   ;
   record_binder_body:
     [ [ l = binders; oc = of_type_with_opt_coercion;
-         t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN (!@loc) l t))
+         t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN ~loc:!@loc l t))
       | l = binders; oc = of_type_with_opt_coercion;
          t = lconstr; ":="; b = lconstr -> fun id ->
-	   (oc,DefExpr (id,mkCLambdaN (!@loc) l b,Some (mkCProdN (!@loc) l t)))
+	   (oc,DefExpr (id,mkCLambdaN ~loc:!@loc l b,Some (mkCProdN ~loc:!@loc l t)))
       | l = binders; ":="; b = lconstr -> fun id ->
-         match b with
-	 | CCast(_,b, (CastConv t|CastVM t|CastNative t)) ->
-	     (None,DefExpr(id,mkCLambdaN (!@loc) l b,Some (mkCProdN (!@loc) l t)))
+         match b.CAst.v with
+	 | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
+	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b',Some (mkCProdN ~loc:!@loc l t)))
          | _ ->
-	     (None,DefExpr(id,mkCLambdaN (!@loc) l b,None)) ] ]
+	     (None,DefExpr(id,mkCLambdaN ~loc:!@loc l b,None)) ] ]
   ;
   record_binder:
-    [ [ id = name -> (None,AssumExpr(id,CHole (!@loc, None, Misctypes.IntroAnonymous, None)))
+    [ [ id = name -> (None,AssumExpr(id, CAst.make ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))
       | id = name; f = record_binder_body -> f id ] ]
   ;
   assum_list:
@@ -378,9 +378,9 @@ GEXTEND Gram
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
-	            fun l id -> (not (Option.is_empty coe),(id,mkCProdN (!@loc) l c))
+	            fun l id -> (not (Option.is_empty coe),(id,mkCProdN ~loc:!@loc l c))
             |  ->
-		 fun l id -> (false,(id,mkCProdN (!@loc) l (CHole (!@loc, None, Misctypes.IntroAnonymous, None)))) ]
+		 fun l id -> (false,(id,mkCProdN ~loc:!@loc l (CAst.make ~loc:!@loc @@ CHole (None, Misctypes.IntroAnonymous, None)))) ]
 	 -> t l
      ]]
 ;
@@ -511,11 +511,11 @@ GEXTEND Gram
   (* Module expressions *)
   module_expr:
     [ [ me = module_expr_atom -> me
-      | me1 = module_expr; me2 = module_expr_atom -> CMapply (!@loc,me1,me2)
+      | me1 = module_expr; me2 = module_expr_atom -> CAst.make ~loc:!@loc @@ CMapply (me1,me2)
       ] ]
   ;
   module_expr_atom:
-    [ [ qid = qualid -> CMident qid | "("; me = module_expr; ")" -> me ] ]
+    [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (snd qid) | "("; me = module_expr; ")" -> me ] ]
   ;
   with_declaration:
     [ [ "Definition"; fqid = fullyqualid; ":="; c = Constr.lconstr ->
@@ -525,11 +525,12 @@ GEXTEND Gram
       ] ]
   ;
   module_type:
-    [ [ qid = qualid -> CMident qid
+    [ [ qid = qualid -> CAst.make ~loc:!@loc @@ CMident (snd qid)
       | "("; mt = module_type; ")" -> mt
-      | mty = module_type; me = module_expr_atom -> CMapply (!@loc,mty,me)
+      | mty = module_type; me = module_expr_atom ->
+          CAst.make ~loc:!@loc @@ CMapply (mty,me)
       | mty = module_type; "with"; decl = with_declaration ->
-          CMwith (!@loc,mty,decl)
+          CAst.make ~loc:!@loc @@ CMwith (mty,decl)
       ] ]
   ;
   (* Proof using *)
@@ -541,8 +542,8 @@ GEXTEND Gram
   starredidentref:
     [ [ i = identref -> SsSingl i
       | i = identref; "*" -> SsFwdClose(SsSingl i)
-      | "Type" -> SsSingl (!@loc, Id.of_string "Type")
-      | "Type"; "*" -> SsFwdClose (SsSingl (!@loc, Id.of_string "Type")) ]]
+      | "Type" -> SsSingl (Loc.tag ~loc:!@loc @@ Id.of_string "Type")
+      | "Type"; "*" -> SsFwdClose (SsSingl (Loc.tag ~loc:!@loc @@ Id.of_string "Type")) ]]
   ;
   ssexpr:
     [ "35" 
@@ -591,15 +592,15 @@ GEXTEND Gram
           d = def_body ->
           let s = coerce_reference_to_id qid in
 	  VernacDefinition
-	    ((Some Global,CanonicalStructure),((Loc.ghost,s),None),d)
+	    ((Some Global,CanonicalStructure),((Loc.tag s),None),d)
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-	  VernacDefinition ((None,Coercion),((Loc.ghost,s),None),d)
+	  VernacDefinition ((None,Coercion),((Loc.tag s),None),d)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = coerce_reference_to_id qid in
-	  VernacDefinition ((Some Decl_kinds.Local,Coercion),((Loc.ghost,s),None),d)
+	  VernacDefinition ((Some Decl_kinds.Local,Coercion),((Loc.tag s),None),d)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr ->
 	   VernacIdentityCoercion (true, f, s, t)
@@ -719,7 +720,7 @@ GEXTEND Gram
   ;
   argument_spec: [
        [ b = OPT "!"; id = name ; s = OPT scope ->
-       snd id, not (Option.is_empty b), Option.map (fun x -> !@loc, x) s
+       snd id, not (Option.is_empty b), Option.map (fun x -> Loc.tag ~loc:!@loc x) s
     ]
   ];
   (* List of arguments implicit status, scope, modifiers *)
@@ -732,7 +733,7 @@ GEXTEND Gram
     | "/" -> [`Slash]
     | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
        let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
+         | None, x -> x | x, None -> Option.map (fun y -> Loc.tag ~loc:!@loc y) x
          | Some _, Some _ -> error "scope declared twice" in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
@@ -740,7 +741,7 @@ GEXTEND Gram
                  implicit_status = NotImplicit}) items
     | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
        let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
+         | None, x -> x | x, None -> Option.map (fun y -> Loc.tag ~loc:!@loc y) x
          | Some _, Some _ -> error "scope declared twice" in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
@@ -748,7 +749,7 @@ GEXTEND Gram
                  implicit_status = Implicit}) items
     | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
        let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
+         | None, x -> x | x, None -> Option.map (fun y -> Loc.tag ~loc:!@loc y) x
          | Some _, Some _ -> error "scope declared twice" in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
@@ -776,7 +777,7 @@ GEXTEND Gram
     [ [ name = pidentref; sup = OPT binders ->
 	  (let ((loc,id),l) = name in ((loc, Name id),l)),
           (Option.default [] sup)
-      | -> ((!@loc, Anonymous), None), []  ] ]
+      | -> ((Loc.tag ~loc:!@loc Anonymous), None), []  ] ]
   ;
   hint_info:
     [ [ "|"; i = OPT natural; pat = OPT constr_pattern ->
@@ -1143,8 +1144,8 @@ GEXTEND Gram
       | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
       | IDENT "compat"; s = STRING ->
         SetCompatVersion (Coqinit.get_compat_version s)
-      | IDENT "format"; s1 = [s = STRING -> (!@loc,s)];
-                        s2 = OPT [s = STRING -> (!@loc,s)] ->
+      | IDENT "format"; s1 = [s = STRING -> Loc.tag ~loc:!@loc s];
+                        s2 = OPT [s = STRING -> Loc.tag ~loc:!@loc s] ->
           begin match s1, s2 with
           | (_,k), Some s -> SetFormat(k,s)
           | s, None -> SetFormat ("text",s) end

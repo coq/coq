@@ -53,18 +53,19 @@ let rec under_binders env sigma f n c =
 	  mkLetIn (x,b,t,under_binders (push_rel (LocalDef (x,b,t)) env) sigma f (n-1) c)
       | _ -> assert false
 
-let rec complete_conclusion a cs = function
-  | CProdN (loc,bl,c) -> CProdN (loc,bl,complete_conclusion a cs c)
-  | CLetIn (loc,na,b,t,c) -> CLetIn (loc,na,b,t,complete_conclusion a cs c)
-  | CHole (loc, k, _, _) ->
+let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
+  | CProdN (bl,c) -> CProdN (bl,complete_conclusion a cs c)
+  | CLetIn (na,b,t,c) -> CLetIn (na,b,t,complete_conclusion a cs c)
+  | CHole (k, _, _) ->
       let (has_no_args,name,params) = a in
       if not has_no_args then
-	user_err ~loc 
+	user_err ?loc
 	 (strbrk"Cannot infer the non constant arguments of the conclusion of "
 	  ++ pr_id cs ++ str ".");
-      let args = List.map (fun id -> CRef(Ident(loc,id),None)) params in
-      CAppExpl (loc,(None,Ident(loc,name),None),List.rev args)
+      let args = List.map (fun id -> CAst.make ?loc @@ CRef(Ident(loc,id),None)) params in
+      CAppExpl ((None,Ident(loc,name),None),List.rev args)
   | c -> c
+  )
 
 (* Commands of the interface *)
 
@@ -266,7 +267,7 @@ match local with
     (gr,inst,Lib.is_modtype_strict ())
 
 let interp_assumption evdref env impls bl c =
-  let c = mkCProdN (local_binders_loc bl) bl c in
+  let c = mkCProdN ?loc:(local_binders_loc bl) bl c in
   let ty, impls = interp_type_evars_impls env evdref ~impls c in
   let ty = EConstr.Unsafe.to_constr ty in
   (ty, impls)
@@ -343,7 +344,7 @@ let do_assumptions kind nl l = match l with
   | (Discharge, _, _) when Lib.sections_are_opened () ->
     let loc = fst id in
     let msg = Pp.str "Section variables cannot be polymorphic." in
-    user_err ~loc  msg
+    user_err ?loc  msg
   | _ -> ()
   in
   do_assumptions_bound_univs coe kind nl id (Some pl) c
@@ -355,7 +356,7 @@ let do_assumptions kind nl l = match l with
       let loc = fst id in
       let msg =
 	Pp.str "Assumptions with bound universes can only be defined one at a time." in
-      user_err ~loc  msg
+      user_err ?loc  msg
     in
     (coe, (List.map map idl, c))
   in
@@ -421,13 +422,13 @@ let prepare_param = function
     
 let rec check_anonymous_type ind =
   let open Glob_term in
-    match ind with
-    | GSort (_, GType []) -> true
-    | GProd (_, _, _, _, e) 
-    | GLetIn (_, _, _, _, e)
-    | GLambda (_, _, _, _, e)
-    | GApp (_, e, _)
-    | GCast (_, e, _) -> check_anonymous_type e
+    match ind.CAst.v with
+    | GSort (GType []) -> true
+    | GProd ( _, _, _, e) 
+    | GLetIn (_, _, _, e)
+    | GLambda (_, _, _, e)
+    | GApp (e, _)
+    | GCast (e, _) -> check_anonymous_type e
     | _ -> false
 
 let make_conclusion_flexible evdref ty poly =
@@ -451,7 +452,7 @@ let interp_ind_arity env evdref ind =
   let t, impls = understand_tcc_evars env evdref ~expected_type:IsType c, imps in
   let pseudo_poly = check_anonymous_type c in
   let () = if not (Reductionops.is_arity env !evdref t) then
-    user_err ~loc:(constr_loc ind.ind_arity) (str "Not an arity")
+    user_err ?loc:(constr_loc ind.ind_arity) (str "Not an arity")
   in
   let t = EConstr.Unsafe.to_constr t in
     t, pseudo_poly, impls
@@ -565,7 +566,7 @@ let check_named (loc, na) = match na with
 | Name _ -> ()
 | Anonymous ->
   let msg = str "Parameters must be named." in
-  user_err ~loc  msg
+  user_err ?loc  msg
 
 
 let check_param = function
@@ -682,7 +683,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun (((_,indname),pl),_,ar,lc) -> {
     ind_name = indname; ind_univs = pl;
-    ind_arity = Option.cata (fun x -> x) (CSort (Loc.ghost,GType [])) ar;
+    ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (GType [])) ar;
     ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
   }) indl
 
@@ -918,7 +919,7 @@ let mkSubset name typ prop =
 	 [| typ; mkLambda (name, typ, prop) |])
 let sigT = Lazy.from_fun build_sigma_type
 
-let make_qref s = Qualid (Loc.ghost, qualid_of_string s)
+let make_qref s = Qualid (Loc.tag @@ qualid_of_string s)
 let lt_ref = make_qref "Init.Peano.lt"
 
 let rec telescope l =
@@ -983,7 +984,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let relty = Typing.unsafe_type_of env !evdref rel in
   let relargty =
     let error () =
-      user_err ~loc:(constr_loc r)
+      user_err ?loc:(constr_loc r)
                ~hdr:"Command.build_wellfounded"
 		    (Printer.pr_econstr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
     in
@@ -1060,7 +1061,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     mkApp (EConstr.of_constr (Universes.constr_of_global (delayed_force fix_sub_ref)),
 	  [| argtyp ; wf_rel ;
 	     Evarutil.e_new_evar env evdref
-	       ~src:(Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
+	       ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
 	     prop |])
   in
   let def = Typing.e_solve_evars env evdref def in
@@ -1210,7 +1211,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let env = Global.env() in
-    let indexes = search_guard Loc.ghost env indexes fixdecls in
+    let indexes = search_guard env indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let vars = Universes.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
@@ -1322,8 +1323,7 @@ let do_program_recursive local p fixkind fixl ntns =
 	Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in
       let indexes = 
-        Pretyping.search_guard
-          Loc.ghost (Global.env ()) possible_indexes fixdecls in
+        Pretyping.search_guard (Global.env ()) possible_indexes fixdecls in
       List.iteri (fun i _ ->
           Inductive.check_fix env
                               ((indexes,i),fixdecls))
@@ -1350,7 +1350,7 @@ let do_program_fixpoint local poly l =
 	     
     | [(n, CMeasureRec (m, r))], [((((_,id),pl),_,bl,typ,def),ntn)] ->
 	build_wellfounded (id, pl, n, bl, typ, out_def def) poly
-	  (Option.default (CRef (lt_ref,None)) r) m ntn
+	  (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m ntn
 	  
     | _, _ when List.for_all (fun (n, ro) -> ro == CStructRec) g ->
 	let fixl,ntns = extract_fixpoint_components true l in

@@ -105,8 +105,8 @@ let make_prod_item = function
     let nt = type_of_user_symbol g in
     let base s = <:expr< Pcoq.genarg_grammar ($mk_extraarg loc s$) >> in
     let typ = match ido with None -> None | Some _ -> Some nt in
-      <:expr< Egramml.GramNonTerminal $default_loc$ $mlexpr_of_option (make_rawwit loc) typ$
-      $mlexpr_of_prod_entry_key base g$ >>
+      <:expr< Egramml.GramNonTerminal ( Loc.tag ( $mlexpr_of_option (make_rawwit loc) typ$ ,
+      $mlexpr_of_prod_entry_key base g$ ) ) >>
 
 let mlexpr_of_clause cl =
   let mkexpr { r_head = a; r_patt = b; } = match a with

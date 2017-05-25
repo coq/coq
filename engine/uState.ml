@@ -258,7 +258,7 @@ let universe_context ?names ctx =
           let l =
             try UNameMap.find (Id.to_string id) (fst ctx.uctx_names)
             with Not_found ->
-              user_err ~loc ~hdr:"universe_context"
+              user_err ?loc ~hdr:"universe_context"
                             (str"Universe " ++ Nameops.pr_id id ++ str" is not bound anymore.")
           in (l :: newinst, (id, l) :: map, Univ.LSet.remove l acc))
          pl ([], [], levels)
@@ -269,10 +269,10 @@ let universe_context ?names ctx =
            try
              let info =
                Univ.LMap.find (Univ.LSet.choose left) (snd ctx.uctx_names) in
-             Option.default Loc.ghost info.uloc
-           with Not_found -> Loc.ghost
+             info.uloc
+           with Not_found -> None
          in
-           user_err ~loc ~hdr:"universe_context"
+           user_err ?loc ~hdr:"universe_context"
                         ((str(CString.plural n "Universe") ++ spc () ++
 			     Univ.LSet.pr (pr_uctx_level ctx) left ++
 			   spc () ++ str (CString.conjugate_verb_to_be n) ++

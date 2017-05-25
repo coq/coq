@@ -10,16 +10,16 @@ open Misctypes
    Some basic functions to rebuild glob_constr
    In each of them the location is Loc.ghost
 *)
-let mkGRef ref = GRef(Loc.ghost,ref,None)
-let mkGVar id = GVar(Loc.ghost,id)
-let mkGApp(rt,rtl) = GApp(Loc.ghost,rt,rtl)
-let mkGLambda(n,t,b) = GLambda(Loc.ghost,n,Explicit,t,b)
-let mkGProd(n,t,b) = GProd(Loc.ghost,n,Explicit,t,b)
-let mkGLetIn(n,b,t,c) = GLetIn(Loc.ghost,n,b,t,c)
-let mkGCases(rto,l,brl) = GCases(Loc.ghost,Term.RegularStyle,rto,l,brl)
-let mkGSort s = GSort(Loc.ghost,s)
-let mkGHole () = GHole(Loc.ghost,Evar_kinds.BinderType Anonymous,Misctypes.IntroAnonymous,None)
-let mkGCast(b,t) = GCast(Loc.ghost,b,CastConv t)
+let mkGRef ref          = CAst.make @@ GRef(ref,None)
+let mkGVar id           = CAst.make @@ GVar(id)
+let mkGApp(rt,rtl)      = CAst.make @@ GApp(rt,rtl)
+let mkGLambda(n,t,b)    = CAst.make @@ GLambda(n,Explicit,t,b)
+let mkGProd(n,t,b)      = CAst.make @@ GProd(n,Explicit,t,b)
+let mkGLetIn(n,b,t,c)   = CAst.make @@ GLetIn(n,b,t,c)
+let mkGCases(rto,l,brl) = CAst.make @@ GCases(Term.RegularStyle,rto,l,brl)
+let mkGSort s           = CAst.make @@ GSort(s)
+let mkGHole ()          = CAst.make @@ GHole(Evar_kinds.BinderType Anonymous,Misctypes.IntroAnonymous,None)
+let mkGCast(b,t)        = CAst.make @@ GCast(b,CastConv t)
 
 (*
   Some basic functions to decompose glob_constrs
@@ -27,7 +27,7 @@ let mkGCast(b,t) = GCast(Loc.ghost,b,CastConv t)
 *)
 let glob_decompose_prod =
   let rec glob_decompose_prod args = function
-  | GProd(_,n,k,t,b) ->
+  | { CAst.v = GProd(n,k,t,b) } ->
       glob_decompose_prod ((n,t)::args) b
   | rt -> args,rt
   in
@@ -35,9 +35,9 @@ let glob_decompose_prod =
 
 let glob_decompose_prod_or_letin =
   let rec glob_decompose_prod args = function
-  | GProd(_,n,k,t,b) ->
+  | { CAst.v = GProd(n,k,t,b) } ->
       glob_decompose_prod ((n,None,Some t)::args) b
-  | GLetIn(_,n,b,t,c) ->
+  | { CAst.v = GLetIn(n,b,t,c) } ->
       glob_decompose_prod ((n,Some b,t)::args) c
   | rt -> args,rt
   in
@@ -59,7 +59,7 @@ let glob_decompose_prod_n n =
     if i<=0 then args,c
     else
       match c with
-	| GProd(_,n,_,t,b) ->
+	| { CAst.v = GProd(n,_,t,b) } ->
 	    glob_decompose_prod (i-1) ((n,t)::args) b
 	| rt -> args,rt
   in
@@ -71,9 +71,9 @@ let glob_decompose_prod_or_letin_n n =
     if i<=0 then args,c
     else
       match c with
-	| GProd(_,n,_,t,b) ->
+	| { CAst.v = GProd(n,_,t,b) } ->
 	    glob_decompose_prod (i-1) ((n,None,Some t)::args) b
-	| GLetIn(_,n,b,t,c) ->
+	| { CAst.v = GLetIn(n,b,t,c) } ->
 	    glob_decompose_prod (i-1) ((n,Some b,t)::args) c
 	| rt -> args,rt
   in
@@ -84,7 +84,7 @@ let glob_decompose_app =
   let rec decompose_rapp acc rt =
 (*     msgnl (str "glob_decompose_app on : "++ Printer.pr_glob_constr rt); *)
     match rt with
-    | GApp(_,rt,rtl) ->
+    | { CAst.v = GApp(rt,rtl) } ->
 	decompose_rapp (List.fold_left (fun y x -> x::y) acc rtl) rt
     | rt -> rt,List.rev acc
   in
@@ -120,93 +120,89 @@ let remove_name_from_mapping mapping na =
 
 let change_vars =
   let rec change_vars mapping rt =
-    match rt with
-      | GRef _ -> rt
-      | GVar(loc,id) ->
+    CAst.map (function
+      | GRef _ as x -> x
+      | GVar id ->
 	  let new_id =
 	    try
 	      Id.Map.find id mapping
 	    with Not_found -> id
 	  in
-	  GVar(loc,new_id)
-      | GEvar _ -> rt
-      | GPatVar _ -> rt
-      | GApp(loc,rt',rtl) ->
-	  GApp(loc,
-	       change_vars mapping rt',
+	  GVar(new_id)
+      | GEvar _ as x   -> x
+      | GPatVar _ as x -> x
+      | GApp(rt',rtl) ->
+	  GApp(change_vars mapping rt',
 	       List.map (change_vars mapping) rtl
 	      )
-      | GLambda(loc,name,k,t,b) ->
-	  GLambda(loc,
-		  name,
+      | GLambda(name,k,t,b) ->
+	  GLambda(name,
 		  k,
 		  change_vars mapping t,
 		  change_vars (remove_name_from_mapping mapping name) b
 		 )
-      | GProd(loc,name,k,t,b) ->
-	  GProd(loc,
-		  name,
+      | GProd(name,k,t,b) ->
+	  GProd(  name,
 	          k,
 		  change_vars mapping t,
 		  change_vars (remove_name_from_mapping mapping name) b
 		 )
-      | GLetIn(loc,name,def,typ,b) ->
-	  GLetIn(loc,
-		 name,
+      | GLetIn(name,def,typ,b) ->
+	  GLetIn(name,
 		 change_vars mapping def,
 		 Option.map (change_vars mapping) typ,
 		 change_vars (remove_name_from_mapping mapping name) b
 		)
-      | GLetTuple(loc,nal,(na,rto),b,e) ->
+      | GLetTuple(nal,(na,rto),b,e) ->
 	  let new_mapping = List.fold_left remove_name_from_mapping mapping nal in
-	  GLetTuple(loc,
-		    nal,
+	  GLetTuple(nal,
 		    (na, Option.map (change_vars mapping) rto),
 		    change_vars mapping b,
 		    change_vars new_mapping e
 		   )
-      | GCases(loc,sty,infos,el,brl) ->
-	  GCases(loc,sty,
+      | GCases(sty,infos,el,brl) ->
+	  GCases(sty,
 		 infos,
 		 List.map (fun (e,x) -> (change_vars mapping e,x)) el,
 		 List.map (change_vars_br mapping) brl
 		)
-      | GIf(loc,b,(na,e_option),lhs,rhs) ->
-	  GIf(loc,
-	      change_vars mapping b,
+      | GIf(b,(na,e_option),lhs,rhs) ->
+	  GIf(change_vars mapping b,
 	      (na,Option.map (change_vars mapping) e_option),
 	      change_vars mapping lhs,
 	      change_vars mapping rhs
 	     )
       | GRec _ -> error "Local (co)fixes are not supported"
-      | GSort _ -> rt
-      | GHole _ -> rt
-      | GCast(loc,b,c) ->
-	  GCast(loc,change_vars mapping b,
+      | GSort _ as x -> x
+      | GHole _ as x -> x
+      | GCast(b,c) ->
+	  GCast(change_vars mapping b,
 		Miscops.map_cast_type (change_vars mapping) c)
-  and change_vars_br mapping ((loc,idl,patl,res) as br) =
+      ) rt
+  and change_vars_br mapping ((loc,(idl,patl,res)) as br) =
     let new_mapping = List.fold_right Id.Map.remove idl mapping in
     if Id.Map.is_empty new_mapping
     then br
-    else (loc,idl,patl,change_vars new_mapping res)
+    else (loc,(idl,patl,change_vars new_mapping res))
   in
   change_vars
 
 
 
 let rec alpha_pat excluded pat =
-  match pat with
-    | PatVar(loc,Anonymous) ->
+  let loc = pat.CAst.loc in
+  match pat.CAst.v with
+    | PatVar Anonymous ->
 	let new_id = Indfun_common.fresh_id excluded "_x" in
-	PatVar(loc,Name new_id),(new_id::excluded),Id.Map.empty
-    | PatVar(loc,Name id) ->
+	(CAst.make ?loc @@ PatVar(Name new_id)),(new_id::excluded),Id.Map.empty
+    | PatVar(Name id) ->
 	if Id.List.mem id excluded
 	then
 	  let new_id = Namegen.next_ident_away id excluded in
-	  PatVar(loc,Name new_id),(new_id::excluded),
+	  (CAst.make ?loc @@ PatVar(Name new_id)),(new_id::excluded),
 	(Id.Map.add id new_id Id.Map.empty)
-	else pat,excluded,Id.Map.empty
-    | PatCstr(loc,constr,patl,na) ->
+	else pat, excluded,Id.Map.empty
+    | PatCstr(constr,patl,na) ->
 	let new_na,new_excluded,map =
 	  match na with
 	    | Name id when Id.List.mem id excluded ->
@@ -223,7 +219,7 @@ let rec alpha_pat excluded pat =
 	    ([],new_excluded,map)
 	    patl
 	in
-	PatCstr(loc,constr,List.rev new_patl,new_na),new_excluded,new_map
+        (CAst.make ?loc @@ PatCstr(constr,List.rev new_patl,new_na)),new_excluded,new_map
 
 let alpha_patl excluded patl  =
   let patl,new_excluded,map =
@@ -242,11 +238,11 @@ let alpha_patl excluded patl  =
 
 let raw_get_pattern_id pat acc =
   let rec get_pattern_id pat =
-    match pat with
-      | PatVar(loc,Anonymous) -> assert false
-      | PatVar(loc,Name id) ->
+    match pat.CAst.v with
+      | PatVar(Anonymous) -> assert false
+      | PatVar(Name id) ->
 	  [id]
-      | PatCstr(loc,constr,patternl,_) ->
+      | PatCstr(constr,patternl,_) ->
 	  List.fold_right
 	  (fun pat idl ->
 	     let idl' = get_pattern_id pat in
@@ -260,29 +256,30 @@ let raw_get_pattern_id pat acc =
 let get_pattern_id pat = raw_get_pattern_id pat []
 
 let rec alpha_rt excluded rt =
-  let new_rt =
-    match rt with
-      | GRef _ | GVar _ | GEvar _ | GPatVar _ -> rt
-      | GLambda(loc,Anonymous,k,t,b) ->
+  let loc = rt.CAst.loc in
+  let new_rt = CAst.make ?loc @@
+    match rt.CAst.v with
+      | GRef _ | GVar _ | GEvar _ | GPatVar _ as rt -> rt
+      | GLambda(Anonymous,k,t,b) ->
 	  let new_id = Namegen.next_ident_away (Id.of_string "_x") excluded in
 	  let new_excluded = new_id :: excluded in
 	  let new_t = alpha_rt new_excluded t in
 	  let new_b = alpha_rt new_excluded b in
-	  GLambda(loc,Name new_id,k,new_t,new_b)
-      | GProd(loc,Anonymous,k,t,b) ->
+	  GLambda(Name new_id,k,new_t,new_b)
+      | GProd(Anonymous,k,t,b) ->
 	let new_t = alpha_rt excluded t in
 	let new_b = alpha_rt excluded b in
-	GProd(loc,Anonymous,k,new_t,new_b)
-    | GLetIn(loc,Anonymous,b,t,c) ->
+	GProd(Anonymous,k,new_t,new_b)
+    | GLetIn(Anonymous,b,t,c) ->
 	let new_b = alpha_rt excluded b in
 	let new_t = Option.map (alpha_rt excluded) t in
 	let new_c = alpha_rt excluded c in
-	GLetIn(loc,Anonymous,new_b,new_t,new_c)
-    | GLambda(loc,Name id,k,t,b) ->
+	GLetIn(Anonymous,new_b,new_t,new_c)
+    | GLambda(Name id,k,t,b) ->
 	let new_id = Namegen.next_ident_away id excluded in
 	let t,b =
 	  if Id.equal new_id id
-	  then t,b
+	  then t, b
 	  else
 	    let replace = change_vars (Id.Map.add id new_id Id.Map.empty) in
 	    (t,replace b)
@@ -290,8 +287,8 @@ let rec alpha_rt excluded rt =
 	let new_excluded = new_id::excluded in
 	let new_t = alpha_rt new_excluded t in
 	let new_b = alpha_rt new_excluded b in
-	GLambda(loc,Name new_id,k,new_t,new_b)
-    | GProd(loc,Name id,k,t,b) ->
+	GLambda(Name new_id,k,new_t,new_b)
+    | GProd(Name id,k,t,b) ->
 	let new_id = Namegen.next_ident_away id excluded in
 	let new_excluded = new_id::excluded in
 	let t,b =
@@ -303,8 +300,8 @@ let rec alpha_rt excluded rt =
 	in
 	let new_t = alpha_rt new_excluded t in
 	let new_b = alpha_rt new_excluded b in
-	GProd(loc,Name new_id,k,new_t,new_b)
-    | GLetIn(loc,Name id,b,t,c) ->
+	GProd(Name new_id,k,new_t,new_b)
+    | GLetIn(Name id,b,t,c) ->
 	let new_id = Namegen.next_ident_away id excluded in
 	let c =
 	  if Id.equal new_id id then c
@@ -314,10 +311,9 @@ let rec alpha_rt excluded rt =
 	let new_b = alpha_rt new_excluded b in
 	let new_t = Option.map (alpha_rt new_excluded) t in
 	let new_c = alpha_rt new_excluded c in
-	GLetIn(loc,Name new_id,new_b,new_t,new_c)
+	GLetIn(Name new_id,new_b,new_t,new_c)
 
-
-    | GLetTuple(loc,nal,(na,rto),t,b) ->
+    | GLetTuple(nal,(na,rto),t,b) ->
 	let rev_new_nal,new_excluded,mapping =
 	  List.fold_left
 	    (fun (nal,excluded,mapping) na ->
@@ -344,92 +340,92 @@ let rec alpha_rt excluded rt =
 	let new_t = alpha_rt new_excluded new_t in
 	let new_b = alpha_rt new_excluded new_b in
 	let new_rto = Option.map (alpha_rt new_excluded) new_rto  in
-	GLetTuple(loc,new_nal,(na,new_rto),new_t,new_b)
-    | GCases(loc,sty,infos,el,brl) ->
+	GLetTuple(new_nal,(na,new_rto),new_t,new_b)
+    | GCases(sty,infos,el,brl) ->
 	let new_el =
 	  List.map (function (rt,i) -> alpha_rt excluded rt, i) el
 	in
-	GCases(loc,sty,infos,new_el,List.map (alpha_br excluded) brl)
-    | GIf(loc,b,(na,e_o),lhs,rhs) ->
-	GIf(loc,alpha_rt excluded b,
+	GCases(sty,infos,new_el,List.map (alpha_br excluded) brl)
+    | GIf(b,(na,e_o),lhs,rhs) ->
+	GIf(alpha_rt excluded b,
 	    (na,Option.map (alpha_rt excluded) e_o),
 	    alpha_rt excluded lhs,
 	    alpha_rt excluded rhs
 	   )
     | GRec _ -> error "Not handled GRec"
-    | GSort _ -> rt
-    | GHole _ -> rt
-    | GCast (loc,b,c) ->
-	GCast(loc,alpha_rt excluded b,
+    | GSort _
+    | GHole _ as rt -> rt
+    | GCast (b,c) ->
+	GCast(alpha_rt excluded b,
 	      Miscops.map_cast_type (alpha_rt excluded) c)
-    | GApp(loc,f,args) ->
-	GApp(loc,
-	     alpha_rt excluded f,
+    | GApp(f,args) ->
+	GApp(alpha_rt excluded f,
 	     List.map (alpha_rt excluded) args
 	    )
   in
   new_rt
 
-and alpha_br excluded (loc,ids,patl,res) =
+and alpha_br excluded (loc,(ids,patl,res)) =
   let new_patl,new_excluded,mapping = alpha_patl excluded patl in
   let new_ids = List.fold_right raw_get_pattern_id new_patl [] in
   let new_excluded = new_ids@excluded in
   let renamed_res = change_vars mapping res in
   let new_res = alpha_rt new_excluded renamed_res in
-  (loc,new_ids,new_patl,new_res)
+  (loc,(new_ids,new_patl,new_res))
 
 (*
    [is_free_in id rt] checks if [id] is a free variable in [rt]
 *)
 let is_free_in id =
-  let rec is_free_in = function
+  let rec is_free_in x = CAst.with_loc_val (fun ?loc -> function
     | GRef _ ->  false
-    | GVar(_,id') -> Id.compare id' id == 0
+    | GVar id' -> Id.compare id' id == 0
     | GEvar _ -> false
     | GPatVar _ -> false
-    | GApp(_,rt,rtl) -> List.exists is_free_in (rt::rtl)
-    | GLambda(_,n,_,t,b) | GProd(_,n,_,t,b) ->
+    | GApp(rt,rtl) -> List.exists is_free_in (rt::rtl)
+    | GLambda(n,_,t,b) | GProd(n,_,t,b) ->
 	let check_in_b =
 	  match n with
 	    | Name id' -> not (Id.equal id' id)
 	    | _ -> true
 	in
 	is_free_in t || (check_in_b && is_free_in b)
-    | GLetIn(_,n,b,t,c) ->
+    | GLetIn(n,b,t,c) ->
 	let check_in_c =
 	  match n with
 	    | Name id' -> not (Id.equal id' id)
 	    | _ -> true
 	in
 	is_free_in b || Option.cata is_free_in true t || (check_in_c && is_free_in c)
-    | GCases(_,_,_,el,brl) ->
+    | GCases(_,_,el,brl) ->
 	(List.exists (fun (e,_) -> is_free_in e) el) ||
 	  List.exists is_free_in_br brl
-    | GLetTuple(_,nal,_,b,t) ->
+    | GLetTuple(nal,_,b,t) ->
 	let check_in_nal =
 	  not (List.exists (function Name id' -> Id.equal id' id | _ -> false) nal)
 	in
 	is_free_in t  || (check_in_nal && is_free_in b)
 
-    | GIf(_,cond,_,br1,br2) ->
+    | GIf(cond,_,br1,br2) ->
 	is_free_in cond || is_free_in br1 || is_free_in br2
     | GRec _ -> raise (UserError(None,str "Not handled GRec"))
     | GSort _ -> false
     | GHole _ -> false
-    | GCast (_,b,(CastConv t|CastVM t|CastNative t)) -> is_free_in b || is_free_in t
-    | GCast (_,b,CastCoerce) -> is_free_in b
-  and is_free_in_br (_,ids,_,rt) =
+    | GCast (b,(CastConv t|CastVM t|CastNative t)) -> is_free_in b || is_free_in t
+    | GCast (b,CastCoerce) -> is_free_in b
+    ) x
+  and is_free_in_br (_,(ids,_,rt)) =
     (not (Id.List.mem id ids)) && is_free_in rt
   in
   is_free_in
 
 
 
-let rec pattern_to_term  = function
-  | PatVar(loc,Anonymous) -> assert false
-  | PatVar(loc,Name id) ->
+let rec pattern_to_term pt = CAst.with_val (function
+  | PatVar Anonymous -> assert false
+  | PatVar(Name id) ->
 	mkGVar id
-  | PatCstr(loc,constr,patternl,_) ->
+  | PatCstr(constr,patternl,_) ->
       let cst_narg =
 	Inductiveops.constructor_nallargs_env
 	  (Global.env ())
@@ -448,78 +444,73 @@ let rec pattern_to_term  = function
       mkGApp(mkGRef(Globnames.ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
-
+  ) pt
 
 
 let replace_var_by_term x_id term =
-  let rec replace_var_by_pattern rt =
-    match rt with
-      | GRef _ -> rt
-      | GVar(_,id) when Id.compare id x_id == 0 -> term
-      | GVar _ -> rt
-      | GEvar _ -> rt
-      | GPatVar _ -> rt
-      | GApp(loc,rt',rtl) ->
-	  GApp(loc,
-	       replace_var_by_pattern rt',
+  let rec replace_var_by_pattern x = CAst.map (function
+      | GVar id when Id.compare id x_id == 0 -> term.CAst.v
+      | GRef _
+      | GVar _
+      | GEvar _
+      | GPatVar _ as rt -> rt
+      | GApp(rt',rtl) ->
+	  GApp(replace_var_by_pattern rt',
 	       List.map replace_var_by_pattern rtl
 	      )
-      | GLambda(_,Name id,_,_,_) when Id.compare id x_id == 0 -> rt
-      | GLambda(loc,name,k,t,b) ->
-	  GLambda(loc,
-		  name,
+      | GLambda(Name id,_,_,_) as rt when Id.compare id x_id == 0 -> rt
+      | GLambda(name,k,t,b) ->
+	  GLambda(name,
 		  k,
 		  replace_var_by_pattern t,
 		  replace_var_by_pattern b
 		 )
-      | GProd(_,Name id,_,_,_) when Id.compare id x_id == 0 -> rt
-      | GProd(loc,name,k,t,b) ->
-	  GProd(loc,
-		  name,
+      | GProd(Name id,_,_,_) as rt when Id.compare id x_id == 0 -> rt
+      | GProd(name,k,t,b) ->
+	  GProd(  name,
 	          k,
 		  replace_var_by_pattern t,
 		  replace_var_by_pattern b
 		 )
-      | GLetIn(_,Name id,_,_,_) when Id.compare id x_id == 0 -> rt
-      | GLetIn(loc,name,def,typ,b) ->
-	  GLetIn(loc,
-		 name,
+      | GLetIn(Name id,_,_,_) as rt when Id.compare id x_id == 0 -> rt
+      | GLetIn(name,def,typ,b) ->
+	  GLetIn(name,
 		 replace_var_by_pattern def,
 		 Option.map (replace_var_by_pattern) typ,
 		 replace_var_by_pattern b
 		)
-      | GLetTuple(_,nal,_,_,_)
+      | GLetTuple(nal,_,_,_) as rt
 	  when List.exists (function Name id -> Id.equal id x_id | _ -> false) nal  ->
 	  rt
-      | GLetTuple(loc,nal,(na,rto),def,b) ->
-	  GLetTuple(loc,
-		    nal,
+      | GLetTuple(nal,(na,rto),def,b) ->
+	  GLetTuple(nal,
 		    (na,Option.map replace_var_by_pattern rto),
 		    replace_var_by_pattern def,
 		    replace_var_by_pattern b
 		   )
-      | GCases(loc,sty,infos,el,brl) ->
-	  GCases(loc,sty,
+      | GCases(sty,infos,el,brl) ->
+	  GCases(sty,
 		 infos,
 		 List.map (fun (e,x) -> (replace_var_by_pattern e,x)) el,
 		 List.map replace_var_by_pattern_br brl
 		)
-      | GIf(loc,b,(na,e_option),lhs,rhs) ->
-	  GIf(loc, replace_var_by_pattern b,
+      | GIf(b,(na,e_option),lhs,rhs) ->
+	  GIf(replace_var_by_pattern b,
 	      (na,Option.map replace_var_by_pattern e_option),
 	      replace_var_by_pattern lhs,
 	      replace_var_by_pattern rhs
 	     )
       | GRec _ -> raise (UserError(None,str "Not handled GRec"))
-      | GSort _ -> rt
-      | GHole _ -> rt
-      | GCast(loc,b,c) ->
-	  GCast(loc,replace_var_by_pattern b,
+      | GSort _
+      | GHole _ as rt -> rt
+      | GCast(b,c) ->
+	  GCast(replace_var_by_pattern b,
 		Miscops.map_cast_type replace_var_by_pattern c)
-  and replace_var_by_pattern_br ((loc,idl,patl,res) as br) =
+    ) x
+  and replace_var_by_pattern_br ((loc,(idl,patl,res)) as br) =
     if List.exists (fun id -> Id.compare id x_id == 0) idl
     then br
-    else (loc,idl,patl,replace_var_by_pattern res)
+    else (loc,(idl,patl,replace_var_by_pattern res))
   in
   replace_var_by_pattern
 
@@ -532,9 +523,10 @@ exception NotUnifiable
 let rec are_unifiable_aux  = function
   | [] -> ()
   | eq::eqs ->
+      let open CAst in
       match eq with
-	 | PatVar _,_ | _,PatVar _ -> are_unifiable_aux eqs
-	 | PatCstr(_,constructor1,cpl1,_),PatCstr(_,constructor2,cpl2,_) ->
+	 | { v = PatVar _ },_ | _, { v = PatVar _ } -> are_unifiable_aux eqs
+	 | { v = PatCstr(constructor1,cpl1,_) }, { v = PatCstr(constructor2,cpl2,_) } ->
 	     if not (eq_constructor constructor2 constructor1)
 	     then raise NotUnifiable
 	     else
@@ -554,9 +546,10 @@ let are_unifiable pat1 pat2 =
 let rec eq_cases_pattern_aux  = function
   | [] -> ()
   | eq::eqs ->
+      let open CAst in
       match eq with
-	 | PatVar _,PatVar _ -> eq_cases_pattern_aux eqs
-	 | PatCstr(_,constructor1,cpl1,_),PatCstr(_,constructor2,cpl2,_) ->
+	 | { v = PatVar _ }, { v = PatVar _ } -> eq_cases_pattern_aux eqs
+	 | { v = PatCstr(constructor1,cpl1,_) }, { v = PatCstr(constructor2,cpl2,_) } ->
 	     if not (eq_constructor constructor2 constructor1)
 	     then raise NotUnifiable
 	     else
@@ -576,10 +569,11 @@ let eq_cases_pattern pat1 pat2 =
 
 
 let ids_of_pat =
-  let rec ids_of_pat ids = function
-    | PatVar(_,Anonymous) -> ids
-    | PatVar(_,Name id) -> Id.Set.add id ids
-    | PatCstr(_,_,patl,_) -> List.fold_left ids_of_pat ids patl
+  let rec ids_of_pat ids = CAst.with_val (function
+    | PatVar Anonymous -> ids
+    | PatVar(Name id) -> Id.Set.add id ids
+    | PatCstr(_,patl,_) -> List.fold_left ids_of_pat ids patl
+    )
   in
   ids_of_pat Id.Set.empty
 
@@ -589,22 +583,22 @@ let id_of_name = function
 
 (* TODO: finish Rec caes *)
 let ids_of_glob_constr c =
-  let rec ids_of_glob_constr acc c =
+  let rec ids_of_glob_constr acc {loc; CAst.v = c} =
     let idof = id_of_name in
     match c with
-      | GVar (_,id) -> id::acc
-      | GApp (loc,g,args) ->
+      | GVar id -> id::acc
+      | GApp (g,args) ->
           ids_of_glob_constr [] g @ List.flatten (List.map (ids_of_glob_constr []) args) @ acc
-      | GLambda (loc,na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
-      | GProd (loc,na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
-      | GLetIn (loc,na,b,t,c) -> idof na :: ids_of_glob_constr [] b @ Option.cata (ids_of_glob_constr []) [] t @ ids_of_glob_constr [] c @ acc
-      | GCast (loc,c,(CastConv t|CastVM t|CastNative t)) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] t @ acc
-      | GCast (loc,c,CastCoerce) -> ids_of_glob_constr [] c @ acc
-      | GIf (loc,c,(na,po),b1,b2) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] b1 @ ids_of_glob_constr [] b2 @ acc
-      | GLetTuple (_,nal,(na,po),b,c) ->
+      | GLambda (na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
+      | GProd (na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
+      | GLetIn (na,b,t,c) -> idof na :: ids_of_glob_constr [] b @ Option.cata (ids_of_glob_constr []) [] t @ ids_of_glob_constr [] c @ acc
+      | GCast (c,(CastConv t|CastVM t|CastNative t)) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] t @ acc
+      | GCast (c,CastCoerce) -> ids_of_glob_constr [] c @ acc
+      | GIf (c,(na,po),b1,b2) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] b1 @ ids_of_glob_constr [] b2 @ acc
+      | GLetTuple (nal,(na,po),b,c) ->
           List.map idof nal @ ids_of_glob_constr [] b @ ids_of_glob_constr [] c @ acc
-      | GCases (loc,sty,rtntypopt,tml,brchl) ->
-	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_glob_constr [] c) brchl)
+      | GCases (sty,rtntypopt,tml,brchl) ->
+	  List.flatten (List.map (fun (_,(idl,patl,c)) -> idl @ ids_of_glob_constr [] c) brchl)
       | GRec _ -> failwith "Fix inside a constructor branch"
       | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> []
   in
@@ -616,61 +610,58 @@ let ids_of_glob_constr c =
 
 
 let zeta_normalize =
-  let rec zeta_normalize_term rt =
-    match rt with
-      | GRef _ -> rt
-      | GVar _ -> rt
-      | GEvar _ -> rt
-      | GPatVar _ -> rt
-      | GApp(loc,rt',rtl) ->
-	  GApp(loc,
-	       zeta_normalize_term rt',
+  let rec zeta_normalize_term x = CAst.map (function
+      | GRef _
+      | GVar _
+      | GEvar _
+      | GPatVar _ as rt -> rt
+      | GApp(rt',rtl) ->
+	  GApp(zeta_normalize_term rt',
 	       List.map zeta_normalize_term rtl
 	      )
-      | GLambda(loc,name,k,t,b) ->
-	  GLambda(loc,
-		  name,
+      | GLambda(name,k,t,b) ->
+	  GLambda(name,
 		  k,
 		  zeta_normalize_term t,
 		  zeta_normalize_term b
 		 )
-      | GProd(loc,name,k,t,b) ->
-	  GProd(loc,
-		name,
+      | GProd(name,k,t,b) ->
+	  GProd(name,
 	        k,
 		zeta_normalize_term t,
 		zeta_normalize_term b
 		 )
-      | GLetIn(_,Name id,def,typ,b) ->
-	  zeta_normalize_term (replace_var_by_term id def b)
-      | GLetIn(loc,Anonymous,def,typ,b) -> zeta_normalize_term b
-      | GLetTuple(loc,nal,(na,rto),def,b) ->
-	  GLetTuple(loc,
-		    nal,
+      | GLetIn(Name id,def,typ,b) ->
+	  (zeta_normalize_term (replace_var_by_term id def b)).CAst.v
+      | GLetIn(Anonymous,def,typ,b) ->
+          (zeta_normalize_term b).CAst.v
+      | GLetTuple(nal,(na,rto),def,b) ->
+	  GLetTuple(nal,
 		    (na,Option.map zeta_normalize_term rto),
 		    zeta_normalize_term def,
 		    zeta_normalize_term b
 		   )
-      | GCases(loc,sty,infos,el,brl) ->
-	  GCases(loc,sty,
+      | GCases(sty,infos,el,brl) ->
+	  GCases(sty,
 		 infos,
 		 List.map (fun (e,x) -> (zeta_normalize_term e,x)) el,
 		 List.map zeta_normalize_br brl
 		)
-      | GIf(loc,b,(na,e_option),lhs,rhs) ->
-	  GIf(loc, zeta_normalize_term b,
+      | GIf(b,(na,e_option),lhs,rhs) ->
+	  GIf(zeta_normalize_term b,
 	      (na,Option.map zeta_normalize_term e_option),
 	      zeta_normalize_term lhs,
 	      zeta_normalize_term rhs
 	     )
       | GRec _ -> raise (UserError(None,str "Not handled GRec"))
-      | GSort _ -> rt
-      | GHole _ -> rt
-      | GCast(loc,b,c) ->
-	  GCast(loc,zeta_normalize_term b,
+      | GSort _
+      | GHole _ as rt -> rt
+      | GCast(b,c) ->
+	  GCast(zeta_normalize_term b,
                 Miscops.map_cast_type zeta_normalize_term c)
-  and zeta_normalize_br (loc,idl,patl,res) =
-    (loc,idl,patl,zeta_normalize_term res)
+    ) x
+  and zeta_normalize_br (loc,(idl,patl,res)) =
+    (loc,(idl,patl,zeta_normalize_term res))
   in
   zeta_normalize_term
 
@@ -679,40 +670,40 @@ let zeta_normalize =
 
 let expand_as =
 
-  let rec add_as map pat =
+  let rec add_as map ({loc; CAst.v = pat } as rt) =
     match pat with
       | PatVar _ -> map
-      | PatCstr(_,_,patl,Name id) ->
-	  Id.Map.add id (pattern_to_term pat) (List.fold_left add_as map patl)
-      | PatCstr(_,_,patl,_) -> List.fold_left add_as map patl
+      | PatCstr(_,patl,Name id) ->
+	  Id.Map.add id (pattern_to_term rt) (List.fold_left add_as map patl)
+      | PatCstr(_,patl,_) -> List.fold_left add_as map patl
   in
-  let rec expand_as map rt =
-    match rt with
-      | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ -> rt
-      | GVar(_,id) ->
+  let rec expand_as map = CAst.map (function
+      | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ as rt -> rt
+      | GVar id as rt ->
 	  begin
 	    try
-	      Id.Map.find id map
+	      (Id.Map.find id map).CAst.v
 	    with Not_found -> rt
 	  end
-      | GApp(loc,f,args) -> GApp(loc,expand_as map f,List.map (expand_as map) args)
-      | GLambda(loc,na,k,t,b) -> GLambda(loc,na,k,expand_as map t, expand_as map b)
-      | GProd(loc,na,k,t,b) -> GProd(loc,na,k,expand_as map t, expand_as map b)
-      | GLetIn(loc,na,v,typ,b) -> GLetIn(loc,na, expand_as map v,Option.map (expand_as map) typ,expand_as map b)
-      | GLetTuple(loc,nal,(na,po),v,b) ->
-	  GLetTuple(loc,nal,(na,Option.map (expand_as map) po),
+      | GApp(f,args) -> GApp(expand_as map f,List.map (expand_as map) args)
+      | GLambda(na,k,t,b) -> GLambda(na,k,expand_as map t, expand_as map b)
+      | GProd(na,k,t,b) -> GProd(na,k,expand_as map t, expand_as map b)
+      | GLetIn(na,v,typ,b) -> GLetIn(na, expand_as map v,Option.map (expand_as map) typ,expand_as map b)
+      | GLetTuple(nal,(na,po),v,b) ->
+	  GLetTuple(nal,(na,Option.map (expand_as map) po),
 		    expand_as map v, expand_as map b)
-      | GIf(loc,e,(na,po),br1,br2) ->
-	  GIf(loc,expand_as map e,(na,Option.map (expand_as map) po),
+      | GIf(e,(na,po),br1,br2) ->
+	  GIf(expand_as map e,(na,Option.map (expand_as map) po),
 	      expand_as map br1, expand_as map br2)
       | GRec _ ->  error "Not handled GRec"
-      | GCast(loc,b,c) ->
-	  GCast(loc,expand_as map b,
+      | GCast(b,c) ->
+	  GCast(expand_as map b,
 		Miscops.map_cast_type (expand_as map) c)
-      | GCases(loc,sty,po,el,brl) ->
-	  GCases(loc, sty, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
+      | GCases(sty,po,el,brl) ->
+	  GCases(sty, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)
-  and expand_as_br map (loc,idl,cpl,rt) =
-    (loc,idl,cpl, expand_as (List.fold_left add_as map cpl) rt)
+    )
+  and expand_as_br map (loc,(idl,cpl,rt)) =
+    (loc,(idl,cpl, expand_as (List.fold_left add_as map cpl) rt))
   in
   expand_as Id.Map.empty

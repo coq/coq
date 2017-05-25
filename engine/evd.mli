@@ -414,7 +414,7 @@ val extract_changed_conv_pbs : evar_map ->
       (Evar.Set.t -> evar_constraint -> bool) ->
       evar_map * evar_constraint list
 val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
-val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t
+val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t option
 
 (** The following functions return the set of evars immediately
     contained in the object; need the term to be evar-normal otherwise

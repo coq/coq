@@ -84,7 +84,7 @@ let print_rewrite_hintdb bas =
 	       Pputils.pr_glb_generic (Global.env()) tac) (mt ()) h.rew_tac)
 	   (find_rewrites bas))
 
-type raw_rew_rule = Loc.t * constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option
+type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) Loc.located
 
 (* Applies all the rules of one base *)
 let one_base general_rewrite_maybe_in tac_main bas =
@@ -257,12 +257,12 @@ let decompose_applied_relation metas env sigma c ctype left2right =
 	| Some c -> Some c
 	| None -> None
 
-let find_applied_relation metas loc env sigma c left2right =
+let find_applied_relation ?loc metas env sigma c left2right =
   let ctype = Typing.unsafe_type_of env sigma (EConstr.of_constr c) in
     match decompose_applied_relation metas env sigma c ctype left2right with
     | Some c -> c
     | None ->
-	user_err ~loc ~hdr:"decompose_applied_relation"
+	user_err ?loc ~hdr:"decompose_applied_relation"
 		    (str"The type" ++ spc () ++ Printer.pr_econstr_env env sigma ctype ++
 		       spc () ++ str"of this term does not end with an applied relation.")
 
@@ -275,9 +275,9 @@ let add_rew_rules base lrul =
   let intern tac = snd (Genintern.generic_intern ist tac) in
   let lrul =
     List.fold_left
-      (fun dn (loc,(c,ctx),b,t) ->
+      (fun dn (loc,((c,ctx),b,t)) ->
 	let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
-	let info = find_applied_relation false loc env sigma c b in
+	let info = find_applied_relation ?loc false env sigma c b in
 	let pat = if b then info.hyp_left else info.hyp_right in
 	let rul = { rew_lemma = c; rew_type = info.hyp_ty;
 		    rew_pat = pat; rew_ctx = ctx; rew_l2r = b;

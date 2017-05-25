@@ -32,8 +32,8 @@ let subst_glob_constr_and_expr subst (c, e) =
 
 let subst_glob_constr = subst_glob_constr_and_expr (* shortening *)
 
-let subst_binding subst (loc,b,c) =
-  (loc,subst_quantified_hypothesis subst b,subst_glob_constr subst c)
+let subst_binding subst (loc,(b,c)) =
+  (loc,(subst_quantified_hypothesis subst b,subst_glob_constr subst c))
 
 let subst_bindings subst = function
   | NoBindings -> NoBindings
@@ -77,9 +77,7 @@ let subst_or_var f =  function
   | ArgVar _ as x -> x
   | ArgArg x -> ArgArg (f x)
 
-let dloc = Loc.ghost
-
-let subst_located f (_loc,id) = (dloc,f id)
+let subst_located f = Loc.map f
 
 let subst_reference subst =
   subst_or_var (subst_located (subst_kn subst))
@@ -182,7 +180,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacInversion (InversionUsing (subst_glob_constr subst c,cl),hyp)
 
 and subst_tactic subst (t:glob_tactic_expr) = match t with
-  | TacAtom (_loc,t) -> TacAtom (dloc, subst_atomic subst t)
+  | TacAtom (_loc,t) -> TacAtom (Loc.tag @@ subst_atomic subst t)
   | TacFun tacfun -> TacFun (subst_tactic_fun subst tacfun)
   | TacLetIn (r,l,u) ->
       let l = List.map (fun (n,b) -> (n,subst_tacarg subst b)) l in
@@ -229,22 +227,22 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacFirst l -> TacFirst (List.map (subst_tactic subst) l)
   | TacSolve l -> TacSolve (List.map (subst_tactic subst) l)
   | TacComplete tac -> TacComplete (subst_tactic subst tac)
-  | TacArg (_,a) -> TacArg (dloc,subst_tacarg subst a)
+  | TacArg (_,a) -> TacArg (Loc.tag @@ subst_tacarg subst a)
   | TacSelect (s, tac) -> TacSelect (s, subst_tactic subst tac)
 
   (* For extensions *)
-  | TacAlias (_,s,l) ->
+  | TacAlias (_,(s,l)) ->
       let s = subst_kn subst s in
-      TacAlias (dloc,s,List.map (subst_tacarg subst) l)
-  | TacML (_loc,opn,l) -> TacML (dloc,opn,List.map (subst_tacarg subst) l)
+      TacAlias (Loc.tag (s,List.map (subst_tacarg subst) l))
+  | TacML (loc,(opn,l)) -> TacML (loc, (opn,List.map (subst_tacarg subst) l))
 
 and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)
 
 and subst_tacarg subst = function
   | Reference r -> Reference (subst_reference subst r)
   | ConstrMayEval c -> ConstrMayEval (subst_raw_may_eval subst c)
-  | TacCall (_loc,f,l) ->
-      TacCall (_loc, subst_reference subst f, List.map (subst_tacarg subst) l)
+  | TacCall (loc,(f,l)) ->
+      TacCall (Loc.tag ?loc (subst_reference subst f, List.map (subst_tacarg subst) l))
   | TacFreshId _ as x -> x
   | TacPretype c -> TacPretype (subst_glob_constr subst c)
   | TacNumgoals -> TacNumgoals

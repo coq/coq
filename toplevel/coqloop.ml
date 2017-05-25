@@ -146,7 +146,6 @@ let print_highlight_location ib loc =
   highlight_lines
 
 let valid_buffer_loc ib loc =
-  not (Loc.is_ghost loc) &&
   let (b,e) = Loc.unloc loc in b-ib.start >= 0 && e-ib.start < ib.len && b<=e
 
 (* Toplevel error explanation. *)

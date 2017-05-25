@@ -26,7 +26,7 @@ open Clenv
 let _ = Detyping.print_evar_arguments := true
 let _ = Detyping.print_universes := true
 let _ = set_bool_option_value ["Printing";"Matching"] false
-let _ = Detyping.set_detype_anonymous (fun _ _ -> raise Not_found)
+let _ = Detyping.set_detype_anonymous (fun ?loc _ -> raise Not_found)
 
 (* std_ppcmds *)
 let pp   x = Pp.pp_with !Topfmt.std_ft x
@@ -510,7 +510,7 @@ let _ =
   extend_vernac_command_grammar ("PrintConstr", 0) None
     [GramTerminal "PrintConstr";
       GramNonTerminal
-        (Loc.ghost,Some (rawwit wit_constr),Extend.Aentry Pcoq.Constr.constr)]
+        (Loc.tag (Some (rawwit wit_constr),Extend.Aentry Pcoq.Constr.constr))]
 
 let _ =
   try
@@ -526,46 +526,46 @@ let _ =
   extend_vernac_command_grammar ("PrintPureConstr", 0) None
     [GramTerminal "PrintPureConstr";
       GramNonTerminal
-        (Loc.ghost,Some (rawwit wit_constr),Extend.Aentry Pcoq.Constr.constr)]
+        (Loc.tag (Some (rawwit wit_constr),Extend.Aentry Pcoq.Constr.constr))]
 
 (* Setting printer of unbound global reference *)
 open Names
 open Libnames
 
-let encode_path loc prefix mpdir suffix id =
+let encode_path ?loc prefix mpdir suffix id =
   let dir = match mpdir with
     | None -> []
     | Some (mp,dir) ->
 	(DirPath.repr (dirpath_of_string (string_of_mp mp))@
 	DirPath.repr dir) in
-  Qualid (loc, make_qualid
+  Qualid (Loc.tag ?loc @@ make_qualid
     (DirPath.make (List.rev (Id.of_string prefix::dir@suffix))) id)
 
-let raw_string_of_ref loc _ = function
+let raw_string_of_ref ?loc _ = function
   | ConstRef cst ->
       let (mp,dir,id) = repr_con cst in
-      encode_path loc "CST" (Some (mp,dir)) [] (Label.to_id id)
+      encode_path ?loc "CST" (Some (mp,dir)) [] (Label.to_id id)
   | IndRef (kn,i) ->
       let (mp,dir,id) = repr_mind kn in
-      encode_path loc "IND" (Some (mp,dir)) [Label.to_id id]
+      encode_path ?loc "IND" (Some (mp,dir)) [Label.to_id id]
 	(Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
       let (mp,dir,id) = repr_mind kn in
-      encode_path loc "CSTR" (Some (mp,dir))
+      encode_path ?loc "CSTR" (Some (mp,dir))
 	[Label.to_id id;Id.of_string ("_"^string_of_int i)]
 	(Id.of_string ("_"^string_of_int j))
   | VarRef id ->
-      encode_path loc "SECVAR" None [] id
+      encode_path ?loc "SECVAR" None [] id
 
-let short_string_of_ref loc _ = function
-  | VarRef id -> Ident (loc,id)
-  | ConstRef cst -> Ident (loc,Label.to_id (pi3 (repr_con cst)))
-  | IndRef (kn,0) -> Ident (loc,Label.to_id (pi3 (repr_mind kn)))
+let short_string_of_ref ?loc _ = function
+  | VarRef id -> Ident (Loc.tag ?loc id)
+  | ConstRef cst -> Ident (Loc.tag ?loc @@ Label.to_id (pi3 (repr_con cst)))
+  | IndRef (kn,0) -> Ident (Loc.tag ?loc @@ Label.to_id (pi3 (repr_mind kn)))
   | IndRef (kn,i) ->
-      encode_path loc "IND" None [Label.to_id (pi3 (repr_mind kn))]
+      encode_path ?loc "IND" None [Label.to_id (pi3 (repr_mind kn))]
         (Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
-      encode_path loc "CSTR" None
+      encode_path ?loc "CSTR" None
         [Label.to_id (pi3 (repr_mind kn));Id.of_string ("_"^string_of_int i)]
         (Id.of_string ("_"^string_of_int j))
 

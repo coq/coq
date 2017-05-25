@@ -20,8 +20,6 @@ let make_fun loc cl =
   let l = cl @ [default_patt loc] in
   MLast.ExFun (loc, ploc_vala l)  (* correspond to <:expr< fun [ $list:l$ ] >> *)
 
-let dloc = <:expr< Loc.ghost >>
-
 let plugin_name = <:expr< __coq_plugin_name >>
 
 let mlexpr_of_ident id =
@@ -75,7 +73,7 @@ let rec mlexpr_of_symbol = function
 let make_prod_item = function
   | ExtTerminal s -> <:expr< Tacentries.TacTerm $str:s$ >>
   | ExtNonTerminal (g, id) ->
-    <:expr< Tacentries.TacNonTerm $default_loc$ $mlexpr_of_symbol g$ $mlexpr_of_option mlexpr_of_ident id$ >>
+    <:expr< Tacentries.TacNonTerm (Loc.tag ( $mlexpr_of_symbol g$ , $mlexpr_of_option mlexpr_of_ident id$ ) ) >>
 
 let mlexpr_of_clause cl =
   mlexpr_of_list (fun (a,_,_) -> mlexpr_of_list make_prod_item a) cl
@@ -114,7 +112,7 @@ let declare_tactic loc tacname ~level classification clause = match clause with
   (** Arguments are not passed directly to the ML tactic in the TacML node,
       the ML tactic retrieves its arguments in the [ist] environment instead.
       This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
-  let body = <:expr< Tacexpr.TacFun ($vars$, Tacexpr.TacML ($dloc$, $ml$, [])) >> in
+  let body = <:expr< Tacexpr.TacFun ($vars$, Tacexpr.TacML (Loc.tag ( $ml$ , []))) >> in
   let name = <:expr< Names.Id.of_string $name$ >> in
   declare_str_items loc
     [ <:str_item< do {

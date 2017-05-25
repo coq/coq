@@ -125,7 +125,7 @@ val eq_reference : reference -> reference -> bool
 val qualid_of_reference : reference -> qualid located
 val string_of_reference : reference -> string
 val pr_reference : reference -> std_ppcmds
-val loc_of_reference : reference -> Loc.t
+val loc_of_reference : reference -> Loc.t option
 val join_reference : reference -> reference -> reference
 
 (** Deprecated synonyms *)

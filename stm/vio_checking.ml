@@ -107,7 +107,7 @@ let schedule_vio_compilation j fs =
     let long_f_dot_v = Loadpath.locate_file (f^".v") in
     let aux = Aux_file.load_aux_file_for long_f_dot_v in
     let eta =
-      try float_of_string (Aux_file.get aux Loc.ghost "vo_compile_time")
+      try float_of_string (Aux_file.get aux "vo_compile_time")
       with Not_found -> 0.0 in
     jobs := (f, eta) :: !jobs)
   fs;

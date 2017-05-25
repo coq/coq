@@ -268,11 +268,11 @@ let coerce_to_constr_list env v =
     List.map map l
   | None -> raise (CannotCoerceTo "a term list")
 
-let coerce_to_intro_pattern_list loc env sigma v =
+let coerce_to_intro_pattern_list ?loc env sigma v =
   match Value.to_list v with
   | None -> raise (CannotCoerceTo "an intro pattern list")
   | Some l ->
-    let map v = (loc, coerce_to_intro_pattern env sigma v) in
+    let map v = Loc.tag ?loc @@ coerce_to_intro_pattern env sigma v in
     List.map map l
 
 let coerce_to_hyp env sigma v =

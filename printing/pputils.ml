@@ -15,14 +15,15 @@ open Locus
 open Genredexpr
 
 let pr_located pr (loc, x) =
-  if !Flags.beautify && loc <> Loc.ghost then
+  match loc with
+  | Some loc when !Flags.beautify ->
     let (b, e) = Loc.unloc loc in
     (* Side-effect: order matters *)
     let before = Pp.comment (CLexer.extract_comments b) in
     let x = pr x in
     let after = Pp.comment (CLexer.extract_comments e) in
     before ++ x ++ after
-  else pr x
+  | _ -> pr x
 
 let pr_or_var pr = function
   | ArgArg x -> pr x
@@ -105,7 +106,7 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
 
 let pr_or_by_notation f = function
   | AN v -> f v
-  | ByNotation (_,s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
+  | ByNotation (_,(s,sc)) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
 let hov_if_not_empty n p = if Pp.ismt p then p else hov n p
 

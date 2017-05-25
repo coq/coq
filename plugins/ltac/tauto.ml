@@ -88,7 +88,6 @@ let _ =
 
 (** Base tactics *)
 
-let loc = Loc.ghost
 let idtac = Proofview.tclUNIT ()
 let fail = Proofview.tclINDEPENDENT (tclFAIL 0 (Pp.mt ()))
 
@@ -206,7 +205,7 @@ let u_iff = make_unfold "iff"
 let u_not = make_unfold "not"
 
 let reduction_not_iff _ ist =
-  let make_reduce c = TacAtom (loc, TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
+  let make_reduce c = TacAtom (Loc.tag @@ TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
   let tac = match !negation_unfolding, unfold_iff () with
     | true, true -> make_reduce [u_not; u_iff]
     | true, false -> make_reduce [u_not]
@@ -259,11 +258,11 @@ let tauto_power_flags = {
 }
 
 let with_flags flags _ ist =
-  let f = (loc, Id.of_string "f") in
-  let x = (loc, Id.of_string "x") in
+  let f = (Loc.tag @@ Id.of_string "f") in
+  let x = (Loc.tag @@ Id.of_string "x") in
   let arg = Val.Dyn (tag_tauto_flags, flags) in
   let ist = { ist with lfun = Id.Map.add (snd x) arg ist.lfun } in
-  eval_tactic_ist ist (TacArg (loc, TacCall (loc, ArgVar f, [Reference (ArgVar x)])))
+  eval_tactic_ist ist (TacArg (Loc.tag @@ TacCall (Loc.tag (ArgVar f, [Reference (ArgVar x)]))))
 
 let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in
@@ -271,7 +270,7 @@ let register_tauto_tactic tac name0 args =
   let name = { mltac_plugin = tauto_plugin; mltac_tactic = name0; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let () = Tacenv.register_ml_tactic name [| tac |] in
-  let tac = TacFun (ids, TacML (loc, entry, [])) in
+  let tac = TacFun (ids, TacML (Loc.tag (entry, []))) in
   let obj () = Tacenv.register_ltac true true (Id.of_string name0) tac in
   Mltop.declare_cache_obj obj tauto_plugin
 

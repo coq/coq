@@ -180,7 +180,7 @@ let define_evar_as_sort env evd (ev,args) =
    constraint on its domain and codomain. If the input constraint is
    an evar instantiate it with the product of 2 new evars. *)
 
-let split_tycon loc env evd tycon =
+let split_tycon ?loc env evd tycon =
   let rec real_split evd c =
     let t = Reductionops.whd_all env evd c in
       match EConstr.kind evd t with
@@ -192,7 +192,7 @@ let split_tycon loc env evd tycon =
 	| App (c,args) when isEvar evd c ->
 	    let (evd',lam) = define_evar_as_lambda env evd (destEvar evd c) in
 	    real_split evd' (mkApp (lam,args))
-	| _ -> error_not_product ~loc env evd c
+	| _ -> error_not_product ?loc env evd c
   in
     match tycon with
       | None -> evd,(Anonymous,None,None)

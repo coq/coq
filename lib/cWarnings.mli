@@ -8,7 +8,7 @@
 
 type status = Disabled | Enabled | AsError
 
-val set_current_loc : Loc.t -> unit
+val set_current_loc : Loc.t option -> unit
 
 val create : name:string -> category:string -> ?default:status ->
              ('a -> Pp.std_ppcmds) -> ?loc:Loc.t -> 'a -> unit

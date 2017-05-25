@@ -41,7 +41,7 @@ let in_tac tac = in_gen (rawwit Tacarg.wit_ltac) tac
 let reference_to_id = function
   | Libnames.Ident (loc, id) -> (loc, id)
   | Libnames.Qualid (loc,_) ->
-      CErrors.user_err ~loc 
+      CErrors.user_err ?loc 
        (str "This expression should be a simple identifier.")
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
@@ -159,9 +159,9 @@ GEXTEND Gram
       | g=failkw; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  l = LIST0 message_token -> TacFail (g,n,l)
       | st = simple_tactic -> st
-      | a = tactic_arg -> TacArg(!@loc,a)
+      | a = tactic_arg -> TacArg(Loc.tag ~loc:!@loc a)
       | r = reference; la = LIST0 tactic_arg_compat ->
-          TacArg(!@loc,TacCall (!@loc,r,la)) ]
+          TacArg(Loc.tag ~loc:!@loc @@ TacCall (Loc.tag ~loc:!@loc (r,la))) ]
     | "0"
       [ "("; a = tactic_expr; ")" -> a
       | "["; ">"; (tf,tail) = tactic_then_gen; "]" ->
@@ -169,7 +169,7 @@ GEXTEND Gram
           | Some (t,tl) -> TacExtendTac(Array.of_list tf,t,tl)
           | None -> TacDispatch tf
           end
-      | a = tactic_atom -> TacArg (!@loc,a) ] ]
+      | a = tactic_atom -> TacArg (Loc.tag ~loc:!@loc a) ] ]
   ;
   failkw:
   [ [ IDENT "fail" -> TacLocal | IDENT "gfail" -> TacGlobal ] ]
@@ -187,7 +187,7 @@ GEXTEND Gram
   (* Tactic arguments to the right of an application *)
   tactic_arg_compat:
     [ [ a = tactic_arg -> a
-      | c = Constr.constr -> (match c with CRef (r,None) -> Reference r | c -> ConstrMayEval (ConstrTerm c))
+      | c = Constr.constr -> (match c with { CAst.v = CRef (r,None) } -> Reference r | c -> ConstrMayEval (ConstrTerm c))
       (* Unambiguous entries: tolerated w/o "ltac:" modifier *)
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
@@ -203,7 +203,7 @@ GEXTEND Gram
      verbose most of the time. *)
   fresh_id:
     [ [ s = STRING -> ArgArg s (*| id = ident -> ArgVar (!@loc,id)*)
-	| qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (!@loc,id) ] ]
+	| qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (Loc.tag ~loc:!@loc id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
@@ -219,7 +219,7 @@ GEXTEND Gram
   ;
   tactic_atom:
     [ [ n = integer -> TacGeneric (genarg_of_int n)
-      | r = reference -> TacCall (!@loc,r,[])
+      | r = reference -> TacCall (Loc.tag ~loc:!@loc (r,[]))
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
   match_key:
@@ -255,10 +255,10 @@ GEXTEND Gram
 	  let t, ty =
 	    match mpv with
 	    | Term t -> (match t with
-	      | CCast (loc, t, (CastConv ty | CastVM ty | CastNative ty)) -> Term t, Some (Term ty)
+	      | { CAst.v = CCast (t, (CastConv ty | CastVM ty | CastNative ty)) } -> Term t, Some (Term ty)
 	      | _ -> mpv, None)
 	    | _ -> mpv, None
-	  in Def (na, t, Option.default (Term (CHole (Loc.ghost, None, IntroAnonymous, None))) ty)
+	  in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty)
     ] ]
   ;
   match_context_rule:
@@ -353,7 +353,7 @@ GEXTEND Gram
   operconstr: LEVEL "0"
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.tactic_expr; ")" ->
           let arg = Genarg.in_gen (Genarg.rawwit Tacarg.wit_tactic) tac in
-          CHole (!@loc, None, IntroAnonymous, Some arg) ] ]
+          CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, Some arg) ] ]
   ;
   END
 
@@ -460,9 +460,9 @@ END
 
 let pr_ltac_production_item = function
 | Tacentries.TacTerm s -> quote (str s)
-| Tacentries.TacNonTerm (_, (arg, None), None) -> str arg
-| Tacentries.TacNonTerm (_, (arg, Some _), None) -> assert false
-| Tacentries.TacNonTerm (_, (arg, sep), Some id) ->
+| Tacentries.TacNonTerm (_, ((arg, None), None)) -> str arg
+| Tacentries.TacNonTerm (_, ((arg, Some _), None)) -> assert false
+| Tacentries.TacNonTerm (_, ((arg, sep), Some id)) ->
   let sep = match sep with
   | None -> mt ()
   | Some sep -> str "," ++ spc () ++ quote (str sep)
@@ -472,9 +472,9 @@ let pr_ltac_production_item = function
 VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY pr_ltac_production_item
 | [ string(s) ] -> [ Tacentries.TacTerm s ]
 | [ ident(nt) "(" ident(p) ltac_production_sep_opt(sep) ")" ] ->
-  [ Tacentries.TacNonTerm (loc, (Names.Id.to_string nt, sep), Some p) ]
+  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Names.Id.to_string nt, sep), Some p)) ]
 | [ ident(nt) ] ->
-  [ Tacentries.TacNonTerm (loc, (Names.Id.to_string nt, None), None) ]
+  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Names.Id.to_string nt, None), None)) ]
 END
 
 VERNAC COMMAND EXTEND VernacTacticNotation

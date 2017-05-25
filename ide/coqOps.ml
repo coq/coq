@@ -14,7 +14,7 @@ open Feedback
 
 let b2c = byte_offset_to_char_offset
 
-type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of Loc.t * string | `WARNING of Loc.t * string ]
+type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of string Loc.located | `WARNING of string Loc.located ]
 type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR | `WARNING ]
 let mem_flag_of_flag : flag -> mem_flag = function
   | `ERROR _ -> `ERROR
@@ -462,20 +462,18 @@ object(self)
           self#attach_tooltip ~loc sentence
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | Message(Error, loc, msg), Some (id,sentence) ->
-          let uloc = Option.default Loc.ghost loc in
           log_pp ?id Pp.(str "ErrorMsg" ++ msg);
           remove_flag sentence `PROCESSING;
-          let rmsg = Pp.string_of_ppcmds msg     in
-          add_flag sentence (`ERROR (uloc, rmsg));
+          let rmsg = Pp.string_of_ppcmds msg in
+          add_flag sentence (`ERROR (loc, rmsg));
           self#mark_as_needed sentence;
-          self#attach_tooltip sentence ?loc rmsg;
+          self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.error sentence
       | Message(Warning, loc, msg), Some (id,sentence) ->
-          let uloc = Option.default Loc.ghost loc in
           log_pp ?id Pp.(str "WarningMsg" ++ msg);
           let rmsg = Pp.string_of_ppcmds msg     in
-          add_flag sentence (`WARNING (uloc, rmsg));
-          self#attach_tooltip sentence ?loc rmsg;
+          add_flag sentence (`WARNING (loc, rmsg));
+          self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.warning sentence;
           messages#push Warning msg
       | Message(lvl, loc, msg), Some (id,sentence) ->
@@ -525,14 +523,14 @@ object(self)
     let start, stop, phrase = self#get_sentence sentence in
     self#position_tag_at_iter ?loc start stop tag phrase
 
-  method private process_interp_error queue sentence loc msg tip id =
+  method private process_interp_error ?loc queue sentence msg tip id =
     Coq.bind (Coq.return ()) (function () ->
     let start, stop, phrase = self#get_sentence sentence in
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
     pop_info ();
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
-      self#position_tag_at_iter ~loc start stop Tags.Script.error phrase;
+      self#position_tag_at_iter ?loc start stop Tags.Script.error phrase;
       buffer#place_cursor ~where:stop;
       messages#clear;
       messages#push Feedback.Error msg;
@@ -646,9 +644,9 @@ object(self)
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
-                  let loc = Option.cata Loc.make_loc Loc.ghost loc in
+                  let loc = Option.map Loc.make_loc loc in
                   let sentence = Doc.pop document in
-                  self#process_interp_error queue sentence loc msg tip id in
+                  self#process_interp_error ?loc queue sentence msg tip id in
             Coq.bind coq_query handle_answer
       in
       let tip =
@@ -678,14 +676,13 @@ object(self)
     let extract_error s =
       match List.find (function `ERROR _ -> true | _ -> false) s.flags with
       | `ERROR (loc, msg) ->
-         let iter =
-           if Loc.is_ghost loc then
-             buffer#get_iter_at_mark s.start
-           else
+         let iter = begin match loc with
+           | None      -> buffer#get_iter_at_mark s.start
+           | Some loc ->
              let (iter, _, phrase) = self#get_sentence s in
              let (start, _) = Loc.unloc loc in
-             iter#forward_chars (b2c phrase start) in
-         iter#line + 1, msg
+             iter#forward_chars (b2c phrase start)
+         end in iter#line + 1, msg
       | _ -> assert false in
     List.rev
       (Doc.fold_all document [] (fun acc _ _ s ->

@@ -21,7 +21,7 @@ open Nameops
 
 type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
 | TacTerm of string
-| TacNonTerm of Loc.t * 'a * Names.Id.t option
+| TacNonTerm of ('a * Names.Id.t option) Loc.located
 
 type raw_argument = string * string option
 type argument = Genarg.ArgT.any Extend.user_symbol
@@ -166,7 +166,7 @@ let add_tactic_entry (kn, ml, tg) state =
         TacGeneric arg
     in
     let l = List.map map l in
-    (TacAlias (loc,kn,l):raw_tactic_expr)
+    (TacAlias (Loc.tag ~loc (kn,l)):raw_tactic_expr)
   in
   let () =
     if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
@@ -174,9 +174,9 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let map = function
   | TacTerm s -> GramTerminal s
-  | TacNonTerm (loc, s, ido) ->
+  | TacNonTerm (loc, (s, ido)) ->
     let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
-    GramNonTerminal (loc, Option.map (fun _ -> typ) ido, e)
+    GramNonTerminal (Loc.tag ?loc @@ (Option.map (fun _ -> typ) ido, e))
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
@@ -202,7 +202,7 @@ let register_tactic_notation_entry name entry =
 
 let interp_prod_item = function
   | TacTerm s -> TacTerm s
-  | TacNonTerm (loc, (nt, sep), ido) ->
+  | TacNonTerm (loc, ((nt, sep), ido)) ->
     let symbol = parse_user_entry nt sep in
     let interp s = function
     | None ->
@@ -220,7 +220,7 @@ let interp_prod_item = function
       end
     in
     let symbol = interp_entry_name interp symbol in
-    TacNonTerm (loc, symbol, ido)
+    TacNonTerm (loc, (symbol, ido))
 
 let make_fresh_key =
   let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
@@ -296,7 +296,7 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
 
 let cons_production_parameter = function
 | TacTerm _ -> None
-| TacNonTerm (_, _, ido) -> ido
+| TacNonTerm (_, (_, ido)) -> ido
 
 let add_glob_tactic_notation local ~level prods forml ids tac =
   let parule = {
@@ -334,10 +334,10 @@ let extend_atomic_tactic name entries =
     in
     let empty_value = function
     | TacTerm s -> raise NonEmptyArgument
-    | TacNonTerm (_, symb, _) ->
+    | TacNonTerm (_, (symb, _)) ->
       let EntryName (typ, e) = prod_item_of_symbol 0 symb in
       let Genarg.Rawwit wit = typ in
-      let inj x = TacArg (Loc.ghost, TacGeneric (Genarg.in_gen typ x)) in
+      let inj x = TacArg (Loc.tag @@ TacGeneric (Genarg.in_gen typ x)) in
       let default = epsilon_value inj e in
       match default with
       | None -> raise NonEmptyArgument
@@ -351,7 +351,7 @@ let extend_atomic_tactic name entries =
   | Some (id, args) ->
     let args = List.map (fun a -> Tacexp a) args in
     let entry = { mltac_name = name; mltac_index = i } in
-    let body = TacML (Loc.ghost, entry, args) in
+    let body = TacML (Loc.tag (entry, args)) in
     Tacenv.register_ltac false false (Names.Id.of_string id) body
   in
   List.iteri add_atomic entries
@@ -362,12 +362,12 @@ let add_ml_tactic_notation name ~level prods =
     let open Tacexpr in
     let get_id = function
     | TacTerm s -> None
-    | TacNonTerm (_, _, ido) -> ido
+    | TacNonTerm (_, (_, ido)) -> ido
     in
     let ids = List.map_filter get_id prods in
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
-    let map id = Reference (Misctypes.ArgVar (Loc.ghost, id)) in
-    let tac = TacML (Loc.ghost, entry, List.map map ids) in
+    let map id = Reference (Misctypes.ArgVar (Loc.tag id)) in
+    let tac = TacML (Loc.tag (entry, List.map map ids)) in
     add_glob_tactic_notation false ~level prods true ids tac
   in
   List.iteri iter (List.rev prods);
@@ -401,7 +401,7 @@ let create_ltac_quotation name cast (e, l) =
       entry),
       Atoken (CLexer.terminal ")"))
   in
-  let action _ v _ _ _ loc = cast (loc, v) in
+  let action _ v _ _ _ loc = cast (Some loc, v) in
   let gram = (level, assoc, [Rule (rule, action)]) in
   Pcoq.grammar_extend Pltac.tactic_arg None (None, [gram])
 
@@ -427,7 +427,7 @@ let register_ltac local tacl =
         let kn = Lib.make_kn id in
         let id_pp = pr_id id in
         let () = if is_defined_tac kn then
-          CErrors.user_err ~loc 
+          CErrors.user_err ?loc 
             (str "There is already an Ltac named " ++ id_pp ++ str".")
         in
         let is_shadowed =
@@ -444,7 +444,7 @@ let register_ltac local tacl =
         let kn =
           try Nametab.locate_tactic (snd (qualid_of_reference ident))
           with Not_found ->
-            CErrors.user_err ~loc 
+            CErrors.user_err ?loc 
                        (str "There is no Ltac named " ++ pr_reference ident ++ str ".")
         in
         UpdateTac kn, body
