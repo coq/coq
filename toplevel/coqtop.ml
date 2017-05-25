@@ -555,6 +555,7 @@ let parse_args arglist =
     |"-color" -> set_color (next ())
     |"-config"|"--config" -> print_config := true
     |"-debug" -> set_debug ()
+    |"-stm-debug" -> Flags.stm_debug := true
     |"-emacs" -> set_emacs ()
     |"-filteropts" -> filter_opts := true
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage ()

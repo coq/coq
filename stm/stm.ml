@@ -7,13 +7,14 @@
 (************************************************************************)
 
 (* enable in case of stm problems  *)
-let stm_debug = false
+(* let stm_debug () = !Flags.debug *)
+let stm_debug () = !Flags.stm_debug
 
-let stm_pr_err s  = Printf.eprintf "%s] %s\n"     (System.process_id ()) s; flush stderr
-let stm_pp_err pp = Format.eprintf "%s] @[%a@]\n" (System.process_id ()) Pp.pp_with pp; flush stderr
+let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (System.process_id ()) s
+let stm_pp_err pp = Format.eprintf "%s] @[%a@]\n%!" (System.process_id ()) Pp.pp_with pp
 
-let stm_prerr_endline s = if stm_debug then begin stm_pr_err (s ()) end else ()
-let stm_pperr_endline s = if stm_debug then begin stm_pp_err (s ()) end else ()
+let stm_prerr_endline s = if stm_debug () then begin stm_pr_err (s ()) end else ()
+let stm_pperr_endline s = if stm_debug () then begin stm_pp_err (s ()) end else ()
 
 let stm_prerr_debug   s = if !Flags.debug then begin stm_pr_err (s ()) end else ()
 
@@ -330,7 +331,7 @@ end = struct (* {{{ *)
 
        In case you are hitting the race enable stm_debug.
     *)
-    if stm_debug then Flags.we_are_parsing := false;
+    if stm_debug () then Flags.we_are_parsing := false;
 
     let fname =
       "stm_" ^ Str.global_replace (Str.regexp " ") "_" (System.process_id ()) in
@@ -2642,7 +2643,11 @@ let process_transaction ?(newtip=Stateid.fresh ())
       | VtUnknown, VtLater ->
           anomaly(str"classifier: VtUnknown must imply VtNow")
     end in
-    stm_prerr_endline (fun () -> "processed }}}");
+    let pr_rc rc = match rc with
+      | `Ok -> Pp.(seq [str "newtip ("; str (Stateid.to_string (VCS.cur_tip ())); str ")"])
+      | _   -> Pp.(str "unfocus")
+    in
+    stm_pperr_endline (fun () -> str "processed with " ++ pr_rc rc ++ str " }}}");
     VCS.print ();
     rc
   with e ->
@@ -2682,7 +2687,7 @@ let parse_sentence sid pa =
       (str "Currently, the parsing api only supports parsing at the tip of the document." ++ fnl () ++
        str "You wanted to parse at: "  ++ str (Stateid.to_string sid) ++
        str " but the current tip is: " ++ str (Stateid.to_string cur_tip)) ;
-  if not (Stateid.equal sid real_tip) && !Flags.debug && stm_debug then
+  if not (Stateid.equal sid real_tip) && !Flags.debug && stm_debug () then
     Feedback.msg_debug
       (str "Warning, the real tip doesn't match the current tip." ++
        str "You wanted to parse at: "  ++ str (Stateid.to_string sid) ++
