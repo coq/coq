@@ -4,6 +4,7 @@ let prefix_small_block =         0x80
 let prefix_small_int =           0x40
 let prefix_small_string =        0x20
 
+[@@@ocaml.warning "-32"]
 let code_int8 =                  0x00
 let code_int16 =                 0x01
 let code_int32 =                 0x02
@@ -25,6 +26,7 @@ let code_infixpointer =          0x11
 let code_custom =                0x12
 let code_block64 =               0x13
 
+[@@@ocaml.warning "-37"]
 type code_descr =
 | CODE_INT8
 | CODE_INT16
@@ -244,7 +246,7 @@ let parse_object chan =
     RString (input_string len chan)
   | CODE_CODEPOINTER ->
     let addr = input_int32u chan in
-    for i = 0 to 15 do ignore (input_byte chan); done;
+    for _i = 0 to 15 do ignore (input_byte chan); done;
     RCode addr
   | CODE_DOUBLE_ARRAY32_LITTLE
   | CODE_DOUBLE_BIG

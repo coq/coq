@@ -10,6 +10,7 @@ open Values
 
 (** {6 Interactive visit of a vo} *)
 
+[@@@ocaml.warning "-52"]
 let rec read_num max =
   let quit () =
     Printf.printf "\nGoodbye!\n%!";
@@ -261,6 +262,7 @@ let pop () = match !stk with
   | i::s -> stk := s; i
   | _ -> failwith "empty stack"
 
+[@@@ocaml.warning "-52"]
 let rec visit v o pos =
   Printf.printf "\nDepth %d Pos %s Context %s\n"
     (List.length !stk)
