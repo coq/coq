@@ -82,7 +82,6 @@ Addendum
    addendum/nsatz
    addendum/generalized-rewriting
    addendum/parallel-proof-processing
-   addendum/miscellaneous-extensions
    addendum/universe-polymorphism
    addendum/sprop
 

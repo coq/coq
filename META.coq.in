@@ -447,18 +447,6 @@ package "plugins" (
     archive(native)  = "string_notation_plugin.cmx"
   )
 
-  package "derive" (
-
-    description = "Coq derive plugin"
-    version     = "8.10"
-
-    requires    = ""
-    directory   = "derive"
-
-    archive(byte)    = "derive_plugin.cmo"
-    archive(native)  = "derive_plugin.cmx"
-  )
-
   package "ssrmatching" (
 
     description = "Coq ssrmatching plugin"

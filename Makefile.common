@@ -100,7 +100,7 @@ CORESRCDIRS:=\
 PLUGINDIRS:=\
   omega		micromega \
   setoid_ring 	extraction \
-  cc 		funind 		firstorder 	derive \
+  cc 		funind 		firstorder \
   rtauto 	nsatz           syntax          btauto \
   ssrmatching	ltac		ssr
 
@@ -149,7 +149,6 @@ SYNTAXCMO:=$(addprefix plugins/syntax/, \
 	int63_syntax_plugin.cmo \
 	numeral_notation_plugin.cmo \
 	string_notation_plugin.cmo)
-DERIVECMO:=plugins/derive/derive_plugin.cmo
 LTACCMO:=plugins/ltac/ltac_plugin.cmo plugins/ltac/tauto_plugin.cmo
 SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
 SSRCMO:=plugins/ssr/ssreflect_plugin.cmo
@@ -160,7 +159,7 @@ PLUGINSCMO:=$(LTACCMO) $(OMEGACMO) $(MICROMEGACMO) \
         $(EXTRACTIONCMO) \
         $(CCCMO)  $(FOCMO) $(RTAUTOCMO) $(BTAUTOCMO) \
         $(FUNINDCMO) $(NSATZCMO) $(SYNTAXCMO) \
-	$(DERIVECMO) $(SSRMATCHINGCMO) $(SSRCMO) $(LTAC2CMO)
+	$(SSRMATCHINGCMO) $(SSRCMO) $(LTAC2CMO)
 
 ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
  STATICPLUGINS:=$(PLUGINSCMO)

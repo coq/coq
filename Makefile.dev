@@ -149,7 +149,6 @@ BTAUTOVO:=$(filter plugins/btauto/%, $(PLUGINSVO))
 RTAUTOVO:=$(filter plugins/rtauto/%, $(PLUGINSVO))
 EXTRACTIONVO:=$(filter plugins/extraction/%, $(PLUGINSVO))
 CCVO:=
-DERIVEVO:=$(filter plugins/derive/%, $(PLUGINSVO))
 LTACVO:=$(filter plugins/ltac/%, $(PLUGINSVO))
 
 omega: $(OMEGAVO) $(OMEGACMO)

@@ -1,5 +1,0 @@
-(library
- (name derive_plugin)
- (public_name coq.plugins.derive)
- (synopsis "Coq's derive plugin")
- (libraries coq.plugins.ltac))
