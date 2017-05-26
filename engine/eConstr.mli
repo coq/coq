@@ -205,11 +205,20 @@ val fold : Evd.evar_map -> ('a -> t -> 'a) -> 'a -> t -> 'a
 
 module Vars :
 sig
+
+(** See vars.mli for the documentation of the functions below *)
+
+type substl = t list
+
 val lift : int -> t -> t
 val liftn : int -> int -> t -> t
-val substnl : t list -> int -> t -> t
-val substl : t list -> t -> t
+val substnl : substl -> int -> t -> t
+val substl : substl -> t -> t
 val subst1 : t -> t -> t
+
+val substnl_decl : substl -> int -> rel_declaration -> rel_declaration
+val substl_decl : substl -> rel_declaration -> rel_declaration
+val subst1_decl : t -> rel_declaration -> rel_declaration
 
 val replace_vars : (Id.t * t) list -> t -> t
 val substn_vars : int -> Id.t list -> t -> t

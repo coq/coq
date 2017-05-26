@@ -638,22 +638,54 @@ let eq_constr_universes_proj env sigma m n =
     let res = eq_constr' (unsafe_to_constr m) (unsafe_to_constr n) in
     if res then Some !cstrs else None
 
+open Context
+open Environ
+
+let cast_list : type a b. (a,b) eq -> a list -> b list =
+  fun Refl x -> x
+
+let cast_list_snd : type a b. (a,b) eq -> ('c * a) list -> ('c * b) list =
+  fun Refl x -> x
+
+let cast_rel_decl :
+  type a b. (a,b) eq -> (a, a) Rel.Declaration.pt -> (b, b) Rel.Declaration.pt =
+  fun Refl x -> x
+
+let cast_rel_context :
+  type a b. (a,b) eq -> (a, a) Rel.pt -> (b, b) Rel.pt =
+  fun Refl x -> x
+
+let cast_named_decl :
+  type a b. (a,b) eq -> (a, a) Named.Declaration.pt -> (b, b) Named.Declaration.pt =
+  fun Refl x -> x
+
+let cast_named_context :
+  type a b. (a,b) eq -> (a, a) Named.pt -> (b, b) Named.pt =
+  fun Refl x -> x
+
+
 module Vars =
 struct
 exception LocalOccur
 let to_constr = unsafe_to_constr
+let to_rel_decl = unsafe_to_rel_decl
+
+type substl = t list
 
 (** Operations that commute with evar-normalization *)
 let lift n c = of_constr (Vars.lift n (to_constr c))
 let liftn n m c = of_constr (Vars.liftn n m (to_constr c))
 
-let substnl subst n c = of_constr (Vars.substnl (List.map to_constr subst) n (to_constr c))
-let substl subst c = of_constr (Vars.substl (List.map to_constr subst) (to_constr c))
+let substnl subst n c = of_constr (Vars.substnl (cast_list unsafe_eq subst) n (to_constr c))
+let substl subst c = of_constr (Vars.substl (cast_list unsafe_eq subst) (to_constr c))
 let subst1 c r = of_constr (Vars.subst1 (to_constr c) (to_constr r))
 
+let substnl_decl subst n d = of_rel_decl (Vars.substnl_decl (cast_list unsafe_eq subst) n (to_rel_decl d))
+let substl_decl subst d = of_rel_decl (Vars.substl_decl (cast_list unsafe_eq subst) (to_rel_decl d))
+let subst1_decl c d = of_rel_decl (Vars.subst1_decl (to_constr c) (to_rel_decl d))
+
 let replace_vars subst c =
-  let map (id, c) = (id, to_constr c) in
-  of_constr (Vars.replace_vars (List.map map subst) (to_constr c))
+  of_constr (Vars.replace_vars (cast_list_snd unsafe_eq subst) (to_constr c))
 let substn_vars n subst c = of_constr (Vars.substn_vars n subst (to_constr c))
 let subst_vars subst c = of_constr (Vars.subst_vars subst (to_constr c))
 let subst_var subst c = of_constr (Vars.subst_var subst (to_constr c))
@@ -685,7 +717,8 @@ let closedn sigma n c =
 let closed0 sigma c = closedn sigma 0 c
 
 let subst_of_rel_context_instance ctx subst =
-  List.map of_constr (Vars.subst_of_rel_context_instance (List.map unsafe_to_rel_decl ctx) (List.map to_constr subst))
+  cast_list (sym unsafe_eq)
+    (Vars.subst_of_rel_context_instance (cast_rel_context unsafe_eq ctx) (cast_list unsafe_eq subst))
 
 end
 
@@ -727,27 +760,6 @@ let mkNamedLambda_or_LetIn decl c =
 
 let it_mkProd_or_LetIn t ctx = List.fold_left (fun c d -> mkProd_or_LetIn d c) t ctx
 let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d c) t ctx
-
-open Context
-open Environ
-
-let sym : type a b. (a, b) eq -> (b, a) eq = fun Refl -> Refl
-
-let cast_rel_decl :
-  type a b. (a,b) eq -> (a, a) Rel.Declaration.pt -> (b, b) Rel.Declaration.pt =
-  fun Refl x -> x
-
-let cast_rel_context :
-  type a b. (a,b) eq -> (a, a) Rel.pt -> (b, b) Rel.pt =
-  fun Refl x -> x
-
-let cast_named_decl :
-  type a b. (a,b) eq -> (a, a) Named.Declaration.pt -> (b, b) Named.Declaration.pt =
-  fun Refl x -> x
-
-let cast_named_context :
-  type a b. (a,b) eq -> (a, a) Named.pt -> (b, b) Named.pt =
-  fun Refl x -> x
 
 let push_rel d e = push_rel (cast_rel_decl unsafe_eq d) e
 let push_rel_context d e = push_rel_context (cast_rel_context unsafe_eq d) e

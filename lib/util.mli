@@ -133,5 +133,7 @@ type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 
 type ('a, 'b) eq = ('a, 'b) CSig.eq = Refl : ('a, 'a) eq
 
+val sym : ('a, 'b) eq -> ('b, 'a) eq
+
 val open_utf8_file_in : string -> in_channel
 (** Open an utf-8 encoded file and skip the byte-order mark if any. *)
