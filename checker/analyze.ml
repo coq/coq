@@ -101,11 +101,11 @@ let input_binary_int chan =
   input_binary_int chan
 
 let input_char chan = Char.chr (input_byte chan)
+let input_string len chan = String.init len (fun _ -> input_char chan)
 
 let parse_header chan =
   let () = current_offset := 0 in
-  let magic = String.create 4 in
-  let () = for i = 0 to 3 do magic.[i] <- input_char chan done in
+  let magic = input_string 4 chan in
   let length = input_binary_int chan in
   let objects = input_binary_int chan in
   let size32 = input_binary_int chan in
@@ -203,13 +203,6 @@ let input_header64 chan =
     (m lsl 14) lor (n lsl 6) lor (o lsr 2)
   in
   (tag, len)
-
-let input_string len chan =
-  let ans = String.create len in
-  for i = 0 to pred len do
-    ans.[i] <- input_char chan;
-  done;
-  ans
 
 let parse_object chan =
   let data = input_byte chan in

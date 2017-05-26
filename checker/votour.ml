@@ -313,8 +313,7 @@ let dummy_header = {
 }
 
 let parse_header chan =
-  let magic = String.create 4 in
-  let () = for i = 0 to 3 do magic.[i] <- input_char chan done in
+  let magic = really_input_string chan 4 in
   let length = input_binary_int chan in
   let objects = input_binary_int chan in
   let size32 = input_binary_int chan in
