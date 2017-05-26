@@ -139,3 +139,9 @@ Notation "'tele' x .. z := b" :=
   (at level 85, x binder, z binder).
 
 Check tele (t:Type) '((y,z):nat*nat) (x:t) := tt.
+
+(**********************************************************************)
+(* Test printing of #5526                                             *)
+
+Notation "x === x" := (eq_refl x) (only printing, at level 10).
+Check (fun x => eq_refl x).
