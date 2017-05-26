@@ -10,7 +10,6 @@ open Values
 
 (** {6 Interactive visit of a vo} *)
 
-[@@@ocaml.warning "-52"]
 let rec read_num max =
   let quit () =
     Printf.printf "\nGoodbye!\n%!";
@@ -20,14 +19,14 @@ let rec read_num max =
   if l = "u" then None
   else if l = "x" then quit ()
   else
-    try
-      let v = int_of_string l in
+    match int_of_string l with
+    | v ->
       if v < 0 || v >= max then
         let () =
           Printf.printf "Out-of-range input! (only %d children)\n%!" max in
         read_num max
       else Some v
-    with Failure "int_of_string" ->
+    | exception Failure _ ->
       Printf.printf "Unrecognized input! <n> enters the <n>-th child, u goes up 1 level, x exits\n%!";
       read_num max
 
@@ -150,16 +149,17 @@ let rec get_name ?(extra=false) = function
 (** For tuples, its quite handy to display the inner 1st string (if any).
     Cf. [structure_body] for instance *)
 
+exception TupleString of string
 let get_string_in_tuple o =
   try
     for i = 0 to Array.length o - 1 do
       match Repr.repr o.(i) with
       | STRING s ->
-        failwith (Printf.sprintf " [..%s..]" s)
+        raise (TupleString (Printf.sprintf " [..%s..]" s))
       | _ -> ()
     done;
     ""
-  with Failure s -> s
+  with TupleString s -> s
 
 (** Some details : tags, integer value for non-block, etc etc *)
 
@@ -206,6 +206,7 @@ let access_block o = match Repr.repr o with
 let access_int o = match Repr.repr o with INT i -> i | _ -> raise Exit
 
 (** raises Exit if the object has not the expected structure *)
+exception Forbidden
 let rec get_children v o pos = match v with
   |Tuple (_, v) ->
     let (_, os) = access_block o in
@@ -237,7 +238,7 @@ let rec get_children v o pos = match v with
       [|(Int, id, 0 :: pos); (tpe, o, 1 :: pos)|]
     | _ -> raise Exit
     end
-  |Fail s -> failwith "forbidden"
+  |Fail s -> raise Forbidden
 
 let get_children v o pos =
   try get_children v o pos
@@ -258,11 +259,11 @@ let init () = stk := []
 
 let push name v o p = stk := { nam = name; typ = v; obj = o; pos = p } :: !stk
 
+exception EmptyStack
 let pop () = match !stk with
   | i::s -> stk := s; i
-  | _ -> failwith "empty stack"
+  | _ -> raise EmptyStack
 
-[@@@ocaml.warning "-52"]
 let rec visit v o pos =
   Printf.printf "\nDepth %d Pos %s Context %s\n"
     (List.length !stk)
@@ -285,8 +286,8 @@ let rec visit v o pos =
        push (get_name v) v o pos;
        visit v' o' pos'
   with
-  | Failure "empty stack" -> ()
-  | Failure "forbidden" -> let info = pop () in visit info.typ info.obj info.pos
+  | EmptyStack -> ()
+  | Forbidden -> let info = pop () in visit info.typ info.obj info.pos
   | Failure _ | Invalid_argument _ -> visit v o pos
 
 end
