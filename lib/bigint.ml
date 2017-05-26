@@ -257,9 +257,9 @@ let sub_mult m d q k =
     end
   done
 
-(** Euclid division m/d = (q,r)
-    This is the "Floor" variant, as with ocaml's /
-    (but not as ocaml's Big_int.quomod_big_int).
+(** Euclid division m/d = (q,r), with m = q*d+r and |r|<|q|.
+    This is the "Trunc" variant (a.k.a "Truncated-Toward-Zero"),
+    as with ocaml's / (but not as ocaml's Big_int.quomod_big_int).
     We have sign r = sign m *)
 
 let euclid m d =

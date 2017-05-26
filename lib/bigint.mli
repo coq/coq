@@ -30,6 +30,12 @@ val mult_2 : bigint -> bigint
 val add : bigint -> bigint -> bigint
 val sub : bigint -> bigint -> bigint
 val mult : bigint -> bigint -> bigint
+
+(** Euclid division m/d = (q,r), with m = q*d+r and |r|<|q|.
+    This is the "Trunc" variant (a.k.a "Truncated-Toward-Zero"),
+    as with ocaml's / (but not as ocaml's Big_int.quomod_big_int).
+    We have sign r = sign m *)
+
 val euclid : bigint -> bigint -> bigint * bigint
 
 val less_than : bigint -> bigint -> bool

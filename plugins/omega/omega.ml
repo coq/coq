@@ -96,7 +96,7 @@ type afine = {
 
 type state_action = {
   st_new_eq : afine;
-  st_def    : afine;
+  st_def    : afine; (* /!\ this represents [st_def = st_var] *)
   st_orig   : afine;
   st_coef   : bigint;
   st_var    : int }
@@ -586,10 +586,6 @@ let rec depend relie_on accu = function
 	| SPLIT_INEQ _ -> failwith "depend"
       end
   | [] -> relie_on, accu
-
-let solve (new_eq_id,new_eq_var,print_var) system =
-  try let _ = simplify new_eq_id false system in failwith "no contradiction"
-  with UNSOLVABLE -> display_action print_var (snd (depend [] [] (history ())))
 
 let negation (eqs,ineqs) =
   let diseq,_ = List.partition (fun e -> e.kind = DISE) ineqs in
