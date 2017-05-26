@@ -98,7 +98,7 @@ pluginsopt: $(PLUGINSOPT)
 pluginsbyte: $(PLUGINS)
 
 # This should build all the ocaml code but not (most of) the .v files
-coqocaml: tools coqbinaries pluginsopt coqide printers
+coqocaml: tools coqbinaries pluginsopt coqide printers bin/votour
 
 .PHONY: coqlight states miniopt minibyte pluginsopt pluginsbyte coqocaml
 
