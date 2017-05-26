@@ -251,7 +251,7 @@ let print_namespace ns =
   let print_list pr l = prlist_with_sep (fun () -> str".") pr l in
   let print_kn kn =
     (* spiwack: I'm ignoring the dirpath, is that bad? *)
-    let (mp,_,lbl) = Names.repr_kn kn in
+    let (mp,_,lbl) = Names.KerName.repr kn in
     let qn = (qualified_minus (List.length ns) mp)@[Names.Label.to_id lbl] in
     print_list pr_id qn
   in
@@ -266,8 +266,8 @@ let print_namespace ns =
   let constants = (Environ.pre_env (Global.env ())).Pre_env.env_globals.Pre_env.env_constants in
   let constants_in_namespace =
     Cmap_env.fold (fun c (body,_) acc ->
-      let kn = user_con c in
-      if matches (modpath kn) then
+      let kn = Constant.user c in
+      if matches (KerName.modpath kn) then
         acc++fnl()++hov 2 (print_constant kn body)
       else
         acc

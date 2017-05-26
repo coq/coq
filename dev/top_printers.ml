@@ -41,11 +41,11 @@ let pplab l = pp (pr_lab l)
 let ppmbid mbid = pp (str (MBId.debug_to_string mbid))
 let ppdir dir = pp (pr_dirpath dir)
 let ppmp mp = pp(str (ModPath.debug_to_string mp))
-let ppcon con = pp(debug_pr_con con)
-let ppproj con = pp(debug_pr_con (Projection.constant con))
+let ppcon con = pp(Constant.debug_print con)
+let ppproj con = pp(Constant.debug_print (Projection.constant con))
 let ppkn kn = pp(str (KerName.to_string kn))
-let ppmind kn = pp(debug_pr_mind kn)
-let ppind (kn,i) = pp(debug_pr_mind kn ++ str"," ++int i)
+let ppmind kn = pp(MutInd.debug_print kn)
+let ppind (kn,i) = pp(MutInd.debug_print kn ++ str"," ++int i)
 let ppsp sp = pp(pr_path sp)
 let ppqualid qid = pp(pr_qualid qid)
 let ppclindex cl = pp(Classops.pr_cl_index cl)
@@ -126,10 +126,10 @@ let ppclosedglobconstridmap x = pp (pr_closed_glob_constr_idmap x)
 let pP s = pp (hov 0 s)
 
 let safe_pr_global = function
-  | ConstRef kn -> pp (str "CONSTREF(" ++ debug_pr_con kn ++ str ")")
-  | IndRef (kn,i) -> pp (str "INDREF(" ++ debug_pr_mind kn ++ str "," ++
+  | ConstRef kn -> pp (str "CONSTREF(" ++ Constant.debug_print kn ++ str ")")
+  | IndRef (kn,i) -> pp (str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
 			  int i ++ str ")")
-  | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ debug_pr_mind kn ++ str "," ++
+  | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
 				      int i ++ str "," ++ int j ++ str ")")
   | VarRef id -> pp (str "VARREF(" ++ Id.print id ++ str ")")
 
@@ -170,7 +170,7 @@ let ppexistentialfilter filter = match Evd.Filter.repr filter with
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoalgoal gl = pp(Goal.pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)
-let ppgoalsigma g = pp(Printer.pr_goal g ++ Termops.pr_evar_map None (Refiner.project g))
+let ppgoalsigma g = pp(Printer.pr_goal g ++ Termops.pr_evar_map None g.Evd.sigma)
 let pphintdb db = pp(Hints.pr_hint_db db)
 let ppproofview p =
   let gls,sigma = Proofview.proofview p in
@@ -227,7 +227,7 @@ let ppenv e = pp
 let ppenvwithcst e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]" ++ spc() ++
-   str "{" ++ Cmap_env.fold (fun a _ s -> pr_con a ++ spc () ++ s) (Obj.magic e).Pre_env.env_globals.Pre_env.env_constants (mt ()) ++ str "}")
+   str "{" ++ Cmap_env.fold (fun a _ s -> Constant.print a ++ spc () ++ s) (Obj.magic e).Pre_env.env_globals.Pre_env.env_constants (mt ()) ++ str "}")
 
 let pptac = (fun x -> pp(Ltac_plugin.Pptactic.pr_glob_tactic (API.Global.env()) x))
 
@@ -259,13 +259,13 @@ let constr_display csr =
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | Evar (e,l) -> "Evar("^(string_of_existential e)^","^(array_display l)^")"
-  | Const (c,u) -> "Const("^(string_of_con c)^","^(universes_display u)^")"
+  | Const (c,u) -> "Const("^(Constant.to_string c)^","^(universes_display u)^")"
   | Ind ((sp,i),u) ->
-      "MutInd("^(string_of_mind sp)^","^(string_of_int i)^","^(universes_display u)^")"
+      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^")"
   | Construct (((sp,i),j),u) ->
-      "MutConstruct(("^(string_of_mind sp)^","^(string_of_int i)^"),"
+      "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
-  | Proj (p, c) -> "Proj("^(string_of_con (Projection.constant p))^","^term_display c ^")"
+  | Proj (p, c) -> "Proj("^(Constant.to_string (Projection.constant p))^","^term_display c ^")"
   | Case (ci,p,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display bl)^")"
@@ -433,7 +433,7 @@ let print_pure_constr csr =
 	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
-      print_string (debug_string_of_mind sp)
+      print_string (MutInd.debug_to_string sp)
   and sp_con_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
@@ -442,7 +442,7 @@ let print_pure_constr csr =
 	| ("Coq"::_::l) -> l
 	| l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
-      print_string (debug_string_of_con sp)
+      print_string (Constant.debug_to_string sp)
 
   in
     try

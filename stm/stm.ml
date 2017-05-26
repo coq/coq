@@ -475,8 +475,8 @@ end = struct (* {{{ *)
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
     (let rec aux x = match x with
-    | VernacDefinition (_,((_,i),_),_) -> Names.string_of_id i
-    | VernacStartTheoremProof (_,[Some ((_,i),_),_]) -> Names.string_of_id i
+    | VernacDefinition (_,((_,i),_),_) -> Names.Id.to_string i
+    | VernacStartTheoremProof (_,[Some ((_,i),_),_]) -> Names.Id.to_string i
     | VernacTime (_, e)
     | VernacTimeout (_, e) -> aux e
     | _ -> "branch" in aux x)
@@ -1849,12 +1849,17 @@ end = struct (* {{{ *)
           let open Notations in
           match Future.join f with
           | Some (pt, uc) ->
+            let push_ctx =
+              Proofview.tclEVARMAP >>= fun sigma ->
+              let sigma = Evd.merge_universe_context sigma uc in
+              Proofview.Unsafe.tclEVARS sigma
+            in
             stm_pperr_endline (fun () -> hov 0 (
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
               str"uc=" ++ Termops.pr_evar_universe_context uc));
             (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
-              (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
+              (push_ctx <*>
               Tactics.exact_no_check (EConstr.of_constr pt))
           | None ->
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
@@ -2929,7 +2934,7 @@ let current_proof_depth () =
 let unmangle n =
   let n = VCS.Branch.to_string n in
   let idx = String.index n '_' + 1 in
-  Names.id_of_string (String.sub n idx (String.length n - idx))
+  Names.Id.of_string (String.sub n idx (String.length n - idx))
 
 let proofname b = match VCS.get_branch b with
   | { VCS.kind = (`Proof _| `Edit _) } -> Some b

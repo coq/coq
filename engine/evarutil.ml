@@ -306,7 +306,7 @@ let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc) =
   in
   let extract_if_neq id = function
     | Anonymous -> None
-    | Name id' when id_ord id id' = 0 -> None
+    | Name id' when Id.compare id id' = 0 -> None
     | Name id' -> Some id'
   in
   let na = RelDecl.get_name decl in

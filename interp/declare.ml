@@ -145,31 +145,31 @@ let check_exists sp =
 
 let cache_constant ((sp,kn), obj) =
   let id = basename sp in
-  let _,dir,_ = repr_kn kn in
+  let _,dir,_ = KerName.repr kn in
   let kn' =
     match obj.cst_decl with
     | None ->
       if Global.exists_objlabel (Label.of_id (basename sp))
-      then constant_of_kn kn
+      then Constant.make1 kn
       else CErrors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp) ++ str".")
     | Some decl ->
       let () = check_exists sp in
       Global.add_constant dir id decl
   in
-  assert (eq_constant kn' (constant_of_kn kn));
-  Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
+  assert (Constant.equal kn' (Constant.make1 kn));
+  Nametab.push (Nametab.Until 1) sp (ConstRef (Constant.make1 kn));
   let cst = Global.lookup_constant kn' in
   add_section_constant (Declareops.constant_is_polymorphic cst) kn' cst.const_hyps;
   Dischargedhypsmap.set_discharged_hyps sp obj.cst_hyps;
-  add_constant_kind (constant_of_kn kn) obj.cst_kind
+  add_constant_kind (Constant.make1 kn) obj.cst_kind
 
 let discharged_hyps kn sechyps =
-  let (_,dir,_) = repr_kn kn in
+  let (_,dir,_) = KerName.repr kn in
   let args = Array.to_list (instance_from_variable_context sechyps) in
   List.rev_map (Libnames.make_path dir) args
 
 let discharge_constant ((sp, kn), obj) =
-  let con = constant_of_kn kn in
+  let con = Constant.make1 kn in
   let from = Global.lookup_constant con in
   let modlist = replacement_context () in
   let hyps,subst,uctx = section_segment_of_constant con in
@@ -323,9 +323,9 @@ let cache_inductive ((sp,kn),(dhyps,mie)) =
   let names = inductive_names sp kn mie in
   List.iter check_exists (List.map fst names);
   let id = basename sp in
-  let _,dir,_ = repr_kn kn in
+  let _,dir,_ = KerName.repr kn in
   let kn' = Global.add_mind dir id mie in
-  assert (eq_mind kn' (mind_of_kn kn));
+  assert (MutInd.equal kn' (MutInd.make1 kn));
   let mind = Global.lookup_mind kn' in
   add_section_kn (Declareops.inductive_is_polymorphic mind) kn' mind.mind_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
@@ -396,7 +396,7 @@ let declare_projections mind =
 	let kn' = declare_constant id (ProjectionEntry entry,
 				       IsDefinition StructureComponent)
 	in
-	  assert(eq_constant kn kn')) kns; true,true
+	  assert(Constant.equal kn kn')) kns; true,true
     | Some None -> true,false
     | None -> false,false
 
@@ -477,7 +477,7 @@ let cache_universes (p, l) =
   let glob = Global.global_universe_names () in
   let glob', ctx =
     List.fold_left (fun ((idl,lid),ctx) (id, lev) ->
-        ((Idmap.add id (p, lev) idl,
+        ((Id.Map.add id (p, lev) idl,
           Univ.LMap.add lev id lid),
          Univ.ContextSet.add_universe lev ctx))
       (glob, Univ.ContextSet.empty) l
@@ -538,7 +538,7 @@ let do_constraint poly l =
                      (str "Cannot declare constraints on anonymous universes")
     | GType (Some (loc, Name id)) ->
        let names, _ = Global.global_universe_names () in
-       try loc, Idmap.find id names
+       try loc, Id.Map.find id names
        with Not_found ->
          user_err ?loc ~hdr:"Constraint" (str "Undeclared universe " ++ pr_id id)
   in

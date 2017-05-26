@@ -371,17 +371,17 @@ val key : Id.t -> t -> Evar.t
 end =
 struct
 
-type t = Id.t EvMap.t * existential_key Idmap.t
+type t = Id.t EvMap.t * existential_key Id.Map.t
 
-let empty = (EvMap.empty, Idmap.empty)
+let empty = (EvMap.empty, Id.Map.empty)
 
 let add_name_newly_undefined id evk evi (evtoid, idtoev as names) =
   match id with
   | None -> names
   | Some id ->
-    if Idmap.mem id idtoev then
+    if Id.Map.mem id idtoev then
       user_err  (str "Already an existential evar of name " ++ pr_id id);
-    (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
+    (EvMap.add evk id evtoid, Id.Map.add id evk idtoev)
 
 let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =
   if EvMap.mem evk evtoid then
@@ -393,15 +393,15 @@ let remove_name_defined evk (evtoid, idtoev as names) =
   let id = try Some (EvMap.find evk evtoid) with Not_found -> None in
   match id with
   | None -> names
-  | Some id -> (EvMap.remove evk evtoid, Idmap.remove id idtoev)
+  | Some id -> (EvMap.remove evk evtoid, Id.Map.remove id idtoev)
 
 let rename evk id (evtoid, idtoev) =
   let id' = try Some (EvMap.find evk evtoid) with Not_found -> None in
   match id' with
-  | None -> (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
+  | None -> (EvMap.add evk id evtoid, Id.Map.add id evk idtoev)
   | Some id' ->
-    if Idmap.mem id idtoev then anomaly (str "Evar name already in use.");
-    (EvMap.update evk id evtoid (* overwrite old name *), Idmap.add id evk (Idmap.remove id' idtoev))
+    if Id.Map.mem id idtoev then anomaly (str "Evar name already in use.");
+    (EvMap.update evk id evtoid (* overwrite old name *), Id.Map.add id evk (Id.Map.remove id' idtoev))
 
 let reassign_name_defined evk evk' (evtoid, idtoev as names) =
   let id = try Some (EvMap.find evk evtoid) with Not_found -> None in
@@ -409,13 +409,13 @@ let reassign_name_defined evk evk' (evtoid, idtoev as names) =
   | None -> names (** evk' must not be defined *)
   | Some id ->
     (EvMap.add evk' id (EvMap.remove evk evtoid),
-    Idmap.add id evk' (Idmap.remove id idtoev))
+    Id.Map.add id evk' (Id.Map.remove id idtoev))
 
 let ident evk (evtoid, _) =
   try Some (EvMap.find evk evtoid) with Not_found -> None
 
 let key id (_, idtoev) =
-  Idmap.find id idtoev
+  Id.Map.find id idtoev
 
 end
 

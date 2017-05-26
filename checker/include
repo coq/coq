@@ -149,12 +149,12 @@ let parse_sp s =
 let parse_kn s =
    let l = List.rev (Str.split(Str.regexp"\\.") s) in
    let dp = make_dirpath(List.map id_of_string(List.tl l)) in
-   make_kn(MPfile dp) empty_dirpath (label_of_id (id_of_string (List.hd l)))
+   make_kn(MPfile dp) DirPath.empty (label_of_id (id_of_string (List.hd l)))
 ;;
 let parse_con s =
    let l = List.rev (Str.split(Str.regexp"\\.") s) in
    let dp = make_dirpath(List.map id_of_string(List.tl l)) in
-   make_con(MPfile dp) empty_dirpath (label_of_id (id_of_string (List.hd l)))
+   Constant.make3 (MPfile dp) DirPath.empty (label_of_id (id_of_string (List.hd l)))
 ;;
 let get_mod dp = 
   lookup_module dp (Safe_typing.get_env())

@@ -516,7 +516,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   | (f, n, ar) :: oth ->
     let open Context.Named.Declaration in
     let (sp', u')  = check_mutind env sigma n ar in
-    if not (eq_mind sp sp') then
+    if not (MutInd.equal sp sp') then
       error "Fixpoints should be on the same mutual inductive declaration.";
     if mem_named_context_val f sign then
       user_err ~hdr:"Logic.prim_refiner"
@@ -1329,7 +1329,7 @@ let enforce_prop_bound_names rename tac =
                 (* "very_standard" says that we should have "H" names only, but
                    this would break compatibility even more... *)
                 let s = match Namegen.head_name sigma t with
-                  | Some id when not very_standard -> string_of_id id
+                  | Some id when not very_standard -> Id.to_string id
                   | _ -> "" in
                 Name (add_suffix Namegen.default_prop_ident s)
               else

@@ -159,7 +159,7 @@ type object_name = full_path * kernel_name
 type object_prefix = DirPath.t * (module_path * DirPath.t)
 
 let make_oname (dirpath,(mp,dir)) id =
-  make_path dirpath id, make_kn mp dir (Label.of_id id)
+  make_path dirpath id, KerName.make mp dir (Label.of_id id)
 
 (* to this type are mapped DirPath.t's in the nametab *)
 type global_dir_reference =
@@ -173,7 +173,7 @@ type global_dir_reference =
 let eq_op (d1, (mp1, p1)) (d2, (mp2, p2)) =
   DirPath.equal d1 d2 &&
   DirPath.equal p1 p2 &&
-  mp_eq mp1 mp2
+  ModPath.equal mp1 mp2
 
 let eq_global_dir_reference r1 r2 = match r1, r2 with
 | DirOpenModule op1, DirOpenModule op2 -> eq_op op1 op2

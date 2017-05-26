@@ -193,7 +193,7 @@ let pp_sort s =
 
 let rec pp_struct_const = function
   | Const_sorts s -> pp_sort s
-  | Const_ind (mind, i) -> pr_mind mind ++ str"#" ++ int i
+  | Const_ind (mind, i) -> MutInd.print mind ++ str"#" ++ int i
   | Const_proj p -> Constant.print p
   | Const_b0 i -> int i
   | Const_bn (i,t) ->
@@ -241,7 +241,7 @@ let rec pp_instr i =
 	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
 	     str " bodies = " ++
 	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
-  | Kgetglobal idu -> str "getglobal " ++ pr_con idu
+  | Kgetglobal idu -> str "getglobal " ++ Constant.print idu
   | Kconst sc ->
       str "const " ++ pp_struct_const sc
   | Kmakeblock(n, m) ->

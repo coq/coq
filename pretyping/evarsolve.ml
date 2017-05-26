@@ -1001,7 +1001,7 @@ let closure_of_filter evd evk = function
   | Some filter ->
   let evi = Evd.find_undefined evd evk in
   let vars = collect_vars evd (EConstr.of_constr (evar_concl evi)) in
-  let test b decl = b || Idset.mem (get_id decl) vars ||
+  let test b decl = b || Id.Set.mem (get_id decl) vars ||
                     match decl with
                     | LocalAssum _ ->
                        false
@@ -1550,19 +1550,19 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
   let rhs = whd_beta evd rhs (* heuristic *) in
   let fast rhs = 
     let filter_ctxt = evar_filtered_context evi in
-    let names = ref Idset.empty in
+    let names = ref Id.Set.empty in
     let rec is_id_subst ctxt s =
       match ctxt, s with
       | (decl :: ctxt'), (c :: s') ->
         let id = get_id decl in
-        names := Idset.add id !names;
+        names := Id.Set.add id !names;
         isVarId evd id c && is_id_subst ctxt' s'
       | [], [] -> true
       | _ -> false 
     in
       is_id_subst filter_ctxt (Array.to_list argsv) &&
       closed0 evd rhs &&
-      Idset.subset (collect_vars evd rhs) !names 
+      Id.Set.subset (collect_vars evd rhs) !names 
   in
   let body =
     if fast rhs then EConstr.of_constr (EConstr.to_constr evd rhs) (** FIXME? *)

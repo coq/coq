@@ -233,11 +233,11 @@ let universes_of_global gr =
 
 (** Global universe names *)
 type universe_names = 
-  (polymorphic * Univ.universe_level) Idmap.t * Id.t Univ.LMap.t
+  (polymorphic * Univ.universe_level) Id.Map.t * Id.t Univ.LMap.t
 
 let global_universes =
   Summary.ref ~name:"Global universe names"
-  ((Idmap.empty, Univ.LMap.empty) : universe_names)
+  ((Id.Map.empty, Univ.LMap.empty) : universe_names)
 
 let global_universe_names () = !global_universes
 let set_global_universe_names s = global_universes := s

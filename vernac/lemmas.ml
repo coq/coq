@@ -117,7 +117,7 @@ let find_mutually_recursive_statements thms =
             [] in
       ind_hyps,ind_ccl) thms in
     let inds_hyps,ind_ccls = List.split inds in
-    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> eq_mind kn kn' in
+    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> MutInd.equal kn kn' in
     (* Check if all conclusions are coinductive in the same type *)
     (* (degenerated cartesian product since there is at most one coind ccl) *)
     let same_indccl =
@@ -505,7 +505,7 @@ let save_proof ?proof = function
                   let env = Global.env () in
                   let ids_typ = Environ.global_vars_set env typ in
                   let ids_def = Environ.global_vars_set env pproof in
-                  Some (Environ.keep_hyps env (Idset.union ids_typ ids_def))
+                  Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
               | _ -> None in
 	    let names = Proof_global.get_universe_binders () in
             let evd = Evd.from_ctx universes in

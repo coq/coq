@@ -16,6 +16,9 @@ open Redexpr
 open Pattern
 open Locus
 
+(** Deactivate deprecated warning *)
+[@@@ocaml.warning "-3"]
+
 (** Operations for handling terms under a local typing context. *)
 
 type 'a sigma   = 'a Evd.sigma

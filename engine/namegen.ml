@@ -59,9 +59,9 @@ let is_imported_ref = function
   | VarRef _ -> false
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) ->
-      let (mp,_,_) = repr_mind kn in is_imported_modpath mp
+      let (mp,_,_) = MutInd.repr3 kn in is_imported_modpath mp
   | ConstRef kn ->
-      let (mp,_,_) = repr_con kn in is_imported_modpath mp
+      let (mp,_,_) = Constant.repr3 kn in is_imported_modpath mp
 
 let is_global id =
   try
@@ -97,7 +97,7 @@ let head_name sigma c = (* Find the head constant of a constr if any *)
     match EConstr.kind sigma c with
     | Prod (_,_,c) | Lambda (_,_,c) | LetIn (_,_,_,c)
     | Cast (c,_,_) | App (c,_) -> hdrec c
-    | Proj (kn,_) -> Some (Label.to_id (con_label (Projection.constant kn)))
+    | Proj (kn,_) -> Some (Label.to_id (Constant.label (Projection.constant kn)))
     | Const _ | Ind _ | Construct _ | Var _ as c ->
 	Some (basename_of_global (global_of_constr c))
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
@@ -118,8 +118,8 @@ let hdchar env sigma c =
     match EConstr.kind sigma c with
     | Prod (_,_,c) | Lambda (_,_,c) | LetIn (_,_,_,c) -> hdrec (k+1) c
     | Cast (c,_,_) | App (c,_) -> hdrec k c
-    | Proj (kn,_) -> lowercase_first_char (Label.to_id (con_label (Projection.constant kn)))
-    | Const (kn,_) -> lowercase_first_char (Label.to_id (con_label kn))
+    | Proj (kn,_) -> lowercase_first_char (Label.to_id (Constant.label (Projection.constant kn)))
+    | Const (kn,_) -> lowercase_first_char (Label.to_id (Constant.label kn))
     | Ind (x,_) -> lowercase_first_char (basename_of_global (IndRef x))
     | Construct (x,_) -> lowercase_first_char (basename_of_global (ConstructRef x))
     | Var id  -> lowercase_first_char id

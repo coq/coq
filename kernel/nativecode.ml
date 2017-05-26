@@ -1504,7 +1504,7 @@ let string_of_dirpath = function
 (* OCaml as a module identifier.                                           *)
 let string_of_dirpath s = "N"^string_of_dirpath s
 
-let mod_uid_of_dirpath dir = string_of_dirpath (repr_dirpath dir)
+let mod_uid_of_dirpath dir = string_of_dirpath (DirPath.repr dir)
 
 let link_info_of_dirpath dir =
   Linked (mod_uid_of_dirpath dir ^ ".")
@@ -1523,19 +1523,19 @@ let string_of_label_def l =
 let rec list_of_mp acc = function
   | MPdot (mp,l) -> list_of_mp (string_of_label l::acc) mp
   | MPfile dp ->
-      let dp = repr_dirpath dp in
+      let dp = DirPath.repr dp in
       string_of_dirpath dp :: acc
-  | MPbound mbid -> ("X"^string_of_id (id_of_mbid mbid))::acc
+  | MPbound mbid -> ("X"^string_of_id (MBId.to_id mbid))::acc
 
 let list_of_mp mp = list_of_mp [] mp
 
 let string_of_kn kn =
-  let (mp,dp,l) = repr_kn kn in
+  let (mp,dp,l) = KerName.repr kn in
   let mp = list_of_mp mp in
   String.concat "_" mp ^ "_" ^ string_of_label l
 
-let string_of_con c = string_of_kn (user_con c)
-let string_of_mind mind = string_of_kn (user_mind mind)
+let string_of_con c = string_of_kn (Constant.user c)
+let string_of_mind mind = string_of_kn (MutInd.user mind)
 
 let string_of_gname g =
   match g with
@@ -1721,7 +1721,7 @@ let pp_mllam fmt l =
     | Mk_cofix(start) -> Format.fprintf fmt "mk_cofix_accu %i" start
     | Mk_rel i -> Format.fprintf fmt "mk_rel_accu %i" i
     | Mk_var id ->
-        Format.fprintf fmt "mk_var_accu (Names.id_of_string \"%s\")" (string_of_id id)
+        Format.fprintf fmt "mk_var_accu (Names.Id.of_string \"%s\")" (string_of_id id)
     | Mk_proj -> Format.fprintf fmt "mk_proj_accu"
     | Is_accu -> Format.fprintf fmt "is_accu"
     | Is_int -> Format.fprintf fmt "is_int"
@@ -1877,7 +1877,7 @@ let compile_constant env sigma prefix ~interactive con cb =
         if interactive then LinkedInteractive prefix
         else Linked prefix
       in
-      let l = con_label con in
+      let l = Constant.label con in
       let auxdefs,code =
 	if no_univs then compile_with_fv env sigma None [] (Some l) code
 	else
@@ -1955,8 +1955,8 @@ let is_code_loaded ~interactive name =
       if is_loaded_native_file s then true
       else (name := NotLinked; false)
 
-let param_name = Name (id_of_string "params")
-let arg_name = Name (id_of_string "arg")
+let param_name = Name (Id.of_string "params")
+let arg_name = Name (Id.of_string "arg")
 
 let compile_mind prefix ~interactive mb mind stack =
   let u = Declareops.inductive_polymorphic_context mb in

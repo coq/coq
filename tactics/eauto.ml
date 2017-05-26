@@ -442,7 +442,7 @@ let autounfolds db occs cls gl =
     in
     let (ids, csts) = Hint_db.unfolds db in
     let hyps = pf_ids_of_hyps gl in
-    let ids = Idset.filter (fun id -> List.mem id hyps) ids in
+    let ids = Id.Set.filter (fun id -> List.mem id hyps) ids in
       Cset.fold (fun cst -> cons (AllOccurrences, EvalConstRef cst)) csts
 	(Id.Set.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
   in Proofview.V82.of_tactic (unfold_option unfolds cls) gl

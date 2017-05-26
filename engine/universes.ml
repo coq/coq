@@ -238,7 +238,7 @@ let compare_head_gen_proj env equ eqs eqc' m n =
   | Proj (p, c), App (f, args)
   | App (f, args), Proj (p, c) -> 
       (match kind_of_term f with
-      | Const (p', u) when eq_constant (Projection.constant p) p' -> 
+      | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
           let pb = Environ.lookup_projection p env in
           let npars = pb.Declarations.proj_npars in
 	  if Array.length args == npars + 1 then

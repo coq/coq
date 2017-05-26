@@ -149,7 +149,7 @@ let pattern_of_constr env sigma t =
          with
          | Some n -> PSoApp (n,Array.to_list (Array.map (pattern_of_constr env) a))
          | None -> PApp (pattern_of_constr env f,Array.map (pattern_of_constr env) a))
-    | Const (sp,u)  -> PRef (ConstRef (constant_of_kn(canonical_con sp)))
+    | Const (sp,u)  -> PRef (ConstRef (Constant.make1(Constant.canonical sp)))
     | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
     | Proj (p, c) -> 
