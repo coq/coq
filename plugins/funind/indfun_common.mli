@@ -123,3 +123,5 @@ type tcc_lemma_value =
   | Undefined
   | Value of Term.constr
   | Not_needed
+
+val funind_purify : ('a -> 'b) -> ('a -> 'b)

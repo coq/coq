@@ -549,3 +549,12 @@ type tcc_lemma_value =
   | Undefined
   | Value of Term.constr
   | Not_needed
+
+(* We only "purify" on exceptions *)
+let funind_purify f x =
+  let st = Vernacentries.freeze_interp_state `No in
+  try f x
+  with e ->
+    let e = CErrors.push e in
+    Vernacentries.unfreeze_interp_state st;
+    Exninfo.iraise e

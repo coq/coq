@@ -468,7 +468,9 @@ let register_ltac local tacl =
     let () = List.iter iter_rec recvars in
     List.map map rfun
   in
-  let defs = Future.transactify defs () in
+  (* STATE XXX: Review what is going on here. Why does this needs
+     protection? Why is not the STM level protection enough? Fishy *)
+  let defs = States.with_state_protection defs () in
   let iter (def, tac) = match def with
   | NewTac id ->
     Tacenv.register_ltac false local id tac;

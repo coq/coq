@@ -22,7 +22,6 @@ type interp_state = { (* TODO: inline records in OCaml 4.03 *)
 
 val freeze_interp_state : Summary.marshallable -> interp_state
 val unfreeze_interp_state : interp_state -> unit
-val _dummy_interp_state : interp_state
 
 (** The main interpretation function of vernacular expressions *)
 val interp :
@@ -39,7 +38,9 @@ val interp :
 
 val make_cases : string -> string list list
 
-val with_fail : bool -> (unit -> unit) -> unit
+(* XXX STATE: this type hints that restoring the state should be the
+   caller's responsibility *)
+val with_fail : interp_state -> bool -> (unit -> unit) -> unit
 
 val command_focus : unit Proof.focus_kind
 

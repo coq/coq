@@ -79,7 +79,7 @@ let red_constant_entry n ce sigma = function
         let (_, c) = redfun env sigma c in
         EConstr.Unsafe.to_constr c
       in
-      { ce with const_entry_body = Future.chain ~pure:true proof_out
+      { ce with const_entry_body = Future.chain proof_out
         (fun ((body,ctx),eff) -> (under_binders env sigma redfun n body,ctx),eff) }
 
 let warn_implicits_in_term =

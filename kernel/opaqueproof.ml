@@ -78,12 +78,12 @@ let subst_opaque sub = function
 let iter_direct_opaque f = function
   | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
   | Direct (d,cu) ->
-      Direct (d,Future.chain ~pure:true cu (fun (c, u) -> f c; c, u))
+      Direct (d,Future.chain cu (fun (c, u) -> f c; c, u))
 
 let discharge_direct_opaque ~cook_constr ci = function
   | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
   | Direct (d,cu) ->
-      Direct (ci::d,Future.chain ~pure:true cu (fun (c, u) -> cook_constr c, u))
+      Direct (ci::d,Future.chain cu (fun (c, u) -> cook_constr c, u))
 
 let join_opaque { opaque_val = prfs; opaque_dir = odp } = function
   | Direct (_,cu) -> ignore(Future.join cu)
@@ -105,7 +105,7 @@ let force_proof { opaque_val = prfs; opaque_dir = odp } = function
   | Indirect (l,dp,i) ->
       let pt =
         if DirPath.equal dp odp
-        then Future.chain ~pure:true (snd (Int.Map.find i prfs)) fst
+        then Future.chain (snd (Int.Map.find i prfs)) fst
         else !get_opaque dp i in
       let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
@@ -120,20 +120,20 @@ let force_constraints { opaque_val = prfs; opaque_dir = odp } = function
         | Some u -> Future.force u
 
 let get_constraints { opaque_val = prfs; opaque_dir = odp } = function
-  | Direct (_,cu) -> Some(Future.chain ~pure:true cu snd)
+  | Direct (_,cu) -> Some(Future.chain cu snd)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
-      then Some(Future.chain ~pure:true (snd (Int.Map.find i prfs)) snd)
+      then Some(Future.chain (snd (Int.Map.find i prfs)) snd)
       else !get_univ dp i
 
 let get_proof { opaque_val = prfs; opaque_dir = odp } = function
-  | Direct (_,cu) -> Future.chain ~pure:true cu fst
+  | Direct (_,cu) -> Future.chain cu fst
   | Indirect (l,dp,i) ->
       let pt =
         if DirPath.equal dp odp
-        then Future.chain ~pure:true (snd (Int.Map.find i prfs)) fst
+        then Future.chain (snd (Int.Map.find i prfs)) fst
         else !get_opaque dp i in
-      Future.chain ~pure:true pt (fun c ->
+      Future.chain pt (fun c ->
         force_constr (List.fold_right subst_substituted l (from_val c)))
  
 module FMap = Future.UUIDMap

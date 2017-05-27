@@ -373,11 +373,11 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
           let _, univs = Evd.check_univ_decl (Evd.from_ctx ctx) universe_decl in
           (univs, typ), ((body, Univ.ContextSet.empty), eff)
       in 
-       fun t p -> Future.split2 (Future.chain ~pure:true p (make_body t))
+       fun t p -> Future.split2 (Future.chain p (make_body t))
     else
       fun t p ->
         Future.from_val (univctx, nf t),
-        Future.chain ~pure:true p (fun (pt,eff) ->
+        Future.chain p (fun (pt,eff) ->
           (* Deferred proof, we already checked the universe declaration with
              the initial universes, ensure that the final universes respect
              the declaration as well. If the declaration is non-extensible,

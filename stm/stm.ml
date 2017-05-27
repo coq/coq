@@ -23,7 +23,17 @@ open CErrors
 open Feedback
 open Vernacexpr
 
-let _ds = Vernacentries._dummy_interp_state
+(* Protect against state changes *)
+let stm_purify f x =
+  let st = Vernacentries.freeze_interp_state `No in
+  try
+    let res = f x in
+    Vernacentries.unfreeze_interp_state st;
+    res
+  with e ->
+    let e = CErrors.push e in
+    Vernacentries.unfreeze_interp_state st;
+    Exninfo.iraise e
 
 let execution_error ?loc state_id msg =
     feedback ~id:state_id
@@ -754,13 +764,6 @@ end = struct (* {{{ *)
   let cur_id = ref Stateid.dummy
   let fix_exn_ref = ref (fun x -> x)
 
-  (* hack to make futures functional *)
-  (* this will be removed when we don't call it anymore as we fully
-     handle state functionally *)
-  let () = Future.set_freeze
-    (fun () -> Obj.magic (freeze_interp_state `No, !cur_id))
-    (fun t -> let s,i = Obj.magic t in unfreeze_interp_state s; cur_id := i)
-
   type proof_part =
     Proof_global.state * Summary.frozen_bits (* only meta counters *)
 
@@ -797,9 +800,13 @@ end = struct (* {{{ *)
   let install_cached id =
     match VCS.get_info id with
     | { state = Valid s } ->
-         if Stateid.equal id !cur_id then () (* optimization *)
-         else begin Vernacentries.unfreeze_interp_state s; cur_id := id end
-    | { state = Error ie } -> cur_id := id; Exninfo.iraise ie 
+       Vernacentries.unfreeze_interp_state s;
+       cur_id := id
+
+    | { state = Error ie } ->
+       cur_id := id;
+       Exninfo.iraise ie
+
     | _ ->
         (* coqc has a 1 slot cache and only for valid states *)
         if VCS.is_interactive () = `No && Stateid.equal id !cur_id then ()
@@ -1429,18 +1436,28 @@ end = struct (* {{{ *)
        * the few errors tactics don't catch, like the "fix" tactic building
        * a bad fixpoint *)
       let fix_exn = Future.fix_exn_of future_proof in
+      (* STATE: We use the current installed imperative state *)
+      let st = Vernacentries.freeze_interp_state `No in
       if not drop then begin
-        let checked_proof = Future.chain ~pure:false future_proof (fun p ->
+        let checked_proof = Future.chain future_proof (fun p ->
+
+          (* Unfortunately close_future_proof and friends are not pure so we need
+             to set the state manually here *)
+          Vernacentries.unfreeze_interp_state st;
           let pobject, _ =
             Proof_global.close_future_proof ~feedback_id:stop (Future.from_val ~fix_exn p) in
           let terminator = (* The one sent by master is an InvalidKey *)
             Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
+
+          let st = Vernacentries.freeze_interp_state `No in
           stm_vernac_interp stop
-            ~proof:(pobject, terminator) _ds
+            ~proof:(pobject, terminator) st
             { verbose = false; loc; indentation = 0; strlen = 0;
               expr = (VernacEndProof (Proved (Opaque,None))) }) in
         ignore(Future.join checked_proof);
       end;
+      (* STATE: Restore the state XXX: handle exn *)
+      Vernacentries.unfreeze_interp_state st;
       RespBuiltProof(proof,time)
     with
     | e when CErrors.noncritical e || e = Stack_overflow ->
@@ -1580,7 +1597,9 @@ end = struct (* {{{ *)
        * - end  : start + qed
        * => takes nothing from the itermediate states.
        *)
-      ignore(stm_vernac_interp stop ~proof _ds
+      (* STATE We use the state resulting from reaching start. *)
+      let st = Vernacentries.freeze_interp_state `No in
+      ignore(stm_vernac_interp stop ~proof st
         { verbose = false; loc; indentation = 0; strlen = 0;
           expr = (VernacEndProof (Proved (Opaque,None))) });
       `OK proof
@@ -1638,10 +1657,9 @@ end = struct (* {{{ *)
         let pr =
           Future.from_val (map (Option.get (Global.body_of_constant_body c))) in
         let uc =
-          Future.chain
-            ~pure:true uc Univ.hcons_universe_context_set in
-        let pr = Future.chain ~pure:true pr discharge in
-        let pr = Future.chain ~pure:true pr Constr.hcons in
+          Future.chain uc Univ.hcons_universe_context_set in
+        let pr = Future.chain pr discharge in
+        let pr = Future.chain pr Constr.hcons in
         Future.sink pr;
         let extra = Future.join uc in
         u.(bucket) <- uc;
@@ -1817,7 +1835,7 @@ end = struct (* {{{ *)
     Option.iter VCS.restore vcs;
     try
       Reach.known_state ~cache:`No id;
-      Future.purify (fun () ->
+      stm_purify (fun () ->
        let _,_,_,_,sigma0 = Proof.proof (Proof_global.give_me_the_proof ()) in
        let g = Evd.find sigma0 r_goal in
        let is_ground c = Evarutil.is_ground_term sigma0 (EConstr.of_constr c) in
@@ -1837,8 +1855,8 @@ end = struct (* {{{ *)
          * => captures state id in a future closure, which will
            discard execution state but for the proof + univs.
         *)
-
-        ignore(stm_vernac_interp r_state_fb _ds ast);
+        let st = Vernacentries.freeze_interp_state `No in
+        ignore(stm_vernac_interp r_state_fb st ast);
         let _,_,_,_,sigma = Proof.proof (Proof_global.give_me_the_proof ()) in
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> RespNoProgress
@@ -1877,7 +1895,8 @@ end = struct (* {{{ *)
         | VernacRedirect (_,(_,e)) -> find ~time ~fail e
         | VernacFail e -> find ~time ~fail:true e
         | e -> e, time, fail in find ~time:false ~fail:false e in
-    Vernacentries.with_fail fail (fun () ->
+    let st = Vernacentries.freeze_interp_state `No in
+    Vernacentries.with_fail st fail (fun () ->
     (if time then System.with_time !Flags.time else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
     Proof_global.with_current_proof (fun _ p ->
@@ -1969,12 +1988,14 @@ end = struct (* {{{ *)
     VCS.restore r_doc;
     VCS.print ();
     Reach.known_state ~cache:`No r_where;
+    (* STATE *)
+    let st = Vernacentries.freeze_interp_state `No in
     try
       (* STATE SPEC:
        * - start: r_where
        * - end  : after execution of r_what
        *)
-      ignore(stm_vernac_interp r_for _ds { r_what with verbose = true });
+      ignore(stm_vernac_interp r_for st { r_what with verbose = true });
       feedback ~id:r_for Processed
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
@@ -2191,7 +2212,9 @@ let known_state ?(redefine_qed=false) ~cache id =
                 * - start: Modifies the input state adding a proof.
                 * - end  : maybe after recovery command.
                *)
-               Option.iter (fun expr -> ignore(stm_vernac_interp id _ds {
+               (* STATE: We use an updated state with proof *)
+               let st = Vernacentries.freeze_interp_state `No in
+               Option.iter (fun expr -> ignore(stm_vernac_interp id st {
                   verbose = true; loc = None; expr; indentation = 0;
                   strlen = 0 } ))
                recovery_command
@@ -2231,10 +2254,12 @@ let known_state ?(redefine_qed=false) ~cache id =
   let inject_non_pstate (s,l) =
     Summary.unfreeze_summary s; Lib.unfreeze l; update_global_env ()
   in
-  let rec pure_cherry_pick_non_pstate safe_id id = Future.purify (fun id ->
-    stm_prerr_endline (fun () -> "cherry-pick non pstate " ^ Stateid.to_string id);
-    reach ~safe_id id;
-    cherry_pick_non_pstate ()) id
+  let rec pure_cherry_pick_non_pstate safe_id id =
+    stm_purify (fun id ->
+        stm_prerr_endline (fun () -> "cherry-pick non pstate " ^ Stateid.to_string id);
+        reach ~safe_id id;
+        cherry_pick_non_pstate ())
+      id
 
   (* traverses the dag backward from nodes being already calculated *)
   and reach ?safe_id ?(redefine_qed=false) ?(cache=cache) id =
@@ -2267,7 +2292,9 @@ let known_state ?(redefine_qed=false) ~cache id =
       | `Cmd { cast = x; ceff = eff; ctac = true; cblock } -> (fun () ->
             resilient_tactic id cblock (fun () ->
               reach view.next;
-              ignore(stm_vernac_interp id _ds x)
+              (* State resulting from reach *)
+              let st = Vernacentries.freeze_interp_state `No in
+              ignore(stm_vernac_interp id st x)
             );
 	    if eff then update_global_env ()
           ), (if eff then `Yes else cache), true
@@ -2276,18 +2303,23 @@ let known_state ?(redefine_qed=false) ~cache id =
            | Flags.APon | Flags.APonLazy ->
              resilient_command reach view.next
            | Flags.APoff -> reach view.next);
-          ignore(stm_vernac_interp id _ds x);
+          let st = Vernacentries.freeze_interp_state `No in
+          ignore(stm_vernac_interp id st x);
           if eff then update_global_env ()
         ), (if eff then `Yes else cache), true
       | `Fork ((x,_,_,_), None) -> (fun () ->
             resilient_command reach view.next;
-            ignore(stm_vernac_interp id _ds x);
+            let st = Vernacentries.freeze_interp_state `No in
+            ignore(stm_vernac_interp id st x);
             wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes, true
       | `Fork ((x,_,_,_), Some prev) -> (fun () -> (* nested proof *)
             reach ~cache:`Shallow prev;
             reach view.next;
-            (try ignore(stm_vernac_interp id _ds x);
+
+            (try
+               let st = Vernacentries.freeze_interp_state `No in
+               ignore(stm_vernac_interp id st x);
             with e when CErrors.noncritical e ->
               let (e, info) = CErrors.push e in
               let info = Stateid.add info ~valid:prev id in
@@ -2337,14 +2369,18 @@ let known_state ?(redefine_qed=false) ~cache id =
                       Proof_global.close_future_proof ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
-                    ignore(stm_vernac_interp id ~proof _ds x);
+                    let st = Vernacentries.freeze_interp_state `No in
+                    ignore(stm_vernac_interp id ~proof st x);
                     feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
                 Proof_global.discard_all ()
               ), (if redefine_qed then `No else `Yes), true
           | `Sync (name, `Immediate) -> (fun () -> 
-                reach eop; ignore(stm_vernac_interp id _ds x); Proof_global.discard_all ()
+                reach eop;
+                let st = Vernacentries.freeze_interp_state `No in
+                ignore(stm_vernac_interp id st x);
+                Proof_global.discard_all ()
               ), `Yes, true
           | `Sync (name, reason) -> (fun () ->
                 log_processing_sync id name reason;
@@ -2365,7 +2401,8 @@ let known_state ?(redefine_qed=false) ~cache id =
                 if keep != VtKeepAsAxiom then
                   reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in
-                ignore(stm_vernac_interp id ?proof _ds x);
+                let st = Vernacentries.freeze_interp_state `No in
+                ignore(stm_vernac_interp id ?proof st x);
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at ?loc:x.loc "proof_check_time"
                   (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));
@@ -2381,7 +2418,10 @@ let known_state ?(redefine_qed=false) ~cache id =
           in
           aux (collect_proof keep (view.next, x) brname brinfo eop)
       | `Sideff (ReplayCommand x,_) -> (fun () ->
-            reach view.next; ignore(stm_vernac_interp id _ds x); update_global_env ()
+            reach view.next;
+            let st = Vernacentries.freeze_interp_state `No in
+            ignore(stm_vernac_interp id st x);
+            update_global_env ()
           ), cache, true
       | `Sideff (CherryPickEnv, origin) -> (fun () ->
             reach view.next;
@@ -2525,7 +2565,7 @@ let check_task name (tasks,rcbackup) i =
   RemoteCounter.restore rcbackup;
   let vcs = VCS.backup () in
   try
-    let rc = Future.purify (Slaves.check_task name tasks) i in
+    let rc = stm_purify (Slaves.check_task name tasks) i in
     VCS.restore vcs;
     rc
   with e when CErrors.noncritical e -> VCS.restore vcs; false
@@ -2535,7 +2575,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
   RemoteCounter.restore rcbackup;
   let finish_task u (_,_,i) =
     let vcs = VCS.backup () in
-    let u = Future.purify (Slaves.finish_task name u d p t) i in
+    let u = stm_purify (Slaves.finish_task name u d p t) i in
     VCS.restore vcs;
     u in
   try
@@ -2647,11 +2687,12 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
       (* Query *)
       | VtQuery (false,route), VtNow ->
         let query_sid = VCS.cur_tip () in
-        (try ignore(stm_vernac_interp ~route query_sid _ds x)
+        (try
+           let st = Vernacentries.freeze_interp_state `No in
+           ignore(stm_vernac_interp ~route query_sid st x)
          with e ->
-          let e = CErrors.push e in
-          Exninfo.iraise (State.exn_on ~valid:Stateid.dummy query_sid e));
-        `Ok
+           let e = CErrors.push e in
+           Exninfo.iraise (State.exn_on ~valid:Stateid.dummy query_sid e)); `Ok
       | VtQuery (true, route), w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
@@ -2721,7 +2762,9 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
 
       (* Side effect on all branches *)
       | VtUnknown, _ when expr = VernacToplevelControl Drop ->
-          ignore(stm_vernac_interp (VCS.get_branch_pos head) _ds x); `Ok
+        let st = Vernacentries.freeze_interp_state `No in
+        ignore(stm_vernac_interp (VCS.get_branch_pos head) st x);
+        `Ok
 
       | VtSideff l, w ->
           let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
@@ -2747,8 +2790,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ?(part_of_script=true)
             VCS.checkout VCS.Branch.master;
             let mid = VCS.get_branch_pos VCS.Branch.master in
             let _st' = Reach.known_state ~cache:(VCS.is_interactive ()) mid in
-            ignore(stm_vernac_interp id _ds x);
-
+            let st = Vernacentries.freeze_interp_state `No in
+            ignore(stm_vernac_interp id st x);
             (* Vernac x may or may not start a proof *)
             if not in_proof && Proof_global.there_are_pending_proofs () then
             begin
@@ -2895,7 +2938,7 @@ type focus = {
 }
 
 let query ~doc ~at ~route s =
-  Future.purify (fun s ->
+  stm_purify (fun s ->
     if Stateid.equal at Stateid.dummy then ignore(finish ~doc:dummy_doc)
     else Reach.known_state ~cache:`Yes at;
     let loc, ast = parse_sentence ~doc at s in

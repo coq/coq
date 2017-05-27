@@ -60,7 +60,7 @@ let adjust_guardness_conditions const = function
   (* Try all combinations... not optimal *)
      let env = Global.env() in
      { const with const_entry_body =
-        Future.chain ~pure:true const.const_entry_body
+        Future.chain const.const_entry_body
         (fun ((body, ctx), eff) ->
           match kind_of_term body with
           | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->

@@ -759,7 +759,8 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
   let map (c, u) = mkConstU (c, EInstance.make u) in
   let funs_constr = Array.map map funs  in
-  States.with_state_protection_on_exception
+  (* XXX STATE Why do we need this... why is the toplevel protection not enought *)
+  funind_purify
     (fun () ->
      let env = Global.env () in
      let evd = ref (Evd.from_env env) in 

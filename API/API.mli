@@ -1914,7 +1914,11 @@ module Summary :
 sig
 
   type frozen
-  type marshallable
+
+  type marshallable =
+    [ `Yes       (* Full data will be marshalled to disk                        *)
+    | `No        (* Full data will be store in memory, e.g. for Undo            *)
+    | `Shallow ] (* Only part of the data will be marshalled to a slave process *)
 
   type 'a summary_declaration =
     { freeze_function : marshallable -> 'a;
@@ -2062,7 +2066,6 @@ module States :
 sig
   type state
 
-  val with_state_protection_on_exception : ('a -> 'b) -> 'a -> 'b
   val with_state_protection : ('a -> 'b) -> 'a -> 'b
 end
 
@@ -5798,6 +5801,9 @@ sig
     proof   : Proof_global.state;  (* proof state *)
     shallow : bool                 (* is the state trimmed down (libstack) *)
   }
+
+  val freeze_interp_state : Summary.marshallable -> interp_state
+  val unfreeze_interp_state : interp_state -> unit
 
   val dump_global : Libnames.reference Misctypes.or_by_notation -> unit
   val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
