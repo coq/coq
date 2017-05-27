@@ -28,34 +28,41 @@ End ListLower.
 Lemma LowerL_Lem@{i j} (A : Type@{j}) (l : List@{i} A) : l = LowerL l.
 Proof. reflexivity. Qed.
 
-Inductive Tp := tp : Type -> Tp.
+(* I disable these tests because cqochk can't process them when compiled with
+   ocaml-4.02.3+32bit and camlp5-4.16 which is the case for Travis!
 
-Section TpLift.
-  Universe i j.
+   I have added this file (including the commented parts below) in
+   test-suite/success/cumulativity.v which doesn't run coqchk on them.
+*)
 
-  Constraint i < j.
+(* Inductive Tp := tp : Type -> Tp. *)
 
-  Definition LiftTp : Tp@{i} -> Tp@{j} := fun x => x.
+(* Section TpLift. *)
+(*   Universe i j. *)
 
-End TpLift.
+(*   Constraint i < j. *)
 
-Lemma LiftC_Lem (t : Tp) : LiftTp t = t.
-Proof. reflexivity. Qed.
+(*   Definition LiftTp : Tp@{i} -> Tp@{j} := fun x => x. *)
 
-Section TpLower.
-  Universe i j.
+(* End TpLift. *)
 
-  Constraint i < j.
+(* Lemma LiftC_Lem (t : Tp) : LiftTp t = t. *)
+(* Proof. reflexivity. Qed. *)
 
-  Fail Definition LowerTp : Tp@{j} -> Tp@{i} := fun x => x.
+(* Section TpLower. *)
+(*   Universe i j. *)
 
-End TpLower.
+(*   Constraint i < j. *)
+
+(*   Fail Definition LowerTp : Tp@{j} -> Tp@{i} := fun x => x. *)
+
+(* End TpLower. *)
 
 
-Section subtyping_test.
-  Universe i j.
-  Constraint i < j.
+(* Section subtyping_test. *)
+(*   Universe i j. *)
+(*   Constraint i < j. *)
 
-  Inductive TP2 := tp2 : Type@{i} -> Type@{j} -> TP2.
+(*   Inductive TP2 := tp2 : Type@{i} -> Type@{j} -> TP2. *)
 
-End subtyping_test.
+(* End subtyping_test. *)
