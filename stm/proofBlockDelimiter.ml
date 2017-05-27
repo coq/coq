@@ -46,7 +46,7 @@ let simple_goal sigma g gs =
 let is_focused_goal_simple ~doc id =
   match state_of_id ~doc id with
   | `Expired | `Error _ | `Valid None -> `Not
-  | `Valid (Some { proof }) ->
+  | `Valid (Some { Vernacentries.proof }) ->
        let proof = Proof_global.proof_of_state proof in
        let focused, r1, r2, r3, sigma = Proof.proof proof in
        let rest = List.(flatten (map (fun (x,y) -> x @ y) r1)) @ r2 @ r3 in

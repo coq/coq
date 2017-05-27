@@ -217,16 +217,10 @@ val state_ready_hook : (Stateid.t -> unit) Hook.t
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
 
-type state = {
-  system : States.state;
-  proof : Proof_global.state;
-  shallow : bool
-}
-
 val get_doc : Feedback.doc_id -> doc
 
 val state_of_id : doc:doc ->
-  Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
+  Stateid.t -> [ `Valid of Vernacentries.interp_state option | `Expired | `Error of exn ]
 
 (* Queries for backward compatibility *)
 val current_proof_depth : doc:doc -> int

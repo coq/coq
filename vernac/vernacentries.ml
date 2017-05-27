@@ -2227,3 +2227,22 @@ let interp ?(verbosely=true) ?proof (loc,c) =
   in
     if verbosely then Flags.verbosely (aux false) c
     else aux false c
+
+type interp_state = { (* TODO: inline records in OCaml 4.03 *)
+  system  : States.state;        (* summary + libstack *)
+  proof   : Proof_global.state;  (* proof state *)
+  shallow : bool                 (* is the state trimmed down (libstack) *)
+}
+
+let freeze_interp_state marshallable =
+  { system = States.freeze ~marshallable;
+    proof = Proof_global.freeze ~marshallable;
+    shallow = (marshallable = `Shallow) }
+
+let unfreeze_interp_state { system; proof } =
+  States.unfreeze system; Proof_global.unfreeze proof
+
+let _dummy_interp_state = { system = Obj.magic 0; proof = Obj.magic 0; shallow = false }
+
+let interp ?verbosely ?proof st cmd =
+  interp ?verbosely ?proof cmd; st
