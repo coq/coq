@@ -2,11 +2,18 @@
 
 set -xe
 
-# Coq's tools need an ending slash :S, we should fix them.
-export COQBIN=`pwd`/bin/
-export PATH=`pwd`/bin:$PATH
+if [ -n "${GITLAB_CI}" ];
+then
+    export COQBIN=`pwd`/install/bin
+else
+    export COQBIN=`pwd`/bin
+fi
+export PATH="$COQBIN:$PATH"
 
-ls `pwd`/bin
+# Coq's tools need an ending slash :S, we should fix them.
+export COQBIN="$COQBIN/"
+
+ls "$COQBIN"
 
 # Where we clone and build external developments
 CI_BUILD_DIR=`pwd`/_build_ci

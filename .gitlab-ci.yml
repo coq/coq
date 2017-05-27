@@ -1,0 +1,312 @@
+image: ocaml/opam:ubuntu
+
+# this doesn't seem to work
+cache:
+  paths:
+    - .opamcache
+
+stages:
+  - build
+  - test
+
+variables:
+  # some default values
+  NJOBS: "2"
+  COMPILER: "system"
+  CAMLP5_VER: "6.14"
+
+  # some useful values
+  COMPILER_32BIT: "4.02.3+32bit"
+
+  COMPILER_BLEEDING_EDGE: "4.04.1"
+  CAMLP5_VER_BLEEDING_EDGE: "6.17"
+
+  COQIDE_PACKAGES: "libgtk2.0-dev libgtksourceview2.0-dev"
+  #COQIDE_PACKAGES_32BIT: "libgtk2.0-dev:i386 libgtksourceview2.0-dev:i386"
+  COQIDE_OPAM: "lablgtk-extras"
+  COQDOC_PACKAGES: "texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-math-extra texlive-fonts-recommended texlive-fonts-extra latex-xcolor ghostscript transfig imagemagick tipa"
+  COQDOC_OPAM: "hevea"
+
+
+before_script:
+  - ls # figure out if artifacts are around
+  - printenv
+#  - if [ "$COMPILER" = "$COMPILER_32BIT" ]; then sudo dpkg --add-architecture i386; fi
+  - if [ -n "${EXTRA_PACKAGES}" ]; then sudo apt-get update -qq && sudo apt-get install -y -qq ${EXTRA_PACKAGES}; fi
+
+  # setup cache
+  - if [ ! "(" -d .opamcache ")" ]; then mv ~/.opam .opamcache; else mv ~/.opam ~/.opam-old; fi
+  - ln -s $(readlink -f .opamcache) ~/.opam
+
+  - opam switch ${COMPILER}
+  - eval $(opam config env)
+  - opam config list
+  - opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${EXTRA_OPAM}
+  - rm -rf ~/.opam/log/
+  - opam list
+
+# TODO figure out how to build doc for installed coq
+.build-template: &build-template
+  stage: build
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - install
+      - config/Makefile
+    expire_in: 1 week
+  script:
+    - set -e
+
+    - echo 'start:coq.config'
+    - ./configure -prefix "$(pwd)/install" ${EXTRA_CONF}
+    - echo 'end:coq.config'
+
+    - echo 'start:coq.build'
+    - make -j ${NJOBS}
+    - echo 'end:coq:build'
+
+    - echo 'start:coq.install'
+    - make install
+    - cp bin/fake_ide install/bin/
+    - echo 'end:coq.install'
+
+    - set +e
+  variables: &build-variables
+    EXTRA_CONF: "-native-compiler yes -coqide opt"
+    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
+    EXTRA_OPAM: "$COQIDE_OPAM"
+
+.warnings-template: &warnings-template
+  # keep warnings in test stage so we can test things even when warnings occur
+  stage: test
+  dependencies: []
+  script:
+    - set -e
+
+    - echo 'start:coq.config'
+    - ./configure -local ${EXTRA_CONF}
+    - echo 'end:coq.config'
+
+    - echo 'start:coq.build'
+    - make -j ${NJOBS} coqocaml
+    - echo 'end:coq:build'
+
+    - set +e
+  variables: &warnings-variables
+    EXTRA_CONF: "-native-compiler yes -coqide opt"
+    EXTRA_PACKAGES: "$COQIDE_PACKAGES"
+    EXTRA_OPAM: "$COQIDE_OPAM"
+
+.test-suite-template: &test-suite-template
+  stage: test
+  script:
+    - set -e
+    - cd test-suite
+    - make clean
+    # careful with the ending /
+    - make -j ${NJOBS} BIN=$(readlink -f ../install/bin)/ LIB=$(readlink -f ../install/lib/coq)/ all
+    - cat summary.log
+    - set +e
+
+.validate-template: &validate-template
+  stage: test
+  script:
+    - cd install
+    - find lib/coq/ -name '*.vo' -print0 > vofiles
+    - for regexp in 's/.vo//' 's:lib/coq/plugins:Coq:' 's:lib/coq/theories:Coq:' 's:/:.:g'; do sed -z -i "$regexp" vofiles; done
+    - xargs -0 --arg-file=vofiles bin/coqchk -boot -silent -o -m -coqlib lib/coq/
+
+.documentation-template: &documentation-template
+  stage: test
+  script:
+    - ./configure -prefix "$(pwd)/install" ${EXTRA_CONF}
+    - cp install/lib/coq/tools/coqdoc/coqdoc.sty .
+
+    - INSTALLDIR=$(readlink -f install)
+    - LIB="$INSTALLDIR/lib/coq"
+    # WTF using a newline makes make sigsev
+    # see https://gitlab.com/SkySkimmer/coq/builds/17313312
+    - DOCVFILES=$(find "$LIB/" -name '*.v' -printf "%p ")
+    - DOCLIGHTDIRS="$LIB/theories/Init/ $LIB/theories/Logic/ $LIB/theories/Unicode/ $LIB/theories/Arith/"
+    - DOCLIGHTVOFILES=$(find $DOCLIGHTDIRS -name '*.vo' -printf "%p ")
+
+    - make doc QUICK=true COQDOC_NOBOOT=true COQTEX="$INSTALLDIR/bin/coq-tex" COQDOC="$INSTALLDIR/bin/coqdoc" VFILES="$DOCVFILES" THEORIESLIGHTVO="$DOCLIGHTVOFILES"
+
+    - make install-doc
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - install/share/doc
+    expire_in: 1 week
+
+.ci-template: &ci-template
+  stage: test
+  script:
+    - set -e
+    - echo 'start:coq.test'
+    - make -f Makefile.ci -j ${NJOBS} ${TEST_TARGET}
+    - echo 'end:coq.test'
+    - set +e
+  dependencies:
+    - build
+  variables: &ci-template-vars
+    TEST_TARGET: "$CI_JOB_NAME"
+
+build:
+  <<: *build-template
+
+# no coqide for 32bit: libgtk installation problems
+build:32bit:
+  <<: *build-template
+  variables:
+    EXTRA_CONF: "-native-compiler yes"
+    EXTRA_PACKAGES: "gcc-multilib"
+    COMPILER: "$COMPILER_32BIT"
+
+build:bleeding-edge:
+  <<: *build-template
+  variables:
+    <<: *build-variables
+    COMPILER: "$COMPILER_BLEEDING_EDGE"
+    CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
+
+warnings:
+  <<: *warnings-template
+
+# warnings:32bit:
+#   <<: *warnings-template
+#   variables:
+#     <<: *warnings-variables
+#     EXTRA_PACKAGES: "$gcc-multilib COQIDE_PACKAGES_32BIT"
+#     COMPILER: "$COMPILER_32BIT"
+
+warnings:bleeding-edge:
+  <<: *warnings-template
+  variables:
+    <<: *warnings-variables
+    COMPILER: "$COMPILER_BLEEDING_EDGE"
+    CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
+
+test-suite:
+  <<: *test-suite-template
+  dependencies:
+    - build
+
+test-suite:32bit:
+  <<: *test-suite-template
+  dependencies:
+    - build:32bit
+  variables:
+    COMPILER: "$COMPILER_32BIT"
+    EXTRA_PACKAGES: "gcc-multilib"
+
+test-suite:bleeding-edge:
+  <<: *test-suite-template
+  dependencies:
+    - build:bleeding-edge
+  variables:
+    COMPILER: "$COMPILER_BLEEDING_EDGE"
+    CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
+
+documentation:
+  <<: *documentation-template
+  dependencies:
+    - build
+  variables:
+    EXTRA_PACKAGES: "$COQDOC_PACKAGES"
+    EXTRA_OPAM: "$COQDOC_OPAM"
+
+documentation:bleeding-edge:
+  <<: *documentation-template
+  dependencies:
+    - build:bleeding-edge
+  variables:
+    COMPILER: "$COMPILER_BLEEDING_EDGE"
+    CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
+    EXTRA_PACKAGES: "$COQDOC_PACKAGES"
+    EXTRA_OPAM: "$COQDOC_OPAM"
+
+validate:
+  <<: *validate-template
+  dependencies:
+    - build
+
+validate:32bit:
+  <<: *validate-template
+  dependencies:
+    - build:32bit
+  variables:
+    COMPILER: "$COMPILER_32BIT"
+    EXTRA_PACKAGES: "gcc-multilib"
+
+ci-bedrock-src:
+  <<: *ci-template
+
+ci-bedrock-facade:
+  <<: *ci-template
+
+ci-color:
+  <<: *ci-template
+  variables:
+    <<: *ci-template-vars
+    EXTRA_PACKAGES: "subversion"
+
+ci-compcert:
+  <<: *ci-template
+
+ci-coquelicot:
+  <<: *ci-template
+  variables:
+    <<: *ci-template-vars
+    EXTRA_PACKAGES: "autoconf"
+
+ci-geocoq:
+  <<: *ci-template
+  allow_failure: true
+
+# ci-fiat-crypto:
+#   <<: *ci-template
+#   # out of memory error
+#   allow_failure: true
+
+ci-fiat-parsers:
+  <<: *ci-template
+  variables:
+    <<: *ci-template-vars
+    EXTRA_PACKAGES: "python"
+
+ci-flocq:
+  <<: *ci-template
+  variables:
+    <<: *ci-template-vars
+    EXTRA_PACKAGES: "autoconf"
+
+ci-formal-topology:
+  <<: *ci-template
+
+ci-hott:
+  <<: *ci-template
+  variables:
+    <<: *ci-template-vars
+    EXTRA_PACKAGES: "autoconf"
+
+ci-iris-coq:
+  <<: *ci-template
+
+ci-math-classes:
+  <<: *ci-template
+
+ci-math-comp:
+  <<: *ci-template
+
+ci-sf:
+  <<: *ci-template
+  variables:
+    <<: *ci-template-vars
+    EXTRA_PACKAGES: "wget"
+
+ci-unimath:
+  <<: *ci-template
+
+ci-vst:
+  <<: *ci-template

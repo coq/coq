@@ -53,8 +53,9 @@ FIND_VCS_CLAUSE:='(' \
   -name 'debian' -o \
   -name "$${GIT_DIR}" -o \
   -name '_build' -o \
-  -name '_build_ci' \
-  -name 'coq-makefile' \
+  -name '_build_ci' -o \
+  -name 'coq-makefile' -o \
+  -name '.opamcache' \
 ')' -prune -o
 
 define find

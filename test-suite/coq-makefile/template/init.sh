@@ -1,5 +1,5 @@
 
-export PATH=../../../bin/:$PATH
+export PATH=$COQBIN:$PATH
 
 rm -rf theories src Makefile Makefile.conf tmp
 git clean -dfx || true
