@@ -166,8 +166,17 @@ type option_ref_value =
   | StringRefValue of string
   | QualidRefValue of reference
 
-(** Identifier and optional list of bound universes. *)						 
-type plident = lident * lident list option
+type ('a, 'b) gen_universe_decl = {
+  univdecl_instance : 'a; (* Declared universes *)
+  univdecl_extensible_instance : bool; (* Can new universes be added *)
+  univdecl_constraints : 'b; (* Declared constraints *)
+  univdecl_extensible_constraints : bool (* Can new constraints be added *) }
+
+type universe_decl_expr = (lident list, glob_constraint list) gen_universe_decl
+
+(** Identifier and optional list of bound universes and constraints. *)
+
+type ident_decl = lident * universe_decl_expr option
 
 type sort_expr = glob_sort
 
@@ -177,10 +186,10 @@ type definition_expr =
       * constr_expr option
 
 type fixpoint_expr =
-    plident * (Id.t located option * recursion_order_expr) * local_binder_expr list * constr_expr * constr_expr option
+    ident_decl * (Id.t located option * recursion_order_expr) * local_binder_expr list * constr_expr * constr_expr option
 
 type cofixpoint_expr =
-    plident * local_binder_expr list * constr_expr * constr_expr option
+    ident_decl * local_binder_expr list * constr_expr * constr_expr option
 
 type local_decl_expr =
   | AssumExpr of lname * constr_expr
@@ -199,14 +208,14 @@ type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
 type inductive_expr =
-  plident with_coercion * local_binder_expr list * constr_expr option * inductive_kind *
+  ident_decl with_coercion * local_binder_expr list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
-  plident * local_binder_expr list * constr_expr option * constructor_expr list
+  ident_decl * local_binder_expr list * constr_expr option * constructor_expr list
 
 type proof_expr =
-  plident option * (local_binder_expr list * constr_expr)
+  ident_decl option * (local_binder_expr list * constr_expr)
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
@@ -330,12 +339,12 @@ type vernac_expr =
 
   (* Gallina *)
   | VernacDefinition of
-      (locality option * definition_object_kind) * plident * definition_expr
+      (locality option * definition_object_kind) * ident_decl * definition_expr
   | VernacStartTheoremProof of theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *
-      inline * (plident list * constr_expr) with_coercion list
+      inline * (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of cumulative_inductive_flag * private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       locality option * (fixpoint_expr * decl_notation list) list
@@ -344,7 +353,7 @@ type vernac_expr =
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
-  | VernacConstraint of (glob_level * Univ.constraint_type * glob_level) list
+  | VernacConstraint of glob_constraint list
 
   (* Gallina extensions *)
   | VernacBeginSection of lident

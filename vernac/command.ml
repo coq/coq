@@ -91,8 +91,8 @@ let warn_implicits_in_term =
         
 let interp_definition pl bl p red_option c ctypopt =
   let env = Global.env() in
-  let ctx = Evd.make_evar_universe_context env pl in
-  let evdref = ref (Evd.from_ctx ctx) in
+  let evd, decl = Univdecls.interp_univ_decl_opt env pl in
+  let evdref = ref evd in
   let impls, ((env_bl, ctx), imps1) = interp_context_evars env evdref bl in
   let ctx = List.map (fun d -> map_rel_decl EConstr.Unsafe.to_constr d) ctx in
   let nb_args = Context.Rel.nhyps ctx in
@@ -108,7 +108,7 @@ let interp_definition pl bl p red_option c ctypopt =
         let body = nf (it_mkLambda_or_LetIn c ctx) in
 	let vars = Univops.universes_of_constr body in
 	let evd = Evd.restrict_universe_context !evdref vars in
-	let pl, uctx = Evd.universe_context ?names:pl evd in
+	let pl, uctx = Univdecls.check_univ_decl evd decl in
  	imps1@(Impargs.lift_implicits nb_args imps2), pl,
 	  definition_entry ~univs:uctx ~poly:p body
     | Some ctyp ->
@@ -134,7 +134,7 @@ let interp_definition pl bl p red_option c ctypopt =
         let vars = Univ.LSet.union (Univops.universes_of_constr body) 
           (Univops.universes_of_constr typ) in
         let ctx = Evd.restrict_universe_context !evdref vars in
-	let pl, uctx = Evd.universe_context ?names:pl ctx in
+	let pl, uctx = Univdecls.check_univ_decl ctx decl in
 	imps1@(Impargs.lift_implicits nb_args impsty), pl,
 	  definition_entry ~types:typ ~poly:p 
 	    ~univs:uctx body
@@ -164,8 +164,9 @@ let do_definition ident k pl bl red_option c ctypopt hook =
       in
       let ctx = Evd.evar_universe_context evd in
       let hook = Lemmas.mk_hook (fun l r _ -> Lemmas.call_hook (fun exn -> exn) hook l r) in
-	ignore(Obligations.add_definition
-          ident ~term:c cty ctx ?pl ~implicits:imps ~kind:k ~hook obls)
+      let pl = Option.map (fun d -> d.univdecl_instance) pl in
+      ignore(Obligations.add_definition
+          ident ~term:c cty ctx ?pl:pl ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
       ignore(DeclareDef.declare_definition ident k ce pl' imps
         (Lemmas.mk_hook
@@ -270,15 +271,15 @@ let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
 
 let do_assumptions_bound_univs coe kind nl id pl c =
   let env = Global.env () in
-  let ctx = Evd.make_evar_universe_context env pl in
-  let evdref = ref (Evd.from_ctx ctx) in
+  let evd, decl = Univdecls.interp_univ_decl_opt env pl in
+  let evdref = ref evd in
   let ty, impls = interp_type_evars_impls env evdref c in
   let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
   let ty = EConstr.Unsafe.to_constr ty in
   let ty = nf ty in
   let vars = Univops.universes_of_constr ty in
   let evd = Evd.restrict_universe_context !evdref vars in
-  let pl, uctx = Evd.universe_context ?names:pl evd in
+  let pl, uctx = Univdecls.check_univ_decl evd decl in
   let uctx = Univ.ContextSet.of_context uctx in
   let (_, _, st) = declare_assumption coe kind (ty, uctx) pl impls false nl id in
   st
@@ -318,7 +319,7 @@ let push_types env idl tl =
 
 type structured_one_inductive_expr = {
   ind_name : Id.t;
-  ind_univs : lident list option;
+  ind_univs : Vernacexpr.universe_decl_expr option;
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
@@ -525,8 +526,8 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   List.iter check_param paramsl;
   let env0 = Global.env() in
   let pl = (List.hd indl).ind_univs in
-  let ctx = Evd.make_evar_universe_context env0 pl in
-  let evdref = ref Evd.(from_ctx ctx) in
+  let evd, decl = Univdecls.interp_univ_decl_opt env0 pl in
+  let evdref = ref evd in
   let impls, ((env_params, ctx_params), userimpls) =
     interp_context_evars env0 evdref paramsl
   in
@@ -575,7 +576,7 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf' cl,impsl)) constructors in
   let ctx_params = Context.Rel.map nf ctx_params in
   let evd = !evdref in
-  let pl, uctx = Evd.universe_context ?names:pl evd in
+  let pl, uctx = Univdecls.check_univ_decl evd decl in
   List.iter (fun c -> check_evars env_params Evd.empty evd (EConstr.of_constr c)) arities;
   Context.Rel.iter (fun c -> check_evars env0 Evd.empty evd (EConstr.of_constr c)) ctx_params;
   List.iter (fun (_,ctyps,_) ->
@@ -796,7 +797,7 @@ let check_mutuality env evd isfix fixl =
 
 type structured_fixpoint_expr = {
   fix_name : Id.t;
-  fix_univs : lident list option;
+  fix_univs : universe_decl_expr option;
   fix_annot : Id.t Loc.located option;
   fix_binders : local_binder_expr list;
   fix_body : constr_expr option;
@@ -916,8 +917,8 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
-  let ctx = Evd.make_evar_universe_context env pl in
-  let evdref = ref (Evd.from_ctx ctx) in
+  let evd, decl = Univdecls.interp_univ_decl_opt env pl in
+  let evdref = ref evd in
   let _, ((env', binders_rel), impls) = interp_context_evars env evdref bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
@@ -1018,6 +1019,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let binders_rel = nf_evar_context !evdref binders_rel in
   let binders = nf_evar_context !evdref binders in
   let top_arity = Evarutil.nf_evar !evdref top_arity in
+  let pl = Option.map (fun d -> d.univdecl_instance) pl in
   let hook, recname, typ = 
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
@@ -1067,11 +1069,12 @@ let interp_recursive isfix fixl notations =
         | None , acc -> acc
         | x , None -> x
         | Some ls , Some us ->
-	   if not (CList.for_all2eq (fun x y -> Id.equal (snd x) (snd y)) ls us) then
+           let lsu = ls.univdecl_instance and usu = us.univdecl_instance in
+	   if not (CList.for_all2eq (fun x y -> Id.equal (snd x) (snd y)) lsu usu) then
 	     user_err Pp.(str "(co)-recursive definitions should all have the same universe binders");
 	   Some us) fixl None in
-  let ctx = Evd.make_evar_universe_context env all_universes in
-  let evdref = ref (Evd.from_ctx ctx) in
+  let evd, decl = Univdecls.interp_univ_decl_opt env all_universes in
+  let evdref = ref evd in
   let fixctxs, fiximppairs, fixannots =
     List.split3 (List.map (interp_fix_context env evdref isfix) fixl) in
   let fixctximpenvs, fixctximps = List.split fiximppairs in
@@ -1121,7 +1124,7 @@ let interp_recursive isfix fixl notations =
   let fixctxs = List.map (fun (_,ctx) -> ctx) fixctxs in
 
   (* Build the fix declaration block *)
-  (env,rec_sign,all_universes,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
+  (env,rec_sign,decl,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
   check_evars_are_solved env evd Evd.empty;
@@ -1164,8 +1167,8 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
+    let pl, ctx = Univdecls.check_univ_decl evd pl in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
-    let pl, ctx = Evd.universe_context ?names:pl evd in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
@@ -1196,8 +1199,13 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
+<<<<<<< HEAD
     let pl, ctx = Evd.universe_context ?names:pl evd in
     ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx) 
+=======
+    let pl, ctx = Univdecls.check_univ_decl evd pl in
+    ignore (List.map4 (declare_fix (local, poly, CoFixpoint) pl ctx) 
+>>>>>>> Allow declaring universe constraints at definition level.
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames
@@ -1280,6 +1288,7 @@ let do_program_recursive local p fixkind fixl ntns =
   | Obligations.IsFixpoint _ -> (local, p, Fixpoint)
   | Obligations.IsCoFixpoint -> (local, p, CoFixpoint)
   in
+  let pl = if pl.univdecl_extensible_instance then None else Some pl.univdecl_instance in
   Obligations.add_mutual_definitions defs ~kind ?pl ctx ntns fixkind
 
 let do_program_fixpoint local poly l =

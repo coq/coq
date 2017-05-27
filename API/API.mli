@@ -2001,6 +2001,7 @@ sig
     | GType of 'a
   type sort_info = Names.Name.t Loc.located list
   type glob_sort = sort_info glob_sort_gen
+  type glob_constraint = glob_level * Univ.constraint_type * glob_level
   type 'a cast_type = 'a Misctypes.cast_type =
                     | CastConv of 'a
                     | CastVM of 'a
@@ -2329,6 +2330,17 @@ sig
 
   type obsolete_locality = bool
 
+
+  type ('a, 'b) gen_universe_decl = ('a, 'b) Vernacexpr.gen_universe_decl = {
+    univdecl_instance : 'a; (* Declared universes *)
+    univdecl_extensible_instance : bool; (* Can new universes be added *)
+    univdecl_constraints : 'b; (* Declared constraints *)
+    univdecl_extensible_constraints : bool (* Can new constraints be added *) }
+
+  type universe_decl_expr = (lident list, Misctypes.glob_constraint list) gen_universe_decl
+
+  type ident_decl = lident * universe_decl_expr option
+
   type lstring = Vernacexpr.lstring
   type 'a with_coercion = coercion_flag * 'a
   type scope_name = string
@@ -2343,8 +2355,7 @@ sig
   type constructor_list_or_record_decl_expr = Vernacexpr.constructor_list_or_record_decl_expr =
     | Constructors of constructor_expr list
     | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
-  type plident = lident * lident list option
-  type inductive_expr = plident with_coercion * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * inductive_kind * constructor_list_or_record_decl_expr
+  type inductive_expr = ident_decl with_coercion * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * inductive_kind * constructor_list_or_record_decl_expr
 
   type syntax_modifier = Vernacexpr.syntax_modifier
   type class_rawexpr = Vernacexpr.class_rawexpr
@@ -2355,7 +2366,7 @@ sig
     | Admitted
     | Proved of opacity_flag * lident option
   type inline = Vernacexpr.inline
-  type fixpoint_expr = plident * (Names.Id.t Loc.located option * Constrexpr.recursion_order_expr) * Constrexpr.local_binder_expr list * Constrexpr.constr_expr * Constrexpr.constr_expr option
+  type fixpoint_expr = ident_decl * (Names.Id.t Loc.located option * Constrexpr.recursion_order_expr) * Constrexpr.local_binder_expr list * Constrexpr.constr_expr * Constrexpr.constr_expr option
   type cofixpoint_expr = Vernacexpr.cofixpoint_expr
   type scheme = Vernacexpr.scheme
   type section_subset_expr = Vernacexpr.section_subset_expr
@@ -2406,12 +2417,12 @@ sig
       scope_name option
   | VernacNotationAddFormat of string * string * string
   | VernacDefinition of
-      (Decl_kinds.locality option * Decl_kinds.definition_object_kind) * plident * definition_expr
+      (Decl_kinds.locality option * Decl_kinds.definition_object_kind) * ident_decl * definition_expr
   | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of Constrexpr.constr_expr
   | VernacAssumption of (Decl_kinds.locality option * Decl_kinds.assumption_object_kind) *
-      inline * (plident list * Constrexpr.constr_expr) with_coercion list
+      inline * (ident_decl list * Constrexpr.constr_expr) with_coercion list
   | VernacInductive of Decl_kinds.cumulative_inductive_flag * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       Decl_kinds.locality option * (fixpoint_expr * decl_notation list) list
@@ -2527,7 +2538,7 @@ sig
     | SelectAll
   and vernac_classification = vernac_type * vernac_when
   and one_inductive_expr =
-    plident * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * constructor_expr list
+    ident_decl * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * constructor_expr list
 end
 
 module Glob_term :
@@ -4761,7 +4772,7 @@ sig
     Decl_kinds.polymorphic -> 
     Decl_kinds.private_flag -> Decl_kinds.recursivity_kind -> unit
 
-  val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.lident list option ->
+  val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.universe_decl_expr option ->
     Constrexpr.local_binder_expr list -> Redexpr.red_expr option -> Constrexpr.constr_expr ->
     Constrexpr.constr_expr option -> unit Lemmas.declaration_hook -> unit
 
@@ -4774,7 +4785,7 @@ sig
 
   val interp_fixpoint :
     structured_fixpoint_expr list -> Vernacexpr.decl_notation list ->
-    recursive_preentry * Vernacexpr.lident list option * UState.t * 
+    recursive_preentry * Univdecls.universe_decl * UState.t *
       (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
   val extract_mutual_inductive_declaration_components :

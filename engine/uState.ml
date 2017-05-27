@@ -97,6 +97,8 @@ let subst ctx = ctx.uctx_univ_variables
 
 let ugraph ctx = ctx.uctx_universes
 
+let initial_graph ctx = ctx.uctx_initial_universes
+
 let algebraics ctx = ctx.uctx_univ_algebraic
 
 let constrain_variables diff ctx =

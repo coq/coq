@@ -200,6 +200,13 @@ let save ?export_seff id const cstrs pl do_guard (locality,poly,kind) hook =
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
+let default_thm_decl =
+  let open Vernacexpr in
+  { univdecl_instance = [];
+    univdecl_extensible_instance = true;
+    univdecl_constraints = [];
+    univdecl_extensible_constraints = true }
+
 let compute_proof_name locality = function
   | Some ((loc,id),pl) ->
       (* We check existence here: it's a bit late at Qed time *)
@@ -207,9 +214,10 @@ let compute_proof_name locality = function
 	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
       then
         user_err ?loc  (pr_id id ++ str " already exists.");
-      id, pl
+      let decl = match pl with None -> default_thm_decl | Some d -> d in
+      id, decl
   | None ->
-      next_global_ident_away default_thm_id (Proof_global.get_all_proof_names ()), None
+      next_global_ident_away default_thm_id (Proof_global.get_all_proof_names ()), default_thm_decl
 
 let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,(_,imps))) =
   let t_i = norm t_i in
@@ -422,15 +430,21 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
+      let pl = (* FIXME does not ensure invariant yet *)
+        if pl.Vernacexpr.univdecl_extensible_instance then None
+        else Some pl.Vernacexpr.univdecl_instance
+      in
       start_proof_univs id ?pl kind ctx (EConstr.of_constr t) ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
 
 let start_proof_com ?inference_hook kind thms hook =
   let env0 = Global.env () in
-  let levels = Option.map snd (fst (List.hd thms)) in 
-  let evdref = ref (match levels with
-		    | None -> Evd.from_env env0
-		    | Some l -> Evd.from_ctx (Evd.make_evar_universe_context env0 l))
-  in
+  let decl = fst (List.hd thms) in
+  let evd, decl =
+    match decl with
+    | None -> Evd.from_env env0, Univdecls.default_univ_decl
+    | Some decl ->
+       Univdecls.interp_univ_decl_opt env0 (snd decl) in
+  let evdref = ref evd in
   let thms = List.map (fun (sopt,(bl,t)) ->
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
@@ -446,9 +460,9 @@ let start_proof_com ?inference_hook kind thms hook =
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
   let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
   let () =
-    match levels with
-    | None -> ()
-    | Some l -> ignore (Evd.universe_context evd ?names:l)
+    if not decl.Vernacexpr.univdecl_extensible_instance then
+       ignore (Evd.universe_context evd ~names:decl.Vernacexpr.univdecl_instance)
+    else ()
   in
   let evd =
     if pi2 kind then evd

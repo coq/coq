@@ -53,6 +53,7 @@ type level_info = Name.t Loc.located option
 
 type glob_sort = sort_info glob_sort_gen
 type glob_level = level_info glob_sort_gen
+type glob_constraint = glob_level * Univ.constraint_type * glob_level
 
 (** A synonym of [Evar.t], also defined in Term *)
 
