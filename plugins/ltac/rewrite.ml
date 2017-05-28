@@ -55,22 +55,16 @@ let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
   else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
 
-let make_dir l = DirPath.make (List.rev_map Id.of_string l)
+let lazy_find_reference dir s =
+  let gr = lazy (Coqlib.coq_reference "generalized rewriting" dir s) in
+  fun () -> Lazy.force gr
 
-let try_find_global_reference dir s =
-  let sp = Libnames.make_path (make_dir ("Coq"::dir)) (Id.of_string s) in
-    try Nametab.global_of_path sp
-    with Not_found -> 
-      anomaly (str "Global reference " ++ str s ++ str " not found in generalized rewriting")
-
-let find_reference dir s =
-  let gr = lazy (try_find_global_reference dir s) in
-    fun () -> Lazy.force gr
+let find_reference dir s = Coqlib.coq_reference "generalized rewriting" dir s
 
 type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
 let find_global dir s =
-  let gr = lazy (try_find_global_reference dir s) in
+  let gr = lazy (find_reference dir s) in
     fun (evd,cstrs) ->
       let sigma = Sigma.Unsafe.of_evar_map evd in
       let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force gr) in
@@ -81,7 +75,7 @@ let find_global dir s =
 
 (** Global constants. *)
 
-let coq_eq_ref = find_reference ["Init"; "Logic"] "eq"
+let coq_eq_ref = lazy_find_reference ["Init"; "Logic"] "eq"
 let coq_eq = find_global ["Init"; "Logic"] "eq"
 let coq_f_equal = find_global ["Init"; "Logic"] "f_equal"
 let coq_all = find_global ["Init"; "Logic"] "all"
@@ -158,11 +152,11 @@ end) = struct
   let forall_relation = find_global morphisms "forall_relation"
   let pointwise_relation = find_global morphisms "pointwise_relation"
 
-  let forall_relation_ref = find_reference morphisms "forall_relation"
-  let pointwise_relation_ref = find_reference morphisms "pointwise_relation"
+  let forall_relation_ref = lazy_find_reference morphisms "forall_relation"
+  let pointwise_relation_ref = lazy_find_reference morphisms "pointwise_relation"
 
   let respectful = find_global morphisms "respectful"
-  let respectful_ref = find_reference morphisms "respectful"
+  let respectful_ref = lazy_find_reference morphisms "respectful"
 
   let default_relation = find_global ["Classes"; "SetoidTactics"] "DefaultRelation"
 
@@ -174,8 +168,8 @@ end) = struct
 
   let rewrite_relation_class = find_global relation_classes "RewriteRelation"
 
-  let proper_class = lazy (class_info (try_find_global_reference morphisms "Proper"))
-  let proper_proxy_class = lazy (class_info (try_find_global_reference morphisms "ProperProxy"))
+  let proper_class = lazy (class_info (find_reference morphisms "Proper"))
+  let proper_proxy_class = lazy (class_info (find_reference morphisms "ProperProxy"))
     
   let proper_proj = lazy (mkConst (Option.get (pi3 (List.hd (Lazy.force proper_class).cl_projs))))
     

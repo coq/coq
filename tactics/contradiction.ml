@@ -20,7 +20,7 @@ module NamedDecl = Context.Named.Declaration
 (* Absurd *)
 
 let mk_absurd_proof t =
-  let build_coq_not () = EConstr.of_constr (build_coq_not ()) in
+  let build_coq_not () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_not ()) in
   let id = Namegen.default_dependent_ident in
   mkLambda (Names.Name id,mkApp(build_coq_not (),[|t|]),
     mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
@@ -35,7 +35,7 @@ let absurd c =
     let t = j.Environ.utj_val in
     let tac =
     Tacticals.New.tclTHENLIST [
-      elim_type (EConstr.of_constr (build_coq_False ()));
+      elim_type (EConstr.of_constr (Universes.constr_of_global @@ build_coq_False ()));
       Simple.apply (mk_absurd_proof t)
     ] in
     Sigma.Unsafe.of_pair (tac, sigma)

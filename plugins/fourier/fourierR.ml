@@ -291,9 +291,9 @@ let constant path s = Universes.constr_of_global @@
 (* Standard library *)
 open Coqlib
 let coq_sym_eqT = lazy (build_coq_eq_sym ())
-let coq_False = lazy (build_coq_False ())
-let coq_not = lazy (build_coq_not ())
-let coq_eq = lazy (build_coq_eq ())
+let coq_False = lazy (Universes.constr_of_global @@ build_coq_False ())
+let coq_not = lazy (Universes.constr_of_global @@ build_coq_not ())
+let coq_eq = lazy (Universes.constr_of_global @@ build_coq_eq ())
 
 (* Rdefinitions *)
 let constant_real = constant ["Reals";"Rdefinitions"]

@@ -25,8 +25,10 @@ echo $TRAVIS_PULL_REQUEST
 echo $TRAVIS_BRANCH
 echo $TRAVIS_COMMIT
 
-if [ $TRAVIS_PULL_REQUEST == "481" ] || [ $TRAVIS_BRANCH == "options+remove_non_sync" ]; then
-    mathcomp_CI_BRANCH=options+remove_non_sync
+if [ $TRAVIS_PULL_REQUEST == "678" ] || [ $TRAVIS_BRANCH == "coqlib-part-02" ]; then
+
+    mathcomp_CI_BRANCH=coqlib-part-02
     mathcomp_CI_GITURL=https://github.com/ejgallego/math-comp.git
+
 fi
 

@@ -42,6 +42,31 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> debug_unification:=a);
 }
 
+(*******************************************)
+(* Functions to deal with impossible cases *)
+(*******************************************)
+(* XXX: we would like to search for this with late binding
+   "data.id.type" etc... *)
+let impossible_default_case () =
+  let c, ctx = Universes.fresh_global_instance (Global.env()) (Globnames.ConstRef Coqlib.id) in
+  let (_, u) = Term.destConst c in
+  Some (c, Term.mkConstU (Coqlib.type_of_id, u), ctx)
+
+let coq_unit_judge =
+  let open Environ in
+  let make_judge c t = make_judge (EConstr.of_constr c) (EConstr.of_constr t) in
+  let na1 = Name (Id.of_string "A") in
+  let na2 = Name (Id.of_string "H") in
+  fun () ->
+    match impossible_default_case () with
+    | Some (id, type_of_id, ctx) ->
+      make_judge id type_of_id, ctx
+    | None ->
+      (* In case the constants id/ID are not defined *)
+      Environ.make_judge (mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1)))
+        (mkProd (na1,mkProp,mkArrow (mkRel 1) (mkRel 2))), 
+      Univ.ContextSet.empty
+
 let unfold_projection env evd ts p c =
   let cst = Projection.constant p in
     if is_transparent_constant ts cst then
@@ -351,7 +376,7 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
   match ground_test with
     | Some result -> result
     | None ->
-	(* Until pattern-unification is used consistently, use nohdbeta to not
+      (* Until pattern-unification is used consistently, use nohdbeta to not
 	   destroy beta-redexes that can be used for 1st-order unification *)
         let term1 = apprec_nohdbeta (fst ts) env evd term1 in
         let term2 = apprec_nohdbeta (fst ts) env evd term2 in

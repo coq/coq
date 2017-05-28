@@ -543,7 +543,7 @@ let nsatz lpol =
 
 let return_term t =
   let a =
-    mkApp(gen_constant "CC" ["Init";"Logic"] "refl_equal",[|tllp ();t|]) in
+    mkApp(gen_constant "CC" ["Init";"Logic"] "eq_refl",[|tllp ();t|]) in
   let a = EConstr.of_constr a in
   generalize [a]
 

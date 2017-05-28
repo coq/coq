@@ -10,11 +10,9 @@ open CErrors
 open Util
 open Pp
 open Names
-open Term
 open Libnames
 open Globnames
 open Nametab
-open Smartlocate
 
 let coq = Nameops.coq_string (* "Coq" *)
 
@@ -26,10 +24,16 @@ type message = string
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
 let find_reference locstr dir s =
-  let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
-  try global_of_extended_global (Nametab.extended_global_of_path sp)
+  let dp = make_dir dir in
+  let sp = Libnames.make_path dp (Id.of_string s) in
+  try Nametab.global_of_path sp
   with Not_found ->
-    anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
+    (* Following bug 5066 we are more permissive with the handling
+       of not found errors here *)
+    user_err ~hdr:locstr
+      Pp.(str "cannot find " ++ Libnames.pr_path sp ++
+          str "; maybe library " ++ Libnames.pr_dirpath dp ++
+          str " has to be required first.")
 
 let coq_reference locstr dir s = find_reference locstr (coq::dir) s
 
@@ -37,14 +41,10 @@ let has_suffix_in_dirs dirs ref =
   let dir = dirpath (path_of_global ref) in
   List.exists (fun d -> is_dirpath_prefix_of d dir) dirs
 
-let global_of_extended q =
-  try Some (global_of_extended_global q) with Not_found -> None
-
 let gen_reference_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
   let qualid = qualid_of_string s in
-  let all = Nametab.locate_extended_all qualid in
-  let all = List.map_filter global_of_extended all in
+  let all = Nametab.locate_all qualid in
   let all = List.sort_uniquize RefOrdered_env.compare all in
   let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with
@@ -60,9 +60,6 @@ let gen_reference_in_modules locstr dirs s =
 	   (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
 	   str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
 	   prlist_with_sep pr_comma pr_dirpath dirs)
-
-let gen_constant_in_modules locstr dirs s =
-  Universes.constr_of_global (gen_reference_in_modules locstr dirs s)
 
 (* For tactics/commands requiring vernacular libraries *)
 
@@ -90,10 +87,6 @@ let check_required_library d =
 let init_reference dir s =
   let d = coq::"Init"::dir in
   check_required_library d; find_reference "Coqlib" d s
-
-let init_constant dir s =
-  let d = coq::"Init"::dir in
-  check_required_library d; Universes.constr_of_global @@ find_reference "Coqlib" d s
 
 let logic_reference dir s =
   let d = coq::"Logic"::dir in
@@ -144,12 +137,6 @@ let make_con dir id = Globnames.encode_con dir (Id.of_string id)
 let id = make_con datatypes_module "idProp"
 let type_of_id = make_con datatypes_module "IDProp"
 
-let _ = Termops.set_impossible_default_clause 
-  (fun () -> 
-    let c, ctx = Universes.fresh_global_instance (Global.env()) (ConstRef id) in
-    let (_, u) = destConst c in
-      (c,mkConstU (type_of_id,u)), ctx)
-
 (** Natural numbers *)
 let nat_kn = make_ind datatypes_module "nat"
 let nat_path = Libnames.make_path datatypes_module (Id.of_string "nat")
@@ -189,14 +176,14 @@ type coq_sigma_data = {
   typ   : global_reference }
 
 type coq_bool_data  = {
-  andb : constr;
-  andb_prop : constr;
-  andb_true_intro : constr}
+  andb : global_reference;
+  andb_prop : global_reference;
+  andb_true_intro : global_reference}
 
 let build_bool_type () =
-  { andb =  init_constant ["Datatypes"] "andb";
-    andb_prop =  init_constant ["Datatypes"] "andb_prop";
-    andb_true_intro =  init_constant ["Datatypes"] "andb_true_intro" }
+  { andb =  init_reference ["Datatypes"] "andb";
+    andb_prop =  init_reference ["Datatypes"] "andb_prop";
+    andb_true_intro =  init_reference ["Datatypes"] "andb_true_intro" }
 
 let build_sigma_set () = anomaly (Pp.str "Use build_sigma_type")
 
@@ -239,7 +226,6 @@ type coq_inversion_data = {
 }
 
 let lazy_init_reference dir id = lazy (init_reference dir id)
-let lazy_init_constant dir id = lazy (init_constant dir id)
 let lazy_logic_reference dir id = lazy (logic_reference dir id)
 
 (* Leibniz equality on Type *)
@@ -302,7 +288,7 @@ let build_coq_inversion_jmeq_data () =
   inv_congr = Lazy.force coq_jmeq_congr_canonical }
 
 (* Specif *)
-let coq_sumbool  = lazy_init_constant ["Specif"] "sumbool"
+let coq_sumbool  = lazy_init_reference ["Specif"] "sumbool"
 
 let build_coq_sumbool () = Lazy.force coq_sumbool
 
@@ -344,22 +330,22 @@ let build_coq_inversion_eq_true_data () =
   inv_congr = Lazy.force coq_eq_true_congr }
 
 (* The False proposition *)
-let coq_False  = lazy_init_constant ["Logic"] "False"
+let coq_False  = lazy_init_reference ["Logic"] "False"
 
 (* The True proposition and its unique proof *)
-let coq_True   = lazy_init_constant ["Logic"] "True"
-let coq_I      = lazy_init_constant ["Logic"] "I"
+let coq_True   = lazy_init_reference ["Logic"] "True"
+let coq_I      = lazy_init_reference ["Logic"] "I"
 
 (* Connectives *)
-let coq_not = lazy_init_constant ["Logic"] "not"
-let coq_and = lazy_init_constant ["Logic"] "and"
-let coq_conj = lazy_init_constant ["Logic"] "conj"
-let coq_or = lazy_init_constant ["Logic"] "or"
-let coq_ex = lazy_init_constant ["Logic"] "ex"
-let coq_iff = lazy_init_constant ["Logic"] "iff"
+let coq_not = lazy_init_reference ["Logic"] "not"
+let coq_and = lazy_init_reference ["Logic"] "and"
+let coq_conj = lazy_init_reference ["Logic"] "conj"
+let coq_or = lazy_init_reference ["Logic"] "or"
+let coq_ex = lazy_init_reference ["Logic"] "ex"
+let coq_iff = lazy_init_reference ["Logic"] "iff"
 
-let coq_iff_left_proj  = lazy_init_constant ["Logic"] "proj1"
-let coq_iff_right_proj = lazy_init_constant ["Logic"] "proj2"
+let coq_iff_left_proj  = lazy_init_reference ["Logic"] "proj1"
+let coq_iff_right_proj = lazy_init_reference ["Logic"] "proj2"
 
 (* Runtime part *)
 let build_coq_True ()  = Lazy.force coq_True
@@ -393,7 +379,5 @@ let coq_or_ref     = lazy (init_reference ["Logic"] "or")
 let coq_iff_ref    = lazy (init_reference ["Logic"] "iff")
 
 (* Deprecated *)
-let coq_constant locstr dir s = Universes.constr_of_global (coq_reference locstr dir s)
 let gen_reference = coq_reference
-let gen_constant  = coq_constant
 

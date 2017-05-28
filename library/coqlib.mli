@@ -9,7 +9,6 @@
 open Names
 open Libnames
 open Globnames
-open Term
 open Util
 
 (** This module collects the global references, constructions and
@@ -50,7 +49,6 @@ val coq_reference : message -> string list -> string -> global_reference
 val check_required_library : string list -> unit
 
 (** Search in several modules (not prefixed by "Coq") *)
-val gen_constant_in_modules  : string->string list list-> string -> constr
 val gen_reference_in_modules : string->string list list-> string -> global_reference
 
 val arith_modules : string list list
@@ -71,6 +69,10 @@ val jmeq_module : DirPath.t
 val jmeq_module_name : string list
 
 val datatypes_module_name : string list
+
+(** Identity  *)
+val id : constant
+val type_of_id : constant
 
 (** Natural numbers *)
 val nat_path : full_path
@@ -102,9 +104,9 @@ val glob_jmeq : global_reference
    at runtime. *)
 
 type coq_bool_data = {
-  andb : constr;
-  andb_prop : constr;
-  andb_true_intro : constr}
+  andb : global_reference;
+  andb_prop : global_reference;
+  andb_true_intro : global_reference}
 val build_bool_type : coq_bool_data delayed
 
 (** {6 For Equality tactics } *)
@@ -161,33 +163,33 @@ val build_coq_inversion_jmeq_data : coq_inversion_data delayed
 val build_coq_inversion_eq_true_data : coq_inversion_data delayed
 
 (** Specif *)
-val build_coq_sumbool : constr delayed
+val build_coq_sumbool : global_reference delayed
 
 (** {6 ... } *)
 (** Connectives 
    The False proposition *)
-val build_coq_False : constr delayed
+val build_coq_False : global_reference delayed
 
 (** The True proposition and its unique proof *)
-val build_coq_True : constr delayed
-val build_coq_I : constr delayed
+val build_coq_True : global_reference delayed
+val build_coq_I : global_reference delayed
 
 (** Negation *)
-val build_coq_not : constr delayed
+val build_coq_not : global_reference delayed
 
 (** Conjunction *)
-val build_coq_and : constr delayed
-val build_coq_conj : constr delayed
-val build_coq_iff : constr delayed
+val build_coq_and : global_reference delayed
+val build_coq_conj : global_reference delayed
+val build_coq_iff : global_reference delayed
 
-val build_coq_iff_left_proj : constr delayed
-val build_coq_iff_right_proj : constr delayed
+val build_coq_iff_left_proj : global_reference delayed
+val build_coq_iff_right_proj : global_reference delayed
 
 (** Disjunction *)
-val build_coq_or : constr delayed
+val build_coq_or : global_reference delayed
 
 (** Existential quantifier *)
-val build_coq_ex : constr delayed
+val build_coq_ex : global_reference delayed
 
 val coq_eq_ref : global_reference lazy_t
 val coq_identity_ref : global_reference lazy_t
@@ -205,10 +207,5 @@ val coq_or_ref : global_reference lazy_t
 val coq_iff_ref : global_reference lazy_t
 
 (* Deprecated functions *)
-val coq_constant  : message -> string list -> string -> constr
-[@@ocaml.deprecated "Please use Coqlib.find_reference"]
-val gen_constant  : message -> string list -> string -> constr
-[@@ocaml.deprecated "Please use Coqlib.find_reference"]
 val gen_reference :  message -> string list -> string -> global_reference
 [@@ocaml.deprecated "Please use Coqlib.find_reference"]
-

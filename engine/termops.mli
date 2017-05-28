@@ -275,10 +275,6 @@ val on_judgment       : ('a -> 'b) -> ('a, 'a) punsafe_judgment -> ('b, 'b) puns
 val on_judgment_value : ('c -> 'c) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
 val on_judgment_type  : ('t -> 't) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
 
-(** {6 Functions to deal with impossible cases } *)
-val set_impossible_default_clause : (unit -> (Constr.constr * Constr.types) Univ.in_universe_context_set) -> unit
-val coq_unit_judge : unit -> unsafe_judgment Univ.in_universe_context_set
-
 (** {5 Debug pretty-printers} *)
 
 open Evd

@@ -328,7 +328,6 @@ let selecti s m =
 module M =
 struct
 
-  open Coqlib
   open Constr
   open EConstr
 
@@ -356,8 +355,8 @@ struct
       ["LRing_normalise"]]
 
   let coq_modules =
-   init_modules @
-    [logic_dir] @ arith_modules @ zarith_base_modules @ mic_modules
+   Coqlib.(init_modules @
+    [logic_dir] @ arith_modules @ zarith_base_modules @ mic_modules)
 
   let bin_module = [["Coq";"Numbers";"BinNums"]]
 
@@ -375,8 +374,8 @@ struct
     * ZMicromega.v
     *)
 
-  let gen_constant_in_modules s m n = EConstr.of_constr (gen_constant_in_modules s m n)
-  let init_constant = gen_constant_in_modules "ZMicromega" init_modules
+  let gen_constant_in_modules s m n = EConstr.of_constr (Universes.constr_of_global @@ Coqlib.gen_reference_in_modules s m n)
+  let init_constant = gen_constant_in_modules "ZMicromega" Coqlib.init_modules
   let constant = gen_constant_in_modules "ZMicromega" coq_modules
   let bin_constant = gen_constant_in_modules "ZMicromega" bin_module
   let r_constant = gen_constant_in_modules "ZMicromega" r_modules
@@ -1529,18 +1528,18 @@ let rec apply_ids t ids =
   | i::ids -> apply_ids (Term.mkApp(t,[| Term.mkVar i |])) ids
 
 let coq_Node = 
- lazy (EConstr.of_constr (Coqlib.gen_constant_in_modules "VarMap"
-   [["Coq" ; "micromega" ; "VarMap"];["VarMap"]] "Node"))
+ lazy (gen_constant_in_modules "VarMap"
+   [["Coq" ; "micromega" ; "VarMap"];["VarMap"]] "Node")
 let coq_Leaf = 
- lazy (EConstr.of_constr (Coqlib.gen_constant_in_modules "VarMap"
-   [["Coq" ; "micromega" ; "VarMap"];["VarMap"]] "Leaf"))
+ lazy (gen_constant_in_modules "VarMap"
+   [["Coq" ; "micromega" ; "VarMap"];["VarMap"]] "Leaf")
 let coq_Empty = 
- lazy (EConstr.of_constr (Coqlib.gen_constant_in_modules "VarMap"
-   [["Coq" ; "micromega" ;"VarMap"];["VarMap"]] "Empty"))
+ lazy (gen_constant_in_modules "VarMap"
+   [["Coq" ; "micromega" ;"VarMap"];["VarMap"]] "Empty")
 
 let coq_VarMap = 
-  lazy (EConstr.of_constr (Coqlib.gen_constant_in_modules "VarMap"
-     [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t"))
+  lazy (gen_constant_in_modules "VarMap"
+     [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t")
  
 
 let rec dump_varmap typ m =
@@ -2059,8 +2058,8 @@ let micromega_order_changer cert env ff  =
         [
          ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
          ("__varmap", vm, Term.mkApp
-          (EConstr.of_constr (Coqlib.gen_constant_in_modules "VarMap"
-	    [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t"), [|typ|]));
+          (gen_constant_in_modules "VarMap"
+	    [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|typ|]));
          ("__wit", cert, cert_typ)
         ]
         (Tacmach.New.pf_concl gl)));

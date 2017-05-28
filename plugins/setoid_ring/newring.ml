@@ -229,7 +229,7 @@ let stdlib_modules =
   ]
 
 let coq_constant c =
-  lazy (EConstr.of_constr (Coqlib.gen_constant_in_modules "Ring" stdlib_modules c))
+  lazy (EConstr.of_constr (Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Ring" stdlib_modules c))
 let coq_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" stdlib_modules c)
 
@@ -274,7 +274,7 @@ let plugin_modules =
     ]
 
 let my_constant c =
-  lazy (EConstr.of_constr (Coqlib.gen_constant_in_modules "Ring" plugin_modules c))
+  lazy (EConstr.of_constr (Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Ring" plugin_modules c))
 let my_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" plugin_modules c)
 

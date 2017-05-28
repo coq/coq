@@ -472,7 +472,8 @@ let build_combined_scheme env schemes =
   let ctx, ind, nargs = find_inductive t in
   (* Number of clauses, including the predicates quantification *)
   let prods = nb_prod Evd.empty (EConstr.of_constr t) - (nargs + 1) (** FIXME *) in
-  let coqand = Coqlib.build_coq_and () and coqconj = Coqlib.build_coq_conj () in
+  let coqand  = Universes.constr_of_global @@ Coqlib.build_coq_and () in
+  let coqconj = Universes.constr_of_global @@ Coqlib.build_coq_conj () in
   let relargs = rel_vect 0 prods in
   let concls = List.rev_map
     (fun (cst, t) -> (* FIXME *)

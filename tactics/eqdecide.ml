@@ -106,8 +106,8 @@ let solveNoteqBranch side =
 
 let make_eq () =
 (*FIXME*) EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq ()))
-let build_coq_not () = EConstr.of_constr (build_coq_not ())
-let build_coq_sumbool () = EConstr.of_constr (build_coq_sumbool ())
+let build_coq_not () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_not ())
+let build_coq_sumbool () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_sumbool ())
 
 let mkDecideEqGoal eqonleft op rectype c1 c2 =
   let equality    = mkApp(make_eq(), [|rectype; c1; c2|]) in

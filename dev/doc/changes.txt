@@ -108,6 +108,19 @@ In GOption:
   passed to workers, etc... As a consequence, the field
   `Goptions.optsync` has been removed.
 
+In Coqlib / reference location:
+
+  We have removed from Coqlib functions returning `constr` from
+  names. Now it is only possible to obtain references, that must be
+  processed wrt the particular needs of the client.
+
+  Users of `coq_constant/gen_constant` can do
+  `Universes.constr_of_global (find_reference dir r)` _however_ note
+  the warnings in the `Universes.constr_of_global` in the
+  documentation. It is very likely that you were previously suffering
+  from problems with polymorphic universes due to using
+  `Coqlib.coq_constant` that used to do this.
+
 ** Tactic API **
 
 - pf_constr_of_global now returns a tactic instead of taking a continuation.
