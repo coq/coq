@@ -184,7 +184,7 @@ CMOFILES = \
 	$(MLPACKFILES:.mlpack=.cmo)
 CMXFILES = $(CMOFILES:.cmo=.cmx)
 OFILES = $(CMXFILES:.cmx=.o)
-CMAFILES = $(MLLIBFILES:.mllib=.cma)
+CMAFILES = $(MLLIBFILES:.mllib=.cma) $(MLPACKFILES:.mlpack=.cma)
 CMXAFILES = $(CMAFILES:.cma=.cmxa)
 CMIFILES = \
 	$(CMOFILES:.cmo=.cmi) \
@@ -473,6 +473,10 @@ $(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib
 $(MLPACKFILES:.mlpack=.cmxs): %.cmxs: %.cmx
 	$(SHOW)'CAMLOPT -shared -o $@'
 	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -shared -o $@ $<
+
+$(MLPACKFILES:.mlpack=.cma): %.cma: %.cmo | %.mlpack
+	$(SHOW)'CAMLC -a -o $@'
+	$(HIDE)$(CAMLLINK) $(CAMLDEBUG) $(CAMLFLAGS) -a -o $@ $^
 
 $(MLPACKFILES:.mlpack=.cmo): %.cmo: | %.mlpack
 	$(SHOW)'CAMLC -pack -o $@'

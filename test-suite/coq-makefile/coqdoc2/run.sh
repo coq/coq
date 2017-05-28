@@ -15,6 +15,7 @@ make install-doc DSTROOT="$PWD/tmp"
 sort -u > desired <<EOT
 .
 ./test
+./test/test_plugin.cma
 ./test/test_plugin.cmi
 ./test/test_plugin.cmo
 ./test/test_plugin.cmx
