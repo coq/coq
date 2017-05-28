@@ -26,7 +26,7 @@ done
 
 ## We check that $cmd is ok before the real exec $cmd
 
-`$cmd -version > /dev/null 2>&1` && exec $cmd -w "-3" $script "$@"
+`$cmd -version > /dev/null 2>&1` && exec $cmd $script "$@"
 
 ## If we're still here, something is wrong with $cmd
 
