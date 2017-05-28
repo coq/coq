@@ -4,6 +4,7 @@ let prefix_small_block =         0x80
 let prefix_small_int =           0x40
 let prefix_small_string =        0x20
 
+[@@@ocaml.warning "-32"]
 let code_int8 =                  0x00
 let code_int16 =                 0x01
 let code_int32 =                 0x02
@@ -25,6 +26,7 @@ let code_infixpointer =          0x11
 let code_custom =                0x12
 let code_block64 =               0x13
 
+[@@@ocaml.warning "-37"]
 type code_descr =
 | CODE_INT8
 | CODE_INT16
@@ -101,11 +103,11 @@ let input_binary_int chan =
   input_binary_int chan
 
 let input_char chan = Char.chr (input_byte chan)
+let input_string len chan = String.init len (fun _ -> input_char chan)
 
 let parse_header chan =
   let () = current_offset := 0 in
-  let magic = String.create 4 in
-  let () = for i = 0 to 3 do magic.[i] <- input_char chan done in
+  let magic = input_string 4 chan in
   let length = input_binary_int chan in
   let objects = input_binary_int chan in
   let size32 = input_binary_int chan in
@@ -204,13 +206,6 @@ let input_header64 chan =
   in
   (tag, len)
 
-let input_string len chan =
-  let ans = String.create len in
-  for i = 0 to pred len do
-    ans.[i] <- input_char chan;
-  done;
-  ans
-
 let parse_object chan =
   let data = input_byte chan in
   if prefix_small_block <= data then
@@ -251,7 +246,7 @@ let parse_object chan =
     RString (input_string len chan)
   | CODE_CODEPOINTER ->
     let addr = input_int32u chan in
-    for i = 0 to 15 do ignore (input_byte chan); done;
+    for _i = 0 to 15 do ignore (input_byte chan); done;
     RCode addr
   | CODE_DOUBLE_ARRAY32_LITTLE
   | CODE_DOUBLE_BIG
