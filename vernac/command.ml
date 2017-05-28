@@ -382,7 +382,7 @@ type structured_inductive_expr =
   local_binder_expr list * structured_one_inductive_expr list
 
 let minductive_message warn = function
-  | []  -> error "No inductive definition."
+  | []  -> user_err Pp.(str "No inductive definition.")
   | [x] -> (pr_id x ++ str " is defined" ++ 
 	    if warn then str " as a non-primitive record" else mt())
   | l   -> hov 0  (prlist_with_sep pr_comma pr_id l ++
@@ -676,8 +676,8 @@ let extract_params indl =
   match paramsl with
   | [] -> anomaly (Pp.str "empty list of inductive types")
   | params::paramsl ->
-      if not (List.for_all (eq_local_binders params) paramsl) then error
-	"Parameters should be syntactically the same for each inductive type.";
+      if not (List.for_all (eq_local_binders params) paramsl) then user_err Pp.(str
+	"Parameters should be syntactically the same for each inductive type.");
       params
 
 let extract_inductive indl =
@@ -715,9 +715,9 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
   begin match mie.mind_entry_finite with
   | BiFinite when is_recursive mie ->
       if Option.has_some mie.mind_entry_record then
-        error "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command."
+        user_err Pp.(str "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command.")
       else
-        error ("Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command.")
+        user_err Pp.(str ("Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command."))
   | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
@@ -1123,7 +1123,7 @@ let interp_recursive isfix fixl notations =
         | x , None -> x
         | Some ls , Some us ->
 	   if not (CList.for_all2eq (fun x y -> Id.equal (snd x) (snd y)) ls us) then
-	     error "(co)-recursive definitions should all have the same universe binders";
+	     user_err Pp.(str "(co)-recursive definitions should all have the same universe binders");
 	   Some us) fixl None in
   let ctx = Evd.make_evar_universe_context env all_universes in
   let evdref = ref (Evd.from_ctx ctx) in
@@ -1263,8 +1263,8 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
 let extract_decreasing_argument limit = function
   | (na,CStructRec) -> na
   | (na,_) when not limit -> na
-  | _ -> error 
-      "Only structural decreasing is supported for a non-Program Fixpoint"
+  | _ -> user_err Pp.(str 
+      "Only structural decreasing is supported for a non-Program Fixpoint")
 
 let extract_fixpoint_components limit l =
   let fixl, ntnl = List.split l in
@@ -1283,7 +1283,7 @@ let extract_cofixpoint_components l =
 
 let out_def = function
   | Some def -> def
-  | None -> error "Program Fixpoint needs defined bodies."
+  | None -> user_err Pp.(str "Program Fixpoint needs defined bodies.")
 
 let collect_evars_of_term evd c ty =
   let evars = Evar.Set.union (Evd.evars_of_term c) (Evd.evars_of_term ty) in

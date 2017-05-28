@@ -117,8 +117,8 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
       | _, Some x ->
           let ids = List.map snd (List.flatten (List.map pi1 bl)) in
           (try List.index Names.Name.equal (snd x) ids
-          with Not_found -> error "No such fix variable.")
-      | _ -> error "Cannot guess decreasing argument of fix." in
+          with Not_found -> user_err Pp.(str "No such fix variable."))
+      | _ -> user_err Pp.(str "Cannot guess decreasing argument of fix.") in
   (id,n, CAst.make ~loc @@ CProdN(bl,ty))
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
@@ -152,7 +152,7 @@ let mkTacCase with_evar = function
   | ic ->
       if List.exists (function ((_, ElimOnAnonHyp _),_,_) -> true | _ -> false) (fst ic)
       then
-	error "Use of numbers as direct arguments of 'case' is not supported.";
+	user_err Pp.(str "Use of numbers as direct arguments of 'case' is not supported.");
       TacInductionDestruct (false,with_evar,ic)
 
 let rec mkCLambdaN_simple_loc ?loc bll c =

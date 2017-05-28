@@ -938,7 +938,7 @@ module V85 = struct
     | Some (evd', fk) ->
        if unique then
          (match get_result (fk NotApplicable) with
-          | Some (evd'', fk') -> error "Typeclass resolution gives multiple solutions"
+          | Some (evd'', fk') -> user_err Pp.(str "Typeclass resolution gives multiple solutions")
           | None -> evd')
        else evd'
 

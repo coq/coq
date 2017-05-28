@@ -252,7 +252,7 @@ and intern_or_and_intro_pattern lf ist = function
 let intern_or_and_intro_pattern_loc lf ist = function
   | ArgVar (_,id) as x ->
       if find_var id ist then x
-      else error "Disjunctive/conjunctive introduction pattern expected."
+      else user_err Pp.(str "Disjunctive/conjunctive introduction pattern expected.")
   | ArgArg (loc,l) -> ArgArg (loc,intern_or_and_intro_pattern lf ist l)
 
 let intern_intro_pattern_naming_loc lf ist (loc,pat) =

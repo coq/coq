@@ -952,7 +952,7 @@ let declare_principal_goal evk evd =
   | None -> { evd with
     future_goals = evk::evd.future_goals;
     principal_future_goal=Some evk; }
-  | Some _ -> CErrors.error "Only one main subgoal per instantiation."
+  | Some _ -> CErrors.user_err Pp.(str "Only one main subgoal per instantiation.")
 
 let future_goals evd = evd.future_goals
 

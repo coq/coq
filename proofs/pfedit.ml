@@ -71,7 +71,7 @@ let get_universe_binders () =
 
 exception NoSuchGoal
 let _ = CErrors.register_handler begin function
-  | NoSuchGoal -> CErrors.error "No such goal."
+  | NoSuchGoal -> CErrors.user_err Pp.(str "No such goal.")
   | _ -> raise CErrors.Unhandled
 end
 let get_nth_V82_goal i =
@@ -87,12 +87,12 @@ let get_goal_context_gen i =
 
 let get_goal_context i =
   try get_goal_context_gen i
-  with Proof_global.NoCurrentProof -> CErrors.error "No focused proof."
-     | NoSuchGoal -> CErrors.error "No such goal."
+  with Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof.")
+     | NoSuchGoal -> CErrors.user_err Pp.(str "No such goal.")
 
 let get_current_goal_context () =
   try get_goal_context_gen 1
-  with Proof_global.NoCurrentProof -> CErrors.error "No focused proof."
+  with Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof.")
      | NoSuchGoal -> 
     (* spiwack: returning empty evar_map, since if there is no goal, under focus,
         there is no accessible evar either *)
@@ -143,7 +143,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     (p,status)
   with
-    Proof_global.NoCurrentProof -> CErrors.error "No focused proof"
+    Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof")
 
 let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) None tac)
 

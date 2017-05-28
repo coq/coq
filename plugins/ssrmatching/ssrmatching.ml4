@@ -468,7 +468,7 @@ let mk_tpattern ?p_origin ?(hack=false) env sigma0 (ise, t) ok dir p =
     | Evar (k, _) ->
       if Evd.mem sigma0 k then KpatEvar k, f, a else
       if a <> [] then KpatFlex, f, a else 
-      (match p_origin with None -> CErrors.error "indeterminate pattern"
+      (match p_origin with None -> CErrors.user_err Pp.(str "indeterminate pattern")
       | Some (dir, rule) ->
 	errorstrm (str "indeterminate " ++ pr_dir_side dir
           ++ str " in " ++ pr_constr_pat rule))
@@ -1320,7 +1320,7 @@ let pf_fill_occ env concl occ sigma0 p (sigma, t) ok h =
 let fill_occ_term env cl occ sigma0 (sigma, t) =
   try
     let sigma',uc,t',cl,_= pf_fill_occ env cl occ sigma0 t (sigma, t) all_ok 1 in
-    if sigma' != sigma0 then CErrors.error "matching impacts evars"
+    if sigma' != sigma0 then CErrors.user_err Pp.(str "matching impacts evars")
     else cl, (Evd.merge_universe_context sigma' uc, t')
   with NoMatch -> try
     let sigma', uc, t' =

@@ -289,7 +289,7 @@ let tclONCE = Proof.once
 
 exception MoreThanOneSuccess
 let _ = CErrors.register_handler begin function
-  | MoreThanOneSuccess -> CErrors.error "This tactic has more than one success."
+  | MoreThanOneSuccess -> CErrors.user_err Pp.(str "This tactic has more than one success.")
   | _ -> raise CErrors.Unhandled
 end
 

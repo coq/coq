@@ -716,7 +716,7 @@ let read_sec_context r =
     | (_,Lib.OpenedSection ((dir',_),_) as hd)::rest ->
         if DirPath.equal dir dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | (_,Lib.ClosedSection _)::rest ->
-        error "Cannot print the contents of a closed section."
+        user_err Pp.(str "Cannot print the contents of a closed section.")
 	(* LEM: Actually, we could if we wanted to. *)
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest
@@ -765,7 +765,7 @@ let print_opaque_name qid =
         if Declareops.constant_has_body cb then
 	  print_constant_with_infos cst
         else
-	  error "Not a defined constant."
+	  user_err Pp.(str "Not a defined constant.")
     | IndRef (sp,_) ->
         print_inductive sp
     | ConstructRef cstr as gr ->

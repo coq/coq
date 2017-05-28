@@ -184,7 +184,7 @@ type inversion_scheme = {
   goal [gl]. This function uses the auxiliary functions
   [i_can't_do_that], [decomp_term], [compute_lhs] and [compute_rhs]. *)
 
-let i_can't_do_that () = error "Quote: not a simple fixpoint"
+let i_can't_do_that () = user_err Pp.(str "Quote: not a simple fixpoint")
 
 let decomp_term sigma c = EConstr.kind sigma (Termops.strip_outer_cast sigma c)
 

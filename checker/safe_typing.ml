@@ -40,7 +40,7 @@ let check_engagement env expected_impredicative_set =
   begin
     match impredicative_set, expected_impredicative_set with
     | PredicativeSet, ImpredicativeSet ->
-        CErrors.error "Needs option -impredicative-set."
+        CErrors.user_err Pp.(str "Needs option -impredicative-set.")
     | _ -> ()
   end;
   ()
@@ -61,7 +61,7 @@ let check_imports f caller env needed =
       let actual_stamp = lookup_digest env dp in
       if stamp <> actual_stamp then report_clash f caller dp
     with Not_found ->
-      error ("Reference to unknown module " ^ (DirPath.to_string dp))
+      user_err Pp.(str ("Reference to unknown module " ^ (DirPath.to_string dp)))
   in
   Array.iter check needed
 

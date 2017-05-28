@@ -364,7 +364,7 @@ let set_manual_implicits env flags enriching autoimps l =
     with Not_found -> l, None
   in
   if not (List.distinct l) then
-    error ("Some parameters are referred more than once.");
+    user_err Pp.(str "Some parameters are referred more than once.");
   (* Compare with automatic implicits to recover printing data and names *)
   let rec merge k l = function
   | (Name id,imp)::imps ->
@@ -658,7 +658,7 @@ let check_inclusion l =
   let rec aux = function
     | n1::(n2::_ as nl) ->
 	if n1 <= n2 then
-	  error "Sequences of implicit arguments must be of different lengths.";
+	  user_err Pp.(str "Sequences of implicit arguments must be of different lengths.");
 	aux nl
     | _ -> () in
   aux (List.map (fun (imps,_) -> List.length imps) l)

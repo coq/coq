@@ -81,7 +81,7 @@ let scheme_object_table =
 let declare_scheme_object s aux f =
   let () =
     if not (Id.is_valid ("ind" ^ s)) then
-      error ("Illegal induction scheme suffix: " ^ s)
+      user_err Pp.(str ("Illegal induction scheme suffix: " ^ s))
   in
   let key = if String.is_empty aux then s else aux in
   try

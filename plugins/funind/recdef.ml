@@ -138,7 +138,7 @@ let ex = function () -> (coq_init_constant "ex")
 let nat = function () -> (coq_init_constant "nat")
 let iter_ref () =  
   try find_reference ["Recdef"] "iter" 
-  with Not_found -> error "module Recdef not loaded"
+  with Not_found -> user_err Pp.(str "module Recdef not loaded")
 let iter = function () -> (constr_of_global (delayed_force iter_ref))
 let eq = function () -> (coq_init_constant "eq")
 let le_lt_SS = function () -> (constant ["Recdef"] "le_lt_SS")
@@ -325,8 +325,8 @@ let check_not_nested sigma forbidden e =
       | Construct _ -> ()
       | Case(_,t,e,a) -> 
 	check_not_nested t;check_not_nested e;Array.iter check_not_nested a
-      | Fix _ -> error "check_not_nested : Fix"
-      | CoFix _ -> error "check_not_nested : Fix"
+      | Fix _ -> user_err Pp.(str "check_not_nested : Fix")
+      | CoFix _ -> user_err Pp.(str "check_not_nested : Fix")
   in
   try 
     check_not_nested e 
@@ -432,8 +432,8 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
 let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
   let sigma = project g in
   match EConstr.kind sigma expr_info.info with 
-    | CoFix _ | Fix _ -> error "Function cannot treat local fixpoint or cofixpoint"
-    | Proj _ -> error "Function cannot treat projections"
+    | CoFix _ | Fix _ -> user_err Pp.(str "Function cannot treat local fixpoint or cofixpoint")
+    | Proj _ -> user_err Pp.(str "Function cannot treat projections")
     | LetIn(na,b,t,e) -> 
       begin
 	let new_continuation_tac = 
@@ -1306,7 +1306,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
   in
   let na = next_global_ident_away name [] in
   if Termops.occur_existential sigma gls_type then
-    CErrors.error "\"abstract\" cannot handle existentials";
+    CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials");
   let hook _ _ =
     let opacity =
       let na_ref = Libnames.Ident (Loc.tag na) in

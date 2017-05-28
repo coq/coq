@@ -42,7 +42,7 @@ let compare_glob_constr f add t1 t2 = match CAst.(t1.v,t2.v) with
     | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _),_
   | _,(GCases _ | GRec _
       | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _)
-      -> error "Unsupported construction in recursive notations."
+      -> user_err Pp.(str "Unsupported construction in recursive notations.")
   | (GRef _ | GVar _ | GApp _ | GLambda _ | GProd _
     | GHole _ | GSort _ | GLetIn _), _
       -> false
@@ -112,7 +112,7 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
 (* Re-interpret a notation as a glob_constr, taking care of binders   *)
 
 let name_to_ident = function
-  | Anonymous -> CErrors.error "This expression should be a simple identifier."
+  | Anonymous -> CErrors.user_err Pp.(str "This expression should be a simple identifier.")
   | Name id -> id
 
 let to_id g e id = let e,na = g e (Name id) in e,name_to_ident na
@@ -377,7 +377,7 @@ let notation_constr_and_vars_of_glob_constr a =
       Array.iter (add_id found) idl;
       let dll = Array.map (List.map (fun (na,bk,oc,b) ->
 	 if bk != Explicit then
-	   error "Binders marked as implicit not allowed in notations.";
+	   user_err Pp.(str "Binders marked as implicit not allowed in notations.");
 	 add_name found na; (na,Option.map aux oc,aux b))) dll in
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
   | GCast (c,k) -> NCast (aux c,Miscops.map_cast_type aux k)
@@ -387,7 +387,7 @@ let notation_constr_and_vars_of_glob_constr a =
      NHole (w, naming, arg)
   | GRef (r,_) -> NRef r
   | GEvar _ | GPatVar _ ->
-      error "Existential variables not allowed in notations."
+      user_err Pp.(str "Existential variables not allowed in notations.")
   ) x
   in
   let t = aux a in
@@ -415,9 +415,9 @@ let check_variables_and_reversibility nenv (found,foundrec,foundrecbinding) =
          Id.List.mem_assoc_sym x foundrec ||
          Id.List.mem_assoc_sym x foundrecbinding
       then
-	error
+	user_err Pp.(str
           (Id.to_string x ^
-          " should not be bound in a recursive pattern of the right-hand side.")
+          " should not be bound in a recursive pattern of the right-hand side."))
       else injective := false
   in
   let check_pair s x y where =

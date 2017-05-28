@@ -1076,7 +1076,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   | decl'::ctxt', c::l, occs::occsl when isVarId evd (NamedDecl.get_id decl') c ->
       begin match occs with
       | Some _ ->
-        error "Cannot force abstraction on identity instance."
+        user_err Pp.(str "Cannot force abstraction on identity instance.")
       | None ->
         make_subst (ctxt',l,occsl)
       end
@@ -1095,7 +1095,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let set_var k =
         match occs with
         | Some Locus.AllOccurrences -> mkVar id
-        | Some _ -> error "Selection of specific occurrences not supported"
+        | Some _ -> user_err Pp.(str "Selection of specific occurrences not supported")
         | None ->
         let evty = set_holes evdref cty subst in
         let instance = Filter.filter_list filter instance in
@@ -1133,10 +1133,10 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
               (* This is an arbitrary choice *)
               let evd = Evd.define evk (Constr.mkVar id) evd in
               match evar_conv_x ts env_evar evd CUMUL idty evty with
-              | UnifFailure _ -> error "Cannot find an instance"
+              | UnifFailure _ -> user_err Pp.(str "Cannot find an instance")
               | Success evd ->
               match reconsider_unif_constraints (evar_conv_x ts) evd with
-              | UnifFailure _ -> error "Cannot find an instance"
+              | UnifFailure _ -> user_err Pp.(str "Cannot find an instance")
               | Success evd ->
               evd
             else
@@ -1270,7 +1270,7 @@ let rec solve_unconstrained_evars_with_candidates ts evd =
   | None -> evd
   | Some (evk,ev_info,l) ->
       let rec aux = function
-      | [] -> error "Unsolvable existential variables."
+      | [] -> user_err Pp.(str "Unsolvable existential variables.")
       | a::l ->
           try
             let conv_algo = evar_conv_x ts in

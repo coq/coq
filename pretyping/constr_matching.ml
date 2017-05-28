@@ -220,9 +220,9 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
       | PSoApp (n,args),m ->
         let fold (ans, seen) = function
         | PRel n ->
-          let () = if Int.Set.mem n seen then error "Non linear second-order pattern" in
+          let () = if Int.Set.mem n seen then user_err (str "Non linear second-order pattern") in
           (n :: ans, Int.Set.add n seen)
-        | _ -> error "Only bound indices allowed in second order pattern matching."
+        | _ -> user_err (str "Only bound indices allowed in second order pattern matching.")
         in
         let relargs, relset = List.fold_left fold ([], Int.Set.empty) args in
         let frels = free_rels sigma cT in

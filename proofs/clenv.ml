@@ -163,7 +163,7 @@ let error_incompatible_inst clenv mv  =
 let clenv_assign mv rhs clenv =
   let rhs_fls = mk_freelisted rhs in
   if Metaset.exists (mentions clenv mv) rhs_fls.freemetas then
-    error "clenv_assign: circularity in unification";
+    user_err Pp.(str "clenv_assign: circularity in unification");
   try
     if meta_defined clenv.evd mv then
       if not (EConstr.eq_constr clenv.evd (EConstr.of_constr (fst (meta_fvalue clenv.evd mv)).rebus) rhs) then
@@ -174,7 +174,7 @@ let clenv_assign mv rhs clenv =
       let st = (Conv,TypeNotProcessed) in
       {clenv with evd = meta_assign mv (EConstr.Unsafe.to_constr rhs_fls.rebus,st) clenv.evd}
   with Not_found ->
-    error "clenv_assign: undefined meta"
+    user_err Pp.(str "clenv_assign: undefined meta")
 
 
 

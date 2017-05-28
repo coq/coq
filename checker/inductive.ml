@@ -27,7 +27,7 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 let lookup_mind_specif env (kn,tyi) =
   let mib = lookup_mind kn env in
   if tyi >= Array.length mib.mind_packets then
-    error "Inductive.lookup_mind_specif: invalid inductive index";
+    user_err Pp.(str "Inductive.lookup_mind_specif: invalid inductive index");
   (mib, mib.mind_packets.(tyi))
 
 let find_rectype env c =
@@ -232,7 +232,7 @@ let type_of_constructor_subst cstr u (mib,mip) =
   let specif = mip.mind_user_lc in
   let i = index_of_constructor cstr in
   let nconstr = Array.length mip.mind_consnames in
-  if i > nconstr then error "Not enough constructors in the type.";
+  if i > nconstr then user_err Pp.(str "Not enough constructors in the type.");
     constructor_instantiate (fst ind) u mib specif.(i-1)
 
 let type_of_constructor_gen (cstr,u) (mib,mip as mspec) =

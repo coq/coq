@@ -230,7 +230,7 @@ let instantiate_pattern env sigma lvar c =
 	  error_instantiate_pattern id (List.subtract Id.equal ctx vars)
        with Not_found (* Map.find failed *) ->
 	 x)
-  | (PFix _ | PCoFix _) -> error ("Non instantiable pattern.")
+  | (PFix _ | PCoFix _) -> user_err Pp.(str "Non instantiable pattern.")
   | c ->
       map_pattern_with_binders (fun id vars -> id::vars) aux vars c in
   aux [] c

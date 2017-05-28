@@ -164,7 +164,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let eqclause = pf_apply Clenv.make_clenv_binding gl (c,ty) l in
   let (equiv, args) = decompose_app_vect sigma (Clenv.clenv_type eqclause) in
   let arglen = Array.length args in
-  let () = if arglen < 2 then error "The term provided is not an applied relation." in
+  let () = if arglen < 2 then user_err Pp.(str "The term provided is not an applied relation.") in
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
   let try_occ (evd', c') =
@@ -441,7 +441,7 @@ let adjust_rewriting_direction args lft2rgt =
     (* equality to a constant, like in eq_true *)
     (* more natural to see -> as the rewriting to the constant *)
     if not lft2rgt then
-      error "Rewriting non-symmetric equality not allowed from right-to-left.";
+      user_err Pp.(str "Rewriting non-symmetric equality not allowed from right-to-left.");
     None
   | _ ->
     (* other equality *)
@@ -865,7 +865,7 @@ let descend_then env sigma head dirn =
   let IndType (indf,_) =
     try find_rectype env sigma (get_type_of env sigma head)
     with Not_found ->
-      error "Cannot project on an inductive type derived from a dependency." in
+      user_err Pp.(str "Cannot project on an inductive type derived from a dependency.") in
   let indp,_ = (dest_ind_family indf) in
   let ind, _ = check_privacy env indp in
   let (mib,mip) = lookup_mind_specif env ind in
@@ -1202,7 +1202,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
           evdref := Evarconv.solve_unif_constraints_with_heuristics env !evdref in
 	dflt
       with Evarconv.UnableToUnify _ ->
-	error "Cannot solve a unification problem."
+	user_err Pp.(str "Cannot solve a unification problem.")
     else
       let (a,p_i_minus_1) = match whd_beta_stack !evdref p_i with
 	| (_sigS,[a;p]) -> (a, p)
@@ -1219,7 +1219,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 	      let exist_term = EConstr.of_constr exist_term in
               applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
             else
-              error "Cannot solve a unification problem."
+              user_err Pp.(str "Cannot solve a unification problem.")
 	| None ->
             (* This at least happens if what has been detected as a
                dependency is not one; use an evasive error message;
@@ -1227,7 +1227,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
                tried in the first place in make_iterated_tuple instead
                of approximatively computing the free rels; then
                unsolved evars would mean not binding rel *)
-	    error "Cannot solve a unification problem."
+	    user_err Pp.(str "Cannot solve a unification problem.")
   in
   let scf = sigrec_clausal_form siglen ty in
     !evdref, Evarutil.nf_evar !evdref scf
@@ -1886,7 +1886,7 @@ let cond_eq_term c t gl =
 
 let rewrite_assumption_cond cond_eq_term cl =
   let rec arec hyps gl = match hyps with
-    | [] -> error "No such assumption."
+    | [] -> user_err Pp.(str "No such assumption.")
     | hyp ::rest ->
         let id = NamedDecl.get_id hyp in
 	begin

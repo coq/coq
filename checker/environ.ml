@@ -45,7 +45,7 @@ let set_engagement (impr_set as c) env =
     env.env_stratification.env_engagement in
   begin
     match impr_set,expected_impr_set with
-    | PredicativeSet, ImpredicativeSet -> error "Incompatible engagement"
+    | PredicativeSet, ImpredicativeSet -> user_err Pp.(str "Incompatible engagement")
     | _ -> ()
   end;
   { env with env_stratification =

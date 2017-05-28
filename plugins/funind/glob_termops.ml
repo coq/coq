@@ -120,7 +120,7 @@ let remove_name_from_mapping mapping na =
 
 let change_vars =
   let rec change_vars mapping rt =
-    CAst.map (function
+    CAst.map_with_loc (fun ?loc -> function
       | GRef _ as x -> x
       | GVar id ->
 	  let new_id =
@@ -172,7 +172,7 @@ let change_vars =
 	      change_vars mapping lhs,
 	      change_vars mapping rhs
 	     )
-      | GRec _ -> error "Local (co)fixes are not supported"
+      | GRec _ -> user_err ?loc Pp.(str "Local (co)fixes are not supported")
       | GSort _ as x -> x
       | GHole _ as x -> x
       | GCast(b,c) ->
@@ -352,7 +352,7 @@ let rec alpha_rt excluded rt =
 	    alpha_rt excluded lhs,
 	    alpha_rt excluded rhs
 	   )
-    | GRec _ -> error "Not handled GRec"
+    | GRec _ -> user_err Pp.(str "Not handled GRec")
     | GSort _
     | GHole _ as rt -> rt
     | GCast (b,c) ->
@@ -408,7 +408,7 @@ let is_free_in id =
 
     | GIf(cond,_,br1,br2) ->
 	is_free_in cond || is_free_in br1 || is_free_in br2
-    | GRec _ -> raise (UserError(None,str "Not handled GRec"))
+    | GRec _  -> user_err Pp.(str "Not handled GRec")
     | GSort _ -> false
     | GHole _ -> false
     | GCast (b,(CastConv t|CastVM t|CastNative t)) -> is_free_in b || is_free_in t
@@ -695,7 +695,7 @@ let expand_as =
       | GIf(e,(na,po),br1,br2) ->
 	  GIf(expand_as map e,(na,Option.map (expand_as map) po),
 	      expand_as map br1, expand_as map br2)
-      | GRec _ ->  error "Not handled GRec"
+      | GRec _ ->  user_err Pp.(str "Not handled GRec")
       | GCast(b,c) ->
 	  GCast(expand_as map b,
 		Miscops.map_cast_type (expand_as map) c)

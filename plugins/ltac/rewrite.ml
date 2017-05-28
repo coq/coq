@@ -235,7 +235,7 @@ end) = struct
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
 	      if Option.is_empty obj then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
-	      else error "build_signature: no constraint can apply on a dependent argument"
+	      else user_err Pp.(str "build_signature: no constraint can apply on a dependent argument")
 	| _, obj :: _ -> anomaly ~label:"build_signature" (Pp.str "not enough products")
 	| _, [] ->
 	  (match finalcstr with
@@ -472,7 +472,7 @@ type hypinfo = {
 let get_symmetric_proof b = 
   if b then PropGlobal.get_symmetric_proof else TypeGlobal.get_symmetric_proof
 
-let error_no_relation () = error "Cannot find a relation to rewrite."
+let error_no_relation () = user_err Pp.(str "Cannot find a relation to rewrite.")
 
 let rec decompose_app_rel env evd t = 
   (** Head normalize for compatibility with the old meta mechanism *)
@@ -525,7 +525,7 @@ let decompose_applied_relation env sigma (c,l) =
 	let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
 	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx)) with
 	| Some c -> c
-	| None -> error "Cannot find an homogeneous relation to rewrite."
+	| None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
 
 let rewrite_db = "rewrite"
 
@@ -831,7 +831,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 	      sigargs, r.rew_to :: typeargs')
 	  | None ->
 	      if not (Option.is_empty y) then 
-		error "Cannot rewrite inside dependent arguments of a function";
+		user_err Pp.(str "Cannot rewrite inside dependent arguments of a function");
 	      x :: acc, x :: subst, evars, sigargs, x :: typeargs')
       ([], [], evars, sigargs, []) args args'
   in
@@ -1419,7 +1419,7 @@ module Strategies =
 	let unfolded =
 	  try Tacred.try_red_product env sigma c
 	  with e when CErrors.noncritical e ->
-            error "fold: the term is not unfoldable !"
+            user_err Pp.(str "fold: the term is not unfoldable !")
 	in
 	  try
 	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
@@ -2198,7 +2198,7 @@ let setoid_symmetry_in id =
   let rec split_last_two = function
     | [c1;c2] -> [],(c1, c2)
     | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
-    | _ -> error "Cannot find an equivalence relation to rewrite."
+    | _ -> user_err Pp.(str "Cannot find an equivalence relation to rewrite.")
   in
   let others,(c1,c2) = split_last_two args in
   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in

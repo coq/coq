@@ -456,7 +456,7 @@ let destructurate_prop sigma t =
 	Kapp (Other (string_of_path (path_of_global (IndRef isp))),args)
     | Var id,[] -> Kvar id
     | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
-    | Prod (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"
+    | Prod (Name _,_,_),[] -> CErrors.user_err Pp.(str "Omega: Not a quantifier-free goal")
     | _ -> Kufo
 
 let destructurate_type sigma t =
@@ -891,7 +891,7 @@ let rec scalar p n = function
          (Lazy.force coq_fast_Zmult_assoc_reverse);
        focused_simpl (P_APP 2 :: p)],
       Otimes(t1,Oz (n*x))
-  | Otimes(t1,t2) -> error "Omega: Can't solve a goal with non-linear products"
+  | Otimes(t1,t2) -> CErrors.user_err Pp.(str "Omega: Can't solve a goal with non-linear products")
   | (Oatom _ as t) -> [], Otimes(t,Oz n)
   | Oz i -> [focused_simpl p],Oz(n*i)
   | Oufo c -> [], Oufo (mkApp (Lazy.force coq_Zmult, [| mk_integer n; c |]))
@@ -943,7 +943,7 @@ let rec negate p = function
       [clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2]]
          (Lazy.force coq_fast_Zopp_mult_distr_r);
        focused_simpl (P_APP 2 :: p)], Otimes(t1,Oz (neg x))
-  | Otimes(t1,t2) -> error "Omega: Can't solve a goal with non-linear products"
+  | Otimes(t1,t2) -> CErrors.user_err Pp.(str "Omega: Can't solve a goal with non-linear products")
   | (Oatom _ as t) ->
       let r = Otimes(t,Oz(negone)) in
       [clever_rewrite p [[P_APP 1]] (Lazy.force coq_fast_Zopp_eq_mult_neg_1)], r
@@ -1026,7 +1026,7 @@ let shrink_pair p f1 f2 =
     | t1,t2 ->
 	begin
 	  oprint t1; print_newline (); oprint t2; print_newline ();
-	  flush Pervasives.stdout; error "shrink.1"
+	  flush Pervasives.stdout; CErrors.user_err Pp.(str "shrink.1")
 	end
 
 let reduce_factor p = function
@@ -1038,10 +1038,10 @@ let reduce_factor p = function
       let rec compute = function
         | Oz n -> n
 	| Oplus(t1,t2) -> Bigint.add (compute t1) (compute t2)
-	| _ -> error "condense.1"
+	| _ -> CErrors.user_err Pp.(str "condense.1")
       in
       [focused_simpl (P_APP 2 :: p)], Otimes(Oatom v,Oz(compute c))
-  | t -> oprint t; error "reduce_factor.1"
+  | t -> oprint t; CErrors.user_err Pp.(str "reduce_factor.1")
 
 let rec condense p = function
   | Oplus(f1,(Oplus(f2,r) as t)) ->

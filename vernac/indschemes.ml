@@ -418,7 +418,7 @@ let get_common_underlying_mutual_inductive = function
 	  raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
       | [] ->
 	  if not (List.distinct_f Int.compare (List.map snd (List.map snd all)))
-          then error "A type occurs twice";
+          then user_err Pp.(str "A type occurs twice");
 	  mind,
 	  List.map_filter
 	    (function (Some id,(_,i)) -> Some (i,snd id) | (None,_) -> None) all
@@ -429,7 +429,7 @@ let do_scheme l =
 tried to declare different schemes at once *)
     if not (List.is_empty ischeme) && not (List.is_empty escheme)
     then
-      error "Do not declare equality and induction scheme at the same time."
+      user_err Pp.(str "Do not declare equality and induction scheme at the same time.")
     else (
       if not (List.is_empty ischeme) then do_mutual_induction_scheme ischeme
       else
@@ -498,7 +498,7 @@ let do_combined_scheme name schemes =
 		let refe = Ident x in
 		let qualid = qualid_of_reference refe in
 		try Nametab.locate_constant (snd qualid)
-                with Not_found -> error ((string_of_qualid (snd qualid))^" is not declared."))
+                with Not_found -> user_err Pp.(pr_qualid (snd qualid) ++ str " is not declared."))
       schemes
   in
   let body,typ = build_combined_scheme (Global.env ()) csts in

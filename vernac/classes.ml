@@ -353,7 +353,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 		(match tac with Some tac -> ignore (Pfedit.by tac) | None -> ())) ();
 	       id)
 	end
-      else CErrors.error "Unsolved obligations remaining.")
+      else CErrors.user_err Pp.(str "Unsolved obligations remaining."))
 	
 let named_of_rel_context l =
   let acc, ctx =
@@ -379,7 +379,7 @@ let context poly l =
   let ctx =
     try named_of_rel_context fullctx
     with e when CErrors.noncritical e ->
-      error "Anonymous variables not allowed in contexts."
+      user_err Pp.(str "Anonymous variables not allowed in contexts.")
   in
   let uctx = ref (Evd.universe_context_set !evars) in
   let fn status (id, b, t) =

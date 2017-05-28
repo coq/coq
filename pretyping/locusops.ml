@@ -50,9 +50,9 @@ let is_nowhere = function
 
 let simple_clause_of enum_hyps cl =
   let error_occurrences () =
-    CErrors.error "This tactic does not support occurrences selection" in
+    CErrors.user_err Pp.(str "This tactic does not support occurrences selection") in
   let error_body_selection () =
-    CErrors.error "This tactic does not support body selection" in
+    CErrors.user_err Pp.(str "This tactic does not support body selection") in
   let hyps =
     match cl.onhyps with
     | None ->

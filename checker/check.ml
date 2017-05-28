@@ -72,7 +72,7 @@ let find_library dir =
 let try_find_library dir =
   try find_library dir
   with Not_found ->
-    error ("Unknown library " ^ (DirPath.to_string dir))
+    user_err Pp.(str ("Unknown library " ^ (DirPath.to_string dir)))
 
 let library_full_filename dir = (find_library dir).library_filename
 

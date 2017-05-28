@@ -86,7 +86,7 @@ let parse_flag s =
     | '+' -> (AsError, String.sub s 1 (String.length s - 1))
     | '-' -> (Disabled, String.sub s 1 (String.length s - 1))
     | _ -> (Enabled, s)
-  else CErrors.error "Invalid warnings flag"
+  else CErrors.user_err Pp.(str "Invalid warnings flag")
 
 let string_of_flag (status,name) =
   match status with

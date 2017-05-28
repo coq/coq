@@ -535,13 +535,13 @@ let check_inductive env kn mib =
   (* check mind_finite : always OK *)
   (* check mind_ntypes *)
   if Array.length mib.mind_packets <> mib.mind_ntypes then
-    error "not the right number of packets";
+    user_err Pp.(str "not the right number of packets");
   (* check mind_params_ctxt *)
   let params = mib.mind_params_ctxt in
   let _ = check_ctxt env params in
   (* check mind_nparams *)
   if rel_context_nhyps params <> mib.mind_nparams then
-    error "number the right number of parameters";
+    user_err Pp.(str "number the right number of parameters");
   (* mind_packets *)
   (*  - check arities *)
   let env_ar = typecheck_arity env params mib.mind_packets in

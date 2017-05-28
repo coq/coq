@@ -35,7 +35,7 @@ let omega_tactic l =
        | "positive" -> eval_tactic "zify_positive"
        | "N" -> eval_tactic "zify_N"
        | "Z" -> eval_tactic "zify_op"
-       | s -> CErrors.error ("No Omega knowledge base for type "^s))
+       | s -> CErrors.user_err Pp.(str ("No Omega knowledge base for type "^s)))
     (Util.List.sort_uniquize String.compare l)
   in
   Tacticals.New.tclTHEN

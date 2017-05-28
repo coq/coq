@@ -20,13 +20,13 @@ let make_red_flag l =
     | FZeta :: lf -> add_flag { red with rZeta = true } lf
     | FConst l :: lf ->
 	if red.rDelta then
-	  CErrors.error
-	    "Cannot set both constants to unfold and constants not to unfold";
+	  CErrors.user_err Pp.(str
+	    "Cannot set both constants to unfold and constants not to unfold");
         add_flag { red with rConst = union_consts red.rConst l } lf
     | FDeltaBut l :: lf ->
 	if red.rConst <> [] && not red.rDelta then
-	  CErrors.error
-	    "Cannot set both constants to unfold and constants not to unfold";
+	  CErrors.user_err Pp.(str
+	    "Cannot set both constants to unfold and constants not to unfold");
         add_flag
           { red with rConst = union_consts red.rConst l; rDelta = true }
           lf

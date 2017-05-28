@@ -76,7 +76,7 @@ let classify_segment seg =
     (* LEM; TODO: Understand what this does and see if what I do is the
                   correct thing for ClosedMod(ule|type) *)
     | (_,ClosedModule _) :: stk -> clean acc stk
-    | (_,OpenedSection _) :: _ -> error "there are still opened sections"
+    | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
       user_err ~hdr:"Lib.classify_segment"
         (str "there are still opened " ++ str (module_kind ty) ++ str "s")
@@ -184,7 +184,7 @@ let split_lib_gen test =
     | [] -> None
   in
     match findeq [] !lib_state.lib_stk with
-      | None -> error "no such entry"
+      | None -> user_err Pp.(str "no such entry")
       | Some r -> r
 
 let eq_object_name (fp1, kn1) (fp2, kn2) =
@@ -222,7 +222,7 @@ let add_anonymous_entry node =
 
 let add_leaf id obj =
   if Names.ModPath.equal (current_mp ()) Names.initial_path then
-    error ("No session module started (use -top dir)");
+    user_err Pp.(str "No session module started (use -top dir)");
   let oname = make_oname id in
   cache_object (oname,obj);
   add_entry oname (Leaf obj);
@@ -272,8 +272,8 @@ let current_mod_id () =
   try match find_entry_p is_opening_node_or_lib with
     | oname,OpenedModule (_,_,_,fs) -> basename (fst oname)
     | oname,CompilingLibrary _ -> basename (fst oname)
-    | _ -> error "you are not in a module"
-  with Not_found -> error "no opened modules"
+    | _ -> user_err Pp.(str "you are not in a module")
+  with Not_found -> user_err Pp.(str "no opened modules")
 
 
 let start_mod is_type export id mp fs =
@@ -305,7 +305,7 @@ let end_mod is_type =
 	else error_still_opened (module_kind ty) oname
       | oname,OpenedSection _ -> error_still_opened "section" oname
       | _ -> assert false
-    with Not_found -> error "No opened modules."
+    with Not_found -> user_err (Pp.str "No opened modules.")
   in
   let (after,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
@@ -326,9 +326,9 @@ let contents_after sp = let (after,_,_) = split_lib sp in after
 (* TODO: use check_for_module ? *)
 let start_compilation s mp =
   if !lib_state.comp_name != None then
-    error "compilation unit is already started";
+    user_err Pp.(str "compilation unit is already started");
   if not (Names.DirPath.is_empty (current_sections ())) then
-    error "some sections are already opened";
+    user_err Pp.(str "some sections are already opened");
   let prefix = s, (mp, Names.DirPath.empty) in
   let () = add_anonymous_entry (CompilingLibrary prefix) in
   lib_state := { !lib_state with comp_name = Some s;
@@ -337,7 +337,7 @@ let start_compilation s mp =
 let end_compilation_checks dir =
   let _ =
     try match snd (find_entry_p is_opening_node) with
-      | OpenedSection _ -> error "There are some open sections."
+      | OpenedSection _ -> user_err Pp.(str  "There are some open sections.")
       | OpenedModule (ty,_,_,_) ->
 	user_err ~hdr:"Lib.end_compilation_checks"
           (str "There are some open " ++ str (module_kind ty) ++ str "s.")
@@ -394,7 +394,7 @@ let find_opening_node id =
       user_err ~hdr:"Lib.find_opening_node"
         (str "Last block to end has name " ++ pr_id id' ++ str ".");
     entry
-  with Not_found -> error "There is nothing to end."
+  with Not_found -> user_err Pp.(str "There is nothing to end.")
 
 (* Discharge tables *)
 
@@ -428,7 +428,7 @@ let add_section () =
 let check_same_poly p vars =
   let pred = function Context _ -> p = false | Variable (_, _, poly, _) -> p != poly in
   if List.exists pred vars then
-    error "Cannot mix universe polymorphic and monomorphic declarations in sections."
+    user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
 
 let add_section_variable id impl poly ctx =
   match !sectab with
@@ -555,7 +555,7 @@ let close_section () =
       | oname,OpenedSection (_,fs) -> oname,fs
       | _ -> assert false
     with Not_found ->
-      error "No opened section."
+      user_err Pp.(str  "No opened section.")
   in
   let (secdecls,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };

@@ -161,7 +161,7 @@ let left_instance_tac (inst,id) continue seq=
 		  let evmap, _ =
 		    try Typing.type_of (pf_env gl) evmap gt
 		    with e when CErrors.noncritical e ->
-		      error "Untypable instance, maybe higher-order non-prenex quantification" in
+		      user_err Pp.(str "Untypable instance, maybe higher-order non-prenex quantification") in
 		    Sigma.Unsafe.of_pair (generalize [gt], evmap)
                 end })
 	    else

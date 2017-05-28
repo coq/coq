@@ -36,12 +36,11 @@ let empty_opaquetab = {
 
 (* hooks *)
 let default_get_opaque dp _ =
-  CErrors.error
-    ("Cannot access opaque proofs in library " ^ DirPath.to_string dp)
+  CErrors.user_err Pp.(pr_sequence str ["Cannot access opaque proofs in library"; DirPath.to_string dp])
 let default_get_univ dp _ =
-  CErrors.error
-    ("Cannot access universe constraints of opaque proofs in library " ^
-    DirPath.to_string dp)
+  CErrors.user_err (Pp.pr_sequence Pp.str [
+    "Cannot access universe constraints of opaque proofs in library ";
+    DirPath.to_string dp])
 
 let get_opaque = ref default_get_opaque
 let get_univ = ref default_get_univ

@@ -246,7 +246,7 @@ let rec pp_expr par env args =
         pp_boxed_tuple (pp_expr true env []) l
     | MLcase (_, t, pv) when is_custom_match pv ->
         if not (is_regular_match pv) then
-	  error "Cannot mix yet user-given match and general patterns.";
+	  user_err Pp.(str "Cannot mix yet user-given match and general patterns.");
 	let mkfun (ids,_,e) =
 	  if not (List.is_empty ids) then named_lams (List.rev ids) e
 	  else dummy_lams (ast_lift 1 e) 1

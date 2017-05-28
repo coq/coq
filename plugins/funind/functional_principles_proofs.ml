@@ -820,10 +820,10 @@ let build_proof
 		      build_proof new_finalize {dyn_infos  with info = f } g
 	      end
 	  | Fix _ | CoFix _ ->
-	      error ( "Anonymous local (co)fixpoints are not handled yet")
+	      user_err Pp.(str ( "Anonymous local (co)fixpoints are not handled yet"))
 
-	  | Proj _ -> error "Prod"
-	  | Prod _ -> error "Prod"
+	  | Proj _ -> user_err Pp.(str "Prod")
+	  | Prod _ -> user_err Pp.(str "Prod")
 	  | LetIn _ ->
 	      let new_infos =
 		{ dyn_infos with
@@ -1097,7 +1097,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	       (Global.env ())
 	       (Evd.empty)
 	       (EConstr.of_constr body)
-	| None -> error ( "Cannot define a principle over an axiom ")
+	| None -> user_err Pp.(str "Cannot define a principle over an axiom ")
     in
     let fbody = get_body fnames.(fun_num) in
     let f_ctxt,f_body = decompose_lam (project g) fbody in
@@ -1199,7 +1199,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 					 bs.(num),
 				       List.rev_map var_of_decl princ_params))
 				 ),num
-			 | _ -> error "Not a mutual block"
+			 | _ -> user_err Pp.(str "Not a mutual block")
 		   in
 		   let info =
 		     {infos with
@@ -1594,7 +1594,7 @@ let prove_principle_for_gen
   let args_ids = List.map (get_name %> Nameops.out_name) princ_info.args in
   let lemma =
     match !tcc_lemma_ref with
-     | Undefined -> error "No tcc proof !!"
+     | Undefined -> user_err Pp.(str "No tcc proof !!")
      | Value lemma -> EConstr.of_constr lemma
      | Not_needed -> EConstr.of_constr (Universes.constr_of_global @@ Coqlib.build_coq_I ())
   in

@@ -69,7 +69,7 @@ let tclTHENSEQ       = tclTHENLIST
 
 let nthDecl m gl =
   try List.nth (pf_hyps gl) (m-1)
-  with Failure _ -> error "No such assumption."
+  with Failure _ -> user_err Pp.(str "No such assumption.")
 
 let nthHypId m gl = nthDecl m gl |> NamedDecl.get_id
 let nthHyp m gl   = mkVar (nthHypId m gl)
@@ -80,7 +80,7 @@ let lastHyp gl    = nthHyp 1 gl
 
 let nLastDecls n gl =
   try List.firstn n (pf_hyps gl)
-  with Failure _ -> error "Not enough hypotheses in the goal."
+  with Failure _ -> user_err Pp.(str "Not enough hypotheses in the goal.")
 
 let nLastHypsId n gl = List.map (NamedDecl.get_id) (nLastDecls n gl)
 let nLastHyps n gl   = List.map mkVar (nLastHypsId n gl)
@@ -533,11 +533,11 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     try
       List.nth hyps (m-1)
-    with Failure _ -> CErrors.error "No such assumption."
+    with Failure _ -> CErrors.user_err Pp.(str "No such assumption.")
 
   let nLastDecls gl n =
     try List.firstn n (Proofview.Goal.hyps gl)
-    with Failure _ -> error "Not enough hypotheses in the goal."
+    with Failure _ -> CErrors.user_err Pp.(str "Not enough hypotheses in the goal.")
 
   let nthHypId m gl =
     (** We only use [id] *)

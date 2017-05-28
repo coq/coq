@@ -660,7 +660,7 @@ GEXTEND Gram
               if Option.is_empty !slash_position then
                 (slash_position := Some i; parse_args i args)
               else
-                error "The \"/\" modifier can occur only once"
+                user_err Pp.(str "The \"/\" modifier can occur only once")
          in
          let args = parse_args 0 (List.flatten args) in
          let more_implicits = Option.default [] more_implicits in
@@ -734,7 +734,7 @@ GEXTEND Gram
     | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
        let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> Loc.tag ~loc:!@loc y) x
-         | Some _, Some _ -> error "scope declared twice" in
+         | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
@@ -742,7 +742,7 @@ GEXTEND Gram
     | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
        let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> Loc.tag ~loc:!@loc y) x
-         | Some _, Some _ -> error "scope declared twice" in
+         | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
@@ -750,7 +750,7 @@ GEXTEND Gram
     | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
        let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> Loc.tag ~loc:!@loc y) x
-         | Some _, Some _ -> error "scope declared twice" in
+         | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
@@ -939,7 +939,7 @@ GEXTEND Gram
 	  PrintGrammar ent
       | IDENT "LoadPath"; dir = OPT dirpath -> PrintLoadPath dir
       | IDENT "Modules" ->
-          error "Print Modules is obsolete; use Print Libraries instead"
+          user_err Pp.(str "Print Modules is obsolete; use Print Libraries instead")
       | IDENT "Libraries" -> PrintModules
 
       | IDENT "ML"; IDENT "Path" -> PrintMLLoadPath

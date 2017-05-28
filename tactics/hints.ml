@@ -59,7 +59,7 @@ let head_constr_bound sigma t =
   | _ -> raise Bound
 
 let head_constr sigma c =
-  try head_constr_bound sigma c with Bound -> error "Bound head variable."
+  try head_constr_bound sigma c with Bound -> user_err Pp.(str "Bound head variable.")
 
 let decompose_app_bound sigma t =
   let t = strip_outer_cast sigma t in
@@ -167,7 +167,7 @@ let write_warn_hint = function
 | "Lax" -> warn_hint := `LAX
 | "Warn" -> warn_hint := `WARN
 | "Strict" -> warn_hint := `STRICT
-| _ -> error "Only the following flags are accepted: Lax, Warn, Strict."
+| _ -> user_err Pp.(str "Only the following flags are accepted: Lax, Warn, Strict.")
 
 let _ =
   Goptions.declare_string_option
@@ -767,7 +767,7 @@ let rec nb_hyp sigma c = match EConstr.kind sigma c with
 
 let try_head_pattern c =
   try head_pattern_bound c
-  with BoundPattern -> error "Bound head variable."
+  with BoundPattern -> user_err Pp.(str "Bound head variable.")
 
 let with_uid c = { obj = c; uid = fresh_key () }
 
@@ -980,8 +980,8 @@ let get_db dbname =
 let add_hint dbname hintlist =
   let check (_, h) =
     let () = if KNmap.mem h.code.uid !statustable then
-      error "Conflicting hint keys. This can happen when including \
-      twice the same module."
+      user_err Pp.(str "Conflicting hint keys. This can happen when including \
+      twice the same module.")
     in
     statustable := KNmap.add h.code.uid false !statustable
   in
@@ -1246,10 +1246,10 @@ let prepare_hint check (poly,local) env init (sigma,c) =
       let t = Evarutil.nf_evar sigma (existential_type sigma ev) in
       let t = List.fold_right (fun (e,id) c -> replace_term sigma e id c) !subst t in
       if not (closed0 sigma c) then
-	error "Hints with holes dependent on a bound variable not supported.";
+	user_err Pp.(str "Hints with holes dependent on a bound variable not supported.");
       if occur_existential sigma t then
 	(* Not clever enough to construct dependency graph of evars *)
-	error "Not clever enough to deal with evars dependent in other evars.";
+	user_err Pp.(str "Not clever enough to deal with evars dependent in other evars.");
       raise (Found (c,t))
     | _ -> EConstr.iter sigma find_next_evar c in
   let rec iter c =
@@ -1322,7 +1322,7 @@ let interp_hints poly =
 
 let add_hints local dbnames0 h =
   if String.List.mem "nocore" dbnames0 then
-    error "The hint database \"nocore\" is meant to stay empty.";
+    user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");
   let dbnames = if List.is_empty dbnames0 then ["core"] else dbnames0 in
   let env = Global.env() in
   let sigma = Evd.from_env env in
@@ -1471,7 +1471,7 @@ let pr_applicable_hint () =
   let pts = get_pftreestate () in
   let glss = Proof.V82.subgoals pts in
   match glss.Evd.it with
-  | [] -> CErrors.error "No focused goal."
+  | [] -> CErrors.user_err Pp.(str "No focused goal.")
   | g::_ ->
     pr_hint_term glss.Evd.sigma (Goal.V82.concl glss.Evd.sigma g)
 

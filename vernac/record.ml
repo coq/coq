@@ -561,7 +561,7 @@ let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,id
   in
   let isnot_class = match kind with Class false -> false | _ -> true in
   if isnot_class && List.exists (fun opt -> not (Option.is_empty opt)) priorities then
-    error "Priorities only allowed for type class substructures";
+    user_err Pp.(str "Priorities only allowed for type class substructures");
   (* Now, younger decl in params and fields is on top *)
   let (pl, ctx), arity, template, implpars, params, implfs, fields =
     States.with_state_protection (fun () ->

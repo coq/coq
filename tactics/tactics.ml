@@ -195,6 +195,7 @@ let introduction ?(check=true) id =
   end }
 
 let refine          = Tacmach.refine
+let error msg = CErrors.user_err Pp.(str msg)
 
 let convert_concl ?(check=true) ty k =
   Proofview.Goal.enter { enter = begin fun gl ->

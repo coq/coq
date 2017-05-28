@@ -97,7 +97,7 @@ let mis_nf_constructor_type ((ind,u),mib,mip) j =
   and ntypes = mib.mind_ntypes
   and nconstr = Array.length mip.mind_consnames in
   let make_Ik k = mkIndU (((fst ind),ntypes-k-1),u) in
-  if j > nconstr then error "Not enough constructors in the type.";
+  if j > nconstr then user_err Pp.(str "Not enough constructors in the type.");
     substl (List.init ntypes make_Ik) (subst_instance_constr u specif.(j-1))
 
 (* Number of constructors *)

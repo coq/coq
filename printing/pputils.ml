@@ -96,7 +96,7 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) keyword = function
               pr_arg (prlist_with_sep pr_comma (pr_with_occurrences pr_constr keyword)) l)
 
   | Red true ->
-    CErrors.error "Shouldn't be accessible from user."
+    CErrors.user_err Pp.(str "Shouldn't be accessible from user.")
   | ExtraRedExpr s ->
     str s
   | CbvVm o ->

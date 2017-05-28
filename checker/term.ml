@@ -273,14 +273,14 @@ let decompose_lam =
   abstractions *)
 let decompose_lam_n_assum n =
   if n < 0 then
-    error "decompose_lam_n_assum: integer parameter must be positive";
+    user_err Pp.(str "decompose_lam_n_assum: integer parameter must be positive");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else match c with
     | Lambda (x,t,c)  -> lamdec_rec (LocalAssum (x,t) :: l) (n-1) c
     | LetIn (x,b,t,c) -> lamdec_rec (LocalDef (x,b,t) :: l) n c
     | Cast (c,_,_)      -> lamdec_rec l n c
-    | c -> error "decompose_lam_n_assum: not enough abstractions"
+    | c -> user_err Pp.(str "decompose_lam_n_assum: not enough abstractions")
   in
   lamdec_rec empty_rel_context n
 
@@ -306,14 +306,14 @@ let decompose_prod_assum =
 
 let decompose_prod_n_assum n =
   if n < 0 then
-    error "decompose_prod_n_assum: integer parameter must be positive";
+    user_err Pp.(str "decompose_prod_n_assum: integer parameter must be positive");
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
     else match c with
     | Prod (x,t,c)    -> prodec_rec (LocalAssum (x,t) :: l) (n-1) c
     | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t) :: l) (n-1) c
     | Cast (c,_,_)    -> prodec_rec l n c
-    | c -> error "decompose_prod_n_assum: not enough assumptions"
+    | c -> user_err Pp.(str "decompose_prod_n_assum: not enough assumptions")
   in
   prodec_rec empty_rel_context n
 

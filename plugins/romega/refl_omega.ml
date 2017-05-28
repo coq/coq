@@ -1042,5 +1042,5 @@ let total_reflexive_omega_tactic unsafe =
   let systems_list = destructurate_hyps full_reified_goal in
   if !debug then display_systems systems_list;
   resolution unsafe env reified_goal systems_list
-  with NO_CONTRADICTION -> CErrors.error "ROmega can't solve this system"
+  with NO_CONTRADICTION -> CErrors.user_err Pp.(str "ROmega can't solve this system")
   end }

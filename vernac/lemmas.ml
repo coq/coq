@@ -153,9 +153,9 @@ let find_mutually_recursive_statements thms =
 	  (* assume the largest indices as possible *)
 	  List.last common_same_indhyp, false, possible_guards
       | _, [] ->
-	  error
+	  user_err Pp.(str
             ("Cannot find common (mutual) inductive premises or coinductive" ^
-             " conclusions in the statements.")
+             " conclusions in the statements."))
     in
     (finite,guard,None), ordered_inds
 
@@ -273,7 +273,7 @@ let save_named ?export_seff proof =
 
 let check_anonymity id save_ident =
   if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
-    error "This command can only be used for unnamed theorem."
+    user_err Pp.(str "This command can only be used for unnamed theorem.")
 
 let save_anonymous ?export_seff proof save_ident =
   let id,const,(cstrs,pl),do_guard,persistence,hook = proof in
@@ -478,10 +478,10 @@ let save_proof ?proof = function
         match proof with
         | Some ({ id; entries; persistence = k; universes }, _) ->
             if List.length entries <> 1 then
-              error "Admitted does not support multiple statements";
+              user_err Pp.(str "Admitted does not support multiple statements");
             let { const_entry_secctx; const_entry_type } = List.hd entries in
             if const_entry_type = None then
-              error "Admitted requires an explicit statement";
+              user_err Pp.(str "Admitted requires an explicit statement");
             let typ = Option.get const_entry_type in
             let ctx = Evd.evar_context_universe_context (fst universes) in
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in

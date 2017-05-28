@@ -197,7 +197,7 @@ let generate_type evd g_to_f f graph i =
 let find_induction_principle evd f =
   let f_as_constant,u =  match EConstr.kind !evd f with
     | Const c' -> c'
-    | _ -> error "Must be used with a function"
+    | _ -> user_err Pp.(str "Must be used with a function")
   in
   let infos = find_Function_infos f_as_constant in
   match infos.rect_lemma with
@@ -701,7 +701,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
       let graph_def = graphs.(j) in
       let infos =
         try find_Function_infos (fst (destConst (project g) funcs.(j)))
-        with Not_found ->  error "No graph found"
+        with Not_found ->  user_err Pp.(str "No graph found")
       in
       if infos.is_general
         || Rtree.is_infinite Declareops.eq_recarg graph_def.mind_recargs
@@ -1006,6 +1006,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
       | _ -> tclFAIL 1 (mt ()) g
 
 
+let error msg = user_err Pp.(str msg)
 
 let invfun qhyp f  =
   let f =

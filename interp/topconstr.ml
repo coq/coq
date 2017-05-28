@@ -163,7 +163,7 @@ let split_at_annot bl na =
   match na with
   | None ->
       begin match names with
-      | [] -> error "A fixpoint needs at least one parameter."
+      | [] -> user_err (Pp.str "A fixpoint needs at least one parameter.")
       | _ -> ([], bl)
       end
   | Some (loc, id) ->

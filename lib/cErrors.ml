@@ -38,7 +38,6 @@ exception UserError of string option * std_ppcmds (* User errors *)
 let todo s = prerr_string ("TODO: "^s^"\n")
 
 let user_err ?loc ?hdr strm = Loc.raise ?loc (UserError (hdr, strm))
-let error            string = user_err (str string)
 
 let invalid_arg ?loc s   = Loc.raise ?loc (Invalid_argument s)
 
@@ -138,3 +137,8 @@ let handled e =
   let bottom _ = raise Bottom in
   try let _ = print_gen bottom !handle_stack e in true
   with Bottom -> false
+
+(* Deprecated functions *)
+let error            string = user_err (str string)
+let user_err_loc (loc,hdr,msg) = user_err ~loc ~hdr msg
+let errorlabstrm hdr msg = user_err ~hdr msg

@@ -66,14 +66,14 @@ exception FullyUnfocused
 
 let _ = CErrors.register_handler begin function
   | CannotUnfocusThisWay ->
-    CErrors.error "This proof is focused, but cannot be unfocused this way"
+    CErrors.user_err Pp.(str "This proof is focused, but cannot be unfocused this way")
   | NoSuchGoals (i,j) when Int.equal i j ->
       CErrors.user_err ~hdr:"Focus" Pp.(str"No such goal (" ++ int i ++ str").")
   | NoSuchGoals (i,j) ->
       CErrors.user_err ~hdr:"Focus" Pp.(
         str"Not every goal in range ["++ int i ++ str","++int j++str"] exist."
       )
-  | FullyUnfocused -> CErrors.error "The proof is not focused"
+  | FullyUnfocused -> CErrors.user_err Pp.(str "The proof is not focused")
   | _ -> raise CErrors.Unhandled
 end
 
@@ -301,10 +301,10 @@ exception HasShelvedGoals
 exception HasGivenUpGoals
 exception HasUnresolvedEvar
 let _ = CErrors.register_handler begin function
-  | UnfinishedProof -> CErrors.error "Some goals have not been solved."
-  | HasShelvedGoals -> CErrors.error "Some goals have been left on the shelf."
-  | HasGivenUpGoals -> CErrors.error "Some goals have been given up."
-  | HasUnresolvedEvar -> CErrors.error "Some existential variables are uninstantiated."
+  | UnfinishedProof -> CErrors.user_err Pp.(str "Some goals have not been solved.")
+  | HasShelvedGoals -> CErrors.user_err Pp.(str "Some goals have been left on the shelf.")
+  | HasGivenUpGoals -> CErrors.user_err Pp.(str "Some goals have been given up.")
+  | HasUnresolvedEvar -> CErrors.user_err Pp.(str "Some existential variables are uninstantiated.")
   | _ -> raise CErrors.Unhandled
 end
 
@@ -420,9 +420,9 @@ module V82 = struct
         let evl = Evarutil.non_instantiated sigma in
         let evl = Evar.Map.bindings evl in
         if (n <= 0) then
-          CErrors.error "incorrect existential variable index"
+          CErrors.user_err Pp.(str "incorrect existential variable index")
         else if CList.length evl < n then
-          CErrors.error "not so many uninstantiated existential variables"
+          CErrors.user_err Pp.(str "not so many uninstantiated existential variables")
         else
           CList.nth evl (n-1)
       in

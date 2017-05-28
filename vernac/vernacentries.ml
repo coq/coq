@@ -139,7 +139,7 @@ let make_cases s =
 let show_match id =
   let patterns =
     try make_cases_aux (Nametab.global id)
-    with Not_found -> error "Unknown inductive type."
+    with Not_found -> user_err Pp.(str "Unknown inductive type.")
   in
   let pr_branch l =
     str "| " ++ hov 1 (prlist_with_sep spc str l) ++ str " =>"
@@ -305,7 +305,7 @@ let print_strategy r =
     let key = match r with
     | VarRef id -> VarKey id
     | ConstRef cst -> ConstKey cst
-    | IndRef _ | ConstructRef _ -> error "The reference is not unfoldable"
+    | IndRef _ | ConstructRef _ -> user_err Pp.(str "The reference is not unfoldable")
     in
     let lvl = get_strategy oracle key in
     Feedback.msg_notice (pr_strategy (r, lvl))
@@ -451,8 +451,8 @@ let start_proof_and_print k l hook =
                                    concl (Tacticals.New.tclCOMPLETE tac)
           in Evd.set_universe_context sigma ctx, EConstr.of_constr c
         with Logic_monad.TacticFailure e when Logic.catchable_exception e ->
-          error "The statement obligations could not be resolved \
-                 automatically, write a statement definition first."
+          user_err Pp.(str "The statement obligations could not be resolved \
+                 automatically, write a statement definition first.")
       in Some hook
     else None
   in
@@ -551,9 +551,9 @@ let vernac_inductive poly lo finite indl =
       indl;
   match indl with
   | [ ( _ , _ , _ ,(Record|Structure), Constructors _ ),_ ] ->
-      CErrors.error "The Record keyword is for types defined using the syntax { ... }."
+      user_err Pp.(str "The Record keyword is for types defined using the syntax { ... }.")
   | [ (_ , _ , _ ,Variant, RecordDecl _),_ ] ->
-      CErrors.error "The Variant keyword does not support syntax { ... }."
+      user_err Pp.(str "The Variant keyword does not support syntax { ... }.")
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
       vernac_record (match b with Class _ -> Class false | _ -> b)
        poly finite id bl c oc fs
@@ -564,16 +564,16 @@ let vernac_inductive poly lo finite indl =
   	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
       in vernac_record (Class true) poly finite id bl c None [f]
   | [ ( _ , _, _, Class _, Constructors _), [] ] ->
-      CErrors.error "Inductive classes not supported"
+      user_err Pp.(str "Inductive classes not supported")
   | [ ( id , bl , c , Class _, _), _ :: _ ] ->
-      CErrors.error "where clause not supported for classes"
+      user_err Pp.(str "where clause not supported for classes")
   | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] ->
-      CErrors.error "where clause not supported for (co)inductive records"
+      user_err Pp.(str "where clause not supported for (co)inductive records")
   | _ -> let unpack = function
       | ( (false, id) , bl , c , _ , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
       | ( (true,_),_,_,_,Constructors _),_ ->
-          CErrors.error "Variant types do not handle the \"> Name\" syntax, which is reserved for records. Use the \":>\" syntax on constructors instead."
-      | _ -> CErrors.error "Cannot handle mutually (co)inductive records."
+          user_err Pp.(str "Variant types do not handle the \"> Name\" syntax, which is reserved for records. Use the \":>\" syntax on constructors instead.")
+      | _ -> user_err Pp.(str "Cannot handle mutually (co)inductive records.")
     in
     let indl = List.map unpack indl in
     do_mutual_inductive indl poly lo finite
@@ -631,11 +631,11 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
-    error "Modules and Module Types are not allowed inside sections.";
+    user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   let binders_ast = List.map
    (fun (export,idl,ty) ->
      if not (Option.is_empty export) then
-      error "Arguments of a functor declaration cannot be exported. Remove the \"Export\" and \"Import\" keywords from every functor argument."
+      user_err Pp.(str "Arguments of a functor declaration cannot be exported. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
      else (idl,ty)) binders_ast in
   let mp =
     Declaremods.declare_module Modintern.interp_module_ast
@@ -649,7 +649,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
-    error "Modules and Module Types are not allowed inside sections.";
+    user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   match mexpr_ast_l with
     | [] ->
        check_no_pending_proofs ();
@@ -674,7 +674,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        let binders_ast = List.map
         (fun (export,idl,ty) ->
           if not (Option.is_empty export) then
-           error "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument."
+           user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
           else (idl,ty)) binders_ast in
        let mp =
          Declaremods.declare_module Modintern.interp_module_ast
@@ -694,7 +694,7 @@ let vernac_end_module export (loc,id as lid) =
 
 let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
   if Lib.sections_are_opened () then
-    error "Modules and Module Types are not allowed inside sections.";
+    user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
 
   match mty_ast_l with
     | [] ->
@@ -722,7 +722,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
 	let binders_ast = List.map
           (fun (export,idl,ty) ->
             if not (Option.is_empty export) then
-              error "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument."
+              user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
 	let mp =
           Declaremods.declare_modtype Modintern.interp_module_ast
@@ -846,7 +846,7 @@ let vernac_set_end_tac tac =
   let env = Genintern.empty_glob_sign (Global.env ()) in
   let _, tac = Genintern.generic_intern env tac in
   if not (refining ()) then
-    error "Unknown command of the non proof-editing mode.";
+    user_err Pp.(str "Unknown command of the non proof-editing mode.");
   set_end_tac tac
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
@@ -903,7 +903,7 @@ let vernac_chdir = function
 	  (* Cd is typically used to control the output directory of
 	  extraction. A failed Cd could lead to overwriting .ml files
 	  so we make it an error. *)
-	  CErrors.error ("Cd failed: " ^ err)
+	  user_err Pp.(str ("Cd failed: " ^ err))
       end;
       if_verbose Feedback.msg_info (str (Sys.getcwd()))
 
@@ -972,7 +972,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   let never_unfold_flag = List.mem `ReductionNeverUnfold flags in
 
   let err_incompat x y =
-    error ("Options \""^x^"\" and \""^y^"\" are incompatible.") in
+    user_err Pp.(str ("Options \""^x^"\" and \""^y^"\" are incompatible.")) in
 
   if assert_flag && rename_flag then
     err_incompat "assert" "rename";
@@ -1018,7 +1018,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
     | { name = Anonymous; notation_scope = Some _ } :: args ->
        check_extra_args args
     | _ ->
-       error "Extra notation scopes can be set on anonymous and explicit arguments only."
+       user_err Pp.(str "Extra notation scopes can be set on anonymous and explicit arguments only.")
   in
 
   let args, scopes =
@@ -1032,12 +1032,12 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   in
 
   if Option.cata (fun n -> n > num_args) false nargs_for_red then
-    error "The \"/\" modifier should be put before any extra scope.";
+    user_err Pp.(str "The \"/\" modifier should be put before any extra scope.");
 
   let scopes_specified = List.exists Option.has_some scopes in
   
   if scopes_specified && clear_scopes_flag then
-    error "The \"clear scopes\" flag is incompatible with scope annotations.";
+    user_err Pp.(str "The \"clear scopes\" flag is incompatible with scope annotations.");
 
   let names = List.map (fun { name } -> name) args in
   let names = names :: List.map (List.map fst) more_implicits in
@@ -1062,7 +1062,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
     | name1 :: names1, name2 :: names2 ->
        if Name.equal name1 name2 then
          name1 :: names_union names1 names2
-       else error "Argument lists should agree on the names they provide."
+       else user_err Pp.(str "Argument lists should agree on the names they provide.")
   in
 
   let names = List.fold_left names_union [] names in
@@ -1143,10 +1143,10 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   let implicits_specified = match implicits with [[]] -> false | _ -> true in
 
   if implicits_specified && clear_implicits_flag then
-    error "The \"clear implicits\" flag is incompatible with implicit annotations";
+    user_err Pp.(str "The \"clear implicits\" flag is incompatible with implicit annotations");
 
   if implicits_specified && default_implicits_flag then
-    error "The \"default implicits\" flag is incompatible with implicit annotations";
+    user_err Pp.(str "The \"default implicits\" flag is incompatible with implicit annotations");
 
   let rargs =
     Util.List.map_filter (function (n, true) -> Some n | _ -> None)
@@ -1452,8 +1452,8 @@ let vernac_set_strategy locality l =
     match smart_global r with
       | ConstRef sp -> EvalConstRef sp
       | VarRef id -> EvalVarRef id
-      | _ -> error
-          "cannot set an inductive type or a constructor as transparent" in
+      | _ -> user_err Pp.(str
+          "cannot set an inductive type or a constructor as transparent") in
   let l = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) l in
   Redexpr.set_strategy local l
 
@@ -1463,8 +1463,8 @@ let vernac_set_opacity locality (v,l) =
     match smart_global r with
       | ConstRef sp -> EvalConstRef sp
       | VarRef id -> EvalVarRef id
-      | _ -> error
-          "cannot set an inductive type or a constructor as transparent" in
+      | _ -> user_err Pp.(str
+          "cannot set an inductive type or a constructor as transparent") in
   let l = List.map glob_ref l in
   Redexpr.set_strategy local [v,l]
 
@@ -1764,10 +1764,10 @@ let vernac_locate = let open Feedback in function
 
 let vernac_register id r =
  if Pfedit.refining () then
-    error "Cannot register a primitive while in proof editing mode.";
+    user_err Pp.(str "Cannot register a primitive while in proof editing mode.");
   let t = (Constrintern.global_reference (snd id)) in
   if not (isConst t) then
-    error "Register inline: a constant is expected";
+    user_err Pp.(str "Register inline: a constant is expected");
   let kn = destConst t in
   match r with
   | RegisterInline -> Global.register_inline (Univ.out_punivs kn)
@@ -1780,7 +1780,7 @@ let vernac_focus gln =
     match gln with
       | None -> Proof.focus focus_command_cond () 1 p
       | Some 0 ->
-         CErrors.error "Invalid goal number: 0. Goal numbering starts with 1."
+         user_err Pp.(str "Invalid goal number: 0. Goal numbering starts with 1.")
       | Some n ->
          Proof.focus focus_command_cond () n p)
 
@@ -1795,7 +1795,7 @@ let vernac_unfocused () =
   if Proof.unfocused p then
     Feedback.msg_notice (str"The proof is indeed fully unfocused.")
   else
-    error "The proof is not fully unfocused."
+    user_err Pp.(str "The proof is not fully unfocused.")
 
 
 (* BeginSubproof / EndSubproof. 
@@ -2081,7 +2081,7 @@ let check_vernac_supports_locality c l =
     | VernacDeclareReduction _
     | VernacExtend _ 
     | VernacInductive _) -> ()
-  | Some _, _ -> CErrors.error "This command does not support Locality"
+  | Some _, _ -> user_err Pp.(str "This command does not support Locality")
 
 (* Vernaculars that take a polymorphism flag *)
 let check_vernac_supports_polymorphism c p =
@@ -2095,7 +2095,7 @@ let check_vernac_supports_polymorphism c p =
     | VernacInstance _ | VernacDeclareInstances _
     | VernacHints _ | VernacContext _
     | VernacExtend _ | VernacUniverse _ | VernacConstraint _) -> ()
-  | Some _, _ -> CErrors.error "This command does not support Polymorphism"
+  | Some _, _ -> user_err Pp.(str "This command does not support Polymorphism")
 
 let enforce_polymorphism = function
   | None -> Flags.is_universe_polymorphism ()
@@ -2172,13 +2172,13 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     | VernacStm _ -> assert false (* Done by Stm *)
 
     | VernacProgram c when not isprogcmd -> aux ?locality ?polymorphism true c
-    | VernacProgram _ -> CErrors.error "Program mode specified twice"
+    | VernacProgram _ -> user_err Pp.(str "Program mode specified twice")
     | VernacLocal (b, c) when Option.is_empty locality -> 
       aux ~locality:b ?polymorphism isprogcmd c
     | VernacPolymorphic (b, c) when polymorphism = None -> 
       aux ?locality ~polymorphism:b isprogcmd c
-    | VernacPolymorphic (b, c) -> CErrors.error "Polymorphism specified twice"
-    | VernacLocal _ -> CErrors.error "Locality specified twice"
+    | VernacPolymorphic (b, c) -> user_err Pp.(str "Polymorphism specified twice")
+    | VernacLocal _ -> user_err Pp.(str "Locality specified twice")
     | VernacFail v ->
         with_fail true (fun () -> aux ?locality ?polymorphism isprogcmd v)
     | VernacTimeout (n,v) ->

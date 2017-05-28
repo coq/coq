@@ -141,7 +141,7 @@ let occur_vars_in_decl env sigma hyps d =
 let reorder_context env sigma sign ord =
   let ords = List.fold_right Id.Set.add ord Id.Set.empty in
   if not (Int.equal (List.length ord) (Id.Set.cardinal ords)) then
-    error "Order list has duplicates";
+    user_err Pp.(str "Order list has duplicates");
   let rec step ord expected ctxt_head moved_hyps ctxt_tail =
     match ord with
       | [] -> List.rev ctxt_tail @ ctxt_head

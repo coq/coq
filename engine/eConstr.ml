@@ -295,7 +295,7 @@ let decompose_lam_assum sigma c =
 let decompose_lam_n_assum sigma n c =
   let open Rel.Declaration in
   if n < 0 then
-    error "decompose_lam_n_assum: integer parameter must be positive";
+    user_err Pp.(str "decompose_lam_n_assum: integer parameter must be positive");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
@@ -303,14 +303,14 @@ let decompose_lam_n_assum sigma n c =
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
       | Cast (c,_,_)      -> lamdec_rec l n c
-      | c -> error "decompose_lam_n_assum: not enough abstractions"
+      | c -> user_err Pp.(str "decompose_lam_n_assum: not enough abstractions")
   in
   lamdec_rec Context.Rel.empty n c
 
 let decompose_lam_n_decls sigma n =
   let open Rel.Declaration in
   if n < 0 then
-    error "decompose_lam_n_decls: integer parameter must be positive";
+    user_err Pp.(str "decompose_lam_n_decls: integer parameter must be positive");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
@@ -318,7 +318,7 @@ let decompose_lam_n_decls sigma n =
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> lamdec_rec l n c
-      | c -> error "decompose_lam_n_decls: not enough abstractions"
+      | c -> user_err Pp.(str "decompose_lam_n_decls: not enough abstractions")
   in
   lamdec_rec Context.Rel.empty n
 
@@ -363,7 +363,7 @@ let decompose_prod_assum sigma c =
 let decompose_prod_n_assum sigma n c =
   let open Rel.Declaration in
   if n < 0 then
-    error "decompose_prod_n_assum: integer parameter must be positive";
+    user_err Pp.(str "decompose_prod_n_assum: integer parameter must be positive");
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
     else
@@ -371,7 +371,7 @@ let decompose_prod_n_assum sigma n c =
       | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)      -> prodec_rec l n c
-      | c -> error "decompose_prod_n_assum: not enough assumptions"
+      | c -> user_err Pp.(str "decompose_prod_n_assum: not enough assumptions")
   in
   prodec_rec Context.Rel.empty n c
 

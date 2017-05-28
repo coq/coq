@@ -60,7 +60,7 @@ let get_tacentry n m =
   else EntryName (rawwit Tacarg.wit_tactic, atactic n)
 
 let get_separator = function
-| None -> error "Missing separator."
+| None -> user_err Pp.(str "Missing separator.")
 | Some sep -> sep
 
 let rec parse_user_entry s sep =
@@ -110,7 +110,7 @@ let get_tactic_entry n =
   else if 1<=n && n<5 then
     Pltac.tactic_expr, Some (Extend.Level (string_of_int n))
   else
-    error ("Invalid Tactic Notation level: "^(string_of_int n)^".")
+    user_err Pp.(str ("Invalid Tactic Notation level: "^(string_of_int n)^"."))
 
 (**********************************************************************)
 (** State of the grammar extensions                                   *)
@@ -170,7 +170,7 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let () =
     if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
-      error "Notation for simple tactic must start with an identifier."
+      user_err Pp.(str "Notation for simple tactic must start with an identifier.")
   in
   let map = function
   | TacTerm s -> GramTerminal s
@@ -208,7 +208,7 @@ let interp_prod_item = function
     | None ->
       if String.Map.mem s !entry_names then String.Map.find s !entry_names
       else begin match ArgT.name s with
-      | None -> error ("Unknown entry "^s^".")
+      | None -> user_err Pp.(str ("Unknown entry "^s^"."))
       | Some arg -> arg
       end
     | Some n ->
@@ -253,8 +253,8 @@ let pprule pa = {
 
 let check_key key =
   if Tacenv.check_alias key then
-    error "Conflicting tactic notations keys. This can happen when including \
-    twice the same module."
+    user_err Pp.(str "Conflicting tactic notations keys. This can happen when including \
+    twice the same module.")
 
 let cache_tactic_notation (_, tobj) =
   let key = tobj.tacobj_key in

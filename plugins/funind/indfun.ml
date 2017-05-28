@@ -186,6 +186,8 @@ let build_newrecursive l =
   in
   build_newrecursive l'
 
+let error msg = user_err Pp.(str msg)
+
 (* Checks whether or not the mutual bloc is recursive *)
 let is_rec names =
   let names = List.fold_right Id.Set.add names Id.Set.empty in
