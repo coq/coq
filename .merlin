@@ -1,7 +1,5 @@
 FLG -rectypes -thread -safe-string -w +a-4-9-27-41-42-44-45-48-50
 
-S ltac
-B ltac
 S config
 B config
 S ide
