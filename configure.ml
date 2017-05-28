@@ -515,7 +515,6 @@ let camltag = match caml_version_list with
   | _ -> assert false
 
 (** Explanation of disabled warnings:
-    3: deprecated warning (not error for non minimum supported ocaml)
     4: fragile pattern matching: too common in the code and too annoying to avoid in general
     9: missing fields in a record pattern: too common in the code and not worth the bother
     27: innocuous unused variable: innocuous
@@ -533,7 +532,7 @@ let coq_warn_flags =
     if !Prefs.warn_error
     then "-warn-error +a"
          ^ (if caml_version_nums > [4;2;3]
-            then "-3-56"
+            then "-56"
             else "")
     else ""
   in

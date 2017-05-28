@@ -8,7 +8,11 @@
 
 open Cdglobals
 
-let norm_char_latin1 c = match Char.uppercase c with
+[@@@ocaml.warning "-3"]       (* Char.uppercase_ascii since 4.03.0 GPR#124 *)
+let uppercase = Char.uppercase
+[@@@ocaml.warning "+3"]
+
+let norm_char_latin1 c = match uppercase c with
   | '\192'..'\198' -> 'A'
   | '\199' -> 'C'
   | '\200'..'\203' -> 'E'
@@ -19,12 +23,12 @@ let norm_char_latin1 c = match Char.uppercase c with
   | '\221' -> 'Y'
   | c -> c
 
-let norm_char_utf8 c = Char.uppercase c
+let norm_char_utf8 c = uppercase c
 
 let norm_char c =
   if !utf8 then norm_char_utf8 c else
   if !latin1 then norm_char_latin1 c else
-  Char.uppercase c
+  uppercase c
 
 let norm_string = String.map (fun s -> norm_char s)
 

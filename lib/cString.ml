@@ -11,7 +11,9 @@ module type S = module type of String
 module type ExtS =
 sig
   include S
+  [@@@ocaml.warning "-3"]     (* [@@noalloc] since 4.03.0 GPR#240 *)
   external equal : string -> string -> bool = "caml_string_equal" "noalloc"
+  [@@@ocaml.warning "+3"]
   val hash : string -> int
   val is_empty : string -> bool
   val explode : string -> string list
@@ -33,7 +35,9 @@ end
 
 include String
 
+[@@@ocaml.warning "-3"]     (* [@@noalloc] since 4.03.0 GPR#240 *)
 external equal : string -> string -> bool = "caml_string_equal" "noalloc"
+[@@@ocaml.warning "+3"]
 
 let rec hash len s i accu =
   if i = len then accu

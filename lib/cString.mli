@@ -14,7 +14,10 @@ sig
   include S
   (** We include the standard library *)
 
+  [@@@ocaml.warning "-3"]     (* [@@noalloc] since 4.03.0 GPR#240 *)
   external equal : string -> string -> bool = "caml_string_equal" "noalloc"
+  [@@@ocaml.warning "+3"]
+
   (** Equality on strings *)
 
   val hash : string -> int

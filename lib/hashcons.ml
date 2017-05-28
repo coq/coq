@@ -130,7 +130,11 @@ module Hstring = Make(
     type t = string
     type u = unit
     let hashcons () s =(* incr accesstr;*) s
+
+    [@@@ocaml.warning "-3"]     (* [@@noalloc] since 4.03.0 GPR#240 *)
     external eq : string -> string -> bool = "caml_string_equal" "noalloc"
+    [@@@ocaml.warning "+3"]
+
     (** Copy from CString *)
     let rec hash len s i accu =
       if i = len then accu
