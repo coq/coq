@@ -8,7 +8,7 @@ let init_constant dir s =
   in
   find_constant contrib_name dir s
 
-let get_constant dir s = lazy (Coqlib.gen_constant contrib_name dir s)
+let get_constant dir s = lazy (Universes.constr_of_global @@ Coqlib.coq_reference contrib_name dir s)
 
 let get_inductive dir s =
   let glob_ref () = Coqlib.find_reference contrib_name ("Coq" :: dir) s in

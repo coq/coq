@@ -15,6 +15,25 @@ open Util
 (** This module collects the global references, constructions and
     patterns of the standard library used in ocaml files *)
 
+(** The idea is to migrate to rebindable name-based approach, thus the
+    only function this FILE will provide will be:
+
+    [find_reference : string -> global_reference]
+
+    such that [find_reference "core.eq.type"] returns the proper [global_reference]
+
+    [bind_reference : string -> global_reference -> unit]
+
+    will bind a reference.
+
+    A feature based approach would be possible too.
+
+    Contrary to the old approach of raising an anomaly, we expect
+    tactics to gracefully fail in the absence of some primitive.
+
+    This is work in progress, see below.
+*)
+
 (** {6 ... } *)
 (** [find_reference caller_message [dir;subdir;...] s] returns a global
    reference to the name dir.subdir.(...).s; the corresponding module
@@ -25,30 +44,18 @@ open Util
 type message = string
 
 val find_reference : message -> string list -> string -> global_reference
-
-(** [coq_reference caller_message [dir;subdir;...] s] returns a
-   global reference to the name Coq.dir.subdir.(...).s *)
-
 val coq_reference : message -> string list -> string -> global_reference
-
-(** idem but return a term *)
-
-val coq_constant : message -> string list -> string -> constr
-
-(** Synonyms of [coq_constant] and [coq_reference] *)
-
-val gen_constant : message -> string list -> string -> constr
-val gen_reference :  message -> string list -> string -> global_reference
-
-(** Search in several modules (not prefixed by "Coq") *)
-val gen_constant_in_modules : string->string list list-> string -> constr
-val gen_reference_in_modules : string->string list list-> string -> global_reference
-val arith_modules : string list list
-val zarith_base_modules : string list list
-val init_modules : string list list
 
 (** For tactics/commands requiring vernacular libraries *)
 val check_required_library : string list -> unit
+
+(** Search in several modules (not prefixed by "Coq") *)
+val gen_constant_in_modules  : string->string list list-> string -> constr
+val gen_reference_in_modules : string->string list list-> string -> global_reference
+
+val arith_modules : string list list
+val zarith_base_modules : string list list
+val init_modules : string list list
 
 (** {6 Global references } *)
 
@@ -196,3 +203,12 @@ val coq_sig_ref : global_reference lazy_t
 
 val coq_or_ref : global_reference lazy_t
 val coq_iff_ref : global_reference lazy_t
+
+(* Deprecated functions *)
+val coq_constant  : message -> string list -> string -> constr
+[@@ocaml.deprecated "Please use Coqlib.find_reference"]
+val gen_constant  : message -> string list -> string -> constr
+[@@ocaml.deprecated "Please use Coqlib.find_reference"]
+val gen_reference :  message -> string list -> string -> global_reference
+[@@ocaml.deprecated "Please use Coqlib.find_reference"]
+

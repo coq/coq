@@ -231,7 +231,8 @@ let ll_forall_tac prod backtrack id continue seq=
 
 (* special for compatibility with old Intuition *)
 
-let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
+let constant str = Universes.constr_of_global
+  @@ Coqlib.coq_reference "User" ["Init";"Logic"] str
 
 let defined_connectives=lazy
   [AllOccurrences,EvalConstRef (fst (Term.destConst (constant "not")));

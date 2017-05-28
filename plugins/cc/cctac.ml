@@ -26,7 +26,7 @@ open Proofview.Notations
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let reference dir s = lazy (Coqlib.gen_reference "CC" dir s)
+let reference dir s = lazy (Coqlib.coq_reference "CC" dir s)
 
 let _f_equal = reference ["Init";"Logic"] "f_equal"
 let _eq_rect = reference ["Init";"Logic"] "eq_rect"

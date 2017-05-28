@@ -248,10 +248,10 @@ let mk_result ctxt value avoid =
 **************************************************)
 
 let coq_True_ref =
-  lazy  (Coqlib.gen_reference "" ["Init";"Logic"] "True")
+  lazy  (Coqlib.coq_reference "" ["Init";"Logic"] "True")
 
 let coq_False_ref =
-  lazy  (Coqlib.gen_reference "" ["Init";"Logic"] "False")
+  lazy  (Coqlib.coq_reference "" ["Init";"Logic"] "False")
 
 (*
   [make_discr_match_el \[e1,...en\]] builds match e1,...,en with

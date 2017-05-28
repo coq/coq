@@ -133,7 +133,7 @@ let rec mk_nat = function
 
 let mkListConst c = 
   let r = 
-    Coqlib.gen_reference "" ["Init";"Datatypes"] c
+    Coqlib.coq_reference "" ["Init";"Datatypes"] c
   in 
   let inst = 
     if Global.is_polymorphic r then fun u -> Univ.Instance.of_array [|u|]

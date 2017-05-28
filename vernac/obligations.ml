@@ -260,7 +260,7 @@ let eterm_obligations env name evm fs ?status t ty =
 let tactics_module = ["Program";"Tactics"]
 let safe_init_constant md name () =
   Coqlib.check_required_library ("Coq"::md);
-  Coqlib.gen_constant "Obligations" md name
+  Universes.constr_of_global (Coqlib.coq_reference "Obligations" md name)
 let hide_obligation = safe_init_constant tactics_module "obligation"
 
 let pperror cmd = CErrors.user_err ~hdr:"Program" cmd

@@ -469,13 +469,17 @@ exception ToShow of exn
 let jmeq () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    EConstr.of_constr (Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq")
+    EConstr.of_constr @@
+    Universes.constr_of_global @@
+      Coqlib.coq_reference "Function" ["Logic";"JMeq"] "JMeq"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
     Coqlib.check_required_library Coqlib.jmeq_module_name;
-    EConstr.of_constr (Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq_refl")
+    EConstr.of_constr @@
+    Universes.constr_of_global @@
+      Coqlib.coq_reference "Function" ["Logic";"JMeq"] "JMeq_refl"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
@@ -486,7 +490,10 @@ let hrec_id = Id.of_string "hrec"
 let well_founded = function () -> EConstr.of_constr (coq_constant "well_founded")
 let acc_rel = function () -> EConstr.of_constr (coq_constant "Acc")
 let acc_inv_id = function () -> EConstr.of_constr (coq_constant "Acc_inv")
-let well_founded_ltof = function () ->  EConstr.of_constr (Coqlib.coq_constant "" ["Arith";"Wf_nat"] "well_founded_ltof")
+
+let well_founded_ltof () = EConstr.of_constr @@ Universes.constr_of_global @@
+    Coqlib.coq_reference "" ["Arith";"Wf_nat"] "well_founded_ltof"
+
 let ltof_ref = function  () -> (find_reference ["Coq";"Arith";"Wf_nat"] "ltof")
 
 let evaluable_of_global_reference r = (* Tacred.evaluable_of_global_reference (Global.env ()) *)

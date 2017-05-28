@@ -118,7 +118,8 @@ open Proofview.Notations
   the constants are loaded in the environment *)
 
 let constant dir s =
-  EConstr.of_constr (Coqlib.gen_constant "Quote" ("quote"::dir) s)
+  EConstr.of_constr @@ Universes.constr_of_global @@
+    Coqlib.coq_reference "Quote" ("quote"::dir) s
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")

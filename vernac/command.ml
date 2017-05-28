@@ -906,8 +906,9 @@ let subtac_dir = [contrib_name]
 let fixsub_module = subtac_dir @ ["Wf"]
 let tactics_module = subtac_dir @ ["Tactics"]
 
-let init_reference dir s () = Coqlib.gen_reference "Command" dir s
-let init_constant dir s () = EConstr.of_constr (Coqlib.gen_constant "Command" dir s)
+let init_reference dir s () = Coqlib.coq_reference "Command" dir s
+let init_constant  dir s () = EConstr.of_constr @@ Universes.constr_of_global (Coqlib.coq_reference "Command" dir s)
+
 let make_ref l s = init_reference l s
 let fix_proto = init_constant tactics_module "fix_proto"
 let fix_sub_ref = make_ref fixsub_module "Fix_sub"
