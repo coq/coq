@@ -140,6 +140,7 @@ tactics/rewrite.ml
 tactics/eqdecide.ml
 tactics/extratactics.ml
 tactics/extraargs.ml
+tactics/profile_ltac_tactics.ml
 toplevel/whelp.ml
 ide/coqide_main.ml
 

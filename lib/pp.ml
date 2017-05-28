@@ -44,7 +44,7 @@ end
 
 module Tag :
 sig
-  type t 
+  type t
   type 'a key
   val create : string -> 'a key
   val inj : 'a -> 'a key -> t
@@ -185,6 +185,39 @@ let utf8_length s =
     incr cnt
   done ;
   !cnt
+
+(* Variant of String.sub for UTF8 character positions *)
+let utf8_sub s start_u len_u =
+  let len_b = String.length s
+  and end_u = start_u + len_u
+  and cnt = ref 0
+  and nc = ref 0
+  and p = ref 0 in
+  let start_b = ref len_b in
+  while !p < len_b && !cnt < end_u do
+    if !cnt <= start_u then start_b := !p ;
+    begin
+      match s.[!p] with
+      | '\000'..'\127' -> nc := 0 (* ascii char *)
+      | '\128'..'\191' -> nc := 0 (* cannot start with a continuation byte *)
+      |	'\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
+      |	'\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
+      |	'\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
+      |	'\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
+      |	'\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
+      |	'\254'..'\255' -> nc := 0 (* invalid byte *)
+    end ;
+    incr p ;
+    while !p < len_b && !nc > 0 do
+      match s.[!p] with
+      |	'\128'..'\191' (* next continuation byte *) -> incr p ; decr nc
+      |	_ (* not a continuation byte *) -> nc := 0
+    done ;
+    incr cnt
+  done ;
+  let end_b = !p in
+  String.sub s !start_b (end_b - !start_b)
+
 
 (* formatting commands *)
 let str s = Glue.atom(Ppcmd_print (Str_def s))

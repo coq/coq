@@ -222,9 +222,10 @@ let valueIn t = TacDynamic (Loc.ghost, value_in t)
 
 (** Generic arguments : table of interpretation functions *)
 
+(* Some of the code further down depends on the fact that push_trace does not modify sigma (the evar map) *)
 let push_trace call ist = match TacStore.get ist.extra f_trace with
-| None -> [call]
-| Some trace -> call :: trace
+| None -> Proofview.tclUNIT [call]
+| Some trace -> Proofview.tclLIFT (Proofview.NonLogical.make Profile_ltac.entered_call) <*> Proofview.tclUNIT (call :: trace)
 
 let propagate_trace ist loc id v =
   let v = Value.normalize v in
@@ -233,10 +234,11 @@ let propagate_trace ist loc id v =
     match tacv with
     | VFun (appl,_,lfun,it,b) ->
         let t = if List.is_empty it then b else TacFun (it,b) in
-        let ans = VFun (appl,push_trace(loc,LtacVarCall (id,t)) ist,lfun,it,b) in
-        of_tacvalue ans
-    | _ ->  v
-  else v
+        push_trace(loc,LtacVarCall (id,t)) ist >>= fun trace ->
+        let ans = VFun (appl,trace,lfun,it,b) in
+        Proofview.tclUNIT (of_tacvalue ans)
+    | _ ->  Proofview.tclUNIT v
+  else Proofview.tclUNIT v
 
 let append_trace trace v =
   let v = Value.normalize v in
@@ -561,8 +563,13 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
         match kind with OfType _ -> WithoutTypeConstraint | _ -> kind in
       intern_gen kind_for_intern ~allow_patvar ~ltacvars env c
   in
-  let trace =
-    push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist in
+  (* Jason Gross: To avoid unnecessary modifications to tacinterp, as
+      suggested by Arnaud Spiwack, we run push_trace immediately.  We do
+      this with the kludge of an empty proofview, and rely on the
+      invariant that running the tactic returned by push_trace does
+      not modify sigma. *)
+  let (_, dummy_proofview) = Proofview.init sigma [] in
+  let (trace,_,_,_) = Proofview.apply env (push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist) dummy_proofview in
   let (evd,c) =
     catch_error trace (understand_ltac flags env sigma vars kind) c
   in
@@ -939,7 +946,7 @@ let interp_bindings ist env sigma = function
 | NoBindings ->
     sigma, NoBindings
 | ImplicitBindings l ->
-    let sigma, l = interp_open_constr_list ist env sigma l in   
+    let sigma, l = interp_open_constr_list ist env sigma l in
     sigma, ImplicitBindings l
 | ExplicitBindings l ->
     let sigma, l = List.fold_map (interp_binding ist env) sigma l in
@@ -1017,7 +1024,7 @@ let interp_induction_arg ist gl arg =
           keep,ElimOnIdent (loc,id)
 	else
           let c = (GVar (loc,id),Some (CRef (Ident (loc,id),None))) in
-          let f env sigma = 
+          let f env sigma =
             let (sigma,c) = interp_open_constr ist env sigma c in
             sigma,(c,NoBindings) in
           keep,ElimOnConstr f
@@ -1087,7 +1094,7 @@ let rec read_match_rule lfun ist env sigma = function
 let mk_constr_value ist gl c =
   let (sigma,c_interp) = pf_interp_constr ist gl c in
   sigma, Value.of_constr c_interp
-let mk_open_constr_value ist gl c = 
+let mk_open_constr_value ist gl c =
   let (sigma,c_interp) = pf_apply (interp_open_constr ist) gl c in
   sigma, Value.of_constr c_interp
 let mk_hyp_value ist env sigma c =
@@ -1126,12 +1133,14 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : typed_generi
         in
 	Ftactic.debug_prompt lev tac eval
   | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
-      
+
 
 and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacAtom (loc,t) ->
       let call = LtacAtomCall t in
-      catch_error_tac (push_trace(loc,call) ist) (interp_atomic ist t)
+      push_trace(loc,call) ist >>= fun trace ->
+      Profile_ltac.do_profile "eval_tactic:2" trace
+        (catch_error_tac trace (interp_atomic ist t))
   | TacFun _ | TacLetIn _ -> assert false
   | TacMatchGoal _ | TacMatch _ -> assert false
   | TacId [] -> Proofview.tclLIFT (db_breakpoint (curr_debug ist) [])
@@ -1339,7 +1348,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let addvar (x, v) accu = Id.Map.add x v accu in
       let tac l =
         let lfun = List.fold_right addvar l ist.lfun in
-        let trace = push_trace (loc,LtacNotationCall s) ist in
+        Ftactic.lift (push_trace (loc,LtacNotationCall s) ist) >>= fun trace ->
         let ist = {
           lfun = lfun;
           extra = TacStore.set ist.extra f_trace trace; } in
@@ -1357,7 +1366,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Ftactic.run tac (fun () -> Proofview.tclUNIT ())
 
   | TacML (loc,opn,l) when List.for_all global_genarg l ->
-      let trace = push_trace (loc,LtacMLCall tac) ist in
+      push_trace (loc,LtacMLCall tac) ist >>= fun trace ->
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       (* spiwack: a special case for tactics (from TACTIC EXTEND) when
          every argument can be interpreted without a
@@ -1374,7 +1383,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Proofview.Trace.name_tactic name
         (catch_error_tac trace (tac args ist))
   | TacML (loc,opn,l) ->
-      let trace = push_trace (loc,LtacMLCall tac) ist in
+      push_trace (loc,LtacMLCall tac) ist >>= fun trace ->
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       Proofview.Goal.nf_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
@@ -1408,15 +1417,17 @@ and interp_ltac_reference loc' mustbetac ist r : typed_generic_argument Ftactic.
         try Id.Map.find id ist.lfun
         with Not_found -> in_gen (topwit wit_var) id
       in
-      Ftactic.bind (force_vrec ist v) begin fun v ->
-      let v = propagate_trace ist loc id v in
+      let open Ftactic in
+      force_vrec ist v >>= begin fun v ->
+      Ftactic.lift (propagate_trace ist loc id v) >>= fun v ->
       if mustbetac then Ftactic.return (coerce_to_tactic loc id v) else Ftactic.return v
       end
   | ArgArg (loc,r) ->
       let ids = extract_ids [] ist.lfun in
       let loc_info = ((if Loc.is_ghost loc' then loc else loc'),LtacNameCall r) in
-      let extra = TacStore.set ist.extra f_avoid_ids ids in 
-      let extra = TacStore.set extra f_trace (push_trace loc_info ist) in
+      let extra = TacStore.set ist.extra f_avoid_ids ids in
+      push_trace loc_info ist >>= fun trace ->
+      let extra = TacStore.set extra f_trace trace in
       let ist = { lfun = Id.Map.empty; extra = extra; } in
       let appl = GlbAppl[r,[]] in
       val_interp ~appl ist (Tacenv.interp_ltac r)
@@ -1545,7 +1556,7 @@ and tactic_of_value ist vle =
         lfun = lfun;
         extra = TacStore.set ist.extra f_trace []; } in
       let tac = name_if_glob appl (eval_tactic ist t) in
-      catch_error_tac trace tac
+      Profile_ltac.do_profile "tactic_of_value" trace (catch_error_tac trace tac)
   | (VFun _|VRec _) -> Tacticals.New.tclZEROMSG (str "A fully applied tactic is expected.")
   else if has_type vle (topwit wit_tactic) then
     let tac = out_gen (topwit wit_tactic) vle in
@@ -1833,7 +1844,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma,l' = interp_intro_pattern_list_as_list ist env sigma l in
-        Tacticals.New.tclWITHHOLES false 
+        Tacticals.New.tclWITHHOLES false
         (name_atomic ~env
           (TacIntroPattern l)
           (* spiwack: print uninterpreted, not sure if it is the
@@ -1853,7 +1864,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacExact c ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<exact>") begin
-      Proofview.V82.tactic begin fun gl -> 
+      Proofview.V82.tactic begin fun gl ->
         let (sigma,c_interp) = pf_interp_casted_constr ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
@@ -1869,7 +1880,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = Proofview.Goal.sigma gl in
 	let l = List.map (fun (k,c) ->
           let loc, f = interp_open_constr_with_bindings_loc ist c in
-	    (k,(loc,f))) cb 
+	    (k,(loc,f))) cb
 	in
         let sigma,tac = match cl with
           | None -> sigma, Tactics.apply_with_delayed_bindings_gen a ev l
@@ -1882,7 +1893,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacElim (ev,(keep,cb),cbo) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
-        let sigma = Proofview.Goal.sigma gl in 
+        let sigma = Proofview.Goal.sigma gl in
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
         let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
         let named_tac =
@@ -1958,7 +1969,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
-        let (sigma,c) = 
+        let (sigma,c) =
           (if Option.is_empty t then interp_constr else interp_type) ist env sigma c
         in
         let sigma, ipat' = interp_intro_pattern_option ist env sigma ipat in
@@ -2104,7 +2115,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (Tactics.clear_body l)
       end
   | TacMove (id1,id2) ->
-      Proofview.V82.tactic begin fun gl -> 
+      Proofview.V82.tactic begin fun gl ->
         Tactics.move_hyp (interp_hyp ist (pf_env gl) (project gl) id1)
                    (interp_move_location ist (pf_env gl) (project gl) id2)
                    gl
@@ -2139,7 +2150,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacReduce (r,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<reduce>") begin
-      Proofview.V82.tactic begin fun gl -> 
+      Proofview.V82.tactic begin fun gl ->
         let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
         tclTHEN
 	  (tclEVARS sigma)
@@ -2162,7 +2173,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let c_interp patvars sigma =
 	  let lfun' = Id.Map.fold (fun id c lfun ->
-	    Id.Map.add id (Value.of_constr c) lfun) 
+	    Id.Map.add id (Value.of_constr c) lfun)
 	    patvars ist.lfun
 	  in
 	  let ist = { ist with lfun = lfun' } in
@@ -2181,12 +2192,12 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
-        Proofview.V82.tactic begin fun gl -> 
+        Proofview.V82.tactic begin fun gl ->
           let op = interp_typed_pattern ist env sigma op in
           let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
           let c_interp patvars sigma =
 	    let lfun' = Id.Map.fold (fun id c lfun ->
-	      Id.Map.add id (Value.of_constr c) lfun) 
+	      Id.Map.add id (Value.of_constr c) lfun)
 	      patvars ist.lfun
 	    in
 	    let ist = { ist with lfun = lfun' } in

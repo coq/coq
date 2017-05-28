@@ -21,6 +21,7 @@ Hints
 Auto
 Tacintern
 Tactic_matching
+Profile_ltac
 Tacinterp
 Evar_tactics
 Term_dnet

@@ -99,7 +99,7 @@ let parse_args () =
 
 (* Options for coqtop : a) options with 0 argument *)
 
-    | ("-notactics"|"-bt"|"-debug"|"-nolib"|"-boot"|"-time"
+    | ("-notactics"|"-bt"|"-debug"|"-nolib"|"-boot"|"-time"|"-profile-ltac"
       |"-batch"|"-noinit"|"-nois"|"-noglob"|"-no-glob"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
       |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
