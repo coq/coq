@@ -71,6 +71,12 @@
 : ${Coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot.git}
 
 ########################################################################
+# coq-bug-minimizer
+########################################################################
+: ${coq_bug_minimizer_CI_BRANCH:=master}
+: ${coq_bug_minimizer_CI_GITURL:=https://github.com/JasonGross/coq-tools.git}
+
+########################################################################
 # CompCert
 ########################################################################
 : ${CompCert_CI_BRANCH:=master}

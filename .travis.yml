@@ -32,6 +32,7 @@ env:
   - TEST_TARGET="ci-color"
   - TEST_TARGET="ci-compcert"
   - TEST_TARGET="ci-coquelicot"
+  - TEST_TARGET="ci-coq-bug-minimizer"
   - TEST_TARGET="ci-geocoq"
   - TEST_TARGET="ci-fiat-crypto"
   - TEST_TARGET="ci-fiat-parsers"
