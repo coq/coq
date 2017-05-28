@@ -36,7 +36,7 @@ let is_keyword =
       "Hypothesis"; "Hypotheses";
       "Resolve"; "Unfold"; "Immediate"; "Extern"; "Constructors"; "Rewrite";
       "Implicit"; "Import"; "Inductive";
-      "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac";
+      "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Locate"; "Ltac";
       "Module"; "Module Type"; "Declare Module"; "Include";
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Printing"; "All"; "Proof"; "Proof with"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme"; "Assumptions"; "Axioms"; "Universes";
@@ -58,9 +58,9 @@ let is_keyword =
       (*i (* coq terms *) *)
       "forall"; "match"; "as"; "in"; "return"; "with"; "end"; "let"; "fun";
       "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"; "struct"; "wf"; "measure";
-      "fix"; "cofix";
+      "fix"; "cofix"; "is";
       (* Ltac *)
-      "before"; "after"; "constr"; "ltac"; "goal"; "context"; "beta"; "delta"; "iota"; "zeta"; "lazymatch";
+      "before"; "after"; "constr"; "ltac"; "goal"; "context"; "beta"; "delta"; "iota"; "zeta"; "lazymatch"; "type"; "of"; "rec";
       (* Notations *)
       "level"; "associativity"; "no"
        ]
@@ -70,7 +70,7 @@ let is_tactic =
     [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "clear"; "injection";
       "elimtype"; "progress"; "setoid_rewrite"; "left"; "right"; "constructor"; 
       "econstructor"; "decide equality"; "abstract"; "exists"; "cbv"; "simple destruct";
-      "info"; "fourier"; "field"; "specialize"; "evar"; "solve"; "instanciate";
+      "info"; "fourier"; "field"; "specialize"; "evar"; "solve"; "instanciate"; "info_auto"; "info_eauto";
       "quote"; "eexact"; "autorewrite";
       "destruct"; "destruction"; "destruct_call"; "dependent"; "elim"; "extensionality";
       "f_equal"; "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "induction"; "rename"; "move"; "omega";
