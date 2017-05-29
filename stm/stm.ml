@@ -305,7 +305,7 @@ module VCS : sig
 
   val proof_nesting : unit -> int
   val checkout_shallowest_proof_branch : unit -> unit
-  val propagate_sideff : replay:aast option -> unit
+  val propagate_sideff : unit -> unit
 
   val gc : unit -> unit
 
@@ -514,7 +514,7 @@ end = struct (* {{{ *)
         Proof_global.disactivate_current_proof_mode ()
 
   (* copies the transaction on every open branch *)
-  let propagate_sideff ~replay:t =
+  let propagate_sideff () =
     List.iter (fun b ->
       checkout b;
       let id = new_node () in
@@ -2429,7 +2429,7 @@ let merge_proof_branch ~valid ?id qast keep brname =
       let id = VCS.new_node ?id () in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.delete_branch brname;
-      VCS.propagate_sideff ~replay:None;
+      VCS.propagate_sideff ();
       `Ok
   | { VCS.kind = `Edit (mode, qed_id, master_id, _,_) } ->
       let ofp =
@@ -2598,12 +2598,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
           let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
           VCS.commit id (mkTransCmd x l in_proof `MainQueue);
-          (* We can't replay a Definition since universes may be differently
-           * inferred.  This holds in Coq >= 8.5 *)
-	  let replay = match x.expr with
-	    | VernacDefinition(_, _, DefineBody _) -> None
-	    | _ -> Some x in
-	  VCS.propagate_sideff ~replay;
+	  VCS.propagate_sideff ();
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish (); `Ok
 
@@ -2634,7 +2629,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
             end else begin
               VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
               (* We hope it can be replayed, but we can't really know *)
-              VCS.propagate_sideff ~replay:(Some x);
+              VCS.propagate_sideff ();
               VCS.checkout_shallowest_proof_branch ();
             end in
           State.define ~safe_id:head_id ~cache:`Yes step id;
