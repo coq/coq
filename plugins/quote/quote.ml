@@ -456,39 +456,56 @@ let quote_terms env sigma ivs lc =
   term. Ring for example needs that, but Ring doesn't use Quote
   yet. *)
 
+let pf_constrs_of_globals l =
+  let rec aux l acc =
+    match l with
+      [] -> Proofview.tclUNIT (List.rev acc)
+    | hd :: tl ->
+       Tacticals.New.pf_constr_of_global hd >>= fun g -> aux tl (g :: acc)
+  in aux l []
+
 let quote f lid =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
-    let f = Tacmach.New.pf_global f gl in
-    let cl = List.map (fun id -> EConstr.to_constr sigma (Tacmach.New.pf_global id gl)) lid in
-    let ivs = compute_ivs f cl gl in
-    let concl = Proofview.Goal.concl gl in
-    let quoted_terms = quote_terms env sigma ivs [concl] in
-    let (p, vm) = match quoted_terms with
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let fg = Tacmach.New.pf_global f gl in
+    let clg = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
+    Tacticals.New.pf_constr_of_global fg >>= fun f ->
+    pf_constrs_of_globals clg >>= fun cl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Tacmach.New.project gl in
+      let ivs = compute_ivs f (List.map (EConstr.to_constr sigma) cl) gl in
+      let concl = Proofview.Goal.concl gl in
+      let quoted_terms = quote_terms env sigma ivs [concl] in
+      let (p, vm) = match quoted_terms with
       | [p], vm -> (p,vm)
       | _ -> assert false
-    in
-    match ivs.variable_lhs with
-    | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast
-    | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast
+      in
+      match ivs.variable_lhs with
+      | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast
+      | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast
+    end }
   end }
 
 let gen_quote cont c f lid =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
-  let f = Tacmach.New.pf_global f gl in
-  let cl = List.map (fun id -> EConstr.to_constr sigma (Tacmach.New.pf_global id gl)) lid in
-  let ivs = compute_ivs f cl gl in
-  let quoted_terms = quote_terms env sigma ivs [c] in
-  let (p, vm) = match quoted_terms with
-    | [p], vm -> (p,vm)
-    | _ -> assert false
-  in
-  match ivs.variable_lhs with
-    | None -> cont (mkApp (f, [| p |]))
-    | Some _ -> cont (mkApp (f, [| vm; p |]))
+  Proofview.Goal.enter { enter = begin fun gl ->
+    let fg = Tacmach.New.pf_global f gl in
+    let clg = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
+    Tacticals.New.pf_constr_of_global fg >>= fun f ->
+    pf_constrs_of_globals clg >>= fun cl ->
+    Proofview.Goal.nf_enter { enter = begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Tacmach.New.project gl in
+      let cl = List.map (EConstr.to_constr sigma) cl in
+      let ivs = compute_ivs f cl gl in
+      let quoted_terms = quote_terms env sigma ivs [c] in
+      let (p, vm) = match quoted_terms with
+        | [p], vm -> (p,vm)
+        | _ -> assert false
+      in
+      match ivs.variable_lhs with
+      | None -> cont (mkApp (f, [| p |]))
+      | Some _ -> cont (mkApp (f, [| vm; p |]))
+    end }
   end }
 
 (*i

@@ -133,20 +133,6 @@ let prNamedRLDecl s lc =
     prstr "\n";
   end
 
-let showind (id:Id.t) =
-  let cstrid = Constrintern.global_reference id in
-  let (ind1, u),cstrlist = Inductiveops.find_inductive (Global.env()) Evd.empty (EConstr.of_constr cstrid) in
-  let mib1,ib1 = Inductive.lookup_mind_specif (Global.env()) ind1 in
-  let u = EConstr.Unsafe.to_instance u in
-  List.iter (fun decl ->
-    print_string (string_of_name (Context.Rel.Declaration.get_name decl) ^ ":");
-    prconstr (RelDecl.get_type decl); print_string "\n")
-    ib1.mind_arity_ctxt;
-    Printf.printf "arity :"; prconstr (Inductiveops.type_of_inductive (Global.env ()) (ind1, u));
-  Array.iteri
-    (fun i x -> Printf.printf"type constr %d :" i ; prconstr x)
-    ib1.mind_user_lc
-
 (** {2 Misc} *)
 
 exception Found of int

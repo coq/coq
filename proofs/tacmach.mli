@@ -100,7 +100,7 @@ val pr_glls   : goal list sigma -> Pp.std_ppcmds
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig
   val pf_apply : (env -> evar_map -> 'a) -> ('b, 'r) Proofview.Goal.t -> 'a
-  val pf_global : identifier -> ('a, 'r) Proofview.Goal.t -> constr
+  val pf_global : identifier -> ('a, 'r) Proofview.Goal.t -> Globnames.global_reference
   (** FIXME: encapsulate the level in an existential type. *)
   val of_old : (Proof_type.goal Evd.sigma -> 'a) -> ([ `NF ], 'r) Proofview.Goal.t -> 'a
 

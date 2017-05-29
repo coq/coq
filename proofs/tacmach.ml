@@ -75,7 +75,7 @@ let pf_get_new_ids ids gls =
     (fun id acc -> (next_ident_away id (acc@avoid))::acc)
     ids []
 
-let pf_global gls id = EConstr.of_constr (Constrintern.construct_reference (pf_hyps gls) id)
+let pf_global gls id = EConstr.of_constr (Universes.constr_of_global (Constrintern.construct_reference (pf_hyps gls) id))
 
 let pf_reduction_of_red_expr gls re c =
   let (redfun, _) = reduction_of_red_expr (pf_env gls) re in
@@ -171,7 +171,7 @@ module New = struct
     (** We only check for the existence of an [id] in [hyps] *)
     let gl = Proofview.Goal.assume gl in
     let hyps = Proofview.Goal.hyps gl in
-    EConstr.of_constr (Constrintern.construct_reference hyps id)
+    Constrintern.construct_reference hyps id
 
   let pf_env = Proofview.Goal.env
   let pf_concl = Proofview.Goal.concl
