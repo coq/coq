@@ -104,14 +104,9 @@ let solveNoteqBranch side =
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
-let make_eq () =
-(*FIXME*) EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq ()))
-let build_coq_not () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_not ())
-let build_coq_sumbool () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_sumbool ())
-
-let mkDecideEqGoal eqonleft op rectype c1 c2 =
-  let equality    = mkApp(make_eq(), [|rectype; c1; c2|]) in
-  let disequality = mkApp(build_coq_not (), [|equality|]) in
+let mkDecideEqGoal eqonleft (op,eq,neg) rectype c1 c2 =
+  let equality    = mkApp(eq, [|rectype; c1; c2|]) in
+  let disequality = mkApp(neg, [|equality|]) in
   if eqonleft then mkApp(op, [|equality; disequality |])
   else mkApp(op, [|disequality; equality |])
 
@@ -121,13 +116,13 @@ let mkDecideEqGoal eqonleft op rectype c1 c2 =
 let idx = Id.of_string "x"
 let idy = Id.of_string "y"
 
-let mkGenDecideEqGoal rectype g =
+let mkGenDecideEqGoal rectype ops g =
   let hypnames = pf_ids_of_hyps g in
   let xname    = next_ident_away idx hypnames
   and yname    = next_ident_away idy hypnames in
   (mkNamedProd xname rectype
      (mkNamedProd yname rectype
-        (mkDecideEqGoal true (build_coq_sumbool ())
+        (mkDecideEqGoal true ops
           rectype (mkVar xname) (mkVar yname))))
 
 let rec rewrite_and_clear hyps = match hyps with
@@ -256,9 +251,9 @@ let decideGralEquality =
 
 let decideEqualityGoal = tclTHEN intros decideGralEquality
 
-let decideEquality rectype =
+let decideEquality rectype ops =
   Proofview.Goal.enter { enter = begin fun gl ->
-  let decide = mkGenDecideEqGoal rectype gl in
+  let decide = mkGenDecideEqGoal rectype ops gl in
   (tclTHENS (cut decide) [default_auto;decideEqualityGoal])
   end }
 
@@ -266,11 +261,15 @@ let decideEquality rectype =
 (* The tactic Compare *)
 
 let compare c1 c2 =
+  pf_constr_of_global (build_coq_sumbool ()) >>= fun opc ->
+  pf_constr_of_global (Coqlib.build_coq_eq ()) >>= fun eqc ->
+  pf_constr_of_global (build_coq_not ()) >>= fun notc ->
   Proofview.Goal.enter { enter = begin fun gl ->
   let rectype = pf_unsafe_type_of gl c1 in
-  let decide = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 in
+  let ops = (opc,eqc,notc) in
+  let decide = mkDecideEqGoal true ops rectype c1 c2 in
   (tclTHENS (cut decide)
             [(tclTHEN  intro
              (tclTHEN (onLastHyp simplest_case) clear_last));
-             decideEquality rectype])
+             decideEquality rectype ops])
   end }

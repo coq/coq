@@ -782,6 +782,9 @@ let fresh_global ?loc ?rigid ?names env sigma reference =
     Sigma.fresh_global ?loc ?rigid ?names env sigma reference in
   Sigma.Sigma (of_constr t,sigma,p)
 
+let is_global sigma gr c =
+  Globnames.is_global gr (to_constr sigma c)
+
 module Unsafe =
 struct
 let to_sorts = ESorts.unsafe_to_sorts

@@ -1332,8 +1332,6 @@ let inject_if_homogenous_dependent_pair ty =
     let sigma = Tacmach.New.project gl in
     let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
-    let ceq = Universes.constr_of_global Coqlib.glob_eq in
-    let ceq = EConstr.of_constr ceq in
     let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
     let existTconstr () = (Coqlib.build_sigma_type()).Coqlib.intro in
     (* check whether the equality deals with dep pairs or not *)
@@ -1352,16 +1350,18 @@ let inject_if_homogenous_dependent_pair ty =
       pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
     Coqlib.check_required_library ["Coq";"Logic";"Eqdep_dec"];
     let new_eq_args = [|pf_unsafe_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
-    let inj2 = EConstr.of_constr @@ Universes.constr_of_global @@
-      Coqlib.coq_reference "inj_pair2_eq_dec is missing" ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
+    let inj2 = Coqlib.coq_reference "inj_pair2_eq_dec is missing" ["Logic";"Eqdep_dec"]
+                                    "inj_pair2_eq_dec" in
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in
     (* cut with the good equality and prove the requested goal *)
     tclTHENLIST
       [Proofview.tclEFFECTS eff;
        intro;
        onLastHyp (fun hyp ->
+        Tacticals.New.pf_constr_of_global Coqlib.glob_eq >>= fun ceq ->
         tclTHENS (cut (mkApp (ceq,new_eq_args)))
           [clear [destVar sigma hyp];
+           Tacticals.New.pf_constr_of_global inj2 >>= fun inj2 ->
            Proofview.V82.tactic (Tacmach.refine
              (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|])))
           ])]

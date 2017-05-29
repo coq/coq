@@ -261,6 +261,8 @@ val fresh_global :
   ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->
   'r Sigma.t -> Globnames.global_reference -> (t, 'r) Sigma.sigma
 
+val is_global : Evd.evar_map -> Globnames.global_reference -> t -> bool
+
 (** {5 Extra} *)
 
 val of_named_decl : (Constr.t, Constr.types) Context.Named.Declaration.pt -> (t, types) Context.Named.Declaration.pt

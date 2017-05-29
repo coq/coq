@@ -3519,27 +3519,32 @@ let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
   user_err ~hdr:"Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
 
-let glob c = EConstr.of_constr (Universes.constr_of_global c)
+let glob sigma gr =
+  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map sigma) gr
+  in Sigma.to_evar_map sigma, c
 
-let coq_eq      = lazy (glob (Coqlib.build_coq_eq ()))
-let coq_eq_refl = lazy (glob (Coqlib.build_coq_eq_refl ()))
+let coq_eq sigma       = glob sigma (Coqlib.build_coq_eq ())
+let coq_eq_refl sigma  = glob sigma (Coqlib.build_coq_eq_refl ())
 
-let coq_heq      = lazy (EConstr.of_constr @@ Universes.constr_of_global (Coqlib.coq_reference"mkHEq" ["Logic";"JMeq"] "JMeq"))
-let coq_heq_refl = lazy (EConstr.of_constr @@ Universes.constr_of_global (Coqlib.coq_reference "mkHEq" ["Logic";"JMeq"] "JMeq_refl"))
+let coq_heq_ref        = lazy (Coqlib.coq_reference"mkHEq" ["Logic";"JMeq"] "JMeq")
+let coq_heq sigma      = glob sigma (Lazy.force coq_heq_ref)
+let coq_heq_refl sigma = glob sigma (Coqlib.coq_reference "mkHEq" ["Logic";"JMeq"] "JMeq_refl")
 
-let mkEq t x y =
-  mkApp (Lazy.force coq_eq, [| t; x; y |])
+let mkEq sigma t x y =
+  let sigma, eq = coq_eq sigma in
+  sigma, mkApp (eq, [| t; x; y |])
 
-let mkRefl t x =
-  mkApp (Lazy.force coq_eq_refl, [| t; x |])
+let mkRefl sigma t x =
+  let sigma, refl = coq_eq_refl sigma in
+  sigma, mkApp (refl, [| t; x |])
 
-let mkHEq t x u y =
-  mkApp (Lazy.force coq_heq,
-	[| t; x; u; y |])
+let mkHEq sigma t x u y =
+  let sigma, c = coq_heq sigma in
+  sigma, mkApp (c,[| t; x; u; y |])
 
-let mkHRefl t x =
-  mkApp (Lazy.force coq_heq_refl,
-	[| t; x |])
+let mkHRefl sigma t x =
+  let sigma, c = coq_heq_refl sigma in
+  sigma, mkApp (c, [| t; x |])
 
 let lift_togethern n l =
   let l', _ =
@@ -3577,23 +3582,30 @@ let decompose_indapp sigma f args =
 	mkApp (f, pars), args
   | _ -> f, args
 
-let mk_term_eq env sigma ty t ty' t' =
+let mk_term_eq homogeneous env sigma ty t ty' t' =
   let sigma = Sigma.to_evar_map sigma in
-  if Reductionops.is_conv env sigma ty ty' then
-    mkEq ty t t', mkRefl ty' t'
+  if homogeneous then
+    let sigma, eq = mkEq sigma ty t t' in
+    let sigma, refl = mkRefl sigma ty' t' in
+    Sigma.Unsafe.of_evar_map sigma, (eq, refl)
   else
-    mkHEq ty t ty' t', mkHRefl ty' t'
+    let sigma, heq = mkHEq sigma ty t ty' t' in
+    let sigma, hrefl = mkHRefl sigma ty' t' in
+    Sigma.Unsafe.of_evar_map sigma, (heq, hrefl)
 
 let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
   let open Context.Rel.Declaration in
   Refine.refine { run = begin fun sigma ->
   let eqslen = List.length eqs in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
-  let abshypeq, abshypt =
+  let sigma, abshypeq, abshypt =
     if dep then
-      let eq, refl = mk_term_eq (push_rel_context ctx env) sigma (lift 1 c) (mkRel 1) typ (mkVar id) in
-	mkProd (Anonymous, eq, lift 1 concl), [| refl |]
-    else concl, [||]
+      let ty = lift 1 c in
+      let homogeneous = Reductionops.is_conv env (Sigma.to_evar_map sigma) ty typ in
+      let sigma, (eq, refl) =
+        mk_term_eq homogeneous (push_rel_context ctx env) sigma ty (mkRel 1) typ (mkVar id) in
+      sigma, mkProd (Anonymous, eq, lift 1 concl), [| refl |]
+    else sigma, concl, [||]
   in
     (* Abstract by equalities *)
   let eqs = lift_togethern 1 eqs in (* lift together and past genarg *)
@@ -3699,9 +3711,13 @@ let abstract_args gl generalize_vars dep id defined f args =
 	  let liftarg = lift (List.length ctx) arg in
 	  let eq, refl =
 	    if leq then
-	      mkEq (lift 1 ty) (mkRel 1) liftarg, mkRefl (lift (-lenctx) ty) arg
+	      let sigma', eq = mkEq !sigma (lift 1 ty) (mkRel 1) liftarg in
+              let sigma', refl = mkRefl sigma' (lift (-lenctx) ty) arg in
+              sigma := sigma'; eq, refl
 	    else
-	      mkHEq (lift 1 ty) (mkRel 1) liftargty liftarg, mkHRefl argty arg
+	      let sigma', eq = mkHEq !sigma (lift 1 ty) (mkRel 1) liftargty liftarg in
+              let sigma', refl = mkHRefl sigma' argty arg in
+              sigma := sigma'; eq, refl
 	  in
 	  let eqs = eq :: lift_list eqs in
 	  let refls = refl :: refls in
@@ -3801,17 +3817,19 @@ let specialize_eqs id gl =
     match EConstr.kind !evars ty with
     | Prod (na, t, b) ->
 	(match EConstr.kind !evars t with
-	| App (eq, [| eqty; x; y |]) when EConstr.eq_constr !evars (Lazy.force coq_eq) eq ->
+	| App (eq, [| eqty; x; y |]) when EConstr.is_global !evars (Lazy.force coq_eq_ref) eq ->
 	    let c = if noccur_between !evars 1 (List.length ctx) x then y else x in
-	    let pt = mkApp (Lazy.force coq_eq, [| eqty; c; c |]) in
-	    let p = mkApp (Lazy.force coq_eq_refl, [| eqty; c |]) in
+	    let pt = mkApp (eq, [| eqty; c; c |]) in
+            let ind = destInd !evars eq in
+	    let p = mkApp (mkConstructUi (ind,0), [| eqty; c |]) in
 	      if unif (push_rel_context ctx env) evars pt t then
 		aux true ctx (mkApp (acc, [| p |])) (subst1 p b)
 	      else acc, in_eqs, ctx, ty
-	| App (heq, [| eqty; x; eqty'; y |]) when EConstr.eq_constr !evars heq (Lazy.force coq_heq) ->
+	| App (heq, [| eqty; x; eqty'; y |]) when EConstr.is_global !evars (Lazy.force coq_heq_ref) heq ->
 	    let eqt, c = if noccur_between !evars 1 (List.length ctx) x then eqty', y else eqty, x in
-	    let pt = mkApp (Lazy.force coq_heq, [| eqt; c; eqt; c |]) in
-	    let p = mkApp (Lazy.force coq_heq_refl, [| eqt; c |]) in
+	    let pt = mkApp (heq, [| eqt; c; eqt; c |]) in
+            let ind = destInd !evars heq in
+	    let p = mkApp (mkConstructUi (ind,0), [| eqt; c |]) in
 	      if unif (push_rel_context ctx env) evars pt t then
 		aux true ctx (mkApp (acc, [| p |])) (subst1 p b)
 	      else acc, in_eqs, ctx, ty
