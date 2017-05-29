@@ -1000,7 +1000,7 @@ let rec kl info m =
   if is_val m then (incr prune; term_of_fconstr m)
   else
     let (nm,s) = kni info m [] in
-    let _ = fapp_stack(nm,s) in (* to unlock Zupdates! *)
+    let () = if !share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
     zip_term (kl info) (norm_head info nm) s
 
 (* no redex: go up for atoms and already normalized terms, go down
@@ -1050,7 +1050,7 @@ let inject c = mk_clos (subs_id 0) c
 
 let whd_stack infos m stk =
   let k = kni infos m stk in
-  let _ = fapp_stack k in (* to unlock Zupdates! *)
+  let () = if !share then ignore (fapp_stack k) in (* to unlock Zupdates! *)
   k
 
 (* cache of constants: the body is computed only when needed. *)
