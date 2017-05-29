@@ -27,10 +27,10 @@
 
 # Default value when called from a freshly compiled Coq, but can be
 # easily overridden
-BIN := ../bin/
+BIN := $(shell cd ..; readlink -f bin)/
 LIB := $(shell cd ..; pwd)
 
-coqtop := $(BIN)coqtop -boot -q -batch -test-mode -R prerequisite TestSuite
+coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -batch -test-mode -R prerequisite TestSuite
 coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
 coqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
 coqtopbyte := $(BIN)coqtop.byte
@@ -440,7 +440,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide $< "$(BIN)coqtop -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
+	  $(BIN)fake_ide $< "$(BIN)coqtop -coqlib $(LIB) -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -488,6 +488,7 @@ coq-makefile: $(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh))
 coq-makefile/%.log : coq-makefile/%/run.sh
 	@echo "TEST      coq-makefile/$*"
 	$(HIDE)(\
+	  export COQBIN=$(BIN);\
 	  cd coq-makefile/$* && \
 	  ./run.sh 2>&1; \
 	if [ $$? = 0 ]; then \

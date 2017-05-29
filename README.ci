@@ -6,15 +6,16 @@ Introduction
 
 The Coq Travis CI infrastructure is meant to provide lightweight
 automatics testing of pull requests.
+If you are on GitLab, their integrated CI is also set up.
 
 More comprehensive testing is the responsability of Coq's [Jenkins CI
 server](https://ci.inria.fr/coq/) see, [XXX: add document] for
 instructions on how to add your development to Jenkins.
 
-How to submit your development for Coq Travis CI
-================================================
+How to submit your development for Coq CI
+=========================================
 
-Travis CI provides a convenient way to perform testing of Coq changes
+CI provides a convenient way to perform testing of Coq changes
 versus a set of curated libraries.
 
 Are you an author of a Coq library who would be interested in having
@@ -25,7 +26,7 @@ is easy, all that you need to do is:
 
 1.- Put you development in a public repository tracking coq trunk.
 2.- Make sure that your development builds in less than 35 minutes.
-3.- Submit a PR adding you development.
+3.- Submit a PR adding your development.
 4.- ?
 5.- Profit! Your library is now part of Coq's continous integration!
 
@@ -39,8 +40,8 @@ have.
 Maintaining your contribution manually [current method]
 ======================================
 
-To add your contribution to the Coq Travis CI set, add a script for
-building your library to `dev/ci/`, update `.travis.yml` and
+To add your contribution to the Coq CI set, add a script for building
+your library to `dev/ci/`, update `.travis.yml`, `.gitlab-ci.yml` and
 `Makefile.ci`. Then, submit a PR.
 
 Maintaining your contribution as an OPAM package [work in progress] [to be implemented]
@@ -75,3 +76,29 @@ The `.overlay` file will contain a set of variables that will be used
 to do the corresponding `opam pin` or to overload the corresponding
 git repositories, etc...
 
+Since pull requests only happen on GitHub there is no need to test the
+corresponding GitLab CI variables.
+
+Travis specific information
+===========================
+
+Travis rebuilds all of Coq's executables and stdlib for each job. Coq
+is built with `./configure -local`, then used for the job's test.
+
+GitLab specific information
+===========================
+
+GitLab is set up to use the "build artifact" feature to avoid
+rebuilding Coq. In one job, Coq is built with `./configure -prefix
+install` and `make install` is run, then the `install` directory
+persists to and is used by the next jobs.
+
+Artifacts can also be downloaded from the GitLab repository.
+Currently, available artifacts are:
+- the Coq executables and stdlib, in three copies varying in
+  architecture and Ocaml version used to build Coq.
+- the Coq documentation, in two different copies varying in the OCaml
+  version used to build Coq
+
+As an exception to the above, jobs testing that compilation triggers
+no Ocaml warnings build Coq in parallel with other tests.
