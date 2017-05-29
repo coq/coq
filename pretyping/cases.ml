@@ -2223,14 +2223,14 @@ let build_ineqs evdref prevpatterns pats liftsign =
 	   (Some ([], 0, 0, [])) eqnpats pats
 	 in match acc with
 	     None -> c
-	   | Some (sign, len, _, c') ->
-	       let conj = it_mkProd_or_LetIn (mk_coq_not (mk_coq_and c'))
-		 (lift_rel_context liftsign sign)
-	       in
-		 conj :: c)
+	    | Some (sign, len, _, c') ->
+               let sigma, conj = mk_coq_and !evdref c' in
+               let sigma, neg = mk_coq_not sigma conj in
+	       let conj = it_mkProd_or_LetIn neg (lift_rel_context liftsign sign) in
+               evdref := sigma; conj :: c)
       [] prevpatterns
   in match diffs with [] -> None
-    | _ -> Some (mk_coq_and diffs)
+    | _ -> Some (let sigma, conj = mk_coq_and !evdref diffs in evdref := sigma; conj)
 
 let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
   let i = ref 0 in

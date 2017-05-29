@@ -9,7 +9,6 @@
 open CErrors
 open Util
 
-let init_constant  dir s () = Universes.constr_of_global @@ Coqlib.coq_reference "Program" dir s
 let init_reference dir s () = Coqlib.coq_reference  "Program" dir s
 
 let papp evdref r args = 
@@ -39,20 +38,25 @@ let coq_eq_rect = init_reference ["Init"; "Logic"] "eq_rect"
 let coq_JMeq_ind = init_reference ["Logic";"JMeq"] "JMeq"
 let coq_JMeq_refl = init_reference ["Logic";"JMeq"] "JMeq_refl"
 
-let coq_not = init_constant ["Init";"Logic"] "not"
-let coq_and = init_constant ["Init";"Logic"] "and"
+let coq_not = init_reference ["Init";"Logic"] "not"
+let coq_and = init_reference ["Init";"Logic"] "and"
 
-let delayed_force c = EConstr.of_constr (c ())
+let new_global sigma gr =
+  let open Sigma in
+  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map sigma) gr
+  in Sigma.to_evar_map sigma, c
 
-let mk_coq_not x = EConstr.mkApp (delayed_force coq_not, [| x |])
+let mk_coq_not sigma x =
+  let sigma, notc = new_global sigma (coq_not ()) in
+  sigma, EConstr.mkApp (notc, [| x |])
 
 let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd
   | [] -> invalid_arg "unsafe_fold_right"
 
-let mk_coq_and l =
-  let and_typ = delayed_force coq_and in
-    unsafe_fold_right
+let mk_coq_and sigma l =
+  let sigma, and_typ = new_global sigma (coq_and ()) in
+  sigma, unsafe_fold_right
       (fun c conj ->
 	 EConstr.mkApp (and_typ, [| c ; conj |]))
       l

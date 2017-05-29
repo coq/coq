@@ -453,11 +453,19 @@ let fold_left' f = function
     [] -> invalid_arg "fold_left'"
   | hd :: tl -> List.fold_left f hd tl
 
+let new_global sigma gr =
+  let open Sigma in
+  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map sigma) gr
+  in Sigma.to_evar_map sigma, c
+
+let mk_coq_and sigma = new_global sigma (Coqlib.build_coq_and ())
+let mk_coq_conj sigma = new_global sigma (Coqlib.build_coq_conj ())
+             
 let build_combined_scheme env schemes =
-  let defs = List.map (fun cst -> (* FIXME *)
-    let evd, c = Evd.fresh_constant_instance env (Evd.from_env env) cst in
-      (c, Typeops.type_of_constant_in env c)) schemes in
-(*   let nschemes = List.length schemes in *)
+  let evdref = ref (Evd.from_env env) in
+  let defs = List.map (fun cst ->
+    let evd, c = Evd.fresh_constant_instance env !evdref cst in
+    evdref := evd; (c, Typeops.type_of_constant_in env c)) schemes in
   let find_inductive ty =
     let (ctx, arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
@@ -471,26 +479,27 @@ let build_combined_scheme env schemes =
   let (c, t) = List.hd defs in
   let ctx, ind, nargs = find_inductive t in
   (* Number of clauses, including the predicates quantification *)
-  let prods = nb_prod Evd.empty (EConstr.of_constr t) - (nargs + 1) (** FIXME *) in
-  let coqand  = Universes.constr_of_global @@ Coqlib.build_coq_and () in
-  let coqconj = Universes.constr_of_global @@ Coqlib.build_coq_conj () in
+  let prods = nb_prod !evdref (EConstr.of_constr t) - (nargs + 1) in
+  let sigma, coqand  = mk_coq_and !evdref in
+  let sigma, coqconj = mk_coq_conj sigma in
+  let () = evdref := sigma in
   let relargs = rel_vect 0 prods in
   let concls = List.rev_map
-    (fun (cst, t) -> (* FIXME *)
+    (fun (cst, t) ->
       mkApp(mkConstU cst, relargs),
       snd (decompose_prod_n prods t)) defs in
   let concl_bod, concl_typ =
     fold_left'
       (fun (accb, acct) (cst, x) ->
-	mkApp (coqconj, [| x; acct; cst; accb |]),
-	mkApp (coqand, [| x; acct |])) concls
+	mkApp (EConstr.to_constr !evdref coqconj, [| x; acct; cst; accb |]),
+	mkApp (EConstr.to_constr !evdref coqand, [| x; acct |])) concls
   in
   let ctx, _ =
     list_split_rev_at prods
       (List.rev_map (fun (x, y) -> LocalAssum (x, y)) ctx) in
   let typ = List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d) concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
-  (body, typ)
+  (!evdref, body, typ)
 
 let do_combined_scheme name schemes =
   let csts =
@@ -501,9 +510,9 @@ let do_combined_scheme name schemes =
                 with Not_found -> user_err Pp.(pr_qualid (snd qualid) ++ str " is not declared."))
       schemes
   in
-  let body,typ = build_combined_scheme (Global.env ()) csts in
+  let sigma,body,typ = build_combined_scheme (Global.env ()) csts in
   let proof_output = Future.from_val ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
-  ignore (define (snd name) UserIndividualRequest Evd.empty proof_output (Some typ));
+  ignore (define (snd name) UserIndividualRequest sigma proof_output (Some typ));
   fixpoint_message None [snd name]
 
 (**********************************************************************)

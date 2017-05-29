@@ -40,7 +40,7 @@ val do_scheme : (Id.t located option * scheme) list -> unit
 
 (** Combine a list of schemes into a conjunction of them *)
 
-val build_combined_scheme : env -> constant list -> constr * types
+val build_combined_scheme : env -> constant list -> Evd.evar_map * constr * types
 
 val do_combined_scheme : Id.t located -> Id.t located list -> unit
 
