@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open API
-open Constr
+open Term
 open Libnames
 open Constrexpr
 open Tacexpr

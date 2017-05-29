@@ -8,6 +8,7 @@
 
 open API
 open Names
+open ModPath
 open Globnames
 open CErrors
 open Util
@@ -111,7 +112,7 @@ let ind_iter_references do_term do_cons do_type kn ind =
     do_type (IndRef ip);
     if lang () == Ocaml then
       (match ind.ind_equiv with
-	 | Miniml.Equiv kne -> do_type (IndRef (mind_of_kn kne, snd ip));
+	 | Miniml.Equiv kne -> do_type (IndRef (MutInd.make1 kne, snd ip));
 	 | _ -> ());
     Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types
   in

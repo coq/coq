@@ -152,7 +152,7 @@ let ic_unsafe c = (*FIXME remove *)
     EConstr.of_constr (fst (Constrintern.interp_constr env sigma c))
 
 let decl_constant na ctx c =
-  let open Constr in
+  let open Term in
   let vars = Universes.universes_of_constr c in
   let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context ctx) vars in
   mkConst(declare_constant (Id.of_string na) 
@@ -283,7 +283,7 @@ let my_reference c =
 let znew_ring_path =
   DirPath.make (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
 let zltac s =
-  lazy(make_kn (MPfile znew_ring_path) DirPath.empty (Label.make s))
+  lazy(KerName.make (ModPath.MPfile znew_ring_path) DirPath.empty (Label.make s))
 
 let mk_cst l s = lazy (Coqlib.coq_reference "newring" l s);;
 let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s ;;
@@ -347,7 +347,11 @@ let _ = add_map "ring"
 
 let pr_constr c = pr_econstr c
 
-module Cmap = Map.Make(Constr)
+module M = struct
+  type t = Term.constr
+  let compare = Term.compare
+end
+module Cmap = Map.Make(M)
 
 let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
 let from_name = Summary.ref Spmap.empty ~name:"ring-tac-name-table"
@@ -770,7 +774,7 @@ let new_field_path =
   DirPath.make (List.map Id.of_string ["Field_tac";plugin_dir;"Coq"])
 
 let field_ltac s =
-  lazy(make_kn (MPfile new_field_path) DirPath.empty (Label.make s))
+  lazy(KerName.make (ModPath.MPfile new_field_path) DirPath.empty (Label.make s))
 
 
 let _ = add_map "field"
@@ -930,7 +934,7 @@ let field_equality evd r inv req =
 	  inv_m_lem
 
 let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
-  let open Constr in
+  let open Term in
   check_required_library (cdir@["Field_tac"]);
   let (sigma,fth) = ic fth in
   let env = Global.env() in

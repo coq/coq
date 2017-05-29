@@ -143,7 +143,8 @@ let leq_constr_univs = Constr.leq_constr_univs
 let eq_constr_nounivs = Constr.eq_constr_nounivs
 
 let kind_of_term = Constr.kind
-let constr_ord = Constr.compare
+let compare = Constr.compare
+let constr_ord = compare
 let fold_constr = Constr.fold
 let map_puniverses = Constr.map_puniverses
 let map_constr = Constr.map

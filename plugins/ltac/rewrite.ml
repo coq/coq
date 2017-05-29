@@ -427,7 +427,7 @@ let split_head = function
   | [] -> assert(false)
 
 let eq_pb (ty, env, x, y as pb) (ty', env', x', y' as pb') =
-  pb == pb' || (ty == ty' && Constr.equal x x' && Constr.equal y y')
+  pb == pb' || (ty == ty' && Term.eq_constr x x' && Term.eq_constr y y')
 
 let problem_inclusion x y =
   List.for_all (fun pb -> List.exists (fun pb' -> eq_pb pb pb') y) x
@@ -957,7 +957,7 @@ let fold_match ?(force=false) env sigma c =
 
 let unfold_match env sigma sk app =
   match EConstr.kind sigma app with
-  | App (f', args) when eq_constant (fst (destConst sigma f')) sk ->
+  | App (f', args) when Constant.equal (fst (destConst sigma f')) sk ->
       let v = Environ.constant_value_in (Global.env ()) (sk,Univ.Instance.empty)(*FIXME*) in
       let v = EConstr.of_constr v in
 	Reductionops.whd_beta sigma (mkApp (v, args))
@@ -1371,7 +1371,7 @@ module Strategies =
 	fail cs
 
     let inj_open hint = (); fun sigma ->
-      let ctx = Evd.evar_universe_context_of hint.Autorewrite.rew_ctx in
+      let ctx = UState.of_context_set hint.Autorewrite.rew_ctx in
       let sigma = Evd.merge_universe_context sigma ctx in
       (sigma, (EConstr.of_constr hint.Autorewrite.rew_lemma, NoBindings))
 
@@ -1472,7 +1472,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
   let evars = (!evdref, Evar.Set.empty) in
   let evars, cstr =
     let prop, (evars, arrow) = 
-      if is_prop_sort sort then true, app_poly_sort true env evars impl [||]
+      if Sorts.is_prop sort then true, app_poly_sort true env evars impl [||]
       else false, app_poly_sort false env evars TypeGlobal.arrow [||]
     in
       match is_hyp with
@@ -1965,7 +1965,7 @@ let add_morphism_infer glob m n =
     if Lib.is_modtype () then
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
 				(Entries.ParameterEntry 
-				 (None,poly,(instance,Evd.evar_context_universe_context uctx),None), 
+				 (None,poly,(instance,UState.context uctx),None),
 				 Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
 	add_instance (Typeclasses.new_instance 

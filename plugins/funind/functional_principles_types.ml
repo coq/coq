@@ -150,7 +150,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 		([],[])
 	    in
 	    let new_f,binders_to_remove_from_f = compute_new_princ_type remove env f in
-	    applist(new_f, new_args),
+	    applistc new_f new_args,
 	    list_union_eq eq_constr binders_to_remove_from_f binders_to_remove
 	| LetIn(x,v,t,b) ->
 	    compute_new_princ_type_for_letin remove env x v t b
@@ -330,7 +330,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
     match new_princ_name with
       | Some (id) -> id,id
       | None ->
-	  let id_of_f = Label.to_id (con_label (fst f)) in
+	  let id_of_f = Label.to_id (Constant.label (fst f)) in
 	  id_of_f,Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
   in
   let names = ref [new_princ_name] in
@@ -389,14 +389,14 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 exception Not_Rec
 
 let get_funs_constant mp dp =
-  let get_funs_constant const e : (Names.constant*int) array =
+  let get_funs_constant const e : (Names.Constant.t*int) array =
     match kind_of_term ((strip_lam e)) with
       | Fix((_,(na,_,_))) ->
 	  Array.mapi
 	    (fun i na ->
 	       match na with
 		 | Name id ->
-		     let const = make_con mp dp (Label.of_id id) in
+		     let const = Constant.make3 mp dp (Label.of_id id) in
 		     const,i
 		 | Anonymous ->
 		     anomaly (Pp.str "Anonymous fix.")
@@ -656,7 +656,7 @@ let build_case_scheme fa =
       user_err ~hdr:"FunInd.build_case_scheme"
         (str "Cannot find " ++ Libnames.pr_reference f) in
   let first_fun,u = destConst  funs in
-  let funs_mp,funs_dp,_ = Names.repr_con first_fun in
+  let funs_mp,funs_dp,_ = Constant.repr3 first_fun in
   let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in
   let this_block_funs_indexes = get_funs_constant funs_mp funs_dp first_fun in
   let this_block_funs = Array.map (fun (c,_) -> (c,u)) this_block_funs_indexes in

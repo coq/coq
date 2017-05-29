@@ -49,7 +49,7 @@ end
 
 (*s Utility functions over ML types without meta *)
 
-val type_mem_kn : mutual_inductive -> ml_type -> bool
+val type_mem_kn : MutInd.t -> ml_type -> bool
 
 val type_maxvar : ml_type -> int
 

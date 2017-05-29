@@ -32,7 +32,7 @@ open Context.Rel.Declaration
 exception I of inductive_kind
 
 (* A set of all fixpoint functions currently being extracted *)
-let current_fixpoints = ref ([] : constant list)
+let current_fixpoints = ref ([] : Constant.t list)
 
 let none = Evd.empty
 
@@ -256,7 +256,7 @@ let rec extract_type env db j c args =
 		      let reason = if lvl == TypeScheme then Ktype else Kprop in
 		      Tarr (Tdummy reason, mld)))
     | Sort _ -> Tdummy Ktype (* The two logical cases. *)
-    | _ when sort_of env (applist (c, args)) == InProp -> Tdummy Kprop
+    | _ when sort_of env (applistc c args) == InProp -> Tdummy Kprop
     | Rel n ->
 	(match lookup_rel n env with
            | LocalDef (_,t,_) -> extract_type env db j (lift n t) args
@@ -277,7 +277,7 @@ let rec extract_type env db j c args =
 		  | Undef _ | OpaqueDef _ -> mlt
 		  | Def _ when is_custom r -> mlt
 		  | Def lbody ->
-		      let newc = applist (Mod_subst.force_constr lbody, args) in
+		      let newc = applistc (Mod_subst.force_constr lbody) args in
 		      let mlt' = extract_type env db j newc [] in
 		      (* ML type abbreviations interact badly with Coq *)
 		      (* reduction, so [mlt] and [mlt'] might be different: *)
@@ -291,7 +291,7 @@ let rec extract_type env db j c args =
 		  | Undef _  | OpaqueDef _ -> Tunknown (* Brutal approx ... *)
 		  | Def lbody ->
 		      (* We try to reduce. *)
-		      let newc = applist (Mod_subst.force_constr lbody, args) in
+		      let newc = applistc (Mod_subst.force_constr lbody) args in
 		      extract_type env db j newc []))
     | Ind ((kn,i),u) ->
 	let s = (extract_ind env kn).ind_packets.(i).ip_sign in
@@ -362,14 +362,14 @@ and extract_really_ind env kn mib =
        (cf Vector and bug #2570) *)
     let equiv =
       if lang () != Ocaml ||
-	 (not (modular ()) && at_toplevel (mind_modpath kn)) ||
-	 KerName.equal (canonical_mind kn) (user_mind kn)
+	 (not (modular ()) && at_toplevel (MutInd.modpath kn)) ||
+	 KerName.equal (MutInd.canonical kn) (MutInd.user kn)
       then
 	NoEquiv
       else
 	begin
-	  ignore (extract_ind env (mind_of_kn (canonical_mind kn)));
-	  Equiv (canonical_mind kn)
+	  ignore (extract_ind env (MutInd.make1 (MutInd.canonical kn)));
+	  Equiv (MutInd.canonical kn)
 	end
     in
     (* Everything concerning parameters. *)
@@ -865,7 +865,7 @@ let decomp_lams_eta_n n m env c t =
   (* we'd better keep rels' as long as possible. *)
   let rels = (List.firstn d rels) @ rels' in
   let eta_args = List.rev_map mkRel (List.interval 1 d) in
-  rels, applist (lift d c,eta_args)
+  rels, applistc (lift d c) eta_args
 
 (* Let's try to identify some situation where extracted code
    will allow generalisation of type variables *)

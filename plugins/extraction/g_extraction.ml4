@@ -20,7 +20,6 @@ open Genarg
 open Stdarg
 open Pp
 open Names
-open Nameops
 open Table
 open Extract_env
 
@@ -35,7 +34,7 @@ END
 
 let pr_int_or_id _ _ _ = function
   | ArgInt i -> int i
-  | ArgId id -> pr_id id
+  | ArgId id -> Id.print id
 
 ARGUMENT EXTEND int_or_id
   PRINTED BY pr_int_or_id

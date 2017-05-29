@@ -16,7 +16,7 @@ val functional_induction :
   EConstr.constr ->
   (EConstr.constr * EConstr.constr bindings) option ->
   Tacexpr.or_and_intro_pattern option ->
-  Proof_type.goal Tacmach.sigma -> Proof_type.goal list Evd.sigma
+  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
 
 
 val make_graph :  Globnames.global_reference -> unit

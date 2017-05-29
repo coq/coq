@@ -87,16 +87,16 @@ let let_evar name typ =
     let _ = Typing.e_sort_of env sigma typ in
     let sigma = !sigma in
     let id = match name with
-    | Names.Anonymous -> 
+    | Name.Anonymous ->
       let id = Namegen.id_of_name_using_hdchar env sigma typ name in
       Namegen.next_ident_away_in_goal id (Termops.ids_of_named_context (Environ.named_context env))
-    | Names.Name id -> id
+    | Name.Name id -> id
     in
     let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Tactics.letin_tac None (Names.Name id) evar None Locusops.nowhere)
+    (Tactics.letin_tac None (Name.Name id) evar None Locusops.nowhere)
   end
-
+  
 let hget_evar n =
   let open EConstr in
   Proofview.Goal.nf_enter begin fun gl ->
@@ -108,6 +108,5 @@ let hget_evar n =
   if n <= 0 then user_err Pp.(str "Incorrect existential variable index.");
   let ev = List.nth evl (n-1) in
   let ev_type = EConstr.existential_type sigma ev in
-  Tactics.change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,concl))
+  Tactics.change_concl (mkLetIn (Name.Anonymous,mkEvar ev,ev_type,concl))
   end
-

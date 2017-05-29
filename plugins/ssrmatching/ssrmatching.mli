@@ -154,7 +154,7 @@ type find_P =
     instantiation, the proof term and the ssrdit stored in the tpattern
   @raise UserEerror if too many occurrences were specified *)
 type conclude =
-  unit -> constr * ssrdir * (evar_map * Evd.evar_universe_context * constr)
+  unit -> constr * ssrdir * (evar_map * UState.t * constr)
 
 (** [mk_tpattern_matcher b o sigma0 occ sigma_tplist] creates a pair 
     a function [find_P] and [conclude] with the behaviour explained above.
@@ -224,12 +224,12 @@ val pf_unify_HO : goal sigma -> EConstr.constr -> EConstr.constr -> goal sigma
     on top of the former APIs *)
 val tag_of_cpattern : cpattern -> char
 val loc_of_cpattern : cpattern -> Loc.t option
-val id_of_pattern : pattern -> Names.variable option
+val id_of_pattern : pattern -> Names.Id.t option
 val is_wildcard : cpattern -> bool
-val cpattern_of_id : Names.variable -> cpattern
+val cpattern_of_id : Names.Id.t -> cpattern
 val pr_constr_pat : constr -> Pp.std_ppcmds
-val pf_merge_uc : Evd.evar_universe_context -> goal Evd.sigma -> goal Evd.sigma
-val pf_unsafe_merge_uc : Evd.evar_universe_context -> goal Evd.sigma -> goal Evd.sigma
+val pf_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
+val pf_unsafe_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 
 (* One can also "Set SsrMatchingDebug" from a .v *)
 val debug : bool -> unit

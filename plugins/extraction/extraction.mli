@@ -15,18 +15,18 @@ open Declarations
 open Environ
 open Miniml
 
-val extract_constant : env -> constant -> constant_body -> ml_decl
+val extract_constant : env -> Constant.t -> constant_body -> ml_decl
 
-val extract_constant_spec : env -> constant -> constant_body -> ml_spec
+val extract_constant_spec : env -> Constant.t -> constant_body -> ml_spec
 
 (** For extracting "module ... with ..." declaration *)
 
 val extract_with_type : env -> constr -> ( Id.t list * ml_type ) option
 
 val extract_fixpoint :
-  env -> constant array -> (constr, types) prec_declaration -> ml_decl
+  env -> Constant.t array -> (constr, types) prec_declaration -> ml_decl
 
-val extract_inductive : env -> mutual_inductive -> ml_ind
+val extract_inductive : env -> MutInd.t -> ml_ind
 
 (** For extraction compute *)
 

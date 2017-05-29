@@ -14,11 +14,11 @@ type atom_env=
      mutable env:(Term.constr*int) list}
 
 val make_form : atom_env ->
-    Proof_type.goal Tacmach.sigma -> EConstr.types -> Proof_search.form
+    Proof_type.goal Evd.sigma -> EConstr.types -> Proof_search.form
 
 val make_hyps :
     atom_env ->
-    Proof_type.goal Tacmach.sigma ->
+    Proof_type.goal Evd.sigma ->
     EConstr.types list ->
     EConstr.named_context ->
     (Names.Id.t * Proof_search.form) list

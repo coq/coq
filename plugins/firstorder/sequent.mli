@@ -11,11 +11,11 @@ open EConstr
 open Formula
 open Globnames
 
-module OrderedConstr: Set.OrderedType with type t=Constr.t
+module OrderedConstr: Set.OrderedType with type t=Term.constr
 
-module CM: CSig.MapS with type key=Constr.t
+module CM: CSig.MapS with type key=Term.constr
 
-type h_item = global_reference * (int*Constr.t) option
+type h_item = global_reference * (int*Term.constr) option
 
 module History: Set.S with type elt = h_item
 

@@ -16,7 +16,6 @@
 
 open API
 open Eqdecide
-open Names
 
 DECLARE PLUGIN "g_eqdecide"
 

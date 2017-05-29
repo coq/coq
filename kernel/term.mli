@@ -447,8 +447,11 @@ val eq_constr_nounivs : constr -> constr -> bool
 val kind_of_term : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
 (** Alias for [Constr.kind] *)
 
-val constr_ord : constr -> constr -> int
+val compare : constr -> constr -> int
 (** Alias for [Constr.compare] *)
+
+val constr_ord : constr -> constr -> int
+(** Alias for [Term.compare] *)
 
 val fold_constr : ('a -> constr -> 'a) -> 'a -> constr -> 'a
 (** Alias for [Constr.fold] *)

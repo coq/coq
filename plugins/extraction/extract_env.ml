@@ -11,6 +11,7 @@ open Miniml
 open Term
 open Declarations
 open Names
+open ModPath
 open Libnames
 open Globnames
 open Pp
@@ -28,13 +29,13 @@ open Common
 let toplevel_env () =
   let get_reference = function
     | (_,kn), Lib.Leaf o ->
-	let mp,_,l = repr_kn kn in
+	let mp,_,l = KerName.repr kn in
 	begin match Libobject.object_tag o with
 	  | "CONSTANT" ->
-            let constant = Global.lookup_constant (constant_of_kn kn) in
+            let constant = Global.lookup_constant (Constant.make1 kn) in
             Some (l, SFBconst constant)
 	  | "INDUCTIVE" ->
-            let inductive = Global.lookup_mind (mind_of_kn kn) in
+            let inductive = Global.lookup_mind (MutInd.make1 kn) in
             Some (l, SFBmind inductive)
 	  | "MODULE" ->
             let modl = Global.lookup_module (MPdot (mp, l)) in
@@ -73,21 +74,21 @@ module type VISIT = sig
 
   (* Add the module_path and all its prefixes to the mp visit list.
      We'll keep all fields of these modules. *)
-  val add_mp_all : module_path -> unit
+  val add_mp_all : ModPath.t -> unit
 
   (* Add reference / ... in the visit lists.
      These functions silently add the mp of their arg in the mp list *)
   val add_ref : global_reference -> unit
-  val add_kn : kernel_name -> unit
+  val add_kn : KerName.t -> unit
   val add_decl_deps : ml_decl -> unit
   val add_spec_deps : ml_spec -> unit
 
   (* Test functions:
      is a particular object a needed dependency for the current extraction ? *)
-  val needed_ind : mutual_inductive -> bool
-  val needed_cst : constant -> bool
-  val needed_mp : module_path -> bool
-  val needed_mp_all : module_path -> bool
+  val needed_ind : MutInd.t -> bool
+  val needed_cst : Constant.t -> bool
+  val needed_mp : ModPath.t -> bool
+  val needed_mp_all : ModPath.t -> bool
 end
 
 module Visit : VISIT = struct
@@ -102,8 +103,8 @@ module Visit : VISIT = struct
     v.kn <- KNset.empty;
     v.mp <- MPset.empty;
     v.mp_all <- MPset.empty
-  let needed_ind i = KNset.mem (user_mind i) v.kn
-  let needed_cst c = KNset.mem (user_con c) v.kn
+  let needed_ind i = KNset.mem (MutInd.user i) v.kn
+  let needed_cst c = KNset.mem (Constant.user c) v.kn
   let needed_mp mp = MPset.mem mp v.mp || MPset.mem mp v.mp_all
   let needed_mp_all mp = MPset.mem mp v.mp_all
   let add_mp mp =
@@ -112,10 +113,10 @@ module Visit : VISIT = struct
     check_loaded_modfile mp;
     v.mp <- MPset.union (prefixes_mp mp) v.mp;
     v.mp_all <- MPset.add mp v.mp_all
-  let add_kn kn = v.kn <- KNset.add kn v.kn; add_mp (modpath kn)
+  let add_kn kn = v.kn <- KNset.add kn v.kn; add_mp (KerName.modpath kn)
   let add_ref = function
-    | ConstRef c -> add_kn (user_con c)
-    | IndRef (ind,_) | ConstructRef ((ind,_),_) -> add_kn (user_mind ind)
+    | ConstRef c -> add_kn (Constant.user c)
+    | IndRef (ind,_) | ConstructRef ((ind,_),_) -> add_kn (MutInd.user ind)
     | VarRef _ -> assert false
   let add_decl_deps = decl_iter_references add_ref add_ref add_ref
   let add_spec_deps = spec_iter_references add_ref add_ref add_ref

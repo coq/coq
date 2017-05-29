@@ -77,7 +77,7 @@ let def_of_const t =
 	     | _ -> raise Not_found)
        with Not_found ->
 	 anomaly (str "Cannot find definition of constant " ++
-		    (Id.print (Label.to_id (con_label (fst sp)))) ++ str ".")
+		    (Id.print (Label.to_id (Constant.label (fst sp)))) ++ str ".")
       )
      |_ -> assert false
 
@@ -172,7 +172,7 @@ let simpl_iter clause =
     clause
 
 (* Others ugly things ... *)
-let (value_f:Constr.constr list -> global_reference -> Constr.constr) =
+let (value_f:Term.constr list -> global_reference -> Term.constr) =
   let open Term in
   fun al fterm ->
     let rev_x_id_l =
@@ -204,7 +204,7 @@ let (value_f:Constr.constr list -> global_reference -> Constr.constr) =
     let body = fst (understand env (Evd.from_env env) glob_body)(*FIXME*) in
     it_mkLambda_or_LetIn body context
 
-let (declare_f : Id.t -> logical_kind -> Constr.constr list -> global_reference -> global_reference) =
+let (declare_f : Id.t -> logical_kind -> Term.constr list -> global_reference -> global_reference) =
   fun f_id kind input_type fterm_ref ->
     declare_fun f_id kind (value_f input_type fterm_ref);;
 
@@ -313,7 +313,7 @@ let check_not_nested sigma forbidden e =
       | Var x ->
         if Id.List.mem x forbidden
         then user_err ~hdr:"Recdef.check_not_nested"
-               (str "check_not_nested: failure " ++ pr_id x)
+               (str "check_not_nested: failure " ++ Id.print x)
       | Meta _ | Evar _ | Sort _ -> ()
       | Cast(e,_,t) -> check_not_nested e;check_not_nested t
       | Prod(_,t,b) -> check_not_nested t;check_not_nested b
@@ -450,7 +450,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	  check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info g
 	with e when CErrors.noncritical e ->
-	  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
+	  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
       end
     | Lambda(n,t,b) -> 
       begin
@@ -458,7 +458,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	  check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info g
 	with e when CErrors.noncritical e ->
-	  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
+	  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
       end
     | Case(ci,t,a,l) -> 
       begin
@@ -683,7 +683,7 @@ let pf_typel l tac =
   introduced back later; the result is the pair of the tactic and the
   list of hypotheses that have been generalized and cleared. *)
 let mkDestructEq :
-  Id.t list -> constr -> goal sigma -> tactic * Id.t list =
+  Id.t list -> constr -> goal Evd.sigma -> tactic * Id.t list =
   fun not_on_hyp expr g ->
   let hyps = pf_hyps g in
   let to_revert =
@@ -691,7 +691,7 @@ let mkDestructEq :
       (fun decl ->
         let open Context.Named.Declaration in
         let id = get_id decl in
-        if Id.List.mem id not_on_hyp || not (Termops.occur_term (project g) expr (get_type decl))
+        if Id.List.mem id not_on_hyp || not (Termops.dependent (project g) expr (get_type decl))
         then None else Some id) hyps in
   let to_revert_constr = List.rev_map mkVar to_revert in
   let type_of_expr = pf_unsafe_type_of g expr in
@@ -850,7 +850,7 @@ let rec prove_le g =
       try
 	let matching_fun = 
 	  pf_is_matching g
-	    (Pattern.PApp(Pattern.PRef (reference_of_constr (EConstr.Unsafe.to_constr (le ()))),[|Pattern.PVar (destVar sigma x);Pattern.PMeta None|])) in 
+	    (Pattern.PApp(Pattern.PRef (Globnames.global_of_constr (EConstr.Unsafe.to_constr (le ()))),[|Pattern.PVar (destVar sigma x);Pattern.PMeta None|])) in
 	let (h,t) = List.find (fun (_,t) -> matching_fun t) (pf_hyps_types g)
 	in 
 	let y = 
@@ -870,7 +870,7 @@ let rec make_rewrite_list expr_info max = function
   | [] -> tclIDTAC
   | (_,p,hp)::l -> 
     observe_tac (str "make_rewrite_list") (tclTHENS
-      (observe_tac (str "rewrite heq on " ++ pr_id p ) (
+      (observe_tac (str "rewrite heq on " ++ Id.print p ) (
 	(fun g -> 
           let sigma = project g in
 	  let t_eq = compute_renamed_type g (mkVar hp) in
@@ -965,7 +965,7 @@ let rec destruct_hex expr_info acc l =
 	onNthHypId 1 (fun hp -> 
 	  onNthHypId 2 (fun p -> 
 	    observe_tac 
-	      (str "destruct_hex after " ++ pr_id hp ++ spc () ++ pr_id p)
+	      (str "destruct_hex after " ++ Id.print hp ++ spc () ++ Id.print p)
 	      (destruct_hex expr_info ((v,p,hp)::acc) l)
 	  )
 	)
@@ -1457,7 +1457,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
 
 let (com_eqn : int -> Id.t ->
        global_reference -> global_reference -> global_reference
-	 -> Constr.constr -> unit) =
+	 -> Term.constr -> unit) =
   fun nb_arg eq_name functional_ref f_ref terminate_ref equation_lemma_type ->
     let open CVars in
     let opacity =

@@ -77,8 +77,8 @@ let flin_emult a f =
 type ineq = Rlt | Rle | Rgt | Rge
 
 let string_of_R_constant kn =
-  match Names.repr_con kn with
-    | MPfile dir, sec_dir, id when
+  match Constant.repr3 kn with
+    | ModPath.MPfile dir, sec_dir, id when
 	sec_dir = DirPath.empty &&
 	DirPath.to_string dir = "Coq.Reals.Rdefinitions"
 	-> Label.to_string id

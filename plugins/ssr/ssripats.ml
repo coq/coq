@@ -117,7 +117,7 @@ let delayed_clear force rest clr gl =
     let ren_clr, ren = 
       List.split (List.map (fun x ->
         let x = hyp_id x in
-        let x' = mk_anon_id (string_of_id x) gl in
+        let x' = mk_anon_id (Id.to_string x) gl in
         x', (x, x')) clr) in
     let ctx = { ctx with delayed_clears = ren_clr @ ctx.delayed_clears } in
     let gl = push_ctx ctx gl in
@@ -133,7 +133,7 @@ let with_defective maintac deps clr ist gl =
   let top_id =
     match EConstr.kind_of_type (project gl) (pf_concl gl) with
     | ProdType (Name id, _, _)
-      when has_discharged_tag (string_of_id id) -> id
+      when has_discharged_tag (Id.to_string id) -> id
     | _ -> top_id in
   let top_gen = mkclr clr, cpattern_of_id top_id in
   tclTHEN (introid top_id) (maintac deps top_gen ist) gl
@@ -143,7 +143,7 @@ let with_defective_a maintac deps clr ist gl =
   let top_id =
     match EConstr.kind_of_type sigma (without_ctx pf_concl gl) with
     | ProdType (Name id, _, _)
-      when has_discharged_tag (string_of_id id) -> id
+      when has_discharged_tag (Id.to_string id) -> id
     | _ -> top_id in
   let top_gen = mkclr clr, cpattern_of_id top_id in
   tclTHEN_a (tac_ctx (introid top_id)) (maintac deps top_gen ist) gl

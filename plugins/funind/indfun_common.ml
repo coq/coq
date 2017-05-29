@@ -109,7 +109,7 @@ let const_of_id id =
   try Constrintern.locate_reference princ_ref
   with Not_found ->
     CErrors.user_err ~hdr:"IndFun.const_of_id"
-      (str "cannot find " ++ Nameops.pr_id id)
+      (str "cannot find " ++ Id.print id)
 
 let def_of_const t =
    match (Term.kind_of_term t) with
@@ -217,14 +217,14 @@ let with_full_print f a =
 
 type function_info =
     {
-      function_constant : constant;
+      function_constant : Constant.t;
       graph_ind : inductive;
-      equation_lemma : constant option;
-      correctness_lemma : constant option;
-      completeness_lemma : constant option;
-      rect_lemma : constant option;
-      rec_lemma : constant option;
-      prop_lemma : constant option;
+      equation_lemma : Constant.t option;
+      correctness_lemma : Constant.t option;
+      completeness_lemma : Constant.t option;
+      rect_lemma : Constant.t option;
+      rec_lemma : Constant.t option;
+      prop_lemma : Constant.t option;
       is_general : bool; (* Has this function been defined using general recursive definition *)
     }
 
@@ -389,7 +389,7 @@ let update_Function finfo =
 			 
 
 let add_Function is_general f =
-  let f_id = Label.to_id (con_label f) in
+  let f_id = Label.to_id (Constant.label f) in
   let equation_lemma = find_or_none (mk_equation_id f_id)
   and correctness_lemma = find_or_none (mk_correct_id f_id)
   and completeness_lemma = find_or_none (mk_complete_id f_id)
@@ -548,5 +548,5 @@ let compose_prod l b = prodn (List.length l) l b
 
 type tcc_lemma_value = 
   | Undefined
-  | Value of Constr.constr
+  | Value of Term.constr
   | Not_needed

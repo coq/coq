@@ -12,8 +12,6 @@ open Names
 open Pp
 open Tacexpr
 open Termops
-open Nameops
-
 
 let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
 
@@ -259,14 +257,14 @@ let db_pattern_rule debug num r =
 (* Prints the hypothesis pattern identifier if it exists *)
 let hyp_bound = function
   | Anonymous -> str " (unbound)"
-  | Name id -> str " (bound to " ++ pr_id id ++ str ")"
+  | Name id -> str " (bound to " ++ Id.print id ++ str ")"
 
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env sigma (id,_,c) ido =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Hypothesis " ++ pr_id id ++ hyp_bound ido ++
+    msg_tac_debug (str "Hypothesis " ++ Id.print id ++ hyp_bound ido ++
                 str " has been matched: " ++ print_constr_env env sigma c)
   else return ()
 
@@ -361,7 +359,7 @@ let explain_ltac_call_trace last trace loc =
   | Tacexpr.LtacMLCall t ->
       quote (Pptactic.pr_glob_tactic (Global.env()) t)
   | Tacexpr.LtacVarCall (id,t) ->
-      quote (Nameops.pr_id id) ++ strbrk " (bound to " ++
+      quote (Id.print id) ++ strbrk " (bound to " ++
         Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
   | Tacexpr.LtacAtomCall te ->
       quote (Pptactic.pr_glob_tactic (Global.env())
@@ -372,7 +370,7 @@ let explain_ltac_call_trace last trace loc =
           strbrk " (with " ++
             prlist_with_sep pr_comma
             (fun (id,c) ->
-                pr_id id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
+                Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
             (List.rev (Id.Map.bindings vars)) ++ str ")"
         else mt())
   in

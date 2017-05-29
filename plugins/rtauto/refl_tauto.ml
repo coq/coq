@@ -301,7 +301,7 @@ let rtauto_tac gls=
 		      build_form formula;
 		      build_proof [] 0 prf|]) in
   let term=
-    applist (main,List.rev_map (fun (id,_) -> mkVar id) hyps) in
+    applistc main (List.rev_map (fun (id,_) -> mkVar id) hyps) in
   let build_end_time=System.get_time () in
   let _ = if !verbose then
     begin

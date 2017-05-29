@@ -31,7 +31,7 @@ type cinfo =
 
 type term =
     Symb of constr
-  | Product of sorts * sorts
+  | Product of Sorts.t * Sorts.t
   | Eps of Id.t
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
@@ -129,7 +129,7 @@ val axioms : forest -> (term * term) Constrhash.t
 
 val epsilons : forest -> pa_constructor list
 
-val empty : int -> Proof_type.goal Tacmach.sigma -> state
+val empty : int -> Proof_type.goal Evd.sigma -> state
 
 val add_term : state -> term -> int
 

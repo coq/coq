@@ -37,7 +37,7 @@ let pp   x = Pp.pp_with !Topfmt.std_ft x
 let ppfuture kx = pp (Future.print (fun _ -> str "_") kx)
 
 (* name printers *)
-let ppid id = pp (pr_id id)
+let ppid id = pp (Id.print id)
 let pplab l = pp (pr_lab l)
 let ppmbid mbid = pp (str (MBId.debug_to_string mbid))
 let ppdir dir = pp (pr_dirpath dir)
@@ -79,12 +79,12 @@ let ppbigint n = pp (str (Bigint.to_string n));;
 
 let prset pr l = str "[" ++ hov 0 (prlist_with_sep spc pr l) ++ str "]"
 let ppintset l = pp (prset int (Int.Set.elements l))
-let ppidset l = pp (prset pr_id (Id.Set.elements l))
+let ppidset l = pp (prset Id.print (Id.Set.elements l))
 
 let prset' pr l = str "[" ++ hov 0 (prlist_with_sep pr_comma pr l) ++ str "]"
 
 let pridmap pr l =
-  let pr (id,b) = pr_id id ++ str "=>" ++ pr id b in
+  let pr (id,b) = Id.print id ++ str "=>" ++ pr id b in
   prset' pr (Id.Map.fold (fun a b l -> (a,b)::l) l [])
 
 let ppidmap pr l = pp (pridmap pr l)
@@ -95,10 +95,10 @@ let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
    (match copt with None -> mt () | Some c -> spc () ++ str "<expanded: " ++
     Termops.print_constr (EConstr.of_constr c) ++ str">") ++
    (if id = id0 then mt ()
-    else spc () ++ str "<canonical: " ++ pr_id id ++ str ">"))))
+    else spc () ++ str "<canonical: " ++ Id.print id ++ str ">"))))
 
-let prididmap = pridmap (fun _ -> pr_id)
-let ppididmap = ppidmap (fun _ -> pr_id)
+let prididmap = pridmap (fun _ -> Id.print)
+let ppididmap = ppidmap (fun _ -> Id.print)
 
 let prconstrunderbindersidmap = pridmap (fun _ (l,c) ->
   hov 1 (str"[" ++  prlist_with_sep spc Id.print l ++ str"]")
@@ -132,15 +132,15 @@ let safe_pr_global = function
 			  int i ++ str ")")
   | ConstructRef ((kn,i),j) -> pp (str "INDREF(" ++ debug_pr_mind kn ++ str "," ++
 				      int i ++ str "," ++ int j ++ str ")")
-  | VarRef id -> pp (str "VARREF(" ++ pr_id id ++ str ")")
+  | VarRef id -> pp (str "VARREF(" ++ Id.print id ++ str ")")
 
 let ppglobal x = try pp(pr_global x) with _ -> safe_pr_global x
 
 let ppconst (sp,j) =
-    pp (str"#" ++ pr_kn sp ++ str"=" ++ pr_lconstr j.uj_val)
+    pp (str"#" ++ KerName.print sp ++ str"=" ++ pr_lconstr j.uj_val)
 
 let ppvar ((id,a)) =
-    pp (str"#" ++ pr_id id ++ str":" ++ pr_lconstr a)
+    pp (str"#" ++ Id.print id ++ str":" ++ pr_lconstr a)
 
 let genppj f j = let (c,t) = f j in (c ++ str " : " ++ t)
 
@@ -538,21 +538,21 @@ let encode_path ?loc prefix mpdir suffix id =
   let dir = match mpdir with
     | None -> []
     | Some (mp,dir) ->
-	(DirPath.repr (dirpath_of_string (string_of_mp mp))@
+	(DirPath.repr (dirpath_of_string (ModPath.to_string mp))@
 	DirPath.repr dir) in
   Qualid (Loc.tag ?loc @@ make_qualid
     (DirPath.make (List.rev (Id.of_string prefix::dir@suffix))) id)
 
 let raw_string_of_ref ?loc _ = function
   | ConstRef cst ->
-      let (mp,dir,id) = repr_con cst in
+      let (mp,dir,id) = Constant.repr3 cst in
       encode_path ?loc "CST" (Some (mp,dir)) [] (Label.to_id id)
   | IndRef (kn,i) ->
-      let (mp,dir,id) = repr_mind kn in
+      let (mp,dir,id) = MutInd.repr3 kn in
       encode_path ?loc "IND" (Some (mp,dir)) [Label.to_id id]
 	(Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
-      let (mp,dir,id) = repr_mind kn in
+      let (mp,dir,id) = MutInd.repr3 kn in
       encode_path ?loc "CSTR" (Some (mp,dir))
 	[Label.to_id id;Id.of_string ("_"^string_of_int i)]
 	(Id.of_string ("_"^string_of_int j))
@@ -561,14 +561,14 @@ let raw_string_of_ref ?loc _ = function
 
 let short_string_of_ref ?loc _ = function
   | VarRef id -> Ident (Loc.tag ?loc id)
-  | ConstRef cst -> Ident (Loc.tag ?loc @@ Label.to_id (pi3 (repr_con cst)))
-  | IndRef (kn,0) -> Ident (Loc.tag ?loc @@ Label.to_id (pi3 (repr_mind kn)))
+  | ConstRef cst -> Ident (Loc.tag ?loc @@ Label.to_id (pi3 (Constant.repr3 cst)))
+  | IndRef (kn,0) -> Ident (Loc.tag ?loc @@ Label.to_id (pi3 (MutInd.repr3 kn)))
   | IndRef (kn,i) ->
-      encode_path ?loc "IND" None [Label.to_id (pi3 (repr_mind kn))]
+      encode_path ?loc "IND" None [Label.to_id (pi3 (MutInd.repr3 kn))]
         (Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
       encode_path ?loc "CSTR" None
-        [Label.to_id (pi3 (repr_mind kn));Id.of_string ("_"^string_of_int i)]
+        [Label.to_id (pi3 (MutInd.repr3 kn));Id.of_string ("_"^string_of_int i)]
         (Id.of_string ("_"^string_of_int j))
 
 (* Anticipate that printers can be used from ocamldebug and that 

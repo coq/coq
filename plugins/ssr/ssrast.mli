@@ -94,10 +94,10 @@ type ssrintrosarg = Tacexpr.raw_tactic_expr * ssripats
 type ssrfwdid = Id.t
 (** Binders (for fwd tactics) *)
 type 'term ssrbind =
-  | Bvar of name
-  | Bdecl of name list * 'term
-  | Bdef of name * 'term option * 'term
-  | Bstruct of name
+  | Bvar of Name.t
+  | Bdecl of Name.t list * 'term
+  | Bdef of Name.t * 'term option * 'term
+  | Bstruct of Name.t
   | Bcast of 'term
 (* We use an intermediate structure to correctly render the binder list  *)
 (* abbreviations. We use a list of hints to extract the binders and      *)

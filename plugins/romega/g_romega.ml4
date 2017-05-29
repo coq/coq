@@ -19,7 +19,7 @@ open Stdarg
 
 let eval_tactic name =
   let dp = DirPath.make (List.map Id.of_string ["PreOmega"; "omega"; "Coq"]) in
-  let kn = KerName.make2 (MPfile dp) (Label.make name) in
+  let kn = KerName.make2 (ModPath.MPfile dp) (Label.make name) in
   let tac = Tacenv.interp_ltac kn in
   Tacinterp.eval_tactic tac
 

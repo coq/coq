@@ -65,7 +65,7 @@ let functional_induction with_clean c princl pat =
 			  (or f_rec, f_rect) i*)
 		  let princ_name =
 		    Indrec.make_elimination_ident
-		      (Label.to_id (con_label c'))
+		      (Label.to_id (Constant.label c'))
 		      (Tacticals.elimination_sort_of_goal g)
 		  in
 		  try
@@ -342,8 +342,8 @@ let error_error names e =
 
 let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     is_general do_built (fix_rec_l:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) recdefs  interactive_proof
-    (continue_proof : int -> Names.constant array -> EConstr.constr array -> int ->
-      Tacmach.tactic) : unit =
+    (continue_proof : int -> Names.Constant.t array -> EConstr.constr array -> int ->
+      Proof_type.tactic) : unit =
   let names = List.map (function (((_, name),_),_,_,_,_),_ -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
@@ -446,7 +446,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
-    (_: int) (_:Names.constant array) (_:EConstr.constr array) (_:int) : Tacmach.tactic =
+    (_: int) (_:Names.Constant.t array) (_:EConstr.constr array) (_:int) : Proof_type.tactic =
   Functional_principles_proofs.prove_principle_for_gen
     (f_ref,functional_ref,eq_ref)
     tcc_lemma_ref is_mes  rec_arg_num rec_arg_type relation
@@ -899,14 +899,14 @@ let make_graph (f_ref:global_reference) =
 		 in
 		 l
 	     | _ ->
-		let id = Label.to_id (con_label c) in
+		let id = Label.to_id (Constant.label c) in
 		 [(((Loc.tag id),None),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
-	 let mp,dp,_ = repr_con c in
+	 let mp,dp,_ = Constant.repr3 c in
 	 do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list;
 	 (* We register the infos *)
 	 List.iter
-	   (fun ((((_,id),_),_,_,_,_),_) -> add_Function false (make_con mp dp (Label.of_id id)))
+	   (fun ((((_,id),_),_,_,_,_),_) -> add_Function false (Constant.make3 mp dp (Label.of_id id)))
 	   expr_list)
 
 let do_generate_principle = do_generate_principle [] warning_error true
