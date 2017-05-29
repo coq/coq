@@ -26,7 +26,7 @@
 
    Proposed solution:
      Turn all occurrences of [bad] into [bad key] in your data structure.
-     Use [crate bad_val] to obtain a unique key [k] for [bad_val], and store
+     Use [create bad_val] to obtain a unique key [k] for [bad_val], and store
      [k] in the data structure.  Use [get k] to obtain [bad_val].
 
      An ['a key] can always be marshalled.  When marshalled, a key loses its

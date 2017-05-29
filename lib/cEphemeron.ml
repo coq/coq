@@ -35,10 +35,10 @@ end)
    would make the key always reachable) *)
 let values : Obj.t HT.t = HT.create 1001
 
-(* To avoid a race contidion between the finalization function and
+(* To avoid a race condition between the finalization function and
    get/create on the values hashtable, the finalization function just
    enqueues in an imperative list the item to be collected.  Being the list
-   imperative, even if the Gc enqueue an item while run_collection is operating,
+   imperative, even if the Gc enqueues an item while run_collection is operating,
    the tail of the list is eventually set to Empty on completion.
    Kudos to the authors of Why3 that came up with this solution for their
    implementation of weak hash tables! *)

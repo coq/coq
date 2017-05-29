@@ -379,9 +379,9 @@ module Cset_env  : CSig.SetS with type elt = Constant.t
 
 module Cmap : Map.ExtS with type key = Constant.t and module Set := Cset
 (** A map whose keys are constants (values of the {!Constant.t} type).
-    Keys are ordered wrt. "cannonical form" of the constant. *)
+    Keys are ordered wrt. "canonical form" of the constant. *)
 
-module Cmap_env : Map.ExtS with type key = Constant.t  and module Set := Cset_env
+module Cmap_env : Map.ExtS with type key = Constant.t and module Set := Cset_env
 (** A map whose keys are constants (values of the {!Constant.t} type).
     Keys are ordered wrt. "user form" of the constant. *)
 
