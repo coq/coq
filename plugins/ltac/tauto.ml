@@ -220,9 +220,7 @@ let apply_nnpp _ ist =
   Proofview.tclBIND
     (Proofview.tclUNIT ())
     begin fun () -> try
-      let nnpp = Universes.constr_of_global (Nametab.global_of_path coq_nnpp_path) in
-      let nnpp = EConstr.of_constr nnpp in
-      apply nnpp
+      Tacticals.New.pf_constr_of_global (Nametab.global_of_path coq_nnpp_path) >>= apply
     with Not_found -> tclFAIL 0 (Pp.mt ())
     end
 
