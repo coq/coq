@@ -27,11 +27,6 @@ let rec print_prefix_list sep = function
   | x :: l -> print sep; print x; print_prefix_list sep l
   | [] -> ()
 
-(* These are the Coq library directories that are used for
- * plugin development
- *)
-let lib_dirs = Envars.coq_src_subdirs
-
 let usage () =
   output_string stderr "Usage summary:\
 \n\
@@ -73,6 +68,7 @@ let usage () =
 \n[-f file]: take the contents of file as arguments\
 \n[-o file]: output should go in file file\
 \n	Output file outside the current directory is forbidden.\
+\n[-bypass-API]: when compiling plugins, bypass Coq API\
 \n[-h]: print this usage summary\
 \n[--help]: equivalent to [-h]\n";
   exit 1
@@ -197,9 +193,12 @@ let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
     (S.concat " " (map (fun ({ path },l) -> dash2 "R" path l) r_includes))
 ;;
 
-let generate_conf_coq_config oc args =
+let generate_conf_coq_config oc args bypass_API =
   section oc "Coq configuration.";
-  Envars.print_config ~prefix_var_name:"COQMF_" oc;
+  let src_dirs = if bypass_API
+                 then Coq_config.all_src_dirs
+                 else Coq_config.api_dirs @ Coq_config.plugins_dirs in
+  Envars.print_config ~prefix_var_name:"COQMF_" oc src_dirs;
   fprintf oc "COQMF_MAKEFILE=%s\n" (quote (List.hd args)); 
 ;;
 
@@ -258,7 +257,7 @@ let generate_conf oc project args  =
   fprintf oc "# %s\n\n" (String.concat " " (List.map quote args));
   generate_conf_files oc project;
   generate_conf_includes oc project;
-  generate_conf_coq_config oc args;
+  generate_conf_coq_config oc args project.bypass_API;
   generate_conf_defs oc project;
   generate_conf_doc oc project;
   generate_conf_extra_target oc project.extra_targets;

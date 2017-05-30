@@ -124,7 +124,7 @@ let init_ocaml_path () =
     Mltop.add_ml_dir (List.fold_left (/) Envars.coqroot [dl])
   in
     Mltop.add_ml_dir (Envars.coqlib ());
-    List.iter add_subdir Envars.coq_src_subdirs
+    List.iter add_subdir Coq_config.all_src_dirs
 
 let get_compat_version = function
   | "8.7" -> Flags.Current

@@ -1,3 +1,4 @@
+open API
 open Ltac_plugin
 DECLARE PLUGIN "test_plugin"
 let () = Mltop.add_known_plugin (fun () -> ()) "test_plugin";;
