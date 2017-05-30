@@ -45,7 +45,7 @@ REDIR := $(if $(VERBOSE),,> /dev/null 2>&1)
 
 # read out an emacs config and look for coq-prog-args; if such exists, return it
 get_coq_prog_args_helper = sed -n s'/^.*coq-prog-args:[[:space:]]*(\([^)]*\)).*/\1/p' $(1)
-get_coq_prog_args = $(strip $(shell $(call get_coq_prog_args_helper,$(1)))) 
+get_coq_prog_args = $(strip $(shell $(call get_coq_prog_args_helper,$(1))))
 SINGLE_QUOTE="
 #" # double up on the quotes, in a comment, to appease the emacs syntax highlighter
 # wrap the arguments in parens, but only if they exist
