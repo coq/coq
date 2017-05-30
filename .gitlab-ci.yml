@@ -100,13 +100,17 @@ before_script:
 .test-suite-template: &test-suite-template
   stage: test
   script:
-    - set -e
     - cd test-suite
     - make clean
     # careful with the ending /
     - make -j ${NJOBS} BIN=$(readlink -f ../install/bin)/ LIB=$(readlink -f ../install/lib/coq)/ all
-    - cat summary.log
-    - set +e
+  after_script:
+    - test-suite/save-logs.sh
+  artifacts:
+    name: "$CI_JOB_NAME.logs"
+    when: on_failure
+    paths:
+      - logs
 
 .validate-template: &validate-template
   stage: test
