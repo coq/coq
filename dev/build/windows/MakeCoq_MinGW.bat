@@ -342,7 +342,7 @@ IF "%RUNSETUP%"=="Y" (
     --proxy %PROXY% ^
     --site %CYGWIN_REPOSITORY% ^
     --root %CYGWIN_INSTALLDIR_WFMT% ^
-    --local-package-dir %CYGWIN_LOCAL_CACHE_WFMT% ^
+    --local-package-dir "%CYGWIN_LOCAL_CACHE_WFMT%" ^
     --no-shortcuts ^
     %CYGWIN_OPT% ^
     -P wget,curl,git,make,unzip ^
