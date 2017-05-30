@@ -177,7 +177,7 @@ IF "%0" == "-cygrepo" (
 )
 
 IF "%0" == "-cygcache" (
-  SET CYGWIN_LOCAL_CACHE_WFMT="%1"
+  SET CYGWIN_LOCAL_CACHE_WFMT=%1
   SHIFT
   SHIFT
   GOTO Parse
