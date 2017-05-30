@@ -487,6 +487,7 @@ module New = struct
 
   let check_evars env sigma extsigma origsigma =
     let rec is_undefined_up_to_restriction sigma evk =
+      if Evd.mem origsigma evk then None else
       let evi = Evd.find sigma evk in
       match Evd.evar_body evi with
       | Evd.Evar_empty -> Some (evk,evi)
@@ -500,7 +501,7 @@ module New = struct
     let rest =
       Evd.fold_undefined (fun evk evi acc ->
         match is_undefined_up_to_restriction sigma evk with
-        | Some (evk',evi) when not (Evd.mem origsigma evk) -> (evk',evi)::acc
+        | Some (evk',evi) -> (evk',evi)::acc
         | _ -> acc)
         extsigma []
     in
