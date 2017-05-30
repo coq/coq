@@ -66,9 +66,12 @@ test-suite/coq-makefile/*/Makefile
 test-suite/coq-makefile/*/Makefile.conf
 test-suite/coq-makefile/*/src
 test-suite/coq-makefile/*/theories
+test-suite/coq-makefile/*/theories2
 test-suite/coq-makefile/*/html
 test-suite/coq-makefile/*/mlihtml
 test-suite/coq-makefile/*/subdir/done
+test-suite/coq-makefile/latex1/all.pdf
+test-suite/coq-makefile/merlin1/.merlin
 
 # documentation
 
