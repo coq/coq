@@ -652,4 +652,6 @@ Goal    forall (ptest : program) (cond : Condition) (value : bool)
   subst_body; simpl.
   Fail refine (all_behead (projT2 _)).
   Unset Solve Unification Constraints. refine (all_behead (projT2 _)).
-Abort.
+  Undo.
+  refine (all_behead (projT2 ixsp)).
+Qed.
