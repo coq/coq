@@ -20,6 +20,10 @@ let split_list =
   let spaces = Str.regexp "[ \t\n]+" in
   fun str -> Str.split spaces str
 
+[@@@ocaml.warning "-3"]       (* String.uncapitalize_ascii since 4.03.0 GPR#124 *)
+let capitalize = String.capitalize
+[@@@ocaml.warning "+3"]
+
 let (/) = Filename.concat
 
 (** Which user files do we support (and propagate to ocamlopt) ?
@@ -39,8 +43,7 @@ let native_suffix f = match CUnix.get_extension f with
 (** Transforms a file name in the corresponding Caml module name.
 *)
 let module_of_file name =
-  String.capitalize
-    (try Filename.chop_extension name with Invalid_argument _ -> name)
+  capitalize (try Filename.chop_extension name with Invalid_argument _ -> name)
 
 (** Run a command [prog] with arguments [args].
     We do not use [Sys.command] anymore, see comment in [CUnix.sys_command].

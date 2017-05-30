@@ -515,7 +515,6 @@ let camltag = match caml_version_list with
   | _ -> assert false
 
 (** Explanation of disabled warnings:
-    3: deprecated warning (not error for non minimum supported ocaml)
     4: fragile pattern matching: too common in the code and too annoying to avoid in general
     9: missing fields in a record pattern: too common in the code and not worth the bother
     27: innocuous unused variable: innocuous
@@ -533,7 +532,7 @@ let coq_warn_flags =
     if !Prefs.warn_error
     then "-warn-error +a"
          ^ (if caml_version_nums > [4;2;3]
-            then "-3-56"
+            then "-56"
             else "")
     else ""
   in
@@ -598,9 +597,11 @@ let config_camlpX () =
     let camlp5mod = "gramlib" in
     let camlp5libdir, camlp5o = check_camlp5 (camlp5mod^".cma") in
     let camlp5_version = check_camlp5_version camlp5o in
-    "camlp5", camlp5o, Filename.dirname camlp5o, camlp5libdir, camlp5mod, camlp5_version
+    "camlp5", "Camlp5", camlp5o, Filename.dirname camlp5o, camlp5libdir, camlp5mod, camlp5_version
 
-let camlpX, camlpXo, camlpXbindir, fullcamlpXlibdir, camlpXmod, camlpX_version = config_camlpX ()
+let camlpX, capitalized_camlpX, camlpXo,
+    camlpXbindir, fullcamlpXlibdir,
+    camlpXmod, camlpX_version = config_camlpX ()
 
 let shorten_camllib s =
   if starts_with s (camllib^"/") then
@@ -959,9 +960,9 @@ let print_summary () =
   pr "  OCaml version               : %s\n" caml_version;
   pr "  OCaml binaries in           : %s\n" camlbin;
   pr "  OCaml library in            : %s\n" camllib;
-  pr "  %s version              : %s\n"     (String.capitalize camlpX) camlpX_version;
-  pr "  %s binaries in          : %s\n"     (String.capitalize camlpX) camlpXbindir;
-  pr "  %s library in           : %s\n"     (String.capitalize camlpX) camlpXlibdir;
+  pr "  %s version              : %s\n"     capitalized_camlpX camlpX_version;
+  pr "  %s binaries in          : %s\n"     capitalized_camlpX camlpXbindir;
+  pr "  %s library in           : %s\n"     capitalized_camlpX camlpXlibdir;
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
   if coqide <> "no" then

@@ -36,6 +36,10 @@ let norec_dirs = ref StrSet.empty
 
 let suffixe = ref ".vo"
 
+[@@@ocaml.warning "-3"]       (* String.capitalize_ascii since 4.03.0 GPR#124 *)
+let capitalize = String.capitalize
+[@@@ocaml.warning "+3"]
+
 type dir = string option
 
 (** [get_extension f l] checks whether [f] has one of the extensions
@@ -455,7 +459,7 @@ let mL_dependencies () =
        printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname (String.concat " " dep);
        printf "%s.cmo:$(addsuffix .cmo,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
        printf "%s.cmx:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
-       let efullname_capital = String.capitalize (Filename.basename efullname) in
+       let efullname_capital = capitalize (Filename.basename efullname) in
        List.iter (fun dep ->
          printf "%s.cmx : FOR_PACK=-for-pack %s\n" dep efullname_capital)
          dep;

@@ -11,6 +11,12 @@
 
   let syntax_error lexbuf =
     raise (Syntax_error (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))
+
+  [@@@ocaml.warning "-3"]       (* String.(un)capitalize_ascii since 4.03.0 GPR#124 *)
+  let uncapitalize = String.uncapitalize
+
+  let capitalize = String.capitalize
+  [@@@ocaml.warning "+3"]
 }
 
 let space = [' ' '\t' '\n' '\r']
@@ -22,7 +28,7 @@ let caml_up_ident = uppercase identchar*
 let caml_low_ident = lowercase identchar*
 
 rule mllib_list = parse
-  | caml_up_ident { let s = String.uncapitalize (Lexing.lexeme lexbuf)
+  | caml_up_ident { let s = uncapitalize (Lexing.lexeme lexbuf)
 		in s :: mllib_list lexbuf }
   | "*predef*" { mllib_list lexbuf }
   | space+ { mllib_list lexbuf }
@@ -185,7 +191,7 @@ let mlpack_dependencies () =
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
-       let modname = String.capitalize name in
+       let modname = capitalize name in
        let deps = traite_fichier_modules fullname ".mlpack" in
        let sdeps = String.concat " " deps in
        let efullname = escape fullname in

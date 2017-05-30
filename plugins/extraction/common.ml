@@ -109,12 +109,17 @@ let pseudo_qualify = qualify "__"
 let is_upper s = match s.[0] with 'A' .. 'Z' -> true | _ -> false
 let is_lower s = match s.[0] with 'a' .. 'z' | '_' -> true | _ -> false
 
-let lowercase_id id = Id.of_string (String.uncapitalize (ascii_of_id id))
+[@@@ocaml.warning "-3"]       (* String.(un)capitalize_ascii since 4.03.0 GPR#124 *)
+let capitalize = String.capitalize
+let uncapitalize = String.uncapitalize
+[@@@ocaml.warning "+3"]
+
+let lowercase_id id = Id.of_string (uncapitalize (ascii_of_id id))
 let uppercase_id id =
   let s = ascii_of_id id in
   assert (not (String.is_empty s));
   if s.[0] == '_' then Id.of_string ("Coq_"^s)
-  else Id.of_string (String.capitalize s)
+  else Id.of_string (capitalize s)
 
 type kind = Term | Type | Cons | Mod
 

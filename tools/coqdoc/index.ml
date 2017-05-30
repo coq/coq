@@ -155,10 +155,14 @@ let sort_entries el =
 
 let display_letter c = if c = '*' then "other" else String.make 1 c
 
+[@@@ocaml.warning "-3"]       (* String.lowercase_ascii since 4.03.0 GPR#124 *)
+let lowercase = String.lowercase
+[@@@ocaml.warning "+3"]
+
 let type_name = function
   | Library ->
       let ln = !lib_name in
-        if ln <> "" then String.lowercase ln else "library"
+        if ln <> "" then lowercase ln else "library"
   | Module -> "module"
   | Definition -> "definition"
   | Inductive -> "inductive"
