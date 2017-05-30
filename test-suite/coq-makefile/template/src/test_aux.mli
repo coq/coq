@@ -1,1 +1,1 @@
-val tac : unit Proofview.tactic
+val tac : unit API.Proofview.tactic

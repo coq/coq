@@ -83,7 +83,7 @@ let parse_args () =
 
     | ("-config" | "--config") :: _ ->
         Envars.set_coqlib ~fail:(fun x -> x);
-        Envars.print_config stdout;
+        Envars.print_config stdout Coq_config.all_src_dirs;
         exit 0
       
     |"--print-version" :: _ ->
