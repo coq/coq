@@ -28,6 +28,8 @@ let caml_up_ident = uppercase identchar*
 let caml_low_ident = lowercase identchar*
 
 rule mllib_list = parse
+  | uppercase+ { let s = Lexing.lexeme lexbuf in
+                 s :: mllib_list lexbuf }
   | caml_up_ident { let s = uncapitalize (Lexing.lexeme lexbuf)
 		in s :: mllib_list lexbuf }
   | "*predef*" { mllib_list lexbuf }
