@@ -23,8 +23,6 @@ let ( / ) a b =
 
 let coqify d = d / "coq"
 
-let opt2list = function None -> [] | Some x -> [x]
-
 let home ~warn =
   getenv_else "HOME" (fun () ->
     try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
@@ -81,9 +79,6 @@ let expand_path_macros ~warn s =
 
 (** {2 Coq paths} *)
 
-let relative_base =
-  Filename.dirname (Filename.dirname Sys.executable_name)
-
 let coqbin =
   CUnix.canonical_path_name (Filename.dirname Sys.executable_name)
 
@@ -98,25 +93,26 @@ let _ =
   if Coq_config.arch_is_win32 then
     Unix.putenv "PATH" (coqbin ^ ";" ^ getenv_else "PATH" (fun () -> ""))
 
+(** Add a local installation suffix (unless the suffix is itself
+    absolute in which case the prefix does not matter) *)
+let use_suffix prefix suffix =
+  if String.length suffix > 0 && suffix.[0] = '/' then suffix else prefix / suffix
+
 (** [check_file_else ~dir ~file oth] checks if [file] exists in
-    the installation directory [dir] given relatively to [coqroot].
-    If this Coq is only locally built, then [file] must be in [coqroot].
+    the installation directory [dir] given relatively to [coqroot],
+    which maybe has been relocated.
     If the check fails, then [oth ()] is evaluated.
     Using file system equality seems well enough for this heuristic *)
 let check_file_else ~dir ~file oth =
-  let path = if Coq_config.local then coqroot else coqroot / dir in
+  let path = use_suffix coqroot dir in
   if Sys.file_exists (path / file) then path else oth ()
 
 let guess_coqlib fail =
   let prelude = "theories/Init/Prelude.vo" in
-  let dir = if Coq_config.arch_is_win32 then "lib" else "lib/coq" in
-  check_file_else ~dir ~file:prelude
+  check_file_else ~dir:Coq_config.coqlibsuffix ~file:prelude
     (fun () ->
-      let coqlib = match Coq_config.coqlib with
-        | Some coqlib -> coqlib
-        | None -> coqroot
-      in
-      if Sys.file_exists (coqlib / prelude) then coqlib
+      if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / prelude)
+      then Coq_config.coqlib
       else
         fail "cannot guess a path for Coq libraries; please use -coqlib option")
 
@@ -130,8 +126,19 @@ let set_coqlib ~fail =
 let coqlib () = !Flags.coqlib
 
 let docdir () =
-  let dir = if Coq_config.arch_is_win32 then "doc" else "share/doc/coq" in
-  check_file_else ~dir ~file:"html" (fun () -> Coq_config.docdir)
+  (* This assumes implicitly that the suffix is non-trivial *)
+  let path = use_suffix coqroot Coq_config.docdirsuffix in
+  if Sys.file_exists path then path else Coq_config.docdir
+
+let datadir () =
+  (* This assumes implicitly that the suffix is non-trivial *)
+  let path = use_suffix coqroot Coq_config.datadirsuffix in
+  if Sys.file_exists path then path else Coq_config.datadir
+
+let configdir () =
+  (* This assumes implicitly that the suffix is non-trivial *)
+  let path = use_suffix coqroot Coq_config.configdirsuffix in
+  if Sys.file_exists path then path else Coq_config.configdir
 
 let coqpath =
   let coqpath = getenv_else "COQPATH" (fun () -> "") in
@@ -186,20 +193,9 @@ let xdg_data_dirs warn =
     try
       List.map coqify (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
     with
-      | Not_found when String.equal Sys.os_type "Win32" -> [relative_base / "share"]
-      | Not_found -> ["/usr/local/share/coq";"/usr/share/coq"]
+      | Not_found -> [datadir ()]
   in
-  xdg_data_home warn :: sys_dirs @ opt2list Coq_config.datadir
-
-let xdg_config_dirs warn =
-  let sys_dirs =
-    try
-      List.map coqify (path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
-    with
-      | Not_found when String.equal Sys.os_type "Win32" -> [relative_base / "config"]
-      | Not_found -> ["/etc/xdg/coq"]
-  in
-  xdg_config_home warn :: sys_dirs @ opt2list Coq_config.configdir
+  xdg_data_home warn :: sys_dirs
 
 let xdg_dirs ~warn =
   List.filter Sys.file_exists (xdg_data_dirs warn)

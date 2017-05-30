@@ -425,11 +425,11 @@ let arch = match !Prefs.arch with
     else if arch <> "" then arch
     else try_archs arch_progs
 
-(** NB: [arch_win32] is broader than [os_type_win32], cf. cygwin *)
+(** NB: [arch_is_win32] is broader than [os_type_win32], cf. cygwin *)
 
-let arch_win32 = (arch = "win32")
+let arch_is_win32 = (arch = "win32")
 
-let exe = exe := if arch_win32 then ".exe" else ""; !exe
+let exe = exe := if arch_is_win32 then ".exe" else ""; !exe
 let dll = if os_type_win32 then ".dll" else ".so"
 
 (** * VCS
@@ -449,7 +449,7 @@ let vcs =
 let browser =
   match !Prefs.browser with
   | Some b -> b
-  | None when arch_win32 -> "start %s"
+  | None when arch_is_win32 -> "start %s"
   | None when arch = "Darwin" -> "open %s"
   | _ -> "firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s &"
 
@@ -855,73 +855,91 @@ let withdoc = check_doc ()
 
 let coqtop = Sys.getcwd ()
 
-let unix = os_type_cygwin || not arch_win32
+let unix = os_type_cygwin || not arch_is_win32
 
 (** Variable name, description, ref in Prefs, default dir, prefix-relative *)
 
+type path_style =
+  | Absolute of string (* Should start with a "/" *)
+  | Relative of string (* Should not start with a "/" *)
+
 let install = [
   "BINDIR", "the Coq binaries", Prefs.bindir,
-    (if unix then "/usr/local/bin" else "C:/coq/bin"),
-    "/bin";
+    Relative "bin", Relative "bin", Relative "bin";
   "COQLIBINSTALL", "the Coq library", Prefs.libdir,
-    (if unix then "/usr/local/lib/coq" else "C:/coq/lib"),
-    (if arch_win32 then "" else "/lib/coq");
+    Relative "lib", Relative "lib/coq", Relative "";
   "CONFIGDIR", "the Coqide configuration files", Prefs.configdir,
-    (if unix then "/etc/xdg/coq" else "C:/coq/config"),
-    (if arch_win32 then "/config" else "/etc/xdg/coq");
+    Relative "config", Absolute "/etc/xdg/coq", Relative "ide";
   "DATADIR", "the Coqide data files", Prefs.datadir,
-    (if unix then "/usr/local/share/coq" else "C:/coq/share"),
-    "/share/coq";
+    Relative "share", Relative "share/coq", Relative "ide";
   "MANDIR", "the Coq man pages", Prefs.mandir,
-    (if unix then "/usr/local/share/man" else "C:/coq/man"),
-    "/share/man";
+    Relative "man", Relative "share/man", Relative "man";
   "DOCDIR", "the Coq documentation", Prefs.docdir,
-    (if unix then "/usr/local/share/doc/coq" else "C:/coq/doc"),
-    "/share/doc/coq";
+    Relative "doc", Relative "share/doc/coq", Relative "doc";
   "EMACSLIB", "the Coq Emacs mode", Prefs.emacslib,
-    (if unix then "/usr/local/share/emacs/site-lisp" else "C:/coq/emacs"),
-    (if arch_win32 then "/emacs" else "/share/emacs/site-lisp");
+    Relative "emacs", Relative "share/emacs/site-lisp", Relative "tools";
   "COQDOCDIR", "the Coqdoc LaTeX files", Prefs.coqdocdir,
-    (if unix then "/usr/local/share/texmf/tex/latex/misc" else "C:/coq/latex"),
-    (if arch_win32 then "/latex" else "/share/emacs/site-lisp");
+    Relative "latex", Relative "share/texmf/tex/latex/misc", Relative "tools/coqdoc";
  ]
 
-let do_one_instdir (var,msg,r,dflt,suff) =
-  let dir = match !r, !Prefs.prefix with
-    | Some d, _ -> d
-    | _, Some p -> p^suff
-    | _ ->
+let strip_trailing_slash_if_any p =
+  if p.[String.length p - 1] = '/' then String.sub p 0 (String.length p - 1) else p
+
+let use_suffix prefix = function
+  | Relative "" -> prefix
+  | Relative suff -> prefix ^ "/" ^ suff
+  | Absolute path -> path
+
+let relativize = function
+  (* Turn a global layout based on some prefix to a relative layout *)
+  | Relative _ as suffix -> suffix
+  | Absolute path -> Relative (String.sub path 1 (String.length path - 1))
+
+let find_suffix prefix path = match prefix with
+  | None -> Absolute path
+  | Some p ->
+     let p = strip_trailing_slash_if_any p in
+     let lpath = String.length path in
+     let lp = String.length p in
+     if lpath > lp && String.sub path 0 lp = p then
+       Relative (String.sub path (lp+1) (lpath - lp - 1))
+     else
+       Absolute path
+
+let do_one_instdir (var,msg,uservalue,selfcontainedlayout,unixlayout,locallayout) =
+  let dir,suffix =
+    if !Prefs.local then (use_suffix coqtop locallayout,locallayout)
+    else match !uservalue, !Prefs.prefix with
+    | Some d, p -> d,find_suffix p d
+    | _, Some p ->
+      let suffix = if arch_is_win32 then selfcontainedlayout else relativize unixlayout in
+      use_suffix p suffix, suffix
+    | _, p ->
+      let suffix = if unix then unixlayout else selfcontainedlayout in
+      let base = if unix then "/usr/local" else "C:/coq" in
+      let dflt = use_suffix base suffix in
       let () = printf "Where should I install %s [%s]? " msg dflt in
       let line = read_line () in
-      if line = "" then dflt else line
-  in (var,msg,dir,dir<>dflt)
+      if line = "" then (dflt,suffix) else (line,find_suffix p line)
+  in (var,msg,dir,suffix)
 
-let do_one_noinst (var,msg,_,_,_) =
-  if var="CONFIGDIR" || var="DATADIR" then (var,msg,coqtop^"/ide",true)
-  else (var,msg,coqtop^"/doc",false)
-
-let install_dirs =
-  let f = if !Prefs.local then do_one_noinst else do_one_instdir in
-  List.map f install
+let install_dirs = List.map do_one_instdir install
 
 let select var = List.find (fun (v,_,_,_) -> v=var) install_dirs
 
-let libdir = let (_,_,d,_) = select "COQLIBINSTALL" in d
+let coqlib,coqlibsuffix = let (_,_,d,s) = select "COQLIBINSTALL" in d,s
 
-let docdir = let (_,_,d,_) = select "DOCDIR" in d
+let docdir,docdirsuffix = let (_,_,d,s) = select "DOCDIR" in d,s
 
-let configdir =
-  let (_,_,d,b) = select "CONFIGDIR" in if b then Some d else None
+let configdir,configdirsuffix = let (_,_,d,s) = select "CONFIGDIR" in d,s
 
-let datadir =
-  let (_,_,d,b) = select "DATADIR" in if b then Some d else None
-
+let datadir,datadirsuffix = let (_,_,d,s) = select "DATADIR" in d,s
 
 (** * OCaml runtime flags *)
 
 (** Do we use -custom (yes by default on Windows and MacOS) *)
 
-let custom_os = arch_win32 || arch = "Darwin"
+let custom_os = arch_is_win32 || arch = "Darwin"
 
 let use_custom = match !Prefs.custom with
   | Some b -> b
@@ -941,7 +959,7 @@ let config_runtime () =
   | _ ->
     let ld="CAML_LD_LIBRARY_PATH" in
     build_loadpath := sprintf "export %s:='%s/kernel/byterun':$(%s)" ld coqtop ld;
-    ["-dllib";"-lcoqrun";"-dllpath";libdir/"kernel/byterun"]
+    ["-dllib";"-lcoqrun";"-dllpath";coqlib/"kernel/byterun"]
 
 let vmbyteflags = config_runtime ()
 
@@ -1019,18 +1037,22 @@ let write_configml f =
   let pr_s = pr "let %s = %S\n" in
   let pr_b = pr "let %s = %B\n" in
   let pr_i = pr "let %s = %d\n" in
-  let pr_o s o = pr "let %s = %s\n" s
-    (match o with None -> "None" | Some d -> sprintf "Some %S" d)
+  let pr_p s o = pr "let %s = %S\n" s
+    (match o with Relative s -> s | Absolute s -> s)
   in
   pr "(* DO NOT EDIT THIS FILE: automatically generated by ../configure *)\n";
   pr "(* Exact command that generated this file: *)\n";
   pr "(* %s *)\n\n" (String.concat " " (Array.to_list Sys.argv));
   pr_b "local" !Prefs.local;
   pr "let vmbyteflags = ["; List.iter (pr "%S;") vmbyteflags; pr "]\n";
-  pr_o "coqlib" (if !Prefs.local then None else Some libdir);
-  pr_o "configdir" configdir;
-  pr_o "datadir" datadir;
+  pr_s "coqlib" coqlib;
+  pr_s "configdir" configdir;
+  pr_s "datadir" datadir;
   pr_s "docdir" docdir;
+  pr_p "coqlibsuffix" coqlibsuffix;
+  pr_p "configdirsuffix" configdirsuffix;
+  pr_p "datadirsuffix" datadirsuffix;
+  pr_p "docdirsuffix" docdirsuffix;
   pr_s "ocaml" camlexec.top;
   pr_s "ocamlfind" camlexec.find;
   pr_s "ocamllex" camlexec.lex;
@@ -1049,7 +1071,7 @@ let write_configml f =
   pr_s "date" short_date;
   pr_s "compile_date" full_date;
   pr_s "arch" arch;
-  pr_b "arch_is_win32" arch_win32;
+  pr_b "arch_is_win32" arch_is_win32;
   pr_s "exec_extension" exe;
   pr_s "coqideincl" !lablgtkincludes;
   pr_s "has_coqide" coqide;
