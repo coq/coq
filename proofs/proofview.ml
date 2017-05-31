@@ -892,8 +892,6 @@ module Unsafe = struct
 
 end
 
-
-
 (** {7 Notations} *)
 
 module Notations = struct
@@ -904,6 +902,15 @@ end
 
 open Notations
 
+(** {7 solve_constraints}
+
+  Ensure no remaining unification problems are left. Run at every "." by default. *)
+
+let solve_constraints =
+  tclENV >>= fun env -> tclEVARMAP >>= fun sigma ->
+   try let sigma = Evarconv.consider_remaining_unif_problems env sigma in
+       Unsafe.tclEVARSADVANCE sigma
+   with e -> tclZERO e
 
 
 (** {6 Goal-dependent tactics} *)
@@ -1166,10 +1173,6 @@ let tclLIFT = Proof.lift
 
 let tclCHECKINTERRUPT =
    tclLIFT (NonLogical.make Control.check_for_interrupt)
-
-
-
-
 
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 = struct
