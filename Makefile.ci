@@ -1,7 +1,24 @@
-CI_TARGETS=ci-all ci-hott ci-math-comp ci-compcert ci-sf ci-cpdt \
-           ci-color ci-math-classes ci-tlc ci-fiat-crypto ci-fiat-parsers \
-           ci-coquelicot ci-flocq ci-iris-coq ci-metacoq ci-geocoq \
-           ci-unimath ci-vst ci-bedrock-src ci-bedrock-facade ci-formal-topology
+CI_TARGETS=ci-all \
+    ci-bedrock-facade \
+    ci-bedrock-src \
+    ci-color \
+    ci-compcert \
+    ci-coquelicot \
+    ci-cpdt \
+    ci-fiat-crypto \
+    ci-fiat-parsers \
+    ci-flocq \
+    ci-formal-topology \
+    ci-geocoq \
+    ci-hott \
+    ci-iris-coq \
+    ci-math-classes \
+    ci-math-comp \
+    ci-metacoq \
+    ci-sf \
+    ci-tlc \
+    ci-unimath \
+    ci-vst
 
 .PHONY: $(CI_TARGETS)
 
