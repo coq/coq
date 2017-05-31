@@ -104,13 +104,11 @@ before_script:
     - make clean
     # careful with the ending /
     - make -j ${NJOBS} BIN=$(readlink -f ../install/bin)/ LIB=$(readlink -f ../install/lib/coq)/ all
-  after_script:
-    - test-suite/save-logs.sh
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
     paths:
-      - logs
+      - test-suite/logs
 
 .validate-template: &validate-template
   stage: test

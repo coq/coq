@@ -68,6 +68,7 @@ ifeq (,$(bogomips))
   $(warning cannot run complexity tests (no bogomips found))
 endif
 
+# keep these synced with test-suite/save-logs.sh
 log_success = "==========> SUCCESS <=========="
 log_segfault = "==========> FAILURE <=========="
 log_anomaly = "==========> FAILURE <=========="
@@ -164,7 +165,13 @@ summary.log:
 	$(SHOW) BUILDING SUMMARY FILE
 	$(HIDE)$(MAKE) --quiet summary > "$@"
 
+# if not on travis we can get the log files (they're just there for a
+# local build, and downloadable on GitLab)
 report: summary.log
+	$(HIDE)./save-logs.sh
+	$(HIDE)if [ -n "${TRAVIS}" ]; then echo 'travis_fold:start:coq.logs'; fi
+	$(HIDE)if [ -n "${TRAVIS}" ]; then find logs/ -name '*.log' -not -name 'summary.log' -exec cat '{}' ';'; fi
+	$(HIDE)if [ -n "${TRAVIS}" ]; then echo 'travis_fold:end:coq.logs'; fi
 	$(HIDE)if grep -q -F 'Error!' summary.log ; then echo FAILURES; grep -F 'Error!' summary.log; false; else echo NO FAILURES; fi
 
 #######################################################################
