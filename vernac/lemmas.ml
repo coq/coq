@@ -169,7 +169,7 @@ let look_for_possibly_mutual_statements = function
     let recguard,ordered_inds = find_mutually_recursive_statements thms in
     let thms = List.map pi2 ordered_inds in
     Some recguard,thms, Some (List.map (fun (_,_,i) -> succ i) ordered_inds)
-  | [] -> anomaly (Pp.str "Empty list of theorems.")
+  | [] -> anomaly (Pp.str "Empty list of theorems")
 
 (* Saving a goal *)
 

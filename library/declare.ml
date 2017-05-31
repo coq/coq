@@ -415,7 +415,7 @@ let fixpoint_message indexes l =
 
 let cofixpoint_message l =
   Flags.if_verbose Feedback.msg_info (match l with
-  | [] -> anomaly (Pp.str "No corecursive definition.")
+  | [] -> anomaly (Pp.str "No corecursive definition")
   | [id] -> pr_id id ++ str " is corecursively defined"
   | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
                     spc () ++ str "are corecursively defined"))

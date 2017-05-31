@@ -1166,7 +1166,7 @@ let next_obligation n tac =
   let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
   let i = match Array.findi is_open obls with
   | Some i -> i
-  | None -> anomaly (Pp.str "Could not find a solvable obligation.")
+  | None -> anomaly (Pp.str "Could not find a solvable obligation")
   in
   solve_obligation prg i tac
 

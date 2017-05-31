@@ -510,7 +510,7 @@ let raw_map f d =
     let () = match info.evar_body, ans.evar_body with
     | Evar_defined _, Evar_empty
     | Evar_empty, Evar_defined _ ->
-      anomaly (str "Unrespectful mapping function.")
+      anomaly (str "Unrespectful mapping function")
     | _ -> ()
     in
     ans
@@ -524,7 +524,7 @@ let raw_map_undefined f d =
     let ans = f evk info in
     let () = match ans.evar_body with
     | Evar_defined _ ->
-      anomaly (str "Unrespectful mapping function.")
+      anomaly (str "Unrespectful mapping function")
     | _ -> ()
     in
     ans

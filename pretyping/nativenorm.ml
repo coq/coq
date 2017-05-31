@@ -183,7 +183,7 @@ let rec nf_val env sigma v typ =
 	try decompose_prod env typ
 	with DestKO ->
           CErrors.anomaly
-            (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+            (Pp.strbrk "Returned a functional value in a type not recognized as a product type")
       in
       let env = push_rel (LocalAssum (name,dom)) env in
       let body = nf_val env sigma (f (mk_rel_accu lvl)) codom in
@@ -229,7 +229,7 @@ and nf_args env sigma accu t =
       try decompose_prod env t with
 	DestKO ->
 	CErrors.anomaly
-	  (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+	  (Pp.strbrk "Returned a functional value in a type not recognized as a product type")
     in
     let c = nf_val env sigma arg dom in
     (subst1 c codom, c::l)
@@ -246,7 +246,7 @@ and nf_bargs env sigma b t =
 	try decompose_prod env !t with
 	  DestKO ->
 	  CErrors.anomaly
-	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type")
       in
       let c = nf_val env sigma (block_field b i) dom in
       t := subst1 c codom; c)
@@ -357,7 +357,7 @@ and  nf_predicate env sigma ind mip params v pT =
 	try decompose_prod env pT with
 	  DestKO ->
 	  CErrors.anomaly
-	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type")
       in
       let dep,body = 
 	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in

@@ -50,7 +50,7 @@ let cook_this_proof p =
   match p with
   | { Proof_global.id;entries=[constr];persistence;universes } ->
       (id,(constr,universes,persistence))
-  | _ -> CErrors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
+  | _ -> CErrors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term")
 
 let cook_proof () =
   cook_this_proof (fst
