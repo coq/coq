@@ -593,6 +593,7 @@ let make_hints g st only_classes sign =
     List.fold_left
       (fun hints hyp ->
         let consider =
+          not only_classes ||
           let open Context.Named.Declaration in
           try let t = Global.lookup_named (get_id hyp) |> get_type in
               (* Section variable, reindex only if the type changed *)
