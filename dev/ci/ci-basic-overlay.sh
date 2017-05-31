@@ -113,6 +113,12 @@
 : ${formal_topology_CI_GITURL:=https://github.com/bmsherman/topology.git}
 
 ########################################################################
+# coq-dpdgraph
+########################################################################
+: ${coq_dpdgraph_CI_BRANCH:=master}
+: ${coq_dpdgraph_CI_GITURL:=https://github.com/Karmaki/coq-dpdgraph.git}
+
+########################################################################
 # CoLoR
 ########################################################################
 : ${Color_CI_SVNURL:=https://scm.gforge.inria.fr/anonscm/svn/color/trunk/color}
