@@ -198,6 +198,7 @@ type 'a gen_tactic_arg =
   | TacCall of Loc.t * 'ref *
       'a gen_tactic_arg list
   | TacFreshId of string or_var list
+  | TacExactId of Id.t
   | Tacexp of 'tacexpr
   | TacPretype of 'trm
   | TacNumgoals

@@ -117,7 +117,8 @@ OTHERSYNTAXCMO:=$(addprefix plugins/syntax/, \
         numbers_syntax_plugin.cmo \
         r_syntax_plugin.cmo \
 	ascii_syntax_plugin.cmo \
-        string_syntax_plugin.cmo )
+        string_syntax_plugin.cmo \
+        string_ident_plugin.cmo )
 DECLMODECMO:=plugins/decl_mode/decl_mode_plugin.cmo
 DERIVECMO:=plugins/derive/derive_plugin.cmo
 LTACCMO:=plugins/ltac/ltac_plugin.cmo

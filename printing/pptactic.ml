@@ -1185,6 +1185,8 @@ module Make
               pr_may_eval pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c, leval
             | TacArg(_,TacFreshId l) ->
               primitive "fresh" ++ pr_fresh_ids l, latom
+            | TacArg(_,TacExactId x) ->
+              primitive "exact_id" ++ pr_id x, latom
             | TacArg(_,TacGeneric arg) ->
               pr.pr_generic arg, latom
             | TacArg(_,TacCall(loc,f,[])) ->
@@ -1212,6 +1214,8 @@ module Make
             pr_may_eval pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c
           | TacFreshId l ->
             keyword "fresh" ++ pr_fresh_ids l
+          | TacExactId x ->
+            primitive "exact_id" ++ pr_id x
           | TacPretype c ->
             keyword "type_term" ++ pr.pr_constr c
           | TacNumgoals ->

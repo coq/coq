@@ -1360,6 +1360,10 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
         let id = interp_fresh_id ist (pf_env gl) (project gl) l in
         Ftactic.return (in_gen (topwit wit_intro_pattern) (dloc, IntroNaming (IntroIdentifier id)))
       end }
+  | TacExactId id ->
+      Ftactic.enter { enter = begin fun gl ->
+      Ftactic.return (in_gen (topwit wit_intro_pattern) (dloc, IntroNaming (IntroIdentifier id)))
+      end }
   | TacPretype c ->
       Ftactic.s_enter { s_enter = begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in

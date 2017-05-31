@@ -127,6 +127,7 @@ ltac/extraargs.ml
 ltac/profile_ltac_tactics.ml
 ide/coqide_main.ml
 plugins/ssrmatching/ssrmatching.ml
+plugins/syntax/string_ident.ml
 
 # other auto-generated files
 

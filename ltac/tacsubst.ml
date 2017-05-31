@@ -245,6 +245,7 @@ and subst_tacarg subst = function
   | TacCall (_loc,f,l) ->
       TacCall (_loc, subst_reference subst f, List.map (subst_tacarg subst) l)
   | TacFreshId _ as x -> x
+  | TacExactId _ as x -> x
   | TacPretype c -> TacPretype (subst_glob_constr subst c)
   | TacNumgoals -> TacNumgoals
   | Tacexp t -> Tacexp (subst_tactic subst t)
