@@ -13,7 +13,11 @@ Lemma test : forall
 Proof.
   intros. eapply EV. intros. 
   (* worked in v8.2 but not in v8.3beta, fixed in r12898 *)
-  apply HS.
-
+  (* MS: With evarconv, not choosing an instance for x' anymore and
+     unresolved evars test working correctly *)
+  Set Debug Unification.
+  Fail apply HS.
+  unshelve eapply HS. exact x'.
+Qed.
   (* still not compatible with 8.2 because an evar can be solved in
      two different ways and is left open *)
