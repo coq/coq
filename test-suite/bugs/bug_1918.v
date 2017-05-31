@@ -299,7 +299,7 @@ Proof.
   apply prodpEFct.
   apply constpEFct.
   apply idEFct.
-  apply comppEFct.
+  apply (comppEFct (F:=fun x => x)). (* MS: previously handled by unif, choosing a FO solution *)
   apply idpEFct.
   apply idpEFct_eta.
 Defined.
