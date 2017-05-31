@@ -38,11 +38,11 @@ Extract Inductive sumor => option [ Some None ].
     Let's rather use the ocaml && *)
 Extract Inlined Constant andb => "(&&)".
 
-Require Import Reals.
+Import Reals.Rdefinitions.
 
-Extract Constant R => "int".  
-Extract Constant R0 => "0".  
-Extract Constant R1 => "1".  
+Extract Constant R => "int".
+Extract Constant R0 => "0".
+Extract Constant R1 => "1".
 Extract Constant Rplus => "( + )".
 Extract Constant Rmult => "( * )".
 Extract Constant Ropp  => "fun x -> - x".
