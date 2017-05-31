@@ -242,3 +242,65 @@ Tactic Notation "clear" "dependent" hyp(h) :=
 
 Tactic Notation "revert" "dependent" hyp(h) :=
  generalize dependent h.
+
+Ltac replace_with_at_by x y set_tac tac :=
+  let H := fresh in
+  let x' := fresh in
+  set_tac x' x;
+  assert (H : y = x') by (subst x'; tac);
+  clearbody x'; induction H.
+Ltac replace_with_at x y set_tac :=
+  let H := fresh in
+  let x' := fresh in
+  set_tac x' x;
+  cut (y = x');
+  [ intro H; induction H
+  | subst x' ].
+Tactic Notation "replace" constr(x) "with" constr(y) := 
+  replace_with_at x y ltac:(fun x' x => set (x' := x) ).
+Tactic Notation "replace" constr(x) "with" constr(y) "at" ne_integer_list(n) :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) at n ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in * ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" "at" ne_integer_list(n) :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in * at n ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" "|-" :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in * |- ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" "|-" "*" :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in * |- * ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" "|-" "*" "at" ne_integer_list(n) :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in * |- * at n ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) "|-" "*" :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in H |- * ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) "|-" "*" "at" ne_integer_list(n) :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in H |- * at n ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) "|-" :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in H |- ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in H ).
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) "at" ne_integer_list(n) :=
+  replace_with_at x y ltac:(fun x' x => set (x' := x) in H at n ).
+Tactic Notation "replace" constr(x) "with" constr(y) "by" tactic3(tac) := 
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "at" ne_integer_list(n) "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) at n ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in * ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" "at" ne_integer_list(n) "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in * at n ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" "|-" "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in * |- ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" "|-" "*" "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in * |- * ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" "*" "|-" "*" "at" ne_integer_list(n) "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in * |- * at n ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) "|-" "*" "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in H |- * ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) "|-" "*" "at" ne_integer_list(n) "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in H |- * at n ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) "|-" "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in H |- ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in H ) tac.
+Tactic Notation "replace" constr(x) "with" constr(y) "in" hyp_list(H) "at" ne_integer_list(n) "by" tactic3(tac) :=
+  replace_with_at_by x y ltac:(fun x' x => set (x' := x) in H at n ) tac.
