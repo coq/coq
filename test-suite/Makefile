@@ -27,8 +27,8 @@
 
 # Default value when called from a freshly compiled Coq, but can be
 # easily overridden
-BIN := $(shell cd ..; readlink -f bin)/
 LIB := $(shell cd ..; pwd)
+BIN := $(LIB)/bin/
 
 coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -batch -test-mode -R prerequisite TestSuite
 coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
