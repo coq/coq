@@ -454,7 +454,6 @@ check: validate test-suite
 test-suite: world $(ALLSTDLIB).v
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
-	$(MAKE) $(MAKE_TSOPTS) report
 
 ###########################################################################
 # Default rules for compiling ML code
