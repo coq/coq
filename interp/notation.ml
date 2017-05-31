@@ -331,6 +331,16 @@ let mkString = function
 
 let delay dir int ?loc x = (dir, (fun () -> int ?loc x))
 
+type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
+
+let declare_rawnumeral_interpreter sc dir interp (patl,uninterp,inpat) =
+  declare_prim_token_interpreter sc
+    (fun cont ?loc -> function Numeral (n,s) -> delay dir interp ?loc (n,s)
+                            | p -> cont ?loc p)
+    (patl, (fun r -> match uninterp r with
+                     | None -> None
+                     | Some (n,s) -> Some (Numeral (n,s))), inpat)
+
 let declare_numeral_interpreter sc dir interp (patl,uninterp,inpat) =
   let interp' ?loc (n,s) = interp ?loc (ofNumeral n s) in
   declare_prim_token_interpreter sc
