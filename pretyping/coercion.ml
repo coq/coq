@@ -67,7 +67,7 @@ let apply_coercion_args env evd check isproj argl funj =
         if check && not (e_cumul env evdref (Retyping.get_type_of env !evdref h) c1) then
 	  raise NoCoercion;
         apply_rec (h::acc) (subst1 h c2) restl
-      | _ -> anomaly (Pp.str "apply_coercion_args")
+      | _ -> anomaly (Pp.str "apply_coercion_args.")
   in
   let res = apply_rec [] funj.uj_type argl in
     !evdref, res
@@ -368,7 +368,7 @@ let apply_coercion env sigma p hj typ_cl =
       (hj,typ_cl,sigma) p
     in evd, j
   with NoCoercion as e -> raise e
-  | e when CErrors.noncritical e -> anomaly (Pp.str "apply_coercion")
+  | e when CErrors.noncritical e -> anomaly (Pp.str "apply_coercion.")
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core env evd j =

@@ -77,7 +77,7 @@ let where = function
   if !Flags.debug then str "in " ++ str s ++ str ":" ++ spc () else mt ()
 
 let raw_anomaly e = match e with
-  | Anomaly (s, pps) -> where s ++ pps ++ str "."
+  | Anomaly (s, pps) -> where s ++ pps
   | Assert_failure _ | Match_failure _ -> str (Printexc.to_string e) ++ str "."
   | _ -> str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "."
 

@@ -208,7 +208,7 @@ let tag_var = tag Tag.variable
     match expl with
       | None -> pr (lapp,L) a
       | Some (_,ExplByPos (n,_id)) ->
-        anomaly (Pp.str "Explicitation by position not implemented")
+        anomaly (Pp.str "Explicitation by position not implemented.")
       | Some (_,ExplByName id) ->
         str "(" ++ pr_id id ++ str ":=" ++ pr ltop a ++ str ")"
 
@@ -345,7 +345,7 @@ let tag_var = tag Tag.variable
             hov 1 (str "`" ++ (surround_impl b'
                                  (pr_lident (loc,id) ++ str " : " ++
                                     (if t' then str "!" else mt()) ++ pr t)))
-          |_ -> anomaly (Pp.str "List of generalized binders have alwais one element")
+          |_ -> anomaly (Pp.str "List of generalized binders have alwais one element.")
         end
       | Default b ->
         match t with
@@ -423,7 +423,7 @@ let tag_var = tag Tag.variable
     | CLambdaN ([[na],bk,t],c) -> (na,t,c)
     | CLambdaN (([na],bk,t)::bl,c) -> (na,t, CAst.make ?loc @@ CLambdaN(bl,c))
     | CLambdaN ((na::nal,bk,t)::bl,c) -> (na,t, CAst.make ?loc @@ CLambdaN((nal,bk,t)::bl,c))
-    | _ -> anomaly (Pp.str "ill-formed fixpoint body")
+    | _ -> anomaly (Pp.str "ill-formed fixpoint body.")
     )
 
   let rename na na' t c =
@@ -438,7 +438,7 @@ let tag_var = tag Tag.variable
     | CProdN (([na],bk,t)::bl,c) -> rename na na' t (CAst.make ?loc @@ CProdN(bl,c))
     | CProdN ((na::nal,bk,t)::bl,c) ->
       rename na na' t (CAst.make ?loc @@ CProdN((nal,bk,t)::bl,c))
-    | _ -> anomaly (Pp.str "ill-formed fixpoint body")
+    | _ -> anomaly (Pp.str "ill-formed fixpoint body.")
     )
 
   let rec split_fix n typ def =
@@ -485,7 +485,7 @@ let tag_var = tag Tag.variable
     pr_recursive_decl pr prd dangling_with_for id bl (mt()) t c
 
   let pr_recursive pr_decl id = function
-    | [] -> anomaly (Pp.str "(co)fixpoint with no definition")
+    | [] -> anomaly (Pp.str "(co)fixpoint with no definition.")
     | [d1] -> pr_decl false d1
     | dl ->
       prlist_with_sep (fun () -> fnl() ++ keyword "with" ++ spc ())

@@ -294,7 +294,7 @@ module DirPath' =
 struct
   include DirPath
   let repr dir = match DirPath.repr dir with
-    | [] -> anomaly (Pp.str "Empty dirpath")
+    | [] -> anomaly (Pp.str "Empty dirpath.")
     | id :: l -> (id, l)
 end
 

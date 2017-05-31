@@ -133,7 +133,7 @@ let dC t = CastConv t
 (** Constructors for constr_expr *)
 let isCVar   = function { CAst.v = CRef (Ident _, _) } -> true | _ -> false
 let destCVar = function { CAst.v = CRef (Ident (_, id), _) } -> id | _ ->
-  CErrors.anomaly (str"not a CRef")
+  CErrors.anomaly (str"not a CRef.")
 let mkCHole ~loc = CAst.make ?loc @@ CHole (None, IntroAnonymous, None)
 let mkCLambda ?loc name ty t = CAst.make ?loc @@
    CLambdaN ([[Loc.tag ?loc name], Default Explicit, ty], t)
@@ -150,8 +150,8 @@ let mkRLambda n s t = CAst.make @@ GLambda (n, Explicit, s, t)
 let combineCG t1 t2 f g = match t1, t2 with
  | (x, (t1, None)), (_, (t2, None)) -> x, (g t1 t2, None)
  | (x, (_, Some t1)), (_, (_, Some t2)) -> x, (mkRHole, Some (f t1 t2))
- | _, (_, (_, None)) -> CErrors.anomaly (str"have: mixed C-G constr")
- | _ -> CErrors.anomaly (str"have: mixed G-C constr")
+ | _, (_, (_, None)) -> CErrors.anomaly (str"have: mixed C-G constr.")
+ | _ -> CErrors.anomaly (str"have: mixed G-C constr.")
 let loc_ofCG = function
  | (_, (s, None)) -> Glob_ops.loc_of_glob_constr s
  | (_, (_, Some s)) -> Constrexpr_ops.constr_loc s
@@ -620,12 +620,12 @@ let match_upats_FO upats env sigma0 ise orig_c =
            let pt' = pi1 pt', pi2 pt', EConstr.Unsafe.to_constr (pi3 pt') in
            raise (FoundUnif (ungen_upat lhs pt' u))
        with FoundUnif (s,_,_) as sig_u when dont_impact_evars s -> raise sig_u
-       | Not_found -> CErrors.anomaly (str"incomplete ise in match_upats_FO")
+       | Not_found -> CErrors.anomaly (str"incomplete ise in match_upats_FO.")
        | e when CErrors.noncritical e -> () in
     List.iter one_match fpats
   done;
   iter_constr_LR loop f; Array.iter loop a in
-  try loop orig_c with Invalid_argument _ -> CErrors.anomaly (str"IN FO")
+  try loop orig_c with Invalid_argument _ -> CErrors.anomaly (str"IN FO.")
 
 let prof_FO = mk_profiler "match_upats_FO";;
 let match_upats_FO upats env sigma0 ise c =
@@ -696,11 +696,11 @@ let fixed_upat = function
 let do_once r f = match !r with Some _ -> () | None -> r := Some (f ())
 
 let assert_done r = 
-  match !r with Some x -> x | None -> CErrors.anomaly (str"do_once never called")
+  match !r with Some x -> x | None -> CErrors.anomaly (str"do_once never called.")
 
 let assert_done_multires r = 
   match !r with
-  | None -> CErrors.anomaly (str"do_once never called")
+  | None -> CErrors.anomaly (str"do_once never called.")
   | Some (n, xs) ->
       r := Some (n+1,xs);
       try List.nth xs n with Failure _ -> raise NoMatch
@@ -757,7 +757,7 @@ let source () = match upats_origin, upats with
   | Some (dir,rule), _ -> str"The " ++ pr_dir_side dir ++ str" of " ++ 
       pr_constr_pat rule ++ spc()
   | _, [] | None, _::_::_ ->
-      CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin") in
+      CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin.") in
 let on_instance, instances =
   let instances = ref [] in
   (fun x ->
@@ -795,7 +795,7 @@ let rec uniquize = function
         errorstrm (source () ++ str "does not match any subterm of the goal")
     | NoProgress when (not raise_NoMatch) ->
         let dir = match upats_origin with Some (d,_) -> d | _ ->
-          CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin") in
+          CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin.") in
         errorstrm (str"all matches of "++source()++
           str"are equal to the " ++ pr_dir_side (inv_dir dir))
     | NoProgress -> raise NoMatch);
@@ -833,7 +833,7 @@ let rec uniquize = function
   let sigma, uc, ({up_f = pf; up_a = pa} as u) =
     match !upat_that_matched with
     | Some (_,x) -> List.hd x | None when raise_NoMatch -> raise NoMatch
-    | None -> CErrors.anomaly (str"companion function never called") in
+    | None -> CErrors.anomaly (str"companion function never called.") in
   let p' = mkApp (pf, pa) in
   if max_occ <= !nocc then p', u.up_dir, (sigma, uc, u.up_t)
   else errorstrm (str"Only " ++ int !nocc ++ str" < " ++ int max_occ ++
@@ -920,7 +920,7 @@ let glob_cpattern gs p =
          | (r1, Some _), (r2, Some _) when isCVar t1 ->
              encode k "In" [r1; r2; bind_in t1 t2]
          | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
-         | _ -> CErrors.anomaly (str"where are we?")
+         | _ -> CErrors.anomaly (str"where are we?.")
          with _ when isCVar t1 -> encode k "In" [bind_in t1 t2])
      | CNotation("( _ in _ in _ )", ([t1; t2; t3], [], [])) ->
          check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
@@ -1094,7 +1094,7 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
           (Value.cast (topwit (Option.get wit_ssrpatternarg)) v)
     | it -> g t with e when CErrors.noncritical e -> g t in
   let decodeG t f g = decode ist (mkG t) f g in
-  let bad_enc id _ = CErrors.anomaly (str"bad encoding for pattern "++str id) in
+  let bad_enc id _ = CErrors.anomaly (str"bad encoding for pattern "++str id++str".") in
   let cleanup_XinE h x rp sigma =
     let h_k = match kind_of_term h with Evar (k,_) -> k | _ -> assert false in
     let to_clean, update = (* handle rename if x is already used *)
@@ -1280,7 +1280,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
 
 let redex_of_pattern ?(resolve_typeclasses=false) env (sigma, p) =
   let e = match p with
-  | In_T _ | In_X_In_T _ -> CErrors.anomaly (str"pattern without redex")
+  | In_T _ | In_X_In_T _ -> CErrors.anomaly (str"pattern without redex.")
   | T e | X_In_T (e, _) | E_As_X_In_T (e, _, _) | E_In_X_In_T (e, _, _) -> e in
   let sigma =
     if not resolve_typeclasses then sigma

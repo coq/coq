@@ -62,7 +62,7 @@ Check
 
 Check (fun f:(forall (v:Type->Type), v (v nat) -> nat) => f _ (Some (Some O))).
 
-(* This used to fail with anomaly (Pp.str "evar was not declared") in V8.0pl3 *)
+(* This used to fail with anomaly (Pp.str "evar was not declared.") in V8.0pl3 *)
 
 Theorem contradiction : forall p, ~ p -> p -> False.
 Proof. trivial. Qed.

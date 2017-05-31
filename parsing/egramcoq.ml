@@ -298,7 +298,7 @@ let interp_entry forpat e = match e with
 | ETName -> TTAny TTName
 | ETReference -> TTAny TTReference
 | ETBigint -> TTAny TTBigint
-| ETBinder true -> anomaly (Pp.str "Should occur only as part of BinderList")
+| ETBinder true -> anomaly (Pp.str "Should occur only as part of BinderList.")
 | ETBinder false  -> TTAny TTBinder
 | ETConstr p -> TTAny (TTConstr (p, forpat))
 | ETPattern -> assert false (** not used *)

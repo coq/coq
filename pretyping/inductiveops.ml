@@ -538,7 +538,7 @@ let is_predicate_explicitly_dep env sigma pred arsign =
           | Name _ -> true
           end
 
-      | _ -> anomaly (Pp.str "Non eta-expanded dep-expanded \"match\" predicate")
+      | _ -> anomaly (Pp.str "Non eta-expanded dep-expanded \"match\" predicate.")
   in
   srec env (EConstr.of_constr pred) arsign
 

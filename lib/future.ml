@@ -157,7 +157,7 @@ let chain ~pure ck f =
   | Val (v, None) ->
       match !ck with
       | Finished _ -> CErrors.anomaly(Pp.str
-          "Future.chain ~pure:false call on an already joined computation")
+          "Future.chain ~pure:false call on an already joined computation.")
       | Ongoing _ -> CErrors.anomaly(Pp.strbrk(
           "Future.chain ~pure:false call on a pure computation. "^
           "This can happen if the computation was initial created with "^
@@ -171,7 +171,7 @@ let replace kx y =
   match !x with
   | Exn _ -> x := Closure (fun () -> force ~pure:false y)
   | _ -> CErrors.anomaly
-           (Pp.str "A computation can be replaced only if is_exn holds")
+           (Pp.str "A computation can be replaced only if is_exn holds.")
 
 let purify f x =
   let state = !freeze () in
@@ -213,7 +213,7 @@ let map2 f x l =
     let xi = chain ~pure:true x (fun x ->
         try List.nth x i
         with Failure _ | Invalid_argument _ ->
-          CErrors.anomaly (Pp.str "Future.map2 length mismatch")) in
+          CErrors.anomaly (Pp.str "Future.map2 length mismatch.")) in
     f xi y) 0 l
 
 let print f kx =

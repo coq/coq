@@ -219,7 +219,7 @@ end = struct (* {{{ *)
   let find_proof_at_depth vcs pl =
     try List.find (function
           | _, { Vcs_.kind = `Proof(m, n) } -> Int.equal n pl
-          | _, { Vcs_.kind = `Edit _ } -> anomaly(Pp.str "find_proof_at_depth")
+          | _, { Vcs_.kind = `Edit _ } -> anomaly(Pp.str "find_proof_at_depth.")
           | _ -> false)
         (List.map (fun h -> h, Vcs_.get_branch vcs h) (Vcs_.branches vcs))
     with Not_found -> failwith "find_proof_at_depth"
@@ -227,9 +227,9 @@ end = struct (* {{{ *)
   exception Expired
   let visit vcs id =
     if Stateid.equal id Stateid.initial then
-      anomaly(Pp.str "Visiting the initial state id")
+      anomaly(Pp.str "Visiting the initial state id.")
     else if Stateid.equal id Stateid.dummy then
-      anomaly(Pp.str "Visiting the dummy state id")
+      anomaly(Pp.str "Visiting the dummy state id.")
     else
     try
       match Vcs_.Dag.from_node (Vcs_.dag vcs) id with
@@ -245,7 +245,7 @@ end = struct (* {{{ *)
       | [n, Sideff (ReplayCommand x); p, Noop]
       | [p, Noop; n, Sideff (ReplayCommand x)]-> { step = `Sideff(ReplayCommand x,p); next = n }
       | [n, Sideff (ReplayCommand x)]-> {step = `Sideff(ReplayCommand x, Stateid.dummy); next=n}
-      | _ -> anomaly (Pp.str ("Malformed VCS at node "^Stateid.to_string id))
+      | _ -> anomaly (Pp.str ("Malformed VCS at node "^Stateid.to_string id^"."))
     with Not_found -> raise Expired
 
 end (* }}} *)
@@ -533,7 +533,7 @@ end = struct (* {{{ *)
       | { next = n; step = `Sideff (ReplayCommand x,_) } ->
            (id,Sideff (ReplayCommand x)) :: aux n
       | _ -> anomaly Pp.(str("Cannot slice from "^ Stateid.to_string block_start ^
-                         " to "^Stateid.to_string block_stop))
+                         " to "^Stateid.to_string block_stop^"."))
     in aux block_stop
 
   let slice ~block_start ~block_stop =
@@ -585,11 +585,11 @@ end = struct (* {{{ *)
       l
 
   let create_proof_task_box l ~qed ~block_start:lemma =
-    if not (topo_invariant l) then anomaly Pp.(str "overlapping boxes");
+    if not (topo_invariant l) then anomaly Pp.(str "overlapping boxes.");
     vcs := create_property !vcs l (ProofTask { qed; lemma })
   let create_proof_block ({ block_start; block_stop} as decl) name =
     let l = nodes_in_slice ~block_start ~block_stop in
-    if not (topo_invariant l) then anomaly Pp.(str "overlapping boxes");
+    if not (topo_invariant l) then anomaly Pp.(str "overlapping boxes.");
     vcs := create_property !vcs l (ProofBlock (decl, name))
   let box_of id = List.map Dag.Property.data (property_of !vcs id)
   let delete_boxes_of id =
@@ -600,7 +600,7 @@ end = struct (* {{{ *)
     with
     | [] -> None
     | [x] -> Some x
-    | _ -> anomaly Pp.(str "node with more than 1 proof task box")
+    | _ -> anomaly Pp.(str "node with more than 1 proof task box.")
 
   let gc () =
     let old_vcs = !vcs in
@@ -764,13 +764,13 @@ end = struct (* {{{ *)
     | _ ->
         (* coqc has a 1 slot cache and only for valid states *)
         if interactive () = `No && Stateid.equal id !cur_id then ()
-        else anomaly Pp.(str "installing a non cached state")
+        else anomaly Pp.(str "installing a non cached state.")
 
   let get_cached id =
     try match VCS.get_info id with
     | { state = Valid s } -> s
-    | _ -> anomaly Pp.(str "not a cached state")
-    with VCS.Expired -> anomaly Pp.(str "not a cached state (expired)")
+    | _ -> anomaly Pp.(str "not a cached state.")
+    with VCS.Expired -> anomaly Pp.(str "not a cached state (expired).")
 
   let assign id what =
     if VCS.get_state id <> Empty then () else
@@ -821,7 +821,7 @@ end = struct (* {{{ *)
     feedback ~id:id (ProcessingIn !Flags.async_proofs_worker_id);
     let str_id = Stateid.to_string id in
     if is_cached id && not redefine then
-      anomaly Pp.(str"defining state "++str str_id++str" twice");
+      anomaly Pp.(str"defining state "++str str_id++str" twice.");
     try
       stm_prerr_endline (fun () -> "defining "^str_id^" (cache="^
         if cache = `Yes then "Y)" else if cache = `Shallow then "S)" else "N)");
@@ -1013,7 +1013,7 @@ end = struct (* {{{ *)
     match info.vcs_backup with
     | None, _ ->
        anomaly Pp.(str"Backtrack.backto "++str(Stateid.to_string oid)++
-               str": a state with no vcs_backup")
+               str": a state with no vcs_backup.")
     | Some vcs, _ -> VCS.restore vcs
 
   let branches_of id =
@@ -1021,7 +1021,7 @@ end = struct (* {{{ *)
     match info.vcs_backup with
     | _, None ->
        anomaly Pp.(str"Backtrack.branches_of "++str(Stateid.to_string id)++
-                   str": a state with no vcs_backup")
+                   str": a state with no vcs_backup.")
     | _, Some x -> x
 
   let rec fold_until f acc id =
@@ -1075,7 +1075,7 @@ end = struct (* {{{ *)
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let vcs =
             match (VCS.get_info id).vcs_backup with 
-            | None, _ -> anomaly Pp.(str"Backtrack: tip with no vcs_backup")
+            | None, _ -> anomaly Pp.(str"Backtrack: tip with no vcs_backup.")
             | Some vcs, _ -> vcs in
           let cb, _ =
             try Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs)
@@ -1838,7 +1838,7 @@ end = struct (* {{{ *)
         let gid = Goal.goal g in
         let f =
           try List.assoc gid res
-          with Not_found -> CErrors.anomaly(str"Partac: wrong focus") in
+          with Not_found -> CErrors.anomaly(str"Partac: wrong focus.") in
         if not (Future.is_over f) then
           (* One has failed and cancelled the others, but not this one *)
           if solve then Tacticals.New.tclZEROMSG
@@ -2455,7 +2455,7 @@ let handle_failure (e, info) vcs =
       VCS.restore vcs;
       VCS.print ();
       anomaly(str"error with no safe_id attached:" ++ spc() ++
-        CErrors.iprint_no_report (e, info))
+        CErrors.iprint_no_report (e, info) ++ str".")
   | Some (safe_id, id) ->
       stm_prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
       VCS.restore vcs;
@@ -2487,7 +2487,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
       | VtStm (VtJoinDocument, b), VtNow -> join (); `Ok
       | VtStm (VtWait, b),         VtNow -> finish (); wait (); `Ok
       | VtStm ((VtJoinDocument|VtWait),_), VtLater ->
-          anomaly(str"classifier: join actions cannot be classified as VtLater")
+          anomaly(str"classifier: join actions cannot be classified as VtLater.")
 
       (* Back *)
       | VtStm (VtBack oid, true), w ->
@@ -2515,7 +2515,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
           VCS.checkout_shallowest_proof_branch ();
           Reach.known_state ~cache:(interactive ()) id; `Ok
       | VtStm (VtBack id, false), VtLater ->
-          anomaly(str"classifier: VtBack + VtLater must imply part_of_script")
+          anomaly(str"classifier: VtBack + VtLater must imply part_of_script.")
 
       (* Query *)
       | VtQuery (false,(report_id,route)), VtNow ->
@@ -2536,7 +2536,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
           VCS.commit id (mkTransCmd x [] false queue);
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQuery (false,_), VtLater ->
-          anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
+          anomaly(str"classifier: VtQuery + VtLater must imply part_of_script.")
 
       (* Proof *)
       | VtStartProof (mode, guarantee, names), w ->
@@ -2553,7 +2553,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
           Proof_global.activate_proof_mode mode;
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtProofMode _, VtLater ->
-          anomaly(str"VtProofMode must be executed VtNow")
+          anomaly(str"VtProofMode must be executed VtNow.")
       | VtProofMode mode, VtNow ->
           let id = VCS.new_node ~id:newtip () in
           VCS.commit id (mkTransCmd x [] false `MainQueue);
@@ -2642,7 +2642,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
           Backtrack.record (); `Ok
 
       | VtUnknown, VtLater ->
-          anomaly(str"classifier: VtUnknown must imply VtNow")
+          anomaly(str"classifier: VtUnknown must imply VtNow.")
     end in
     let pr_rc rc = match rc with
       | `Ok -> Pp.(seq [str "newtip ("; str (Stateid.to_string (VCS.cur_tip ())); str ")"])
@@ -2781,7 +2781,7 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
   s
 
 let edit_at id =
-  if Stateid.equal id Stateid.dummy then anomaly(str"edit_at dummy") else
+  if Stateid.equal id Stateid.dummy then anomaly(str"edit_at dummy.") else
   let vcs = VCS.backup () in
   let on_cur_branch id =
     let rec aux cur =
@@ -2820,7 +2820,7 @@ let edit_at id =
       (* Hum, this should be the real start_id in the cluster and not next *)
       match VCS.visit qed_id with
       | { step = `Qed ({ fproof = Some (_,cs); keep },_) } -> start, cs, keep
-      | _ -> anomaly (str "ProofTask not ending with Qed") in
+      | _ -> anomaly (str "ProofTask not ending with Qed.") in
     VCS.branch ~root:master_id ~pos:id
       VCS.edit_branch (`Edit (mode, qed_id, master_id, keep, old_branch));
     VCS.delete_boxes_of id;
@@ -2872,7 +2872,7 @@ let edit_at id =
           end else if is_ancestor_of_cur_branch id then begin
             backto id (Some bn)
           end else begin
-            anomaly(str"Cannot leave an `Edit branch open")
+            anomaly(str"Cannot leave an `Edit branch open.")
           end
       | true, None, _ ->
           if on_cur_branch id then begin
@@ -2883,7 +2883,7 @@ let edit_at id =
           end else if is_ancestor_of_cur_branch id then begin
             backto id None
           end else begin
-            anomaly(str"Cannot leave an `Edit branch open")
+            anomaly(str"Cannot leave an `Edit branch open.")
           end
       | false, None, Some(_,bn) -> backto id (Some bn)
       | false, None, None -> backto id None
@@ -2896,7 +2896,7 @@ let edit_at id =
     | None ->
         VCS.print ();
         anomaly (str ("edit_at "^Stateid.to_string id^": ") ++
-          CErrors.print_no_report e)
+          CErrors.print_no_report e ++ str ".")
     | Some (_, id) ->
         stm_prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
         VCS.restore vcs;

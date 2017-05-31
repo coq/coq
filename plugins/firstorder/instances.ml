@@ -77,7 +77,7 @@ let match_one_quantified_hyp sigma setref seq lf=
       Left(Lforall(i,dom,triv))|Right(Rexists(i,dom,triv))->
 	if do_sequent sigma setref triv lf.id seq i dom lf.atoms then
 	  setref:=IS.add ((Phantom dom),lf.id) !setref
-    | _ -> anomaly (Pp.str "can't happen")
+    | _ -> anomaly (Pp.str "can't happen.")
 
 let give_instances sigma lf seq=
   let setref=ref IS.empty in

@@ -242,4 +242,4 @@ let pop_global_reference = function
   | ConstRef con -> ConstRef (pop_con con)
   | IndRef (kn,i) -> IndRef (pop_kn kn,i)
   | ConstructRef ((kn,i),j) -> ConstructRef ((pop_kn kn,i),j)
-  | VarRef id -> anomaly (Pp.str "VarRef not poppable")
+  | VarRef id -> anomaly (Pp.str "VarRef not poppable.")

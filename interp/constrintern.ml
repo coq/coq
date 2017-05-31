@@ -616,7 +616,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
 	  let env,bl' = List.fold_left (intern_local_binder_aux intern ntnvars) (env,[]) bl in
           terms_of_binders (if lassoc then bl' else List.rev bl'),(None,[])
         with Not_found ->
-          anomaly (Pp.str "Inconsistent substitution of recursive notation") in
+          anomaly (Pp.str "Inconsistent substitution of recursive notation.") in
       let termin = aux (terms,None,None) subinfos terminator in
       let fold a t =
         let nterms = Id.Map.add y (a, (scopt, subscopes)) terms in
@@ -659,7 +659,7 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
 	  termin bl in
 	make_letins letins res
       with Not_found ->
-          anomaly (Pp.str "Inconsistent substitution of recursive notation"))
+          anomaly (Pp.str "Inconsistent substitution of recursive notation."))
     | NProd (Name id, NHole _, c') when option_mem_assoc id binderopt ->
         let a,letins = snd (Option.get binderopt) in
         let e = make_letins letins (aux subst' infos c') in
@@ -1070,7 +1070,7 @@ let sort_fields ~complete loc fields completer =
           let global_record_id = ConstructRef record.Recordops.s_CONST in
           try Qualid (loc, shortest_qualid_of_global Id.Set.empty global_record_id)
           with Not_found ->
-            anomaly (str "Environment corruption for records") in
+            anomaly (str "Environment corruption for records.") in
         let () = check_duplicate loc fields in
         let (end_index,    (* one past the last field index *)
              first_field_index,  (* index of the first field of the record *)
@@ -1085,7 +1085,7 @@ let sort_fields ~complete loc fields completer =
                  let field_glob_ref = ConstRef field_glob_id in
                  let first_field = eq_gr field_glob_ref first_field_glob_ref in
                  begin match proj_kinds with
-                    | [] -> anomaly (Pp.str "Number of projections mismatch")
+                    | [] -> anomaly (Pp.str "Number of projections mismatch.")
                     | (_, regular) :: proj_kinds ->
                        (* "regular" is false when the field is defined
                            by a let-in in the record declaration
@@ -1218,7 +1218,7 @@ let drop_notations_pattern looked_for =
     | GHole (_,_,_) -> RCPatAtom (None)
     | GRef (g,_) -> RCPatCstr (g,[],[])
     | GApp ({ v = GRef (g,_) }, l) -> RCPatCstr (g, List.map rcp_of_glob l,[])
-    | _ -> CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr "))) x
+    | _ -> CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr."))) x
   in
   let rec drop_syndef top scopes re pats =
     let (loc,qid) = qualid_of_reference re in
@@ -1345,7 +1345,7 @@ let drop_notations_pattern looked_for =
 	  in_pat top (scopt,subscopes@snd scopes) a
 	with Not_found ->
 	  if Id.equal id ldots_var then CAst.make ?loc @@ RCPatAtom (Some id) else
-	    anomaly (str "Unbound pattern notation variable: " ++ Id.print id)
+	    anomaly (str "Unbound pattern notation variable: " ++ Id.print id ++ str ".")
       end
     | NRef g ->
       ensure_kind top loc g;
@@ -1370,7 +1370,7 @@ let drop_notations_pattern looked_for =
            subst_pat_iterator ldots_var t u)
            (if lassoc then List.rev l else l) termin
        with Not_found ->
-         anomaly (Pp.str "Inconsistent substitution of recursive notation"))
+         anomaly (Pp.str "Inconsistent substitution of recursive notation."))
     | NHole _ ->
       let () = assert (List.is_empty args) in
       CAst.make ?loc @@ RCPatAtom None
@@ -1464,7 +1464,7 @@ let get_implicit_name n imps =
 let set_hole_implicit i b = function
   | {loc; v = GRef (r,_) } | { v = GApp ({loc; v = GRef (r,_)},_) } -> Loc.tag ?loc (Evar_kinds.ImplicitArg (r,i,b),Misctypes.IntroAnonymous,None)
   | {loc; v = GVar id } -> Loc.tag ?loc (Evar_kinds.ImplicitArg (VarRef id,i,b),Misctypes.IntroAnonymous,None)
-  | _ -> anomaly (Pp.str "Only refs have implicits")
+  | _ -> anomaly (Pp.str "Only refs have implicits.")
 
 let exists_implicit_name id =
   List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))

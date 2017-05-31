@@ -1115,7 +1115,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		  new_b, Id.Set.remove id (Id.Set.filter not_free_in_t id_to_exclude)
 		else
 		  CAst.make @@ GProd(n,k,t,new_b),Id.Set.filter not_free_in_t id_to_exclude
-	    | _ -> anomaly (Pp.str "Should not have an anonymous function here")
+	    | _ -> anomaly (Pp.str "Should not have an anonymous function here.")
 		(* We have renamed all the anonymous functions during alpha_renaming phase *)
 
 	end

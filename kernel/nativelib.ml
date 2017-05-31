@@ -15,7 +15,7 @@ open Envars
 used by the native compiler. *)
 
 let get_load_paths =
-  ref (fun _ -> anomaly (Pp.str "get_load_paths not initialized") : unit -> string list)
+  ref (fun _ -> anomaly (Pp.str "get_load_paths not initialized.") : unit -> string list)
 
 let open_header = ["Nativevalues";
                    "Nativecode";

@@ -369,7 +369,7 @@ let in_Function : function_info -> Libobject.obj =
 
 let find_or_none id =
   try Some
-    (match Nametab.locate (qualid_of_ident id) with ConstRef c -> c | _ -> CErrors.anomaly (Pp.str "Not a constant")
+    (match Nametab.locate (qualid_of_ident id) with ConstRef c -> c | _ -> CErrors.anomaly (Pp.str "Not a constant.")
     )
   with Not_found -> None
 
@@ -397,7 +397,7 @@ let add_Function is_general f =
   and prop_lemma = find_or_none (Nameops.add_suffix f_id "_ind")
   and graph_ind =
     match Nametab.locate (qualid_of_ident (mk_rel_id f_id))
-    with | IndRef ind -> ind | _ -> CErrors.anomaly (Pp.str "Not an inductive")
+    with | IndRef ind -> ind | _ -> CErrors.anomaly (Pp.str "Not an inductive.")
   in
   let finfos =
     { function_constant = f;

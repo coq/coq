@@ -100,7 +100,7 @@ let rec sorts_of_constr_args env t =
         let env1 = push_rel (LocalDef (name,def,ty)) env in
 	sorts_of_constr_args env1 c
     | _ when is_constructor_head t -> []
-    | _ -> anomaly ~label:"infos_and_sort" (Pp.str "not a positive constructor")
+    | _ -> anomaly ~label:"infos_and_sort" (Pp.str "not a positive constructor.")
 
 
 (* Prop and Set are small *)
@@ -302,11 +302,11 @@ let failwith_non_pos n ntypes c =
 
 let failwith_non_pos_vect n ntypes v =
   Array.iter (failwith_non_pos n ntypes) v;
-  anomaly ~label:"failwith_non_pos_vect" (Pp.str "some k in [n;n+ntypes-1] should occur")
+  anomaly ~label:"failwith_non_pos_vect" (Pp.str "some k in [n;n+ntypes-1] should occur.")
 
 let failwith_non_pos_list n ntypes l =
   List.iter (failwith_non_pos n ntypes) l;
-  anomaly ~label:"failwith_non_pos_list" (Pp.str "some k in [n;n+ntypes-1] should occur")
+  anomaly ~label:"failwith_non_pos_list" (Pp.str "some k in [n;n+ntypes-1] should occur.")
 
 (* Conclusion of constructors: check the inductive type is called with
    the expected parameters *)

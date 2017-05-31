@@ -29,7 +29,7 @@ let physical p = p.path_physical
 let get_load_paths () = !load_paths
 
 let anomaly_too_many_paths path =
-  anomaly (str "Several logical paths are associated to" ++ spc () ++ str path)
+  anomaly (str "Several logical paths are associated to" ++ spc () ++ str path ++ str ".")
 
 let find_load_path phys_dir =
   let phys_dir = CUnix.canonical_path_name phys_dir in

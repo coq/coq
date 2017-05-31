@@ -425,7 +425,7 @@ type binder_kind = BProd | BLambda | BLetIn
 (**********************************************************************)
 (* Main detyping function                                             *)
 
-let detype_anonymous = ref (fun ?loc n -> anomaly ~label:"detype" (Pp.str "index to an anonymous variable"))
+let detype_anonymous = ref (fun ?loc n -> anomaly ~label:"detype" (Pp.str "index to an anonymous variable."))
 let set_detype_anonymous f = detype_anonymous := f
 
 let detype_level sigma l =
@@ -508,7 +508,7 @@ let rec detype flags avoid env sigma t = CAst.make @@
 	      let body' = EConstr.of_constr body' in
 		substl (c :: List.rev args) body'
 	    with Retyping.RetypeError _ | Not_found -> 
-	      anomaly (str"Cannot detype an unfolded primitive projection")
+	      anomaly (str"Cannot detype an unfolded primitive projection.")
 	  in (detype flags avoid env sigma c').CAst.v
 	else
 	  if print_primproj_params () then

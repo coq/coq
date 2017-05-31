@@ -165,7 +165,7 @@ let find_logical_path phys_dir =
   match List.filter2 (fun p d -> p = phys_dir) physical logical with
   | _,[dir] -> dir
   | _,[] -> default_root_prefix
-  | _,l -> anomaly (Pp.str ("Two logical paths are associated to "^phys_dir))
+  | _,l -> anomaly (Pp.str ("Two logical paths are associated to "^phys_dir^"."))
 
 let remove_load_path dir =
   let physical, logical = !load_paths in
@@ -197,7 +197,7 @@ let add_load_path (phys_path,coq_path) =
 	    end
       | _,[] ->
 	  load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
-      | _ -> anomaly (Pp.str ("Two logical paths are associated to "^phys_path))
+      | _ -> anomaly (Pp.str ("Two logical paths are associated to "^phys_path^"."))
 
 let load_paths_of_dir_path dir =
   let physical, logical = !load_paths in

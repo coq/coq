@@ -155,7 +155,7 @@ let make_evar hyps ccl = {
 }
 
 let instance_mismatch () =
-  anomaly (Pp.str "Signature and its instance do not match")
+  anomaly (Pp.str "Signature and its instance do not match.")
 
 let evar_concl evi = evi.evar_concl
 
@@ -400,7 +400,7 @@ let rename evk id (evtoid, idtoev) =
   match id' with
   | None -> (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
   | Some id' ->
-    if Idmap.mem id idtoev then anomaly (str "Evar name already in use");
+    if Idmap.mem id idtoev then anomaly (str "Evar name already in use.");
     (EvMap.update evk id evtoid (* overwrite old name *), Idmap.add id evk (Idmap.remove id' idtoev))
 
 let reassign_name_defined evk evk' (evtoid, idtoev as names) =
@@ -510,7 +510,7 @@ let raw_map f d =
     let () = match info.evar_body, ans.evar_body with
     | Evar_defined _, Evar_empty
     | Evar_empty, Evar_defined _ ->
-      anomaly (str "Unrespectful mapping function")
+      anomaly (str "Unrespectful mapping function.")
     | _ -> ()
     in
     ans
@@ -524,7 +524,7 @@ let raw_map_undefined f d =
     let ans = f evk info in
     let () = match ans.evar_body with
     | Evar_defined _ ->
-      anomaly (str "Unrespectful mapping function")
+      anomaly (str "Unrespectful mapping function.")
     | _ -> ()
     in
     ans
@@ -553,7 +553,7 @@ let existential_type d (n, args) =
   let info =
     try find d n
     with Not_found ->
-      anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared") in
+      anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared.") in
   instantiate_evar_array info info.evar_concl args
 
 let add_constraints d c =
@@ -635,9 +635,9 @@ let define_aux def undef evk body =
     try EvMap.find evk undef
     with Not_found ->
       if EvMap.mem evk def then
-        anomaly ~label:"Evd.define" (Pp.str "cannot define an evar twice")
+        anomaly ~label:"Evd.define" (Pp.str "cannot define an evar twice.")
       else
-        anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar")
+        anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
   in
   let () = assert (oldinfo.evar_body == Evar_empty) in
   let newinfo = { oldinfo with evar_body = Evar_defined body } in
@@ -1022,7 +1022,7 @@ let try_meta_fvalue evd mv =
 
 let meta_fvalue evd mv =
   try try_meta_fvalue evd mv
-  with Not_found -> anomaly ~label:"meta_fvalue" (Pp.str "meta has no value")
+  with Not_found -> anomaly ~label:"meta_fvalue" (Pp.str "meta has no value.")
 
 let meta_value evd mv =
   (fst (try_meta_fvalue evd mv)).rebus
@@ -1041,7 +1041,7 @@ let meta_declare mv v ?(name=Anonymous) evd =
 let meta_assign mv (v, pb) evd =
   let modify _ = function
   | Cltyp (na, ty) -> Clval (na, (mk_freelisted v, pb), ty)
-  | _ -> anomaly ~label:"meta_assign" (Pp.str "already defined")
+  | _ -> anomaly ~label:"meta_assign" (Pp.str "already defined.")
   in
   let metas = Metamap.modify mv modify evd.metas in
   set_metas evd metas
@@ -1049,7 +1049,7 @@ let meta_assign mv (v, pb) evd =
 let meta_reassign mv (v, pb) evd =
   let modify _ = function
   | Clval(na, _, ty) -> Clval (na, (mk_freelisted v, pb), ty)
-  | _ -> anomaly ~label:"meta_reassign" (Pp.str "not yet defined")
+  | _ -> anomaly ~label:"meta_reassign" (Pp.str "not yet defined.")
   in
   let metas = Metamap.modify mv modify evd.metas in
   set_metas evd metas
@@ -1090,7 +1090,7 @@ let dependent_evar_ident ev evd =
   let evi = find evd ev in
   match evi.evar_source with
   | (_,Evar_kinds.VarInstance id) -> id
-  | _ -> anomaly (str "Not an evar resulting of a dependent binding")
+  | _ -> anomaly (str "Not an evar resulting of a dependent binding.")
 
 (**********************************************************)
 (* Extra data *)

@@ -118,7 +118,7 @@ open Decl_kinds
 
   let pr_explanation (e,b,f) =
     let a = match e with
-      | ExplByPos (n,_) -> anomaly (Pp.str "No more supported")
+      | ExplByPos (n,_) -> anomaly (Pp.str "No more supported.")
       | ExplByName id -> pr_id id in
     let a = if f then str"!" ++ a else a in
     if b then str "[" ++ a ++ str "]" else a
@@ -318,7 +318,7 @@ open Decl_kinds
         keyword (if many then "Local Parameters" else "Local Parameter")
       | (Global,Conjectural) -> str"Conjecture"
       | ((Discharge | Local),Conjectural) ->
-        anomaly (Pp.str "Don't know how to beautify a local conjecture")
+        anomaly (Pp.str "Don't know how to beautify a local conjecture.")
 
   let pr_params pr_c (xl,(c,t)) =
     hov 2 (prlist_with_sep sep pr_lident xl ++ spc() ++
@@ -1075,7 +1075,7 @@ open Decl_kinds
         )
       | VernacSetOpacity _ ->
         return (
-          CErrors.anomaly (keyword "VernacSetOpacity used to set something else")
+          CErrors.anomaly (keyword "VernacSetOpacity used to set something else.")
         )
       | VernacSetStrategy l ->
         let pr_lev = function

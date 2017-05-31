@@ -47,7 +47,7 @@ let rec ptrans p1 p3=
 	{p_lhs=p1.p_lhs;
 	 p_rhs=p3.p_rhs;
 	 p_rule=Trans (p1,p3)}
-      else anomaly (Pp.str "invalid cc transitivity")
+      else anomaly (Pp.str "invalid cc transitivity.")
 
 let rec psym p =
   match p.p_rule with
@@ -85,7 +85,7 @@ let rec nth_arg t n=
 	if n>0 then
 	  nth_arg t1 (n-1)
 	else t2
-    | _ -> anomaly ~label:"nth_arg" (Pp.str "not enough args")
+    | _ -> anomaly ~label:"nth_arg" (Pp.str "not enough args.")
 
 let pinject p c n a =
   {p_lhs=nth_arg p.p_lhs (n-a);

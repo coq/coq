@@ -261,7 +261,7 @@ let safe_basename_of_global r =
   let last_chance r =
     try Nametab.basename_of_global r
     with Not_found ->
-      anomaly (Pp.str "Inductive object unknown to extraction and not globally visible")
+      anomaly (Pp.str "Inductive object unknown to extraction and not globally visible.")
   in
   match r with
     | ConstRef kn -> Label.to_id (con_label kn)

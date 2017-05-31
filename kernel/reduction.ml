@@ -324,7 +324,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	(match kind_of_term a1, kind_of_term a2 with
 	   | (Sort s1, Sort s2) ->
 	       if not (is_empty_stack v1 && is_empty_stack v2) then
-		 anomaly (Pp.str "conversion was given ill-typed terms (Sort)");
+		 anomaly (Pp.str "conversion was given ill-typed terms (Sort).");
 	       sort_cmp_universes (env_of_infos infos) cv_pb s1 s2 cuniv
 	   | (Meta n, Meta m) ->
                if Int.equal n m
@@ -421,7 +421,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         (* Inconsistency: we tolerate that v1, v2 contain shift and update but
            we throw them away *)
         if not (is_empty_stack v1 && is_empty_stack v2) then
-	  anomaly (Pp.str "conversion was given ill-typed terms (FLambda)");
+	  anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
         let (_,ty1,bd1) = destFLambda mk_clos hd1 in
         let (_,ty2,bd2) = destFLambda mk_clos hd2 in
         let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
@@ -429,7 +429,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     | (FProd (_,c1,c2), FProd (_,c'1,c'2)) ->
         if not (is_empty_stack v1 && is_empty_stack v2) then
-	  anomaly (Pp.str "conversion was given ill-typed terms (FProd)");
+	  anomaly (Pp.str "conversion was given ill-typed terms (FProd).");
 	(* Luo's system *)
         let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
         ccnv cv_pb l2r infos (el_lift el1) (el_lift el2) c2 c'2 cuniv
@@ -439,7 +439,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let () = match v1 with
         | [] -> ()
         | _ ->
-          anomaly (Pp.str "conversion was given unreduced term (FLambda)")
+          anomaly (Pp.str "conversion was given unreduced term (FLambda).")
         in
         let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
 	eqappr CONV l2r infos
@@ -448,7 +448,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let () = match v2 with
         | [] -> ()
         | _ ->
-	  anomaly (Pp.str "conversion was given unreduced term (FLambda)")
+	  anomaly (Pp.str "conversion was given unreduced term (FLambda).")
 	in
         let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
 	eqappr CONV l2r infos
@@ -767,7 +767,7 @@ let betazeta_appvect = lambda_appvect_assum
 let hnf_prod_app env t n =
   match kind_of_term (whd_all env t) with
     | Prod (_,_,b) -> subst1 n b
-    | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product")
+    | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product.")
 
 let hnf_prod_applist env t nl =
   List.fold_left (hnf_prod_app env) t nl

@@ -381,7 +381,7 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
 
 let declare_notation_level ntn level =
   if String.Map.mem ntn !notation_level_map then
-    anomaly (str "Notation " ++ str ntn ++ str " is already assigned a level");
+    anomaly (str "Notation " ++ str ntn ++ str " is already assigned a level.");
   notation_level_map := String.Map.add ntn level !notation_level_map
 
 let level_of_notation ntn =
@@ -1004,13 +1004,13 @@ let declare_notation_rule ntn ~extra unpl gram =
 
 let find_notation_printing_rule ntn =
   try pi1 (String.Map.find ntn !notation_rules)
-  with Not_found -> anomaly (str "No printing rule found for " ++ str ntn)
+  with Not_found -> anomaly (str "No printing rule found for " ++ str ntn ++ str ".")
 let find_notation_extra_printing_rules ntn =
   try pi2 (String.Map.find ntn !notation_rules)
   with Not_found -> []
 let find_notation_parsing_rules ntn =
   try pi3 (String.Map.find ntn !notation_rules)
-  with Not_found -> anomaly (str "No parsing rule found for " ++ str ntn)
+  with Not_found -> anomaly (str "No parsing rule found for " ++ str ntn ++ str ".")
 
 let get_defined_notations () =
   String.Set.elements @@ String.Map.domain !notation_rules

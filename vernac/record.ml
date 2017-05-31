@@ -174,7 +174,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
 let degenerate_decl decl =
   let id = match RelDecl.get_name decl with
     | Name id -> id
-    | Anonymous -> anomaly (Pp.str "Unnamed record variable") in
+    | Anonymous -> anomaly (Pp.str "Unnamed record variable.") in
   match decl with
     | LocalAssum (_,t) -> (id, LocalAssumEntry t)
     | LocalDef (_,b,_) -> (id, LocalDefEntry b)

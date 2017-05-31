@@ -76,7 +76,7 @@ let def_of_const t =
 	     | _ -> raise Not_found)
        with Not_found ->
 	 anomaly (str "Cannot find definition of constant " ++
-		    (Id.print (Label.to_id (con_label (fst sp)))))
+		    (Id.print (Label.to_id (con_label (fst sp)))) ++ str ".")
       )
      |_ -> assert false
 
@@ -95,7 +95,7 @@ let constant sl s = constr_of_global (find_reference sl s)
 
 let const_of_ref = function
     ConstRef kn -> kn
-  | _ -> anomaly (Pp.str "ConstRef expected")
+  | _ -> anomaly (Pp.str "ConstRef expected.")
 
 
 let nf_zeta env =
@@ -442,7 +442,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	travel jinfo new_continuation_tac 
 	  {expr_info with info = b; is_final=false} g
       end
-    | Rel _ -> anomaly (Pp.str "Free var in goal conclusion !")
+    | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!")
     | Prod _ -> 
       begin
 	try
@@ -486,7 +486,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
 	    travel_args jinfo
 	      expr_info.is_main_branch new_continuation_tac new_infos g
 	  | Case _ ->  user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr expr_info.info ++ str " can not contain an applied match (See Limitation in Section 2.3 of refman)")
-	  | _ -> anomaly (Pp.str "travel_aux : unexpected "++ Printer.pr_leconstr expr_info.info)
+	  | _ -> anomaly (Pp.str "travel_aux : unexpected "++ Printer.pr_leconstr expr_info.info ++ Pp.str ".")
       end
     | Cast(t,_,_) -> travel jinfo continuation_tac {expr_info with info=t} g
     | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ ->
@@ -1165,7 +1165,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
       let f_id =
 	match f_name with
 	  | Name f_id -> next_ident_away_in_goal f_id ids
-	  | Anonymous -> anomaly (Pp.str "Anonymous function")
+	  | Anonymous -> anomaly (Pp.str "Anonymous function.")
       in
       let n_names_types,_ = decompose_lam_n sigma nb_args body1 in
       let n_ids,ids =
@@ -1175,7 +1175,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
 	       | Name id ->
 		   let n_id = next_ident_away_in_goal id ids in
 		   n_id::n_ids,n_id::ids
-	       | _ -> anomaly (Pp.str "anonymous argument")
+	       | _ -> anomaly (Pp.str "anonymous argument.")
 	  )
 	  ([],(f_id::ids))
 	  n_names_types
@@ -1302,7 +1302,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
     | None   ->
 	try add_suffix current_proof_name "_subproof"
 	with e when CErrors.noncritical e ->
-          anomaly (Pp.str "open_new_goal with an unamed theorem")
+          anomaly (Pp.str "open_new_goal with an unamed theorem.")
   in
   let na = next_global_ident_away name [] in
   if Termops.occur_existential sigma gls_type then
@@ -1313,7 +1313,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
       let na_global = Smartlocate.global_with_alias na_ref in
       match na_global with
 	  ConstRef c -> is_opaque_constant c
-	| _ -> anomaly ~label:"equation_lemma" (Pp.str "not a constant")
+	| _ -> anomaly ~label:"equation_lemma" (Pp.str "not a constant.")
     in
     let lemma = mkConst (Names.Constant.make1 (Lib.make_kn na)) in
     ref_ := Value (EConstr.Unsafe.to_constr lemma);
@@ -1464,7 +1464,7 @@ let (com_eqn : int -> Id.t ->
     let opacity =
       match terminate_ref with
 	| ConstRef c -> is_opaque_constant c
-	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant")
+	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant.")
     in
     let (evmap, env) = Lemmas.get_current_context() in
     let evmap = Evd.from_ctx (Evd.evar_universe_context evmap) in

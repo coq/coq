@@ -690,7 +690,7 @@ let bind_term_as_binding_env alp (terms,onlybinders,termlists,binderlists as sig
     | { CAst.v = GVar id' } ->
        (if not (Id.equal id id') then (fst alp,(id,id')::snd alp) else alp),
        sigma
-    | _ -> anomaly (str "A term which can be a binder has to be a variable")
+    | _ -> anomaly (str "A term which can be a binder has to be a variable.")
   with Not_found ->
     (* The matching against a term allowing to find the instance has not been found yet *)
     (* If it will be a different name, we shall unfortunately fail *)
@@ -830,7 +830,7 @@ let bind_bindinglist_as_term_env alp (terms,onlybinders,termlists,binderlists) v
     let sigma = (terms,onlybinders,termlists,Id.List.remove_assoc var binderlists) in
     add_bindinglist_env sigma var bl
   with Not_found ->
-    anomaly (str "There should be a binder list bindings this list of terms")
+    anomaly (str "There should be a binder list bindings this list of terms.")
 
 let match_fix_kind fk1 fk2 =
   match (fk1,fk2) with

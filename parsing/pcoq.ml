@@ -338,7 +338,7 @@ module Gram =
 let rec remove_grammars n =
   if n>0 then
     (match !camlp4_state with
-       | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove")
+       | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove.")
        | ByGrammar (ExtendRule (g, reinit, ext)) :: t ->
            grammar_delete g reinit (of_coq_extend_statement ext);
            camlp4_state := t;

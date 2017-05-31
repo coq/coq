@@ -50,7 +50,7 @@ let cook_this_proof p =
   match p with
   | { Proof_global.id;entries=[constr];persistence;universes } ->
       (id,(constr,universes,persistence))
-  | _ -> CErrors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term")
+  | _ -> CErrors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
 let cook_proof () =
   cook_this_proof (fst
@@ -113,7 +113,7 @@ let get_current_context () =
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with
     | (id,([concl],strength)) -> id,strength,concl
-    | _ -> CErrors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement")
+    | _ -> CErrors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement.")
 
 let solve ?with_end_tac gi info_lvl tac pr =
   try 

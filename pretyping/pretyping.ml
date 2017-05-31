@@ -199,7 +199,7 @@ let interp_universe_level_name ~anon_rigidity evd (loc, s) =
      let names, _ = Global.global_universe_names () in
      if CString.string_contains ~where:s ~what:"." then
        match List.rev (CString.split '.' s) with
-       | [] -> anomaly (str"Invalid universe name " ++ str s)
+       | [] -> anomaly (str"Invalid universe name " ++ str s ++ str".")
        | n :: dp ->
 	  let num = int_of_string n in
 	  let dp = DirPath.make (List.map Id.of_string dp) in
@@ -1149,7 +1149,7 @@ and pretype_type k0 resolve_tc valcon (env : ExtraEnv.t) evdref lvar = function
                | Sort s -> ESorts.kind sigma s
                | Evar ev when is_Type (existential_type sigma ev) ->
 		   evd_comb1 (define_evar_as_sort env.ExtraEnv.env) evdref ev
-               | _ -> anomaly (Pp.str "Found a type constraint which is not a type")
+               | _ -> anomaly (Pp.str "Found a type constraint which is not a type.")
            in
 	     { utj_val = v;
 	       utj_type = s }

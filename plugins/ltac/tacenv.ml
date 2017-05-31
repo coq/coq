@@ -24,7 +24,7 @@ let register_alias key tac =
 
 let interp_alias key =
   try KNmap.find key !alias_map
-  with Not_found -> CErrors.anomaly (str "Unknown tactic alias: " ++ KerName.print key)
+  with Not_found -> CErrors.anomaly (str "Unknown tactic alias: " ++ KerName.print key ++ str ".")
 
 let check_alias key = KNmap.mem key !alias_map
 
@@ -55,7 +55,7 @@ let register_ml_tactic ?(overwrite = false) s (t : ml_tactic array) =
       if overwrite then
         tac_tab := MLTacMap.remove s !tac_tab
       else
-        CErrors.anomaly (str "Cannot redeclare tactic " ++ pr_tacname s)
+        CErrors.anomaly (str "Cannot redeclare tactic " ++ pr_tacname s ++ str ".")
   in
   tac_tab := MLTacMap.add s t !tac_tab
 

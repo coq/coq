@@ -139,7 +139,7 @@ let type_of_var env id =
   let open Context.Named.Declaration in
   try env |> lookup_named id |> get_type
   with Not_found ->
-    anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound")
+    anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound.")
 
 let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
@@ -183,7 +183,7 @@ let rec nf_val env sigma v typ =
 	try decompose_prod env typ
 	with DestKO ->
           CErrors.anomaly
-            (Pp.strbrk "Returned a functional value in a type not recognized as a product type")
+            (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let env = push_rel (LocalAssum (name,dom)) env in
       let body = nf_val env sigma (f (mk_rel_accu lvl)) codom in
@@ -229,7 +229,7 @@ and nf_args env sigma accu t =
       try decompose_prod env t with
 	DestKO ->
 	CErrors.anomaly
-	  (Pp.strbrk "Returned a functional value in a type not recognized as a product type")
+	  (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
     in
     let c = nf_val env sigma arg dom in
     (subst1 c codom, c::l)
@@ -246,7 +246,7 @@ and nf_bargs env sigma b t =
 	try decompose_prod env !t with
 	  DestKO ->
 	  CErrors.anomaly
-	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type")
+	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let c = nf_val env sigma (block_field b i) dom in
       t := subst1 c codom; c)
@@ -357,7 +357,7 @@ and  nf_predicate env sigma ind mip params v pT =
 	try decompose_prod env pT with
 	  DestKO ->
 	  CErrors.anomaly
-	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type")
+	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let dep,body = 
 	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
@@ -405,7 +405,7 @@ let native_norm env sigma c ty =
         let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         EConstr.of_constr res
-    | _ -> anomaly (Pp.str "Compilation failure") 
+    | _ -> anomaly (Pp.str "Compilation failure.") 
 
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t

@@ -149,7 +149,7 @@ let cache_constant ((sp,kn), obj) =
       obj.cst_was_seff <- false;  
       if Global.exists_objlabel (Label.of_id (basename sp))
       then constant_of_kn kn
-      else CErrors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp))
+      else CErrors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp) ++ str".")
     end else
       let () = check_exists sp in
       let kn', exported = Global.add_constant dir id obj.cst_decl in
@@ -385,7 +385,7 @@ let declare_projections mind =
 let declare_mind mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
-    | [] -> anomaly (Pp.str "cannot declare an empty list of inductives") in
+    | [] -> anomaly (Pp.str "cannot declare an empty list of inductives.") in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
   let isrecord,isprim = declare_projections mind in
@@ -400,7 +400,7 @@ let pr_rank i = pr_nth (i+1)
 
 let fixpoint_message indexes l =
   Flags.if_verbose Feedback.msg_info (match l with
-  | [] -> anomaly (Pp.str "no recursive definition")
+  | [] -> anomaly (Pp.str "no recursive definition.")
   | [id] -> pr_id id ++ str " is recursively defined" ++
       (match indexes with
 	 | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
@@ -415,7 +415,7 @@ let fixpoint_message indexes l =
 
 let cofixpoint_message l =
   Flags.if_verbose Feedback.msg_info (match l with
-  | [] -> anomaly (Pp.str "No corecursive definition")
+  | [] -> anomaly (Pp.str "No corecursive definition.")
   | [id] -> pr_id id ++ str " is corecursively defined"
   | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
                     spc () ++ str "are corecursively defined"))

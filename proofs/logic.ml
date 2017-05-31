@@ -414,7 +414,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 
       | _ ->
 	if occur_meta sigma (EConstr.of_constr trm) then
-	  anomaly (Pp.str "refiner called with a meta in non app/case subterm");
+	  anomaly (Pp.str "refiner called with a meta in non app/case subterm.");
 	let (sigma, t'ty) = goal_type_of env sigma trm in
 	let sigma = check_conv_leq_goal env sigma trm t'ty conclty in
           (goalacc,t'ty,sigma, trm)
@@ -474,7 +474,7 @@ and mk_hdgoals sigma goal goalacc trm =
 
     | _ ->
 	if !check && occur_meta sigma (EConstr.of_constr trm) then
-	  anomaly (Pp.str "refine called with a dependent meta");
+	  anomaly (Pp.str "refine called with a dependent meta.");
         let (sigma, ty) = goal_type_of env sigma trm in
 	goalacc, ty, sigma, trm
 
@@ -502,7 +502,7 @@ and mk_casegoals sigma goal goalacc p c =
   let (acc'',pt,sigma,p') = mk_hdgoals sigma goal acc' p in
   let ((ind, u), spec) =
     try Tacred.find_hnf_rectype env sigma ct
-    with Not_found -> anomaly (Pp.str "mk_casegoals") in
+    with Not_found -> anomaly (Pp.str "mk_casegoals.") in
   let indspec = ((ind, EConstr.EInstance.kind sigma u), spec) in
   let (lbrty,conclty) = type_case_branches_with_names env sigma indspec p c in
   (acc'',lbrty,conclty,sigma,p',c')

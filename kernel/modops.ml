@@ -265,7 +265,7 @@ let add_retroknowledge mp =
       Environ.register env f e
     |_ ->
       CErrors.anomaly ~label:"Modops.add_retroknowledge"
-        (Pp.str "had to import an unsupported kind of term")
+        (Pp.str "had to import an unsupported kind of term.")
   in
   fun lclrk env ->
   (* The order of the declaration matters, for instance (and it's at the

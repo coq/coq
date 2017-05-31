@@ -238,7 +238,7 @@ let compute_constructor_signatures isrec ((_,k as ity),u) =
         end
     | LetIn (_,_,_,c), rest -> false :: analrec c rest
     | _, [] -> []
-    | _ -> anomaly (Pp.str "compute_constructor_signatures")
+    | _ -> anomaly (Pp.str "compute_constructor_signatures.")
   in
   let (mib,mip) = Global.lookup_inductive ity in
   let n = mib.mind_nparams in
@@ -613,7 +613,7 @@ module New = struct
     let indmv =
       match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
-      | _         -> anomaly (str"elimination")
+      | _         -> anomaly (str"elimination.")
     in
     let pmv =
       let p, _ = decompose_app elimclause.evd elimclause.templtyp.Evd.rebus in
@@ -700,7 +700,7 @@ module New = struct
   let make_elim_branch_assumptions ba hyps =
     let assums =
       try List.rev (List.firstn ba.nassums hyps)
-      with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions") in
+      with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions.") in
     { ba = ba; assums = assums }
 
   let elim_on_ba tac ba =

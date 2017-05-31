@@ -456,7 +456,7 @@ let lambda_applist c l =
     match kind_of_term c, l with
     | Lambda(_,_,c), arg::l -> app (arg::subst) c l
     | _, [] -> substl subst c
-    | _ -> anomaly (Pp.str "Not enough lambda's") in
+    | _ -> anomaly (Pp.str "Not enough lambda's.") in
   app [] c l
 
 let lambda_appvect c v = lambda_applist c (Array.to_list v)
@@ -465,11 +465,11 @@ let lambda_applist_assum n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
-      else anomaly (Pp.str "Not enough arguments")
+      else anomaly (Pp.str "Not enough arguments.")
     else match kind_of_term t, l with
     | Lambda(_,_,c), arg::l -> app (n-1) (arg::subst) c l
     | LetIn(_,b,_,c), _ -> app (n-1) (substl subst b::subst) c l
-    | _ -> anomaly (Pp.str "Not enough lambda/let's") in
+    | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
   app n [] c l
 
 let lambda_appvect_assum n c v = lambda_applist_assum n c (Array.to_list v)
@@ -480,7 +480,7 @@ let prod_applist c l =
     match kind_of_term c, l with
     | Prod(_,_,c), arg::l -> app (arg::subst) c l
     | _, [] -> substl subst c
-    | _ -> anomaly (Pp.str "Not enough prod's") in
+    | _ -> anomaly (Pp.str "Not enough prod's.") in
   app [] c l
 
 (* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)
@@ -490,11 +490,11 @@ let prod_applist_assum n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
-      else anomaly (Pp.str "Not enough arguments")
+      else anomaly (Pp.str "Not enough arguments.")
     else match kind_of_term t, l with
     | Prod(_,_,c), arg::l -> app (n-1) (arg::subst) c l
     | LetIn(_,b,_,c), _ -> app (n-1) (substl subst b::subst) c l
-    | _ -> anomaly (Pp.str "Not enough prod/let's") in
+    | _ -> anomaly (Pp.str "Not enough prod/let's.") in
   app n [] c l
 
 let prod_appvect_assum n c v = prod_applist_assum n c (Array.to_list v)
@@ -660,7 +660,7 @@ let destArity =
     | LetIn (x,b,t,c) -> prodec_rec (LocalDef (x,b,t) :: l) c
     | Cast (c,_,_)      -> prodec_rec l c
     | Sort s          -> l,s
-    | _               -> anomaly ~label:"destArity" (Pp.str "not an arity")
+    | _               -> anomaly ~label:"destArity" (Pp.str "not an arity.")
   in
   prodec_rec []
 

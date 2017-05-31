@@ -340,7 +340,7 @@ let match_arrow_pattern sigma t =
   match Id.Map.bindings result with
     | [(m1,arg);(m2,mind)] ->
       assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
-    | _ -> anomaly (Pp.str "Incorrect pattern matching")
+    | _ -> anomaly (Pp.str "Incorrect pattern matching.")
 
 let match_with_imp_term sigma c =
   match EConstr.kind sigma c with
@@ -471,7 +471,7 @@ let match_eq_nf gls eqn (ref, hetero) =
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
 	(t,pf_whd_all gls x,pf_whd_all gls y)
-    | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 terms")
+    | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 terms.")
 
 let dest_nf_eq gls eqn =
   try
@@ -499,7 +499,7 @@ let coq_sig_pattern =
 let match_sigma sigma t =
   match Id.Map.bindings (matches sigma (Lazy.force coq_sig_pattern) t) with
     | [(_,a); (_,p)] -> (a,p)
-    | _ -> anomaly (Pp.str "Unexpected pattern")
+    | _ -> anomaly (Pp.str "Unexpected pattern.")
 
 let is_matching_sigma sigma t = is_matching sigma (Lazy.force coq_sig_pattern) t
 
@@ -545,7 +545,7 @@ let match_eqdec sigma t =
   match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
       eqonleft, Lazy.force op, c1, c2, typ
-  | _ -> anomaly (Pp.str "Unexpected pattern")
+  | _ -> anomaly (Pp.str "Unexpected pattern.")
 
 (* Patterns "~ ?" and "? -> False" *)
 let coq_not_pattern = lazy (mkPattern (mkGAppRef coq_not_ref [mkGHole]))

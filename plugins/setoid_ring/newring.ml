@@ -47,7 +47,7 @@ let tag_arg tag_rec map subs i c =
 let global_head_of_constr sigma c = 
   let f, args = decompose_app sigma c in
     try fst (Termops.global_of_constr sigma f)
-    with Not_found -> CErrors.anomaly (str "global_head_of_constr")
+    with Not_found -> CErrors.anomaly (str "global_head_of_constr.")
 
 let global_of_constr_nofail c = 
   try global_of_constr c

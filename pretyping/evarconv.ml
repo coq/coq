@@ -605,7 +605,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                   postpone to see if other equations help, as in:
                   [Check fun a b c : unit => (eqᵣefl : _ a b = _ c a b)] *)
                UnifFailure (i,NotSameArgSize)
-          | _, _ -> anomaly (Pp.str "Unexpected result from ise_stack2")
+          | _, _ -> anomaly (Pp.str "Unexpected result from ise_stack2.")
 
 	and f2 i =
           if Evar.equal sp1 sp2 then
@@ -1088,7 +1088,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let filter' = filter_possible_projections evd c ty ctxt args in
       (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
   | _, _, [] -> []
-  | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list") in
+  | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list.") in
 
   let rec set_holes evdref rhs = function
   | (id,_,c,cty,evsref,filter,occs)::subst ->

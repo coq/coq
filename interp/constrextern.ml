@@ -698,7 +698,7 @@ let rec extern inctx scopes vars r =
 		     | None :: q -> raise No_match
 		     | Some c :: q ->
 		         match locs with
-			   | [] -> anomaly (Pp.str "projections corruption [Constrextern.extern]")
+			   | [] -> anomaly (Pp.str "projections corruption [Constrextern.extern].")
 			   | (_, false) :: locs' ->
 			       (* we don't want to print locals *)
 			       ip q locs' args acc
@@ -1033,7 +1033,7 @@ let rec glob_of_pat env sigma pat = CAst.make @@ match pat with
       let id = try match lookup_name_of_rel n env with
 	| Name id   -> id
 	| Anonymous ->
-	    anomaly ~label:"glob_constr_of_pattern" (Pp.str "index to an anonymous variable")
+	    anomaly ~label:"glob_constr_of_pattern" (Pp.str "index to an anonymous variable.")
       with Not_found -> Id.of_string ("_UNBOUND_REL_"^(string_of_int n)) in
       GVar id
   | PMeta None -> GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous,None)
@@ -1064,7 +1064,7 @@ let rec glob_of_pat env sigma pat = CAst.make @@ match pat with
 	| _, Some ind ->
 	  let bl' = List.map (fun (i,n,c) -> (i,n,glob_of_pat env sigma c)) bl in
 	  simple_cases_matrix_of_branches ind bl'
-	| _, None -> anomaly (Pp.str "PCase with some branches but unknown inductive")
+	| _, None -> anomaly (Pp.str "PCase with some branches but unknown inductive.")
       in
       let mat = if info.cip_extensible then mat @ [any_any_branch] else mat
       in
@@ -1072,7 +1072,7 @@ let rec glob_of_pat env sigma pat = CAst.make @@ match pat with
 	| PMeta None, _, _ -> (Anonymous,None),None
 	| _, Some ind, Some nargs ->
 	  return_type_of_predicate ind nargs (glob_of_pat env sigma p)
-	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive")
+	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive.")
       in
       GCases (RegularStyle,rtn,[glob_of_pat env sigma tm,indnames],mat)
   | PFix f -> (Detyping.detype_names false [] env (Global.env()) sigma (EConstr.of_constr (mkFix f))).v (** FIXME bad env *)

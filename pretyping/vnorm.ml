@@ -314,7 +314,7 @@ and nf_fun env sigma f typ =
     with DestKO ->
       (* 27/2/13: Turned this into an anomaly *)
       CErrors.anomaly
-        (Pp.strbrk "Returned a functional value in a type not recognized as a product type")
+        (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
   in
   let body = nf_val (push_rel (LocalAssum (name,dom)) env) sigma vb codom in
   mkLambda(name,dom,body)

@@ -719,7 +719,7 @@ type state = pstate list
 let freeze ~marshallable =
   match marshallable with
   | `Yes ->
-      CErrors.anomaly (Pp.str"full marshalling of proof state not supported")
+      CErrors.anomaly (Pp.str"full marshalling of proof state not supported.")
   | `Shallow -> !pstates
   | `No -> !pstates
 let unfreeze s = pstates := s; update_proof_mode ()

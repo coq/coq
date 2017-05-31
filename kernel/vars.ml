@@ -175,7 +175,7 @@ let subst_of_rel_context_instance sign l =
     | LocalDef (_,c,_)::sign', args' ->
 	aux (substl subst c :: subst) sign' args'
     | [], [] -> subst
-    | _ -> CErrors.anomaly (Pp.str "Instance and signature do not match")
+    | _ -> CErrors.anomaly (Pp.str "Instance and signature do not match.")
   in aux [] (List.rev sign) l
 
 let adjust_subst_to_rel_context sign l =

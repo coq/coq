@@ -214,7 +214,7 @@ let param_ccls paramsctxt =
 *)
 let typecheck_inductive env mie =
   let () = match mie.mind_entry_inds with
-  | [] -> anomaly (Pp.str "empty inductive types declaration")
+  | [] -> anomaly (Pp.str "empty inductive types declaration.")
   | _ -> ()
   in
   (* Check unicity of names *)
@@ -313,7 +313,7 @@ let typecheck_inductive env mie =
 	      anomaly ~label:"check_inductive" 
 		(Pp.str"Incorrect universe " ++
 		   Universe.pr defu ++ Pp.str " declared for inductive type, inferred level is "
-		 ++ Universe.pr infu)
+		 ++ Universe.pr infu ++ Pp.str ".")
 	in
 	  RegularArity (not is_natural,full_arity,defu)
       in
@@ -333,7 +333,7 @@ let typecheck_inductive env mie =
 		anomaly ~label:"check_inductive" 
 		  (Pp.str"Incorrect universe " ++
 		     Universe.pr u ++ Pp.str " declared for inductive type, inferred level is "
-		   ++ Universe.pr clev)
+		   ++ Universe.pr clev ++ Pp.str ".")
 	      else
 		TemplateArity (param_ccls paramsctxt, infu)
 	  | _ (* Not an explicit occurrence of Type *) ->
@@ -389,11 +389,11 @@ let failwith_non_pos n ntypes c =
 
 let failwith_non_pos_vect n ntypes v =
   Array.iter (failwith_non_pos n ntypes) v;
-  anomaly ~label:"failwith_non_pos_vect" (Pp.str "some k in [n;n+ntypes-1] should occur")
+  anomaly ~label:"failwith_non_pos_vect" (Pp.str "some k in [n;n+ntypes-1] should occur.")
 
 let failwith_non_pos_list n ntypes l =
   List.iter (failwith_non_pos n ntypes) l;
-  anomaly ~label:"failwith_non_pos_list" (Pp.str "some k in [n;n+ntypes-1] should occur")
+  anomaly ~label:"failwith_non_pos_list" (Pp.str "some k in [n;n+ntypes-1] should occur.")
 
 (* Check the inductive type is called with the expected parameters *)
 (* [n] is the index of the last inductive type in [env] *)

@@ -46,7 +46,7 @@ let declare_summary sumname decl =
   let () = if Int.Map.mem hash !summaries then
     let (name, _) = Int.Map.find hash !summaries in
     anomaly ~label:"Summary.declare_summary"
-      (str "Colliding summary names: " ++ str sumname ++ str " vs. " ++ str name)
+      (str "Colliding summary names: " ++ str sumname ++ str " vs. " ++ str name ++ str ".")
   in
   all_declared_summaries := Int.Set.add hash !all_declared_summaries;
   summary_names := (hash, sumname) :: !summary_names;
@@ -85,10 +85,10 @@ let unfreeze_summaries fs =
    * may modify the content of [summaries] ny loading new ML modules *)
   let (_, decl) =
     try Int.Map.find ml_modules_summary !summaries
-    with Not_found -> anomaly (str "Undeclared summary " ++ str ml_modules)
+    with Not_found -> anomaly (str "Undeclared summary " ++ str ml_modules ++ str ".")
   in
   let () = match fs.ml_module with
-  | None -> anomaly (str "Undeclared summary " ++ str ml_modules)
+  | None -> anomaly (str "Undeclared summary " ++ str ml_modules ++ str ".")
   | Some state -> decl.unfreeze_function state
   in
   let fold id (_, decl) states =

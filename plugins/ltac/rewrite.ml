@@ -236,7 +236,7 @@ end) = struct
 	    let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
 	      if Option.is_empty obj then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
 	      else user_err Pp.(str "build_signature: no constraint can apply on a dependent argument")
-	| _, obj :: _ -> anomaly ~label:"build_signature" (Pp.str "not enough products")
+	| _, obj :: _ -> anomaly ~label:"build_signature" (Pp.str "not enough products.")
 	| _, [] ->
 	  (match finalcstr with
 	  | None | Some (_, None) ->
@@ -1424,7 +1424,7 @@ module Strategies =
 	let unfolded =
 	  try Tacred.try_red_product env sigma c
 	  with e when CErrors.noncritical e ->
-            user_err Pp.(str "fold: the term is not unfoldable !")
+            user_err Pp.(str "fold: the term is not unfoldable!")
 	in
 	  try
 	    let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ()) unfolded t in
