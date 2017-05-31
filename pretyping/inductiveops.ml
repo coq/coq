@@ -269,6 +269,11 @@ let projection_nparams_env env p =
 
 let projection_nparams p = projection_nparams_env (Global.env ()) p
 
+let has_dependent_elim mib =
+  match mib.mind_record with
+  | Some (Some _) -> mib.mind_finite == Decl_kinds.BiFinite
+  | _ -> true
+
 (* Annotation for cases *)
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -343,6 +348,35 @@ let get_projections env (ind,params) =
     match mib.mind_record with
     | Some (Some (id, projs, pbs)) -> Some projs
     | _ -> None
+
+let make_case_or_project env indf ci pred c branches =
+  let projs = get_projections env indf in
+  match projs with
+  | None -> (mkCase (ci, pred, c, branches))
+  | Some ps ->
+     assert(Array.length branches == 1);
+     let () =
+       let _, _, t = destLambda pred in
+       let (ind, _), _ = dest_ind_family indf in
+       let mib, _ = Inductive.lookup_mind_specif env ind in
+       if (* dependent *) not (noccurn 1 t) &&
+          not (has_dependent_elim mib) then
+       errorlabstrm "make_case_or_project"
+		    Pp.(str"Dependent case analysis not allowed" ++
+		     str" on inductive type " ++ Names.MutInd.print (fst ind))
+     in
+     let branch = branches.(0) in
+     let ctx, br = decompose_lam_assum branch in
+     let n, subst =
+       List.fold_right
+         (fun (na,b,t) (i, subst) ->
+	  match b with
+	  | None ->
+	     let t = mkProj (Projection.make ps.(i) true, c) in
+	     (i + 1, t :: subst)
+	  | Some b -> (i, substl subst b :: subst))
+	 ctx (0, [])
+     in substl subst br
 
 (* substitution in a signature *)
 

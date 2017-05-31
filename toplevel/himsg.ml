@@ -1135,6 +1135,11 @@ let error_not_allowed_case_analysis isrec kind i =
   strbrk " is not allowed for inductive definition " ++
   pr_inductive (Global.env()) (fst i) ++ str "."
 
+let error_not_allowed_dependent_analysis isrec i =
+  str "Dependent " ++ str (if isrec then "Induction" else "Case analysis") ++
+  strbrk " is not allowed for inductive definition " ++
+  pr_inductive (Global.env()) i ++ str "."
+
 let error_not_mutual_in_scheme ind ind' =
   if eq_ind ind ind' then
     str "The inductive type " ++ pr_inductive (Global.env()) ind ++
@@ -1166,6 +1171,8 @@ let explain_recursion_scheme_error = function
   | NotAllowedCaseAnalysis (isrec,k,i) ->
       error_not_allowed_case_analysis isrec k i
   | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme ind ind'
+  | NotAllowedDependentAnalysis (isrec, i) ->
+     error_not_allowed_dependent_analysis isrec i
 
 (* Pattern-matching errors *)
 

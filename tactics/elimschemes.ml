@@ -96,6 +96,10 @@ let rec_scheme_kind_from_prop =
   declare_individual_scheme_object "_rec" ~aux:"_rec_from_prop"
   (optimize_non_type_induction_scheme rect_scheme_kind_from_prop false InSet)
 
+let rec_scheme_kind_from_type =
+  declare_individual_scheme_object "_rec_nodep" ~aux:"_rec_nodep_from_type"
+  (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InSet)
+
 let rec_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_rec" ~aux:"_rec_from_type"
   (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_type true InSet)

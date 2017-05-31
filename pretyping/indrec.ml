@@ -35,11 +35,13 @@ type dep_flag = bool
 type recursion_scheme_error =
   | NotAllowedCaseAnalysis of (*isrec:*) bool * sorts * pinductive
   | NotMutualInScheme of inductive * inductive
+  | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
 exception RecursionSchemeError of recursion_scheme_error
 
 let make_prod_dep dep env = if dep then mkProd_name env else mkProd
 let mkLambda_string s t c = mkLambda (Name (Id.of_string s), t, c)
+
 
 (*******************************************)
 (* Building curryfied elimination          *)
@@ -387,25 +389,9 @@ let mis_make_indrec env sigma listdepkind mib u =
 		      (Anonymous,depind',concl))
 		  arsign'
 	      in
-	      let obj = 
-		let projs = get_projections env indf in
-		  match projs with
-		  | None -> (mkCase (ci, pred,
-				     mkRel 1,
-				     branches))
-		  | Some ps -> 
-		    let branch = branches.(0) in
-		    let ctx, br = decompose_lam_assum branch in
-		    let n, subst = 
-		      List.fold_right (fun (na,b,t) (i, subst) ->
-			if b == None then 
-			  let t = mkProj (Projection.make ps.(i) true, mkRel 1) in
-			    (i + 1, t :: subst)
-			else (i, mkRel 0 :: subst))
-			ctx (0, [])
-		    in
-		    let term = substl subst br in
-		      term
+	      let obj =
+		Inductiveops.make_case_or_project env indf ci pred
+						  (mkRel 1) branches
 	      in
 		it_mkLambda_or_LetIn_name env obj
 		  (Termops.lift_rel_context nrec deparsign)
@@ -491,6 +477,8 @@ let mis_make_indrec env sigma listdepkind mib u =
 
 let build_case_analysis_scheme env sigma pity dep kind =
   let (mib,mip) = lookup_mind_specif env (fst pity) in
+  if dep && not (Inductiveops.has_dependent_elim mib) then
+    raise (RecursionSchemeError (NotAllowedDependentAnalysis (false, fst pity)));
   mis_make_case_com dep env sigma pity (mib,mip) kind
 
 let is_in_prop mip =
@@ -500,7 +488,7 @@ let is_in_prop mip =
 
 let build_case_analysis_scheme_default env sigma pity kind =
   let (mib,mip) = lookup_mind_specif env (fst pity) in
-  let dep = not (is_in_prop mip) in
+  let dep = not (is_in_prop mip || not (Inductiveops.has_dependent_elim mib)) in
   mis_make_case_com dep env sigma pity (mib,mip) kind
 
 (**********************************************************************)
@@ -561,6 +549,8 @@ let check_arities env listdepkind =
 let build_mutual_induction_scheme env sigma = function
   | ((mind,u),dep,s)::lrecspec ->
       let (mib,mip) = lookup_mind_specif env mind in
+      if dep && not (Inductiveops.has_dependent_elim mib) then
+        raise (RecursionSchemeError (NotAllowedDependentAnalysis (true, mind)));
       let (sp,tyi) = mind in
       let listdepkind =
 	((mind,u),mib,mip,dep,s)::
@@ -580,6 +570,8 @@ let build_mutual_induction_scheme env sigma = function
 
 let build_induction_scheme env sigma pind dep kind =
   let (mib,mip) = lookup_mind_specif env (fst pind) in
+  if dep && not (Inductiveops.has_dependent_elim mib) then
+    raise (RecursionSchemeError (NotAllowedDependentAnalysis (true, fst pind)));
   let sigma, l = mis_make_indrec env sigma [(pind,mib,mip,dep,kind)] mib (snd pind) in
     sigma, List.hd l
 

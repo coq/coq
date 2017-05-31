@@ -222,7 +222,11 @@ let declare_beq_scheme = declare_beq_scheme_with []
 let declare_one_case_analysis_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
-  let dep = if kind == InProp then case_scheme_kind_from_prop else case_dep_scheme_kind_from_type in
+  let dep =
+    if kind == InProp then case_scheme_kind_from_prop
+    else if not (Inductiveops.has_dependent_elim mib) then
+      case_scheme_kind_from_type
+    else case_dep_scheme_kind_from_type in
   let kelim = elim_sorts (mib,mip) in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
@@ -242,21 +246,33 @@ let kinds_from_type =
    InProp,ind_dep_scheme_kind_from_type;
    InSet,rec_dep_scheme_kind_from_type]
 
+let nondep_kinds_from_type =
+  [InType,rect_scheme_kind_from_type;
+   InProp,ind_scheme_kind_from_type;
+   InSet,rec_scheme_kind_from_type]
+
 let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
   let from_prop = kind == InProp in
+  let depelim = Inductiveops.has_dependent_elim mib in
   let kelim = elim_sorts (mib,mip) in
   let elims =
     List.map_filter (fun (sort,kind) ->
       if Sorts.List.mem sort kelim then Some kind else None)
-      (if from_prop then kinds_from_prop else kinds_from_type) in
+      (if from_prop then kinds_from_prop
+       else if depelim then kinds_from_type
+       else nondep_kinds_from_type) in
   List.iter (fun kind -> ignore (define_individual_scheme kind UserAutomaticRequest None ind))
     elims
 
 let declare_induction_schemes kn =
   let mib = Global.lookup_mind kn in
   if mib.mind_finite <> Decl_kinds.CoFinite then begin
+    if not (Inductiveops.has_dependent_elim mib) then
+      msg_warning (str"Defining non dependent induction schemes for " ++
+		   Names.MutInd.print kn ++
+		   str" which does not support dependent elimination.");
     for i = 0 to Array.length mib.mind_packets - 1 do
       declare_one_induction_scheme (kn,i);
     done;
@@ -392,7 +408,6 @@ let do_mutual_induction_scheme lnamedepindsort =
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma lrecspec in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma decl in
-    (* let decltype = refresh_universes decltype in *)
     let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
     let cst = define fi UserIndividualRequest sigma proof_output (Some decltype) in
     ConstRef cst :: lrecref
@@ -503,7 +518,7 @@ let declare_default_schemes kn =
   let mib = Global.lookup_mind kn in
   let n = Array.length mib.mind_packets in
   if !elim_flag && (mib.mind_finite <> BiFinite || !bifinite_elim_flag) then
-    declare_induction_schemes kn;
+     declare_induction_schemes kn;
   if !case_flag then map_inductive_block declare_one_case_analysis_scheme kn n;
   if is_eq_flag() then try_declare_beq_scheme kn;
   if !eq_dec_flag then try_declare_eq_decidability kn;
