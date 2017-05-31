@@ -1,4 +1,3 @@
-
 (* Cf coqbugs #546 *)
 
 Require Import Omega.

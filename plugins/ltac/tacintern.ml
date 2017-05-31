@@ -489,17 +489,17 @@ let rec intern_atomic lf ist x =
   | TacMutualCofix (id,l) ->
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
-  | TacAssert (b,otac,ipat,c) ->
-      TacAssert (b,Option.map (Option.map (intern_pure_tactic ist)) otac,
+  | TacAssert (ev,b,otac,ipat,c) ->
+      TacAssert (ev,b,Option.map (Option.map (intern_pure_tactic ist)) otac,
                  Option.map (intern_intro_pattern lf ist) ipat,
                  intern_constr_gen false (not (Option.is_empty otac)) ist c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (fun (c,na) ->
 	               intern_constr_with_occurrences ist c,
                        intern_name lf ist na) cl)
-  | TacLetTac (na,c,cls,b,eqpat) ->
+  | TacLetTac (ev,na,c,cls,b,eqpat) ->
       let na = intern_name lf ist na in
-      TacLetTac (na,intern_constr ist c,
+      TacLetTac (ev,na,intern_constr ist c,
                  (clause_app (intern_hyp_location ist) cls),b,
 		 (Option.map (intern_intro_pattern_naming_loc lf ist) eqpat))
 

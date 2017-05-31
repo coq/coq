@@ -2756,7 +2756,7 @@ let letin_tac with_eq id c ty occs =
     Sigma (tac, sigma, p)
   end }
 
-let letin_pat_tac with_eq id c occs =
+let letin_pat_tac with_evars with_eq id c occs =
   Proofview.Goal.s_enter { s_enter = begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
@@ -2765,7 +2765,7 @@ let letin_pat_tac with_eq id c occs =
     let abs = AbstractPattern (false,check,id,c,occs,false) in
     let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
     let Sigma (c, sigma, p) = match res with
-    | None -> finish_evar_resolution ~flags:(tactic_infer_flags false) env sigma c
+    | None -> finish_evar_resolution ~flags:(tactic_infer_flags with_evars) env sigma c
     | Some res -> res in
     let tac =
       (letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) None)

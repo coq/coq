@@ -1081,8 +1081,8 @@ let sort_fields ~complete loc fields completer =
           let rec build_proj_list projs proj_kinds idx ~acc_first_idx acc =
             match projs with
               | [] -> (idx, acc_first_idx, acc)
-              | (Some name) :: projs ->
-                 let field_glob_ref = ConstRef name in
+              | (Some field_glob_id) :: projs ->
+                 let field_glob_ref = ConstRef field_glob_id in
                  let first_field = eq_gr field_glob_ref first_field_glob_ref in
                  begin match proj_kinds with
                     | [] -> anomaly (Pp.str "Number of projections mismatch")
@@ -1099,7 +1099,7 @@ let sort_fields ~complete loc fields completer =
                          build_proj_list projs proj_kinds idx ~acc_first_idx acc
                        else
                          build_proj_list projs proj_kinds (idx+1) ~acc_first_idx
-                                         ((idx, field_glob_ref) :: acc)
+                                         ((idx, field_glob_id) :: acc)
                  end
               | None :: projs ->
                  if complete then
@@ -1121,7 +1121,7 @@ let sort_fields ~complete loc fields completer =
                  user_err ?loc:(loc_of_reference field_ref) ~hdr:"intern"
                                (str "The field \"" ++ pr_reference field_ref ++ str "\" does not exist.") in
                let remaining_projs, (field_index, _) =
-                 let the_proj (idx, glob_ref) = eq_gr field_glob_ref glob_ref in
+                 let the_proj (idx, glob_id) = eq_gr field_glob_ref (ConstRef glob_id) in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
                    user_err ?loc 
@@ -1646,7 +1646,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
        let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
        let fields =
 	 sort_fields ~complete:true loc fs
-	             (fun _idx -> CAst.make ?loc @@ CHole (Some (Evar_kinds.QuestionMark st),
+	             (fun _idx -> CAst.make ?loc @@ CHole (Some (Evar_kinds.QuestionMark (st,Anonymous)),
                                                            Misctypes.IntroAnonymous, None))
        in
        begin
@@ -1726,7 +1726,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
            let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
            (match naming with
            | Misctypes.IntroIdentifier id -> Evar_kinds.NamedHole id
-           | _ -> Evar_kinds.QuestionMark st)
+           | _ -> Evar_kinds.QuestionMark (st,Anonymous))
         | Some k -> k
         in
         let solve = match solve with

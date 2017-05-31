@@ -3,3 +3,9 @@ In environment
 y : nat
 The term "a y" has type "{y0 : nat | y = y0}"
 while it is expected to have type "{x : nat | x = y}".
+1 focused subgoal
+(shelved: 1)
+  
+  H : ?n <= 3 -> 3 <= ?n -> ?n = 3
+  ============================
+  True

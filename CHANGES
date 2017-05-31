@@ -26,6 +26,10 @@ Tactics
   now uses type classes and rejects terms with unresolved holes, like
   entry "constr" does. To get the former behavior use
   "open_constr_with_bindings" (possible source of incompatibility.
+- New e-variants eassert, eenough, epose proof, eset, eremember, epose
+  which behave like the corresponding variants with no "e" but turn
+  unresolved implicit arguments into existential variables, on the
+  shelf, rather than failing.
 
 Vernacular Commands
 

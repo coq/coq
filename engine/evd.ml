@@ -653,12 +653,13 @@ let define evk body evd =
   let evar_names = EvNames.remove_name_defined evk evd.evar_names in
   { evd with defn_evars; undf_evars; last_mods; evar_names }
 
-let restrict evk filter ?candidates evd =
+let restrict evk filter ?candidates ?src evd =
   let evk' = new_untyped_evar () in
   let evar_info = EvMap.find evk evd.undf_evars in
   let evar_info' =
     { evar_info with evar_filter = filter;
       evar_candidates = candidates;
+      evar_source = (match src with None -> evar_info.evar_source | Some src -> src);
       evar_extra = Store.empty } in
   let last_mods = match evd.conv_pbs with
   | [] ->  evd.last_mods

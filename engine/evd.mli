@@ -240,7 +240,7 @@ val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
 (** {6 Misc} *)
 
 val restrict : evar -> Filter.t -> ?candidates:constr list ->
-  evar_map -> evar_map * evar
+  ?src:Evar_kinds.t located -> evar_map -> evar_map * evar
 (** Restrict an undefined evar into a new evar by filtering context and
     possibly limiting the instances to a set of candidates *)
 

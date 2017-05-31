@@ -538,38 +538,64 @@ GEXTEND Gram
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacMutualCofix (id,List.map mk_cofix_tac fd))
 
       | IDENT "pose"; (id,b) = bindings_with_parameters ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (Names.Name id,b,Locusops.nowhere,true,None))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name id,b,Locusops.nowhere,true,None))
       | IDENT "pose"; b = constr; na = as_name ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (na,b,Locusops.nowhere,true,None))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,b,Locusops.nowhere,true,None))
+      | IDENT "epose"; (id,b) = bindings_with_parameters ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name id,b,Locusops.nowhere,true,None))
+      | IDENT "epose"; b = constr; na = as_name ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,b,Locusops.nowhere,true,None))
       | IDENT "set"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (Names.Name id,c,p,true,None))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name id,c,p,true,None))
       | IDENT "set"; c = constr; na = as_name; p = clause_dft_concl ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (na,c,p,true,None))
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,c,p,true,None))
+      | IDENT "eset"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,Names.Name id,c,p,true,None))
+      | IDENT "eset"; c = constr; na = as_name; p = clause_dft_concl ->
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,c,p,true,None))
       | IDENT "remember"; c = constr; na = as_name; e = eqn_ipat;
           p = clause_dft_all ->
-          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (na,c,p,false,e))
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,c,p,false,e))
+      | IDENT "eremember"; c = constr; na = as_name; e = eqn_ipat;
+          p = clause_dft_all ->
+          TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,c,p,false,e))
 
       (* Alternative syntax for "pose proof c as id" *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
 	  c = lconstr; ")" ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,None,Some (Loc.tag ~loc:!@loc @@IntroNaming (IntroIdentifier id)),c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,None,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+      | IDENT "eassert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
+	  c = lconstr; ")" ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,None,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
 
       (* Alternative syntax for "assert c as id by tac" *)
       | IDENT "assert"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,Some tac,Some (Loc.tag ~loc:!@loc @@IntroNaming (IntroIdentifier id)),c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+      | IDENT "eassert"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
+	  c = lconstr; ")"; tac=by_tactic ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
 
       (* Alternative syntax for "enough c as id by tac" *)
       | IDENT "enough"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,Some tac,Some (Loc.tag ~loc:!@loc @@IntroNaming (IntroIdentifier id)),c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,false,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
+      | IDENT "eenough"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
+	  c = lconstr; ")"; tac=by_tactic ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,false,Some tac,Some (Loc.tag ~loc:!@loc @@ IntroNaming (IntroIdentifier id)),c))
 
       | IDENT "assert"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,Some tac,ipat,c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,Some tac,ipat,c))
+      | IDENT "eassert"; c = constr; ipat = as_ipat; tac = by_tactic ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,Some tac,ipat,c))
       | IDENT "pose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,None,ipat,c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,true,None,ipat,c))
+      | IDENT "epose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,true,None,ipat,c))
       | IDENT "enough"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,Some tac,ipat,c))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (false,false,Some tac,ipat,c))
+      | IDENT "eenough"; c = constr; ipat = as_ipat; tac = by_tactic ->
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,false,Some tac,ipat,c))
 
       | IDENT "generalize"; c = constr ->
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacGeneralize [((AllOccurrences,c),Names.Anonymous)])

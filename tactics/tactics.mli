@@ -385,7 +385,7 @@ val letin_tac : (bool * intro_pattern_naming) option ->
 
 (** Common entry point for user-level "set", "pose" and "remember" *)
 
-val letin_pat_tac : (bool * intro_pattern_naming) option ->
+val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
   Name.t -> (evar_map * constr) -> clause -> unit Proofview.tactic
 
 (** {6 Generalize tactics. } *)

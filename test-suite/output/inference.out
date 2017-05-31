@@ -6,13 +6,13 @@ fun e : option L => match e with
      : option L -> option L
 fun (m n p : nat) (H : S m <= S n + p) => le_S_n m (n + p) H
      : forall m n p : nat, S m <= S n + p -> m <= n + p
-fun n : nat => let x : T n := A n in ?t ?y : T n
+fun n : nat => let y : T n := A n in ?t ?x : T n
      : forall n : nat, T n
 where
-?t : [n : nat  x := A n : T n |- ?T -> T n] 
-?y : [n : nat  x := A n : T n |- ?T] 
-fun n : nat => ?t ?y : T n
+?t : [n : nat  y := A n : T n |- ?T -> T n] 
+?x : [n : nat  y := A n : T n |- ?T] 
+fun n : nat => ?t ?x : T n
      : forall n : nat, T n
 where
 ?t : [n : nat |- ?T -> T n] 
-?y : [n : nat |- ?T] 
+?x : [n : nat |- ?T] 

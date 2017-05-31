@@ -27,5 +27,5 @@ Check (fun m n p (H : S m <= (S n) + p) => le_S_n _ _ H).
 (* Note: exact numbers of evars are not important... *)
 
 Inductive T (n:nat) : Type := A : T n.
-Check fun n (x:=A n:T n) => _ _ : T n.
+Check fun n (y:=A n:T n) => _ _ : T n.
 Check fun n => _ _ : T n.

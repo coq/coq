@@ -146,13 +146,13 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacMutualFix(id,n,List.map (fun (id,n,c) -> (id,n,subst_glob_constr subst c)) l)
   | TacMutualCofix (id,l) ->
       TacMutualCofix (id, List.map (fun (id,c) -> (id,subst_glob_constr subst c)) l)
-  | TacAssert (b,otac,na,c) ->
-      TacAssert (b,Option.map (Option.map (subst_tactic subst)) otac,na,
+  | TacAssert (ev,b,otac,na,c) ->
+      TacAssert (ev,b,Option.map (Option.map (subst_tactic subst)) otac,na,
                  subst_glob_constr subst c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (on_fst (subst_constr_with_occurrences subst))cl)
-  | TacLetTac (id,c,clp,b,eqpat) ->
-    TacLetTac (id,subst_glob_constr subst c,clp,b,eqpat)
+  | TacLetTac (ev,id,c,clp,b,eqpat) ->
+    TacLetTac (ev,id,subst_glob_constr subst c,clp,b,eqpat)
 
   (* Derived basic tactics *)
   | TacInductionDestruct (isrec,ev,(l,el)) ->

@@ -367,10 +367,10 @@ let push_rel_context_to_named_context env sigma typ =
 
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
-let restrict_evar evd evk filter candidates =
+let restrict_evar evd evk filter ?src candidates =
   let evd = Sigma.to_evar_map evd in
   let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
-  let evd, evk' = Evd.restrict evk filter ?candidates evd in
+  let evd, evk' = Evd.restrict evk filter ?candidates ?src evd in
   Sigma.Unsafe.of_pair (evk', Evd.declare_future_goal evk' evd)
 
 let new_pure_evar_full evd evi =

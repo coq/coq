@@ -383,6 +383,21 @@ let process_inference_flags flags env initial_sigma (sigma,c) =
   let c = if flags.expand_evars then nf_evar sigma c else c in
   sigma,c
 
+let adjust_evar_source evdref na c =
+  match na, kind !evdref c with
+  | Name id, Evar (evk,args) ->
+     let evi = Evd.find !evdref evk in
+     begin match evi.evar_source with
+     | loc, Evar_kinds.QuestionMark (b,Anonymous) ->
+        let src = (loc,Evar_kinds.QuestionMark (b,na)) in
+        let sigma = Sigma.Unsafe.of_evar_map !evdref in
+        let Sigma (evk', evd, _) = restrict_evar sigma evk (evar_filter evi) ~src None in
+        evdref := Sigma.to_evar_map evd;
+        mkEvar (evk',args)
+     | _ -> c
+     end
+  | _, _ -> c
+
 (* Allow references to syntactically nonexistent variables (i.e., if applied on an inductive) *)
 let allow_anonymous_refs = ref false
 
@@ -785,6 +800,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 		  args, nf_evar !evdref (j_val hj)
 		else [], j_val hj
 	    in
+            let ujval = adjust_evar_source evdref na ujval in
 	    let value, typ = app_f n (j_val resj) ujval, subst1 ujval c2 in
 	    let j = { uj_val = value; uj_type = typ } in
 	      apply_rec env (n+1) j candargs rest
