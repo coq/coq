@@ -11,9 +11,7 @@
 (commutative ring without zero divisor).
  
 Examples: see test-suite/success/Nsatz.v
-
 Reification is done using type classes, defined in Ncring_tac.v
-
 *)
 
 Require Import List.
@@ -289,6 +287,8 @@ Ltac rev l :=
    | (cons ?x ?l) => let l' := rev l in append1 x l'
   end.
 
+
+
 Ltac nsatz_call_n info nparam p rr lp kont := 
 (*  idtac "Trying power: " rr;*)
   let ll := constr:(PEc info :: PEc nparam :: PEpow p rr :: lp) in
@@ -386,7 +386,7 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
     let lp21 := fresh "lp21" in
     set (p21:=p) ;
     set (lp21:=lp);
-(*    idtac "nparam:"; idtac nparam; idtac "p:"; idtac p; idtac "lp:"; idtac lp; *)
+(*   idtac "nparam:"; idtac nparam; idtac "p:"; idtac p; idtac "lp:"; idtac lp; *)
     nsatz_call radicalmax info nparam p lp ltac:(fun c r lq lci => 
       let q := fresh "q" in
       set (q := PEmul c (PEpow p21 r)); 
