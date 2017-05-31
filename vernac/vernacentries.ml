@@ -1871,8 +1871,8 @@ exception End_of_input
  *)
 let vernac_load interp fname =
   let interp x =
-    let proof_mode = Proof_global.get_default_proof_mode_name () in
-    Proof_global.activate_proof_mode proof_mode;
+    let proof_mode = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"] in
+    Proof_global.activate_proof_mode proof_mode [@ocaml.warning "-3"];
     interp x in
   let parse_sentence = Flags.with_option Flags.we_are_parsing
     (fun po ->
@@ -2055,7 +2055,7 @@ let interp ?proof ?loc locality poly c =
   | VernacProof (Some tac, Some l) -> 
       Aux_file.record_in_aux_at ?loc "VernacProof" "tac:yes using:yes";
       vernac_set_end_tac tac; vernac_set_used_variables l
-  | VernacProofMode mn -> Proof_global.set_proof_mode mn
+  | VernacProofMode mn -> Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
 
   (* Extensions *)
   | VernacExtend (opn,args) -> Vernacinterp.call ?locality (opn,args)

@@ -80,7 +80,7 @@ type aast = {
 }
 let pr_ast { expr; indentation } = Pp.(int indentation ++ str " " ++ Ppvernac.pr_vernac expr)
 
-let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
+let default_proof_mode () = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"]
 
 (* Commands piercing opaque *)
 let may_pierce_opaque = function
@@ -500,7 +500,7 @@ end = struct (* {{{ *)
     if List.mem edit_branch (Vcs_.branches !vcs) then begin
       checkout edit_branch;
       match get_branch edit_branch with
-      | { kind = `Edit (mode, _,_,_,_) } -> Proof_global.activate_proof_mode mode
+      | { kind = `Edit (mode, _,_,_,_) } -> Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
       | _ -> assert false
     end else
       let pl = proof_nesting () in
@@ -509,10 +509,10 @@ end = struct (* {{{ *)
           | h, { Vcs_.kind = `Proof (m, _) } -> h, m | _ -> assert false in
         checkout branch;
         stm_prerr_endline (fun () -> "mode:" ^ mode);
-        Proof_global.activate_proof_mode mode
+        Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
       with Failure _ ->
         checkout Branch.master;
-        Proof_global.disactivate_current_proof_mode ()
+        Proof_global.disactivate_current_proof_mode () [@ocaml.warning "-3"]
 
   (* copies the transaction on every open branch *)
   let propagate_sideff ~action =
@@ -2367,8 +2367,8 @@ let finish () =
      hides true bugs cf bug #5363. Also, what happens with observe? *)
   (* Some commands may by side effect change the proof mode *)
   match VCS.get_branch head with
-  | { VCS.kind = `Edit (mode,_,_,_,_) } -> Proof_global.activate_proof_mode mode
-  | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode
+  | { VCS.kind = `Edit (mode,_,_,_,_) } -> Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
+  | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
   | _ -> ()
 
 let wait () =
@@ -2550,7 +2550,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
             VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
             VCS.merge id ~ours:(Fork (x, bname, guarantee, names)) head
           end;
-          Proof_global.activate_proof_mode mode;
+          Proof_global.activate_proof_mode mode [@ocaml.warning "-3"];
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtProofMode _, VtLater ->
           anomaly(str"VtProofMode must be executed VtNow")
@@ -2631,7 +2631,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
               VCS.commit id (Fork (x,bname,opacity_of_produced_term x.expr,[]));
               let proof_mode = default_proof_mode () in
               VCS.branch bname (`Proof (proof_mode, VCS.proof_nesting () + 1));
-              Proof_global.activate_proof_mode proof_mode;
+              Proof_global.activate_proof_mode proof_mode [@ocaml.warning "-3"];
             end else begin
               VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
               (* We hope it can be replayed, but we can't really know *)
