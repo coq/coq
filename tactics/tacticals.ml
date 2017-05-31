@@ -293,6 +293,18 @@ module New = struct
       tclUNIT ()
     with e when CErrors.noncritical e -> tclZERO e
 
+  let catch_error (e, info) =
+    try
+      begin
+	if Logic.catchable_exception e then Control.check_for_interrupt ()
+	else match e with
+	   | Refiner.FailError (0,_) ->
+	      Control.check_for_interrupt ()
+	   | e -> iraise (e, info)
+      end;
+      tclUNIT ()
+    with e -> tclZERO e
+
   (* spiwack: I chose to give the Ltac + the same semantics as
      [Proofview.tclOR], however, for consistency with the or-else
      tactical, we may consider wrapping the first argument with
@@ -303,7 +315,7 @@ module New = struct
       Proofview.tclOR
         t1
         begin fun e ->
-          catch_failerror e <*> t2
+          catch_error e <*> t2
         end
     end
 
@@ -312,7 +324,7 @@ module New = struct
       Proofview.tclOR
         t1
         begin fun e ->
-          catch_failerror e <*> t2 ()
+          catch_error e <*> t2 ()
         end
     end
 
