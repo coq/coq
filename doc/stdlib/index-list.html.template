@@ -18,6 +18,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Init/Logic.v
     theories/Init/Logic_Type.v
     theories/Init/Nat.v
+    theories/Init/Decimal.v
     theories/Init/Peano.v
     theories/Init/Specif.v
     theories/Init/Tactics.v
@@ -225,6 +226,12 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/BinNums.v
     theories/Numbers/NumPrelude.v
     theories/Numbers/NaryFunctions.v
+    theories/Numbers/DecimalFacts.v
+    theories/Numbers/DecimalNat.v
+    theories/Numbers/DecimalPos.v
+    theories/Numbers/DecimalN.v
+    theories/Numbers/DecimalZ.v
+    theories/Numbers/DecimalString.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;NatInt</b>:
