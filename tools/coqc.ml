@@ -156,6 +156,6 @@ let main () =
       else Filename.concat Envars.coqbin (!binary ^ Coq_config.exec_extension)
     in
       (*  List.iter (compile coqtopname args) cfiles*)
-      Unix.handle_unix_error (compile coqtopname args) cfiles
+      Unix.handle_unix_error (compile coqtopname ("-w"::"-generated-names"::args)) cfiles
 
 let _ = Printexc.print main ()
