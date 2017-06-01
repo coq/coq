@@ -2954,6 +2954,19 @@ let quantify lconstr =
 
 (* Modifying/Adding an hypothesis  *)
 
+(* Instantiating some arguments (whatever their position) of an hypothesis
+   or any term, leaving other arguments quantified. If operating on an
+   hypothesis of the goal, the new hypothesis replaces it.
+
+   (c,lbind) are supposed to be of the form
+   ((t t1 t2 ... tm) , someBindings)
+
+   in which case we pose a proof with body
+
+   (fun y1...yp => H t1 t2 ... tm u1 ... uq) where yi are the
+   remaining arguments of H that lbind could not resolve, ui are a mix
+   of inferred args and yi. The overall effect is to remove from H as
+   much quantification as possible given lbind. *)
 let specialize (c,lbind) ipat =
   Proofview.Goal.enter { enter = begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -2962,22 +2975,49 @@ let specialize (c,lbind) ipat =
     if lbind == NoBindings then
       sigma, c
     else
-      let clause = make_clenv_binding env sigma (c,Retyping.get_type_of env sigma c) lbind in
+      let typ_of_c = Retyping.get_type_of env sigma c in
+      (* If the term is lambda then we put a letin to put avoid
+         interaction between the term and the bindings. *)
+      let c = match EConstr.kind sigma c with
+        | Lambda(_,_,_) ->
+          mkLetIn(Name.Anonymous, c, typ_of_c, (mkRel 1))
+        | _ -> c in
+      let clause = make_clenv_binding env sigma (c,typ_of_c) lbind in
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
-      let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
-      let rec chk = function
-      | [] -> []
-      | t::l -> if occur_meta clause.evd t then [] else t :: chk l
-      in
-      let tstack = chk tstack in
-      let term = applist(thd,List.map (nf_evar clause.evd) tstack) in
-      if occur_meta clause.evd term then
-	user_err  (str "Cannot infer an instance for " ++
-
-          Name.print (meta_name clause.evd (List.hd (collect_metas clause.evd term))) ++
-	  str ".");
-      clause.evd, term in
+      let sigma = clause.evd in
+      let (thd,tstack) = whd_nored_stack sigma (clenv_value clause) in
+      let c_hd , c_args = decompose_app sigma c in
+      let liftrel x =
+        match kind sigma x with
+        | Rel n -> mkRel (n+1)
+        | _ -> x in
+      (* We grab names used in product to remember them at re-abstracting phase *)
+      let typ_of_c_hd = pf_get_type_of gl c_hd in
+      let lprod, concl = decompose_prod_assum sigma typ_of_c_hd in
+      (* accumulator args: arguments to apply to c_hd: all infered
+         args + re-abstracted rels *)
+      let rec rebuild_lambdas sigma lprd args hd l =
+        match lprd , l with
+        | _, [] -> sigma,applist (hd, (List.map (nf_evar sigma) args))
+        | Context.Rel.Declaration.LocalAssum(nme,_)::lp' , t::l' when occur_meta sigma t ->
+          (* nme has not been resolved, let us re-abstract it. Same
+             name but type updated by instanciation of other args. *)
+          let sigma,new_typ_of_t = Typing.type_of clause.env sigma t in
+          let liftedargs = List.map liftrel args in
+          (* lifting rels in the accumulator args *)
+          let sigma,hd' = rebuild_lambdas sigma lp' (liftedargs@[mkRel 1 ]) hd l' in
+          (* replace meta variable by the abstracted variable *)
+          let hd'' = subst_term sigma t hd' in
+          (* lambda expansion *)
+          sigma,mkLambda (nme,new_typ_of_t,hd'')
+        | Context.Rel.Declaration.LocalAssum(_,_)::lp' , t::l' ->
+          let sigma,hd' = rebuild_lambdas sigma lp' (args@[t]) hd l' in
+          sigma,hd'
+        | _ ,_ -> assert false in
+      let sigma,hd = rebuild_lambdas sigma (List.rev lprod) [] c_hd tstack in
+      sigma, hd
+  in
   let typ = Retyping.get_type_of env sigma term in
   let tac =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
@@ -2994,7 +3034,9 @@ let specialize (c,lbind) ipat =
       | None ->
         (* Like generalize with extra support for "with" bindings *)
         (* even though the "with" bindings forces full application *)
-        Tacticals.New.tclTHENLAST (cut typ) (exact_no_check term)
+        (* TODO: add intro to be more homogeneous. It will break
+           scripts but will be easy to fix *)
+         (Tacticals.New.tclTHENLAST (cut typ) (exact_no_check term))
       | Some (loc,ipat) ->
         (* Like pose proof with extra support for "with" bindings *)
         (* even though the "with" bindings forces full application *)
