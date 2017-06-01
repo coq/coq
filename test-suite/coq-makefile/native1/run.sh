@@ -3,7 +3,8 @@
 #set -x
 set -e
 
-if which ocamlopt; then
+NATIVECOMP=`grep "let no_native_compiler = false" ../../../config/coq_config.ml`||true
+if [[ `which ocamlopt` && $NATIVECOMP ]]; then
 
 . ../template/init.sh
 	
