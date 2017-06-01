@@ -431,23 +431,35 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 
     | (FInd (ind1,u1), FInd (ind2,u2)) ->
       if mind_equiv_infos infos ind1 ind2 then
-        let mind = Environ.lookup_mind (fst ind1) (infos_env infos) in
-        let () =
-          convert_inductives cv_pb (mind, snd ind1) u1 (stack_args_size v1)
-            u2 (stack_args_size v2) univ
-        in
-        convert_stacks univ infos lft1 lft2 v1 v2
+        if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+          begin
+            convert_universes univ u1 u2;
+            convert_stacks univ infos lft1 lft2 v1 v2
+          end
+        else
+          let mind = Environ.lookup_mind (fst ind1) (infos_env infos) in
+          let () =
+            convert_inductives cv_pb (mind, snd ind1) u1 (stack_args_size v1)
+              u2 (stack_args_size v2) univ
+          in
+          convert_stacks univ infos lft1 lft2 v1 v2
       else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
       if Int.equal j1 j2 && mind_equiv_infos infos ind1 ind2 then
-        let mind = Environ.lookup_mind (fst ind1) (infos_env infos) in
-        let () =
-          convert_constructors
-            (mind, snd ind1, j1) u1 (stack_args_size v1)
-            u2 (stack_args_size v2) univ
-        in
-        convert_stacks univ infos lft1 lft2 v1 v2
+        if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+          begin
+            convert_universes univ u1 u2;
+            convert_stacks univ infos lft1 lft2 v1 v2
+          end
+        else
+          let mind = Environ.lookup_mind (fst ind1) (infos_env infos) in
+          let () =
+            convert_constructors
+              (mind, snd ind1, j1) u1 (stack_args_size v1)
+              u2 (stack_args_size v2) univ
+          in
+          convert_stacks univ infos lft1 lft2 v1 v2
       else raise NotConvertible
 
      (* Eta expansion of records *)

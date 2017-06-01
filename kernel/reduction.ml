@@ -495,31 +495,39 @@ and eqappr env cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
     | (FInd (ind1,u1), FInd (ind2,u2)) ->
       if eq_ind ind1 ind2 then
-        let mind = Environ.lookup_mind (fst ind1) env in
-        let cuniv =
-          match mind.Declarations.mind_universes with
-          | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
-            convert_instances ~flex:false u1 u2 cuniv
-          | Declarations.Cumulative_ind cumi ->
-            convert_inductives cv_pb (mind, snd ind1) u1 (CClosure.stack_args_size v1)
-              u2 (CClosure.stack_args_size v2) cuniv
-        in
-        convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+        if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+          let cuniv = convert_instances ~flex:false u1 u2 cuniv in
+          convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+        else
+          let mind = Environ.lookup_mind (fst ind1) env in
+          let cuniv =
+            match mind.Declarations.mind_universes with
+            | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
+              convert_instances ~flex:false u1 u2 cuniv
+            | Declarations.Cumulative_ind cumi ->
+              convert_inductives cv_pb (mind, snd ind1) u1 (CClosure.stack_args_size v1)
+                u2 (CClosure.stack_args_size v2) cuniv
+          in
+          convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
       if Int.equal j1 j2 && eq_ind ind1 ind2 then
-        let mind = Environ.lookup_mind (fst ind1) env in
-        let cuniv =
-          match mind.Declarations.mind_universes with
-          | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
-            convert_instances ~flex:false u1 u2 cuniv
-          | Declarations.Cumulative_ind _ ->
-            convert_constructors
-              (mind, snd ind1, j1) u1 (CClosure.stack_args_size v1)
-              u2 (CClosure.stack_args_size v2) cuniv
-        in
-        convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+        if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+          let cuniv = convert_instances ~flex:false u1 u2 cuniv in
+          convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
+        else
+          let mind = Environ.lookup_mind (fst ind1) env in
+          let cuniv =
+            match mind.Declarations.mind_universes with
+            | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
+              convert_instances ~flex:false u1 u2 cuniv
+            | Declarations.Cumulative_ind _ ->
+              convert_constructors
+                (mind, snd ind1, j1) u1 (CClosure.stack_args_size v1)
+                u2 (CClosure.stack_args_size v2) cuniv
+          in
+          convert_stacks env l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 	  
     (* Eta expansion of records *)
