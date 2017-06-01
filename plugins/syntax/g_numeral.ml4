@@ -405,7 +405,10 @@ let vernac_numeral_notation ty f g scope opts =
   in
   (* Check the type of f *)
   let to_kind =
-    if has_type f (arrow cint cty) then Int, Direct
+    if Global.is_polymorphic (Nametab.global f) then
+      CErrors.user_err
+        (pr_reference f ++ str "cannot be polymorphic for the moment")
+    else if has_type f (arrow cint cty) then Int, Direct
     else if has_type f (arrow cint (opt cty)) then Int, Option
     else if has_type f (arrow cuint cty) then UInt, Direct
     else if has_type f (arrow cuint (opt cty)) then UInt, Option
@@ -425,7 +428,10 @@ let vernac_numeral_notation ty f g scope opts =
   in
   (* Check the type of g *)
   let of_kind =
-    if has_type g (arrow cty cint) then Int, Direct
+    if Global.is_polymorphic (Nametab.global g) then
+      CErrors.user_err
+        (pr_reference g ++ str "cannot be polymorphic for the moment")
+    else if has_type g (arrow cty cint) then Int, Direct
     else if has_type g (arrow cty (opt cint)) then Int, Option
     else if has_type g (arrow cty cuint) then UInt, Direct
     else if has_type g (arrow cty (opt cuint)) then UInt, Option
