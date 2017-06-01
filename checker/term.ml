@@ -413,38 +413,18 @@ let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 let map_constr f c = map_constr_with_binders (fun x -> x) (fun _ c -> f c) 0 c
 
 let subst_instance_constr subst c =
-  if Univ.Instance.is_empty subst then c
-  else
-    let f u = Univ.subst_instance_instance subst u in
-    let changed = ref false in
-    let rec aux t = 
-      match t with
-      | Const (c, u) -> 
-	if Univ.Instance.is_empty u then t
-	else 
-          let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; Const (c, u'))
-      | Ind (i, u) ->
-	if Univ.Instance.is_empty u then t
-	else 
-	  let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; Ind (i, u'))
-      | Construct (c, u) ->
-	if Univ.Instance.is_empty u then t
-	else 
-          let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; Construct (c, u'))
-      | Sort (Type u) -> 
-         let u' = Univ.subst_instance_universe subst u in
-	   if u' == u then t else 
-	     (changed := true; Sort (sort_of_univ u'))
-      | _ -> map_constr aux t
-    in
-    let c' = aux c in
-      if !changed then c' else c
+  let f u = Univ.subst_instance_instance subst u in
+  let rec aux t =
+    match t with
+    | Const (c, u) -> Const (c, f u)
+    | Ind (i, u) -> Ind (i, f u)
+    | Construct (c, u) -> Construct (c, f u)
+    | Sort (Type u) ->
+      let u' = Univ.subst_instance_universe subst u in
+      Sort (sort_of_univ u')
+    | _ -> map_constr aux t
+  in
+  aux c
 
 let subst_instance_context s ctx = 
   if Univ.Instance.is_empty s then ctx
