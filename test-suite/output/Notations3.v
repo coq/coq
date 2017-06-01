@@ -140,6 +140,12 @@ Notation "'tele' x .. z := b" :=
 
 Check tele (t:Type) '((y,z):nat*nat) (x:t) := tt.
 
+(* Checking that "fun" in a notation does not mixed up with the
+   detection of a recursive binder *)
+
+Notation "[ x ;; .. ;; y ]" := ((x,((fun u => S u), .. (y,(fun u => S u,fun v:nat => v)) ..))).
+Check [ fun x => x+0 ;; fun x => x+1 ;; fun x => x+2 ].
+
 (* Cyprien's part of bug #4765 *)
 
 Notation foo5 x T y := (fun x : T => y).

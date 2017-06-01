@@ -33,109 +33,104 @@ let map_glob_decl_left_to_right f (na,k,obd,ty) =
   (na,k,comp1,comp2)
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
-| Decl_kinds.Explicit, Decl_kinds.Explicit -> true
-| Decl_kinds.Implicit, Decl_kinds.Implicit -> true
-| _ -> false
+  | Decl_kinds.Explicit, Decl_kinds.Explicit -> true
+  | Decl_kinds.Implicit, Decl_kinds.Implicit -> true
+  | (Decl_kinds.Explicit | Decl_kinds.Implicit), _ -> false
 
 let case_style_eq s1 s2 = match s1, s2 with
-| LetStyle, LetStyle -> true
-| IfStyle, IfStyle -> true
-| LetPatternStyle, LetPatternStyle -> true
-| MatchStyle, MatchStyle -> true
-| RegularStyle, RegularStyle -> true
-| _ -> false
+  | LetStyle, LetStyle -> true
+  | IfStyle, IfStyle -> true
+  | LetPatternStyle, LetPatternStyle -> true
+  | MatchStyle, MatchStyle -> true
+  | RegularStyle, RegularStyle -> true
+  | (LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle), _ -> false
 
 let rec cases_pattern_eq { CAst.v = p1} { CAst.v = p2 } = match p1, p2 with
-| PatVar na1, PatVar na2 -> Name.equal na1 na2
-| PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
-  eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
-  Name.equal na1 na2
-| _ -> false
+  | PatVar na1, PatVar na2 -> Name.equal na1 na2
+  | PatCstr (c1, pl1, na1), PatCstr (c2, pl2, na2) ->
+    eq_constructor c1 c2 && List.equal cases_pattern_eq pl1 pl2 &&
+      Name.equal na1 na2
+  | (PatVar _ | PatCstr _), _ -> false
 
 let cast_type_eq eq t1 t2 = match t1, t2 with
-| CastConv t1, CastConv t2 -> eq t1 t2
-| CastVM t1, CastVM t2 -> eq t1 t2
-| CastCoerce, CastCoerce -> true
-| CastNative t1, CastNative t2 -> eq t1 t2
-| _ -> false
+  | CastConv t1, CastConv t2 -> eq t1 t2
+  | CastVM t1, CastVM t2 -> eq t1 t2
+  | CastCoerce, CastCoerce -> true
+  | CastNative t1, CastNative t2 -> eq t1 t2
+  | (CastConv _ | CastVM _ | CastCoerce | CastNative _), _ -> false
 
-let rec glob_constr_eq { CAst.v = c1 } { CAst.v = c2 } = match c1, c2 with
-| GRef (gr1, _), GRef (gr2, _) -> eq_gr gr1 gr2
-| GVar id1, GVar id2 -> Id.equal id1 id2
-| GEvar (id1, arg1), GEvar (id2, arg2) ->
-  Id.equal id1 id2 &&
-  List.equal instance_eq arg1 arg2
-| GPatVar (b1, pat1), GPatVar (b2, pat2) ->
-  (b1 : bool) == b2 && Id.equal pat1 pat2
-| GApp (f1, arg1), GApp (f2, arg2) ->
-  glob_constr_eq f1 f2 && List.equal glob_constr_eq arg1 arg2
-| GLambda (na1, bk1, t1, c1), GLambda (na2, bk2, t2, c2) ->
-  Name.equal na1 na2 && binding_kind_eq bk1 bk2 &&
-  glob_constr_eq t1 t2 && glob_constr_eq c1 c2
-| GProd (na1, bk1, t1, c1), GProd (na2, bk2, t2, c2) ->
-  Name.equal na1 na2 && binding_kind_eq bk1 bk2 &&
-  glob_constr_eq t1 t2 && glob_constr_eq c1 c2
-| GLetIn (na1, b1, t1, c1), GLetIn (na2, b2, t2, c2) ->
-  Name.equal na1 na2 && glob_constr_eq b1 b2 && Option.equal glob_constr_eq t1 t2 && glob_constr_eq c1 c2
-| GCases (st1, c1, tp1, cl1), GCases (st2, c2, tp2, cl2) ->
-  case_style_eq st1 st2 && Option.equal glob_constr_eq c1 c2 &&
-  List.equal tomatch_tuple_eq tp1 tp2 &&
-  List.equal cases_clause_eq cl1 cl2
-| GLetTuple (na1, (n1, p1), c1, t1), GLetTuple (na2, (n2, p2), c2, t2) ->
-  List.equal Name.equal na1 na2 && Name.equal n1 n2 &&
-  Option.equal glob_constr_eq p1 p2 && glob_constr_eq c1 c2 &&
-  glob_constr_eq t1 t2
-| GIf (m1, (pat1, p1), c1, t1), GIf (m2, (pat2, p2), c2, t2) ->
-  glob_constr_eq m1 m2 && Name.equal pat1 pat2 &&
-  Option.equal glob_constr_eq p1 p2 && glob_constr_eq c1 c2 &&
-  glob_constr_eq t1 t2
-| GRec (kn1, id1, decl1, c1, t1), GRec (kn2, id2, decl2, c2, t2) ->
-  fix_kind_eq kn1 kn2 && Array.equal Id.equal id1 id2 &&
-  Array.equal (fun l1 l2 -> List.equal glob_decl_eq l1 l2) decl1 decl2 &&
-  Array.equal glob_constr_eq c1 c2 &&
-  Array.equal glob_constr_eq t1 t2
-| GSort s1, GSort s2 -> Miscops.glob_sort_eq s1 s2
-| GHole (kn1, nam1, gn1), GHole (kn2, nam2, gn2) ->
-  Option.equal (==) gn1 gn2 (** Only thing sensible *) &&
-  Miscops.intro_pattern_naming_eq nam1 nam2
-| GCast (c1, t1), GCast (c2, t2) ->
-  glob_constr_eq c1 c2 && cast_type_eq glob_constr_eq t1 t2
-| _ -> false
-
-and tomatch_tuple_eq (c1, p1) (c2, p2) =
+let tomatch_tuple_eq f (c1, p1) (c2, p2) =
   let eqp (_, (i1, na1)) (_, (i2, na2)) =
     eq_ind i1 i2 && List.equal Name.equal na1 na2
   in
   let eq_pred (n1, o1) (n2, o2) = Name.equal n1 n2 && Option.equal eqp o1 o2 in
-  glob_constr_eq c1 c2 && eq_pred p1 p2
+  f c1 c2 && eq_pred p1 p2
 
-and cases_clause_eq (_, (id1, p1, c1)) (_, (id2, p2, c2)) =
-  List.equal Id.equal id1 id2 && List.equal cases_pattern_eq p1 p2 &&
-  glob_constr_eq c1 c2
+and cases_clause_eq f (_, (id1, p1, c1)) (_, (id2, p2, c2)) =
+  List.equal Id.equal id1 id2 && List.equal cases_pattern_eq p1 p2 && f c1 c2
 
-and glob_decl_eq (na1, bk1, c1, t1) (na2, bk2, c2, t2) =
+let glob_decl_eq f (na1, bk1, c1, t1) (na2, bk2, c2, t2) =
   Name.equal na1 na2 && binding_kind_eq bk1 bk2 &&
-  Option.equal glob_constr_eq c1 c2 &&
-  glob_constr_eq t1 t2
+  Option.equal f c1 c2 && f t1 t2
 
-and fix_kind_eq k1 k2 = match k1, k2 with
-| GFix (a1, i1), GFix (a2, i2) ->
-  let eq (i1, o1) (i2, o2) =
-    Option.equal Int.equal i1 i2 && fix_recursion_order_eq o1 o2
-  in
-  Int.equal i1 i2 && Array.equal eq a1 a1
-| GCoFix i1, GCoFix i2 -> Int.equal i1 i2
-| _ -> false
+let fix_recursion_order_eq f o1 o2 = match o1, o2 with
+  | GStructRec, GStructRec -> true
+  | GWfRec c1, GWfRec c2 -> f c1 c2
+  | GMeasureRec (c1, o1), GMeasureRec (c2, o2) ->
+    f c1 c2 && Option.equal f o1 o2
+  | (GStructRec | GWfRec _ | GMeasureRec _), _ -> false
 
-and fix_recursion_order_eq o1 o2 = match o1, o2 with
-| GStructRec, GStructRec -> true
-| GWfRec c1, GWfRec c2 -> glob_constr_eq c1 c2
-| GMeasureRec (c1, o1), GMeasureRec (c2, o2) ->
-  glob_constr_eq c1 c2 && Option.equal glob_constr_eq o1 o2
-| _ -> false
+let fix_kind_eq f k1 k2 = match k1, k2 with
+  | GFix (a1, i1), GFix (a2, i2) ->
+    let eq (i1, o1) (i2, o2) =
+      Option.equal Int.equal i1 i2 && fix_recursion_order_eq f o1 o2
+    in
+    Int.equal i1 i2 && Array.equal eq a1 a1
+  | GCoFix i1, GCoFix i2 -> Int.equal i1 i2
+  | (GFix _ | GCoFix _), _ -> false
 
-and instance_eq (x1,c1) (x2,c2) =
-  Id.equal x1 x2 && glob_constr_eq c1 c2
+let instance_eq f (x1,c1) (x2,c2) =
+  Id.equal x1 x2 && f c1 c2
+
+let mk_glob_constr_eq f { CAst.v = c1 } { CAst.v = c2 } = match c1, c2 with
+  | GRef (gr1, _), GRef (gr2, _) -> eq_gr gr1 gr2
+  | GVar id1, GVar id2 -> Id.equal id1 id2
+  | GEvar (id1, arg1), GEvar (id2, arg2) ->
+    Id.equal id1 id2 && List.equal (instance_eq f) arg1 arg2
+  | GPatVar (b1, pat1), GPatVar (b2, pat2) ->
+    (b1 : bool) == b2 && Id.equal pat1 pat2
+  | GApp (f1, arg1), GApp (f2, arg2) ->
+    f f1 f2 && List.equal f arg1 arg2
+  | GLambda (na1, bk1, t1, c1), GLambda (na2, bk2, t2, c2) ->
+    Name.equal na1 na2 && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
+  | GProd (na1, bk1, t1, c1), GProd (na2, bk2, t2, c2) ->
+    Name.equal na1 na2 && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
+  | GLetIn (na1, b1, t1, c1), GLetIn (na2, b2, t2, c2) ->
+    Name.equal na1 na2 && f b1 b2 && Option.equal f t1 t2 && f c1 c2
+  | GCases (st1, c1, tp1, cl1), GCases (st2, c2, tp2, cl2) ->
+    case_style_eq st1 st2 && Option.equal f c1 c2 &&
+    List.equal (tomatch_tuple_eq f) tp1 tp2 &&
+    List.equal (cases_clause_eq f) cl1 cl2
+  | GLetTuple (na1, (n1, p1), c1, t1), GLetTuple (na2, (n2, p2), c2, t2) ->
+    List.equal Name.equal na1 na2 && Name.equal n1 n2 &&
+    Option.equal f p1 p2 && f c1 c2 && f t1 t2
+  | GIf (m1, (pat1, p1), c1, t1), GIf (m2, (pat2, p2), c2, t2) ->
+    f m1 m2 && Name.equal pat1 pat2 &&
+    Option.equal f p1 p2 && f c1 c2 && f t1 t2
+  | GRec (kn1, id1, decl1, c1, t1), GRec (kn2, id2, decl2, c2, t2) ->
+    fix_kind_eq f kn1 kn2 && Array.equal Id.equal id1 id2 &&
+    Array.equal (fun l1 l2 -> List.equal (glob_decl_eq f) l1 l2) decl1 decl2 &&
+    Array.equal f c1 c2 && Array.equal f t1 t2
+  | GSort s1, GSort s2 -> Miscops.glob_sort_eq s1 s2
+  | GHole (kn1, nam1, gn1), GHole (kn2, nam2, gn2) ->
+    Option.equal (==) gn1 gn2 (** Only thing sensible *) &&
+    Miscops.intro_pattern_naming_eq nam1 nam2
+  | GCast (c1, t1), GCast (c2, t2) ->
+    f c1 c2 && cast_type_eq f t1 t2
+  | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _ | GLetIn _ |
+     GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GCast _), _ -> false
+
+let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
 
 let map_glob_constr_left_to_right f = CAst.map (function
   | GApp (g,args) ->

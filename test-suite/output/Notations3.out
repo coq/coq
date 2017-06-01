@@ -98,5 +98,10 @@ fun n : nat => foo4 n (fun _ y : nat => ETA z : nat, (fun _ : nat => y = 0))
      : nat -> Prop
 tele (t : Type) '(y, z) (x : t0) := tt
      : forall t : Type, nat * nat -> t -> fpack
+[fun x : nat => x + 0;; fun x : nat => x + 1;; fun x : nat => x + 2]
+     : (nat -> nat) *
+       ((nat -> nat) *
+        ((nat -> nat) *
+         ((nat -> nat) * ((nat -> nat) * ((nat -> nat) * (nat -> nat))))))
 foo5 x nat x
      : nat -> nat
