@@ -32,8 +32,8 @@ val coq_eq_rect : unit -> global_reference
 val coq_JMeq_ind : unit -> global_reference
 val coq_JMeq_refl : unit -> global_reference
 
-val mk_coq_and : constr list -> constr
-val mk_coq_not : constr -> constr
+val mk_coq_and : Evd.evar_map -> constr list -> Evd.evar_map * constr
+val mk_coq_not : Evd.evar_map -> constr -> Evd.evar_map * constr
 
 (** Polymorphic application of delayed references *)
 val papp : Evd.evar_map ref -> (unit -> global_reference) -> constr array -> constr

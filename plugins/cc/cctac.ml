@@ -231,9 +231,9 @@ let make_prb gls depth additionnal_terms =
 let build_projection intype (cstr:pconstructor) special default gls=
   let open Tacmach.New in
   let ci= (snd(fst cstr)) in
-  let body=Equality.build_selector (pf_env gls) (project gls) ci (mkRel 1) intype special default in
+  let sigma, body=Equality.build_selector (pf_env gls) (project gls) ci (mkRel 1) intype special default in
   let id=pf_get_new_id (Id.of_string "t") gls in
-    mkLambda(Name id,intype,body)
+  sigma, mkLambda(Name id,intype,body)
 
 (* generate an adhoc tactic following the proof tree  *)
 
@@ -346,12 +346,13 @@ let rec proof_tac p : unit Proofview.tactic =
 	 let special=mkRel (1+nargs-argind) in
 	 refresh_universes (type_of ti) (fun intype ->
          refresh_universes (type_of default) (fun outtype ->
-         let proj =
+         let sigma, proj =
            build_projection intype cstr special default gl
          in
 	 let injt=
            app_global_with_holes _f_equal [|intype;outtype;proj;ti;tj|] 1 in
-	   Tacticals.New.tclTHEN injt (proof_tac prf)))
+	 Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+                               (Tacticals.New.tclTHEN injt (proof_tac prf))))
   with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end }
 

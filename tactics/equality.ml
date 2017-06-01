@@ -874,7 +874,7 @@ let descend_then env sigma head dirn =
   let dirn_env = Environ.push_rel_context cstr.(dirn-1).cs_args env in
   (dirn_nlams,
    dirn_env,
-   (fun dirnval (dfltval,resty) ->
+   (fun sigma dirnval (dfltval,resty) ->
       let deparsign = make_arity_signature env sigma true indf in
       let p =
 	it_mkLambda_or_LetIn (lift (mip.mind_nrealargs+1) resty) deparsign in
@@ -887,7 +887,7 @@ let descend_then env sigma head dirn =
         List.map build_branch
           (List.interval 1 (Array.length mip.mind_consnames)) in
       let ci = make_case_info env ind RegularStyle in
-      Inductiveops.make_case_or_project env sigma indf ci p head (Array.of_list brl)))
+      sigma, Inductiveops.make_case_or_project env sigma indf ci p head (Array.of_list brl)))
 
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:
@@ -932,23 +932,28 @@ let build_selector env sigma dirn c ind special default =
   let brl =
     List.map build_branch(List.interval 1 (Array.length mip.mind_consnames)) in
   let ci = make_case_info env ind RegularStyle in
-  mkCase (ci, p, c, Array.of_list brl)
+  sigma, mkCase (ci, p, c, Array.of_list brl)
 
-let build_coq_False () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_False ())
-let build_coq_True () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_True ())
-let build_coq_I () = EConstr.of_constr (Universes.constr_of_global @@ build_coq_I ())
+let new_global sigma gr =
+  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map sigma) gr
+  in Sigma.to_evar_map sigma, c
+    
+let build_coq_False sigma = new_global sigma (build_coq_False ())
+let build_coq_True sigma = new_global sigma (build_coq_True ())
+let build_coq_I sigma = new_global sigma (build_coq_I ())
 
 let rec build_discriminator env sigma dirn c = function
   | [] ->
       let ind = get_type_of env sigma c in
-      let true_0,false_0 =
-        build_coq_True(),build_coq_False() in
+      let sigma, true_0 = build_coq_True sigma in
+      let sigma, false_0 = build_coq_False sigma in
       build_selector env sigma dirn c ind true_0 false_0
   | ((sp,cnum),argnum)::l ->
+      let sigma, false_0 = build_coq_False sigma in
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
-      let subval = build_discriminator cnum_env sigma dirn newc l in
-      kont subval (build_coq_False (),mkSort (Prop Null))
+      let sigma, subval = build_discriminator cnum_env sigma dirn newc l in
+      kont sigma subval (false_0,mkSort (Prop Null))
 
 (* Note: discrimination could be more clever: if some elimination is
    not allowed because of a large impredicative constructor in the
@@ -991,9 +996,9 @@ let ind_scheme_of_eq lbeq =
 
 
 let discrimination_pf env sigma e (t,t1,t2) discriminator lbeq =
-  let i            = build_coq_I () in
-  let absurd_term  = build_coq_False () in
-  let eq_elim, eff = ind_scheme_of_eq lbeq in
+  let sigma, i           = build_coq_I sigma in
+  let sigma, absurd_term = build_coq_False sigma in
+  let eq_elim, eff       = ind_scheme_of_eq lbeq in
   let sigma, eq_elim = Evd.fresh_global (Global.env ()) sigma eq_elim in
   let eq_elim = EConstr.of_constr eq_elim in
     sigma, (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term),
@@ -1013,7 +1018,7 @@ let apply_on_clause (f,t) clause =
 let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (Context.Named.Declaration.LocalAssum (e,t)) env in
-  let discriminator =
+  let sigma, discriminator =
     build_discriminator e_env sigma dirn (mkVar e) cpath in
   let sigma,(pf, absurd_term), eff = 
     discrimination_pf env sigma e (t,t1,t2) discriminator lbeq in
@@ -1309,7 +1314,8 @@ let rec build_injrec env sigma dflt c = function
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
       let sigma, (subval,tuplety,dfltval) = build_injrec cnum_env sigma dflt newc l in
-	sigma, (kont subval (dfltval,tuplety), tuplety,dfltval)
+      let sigma, res = kont sigma subval (dfltval,tuplety) in
+      sigma, (res, tuplety,dfltval)
     with
 	UserError _ -> failwith "caught"
 
@@ -1326,8 +1332,6 @@ let inject_if_homogenous_dependent_pair ty =
     let sigma = Tacmach.New.project gl in
     let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
-    let ceq = Universes.constr_of_global Coqlib.glob_eq in
-    let ceq = EConstr.of_constr ceq in
     let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
     let existTconstr () = (Coqlib.build_sigma_type()).Coqlib.intro in
     (* check whether the equality deals with dep pairs or not *)
@@ -1346,16 +1350,18 @@ let inject_if_homogenous_dependent_pair ty =
       pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
     Coqlib.check_required_library ["Coq";"Logic";"Eqdep_dec"];
     let new_eq_args = [|pf_unsafe_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
-    let inj2 = EConstr.of_constr @@ Universes.constr_of_global @@
-      Coqlib.coq_reference "inj_pair2_eq_dec is missing" ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
+    let inj2 = Coqlib.coq_reference "inj_pair2_eq_dec is missing" ["Logic";"Eqdep_dec"]
+                                    "inj_pair2_eq_dec" in
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in
     (* cut with the good equality and prove the requested goal *)
     tclTHENLIST
       [Proofview.tclEFFECTS eff;
        intro;
        onLastHyp (fun hyp ->
+        Tacticals.New.pf_constr_of_global Coqlib.glob_eq >>= fun ceq ->
         tclTHENS (cut (mkApp (ceq,new_eq_args)))
           [clear [destVar sigma hyp];
+           Tacticals.New.pf_constr_of_global inj2 >>= fun inj2 ->
            Proofview.V82.tactic (Tacmach.refine
              (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|])))
           ])]

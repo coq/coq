@@ -211,7 +211,7 @@ let do_definition ident k pl bl red_option c ctypopt hook =
       assert(Univ.ContextSet.is_empty ctx);
       let typ = match ce.const_entry_type with 
 	| Some t -> t
-	| None -> EConstr.Unsafe.to_constr (Retyping.get_type_of env evd (EConstr.of_constr c))
+	| None -> EConstr.to_constr evd (Retyping.get_type_of env evd (EConstr.of_constr c))
       in 
       Obligations.check_evars env evd;
       let obls, _, c, cty = 
@@ -907,23 +907,26 @@ let fixsub_module = subtac_dir @ ["Wf"]
 let tactics_module = subtac_dir @ ["Tactics"]
 
 let init_reference dir s () = Coqlib.coq_reference "Command" dir s
-let init_constant  dir s () = EConstr.of_constr @@ Universes.constr_of_global (Coqlib.coq_reference "Command" dir s)
+let init_constant  dir s evdref =
+  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map !evdref)
+                                                (Coqlib.coq_reference "Command" dir s)
+  in evdref := Sigma.to_evar_map sigma; c
 
 let make_ref l s = init_reference l s
 let fix_proto = init_constant tactics_module "fix_proto"
 let fix_sub_ref = make_ref fixsub_module "Fix_sub"
 let measure_on_R_ref = make_ref fixsub_module "MR"
 let well_founded = init_constant ["Init"; "Wf"] "well_founded"
-let mkSubset name typ prop =
+let mkSubset evdref name typ prop =
   let open EConstr in
-  mkApp (EConstr.of_constr (Universes.constr_of_global (delayed_force build_sigma).typ),
+  mkApp (Evarutil.e_new_global evdref (delayed_force build_sigma).typ,
 	 [| typ; mkLambda (name, typ, prop) |])
 let sigT = Lazy.from_fun build_sigma_type
 
 let make_qref s = Qualid (Loc.tag @@ qualid_of_string s)
 let lt_ref = make_qref "Init.Peano.lt"
 
-let rec telescope l =
+let rec telescope evdref l =
   let open EConstr in
   let open Vars in
   match l with
@@ -935,10 +938,8 @@ let rec telescope l =
 	  (fun (ty, tys, (k, constr)) decl ->
             let t = RelDecl.get_type decl in
             let pred = mkLambda (RelDecl.get_name decl, t, ty) in
-	    let ty = Universes.constr_of_global (Lazy.force sigT).typ in
-	    let ty = EConstr.of_constr ty in
-	    let intro = Universes.constr_of_global (Lazy.force sigT).intro in
-	    let intro = EConstr.of_constr intro in
+	    let ty = Evarutil.e_new_global evdref (Lazy.force sigT).typ in
+	    let intro = Evarutil.e_new_global evdref (Lazy.force sigT).intro in
 	    let sigty = mkApp (ty, [|t; pred|]) in
 	    let intro = mkApp (intro, [|lift k t; lift k pred; mkRel k; constr|]) in
 	      (sigty, pred :: tys, (succ k, intro)))
@@ -947,17 +948,15 @@ let rec telescope l =
       let (last, subst) = List.fold_right2
         (fun pred decl (prev, subst) ->
           let t = RelDecl.get_type decl in
-	  let p1 = Universes.constr_of_global (Lazy.force sigT).proj1 in
-	  let p1 = EConstr.of_constr p1 in
-	  let p2 = Universes.constr_of_global (Lazy.force sigT).proj2 in
-	  let p2 = EConstr.of_constr p2 in
+	  let p1 = Evarutil.e_new_global evdref (Lazy.force sigT).proj1 in
+	  let p2 = Evarutil.e_new_global evdref (Lazy.force sigT).proj2 in
 	  let proj1 = applist (p1, [t; pred; prev]) in
 	  let proj2 = applist (p2, [t; pred; prev]) in
 	    (lift 1 proj2, LocalDef (get_name decl, proj1, t) :: subst))
 	(List.rev tys) tl (mkRel 1, [])
       in ty, (LocalDef (n, last, t) :: subst), constr
 
-  | LocalDef (n, b, t) :: tl -> let ty, subst, term = telescope tl in
+  | LocalDef (n, b, t) :: tl -> let ty, subst, term = telescope evdref tl in
       ty, (LocalDef (n, b, t) :: subst), lift 1 term
 
 let nf_evar_context sigma ctx =
@@ -976,7 +975,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let top_env = push_rel_context binders_rel env in
   let top_arity = interp_type_evars top_env evdref arityc in
   let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
-  let argtyp, letbinders, make = telescope binders_rel in
+  let argtyp, letbinders, make = telescope evdref binders_rel in
   let argname = Id.of_string "recarg" in
   let arg = LocalAssum (Name argname, argtyp) in
   let binders = letbinders @ [arg] in
@@ -1004,7 +1003,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       it_mkLambda_or_LetIn measure letbinders,
       it_mkLambda_or_LetIn measure binders
     in
-    let comb = EConstr.of_constr (Universes.constr_of_global (delayed_force measure_on_R_ref)) in
+    let comb = Evarutil.e_new_global evdref (delayed_force measure_on_R_ref) in
     let relargty = EConstr.of_constr relargty in
     let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in
     let wf_rel_fun x y =
@@ -1012,15 +1011,15 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
  		     subst1 y measure_body |])
     in wf_rel, wf_rel_fun, measure
   in
-  let wf_proof = mkApp (delayed_force well_founded, [| argtyp ; wf_rel |]) in
+  let wf_proof = mkApp (well_founded evdref, [| argtyp ; wf_rel |]) in
   let argid' = Id.of_string (Id.to_string argname ^ "'") in
   let wfarg len = LocalAssum (Name argid',
-                              mkSubset (Name argid') argtyp
+                              mkSubset evdref (Name argid') argtyp
 				       (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
   in
   let intern_bl = wfarg 1 :: [arg] in
   let _intern_env = push_rel_context intern_bl env in
-  let proj = (*FIXME*)EConstr.of_constr (Universes.constr_of_global (delayed_force build_sigma).Coqlib.proj1) in
+  let proj = Evarutil.e_new_global evdref (delayed_force build_sigma).Coqlib.proj1 in
   let wfargpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
   let projection = (* in wfarg :: arg :: before *)
     mkApp (proj, [| argtyp ; wfargpred ; mkRel 1 |])
@@ -1033,7 +1032,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let intern_fun_binder = LocalAssum (Name (add_suffix recname "'"), intern_fun_arity_prod) in
   let curry_fun =
     let wfpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
-    let intro = (*FIXME*)EConstr.of_constr (Universes.constr_of_global (delayed_force build_sigma).Coqlib.intro) in
+    let intro = Evarutil.e_new_global evdref (delayed_force build_sigma).Coqlib.intro in
     let arg = mkApp (intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
     let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
@@ -1059,7 +1058,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
   let prop = mkLambda (Name argname, argtyp, top_arity_let) in
   let def =
-    mkApp (EConstr.of_constr (Universes.constr_of_global (delayed_force fix_sub_ref)),
+    mkApp (Evarutil.e_new_global evdref (delayed_force fix_sub_ref),
 	  [| argtyp ; wf_rel ;
 	     Evarutil.e_new_evar env evdref
 	       ~src:(Loc.tag @@ Evar_kinds.QuestionMark (Evar_kinds.Define false,Anonymous)) wf_proof;
@@ -1075,12 +1074,12 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
       let hook l gr _ = 
-	let body = it_mkLambda_or_LetIn (mkApp (EConstr.of_constr (Universes.constr_of_global gr), [|make|])) binders_rel in
+	let body = it_mkLambda_or_LetIn (mkApp (Evarutil.e_new_global evdref gr, [|make|])) binders_rel in
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
 	let ty = EConstr.Unsafe.to_constr ty in
 	let pl, univs = Evd.universe_context ?names:pl !evdref in
 	  (*FIXME poly? *)
-	let ce = definition_entry ~poly ~types:ty ~univs (EConstr.Unsafe.to_constr (Evarutil.nf_evar !evdref body)) in
+	let ce = definition_entry ~poly ~types:ty ~univs (EConstr.to_constr !evdref body) in
 	(** FIXME: include locality *)
 	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
 	let gr = ConstRef c in
@@ -1097,10 +1096,8 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       in hook, recname, typ
   in
   let hook = Lemmas.mk_hook hook in
-  let fullcoqc = Evarutil.nf_evar !evdref def in
-  let fullctyp = Evarutil.nf_evar !evdref typ in
-  let fullcoqc = EConstr.Unsafe.to_constr fullcoqc in
-  let fullctyp = EConstr.Unsafe.to_constr fullctyp in
+  let fullcoqc = EConstr.to_constr !evdref def in
+  let fullctyp = EConstr.to_constr !evdref typ in
   Obligations.check_evars env !evdref;
   let evars, _, evars_def, evars_typ = 
     Obligations.eterm_obligations env recname !evdref 0 fullcoqc fullctyp 
@@ -1143,7 +1140,7 @@ let interp_recursive isfix fixl notations =
 	   let sort = Evarutil.evd_comb1 (Typing.type_of ~refresh:true env) evdref t in
 	   let fixprot =
 	     try 
-	       let app = mkApp (delayed_force fix_proto, [|sort; t|]) in
+	       let app = mkApp (fix_proto evdref, [|sort; t|]) in
 		 Typing.e_solve_evars env evdref app
 	     with e  when CErrors.noncritical e -> t
 	   in
@@ -1303,9 +1300,9 @@ let do_program_recursive local p fixkind fixl ntns =
   let collect_evars id def typ imps =
     (* Generalize by the recursive prototypes  *)
     let def =
-      EConstr.Unsafe.to_constr (nf_evar evd (Termops.it_mkNamedLambda_or_LetIn (EConstr.of_constr def) rec_sign))
+      EConstr.to_constr evd (Termops.it_mkNamedLambda_or_LetIn (EConstr.of_constr def) rec_sign)
     and typ =
-      EConstr.Unsafe.to_constr (nf_evar evd (Termops.it_mkNamedProd_or_LetIn (EConstr.of_constr typ) rec_sign))
+      EConstr.to_constr evd (Termops.it_mkNamedProd_or_LetIn (EConstr.of_constr typ) rec_sign)
     in
     let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ = 

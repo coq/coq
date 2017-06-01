@@ -119,19 +119,27 @@ In Coqlib / reference location:
   We have removed from Coqlib functions returning `constr` from
   names. Now it is only possible to obtain references, that must be
   processed wrt the particular needs of the client.
+  We have changed in constrintern the functions returnin `constr` as
+  well to return global references instead.
 
   Users of `coq_constant/gen_constant` can do
   `Universes.constr_of_global (find_reference dir r)` _however_ note
   the warnings in the `Universes.constr_of_global` in the
   documentation. It is very likely that you were previously suffering
   from problems with polymorphic universes due to using
-  `Coqlib.coq_constant` that used to do this.
+  `Coqlib.coq_constant` that used to do this. You must rather use
+  `pf_constr_of_global` in tactics and `Evarutil.new_global` variants
+  when constructing terms in ML (see univpoly.txt for more information).
 
 ** Tactic API **
 
 - pf_constr_of_global now returns a tactic instead of taking a continuation.
   Thus it only generates one instance of the global reference, and it is the
   caller's responsibility to perform a focus on the goal.
+
+- pf_global, construct_reference, global_reference,
+  global_reference_in_absolute_module now return a global_reference
+  instead of a constr.
 
 - The tclWEAK_PROGRESS and tclNOTSAMEGOAL tacticals were removed. Their usecase
   was very specific. Use tclPROGRESS instead.

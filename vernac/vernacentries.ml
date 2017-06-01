@@ -1765,12 +1765,11 @@ let vernac_locate = let open Feedback in function
 let vernac_register id r =
  if Pfedit.refining () then
     user_err Pp.(str "Cannot register a primitive while in proof editing mode.");
-  let t = (Constrintern.global_reference (snd id)) in
-  if not (isConst t) then
+  let kn = Constrintern.global_reference (snd id) in
+  if not (isConstRef kn) then
     user_err Pp.(str "Register inline: a constant is expected");
-  let kn = destConst t in
   match r with
-  | RegisterInline -> Global.register_inline (Univ.out_punivs kn)
+  | RegisterInline -> Global.register_inline (destConstRef kn)
 
 (********************)
 (* Proof management *)

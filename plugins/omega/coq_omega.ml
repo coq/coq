@@ -39,10 +39,10 @@ open OmegaSolver
 
 let elim_id id =
   Proofview.Goal.enter { enter = begin fun gl ->
-    simplest_elim (Tacmach.New.pf_global id gl)
+    simplest_elim (mkVar id)
   end }
 let resolve_id id = Proofview.Goal.enter { enter = begin fun gl ->
-  apply (Tacmach.New.pf_global id gl)
+  apply (mkVar id)
 end }
 
 let timing timer_name f arg = f arg

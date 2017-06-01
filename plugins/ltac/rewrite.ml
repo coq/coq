@@ -751,17 +751,23 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 
 let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
-let make_eq () =
-(*FIXME*) EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq ()))
-let make_eq_refl () =
-(*FIXME*) EConstr.of_constr (Universes.constr_of_global (Coqlib.build_coq_eq_refl ()))
+let new_global (evars, cstrs) gr = 
+  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map evars) gr
+  in (Sigma.to_evar_map sigma, cstrs), c
 
-let get_rew_prf r = match r.rew_prf with
-  | RewPrf (rel, prf) -> rel, prf 
+let make_eq sigma =
+  new_global sigma (Coqlib.build_coq_eq ())
+let make_eq_refl sigma =
+  new_global sigma (Coqlib.build_coq_eq_refl ())
+
+let get_rew_prf evars r = match r.rew_prf with
+  | RewPrf (rel, prf) -> evars, (rel, prf)
   | RewCast c ->
-    let rel = mkApp (make_eq (), [| r.rew_car |]) in
-      rel, mkCast (mkApp (make_eq_refl (), [| r.rew_car; r.rew_from |]),
-		   c, mkApp (rel, [| r.rew_from; r.rew_to |]))
+    let evars, eq = make_eq evars in
+    let evars, eq_refl = make_eq_refl evars in
+    let rel = mkApp (eq, [| r.rew_car |]) in
+    evars, (rel, mkCast (mkApp (eq_refl, [| r.rew_car; r.rew_from |]),
+		         c, mkApp (rel, [| r.rew_from; r.rew_to |])))
 
 let poly_subrelation sort = 
   if sort then PropGlobal.subrelation else TypeGlobal.subrelation
@@ -827,7 +833,8 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 		      env evars carrier relation x in
 		    [ proof ; x ; x ] @ acc, subst, evars, sigargs, x :: typeargs'
 	      | Some r ->
-		  [ snd (get_rew_prf r); r.rew_to; x ] @ acc, subst, evars, 
+                 let evars, proof = get_rew_prf evars r in
+		 [ snd proof; r.rew_to; x ] @ acc, subst, evars, 
 	      sigargs, r.rew_to :: typeargs')
 	  | None ->
 	      if not (Option.is_empty y) then 
@@ -847,7 +854,8 @@ let apply_constraint env avoid car rel prf cstr res =
   | Some r -> resolve_subrelation env avoid car rel (fst cstr) prf r res
 
 let coerce env avoid cstr res = 
-  let rel, prf = get_rew_prf res in
+  let evars, (rel, prf) = get_rew_prf res.rew_evars res in
+  let res = { res with rew_evars = evars } in
     apply_constraint env avoid res.rew_car rel prf cstr res
 
 let apply_rule unify loccs : int pure_strategy =
@@ -868,8 +876,7 @@ let apply_rule unify loccs : int pure_strategy =
 	    else if Termops.eq_constr (fst rew.rew_evars) t rew.rew_to then (occ, Identity)
 	    else
 	      let res = { rew with rew_car = ty } in
-              let rel, prf = get_rew_prf res in
-	      let res = Success (apply_constraint env unfresh rew.rew_car rel prf cstr res) in
+	      let res = Success (coerce env unfresh cstr res) in
               (occ, res)
     }
 
@@ -1231,9 +1238,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	in 
 	let res = 
 	  match res with
-	  | Success r ->  
-	    let rel, prf = get_rew_prf r in
-	      Success (apply_constraint env unfresh r.rew_car rel prf (prop,cstr) r)
+	  | Success r -> Success (coerce env unfresh (prop,cstr) r)
 	  | Fail | Identity -> res
 	in state, res
       | _ -> state, Fail
