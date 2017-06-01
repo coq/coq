@@ -1003,12 +1003,12 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   let err_extra_args names =
     user_err ~hdr:"vernac_declare_arguments"
                  (strbrk "Extra arguments: " ++
-                    prlist_with_sep pr_comma pr_name names ++ str ".")
+                    prlist_with_sep pr_comma Name.print names ++ str ".")
   in
   let err_missing_args names =
     user_err ~hdr:"vernac_declare_arguments"
                  (strbrk "The following arguments are not declared: " ++
-                    prlist_with_sep pr_comma pr_name names ++ str ".")
+                    prlist_with_sep pr_comma Name.print names ++ str ".")
   in
 
   let rec check_extra_args extra_args =
@@ -1093,14 +1093,14 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
        match !example_renaming with
        | None -> mt ()
        | Some (o,n) ->
-          str "Argument " ++ pr_name o ++
-            str " renamed to " ++ pr_name n ++ str ".");
+          str "Argument " ++ Name.print o ++
+            str " renamed to " ++ Name.print n ++ str ".");
 
   let duplicate_names =
     List.duplicates Name.equal (List.filter ((!=) Anonymous) names)
   in
   if not (List.is_empty duplicate_names) then begin
-    let duplicates = prlist_with_sep pr_comma pr_name duplicate_names in
+    let duplicates = prlist_with_sep pr_comma Name.print duplicate_names in
     user_err (strbrk "Some argument names are duplicated: " ++ duplicates)
   end;
 
@@ -1129,7 +1129,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
        anonymous argument implicit *)
     | Anonymous :: _, (name, _) :: _ ->
        user_err ~hdr:"vernac_declare_arguments"
-                    (strbrk"Argument "++ pr_name name ++ 
+                    (strbrk"Argument "++ Name.print name ++ 
                        strbrk " cannot be declared implicit.")
 
     | Name id :: inf_names, (name, impl) :: implicits ->

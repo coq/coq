@@ -151,8 +151,8 @@ let tag_var = tag Tag.variable
 
   let pr_univ l =
     match l with
-      | [_,x] -> pr_name x
-      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") (fun x -> pr_name (snd x)) l ++ str")"
+      | [_,x] -> Name.print x
+      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") (fun x -> Name.print (snd x)) l ++ str")"
 
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
@@ -166,7 +166,7 @@ let tag_var = tag Tag.variable
     | GProp -> tag_type (str "Prop")
     | GSet -> tag_type (str "Set")
     | GType None -> tag_type (str "Type")
-    | GType (Some (_, u)) -> tag_type (pr_name u)
+    | GType (Some (_, u)) -> tag_type (Name.print u)
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
@@ -191,7 +191,7 @@ let tag_var = tag Tag.variable
       tag_type (str "Set")
     | GType u ->
       (match u with
-        | Some (_,u) -> pr_name u
+        | Some (_,u) -> Name.print u
         | None -> tag_type (str "Type"))
 
   let pr_universe_instance l =
@@ -224,7 +224,7 @@ let tag_var = tag Tag.variable
 
   let pr_lname = function
     | (loc,Name id) -> pr_lident (loc,id)
-    | lna -> pr_located pr_name lna
+    | lna -> pr_located Name.print lna
 
   let pr_or_var pr = function
     | ArgArg x -> pr x

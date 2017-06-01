@@ -31,10 +31,6 @@ let pr_sort_family = function
   | InProp -> (str "Prop")
   | InType -> (str "Type")
 
-let pr_name = function
-  | Name id -> pr_id id
-  | Anonymous -> str "_"
-
 let pr_con sp = str(string_of_con sp)
 
 let pr_fix pr_constr ((t,i),(lna,tl,bl)) =
@@ -42,7 +38,7 @@ let pr_fix pr_constr ((t,i),(lna,tl,bl)) =
   hov 1
       (str"fix " ++ int i ++ spc() ++  str"{" ++
          v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
-           pr_name na ++ str"/" ++ int i ++ str":" ++ pr_constr ty ++
+           Name.print na ++ str"/" ++ int i ++ str":" ++ pr_constr ty ++
 	   cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
 
@@ -65,10 +61,10 @@ let rec pr_constr c = match kind_of_term c with
       (str"(" ++ pr_constr t ++ str " ->" ++ spc() ++
        pr_constr c ++ str")")
   | Lambda (na,t,c) -> hov 1
-      (str"fun " ++ pr_name na ++ str":" ++
+      (str"fun " ++ Name.print na ++ str":" ++
        pr_constr t ++ str" =>" ++ spc() ++ pr_constr c)
   | LetIn (na,b,t,c) -> hov 0
-      (str"let " ++ pr_name na ++ str":=" ++ pr_constr b ++
+      (str"let " ++ Name.print na ++ str":=" ++ pr_constr b ++
        str":" ++ brk(1,2) ++ pr_constr t ++ cut() ++
        pr_constr c)
   | App (c,l) ->  hov 1
@@ -93,7 +89,7 @@ let rec pr_constr c = match kind_of_term c with
       hov 1
         (str"cofix " ++ int i ++ spc() ++  str"{" ++
          v 0 (prlist_with_sep spc (fun (na,ty,bd) ->
-           pr_name na ++ str":" ++ pr_constr ty ++
+           Name.print na ++ str":" ++ pr_constr ty ++
            cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
 
@@ -309,8 +305,8 @@ let pr_evar_universe_context ctx =
 let print_env_short env =
   let print_constr = print_kconstr in
   let pr_rel_decl = function
-    | RelDecl.LocalAssum (n,_) -> pr_name n
-    | RelDecl.LocalDef (n,b,_) -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")"
+    | RelDecl.LocalAssum (n,_) -> Name.print n
+    | RelDecl.LocalDef (n,b,_) -> str "(" ++ Name.print n ++ str " := " ++ print_constr b ++ str ")"
   in
   let pr_named_decl = NamedDecl.to_rel_decl %> pr_rel_decl in
   let nc = List.rev (named_context env) in

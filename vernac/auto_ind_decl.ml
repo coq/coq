@@ -533,7 +533,7 @@ open Namegen
 let compute_bl_goal ind lnamesparrec nparrec =
   let eqI, eff = eqI ind lnamesparrec in
   let list_id = list_id lnamesparrec in
-  let avoid = List.fold_right (Nameops.name_fold (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
+  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
   let create_input c =
     let x = next_ident_away (Id.of_string "x") avoid and
         y = next_ident_away (Id.of_string "y") avoid in
@@ -676,7 +676,7 @@ let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
 let compute_lb_goal ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
-  let avoid = List.fold_right (Nameops.name_fold (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
+  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
   let eqI, eff = eqI ind lnamesparrec in
     let create_input c =
       let x = next_ident_away (Id.of_string "x") avoid and
@@ -806,7 +806,7 @@ let compute_dec_goal ind lnamesparrec nparrec =
   check_not_is_defined ();
   let eq = Lazy.force eq and tt = Lazy.force tt and bb = Lazy.force bb in
   let list_id = list_id lnamesparrec in
-  let avoid = List.fold_right (Nameops.name_fold (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
+  let avoid = List.fold_right (Nameops.Name.fold_right (fun id l -> id::l)) (List.map RelDecl.get_name lnamesparrec) [] in
     let create_input c =
       let x = next_ident_away (Id.of_string "x") avoid and
           y = next_ident_away (Id.of_string "y") avoid in

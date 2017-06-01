@@ -340,15 +340,15 @@ let rec pat_of_raw metas vars = CAst.with_loc_val (fun ?loc -> function
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
   | GLambda (na,bk,c1,c2) ->
-      name_iter (fun n -> metas := n::!metas) na;
+      Name.iter (fun n -> metas := n::!metas) na;
       PLambda (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
   | GProd (na,bk,c1,c2) ->
-      name_iter (fun n -> metas := n::!metas) na;
+      Name.iter (fun n -> metas := n::!metas) na;
       PProd (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
   | GLetIn (na,c1,t,c2) ->
-      name_iter (fun n -> metas := n::!metas) na;
+      Name.iter (fun n -> metas := n::!metas) na;
       PLetIn (na, pat_of_raw metas vars c1,
                Option.map (pat_of_raw metas vars) t,
 	       pat_of_raw metas (na::vars) c2)
@@ -411,7 +411,7 @@ let rec pat_of_raw metas vars = CAst.with_loc_val (fun ?loc -> function
 and pats_of_glob_branches loc metas vars ind brs =
   let get_arg = function
     | { CAst.v = PatVar na } ->
-      name_iter (fun n -> metas := n::!metas) na;
+      Name.iter (fun n -> metas := n::!metas) na;
       na
     | { CAst.v = PatCstr(_,_,_) ; loc } -> err ?loc (Pp.str "Non supported pattern.")
   in

@@ -740,7 +740,7 @@ let rec extern inctx scopes vars r =
 
   | GCases (sty,rtntypopt,tml,eqns) ->
     let vars' =
-      List.fold_right (name_fold Id.Set.add)
+      List.fold_right (Name.fold_right Id.Set.add)
 	(cases_predicate_names tml) vars in
     let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
     let tml = List.map (fun (tm,(na,x)) ->
@@ -790,12 +790,12 @@ let rec extern inctx scopes vars r =
                  let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
                  let bl = List.map (extended_glob_local_binder_of_decl ?loc) bl in
                  let (assums,ids,bl) = extern_local_binder scopes vars bl in
-                 let vars0 = List.fold_right (name_fold Id.Set.add) ids vars in
-                 let vars1 = List.fold_right (name_fold Id.Set.add) ids vars' in
+                 let vars0 = List.fold_right (Name.fold_right Id.Set.add) ids vars in
+                 let vars1 = List.fold_right (Name.fold_right Id.Set.add) ids vars' in
 		 let n =
 		   match fst nv.(i) with
 		     | None -> None
-		     | Some x -> Some (Loc.tag @@ out_name (List.nth assums x))
+		     | Some x -> Some (Loc.tag @@ Name.get_id (List.nth assums x))
 		 in
 		 let ro = extern_recursion_order scopes vars (snd nv.(i)) in
 		 ((Loc.tag fi), (n, ro), bl, extern_typ scopes vars0 ty,
@@ -807,8 +807,8 @@ let rec extern inctx scopes vars r =
                Array.mapi (fun i fi ->
                  let bl = List.map (extended_glob_local_binder_of_decl ?loc) blv.(i) in
                  let (_,ids,bl) = extern_local_binder scopes vars bl in
-                 let vars0 = List.fold_right (name_fold Id.Set.add) ids vars in
-                 let vars1 = List.fold_right (name_fold Id.Set.add) ids vars' in
+                 let vars0 = List.fold_right (Name.fold_right Id.Set.add) ids vars in
+                 let vars1 = List.fold_right (Name.fold_right Id.Set.add) ids vars' in
 		 ((Loc.tag fi),bl,extern_typ scopes vars0 tyv.(i),
                   sub_extern false scopes vars1 bv.(i))) idv
 	     in
@@ -852,14 +852,14 @@ and extern_local_binder scopes vars = function
     [] -> ([],[],[])
   | { v = GLocalDef (na,bk,bd,ty)}::l ->
       let (assums,ids,l) =
-        extern_local_binder scopes (name_fold Id.Set.add na vars) l in
+        extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l in
       (assums,na::ids,
        CLocalDef((Loc.tag na), extern false scopes vars bd,
                    Option.map (extern false scopes vars) ty) :: l)
 
   | { v = GLocalAssum (na,bk,ty)}::l ->
       let ty = extern_typ scopes vars ty in
-      (match extern_local_binder scopes (name_fold Id.Set.add na vars) l with
+      (match extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l with
           (assums,ids,CLocalAssum(nal,k,ty')::l)
             when constr_expr_eq ty ty' &&
               match na with Name id -> not (occur_var_constr_expr id ty')

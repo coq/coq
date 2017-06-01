@@ -62,7 +62,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       then List.tl args
       else args
     in
-    Context.Named.Declaration.LocalAssum (Nameops.out_name (Context.Rel.Declaration.get_name decl),
+    Context.Named.Declaration.LocalAssum (Nameops.Name.get_id (Context.Rel.Declaration.get_name decl),
                                           Term.compose_prod real_args (mkSort new_sort))
   in
   let new_predicates =
@@ -185,11 +185,11 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 
        with
 	 | Toberemoved ->
-(* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
+(* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
 	    new_b, List.map pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
-(* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
+(* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
 	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
     end
@@ -214,11 +214,11 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 
       with
 	| Toberemoved ->
-(* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
+(* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [dummy_var] 1 b)  in
 	    new_b, List.map pop binders_to_remove_from_b
 	| Toberemoved_with_rel (n,c) ->
-(* 	    observe (str "Decl of "++Ppconstr.pr_name x ++ str " is removed "); *)
+(* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
 	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
     end

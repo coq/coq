@@ -9,8 +9,6 @@
 open Names
 
 (** Identifiers and names *)
-val pr_id : Id.t -> Pp.std_ppcmds
-val pr_name : Name.t -> Pp.std_ppcmds
 
 val make_ident : string -> int option -> Id.t
 val repr_ident : Id.t -> string * int option
@@ -50,16 +48,69 @@ val increment_subscript : Id.t -> Id.t
 
 val forget_subscript    : Id.t -> Id.t
 
+module Name : sig
+
+  include module type of struct include Names.Name end
+
+  exception IsAnonymous
+
+  val fold_left : ('a -> Id.t -> 'a) -> 'a -> Name.t -> 'a
+  (** [fold_left f na a] is [f id a] if [na] is [Name id], and [a] otherwise. *)
+
+  val fold_right : (Id.t -> 'a -> 'a) -> Name.t -> 'a -> 'a
+  (** [fold_right f a na] is [f a id] if [na] is [Name id], and [a] otherwise. *)
+
+  val iter : (Id.t -> unit) -> Name.t -> unit
+  (** [iter f na] does [f id] if [na] equals [Name id], nothing otherwise. *)
+
+  val map : (Id.t -> Id.t) -> Name.t -> t
+  (** [map f na] is [Anonymous] if [na] is [Anonymous] and [Name (f id)] if [na] is [Name id]. *)
+
+  val fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> Name.t -> 'a * Name.t
+  (** [fold_map f na a] is [a',Name id'] when [na] is [Name id] and [f a id] is [(a',id')].
+      It is [a,Anonymous] otherwise. *)
+
+  val get_id : Name.t -> Id.t
+  (** [get_id] associates [id] to [Name id]. @raise IsAnonymous otherwise. *)
+
+  val pick : Name.t -> Name.t -> Name.t
+  (** [pick na na'] returns [Anonymous] if both names are [Anonymous].
+      Pick one of [na] or [na'] otherwise. *)
+
+  val cons : Name.t -> Id.t list -> Id.t list
+  (** [cons na l] returns [id::l] if [na] is [Name id] and [l] otherwise. *)
+
+  val to_option : Name.t -> Id.t option
+  (** [to_option Anonymous] is [None] and [to_option (Name id)] is [Some id] *)
+
+end
+
 val out_name : Name.t -> Id.t
-(** [out_name] associates [id] to [Name id]. Raises [Failure "Nameops.out_name"]
-    otherwise. *)
+(** @deprecated Same as [Name.get_id] *)
 
 val name_fold : (Id.t -> 'a -> 'a) -> Name.t -> 'a -> 'a
+(** @deprecated Same as [Name.fold_right] *)
+
 val name_iter : (Id.t -> unit) -> Name.t -> unit
-val name_cons : Name.t -> Id.t list -> Id.t list
+(** @deprecated Same as [Name.iter] *)
+
 val name_app : (Id.t -> Id.t) -> Name.t -> Name.t
+(** @deprecated Same as [Name.map] *)
+
 val name_fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> Name.t -> 'a * Name.t
+(** @deprecated Same as [Name.fold_map] *)
+
 val name_max : Name.t -> Name.t -> Name.t
+(** @deprecated Same as [Name.pick] *)
+
+val name_cons : Name.t -> Id.t list -> Id.t list
+(** @deprecated Same as [Name.cons] *)
+
+val pr_name : Name.t -> Pp.std_ppcmds
+(** @deprecated Same as [Name.print] *)
+
+val pr_id : Id.t -> Pp.std_ppcmds
+(** @deprecated Same as [Names.Id.print] *)
 
 val pr_lab : Label.t -> Pp.std_ppcmds
 

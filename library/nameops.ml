@@ -14,10 +14,6 @@ open Names
 
 let pr_id id = Id.print id
 
-let pr_name = function
-  | Anonymous -> str "_"
-  | Name id -> pr_id id
-
 (* Utilities *)
 
 let code_of_0 = Char.code '0'
@@ -124,34 +120,82 @@ let atompart_of_id id = fst (repr_ident id)
 
 (* Names *)
 
-let out_name = function
-  | Name id -> id
-  | Anonymous -> failwith "Nameops.out_name"
+module type ExtName =
+sig
 
-let name_fold f na a =
-  match na with
-  | Name id -> f id a
-  | Anonymous -> a
+  include module type of struct include Names.Name end
 
-let name_iter f na = name_fold (fun x () -> f x) na ()
+  exception IsAnonymous
 
-let name_cons na l =
-  match na with
-  | Anonymous -> l
-  | Name id -> id::l
+  val fold_left : ('a -> Id.t -> 'a) -> 'a -> t -> 'a
+  val fold_right : (Id.t -> 'a -> 'a) -> t -> 'a -> 'a
+  val iter : (Id.t -> unit) -> t -> unit
+  val map : (Id.t -> Id.t) -> t -> t
+  val fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> t -> 'a * t
+  val get_id : t -> Id.t
+  val pick : t -> t -> t
+  val cons : t -> Id.t list -> Id.t list
+  val to_option : Name.t -> Id.t option
 
-let name_app f = function
-  | Name id -> Name (f id)
-  | Anonymous -> Anonymous
+end
 
-let name_fold_map f e = function
-  | Name id -> let (e,id) = f e id in (e,Name id)
-  | Anonymous -> e,Anonymous
+module Name : ExtName =
+struct
 
-let name_max na1 na2 =
-  match na1 with
-  | Name _ -> na1
-  | Anonymous -> na2
+  include Names.Name
+
+  exception IsAnonymous
+
+  let fold_left f a = function
+    | Name id -> f a id
+    | Anonymous -> a
+
+  let fold_right f na a =
+    match na with
+    | Name id -> f id a
+    | Anonymous -> a
+
+  let iter f na = fold_right (fun x () -> f x) na ()
+
+  let map f = function
+    | Name id -> Name (f id)
+    | Anonymous -> Anonymous
+
+  let fold_map f a = function
+    | Name id -> let (a, id) = f a id in (a, Name id)
+    | Anonymous -> a, Anonymous
+
+  let get_id = function
+    | Name id -> id
+    | Anonymous -> raise IsAnonymous
+
+  let pick na1 na2 =
+    match na1 with
+    | Name _ -> na1
+    | Anonymous -> na2
+
+  let cons na l =
+    match na with
+    | Anonymous -> l
+    | Name id -> id::l
+
+  let to_option = function
+    | Anonymous -> None
+    | Name id -> Some id
+
+end
+
+open Name
+
+(* Compatibility *)
+let out_name = get_id
+let name_fold = fold_right
+let name_iter = iter
+let name_app = map
+let name_fold_map = fold_map
+let name_cons = cons
+let name_max = pick
+let pr_name = print
 
 let pr_lab l = Label.print l
 

@@ -731,7 +731,7 @@ let get_names env sigma sign eqns =
 	     (fun (LocalAssum (na,t) | LocalDef (na,_,t)) -> Name (next_name_away (named_hd env sigma t na) avoid))
 	     d na
 	 in
-         (na::l,(out_name na)::avoid))
+         (na::l,(Name.get_id na)::avoid))
       ([],allvars) (List.rev sign) names2 in
   names3,aliasname
 

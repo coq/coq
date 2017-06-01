@@ -105,6 +105,9 @@ sig
   val hcons : t -> t
   (** Hashconsing over names. *)
 
+  val print : t -> Pp.std_ppcmds
+  (** Pretty-printer (print "_" for [Anonymous]. *)
+
 end
 
 (** {6 Type aliases} *)

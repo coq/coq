@@ -879,7 +879,7 @@ let rec make_rewrite_list expr_info max = function
 	    let k_na,_,t = destProd sigma t_eq in
 	    let _,_,t  = destProd sigma t in
 	    let def_na,_,_ = destProd sigma t in
-	    Nameops.out_name k_na,Nameops.out_name def_na
+	    Nameops.Name.get_id k_na,Nameops.Name.get_id def_na
 	  in
 	  Proofview.V82.of_tactic (general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
@@ -905,7 +905,7 @@ let make_rewrite expr_info l hp max =
 	    let k_na,_,t = destProd sigma t_eq in
 	    let _,_,t  = destProd sigma t in
 	    let def_na,_,_ = destProd sigma t in
-	    Nameops.out_name k_na,Nameops.out_name def_na
+	    Nameops.Name.get_id k_na,Nameops.Name.get_id def_na
 	  in
 	 observe_tac (str "general_rewrite_bindings")
 	   (Proofview.V82.of_tactic (general_rewrite_bindings false Locus.AllOccurrences

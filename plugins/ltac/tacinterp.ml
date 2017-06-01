@@ -1113,11 +1113,11 @@ let cons_and_check_name id l =
 
 let rec read_match_goal_hyps lfun ist env sigma lidh = function
   | (Hyp ((loc,na) as locna,mp))::tl ->
-      let lidh' = name_fold cons_and_check_name na lidh in
+      let lidh' = Name.fold_right cons_and_check_name na lidh in
       Hyp (locna,read_pattern lfun ist env sigma mp)::
 	(read_match_goal_hyps lfun ist env sigma lidh' tl)
   | (Def ((loc,na) as locna,mv,mp))::tl ->
-      let lidh' = name_fold cons_and_check_name na lidh in
+      let lidh' = Name.fold_right cons_and_check_name na lidh in
       Def (locna,read_pattern lfun ist env sigma mv, read_pattern lfun ist env sigma mp)::
 	(read_match_goal_hyps lfun ist env sigma lidh' tl)
   | [] -> []
@@ -1420,7 +1420,7 @@ and tactic_of_value ist vle =
       (str "A fully applied tactic is expected:" ++ spc() ++ Pp.str "missing " ++
        Pp.str (String.plural numargs "argument") ++ Pp.str " for " ++
        Pp.str (String.plural numargs "variable") ++ Pp.str " " ++
-       pr_enum pr_name vars ++ Pp.str ".")
+       pr_enum Name.print vars ++ Pp.str ".")
   | VRec _ -> Tacticals.New.tclZEROMSG (str "A fully applied tactic is expected.")
   else if has_type vle (topwit wit_tactic) then
     let tac = out_gen (topwit wit_tactic) vle in

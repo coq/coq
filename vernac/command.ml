@@ -411,8 +411,8 @@ let mk_mltype_data evdref env assums arity indname =
   (is_ml_type,indname,assums)
 
 let prepare_param = function
-  | LocalAssum (na,t) -> out_name na, LocalAssumEntry t
-  | LocalDef (na,b,_) -> out_name na, LocalDefEntry b
+  | LocalAssum (na,t) -> Name.get_id na, LocalAssumEntry t
+  | LocalDef (na,b,_) -> Name.get_id na, LocalDefEntry b
 
 (** Make the arity conclusion flexible to avoid generating an upper bound universe now,
     only if the universe does not appear anywhere else.
@@ -590,7 +590,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
       
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   let assums = List.filter is_local_assum ctx_params in
-  let params = List.map (RelDecl.get_name %> out_name) assums in
+  let params = List.map (RelDecl.get_name %> Name.get_id) assums in
 
   (* Interpret the arities *)
   let arities = List.map (interp_ind_arity env_params evdref) indl in

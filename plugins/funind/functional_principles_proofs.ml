@@ -944,7 +944,7 @@ let generalize_non_dep hyp g =
     ((* observe_tac "thin" *) (thin to_revert))
     g
 
-let id_of_decl = RelDecl.get_name %> Nameops.out_name
+let id_of_decl = RelDecl.get_name %> Nameops.Name.get_id
 let var_of_decl = id_of_decl %> mkVar
 let revert idl =
   tclTHEN
@@ -1127,11 +1127,11 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	)
     in
     observe (str "full_params := " ++
-	       prlist_with_sep spc (RelDecl.get_name %> Nameops.out_name %> Ppconstr.pr_id)
+	       prlist_with_sep spc (RelDecl.get_name %> Nameops.Name.get_id %> Ppconstr.pr_id)
 	       full_params
 	    );
     observe (str "princ_params := " ++
-	       prlist_with_sep spc (RelDecl.get_name %> Nameops.out_name %> Ppconstr.pr_id)
+	       prlist_with_sep spc (RelDecl.get_name %> Nameops.Name.get_id %> Ppconstr.pr_id)
 	       princ_params
 	    );
     observe (str "fbody_with_full_params := " ++
@@ -1158,7 +1158,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		(fun i types ->
 		   let types = prod_applist (project g) types (List.rev_map var_of_decl princ_params) in
 		   { idx = idxs.(i)  - fix_offset;
-		     name = Nameops.out_name (fresh_id names.(i));
+		     name = Nameops.Name.get_id (fresh_id names.(i));
 		     types = types;
 		     offset = fix_offset;
 		     nb_realargs =
@@ -1181,7 +1181,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		   let first_args = Array.init nargs (fun i -> mkRel (nargs -i)) in
 		   let app_f = mkApp(f,first_args) in
 		   let pte_args = (Array.to_list first_args)@[app_f] in
-		   let app_pte = applist(mkVar (Nameops.out_name pte),pte_args) in
+		   let app_pte = applist(mkVar (Nameops.Name.get_id pte),pte_args) in
 		   let body_with_param,num =
 		     let body = get_body fnames.(i) in
 		     let body_with_full_params =
@@ -1208,9 +1208,9 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 			 num_in_block = num
 		     }
 		   in
-(* 		   observe (str "binding " ++ Ppconstr.pr_id (Nameops.out_name pte) ++  *)
+(* 		   observe (str "binding " ++ Ppconstr.pr_id (Nameops.Name.get_id pte) ++  *)
 (* 			      str " to " ++ Ppconstr.pr_id info.name); *)
-		   (Id.Map.add (Nameops.out_name pte) info acc_map,info::acc_info)
+		   (Id.Map.add (Nameops.Name.get_id pte) info acc_map,info::acc_info)
 		   )
 		0
 		(Id.Map.empty,[])
@@ -1284,7 +1284,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		       (do_replace evd
 			  full_params
 			  (fix_info.idx + List.length princ_params)
-			  (args_id@(List.map (RelDecl.get_name %> Nameops.out_name) princ_params))
+			  (args_id@(List.map (RelDecl.get_name %> Nameops.Name.get_id) princ_params))
 			  (all_funs.(fix_info.num_in_block))
 			  fix_info.num_in_block
 			  all_funs
@@ -1563,17 +1563,17 @@ let prove_principle_for_gen
       | _ -> assert false
   in
 (*   observe (str "rec_arg_id := " ++ pr_lconstr (mkVar rec_arg_id)); *)
-  let subst_constrs = List.map (get_name %> Nameops.out_name %> mkVar) (pre_rec_arg@princ_info.params) in
+  let subst_constrs = List.map (get_name %> Nameops.Name.get_id %> mkVar) (pre_rec_arg@princ_info.params) in
   let relation = substl subst_constrs relation in
   let input_type = substl subst_constrs rec_arg_type in
-  let wf_thm_id = Nameops.out_name (fresh_id (Name (Id.of_string "wf_R"))) in
+  let wf_thm_id = Nameops.Name.get_id (fresh_id (Name (Id.of_string "wf_R"))) in
   let acc_rec_arg_id =
-    Nameops.out_name (fresh_id (Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
+    Nameops.Name.get_id (fresh_id (Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
   in
   let revert l =
     tclTHEN (Proofview.V82.of_tactic (Tactics.generalize (List.map mkVar l))) (Proofview.V82.of_tactic (clear l))
   in
-  let fix_id = Nameops.out_name (fresh_id (Name hrec_id)) in
+  let fix_id = Nameops.Name.get_id (fresh_id (Name hrec_id)) in
   let prove_rec_arg_acc g =
       ((* observe_tac "prove_rec_arg_acc"  *)
 	 (tclCOMPLETE
@@ -1591,7 +1591,7 @@ let prove_principle_for_gen
       )
       g
   in
-  let args_ids = List.map (get_name %> Nameops.out_name) princ_info.args in
+  let args_ids = List.map (get_name %> Nameops.Name.get_id) princ_info.args in
   let lemma =
     match !tcc_lemma_ref with
      | Undefined -> user_err Pp.(str "No tcc proof !!")
@@ -1639,7 +1639,7 @@ let prove_principle_for_gen
     [
       observe_tac "start_tac" start_tac;
       h_intros
-	(List.rev_map (get_name %> Nameops.out_name)
+	(List.rev_map (get_name %> Nameops.Name.get_id)
 	   (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
 	);
       (* observe_tac "" *) Proofview.V82.of_tactic (assert_by
@@ -1677,14 +1677,14 @@ let prove_principle_for_gen
 	 in
 	 let acc_inv = lazy (mkApp(Lazy.force acc_inv, [|mkVar  acc_rec_arg_id|])) in
 	 let predicates_names =
-	   List.map (get_name %> Nameops.out_name) princ_info.predicates
+	   List.map (get_name %> Nameops.Name.get_id) princ_info.predicates
 	 in
 	 let pte_info =
 	   { proving_tac =
 	       (fun eqs ->
 (* 		  msgnl (str "tcc_list := "++ prlist_with_sep spc Ppconstr.pr_id  !tcc_list); *)
-(* 		  msgnl (str "princ_info.args := "++ prlist_with_sep spc Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.out_name na)) princ_info.args)); *)
-(* 		  msgnl (str "princ_info.params := "++ prlist_with_sep spc Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.out_name na)) princ_info.params)); *)
+(* 		  msgnl (str "princ_info.args := "++ prlist_with_sep spc Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.Name.get_id na)) princ_info.args)); *)
+(* 		  msgnl (str "princ_info.params := "++ prlist_with_sep spc Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.Name.get_id na)) princ_info.params)); *)
 (* 		  msgnl (str "acc_rec_arg_id := "++  Ppconstr.pr_id acc_rec_arg_id); *)
 (* 		  msgnl (str "eqs := "++ prlist_with_sep spc Ppconstr.pr_id  eqs); *)
 
@@ -1693,7 +1693,7 @@ let prove_principle_for_gen
 		       is_mes acc_inv fix_id
 
 		       (!tcc_list@(List.map
-			   (get_name %> Nameops.out_name)
+			   (get_name %> Nameops.Name.get_id)
 			   (princ_info.args@princ_info.params)
 			)@ ([acc_rec_arg_id])) eqs
 		    )
@@ -1722,7 +1722,7 @@ let prove_principle_for_gen
 	 (* observe_tac "instanciate_hyps_with_args"  *)
 	   (instanciate_hyps_with_args
 	      make_proof
-	      (List.map (get_name %> Nameops.out_name) princ_info.branches)
+	      (List.map (get_name %> Nameops.Name.get_id) princ_info.branches)
 	      (List.rev args_ids)
 	   )
 	   gl'

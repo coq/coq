@@ -907,8 +907,7 @@ let simple_cases_matrix_of_branches ind brs =
       let nal,c = it_destRLambda_or_LetIn_names n b in
       let mkPatVar na = CAst.make @@ PatVar na in
       let p = CAst.make @@ PatCstr ((ind,i+1),List.map mkPatVar nal,Anonymous) in
-      let map name = try Some (Nameops.out_name name) with Failure _ -> None in
-      let ids = List.map_filter map nal in
+      let ids = List.map_filter Nameops.Name.to_option nal in
       Loc.tag @@ (ids,[p],c))
     brs
 

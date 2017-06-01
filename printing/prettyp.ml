@@ -132,7 +132,7 @@ let print_impargs_list prefix l =
 let print_renames_list prefix l =
   if List.is_empty l then [] else
   [add_colon prefix ++ str "Arguments are renamed to " ++
-    hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map pr_name l))]
+    hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map Name.print l))]
 
 let need_expansion impl ref =
   let typ = Global.type_of_global_unsafe ref in

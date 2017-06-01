@@ -200,13 +200,13 @@ let is_rec names =
     | GIf(b,_,lhs,rhs) ->
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
     | GProd(na,_,t,b) | GLambda(na,_,t,b) ->
-	lookup names t || lookup (Nameops.name_fold Id.Set.remove na names) b
+	lookup names t || lookup (Nameops.Name.fold_right Id.Set.remove na names) b
     | GLetIn(na,b,t,c) ->
-	lookup names b || Option.cata (lookup names) true t || lookup (Nameops.name_fold Id.Set.remove na names) c
+	lookup names b || Option.cata (lookup names) true t || lookup (Nameops.Name.fold_right Id.Set.remove na names) c
     | GLetTuple(nal,_,t,b) -> lookup names t ||
 	lookup
 	  (List.fold_left
-	     (fun acc na -> Nameops.name_fold Id.Set.remove na acc)
+	     (fun acc na -> Nameops.Name.fold_right Id.Set.remove na acc)
 	     names
 	     nal
 	  )
@@ -885,7 +885,7 @@ let make_graph (f_ref:global_reference) =
 				  | Constrexpr.CLocalAssum (nal,_,_) ->
 				      List.map
 					(fun (loc,n) -> CAst.make ?loc @@ 
-					   CRef(Libnames.Ident(loc, Nameops.out_name n),None))
+					   CRef(Libnames.Ident(loc, Nameops.Name.get_id n),None))
 					nal
                                   | Constrexpr.CLocalPattern _ -> assert false
 			       )

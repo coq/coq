@@ -433,7 +433,7 @@ let explain_no_such_bound_variable evd id =
     | Cltyp (na, _) -> na
     | Clval (na, _, _) -> na
     in
-    if na != Anonymous then out_name na :: l else l
+    if na != Anonymous then Name.get_id na :: l else l
   in
   let mvl = List.fold_left fold [] (Evd.meta_list evd) in
   user_err ~hdr:"Evd.meta_with_name"
