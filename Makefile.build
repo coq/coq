@@ -53,7 +53,7 @@ world: coq coqide documentation revision
 
 coq: coqlib coqbinaries tools
 
-# Note: 'world' do not build the bytecode binaries anymore.
+# Note: 'world' does not build the bytecode binaries anymore.
 # For that, you can use the 'byte' rule. Native and byte compilations
 # shouldn't be done in a same make -j... run, otherwise both ocamlc and
 # ocamlopt might race for access to the same .cmi files.

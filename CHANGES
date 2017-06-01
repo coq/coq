@@ -74,6 +74,15 @@ Tools
   warnings when a deprecated feature is used.  Please upgrade your _CoqProject
   accordingly.
 
+Build Infrastructure
+
+- Note that 'make world' does not build the bytecode binaries anymore.
+  For that, you can use 'make byte' (and 'make install-byte' afterwards).
+  Warning: native and byte compilations should *not* be mixed in the same
+  instance of 'make -j', otherwise both ocamlc and ocamlopt might race for
+  access to the same .cmi files. In short, use "make -j && make -j byte"
+  instead of "make -j world byte".
+
 Changes from V8.6beta1 to V8.6
 ==============================
 
