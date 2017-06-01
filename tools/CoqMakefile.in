@@ -375,7 +375,7 @@ uninstall::
 	 instf="$(DESTDIR)$(COQLIBINSTALL)/$$df/`basename $$f`"; \
 	 rm -f "$$instf";\
 	 echo RM "$$instf"; \
-	 rmdir --ignore-fail-on-non-empty "$(DESTDIR)$(COQLIBINSTALL)/$$df/"; \
+	 rmdir "$(DESTDIR)$(COQLIBINSTALL)/$$df/" || true; \
 	done
 .PHONY: uninstall
 
@@ -385,8 +385,7 @@ uninstall-doc::
 	$(HIDE)rm -rf "$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/html"
 	$(SHOW)'RM $(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/mlihtml'
 	$(HIDE)rm -rf "$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/mlihtml"
-	$(HIDE)rmdir --ignore-fail-on-non-empty \
-		"$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/"
+	$(HIDE) rmdir "$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/" || true
 .PHONY: uninstall-doc
 
 # Cleaning ####################################################################
