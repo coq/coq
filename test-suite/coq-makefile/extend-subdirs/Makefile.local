@@ -1,4 +1,0 @@
-pre-all::
-	$(MAKE) -C subdir pre
-post-all::
-	$(MAKE) -C subdir post
