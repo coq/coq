@@ -22,26 +22,10 @@ open Pltac
 
 DECLARE PLUGIN "recdef_plugin"
 
-let pr_binding prc = function
-  | loc, (NamedHyp id, c) -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
-  | loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
-
-let pr_bindings prc prlc = function
-  | ImplicitBindings l ->
-      brk (1,1) ++ str "with" ++ brk (1,1) ++
-      pr_sequence prc l
-  | ExplicitBindings l ->
-      brk (1,1) ++ str "with" ++ brk (1,1) ++
-        pr_sequence (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
-  | NoBindings -> mt ()
-
-let pr_with_bindings prc prlc (c,bl) =
-  prc c ++ hv 0 (pr_bindings prc prlc bl)
-
 let pr_fun_ind_using  prc prlc _ opt_c =
   match opt_c with
     | None -> mt ()
-    | Some b -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings prc prlc b)
+    | Some b -> spc () ++ hov 2 (str "using" ++ spc () ++ Miscprint.pr_with_bindings prc prlc b)
 
 (* Duplication of printing functions because "'a with_bindings" is
    (internally) not uniform in 'a: indeed constr_with_bindings at the
@@ -49,17 +33,12 @@ let pr_fun_ind_using  prc prlc _ opt_c =
    "constr with_bindings"; hence, its printer cannot be polymorphic in
    (prc,prlc)... *)
 
-let pr_with_bindings_typed prc prlc (c,bl) =
-  prc c ++
-  hv 0 (pr_bindings prc prlc bl)
-
 let pr_fun_ind_using_typed prc prlc _ opt_c =
   match opt_c with
     | None -> mt ()
     | Some b ->
       let (b, _) = Tactics.run_delayed (Global.env ()) Evd.empty b in
-      spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc b)
-
+      spc () ++ hov 2 (str "using" ++ spc () ++ Miscprint.pr_with_bindings prc prlc b)
 
 ARGUMENT EXTEND fun_ind_using
   TYPED AS constr_with_bindings option
@@ -79,7 +58,6 @@ TACTIC EXTEND newfuninv
        Proofview.V82.tactic (Invfun.invfun hyp fname)
      ]
 END
-
 
 let pr_intro_as_pat _prc _ _ pat =
   match pat with

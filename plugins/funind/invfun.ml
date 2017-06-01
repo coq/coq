@@ -26,31 +26,6 @@ open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 
-(* Some pretty printing function for debugging purpose *)
-
-let pr_binding prc  =
-  function
-    | loc, (NamedHyp id, c) -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
-    | loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
-
-let pr_bindings prc prlc = function
-  | ImplicitBindings l ->
-      brk (1,1) ++ str "with" ++ brk (1,1) ++
-      pr_sequence prc l
-  | ExplicitBindings l ->
-      brk (1,1) ++ str "with" ++ brk (1,1) ++
-        pr_sequence (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
-  | NoBindings -> mt ()
-
-
-let pr_with_bindings prc prlc (c,bl) =
-  prc c ++ hv 0 (pr_bindings prc prlc bl)
-
-
-
-let pr_constr_with_binding prc (c,bl) :  Pp.std_ppcmds =
-  pr_with_bindings prc prc  (c,bl)
-
 (* The local debugging mechanism *)
 (* let msgnl = Pp.msgnl *)
 

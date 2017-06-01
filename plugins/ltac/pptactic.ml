@@ -161,28 +161,6 @@ type 'a extra_genarg_printer =
     | AnonHyp n -> int n
     | NamedHyp id -> pr_id id
 
-  let pr_binding prc = function
-    | loc, (NamedHyp id, c) -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
-    | loc, (AnonHyp n, c) -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
-
-  let pr_bindings prc prlc = function
-    | ImplicitBindings l ->
-      brk (1,1) ++ keyword "with" ++ brk (1,1) ++
-        hv 0 (prlist_with_sep spc prc l)
-    | ExplicitBindings l ->
-      brk (1,1) ++ keyword "with" ++ brk (1,1) ++
-        hv 0 (prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l)
-    | NoBindings -> mt ()
-
-  let pr_bindings_no_with prc prlc = function
-    | ImplicitBindings l ->
-      brk (0,1) ++
-        prlist_with_sep spc prc l
-    | ExplicitBindings l ->
-      brk (0,1) ++
-        prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
-    | NoBindings -> mt ()
-
   let pr_clear_flag clear_flag pp x =
     match clear_flag with
     | Some false -> surround (pp x)
@@ -190,7 +168,7 @@ type 'a extra_genarg_printer =
     | None -> pp x
 
   let pr_with_bindings prc prlc (c,bl) =
-    prc c ++ pr_bindings prc prlc bl
+    prc c ++ Miscprint.pr_bindings prc prlc bl
 
   let pr_with_bindings_arg prc prlc (clear_flag,c) =
     pr_clear_flag clear_flag (pr_with_bindings prc prlc) c
@@ -366,30 +344,6 @@ type 'a extra_genarg_printer =
     | EvalVarRef id -> pr_id id
     | EvalConstRef sp ->
       Nametab.pr_global_env (Termops.vars_of_env env) (Globnames.ConstRef sp)
-
-  let pr_esubst prc l =
-    let pr_qhyp = function
-    (_,(AnonHyp n,c)) -> str "(" ++ int n ++ str" := " ++ prc c ++ str ")"
-      | (_,(NamedHyp id,c)) ->
-        str "(" ++ pr_id id ++ str" := " ++ prc c ++ str ")"
-    in
-    prlist_with_sep spc pr_qhyp l
-
-  let pr_bindings_gen for_ex prc prlc = function
-    | ImplicitBindings l ->
-      spc () ++
-        hv 2 ((if for_ex then mt() else keyword "with" ++ spc ()) ++
-                 prlist_with_sep spc prc l)
-    | ExplicitBindings l ->
-      spc () ++
-        hv 2 ((if for_ex then mt() else keyword "with" ++ spc ()) ++
-                 pr_esubst prlc l)
-    | NoBindings -> mt ()
-
-  let pr_bindings prc prlc = pr_bindings_gen false prc prlc
-
-  let pr_with_bindings prc prlc (c,bl) =
-    hov 1 (prc c ++ pr_bindings prc prlc bl)
 
   let pr_as_disjunctive_ipat prc ipatl =
     keyword "as" ++ spc () ++
@@ -1280,9 +1234,9 @@ let () =
     (pr_red_expr (pr_econstr, pr_leconstr, pr_evaluable_reference, pr_constr_pattern));
   Genprint.register_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
   Genprint.register_print0 wit_bindings
-    (pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
-    (pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_bindings_no_with pr_econstr pr_leconstr (fst (run_delayed it)));
+    (Miscprint.pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
+    (Miscprint.pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
+    (fun it -> Miscprint.pr_bindings_no_with pr_econstr pr_leconstr (fst (run_delayed it)));
   Genprint.register_print0 wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))

@@ -22,3 +22,16 @@ val pr_intro_pattern_naming : intro_pattern_naming_expr -> Pp.std_ppcmds
 
 val pr_move_location :
   ('a -> Pp.std_ppcmds) -> 'a move_location -> Pp.std_ppcmds
+
+val pr_bindings :
+  ('a -> Pp.std_ppcmds) ->
+  ('a -> Pp.std_ppcmds) -> 'a bindings -> Pp.std_ppcmds
+
+val pr_bindings_no_with :
+  ('a -> Pp.std_ppcmds) ->
+  ('a -> Pp.std_ppcmds) -> 'a bindings -> Pp.std_ppcmds
+
+val pr_with_bindings :
+  ('a -> Pp.std_ppcmds) ->
+  ('a -> Pp.std_ppcmds) -> 'a * 'a bindings -> Pp.std_ppcmds
+
