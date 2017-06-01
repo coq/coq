@@ -35,6 +35,7 @@ type signature_mismatch_error =
   | NotConvertibleConstructorField of Id.t
   | NotConvertibleBodyField
   | NotConvertibleTypeField of env * types * types
+  | CumulativeStatusExpected of bool
   | PolymorphicStatusExpected of bool
   | NotSameConstructorNamesField
   | NotSameInductiveNameInBlockField
@@ -327,12 +328,10 @@ let strengthen_const mp_from l cb resolver =
   |_ ->
     let kn = KerName.make2 mp_from l in
     let con = constant_of_delta_kn resolver kn in
-    let u = 
-      if cb.const_polymorphic then
-	let u = Univ.UContext.instance cb.const_universes in
-	let s = Univ.make_instance_subst u in
-	  Univ.subst_univs_level_instance s u
-      else Univ.Instance.empty
+    let u =
+      match cb.const_universes with
+      | Monomorphic_const _ -> Univ.Instance.empty
+      | Polymorphic_const ctx -> Univ.make_abstract_instance ctx
     in
       { cb with
 	const_body = Def (Mod_subst.from_val (mkConstU (con,u)));

@@ -649,20 +649,25 @@ let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
 	indimpls, List.map (fun impls ->
 	  userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
   in
-  let ground_uinfind = Universes.univ_inf_ind_from_universe_context uctx in
+  let univs =
+    if poly then
+      if cum then
+        Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context uctx)
+      else Polymorphic_ind_entry uctx
+    else
+      Monomorphic_ind_entry uctx
+  in
   (* Build the mutual inductive entry *)
-  let mind_ent = 
+  let mind_ent =
     { mind_entry_params = List.map prepare_param ctx_params;
       mind_entry_record = None;
       mind_entry_finite = finite;
       mind_entry_inds = entries;
-      mind_entry_polymorphic = poly;
-      mind_entry_cumulative = cum;
       mind_entry_private = if prv then Some false else None;
-      mind_entry_universes = ground_uinfind;
+      mind_entry_universes = univs;
     }
   in
-  (if poly then
+  (if poly && cum then
       Inductiveops.infer_inductive_subtyping env_ar evd mind_ent
    else mind_ent), pl, impls
 

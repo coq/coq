@@ -157,7 +157,7 @@ val xml_close_section : (Names.Id.t -> unit) Hook.t
 (** {6 Section management for discharge } *)
 type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 type variable_context = variable_info list 
-type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
+type abstr_info = variable_context * Univ.universe_level_subst * Univ.AUContext.t
 
 val instance_from_variable_context : variable_context -> Names.Id.t array
 val named_of_variable_context : variable_context -> Context.Named.t

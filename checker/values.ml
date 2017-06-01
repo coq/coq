@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 6153d4f8fb414a8f14797636ab10f55e  checker/cic.mli
+MD5 6950230ca9e99e9cc3a70488d8ab824c  checker/cic.mli
 
 *)
 
@@ -109,6 +109,8 @@ let v_cstrs =
 
 let v_instance = Annot ("instance", Array v_level)
 let v_context = v_tuple "universe_context" [|v_instance;v_cstrs|]
+let v_abs_context = v_context (* only for clarity *)
+let v_abs_cum_info = v_tuple "cumulativity_info" [|v_abs_context; v_context|]
 let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 
 (** kernel/term *)
@@ -215,13 +217,14 @@ let v_projbody =
 let v_typing_flags =
   v_tuple "typing_flags" [|v_bool; v_bool|]
 
+let v_const_univs = v_sum "constant_universes" 0 [|[|v_context|]; [|v_abs_context|]|]
+
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_cst_def;
     v_cst_type;
     Any;
-    v_bool;
-    v_context;
+    v_const_univs;
     Opt v_projbody;
     v_bool;
     v_typing_flags|]
@@ -262,6 +265,10 @@ let v_finite = v_enum "recursivity_kind" 3
 let v_mind_record = Annot ("mind_record", 
 			   Opt (Opt (v_tuple "record" [| v_id; Array v_cst; Array v_projbody |])))
 
+let v_ind_pack_univs = 
+  v_sum "abstract_inductive_universes" 0
+    [|[|v_context|]; [|v_abs_context|]; [|v_abs_cum_info|]|]
+
 let v_ind_pack = v_tuple "mutual_inductive_body"
   [|Array v_one_ind;
     v_mind_record;
@@ -271,9 +278,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     Int;
     Int;
     v_rctxt;
-    v_bool;
-    v_bool;
-    v_tuple "universes" [|v_context; v_context|];
+    v_ind_pack_univs; (* universes *)
     Opt v_bool;
     v_typing_flags|]
 

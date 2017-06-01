@@ -548,16 +548,20 @@ let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : con
 
 (* Check that the subtyping information inferred for inductive types in the block is correct. *)
 (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
-let check_subtyping mib paramsctxt env_ar inds =
+let check_subtyping cumi paramsctxt env_ar inds =
   let numparams = rel_context_nhyps paramsctxt in
-  let sbsubst = Univ.UInfoInd.subtyping_susbst mib.mind_universes in
-  let other_instnace = Univ.UInfoInd.subtyping_other_instance mib.mind_universes in
+  let sbsubst = Univ.CumulativityInfo.subtyping_susbst cumi in
+  let other_instnace = Univ.CumulativityInfo.subtyping_other_instance cumi in
   let dosubst = subst_univs_level_constr sbsubst in
-  let uctx = Univ.UInfoInd.univ_context mib.mind_universes in
+  let uctx = Univ.CumulativityInfo.univ_context cumi in
   let uctx_other = Univ.UContext.make (other_instnace, Univ.UContext.constraints uctx) in
-  let env = Environ.push_context (Univ.instantiate_univ_context uctx) env_ar in
-  let env = Environ.push_context (Univ.instantiate_univ_context uctx_other) env in
-  let env = Environ.push_context (Univ.instantiate_univ_context (Univ.UInfoInd.subtyp_context mib.mind_universes)) env in
+  let env = Environ.push_context uctx env_ar 
+  in
+  let env = Environ.push_context uctx_other env 
+  in
+  let env =  Environ.push_context 
+      (Univ.CumulativityInfo.subtyp_context cumi) env
+  in
   (* process individual inductive types: *)
   Array.iter (fun { mind_user_lc = lc; mind_arity = arity } ->
       match arity with
@@ -573,7 +577,14 @@ let check_subtyping mib paramsctxt env_ar inds =
 let check_inductive env kn mib =
   Flags.if_verbose Feedback.msg_notice (str "  checking ind: " ++ MutInd.print kn);
   (* check mind_constraints: should be consistent with env *)
-  let env = Environ.push_context (Univ.instantiate_univ_context (Univ.UInfoInd.univ_context mib.mind_universes)) env in
+  let ind_ctx =
+    match mib.mind_universes with
+    | Monomorphic_ind ctx -> ctx
+    | Polymorphic_ind auctx -> Univ.instantiate_univ_context auctx
+    | Cumulative_ind cumi -> 
+      Univ.instantiate_univ_context (Univ.ACumulativityInfo.univ_context cumi)
+  in
+  let env = Environ.push_context ind_ctx env in
   (* check mind_record : TODO ? check #constructor = 1 ? *)
   (* check mind_finite : always OK *)
   (* check mind_ntypes *)
@@ -591,8 +602,13 @@ let check_inductive env kn mib =
   (*  - check constructor types *)
   Array.iter (typecheck_one_inductive env_ar params mib) mib.mind_packets;
   (* check the inferred subtyping relation *)
-  if mib.mind_cumulative then
-    check_subtyping mib params env_ar mib.mind_packets;
+  let () = 
+    match mib.mind_universes with
+    | Monomorphic_ind _ | Polymorphic_ind _ -> ()
+    | Cumulative_ind acumi ->
+      check_subtyping 
+        (Univ.instantiate_cumulativity_info acumi) params env_ar mib.mind_packets
+  in
   (* check mind_nparams_rec: positivity condition *)
   check_positivity env_ar kn params mib.mind_nparams_rec mib.mind_packets;
   (* check mind_equiv... *)

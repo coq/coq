@@ -45,14 +45,15 @@ let hcons_template_arity ar =
 (** {6 Constants } *)
 
 let instantiate cb c =
-  if cb.const_polymorphic then 
-    Vars.subst_instance_constr (Univ.UContext.instance cb.const_universes) c
-  else c
+  match cb.const_universes with
+  | Monomorphic_const _ -> c
+  | Polymorphic_const ctx -> 
+     Vars.subst_instance_constr (Univ.AUContext.instance ctx) c
 
-let instantiate_constraints cb cst =
-  if cb.const_polymorphic then 
-    Univ.subst_instance_constraints (Univ.UContext.instance cb.const_universes) cst
-  else cst
+let constant_is_polymorphic cb =
+  match cb.const_universes with
+  | Monomorphic_const _ -> false
+  | Polymorphic_const _ -> true
 
 let body_of_constant otab cb = match cb.const_body with
   | Undef _ -> None
@@ -67,33 +68,54 @@ let type_of_constant cb =
   | TemplateArity _ as x -> x
 
 let constraints_of_constant otab cb =
-  let cst = Univ.Constraint.union 
-    (Univ.UContext.constraints cb.const_universes)
-    (match cb.const_body with
-    | Undef _ -> Univ.empty_constraint
-    | Def c -> Univ.empty_constraint
-    | OpaqueDef o ->
-        Univ.ContextSet.constraints (Opaqueproof.force_constraints otab o))
-   in instantiate_constraints cb cst
+  match cb.const_universes with
+  | Polymorphic_const ctx -> 
+    Univ.UContext.constraints (Univ.instantiate_univ_context ctx)
+  | Monomorphic_const ctx -> 
+    Univ.Constraint.union 
+      (Univ.UContext.constraints ctx)
+      (match cb.const_body with
+       | Undef _ -> Univ.empty_constraint
+       | Def c -> Univ.empty_constraint
+       | OpaqueDef o ->
+         Univ.ContextSet.constraints (Opaqueproof.force_constraints otab o))
 
 let universes_of_constant otab cb = 
   match cb.const_body with
-  | Undef _ | Def _ -> cb.const_universes
+  | Undef _ | Def _ ->
+    begin
+      match cb.const_universes with
+      | Monomorphic_const ctx -> ctx
+      | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
+    end
   | OpaqueDef o -> 
-      let body_uctxs = Opaqueproof.force_constraints otab o in
-      assert(not cb.const_polymorphic || Univ.ContextSet.is_empty body_uctxs);
-      let uctxs = Univ.ContextSet.of_context cb.const_universes in
-      Univ.ContextSet.to_context (Univ.ContextSet.union body_uctxs uctxs) 
+    let body_uctxs = Opaqueproof.force_constraints otab o in
+    match cb.const_universes with
+    | Monomorphic_const ctx ->
+      let uctxs = Univ.ContextSet.of_context ctx in
+      Univ.ContextSet.to_context (Univ.ContextSet.union body_uctxs uctxs)
+    | Polymorphic_const ctx ->
+      assert(Univ.ContextSet.is_empty body_uctxs);
+      Univ.instantiate_univ_context ctx
 
 let universes_of_polymorphic_constant otab cb = 
-  if cb.const_polymorphic then 
-    let univs = universes_of_constant otab cb in
-      Univ.instantiate_univ_context univs
-  else Univ.UContext.empty
+  match cb.const_universes with
+  | Monomorphic_const _ -> Univ.UContext.empty
+  | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
   | Def _ | OpaqueDef _ -> true
+
+let constant_polymorphic_instance cb =
+  match cb.const_universes with
+  | Monomorphic_const _ -> Univ.Instance.empty
+  | Polymorphic_const ctx -> Univ.AUContext.instance ctx
+
+let constant_polymorphic_context cb =
+  match cb.const_universes with
+  | Monomorphic_const _ -> Univ.UContext.empty
+  | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
 
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
@@ -142,7 +164,6 @@ let subst_const_body sub cb =
         const_proj = proj';
         const_body_code =
           Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
-        const_polymorphic = cb.const_polymorphic;
         const_universes = cb.const_universes;
         const_inline_code = cb.const_inline_code;
         const_typing_flags = cb.const_typing_flags }
@@ -173,11 +194,18 @@ let hcons_const_def = function
     Def (from_val (Term.hcons_constr constr))
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
+let hcons_const_universes cbu =
+  match cbu with
+  | Monomorphic_const ctx -> 
+    Monomorphic_const (Univ.hcons_universe_context ctx)
+  | Polymorphic_const ctx -> 
+    Polymorphic_const (Univ.hcons_abstract_universe_context ctx)
+
 let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
     const_type = hcons_const_type cb.const_type;
-    const_universes = Univ.hcons_universe_context cb.const_universes }
+    const_universes = hcons_const_universes cb.const_universes }
 
 (** {6 Inductive types } *)
 
@@ -266,22 +294,36 @@ let subst_mind_body sub mib =
     mind_params_ctxt =
       Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
-    mind_polymorphic = mib.mind_polymorphic;
-    mind_cumulative = mib.mind_cumulative;
     mind_universes = mib.mind_universes;
     mind_private = mib.mind_private;
     mind_typing_flags = mib.mind_typing_flags;
   }
 
-let inductive_instance mib =
-  if mib.mind_polymorphic then
-    Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes)
-  else Univ.Instance.empty
+let inductive_polymorphic_instance mib =
+  match mib.mind_universes with
+  | Monomorphic_ind _ -> Univ.Instance.empty
+  | Polymorphic_ind ctx -> Univ.AUContext.instance ctx
+  | Cumulative_ind cumi -> 
+    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi)
 
-let inductive_context mib =
-  if mib.mind_polymorphic then 
-    Univ.instantiate_univ_context (Univ.UInfoInd.univ_context mib.mind_universes)
-  else Univ.UContext.empty
+let inductive_polymorphic_context mib =
+  match mib.mind_universes with
+  | Monomorphic_ind _ -> Univ.UContext.empty
+  | Polymorphic_ind ctx -> Univ.instantiate_univ_context ctx
+  | Cumulative_ind cumi -> 
+    Univ.instantiate_univ_context (Univ.ACumulativityInfo.univ_context cumi)
+
+let inductive_is_polymorphic mib =
+  match mib.mind_universes with
+  | Monomorphic_ind _ -> false
+  | Polymorphic_ind ctx -> true
+  | Cumulative_ind cumi -> true
+
+let inductive_is_cumulative mib =
+  match mib.mind_universes with
+  | Monomorphic_ind _ -> false
+  | Polymorphic_ind ctx -> false
+  | Cumulative_ind cumi -> true
 
 (** {6 Hash-consing of inductive declarations } *)
 
@@ -309,11 +351,17 @@ let hcons_mind_packet oib =
     mind_user_lc = user;
     mind_nf_lc = nf }
 
+let hcons_mind_universes miu =
+  match miu with
+  | Monomorphic_ind ctx -> Monomorphic_ind (Univ.hcons_universe_context ctx)
+  | Polymorphic_ind ctx -> Polymorphic_ind (Univ.hcons_abstract_universe_context ctx)
+  | Cumulative_ind cui -> Cumulative_ind (Univ.hcons_abstract_cumulativity_info cui)
+
 let hcons_mind mib =
   { mib with
     mind_packets = Array.smartmap hcons_mind_packet mib.mind_packets;
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
-    mind_universes = Univ.hcons_universe_info_ind mib.mind_universes }
+    mind_universes = hcons_mind_universes mib.mind_universes }
 
 (** {6 Stm machinery } *)
 

@@ -88,8 +88,8 @@ let build_ind_type env mip =
   Inductive.type_of_inductive env mip
 
 let print_one_inductive env sigma mib ((_,i) as ind) =
-  let u = if mib.mind_polymorphic then 
-      Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes)
+  let u = if Declareops.inductive_is_polymorphic mib then 
+      Declareops.inductive_polymorphic_instance mib
     else Univ.Instance.empty in
   let mip = mib.mind_packets.(i) in
   let params = Inductive.inductive_paramdecls (mib,u) in
@@ -99,8 +99,8 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
   let cstrtypes = Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
   let envpar = push_rel_context params env in
   let inst =
-    if mib.mind_polymorphic then
-      Printer.pr_universe_instance sigma (Univ.UInfoInd.univ_context mib.mind_universes)
+    if Declareops.inductive_is_polymorphic mib then
+      Printer.pr_universe_instance sigma (Declareops.inductive_polymorphic_context mib)
     else mt ()
   in
   hov 0 (
@@ -120,12 +120,18 @@ let print_mutual_inductive env mind mib =
   in
   let bl = Universes.universe_binders_of_global (IndRef (mind, 0)) in
   let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
-  hov 0 (Printer.pr_polymorphic mib.mind_polymorphic ++
-         Printer.pr_cumulative mib.mind_polymorphic mib.mind_cumulative ++
+  hov 0 (Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
+         Printer.pr_cumulative
+           (Declareops.inductive_is_polymorphic mib) 
+           (Declareops.inductive_is_cumulative mib) ++
          def keyword ++ spc () ++
          prlist_with_sep (fun () -> fnl () ++ str"  with ")
            (print_one_inductive env sigma mib) inds ++
-         Printer.pr_universe_info_ind sigma (Univ.instantiate_univ_info_ind mib.mind_universes))
+         match mib.mind_universes with
+         | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
+         | Cumulative_ind cumi ->
+           Printer.pr_cumulativity_info
+             sigma (Univ.instantiate_cumulativity_info cumi))
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -142,8 +148,8 @@ let get_fields =
 
 let print_record env mind mib =
   let u = 
-    if mib.mind_polymorphic then 
-      Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes)
+    if Declareops.inductive_is_polymorphic mib then 
+      Declareops.inductive_polymorphic_instance mib
     else Univ.Instance.empty 
   in
   let mip = mib.mind_packets.(0) in
@@ -165,8 +171,10 @@ let print_record env mind mib =
   in
   hov 0 (
     hov 0 (
-      Printer.pr_polymorphic mib.mind_polymorphic ++
-      Printer.pr_cumulative mib.mind_polymorphic mib.mind_cumulative ++
+      Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
+      Printer.pr_cumulative
+        (Declareops.inductive_is_polymorphic mib)
+        (Declareops.inductive_is_cumulative mib) ++
       def keyword ++ spc () ++ pr_id mip.mind_typename ++ brk(1,4) ++
       print_params env sigma params ++
       str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ brk(1,2) ++
@@ -177,7 +185,12 @@ let print_record env mind mib =
         (fun (id,b,c) ->
           pr_id id ++ str (if b then " : " else " := ") ++
           Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }" ++
-      Printer.pr_universe_info_ind sigma (Univ.instantiate_univ_info_ind mib.mind_universes))
+    match mib.mind_universes with
+    | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
+    | Cumulative_ind cumi ->
+      Printer.pr_cumulativity_info
+        sigma (Univ.instantiate_cumulativity_info cumi)
+  )
 
 let pr_mutual_inductive_body env mind mib =
   if mib.mind_record <> None && not !Flags.raw_print then
@@ -280,7 +293,8 @@ let print_body is_impl env mp (l,body) =
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name
     | SFBconst cb ->
        let u =
-	 if cb.const_polymorphic then Univ.UContext.instance cb.const_universes
+	 if Declareops.constant_is_polymorphic cb then
+            Declareops.constant_polymorphic_instance cb
 	 else Univ.Instance.empty
        in
        let sigma = Evd.empty in
@@ -302,7 +316,8 @@ let print_body is_impl env mp (l,body) =
 		       Printer.pr_lconstr_env env sigma
 			  (Vars.subst_instance_constr u (Mod_subst.force_constr l)))
 	      | _ -> mt ()) ++ str "." ++
-	    Printer.pr_universe_ctx sigma (Univ.instantiate_univ_context cb.const_universes))
+	    Printer.pr_universe_ctx sigma 
+              (Declareops.constant_polymorphic_context cb))
     | SFBmind mib ->
       try
 	let env = Option.get env in

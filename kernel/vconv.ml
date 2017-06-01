@@ -88,30 +88,34 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
 (*  Pp.(msg_debug (str "conv_atom(" ++ pr_atom a1 ++ str ", " ++ pr_atom a2 ++ str ")")) ; *)
   match a1, a2 with
   | Aind ((mi,i) as ind1) , Aind ind2 ->
-      if eq_ind ind1 ind2 && compare_stack stk1 stk2
-      then
-        if Environ.polymorphic_ind ind1 env
-        then
-          let mib = Environ.lookup_mind mi env in
-	  let ulen = Univ.UContext.size (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) in
-          match stk1 , stk2 with
-	  | [], [] -> assert (Int.equal ulen 0); cu
-	  | Zapp args1 :: stk1' , Zapp args2 :: stk2' ->
-	     assert (ulen <= nargs args1);
-             assert (ulen <= nargs args2);
-	     let u1 = Array.init ulen (fun i -> uni_lvl_val (arg args1 i)) in
-	     let u2 = Array.init ulen (fun i -> uni_lvl_val (arg args2 i)) in
-	     let u1 = Univ.Instance.of_array u1 in
-	     let u2 = Univ.Instance.of_array u2 in
-	     let cu = convert_instances ~flex:false u1 u2 cu in
-             conv_arguments env ~from:ulen k args1 args2
-			    (conv_stack env k stk1' stk2' cu)
-	  | _, _ -> assert false (* Should not happen if problem is well typed *)
-        else
-	  conv_stack env k stk1 stk2 cu
-      else raise NotConvertible
+    if eq_ind ind1 ind2 && compare_stack stk1 stk2 then
+      if Environ.polymorphic_ind ind1 env then
+        let mib = Environ.lookup_mind mi env in
+	let ulen = 
+          match mib.Declarations.mind_universes with
+          | Declarations.Monomorphic_ind ctx -> Univ.UContext.size ctx
+          | Declarations.Polymorphic_ind auctx -> Univ.AUContext.size auctx
+          | Declarations.Cumulative_ind cumi -> 
+            Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
+        in
+        match stk1 , stk2 with
+	| [], [] -> assert (Int.equal ulen 0); cu
+        | Zapp args1 :: stk1' , Zapp args2 :: stk2' ->
+          assert (ulen <= nargs args1);
+          assert (ulen <= nargs args2);
+          let u1 = Array.init ulen (fun i -> uni_lvl_val (arg args1 i)) in
+          let u2 = Array.init ulen (fun i -> uni_lvl_val (arg args2 i)) in
+          let u1 = Univ.Instance.of_array u1 in
+          let u2 = Univ.Instance.of_array u2 in
+          let cu = convert_instances ~flex:false u1 u2 cu in
+          conv_arguments env ~from:ulen k args1 args2
+	    (conv_stack env k stk1' stk2' cu)
+        | _, _ -> assert false (* Should not happen if problem is well typed *)
+      else
+	conv_stack env k stk1 stk2 cu
+    else raise NotConvertible
   | Aid ik1, Aid ik2 ->
-      if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
+    if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
   | Atype _ , _ | _, Atype _ -> assert false

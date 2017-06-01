@@ -696,39 +696,52 @@ let infer_inductive_subtyping_arity_constructor
 let infer_inductive_subtyping env evd mind_ent =
   let { Entries.mind_entry_params = params;
         Entries.mind_entry_inds = entries;
-        Entries.mind_entry_polymorphic = poly;
-        Entries.mind_entry_cumulative = cum;
-        Entries.mind_entry_universes = ground_uinfind;
+        Entries.mind_entry_universes = ground_univs;
       } = mind_ent
   in
   let uinfind =
-    if poly && cum then
-    begin
-      let uctx = Univ.UInfoInd.univ_context ground_uinfind in
-      let sbsubst = Univ.UInfoInd.subtyping_susbst ground_uinfind in
-      let dosubst = subst_univs_level_constr sbsubst in
-      let instance_other = Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) in
-      let constraints_other = Univ.subst_univs_level_constraints sbsubst (Univ.UContext.constraints uctx) in
-      let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
-      let env = Environ.push_context uctx env in
-      let env = Environ.push_context uctx_other env in
-      let evd = Evd.merge_universe_context evd (UState.of_context_set (Univ.ContextSet.of_context uctx_other)) in
-      let (_, _, subtyp_constraints) =
-        List.fold_left
-          (fun ctxs indentry ->
-             let _, params = Typeops.infer_local_decls env params in
-             let ctxs' = infer_inductive_subtyping_arity_constructor
-                 ctxs dosubst indentry.Entries.mind_entry_arity true params
-             in
-             List.fold_left
-               (fun ctxs cons ->
-                  infer_inductive_subtyping_arity_constructor ctxs dosubst cons false params)
-               ctxs' indentry.Entries.mind_entry_lc
-          ) (env, evd, Univ.Constraint.empty) entries
-      in Univ.UInfoInd.make (Univ.UInfoInd.univ_context ground_uinfind,
-           Univ.UContext.make
-             (Univ.UContext.instance (Univ.UInfoInd.subtyp_context ground_uinfind),
-               subtyp_constraints))
-    end
-    else ground_uinfind
+    match ground_univs with
+    | Entries.Monomorphic_ind_entry _
+    | Entries.Polymorphic_ind_entry _ -> ground_univs
+    | Entries.Cumulative_ind_entry cumi -> 
+      begin
+        let uctx = Univ.CumulativityInfo.univ_context cumi in
+        let sbsubst = Univ.CumulativityInfo.subtyping_susbst cumi in
+        let dosubst = subst_univs_level_constr sbsubst in
+        let instance_other = 
+          Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) 
+        in
+        let constraints_other = 
+          Univ.subst_univs_level_constraints
+            sbsubst (Univ.UContext.constraints uctx) 
+        in
+        let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
+        let env = Environ.push_context uctx env in
+        let env = Environ.push_context uctx_other env in
+        let evd = 
+          Evd.merge_universe_context
+            evd (UState.of_context_set (Univ.ContextSet.of_context uctx_other)) 
+        in
+        let (_, _, subtyp_constraints) =
+          List.fold_left
+            (fun ctxs indentry ->
+               let _, params = Typeops.infer_local_decls env params in
+               let ctxs' = infer_inductive_subtyping_arity_constructor
+                   ctxs dosubst indentry.Entries.mind_entry_arity true params
+               in
+               List.fold_left
+                 (fun ctxs cons ->
+                    infer_inductive_subtyping_arity_constructor
+                      ctxs dosubst cons false params
+                 )
+                 ctxs' indentry.Entries.mind_entry_lc
+            ) (env, evd, Univ.Constraint.empty) entries
+        in 
+        Entries.Cumulative_ind_entry
+          (Univ.CumulativityInfo.make 
+             (Univ.CumulativityInfo.univ_context cumi,
+              Univ.UContext.make
+                (Univ.UContext.instance (Univ.CumulativityInfo.subtyp_context cumi),
+                 subtyp_constraints)))
+      end
   in {mind_ent with Entries.mind_entry_universes = uinfind;}

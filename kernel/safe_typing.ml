@@ -237,20 +237,29 @@ let private_con_of_scheme ~kind env cl =
 
 let universes_of_private eff =
   let open Declarations in
-  List.fold_left (fun acc { Entries.eff } ->
-     match eff with
-     | Entries.SEscheme (l,s) ->
-        List.fold_left (fun acc (_,_,cb,c) ->
-          let acc = match c with
-            | `Nothing -> acc
-            | `Opaque (_, ctx) -> ctx :: acc in
-          if cb.const_polymorphic then acc
-          else (Univ.ContextSet.of_context cb.const_universes) :: acc)
-        acc l
-     | Entries.SEsubproof (c, cb, e) ->
-	if cb.const_polymorphic then acc
-	else Univ.ContextSet.of_context cb.const_universes :: acc)
-   [] (Term_typing.uniq_seff eff)
+  List.fold_left
+    (fun acc { Entries.eff } ->
+       match eff with
+       | Entries.SEscheme (l,s) ->
+         List.fold_left
+           (fun acc (_,_,cb,c) ->
+              let acc = match c with
+                | `Nothing -> acc
+                | `Opaque (_, ctx) -> ctx :: acc
+              in
+              match cb.const_universes with
+              | Monomorphic_const ctx ->
+                (Univ.ContextSet.of_context ctx) :: acc
+              | Polymorphic_const _ -> acc
+           )
+           acc l
+       | Entries.SEsubproof (c, cb, e) ->
+         match cb.const_universes with
+              | Monomorphic_const ctx ->
+                (Univ.ContextSet.of_context ctx) :: acc
+              | Polymorphic_const _ -> acc
+    )
+    [] (Term_typing.uniq_seff eff)
 
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
@@ -373,7 +382,11 @@ let safe_push_named d env =
 
 
 let push_named_def (id,de) senv =
-  let c,typ,univs = Term_typing.translate_local_def senv.revstruct senv.env id de in
+  let c,typ,univs = 
+    match Term_typing.translate_local_def senv.revstruct senv.env id de with
+    | c, typ, Monomorphic_const ctx -> c, typ, ctx
+    | _, _, Polymorphic_const _ -> assert false
+  in
   let poly = de.Entries.const_entry_polymorphic in
   let univs = Univ.ContextSet.of_context univs in
   let c, univs = match c with
@@ -410,26 +423,28 @@ let labels_of_mib mib =
   get ()
 
 let globalize_constant_universes env cb =
-  if cb.const_polymorphic then
-    [Now (true, Univ.ContextSet.empty)]
-  else
-    let cstrs = Univ.ContextSet.of_context cb.const_universes in
-      Now (false, cstrs) ::  
-	(match cb.const_body with
-	| (Undef _ | Def _) -> []
-	| OpaqueDef lc ->
-	  match Opaqueproof.get_constraints (Environ.opaque_tables env) lc with
-	  | None -> []
-	  | Some fc ->
+  match cb.const_universes with
+  | Monomorphic_const ctx ->
+    let cstrs = Univ.ContextSet.of_context ctx in
+    Now (false, cstrs) ::  
+    (match cb.const_body with
+     | (Undef _ | Def _) -> []
+     | OpaqueDef lc ->
+       match Opaqueproof.get_constraints (Environ.opaque_tables env) lc with
+       | None -> []
+       | Some fc ->
             match Future.peek_val fc with
-            | None -> [Later fc]
-            | Some c -> [Now (false, c)])
+             | None -> [Later fc]
+             | Some c -> [Now (false, c)])
+  | Polymorphic_const _ ->
+    [Now (true, Univ.ContextSet.empty)]
       
 let globalize_mind_universes mb =
-  if mb.mind_polymorphic then
-    [Now (true, Univ.ContextSet.empty)]
-  else
-    [Now (false, Univ.ContextSet.of_context (Univ.UInfoInd.univ_context mb.mind_universes))]
+  match mb.mind_universes with
+  | Monomorphic_ind ctx ->
+    [Now (false, Univ.ContextSet.of_context ctx)]
+  | Polymorphic_ind _ -> [Now (true, Univ.ContextSet.empty)]
+  | Cumulative_ind _ -> [Now (true, Univ.ContextSet.empty)]
 
 let constraints_of_sfb env sfb = 
   match sfb with

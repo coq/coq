@@ -98,7 +98,7 @@ val pr_polymorphic         : bool -> std_ppcmds
 val pr_cumulative          : bool -> bool -> std_ppcmds
 val pr_universe_instance   : evar_map -> Univ.universe_context -> std_ppcmds
 val pr_universe_ctx        : evar_map -> Univ.universe_context -> std_ppcmds
-val pr_universe_info_ind   : evar_map -> Univ.universe_info_ind -> std_ppcmds
+val pr_cumulativity_info   : evar_map -> Univ.cumulativity_info -> std_ppcmds
 
 (** Printing global references using names as short as possible *)
 

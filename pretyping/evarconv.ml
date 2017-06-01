@@ -350,18 +350,22 @@ let exact_ise_stack2 env evd f sk1 sk2 =
     ise_stack2 evd (List.rev sk1) (List.rev sk2)
   else UnifFailure (evd, (* Dummy *) NotSameHead)
 
-let check_leq_inductives evd uinfind u u' =
+let check_leq_inductives evd cumi u u' =
   let u = EConstr.EInstance.kind evd u in
   let u' = EConstr.EInstance.kind evd u' in
-  let ind_instance = Univ.UContext.instance (Univ.UInfoInd.univ_context uinfind) in
-  let ind_sbcst = Univ.UContext.constraints (Univ.UInfoInd.subtyp_context uinfind) in
+  let ind_instance = 
+    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi) 
+  in
+  let ind_sbcst =  Univ.ACumulativityInfo.subtyp_context cumi in
   if not ((Univ.Instance.length ind_instance = Univ.Instance.length u) &&
           (Univ.Instance.length ind_instance = Univ.Instance.length u')) then
      anomaly (Pp.str "Invalid inductive subtyping encountered!")
   else
     begin
      let comp_subst = (Univ.Instance.append u u') in
-     let comp_cst = Univ.subst_instance_constraints comp_subst ind_sbcst in
+     let comp_cst = 
+       Univ.UContext.constraints (Univ.subst_instance_context comp_subst ind_sbcst)
+     in
      Evd.add_constraints evd comp_cst
     end
 
@@ -491,23 +495,24 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
           let nparamsaplied' = Stack.args_size sk' in
           begin
             let mind = Environ.lookup_mind (fst ind) env in
-            if mind.Declarations.mind_polymorphic then
+            match mind.Declarations.mind_universes with
+            | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
+              UnifFailure (evd, NotSameHead)
+            | Declarations.Cumulative_ind cumi ->
               begin
                 let num_param_arity =
-                  (* Context.Rel.length (mind.Declarations.mind_packets.(snd ind).Declarations.mind_arity_ctxt) *)
-                  mind.Declarations.mind_nparams + mind.Declarations.mind_packets.(snd ind).Declarations.mind_nrealargs
+                  mind.Declarations.mind_nparams + 
+                  mind.Declarations.mind_packets.(snd ind).Declarations.mind_nrealargs
                 in
-                if not (num_param_arity = nparamsaplied && num_param_arity = nparamsaplied') then
+                if not (num_param_arity = nparamsaplied
+                        && num_param_arity = nparamsaplied') then
                   UnifFailure (evd, NotSameHead)
                 else
                   begin
-                    let uinfind = mind.Declarations.mind_universes in
-                    let evd' = check_leq_inductives evd uinfind u u' in
-                    Success (check_leq_inductives evd' uinfind u' u)
+                    let evd' = check_leq_inductives evd cumi u u' in
+                    Success (check_leq_inductives evd' cumi u' u)
                   end
               end
-            else
-              UnifFailure (evd, NotSameHead)
           end
         in
         first_try_strict_check (Names.eq_ind ind ind') u u' check_subtyping_constraints
@@ -518,26 +523,29 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
           let nparamsaplied = Stack.args_size sk in
           let nparamsaplied' = Stack.args_size sk' in
           let mind = Environ.lookup_mind (fst ind) env in
-          if mind.Declarations.mind_polymorphic then
+          match mind.Declarations.mind_universes with
+          | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ ->
+            UnifFailure (evd, NotSameHead)
+          | Declarations.Cumulative_ind cumi ->
             begin
               let num_cnstr_args =
                 let nparamsctxt =
-                  (* Context.Rel.length mind.Declarations.mind_params_ctxt *)
-                  mind.Declarations.mind_nparams + mind.Declarations.mind_packets.(snd ind).Declarations.mind_nrealargs
+                  mind.Declarations.mind_nparams + 
+                  mind.Declarations.mind_packets.(snd ind).Declarations.mind_nrealargs
                 in
-                nparamsctxt + mind.Declarations.mind_packets.(snd ind).Declarations.mind_consnrealargs.(j - 1)
+                nparamsctxt + 
+                mind.Declarations.mind_packets.(snd ind).
+                  Declarations.mind_consnrealargs.(j - 1)
               in
-              if not (num_cnstr_args = nparamsaplied && num_cnstr_args = nparamsaplied') then
+              if not (num_cnstr_args = nparamsaplied 
+                      && num_cnstr_args = nparamsaplied') then
                 UnifFailure (evd, NotSameHead)
               else
                 begin
-                  let uinfind = mind.Declarations.mind_universes in
-                  let evd' = check_leq_inductives evd uinfind u u' in
-                  Success (check_leq_inductives evd' uinfind u' u)
+                  let evd' = check_leq_inductives evd cumi u u' in
+                  Success (check_leq_inductives evd' cumi u' u)
                 end
             end
-          else
-            UnifFailure (evd, NotSameHead)
         in
         first_try_strict_check (Names.eq_constructor cons cons') u u' check_subtyping_constraints
       | _, _ -> anomaly (Pp.str "")
@@ -546,7 +554,6 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                 try compare_heads i
                 with Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
                  (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk sk')]
-(* >>>>>>> Make unification use subtyping info of inductives *)
   in
   let flex_maybeflex on_left ev ((termF,skF as apprF),cstsF) ((termM, skM as apprM),cstsM) vM =
     let switch f a b = if on_left then f a b else f b a in

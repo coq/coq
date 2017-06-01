@@ -84,9 +84,11 @@ sig
   end
 
   type universe_context = UContext.t
-  [@@ocaml.deprecated "alias of API.Names.UContext.t"]
+  [@@ocaml.deprecated "alias of API.Univ.UContext.t"]
 
-  type universe_info_ind = Univ.UInfoInd.t
+  type abstract_universe_context = Univ.AUContext.t
+  type cumulativity_info = Univ.CumulativityInfo.t
+  type abstract_cumulativity_info = Univ.ACumulativityInfo.t
 
   module LSet : module type of struct include Univ.LSet end
   module ContextSet : 
@@ -1047,12 +1049,12 @@ sig
         proj_body : Term.constr;
       }
   type typing_flags = Declarations.typing_flags
+
   type constant_body = Declarations.constant_body = {
         const_hyps : Context.Named.t;
         const_body : constant_def;
         const_type : constant_type;
         const_body_code : Cemitcodes.to_patch_substituted option;
-        const_polymorphic : bool;
         const_universes : constant_universes;
         const_proj : projection_body option;
         const_inline_code : bool;
@@ -1085,6 +1087,13 @@ sig
                        | MEident of Names.ModPath.t
                        | MEapply of module_alg_expr * Names.ModPath.t
                        | MEwith of module_alg_expr * with_declaration
+
+  type abstrac_inductive_universes = Declarations.abstrac_inductive_universes =
+    | Monomorphic_ind of Univ.UContext.t
+    | Polymorphic_ind of Univ.abstract_universe_context
+    | Cumulative_ind of Univ.abstract_cumulativity_info
+
+
   type mutual_inductive_body = Declarations.mutual_inductive_body = {
         mind_packets : one_inductive_body array;
         mind_record : Declarations.record_body option;
@@ -1094,9 +1103,7 @@ sig
         mind_nparams : int;
         mind_nparams_rec : int;
         mind_params_ctxt : Context.Rel.t;
-        mind_polymorphic : bool;
-        mind_cumulative : bool;
-        mind_universes : Univ.universe_info_ind;
+        mind_universes : abstrac_inductive_universes;
         mind_private : bool option;
         mind_typing_flags : Declarations.typing_flags;
       }

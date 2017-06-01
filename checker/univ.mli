@@ -204,7 +204,17 @@ end
 
 type universe_context = UContext.t
 
-module UInfoInd :
+module AUContext :
+sig
+  type t
+
+  val instance : t -> Instance.t
+
+end
+
+type abstract_universe_context = AUContext.t
+
+module CumulativityInfo :
 sig
   type t
 
@@ -223,7 +233,18 @@ sig
 
 end
 
-type universe_info_ind = UInfoInd.t
+type cumulativity_info = CumulativityInfo.t
+
+module ACumulativityInfo :
+sig
+  type t
+
+  val univ_context : t -> abstract_universe_context
+  val subtyp_context : t -> abstract_universe_context
+
+end
+
+type abstract_cumulativity_info = ACumulativityInfo.t
 
 module ContextSet :
   sig 
@@ -255,17 +276,17 @@ val subst_univs_universe : universe_subst_fn -> universe -> universe
 (** Substitution of instances *)
 val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
 val subst_instance_universe : universe_instance -> universe -> universe
-val subst_instance_constraints : universe_instance -> constraints -> constraints
+val subst_instance_context : universe_instance -> abstract_universe_context -> universe_context
 
 (* val make_instance_subst : universe_instance -> universe_level_subst *)
 (* val make_inverse_instance_subst : universe_instance -> universe_level_subst *)
 
 (** Get the instantiated graph. *)
-val instantiate_univ_context : universe_context -> universe_context
-val instantiate_univ_constraints : universe_instance -> universe_context -> constraints
+val instantiate_univ_context : abstract_universe_context -> universe_context
+val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_info
 
 (** Build the relative instance corresponding to the context *)
-val make_abstract_instance : universe_context -> universe_instance
+val make_abstract_instance : abstract_universe_context -> universe_instance
 									    
 (** {6 Pretty-printing of universes. } *)
 

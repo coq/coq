@@ -34,6 +34,11 @@ then, in i{^ th} block, [mind_entry_params] is [xn:Xn;...;x1:X1];
 [mind_entry_lc] is [Ti1;...;Tini], defined in context [[A'1;...;A'p;x1:X1;...;xn:Xn]] where [A'i] is [Ai] generalized over [[x1:X1;...;xn:Xn]].
 *)
 
+type inductive_universes =
+  | Monomorphic_ind_entry of Univ.universe_context
+  | Polymorphic_ind_entry of Univ.universe_context
+  | Cumulative_ind_entry of Univ.cumulativity_info
+
 type one_inductive_entry = {
   mind_entry_typename : Id.t;
   mind_entry_arity : constr;
@@ -49,9 +54,7 @@ type mutual_inductive_entry = {
   mind_entry_finite : Decl_kinds.recursivity_kind;
   mind_entry_params : (Id.t * local_entry) list;
   mind_entry_inds : one_inductive_entry list;
-  mind_entry_polymorphic : bool;
-  mind_entry_cumulative : bool;
-  mind_entry_universes : Univ.universe_info_ind;
+  mind_entry_universes : inductive_universes;
   (* universe constraints and the constraints for subtyping of
      inductive types in the block. *)
   mind_entry_private : bool option;

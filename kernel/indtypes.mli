@@ -32,17 +32,6 @@ type inductive_error =
 
 exception InductiveError of inductive_error
 
-val check_subtyping_arity_constructor : Environ.env ->
-(Term.constr -> Term.constr) -> Term.types -> int -> bool -> unit
-
-(* This needs not be exposed. Exposing for debugging purposes! *)
-val check_subtyping : Entries.mutual_inductive_entry ->
-Context.Rel.t ->
-Environ.env ->
-('b * 'c * Term.types array *
- ('d * ('e * Term.types * 'f, 'g) Declarations.declaration_arity))
-array -> unit
-
 (** The following function does checks on inductive declarations. *)
 
 val check_inductive : env -> mutual_inductive -> mutual_inductive_entry -> mutual_inductive_body

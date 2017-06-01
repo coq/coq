@@ -158,7 +158,7 @@ let cache_constant ((sp,kn), obj) =
   assert (eq_constant kn' (constant_of_kn kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
   let cst = Global.lookup_constant kn' in
-  add_section_constant cst.const_polymorphic kn' cst.const_hyps;
+  add_section_constant (Declareops.constant_is_polymorphic cst) kn' cst.const_hyps;
   Dischargedhypsmap.set_discharged_hyps sp obj.cst_hyps;
   add_constant_kind (constant_of_kn kn) obj.cst_kind
 
@@ -325,7 +325,7 @@ let cache_inductive ((sp,kn),(dhyps,mie)) =
   let kn' = Global.add_mind dir id mie in
   assert (eq_mind kn' (mind_of_kn kn));
   let mind = Global.lookup_mind kn' in
-  add_section_kn mind.mind_polymorphic kn' mind.mind_hyps;
+  add_section_kn (Declareops.inductive_is_polymorphic mind) kn' mind.mind_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
@@ -351,25 +351,26 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_record = None;
   mind_entry_finite = Decl_kinds.BiFinite;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds;
-  mind_entry_polymorphic = false;
-  mind_entry_cumulative = false;
-  mind_entry_universes = Univ.UInfoInd.empty;
+  mind_entry_universes = Monomorphic_ind_entry Univ.UContext.empty;
   mind_entry_private = None;
 })
 
 (* reinfer subtyping constraints for inductive after section is dischared. *)
-let infer_inductive_subtyping (pth, mind_ent) = 
-  if mind_ent.mind_entry_polymorphic && mind_ent.mind_entry_cumulative then
+let infer_inductive_subtyping (pth, mind_ent) =
+  match mind_ent.mind_entry_universes with
+  | Monomorphic_ind_entry _ | Polymorphic_ind_entry _ ->
+    (pth, mind_ent)
+  | Cumulative_ind_entry cumi ->
     begin
       let env = Global.env () in
       let env' =
-        Environ.push_context (Univ.UInfoInd.univ_context mind_ent.mind_entry_universes) env
+        Environ.push_context
+          (Univ.CumulativityInfo.univ_context cumi) env
       in
       (* let (env'', typed_params) = Typeops.infer_local_decls env' (mind_ent.mind_entry_params) in *)
       let evd = Evd.from_env env' in
         (pth, Inductiveops.infer_inductive_subtyping env' evd mind_ent)
     end
-  else (pth, mind_ent)
 
 type inductive_obj = Dischargedhypsmap.discharged_hyps * mutual_inductive_entry
 

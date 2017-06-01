@@ -1031,7 +1031,13 @@ end
 type universe_context = UContext.t
 let hcons_universe_context = UContext.hcons
 
-(** Universe info for inductive types: A context of universe levels
+module AUContext = UContext
+
+type abstract_universe_context = AUContext.t
+let hcons_abstract_universe_context = AUContext.hcons
+
+(** Universe info for cumulative inductive types:
+    A context of universe levels
     with universe constraints, representing local universe variables
     and constraints, together with a context of universe levels with
     universe constraints, representing conditions for subtyping used
@@ -1040,7 +1046,7 @@ let hcons_universe_context = UContext.hcons
     This data structure maintains the invariant that the context for
     subtyping constraints is exactly twice as big as the context for
     universe constraints. *)
-module UInfoInd =
+module CumulativityInfo =
 struct
   type t = universe_context * universe_context
 
@@ -1093,8 +1099,13 @@ struct
 
 end
 
-type universe_info_ind = UInfoInd.t
-let hcons_universe_info_ind = UInfoInd.hcons
+type cumulativity_info = CumulativityInfo.t
+let hcons_cumulativity_info = CumulativityInfo.hcons
+
+module ACumulativityInfo = CumulativityInfo
+
+type abstract_cumulativity_info = ACumulativityInfo.t
+let hcons_abstract_cumulativity_info = ACumulativityInfo.hcons
 
 (** A set of universes with universe constraints.
     We linearize the set to a list after typechecking. 
@@ -1200,6 +1211,9 @@ let subst_univs_level_constraints subst csts =
     (fun c -> Option.fold_right Constraint.add (subst_univs_level_constraint subst c))
     csts Constraint.empty 
 
+let subst_univs_level_abstract_universe_context subst (inst, csts) =
+  inst, subst_univs_level_constraints subst csts
+
 (** With level to universe substitutions. *)
 type universe_subst_fn = universe_level -> universe
 
@@ -1272,11 +1286,8 @@ let instantiate_univ_context (ctx, csts) =
   (ctx, subst_instance_constraints ctx csts)
 
 (** Substitute instance inst for ctx in universe constraints and subtyping constraints *)
-let instantiate_univ_info_ind (univcst, subtpcst) = 
+let instantiate_cumulativity_info (univcst, subtpcst) = 
   (instantiate_univ_context univcst, instantiate_univ_context subtpcst)
-
-let instantiate_univ_constraints u (_, csts) = 
-  subst_instance_constraints u csts
 
 let make_instance_subst i = 
   let arr = Instance.to_array i in
@@ -1290,16 +1301,22 @@ let make_inverse_instance_subst i =
       LMap.add (Level.var i) l acc)
       LMap.empty arr
 
-let abstract_universes poly ctx =
+let make_abstract_instance (ctx, _) = 
+  Array.mapi (fun i l -> Level.var i) ctx
+
+let abstract_universes ctx =
   let instance = UContext.instance ctx in
-    if poly then
-      let subst = make_instance_subst instance in
-      let cstrs = subst_univs_level_constraints subst 
-	(UContext.constraints ctx)
-      in
-      let ctx = UContext.make (instance, cstrs) in
-	subst, ctx
-    else empty_level_subst, ctx
+  let subst = make_instance_subst instance in
+  let cstrs = subst_univs_level_constraints subst 
+      (UContext.constraints ctx)
+  in
+  let ctx = UContext.make (instance, cstrs) in
+  subst, ctx
+
+let abstract_cumulativity_info (univcst, substcst) = 
+  let instance, univcst = abstract_universes univcst in
+  let _, substcst = abstract_universes substcst in
+  (instance, (univcst, substcst))
 
 (** Pretty-printing *)
 
@@ -1307,7 +1324,11 @@ let pr_constraints prl = Constraint.pr prl
 
 let pr_universe_context = UContext.pr
 
-let pr_universe_info_ind = UInfoInd.pr
+let pr_cumulativity_info = CumulativityInfo.pr
+
+let pr_abstract_universe_context = AUContext.pr
+
+let pr_abstract_cumulativity_info = ACumulativityInfo.pr
 
 let pr_universe_context_set = ContextSet.pr
 
@@ -1364,3 +1385,12 @@ let subst_instance_constraints =
     let key = Profile.declare_profile "subst_instance_constraints" in
       Profile.profile2 key subst_instance_constraints
   else subst_instance_constraints
+
+let subst_instance_context = 
+  let subst_instance_context_body inst (inner_inst, inner_constr) =
+    (inner_inst, subst_instance_constraints inst inner_constr)
+  in
+  if Flags.profile then 
+    let key = Profile.declare_profile "subst_instance_constraints" in
+      Profile.profile2 key subst_instance_context_body
+  else subst_instance_context_body

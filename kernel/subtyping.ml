@@ -104,15 +104,21 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       | IndType ((_,0), mib) -> Declareops.subst_mind_body subst1 mib
       | _ -> error (InductiveFieldExpected mib2)
   in
-  let poly = 
-    if not (mib1.mind_polymorphic == mib2.mind_polymorphic) then
-      error (PolymorphicStatusExpected mib2.mind_polymorphic)
-    else mib2.mind_polymorphic
-  in
-  let u = 
-    if poly then 
-      CErrors.user_err Pp.(str "Checking of subtyping of polymorphic inductive types not implemented")
-    else Instance.empty
+  let u =
+    let process inst inst' =
+      if Univ.Instance.equal inst inst' then inst else error IncompatibleInstances
+    in
+    match mib1.mind_universes, mib2.mind_universes with
+    | Monomorphic_ind _, Monomorphic_ind _ -> Univ.Instance.empty
+    | Polymorphic_ind auctx, Polymorphic_ind auctx' ->
+      process
+        (Univ.AUContext.instance auctx) (Univ.AUContext.instance auctx')
+    | Cumulative_ind cumi, Cumulative_ind cumi' ->
+      process
+        (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
+        (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi'))
+    | _ -> error 
+             (CumulativeStatusExpected (Declareops.inductive_is_cumulative mib2))
   in
   let mib2 =  Declareops.subst_mind_body subst2 mib2 in
   let check_inductive_type cst name env t1 t2 =
@@ -148,7 +154,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
 	error (NotConvertibleInductiveField name)
       | _ -> (s1, s2) in
     check_conv (NotConvertibleInductiveField name)
-      cst poly u infer_conv_leq env (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
+      cst (inductive_is_polymorphic mib1) u infer_conv_leq env (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
   in
 
   let check_packet cst p1 p2 =
@@ -176,7 +182,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   let check_cons_types i cst p1 p2 =
     Array.fold_left3
       (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst
-	poly u infer_conv env t1 t2)
+	(inductive_is_polymorphic mib1) u infer_conv env t1 t2)
       cst
       p2.mind_consnames
       (arities_of_specif (mind,u) (mib1,p1))
@@ -293,37 +299,42 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let cb2 = Declareops.subst_const_body subst2 cb2 in
       (* Start by checking universes *)
       let poly = 
-	if not (cb1.const_polymorphic == cb2.const_polymorphic) then
-	  error (PolymorphicStatusExpected cb2.const_polymorphic)
-	else cb2.const_polymorphic
+	if not (Declareops.constant_is_polymorphic cb1 
+                 == Declareops.constant_is_polymorphic cb2) then
+           error (PolymorphicStatusExpected (Declareops.constant_is_polymorphic cb2))
+	else Declareops.constant_is_polymorphic cb2
       in
-      let cst', env', u = 
-	if poly then 
-	  let ctx1 = Univ.instantiate_univ_context cb1.const_universes in
-	  let ctx2 = Univ.instantiate_univ_context cb2.const_universes in
-	  let inst1, ctx1 = Univ.UContext.dest ctx1 in
-	  let inst2, ctx2 = Univ.UContext.dest ctx2 in
+      let cst', env', u =
+        match cb1.const_universes, cb2.const_universes with
+        | Monomorphic_const _, Monomorphic_const _ ->
+          cst, env, Univ.Instance.empty
+        | Polymorphic_const auctx1, Polymorphic_const auctx2 ->
+          begin
+	    let ctx1 = Univ.instantiate_univ_context auctx1 in
+	    let ctx2 = Univ.instantiate_univ_context auctx2 in
+	    let inst1, ctx1 = Univ.UContext.dest ctx1 in
+	    let inst2, ctx2 = Univ.UContext.dest ctx2 in
 	    if not (Univ.Instance.length inst1 == Univ.Instance.length inst2) then
 	      error IncompatibleInstances
 	    else 
 	      let cstrs = Univ.enforce_eq_instances inst1 inst2 cst in
 	      let cstrs = Univ.Constraint.union cstrs ctx2 in
-		try 
-		  (* The environment with the expected universes plus equality 
-		     of the body instances with the expected instance *)
-		  let ctxi = Univ.Instance.append inst1 inst2 in
-		  let ctx = Univ.UContext.make (ctxi, cstrs) in
-		  let env = Environ.push_context ctx env in
-		  (* Check that the given definition does not add any constraint over
-		     the expected ones, so that it can be used in place of 
-                     the original. *)
-		    if UGraph.check_constraints ctx1 (Environ.universes env) then
-		      cstrs, env, inst2
-		    else error (IncompatibleConstraints ctx1)
-		with Univ.UniverseInconsistency incon -> 
-		  error (IncompatibleUniverses incon)
-	else
-	  cst, env, Univ.Instance.empty
+	      try 
+		(* The environment with the expected universes plus equality 
+		   of the body instances with the expected instance *)
+		let ctxi = Univ.Instance.append inst1 inst2 in
+		let ctx = Univ.UContext.make (ctxi, cstrs) in
+		let env = Environ.push_context ctx env in
+		(* Check that the given definition does not add any constraint over
+		   the expected ones, so that it can be used in place of 
+                                 the original. *)
+		if UGraph.check_constraints ctx1 (Environ.universes env) then
+		  cstrs, env, inst2
+		else error (IncompatibleConstraints ctx1)
+	      with Univ.UniverseInconsistency incon -> 
+		error (IncompatibleUniverses incon)
+          end
+        | _ -> assert false
       in
       (* Now check types *)
       let typ1 = Typeops.type_of_constant_type env' cb1.const_type in
@@ -354,7 +365,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "name."));
       let () = assert (List.is_empty mind1.mind_hyps && List.is_empty cb2.const_hyps) in
       if Declareops.constant_has_body cb2 then error DefinitionFieldExpected;
-      let u1 = inductive_instance mind1 in
+      let u1 = inductive_polymorphic_instance mind1 in
       let arity1,cst1 = constrained_type_of_inductive env 
 	((mind1,mind1.mind_packets.(i)),u1) in
       let cst2 =
@@ -371,7 +382,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "name."));
       let () = assert (List.is_empty mind1.mind_hyps && List.is_empty cb2.const_hyps) in
       if Declareops.constant_has_body cb2 then error DefinitionFieldExpected;
-      let u1 = inductive_instance mind1 in
+      let u1 = inductive_polymorphic_instance mind1 in
       let ty1,cst1 = constrained_type_of_constructor (cstr,u1) (mind1,mind1.mind_packets.(i)) in
       let cst2 =
         Declareops.constraints_of_constant (Environ.opaque_tables env) cb2 in

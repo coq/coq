@@ -174,8 +174,7 @@ and nf_whd env sigma whd typ =
   | Vatom_stk(Aind ((mi,i) as ind), stk) ->
      let mib = Environ.lookup_mind mi env in
      let nb_univs =
-       if mib.mind_polymorphic then Univ.UContext.size (Univ.UInfoInd.univ_context mib.mind_universes)
-       else 0
+       Univ.Instance.length (Declareops.inductive_polymorphic_instance mib)
      in
      let mk u =
        let pind = (ind, u) in (mkIndU pind, type_of_ind env pind)
@@ -204,8 +203,7 @@ and constr_type_of_idkey env sigma (idkey : Vars.id_key) stk =
   | ConstKey cst ->
      let cbody = Environ.lookup_constant cst env in
      let nb_univs =
-       if cbody.const_polymorphic then Univ.UContext.size cbody.const_universes
-       else 0
+       Univ.Instance.length (Declareops.constant_polymorphic_instance cbody)
      in
      let mk u =
        let pcst = (cst, u) in (mkConstU pcst, Typeops.type_of_constant_in env pcst)

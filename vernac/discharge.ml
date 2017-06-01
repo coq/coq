@@ -79,12 +79,14 @@ let refresh_polymorphic_type_of_inductive (_,mip) =
 
 let process_inductive (sechyps,abs_ctx) modlist mib =
   let nparams = mib.mind_nparams in
-  let subst, univs = 
-    if mib.mind_polymorphic then 
-      let inst = Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes) in
-      let cstrs = Univ.UContext.constraints (Univ.UInfoInd.univ_context mib.mind_universes) in
-	inst, Univ.UContext.make (inst, Univ.subst_instance_constraints inst cstrs)
-    else Univ.Instance.empty, (Univ.UInfoInd.univ_context mib.mind_universes)
+  let subst, univs =
+    match mib.mind_universes with
+    | Monomorphic_ind ctx -> Univ.Instance.empty, ctx
+    | Polymorphic_ind auctx ->
+      Univ.AUContext.instance auctx, Univ.instantiate_univ_context auctx
+    | Cumulative_ind cumi ->
+      let auctx = Univ.ACumulativityInfo.univ_context cumi in
+      Univ.AUContext.instance auctx, Univ.instantiate_univ_context auctx
   in
   let inds =
     Array.map_to_list
@@ -105,7 +107,12 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
   let (params',inds') = abstract_inductive sechyps' nparams inds in
   let abs_ctx = Univ.instantiate_univ_context abs_ctx in
   let univs = Univ.UContext.union abs_ctx univs in
-  let univ_info_ind = Universes.univ_inf_ind_from_universe_context univs in
+  let ind_univs =
+    match mib.mind_universes with
+    | Monomorphic_ind _ -> Monomorphic_ind_entry univs
+    | Polymorphic_ind _ -> Polymorphic_ind_entry univs
+    | Cumulative_ind _ ->
+      Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context univs) in
   let record = match mib.mind_record with
     | Some (Some (id, _, _)) -> Some (Some id)
     | Some None -> Some None
@@ -115,9 +122,7 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
     mind_entry_finite = mib.mind_finite;
     mind_entry_params = params';
     mind_entry_inds = inds';
-    mind_entry_polymorphic = mib.mind_polymorphic;
-    mind_entry_cumulative = mib.mind_cumulative;
     mind_entry_private = mib.mind_private;
-    mind_entry_universes = univ_info_ind
+    mind_entry_universes = ind_univs
   }
 

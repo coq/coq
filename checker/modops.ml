@@ -83,10 +83,10 @@ let strengthen_const mp_from l cb resolver =
     | Def _ -> cb
     | _ ->
       let con = Constant.make2 mp_from l in
-      let u = 
-	if cb.const_polymorphic then
-	  Univ.make_abstract_instance cb.const_universes
-	else Univ.Instance.empty
+      let u =
+        match cb.const_universes with
+      | Monomorphic_const _ -> Univ.Instance.empty
+      | Polymorphic_const auctx -> Univ.make_abstract_instance auctx
       in
       { cb with
 	const_body = Def (Declarations.from_val (Const (con,u))) }

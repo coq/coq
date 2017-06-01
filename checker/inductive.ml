@@ -54,10 +54,31 @@ let inductive_params (mib,_) = mib.mind_nparams
 
 (** Polymorphic inductives *)
 
-let inductive_instance mib =
-  if mib.mind_polymorphic then
-    UContext.instance (UInfoInd.univ_context mib.mind_universes)
-  else Instance.empty
+let inductive_is_polymorphic mib =
+  match mib.mind_universes with
+  | Monomorphic_ind _ -> false
+  | Polymorphic_ind ctx -> true
+  | Cumulative_ind cumi -> true
+
+let inductive_is_cumulative mib =
+  match mib.mind_universes with
+  | Monomorphic_ind _ -> false
+  | Polymorphic_ind ctx -> false
+  | Cumulative_ind cumi -> true
+
+let inductive_polymorphic_instance mib =
+  match mib.mind_universes with
+  | Monomorphic_ind _ -> Univ.Instance.empty
+  | Polymorphic_ind ctx -> Univ.AUContext.instance ctx
+  | Cumulative_ind cumi -> 
+    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi)
+
+let inductive_polymorphic_context mib =
+  match mib.mind_universes with
+  | Monomorphic_ind _ -> Univ.UContext.empty
+  | Polymorphic_ind ctx -> Univ.instantiate_univ_context ctx
+  | Cumulative_ind cumi -> 
+    Univ.instantiate_univ_context (Univ.ACumulativityInfo.univ_context cumi)
 
 (************************************************************************)
 
@@ -93,7 +114,7 @@ let instantiate_params full t u args sign =
 
 let full_inductive_instantiate mib u params sign =
   let dummy = Prop Null in
-  let t = mkArity (subst_instance_context u sign,dummy) in
+  let t = mkArity (Term.subst_instance_context u sign,dummy) in
     fst (destArity (instantiate_params true t u params mib.mind_params_ctxt))
 
 let full_constructor_instantiate ((mind,_),u,(mib,_),params) t =
@@ -199,7 +220,7 @@ let instantiate_universes env ctx ar argsorts =
 let type_of_inductive_gen env ((mib,mip),u) paramtyps =
   match mip.mind_arity with
   | RegularArity a ->
-    if not mib.mind_polymorphic then a.mind_user_arity
+    if not (inductive_is_polymorphic mib) then a.mind_user_arity
     else subst_instance_constr u a.mind_user_arity
   | TemplateArity ar ->
     let ctx = List.rev mip.mind_arity_ctxt in

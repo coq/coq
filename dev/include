@@ -41,7 +41,7 @@
 #install_printer  (* univ context *) ppuniverse_context;;
 #install_printer  (* univ context future *) ppuniverse_context_future;;
 #install_printer  (* univ context set *) ppuniverse_context_set;;
-#install_printer  (* univ info *) ppuniverse_info;;
+#install_printer  (* univ info *) ppcumulativity_info;;
 #install_printer  (* univ set *) ppuniverse_set;;
 #install_printer  (* univ instance *) ppuniverse_instance;;
 #install_printer  (* univ subst *) ppuniverse_subst;;

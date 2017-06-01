@@ -27,14 +27,13 @@ End ListLower.
 
 Lemma LowerL_Lem@{i j} (A : Type@{j}) (l : List@{i} A) : l = LowerL l.
 Proof. reflexivity. Qed.
-
-(* I disable these tests because cqochk can't process them when compiled with
+(*
+I disable these tests because cqochk can't process them when compiled with
    ocaml-4.02.3+32bit and camlp5-4.16 which is the case for Travis!
 
    I have added this file (including the commented parts below) in
    test-suite/success/cumulativity.v which doesn't run coqchk on them.
 *)
-
 (* Inductive Tp := tp : Type -> Tp. *)
 
 (* Section TpLift. *)

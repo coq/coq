@@ -16,7 +16,7 @@ type work_list = (Instance.t * Id.t array) Cmap.t *
 
 type cooking_info = { 
   modlist : work_list; 
-  abstract : Context.Named.t * Univ.universe_level_subst * Univ.UContext.t } 
+  abstract : Context.Named.t * Univ.universe_level_subst * Univ.AUContext.t } 
 type proofterm = (constr * Univ.universe_context_set) Future.computation
 type opaque =
   | Indirect of substitution list * DirPath.t * int (* subst, lib, index *)

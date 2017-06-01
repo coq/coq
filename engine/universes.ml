@@ -283,11 +283,11 @@ let new_Type_sort dp = Type (new_univ dp)
 
 let fresh_universe_instance ctx =
   Instance.subst_fn (fun _ -> new_univ_level (Global.current_dirpath ())) 
-    (UContext.instance ctx)
+    (AUContext.instance ctx)
 
 let fresh_instance_from_context ctx =
   let inst = fresh_universe_instance ctx in
-  let constraints = instantiate_univ_constraints inst ctx in
+  let constraints = UContext.constraints (subst_instance_context inst ctx) in
     inst, constraints
 
 let fresh_instance ctx =
@@ -296,13 +296,13 @@ let fresh_instance ctx =
     Instance.subst_fn (fun v -> 
       let u = new_univ_level (Global.current_dirpath ()) in
 	ctx' := LSet.add u !ctx'; u) 
-      (UContext.instance ctx)
+      (AUContext.instance ctx)
   in !ctx', inst
 
 let existing_instance ctx inst = 
   let () = 
     let a1 = Instance.to_array inst 
-    and a2 = Instance.to_array (UContext.instance ctx) in
+    and a2 = Instance.to_array (AUContext.instance ctx) in
     let len1 = Array.length a1 and len2 = Array.length a2 in 
       if not (len1 == len2) then
 	CErrors.user_err ~hdr:"Universes"
@@ -317,59 +317,75 @@ let fresh_instance_from ctx inst =
     | Some inst -> existing_instance ctx inst
     | None -> fresh_instance ctx 
   in
-  let constraints = instantiate_univ_constraints inst ctx in
+  let constraints = UContext.constraints (subst_instance_context inst ctx) in
     inst, (ctx', constraints)
 
 let unsafe_instance_from ctx =
-  (Univ.UContext.instance ctx, ctx)
+  (Univ.AUContext.instance ctx, Univ.instantiate_univ_context ctx)
     
 (** Fresh universe polymorphic construction *)
 
 let fresh_constant_instance env c inst =
   let cb = lookup_constant c env in
-    if cb.Declarations.const_polymorphic then
-      let inst, ctx =
-        fresh_instance_from
-          (Declareops.universes_of_constant (Environ.opaque_tables env) cb) inst
-      in
-	((c, inst), ctx)
-    else ((c,Instance.empty), ContextSet.empty)
+  match cb.Declarations.const_universes with
+  | Declarations.Monomorphic_const _ -> ((c,Instance.empty), ContextSet.empty)
+  | Declarations.Polymorphic_const auctx -> 
+    let inst, ctx =
+      fresh_instance_from auctx inst
+    in
+    ((c, inst), ctx)
 
 let fresh_inductive_instance env ind inst = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
-    if mib.Declarations.mind_polymorphic then
-      let inst, ctx = fresh_instance_from (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) inst in
-	((ind,inst), ctx)
-    else ((ind,Instance.empty), ContextSet.empty)
+  match mib.Declarations.mind_universes with
+  | Declarations.Monomorphic_ind _ ->
+    ((ind,Instance.empty), ContextSet.empty)
+  | Declarations.Polymorphic_ind uactx ->
+    let inst, ctx = (fresh_instance_from uactx) inst in 
+     ((ind,inst), ctx)
+  | Declarations.Cumulative_ind acumi ->
+    let inst, ctx = 
+      fresh_instance_from (Univ.ACumulativityInfo.univ_context acumi) inst
+    in ((ind,inst), ctx)
 
 let fresh_constructor_instance env (ind,i) inst = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
-    if mib.Declarations.mind_polymorphic then
-      let inst, ctx = fresh_instance_from (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) inst in
+  match mib.Declarations.mind_universes with
+  | Declarations.Monomorphic_ind _ -> (((ind,i),Instance.empty), ContextSet.empty)
+  | Declarations.Polymorphic_ind auctx ->
+    let inst, ctx = fresh_instance_from auctx  inst in
 	(((ind,i),inst), ctx)
-    else (((ind,i),Instance.empty), ContextSet.empty)
+  | Declarations.Cumulative_ind acumi ->
+    let inst, ctx = fresh_instance_from (ACumulativityInfo.univ_context acumi) inst in
+    (((ind,i),inst), ctx)
 
 let unsafe_constant_instance env c =
   let cb = lookup_constant c env in
-    if cb.Declarations.const_polymorphic then
-      let inst, ctx = unsafe_instance_from
-        (Declareops.universes_of_constant (Environ.opaque_tables env) cb) in
-	((c, inst), ctx)
-    else ((c,Instance.empty), UContext.empty)
+  match cb.Declarations.const_universes with
+  | Declarations.Monomorphic_const _ ->
+    ((c,Instance.empty), UContext.empty)
+  | Declarations.Polymorphic_const auctx ->
+    let inst, ctx = unsafe_instance_from auctx in ((c, inst), ctx)
 
 let unsafe_inductive_instance env ind = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
-    if mib.Declarations.mind_polymorphic then
-      let inst, ctx = unsafe_instance_from (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) in
-	((ind,inst), ctx)
-    else ((ind,Instance.empty), UContext.empty)
+  match mib.Declarations.mind_universes with
+  | Declarations.Monomorphic_ind _ -> ((ind,Instance.empty), UContext.empty)
+  | Declarations.Polymorphic_ind auctx ->
+    let inst, ctx = unsafe_instance_from auctx in ((ind,inst), ctx)
+  | Declarations.Cumulative_ind acumi ->
+    let inst, ctx = unsafe_instance_from (ACumulativityInfo.univ_context acumi) in
+    ((ind,inst), ctx)
 
 let unsafe_constructor_instance env (ind,i) = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
-    if mib.Declarations.mind_polymorphic then
-      let inst, ctx = unsafe_instance_from (Univ.UInfoInd.univ_context mib.Declarations.mind_universes) in
-	(((ind,i),inst), ctx)
-    else (((ind,i),Instance.empty), UContext.empty)
+  match mib.Declarations.mind_universes with
+  | Declarations.Monomorphic_ind _ -> (((ind, i),Instance.empty), UContext.empty)
+  | Declarations.Polymorphic_ind auctx ->
+    let inst, ctx = unsafe_instance_from auctx in (((ind, i),inst), ctx)
+  | Declarations.Cumulative_ind acumi ->
+    let inst, ctx = unsafe_instance_from (ACumulativityInfo.univ_context acumi) in
+    (((ind, i),inst), ctx)
 
 open Globnames
 
@@ -452,26 +468,49 @@ let type_of_reference env r =
   | ConstRef c ->
      let cb = Environ.lookup_constant c env in
      let ty = Typeops.type_of_constant_type env cb.const_type in
-       if cb.const_polymorphic then
-	 let inst, ctx = fresh_instance_from (Declareops.universes_of_constant (Environ.opaque_tables env) cb) None in
-	   Vars.subst_instance_constr inst ty, ctx
-       else ty, ContextSet.empty
-
+     begin
+       match cb.const_universes with
+       | Monomorphic_const _ -> ty, ContextSet.empty
+       | Polymorphic_const auctx ->
+         let inst, ctx = fresh_instance_from auctx None in
+         Vars.subst_instance_constr inst ty, ctx
+     end
   | IndRef ind ->
      let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
-       if mib.mind_polymorphic then
-	 let inst, ctx = fresh_instance_from (Univ.UInfoInd.univ_context mib.mind_universes) None in
+     begin
+       match mib.mind_universes with
+       | Monomorphic_ind _ ->
+         let ty = Inductive.type_of_inductive env (specif, Univ.Instance.empty) in
+	 ty, ContextSet.empty
+       | Polymorphic_ind auctx ->
+         let inst, ctx = fresh_instance_from auctx  None in
 	 let ty = Inductive.type_of_inductive env (specif, inst) in
-	   ty, ctx
-       else
-	 let ty = Inductive.type_of_inductive env (specif, Univ.Instance.empty) in
-	   ty, ContextSet.empty
+         ty, ctx
+       | Cumulative_ind cumi ->
+         let inst, ctx = 
+           fresh_instance_from (ACumulativityInfo.univ_context cumi) None
+         in
+         let ty = Inductive.type_of_inductive env (specif, inst) in
+         ty, ctx
+     end
+	 
   | ConstructRef cstr ->
-     let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
-       if mib.mind_polymorphic then
-	 let inst, ctx = fresh_instance_from (Univ.UInfoInd.univ_context mib.mind_universes) None in
-	   Inductive.type_of_constructor (cstr,inst) specif, ctx
-       else Inductive.type_of_constructor (cstr,Instance.empty) specif, ContextSet.empty
+    let (mib,oib as specif) = 
+      Inductive.lookup_mind_specif env (inductive_of_constructor cstr) 
+    in
+    begin
+       match mib.mind_universes with
+       | Monomorphic_ind _ ->
+         Inductive.type_of_constructor (cstr,Instance.empty) specif, ContextSet.empty
+       | Polymorphic_ind auctx ->
+         let inst, ctx = fresh_instance_from auctx None in
+	 Inductive.type_of_constructor (cstr,inst) specif, ctx
+       | Cumulative_ind cumi ->
+         let inst, ctx = 
+           fresh_instance_from (ACumulativityInfo.univ_context cumi) None 
+         in
+	 Inductive.type_of_constructor (cstr,inst) specif, ctx
+     end
 
 let type_of_global t = type_of_reference (Global.env ()) t
 
@@ -1098,4 +1137,4 @@ let univ_inf_ind_from_universe_context univcst =
   let freshunivs = Instance.of_array
       (Array.map (fun _ -> new_univ_level ())
          (Instance.to_array (UContext.instance univcst)))
-  in UInfoInd.from_universe_context univcst freshunivs
+  in CumulativityInfo.from_universe_context univcst freshunivs

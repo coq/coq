@@ -209,7 +209,9 @@ type constant_def =
   | Def of constr_substituted
   | OpaqueDef of lazy_constr
 
-type constant_universes = Univ.universe_context
+type constant_universes =
+  | Monomorphic_const of Univ.universe_context
+  | Polymorphic_const of Univ.abstract_universe_context
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
@@ -226,7 +228,6 @@ type constant_body = {
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-    const_polymorphic : bool; (** Is it polymorphic or not *)
     const_universes : constant_universes;
     const_proj : projection_body option;
     const_inline_code : bool;
@@ -303,6 +304,11 @@ type one_inductive_body = {
     mind_reloc_tbl : reloc_table;
   }
 
+type abstrac_inductive_universes =
+  | Monomorphic_ind of Univ.universe_context
+  | Polymorphic_ind of Univ.abstract_universe_context
+  | Cumulative_ind of Univ.abstract_cumulativity_info
+
 type mutual_inductive_body = {
 
     mind_packets : one_inductive_body array;  (** The component of the mutual inductive block *)
@@ -321,11 +327,7 @@ type mutual_inductive_body = {
 
     mind_params_ctxt : rel_context;  (** The context of parameters (includes let-in declaration) *)
 
-    mind_polymorphic : bool; (** Is it polymorphic or not *)
-
-    mind_cumulative : bool; (** Is it cumulative or not *)
-
-    mind_universes : Univ.universe_info_ind; (** Local universe variables and constraints together with subtyping constraints *)
+    mind_universes : abstrac_inductive_universes; (** Local universe variables and constraints together with subtyping constraints *)
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
 

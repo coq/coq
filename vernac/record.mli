@@ -26,9 +26,7 @@ val declare_projections :
 
 val declare_structure :
   Decl_kinds.recursivity_kind ->
-  Decl_kinds.cumulative_inductive_flag ->
-  Decl_kinds.polymorphic ->
-  Univ.universe_info_ind (** universe and subtyping constraints *) ->
+  Entries.inductive_universes ->
   Id.t -> Id.t ->
   manual_explicitation list -> Context.Rel.t -> (** params *) constr -> (** arity *)
   bool (** template arity ? *) ->

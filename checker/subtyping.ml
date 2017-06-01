@@ -88,18 +88,25 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   let check_conv f = check_conv_error error f in
   let mib1 =
     match info1 with
-      | IndType ((_,0), mib) -> mib
+      | IndType ((_,0), mib) -> subst_mind subst1 mib
       | _ -> error ()
   in
   let mib2 = subst_mind subst2 mib2 in
   let check eq f = if not (eq (f mib1) (f mib2)) then error () in
-  let bool_equal (x : bool) (y : bool) = x = y in
-  let u = 
-    check bool_equal (fun x -> x.mind_polymorphic);
-    if mib1.mind_polymorphic then (
-      check Univ.Instance.equal (fun x -> Univ.UContext.instance (Univ.UInfoInd.univ_context x.mind_universes));
-      Univ.UContext.instance (Univ.UInfoInd.univ_context mib1.mind_universes))
-    else Univ.Instance.empty
+  let u =
+    let process inst inst' =
+      if Univ.Instance.equal inst inst' then inst else error ()
+    in
+    match mib1.mind_universes, mib2.mind_universes with
+    | Monomorphic_ind _, Monomorphic_ind _ -> Univ.Instance.empty
+    | Polymorphic_ind auctx, Polymorphic_ind auctx' ->
+      process
+        (Univ.AUContext.instance auctx) (Univ.AUContext.instance auctx')
+    | Cumulative_ind cumi, Cumulative_ind cumi' ->
+      process
+        (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
+        (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi'))
+    | _ -> error ()
   in
   let eq_projection_body p1 p2 =
     let check eq f = if not (eq (f p1) (f p2)) then error () in
@@ -308,7 +315,7 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
 		      "inductive type and give a definition to map the old name to the new " ^
 		      "name.")));
       if constant_has_body cb2 then error () ;
-      let u = inductive_instance mind1 in
+      let u = inductive_polymorphic_instance mind1 in
       let arity1 = type_of_inductive env ((mind1,mind1.mind_packets.(i)),u) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv conv_leq env arity1 typ2
@@ -319,7 +326,7 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
        "constructor and give a definition to map the old name to the new " ^
        "name.")));
       if constant_has_body cb2 then error () ;
-      let u1 = inductive_instance mind1 in
+      let u1 = inductive_polymorphic_instance mind1 in
       let ty1 = type_of_constructor (cstr,u1) (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv conv env ty1 ty2

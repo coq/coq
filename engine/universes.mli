@@ -101,10 +101,10 @@ val eq_constr_universes_proj : env -> constr -> constr -> bool universe_constrai
 (** Build a fresh instance for a given context, its associated substitution and 
     the instantiated constraints. *)
 
-val fresh_instance_from_context : universe_context -> 
+val fresh_instance_from_context : abstract_universe_context -> 
   universe_instance constrained
 
-val fresh_instance_from : universe_context -> universe_instance option ->
+val fresh_instance_from : abstract_universe_context -> universe_instance option ->
   universe_instance in_universe_context_set
 
 val fresh_sort_in_family : env -> sorts_family -> 
@@ -228,4 +228,4 @@ val solve_constraints_system : universe option array -> universe array -> univer
 
 (** Given a universe context representing constraints of an inductive
     this function produces a UInfoInd.t that with the trivial subtyping relation. *)
-val univ_inf_ind_from_universe_context : universe_context -> universe_info_ind
+val univ_inf_ind_from_universe_context : universe_context -> cumulativity_info

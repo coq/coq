@@ -22,9 +22,8 @@ let universes_of_constr c =
   in aux LSet.empty c
 
 let universes_of_inductive mind =
-  if mind.mind_polymorphic then
-  begin
-    let u = Univ.UContext.instance (Univ.UInfoInd.univ_context mind.mind_universes) in
+  let process auctx =
+    let u = Univ.AUContext.instance auctx in
     let univ_of_one_ind oind = 
       let arity_univs =
         Context.Rel.fold_outside
@@ -43,12 +42,22 @@ let universes_of_inductive mind =
           Univ.LSet.union (universes_of_constr cns) unvs) arity_univs 
        oind.mind_nf_lc
     in
-    let univs = Array.fold_left (fun unvs pk -> Univ.LSet.union (univ_of_one_ind pk) unvs) Univ.LSet.empty mind.mind_packets in
-    let mindcnt = Univ.UContext.constraints (Univ.instantiate_univ_context (Univ.UInfoInd.univ_context mind.mind_universes)) in
+    let univs = 
+      Array.fold_left
+        (fun unvs pk ->
+           Univ.LSet.union
+             (univ_of_one_ind pk) unvs
+        )
+        Univ.LSet.empty mind.mind_packets 
+    in
+    let mindcnt =  Univ.UContext.constraints (Univ.instantiate_univ_context auctx) in
     let univs = Univ.LSet.union univs (Univ.universes_of_constraints mindcnt) in
     univs
-  end
-  else LSet.empty
+  in
+  match mind.mind_universes with
+  | Monomorphic_ind _ -> LSet.empty
+  | Polymorphic_ind auctx -> process auctx
+  | Cumulative_ind cumi -> process (Univ.ACumulativityInfo.univ_context cumi)
 
 let restrict_universe_context (univs,csts) s =
   (* Universes that are not necessary to typecheck the term.

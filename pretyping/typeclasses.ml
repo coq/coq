@@ -111,20 +111,16 @@ let new_instance cl info glob poly impl =
 let classes : typeclasses ref = Summary.ref Refmap.empty ~name:"classes"
 let instances : instances ref = Summary.ref Refmap.empty ~name:"instances"
 
-open Declarations
-
 let typeclass_univ_instance (cl,u') =
   let subst = 
     let u = 
       match cl.cl_impl with
       | ConstRef c -> 
         let cb = Global.lookup_constant c in
-	  if cb.const_polymorphic then Univ.UContext.instance cb.const_universes
-	  else Univ.Instance.empty
+        Declareops.constant_polymorphic_instance cb
       | IndRef c ->
          let mib,oib = Global.lookup_inductive c in
-	  if mib.mind_polymorphic then Univ.UContext.instance (Univ.UInfoInd.univ_context mib.mind_universes)
-	  else Univ.Instance.empty
+         Declareops.inductive_polymorphic_instance mib
       | _ -> Univ.Instance.empty
     in Array.fold_left2 (fun subst u u' -> Univ.LMap.add u u' subst) 
       Univ.LMap.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')

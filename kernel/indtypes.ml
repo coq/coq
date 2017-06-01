@@ -231,23 +231,23 @@ let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : Ter
 
 (* Check that the subtyping information inferred for inductive types in the block is correct. *)
 (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
-let check_subtyping mie paramsctxt env_ar inds = 
+let check_subtyping cumi paramsctxt env_ar inds = 
     let numparams = Context.Rel.nhyps paramsctxt in
-    let sbsubst = UInfoInd.subtyping_susbst mie.mind_entry_universes in
+    let sbsubst = CumulativityInfo.subtyping_susbst cumi in
     let dosubst = subst_univs_level_constr sbsubst in
-    let uctx = UInfoInd.univ_context mie.mind_entry_universes in
+    let uctx = CumulativityInfo.univ_context cumi in
     let instance_other = Univ.subst_univs_level_instance sbsubst (Univ.UContext.instance uctx) in
     let constraints_other = Univ.subst_univs_level_constraints sbsubst (Univ.UContext.constraints uctx) in
     let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
-    let env' = Environ.push_context uctx env_ar in
-    let env'' = Environ.push_context uctx_other env' in
-    let envsb = push_context (UInfoInd.subtyp_context mie.mind_entry_universes) env'' in
+    let env = Environ.push_context uctx env_ar in
+    let env = Environ.push_context uctx_other env in
+    let env = push_context (CumulativityInfo.subtyp_context cumi) env in
     (* process individual inductive types: *)
     Array.iter (fun (id,cn,lc,(sign,arity)) ->
       match arity with
         | RegularArity (_, full_arity, _) ->
-           check_subtyping_arity_constructor envsb dosubst full_arity numparams true;
-           Array.iter (fun cnt -> check_subtyping_arity_constructor envsb dosubst cnt numparams false) lc
+           check_subtyping_arity_constructor env dosubst full_arity numparams true;
+           Array.iter (fun cnt -> check_subtyping_arity_constructor env dosubst cnt numparams false) lc
         | TemplateArity _ -> ()
     ) inds
 
@@ -264,7 +264,13 @@ let typecheck_inductive env mie =
   (* Check unicity of names *)
   mind_check_names mie;
   (* Params are typed-checked here *)
-  let env' = push_context (Univ.UInfoInd.univ_context mie.mind_entry_universes) env in
+  let univctx =
+    match mie.mind_entry_universes with
+    | Monomorphic_ind_entry ctx -> ctx
+    | Polymorphic_ind_entry ctx -> ctx
+    | Cumulative_ind_entry cumi -> Univ.CumulativityInfo.univ_context cumi
+  in
+  let env' = push_context univctx env in
   let (env_params,paramsctxt) = infer_local_decls env' mie.mind_entry_params in
   (* We first type arity of each inductive definition *)
   (* This allows building the environment of arities and to share *)
@@ -383,16 +389,21 @@ let typecheck_inductive env mie =
 	  | _ (* Not an explicit occurrence of Type *) ->
 	    full_polymorphic ()
       in
-      let arity = 
-	if mie.mind_entry_polymorphic then full_polymorphic ()
-	else template_polymorphic ()
+      let arity =
+        match mie.mind_entry_universes with
+        | Monomorphic_ind_entry _ -> template_polymorphic ()
+        | Polymorphic_ind_entry _ | Cumulative_ind_entry _ -> full_polymorphic ()
       in
 	(id,cn,lc,(sign,arity)))
     inds
   in
   (* Check that the subtyping information inferred for inductive types in the block is correct. *)
   (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
-  let () = if mie.mind_entry_cumulative then check_subtyping mie paramsctxt env_arities inds
+  let () = 
+    match mie.mind_entry_universes with
+    | Monomorphic_ind_entry _ -> ()
+    | Polymorphic_ind_entry _ -> ()
+    | Cumulative_ind_entry cumi -> check_subtyping cumi paramsctxt env_arities inds
   in (env_arities, env_ar_par, paramsctxt, inds)
 
 (************************************************************************)
@@ -864,14 +875,21 @@ let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
     Array.of_list (List.rev kns),
     Array.of_list (List.rev pbs)
 
-let build_inductive env cum p prv ctx env_ar paramsctxt kn isrecord isfinite inds nmr recargs =
+let abstract_inductive_universes iu =
+  match iu with
+  | Monomorphic_ind_entry ctx -> (Univ.empty_level_subst, Monomorphic_ind ctx)
+  | Polymorphic_ind_entry ctx -> 
+    let (inst, auctx) = Univ.abstract_universes ctx in (inst, Polymorphic_ind auctx)
+  | Cumulative_ind_entry cumi -> 
+    let (inst, acumi) = Univ.abstract_cumulativity_info cumi in (inst, Cumulative_ind acumi)
+
+let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
   let nparamsctxt = Context.Rel.length paramsctxt in
-  let substunivs, ctxunivs = Univ.abstract_universes p (Univ.UInfoInd.univ_context ctx) in
-  let substsubtyp, ctxsubtyp = Univ.abstract_universes p (Univ.UInfoInd.subtyp_context ctx) in
+  let substunivs, aiu = abstract_inductive_universes iu in
   let paramsctxt = Vars.subst_univs_level_context substunivs paramsctxt in
   let env_ar =
     let ctxunivs = Environ.rel_context env_ar in 
@@ -942,10 +960,14 @@ let build_inductive env cum p prv ctx env_ar paramsctxt kn isrecord isfinite ind
 			   && Array.length pkt.mind_consnames == 1
 			   && pkt.mind_consnrealargs.(0) > 0 ->
       (** The elimination criterion ensures that all projections can be defined. *)
-      let u = 
-	if p then 
-	  subst_univs_level_instance substunivs (Univ.UContext.instance ctxunivs)
-	else Univ.Instance.empty 
+      let u =
+        let process auctx = 
+          subst_univs_level_instance substunivs (Univ.AUContext.instance auctx)
+        in
+        match aiu with
+        | Monomorphic_ind _ -> Univ.Instance.empty
+        | Polymorphic_ind auctx -> process auctx
+        | Cumulative_ind acumi -> process (Univ.ACumulativityInfo.univ_context acumi)
       in
       let indsp = ((kn, 0), u) in
       let rctx, indty = decompose_prod_assum (subst1 (mkIndU indsp) pkt.mind_nf_lc.(0)) in
@@ -968,9 +990,7 @@ let build_inductive env cum p prv ctx env_ar paramsctxt kn isrecord isfinite ind
       mind_nparams_rec = nmr;
       mind_params_ctxt = paramsctxt;
       mind_packets = packets;
-      mind_polymorphic = p;
-      mind_cumulative = cum;
-      mind_universes = Univ.UInfoInd.make (ctxunivs, ctxsubtyp);
+      mind_universes = aiu;
       mind_private = prv;
       mind_typing_flags = Environ.typing_flags env;
     }
@@ -985,7 +1005,6 @@ let check_inductive env kn mie =
   let chkpos = (Environ.typing_flags env).check_guarded in
   let (nmr,recargs) = check_positivity ~chkpos kn env_ar_par paramsctxt mie.mind_entry_finite inds in
   (* Build the inductive packets *)
-    build_inductive env mie.mind_entry_cumulative mie.mind_entry_polymorphic mie.mind_entry_private
-      mie.mind_entry_universes
+    build_inductive env mie.mind_entry_private mie.mind_entry_universes
       env_ar paramsctxt kn mie.mind_entry_record mie.mind_entry_finite
       inds nmr recargs

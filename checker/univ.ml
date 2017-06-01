@@ -1184,7 +1184,11 @@ end
 
 type universe_context = UContext.t
 
-module UInfoInd =
+module AUContext = UContext
+
+type abstract_universe_context = AUContext.t
+
+module CumulativityInfo =
 struct
   type t = universe_context * universe_context
 
@@ -1223,7 +1227,10 @@ struct
 
 end
 
-type universe_info_ind = UInfoInd.t
+type cumulativity_info = CumulativityInfo.t
+
+module ACumulativityInfo = CumulativityInfo
+type abstract_cumulativity_info = ACumulativityInfo.t
 
 module ContextSet =
 struct
@@ -1281,7 +1288,10 @@ let subst_instance_constraint s (u,d,v as c) =
 let subst_instance_constraints s csts =
   Constraint.fold 
     (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
-    csts Constraint.empty 
+    csts Constraint.empty
+
+let subst_instance_context inst (inner_inst, inner_constr) =
+  (inner_inst, subst_instance_constraints inst inner_constr)
 
 let make_abstract_instance (ctx, _) = 
   Array.mapi (fun i l -> Level.var i) ctx
@@ -1290,8 +1300,8 @@ let make_abstract_instance (ctx, _) =
 let instantiate_univ_context (ctx, csts) = 
   (ctx, subst_instance_constraints ctx csts)
 
-let instantiate_univ_constraints u (_, csts) = 
-  subst_instance_constraints u csts
+let instantiate_cumulativity_info (ctx, ctx') = 
+  (instantiate_univ_context ctx, instantiate_univ_context ctx')
 
 (** With level to universe substitutions. *)
 type universe_subst_fn = universe_level -> universe
