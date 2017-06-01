@@ -7,4 +7,4 @@ fiat_parsers_CI_DIR=${CI_BUILD_DIR}/fiat
 
 git_checkout ${fiat_parsers_CI_BRANCH} ${fiat_parsers_CI_GITURL} ${fiat_parsers_CI_DIR}
 
-( cd ${fiat_parsers_CI_DIR} && make -j ${NJOBS} parsers )
+( cd ${fiat_parsers_CI_DIR} && make -j ${NJOBS} parsers && make -j ${NJOBS} fiat-core )
