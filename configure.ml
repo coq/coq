@@ -349,6 +349,8 @@ let args_options = Arg.align [
     " URL of the coq website";
   "-force-caml-version", Arg.Set Prefs.force_caml_version,
     " Force OCaml version";
+  "-camldir", Arg.String (fun _ -> ()),
+    "<dir> Specifies path to ocaml for running configure script";
 ]
 
 let parse_args () =
@@ -510,6 +512,8 @@ let camltag = match caml_version_list with
   | x::y::_ -> "OCAML"^x^y
   | _ -> assert false
 
+let coq_warn_flag =
+  if caml_version_nums > [4;2;3] then "-w -3-52-56" else ""
 
 (** * CamlpX configuration *)
 
@@ -1128,7 +1132,7 @@ let write_makefile f =
   pr "CAMLHLIB=%S\n\n" camllib;
   pr "# Caml link command and Caml make top command\n";
   pr "# Caml flags\n";
-  pr "CAMLFLAGS=-rectypes %s\n" coq_annotate_flag;
+  pr "CAMLFLAGS=-rectypes %s %s\n" coq_annotate_flag coq_warn_flag;
   pr "# User compilation flag\n";
   pr "USERFLAGS=\n\n";
   pr "# Flags for GCC\n";
