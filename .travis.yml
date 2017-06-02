@@ -31,6 +31,7 @@ env:
   # system is == 4.02.3
   - COMPILER="system"
   - CAMLP5_VER="6.14"
+  - NATIVE_COMP="yes"
   # Main test suites
   matrix:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
@@ -133,6 +134,16 @@ matrix:
           - avsm
           packages: *coqide-packages
 
+    - os: osx
+      env:
+      - TEST_TARGET="test-suite"
+      - COMPILER="system"
+      - CAMLP5_VER="6.17"
+      - NATIVE_COMP="no"
+      before_install:
+      - brew update
+      - brew install opam
+
 install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
 - eval $(opam config env)
@@ -144,7 +155,7 @@ script:
 
 - set -e
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
-- ./configure -local -usecamlp5 -native-compiler yes ${EXTRA_CONF}
+- ./configure -local -usecamlp5 -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'
 
 - echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'
