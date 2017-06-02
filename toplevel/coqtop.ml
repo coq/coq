@@ -246,21 +246,21 @@ let compile_files () =
 let set_emacs () =
   if not (Option.is_empty !toploop) then
     user_err Pp.(str "Flag -emacs is incompatible with a custom toplevel loop");
-  Flags.print_emacs := true;
+  Coqloop.print_emacs := true;
   Printer.enable_goal_tags_printing := true;
   color := `OFF
 
 (** Options for CoqIDE *)
 
 let set_ideslave () =
-  if !Flags.print_emacs then user_err Pp.(str "Flags -ideslave and -emacs are incompatible");
+  if !Coqloop.print_emacs then user_err Pp.(str "Flags -ideslave and -emacs are incompatible");
   toploop := Some "coqidetop";
   Flags.ide_slave := true
 
 (** Options for slaves *)
 
 let set_toploop name =
-  if !Flags.print_emacs then user_err Pp.(str "Flags -toploop and -emacs are incompatible");
+  if !Coqloop.print_emacs then user_err Pp.(str "Flags -toploop and -emacs are incompatible");
   toploop := Some name
 
 (** GC tweaking *)

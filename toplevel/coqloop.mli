@@ -8,6 +8,9 @@
 
 (** The Coq toplevel loop. *)
 
+(** -emacs option: printing includes emacs tags. *)
+val print_emacs : bool ref
+
 (** A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
 

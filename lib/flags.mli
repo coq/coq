@@ -13,7 +13,9 @@
 val boot : bool ref
 val load_init : bool ref
 
+(* Will affect STM caching *)
 val batch_mode : bool ref
+
 type compilation_mode = BuildVo | BuildVio | Vio2Vo
 val compilation_mode : compilation_mode ref
 val compilation_output_name : string option ref
@@ -56,8 +58,6 @@ val profile : bool
 
 (* Legacy flags *)
 
-(* -emacs option: printing includes emacs tags, will affect stm caching. *)
-val print_emacs : bool ref
 (* -xml option: xml hooks will be called *)
 val xml_export : bool ref
 

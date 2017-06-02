@@ -188,8 +188,6 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
       (fun hypl -> List.subtract cmp hypl oldhyps)
       hyps
   in
-  let emacs_str s =
-    if !Flags.print_emacs then s else "" in
   let s = 
     let frst = ref true in
     List.fold_left
@@ -199,9 +197,9 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
 	   "" lh))
     "" newhyps in
   Feedback.msg_notice
-    (str (emacs_str "<infoH>")
+    (str "<infoH>"
       ++  (hov 0 (str s))
-      ++  (str (emacs_str "</infoH>")));
+      ++  (str "</infoH>"));
   tclIDTAC goal;;
 
 

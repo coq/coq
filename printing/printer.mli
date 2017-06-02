@@ -169,19 +169,6 @@ val pr_ne_evar_set         : std_ppcmds -> std_ppcmds -> evar_map ->
 
 val pr_prim_rule           : prim_rule -> std_ppcmds
 
-(** Emacs/proof general support
-   (emacs_str s) outputs
-    - s if emacs mode,
-    - nothing otherwise.
-    This function was previously used to insert special chars like
-    [(String.make 1 (Char.chr 253))] to parenthesize sub-parts of the
-    proof context for proof by pointing. This part of the code is
-    removed for now because it interacted badly with utf8. We may put
-    it back some day using some xml-like tags instead of special
-    chars. See for example the <prompt> tag in the prompt when in
-    emacs mode. *)
-val emacs_str              : string -> string
-
 (** Backwards compatibility *)
 
 val prterm                 : constr -> std_ppcmds (** = pr_lconstr *)
