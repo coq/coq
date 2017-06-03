@@ -288,13 +288,13 @@ let empty_csubst = (0, Int.Map.empty)
 
 type ext_named_context =
   csubst * (Id.t * EConstr.constr) list *
-  Id.Set.t * EConstr.named_context
+  Id.Set.t * EConstr.named_context * Id.Set.t
 
 let push_var id (n, s) =
   let s = Int.Map.add n (EConstr.mkVar id) s in
   (succ n, s)
 
-let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc) =
+let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc, private_ids) =
   let open EConstr in
   let open Vars in
   let map_decl f d =
@@ -334,14 +334,16 @@ let push_rel_decl_to_named_context sigma decl (subst, vsubst, avoid, nc) =
       let vsubst = (id0,mkVar id)::vsubst in
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (subst2 subst vsubst) in
       let nc = List.map (replace_var_named_declaration id0 id) nc in
-      (push_var id0 subst, vsubst, Id.Set.add id avoid, d :: nc)
+      let private_ids = Id.Set.add id (Id.Set.remove id0 private_ids) in
+      (push_var id0 subst, vsubst, Id.Set.add id avoid, d :: nc, private_ids)
   | _ ->
       (* spiwack: if [id0] is a section variable renaming it is
           incorrect. We revert to a less robust behaviour where
           the new binder has name [id]. Which amounts to the same
           behaviour than when [id=id0]. *)
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (subst2 subst vsubst) in
-      (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc)
+      let private_ids = if na = Anonymous then Id.Set.add id private_ids else private_ids in
+      (push_var id subst, vsubst, Id.Set.add id avoid, d :: nc, private_ids)
 
 let push_rel_context_to_named_context env sigma typ =
   (* compute the instances relative to the named context and rel_context *)
@@ -358,9 +360,9 @@ let push_rel_context_to_named_context env sigma typ =
     (* with vars of the rel context *)
     (* We do keep the instances corresponding to local definition (see above) *)
     let private_ids = named_context_private_ids (named_context_val env) in
-    let (subst, vsubst, _, sign) =
+    let (subst, vsubst, _, sign, private_ids) =
       Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context sigma d acc)
-        (rel_context env) ~init:(empty_csubst, [], avoid, named_context env) in
+        (rel_context env) ~init:(empty_csubst, [], avoid, named_context env, private_ids) in
     (val_of_named_context sign private_ids, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
 (*------------------------------------*

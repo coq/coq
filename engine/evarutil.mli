@@ -217,7 +217,7 @@ val csubst_subst : csubst -> constr -> constr
 
 type ext_named_context =
   csubst * (Id.t * constr) list *
-  Id.Set.t * named_context
+  Id.Set.t * named_context * Id.Set.t
 
 val push_rel_decl_to_named_context :
   evar_map -> rel_declaration -> ext_named_context -> ext_named_context
