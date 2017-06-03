@@ -53,3 +53,14 @@ Goal False -> False.
 intro.
 Fail let H' := H in abstract exact H'.
 Abort.
+
+(* Indirectly testing preservation of names by move (derived from Jason) *)
+
+Inductive nat2 := S2 (_ _ : nat2).
+Goal forall t : nat2, True.
+  intro t.
+  let IHt1 := fresh "IHt1" in
+  let IHt2 := fresh "IHt2" in
+  induction t as [? IHt1 ? IHt2].
+  Fail exact IHt1.
+Abort.

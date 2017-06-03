@@ -211,7 +211,7 @@ let hyp_of_move_location = function
   | MoveBefore id -> id
   | _ -> assert false
 
-let move_hyp sigma toleft (left,declfrom,right) hto =
+let move_hyp sigma private_ids toleft (left,declfrom,right) hto =
   let env = Global.env() in
   let test_dep d d2 =
     if toleft
@@ -245,27 +245,31 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
 	  moverec first' middle' right
   in
   let open EConstr in
+  let push_named_context_val_with_privacy d sign =
+    push_named_context_val d (Id.Set.mem (NamedDecl.get_id d) private_ids) sign in
   if toleft then
     let right =
-      List.fold_right (fun d -> push_named_context_val d false) right empty_named_context_val in
-    List.fold_left (fun sign d -> push_named_context_val d false sign)
+      List.fold_right (fun d -> push_named_context_val_with_privacy d) right empty_named_context_val in
+    List.fold_left (fun sign d -> push_named_context_val_with_privacy d sign)
       right (moverec [] [declfrom] left)
   else
     let right =
-      List.fold_right (fun d -> push_named_context_val d false)
+      List.fold_right (fun d -> push_named_context_val_with_privacy d)
 	(moverec [] [declfrom] right) empty_named_context_val in
-    List.fold_left (fun sign d -> push_named_context_val d false sign)
+    List.fold_left (fun sign d -> push_named_context_val_with_privacy d sign)
       right left
 
 let move_hyp_in_named_context sigma hfrom hto sign =
   let open EConstr in
+  let private_ids = Environ.named_context_private_ids sign in
   let (left,right,declfrom,toleft) =
     split_sign hfrom hto (named_context_of_val sign) in
-  move_hyp sigma toleft (left,declfrom,right) hto
+  move_hyp sigma private_ids toleft (left,declfrom,right) hto
 
 let insert_decl_in_named_context sigma decl hto sign =
   let open EConstr in
-  move_hyp sigma false ([],decl,named_context_of_val sign) hto
+  let private_ids = Environ.named_context_private_ids sign in
+  move_hyp sigma private_ids false ([],decl,named_context_of_val sign) hto
 
 (**********************************************************************)
 
