@@ -222,7 +222,14 @@ Unset Implicit Arguments.
 Ltac solve_crelation :=
   match goal with
   | [ |- ?R ?x ?x ] => reflexivity
-  | [ H : ?R ?x ?y |- ?R ?y ?x ] => symmetry ; exact H
+  (* use separate pattern matches as a workaround for bug
+  https://coq.inria.fr/bugs/show_bug.cgi?id=5156 (this tactic applies frequently
+  even in developments that don't actively use CRelationClasses due to
+  [intuition]'s use of [auto with *]) *)
+  | [ |- ?R ?y ?x ] =>
+    match goal with
+    | [ H : R y x |- _ ] => symmetry ; exact H
+    end
   end.
 
 Hint Extern 4 => solve_crelation : crelations.
