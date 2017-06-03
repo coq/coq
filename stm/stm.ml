@@ -474,10 +474,12 @@ end = struct (* {{{ *)
     vcs := rewrite_merge !vcs id ~ours ~theirs:Noop ~at branch
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
-    (match x with
+    (let rec aux x = match x with
     | VernacDefinition (_,((_,i),_),_) -> Names.string_of_id i
     | VernacStartTheoremProof (_,[Some ((_,i),_),_],_) -> Names.string_of_id i
-    | _ -> "branch")
+    | VernacTime (_, e)
+    | VernacTimeout (_, e) -> aux e
+    | _ -> "branch" in aux x)
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind
   let get_info id =
