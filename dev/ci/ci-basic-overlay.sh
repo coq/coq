@@ -115,8 +115,11 @@
 ########################################################################
 # coq-dpdgraph
 ########################################################################
-: ${coq_dpdgraph_CI_BRANCH:=master}
-: ${coq_dpdgraph_CI_GITURL:=https://github.com/Karmaki/coq-dpdgraph.git}
+# Temporary overlay
+: ${coq_dpdgraph_CI_BRANCH:=trunk+clobber-test-suite}
+: ${coq_dpdgraph_CI_GITURL:=https://github.com/JasonGross/coq-dpdgraph.git}
+#: ${coq_dpdgraph_CI_BRANCH:=master}
+#: ${coq_dpdgraph_CI_GITURL:=https://github.com/Karmaki/coq-dpdgraph.git}
 
 ########################################################################
 # CoLoR
