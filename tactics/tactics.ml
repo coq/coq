@@ -5053,7 +5053,10 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
       evd, ctx, nf concl
   in
   let concl = EConstr.of_constr concl in
-  let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac) in
+  let reintros =
+    let private_ids = named_context_private_ids (Environ.named_context_val (Proofview.Goal.env gl)) in
+    tclMAP (fun d -> let id = NamedDecl.get_id d in introduction id (Id.Set.mem id private_ids)) (List.rev sign) in
+  let solve_tac = tclCOMPLETE (tclTHEN reintros tac) in
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
     try Pfedit.build_constant_by_tactic ~goal_kind:gk id ectx secsign concl solve_tac

@@ -25,3 +25,31 @@ Proof.
   refine (fun _ => _).
   Fail exact t.
 Abort.
+
+(* Example from Jason *)
+
+Goal False -> False.
+intro H.
+abstract exact H.
+Qed.
+
+(* Variant *)
+
+Goal False -> False.
+intro.
+Fail abstract exact H.
+Abort.
+
+(* Example from Jason *)
+
+Goal False -> False.
+intro H.
+let H' := H in abstract exact H'. (* Name H' is from Ltac here, so it preserves the privacy *)
+Qed.
+
+(* Variant *)
+
+Goal False -> False.
+intro.
+Fail let H' := H in abstract exact H'.
+Abort.
