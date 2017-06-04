@@ -33,13 +33,13 @@ Print Ltac f.
 Lemma even_pos_odd_pos: forall n, even n -> n >= 0.
 Proof.
 fix even_pos_odd_pos 2 with (odd_pos_even_pos n (H:odd n) {struct H} : n >= 1).
- intros.
- destruct H.
+ intros n H.
+ destruct H as [|? H].
    omega.
    apply odd_pos_even_pos in H.
    omega.
- intros.
- destruct H.
+ intros n H.
+ destruct H as [? H].
   apply even_pos_odd_pos in H.
   omega.
 Qed.

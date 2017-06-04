@@ -117,7 +117,7 @@ fun x : list ?T => match x with
                    end
      : list ?T -> option (list ?T)
 where
-?T : [x : list ?T  x1 : list ?T  x0 := x1 : list ?T |- Type] (x, x1,
+?T : [x : list ?T  ~x1 : list ?T  x0 := x1 : list ?T |- Type] (x, x1,
      x0 cannot be used)
 s
      : s
