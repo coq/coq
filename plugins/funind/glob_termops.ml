@@ -707,3 +707,48 @@ let expand_as =
     (loc,(idl,cpl, expand_as (List.fold_left add_as map cpl) rt))
   in
   expand_as Id.Map.empty
+
+
+
+           
+(* [resolve_and_replace_implicits ?expected_type env sigma rt] solves implicits of [rt] w.r.t. [env] and [sigma] and then replace them by their solution 
+ *)
+
+exception Found of Evd.evar_info
+let resolve_and_replace_implicits ?(flags=Pretyping.all_and_fail_flags) ?(expected_type=Pretyping.WithoutTypeConstraint) env sigma rt =
+  let open Evd in
+  let open Evar_kinds in 
+  (* we first (pseudo) understand [rt] and get back the computed evar_map *)
+  (* FIXME : JF (30/03/2017) I'm not completely sure to have split understand as needed. 
+If someone knows how to prevent solved existantial removal in  understand, please do not hesitate to change the computation of [ctx] here *) 
+  let ctx,_ = Pretyping.ise_pretype_gen flags env sigma Pretyping.empty_lvar expected_type rt in
+  let ctx, f = Evarutil.nf_evars_and_universes ctx in
+
+  (* then we map [rt] to replace the implicit holes by their values *)
+  let rec change rt =
+    match rt.CAst.v with
+    | GHole(ImplicitArg(grk,pk,bk),_,_) -> (* we only want to deal with implicit arguments *)
+       (
+         try (* we scan the new evar map to find the evar corresponding to this hole (by looking the source *)
+           Evd.fold (* to simulate an iter *)
+             (fun _ evi _ ->
+               match evi.evar_source with
+               | (loc_evi,ImplicitArg(gr_evi,p_evi,b_evi)) ->
+                  if Globnames.eq_gr grk gr_evi && pk=p_evi && bk=b_evi  && rt.CAst.loc = loc_evi
+                  then raise (Found evi)
+               | _ -> ()
+             )
+             ctx
+             ();
+           (* the hole was not solved : we do nothing *)
+           rt
+         with Found evi -> (* we found the evar corresponding to this hole *)
+           match evi.evar_body with
+           | Evar_defined c ->
+           (* we just have to lift the solution in glob_term *)
+              Detyping.detype false [] env ctx (EConstr.of_constr (f c))
+           | Evar_empty -> rt (* the hole was not solved : we do nothing *)
+       )
+    | _ -> Glob_ops.map_glob_constr change rt 
+  in
+  change rt
