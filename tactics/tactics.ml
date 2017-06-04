@@ -433,7 +433,9 @@ let find_name mayrepl decl naming gl = match naming with
       (* this case must be compatible with [find_intro_names] below. *)
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
-      new_fresh_id idl (default_id env sigma decl) gl, true
+      let id = new_fresh_id idl (default_id env sigma decl) gl in
+      let isprivate = match RelDecl.get_name decl with Name id' -> not (Id.equal id id') | _ -> true in
+      id, isprivate
   | NamingBasedOn (id,idl) ->  new_fresh_id idl id gl, true
   | NamingMustBe ((loc,id),isprivate) ->
       (* When name is given, we allow to hide a global name *)
@@ -1216,6 +1218,8 @@ let onOpenInductionArg env sigma tac = function
       Tacticals.New.tclTHEN
         (try_intros_until_id_check id)
         (Proofview.Goal.enter begin fun gl ->
+         if Id.Set.mem id (named_context_private_ids (named_context_val (Proofview.Goal.env gl))) then
+           Constrintern.warn_private_name id;
          let sigma = Tacmach.New.project gl in
          tac clear_flag (sigma,(mkVar id,NoBindings))
         end)

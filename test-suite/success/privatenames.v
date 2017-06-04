@@ -71,3 +71,16 @@ Goal False -> False.
 intro; pose proof I as H0.
 Fail exact H.
 Abort.
+
+(* Testing the approach for which non alpha-renamed quantified names are user-generated *)
+
+Section foo.
+Context (b : True).
+Goal forall b : False, b = b.
+Fail destruct b0.
+Abort.
+
+Goal forall b : False, b = b.
+now destruct b.
+Qed.
+End foo.
