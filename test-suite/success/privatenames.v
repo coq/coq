@@ -64,3 +64,10 @@ Goal forall t : nat2, True.
   induction t as [? IHt1 ? IHt2].
   Fail exact IHt1.
 Abort.
+
+(* Example on "pose proof" (from Jason) *)
+
+Goal False -> False.
+intro; pose proof I as H0.
+Fail exact H.
+Abort.
