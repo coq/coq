@@ -106,10 +106,6 @@ val pr_hintbases : string list option -> std_ppcmds
 
 val pr_auto_using : ('constr -> std_ppcmds) -> 'constr list -> std_ppcmds
 
-val pr_bindings :
-  ('constr -> std_ppcmds) ->
-  ('constr -> std_ppcmds) -> 'constr bindings -> std_ppcmds
-
 val pr_match_pattern : ('a -> std_ppcmds) -> 'a match_pattern -> std_ppcmds
 
 val pr_match_rule : bool -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
