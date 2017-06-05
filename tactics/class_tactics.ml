@@ -226,16 +226,22 @@ let e_give_exact flags poly (c,clenv) =
   Sigma.Unsafe.of_pair (Clenvtac.unify ~flags t1 <*> exact_no_check c, sigma)
   end }
 
+let clenv_unique_resolver_tac with_evars ~flags clenv' =
+  Proofview.Goal.enter { enter = begin fun gls ->
+    let resolve =
+      try Proofview.tclUNIT (clenv_unique_resolver ~flags clenv' gls)
+      with e -> Proofview.tclZERO e
+    in resolve >>= fun clenv' ->
+       Clenvtac.clenv_refine with_evars ~with_classes:false clenv'
+  end }
+
 let unify_e_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
   let clenv', c = connect_hint_clenv poly c clenv gls in
-  let clenv' = clenv_unique_resolver ~flags clenv' gls in
-    Clenvtac.clenv_refine true ~with_classes:false clenv'
-  end }
+  clenv_unique_resolver_tac true ~flags clenv' end }
 
 let unify_resolve poly flags = { enter = begin fun gls (c,_,clenv) ->
   let clenv', _ = connect_hint_clenv poly c clenv gls in
-  let clenv' = clenv_unique_resolver ~flags clenv' gls in
-    Clenvtac.clenv_refine false ~with_classes:false clenv'
+  clenv_unique_resolver_tac false ~flags clenv'
   end }
 
 (** Application of a lemma using [refine] instead of the old [w_unify] *)
@@ -691,7 +697,7 @@ module V85 = struct
   let merge_failures x y =
     match x, y with
     | _, ReachedLimit
-      | ReachedLimit, _ -> ReachedLimit
+    | ReachedLimit, _ -> ReachedLimit
     | NotApplicable, NotApplicable -> NotApplicable
 
   let or_tac (x : 'a tac) (y : 'a tac) : 'a tac =
@@ -1004,9 +1010,9 @@ module Search = struct
 
   (** In the proof engine failures are represented as exceptions *)
   exception ReachedLimitEx
-  exception NotApplicableEx
+  exception NoApplicableEx
 
-  (** ReachedLimitEx has priority over NotApplicableEx to handle
+  (** ReachedLimitEx has priority over NoApplicableEx to handle
       iterative deepening: it should fail when no hints are applicable,
       but go to a deeper depth otherwise. *)
   let merge_exceptions e e' =
@@ -1042,7 +1048,7 @@ module Search = struct
               Feedback.msg_debug (pr_depth info.search_depth ++
                                     str": failure due to non-class subgoal " ++
                                     pr_ev sigma (Proofview.Goal.goal gl));
-            Proofview.tclZERO NotApplicableEx) }
+            Proofview.tclZERO NoApplicableEx) }
 
   (** The general hint application tactic.
       tac1 + tac2 .... The choice of OR or ORELSE is determined
@@ -1078,14 +1084,24 @@ module Search = struct
       let derivs = path_derivate info.search_cut name in
       let pr_error ie =
         if !typeclasses_debug > 1 then
-          let msg =
-            pr_depth (!idx :: info.search_depth) ++ str": " ++
+          let idx = if fst ie == NoApplicableEx then pred !idx else !idx in
+          let header =
+            pr_depth (idx :: info.search_depth) ++ str": " ++
               Lazy.force pp ++
               (if !foundone != true then
                  str" on" ++ spc () ++ pr_ev s (Proofview.Goal.goal (Proofview.Goal.assume gl))
                else mt ())
           in
-          Feedback.msg_debug (msg ++ str " failed with " ++ CErrors.iprint ie)
+          let msg =
+            match fst ie with
+            | Pretype_errors.PretypeError (env, evd, Pretype_errors.CannotUnify (x,y,_)) ->
+               str"Cannot unify " ++ print_constr_env env evd x ++ str" and " ++
+                                           print_constr_env env evd y
+            | ReachedLimitEx -> str "Proof-search reached its limit."
+            | NoApplicableEx -> str "Proof-search failed."
+            | e -> CErrors.iprint ie
+          in
+          Feedback.msg_debug (header ++ str " failed with: " ++ msg)
         else ()
       in
       let tac_of gls i j = Goal.enter { enter = fun gl' ->
@@ -1196,10 +1212,10 @@ module Search = struct
                 str" possibilities");
          match e with
          | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
-         | (_,ie) -> Proofview.tclZERO ~info:ie NotApplicableEx
+         | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableEx
     in
-    if backtrack then aux (NotApplicableEx,Exninfo.null) poss
-    else tclONCE (aux (NotApplicableEx,Exninfo.null) poss)
+    if backtrack then aux (NoApplicableEx,Exninfo.null) poss
+    else tclONCE (aux (NoApplicableEx,Exninfo.null) poss)
 
   let hints_tac hints info kont : unit Proofview.tactic =
     Proofview.Goal.enter
@@ -1303,7 +1319,7 @@ module Search = struct
       match e with
       | ReachedLimitEx ->
          Tacticals.New.tclFAIL 0 (str"Proof search reached its limit")
-      | NotApplicableEx ->
+      | NoApplicableEx ->
          Tacticals.New.tclFAIL 0 (str"Proof search failed" ++
                                     (if Option.is_empty depth then mt()
                                      else str" without reaching its limit"))
