@@ -24,11 +24,11 @@ the latest Coq changes validated against your development?
 If so, keep reading! Getting Coq changes tested against your library
 is easy, all that you need to do is:
 
-1.- Put you development in a public repository tracking coq trunk.
-2.- Make sure that your development builds in less than 35 minutes.
-3.- Submit a PR adding your development.
-4.- ?
-5.- Profit! Your library is now part of Coq's continous integration!
+1. Put you development in a public repository tracking coq trunk.
+2. Make sure that your development builds in less than 35 minutes.
+3. Submit a PR adding your development.
+4. ?
+5. Profit! Your library is now part of Coq's continous integration!
 
 Note that by partipating in this program, you assume a reasonable
 compromise to discuss and eventually integrate compatibility changes
