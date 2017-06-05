@@ -260,7 +260,7 @@ let mkGProd id c1 c2 = CAst.make @@
 let mkGArrow c1 c2 = CAst.make @@
   GProd (Anonymous, Explicit, c1, c2)
 let mkGVar id = CAst.make @@ GVar (Id.of_string id)
-let mkGPatVar id = CAst.make @@ GPatVar((false, Id.of_string id))
+let mkGPatVar id = CAst.make @@ GPatVar(Evar_kinds.FirstOrderPatVar (Id.of_string id))
 let mkGRef r = CAst.make @@ GRef (Lazy.force r, None)
 let mkGAppRef r args = mkGApp (mkGRef r) args
 

@@ -625,13 +625,13 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
       let j = (Retyping.get_judgment_of env.ExtraEnv.env !evdref c) in
 	inh_conv_coerce_to_tycon ?loc env evdref j tycon
 
-  | GPatVar (someta,n) ->
+  | GPatVar kind ->
     let env = ltac_interp_name_env k0 lvar env !evdref in
     let ty =
       match tycon with
       | Some ty -> ty
       | None -> new_type_evar env evdref loc in
-    let k = Evar_kinds.MatchingVar (someta,n) in
+    let k = Evar_kinds.MatchingVar kind in
       { uj_val = e_new_evar env evdref ~src:(loc,k) ty; uj_type = ty }
 
   | GHole (k, naming, None) ->

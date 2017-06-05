@@ -39,7 +39,7 @@ type glob_constr_r =
       (** An identifier that cannot be regarded as "GRef".
           Bound variables are typically represented this way. *)
   | GEvar   of existential_name * (Id.t * glob_constr) list
-  | GPatVar of bool * patvar (** Used for patterns only *)
+  | GPatVar of Evar_kinds.matching_var_kind (** Used for patterns only *)
   | GApp    of glob_constr * glob_constr list
   | GLambda of Name.t * binding_kind *  glob_constr * glob_constr
   | GProd   of Name.t * binding_kind * glob_constr * glob_constr

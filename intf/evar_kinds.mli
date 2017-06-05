@@ -8,6 +8,7 @@
 
 open Names
 open Globnames
+open Misctypes
 
 (** The kinds of existential variable *)
 
@@ -15,6 +16,8 @@ open Globnames
     defined transparent and expanded in the term? *)
 
 type obligation_definition_status = Define of bool | Expand
+
+type matching_var_kind = FirstOrderPatVar of patvar | SecondOrderPatVar of patvar
 
 type t =
   | ImplicitArg of global_reference * (int * Id.t option)
@@ -27,6 +30,6 @@ type t =
   | TomatchTypeParameter of inductive * int
   | GoalEvar
   | ImpossibleCase
-  | MatchingVar of bool * Id.t
+  | MatchingVar of matching_var_kind
   | VarInstance of Id.t
   | SubEvar of Constr.existential_key

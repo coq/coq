@@ -663,9 +663,11 @@ let rec extern inctx scopes vars r =
   | GEvar (n,l) ->
       extern_evar n (List.map (on_snd (extern false scopes vars)) l)
 
-  | GPatVar (b,n) ->
+  | GPatVar kind ->
       if !print_meta_as_hole then CHole (None, Misctypes.IntroAnonymous, None) else
-        if b then CPatVar n else CEvar (n,[])
+       (match kind with
+         | Evar_kinds.SecondOrderPatVar n -> CPatVar n
+         | Evar_kinds.FirstOrderPatVar n -> CEvar (n,[]))
 
   | GApp (f,args) ->
       (match f with
@@ -1037,13 +1039,13 @@ let rec glob_of_pat env sigma pat = CAst.make @@ match pat with
       with Not_found -> Id.of_string ("_UNBOUND_REL_"^(string_of_int n)) in
       GVar id
   | PMeta None -> GHole (Evar_kinds.InternalHole, Misctypes.IntroAnonymous,None)
-  | PMeta (Some n) -> GPatVar (false,n)
+  | PMeta (Some n) -> GPatVar (Evar_kinds.FirstOrderPatVar n)
   | PProj (p,c) -> GApp (CAst.make @@ GRef (ConstRef (Projection.constant p),None),
 			 [glob_of_pat env sigma c])
   | PApp (f,args) ->
       GApp (glob_of_pat env sigma f,Array.map_to_list (glob_of_pat env sigma) args)
   | PSoApp (n,args) ->
-      GApp (CAst.make @@ GPatVar (true,n),
+      GApp (CAst.make @@ GPatVar (Evar_kinds.SecondOrderPatVar n),
         List.map (glob_of_pat env sigma) args)
   | PProd (na,t,c) ->
       GProd (na,Explicit,glob_of_pat env sigma t,glob_of_pat (na::env) sigma c)
