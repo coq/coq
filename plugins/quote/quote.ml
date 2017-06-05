@@ -423,7 +423,7 @@ let quote_terms env sigma ivs lc =
                | None ->
                    begin match ivs.constant_lhs with
                      | Some c_lhs -> subst_meta [1, c] c_lhs
-                     | None -> anomaly (Pp.str "invalid inversion scheme for quote")
+                     | None -> anomaly (Pp.str "invalid inversion scheme for quote.")
                    end
                | Some var_lhs ->
                    begin match ivs.constant_lhs with

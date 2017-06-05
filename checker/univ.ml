@@ -545,7 +545,7 @@ let repr g u =
     let a =
       try UMap.find u g
       with Not_found -> anomaly ~label:"Univ.repr"
-	  (str"Universe " ++ Level.pr u ++ str" undefined")
+	  (str"Universe " ++ Level.pr u ++ str" undefined.")
     in
     match a with
       | Equiv v -> repr_rec v
@@ -848,7 +848,7 @@ let merge g arcu arcv =
       else (max_rank, old_max_rank, best_arc, arc::rest)
     in
       match between g arcu arcv with
-      | [] -> anomaly (str "Univ.between")
+      | [] -> anomaly (str "Univ.between.")
       | arc::rest ->
         let (max_rank, old_max_rank, best_arc, rest) =
           List.fold_left best_ranked (arc.rank, min_int, arc, []) rest in
@@ -911,7 +911,7 @@ let enforce_univ_eq u v g =
       | FastLT -> error_inconsistency Eq u v
       | FastLE -> merge g arcv arcu
       | FastNLE -> merge_disc g arcu arcv
-      | FastEQ -> anomaly (Pp.str "Univ.compare"))
+      | FastEQ -> anomaly (Pp.str "Univ.compare."))
 
 (* enforce_univ_leq : Level.t -> Level.t -> unit *)
 (* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
@@ -924,7 +924,7 @@ let enforce_univ_leq u v g =
     | FastLT -> error_inconsistency Le u v
     | FastLE  -> merge g arcv arcu
     | FastNLE -> fst (setleq g arcu arcv)
-    | FastEQ -> anomaly (Pp.str "Univ.compare")
+    | FastEQ -> anomaly (Pp.str "Univ.compare.")
 
 (* enforce_univ_lt u v will force u<v if possible, will fail otherwise *)
 let enforce_univ_lt u v g =
@@ -937,7 +937,7 @@ let enforce_univ_lt u v g =
     | FastNLE ->
       match fast_compare_neq false g arcv arcu with
 	FastNLE -> fst (setlt g arcu arcv)
-      | FastEQ -> anomaly (Pp.str "Univ.compare")
+      | FastEQ -> anomaly (Pp.str "Univ.compare.")
       | FastLE | FastLT -> error_inconsistency Lt u v
 
 (* Prop = Set is forbidden here. *)
@@ -995,13 +995,13 @@ let constraint_add_leq v u c =
       else if j <= -1 (* n = m+k, v+k <= u <-> v+(k-1) < u *) then
 	if Level.equal x y then (* u+(k+1) <= u *)
 	  raise (UniverseInconsistency (Le, Universe.tip v, Universe.tip u))
-	else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints")
+	else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
       else if j = 0 then
 	Constraint.add (x,Le,y) c
       else (* j >= 1 *) (* m = n + k, u <= v+k *)
 	if Level.equal x y then c (* u <= u+k, trivial *)
 	else if Level.is_small x then c (* Prop,Set <= u+S k, trivial *)
-	else anomaly (Pp.str"Unable to handle arbitrary u <= v+k constraints")
+	else anomaly (Pp.str"Unable to handle arbitrary u <= v+k constraints.")
 	  
 let check_univ_leq_one u v = Universe.exists (Expr.leq u) v
 
@@ -1012,7 +1012,7 @@ let enforce_leq u v c =
   match v with
   | Universe.Huniv.Cons (v, _, Universe.Huniv.Nil) ->
     Universe.Huniv.fold (fun u -> constraint_add_leq u v) u c
-  | _ -> anomaly (Pp.str"A universe bound can only be a variable")
+  | _ -> anomaly (Pp.str"A universe bound can only be a variable.")
 
 let enforce_leq u v c =
   if check_univ_leq u v then c

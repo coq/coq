@@ -132,7 +132,7 @@ let rec repr g u =
   let a =
     try UMap.find u g.entries
     with Not_found -> CErrors.anomaly ~label:"Univ.repr"
-        (str"Universe " ++ Level.pr u ++ str" undefined")
+        (str"Universe " ++ Level.pr u ++ str" undefined.")
   in
   match a with
     | Equiv v -> repr g v

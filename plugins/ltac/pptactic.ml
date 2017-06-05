@@ -536,7 +536,7 @@ type 'a extra_genarg_printer =
       hv 0
         (pr_let_clause (if recflag then "let rec" else "let") pr hd ++
            prlist (fun t -> spc () ++ pr_let_clause "with" pr t) tl)
-    | [] -> anomaly (Pp.str "LetIn must declare at least one binding")
+    | [] -> anomaly (Pp.str "LetIn must declare at least one binding.")
 
   let pr_seq_body pr tl =
     hv 0 (str "[ " ++

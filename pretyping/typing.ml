@@ -31,7 +31,7 @@ let push_rec_types pfix env =
 let meta_type evd mv =
   let ty =
     try Evd.meta_ftype evd mv
-    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv)) in
+    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
   let ty = Evd.map_fl EConstr.of_constr ty in
   meta_instance evd ty
 
@@ -121,11 +121,11 @@ let lambda_applist_assum sigma n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
-      else anomaly (Pp.str "Not enough arguments")
+      else anomaly (Pp.str "Not enough arguments.")
     else match EConstr.kind sigma t, l with
     | Lambda(_,_,c), arg::l -> app (n-1) (arg::subst) c l
     | LetIn(_,b,_,c), _ -> app (n-1) (substl subst b::subst) c l
-    | _ -> anomaly (Pp.str "Not enough lambda/let's") in
+    | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
   app n [] c l
 
 let e_type_case_branches env evdref (ind,largs) pj c =

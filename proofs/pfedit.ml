@@ -113,7 +113,7 @@ let get_current_context () =
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with
     | (id,([concl],strength)) -> id,strength,concl
-    | _ -> CErrors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement")
+    | _ -> CErrors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement.")
 
 let solve ?with_end_tac gi info_lvl tac pr =
   try 

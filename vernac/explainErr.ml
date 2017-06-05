@@ -109,7 +109,7 @@ let process_vernac_interp_error ?(allow_uncaught=true) (exc, info) =
   let () =
     if not allow_uncaught && not (CErrors.handled (fst e)) then
       let (e, info) = e in
-      let msg = str "Uncaught exception " ++ str (Printexc.to_string e) in
+      let msg = str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "." in
       let err = CErrors.make_anomaly msg in
       Util.iraise (err, info)
   in

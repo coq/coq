@@ -48,7 +48,7 @@ let retype_error re = raise (RetypeError re)
 
 let anomaly_on_error f x =
  try f x
- with RetypeError e -> anomaly ~label:"retyping" (print_retype_error e)
+ with RetypeError e -> anomaly ~label:"retyping" (print_retype_error e ++ str ".")
 
 let get_type_from_constraints env sigma t =
   if isEvar sigma (fst (decompose_app_vect sigma t)) then

@@ -145,7 +145,7 @@ let add_step s sub =
     | SI_Or_r,[p] -> I_Or_r p
     | SE_Or i,[p1;p2] -> E_Or(i,p1,p2)
     | SD_Or i,[p] -> D_Or(i,p)
-    | _,_ -> anomaly ~label:"add_step" (Pp.str "wrong arity")
+    | _,_ -> anomaly ~label:"add_step" (Pp.str "wrong arity.")
 
 type 'a with_deps =
     {dep_it:'a;
@@ -167,7 +167,7 @@ type state =
 
 let project = function
     Complete prf -> prf
-  | Incomplete (_,_) -> anomaly (Pp.str "not a successful state")
+  | Incomplete (_,_) -> anomaly (Pp.str "not a successful state.")
 
 let pop n prf =
   let nprf=
@@ -361,7 +361,7 @@ let search_norev seq=
 		     (Arrow(f2,f3)))
 		  f1;
 		add_hyp (embed nseq) f3]):: !goals
-      | _ -> anomaly ~label:"search_no_rev" (Pp.str "can't happen") in
+      | _ -> anomaly ~label:"search_no_rev" (Pp.str "can't happen.") in
     Int.Map.iter add_one seq.norev_hyps;
     List.rev !goals
 
@@ -386,7 +386,7 @@ let search_in_rev_hyps seq=
 	| Arrow (Disjunct (f1,f2),f0) ->
 	    [make_step (SD_Or(i)),
 	     [add_hyp (add_hyp (embed nseq) (Arrow(f1,f0))) (Arrow (f2,f0))]]
-	| _ -> anomaly ~label:"search_in_rev_hyps" (Pp.str "can't happen")
+	| _ -> anomaly ~label:"search_in_rev_hyps" (Pp.str "can't happen.")
   with
       Not_found -> search_norev seq
 
@@ -464,7 +464,7 @@ let branching = function
 	  | _::next ->
 	      s_info.nd_branching<-s_info.nd_branching+List.length next in
 	List.map (append stack) successors
-  | Complete prf -> anomaly (Pp.str "already succeeded")
+  | Complete prf -> anomaly (Pp.str "already succeeded.")
 
 open Pp
 

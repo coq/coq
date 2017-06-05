@@ -357,7 +357,7 @@ let handle_exn (e, info) =
 let init =
   let initialized = ref false in
   fun file ->
-   if !initialized then anomaly (str "Already initialized")
+   if !initialized then anomaly (str "Already initialized.")
    else begin
      let init_sid = Stm.get_current_state () in
      initialized := true;

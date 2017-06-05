@@ -24,7 +24,7 @@ let register_alias key tac =
 
 let interp_alias key =
   try KNmap.find key !alias_map
-  with Not_found -> CErrors.anomaly (str "Unknown tactic alias: " ++ KerName.print key)
+  with Not_found -> CErrors.anomaly (str "Unknown tactic alias: " ++ KerName.print key ++ str ".")
 
 let check_alias key = KNmap.mem key !alias_map
 

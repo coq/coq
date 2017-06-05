@@ -350,7 +350,7 @@ let end_compilation_checks dir =
     try match find_entry_p is_opening_lib with
       |	(oname, CompilingLibrary prefix) -> oname
       | _ -> assert false
-    with Not_found -> anomaly (Pp.str "No module declared")
+    with Not_found -> anomaly (Pp.str "No module declared.")
   in
   let _ =
     match !lib_state.comp_name with
@@ -358,7 +358,7 @@ let end_compilation_checks dir =
       | Some m ->
 	  if not (Names.DirPath.equal m dir) then anomaly
 	    (str "The current open module has name" ++ spc () ++ pr_dirpath m ++
-             spc () ++ str "and not" ++ spc () ++ pr_dirpath m);
+             spc () ++ str "and not" ++ spc () ++ pr_dirpath m ++ str ".");
   in
   oname
 
@@ -547,7 +547,7 @@ let discharge_item ((sp,_ as oname),e) =
   | FrozenState _ -> None
   | ClosedSection _ | ClosedModule _ -> None
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
-      anomaly (Pp.str "discharge_item")
+      anomaly (Pp.str "discharge_item.")
 
 let close_section () =
   let oname,fs =

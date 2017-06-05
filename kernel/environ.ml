@@ -342,7 +342,7 @@ let template_polymorphic_pconstant (cst,u) env =
 let lookup_projection cst env =
   match (lookup_constant (Projection.constant cst) env).const_proj with 
   | Some pb -> pb
-  | None -> anomaly (Pp.str "lookup_projection: constant is not a projection")
+  | None -> anomaly (Pp.str "lookup_projection: constant is not a projection.")
 
 let is_projection cst env =
   match (lookup_constant cst env).const_proj with 
@@ -546,7 +546,7 @@ let register env field entry =
     | KInt31 (grp, Int31Type) ->
         let i31c = match kind_of_term entry with
                      | Ind i31t -> mkConstructUi (i31t, 1)
-		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type")
+		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type.")
 	in
         register_one (register_one env (KInt31 (grp,Int31Constructor)) i31c) field entry
     | field -> register_one env field entry
@@ -592,7 +592,7 @@ fun rk value field ->
   let int31_op_from_const n op prim =
     match kind_of_term value with
       | Const kn ->  int31_op n op prim kn
-      | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
+      | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant.")
   in
   let int31_binop_from_const op prim = int31_op_from_const 2 op prim in
   let int31_unop_from_const op prim = int31_op_from_const 1 op prim in
@@ -604,20 +604,20 @@ fun rk value field ->
           match field with
           | KInt31 (grp, Int31Type) -> Retroknowledge.find rk (KInt31 (grp,Int31Bits))
           | _ -> anomaly ~label:"Environ.register"
-              (Pp.str "add_int31_decompilation_from_type called with an abnormal field")
+              (Pp.str "add_int31_decompilation_from_type called with an abnormal field.")
         in
         let i31bit_type =
           match kind_of_term int31bit with
           | Ind (i31bit_type,_) -> i31bit_type
           |  _ -> anomaly ~label:"Environ.register"
-              (Pp.str "Int31Bits should be an inductive type")
+              (Pp.str "Int31Bits should be an inductive type.")
         in
         let int31_decompilation =
           match kind_of_term value with
           | Ind (i31t,_) ->
               constr_of_int31 i31t i31bit_type
           | _ -> anomaly ~label:"Environ.register"
-              (Pp.str "should be an inductive type")
+              (Pp.str "should be an inductive type.")
         in
         { empty_reactive_info with
           vm_decompile_const = Some int31_decompilation;

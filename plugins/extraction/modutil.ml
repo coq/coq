@@ -19,7 +19,7 @@ open Mlutil
 let rec msid_of_mt = function
   | MTident mp -> mp
   | MTwith(mt,_)-> msid_of_mt mt
-  | _ -> anomaly ~label:"extraction" (Pp.str "the With operator isn't applied to a name")
+  | _ -> anomaly ~label:"extraction" (Pp.str "the With operator isn't applied to a name.")
 
 (*s Apply some functions upon all [ml_decl] and [ml_spec] found in a
    [ml_structure]. *)
@@ -231,7 +231,7 @@ let get_decl_in_structure r struc =
 		  | _ -> error_not_visible r
     in go ll sel
   with Not_found ->
-    anomaly (Pp.str "reference not found in extracted structure")
+    anomaly (Pp.str "reference not found in extracted structure.")
 
 
 (*s Optimization of a [ml_structure]. *)

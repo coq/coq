@@ -52,14 +52,14 @@ let gen_reference_in_modules locstr dirs s =
     | [] ->
 	anomaly ~label:locstr (str "cannot find " ++ str s ++
 	str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-	prlist_with_sep pr_comma pr_dirpath dirs)
+	prlist_with_sep pr_comma pr_dirpath dirs ++ str ".")
     | l ->
       anomaly ~label:locstr
 	(str "ambiguous name " ++ str s ++ str " can represent " ++
 	   prlist_with_sep pr_comma
 	   (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
 	   str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-	   prlist_with_sep pr_comma pr_dirpath dirs)
+	   prlist_with_sep pr_comma pr_dirpath dirs ++ str ".")
 
 (* For tactics/commands requiring vernacular libraries *)
 
@@ -185,7 +185,7 @@ let build_bool_type () =
     andb_prop =  init_reference ["Datatypes"] "andb_prop";
     andb_true_intro =  init_reference ["Datatypes"] "andb_true_intro" }
 
-let build_sigma_set () = anomaly (Pp.str "Use build_sigma_type")
+let build_sigma_set () = anomaly (Pp.str "Use build_sigma_type.")
 
 let build_sigma_type () =
   { proj1 = init_reference ["Specif"] "projT1";
@@ -368,7 +368,7 @@ let coq_eq_ref      = lazy (init_reference ["Logic"] "eq")
 let coq_identity_ref = lazy (init_reference ["Datatypes"] "identity")
 let coq_jmeq_ref     = lazy (find_reference "Coqlib" [coq;"Logic";"JMeq"] "JMeq")
 let coq_eq_true_ref = lazy (find_reference "Coqlib" [coq;"Init";"Datatypes"] "eq_true")
-let coq_existS_ref  = lazy (anomaly (Pp.str "use coq_existT_ref"))
+let coq_existS_ref  = lazy (anomaly (Pp.str "use coq_existT_ref."))
 let coq_existT_ref  = lazy (init_reference ["Specif"] "existT")
 let coq_exist_ref  = lazy (init_reference ["Specif"] "exist")
 let coq_not_ref     = lazy (init_reference ["Logic"] "not")

@@ -131,7 +131,7 @@ let lookup_constant_in_impl cst fallback =
        - The label has not been found in the structure. This is an error *)
     match fallback with
       | Some cb -> cb
-      | None -> anomaly (str "Print Assumption: unknown constant " ++ pr_con cst)
+      | None -> anomaly (str "Print Assumption: unknown constant " ++ pr_con cst ++ str ".")
 
 let lookup_constant cst =
   try
@@ -146,7 +146,7 @@ let lookup_mind_in_impl mind =
     let fields = memoize_fields_of_mp mp in
       search_mind_label lab fields
   with Not_found ->
-    anomaly (str "Print Assumption: unknown inductive " ++ MutInd.print mind)
+    anomaly (str "Print Assumption: unknown inductive " ++ MutInd.print mind ++ str ".")
 
 let lookup_mind mind =
   try Global.lookup_mind mind

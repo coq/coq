@@ -26,7 +26,7 @@ module NamedDecl = Context.Named.Declaration
 (*s Cooking the constants. *)
 
 let pop_dirpath p = match DirPath.repr p with
-  | [] -> anomaly ~label:"dirpath_prefix" (Pp.str "empty dirpath")
+  | [] -> anomaly ~label:"dirpath_prefix" (Pp.str "empty dirpath.")
   | _::l -> DirPath.make l
 
 let pop_mind kn =

@@ -1445,7 +1445,7 @@ let instance sigma s c =
 let hnf_prod_app env sigma t n =
   match EConstr.kind sigma (whd_all env sigma t) with
     | Prod (_,_,b) -> subst1 n b
-    | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product")
+    | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product.")
 
 let hnf_prod_appvect env sigma t nl =
   Array.fold_left (fun acc t -> hnf_prod_app env sigma acc t) t nl
@@ -1456,7 +1456,7 @@ let hnf_prod_applist env sigma t nl =
 let hnf_lam_app env sigma t n =
   match EConstr.kind sigma (whd_all env sigma t) with
     | Lambda (_,_,b) -> subst1 n b
-    | _ -> anomaly ~label:"hnf_lam_app" (Pp.str "Need an abstraction")
+    | _ -> anomaly ~label:"hnf_lam_app" (Pp.str "Need an abstraction.")
 
 let hnf_lam_appvect env sigma t nl =
   Array.fold_left (fun acc t -> hnf_lam_app env sigma acc t) t nl
@@ -1693,5 +1693,5 @@ let betazetaevar_applist sigma n c l =
     | Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
     | LetIn(_,b,_,c), _ -> stacklam (n-1) (substl env b::env) c stack
     | Evar _, _ -> applist (substl env t, stack)
-    | _ -> anomaly (Pp.str "Not enough lambda/let's") in
+    | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
   stacklam n [] c l

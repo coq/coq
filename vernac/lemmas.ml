@@ -242,7 +242,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
         | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, body_i t2)
         | Lambda(na,ty,t) -> mkLambda(na,ty,body_i t)
         | App (t, args) -> mkApp (body_i t, args)
-        | _ -> anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr body) in
+        | _ -> anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr body ++ str ".") in
       let body_i = body_i body in
       match locality with
       | Discharge ->
@@ -402,7 +402,7 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
       let () = match thms with [_] -> () | _ -> assert false in
       (if Flags.is_auto_intros () then Some (intro_tac (List.hd thms)) else None), [] in
   match thms with
-  | [] -> anomaly (Pp.str "No proof to start")
+  | [] -> anomaly (Pp.str "No proof to start.")
   | ((id,pl),(t,(_,imps)))::other_thms ->
       let hook ctx strength ref =
         let ctx = match ctx with

@@ -397,7 +397,7 @@ let rewrite_until_var arg_num eq_ids : tactic =
     then tclIDTAC g
     else
       match eq_ids with
-	| [] -> anomaly (Pp.str "Cannot find a way to prove recursive property");
+	| [] -> anomaly (Pp.str "Cannot find a way to prove recursive property.");
 	| eq_id::eq_ids ->
 	    tclTHEN
 	      (tclTRY (Proofview.V82.of_tactic (Equality.rewriteRL (mkVar eq_id))))
@@ -605,7 +605,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 		   observe (str "cannot compute new term value : " ++ pr_gls g' ++ fnl () ++ str "last hyp is" ++
 			      pr_leconstr_env (pf_env g') (project g') new_term_value_eq
 			   );
-		   anomaly (Pp.str "cannot compute new term value")
+		   anomaly (Pp.str "cannot compute new term value.")
 	   in
 	 let fun_body =
 	   mkLambda(Anonymous,
@@ -838,7 +838,7 @@ let build_proof
 		 h_reduce_with_zeta Locusops.onConcl;
 		 build_proof do_finalize new_infos
 		] g
-	  | Rel _ -> anomaly (Pp.str "Free var in goal conclusion !")
+	  | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!")
   and build_proof do_finalize dyn_infos g =
 (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
     observe_tac_stream (str "build_proof with " ++ Printer.pr_leconstr dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
@@ -1032,7 +1032,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 		{finfos with
 		   equation_lemma = Some (match Nametab.locate (qualid_of_ident equation_lemma_id) with
 					      ConstRef c -> c
-					    | _ -> CErrors.anomaly (Pp.str "Not a constant")
+					    | _ -> CErrors.anomaly (Pp.str "Not a constant.")
 					 )
 		}
 	  | _ -> ()
@@ -1255,7 +1255,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	try
 	  let pte =
             try destVar (project gl) pte
-            with DestKO -> anomaly (Pp.str "Property is not a variable")
+            with DestKO -> anomaly (Pp.str "Property is not a variable.")
           in
 	  let fix_info = Id.Map.find  pte ptes_to_fix in
 	  let nb_args = fix_info.nb_realargs in

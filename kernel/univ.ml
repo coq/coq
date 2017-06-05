@@ -781,7 +781,7 @@ let enforce_eq_level u v c =
 let enforce_eq u v c =
   match Universe.level u, Universe.level v with
     | Some u, Some v -> enforce_eq_level u v c
-    | _ -> anomaly (Pp.str "A universe comparison can only happen between variables")
+    | _ -> anomaly (Pp.str "A universe comparison can only happen between variables.")
 
 let check_univ_eq u v = Universe.equal u v
 
@@ -801,13 +801,13 @@ let constraint_add_leq v u c =
       else if j <= -1 (* n = m+k, v+k <= u <-> v+(k-1) < u *) then
 	if Level.equal x y then (* u+(k+1) <= u *)
 	  raise (UniverseInconsistency (Le, Universe.tip v, Universe.tip u, None))
-	else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints")
+	else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
       else if j = 0 then
 	Constraint.add (x,Le,y) c
       else (* j >= 1 *) (* m = n + k, u <= v+k *)
 	if Level.equal x y then c (* u <= u+k, trivial *)
 	else if Level.is_small x then c (* Prop,Set <= u+S k, trivial *)
-	else anomaly (Pp.str"Unable to handle arbitrary u <= v+k constraints")
+	else anomaly (Pp.str"Unable to handle arbitrary u <= v+k constraints.")
 	  
 let check_univ_leq_one u v = Universe.exists (Expr.leq u) v
 
@@ -982,7 +982,7 @@ let enforce_eq_instances x y =
   let ax = Instance.to_array x and ay = Instance.to_array y in
     if Array.length ax != Array.length ay then
       anomaly (Pp.(++) (Pp.str "Invalid argument: enforce_eq_instances called with")
-		 (Pp.str " instances of different lengths"));
+		 (Pp.str " instances of different lengths."));
     CArray.fold_right2 enforce_eq_level ax ay
 
 type universe_instance = Instance.t

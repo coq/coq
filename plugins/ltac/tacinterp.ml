@@ -379,7 +379,7 @@ let try_interp_ltac_var coerce ist env (loc,id) =
 
 let interp_ltac_var coerce ist env locid =
   try try_interp_ltac_var coerce ist env locid
-  with Not_found -> anomaly (str "Detected '" ++ Id.print (snd locid) ++ str "' as ltac var at interning time")
+  with Not_found -> anomaly (str "Detected '" ++ Id.print (snd locid) ++ str "' as ltac var at interning time.")
 
 let interp_ident ist env sigma id =
   try try_interp_ltac_var (coerce_var_to_ident false env sigma) ist (Some (env,sigma)) (Loc.tag id)

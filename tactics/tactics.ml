@@ -1246,7 +1246,7 @@ let cut c =
 let error_uninstantiated_metas t clenv =
   let t = EConstr.Unsafe.to_constr t in
   let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
-  let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta")
+  let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.")
   in user_err  (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
 let check_unresolved_evars_of_metas sigma clenv =
@@ -1305,13 +1305,13 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true)
 let last_arg sigma c = match EConstr.kind sigma c with
   | App (f,cl) ->
       Array.last cl
-  | _ -> anomaly (Pp.str "last_arg")
+  | _ -> anomaly (Pp.str "last_arg.")
 
 let nth_arg sigma i c =
   if Int.equal i (-1) then last_arg sigma c else
   match EConstr.kind sigma c with
   | App (f,cl) -> cl.(i)
-  | _ -> anomaly (Pp.str "nth_arg")
+  | _ -> anomaly (Pp.str "nth_arg.")
 
 let index_of_ind_arg sigma t =
   let rec aux i j t = match EConstr.kind sigma t with
@@ -4705,7 +4705,7 @@ let elim_scheme_type elim t =
 	  clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
             (clenv_meta_type clause mv) clause in
 	Clenvtac.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
-    | _ -> anomaly (Pp.str "elim_scheme_type")
+    | _ -> anomaly (Pp.str "elim_scheme_type.")
   end }
 
 let elim_type t =

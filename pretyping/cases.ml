@@ -70,7 +70,7 @@ let error_wrong_numarg_inductive ?loc env c n =
 
 let list_try_compile f l =
   let rec aux errors = function
-  | [] -> if errors = [] then anomaly (str "try_find_f") else iraise (List.last errors)
+  | [] -> if errors = [] then anomaly (str "try_find_f.") else iraise (List.last errors)
   | h::t ->
       try f h
       with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _ as e ->
@@ -162,9 +162,9 @@ let feed_history arg = function
   | Continuation (n, l, h) when n>=1 ->
       Continuation (n-1, arg :: l, h)
   | Continuation (n, _, _) ->
-      anomaly (str "Bad number of expected remaining patterns: " ++ int n)
+      anomaly (str "Bad number of expected remaining patterns: " ++ int n ++ str ".")
   | Result _ ->
-      anomaly (Pp.str "Exhausted pattern history")
+      anomaly (Pp.str "Exhausted pattern history.")
 
 (* This is for non exhaustive error message *)
 
@@ -190,7 +190,7 @@ let pop_history_pattern = function
   | Continuation (0, l, MakeConstructor (pci, rh)) ->
       feed_history (CAst.make @@ PatCstr (pci,List.rev l,Anonymous)) rh
   | _ ->
-      anomaly (Pp.str "Constructor not yet filled with its arguments")
+      anomaly (Pp.str "Constructor not yet filled with its arguments.")
 
 let pop_history h =
   feed_history (CAst.make @@ PatVar Anonymous) h
@@ -425,7 +425,7 @@ let lift_tomatch_type n = liftn_tomatch_type n 1
 let current_pattern eqn =
   match eqn.patterns with
     | pat::_ -> pat
-    | [] -> anomaly (Pp.str "Empty list of patterns")
+    | [] -> anomaly (Pp.str "Empty list of patterns.")
 
 let alias_of_pat = CAst.with_val (function
   | PatVar name -> name
@@ -438,7 +438,7 @@ let remove_current_pattern eqn =
 	{ eqn with
 	    patterns = pats;
 	    alias_stack = alias_of_pat pat :: eqn.alias_stack }
-    | [] -> anomaly (Pp.str "Empty list of patterns")
+    | [] -> anomaly (Pp.str "Empty list of patterns.")
 
 let push_current_pattern (cur,ty) eqn =
   match eqn.patterns with
@@ -447,7 +447,7 @@ let push_current_pattern (cur,ty) eqn =
 	{ eqn with
             rhs = { eqn.rhs with rhs_env = rhs_env };
 	    patterns = pats }
-    | [] -> anomaly (Pp.str "Empty list of patterns")
+    | [] -> anomaly (Pp.str "Empty list of patterns.")
 
 (* spiwack: like [push_current_pattern] but does not introduce an
    alias in rhs_env. Aliasing binders are only useful for variables at
@@ -457,7 +457,7 @@ let push_noalias_current_pattern eqn =
   match eqn.patterns with
   | _::pats ->
       { eqn with patterns = pats }
-  | [] -> anomaly (Pp.str "push_noalias_current_pattern: Empty list of patterns")
+  | [] -> anomaly (Pp.str "push_noalias_current_pattern: Empty list of patterns.")
 
 
 
@@ -641,7 +641,7 @@ let replace_tomatch sigma n c =
   | Pushed (initial,((b,tm),l,na)) :: rest ->
       let b = replace_term sigma n c depth b in
       let tm = map_tomatch_type (replace_term sigma n c depth) tm in
-      List.iter (fun i -> if Int.equal i (n + depth) then anomaly (Pp.str "replace_tomatch")) l;
+      List.iter (fun i -> if Int.equal i (n + depth) then anomaly (Pp.str "replace_tomatch.")) l;
       Pushed (initial,((b,tm),l,na)) :: replrec depth rest
   | Alias (initial,(na,b,d)) :: rest ->
       (* [b] is out of replacement scope *)
@@ -882,7 +882,7 @@ let specialize_predicate_var (cur,typ,dep) env tms ccl =
 (*****************************************************************************)
 let generalize_predicate sigma (names,na) ny d tms ccl =
   let () = match na with
-  | Anonymous -> anomaly (Pp.str "Undetected dependency")
+  | Anonymous -> anomaly (Pp.str "Undetected dependency.")
   | _ -> () in
   let p = List.length names + 1 in
   let ccl = lift_predicate 1 ccl tms in
@@ -1708,7 +1708,7 @@ let build_tycon ?loc env tycon_env s subst tycon extenv evdref t =
         evdref := evd;
         (t,tt) in
   let b = e_cumul env evdref tt (mkSort s) (* side effect *) in
-  if not b then anomaly (Pp.str "Build_tycon: should be a type");
+  if not b then anomaly (Pp.str "Build_tycon: should be a type.");
   { uj_val = t; uj_type = tt }
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
@@ -1872,7 +1872,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 		  if not (eq_ind ind ind') then
 		    user_err ?loc  (str "Wrong inductive type.");
 		  if not (Int.equal nrealargs_ctxt (List.length realnal)) then
-		      anomaly (Pp.str "Ill-formed 'in' clause in cases");
+		      anomaly (Pp.str "Ill-formed 'in' clause in cases.");
 		  List.rev realnal
 	      | None -> List.make nrealargs_ctxt Anonymous in
 	  LocalAssum (na, EConstr.of_constr (build_dependent_inductive env0 indf'))

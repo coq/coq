@@ -88,7 +88,7 @@ let broadcast { lock = m; cond = c } =
 
 let push { queue = q; lock = m; cond = c; release } x =
   if release then CErrors.anomaly(Pp.str
-    "TQueue.push while being destroyed! Only 1 producer/destroyer allowed");
+    "TQueue.push while being destroyed! Only 1 producer/destroyer allowed.");
   Mutex.lock m;
   PriorityQueue.push q x;
   Condition.broadcast c;

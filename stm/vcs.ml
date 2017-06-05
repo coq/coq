@@ -113,7 +113,7 @@ let add_node vcs id edges =
 
 let get_branch vcs head =
   try BranchMap.find head vcs.heads
-  with Not_found -> anomaly (str"head " ++ str head ++ str" not found")
+  with Not_found -> anomaly (str"head " ++ str head ++ str" not found.")
 
 let reset_branch vcs head id =
   let map name h =

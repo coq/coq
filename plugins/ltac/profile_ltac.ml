@@ -113,7 +113,7 @@ let rec to_ltacprof_tactic m xml =
          children = List.fold_left to_ltacprof_tactic M.empty xs;
        } in
       M.add name node m
-  | _ -> CErrors.anomaly Pp.(str "Malformed ltacprof_tactic XML")
+  | _ -> CErrors.anomaly Pp.(str "Malformed ltacprof_tactic XML.")
 
 let to_ltacprof_results xml =
   let open Xml_datatype in
@@ -125,7 +125,7 @@ let to_ltacprof_results xml =
        max_total = 0.0;
        local = 0.0;
        children = List.fold_left to_ltacprof_tactic M.empty xs }
-  | _ -> CErrors.anomaly Pp.(str "Malformed ltacprof XML")
+  | _ -> CErrors.anomaly Pp.(str "Malformed ltacprof XML.")
 
 let feedback_results results =
   Feedback.(feedback

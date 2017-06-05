@@ -75,7 +75,7 @@ let constructor_instantiate mind u mib c =
 
 let instantiate_params full t u args sign =
   let fail () =
-    anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch") in
+    anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch.") in
   let (rem_args, subs, ty) =
     fold_rel_context
       (fun decl (largs,subs,ty) ->
@@ -986,7 +986,7 @@ let check_one_fix renv recpos trees def =
             List.iter (check_rec_call renv []) l;
             check_rec_call renv [] c
 
-        | Var _ -> anomaly (Pp.str "Section variable in Coqchk !")
+        | Var _ -> anomaly (Pp.str "Section variable in Coqchk!")
 
 	| Sort _ -> assert (l = [])
 
@@ -1004,7 +1004,7 @@ let check_one_fix renv recpos trees def =
 	    check_rec_call renv [] a;
             let renv' = push_var_renv renv (x,a) in
 	      check_nested_fix_body renv' (decr-1) recArgsDecrArg b
-	| _ -> anomaly (Pp.str "Not enough abstractions in fix body")
+	| _ -> anomaly (Pp.str "Not enough abstractions in fix body.")
 	    
   in
   check_rec_call renv [] def
@@ -1018,7 +1018,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
     || Array.length names <> nbfix
     || bodynum < 0
     || bodynum >= nbfix
-  then anomaly (Pp.str "Ill-formed fix term");
+  then anomaly (Pp.str "Ill-formed fix term.");
   let fixenv = push_rec_types recdef env in
   let raise_err env i err =
     error_ill_formed_rec_body env err names i in
@@ -1039,7 +1039,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
 		    raise_err env i (RecursionNotOnInductiveType a) in
                 (mind, (env', b))
 	      else check_occur env' (n+1) b
-            else anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call")
+            else anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call.")
         | _ -> raise_err env i NotEnoughAbstractionInFixBody in
     check_occur fixenv 1 def in
   (* Do it on every fixpoint *)
@@ -1073,7 +1073,7 @@ let check_fix env fix = Profile.profile3 cfkey check_fix env fix;;
 exception CoFixGuardError of env * guard_error
 
 let anomaly_ill_typed () =
-  anomaly ~label:"check_one_cofix" (Pp.str "too many arguments applied to constructor")
+  anomaly ~label:"check_one_cofix" (Pp.str "too many arguments applied to constructor.")
 
 let rec codomain_is_coind env c =
   let b = whd_all env c in

@@ -144,7 +144,7 @@ let native_conv_gen pb sigma env univs t1 t2 =
         (* TODO change 0 when we can have de Bruijn *)
         fst (conv_val env pb 0 !rt1 !rt2 univs)
       end
-  | _ -> anomaly (Pp.str "Compilation failure") 
+  | _ -> anomaly (Pp.str "Compilation failure.") 
 
 let warn_no_native_compiler =
   let open Pp in

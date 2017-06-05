@@ -46,7 +46,7 @@ let control_channel = ref None
 let channels = ref None
 
 let init_channels () =
-  if !channels <> None then CErrors.anomaly(Pp.str "init_channels called twice");
+  if !channels <> None then CErrors.anomaly(Pp.str "init_channels called twice.");
   let () = match !main_channel with
   | None -> ()
   | Some (Socket(mh,mpr,mpw)) ->
@@ -65,7 +65,7 @@ let init_channels () =
   | Some (Socket (ch, cpr, cpw)) ->
     controller ch cpr cpw
   | Some AnonPipe ->
-    CErrors.anomaly (Pp.str "control channel cannot be a pipe")
+    CErrors.anomaly (Pp.str "control channel cannot be a pipe.")
 
 let get_channels () =
   match !channels with

@@ -139,7 +139,7 @@ let type_of_var env id =
   let open Context.Named.Declaration in
   try env |> lookup_named id |> get_type
   with Not_found ->
-    anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound")
+    anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound.")
 
 let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
@@ -405,7 +405,7 @@ let native_norm env sigma c ty =
         let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
         if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
         EConstr.of_constr res
-    | _ -> anomaly (Pp.str "Compilation failure") 
+    | _ -> anomaly (Pp.str "Compilation failure.") 
 
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t

@@ -425,7 +425,7 @@ type binder_kind = BProd | BLambda | BLetIn
 (**********************************************************************)
 (* Main detyping function                                             *)
 
-let detype_anonymous = ref (fun ?loc n -> anomaly ~label:"detype" (Pp.str "index to an anonymous variable"))
+let detype_anonymous = ref (fun ?loc n -> anomaly ~label:"detype" (Pp.str "index to an anonymous variable."))
 let set_detype_anonymous f = detype_anonymous := f
 
 let detype_level sigma l =

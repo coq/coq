@@ -674,7 +674,7 @@ let extract_coercions indl =
 let extract_params indl =
   let paramsl = List.map (fun (_,params,_,_) -> params) indl in
   match paramsl with
-  | [] -> anomaly (Pp.str "empty list of inductive types")
+  | [] -> anomaly (Pp.str "empty list of inductive types.")
   | params::paramsl ->
       if not (List.for_all (eq_local_binders params) paramsl) then user_err Pp.(str
 	"Parameters should be syntactically the same for each inductive type.");

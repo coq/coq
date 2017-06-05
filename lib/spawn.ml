@@ -200,7 +200,7 @@ let spawn ?(prefer_sock=prefer_sock) ?(env=Unix.environment ())
   p, cout
 
 let stats { oob_req; oob_resp; alive } =
-  assert_ alive "This process is dead";
+  assert_ alive "This process is dead.";
   output_value oob_req ReqStats;
   flush oob_req;
   input_value oob_resp
@@ -251,7 +251,7 @@ let kill ({ pid = unixpid; oob_req; oob_resp; cin; cout; alive } as p) =
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
 
 let stats { oob_req; oob_resp; alive } =
-  assert_ alive "This process is dead";
+  assert_ alive "This process is dead.";
   output_value oob_req ReqStats;
   flush oob_req;
   let RespStats g = input_value oob_resp in g

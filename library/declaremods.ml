@@ -252,7 +252,7 @@ let in_modkeep : Lib.lib_objects -> obj =
 
 let do_modtype i sp mp sobjs =
   if Nametab.exists_modtype sp then
-    anomaly (pr_path sp ++ str " already exists");
+    anomaly (pr_path sp ++ str " already exists.");
   Nametab.push_modtype (Nametab.Until i) sp mp;
   ModSubstObjs.set mp sobjs
 
@@ -883,7 +883,7 @@ let register_library dir cenv (objs:library_objects) digest univ =
       (* If not, let's do it now ... *)
       let mp' = Global.import cenv univ digest in
       if not (ModPath.equal mp mp') then
-        anomaly (Pp.str "Unexpected disk module name");
+        anomaly (Pp.str "Unexpected disk module name.");
   in
   let sobjs,keepobjs = objs in
   do_module false Lib.load_objects 1 dir mp ([],Objs sobjs) keepobjs

@@ -107,7 +107,7 @@ let destEvalRefU sigma c = match EConstr.kind sigma c with
   | Var id  -> (EvalVar id, EInstance.empty)
   | Rel n -> (EvalRel n, EInstance.empty)
   | Evar ev -> (EvalEvar ev, EInstance.empty)
-  | _ -> anomaly (Pp.str "Not an unfoldable reference")
+  | _ -> anomaly (Pp.str "Not an unfoldable reference.")
 
 let unsafe_reference_opt_value env sigma eval =
   match eval with
@@ -307,7 +307,7 @@ let compute_consteval_mutual_fix env sigma ref =
 	  (* Forget all \'s and args and do as if we had started with c' *)
 	  let ref,_ = destEvalRefU sigma c' in
 	  (match unsafe_reference_opt_value env sigma ref with
-	    | None -> anomaly (Pp.str "Should have been trapped by compute_direct")
+	    | None -> anomaly (Pp.str "Should have been trapped by compute_direct.")
 	    | Some c -> srec env (minarg-nargs) [] ref c)
       | _ -> (* Should not occur *) NotAnElimination
   in

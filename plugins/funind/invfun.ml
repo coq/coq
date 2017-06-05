@@ -115,7 +115,7 @@ let generate_type evd g_to_f f graph i =
   let ctxt,_ = decompose_prod_assum !evd graph_arity in
   let fun_ctxt,res_type =
     match ctxt with
-      | [] | [_] -> anomaly (Pp.str "Not a valid context")
+      | [] | [_] -> anomaly (Pp.str "Not a valid context.")
       | decl :: fun_ctxt -> fun_ctxt, RelDecl.get_type decl
   in
   let rec args_from_decl i accu = function
@@ -267,7 +267,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       	  (fun (_,pat) acc ->
       	     match pat with
 	       | IntroNaming (IntroIdentifier id) -> id::acc
-      	       | _ -> anomaly (Pp.str "Not an identifier")
+      	       | _ -> anomaly (Pp.str "Not an identifier.")
       	  )
       	  (List.nth intro_pats (pred i))
       	  []
@@ -376,7 +376,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       Array.map
 	(fun ((_,(ctxt,concl))) ->
 	   match ctxt with
-	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context")
+	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context.")
 	     | hres::res::decl::ctxt ->
 		let res = EConstr.it_mkLambda_or_LetIn
 			    (EConstr.it_mkProd_or_LetIn concl [hres;res])
@@ -683,7 +683,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
       then
 	let eq_lemma =
 	  try Option.get (infos).equation_lemma
-	  with Option.IsNone -> anomaly (Pp.str "Cannot find equation lemma")
+	  with Option.IsNone -> anomaly (Pp.str "Cannot find equation lemma.")
 	in
 	tclTHENSEQ[
 	  tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) ids;
@@ -913,7 +913,7 @@ let revert_graph kn post_tac hid g =
 	    let info =
 	      try find_Function_of_graph ind'
 	      with Not_found -> (* The graphs are mutually recursive but we cannot find one of them !*)
-		anomaly (Pp.str "Cannot retrieve infos about a mutual block")
+		anomaly (Pp.str "Cannot retrieve infos about a mutual block.")
 	    in
 	    (* if we can find a completeness lemma for this function
 	       then we can come back to the functional form. If not, we do nothing

@@ -159,7 +159,7 @@ let create_arg name =
   match ArgT.name name with
   | None -> ExtraArg (ArgT.create name)
   | Some _ ->
-    CErrors.anomaly (str "generic argument already declared: " ++ str name)
+    CErrors.anomaly (str "generic argument already declared: " ++ str name ++ str ".")
 
 let make0 = create_arg
 
@@ -180,7 +180,7 @@ struct
   let register0 arg f = match arg with
   | ExtraArg s ->
     if GenMap.mem s !arg0_map then
-      let msg = str M.name ++ str " function already registered: " ++ str (ArgT.repr s) in
+      let msg = str M.name ++ str " function already registered: " ++ str (ArgT.repr s) ++ str "." in
       CErrors.anomaly msg
     else
       arg0_map := GenMap.add s (GenMap.Pack f) !arg0_map
@@ -192,7 +192,7 @@ struct
     with Not_found ->
       match M.default (ExtraArg name) with
       | None ->
-        CErrors.anomaly (str M.name ++ str " function not found: " ++ str (ArgT.repr name))
+        CErrors.anomaly (str M.name ++ str " function not found: " ++ str (ArgT.repr name) ++ str ".")
       | Some obj -> obj
 
   (** For now, the following function is quite dummy and should only be applied

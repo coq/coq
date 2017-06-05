@@ -44,7 +44,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	   let id = Namegen.next_ident_away x avoid in
 	   Hashtbl.add tbl id x;
 	   RelDecl.set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
-	| Anonymous -> anomaly (Pp.str "Anonymous property binder "))
+	| Anonymous -> anomaly (Pp.str "Anonymous property binder."))
   in
   let avoid = (Termops.ids_of_context env_with_params ) in
   let princ_type_info =
@@ -399,7 +399,7 @@ let get_funs_constant mp dp =
 		     let const = make_con mp dp (Label.of_id id) in
 		     const,i
 		 | Anonymous ->
-		     anomaly (Pp.str "Anonymous fix")
+		     anomaly (Pp.str "Anonymous fix.")
 	    )
 	    na
       | _ -> [|const,0|]

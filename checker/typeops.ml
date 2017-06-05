@@ -262,7 +262,7 @@ let rec execute env cstr =
 
     | Rel n -> judge_of_relative env n
 
-    | Var _ -> anomaly (Pp.str "Section variable in Coqchk !")
+    | Var _ -> anomaly (Pp.str "Section variable in Coqchk!")
 
     | Const c -> judge_of_constant env c
 
@@ -344,10 +344,10 @@ let rec execute env cstr =
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
-	anomaly (Pp.str "the kernel does not support metavariables")
+	anomaly (Pp.str "the kernel does not support metavariables.")
 
     | Evar _ ->
-	anomaly (Pp.str "the kernel does not support existential variables")
+	anomaly (Pp.str "the kernel does not support existential variables.")
 
 and execute_type env constr =
   let j = execute env constr in

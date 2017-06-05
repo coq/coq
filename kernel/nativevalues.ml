@@ -200,7 +200,7 @@ let mk_block tag args =
 (* Two instances of dummy_value should not be pointer equal, otherwise
  comparing them as terms would succeed *)
 let dummy_value : unit -> t =
-  fun () _ -> anomaly ~label:"native" (Pp.str "Evaluation failed")
+  fun () _ -> anomaly ~label:"native" (Pp.str "Evaluation failed.")
 
 let cast_accu v = (Obj.magic v:accumulator)
 

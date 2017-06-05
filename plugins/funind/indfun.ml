@@ -734,7 +734,7 @@ let rec add_args id new_args = CAst.map (function
 	    CAppExpl((None,r,None),new_args)
 	| _ -> b
       end
-  | CFix  _  | CCoFix _ -> anomaly ~label:"add_args " (Pp.str "todo")
+  | CFix  _  | CCoFix _ -> anomaly ~label:"add_args " (Pp.str "todo.")
   | CProdN(nal,b1) ->
         CProdN(List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args b2)) nal,
 	     add_args id new_args  b1)
@@ -782,9 +782,9 @@ let rec add_args id new_args = CAst.map (function
 	    Miscops.map_cast_type (add_args id new_args) b2)
   | CRecord pars ->
       CRecord (List.map (fun (e,o) -> e, add_args id new_args o) pars)
-  | CNotation _ -> anomaly ~label:"add_args " (Pp.str "CNotation")
-  | CGeneralization _ -> anomaly ~label:"add_args " (Pp.str "CGeneralization")
-  | CDelimiters _ -> anomaly ~label:"add_args " (Pp.str "CDelimiters")
+  | CNotation _ -> anomaly ~label:"add_args " (Pp.str "CNotation.")
+  | CGeneralization _ -> anomaly ~label:"add_args " (Pp.str "CGeneralization.")
+  | CDelimiters _ -> anomaly ~label:"add_args " (Pp.str "CDelimiters.")
   )
 exception Stop of  Constrexpr.constr_expr
 
@@ -826,7 +826,7 @@ let rec chop_n_arrow n t =
 	      chop_n_arrow new_n t'
 	    with Stop t -> t
 	  end
-      | _ -> anomaly (Pp.str "Not enough products")
+      | _ -> anomaly (Pp.str "Not enough products.")
 
 
 let rec get_args b t : Constrexpr.local_binder_expr list *
@@ -856,7 +856,7 @@ let make_graph (f_ref:global_reference) =
       | _ -> raise (UserError (None, str "Not a function reference") )
   in
   (match Global.body_of_constant_body c_body with
-     | None -> error "Cannot build a graph over an axiom !"
+     | None -> error "Cannot build a graph over an axiom!"
      | Some body ->
 	 let env = Global.env () in
 	 let sigma = Evd.from_env env in

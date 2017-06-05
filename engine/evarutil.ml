@@ -220,7 +220,7 @@ let make_pure_subst evi args =
     (fun decl (args,l) ->
       match args with
         | a::rest -> (rest, (NamedDecl.get_id decl, a)::l)
-        | _ -> anomaly (Pp.str "Instance does not match its signature"))
+        | _ -> anomaly (Pp.str "Instance does not match its signature."))
     (evar_filtered_context evi) (Array.rev_to_list args,[]))
 
 (*------------------------------------*

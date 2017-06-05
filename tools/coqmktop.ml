@@ -265,7 +265,7 @@ let main () =
   (* Which ocaml compiler to invoke *)
   let prog = if !opt then "opt" else "ocamlc" in
   (* Which arguments ? *)
-  if !opt && !top then failwith "no custom toplevel in native code !";
+  if !opt && !top then failwith "no custom toplevel in native code!";
   let flags = if !opt then [] else Coq_config.vmbyteflags in
   let topstart = if !top then [ "topstart.cmo" ] else [] in
   let (modules, tolink) = files_to_link userfiles in

@@ -1088,7 +1088,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let filter' = filter_possible_projections evd c ty ctxt args in
       (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
   | _, _, [] -> []
-  | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list") in
+  | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list.") in
 
   let rec set_holes evdref rhs = function
   | (id,_,c,cty,evsref,filter,occs)::subst ->

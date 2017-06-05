@@ -101,7 +101,7 @@ let enforce_eq_instances_univs strict x y c =
   let ax = Instance.to_array x and ay = Instance.to_array y in
     if Array.length ax != Array.length ay then
       CErrors.anomaly (Pp.str "Invalid argument: enforce_eq_instances_univs called with" ++
-	       Pp.str " instances of different lengths");
+	       Pp.str " instances of different lengths.");
     CArray.fold_right2
       (fun x y -> Constraints.add (Universe.make x, d, Universe.make y))
       ax ay c

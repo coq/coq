@@ -411,7 +411,7 @@ class text_param_box param (tt:GData.tooltips) =
       let v = param.string_of_string (buffer#get_text ()) in
       if v <> param.string_value then
 	(
-	 dbg "apply new value !";
+	 dbg "apply new value!";
 	 let _ = param.string_f_apply v in
 	 param.string_value <- v
 	)

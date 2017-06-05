@@ -503,7 +503,7 @@ let push_named_rec_types (lna,typarray,_) env =
       (fun i na t ->
 	 match na with
 	   | Name id -> LocalAssum (id, lift i t)
-	   | Anonymous -> anomaly (Pp.str "Fix declarations must be named"))
+	   | Anonymous -> anomaly (Pp.str "Fix declarations must be named."))
       lna typarray in
   Array.fold_left
     (fun e assum -> push_named assum e) env ctxt
@@ -579,7 +579,7 @@ let rec drop_extra_implicit_args sigma c = match EConstr.kind sigma c with
 (* Get the last arg of an application *)
 let last_arg sigma c = match EConstr.kind sigma c with
   | App (f,cl) -> Array.last cl
-  | _ -> anomaly (Pp.str "last_arg")
+  | _ -> anomaly (Pp.str "last_arg.")
 
 (* Get the last arg of an application *)
 let decompose_app_vect sigma c =
@@ -1286,7 +1286,7 @@ let rec eta_reduce_head sigma c =
 	(match EConstr.kind sigma (eta_reduce_head sigma c') with
            | App (f,cl) ->
                let lastn = (Array.length cl) - 1 in
-               if lastn < 0 then anomaly (Pp.str "application without arguments")
+               if lastn < 0 then anomaly (Pp.str "application without arguments.")
                else
                  (match EConstr.kind sigma cl.(lastn) with
                     | Rel 1 ->
@@ -1439,7 +1439,7 @@ let prod_applist sigma c l =
     match EConstr.kind sigma c, l with
     | Prod(_,_,c), arg::l -> app (arg::subst) c l
     | _, [] -> Vars.substl subst c
-    | _ -> anomaly (Pp.str "Not enough prod's") in
+    | _ -> anomaly (Pp.str "Not enough prod's.") in
   app [] c l
 
 (* Combinators on judgments *)
@@ -1455,7 +1455,7 @@ let context_chop k ctx =
     | (0, l2) -> (List.rev acc, l2)
     | (n, (RelDecl.LocalDef _ as h)::t) -> chop_aux (h::acc) (n, t)
     | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
-    | (_, []) -> anomaly (Pp.str "context_chop")
+    | (_, []) -> anomaly (Pp.str "context_chop.")
   in chop_aux [] (k,ctx)
 
 (* Do not skip let-in's *)

@@ -40,7 +40,7 @@ let wrap n b continue seq =
   let rec aux i nc ctx=
     if i<=0 then seq else
       match nc with
-	  []->anomaly (Pp.str "Not the expected number of hyps")
+	  []->anomaly (Pp.str "Not the expected number of hyps.")
 	| nd::q->
             let id = NamedDecl.get_id nd in
 	    if occur_var env sigma id (pf_concl gls) ||

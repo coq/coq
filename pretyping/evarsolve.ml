@@ -634,7 +634,7 @@ let make_projectable_subst aliases sigma evi args =
                    cstrs)
             | _ ->
                 (rest,Id.Map.add id [a,normalize_alias_opt sigma aliases a,id] all,cstrs))
-        | _ -> anomaly (Pp.str "Instance does not match its signature"))
+        | _ -> anomaly (Pp.str "Instance does not match its signature."))
       sign (Array.rev_to_list args,Id.Map.empty,Constrmap.empty) in
   (full_subst,cstr_subst)
 
@@ -828,7 +828,7 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
             | _ -> subst'
           end
         | [] -> subst'
-        | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance")
+        | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
       else
         subst' in
   Id.Map.fold is_projectable subst []

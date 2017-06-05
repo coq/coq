@@ -912,7 +912,7 @@ let make_resolve_hyp env sigma decl =
        (c, NamedDecl.get_type decl, Univ.ContextSet.empty)]
   with
     | Failure _ -> []
-    | e when Logic.catchable_exception e -> anomaly (Pp.str "make_resolve_hyp")
+    | e when Logic.catchable_exception e -> anomaly (Pp.str "make_resolve_hyp.")
 
 (* REM : in most cases hintname = id *)
 

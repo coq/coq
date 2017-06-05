@@ -362,7 +362,7 @@ let coq_True = lazy (init_constant "True")
 let evaluable_ref_of_constr s c = match EConstr.kind Evd.empty (Lazy.force c) with
   | Const (kn,u) when Tacred.is_evaluable (Global.env()) (EvalConstRef kn) ->
       EvalConstRef kn
-  | _ -> anomaly ~label:"Coq_omega" (Pp.str (s^" is not an evaluable constant"))
+  | _ -> anomaly ~label:"Coq_omega" (Pp.str (s^" is not an evaluable constant."))
 
 let sp_Zsucc =     lazy (evaluable_ref_of_constr "Z.succ" coq_Zsucc)
 let sp_Zpred =     lazy (evaluable_ref_of_constr "Z.pred" coq_Zpred)
@@ -630,7 +630,7 @@ let compile name kind =
 	let id = new_id () in
 	tag_hypothesis name id;
 	{kind = kind; body = List.rev accu; constant = n; id = id}
-    | _ -> anomaly (Pp.str "compile_equation")
+    | _ -> anomaly (Pp.str "compile_equation.")
   in
   loop []
 

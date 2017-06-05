@@ -67,7 +67,7 @@ let show_node () =
       could, possibly, be cleaned away. (Feb. 2010) *)
   ()
 
-let show_thesis () = CErrors.anomaly (Pp.str "Show Thesis: TODO")
+let show_thesis () = CErrors.anomaly (Pp.str "Show Thesis: TODO.")
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
@@ -1918,10 +1918,10 @@ let interp ?proof ?loc locality poly c =
   | VernacToplevelControl e -> raise e
 
   (* Resetting *)
-  | VernacResetName _  -> anomaly (str "VernacResetName not handled by Stm")
-  | VernacResetInitial -> anomaly (str "VernacResetInitial not handled by Stm")
-  | VernacBack _       -> anomaly (str "VernacBack not handled by Stm")
-  | VernacBackTo _     -> anomaly (str "VernacBackTo not handled by Stm")
+  | VernacResetName _  -> anomaly (str "VernacResetName not handled by Stm.")
+  | VernacResetInitial -> anomaly (str "VernacResetInitial not handled by Stm.")
+  | VernacBack _       -> anomaly (str "VernacBack not handled by Stm.")
+  | VernacBackTo _     -> anomaly (str "VernacBackTo not handled by Stm.")
 
   (* This one is possible to handle here *)
   | VernacAbort id    -> CErrors.user_err  (str "Abort cannot be used through the Load command")

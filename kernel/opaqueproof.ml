@@ -54,8 +54,8 @@ let create cu = Direct ([],cu)
 let turn_indirect dp o tab = match o with
   | Indirect (_,_,i) ->
       if not (Int.Map.mem i tab.opaque_val)
-      then CErrors.anomaly (Pp.str "Indirect in a different table")
-      else CErrors.anomaly (Pp.str "Already an indirect opaque")
+      then CErrors.anomaly (Pp.str "Indirect in a different table.")
+      else CErrors.anomaly (Pp.str "Already an indirect opaque.")
   | Direct (d,cu) ->
       (** Uncomment to check dynamically that all terms turned into
           indirections are hashconsed. *)
@@ -67,21 +67,21 @@ let turn_indirect dp o tab = match o with
         if DirPath.equal dp tab.opaque_dir then tab.opaque_dir
         else if DirPath.equal tab.opaque_dir DirPath.initial then dp
         else CErrors.anomaly
-          (Pp.str "Using the same opaque table for multiple dirpaths") in
+          (Pp.str "Using the same opaque table for multiple dirpaths.") in
       let ntab = { opaque_val; opaque_dir; opaque_len = id + 1 } in
       Indirect ([],dp,id), ntab
 
 let subst_opaque sub = function
   | Indirect (s,dp,i) -> Indirect (sub::s,dp,i)
-  | Direct _ -> CErrors.anomaly (Pp.str "Substituting a Direct opaque")
+  | Direct _ -> CErrors.anomaly (Pp.str "Substituting a Direct opaque.")
 
 let iter_direct_opaque f = function
-  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque")
+  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
   | Direct (d,cu) ->
       Direct (d,Future.chain ~pure:true cu (fun (c, u) -> f c; c, u))
 
 let discharge_direct_opaque ~cook_constr ci = function
-  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque")
+  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
   | Direct (d,cu) ->
       Direct (ci::d,Future.chain ~pure:true cu (fun (c, u) -> cook_constr c, u))
 
