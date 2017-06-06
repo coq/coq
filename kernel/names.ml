@@ -590,7 +590,7 @@ module Constant = KerPair
 
 module Cmap = HMap.Make(Constant.CanOrd)
 (** A map whose keys are constants (values of the {!Constant.t} type).
-    Keys are ordered wrt. "cannonical form" of the constant. *)
+    Keys are ordered wrt. "canonical form" of the constant. *)
 
 module Cmap_env = HMap.Make(Constant.UserOrd)
 (** A map whose keys are constants (values of the {!Constant.t} type).
