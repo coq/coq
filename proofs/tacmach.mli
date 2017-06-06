@@ -102,7 +102,7 @@ module New : sig
   val pf_apply : (env -> evar_map -> 'a) -> ('b, 'r) Proofview.Goal.t -> 'a
   val pf_global : identifier -> ('a, 'r) Proofview.Goal.t -> Globnames.global_reference
   (** FIXME: encapsulate the level in an existential type. *)
-  val of_old : (Proof_type.goal Evd.sigma -> 'a) -> ([ `NF ], 'r) Proofview.Goal.t -> 'a
+  val of_old : (Proof_type.goal Evd.sigma -> 'a) -> ('b, 'r) Proofview.Goal.t -> 'a
 
   val project : ('a, 'r) Proofview.Goal.t -> Evd.evar_map
   val pf_env : ('a, 'r) Proofview.Goal.t -> Environ.env

@@ -526,7 +526,7 @@ module Goal : sig
   val unsolved : ('a, 'r) t -> bool tactic
 
   (** Compatibility: avoid if possible *)
-  val goal : ([ `NF ], 'r) t -> Evar.t
+  val goal : ('a, 'r) t -> Evar.t
 
   (** Every goal is valid at a later stage. FIXME: take a later evarmap *)
   val lift : ('a, 'r) t -> ('r, 's) Sigma.le -> ('a, 's) t
