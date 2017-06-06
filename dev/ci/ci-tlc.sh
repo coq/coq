@@ -7,4 +7,4 @@ tlc_CI_DIR=${CI_BUILD_DIR}/tlc
 
 git_checkout ${tlc_CI_BRANCH} ${tlc_CI_GITURL} ${tlc_CI_DIR}
 
-( cd ${tlc_CI_DIR} && make )
+( cd ${tlc_CI_DIR} && (make TIMED=1 | tee time-of-build.log; exit ${PIPESTATUS[0]}) && make -C src -f Makefile.coq print-pretty-timed )
