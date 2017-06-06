@@ -30,14 +30,3 @@ if [ $TRAVIS_PULL_REQUEST == "590" ] || [ $TRAVIS_BRANCH == "trunk+algebraic-mat
     mathcomp_CI_GITURL=https://github.com/herbelin/math-comp.git
 fi
 
-if [ $TRAVIS_PULL_REQUEST == "623" ] || [ $TRAVIS_BRANCH == "remove-sigma" ]; then
-    mathcomp_CI_BRANCH=remove-sigma
-    mathcomp_CI_GITURL=https://github.com/maximedenes/math-comp.git
-    fiat_parsers_CI_BRANCH=remove-sigma
-    fiat_parsers_CI_GITURL=https://github.com/maximedenes/fiat.git
-    bedrock_src_CI_BRANCH=remove-sigma
-    bedrock_src_CI_GITURL=https://github.com/maximedenes/bedrock.git
-    bedrock_facade_CI_BRANCH=remove-sigma
-    bedrock_facade_CI_GITURL=https://github.com/maximedenes/bedrock.git
-fi
-
