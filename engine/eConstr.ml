@@ -780,9 +780,8 @@ let lookup_named n e = cast_named_decl (sym unsafe_eq) (lookup_named n e)
 let lookup_named_val n e = cast_named_decl (sym unsafe_eq) (lookup_named_val n e)
 
 let fresh_global ?loc ?rigid ?names env sigma reference =
-  let Sigma.Sigma (t,sigma,p) =
-    Sigma.fresh_global ?loc ?rigid ?names env sigma reference in
-  Sigma.Sigma (of_constr t,sigma,p)
+  let (evd,t) = Evd.fresh_global ?loc ?rigid ?names env sigma reference in
+  evd, of_constr t
 
 let is_global sigma gr c =
   Globnames.is_global gr (to_constr sigma c)

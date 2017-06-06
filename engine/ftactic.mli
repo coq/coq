@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Proofview.Notations
-
 (** This module defines potentially focussing tactics. They are used by Ltac to
     emulate the historical behaviour of always-focussed tactics while still
     allowing to remain global when the goal is not needed. *)
@@ -41,19 +39,12 @@ val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
 
 (** {5 Focussing} *)
 
-val nf_enter : ([ `NF ], 'a t) enter -> 'a t
+val nf_enter : ([ `NF ] Proofview.Goal.t -> 'a t) -> 'a t
 (** Enter a goal. The resulting tactic is focussed. *)
 
-val enter : ([ `LZ ], 'a t) enter -> 'a t
+val enter : ([ `LZ ] Proofview.Goal.t -> 'a t) -> 'a t
 (** Enter a goal, without evar normalization. The resulting tactic is
     focussed. *)
-
-val s_enter : ([ `LZ ], 'a t) s_enter -> 'a t
-(** Enter a goal and put back an evarmap. The resulting tactic is focussed. *)
-
-val nf_s_enter : ([ `NF ], 'a t) s_enter -> 'a t
-(** Enter a goal, without evar normalization and put back an evarmap. The
-    resulting tactic is focussed. *)
 
 val with_env : 'a t -> (Environ.env*'a) t
 (** [with_env t] returns, in addition to the return type of [t], an

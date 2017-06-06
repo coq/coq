@@ -226,7 +226,7 @@ module type Int = sig
 
   val mk : Bigint.bigint -> Term.constr
   val parse_term : Term.constr -> parse_term
-  val parse_rel : ([ `NF ], 'r) Proofview.Goal.t -> Term.constr -> parse_rel
+  val parse_rel : [ `NF ] Proofview.Goal.t -> Term.constr -> parse_rel
   (* check whether t is built only with numbers and + * - *)
   val get_scalar : Term.constr -> Bigint.bigint option
 end

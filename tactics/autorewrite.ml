@@ -15,7 +15,6 @@ open CErrors
 open Util
 open Mod_subst
 open Locus
-open Proofview.Notations
 
 (* Rewriting rules *)
 type rew_rule = { rew_lemma: constr;
@@ -90,15 +89,14 @@ type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_gen
 let one_base general_rewrite_maybe_in tac_main bas =
   let lrul = find_rewrites bas in
   let try_rewrite dir ctx c tc =
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
     let c' = Vars.subst_univs_level_constr subst c in
-    let sigma = Sigma.to_evar_map sigma in
     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
-    let tac = general_rewrite_maybe_in dir c' tc in
-    Sigma.Unsafe.of_pair (tac, sigma)
-  end } in
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    (general_rewrite_maybe_in dir c' tc)
+  end in
   let lrul = List.map (fun h -> 
   let tac = match h.rew_tac with
   | None -> Proofview.tclUNIT ()
@@ -125,7 +123,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
       (Proofview.tclUNIT()) lbas))
 
 let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
  (* let's check at once if id exists (to raise the appropriate error) *)
   let _ = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) idl in
   let general_rewrite_in id dir cstr tac =
@@ -137,7 +135,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
     (List.fold_left (fun tac bas ->
        Tacticals.New.tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) (Proofview.tclUNIT()) lbas)))
    idl
- end }
+ end
 
 let autorewrite_in ?(conds=Naive) id = autorewrite_multi_in ~conds [id]
 
@@ -162,10 +160,10 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 	   | None ->
 		 (* try to rewrite in all hypothesis
 		    (except maybe the rewritten one) *)
-               Proofview.Goal.nf_enter { enter = begin fun gl ->
+               Proofview.Goal.nf_enter begin fun gl ->
                  let ids = Tacmach.New.pf_ids_of_hyps gl in
 		 try_do_hyps (fun id -> id)  ids
-               end })
+               end)
 
 let auto_multi_rewrite ?(conds=Naive) lems cl =
   Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds (Proofview.tclUNIT()) lems cl)

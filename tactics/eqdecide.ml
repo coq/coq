@@ -23,7 +23,6 @@ open Tacticals.New
 open Auto
 open Constr_matching
 open Misctypes
-open Tactypes
 open Hipattern
 open Proofview.Notations
 open Tacmach.New
@@ -66,22 +65,20 @@ let choose_noteq eqonleft =
   else
     left_with_bindings false Misctypes.NoBindings
 
-open Sigma.Notations
-
 (* A surgical generalize which selects the right occurrences by hand *)
 (* This prevents issues where c2 is also a subterm of c1 (see e.g. #5449) *)
 
 let generalize_right mk typ c1 c2 =
-  Proofview.Goal.enter { Proofview.Goal.enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
-  Refine.refine ~unsafe:true { Sigma.run = begin fun sigma ->
+  Refine.refine ~unsafe:true begin fun sigma ->
     let na = Name (next_name_away_with_default "x" Anonymous (Termops.ids_of_context env)) in
     let newconcl = mkProd (na, typ, mk typ c1 (mkRel 1)) in
-    let Sigma (x, sigma, p) = Evarutil.new_evar env sigma ~principal:true ~store newconcl in
-    Sigma (mkApp (x, [|c2|]), sigma, p)
-  end }
-  end }
+    let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ~store newconcl in
+    (sigma, mkApp (x, [|c2|]))
+  end
+  end
 
 let mkBranches (eqonleft,mk,c1,c2,typ) =
   tclTHENLIST
@@ -93,7 +90,7 @@ let mkBranches (eqonleft,mk,c1,c2,typ) =
      intros]
 
 let discrHyp id =
-  let c = { delayed = fun env sigma -> Sigma.here (mkVar id, NoBindings) sigma } in
+  let c env sigma = (sigma, (mkVar id, NoBindings)) in
   let tac c = Equality.discr_tac false (Some (None, ElimOnConstr c)) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
@@ -138,7 +135,7 @@ let eqCase tac =
   tclTHEN intro (onLastHypId tac)
 
 let injHyp id =
-  let c = { delayed = fun env sigma -> Sigma.here (mkVar id, NoBindings) sigma } in
+  let c env sigma = (sigma, (mkVar id, NoBindings)) in
   let tac c = Equality.injClause None false (Some (None, ElimOnConstr c)) in
   Tacticals.New.tclDELAYEDWITHHOLES false c tac
 
@@ -189,7 +186,7 @@ let rec solveArg hyps eqonleft mk largs rargs = match largs, rargs with
     intros_reflexivity;
   ]
 | a1 :: largs, a2 :: rargs ->
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let rectype = pf_unsafe_type_of gl a1 in
   let decide = mk rectype a1 a2 in
   let tac hyp = solveArg (hyp :: hyps) eqonleft mk largs rargs in
@@ -197,13 +194,13 @@ let rec solveArg hyps eqonleft mk largs rargs = match largs, rargs with
     if eqonleft then [eqCase tac;diseqCase hyps eqonleft;default_auto]
     else [diseqCase hyps eqonleft;eqCase tac;default_auto] in
   (tclTHENS (elim_type decide) subtacs)
-  end }
+  end
 | _ -> invalid_arg "List.fold_right2"
 
 let solveEqBranch rectype =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.enter { enter = begin fun gl ->
+      Proofview.Goal.enter begin fun gl ->
         let concl = pf_concl gl in
         let sigma = project gl in
         match_eqdec sigma concl >>= fun (eqonleft,mk,lhs,rhs,_) ->
@@ -212,8 +209,9 @@ let solveEqBranch rectype =
           let getargs l = List.skipn nparams (snd (decompose_app sigma l)) in
           let rargs   = getargs rhs
           and largs   = getargs lhs in
+
           solveArg [] eqonleft mk largs rargs
-      end }
+      end
     end
     begin function (e, info) -> match e with
       | PatternMatchingFailure -> Tacticals.New.tclZEROMSG (Pp.str"Unexpected conclusion!")
@@ -229,7 +227,7 @@ let hd_app sigma c = match EConstr.kind sigma c with
 let decideGralEquality =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.enter { enter = begin fun gl ->
+      Proofview.Goal.enter begin fun gl ->
         let concl = pf_concl gl in
         let sigma = project gl in
         match_eqdec sigma concl >>= fun (eqonleft,mk,c1,c2,typ as data) ->
@@ -241,7 +239,7 @@ let decideGralEquality =
           (tclTHEN
              (mkBranches data)
              (tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))
-      end }
+      end
     end
     begin function (e, info) -> match e with
       | PatternMatchingFailure ->
@@ -252,10 +250,10 @@ let decideGralEquality =
 let decideEqualityGoal = tclTHEN intros decideGralEquality
 
 let decideEquality rectype ops =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let decide = mkGenDecideEqGoal rectype ops gl in
   (tclTHENS (cut decide) [default_auto;decideEqualityGoal])
-  end }
+  end
 
 
 (* The tactic Compare *)
@@ -264,7 +262,7 @@ let compare c1 c2 =
   pf_constr_of_global (build_coq_sumbool ()) >>= fun opc ->
   pf_constr_of_global (Coqlib.build_coq_eq ()) >>= fun eqc ->
   pf_constr_of_global (build_coq_not ()) >>= fun notc ->
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let rectype = pf_unsafe_type_of gl c1 in
   let ops = (opc,eqc,notc) in
   let decide = mkDecideEqGoal true ops rectype c1 c2 in
@@ -272,4 +270,4 @@ let compare c1 c2 =
             [(tclTHEN  intro
              (tclTHEN (onLastHyp simplest_case) clear_last));
              decideEquality rectype ops])
-  end }
+  end

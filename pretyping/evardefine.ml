@@ -17,14 +17,8 @@ open Namegen
 open Evd
 open Evarutil
 open Pretype_errors
-open Sigma.Notations
 
 module RelDecl = Context.Rel.Declaration
-
-let new_evar_unsafe env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
-  let evd = Sigma.Unsafe.of_evar_map evd in
-  let Sigma (evk, evd, _) = new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ in
-  (Sigma.to_evar_map evd, evk)
 
 let env_nf_evar sigma env =
   let nf_evar c = nf_evar sigma c in
@@ -82,9 +76,7 @@ let define_pure_evar_as_product evd evk =
   let concl = Reductionops.whd_all evenv evd (EConstr.of_constr evi.evar_concl) in
   let s = destSort evd concl in
   let evd1,(dom,u1) =
-    let evd = Sigma.Unsafe.of_evar_map evd in
-    let Sigma (e, evd1, _) = new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi) in
-    (Sigma.to_evar_map evd1, e)
+    new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi)
   in
   let evd2,rng =
     let newenv = push_named (LocalAssum (id, dom)) evenv in
@@ -92,13 +84,11 @@ let define_pure_evar_as_product evd evk =
     let filter = Filter.extend 1 (evar_filter evi) in
       if is_prop_sort (ESorts.kind evd1 s) then
        (* Impredicative product, conclusion must fall in [Prop]. *)
-        new_evar_unsafe newenv evd1 concl ~src ~filter
+        new_evar newenv evd1 concl ~src ~filter
       else
 	let status = univ_flexible_alg in
 	let evd3, (rng, srng) =
-          let evd1 = Sigma.Unsafe.of_evar_map evd1 in
-          let Sigma (e, evd3, _) = new_type_evar newenv evd1 status ~src ~filter in
-          (Sigma.to_evar_map evd3, e)
+          new_type_evar newenv evd1 status ~src ~filter
         in
 	let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
 	let evd3 = Evd.set_leq_sort evenv evd3 (Type prods) (ESorts.kind evd1 s) in
@@ -143,7 +133,7 @@ let define_pure_evar_as_lambda env evd evk =
   let newenv = push_named (LocalAssum (id, dom)) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
-  let evd2,body = new_evar_unsafe newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
+  let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
   let lam = mkLambda (Name id, dom, subst_var id body) in
   Evd.define evk (EConstr.Unsafe.to_constr lam) evd2, lam
 

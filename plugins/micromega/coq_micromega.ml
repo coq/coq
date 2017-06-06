@@ -1668,8 +1668,6 @@ let rcst_domain_spec  = lazy {
  dump_proof = dump_psatz coq_Q dump_q
 }
 
-open Proofview.Notations
-
 (** Naive topological sort of constr according to the subterm-ordering *)
 
 (* An element is minimal x is minimal w.r.t y if 
@@ -1712,7 +1710,7 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
  let ff  = dump_formula formula_typ (dump_cstr spec.coeff spec.dump_coeff) ff in
  let vm = dump_varmap (spec.typ) (vm_of_list env) in
  (* todo : directly generate the proof term - or generalize before conversion? *)
-  Proofview.Goal.nf_enter { enter = begin fun gl -> 
+  Proofview.Goal.nf_enter begin fun gl -> 
    Tacticals.New.tclTHENLIST
     [
      Tactics.change_concl
@@ -1724,7 +1722,7 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
       ]
       (Tacmach.New.pf_concl gl))
   ] 
-  end }
+  end
 
 
 (**
@@ -1972,7 +1970,7 @@ let micromega_gen
     (normalise:'cst atom -> 'cst mc_cnf)
     unsat deduce 
     spec dumpexpr prover tac =
- Proofview.Goal.nf_enter { enter = begin fun gl -> 
+ Proofview.Goal.nf_enter begin fun gl -> 
     let sigma = Tacmach.New.project gl in
     let concl = Tacmach.New.pf_concl gl in
     let hyps  = Tacmach.New.pf_hyps_types gl in
@@ -2029,7 +2027,7 @@ let micromega_gen
                             ^ "the use of a specialized external tool called csdp. \n\n" 
                             ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
                             ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp"))
-  end }
+  end
 
 let micromega_gen parse_arith 
     (negate:'cst atom -> 'cst mc_cnf)
@@ -2050,7 +2048,7 @@ let micromega_order_changer cert env ff  =
   let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[| coeff|])) in
   let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
   let vm = dump_varmap (typ) (vm_of_list env) in
-  Proofview.Goal.nf_enter { enter = begin fun gl -> 
+  Proofview.Goal.nf_enter begin fun gl -> 
     Tacticals.New.tclTHENLIST
      [
      (Tactics.change_concl
@@ -2065,7 +2063,7 @@ let micromega_order_changer cert env ff  =
         (Tacmach.New.pf_concl gl)));
      (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
      ]
-  end }
+  end
 
 let micromega_genr prover tac =
   let parse_arith = parse_rarith in
@@ -2080,7 +2078,7 @@ let micromega_genr prover tac =
     proof_typ = Lazy.force coq_QWitness ;
     dump_proof = dump_psatz coq_Q dump_q
   } in
-  Proofview.Goal.nf_enter { enter = begin fun gl -> 
+  Proofview.Goal.nf_enter begin fun gl -> 
      let sigma = Tacmach.New.project gl in
      let concl = Tacmach.New.pf_concl gl in
      let hyps  = Tacmach.New.pf_hyps_types gl in
@@ -2144,7 +2142,7 @@ let micromega_genr prover tac =
                             ^ "the use of a specialized external tool called csdp. \n\n" 
                             ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
                             ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp"))
-  end }
+  end
 
 
 

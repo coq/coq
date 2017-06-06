@@ -22,18 +22,18 @@ val mk_new_meta : unit -> constr
 
 (** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
-  env -> 'r Sigma.t -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> (constr, 'r) Sigma.sigma
+  ?principal:bool -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
-  named_context_val -> 'r Sigma.t -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> (evar, 'r) Sigma.sigma
+  ?principal:bool -> types -> evar_map * evar
 
-val new_pure_evar_full : 'r Sigma.t -> evar_info -> (evar, 'r) Sigma.sigma
+val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
 
 (** the same with side-effects *)
 val e_new_evar :
@@ -45,23 +45,23 @@ val e_new_evar :
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
-  env -> 'r Sigma.t -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid ->
-  (constr * sorts, 'r) Sigma.sigma
+  evar_map * (constr * sorts)
 
 val e_new_type_evar : env -> evar_map ref ->
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> rigid -> constr * sorts
 
-val new_Type : ?rigid:rigid -> env -> 'r Sigma.t -> (constr, 'r) Sigma.sigma
+val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
 
-val restrict_evar : 'r Sigma.t -> existential_key -> Filter.t ->
-  ?src:Evar_kinds.t Loc.located -> constr list option -> (existential_key, 'r) Sigma.sigma
+val restrict_evar : evar_map -> existential_key -> Filter.t ->
+  ?src:Evar_kinds.t Loc.located -> constr list option -> evar_map * existential_key
 
 (** Polymorphic constants *)
 
-val new_global : 'r Sigma.t -> Globnames.global_reference -> (constr, 'r) Sigma.sigma
+val new_global : evar_map -> Globnames.global_reference -> evar_map * constr
 val e_new_global : evar_map ref -> Globnames.global_reference -> constr
 
 (** Create a fresh evar in a context different from its definition context:
@@ -71,11 +71,11 @@ val e_new_global : evar_map ref -> Globnames.global_reference -> constr
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
- named_context_val -> 'r Sigma.t -> types -> 
+ named_context_val -> evar_map -> types -> 
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
   ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool ->
-  constr list -> (constr, 'r) Sigma.sigma
+  constr list -> evar_map * constr
 
 val make_pure_subst : evar_info -> 'a array -> (Id.t * 'a) list
 
@@ -133,7 +133,7 @@ val occur_evar_upto : evar_map -> Evar.t -> constr -> bool
 
 (** {6 Value/Type constraints} *)
 
-val judge_of_new_Type : 'r Sigma.t -> (unsafe_judgment, 'r) Sigma.sigma
+val judge_of_new_Type : evar_map -> evar_map * unsafe_judgment
 
 (***********************************************************)
 

@@ -44,8 +44,6 @@ open Glob_ops
 open Evarconv
 open Pattern
 open Misctypes
-open Tactypes
-open Sigma.Notations
 
 module NamedDecl = Context.Named.Declaration
 
@@ -111,9 +109,9 @@ let e_new_evar env evdref ?src ?naming typ =
   let typ' = subst2 subst vsubst typ in
   let instance = inst_rels @ inst_vars in
   let sign = val_of_named_context nc in
-  let sigma = Sigma.Unsafe.of_evar_map !evdref in
-  let Sigma (e, sigma, _) = new_evar_instance sign sigma typ' ?src ?naming instance in
-  evdref := Sigma.to_evar_map sigma;
+  let sigma = !evdref in
+  let (sigma, e) = new_evar_instance sign sigma typ' ?src ?naming instance in
+  evdref := sigma;
   e
 
 let push_rec_types sigma (lna,typarray,_) env =
@@ -390,9 +388,8 @@ let adjust_evar_source evdref na c =
      begin match evi.evar_source with
      | loc, Evar_kinds.QuestionMark (b,Anonymous) ->
         let src = (loc,Evar_kinds.QuestionMark (b,na)) in
-        let sigma = Sigma.Unsafe.of_evar_map !evdref in
-        let Sigma (evk', evd, _) = restrict_evar sigma evk (evar_filter evi) ~src None in
-        evdref := Sigma.to_evar_map evd;
+        let (evd, evk') = restrict_evar !evdref evk (evar_filter evi) ~src None in
+        evdref := evd;
         mkEvar (evk',args)
      | _ -> c
      end
@@ -571,12 +568,12 @@ let pretype_sort ?loc evdref = function
   | GType s -> evd_comb1 (judge_of_Type ?loc) evdref s
 
 let new_type_evar env evdref loc =
-  let sigma = Sigma.Unsafe.of_evar_map !evdref in
-  let Sigma ((e, _), sigma, _) =
+  let sigma = !evdref in
+  let (sigma, (e, _)) =
     Evarutil.new_type_evar env.ExtraEnv.env sigma
       univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)
   in
-  evdref := Sigma.to_evar_map sigma;
+  evdref := sigma;
   e
 
 module ConstrInterpObj =
@@ -1267,7 +1264,7 @@ let constr_flags = {
 (* Fully evaluate an untyped constr *)
 let type_uconstr ?(flags = constr_flags)
   ?(expected_type = WithoutTypeConstraint) ist c =
-  { delayed = begin fun env sigma ->
+  begin fun env sigma ->
   let { closure; term } = c in
   let vars = {
     ltac_constrs = closure.typed;
@@ -1275,10 +1272,8 @@ let type_uconstr ?(flags = constr_flags)
     ltac_idents = closure.idents;
     ltac_genargs = Id.Map.empty;
   } in
-  let sigma = Sigma.to_evar_map sigma in
-  let (sigma, c) = understand_ltac flags env sigma vars expected_type term in
-  Sigma.Unsafe.of_pair (c, sigma)
-  end }
+  understand_ltac flags env sigma vars expected_type term
+  end
 
 let pretype k0 resolve_tc typcon env evdref lvar t =
   pretype k0 resolve_tc typcon (make_env env !evdref) evdref lvar t

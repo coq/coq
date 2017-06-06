@@ -18,7 +18,6 @@ open Glob_term
 open Geninterp
 open Extraargs
 open Tacmach
-open Proofview.Notations
 open Rewrite
 open Stdarg
 open Pcoq.Vernac_
@@ -123,7 +122,7 @@ TACTIC EXTEND rewrite_strat
 END
 
 let clsubstitute o c =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let is_tac id = match fst (fst (snd c)) with { CAst.v = GVar id' } when Id.equal id' id -> true | _ -> false in
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
     Tacticals.New.tclMAP
@@ -132,7 +131,7 @@ let clsubstitute o c =
           | Some id when is_tac id -> Tacticals.New.tclIDTAC
           | _ -> cl_rewrite_clause c o AllOccurrences cl)
       (None :: List.map (fun id -> Some id) hyps)
-  end }
+  end
 
 TACTIC EXTEND substitute
 | [ "substitute" orient(o) glob_constr_with_bindings(c) ] -> [ clsubstitute o c ]

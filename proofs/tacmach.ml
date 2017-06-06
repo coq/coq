@@ -18,7 +18,6 @@ open Tacred
 open Proof_type
 open Logic
 open Refiner
-open Sigma.Notations
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
@@ -79,9 +78,8 @@ let pf_global gls id = EConstr.of_constr (Universes.constr_of_global (Constrinte
 
 let pf_reduction_of_red_expr gls re c =
   let (redfun, _) = reduction_of_red_expr (pf_env gls) re in
-  let sigma = Sigma.Unsafe.of_evar_map (project gls) in
-  let Sigma (c, sigma, _) = redfun.e_redfun (pf_env gls) sigma c in
-  (Sigma.to_evar_map sigma, c)
+  let sigma = project gls in
+  redfun (pf_env gls) sigma c
 
 let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_eapply f gls x = 
@@ -158,8 +156,7 @@ let pr_glls glls =
 module New = struct
 
   let project gl =
-    let sigma = Proofview.Goal.sigma gl in
-    Sigma.to_evar_map sigma
+    Proofview.Goal.sigma gl
 
   let pf_apply f gl =
     f (Proofview.Goal.env gl) (project gl)
@@ -216,7 +213,7 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     List.hd hyps
 
-  let pf_nf_concl (gl : ([ `LZ ], 'r) Proofview.Goal.t) =
+  let pf_nf_concl (gl : [ `LZ ] Proofview.Goal.t) =
     (** We normalize the conclusion just after *)
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in

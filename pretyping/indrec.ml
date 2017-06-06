@@ -27,7 +27,6 @@ open Inductiveops
 open Environ
 open Reductionops
 open Nametab
-open Sigma.Notations
 open Context.Rel.Declaration
 
 type dep_flag = bool
@@ -130,19 +129,19 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 	it_mkLambda_or_LetIn_name env' obj deparsign
     else
       let cs = lift_constructor (k+1) constrs.(k) in
-      let t = build_branch_type env (Sigma.to_evar_map sigma) dep (mkRel (k+1)) cs in
+      let t = build_branch_type env sigma dep (mkRel (k+1)) cs in
       mkLambda_string "f" t
 	(add_branch (push_rel (LocalAssum (Anonymous, t)) env) (k+1))
   in
-  let Sigma (s, sigma, p) = Sigma.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env sigma kind in
-  let typP = make_arity env' (Sigma.to_evar_map sigma) dep indf s in
+  let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg env sigma kind in
+  let typP = make_arity env' sigma dep indf s in
   let typP = EConstr.Unsafe.to_constr typP in
   let c = 
     it_mkLambda_or_LetIn_name env
     (mkLambda_string "P" typP
      (add_branch (push_rel (LocalAssum (Anonymous,typP)) env') 0)) lnamespar
   in
-  Sigma (c, sigma, p)
+  (sigma, c)
 
 (* check if the type depends recursively on one of the inductive scheme *)
 
@@ -475,10 +474,9 @@ let mis_make_indrec env sigma listdepkind mib u =
 	  it_mkLambda_or_LetIn_name env (put_arity env' 0 listdepkind)
 	    lnamesparrec
       else
-        let sigma = Sigma.Unsafe.of_evar_map !evdref in
-        let Sigma (c, sigma, _) = mis_make_case_com dep env sigma (indi,u) (mibi,mipi) kind in
-        let evd' = Sigma.to_evar_map sigma in
-	  evdref := evd'; c
+        let evd = !evdref in
+        let (evd, c) = mis_make_case_com dep env evd (indi,u) (mibi,mipi) kind in
+	  evdref := evd; c
   in
     (* Body of mis_make_indrec *)
     !evdref, List.init nrec make_one_rec

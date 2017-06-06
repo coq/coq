@@ -241,24 +241,20 @@ let app_global f args k =
   Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc -> k (mkApp (fc, args))
 
 let rec gen_holes env sigma t n accu =
-  let open Sigma in
   if Int.equal n 0 then (sigma, List.rev accu)
   else match EConstr.kind sigma t with
   | Prod (_, u, t) ->
-    let sigma = Sigma.Unsafe.of_evar_map sigma in
-    let Sigma (ev, sigma, _) = Evarutil.new_evar env sigma u in
-    let sigma = Sigma.to_evar_map sigma in
+    let (sigma, ev) = Evarutil.new_evar env sigma u in
     let t = EConstr.Vars.subst1 ev t in
     gen_holes env sigma t (pred n) (ev :: accu)
   | _ -> assert false
 
 let app_global_with_holes f args n =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc ->
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
-    Refine.refine { Sigma.run = begin fun sigma ->
-      let sigma = Sigma.to_evar_map sigma in
+    Refine.refine begin fun sigma ->
       let t = Tacmach.New.pf_get_type_of gl fc in
       let t = Termops.prod_applist sigma t (Array.to_list args) in
       let ans = mkApp (fc, args) in
@@ -266,32 +262,33 @@ let app_global_with_holes f args n =
       let ans = applist (ans, holes) in
       let evdref = ref sigma in
       let () = Typing.e_check env evdref ans concl in
-      Sigma.Unsafe.of_pair (ans, !evdref)
-    end }
-  end }
+      (!evdref, ans)
+    end
+  end
 
 let assert_before n c =
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let evm, _ = Tacmach.New.pf_apply type_of gl c in
-    Sigma.Unsafe.of_pair (assert_before n c, evm)
-  end }
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm)
+    (assert_before n c)
+  end
 
 let refresh_type env evm ty =
   Evarsolve.refresh_universes ~status:Evd.univ_flexible ~refreshset:true
 			      (Some false) env evm ty
 
 let refresh_universes ty k =
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let evm = Tacmach.New.project gl in
     let evm, ty = refresh_type env evm ty in
-    Sigma.Unsafe.of_pair (k ty, evm)
-  end }
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k ty)
+  end
 
 let constr_of_term c = EConstr.of_constr (constr_of_term c)
 
 let rec proof_tac p : unit Proofview.tactic =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let type_of t = Tacmach.New.pf_unsafe_type_of gl t in
   try (* type_of can raise exceptions *)
   match p.p_rule with
@@ -354,10 +351,10 @@ let rec proof_tac p : unit Proofview.tactic =
 	 Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
                                (Tacticals.New.tclTHEN injt (proof_tac prf))))
   with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
-  end }
+  end
 
 let refute_tac c t1 t2 p =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let hid = Tacmach.New.pf_get_new_id (Id.of_string "Heq") gl in
   let false_t=mkApp (c,[|mkVar hid|]) in
@@ -366,16 +363,16 @@ let refute_tac c t1 t2 p =
     Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
       [proof_tac p; simplest_elim false_t]
   in refresh_universes (Tacmach.New.pf_unsafe_type_of gl tt1) k
-  end }
+  end
 
 let refine_exact_check c =
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let evm, _ = Tacmach.New.pf_apply type_of gl c in
-    Sigma.Unsafe.of_pair (exact_check c, evm)
-  end }
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (exact_check c)
+  end
 
 let convert_to_goal_tac c t1 t2 p = 
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let k sort =
     let neweq= app_global _eq [|sort;tt1;tt2|] in
@@ -386,21 +383,21 @@ let convert_to_goal_tac c t1 t2 p =
     Tacticals.New.tclTHENS (neweq (assert_before (Name e)))
 			   [proof_tac p; endt refine_exact_check]
   in refresh_universes (Tacmach.New.pf_unsafe_type_of gl tt2) k
-  end }
+  end
 
 let convert_to_hyp_tac c1 t1 c2 t2 p =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let tt2=constr_of_term t2 in
   let h = Tacmach.New.pf_get_new_id (Id.of_string "H") gl in
   let false_t=mkApp (c2,[|mkVar h|]) in
     Tacticals.New.tclTHENS (assert_before (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
        simplest_elim false_t]
-  end }
+  end
 
 (* Essentially [assert (Heq : lhs = rhs) by proof_tac p; discriminate Heq] *)
 let discriminate_tac cstru p =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let lhs=constr_of_term p.p_lhs and rhs=constr_of_term p.p_rhs in
     let env = Proofview.Goal.env gl in
     let evm = Tacmach.New.project gl in
@@ -410,7 +407,7 @@ let discriminate_tac cstru p =
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evm)
 			  (Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
       [proof_tac p; Equality.discrHyp hid])
-  end }
+  end
 
 (* wrap everything *)
 
@@ -421,7 +418,7 @@ let build_term_to_complete uf pac =
   (applist (mkConstructU (kn, EInstance.make u), real_args), pac.arity)
 
 let cc_tactic depth additionnal_terms =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     Coqlib.check_required_library Coqlib.logic_module_name;
     let _ = debug (fun () -> Pp.str "Reading subgoal ...") in
@@ -477,7 +474,7 @@ let cc_tactic depth additionnal_terms =
                 let ida = EConstr.of_constr ida in
                 let idb = EConstr.of_constr idb in
 		convert_to_hyp_tac ida ta idb tb p
-  end }
+  end
 
 let cc_fail =
   Tacticals.New.tclZEROMSG (Pp.str "congruence failed.")
@@ -500,17 +497,17 @@ let congruence_tac depth l =
 
 let mk_eq f c1 c2 k =
   Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc ->
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let open Tacmach.New in
     let evm, ty = pf_apply type_of gl c1 in
     let evm, ty = Evarsolve.refresh_universes (Some false) (pf_env gl) evm ty in
     let term = mkApp (fc, [| ty; c1; c2 |]) in
     let evm, _ =  type_of (pf_env gl) evm term in
-    Sigma.Unsafe.of_pair (k term, evm)
-    end }
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k term)
+    end
 
 let f_equal =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
     let cut_eq c1 c2 =
@@ -537,4 +534,4 @@ let f_equal =
         | Pretype_errors.PretypeError _ | Type_errors.TypeError _ -> Proofview.tclUNIT ()
         | e -> Proofview.tclZERO ~info e
       end
-  end }
+  end

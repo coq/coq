@@ -465,12 +465,12 @@ let pf_constrs_of_globals l =
   in aux l []
 
 let quote f lid =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let fg = Tacmach.New.pf_global f gl in
     let clg = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
     Tacticals.New.pf_constr_of_global fg >>= fun f ->
     pf_constrs_of_globals clg >>= fun cl ->
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
       let ivs = compute_ivs f (List.map (EConstr.to_constr sigma) cl) gl in
@@ -483,16 +483,16 @@ let quote f lid =
       match ivs.variable_lhs with
       | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast
       | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast
-    end }
-  end }
+    end
+  end
 
 let gen_quote cont c f lid =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let fg = Tacmach.New.pf_global f gl in
     let clg = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
     Tacticals.New.pf_constr_of_global fg >>= fun f ->
     pf_constrs_of_globals clg >>= fun cl ->
-    Proofview.Goal.nf_enter { enter = begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
       let cl = List.map (EConstr.to_constr sigma) cl in
@@ -505,8 +505,8 @@ let gen_quote cont c f lid =
       match ivs.variable_lhs with
       | None -> cont (mkApp (f, [| p |]))
       | Some _ -> cont (mkApp (f, [| vm; p |]))
-    end }
-  end }
+    end
+  end
 
 (*i
 

@@ -469,67 +469,48 @@ module Goal : sig
       data using {!assume} if you known you do not rely on the assumption of
       being normalized, at your own risk.
 
-      The second parameter is a stage indicating where the goal belongs. See
-      module {!Sigma}.
   *)
-  type ('a, 'r) t
+  type 'a t
 
   (** Assume that you do not need the goal to be normalized. *)
-  val assume : ('a, 'r) t -> ([ `NF ], 'r) t
+  val assume : 'a t -> [ `NF ] t
 
   (** Normalises the argument goal. *)
-  val normalize : ('a, 'r) t -> ([ `NF ], 'r) t tactic
+  val normalize : 'a t -> [ `NF ] t tactic
 
   (** [concl], [hyps], [env] and [sigma] given a goal [gl] return
       respectively the conclusion of [gl], the hypotheses of [gl], the
       environment of [gl] (i.e. the global environment and the
       hypotheses) and the current evar map. *)
-  val concl : ('a, 'r) t -> constr
-  val hyps : ('a, 'r) t -> named_context
-  val env : ('a, 'r) t -> Environ.env
-  val sigma : ('a, 'r) t -> 'r Sigma.t
-  val extra : ('a, 'r) t -> Evd.Store.t
-
-  type ('a, 'b) enter =
-    { enter : 'r. ('a, 'r) t -> 'b }
+  val concl : 'a t -> constr
+  val hyps : 'a t -> named_context
+  val env : 'a t -> Environ.env
+  val sigma : 'a t -> Evd.evar_map
+  val extra : 'a t -> Evd.Store.t
 
   (** [nf_enter t] applies the goal-dependent tactic [t] in each goal
       independently, in the manner of {!tclINDEPENDENT} except that
       the current goal is also given as an argument to [t]. The goal
       is normalised with respect to evars. *)
-  val nf_enter : ([ `NF ], unit tactic) enter -> unit tactic
+  val nf_enter : ([ `NF ] t -> unit tactic) -> unit tactic
 
   (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
-  val enter : ([ `LZ ], unit tactic) enter -> unit tactic
+  val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
 
   (** Like {!enter}, but assumes exactly one goal under focus, raising *)
   (** an error otherwise. *)
-  val enter_one : ([ `LZ ], 'a tactic) enter -> 'a tactic
-
-  type ('a, 'b) s_enter =
-    { s_enter : 'r. ('a, 'r) t -> ('b, 'r) Sigma.sigma }
-
-  (** A variant of {!enter} allows to work with a monotonic state. The evarmap
-      returned by the argument is put back into the current state before firing
-      the returned tactic. *)
-  val s_enter : ([ `LZ ], unit tactic) s_enter -> unit tactic
-
-  (** Like {!s_enter}, but normalizes the goal beforehand. *)
-  val nf_s_enter : ([ `NF ], unit tactic) s_enter -> unit tactic
+  val enter_one : ([ `LZ ] t -> 'a tactic) -> 'a tactic
 
   (** Recover the list of current goals under focus, without evar-normalization.
       FIXME: encapsulate the level in an existential type. *)
-  val goals : ([ `LZ ], 'r) t tactic list tactic
+  val goals : [ `LZ ] t tactic list tactic
 
   (** [unsolved g] is [true] if [g] is still unsolved in the current
       proof state. *)
-  val unsolved : ('a, 'r) t -> bool tactic
+  val unsolved : 'a t -> bool tactic
 
   (** Compatibility: avoid if possible *)
-  val goal : ([ `NF ], 'r) t -> Evar.t
-
-  (** Every goal is valid at a later stage. FIXME: take a later evarmap *)
-  val lift : ('a, 'r) t -> ('r, 's) Sigma.le -> ('a, 's) t
+  val goal : [ `NF ] t -> Evar.t
 
 end
 
@@ -616,8 +597,4 @@ module Notations : sig
   (** {!tclOR}: [t1+t2] = [tclOR t1 (fun _ -> t2)]. *)
   val (<+>) : 'a tactic -> 'a tactic -> 'a tactic
 
-  type ('a, 'b) enter = ('a, 'b) Goal.enter =
-    { enter : 'r. ('a, 'r) Goal.t -> 'b }
-  type ('a, 'b) s_enter = ('a, 'b) Goal.s_enter =
-    { s_enter : 'r. ('a, 'r) Goal.t -> ('b, 'r) Sigma.sigma }
 end

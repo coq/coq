@@ -42,7 +42,6 @@ open Auto
 open Eauto
 
 open Indfun_common
-open Sigma.Notations
 open Context.Rel.Declaration
 
 (* Ugly things which should not be here *)
@@ -700,11 +699,9 @@ let mkDestructEq :
     observe_tclTHENLIST (str "mkDestructEq")
      [Proofview.V82.of_tactic (generalize new_hyps);
       (fun g2 ->
-        let changefun patvars = { run = fun sigma ->
-          let redfun = pattern_occs [Locus.AllOccurrencesBut [1], expr] in
-          let Sigma (c, sigma, p) = redfun.Reductionops.e_redfun (pf_env g2) sigma (pf_concl g2) in
-          Sigma (c, sigma, p)
-        } in
+        let changefun patvars sigma =
+          pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) sigma (pf_concl g2)
+        in
 	Proofview.V82.of_tactic (change_in_concl None changefun) g2);
       Proofview.V82.of_tactic (simplest_case expr)]), to_revert
 
@@ -1357,7 +1354,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 			  (Proofview.V82.of_tactic e_assumption);
 		      Eauto.eauto_with_bases
 			(true,5)
-			[{ Tacexpr.delayed = fun _ sigma -> Sigma.here (Lazy.force refl_equal) sigma}]
+			[(fun _ sigma -> (sigma, (Lazy.force refl_equal)))]
 			[Hints.Hint_db.empty empty_transparent_state false]
 		      ]
 		    )

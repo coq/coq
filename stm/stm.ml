@@ -1836,7 +1836,7 @@ end = struct (* {{{ *)
         1 goals in
       TaskQueue.join queue;
       let assign_tac : unit Proofview.tactic =
-        Proofview.(Goal.nf_enter { Goal.enter = fun g ->
+        Proofview.(Goal.nf_enter begin fun g ->
         let gid = Goal.goal g in
         let f =
           try List.assoc gid res
@@ -1859,7 +1859,7 @@ end = struct (* {{{ *)
               Tactics.exact_no_check (EConstr.of_constr pt))
           with TacTask.NoProgress ->
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
-        })
+        end)
       in
       Proof.run_tactic (Global.env()) assign_tac p)))) ())
   
@@ -2108,12 +2108,11 @@ let known_state ?(redefine_qed=false) ~cache id =
         | `Leaks -> Exninfo.iraise exn
         | `ValidBlock { base_state; goals_to_admit; recovery_command } -> begin
            let tac =
-             let open Proofview.Notations in
-             Proofview.Goal.nf_enter { enter = fun gl ->
+             Proofview.Goal.nf_enter begin fun gl ->
                if CList.mem_f Evar.equal
                  (Proofview.Goal.goal gl) goals_to_admit then
              Proofview.give_up else Proofview.tclUNIT ()
-               } in
+              end in
            match (VCS.get_info base_state).state with
            | Valid { proof } ->
                Proof_global.unfreeze proof;

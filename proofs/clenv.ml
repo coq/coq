@@ -25,7 +25,6 @@ open Pretype_errors
 open Evarutil
 open Unification
 open Misctypes
-open Sigma.Notations
 
 (******************************************************************)
 (* Clausal environments *)
@@ -337,9 +336,8 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
       else
         let src = evar_source_of_meta mv clenv.evd in
         let src = adjust_meta_source clenv.evd mv src in
-        let evd = Sigma.Unsafe.of_evar_map clenv.evd in
-	let Sigma (evar, evd, _) = new_evar (cl_env clenv) evd ~src ty in
-	let evd = Sigma.to_evar_map evd in
+        let evd = clenv.evd in
+	let (evd, evar) = new_evar (cl_env clenv) evd ~src ty in
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
 	fold clenv mvs in
   fold clenv dep_mvs
@@ -614,9 +612,7 @@ let make_evar_clause env sigma ?len t =
     | Cast (t, _, _) -> clrec (sigma, holes) n t
     | Prod (na, t1, t2) ->
       let store = Typeclasses.set_resolvable Evd.Store.empty false in
-      let sigma = Sigma.Unsafe.of_evar_map sigma in
-      let Sigma (ev, sigma, _) = new_evar ~store env sigma t1 in
-      let sigma = Sigma.to_evar_map sigma in
+      let (sigma, ev) = new_evar ~store env sigma t1 in
       let dep = not (noccurn sigma 1 t2) in
       let hole = {
         hole_evar = ev;

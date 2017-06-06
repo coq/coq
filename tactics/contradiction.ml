@@ -25,22 +25,20 @@ let mk_absurd_proof coq_not t =
     mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
 
 let absurd c =
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-    let sigma = Sigma.to_evar_map sigma in
     let j = Retyping.get_judgment_of env sigma c in
     let sigma, j = Coercion.inh_coerce_to_sort env sigma j in
     let t = j.Environ.utj_val in
-    let tac =
+    Proofview.Unsafe.tclEVARS sigma <*>
     Tacticals.New.pf_constr_of_global (build_coq_not ()) >>= fun coqnot ->
     Tacticals.New.pf_constr_of_global (build_coq_False ()) >>= fun coqfalse ->
     Tacticals.New.tclTHENLIST [
       elim_type coqfalse;
       Simple.apply (mk_absurd_proof coqnot t)
-    ] in
-    Sigma.Unsafe.of_pair (tac, sigma)
-  end }
+    ]
+  end
 
 let absurd c = absurd c
 
@@ -54,13 +52,13 @@ let filter_hyp f tac =
     | [] -> Proofview.tclZERO Not_found
     | d::rest when f (NamedDecl.get_type d) -> tac (NamedDecl.get_id d)
     | _::rest -> seek rest in
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
     seek hyps
-  end }
+  end
 
 let contradiction_context =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let rec seek_neg l = match l with
@@ -89,11 +87,11 @@ let contradiction_context =
                | None ->
                  Tacticals.New.tclZEROMSG (Pp.str"Not a negated unit type."))
 	      (Proofview.tclORELSE
-                 (Proofview.Goal.enter { enter = begin fun gl ->
+                 (Proofview.Goal.enter begin fun gl ->
                    let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
 	           filter_hyp (fun typ -> is_conv_leq typ t)
 		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
-                 end })
+                 end)
                  begin function (e, info) -> match e with
 	           | Not_found -> seek_neg rest
                    | e -> Proofview.tclZERO ~info e
@@ -102,7 +100,7 @@ let contradiction_context =
     in
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
     seek_neg hyps
-  end }
+  end
 
 let is_negation_of env sigma typ t =
   match EConstr.kind sigma (whd_all env sigma t) with
@@ -111,7 +109,7 @@ let is_negation_of env sigma typ t =
     | _ -> false
 
 let contradiction_term (c,lbind as cl) =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
@@ -134,7 +132,7 @@ let contradiction_term (c,lbind as cl) =
           | Not_found -> Tacticals.New.tclZEROMSG (Pp.str"Not a contradiction.")
           | e -> Proofview.tclZERO ~info e
         end
-  end }
+  end
 
 let contradiction = function
   | None -> Tacticals.New.tclTHEN intros contradiction_context

@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Util
-open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration
 
@@ -73,7 +72,6 @@ let add_side_effects env effects =
 let generic_refine ?(unsafe = true) f gl =
   let gl = Proofview.Goal.assume gl in
   let sigma = Proofview.Goal.sigma gl in
-  let sigma = Sigma.to_evar_map sigma in
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   (** Save the [future_goals] state to restore them after the
@@ -129,19 +127,20 @@ let generic_refine ?(unsafe = true) f gl =
 let lift c =
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.V82.wrap_exceptions begin fun () ->
-  let Sigma (c, sigma, _) = c.run (Sigma.Unsafe.of_evar_map sigma) in
-  Proofview.Unsafe.tclEVARS (Sigma.to_evar_map sigma) >>= fun () ->
+  let (sigma, c) = c sigma in
+  Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   Proofview.tclUNIT c
   end
 
-let make_refine_enter ?unsafe f =
-  { enter = fun gl -> generic_refine ?unsafe (lift f) gl }
+let make_refine_enter ?unsafe f gl = generic_refine ?unsafe (lift f) gl
 
 let refine_one ?(unsafe = true) f =
   Proofview.Goal.enter_one (make_refine_enter ~unsafe f)
 
 let refine ?(unsafe = true) f =
-  let f = { run = fun sigma -> let Sigma (c,sigma,p) = f.run sigma in Sigma (((),c),sigma,p) } in
+  let f evd =
+    let (evd,c) = f evd in (evd,((), c))
+  in
   Proofview.Goal.enter (make_refine_enter ~unsafe f)
 
 (** Useful definitions *)
@@ -154,17 +153,16 @@ let with_type env evd c t =
   in
   evd , j'.Environ.uj_val
 
-let refine_casted ?unsafe f = Proofview.Goal.enter { enter = begin fun gl ->
+let refine_casted ?unsafe f = Proofview.Goal.enter begin fun gl ->
   let gl = Proofview.Goal.assume gl in
   let concl = Proofview.Goal.concl gl in
   let env = Proofview.Goal.env gl in
-  let f = { run = fun h ->
-    let Sigma (c, h, p) = f.run h in
-    let sigma, c = with_type env (Sigma.to_evar_map h) c concl in
-    Sigma (c, Sigma.Unsafe.of_evar_map sigma, p)
-  } in
+  let f h =
+    let (h, c) = f h in
+    with_type env h c concl
+  in
   refine ?unsafe f
-end }
+end
 
 (** {7 solve_constraints}
 
