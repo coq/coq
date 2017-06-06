@@ -11,9 +11,7 @@ formal_topology_CI_DIR=${CI_BUILD_DIR}/formal-topology
 
 # Setup Bignums
 
-git_checkout master https://github.com/coq/bignums.git bignums
-
-( cd bignums && make -j ${NJOBS} && make install )
+source ${ci_dir}/ci-bignums.sh
 
 # Setup Math-Classes
 

@@ -7,9 +7,7 @@ Color_CI_DIR=${CI_BUILD_DIR}/color
 
 # Setup Bignums
 
-git_checkout master https://github.com/coq/bignums.git bignums
-
-( cd bignums && make -j ${NJOBS} && make install )
+source ${ci_dir}/ci-bignums.sh
 
 # Compiles CoLoR
 

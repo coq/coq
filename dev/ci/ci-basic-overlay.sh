@@ -133,3 +133,9 @@
 ########################################################################
 : ${tlc_CI_BRANCH:=master}
 : ${tlc_CI_GITURL:=https://gforge.inria.fr/git/tlc/tlc.git}
+
+########################################################################
+# Bignums
+########################################################################
+: ${bignums_CI_BRANCH:=master}
+: ${bignums_CI_GITURL:=https://github.com/coq/bignums.git}
