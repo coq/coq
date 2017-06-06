@@ -43,7 +43,13 @@ let assumption id = e_give_exact (mkVar id)
 
 let e_assumption =
   Proofview.Goal.enter { enter = begin fun gl ->
-    Tacticals.New.tclFIRST (List.map assumption (Tacmach.New.pf_ids_of_hyps gl))
+    (if Flags.version_strictly_greater Flags.V8_6 then
+       Tacticals.New.tclANY
+     else
+       Tacticals.New.tclFIRST_ON)
+      ~msg:(str "No such assumption.")
+      assumption
+      (Tacmach.New.pf_ids_of_hyps gl)
   end }
 
 let registered_e_assumption =

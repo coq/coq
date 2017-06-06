@@ -2229,11 +2229,6 @@ let one_constructor i lbind = constructor_tac false None i lbind
    Should be generalize in Constructor (Fun c : I -> tactic)
  *)
 
-let rec tclANY tac = function
-| [] -> Tacticals.New.tclZEROMSG (str "No applicable tactic.")
-| arg :: l ->
-  Tacticals.New.tclORD (tac arg) (fun () -> tclANY tac l)
-
 let any_constructor with_evars tacopt =
   let t = match tacopt with None -> Proofview.tclUNIT () | Some t -> t in
   let tac i = Tacticals.New.tclTHEN (constructor_tac with_evars None i NoBindings) t in
@@ -2246,7 +2241,7 @@ let any_constructor with_evars tacopt =
     let nconstr =
       Array.length (snd (Global.lookup_inductive (fst mind))).mind_consnames in
     if Int.equal nconstr 0 then error "The type has no constructors.";
-    tclANY tac (List.interval 1 nconstr)
+    Tacticals.New.tclANY tac (List.interval 1 nconstr)
  end }
 
 let left_with_bindings  with_evars = constructor_tac with_evars (Some 2) 1
