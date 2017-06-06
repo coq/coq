@@ -979,29 +979,29 @@ module Search = struct
       search_hints : hint_db; }
 
   (** Local hints *)
-  let autogoal_cache = ref (DirPath.empty, true, Context.Named.empty,
-                            Hint_db.empty full_transparent_state true)
+  let autogoal_empty_cache = (Context.Named.empty, Hint_db.empty full_transparent_state true)
 
-  let make_autogoal_hints only_classes ?(st=full_transparent_state) g =
+  let make_autogoal_hints ?cache only_classes ?(st=full_transparent_state) g =
     let open Proofview in
     let open Tacmach.New in
     let sign = Goal.hyps g in
-    let (dir, onlyc, sign', cached_hints) = !autogoal_cache in
-    let cwd = Lib.cwd () in
-    let eq c1 c2 = EConstr.eq_constr (project g) c1 c2 in
-    if DirPath.equal cwd dir &&
-         (onlyc == only_classes) &&
-           Context.Named.equal eq sign sign' &&
-             Hint_db.transparent_state cached_hints == st
-    then cached_hints
-    else
-      let hints = make_hints {it = Goal.goal (Proofview.Goal.assume g); sigma = project g}
-                             st only_classes sign
-      in
-      autogoal_cache := (cwd, only_classes, sign, hints); hints
+    match cache with
+    | Some cache ->
+       let (sign', cached_hints) = !cache in
+       let eq c1 c2 = EConstr.eq_constr (project g) c1 c2 in
+       if Context.Named.equal eq sign sign'
+       then cached_hints
+       else
+         let hints = make_hints {it = Goal.goal (Proofview.Goal.assume g); sigma = project g}
+                                st only_classes sign
+         in
+         cache := (sign, hints); hints
+    | None ->
+       make_hints {it = Goal.goal (Proofview.Goal.assume g); sigma = project g}
+                  st only_classes sign
 
-  let make_autogoal ?(st=full_transparent_state) only_classes dep cut i g =
-    let hints = make_autogoal_hints only_classes ~st g in
+  let make_autogoal ?cache ?(st=full_transparent_state) only_classes dep cut i g =
+    let hints = make_autogoal_hints ?cache only_classes ~st g in
     { search_hints = hints;
       search_depth = [i]; last_tac = lazy (str"none");
       search_dep = dep;
@@ -1080,7 +1080,7 @@ module Search = struct
     let ortac = if backtrack then Proofview.tclOR else Proofview.tclORELSE in
     let idx = ref 1 in
     let foundone = ref false in
-    let rec onetac e (tac, pat, b, name, pp) tl =
+    let rec onetac e (tac, pat, extern, name, pp) tl =
       let derivs = path_derivate info.search_cut name in
       let pr_error ie =
         if !typeclasses_debug > 1 then
@@ -1114,7 +1114,7 @@ module Search = struct
                pr_ev s' (Proofview.Goal.goal (Proofview.Goal.assume gl')));
         let eq c1 c2 = EConstr.eq_constr s' c1 c2 in
         let hints' =
-          if b && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
+          if extern && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
           then
             let st = Hint_db.transparent_state info.search_hints in
             make_autogoal_hints info.search_only_classes ~st gl'
@@ -1257,22 +1257,23 @@ module Search = struct
                       (fun e' -> let (e, info) = merge_exceptions e e' in
                               Proofview.tclZERO ~info e))
 
-  let search_tac_gl ?st only_classes dep hints depth i sigma gls gl :
+  let search_tac_gl cache ?st only_classes dep hints depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
     if false (* In 8.6, still allow non-class goals only_classes && not (is_class_type sigma (Goal.concl gl)) *) then
       Tacticals.New.tclZEROMSG (str"Not a subgoal for a class")
     else
       let dep = dep || Proofview.unifiable sigma (Goal.goal (Proofview.Goal.assume gl)) gls in
-      let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
+      let info = make_autogoal ~cache ?st only_classes dep (cut_of_hints hints) i gl in
       search_tac hints depth 1 info
 
   let search_tac ?(st=full_transparent_state) only_classes dep hints depth =
     let open Proofview in
+    let cache = ref autogoal_empty_cache in
     let tac sigma gls i =
       Goal.enter
         { enter = fun gl ->
-          search_tac_gl ~st only_classes dep hints depth (succ i) sigma gls gl }
+          search_tac_gl cache ~st only_classes dep hints depth (succ i) sigma gls gl }
     in
       Proofview.Unsafe.tclGETGOALS >>= fun gls ->
       Proofview.tclEVARMAP >>= fun sigma ->
