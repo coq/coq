@@ -7,4 +7,4 @@ fiat_crypto_CI_DIR=${CI_BUILD_DIR}/fiat-crypto
 
 git_checkout ${fiat_crypto_CI_BRANCH} ${fiat_crypto_CI_GITURL} ${fiat_crypto_CI_DIR}
 
-( cd ${fiat_crypto_CI_DIR} && make -j ${NJOBS} lite )
+( cd ${fiat_crypto_CI_DIR} && ./etc/coq-scripts/timing/make-pretty-timed-or-error.sh -j ${NJOBS} lite )
