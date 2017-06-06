@@ -20,3 +20,9 @@ Inductive U := A.
 Bind Scope u with U.
 Notation "'ε'" := A : u.
 Definition c := ε : U.
+
+(* Check activation of type scope for tactics such as assert *)
+
+Goal True.
+assert (nat * nat).
+
