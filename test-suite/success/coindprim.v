@@ -13,9 +13,10 @@ Definition eta {A} (s : Stream A) := {| hd := s.(hd); tl := s.(tl) |}.
 CoFixpoint ones := {| hd := 1; tl := ones |}.
 CoFixpoint ticks := {| hd := tt; tl := ticks |}.
 
-CoInductive stream_equiv {A} {s : Stream A} {s' : Stream A} : Prop :=
-  mkStreamEq { hdeq : s.(hd) = s'.(hd); tleq : stream_equiv _ s.(tl) s'.(tl) }.
-Arguments stream_equiv {A} s s'.
+CoInductive stream_equiv {A} (s : Stream A) (s' : Stream A) : Prop :=
+  mkStreamEq { hdeq : s.(hd) = s'.(hd); tleq : stream_equiv s.(tl) s'.(tl) }.
+Arguments hdeq {A} {s} {s'}.
+Arguments tleq {A} {s} {s'}.
 
 Program CoFixpoint ones_eq : stream_equiv ones ones.(tl) :=
   {| hdeq := eq_refl; tleq := ones_eq |}.

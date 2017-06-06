@@ -38,7 +38,7 @@ open Misctypes
    of [env] *)
 
 type var_internalization_type =
-  | Inductive of Id.t list (* list of params *)
+  | Inductive of Id.t list (* list of params *) * bool (* true = check for possible capture *)
   | Recursive
   | Method
   | Variable
@@ -61,7 +61,7 @@ val empty_internalization_env : internalization_env
 val compute_internalization_data : env -> var_internalization_type ->
   types -> Impargs.manual_explicitation list -> var_internalization_data
 
-val compute_internalization_env : env -> var_internalization_type ->
+val compute_internalization_env : env -> ?impls:internalization_env -> var_internalization_type ->
   Id.t list -> types list -> Impargs.manual_explicitation list list ->
   internalization_env
 

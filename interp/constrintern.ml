@@ -46,7 +46,7 @@ open Context.Rel.Declaration
    types and recursive definitions and of projection names in records *)
 
 type var_internalization_type =
-  | Inductive of Id.t list (* list of params *)
+  | Inductive of Id.t list (* list of params *) * bool (* true = check for possible capture *)
   | Recursive
   | Method
   | Variable
@@ -176,7 +176,7 @@ let parsing_explicit = ref false
 let empty_internalization_env = Id.Map.empty
 
 let compute_explicitable_implicit imps = function
-  | Inductive params ->
+  | Inductive (params,_) ->
       (* In inductive types, the parameters are fixed implicit arguments *)
       let sub_impl,_ = List.chop (List.length params) imps in
       let sub_impl' = List.filter is_status_implicit sub_impl in
@@ -190,10 +190,10 @@ let compute_internalization_data env ty typ impl =
   let expls_impl = compute_explicitable_implicit impl ty in
   (ty, expls_impl, impl, compute_arguments_scope typ)
 
-let compute_internalization_env env ty =
+let compute_internalization_env env ?(impls=empty_internalization_env) ty =
   List.fold_left3
     (fun map id typ impl -> Id.Map.add id (compute_internalization_data env ty typ impl) map)
-    empty_internalization_env
+    impls
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
@@ -358,16 +358,17 @@ let locate_if_hole ?loc na = function
 
 let reset_hidden_inductive_implicit_test env =
   { env with impls = Id.Map.map (function
-         | (Inductive _,b,c,d) -> (Inductive [],b,c,d)
+         | (Inductive (params,_),b,c,d) -> (Inductive (params,false),b,c,d)
          | x -> x) env.impls }
 
-let check_hidden_implicit_parameters id impls =
+let check_hidden_implicit_parameters ?loc id impls =
   if Id.Map.exists (fun _ -> function
-    | (Inductive indparams,_,_,_) -> Id.List.mem id indparams
+    | (Inductive (indparams,check),_,_,_) when check -> Id.List.mem id indparams
     | _ -> false) impls
   then
-    user_err  (strbrk "A parameter of an inductive type " ++
-    pr_id id ++ strbrk " is not allowed to be used as a bound variable in the type of its constructor.")
+    user_err ?loc (pr_id id ++ strbrk " is already used as name of " ++
+      strbrk "a parameter of the inductive type; bound variables in " ++
+      strbrk "the type of a constructor shall use a different name.")
 
 let push_name_env ?(global_level=false) ntnvars implargs env =
   function
@@ -376,7 +377,7 @@ let push_name_env ?(global_level=false) ntnvars implargs env =
 	user_err ?loc (str "Anonymous variables not allowed");
       env
   | loc,Name id ->
-      check_hidden_implicit_parameters id env.impls ;
+      check_hidden_implicit_parameters ?loc id env.impls ;
       if Id.Map.is_empty ntnvars && Id.equal id ldots_var
         then error_ldots_var ?loc;
       set_var_scope ?loc id false env ntnvars;
