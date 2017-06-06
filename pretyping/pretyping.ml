@@ -1262,7 +1262,7 @@ let constr_flags = {
   solve_unification_constraints = true;
   use_hook = None;
   fail_evar = true;
-  expand_evars = false }
+  expand_evars = true }
 
 (* Fully evaluate an untyped constr *)
 let type_uconstr ?(flags = constr_flags)

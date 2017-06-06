@@ -640,7 +640,7 @@ let constr_flags () = {
   solve_unification_constraints = true;
   use_hook = solve_by_implicit_tactic ();
   fail_evar = true;
-  expand_evars = false }
+  expand_evars = true }
 
 (* Interprets a constr; expects evars to be solved *)
 let interp_constr_gen kind ist env sigma c =
@@ -655,14 +655,14 @@ let open_constr_use_classes_flags () = {
   solve_unification_constraints = true;
   use_hook = solve_by_implicit_tactic ();
   fail_evar = false;
-  expand_evars = false }
+  expand_evars = true }
 
 let open_constr_no_classes_flags () = {
   use_typeclasses = false;
   solve_unification_constraints = true;
   use_hook = solve_by_implicit_tactic ();
   fail_evar = false;
-  expand_evars = false }
+  expand_evars = true }
 
 let pure_open_constr_flags = {
   use_typeclasses = false;
