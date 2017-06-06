@@ -7,6 +7,12 @@ math_classes_CI_DIR=${CI_BUILD_DIR}/math-classes
 
 Corn_CI_DIR=${CI_BUILD_DIR}/corn
 
+# Setup Bignums
+
+git_checkout master https://github.com/coq/bignums.git bignums
+
+( cd bignums && make -j ${NJOBS} && make install )
+
 # Setup Math-Classes
 
 git_checkout ${math_classes_CI_BRANCH} ${math_classes_CI_GITURL} ${math_classes_CI_DIR}

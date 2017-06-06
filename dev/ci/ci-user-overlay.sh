@@ -40,3 +40,8 @@ if [ $TRAVIS_PULL_REQUEST = "707" ] || [ $TRAVIS_BRANCH == "trunk__API__coq_make
     fiat_parsers_CI_BRANCH=trunk__API
     fiat_parsers_CI_GITURL=https://github.com/matejkosik/fiat.git
 fi
+
+if [ $TRAVIS_PULL_REQUEST == "498" ] || [ $TRAVIS_BRANCH == "outsource-bignums" ]; then
+    math_classes_CI_BRANCH=external-bignums
+    math_classes_CI_GITURL=https://github.com/letouzey/math-classes.git
+fi
