@@ -17,16 +17,16 @@ source ${ci_dir}/ci-bignums.sh
 
 git_checkout ${math_classes_CI_BRANCH} ${math_classes_CI_GITURL} ${math_classes_CI_DIR}
 
-( cd ${math_classes_CI_DIR} && make && make install )
+( cd ${math_classes_CI_DIR} && make pretty-timed TGTS="all" && make install )
 
 # Setup Corn
 
 git_checkout ${Corn_CI_BRANCH} ${Corn_CI_GITURL} ${Corn_CI_DIR}
 
-( cd ${Corn_CI_DIR} && make && make install )
+( cd ${Corn_CI_DIR} && make pretty-timed TGTS="all" && make install )
 
 # Setup formal-topology
 
 git_checkout ${formal_topology_CI_BRANCH} ${formal_topology_CI_GITURL} ${formal_topology_CI_DIR}
 
-( cd ${formal_topology_CI_DIR} && make )
+( cd ${formal_topology_CI_DIR} && (make TIMED=1 2>&1 | tee time-of-build.log; exit ${PIPESTATUS[0]}) && make -f Makefile.coq print-pretty-timed )

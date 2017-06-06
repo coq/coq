@@ -12,4 +12,4 @@ checkout_mathcomp ${mathcomp_CI_DIR}
 ( cd ${mathcomp_CI_DIR}/mathcomp                  && \
   sed -i.bak '/PFsection/d'                  Make && \
   sed -i.bak '/stripped_odd_order_theorem/d' Make && \
-  make Makefile.coq && make -f Makefile.coq all )
+  make Makefile.coq && make -f Makefile.coq pretty-timed TGTS="all" )
