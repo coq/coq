@@ -10,7 +10,7 @@ open Vernacexpr
 open CErrors
 open Pp
 
-let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
+let default_proof_mode () = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"]
 
 let string_of_in_script b = if b then " (inside script)" else ""
 
