@@ -392,7 +392,7 @@ $(COQTOP_BYTE_MLTOP): toplevel/coqtop_byte_bin.ml
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -package compiler-libs.toplevel -c $<
 
 ifeq ($(BEST),opt)
-$(COQTOPEXE): $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs) $(COQTOP_OPT_MLTOP)
+$(COQTOPEXE): $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs) $(COQTOP_OPT_MLTOP) revision
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -I toplevel \
 	                   -I kernel/byterun/ -cclib -lcoqrun \
@@ -407,7 +407,7 @@ $(COQTOPEXE): $(COQTOPBYTE)
 endif
 
 # VMBYTEFLAGS will either contain -custom of the right -dllpath for the VM
-$(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE_MLTOP)
+$(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA) $(COQTOP_BYTE_MLTOP) revision
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLC) -linkall -linkpkg -I toplevel \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
