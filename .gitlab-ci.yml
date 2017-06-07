@@ -21,6 +21,8 @@ variables:
   COMPILER_BLEEDING_EDGE: "4.04.1"
   CAMLP5_VER_BLEEDING_EDGE: "6.17"
 
+  TEST_PACKAGES: "time python"
+
   COQIDE_PACKAGES: "libgtk2.0-dev libgtksourceview2.0-dev"
   #COQIDE_PACKAGES_32BIT: "libgtk2.0-dev:i386 libgtksourceview2.0-dev:i386"
   COQIDE_OPAM: "lablgtk-extras"
@@ -193,6 +195,8 @@ test-suite:
   <<: *test-suite-template
   dependencies:
     - build
+  variables:
+    EXTRA_PACKAGES: "$TEST_PACKAGES"
 
 test-suite:32bit:
   <<: *test-suite-template
@@ -200,7 +204,7 @@ test-suite:32bit:
     - build:32bit
   variables:
     COMPILER: "$COMPILER_32BIT"
-    EXTRA_PACKAGES: "gcc-multilib"
+    EXTRA_PACKAGES: "gcc-multilib $TEST_PACKAGES"
 
 test-suite:bleeding-edge:
   <<: *test-suite-template
@@ -209,6 +213,7 @@ test-suite:bleeding-edge:
   variables:
     COMPILER: "$COMPILER_BLEEDING_EDGE"
     CAMLP5_VER: "$CAMLP5_VER_BLEEDING_EDGE"
+    EXTRA_PACKAGES: "$TEST_PACKAGES"
 
 documentation:
   <<: *documentation-template

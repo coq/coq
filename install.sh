@@ -8,7 +8,7 @@ for f; do
   dn=`dirname $f`
   install -d "$dest/$dn"
   case $bn in
-      *.cmxs) install -m 755 $f "$dest/$dn/$bn"
+      *.cmxs|*.py) install -m 755 $f "$dest/$dn/$bn"
 	      ;;
       *) install -m 644 $f "$dest/$dn/$bn"
 	 ;;

@@ -17,7 +17,7 @@
 # read
 #    http://miller.emu.id.au/pmiller/books/rmch/
 # before complaining.
-# 
+#
 # When you are working in a subdir, you can compile without moving to the
 # upper directory using "make -C ..", and the output is still understood
 # by Emacs' next-error.
@@ -168,7 +168,7 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 # Cleaning
 ###########################################################################
 
-.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean devdocclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean timingclean devdocclean
 
 clean: objclean cruftclean depclean docclean devdocclean
 
@@ -239,16 +239,19 @@ cacheclean:
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml myocamlbuild_config.ml dev/ocamldebug-coq dev/camlp4.dbg config/Info-*.plist
 
-distclean: clean cleanconfig cacheclean
+distclean: clean cleanconfig cacheclean timingclean
 
 voclean:
 	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -delete
 	find theories plugins test-suite -name .coq-native -empty -delete
 
+timingclean:
+	find theories plugins test-suite \( -name '*.v.timing' -o -name '*.v.before-timing' -o -name "*.v.after-timing" -o -name "*.v.timing.diff" -o -name "time-of-build.log" -o -name "time-of-build-before.log" -o -name "time-of-build-after.log" -o -name "time-of-build-pretty.log" -o -name "time-of-build-both.log" \) -delete
+
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f
-	rm -f $(OCAMLDOCDIR)/*.log $(OCAMLDOCDIR)/*.aux $(OCAMLDOCDIR)/*.toc 
-	rm -f $(OCAMLDOCDIR)/ocamldoc.sty $(OCAMLDOCDIR)/coq.tex 
+	rm -f $(OCAMLDOCDIR)/*.log $(OCAMLDOCDIR)/*.aux $(OCAMLDOCDIR)/*.toc
+	rm -f $(OCAMLDOCDIR)/ocamldoc.sty $(OCAMLDOCDIR)/coq.tex
 	rm -f $(OCAMLDOCDIR)/html/*.html
 
 ###########################################################################
@@ -299,4 +302,3 @@ printenv:
 	@env | wc -L
 	@echo -n "Total (win32 limit is 32k) : "
 	@env | wc -m
-

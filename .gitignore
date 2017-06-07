@@ -9,6 +9,7 @@
 *.spot
 *.o
 *.a
+*.pyc
 *.log
 *.aux
 *.dvi
@@ -35,6 +36,10 @@
 *.tacind
 *.v.tex
 *.v.ps
+*.v.timing
+*.v.timing.diff
+*.v.before-timing
+*.v.after-timing
 *.v.html
 *.stamp
 *.native
@@ -55,6 +60,10 @@ plugins/micromega/csdpcert
 plugins/micromega/.micromega.ml.generated
 kernel/byterun/dllcoqrun.so
 coqdoc.sty
+time-of-build.log
+time-of-build-pretty.log
+time-of-build-before.log
+time-of-build-after.log
 .csdp.cache
 test-suite/.lia.cache
 test-suite/.nra.cache
@@ -63,8 +72,9 @@ test-suite/misc/universes/all_stdlib.v
 test-suite/misc/universes/universes.txt
 test-suite/coq-makefile/*/actual
 test-suite/coq-makefile/*/desired
-test-suite/coq-makefile/*/Makefile
-test-suite/coq-makefile/*/Makefile.conf
+test-suite/coq-makefile/**/*.processed
+test-suite/coq-makefile/**/Makefile
+test-suite/coq-makefile/**/Makefile.conf
 test-suite/coq-makefile/*/src
 test-suite/coq-makefile/*/theories
 test-suite/coq-makefile/*/theories2
