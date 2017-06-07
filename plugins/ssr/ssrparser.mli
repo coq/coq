@@ -8,6 +8,9 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open API
+open Grammar_API
+
 val ssrtacarg : Tacexpr.raw_tactic_expr Pcoq.Gram.entry
 val wit_ssrtacarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
 val pr_ssrtacarg : 'a -> 'b -> (int * Ppextend.parenRelation -> 'c) -> 'c

@@ -8,6 +8,8 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open API
+
 val tclSEQAT :
   Ltac_plugin.Tacinterp.interp_sign ->
   Ltac_plugin.Tacinterp.Value.t ->

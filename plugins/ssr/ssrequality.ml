@@ -8,6 +8,7 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open API
 open Ltac_plugin
 open Util
 open Names
@@ -343,7 +344,7 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
     if dir = R2L then elim, gl else (* taken from Coq's rewrite *)
     let elim, _ = Term.destConst elim in          
     let mp,dp,l = repr_con (constant_of_kn (canonical_con elim)) in
-    let l' = label_of_id (Nameops.add_suffix (id_of_label l) "_r")  in 
+    let l' = Label.of_id (Nameops.add_suffix (Label.to_id l) "_r")  in 
     let c1' = Global.constant_of_delta_kn (canonical_con (make_con mp dp l')) in
     mkConst c1', gl in
   let elim = EConstr.of_constr elim in

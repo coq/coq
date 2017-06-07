@@ -8,6 +8,7 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open API
 open Names
 open Environ
 open Proof_type
@@ -173,12 +174,12 @@ val pf_type_id :  Proof_type.goal Evd.sigma -> EConstr.types -> Id.t
 val pf_abs_evars : 
            Proof_type.goal Evd.sigma ->
            evar_map * EConstr.t ->
-           int * EConstr.t * Constr.existential_key list *
+           int * EConstr.t * Evar.t list *
            Evd.evar_universe_context
 val pf_abs_evars2 : (* ssr2 *)
            Proof_type.goal Evd.sigma -> Evar.t list ->
            evar_map * EConstr.t ->
-           int * EConstr.t * Constr.existential_key list *
+           int * EConstr.t * Evar.t list *
            Evd.evar_universe_context
 val pf_abs_cterm :
            Proof_type.goal Evd.sigma -> int -> EConstr.t -> EConstr.t
@@ -214,7 +215,7 @@ val pf_mkSsrConst :
            string ->
            Proof_type.goal Evd.sigma ->
            EConstr.t * Proof_type.goal Evd.sigma
-val new_wild_id : tac_ctx -> Names.identifier * tac_ctx
+val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
 
 
 val pf_fresh_global :
@@ -228,7 +229,7 @@ val is_tagged : string -> string -> bool
 val has_discharged_tag : string -> bool
 val ssrqid : string -> Libnames.qualid 
 val new_tmp_id :
-  tac_ctx -> (Names.identifier * Names.name ref) * tac_ctx
+  tac_ctx -> (Names.Id.t * Names.name ref) * tac_ctx
 val mk_anon_id : string -> Proof_type.goal Evd.sigma -> Id.t
 val pf_abs_evars_pirrel :
            Proof_type.goal Evd.sigma ->
@@ -252,7 +253,7 @@ val red_product_skip_id :
   env -> evar_map -> EConstr.t -> EConstr.t
 
 val ssrautoprop_tac :
-           (Constr.existential_key Evd.sigma -> Constr.existential_key list Evd.sigma) ref
+           (Evar.t Evd.sigma -> Evar.t list Evd.sigma) ref
 
 val mkProt :
   EConstr.t ->

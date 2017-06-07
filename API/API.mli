@@ -809,6 +809,7 @@ sig
   val mkNamedLambda : Names.Id.t -> types -> constr -> constr
   val mkNamedProd : Names.Id.t -> types -> types -> types
 
+  val isCast : Evd.evar_map -> t -> bool
   val isEvar : Prelude.evar_map -> constr -> bool
   val isInd  : Prelude.evar_map -> constr -> bool
   val isRel : Prelude.evar_map -> constr -> bool
@@ -827,6 +828,7 @@ sig
   val destConst : Prelude.evar_map -> constr -> Names.Constant.t * EInstance.t
   val destConstruct : Prelude.evar_map -> constr -> Names.constructor * EInstance.t
   val destFix : Evd.evar_map -> t -> (t, t) Term.pfixpoint
+  val destCast : Evd.evar_map -> t -> t * Term.cast_kind * t
 
   val mkConstruct : Names.constructor -> constr
 
@@ -866,6 +868,8 @@ sig
     val substl : constr list -> constr -> constr
     val lift : int -> constr -> constr
     val liftn : int -> int -> t -> t
+    val subst_var : Names.Id.t -> t -> t
+    val subst_vars : Names.Id.t list -> t -> t
   end
 
   val fresh_global :
@@ -907,6 +911,7 @@ val of_named_decl : (Term.constr, Term.types) Context.Named.Declaration.pt -> (c
   val mkConstU : Names.Constant.t * EInstance.t -> t
   val isProd : Evd.evar_map -> t -> bool
   val mkConstructUi : (Names.inductive * EInstance.t) * int -> t
+  val isLambda : Evd.evar_map -> t -> bool
 end
 
 module Mod_subst :
@@ -3262,10 +3267,11 @@ end
 module Proof_type :
 sig
   type goal = Evar.t
+  type rule = Proof_type.prim_rule =
+    | Cut of bool * bool * Names.Id.t * Term.types
+    | Refine of Term.constr
 
   type tactic = goal Evd.sigma -> goal list Evd.sigma
-
-  type rule = Proof_type.rule
 end
 
 module Redexpr :
@@ -3332,6 +3338,8 @@ sig
   val pf_last_hyp : Proof_type.goal sigma -> EConstr.named_declaration
 
   val pf_nth_hyp_id : Proof_type.goal sigma -> int -> Names.Id.t
+
+  val sig_it : 'a sigma -> 'a
 
   module New :
   sig
@@ -3467,6 +3475,11 @@ sig
   val tclREPEAT : Proof_type.tactic -> Proof_type.tactic
   val tclORELSE        : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
   val tclFAIL : int -> Pp.std_ppcmds -> Proof_type.tactic
+  val tclIDTAC : Proof_type.tactic
+  val tclTHEN : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
+  val tclTHENLIST : Proof_type.tactic list -> Proof_type.tactic
+  val tclTRY : Proof_type.tactic -> Proof_type.tactic
+  val tclAT_LEAST_ONCE : Proof_type.tactic -> Proof_type.tactic
 end
 
 module Termops :
@@ -4031,9 +4044,13 @@ sig
   val cache_term_by_tactic_then :
     opaque:bool -> ?goal_type:(EConstr.constr option) -> Names.Id.t ->
     Decl_kinds.goal_kind -> unit Proofview.tactic -> (EConstr.constr -> EConstr.constr list -> unit Proofview.tactic) -> unit Proofview.tactic
+  val apply_type : EConstr.constr -> EConstr.constr list -> unit Proofview.tactic
+  val hnf_in_concl : unit Proofview.tactic
+  val intro_mustbe_force : Names.Id.t -> unit Proofview.tactic
 
   module New :
   sig
+    val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.constr) -> unit Proofview.tactic
     val reduce_after_refine : unit Proofview.tactic
   end
   module Simple :
@@ -4061,7 +4078,12 @@ sig
   val tclTHENS : tactic -> tactic list -> tactic
   val tclFIRST         : tactic list -> tactic
   val tclTHENFIRST     : tactic -> tactic -> tactic
+  val tclTHENLAST      : tactic -> tactic -> tactic
+  val tclTHENSFIRSTn   : tactic -> tactic array -> tactic -> tactic
+  val tclTHENSLASTn    : tactic -> tactic -> tactic array -> tactic
+  val tclSOLVE         : tactic list -> tactic
 
+  val onClause   : (Names.Id.t option -> tactic) -> Locus.clause -> tactic
   val onAllHypsAndConcl : (Names.Id.t option -> tactic) -> tactic
   val onLastHypId : (Names.Id.t -> tactic) -> tactic
   val onNthHypId : int -> (Names.Id.t -> tactic) -> tactic

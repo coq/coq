@@ -177,6 +177,7 @@ sig
   val parse_string : 'a Gram.Entry.e -> string -> 'a
   val (!@) : Ploc.t -> Loc.t
   val set_command_entry : API.Vernacexpr.vernac_expr Gram.Entry.e -> unit
+  val to_coqloc : Ploc.t -> Loc.t
 end
 
 module CLexer :
