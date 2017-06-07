@@ -124,3 +124,13 @@ let init_ocaml_path () =
   in
     Mltop.add_coq_path (lp (Envars.coqlib ()));
     List.iter add_subdir Coq_config.all_src_dirs
+
+let get_version () =
+  try
+    let ch = open_in (Envars.coqlib () / "revision") in
+    let version = input_line ch in
+    let branch = input_line ch in
+    let () = close_in ch in
+    (version,branch)
+  with e when CErrors.noncritical e ->
+    (Coq_config.version,Coq_config.date)

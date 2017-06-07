@@ -6,6 +6,21 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+let print_version ret =
+  Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err (Pp.str msg));
+  let (version,branch) = Coqinit.get_version () in
+  Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
+    version branch;
+  Printf.printf "compiled on %s with OCaml %s\n" Coq_config.compile_date Coq_config.caml_version;
+  exit ret
+
+let print_machine_readable_version ret =
+  Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err (Pp.str msg));
+  let (version,_branch) = Coqinit.get_version () in
+  Printf.printf "%s %s\n"
+    version Coq_config.caml_version;
+  exit ret
+
 let warning s = Flags.(with_option warn Feedback.msg_warning (Pp.strbrk s))
 
 let fatal_error ?extra exn =
@@ -559,9 +574,10 @@ let parse_args arglist : coq_cmdopts * string list =
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
     |"-where" -> { oval with print_where = true }
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage oval.batch_mode; oval
-    |"-v"|"--version" -> Usage.version (exitcode oval)
+    |"-v"|"--version" ->
+      print_version (exitcode oval)
     |"-print-version"|"--print-version" ->
-      Usage.machine_readable_version (exitcode oval)
+      print_machine_readable_version (exitcode oval)
 
     (* Unknown option *)
     | s ->

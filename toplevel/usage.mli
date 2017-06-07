@@ -6,11 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** {6 Prints the version number on the standard output and exits (with 0). } *)
-
-val version : int -> 'a
-val machine_readable_version : int -> 'a
-
 (** {6 Prints the usage on the error output, preceeded by a user-provided message. } *)
 val print_usage : string -> unit
 
