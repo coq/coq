@@ -8,7 +8,8 @@
 # MathComp
 ########################################################################
 : ${mathcomp_CI_BRANCH:=master}
-: ${mathcomp_CI_GITURL:=https://github.com/math-comp/math-comp.git}
+: ${mathcomp_CI_GITURL:=https://github.com/Zimmi48/math-comp.git}
+# Until MathComp gets fixed for Coq 8.6.
 
 ########################################################################
 # UniMath
