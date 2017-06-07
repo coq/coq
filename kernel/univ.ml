@@ -31,133 +31,6 @@ open Util
    union-find algorithm. The assertions $<$ and $\le$ are represented by
    adjacency lists *)
 
-module type Hashconsed =
-sig
-  type t
-  val hash : t -> int
-  val eq : t -> t -> bool
-  val hcons : t -> t
-end
-
-module HashedList (M : Hashconsed) :
-sig
-  type t = private Nil | Cons of M.t * int * t
-  val nil : t
-  val cons : M.t -> t -> t
-end =
-struct
-  type t = Nil | Cons of M.t * int * t
-  module Self =
-  struct
-    type _t = t
-    type t = _t
-    type u = (M.t -> M.t)
-    let hash = function Nil -> 0 | Cons (_, h, _) -> h
-    let eq l1 l2 = match l1, l2 with
-    | Nil, Nil -> true
-    | Cons (x1, _, l1), Cons (x2, _, l2) -> x1 == x2 && l1 == l2
-    | _ -> false
-    let hashcons hc = function
-    | Nil -> Nil
-    | Cons (x, h, l) -> Cons (hc x, h, l)
-  end
-  module Hcons = Hashcons.Make(Self)
-  let hcons = Hashcons.simple_hcons Hcons.generate Hcons.hcons M.hcons
-  (** No recursive call: the interface guarantees that all HLists from this
-      program are already hashconsed. If we get some external HList, we can
-      still reconstruct it by traversing it entirely. *)
-  let nil = Nil
-  let cons x l =
-    let h = M.hash x in
-    let hl = match l with Nil -> 0 | Cons (_, h, _) -> h in
-    let h = Hashset.Combine.combine h hl in
-    hcons (Cons (x, h, l))
-end
-
-module HList = struct
-
-  module type S = sig
-    type elt
-    type t = private Nil | Cons of elt * int * t
-    val hash : t -> int
-    val nil : t
-    val cons : elt -> t -> t
-    val tip : elt -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val map : (elt -> elt) -> t -> t
-    val smartmap : (elt -> elt) -> t -> t
-    val exists : (elt -> bool) -> t -> bool
-    val for_all : (elt -> bool) -> t -> bool
-    val for_all2 : (elt -> elt -> bool) -> t -> t -> bool
-    val mem : elt -> t -> bool
-    val remove : elt -> t -> t
-    val to_list : t -> elt list
-    val compare : (elt -> elt -> int) -> t -> t -> int
-  end
-
-  module Make (H : Hashconsed) : S with type elt = H.t =
-  struct
-  type elt = H.t
-  include HashedList(H)
-
-  let hash = function Nil -> 0 | Cons (_, h, _) -> h
-
-  let tip e = cons e nil
-
-  let rec fold f l accu = match l with
-  | Nil -> accu
-  | Cons (x, _, l) -> fold f l (f x accu)
-
-  let rec map f = function
-  | Nil -> nil
-  | Cons (x, _, l) -> cons (f x) (map f l)
-
-  let smartmap = map
-  (** Apriori hashconsing ensures that the map is equal to its argument *)
-
-  let rec exists f = function
-  | Nil -> false
-  | Cons (x, _, l) -> f x || exists f l
-
-  let rec for_all f = function
-  | Nil -> true
-  | Cons (x, _, l) -> f x && for_all f l
-
-  let rec for_all2 f l1 l2 = match l1, l2 with
-  | Nil, Nil -> true
-  | Cons (x1, _, l1), Cons (x2, _, l2) -> f x1 x2 && for_all2 f l1 l2
-  | _ -> false
-
-  let rec to_list = function
-  | Nil -> []
-  | Cons (x, _, l) -> x :: to_list l
-
-  let rec remove x = function
-  | Nil -> nil
-  | Cons (y, _, l) ->
-    if H.eq x y then l
-    else cons y (remove x l)
-
-  let rec mem x = function
-  | Nil -> false
-  | Cons (y, _, l) -> H.eq x y || mem x l
-
-  let rec compare cmp l1 l2 = match l1, l2 with
-  | Nil, Nil -> 0
-  | Cons (x1, h1, l1), Cons (x2, h2, l2) ->
-    let c = Int.compare h1 h2 in
-    if c == 0 then
-      let c = cmp x1 x2 in
-      if c == 0 then
-        compare cmp l1 l2
-      else c
-    else c
-  | Cons _, Nil -> 1
-  | Nil, Cons _ -> -1
-
-  end
-end
-
 module RawLevel =
 struct
   open Names
@@ -390,12 +263,11 @@ struct
   module Expr = 
   struct
     type t = Level.t * int
-    type _t = t
 	
     (* Hashing of expressions *)
     module ExprHash = 
     struct
-      type t = _t
+      type t = Level.t * int
       type u = Level.t -> Level.t
       let hashcons hdir (b,n as x) = 
 	let b' = hdir b in 
@@ -409,25 +281,12 @@ struct
 
     end
 
-    module HExpr = 
-    struct 
+    module H = Hashcons.Make(ExprHash)
 
-      module H = Hashcons.Make(ExprHash)
+    let hcons =
+      Hashcons.simple_hcons H.generate H.hcons Level.hcons
 
-      type t = ExprHash.t
-
-      let hcons =
-	Hashcons.simple_hcons H.generate H.hcons Level.hcons
-      let hash = ExprHash.hash
-      let eq x y = x == y ||
-	(let (u,n) = x and (v,n') = y in
-	   Int.equal n n' && Level.equal u v)
-
-    end
-
-    let hcons = HExpr.hcons
-
-    let make l = hcons (l, 0)
+    let make l = (l, 0)
 
     let compare u v =
       if u == v then 0
@@ -436,8 +295,8 @@ struct
 	  if Int.equal n n' then Level.compare x x'
 	  else n - n'
 
-    let prop = make Level.prop
-    let set = make Level.set
+    let prop = hcons (Level.prop, 0)
+    let set = hcons (Level.set, 0)
     let type1 = hcons (Level.set, 1)
 
     let is_small = function
@@ -448,6 +307,8 @@ struct
       (let (u,n) = x and (v,n') = y in
 	 Int.equal n n' && Level.equal u v)
 
+    let hash = ExprHash.hash
+
     let leq (u,n) (v,n') =
       let cmp = Level.compare u v in
 	if Int.equal cmp 0 then n <= n'
@@ -457,13 +318,13 @@ struct
 
     let successor (u,n) =
       if Level.is_prop u then type1
-      else hcons (u, n + 1)
+      else (u, n + 1)
 
     let addn k (u,n as x) = 
       if k = 0 then x 
       else if Level.is_prop u then
-	hcons (Level.set,n+k)
-      else hcons (u,n+k)
+	(Level.set,n+k)
+      else (u,n+k)
 
     type super_result =
 	SuperSame of bool
@@ -515,71 +376,63 @@ struct
       let v' = f v in 
 	if v' == v then x
 	else if Level.is_prop v' && n != 0 then
-	  hcons (Level.set, n)
-	else hcons (v', n)
+	  (Level.set, n)
+	else (v', n)
 
   end
-    
-  let compare_expr = Expr.compare
 
-  module Huniv = HList.Make(Expr.HExpr)
-  type t = Huniv.t
-  open Huniv
-    
-  let equal x y = x == y || 
-    (Huniv.hash x == Huniv.hash y && 
-       Huniv.for_all2 Expr.equal x y)
+  type t = Expr.t list
 
-  let hash = Huniv.hash
+  let tip l = [l]
+  let cons x l = x :: l
 
-  let compare x y =
-    if x == y then 0
-    else 
-      let hx = Huniv.hash x and hy = Huniv.hash y in
-      let c = Int.compare hx hy in 
-	if c == 0 then
-	  Huniv.compare (fun e1 e2 -> compare_expr e1 e2) x y
-	else c
+  let rec hash = function
+  | [] -> 0
+  | e :: l -> Hashset.Combine.combinesmall (Expr.ExprHash.hash e) (hash l)
 
-  let rec hcons = function
-  | Nil -> Huniv.nil
-  | Cons (x, _, l) -> Huniv.cons x (hcons l)
+  let equal x y = x == y || List.equal Expr.equal x y
 
-  let make l = Huniv.tip (Expr.make l)
-  let tip x = Huniv.tip x
+  let compare x y = if x == y then 0 else List.compare Expr.compare x y
+
+  module Huniv = Hashcons.Hlist(Expr)
+
+  let hcons = Hashcons.recursive_hcons Huniv.generate Huniv.hcons Expr.hcons
+
+  let make l = tip (Expr.make l)
+  let tip x = tip x
 
   let pr l = match l with
-    | Cons (u, _, Nil) -> Expr.pr u
+    | [u] -> Expr.pr u
     | _ -> 
       str "max(" ++ hov 0
-	(prlist_with_sep pr_comma Expr.pr (to_list l)) ++
+	(prlist_with_sep pr_comma Expr.pr l) ++
         str ")"
 
   let pr_with f l = match l with
-    | Cons (u, _, Nil) -> Expr.pr_with f u
+    | [u] -> Expr.pr_with f u
     | _ -> 
       str "max(" ++ hov 0
-	(prlist_with_sep pr_comma (Expr.pr_with f) (to_list l)) ++
+	(prlist_with_sep pr_comma (Expr.pr_with f) l) ++
         str ")"
 
   let is_level l = match l with
-    | Cons (l, _, Nil) -> Expr.is_level l
+    | [l] -> Expr.is_level l
     | _ -> false
 
   let rec is_levels l = match l with
-    | Cons (l, _, r) -> Expr.is_level l && is_levels r
-    | Nil -> true
+    | l :: r -> Expr.is_level l && is_levels r
+    | [] -> true
 
   let level l = match l with
-    | Cons (l, _, Nil) -> Expr.level l
+    | [l] -> Expr.level l
     | _ -> None
 
   let levels l = 
-    fold (fun x acc -> LSet.add (Expr.get_level x) acc) l LSet.empty
+    List.fold_left (fun acc x -> LSet.add (Expr.get_level x) acc) LSet.empty l
 
   let is_small u = 
     match u with
-    | Cons (l, _, Nil) -> Expr.is_small l
+    | [l] -> Expr.is_small l
     | _ -> false
 
   (* The lower predicative level of the hierarchy that contains (impredicative)
@@ -601,16 +454,16 @@ struct
   let super l = 
     if is_small l then type1
     else
-      Huniv.map (fun x -> Expr.successor x) l
+      List.smartmap (fun x -> Expr.successor x) l
 
   let addn n l =
-    Huniv.map (fun x -> Expr.addn n x) l
+    List.smartmap (fun x -> Expr.addn n x) l
 
   let rec merge_univs l1 l2 =
     match l1, l2 with
-    | Nil, _ -> l2
-    | _, Nil -> l1
-    | Cons (h1, _, t1), Cons (h2, _, t2) ->
+    | [], _ -> l2
+    | _, [] -> l1
+    | h1 :: t1, h2 :: t2 ->
        let open Expr in
        (match super h1 h2 with
 	| SuperSame true (* h1 < h2 *) -> merge_univs t1 l2
@@ -623,7 +476,7 @@ struct
   let sort u =
     let rec aux a l = 
       match l with
-      | Cons (b, _, l') ->
+      | b :: l' ->
 	let open Expr in
         (match super a b with
 	 | SuperSame false -> aux a l'
@@ -631,21 +484,21 @@ struct
 	 | SuperDiff c ->
 	    if c <= 0 then cons a l
 	    else cons b (aux a l'))
-      | Nil -> cons a l
+      | [] -> cons a l
     in 
-      fold (fun a acc -> aux a acc) u nil
+      List.fold_right (fun a acc -> aux a acc) u []
 	
   (* Returns the formal universe that is greater than the universes u and v.
      Used to type the products. *)
   let sup x y = merge_univs x y
 
-  let empty = nil
+  let empty = []
 
-  let exists = Huniv.exists
+  let exists = List.exists
 
-  let for_all = Huniv.for_all
+  let for_all = List.for_all
 
-  let smartmap = Huniv.smartmap
+  let smartmap = List.smartmap
 
 end
 
@@ -818,12 +671,11 @@ let check_univ_leq u v =
   Universe.for_all (fun u -> check_univ_leq_one u v) u
 
 let enforce_leq u v c =
-  let open Universe.Huniv in
   let rec aux acc v =
   match v with
-  | Cons (v, _, l) ->
-    aux (fold (fun u -> constraint_add_leq u v) u c) l
-  | Nil -> acc
+  | v :: l ->
+    aux (List.fold_right (fun u -> constraint_add_leq u v) u c) l
+  | [] -> acc
   in aux c v
 
 let enforce_leq u v c =
@@ -842,12 +694,13 @@ let enforce_univ_constraint (u,d,v) =
 (* Miscellaneous functions to remove or test local univ assumed to
    occur in a universe *)
 
-let univ_level_mem u v = Huniv.mem (Expr.make u) v
+let univ_level_mem u v =
+  List.exists (fun (l, n) -> Int.equal n 0 && Level.equal u l) v
 
 let univ_level_rem u v min = 
   match Universe.level v with
   | Some u' -> if Level.equal u u' then min else v
-  | None -> Huniv.remove (Universe.Expr.make u) v
+  | None -> List.filter (fun (l, n) -> not (Int.equal n 0 && Level.equal u l)) v
 
 (* Is u mentionned in v (or equals to v) ? *)
 
@@ -1231,7 +1084,7 @@ let subst_univs_expr_opt fn (l,n) =
 
 let subst_univs_universe fn ul =
   let subst, nosubst = 
-    Universe.Huniv.fold (fun u (subst,nosubst) -> 
+    List.fold_right (fun u (subst,nosubst) -> 
       try let a' = subst_univs_expr_opt fn u in
 	    (a' :: subst, nosubst)
       with Not_found -> (subst, u :: nosubst))
@@ -1242,7 +1095,7 @@ let subst_univs_universe fn ul =
       let substs = 
 	List.fold_left Universe.merge_univs Universe.empty subst
       in
-	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.Huniv.tip u))
+	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.tip u))
 	  substs nosubst
 
 let subst_univs_level fn l = 
