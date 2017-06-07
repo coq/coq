@@ -80,7 +80,7 @@ type aast = {
 }
 let pr_ast { expr; indentation } = Pp.(int indentation ++ str " " ++ Ppvernac.pr_vernac expr)
 
-let default_proof_mode () = Proof_global.get_default_proof_mode_name ()
+let default_proof_mode () = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"]
 
 (* Commands piercing opaque *)
 let may_pierce_opaque = function
@@ -502,7 +502,7 @@ end = struct (* {{{ *)
     if List.mem edit_branch (Vcs_.branches !vcs) then begin
       checkout edit_branch;
       match get_branch edit_branch with
-      | { kind = `Edit (mode, _,_,_,_) } -> Proof_global.activate_proof_mode mode
+      | { kind = `Edit (mode, _,_,_,_) } -> Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
       | _ -> assert false
     end else
       let pl = proof_nesting () in
@@ -511,10 +511,10 @@ end = struct (* {{{ *)
           | h, { Vcs_.kind = `Proof (m, _) } -> h, m | _ -> assert false in
         checkout branch;
         stm_prerr_endline (fun () -> "mode:" ^ mode);
-        Proof_global.activate_proof_mode mode
+        Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
       with Failure _ ->
         checkout Branch.master;
-        Proof_global.disactivate_current_proof_mode ()
+        Proof_global.disactivate_current_proof_mode () [@ocaml.warning "-3"]
 
   (* copies the transaction on every open branch *)
   let propagate_sideff ~action =
@@ -1836,7 +1836,7 @@ end = struct (* {{{ *)
         1 goals in
       TaskQueue.join queue;
       let assign_tac : unit Proofview.tactic =
-        Proofview.(Goal.nf_enter { Goal.enter = fun g ->
+        Proofview.(Goal.nf_enter begin fun g ->
         let gid = Goal.goal g in
         let f =
           try List.assoc gid res
@@ -1859,7 +1859,7 @@ end = struct (* {{{ *)
               Tactics.exact_no_check (EConstr.of_constr pt))
           with TacTask.NoProgress ->
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
-        })
+        end)
       in
       Proof.run_tactic (Global.env()) assign_tac p)))) ())
   
@@ -2108,12 +2108,11 @@ let known_state ?(redefine_qed=false) ~cache id =
         | `Leaks -> Exninfo.iraise exn
         | `ValidBlock { base_state; goals_to_admit; recovery_command } -> begin
            let tac =
-             let open Proofview.Notations in
-             Proofview.Goal.nf_enter { enter = fun gl ->
+             Proofview.Goal.nf_enter begin fun gl ->
                if CList.mem_f Evar.equal
                  (Proofview.Goal.goal gl) goals_to_admit then
              Proofview.give_up else Proofview.tclUNIT ()
-               } in
+              end in
            match (VCS.get_info base_state).state with
            | Valid { proof } ->
                Proof_global.unfreeze proof;
@@ -2369,8 +2368,8 @@ let finish () =
      hides true bugs cf bug #5363. Also, what happens with observe? *)
   (* Some commands may by side effect change the proof mode *)
   match VCS.get_branch head with
-  | { VCS.kind = `Edit (mode,_,_,_,_) } -> Proof_global.activate_proof_mode mode
-  | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode
+  | { VCS.kind = `Edit (mode,_,_,_,_) } -> Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
+  | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode [@ocaml.warning "-3"]
   | _ -> ()
 
 let wait () =
@@ -2552,7 +2551,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
             VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
             VCS.merge id ~ours:(Fork (x, bname, guarantee, names)) head
           end;
-          Proof_global.activate_proof_mode mode;
+          Proof_global.activate_proof_mode mode [@ocaml.warning "-3"];
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtProofMode _, VtLater ->
           anomaly(str"VtProofMode must be executed VtNow.")
@@ -2633,7 +2632,7 @@ let process_transaction ?(newtip=Stateid.fresh ())
               VCS.commit id (Fork (x,bname,opacity_of_produced_term x.expr,[]));
               let proof_mode = default_proof_mode () in
               VCS.branch bname (`Proof (proof_mode, VCS.proof_nesting () + 1));
-              Proof_global.activate_proof_mode proof_mode;
+              Proof_global.activate_proof_mode proof_mode [@ocaml.warning "-3"];
             end else begin
               VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
               (* We hope it can be replayed, but we can't really know *)

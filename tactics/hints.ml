@@ -22,7 +22,6 @@ open Namegen
 open Libnames
 open Smartlocate
 open Misctypes
-open Tactypes
 open Termops
 open Inductiveops
 open Typing
@@ -34,7 +33,6 @@ open Pfedit
 open Tacred
 open Printer
 open Vernacexpr
-open Sigma.Notations
 
 module NamedDecl = Context.Named.Declaration
 
@@ -1363,11 +1361,7 @@ let add_hint_lemmas env sigma eapply lems hint_db =
   Hint_db.add_list env sigma hintlist' hint_db
 
 let make_local_hint_db env sigma ts eapply lems =
-  let map c =
-    let sigma = Sigma.Unsafe.of_evar_map sigma in
-    let Sigma (c, sigma, _) = c.delayed env sigma in
-    (Sigma.to_evar_map sigma, c)
-  in
+  let map c = c env sigma in
   let lems = List.map map lems in
   let sign = EConstr.named_context env in
   let ts = match ts with

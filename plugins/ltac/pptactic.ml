@@ -1179,11 +1179,10 @@ let declare_extra_genarg_pprule wit
 
 (** Registering *)
 
-let run_delayed c =
-  Sigma.run Evd.empty { Sigma.run = fun sigma -> c.delayed (Global.env ()) sigma }
+let run_delayed c = c (Global.env ()) Evd.empty
 
 let run_delayed_destruction_arg = function (* HH: Using Evd.empty looks suspicious *)
-  | clear_flag,ElimOnConstr g -> clear_flag,ElimOnConstr (fst (run_delayed g))
+  | clear_flag,ElimOnConstr g -> clear_flag,ElimOnConstr (snd (run_delayed g))
   | clear_flag,ElimOnAnonHyp n as x -> x
   | clear_flag,ElimOnIdent id as x -> x
 
@@ -1203,7 +1202,7 @@ let () =
     wit_intro_pattern
     (Miscprint.pr_intro_pattern pr_constr_expr)
     (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr c))
-    (Miscprint.pr_intro_pattern (fun c -> pr_econstr (fst (run_delayed c))));
+    (Miscprint.pr_intro_pattern (fun c -> pr_econstr (snd (run_delayed c))));
   Genprint.register_print0
     wit_clause_dft_concl
     (pr_clauses (Some true) pr_lident)
@@ -1236,11 +1235,11 @@ let () =
   Genprint.register_print0 wit_bindings
     (Miscprint.pr_bindings_no_with pr_constr_expr pr_lconstr_expr)
     (Miscprint.pr_bindings_no_with (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> Miscprint.pr_bindings_no_with pr_econstr pr_leconstr (fst (run_delayed it)));
+    (fun it -> Miscprint.pr_bindings_no_with pr_econstr pr_leconstr (snd (run_delayed it)));
   Genprint.register_print0 wit_constr_with_bindings
     (pr_with_bindings pr_constr_expr pr_lconstr_expr)
     (pr_with_bindings (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))
-    (fun it -> pr_with_bindings pr_econstr pr_leconstr (fst (run_delayed it)));
+    (fun it -> pr_with_bindings pr_econstr pr_leconstr (snd (run_delayed it)));
   Genprint.register_print0 Tacarg.wit_destruction_arg
     (pr_destruction_arg pr_constr_expr pr_lconstr_expr)
     (pr_destruction_arg (pr_and_constr_expr pr_glob_constr) (pr_and_constr_expr pr_lglob_constr))

@@ -32,7 +32,7 @@ type lseqtac= global_reference -> seqtac
 type 'a with_backtracking = tactic -> 'a
 
 let wrap n b continue seq =
-  Proofview.Goal.nf_enter { enter = begin fun gls ->
+  Proofview.Goal.nf_enter begin fun gls ->
   Control.check_for_interrupt ();
   let nc = Proofview.Goal.hyps gls in
   let env=pf_env gls in
@@ -52,7 +52,7 @@ let wrap n b continue seq =
   let seq2=if b then
     add_formula env sigma Concl dummy_id (pf_concl gls) seq1 else seq1 in
     continue seq2
-  end }
+  end
 
 let basename_of_global=function
     VarRef id->id
@@ -65,12 +65,12 @@ let clear_global=function
 (* connection rules *)
 
 let axiom_tac t seq =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   try
     pf_constr_of_global (find_left (project gl) t seq) >>= fun c ->
     exact_no_check c
   with Not_found -> tclFAIL 0 (Pp.str "No axiom link")
-  end }
+  end
 
 let ll_atom_tac a backtrack id continue seq =
   let open EConstr in
@@ -107,7 +107,7 @@ let arrow_tac backtrack continue seq=
 (* left connectives rules *)
 
 let left_and_tac ind backtrack id continue seq =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let n=(construct_nhyps (pf_env gl) ind).(0) in
    tclIFTHENELSE
      (tclTHENLIST
@@ -116,10 +116,10 @@ let left_and_tac ind backtrack id continue seq =
        tclDO n intro])
      (wrap n false continue seq)
      backtrack
-  end }
+  end
 
 let left_or_tac ind backtrack id continue seq =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let v=construct_nhyps (pf_env gl) ind in
   let f n=
     tclTHENLIST
@@ -130,7 +130,7 @@ let left_or_tac ind backtrack id continue seq =
       (pf_constr_of_global id >>= simplest_elim)
       (Array.map f v)
       backtrack
-  end }
+  end
 
 let left_false_tac id=
   Tacticals.New.pf_constr_of_global id >>= simplest_elim
@@ -140,7 +140,7 @@ let left_false_tac id=
 (* We use this function for false, and, or, exists *)
 
 let ll_ind_tac (ind,u as indu) largs backtrack id continue seq =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
      let rcs=ind_hyps (pf_env gl) (project gl) 0 indu largs in
      let vargs=Array.of_list largs in
              (* construire le terme  H->B, le generaliser etc *)
@@ -161,7 +161,7 @@ let ll_ind_tac (ind,u as indu) largs backtrack id continue seq =
 	       clear_global id;
 	       tclDO lp intro])
 	   (wrap lp false continue seq) backtrack
-  end }
+  end
 
 let ll_arrow_tac a b c backtrack id continue seq=
   let open EConstr in
@@ -199,7 +199,7 @@ let forall_tac backtrack continue seq=
        backtrack)
 
 let left_exists_tac ind backtrack id continue seq =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let n=(construct_nhyps (pf_env gl) ind).(0) in
     tclIFTHENELSE
       (Tacticals.New.pf_constr_of_global id >>= simplest_elim)
@@ -207,7 +207,7 @@ let left_exists_tac ind backtrack id continue seq =
                     tclDO n intro;
                     (wrap (n-1) false continue seq)])
       backtrack
-  end }
+  end
 
 let ll_forall_tac prod backtrack id continue seq=
   tclORELSE
@@ -215,12 +215,12 @@ let ll_forall_tac prod backtrack id continue seq=
        [tclTHENLIST
 	  [intro;
            (pf_constr_of_global id >>= fun idc ->
-	   Proofview.Goal.enter { enter = begin fun gls->
+	   Proofview.Goal.enter begin fun gls->
               let open EConstr in
 	      let id0 = List.nth (pf_ids_of_hyps gls) 0 in
               let term=mkApp(idc,[|mkVar(id0)|]) in
               tclTHEN (generalize [term]) (clear [id0])
-           end });
+           end);
 	   clear_global id;
 	   intro;
 	   tclCOMPLETE (wrap 1 false continue (deepen seq))];
@@ -239,9 +239,9 @@ let defined_connectives=lazy
    AllOccurrences,EvalConstRef (fst (Term.destConst (constant "iff")))]
 
 let normalize_evaluables=
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     unfold_in_concl (Lazy.force defined_connectives) <*>
     tclMAP
       (fun id -> unfold_in_hyp (Lazy.force defined_connectives) (id,InHypTypeOnly))
       (pf_ids_of_hyps gl)
-  end }
+  end

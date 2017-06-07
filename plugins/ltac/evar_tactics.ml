@@ -16,8 +16,6 @@ open Tacexpr
 open Refiner
 open Evd
 open Locus
-open Sigma.Notations
-open Proofview.Notations
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
@@ -81,7 +79,7 @@ let instantiate_tac_by_name id c =
 
 let let_evar name typ =
   let src = (Loc.tag Evar_kinds.GoalEvar) in
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let sigma = ref sigma in
@@ -93,17 +91,14 @@ let let_evar name typ =
       Namegen.next_ident_away_in_goal id (Termops.ids_of_named_context (Environ.named_context env))
     | Names.Name id -> id
     in
-    let sigma = Sigma.Unsafe.of_evar_map sigma in
-    let Sigma (evar, sigma, p) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
-    let tac =
-      (Tactics.letin_tac None (Names.Name id) evar None Locusops.nowhere)
-    in
-    Sigma (tac, sigma, p)
-  end }
+    let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
+    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    (Tactics.letin_tac None (Names.Name id) evar None Locusops.nowhere)
+  end
 
 let hget_evar n =
   let open EConstr in
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
   let evl = evar_list sigma concl in
@@ -113,5 +108,5 @@ let hget_evar n =
   let ev = List.nth evl (n-1) in
   let ev_type = EConstr.existential_type sigma ev in
   Tactics.change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,concl))
-  end }
+  end
 

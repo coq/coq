@@ -37,8 +37,9 @@ let pr_fun_ind_using_typed prc prlc _ opt_c =
   match opt_c with
     | None -> mt ()
     | Some b ->
-      let (b, _) = Tactics.run_delayed (Global.env ()) Evd.empty b in
+      let (_, b) = b (Global.env ()) Evd.empty in
       spc () ++ hov 2 (str "using" ++ spc () ++ Miscprint.pr_with_bindings prc prlc b)
+
 
 ARGUMENT EXTEND fun_ind_using
   TYPED AS constr_with_bindings option

@@ -24,7 +24,6 @@ open Util
 open Termops
 open Equality
 open Misctypes
-open Sigma.Notations
 open Proofview.Notations
 
 DECLARE PLUGIN "extratactics"
@@ -80,12 +79,12 @@ let induction_arg_of_quantified_hyp = function
    ElimOnIdent and not as "constr" *)
 
 let mytclWithHoles tac with_evars c =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.New.pf_env gl in
     let sigma = Tacmach.New.project gl in
     let sigma',c = Tactics.force_destruction_arg with_evars env sigma c in
     Tacticals.New.tclWITHHOLES with_evars (tac with_evars (Some c)) sigma'
-  end }
+  end
 
 let elimOnConstrWithHoles tac with_evars c =
   Tacticals.New.tclDELAYEDWITHHOLES with_evars c
@@ -115,7 +114,7 @@ END
 
 let discrHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  discr_main { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma }
+  discr_main (fun env sigma -> (sigma, (EConstr.mkVar id, NoBindings)))
 
 let injection_main with_evars c =
  elimOnConstrWithHoles (injClause None) with_evars c
@@ -147,7 +146,7 @@ END
 
 let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
-  injection_main false { delayed = fun env sigma -> Sigma.here (EConstr.mkVar id, NoBindings) sigma }
+  injection_main false (fun env sigma -> (sigma, (EConstr.mkVar id, NoBindings)))
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
@@ -354,23 +353,22 @@ let constr_flags () = {
   Pretyping.expand_evars = true }
 
 let refine_tac ist simple with_classes c =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags =
       { constr_flags () with Pretyping.use_typeclasses = with_classes } in
     let expected_type = Pretyping.OfType concl in
     let c = Pretyping.type_uconstr ~flags ~expected_type ist c in
-    let update = { run = fun sigma ->
-      let Sigma (c, sigma, p) = c.delayed env sigma in
-      Sigma (c, sigma, p)
-    } in
+    let update = begin fun sigma ->
+      c env sigma
+    end in
     let refine = Refine.refine ~unsafe:true update in
     if simple then refine
     else refine <*>
            Tactics.New.reduce_after_refine <*>
            Proofview.shelve_unifiable
-  end }
+  end
 
 TACTIC EXTEND refine
 | [ "refine" uconstr(c) ] ->
@@ -663,9 +661,8 @@ let subst_hole_with_term occ tc t =
 open Tacmach
 
 let hResolve id c occ t =
-  Proofview.Goal.s_enter { s_enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
-  let sigma = Sigma.to_evar_map sigma in
   let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
   let concl = Proofview.Goal.concl gl in
   let env_ids = Termops.ids_of_context env in
@@ -684,11 +681,9 @@ let hResolve id c occ t =
   let t_constr = EConstr.of_constr t_constr in
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
-  let tac =
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (change_concl (mkLetIn (Anonymous,t_constr,t_constr_type,concl)))
-  in
-  Sigma.Unsafe.of_pair (tac, sigma)
-  end }
+  end
 
 let hResolve_auto id c t =
   let rec resolve_auto n = 
@@ -726,12 +721,12 @@ END
 exception Found of unit Proofview.tactic
 
 let rewrite_except h =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
       Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
     hyps
-  end }
+  end
 
 
 let refl_equal = 
@@ -745,29 +740,29 @@ let refl_equal =
   should be replaced by a call to the tactic but I don't know how to
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let type_of_a = Tacmach.New.pf_unsafe_type_of gl a in
     Tacticals.New.pf_constr_of_global (delayed_force refl_equal) >>= fun req ->
     Tacticals.New.tclTHENLIST
          [Tactics.generalize [(mkApp(req, [| type_of_a; a|]))];
-          Proofview.Goal.enter { enter = begin fun gl ->
+          Proofview.Goal.enter begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
             (** FIXME: this looks really wrong. Does anybody really use this tactic? *)
-            let Sigma (c, _, _) = (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a]).Reductionops.e_redfun env (Sigma.Unsafe.of_evar_map Evd.empty) concl in
+            let (_, c) = Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl in
 	    change_concl c
-          end };
+          end;
 	  simplest_case a]
-  end }
+  end
 
 
 let case_eq_intros_rewrite x =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let n = nb_prod (Tacmach.New.project gl) (Proofview.Goal.concl gl) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
-    Proofview.Goal.enter { enter = begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let hyps = Tacmach.New.pf_ids_of_hyps gl in
       let n' = nb_prod (Tacmach.New.project gl) concl in
@@ -776,9 +771,9 @@ let case_eq_intros_rewrite x =
                     Tacticals.New.tclDO (n'-n-1) intro;
 		    introduction h;
 		    rewrite_except h]
-    end }
+    end
   ]
-  end }
+  end
 
 let rec find_a_destructable_match sigma t =
   let cl = induction_arg_of_quantified_hyp (NamedHyp (Id.of_string "x")) in
@@ -802,15 +797,15 @@ let destauto t =
   with Found tac -> tac
 
 let destauto_in id = 
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let ctype = Tacmach.New.pf_unsafe_type_of gl (mkVar id) in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype
-  end }
+  end
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ Proofview.Goal.enter { enter = begin fun gl -> destauto (Proofview.Goal.concl gl) end } ]
+| [ "destauto" ] -> [ Proofview.Goal.enter begin fun gl -> destauto (Proofview.Goal.concl gl) end ]
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 
@@ -822,21 +817,21 @@ END
 (**********************************************************************)
 
 TACTIC EXTEND transparent_abstract
-| [ "transparent_abstract" tactic3(t) ] -> [ Proofview.Goal.nf_enter { enter = fun gl ->
-      Tactics.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) } ]
-| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> [ Proofview.Goal.nf_enter { enter = fun gl ->
-      Tactics.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) } ]
+| [ "transparent_abstract" tactic3(t) ] -> [ Proofview.Goal.nf_enter begin fun gl ->
+      Tactics.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end ]
+| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> [ Proofview.Goal.nf_enter begin fun gl ->
+      Tactics.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end ]
 END
 
 (* ********************************************************************* *)
 
 let eq_constr x y = 
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let evd = Tacmach.New.project gl in
       match EConstr.eq_constr_universes evd x y with
       | Some _ -> Proofview.tclUNIT () 
       | None -> Tacticals.New.tclFAIL 0 (str "Not equal")
-  end }
+  end
 
 TACTIC EXTEND constr_eq
 | [ "constr_eq" constr(x) constr(y) ] -> [ eq_constr x y ]
@@ -1082,7 +1077,7 @@ TACTIC EXTEND guard
 END
 
 let decompose l c =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.New.project gl in
     let to_ind c =
       if isInd sigma c then fst (destInd sigma c)
@@ -1090,7 +1085,7 @@ let decompose l c =
     in
     let l = List.map to_ind l in
     Elim.h_decompose l c
-  end }
+  end
 
 TACTIC EXTEND decompose
 | [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l c ]

@@ -469,7 +469,7 @@ exception GoalDone
 
 (* Résolution d'inéquations linéaires dans R *)
 let rec fourier () =
-  Proofview.Goal.nf_enter { enter = begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let sigma = Tacmach.New.project gl in
     Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
@@ -633,7 +633,7 @@ let rec fourier () =
 (*    ((tclTHEN !tac (tclFAIL 1 (* 1 au hasard... *))) gl) *)
       !tac
 (*      ((tclABSTRACT None !tac) gl) *)
-  end }
+  end
 ;;
 
 (*

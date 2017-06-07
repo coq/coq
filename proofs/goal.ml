@@ -8,7 +8,6 @@
 
 open Util
 open Pp
-open Sigma.Notations
 
 module NamedDecl = Context.Named.Declaration
 
@@ -73,9 +72,7 @@ module V82 = struct
 		Evd.evar_extra = extra }
     in
     let evi = Typeclasses.mark_unresolvable evi in
-    let evars = Sigma.Unsafe.of_evar_map evars in
-    let Sigma (evk, evars, _) = Evarutil.new_pure_evar_full evars evi in
-    let evars = Sigma.to_evar_map evars in
+    let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
     let evars = Evd.restore_future_goals evars prev_future_goals prev_principal_goal in
     let ctxt = Environ.named_context_of_val hyps in
     let inst = Array.map_of_list (NamedDecl.get_id %> EConstr.mkVar) ctxt in
@@ -131,9 +128,7 @@ module V82 = struct
     let new_evi =
       { evi with Evd.evar_hyps = new_hyps; Evd.evar_filter = new_filter } in
     let new_evi = Typeclasses.mark_unresolvable new_evi in
-    let sigma = Sigma.Unsafe.of_evar_map Evd.empty in
-    let Sigma (evk, sigma, _) = Evarutil.new_pure_evar_full sigma new_evi in
-    let sigma = Sigma.to_evar_map sigma in
+    let (sigma, evk) = Evarutil.new_pure_evar_full Evd.empty new_evi in
     { Evd.it = evk ; sigma = sigma; }
 
   (* Used by the compatibility layer and typeclasses *)

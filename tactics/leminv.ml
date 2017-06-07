@@ -27,7 +27,6 @@ open Declare
 open Tacticals.New
 open Tactics
 open Decl_kinds
-open Proofview.Notations
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
@@ -261,7 +260,7 @@ let add_inversion_lemma_exn na com comsort bool tac =
 (* ================================= *)
 
 let lemInv id c =
-  Proofview.Goal.enter { enter = begin fun gls ->
+  Proofview.Goal.enter begin fun gls ->
   try
     let clause = mk_clenv_from_env (pf_env gls) (project gls) None (c, pf_unsafe_type_of gls c) in
     let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
@@ -274,12 +273,12 @@ let lemInv id c =
 	 user_err ~hdr:"LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
 	      pr_leconstr_env (pf_env gls) (project gls) c)
-  end }
+  end
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id
 
 let lemInvIn id c ids =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in
@@ -292,7 +291,7 @@ let lemInvIn id c ids =
     in
     ((tclTHEN (tclTHEN (bring_hyps hyps) (lemInv id c))
         (intros_replace_ids)))
-  end }
+  end
 
 let lemInvIn_gen id c l = try_intros_until (fun id -> lemInvIn id c l) id
 

@@ -143,7 +143,7 @@ EXTEND
       | "DECLARE"; "PLUGIN"; name = STRING ->
         declare_str_items loc [
           <:str_item< value __coq_plugin_name = $str:name$ >>;
-          <:str_item< value _ = Mltop.add_known_module $str:name$ >>;
+          <:str_item< value _ = Mltop.add_known_module __coq_plugin_name >>;
         ]
       ] ]
   ;

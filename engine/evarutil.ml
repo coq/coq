@@ -15,7 +15,6 @@ open Namegen
 open Pre_env
 open Environ
 open Evd
-open Sigma.Notations
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -45,8 +44,8 @@ let e_new_global evdref x =
   EConstr.of_constr (evd_comb1 (Evd.fresh_global (Global.env())) evdref x)
 
 let new_global evd x = 
-  let Sigma (c, sigma, p) = Sigma.fresh_global (Global.env()) evd x in
-  Sigma (EConstr.of_constr c, sigma, p)
+  let (evd, c) = Evd.fresh_global (Global.env()) evd x in
+  (evd, EConstr.of_constr c)
 
 (****************************************************)
 (* Expanding/testing/exposing existential variables *)
@@ -368,20 +367,17 @@ let push_rel_context_to_named_context env sigma typ =
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
 let restrict_evar evd evk filter ?src candidates =
-  let evd = Sigma.to_evar_map evd in
   let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
   let evd, evk' = Evd.restrict evk filter ?candidates ?src evd in
-  Sigma.Unsafe.of_pair (evk', Evd.declare_future_goal evk' evd)
+  Evd.declare_future_goal evk' evd, evk'
 
 let new_pure_evar_full evd evi =
-  let evd = Sigma.to_evar_map evd in
   let (evd, evk) = Evd.new_evar evd evi in
   let evd = Evd.declare_future_goal evk evd in
-  Sigma.Unsafe.of_pair (evk, evd)
+  (evd, evk)
 
 let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) typ =
   let typ = EConstr.Unsafe.to_constr typ in
-  let evd = Sigma.to_evar_map evd in
   let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
   let default_naming = Misctypes.IntroAnonymous in
   let naming = Option.default default_naming naming in
@@ -407,19 +403,19 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
     if principal then Evd.declare_principal_goal newevk evd
     else Evd.declare_future_goal newevk evd
   in
-  Sigma.Unsafe.of_pair (newevk, evd)
+  (evd, newevk)
 
 let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?principal instance =
   let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let Sigma (newevk, evd, p) = new_pure_evar sign evd ?src ?filter ?candidates ?store ?naming ?principal typ in
-  Sigma (mkEvar (newevk,Array.of_list instance), evd, p)
+  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?store ?naming ?principal typ in
+  evd, mkEvar (newevk,Array.of_list instance)
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
-  let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env (Sigma.to_evar_map evd) typ in
+  let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env evd typ in
   let map c = subst2 subst vsubst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
   let instance =
@@ -428,27 +424,20 @@ let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
     | Some filter -> Filter.filter_list filter instance in
   new_evar_instance sign evd typ' ?src ?filter ?candidates ?store ?naming ?principal instance
 
-let new_evar_unsafe env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
-  let evd = Sigma.Unsafe.of_evar_map evd in
-  let Sigma (evk, evd, _) = new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ in
-  (Sigma.to_evar_map evd, evk)
-
 let new_type_evar env evd ?src ?filter ?naming ?principal rigid =
-  let Sigma (s, evd', p) = Sigma.new_sort_variable rigid evd in
-  let Sigma (e, evd', q) = new_evar env evd' ?src ?filter ?naming ?principal (EConstr.mkSort s) in
-  Sigma ((e, s), evd', p +> q)
+  let (evd', s) = new_sort_variable rigid evd in
+  let (evd', e) = new_evar env evd' ?src ?filter ?naming ?principal (EConstr.mkSort s) in
+  evd', (e, s)
 
 let e_new_type_evar env evdref ?src ?filter ?naming ?principal rigid =
-  let sigma = Sigma.Unsafe.of_evar_map !evdref in
-  let Sigma (c, sigma, _) = new_type_evar env sigma ?src ?filter ?naming ?principal rigid in
-  let sigma = Sigma.to_evar_map sigma in
-    evdref := sigma;
+  let (evd, c) = new_type_evar env !evdref ?src ?filter ?naming ?principal rigid in
+    evdref := evd;
     c
 
 let new_Type ?(rigid=Evd.univ_flexible) env evd = 
   let open EConstr in
-  let Sigma (s, sigma, p) = Sigma.new_sort_variable rigid evd in
-  Sigma (mkSort s, sigma, p)
+  let (evd, s) = new_sort_variable rigid evd in
+  (evd, mkSort s)
 
 let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
   let evd', s = new_sort_variable rigid !evdref in
@@ -456,7 +445,7 @@ let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
 
   (* The same using side-effect *)
 let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?naming ?principal ty =
-  let (evd',ev) = new_evar_unsafe env !evdref ~src:src ?filter ?candidates ?store ?naming ?principal ty in
+  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store ?naming ?principal ty in
   evdref := evd';
   ev
 
@@ -552,9 +541,8 @@ let rec check_and_clear_in_constr env evdref err ids global c =
             else
               let origfilter = Evd.evar_filter evi in
               let filter = Evd.Filter.apply_subfilter origfilter filter in
-              let evd = Sigma.Unsafe.of_evar_map !evdref in
-              let Sigma (_, evd, _) = restrict_evar evd evk filter None in
-              let evd = Sigma.to_evar_map evd in
+              let evd = !evdref in
+              let (evd,_) = restrict_evar evd evk filter None in
               evdref := evd;
 	    (* spiwack: hacking session to mark the old [evk] as having been "cleared" *)
 	      let evi = Evd.find !evdref evk in
@@ -723,8 +711,8 @@ let occur_evar_upto sigma n c =
 
 let judge_of_new_Type evd =
   let open EConstr in
-  let Sigma (s, evd', p) = Sigma.new_univ_variable univ_rigid evd in
-  Sigma ({ uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) }, evd', p)
+  let (evd', s) = new_univ_variable univ_rigid evd in
+  (evd', { uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) })
 
 let subterm_source evk (loc,k) =
   let evk = match k with

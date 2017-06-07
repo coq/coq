@@ -22,8 +22,7 @@ open Misctypes
 type glob_constr_and_expr = Glob_term.glob_constr * constr_expr option
 type glob_constr_pattern_and_expr = Id.Set.t * glob_constr_and_expr * constr_pattern
 
-type 'a delayed_open =
-  { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
+type 'a delayed_open = Environ.env -> Evd.evar_map -> Evd.evar_map * 'a
 
 type delayed_open_constr = EConstr.constr delayed_open
 type delayed_open_constr_with_bindings = EConstr.constr with_bindings delayed_open

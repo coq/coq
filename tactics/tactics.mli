@@ -29,7 +29,7 @@ open Locus
 
 (** {6 General functions. } *)
 
-val is_quantified_hypothesis : Id.t -> ('a, 'r) Proofview.Goal.t -> bool
+val is_quantified_hypothesis : Id.t -> 'a Proofview.Goal.t -> bool
 
 (** {6 Primitive tactics. } *)
 
@@ -75,7 +75,7 @@ val intros               : unit Proofview.tactic
 (** [depth_of_quantified_hypothesis b h g] returns the index of [h] in
    the conclusion of goal [g], up to head-reduction if [b] is [true] *)
 val depth_of_quantified_hypothesis :
-  bool -> quantified_hypothesis -> ('a, 'r) Proofview.Goal.t -> int
+  bool -> quantified_hypothesis -> 'a Proofview.Goal.t -> int
 
 val intros_until         : quantified_hypothesis -> unit Proofview.tactic
 
@@ -131,7 +131,7 @@ val exact_proof      : Constrexpr.constr_expr -> unit Proofview.tactic
 
 type tactic_reduction = env -> evar_map -> constr -> constr
 
-type change_arg = patvar_map -> constr Sigma.run
+type change_arg = patvar_map -> evar_map -> evar_map * constr
 
 val make_change_arg   : constr -> change_arg
 val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> unit Proofview.tactic
@@ -210,8 +210,6 @@ val apply_delayed_in :
   advanced_flag -> evars_flag -> Id.t -> 
     (clear_flag * delayed_open_constr_with_bindings located) list ->
     intro_pattern option -> unit Proofview.tactic
-
-val run_delayed : Environ.env -> evar_map -> 'a delayed_open -> 'a * evar_map
 
 (** {6 Elimination tactics. } *)
 
@@ -437,7 +435,7 @@ end
 
 module New : sig
 
-  val refine : ?unsafe:bool -> constr Sigma.run -> unit Proofview.tactic
+  val refine : ?unsafe:bool -> (evar_map -> evar_map * constr) -> unit Proofview.tactic
   (** [refine ?unsafe c] is [Refine.refine ?unsafe c]
       followed by beta-iota-reduction of the conclusion. *)
 

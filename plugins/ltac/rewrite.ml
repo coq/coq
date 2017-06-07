@@ -33,7 +33,6 @@ open Environ
 open Termops
 open EConstr
 open Libnames
-open Sigma.Notations
 open Proofview.Notations
 open Context.Named.Declaration
 
@@ -66,9 +65,7 @@ type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 let find_global dir s =
   let gr = lazy (find_reference dir s) in
     fun (evd,cstrs) ->
-      let sigma = Sigma.Unsafe.of_evar_map evd in
-      let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force gr) in
-      let evd = Sigma.to_evar_map sigma in
+      let (evd, c) = Evarutil.new_global evd (Lazy.force gr) in
 	(evd, cstrs), c
 
 (** Utility for dealing with polymorphic applications *)
@@ -89,9 +86,7 @@ let cstrevars evars = snd evars
 
 let new_cstr_evar (evd,cstrs) env t =
   let s = Typeclasses.set_resolvable Evd.Store.empty false in
-  let evd = Sigma.Unsafe.of_evar_map evd in
-  let Sigma (t, evd', _) = Evarutil.new_evar ~store:s env evd t in
-  let evd' = Sigma.to_evar_map evd' in
+  let (evd', t) = Evarutil.new_evar ~store:s env evd t in
   let ev, _ = destEvar evd' t in
     (evd', Evar.Set.add ev cstrs), t
 
@@ -176,17 +171,13 @@ end) = struct
   let proper_type = 
     let l = lazy (Lazy.force proper_class).cl_impl in
       fun (evd,cstrs) -> 
-        let sigma = Sigma.Unsafe.of_evar_map evd in
-        let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
-        let evd = Sigma.to_evar_map sigma in
+        let (evd, c) = Evarutil.new_global evd (Lazy.force l) in
 	  (evd, cstrs), c
 	
   let proper_proxy_type = 
     let l = lazy (Lazy.force proper_proxy_class).cl_impl in
       fun (evd,cstrs) -> 
-        let sigma = Sigma.Unsafe.of_evar_map evd in
-        let Sigma (c, sigma, _) = Evarutil.new_global sigma (Lazy.force l) in
-        let evd = Sigma.to_evar_map sigma in
+        let (evd, c) = Evarutil.new_global evd (Lazy.force l) in
 	  (evd, cstrs), c
 
   let proper_proof env evars carrier relation x =
@@ -357,9 +348,7 @@ end) = struct
 	  (try
 	   let params, args = Array.chop (Array.length args - 2) args in
 	   let env' = push_rel_context rels env in
-	   let sigma = Sigma.Unsafe.of_evar_map sigma in
-	   let Sigma ((evar, _), evars, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
-	   let evars = Sigma.to_evar_map evars in
+	   let (evars, (evar, _)) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
 	   let evars, inst = 
 	     app_poly env (evars,Evar.Set.empty)
 	       rewrite_relation_class [| evar; mkApp (c, params) |] in
@@ -419,9 +408,7 @@ module TypeGlobal = struct
 
 
   let inverse env (evd,cstrs) car rel = 
-    let sigma = Sigma.Unsafe.of_evar_map evd in
-    let Sigma (sort, sigma, _) = Evarutil.new_Type ~rigid:Evd.univ_flexible env sigma in
-    let evd = Sigma.to_evar_map sigma in
+    let (evd, sort) = Evarutil.new_Type ~rigid:Evd.univ_flexible env evd in
       app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
 
 end
@@ -751,9 +738,9 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 
 let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
-let new_global (evars, cstrs) gr = 
-  let Sigma (c, sigma, _) = Evarutil.new_global (Sigma.Unsafe.of_evar_map evars) gr
-  in (Sigma.to_evar_map sigma, cstrs), c
+let new_global (evars, cstrs) gr =
+  let (sigma,c) = Evarutil.new_global evars gr in
+  (sigma, cstrs), c
 
 let make_eq sigma =
   new_global sigma (Coqlib.build_coq_eq ())
@@ -1406,15 +1393,14 @@ module Strategies =
     let reduce (r : Redexpr.red_expr) : 'a pure_strategy = { strategy =
 	fun { state = state ; env = env ; term1 = t ; ty1 = ty ; cstr = cstr ; evars = evars } ->
           let rfn, ckind = Redexpr.reduction_of_red_expr env r in
-          let sigma = Sigma.Unsafe.of_evar_map (goalevars evars) in
-	  let Sigma (t', sigma, _) = rfn.Reductionops.e_redfun env sigma t in
-	  let evars' = Sigma.to_evar_map sigma in
-	    if Termops.eq_constr evars' t' t then
+          let sigma = goalevars evars in
+	  let (sigma, t') = rfn env sigma t in
+	    if Termops.eq_constr sigma t' t then
 	      state, Identity
 	    else
 	      state, Success { rew_car = ty; rew_from = t; rew_to = t';
 			       rew_prf = RewCast ckind; 
-			       rew_evars = evars', cstrevars evars }
+			       rew_evars = sigma, cstrevars evars }
 							   }
 	
     let fold_glob c : 'a pure_strategy = { strategy =
@@ -1541,7 +1527,7 @@ let rec insert_dependent env sigma decl accu hyps = match hyps with
     insert_dependent env sigma decl (ndecl :: accu) rem
 
 let assert_replacing id newt tac = 
-  let prf = Proofview.Goal.enter { enter = begin fun gl ->
+  let prf = Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
@@ -1552,17 +1538,17 @@ let assert_replacing id newt tac =
     | d :: rem -> insert_dependent env sigma (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
-    Refine.refine ~unsafe:false { run = begin fun sigma ->
-      let Sigma (ev, sigma, p) = Evarutil.new_evar env' sigma concl in
-      let Sigma (ev', sigma, q) = Evarutil.new_evar env sigma newt in
+    Refine.refine ~unsafe:false begin fun sigma ->
+      let (sigma, ev) = Evarutil.new_evar env' sigma concl in
+      let (sigma, ev') = Evarutil.new_evar env sigma newt in
       let map d =
         let n = NamedDecl.get_id d in
         if Id.equal n id then ev' else mkVar n
       in
-      let (e, _) = destEvar (Sigma.to_evar_map sigma) ev in
-      Sigma (mkEvar (e, Array.map_of_list map nc), sigma, p +> q)
-    end }
-  end } in
+      let (e, _) = destEvar sigma ev in
+      (sigma, mkEvar (e, Array.map_of_list map nc))
+    end
+  end in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
 
 let newfail n s = 
@@ -1586,7 +1572,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	match clause, prf with
 	| Some id, Some p ->
             let tac = tclTHENLIST [
-              Refine.refine ~unsafe:false { run = fun h -> Sigma.here p h };
+              Refine.refine ~unsafe:false (fun h -> (h,p));
               Proofview.Unsafe.tclNEWGOALS gls;
             ] in
             Proofview.Unsafe.tclEVARS undef <*>
@@ -1597,19 +1583,19 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             beta_hyp id
 	| None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>
-            Proofview.Goal.enter { enter = begin fun gl ->
+            Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
-            let make = { run = begin fun sigma ->
-              let Sigma (ev, sigma, q) = Evarutil.new_evar env sigma newt in
-              Sigma (mkApp (p, [| ev |]), sigma, q)
-            end } in
+            let make = begin fun sigma ->
+              let (sigma, ev) = Evarutil.new_evar env sigma newt in
+              (sigma, mkApp (p, [| ev |]))
+            end in
             Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
-            end }
+            end
 	| None, None ->
             Proofview.Unsafe.tclEVARS undef <*>
             convert_concl_no_check newt DEFAULTcast
   in
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
@@ -1637,7 +1623,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
       raise (RewriteFailure (Himsg.explain_pretype_error env evd e))
-  end }
+  end
 
 let tactic_init_setoid () = 
   try init_setoid (); Proofview.tclUNIT ()
@@ -2092,7 +2078,7 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
   let unify env evars t = unify_abs res l2r sort env evars t in
   let app = apply_rule unify occs in
@@ -2114,7 +2100,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
     | RewriteFailure e ->
       tclFAIL 0 (str"setoid rewrite failed: " ++ e)
     | e -> Proofview.tclZERO ~info e)
-  end }
+  end
 
 let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite
 
@@ -2126,7 +2112,7 @@ let not_declared env sigma ty rel =
      str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
 
 let setoid_proof ty fn fallback =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
@@ -2155,7 +2141,7 @@ let setoid_proof ty fn fallback =
                 | e' -> Proofview.tclZERO ~info e'
               end
       end
-  end }
+  end
 
 let tac_open ((evm,_), c) tac = 
     (tclTHEN (Proofview.Unsafe.tclEVARS evm) (tac c))
@@ -2195,7 +2181,7 @@ let setoid_transitivity c =
     
 let setoid_symmetry_in id =
   let open Tacmach.New in
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let sigma = project gl in
   let ctype = pf_unsafe_type_of gl (mkVar id) in
   let binders,concl = decompose_prod_assum sigma ctype in
@@ -2212,7 +2198,7 @@ let setoid_symmetry_in id =
     (tclTHENLAST
       (Tactics.assert_after_replacing id new_hyp)
       (tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ]))
-  end }
+  end
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity
 let _ = Hook.set Tactics.setoid_symmetry setoid_symmetry

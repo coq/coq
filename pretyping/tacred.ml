@@ -24,7 +24,6 @@ open Reductionops
 open Cbv
 open Patternops
 open Locus
-open Sigma.Notations
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -399,9 +398,8 @@ let substl_with_function subst sigma constr =
     if i <= k + Array.length v then
       match v.(i-k-1) with
       | (fx, Some (min, ref)) ->
-        let sigma = Sigma.Unsafe.of_evar_map !evd in
-        let Sigma (evk, sigma, _) = Evarutil.new_pure_evar venv sigma dummy in
-        let sigma = Sigma.to_evar_map sigma in
+        let sigma = !evd in
+        let (sigma, evk) = Evarutil.new_pure_evar venv sigma dummy in
         evd := sigma;
         minargs := Evar.Map.add evk min !minargs;
         Vars.lift k (mkEvar (evk, [|fx;ref|]))
@@ -983,11 +981,10 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
       | _ -> mkApp (app', [| a' |]))
   | _ -> map_constr_with_binders_left_to_right sigma g f acc c
 
-let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
+let e_contextually byhead (occs,c) f = begin fun env sigma t ->
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
-  let sigma = Sigma.to_evar_map sigma in
   (** FIXME: we do suspicious things with this evarmap *)
   let evd = ref sigma in
   let rec traverse nested (env,c as envc) t =
@@ -1007,8 +1004,8 @@ let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
         (* Skip inner occurrences for stable counting of occurrences *)
         if locs != [] then
           ignore (traverse_below (Some (!pos-1)) envc t);
-	let Sigma (t, evm, _) = (f subst).e_redfun env (Sigma.Unsafe.of_evar_map !evd) t in
-	(evd := Sigma.to_evar_map evm; t)
+	let (evm, t) = (f subst) env !evd t in
+	(evd := evm; t)
       end
       else
 	traverse_below nested envc t
@@ -1027,15 +1024,12 @@ let e_contextually byhead (occs,c) f = { e_redfun = begin fun env sigma t ->
   in
   let t' = traverse None (env,c) t in
   if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;
-  Sigma.Unsafe.of_pair (t', !evd)
-  end }
+  (!evd, t')
+  end
 
 let contextually byhead occs f env sigma t =
-  let f' subst = { e_redfun = begin fun env sigma t ->
-    Sigma.here (f subst env (Sigma.to_evar_map sigma) t) sigma
-  end } in
-  let Sigma (c, _, _) = (e_contextually byhead occs f').e_redfun env (Sigma.Unsafe.of_evar_map sigma) t in
-  c
+  let f' subst env sigma t = sigma, f subst env sigma t in
+  snd (e_contextually byhead occs f' env sigma t)
 
 (* linear bindings (following pretty-printer) of the value of name in c.
  * n is the number of the next occurrence of name.
@@ -1154,15 +1148,14 @@ let abstract_scheme env sigma (locc,a) (c, sigma) =
     let c', sigma' = subst_closed_term_occ env sigma (AtOccs locc) a c in
       mkLambda (na,ta,c'), sigma'
 
-let pattern_occs loccs_trm = { e_redfun = begin fun env sigma c ->
-  let sigma = Sigma.to_evar_map sigma in
+let pattern_occs loccs_trm = begin fun env sigma c ->
   let abstr_trm, sigma = List.fold_right (abstract_scheme env sigma) loccs_trm (c,sigma) in
   try
     let _ = Typing.unsafe_type_of env sigma abstr_trm in
-    Sigma.Unsafe.of_pair (applist(abstr_trm, List.map snd loccs_trm), sigma)
+    (sigma, applist(abstr_trm, List.map snd loccs_trm))
   with Type_errors.TypeError (env',t) ->
     raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
-  end }
+  end
 
 (* Used in several tactics. *)
 

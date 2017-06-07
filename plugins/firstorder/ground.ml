@@ -14,7 +14,6 @@ open Instances
 open Term
 open Tacmach.New
 open Tacticals.New
-open Proofview.Notations
 
 let update_flags ()=
   let predref=ref Names.Cpred.empty in
@@ -31,10 +30,10 @@ let update_flags ()=
       (Names.Id.Pred.full,Names.Cpred.complement !predref)
 
 let ground_tac solver startseq =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   update_flags ();
   let rec toptac skipped seq =
-    Proofview.Goal.enter { enter = begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
     let () =
       if Tacinterp.get_debug()=Tactic_debug.DebugOn 0
       then
@@ -127,7 +126,7 @@ let ground_tac solver startseq =
 		  end
 	    with Heap.EmptyHeap->solver
       end
-    end } in
+    end in
     let n = List.length (Proofview.Goal.hyps gl) in
     startseq (fun seq -> wrap n true (toptac []) seq)
-  end }
+  end

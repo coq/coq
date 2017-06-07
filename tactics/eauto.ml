@@ -30,27 +30,27 @@ open Proofview.Notations
 let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t2 = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
   let sigma = Tacmach.New.project gl in
   if occur_existential sigma t1 || occur_existential sigma t2 then
      Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
   else exact_check c
-  end }
+  end
 
 let assumption id = e_give_exact (mkVar id)
 
 let e_assumption =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     Tacticals.New.tclFIRST (List.map assumption (Tacmach.New.pf_ids_of_hyps gl))
-  end }
+  end
 
 let registered_e_assumption =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
               (Tacmach.New.pf_ids_of_hyps gl))
-  end }
+  end
 
 (************************************************************************)
 (*   PROLOG tactic                                                      *)
@@ -93,7 +93,7 @@ let out_term = function
 let prolog_tac l n =
   Proofview.V82.tactic begin fun gl ->
   let map c =
-    let (c, sigma) = Tactics.run_delayed (pf_env gl) (project gl) c in
+    let (sigma, c) = c (pf_env gl) (project gl) in
     let c = pf_apply (prepare_hint false (false,true)) gl (sigma, c) in
     out_term c
   in
@@ -112,13 +112,13 @@ open Auto
 let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 
 let unify_e_resolve poly flags (c,clenv) =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
       let clenv', c = connect_hint_clenv poly c clenv gl in
       let clenv' = clenv_unique_resolver ~flags clenv' gl in
       Proofview.tclTHEN
         (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
         (Tactics.Simple.eapply c)
-    end }
+    end
 
 let hintmap_of sigma secvars hdc concl =
   match hdc with
@@ -130,20 +130,20 @@ let hintmap_of sigma secvars hdc concl =
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
 let e_exact poly flags (c,clenv) =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let clenv', c = connect_hint_clenv poly c clenv gl in
     Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
     (e_give_exact c)
-  end }
+  end
 
 let rec e_trivial_fail_db db_list local_db =
-  let next = Proofview.Goal.enter { enter = begin fun gl ->
+  let next = Proofview.Goal.enter begin fun gl ->
     let d = Tacmach.New.pf_last_hyp gl in
     let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Tacmach.New.project gl) d in
     e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) (Tacmach.New.project gl) hintl local_db)
-  end } in
-  Proofview.Goal.enter { enter = begin fun gl ->
+  end in
+  Proofview.Goal.enter begin fun gl ->
   let secvars = compute_secvars gl in
   let tacl =
     registered_e_assumption ::
@@ -151,7 +151,7 @@ let rec e_trivial_fail_db db_list local_db =
     (List.map fst (e_trivial_resolve (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_concl gl)))
   in
   Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
-  end }
+  end
 
 and e_my_find_search sigma db_list local_db secvars hdc concl =
   let hint_of_db = hintmap_of sigma secvars hdc concl in
@@ -497,7 +497,7 @@ let unfold_head env sigma (ids, csts) c =
   in aux c
 
 let autounfold_one db cl =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
@@ -517,4 +517,4 @@ let autounfold_one db cl =
       | Some hyp -> change_in_hyp None (make_change_arg c') hyp
       | None -> convert_concl_no_check c' DEFAULTcast
     else Tacticals.New.tclFAIL 0 (str "Nothing to unfold")
-  end }
+  end

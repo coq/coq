@@ -16,8 +16,6 @@ open Genredexpr
 open Stdarg
 open Extraargs
 
-open Sigma.Notations
-
 DECLARE PLUGIN "coretactics"
 
 (** Basic tactics *)
@@ -160,12 +158,12 @@ END
 (** Split *)
 
 let rec delayed_list = function
-| [] -> { Tacexpr.delayed = fun _ sigma -> Sigma.here [] sigma }
+| [] -> fun _ sigma -> (sigma, [])
 | x :: l ->
-  { Tacexpr.delayed = fun env sigma ->
-    let Sigma (x, sigma, p) = x.Tacexpr.delayed env sigma in
-    let Sigma (l, sigma, q) = (delayed_list l).Tacexpr.delayed env sigma in
-    Sigma (x :: l, sigma, p +> q) }
+  fun env sigma ->
+    let (sigma, x) = x env sigma in
+    let (sigma, l) = delayed_list l env sigma in
+    (sigma, x :: l)
 
 TACTIC EXTEND split
   [ "split" ] -> [ Tactics.split_with_bindings false [NoBindings] ]

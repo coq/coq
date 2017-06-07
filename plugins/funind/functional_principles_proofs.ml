@@ -1481,7 +1481,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 			    tclCOMPLETE(
 				    Eauto.eauto_with_bases
 				      (true,5)
-				      [{ Tacexpr.delayed = fun _ sigma -> Sigma.here (Lazy.force refl_equal) sigma}]
+				      [(fun _ sigma -> (sigma, Lazy.force refl_equal))]
 				      [Hints.Hint_db.empty empty_transparent_state false]
 				  )
 			   )

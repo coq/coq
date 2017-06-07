@@ -12,7 +12,6 @@ open Context.Rel.Declaration
 open Indfun_common
 open Functional_principles_proofs
 open Misctypes
-open Sigma.Notations
 
 module RelDecl = Context.Rel.Declaration
 
@@ -669,11 +668,9 @@ let build_case_scheme fa =
 	 let ind = first_fun_kn,funs_indexes in
 	   (ind,Univ.Instance.empty)(*FIXME*),prop_sort
   in
-  let sigma = Sigma.Unsafe.of_evar_map sigma in
-  let Sigma (scheme, sigma, _) = 
+  let (sigma, scheme) = 
       Indrec.build_case_analysis_scheme_default env sigma ind sf
   in
-  let sigma = Sigma.to_evar_map sigma in
   let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
   let sorts =
     (fun (_,_,x) ->

@@ -17,7 +17,6 @@ open Logic
 open Reduction
 open Tacmach
 open Clenv
-open Proofview.Notations
 
 (* This function put casts around metavariables whose type could not be
  * infered by the refiner, that is head of applications, predicates and
@@ -104,10 +103,10 @@ open Unification
 let dft = default_unify_flags
 
 let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let clenv = clenv_unique_resolver ~flags clenv gl in
     clenv_refine with_evars ~with_classes clenv
-  end }
+  end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
    particulier ne semblent pas vérifier que des instances différentes
@@ -139,7 +138,7 @@ let fail_quick_unif_flags = {
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
 let unify ?(flags=fail_quick_unif_flags) m =
-  Proofview.Goal.enter { enter = begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.New.pf_env gl in
     let n = Tacmach.New.pf_concl (Proofview.Goal.assume gl) in
     let evd = clear_metas (Tacmach.New.project gl) in
@@ -147,4 +146,4 @@ let unify ?(flags=fail_quick_unif_flags) m =
       let evd' = w_unify env evd CONV ~flags m n in
 	Proofview.Unsafe.tclEVARSADVANCE evd'
     with e when CErrors.noncritical e -> Proofview.tclZERO e
-  end }
+  end

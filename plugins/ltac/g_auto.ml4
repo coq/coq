@@ -15,7 +15,6 @@ open Pcoq.Prim
 open Pcoq.Constr
 open Pltac
 open Hints
-open Tacexpr
 open Names
 
 DECLARE PLUGIN "g_auto"
@@ -49,10 +48,7 @@ let eval_uconstrs ist cs =
     fail_evar = false;
     expand_evars = true
   } in
-  let map c = { delayed = fun env sigma ->
-    let Sigma.Sigma (c, sigma, p) = c.delayed env sigma in
-    Sigma.Sigma (c, sigma, p)
-  } in
+  let map c env sigma = c env sigma in
   List.map (fun c -> map (Pretyping.type_uconstr ~flags ist c)) cs
 
 let pr_auto_using_raw _ _ _  = Pptactic.pr_auto_using Ppconstr.pr_constr_expr

@@ -32,7 +32,6 @@ open Evardefine
 open Evarsolve
 open Evarconv
 open Evd
-open Sigma.Notations
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -2000,10 +1999,8 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
         let sigma,t = match tycon with
 	| Some t -> refresh_tycon sigma t
 	| None -> 
-          let sigma = Sigma.Unsafe.of_evar_map sigma in
-          let Sigma ((t, _), sigma, _) =
+          let (sigma, (t, _)) =
 	    new_type_evar env sigma univ_flexible_alg ~src:(Loc.tag ?loc @@ Evar_kinds.CasesType false) in
-          let sigma = Sigma.to_evar_map sigma in
 	    sigma, t
 	in
         (* First strategy: we build an "inversion" predicate *)
