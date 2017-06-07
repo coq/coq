@@ -140,6 +140,8 @@ plugins/ltac/extraargs.ml
 plugins/ltac/profile_ltac_tactics.ml
 ide/coqide_main.ml
 plugins/ssrmatching/ssrmatching.ml
+plugins/ssr/ssrparser.ml
+plugins/ssr/ssrvernac.ml
 
 # other auto-generated files
 
