@@ -126,8 +126,7 @@ let inline_side_effects env body ctx side_eff =
         (** Abstract over the term at the top of the proof *)
         let ty = Typeops.type_of_constant_type env cb.const_type in
         let subst = Cmap_env.add c (Inr var) subst in
-        let univs = Univ.ContextSet.of_context cnstctx in
-        let ctx = Univ.ContextSet.union ctx univs in
+        let ctx = Univ.UContext.union ctx cnstctx in
         (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
       | Polymorphic_const auctx ->
         (** Inline the term to emulate universe polymorphism *)
@@ -258,10 +257,11 @@ let infer_declaration ~trust env kn dcl =
       let tyj = infer_type env typ in
       let proofterm =
         Future.chain ~pure:true body (fun ((body,uctx),side_eff) ->
+          let uctx = Univ.ContextSet.to_context uctx in
           let body, uctx, signatures =
             inline_side_effects env body uctx side_eff in
           let valid_signatures = check_signatures trust signatures in
-	  let env = push_context_set uctx env in
+	  let env = push_context uctx env in
           let j =
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
             let j = infer env body in
@@ -272,7 +272,7 @@ let infer_declaration ~trust env kn dcl =
           let c = hcons_constr j.uj_val in
           let _typ = RegularArity (Vars.subst_univs_level_constr subst typ) in
           feedback_completion_typecheck feedback_id;
-          c, uctx) in
+          c, Univ.ContextSet.of_context uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
       def, RegularArity typ, None,
       (Monomorphic_const c.const_entry_universes),
@@ -283,14 +283,16 @@ let infer_declaration ~trust env kn dcl =
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let (body, ctx), side_eff = Future.join body in
-      let univsctx = Univ.ContextSet.of_context c.const_entry_universes in
+      let univsctx = c.const_entry_universes in
+      let ctx =
+        let orig = Univ.ContextSet.of_context univsctx in
+        let ctx = Univ.ContextSet.diff ctx orig in
+        Univ.ContextSet.to_context ctx in
       let body, ctx, _ = inline_side_effects env body
-        (Univ.ContextSet.union univsctx ctx) side_eff in
-      let env = push_context_set ~strict:(not c.const_entry_polymorphic) ctx env in
+        (Univ.UContext.union univsctx ctx) side_eff in
+      let env = push_context ~strict:(not c.const_entry_polymorphic) ctx env in
       let abstract = c.const_entry_polymorphic && not (Option.is_empty kn) in
-      let usubst, univs =
-        abstract_constant_universes abstract (Univ.ContextSet.to_context ctx)
-      in      
+      let usubst, univs = abstract_constant_universes abstract ctx in
       let j = infer env body in
       let typ = match typ with
         | None ->
@@ -606,9 +608,11 @@ let translate_mind env kn mie = Indtypes.check_inductive env kn mie
 let inline_entry_side_effects env ce = { ce with
   const_entry_body = Future.chain ~pure:true
     ce.const_entry_body (fun ((body, ctx), side_eff) ->
+      let ctx = Univ.ContextSet.to_context ctx in
       let body, ctx',_ = inline_side_effects env body ctx side_eff in
+      let ctx' = Univ.ContextSet.of_context ctx' in
       (body, ctx'), empty_seff);
 }
 
 let inline_side_effects env body side_eff =
-  pi1 (inline_side_effects env body Univ.ContextSet.empty side_eff)
+  pi1 (inline_side_effects env body Univ.UContext.empty side_eff)
