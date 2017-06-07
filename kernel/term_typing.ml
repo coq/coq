@@ -344,11 +344,18 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
     if not (Id.Set.subset inferred_set declared_set) then
       let l = Id.Set.elements (Idset.diff inferred_set declared_set) in
       let n = List.length l in
-      user_err  (Pp.(str "The following section " ++
-        str (String.plural n "variable") ++
-        str " " ++ str (String.conjugate_verb_to_be n) ++
-        str " used but not declared:" ++
-        fnl () ++ pr_sequence Id.print (List.rev l) ++ str ".")) in
+      let declared_vars = Pp.pr_sequence Id.print (Idset.elements declared_set) in
+      let inferred_vars = Pp.pr_sequence Id.print (Idset.elements inferred_set) in
+      let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
+      user_err Pp.(prlist str
+         ["The following section "; (String.plural n "variable"); " ";
+          (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
+         missing_vars ++ str "." ++ fnl () ++ fnl () ++
+         str "You can either update your proof to not depend on " ++ missing_vars ++
+         str ", or you can update your Proof line from" ++ fnl () ++
+         str "Proof using " ++ declared_vars ++ fnl () ++
+         str "to" ++ fnl () ++
+         str "Proof using " ++ inferred_vars) in
   let sort evn l =
     List.filter (fun decl ->
       let id = NamedDecl.get_id decl in
