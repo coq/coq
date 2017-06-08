@@ -30,16 +30,3 @@ if [ $TRAVIS_PULL_REQUEST == "669" ] || [ $TRAVIS_BRANCH == "ssr-merge" ]; then
     mathcomp_CI_GITURL=https://github.com/maximedenes/math-comp.git
 fi
 
-echo "DEBUG: ci-user-overlay.sh 0"
-if [ $TRAVIS_PULL_REQUEST = "652" ] || [ $TRAVIS_BRANCH == "trunk__API" ]; then
-    echo "DEBUG: ci-user-overlay.sh 1"
-    echo
-    #mathcomp_CI_BRANCH=remove-sigma
-    #mathcomp_CI_GITURL=https://github.com/maximedenes/math-comp.git
-    fiat_parsers_CI_BRANCH=remove-sigma
-    fiat_parsers_CI_GITURL=https://github.com/maximedenes/fiat.git
-    bedrock_src_CI_BRANCH=remove-sigma
-    bedrock_src_CI_GITURL=https://github.com/maximedenes/bedrock.git
-    bedrock_facade_CI_BRANCH=remove-sigma
-    bedrock_facade_CI_GITURL=https://github.com/maximedenes/bedrock.git
-fi
