@@ -737,7 +737,7 @@ let default_pr_subgoals ?(pr_first=true)
       v 0 (
 	int ngoals ++ focused_if_needed ++ str(String.plural ngoals "subgoal")
         ++ print_extra
-        ++ str (if (should_gname()) then ", subgoal 1" else "")
+        ++ str ", subgoal 1"
         ++ (if should_tag() then pr_goal_tag g1 else str"")
         ++ pr_goal_name sigma g1 ++ cut () ++ goals
         ++ (if unfocused=[] then str ""
