@@ -37,12 +37,15 @@ git_checkout()
   local _DEPTH=$(if [ -z "${4}" ]; then echo "--depth 1"; fi)
 
   mkdir -p ${_DEST}
-  ( cd ${_DEST}                                                && \
-    if [ ! -d .git ] ; then git clone ${_DEPTH} ${_URL} . ; fi && \
-    echo "Checking out ${_DEST}"                               && \
-    git fetch ${_URL} ${_BRANCH}                               && \
-    git checkout ${_COMMIT}                                    && \
-    echo "${_DEST}: `git log -1 --format='%s | %H | %cd | %aN'`" )
+  ( cd ${_DEST}                                                            && \
+    if [ ! -d .git ] ; then git clone --recursive ${_DEPTH} ${_URL} . ; fi && \
+    echo "Checking out ${_DEST}"                                           && \
+    git fetch ${_URL} ${_BRANCH}                                           && \
+    git checkout ${_COMMIT}                                                && \
+    git submodule update --init --recursive                                && \
+    echo "${_DEST}: `git log -1 --format='%s | %H | %cd | %aN'`"           && \
+    git submodule foreach                                                     \
+	'echo "$path: `git log -1 --format="%s | %H | %cd | %aN"`' )
 }
 
 checkout_mathcomp()
