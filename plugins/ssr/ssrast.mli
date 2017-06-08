@@ -8,6 +8,7 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open API
 open Names
 open Ltac_plugin
 
@@ -78,7 +79,7 @@ type ssripat =
   | IPatView of ssrterm list (* /view *)
   | IPatClear of ssrclear (* {H1 H2} *)
   | IPatSimpl of ssrsimpl
-  | IPatNewHidden of identifier list
+  | IPatNewHidden of Id.t list
 (* | IPatVarsForAbstract of Id.t list *)
 
 and ssripats = ssripat list

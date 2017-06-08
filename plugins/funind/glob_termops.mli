@@ -1,3 +1,4 @@
+open API
 open Names
 open Glob_term
 open Misctypes

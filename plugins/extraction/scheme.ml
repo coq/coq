@@ -8,6 +8,7 @@
 
 (*s Production of Scheme syntax. *)
 
+open API
 open Pp
 open CErrors
 open Util

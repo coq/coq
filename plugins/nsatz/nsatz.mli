@@ -6,4 +6,5 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open API
 val nsatz_compute : Constr.t -> unit Proofview.tactic

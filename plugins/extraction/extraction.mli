@@ -8,6 +8,7 @@
 
 (*s Extraction from Coq terms to Miniml. *)
 
+open API
 open Names
 open Term
 open Declarations

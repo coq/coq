@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open API
 open Ltac_plugin
 open Declarations
 open CErrors

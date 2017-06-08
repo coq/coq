@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open API
+
 (* Poor's man DECLARE PLUGIN *)
 let __coq_plugin_name = "numbers_syntax_plugin"
 let () = Mltop.add_known_module __coq_plugin_name

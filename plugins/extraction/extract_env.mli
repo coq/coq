@@ -8,6 +8,7 @@
 
 (*s This module declares the extraction commands. *)
 
+open API
 open Names
 open Libnames
 open Globnames

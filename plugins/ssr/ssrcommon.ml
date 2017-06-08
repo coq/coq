@@ -8,6 +8,8 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open API
+open Grammar_API
 open Util
 open Names
 open Evd
@@ -689,7 +691,7 @@ let pf_merge_uc_of sigma gl =
 let rec constr_name sigma c = match EConstr.kind sigma c with
   | Var id -> Name id
   | Cast (c', _, _) -> constr_name sigma c'
-  | Const (cn,_) -> Name (id_of_label (con_label cn))
+  | Const (cn,_) -> Name (Label.to_id (con_label cn))
   | App (c', _) -> constr_name sigma c'
   | _ -> Anonymous
 
@@ -701,9 +703,9 @@ let pf_mkprod gl c ?(name=constr_name (project gl) c) cl =
 let pf_abs_prod name gl c cl = pf_mkprod gl c ~name (Termops.subst_term (project gl) c cl)
 
 (** look up a name in the ssreflect internals module *)
-let ssrdirpath = make_dirpath [id_of_string "ssreflect"]
+let ssrdirpath = DirPath.make [id_of_string "ssreflect"]
 let ssrqid name = Libnames.make_qualid ssrdirpath (id_of_string name) 
-let ssrtopqid name = Libnames.make_short_qualid (id_of_string name) 
+let ssrtopqid name = Libnames.qualid_of_ident (id_of_string name) 
 let locate_reference qid =
   Smartlocate.global_of_extended_global (Nametab.locate_extended qid)
 let mkSsrRef name =

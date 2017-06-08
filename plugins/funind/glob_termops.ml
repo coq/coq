@@ -1,3 +1,4 @@
+open API
 open Pp
 open Glob_term
 open CErrors

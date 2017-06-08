@@ -120,7 +120,7 @@ highparsing: parsing/highparsing.cma
 stm: stm/stm.cma
 toplevel: toplevel/toplevel.cma
 
-.PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
+.PHONY: lib kernel byterun library proofs tactics interp parsing pretyping API
 .PHONY: engine highparsing stm toplevel
 
 ######################

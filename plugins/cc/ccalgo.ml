@@ -10,6 +10,7 @@
 (* Downey,Sethi and Tarjan. *)
 (* Plus some e-matching and constructor handling by P. Corbineau *)
 
+open API
 open CErrors
 open Util
 open Pp

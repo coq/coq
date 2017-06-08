@@ -8,6 +8,7 @@
 
 (* Merging of induction principles. *)
 
+open API
 open Globnames
 open Tactics
 open Indfun_common

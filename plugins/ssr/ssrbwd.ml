@@ -8,6 +8,7 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open API
 open Printer
 open Pretyping
 open Globnames

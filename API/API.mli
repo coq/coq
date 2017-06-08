@@ -1,0 +1,4697 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2016     *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+module Prelude :
+sig
+  (* None of the items in this modules are meant to be used by plugin-writers.
+     This module is here only for "technical reasons"
+     (it will disappear when we take advantage of mutually-recursive modules) *)
+
+  (* API.Term.constr *)
+  type constr = Constr.t
+
+  (* API.Term.types *)
+  type types = Constr.t
+
+  (* API.Evar.t *)
+  type evar = Evar.t
+
+  (* 'constr API.Term.pexistential *)
+  type 'constr pexistential = evar * 'constr array
+
+  (* API.Environ.env *)
+  type env = Environ.env
+
+  (* API.Evar.Map.t *)
+  type evar_map = Evd.evar_map
+
+  (* API.Globnames.global_reference *)
+  type global_reference = Globnames.global_reference
+
+  type rigid = Evd.rigid =
+             | UnivRigid
+             | UnivFlexible of bool
+
+  type conv_pb = Reduction.conv_pb =
+    | CONV
+    | CUMUL
+
+  type named_context_val = Environ.named_context_val
+
+  type metavariable = int
+
+  (* Termops.meta_value_map *)
+  type meta_value_map = (metavariable * constr) list
+
+  (* API.Libnames.reference *)
+  type reference = Libnames.reference =
+         | Qualid of Libnames.qualid Loc.located
+         | Ident of Names.Id.t Loc.located
+end
+
+module Univ :
+sig
+  module Level :
+  sig
+    type t = Univ.Level.t
+    val set : t
+    val pr : t -> Pp.std_ppcmds
+  end
+
+  module Instance :
+  sig 
+    type t = Univ.Instance.t
+    val empty : t
+    val of_array : Level.t array -> t
+    val to_array : t -> Level.t array
+    val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+  end
+  type 'a puniverses = 'a * Instance.t
+
+  module Constraint : module type of struct include Univ.Constraint end
+
+  type 'a constrained = 'a * Constraint.t
+
+  module UContext :
+  sig
+    type t = Univ.UContext.t
+    val empty : t
+  end
+
+  type universe_context = UContext.t
+
+  module LSet : module type of struct include Univ.LSet end
+  module ContextSet : 
+  sig
+    type t = Univ.ContextSet.t
+    val empty : t
+    val of_context : universe_context -> t
+    val to_context : t -> universe_context
+  end
+
+  type 'a in_universe_context_set = 'a * ContextSet.t
+  type 'a in_universe_context = 'a * universe_context
+  type constraint_type = Univ.constraint_type
+
+  module Universe :
+  sig
+    type t = Univ.Universe.t
+    val pr : t -> Pp.std_ppcmds
+  end
+
+  type universe_context_set = ContextSet.t
+  type universe_set = LSet.t
+
+  type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
+  type universe_subst = Univ.universe_subst
+  type universe_level_subst = Univ.universe_level_subst
+
+  val enforce_leq : Universe.t constraint_function
+  val pr_uni : Universe.t -> Pp.std_ppcmds
+  val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> UContext.t -> Pp.std_ppcmds
+  val pr_universe_context_set : (Level.t -> Pp.std_ppcmds) -> ContextSet.t -> Pp.std_ppcmds
+  val pr_universe_subst : universe_subst -> Pp.std_ppcmds
+  val pr_universe_level_subst : universe_level_subst -> Pp.std_ppcmds
+  val pr_constraints : (Level.t -> Pp.std_ppcmds) -> Constraint.t -> Pp.std_ppcmds
+end
+
+module UState :
+sig
+  type t = UState.t
+  val context : t -> Univ.UContext.t
+  val context_set : t -> Univ.ContextSet.t
+  val of_context_set : Univ.ContextSet.t -> t
+end
+
+module Sorts :
+sig
+  type contents = Sorts.contents = Pos | Null
+  type t = Sorts.t =
+         | Prop of contents
+         | Type of Univ.Universe.t
+  val is_prop : t -> bool
+  val hash : t -> int
+
+  type family = Sorts.family = InProp | InSet | InType
+  val family : t -> family
+end
+
+module Names :
+sig
+  module Id : module type of struct include Names.Id end
+
+  module MBId : sig
+    type t = Names.MBId.t
+    val equal : t -> t -> bool
+    val to_id : t -> Names.Id.t
+    val repr : t -> int * Names.Id.t * Names.DirPath.t    
+    val debug_to_string : t -> string
+  end
+
+  type evaluable_global_reference = Names.evaluable_global_reference =
+    | EvalVarRef of Id.t
+    | EvalConstRef of Names.Constant.t
+  module Name : module type of struct include Names.Name end
+
+  type name = Name.t =
+    | Anonymous     
+    | Name of Id.t
+
+  module DirPath :
+  sig
+    type t = Names.DirPath.t
+    val empty : t
+    val make : Id.t list -> t
+    val repr : t -> Id.t list
+    val equal : t -> t -> bool
+    val to_string : t -> string
+  end
+
+  module Label :
+  sig
+    type t = Names.Label.t
+    val make : string -> t
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val of_id : Names.Id.t -> t
+    val to_id : t -> Names.Id.t
+    val to_string : t -> string
+  end
+
+  module ModPath :
+  sig
+    type t = Names.ModPath.t =
+           | MPfile of Names.DirPath.t
+           | MPbound of MBId.t
+           | MPdot of t * Label.t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+    val initial : t
+    val to_string : t -> string
+    val debug_to_string : t -> string
+  end
+
+  module KerName :
+  sig
+    type t = Names.KerName.t
+    val make : ModPath.t -> DirPath.t -> Label.t -> t
+    val make2 : ModPath.t -> Label.t -> t
+    val modpath : t -> ModPath.t
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val label : t -> Label.t
+    val repr : t -> ModPath.t * DirPath.t * Label.t
+    val print : t -> Pp.std_ppcmds
+    val to_string : t -> string
+  end
+
+  type kernel_name = KerName.t
+
+  module Constant :
+  sig
+    type t = Names.Constant.t
+    val equal : t -> t -> bool
+    val make1 : Names.KerName.t -> t
+    val make2 : Names.ModPath.t -> Label.t -> t
+    val make3 : Names.ModPath.t -> Names.DirPath.t -> Label.t -> t
+    val repr3 : t -> Names.ModPath.t * Names.DirPath.t * Label.t
+    val canonical : t -> Names.KerName.t
+    val user : t -> Names.KerName.t
+    val label : t -> Label.t
+  end
+
+  module MutInd :
+  sig
+    type t = Names.MutInd.t
+    val make1 : Names.KerName.t -> t
+    val make2 : Names.ModPath.t -> Label.t -> t
+    val equal : t -> t -> bool
+    val repr3 : t -> Names.ModPath.t * Names.DirPath.t * Label.t
+    val canonical : t -> Names.KerName.t
+    val modpath : t -> Names.ModPath.t
+    val label : t -> Label.t
+    val user : t -> Names.KerName.t
+    val print : t -> Pp.std_ppcmds
+  end
+
+  module Projection :
+  sig
+    type t = Names.Projection.t
+    val make : Constant.t -> bool -> t
+    val map : (Constant.t -> Constant.t) -> t -> t
+    val constant : t -> Constant.t
+    val equal : t -> t -> bool
+  end
+
+  type inductive = MutInd.t * int
+  val eq_ind : inductive -> inductive -> bool
+
+  type constructor = inductive * int
+  val eq_constructor : constructor -> constructor -> bool
+  val constructor_hash : constructor -> int
+
+  module MPset : module type of struct include Names.MPset end
+  module MPmap : module type of struct include Names.MPmap end
+  module KNset : module type of struct include Names.KNset end
+  module KNmap : module type of struct include Names.KNmap end
+  module Cset : module type of struct include Names.Cset end
+  module Cset_env : module type of struct include Names.Cset_env end
+  module Cmap : module type of struct include Names.Cmap end
+  module Cmap_env : module type of struct include Names.Cmap_env end
+  module Cpred : module type of struct include  Names.Cpred end
+  module Mindset : module type of struct include Names.Mindset end
+  module Mindmap : module type of struct include Names.Mindmap end
+  module Mindmap_env : module type of struct include Names.Mindmap_env end
+  module Indmap : module type of struct include Names.Indmap end
+                                   with type key = inductive
+  module Indmap_env : module type of struct include Names.Indmap_env end
+  module Constrmap : module type of struct include Names.Constrmap end
+  module Constrmap_env : module type of struct include Names.Constrmap_env end
+
+  type transparent_state = Id.Pred.t * Cpred.t
+  val empty_transparent_state : transparent_state
+  val full_transparent_state : transparent_state
+  val var_full_transparent_state : transparent_state
+  val cst_full_transparent_state : transparent_state
+
+  val pr_kn : KerName.t -> Pp.std_ppcmds
+
+  val eq_constant : Constant.t -> Constant.t -> bool
+
+  type module_path = ModPath.t =
+    | MPfile of DirPath.t
+    | MPbound of MBId.t
+    | MPdot of module_path * Label.t
+
+  type variable = Id.t
+
+  type constant = Constant.t
+
+  type 'a tableKey = 'a Names.tableKey =
+    | ConstKey of 'a
+    | VarKey of Id.t
+    | RelKey of Int.t
+
+  val id_of_string : string -> Id.t
+
+  val string_of_id : Id.t -> string
+
+  type mutual_inductive = MutInd.t
+
+  val eq_mind : MutInd.t -> MutInd.t -> bool
+
+  val repr_con : Constant.t -> ModPath.t * DirPath.t * Label.t
+
+  val repr_mind : MutInd.t -> ModPath.t * DirPath.t * Label.t
+
+  val initial_path : ModPath.t
+
+  val con_label : Constant.t -> Label.t
+
+  val mind_label : MutInd.t -> Label.t
+
+  val string_of_mp : ModPath.t -> string
+
+  val mind_of_kn : KerName.t -> MutInd.t
+
+  val mind_modpath : MutInd.t -> ModPath.t
+
+  val canonical_mind : MutInd.t -> KerName.t
+
+  val user_mind : MutInd.t -> KerName.t
+
+  val repr_kn : KerName.t -> ModPath.t * DirPath.t * Label.t
+
+  val constant_of_kn : KerName.t -> Constant.t
+
+  val user_con : Constant.t -> KerName.t
+
+  val modpath : KerName.t -> ModPath.t
+
+  val canonical_con : Constant.t -> KerName.t
+
+  val make_kn : ModPath.t -> DirPath.t -> Label.t -> KerName.t
+
+  val make_con : ModPath.t -> DirPath.t -> Label.t -> Constant.t
+
+  val debug_pr_con : Constant.t -> Pp.std_ppcmds
+
+  val debug_pr_mind : MutInd.t -> Pp.std_ppcmds
+
+  val pr_con : Constant.t -> Pp.std_ppcmds
+
+  val string_of_con : Constant.t -> string
+
+  val string_of_mind : MutInd.t -> string
+
+  val debug_string_of_mind : MutInd.t -> string
+
+  val debug_string_of_con : Constant.t -> string
+
+  module Idset : module type of struct include Id.Set end
+end
+
+module Context :
+sig
+
+  module Rel :
+  sig
+    module Declaration :
+    sig
+      (* local declaration *)
+      (* local declaration *)
+      type ('constr, 'types) pt = ('constr, 'types) Context.Rel.Declaration.pt =
+        | LocalAssum of Names.Name.t * 'types            (** name, type *)
+        | LocalDef of Names.Name.t * 'constr * 'types    (** name, value, type *)
+
+      type t = (Prelude.constr, Prelude.types) pt
+
+      (** Return the name bound by a given declaration. *)
+      val get_name : ('c, 't) pt -> Names.Name.t
+
+      (** Return the type of the name bound by a given declaration. *)
+      val get_type : ('c, 't) pt -> 't
+
+      (** Set the name that is bound by a given declaration. *)
+      val set_name : Names.Name.t -> ('c, 't) pt -> ('c, 't) pt
+
+      (** Set the type of the bound variable in a given declaration. *)
+      val set_type : 't -> ('c, 't) pt -> ('c, 't) pt
+
+      (** Return [true] iff a given declaration is a local assumption. *)
+      val is_local_assum : ('c, 't) pt -> bool
+
+      (** Return [true] iff a given declaration is a local definition. *)
+      val is_local_def : ('c, 't) pt -> bool
+
+      (** Check whether the two given declarations are equal. *)
+      val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
+
+      (** Map the name bound by a given declaration. *)
+      val map_name : (Names.Name.t -> Names.Name.t) -> ('c, 't) pt -> ('c, 't) pt
+
+      (** For local assumptions, this function returns the original local assumptions.
+        For local definitions, this function maps the value in the local definition. *)
+      val map_value : ('c -> 'c) -> ('c, 't) pt -> ('c, 't) pt
+
+      (** Map the type of the name bound by a given declaration. *)
+      val map_type : ('t -> 't) -> ('c, 't) pt -> ('c, 't) pt
+
+      (** Map all terms in a given declaration. *)
+      val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+
+      (** Perform a given action on all terms in a given declaration. *)
+      val iter_constr : ('c -> unit) -> ('c, 'c) pt -> unit 
+
+      (** Reduce all terms in a given declaration to a single value. *)
+      val fold_constr : ('c -> 'a -> 'a) -> ('c, 'c) pt -> 'a -> 'a
+    end
+
+    (** Rel-context is represented as a list of declarations.
+        Inner-most declarations are at the beginning of the list.
+        Outer-most declarations are at the end of the list. *)
+    type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
+    type t = Declaration.t list
+
+    (** empty rel-context *)
+    val empty : ('c, 't) pt
+
+    (** Return a new rel-context enriched by with a given inner-most declaration. *)
+    val add : ('c, 't) Declaration.pt -> ('c, 't) pt -> ('c, 't) pt
+
+    (** Return the number of {e local declarations} in a given context. *)
+    val length : ('c, 't) pt -> int
+
+    (** Check whether given two rel-contexts are equal. *)
+    val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
+
+    (** Return the number of {e local assumptions} in a given rel-context. *)
+    val nhyps : ('c, 't) pt -> int
+
+    (** Return a declaration designated by a given de Bruijn index.
+      @raise Not_found if the designated de Bruijn index outside the range. *)
+    val lookup : int -> ('c, 't) pt -> ('c, 't) Declaration.pt
+
+    (** Map all terms in a given rel-context. *)
+    val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+
+    (** Perform a given action on every declaration in a given rel-context. *)
+    val iter : ('c -> unit) -> ('c, 'c) pt -> unit
+
+    (** Reduce all terms in a given rel-context to a single value.
+      Innermost declarations are processed first. *)
+    val fold_inside : ('a -> ('c, 't) Declaration.pt -> 'a) -> init:'a -> ('c, 't) pt -> 'a
+
+    (** Reduce all terms in a given rel-context to a single value.
+      Outermost declarations are processed first. *)
+    val fold_outside : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
+
+    (** [extended_vect n Γ] does the same, returning instead an array. *)
+    val to_extended_vect : (int -> 'r) -> int -> ('c, 't) pt -> 'r array
+  end
+  module Named :
+  sig
+    module Declaration :
+    sig
+      (** local declaration *)
+      type ('constr, 'types) pt = ('constr, 'types) Context.Named.Declaration.pt =
+        | LocalAssum of Names.Id.t * 'types             (** identifier, type *)
+        | LocalDef of Names.Id.t * 'constr * 'types     (** identifier, value, type *)
+
+      type t = (Prelude.constr, Prelude.types) pt
+
+      (** Return the identifier bound by a given declaration. *)
+      val get_id : ('c, 't) pt -> Names.Id.t
+
+      (** Return the type of the name bound by a given declaration. *)
+      val get_type : ('c, 't) pt -> 't
+
+      (** Set the identifier that is bound by a given declaration. *)
+      val set_id : Names.Id.t -> ('c, 't) pt -> ('c, 't) pt
+
+      (** Set the type of the bound variable in a given declaration. *)
+      val set_type : 't -> ('c, 't) pt -> ('c, 't) pt
+
+      (** Return [true] iff a given declaration is a local assumption. *)
+      val is_local_assum : ('c, 't) pt -> bool
+
+      (** Return [true] iff a given declaration is a local definition. *)
+      val is_local_def : ('c, 't) pt -> bool
+
+      (** Check whether any term in a given declaration satisfies a given predicate. *)
+      val exists : ('c -> bool) -> ('c, 'c) pt -> bool
+
+      (** Check whether all terms in a given declaration satisfy a given predicate. *)
+      val for_all : ('c -> bool) -> ('c, 'c) pt -> bool
+
+      (** Check whether the two given declarations are equal. *)
+      val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
+
+      (** Map the identifier bound by a given declaration. *)
+      val map_id : (Names.Id.t -> Names.Id.t) -> ('c, 't) pt -> ('c, 't) pt
+
+      (** For local assumptions, this function returns the original local assumptions.
+        For local definitions, this function maps the value in the local definition. *)
+      val map_value : ('c -> 'c) -> ('c, 't) pt -> ('c, 't) pt
+
+      (** Map the type of the name bound by a given declaration. *)
+      val map_type : ('t -> 't) -> ('c, 't) pt -> ('c, 't) pt
+
+      (** Map all terms in a given declaration. *)
+      val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+
+      (** Perform a given action on all terms in a given declaration. *)
+      val iter_constr : ('c -> unit) -> ('c, 'c) pt -> unit
+
+      (** Reduce all terms in a given declaration to a single value. *)
+      val fold_constr : ('c -> 'a -> 'a) -> ('c, 'c) pt -> 'a -> 'a
+
+      val to_rel_decl : ('c, 't) pt -> ('c, 't) Rel.Declaration.pt
+    end
+    (** Named-context is represented as a list of declarations.
+      Inner-most declarations are at the beginning of the list.
+      Outer-most declarations are at the end of the list. *)
+    type ('constr, 'types) pt = ('constr, 'types) Declaration.pt list
+    type t = Declaration.t list
+
+    (** empty named-context *)
+    val empty : ('c, 't) pt
+
+    (** Return a new named-context enriched by with a given inner-most declaration. *)
+    val add : ('c, 't) Declaration.pt -> ('c, 't) pt -> ('c, 't) pt
+
+    (** Return the number of {e local declarations} in a given named-context. *)
+    val length : ('c, 't) pt -> int
+
+    (** Return a declaration designated by an identifier of the variable bound in that declaration.
+      @raise Not_found if the designated identifier is not bound in a given named-context. *)
+    val lookup : Names.Id.t -> ('c, 't) pt -> ('c, 't) Declaration.pt
+
+    (** Check whether given two named-contexts are equal. *)
+    val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
+
+    (** Map all terms in a given named-context. *)
+    val map : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
+
+    (** Perform a given action on every declaration in a given named-context. *)
+    val iter : ('c -> unit) -> ('c, 'c) pt -> unit
+
+    (** Reduce all terms in a given named-context to a single value.
+      Innermost declarations are processed first. *)
+    val fold_inside : ('a -> ('c, 't) Declaration.pt -> 'a) -> init:'a -> ('c, 't) pt -> 'a
+
+    (** Reduce all terms in a given named-context to a single value.
+      Outermost declarations are processed first. *)
+    val fold_outside : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
+
+    (** Return the set of all identifiers bound in a given named-context. *)
+    val to_vars : ('c, 't) pt -> Names.Id.Set.t
+
+    (** [to_instance Ω] builds an instance [args] such
+      that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the local
+      definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
+      gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
+    val to_instance : (Names.Id.t -> 'r) -> ('c, 't) pt -> 'r list
+  end
+end
+
+module Term :
+sig
+  type sorts_family = Sorts.family = InProp | InSet | InType
+
+  type metavariable = Prelude.metavariable
+
+  type contents = Sorts.contents = Pos | Null
+
+  type sorts = Sorts.t =
+  | Prop of contents
+  | Type of Univ.Universe.t
+
+  type constr = Prelude.constr
+  type types = Prelude.types
+  type ('constr, 'types) prec_declaration = Names.Name.t array * 'types array * 'constr array
+  type 'constr pexistential = 'constr Prelude.pexistential
+  type cast_kind = Term.cast_kind =
+                 | VMcast
+                 | NATIVEcast
+                 | DEFAULTcast
+                 | REVERTcast
+  type 'a puniverses = 'a Univ.puniverses
+  type pconstant = Names.Constant.t puniverses
+  type pinductive = Names.inductive puniverses
+  type pconstructor = Names.constructor puniverses
+  type case_style = Term.case_style =
+                  | LetStyle
+                  | IfStyle
+                  | LetPatternStyle
+                  | MatchStyle
+                  | RegularStyle
+  type case_printing = Term.case_printing =
+                         { ind_tags  : bool list;
+                           cstr_tags : bool list array;
+                           style     : case_style
+                         }
+  type case_info = Term.case_info =
+                     { ci_ind         : Names.inductive;
+                       ci_npar        : int;
+                       ci_cstr_ndecls : int array;
+                       ci_cstr_nargs  : int array;
+                       ci_pp_info     : case_printing
+                     }
+  type ('constr, 'types) pfixpoint =
+    (int array * int) * ('constr, 'types) prec_declaration
+  type ('constr, 'types) pcofixpoint =
+    int * ('constr, 'types) prec_declaration
+  type ('constr, 'types, 'sort, 'univs) kind_of_term = ('constr, 'types, 'sort, 'univs) Term.kind_of_term =
+     | Rel       of int
+     | Var       of Names.Id.t
+     | Meta      of metavariable
+     | Evar      of 'constr pexistential
+     | Sort      of 'sort
+     | Cast      of 'constr * cast_kind * 'types
+     | Prod      of Names.Name.t * 'types * 'types
+     | Lambda    of Names.Name.t * 'types * 'constr
+     | LetIn     of Names.Name.t * 'constr * 'types * 'constr
+     | App       of 'constr * 'constr array
+     | Const     of (Names.Constant.t * 'univs)
+     | Ind       of (Names.inductive * 'univs)
+     | Construct of (Names.constructor * 'univs)
+     | Case      of case_info * 'constr * 'constr * 'constr array
+     | Fix       of ('constr, 'types) pfixpoint
+     | CoFix     of ('constr, 'types) pcofixpoint
+     | Proj      of Names.Projection.t * 'constr
+  type existential = Prelude.evar * constr array
+  type rec_declaration = Names.Name.t array * constr array * constr array
+  type fixpoint = (int array * int) * rec_declaration
+  type cofixpoint = int * rec_declaration
+  val kind_of_term : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
+  val applistc : constr -> constr list -> constr
+  val applist : constr * constr list -> constr
+
+  val mkArrow : types -> types -> constr
+  val mkRel : int -> constr
+  val mkVar : Names.Id.t -> constr
+
+  val mkMeta : Prelude.metavariable -> constr
+
+  val mkEvar : existential -> constr
+  val mkSort : Sorts.t -> types
+  val mkProp : types
+  val mkSet  : types
+  val mkType : Univ.Universe.t -> types
+  val mkCast : constr * cast_kind * constr -> constr
+  val mkProd : Names.Name.t * types * types -> types
+  val mkLambda : Names.Name.t * types * constr -> constr
+  val mkLetIn : Names.Name.t * constr * types * constr -> constr
+  val mkApp : constr * constr array -> constr
+  val mkConst : Names.Constant.t -> constr
+  val mkProj : Names.Projection.t * constr -> constr
+  val mkInd : Names.inductive -> constr
+  val mkConstruct : Names.constructor -> constr
+  val mkConstructU : Names.constructor puniverses -> constr
+  val mkConstructUi : (pinductive * int) -> constr
+  val mkCase : case_info * constr * constr * constr array -> constr
+  val mkFix : fixpoint -> constr
+  val mkCoFix : cofixpoint -> constr
+  val mkNamedLambda : Names.Id.t -> types -> constr -> constr
+  val mkNamedLetIn : Names.Id.t -> constr -> types -> constr -> constr
+  val mkNamedProd : Names.Id.t -> types -> types -> types
+
+  val decompose_app : constr -> constr * constr list
+  val decompose_prod : constr -> (Names.Name.t*constr) list * constr
+  val decompose_prod_n : int -> constr -> (Names.Name.t * constr) list * constr
+  val decompose_prod_assum : types -> Context.Rel.t * types
+  val decompose_lam : constr -> (Names.Name.t * constr) list * constr
+  val decompose_lam_n : int -> constr -> (Names.Name.t * constr) list * constr
+  val decompose_prod_n_assum : int -> types -> Context.Rel.t * types
+
+  val compose_prod : (Names.Name.t * constr) list -> constr -> constr
+  val compose_lam : (Names.Name.t * constr) list -> constr -> constr
+
+  val destSort : constr -> Sorts.t
+  val destVar : constr -> Names.Id.t
+  val destApp : constr -> constr * constr array
+  val destProd : types -> Names.Name.t * types * types
+  val destLetIn : constr -> Names.Name.t * constr * types * constr
+  val destEvar : constr -> existential
+  val destRel : constr -> int
+  val destConst : constr -> Names.Constant.t puniverses
+  val destCast : constr -> constr * cast_kind * constr
+  val destLambda : constr -> Names.Name.t * types * constr
+
+  val isRel : constr -> bool
+  val isVar  : constr -> bool
+  val isEvar : constr -> bool
+  val isLetIn : constr -> bool
+  val isLambda : constr -> bool
+  val isConst : constr -> bool
+  val isEvar_or_Meta : constr -> bool
+  val isCast : constr -> bool
+  val isMeta : constr -> bool
+  val isApp : constr -> bool
+
+  val fold_constr : ('a -> constr -> 'a) -> 'a -> constr -> 'a
+
+  val eq_constr : constr -> constr -> bool
+
+  val hash_constr : constr -> int
+  val it_mkLambda_or_LetIn : constr -> Context.Rel.t -> constr
+  val it_mkProd_or_LetIn : types -> Context.Rel.t -> types
+  val prod_applist : constr -> constr list -> constr
+  exception DestKO
+  val map_constr : (constr -> constr) -> constr -> constr
+
+  val mkIndU : pinductive -> constr
+  val mkConstU : pconstant -> constr
+  val map_constr_with_binders :
+    ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
+  val iter_constr : (constr -> unit) -> constr -> unit
+
+  (* Quotients away universes: really needed?
+   * Can't we just call eq_c_univs_infer and discard the inferred csts?
+   *)
+  val eq_constr_nounivs : constr -> constr -> bool
+
+  type ('constr, 'types) kind_of_type = ('constr, 'types) Term.kind_of_type =                                          
+                                      | SortType   of Sorts.t
+                                      | CastType   of 'types * 'types
+                                      | ProdType   of Names.Name.t * 'types * 'types
+                                      | LetInType  of Names.Name.t * 'constr * 'types * 'types
+                                      | AtomicType of 'constr * 'constr array
+  val kind_of_type : types -> (constr, types) kind_of_type
+
+  val is_prop_sort : Sorts.t -> bool
+
+  type existential_key = Prelude.evar
+
+  val family_of_sort : Sorts.t -> Sorts.family
+
+  val constr_ord : constr -> constr -> int
+
+  val destInd : constr -> Names.inductive puniverses
+  val univ_of_sort : Sorts.t -> Univ.Universe.t
+
+  val strip_lam : constr -> constr
+  val strip_prod_assum : types -> types
+
+  val decompose_lam_assum : constr -> Context.Rel.t * constr
+  val destFix : constr -> fixpoint
+
+  val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
+end
+
+module EConstr :
+sig
+  type t = EConstr.t
+  type constr = t
+  type types = t
+  type unsafe_judgment = EConstr.unsafe_judgment
+  type named_declaration = (constr, types) Context.Named.Declaration.pt
+  type named_context = (constr, types) Context.Named.pt
+  type rel_context = (constr, types) Context.Rel.pt
+  type rel_declaration = (constr, types) Context.Rel.Declaration.pt
+  type existential = constr Term.pexistential
+  module ESorts :
+  sig
+    type t = EConstr.ESorts.t
+    (** Type of sorts up-to universe unification. Essentially a wrapper around
+      Sorts.t so that normalization is ensured statically. *)
+
+    val make : Sorts.t -> t
+    (** Turn a sort into an up-to sort. *)
+
+    val kind : Prelude.evar_map -> t -> Sorts.t
+    (** Returns the view into the current sort. Note that the kind of a variable
+        may change if the unification state of the evar map changes. *)
+
+  end
+  
+  module EInstance :
+  sig
+    type t = EConstr.EInstance.t
+    (** Type of universe instances up-to universe unification. Similar to
+      {ESorts.t} for {Univ.Instance.t}. *)
+
+    val make : Univ.Instance.t -> t
+    val kind : Prelude.evar_map -> t -> Univ.Instance.t
+    val empty : t
+    val is_empty : t -> bool
+  end
+    
+  val of_constr : Term.constr -> constr
+
+  val kind : Prelude.evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t) Term.kind_of_term
+
+  val mkArrow : constr -> constr -> constr
+  val mkInd : Names.inductive -> t
+  val mkProp : constr
+  val mkProd : Names.Name.t * constr * constr -> constr
+  val mkRel : int -> constr
+  val mkSort : Sorts.t -> constr
+  val mkVar : Names.Id.t -> constr
+  val mkLambda : Names.Name.t * constr * constr -> constr
+  val mkLambda_or_LetIn : rel_declaration -> constr -> constr
+  val mkApp : constr * constr array -> constr
+  val mkEvar : constr Term.pexistential -> constr
+
+  val mkMeta : Prelude.metavariable -> constr
+
+  val mkConstructU : Names.constructor * EInstance.t -> constr
+  val mkLetIn : Names.Name.t * constr * constr * constr -> constr
+  val mkProd_or_LetIn : rel_declaration -> constr -> constr
+  val mkCast : constr * Term.cast_kind * constr -> constr
+  val mkNamedLambda : Names.Id.t -> types -> constr -> constr
+  val mkNamedProd : Names.Id.t -> types -> types -> types
+
+  val isCast : Evd.evar_map -> t -> bool
+  val isEvar : Prelude.evar_map -> constr -> bool
+  val isInd  : Prelude.evar_map -> constr -> bool
+  val isRel : Prelude.evar_map -> constr -> bool
+  val isSort : Prelude.evar_map -> constr -> bool
+  val isVar : Prelude.evar_map -> constr -> bool
+  val isConst : Prelude.evar_map -> constr -> bool
+  val isConstruct : Prelude.evar_map -> constr -> bool
+
+  val destInd : Prelude.evar_map -> constr -> Names.inductive * EInstance.t
+  val destVar : Prelude.evar_map -> constr -> Names.Id.t
+  val destEvar : Prelude.evar_map -> constr -> constr Term.pexistential
+  val destRel : Prelude.evar_map -> constr -> int
+  val destProd : Prelude.evar_map -> constr -> Names.Name.t * types * types
+  val destLambda : Prelude.evar_map -> constr -> Names.Name.t * types * constr
+  val destApp : Prelude.evar_map -> constr -> constr * constr array
+  val destConst : Prelude.evar_map -> constr -> Names.Constant.t * EInstance.t
+  val destConstruct : Prelude.evar_map -> constr -> Names.constructor * EInstance.t
+  val destFix : Evd.evar_map -> t -> (t, t) Term.pfixpoint
+  val destCast : Evd.evar_map -> t -> t * Term.cast_kind * t
+
+  val mkConstruct : Names.constructor -> constr
+
+  val compose_lam : (Names.Name.t * constr) list -> constr -> constr
+
+  val decompose_lam : Prelude.evar_map -> constr -> (Names.Name.t * constr) list * constr
+  val decompose_lam_n_assum : Prelude.evar_map -> int -> constr -> rel_context * constr
+  val decompose_app : Prelude.evar_map -> constr -> constr * constr list
+  val decompose_prod : Prelude.evar_map -> constr -> (Names.Name.t * constr) list * constr
+  val decompose_prod_assum : Prelude.evar_map -> constr -> rel_context * constr
+
+  val applist : constr * constr list -> constr
+
+  val to_constr : Prelude.evar_map -> constr -> Constr.t
+
+  val push_rel : rel_declaration -> Prelude.env -> Prelude.env
+
+  module Unsafe :
+  sig
+    val to_constr : constr -> Term.constr
+
+    val to_rel_decl : (constr, types) Context.Rel.Declaration.pt -> (Prelude.constr, Prelude.types) Context.Rel.Declaration.pt
+
+    (** Physical identity. Does not care for defined evars. *)
+
+    val to_named_decl : (constr, types) Context.Named.Declaration.pt -> (Prelude.constr, Prelude.types) Context.Named.Declaration.pt
+
+    val to_instance : EInstance.t -> Univ.Instance.t
+  end
+
+  module Vars :
+  sig
+    val substnl : t list -> int -> t -> t
+    val noccurn : Prelude.evar_map -> int -> constr -> bool
+    val closed0 : Prelude.evar_map -> constr -> bool
+    val subst1 : constr -> constr -> constr
+    val substl : constr list -> constr -> constr
+    val lift : int -> constr -> constr
+    val liftn : int -> int -> t -> t
+    val subst_var : Names.Id.t -> t -> t
+    val subst_vars : Names.Id.t list -> t -> t
+  end
+
+  val fresh_global :
+    ?loc:Loc.t -> ?rigid:Prelude.rigid -> ?names:Univ.Instance.t -> Environ.env ->
+    Evd.evar_map -> Prelude.global_reference -> Evd.evar_map * t
+
+val of_named_decl : (Term.constr, Term.types) Context.Named.Declaration.pt -> (constr, types) Context.Named.Declaration.pt
+  val of_rel_decl : (Term.constr, Term.types) Context.Rel.Declaration.pt -> (constr, types) Context.Rel.Declaration.pt
+  val kind_of_type : Prelude.evar_map -> constr -> (constr, constr) Term.kind_of_type
+  val to_lambda : Prelude.evar_map -> int -> constr -> constr
+  val it_mkLambda_or_LetIn : constr -> rel_context -> constr
+  val push_rel_context : rel_context -> Prelude.env -> Prelude.env
+  val eq_constr : Prelude.evar_map -> constr -> constr -> bool
+  val iter_with_binders : Prelude.evar_map -> ('a -> 'a) -> ('a -> constr -> unit) -> 'a -> constr -> unit
+  val fold : Prelude.evar_map -> ('a -> constr -> 'a) -> 'a -> constr -> 'a
+  val existential_type : Prelude.evar_map -> existential -> types
+  val iter : Prelude.evar_map -> (constr -> unit) -> constr -> unit
+  val eq_constr_universes : Prelude.evar_map -> constr -> constr -> Universes.universe_constraints option
+  val eq_constr_nounivs : Prelude.evar_map -> constr -> constr -> bool
+  val compare_constr : Evd.evar_map -> (constr -> constr -> bool) -> constr -> constr -> bool
+  val isApp : Prelude.evar_map -> constr -> bool
+  val it_mkProd_or_LetIn : constr -> rel_context -> constr
+  val push_named : named_declaration -> Prelude.env -> Prelude.env
+  val destCase : Prelude.evar_map -> constr -> Term.case_info * constr * constr * constr array
+  val decompose_lam_assum : Prelude.evar_map -> constr -> rel_context * constr
+  val mkConst : Names.Constant.t -> constr
+  val mkCase : Term.case_info * constr * constr * constr array -> constr
+  val named_context : Prelude.env -> named_context
+  val val_of_named_context : named_context -> Prelude.named_context_val
+  val mkFix : (t, t) Term.pfixpoint -> t
+  val decompose_prod_n_assum : Evd.evar_map -> int -> t -> rel_context * t
+  val isMeta : Evd.evar_map -> t -> bool
+
+  val destMeta : Evd.evar_map -> t -> Term.metavariable
+
+  val map_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> t) -> 'a -> t -> t
+  val mkNamedLetIn : Names.Id.t -> constr -> types -> constr -> constr
+  val map : Evd.evar_map -> (t -> t) -> t -> t
+  val mkConstU : Names.Constant.t * EInstance.t -> t
+  val isProd : Evd.evar_map -> t -> bool
+  val mkConstructUi : (Names.inductive * EInstance.t) * int -> t
+  val isLambda : Evd.evar_map -> t -> bool
+end
+
+module Mod_subst :
+sig
+  type substitution = Mod_subst.substitution
+  type 'a substituted = 'a Mod_subst.substituted
+  type delta_resolver = Mod_subst.delta_resolver
+
+  val force_constr : Term.constr substituted -> Term.constr
+
+  val empty_delta_resolver : delta_resolver
+  val constant_of_delta_kn : delta_resolver -> Names.KerName.t -> Names.Constant.t
+  val mind_of_delta_kn : delta_resolver -> Names.KerName.t -> Names.MutInd.t
+  val subst_kn : substitution -> Names.KerName.t -> Names.KerName.t
+  val subst_evaluable_reference :
+    substitution -> Names.evaluable_global_reference -> Names.evaluable_global_reference
+  val subst_mps : substitution -> Term.constr -> Term.constr
+  val subst_constant : substitution -> Names.Constant.t -> Names.Constant.t
+  val subst_ind : substitution -> Names.inductive -> Names.inductive
+  val debug_pr_subst : substitution -> Pp.std_ppcmds
+  val debug_pr_delta : delta_resolver -> Pp.std_ppcmds
+end
+
+module Retroknowledge :
+sig
+  type action = Retroknowledge.action
+  type nat_field = Retroknowledge.nat_field =
+    | NatType
+    | NatPlus
+    | NatTimes
+  type n_field = Retroknowledge.n_field =
+    | NPositive
+    | NType
+    | NTwice
+    | NTwicePlusOne
+    | NPhi
+    | NPhiInv
+    | NPlus
+    | NTimes
+  type int31_field = Retroknowledge.int31_field =
+    | Int31Bits
+    | Int31Type
+    | Int31Constructor
+    | Int31Twice
+    | Int31TwicePlusOne
+    | Int31Phi
+    | Int31PhiInv
+    | Int31Plus
+    | Int31PlusC
+    | Int31PlusCarryC
+    | Int31Minus
+    | Int31MinusC
+    | Int31MinusCarryC
+    | Int31Times
+    | Int31TimesC
+    | Int31Div21
+    | Int31Div
+    | Int31Diveucl
+    | Int31AddMulDiv
+    | Int31Compare
+    | Int31Head0
+    | Int31Tail0
+    | Int31Lor
+    | Int31Land
+    | Int31Lxor
+  type field = Retroknowledge.field =
+    | KInt31 of string * int31_field
+end
+
+module Declarations :
+sig
+  type recarg = Declarations.recarg =
+    | Norec
+    | Mrec of Names.inductive
+    | Imbr of Names.inductive
+  type wf_paths = recarg Rtree.t
+  type inline = Declarations.inline
+  type constant_def = Declarations.constant_def =
+                    | Undef of inline
+                    | Def of Term.constr Mod_subst.substituted
+                    | OpaqueDef of Opaqueproof.opaque
+  type constant_type = Declarations.constant_type
+  type constant_universes = Declarations.constant_universes
+  type projection_body = Declarations.projection_body = {
+        proj_ind : Names.MutInd.t;
+        proj_npars : int;
+        proj_arg : int;
+        proj_type : Term.types;
+        proj_eta : Term.constr * Term.types;
+        proj_body : Term.constr;
+      }
+  type typing_flags = Declarations.typing_flags
+  type constant_body = Declarations.constant_body = {
+        const_hyps : Context.Named.t;
+        const_body : constant_def;
+        const_type : constant_type;
+        const_body_code : Cemitcodes.to_patch_substituted option;
+        const_polymorphic : bool;
+        const_universes : constant_universes;
+        const_proj : projection_body option;
+        const_inline_code : bool;
+        const_typing_flags : typing_flags;
+      }
+  type one_inductive_body = Declarations.one_inductive_body = {
+        mind_typename : Names.Id.t;
+        mind_arity_ctxt : Context.Rel.t;
+        mind_arity : Declarations.inductive_arity;
+        mind_consnames : Names.Id.t array;
+        mind_user_lc : Term.types array;
+        mind_nrealargs : int;
+        mind_nrealdecls : int;
+        mind_kelim : Sorts.family list;
+        mind_nf_lc : Term.types array;
+        mind_consnrealargs : int array;
+        mind_consnrealdecls : int array;
+        mind_recargs : wf_paths;
+        mind_nb_constant : int;
+        mind_nb_args : int;
+        mind_reloc_tbl :  Cbytecodes.reloc_table;
+      }
+  type ('ty,'a) functorize = ('ty,'a) Declarations.functorize =
+                           | NoFunctor of 'a
+                           | MoreFunctor of Names.MBId.t * 'ty * ('ty,'a) functorize
+  type with_declaration = Declarations.with_declaration =
+                        | WithMod of Names.Id.t list * Names.ModPath.t
+                        | WithDef of Names.Id.t list * Term.constr Univ.in_universe_context
+  type module_alg_expr = Declarations.module_alg_expr =
+                       | MEident of Names.ModPath.t
+                       | MEapply of module_alg_expr * Names.ModPath.t
+                       | MEwith of module_alg_expr * with_declaration
+  type mutual_inductive_body = Declarations.mutual_inductive_body = {
+        mind_packets : one_inductive_body array;
+        mind_record : Declarations.record_body option;
+        mind_finite : Decl_kinds.recursivity_kind;
+        mind_ntypes : int;
+        mind_hyps : Context.Named.t;
+        mind_nparams : int;
+        mind_nparams_rec : int;
+        mind_params_ctxt : Context.Rel.t;
+        mind_polymorphic : bool;
+        mind_universes : Univ.universe_context;
+        mind_private : bool option;
+        mind_typing_flags : Declarations.typing_flags;
+      }
+   and module_expression = (module_type_body,module_alg_expr) functorize
+   and module_implementation = Declarations.module_implementation =
+                             | Abstract
+                               | Algebraic of module_expression
+                             | Struct of module_signature
+                             | FullStruct
+   and module_body = Declarations.module_body =
+                       { mod_mp : Names.ModPath.t;
+                         mod_expr : module_implementation;
+                         mod_type : module_signature;
+                         mod_type_alg : module_expression option;
+                         mod_constraints : Univ.ContextSet.t;
+                         mod_delta : Mod_subst.delta_resolver;
+                         mod_retroknowledge : Retroknowledge.action list
+                       }
+   and module_signature = (module_type_body,structure_body) functorize
+   and module_type_body = module_body
+   and structure_body = (Names.Label.t * structure_field_body) list
+   and structure_field_body = Declarations.structure_field_body =
+                            | SFBconst of constant_body
+                            | SFBmind of mutual_inductive_body
+                            | SFBmodule of module_body
+                            | SFBmodtype of module_type_body
+end
+
+module Environ :
+sig
+  type env = Prelude.env
+  type named_context_val = Prelude.named_context_val
+  type ('constr, 'types) punsafe_judgment = ('constr, 'types) Environ.punsafe_judgment =
+    {
+      uj_val : 'constr;
+      uj_type : 'types
+    }
+  val empty_env : env
+  val lookup_mind : Names.MutInd.t -> env -> Declarations.mutual_inductive_body
+  val push_rel : Context.Rel.Declaration.t -> env -> env
+  val push_rel_context : Context.Rel.t -> env -> env
+  val push_rec_types : Term.rec_declaration -> env -> env
+  val lookup_rel : int -> env -> Context.Rel.Declaration.t
+  val lookup_named : Names.Id.t -> env -> Context.Named.Declaration.t
+  val lookup_named_val : Names.Id.t -> Environ.named_context_val -> Context.Named.Declaration.t
+  val lookup_constant : Names.Constant.t -> env -> Declarations.constant_body
+  val opaque_tables : env -> Opaqueproof.opaquetab
+  val is_projection : Names.Constant.t -> env -> bool
+  val lookup_projection : Names.Projection.t -> env -> Declarations.projection_body
+  val named_context_of_val : named_context_val -> Context.Named.t
+  val push_named : Context.Named.Declaration.t -> env -> env
+  val named_context : env -> Context.Named.t
+  val named_context_val : env -> named_context_val
+  val push_named_context_val : Context.Named.Declaration.t -> named_context_val -> named_context_val
+  val reset_with_named_context : named_context_val -> env -> env
+  val rel_context : env -> Context.Rel.t
+  val constant_value_in : env -> Names.Constant.t Univ.puniverses -> Term.constr
+  val named_type : Names.Id.t -> env -> Term.types
+  val constant_opt_value_in : env -> Names.Constant.t Univ.puniverses -> Term.constr option
+  val fold_named_context_reverse :
+    ('a -> Context.Named.Declaration.t -> 'a) -> init:'a -> env -> 'a
+  val evaluable_named  : Names.Id.t -> Environ.env -> bool
+end
+
+module UGraph :
+sig
+  type t = UGraph.t
+  val pr_universes : (Univ.Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+end
+
+module Reduction :
+sig
+  exception NotConvertible
+  type conv_pb = Prelude.conv_pb =
+               | CONV
+               | CUMUL
+
+  val whd_all : Environ.env -> Term.constr -> Term.constr
+
+  val whd_betaiotazeta : Environ.env -> Term.constr -> Term.constr
+
+  val is_arity : Environ.env -> Term.types -> bool
+
+  val dest_prod : Environ.env -> Term.types -> Context.Rel.t * Term.types
+
+  type 'a extended_conversion_function = 
+    ?l2r:bool -> ?reds:Names.transparent_state -> Environ.env ->
+    ?evars:((Term.existential->Term.constr option) * UGraph.t) ->
+    'a -> 'a -> unit
+  val conv : Term.constr extended_conversion_function
+end
+
+module Vars :
+sig
+  type substl = Term.constr list
+
+  val substl : substl -> Term.constr -> Term.constr
+
+  val subst1 : Term.constr -> Term.constr -> Term.constr
+
+  val lift : int -> Term.constr -> Term.constr
+
+  val closed0 : Term.constr -> bool
+
+  val closedn : int -> Term.constr -> bool
+
+  val replace_vars : (Names.Id.t * Term.constr) list -> Term.constr -> Term.constr
+
+  val noccurn : int -> Term.constr -> bool
+  val subst_var : Names.Id.t -> Term.constr -> Term.constr
+  val subst_vars : Names.Id.t list -> Term.constr -> Term.constr
+  val substnl : substl -> int -> Term.constr -> Term.constr
+end
+
+module Inductive :
+sig
+  type mind_specif = Declarations.mutual_inductive_body * Declarations.one_inductive_body
+  val type_of_inductive : Environ.env -> mind_specif Univ.puniverses -> Term.types
+  exception SingletonInductiveBecomesProp of Names.Id.t
+  val lookup_mind_specif : Environ.env -> Names.inductive -> mind_specif
+  val find_inductive  : Environ.env -> Term.types -> Term.pinductive * Term.constr list
+end
+
+module Typeops :
+sig
+  val type_of_constant_type : Environ.env -> Declarations.constant_type -> Term.types
+  val type_of_constant_in : Environ.env -> Term.pconstant -> Term.types
+end
+
+module Opaqueproof :
+sig
+  type opaquetab = Opaqueproof.opaquetab
+  type opaque = Opaqueproof.opaque
+  val empty_opaquetab : opaquetab
+  val force_proof : opaquetab -> opaque -> Term.constr
+end
+
+module Modops :
+sig
+  val destr_nofunctor : ('ty,'a) Declarations.functorize -> 'a
+  val add_structure :
+    Names.ModPath.t -> Declarations.structure_body -> Mod_subst.delta_resolver ->
+    Environ.env -> Environ.env
+  val add_module_type : Names.ModPath.t -> Declarations.module_type_body -> Environ.env -> Environ.env
+end
+
+module Entries :
+sig
+  type mutual_inductive_entry = Entries.mutual_inductive_entry
+  type inline = int option
+  type 'a proof_output = Term.constr Univ.in_universe_context_set * 'a
+  type 'a const_entry_body = 'a proof_output Future.computation
+  type 'a definition_entry = 'a Entries.definition_entry =
+                               { const_entry_body   : 'a const_entry_body;
+                                 (* List of section variables *)
+                                 const_entry_secctx : Context.Named.t option;
+                                 (* State id on which the completion of type checking is reported *)
+                                 const_entry_feedback : Stateid.t option;
+                                 const_entry_type        : Term.types option;
+                                 const_entry_polymorphic : bool;
+                                 const_entry_universes   : Univ.universe_context;
+                                 const_entry_opaque      : bool;
+                                 const_entry_inline_code : bool }
+  type parameter_entry = Context.Named.t option * bool * Term.types Univ.in_universe_context * inline 
+  type projection_entry = Entries.projection_entry
+  type 'a constant_entry = 'a Entries.constant_entry =
+                         | DefinitionEntry of 'a definition_entry
+                         | ParameterEntry of parameter_entry
+                         | ProjectionEntry of projection_entry
+end
+
+module Mod_typing :
+sig
+  type 'alg translation =
+    Declarations.module_signature * 'alg * Mod_subst.delta_resolver * Univ.ContextSet.t
+  val translate_mse :
+    Environ.env -> Names.ModPath.t option -> Entries.inline -> Declarations.module_alg_expr ->
+    Declarations.module_alg_expr translation
+end
+
+module Esubst :
+sig
+  type 'a subs = 'a Esubst.subs
+  val subs_id : int -> 'a subs
+end
+
+module CClosure :
+sig
+  type fconstr = CClosure.fconstr
+  type clos_infos = CClosure.clos_infos
+  type table_key = Names.Constant.t Univ.puniverses Names.tableKey
+  type fterm = CClosure.fterm =
+    | FRel of int
+    | FAtom of Term.constr (** Metas and Sorts *)
+    | FCast of fconstr * Term.cast_kind * fconstr
+    | FFlex of table_key
+    | FInd of Names.inductive Univ.puniverses
+    | FConstruct of Names.constructor Univ.puniverses
+    | FApp of fconstr * fconstr array
+    | FProj of Names.Projection.t * fconstr
+    | FFix of Term.fixpoint * fconstr Esubst.subs
+    | FCoFix of Term.cofixpoint * fconstr Esubst.subs
+    | FCaseT of Term.case_info * Term.constr * fconstr * Term.constr array * fconstr Esubst.subs (* predicate and branches are closures *)
+    | FLambda of int * (Names.Name.t * Term.constr) list * Term.constr * fconstr Esubst.subs
+    | FProd of Names.Name.t * fconstr * fconstr
+    | FLetIn of Names.Name.t * fconstr * fconstr * Term.constr * fconstr Esubst.subs
+    | FEvar of Term.existential * fconstr Esubst.subs
+    | FLIFT of int * fconstr
+    | FCLOS of Term.constr * fconstr Esubst.subs
+    | FLOCKED
+  module RedFlags : sig
+    type reds = CClosure.RedFlags.reds
+    type red_kind = CClosure.RedFlags.red_kind
+    val mkflags : red_kind list -> reds
+    val fBETA : red_kind
+    val fCOFIX : red_kind
+    val fCONST : Names.Constant.t -> CClosure.RedFlags.red_kind
+    val fFIX : red_kind
+    val fMATCH : red_kind
+    val fZETA : red_kind
+    val red_add_transparent : reds -> Names.transparent_state -> reds
+  end
+  val mk_clos : fconstr Esubst.subs -> Term.constr -> fconstr
+  val mk_atom : Term.constr -> fconstr
+  val mk_clos_deep :
+    (fconstr Esubst.subs -> Term.constr -> fconstr) ->
+    fconstr Esubst.subs -> Term.constr -> fconstr
+  val mk_red : fterm -> fconstr
+  val all : RedFlags.reds
+  val beta : RedFlags.reds
+  val betaiota : RedFlags.reds
+  val betaiotazeta : RedFlags.reds
+
+  val create_clos_infos : ?evars:(Term.existential -> Term.constr option) -> RedFlags.reds -> Environ.env -> clos_infos
+
+  val whd_val : clos_infos -> fconstr -> Term.constr
+
+  val inject : Term.constr -> fconstr
+
+  val kl : clos_infos -> fconstr -> Term.constr
+  val term_of_fconstr : fconstr -> Term.constr
+end
+
+module Type_errors :
+sig
+  type type_error = Type_errors.type_error
+  exception TypeError of Environ.env * type_error
+end
+
+module Evar :
+sig
+  (** Unique identifier of some {i evar} *)
+  type t = Prelude.evar
+
+  (** Recover the underlying integer. *)
+  val repr : t -> int
+
+  val equal : t -> t -> bool
+
+  (** a set of unique identifiers of some {i evars} *)
+  module Set : module type of struct include Evar.Set end
+end
+
+module Evd :
+sig
+  val string_of_existential : Evar.t -> string
+  type evar_constraint = Prelude.conv_pb * Environ.env * Term.constr * Term.constr
+
+  (* --------------------------------- *)
+
+  (* evar info *)
+
+  module Store :
+  sig
+    type t = Evd.Store.t
+    val empty : t
+  end
+
+  module Filter :
+  sig
+    type t = Evd.Filter.t
+    val repr : t -> bool list option
+  end
+
+  (** This value defines the refinement of a given {i evar} *)
+  type evar_body = Evd.evar_body =
+              | Evar_empty (** given {i evar} was not yet refined *)
+              | Evar_defined of Term.constr (** given {i var} was refined to the indicated term *)
+
+  (** all the information we have concerning some {i evar} *)
+  type evar_info = Evd.evar_info =
+    {
+      evar_concl : Term.constr;
+      evar_hyps : Environ.named_context_val;
+      evar_body : evar_body;
+      evar_filter : Filter.t;
+      evar_source : Evar_kinds.t Loc.located;
+      evar_candidates : Term.constr list option; (* if not None, list of allowed instances *)
+      evar_extra : Store.t
+    }
+
+  val evar_concl : evar_info -> Term.constr
+  val evar_body : evar_info -> evar_body
+  val evar_context : evar_info -> Context.Named.t
+  val instantiate_evar_array : evar_info -> Term.constr -> Term.constr array -> Term.constr
+  val evar_filtered_env : evar_info -> Environ.env
+  val evar_hyps : evar_info -> Environ.named_context_val
+
+  (* ------------------------------------ *)
+
+  (* evar map *)
+
+  type evar_map = Prelude.evar_map
+  type open_constr = evar_map * Term.constr
+
+  type rigid = Prelude.rigid =
+    | UnivRigid
+      | UnivFlexible of bool
+
+                          
+    type 'a freelisted = 'a Evd.freelisted = {
+          rebus : 'a;
+          freemetas : Evd.Metaset.t
+        }
+    type instance_status = Evd.instance_status
+    type clbinding = Evd.clbinding =
+      | Cltyp of Names.Name.t * Term.constr freelisted
+      | Clval of Names.Name.t * (Term.constr freelisted * instance_status) * Term.constr freelisted
+    val empty : evar_map
+    val from_env : Environ.env -> evar_map
+    val find : evar_map -> Evar.t -> evar_info
+    val find_undefined : evar_map -> Prelude.evar -> evar_info
+    val is_defined : evar_map -> Evar.t -> bool
+    val mem : evar_map -> Evar.t -> bool
+    val add : evar_map -> Evar.t -> evar_info -> evar_map
+    val evar_universe_context : evar_map -> UState.t
+    val set_universe_context : evar_map -> UState.t -> evar_map
+    val universes : evar_map -> UGraph.t
+    val define : Evar.t -> Term.constr -> evar_map -> evar_map
+    val fold : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+    val evar_key : Names.Id.t -> evar_map -> Evar.t
+
+    val create_evar_defs : evar_map -> evar_map
+
+    val meta_declare : Prelude.metavariable -> Term.types -> ?name:Names.Name.t -> evar_map -> evar_map
+
+    val clear_metas : evar_map -> evar_map
+
+    (** Allocates a new evar that represents a {i sort}. *)
+    val new_sort_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_map * Sorts.t
+
+    val remove : evar_map -> Evar.t -> evar_map
+    val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> Environ.env ->
+                       evar_map -> Prelude.global_reference -> evar_map * Term.constr
+    val evar_filtered_context : evar_info -> Context.Named.t
+    val fresh_inductive_instance : ?loc:Loc.t -> Environ.env -> evar_map -> Names.inductive -> evar_map * Term.pinductive
+    val fold_undefined : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+
+    val universe_context_set : evar_map -> Univ.ContextSet.t
+    val evar_ident : Prelude.evar -> evar_map -> Names.Id.t option
+    val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
+    val universe_context : ?names:(Names.Id.t Loc.located) list -> evar_map ->
+                           (Names.Id.t * Univ.Level.t) list * Univ.universe_context
+    val nf_constraints : evar_map -> evar_map
+    val from_ctx : UState.t -> evar_map
+
+    val meta_list : evar_map -> (Prelude.metavariable * clbinding) list
+
+    val meta_defined : evar_map -> Prelude.metavariable -> bool
+
+    val meta_name : evar_map -> Prelude.metavariable -> Names.Name.t
+
+    module MonadR :
+    sig
+      module List :
+      sig
+        val map_right : ('a -> evar_map -> evar_map * 'b) -> 'a list -> evar_map -> evar_map * 'b list
+      end
+    end
+
+  type 'a sigma = 'a Evd.sigma = {
+        it : 'a ;
+        sigma : evar_map
+      }
+
+  val sig_sig : 'a sigma -> evar_map
+
+  val sig_it  : 'a sigma -> 'a
+
+  type 'a in_evar_universe_context = 'a * UState.t
+
+  val univ_flexible : rigid
+  val univ_flexible_alg : rigid
+  val empty_evar_universe_context : UState.t
+  val union_evar_universe_context : UState.t -> UState.t -> UState.t
+  val merge_universe_context : evar_map -> UState.t -> evar_map
+
+  type unsolvability_explanation = Evd.unsolvability_explanation =
+                                 | SeveralInstancesFound of int
+    
+  module Metaset : module type of struct include Evd.Metaset end
+                                  with type elt = Prelude.metavariable
+
+  (** Return {i ids} of all {i evars} that occur in a given term. *)
+  val evars_of_term : Term.constr -> Evar.Set.t
+
+  val evar_universe_context_of : Univ.ContextSet.t -> UState.t
+
+  val evar_context_universe_context : UState.t -> Univ.UContext.t
+
+  type evar_universe_context = UState.t
+
+  val existential_opt_value : evar_map -> Term.existential -> Term.constr option
+  val existential_value : evar_map -> Term.existential -> Term.constr
+
+  exception NotInstantiatedEvar
+
+  val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> Environ.env -> evar_map -> Sorts.family -> evar_map * Sorts.t
+end
+
+module Namegen :
+sig
+  (** *)
+
+  (** [next_ident_away original_id unwanted_ids] returns a new identifier as close as possible
+      to the [original_id] while avoiding all [unwanted_ids].
+
+      In particular:
+      {ul {- if [original_id] does not appear in the list of [unwanted_ids], then [original_id] is returned.}
+          {- if [original_id] appears in the list of [unwanted_ids],
+             then this function returns a new id that:
+             {ul {- has the same {i root} as the [original_id],}
+                 {- does not occur in the list of [unwanted_ids],}
+                 {- has the smallest possible {i subscript}.}}}}
+
+      where by {i subscript} of some identifier we mean last part of it that is composed
+      only from (decimal) digits and by {i root} of some identifier we mean
+      the whole identifier except for the {i subscript}.
+
+      E.g. if we take [foo42], then [42] is the {i subscript}, and [foo] is the root. *)
+  val next_ident_away : Names.Id.t -> Names.Id.t list -> Names.Id.t
+
+  val hdchar : Environ.env -> Evd.evar_map -> EConstr.types -> string
+  val id_of_name_using_hdchar : Environ.env -> Evd.evar_map -> EConstr.types -> Names.Name.t -> Names.Id.t
+  val next_ident_away_in_goal : Names.Id.t -> Names.Id.t list -> Names.Id.t
+  val default_dependent_ident : Names.Id.t
+  val next_global_ident_away : Names.Id.t -> Names.Id.t list -> Names.Id.t
+  val rename_bound_vars_as_displayed :
+    Evd.evar_map -> Names.Id.t list -> Names.Name.t list -> EConstr.types -> EConstr.types
+end
+
+module Safe_typing :
+sig
+  type private_constants = Safe_typing.private_constants
+  val mk_pure_proof : Term.constr -> Safe_typing.private_constants Entries.proof_output
+end
+
+module Proofview_monad :
+sig
+  type lazy_msg = unit -> Pp.std_ppcmds
+  module Info :
+  sig
+    type tree = Proofview_monad.Info.tree
+  end
+end
+
+(* All items in the Goal modules are deprecated. *)
+module Goal :
+sig
+  type goal = Evar.t
+
+  val pr_goal : goal -> Pp.std_ppcmds
+
+  module V82 :
+  sig
+    val new_goal_with : Evd.evar_map -> goal -> Context.Named.t -> goal Evd.sigma
+
+    val nf_hyps : Evd.evar_map -> goal -> Environ.named_context_val
+
+    val env : Evd.evar_map -> goal -> Environ.env
+
+    val concl : Evd.evar_map -> goal -> EConstr.constr
+
+    val mk_goal : Evd.evar_map ->
+                  Environ.named_context_val ->
+                  EConstr.constr ->
+                  Evd.Store.t ->
+                  goal * EConstr.constr * Evd.evar_map
+
+    val extra : Evd.evar_map -> goal -> Evd.Store.t
+
+    val partial_solution_to : Evd.evar_map -> goal -> goal -> EConstr.constr -> Evd.evar_map
+
+    val partial_solution : Evd.evar_map -> goal -> EConstr.constr -> Evd.evar_map
+
+    val hyps : Evd.evar_map -> goal -> Environ.named_context_val
+
+    val abstract_type : Evd.evar_map -> goal -> EConstr.types
+  end
+end
+
+module Proofview :
+sig
+  type proofview = Proofview.proofview
+  type entry = Proofview.entry
+  type +'a tactic = 'a Proofview.tactic
+  type telescope = Proofview.telescope =
+    | TNil of Evd.evar_map
+    | TCons of Environ.env * Evd.evar_map * EConstr.types * (Evd.evar_map -> EConstr.constr -> telescope)
+  module NonLogical :
+  sig
+    type +'a t = 'a Proofview.NonLogical.t
+    val make : (unit -> 'a) -> 'a t
+    val return : 'a -> 'a t
+    val ( >> ) : unit t -> 'a t -> 'a t
+    val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
+    val print_char : char -> unit t
+    val print_debug : Pp.std_ppcmds -> unit t
+    val print_warning : Pp.std_ppcmds -> unit t
+    val print_notice : Pp.std_ppcmds -> unit t
+    val print_info : Pp.std_ppcmds -> unit t
+    val run : 'a t -> 'a
+    type 'a ref = 'a Proofview.NonLogical.ref
+    val ref : 'a -> 'a ref t
+    val ( := ) : 'a ref -> 'a -> unit t
+    val ( ! ) : 'a ref -> 'a t
+    val raise : ?info:Exninfo.info -> exn -> 'a t
+    val catch : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t
+    val read_line : string t
+  end
+  val proofview : proofview -> Goal.goal list * Evd.evar_map
+  val cycle : int -> unit tactic
+  val swap : int -> int -> unit tactic
+  val revgoals : unit tactic
+  val give_up : unit tactic
+  val init : Evd.evar_map -> (Environ.env * EConstr.types) list -> entry * proofview
+  val shelve : unit tactic
+  val tclZERO : ?info:Exninfo.info -> exn -> 'a tactic
+  val tclUNIT : 'a -> 'a tactic
+  val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
+  val tclORELSE : 'a tactic -> (Util.iexn -> 'a tactic) -> 'a tactic
+  val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
+  val tclEVARMAP : Evd.evar_map tactic
+  val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
+  val tclLIFT : 'a NonLogical.t -> 'a tactic
+  val tclOR : 'a tactic -> (Exninfo.iexn -> 'a tactic) -> 'a tactic
+  val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (Exninfo.iexn -> 'b tactic) -> 'b tactic
+  val tclINDEPENDENT : unit tactic -> unit tactic
+  val tclDISPATCH : unit tactic list -> unit tactic
+  val tclEXTEND : unit tactic list -> unit tactic -> unit tactic list -> unit tactic
+  val tclBREAK : (Exninfo.iexn -> Exninfo.iexn option) -> 'a tactic -> 'a tactic
+  val tclENV : Environ.env tactic
+  val tclONCE : 'a tactic -> 'a tactic
+  val tclPROGRESS : 'a tactic -> 'a tactic
+  val shelve_unifiable : unit tactic
+  val apply : Environ.env -> 'a tactic -> proofview -> 'a
+                                                     * proofview
+                                                     * (bool*Goal.goal list*Goal.goal list)
+                                                     * Proofview_monad.Info.tree
+  val numgoals : int tactic
+  val with_shelf : 'a tactic -> (Goal.goal list * 'a) tactic
+
+  module Unsafe :
+  sig
+    val tclEVARS : Evd.evar_map -> unit tactic
+
+    val tclGETGOALS : Goal.goal list tactic
+
+    val tclSETGOALS : Goal.goal list -> unit tactic
+
+    val tclNEWGOALS : Goal.goal list -> unit tactic
+  end
+
+  module Goal :
+  sig
+    type 'a t = 'a Proofview.Goal.t
+    val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
+    val hyps : 'a t -> EConstr.named_context
+    val nf_enter : ([ `NF ] t -> unit tactic) -> unit tactic
+    val enter_one : ([ `LZ ] t -> 'a tactic) -> 'a tactic
+    val concl : 'a t -> EConstr.constr
+    val sigma : 'a t -> Evd.evar_map
+    val goal : [ `NF ] t -> Evar.t
+    val env : 'a t -> Environ.env
+    val assume : 'a t -> [ `NF ] t
+  end
+
+  module Notations :
+  sig
+    val (>>=) : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
+    val (<*>) : unit tactic -> 'a tactic -> 'a tactic
+    val (<+>) : 'a tactic -> 'a tactic -> 'a tactic
+  end
+  module V82 :
+  sig
+    type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
+
+    val tactic : tac -> unit tactic
+
+    val of_tactic : 'a tactic -> tac
+
+    val nf_evar_goals : unit tactic
+
+    val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
+
+    val catchable_exception : exn -> bool
+  end
+  module Trace :
+  sig
+    val name_tactic : Proofview_monad.lazy_msg -> 'a tactic -> 'a tactic
+    val log : Proofview_monad.lazy_msg -> unit tactic
+  end
+end
+
+module Ftactic :
+sig
+  type +'a focus = 'a Ftactic.focus
+  type +'a t = 'a focus Proofview.tactic
+  val return : 'a -> 'a t
+  val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
+  val enter : ([ `LZ ] Proofview.Goal.t -> 'a t) -> 'a t
+  val nf_enter : ([ `NF ] Proofview.Goal.t -> 'a t) -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+  val lift : 'a Proofview.tactic -> 'a t
+  val with_env : 'a t -> (Environ.env * 'a) t
+  module List :
+  sig
+    val map : ('a -> 'b t) -> 'a list -> 'b list t
+    val map_right : ('a -> 'b t) -> 'a list -> 'b list t
+  end
+  module Notations :
+  sig
+    val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+    val (<*>) : unit t -> 'a t -> 'a t
+  end
+end
+
+module Evarutil :
+sig
+  val e_new_global : Evd.evar_map ref -> Globnames.global_reference -> EConstr.constr
+
+  val nf_evars_and_universes : Evd.evar_map -> Evd.evar_map * (Term.constr -> Term.constr)
+  val nf_evar : Evd.evar_map -> EConstr.constr -> EConstr.constr
+  val nf_evar_info : Evd.evar_map -> Evd.evar_info -> Evd.evar_info
+
+  val mk_new_meta : unit -> EConstr.constr
+
+  (** [new_meta] is a generator of unique meta variables *)
+  val new_meta : unit -> Prelude.metavariable
+
+  val new_Type : ?rigid:Evd.rigid -> Environ.env -> Evd.evar_map -> Evd.evar_map * EConstr.constr
+  val new_global : Evd.evar_map -> Prelude.global_reference -> Evd.evar_map * EConstr.constr
+
+  val new_evar :
+    Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
+    ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
+    ?naming:Misctypes.intro_pattern_naming_expr ->
+    ?principal:bool -> EConstr.types -> Evd.evar_map * EConstr.constr
+
+  val new_evar_instance :
+    Environ.named_context_val -> Evd.evar_map -> EConstr.types -> 
+    ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t -> ?candidates:EConstr.constr list ->
+    ?store:Evd.Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
+    ?principal:bool ->
+    EConstr.constr list -> Evd.evar_map * EConstr.constr
+
+  val clear_hyps_in_evi : Environ.env -> Evd.evar_map ref -> Environ.named_context_val ->
+                          EConstr.types -> Names.Id.Set.t -> Environ.named_context_val * EConstr.types
+
+  exception ClearDependencyError of Names.Id.t * Evarutil.clear_dependency_error
+  val undefined_evars_of_term : Evd.evar_map -> EConstr.constr -> Evar.Set.t
+  val e_new_evar :
+      Environ.env -> Evd.evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
+      ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
+      ?naming:Misctypes.intro_pattern_naming_expr ->
+      ?principal:bool -> EConstr.types -> EConstr.constr
+  val new_type_evar :
+    Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
+    ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> Evd.rigid ->
+    Evd.evar_map * (EConstr.constr * Term.sorts)
+  val nf_evars_universes : Evd.evar_map -> Term.constr -> Term.constr
+  val safe_evar_value : Evd.evar_map -> Term.existential -> Term.constr option
+  val evd_comb1 : (Evd.evar_map -> 'b -> Evd.evar_map * 'a) -> Evd.evar_map ref -> 'b -> 'a
+end
+
+module Geninterp :
+sig
+  module Val :
+  sig
+    type 'a typ = 'a Geninterp.Val.typ
+    type t = Geninterp.Val.t = Dyn : 'a typ * 'a -> t
+    type 'a tag = 'a Geninterp.Val.tag =
+                | Base : 'a typ -> 'a tag
+                | List : 'a tag -> 'a list tag
+                | Opt : 'a tag -> 'a option tag
+                | Pair : 'a tag * 'b tag -> ('a * 'b) tag
+    val create : string -> 'a typ
+    val pr : 'a typ -> Pp.std_ppcmds
+    val eq : 'a typ -> 'b typ -> ('a, 'b) CSig.eq option
+    val typ_list : t list typ
+    val typ_opt : t option typ
+    val typ_pair : (t * t) typ
+    val repr : 'a typ -> string
+    val inject : 'a tag -> 'a -> t
+  end
+  module TacStore :
+  sig
+    type t = Geninterp.TacStore.t
+    type 'a field = 'a Geninterp.TacStore.field
+    val empty : t
+    val field : unit -> 'a field
+    val get : t -> 'a field -> 'a option
+    val set : t -> 'a field -> 'a -> t
+    val remove : t -> 'a field -> t
+    val merge : t -> t -> t
+  end
+  type interp_sign = Geninterp.interp_sign =
+                       {lfun : Val.t Names.Id.Map.t;
+                        extra : TacStore.t }
+  type ('glb, 'top) interp_fun = interp_sign -> 'glb -> 'top Ftactic.t
+  val register_interp0 :
+    ('raw, 'glb, 'top) Genarg.genarg_type -> ('glb, Val.t) interp_fun -> unit
+  val register_val0 : ('raw, 'glb, 'top) Genarg.genarg_type -> 'top Val.tag option -> unit
+  val val_tag : 'a Genarg.typed_abstract_argument_type -> 'a Val.tag
+  val interp : ('raw, 'glb, 'top) Genarg.genarg_type -> ('glb, Val.t) interp_fun
+end
+
+module Globnames :
+sig
+  type global_reference = Globnames.global_reference =
+    | VarRef of Names.Id.t
+    | ConstRef of Names.Constant.t
+    | IndRef of Names.inductive
+    | ConstructRef of Names.constructor
+
+  type extended_global_reference = Globnames.extended_global_reference =
+                                 | TrueGlobal of global_reference
+                                 | SynDef of Names.KerName.t
+
+  (* Long term: change implementation so that only 1 kind of order is needed.
+   * Today: _env ones are fine grained, which one to pick depends.  Eg.
+   *   - conversion rule are implemented by the non_env ones
+   *   - pretty printing (of user provided names/aliases) are implemented by
+   *     the _env ones
+   *)
+  module Refset : module type of struct include Globnames.Refset end
+  module Refmap : module type of struct include Globnames.Refmap end
+  module Refset_env : module type of struct include Globnames.Refset_env end
+  module Refmap_env : module type of struct include Globnames.Refmap_env end
+  module RefOrdered :
+  sig
+    type t = global_reference
+    val compare : t -> t -> int
+  end
+
+  val pop_global_reference : global_reference -> global_reference
+  val eq_gr : global_reference -> global_reference -> bool
+  val destIndRef : global_reference -> Names.inductive
+
+  val encode_mind : Names.DirPath.t -> Names.Id.t -> Names.MutInd.t
+  val encode_con : Names.DirPath.t -> Names.Id.t -> Names.Constant.t
+
+  val global_of_constr : Term.constr -> global_reference
+
+  val subst_global : Mod_subst.substitution -> global_reference -> global_reference * Term.constr
+  val destConstructRef : Globnames.global_reference -> Names.constructor
+
+  val reference_of_constr : Term.constr -> global_reference
+  val is_global : global_reference -> Term.constr -> bool
+end
+
+module Evar_kinds :
+sig
+  type obligation_definition_status = Evar_kinds.obligation_definition_status =
+                                    | Define of bool
+                                    | Expand
+
+  type matching_var_kind = Evar_kinds.matching_var_kind =
+    | FirstOrderPatVar of Names.Id.t
+    | SecondOrderPatVar of Names.Id.t
+
+  type t = Evar_kinds.t =
+         | ImplicitArg of Globnames.global_reference * (int * Names.Id.t option)
+                          * bool (** Force inference *)
+         | BinderType of Names.Name.t
+         | NamedHole of Names.Id.t (* coming from some ?[id] syntax *)
+         | QuestionMark of obligation_definition_status * Names.Name.t
+         | CasesType of bool (* true = a subterm of the type *)
+         | InternalHole
+         | TomatchTypeParameter of Names.inductive * int
+         | GoalEvar
+         | ImpossibleCase
+         | MatchingVar of matching_var_kind
+         | VarInstance of Names.Id.t
+         | SubEvar of Prelude.evar
+end
+
+module Decl_kinds :
+sig
+  type polymorphic = bool
+  type recursivity_kind = Decl_kinds.recursivity_kind =
+    | Finite
+    | CoFinite
+    | BiFinite
+  type locality = Decl_kinds.locality =
+    | Discharge
+    | Local
+    | Global
+  type definition_object_kind = Decl_kinds.definition_object_kind =
+    | Definition
+    | Coercion
+    | SubClass
+    | CanonicalStructure
+    | Example
+    | Fixpoint
+    | CoFixpoint
+    | Scheme
+    | StructureComponent
+    | IdentityCoercion
+    | Instance
+    | Method
+  type theorem_kind = Decl_kinds.theorem_kind =
+    | Theorem
+    | Lemma
+    | Fact
+    | Remark
+    | Property
+    | Proposition
+    | Corollary
+  type goal_object_kind = Decl_kinds.goal_object_kind =
+    | DefinitionBody of definition_object_kind
+    | Proof of theorem_kind
+  type goal_kind = locality * polymorphic * goal_object_kind
+  type assumption_object_kind = Decl_kinds.assumption_object_kind =
+    | Definitional
+    | Logical
+    | Conjectural
+  type logical_kind = Decl_kinds.logical_kind =
+    | IsAssumption of assumption_object_kind
+    | IsDefinition of definition_object_kind
+    | IsProof of theorem_kind
+  type binding_kind = Decl_kinds.binding_kind =
+    | Explicit
+    | Implicit
+  type private_flag = bool
+  type definition_kind = locality * polymorphic * definition_object_kind
+end
+
+module Misctypes :
+sig
+  type evars_flag = bool
+  type clear_flag = bool option
+  type advanced_flag = bool
+  type rec_flag = bool
+
+  type 'a or_by_notation = 'a Misctypes.or_by_notation =
+    | AN of 'a
+    | ByNotation of (string * string option) Loc.located
+  type 'a or_var = 'a Misctypes.or_var =
+                 | ArgArg of 'a
+                 | ArgVar of Names.Id.t Loc.located
+  type 'a and_short_name = 'a * Names.Id.t Loc.located option
+  type glob_level = Misctypes.glob_level
+  type 'a glob_sort_gen = 'a Misctypes.glob_sort_gen =
+    | GProp
+    | GSet
+    | GType of 'a
+  type sort_info = Names.Name.t Loc.located list
+  type glob_sort = sort_info glob_sort_gen
+  type 'a cast_type = 'a Misctypes.cast_type =
+                    | CastConv of 'a
+                    | CastVM of 'a
+                    | CastCoerce
+                    | CastNative of 'a
+  type 'constr intro_pattern_expr = 'constr Misctypes.intro_pattern_expr =
+    | IntroForthcoming of bool
+    | IntroNaming of intro_pattern_naming_expr
+    | IntroAction of 'constr intro_pattern_action_expr
+   and intro_pattern_naming_expr = Misctypes.intro_pattern_naming_expr =
+     | IntroIdentifier of Names.Id.t
+     | IntroFresh of Names.Id.t
+     | IntroAnonymous
+   and 'constr intro_pattern_action_expr = 'constr Misctypes.intro_pattern_action_expr =
+     | IntroWildcard
+     | IntroOrAndPattern of 'constr or_and_intro_pattern_expr
+     | IntroInjection of ('constr intro_pattern_expr) Loc.located list
+     | IntroApplyOn of 'constr Loc.located * 'constr intro_pattern_expr Loc.located
+     | IntroRewrite of bool
+   and 'constr or_and_intro_pattern_expr = 'constr Misctypes.or_and_intro_pattern_expr =
+     | IntroOrPattern of ('constr intro_pattern_expr) Loc.located list list
+     | IntroAndPattern of ('constr intro_pattern_expr) Loc.located list
+  type quantified_hypothesis = Misctypes.quantified_hypothesis =
+    | AnonHyp of int
+    | NamedHyp of Names.Id.t
+  type 'a explicit_bindings = (quantified_hypothesis * 'a) Loc.located list
+  type 'a bindings = 'a Misctypes.bindings =
+    | ImplicitBindings of 'a list
+    | ExplicitBindings of 'a explicit_bindings
+    | NoBindings
+  type 'a with_bindings = 'a * 'a bindings
+  type 'a core_destruction_arg = 'a Misctypes.core_destruction_arg =
+    | ElimOnConstr of 'a
+    | ElimOnIdent of Names.Id.t Loc.located
+    | ElimOnAnonHyp of int
+  type inversion_kind = Misctypes.inversion_kind =
+    | SimpleInversion
+    | FullInversion
+    | FullInversionClear
+  type multi = Misctypes.multi =
+    | Precisely of int
+    | UpTo of int
+    | RepeatStar
+    | RepeatPlus
+  type 'id move_location = 'id Misctypes.move_location =
+    | MoveAfter of 'id
+    | MoveBefore of 'id
+    | MoveFirst
+    | MoveLast
+  type 'a destruction_arg = clear_flag * 'a core_destruction_arg
+end
+
+module Pattern :
+sig
+  type case_info_pattern = Pattern.case_info_pattern
+  type constr_pattern = Pattern.constr_pattern =
+    | PRef of Globnames.global_reference
+    | PVar of Names.Id.t
+    | PEvar of Evar.t * constr_pattern array
+    | PRel of int
+    | PApp of constr_pattern * constr_pattern array
+    | PSoApp of Names.Id.t * constr_pattern list
+    | PProj of Names.Projection.t * constr_pattern
+    | PLambda of Names.Name.t * constr_pattern * constr_pattern
+    | PProd of Names.Name.t * constr_pattern * constr_pattern
+    | PLetIn of Names.Name.t * constr_pattern * constr_pattern option * constr_pattern
+    | PSort of Misctypes.glob_sort
+    | PMeta of Names.Id.t option
+    | PIf of constr_pattern * constr_pattern * constr_pattern
+    | PCase of case_info_pattern * constr_pattern * constr_pattern *
+                 (int * bool list * constr_pattern) list (** index of constructor, nb of args *)
+    | PFix of Term.fixpoint
+    | PCoFix of Term.cofixpoint
+  type constr_under_binders = Names.Id.t list * EConstr.constr
+  type extended_patvar_map = constr_under_binders Names.Id.Map.t
+  type patvar_map = EConstr.constr Names.Id.Map.t
+end
+
+module Constrexpr :
+sig
+  type binder_kind = Constrexpr.binder_kind =
+                   | Default of Decl_kinds.binding_kind
+                   | Generalized of Decl_kinds.binding_kind * Decl_kinds.binding_kind * bool
+  type explicitation = Constrexpr.explicitation =
+                     | ExplByPos of int * Names.Id.t option
+                     | ExplByName of Names.Id.t
+  type prim_token = Constrexpr.prim_token =
+                  | Numeral of Bigint.bigint
+                  | String of string
+  type notation = string
+  type instance_expr = Misctypes.glob_level list
+  type proj_flag = int option
+  type abstraction_kind = Constrexpr.abstraction_kind =
+                        | AbsLambda
+                        | AbsPi
+  type cases_pattern_expr_r = Constrexpr.cases_pattern_expr_r =
+    | CPatAlias of cases_pattern_expr * Names.Id.t
+    | CPatCstr  of Prelude.reference
+      * cases_pattern_expr list option * cases_pattern_expr list
+    (** [CPatCstr (_, c, Some l1, l2)] represents (@c l1) l2 *)
+    | CPatAtom of Prelude.reference option
+    | CPatOr   of cases_pattern_expr list
+    | CPatNotation of notation * cases_pattern_notation_substitution
+                      * cases_pattern_expr list
+    | CPatPrim   of prim_token
+    | CPatRecord of (Prelude.reference * cases_pattern_expr) list
+    | CPatDelimiters of string * cases_pattern_expr
+    | CPatCast   of cases_pattern_expr * constr_expr
+   and cases_pattern_expr = cases_pattern_expr_r CAst.t
+
+   and cases_pattern_notation_substitution =
+     cases_pattern_expr list * cases_pattern_expr list list
+
+   and constr_expr_r = Constrexpr.constr_expr_r =
+     | CRef     of Prelude.reference * instance_expr option
+     | CFix     of Names.Id.t Loc.located * fix_expr list
+     | CCoFix   of Names.Id.t Loc.located * cofix_expr list
+     | CProdN   of binder_expr list * constr_expr
+     | CLambdaN of binder_expr list * constr_expr
+     | CLetIn   of Names.Name.t Loc.located * constr_expr * constr_expr option * constr_expr
+     | CAppExpl of (proj_flag * Prelude.reference * instance_expr option) * constr_expr list
+     | CApp     of (proj_flag * constr_expr) *
+                   (constr_expr * explicitation Loc.located option) list
+     | CRecord  of (Prelude.reference * constr_expr) list
+     | CCases of Term.case_style
+               * constr_expr option
+               * case_expr list
+               * branch_expr list
+     | CLetTuple of Names.Name.t Loc.located list * (Names.Name.t Loc.located option * constr_expr option) *
+                    constr_expr * constr_expr
+     | CIf of constr_expr * (Names.Name.t Loc.located option * constr_expr option)
+            * constr_expr * constr_expr
+     | CHole   of Evar_kinds.t option * Misctypes.intro_pattern_naming_expr * Genarg.raw_generic_argument option
+     | CPatVar of Names.Id.t
+     | CEvar   of Glob_term.existential_name * (Names.Id.t * constr_expr) list
+     | CSort   of Misctypes.glob_sort
+     | CCast   of constr_expr * constr_expr Misctypes.cast_type
+     | CNotation of notation * constr_notation_substitution
+     | CGeneralization of Decl_kinds.binding_kind * abstraction_kind option * constr_expr
+     | CPrim of prim_token
+     | CDelimiters of string * constr_expr
+   and constr_expr = constr_expr_r CAst.t
+
+   and case_expr = constr_expr * Names.Name.t Loc.located option * cases_pattern_expr option
+
+   and branch_expr =
+     (cases_pattern_expr list Loc.located list * constr_expr) Loc.located
+
+   and binder_expr =
+     Names.Name.t Loc.located list * binder_kind * constr_expr
+
+   and fix_expr =
+     Names.Id.t Loc.located * (Names.Id.t Loc.located option * recursion_order_expr) *
+       local_binder_expr list * constr_expr * constr_expr
+
+   and cofix_expr =
+     Names.Id.t Loc.located * local_binder_expr list * constr_expr * constr_expr
+
+   and recursion_order_expr = Constrexpr.recursion_order_expr =
+                            | CStructRec
+                              | CWfRec of constr_expr
+                            | CMeasureRec of constr_expr * constr_expr option
+
+   and local_binder_expr = Constrexpr.local_binder_expr =
+     | CLocalAssum   of Names.Name.t Loc.located list * binder_kind * constr_expr
+     | CLocalDef     of Names.Name.t Loc.located * constr_expr * constr_expr option
+     | CLocalPattern of (cases_pattern_expr * constr_expr option) Loc.located
+
+   and constr_notation_substitution =
+     constr_expr list *
+       constr_expr list list *
+         local_binder_expr list list
+
+  type typeclass_constraint = (Names.Name.t Loc.located * Names.Id.t Loc.located list option) * Decl_kinds.binding_kind * constr_expr
+  type constr_pattern_expr = constr_expr
+end
+
+module Goptions :
+sig
+  type option_name = string list
+  type 'a option_sig = 'a Goptions.option_sig =
+    {
+      optdepr  : bool;
+      optname  : string;
+      optkey   : option_name;
+      optread  : unit -> 'a;
+      optwrite : 'a -> unit
+    }
+  type 'a write_function = 'a Goptions.write_function
+  val declare_bool_option  : ?preprocess:(bool -> bool) ->
+                             bool option_sig   -> bool write_function
+  val declare_int_option   : ?preprocess:(int option -> int option) ->
+                             int option option_sig -> int option write_function
+  val declare_string_option: ?preprocess:(string -> string) ->
+                             string option_sig -> string write_function
+  val set_bool_option_value : option_name -> bool -> unit
+end
+
+module Locus :
+sig
+  type 'a occurrences_gen = 'a Locus.occurrences_gen =
+  | AllOccurrences
+  | AllOccurrencesBut of 'a list (** non-empty *)
+  | NoOccurrences
+  | OnlyOccurrences of 'a list (** non-empty *)
+  type occurrences = int occurrences_gen
+  type occurrences_expr = (int Misctypes.or_var) occurrences_gen
+  type 'a with_occurrences = occurrences_expr * 'a
+  type hyp_location_flag = Locus.hyp_location_flag =
+                             InHyp | InHypTypeOnly | InHypValueOnly
+  type 'a hyp_location_expr = 'a with_occurrences * hyp_location_flag
+  type 'id clause_expr = 'id Locus.clause_expr =
+  { onhyps : 'id hyp_location_expr list option;
+    concl_occs : occurrences_expr }
+  type clause = Names.Id.t clause_expr
+  type hyp_location = Names.Id.t * hyp_location_flag
+  type goal_location = hyp_location option
+end
+
+module Genredexpr :
+sig
+
+  (** The parsing produces initially a list of [red_atom] *)
+
+  type 'a red_atom = 'a Genredexpr.red_atom =
+    | FBeta
+    | FMatch
+    | FFix
+    | FCofix
+    | FZeta
+    | FConst of 'a list
+    | FDeltaBut of 'a list
+
+  (** This list of atoms is immediately converted to a [glob_red_flag] *)
+
+  type 'a glob_red_flag = 'a Genredexpr.glob_red_flag = {
+      rBeta : bool;
+      rMatch : bool;
+      rFix : bool;
+      rCofix : bool;
+      rZeta : bool;
+      rDelta : bool; (** true = delta all but rConst; false = delta only on rConst*)
+      rConst : 'a list
+    }
+
+  (** Generic kinds of reductions *)
+
+  type ('a,'b,'c) red_expr_gen = ('a,'b,'c) Genredexpr.red_expr_gen =
+    | Red of bool
+    | Hnf
+    | Simpl of 'b glob_red_flag*('b,'c) Util.union Locus.with_occurrences option
+    | Cbv of 'b glob_red_flag
+    | Cbn of 'b glob_red_flag
+    | Lazy of 'b glob_red_flag
+    | Unfold of 'b Locus.with_occurrences list
+    | Fold of 'a list
+    | Pattern of 'a Locus.with_occurrences list
+    | ExtraRedExpr of string
+    | CbvVm of ('b,'c) Util.union Locus.with_occurrences option
+    | CbvNative of ('b,'c) Util.union Locus.with_occurrences option
+
+  type ('a,'b,'c) may_eval = ('a,'b,'c) Genredexpr.may_eval =
+    | ConstrTerm of 'a
+    | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
+    | ConstrContext of Names.Id.t Loc.located * 'a
+    | ConstrTypeOf of 'a
+
+  type r_trm = Constrexpr.constr_expr
+  type r_pat = Constrexpr.constr_pattern_expr
+  type r_cst = Prelude.reference Misctypes.or_by_notation
+  type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
+end
+
+module Vernacexpr :
+sig
+  type instance_flag  = bool option
+  type coercion_flag = bool
+  type inductive_flag = Decl_kinds.recursivity_kind
+  type lname = Names.Name.t Loc.located
+  type lident = Names.Id.t Loc.located
+  type opacity_flag = Vernacexpr.opacity_flag =
+                    | Opaque of lident list option
+                    | Transparent
+  type locality_flag = bool
+  type inductive_kind = Vernacexpr.inductive_kind =
+    | Inductive_kw | CoInductive | Variant | Record | Structure | Class of bool
+  type 'a hint_info_gen = 'a Vernacexpr.hint_info_gen =
+    { hint_priority : int option;
+      hint_pattern : 'a option }
+  type vernac_type = Vernacexpr.vernac_type =
+                   | VtStartProof of vernac_start
+                   | VtSideff of vernac_sideff_type
+                   | VtQed of vernac_qed_type
+                   | VtProofStep of proof_step
+                   | VtProofMode of string
+                   | VtQuery of vernac_part_of_script * report_with
+                   | VtStm of vernac_control * vernac_part_of_script
+                   | VtUnknown
+   and report_with = Stateid.t * Feedback.route_id
+   and vernac_qed_type = Vernacexpr.vernac_qed_type =
+                       | VtKeep
+                         | VtKeepAsAxiom
+                         | VtDrop
+   and vernac_start = string * opacity_guarantee * Names.Id.t list
+   and vernac_sideff_type = Names.Id.t list
+   and vernac_part_of_script = bool
+   and vernac_control = Vernacexpr.vernac_control =
+                      | VtWait
+                        | VtJoinDocument
+                        | VtBack of Stateid.t
+   and opacity_guarantee = Vernacexpr.opacity_guarantee =
+                         | GuaranteesOpacity
+                           | Doesn'tGuaranteeOpacity
+   and proof_step = Vernacexpr.proof_step = {
+         parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
+         proof_block_detection : proof_block_name option
+       }
+   and solving_tac = bool
+   and anon_abstracting_tac = bool
+   and proof_block_name = string
+  type vernac_when = Vernacexpr.vernac_when = 
+                   | VtNow
+                   | VtLater
+  type verbose_flag = bool
+
+  type obsolete_locality = bool
+
+  type lstring = Vernacexpr.lstring
+  type 'a with_coercion = coercion_flag * 'a
+  type scope_name = string
+  type decl_notation = lstring * Constrexpr.constr_expr * scope_name option
+  type constructor_expr = (lident * Constrexpr.constr_expr) with_coercion
+  type 'a with_notation = 'a * decl_notation list
+  type local_decl_expr = Vernacexpr.local_decl_expr =
+    | AssumExpr of lname * Constrexpr.constr_expr
+    | DefExpr of lname * Constrexpr.constr_expr * Constrexpr.constr_expr option
+  type 'a with_priority = 'a * int option
+  type 'a with_instance = instance_flag * 'a
+  type constructor_list_or_record_decl_expr = Vernacexpr.constructor_list_or_record_decl_expr =
+    | Constructors of constructor_expr list
+    | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
+  type plident = lident * lident list option
+  type inductive_expr = plident with_coercion * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * inductive_kind * constructor_list_or_record_decl_expr
+
+  type syntax_modifier = Vernacexpr.syntax_modifier
+  type class_rawexpr = Vernacexpr.class_rawexpr
+  type definition_expr = Vernacexpr.definition_expr
+  type hint_info_expr = Constrexpr.constr_pattern_expr hint_info_gen
+  type proof_expr = Vernacexpr.proof_expr
+  type proof_end = Vernacexpr.proof_end =
+    | Admitted
+    | Proved of opacity_flag * lident option
+  type inline = Vernacexpr.inline
+  type fixpoint_expr = plident * (Names.Id.t Loc.located option * Constrexpr.recursion_order_expr) * Constrexpr.local_binder_expr list * Constrexpr.constr_expr * Constrexpr.constr_expr option
+  type cofixpoint_expr = Vernacexpr.cofixpoint_expr
+  type scheme = Vernacexpr.scheme
+  type section_subset_expr = Vernacexpr.section_subset_expr
+  type module_binder = Vernacexpr.module_binder
+  type vernac_argument_status = Vernacexpr.vernac_argument_status
+  type vernac_implicit_status = Vernacexpr.vernac_implicit_status
+  type module_ast_inl = Vernacexpr.module_ast_inl
+  type 'a module_signature = 'a Vernacexpr.module_signature
+  type extend_name = string * int
+  type simple_binder = Vernacexpr.simple_binder
+  type option_value = Vernacexpr.option_value
+  type showable = Vernacexpr.showable
+  type bullet = Vernacexpr.bullet
+  type stm_vernac = Vernacexpr.stm_vernac
+  type comment = Vernacexpr.comment
+  type register_kind = Vernacexpr.register_kind
+  type locatable = Vernacexpr.locatable
+  type search_restriction = Vernacexpr.search_restriction
+  type searchable = Vernacexpr.searchable
+  type printable = Vernacexpr.printable
+  type option_ref_value = Vernacexpr.option_ref_value
+  type onlyparsing_flag = Vernacexpr.onlyparsing_flag
+  type reference_or_constr = Vernacexpr.reference_or_constr
+  type hint_mode = Vernacexpr.hint_mode
+  type hints_expr = Vernacexpr.hints_expr =
+    | HintsResolve of (hint_info_expr * bool * reference_or_constr) list
+    | HintsImmediate of reference_or_constr list
+    | HintsUnfold of Prelude.reference list
+    | HintsTransparency of Prelude.reference list * bool
+    | HintsMode of Prelude.reference * hint_mode list
+    | HintsConstructors of Prelude.reference list
+    | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
+  type vernac_expr = Vernacexpr.vernac_expr =
+  | VernacLoad of verbose_flag * string
+  | VernacTime of vernac_expr Loc.located
+  | VernacRedirect of string * vernac_expr Loc.located
+  | VernacTimeout of int * vernac_expr
+  | VernacFail of vernac_expr
+  | VernacSyntaxExtension of
+      obsolete_locality * (lstring * syntax_modifier list)
+  | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
+  | VernacDelimiters of scope_name * string option
+  | VernacBindScope of scope_name * class_rawexpr list
+  | VernacInfix of obsolete_locality * (lstring * syntax_modifier list) *
+      Constrexpr.constr_expr * scope_name option
+  | VernacNotation of
+      obsolete_locality * Constrexpr.constr_expr * (lstring * syntax_modifier list) *
+      scope_name option
+  | VernacNotationAddFormat of string * string * string
+  | VernacDefinition of
+      (Decl_kinds.locality option * Decl_kinds.definition_object_kind) * plident * definition_expr
+  | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list * bool
+  | VernacEndProof of proof_end
+  | VernacExactProof of Constrexpr.constr_expr
+  | VernacAssumption of (Decl_kinds.locality option * Decl_kinds.assumption_object_kind) *
+      inline * (plident list * Constrexpr.constr_expr) with_coercion list
+  | VernacInductive of Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacFixpoint of
+      Decl_kinds.locality option * (fixpoint_expr * decl_notation list) list
+  | VernacCoFixpoint of
+      Decl_kinds.locality option * (cofixpoint_expr * decl_notation list) list
+  | VernacScheme of (lident option * scheme) list
+  | VernacCombinedScheme of lident * lident list
+  | VernacUniverse of lident list
+  | VernacConstraint of (Misctypes.glob_level * Univ.constraint_type * Misctypes.glob_level) list
+  | VernacBeginSection of lident
+  | VernacEndSegment of lident
+  | VernacRequire of
+      Prelude.reference option * bool option * Prelude.reference list
+  | VernacImport of bool * Prelude.reference list
+  | VernacCanonical of Prelude.reference Misctypes.or_by_notation
+  | VernacCoercion of obsolete_locality * Prelude.reference Misctypes.or_by_notation *
+      class_rawexpr * class_rawexpr
+  | VernacIdentityCoercion of obsolete_locality * lident *
+      class_rawexpr * class_rawexpr
+  | VernacNameSectionHypSet of lident * section_subset_expr
+  | VernacInstance of
+      bool *
+      Constrexpr.local_binder_expr list *
+        Constrexpr.typeclass_constraint *
+          (bool * Constrexpr.constr_expr) option *
+            hint_info_expr
+  | VernacContext of Constrexpr.local_binder_expr list
+  | VernacDeclareInstances of
+    (Prelude.reference * hint_info_expr) list
+  | VernacDeclareClass of Prelude.reference
+  | VernacDeclareModule of bool option * lident *
+      module_binder list * module_ast_inl
+  | VernacDefineModule of bool option * lident * module_binder list *
+      module_ast_inl module_signature * module_ast_inl list
+  | VernacDeclareModuleType of lident *
+      module_binder list * module_ast_inl list * module_ast_inl list
+  | VernacInclude of module_ast_inl list
+  | VernacSolveExistential of int * Constrexpr.constr_expr
+  | VernacAddLoadPath of bool * string * Names.DirPath.t option
+  | VernacRemoveLoadPath of string
+  | VernacAddMLPath of bool * string
+  | VernacDeclareMLModule of string list
+  | VernacChdir of string option
+  | VernacWriteState of string
+  | VernacRestoreState of string
+  | VernacResetName of lident
+  | VernacResetInitial
+  | VernacBack of int
+  | VernacBackTo of int
+  | VernacCreateHintDb of string * bool
+  | VernacRemoveHints of string list * Prelude.reference list
+  | VernacHints of obsolete_locality * string list * hints_expr
+  | VernacSyntacticDefinition of Names.Id.t Loc.located * (Names.Id.t list * Constrexpr.constr_expr) *
+      obsolete_locality * onlyparsing_flag
+  | VernacDeclareImplicits of Prelude.reference Misctypes.or_by_notation *
+                                (Constrexpr.explicitation * bool * bool) list list
+  | VernacArguments of Prelude.reference Misctypes.or_by_notation *
+      vernac_argument_status list *
+        (Names.Name.t * vernac_implicit_status) list list *
+      int option *
+        [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
+          `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
+          `DefaultImplicits ] list
+  | VernacArgumentsScope of Prelude.reference Misctypes.or_by_notation *
+      scope_name option list
+  | VernacReserve of simple_binder list
+  | VernacGeneralizable of (lident list) option
+  | VernacSetOpacity of (Conv_oracle.level * Prelude.reference Misctypes.or_by_notation list)
+  | VernacSetStrategy of
+      (Conv_oracle.level * Prelude.reference Misctypes.or_by_notation list) list
+  | VernacUnsetOption of Goptions.option_name
+  | VernacSetOption of Goptions.option_name * option_value
+  | VernacSetAppendOption of Goptions.option_name * string
+  | VernacAddOption of Goptions.option_name * option_ref_value list
+  | VernacRemoveOption of Goptions.option_name * option_ref_value list
+  | VernacMemOption of Goptions.option_name * option_ref_value list
+  | VernacPrintOption of Goptions.option_name
+  | VernacCheckMayEval of Genredexpr.raw_red_expr option * goal_selector option * Constrexpr.constr_expr
+  | VernacGlobalCheck of Constrexpr.constr_expr
+  | VernacDeclareReduction of string * Genredexpr.raw_red_expr
+  | VernacPrint of printable
+  | VernacSearch of searchable * goal_selector option * search_restriction
+  | VernacLocate of locatable
+  | VernacRegister of lident * register_kind
+  | VernacComments of comment list
+  | VernacStm of stm_vernac
+  | VernacGoal of Constrexpr.constr_expr
+  | VernacAbort of lident option
+  | VernacAbortAll
+  | VernacRestart
+  | VernacUndo of int
+  | VernacUndoTo of int
+  | VernacBacktrack of int*int*int
+  | VernacFocus of int option
+  | VernacUnfocus
+  | VernacUnfocused
+  | VernacBullet of bullet
+  | VernacSubproof of int option
+  | VernacEndSubproof
+  | VernacShow of showable
+  | VernacCheckGuard
+  | VernacProof of Genarg.raw_generic_argument option * section_subset_expr option
+  | VernacProofMode of string
+  | VernacToplevelControl of exn
+  | VernacExtend of extend_name * Genarg.raw_generic_argument list
+  | VernacProgram of vernac_expr
+  | VernacPolymorphic of bool * vernac_expr
+  | VernacLocal of bool * vernac_expr
+  and goal_selector = Vernacexpr.goal_selector =
+    | SelectNth of int
+    | SelectList of (int * int) list
+    | SelectId of Names.Id.t
+    | SelectAll
+  and vernac_classification = vernac_type * vernac_when
+  and one_inductive_expr =
+    plident * Constrexpr.local_binder_expr list * Constrexpr.constr_expr option * constructor_expr list
+end
+
+module Glob_term :
+sig
+  type cases_pattern_r = Glob_term.cases_pattern_r =
+    | PatVar  of Names.Name.t
+    | PatCstr of Names.constructor * cases_pattern list * Names.Name.t
+  and cases_pattern = cases_pattern_r CAst.t
+  type existential_name = Names.Id.t
+  type glob_constr_r = Glob_term.glob_constr_r =
+    | GRef of Globnames.global_reference * Misctypes.glob_level list option
+        (** An identifier that represents a reference to an object defined
+            either in the (global) environment or in the (local) context. *)
+    | GVar of Names.Id.t
+        (** An identifier that cannot be regarded as "GRef".
+            Bound variables are typically represented this way. *)
+    | GEvar   of existential_name * (Names.Id.t * glob_constr) list
+    | GPatVar of Evar_kinds.matching_var_kind
+    | GApp    of glob_constr * glob_constr list
+    | GLambda of Names.Name.t * Decl_kinds.binding_kind *  glob_constr * glob_constr
+    | GProd   of Names.Name.t * Decl_kinds.binding_kind * glob_constr * glob_constr
+    | GLetIn  of Names.Name.t * glob_constr * glob_constr option * glob_constr
+    | GCases  of Term.case_style * glob_constr option * tomatch_tuples * cases_clauses
+    | GLetTuple of Names.Name.t list * (Names.Name.t * glob_constr option) * glob_constr * glob_constr
+    | GIf   of glob_constr * (Names.Name.t * glob_constr option) * glob_constr * glob_constr
+    | GRec  of fix_kind * Names.Id.t array * glob_decl list array *
+               glob_constr array * glob_constr array
+    | GSort of Misctypes.glob_sort
+    | GHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
+    | GCast of glob_constr * glob_constr Misctypes.cast_type
+
+   and glob_constr = glob_constr_r CAst.t
+   
+   and glob_decl = Names.Name.t * Decl_kinds.binding_kind * glob_constr option * glob_constr
+   
+   and fix_recursion_order = Glob_term.fix_recursion_order =
+                           | GStructRec
+                             | GWfRec of glob_constr
+                           | GMeasureRec of glob_constr * glob_constr option
+
+   and fix_kind = Glob_term.fix_kind =
+                | GFix of ((int option * fix_recursion_order) array * int)
+                | GCoFix of int
+
+   and predicate_pattern =
+     Names.Name.t * (Names.inductive * Names.Name.t list) Loc.located option
+
+   and tomatch_tuple = (glob_constr * predicate_pattern)
+
+   and tomatch_tuples = tomatch_tuple list
+
+   and cases_clause = (Names.Id.t list * cases_pattern list * glob_constr) Loc.located
+   and cases_clauses = cases_clause list
+
+  type closure = Glob_term.closure =
+    { idents:Names.Id.t Names.Id.Map.t;
+      typed: Pattern.constr_under_binders Names.Id.Map.t ;
+      untyped:closed_glob_constr Names.Id.Map.t }
+   and closed_glob_constr = Glob_term.closed_glob_constr = {
+       closure: closure;
+       term: glob_constr }
+end
+
+module Libnames :
+sig
+  type full_path = Libnames.full_path
+  val pr_path : Libnames.full_path -> Pp.std_ppcmds
+  val make_path : Names.DirPath.t -> Names.Id.t -> full_path
+  val eq_full_path : full_path -> full_path -> bool
+  val dirpath : full_path -> Names.DirPath.t
+  val path_of_string : string -> full_path
+
+  type qualid = Libnames.qualid
+  val make_qualid : Names.DirPath.t -> Names.Id.t -> qualid
+  val qualid_eq : qualid -> qualid -> bool
+  val repr_qualid : qualid -> Names.DirPath.t * Names.Id.t
+  val pr_qualid : qualid -> Pp.std_ppcmds
+  val string_of_qualid : qualid -> string
+  val qualid_of_string : string -> qualid
+  val qualid_of_path : full_path -> qualid
+  val qualid_of_dirpath : Names.DirPath.t -> qualid
+  val qualid_of_ident : Names.Id.t -> qualid
+
+  type reference = Prelude.reference =
+    | Qualid of Libnames.qualid Loc.located
+    | Ident of Names.Id.t Loc.located
+  val loc_of_reference : reference -> Loc.t option
+  val qualid_of_reference : reference -> qualid Loc.located
+  val pr_reference : reference -> Pp.std_ppcmds
+
+  val is_dirpath_prefix_of : Names.DirPath.t -> Names.DirPath.t -> bool
+  val split_dirpath : Names.DirPath.t -> Names.DirPath.t * Names.Id.t
+  val dirpath_of_string : string -> Names.DirPath.t
+  val pr_dirpath : Names.DirPath.t -> Pp.std_ppcmds
+
+  val string_of_path : full_path -> string
+  val basename : full_path -> Names.Id.t
+
+  type object_name = Libnames.full_path * Names.KerName.t
+  type object_prefix = Names.DirPath.t * (Names.ModPath.t * Names.DirPath.t)
+
+  module Dirset : module type of struct include Libnames.Dirset end
+  module Dirmap : module type of struct include  Libnames.Dirmap end
+  module Spmap : module type of struct include Libnames.Spmap end
+end
+
+module Libobject :
+sig
+  type obj = Libobject.obj
+  type 'a substitutivity = 'a Libobject.substitutivity =
+                         | Dispose
+                           | Substitute of 'a
+                         | Keep of 'a
+                         | Anticipate of 'a
+  type 'a object_declaration = 'a Libobject.object_declaration =
+                                 {
+                                   object_name : string;
+                                   cache_function : Libnames.object_name * 'a -> unit;
+                                   load_function : int -> Libnames.object_name * 'a -> unit;
+                                   open_function : int -> Libnames.object_name * 'a -> unit;
+                                   classify_function : 'a -> 'a substitutivity;
+                                   subst_function :  Mod_subst.substitution * 'a -> 'a;
+                                   discharge_function : Libnames.object_name * 'a -> 'a option;
+                                   rebuild_function : 'a -> 'a
+                                 }
+  val declare_object : 'a object_declaration -> ('a -> obj)
+  val default_object : string -> 'a object_declaration
+  val object_tag : obj -> string
+end
+
+module Universes :
+sig
+  type universe_binders = Universes.universe_binders
+  type universe_opt_subst = Universes.universe_opt_subst
+  val fresh_inductive_instance : Environ.env -> Names.inductive -> Term.pinductive Univ.in_universe_context_set
+  val new_Type : Names.DirPath.t -> Term.types
+  val unsafe_type_of_global : Globnames.global_reference -> Term.types
+  val constr_of_global : Prelude.global_reference -> Term.constr
+  val universes_of_constr : Term.constr -> Univ.LSet.t
+  val restrict_universe_context : Univ.universe_context_set -> Univ.universe_set -> Univ.universe_context_set
+  val new_univ_level : Names.DirPath.t -> Univ.Level.t
+  val unsafe_constr_of_global : Globnames.global_reference -> Term.constr Univ.in_universe_context
+  val new_sort_in_family : Sorts.family -> Sorts.t
+  val pr_with_global_universes : Univ.Level.t -> Pp.std_ppcmds
+  val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
+  type universe_constraint = Universes.universe_constraint
+  module Constraints :
+  sig
+    type t = Universes.Constraints.t
+    val pr : t -> Pp.std_ppcmds
+  end
+end
+
+module Global :
+sig
+  val env : unit -> Environ.env
+  val lookup_mind : Names.MutInd.t -> Declarations.mutual_inductive_body
+  val lookup_constant  : Names.Constant.t -> Declarations.constant_body
+  val lookup_module    : Names.ModPath.t -> Declarations.module_body
+  val lookup_modtype   : Names.ModPath.t -> Declarations.module_type_body
+  val lookup_inductive : Names.inductive -> Declarations.mutual_inductive_body * Declarations.one_inductive_body
+  val constant_of_delta_kn : Names.KerName.t -> Names.Constant.t
+  val register :
+    Retroknowledge.field -> Term.constr -> Term.constr -> unit
+  val env_of_context : Environ.named_context_val -> Environ.env
+  val is_polymorphic : Globnames.global_reference -> bool
+
+  val type_of_global_unsafe : Globnames.global_reference -> Term.types
+
+  val current_dirpath : unit -> Names.DirPath.t
+  val body_of_constant_body : Declarations.constant_body -> Term.constr option
+  val body_of_constant : Names.Constant.t -> Term.constr option
+  val add_constraints : Univ.Constraint.t -> unit
+end
+
+module Lib : sig
+  type is_type = bool
+  type export = bool option
+  type node = Lib.node =
+            | Leaf of Libobject.obj (* FIX: horrible hack (wrt. Enrico) *)
+            | CompilingLibrary of Libnames.object_prefix
+            | OpenedModule of is_type * export * Libnames.object_prefix * Summary.frozen
+            | ClosedModule  of library_segment
+            | OpenedSection of Libnames.object_prefix * Summary.frozen
+            | ClosedSection of library_segment
+            | FrozenState of Summary.frozen
+
+   and library_segment = (Libnames.object_name * node) list
+
+  val current_mp : unit -> Names.ModPath.t
+  val is_modtype : unit -> bool
+  val is_module : unit -> bool
+  val sections_are_opened : unit -> bool                                        
+  val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
+  val contents : unit -> library_segment
+  val cwd : unit -> Names.DirPath.t
+  val add_leaf : Names.Id.t -> Libobject.obj -> Libnames.object_name
+  val make_kn : Names.Id.t -> Names.KerName.t
+  val make_path : Names.Id.t -> Libnames.full_path
+  val discharge_con : Names.Constant.t -> Names.Constant.t
+  val discharge_inductive : Names.inductive -> Names.inductive
+end
+
+module Library :
+sig
+  val library_is_loaded : Names.DirPath.t -> bool
+  val loaded_libraries : unit -> Names.DirPath.t list
+end
+
+module Summary :
+sig
+  type marshallable = Summary.marshallable
+  type 'a summary_declaration = 'a Summary.summary_declaration =
+    { freeze_function : marshallable -> 'a;
+      unfreeze_function : 'a -> unit;
+      init_function : unit -> unit; }
+  val ref : ?freeze:(marshallable -> 'a -> 'a) -> name:string -> 'a -> 'a ref
+  val declare_summary : string -> 'a summary_declaration -> unit
+  module Local :
+  sig
+    type 'a local_ref = 'a Summary.Local.local_ref
+    val ref : ?freeze:('a -> 'a) -> name:string -> 'a -> 'a local_ref
+    val (:=) : 'a local_ref -> 'a -> unit
+    val (!) : 'a local_ref -> 'a
+  end
+end
+
+module Declare :
+sig
+  type internal_flag = Declare.internal_flag =
+    | UserAutomaticRequest
+    | InternalTacticRequest
+    | UserIndividualRequest
+  type constant_declaration = Safe_typing.private_constants Entries.constant_entry * Decl_kinds.logical_kind
+  type section_variable_entry = Declare.section_variable_entry =
+    | SectionLocalDef of Safe_typing.private_constants Entries.definition_entry
+    | SectionLocalAssum of Term.types Univ.in_universe_context_set * Decl_kinds.polymorphic * bool
+  type variable_declaration = Names.DirPath.t * section_variable_entry * Decl_kinds.logical_kind
+  val declare_constant :
+    ?internal:internal_flag -> ?local:bool -> Names.Id.t -> ?export_seff:bool -> constant_declaration -> Names.Constant.t
+  val declare_universe_context : Decl_kinds.polymorphic -> Univ.ContextSet.t -> unit
+  val declare_definition : 
+    ?internal:internal_flag -> ?opaque:bool -> ?kind:Decl_kinds.definition_object_kind ->
+    ?local:bool -> ?poly:Decl_kinds.polymorphic -> Names.Id.t -> ?types:Term.constr -> 
+    Term.constr Univ.in_universe_context_set -> Names.Constant.t
+  val definition_entry : ?fix_exn:Future.fix_exn ->
+    ?opaque:bool -> ?inline:bool -> ?types:Term.types ->
+    ?poly:Decl_kinds.polymorphic -> ?univs:Univ.universe_context ->
+    ?eff:Safe_typing.private_constants -> Term.constr -> Safe_typing.private_constants Entries.definition_entry
+  val definition_message : Names.Id.t -> unit
+  val declare_variable : Names.Id.t -> variable_declaration -> Libnames.object_name
+end
+
+module Reductionops :
+sig
+  type local_reduction_function = Evd.evar_map -> EConstr.constr -> EConstr.constr
+
+  type reduction_function = Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr
+
+  type local_stack_reduction_function =
+    Evd.evar_map -> EConstr.constr -> EConstr.constr * EConstr.constr list
+
+  type e_reduction_function = Environ.env -> Evd.evar_map -> EConstr.constr -> Evd.evar_map * EConstr.constr
+  type state = Reductionops.state
+
+  val clos_whd_flags : CClosure.RedFlags.reds -> reduction_function
+  val nf_beta : local_reduction_function
+  val nf_betaiota : local_reduction_function
+  val splay_prod : Environ.env ->  Evd.evar_map -> EConstr.constr ->
+                   (Names.Name.t * EConstr.constr) list * EConstr.constr
+  val splay_prod_n : Environ.env ->  Evd.evar_map -> int -> EConstr.constr -> EConstr.rel_context * EConstr.constr
+  val whd_all :  reduction_function
+  val whd_beta : local_reduction_function                  
+
+  val whd_betaiotazeta : local_reduction_function
+
+  val whd_betaiota_stack : local_stack_reduction_function
+
+  val clos_norm_flags : CClosure.RedFlags.reds -> reduction_function
+  val is_conv : ?reds:Names.transparent_state -> Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
+  val beta_applist : Evd.evar_map -> EConstr.constr * EConstr.constr list -> EConstr.constr
+  val sort_of_arity : Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.ESorts.t
+  val is_conv_leq : ?reds:Names.transparent_state -> Environ.env ->  Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
+  val whd_betaiota : local_reduction_function
+  val is_arity : Environ.env ->  Evd.evar_map -> EConstr.constr -> bool
+  val nf_evar : Evd.evar_map -> EConstr.constr -> EConstr.constr
+  val nf_meta : Evd.evar_map -> EConstr.constr -> EConstr.constr
+  val hnf_prod_appvect : Environ.env ->  Evd.evar_map -> EConstr.constr -> EConstr.constr array -> EConstr.constr
+  val pr_state : state -> Pp.std_ppcmds
+  module Stack :
+  sig
+    type 'a t = 'a Reductionops.Stack.t
+    val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+  end
+  module Cst_stack :
+  sig
+    type t = Reductionops.Cst_stack.t
+    val pr : t -> Pp.std_ppcmds
+  end
+end
+
+module Inductiveops :
+sig
+  type inductive_family = Inductiveops.inductive_family
+  type inductive_type = Inductiveops.inductive_type =
+    | IndType of inductive_family * EConstr.constr list
+  type constructor_summary = Inductiveops.constructor_summary =
+    {
+      cs_cstr : Term.pconstructor;
+      cs_params : Term.constr list;
+      cs_nargs : int;
+      cs_args : Context.Rel.t;
+      cs_concl_realargs : Term.constr array;
+    }
+
+  val arities_of_constructors : Environ.env -> Term.pinductive -> Term.types array
+  val constructors_nrealargs_env : Environ.env -> Names.inductive -> int array
+  val constructor_nallargs_env : Environ.env -> Names.constructor -> int
+
+  val inductive_nparams : Names.inductive -> int
+
+  val inductive_nparamdecls : Names.inductive -> int
+
+  val type_of_constructors : Environ.env -> Term.pinductive -> Term.types array
+  val find_mrectype : Environ.env -> Evd.evar_map -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.constr list
+  val mis_is_recursive :
+    Names.inductive * Declarations.mutual_inductive_body * Declarations.one_inductive_body -> bool
+  val nconstructors : Names.inductive -> int
+  val find_rectype : Environ.env -> Evd.evar_map -> EConstr.types -> inductive_type
+  val get_constructors : Environ.env -> inductive_family -> constructor_summary array
+  val dest_ind_family : inductive_family -> Names.inductive Term.puniverses * Term.constr list
+  val find_inductive   : Environ.env -> Evd.evar_map -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * Term.constr list
+  val type_of_inductive : Environ.env -> Term.pinductive -> Term.types
+end
+
+module Recordops :
+sig
+  type cs_pattern = Recordops.cs_pattern =
+                  | Const_cs of Globnames.global_reference
+                  | Prod_cs
+                  | Sort_cs of Sorts.family
+                  | Default_cs
+  type obj_typ = Recordops.obj_typ = {
+        o_DEF : Term.constr;
+        o_CTX : Univ.ContextSet.t;
+        o_INJ : int option;      (** position of trivial argument *)
+        o_TABS : Term.constr list;    (** ordered *)
+        o_TPARAMS : Term.constr list; (** ordered *)
+        o_NPARAMS : int;
+        o_TCOMPS : Term.constr list }
+  val lookup_projections : Names.inductive -> Names.Constant.t option list
+  val lookup_canonical_conversion : (Globnames.global_reference * cs_pattern) -> Term.constr * obj_typ
+  val find_projection_nparams : Globnames.global_reference -> int
+end
+
+module Retyping :  (* reconstruct the type of a term knowing that it was already typechecked *)
+sig
+  val get_type_of : ?polyprop:bool -> ?lax:bool -> Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.types
+  val get_sort_family_of : ?polyprop:bool -> Environ.env -> Evd.evar_map -> EConstr.types -> Sorts.family
+  val expand_projection : Environ.env -> Evd.evar_map -> Names.Projection.t -> EConstr.constr -> EConstr.constr list -> EConstr.constr
+  val get_sort_of :
+    ?polyprop:bool -> Environ.env -> Evd.evar_map -> EConstr.types -> Sorts.t
+end
+
+module Typing :
+sig
+  val e_sort_of : Environ.env -> Evd.evar_map ref -> EConstr.types -> Sorts.t
+
+  val type_of : ?refresh:bool -> Environ.env -> Evd.evar_map -> EConstr.constr -> Evd.evar_map * EConstr.types
+  val e_solve_evars : Environ.env -> Evd.evar_map ref -> EConstr.constr -> EConstr.constr
+
+  val unsafe_type_of : Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.types
+
+  val e_check : Environ.env -> Evd.evar_map ref -> EConstr.constr -> EConstr.types -> unit
+
+  val e_type_of : ?refresh:bool -> Environ.env -> Evd.evar_map ref -> EConstr.constr -> EConstr.types
+end
+
+module Evarsolve :
+sig
+  val refresh_universes :
+    ?status:Evd.rigid -> ?onlyalg:bool -> ?refreshset:bool -> bool option ->
+    Environ.env -> Evd.evar_map -> EConstr.types -> Evd.evar_map * EConstr.types
+end
+
+module Constr_matching :
+sig
+  val special_meta : Prelude.metavariable
+
+  type binding_bound_vars = Names.Id.Set.t
+  type bound_ident_map = Names.Id.t Names.Id.Map.t
+  val is_matching : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> EConstr.constr -> bool
+  val extended_matches :
+    Environ.env -> Evd.evar_map -> binding_bound_vars * Pattern.constr_pattern ->
+    EConstr.constr -> bound_ident_map * Pattern.extended_patvar_map
+  exception PatternMatchingFailure
+  type matching_result =
+    { m_sub : bound_ident_map * Pattern.patvar_map;
+      m_ctx : EConstr.constr }
+  val match_subterm_gen : Environ.env -> Evd.evar_map ->
+                          bool ->
+                          binding_bound_vars * Pattern.constr_pattern -> EConstr.constr ->
+                          matching_result IStream.t
+  val matches : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> EConstr.constr -> Pattern.patvar_map
+end  
+
+module Tactypes :
+sig
+  type glob_constr_and_expr = Glob_term.glob_constr * Constrexpr.constr_expr option
+  type glob_constr_pattern_and_expr = Names.Id.Set.t * glob_constr_and_expr * Pattern.constr_pattern
+  type 'a delayed_open = Environ.env -> Evd.evar_map -> Evd.evar_map * 'a
+  type delayed_open_constr = EConstr.constr delayed_open
+  type delayed_open_constr_with_bindings = EConstr.constr Misctypes.with_bindings delayed_open
+  type intro_pattern = delayed_open_constr Misctypes.intro_pattern_expr Loc.located
+  type intro_patterns = delayed_open_constr Misctypes.intro_pattern_expr Loc.located list
+  type intro_pattern_naming = Misctypes.intro_pattern_naming_expr Loc.located
+  type or_and_intro_pattern = delayed_open_constr Misctypes.or_and_intro_pattern_expr Loc.located
+end
+
+module Pretyping :
+sig
+  type typing_constraint = Pretyping.typing_constraint =
+                         | OfType of EConstr.types
+                         | IsType
+                         | WithoutTypeConstraint
+
+  type var_map = Pattern.constr_under_binders Names.Id.Map.t
+  type uconstr_var_map = Glob_term.closed_glob_constr Names.Id.Map.t
+  type unbound_ltac_var_map = Geninterp.Val.t Names.Id.Map.t
+
+  type inference_hook = Environ.env -> Evd.evar_map -> Evar.t -> Evd.evar_map * EConstr.constr
+  type inference_flags = Pretyping.inference_flags = {
+      use_typeclasses : bool;
+      solve_unification_constraints : bool;
+      use_hook : inference_hook option;
+      fail_evar : bool;
+      expand_evars : bool
+    }
+
+  type ltac_var_map = Pretyping.ltac_var_map = {
+        ltac_constrs : var_map;
+        (** Ltac variables bound to constrs *)
+        ltac_uconstrs : uconstr_var_map;
+        (** Ltac variables bound to untyped constrs *)
+        ltac_idents: Names.Id.t Names.Id.Map.t;
+        (** Ltac variables bound to identifiers *)
+        ltac_genargs : unbound_ltac_var_map;
+        (** Ltac variables bound to other kinds of arguments *)
+      }                                                 
+  type pure_open_constr = Evd.evar_map * EConstr.constr
+  type glob_constr_ltac_closure = ltac_var_map * Glob_term.glob_constr
+
+  val empty_lvar : ltac_var_map
+  val understand_ltac : inference_flags ->
+                        Environ.env -> Evd.evar_map -> ltac_var_map ->
+                        typing_constraint -> Glob_term.glob_constr -> pure_open_constr
+  val understand_tcc : ?flags:inference_flags -> Environ.env -> Evd.evar_map ->
+                       ?expected_type:typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
+  val type_uconstr :
+    ?flags:inference_flags ->
+    ?expected_type:typing_constraint ->
+    Geninterp.interp_sign -> Glob_term.closed_glob_constr -> EConstr.constr Tactypes.delayed_open
+  val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
+                   Environ.env -> Evd.evar_map -> Glob_term.glob_constr -> Term.constr Evd.in_evar_universe_context
+  val check_evars : Environ.env -> Evd.evar_map -> Evd.evar_map -> EConstr.constr -> unit
+  val interp_elimination_sort : Misctypes.glob_sort -> Sorts.family
+  val register_constr_interp0 :
+    ('r, 'g, 't) Genarg.genarg_type ->
+    (unbound_ltac_var_map -> Environ.env -> Evd.evar_map -> EConstr.types -> 'g -> EConstr.constr * Evd.evar_map) -> unit
+  val all_and_fail_flags : inference_flags
+  val ise_pretype_gen :
+    inference_flags -> Environ.env -> Evd.evar_map ->
+    ltac_var_map -> typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
+end
+
+module Evarconv :
+sig
+  val e_conv : Environ.env -> ?ts:Names.transparent_state -> Evd.evar_map ref -> EConstr.constr -> EConstr.constr -> bool
+  val the_conv_x : Environ.env -> ?ts:Names.transparent_state -> EConstr.constr -> EConstr.constr -> Evd.evar_map -> Evd.evar_map
+  val the_conv_x_leq : Environ.env -> ?ts:Names.transparent_state -> EConstr.constr -> EConstr.constr -> Evd.evar_map -> Evd.evar_map
+  val solve_unif_constraints_with_heuristics : Environ.env -> ?ts:Names.transparent_state -> Evd.evar_map -> Evd.evar_map
+end
+
+module Unification :
+sig
+  type core_unify_flags = Unification.core_unify_flags =
+                            {
+                              modulo_conv_on_closed_terms : Names.transparent_state option;
+                              use_metas_eagerly_in_conv_on_closed_terms : bool;
+                              use_evars_eagerly_in_conv_on_closed_terms : bool;
+                              modulo_delta : Names.transparent_state;
+                              modulo_delta_types : Names.transparent_state;
+                              check_applied_meta_types : bool;
+                              use_pattern_unification : bool;
+                              use_meta_bound_pattern_unification : bool;
+                              frozen_evars : Evar.Set.t;
+                              restrict_conv_on_strict_subterms : bool;
+                              modulo_betaiota : bool;
+                              modulo_eta : bool;
+                            }
+  type unify_flags = Unification.unify_flags =
+                       {
+                         core_unify_flags : core_unify_flags;
+                         merge_unify_flags : core_unify_flags;
+                         subterm_unify_flags : core_unify_flags;
+                         allow_K_in_toplevel_higher_order_unification : bool;
+                         resolve_evars : bool
+                       }
+  val default_no_delta_unify_flags : unit -> unify_flags
+  val w_unify : Environ.env -> Evd.evar_map -> Reduction.conv_pb -> ?flags:unify_flags -> EConstr.constr -> EConstr.constr -> Evd.evar_map
+  val elim_flags : unit -> unify_flags
+  val w_unify_to_subterm :
+    Environ.env -> Evd.evar_map -> ?flags:unify_flags -> EConstr.constr * EConstr.constr -> Evd.evar_map * EConstr.constr
+end
+
+module Typeclasses :
+sig
+  type typeclass = Typeclasses.typeclass = {
+    cl_impl : Globnames.global_reference;
+    cl_context : (Globnames.global_reference * bool) option list * Context.Rel.t;
+    cl_props : Context.Rel.t;
+    cl_projs : (Names.Name.t * (direction * Vernacexpr.hint_info_expr) option
+                * Names.Constant.t option) list;
+    cl_strict : bool;
+    cl_unique : bool;
+  }
+   and direction = Typeclasses.direction
+  type instance = Typeclasses.instance
+  type evar_filter = Evar.t -> Evar_kinds.t -> bool
+  val resolve_typeclasses : ?fast_path:bool -> ?filter:evar_filter -> ?unique:bool ->
+                            ?split:bool -> ?fail:bool -> Environ.env -> Evd.evar_map -> Evd.evar_map
+  val set_resolvable : Evd.Store.t -> bool -> Evd.Store.t
+  val resolve_one_typeclass : ?unique:bool -> Environ.env -> Evd.evar_map -> EConstr.types -> Evd.evar_map * EConstr.constr
+  val class_info : Globnames.global_reference -> typeclass
+  val mark_resolvables : ?filter:evar_filter -> Evd.evar_map -> Evd.evar_map
+  val add_instance : instance -> unit
+  val new_instance : typeclass -> Vernacexpr.hint_info_expr -> bool -> Decl_kinds.polymorphic ->
+                     Globnames.global_reference -> instance
+end
+
+module Pretype_errors :
+sig
+  type unification_error = Pretype_errors.unification_error
+  type subterm_unification_error = Pretype_errors.subterm_unification_error
+  type pretype_error = Pretype_errors.pretype_error =
+                     | CantFindCaseType of EConstr.constr
+                     | ActualTypeNotCoercible of EConstr.unsafe_judgment * EConstr.types * unification_error
+                     | UnifOccurCheck of Evar.t * EConstr.constr
+                     | UnsolvableImplicit of Evar.t * Evd.unsolvability_explanation option
+                     | CannotUnify of EConstr.constr * EConstr.constr * unification_error option
+                     | CannotUnifyLocal of EConstr.constr * EConstr.constr * EConstr.constr
+                     | CannotUnifyBindingType of EConstr.constr * EConstr.constr
+                     | CannotGeneralize of EConstr.constr
+                     | NoOccurrenceFound of EConstr.constr * Names.Id.t option
+                     | CannotFindWellTypedAbstraction of EConstr.constr * EConstr.constr list * (Environ.env * Pretype_errors.type_error) option
+                     | WrongAbstractionType of Names.Name.t * EConstr.constr * EConstr.types * EConstr.types
+                     | AbstractionOverMeta of Names.Name.t * Names.Name.t
+                     | NonLinearUnification of Names.Name.t * EConstr.constr
+                     | VarNotFound of Names.Id.t
+                     | UnexpectedType of EConstr.constr * EConstr.constr
+                     | NotProduct of EConstr.constr
+                     | TypingError of Pretype_errors.type_error
+                     | CannotUnifyOccurrences of subterm_unification_error
+                     | UnsatisfiableConstraints of
+                         (Evar.t * Evar_kinds.t) option * Evar.Set.t option
+
+  exception PretypeError of Environ.env * Evd.evar_map * pretype_error
+  val error_var_not_found : ?loc:Loc.t -> Names.Id.t -> 'b
+  val precatchable_exception : exn -> bool
+end
+
+module Smartlocate :
+sig
+  val locate_global_with_alias : ?head:bool -> Libnames.qualid Loc.located -> Globnames.global_reference
+  val global_with_alias : ?head:bool -> Prelude.reference -> Globnames.global_reference
+  val global_of_extended_global : Globnames.extended_global_reference -> Globnames.global_reference
+  val loc_of_smart_reference : Prelude.reference Misctypes.or_by_notation -> Loc.t option
+  val smart_global : ?head:bool -> Prelude.reference Misctypes.or_by_notation -> Globnames.global_reference
+end
+
+module Dumpglob :
+sig
+  val add_glob : ?loc:Loc.t -> Globnames.global_reference -> unit
+  val pause : unit -> unit
+  val continue : unit -> unit
+end
+
+module Stdarg :
+sig
+  val loc_of_or_by_notation : ('a -> Loc.t option) -> 'a Misctypes.or_by_notation -> Loc.t option
+  val wit_unit : unit Genarg.uniform_genarg_type
+  val wit_int : int Genarg.uniform_genarg_type
+  val wit_var : (Names.Id.t Loc.located, Names.Id.t Loc.located, Names.Id.t) Genarg.genarg_type
+  val wit_bool : bool Genarg.uniform_genarg_type
+  val wit_string : string Genarg.uniform_genarg_type
+  val wit_pre_ident : string Genarg.uniform_genarg_type
+  val wit_global : (Prelude.reference, Globnames.global_reference Loc.located Misctypes.or_var, Globnames.global_reference) Genarg.genarg_type
+  val wit_ident : Names.Id.t Genarg.uniform_genarg_type
+  val wit_integer : int Genarg.uniform_genarg_type
+  val wit_constr : (Constrexpr.constr_expr, Tactypes.glob_constr_and_expr, EConstr.constr) Genarg.genarg_type
+  val wit_open_constr : (Constrexpr.constr_expr, Tactypes.glob_constr_and_expr, EConstr.constr) Genarg.genarg_type
+  val wit_intro_pattern : (Constrexpr.constr_expr Misctypes.intro_pattern_expr Loc.located, Tactypes.glob_constr_and_expr Misctypes.intro_pattern_expr Loc.located, Tactypes.intro_pattern) Genarg.genarg_type
+  val wit_int_or_var : (int Misctypes.or_var, int Misctypes.or_var, int) Genarg.genarg_type
+  val wit_ref : (Prelude.reference, Globnames.global_reference Loc.located Misctypes.or_var, Globnames.global_reference) Genarg.genarg_type
+  val wit_clause_dft_concl :  (Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) Genarg.genarg_type
+  val wit_uconstr : (Constrexpr.constr_expr , Tactypes.glob_constr_and_expr, Glob_term.closed_glob_constr) Genarg.genarg_type
+  val wit_red_expr :
+    ((Constrexpr.constr_expr,Prelude.reference Misctypes.or_by_notation,Constrexpr.constr_expr) Genredexpr.red_expr_gen,
+     (Tactypes.glob_constr_and_expr,Names.evaluable_global_reference Misctypes.and_short_name Misctypes.or_var,Tactypes.glob_constr_pattern_and_expr) Genredexpr.red_expr_gen,
+     (EConstr.constr,Names.evaluable_global_reference,Pattern.constr_pattern) Genredexpr.red_expr_gen) Genarg.genarg_type
+  val wit_quant_hyp : Misctypes.quantified_hypothesis Genarg.uniform_genarg_type
+  val wit_bindings :
+    (Constrexpr.constr_expr Misctypes.bindings,
+     Tactypes.glob_constr_and_expr Misctypes.bindings,
+     EConstr.constr Misctypes.bindings Tactypes.delayed_open) Genarg.genarg_type
+  val wit_constr_with_bindings :
+    (Constrexpr.constr_expr Misctypes.with_bindings,
+     Tactypes.glob_constr_and_expr Misctypes.with_bindings,
+     EConstr.constr Misctypes.with_bindings Tactypes.delayed_open) Genarg.genarg_type
+  val wit_intropattern : (Constrexpr.constr_expr Misctypes.intro_pattern_expr Loc.located, Tactypes.glob_constr_and_expr Misctypes.intro_pattern_expr Loc.located, Tactypes.intro_pattern) Genarg.genarg_type
+  val wit_quantified_hypothesis : Misctypes.quantified_hypothesis Genarg.uniform_genarg_type
+  val wit_clause :  (Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) Genarg.genarg_type
+  val wit_preident : string Genarg.uniform_genarg_type
+  val wit_reference : (Prelude.reference, Globnames.global_reference Loc.located Misctypes.or_var, Globnames.global_reference) Genarg.genarg_type
+  val wit_open_constr_with_bindings :
+    (Constrexpr.constr_expr Misctypes.with_bindings,
+     Tactypes.glob_constr_and_expr Misctypes.with_bindings,
+     EConstr.constr Misctypes.with_bindings Tactypes.delayed_open) Genarg.genarg_type
+end
+
+module Coqlib :
+sig
+  type coq_eq_data = Coqlib.coq_eq_data = { eq   : Globnames.global_reference;
+                                            ind  : Globnames.global_reference;
+                                            refl : Globnames.global_reference;
+                                            sym  : Globnames.global_reference;
+                                            trans: Globnames.global_reference;
+                                            congr: Globnames.global_reference;
+                                          }
+  type coq_sigma_data = Coqlib.coq_sigma_data = {
+      proj1 : Globnames.global_reference;
+      proj2 : Globnames.global_reference;
+      elim  : Globnames.global_reference;
+      intro : Globnames.global_reference;
+      typ   : Globnames.global_reference }
+  val gen_reference : string -> string list -> string -> Globnames.global_reference
+  val find_reference : string -> string list -> string -> Globnames.global_reference
+  val check_required_library : string list -> unit
+  val logic_module_name : string list
+  val glob_true : Globnames.global_reference
+  val glob_false : Globnames.global_reference
+  val glob_O : Globnames.global_reference
+  val glob_S : Globnames.global_reference
+  val nat_path : Libnames.full_path
+  val datatypes_module_name : string list
+  val glob_eq : Globnames.global_reference
+  val build_coq_eq_sym : Globnames.global_reference Util.delayed
+  val build_coq_False : Globnames.global_reference Util.delayed
+  val build_coq_not : Globnames.global_reference Util.delayed
+  val build_coq_eq : Globnames.global_reference Util.delayed
+  val build_coq_eq_data : coq_eq_data Util.delayed
+  val path_of_O : Names.constructor
+  val path_of_S : Names.constructor
+  val build_prod : coq_sigma_data Util.delayed
+  val build_coq_True : Globnames.global_reference Util.delayed
+  val coq_iff_ref : Globnames.global_reference lazy_t
+  val build_coq_iff_left_proj : Globnames.global_reference Util.delayed
+  val build_coq_iff_right_proj : Globnames.global_reference Util.delayed
+  val init_modules : string list list
+  val build_coq_eq_refl  : Globnames.global_reference Util.delayed
+  val arith_modules : string list list
+  val zarith_base_modules : string list list
+  val gen_reference_in_modules : string -> string list list-> string -> Globnames.global_reference
+  val jmeq_module_name : string list
+  val coq_eq_ref : Globnames.global_reference lazy_t
+  val coq_not_ref : Globnames.global_reference lazy_t
+  val coq_or_ref : Globnames.global_reference lazy_t
+  val build_coq_and : Globnames.global_reference Util.delayed
+  val build_coq_I : Globnames.global_reference Util.delayed
+  val coq_reference : string -> string list -> string -> Globnames.global_reference
+end
+
+module Impargs :
+sig
+  type implicit_status = Impargs.implicit_status
+  type implicit_side_condition = Impargs.implicit_side_condition
+  type implicits_list = implicit_side_condition * implicit_status list
+  type manual_explicitation = Constrexpr.explicitation * (bool * bool * bool)
+  type manual_implicits = manual_explicitation list
+  val is_status_implicit : implicit_status -> bool
+  val name_of_implicit : implicit_status -> Names.Id.t
+  val implicits_of_global : Globnames.global_reference -> implicits_list list
+  val declare_manual_implicits : bool -> Globnames.global_reference -> ?enriching:bool ->
+                                 manual_implicits list -> unit
+  val is_implicit_args : unit -> bool
+  val is_strict_implicit_args : unit -> bool
+  val is_contextual_implicit_args : unit -> bool
+  val make_implicit_args : bool -> unit
+  val make_strict_implicit_args : bool -> unit
+  val make_contextual_implicit_args : bool -> unit
+end
+
+module Constrintern :
+sig
+  type ltac_sign = Constrintern.ltac_sign = {
+        ltac_vars : Names.Id.Set.t;
+        ltac_bound : Names.Id.Set.t;
+        ltac_extra : Genintern.Store.t;
+      }
+  type var_internalization_data = Constrintern.var_internalization_data
+  type var_internalization_type = Constrintern.var_internalization_type =
+    | Inductive of Names.Id.t list * bool
+    | Recursive
+    | Method
+    | Variable
+  type internalization_env = var_internalization_data Names.Id.Map.t
+
+  val interp_constr_evars : Environ.env -> Evd.evar_map ref ->
+                            ?impls:internalization_env -> Constrexpr.constr_expr -> EConstr.constr
+
+  val interp_type_evars : Environ.env -> Evd.evar_map ref ->
+                          ?impls:internalization_env -> Constrexpr.constr_expr -> EConstr.types
+
+  val empty_ltac_sign : ltac_sign
+  val intern_gen : Pretyping.typing_constraint -> Environ.env ->
+                   ?impls:internalization_env -> ?pattern_mode:bool -> ?ltacvars:ltac_sign ->
+                   Constrexpr.constr_expr -> Glob_term.glob_constr
+  val intern_constr_pattern :
+    Environ.env -> ?as_type:bool -> ?ltacvars:ltac_sign ->
+    Constrexpr.constr_pattern_expr -> Names.Id.t list * Pattern.constr_pattern
+  val intern_constr : Environ.env -> Constrexpr.constr_expr -> Glob_term.glob_constr
+  val for_grammar : ('a -> 'b) -> 'a -> 'b
+  val interp_reference : ltac_sign -> Prelude.reference -> Glob_term.glob_constr
+  val interp_constr : Environ.env -> Evd.evar_map -> ?impls:internalization_env ->
+                      Constrexpr.constr_expr -> Term.constr Evd.in_evar_universe_context
+  val interp_open_constr : Environ.env -> Evd.evar_map -> Constrexpr.constr_expr -> Evd.evar_map * EConstr.constr
+  val locate_reference :  Libnames.qualid -> Globnames.global_reference
+  val interp_type : Environ.env -> Evd.evar_map -> ?impls:internalization_env ->
+                    Constrexpr.constr_expr -> Term.types Evd.in_evar_universe_context
+  val interp_context_evars :
+    ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
+    Environ.env -> Evd.evar_map ref -> Constrexpr.local_binder_expr list ->
+    internalization_env * ((Environ.env * EConstr.rel_context) * Impargs.manual_implicits)
+  val compute_internalization_data : Environ.env -> var_internalization_type ->
+                                     Term.types -> Impargs.manual_explicitation list -> var_internalization_data
+  val empty_internalization_env : internalization_env
+  val global_reference : Names.Id.t -> Globnames.global_reference
+end
+
+module Notation_term :
+sig
+  type scope_name = string
+  type notation_var_instance_type = Notation_term.notation_var_instance_type =
+                                  | NtnTypeConstr | NtnTypeOnlyBinder | NtnTypeConstrList | NtnTypeBinderList
+  type tmp_scope_name = Notation_term.tmp_scope_name
+  type subscopes = tmp_scope_name option * scope_name list
+  type notation_constr = Notation_term.notation_constr =
+                       | NRef of Globnames.global_reference
+                       | NVar of Names.Id.t
+                       | NApp of notation_constr * notation_constr list
+                       | NHole of Evar_kinds.t * Misctypes.intro_pattern_naming_expr * Genarg.glob_generic_argument option
+                       | NList of Names.Id.t * Names.Id.t * notation_constr * notation_constr * bool
+                       | NLambda of Names.Name.t * notation_constr * notation_constr
+                       | NProd of Names.Name.t * notation_constr * notation_constr
+                       | NBinderList of Names.Id.t * Names.Id.t * notation_constr * notation_constr
+                       | NLetIn of Names.Name.t * notation_constr * notation_constr option * notation_constr
+                       | NCases of Term.case_style * notation_constr option *
+                                     (notation_constr * (Names.Name.t * (Names.inductive * Names.Name.t list) option)) list *
+                                       (Glob_term.cases_pattern list * notation_constr) list
+                       | NLetTuple of Names.Name.t list * (Names.Name.t * notation_constr option) *
+                                        notation_constr * notation_constr
+                       | NIf of notation_constr * (Names.Name.t * notation_constr option) *
+                                  notation_constr * notation_constr
+                       | NRec of Glob_term.fix_kind * Names.Id.t array *
+                                   (Names.Name.t * notation_constr option * notation_constr) list array *
+                                     notation_constr array * notation_constr array
+                       | NSort of Misctypes.glob_sort
+                       | NCast of notation_constr * notation_constr Misctypes.cast_type
+  type interpretation = (Names.Id.t * (subscopes * notation_var_instance_type)) list *
+    notation_constr
+end
+
+module Notation :
+sig
+  type cases_pattern_status = bool
+  type required_module = Libnames.full_path * string list
+  type 'a prim_token_interpreter = ?loc:Loc.t -> 'a -> Glob_term.glob_constr
+  type 'a prim_token_uninterpreter = Glob_term.glob_constr list * (Glob_term.glob_constr -> 'a option) * cases_pattern_status
+  type delimiters = string
+  type local_scopes = Notation_term.tmp_scope_name option * Notation_term.scope_name list
+  type notation_location = (Names.DirPath.t * Names.DirPath.t) * string
+  val declare_string_interpreter : Notation_term.scope_name -> required_module ->
+                                   string prim_token_interpreter -> string prim_token_uninterpreter -> unit
+  val declare_numeral_interpreter : Notation_term.scope_name -> required_module ->
+                                    Bigint.bigint prim_token_interpreter -> Bigint.bigint prim_token_uninterpreter -> unit
+  val interp_notation_as_global_reference : ?loc:Loc.t -> (Globnames.global_reference -> bool) ->
+                                            Constrexpr.notation -> delimiters option -> Globnames.global_reference
+  val locate_notation : (Glob_term.glob_constr -> Pp.std_ppcmds) -> Constrexpr.notation ->
+                        Notation_term.scope_name option -> Pp.std_ppcmds
+  val find_delimiters_scope : ?loc:Loc.t -> delimiters -> Notation_term.scope_name
+  val pr_scope : (Glob_term.glob_constr -> Pp.std_ppcmds) -> Notation_term.scope_name -> Pp.std_ppcmds
+  val pr_scopes : (Glob_term.glob_constr -> Pp.std_ppcmds) -> Pp.std_ppcmds
+  val interp_notation : ?loc:Loc.t -> Constrexpr.notation -> local_scopes ->
+                        Notation_term.interpretation * (notation_location * Notation_term.scope_name option)
+  val uninterp_prim_token : Glob_term.glob_constr -> Notation_term.scope_name * Constrexpr.prim_token
+end
+
+module Mltop :
+sig
+  val declare_cache_obj : (unit -> unit) -> string -> unit
+  val add_known_plugin : (unit -> unit) -> string -> unit
+  val add_known_module : string -> unit
+end
+
+(* All items in the Proof_type module are deprecated. *)
+module Proof_type :
+sig
+  type goal = Evar.t
+  type rule = Proof_type.prim_rule =
+    | Cut of bool * bool * Names.Id.t * Term.types
+    | Refine of Term.constr
+
+  type tactic = goal Evd.sigma -> goal list Evd.sigma
+end
+
+module Redexpr :
+sig
+  type red_expr =
+    (EConstr.constr, Names.evaluable_global_reference, Pattern.constr_pattern) Genredexpr.red_expr_gen
+  val reduction_of_red_expr :
+    Environ.env -> red_expr -> Reductionops.e_reduction_function * Term.cast_kind
+  val declare_reduction : string -> Reductionops.reduction_function -> unit
+end
+
+module Tacmach :
+sig
+  type tactic = Proof_type.tactic
+
+  type 'a sigma = 'a Evd.sigma
+
+  val re_sig : 'a -> Evd.evar_map -> 'a Evd.sigma
+
+  val pf_reduction_of_red_expr : Proof_type.goal Evd.sigma -> Redexpr.red_expr -> EConstr.constr -> Evd.evar_map * EConstr.constr
+
+  val pf_unsafe_type_of : Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.types
+
+  val pf_get_new_id  : Names.Id.t -> Proof_type.goal Evd.sigma -> Names.Id.t
+
+  val pf_env : Proof_type.goal Evd.sigma -> Environ.env
+
+  val pf_concl : Proof_type.goal Evd.sigma -> EConstr.types
+
+  val pf_apply : (Environ.env -> Evd.evar_map -> 'a) -> Proof_type.goal Evd.sigma -> 'a
+
+  val pf_get_hyp            : Proof_type.goal Evd.sigma -> Names.Id.t -> EConstr.named_declaration
+  val pf_get_hyp_typ        : Proof_type.goal Evd.sigma -> Names.Id.t -> EConstr.types
+  val project : Proof_type.goal Evd.sigma -> Evd.evar_map
+  val refine : EConstr.constr -> Proof_type.tactic
+  val pf_type_of : Proof_type.goal Evd.sigma -> EConstr.constr -> Evd.evar_map * EConstr.types
+
+  val pf_hyps : Proof_type.goal Evd.sigma -> EConstr.named_context
+
+  val pf_ids_of_hyps : Proof_type.goal Evd.sigma -> Names.Id.t list
+
+  val pf_reduce_to_atomic_ind : Proof_type.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
+
+  val pf_reduce_to_quantified_ind : Proof_type.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
+
+  val pf_eapply : (Environ.env -> Evd.evar_map -> 'a -> Evd.evar_map * 'b) -> 
+                  Evar.t Evd.sigma -> 'a -> Evar.t Evd.sigma * 'b
+
+  val pf_unfoldn : (Locus.occurrences * Names.evaluable_global_reference) list
+                   -> Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
+
+  val pf_reduce : (Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr) -> Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
+
+  val pf_conv_x : Proof_type.goal sigma -> EConstr.constr -> EConstr.constr -> bool
+
+  val pf_is_matching : Proof_type.goal sigma -> Pattern.constr_pattern -> EConstr.constr -> bool
+
+  val pf_hyps_types : Proof_type.goal sigma -> (Names.Id.t * EConstr.types) list
+
+  val pr_gls    : Proof_type.goal sigma -> Pp.std_ppcmds
+
+  val pf_nf_betaiota : Proof_type.goal sigma -> EConstr.constr -> EConstr.constr
+
+  val pf_last_hyp : Proof_type.goal sigma -> EConstr.named_declaration
+
+  val pf_nth_hyp_id : Proof_type.goal sigma -> int -> Names.Id.t
+
+  val sig_it : 'a sigma -> 'a
+
+  module New :
+  sig
+    val pf_apply : (Environ.env -> Evd.evar_map -> 'a) -> 'b Proofview.Goal.t -> 'a
+    val project : 'a Proofview.Goal.t -> Evd.evar_map
+    val pf_unsafe_type_of : 'a Proofview.Goal.t -> EConstr.constr -> EConstr.types
+    val of_old : (Proof_type.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
+
+    val pf_env : 'a Proofview.Goal.t -> Environ.env
+    val pf_ids_of_hyps : 'a Proofview.Goal.t -> Names.Id.t list
+    val pf_concl : 'a Proofview.Goal.t -> EConstr.types
+    val pf_get_new_id  : Names.Id.t -> 'a Proofview.Goal.t -> Names.Id.t
+    val pf_get_hyp_typ : Names.Id.t -> 'a Proofview.Goal.t -> EConstr.types
+    val pf_get_type_of : 'a Proofview.Goal.t -> EConstr.constr -> EConstr.types
+    val pf_global : Names.Id.t -> 'a Proofview.Goal.t -> Globnames.global_reference
+    val pf_hyps_types : 'a Proofview.Goal.t -> (Names.Id.t * EConstr.types) list
+  end
+end
+
+module Proof :
+sig
+  type proof = Proof.proof
+  type 'a focus_kind = 'a Proof.focus_kind
+  val run_tactic : Environ.env ->
+                   unit Proofview.tactic -> proof -> proof * (bool * Proofview_monad.Info.tree)
+  val unshelve : proof -> proof
+  val maximal_unfocus : 'a focus_kind -> proof -> proof
+  val pr_proof : proof -> Pp.std_ppcmds
+  module V82 :
+  sig
+    val grab_evars : proof -> proof
+
+    val subgoals : proof -> Goal.goal list Evd.sigma
+  end
+end
+
+module Proof_global :
+sig
+  type proof_mode = Proof_global.proof_mode = {
+      name : string;
+      set : unit -> unit ;
+      reset : unit -> unit
+    }
+  type proof_universes = UState.t * Universes.universe_binders option
+  type proof_object = Proof_global.proof_object = {
+        id : Names.Id.t;
+        entries : Safe_typing.private_constants Entries.definition_entry list;
+        persistence : Decl_kinds.goal_kind;
+        universes: proof_universes;
+      }
+  type proof_ending = Proof_global.proof_ending =
+  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
+                  proof_universes
+  | Proved of Vernacexpr.opacity_flag *
+              Vernacexpr.lident option *
+              proof_object
+  type proof_terminator = Proof_global.proof_terminator
+  type lemma_possible_guards = Proof_global.lemma_possible_guards
+  type universe_binders = Proof_global.universe_binders
+  type closed_proof = proof_object * proof_terminator
+  val make_terminator : (proof_ending -> unit) -> proof_terminator
+  val start_dependent_proof :
+    Names.Id.t -> ?pl:universe_binders -> Decl_kinds.goal_kind ->
+    Proofview.telescope -> proof_terminator -> unit
+  val with_current_proof :
+    (unit Proofview.tactic -> Proof.proof -> Proof.proof * 'a) -> 'a
+  val simple_with_current_proof :
+    (unit Proofview.tactic -> Proof.proof -> Proof.proof) -> unit
+  val compact_the_proof : unit -> unit
+  val register_proof_mode : proof_mode -> unit
+  val get_default_goal_selector : unit -> Vernacexpr.goal_selector
+
+  exception NoCurrentProof
+  val give_me_the_proof : unit -> Proof.proof
+  (** @raise NoCurrentProof when outside proof mode. *)
+
+  val discard_all : unit -> unit
+end
+
+module Nametab :
+sig
+  exception GlobalizationError of Libnames.qualid
+
+  type ltac_constant = Names.KerName.t
+
+  val global_of_path : Libnames.full_path -> Globnames.global_reference
+  val shortest_qualid_of_global : Names.Id.Set.t -> Globnames.global_reference -> Libnames.qualid
+  val path_of_global : Globnames.global_reference -> Libnames.full_path
+  val locate_extended : Libnames.qualid -> Globnames.extended_global_reference
+  val full_name_module : Libnames.qualid -> Names.DirPath.t
+  val locate_tactic : Libnames.qualid -> Names.KerName.t
+  val pr_global_env : Names.Id.Set.t -> Globnames.global_reference -> Pp.std_ppcmds
+  val shortest_qualid_of_tactic : Names.KerName.t -> Libnames.qualid
+  val basename_of_global : Globnames.global_reference -> Names.Id.t
+
+  type visibility = Nametab.visibility =
+                  | Until of int
+                  | Exactly of int
+
+  val push_tactic : visibility -> Libnames.full_path -> Names.KerName.t -> unit
+  val error_global_not_found : ?loc:Loc.t -> Libnames.qualid -> 'a
+  val shortest_qualid_of_module : Names.ModPath.t -> Libnames.qualid
+  val dirpath_of_module : Names.ModPath.t -> Names.DirPath.t
+  val locate_module : Libnames.qualid -> Names.ModPath.t
+  val dirpath_of_global : Globnames.global_reference -> Names.DirPath.t
+  val locate : Libnames.qualid -> Globnames.global_reference
+  val locate_constant : Libnames.qualid -> Names.Constant.t
+end
+
+module Ppextend :
+sig
+  type precedence = int
+  type parenRelation = Ppextend.parenRelation =
+                     | L | E | Any | Prec of precedence
+  type tolerability = precedence * parenRelation
+end
+
+module Refiner :
+sig
+  val project : 'a Evd.sigma -> Evd.evar_map
+  
+  val unpackage : 'a Evd.sigma -> Evd.evar_map ref * 'a
+
+  val repackage : Evd.evar_map ref -> 'a -> 'a Evd.sigma
+
+  val refiner : Proof_type.rule -> Proof_type.tactic
+
+  val tclSHOWHYPS : Proof_type.tactic -> Proof_type.tactic
+  exception FailError of int * Pp.std_ppcmds Lazy.t
+
+  val tclEVARS : Evd.evar_map -> Proof_type.tactic
+  val tclMAP : ('a -> Proof_type.tactic) -> 'a list -> Proof_type.tactic
+  val tclREPEAT : Proof_type.tactic -> Proof_type.tactic
+  val tclORELSE        : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
+  val tclFAIL : int -> Pp.std_ppcmds -> Proof_type.tactic
+  val tclIDTAC : Proof_type.tactic
+  val tclTHEN : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
+  val tclTHENLIST : Proof_type.tactic list -> Proof_type.tactic
+  val tclTRY : Proof_type.tactic -> Proof_type.tactic
+  val tclAT_LEAST_ONCE : Proof_type.tactic -> Proof_type.tactic
+end
+
+module Termops :
+sig
+  val it_mkLambda_or_LetIn : Term.constr -> Context.Rel.t -> Term.constr
+  val local_occur_var : Evd.evar_map -> Names.Id.t -> EConstr.constr -> bool
+  val occur_var : Environ.env -> Evd.evar_map -> Names.Id.t -> EConstr.constr -> bool
+  val pr_evar_info : Evd.evar_info -> Pp.std_ppcmds
+
+  val print_constr : EConstr.constr -> Pp.std_ppcmds
+
+  (** [dependent m t] tests whether [m] is a subterm of [t] *)
+  val dependent : Prelude.evar_map -> EConstr.constr -> EConstr.constr -> bool
+
+  (** [pop c] returns a copy of [c] with decremented De Bruijn indexes *)
+  val pop : EConstr.constr -> EConstr.constr
+
+  (** Does a given term contain an existential variable? *)
+  val occur_existential : Prelude.evar_map -> EConstr.constr -> bool
+
+  (** [map_constr_with_binders_left_to_right g f acc c] maps [f updated_acc] on all the immediate subterms of [c].
+      {ul {- if a given immediate subterm of [c] is not below a binder, then [updated_acc] is the same as [acc].}
+          {- if a given immediate subterm of [c] is below a binder [b], then [updated_acc] is computed as [g b acc].}} *)
+  val map_constr_with_binders_left_to_right :
+    Prelude.evar_map -> (EConstr.rel_declaration -> 'a -> 'a) -> ('a -> EConstr.constr -> EConstr.constr) -> 'a -> EConstr.constr -> EConstr.constr
+
+  (** Remove the outer-most {!Term.kind_of_term.Cast} from a given term. *)
+  val strip_outer_cast : Prelude.evar_map -> EConstr.constr -> EConstr.constr
+
+  (** [nb_lam] ⟦[fun (x1:t1)...(xn:tn) => c]⟧ where [c] is not an abstraction gives [n].
+      Casts are ignored. *)
+  val nb_lam : Prelude.evar_map -> EConstr.constr -> int
+
+  (** [push_rel_assum env_assumtion env] adds a given {i env assumption} to the {i env context} of a given {i environment}. *)
+  val push_rel_assum : Names.Name.t * EConstr.types -> Environ.env -> Environ.env
+
+  (** [push_rels_assum env_assumptions env] adds given {i env assumptions} to the {i env context} of a given {i environment}. *)
+  val push_rels_assum : (Names.Name.t * Term.types) list -> Environ.env -> Environ.env
+
+  type meta_value_map = Prelude.meta_value_map
+
+  val last_arg : Evd.evar_map -> EConstr.constr -> EConstr.constr
+  val assums_of_rel_context : ('c, 't) Context.Rel.pt -> (Names.Name.t * 't) list
+  val prod_applist : Evd.evar_map -> EConstr.constr -> EConstr.constr list -> EConstr.constr
+  val nb_prod : Evd.evar_map -> EConstr.constr -> int
+  val is_section_variable : Names.Id.t -> bool
+  val ids_of_rel_context : ('c, 't) Context.Rel.pt -> Names.Id.t list
+  val subst_term : Evd.evar_map -> EConstr.constr -> EConstr.constr -> EConstr.constr
+  val global_vars_set_of_decl : Environ.env -> Evd.evar_map -> EConstr.named_declaration -> Names.Id.Set.t
+  val vars_of_env: Environ.env -> Names.Id.Set.t
+  val ids_of_named_context : ('c, 't) Context.Named.pt -> Names.Id.t list
+  val ids_of_context : Environ.env -> Names.Id.t list
+  val global_of_constr : Evd.evar_map -> EConstr.constr -> Globnames.global_reference * EConstr.EInstance.t
+  val print_named_context : Environ.env -> Pp.std_ppcmds
+  val print_constr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.std_ppcmds
+  val clear_named_body : Names.Id.t -> Environ.env -> Environ.env
+  val is_Prop : Evd.evar_map -> EConstr.constr -> bool
+  val is_global : Evd.evar_map -> Globnames.global_reference -> EConstr.constr -> bool
+
+  val eq_constr : Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
+
+  val occur_var_in_decl :
+    Environ.env -> Evd.evar_map ->
+    Names.Id.t -> EConstr.named_declaration -> bool
+
+  val subst_meta : Prelude.meta_value_map -> Term.constr -> Term.constr
+
+  val free_rels : Evd.evar_map -> EConstr.constr -> Int.Set.t
+
+  val occur_term : Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
+
+  val replace_term : Evd.evar_map -> EConstr.constr -> EConstr.constr -> EConstr.constr -> EConstr.constr
+  val map_named_decl : ('a -> 'b) -> ('a, 'a) Context.Named.Declaration.pt -> ('b, 'b) Context.Named.Declaration.pt
+  val map_rel_decl : ('a -> 'b) -> ('a, 'a) Context.Rel.Declaration.pt -> ('b, 'b) Context.Rel.Declaration.pt
+  val pr_metaset : Evd.Metaset.t -> Pp.std_ppcmds
+  val pr_evar_map : ?with_univs:bool -> int option -> Evd.evar_map -> Pp.std_ppcmds
+  val pr_evar_universe_context : Evd.evar_universe_context -> Pp.std_ppcmds
+end
+
+module Locality :
+sig
+  val make_section_locality : bool option -> bool
+  module LocalityFixme : sig
+    val consume : unit -> bool option
+  end
+  val make_module_locality : bool option -> bool
+end
+
+module Search :
+sig
+  type glob_search_about_item = Search.glob_search_about_item =
+                              | GlobSearchSubPattern of Pattern.constr_pattern
+                              | GlobSearchString of string
+  type filter_function = Globnames.global_reference -> Environ.env -> Term.constr -> bool
+  type display_function = Globnames.global_reference -> Environ.env -> Term.constr -> unit
+  val search_about_filter : glob_search_about_item -> filter_function
+  val module_filter : Names.DirPath.t list * bool -> filter_function
+  val generic_search : int option -> display_function -> unit
+end
+
+module Notation_ops :
+sig
+  val glob_constr_of_notation_constr : ?loc:Loc.t -> Notation_term.notation_constr -> Glob_term.glob_constr
+  val glob_constr_of_notation_constr_with_binders : ?loc:Loc.t ->
+                                                    ('a -> Names.Name.t -> 'a * Names.Name.t) ->
+                                                    ('a -> Notation_term.notation_constr -> Glob_term.glob_constr) ->
+                                                    'a -> Notation_term.notation_constr -> Glob_term.glob_constr
+end
+
+module Constrextern :
+sig
+  val extern_glob_constr : Names.Id.Set.t -> Glob_term.glob_constr -> Constrexpr.constr_expr
+  val extern_glob_type : Names.Id.Set.t -> Glob_term.glob_constr -> Constrexpr.constr_expr
+  val extern_constr : ?lax:bool -> bool -> Environ.env -> Evd.evar_map -> Term.constr -> Constrexpr.constr_expr
+  val without_symbols : ('a -> 'b) -> 'a -> 'b
+  val print_universes : bool ref
+  val extern_type : bool -> Environ.env -> Evd.evar_map -> Term.types -> Constrexpr.constr_expr
+  val with_universes : ('a -> 'b) -> 'a -> 'b
+  val set_extern_reference :
+    (?loc:Loc.t -> Names.Id.Set.t -> Globnames.global_reference -> Libnames.reference) -> unit
+end
+
+module Patternops :
+sig
+  val pattern_of_glob_constr : Glob_term.glob_constr -> Names.Id.t list * Pattern.constr_pattern
+  val subst_pattern : Mod_subst.substitution -> Pattern.constr_pattern -> Pattern.constr_pattern
+  val pattern_of_constr : Environ.env -> Evd.evar_map -> Term.constr -> Pattern.constr_pattern
+  val instantiate_pattern : Environ.env ->
+    Evd.evar_map -> Pattern.extended_patvar_map ->
+    Pattern.constr_pattern -> Pattern.constr_pattern
+end
+
+module Printer :
+sig
+  val pr_named_context : Environ.env -> Evd.evar_map -> Context.Named.t -> Pp.std_ppcmds
+  val pr_rel_context : Environ.env -> Evd.evar_map -> Context.Rel.t -> Pp.std_ppcmds
+  val pr_goal : Proof_type.goal Evd.sigma -> Pp.std_ppcmds
+
+  val pr_constr_env : Prelude.env -> Prelude.evar_map -> Term.constr -> Pp.std_ppcmds
+  val pr_lconstr_env : Prelude.env -> Prelude.evar_map -> Term.constr -> Pp.std_ppcmds
+
+  val pr_constr : Term.constr -> Pp.std_ppcmds
+
+  val pr_lconstr : Term.constr -> Pp.std_ppcmds
+
+  val pr_econstr : EConstr.constr -> Pp.std_ppcmds
+  val pr_glob_constr : Glob_term.glob_constr -> Pp.std_ppcmds
+  val pr_constr_pattern : Pattern.constr_pattern -> Pp.std_ppcmds
+  val pr_glob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.std_ppcmds
+  val pr_lglob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.std_ppcmds
+  val pr_econstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.std_ppcmds
+  val pr_constr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.std_ppcmds
+  val pr_lconstr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.std_ppcmds
+  val pr_closed_glob : Glob_term.closed_glob_constr -> Pp.std_ppcmds
+  val pr_lglob_constr : Glob_term.glob_constr -> Pp.std_ppcmds
+  val pr_leconstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.std_ppcmds
+  val pr_leconstr : EConstr.constr -> Pp.std_ppcmds
+  val pr_global : Globnames.global_reference -> Pp.std_ppcmds
+  val pr_lconstr_under_binders : Pattern.constr_under_binders -> Pp.std_ppcmds
+  val pr_lconstr_under_binders_env : Environ.env -> Evd.evar_map -> Pattern.constr_under_binders -> Pp.std_ppcmds
+
+  val pr_constr_under_binders_env : Environ.env -> Evd.evar_map -> Pattern.constr_under_binders -> Pp.std_ppcmds
+  val pr_closed_glob_env : Environ.env -> Evd.evar_map -> Glob_term.closed_glob_constr -> Pp.std_ppcmds
+  val pr_rel_context_of : Environ.env -> Evd.evar_map -> Pp.std_ppcmds
+  val pr_named_context_of : Environ.env -> Evd.evar_map -> Pp.std_ppcmds
+  val pr_ltype : Term.types -> Pp.std_ppcmds
+  val pr_ljudge : EConstr.unsafe_judgment -> Pp.std_ppcmds * Pp.std_ppcmds
+  val pr_idpred : Names.Id.Pred.t -> Pp.std_ppcmds
+  val pr_cpred : Names.Cpred.t -> Pp.std_ppcmds
+  val pr_transparent_state : Names.transparent_state -> Pp.std_ppcmds
+end
+
+module Classes :
+sig
+  val set_typeclass_transparency : Names.evaluable_global_reference -> bool -> bool -> unit
+  val new_instance :
+    ?abstract:bool ->
+    ?global:bool ->
+    ?refine:bool ->
+    Decl_kinds.polymorphic ->
+    Constrexpr.local_binder_expr list ->
+    Constrexpr.typeclass_constraint ->
+    (bool * Constrexpr.constr_expr) option ->
+    ?generalize:bool ->
+    ?tac:unit Proofview.tactic  ->
+    ?hook:(Globnames.global_reference -> unit) ->
+    Vernacexpr.hint_info_expr ->
+    Names.Id.t
+end
+
+module Classops :
+sig
+  type coe_index = Classops.coe_index
+  type inheritance_path = coe_index list
+  type cl_index = Classops.cl_index
+
+  val hide_coercion : Globnames.global_reference -> int option
+  val lookup_path_to_sort_from : Environ.env -> Evd.evar_map -> EConstr.types ->
+                                 EConstr.types * inheritance_path
+  val get_coercion_value : coe_index -> Constr.t
+  val coercions : unit -> coe_index list
+  val pr_cl_index : cl_index -> Pp.std_ppcmds
+end
+
+module ExplainErr :
+sig
+  val process_vernac_interp_error : ?allow_uncaught:bool -> Util.iexn -> Util.iexn
+  val register_additional_error_info : (Util.iexn -> Pp.std_ppcmds option Loc.located option) -> unit
+end
+
+module Tacred :
+sig
+  val try_red_product : Reductionops.reduction_function
+  val simpl : Reductionops.reduction_function
+  val unfoldn :
+    (Locus.occurrences * Names.evaluable_global_reference) list ->  Reductionops.reduction_function
+  val hnf_constr : Reductionops.reduction_function
+  val red_product : Reductionops.reduction_function
+  val is_evaluable : Environ.env -> Names.evaluable_global_reference -> bool
+  val evaluable_of_global_reference :
+    Environ.env -> Globnames.global_reference -> Names.evaluable_global_reference
+  val error_not_evaluable : Globnames.global_reference -> 'a
+  val reduce_to_quantified_ref :
+    Environ.env ->  Evd.evar_map -> Globnames.global_reference -> EConstr.types -> EConstr.types
+  val pattern_occs : (Locus.occurrences * EConstr.constr) list -> Reductionops.e_reduction_function
+  val cbv_norm_flags : CClosure.RedFlags.reds -> Reductionops.reduction_function
+end
+
+module Detyping :
+sig
+  val print_universes : bool ref
+  val print_evar_arguments : bool ref
+  val detype : ?lax:bool -> bool -> Names.Id.t list -> Environ.env -> Evd.evar_map -> EConstr.constr -> Glob_term.glob_constr
+  val subst_glob_constr : Mod_subst.substitution -> Glob_term.glob_constr -> Glob_term.glob_constr
+  val set_detype_anonymous : (?loc:Loc.t -> int -> Glob_term.glob_constr) -> unit
+end
+
+module Constrexpr_ops :
+sig
+  val mkIdentC : Names.Id.t -> Constrexpr.constr_expr
+  val mkAppC : Constrexpr.constr_expr * Constrexpr.constr_expr list -> Constrexpr.constr_expr
+  val names_of_local_assums : Constrexpr.local_binder_expr list -> Names.Name.t Loc.located list
+  val coerce_reference_to_id : Prelude.reference -> Names.Id.t
+  val coerce_to_id : Constrexpr.constr_expr -> Names.Id.t Loc.located
+  val constr_loc : Constrexpr.constr_expr -> Loc.t option
+  val mkRefC : Prelude.reference -> Constrexpr.constr_expr
+  val mkLambdaC : Names.Name.t Loc.located list * Constrexpr.binder_kind * Constrexpr.constr_expr * Constrexpr.constr_expr -> Constrexpr.constr_expr
+  val default_binder_kind : Constrexpr.binder_kind
+  val mkLetInC : Names.Name.t Loc.located * Constrexpr.constr_expr * Constrexpr.constr_expr option * Constrexpr.constr_expr -> Constrexpr.constr_expr
+  val mkCProdN : ?loc:Loc.t -> Constrexpr.local_binder_expr list -> Constrexpr.constr_expr -> Constrexpr.constr_expr
+end
+
+module Glob_ops :
+sig
+  val map_glob_constr_left_to_right : (Glob_term.glob_constr -> Glob_term.glob_constr) -> Glob_term.glob_constr -> Glob_term.glob_constr
+  val loc_of_glob_constr : Glob_term.glob_constr -> Loc.t option
+  val glob_constr_eq : Glob_term.glob_constr -> Glob_term.glob_constr -> bool
+  val bound_glob_vars : Glob_term.glob_constr -> Names.Id.Set.t
+
+  (** Conversion from glob_constr to cases pattern, if possible
+
+    Take the current alias as parameter,
+    @raise Not_found if translation is impossible *)
+  val cases_pattern_of_glob_constr : Names.Name.t -> Glob_term.glob_constr -> Glob_term.cases_pattern
+  val map_glob_constr :
+    (Glob_term.glob_constr -> Glob_term.glob_constr) -> Glob_term.glob_constr -> Glob_term.glob_constr
+end
+
+module Indrec :
+sig
+  type dep_flag = bool
+  val lookup_eliminator : Names.inductive -> Sorts.family -> Globnames.global_reference
+  val build_case_analysis_scheme : Environ.env -> Evd.evar_map -> Term.pinductive ->
+                                   dep_flag -> Sorts.family -> Evd.evar_map * Term.constr
+  val make_elimination_ident : Names.Id.t -> Sorts.family -> Names.Id.t
+  val build_mutual_induction_scheme :
+    Environ.env -> Evd.evar_map -> (Term.pinductive * dep_flag * Sorts.family) list -> Evd.evar_map * Term.constr list
+  val build_case_analysis_scheme_default : Environ.env -> Evd.evar_map -> Term.pinductive ->
+      Sorts.family -> Evd.evar_map * Term.constr
+end
+
+module Logic :
+sig
+  type refiner_error = Logic.refiner_error =
+  | BadType of Term.constr * Term.constr * Term.constr
+  | UnresolvedBindings of Names.Name.t list
+  | CannotApply of Term.constr * Term.constr
+  | NotWellTyped of Term.constr
+  | NonLinearProof of Term.constr
+  | MetaInType of EConstr.constr
+  | IntroNeedsProduct
+  | DoesNotOccurIn of Term.constr * Names.Id.t
+  | NoSuchHyp of Names.Id.t
+  exception RefinerError of refiner_error
+  val catchable_exception : exn -> bool
+end
+
+module Himsg :
+sig
+  val explain_refiner_error : Logic.refiner_error -> Pp.std_ppcmds
+  val explain_pretype_error : Environ.env -> Evd.evar_map -> Pretype_errors.pretype_error -> Pp.std_ppcmds
+end
+
+module Extend :
+sig
+  type ('self, 'a) symbol = ('self, 'a) Extend.symbol
+  type 'a user_symbol = 'a Extend.user_symbol =
+    | Ulist1 of 'a user_symbol
+    | Ulist1sep of 'a user_symbol * string
+    | Ulist0 of 'a user_symbol
+    | Ulist0sep of 'a user_symbol * string
+    | Uopt of 'a user_symbol
+    | Uentry of 'a
+    | Uentryl of 'a * int
+end
+
+module Pputils :
+sig
+  val pr_with_occurrences : ('a -> Pp.std_ppcmds) -> (string -> Pp.std_ppcmds) -> 'a Locus.with_occurrences -> Pp.std_ppcmds
+  val pr_red_expr :
+    ('a -> Pp.std_ppcmds) * ('a -> Pp.std_ppcmds) * ('b -> Pp.std_ppcmds) * ('c -> Pp.std_ppcmds) ->
+    (string -> Pp.std_ppcmds) ->
+    ('a,'b,'c) Genredexpr.red_expr_gen -> Pp.std_ppcmds
+  val pr_raw_generic : Environ.env -> Genarg.rlevel Genarg.generic_argument -> Pp.std_ppcmds
+  val pr_glb_generic : Environ.env -> Genarg.glevel Genarg.generic_argument -> Pp.std_ppcmds
+  val pr_or_var : ('a -> Pp.std_ppcmds) -> 'a Misctypes.or_var -> Pp.std_ppcmds
+  val pr_or_by_notation : ('a -> Pp.std_ppcmds) -> 'a Misctypes.or_by_notation -> Pp.std_ppcmds
+end
+
+module Ppconstr :
+sig
+  val pr_name : Names.Name.t -> Pp.std_ppcmds
+
+  val pr_id : Names.Id.t -> Pp.std_ppcmds
+  val pr_or_var : ('a -> Pp.std_ppcmds) -> 'a Misctypes.or_var -> Pp.std_ppcmds
+  val pr_with_comments : ?loc:Loc.t -> Pp.std_ppcmds -> Pp.std_ppcmds
+  val pr_lident : Names.Id.t Loc.located -> Pp.std_ppcmds
+  val pr_lname : Names.Name.t Loc.located -> Pp.std_ppcmds
+  val prec_less : int -> int * Ppextend.parenRelation -> bool
+  val pr_constr_expr : Constrexpr.constr_expr -> Pp.std_ppcmds
+  val pr_lconstr_expr : Constrexpr.constr_expr -> Pp.std_ppcmds
+  val pr_constr_pattern_expr : Constrexpr.constr_pattern_expr -> Pp.std_ppcmds
+  val pr_lconstr_pattern_expr : Constrexpr.constr_pattern_expr -> Pp.std_ppcmds
+  val pr_binders : Constrexpr.local_binder_expr list -> Pp.std_ppcmds
+  val pr_glob_sort : Misctypes.glob_sort -> Pp.std_ppcmds
+end
+
+module Genprint :
+sig
+  type 'a printer = 'a -> Pp.std_ppcmds
+  val generic_top_print : Genarg.tlevel Genarg.generic_argument printer
+  val register_print0 : ('raw, 'glb, 'top) Genarg.genarg_type ->
+                        'raw printer -> 'glb printer -> 'top printer -> unit
+end
+
+module Miscprint :
+sig
+  val pr_or_and_intro_pattern :
+    ('a -> Pp.std_ppcmds) -> 'a Misctypes.or_and_intro_pattern_expr -> Pp.std_ppcmds
+  val pr_intro_pattern_naming : Misctypes.intro_pattern_naming_expr -> Pp.std_ppcmds
+  val pr_intro_pattern :
+    ('a -> Pp.std_ppcmds) -> 'a Misctypes.intro_pattern_expr Loc.located -> Pp.std_ppcmds
+  val pr_bindings :
+    ('a -> Pp.std_ppcmds) ->
+    ('a -> Pp.std_ppcmds) -> 'a Misctypes.bindings -> Pp.std_ppcmds
+  val pr_bindings_no_with :
+    ('a -> Pp.std_ppcmds) ->
+    ('a -> Pp.std_ppcmds) -> 'a Misctypes.bindings -> Pp.std_ppcmds
+  val pr_with_bindings :
+    ('a -> Pp.std_ppcmds) ->
+    ('a -> Pp.std_ppcmds) -> 'a * 'a Misctypes.bindings -> Pp.std_ppcmds
+end
+
+module Miscops :
+sig
+  val map_red_expr_gen : ('a -> 'd) -> ('b -> 'e) -> ('c -> 'f) ->
+                         ('a,'b,'c) Genredexpr.red_expr_gen -> ('d,'e,'f) Genredexpr.red_expr_gen
+  val map_cast_type : ('a -> 'b) -> 'a Misctypes.cast_type -> 'b Misctypes.cast_type
+end
+
+module Stateid :
+sig
+  type t = Stateid.t
+  module Self : module type of struct include Stateid.Self end
+end
+
+module Stm :
+sig
+  type state = Stm.state
+  val state_of_id :
+    Stateid.t -> [ `Valid of state option | `Expired | `Error of exn ]
+end
+
+module Declaremods :
+sig
+  val append_end_library_hook : (unit -> unit) -> unit
+end
+
+module Pfedit :
+sig
+  val solve_by_implicit_tactic : unit -> Pretyping.inference_hook option
+  val refine_by_tactic : Environ.env -> Evd.evar_map -> EConstr.types -> unit Proofview.tactic ->
+                         Term.constr * Evd.evar_map
+  val declare_implicit_tactic : unit Proofview.tactic -> unit
+  val clear_implicit_tactic : unit -> unit
+  val by : unit Proofview.tactic -> bool
+  val solve : ?with_end_tac:unit Proofview.tactic ->
+      Vernacexpr.goal_selector -> int option -> unit Proofview.tactic ->
+      Proof.proof -> Proof.proof * bool
+  val delete_current_proof : unit -> unit
+  val cook_proof :
+    unit -> (Names.Id.t * (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * Decl_kinds.goal_kind))
+  val get_current_proof_name : unit -> Names.Id.t
+  val get_current_context : unit -> Evd.evar_map * Environ.env
+end
+
+module Tactics :
+sig
+  open Proofview
+
+  type change_arg = Pattern.patvar_map -> Evd.evar_map -> Evd.evar_map * EConstr.constr
+  type tactic_reduction = Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr
+  type elim_scheme = Tactics.elim_scheme =
+    {
+      elimc: EConstr.constr Misctypes.with_bindings option;
+      elimt: EConstr.types;
+      indref: Globnames.global_reference option;
+      params: EConstr.rel_context;
+      nparams: int;
+      predicates: EConstr.rel_context;
+      npredicates: int;
+      branches: EConstr.rel_context;
+      nbranches: int;
+      args: EConstr.rel_context;
+      nargs: int;
+      indarg: EConstr.rel_declaration option;
+      concl: EConstr.types;
+      indarg_in_concl: bool;
+      farg_in_concl: bool;
+    }
+
+  val unify : ?state:Names.transparent_state -> EConstr.constr -> EConstr.constr -> unit Proofview.tactic
+  val intro_then : (Names.Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
+  val reflexivity : unit tactic
+  val change_concl : EConstr.constr -> unit tactic
+  val apply : EConstr.constr -> unit tactic
+  val normalise_vm_in_concl : unit tactic
+  val assert_before : Names.Name.t -> EConstr.types -> unit tactic
+  val exact_check : EConstr.constr -> unit tactic
+  val simplest_elim : EConstr.constr -> unit tactic
+  val introf : unit tactic
+  val cut : EConstr.types -> unit tactic
+  val convert_concl : ?check:bool -> EConstr.types -> Term.cast_kind -> unit tactic
+  val intro_using : Names.Id.t -> unit tactic
+  val intro : unit tactic
+  val fresh_id_in_env : Names.Id.t list -> Names.Id.t -> Environ.env -> Names.Id.t
+  val is_quantified_hypothesis : Names.Id.t -> 'a Goal.t -> bool
+  val tclABSTRACT : ?opaque:bool -> Names.Id.t option -> unit Proofview.tactic -> unit Proofview.tactic
+  val intro_patterns : bool -> Tactypes.intro_patterns -> unit Proofview.tactic
+  val apply_with_delayed_bindings_gen :
+    Misctypes.advanced_flag -> Misctypes.evars_flag -> (Misctypes.clear_flag * Tactypes.delayed_open_constr_with_bindings Loc.located) list -> unit Proofview.tactic
+  val apply_delayed_in :
+    Misctypes.advanced_flag -> Misctypes.evars_flag -> Names.Id.t -> 
+    (Misctypes.clear_flag * Tactypes.delayed_open_constr_with_bindings Loc.located) list ->
+    Tactypes.intro_pattern option -> unit Proofview.tactic
+  val elim :
+    Misctypes.evars_flag -> Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings -> EConstr.constr Misctypes.with_bindings option -> unit Proofview.tactic
+  val general_case_analysis : Misctypes.evars_flag -> Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings ->  unit Proofview.tactic
+  val mutual_fix :
+    Names.Id.t -> int -> (Names.Id.t * int * EConstr.constr) list -> int -> unit Proofview.tactic
+  val mutual_cofix : Names.Id.t -> (Names.Id.t * EConstr.constr) list -> int -> unit Proofview.tactic
+  val forward   : bool -> unit Proofview.tactic option option ->
+                  Tactypes.intro_pattern option -> EConstr.constr -> unit Proofview.tactic
+  val generalize_gen : (EConstr.constr Locus.with_occurrences * Names.Name.t) list -> unit Proofview.tactic
+  val letin_tac : (bool * Tactypes.intro_pattern_naming) option ->
+                  Names.Name.t -> EConstr.constr -> EConstr.types option -> Locus.clause -> unit Proofview.tactic
+  val letin_pat_tac : Misctypes.evars_flag ->
+                      (bool * Tactypes.intro_pattern_naming) option ->
+                      Names.Name.t ->
+                      Evd.evar_map * EConstr.constr ->
+                      Locus.clause -> unit Proofview.tactic
+  val induction_destruct : Misctypes.rec_flag -> Misctypes.evars_flag ->
+                           (Tactypes.delayed_open_constr_with_bindings Misctypes.destruction_arg
+                            * (Tactypes.intro_pattern_naming option * Tactypes.or_and_intro_pattern option)
+                            * Locus.clause option) list *
+                             EConstr.constr Misctypes.with_bindings option -> unit Proofview.tactic
+  val reduce : Redexpr.red_expr -> Locus.clause -> unit Proofview.tactic
+  val change : Pattern.constr_pattern option -> change_arg -> Locus.clause -> unit Proofview.tactic
+  val intros_reflexivity : unit Proofview.tactic
+  val exact_no_check : EConstr.constr -> unit Proofview.tactic
+  val assumption : unit Proofview.tactic
+  val intros_transitivity : EConstr.constr option -> unit Proofview.tactic
+  val vm_cast_no_check : EConstr.constr -> unit Proofview.tactic
+  val native_cast_no_check : EConstr.constr -> unit Proofview.tactic
+  val case_type : EConstr.types -> unit Proofview.tactic
+  val elim_type : EConstr.types -> unit Proofview.tactic
+  val cut_and_apply : EConstr.constr -> unit Proofview.tactic
+  val left_with_bindings  : Misctypes.evars_flag -> EConstr.constr Misctypes.bindings -> unit Proofview.tactic
+  val right_with_bindings : Misctypes.evars_flag -> EConstr.constr Misctypes.bindings -> unit Proofview.tactic
+  val any_constructor : Misctypes.evars_flag -> unit Proofview.tactic option -> unit Proofview.tactic
+  val constructor_tac : Misctypes.evars_flag -> int option -> int ->
+                        EConstr.constr Misctypes.bindings -> unit Proofview.tactic
+  val specialize : EConstr.constr Misctypes.with_bindings -> Tactypes.intro_pattern option -> unit Proofview.tactic
+  val intros_symmetry : Locus.clause -> unit Proofview.tactic
+  val split_with_bindings : Misctypes.evars_flag -> EConstr.constr Misctypes.bindings list -> unit Proofview.tactic
+  val intros_until : Misctypes.quantified_hypothesis -> unit Proofview.tactic
+  val intro_move : Names.Id.t option -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
+  val move_hyp : Names.Id.t -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
+  val rename_hyp : (Names.Id.t * Names.Id.t) list -> unit Proofview.tactic
+  val revert : Names.Id.t list -> unit Proofview.tactic
+  val simple_induct : Misctypes.quantified_hypothesis -> unit Proofview.tactic
+  val simple_destruct : Misctypes.quantified_hypothesis -> unit Proofview.tactic
+  val fix : Names.Id.t option -> int -> unit Proofview.tactic
+  val cofix : Names.Id.t option -> unit Proofview.tactic
+  val keep : Names.Id.t list -> unit Proofview.tactic
+  val clear : Names.Id.t list -> unit Proofview.tactic
+  val clear_body : Names.Id.t list -> unit Proofview.tactic
+  val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> EConstr.constr  -> unit Proofview.tactic
+  val force_destruction_arg : Misctypes.evars_flag -> Environ.env -> Evd.evar_map ->
+    Tactypes.delayed_open_constr_with_bindings Misctypes.destruction_arg ->
+    Evd.evar_map * EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg
+  val apply_with_bindings   : EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
+  val abstract_generalize : ?generalize_vars:bool -> ?force_dep:bool -> Names.Id.t -> unit Proofview.tactic
+  val specialize_eqs : Names.Id.t -> unit Proofview.tactic
+  val generalize : EConstr.constr list -> unit Proofview.tactic
+  val simplest_case : EConstr.constr -> unit Proofview.tactic
+  val introduction : ?check:bool -> Names.Id.t -> unit Proofview.tactic
+  val convert_concl_no_check : EConstr.types -> Term.cast_kind -> unit Proofview.tactic
+  val reduct_in_concl : tactic_reduction * Term.cast_kind -> unit Proofview.tactic
+  val reduct_in_hyp : ?check:bool -> tactic_reduction -> Locus.hyp_location -> unit Proofview.tactic
+  val convert_hyp_no_check : EConstr.named_declaration -> unit Proofview.tactic
+  val reflexivity_red : bool -> unit Proofview.tactic
+  val symmetry_red : bool -> unit Proofview.tactic
+  val eapply : EConstr.constr -> unit Proofview.tactic
+  val transitivity_red : bool -> EConstr.constr option -> unit Proofview.tactic
+  val assert_after_replacing : Names.Id.t -> EConstr.types -> unit Proofview.tactic
+  val intros : unit Proofview.tactic
+  val setoid_reflexivity : unit Proofview.tactic Hook.t
+  val setoid_symmetry : unit Proofview.tactic Hook.t
+  val setoid_symmetry_in : (Names.Id.t -> unit Proofview.tactic) Hook.t
+  val setoid_transitivity : (EConstr.constr option -> unit Proofview.tactic) Hook.t
+  val unfold_in_concl :
+    (Locus.occurrences * Names.evaluable_global_reference) list -> unit Proofview.tactic
+  val intros_using : Names.Id.t list -> unit Proofview.tactic
+  val simpl_in_concl : unit Proofview.tactic
+  val reduct_option : ?check:bool -> tactic_reduction * Term.cast_kind -> Locus.goal_location -> unit Proofview.tactic
+  val simplest_split : unit Proofview.tactic
+  val unfold_in_hyp :
+    (Locus.occurrences * Names.evaluable_global_reference) list -> Locus.hyp_location -> unit Proofview.tactic
+  val split : EConstr.constr Misctypes.bindings -> unit Proofview.tactic
+  val red_in_concl : unit Proofview.tactic
+  val change_in_concl   : (Locus.occurrences * Pattern.constr_pattern) option -> change_arg -> unit Proofview.tactic
+  val eapply_with_bindings  : EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
+  val assert_by  : Names.Name.t -> EConstr.types -> unit Proofview.tactic ->
+                   unit Proofview.tactic
+  val intro_avoiding : Names.Id.t list -> unit Proofview.tactic
+  val pose_proof : Names.Name.t -> EConstr.constr -> unit Proofview.tactic
+  val pattern_option :  (Locus.occurrences * EConstr.constr) list -> Locus.goal_location -> unit Proofview.tactic
+  val compute_elim_sig : Evd.evar_map -> ?elimc:EConstr.constr Misctypes.with_bindings -> EConstr.types -> elim_scheme
+  val try_intros_until :
+    (Names.Id.t -> unit Proofview.tactic) -> Misctypes.quantified_hypothesis -> unit Proofview.tactic
+  val cache_term_by_tactic_then :
+    opaque:bool -> ?goal_type:(EConstr.constr option) -> Names.Id.t ->
+    Decl_kinds.goal_kind -> unit Proofview.tactic -> (EConstr.constr -> EConstr.constr list -> unit Proofview.tactic) -> unit Proofview.tactic
+  val apply_type : EConstr.constr -> EConstr.constr list -> unit Proofview.tactic
+  val hnf_in_concl : unit Proofview.tactic
+  val intro_mustbe_force : Names.Id.t -> unit Proofview.tactic
+
+  module New :
+  sig
+    val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.constr) -> unit Proofview.tactic
+    val reduce_after_refine : unit Proofview.tactic
+  end
+  module Simple :
+  sig
+    val intro : Names.Id.t -> unit Proofview.tactic
+    val apply  : EConstr.constr -> unit Proofview.tactic
+    val case : EConstr.constr -> unit Proofview.tactic
+  end
+end
+
+module Tacticals :
+sig
+  open Proof_type
+  val tclORELSE        : tactic -> tactic -> tactic
+  val tclDO : int -> tactic -> tactic
+  val tclIDTAC : tactic
+  val tclFAIL : int -> Pp.std_ppcmds -> tactic
+  val tclTHEN : tactic -> tactic -> tactic
+  val tclTHENLIST      : tactic list -> tactic
+  val pf_constr_of_global :         
+    Globnames.global_reference -> (EConstr.constr -> Proof_type.tactic) -> Proof_type.tactic
+  val tclMAP : ('a -> tactic) -> 'a list -> tactic
+  val tclTRY           : tactic -> tactic
+  val tclCOMPLETE      : tactic -> tactic
+  val tclTHENS : tactic -> tactic list -> tactic
+  val tclFIRST         : tactic list -> tactic
+  val tclTHENFIRST     : tactic -> tactic -> tactic
+  val tclTHENLAST      : tactic -> tactic -> tactic
+  val tclTHENSFIRSTn   : tactic -> tactic array -> tactic -> tactic
+  val tclTHENSLASTn    : tactic -> tactic -> tactic array -> tactic
+  val tclSOLVE         : tactic list -> tactic
+
+  val onClause   : (Names.Id.t option -> tactic) -> Locus.clause -> tactic
+  val onAllHypsAndConcl : (Names.Id.t option -> tactic) -> tactic
+  val onLastHypId : (Names.Id.t -> tactic) -> tactic
+  val onNthHypId : int -> (Names.Id.t -> tactic) -> tactic
+  val onNLastHypsId : int -> (Names.Id.t list -> tactic) -> tactic
+  val tclTHENSEQ : tactic list -> tactic
+
+  val nLastDecls : int -> Proof_type.goal Evd.sigma -> EConstr.named_context
+
+  val tclTHEN_i : tactic -> (int -> tactic) -> tactic
+
+  val tclPROGRESS : tactic -> tactic
+
+  val elimination_sort_of_goal : Proof_type.goal Evd.sigma -> Sorts.family
+
+  module New :
+  sig
+    open Proofview
+    val tclORELSE0 : unit tactic -> unit tactic -> unit tactic
+    val tclFAIL : int -> Pp.std_ppcmds -> 'a tactic
+    val pf_constr_of_global : Globnames.global_reference -> EConstr.constr tactic
+    val tclTHEN : unit tactic -> unit tactic -> unit tactic
+    val tclTHENS : unit tactic -> unit tactic list -> unit tactic
+    val tclFIRST : unit tactic list -> unit tactic
+    val tclZEROMSG : ?loc:Loc.t -> Pp.std_ppcmds -> 'a tactic
+    val tclORELSE  : unit tactic -> unit tactic -> unit tactic
+    val tclREPEAT : unit tactic -> unit tactic
+    val tclTRY : unit tactic -> unit tactic
+    val tclTHENFIRST : unit tactic -> unit tactic -> unit tactic
+    val tclPROGRESS :  unit Proofview.tactic -> unit Proofview.tactic
+    val tclTHENS3PARTS : unit tactic -> unit tactic array -> unit tactic -> unit tactic array -> unit tactic
+    val tclDO : int -> unit tactic -> unit tactic
+    val tclTIMEOUT : int -> unit tactic -> unit tactic
+    val tclTIME : string option -> 'a tactic -> 'a tactic
+    val tclOR : unit tactic -> unit tactic -> unit tactic
+    val tclONCE : unit tactic -> unit tactic
+    val tclEXACTLY_ONCE : unit tactic -> unit tactic
+    val tclIFCATCH :
+      unit tactic  ->
+      (unit -> unit tactic) ->
+      (unit -> unit tactic) -> unit tactic
+    val tclSOLVE : unit tactic list -> unit tactic
+    val tclCOMPLETE : 'a tactic -> 'a tactic
+    val tclSELECT : Vernacexpr.goal_selector -> 'a tactic -> 'a tactic
+    val tclWITHHOLES : bool -> 'a tactic -> Evd.evar_map -> 'a tactic
+    val tclDELAYEDWITHHOLES : bool -> 'a Tactypes.delayed_open -> ('a -> unit tactic) -> unit tactic
+    val tclTHENLIST : unit tactic list -> unit tactic
+    val tclTHENLAST  : unit tactic -> unit tactic -> unit tactic
+    val tclMAP : ('a -> unit tactic) -> 'a list -> unit tactic
+    val tclIDTAC : unit tactic
+    val tclIFTHENELSE : unit tactic -> unit tactic -> unit tactic -> unit tactic
+    val tclIFTHENSVELSE : unit tactic -> unit tactic array -> unit tactic -> unit tactic
+  end
+end
+
+module Equality :
+sig
+  type orientation = bool
+  type freeze_evars_flag = bool
+  type dep_proof_flag = bool
+  type conditions =
+    | Naive
+    | FirstSolved
+    | AllMatches
+
+  val build_selector :
+    Environ.env -> Evd.evar_map -> int -> EConstr.constr -> EConstr.types ->
+    EConstr.constr -> EConstr.constr -> Evd.evar_map * EConstr.constr
+  val replace : EConstr.constr -> EConstr.constr -> unit Proofview.tactic
+  val general_rewrite :
+    orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
+    ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr -> unit Proofview.tactic
+  val inj : Tactypes.intro_patterns option -> Misctypes.evars_flag ->
+            Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
+  val general_multi_rewrite :
+    Misctypes.evars_flag -> (bool * Misctypes.multi * Misctypes.clear_flag * Tactypes.delayed_open_constr_with_bindings) list ->
+    Locus.clause -> (unit Proofview.tactic * conditions) option -> unit Proofview.tactic
+  val replace_in_clause_maybe_by : EConstr.constr -> EConstr.constr -> Locus.clause -> unit Proofview.tactic option -> unit Proofview.tactic
+  val replace_term : bool option -> EConstr.constr -> Locus.clause -> unit Proofview.tactic
+  val dEq : Misctypes.evars_flag -> EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option -> unit Proofview.tactic
+  val discr_tac : Misctypes.evars_flag ->
+                  EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option -> unit Proofview.tactic
+  val injClause    : Tactypes.intro_patterns option -> Misctypes.evars_flag ->
+                     EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option -> unit Proofview.tactic
+
+  val simpleInjClause : Misctypes.evars_flag ->
+                        EConstr.constr Misctypes.with_bindings Misctypes.destruction_arg option ->
+                        unit Proofview.tactic
+  val rewriteInConcl : bool -> EConstr.constr -> unit Proofview.tactic
+  val rewriteInHyp : bool -> EConstr.constr -> Names.Id.t -> unit Proofview.tactic
+  val cutRewriteInConcl : bool -> EConstr.constr -> unit Proofview.tactic
+  val cutRewriteInHyp : bool -> EConstr.types -> Names.Id.t -> unit Proofview.tactic
+  val general_rewrite_ebindings_clause : Names.Id.t option ->
+                                         orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
+                                         ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
+  val subst : Names.Id.t list -> unit Proofview.tactic
+  type subst_tactic_flags = Equality.subst_tactic_flags = {
+    only_leibniz : bool;
+    rewrite_dependent_proof : bool
+  }
+  val subst_all : ?flags:subst_tactic_flags -> unit -> unit Proofview.tactic
+
+  val general_rewrite_in :
+    orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag -> 
+    ?tac:(unit Proofview.tactic * conditions) -> Names.Id.t -> EConstr.constr -> Misctypes.evars_flag -> unit Proofview.tactic
+
+  val general_setoid_rewrite_clause :
+  (Names.Id.t option -> orientation -> Locus.occurrences -> EConstr.constr Misctypes.with_bindings ->
+   new_goals:EConstr.constr list -> unit Proofview.tactic) Hook.t
+
+  val discrConcl   : unit Proofview.tactic
+  val rewriteLR : ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr -> unit Proofview.tactic
+  val rewriteRL : ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr  -> unit Proofview.tactic
+  val general_rewrite_bindings :
+    orientation -> Locus.occurrences -> freeze_evars_flag -> dep_proof_flag ->
+    ?tac:(unit Proofview.tactic * conditions) -> EConstr.constr Misctypes.with_bindings -> Misctypes.evars_flag -> unit Proofview.tactic
+  val discriminable : Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
+  val discrHyp : Names.Id.t -> unit Proofview.tactic
+  val injectable : Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
+  val injHyp : Misctypes.clear_flag -> Names.Id.t -> unit Proofview.tactic
+  val subst_gen : bool -> Names.Id.t list -> unit Proofview.tactic
+end
+
+module Contradiction :
+sig
+  val contradiction : EConstr.constr Misctypes.with_bindings option -> unit Proofview.tactic
+  val absurd : EConstr.constr -> unit Proofview.tactic
+end
+
+module Clenv :
+sig
+  type hole = Clenv.hole = {
+        hole_evar : EConstr.constr;
+        hole_type : EConstr.types;
+        hole_deps  : bool;
+        hole_name : Names.Name.t;
+      }
+  type clause = Clenv.clause = {
+        cl_holes : hole list;
+        cl_concl : EConstr.types;
+      }
+  val make_evar_clause : Environ.env -> Evd.evar_map -> ?len:int -> EConstr.types ->
+                         (Evd.evar_map * clause)
+  val solve_evar_clause : Environ.env -> Evd.evar_map -> bool -> clause -> EConstr.constr Misctypes.bindings ->
+                          Evd.evar_map
+  type clausenv = Clenv.clausenv
+  val pr_clenv : Clenv.clausenv -> Pp.std_ppcmds
+end
+
+module Hints :
+sig
+  type hint = Hints.hint
+  type debug = Hints.debug =
+             | Debug | Info | Off
+  type 'a hints_path_atom_gen = 'a Hints.hints_path_atom_gen =
+    | PathHints of 'a list
+    | PathAny
+  type hint_term = Hints.hint_term =
+    | IsGlobRef of Globnames.global_reference
+    | IsConstr of EConstr.constr * Univ.ContextSet.t
+  type hint_db_name = string
+  type hint_info = (Names.Id.t list * Pattern.constr_pattern) Vernacexpr.hint_info_gen
+  type hnf = bool
+  type hints_path_atom = Globnames.global_reference hints_path_atom_gen
+
+  type 'a hints_path_gen = 'a Hints.hints_path_gen =
+    | PathAtom of 'a hints_path_atom_gen
+    | PathStar of 'a hints_path_gen
+    | PathSeq of 'a hints_path_gen * 'a hints_path_gen
+    | PathOr of 'a hints_path_gen * 'a hints_path_gen
+    | PathEmpty
+    | PathEpsilon
+
+  type hints_path = Globnames.global_reference hints_path_gen
+
+  type hints_entry = Hints.hints_entry =
+    | HintsResolveEntry of (hint_info * Decl_kinds.polymorphic * hnf * hints_path_atom * hint_term) list
+    | HintsImmediateEntry of (hints_path_atom * Decl_kinds.polymorphic * hint_term) list
+    | HintsCutEntry of hints_path
+    | HintsUnfoldEntry of Names.evaluable_global_reference list
+    | HintsTransparencyEntry of Names.evaluable_global_reference list * bool
+    | HintsModeEntry of Globnames.global_reference * Vernacexpr.hint_mode list
+    | HintsExternEntry of hint_info * Genarg.glob_generic_argument
+
+  type 'a hint_ast = 'a Hints.hint_ast =
+    | Res_pf     of 'a
+    | ERes_pf    of 'a
+    | Give_exact of 'a
+    | Res_pf_THEN_trivial_fail of 'a
+    | Unfold_nth of Names.evaluable_global_reference
+    | Extern     of Genarg.glob_generic_argument
+  type raw_hint = EConstr.constr * EConstr.types * Univ.universe_context_set
+  type 'a with_metadata = 'a Hints.with_metadata = private {
+      pri     : int;
+      poly    : Decl_kinds.polymorphic;
+      pat     : Pattern.constr_pattern option;
+      name    : hints_path_atom;
+      db : string option;
+      secvars : Names.Id.Pred.t;
+      code    : 'a;
+    }
+  type full_hint = hint with_metadata
+
+  module Hint_db :
+  sig
+    type t = Hints.Hint_db.t
+    val empty : ?name:hint_db_name -> Names.transparent_state -> bool -> t
+    val transparent_state : t -> Names.transparent_state
+    val iter : (Globnames.global_reference option ->
+                Vernacexpr.hint_mode array list -> full_hint list -> unit) -> t -> unit
+  end
+  type hint_db = Hint_db.t
+
+  val add_hints : Vernacexpr.locality_flag -> hint_db_name list -> hints_entry -> unit
+  val searchtable_map : hint_db_name -> hint_db
+  val pp_hints_path_atom : ('a -> Pp.std_ppcmds) -> 'a hints_path_atom_gen -> Pp.std_ppcmds
+  val pp_hints_path_gen : ('a -> Pp.std_ppcmds) -> 'a hints_path_gen -> Pp.std_ppcmds
+  val glob_hints_path_atom :
+    Prelude.reference hints_path_atom_gen -> Globnames.global_reference hints_path_atom_gen
+  val pp_hints_path : hints_path -> Pp.std_ppcmds
+  val glob_hints_path :
+    Prelude.reference hints_path_gen -> Globnames.global_reference hints_path_gen
+  val typeclasses_db : hint_db_name
+  val add_hints_init : (unit -> unit) -> unit
+  val create_hint_db : bool -> hint_db_name -> Names.transparent_state -> bool -> unit
+  val empty_hint_info : 'a Vernacexpr.hint_info_gen
+  val repr_hint : hint -> (raw_hint * Clenv.clausenv) hint_ast
+  val pr_hint_db : Hint_db.t -> Pp.std_ppcmds
+end
+
+module Auto :
+sig
+  val default_auto : unit Proofview.tactic
+  val full_trivial : ?debug:Hints.debug ->
+                     Tactypes.delayed_open_constr list -> unit Proofview.tactic
+  val h_auto   : ?debug:Hints.debug ->
+                 int option -> Tactypes.delayed_open_constr list -> Hints.hint_db_name list option -> unit Proofview.tactic
+  val h_trivial : ?debug:Hints.debug ->
+                  Tactypes.delayed_open_constr list -> Hints.hint_db_name list option -> unit Proofview.tactic
+  val new_full_auto : ?debug:Hints.debug ->
+                      int -> Tactypes.delayed_open_constr list -> unit Proofview.tactic
+  val full_auto : ?debug:Hints.debug ->
+                  int -> Tactypes.delayed_open_constr list -> unit Proofview.tactic
+  val new_auto : ?debug:Hints.debug ->
+                 int -> Tactypes.delayed_open_constr list -> Hints.hint_db_name list -> unit Proofview.tactic
+  val default_full_auto : unit Proofview.tactic
+end
+
+module Hipattern :
+sig
+  exception NoEquationFound
+  type 'a matching_function = Evd.evar_map -> EConstr.constr -> 'a option
+  type testing_function = Evd.evar_map -> EConstr.constr -> bool
+  val is_disjunction : ?strict:bool -> ?onlybinary:bool -> testing_function
+  val match_with_disjunction : ?strict:bool -> ?onlybinary:bool -> (EConstr.constr * EConstr.constr list) matching_function
+  val match_with_equality_type : (EConstr.constr * EConstr.constr list) matching_function
+  val is_empty_type : testing_function
+  val is_unit_type : testing_function
+  val is_unit_or_eq_type : testing_function
+  val is_conjunction : ?strict:bool -> ?onlybinary:bool -> testing_function
+  val match_with_conjunction : ?strict:bool -> ?onlybinary:bool -> (EConstr.constr * EConstr.constr list) matching_function
+  val match_with_imp_term : (EConstr.constr * EConstr.constr) matching_function
+  val match_with_forall_term : (Names.Name.t * EConstr.constr * EConstr.constr) matching_function
+  val match_with_nodep_ind : (EConstr.constr * EConstr.constr list * int) matching_function
+  val match_with_sigma_type : (EConstr.constr * EConstr.constr list) matching_function
+end
+
+module Inv :
+sig
+  val dinv :
+    Misctypes.inversion_kind -> EConstr.constr option ->
+    Tactypes.or_and_intro_pattern option -> Misctypes.quantified_hypothesis -> unit Proofview.tactic
+  val inv_clause :
+    Misctypes.inversion_kind -> Tactypes.or_and_intro_pattern option -> Names.Id.t list ->
+    Misctypes.quantified_hypothesis -> unit Proofview.tactic
+  val inv_clear_tac : Names.Id.t -> unit Proofview.tactic
+  val inv_tac : Names.Id.t -> unit Proofview.tactic
+  val dinv_tac : Names.Id.t -> unit Proofview.tactic
+  val dinv_clear_tac : Names.Id.t -> unit Proofview.tactic
+  val inv : Misctypes.inversion_kind -> Tactypes.or_and_intro_pattern option ->
+            Misctypes.quantified_hypothesis -> unit Proofview.tactic
+end
+
+module Leminv :
+sig
+  val lemInv_clause :
+    Misctypes.quantified_hypothesis -> EConstr.constr -> Names.Id.t list -> unit Proofview.tactic
+  val add_inversion_lemma_exn :
+    Names.Id.t -> Constrexpr.constr_expr -> Misctypes.glob_sort -> bool -> (Names.Id.t -> unit Proofview.tactic) ->
+    unit
+end
+
+module Vernacentries :
+sig
+  val dump_global : Prelude.reference Misctypes.or_by_notation -> unit
+  val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
+                            Evd.evar_map * Redexpr.red_expr) Hook.t
+  val command_focus : unit Proof.focus_kind
+end
+
+module Evar_refiner :
+sig
+  val w_refine : Evar.t * Evd.evar_info ->
+                 Pretyping.glob_constr_ltac_closure -> Evd.evar_map -> Evd.evar_map
+end
+
+module Obligations :
+sig
+  val default_tactic : unit Proofview.tactic ref
+  val obligation : int * Names.Id.t option * Constrexpr.constr_expr option ->
+                   Genarg.glob_generic_argument option -> unit
+  val next_obligation : Names.Id.t option -> Genarg.glob_generic_argument option -> unit
+  val try_solve_obligation : int -> Names.Id.t option -> unit Proofview.tactic option -> unit
+  val try_solve_obligations : Names.Id.t option -> unit Proofview.tactic option -> unit
+  val solve_all_obligations : unit Proofview.tactic option -> unit
+  val admit_obligations : Names.Id.t option -> unit
+  val show_obligations : ?msg:bool -> Names.Id.t option -> unit
+  val show_term : Names.Id.t option -> Pp.std_ppcmds
+end
+
+module Elim :
+sig
+  val h_decompose : Names.inductive list -> EConstr.constr -> unit Proofview.tactic
+  val h_double_induction : Misctypes.quantified_hypothesis -> Misctypes.quantified_hypothesis-> unit Proofview.tactic
+  val h_decompose_or : EConstr.constr -> unit Proofview.tactic
+  val h_decompose_and : EConstr.constr -> unit Proofview.tactic
+end
+
+module Redops :
+sig
+  val all_flags : 'a Genredexpr.glob_red_flag
+  val make_red_flag : 'a Genredexpr.red_atom list -> 'a Genredexpr.glob_red_flag
+end
+
+module Autorewrite :
+sig
+  type rew_rule = { rew_lemma: Term.constr;
+                    rew_type: Term.types;
+                    rew_pat: Term.constr;
+                    rew_ctx: Univ.ContextSet.t;
+                    rew_l2r: bool;
+                    rew_tac: Genarg.glob_generic_argument option }
+  type raw_rew_rule = (Term.constr Univ.in_universe_context_set * bool *
+                         Genarg.raw_generic_argument option)
+                        Loc.located
+  val auto_multi_rewrite : ?conds:Equality.conditions -> string list -> Locus.clause -> unit Proofview.tactic
+  val auto_multi_rewrite_with : ?conds:Equality.conditions -> unit Proofview.tactic -> string list -> Locus.clause -> unit Proofview.tactic
+  val add_rew_rules : string -> raw_rew_rule list -> unit
+  val find_rewrites : string -> rew_rule list
+  val find_matches : string -> Term.constr -> rew_rule list
+  val print_rewrite_hintdb : string -> Pp.std_ppcmds
+end
+
+module Refine :
+sig
+  val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit Proofview.tactic
+  val solve_constraints : unit Proofview.tactic
+end
+
+module Find_subterm :
+sig
+  val error_invalid_occurrence : int list -> 'a
+end
+
+module Vernac_classifier :
+sig
+  val declare_vernac_classifier :
+    Vernacexpr.extend_name -> (Genarg.raw_generic_argument list -> unit -> Vernacexpr.vernac_classification) -> unit
+  val classify_as_proofstep : Vernacexpr.vernac_classification
+  val classify_as_query : Vernacexpr.vernac_classification
+  val classify_as_sideeff : Vernacexpr.vernac_classification
+  val classify_vernac : Vernacexpr.vernac_expr -> Vernacexpr.vernac_classification
+end
+
+module Keys :
+sig
+  type key = Keys.key
+  val constr_key : ('a -> ('a, 't, 'u, 'i) Term.kind_of_term) -> 'a -> key option
+  val declare_equiv_keys : key -> key -> unit
+  val pr_keys : (Globnames.global_reference -> Pp.std_ppcmds) -> Pp.std_ppcmds
+end
+
+module Eauto :
+sig
+  val e_assumption : unit Proofview.tactic
+  val e_give_exact : ?flags:Unification.unify_flags -> EConstr.constr -> unit Proofview.tactic
+  val prolog_tac : Tactypes.delayed_open_constr list -> int -> unit Proofview.tactic
+  val make_dimension : int option -> int option -> bool * int
+  val gen_eauto : ?debug:Hints.debug -> bool * int -> Tactypes.delayed_open_constr list ->
+                  Hints.hint_db_name list option -> unit Proofview.tactic
+  val autounfold_tac : Hints.hint_db_name list option -> Locus.clause -> unit Proofview.tactic
+  val autounfold_one : Hints.hint_db_name list -> Locus.hyp_location option -> unit Proofview.tactic
+  val eauto_with_bases :
+    ?debug:Hints.debug -> bool * int -> Tactypes.delayed_open_constr list -> Hints.hint_db list -> Proof_type.tactic
+end
+
+module Class_tactics :
+sig
+  type search_strategy = Class_tactics.search_strategy =
+    | Dfs
+    | Bfs
+  val set_typeclasses_debug : bool -> unit
+  val set_typeclasses_strategy : search_strategy -> unit
+  val set_typeclasses_depth : int option -> unit
+  val typeclasses_eauto : ?only_classes:bool -> ?st:Names.transparent_state -> ?strategy:search_strategy ->
+                        depth:(Int.t option) ->
+                        Hints.hint_db_name list -> unit Proofview.tactic
+  val head_of_constr : Names.Id.t -> EConstr.constr -> unit Proofview.tactic
+  val not_evar : EConstr.constr -> unit Proofview.tactic
+  val is_ground : EConstr.constr -> unit Proofview.tactic
+  val autoapply : EConstr.constr -> Hints.hint_db_name -> unit Proofview.tactic
+  val catchable : exn -> bool
+end
+
+module Ind_tables :
+sig
+  type individual = Ind_tables.individual
+  type 'a scheme_kind = 'a Ind_tables.scheme_kind
+
+  val check_scheme : 'a scheme_kind -> Names.inductive -> bool
+  val find_scheme : ?mode:Declare.internal_flag -> 'a scheme_kind -> Names.inductive -> Names.Constant.t * Safe_typing.private_constants
+  val pr_scheme_kind : 'a scheme_kind -> Pp.std_ppcmds
+end
+
+module Elimschemes :
+sig
+  val case_scheme_kind_from_prop : Ind_tables.individual Ind_tables.scheme_kind
+  val case_dep_scheme_kind_from_type_in_prop : Ind_tables.individual Ind_tables.scheme_kind
+  val case_scheme_kind_from_type : Ind_tables.individual Ind_tables.scheme_kind
+  val case_dep_scheme_kind_from_type : Ind_tables.individual Ind_tables.scheme_kind
+  val case_dep_scheme_kind_from_prop : Ind_tables.individual Ind_tables.scheme_kind
+end
+
+module Lemmas :
+sig
+  type 'a declaration_hook = 'a Lemmas.declaration_hook
+  val mk_hook :
+    (Decl_kinds.locality -> Globnames.global_reference -> 'a) -> 'a declaration_hook
+  val start_proof : Names.Id.t -> ?pl:Proof_global.universe_binders -> Decl_kinds.goal_kind -> Evd.evar_map ->
+    ?terminator:(Proof_global.lemma_possible_guards -> unit declaration_hook -> Proof_global.proof_terminator) ->
+    ?sign:Environ.named_context_val -> EConstr.types ->
+    ?init_tac:unit Proofview.tactic -> ?compute_guard:Proof_global.lemma_possible_guards -> 
+    unit declaration_hook -> unit
+  val call_hook :
+    Future.fix_exn -> 'a declaration_hook -> Decl_kinds.locality -> Globnames.global_reference -> 'a
+  val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
+  val get_current_context : unit -> Evd.evar_map * Environ.env
+end
+
+module Eqdecide :
+sig
+  val compare : EConstr.constr -> EConstr.constr -> unit Proofview.tactic
+  val decideEqualityGoal : unit Proofview.tactic
+end
+
+module Locusops :
+sig
+  val clause_with_generic_occurrences : 'a Locus.clause_expr -> bool
+  val nowhere : 'a Locus.clause_expr
+  val allHypsAndConcl : 'a Locus.clause_expr
+  val is_nowhere : 'a Locus.clause_expr -> bool
+  val occurrences_map :
+    ('a list -> 'b list) -> 'a Locus.occurrences_gen -> 'b Locus.occurrences_gen
+  val convert_occs : Locus.occurrences -> bool * int list
+  val onConcl : 'a Locus.clause_expr
+  val onHyp : 'a -> 'a Locus.clause_expr
+end
+
+module Topfmt :
+sig
+  val std_ft : Format.formatter ref
+  val with_output_to : out_channel -> Format.formatter
+  val get_margin : unit -> int option
+end
+
+module Nameops :
+sig
+  val atompart_of_id : Names.Id.t -> string
+
+  val pr_id : Names.Id.t -> Pp.std_ppcmds
+
+  val pr_name : Names.Name.t -> Pp.std_ppcmds
+
+  val name_fold : (Names.Id.t -> 'a -> 'a) -> Names.Name.t -> 'a -> 'a
+  val name_app : (Names.Id.t -> Names.Id.t) -> Names.Name.t -> Names.Name.t
+  val add_suffix : Names.Id.t -> string -> Names.Id.t
+  val increment_subscript : Names.Id.t -> Names.Id.t
+  val make_ident : string -> int option -> Names.Id.t
+  val out_name : Names.Name.t -> Names.Id.t
+  val pr_lab : Names.Label.t -> Pp.std_ppcmds
+  module Name :
+  sig
+    include module type of struct include Names.Name end
+    val get_id : t -> Names.Id.t
+    val fold_right : (Names.Id.t -> 'a -> 'a) -> t -> 'a -> 'a
+  end
+end
+
+module Declareops :
+sig
+  val constant_has_body : Declarations.constant_body -> bool
+  val is_opaque : Declarations.constant_body -> bool
+  val eq_recarg : Declarations.recarg -> Declarations.recarg -> bool
+  val body_of_constant :
+    Opaqueproof.opaquetab -> Declarations.constant_body -> Term.constr option
+end
+
+module Constr :
+sig
+  type t = Term.constr
+  type constr = t
+  type types = t
+  type cast_kind = Term.cast_kind =
+                 | VMcast
+                 | NATIVEcast
+                 | DEFAULTcast
+                 | REVERTcast
+  type ('constr, 'types, 'sort, 'univs) kind_of_term = ('constr, 'types, 'sort, 'univs) Term.kind_of_term =
+     | Rel       of int
+     | Var       of Names.Id.t
+     | Meta      of Term.metavariable
+     | Evar      of 'constr Term.pexistential
+     | Sort      of 'sort
+     | Cast      of 'constr * cast_kind * 'types
+     | Prod      of Names.Name.t * 'types * 'types
+     | Lambda    of Names.Name.t * 'types * 'constr
+     | LetIn     of Names.Name.t * 'constr * 'types * 'constr
+     | App       of 'constr * 'constr array
+     | Const     of (Names.Constant.t * 'univs)
+     | Ind       of (Names.inductive * 'univs)
+     | Construct of (Names.constructor * 'univs)
+     | Case      of Term.case_info * 'constr * 'constr * 'constr array
+     | Fix       of ('constr, 'types) Term.pfixpoint
+     | CoFix     of ('constr, 'types) Term.pcofixpoint
+     | Proj      of Names.Projection.t * 'constr
+  val equal : constr -> constr -> bool
+  val mkIndU : Term.pinductive -> constr
+  val mkConstU : Term.pconstant -> constr
+  val mkConst : Names.Constant.t -> constr
+  val mkVar : Names.Id.t -> constr
+  val compare : constr -> constr -> int
+  val mkApp : constr * constr array -> constr
+end
+
+module Coq_config :
+sig
+  val exec_extension : string
+end
+
+module Kindops :
+sig
+  val logical_kind_of_goal_kind : Decl_kinds.goal_object_kind -> Decl_kinds.logical_kind
+end
+
+module States :
+sig
+  val with_state_protection_on_exception : ('a -> 'b) -> 'a -> 'b
+  val with_state_protection : ('a -> 'b) -> 'a -> 'b
+end
+
+module Command :
+sig
+  type structured_fixpoint_expr = Command.structured_fixpoint_expr
+  type recursive_preentry = Names.Id.t list * Term.constr option list * Term.types list
+  type structured_inductive_expr = Command.structured_inductive_expr
+  type one_inductive_impls = Command.one_inductive_impls
+
+  val do_mutual_inductive :
+    (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list -> Decl_kinds.polymorphic -> 
+    Decl_kinds.private_flag -> Decl_kinds.recursivity_kind -> unit
+
+  val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.lident list option ->
+    Constrexpr.local_binder_expr list -> Redexpr.red_expr option -> Constrexpr.constr_expr ->
+    Constrexpr.constr_expr option -> unit Lemmas.declaration_hook -> unit
+
+  val do_fixpoint :
+    Decl_kinds.locality -> Decl_kinds.polymorphic -> (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list -> unit
+
+  val extract_fixpoint_components : bool ->
+    (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list ->
+    structured_fixpoint_expr list * Vernacexpr.decl_notation list
+
+  val interp_fixpoint :
+    structured_fixpoint_expr list -> Vernacexpr.decl_notation list ->
+    recursive_preentry * Vernacexpr.lident list option * Evd.evar_universe_context * 
+      (EConstr.rel_context * Impargs.manual_implicits * int option) list
+
+  val extract_mutual_inductive_declaration_components :
+    (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list ->
+    structured_inductive_expr * Libnames.qualid list * Vernacexpr.decl_notation list
+
+  val interp_mutual_inductive :
+    structured_inductive_expr -> Vernacexpr.decl_notation list -> Decl_kinds.polymorphic ->
+    Decl_kinds.private_flag -> Decl_kinds.recursivity_kind ->
+    Entries.mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
+
+  val declare_mutual_inductive_with_eliminations :
+    Entries.mutual_inductive_entry -> Universes.universe_binders -> one_inductive_impls list ->
+    Names.MutInd.t
+end
+
+module Ppvernac :
+sig
+  val pr_vernac : Vernacexpr.vernac_expr -> Pp.std_ppcmds
+  val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.std_ppcmds
+end
+
+module Topconstr :
+sig
+  val replace_vars_constr_expr :
+  Names.Id.t Names.Id.Map.t -> Constrexpr.constr_expr -> Constrexpr.constr_expr
+end

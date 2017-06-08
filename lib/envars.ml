@@ -206,7 +206,7 @@ let coq_src_subdirs = [
    "config" ; "dev" ; "lib" ; "kernel" ; "library" ;
    "engine" ; "pretyping" ; "interp" ; "parsing" ; "proofs" ;
    "tactics" ; "toplevel" ; "printing" ; "intf" ;
-   "grammar" ; "ide" ; "stm"; "vernac" ] @
+   "grammar" ; "ide" ; "stm"; "vernac" ; "API" ] @
    Coq_config.plugins_dirs
   
 let print_config ?(prefix_var_name="") f =

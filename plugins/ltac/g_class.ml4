@@ -8,6 +8,7 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+open API
 open Class_tactics
 open Stdarg
 open Tacarg

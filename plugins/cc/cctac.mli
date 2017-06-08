@@ -7,6 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open API
 open EConstr
 
 val proof_tac: Ccproof.proof -> unit Proofview.tactic
