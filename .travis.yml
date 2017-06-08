@@ -32,6 +32,7 @@ env:
   - COMPILER="system"
   - CAMLP5_VER="6.14"
   - NATIVE_COMP="yes"
+  - COQ_DEST="-local"
   # Main test suites
   matrix:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
@@ -139,14 +140,26 @@ matrix:
       env:
       - TEST_TARGET="test-suite"
       - COMPILER="4.02.3"
+      - CAMLP5_VER="6.17"
       - NATIVE_COMP="no"
+      - COQ_DEST="-prefix _install"
+      - EXTRA_CONF="-coqide opt -warn-error"
+      - EXTRA_OPAM="lablgtk-extras"
       before_install:
       - brew update
-      - brew install opam
-      - brew install gnu-time
-
-before_install:
-- if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then echo "Tested commit (followed by parent commits):"; git log -1; for commit in `git log -1 --format="%P"`; do echo; git log -1 $commit; done; fi
+      - brew install opam gnu-time gtk+ expat gtksourceview libxml2 gdk-pixbuf python3
+      - pip3 install macpack
+      before_deploy:
+        - dev/build/osx/make-macos-dmg.sh
+      deploy:
+        provider: bintray
+        user: maximedenes
+        file: .bintray.json
+        key:
+          secure: "GDRjXPNvYHJBPMJqbXsSUAAPAZeGvr+mns80eYUD47Uxvueivql5VJ9d8MwLRJOV6lzwnQ1+F65WOKsR/JARMMRuVUKg3dAa3w1j8s2Yr/gwqsLt0G4Roqp93eTFDvs2X0xzzncN31G/NcV/5suc3oXuqjIF7EUSyrtiJUpMcIfFoMHWmdcGM9az4djIKYTzczAs+8MPSfrYD1AAqx2Ezeu+xDEmtvQ0w7OyO48ArUO4K5AWCRWdzSMN0A2s1w72fiCEfMgqzphzzJfRMPzp0rTF6/4CKRbtJpnSGtvovn2TeCRVDI8Y9k61nY5w5rR5Mcdf1K9BA1wzP2L4nTBoHbur70eMdEmeM3R2e9LzFETmuUAFh7L1k6LDhx7kFqjnSLwPSVa8ALK1bJDjgv1i300NCo5divaY/mjIr9e2/AZWL3MQjdwceoVZPrpCgKfpp44XdMYB/fi/wDLORQkLIm5fQMznDeYZKGceILRTwWyjL8Yyy+bBfA++frNLF8Agknfm0gGEI9VBaF7TVYbDJrZ2lmdT68D1hagJ8g1vief7HArTgapHfLxLL2BYWmapEm284GowHDrg4hGHd1aZu+wIh10SzPp4tTGRp0scu/x4ZEr7cglKgegwy9L7ubFA7zm9E368Y6RMxYXETBGgeEVDAqVnfBHIOZVvBIEgsCw="
+          skip_cleanup: true
+        on:
+          all_branches: true
 
 install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
@@ -159,7 +172,7 @@ script:
 
 - set -e
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
-- ./configure -local -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
+- ./configure ${COQ_DEST} -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'
 
 - echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'
