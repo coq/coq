@@ -55,7 +55,8 @@ IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_
 GTKSHARE=$(shell pkg-config --variable=prefix gtk+-2.0)/share
 GTKBIN=$(shell pkg-config --variable=prefix gtk+-2.0)/bin
 GTKLIBS=$(shell pkg-config --variable=libdir gtk+-2.0)
-
+PIXBUFBIN=$(shell pkg-config --variable=prefix gdk-pixbuf-2.0)/bin
+SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-2.0)/share
 
 ###########################################################################
 # CoqIde special targets
@@ -176,15 +177,14 @@ $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
 	$(MKDIR) $@/coq/
 	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $@/coq/
 	$(MKDIR) $@/gtksourceview-2.0/{language-specs,styles}
-	$(INSTALLLIB) "$(GTKSHARE)/"gtksourceview-2.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-2.0/language-specs/
-	$(INSTALLLIB) "$(GTKSHARE)/"gtksourceview-2.0/styles/{styles.rng,classic.xml} $@/gtksourceview-2.0/styles/
+	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-2.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-2.0/language-specs/
+	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-2.0/styles/{styles.rng,classic.xml} $@/gtksourceview-2.0/styles/
 	cp -R "$(GTKSHARE)/"locale $@
-	cp -R "$(GTKSHARE)/"icons $@
 	cp -R "$(GTKSHARE)/"themes $@
 
 $(COQIDEAPP)/Contents/Resources/loaders: $(COQIDEAPP)/Contents
 	$(MKDIR) $@
-	$(INSTALLLIB) $$("$(GTKBIN)/gdk-pixbuf-query-loaders" | sed -n -e '5 s!.*= \(.*\)$$!\1!p')/libpixbufloader-png.so $@
+	$(INSTALLLIB) $$("$(PIXBUFBIN)/gdk-pixbuf-query-loaders" | sed -n -e '5 s!.*= \(.*\)$$!\1!p')/libpixbufloader-png.so $@
 
 $(COQIDEAPP)/Contents/Resources/immodules: $(COQIDEAPP)/Contents
 	$(MKDIR) $@
@@ -195,7 +195,7 @@ $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
 	$(MKDIR) $@/xdg/coq
 	$(INSTALLLIB) ide/MacOS/default_accel_map $@/xdg/coq/coqide.keys
 	$(MKDIR) $@/gtk-2.0
-	{ "$(GTKBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
+	{ "$(PIXBUFBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
 	 sed -e "s!/.*\(/loaders/.*.so\)!@executable_path/../Resources/\1!"; } \
 	> $@/gtk-2.0/gdk-pixbuf.loaders
 	{ "$(GTKBIN)/gtk-query-immodules-2.0" $@/../immodules/*.so |\
@@ -207,32 +207,11 @@ $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
 
 $(COQIDEAPP)/Contents/Resources/lib: $(COQIDEAPP)/Contents/Resources/immodules $(COQIDEAPP)/Contents/Resources/loaders $(COQIDEAPP)/Contents $(COQIDEINAPP)
 	$(MKDIR) $@
-	$(INSTALLLIB) $(GTKLIBS)/charset.alias $@/
-	$(MKDIR) $@/pango/1.8.0/modules
-	$(INSTALLLIB) "$(GTKLIBS)/pango/1.8.0/modules/"*.so $@/pango/1.8.0/modules/
-	{ "$(GTKBIN)/pango-querymodules" $@/pango/1.8.0/modules/*.so |\
-	 sed -e "s!/.*\(/pango/1.8.0/modules/.*.so\)!@executable_path/../Resources/lib\1!"; } \
-	> $@/pango/1.8.0/modules.cache
-
-	for i in $$(otool -L $(COQIDEINAPP) |sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
-	    do cp $$i $@/; \
-	    ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$i) $(GTKLIBS) $@; \
+	macpack -d ../Resources/lib $(COQIDEINAPP)
+	for i in $@/../loaders/*.so $@/../immodules/*.so; \
+	do \
+	  macpack -d ../lib $$i; \
 	done
-	for i in $@/../loaders/*.so $@/../immodules/*.so $@/pango/1.8.0/modules/*.so; \
-	    do \
-		for j in $$(otool -L $$i | sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
-		do cp $$j $@/; ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$j) $(GTKLIBS) $@; done; \
-		ide/MacOS/relatify_with-respect-to_.sh $$i $(GTKLIBS) $@; \
-	    done
-	EXTRAWORK=1; \
-	while [ $${EXTRAWORK} -eq 1 ]; \
-	do EXTRAWORK=0; \
-	    for i in $@/*.dylib; \
-	    do for j in $$(otool -L $$i | sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
-		do EXTRAWORK=1; cp $$j $@/; ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$j) $(GTKLIBS) $@; done; \
-	    done; \
-	done
-	ide/MacOS/relatify_with-respect-to_.sh $(COQIDEINAPP) $(GTKLIBS) $@
 
 $(COQIDEAPP)/Contents/Resources:$(COQIDEAPP)/Contents/Resources/etc $(COQIDEAPP)/Contents/Resources/share
 	$(INSTALLLIB) ide/MacOS/*.icns $@

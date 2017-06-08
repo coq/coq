@@ -22,6 +22,8 @@ env:
   - NJOBS=2
   # system is == 4.02.3
   - COMPILER="system"
+  - NATIVE_COMP="yes"
+  - COQ_DEST="-local"
   # Main test suites
   matrix:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
@@ -106,6 +108,30 @@ matrix:
           - transfig
           - imagemagick
 
+    - os: osx
+      env:
+      - TEST_TARGET=""
+      - COMPILER="4.02.3"
+      - NATIVE_COMP="no"
+      - COQ_DEST="-prefix ${PWD}/_install"
+      - EXTRA_CONF="-coqide opt"
+      - EXTRA_OPAM="lablgtk-extras"
+      before_install:
+      - brew update
+      - brew install opam gtk+ expat gtksourceview libxml2 gdk-pixbuf python3
+      - pip3 install macpack
+      before_deploy:
+        - dev/build/osx/make-macos-dmg.sh
+      deploy:
+        provider: bintray
+        user: maximedenes
+        file: .bintray.json
+        key:
+          secure: "AUJJuMuzOSpyKX+2nZ2XEdQ0G2kgPcfSsnHoY8YCi/SxzNckVLfUegweHfkNG0oeMhyjCHn588IZ7Op67A5NADYxaU2R2cpAt8hN1SFo/7Wj5Sv1qM/hVwOFPQ4iDv5iHJIONaiHUY1dy1JRHPJrsJ+sBrcDLgVlI3rKcNWMNEA="
+        skip_cleanup: true
+        on:
+          all_branches: true
+
 install:
 - opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
 - eval $(opam config env)
@@ -116,7 +142,7 @@ install:
 script:
 
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
-- ./configure -local -usecamlp5 -native-compiler yes ${EXTRA_CONF}
+- ./configure ${COQ_DEST} -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'
 
 - echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'
