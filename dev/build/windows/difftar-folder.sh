@@ -8,35 +8,28 @@
 # Released to the public by Intel under the
 # GNU Lesser General Public License Version 2.1 or later
 # See https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
-#
-# With very valuable help on building GTK from
-#   https://wiki.gnome.org/Projects/GTK+/Win32/MSVCCompilationOfGTKStack
-#   http://www.gaia-gis.it/spatialite-3.0.0-BETA/mingw64_how_to.html
 
-###################### Script safety and debugging settings ######################
+###################### DIFF A TAR FILE AND A FOLDER ######################
 
 set -o nounset
 
 # Print usage
 
-if [ "$#" -lt 1 ] ; then
+if [ "$#" -lt 2 ] ; then
   echo 'Diff a tar (or compressed tar) file with a folder'
-  echo 'difftar-folder.sh <tarfile> [<folder>] [strip]'
-  echo default for folder is .
-  echo default for strip is 0.
-  echo 'strip must be 0 or 1.'
+  echo 'difftar-folder.sh <tarfile> <folder> [strip]'
+  echo '<tarfile> is the name of the tar file do diff with (required)'
+  echo '<folder> is the name of the folder to diff with (required)'
+  echo '<strip> is the number of path components to strip from tar file (default is 0)'
+  echo 'All files in the tar file must have at least <strip> path components.'
+  echo 'This also adds new files from folder.new, if folder.new exists'
   exit 1
 fi
 
 # Parse parameters
 
 tarfile=$1
-
-if [ "$#" -ge 2 ] ; then
-  folder=$2
-else
-  folder=.
-fi
+folder=$2
 
 if [ "$#" -ge 3 ] ; then
   strip=$3
@@ -47,27 +40,33 @@ fi
 # Get path prefix if --strip is used
 
 if [ "$strip" -gt 0 ] ; then
-  prefix=`tar -t -f $tarfile | head -1`
+  # Get the path/name of the first file from teh tar and extract the first $strip path components
+  # This assumes that the first file in the tar file has at least $strip many path components
+  prefix=$(tar -t -f $tarfile | head -1 | cut -d / -f -$strip)/
 else
   prefix=
 fi
 
 # Original folder
 
-if [ "$strip" -gt 0 ] ; then
-  orig=${prefix%/}.orig
-elif [ "$folder" = "." ] ; then
-  orig=${tarfile##*/}
-  orig=./${orig%%.tar*}.orig
-elif [ "$folder" = "" ] ; then
-  orig=${tarfile##*/}
-  orig=${orig%%.tar*}.orig
-else
-  orig=$folder.orig
-fi
-echo $orig
+orig=$folder.orig
 mkdir -p "$orig"
 
+# New amd empty filefolder
+
+new=$folder.new
+empty=$folder.empty
+mkdir -p "$empty"
+
+# Print information (this is ignored by patch)
+
+echo diff/patch file created on $(date) with:
+echo difftar-folder.sh $@
+echo TARFILE=    $tarfile
+echo FOLDER=     $folder
+echo TARSTRIP=   $strip
+echo TARPREFIX=  $prefix
+echo ORIGFOLDER= $orig
 
 # Make sure tar uses english output (for Mod time differs)
 export LC_ALL=C
@@ -84,3 +83,7 @@ tar --diff -a -f "$tarfile" --strip $strip --directory "$folder" | grep "Mod tim
     diff -u "$orig/$file" "$folder/$file" 
   fi
 done
+
+if [ -d "$new" ] ; then
+  diff -u -r --unidirectional-new-file $empty $new
+fi

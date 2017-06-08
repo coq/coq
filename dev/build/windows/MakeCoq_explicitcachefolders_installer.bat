@@ -14,13 +14,15 @@ REM ========== BUILD COQ ==========
 call MakeCoq_SetRootPath
 
 call MakeCoq_MinGW.bat ^
-  -arch=32 ^
+  -arch=64 ^
   -installer=Y ^
   -coqver=git-v8.6 ^
-  -destcyg="%ROOTPATH%\cygwin_coq32_86git_inst" ^
-  -destcoq="%ROOTPATH%\coq32_86git_inst"
+  -destcyg="%ROOTPATH%\cygwin_coq64_cachefolder_inst" ^
+  -destcoq="%ROOTPATH%\coq64_cachefolder_inst" ^
+  -cygcache="%ROOTPATH%\cache\cygwin" ^
+  -srccache="%ROOTPATH%\cache\source"
 
 IF %ERRORLEVEL% NEQ 0 (
-  ECHO MakeCoq_86git_installer_32.bat failed with error code %ERRORLEVEL%
+  ECHO MakeCoq_explicitcachefolders_installer.bat failed with error code %ERRORLEVEL%
   EXIT /b %ERRORLEVEL%
 )

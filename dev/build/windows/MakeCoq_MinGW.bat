@@ -18,7 +18,7 @@ REM ========== DEFAULT VALUES FOR PARAMETERS ==========
 
 REM For a description of all parameters, see ReadMe.txt
 
-SET BATCHFILE=%0
+SET BATCHFILE=%~0
 SET BATCHDIR=%~dp0
 
 REM see -arch in ReadMe.txt, but values are x86_64 or i686 (not 64 or 32)
@@ -47,9 +47,11 @@ SET SETUP=setup-x86_64.exe
 
 REM see -proxy in ReadMe.txt
 IF DEFINED HTTP_PROXY (
-  SET PROXY="%HTTP_PROXY:http://=%"
+  SET PROXY=%HTTP_PROXY:http://=%
 ) else (
-  SET PROXY=""
+  REM One can't set a variable to empty in DOS, but you can set it to a space this way.
+  REM The quotes are just there to make the space visible and to protect from "remove trailing spaces".
+  SET "PROXY= "
 )
 
 REM see -cygrepo in ReadMe.txt
@@ -82,12 +84,12 @@ SHIFT
 
 :Parse
 
-IF "%0" == "-arch" (
-  IF "%1" == "32" (
+IF "%~0" == "-arch" (
+  IF "%~1" == "32" (
     SET ARCH=i686
     SET SETUP=setup-x86.exe
   ) ELSE (
-    IF "%1" == "64" (
+    IF "%~1" == "64" (
       SET ARCH=x86_64
       SET SETUP=setup-x86_64.exe
     ) ELSE (
@@ -100,15 +102,15 @@ IF "%0" == "-arch" (
   GOTO Parse
 )
 
-IF "%0" == "-mode" (
-  IF "%1" == "mingwincygwin" (
-    SET INSTALLMODE=%1
+IF "%~0" == "-mode" (
+  IF "%~1" == "mingwincygwin" (
+    SET INSTALLMODE=%~1
   ) ELSE (
-    IF "%1" == "absolute" (
-      SET INSTALLMODE=%1
+    IF "%~1" == "absolute" (
+      SET INSTALLMODE=%~1
     ) ELSE (
-      IF "%1" == "relocatable" (
-        SET INSTALLMODE=%1
+      IF "%~1" == "relocatable" (
+        SET INSTALLMODE=%~1
       ) ELSE (
         ECHO "Invalid -mode, valid are mingwincygwin, absolute and relocatable"
         GOTO :EOF
@@ -120,118 +122,124 @@ IF "%0" == "-mode" (
   GOTO Parse
 )
 
-IF "%0" == "-installer" (
-  SET MAKEINSTALLER=%1
+IF "%~0" == "-installer" (
+  SET MAKEINSTALLER=%~1
+  CALL :CheckYN -installer %~1 || GOTO ErrorExit
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-ocaml" (
-  SET INSTALLOCAML=%1
+IF "%~0" == "-ocaml" (
+  SET INSTALLOCAML=%~1
+  CALL :CheckYN -installer %~1 || GOTO ErrorExit
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-make" (
-  SET INSTALLMAKE=%1
+IF "%~0" == "-make" (
+  SET INSTALLMAKE=%~1
+  CALL :CheckYN -installer %~1 || GOTO ErrorExit
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-destcyg" (
-  SET DESTCYG=%1
+IF "%~0" == "-destcyg" (
+  SET DESTCYG=%~1
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-destcoq" (
-  SET DESTCOQ=%1
+IF "%~0" == "-destcoq" (
+  SET DESTCOQ=%~1
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-setup" (
-  SET SETUP=%1
+IF "%~0" == "-setup" (
+  SET SETUP=%~1
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-proxy" (
-  SET PROXY="%1"
+IF "%~0" == "-proxy" (
+  SET PROXY=%~1
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-cygrepo" (
-  SET CYGWIN_REPOSITORY="%1"
+IF "%~0" == "-cygrepo" (
+  SET CYGWIN_REPOSITORY=%~1
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-cygcache" (
-  SET CYGWIN_LOCAL_CACHE_WFMT="%1"
+IF "%~0" == "-cygcache" (
+  SET CYGWIN_LOCAL_CACHE_WFMT=%~1
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-cyglocal" (
-  SET CYGWIN_FROM_CACHE=%1
+IF "%~0" == "-cyglocal" (
+  SET CYGWIN_FROM_CACHE=%~1
+  CALL :CheckYN -cyglocal %~1 || GOTO ErrorExit
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-cygquiet" (
-  SET CYGWIN_QUIET=%1
+IF "%~0" == "-cygquiet" (
+  SET CYGWIN_QUIET=%~1
+  CALL :CheckYN -cygquiet %~1 || GOTO ErrorExit
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-srccache" (
-  SET SOURCE_LOCAL_CACHE_WFMT="%1"
+IF "%~0" == "-srccache" (
+  SET SOURCE_LOCAL_CACHE_WFMT=%~1
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-coqver" (
-  SET COQ_VERSION=%1
+IF "%~0" == "-coqver" (
+  SET COQ_VERSION=%~1
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-gtksrc" (
-  SET GTK_FROM_SOURCES=%1
+IF "%~0" == "-gtksrc" (
+  SET GTK_FROM_SOURCES=%~1
+  CALL :CheckYN -gtksrc %~1 || GOTO ErrorExit
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF "%0" == "-threads" (
-  SET MAKE_THREADS=%1
+IF "%~0" == "-threads" (
+  SET MAKE_THREADS=%~1
   SHIFT
   SHIFT
   GOTO Parse
 )
 
-IF NOT "%0" == "" (
+IF NOT "%~0" == "" (
   ECHO Install cygwin and download, compile and install OCaml and Coq for MinGW
-  ECHO !!! Illegal parameter %0
+  ECHO !!! Illegal parameter %~0
   ECHO Usage: 
   ECHO MakeCoq_MinGW
   CALL :PrintPars
-  goto :EOF
+  GOTO :EOF
 )
 
 IF NOT EXIST %SETUP% (
@@ -255,7 +263,7 @@ REM ========== CONFIRM PARAMETERS ==========
 
 CALL :PrintPars
 REM Note: DOS batch replaces variables on parsing, so one can't use a variable just set in an () block
-IF "%COQREGTESTING%"=="Y" (GOTO :DontAsk)
+IF "%COQREGTESTING%"=="Y" (GOTO DontAsk)
   SET /p ANSWER=Is this correct? y/n 
   IF NOT "%ANSWER%"=="y" (GOTO :EOF)
 :DontAsk
@@ -325,7 +333,7 @@ REM => Create the setup log in a temporary location and move it later.
 REM Get Unique temporary file name
 :logfileloop
 SET LOGFILE=%TEMP%\CygwinSetUp%RANDOM%-%RANDOM%-%RANDOM%-%RANDOM%.log
-if exist "%LOGFILE%" goto :logfileloop
+if exist "%LOGFILE%" GOTO logfileloop
 
 REM Run Cygwin Setup
 
@@ -339,10 +347,10 @@ IF NOT "%CYGWIN_QUIET%" == "Y" (
 
 IF "%RUNSETUP%"=="Y" (
   %SETUP% ^
-    --proxy %PROXY% ^
-    --site %CYGWIN_REPOSITORY% ^
-    --root %CYGWIN_INSTALLDIR_WFMT% ^
-    --local-package-dir %CYGWIN_LOCAL_CACHE_WFMT% ^
+    --proxy "%PROXY%" ^
+    --site "%CYGWIN_REPOSITORY%" ^
+    --root "%CYGWIN_INSTALLDIR_WFMT%" ^
+    --local-package-dir "%CYGWIN_LOCAL_CACHE_WFMT%" ^
     --no-shortcuts ^
     %CYGWIN_OPT% ^
     -P wget,curl,git,make,unzip ^
@@ -359,11 +367,11 @@ IF "%RUNSETUP%"=="Y" (
     -P libtool,automake ^
     -P intltool ^
     > "%LOGFILE%" ^
-    || GOTO :Error
+    || GOTO ErrorExit
 
-  MKDIR %CYGWIN_INSTALLDIR_WFMT%\build
-  MKDIR %CYGWIN_INSTALLDIR_WFMT%\build\buildlogs
-  MOVE  "%LOGFILE%" %CYGWIN_INSTALLDIR_WFMT%\build\buildlogs\cygwinsetup.log || GOTO :Error
+  MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build"
+  MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build\buildlogs"
+  MOVE  "%LOGFILE%" "%CYGWIN_INSTALLDIR_WFMT%\build\buildlogs\cygwinsetup.log" || GOTO ErrorExit
 )
 
 
@@ -377,18 +385,18 @@ IF NOT "%CYGWIN_QUIET%" == "Y" (
 
 ECHO ========== CONFIGURE CYGWIN USER ACCOUNT ==========
 
-copy %BATCHDIR%\configure_profile.sh %CYGWIN_INSTALLDIR_WFMT%\var\tmp || GOTO :Error
-%BASH% --login %CYGWIN_INSTALLDIR_CFMT%\var\tmp\configure_profile.sh %PROXY% || GOTO :Error
+copy "%BATCHDIR%\configure_profile.sh" "%CYGWIN_INSTALLDIR_WFMT%\var\tmp" || GOTO ErrorExit
+%BASH% --login "%CYGWIN_INSTALLDIR_CFMT%\var\tmp\configure_profile.sh" "%PROXY%" || GOTO ErrorExit
 
 ECHO ========== BUILD COQ ==========
 
-MKDIR %CYGWIN_INSTALLDIR_WFMT%\build
-MKDIR %CYGWIN_INSTALLDIR_WFMT%\build\patches
+MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build"
+MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build\patches"
 
-COPY %BATCHDIR%\makecoq_mingw.sh    %CYGWIN_INSTALLDIR_WFMT%\build || GOTO :Error
-COPY %BATCHDIR%\patches_coq\*.* %CYGWIN_INSTALLDIR_WFMT%\build\patches || GOTO :Error
+COPY "%BATCHDIR%\makecoq_mingw.sh" "%CYGWIN_INSTALLDIR_WFMT%\build" || GOTO ErrorExit
+COPY "%BATCHDIR%\patches_coq\*.*" "%CYGWIN_INSTALLDIR_WFMT%\build\patches" || GOTO ErrorExit
 
-%BASH% --login %CYGWIN_INSTALLDIR_CFMT%\build\makecoq_mingw.sh || GOTO :Error
+%BASH% --login "%CYGWIN_INSTALLDIR_CFMT%\build\makecoq_mingw.sh" || GOTO ErrorExit
 
 ECHO ========== FINISHED ==========
 
@@ -440,6 +448,19 @@ ECHO ========== BATCH FUNCTIONS ==========
   ECHO -threads  = %MAKE_THREADS%
   GOTO :EOF
 
-:Error
-ECHO Building Coq failed with error code %errorlevel%
-EXIT /b %errorlevel%
+:CheckYN
+  REM Reset errorlevel to 0
+  CMD /c "EXIT /b 0"
+  IF "%2" == "Y" (
+    REM OK Y
+  ) ELSE IF "%2" == "N" (
+    REM OK N
+  ) ELSE (
+    ECHO ERROR Parameter %1 must be Y or N, but is %2
+    GOTO ErrorExit
+  )
+  GOTO :EOF
+
+:ErrorExit
+  ECHO ERROR MakeCoq_MinGW.bat failed
+  EXIT /b 1

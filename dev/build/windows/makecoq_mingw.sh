@@ -98,6 +98,8 @@ mkdir -p $TARBALLS
 mkdir -p $FILELISTS
 cd /build
 
+# Create source cache folder
+mkdir -p "$SOURCE_LOCAL_CACHE_CFMT"
 
 # sysroot prefix for the above /build/host/target combination
 PREFIX=$CYGWIN_INSTALLDIR_MFMT/usr/$TARGET_ARCH/sys-root/mingw
@@ -112,9 +114,9 @@ else
   PREFIXOCAML=$PREFIX
 fi
 
-mkdir -p $PREFIX/bin
-mkdir -p $PREFIXCOQ/bin
-mkdir -p $PREFIXOCAML/bin
+mkdir -p "$PREFIX/bin"
+mkdir -p "$PREFIXCOQ/bin"
+mkdir -p "$PREFIXOCAML/bin"
 
 ###################### Copy Cygwin Setup Info #####################
 
@@ -128,7 +130,7 @@ CYGWIN_REPO_FOLDER=${CYGWIN_REPO_FOLDER//:/%3a}
 CYGWIN_REPO_FOLDER=${CYGWIN_REPO_FOLDER//\//%2f}
 
 # Copy files
-cp $CYGWIN_LOCAL_CACHE_WFMT/$CYGWIN_REPO_FOLDER/$CYGWINARCH/setup.ini $TARBALLS
+cp "$CYGWIN_LOCAL_CACHE_WFMT/$CYGWIN_REPO_FOLDER/$CYGWINARCH/setup.ini" $TARBALLS
 cp /etc/setup/installed.db $TARBALLS
   
 ###################### LOGGING #####################
@@ -158,6 +160,21 @@ logn() {
   "$@" > $LOGS/$LOGTARGET-$LOGTARGETEX.log 2> $LOGS/$LOGTARGET-$LOGTARGETEX.err
 }
  
+###################### 'UNFIX' SED #####################
+
+# In Cygwin SED used to do CR-LF to LF conversion, but since sed 4.4-1 this was changed
+# We replace sed with a shell script which restores the old behavior for piped input
+
+#if [ -f /bin/sed.exe ]
+#then
+#  mv /bin/sed.exe /bin/sed_orig.exe
+#fi
+#cat  > /bin/sed << EOF
+##!/bin/sh
+#dos2unix | /bin/sed_orig.exe "$@"
+#EOF
+#chmod a+x /bin/sed
+
 ###################### UTILITY FUNCTIONS #####################
 
 # ------------------------------------------------------------------------------
@@ -202,8 +219,8 @@ function get_expand_source_tar {
   
   # Get the source archive either from the source cache or online
   if [ ! -f $TARBALLS/$name.$3 ] ; then
-    if [ -f $SOURCE_LOCAL_CACHE_CFMT/$name.$3 ] ; then
-      cp $SOURCE_LOCAL_CACHE_CFMT/$name.$3 $TARBALLS
+    if [ -f "$SOURCE_LOCAL_CACHE_CFMT/$name.$3" ] ; then
+      cp "$SOURCE_LOCAL_CACHE_CFMT/$name.$3" $TARBALLS
     else
       wget $1/$2.$3
       if [ ! "$2.$3" == "$name.$3" ] ; then
@@ -211,8 +228,8 @@ function get_expand_source_tar {
       fi
       mv $name.$3 $TARBALLS
       # Save the source archive in the source cache
-      if [ -d $SOURCE_LOCAL_CACHE_CFMT ] ; then
-        cp $TARBALLS/$name.$3 $SOURCE_LOCAL_CACHE_CFMT
+      if [ -d "$SOURCE_LOCAL_CACHE_CFMT" ] ; then
+        cp $TARBALLS/$name.$3 "$SOURCE_LOCAL_CACHE_CFMT"
       fi
     fi
   fi
@@ -341,7 +358,7 @@ function build_post {
 function build_conf_make_inst {
   if build_prep $1 $2 $3 ; then
     $4
-    logn configure ./configure --build=$BUILD --host=$HOST --target=$TARGET --prefix=$PREFIX "${@:5}"
+    logn configure ./configure --build=$BUILD --host=$HOST --target=$TARGET --prefix="$PREFIX" "${@:5}"
     log1 make $MAKE_OPT
     log2 make install
     log2 make clean
@@ -388,7 +405,7 @@ function install_rec {
 
 function list_files {
   if [ ! -e "/build/filelists/$1" ] ; then
-    ( cd $PREFIXCOQ && find -type f | sort > /build/filelists/$1 )
+    ( cd "$PREFIXCOQ" && find -type f | sort > /build/filelists/$1 )
   fi
 }
 
@@ -435,6 +452,18 @@ function files_to_nsis {
 
 
 ###################### MODULE BUILD FUNCTIONS #####################
+
+##### SED #####
+
+function make_sed {
+  if build_prep https://ftp.gnu.org/gnu/sed/  sed-4.2.2  tar.gz ; then
+    logn configure ./configure
+    log1 make
+    log2 make install
+    log2 make clean
+    build_post
+  fi
+}
 
 ##### LIBPNG #####
 
@@ -639,9 +668,9 @@ function make_libxml2 {
   # Note: latest release version 2.9.2 fails during configuring lzma, so using 2.9.1
   # Note: python binding requires <sys/select.h> which doesn't exist on cygwin
   if build_prep https://git.gnome.org/browse/libxml2/snapshot  libxml2-2.9.1  tar.xz ; then
-    # ./autogen.sh --build=$BUILD --host=$HOST --target=$TARGET --prefix=$PREFIX --disable-shared --without-python
+    # ./autogen.sh --build=$BUILD --host=$HOST --target=$TARGET --prefix="$PREFIX" --disable-shared --without-python
     # shared library required by gtksourceview
-    ./autogen.sh --build=$BUILD --host=$HOST --target=$TARGET --prefix=$PREFIX --without-python
+    ./autogen.sh --build=$BUILD --host=$HOST --target=$TARGET --prefix="$PREFIX" --without-python
     log1 make $MAKE_OPT all
     log2 make install
     log2 make clean
@@ -676,10 +705,10 @@ function install_flexdll {
   cp flexdll.h /usr/$TARGET_ARCH/sys-root/mingw/include
   if [ "$TARGET_ARCH" == "i686-w64-mingw32" ]; then
     cp flexdll*_mingw.o /usr/$TARGET_ARCH/bin
-    cp flexdll*_mingw.o $PREFIXOCAML/bin
+    cp flexdll*_mingw.o "$PREFIXOCAML/bin"
   elif [ "$TARGET_ARCH" == "x86_64-w64-mingw32" ]; then
     cp flexdll*_mingw64.o /usr/$TARGET_ARCH/bin
-    cp flexdll*_mingw64.o $PREFIXOCAML/bin
+    cp flexdll*_mingw64.o "$PREFIXOCAML/bin"
   else
     echo "Unknown target architecture"
     return 1
@@ -691,7 +720,7 @@ function install_flexdll {
 function install_flexlink {
   cp flexlink.exe /usr/$TARGET_ARCH/bin
     
-  cp flexlink.exe $PREFIXOCAML/bin
+  cp flexlink.exe "$PREFIXOCAML/bin"
 }
 
 # Get binary flexdll flexlink for building OCaml
@@ -737,7 +766,7 @@ function make_ln {
     cd myln
     cp $PATCHES/ln.c .
     $TARGET_ARCH-gcc -DUNICODE -D_UNICODE -DIGNORE_SYMBOLIC -mconsole -o ln.exe ln.c 
-    install -D ln.exe $PREFIXCOQ/bin/ln.exe
+    install -D ln.exe "$PREFIXCOQ/bin/ln.exe"
     cd ..
     touch flagfiles/myln.finished
   fi
@@ -762,6 +791,7 @@ function make_ocaml {
     fi
 
     # Prefix is fixed in make file - replace it with the real one
+    # TODO: this might not work if PREFIX contains spaces
     sed -i "s|^PREFIX=.*|PREFIX=$PREFIXOCAML|" config/Makefile
     
     # We don't want to mess up Coq's dirctory structure so put the OCaml library in a separate folder
@@ -782,15 +812,15 @@ function make_ocaml {
     
     # Move license files and other into into special folder
     if [ "$INSTALLMODE" == "absolute" ] || [ "$INSTALLMODE" == "relocatable" ]; then
-      mkdir -p $PREFIXOCAML/license_readme/ocaml
+      mkdir -p "$PREFIXOCAML/license_readme/ocaml"
       # 4.01 installs these files, 4.02 doesn't. So delete them and copy them from the sources.
       rm -f *.txt
-      cp LICENSE      $PREFIXOCAML/license_readme/ocaml/License.txt
-      cp INSTALL      $PREFIXOCAML/license_readme/ocaml/Install.txt
-      cp README       $PREFIXOCAML/license_readme/ocaml/ReadMe.txt
-      cp README.win32 $PREFIXOCAML/license_readme/ocaml/ReadMeWin32.txt
-      cp VERSION      $PREFIXOCAML/license_readme/ocaml/Version.txt
-      cp Changes      $PREFIXOCAML/license_readme/ocaml/Changes.txt
+      cp LICENSE      "$PREFIXOCAML/license_readme/ocaml/License.txt"
+      cp INSTALL      "$PREFIXOCAML/license_readme/ocaml/Install.txt"
+      cp README       "$PREFIXOCAML/license_readme/ocaml/ReadMe.txt"
+      cp README.win32 "$PREFIXOCAML/license_readme/ocaml/ReadMeWin32.txt"
+      cp VERSION      "$PREFIXOCAML/license_readme/ocaml/Version.txt"
+      cp Changes      "$PREFIXOCAML/license_readme/ocaml/Changes.txt"
     fi
 
     build_post
@@ -798,12 +828,28 @@ function make_ocaml {
   make_flex_dll_link
 }
 
+##### OCAML EXTRA TOOLS #####
+
+function make_ocaml_tools {
+  make_findlib
+  make_menhir
+  make_camlp5
+}
+
+##### OCAML EXTRA LIBRARIES #####
+
+function make_ocaml_libs {
+  make_findlib
+  make_lablgtk
+  make_stdint
+}
+
 ##### FINDLIB Ocaml library manager #####
 
 function make_findlib {
   make_ocaml
   if build_prep http://download.camlcity.org/download findlib-1.5.6 tar.gz 1 ; then
-    ./configure -bindir $PREFIXOCAML\\bin -sitelib $PREFIXOCAML\\libocaml\\site-lib -config $PREFIXOCAML\\etc\\findlib.conf
+    logn configure ./configure -bindir "$PREFIXOCAML\\bin" -sitelib "$PREFIXOCAML\\libocaml\\site-lib" -config "$PREFIXOCAML\\etc\\findlib.conf"
     # Note: findlib doesn't support -j 8, so don't pass MAKE_OPT
     log2 make all
     log2 make opt
@@ -824,9 +870,9 @@ function make_menhir {
   # For Ocaml 4.01
   if build_prep http://gallium.inria.fr/~fpottier/menhir menhir-20140422 tar.gz 1 ; then
     # Note: menhir doesn't support -j 8, so don't pass MAKE_OPT
-    log2 make all PREFIX=$PREFIXOCAML
-    log2 make install PREFIX=$PREFIXOCAML
-    mv $PREFIXOCAML/bin/menhir $PREFIXOCAML/bin/menhir.exe
+    log2 make all PREFIX="$PREFIXOCAML"
+    log2 make install PREFIX="$PREFIXOCAML"
+    mv "$PREFIXOCAML/bin/menhir" "$PREFIXOCAML/bin/menhir.exe"
     build_post
   fi
 }
@@ -863,7 +909,7 @@ function make_camlp5 {
     log1 make world.opt $MAKE_OPT
     log2 make install
     # For some reason gramlib.a is not copied, but it is required by Coq
-    cp lib/gramlib.a $PREFIXOCAML/libocaml/camlp5/
+    cp lib/gramlib.a "$PREFIXOCAML/libocaml/camlp5/"
     log2 make clean
     build_post
   fi
@@ -878,11 +924,13 @@ function make_camlp5 {
 function make_lablgtk {
   make_ocaml
   make_findlib
-  make_camlp4
+  make_camlp4 # required by lablgtk-2.18.3 and lablgtk-2.18.5
+  make_gtk2
+  make_gtk_sourceview2
   if build_prep https://forge.ocamlcore.org/frs/download.php/1479 lablgtk-2.18.3 tar.gz 1 ; then
     # configure should be fixed to search for $TARGET_ARCH-pkg-config.exe
     cp /bin/$TARGET_ARCH-pkg-config.exe  bin_special/pkg-config.exe
-    logn configure ./configure --build=$BUILD --host=$HOST --target=$TARGET --prefix=$PREFIXOCAML
+    logn configure ./configure --build=$BUILD --host=$HOST --target=$TARGET --prefix="$PREFIXOCAML"
     
     # lablgtk shows occasional errors with -j, so don't pass $MAKE_OPT
     
@@ -920,7 +968,7 @@ function make_stdint {
 
 function copy_coq_dll {
   if [ "$INSTALLMODE" == "absolute" ] || [ "$INSTALLMODE" == "relocatable" ]; then
-    cp /usr/${ARCH}-w64-mingw32/sys-root/mingw/bin/$1 $PREFIXCOQ/bin/$1
+    cp /usr/${ARCH}-w64-mingw32/sys-root/mingw/bin/$1 "$PREFIXCOQ/bin/$1"
   fi
 }
 
@@ -986,13 +1034,13 @@ function copy_coq_dlls {
 function copy_coq_objects {
   # copy objects only from folders which exist in the target lib directory
   find . -type d | while read FOLDER ; do
-    if [ -e $PREFIXCOQ/lib/$FOLDER ] ; then
-      install_glob $FOLDER/'*.cmxa' $PREFIXCOQ/lib/$FOLDER 
-      install_glob $FOLDER/'*.cmi'  $PREFIXCOQ/lib/$FOLDER 
-      install_glob $FOLDER/'*.cma'  $PREFIXCOQ/lib/$FOLDER 
-      install_glob $FOLDER/'*.cmo'  $PREFIXCOQ/lib/$FOLDER 
-      install_glob $FOLDER/'*.a'    $PREFIXCOQ/lib/$FOLDER 
-      install_glob $FOLDER/'*.o'    $PREFIXCOQ/lib/$FOLDER 
+    if [ -e "$PREFIXCOQ/lib/$FOLDER" ] ; then
+      install_glob $FOLDER/'*.cmxa' "$PREFIXCOQ/lib/$FOLDER" 
+      install_glob $FOLDER/'*.cmi'  "$PREFIXCOQ/lib/$FOLDER" 
+      install_glob $FOLDER/'*.cma'  "$PREFIXCOQ/lib/$FOLDER" 
+      install_glob $FOLDER/'*.cmo'  "$PREFIXCOQ/lib/$FOLDER" 
+      install_glob $FOLDER/'*.a'    "$PREFIXCOQ/lib/$FOLDER" 
+      install_glob $FOLDER/'*.o'    "$PREFIXCOQ/lib/$FOLDER" 
     fi
   done
 }
@@ -1000,23 +1048,23 @@ function copy_coq_objects {
 # Copy required GTK config and suport files
 
 function copq_coq_gtk {
-  echo 'gtk-theme-name = "MS-Windows"'     >  $PREFIX/etc/gtk-2.0/gtkrc
-  echo 'gtk-fallback-icon-theme = "Tango"' >> $PREFIX/etc/gtk-2.0/gtkrc
+  echo 'gtk-theme-name = "MS-Windows"'     >  "$PREFIX/etc/gtk-2.0/gtkrc"
+  echo 'gtk-fallback-icon-theme = "Tango"' >> "$PREFIX/etc/gtk-2.0/gtkrc"
 
   if [ "$INSTALLMODE" == "absolute" ] || [ "$INSTALLMODE" == "relocatable" ]; then
-    install_glob $PREFIX/etc/gtk-2.0/'*'                            $PREFIXCOQ/gtk-2.0
-    install_glob $PREFIX/share/gtksourceview-2.0/language-specs/'*' $PREFIXCOQ/share/gtksourceview-2.0/language-specs
-    install_glob $PREFIX/share/gtksourceview-2.0/styles/'*'         $PREFIXCOQ/share/gtksourceview-2.0/styles
-    install_rec  $PREFIX/share/themes/ '*'                          $PREFIXCOQ/share/themes
+    install_glob "$PREFIX/etc/gtk-2.0/"'*'                            "$PREFIXCOQ/gtk-2.0"
+    install_glob "$PREFIX/share/gtksourceview-2.0/language-specs/"'*' "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
+    install_glob "$PREFIX/share/gtksourceview-2.0/styles/"'*'         "$PREFIXCOQ/share/gtksourceview-2.0/styles"
+    install_rec  "$PREFIX/share/themes/" '*'                          "$PREFIXCOQ/share/themes"
     
     # This below item look like a bug in make install
     if [[ ! $COQ_VERSION == 8.4* ]] ; then
-      mv $PREFIXCOQ/share/coq/*.lang $PREFIXCOQ/share/gtksourceview-2.0/language-specs
-      mv $PREFIXCOQ/share/coq/*.xml  $PREFIXCOQ/share/gtksourceview-2.0/styles
+      mv "$PREFIXCOQ/share/coq/"*.lang "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
+      mv "$PREFIXCOQ/share/coq/"*.xml  "$PREFIXCOQ/share/gtksourceview-2.0/styles"
     fi
-    mkdir -p $PREFIXCOQ/ide
-    mv $PREFIXCOQ/share/coq/*.png  $PREFIXCOQ/ide
-    rmdir $PREFIXCOQ/share/coq
+    mkdir -p "$PREFIXCOQ/ide"
+    mv "$PREFIXCOQ/share/coq/"*.png  "$PREFIXCOQ/ide"
+    rmdir "$PREFIXCOQ/share/coq"
   fi
 }
 
@@ -1024,16 +1072,17 @@ function copq_coq_gtk {
 
 function copy_coq_license {
   if [ "$INSTALLMODE" == "absolute" ] || [ "$INSTALLMODE" == "relocatable" ]; then
-    install -D doc/LICENSE                    $PREFIXCOQ/license_readme/coq/LicenseDoc.txt
-    install -D LICENSE                        $PREFIXCOQ/license_readme/coq/License.txt
-    install -D plugins/micromega/LICENSE.sos  $PREFIXCOQ/license_readme/coq/LicenseMicromega.txt
-    install -D README                         $PREFIXCOQ/license_readme/coq/ReadMe.txt || true
-    install -D README.md                      $PREFIXCOQ/license_readme/coq/ReadMe.md || true
-    install -D README.doc                     $PREFIXCOQ/license_readme/coq/ReadMeDoc.txt
-    install -D CHANGES                        $PREFIXCOQ/license_readme/coq/Changes.txt
-    install -D INSTALL                        $PREFIXCOQ/license_readme/coq/Install.txt
-    install -D INSTALL.doc                    $PREFIXCOQ/license_readme/coq/InstallDoc.txt
-    install -D INSTALL.ide                    $PREFIXCOQ/license_readme/coq/InstallIde.txt
+    install -D doc/LICENSE                    "$PREFIXCOQ/license_readme/coq/LicenseDoc.txt"
+    install -D LICENSE                        "$PREFIXCOQ/license_readme/coq/License.txt"
+    install -D plugins/micromega/LICENSE.sos  "$PREFIXCOQ/license_readme/coq/LicenseMicromega.txt"
+    install -D README                         "$PREFIXCOQ/license_readme/coq/ReadMe.txt" || true
+    install -D README.md                      "$PREFIXCOQ/license_readme/coq/ReadMe.md" || true
+    install -D README.win                     "$PREFIXCOQ/license_readme/coq/ReadMeWindows.txt" || true
+    install -D README.doc                     "$PREFIXCOQ/license_readme/coq/ReadMeDoc.txt"
+    install -D CHANGES                        "$PREFIXCOQ/license_readme/coq/Changes.txt"
+    install -D INSTALL                        "$PREFIXCOQ/license_readme/coq/Install.txt"
+    install -D INSTALL.doc                    "$PREFIXCOQ/license_readme/coq/InstallDoc.txt"
+    install -D INSTALL.ide                    "$PREFIXCOQ/license_readme/coq/InstallIde.txt"
   fi
 }
 
@@ -1043,19 +1092,38 @@ function make_coq {
   make_ocaml
   make_lablgtk
   make_camlp5
-  if 
+  if
     case $COQ_VERSION in
-      git-*) build_prep https://github.com/coq/coq/archive ${COQ_VERSION##git-} zip 1 coq-${COQ_VERSION} ;;
-      *)     build_prep https://coq.inria.fr/distrib/V$COQ_VERSION/files coq-$COQ_VERSION tar.gz ;;
+      # e.g. git-v8.6 => download from https://github.com/coq/coq/archive/v8.6.zip
+      # e.g. git-trunk => download from https://github.com/coq/coq/archive/trunk.zip
+      git-*) 
+        COQ_BUILD_PATH=/build/coq-${COQ_VERSION}
+        build_prep https://github.com/coq/coq/archive ${COQ_VERSION##git-} zip 1 coq-${COQ_VERSION}
+        ;;
+      
+      # e.g. /cygdrive/d/coqgit
+      /*)
+        # Todo: --exclude-vcs-ignores doesn't work because tools/coqdoc/coqdoc.sty is excluded => fix .gitignore
+        # But this is not a big deal, only 2 files are removed with --exclude-vcs-ignores from a fresch clone
+        COQ_BUILD_PATH=/build/coq-local
+        tar -zcf $TARBALLS/coq-local.tar.gz --exclude-vcs -C "${COQ_VERSION%/*}" "${COQ_VERSION##*/}"
+        build_prep NEVER-DOWNLOADED coq-local tar.gz
+        ;;
+      
+      # e.g. 8.6 => https://coq.inria.fr/distrib/8.6/files/coq-8.6.tar.gz
+      *)
+        COQ_BUILD_PATH=/build/coq-$COQ_VERSION
+        build_prep https://coq.inria.fr/distrib/V$COQ_VERSION/files coq-$COQ_VERSION tar.gz
+        ;;
     esac
   then
     if [ "$INSTALLMODE" == "relocatable" ]; then
       # HACK: for relocatable builds, first configure with ./, then build but before install reconfigure with the real target path
       logn configure ./configure -debug -with-doc no -prefix ./ -libdir ./lib -mandir ./man
     elif [ "$INSTALLMODE" == "absolute" ]; then
-      logn configure ./configure -debug -with-doc no -prefix $PREFIXCOQ -libdir $PREFIXCOQ/lib -mandir $PREFIXCOQ/man
+      logn configure ./configure -debug -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
     else
-      logn configure ./configure -debug -with-doc no -prefix $PREFIXCOQ
+      logn configure ./configure -debug -with-doc no -prefix "$PREFIXCOQ"
     fi
 
     # The windows resource compiler binary name is hard coded
@@ -1070,7 +1138,7 @@ function make_coq {
     fi
     
     if [ "$INSTALLMODE" == "relocatable" ]; then
-      ./configure -debug -with-doc no -prefix $PREFIXCOQ -libdir $PREFIXCOQ/lib -mandir $PREFIXCOQ/man
+      logn reconfigure ./configure -debug -with-doc no -prefix "$PREFIXCOQ" -libdir "$PREFIXCOQ/lib" -mandir "$PREFIXCOQ/man"
     fi
 
     log2 make install
@@ -1101,7 +1169,7 @@ function make_mingw_make {
     # By some magic cygwin bash can run batch files
     logn build ./build_w32.bat gcc
     # Copy make to Coq folder
-    cp GccRel/gnumake.exe $PREFIXCOQ/bin/make.exe
+    cp GccRel/gnumake.exe "$PREFIXCOQ/bin/make.exe"
     build_post
   fi
 }
@@ -1110,7 +1178,7 @@ function make_mingw_make {
 
 function make_binutils {
   if build_prep http://ftp.gnu.org/gnu/binutils binutils-2.27 tar.gz ; then
-    logn configure ./configure --build=$BUILD --host=$HOST --target=$TARGET --prefix=$PREFIXCOQ --program-prefix=$TARGET-
+    logn configure ./configure --build=$BUILD --host=$HOST --target=$TARGET --prefix="$PREFIXCOQ" --program-prefix=$TARGET-
     log1 make $MAKE_OPT
     log2 make install
     # log2 make clean
@@ -1133,15 +1201,15 @@ function make_gcc {
     # For whatever reason gcc needs this (although it never puts anything into it)
     # Error: "The directory that should contain system headers does not exist:"
     # mkdir -p /mingw/include    without --with-sysroot
-    mkdir -p $PREFIXCOQ/mingw/include
+    mkdir -p "$PREFIXCOQ/mingw/include"
 
     # See https://gcc.gnu.org/install/configure.html
     logn configure ./configure --build=$BUILD --host=$HOST --target=$TARGET \
-        --prefix=$PREFIXCOQ --program-prefix=$TARGET- --disable-win32-registry --with-sysroot=$PREFIXCOQ \
+        --prefix="$PREFIXCOQ" --program-prefix=$TARGET- --disable-win32-registry --with-sysroot="$PREFIXCOQ" \
         --enable-languages=c --disable-nls \
         --disable-libsanitizer --disable-libssp --disable-libquadmath --disable-libgomp --disable-libvtv --disable-lto
         # --disable-decimal-float seems to be required
-        # --with-sysroot=$PREFIX  results in configure error that this is not an absolute path
+        # --with-sysroot="$PREFIX"  results in configure error that this is not an absolute path
     log1 make $MAKE_OPT
     log2 make install
     # log2 make clean
@@ -1176,14 +1244,14 @@ function get_cygwin_mingw_sources {
 
       # Get the source file (either from the source cache or online)
       if [ ! -f $TARBALLS/$SOURCEFILE ] ; then
-        if [ -f $SOURCE_LOCAL_CACHE_CFMT/$SOURCEFILE ] ; then
-          cp $SOURCE_LOCAL_CACHE_CFMT/$SOURCEFILE $TARBALLS
+        if [ -f "$SOURCE_LOCAL_CACHE_CFMT/$SOURCEFILE" ] ; then
+          cp "$SOURCE_LOCAL_CACHE_CFMT/$SOURCEFILE" $TARBALLS
         else
           wget "$CYGWIN_REPOSITORY/$SOURCE"
           mv $SOURCEFILE $TARBALLS
           # Save the source archive in the source cache
-          if [ -d $SOURCE_LOCAL_CACHE_CFMT ] ; then
-            cp $TARBALLS/$SOURCEFILE $SOURCE_LOCAL_CACHE_CFMT
+          if [ -d "$SOURCE_LOCAL_CACHE_CFMT" ] ; then
+            cp $TARBALLS/$SOURCEFILE "$SOURCE_LOCAL_CACHE_CFMT"
           fi
         fi
       fi
@@ -1199,7 +1267,7 @@ function get_cygwin_mingw_sources {
 function make_coq_installer {
   make_coq
   make_mingw_make
-  get_cygwin_mingw_sources
+  # get_cygwin_mingw_sources
 
   # Prepare the file lists for the installer. We created to file list dumps of the target folder during the build:
   # ocaml: ocaml + menhir + camlp5 + findlib
@@ -1230,14 +1298,14 @@ function make_coq_installer {
     NSIS=`pwd`/makensis.exe
     chmod u+x "$NSIS"
     # Change to Coq folder
-    cd ../coq-${COQ_VERSION}
+    cd $COQ_BUILD_PATH
     # Copy patched nsi file
     cp ../patches/coq_new.nsi dev/nsis
     cp ../patches/StrRep.nsh dev/nsis
     cp ../patches/ReplaceInFile.nsh dev/nsis
-    VERSION=`grep ^VERSION= config/Makefile | cut -d = -f 2`
+    VERSION=`grep '^VERSION=' config/Makefile | cut -d = -f 2 | tr -d '\r'`
     cd dev/nsis
-    logn nsis-installer "$NSIS" -DVERSION=$VERSION -DARCH=$ARCH -DCOQ_SRC_PATH=$PREFIXCOQ -DCOQ_ICON=..\\..\\ide\\coq.ico coq_new.nsi
+    logn nsis-installer "$NSIS" -DVERSION=$VERSION -DARCH=$ARCH -DCOQ_SRC_PATH="$PREFIXCOQ" -DCOQ_ICON=..\\..\\ide\\coq.ico coq_new.nsi
     
     build_post
   fi
@@ -1245,17 +1313,13 @@ function make_coq_installer {
 
 ###################### TOP LEVEL BUILD #####################
 
-make_gtk2
-make_gtk_sourceview2
-
+make_sed
 make_ocaml
-make_findlib
-make_lablgtk
-make_camlp4
-make_camlp5
-make_menhir
-make_stdint
+make_ocaml_tools
+make_ocaml_libs
+
 list_files ocaml
+
 make_coq
 
 if [ "$INSTALLMAKE" == "Y" ] ; then

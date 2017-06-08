@@ -1,5 +1,16 @@
 #!/bin/bash
 
+###################### COPYRIGHT/COPYLEFT ######################
+
+# (C) 2016 Intel Deutschland GmbH
+# Author: Michael Soegtrop
+#
+# Released to the public by Intel under the
+# GNU Lesser General Public License Version 2.1 or later
+# See https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+###################### CONFIGURE CYGWIN USER PROFILE FOR BUILDING COQ ######################
+
 rcfile=~/.bash_profile
 donefile=~/.bash_profile.upated
 
