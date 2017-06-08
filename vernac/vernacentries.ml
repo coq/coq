@@ -108,14 +108,29 @@ let show_intro all =
     [Not_found] is raised if the given string isn't the qualid of
     a known inductive type. *)
 
+(*
+
+  HH notes in PR #679:
+
+  The Show Match could also be made more robust, for instance in the
+  presence of let in the branch of a constructor. A
+  decompose_prod_assum would probably suffice for that, but then, it
+  is a Context.Rel.Declaration.t which needs to be matched and not
+  just a pair (name,type).
+
+  Otherwise, this is OK. After all, the API on inductive types is not
+  so canonical in general, and in this simple case, working at the
+  low-level of mind_nf_lc seems reasonable (compared to working at the
+  higher-level of Inductiveops).
+
+*)
+    
 let make_cases_aux glob_ref =
   match glob_ref with
-    | Globnames.IndRef i ->
-	let {Declarations.mind_nparams = np}
-	    , {Declarations.mind_consnames = carr ; Declarations.mind_nf_lc = tarr }
-	      = Global.lookup_inductive i in
-	Util.Array.fold_right2
-	  (fun consname typ l ->
+    | Globnames.IndRef ind ->
+	let {Declarations.mind_nparams = np} , {Declarations.mind_nf_lc = tarr} = Global.lookup_inductive ind in
+	Util.Array.fold_right_i
+	  (fun i typ l ->
 	     let al = List.rev (fst (decompose_prod typ)) in
 	     let al = Util.List.skipn np al in
 	     let rec rename avoid = function
@@ -124,8 +139,9 @@ let make_cases_aux glob_ref =
 		   let n' = Namegen.next_name_away_with_default (Id.to_string Namegen.default_dependent_ident) n avoid in
 		   Id.to_string n' :: rename (n'::avoid) l in
 	     let al' = rename [] al in
-	     (Id.to_string consname :: al') :: l)
-	  carr tarr []
+	     let consref = ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
+	     (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
+	  tarr []
     | _ -> raise Not_found
 
 let make_cases s =

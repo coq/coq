@@ -603,6 +603,7 @@ let make_hints g st only_classes sign =
     List.fold_left
       (fun hints hyp ->
         let consider =
+          not only_classes ||
           try let t = hyp |> NamedDecl.get_id |> Global.lookup_named |> NamedDecl.get_type in
               (* Section variable, reindex only if the type changed *)
               not (EConstr.eq_constr (project g) (EConstr.of_constr t) (NamedDecl.get_type hyp))

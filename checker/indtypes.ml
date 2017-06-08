@@ -530,7 +530,7 @@ let check_positivity env_ar mind params nrecp inds =
 let check_inductive env kn mib =
   Flags.if_verbose Feedback.msg_notice (str "  checking ind: " ++ MutInd.print kn);
   (* check mind_constraints: should be consistent with env *)
-  let env = add_constraints (Univ.UContext.constraints mib.mind_universes) env in
+  let env = Environ.push_context (Univ.instantiate_univ_context mib.mind_universes) env in
   (* check mind_record : TODO ? check #constructor = 1 ? *)
   (* check mind_finite : always OK *)
   (* check mind_ntypes *)

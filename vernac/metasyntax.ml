@@ -301,22 +301,22 @@ let is_numeral symbs =
   | _ ->
       false
 
-let rec get_notation_vars = function
+let rec get_notation_vars onlyprint = function
   | [] -> []
   | NonTerminal id :: sl ->
-      let vars = get_notation_vars sl in
+      let vars = get_notation_vars onlyprint sl in
       if Id.equal id ldots_var then vars else
-	if Id.List.mem id vars then
+	(* don't check for nonlinearity if printing only, see Bug 5526 *)
+	if not onlyprint && Id.List.mem id vars then 
 	  user_err ~hdr:"Metasyntax.get_notation_vars"
             (str "Variable " ++ pr_id id ++ str " occurs more than once.")
-	else
-          id::vars
-  | (Terminal _ | Break _) :: sl -> get_notation_vars sl
+	else id::vars
+  | (Terminal _ | Break _) :: sl -> get_notation_vars onlyprint sl
   | SProdList _ :: _ -> assert false
 
-let analyze_notation_tokens l =
+let analyze_notation_tokens ~onlyprint l =
   let l = raw_analyze_notation_tokens l in
-  let vars = get_notation_vars l in
+  let vars = get_notation_vars onlyprint l in
   let recvars,l = interp_list_parser [] l in
   recvars, List.subtract Id.equal vars (List.map snd recvars), l
 
@@ -1084,12 +1084,12 @@ let compute_syntax_data df modifiers =
   if onlyprint && onlyparse then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
   let assoc = Option.append mods.assoc (Some NonA) in
   let toks = split_notation_string df in
-  let recvars,mainvars,symbols = analyze_notation_tokens toks in
+  let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint toks in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
   let _ = check_binder_type recvars mods.etyps in
 
   (* Notations for interp and grammar  *)
-let ntn_for_interp = make_notation_key symbols in
+  let ntn_for_interp = make_notation_key symbols in
   let symbols' = remove_curly_brackets symbols in
   let ntn_for_grammar = make_notation_key symbols' in
   if not onlyprint then check_rule_productivity symbols';
@@ -1333,7 +1333,7 @@ let add_notation_in_scope local df c mods scope =
 
 let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse onlyprint compat =
   let dfs = split_notation_string df in
-  let recvars,mainvars,symbs = analyze_notation_tokens dfs in
+  let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprint dfs in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
   let i_typs, onlyprint = if not (is_numeral symbs) then begin
     let i_typs,sy_rules,onlyprint' = recover_notation_syntax (make_notation_key symbs) in
@@ -1410,7 +1410,7 @@ let add_notation local c ((loc,df),modifiers) sc =
 let add_notation_extra_printing_rule df k v =
   let notk = 
     let dfs = split_notation_string df in
-    let _,_, symbs = analyze_notation_tokens dfs in
+    let _,_, symbs = analyze_notation_tokens ~onlyprint:true dfs in
     make_notation_key symbs in
   Notation.add_notation_extra_printing_rule notk k v
 

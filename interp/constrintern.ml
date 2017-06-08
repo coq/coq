@@ -963,6 +963,45 @@ let check_constructor_length env loc cstr len_pl pl0 =
       (error_wrong_numarg_constructor ?loc env cstr
          (Inductiveops.constructor_nrealargs cstr)))
 
+open Term
+open Declarations
+
+(* Similar to Cases.adjust_local_defs but on RCPat *)
+let insert_local_defs_in_pattern (ind,j) l =
+  let (mib,mip) = Global.lookup_inductive ind in
+  if mip.mind_consnrealdecls.(j-1) = mip.mind_consnrealargs.(j-1) then
+    (* Optimisation *) l
+  else
+    let typi = mip.mind_nf_lc.(j-1) in
+    let (_,typi) = decompose_prod_n_assum (Context.Rel.length mib.mind_params_ctxt) typi in
+    let (decls,_) = decompose_prod_assum typi in
+    let rec aux decls args =
+      match decls, args with
+      | Context.Rel.Declaration.LocalDef _ :: decls, args -> (CAst.make @@ RCPatAtom None) :: aux decls args
+      | _, [] -> [] (* In particular, if there were trailing local defs, they have been inserted *)
+      | Context.Rel.Declaration.LocalAssum _ :: decls, a :: args -> a :: aux decls args
+      | _ -> assert false in
+    aux (List.rev decls) l
+
+let add_local_defs_and_check_length loc env g pl args = match g with
+  | ConstructRef cstr ->
+     (* We consider that no variables corresponding to local binders
+        have been given in the "explicit" arguments, which come from a
+        "@C args" notation or from a custom user notation *)
+     let pl' = insert_local_defs_in_pattern cstr pl in
+     let maxargs = Inductiveops.constructor_nalldecls cstr in
+     if List.length pl' + List.length args > maxargs then
+       error_wrong_numarg_constructor ?loc env cstr (Inductiveops.constructor_nrealargs cstr);
+     (* Two possibilities: either the args are given with explict
+     variables for local definitions, then we give the explicit args
+     extended with local defs, so that there is nothing more to be
+     added later on; or the args are not enough to have all arguments,
+     which a priori means local defs to add in the [args] part, so we
+     postpone the insertion of local defs in the explicit args *)
+     (* Note: further checks done later by check_constructor_length *)
+     if List.length pl' + List.length args = maxargs then pl' else pl
+  | _ -> pl
+
 let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 =
   let impl_list = if Int.equal len_pl1 0
     then select_impargs_size (List.length pl2) impls_st
@@ -1200,7 +1239,7 @@ let rec subst_pat_iterator y t = CAst.(map (function
   | RCPatAlias (p,a) -> RCPatAlias (subst_pat_iterator y t p,a)
   | RCPatOr pl -> RCPatOr (List.map (subst_pat_iterator y t) pl)))
 
-let drop_notations_pattern looked_for =
+let drop_notations_pattern looked_for genv =
   (* At toplevel, Constructors and Inductives are accepted, in recursive calls
      only constructor are allowed *)
   let ensure_kind top loc g =
@@ -1355,9 +1394,9 @@ let drop_notations_pattern looked_for =
     | NApp (NRef g,pl) ->
       ensure_kind top loc g;
       let (argscs1,argscs2) = find_remaining_scopes pl args g in
-      CAst.make ?loc @@ RCPatCstr (g,
-		 List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl @
-		 List.map (in_pat false scopes) args, [])
+      let pl = List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl in
+      let pl = add_local_defs_and_check_length loc genv g pl args in
+      CAst.make ?loc @@ RCPatCstr (g, pl @ List.map (in_pat false scopes) args, [])
     | NList (x,y,iter,terminator,lassoc) ->
       if not (List.is_empty args) then user_err ?loc 
         (strbrk "Application of arguments to a recursive notation not supported in patterns.");
@@ -1418,7 +1457,7 @@ let rec intern_pat genv aliases pat =
 
 let intern_cases_pattern genv scopes aliases pat =
   intern_pat genv aliases
-    (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) scopes pat)
+    (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) genv scopes pat)
 
 let _ =
   intern_cases_pattern_fwd :=
@@ -1427,7 +1466,7 @@ let _ =
 let intern_ind_pattern genv scopes pat =
   let no_not =
     try
-      drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) scopes pat
+      drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) genv scopes pat
     with InternalizationError(loc,NotAConstructor _) -> error_bad_inductive_type ?loc
   in
   let loc = no_not.CAst.loc in

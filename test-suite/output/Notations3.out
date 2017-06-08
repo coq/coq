@@ -105,3 +105,7 @@ tele (t : Type) '(y, z) (x : t0) := tt
          ((nat -> nat) * ((nat -> nat) * ((nat -> nat) * (nat -> nat))))))
 foo5 x nat x
      : nat -> nat
+fun x : ?A => x === x
+     : forall x : ?A, x = x
+where
+?A : [x : ?A |- Type] (x cannot be used)

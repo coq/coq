@@ -174,12 +174,18 @@ Ltac zify_nat_op :=
      match isnat with
       | true => simpl (Z.of_nat (S a)) in H
       | _ => rewrite (Nat2Z.inj_succ a) in H
+      | _ => (* if the [rewrite] fails (most likely a dependent occurence of [Z.of_nat (S a)]),
+                hide [Z.of_nat (S a)] in this one hypothesis *)
+        change (Z.of_nat (S a)) with (Z_of_nat' (S a)) in H
      end
   | |- context [ Z.of_nat (S ?a) ] =>
      let isnat := isnatcst a in
      match isnat with
       | true => simpl (Z.of_nat (S a))
       | _ => rewrite (Nat2Z.inj_succ a)
+      | _ => (* if the [rewrite] fails (most likely a dependent occurence of [Z.of_nat (S a)]),
+                hide [Z.of_nat (S a)] in the goal *)
+        change (Z.of_nat (S a)) with (Z_of_nat' (S a))
      end
 
   (* atoms of type nat : we add a positivity condition (if not already there) *)
@@ -401,4 +407,3 @@ Ltac zify_N := repeat zify_N_rel; repeat zify_N_op; unfold Z_of_N' in *.
 (** The complete Z-ification tactic *)
 
 Ltac zify := repeat (zify_nat; zify_positive; zify_N); zify_op.
-

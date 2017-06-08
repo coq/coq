@@ -414,4 +414,10 @@ Axiom test : forall P1 P2, P1 = P2 -> P1 -> P2.
 Import EqNotations.
 Definition test2 {A B:Type} {H:A=B} (a:A) : B := rew H in a.
 
+(* Check that pre-existing evars are not counted as newly undefined in "set" *)
+(* Reported by Théo *)
 
+Goal exists n : nat, n = n -> True.
+eexists.
+set (H := _ = _).
+Abort.
