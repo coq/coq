@@ -62,7 +62,21 @@ VERBOSE ?=
 # Time the Coq process (set to non empty), and how (see default value)
 TIMED?=
 TIMECMD?=
-STDTIME?=/usr/bin/time -f "$* (real: %e, user: %U, sys: %S, mem: %M ko)"
+# Use /usr/bin/time on linux, gtime on Mac OS
+TIMEFMT?="$* (real: %e, user: %U, sys: %S, mem: %M ko)"
+ifneq (,$(TIMED))
+ifeq (0,$(shell /usr/bin/time -f $(TIMEFMT) true >/dev/null 2>/dev/null; echo $$?))
+STDTIME?=/usr/bin/time -f $(TIMEFMT)
+else
+ifeq (0,$(shell gtime -f $(TIMEFMT) true >/dev/null 2>/dev/null; echo $$?))
+STDTIME?=gtime -f $(TIMEFMT)
+else
+STDTIME?=time
+endif
+endif
+else
+STDTIME?=/usr/bin/time -f $(TIMEFMT)
+endif
 
 # Coq binaries
 COQC     ?= "$(COQBIN)coqc"
