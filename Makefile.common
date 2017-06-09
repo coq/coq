@@ -145,8 +145,6 @@ LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)
 # vo files
 ###########################################################################
 
-## we now retrieve the names of .vo file to compile in */vo.itarget files
-
 GENVOFILES := $(GENVFILES:.v=.vo)
 
 THEORIESVO := $(patsubst %.v,%.vo,$(shell find theories -type f -name "*.v")) \
