@@ -18,7 +18,7 @@ if [ ! -f $donefile ] ; then
 
     echo >> $rcfile
     
-    if [ -n "$1" ]; then
+    if [ "$1" != "" -a "$1" != " " ]; then
       echo export http_proxy="http://$1" >> $rcfile
       echo export https_proxy="http://$1" >> $rcfile
       echo export ftp_proxy="http://$1" >> $rcfile

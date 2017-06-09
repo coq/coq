@@ -12,7 +12,7 @@ REM ========== BUILD COQ ==========
 call MakeCoq_SetRootPath
 
 SET HTTP_PROXY=
-EXPORT HTTP_PROXY=
+SET HTTPS_PROXY=
 MKDIR C:\Temp\srccache
 
 call MakeCoq_MinGW.bat ^
