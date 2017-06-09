@@ -177,7 +177,7 @@ IF "%0" == "-cygrepo" (
 )
 
 IF "%0" == "-cygcache" (
-  SET CYGWIN_LOCAL_CACHE_WFMT="%1"
+  SET CYGWIN_LOCAL_CACHE_WFMT=%1
   SHIFT
   SHIFT
   GOTO Parse
@@ -342,7 +342,7 @@ IF "%RUNSETUP%"=="Y" (
     --proxy %PROXY% ^
     --site %CYGWIN_REPOSITORY% ^
     --root %CYGWIN_INSTALLDIR_WFMT% ^
-    --local-package-dir %CYGWIN_LOCAL_CACHE_WFMT% ^
+    --local-package-dir "%CYGWIN_LOCAL_CACHE_WFMT%" ^
     --no-shortcuts ^
     %CYGWIN_OPT% ^
     -P wget,curl,git,make,unzip ^
