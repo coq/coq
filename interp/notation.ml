@@ -561,11 +561,12 @@ let interpretation_eq (vars1, t1) (vars2, t2) =
   List.equal var_attributes_eq vars1 vars2 &&
   Notation_ops.eq_notation_constr (List.map fst vars1, List.map fst vars2) t1 t2
 
-let exists_notation_in_scope scopt ntn r =
+let exists_notation_in_scope scopt ntn onlyprint r =
   let scope = match scopt with Some s -> s | None -> default_scope in
   try
     let sc = String.Map.find scope !scope_map in
     let n = String.Map.find ntn sc.notations in
+    onlyprint = n.not_onlyprinting && 
     interpretation_eq n.not_interp r
   with Not_found -> false
 

@@ -1073,11 +1073,11 @@ let open_notation i (_, nobj) =
   let scope = nobj.notobj_scope in
   let (ntn, df) = nobj.notobj_notation in
   let pat = nobj.notobj_interp in
-  let fresh = not (Notation.exists_notation_in_scope scope ntn pat) in
+  let onlyprint = nobj.notobj_onlyprint  in
+  let fresh = not (Notation.exists_notation_in_scope scope ntn onlyprint pat) in
   let active = is_active_compat nobj.notobj_compat in
   if Int.equal i 1 && fresh && active then begin
     (* Declare the interpretation *)
-    let onlyprint = nobj.notobj_onlyprint  in
     let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint in
     (* Declare the uninterpretation *)
     if not nobj.notobj_onlyparse then
