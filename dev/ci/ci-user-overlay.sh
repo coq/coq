@@ -44,4 +44,6 @@ fi
 if [ $TRAVIS_PULL_REQUEST == "498" ] || [ $TRAVIS_BRANCH == "outsource-bignums" ]; then
     math_classes_CI_BRANCH=external-bignums
     math_classes_CI_GITURL=https://github.com/letouzey/math-classes.git
+    Corn_CI_BRANCH=external-bignums
+    Corn_CI_GITURL=https://github.com/letouzey/corn.git
 fi
