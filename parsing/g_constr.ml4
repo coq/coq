@@ -290,7 +290,7 @@ GEXTEND Gram
       | s=string -> CAst.make ~loc:!@loc @@ CPrim (String s)
       | "_"      -> CAst.make ~loc:!@loc @@ CHole (None, IntroAnonymous, None)
       | "?"; "["; id=ident; "]"  -> CAst.make ~loc:!@loc @@  CHole (None, IntroIdentifier (id,false), None)
-      | "?"; "["; id=pattern_ident; "]"  -> CAst.make ~loc:!@loc @@  CHole (None, IntroFresh id, None)
+      | "?"; "["; id=pattern_ident; "]"  -> CAst.make ~loc:!@loc @@  CHole (None, IntroFresh (id,false), None)
       | id=pattern_ident; inst = evar_instance -> CAst.make ~loc:!@loc @@ CEvar(id,inst) ] ]
   ;
   inst:

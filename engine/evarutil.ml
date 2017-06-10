@@ -389,7 +389,7 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
   let name = match naming with
   | Misctypes.IntroAnonymous -> None
   | Misctypes.IntroIdentifier (id,_) -> Some id
-  | Misctypes.IntroFresh id ->
+  | Misctypes.IntroFresh (id,_) ->
     let has_name id = try let _ = Evd.evar_key id evd in true with Not_found -> false in
     let id = Namegen.next_ident_away_from id has_name in
     Some id

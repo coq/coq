@@ -892,7 +892,7 @@ let rec interp_intro_pattern ist env sigma = function
   | loc, IntroForthcoming _  as x -> sigma, x
 
 and interp_intro_pattern_naming loc ist env sigma = function
-  | IntroFresh id -> IntroFresh (fst (interp_ident ist env sigma id))
+  | IntroFresh (id,unstable) -> IntroFresh (fst (interp_ident ist env sigma id),unstable)
   | IntroIdentifier (id,isprivate) -> interp_intro_pattern_naming_var loc ist env sigma id isprivate
   | IntroAnonymous as x -> x
 

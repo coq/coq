@@ -36,7 +36,7 @@ let glob_sort_eq g1 g2 = match g1, g2 with
 let intro_pattern_naming_eq nam1 nam2 = match nam1, nam2 with
 | IntroAnonymous, IntroAnonymous -> true
 | IntroIdentifier (id1,b1), IntroIdentifier (id2,b2) -> Names.Id.equal id1 id2 && b1 == b2
-| IntroFresh id1, IntroFresh id2 -> Names.Id.equal id1 id2
+| IntroFresh (id1,b1), IntroFresh (id2,b2) -> Names.Id.equal id1 id2 && b1 == b2
 | _ -> false
 
 (** Mapping [red_expr_gen] *)

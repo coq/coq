@@ -301,7 +301,7 @@ GEXTEND Gram
       | "[="; tc = intropatterns; "]" -> IntroInjection tc ] ]
   ;
   naming_intropattern:
-    [ [ prefix = pattern_ident -> IntroFresh prefix
+    [ [ prefix = pattern_ident -> IntroFresh (prefix,true)
       | "?" -> IntroAnonymous
       | id = ident -> IntroIdentifier (id,false) ] ]
   ;

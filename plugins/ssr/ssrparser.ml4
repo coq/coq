@@ -519,7 +519,7 @@ let ipat_of_intro_pattern p = Misctypes.(
        [List.map ipat_of_intro_pattern (List.map remove_loc iandpat)]
     | IntroNaming IntroAnonymous -> IPatAnon One
     | IntroAction (IntroRewrite b) -> IPatRewrite (allocc, if b then L2R else R2L)
-    | IntroNaming (IntroFresh id) -> IPatAnon One
+    | IntroNaming (IntroFresh (id,_)) -> IPatAnon One
     | IntroAction (IntroApplyOn _) -> (* to do *) CErrors.user_err (Pp.str "TO DO")
     | IntroAction (IntroInjection ips) ->
         IPatInj [List.map ipat_of_intro_pattern (List.map remove_loc ips)]

@@ -16,13 +16,15 @@ type patvar = Id.t
 
 (** Introduction patterns *)
 
+type unstable_flag = bool
+
 type 'constr intro_pattern_expr =
   | IntroForthcoming of bool
   | IntroNaming of intro_pattern_naming_expr
   | IntroAction of 'constr intro_pattern_action_expr
 and intro_pattern_naming_expr =
   | IntroIdentifier of Id.t * Decl_kinds.private_flag
-  | IntroFresh of Id.t
+  | IntroFresh of Id.t * unstable_flag
   | IntroAnonymous
 and 'constr intro_pattern_action_expr =
   | IntroWildcard

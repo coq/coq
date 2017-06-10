@@ -19,7 +19,7 @@ let rec pr_intro_pattern prc (_,pat) = match pat with
 
 and pr_intro_pattern_naming = function
   | IntroIdentifier (id,_) -> Nameops.pr_id id
-  | IntroFresh id -> str "?" ++ Nameops.pr_id id
+  | IntroFresh (id,_) -> str "?" ++ Nameops.pr_id id
   | IntroAnonymous -> str "?"
 
 and pr_intro_pattern_action prc = function

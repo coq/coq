@@ -228,10 +228,11 @@ let rec intern_intro_pattern lf ist = function
 
 and intern_intro_pattern_naming lf ist = function
   | IntroIdentifier (id,isprivate) ->
-      assert (not isprivate);
+      assert (not isprivate); (* user provided *)
       IntroIdentifier (intern_ident lf ist id,false)
-  | IntroFresh id ->
-      IntroFresh (intern_ident lf ist id)
+  | IntroFresh (id,unstable) ->
+      assert unstable; (* user provided *)
+      IntroFresh (intern_ident lf ist id,unstable)
   | IntroAnonymous as x -> x
 
 and intern_intro_pattern_action lf ist = function

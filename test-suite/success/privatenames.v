@@ -84,3 +84,81 @@ Goal forall b : False, b = b.
 now destruct b.
 Qed.
 End foo.
+
+(* Test stability of "fix" *)
+
+Lemma a : forall n, n = 0.
+Proof.
+fix 1.
+Check a. (* name a is canonical *)
+fix 1.
+Fail Check a0. (* name a0 is not canonical *)
+Set Warnings "-generated-names".
+Check a0. (* name a0 exists *)
+Set Warnings "+generated-names".
+Abort.
+
+(* Test stability of "induction" *)
+
+Lemma a : forall n : nat, n = n.
+Proof.
+induction n.
+- auto.
+- Check n. (* name n is canonical *)
+  Check IHn. (* name IHn is canonical *)
+Abort.
+
+Inductive I := C : I -> I -> I.
+
+Lemma a : forall n : I, n = n.
+Proof.
+induction n.
+Check n1. (* name n1 is canonical *)
+Check n2. (* name n2 is canonical *)
+apply f_equal2.
++ apply IHn1. (* name IHn1 is canonical *)
++ apply IHn2. (* name IHn2 is canonical *)
+Qed.
+
+Lemma b : forall n1 n : I, n = n.
+Proof.
+induction n.
+Fail Check n3. (* expected n1 is now n2 hence not canonical *)
+Fail Check IHn1. (* name IHn1 is not canonical, because n1 renamed to n2 *)
+Fail Check n2. (* expected n2 is now n3 not canonical *)
+Fail Check IHn2. (* name IHn2 is not canonical, because n2 renamed to n3 *)
+Set Warnings "-generated-names".
+Check n3. (* Check names exist *)
+Check IHn1.
+Check n2.
+Check IHn2.
+Set Warnings "+generated-names".
+Abort.
+
+Lemma b : forall n2 n : I, n = n.
+Proof.
+induction n.
+Check n1. (* name n1 is not canonical *)
+Check IHn1. (* name IHn1 is canonical *)
+Fail Check n3. (* expected n2 is now n3 hence not canonical *)
+Fail Check IHn2. (* name IHn2 is not canonical, because n2 renamed to n3 *)
+Set Warnings "-generated-names".
+Check n3.
+Check IHn2.
+Set Warnings "+generated-names".
+Abort.
+
+(* Testing remember *)
+
+Lemma c : 0 = 0.
+Proof.
+remember 0 as x.
+Check Heqx. (* Heqx is canonical *)
+Abort.
+
+Lemma c : forall Heqx, Heqx -> 0 = 0.
+Proof.
+intros.
+remember 0 as x.
+Fail Check Heqx0. (* Heqx0 is not canonical *)
+Abort.

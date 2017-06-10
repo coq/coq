@@ -1674,13 +1674,15 @@ sig
                     | CastCoerce
                     | CastNative of 'a
 
+  type unstable_flag = bool
+
   type 'constr intro_pattern_expr =
     | IntroForthcoming of bool
     | IntroNaming of intro_pattern_naming_expr
     | IntroAction of 'constr intro_pattern_action_expr
   and intro_pattern_naming_expr =
     | IntroIdentifier of Names.Id.t * Decl_kinds.private_flag
-    | IntroFresh of Names.Id.t
+    | IntroFresh of Names.Id.t * unstable_flag
     | IntroAnonymous
   and 'constr intro_pattern_action_expr =
     | IntroWildcard

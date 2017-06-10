@@ -400,6 +400,14 @@ let fresh_id avoid id gl =
 let new_fresh_id avoid id gl =
   fresh_id_in_env avoid id (Proofview.Goal.env gl)
 
+let fresh_stable_id_in_env avoid (id,unstable) env =
+  let id' = fresh_id_in_env avoid id env in
+  let isprivate = unstable || not (Id.equal id id') in
+  id', isprivate
+
+let new_fresh_stable_id avoid id gl =
+  fresh_stable_id_in_env avoid id (Proofview.Goal.env gl)
+
 let id_of_name_with_default id = function
   | Anonymous -> id
   | Name id   -> id
@@ -421,7 +429,7 @@ let default_id env sigma decl =
 
 type name_flag =
   | NamingAvoid of Id.Set.t
-  | NamingBasedOn of Id.t * Id.Set.t
+  | NamingBasedOn of Id.t * Misctypes.unstable_flag * Id.Set.t
   | NamingMustBe of Id.t Loc.located * Pre_env.private_flag
 
 let naming_of_name = function
@@ -433,10 +441,9 @@ let find_name mayrepl decl naming gl = match naming with
       (* this case must be compatible with [find_intro_names] below. *)
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
-      let id = new_fresh_id idl (default_id env sigma decl) gl in
-      let isprivate = match RelDecl.get_name decl with Name id' -> not (Id.equal id id') | _ -> true in
-      id, isprivate
-  | NamingBasedOn (id,idl) ->  new_fresh_id idl id gl, true
+      let unstable = match RelDecl.get_name decl with Name _ -> false | _ -> true in
+      new_fresh_stable_id idl (default_id env sigma decl,unstable) gl
+  | NamingBasedOn (id,unstable,idl) -> new_fresh_stable_id idl (id,unstable) gl
   | NamingMustBe ((loc,id),isprivate) ->
       (* When name is given, we allow to hide a global name *)
       let ids_of_hyps = Tacmach.New.pf_ids_set_of_hyps gl in
@@ -612,9 +619,9 @@ end
 let fix ido n = match ido with
   | None ->
     Proofview.Goal.enter begin fun gl ->
-      let name = Proof_global.get_current_proof_name () in
-      let id = new_fresh_id Id.Set.empty name gl in
-      mutual_fix (id,true) n [] 0
+      let id = Proof_global.get_current_proof_name () in
+      let id = new_fresh_stable_id Id.Set.empty (id,false) gl in
+      mutual_fix id n [] 0
     end
   | Some id ->
     mutual_fix id n [] 0
@@ -664,9 +671,9 @@ end
 let cofix ido = match ido with
   | None ->
     Proofview.Goal.enter begin fun gl ->
-      let name = Proof_global.get_current_proof_name () in
-      let id = new_fresh_id Id.Set.empty name gl in
-      mutual_cofix (id,true) [] 0
+      let id = Proof_global.get_current_proof_name () in
+      let id = new_fresh_stable_id Id.Set.empty (id,true) gl in
+      mutual_cofix id [] 0
     end
   | Some id ->
       mutual_cofix id [] 0
@@ -1032,7 +1039,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
 
 let intro_gen n m f d = intro_then_gen n m f d (fun _ -> Proofview.tclUNIT ())
 let intro_mustbe_force id = intro_gen (NamingMustBe (Loc.tag id,false)) MoveLast true false
-let intro_using id = intro_gen (NamingBasedOn (id, Id.Set.empty)) MoveLast false false
+let intro_using id = intro_gen (NamingBasedOn (id,false,Id.Set.empty)) MoveLast false false
 
 let intro_then = intro_then_gen (NamingAvoid Id.Set.empty) MoveLast false false
 let intro = intro_gen (NamingAvoid Id.Set.empty) MoveLast false false
@@ -2407,7 +2414,7 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
 let prepare_naming ?loc = function
   | IntroIdentifier (id,isprivate) -> NamingMustBe (Loc.tag ?loc id,isprivate)
   | IntroAnonymous -> NamingAvoid Id.Set.empty
-  | IntroFresh id -> NamingBasedOn (id, Id.Set.empty)
+  | IntroFresh (id,unstable) -> NamingBasedOn (id, unstable, Id.Set.empty)
 
 let rec explicit_intro_names = function
 | (_, IntroForthcoming _) :: l -> explicit_intro_names l
@@ -2470,7 +2477,7 @@ let make_tmp_naming avoid l = function
      IntroAnonymous, but at the cost of a "renaming"; Note that in the
      case of IntroFresh, we should use check_thin_clash_then anyway to
      prevent the case of an IntroFresh precisely using the wild_id *)
-  | IntroWildcard -> NamingBasedOn (wild_id, Id.Set.union avoid (explicit_intro_names l))
+  | IntroWildcard -> NamingBasedOn (wild_id, true, Id.Set.union avoid (explicit_intro_names l))
   | pat -> NamingAvoid(Id.Set.union avoid (explicit_intro_names ((Loc.tag @@ IntroAction pat)::l)))
 
 let fit_bound n = function
@@ -2538,9 +2545,9 @@ and intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound n tac
       intro_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
 	destopt true false
         (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
-  | IntroFresh id ->
+  | IntroFresh (id,unstable) ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
-      intro_then_gen (NamingBasedOn (id, Id.Set.union avoid (explicit_intro_names l)))
+      intro_then_gen (NamingBasedOn (id, unstable, Id.Set.union avoid (explicit_intro_names l)))
 	destopt true false
         (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
 
@@ -2700,8 +2707,8 @@ let letin_tac_gen with_eq (id,isprivate,depdecls,lastlhyp,ccl,c) ty =
     let (sigma, (newcl, eq_tac)) = match with_eq with
       | Some (lr,(loc,ido)) ->
           let heq,isprivateeq = match ido with
-            | IntroAnonymous -> new_fresh_id (Id.Set.singleton id) (add_prefix "Heq" id) gl, true
-            | IntroFresh heq_base -> new_fresh_id (Id.Set.singleton id) heq_base gl, true
+            | IntroAnonymous -> new_fresh_stable_id (Id.Set.singleton id) (add_prefix "Heq" id,false) gl
+            | IntroFresh (heq_base,unstable) -> new_fresh_stable_id (Id.Set.singleton id) (heq_base,unstable) gl
             | IntroIdentifier (id,isprivate) -> id, isprivate in
           let eqdata = build_coq_eq_data () in
           let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
@@ -2754,7 +2761,7 @@ let mkletin_goal env sigma store with_eq dep (id,isprivate,lastlhyp,ccl,c) ty =
   | Some (lr,(loc,ido)) ->
       let heq,isprivateeq = match ido with
       | IntroAnonymous -> fresh_id_in_env (Id.Set.singleton id) (add_prefix "Heq" id) env, true
-      | IntroFresh heq_base -> fresh_id_in_env (Id.Set.singleton id) heq_base env, true
+      | IntroFresh (heq_base,isstable) -> fresh_id_in_env (Id.Set.singleton id) heq_base env, true
       | IntroIdentifier (id,isprivate) ->
           if List.mem id (ids_of_named_context (named_context env)) then
             user_err ?loc (pr_id id ++ str" is already used.");
@@ -3155,23 +3162,22 @@ let check_unused_names env sigma names =
   if not (List.is_empty names) then
     warn_unused_intro_pattern env sigma names
 
-let intropattern_of_name gl avoid = function
-  | Anonymous -> IntroNaming IntroAnonymous
-  | Name id -> IntroNaming (IntroFresh id)
+let intropattern_of_name gl = function
+  | None -> IntroNaming IntroAnonymous
+  | Some (id,unstable) -> IntroNaming (IntroFresh (id,unstable))
 
 let rec consume_pattern avoid na isdep gl = function
-  | [] -> ((Loc.tag @@ intropattern_of_name gl avoid na), [])
+  | [] -> ((Loc.tag @@ intropattern_of_name gl na), [])
   | (loc,IntroForthcoming true)::names when not isdep ->
       consume_pattern avoid na isdep gl names
   | (loc,IntroForthcoming _)::names as fullpat ->
-      let avoid = Id.Set.union avoid (explicit_intro_names names) in
-      ((loc,intropattern_of_name gl avoid na), fullpat)
+      ((loc,intropattern_of_name gl na), fullpat)
   | (loc,IntroNaming IntroAnonymous)::names ->
+      ((loc,intropattern_of_name gl na), names)
+  | (loc,IntroNaming (IntroFresh (id',unstable)))::names ->
       let avoid = Id.Set.union avoid (explicit_intro_names names) in
-      ((loc,intropattern_of_name gl avoid na), names)
-  | (loc,IntroNaming (IntroFresh id'))::names ->
-      let avoid = Id.Set.union avoid (explicit_intro_names names) in
-      ((loc,IntroNaming (IntroIdentifier (new_fresh_id avoid id' gl,true))), names)
+      let id,isprivate = new_fresh_stable_id avoid (id',unstable) gl in
+      ((loc,IntroNaming (IntroIdentifier (id,isprivate))), names)
   | pat::names -> (pat,names)
 
 let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
@@ -3199,7 +3205,7 @@ let safe_dest_intro_patterns with_evars avoid thin dest pat tac =
       | e -> Proofview.tclZERO ~info e
     end
 
-type elim_arg_kind = RecArg | IndArg | OtherArg
+type 'a elim_arg_kind = RecArg of 'a | IndArg of 'a | OtherArg
 
 type recarg_position =
   | AfterFixedPosition of Id.t option (* None = top of context *)
@@ -3217,6 +3223,14 @@ let get_recarg_dest (recargdests,tophyp) =
   | AfterFixedPosition None -> MoveLast
   | AfterFixedPosition (Some id) -> MoveAfter id
 
+let update_stability recvar hyprecvar ids names =
+  (* If the generated name for the recursive var is not granted, we
+     don't consider the corresponding induction hypothesis name as
+     stable *)
+  match recvar, hyprecvar, ids, names with
+  | (id,false), (hyprec,false), [id'], [] when not (Id.equal id' id) -> (hyprec,true)
+  | _ -> hyprecvar
+
 (* Current policy re-introduces recursive arguments of destructed
    variable at the place of the original variable while induction
    hypothesese are introduced at the top of the context. Since in the
@@ -3231,43 +3245,46 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
   let avoid = Id.Set.union avoid avoid' in
   let rec peel_tac ra dests names thin =
     match ra with
-    | (RecArg,_,deprec,recvarname) ::
-        (IndArg,_,depind,hyprecname) :: ra' ->
+    | (RecArg recvarname,_,deprec) ::
+        (IndArg hyprecname,_,depind) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
-        let (recpat,names) = match names with
-          | [loc,IntroNaming (IntroIdentifier (id,_)) as pat] ->
-              let id' = next_ident_away (add_prefix "IH" id) avoid in
-	      (pat, [Loc.tag @@ IntroNaming (IntroIdentifier (id',true))])
-          | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
+        let (recpat,names') = match names with
+          | [loc,IntroNaming (IntroIdentifier (id,isprivate)) as pat] ->
+              let indhypid = add_prefix "IH" id in
+              let indhypid' = next_ident_away indhypid avoid in
+              let isprivate = Id.equal indhypid indhypid' || isprivate in
+	      (pat, [Loc.tag @@ IntroNaming (IntroIdentifier (indhypid',isprivate))])
+          | _ -> consume_pattern avoid (Some recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
         dest_intro_patterns with_evars avoid thin dest [recpat] (fun ids thin ->
         Proofview.Goal.enter begin fun gl ->
-          let (hyprec,names) =
-            consume_pattern avoid (Name hyprecname) depind gl names
+          let hyprecname = update_stability recvarname hyprecname ids names in
+          let (hyprec,names'') =
+            consume_pattern avoid (Some hyprecname) depind gl names'
           in
 	  dest_intro_patterns with_evars avoid thin MoveLast [hyprec] (fun ids' thin ->
-	    peel_tac ra' (update_dest dests ids') names thin)
+	    peel_tac ra' (update_dest dests ids') names'' thin)
                              end)
         end
-    | (IndArg,_,dep,hyprecname) :: ra' ->
+    | (IndArg hyprecname,_,dep) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names =
-          consume_pattern avoid (Name hyprecname) dep gl names in
+          consume_pattern avoid (Some hyprecname) dep gl names in
 	dest_intro_patterns with_evars avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin)
         end
-    | (RecArg,_,dep,recvarname) :: ra' ->
+    | (RecArg recvarname,_,dep) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
         let (pat,names) =
-          consume_pattern avoid (Name recvarname) dep gl names in
+          consume_pattern avoid (Some recvarname) dep gl names in
         let dest = get_recarg_dest dests in
 	dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
-    | (OtherArg,_,dep,_) :: ra' ->
+    | (OtherArg,_,dep) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
-        let (pat,names) = consume_pattern avoid Anonymous dep gl names in
+        let (pat,names) = consume_pattern avoid None dep gl names in
         let dest = get_recarg_dest dests in
 	safe_dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
@@ -3573,7 +3590,7 @@ let make_base n id =
    type is None, then hyprecname is IHi where i is a number. *)
 let make_up_names n ind_opt cname =
   let is_hyp = String.equal (atompart_of_id cname) "H" in
-  let base = Id.to_string (make_base n cname) in
+  let base = make_base n cname in
   let ind_prefix = "IH" in
   let base_ind =
     if is_hyp then
@@ -3582,18 +3599,23 @@ let make_up_names n ind_opt cname =
 	| Some ind_id -> add_prefix ind_prefix (Nametab.basename_of_global ind_id)
     else add_prefix ind_prefix cname in
   let hyprecname = make_base n base_ind in
-  let avoid =
-    if Int.equal n 1 (* Only one recursive argument *) || Int.equal n 0 then Id.Set.empty
+  if Int.equal n 1 (* Only one recursive argument *) || Int.equal n 0 then
+    (fun _ -> (base,false)), (fun _ -> (hyprecname,false)), Id.Set.empty
+  else
+    let base_string = Id.to_string base in
+    let hyprec_string = Id.to_string hyprecname in
+    let mkbase b p = (make_ident base_string (Some p),b) in
+    let mkhyprecname b p = (make_ident hyprec_string (Some p),b) in
+    (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
+    (* in order to get names such as f1, f2, ... *)
+    let avoid =
+      Id.Set.add (make_ident hyprec_string None)
+      (Id.Set.singleton (make_ident hyprec_string (Some 0))) in
+    if not is_hyp then
+      mkbase false, mkhyprecname false,
+      Id.Set.add (make_ident base_string (Some 0)) (Id.Set.add (make_ident base_string None) avoid)
     else
-      (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
-      (* in order to get names such as f1, f2, ... *)
-      let avoid =
-        Id.Set.add (make_ident (Id.to_string hyprecname) None)
-        (Id.Set.singleton (make_ident (Id.to_string hyprecname) (Some 0))) in
-      if not (String.equal (atompart_of_id cname) "H") then
-        Id.Set.add (make_ident base (Some 0)) (Id.Set.add (make_ident base None) avoid)
-      else avoid in
-  Id.of_string base, hyprecname, avoid
+      (fun _ -> (base,true)), mkhyprecname true, avoid
 
 let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
@@ -4089,9 +4111,9 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
       | Some (LocalAssum (_,ind)) -> (* Standard scheme from an inductive type *)
 	  let indhd,indargs = decompose_app evd ind in
 	  let cond hd = EConstr.eq_constr evd hd indhd in
-	  let check_concl is_pred p =
+	  let check_concl is_concl p =
 	    (* Check again conclusion *)
-	    let ccl_arg_ok = is_pred (p + scheme.nargs + 1) f == IndArg in
+	    let ccl_arg_ok = is_concl (p + scheme.nargs + 1) f in
 	    let ind_is_ok =
 	      List.equal (fun c1 c2 -> EConstr.eq_constr evd c1 c2)
 		(List.lastn scheme.nargs indargs)
@@ -4100,39 +4122,50 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
 	      error_ind_scheme "the conclusion of"
 	  in (cond, check_concl)
   in
-  let is_pred n c =
+  let is_concl k c =
     let hd = fst (decompose_app evd c) in
     match EConstr.kind evd hd with
-      | Rel q when n < q && q <= n+scheme.npredicates -> IndArg
-      | _ when cond hd -> RecArg
-      | _ -> OtherArg
+      | Rel q when k < q && q <= k+scheme.npredicates -> true
+      | _ -> false
   in
-  let rec check_branch p c =
+  let classify_arg k (rec_index,ind_index as index) c =
+    let hd = fst (decompose_app evd c) in
+    match EConstr.kind evd hd with
+      | Rel q when k < q && q <= k+scheme.npredicates -> (rec_index,ind_index+1), IndArg (ind_index+1)
+      | _ when cond hd -> (rec_index+1,ind_index), RecArg (rec_index+1)
+      | _ -> index, OtherArg
+  in
+  let rec check_branch k n c =
     match EConstr.kind evd c with
       | Prod (_,t,c) ->
-	(is_pred p t, true, not (Vars.noccurn evd 1 c)) :: check_branch (p+1) c
+        let n, b = classify_arg k n t in
+        let n, l = check_branch (k+1) n c in
+	n, (b, true, not (Vars.noccurn evd 1 c)) :: l
       | LetIn (_,_,_,c) ->
-	(OtherArg, false, not (Vars.noccurn evd 1 c)) :: check_branch (p+1) c
-      | _ when is_pred p c == IndArg -> []
+        let n, l = check_branch (k+1) n c in
+	n, (OtherArg, false, not (Vars.noccurn evd 1 c)) :: l
+      | _ when is_concl k c -> n,[]
       | _ -> raise Exit
   in
   let rec find_branches p lbrch =
     match lbrch with
       | LocalAssum (_,t) :: brs ->
 	(try
-	   let lchck_brch = check_branch p t in
-	   let n = List.fold_left
-	     (fun n (b,_,_) -> if b == RecArg then n+1 else n) 0 lchck_brch in
-	   let recvarname, hyprecname, avoid =
-	     make_up_names n scheme.indref names_info in
+	   let (nrecarg,_),lchck_brch = check_branch p (0,0) t in
+	   let mkrecvarname, mkhyprecname, avoid =
+	     make_up_names nrecarg scheme.indref names_info in
 	   let namesign =
 	     List.map (fun (b,is_assum,dep) ->
-	       (b,is_assum,dep,if b == IndArg then hyprecname else recvarname))
+               let kind = match b with
+                 | IndArg i -> IndArg (mkhyprecname i)
+                 | RecArg i -> RecArg (mkrecvarname i)
+                 | OtherArg -> OtherArg in
+	       (kind,is_assum,dep))
 	       lchck_brch in
 	   (avoid,namesign) :: find_branches (p+1) brs
 	 with Exit-> error_ind_scheme "the branches of")
       | LocalDef _ :: _ -> error_ind_scheme "the branches of"
-      | [] -> check_concl is_pred p; []
+      | [] -> check_concl is_concl p; []
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
@@ -4177,7 +4210,7 @@ let given_elim hyp0 (elimc,lbind as e) gl =
   Tacmach.New.project gl, (e, elimt), ind_type_guess
 
 type scheme_signature =
-    (Id.Set.t * (elim_arg_kind * bool * bool * Id.t) list) array
+    (Id.Set.t * ((Id.t * unstable_flag) elim_arg_kind * bool * bool) list) array
 
 type eliminator_source =
   | ElimUsing of (eliminator * EConstr.types) * scheme_signature
@@ -4305,7 +4338,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
         (fun a decl -> if NamedDecl.is_local_assum decl then (mkVar (NamedDecl.get_id decl))::a else a) [] deps in
     let (sigma, isrec, elim, indsign) = get_eliminator elim dep s (Proofview.Goal.assume gl) in
     let branchletsigns =
-      let f (_,is_not_let,_,_) = is_not_let in
+      let f (_,is_not_let,_) = is_not_let in
       Array.map (fun (_,l) -> List.map f l) indsign in
     let names = compute_induction_names branchletsigns names in
     Array.iter (check_name_unicity env toclear []) names;
