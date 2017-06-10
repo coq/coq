@@ -10,8 +10,8 @@
 (* let stm_debug () = !Flags.debug *)
 let stm_debug () = !Flags.stm_debug
 
-let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (System.process_id ()) s
-let stm_pp_err pp = Format.eprintf "%s] @[%a@]\n%!" (System.process_id ()) Pp.pp_with pp
+let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (Spawned.process_id ()) s
+let stm_pp_err pp = Format.eprintf "%s] @[%a@]\n%!" (Spawned.process_id ()) Pp.pp_with pp
 
 let stm_prerr_endline s = if stm_debug () then begin stm_pr_err (s ()) end else ()
 let stm_pperr_endline s = if stm_debug () then begin stm_pp_err (s ()) end else ()
@@ -355,7 +355,7 @@ end = struct (* {{{ *)
     if stm_debug () then Flags.we_are_parsing := false;
 
     let fname =
-      "stm_" ^ Str.global_replace (Str.regexp " ") "_" (System.process_id ()) in
+      "stm_" ^ Str.global_replace (Str.regexp " ") "_" (Spawned.process_id ()) in
     let string_of_transaction = function
       | Cmd { cast = t } | Fork (t, _,_,_) ->
           (try Pp.string_of_ppcmds (pr_ast t) with _ -> "ERR")

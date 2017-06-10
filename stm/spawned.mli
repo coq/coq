@@ -20,3 +20,5 @@ val init_channels : unit -> unit
 (* Once initialized, these are the channels to talk with our master *)
 val get_channels : unit -> CThread.thread_ic * out_channel
 
+(** {6 Name of current process.} *)
+val process_id : unit -> string

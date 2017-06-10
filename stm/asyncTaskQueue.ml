@@ -10,7 +10,7 @@ open CErrors
 open Pp
 open Util
 
-let stm_pr_err pp = Format.eprintf "%s] @[%a@]\n%!" (System.process_id ()) Pp.pp_with pp
+let stm_pr_err pp = Format.eprintf "%s] @[%a@]\n%!" (Spawned.process_id ()) Pp.pp_with pp
 
 let stm_prerr_endline s = if !Flags.debug then begin stm_pr_err (str s) end else ()
 
@@ -295,7 +295,7 @@ module Make(T : Task) () = struct
   let slave_handshake () =
     Pool.worker_handshake (Option.get !slave_ic) (Option.get !slave_oc)
 
-  let pp_pid pp = Pp.(str (System.process_id () ^ " ") ++ pp)
+  let pp_pid pp = Pp.(str (Spawned.process_id () ^ " ") ++ pp)
 
   let debug_with_pid = Feedback.(function
     | { contents = Message(Debug, loc, pp) } as fb ->

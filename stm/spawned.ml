@@ -73,3 +73,9 @@ let get_channels () =
     Printf.eprintf "Fatal error: ideslave communication channels not set.\n";
     exit 1
   | Some(ic, oc) -> ic, oc
+
+let process_id () =
+  Printf.sprintf "%d:%s:%d" (Unix.getpid ())
+    (if Flags.async_proofs_is_worker () then !Flags.async_proofs_worker_id
+     else "master")
+    (Thread.id (Thread.self ()))
