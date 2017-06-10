@@ -169,7 +169,7 @@ summary.log:
 # local build, and downloadable on GitLab)
 report: summary.log
 	$(HIDE)./save-logs.sh
-	$(HIDE)if [ -n "${TRAVIS}" ]; then find logs/ -name '*.log' -not -name 'summary.log' -exec echo 'travis_fold:start:coq.logs.{}' ';' -exec cat '{}' ';' -exec echo 'travis_fold:end:coq.logs.{}' ';'; fi
+	$(HIDE)if [ -n "${TRAVIS}" ]; then find logs/ -name '*.log' -not -name 'summary.log' -exec 'bash' '-c' 'echo "travis_fold:start:coq.logs.$$(echo '{}' | sed s,/,.,g)"' ';' -exec cat '{}' ';' -exec 'bash' '-c' 'echo "travis_fold:end:coq.logs.$$(echo '{}' | sed s,/,.,g)"' ';'; fi
 	$(HIDE)if grep -q -F 'Error!' summary.log ; then echo FAILURES; grep -F 'Error!' summary.log; false; else echo NO FAILURES; fi
 
 #######################################################################
