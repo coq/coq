@@ -155,7 +155,7 @@ let generate_conf_extra_target oc sps =
     let target = if target = "all" then "custom-all" else target in
     if phony then fprintf oc ".PHONY: %s\n" target;
     if not (is_genrule target) && not phony then begin
-      fprintf oc "post-all::\n\t$(MAKE) -f $(SELF) %s\n" target;
+      fprintf oc "all: %s\n" target;
       if not phony then
         fprintf oc "clean::\n\trm -f %s\n" target;
     end;
@@ -170,9 +170,13 @@ let generate_conf_extra_target oc sps =
     List.iter pr_path sps
 
 let generate_conf_subdirs oc sds =
+  let strip_slash = Str.global_replace (Str.regexp "/$") "" in
   if sds <> [] then section oc "Subdirectories. (DEPRECATED)";
-  List.iter (fprintf oc ".PHONY:%s\n") sds;
-  List.iter (fprintf oc "post-all::\n\tcd \"%s\" && $(MAKE) all\n") sds;
+  List.iter (fun x -> fprintf oc ".PHONY:\"%s\"\n" (strip_slash x)) sds;
+  List.iter (fun x ->
+    fprintf oc "COMPAT_SUBDIRS += \"%s\"\n" (strip_slash x)) sds;
+  List.iter (fun x ->
+    fprintf oc "\"%s\" :\n\tcd \"%s\" && $(MAKE) all\n" (strip_slash x) x) sds;
   List.iter (fprintf oc "clean::\n\tcd \"%s\" && $(MAKE) clean\n") sds;
   List.iter (fprintf oc "archclean::\n\tcd \"%s\" && $(MAKE) archclean\n") sds;
   List.iter (fprintf oc "install-extra::\n\tcd \"%s\" && $(MAKE) install\n") sds
