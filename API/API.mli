@@ -1393,6 +1393,8 @@ sig
     utj_val : 'types;
     utj_type : Sorts.t }
 
+  type private_flag = bool
+
   type unsafe_type_judgment = Term.types punsafe_type_judgment
   val empty_env : env
   val lookup_mind : Names.MutInd.t -> env -> Declarations.mutual_inductive_body
@@ -1411,7 +1413,7 @@ sig
   val named_context : env -> Context.Named.t
   val named_context_val : env -> named_context_val
   val named_context_private_ids : named_context_val -> Names.Id.Set.t
-  val push_named_context_val : Context.Named.Declaration.t -> Decl_kinds.private_flag -> named_context_val -> named_context_val
+  val push_named_context_val : Context.Named.Declaration.t -> private_flag -> named_context_val -> named_context_val
   val reset_with_named_context : named_context_val -> env -> env
   val set_named_context_private : named_context_val -> Names.Id.Set.t -> named_context_val
   val rel_context : env -> Context.Rel.t
@@ -1675,6 +1677,7 @@ sig
                     | CastNative of 'a
 
   type unstable_flag = bool
+  type private_flag = bool
 
   type 'constr intro_pattern_expr =
     | IntroForthcoming of bool
@@ -4201,7 +4204,7 @@ sig
   val wit_string : string Genarg.uniform_genarg_type
   val wit_pre_ident : string Genarg.uniform_genarg_type
   val wit_global : (Libnames.reference, Globnames.global_reference Loc.located Misctypes.or_var, Globnames.global_reference) Genarg.genarg_type
-  val wit_ident : (Names.Id.t, Names.Id.t, Names.Id.t * Decl_kinds.private_flag) Genarg.genarg_type
+  val wit_ident : (Names.Id.t, Names.Id.t, Names.Id.t * Misctypes.private_flag) Genarg.genarg_type
   val wit_integer : int Genarg.uniform_genarg_type
   val wit_sort_family : (Sorts.family, unit, unit) Genarg.genarg_type
   val wit_constr : (Constrexpr.constr_expr, Tactypes.glob_constr_and_expr, EConstr.constr) Genarg.genarg_type
@@ -5216,16 +5219,16 @@ sig
     Misctypes.evars_flag -> Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings -> EConstr.constr Misctypes.with_bindings option -> unit Proofview.tactic
   val general_case_analysis : Misctypes.evars_flag -> Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings ->  unit Proofview.tactic
   val mutual_fix :
-    Names.Id.t * Decl_kinds.private_flag -> int -> ((Names.Id.t * Decl_kinds.private_flag) * int * EConstr.constr) list -> int -> unit Proofview.tactic
-  val mutual_cofix : Names.Id.t * Decl_kinds.private_flag -> ((Names.Id.t * Decl_kinds.private_flag) * EConstr.constr) list -> int -> unit Proofview.tactic
+    Names.Id.t * Misctypes.private_flag -> int -> ((Names.Id.t * Misctypes.private_flag) * int * EConstr.constr) list -> int -> unit Proofview.tactic
+  val mutual_cofix : Names.Id.t * Misctypes.private_flag -> ((Names.Id.t * Misctypes.private_flag) * EConstr.constr) list -> int -> unit Proofview.tactic
   val forward   : bool -> unit Proofview.tactic option option ->
                   Tactypes.intro_pattern option -> EConstr.constr -> unit Proofview.tactic
   val generalize_gen : (EConstr.constr Locus.with_occurrences * Names.Name.t) list -> unit Proofview.tactic
   val letin_tac : (bool * Tactypes.intro_pattern_naming) option ->
-                  Names.Name.t -> Decl_kinds.private_flag -> EConstr.constr -> EConstr.types option -> Locus.clause -> unit Proofview.tactic
+                  Names.Name.t -> Misctypes.private_flag -> EConstr.constr -> EConstr.types option -> Locus.clause -> unit Proofview.tactic
   val letin_pat_tac : Misctypes.evars_flag ->
                       (bool * Tactypes.intro_pattern_naming) option ->
-                      Names.Name.t -> Decl_kinds.private_flag ->
+                      Names.Name.t -> Misctypes.private_flag ->
                       Evd.evar_map * EConstr.constr ->
                       Locus.clause -> unit Proofview.tactic
   val induction_destruct : Misctypes.rec_flag -> Misctypes.evars_flag ->
@@ -5253,14 +5256,14 @@ sig
   val intros_symmetry : Locus.clause -> unit Proofview.tactic
   val split_with_bindings : Misctypes.evars_flag -> EConstr.constr Misctypes.bindings list -> unit Proofview.tactic
   val intros_until : Misctypes.quantified_hypothesis -> unit Proofview.tactic
-  val intro_move : (Names.Id.t * Decl_kinds.private_flag) option -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
+  val intro_move : (Names.Id.t * Misctypes.private_flag) option -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
   val move_hyp : Names.Id.t -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
-  val rename_hyp : (Names.Id.t * (Names.Id.t * Decl_kinds.private_flag)) list -> unit Proofview.tactic
+  val rename_hyp : (Names.Id.t * (Names.Id.t * Misctypes.private_flag)) list -> unit Proofview.tactic
   val revert : Names.Id.t list -> unit Proofview.tactic
   val simple_induct : Misctypes.quantified_hypothesis -> unit Proofview.tactic
   val simple_destruct : Misctypes.quantified_hypothesis -> unit Proofview.tactic
-  val fix : (Names.Id.t * Decl_kinds.private_flag) option -> int -> unit Proofview.tactic
-  val cofix : (Names.Id.t * Decl_kinds.private_flag) option -> unit Proofview.tactic
+  val fix : (Names.Id.t * Misctypes.private_flag) option -> int -> unit Proofview.tactic
+  val cofix : (Names.Id.t * Misctypes.private_flag) option -> unit Proofview.tactic
   val keep : Names.Id.t list -> unit Proofview.tactic
   val clear : Names.Id.t list -> unit Proofview.tactic
   val clear_body : Names.Id.t list -> unit Proofview.tactic
@@ -5273,7 +5276,7 @@ sig
   val specialize_eqs : Names.Id.t -> unit Proofview.tactic
   val generalize : EConstr.constr list -> unit Proofview.tactic
   val simplest_case : EConstr.constr -> unit Proofview.tactic
-  val introduction : ?check:bool -> Names.Id.t -> Decl_kinds.private_flag -> unit Proofview.tactic
+  val introduction : ?check:bool -> Names.Id.t -> Misctypes.private_flag -> unit Proofview.tactic
   val convert_concl_no_check : EConstr.types -> Constr.cast_kind -> unit Proofview.tactic
   val reduct_in_concl : tactic_reduction * Constr.cast_kind -> unit Proofview.tactic
   val reduct_in_hyp : ?check:bool -> tactic_reduction -> Locus.hyp_location -> unit Proofview.tactic
@@ -5300,10 +5303,10 @@ sig
   val red_in_concl : unit Proofview.tactic
   val change_in_concl   : (Locus.occurrences * Pattern.constr_pattern) option -> change_arg -> unit Proofview.tactic
   val eapply_with_bindings  : EConstr.constr Misctypes.with_bindings -> unit Proofview.tactic
-  val assert_by  : Names.Name.t -> Decl_kinds.private_flag -> EConstr.types -> unit Proofview.tactic ->
+  val assert_by  : Names.Name.t -> Misctypes.private_flag -> EConstr.types -> unit Proofview.tactic ->
                    unit Proofview.tactic
   val intro_avoiding : Names.Id.Set.t -> unit Proofview.tactic
-  val pose_proof : Names.Name.t -> Decl_kinds.private_flag -> EConstr.constr -> unit Proofview.tactic
+  val pose_proof : Names.Name.t -> Misctypes.private_flag -> EConstr.constr -> unit Proofview.tactic
   val pattern_option :  (Locus.occurrences * EConstr.constr) list -> Locus.goal_location -> unit Proofview.tactic
   val compute_elim_sig : Evd.evar_map -> ?elimc:EConstr.constr Misctypes.with_bindings -> EConstr.types -> elim_scheme
   val try_intros_until :
@@ -5571,7 +5574,7 @@ sig
   val typeclasses_eauto : ?only_classes:bool -> ?st:Names.transparent_state -> ?strategy:search_strategy ->
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic
-  val head_of_constr : Names.Id.t * Decl_kinds.private_flag -> EConstr.constr -> unit Proofview.tactic
+  val head_of_constr : Names.Id.t * Misctypes.private_flag -> EConstr.constr -> unit Proofview.tactic
   val not_evar : EConstr.constr -> unit Proofview.tactic
   val is_ground : EConstr.constr -> unit Proofview.tactic
   val autoapply : EConstr.constr -> Hints.hint_db_name -> unit Proofview.tactic
@@ -5722,8 +5725,10 @@ sig
   type one_inductive_impls
 
   val do_mutual_inductive :
-    (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list -> Decl_kinds.cumulative_inductive_flag -> Decl_kinds.polymorphic ->
-    Decl_kinds.private_flag -> Decl_kinds.recursivity_kind -> unit
+    (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list ->
+    Decl_kinds.cumulative_inductive_flag -> 
+    Decl_kinds.polymorphic -> 
+    Misctypes.private_flag -> Decl_kinds.recursivity_kind -> unit
 
   val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.universe_decl_expr option ->
     Constrexpr.local_binder_expr list -> Redexpr.red_expr option -> Constrexpr.constr_expr ->
@@ -5749,7 +5754,7 @@ sig
     structured_inductive_expr -> Vernacexpr.decl_notation list ->
     Decl_kinds.cumulative_inductive_flag ->
     Decl_kinds.polymorphic ->
-    Decl_kinds.private_flag -> Decl_kinds.recursivity_kind ->
+    Misctypes.private_flag -> Decl_kinds.recursivity_kind ->
     Entries.mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
 
   val declare_mutual_inductive_with_eliminations :

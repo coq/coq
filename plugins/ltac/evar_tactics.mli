@@ -16,6 +16,6 @@ val instantiate_tac : int -> Tacinterp.interp_sign * Glob_term.glob_constr ->
 val instantiate_tac_by_name : Id.t  ->
   Tacinterp.interp_sign * Glob_term.glob_constr -> unit Proofview.tactic
 
-val let_evar : Name.t * Decl_kinds.private_flag -> EConstr.types -> unit Proofview.tactic
+val let_evar : Name.t * Misctypes.private_flag -> EConstr.types -> unit Proofview.tactic
 
 val hget_evar : int -> unit Proofview.tactic

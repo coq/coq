@@ -79,7 +79,7 @@ val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
   env -> evar_map -> (evar_map * constr) -> evar_map * constr
 
 type 'r abstraction_result =
-  Names.Id.t * Decl_kinds.private_flag * named_context_val *
+  Names.Id.t * Misctypes.private_flag * named_context_val *
     named_declaration list * Names.Id.t option *
     types * (evar_map * constr) option
 

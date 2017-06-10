@@ -1690,7 +1690,7 @@ type abstraction_request =
 | AbstractExact of Name.t * constr * types option * clause * bool
 
 type 'r abstraction_result =
-  Names.Id.t * Pre_env.private_flag * named_context_val *
+  Names.Id.t * Misctypes.private_flag * named_context_val *
     named_declaration list * Names.Id.t option *
     types * (evar_map * constr) option
 

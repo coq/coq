@@ -430,7 +430,7 @@ let default_id env sigma decl =
 type name_flag =
   | NamingAvoid of Id.Set.t
   | NamingBasedOn of Id.t * Misctypes.unstable_flag * Id.Set.t
-  | NamingMustBe of Id.t Loc.located * Pre_env.private_flag
+  | NamingMustBe of Id.t Loc.located * Misctypes.private_flag
 
 let naming_of_name = function
   | Anonymous -> NamingAvoid Id.Set.empty

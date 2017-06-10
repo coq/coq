@@ -671,7 +671,7 @@ let cast_named_context :
   fun Refl x -> x
 
 let cast_named_context_with_privacy :
-  type a b. (a,b) eq -> ((a, a) Named.Declaration.pt * Pre_env.private_flag) list -> ((b, b) Named.Declaration.pt * Pre_env.private_flag) list =
+  type a b. (a,b) eq -> ((a, a) Named.Declaration.pt * Misctypes.private_flag) list -> ((b, b) Named.Declaration.pt * Misctypes.private_flag) list =
   fun Refl x -> x
 
 

@@ -16,7 +16,7 @@ val wit_orient : bool Genarg.uniform_genarg_type
 val orient : bool Pcoq.Gram.entry
 val pr_orient : bool -> Pp.t
 
-val wit_rename : (Id.t Loc.located * Id.t, Id.t Loc.located * Id.t, Id.t* (Id.t * Decl_kinds.private_flag)) Genarg.genarg_type
+val wit_rename : (Id.t Loc.located * Id.t, Id.t Loc.located * Id.t, Id.t* (Id.t * Misctypes.private_flag)) Genarg.genarg_type
 
 val occurrences : (int list or_var) Pcoq.Gram.entry
 val wit_occurrences : (int list or_var, int list or_var, int list) Genarg.genarg_type

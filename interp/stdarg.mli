@@ -39,7 +39,7 @@ val wit_int_or_var : (int or_var, int or_var, int) genarg_type
 
 val wit_intro_pattern : (constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type
 
-val wit_ident : (Id.t, Id.t, Id.t * Decl_kinds.private_flag) genarg_type
+val wit_ident : (Id.t, Id.t, Id.t * Misctypes.private_flag) genarg_type
 
 val wit_var : (Id.t located, Id.t located, Id.t) genarg_type
 
