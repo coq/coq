@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Default flags for workers *)
+val async_proofs_flags_for_workers : string list ref
+
 (** This file provides an API for defining and managing a queue of
     tasks to be done by external workers.
 

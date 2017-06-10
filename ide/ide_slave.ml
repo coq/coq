@@ -13,7 +13,6 @@ open Util
 open Pp
 open Printer
 
-module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 module CompactedDecl = Context.Compacted.Declaration
 
@@ -517,7 +516,7 @@ let rec parse = function
 let () = Coqtop.toploop_init := (fun args ->
         let args = parse args in
         Flags.quiet := true;
-        CoqworkmgrApi.(init Flags.High);
+        CoqworkmgrApi.(init High);
         args)
 
 let () = Coqtop.toploop_run := loop

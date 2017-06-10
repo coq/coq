@@ -14,7 +14,7 @@ type party = {
           sock     : Unix.file_descr;
           cout     : out_channel;
   mutable tokens   : int;
-          priority : Flags.priority;
+          priority : priority;
 }
 
 let answer party msg =
@@ -42,10 +42,10 @@ end = struct
   let is_empty q = !q = []
   let rec split acc = function
     | [] -> List.rev acc, []
-    | (_, { priority = Flags.Low }) :: _ as l -> List.rev acc, l
+    | (_, { priority = Low }) :: _ as l -> List.rev acc, l
     | x :: xs -> split (x :: acc) xs
   let push (_,{ priority } as item) q =
-    if priority = Flags.Low then q := !q @ [item]
+    if priority = Low then q := !q @ [item]
     else
       let high, low = split [] !q in
       q := high @ (item :: low)
@@ -148,7 +148,7 @@ let check_alive s =
   | Some s ->
       let cout = Unix.out_channel_of_descr s in
       set_binary_mode_out cout true;
-      output_string cout (print_request (Hello Flags.Low)); flush cout;
+      output_string cout (print_request (Hello Low)); flush cout;
       output_string cout (print_request Ping); flush cout;
       begin match Unix.select [s] [] [] 1.0 with
       | [s],_,_ ->

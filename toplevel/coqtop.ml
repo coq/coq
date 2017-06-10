@@ -71,7 +71,7 @@ let init_color () =
 
 let toploop_init = ref begin fun x ->
   let () = init_color () in
-  let () = CoqworkmgrApi.(init !Flags.async_proofs_worker_priority) in
+  let () = CoqworkmgrApi.init !WorkerLoop.async_proofs_worker_priority in
   x
   end
 
@@ -529,18 +529,18 @@ let print_config = ref false
 let print_tags = ref false
 
 let get_priority opt s =
-  try Flags.priority_of_string s
+  try CoqworkmgrApi.priority_of_string s
   with Invalid_argument _ ->
     prerr_endline ("Error: low/high expected after "^opt); exit 1
 
-let get_async_proofs_mode opt = function
-  | "no" | "off" -> Flags.APoff
-  | "yes" | "on" -> Flags.APon
-  | "lazy" -> Flags.APonLazy
+let get_async_proofs_mode opt = let open Stm.AsyncOpts in function
+  | "no" | "off" -> APoff
+  | "yes" | "on" -> APon
+  | "lazy" -> APonLazy
   | _ -> prerr_endline ("Error: on/off/lazy expected after "^opt); exit 1
 
 let get_cache opt = function
-  | "force" -> Some Flags.Force
+  | "force" -> Some Stm.AsyncOpts.Force
   | _ -> prerr_endline ("Error: force expected after "^opt); exit 1
 
 
@@ -649,23 +649,23 @@ let parse_args arglist =
     (* Options with one arg *)
     |"-coqlib" -> Flags.coqlib_spec:=true; Flags.coqlib:=(next ())
     |"-async-proofs" ->
-        Flags.async_proofs_mode := get_async_proofs_mode opt (next())
+        Stm.AsyncOpts.async_proofs_mode := get_async_proofs_mode opt (next())
     |"-async-proofs-j" ->
-        Flags.async_proofs_n_workers := (get_int opt (next ()))
+        Stm.AsyncOpts.async_proofs_n_workers := (get_int opt (next ()))
     |"-async-proofs-cache" ->
-        Flags.async_proofs_cache := get_cache opt (next ())
+        Stm.AsyncOpts.async_proofs_cache := get_cache opt (next ())
     |"-async-proofs-tac-j" ->
-        Flags.async_proofs_n_tacworkers := (get_int opt (next ()))
+        Stm.AsyncOpts.async_proofs_n_tacworkers := (get_int opt (next ()))
     |"-async-proofs-worker-priority" ->
-        Flags.async_proofs_worker_priority := get_priority opt (next ())
+        WorkerLoop.async_proofs_worker_priority := get_priority opt (next ())
     |"-async-proofs-private-flags" ->
-        Flags.async_proofs_private_flags := Some (next ());
+        Stm.AsyncOpts.async_proofs_private_flags := Some (next ());
     |"-async-proofs-tactic-error-resilience" ->
-        Flags.async_proofs_tac_error_resilience := get_error_resilience opt (next ())
+        Stm.AsyncOpts.async_proofs_tac_error_resilience := get_error_resilience opt (next ())
     |"-async-proofs-command-error-resilience" ->
-        Flags.async_proofs_cmd_error_resilience := get_bool opt (next ())
+        Stm.AsyncOpts.async_proofs_cmd_error_resilience := get_bool opt (next ())
     |"-async-proofs-delegation-threshold" ->
-        Flags.async_proofs_delegation_threshold:= get_float opt (next ())
+        Stm.AsyncOpts.async_proofs_delegation_threshold:= get_float opt (next ())
     |"-worker-id" -> set_worker_id opt (next ())
     |"-compat" ->
         let v = G_vernac.parse_compat_version ~allow_old:false (next ()) in
@@ -705,9 +705,9 @@ let parse_args arglist =
     |"-async-queries-always-delegate"
     |"-async-proofs-always-delegate"
     |"-async-proofs-full" ->
-        Flags.async_proofs_full := true;
+        Stm.AsyncOpts.async_proofs_full := true;
     |"-async-proofs-never-reopen-branch" ->
-        Flags.async_proofs_never_reopen_branch := true;
+        Stm.AsyncOpts.async_proofs_never_reopen_branch := true;
     |"-batch" -> set_batch_mode ()
     |"-test-mode" -> Flags.test_mode := true
     |"-beautify" -> Flags.beautify := true
@@ -716,7 +716,7 @@ let parse_args arglist =
     |"-color" -> set_color (next ())
     |"-config"|"--config" -> print_config := true
     |"-debug" -> Coqinit.set_debug ()
-    |"-stm-debug" -> Flags.stm_debug := true
+    |"-stm-debug" -> Stm.stm_debug := true
     |"-emacs" -> set_emacs ()
     |"-filteropts" -> filter_opts := true
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage !batch_mode

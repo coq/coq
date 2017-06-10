@@ -225,3 +225,30 @@ val state_of_id : doc:doc ->
 (* Queries for backward compatibility *)
 val current_proof_depth : doc:doc -> int
 val get_all_proof_names : doc:doc -> Id.t list
+
+(** Enable STM debugging *)
+val stm_debug : bool ref
+
+(* Flags *)
+module AsyncOpts : sig
+
+  (* Defaults for worker creation *)
+  val async_proofs_n_workers : int ref
+  val async_proofs_n_tacworkers : int ref
+
+  type async_proofs = APoff | APonLazy | APon
+  val async_proofs_mode : async_proofs ref
+
+  type cache = Force
+  val async_proofs_cache : cache option ref
+
+  val async_proofs_private_flags : string option ref
+  val async_proofs_full : bool ref
+  val async_proofs_never_reopen_branch : bool ref
+
+  type tac_error_filter = [ `None | `Only of string list | `All ]
+  val async_proofs_tac_error_resilience : tac_error_filter ref
+  val async_proofs_cmd_error_resilience : bool ref
+  val async_proofs_delegation_threshold : float ref
+
+end

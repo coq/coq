@@ -8,9 +8,13 @@
 
 (* High level api for clients of the service (like coqtop) *)
 
+type priority = Low | High
+val string_of_priority : priority -> string
+val priority_of_string : string -> priority
+
 (* Connects to a work manager if any. If no worker manager, then
    -async-proofs-j and -async-proofs-tac-j are used *)
-val init : Flags.priority -> unit
+val init : priority -> unit
 
 (* blocking *)
 val get : int -> int
@@ -21,7 +25,7 @@ val giveback : int -> unit
 
 (* Low level *)
 type request =
-  | Hello of Flags.priority
+  | Hello of priority
   | Get of int
   | TryGet of int
   | GiveBack of int

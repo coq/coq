@@ -6,6 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Default priority *)
+open CoqworkmgrApi
+let async_proofs_worker_priority = ref Low
+
 let rec parse = function
   | "--xml_format=Ppcmds" :: rest -> parse rest
   | x :: rest -> x :: parse rest
@@ -15,5 +19,5 @@ let loop init args =
   let args = parse args in
   Flags.quiet := true;
   init ();
-  CoqworkmgrApi.init !Flags.async_proofs_worker_priority;
+  CoqworkmgrApi.init !async_proofs_worker_priority;
   args

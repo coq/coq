@@ -21,34 +21,13 @@ val record_aux_file : bool ref
 val test_mode : bool ref
 
 (** Async-related flags *)
-type async_proofs = APoff | APonLazy | APon
-val async_proofs_mode : async_proofs ref
-type cache = Force
-val async_proofs_cache : cache option ref
-val async_proofs_n_workers : int ref
-val async_proofs_n_tacworkers : int ref
-val async_proofs_private_flags : string option ref
-val async_proofs_is_worker : unit -> bool
-val async_proofs_is_master : unit -> bool
-val async_proofs_full : bool ref
-val async_proofs_never_reopen_branch : bool ref
-val async_proofs_flags_for_workers : string list ref
 val async_proofs_worker_id : string ref
-type priority = Low | High
-val async_proofs_worker_priority : priority ref
-val string_of_priority : priority -> string
-val priority_of_string : string -> priority
-type tac_error_filter = [ `None | `Only of string list | `All ]
-val async_proofs_tac_error_resilience : tac_error_filter ref
-val async_proofs_cmd_error_resilience : bool ref
-val async_proofs_delegation_threshold : float ref
+val async_proofs_is_worker : unit -> bool
 
+(** Debug flags *)
 val debug : bool ref
 val in_debugger : bool ref
 val in_toplevel : bool ref
-
-(** Enable STM debugging *)
-val stm_debug : bool ref
 
 val profile : bool
 

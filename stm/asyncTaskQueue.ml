@@ -11,10 +11,10 @@ open Pp
 open Util
 
 let stm_pr_err pp = Format.eprintf "%s] @[%a@]\n%!" (Spawned.process_id ()) Pp.pp_with pp
-
 let stm_prerr_endline s = if !Flags.debug then begin stm_pr_err (str s) end else ()
 
 type cancel_switch = bool ref
+let async_proofs_flags_for_workers = ref []
 
 module type Task = sig
 
@@ -117,12 +117,12 @@ module Make(T : Task) () = struct
     let name = Printf.sprintf "%s:%d" !T.name id in
     let proc, ic, oc =
       let rec set_slave_opt = function
-        | [] -> !Flags.async_proofs_flags_for_workers @
+        | [] -> !async_proofs_flags_for_workers @
                 ["-toploop"; !T.name^"top";
                  "-worker-id"; name;
                  "-async-proofs-worker-priority";
-                   Flags.string_of_priority !Flags.async_proofs_worker_priority]
-        | ("-ideslave"|"-emacs"|"-batch")::tl -> set_slave_opt tl
+                   CoqworkmgrApi.(string_of_priority !WorkerLoop.async_proofs_worker_priority)]
+        | ("-ideslave"|"-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
         | ("-async-proofs" |"-toploop" |"-vio2vo"
           |"-load-vernac-source" |"-l" |"-load-vernac-source-verbose" |"-lv"
           |"-compile" |"-compile-verbose"
