@@ -32,7 +32,7 @@ let load_rcfile sid =
     try
       if !rcfile_specified then
         if CUnix.file_readable_p !rcfile then
-          Vernac.load_vernac false sid !rcfile
+          Vernac.load_vernac ~verbosely:false ~interactive:false ~check:true sid !rcfile
         else raise (Sys_error ("Cannot read rcfile: "^ !rcfile))
       else
 	try
@@ -43,7 +43,7 @@ let load_rcfile sid =
 	    Envars.home ~warn / "."^rcdefaultname^"."^Coq_config.version;
 	    Envars.home ~warn / "."^rcdefaultname
 	  ] in
-          Vernac.load_vernac false sid inferedrc
+          Vernac.load_vernac ~verbosely:false ~interactive:false ~check:true sid inferedrc
 	with Not_found -> sid
 	(*
 	Flags.if_verbose

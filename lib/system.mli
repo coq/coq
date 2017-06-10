@@ -54,6 +54,12 @@ val where_in_path_rex :
 val find_file_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
 
+val trust_file_cache : bool ref
+(** [trust_file_cache] indicates whether we trust the underlying
+    mapped file-system not to change along the execution of Coq. This
+    assumption greatly speds up file search, but it is often
+    inconvenient in interactive mode *)
+
 val file_exists_respecting_case : string -> string -> bool
 
 (** {6 I/O functions } *)

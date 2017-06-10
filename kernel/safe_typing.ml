@@ -683,12 +683,15 @@ let build_module_body params restype senv =
     with one extra component and some updated fields
     (constraints, required, etc) *)
 
+let allow_delayed_constants = ref false
+
 let propagate_senv newdef newenv newresolver senv oldsenv =
   let now_cst, later_cst = List.partition Future.is_val senv.future_cst in
   (* This asserts that after Paral-ITP, standard vo compilation is behaving
    * exctly as before: the same universe constraints are added to modules *)
-  if !Flags.compilation_mode = Flags.BuildVo &&
-     !Flags.async_proofs_mode = Flags.APoff then assert(later_cst = []);
+  if not !allow_delayed_constants && later_cst <> [] then
+    CErrors.anomaly ~label:"safe_typing"
+      Pp.(str "True Future.t were created for opaque constants even if -async-proofs is off");
   { oldsenv with
     env = newenv;
     modresolver = newresolver;
