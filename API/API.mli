@@ -3307,6 +3307,7 @@ sig
   val declare_cache_obj : (unit -> unit) -> string -> unit
   val add_known_plugin : (unit -> unit) -> string -> unit
   val add_known_module : string -> unit
+  val module_is_known : string -> bool
 end
 
 (* All items in the Proof_type module are deprecated. *)
