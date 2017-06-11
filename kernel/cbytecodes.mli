@@ -34,7 +34,7 @@ type structured_constant =
   | Const_univ_level of Univ.universe_level
   | Const_type of Univ.universe
 
-val pp_struct_const : structured_constant -> Pp.std_ppcmds
+val pp_struct_const : structured_constant -> Pp.t
 
 type reloc_table = (tag * int) array
 
@@ -163,8 +163,8 @@ type comp_env = {
     in_env : vm_env ref          (** the variables that are accessed        *)
   }
 
-val pp_bytecodes : bytecodes -> Pp.std_ppcmds
-val pp_fv_elem : fv_elem -> Pp.std_ppcmds
+val pp_bytecodes : bytecodes -> Pp.t
+val pp_fv_elem : fv_elem -> Pp.t
 
 (*spiwack: moved this here because I needed it for retroknowledge *)
 type block =

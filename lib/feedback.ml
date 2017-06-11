@@ -32,7 +32,7 @@ type feedback_content =
   (* Extra metadata *)
   | Custom of Loc.t option * string * xml
   (* Generic messages *)
-  | Message of level * Loc.t option * Pp.std_ppcmds
+  | Message of level * Loc.t option * Pp.t
 
 type feedback = {
   id       : Stateid.t;

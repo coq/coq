@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-open Pp
-
 (** This modules implements basic manipulations of errors for use
     throughout Coq's code. *)
 
@@ -21,10 +19,10 @@ val push : exn -> Exninfo.iexn
  [Anomaly] is used for system errors and [UserError] for the
    user's ones. *)
 
-val make_anomaly : ?label:string -> std_ppcmds -> exn
+val make_anomaly : ?label:string -> Pp.t -> exn
 (** Create an anomaly. *)
 
-val anomaly : ?loc:Loc.t -> ?label:string -> std_ppcmds -> 'a
+val anomaly : ?loc:Loc.t -> ?label:string -> Pp.t -> 'a
 (** Raise an anomaly, with an optional location and an optional
     label identifying the anomaly. *)
 
@@ -33,16 +31,16 @@ val is_anomaly : exn -> bool
     This is mostly provided for compatibility. Please avoid doing specific
     tricks with anomalies thanks to it. See rather [noncritical] below. *)
 
-exception UserError of string option * std_ppcmds
+exception UserError of string option * Pp.t
 (** Main error signaling exception. It carries a header plus a pretty printing
     doc *)
 
-val user_err : ?loc:Loc.t -> ?hdr:string -> std_ppcmds -> 'a
+val user_err : ?loc:Loc.t -> ?hdr:string -> Pp.t -> 'a
 (** Main error raising primitive. [user_err ?loc ?hdr pp] signals an
     error [pp] with optional header and location [hdr] [loc] *)
 
-exception AlreadyDeclared of std_ppcmds
-val alreadydeclared : std_ppcmds -> 'a
+exception AlreadyDeclared of Pp.t
+val alreadydeclared : Pp.t -> 'a
 
 val invalid_arg : ?loc:Loc.t -> string -> 'a
 
@@ -74,16 +72,16 @@ exception Quit
 
 exception Unhandled
 
-val register_handler : (exn -> Pp.std_ppcmds) -> unit
+val register_handler : (exn -> Pp.t) -> unit
 
 (** The standard exception printer *)
-val print : ?info:Exninfo.info -> exn -> Pp.std_ppcmds
-val iprint : Exninfo.iexn -> Pp.std_ppcmds
+val print : ?info:Exninfo.info -> exn -> Pp.t
+val iprint : Exninfo.iexn -> Pp.t
 
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)
-val print_no_report : exn -> Pp.std_ppcmds
-val iprint_no_report : Exninfo.iexn -> Pp.std_ppcmds
+val print_no_report : exn -> Pp.t
+val iprint_no_report : Exninfo.iexn -> Pp.t
 
 (** Critical exceptions should not be caught and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled
@@ -100,9 +98,9 @@ val handled : exn -> bool
 val error : string -> 'a
  [@@ocaml.deprecated "use [user_err] instead"]
 
-val errorlabstrm : string -> std_ppcmds -> 'a
+val errorlabstrm : string -> Pp.t -> 'a
  [@@ocaml.deprecated "use [user_err ~hdr] instead"]
 
-val user_err_loc : Loc.t * string * std_ppcmds -> 'a
+val user_err_loc : Loc.t * string * Pp.t -> 'a
  [@@ocaml.deprecated "use [user_err ~loc] instead"]
 

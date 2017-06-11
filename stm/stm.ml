@@ -1133,7 +1133,7 @@ let record_pb_time ?loc proof_name time =
     hints := Aux_file.set !hints proof_name proof_build_time
   end
  
-exception RemoteException of Pp.std_ppcmds
+exception RemoteException of Pp.t
 let _ = CErrors.register_handler (function
   | RemoteException ppcmd -> ppcmd
   | _ -> raise Unhandled)
@@ -1274,7 +1274,7 @@ end = struct (* {{{ *)
   type error = {
     e_error_at    : Stateid.t;
     e_safe_id     : Stateid.t;
-    e_msg         : Pp.std_ppcmds;
+    e_msg         : Pp.t;
     e_safe_states : Stateid.t list }
 
   type response =
@@ -1711,7 +1711,7 @@ end = struct (* {{{ *)
 
   type response =
     | RespBuiltSubProof of (Constr.constr * Evd.evar_universe_context)
-    | RespError of Pp.std_ppcmds
+    | RespError of Pp.t
     | RespNoProgress
 
   let name = ref "tacworker"

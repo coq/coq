@@ -38,9 +38,9 @@ val branching: state -> state list
 
 val success: state -> bool
 
-val pp: state -> Pp.std_ppcmds
+val pp: state -> Pp.t
 
-val pr_form : form -> Pp.std_ppcmds
+val pr_form : form -> Pp.t
 
 val reset_info : unit -> unit
 

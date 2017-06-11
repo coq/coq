@@ -40,7 +40,7 @@ type feedback_content =
   (* Extra metadata *)
   | Custom of Loc.t option * string * xml
   (* Generic messages *)
-  | Message of level * Loc.t option * Pp.std_ppcmds
+  | Message of level * Loc.t option * Pp.t
 
 type feedback = {
   id       : Stateid.t;         (* The document part concerned *)
@@ -78,20 +78,20 @@ relaxed. *)
 (* Should we advertise these functions more? Should they be the ONLY
    allowed way to output something? *)
 
-val msg_info : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_info : ?loc:Loc.t -> Pp.t -> unit
 (** Message that displays information, usually in verbose mode, such as [Foobar
     is defined] *)
 
-val msg_notice : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_notice : ?loc:Loc.t -> Pp.t -> unit
 (** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
 
-val msg_warning : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_warning : ?loc:Loc.t -> Pp.t -> unit
 (** Message indicating that something went wrong, but without serious
     consequences. *)
 
-val msg_error : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_error : ?loc:Loc.t -> Pp.t -> unit
 (** Message indicating that something went really wrong, though still
     recoverable; otherwise an exception would have been raised. *)
 
-val msg_debug : ?loc:Loc.t -> Pp.std_ppcmds -> unit
+val msg_debug : ?loc:Loc.t -> Pp.t -> unit
 (** For debugging purposes *)

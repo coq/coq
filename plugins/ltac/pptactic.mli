@@ -9,7 +9,6 @@
 (** This module implements pretty-printers for tactic_expr syntactic
     objects and their subcomponents. *)
 
-open Pp
 open Genarg
 open Geninterp
 open Names
@@ -24,22 +23,22 @@ type 'a grammar_tactic_prod_item_expr =
 | TacNonTerm of ('a * Names.Id.t option) Loc.located
 
 type 'a raw_extra_genarg_printer =
-    (constr_expr -> std_ppcmds) ->
-    (constr_expr -> std_ppcmds) ->
-    (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    (constr_expr -> Pp.t) ->
+    (constr_expr -> Pp.t) ->
+    (tolerability -> raw_tactic_expr -> Pp.t) ->
+    'a -> Pp.t
 
 type 'a glob_extra_genarg_printer =
-    (glob_constr_and_expr -> std_ppcmds) ->
-    (glob_constr_and_expr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    (glob_constr_and_expr -> Pp.t) ->
+    (glob_constr_and_expr -> Pp.t) ->
+    (tolerability -> glob_tactic_expr -> Pp.t) ->
+    'a -> Pp.t
 
 type 'a extra_genarg_printer =
-    (EConstr.t -> std_ppcmds) ->
-    (EConstr.t -> std_ppcmds) ->
-    (tolerability -> Val.t -> std_ppcmds) ->
-    'a -> std_ppcmds
+    (EConstr.t -> Pp.t) ->
+    (EConstr.t -> Pp.t) ->
+    (tolerability -> Val.t -> Pp.t) ->
+    'a -> Pp.t
 
 val declare_extra_genarg_pprule :
   ('a, 'b, 'c) genarg_type ->
@@ -57,61 +56,61 @@ type pp_tactic = {
 val declare_notation_tactic_pprule : KerName.t -> pp_tactic -> unit
 
 val pr_with_occurrences :
-  ('a -> std_ppcmds) -> 'a Locus.with_occurrences -> std_ppcmds
+  ('a -> Pp.t) -> 'a Locus.with_occurrences -> Pp.t
 val pr_red_expr :
-  ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) * ('c -> std_ppcmds) ->
-  ('a,'b,'c) Genredexpr.red_expr_gen -> std_ppcmds
+  ('a -> Pp.t) * ('a -> Pp.t) * ('b -> Pp.t) * ('c -> Pp.t) ->
+  ('a,'b,'c) Genredexpr.red_expr_gen -> Pp.t
 val pr_may_eval :
-  ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
-  ('c -> std_ppcmds) -> ('a,'b,'c) Genredexpr.may_eval -> std_ppcmds
+  ('a -> Pp.t) -> ('a -> Pp.t) -> ('b -> Pp.t) ->
+  ('c -> Pp.t) -> ('a,'b,'c) Genredexpr.may_eval -> Pp.t
 
-val pr_and_short_name : ('a -> std_ppcmds) -> 'a and_short_name -> std_ppcmds
-val pr_or_by_notation : ('a -> std_ppcmds) -> 'a or_by_notation -> std_ppcmds
+val pr_and_short_name : ('a -> Pp.t) -> 'a and_short_name -> Pp.t
+val pr_or_by_notation : ('a -> Pp.t) -> 'a or_by_notation -> Pp.t
 
 val pr_in_clause :
-  ('a -> Pp.std_ppcmds) -> 'a Locus.clause_expr -> Pp.std_ppcmds
+  ('a -> Pp.t) -> 'a Locus.clause_expr -> Pp.t
 
 val pr_clauses :  bool option ->
-  ('a -> Pp.std_ppcmds) -> 'a Locus.clause_expr -> Pp.std_ppcmds
+  ('a -> Pp.t) -> 'a Locus.clause_expr -> Pp.t
 
-val pr_raw_generic : env -> rlevel generic_argument -> std_ppcmds
+val pr_raw_generic : env -> rlevel generic_argument -> Pp.t
 
-val pr_glb_generic : env -> glevel generic_argument -> std_ppcmds
+val pr_glb_generic : env -> glevel generic_argument -> Pp.t
 
 val pr_raw_extend: env -> int ->
-  ml_tactic_entry -> raw_tactic_arg list -> std_ppcmds
+  ml_tactic_entry -> raw_tactic_arg list -> Pp.t
 
 val pr_glob_extend: env -> int ->
-  ml_tactic_entry -> glob_tactic_arg list -> std_ppcmds
+  ml_tactic_entry -> glob_tactic_arg list -> Pp.t
 
 val pr_extend :
-  (Val.t -> std_ppcmds) -> int -> ml_tactic_entry -> Val.t list -> std_ppcmds
+  (Val.t -> Pp.t) -> int -> ml_tactic_entry -> Val.t list -> Pp.t
 
-val pr_alias_key : Names.KerName.t -> std_ppcmds
+val pr_alias_key : Names.KerName.t -> Pp.t
 
-val pr_alias : (Val.t -> std_ppcmds) ->
-  int -> Names.KerName.t -> Val.t list -> std_ppcmds
+val pr_alias : (Val.t -> Pp.t) ->
+  int -> Names.KerName.t -> Val.t list -> Pp.t
 
-val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
+val pr_ltac_constant : Nametab.ltac_constant -> Pp.t
 
-val pr_raw_tactic : raw_tactic_expr -> std_ppcmds
+val pr_raw_tactic : raw_tactic_expr -> Pp.t
 
-val pr_raw_tactic_level : tolerability -> raw_tactic_expr -> std_ppcmds
+val pr_raw_tactic_level : tolerability -> raw_tactic_expr -> Pp.t
 
-val pr_glob_tactic : env -> glob_tactic_expr -> std_ppcmds
+val pr_glob_tactic : env -> glob_tactic_expr -> Pp.t
 
-val pr_atomic_tactic : env -> Evd.evar_map -> atomic_tactic_expr -> std_ppcmds
+val pr_atomic_tactic : env -> Evd.evar_map -> atomic_tactic_expr -> Pp.t
 
-val pr_hintbases : string list option -> std_ppcmds
+val pr_hintbases : string list option -> Pp.t
 
-val pr_auto_using : ('constr -> std_ppcmds) -> 'constr list -> std_ppcmds
+val pr_auto_using : ('constr -> Pp.t) -> 'constr list -> Pp.t
 
-val pr_match_pattern : ('a -> std_ppcmds) -> 'a match_pattern -> std_ppcmds
+val pr_match_pattern : ('a -> Pp.t) -> 'a match_pattern -> Pp.t
 
-val pr_match_rule : bool -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
-  ('b, 'a) match_rule -> std_ppcmds
+val pr_match_rule : bool -> ('a -> Pp.t) -> ('b -> Pp.t) ->
+  ('b, 'a) match_rule -> Pp.t
 
-val pr_value : tolerability -> Val.t -> std_ppcmds
+val pr_value : tolerability -> Val.t -> Pp.t
 
 
 val ltop : tolerability

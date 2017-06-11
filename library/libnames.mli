@@ -7,14 +7,13 @@
 (************************************************************************)
 
 open Util
-open Pp
 open Loc
 open Names
 
 (** {6 Dirpaths } *)
 (** FIXME: ought to be in Names.dir_path *)
 
-val pr_dirpath : DirPath.t -> Pp.std_ppcmds
+val pr_dirpath : DirPath.t -> Pp.t
 
 val dirpath_of_string : string -> DirPath.t
 val string_of_dirpath : DirPath.t -> string
@@ -58,7 +57,7 @@ val basename : full_path -> Id.t
 (** Parsing and printing of section path as ["coq_root.module.id"] *)
 val path_of_string : string -> full_path
 val string_of_path : full_path -> string
-val pr_path : full_path -> std_ppcmds
+val pr_path : full_path -> Pp.t
 
 module Spmap  : CSig.MapS with type key = full_path
 
@@ -77,7 +76,7 @@ val repr_qualid : qualid -> DirPath.t * Id.t
 
 val qualid_eq : qualid -> qualid -> bool
 
-val pr_qualid : qualid -> std_ppcmds
+val pr_qualid : qualid -> Pp.t
 val string_of_qualid : qualid -> string
 val qualid_of_string : string -> qualid
 
@@ -124,7 +123,7 @@ type reference =
 val eq_reference : reference -> reference -> bool
 val qualid_of_reference : reference -> qualid located
 val string_of_reference : reference -> string
-val pr_reference : reference -> std_ppcmds
+val pr_reference : reference -> Pp.t
 val loc_of_reference : reference -> Loc.t option
 val join_reference : reference -> reference -> reference
 

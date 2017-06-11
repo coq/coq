@@ -57,11 +57,11 @@ module NonLogical : sig
   val print_char : char -> unit t
 
   (** Loggers. The buffer is also flushed. *)
-  val print_debug : Pp.std_ppcmds -> unit t
-  val print_warning : Pp.std_ppcmds -> unit t
-  val print_notice : Pp.std_ppcmds -> unit t
-  val print_info : Pp.std_ppcmds -> unit t
-  val print_error : Pp.std_ppcmds -> unit t
+  val print_debug : Pp.t -> unit t
+  val print_warning : Pp.t -> unit t
+  val print_notice : Pp.t -> unit t
+  val print_info : Pp.t -> unit t
+  val print_error : Pp.t -> unit t
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)

@@ -14,13 +14,13 @@ open Misctypes
 
 val wit_orient : bool Genarg.uniform_genarg_type
 val orient : bool Pcoq.Gram.entry
-val pr_orient : bool -> Pp.std_ppcmds
+val pr_orient : bool -> Pp.t
 
 val wit_rename : (Id.t * Id.t) Genarg.uniform_genarg_type
 
 val occurrences : (int list or_var) Pcoq.Gram.entry
 val wit_occurrences : (int list or_var, int list or_var, int list) Genarg.genarg_type
-val pr_occurrences : int list or_var -> Pp.std_ppcmds
+val pr_occurrences : int list or_var -> Pp.t
 val occurrences_of : int list -> Locus.occurrences
 
 val wit_natural : int Genarg.uniform_genarg_type
@@ -55,7 +55,7 @@ type place = Id.t gen_place
 
 val wit_hloc : (loc_place, loc_place, place) Genarg.genarg_type
 val hloc : loc_place Pcoq.Gram.entry
-val pr_hloc : loc_place -> Pp.std_ppcmds
+val pr_hloc : loc_place -> Pp.t
 
 val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Gram.entry
 val wit_by_arg_tac :
@@ -64,8 +64,8 @@ val wit_by_arg_tac :
   Geninterp.Val.t option) Genarg.genarg_type
 
 val pr_by_arg_tac : 
-  (int * Ppextend.parenRelation -> raw_tactic_expr -> Pp.std_ppcmds) ->
-  raw_tactic_expr option -> Pp.std_ppcmds
+  (int * Ppextend.parenRelation -> raw_tactic_expr -> Pp.t) ->
+  raw_tactic_expr option -> Pp.t
 
 val test_lpar_id_colon : unit Pcoq.Gram.entry
 

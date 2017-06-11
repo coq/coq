@@ -9,30 +9,29 @@
 open Names
 open Globnames
 open Miniml
-open Pp
 
 (** By default, in module Format, you can do horizontal placing of blocks
     even if they include newlines, as long as the number of chars in the
     blocks are less that a line length. To avoid this awkward situation,
     we attach a big virtual size to [fnl] newlines. *)
 
-val fnl : unit -> std_ppcmds
-val fnl2 : unit -> std_ppcmds
-val space_if : bool -> std_ppcmds
+val fnl : unit -> Pp.t
+val fnl2 : unit -> Pp.t
+val space_if : bool -> Pp.t
 
-val pp_par : bool -> std_ppcmds -> std_ppcmds
+val pp_par : bool -> Pp.t -> Pp.t
 
 (** [pp_apply] : a head part applied to arguments, possibly with parenthesis *)
-val pp_apply : std_ppcmds -> bool -> std_ppcmds list -> std_ppcmds
+val pp_apply : Pp.t -> bool -> Pp.t list -> Pp.t
 
 (** Same as [pp_apply], but with also protection of the head by parenthesis *)
-val pp_apply2 : std_ppcmds -> bool -> std_ppcmds list -> std_ppcmds
+val pp_apply2 : Pp.t -> bool -> Pp.t list -> Pp.t
 
-val pp_tuple_light : (bool -> 'a -> std_ppcmds) -> 'a list -> std_ppcmds
-val pp_tuple : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
-val pp_boxed_tuple : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val pp_tuple_light : (bool -> 'a -> Pp.t) -> 'a list -> Pp.t
+val pp_tuple : ('a -> Pp.t) -> 'a list -> Pp.t
+val pp_boxed_tuple : ('a -> Pp.t) -> 'a list -> Pp.t
 
-val pr_binding : Id.t list -> std_ppcmds
+val pr_binding : Id.t list -> Pp.t
 
 val rename_id : Id.t -> Id.Set.t -> Id.t
 
@@ -80,4 +79,4 @@ val mk_ind : string -> string -> MutInd.t
 
 val is_native_char : ml_ast -> bool
 val get_native_char : ml_ast -> char
-val pp_native_char : ml_ast -> std_ppcmds
+val pp_native_char : ml_ast -> Pp.t

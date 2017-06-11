@@ -43,7 +43,6 @@
    All options are synchronized with the document.
 *)
 
-open Pp
 open Libnames
 open Mod_subst
 
@@ -64,7 +63,7 @@ module MakeStringTable :
     (A : sig
        val key : option_name
        val title : string
-       val member_message : string -> bool -> std_ppcmds
+       val member_message : string -> bool -> Pp.t
      end) ->
 sig
   val active : string -> bool
@@ -88,10 +87,10 @@ module MakeRefTable :
            val compare : t -> t -> int
            val encode : reference -> t
 	   val subst : substitution -> t -> t
-           val printer : t -> std_ppcmds
+           val printer : t -> Pp.t
            val key : option_name
            val title : string
-           val member_message : t -> bool -> std_ppcmds
+           val member_message : t -> bool -> Pp.t
          end) ->
     sig
       val active : A.t -> bool
@@ -177,6 +176,6 @@ type option_state = {
 }
 
 val get_tables : unit -> option_state OptionMap.t
-val print_tables : unit -> std_ppcmds
+val print_tables : unit -> Pp.t
 
 val error_undeclared_key : option_name -> 'a

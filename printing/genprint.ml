@@ -9,7 +9,7 @@
 open Pp
 open Genarg
 
-type 'a printer = 'a -> std_ppcmds
+type 'a printer = 'a -> Pp.t
 
 type ('raw, 'glb, 'top) genprinter = {
   raw : 'raw printer;

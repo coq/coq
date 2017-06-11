@@ -14,7 +14,7 @@ module type SearchProblem = sig
   type state
   val branching : state -> state list
   val success : state -> bool
-  val pp : state -> std_ppcmds
+  val pp : state -> Pp.t
 end
 
 module Make = functor(S : SearchProblem) -> struct

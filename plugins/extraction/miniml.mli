@@ -8,7 +8,6 @@
 
 (*s Target language for extraction: a core ML called MiniML. *)
 
-open Pp
 open Names
 open Globnames
 
@@ -205,19 +204,19 @@ type language_descr = {
   file_naming : ModPath.t -> string;
   (* the second argument is a comment to add to the preamble *)
   preamble :
-    Id.t -> std_ppcmds option -> ModPath.t list -> unsafe_needs ->
-    std_ppcmds;
-  pp_struct : ml_structure -> std_ppcmds;
+    Id.t -> Pp.t option -> ModPath.t list -> unsafe_needs ->
+    Pp.t;
+  pp_struct : ml_structure -> Pp.t;
 
   (* Concerning a possible interface file *)
   sig_suffix : string option;
   (* the second argument is a comment to add to the preamble *)
   sig_preamble :
-    Id.t -> std_ppcmds option -> ModPath.t list -> unsafe_needs ->
-    std_ppcmds;
-  pp_sig : ml_signature -> std_ppcmds;
+    Id.t -> Pp.t option -> ModPath.t list -> unsafe_needs ->
+    Pp.t;
+  pp_sig : ml_signature -> Pp.t;
 
   (* for an isolated declaration print *)
-  pp_decl : ml_decl -> std_ppcmds;
+  pp_decl : ml_decl -> Pp.t;
 
 }

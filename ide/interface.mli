@@ -17,9 +17,9 @@ type verbose = bool
 type goal = {
   goal_id : string;
   (** Unique goal identifier *)
-  goal_hyp : Pp.std_ppcmds list;
+  goal_hyp : Pp.t list;
   (** List of hypotheses *)
-  goal_ccl : Pp.std_ppcmds;
+  goal_ccl : Pp.t;
   (** Goal conclusion *)
 }
 
@@ -121,7 +121,7 @@ type edit_id  = int
    should probably retract to that point *)
 type 'a value =
   | Good of 'a
-  | Fail of (state_id * location * Pp.std_ppcmds)
+  | Fail of (state_id * location * Pp.t)
 
 type ('a, 'b) union = ('a, 'b) Util.union
 
@@ -213,7 +213,7 @@ type about_sty = unit
 type about_rty = coq_info
 
 type handle_exn_sty = Exninfo.iexn
-type handle_exn_rty = state_id * location * Pp.std_ppcmds
+type handle_exn_rty = state_id * location * Pp.t
 
 (* Retrocompatibility stuff *)
 type interp_sty = (raw * verbose) * string

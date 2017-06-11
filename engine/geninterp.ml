@@ -32,7 +32,7 @@ struct
   let repr = ValT.repr
   let create = ValT.create
 
-  let pr : type a. a typ -> Pp.std_ppcmds = fun t -> Pp.str (repr t)
+  let pr : type a. a typ -> Pp.t = fun t -> Pp.str (repr t)
 
   let typ_list = ValT.create "list"
   let typ_opt = ValT.create "option"

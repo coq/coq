@@ -892,7 +892,7 @@ module Instance : sig
 
     val subst_fn : universe_level_subst_fn -> t -> t
     
-    val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+    val pr : (Level.t -> Pp.t) -> t -> Pp.t
     val levels : t -> LSet.t
 end = 
 struct

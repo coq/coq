@@ -10,7 +10,7 @@
 
 (** Pretty printing guidelines ******************************************)
 (*                                                                      *)
-(* `Pp.t` or `Pp.std_ppcmds` is the main pretty printing document type  *)
+(* `Pp.t` is the main pretty printing document type                     *)
 (* in the Coq system. Documents are composed laying out boxes, and      *)
 (* users can add arbitrary tag metadata that backends are free          *)
 (* to interpret.                                                        *)
@@ -39,7 +39,9 @@ type pp_tag = string
 (* Following discussion on #390, we play on the safe side and make the
    internal representation opaque here. *)
 type t
+
 type std_ppcmds = t
+[@@ocaml.deprecated "alias of Pp.t"]
 
 type block_type =
   | Pp_hbox   of int
@@ -58,127 +60,127 @@ type doc_view =
   | Ppcmd_force_newline
   | Ppcmd_comment of string list
 
-val repr   : std_ppcmds -> doc_view
-val unrepr : doc_view -> std_ppcmds
+val repr   : t -> doc_view
+val unrepr : doc_view -> t
 
 (** {6 Formatting commands} *)
 
-val str   : string -> std_ppcmds
-val brk   : int * int -> std_ppcmds
-val fnl   : unit -> std_ppcmds
-val ws    : int -> std_ppcmds
-val mt    : unit -> std_ppcmds
-val ismt  : std_ppcmds -> bool
+val str   : string -> t
+val brk   : int * int -> t
+val fnl   : unit -> t
+val ws    : int -> t
+val mt    : unit -> t
+val ismt  : t -> bool
 
-val comment  : string list -> std_ppcmds
+val comment  : string list -> t
 
 (** {6 Manipulation commands} *)
 
-val app : std_ppcmds -> std_ppcmds -> std_ppcmds
+val app : t -> t -> t
 (** Concatenation. *)
 
-val seq : std_ppcmds list -> std_ppcmds
+val seq : t list -> t
 (** Multi-Concatenation. *)
 
-val (++) : std_ppcmds -> std_ppcmds -> std_ppcmds
+val (++) : t -> t -> t
 (** Infix alias for [app]. *)
 
 (** {6 Derived commands} *)
 
-val spc : unit -> std_ppcmds
-val cut : unit -> std_ppcmds
-val align : unit -> std_ppcmds
-val int : int -> std_ppcmds
-val real : float -> std_ppcmds
-val bool : bool -> std_ppcmds
-val qstring : string -> std_ppcmds
-val qs : string -> std_ppcmds
-val quote : std_ppcmds -> std_ppcmds
-val strbrk : string -> std_ppcmds
+val spc : unit -> t
+val cut : unit -> t
+val align : unit -> t
+val int : int -> t
+val real : float -> t
+val bool : bool -> t
+val qstring : string -> t
+val qs : string -> t
+val quote : t -> t
+val strbrk : string -> t
 
 (** {6 Boxing commands} *)
 
-val h : int -> std_ppcmds -> std_ppcmds
-val v : int -> std_ppcmds -> std_ppcmds
-val hv : int -> std_ppcmds -> std_ppcmds
-val hov : int -> std_ppcmds -> std_ppcmds
+val h : int -> t -> t
+val v : int -> t -> t
+val hv : int -> t -> t
+val hov : int -> t -> t
 
 (** {6 Tagging} *)
 
-val tag : pp_tag -> std_ppcmds -> std_ppcmds
+val tag : pp_tag -> t -> t
 
 (** {6 Printing combinators} *)
 
-val pr_comma : unit -> std_ppcmds
+val pr_comma : unit -> t
 (** Well-spaced comma. *)
 
-val pr_semicolon : unit -> std_ppcmds
+val pr_semicolon : unit -> t
 (** Well-spaced semicolon. *)
 
-val pr_bar : unit -> std_ppcmds
+val pr_bar : unit -> t
 (** Well-spaced pipe bar. *)
 
-val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
+val pr_arg : ('a -> t) -> 'a -> t
 (** Adds a space in front of its argument. *)
 
-val pr_non_empty_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
+val pr_non_empty_arg : ('a -> t) -> 'a -> t
 (** Adds a space in front of its argument if non empty. *)
 
-val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+val pr_opt : ('a -> t) -> 'a option -> t
 (** Inner object preceded with a space if [Some], nothing otherwise. *)
 
-val pr_opt_no_spc : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+val pr_opt_no_spc : ('a -> t) -> 'a option -> t
 (** Same as [pr_opt] but without the leading space. *)
 
-val pr_nth : int -> std_ppcmds
+val pr_nth : int -> t
 (** Ordinal number with the correct suffix (i.e. "st", "nd", "th", etc.). *)
 
-val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val prlist : ('a -> t) -> 'a list -> t
 (** Concatenation of the list contents, without any separator.
 
     Unlike all other functions below, [prlist] works lazily. If a strict
     behavior is needed, use [prlist_strict] instead. *)
 
-val prlist_strict :  ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val prlist_strict :  ('a -> t) -> 'a list -> t
 (** Same as [prlist], but strict. *)
 
 val prlist_with_sep :
-   (unit -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+   (unit -> t) -> ('a -> t) -> 'a list -> t
 (** [prlist_with_sep sep pr [a ; ... ; c]] outputs
     [pr a ++ sep () ++ ... ++ sep () ++ pr c]. 
     where the thunk sep is memoized, rather than being called each place 
      its result is used.
 *)
 
-val prvect : ('a -> std_ppcmds) -> 'a array -> std_ppcmds
+val prvect : ('a -> t) -> 'a array -> t
 (** As [prlist], but on arrays. *)
 
-val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
+val prvecti : (int -> 'a -> t) -> 'a array -> t
 (** Indexed version of [prvect]. *)
 
 val prvect_with_sep :
-   (unit -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a array -> std_ppcmds
+   (unit -> t) -> ('a -> t) -> 'a array -> t
 (** As [prlist_with_sep], but on arrays. *)
 
 val prvecti_with_sep :
-   (unit -> std_ppcmds) -> (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
+   (unit -> t) -> (int -> 'a -> t) -> 'a array -> t
 (** Indexed version of [prvect_with_sep]. *)
 
-val pr_enum : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val pr_enum : ('a -> t) -> 'a list -> t
 (** [pr_enum pr [a ; b ; ... ; c]] outputs
     [pr a ++ str "," ++ pr b ++ str "," ++ ... ++ str "and" ++ pr c]. *)
 
-val pr_sequence : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val pr_sequence : ('a -> t) -> 'a list -> t
 (** Sequence of objects separated by space (unless an element is empty). *)
 
-val surround : std_ppcmds -> std_ppcmds
+val surround : t -> t
 (** Surround with parenthesis. *)
 
-val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
+val pr_vertical_list : ('b -> t) -> 'b list -> t
 
 (** {6 Main renderers, to formatter and to string } *)
 
 (** [pp_with fmt pp] Print [pp] to [fmt] and don't flush [fmt]  *)
-val pp_with          : Format.formatter -> std_ppcmds -> unit
+val pp_with          : Format.formatter -> t -> unit
 
-val string_of_ppcmds : std_ppcmds -> string
+val string_of_ppcmds : t -> string

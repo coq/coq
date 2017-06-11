@@ -39,7 +39,9 @@ type doc_view =
 (* Following discussion on #390, we play on the safe side and make the
    internal representation opaque here. *)
 type t = doc_view
+
 type std_ppcmds = t
+[@@ocaml.deprecated "alias of Pp.t"]
 
 let repr x = x
 let unrepr x = x

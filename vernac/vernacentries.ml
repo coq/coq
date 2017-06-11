@@ -2120,7 +2120,7 @@ let locate_if_not_already ?loc (e, info) =
   | Some l -> (e, info)
 
 exception HasNotFailed
-exception HasFailed of std_ppcmds
+exception HasFailed of Pp.t
 
 let with_fail b f =
   if not b then f ()

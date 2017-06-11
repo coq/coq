@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
 open Libnames
 open Globnames
@@ -155,7 +154,7 @@ val basename_of_global : global_reference -> Id.t
 
 (** Printing of global references using names as short as possible.
     @raise Not_found when the reference is not in the global tables. *)
-val pr_global_env : Id.Set.t -> global_reference -> std_ppcmds
+val pr_global_env : Id.Set.t -> global_reference -> Pp.t
 
 
 (** The [shortest_qualid] functions given an object with [user_name]

@@ -182,7 +182,7 @@ val in_proof : proof -> (Evd.evar_map -> 'a) -> 'a
    focused goals. *)
 val unshelve : proof -> proof
 
-val pr_proof : proof -> Pp.std_ppcmds
+val pr_proof : proof -> Pp.t
 
 (*** Compatibility layer with <=v8.2 ***)
 module V82 : sig

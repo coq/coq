@@ -22,7 +22,7 @@ type level = [
 (** debug printing *)
 val debug : bool ref
 
-val log_pp : ?level:level -> Pp.std_ppcmds -> unit
+val log_pp : ?level:level -> Pp.t -> unit
 val log    : ?level:level -> string        -> unit
 
 val coqide_config_home : unit -> string

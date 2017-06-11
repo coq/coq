@@ -29,7 +29,7 @@ val mono_environment :
 (* Used by the Relation Extraction plugin *)
 
 val print_one_decl :
-  Miniml.ml_structure -> ModPath.t -> Miniml.ml_decl -> Pp.std_ppcmds
+  Miniml.ml_structure -> ModPath.t -> Miniml.ml_decl -> Pp.t
 
 (* Used by Extraction Compute *)
 

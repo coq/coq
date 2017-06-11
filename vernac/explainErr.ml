@@ -18,7 +18,7 @@ let guill s = str "\"" ++ str s ++ str "\""
 (** Invariant : exceptions embedded in EvaluatedError satisfy
     Errors.noncritical *)
 
-exception EvaluatedError of std_ppcmds * exn option
+exception EvaluatedError of Pp.t * exn option
 
 (** Registration of generic errors
     Nota: explain_exn does NOT end with a newline anymore!

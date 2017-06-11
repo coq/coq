@@ -11,27 +11,27 @@ open Misctypes
 (** Printing of [intro_pattern] *)
 
 val pr_intro_pattern :
-  ('a -> Pp.std_ppcmds) -> 'a intro_pattern_expr Loc.located -> Pp.std_ppcmds
+  ('a -> Pp.t) -> 'a intro_pattern_expr Loc.located -> Pp.t
 
 val pr_or_and_intro_pattern :
-  ('a -> Pp.std_ppcmds) -> 'a or_and_intro_pattern_expr -> Pp.std_ppcmds
+  ('a -> Pp.t) -> 'a or_and_intro_pattern_expr -> Pp.t
 
-val pr_intro_pattern_naming : intro_pattern_naming_expr -> Pp.std_ppcmds
+val pr_intro_pattern_naming : intro_pattern_naming_expr -> Pp.t
 
 (** Printing of [move_location] *)
 
 val pr_move_location :
-  ('a -> Pp.std_ppcmds) -> 'a move_location -> Pp.std_ppcmds
+  ('a -> Pp.t) -> 'a move_location -> Pp.t
 
 val pr_bindings :
-  ('a -> Pp.std_ppcmds) ->
-  ('a -> Pp.std_ppcmds) -> 'a bindings -> Pp.std_ppcmds
+  ('a -> Pp.t) ->
+  ('a -> Pp.t) -> 'a bindings -> Pp.t
 
 val pr_bindings_no_with :
-  ('a -> Pp.std_ppcmds) ->
-  ('a -> Pp.std_ppcmds) -> 'a bindings -> Pp.std_ppcmds
+  ('a -> Pp.t) ->
+  ('a -> Pp.t) -> 'a bindings -> Pp.t
 
 val pr_with_bindings :
-  ('a -> Pp.std_ppcmds) ->
-  ('a -> Pp.std_ppcmds) -> 'a * 'a bindings -> Pp.std_ppcmds
+  ('a -> Pp.t) ->
+  ('a -> Pp.t) -> 'a * 'a bindings -> Pp.t
 

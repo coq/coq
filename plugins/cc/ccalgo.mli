@@ -120,7 +120,7 @@ val term_equal : term -> term -> bool
 
 val constr_of_term : term -> constr
 
-val debug : (unit -> Pp.std_ppcmds) -> unit
+val debug : (unit -> Pp.t) -> unit
 
 val forest : state -> forest
 
@@ -169,7 +169,7 @@ val find_instances : state -> (quant_eq * int array) list
 
 val execute : bool -> state -> explanation option
 
-val pr_idx_term : forest -> int -> Pp.std_ppcmds
+val pr_idx_term : forest -> int -> Pp.t
 
 val empty_forest: unit -> forest
 

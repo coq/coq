@@ -117,7 +117,7 @@ let to_box = let open Pp in
       | x        -> raise (Marshal_error("*ppbox",PCData x))
     )
 
-let rec of_pp (pp : Pp.std_ppcmds) = let open Pp in match Pp.repr pp with
+let rec of_pp (pp : Pp.t) = let open Pp in match Pp.repr pp with
     | Ppcmd_empty         -> constructor "ppdoc" "empty"  []
     | Ppcmd_string s      -> constructor "ppdoc" "string" [of_string s]
     | Ppcmd_glue sl       -> constructor "ppdoc" "glue"   [of_list of_pp sl]
@@ -149,7 +149,7 @@ let rec to_pp xpp = let open Pp in
 let of_richpp x = Element ("richpp", [], [x])
 
 (* Run-time Selectable *)
-let of_pp (pp : Pp.std_ppcmds) =
+let of_pp (pp : Pp.t) =
   match !msg_format with
   | Richpp margin -> of_richpp (Richpp.richpp_of_pp margin pp)
   | Ppcmds        -> of_pp pp

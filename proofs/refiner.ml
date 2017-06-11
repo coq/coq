@@ -63,7 +63,7 @@ let tclIDTAC_MESSAGE s gls =
 let tclFAIL_s s gls = user_err ~hdr:"Refiner.tclFAIL_s" (str s)
 
 (* A special exception for levels for the Fail tactic *)
-exception FailError of int * std_ppcmds Lazy.t
+exception FailError of int * Pp.t Lazy.t
 
 (* The Fail tactic *)
 let tclFAIL lvl s g = raise (FailError (lvl,lazy s))

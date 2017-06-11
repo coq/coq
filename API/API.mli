@@ -47,7 +47,7 @@ sig
     val of_string : string -> t
     val of_string_soft : string -> t
     val to_string : t -> string
-    val print : t -> Pp.std_ppcmds
+    val print : t -> Pp.t
 
     module Set  : Set.S with type elt = t
     module Map  : Map.ExtS with type key = t and module Set := Set
@@ -67,7 +67,7 @@ sig
     val equal : t -> t -> bool
     val hash : t -> int
     val hcons : t -> t
-    val print : t -> Pp.std_ppcmds
+    val print : t -> Pp.t
   end
 
   type name = Name.t =
@@ -128,7 +128,7 @@ sig
     val compare : t -> t -> int
     val label : t -> Label.t
     val repr : t -> ModPath.t * DirPath.t * Label.t
-    val print : t -> Pp.std_ppcmds
+    val print : t -> Pp.t
     val to_string : t -> string
   end
 
@@ -159,7 +159,7 @@ sig
     val modpath : t -> ModPath.t
     val label : t -> Label.t
     val user : t -> KerName.t
-    val print : t -> Pp.std_ppcmds
+    val print : t -> Pp.t
   end
 
   module Projection :
@@ -212,7 +212,7 @@ sig
   val var_full_transparent_state : transparent_state
   val cst_full_transparent_state : transparent_state
 
-  val pr_kn : KerName.t -> Pp.std_ppcmds
+  val pr_kn : KerName.t -> Pp.t
   [@@ocaml.deprecated "alias of API.Names.KerName.print"]
 
   val eq_constant : Constant.t -> Constant.t -> bool
@@ -297,11 +297,11 @@ sig
   val make_con : ModPath.t -> DirPath.t -> Label.t -> Constant.t
   [@@ocaml.deprecated "alias of API.Names.Constant.make3"]
 
-  val debug_pr_con : Constant.t -> Pp.std_ppcmds
+  val debug_pr_con : Constant.t -> Pp.t
 
-  val debug_pr_mind : MutInd.t -> Pp.std_ppcmds
+  val debug_pr_mind : MutInd.t -> Pp.t
 
-  val pr_con : Constant.t -> Pp.std_ppcmds
+  val pr_con : Constant.t -> Pp.t
 
   val string_of_con : Constant.t -> string
 
@@ -323,7 +323,7 @@ sig
   sig
     type t
     val set : t
-    val pr : t -> Pp.std_ppcmds
+    val pr : t -> Pp.t
   end
 
   type universe_level = Level.t
@@ -331,13 +331,13 @@ sig
   module LSet :
   sig
     include CSig.SetS with type elt = universe_level
-    val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+    val pr : (Level.t -> Pp.t) -> t -> Pp.t
   end
 
   module Universe :
   sig
     type t
-    val pr : t -> Pp.std_ppcmds
+    val pr : t -> Pp.t
   end
 
   type universe = Universe.t
@@ -348,7 +348,7 @@ sig
     val empty : t
     val of_array : Level.t array -> t
     val to_array : t -> Level.t array
-    val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+    val pr : (Level.t -> Pp.t) -> t -> Pp.t
   end
 
   type 'a puniverses = 'a * Instance.t
@@ -418,7 +418,7 @@ sig
     val union : 'a t -> 'a t -> 'a t
     val diff : 'a t -> 'a t -> 'a t
     val subst_union : 'a option t -> 'a option t -> 'a option t
-    val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+    val pr : ('a -> Pp.t) -> 'a t -> Pp.t
   end
 
   type 'a universe_map = 'a LMap.t
@@ -426,18 +426,18 @@ sig
   type universe_level_subst = universe_level universe_map
 
   val enforce_leq : Universe.t constraint_function
-  val pr_uni : Universe.t -> Pp.std_ppcmds
-  val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> UContext.t -> Pp.std_ppcmds
-  val pr_universe_context_set : (Level.t -> Pp.std_ppcmds) -> ContextSet.t -> Pp.std_ppcmds
-  val pr_universe_subst : universe_subst -> Pp.std_ppcmds
-  val pr_universe_level_subst : universe_level_subst -> Pp.std_ppcmds
-  val pr_constraints : (Level.t -> Pp.std_ppcmds) -> Constraint.t -> Pp.std_ppcmds
+  val pr_uni : Universe.t -> Pp.t
+  val pr_universe_context : (Level.t -> Pp.t) -> UContext.t -> Pp.t
+  val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
+  val pr_universe_subst : universe_subst -> Pp.t
+  val pr_universe_level_subst : universe_level_subst -> Pp.t
+  val pr_constraints : (Level.t -> Pp.t) -> Constraint.t -> Pp.t
 end
 
 module UGraph :
 sig
   type t
-  val pr_universes : (Univ.Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+  val pr_universes : (Univ.Level.t -> Pp.t) -> t -> Pp.t
 end
 
 module Esubst :
@@ -1033,8 +1033,8 @@ sig
   val subst_mps : substitution -> Constr.t -> Constr.t
   val subst_constant : substitution -> Names.Constant.t -> Names.Constant.t
   val subst_ind : substitution -> Names.inductive -> Names.inductive
-  val debug_pr_subst : substitution -> Pp.std_ppcmds
-  val debug_pr_delta : delta_resolver -> Pp.std_ppcmds
+  val debug_pr_subst : substitution -> Pp.t
+  val debug_pr_delta : delta_resolver -> Pp.t
 end
 
 module Opaqueproof :
@@ -1750,10 +1750,10 @@ module Nameops :
 sig
   val atompart_of_id : Names.Id.t -> string
 
-  val pr_id : Names.Id.t -> Pp.std_ppcmds
+  val pr_id : Names.Id.t -> Pp.t
   [@@ocaml.deprecated "alias of API.Names.Id.print"]
 
-  val pr_name : Names.Name.t -> Pp.std_ppcmds
+  val pr_name : Names.Name.t -> Pp.t
   [@@ocaml.deprecated "alias of API.Names.Name.print"]
 
   val name_fold : (Names.Id.t -> 'a -> 'a) -> Names.Name.t -> 'a -> 'a
@@ -1762,7 +1762,7 @@ sig
   val increment_subscript : Names.Id.t -> Names.Id.t
   val make_ident : string -> int option -> Names.Id.t
   val out_name : Names.Name.t -> Names.Id.t
-  val pr_lab : Names.Label.t -> Pp.std_ppcmds
+  val pr_lab : Names.Label.t -> Pp.t
   module Name :
   sig
     include module type of struct include Names.Name end
@@ -1778,7 +1778,7 @@ sig
   open Names
 
   type full_path
-  val pr_path : full_path -> Pp.std_ppcmds
+  val pr_path : full_path -> Pp.t
   val make_path : Names.DirPath.t -> Names.Id.t -> full_path
   val eq_full_path : full_path -> full_path -> bool
   val dirpath : full_path -> Names.DirPath.t
@@ -1788,7 +1788,7 @@ sig
   val make_qualid : Names.DirPath.t -> Names.Id.t -> qualid
   val qualid_eq : qualid -> qualid -> bool
   val repr_qualid : qualid -> Names.DirPath.t * Names.Id.t
-  val pr_qualid : qualid -> Pp.std_ppcmds
+  val pr_qualid : qualid -> Pp.t
   val string_of_qualid : qualid -> string
   val qualid_of_string : string -> qualid
   val qualid_of_path : full_path -> qualid
@@ -1800,12 +1800,12 @@ sig
     | Ident of Names.Id.t Loc.located
   val loc_of_reference : reference -> Loc.t option
   val qualid_of_reference : reference -> qualid Loc.located
-  val pr_reference : reference -> Pp.std_ppcmds
+  val pr_reference : reference -> Pp.t
 
   val is_dirpath_prefix_of : Names.DirPath.t -> Names.DirPath.t -> bool
   val split_dirpath : Names.DirPath.t -> Names.DirPath.t * Names.Id.t
   val dirpath_of_string : string -> Names.DirPath.t
-  val pr_dirpath : Names.DirPath.t -> Pp.std_ppcmds
+  val pr_dirpath : Names.DirPath.t -> Pp.t
 
   val string_of_path : full_path -> string
   val basename : full_path -> Names.Id.t
@@ -1930,7 +1930,7 @@ sig
   val locate_extended : Libnames.qualid -> Globnames.extended_global_reference
   val full_name_module : Libnames.qualid -> Names.DirPath.t
   val locate_tactic : Libnames.qualid -> Names.KerName.t
-  val pr_global_env : Names.Id.Set.t -> Globnames.global_reference -> Pp.std_ppcmds
+  val pr_global_env : Names.Id.Set.t -> Globnames.global_reference -> Pp.t
   val shortest_qualid_of_tactic : Names.KerName.t -> Libnames.qualid
   val basename_of_global : Globnames.global_reference -> Names.Id.t
 
@@ -2053,7 +2053,7 @@ sig
   type key
   val constr_key : ('a -> ('a, 't, 'u, 'i) Constr.kind_of_term) -> 'a -> key option
   val declare_equiv_keys : key -> key -> unit
-  val pr_keys : (Globnames.global_reference -> Pp.std_ppcmds) -> Pp.std_ppcmds
+  val pr_keys : (Globnames.global_reference -> Pp.t) -> Pp.t
 end
 
 module Coqlib :
@@ -2128,14 +2128,14 @@ sig
   val constr_of_global : Globnames.global_reference -> Constr.t
   val new_univ_level : Names.DirPath.t -> Univ.Level.t
   val new_sort_in_family : Sorts.family -> Sorts.t
-  val pr_with_global_universes : Univ.Level.t -> Pp.std_ppcmds
-  val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
+  val pr_with_global_universes : Univ.Level.t -> Pp.t
+  val pr_universe_opt_subst : universe_opt_subst -> Pp.t
   type universe_constraint
 
   module Constraints :
   sig
     type t
-    val pr : t -> Pp.std_ppcmds
+    val pr : t -> Pp.t
   end
 
   type universe_constraints = Constraints.t
@@ -2753,9 +2753,9 @@ sig
   val it_mkLambda_or_LetIn : Constr.t -> Context.Rel.t -> Constr.t
   val local_occur_var : Evd.evar_map -> Names.Id.t -> EConstr.constr -> bool
   val occur_var : Environ.env -> Evd.evar_map -> Names.Id.t -> EConstr.constr -> bool
-  val pr_evar_info : Evd.evar_info -> Pp.std_ppcmds
+  val pr_evar_info : Evd.evar_info -> Pp.t
 
-  val print_constr : EConstr.constr -> Pp.std_ppcmds
+  val print_constr : EConstr.constr -> Pp.t
 
   (** [dependent m t] tests whether [m] is a subterm of [t] *)
   val dependent : Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
@@ -2799,8 +2799,8 @@ sig
   val ids_of_named_context : ('c, 't) Context.Named.pt -> Names.Id.t list
   val ids_of_context : Environ.env -> Names.Id.t list
   val global_of_constr : Evd.evar_map -> EConstr.constr -> Globnames.global_reference * EConstr.EInstance.t
-  val print_named_context : Environ.env -> Pp.std_ppcmds
-  val print_constr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.std_ppcmds
+  val print_named_context : Environ.env -> Pp.t
+  val print_constr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
   val clear_named_body : Names.Id.t -> Environ.env -> Environ.env
   val is_Prop : Evd.evar_map -> EConstr.constr -> bool
   val is_global : Evd.evar_map -> Globnames.global_reference -> EConstr.constr -> bool
@@ -2821,14 +2821,14 @@ sig
   val replace_term : Evd.evar_map -> EConstr.constr -> EConstr.constr -> EConstr.constr -> EConstr.constr
   val map_named_decl : ('a -> 'b) -> ('a, 'a) Context.Named.Declaration.pt -> ('b, 'b) Context.Named.Declaration.pt
   val map_rel_decl : ('a -> 'b) -> ('a, 'a) Context.Rel.Declaration.pt -> ('b, 'b) Context.Rel.Declaration.pt
-  val pr_metaset : Evd.Metaset.t -> Pp.std_ppcmds
-  val pr_evar_map : ?with_univs:bool -> int option -> Evd.evar_map -> Pp.std_ppcmds
-  val pr_evar_universe_context : UState.t -> Pp.std_ppcmds
+  val pr_metaset : Evd.Metaset.t -> Pp.t
+  val pr_evar_map : ?with_univs:bool -> int option -> Evd.evar_map -> Pp.t
+  val pr_evar_universe_context : UState.t -> Pp.t
 end
 
 module Proofview_monad :
 sig
-  type lazy_msg = unit -> Pp.std_ppcmds
+  type lazy_msg = unit -> Pp.t
   module Info :
   sig
     type tree
@@ -2904,10 +2904,10 @@ sig
     val ( >> ) : unit t -> 'a t -> 'a t
     val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
     val print_char : char -> unit t
-    val print_debug : Pp.std_ppcmds -> unit t
-    val print_warning : Pp.std_ppcmds -> unit t
-    val print_notice : Pp.std_ppcmds -> unit t
-    val print_info : Pp.std_ppcmds -> unit t
+    val print_debug : Pp.t -> unit t
+    val print_warning : Pp.t -> unit t
+    val print_notice : Pp.t -> unit t
+    val print_info : Pp.t -> unit t
     val run : 'a t -> 'a
     type 'a ref
     val ref : 'a -> 'a ref t
@@ -3037,7 +3037,7 @@ sig
                 | Opt : 'a tag -> 'a option tag
                 | Pair : 'a tag * 'b tag -> ('a * 'b) tag
     val create : string -> 'a typ
-    val pr : 'a typ -> Pp.std_ppcmds
+    val pr : 'a typ -> Pp.t
     val eq : 'a typ -> 'b typ -> ('a, 'b) CSig.eq option
     val typ_list : t list typ
     val typ_opt : t option typ
@@ -3290,16 +3290,16 @@ sig
   val nf_evar : Evd.evar_map -> EConstr.constr -> EConstr.constr
   val nf_meta : Evd.evar_map -> EConstr.constr -> EConstr.constr
   val hnf_prod_appvect : Environ.env ->  Evd.evar_map -> EConstr.constr -> EConstr.constr array -> EConstr.constr
-  val pr_state : state -> Pp.std_ppcmds
+  val pr_state : state -> Pp.t
   module Stack :
   sig
     type 'a t
-    val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+    val pr : ('a -> Pp.t) -> 'a t -> Pp.t
   end
   module Cst_stack :
   sig
     type t
-    val pr : t -> Pp.std_ppcmds
+    val pr : t -> Pp.t
   end
 end
 
@@ -3964,7 +3964,7 @@ sig
                                  EConstr.types * inheritance_path
   val get_coercion_value : coe_index -> Constr.t
   val coercions : unit -> coe_index list
-  val pr_cl_index : cl_index -> Pp.std_ppcmds
+  val pr_cl_index : cl_index -> Pp.t
 end
 
 module Detyping :
@@ -4197,11 +4197,11 @@ sig
                                     Bigint.bigint prim_token_interpreter -> Bigint.bigint prim_token_uninterpreter -> unit
   val interp_notation_as_global_reference : ?loc:Loc.t -> (Globnames.global_reference -> bool) ->
                                             Constrexpr.notation -> delimiters option -> Globnames.global_reference
-  val locate_notation : (Glob_term.glob_constr -> Pp.std_ppcmds) -> Constrexpr.notation ->
-                        Notation_term.scope_name option -> Pp.std_ppcmds
+  val locate_notation : (Glob_term.glob_constr -> Pp.t) -> Constrexpr.notation ->
+                        Notation_term.scope_name option -> Pp.t
   val find_delimiters_scope : ?loc:Loc.t -> delimiters -> Notation_term.scope_name
-  val pr_scope : (Glob_term.glob_constr -> Pp.std_ppcmds) -> Notation_term.scope_name -> Pp.std_ppcmds
-  val pr_scopes : (Glob_term.glob_constr -> Pp.std_ppcmds) -> Pp.std_ppcmds
+  val pr_scope : (Glob_term.glob_constr -> Pp.t) -> Notation_term.scope_name -> Pp.t
+  val pr_scopes : (Glob_term.glob_constr -> Pp.t) -> Pp.t
   val interp_notation : ?loc:Loc.t -> Constrexpr.notation -> local_scopes ->
                         Notation_term.interpretation * (notation_location * Notation_term.scope_name option)
   val uninterp_prim_token : Glob_term.glob_constr -> Notation_term.scope_name * Constrexpr.prim_token
@@ -4334,19 +4334,19 @@ end
 module Miscprint :
 sig
   val pr_or_and_intro_pattern :
-    ('a -> Pp.std_ppcmds) -> 'a Misctypes.or_and_intro_pattern_expr -> Pp.std_ppcmds
-  val pr_intro_pattern_naming : Misctypes.intro_pattern_naming_expr -> Pp.std_ppcmds
+    ('a -> Pp.t) -> 'a Misctypes.or_and_intro_pattern_expr -> Pp.t
+  val pr_intro_pattern_naming : Misctypes.intro_pattern_naming_expr -> Pp.t
   val pr_intro_pattern :
-    ('a -> Pp.std_ppcmds) -> 'a Misctypes.intro_pattern_expr Loc.located -> Pp.std_ppcmds
+    ('a -> Pp.t) -> 'a Misctypes.intro_pattern_expr Loc.located -> Pp.t
   val pr_bindings :
-    ('a -> Pp.std_ppcmds) ->
-    ('a -> Pp.std_ppcmds) -> 'a Misctypes.bindings -> Pp.std_ppcmds
+    ('a -> Pp.t) ->
+    ('a -> Pp.t) -> 'a Misctypes.bindings -> Pp.t
   val pr_bindings_no_with :
-    ('a -> Pp.std_ppcmds) ->
-    ('a -> Pp.std_ppcmds) -> 'a Misctypes.bindings -> Pp.std_ppcmds
+    ('a -> Pp.t) ->
+    ('a -> Pp.t) -> 'a Misctypes.bindings -> Pp.t
   val pr_with_bindings :
-    ('a -> Pp.std_ppcmds) ->
-    ('a -> Pp.std_ppcmds) -> 'a * 'a Misctypes.bindings -> Pp.std_ppcmds
+    ('a -> Pp.t) ->
+    ('a -> Pp.t) -> 'a * 'a Misctypes.bindings -> Pp.t
 end
 
 (* All items in the Goal modules are deprecated. *)
@@ -4354,7 +4354,7 @@ module Goal :
 sig
   type goal = Evar.t
 
-  val pr_goal : goal -> Pp.std_ppcmds
+  val pr_goal : goal -> Pp.t
 
   module V82 :
   sig
@@ -4431,7 +4431,7 @@ sig
                    unit Proofview.tactic -> proof -> proof * (bool * Proofview_monad.Info.tree)
   val unshelve : proof -> proof
   val maximal_unfocus : 'a focus_kind -> proof -> proof
-  val pr_proof : proof -> Pp.std_ppcmds
+  val pr_proof : proof -> Pp.t
   module V82 :
   sig
     val grab_evars : proof -> proof
@@ -4510,13 +4510,13 @@ sig
   val repackage : Evd.evar_map ref -> 'a -> 'a Evd.sigma
 
   val tclSHOWHYPS : Proof_type.tactic -> Proof_type.tactic
-  exception FailError of int * Pp.std_ppcmds Lazy.t
+  exception FailError of int * Pp.t Lazy.t
 
   val tclEVARS : Evd.evar_map -> Proof_type.tactic
   val tclMAP : ('a -> Proof_type.tactic) -> 'a list -> Proof_type.tactic
   val tclREPEAT : Proof_type.tactic -> Proof_type.tactic
   val tclORELSE        : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
-  val tclFAIL : int -> Pp.std_ppcmds -> Proof_type.tactic
+  val tclFAIL : int -> Pp.t -> Proof_type.tactic
   val tclIDTAC : Proof_type.tactic
   val tclTHEN : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
   val tclTHENLIST : Proof_type.tactic list -> Proof_type.tactic
@@ -4575,7 +4575,7 @@ sig
 
   val pf_hyps_types : Goal.goal Evd.sigma -> (Names.Id.t * EConstr.types) list
 
-  val pr_gls    : Goal.goal Evd.sigma -> Pp.std_ppcmds
+  val pr_gls    : Goal.goal Evd.sigma -> Pp.t
 
   val pf_nf_betaiota : Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr
 
@@ -4648,7 +4648,7 @@ sig
   val solve_evar_clause : Environ.env -> Evd.evar_map -> bool -> clause -> EConstr.constr Misctypes.bindings ->
                           Evd.evar_map
   type clausenv
-  val pr_clenv : clausenv -> Pp.std_ppcmds
+  val pr_clenv : clausenv -> Pp.t
 end
 
 (************************************************************************)
@@ -4843,7 +4843,7 @@ end
 
 module Genprint :
 sig
-  type 'a printer = 'a -> Pp.std_ppcmds
+  type 'a printer = 'a -> Pp.t
   val generic_top_print : Genarg.tlevel Genarg.generic_argument printer
   val register_print0 : ('raw, 'glb, 'top) Genarg.genarg_type ->
                         'raw printer -> 'glb printer -> 'top printer -> unit
@@ -4851,74 +4851,74 @@ end
 
 module Pputils :
 sig
-  val pr_with_occurrences : ('a -> Pp.std_ppcmds) -> (string -> Pp.std_ppcmds) -> 'a Locus.with_occurrences -> Pp.std_ppcmds
+  val pr_with_occurrences : ('a -> Pp.t) -> (string -> Pp.t) -> 'a Locus.with_occurrences -> Pp.t
   val pr_red_expr :
-    ('a -> Pp.std_ppcmds) * ('a -> Pp.std_ppcmds) * ('b -> Pp.std_ppcmds) * ('c -> Pp.std_ppcmds) ->
-    (string -> Pp.std_ppcmds) ->
-    ('a,'b,'c) Genredexpr.red_expr_gen -> Pp.std_ppcmds
-  val pr_raw_generic : Environ.env -> Genarg.rlevel Genarg.generic_argument -> Pp.std_ppcmds
-  val pr_glb_generic : Environ.env -> Genarg.glevel Genarg.generic_argument -> Pp.std_ppcmds
-  val pr_or_var : ('a -> Pp.std_ppcmds) -> 'a Misctypes.or_var -> Pp.std_ppcmds
-  val pr_or_by_notation : ('a -> Pp.std_ppcmds) -> 'a Misctypes.or_by_notation -> Pp.std_ppcmds
+    ('a -> Pp.t) * ('a -> Pp.t) * ('b -> Pp.t) * ('c -> Pp.t) ->
+    (string -> Pp.t) ->
+    ('a,'b,'c) Genredexpr.red_expr_gen -> Pp.t
+  val pr_raw_generic : Environ.env -> Genarg.rlevel Genarg.generic_argument -> Pp.t
+  val pr_glb_generic : Environ.env -> Genarg.glevel Genarg.generic_argument -> Pp.t
+  val pr_or_var : ('a -> Pp.t) -> 'a Misctypes.or_var -> Pp.t
+  val pr_or_by_notation : ('a -> Pp.t) -> 'a Misctypes.or_by_notation -> Pp.t
 end
 
 module Ppconstr :
 sig
-  val pr_name : Names.Name.t -> Pp.std_ppcmds
+  val pr_name : Names.Name.t -> Pp.t
   [@@ocaml.deprecated "alias of API.Names.Name.print"]
 
-  val pr_id : Names.Id.t -> Pp.std_ppcmds
-  val pr_or_var : ('a -> Pp.std_ppcmds) -> 'a Misctypes.or_var -> Pp.std_ppcmds
-  val pr_with_comments : ?loc:Loc.t -> Pp.std_ppcmds -> Pp.std_ppcmds
-  val pr_lident : Names.Id.t Loc.located -> Pp.std_ppcmds
-  val pr_lname : Names.Name.t Loc.located -> Pp.std_ppcmds
+  val pr_id : Names.Id.t -> Pp.t
+  val pr_or_var : ('a -> Pp.t) -> 'a Misctypes.or_var -> Pp.t
+  val pr_with_comments : ?loc:Loc.t -> Pp.t -> Pp.t
+  val pr_lident : Names.Id.t Loc.located -> Pp.t
+  val pr_lname : Names.Name.t Loc.located -> Pp.t
   val prec_less : int -> int * Ppextend.parenRelation -> bool
-  val pr_constr_expr : Constrexpr.constr_expr -> Pp.std_ppcmds
-  val pr_lconstr_expr : Constrexpr.constr_expr -> Pp.std_ppcmds
-  val pr_constr_pattern_expr : Constrexpr.constr_pattern_expr -> Pp.std_ppcmds
-  val pr_lconstr_pattern_expr : Constrexpr.constr_pattern_expr -> Pp.std_ppcmds
-  val pr_binders : Constrexpr.local_binder_expr list -> Pp.std_ppcmds
-  val pr_glob_sort : Misctypes.glob_sort -> Pp.std_ppcmds
+  val pr_constr_expr : Constrexpr.constr_expr -> Pp.t
+  val pr_lconstr_expr : Constrexpr.constr_expr -> Pp.t
+  val pr_constr_pattern_expr : Constrexpr.constr_pattern_expr -> Pp.t
+  val pr_lconstr_pattern_expr : Constrexpr.constr_pattern_expr -> Pp.t
+  val pr_binders : Constrexpr.local_binder_expr list -> Pp.t
+  val pr_glob_sort : Misctypes.glob_sort -> Pp.t
 end
 
 module Printer :
 sig
-  val pr_named_context : Environ.env -> Evd.evar_map -> Context.Named.t -> Pp.std_ppcmds
-  val pr_rel_context : Environ.env -> Evd.evar_map -> Context.Rel.t -> Pp.std_ppcmds
-  val pr_goal : Goal.goal Evd.sigma -> Pp.std_ppcmds
+  val pr_named_context : Environ.env -> Evd.evar_map -> Context.Named.t -> Pp.t
+  val pr_rel_context : Environ.env -> Evd.evar_map -> Context.Rel.t -> Pp.t
+  val pr_goal : Goal.goal Evd.sigma -> Pp.t
 
-  val pr_constr_env : Environ.env -> Evd.evar_map -> Constr.t -> Pp.std_ppcmds
-  val pr_lconstr_env : Environ.env -> Evd.evar_map -> Constr.t -> Pp.std_ppcmds
+  val pr_constr_env : Environ.env -> Evd.evar_map -> Constr.t -> Pp.t
+  val pr_lconstr_env : Environ.env -> Evd.evar_map -> Constr.t -> Pp.t
 
-  val pr_constr : Constr.t -> Pp.std_ppcmds
+  val pr_constr : Constr.t -> Pp.t
 
-  val pr_lconstr : Constr.t -> Pp.std_ppcmds
+  val pr_lconstr : Constr.t -> Pp.t
 
-  val pr_econstr : EConstr.constr -> Pp.std_ppcmds
-  val pr_glob_constr : Glob_term.glob_constr -> Pp.std_ppcmds
-  val pr_constr_pattern : Pattern.constr_pattern -> Pp.std_ppcmds
-  val pr_glob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.std_ppcmds
-  val pr_lglob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.std_ppcmds
-  val pr_econstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.std_ppcmds
-  val pr_constr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.std_ppcmds
-  val pr_lconstr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.std_ppcmds
-  val pr_closed_glob : Glob_term.closed_glob_constr -> Pp.std_ppcmds
-  val pr_lglob_constr : Glob_term.glob_constr -> Pp.std_ppcmds
-  val pr_leconstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.std_ppcmds
-  val pr_leconstr : EConstr.constr -> Pp.std_ppcmds
-  val pr_global : Globnames.global_reference -> Pp.std_ppcmds
-  val pr_lconstr_under_binders : Pattern.constr_under_binders -> Pp.std_ppcmds
-  val pr_lconstr_under_binders_env : Environ.env -> Evd.evar_map -> Pattern.constr_under_binders -> Pp.std_ppcmds
+  val pr_econstr : EConstr.constr -> Pp.t
+  val pr_glob_constr : Glob_term.glob_constr -> Pp.t
+  val pr_constr_pattern : Pattern.constr_pattern -> Pp.t
+  val pr_glob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.t
+  val pr_lglob_constr_env : Environ.env -> Glob_term.glob_constr -> Pp.t
+  val pr_econstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
+  val pr_constr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.t
+  val pr_lconstr_pattern_env : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> Pp.t
+  val pr_closed_glob : Glob_term.closed_glob_constr -> Pp.t
+  val pr_lglob_constr : Glob_term.glob_constr -> Pp.t
+  val pr_leconstr_env : Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
+  val pr_leconstr : EConstr.constr -> Pp.t
+  val pr_global : Globnames.global_reference -> Pp.t
+  val pr_lconstr_under_binders : Pattern.constr_under_binders -> Pp.t
+  val pr_lconstr_under_binders_env : Environ.env -> Evd.evar_map -> Pattern.constr_under_binders -> Pp.t
 
-  val pr_constr_under_binders_env : Environ.env -> Evd.evar_map -> Pattern.constr_under_binders -> Pp.std_ppcmds
-  val pr_closed_glob_env : Environ.env -> Evd.evar_map -> Glob_term.closed_glob_constr -> Pp.std_ppcmds
-  val pr_rel_context_of : Environ.env -> Evd.evar_map -> Pp.std_ppcmds
-  val pr_named_context_of : Environ.env -> Evd.evar_map -> Pp.std_ppcmds
-  val pr_ltype : Term.types -> Pp.std_ppcmds
-  val pr_ljudge : EConstr.unsafe_judgment -> Pp.std_ppcmds * Pp.std_ppcmds
-  val pr_idpred : Names.Id.Pred.t -> Pp.std_ppcmds
-  val pr_cpred : Names.Cpred.t -> Pp.std_ppcmds
-  val pr_transparent_state : Names.transparent_state -> Pp.std_ppcmds
+  val pr_constr_under_binders_env : Environ.env -> Evd.evar_map -> Pattern.constr_under_binders -> Pp.t
+  val pr_closed_glob_env : Environ.env -> Evd.evar_map -> Glob_term.closed_glob_constr -> Pp.t
+  val pr_rel_context_of : Environ.env -> Evd.evar_map -> Pp.t
+  val pr_named_context_of : Environ.env -> Evd.evar_map -> Pp.t
+  val pr_ltype : Term.types -> Pp.t
+  val pr_ljudge : EConstr.unsafe_judgment -> Pp.t * Pp.t
+  val pr_idpred : Names.Id.Pred.t -> Pp.t
+  val pr_cpred : Names.Cpred.t -> Pp.t
+  val pr_transparent_state : Names.transparent_state -> Pp.t
 end
 
 (************************************************************************)
@@ -4936,7 +4936,7 @@ sig
   val tclORELSE        : tactic -> tactic -> tactic
   val tclDO : int -> tactic -> tactic
   val tclIDTAC : tactic
-  val tclFAIL : int -> Pp.std_ppcmds -> tactic
+  val tclFAIL : int -> Pp.t -> tactic
   val tclTHEN : tactic -> tactic -> tactic
   val tclTHENLIST      : tactic list -> tactic
   val pf_constr_of_global :
@@ -4973,12 +4973,12 @@ sig
   sig
     open Proofview
     val tclORELSE0 : unit tactic -> unit tactic -> unit tactic
-    val tclFAIL : int -> Pp.std_ppcmds -> 'a tactic
+    val tclFAIL : int -> Pp.t -> 'a tactic
     val pf_constr_of_global : Globnames.global_reference -> EConstr.constr tactic
     val tclTHEN : unit tactic -> unit tactic -> unit tactic
     val tclTHENS : unit tactic -> unit tactic list -> unit tactic
     val tclFIRST : unit tactic list -> unit tactic
-    val tclZEROMSG : ?loc:Loc.t -> Pp.std_ppcmds -> 'a tactic
+    val tclZEROMSG : ?loc:Loc.t -> Pp.t -> 'a tactic
     val tclORELSE  : unit tactic -> unit tactic -> unit tactic
     val tclREPEAT : unit tactic -> unit tactic
     val tclTRY : unit tactic -> unit tactic
@@ -5035,7 +5035,7 @@ sig
 
   val check_scheme : 'a scheme_kind -> Names.inductive -> bool
   val find_scheme : ?mode:Declare.internal_flag -> 'a scheme_kind -> Names.inductive -> Names.Constant.t * Safe_typing.private_constants
-  val pr_scheme_kind : 'a scheme_kind -> Pp.std_ppcmds
+  val pr_scheme_kind : 'a scheme_kind -> Pp.t
 end
 
 module Elimschemes :
@@ -5394,11 +5394,11 @@ sig
 
   val add_hints : bool -> hint_db_name list -> hints_entry -> unit
   val searchtable_map : hint_db_name -> hint_db
-  val pp_hints_path_atom : ('a -> Pp.std_ppcmds) -> 'a hints_path_atom_gen -> Pp.std_ppcmds
-  val pp_hints_path_gen : ('a -> Pp.std_ppcmds) -> 'a hints_path_gen -> Pp.std_ppcmds
+  val pp_hints_path_atom : ('a -> Pp.t) -> 'a hints_path_atom_gen -> Pp.t
+  val pp_hints_path_gen : ('a -> Pp.t) -> 'a hints_path_gen -> Pp.t
   val glob_hints_path_atom :
     Libnames.reference hints_path_atom_gen -> Globnames.global_reference hints_path_atom_gen
-  val pp_hints_path : hints_path -> Pp.std_ppcmds
+  val pp_hints_path : hints_path -> Pp.t
   val glob_hints_path :
     Libnames.reference hints_path_gen -> Globnames.global_reference hints_path_gen
   val typeclasses_db : hint_db_name
@@ -5406,7 +5406,7 @@ sig
   val create_hint_db : bool -> hint_db_name -> Names.transparent_state -> bool -> unit
   val empty_hint_info : 'a Vernacexpr.hint_info_gen
   val repr_hint : hint -> (raw_hint * Clenv.clausenv) hint_ast
-  val pr_hint_db : Hint_db.t -> Pp.std_ppcmds
+  val pr_hint_db : Hint_db.t -> Pp.t
 end
 
 module Auto :
@@ -5483,7 +5483,7 @@ sig
   val add_rew_rules : string -> raw_rew_rule list -> unit
   val find_rewrites : string -> rew_rule list
   val find_matches : string -> Constr.t -> rew_rule list
-  val print_rewrite_hintdb : string -> Pp.std_ppcmds
+  val print_rewrite_hintdb : string -> Pp.t
 end
 
 (************************************************************************)
@@ -5496,8 +5496,8 @@ end
 
 module Ppvernac :
 sig
-  val pr_vernac : Vernacexpr.vernac_expr -> Pp.std_ppcmds
-  val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.std_ppcmds
+  val pr_vernac : Vernacexpr.vernac_expr -> Pp.t
+  val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.t
 end
 
 module Lemmas :
@@ -5520,14 +5520,14 @@ end
 
 module Himsg :
 sig
-  val explain_refiner_error : Logic.refiner_error -> Pp.std_ppcmds
-  val explain_pretype_error : Environ.env -> Evd.evar_map -> Pretype_errors.pretype_error -> Pp.std_ppcmds
+  val explain_refiner_error : Logic.refiner_error -> Pp.t
+  val explain_pretype_error : Environ.env -> Evd.evar_map -> Pretype_errors.pretype_error -> Pp.t
 end
 
 module ExplainErr :
 sig
   val process_vernac_interp_error : ?allow_uncaught:bool -> Util.iexn -> Util.iexn
-  val register_additional_error_info : (Util.iexn -> Pp.std_ppcmds option Loc.located option) -> unit
+  val register_additional_error_info : (Util.iexn -> Pp.t option Loc.located option) -> unit
 end
 
 module Locality :
@@ -5572,7 +5572,7 @@ sig
   val solve_all_obligations : unit Proofview.tactic option -> unit
   val admit_obligations : Names.Id.t option -> unit
   val show_obligations : ?msg:bool -> Names.Id.t option -> unit
-  val show_term : Names.Id.t option -> Pp.std_ppcmds
+  val show_term : Names.Id.t option -> Pp.t
 end
 
 module Command :

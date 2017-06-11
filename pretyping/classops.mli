@@ -95,15 +95,14 @@ val lookup_pattern_path_between :
 
 (**/**)
 (* Crade *)
-open Pp
 val install_path_printer :
-  ((cl_index * cl_index) * inheritance_path -> std_ppcmds) -> unit
+  ((cl_index * cl_index) * inheritance_path -> Pp.t) -> unit
 (**/**)
 
 (** {6 This is for printing purpose } *)
 val string_of_class : cl_typ -> string
-val pr_class : cl_typ -> std_ppcmds
-val pr_cl_index : cl_index -> std_ppcmds
+val pr_class : cl_typ -> Pp.t
+val pr_cl_index : cl_index -> Pp.t
 val get_coercion_value : coe_index -> Constr.t
 val inheritance_graph : unit -> ((cl_index * cl_index) * inheritance_path) list
 val classes : unit -> cl_typ list

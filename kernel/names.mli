@@ -57,7 +57,7 @@ sig
   val to_string : t -> string
   (** Converts a identifier into an string. *)
 
-  val print : t -> Pp.std_ppcmds
+  val print : t -> Pp.t
   (** Pretty-printer. *)
 
   module Set : Set.S with type elt = t
@@ -105,7 +105,7 @@ sig
   val hcons : t -> t
   (** Hashconsing over names. *)
 
-  val print : t -> Pp.std_ppcmds
+  val print : t -> Pp.t
   (** Pretty-printer (print "_" for [Anonymous]. *)
 
 end
@@ -187,7 +187,7 @@ sig
   val to_id : t -> Id.t
   (** Conversion to an identifier. *)
 
-  val print : t -> Pp.std_ppcmds
+  val print : t -> Pp.t
   (** Pretty-printer. *)
 
   module Set : Set.S with type elt = t
@@ -286,7 +286,7 @@ sig
   val debug_to_string : t -> string
   (** Same as [to_string], but outputs information related to debug. *)
 
-  val print : t -> Pp.std_ppcmds
+  val print : t -> Pp.t
 
   (** Comparisons *)
   val compare : t -> t -> int
@@ -365,9 +365,9 @@ sig
   (** Displaying *)
 
   val to_string : t -> string
-  val print : t -> Pp.std_ppcmds
+  val print : t -> Pp.t
   val debug_to_string : t -> string
-  val debug_print : t -> Pp.std_ppcmds
+  val debug_print : t -> Pp.t
 
 end
 
@@ -447,9 +447,9 @@ sig
   (** Displaying *)
 
   val to_string : t -> string
-  val print : t -> Pp.std_ppcmds
+  val print : t -> Pp.t
   val debug_to_string : t -> string
-  val debug_print : t -> Pp.std_ppcmds
+  val debug_print : t -> Pp.t
 
 end
 
@@ -609,7 +609,7 @@ val mk_label : string -> label
 val string_of_label : label -> string
 (** @deprecated Same as [Label.to_string]. *)
 
-val pr_label : label -> Pp.std_ppcmds
+val pr_label : label -> Pp.t
 (** @deprecated Same as [Label.print]. *)
 
 val label_of_id : Id.t -> label
@@ -695,7 +695,7 @@ val label : kernel_name -> Label.t
 val string_of_kn : kernel_name -> string
 (** @deprecated Same as [KerName.to_string]. *)
 
-val pr_kn : kernel_name -> Pp.std_ppcmds
+val pr_kn : kernel_name -> Pp.t
 (** @deprecated Same as [KerName.print]. *)
 
 val kn_ord : kernel_name -> kernel_name -> int
@@ -731,7 +731,7 @@ module Projection : sig
   val map : (constant -> constant) -> t -> t
 
   val to_string : t -> string
-  val print : t -> Pp.std_ppcmds
+  val print : t -> Pp.t
 
 end
 
@@ -776,10 +776,10 @@ val con_with_label : constant -> Label.t -> constant
 val string_of_con : constant -> string
 (** @deprecated Same as [Constant.to_string] *)
 
-val pr_con : constant -> Pp.std_ppcmds
+val pr_con : constant -> Pp.t
 (** @deprecated Same as [Constant.print] *)
 
-val debug_pr_con : constant -> Pp.std_ppcmds
+val debug_pr_con : constant -> Pp.t
 (** @deprecated Same as [Constant.debug_print] *)
 
 val debug_string_of_con : constant -> string
@@ -826,10 +826,10 @@ val mind_modpath : mutual_inductive -> ModPath.t
 val string_of_mind : mutual_inductive -> string
 (** @deprecated Same as [MutInd.to_string] *)
 
-val pr_mind : mutual_inductive -> Pp.std_ppcmds
+val pr_mind : mutual_inductive -> Pp.t
 (** @deprecated Same as [MutInd.print] *)
 
-val debug_pr_mind : mutual_inductive -> Pp.std_ppcmds
+val debug_pr_mind : mutual_inductive -> Pp.t
 (** @deprecated Same as [MutInd.debug_print] *)
 
 val debug_string_of_mind : mutual_inductive -> string

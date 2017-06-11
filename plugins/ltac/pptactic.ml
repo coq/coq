@@ -67,22 +67,22 @@ let declare_notation_tactic_pprule kn pt =
   prnotation_tab := KNmap.add kn pt !prnotation_tab
 
 type 'a raw_extra_genarg_printer =
-    (constr_expr -> std_ppcmds) ->
-    (constr_expr -> std_ppcmds) ->
-    (tolerability -> raw_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    (constr_expr -> Pp.t) ->
+    (constr_expr -> Pp.t) ->
+    (tolerability -> raw_tactic_expr -> Pp.t) ->
+    'a -> Pp.t
 
 type 'a glob_extra_genarg_printer =
-    (glob_constr_and_expr -> std_ppcmds) ->
-    (glob_constr_and_expr -> std_ppcmds) ->
-    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-    'a -> std_ppcmds
+    (glob_constr_and_expr -> Pp.t) ->
+    (glob_constr_and_expr -> Pp.t) ->
+    (tolerability -> glob_tactic_expr -> Pp.t) ->
+    'a -> Pp.t
 
 type 'a extra_genarg_printer =
-    (EConstr.constr -> std_ppcmds) ->
-    (EConstr.constr -> std_ppcmds) ->
-    (tolerability -> Val.t -> std_ppcmds) ->
-    'a -> std_ppcmds
+    (EConstr.constr -> Pp.t) ->
+    (EConstr.constr -> Pp.t) ->
+    (tolerability -> Val.t -> Pp.t) ->
+    'a -> Pp.t
 
   let keyword x = tag_keyword (str x)
   let primitive x = tag_primitive (str x)
@@ -96,7 +96,7 @@ type 'a extra_genarg_printer =
   | None -> assert false
   | Some Refl -> x
 
-  let rec pr_value lev v : std_ppcmds =
+  let rec pr_value lev v : Pp.t =
     if has_type v Val.typ_list then
       pr_sequence (fun x -> pr_value lev x) (unbox v Val.typ_list)
     else if has_type v Val.typ_opt then
@@ -272,7 +272,7 @@ type 'a extra_genarg_printer =
   | Glbwit (OptArg wit) -> Some (Option.map (in_gen (glbwit wit)) arg)
   | _ -> None
 
-  let rec pr_any_arg : type l. (_ -> l generic_argument -> std_ppcmds) -> _ -> l generic_argument -> std_ppcmds =
+  let rec pr_any_arg : type l. (_ -> l generic_argument -> Pp.t) -> _ -> l generic_argument -> Pp.t =
   fun prtac symb arg -> match symb with
   | Extend.Uentry tag when is_genarg tag (genarg_tag arg) -> prtac (1, Any) arg
   | Extend.Ulist1 s | Extend.Ulist0 s ->
@@ -599,18 +599,18 @@ type 'a extra_genarg_printer =
       "raw", "glob" and "typed" levels *)
 
   type 'a printer = {
-    pr_tactic    : tolerability -> 'tacexpr -> std_ppcmds;
-    pr_constr    : 'trm -> std_ppcmds;
-    pr_lconstr   : 'trm -> std_ppcmds;
-    pr_dconstr   : 'dtrm -> std_ppcmds;
-    pr_pattern   : 'pat -> std_ppcmds;
-    pr_lpattern  : 'pat -> std_ppcmds;
-    pr_constant  : 'cst -> std_ppcmds;
-    pr_reference : 'ref -> std_ppcmds;
-    pr_name      : 'nam -> std_ppcmds;
-    pr_generic   : 'lev generic_argument -> std_ppcmds;
-    pr_extend    : int -> ml_tactic_entry -> 'a gen_tactic_arg list -> std_ppcmds;
-    pr_alias     : int -> KerName.t -> 'a gen_tactic_arg list -> std_ppcmds;
+    pr_tactic    : tolerability -> 'tacexpr -> Pp.t;
+    pr_constr    : 'trm -> Pp.t;
+    pr_lconstr   : 'trm -> Pp.t;
+    pr_dconstr   : 'dtrm -> Pp.t;
+    pr_pattern   : 'pat -> Pp.t;
+    pr_lpattern  : 'pat -> Pp.t;
+    pr_constant  : 'cst -> Pp.t;
+    pr_reference : 'ref -> Pp.t;
+    pr_name      : 'nam -> Pp.t;
+    pr_generic   : 'lev generic_argument -> Pp.t;
+    pr_extend    : int -> ml_tactic_entry -> 'a gen_tactic_arg list -> Pp.t;
+    pr_alias     : int -> KerName.t -> 'a gen_tactic_arg list -> Pp.t;
   }
 
   constraint 'a = <

@@ -146,7 +146,7 @@ val abstract_argument_type_eq :
   ('a, 'l) abstract_argument_type -> ('b, 'l) abstract_argument_type ->
   ('a, 'b) CSig.eq option
 
-val pr_argument_type : argument_type -> Pp.std_ppcmds
+val pr_argument_type : argument_type -> Pp.t
 (** Print a human-readable representation for a given type. *)
 
 val genarg_tag : 'a generic_argument -> argument_type

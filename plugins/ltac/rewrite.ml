@@ -1461,7 +1461,7 @@ let solve_constraints env (evars,cstrs) =
 let nf_zeta =
   Reductionops.clos_norm_flags (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 
-exception RewriteFailure of Pp.std_ppcmds
+exception RewriteFailure of Pp.t
 
 type result = (evar_map * constr option * types) option option
 

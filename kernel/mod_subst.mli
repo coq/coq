@@ -107,9 +107,9 @@ val subst_substituted : substitution -> 'a substituted -> 'a substituted
 (**/**)
 (* debugging *)
 val debug_string_of_subst : substitution -> string
-val debug_pr_subst : substitution -> Pp.std_ppcmds
+val debug_pr_subst : substitution -> Pp.t
 val debug_string_of_delta : delta_resolver -> string
-val debug_pr_delta : delta_resolver -> Pp.std_ppcmds
+val debug_pr_delta : delta_resolver -> Pp.t
 (**/**)
 
 (** [subst_mp sub mp] guarantees that whenever the result of the

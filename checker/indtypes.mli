@@ -12,8 +12,8 @@ open Cic
 open Environ
 (*i*)
 
-val prkn : kernel_name -> Pp.std_ppcmds
-val prcon : constant -> Pp.std_ppcmds
+val prkn : kernel_name -> Pp.t
+val prcon : constant -> Pp.t
 
 (*s The different kinds of errors that may result of a malformed inductive
   definition. *)

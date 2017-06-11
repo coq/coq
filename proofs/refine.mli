@@ -17,7 +17,7 @@ open Proofview
 
 (** Printer used to print the constr which refine refines. *)
 val pr_constr :
-  (Environ.env -> Evd.evar_map -> Term.constr -> Pp.std_ppcmds) Hook.t
+  (Environ.env -> Evd.evar_map -> Term.constr -> Pp.t) Hook.t
 
 (** {7 Refinement primitives} *)
 

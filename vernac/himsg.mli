@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Indtypes
 open Environ
 open Type_errors
@@ -18,28 +17,28 @@ open Logic
 
 (** This module provides functions to explain the type errors. *)
 
-val explain_type_error : env -> Evd.evar_map -> type_error -> std_ppcmds
+val explain_type_error : env -> Evd.evar_map -> type_error -> Pp.t
 
-val explain_pretype_error : env -> Evd.evar_map -> pretype_error -> std_ppcmds
+val explain_pretype_error : env -> Evd.evar_map -> pretype_error -> Pp.t
 
-val explain_inductive_error : inductive_error -> std_ppcmds
+val explain_inductive_error : inductive_error -> Pp.t
 
-val explain_typeclass_error : env -> typeclass_error -> Pp.std_ppcmds
+val explain_typeclass_error : env -> typeclass_error -> Pp.t
 
-val explain_recursion_scheme_error : recursion_scheme_error -> std_ppcmds
+val explain_recursion_scheme_error : recursion_scheme_error -> Pp.t
 
-val explain_refiner_error : refiner_error -> std_ppcmds
+val explain_refiner_error : refiner_error -> Pp.t
 
 val explain_pattern_matching_error :
-  env -> Evd.evar_map -> pattern_matching_error -> std_ppcmds
+  env -> Evd.evar_map -> pattern_matching_error -> Pp.t
 
 val explain_reduction_tactic_error :
-  Tacred.reduction_tactic_error -> std_ppcmds
+  Tacred.reduction_tactic_error -> Pp.t
 
-val explain_module_error : Modops.module_typing_error -> std_ppcmds
+val explain_module_error : Modops.module_typing_error -> Pp.t
 
 val explain_module_internalization_error :
-  Modintern.module_internalization_error -> std_ppcmds
+  Modintern.module_internalization_error -> Pp.t
 
 val map_pguard_error : ('c -> 'd) -> 'c pguard_error -> 'd pguard_error
 val map_ptype_error : ('c -> 'd) -> ('c, 'c) ptype_error -> ('d, 'd) ptype_error

@@ -14,7 +14,7 @@ let push = Backtrace.add_backtrace
 
 (* Errors *)
 
-exception Anomaly of string option * std_ppcmds (* System errors *)
+exception Anomaly of string option * Pp.t (* System errors *)
 
 let _ =
   let pr = function
@@ -33,7 +33,7 @@ let is_anomaly = function
 | Anomaly _ -> true
 | _ -> false
 
-exception UserError of string option * std_ppcmds (* User errors *)
+exception UserError of string option * Pp.t (* User errors *)
 
 let todo s = prerr_string ("TODO: "^s^"\n")
 
@@ -41,7 +41,7 @@ let user_err ?loc ?hdr strm = Loc.raise ?loc (UserError (hdr, strm))
 
 let invalid_arg ?loc s   = Loc.raise ?loc (Invalid_argument s)
 
-exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
+exception AlreadyDeclared of Pp.t (* for already declared Schemes *)
 let alreadydeclared pps = raise (AlreadyDeclared(pps))
 
 exception Timeout

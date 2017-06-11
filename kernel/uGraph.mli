@@ -59,7 +59,7 @@ val check_subtype : AUContext.t check_function
 
 (** {6 Pretty-printing of universes. } *)
 
-val pr_universes : (Level.t -> Pp.std_ppcmds) -> universes -> Pp.std_ppcmds
+val pr_universes : (Level.t -> Pp.t) -> universes -> Pp.t
 
 (** {6 Dumping to a file } *)
 

@@ -121,7 +121,7 @@ val iter_all_segments :
   (Libnames.object_name -> Libobject.obj -> unit) -> unit
 
 
-val debug_print_modtab : unit -> Pp.std_ppcmds
+val debug_print_modtab : unit -> Pp.t
 
 (** For printing modules, [process_module_binding] adds names of
     bound module (and its components) to Nametab. It also loads

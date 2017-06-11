@@ -203,7 +203,7 @@ type search_state = {
   priority : int;
   depth : int; (*r depth of search before failing *)
   tacres : goal list sigma;
-  last_tactic : std_ppcmds Lazy.t;
+  last_tactic : Pp.t Lazy.t;
   dblist : hint_db list;
   localdb :  hint_db list;
   prev : prev_search_state;

@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
 open Tacexpr
 open Genarg
@@ -55,7 +54,7 @@ val intern_hyp : glob_sign -> Id.t Loc.located -> Id.t Loc.located
 val intern_genarg : glob_sign -> raw_generic_argument -> glob_generic_argument
 
 (** printing *)
-val print_ltac : Libnames.qualid -> std_ppcmds
+val print_ltac : Libnames.qualid -> Pp.t
 
 (** Reduction expressions *)
 

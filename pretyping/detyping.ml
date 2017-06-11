@@ -81,7 +81,7 @@ let encode_tuple r =
 module PrintingInductiveMake =
   functor (Test : sig
      val encode : reference -> inductive
-     val member_message : std_ppcmds -> bool -> std_ppcmds
+     val member_message : Pp.t -> bool -> Pp.t
      val field : string
      val title : string
   end) ->

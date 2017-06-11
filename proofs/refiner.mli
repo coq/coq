@@ -31,7 +31,7 @@ val refiner : rule -> tactic
 
 (** [tclIDTAC] is the identity tactic without message printing*)
 val tclIDTAC          : tactic
-val tclIDTAC_MESSAGE  : Pp.std_ppcmds -> tactic
+val tclIDTAC_MESSAGE  : Pp.t -> tactic
 
 (** [tclEVARS sigma] changes the current evar map *)
 val tclEVARS : evar_map -> tactic
@@ -100,7 +100,7 @@ val tclTHENLASTn    : tactic -> tactic array -> tactic
 val tclTHENFIRSTn   : tactic -> tactic array -> tactic
 
 (** A special exception for levels for the Fail tactic *)
-exception FailError of int * Pp.std_ppcmds Lazy.t
+exception FailError of int * Pp.t Lazy.t
 
 (** Takes an exception and either raise it at the next
    level or do nothing. *)
@@ -116,8 +116,8 @@ val tclTRY           : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : int -> Pp.std_ppcmds -> tactic
-val tclFAIL_lazy     : int -> Pp.std_ppcmds Lazy.t -> tactic
+val tclFAIL          : int -> Pp.t -> tactic
+val tclFAIL_lazy     : int -> Pp.t Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic

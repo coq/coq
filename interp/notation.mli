@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Bigint
 open Names
 open Libnames
@@ -189,13 +188,13 @@ val make_notation_key : symbol list -> notation
 val decompose_notation_key : notation -> symbol list
 
 (** Prints scopes (expects a pure aconstr printer) *)
-val pr_scope_class : scope_class -> std_ppcmds
-val pr_scope : (glob_constr -> std_ppcmds) -> scope_name -> std_ppcmds
-val pr_scopes : (glob_constr -> std_ppcmds) -> std_ppcmds
-val locate_notation : (glob_constr -> std_ppcmds) -> notation ->
-      scope_name option -> std_ppcmds
+val pr_scope_class : scope_class -> Pp.t
+val pr_scope : (glob_constr -> Pp.t) -> scope_name -> Pp.t
+val pr_scopes : (glob_constr -> Pp.t) -> Pp.t
+val locate_notation : (glob_constr -> Pp.t) -> notation ->
+      scope_name option -> Pp.t
 
-val pr_visibility: (glob_constr -> std_ppcmds) -> scope_name option -> std_ppcmds
+val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
 
 (** {6 Printing rules for notations} *)
 

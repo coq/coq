@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Util
 open Names
 open EConstr
@@ -85,10 +84,10 @@ type hints_path = global_reference hints_path_gen
 val normalize_path : hints_path -> hints_path
 val path_matches : hints_path -> hints_path_atom list -> bool
 val path_derivate : hints_path -> hints_path_atom -> hints_path
-val pp_hints_path_gen : ('a -> Pp.std_ppcmds) -> 'a hints_path_gen -> Pp.std_ppcmds
-val pp_hints_path_atom : ('a -> Pp.std_ppcmds) -> 'a hints_path_atom_gen -> Pp.std_ppcmds
-val pp_hints_path : hints_path -> Pp.std_ppcmds
-val pp_hint_mode : hint_mode -> Pp.std_ppcmds
+val pp_hints_path_gen : ('a -> Pp.t) -> 'a hints_path_gen -> Pp.t
+val pp_hints_path_atom : ('a -> Pp.t) -> 'a hints_path_atom_gen -> Pp.t
+val pp_hints_path : hints_path -> Pp.t
+val pp_hint_mode : hint_mode -> Pp.t
 val glob_hints_path_atom :
   Libnames.reference hints_path_atom_gen -> Globnames.global_reference hints_path_atom_gen
 val glob_hints_path :
@@ -261,12 +260,12 @@ val rewrite_db : hint_db_name
 
 (** Printing  hints *)
 
-val pr_searchtable : unit -> std_ppcmds
-val pr_applicable_hint : unit -> std_ppcmds
-val pr_hint_ref : global_reference -> std_ppcmds
-val pr_hint_db_by_name : hint_db_name -> std_ppcmds
-val pr_hint_db : Hint_db.t -> std_ppcmds
-val pr_hint : hint -> Pp.std_ppcmds
+val pr_searchtable : unit -> Pp.t
+val pr_applicable_hint : unit -> Pp.t
+val pr_hint_ref : global_reference -> Pp.t
+val pr_hint_db_by_name : hint_db_name -> Pp.t
+val pr_hint_db : Hint_db.t -> Pp.t
+val pr_hint : hint -> Pp.t
 
 (** Hook for changing the initialization of auto *)
 

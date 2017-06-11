@@ -58,7 +58,7 @@ fun t1 t2 -> match t1, t2 with
   end
 | _ -> None
 
-let rec pr_genarg_type : type a b c. (a, b, c) genarg_type -> std_ppcmds = function
+let rec pr_genarg_type : type a b c. (a, b, c) genarg_type -> Pp.t = function
 | ListArg t -> pr_genarg_type t ++ spc () ++ str "list"
 | OptArg t -> pr_genarg_type t ++ spc () ++ str "opt"
 | PairArg (t1, t2) ->

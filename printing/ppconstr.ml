@@ -731,10 +731,10 @@ let tag_var = tag Tag.variable
       (sep() ++ if prec_less prec inherited then strm else surround strm)
 
   type term_pr = {
-    pr_constr_expr   : constr_expr -> std_ppcmds;
-    pr_lconstr_expr  : constr_expr -> std_ppcmds;
-    pr_constr_pattern_expr  : constr_pattern_expr -> std_ppcmds;
-    pr_lconstr_pattern_expr : constr_pattern_expr -> std_ppcmds
+    pr_constr_expr   : constr_expr -> Pp.t;
+    pr_lconstr_expr  : constr_expr -> Pp.t;
+    pr_constr_pattern_expr  : constr_pattern_expr -> Pp.t;
+    pr_lconstr_pattern_expr : constr_pattern_expr -> Pp.t
   }
 
   type precedence =  Ppextend.precedence * Ppextend.parenRelation

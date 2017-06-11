@@ -316,7 +316,7 @@ let textview_width (view : #GText.view_skel) =
   let char_width = GPango.to_pixels metrics#approx_char_width in
   pixel_width / char_width
 
-type logger = Feedback.level -> Pp.std_ppcmds -> unit
+type logger = Feedback.level -> Pp.t -> unit
 
 let default_logger level message =
   let level = match level with

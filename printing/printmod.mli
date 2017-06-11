@@ -6,12 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
 
 (** false iff the module is an element of an open module type *)
 val printable_body : DirPath.t -> bool
 
-val pr_mutual_inductive_body : Environ.env -> mutual_inductive -> Declarations.mutual_inductive_body -> std_ppcmds
-val print_module : bool -> module_path -> std_ppcmds
-val print_modtype : module_path -> std_ppcmds
+val pr_mutual_inductive_body : Environ.env -> mutual_inductive -> Declarations.mutual_inductive_body -> Pp.t
+val print_module : bool -> module_path -> Pp.t
+val print_modtype : module_path -> Pp.t

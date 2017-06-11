@@ -48,4 +48,4 @@ val sorts_of_context : env -> evar_map -> rel_context -> sorts list
 
 val expand_projection : env -> evar_map -> Names.projection -> constr -> constr list -> constr
 
-val print_retype_error : retype_error -> Pp.std_ppcmds
+val print_retype_error : retype_error -> Pp.t

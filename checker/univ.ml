@@ -1071,7 +1071,7 @@ module Instance : sig
     val equal : t -> t -> bool
     val subst_fn : universe_level_subst_fn -> t -> t
     val subst : universe_level_subst -> t -> t
-    val pr : t -> Pp.std_ppcmds
+    val pr : t -> Pp.t
     val check_eq : t check_function
     val length : t -> int
     val append : t -> t -> t

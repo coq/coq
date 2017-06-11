@@ -66,7 +66,7 @@ val subst_genarg_hook :
 module PrintingInductiveMake :
   functor (Test : sig
     val encode : Libnames.reference -> Names.inductive
-    val member_message : Pp.std_ppcmds -> bool -> Pp.std_ppcmds
+    val member_message : Pp.t -> bool -> Pp.t
     val field : string
     val title : string
   end) ->
@@ -75,9 +75,9 @@ module PrintingInductiveMake :
       val compare : t -> t -> int
       val encode : Libnames.reference -> Names.inductive
       val subst : substitution -> t -> t
-      val printer : t -> Pp.std_ppcmds
+      val printer : t -> Pp.t
       val key : Goptions.option_name
       val title : string
-      val member_message : t -> bool -> Pp.std_ppcmds
+      val member_message : t -> bool -> Pp.t
       val synchronous : bool
     end
