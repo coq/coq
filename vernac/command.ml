@@ -145,54 +145,6 @@ let check_definition (ce, evd, _, imps) =
   check_evars_are_solved (Global.env ()) evd Evd.empty;
   ce
 
-let warn_local_declaration =
-  CWarnings.create ~name:"local-declaration" ~category:"scope"
-         (fun (id,kind) ->
-          pr_id id ++ strbrk " is declared as a local " ++ str kind)
-
-let get_locality id ~kind = function
-| Discharge ->
-  (** If a Let is defined outside a section, then we consider it as a local definition *)
-   warn_local_declaration (id,kind);
-  true
-| Local -> true
-| Global -> false
-
-let declare_global_definition ident ce local k pl imps =
-  let local = get_locality ident ~kind:"definition" local in
-  let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
-  let gr = ConstRef kn in
-  let () = maybe_declare_manual_implicits false gr imps in
-  let () = Universes.register_universe_binders gr pl in
-  let () = definition_message ident in
-  gr
-
-let warn_definition_not_visible =
-  CWarnings.create ~name:"definition-not-visible" ~category:"implicits"
-         (fun ident ->
-          strbrk "Section definition " ++
-            pr_id ident ++ strbrk " is not visible from current goals")
-
-let declare_definition ident (local, p, k) ce pl imps hook =
-  let fix_exn = Future.fix_exn_of ce.const_entry_body in
-  let r = match local with
-  | Discharge when Lib.sections_are_opened () ->
-    let c = SectionLocalDef ce in
-    let _ = declare_variable ident (Lib.cwd(), c, IsDefinition k) in
-    let () = definition_message ident in
-    let gr = VarRef ident in
-    let () = maybe_declare_manual_implicits false gr imps in
-    let () = if Proof_global.there_are_pending_proofs () then
-	       warn_definition_not_visible ident
-    in
-    gr
-  | Discharge | Local | Global ->
-    declare_global_definition ident ce local k pl imps in
-  Lemmas.call_hook fix_exn hook local r
-
-let _ = Obligations.declare_definition_ref :=
-       (fun i k c imps hook -> declare_definition i k c [] imps hook)
-
 let do_definition ident k pl bl red_option c ctypopt hook =
   let (ce, evd, pl', imps as def) =
     interp_definition pl bl (pi2 k) red_option c ctypopt
@@ -215,7 +167,7 @@ let do_definition ident k pl bl red_option c ctypopt hook =
 	ignore(Obligations.add_definition
           ident ~term:c cty ctx ?pl ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
-      ignore(declare_definition ident k ce pl' imps
+      ignore(DeclareDef.declare_definition ident k ce pl' imps
         (Lemmas.mk_hook
           (fun l r -> Lemmas.call_hook (fun exn -> exn) hook l r;r)))
 
@@ -238,7 +190,7 @@ match local with
   (r,Univ.Instance.empty,true)
 
 | Global | Local | Discharge ->
-  let local = get_locality ident ~kind:"axiom" local in
+  let local = DeclareDef.get_locality ident ~kind:"axiom" local in
   let inl = match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
@@ -871,13 +823,6 @@ let interp_fix_body env_rec evdref impls (_,ctx) fix ccl =
 
 let build_fix_type (_,ctx) ccl = EConstr.it_mkProd_or_LetIn ccl ctx
 
-let declare_fix ?(opaque = false) (_,poly,_ as kind) pl ctx f ((def,_),eff) t imps =
-  let ce = definition_entry ~opaque ~types:t ~poly ~univs:ctx ~eff def in
-  declare_definition f kind ce pl imps (Lemmas.mk_hook (fun _ r -> r))
-
-let _ = Obligations.declare_fix_ref :=
-  (fun ?opaque k ctx f d t imps -> declare_fix ?opaque k [] ctx f d t imps)
-
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
   let names = List.map (fun id -> Name id) fixnames in
@@ -1221,7 +1166,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let evd = Evd.restrict_universe_context evd vars in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     let pl, ctx = Evd.universe_context ?names:pl evd in
-    ignore (List.map4 (declare_fix (local, poly, Fixpoint) pl ctx)
+    ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
@@ -1252,7 +1197,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
     let pl, ctx = Evd.universe_context ?names:pl evd in
-    ignore (List.map4 (declare_fix (local, poly, CoFixpoint) pl ctx) 
+    ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx) 
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames

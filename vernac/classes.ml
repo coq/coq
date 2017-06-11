@@ -417,7 +417,7 @@ let context poly l =
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
         let hook = Lemmas.mk_hook (fun _ gr -> gr) in
-        let _ = Command.declare_definition id decl entry [] [] hook in
+        let _ = DeclareDef.declare_definition id decl entry [] [] hook in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
 	status && nstatus

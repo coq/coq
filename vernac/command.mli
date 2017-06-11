@@ -30,10 +30,6 @@ val interp_definition :
   constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map * 
       Universes.universe_binders * Impargs.manual_implicits
 
-val declare_definition : Id.t -> definition_kind ->
-  Safe_typing.private_constants definition_entry -> Universes.universe_binders -> Impargs.manual_implicits ->
-    Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
-
 val do_definition : Id.t -> definition_kind -> lident list option ->
   local_binder_expr list -> red_expr option -> constr_expr ->
   constr_expr option -> unit Lemmas.declaration_hook -> unit
@@ -165,6 +161,3 @@ val do_cofixpoint :
 (** Utils *)
 
 val check_mutuality : Environ.env -> Evd.evar_map -> bool -> (Id.t * types) list -> unit
-
-val declare_fix : ?opaque:bool -> definition_kind -> Universes.universe_binders -> Univ.universe_context -> Id.t ->
-  Safe_typing.private_constants Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference
