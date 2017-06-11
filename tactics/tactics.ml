@@ -25,7 +25,6 @@ open Inductiveops
 open Reductionops
 open Globnames
 open Evd
-open Pfedit
 open Tacred
 open Genredexpr
 open Tacmach.New
@@ -543,7 +542,7 @@ end
 let fix ido n = match ido with
   | None ->
     Proofview.Goal.enter begin fun gl ->
-      let name = Pfedit.get_current_proof_name () in
+      let name = Proof_global.get_current_proof_name () in
       let id = new_fresh_id [] name gl in
       mutual_fix id n [] 0
     end
@@ -594,7 +593,7 @@ end
 let cofix ido = match ido with
   | None ->
     Proofview.Goal.enter begin fun gl ->
-      let name = Pfedit.get_current_proof_name () in
+      let name = Proof_global.get_current_proof_name () in
       let id = new_fresh_id [] name gl in
       mutual_cofix id [] 0
     end
@@ -1140,7 +1139,7 @@ let rec intros_move = function
 let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
   Pretyping.solve_unification_constraints = true;
-  Pretyping.use_hook = solve_by_implicit_tactic ();
+  Pretyping.use_hook = Pfedit.solve_by_implicit_tactic ();
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
 
@@ -5032,11 +5031,11 @@ let name_op_to_name name_op object_kind suffix =
   let default_gk = (Global, false, object_kind) in
   match name_op with
     | Some s ->
-      (try let _, gk, _ = current_proof_statement () in s, gk
+      (try let _, gk, _ = Pfedit.current_proof_statement () in s, gk
        with NoCurrentProof -> s, default_gk)
     | None   ->
       let name, gk =
-	try let name, gk, _ = current_proof_statement () in name, gk
+	try let name, gk, _ = Pfedit.current_proof_statement () in name, gk
 	with NoCurrentProof -> anon_id, default_gk in
       add_suffix name suffix, gk
 

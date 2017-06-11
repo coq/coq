@@ -17,7 +17,6 @@ open Nametab
 open Evd
 open Proof_type
 open Refiner
-open Pfedit
 open Constrextern
 open Ppconstr
 open Declarations
@@ -812,7 +811,7 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
   end
 
 let pr_nth_open_subgoal n =
-  let pf = get_pftreestate () in
+  let pf = Proof_global.give_me_the_proof () in
   let { it=gls ; sigma=sigma } = Proof.V82.subgoals pf in
   pr_subgoal n sigma gls
 

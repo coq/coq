@@ -29,7 +29,6 @@ open Decl_kinds
 open Pattern
 open Patternops
 open Clenv
-open Pfedit
 open Tacred
 open Printer
 open Vernacexpr
@@ -1462,7 +1461,7 @@ let pr_hint_term sigma cl =
 
 (* print all hints that apply to the concl of the current goal *)
 let pr_applicable_hint () =
-  let pts = get_pftreestate () in
+  let pts = Proof_global.give_me_the_proof () in
   let glss = Proof.V82.subgoals pts in
   match glss.Evd.it with
   | [] -> CErrors.user_err Pp.(str "No focused goal.")

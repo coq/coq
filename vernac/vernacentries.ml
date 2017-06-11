@@ -15,7 +15,6 @@ open Flags
 open Names
 open Nameops
 open Term
-open Pfedit
 open Tacmach
 open Constrintern
 open Prettyp
@@ -70,13 +69,13 @@ let show_thesis () = CErrors.anomaly (Pp.str "Show Thesis: TODO.")
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
-  let pfts = get_pftreestate () in
+  let pfts = Proof_global.give_me_the_proof () in
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
   Feedback.msg_notice (pr_evars_int sigma 1 (Evarutil.non_instantiated sigma))
 
 let show_universes () =
-  let pfts = get_pftreestate () in
+  let pfts = Proof_global.give_me_the_proof () in
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
   let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
@@ -89,7 +88,7 @@ let show_prooftree () = ()
 (* Simulate the Intro(s) tactic *)
 let show_intro all =
   let open EConstr in
-  let pf = get_pftreestate() in
+  let pf = Proof_global.give_me_the_proof() in
   let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
   if not (List.is_empty gls) then begin
     let gl = {Evd.it=List.hd gls ; sigma = sigma; } in
@@ -508,7 +507,7 @@ let vernac_start_proof locality p kind l lettop =
       match id with
 	| Some (lid,_) -> Dumpglob.dump_definition lid false "prf"
 	| None -> ()) l;
-  if not(refining ()) then
+  if not(Proof_global.there_are_pending_proofs ()) then
     if lettop then
       user_err ~hdr:"Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
@@ -521,7 +520,7 @@ let vernac_end_proof ?proof = function
 let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
-  let status = by (Tactics.exact_proof c) in
+  let status = Pfedit.by (Tactics.exact_proof c) in
   save_proof (Vernacexpr.(Proved(Opaque None,None)));
   if not status then Feedback.feedback Feedback.AddedAxiom
 
@@ -667,7 +666,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   match mexpr_ast_l with
     | [] ->
-       check_no_pending_proofs ();
+       Proof_global.check_no_pending_proof ();
        let binders_ast,argsexport =
         List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
@@ -713,7 +712,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
 
   match mty_ast_l with
     | [] ->
-       check_no_pending_proofs ();
+       Proof_global.check_no_pending_proof ();
        let binders_ast,argsexport =
 	 List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
@@ -761,7 +760,7 @@ let vernac_include l =
 (* Sections *)
 
 let vernac_begin_section (_, id as lid) =
-  check_no_pending_proofs ();
+  Proof_global.check_no_pending_proof ();
   Dumpglob.dump_definition lid true "sec";
   Lib.open_section id
 
@@ -775,7 +774,7 @@ let vernac_name_sec_hyp (_,id) set = Proof_using.name_set id set
 (* Dispatcher of the "End" command *)
 
 let vernac_end_segment (_,id as lid) =
-  check_no_pending_proofs ();
+  Proof_global.check_no_pending_proof ();
   match Lib.find_opening_node id with
   | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
   | Lib.OpenedModule (true,_,_,_) -> vernac_end_modtype lid
@@ -855,14 +854,14 @@ let focus_command_cond = Proof.no_cond command_focus
      there are no more goals to solve. It cannot be a tactic since
      all tactics fail if there are no further goals to prove. *)
 
-let vernac_solve_existential = instantiate_nth_evar_com
+let vernac_solve_existential = Pfedit.instantiate_nth_evar_com
 
 let vernac_set_end_tac tac =
   let env = Genintern.empty_glob_sign (Global.env ()) in
   let _, tac = Genintern.generic_intern env tac in
-  if not (refining ()) then
+  if not (Proof_global.there_are_pending_proofs ()) then
     user_err Pp.(str "Unknown command of the non proof-editing mode.");
-  set_end_tac tac
+  Proof_global.set_endline_tactic tac
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
 let vernac_set_used_variables e =
@@ -877,13 +876,13 @@ let vernac_set_used_variables e =
       user_err ~hdr:"vernac_set_used_variables"
         (str "Unknown variable: " ++ pr_id id))
     l;
-  let _, to_clear = set_used_variables l in
+  let _, to_clear = Proof_global.set_used_variables l in
   let to_clear = List.map snd to_clear in
   Proof_global.with_current_proof begin fun _ p ->
     if List.is_empty to_clear then (p, ())
     else
       let tac = Tactics.clear to_clear in
-      fst (solve SelectAll None tac p), ()
+      fst (Pfedit.solve SelectAll None tac p), ()
   end
 
 (*****************************)
@@ -927,12 +926,12 @@ let vernac_chdir = function
 (* State management *)
 
 let vernac_write_state file =
-  Pfedit.delete_all_proofs ();
+  Proof_global.discard_all ();
   let file = CUnix.make_suffix file ".coq" in
   States.extern_state file
 
 let vernac_restore_state file =
-  Pfedit.delete_all_proofs ();
+  Proof_global.discard_all ();
   let file = Loadpath.locate_file (CUnix.make_suffix file ".coq") in
   States.intern_state file
 
@@ -1526,7 +1525,7 @@ let vernac_print_option key =
   with Not_found -> error_undeclared_key key
 
 let get_current_context_of_args = function
-  | Some n -> get_goal_context n
+  | Some n -> Pfedit.get_goal_context n
   | None -> get_current_context ()
 
 let query_command_selector ?loc = function
@@ -1588,7 +1587,7 @@ let vernac_global_check c =
 
 
 let get_nth_goal n =
-  let pf = get_pftreestate() in
+  let pf = Proof_global.give_me_the_proof() in
   let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
   let gl = {Evd.it=List.nth gls (n-1) ; sigma = sigma; } in
   gl
@@ -1777,7 +1776,7 @@ let vernac_locate = let open Feedback in function
   | LocateFile f -> msg_notice (locate_file f)
 
 let vernac_register id r =
- if Pfedit.refining () then
+ if Proof_global.there_are_pending_proofs () then
     user_err Pp.(str "Cannot register a primitive while in proof editing mode.");
   let kn = Constrintern.global_reference (snd id) in
   if not (isConstRef kn) then
@@ -1854,14 +1853,14 @@ let vernac_show = let open Feedback in function
   | ShowUniverses -> show_universes ()
   | ShowTree -> show_prooftree ()
   | ShowProofNames ->
-      msg_notice (pr_sequence pr_id (Pfedit.get_all_proof_names()))
+      msg_notice (pr_sequence pr_id (Proof_global.get_all_proof_names()))
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
   | ShowThesis -> show_thesis ()
 
 
 let vernac_check_guard () =
-  let pts = get_pftreestate () in
+  let pts = Proof_global.give_me_the_proof () in
   let pfterm = List.hd (Proof.partial_proof pts) in
   let message =
     try

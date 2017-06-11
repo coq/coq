@@ -931,7 +931,7 @@ let show_script ?proof () =
   try
     let prf =
       try match proof with
-      | None -> Some (Pfedit.get_current_proof_name ())
+      | None -> Some (Proof_global.get_current_proof_name ())
       | Some (p,_) -> Some (p.Proof_global.id)
       with Proof_global.NoCurrentProof -> None
     in

@@ -187,7 +187,7 @@ end
     from cycling. *)
 let make_prompt () =
   try
-    (Names.Id.to_string (Pfedit.get_current_proof_name ())) ^ " < "
+    (Names.Id.to_string (Proof_global.get_current_proof_name ())) ^ " < "
   with Proof_global.NoCurrentProof ->
     "Coq < "
 
