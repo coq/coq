@@ -167,10 +167,6 @@ let declare_global_definition ident ce local k pl imps =
   let () = definition_message ident in
   gr
 
-let declare_definition_hook = ref ignore
-let set_declare_definition_hook = (:=) declare_definition_hook
-let get_declare_definition_hook () = !declare_definition_hook
-
 let warn_definition_not_visible =
   CWarnings.create ~name:"definition-not-visible" ~category:"implicits"
          (fun ident ->
@@ -179,7 +175,6 @@ let warn_definition_not_visible =
 
 let declare_definition ident (local, p, k) ce pl imps hook =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
-  let () = !declare_definition_hook ce in
   let r = match local with
   | Discharge when Lib.sections_are_opened () ->
     let c = SectionLocalDef ce in

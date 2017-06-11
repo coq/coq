@@ -23,11 +23,6 @@ val do_universe : polymorphic -> Id.t Loc.located list -> unit
 val do_constraint : polymorphic ->
   (Misctypes.glob_level * Univ.constraint_type * Misctypes.glob_level) list -> unit
 
-(** {6 Hooks for Pcoq} *)
-
-val set_declare_definition_hook : (Safe_typing.private_constants definition_entry -> unit) -> unit
-val get_declare_definition_hook : unit -> (Safe_typing.private_constants definition_entry -> unit)
-
 (** {6 Definitions/Let} *)
 
 val interp_definition :
