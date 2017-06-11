@@ -327,7 +327,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = Goal.V82.env sigma goal in
   let hyps = Goal.V82.hyps sigma goal in
   let mk_goal hyps concl =
-    Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal)
+    Goal.V82.mk_goal sigma hyps (Goal.V82.private_ids sigma goal) concl (Goal.V82.extra sigma goal)
   in
     if (not !check) && not (occur_meta sigma (EConstr.of_constr trm)) then
       let t'ty = Retyping.get_type_of env sigma (EConstr.of_constr trm) in
@@ -415,7 +415,7 @@ and mk_hdgoals sigma goal goalacc trm =
   let env = Goal.V82.env sigma goal in
   let hyps = Goal.V82.hyps sigma goal in
   let mk_goal hyps concl = 
-    Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal) in
+    Goal.V82.mk_goal sigma hyps (Goal.V82.private_ids sigma goal) concl (Goal.V82.extra sigma goal) in
   match kind_of_term trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;

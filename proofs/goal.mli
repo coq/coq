@@ -40,6 +40,9 @@ module V82 : sig
   (* Access to ".evar_concl" *)
   val concl : Evd.evar_map -> goal -> EConstr.constr
 
+  (* Access to ".private" *)
+  val private_ids : Evd.evar_map -> goal -> Names.Id.Set.t
+
   (* Access to ".evar_extra" *)
   val extra : Evd.evar_map -> goal -> Evd.Store.t
 
@@ -48,6 +51,7 @@ module V82 : sig
        the evar corresponding to the goal, and an updated evar_map. *)
   val mk_goal : Evd.evar_map -> 
                          Environ.named_context_val ->
+                         Names.Id.Set.t ->
                          EConstr.constr ->
                          Evd.Store.t ->
                          goal * EConstr.constr * Evd.evar_map

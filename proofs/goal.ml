@@ -51,13 +51,18 @@ module V82 = struct
     let evi = Evd.find evars gl in
     EConstr.of_constr evi.Evd.evar_concl
 
+  (* Access to ".private" *)
+  let private_ids evars gl =
+    let evi = Evd.find evars gl in
+    evi.Evd.evar_private
+
   (* Access to ".evar_extra" *)
   let extra evars gl =
     let evi = Evd.find evars gl in
     evi.Evd.evar_extra
 
   (* Old style mk_goal primitive *)
-  let mk_goal evars hyps concl extra =
+  let mk_goal evars hyps private_ids concl extra =
     (* A goal created that way will not be used by refine and will not
        be shelved. It must not appear as a future_goal, so the future
        goals are restored to their initial value after the evar is
@@ -68,6 +73,7 @@ module V82 = struct
     let evi = { Evd.evar_hyps = hyps;
 		Evd.evar_concl = concl;
 		Evd.evar_filter = Evd.Filter.identity;
+		Evd.evar_private = private_ids;
 		Evd.evar_body = Evd.Evar_empty;
 		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
 		Evd.evar_candidates = None;

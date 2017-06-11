@@ -187,7 +187,7 @@ Module IntProperties (I:Int).
 
  Lemma plus_reg_l : forall x y z, x+y = x+z -> y = z.
  Proof.
-  intros.
+  intros * H.
   rewrite <- (plus_0_r y), <- (plus_0_r z), <-(opp_def x).
   now rewrite plus_permute, plus_assoc, H, <- plus_assoc, plus_permute.
  Qed.
@@ -266,7 +266,7 @@ Module IntProperties (I:Int).
 
  Lemma egal_left n m : 0 = n+-m <-> n = m.
  Proof.
-  split; intros.
+  split; intros H.
   - apply plus_reg_l with (-m).
     rewrite plus_comm, <- H. symmetry. apply plus_opp_l.
   - symmetry. subst; apply opp_def.
@@ -314,7 +314,7 @@ Module IntProperties (I:Int).
 
  Lemma lt_antisym : forall n m, n<m -> m<n -> False.
  Proof.
- intros; elim (lt_irrefl _ (lt_trans _ _ _ H H0)); auto.
+ intros * H H0; elim (lt_irrefl _ (lt_trans _ _ _ H H0)); auto.
  Qed.
 
  Lemma lt_le_weak : forall n m, n<m -> n<=m.
@@ -329,7 +329,7 @@ Module IntProperties (I:Int).
 
  Lemma le_antisym : forall n m, n<=m -> m<=n -> n=m.
  Proof.
- intros n m; do 2 rewrite le_lt_iff; intros.
+ intros n m; do 2 rewrite le_lt_iff; intros H H0.
  rewrite <- compare_Lt in H0.
  rewrite <- gt_lt_iff, <- compare_Gt in H.
  rewrite <- compare_Eq.
@@ -454,7 +454,7 @@ Module IntProperties (I:Int).
 
  Lemma plus_le_lt_compat : forall n m p q, n<=m -> p<q -> n+p<m+q.
  Proof.
- intros.
+ intros * H H0.
  apply le_neq_lt.
  apply plus_le_compat; auto.
  apply lt_le_weak; auto.
@@ -562,7 +562,7 @@ Module IntProperties (I:Int).
 
  Lemma OMEGA8 x y : 0 <= x -> 0 <= y -> x = - y -> x = 0.
  Proof.
- intros.
+ intros H H0 H1.
  assert (y=-x).
   subst x; symmetry; apply opp_involutive.
  clear H1; subst y.
@@ -570,8 +570,7 @@ Module IntProperties (I:Int).
  assert (H'':=le_neq_lt _ _ H H').
  generalize (plus_le_lt_compat _ _ _ _ H0 H'').
  rewrite plus_opp_l, plus_0_l.
- intros.
- elim (lt_not_eq _ _ H1); auto.
+ intros []%lt_not_eq; auto.
  Qed.
 
  Lemma sum2 a b c d :
@@ -785,7 +784,7 @@ Infix "=?" := eq_term : romega_scope.
 Theorem eq_term_iff (t t' : term) :
  (t =? t')%term = true <-> t = t'.
 Proof.
- revert t'. induction t; destruct t'; simpl in *;
+ revert t'; induction t; destruct t'; simpl in *;
  rewrite ?andb_true_iff, ?beq_iff, ?N.eqb_eq, ?IHt, ?IHt1, ?IHt2;
   intuition congruence.
 Qed.
@@ -950,7 +949,7 @@ Theorem valid_goal :
   forall (ep : list Prop) (env : list int) (l : hyps) (a : hyps -> hyps),
   valid_hyps a -> interp_goal ep env (a l) -> interp_goal ep env l.
 Proof.
- intros; simpl; apply goal_to_hyps; intro H1;
+ intros * H H0; simpl; apply goal_to_hyps; intro H1;
  apply (hyps_to_goal ep env (a l) H0); apply H; assumption.
 Qed.
 
@@ -1348,7 +1347,7 @@ Qed.
 Theorem normalize_hyps_goal (ep : list Prop) (env : list int) (l : hyps) :
  interp_goal ep env (normalize_hyps l) -> interp_goal ep env l.
 Proof.
- intros; apply valid_goal with (2 := H); apply normalize_hyps_valid.
+ intros * H; apply valid_goal with (2 := H); apply normalize_hyps_valid.
 Qed.
 
 (** ** A simple decidability checker

@@ -100,6 +100,8 @@ type evar_info = {
   (** Boolean mask over {!evar_hyps}. Should have the same length.
       When filtered out, the corresponding variable is not allowed to occur
       in the solution *)
+  evar_private : Id.Set.t;
+  (** Subset of non-canonically or non user-generated variables of the context *)
   evar_source : Evar_kinds.t located;
   (** Information about the evar. *)
   evar_candidates : constr list option;

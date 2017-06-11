@@ -1569,9 +1569,10 @@ let _ =
   Hook.set Typeclasses.solve_all_instances_hook solve_inst
 
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
-  let nc, gl, subst, _, _ = Evarutil.push_rel_context_to_named_context env sigma gl in
+  let nc, private_ids, gl, subst, _, _ =
+    Evarutil.push_rel_context_to_named_context env Id.Set.empty sigma gl in
   let (gl,t,sigma) =
-    Goal.V82.mk_goal sigma nc gl Store.empty in
+    Goal.V82.mk_goal sigma nc private_ids gl Store.empty in
   let (ev, _) = destEvar sigma t in
   let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in

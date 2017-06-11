@@ -2279,6 +2279,7 @@ sig
       evar_hyps : Environ.named_context_val;
       evar_body : evar_body;
       evar_filter : Filter.t;
+      evar_private : Names.Id.Set.t;
       evar_source : Evar_kinds.t Loc.located;
       evar_candidates : Constr.t list option; (* if not None, list of allowed instances *)
       evar_extra : Store.t
@@ -2917,14 +2918,14 @@ sig
 
   val new_evar :
     Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
-    ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
+    ?candidates:EConstr.constr list -> ?private_ids:Names.Id.Set.t -> ?store:Evd.Store.t ->
     ?naming:Misctypes.intro_pattern_naming_expr ->
     ?principal:bool -> EConstr.types -> Evd.evar_map * EConstr.constr
 
   val new_evar_instance :
-    Environ.named_context_val -> Evd.evar_map -> EConstr.types ->
+    Environ.named_context_val -> Evd.evar_map -> EConstr.types -> 
     ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t -> ?candidates:EConstr.constr list ->
-    ?store:Evd.Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
+    ?private_ids:Names.Id.Set.t -> ?store:Evd.Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
     ?principal:bool ->
     EConstr.constr list -> Evd.evar_map * EConstr.constr
 
@@ -2939,7 +2940,7 @@ sig
   val undefined_evars_of_term : Evd.evar_map -> EConstr.constr -> Evar.Set.t
   val e_new_evar :
       Environ.env -> Evd.evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
-      ?candidates:EConstr.constr list -> ?store:Evd.Store.t ->
+      ?candidates:EConstr.constr list -> ?private_ids:Names.Id.Set.t -> ?store:Evd.Store.t ->
       ?naming:Misctypes.intro_pattern_naming_expr ->
       ?principal:bool -> EConstr.types -> EConstr.constr
   val new_type_evar :
@@ -4451,9 +4452,12 @@ sig
 
     val mk_goal : Evd.evar_map ->
                   Environ.named_context_val ->
+                  Names.Id.Set.t ->
                   EConstr.constr ->
                   Evd.Store.t ->
                   goal * EConstr.constr * Evd.evar_map
+
+    val private_ids : Evd.evar_map -> goal -> Names.Id.Set.t
 
     val extra : Evd.evar_map -> goal -> Evd.Store.t
 

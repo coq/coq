@@ -30,13 +30,13 @@ val new_evar_from_context :
 
 val new_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
   named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> evar_map * evar
 
@@ -45,7 +45,7 @@ val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
 (** the same with side-effects *)
 val e_new_evar :
   env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> constr
 
@@ -80,6 +80,7 @@ val e_new_global : evar_map ref -> Globnames.global_reference -> constr
 val new_evar_instance :
  named_context_val -> evar_map -> types -> 
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
+  ?private_ids:Id.Set.t ->
   ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool ->
   constr list -> evar_map * constr
@@ -222,8 +223,8 @@ type ext_named_context =
 val push_rel_decl_to_named_context :
   evar_map -> rel_declaration -> ext_named_context -> ext_named_context
 
-val push_rel_context_to_named_context : Environ.env -> evar_map -> types ->
-  named_context_val * types * constr list * csubst * (identifier*constr) list
+val push_rel_context_to_named_context : Environ.env -> Id.Set.t -> evar_map -> types ->
+  named_context_val * Id.Set.t * types * constr list * csubst * (identifier*constr) list
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 
