@@ -59,16 +59,6 @@ val set_extern_reference :
 val get_extern_reference :
   unit -> (?loc:Loc.t -> Id.Set.t -> global_reference -> reference)
 
-(** This governs printing of implicit arguments. If [with_implicits] is
-   on and not [with_arguments] then implicit args are printed prefixed
-   by "!"; if [with_implicits] and [with_arguments] are both on the
-   function and not the arguments is prefixed by "!" *)
-val with_implicits : ('a -> 'b) -> 'a -> 'b
-val with_arguments : ('a -> 'b) -> 'a -> 'b
-
-(** This forces printing of coercions *)
-val with_coercions : ('a -> 'b) -> 'a -> 'b
-
 (** This forces printing universe names of Type\{.\} *)
 val with_universes : ('a -> 'b) -> 'a -> 'b
 

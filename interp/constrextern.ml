@@ -74,9 +74,6 @@ let print_projections = ref false
 
 let print_meta_as_hole = ref false
 
-let with_arguments f = Flags.with_option print_arguments f
-let with_implicits f = Flags.with_option print_implicits f
-let with_coercions f = Flags.with_option print_coercions f
 let with_universes f = Flags.with_option print_universes f
 let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
 let without_symbols f = Flags.with_option print_no_symbol f
