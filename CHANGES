@@ -94,6 +94,12 @@ Build Infrastructure
   access to the same .cmi files. In short, use "make -j && make -j byte"
   instead of "make -j world byte".
 
+XML Protocol
+
+- The `query` call has been modified, now it carries a mandatory
+  "route_id" integer parameter, that associated the result of such
+  query with its generated feedback.
+
 Changes from V8.6beta1 to V8.6
 ==============================
 
