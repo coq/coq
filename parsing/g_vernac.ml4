@@ -238,9 +238,9 @@ GEXTEND Gram
   univ_decl :
     [ [  "@{" ; l = LIST0 identref; ext = [ "+" -> true | -> false ];
          cs = [ "|"; l' = LIST0 univ_constraint SEP ",";
-                ext = [ "+" -> true | -> false ] -> (l',ext)
-              | -> ([], true) ];
-         "}" ->
+                ext = [ "+" -> true | -> false ]; "}" -> (l',ext)
+              | ext = [ "}" -> true | "|}" -> false ] -> ([], ext) ]
+         ->
          { univdecl_instance = l;
            univdecl_extensible_instance = ext;
            univdecl_constraints = fst cs;

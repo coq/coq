@@ -159,6 +159,8 @@ End structures.
 
 Module binders.
 
+  Definition mynat@{|} := nat.
+
   Definition foo@{i j | i < j, i < j} (A : Type@{i}) : Type@{j}.
     exact A.
   Defined.
