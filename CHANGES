@@ -12,6 +12,9 @@ Tactics
   utility. The command "Set NativeCompute Profiling" enables
   profiling, and "Set NativeCompute Profile Filename" customizes
   the profile filename.
+- The tactic "omega" is now aware of the bodies of context variables
+  such as "x := 5 : Z" (see bug #148). This could be disabled via
+  Unset Omega UseLocalDefs.
 
 Changes from 8.7+beta1 to 8.7.0
 ===============================
