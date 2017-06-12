@@ -3,6 +3,7 @@ CI_TARGETS=ci-all \
     ci-bedrock-src \
     ci-color \
     ci-compcert \
+    ci-coq-dpdgraph \
     ci-coquelicot \
     ci-cpdt \
     ci-fiat-crypto \
