@@ -457,11 +457,44 @@ let rec cases_pattern_of_glob_constr na = CAst.map (function
   | _ -> raise Not_found
   )
 
+open Declarations
+open Term
+open Context
+
+(* Keep only patterns which are not bound to a local definitions *)
+let drop_local_defs typi args =
+    let (decls,_) = decompose_prod_assum typi in
+    let rec aux decls args =
+      match decls, args with
+      | [], [] -> []
+      | Rel.Declaration.LocalDef _ :: decls, pat :: args ->
+         begin
+           match pat.CAst.v with
+           | PatVar Anonymous -> aux decls args
+           | _ -> raise Not_found (* The pattern is used, one cannot drop it *)
+         end
+      | Rel.Declaration.LocalAssum _ :: decls, a :: args -> a :: aux decls args
+      | _ -> assert false in
+    aux (List.rev decls) args
+
+let add_patterns_for_params_remove_local_defs (ind,j) l =
+  let (mib,mip) = Global.lookup_inductive ind in
+  let nparams = mib.Declarations.mind_nparams in
+  let l =
+    if mip.mind_consnrealdecls.(j-1) = mip.mind_consnrealargs.(j-1) then
+      (* Optimisation *) l
+    else
+      let typi = mip.mind_nf_lc.(j-1) in
+      let (_,typi) = decompose_prod_n_assum (Rel.length mib.mind_params_ctxt) typi in
+      drop_local_defs typi l in
+  Util.List.addn nparams (CAst.make @@ PatVar Anonymous) l
+
 (* Turn a closed cases pattern into a glob_constr *)
 let rec glob_constr_of_closed_cases_pattern_aux x = CAst.map_with_loc (fun ?loc -> function
   | PatCstr (cstr,[],Anonymous) -> GRef (ConstructRef cstr,None)
   | PatCstr (cstr,l,Anonymous)  ->
       let ref = CAst.make ?loc @@ GRef (ConstructRef cstr,None) in
+      let l = add_patterns_for_params_remove_local_defs cstr l in
       GApp (ref, List.map glob_constr_of_closed_cases_pattern_aux l)
   | _ -> raise Not_found
   ) x

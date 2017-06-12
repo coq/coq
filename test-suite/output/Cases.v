@@ -106,3 +106,18 @@ Fail Fixpoint texpDenote t (e:texp t):typeDenote t:=
   | TBinop t1 t2 _ b e1 e2 => O
   end.
 
+(* Test notations with local definitions in constructors *)
+
+Inductive J := D : forall n m, let p := n+m in nat -> J.
+Notation "{{ n , m , q }}" := (D n m q).
+
+Check fun x : J => let '{{n, m, _}} := x in n + m.
+Check fun x : J => let '{{n, m, p}} := x in n + m + p.
+
+(* Cannot use the notation because of the dependency in p *)
+
+Check fun x => let '(D n m p q) := x in n+m+p+q.
+
+(* This used to succeed, being interpreted as "let '{{n, m, p}} := ..." *)
+
+Fail Check fun x : J => let '{{n, m, _}} p := x in n + m + p.

@@ -148,5 +148,15 @@ Check [ fun x => x+0 ;; fun x => x+1 ;; fun x => x+2 ].
 
 (* Cyprien's part of bug #4765 *)
 
+Section Bug4765.
+
 Notation foo5 x T y := (fun x : T => y).
 Check foo5 x nat x.
+
+End Bug4765.
+
+(**********************************************************************)
+(* Test printing of #5526                                             *)
+
+Notation "x === x" := (eq_refl x) (only printing, at level 10).
+Check (fun x => eq_refl x).

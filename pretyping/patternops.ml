@@ -364,9 +364,9 @@ let rec pat_of_raw metas vars = CAst.with_loc_val (fun ?loc -> function
       PIf (pat_of_raw metas vars c,
            pat_of_raw metas vars b1,pat_of_raw metas vars b2)
   | GLetTuple (nal,(_,None),b,c) ->
-      let mkGLambda c na = CAst.make ?loc @@
+      let mkGLambda na c = CAst.make ?loc @@
 	GLambda (na,Explicit, CAst.make @@ GHole (Evar_kinds.InternalHole, IntroAnonymous, None),c) in
-      let c = List.fold_left mkGLambda c nal in
+      let c = List.fold_right mkGLambda nal c in
       let cip =
 	{ cip_style = LetStyle;
 	  cip_ind = None;

@@ -386,7 +386,13 @@ let context poly l =
       let ctx = Univ.ContextSet.to_context !uctx in
       (* Declare the universe context once *)
       let () = uctx := Univ.ContextSet.empty in
-      let decl = (ParameterEntry (None,poly,(t,ctx),None), IsAssumption Logical) in
+      let decl = match b with
+      | None ->
+        (ParameterEntry (None,poly,(t,ctx),None), IsAssumption Logical)
+      | Some b ->
+        let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
+        (DefinitionEntry entry, IsAssumption Logical)
+      in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
 	match class_of_constr !evars (EConstr.of_constr t) with
 	| Some (rels, ((tc,_), args) as _cl) ->
@@ -402,9 +408,17 @@ let context poly l =
       in
       let impl = List.exists test impls in
       let decl = (Discharge, poly, Definitional) in
-      let nstatus =
+      let nstatus = match b with
+      | None ->
         pi3 (Command.declare_assumption false decl (t, !uctx) [] [] impl
           Vernacexpr.NoInline (Loc.tag id))
+      | Some b ->
+        let ctx = Univ.ContextSet.to_context !uctx in
+        let decl = (Discharge, poly, Definition) in
+        let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
+        let hook = Lemmas.mk_hook (fun _ gr -> gr) in
+        let _ = Command.declare_definition id decl entry [] [] hook in
+        Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
       let () = uctx := Univ.ContextSet.empty in
 	status && nstatus

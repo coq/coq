@@ -33,3 +33,16 @@ Inductive finite_of_order T (D : T -> Type) (n : natural) :=
     (rank_injective : injective_in T natural D rank)
     (rank_onto :
        forall i, equivalent (less_than i n) (in_image T natural D rank i)).
+
+(* Constraints *)
+Universes i j.
+Inductive constraint1 : (Type -> Type) -> Type := mk_constraint1 : constraint1 (fun x : Type@{i} => (x : Type@{j})).
+Constraint i < j.
+Inductive constraint2 : Type@{j} := mkc2 (_ : Type@{i}).
+Universes i' j'.
+Constraint i' = j'.
+Inductive constraint3 : (Type -> Type) -> Type := mk_constraint3 : constraint3 (fun x : Type@{i'} => (x : Type@{j'})).
+Inductive constraint4 : (Type -> Type) -> Type
+  := mk_constraint4 : let U1 := Type in
+                      let U2 := Type in
+                      constraint4 (fun x : U1 => (x : U2)).

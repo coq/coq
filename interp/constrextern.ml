@@ -288,17 +288,8 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
 
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
-  (* pboutill: There are letins in pat which is incompatible with notations and
-     not explicit application. *)
-  match pat with
-    | { loc; v = PatCstr(cstrsp,args,na) }
-	when !Flags.in_debugger||Inductiveops.constructor_has_local_defs cstrsp ->
-      let c = extern_reference ?loc Id.Set.empty (ConstructRef cstrsp) in
-      let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-      CAst.make ?loc @@ CPatCstr (c, Some (add_patt_for_params (fst cstrsp) args), [])
-    | _ ->
   try
-    if !Flags.raw_print || !print_no_symbol then raise No_match;
+    if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
     match availability_of_prim_token p sc scopes with
       | None -> raise No_match
@@ -307,7 +298,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	insert_pat_alias ?loc (insert_pat_delimiters ?loc (CAst.make ?loc @@ CPatPrim p) key) na
   with No_match ->
     try
-      if !Flags.raw_print || !print_no_symbol then raise No_match;
+      if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
       extern_notation_pattern scopes vars pat
 	(uninterp_cases_pattern_notations pat)
     with No_match ->
@@ -321,21 +312,19 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
               if !Flags.raw_print then raise Exit;
 	      let projs = Recordops.lookup_projections (fst cstrsp) in
 	      let rec ip projs args acc =
-		match projs with
-		  | [] -> acc
-		  | None :: q -> ip q args acc
-		  | Some c :: q ->
-		    match args with
-		      | [] -> raise No_match
-
-
-
-
-
-	| { CAst.v = CPatAtom None } :: tail -> ip q tail acc
-		    (* we don't want to have 'x = _' in our patterns *)
-		      | head :: tail -> ip q tail
-		        ((extern_reference ?loc Id.Set.empty (ConstRef c), head) :: acc)
+		match projs, args with
+		  | [], [] -> acc
+		  | proj :: q, pat :: tail ->
+                     let acc =
+                       match proj, pat with
+		       | _, { CAst.v = CPatAtom None } ->
+		          (* we don't want to have 'x := _' in our patterns *)
+                          acc
+		       | Some c, _ ->
+		          ((extern_reference ?loc Id.Set.empty (ConstRef c), pat) :: acc)
+                       | _ -> raise No_match in
+                     ip q tail acc
+	          | _ -> assert false
 	      in
 	      CPatRecord(List.rev (ip projs args []))
 	    with

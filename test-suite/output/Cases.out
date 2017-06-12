@@ -2,18 +2,18 @@ t_rect =
 fun (P : t -> Type) (f : let x := t in forall x0 : x, P x0 -> P (k x0)) =>
 fix F (t : t) : P t :=
   match t as t0 return (P t0) with
-  | @k _ x0 => f x0 (F x0)
+  | k _ x0 => f x0 (F x0)
   end
      : forall P : t -> Type,
        (let x := t in forall x0 : x, P x0 -> P (k x0)) -> forall t : t, P t
 
 Argument scopes are [function_scope function_scope _]
      = fun d : TT => match d with
-                     | @CTT _ _ b => b
+                     | {| f3 := b |} => b
                      end
      : TT -> 0 = 0
      = fun d : TT => match d with
-                     | @CTT _ _ b => b
+                     | {| f3 := b |} => b
                      end
      : TT -> 0 = 0
 proj = 
@@ -72,3 +72,11 @@ e1 : texp t1
 e2 : texp t2
 The term "0" has type "nat" while it is expected to have type
  "typeDenote t0".
+fun '{{n, m, _}} => n + m
+     : J -> nat
+fun '{{n, m, p}} => n + m + p
+     : J -> nat
+fun '(D n m p q) => n + m + p + q
+     : J -> nat
+The command has indeed failed with message:
+The constructor D (in type J) expects 3 arguments.

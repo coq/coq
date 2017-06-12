@@ -708,6 +708,39 @@ let clever_rewrite p vpath t =
   refine_app gl t'
   end
 
+(** simpl_coeffs :
+    The subterm at location [path_init] in the current goal should
+    look like [(v1*c1 + (v2*c2 + ... (vn*cn + k)))], and we reduce
+    via "simpl" each [ci] and the final constant [k].
+    The path [path_k] gives the location of constant [k].
+    Earlier, the whole was a mere call to [focused_simpl],
+    leading to reduction inside the atoms [vi], which is bad,
+    for instance when the atom is an evaluable definition
+    (see #4132). *)
+
+let simpl_coeffs path_init path_k =
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = project gl in
+  let rec loop n t =
+    if Int.equal n 0 then pf_nf gl t
+    else
+      (* t should be of the form ((v * c) + ...) *)
+      match EConstr.kind sigma t with
+      | App(f,[|t1;t2|]) ->
+         (match EConstr.kind sigma t1 with
+          | App (g,[|v;c|]) ->
+             let c' = pf_nf gl c in
+             let t2' = loop (pred n) t2 in
+             mkApp (f,[|mkApp (g,[|v;c'|]);t2'|])
+          | _ -> assert false)
+      | _ -> assert false
+  in
+  let n = Pervasives.(-) (List.length path_k) (List.length path_init) in
+  let newc = context sigma (fun _ t -> loop n t) (List.rev path_init) (pf_concl gl)
+  in
+  convert_concl_no_check newc DEFAULTcast
+  end
+
 let rec shuffle p (t1,t2) =
   match t1,t2 with
     | Oplus(l1,r1), Oplus(l2,r2) ->
@@ -770,7 +803,7 @@ let shuffle_mult p_init k1 e1 k2 e2 =
             let tac' =
 	      clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
                 (Lazy.force coq_fast_Zred_factor5) in
-	    tac :: focused_simpl (P_APP 1::P_APP 2:: p) :: tac' ::
+	    tac :: focused_simpl (P_APP 2::P_APP 1:: p) :: tac' ::
 	    loop p (l1,l2)
           else tac :: loop (P_APP 2 :: p) (l1,l2)
 	else if v1 > v2 then
@@ -805,7 +838,7 @@ let shuffle_mult p_init k1 e1 k2 e2 =
                            [P_APP 2; P_APP 2]]
           (Lazy.force coq_fast_OMEGA12) ::
         loop (P_APP 2 :: p) ([],l2)
-    | [],[] -> [focused_simpl p_init]
+    | [],[] -> [simpl_coeffs p_init p]
   in
   loop p_init (e1,e2)
 
@@ -828,7 +861,7 @@ let shuffle_mult_right p_init e1 k2 e2 =
               clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
                 (Lazy.force coq_fast_Zred_factor5)
 	    in
-            tac :: focused_simpl (P_APP 1::P_APP 2:: p) :: tac' ::
+            tac :: focused_simpl (P_APP 2::P_APP 1:: p) :: tac' ::
             loop p (l1,l2)
           else tac :: loop (P_APP 2 :: p) (l1,l2)
 	else if v1 > v2 then
@@ -855,7 +888,7 @@ let shuffle_mult_right p_init e1 k2 e2 =
                           [P_APP 2; P_APP 2]]
           (Lazy.force coq_fast_OMEGA12) ::
         loop (P_APP 2 :: p) ([],l2)
-    | [],[] -> [focused_simpl p_init]
+    | [],[] -> [simpl_coeffs p_init p]
   in
   loop p_init (e1,e2)
 
@@ -896,7 +929,7 @@ let rec scalar p n = function
 
 let scalar_norm p_init =
   let rec loop p = function
-    | [] -> [focused_simpl p_init]
+    | [] -> [simpl_coeffs p_init p]
     | (_::l) ->
 	clever_rewrite p
           [[P_APP 1; P_APP 1; P_APP 1];[P_APP 1; P_APP 1; P_APP 2];
@@ -907,7 +940,7 @@ let scalar_norm p_init =
 
 let norm_add p_init =
   let rec loop p = function
-    | [] -> [focused_simpl p_init]
+    | [] -> [simpl_coeffs p_init p]
     | _:: l ->
 	clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
           (Lazy.force coq_fast_Zplus_assoc_reverse) ::
@@ -917,7 +950,7 @@ let norm_add p_init =
 
 let scalar_norm_add p_init =
   let rec loop p = function
-    | [] -> [focused_simpl p_init]
+    | [] -> [simpl_coeffs p_init p]
     | _ :: l ->
 	clever_rewrite p
           [[P_APP 1; P_APP 1; P_APP 1; P_APP 1];
