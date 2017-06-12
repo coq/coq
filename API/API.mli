@@ -2416,7 +2416,6 @@ sig
   | VernacDeclareModuleType of lident *
       module_binder list * module_ast_inl list * module_ast_inl list
   | VernacInclude of module_ast_inl list
-  | VernacSolveExistential of int * Constrexpr.constr_expr
   | VernacAddLoadPath of bool * string * Names.DirPath.t option
   | VernacRemoveLoadPath of string
   | VernacAddMLPath of bool * string

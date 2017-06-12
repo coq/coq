@@ -83,13 +83,6 @@ val solve : ?with_end_tac:unit Proofview.tactic ->
 
 val by : unit Proofview.tactic -> bool
 
-(** [instantiate_nth_evar_com n c] instantiate the [n]th undefined
-   existential variable of the current focused proof by [c] or raises a
-   UserError if no proof is focused or if there is no such [n]th
-   existential variable *)
-
-val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
-
 (** [build_by_tactic typ tac] returns a term of type [typ] by calling
     [tac]. The return boolean, if [false] indicates the use of an unsafe
     tactic. *)

@@ -42,8 +42,6 @@ GEXTEND Gram
       | IDENT "Abort" -> VernacAbort None
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
       | IDENT "Abort"; id = identref -> VernacAbort (Some id)
-      | IDENT "Existential"; n = natural; c = constr_body ->
-	  VernacSolveExistential (n,c)
       | IDENT "Admitted" -> VernacEndProof Admitted
       | IDENT "Qed" -> VernacEndProof (Proved (Opaque None,None))
       | IDENT "Qed"; IDENT "exporting"; l = LIST0 identref SEP "," ->
