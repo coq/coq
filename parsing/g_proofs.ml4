@@ -72,7 +72,6 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Intro" -> VernacShow (ShowIntros false)
       | IDENT "Show"; IDENT "Intros" -> VernacShow (ShowIntros true)
       | IDENT "Show"; IDENT "Match"; id = reference -> VernacShow (ShowMatch id)
-      | IDENT "Show"; IDENT "Thesis" -> VernacShow ShowThesis
       | IDENT "Guarded" -> VernacCheckGuard
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;

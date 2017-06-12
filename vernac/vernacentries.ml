@@ -61,8 +61,6 @@ let show_proof () =
   let pprf = Proof.partial_proof p in
   Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_econstr pprf)
 
-let show_thesis () = CErrors.anomaly (Pp.str "Show Thesis: TODO.")
-
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = get_pftreestate () in
@@ -1843,8 +1841,6 @@ let vernac_show = let open Feedback in function
       msg_notice (pr_sequence pr_id (Pfedit.get_all_proof_names()))
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
-  | ShowThesis -> show_thesis ()
-
 
 let vernac_check_guard () =
   let pts = get_pftreestate () in

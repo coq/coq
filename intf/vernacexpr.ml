@@ -103,7 +103,6 @@ type showable =
   | ShowProofNames
   | ShowIntros of bool
   | ShowMatch of reference
-  | ShowThesis
 
 type comment =
   | CommentConstr of constr_expr

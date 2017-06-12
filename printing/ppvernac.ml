@@ -568,7 +568,6 @@ open Decl_kinds
           | ShowProofNames -> keyword "Show Conjectures"
           | ShowIntros b -> keyword "Show " ++ (if b then keyword "Intros" else keyword "Intro")
           | ShowMatch id -> keyword "Show Match " ++ pr_reference id
-          | ShowThesis -> keyword "Show Thesis"
         in
         return (pr_showable s)
       | VernacCheckGuard ->
