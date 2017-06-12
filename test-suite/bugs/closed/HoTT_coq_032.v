@@ -1,4 +1,3 @@
-(* -*- mode: coq; coq-prog-args: ("-xml") -*- *)
 Set Implicit Arguments.
 Generalizable All Variables.
 Set Asymmetric Patterns.

@@ -46,9 +46,6 @@ NO_RECALC_DEPS ?=
 # Non-empty runs the checker on all produced .vo files:
 VALIDATE ?=
 
-# Is "-xml" when building XML library:
-COQ_XML ?=
-
 # Output file names for timed builds
 TIME_OF_BUILD_FILE               ?= time-of-build.log
 TIME_OF_BUILD_BEFORE_FILE        ?= time-of-build-before.log
@@ -189,7 +186,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 # the output format of the unix command time. For instance:
 #   TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
-COQOPTS=$(COQ_XML) $(NATIVECOMPUTE)
+COQOPTS=$(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
 LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
@@ -273,9 +270,6 @@ $(error This Makefile needs GNU Make 3.81 or later (that is a version that suppo
 endif
 
 VO_TOOLS_DEP := $(COQTOPBEST)
-ifdef COQ_XML
- VO_TOOLS_DEP += $(COQDOC)
-endif
 ifdef VALIDATE
  VO_TOOLS_DEP += $(CHICKEN)
 endif
@@ -707,9 +701,9 @@ TIMING_EXTRA =
 endif
 
 theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP)
-	$(SHOW)'COQC $(COQ_XML) -noinit $<'
+	$(SHOW)'COQC -noinit $<'
 	$(HIDE)rm -f theories/Init/$*.glob
-	$(HIDE)$(BOOTCOQC) $< $(COQ_XML) -noinit -R theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
+	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
 
 # MExtraction.v generates the ml core file of the micromega tactic.
 # We check that this generated code is still in sync with the version
