@@ -434,6 +434,24 @@ This command displays the current goals.
 \item \errindex{No focused proof}
 \end{ErrMsgs}
 
+\item {\tt Show {\ident}.}\\
+  Displays the named goal {\ident}.
+  This is useful in particular to display a shelved goal but only works
+  if the corresponding existential variable has been named by the user
+  (see~\ref{ExistentialVariables}) as in the following example.
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Goal exists n, n = 0.
+  eexists ?[n].
+\end{coq_example*}
+\begin{coq_example}
+  Show n.
+\end{coq_example}
+
 \item {\tt Show Script.}\comindex{Show Script}\\
   Displays the whole list of tactics applied from the beginning
   of the current proof. 
