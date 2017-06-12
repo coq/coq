@@ -1990,6 +1990,11 @@ Check (fun x y => _) 0 1.
 Unset Printing Existential Instances.
 \end{coq_eval}
 
+Existential variables can be named by the user upon creation using
+the syntax {\tt ?[\ident]}. This is useful when the existential
+variable needs to be explicitly handled later in the script (e.g.
+with a named-goal selector, see~\ref{ltac:selector}).
+
 \subsection{Explicit displaying of existential instances for pretty-printing
 \label{SetPrintingExistentialInstances}
 \optindex{Printing Existential Instances}}
