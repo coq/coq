@@ -1844,10 +1844,6 @@ let vernac_show = let open Feedback in function
       | GoalUid id -> pr_goal_by_uid id
     in
     msg_notice info
-  | ShowGoalImplicitly None ->
-      Constrextern.with_implicits msg_notice (pr_open_subgoals ())
-  | ShowGoalImplicitly (Some n) ->
-      Constrextern.with_implicits msg_notice (pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
   | ShowExistentials -> show_top_evars ()

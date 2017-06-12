@@ -561,7 +561,6 @@ open Decl_kinds
           | GoalUid n -> spc () ++ str n in
         let pr_showable = function
           | ShowGoal n -> keyword "Show" ++ pr_goal_reference n
-          | ShowGoalImplicitly n -> keyword "Show Implicit Arguments" ++ pr_opt int n
           | ShowProof -> keyword "Show Proof"
           | ShowNode -> keyword "Show Node"
           | ShowScript -> keyword "Show Script"

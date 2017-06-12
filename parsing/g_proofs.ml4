@@ -64,8 +64,6 @@ GEXTEND Gram
       | IDENT "Show" -> VernacShow (ShowGoal OpenSubgoals)
       | IDENT "Show"; n = natural -> VernacShow (ShowGoal (NthGoal n))
       | IDENT "Show"; id = ident -> VernacShow (ShowGoal (GoalId id))
-      | IDENT "Show"; IDENT "Implicit"; IDENT "Arguments"; n = OPT natural ->
-	  VernacShow (ShowGoalImplicitly n)
       | IDENT "Show"; IDENT "Node" -> VernacShow ShowNode
       | IDENT "Show"; IDENT "Script" -> VernacShow ShowScript
       | IDENT "Show"; IDENT "Existentials" -> VernacShow ShowExistentials

@@ -96,7 +96,6 @@ type locatable =
 
 type showable =
   | ShowGoal of goal_reference
-  | ShowGoalImplicitly of int option
   | ShowProof
   | ShowNode
   | ShowScript
