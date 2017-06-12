@@ -587,8 +587,6 @@ let gallina_print_library_entry with_values ent =
 	Some (str " >>>>>>> Module " ++ pr_name oname)
     | (oname,Lib.ClosedModule _) ->
         Some (str " >>>>>>> Closed Module " ++ pr_name oname)
-    | (_,Lib.FrozenState _) ->
-	None
 
 let gallina_print_context with_values =
   let rec prec n = function

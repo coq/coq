@@ -589,7 +589,6 @@ let start_module interp_modast export id args res fs =
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
-  Lib.add_frozen_state ();
   if_xml (Hook.get f_xml_start_module) mp;
   mp
 
@@ -629,7 +628,6 @@ let end_module () =
   assert (eq_full_path (fst newoname) (fst oldoname));
   assert (ModPath.equal (mp_of_kn (snd newoname)) mp);
 
-  Lib.add_frozen_state () (* to prevent recaching *);
   if_xml (Hook.get f_xml_end_module) mp;
   mp
 
@@ -701,7 +699,6 @@ let start_modtype interp_modast id args mtys fs =
   openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
-  Lib.add_frozen_state ();
   if_xml (Hook.get f_xml_start_module_type) mp;
   mp
 
@@ -719,7 +716,6 @@ let end_modtype () =
   assert (eq_full_path (fst oname) (fst oldoname));
   assert (ModPath.equal (mp_of_kn (snd oname)) mp);
 
-  Lib.add_frozen_state ()(* to prevent recaching *);
   if_xml (Hook.get f_xml_end_module_type) mp;
   mp
 
@@ -894,8 +890,7 @@ let get_library_native_symbols dir =
 let start_library dir =
   let mp = Global.start_library dir in
   openmod_info := default_module_info;
-  Lib.start_compilation dir mp;
-  Lib.add_frozen_state ()
+  Lib.start_compilation dir mp
 
 let end_library_hook = ref ignore
 let append_end_library_hook f =

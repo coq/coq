@@ -23,7 +23,6 @@ type node =
   | ClosedModule  of library_segment
   | OpenedSection of Libnames.object_prefix * Summary.frozen
   | ClosedSection of library_segment
-  | FrozenState of Summary.frozen
 
 and library_segment = (Libnames.object_name * node) list
 
@@ -60,8 +59,6 @@ val pull_to_head : Libnames.object_name -> unit
 (** this operation adds all objects with the same name and calls [load_object]
    for each of them *)
 val add_leaves : Names.Id.t -> Libobject.obj list -> Libnames.object_name
-
-val add_frozen_state : unit -> unit
 
 (** {6 ... } *)
 
@@ -122,8 +119,6 @@ val end_modtype :
   unit ->
   Libnames.object_name * Libnames.object_prefix *
     Summary.frozen * library_segment
-
-(** [Lib.add_frozen_state] must be called after each of the above functions *)
 
 (** {6 Compilation units } *)
 

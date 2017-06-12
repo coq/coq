@@ -639,8 +639,7 @@ let vernac_constraint loc poly l =
 (* Modules            *)
 
 let vernac_import export refl =
-  Library.import_module export (List.map qualid_of_reference refl);
-  Lib.add_frozen_state ()
+  Library.import_module export (List.map qualid_of_reference refl)
 
 let vernac_declare_module export (loc, id) binders_ast mty_ast =
   (* We check the state of the system (in section, in module type)
