@@ -1016,7 +1016,7 @@ let resolution unsafe env (reified_concl,reified_hyps) systems_list =
 
   Tactics.generalize
     (l_generalize_arg @ List.map EConstr.mkVar useful_hypnames) >>
-  Tactics.change_concl (EConstr.of_constr reified) >>
+  Tactics.convert_concl_no_check (EConstr.of_constr reified) Term.DEFAULTcast >>
   Tactics.apply (EConstr.of_constr (app coq_do_omega [|decompose_tactic|])) >>
   show_goal >>
   (if unsafe then
