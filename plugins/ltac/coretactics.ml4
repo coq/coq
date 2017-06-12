@@ -10,12 +10,12 @@
 
 open API
 open Util
-open Names
 open Locus
 open Misctypes
 open Genredexpr
 open Stdarg
 open Extraargs
+open Names
 
 DECLARE PLUGIN "coretactics"
 
@@ -307,7 +307,7 @@ let initial_atomic () =
   let nocl = {onhyps=Some[];concl_occs=AllOccurrences} in
   let iter (s, t) =
     let body = TacAtom (Loc.tag t) in
-    Tacenv.register_ltac false false (Id.of_string s) body
+    Tacenv.register_ltac false false (Names.Id.of_string s) body
   in
   let () = List.iter iter
       [ "red", TacReduce(Red false,nocl);
@@ -317,7 +317,7 @@ let initial_atomic () =
         "intros", TacIntroPattern (false,[]);
       ]
   in
-  let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in
+  let iter (s, t) = Tacenv.register_ltac false false (Names.Id.of_string s) t in
   List.iter iter
       [ "idtac",TacId [];
         "fail", TacFail(TacLocal,ArgArg 0,[]);

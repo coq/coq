@@ -7,6 +7,7 @@
  *************************************************************************)
 
 open API
+open Names
 
 let module_refl_name = "ReflOmegaCore"
 let module_refl_path = ["Coq"; "romega"; module_refl_name]
@@ -39,7 +40,7 @@ let destructurate t =
   | Term.Ind (isp,_), args ->
      Kapp (string_of_global (Globnames.IndRef isp), args)
   | Term.Var id, [] -> Kvar(Names.Id.to_string id)
-  | Term.Prod (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
+  | Term.Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
   | _ -> Kufo
 
 exception DestConstApp
@@ -244,7 +245,7 @@ let minus = lazy (z_constant "Z.sub")
 let recognize_pos t =
   let rec loop t =
     let f,l = dest_const_apply t in
-    match Names.Id.to_string f,l with
+    match Id.to_string f,l with
     | "xI",[t] -> Bigint.add Bigint.one (Bigint.mult Bigint.two (loop t))
     | "xO",[t] -> Bigint.mult Bigint.two (loop t)
     | "xH",[] -> Bigint.one
@@ -255,7 +256,7 @@ let recognize_pos t =
 let recognize_Z t =
   try
     let f,l = dest_const_apply t in
-    match Names.Id.to_string f,l with
+    match Id.to_string f,l with
     | "Zpos",[t] -> recognize_pos t
     | "Zneg",[t] -> Option.map Bigint.neg (recognize_pos t)
     | "Z0",[] -> Some Bigint.zero

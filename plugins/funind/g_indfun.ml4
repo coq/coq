@@ -166,7 +166,7 @@ VERNAC COMMAND EXTEND Function
 END
 
 let pr_fun_scheme_arg (princ_name,fun_name,s) =
-  Nameops.pr_id princ_name ++ str " :=" ++ spc() ++ str "Induction for " ++
+  Names.Id.print princ_name ++ str " :=" ++ spc() ++ str "Induction for " ++
   Libnames.pr_reference fun_name ++ spc() ++ str "Sort " ++
   Ppconstr.pr_glob_sort s
 

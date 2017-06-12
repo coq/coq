@@ -335,11 +335,11 @@ type 'a extra_genarg_printer =
     | ArgVar (loc,id) -> pr_with_comments ?loc (pr_id id)
 
   let pr_ltac_constant kn =
-    if !Flags.in_debugger then pr_kn kn
+    if !Flags.in_debugger then KerName.print kn
     else try
            pr_qualid (Nametab.shortest_qualid_of_tactic kn)
       with Not_found -> (* local tactic not accessible anymore *)
-        str "<" ++ pr_kn kn ++ str ">"
+        str "<" ++ KerName.print kn ++ str ">"
 
   let pr_evaluable_reference_env env = function
     | EvalVarRef id -> pr_id id
@@ -482,7 +482,7 @@ type 'a extra_genarg_printer =
     | SelectNth i -> int i ++ str ":"
     | SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
         str "]" ++ str ":"
-    | SelectId id -> str "[" ++ Nameops.pr_id id ++ str "]" ++ str ":"
+    | SelectId id -> str "[" ++ Id.print id ++ str "]" ++ str ":"
     | SelectAll -> str "all" ++ str ":"
 
   let pr_lazy = function

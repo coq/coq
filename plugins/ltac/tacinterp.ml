@@ -92,7 +92,7 @@ type value = Val.t
 (** Abstract application, to print ltac functions *)
 type appl =
   | UnnamedAppl (** For generic applications: nothing is printed *)
-  | GlbAppl of (Names.kernel_name * Val.t list) list
+  | GlbAppl of (Names.KerName.t * Val.t list) list
        (** For calls to global constants, some may alias other. *)
 let push_appl appl args =
   match appl with
@@ -257,7 +257,7 @@ let pr_closure env ist body =
   let pr_sep () = fnl () in
   let pr_iarg (id, arg) =
     let arg = pr_argument_type arg in
-    hov 0 (pr_id id ++ spc () ++ str ":" ++ spc () ++ arg)
+    hov 0 (Id.print id ++ spc () ++ str ":" ++ spc () ++ arg)
   in
   let pp_iargs = v 0 (prlist_with_sep pr_sep pr_iarg (Id.Map.bindings ist)) in
   pp_body ++ fnl() ++ str "in environment " ++ fnl() ++ pp_iargs
@@ -314,7 +314,7 @@ let append_trace trace v =
 let coerce_to_tactic loc id v =
   let v = Value.normalize v in
   let fail () = user_err ?loc 
-    (str "Variable " ++ pr_id id ++ str " should be bound to a tactic.")
+    (str "Variable " ++ Id.print id ++ str " should be bound to a tactic.")
   in
   let v = Value.normalize v in
   if has_type v (topwit wit_tacvalue) then
@@ -369,7 +369,7 @@ let debugging_exception_step ist signal_anomaly e pp =
     pp() ++ spc() ++ str "raised the exception" ++ fnl() ++ explain_exc e)
 
 let error_ltac_variable ?loc id env v s =
-   user_err ?loc  (str "Ltac variable " ++ pr_id id ++
+   user_err ?loc  (str "Ltac variable " ++ Id.print id ++
    strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
    strbrk "which cannot be coerced to " ++ str s ++ str".")
 
@@ -403,7 +403,7 @@ let interp_int ist locid =
   try try_interp_ltac_var coerce_to_int ist None locid
   with Not_found ->
     user_err ?loc:(fst locid) ~hdr:"interp_int"
-     (str "Unbound variable "  ++ pr_id (snd locid) ++ str".")
+     (str "Unbound variable "  ++ Id.print (snd locid) ++ str".")
 
 let interp_int_or_var ist = function
   | ArgVar locid -> interp_int ist locid
@@ -782,7 +782,7 @@ let interp_may_eval f ist env sigma = function
       with
 	| Not_found ->
 	    user_err ?loc ~hdr:"interp_may_eval"
-	    (str "Unbound context identifier" ++ pr_id s ++ str"."))
+	    (str "Unbound context identifier" ++ Id.print s ++ str"."))
   | ConstrTypeOf c ->
       let (sigma,c_interp) = f ist env sigma c in
       let (sigma, t) = Typing.type_of ~refresh:true env sigma c_interp in
@@ -858,7 +858,7 @@ let rec message_of_value v =
     end
   else if has_type v (topwit wit_var) then
     let id = out_gen (topwit wit_var) v in
-    Ftactic.enter begin fun gl -> Ftactic.return (pr_id id) end
+    Ftactic.enter begin fun gl -> Ftactic.return (Id.print id) end
   else match Value.to_list v with
   | Some l ->
     Ftactic.List.map message_of_value l >>= fun l ->
@@ -873,7 +873,7 @@ let interp_message_token ist = function
   | MsgIdent (loc,id) ->
     let v = try Some (Id.Map.find id ist.lfun) with Not_found -> None in
     match v with
-    | None -> Ftactic.lift (Tacticals.New.tclZEROMSG (pr_id id ++ str" not found."))
+    | None -> Ftactic.lift (Tacticals.New.tclZEROMSG (Id.print id ++ str" not found."))
     | Some v -> message_of_value v
 
 let interp_message ist l =
@@ -1010,7 +1010,7 @@ let interp_destruction_arg ist gl arg =
   | keep,ElimOnAnonHyp n as x -> x
   | keep,ElimOnIdent (loc,id) ->
       let error () = user_err ?loc 
-       (strbrk "Cannot coerce " ++ pr_id id ++
+       (strbrk "Cannot coerce " ++ Id.print id ++
         strbrk " neither to a quantified hypothesis nor to a term.")
       in
       let try_cast_id id' =
@@ -1021,7 +1021,7 @@ let interp_destruction_arg ist gl arg =
           try (sigma, (constr_of_id env id', NoBindings))
           with Not_found ->
             user_err ?loc  ~hdr:"interp_destruction_arg" (
-            pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared nor a quantified hypothesis.")
+            Id.print id ++ strbrk " binds to " ++ Id.print id' ++ strbrk " which is neither a declared nor a quantified hypothesis.")
           end)
       in
       try
@@ -1088,7 +1088,7 @@ let read_pattern lfun ist env sigma = function
 let cons_and_check_name id l =
   if Id.List.mem id l then
     user_err ~hdr:"read_match_goal_hyps" (
-      str "Hypothesis pattern-matching variable " ++ pr_id id ++
+      str "Hypothesis pattern-matching variable " ++ Id.print id ++
       str " used twice in the same pattern.")
   else id::l
 

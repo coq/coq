@@ -400,7 +400,7 @@ type pattern_class =
   | KpatLam
   | KpatRigid
   | KpatFlex
-  | KpatProj of constant
+  | KpatProj of Constant.t
 
 type tpattern = {
   up_k : pattern_class;
@@ -421,7 +421,7 @@ let isRigid c = match kind_of_term c with
   | Prod _ | Sort _ | Lambda _ | Case _ | Fix _ | CoFix _ -> true
   | _ -> false
 
-let hole_var = mkVar (id_of_string "_")
+let hole_var = mkVar (Id.of_string "_")
 let pr_constr_pat c0 =
   let rec wipe_evar c =
     if isEvar c then hole_var else map_constr wipe_evar c in
@@ -448,7 +448,7 @@ let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
       Context.Named.fold_inside abs_dc ~init:([], (put evi.evar_concl)) dc in
     let m = Evarutil.new_meta () in
     ise := meta_declare m t !ise;
-    sigma := Evd.define k (applist (mkMeta m, a)) !sigma;
+    sigma := Evd.define k (applistc (mkMeta m) a) !sigma;
     put (existential_value !sigma ex)
     end
   | _ -> map_constr put c in
@@ -465,7 +465,7 @@ let mk_tpattern ?p_origin ?(hack=false) env sigma0 (ise, t) ok dir p =
     | Const (p,_) ->
       let np = proj_nparams p in
       if np = 0 || np > List.length a then KpatConst, f, a else
-      let a1, a2 = List.chop np a in KpatProj p, applist(f, a1), a2
+      let a1, a2 = List.chop np a in KpatProj p, (applistc f a1), a2
     | Proj (p,arg) -> KpatProj (Projection.constant p), f, a
     | Var _ | Ind _ | Construct _ -> KpatFixed, f, a
     | Evar (k, _) ->
@@ -571,7 +571,7 @@ let filter_upat_FO i0 f n u fpats =
   | KpatFlex -> i0 := n; true in
   if ok then begin if !i0 < np then i0 := np; (u, np) :: fpats end else fpats
 
-exception FoundUnif of (evar_map * evar_universe_context * tpattern)
+exception FoundUnif of (evar_map * UState.t * tpattern)
 (* Note: we don't update env as we descend into the term, as the primitive *)
 (* unification procedure always rejects subterms with bound variables.     *)
 
@@ -714,7 +714,7 @@ type find_P =
   k:subst ->
      constr
 type conclude = unit ->
-  constr * ssrdir * (Evd.evar_map * Evd.evar_universe_context * constr)
+  constr * ssrdir * (Evd.evar_map * UState.t * constr)
 
 (* upats_origin makes a better error message only            *)
 let mk_tpattern_matcher ?(all_instances=false)
@@ -905,7 +905,7 @@ let glob_cpattern gs p =
   pp(lazy(str"globbing pattern: " ++ pr_term p));
   let glob x = snd (glob_ssrterm gs (mk_lterm x)) in
   let encode k s l =
-    let name = Name (id_of_string ("_ssrpat_" ^ s)) in
+    let name = Name (Id.of_string ("_ssrpat_" ^ s)) in
     k, (mkRCast mkRHole (mkRLambda name mkRHole (mkRApp mkRHole l)), None) in
   let bind_in t1 t2 =
     let mkCHole = mkCHole ~loc:None in let n = Name (destCVar t1) in
@@ -1131,9 +1131,9 @@ let interp_pattern ?wit_ssrpatternarg ist gl red redty =
     sigma in
   let red = let rec decode_red (ist,red) = let open CAst in match red with
     | T(k,({ v = GCast ({ v = GHole _ },CastConv({ v = GLambda (Name id,_,_,t)}))},None))
-        when let id = string_of_id id in let len = String.length id in
+        when let id = Id.to_string id in let len = String.length id in
         (len > 8 && String.sub id 0 8 = "_ssrpat_") ->
-        let id = string_of_id id in let len = String.length id in
+        let id = Id.to_string id in let len = String.length id in
         (match String.sub id 8 (len - 8), t with
         | "In", { v = GApp( _, [t]) } -> decodeG t xInT (fun x -> T x)
         | "In", { v = GApp( _, [e; t]) } -> decodeG t (eInXInT (mkG e)) (bad_enc id)
@@ -1377,7 +1377,7 @@ let ssrpatterntac _ist (arg_ist,arg) gl =
   let t = EConstr.of_constr t in
   let concl_x = EConstr.of_constr concl_x in
   let gl, tty = pf_type_of gl t in
-  let concl = EConstr.mkLetIn (Name (id_of_string "selected"), t, tty, concl_x) in
+  let concl = EConstr.mkLetIn (Name (Id.of_string "selected"), t, tty, concl_x) in
   Proofview.V82.of_tactic (convert_concl concl DEFAULTcast) gl
 
 (* Register "ssrpattern" tactic *)

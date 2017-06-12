@@ -579,8 +579,8 @@ let ids_of_pat =
   ids_of_pat Id.Set.empty
 
 let id_of_name = function
-  | Names.Anonymous -> Id.of_string "x"
-  | Names.Name x -> x
+  | Anonymous -> Id.of_string "x"
+  | Name x -> x
 
 (* TODO: finish Rec caes *)
 let ids_of_glob_constr c =

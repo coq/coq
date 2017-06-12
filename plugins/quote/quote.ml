@@ -169,8 +169,8 @@ exchange ?1 and ?2 in the example above)
 
 module ConstrSet = Set.Make(
   struct
-    type t = Constr.constr
-    let compare = constr_ord
+    type t = Term.constr
+    let compare = Term.compare
   end)
 
 type inversion_scheme = {
@@ -387,7 +387,7 @@ let rec sort_subterm gl l =
     | h::t -> insert h (sort_subterm gl t)
 
 module Constrhash = Hashtbl.Make
-  (struct type t = Constr.constr
+  (struct type t = Term.constr
 	  let equal = Term.eq_constr
 	  let hash = Term.hash_constr
    end)

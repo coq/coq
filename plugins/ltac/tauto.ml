@@ -197,7 +197,7 @@ let flatten_contravariant_disj _ ist =
 
 let make_unfold name =
   let dir = DirPath.make (List.map Id.of_string ["Logic"; "Init"; "Coq"]) in
-  let const = Constant.make2 (MPfile dir) (Label.make name) in
+  let const = Constant.make2 (ModPath.MPfile dir) (Label.make name) in
   (Locus.AllOccurrences, ArgArg (EvalConstRef const, None))
 
 let u_iff = make_unfold "iff"

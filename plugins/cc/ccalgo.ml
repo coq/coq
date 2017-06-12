@@ -136,7 +136,7 @@ let family_eq f1 f2 = match f1, f2 with
 
 type term=
     Symb of constr
-  | Product of sorts * sorts
+  | Product of Sorts.t * Sorts.t
   | Eps of Id.t
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
@@ -270,7 +270,7 @@ type state =
      mutable rew_depth:int;
      mutable changed:bool;
      by_type: Int.Set.t Typehash.t;
-     mutable gls:Proof_type.goal Tacmach.sigma}
+     mutable gls:Proof_type.goal Evd.sigma}
 
 let dummy_node =
   {
@@ -457,13 +457,13 @@ let rec canonize_name sigma c =
   let func c = canonize_name sigma (EConstr.of_constr c) in
     match kind_of_term c with
       | Const (kn,u) ->
-	  let canon_const = constant_of_kn (canonical_con kn) in 
+	  let canon_const = Constant.make1 (Constant.canonical kn) in 
 	    (mkConstU (canon_const,u))
       | Ind ((kn,i),u) ->
-	  let canon_mind = mind_of_kn (canonical_mind kn) in
+	  let canon_mind = MutInd.make1 (MutInd.canonical kn) in
 	    (mkIndU ((canon_mind,i),u))
       | Construct (((kn,i),j),u) ->
-	  let canon_mind = mind_of_kn (canonical_mind kn) in
+	  let canon_mind = MutInd.make1 (MutInd.canonical kn) in
 	    mkConstructU (((canon_mind,i),j),u)
       | Prod (na,t,ct) ->
 	  mkProd (na,func t, func ct)
@@ -475,7 +475,7 @@ let rec canonize_name sigma c =
 	  mkApp (func ct,Array.smartmap func l)
       | Proj(p,c) ->
 	let p' = Projection.map (fun kn ->
-          constant_of_kn (canonical_con kn)) p in 
+          Constant.make1 (Constant.canonical kn)) p in 
 	  (mkProj (p', func c))
       | _ -> c
 

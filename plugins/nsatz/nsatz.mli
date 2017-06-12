@@ -7,4 +7,4 @@
 (************************************************************************)
 
 open API
-val nsatz_compute : Constr.t -> unit Proofview.tactic
+val nsatz_compute : Term.constr -> unit Proofview.tactic

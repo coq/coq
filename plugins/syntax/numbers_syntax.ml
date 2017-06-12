@@ -25,9 +25,9 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 
 let make_mind mp id = Names.MutInd.make2 mp (Label.make id)
-let make_mind_mpfile dir id = make_mind (MPfile (make_dir dir)) id
+let make_mind_mpfile dir id = make_mind (ModPath.MPfile (make_dir dir)) id
 let make_mind_mpdot dir modname id =
-  let mp = MPdot (MPfile (make_dir dir), Label.make modname)
+  let mp = ModPath.MPdot (ModPath.MPfile (make_dir dir), Label.make modname)
   in make_mind mp id
 
 

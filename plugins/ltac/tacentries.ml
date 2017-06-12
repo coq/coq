@@ -419,7 +419,7 @@ let is_defined_tac kn =
 
 let warn_unusable_identifier =
   CWarnings.create ~name:"unusable-identifier" ~category:"parsing"
-      (fun id -> strbrk "The Ltac name" ++ spc () ++ pr_id id ++ spc () ++
+      (fun id -> strbrk "The Ltac name" ++ spc () ++ Id.print id ++ spc () ++
         strbrk "may be unusable because of a conflict with a notation.")
 
 let register_ltac local tacl =
@@ -427,7 +427,7 @@ let register_ltac local tacl =
     match tactic_body with
     | Tacexpr.TacticDefinition ((loc,id), body) ->
         let kn = Lib.make_kn id in
-        let id_pp = pr_id id in
+        let id_pp = Id.print id in
         let () = if is_defined_tac kn then
           CErrors.user_err ?loc 
             (str "There is already an Ltac named " ++ id_pp ++ str".")
@@ -475,7 +475,7 @@ let register_ltac local tacl =
   let iter (def, tac) = match def with
   | NewTac id ->
     Tacenv.register_ltac false local id tac;
-    Flags.if_verbose Feedback.msg_info (Nameops.pr_id id ++ str " is defined")
+    Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
   | UpdateTac kn ->
     Tacenv.redefine_ltac local kn tac;
     let name = Nametab.shortest_qualid_of_tactic kn in

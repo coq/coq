@@ -23,7 +23,7 @@ val array_get_start : 'a array -> 'a array
 val id_of_name : Name.t -> Id.t
 
 val locate_ind : Libnames.reference -> inductive
-val locate_constant : Libnames.reference -> constant
+val locate_constant : Libnames.reference -> Constant.t
 val locate_with_msg :
   Pp.std_ppcmds -> (Libnames.reference -> 'a) ->
   Libnames.reference -> 'a
@@ -70,21 +70,21 @@ val with_full_print : ('a -> 'b) -> 'a -> 'b
 
 type function_info =
     {
-      function_constant : constant;
+      function_constant : Constant.t;
       graph_ind : inductive;
-      equation_lemma : constant option;
-      correctness_lemma : constant option;
-      completeness_lemma : constant option;
-      rect_lemma : constant option;
-      rec_lemma : constant option;
-      prop_lemma : constant option;
+      equation_lemma : Constant.t option;
+      correctness_lemma : Constant.t option;
+      completeness_lemma : Constant.t option;
+      rect_lemma : Constant.t option;
+      rec_lemma : Constant.t option;
+      prop_lemma : Constant.t option;
       is_general : bool;
     }
 
-val find_Function_infos : constant -> function_info
+val find_Function_infos : Constant.t -> function_info
 val find_Function_of_graph : inductive -> function_info
 (* WARNING: To be used just after the graph definition !!! *)
-val add_Function : bool -> constant -> unit
+val add_Function : bool -> Constant.t -> unit
 
 val update_Function : function_info -> unit
 
@@ -123,5 +123,5 @@ val compose_prod : (Names.Name.t * EConstr.t) list -> EConstr.t -> EConstr.t
                                                         
 type tcc_lemma_value = 
   | Undefined
-  | Value of Constr.constr
+  | Value of Term.constr
   | Not_needed

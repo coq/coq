@@ -50,20 +50,20 @@ type phase = Pre | Impl | Intf
 val set_phase : phase -> unit
 val get_phase : unit -> phase
 
-val opened_libraries : unit -> module_path list
+val opened_libraries : unit -> ModPath.t list
 
 type kind = Term | Type | Cons | Mod
 
 val pp_global : kind -> global_reference -> string
-val pp_module : module_path -> string
+val pp_module : ModPath.t -> string
 
-val top_visible_mp : unit -> module_path
+val top_visible_mp : unit -> ModPath.t
 (* In [push_visible], the [module_path list] corresponds to
    module parameters, the innermost one coming first in the list *)
-val push_visible : module_path -> module_path list -> unit
+val push_visible : ModPath.t -> ModPath.t list -> unit
 val pop_visible : unit -> unit
 
-val get_duplicate : module_path -> Label.t -> string option
+val get_duplicate : ModPath.t -> Label.t -> string option
 
 type reset_kind = AllButExternal | Everything
 
@@ -73,7 +73,7 @@ val set_keywords : Id.Set.t -> unit
 
 (** For instance: [mk_ind "Coq.Init.Datatypes" "nat"] *)
 
-val mk_ind : string -> string -> mutual_inductive
+val mk_ind : string -> string -> MutInd.t
 
 (** Special hack for constants of type Ascii.ascii : if an
     [Extract Inductive ascii => char] has been declared, then

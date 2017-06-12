@@ -22,22 +22,22 @@ val safe_basename_of_global : global_reference -> Id.t
 
 val warning_axioms : unit -> unit
 val warning_opaques : bool -> unit
-val warning_ambiguous_name : ?loc:Loc.t -> qualid * module_path * global_reference -> unit
+val warning_ambiguous_name : ?loc:Loc.t -> qualid * ModPath.t * global_reference -> unit
 val warning_id : string -> unit
 val error_axiom_scheme : global_reference -> int -> 'a
 val error_constant : global_reference -> 'a
 val error_inductive : global_reference -> 'a
 val error_nb_cons : unit -> 'a
-val error_module_clash : module_path -> module_path -> 'a
-val error_no_module_expr : module_path -> 'a
+val error_module_clash : ModPath.t -> ModPath.t -> 'a
+val error_no_module_expr : ModPath.t -> 'a
 val error_singleton_become_prop : Id.t -> global_reference option -> 'a
 val error_unknown_module : qualid -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
-val error_MPfile_as_mod : module_path -> bool -> 'a
+val error_MPfile_as_mod : ModPath.t -> bool -> 'a
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
-val check_loaded_modfile : module_path -> unit
+val check_loaded_modfile : ModPath.t -> unit
 val msg_of_implicit : kill_reason -> string
 val err_or_warn_remaining_implicit : kill_reason -> unit
 
@@ -45,22 +45,22 @@ val info_file : string -> unit
 
 (*s utilities about [module_path] and [kernel_names] and [global_reference] *)
 
-val occur_kn_in_ref : mutual_inductive -> global_reference -> bool
-val repr_of_r : global_reference -> module_path * DirPath.t * Label.t
-val modpath_of_r : global_reference -> module_path
+val occur_kn_in_ref : MutInd.t -> global_reference -> bool
+val repr_of_r : global_reference -> ModPath.t * DirPath.t * Label.t
+val modpath_of_r : global_reference -> ModPath.t
 val label_of_r : global_reference -> Label.t
-val base_mp : module_path -> module_path
-val is_modfile : module_path -> bool
-val string_of_modfile : module_path -> string
-val file_of_modfile : module_path -> string
-val is_toplevel : module_path -> bool
-val at_toplevel : module_path -> bool
-val mp_length : module_path -> int
-val prefixes_mp : module_path -> MPset.t
+val base_mp : ModPath.t -> ModPath.t
+val is_modfile : ModPath.t -> bool
+val string_of_modfile : ModPath.t -> string
+val file_of_modfile : ModPath.t -> string
+val is_toplevel : ModPath.t -> bool
+val at_toplevel : ModPath.t -> bool
+val mp_length : ModPath.t -> int
+val prefixes_mp : ModPath.t -> MPset.t
 val common_prefix_from_list :
-  module_path -> module_path list -> module_path option
-val get_nth_label_mp : int -> module_path -> Label.t
-val labels_of_ref : global_reference -> module_path * Label.t list
+  ModPath.t -> ModPath.t list -> ModPath.t option
+val get_nth_label_mp : int -> ModPath.t -> Label.t
+val labels_of_ref : global_reference -> ModPath.t * Label.t list
 
 (*s Some table-related operations *)
 
@@ -72,16 +72,16 @@ val labels_of_ref : global_reference -> module_path * Label.t list
    [mutual_inductive_body] as checksum. In both case, we should ideally
    also check the env *)
 
-val add_typedef : constant -> constant_body -> ml_type -> unit
-val lookup_typedef : constant -> constant_body -> ml_type option
+val add_typedef : Constant.t -> constant_body -> ml_type -> unit
+val lookup_typedef : Constant.t -> constant_body -> ml_type option
 
-val add_cst_type : constant -> constant_body -> ml_schema -> unit
-val lookup_cst_type : constant -> constant_body -> ml_schema option
+val add_cst_type : Constant.t -> constant_body -> ml_schema -> unit
+val lookup_cst_type : Constant.t -> constant_body -> ml_schema option
 
-val add_ind : mutual_inductive -> mutual_inductive_body -> ml_ind -> unit
-val lookup_ind : mutual_inductive -> mutual_inductive_body -> ml_ind option
+val add_ind : MutInd.t -> mutual_inductive_body -> ml_ind -> unit
+val lookup_ind : MutInd.t -> mutual_inductive_body -> ml_ind option
 
-val add_inductive_kind : mutual_inductive -> inductive_kind -> unit
+val add_inductive_kind : MutInd.t -> inductive_kind -> unit
 val is_coinductive : global_reference -> bool
 val is_coinductive_type : ml_type -> bool
 (* What are the fields of a record (empty for a non-record) *)
@@ -89,10 +89,10 @@ val get_record_fields :
   global_reference -> global_reference option list
 val record_fields_of_type : ml_type -> global_reference option list
 
-val add_recursors : Environ.env -> mutual_inductive -> unit
+val add_recursors : Environ.env -> MutInd.t -> unit
 val is_recursor : global_reference -> bool
 
-val add_projection : int -> constant -> inductive -> unit
+val add_projection : int -> Constant.t -> inductive -> unit
 val is_projection : global_reference -> bool
 val projection_arity : global_reference -> int
 val projection_info : global_reference -> inductive * int (* arity *)

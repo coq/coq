@@ -84,18 +84,19 @@ sig
   end
 
   type universe_context = UContext.t
+  [@@ocaml.deprecated "alias of API.Names.UContext.t"]
 
   module LSet : module type of struct include Univ.LSet end
   module ContextSet : 
   sig
     type t = Univ.ContextSet.t
     val empty : t
-    val of_context : universe_context -> t
-    val to_context : t -> universe_context
+    val of_context : UContext.t -> t
+    val to_context : t -> UContext.t
   end
 
   type 'a in_universe_context_set = 'a * ContextSet.t
-  type 'a in_universe_context = 'a * universe_context
+  type 'a in_universe_context = 'a * UContext.t
   type constraint_type = Univ.constraint_type
 
   module Universe :
@@ -105,7 +106,10 @@ sig
   end
 
   type universe_context_set = ContextSet.t
+  [@@ocaml.deprecated "alias of API.Names.ContextSet.t"]
+
   type universe_set = LSet.t
+  [@@ocaml.deprecated "alias of API.Names.LSet.t"]
 
   type 'a constraint_function = 'a -> 'a -> Constraint.t -> Constraint.t
   type universe_subst = Univ.universe_subst
@@ -156,11 +160,13 @@ sig
   type evaluable_global_reference = Names.evaluable_global_reference =
     | EvalVarRef of Id.t
     | EvalConstRef of Names.Constant.t
+
   module Name : module type of struct include Names.Name end
 
   type name = Name.t =
     | Anonymous     
     | Name of Id.t
+  [@@ocaml.deprecated "alias of API.Name.t"]
 
   module DirPath :
   sig
@@ -212,6 +218,7 @@ sig
   end
 
   type kernel_name = KerName.t
+  [@@ocaml.deprecated "alias of API.Names.KerName.t"]
 
   module Constant :
   sig
@@ -281,17 +288,19 @@ sig
   val cst_full_transparent_state : transparent_state
 
   val pr_kn : KerName.t -> Pp.std_ppcmds
+  [@@ocaml.deprecated "alias of API.Names.KerName.print"]
 
   val eq_constant : Constant.t -> Constant.t -> bool
+  [@@ocaml.deprecated "alias of API.Names.Constant.equal"]
 
   type module_path = ModPath.t =
     | MPfile of DirPath.t
     | MPbound of MBId.t
-    | MPdot of module_path * Label.t
+    | MPdot of ModPath.t * Label.t
+  [@@ocaml.deprecated "alias of API.Names.ModPath.t"]
 
   type variable = Id.t
-
-  type constant = Constant.t
+  [@@ocaml.deprecated "alias of API.Names.Id.t"]
 
   type 'a tableKey = 'a Names.tableKey =
     | ConstKey of 'a
@@ -299,46 +308,70 @@ sig
     | RelKey of Int.t
 
   val id_of_string : string -> Id.t
+  [@@ocaml.deprecated "alias of API.Names.Id.of_string"]
 
   val string_of_id : Id.t -> string
+  [@@ocaml.deprecated "alias of API.Names.Id.to_string"]
 
   type mutual_inductive = MutInd.t
+  [@@ocaml.deprecated "alias of API.Names.MutInd.t"]
 
   val eq_mind : MutInd.t -> MutInd.t -> bool
+  [@@ocaml.deprecated "alias of API.Names.MutInd.equal"]
 
   val repr_con : Constant.t -> ModPath.t * DirPath.t * Label.t
+  [@@ocaml.deprecated "alias of API.Names.Constant.repr3"]
 
   val repr_mind : MutInd.t -> ModPath.t * DirPath.t * Label.t
+  [@@ocaml.deprecated "alias of API.Names.MutInd.repr3"]
 
   val initial_path : ModPath.t
+  [@@ocaml.deprecated "alias of API.Names.ModPath.initial"]
 
   val con_label : Constant.t -> Label.t
+  [@@ocaml.deprecated "alias of API.Names.Constant.label"]
 
   val mind_label : MutInd.t -> Label.t
+  [@@ocaml.deprecated "alias of API.Names.MutInd.label"]
 
   val string_of_mp : ModPath.t -> string
+  [@@ocaml.deprecated "alias of API.Names.ModPath.to_string"]
 
   val mind_of_kn : KerName.t -> MutInd.t
+  [@@ocaml.deprecated "alias of API.Names.MutInd.make1"]
+
+  type constant = Constant.t
+  [@@ocaml.deprecated "alias of API.Names.Constant.t"]
 
   val mind_modpath : MutInd.t -> ModPath.t
+  [@@ocaml.deprecated "alias of API.Names.MutInd.modpath"]
 
   val canonical_mind : MutInd.t -> KerName.t
+  [@@ocaml.deprecated "alias of API.Names.MutInd.canonical"]
 
   val user_mind : MutInd.t -> KerName.t
+  [@@ocaml.deprecated "alias of API.Names.MutInd.user"]
 
   val repr_kn : KerName.t -> ModPath.t * DirPath.t * Label.t
+  [@@ocaml.deprecated "alias of API.Names.KerName.repr"]
 
   val constant_of_kn : KerName.t -> Constant.t
+  [@@ocaml.deprecated "alias of API.Names.Constant.make1"]
 
   val user_con : Constant.t -> KerName.t
+  [@@ocaml.deprecated "alias of API.Names.Constant.user"]
 
   val modpath : KerName.t -> ModPath.t
+  [@@ocaml.deprecated "alias of API.Names.KerName.modpath"]
 
   val canonical_con : Constant.t -> KerName.t
+  [@@ocaml.deprecated "alias of API.Names.Constant.canonical"]
 
   val make_kn : ModPath.t -> DirPath.t -> Label.t -> KerName.t
+  [@@ocaml.deprecated "alias of API.Names.KerName.make"]
 
   val make_con : ModPath.t -> DirPath.t -> Label.t -> Constant.t
+  [@@ocaml.deprecated "alias of API.Names.Constant.make3"]
 
   val debug_pr_con : Constant.t -> Pp.std_ppcmds
 
@@ -564,14 +597,16 @@ end
 module Term :
 sig
   type sorts_family = Sorts.family = InProp | InSet | InType
+  [@@deprecated "alias of API.Sorts.family"]
 
   type metavariable = Prelude.metavariable
 
   type contents = Sorts.contents = Pos | Null
 
   type sorts = Sorts.t =
-  | Prop of contents
-  | Type of Univ.Universe.t
+    | Prop of contents
+    | Type of Univ.Universe.t
+  [@@ocaml.deprecated "alias of API.Sorts.t"]
 
   type constr = Prelude.constr
   type types = Prelude.types
@@ -632,7 +667,9 @@ sig
   type cofixpoint = int * rec_declaration
   val kind_of_term : constr -> (constr, types, Sorts.t, Univ.Instance.t) kind_of_term
   val applistc : constr -> constr list -> constr
+
   val applist : constr * constr list -> constr
+  [@@ocaml.deprecated "(sort of an) alias of API.Term.applistc"]
 
   val mkArrow : types -> types -> constr
   val mkRel : int -> constr
@@ -727,12 +764,16 @@ sig
   val kind_of_type : types -> (constr, types) kind_of_type
 
   val is_prop_sort : Sorts.t -> bool
+  [@@ocaml.deprecated "alias of API.Sorts.is_prop"]
 
   type existential_key = Prelude.evar
 
   val family_of_sort : Sorts.t -> Sorts.family
 
+  val compare : constr -> constr -> int
+
   val constr_ord : constr -> constr -> int
+  [@@ocaml.deprecated "alias of API.Term.compare"]
 
   val destInd : constr -> Names.inductive puniverses
   val univ_of_sort : Sorts.t -> Univ.Universe.t
@@ -1052,7 +1093,7 @@ sig
         mind_nparams_rec : int;
         mind_params_ctxt : Context.Rel.t;
         mind_polymorphic : bool;
-        mind_universes : Univ.universe_context;
+        mind_universes : Univ.UContext.t;
         mind_private : bool option;
         mind_typing_flags : Declarations.typing_flags;
       }
@@ -1213,7 +1254,7 @@ sig
                                  const_entry_feedback : Stateid.t option;
                                  const_entry_type        : Term.types option;
                                  const_entry_polymorphic : bool;
-                                 const_entry_universes   : Univ.universe_context;
+                                 const_entry_universes   : Univ.UContext.t;
                                  const_entry_opaque      : bool;
                                  const_entry_inline_code : bool }
   type parameter_entry = Context.Named.t option * bool * Term.types Univ.in_universe_context * inline 
@@ -1415,7 +1456,7 @@ sig
     val evar_ident : Prelude.evar -> evar_map -> Names.Id.t option
     val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
     val universe_context : ?names:(Names.Id.t Loc.located) list -> evar_map ->
-                           (Names.Id.t * Univ.Level.t) list * Univ.universe_context
+                           (Names.Id.t * Univ.Level.t) list * Univ.UContext.t
     val nf_constraints : evar_map -> evar_map
     val from_ctx : UState.t -> evar_map
 
@@ -1460,10 +1501,13 @@ sig
   val evars_of_term : Term.constr -> Evar.Set.t
 
   val evar_universe_context_of : Univ.ContextSet.t -> UState.t
+  [@@ocaml.deprecated "alias of API.UState.of_context_set"]
 
   val evar_context_universe_context : UState.t -> Univ.UContext.t
+  [@@ocaml.deprecated "alias of API.UState.context"]
 
   type evar_universe_context = UState.t
+  [@@ocaml.deprecated "alias of API.UState.t"]
 
   val existential_opt_value : evar_map -> Term.existential -> Term.constr option
   val existential_value : evar_map -> Term.existential -> Term.constr
@@ -1733,7 +1777,7 @@ sig
   val new_type_evar :
     Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
     ?naming:Misctypes.intro_pattern_naming_expr -> ?principal:bool -> Evd.rigid ->
-    Evd.evar_map * (EConstr.constr * Term.sorts)
+    Evd.evar_map * (EConstr.constr * Sorts.t)
   val nf_evars_universes : Evd.evar_map -> Term.constr -> Term.constr
   val safe_evar_value : Evd.evar_map -> Term.existential -> Term.constr option
   val evd_comb1 : (Evd.evar_map -> 'b -> Evd.evar_map * 'a) -> Evd.evar_map ref -> 'b -> 'a
@@ -1822,6 +1866,8 @@ sig
   val destConstructRef : Globnames.global_reference -> Names.constructor
 
   val reference_of_constr : Term.constr -> global_reference
+  [@@ocaml.deprecated "alias of API.Globnames.global_of_constr"]
+
   val is_global : global_reference -> Term.constr -> bool
 end
 
@@ -2588,7 +2634,7 @@ sig
   val unsafe_type_of_global : Globnames.global_reference -> Term.types
   val constr_of_global : Prelude.global_reference -> Term.constr
   val universes_of_constr : Term.constr -> Univ.LSet.t
-  val restrict_universe_context : Univ.universe_context_set -> Univ.universe_set -> Univ.universe_context_set
+  val restrict_universe_context : Univ.ContextSet.t -> Univ.LSet.t -> Univ.ContextSet.t
   val new_univ_level : Names.DirPath.t -> Univ.Level.t
   val unsafe_constr_of_global : Globnames.global_reference -> Term.constr Univ.in_universe_context
   val new_sort_in_family : Sorts.family -> Sorts.t
@@ -2696,7 +2742,7 @@ sig
     Term.constr Univ.in_universe_context_set -> Names.Constant.t
   val definition_entry : ?fix_exn:Future.fix_exn ->
     ?opaque:bool -> ?inline:bool -> ?types:Term.types ->
-    ?poly:Decl_kinds.polymorphic -> ?univs:Univ.universe_context ->
+    ?poly:Decl_kinds.polymorphic -> ?univs:Univ.UContext.t ->
     ?eff:Safe_typing.private_constants -> Term.constr -> Safe_typing.private_constants Entries.definition_entry
   val definition_message : Names.Id.t -> unit
   val declare_variable : Names.Id.t -> variable_declaration -> Libnames.object_name
@@ -3286,8 +3332,10 @@ end
 module Tacmach :
 sig
   type tactic = Proof_type.tactic
+  [@@ocaml.deprecated "alias for API.Proof_type.tactic"]
 
   type 'a sigma = 'a Evd.sigma
+  [@@ocaml.deprecated "alias of API.Evd.sigma"]
 
   val re_sig : 'a -> Evd.evar_map -> 'a Evd.sigma
 
@@ -3325,21 +3373,21 @@ sig
 
   val pf_reduce : (Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr) -> Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
 
-  val pf_conv_x : Proof_type.goal sigma -> EConstr.constr -> EConstr.constr -> bool
+  val pf_conv_x : Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr -> bool
 
-  val pf_is_matching : Proof_type.goal sigma -> Pattern.constr_pattern -> EConstr.constr -> bool
+  val pf_is_matching : Proof_type.goal Evd.sigma -> Pattern.constr_pattern -> EConstr.constr -> bool
 
-  val pf_hyps_types : Proof_type.goal sigma -> (Names.Id.t * EConstr.types) list
+  val pf_hyps_types : Proof_type.goal Evd.sigma -> (Names.Id.t * EConstr.types) list
 
-  val pr_gls    : Proof_type.goal sigma -> Pp.std_ppcmds
+  val pr_gls    : Proof_type.goal Evd.sigma -> Pp.std_ppcmds
 
-  val pf_nf_betaiota : Proof_type.goal sigma -> EConstr.constr -> EConstr.constr
+  val pf_nf_betaiota : Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
 
-  val pf_last_hyp : Proof_type.goal sigma -> EConstr.named_declaration
+  val pf_last_hyp : Proof_type.goal Evd.sigma -> EConstr.named_declaration
 
-  val pf_nth_hyp_id : Proof_type.goal sigma -> int -> Names.Id.t
+  val pf_nth_hyp_id : Proof_type.goal Evd.sigma -> int -> Names.Id.t
 
-  val sig_it : 'a sigma -> 'a
+  val sig_it : 'a Evd.sigma -> 'a
 
   module New :
   sig
@@ -3550,13 +3598,14 @@ sig
   val free_rels : Evd.evar_map -> EConstr.constr -> Int.Set.t
 
   val occur_term : Evd.evar_map -> EConstr.constr -> EConstr.constr -> bool
+  [@@ocaml.deprecated "alias of API.Termops.dependent"]
 
   val replace_term : Evd.evar_map -> EConstr.constr -> EConstr.constr -> EConstr.constr -> EConstr.constr
   val map_named_decl : ('a -> 'b) -> ('a, 'a) Context.Named.Declaration.pt -> ('b, 'b) Context.Named.Declaration.pt
   val map_rel_decl : ('a -> 'b) -> ('a, 'a) Context.Rel.Declaration.pt -> ('b, 'b) Context.Rel.Declaration.pt
   val pr_metaset : Evd.Metaset.t -> Pp.std_ppcmds
   val pr_evar_map : ?with_univs:bool -> int option -> Evd.evar_map -> Pp.std_ppcmds
-  val pr_evar_universe_context : Evd.evar_universe_context -> Pp.std_ppcmds
+  val pr_evar_universe_context : UState.t -> Pp.std_ppcmds
 end
 
 module Locality :
@@ -3812,6 +3861,7 @@ end
 module Ppconstr :
 sig
   val pr_name : Names.Name.t -> Pp.std_ppcmds
+  [@@ocaml.deprecated "alias of API.Names.Name.print"]
 
   val pr_id : Names.Id.t -> Pp.std_ppcmds
   val pr_or_var : ('a -> Pp.std_ppcmds) -> 'a Misctypes.or_var -> Pp.std_ppcmds
@@ -4088,7 +4138,9 @@ sig
   val onLastHypId : (Names.Id.t -> tactic) -> tactic
   val onNthHypId : int -> (Names.Id.t -> tactic) -> tactic
   val onNLastHypsId : int -> (Names.Id.t list -> tactic) -> tactic
+
   val tclTHENSEQ : tactic list -> tactic
+  [@@ocaml.deprecated "alias of API.Tacticals.tclTHENLIST"]
 
   val nLastDecls : int -> Proof_type.goal Evd.sigma -> EConstr.named_context
 
@@ -4274,7 +4326,7 @@ sig
     | Res_pf_THEN_trivial_fail of 'a
     | Unfold_nth of Names.evaluable_global_reference
     | Extern     of Genarg.glob_generic_argument
-  type raw_hint = EConstr.constr * EConstr.types * Univ.universe_context_set
+  type raw_hint = EConstr.constr * EConstr.types * Univ.ContextSet.t
   type 'a with_metadata = 'a Hints.with_metadata = private {
       pri     : int;
       poly    : Decl_kinds.polymorphic;
@@ -4563,8 +4615,10 @@ sig
   val atompart_of_id : Names.Id.t -> string
 
   val pr_id : Names.Id.t -> Pp.std_ppcmds
+  [@@ocaml.deprecated "alias of API.Names.Id.print"]
 
   val pr_name : Names.Name.t -> Pp.std_ppcmds
+  [@@ocaml.deprecated "alias of API.Names.Name.print"]
 
   val name_fold : (Names.Id.t -> 'a -> 'a) -> Names.Name.t -> 'a -> 'a
   val name_app : (Names.Id.t -> Names.Id.t) -> Names.Name.t -> Names.Name.t
@@ -4593,8 +4647,14 @@ end
 module Constr :
 sig
   type t = Term.constr
-  type constr = t
-  type types = t
+  [@@ocaml.deprecated "alias of API.Term.constr"]
+
+  type constr = Term.constr
+  [@@ocaml.deprecated "alias of API.Term.constr"]
+
+  type types = Term.constr
+  [@@ocaml.deprecated "alias of API.Term.types"]
+
   type cast_kind = Term.cast_kind =
                  | VMcast
                  | NATIVEcast
@@ -4618,14 +4678,30 @@ sig
      | Fix       of ('constr, 'types) Term.pfixpoint
      | CoFix     of ('constr, 'types) Term.pcofixpoint
      | Proj      of Names.Projection.t * 'constr
-  val equal : constr -> constr -> bool
-  val mkIndU : Term.pinductive -> constr
-  val mkConstU : Term.pconstant -> constr
-  val mkConst : Names.Constant.t -> constr
-  val mkVar : Names.Id.t -> constr
-  val compare : constr -> constr -> int
-  val mkApp : constr * constr array -> constr
+  [@@ocaml.deprecated "alias of API.Term.cast_kind"]
+
+  val equal : Term.constr -> Term.constr -> bool
+  [@@ocaml.deprecated "alias of API.Term.eq_constr"]
+
+  val mkIndU : Term.pinductive -> Term.constr
+  [@@ocaml.deprecated "alias of API.Term.mkIndU"]
+
+  val mkConstU : Term.pconstant -> Term.constr
+  [@@ocaml.deprecated "alias of API.Term.mkConstU"]
+
+  val mkConst : Names.Constant.t -> Term.constr
+  [@@ocaml.deprecated "alias of API.Term.mkConst"]
+
+  val mkVar : Names.Id.t -> Term.constr
+  [@@ocaml.deprecated "alias of API.Term.mkVar"]
+
+  val compare : Term.constr -> Term.constr -> int
+  [@@ocaml.deprecated "alias of API.Term.constr_ord"]
+
+  val mkApp : Term.constr * Term.constr array -> Term.constr
+  [@@ocaml.deprecated "alias of API.Term.mkApp"]
 end
+[@@ocaml.deprecated "alias of API.Term"]
 
 module Coq_config :
 sig
@@ -4667,7 +4743,7 @@ sig
 
   val interp_fixpoint :
     structured_fixpoint_expr list -> Vernacexpr.decl_notation list ->
-    recursive_preentry * Vernacexpr.lident list option * Evd.evar_universe_context * 
+    recursive_preentry * Vernacexpr.lident list option * UState.t * 
       (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
   val extract_mutual_inductive_declaration_components :

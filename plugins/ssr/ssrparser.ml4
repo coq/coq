@@ -1465,7 +1465,7 @@ let ssr_id_of_string loc s =
     else Feedback.msg_warning (str (
      "The name " ^ s ^ " fits the _xxx_ format used for anonymous variables.\n"
   ^ "Scripts with explicit references to anonymous variables are fragile."))
-    end; id_of_string s
+    end; Id.of_string s
 
 let ssr_null_entry = Gram.Entry.of_parser "ssr_null" (fun _ -> ())
 
@@ -1555,7 +1555,7 @@ END
 let ssrautoprop gl =
   try 
     let tacname = 
-      try Nametab.locate_tactic (qualid_of_ident (id_of_string "ssrautoprop"))
+      try Nametab.locate_tactic (qualid_of_ident (Id.of_string "ssrautoprop"))
       with Not_found -> Nametab.locate_tactic (ssrqid "ssrautoprop") in
     let tacexpr = Loc.tag @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
     Proofview.V82.of_tactic (eval_tactic (Tacexpr.TacArg tacexpr)) gl
@@ -2320,7 +2320,7 @@ let test_idcomma = Gram.Entry.of_parser "test_idcomma" accept_idcomma
 GEXTEND Gram
   GLOBAL: ssr_idcomma;
   ssr_idcomma: [ [ test_idcomma; 
-    ip = [ id = IDENT -> Some (id_of_string id) | "_" -> None ]; "," ->
+    ip = [ id = IDENT -> Some (Id.of_string id) | "_" -> None ]; "," ->
     Some ip
   ] ];
 END

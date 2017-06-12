@@ -106,7 +106,7 @@ let make_refl_eq constructor type_of_t t  =
 
 type pte_info =
     {
-      proving_tac : (Id.t list ->  Tacmach.tactic);
+      proving_tac : (Id.t list -> Proof_type.tactic);
       is_valid : constr -> bool
     }
 
@@ -688,7 +688,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 
 let build_proof
     (interactive_proof:bool)
-    (fnames:constant list)
+    (fnames:Constant.t list)
     ptes_infos
     dyn_infos
     : tactic =
@@ -708,13 +708,13 @@ let build_proof
 		  let term_eq =
 		    make_refl_eq (Lazy.force refl_equal) type_of_term t
 		  in
-		  tclTHENSEQ
+		  tclTHENLIST
 		    [
 		      Proofview.V82.of_tactic (generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps)));
 		      thin dyn_infos.rec_hyps;
 		      Proofview.V82.of_tactic (pattern_option [Locus.AllOccurrencesBut [1],t] None);
 		      (fun g -> observe_tac "toto" (
-			 tclTHENSEQ [Proofview.V82.of_tactic (Simple.case t);
+			 tclTHENLIST [Proofview.V82.of_tactic (Simple.case t);
 				     (fun g' ->
 					let g'_nb_prod = nb_prod (project g') (pf_concl g') in
 					let nb_instanciate_partial = g'_nb_prod - g_nb_prod in
@@ -982,14 +982,14 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
   let eqn = mkApp(Lazy.force eq,[|type_of_f;eq_lhs;eq_rhs|]) in
   let lemma_type = it_mkProd_or_LetIn eqn type_ctxt in
   (* Pp.msgnl (str "lemma type " ++ Printer.pr_lconstr lemma_type ++ fnl () ++ str "f_body " ++ Printer.pr_lconstr f_body); *)
-  let f_id = Label.to_id (con_label (fst (destConst evd f))) in
+  let f_id = Label.to_id (Constant.label (fst (destConst evd f))) in
   let prove_replacement =
-    tclTHENSEQ
+    tclTHENLIST
       [
 	tclDO (nb_params + rec_args_num + 1) (Proofview.V82.of_tactic intro);
 	observe_tac "" (fun g ->
 	   let rec_id = pf_nth_hyp_id g 1 in
-	   tclTHENSEQ
+	   tclTHENLIST
 	     [observe_tac "generalize_non_dep in generate_equation_lemma" (generalize_non_dep rec_id);
 	      observe_tac "h_case" (Proofview.V82.of_tactic (simplest_case (mkVar rec_id)));
 	      (Proofview.V82.of_tactic intros_reflexivity)] g
@@ -1019,7 +1019,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
       let finfos = find_Function_infos (fst (destConst !evd f)) (*FIXME*) in
       mkConst (Option.get finfos.equation_lemma)
     with (Not_found | Option.IsNone as e) ->
-      let f_id = Label.to_id (con_label (fst (destConst !evd f))) in
+      let f_id = Label.to_id (Constant.label (fst (destConst !evd f))) in
       (*i The next call to mk_equation_id is valid since we will construct the lemma
 	Ensures by: obvious
 	i*)
@@ -1242,7 +1242,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		other_fix_infos 0)
     in
     let first_tac : tactic = (* every operations until fix creations *)
-      tclTHENSEQ
+      tclTHENLIST
 	[ observe_tac "introducing params" (Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.params)));
 	  observe_tac "introducing predictes" (Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.predicates)));
 	  observe_tac "introducing branches" (Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.branches)));
@@ -1260,7 +1260,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
           in
 	  let fix_info = Id.Map.find  pte ptes_to_fix in
 	  let nb_args = fix_info.nb_realargs in
-	  tclTHENSEQ
+	  tclTHENLIST
 	    [
 	      (* observe_tac ("introducing args") *) (tclDO nb_args (Proofview.V82.of_tactic intro));
 	      (fun g -> (* replacement of the function by its body *)
@@ -1279,7 +1279,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		     eq_hyps = []
 		   }
 		 in
-		 tclTHENSEQ
+		 tclTHENLIST
 		   [
 		     observe_tac "do_replace"
 		       (do_replace evd
@@ -1322,7 +1322,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	    ] gl
 	with Not_found ->
 	  let nb_args = min (princ_info.nargs) (List.length ctxt) in
-	  tclTHENSEQ
+	  tclTHENLIST
 	    [
 	      tclDO nb_args (Proofview.V82.of_tactic intro);
 	      (fun g -> (* replacement of the function by its body *)
@@ -1343,7 +1343,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		   }
 		 in
 		 let fname = destConst (project g) (fst (decompose_app (project g) (List.hd (List.rev pte_args)))) in
-		 tclTHENSEQ
+		 tclTHENLIST
 		   [Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (fst fname))]);
 		    let do_prove =
 		      build_proof
@@ -1402,7 +1402,7 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
 	fun gls ->
 (* 	  let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in *)
 (* 	  let ids = hid::pf_ids_of_hyps gls in  *)
-	  tclTHENSEQ
+	  tclTHENLIST
 	    [
 (* 	      generalize [lemma]; *)
 (* 	      h_intro hid; *)
@@ -1457,13 +1457,13 @@ let rec rewrite_eqs_in_eqs eqs =
 
 let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
   fun gls ->
-    (tclTHENSEQ
+    (tclTHENLIST
        [
 	 backtrack_eqs_until_hrec hrec eqs;
 	 (* observe_tac ("new_prove_with_tcc ( applying "^(Id.to_string hrec)^" )" ) *)
 	 (tclTHENS  (* We must have exactly ONE subgoal !*)
 	    (Proofview.V82.of_tactic (apply (mkVar hrec)))
-	    [ tclTHENSEQ
+	    [ tclTHENLIST
 		[
 		  (Proofview.V82.of_tactic (keep (tcc_hyps@eqs)));
 		  (Proofview.V82.of_tactic (apply (Lazy.force acc_inv)));
@@ -1617,7 +1617,7 @@ let prove_principle_for_gen
 	  (Id.of_string "prov")
 	  hyps
       in
-      tclTHENSEQ
+      tclTHENLIST
 	[
 	  Proofview.V82.of_tactic (generalize [lemma]);
 	  Proofview.V82.of_tactic (Simple.intro hid);
@@ -1636,7 +1636,7 @@ let prove_principle_for_gen
 	  ]
 	  gls
   in
-  tclTHENSEQ
+  tclTHENLIST
     [
       observe_tac "start_tac" start_tac;
       h_intros

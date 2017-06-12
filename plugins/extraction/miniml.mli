@@ -83,7 +83,7 @@ type ml_ind_packet = {
 
 type equiv =
   | NoEquiv
-  | Equiv of kernel_name
+  | Equiv of KerName.t
   | RenEquiv of string
 
 type ml_ind = {
@@ -138,13 +138,13 @@ and ml_pattern =
 (*s ML declarations. *)
 
 type ml_decl =
-  | Dind  of mutual_inductive * ml_ind
+  | Dind  of MutInd.t * ml_ind
   | Dtype of global_reference * Id.t list * ml_type
   | Dterm of global_reference * ml_ast * ml_type
   | Dfix  of global_reference array * ml_ast array * ml_type array
 
 type ml_spec =
-  | Sind  of mutual_inductive * ml_ind
+  | Sind  of MutInd.t * ml_ind
   | Stype of global_reference * Id.t list * ml_type option
   | Sval  of global_reference * ml_type
 
@@ -154,14 +154,14 @@ type ml_specif =
   | Smodtype of ml_module_type
 
 and ml_module_type =
-  | MTident of module_path
+  | MTident of ModPath.t
   | MTfunsig of MBId.t * ml_module_type * ml_module_type
-  | MTsig of module_path * ml_module_sig
+  | MTsig of ModPath.t * ml_module_sig
   | MTwith of ml_module_type * ml_with_declaration
 
 and ml_with_declaration =
   | ML_With_type of Id.t list * Id.t list * ml_type
-  | ML_With_module of Id.t list * module_path
+  | ML_With_module of Id.t list * ModPath.t
 
 and ml_module_sig = (Label.t * ml_specif) list
 
@@ -171,9 +171,9 @@ type ml_structure_elem =
   | SEmodtype of ml_module_type
 
 and ml_module_expr =
-  | MEident of module_path
+  | MEident of ModPath.t
   | MEfunctor of MBId.t * ml_module_type * ml_module_expr
-  | MEstruct of module_path * ml_module_structure
+  | MEstruct of ModPath.t * ml_module_structure
   | MEapply of ml_module_expr * ml_module_expr
 
 and ml_module_structure = (Label.t * ml_structure_elem) list
@@ -185,9 +185,9 @@ and ml_module =
 (* NB: we do not translate the [mod_equiv] field, since [mod_equiv = mp]
    implies that [mod_expr = MEBident mp]. Same with [msb_equiv]. *)
 
-type ml_structure = (module_path * ml_module_structure) list
+type ml_structure = (ModPath.t * ml_module_structure) list
 
-type ml_signature = (module_path * ml_module_sig) list
+type ml_signature = (ModPath.t * ml_module_sig) list
 
 type ml_flat_structure = ml_structure_elem list
 
@@ -203,10 +203,10 @@ type language_descr = {
 
   (* Concerning the source file *)
   file_suffix : string;
-  file_naming : module_path -> string;
+  file_naming : ModPath.t -> string;
   (* the second argument is a comment to add to the preamble *)
   preamble :
-    Id.t -> std_ppcmds option -> module_path list -> unsafe_needs ->
+    Id.t -> std_ppcmds option -> ModPath.t list -> unsafe_needs ->
     std_ppcmds;
   pp_struct : ml_structure -> std_ppcmds;
 
@@ -214,7 +214,7 @@ type language_descr = {
   sig_suffix : string option;
   (* the second argument is a comment to add to the preamble *)
   sig_preamble :
-    Id.t -> std_ppcmds option -> module_path list -> unsafe_needs ->
+    Id.t -> std_ppcmds option -> ModPath.t list -> unsafe_needs ->
     std_ppcmds;
   pp_sig : ml_signature -> std_ppcmds;
 

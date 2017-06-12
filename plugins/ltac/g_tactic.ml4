@@ -477,7 +477,7 @@ GEXTEND Gram
       | -> None ] ]
   ;
   as_name:
-    [ [ "as"; id = ident -> Names.Name id | -> Names.Anonymous ] ]
+    [ [ "as"; id = ident ->Names.Name.Name id | -> Names.Name.Anonymous ] ]
   ;
   by_tactic:
     [ [ "by"; tac = tactic_expr LEVEL "3" -> Some tac
@@ -540,7 +540,7 @@ GEXTEND Gram
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacMutualCofix (id,List.map mk_cofix_tac fd))
 
       | IDENT "pose"; (id,b) = bindings_with_parameters ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name id,b,Locusops.nowhere,true,None))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name.Name id,b,Locusops.nowhere,true,None))
       | IDENT "pose"; b = constr; na = as_name ->
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,b,Locusops.nowhere,true,None))
       | IDENT "epose"; (id,b) = bindings_with_parameters ->
@@ -548,7 +548,7 @@ GEXTEND Gram
       | IDENT "epose"; b = constr; na = as_name ->
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (true,na,b,Locusops.nowhere,true,None))
       | IDENT "set"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name id,c,p,true,None))
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,Names.Name.Name id,c,p,true,None))
       | IDENT "set"; c = constr; na = as_name; p = clause_dft_concl ->
           TacAtom (Loc.tag ~loc:!@loc @@ TacLetTac (false,na,c,p,true,None))
       | IDENT "eset"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
@@ -600,9 +600,9 @@ GEXTEND Gram
 	  TacAtom (Loc.tag ~loc:!@loc @@ TacAssert (true,false,Some tac,ipat,c))
 
       | IDENT "generalize"; c = constr ->
-	  TacAtom (Loc.tag ~loc:!@loc @@ TacGeneralize [((AllOccurrences,c),Names.Anonymous)])
+	  TacAtom (Loc.tag ~loc:!@loc @@ TacGeneralize [((AllOccurrences,c),Names.Name.Anonymous)])
       | IDENT "generalize"; c = constr; l = LIST1 constr ->
-	  let gen_everywhere c = ((AllOccurrences,c),Names.Anonymous) in
+	  let gen_everywhere c = ((AllOccurrences,c),Names.Name.Anonymous) in
           TacAtom (Loc.tag ~loc:!@loc @@ TacGeneralize (List.map gen_everywhere (c::l)))
       | IDENT "generalize"; c = constr; lookup_at_as_comma; nl = occs;
           na = as_name;
