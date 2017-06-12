@@ -116,16 +116,19 @@ NOARG: world
 .PHONY: NOARG help noconfig submake
 
 help:
-	@echo "Please use either"
+	@echo "Please use either:"
 	@echo "   ./configure"
 	@echo "   make world"
 	@echo "   make install"
 	@echo "   make clean"
 	@echo "or make archclean"
-	@echo
 	@echo "For make to be verbose, add VERBOSE=1"
+	@echo "If you want camlp5 to generate human-readable files, add READABLE_ML4=1"
 	@echo
-	@echo "If you want camlp{4,5} to generate human-readable files, add READABLE_ML4=1"
+	@echo "Bytecode compilation is now a separate target:"
+	@echo "   make byte"
+	@echo "   make install-byte"
+	@echo "Please do not mix bytecode and native targets in the same make -j"
 
 UNSAVED_FILES:=$(shell find . -name '.\#*v' -o -name '.\#*.ml' -o -name '.\#*.ml?')
 ifdef UNSAVED_FILES

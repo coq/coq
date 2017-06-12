@@ -51,9 +51,16 @@ COQ_XML ?=
 
 world: coq coqide documentation revision
 
-coq: coqlib coqbinaries tools printers
+coq: coqlib coqbinaries tools
 
-.PHONY: world coq
+# Note: 'world' does not build the bytecode binaries anymore.
+# For that, you can use the 'byte' rule. Native and byte compilations
+# shouldn't be done in a same make -j... run, otherwise both ocamlc and
+# ocamlopt might race for access to the same .cmi files.
+
+byte: coqbyte coqide-byte pluginsbyte printers
+
+.PHONY: world coq byte
 
 ###########################################################################
 # Includes
@@ -126,7 +133,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 #   TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
 COQOPTS=$(COQ_XML) $(NATIVECOMPUTE)
-BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -compile
+BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
 LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
@@ -208,7 +215,7 @@ ifndef ORDER_ONLY_SEP
 $(error This Makefile needs GNU Make 3.81 or later (that is a version that supports the order-only dependency feature without major bugs.))
 endif
 
-VO_TOOLS_DEP := $(COQTOPEXE)
+VO_TOOLS_DEP := $(COQTOPBEST)
 ifdef COQ_XML
  VO_TOOLS_DEP += $(COQDOC)
 endif
@@ -315,11 +322,11 @@ grammar/%.cmi: grammar/%.mli
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
-.PHONY: coqbinaries
+.PHONY: coqbinaries coqbyte
 
-coqbinaries: $(COQMKTOP) $(COQTOPEXE) $(COQTOPBYTE) \
- $(CHICKEN) $(CHICKENBYTE) $(CSDPCERT) $(FAKEIDE)
+coqbinaries: $(COQMKTOP) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
 
+coqbyte: $(COQTOPBYTE) $(CHICKENBYTE)
 
 ifeq ($(BEST),opt)
 $(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs)
@@ -510,18 +517,13 @@ kernel/kernel.cma: kernel/kernel.mllib
 
 # For plugin packs
 
-# Note: both ocamlc -pack and ocamlopt -pack will create the same .cmi, and there's
-# apparently no way to avoid that (no -intf-suffix hack as below).
-# We at least ensure that these two commands won't run at the same time, by a fake
-# dependency from the packed .cmx to the packed .cmo.
-
 %.cmo: %.mlpack
 	$(SHOW)'OCAMLC -pack -o $@'
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -pack -o $@ $(filter-out %.mlpack, $^)
 
-%.cmx: %.mlpack %.cmo
+%.cmx: %.mlpack
 	$(SHOW)'OCAMLOPT -pack -o $@'
-	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -pack -o $@ $(filter-out %.mlpack %.cmo, $^)
+	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -pack -o $@ $(filter-out %.mlpack, $^)
 
 COND_BYTEFLAGS= \
  $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) $(BYTEFLAGS)
@@ -537,27 +539,6 @@ COND_OPTFLAGS= \
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
 
-## NB: for the moment ocamlopt erases and recreates .cmi if there's no .mli around.
-## This can lead to nasty things with make -j. To avoid that:
-##  1) We make .cmx always depend on .cmi
-##  2) This .cmi will be created from the .mli, or trigger the compilation of the
-##    .cmo if there's no .mli (see rule below about MLWITHOUTMLI)
-##  3) We tell ocamlopt to use the .cmi as the interface source file. With this
-##     hack, everything goes as if there is a .mli, and the .cmi is preserved
-##     and the .cmx is checked with respect to this .cmi
-
-HACKMLI = $(if $(wildcard $<i),,-intf-suffix .cmi)
-
-define diff
- $(strip $(foreach f, $(1), $(if $(filter $(f),$(2)),,$f)))
-endef
-
-MLWITHOUTMLI := $(call diff, $(MLFILES), $(MLIFILES:.mli=.ml))
-
-$(MLWITHOUTMLI:.ml=.cmx): %.cmx: %.cmi  # for .ml with .mli this is already the case
-
-$(MLWITHOUTMLI:.ml=.cmi): %.cmi: %.cmo
-
 # NB: the *_FORPACK variables are generated in *.mlpack.d by ocamllibdep
 # The only exceptions are the sources of the csdpcert binary.
 # To avoid warnings, we set them manually here:
@@ -568,11 +549,11 @@ plugins/micromega/csdpcert_FORPACK:=
 
 plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -c $<
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $($(@:.cmx=_FORPACK)) -c $<
 
 %.cmx: %.ml
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) -c $<
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) -c $<
 
 %.cmxs: %.cmx
 	$(SHOW)'OCAMLOPT -shared -o $@'
@@ -657,7 +638,7 @@ endif
 
 %.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEPBOOT) -boot $(DEPNATDYN) "$<" $(TOTARGET)
+	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) "$<" $(TOTARGET)
 
 ###########################################################################
 

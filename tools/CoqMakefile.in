@@ -115,6 +115,17 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 
 OPT?=
 
+# The DYNOBJ and DYNLIB variables are used by "coqdep -dyndep var" in .v.d
+ifeq '$(OPT)' '-byte'
+USEBYTE:=true
+DYNOBJ:=.cmo
+DYNLIB:=.cma
+else
+USEBYTE:=
+DYNOBJ:=.cmxs
+DYNLIB:=.cmxs
+endif
+
 COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS)
 COQCHKFLAGS?=-silent -o $(COQLIBS) 
 COQDOCFLAGS?=-interpolate -utf8 $(COQLIBS_NOML)
@@ -213,7 +224,6 @@ CMOFILESTOINSTALL = $(filter-out $(addsuffix .cmo,$(PACKEDFILES)),$(CMOFILES))
 OBJFILES = $(call vo_to_obj,$(VOFILES))
 ALLNATIVEFILES = \
 	$(OBJFILES:.o=.cmi) \
-	$(OBJFILES:.o=.cmo) \
 	$(OBJFILES:.o=.cmx) \
 	$(OBJFILES:.o=.cmxs)
 # trick: wildcard filters out non-existing files
@@ -223,8 +233,9 @@ FILESTOINSTALL = \
 	$(VFILES) \
 	$(GLOBFILES) \
 	$(NATIVEFILESTOINSTALL) \
+	$(CMIFILESTOINSTALL)
+BYTEFILESTOINSTALL = \
 	$(CMOFILESTOINSTALL) \
-	$(CMIFILESTOINSTALL) \
 	$(CMAFILES)
 ifeq '$(HASNATDYNLINK)' 'true'
 DO_NATDYNLINK = yes
@@ -256,8 +267,14 @@ post-all::
 	@# Extension point
 .PHONY: post-all
 
-real-all: $(VOFILES) $(CMOFILES) $(CMAFILES) $(if $(DO_NATDYNLINK),$(CMXSFILES))
+real-all: $(VOFILES) $(if $(USEBYTE),bytefiles,optfiles)
 .PHONY: real-all
+
+bytefiles: $(CMOFILES) $(CMAFILES)
+.PHONY: bytefiles
+
+optfiles: $(if $(DO_NATDYNLINK),$(CMXSFILES))
+.PHONY: optfiles
 
 # FIXME, see Ralph's bugreport
 quick: $(VOFILES:.vo=.vio)
@@ -349,6 +366,18 @@ install: install-extra
 install-extra::
 	@# Extension point
 .PHONY: install install-extra
+
+install-byte:
+	$(HIDE)for f in $(BYTEFILESTOINSTALL); do\
+	 df="`$(COQMF_MAKEFILE) -destination-of "$$f" $(COQLIBS)`";\
+	 if [ -z "$$df" ]; then\
+	   echo SKIP "$$f" since it has no logical path;\
+	 else\
+	   install -d "$(DESTDIR)$(COQLIBINSTALL)/$$df"; \
+	   install -m 0644 "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df"; \
+	   echo INSTALL "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df";\
+	 fi;\
+	done
 
 install-doc:: html mlihtml
 	@# Extension point
@@ -561,7 +590,7 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 
 $(addsuffix .d,$(VFILES)): %.v.d: %.v
 	$(SHOW)'COQDEP $<'
-	$(HIDE)$(COQDEP) $(COQLIBS) -c "$<" $(redir_if_ok)
+	$(HIDE)$(COQDEP) $(COQLIBS) -dyndep var -c "$<" $(redir_if_ok)
 
 # Misc ########################################################################
 

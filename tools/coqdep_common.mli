@@ -19,7 +19,10 @@ val find_dir_logpath: string -> string list
 val option_c : bool ref
 val option_noglob : bool ref
 val option_boot : bool ref
-val option_natdynlk : bool ref
+
+type dynlink = Opt | Byte | Both | No | Variable
+
+val option_dynlink : dynlink ref
 val option_mldep : string option ref
 val norec_dirs : StrSet.t ref
 val suffixe : string ref
