@@ -95,7 +95,7 @@ plugins/micromega/certificate.cmx plugins/micromega/coq_micromega.cmx plugins/mi
 plugins/micromega/micromega.cmx plugins/micromega/micromega.cmo : plugins/micromega/micromega.cmi
 plugins/micromega/micromega.cmi : plugins/micromega/micromega.mli
 
-plugins/micromega/micromega.mli plugins/micromega/micromega.ml : plugins/micromega/MExtraction.vo
+plugins/micromega/generated_micromega.mli plugins/micromega/generated_micromega.ml : plugins/micromega/MExtraction.vo
 	@:
 
 ###########################################################################

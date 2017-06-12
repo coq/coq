@@ -179,9 +179,5 @@ user-contrib
 test-suite/.lia.cache
 test-suite/.nra.cache
 
-# these files are generated from plugins/micromega/MExtraction.v
-plugins/micromega/micromega.ml
-plugins/micromega/micromega.mli
-
 plugins/ssr/ssrparser.ml
 plugins/ssr/ssrvernac.ml
