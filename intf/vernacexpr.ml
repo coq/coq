@@ -97,11 +97,9 @@ type locatable =
 type showable =
   | ShowGoal of goal_reference
   | ShowProof
-  | ShowNode
   | ShowScript
   | ShowExistentials
   | ShowUniverses
-  | ShowTree
   | ShowProofNames
   | ShowIntros of bool
   | ShowMatch of reference

@@ -64,11 +64,9 @@ GEXTEND Gram
       | IDENT "Show" -> VernacShow (ShowGoal OpenSubgoals)
       | IDENT "Show"; n = natural -> VernacShow (ShowGoal (NthGoal n))
       | IDENT "Show"; id = ident -> VernacShow (ShowGoal (GoalId id))
-      | IDENT "Show"; IDENT "Node" -> VernacShow ShowNode
       | IDENT "Show"; IDENT "Script" -> VernacShow ShowScript
       | IDENT "Show"; IDENT "Existentials" -> VernacShow ShowExistentials
       | IDENT "Show"; IDENT "Universes" -> VernacShow ShowUniverses
-      | IDENT "Show"; IDENT "Tree" -> VernacShow ShowTree
       | IDENT "Show"; IDENT "Conjectures" -> VernacShow ShowProofNames
       | IDENT "Show"; IDENT "Proof" -> VernacShow ShowProof
       | IDENT "Show"; IDENT "Intro" -> VernacShow (ShowIntros false)
