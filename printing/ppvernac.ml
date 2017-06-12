@@ -105,7 +105,7 @@ open Decl_kinds
         | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
   let pr_search a gopt b pr_p =
-    pr_opt (fun g -> Proof_global.pr_goal_selector g ++ str ":"++ spc()) gopt
+    pr_opt (fun g -> Proof_bullet.pr_goal_selector g ++ str ":"++ spc()) gopt
     ++
       match a with
       | SearchHead c -> keyword "SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
@@ -490,7 +490,7 @@ open Decl_kinds
     | PrintVisibility s ->
       keyword "Print Visibility" ++ pr_opt str s
     | PrintAbout (qid,gopt) ->
-       pr_opt (fun g -> Proof_global.pr_goal_selector g ++ str ":"++ spc()) gopt
+       pr_opt (fun g -> Proof_bullet.pr_goal_selector g ++ str ":"++ spc()) gopt
        ++ keyword "About" ++ spc()  ++ pr_smart_global qid
     | PrintImplicit qid ->
       keyword "Print Implicit" ++ spc()  ++ pr_smart_global qid
@@ -1130,7 +1130,7 @@ open Decl_kinds
           | None -> hov 2 (keyword "Check" ++ spc() ++ pr_lconstr c)
         in
         let pr_i = match io with None -> mt ()
-                               | Some i -> Proof_global.pr_goal_selector i ++ str ": " in
+                               | Some i -> Proof_bullet.pr_goal_selector i ++ str ": " in
         return (pr_i ++ pr_mayeval r c)
       | VernacGlobalCheck c ->
         return (hov 2 (keyword "Type" ++ pr_constrarg c))

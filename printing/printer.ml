@@ -798,7 +798,7 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
 	  | _ , _, _ ->
             let end_cmd =
               str "This subproof is complete, but there are some unfocused goals." ++
-              (let s = Proof_global.Bullet.suggest p in
+              (let s = Proof_bullet.suggest p in
                if Pp.ismt s then s else fnl () ++ s) ++
               fnl ()
             in

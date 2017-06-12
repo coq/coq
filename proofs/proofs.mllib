@@ -5,6 +5,7 @@ Proof_using
 Logic
 Refine
 Proof
+Proof_bullet
 Proof_global
 Redexpr
 Refiner
