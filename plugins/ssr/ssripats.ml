@@ -95,7 +95,7 @@ let ssrmkabs id gl =
   end in
   Proofview.V82.of_tactic
     (Proofview.tclTHEN
-      (Tactics.New.refine step)
+      (Tactics.New.refine ~typecheck:false step)
       (Proofview.tclFOCUS 1 3 Proofview.shelve)) gl
 
 let ssrmkabstac ids =

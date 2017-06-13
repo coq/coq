@@ -72,7 +72,7 @@ let generalize_right mk typ c1 c2 =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
-  Refine.refine ~unsafe:true begin fun sigma ->
+  Refine.refine ~typecheck:false begin fun sigma ->
     let na = Name (next_name_away_with_default "x" Anonymous (Termops.ids_of_context env)) in
     let newconcl = mkProd (na, typ, mk typ c1 (mkRel 1)) in
     let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ~store newconcl in

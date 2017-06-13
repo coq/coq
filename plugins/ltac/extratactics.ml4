@@ -365,7 +365,7 @@ let refine_tac ist simple with_classes c =
     let update = begin fun sigma ->
       c env sigma
     end in
-    let refine = Refine.refine ~unsafe:true update in
+    let refine = Refine.refine ~typecheck:false update in
     if simple then refine
     else refine <*>
            Tactics.New.reduce_after_refine <*>

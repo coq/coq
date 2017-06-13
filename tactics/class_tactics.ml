@@ -250,7 +250,7 @@ let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
   let open Clenv in
   let env = Proofview.Goal.env gls in
   let concl = Proofview.Goal.concl gls in
-  Refine.refine ~unsafe:true begin fun sigma ->
+  Refine.refine ~typecheck:false begin fun sigma ->
       let sigma, term, ty =
         if poly then
           let (subst, ctx) = Universes.fresh_universe_context_set_instance ctx in

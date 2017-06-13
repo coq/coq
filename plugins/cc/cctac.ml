@@ -255,7 +255,7 @@ let app_global_with_holes f args n =
     Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc ->
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
-    Refine.refine ~unsafe:true begin fun sigma ->
+    Refine.refine ~typecheck:false begin fun sigma ->
       let t = Tacmach.New.pf_get_type_of gl fc in
       let t = Termops.prod_applist sigma t (Array.to_list args) in
       let ans = mkApp (fc, args) in
