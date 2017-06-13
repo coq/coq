@@ -46,8 +46,8 @@
 ########################################################################
 # HoTT
 ########################################################################
-# Temporal overlay
-: ${HoTT_CI_BRANCH:=mz-8.7}
+# Temporary overlay
+: ${HoTT_CI_BRANCH:=ocaml.4.02.3}
 : ${HoTT_CI_GITURL:=https://github.com/ejgallego/HoTT.git}
 # : ${HoTT_CI_BRANCH:=master}
 # : ${HoTT_CI_GITURL:=https://github.com/HoTT/HoTT.git}
