@@ -95,6 +95,8 @@ package "intf" (
 
   directory   = "intf"
 
+  archive(byte)    = "intf.cma"
+  archive(native)  = "intf.cmxa"
 )
 
 package "engine" (
@@ -239,19 +241,6 @@ package "toplevel" (
 
 )
 
-package "highparsing" (
-
-  description = "Coq Extra Parsing"
-  version     = "8.7"
-
-  requires    = "coq.toplevel"
-  directory   = "parsing"
-
-  archive(byte)    = "highparsing.cma"
-  archive(native)  = "highparsing.cmxa"
-
-)
-
 package "idetop" (
 
   description = "Coq IDE Libraries"
@@ -279,28 +268,43 @@ package "ide" (
 
 )
 
-package "ltac" (
+# XXX: Remove the dependency on toplevel (due to Coqinit use for compat flags)
+package "highparsing" (
 
-  description = "Coq LTAC Plugin"
+  description = "Coq Extra Parsing"
   version     = "8.7"
 
-  requires    = "coq.highparsing"
-  directory   = "plugins/ltac"
+  requires    = "coq.toplevel"
+  directory   = "parsing"
 
-  archive(byte)    = "ltac_plugin.cmo"
-  archive(native)  = "ltac_plugin.cmx"
+  archive(byte)    = "highparsing.cma"
+  archive(native)  = "highparsing.cmxa"
 
 )
 
+# XXX: API should depend only on stm.
 package "API" (
 
   description = "Coq API"
   version     = "8.7"
 
-  requires    = "coq.toplevel"
+  requires    = "coq.highparsing"
   directory   = "API"
 
   archive(byte)    = "API.cma"
   archive(native)  = "API.cmxa"
+
+)
+
+package "ltac" (
+
+  description = "Coq LTAC Plugin"
+  version     = "8.7"
+
+  requires    = "coq.API"
+  directory   = "plugins/ltac"
+
+  archive(byte)    = "ltac_plugin.cmo"
+  archive(native)  = "ltac_plugin.cmx"
 
 )
