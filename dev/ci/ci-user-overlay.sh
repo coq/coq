@@ -53,4 +53,6 @@ if [ $TRAVIS_PULL_REQUEST == "220" ] || [ $TRAVIS_BRANCH == "less_init_plugins" 
     CompCert_CI_GITURL=https://github.com/letouzey/CompCert.git
     VST_CI_BRANCH=less_init_plugins
     VST_CI_GITURL=https://github.com/letouzey/VST.git
+    fiat_crypto_CI_BRANCH=less_init_plugins
+    fiat_crypto_CI_GITURL=https://github.com/letouzey/fiat-crypto.git
 fi
