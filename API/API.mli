@@ -3947,6 +3947,8 @@ sig
 
   val get_current_context : unit -> Evd.evar_map * Environ.env
 
+  val current_proof_statement : unit -> Names.Id.t * Decl_kinds.goal_kind * EConstr.types
+
   (* Deprecated *)
   val delete_current_proof : unit -> unit
   [@@ocaml.deprecated "use Proof_global.discard_current"]
@@ -4367,6 +4369,8 @@ sig
   val pp_hints_path : hints_path -> Pp.std_ppcmds
   val glob_hints_path :
     Prelude.reference hints_path_gen -> Globnames.global_reference hints_path_gen
+  val run_hint : hint ->
+    ((raw_hint * Clenv.clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val typeclasses_db : hint_db_name
   val add_hints_init : (unit -> unit) -> unit
   val create_hint_db : bool -> hint_db_name -> Names.transparent_state -> bool -> unit
