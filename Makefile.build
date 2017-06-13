@@ -606,7 +606,7 @@ OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
 coqlib: theories plugins
 
 theories: $(THEORIESVO)
-plugins: $(PLUGINSVO) $(PLUGINSCMO)
+plugins: $(PLUGINSVO)
 
 .PHONY: coqlib theories plugins
 
