@@ -85,8 +85,8 @@
 ########################################################################
 # fiat_parsers
 ########################################################################
-: ${fiat_parsers_CI_BRANCH:=trunk__API}
-: ${fiat_parsers_CI_GITURL:=https://github.com/matejkosik/fiat.git}
+: ${fiat_parsers_CI_BRANCH:=master}
+: ${fiat_parsers_CI_GITURL:=https://github.com/mit-plv/fiat.git}
 
 ########################################################################
 # fiat_crypto
