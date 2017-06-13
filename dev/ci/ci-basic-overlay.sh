@@ -13,8 +13,8 @@
 ########################################################################
 # UniMath
 ########################################################################
-: ${UniMath_CI_BRANCH:=coq_makefile2-fix}
-: ${UniMath_CI_GITURL:=https://github.com/maximedenes/UniMath.git}
+: ${UniMath_CI_BRANCH:=master}
+: ${UniMath_CI_GITURL:=https://github.com/UniMath/UniMath.git}
 
 ########################################################################
 # Unicoq + Metacoq
