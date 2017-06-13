@@ -1053,21 +1053,31 @@ dependencies. This tactic is the inverse of {\tt intro}.
 \label{move}
 
 This moves the hypothesis named {\ident$_1$} in the local context
-after the hypothesis named {\ident$_2$}. The proof term is not changed.
+after the hypothesis named {\ident$_2$}, where ``after'' is in
+reference to the direction of the move. The proof term is not changed.
 
-If {\ident$_1$} comes before {\ident$_2$} in the order of dependencies,
-then all the hypotheses between {\ident$_1$} and {\ident$_2$} that
-(possibly indirectly) depend on {\ident$_1$} are moved too.
+If {\ident$_1$} comes before {\ident$_2$} in the order of
+dependencies, then all the hypotheses between {\ident$_1$} and
+{\ident$_2$} that (possibly indirectly) depend on {\ident$_1$} are
+moved too, and all of them are thus moved after {\ident$_2$} in the
+order of dependencies.
 
 If {\ident$_1$} comes after {\ident$_2$} in the order of dependencies,
 then all the hypotheses between {\ident$_1$} and {\ident$_2$} that
-(possibly indirectly) occur in {\ident$_1$} are moved too.
+(possibly indirectly) occur in the type of {\ident$_1$} are moved
+too, and all of them are thus moved before {\ident$_2$} in the order
+of dependencies.
 
 \begin{Variants}
 
 \item {\tt move {\ident$_1$} before {\ident$_2$}}
 
-This moves {\ident$_1$} towards and just before the hypothesis named {\ident$_2$}.
+This moves {\ident$_1$} towards and just before the hypothesis named
+{\ident$_2$}. As for {\tt move {\ident$_1$} after {\ident$_2$}},
+dependencies over {\ident$_1$} (when {\ident$_1$} comes before
+{\ident$_2$} in the order of dependencies) or in the type of
+{\ident$_1$} (when {\ident$_1$} comes after {\ident$_2$} in the order
+of dependencies) are moved too.
 
 \item {\tt move {\ident} at top}
 
@@ -1084,12 +1094,29 @@ This moves {\ident} at the bottom of the local context (at the end of the contex
 \item \errindex{No such hypothesis}
 
 \item \errindex{Cannot move {\ident$_1$} after {\ident$_2$}:
-                   it occurs in {\ident$_2$}}
+                   it occurs in the type of {\ident$_2$}}
 
 \item \errindex{Cannot move {\ident$_1$} after {\ident$_2$}:
                    it depends on {\ident$_2$}}
 
 \end{ErrMsgs}
+
+\Example
+
+\begin{coq_example}
+Goal forall x :nat, x = 0 -> forall z y:nat, y=y-> 0=x.
+intros x H z y H0.
+move x after H0.
+Undo.
+move x before H0.
+Undo.
+move H0 after H.
+Undo.
+move H0 before H.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 
 \subsection{\tt rename {\ident$_1$} into {\ident$_2$}}
 \tacindex{rename}
