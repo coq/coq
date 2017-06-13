@@ -536,20 +536,27 @@ let reduce_mind_case_use_function func env sigma mia =
     | _ -> assert false
 
 
-let match_eval_ref env sigma constr = 
+let match_eval_ref env sigma constr stack =
   match EConstr.kind sigma constr with
-  | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
-      Some (EvalConst sp, u)
+  | Const (sp, u) ->
+     reduction_effect_hook env sigma (EConstr.to_constr sigma constr)
+        (lazy (EConstr.to_constr sigma (applist (constr,stack))));
+     if is_evaluable env (EvalConstRef sp) then Some (EvalConst sp, u) else None
   | Var id when is_evaluable env (EvalVarRef id) -> Some (EvalVar id, EInstance.empty)
   | Rel i -> Some (EvalRel i, EInstance.empty)
   | Evar ev -> Some (EvalEvar ev, EInstance.empty)
   | _ -> None
 
-let match_eval_ref_value env sigma constr = 
+let match_eval_ref_value env sigma constr stack =
   match EConstr.kind sigma constr with
-  | Const (sp, u) when is_evaluable env (EvalConstRef sp) ->
-    let u = EInstance.kind sigma u in
-    Some (EConstr.of_constr (constant_value_in env (sp, u)))
+  | Const (sp, u) ->
+     reduction_effect_hook env sigma (EConstr.to_constr sigma constr)
+        (lazy (EConstr.to_constr sigma (applist (constr,stack))));
+    if is_evaluable env (EvalConstRef sp) then
+      let u = EInstance.kind sigma u in
+      Some (EConstr.of_constr (constant_value_in env (sp, u)))
+    else
+      None
   | Var id when is_evaluable env (EvalVarRef id) -> 
      env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
@@ -559,7 +566,7 @@ let match_eval_ref_value env sigma constr =
 let special_red_case env sigma whfun (ci, p, c, lf) =
   let rec redrec s =
     let (constr, cargs) = whfun s in
-    match match_eval_ref env sigma constr with
+    match match_eval_ref env sigma constr cargs with
     | Some (ref, u) ->
       (match reference_opt_value env sigma ref u with
       | None -> raise Redelimination
@@ -774,7 +781,7 @@ and whd_simpl_stack env sigma =
 	 with Redelimination -> s')
 	  
       | _ -> 
-        match match_eval_ref env sigma x with
+        match match_eval_ref env sigma x stack with
 	| Some (ref, u) ->
           (try
 	     let sapp, nocase = red_elim_const env sigma ref u stack in
@@ -796,7 +803,7 @@ and whd_simpl_stack env sigma =
 and whd_construct_stack env sigma s =
   let (constr, cargs as s') = whd_simpl_stack env sigma s in
   if reducible_mind_case sigma constr then s'
-  else match match_eval_ref env sigma constr with
+  else match match_eval_ref env sigma constr cargs with
   | Some (ref, u) ->
     (match reference_opt_value env sigma ref u with
     | None -> raise Redelimination
@@ -844,7 +851,7 @@ let try_red_product env sigma c =
 	  | Reduced s -> simpfun (applist s)
 	  | NotReducible -> raise Redelimination)
       | _ -> 
-        (match match_eval_ref env sigma x with
+        (match match_eval_ref env sigma x [] with
         | Some (ref, u) ->
           (* TO DO: re-fold fixpoints after expansion *)
           (* to get true one-step reductions *)
@@ -925,7 +932,7 @@ let whd_simpl_stack =
 let whd_simpl_orelse_delta_but_fix env sigma c =
   let rec redrec s =
     let (constr, stack as s') = whd_simpl_stack env sigma s in
-    match match_eval_ref_value env sigma constr with
+    match match_eval_ref_value env sigma constr stack with
     | Some c ->
       (match EConstr.kind sigma (snd (decompose_lam sigma c)) with
       | CoFix _ | Fix _ -> s'

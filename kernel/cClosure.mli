@@ -187,7 +187,7 @@ val create_clos_infos :
   ?evars:(existential->constr option) -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
-val env_of_infos : clos_infos -> env
+val env_of_infos : 'a infos -> env
 
 val infos_with_reds : clos_infos -> reds -> clos_infos
 
