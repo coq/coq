@@ -218,6 +218,407 @@ Proof.
   intros [[x y]];exists x;exact y.
 Qed.
 
+(** Equality of sigma types *)
+Import EqNotations.
+Local Notation "'rew' 'dependent' H 'in' H'"
+  := (match H with
+      | eq_refl => H'
+      end)
+       (at level 10, H' at level 10,
+        format "'[' 'rew'  'dependent'  '/    ' H  in  '/' H' ']'").
+
+(** Equality for [sigT] *)
+Section sigT.
+  Local Unset Implicit Arguments.
+  (** Projecting an equality of a pair to equality of the first components *)
+  Definition projT1_eq {A} {P : A -> Type} {u v : { a : A & P a }} (p : u = v)
+    : projT1 u = projT1 v
+    := f_equal (@projT1 _ _) p.
+
+  (** Projecting an equality of a pair to equality of the second components *)
+  Definition projT2_eq {A} {P : A -> Type} {u v : { a : A & P a }} (p : u = v)
+    : rew projT1_eq p in projT2 u = projT2 v
+    := rew dependent p in eq_refl.
+
+  (** Equality of [sigT] is itself a [sigT] (forwards-reasoning version) *)
+  Definition eq_existT_uncurried {A : Type} {P : A -> Type} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+             (pq : { p : u1 = v1 & rew p in u2 = v2 })
+    : existT _ u1 u2 = existT _ v1 v2.
+  Proof.
+    destruct pq as [p q].
+    destruct q; simpl in *.
+    destruct p; reflexivity.
+  Defined.
+
+  (** Equality of [sigT] is itself a [sigT] (backwards-reasoning version) *)
+  Definition eq_sigT_uncurried {A : Type} {P : A -> Type} (u v : { a : A & P a })
+             (pq : { p : projT1 u = projT1 v & rew p in projT2 u = projT2 v })
+    : u = v.
+  Proof.
+    destruct u as [u1 u2], v as [v1 v2]; simpl in *.
+    apply eq_existT_uncurried; exact pq.
+  Defined.
+
+  (** Curried version of proving equality of sigma types *)
+  Definition eq_sigT {A : Type} {P : A -> Type} (u v : { a : A & P a })
+             (p : projT1 u = projT1 v) (q : rew p in projT2 u = projT2 v)
+    : u = v
+    := eq_sigT_uncurried u v (existT _ p q).
+
+  (** Equality of [sigT] when the property is an hProp *)
+  Definition eq_sigT_hprop {A P} (P_hprop : forall (x : A) (p q : P x), p = q)
+             (u v : { a : A & P a })
+             (p : projT1 u = projT1 v)
+    : u = v
+    := eq_sigT u v p (P_hprop _ _ _).
+
+  (** Equivalence of equality of [sigT] with a [sigT] of equality *)
+  (** We could actually prove an isomorphism here, and not just [<->],
+      but for simplicity, we don't. *)
+  Definition eq_sigT_uncurried_iff {A P}
+             (u v : { a : A & P a })
+    : u = v <-> { p : projT1 u = projT1 v & rew p in projT2 u = projT2 v }.
+  Proof.
+    split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sigT_uncurried ].
+  Defined.
+
+  (** Induction principle for [@eq (sigT _)] *)
+  Definition eq_sigT_rect {A P} {u v : { a : A & P a }} (Q : u = v -> Type)
+             (f : forall p q, Q (eq_sigT u v p q))
+    : forall p, Q p.
+  Proof. intro p; specialize (f (projT1_eq p) (projT2_eq p)); destruct u, p; exact f. Defined.
+  Definition eq_sigT_rec {A P u v} (Q : u = v :> { a : A & P a } -> Set) := eq_sigT_rect Q.
+  Definition eq_sigT_ind {A P u v} (Q : u = v :> { a : A & P a } -> Prop) := eq_sigT_rec Q.
+
+  (** Equivalence of equality of [sigT] involving hProps with equality of the first components *)
+  Definition eq_sigT_hprop_iff {A P} (P_hprop : forall (x : A) (p q : P x), p = q)
+             (u v : { a : A & P a })
+    : u = v <-> (projT1 u = projT1 v)
+    := conj (fun p => f_equal (@projT1 _ _) p) (eq_sigT_hprop P_hprop u v).
+
+  (** Non-dependent classification of equality of [sigT] *)
+  Definition eq_sigT_nondep {A B : Type} (u v : { a : A & B })
+             (p : projT1 u = projT1 v) (q : projT2 u = projT2 v)
+    : u = v
+    := @eq_sigT _ _ u v p (eq_trans (rew_const _ _) q).
+
+  (** Classification of transporting across an equality of [sigT]s *)
+  Lemma rew_sigT {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : { p : P x & Q x p }) {y} (H : x = y)
+    : rew [fun a => { p : P a & Q a p }] H in u
+      = existT
+          (Q y)
+          (rew H in projT1 u)
+          (rew dependent H in (projT2 u)).
+  Proof.
+    destruct H, u; reflexivity.
+  Defined.
+End sigT.
+
+(** Equality for [sig] *)
+Section sig.
+  Local Unset Implicit Arguments.
+  (** Projecting an equality of a pair to equality of the first components *)
+  Definition proj1_sig_eq {A} {P : A -> Prop} {u v : { a : A | P a }} (p : u = v)
+    : proj1_sig u = proj1_sig v
+    := f_equal (@proj1_sig _ _) p.
+
+  (** Projecting an equality of a pair to equality of the second components *)
+  Definition proj2_sig_eq {A} {P : A -> Prop} {u v : { a : A | P a }} (p : u = v)
+    : rew proj1_sig_eq p in proj2_sig u = proj2_sig v
+    := rew dependent p in eq_refl.
+
+  (** Equality of [sig] is itself a [sig] (forwards-reasoning version) *)
+  Definition eq_exist_uncurried {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+             (pq : { p : u1 = v1 | rew p in u2 = v2 })
+    : exist _ u1 u2 = exist _ v1 v2.
+  Proof.
+    destruct pq as [p q].
+    destruct q; simpl in *.
+    destruct p; reflexivity.
+  Defined.
+
+  (** Equality of [sig] is itself a [sig] (backwards-reasoning version) *)
+  Definition eq_sig_uncurried {A : Type} {P : A -> Prop} (u v : { a : A | P a })
+             (pq : { p : proj1_sig u = proj1_sig v | rew p in proj2_sig u = proj2_sig v })
+    : u = v.
+  Proof.
+    destruct u as [u1 u2], v as [v1 v2]; simpl in *.
+    apply eq_exist_uncurried; exact pq.
+  Defined.
+
+  (** Curried version of proving equality of sigma types *)
+  Definition eq_sig {A : Type} {P : A -> Prop} (u v : { a : A | P a })
+             (p : proj1_sig u = proj1_sig v) (q : rew p in proj2_sig u = proj2_sig v)
+    : u = v
+    := eq_sig_uncurried u v (exist _ p q).
+
+  (** Induction principle for [@eq (sig _)] *)
+  Definition eq_sig_rect {A P} {u v : { a : A | P a }} (Q : u = v -> Type)
+             (f : forall p q, Q (eq_sig u v p q))
+    : forall p, Q p.
+  Proof. intro p; specialize (f (proj1_sig_eq p) (proj2_sig_eq p)); destruct u, p; exact f. Defined.
+  Definition eq_sig_rec {A P u v} (Q : u = v :> { a : A | P a } -> Set) := eq_sig_rect Q.
+  Definition eq_sig_ind {A P u v} (Q : u = v :> { a : A | P a } -> Prop) := eq_sig_rec Q.
+
+  (** Equality of [sig] when the property is an hProp *)
+  Definition eq_sig_hprop {A} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
+             (u v : { a : A | P a })
+             (p : proj1_sig u = proj1_sig v)
+    : u = v
+    := eq_sig u v p (P_hprop _ _ _).
+
+  (** Equivalence of equality of [sig] with a [sig] of equality *)
+  (** We could actually prove an isomorphism here, and not just [<->],
+      but for simplicity, we don't. *)
+  Definition eq_sig_uncurried_iff {A} {P : A -> Prop}
+             (u v : { a : A | P a })
+    : u = v <-> { p : proj1_sig u = proj1_sig v | rew p in proj2_sig u = proj2_sig v }.
+  Proof.
+    split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sig_uncurried ].
+  Defined.
+
+  (** Equivalence of equality of [sig] involving hProps with equality of the first components *)
+  Definition eq_sig_hprop_iff {A} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
+             (u v : { a : A | P a })
+    : u = v <-> (proj1_sig u = proj1_sig v)
+    := conj (fun p => f_equal (@proj1_sig _ _) p) (eq_sig_hprop P_hprop u v).
+
+  Lemma rew_sig {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : { p : P x | Q x p }) {y} (H : x = y)
+    : rew [fun a => { p : P a | Q a p }] H in u
+      = exist
+          (Q y)
+          (rew H in proj1_sig u)
+          (rew dependent H in proj2_sig u).
+  Proof.
+    destruct H, u; reflexivity.
+  Defined.
+End sig.
+
+(** Equality for [sigT] *)
+Section sigT2.
+  (* We make [sigT_of_sigT2] a coercion so we can use [projT1], [projT2] on [sigT2] *)
+  Local Coercion sigT_of_sigT2 : sigT2 >-> sigT.
+  Local Unset Implicit Arguments.
+  (** Projecting an equality of a pair to equality of the first components *)
+  Definition sigT_of_sigT2_eq {A} {P Q : A -> Type} {u v : { a : A & P a & Q a }} (p : u = v)
+    : u = v :> { a : A & P a }
+    := f_equal _ p.
+  Definition projT1_of_sigT2_eq {A} {P Q : A -> Type} {u v : { a : A & P a & Q a }} (p : u = v)
+    : projT1 u = projT1 v
+    := projT1_eq (sigT_of_sigT2_eq p).
+
+  (** Projecting an equality of a pair to equality of the second components *)
+  Definition projT2_of_sigT2_eq {A} {P Q : A -> Type} {u v : { a : A & P a & Q a }} (p : u = v)
+    : rew projT1_of_sigT2_eq p in projT2 u = projT2 v
+    := rew dependent p in eq_refl.
+
+  (** Projecting an equality of a pair to equality of the third components *)
+  Definition projT3_eq {A} {P Q : A -> Type} {u v : { a : A & P a & Q a }} (p : u = v)
+    : rew projT1_of_sigT2_eq p in projT3 u = projT3 v
+    := rew dependent p in eq_refl.
+
+  (** Equality of [sigT2] is itself a [sigT2] (forwards-reasoning version) *)
+  Definition eq_existT2_uncurried {A : Type} {P Q : A -> Type}
+             {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
+             (pqr : { p : u1 = v1
+                    & rew p in u2 = v2 & rew p in u3 = v3 })
+    : existT2 _ _ u1 u2 u3 = existT2 _ _ v1 v2 v3.
+  Proof.
+    destruct pqr as [p q r].
+    destruct r, q, p; simpl.
+    reflexivity.
+  Defined.
+
+  (** Equality of [sigT2] is itself a [sigT2] (backwards-reasoning version) *)
+  Definition eq_sigT2_uncurried {A : Type} {P Q : A -> Type} (u v : { a : A & P a & Q a })
+             (pqr : { p : projT1 u = projT1 v
+                    & rew p in projT2 u = projT2 v & rew p in projT3 u = projT3 v })
+    : u = v.
+  Proof.
+    destruct u as [u1 u2 u3], v as [v1 v2 v3]; simpl in *.
+    apply eq_existT2_uncurried; exact pqr.
+  Defined.
+
+  (** Curried version of proving equality of sigma types *)
+  Definition eq_sigT2 {A : Type} {P Q : A -> Type} (u v : { a : A & P a & Q a })
+             (p : projT1 u = projT1 v)
+             (q : rew p in projT2 u = projT2 v)
+             (r : rew p in projT3 u = projT3 v)
+    : u = v
+    := eq_sigT2_uncurried u v (existT2 _ _ p q r).
+
+  (** Equality of [sigT2] when the second property is an hProp *)
+  Definition eq_sigT2_hprop {A P Q} (Q_hprop : forall (x : A) (p q : Q x), p = q)
+             (u v : { a : A & P a & Q a })
+             (p : u = v :> { a : A & P a })
+    : u = v
+    := eq_sigT2 u v (projT1_eq p) (projT2_eq p) (Q_hprop _ _ _).
+
+  (** Equivalence of equality of [sigT2] with a [sigT2] of equality *)
+  (** We could actually prove an isomorphism here, and not just [<->],
+      but for simplicity, we don't. *)
+  Definition eq_sigT2_uncurried_iff {A P Q}
+             (u v : { a : A & P a & Q a })
+    : u = v
+      <-> { p : projT1 u = projT1 v
+          & rew p in projT2 u = projT2 v & rew p in projT3 u = projT3 v }.
+  Proof.
+    split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sigT2_uncurried ].
+  Defined.
+
+  (** Induction principle for [@eq (sigT2 _ _)] *)
+  Definition eq_sigT2_rect {A P Q} {u v : { a : A & P a & Q a }} (R : u = v -> Type)
+             (f : forall p q r, R (eq_sigT2 u v p q r))
+    : forall p, R p.
+  Proof.
+    intro p.
+    specialize (f (projT1_of_sigT2_eq p) (projT2_of_sigT2_eq p) (projT3_eq p)).
+    destruct u, p; exact f.
+  Defined.
+  Definition eq_sigT2_rec {A P Q u v} (R : u = v :> { a : A & P a & Q a } -> Set) := eq_sigT2_rect R.
+  Definition eq_sigT2_ind {A P Q u v} (R : u = v :> { a : A & P a & Q a } -> Prop) := eq_sigT2_rec R.
+
+  (** Equivalence of equality of [sigT2] involving hProps with equality of the first components *)
+  Definition eq_sigT2_hprop_iff {A P Q} (Q_hprop : forall (x : A) (p q : Q x), p = q)
+             (u v : { a : A & P a & Q a })
+    : u = v <-> (u = v :> { a : A & P a })
+    := conj (fun p => f_equal (@sigT_of_sigT2 _ _ _) p) (eq_sigT2_hprop Q_hprop u v).
+
+  (** Non-dependent classification of equality of [sigT] *)
+  Definition eq_sigT2_nondep {A B C : Type} (u v : { a : A & B & C })
+             (p : projT1 u = projT1 v) (q : projT2 u = projT2 v) (r : projT3 u = projT3 v)
+    : u = v
+    := @eq_sigT2 _ _ _ u v p (eq_trans (rew_const _ _) q) (eq_trans (rew_const _ _) r).
+
+  (** Classification of transporting across an equality of [sigT2]s *)
+  Lemma rew_sigT2 {A x} {P : A -> Type} (Q R : forall a, P a -> Prop)
+        (u : { p : P x & Q x p & R x p })
+        {y} (H : x = y)
+    : rew [fun a => { p : P a & Q a p & R a p }] H in u
+      = existT2
+          (Q y)
+          (R y)
+          (rew H in projT1 u)
+          (rew dependent H in projT2 u)
+          (rew dependent H in projT3 u).
+  Proof.
+    destruct H, u; reflexivity.
+  Defined.
+End sigT2.
+
+(** Equality for [sig2] *)
+Section sig2.
+  (* We make [sig_of_sig2] a coercion so we can use [proj1], [proj2] on [sig2] *)
+  Local Coercion sig_of_sig2 : sig2 >-> sig.
+  Local Unset Implicit Arguments.
+  (** Projecting an equality of a pair to equality of the first components *)
+  Definition sig_of_sig2_eq {A} {P Q : A -> Prop} {u v : { a : A | P a & Q a }} (p : u = v)
+    : u = v :> { a : A | P a }
+    := f_equal _ p.
+  Definition proj1_sig_of_sig2_eq {A} {P Q : A -> Prop} {u v : { a : A | P a & Q a }} (p : u = v)
+    : proj1_sig u = proj1_sig v
+    := proj1_sig_eq (sig_of_sig2_eq p).
+
+  (** Projecting an equality of a pair to equality of the second components *)
+  Definition proj2_sig_of_sig2_eq {A} {P Q : A -> Prop} {u v : { a : A | P a & Q a }} (p : u = v)
+    : rew proj1_sig_of_sig2_eq p in proj2_sig u = proj2_sig v
+    := rew dependent p in eq_refl.
+
+  (** Projecting an equality of a pair to equality of the third components *)
+  Definition proj3_sig_eq {A} {P Q : A -> Prop} {u v : { a : A | P a & Q a }} (p : u = v)
+    : rew proj1_sig_of_sig2_eq p in proj3_sig u = proj3_sig v
+    := rew dependent p in eq_refl.
+
+  (** Equality of [sig2] is itself a [sig2] (fowards-reasoning version) *)
+  Definition eq_exist2_uncurried {A} {P Q : A -> Prop}
+             {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
+             (pqr : { p : u1 = v1
+                    | rew p in u2 = v2 & rew p in u3 = v3 })
+    : exist2 _ _ u1 u2 u3 = exist2 _ _ v1 v2 v3.
+  Proof.
+    destruct pqr as [p q r].
+    destruct r, q, p; simpl.
+    reflexivity.
+  Defined.
+
+  (** Equality of [sig2] is itself a [sig2] (backwards-reasoning version) *)
+  Definition eq_sig2_uncurried {A} {P Q : A -> Prop} (u v : { a : A | P a & Q a })
+             (pqr : { p : proj1_sig u = proj1_sig v
+                    | rew p in proj2_sig u = proj2_sig v & rew p in proj3_sig u = proj3_sig v })
+    : u = v.
+  Proof.
+    destruct u as [u1 u2 u3], v as [v1 v2 v3]; simpl in *.
+    apply eq_exist2_uncurried; exact pqr.
+  Defined.
+
+  (** Curried version of proving equality of sigma types *)
+  Definition eq_sig2 {A} {P Q : A -> Prop} (u v : { a : A | P a & Q a })
+             (p : proj1_sig u = proj1_sig v)
+             (q : rew p in proj2_sig u = proj2_sig v)
+             (r : rew p in proj3_sig u = proj3_sig v)
+    : u = v
+    := eq_sig2_uncurried u v (exist2 _ _ p q r).
+
+  (** Equality of [sig2] when the second property is an hProp *)
+  Definition eq_sig2_hprop {A} {P Q : A -> Prop} (Q_hprop : forall (x : A) (p q : Q x), p = q)
+             (u v : { a : A | P a & Q a })
+             (p : u = v :> { a : A | P a })
+    : u = v
+    := eq_sig2 u v (proj1_sig_eq p) (proj2_sig_eq p) (Q_hprop _ _ _).
+
+  (** Equivalence of equality of [sig2] with a [sig2] of equality *)
+  (** We could actually prove an isomorphism here, and not just [<->],
+      but for simplicity, we don't. *)
+  Definition eq_sig2_uncurried_iff {A P Q}
+             (u v : { a : A | P a & Q a })
+    : u = v
+      <-> { p : proj1_sig u = proj1_sig v
+          | rew p in proj2_sig u = proj2_sig v & rew p in proj3_sig u = proj3_sig v }.
+  Proof.
+    split; [ intro; subst; exists eq_refl; reflexivity | apply eq_sig2_uncurried ].
+  Defined.
+
+  (** Induction principle for [@eq (sig2 _ _)] *)
+  Definition eq_sig2_rect {A P Q} {u v : { a : A | P a & Q a }} (R : u = v -> Type)
+             (f : forall p q r, R (eq_sig2 u v p q r))
+    : forall p, R p.
+  Proof.
+    intro p.
+    specialize (f (proj1_sig_of_sig2_eq p) (proj2_sig_of_sig2_eq p) (proj3_sig_eq p)).
+    destruct u, p; exact f.
+  Defined.
+  Definition eq_sig2_rec {A P Q u v} (R : u = v :> { a : A | P a & Q a } -> Set) := eq_sig2_rect R.
+  Definition eq_sig2_ind {A P Q u v} (R : u = v :> { a : A | P a & Q a } -> Prop) := eq_sig2_rec R.
+
+  (** Equivalence of equality of [sig2] involving hProps with equality of the first components *)
+  Definition eq_sig2_hprop_iff {A} {P Q : A -> Prop} (Q_hprop : forall (x : A) (p q : Q x), p = q)
+             (u v : { a : A | P a & Q a })
+    : u = v <-> (u = v :> { a : A | P a })
+    := conj (fun p => f_equal (@sig_of_sig2 _ _ _) p) (eq_sig2_hprop Q_hprop u v).
+
+  (** Non-dependent classification of equality of [sig] *)
+  Definition eq_sig2_nondep {A} {B C : Prop} (u v : @sig2 A (fun _ => B) (fun _ => C))
+             (p : proj1_sig u = proj1_sig v) (q : proj2_sig u = proj2_sig v) (r : proj3_sig u = proj3_sig v)
+    : u = v
+    := @eq_sig2 _ _ _ u v p (eq_trans (rew_const _ _) q) (eq_trans (rew_const _ _) r).
+
+  (** Classification of transporting across an equality of [sig2]s *)
+  Lemma rew_sig2 {A x} {P : A -> Type} (Q R : forall a, P a -> Prop)
+        (u : { p : P x | Q x p & R x p })
+        {y} (H : x = y)
+    : rew [fun a => { p : P a | Q a p & R a p }] H in u
+      = exist2
+          (Q y)
+          (R y)
+          (rew H in proj1_sig u)
+          (rew dependent H in proj2_sig u)
+          (rew dependent H in proj3_sig u).
+  Proof.
+    destruct H, u; reflexivity.
+  Defined.
+End sig2.
+
+
 (** [sumbool] is a boolean type equipped with the justification of
     their value *)
 

@@ -313,8 +313,8 @@ Arguments eq_ind [A] x P _ y _.
 Arguments eq_rec [A] x P _ y _.
 Arguments eq_rect [A] x P _ y _.
 
-Hint Resolve I conj or_introl or_intror : core. 
-Hint Resolve eq_refl: core. 
+Hint Resolve I conj or_introl or_intror : core.
+Hint Resolve eq_refl: core.
 Hint Resolve ex_intro ex_intro2: core.
 
 Section Logic_lemmas.
@@ -504,6 +504,11 @@ Proof.
   reflexivity.
 Defined.
 
+Lemma eq_refl_map_distr : forall A B x (f:A->B), f_equal f (eq_refl x) = eq_refl (f x).
+Proof.
+  reflexivity.
+Qed.
+
 Lemma eq_trans_map_distr : forall A B x y z (f:A->B) (e:x=y) (e':y=z), f_equal f (eq_trans e e') = eq_trans (f_equal f e) (f_equal f e').
 Proof.
 destruct e'.
@@ -521,6 +526,19 @@ Proof.
 destruct e, e'.
 reflexivity.
 Defined.
+
+Lemma eq_trans_rew_distr : forall A (P:A -> Type) (x y z:A) (e:x=y) (e':y=z) (k:P x),
+    rew (eq_trans e e') in k = rew e' in rew e in k.
+Proof.
+  destruct e, e'; reflexivity.
+Qed.
+
+Lemma rew_const : forall A P (x y:A) (e:x=y) (k:P),
+    rew [fun _ => P] e in k = k.
+Proof.
+  destruct e; reflexivity.
+Qed.
+
 
 (* Aliases *)
 
@@ -575,7 +593,7 @@ Proof.
     assert (H : x0 = x1) by (transitivity x; [symmetry|]; auto).
     destruct H.
     assumption.
-Qed.   
+Qed.
 
 Lemma forall_exists_coincide_unique_domain :
   forall A (P:A->Prop),
@@ -587,7 +605,7 @@ Proof.
   exists x. split; [trivial|].
   destruct H with (Q:=fun x'=>x=x') as (_,Huniq).
   apply Huniq. exists x; auto.
-Qed.       
+Qed.
 
 (** * Being inhabited *)
 
@@ -631,3 +649,97 @@ Qed.
 
 Declare Left Step iff_stepl.
 Declare Right Step iff_trans.
+
+Local Notation "'rew' 'dependent' H 'in' H'"
+  := (match H with
+      | eq_refl => H'
+      end)
+       (at level 10, H' at level 10,
+        format "'[' 'rew'  'dependent'  '/    ' H  in  '/' H' ']'").
+
+(** Equality for [ex] *)
+Section ex.
+  Local Unset Implicit Arguments.
+  Definition eq_ex_uncurried {A : Type} (P : A -> Prop) {u1 v1 : A} {u2 : P u1} {v2 : P v1}
+             (pq : exists p : u1 = v1, rew p in u2 = v2)
+  : ex_intro P u1 u2 = ex_intro P v1 v2.
+  Proof.
+    destruct pq as [p q].
+    destruct q; simpl in *.
+    destruct p; reflexivity.
+  Qed.
+
+  Definition eq_ex {A : Type} {P : A -> Prop} (u1 v1 : A) (u2 : P u1) (v2 : P v1)
+             (p : u1 = v1) (q : rew p in u2 = v2)
+  : ex_intro P u1 u2 = ex_intro P v1 v2
+    := eq_ex_uncurried P (ex_intro _ p q).
+
+  Definition eq_ex_hprop {A} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
+             (u1 v1 : A) (u2 : P u1) (v2 : P v1)
+             (p : u1 = v1)
+    : ex_intro P u1 u2 = ex_intro P v1 v2
+    := eq_ex u1 v1 u2 v2 p (P_hprop _ _ _).
+
+  Lemma rew_ex {A x} {P : A -> Type} (Q : forall a, P a -> Prop) (u : exists p, Q x p) {y} (H : x = y)
+  : rew [fun a => exists p, Q a p] H in u
+    = match u with
+        | ex_intro _ u1 u2
+          => ex_intro
+               (Q y)
+               (rew H in u1)
+               (rew dependent H in u2)
+      end.
+  Proof.
+    destruct H, u; reflexivity.
+  Qed.
+End ex.
+
+(** Equality for [ex2] *)
+Section ex2.
+  Local Unset Implicit Arguments.
+
+  Definition eq_ex2_uncurried {A : Type} (P Q : A -> Prop) {u1 v1 : A}
+             {u2 : P u1} {v2 : P v1}
+             {u3 : Q u1} {v3 : Q v1}
+             (pq : exists2 p : u1 = v1, rew p in u2 = v2 & rew p in u3 = v3)
+  : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3.
+  Proof.
+    destruct pq as [p q r].
+    destruct r, q, p; simpl in *.
+    reflexivity.
+  Qed.
+
+  Definition eq_ex2 {A : Type} {P Q : A -> Prop}
+             (u1 v1 : A)
+             (u2 : P u1) (v2 : P v1)
+             (u3 : Q u1) (v3 : Q v1)
+             (p : u1 = v1) (q : rew p in u2 = v2) (r : rew p in u3 = v3)
+  : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3
+    := eq_ex2_uncurried P Q (ex_intro2 _ _ p q r).
+
+  Definition eq_ex2_hprop {A} {P Q : A -> Prop}
+             (P_hprop : forall (x : A) (p q : P x), p = q)
+             (Q_hprop : forall (x : A) (p q : Q x), p = q)
+             (u1 v1 : A) (u2 : P u1) (v2 : P v1) (u3 : Q u1) (v3 : Q v1)
+             (p : u1 = v1)
+    : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3
+    := eq_ex2 u1 v1 u2 v2 u3 v3 p (P_hprop _ _ _) (Q_hprop _ _ _).
+
+  Lemma rew_ex2 {A x} {P : A -> Type}
+        (Q : forall a, P a -> Prop)
+        (R : forall a, P a -> Prop)
+        (u : exists2 p, Q x p & R x p) {y} (H : x = y)
+  : rew [fun a => exists2 p, Q a p & R a p] H in u
+    = match u with
+        | ex_intro2 _ _ u1 u2 u3
+          => ex_intro2
+               (Q y)
+               (R y)
+               (rew H in u1)
+               (rew dependent H in u2)
+               (rew dependent H in u3)
+      end.
+  Proof.
+    destruct H, u; reflexivity.
+  Qed.
+End ex2.
