@@ -89,8 +89,7 @@ EXISTINGMLI := $(call find, '*.mli')
 GENML4FILES:= $(ML4FILES:.ml4=.ml)
 export GENMLFILES:=$(LEXFILES:.mll=.ml) tools/tolink.ml kernel/copcodes.ml
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
-export GENVFILES:=theories/Numbers/Natural/BigN/NMake_gen.v
-export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES)
+export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
 
 # NB: all files in $(GENFILES) can be created initially, while
 # .ml files in $(GENML4FILES) might need some intermediate building.

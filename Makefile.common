@@ -129,8 +129,8 @@ RTAUTOCMO:=plugins/rtauto/rtauto_plugin.cmo
 NATSYNTAXCMO:=plugins/syntax/nat_syntax_plugin.cmo
 OTHERSYNTAXCMO:=$(addprefix plugins/syntax/, \
         z_syntax_plugin.cmo \
-        numbers_syntax_plugin.cmo \
         r_syntax_plugin.cmo \
+	int31_syntax_plugin.cmo \
 	ascii_syntax_plugin.cmo \
         string_syntax_plugin.cmo )
 DERIVECMO:=plugins/derive/derive_plugin.cmo
@@ -161,14 +161,8 @@ LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)
 # vo files
 ###########################################################################
 
-GENVOFILES := $(GENVFILES:.v=.vo)
-
-THEORIESVO := $(patsubst %.v,%.vo,$(shell find theories -type f -name "*.v")) \
-              $(filter theories/%, $(GENVOFILES))
-
-PLUGINSVO := $(patsubst %.v,%.vo,$(shell find plugins -type f -name "*.v")) \
-             $(filter plugins/%, $(GENVOFILES))
-
+THEORIESVO := $(patsubst %.v,%.vo,$(shell find theories -type f -name "*.v"))
+PLUGINSVO := $(patsubst %.v,%.vo,$(shell find plugins -type f -name "*.v"))
 ALLVO := $(THEORIESVO) $(PLUGINSVO)
 VFILES := $(ALLVO:.vo=.v)
 

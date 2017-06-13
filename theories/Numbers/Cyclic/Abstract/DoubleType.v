@@ -67,4 +67,3 @@ Fixpoint word (w:Type) (n:nat) : Type :=
  | O => w
  | S n => zn2z (word w n)
  end.
-

@@ -150,7 +150,6 @@ plugins/ssr/ssrvernac.ml
 kernel/byterun/coq_jumptbl.h
 kernel/copcodes.ml
 tools/tolink.ml
-theories/Numbers/Natural/BigN/NMake_gen.v
 ide/index_urls.txt
 .lia.cache
 checker/names.ml

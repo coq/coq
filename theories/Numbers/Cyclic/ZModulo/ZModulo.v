@@ -18,7 +18,7 @@ Set Implicit Arguments.
 Require Import Bool.
 Require Import ZArith.
 Require Import Znumtheory.
-Require Import BigNumPrelude.
+Require Import Zpow_facts.
 Require Import DoubleType.
 Require Import CyclicAxioms.
 
@@ -48,13 +48,14 @@ Section ZModulo.
 
  Lemma spec_more_than_1_digit: 1 < Zpos digits.
  Proof.
-  generalize digits_ne_1; destruct digits; auto.
+  generalize digits_ne_1; destruct digits; red; auto.
   destruct 1; auto.
  Qed.
  Let digits_gt_1 := spec_more_than_1_digit.
 
  Lemma wB_pos : wB > 0.
  Proof.
+  apply Z.lt_gt.
   unfold wB, base; auto with zarith.
  Qed.
  Hint Resolve wB_pos.
@@ -558,7 +559,7 @@ Section ZModulo.
  apply Zmod_small.
  generalize (Z_mod_lt [|w|] (2 ^ [|p|])); intros.
  split.
- destruct H; auto with zarith.
+ destruct H; auto using Z.lt_gt with zarith.
  apply Z.le_lt_trans with [|w|]; auto with zarith.
  apply Zmod_le; auto with zarith.
  Qed.
