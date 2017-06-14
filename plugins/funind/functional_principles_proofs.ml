@@ -1381,7 +1381,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 
 
 (* Proof of principles of general functions *)
-(* let  hrec_id =  Recdef.hrec_id *)
+(* let  hrec_id = Recdef.hrec_id *)
 (* and acc_inv_id = Recdef.acc_inv_id *)
 (* and ltof_ref = Recdef.ltof_ref *)
 (* and acc_rel = Recdef.acc_rel *)
