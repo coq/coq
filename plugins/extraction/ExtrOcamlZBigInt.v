@@ -8,6 +8,8 @@
 
 (** Extraction of [positive], [N] and [Z] into Ocaml's [big_int] *)
 
+Require Coq.extraction.Extraction.
+
 Require Import ZArith NArith.
 Require Import ExtrOcamlBasic.
 

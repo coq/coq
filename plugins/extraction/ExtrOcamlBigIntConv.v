@@ -13,6 +13,8 @@
     simplifies the use of [Big_int] (it can be found in the sources
     of Coq). *)
 
+Require Coq.extraction.Extraction.
+
 Require Import Arith ZArith.
 
 Parameter bigint : Type.

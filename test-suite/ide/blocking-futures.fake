@@ -4,6 +4,7 @@
 # Extraction will force the future computation, assert it is blocking
 # Example courtesy of Jonathan (jonikelee)
 #
+ADD { Require Coq.extraction.Extraction. }
 ADD { Require Import List. }
 ADD { Import ListNotations. }
 ADD { Definition myrev{A}(l : list A) : {rl : list A | rl = rev l}. }

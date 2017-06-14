@@ -147,6 +147,7 @@ Proof.
  intros; absurd (p < p); eauto with arith.
 Qed.
 
+Require Coq.extraction.Extraction.
 Extraction max.
 
 

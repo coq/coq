@@ -211,6 +211,7 @@ end
 module Mltop :
 sig
   val add_known_module : string -> unit
+  val module_is_known : string -> bool
   val declare_cache_obj : (unit -> unit) -> string -> unit
 end
 module Vernacinterp :
