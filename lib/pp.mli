@@ -13,6 +13,7 @@
 (* `Pp.t` or `Pp.std_ppcmds` is the main pretty printing document type  *)
 (* in the Coq system. Documents are composed laying out boxes, and      *)
 (* users can add arbitrary tag metadata that backends are free          *)
+(* to interpret.                                                        *)
 (*                                                                      *)
 (* The datatype has a public view to allow serialization or advanced    *)
 (* uses, however regular users are _strongly_ warned againt its use,    *)
