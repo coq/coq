@@ -196,6 +196,10 @@ let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra} c =
     ltac_bound = Id.Set.empty;
     ltac_extra = extra;
   } in
+  let env = if !strict_check then env else
+    (* Deactivate generated names warning in unstrict mode *)
+    Environ.reset_with_named_context
+      (Environ.set_named_context_private (Environ.named_context_val env) Id.Set.empty) env in
   let c' =
     warn (Constrintern.intern_gen scope ~pattern_mode ~ltacvars env) c
   in
