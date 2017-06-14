@@ -2808,6 +2808,8 @@ sig
   val clos_whd_flags : CClosure.RedFlags.reds -> reduction_function
   val nf_beta : local_reduction_function
   val nf_betaiota : local_reduction_function
+  val nf_betaiotazeta : local_reduction_function
+  val nf_all : reduction_function
   val splay_prod : Environ.env ->  Evd.evar_map -> EConstr.constr ->
                    (Names.Name.t * EConstr.constr) list * EConstr.constr
   val splay_prod_n : Environ.env ->  Evd.evar_map -> int -> EConstr.constr -> EConstr.rel_context * EConstr.constr
