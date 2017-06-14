@@ -65,8 +65,8 @@ TIMECMD?=
 STDTIME?=/usr/bin/time -f "$* (user: %U mem: %M ko)"
 
 # Coq binaries
-COQC     ?= $(TIMER) "$(COQBIN)coqc"
-COQCHK   ?= $(TIMER) "$(COQBIN)coqchk"
+COQC     ?= "$(COQBIN)coqc"
+COQCHK   ?= "$(COQBIN)coqchk"
 COQDEP   ?= "$(COQBIN)coqdep"
 GALLINA  ?= "$(COQBIN)gallina"
 COQDOC   ?= "$(COQBIN)coqdoc"
@@ -132,7 +132,7 @@ COQDOCFLAGS?=-interpolate -utf8 $(COQLIBS_NOML)
 
 # The version of Coq being run and the version of coq_makefile that
 # generated this makefile
-COQ_VERSION:=$(shell $(COQC) --print-version 2>/dev/null | cut -d ' ' -f 1)
+COQ_VERSION:=$(shell $(COQC) --print-version | cut -d ' ' -f 1)
 COQMAKEFILE_VERSION:=@COQ_VERSION@
 
 COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)$(d)")
@@ -281,17 +281,17 @@ quick: $(VOFILES:.vo=.vio)
 .PHONY: quick
 
 vio2vo:
-	$(COQC) $(COQDEBUG) $(COQFLAGS) \
+	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) \
 		-schedule-vio2vo $(J) $(VOFILES:%.vo=%.vio)
 .PHONY: vio2vo
 
 checkproofs:
-	$(COQC) $(COQDEBUG) $(COQFLAGS) \
+	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) \
 		-schedule-vio-checking $(J) $(VOFILES:%.vo=%.vio)
 .PHONY: checkproofs
 
 validate: $(VOFILES)
-	$(COQCHK) $(COQCHKFLAGS) $(notdir $(^:.vo=))
+	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $(notdir $(^:.vo=))
 .PHONY: validate
 
 only: $(TGTS)
@@ -520,19 +520,19 @@ $(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix
 
 $(VOFILES): %.vo: %.v
 	$(SHOW)COQC $<
-	$(HIDE)$(COQC) $(COQDEBUG) $(COQFLAGS) $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $<
 
 # FIXME ?merge with .vo / .vio ?
 $(GLOBFILES): %.glob: %.v
-	$(COQC) $(COQDEBUG) $(COQFLAGS) $<
+	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $<
 
 $(VFILES:.v=.vio): %.vio: %.v
 	$(SHOW)COQC -quick $<
-	$(HIDE)$(COQC) -quick $(COQDEBUG) $(COQFLAGS) $<
+	$(HIDE)$(TIMER) $(COQC) -quick $(COQDEBUG) $(COQFLAGS) $<
 
 $(BEAUTYFILES): %.v.beautified: %.v
 	$(SHOW)'BEAUTIFY $<'
-	$(HIDE)$(COQC) $(COQDEBUG) $(COQFLAGS) -beautify $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) -beautify $<
 
 $(GFILES): %.g: %.v
 	$(SHOW)'GALLINA $<'
