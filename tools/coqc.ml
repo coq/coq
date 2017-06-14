@@ -91,11 +91,10 @@ let parse_args () =
 
 (* Options for coqtop : a) options with 0 argument *)
 
-    | ("-notactics"|"-bt"|"-debug"|"-nolib"|"-boot"|"-time"|"-profile-ltac"
+    | ("-bt"|"-debug"|"-nolib"|"-boot"|"-time"|"-profile-ltac"
       |"-batch"|"-noinit"|"-nois"|"-noglob"|"-no-glob"
-      |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
-      |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
-      |"-dont-load-proofs"|"-load-proofs"|"-force-load-proofs"
+      |"-q"|"-profile"|"-just-parsing"|"-echo" |"-quiet"
+      |"-silent"|"-m"|"-xml"|"-beautify"|"-strict-implicit"
       |"-impredicative-set"|"-vm"|"-native-compiler"
       |"-indices-matter"|"-quick"|"-type-in-type"
       |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
@@ -110,7 +109,7 @@ let parse_args () =
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"
       |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
-      |"-o"|"-profile-ltac-cutoff" 
+      |"-o"|"-profile-ltac-cutoff"
       as o) :: rem ->
 	begin
 	  match rem with

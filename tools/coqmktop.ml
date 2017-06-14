@@ -175,8 +175,6 @@ let parse_args () =
     | "-top" :: rem -> top := true ; parse (op,fl) rem
     | "-no-start" :: rem -> no_start:=true; parse (op, fl) rem
     | "-echo" :: rem -> echo := true ; parse (op,fl) rem
-    | ("-v8"|"-full" as o) :: rem ->
-	Printf.eprintf "warning: option %s deprecated\n" o; parse (op,fl) rem
 
     (* Extra options with arity 0 or 1, directly passed to ocamlc/ocamlopt *)
     | ("-noassert"|"-compact"|"-g"|"-p"|"-thread"|"-dtypes" as o) :: rem ->
