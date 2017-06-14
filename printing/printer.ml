@@ -311,7 +311,7 @@ let get_compact_context,set_compact_context =
   (fun () -> !compact_context),(fun b  -> compact_context := b)
 
 let pr_id_with_privacy private_ids id =
-  if Id.Set.mem id private_ids then str "~" ++ pr_id id else pr_id id
+  if Id.Set.mem id private_ids then Pp.tag "name.unstable" (pr_id id) else pr_id id
 
 let pr_compacted_decl env sigma private_ids decl =
   let ids, pbody, typ = match decl with

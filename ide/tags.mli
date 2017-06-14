@@ -31,6 +31,7 @@ sig
   val highlight : GText.tag
   val hypothesis : GText.tag
   val goal : GText.tag
+  val unstablename : GText.tag
 end
 
 module Message :

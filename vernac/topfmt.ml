@@ -178,6 +178,7 @@ let default_tag_map () = let open Terminal in [
   ; "tactic.keyword"   , make ~bold:true ()
   ; "tactic.primitive" , make ~fg_color:`LIGHT_GREEN ()
   ; "tactic.string"    , make ~fg_color:`LIGHT_RED ()
+  ; "name.unstable"    , make ~negative:true ()
   ]
 
 let tag_map = ref CString.Map.empty
