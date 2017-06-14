@@ -5,7 +5,7 @@
 ##    //   #                                                                 ##
 ###############################################################################
 ## GNUMakefile for Coq @COQ_VERSION@
-  
+
 # For debugging purposes (must stay here, don't move below)
 INITIAL_VARS := $(.VARIABLES)
 # To implement recursion we save the name of the main Makefile
@@ -80,7 +80,7 @@ CAMLOPTLINK ?= $(OCAMLFIND) opt       -rectypes -thread
 CAMLDEP     ?= $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
 
 # DESTDIR is prepended to all installation paths
-DESTDIR ?= 
+DESTDIR ?=
 
 # Debug builds, typically -g to OCaml, -debug to Coq.
 CAMLDEBUG ?=
@@ -96,7 +96,7 @@ COQDEBUG ?=
 #
 # post-all::
 # 	echo "All done!"
-# 
+#
 # in @LOCAL_FILE@
 #
 ###############################################################################
@@ -106,7 +106,7 @@ COQDEBUG ?=
 
 # Flags #######################################################################
 #
-# We define a bunch of variables combining the parameters 
+# We define a bunch of variables combining the parameters
 
 SHOW := $(if $(VERBOSE),@true "",@echo "")
 HIDE := $(if $(VERBOSE),,@)
@@ -127,7 +127,7 @@ DYNLIB:=.cmxs
 endif
 
 COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS)
-COQCHKFLAGS?=-silent -o $(COQLIBS) 
+COQCHKFLAGS?=-silent -o $(COQLIBS)
 COQDOCFLAGS?=-interpolate -utf8 $(COQLIBS_NOML)
 
 # The version of Coq being run and the version of coq_makefile that
@@ -155,7 +155,7 @@ COQLIBINSTALL = $(COQLIB)user-contrib
 COQDOCINSTALL = $(DOCDIR)user-contrib
 COQTOPINSTALL = $(COQLIB)toploop
 
-# Retro compatibility (DESTDIR is standard on Unix, DESTROOT is not) 
+# Retro compatibility (DESTDIR is standard on Unix, DESTROOT is not)
 ifneq "$(DSTROOT)" ""
 DESTDIR := $(DSTROOT)
 endif
@@ -248,7 +248,7 @@ ALLDFILES = $(addsuffix .d,$(ALLSRCFILES))
 
 # Compilation targets #########################################################
 
-all: 
+all:
 	$(HIDE)$(MAKE) --no-print-directory -f "$(SELF)" pre-all
 	$(HIDE)$(MAKE) --no-print-directory -f "$(SELF)" real-all
 	$(HIDE)$(MAKE) --no-print-directory -f "$(SELF)" post-all
@@ -427,10 +427,10 @@ clean::
 	$(HIDE)rm -f $(CMOFILES)
 	$(HIDE)rm -f $(CMIFILES)
 	$(HIDE)rm -f $(CMAFILES)
-	$(HIDE)rm -f $(CMOFILES:.cmo=.cmx) 
+	$(HIDE)rm -f $(CMOFILES:.cmo=.cmx)
 	$(HIDE)rm -f $(CMXAFILES)
-	$(HIDE)rm -f $(CMXSFILES) 
-	$(HIDE)rm -f $(CMOFILES:.cmo=.o) 
+	$(HIDE)rm -f $(CMXSFILES)
+	$(HIDE)rm -f $(CMOFILES:.cmo=.o)
 	$(HIDE)rm -f $(CMXAFILES:.cmxa=.a)
 	$(HIDE)rm -f $(ALLDFILES)
 	$(HIDE)rm -f $(ALLNATIVEFILES)
@@ -513,7 +513,7 @@ $(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack
 	$(SHOW)'CAMLOPT -pack -o $@'
 	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -pack -o $@ $^
 
-# This rule is for _CoqProject with no .mllib nor .mlpack 
+# This rule is for _CoqProject with no .mllib nor .mlpack
 $(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)) $(addsuffix .cmxs,$(LIBEDFILES)),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs)): %.cmxs: %.cmx
 	$(SHOW)'[deprecated,use-mllib-or-mlpack] CAMLOPT -shared -o $@'
 	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -shared -o $@ $<
@@ -600,7 +600,7 @@ byte:
 
 opt:
 	$(HIDE)$(MAKE) all "OPT:=-opt" -f "$(SELF)"
-.PHONY:	opt 
+.PHONY:	opt
 
 # This is deprecated.  To extend this makefile use
 # extension points and @LOCAL_FILE@
@@ -655,4 +655,3 @@ debug:
 .PHONY: debug
 
 .DEFAULT_GOAL := all
-
