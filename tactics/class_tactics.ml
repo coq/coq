@@ -527,10 +527,10 @@ let top_sort evm undefs =
   let tosee = ref undefs in
   let rec visit ev evi =
     let evs = Evarutil.undefined_evars_of_evar_info evm evi in
+      tosee := Evar.Map.remove ev !tosee;
       Evar.Set.iter (fun ev ->
         if Evar.Map.mem ev !tosee then
           visit ev (Evar.Map.find ev !tosee)) evs;
-      tosee := Evar.Map.remove ev !tosee;
       l' := ev :: !l';
   in
     while not (Evar.Map.is_empty !tosee) do
