@@ -134,7 +134,7 @@ OTHERSYNTAXCMO:=$(addprefix plugins/syntax/, \
 	ascii_syntax_plugin.cmo \
         string_syntax_plugin.cmo )
 DERIVECMO:=plugins/derive/derive_plugin.cmo
-LTACCMO:=plugins/ltac/ltac_plugin.cmo
+LTACCMO:=plugins/ltac/ltac_plugin.cmo plugins/ltac/tauto_plugin.cmo
 SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
 SSRCMO:=plugins/ssr/ssreflect_plugin.cmo
 

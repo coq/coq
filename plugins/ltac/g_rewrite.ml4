@@ -27,7 +27,7 @@ open Pcoq.Prim
 open Pcoq.Constr
 open Pltac
 
-DECLARE PLUGIN "g_rewrite"
+DECLARE PLUGIN "ltac_plugin"
 
 type constr_expr_with_bindings = constr_expr with_bindings
 type glob_constr_with_bindings = Tacexpr.glob_constr_and_expr with_bindings

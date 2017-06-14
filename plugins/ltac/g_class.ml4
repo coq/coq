@@ -13,7 +13,7 @@ open Class_tactics
 open Stdarg
 open Tacarg
 
-DECLARE PLUGIN "g_class"
+DECLARE PLUGIN "ltac_plugin"
 
 (** Options: depth, debug and transparency settings. *)
 
