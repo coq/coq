@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
 
 val apply_top_tac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 

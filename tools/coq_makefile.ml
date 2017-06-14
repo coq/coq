@@ -197,7 +197,7 @@ let generate_conf_coq_config oc args bypass_API =
   section oc "Coq configuration.";
   let src_dirs = if bypass_API
                  then Coq_config.all_src_dirs
-                 else Coq_config.api_dirs @ Coq_config.plugins_dirs in
+                 else Coq_config.api_dirs @ Coq_config.plugins_dirs @ ["-open API"] in
   Envars.print_config ~prefix_var_name:"COQMF_" oc src_dirs;
   fprintf oc "COQMF_MAKEFILE=%s\n" (quote (List.hd args)); 
 ;;

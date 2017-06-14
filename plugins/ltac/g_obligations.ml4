@@ -12,7 +12,6 @@
   Syntax for the subtac terms and types.
   Elaborated from correctness/psyntax.ml4 by Jean-Christophe Filliâtre *)
 
-open API
 open Grammar_API
 open Libnames
 open Constrexpr

@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
 open Ltac_plugin
 open Util
 open Names

@@ -8,7 +8,6 @@
 
 (*s Target language for extraction: a core ML called MiniML. *)
 
-open API
 open Pp
 open Names
 open Globnames

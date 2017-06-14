@@ -6,7 +6,6 @@
 
  *************************************************************************)
 
-open API
 open Names
 
 let module_refl_name = "ReflOmegaCore"

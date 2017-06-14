@@ -8,7 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma"  i*)
 
-open API
 open Grammar_API
 open Ltac_plugin
 open Formula
