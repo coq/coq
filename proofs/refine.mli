@@ -21,19 +21,18 @@ val pr_constr :
 
 (** {7 Refinement primitives} *)
 
-val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit tactic
-(** In [refine ?unsafe t], [t] is a term with holes under some
+val refine : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit tactic
+(** In [refine ~typecheck t], [t] is a term with holes under some
     [evar_map] context. The term [t] is used as a partial solution
     for the current goal (refine is a goal-dependent tactic), the
     new holes created by [t] become the new subgoals. Exceptions
     raised during the interpretation of [t] are caught and result in
-    tactic failures. If [unsafe] is [false] (default is [true]) [t] is
-    type-checked beforehand. *)
+    tactic failures. If [typecheck] is [true] [t] is type-checked beforehand. *)
 
-val refine_one : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * ('a * EConstr.t)) -> 'a tactic
+val refine_one : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * ('a * EConstr.t)) -> 'a tactic
 (** A variant of [refine] which assumes exactly one goal under focus *)
 
-val generic_refine : ?unsafe:bool -> ('a * EConstr.t) tactic ->
+val generic_refine : typecheck:bool -> ('a * EConstr.t) tactic ->
   [ `NF ] Proofview.Goal.t -> 'a tactic
 (** The general version of refine. *)
 
@@ -44,7 +43,7 @@ val with_type : Environ.env -> Evd.evar_map ->
 (** [with_type env sigma c t] ensures that [c] is of type [t]
     inserting a coercion if needed. *)
 
-val refine_casted : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit tactic
+val refine_casted : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit tactic
 (** Like {!refine} except the refined term is coerced to the conclusion of the
     current goal. *)
 

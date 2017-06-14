@@ -1539,7 +1539,7 @@ let assert_replacing id newt tac =
     | d :: rem -> insert_dependent env sigma (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
-    Refine.refine ~unsafe:false begin fun sigma ->
+    Refine.refine ~typecheck:true begin fun sigma ->
       let (sigma, ev) = Evarutil.new_evar env' sigma concl in
       let (sigma, ev') = Evarutil.new_evar env sigma newt in
       let map d =
@@ -1573,7 +1573,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	match clause, prf with
 	| Some id, Some p ->
             let tac = tclTHENLIST [
-              Refine.refine ~unsafe:false (fun h -> (h,p));
+              Refine.refine ~typecheck:true (fun h -> (h,p));
               Proofview.Unsafe.tclNEWGOALS gls;
             ] in
             Proofview.Unsafe.tclEVARS undef <*>
@@ -1590,7 +1590,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
               let (sigma, ev) = Evarutil.new_evar env sigma newt in
               (sigma, mkApp (p, [| ev |]))
             end in
-            Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
+            Refine.refine ~typecheck:true make <*> Proofview.Unsafe.tclNEWGOALS gls
             end
 	| None, None ->
             Proofview.Unsafe.tclEVARS undef <*>

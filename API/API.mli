@@ -4101,7 +4101,7 @@ sig
 
   module New :
   sig
-    val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.constr) -> unit Proofview.tactic
+    val refine : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.constr) -> unit Proofview.tactic
     val reduce_after_refine : unit Proofview.tactic
   end
   module Simple :
@@ -4491,7 +4491,7 @@ end
 
 module Refine :
 sig
-  val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit Proofview.tactic
+  val refine : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit Proofview.tactic
   val solve_constraints : unit Proofview.tactic
 end
 
