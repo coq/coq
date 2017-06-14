@@ -61,13 +61,6 @@ let show_proof () =
   let pprf = Proof.partial_proof p in
   Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_econstr pprf)
 
-let show_node () =
-  (* spiwack: I'm have little clue what this function used to do. I deactivated it, 
-      could, possibly, be cleaned away. (Feb. 2010) *)
-  ()
-
-let show_thesis () = CErrors.anomaly (Pp.str "Show Thesis: TODO.")
-
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = get_pftreestate () in
@@ -82,9 +75,6 @@ let show_universes () =
   let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
     Feedback.msg_notice (Termops.pr_evar_universe_context (Evd.evar_universe_context sigma));
     Feedback.msg_notice (str"Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
-
-(* Spiwack: proof tree is currently not working *)
-let show_prooftree () = ()
 
 (* Simulate the Intro(s) tactic *)
 let show_intro all =
@@ -1844,21 +1834,13 @@ let vernac_show = let open Feedback in function
       | GoalUid id -> pr_goal_by_uid id
     in
     msg_notice info
-  | ShowGoalImplicitly None ->
-      Constrextern.with_implicits msg_notice (pr_open_subgoals ())
-  | ShowGoalImplicitly (Some n) ->
-      Constrextern.with_implicits msg_notice (pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
-  | ShowNode -> show_node ()
   | ShowExistentials -> show_top_evars ()
   | ShowUniverses -> show_universes ()
-  | ShowTree -> show_prooftree ()
   | ShowProofNames ->
       msg_notice (pr_sequence pr_id (Pfedit.get_all_proof_names()))
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
-  | ShowThesis -> show_thesis ()
-
 
 let vernac_check_guard () =
   let pts = get_pftreestate () in

@@ -96,17 +96,13 @@ type locatable =
 
 type showable =
   | ShowGoal of goal_reference
-  | ShowGoalImplicitly of int option
   | ShowProof
-  | ShowNode
   | ShowScript
   | ShowExistentials
   | ShowUniverses
-  | ShowTree
   | ShowProofNames
   | ShowIntros of bool
   | ShowMatch of reference
-  | ShowThesis
 
 type comment =
   | CommentConstr of constr_expr

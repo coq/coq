@@ -561,17 +561,13 @@ open Decl_kinds
           | GoalUid n -> spc () ++ str n in
         let pr_showable = function
           | ShowGoal n -> keyword "Show" ++ pr_goal_reference n
-          | ShowGoalImplicitly n -> keyword "Show Implicit Arguments" ++ pr_opt int n
           | ShowProof -> keyword "Show Proof"
-          | ShowNode -> keyword "Show Node"
           | ShowScript -> keyword "Show Script"
           | ShowExistentials -> keyword "Show Existentials"
           | ShowUniverses -> keyword "Show Universes"
-          | ShowTree -> keyword "Show Tree"
           | ShowProofNames -> keyword "Show Conjectures"
           | ShowIntros b -> keyword "Show " ++ (if b then keyword "Intros" else keyword "Intro")
           | ShowMatch id -> keyword "Show Match " ++ pr_reference id
-          | ShowThesis -> keyword "Show Thesis"
         in
         return (pr_showable s)
       | VernacCheckGuard ->
