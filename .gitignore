@@ -52,6 +52,7 @@ config/Info-*.plist
 dev/ocamldebug-coq
 dev/camlp4.dbg
 plugins/micromega/csdpcert
+plugins/micromega/.micromega.ml.generated
 kernel/byterun/dllcoqrun.so
 coqdoc.sty
 .csdp.cache
