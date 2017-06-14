@@ -111,7 +111,7 @@ let pr_open_cur_subgoals () =
   with Proof_global.NoCurrentProof -> Pp.str ""
 
 let vernac_error msg =
-  Format.fprintf !Topfmt.err_ft "@[%a@]%!" Pp.pp_with msg;
+  Topfmt.std_logger Feedback.Error msg;
   flush_all ();
   exit 1
 
