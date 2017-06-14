@@ -187,7 +187,7 @@ let declare_definition ident (local, p, k) ce pl imps hook =
     let () = definition_message ident in
     let gr = VarRef ident in
     let () = maybe_declare_manual_implicits false gr imps in
-    let () = if Pfedit.refining () then
+    let () = if Proof_global.there_are_pending_proofs () then
 	       warn_definition_not_visible ident
     in
     gr
@@ -233,7 +233,7 @@ match local with
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
   let () =
-    if not !Flags.quiet && Pfedit.refining () then
+    if not !Flags.quiet && Proof_global.there_are_pending_proofs () then
     Feedback.msg_info (str"Variable" ++ spc () ++ pr_id ident ++
     strbrk " is not visible from current goals")
   in

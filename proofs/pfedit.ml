@@ -24,19 +24,6 @@ let _ = Goptions.declare_bool_option {
 
 let use_unification_heuristics () = !use_unification_heuristics_ref
 
-let refining = Proof_global.there_are_pending_proofs
-let check_no_pending_proofs = Proof_global.check_no_pending_proof
-
-let get_current_proof_name = Proof_global.get_current_proof_name
-let get_all_proof_names = Proof_global.get_all_proof_names
-
-type lemma_possible_guards = Proof_global.lemma_possible_guards
-type universe_binders = Proof_global.universe_binders
-
-let delete_proof = Proof_global.discard
-let delete_current_proof = Proof_global.discard_current
-let delete_all_proofs = Proof_global.discard_all
-
 let start_proof (id : Id.t) ?pl str sigma hyps c ?init_tac terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
   Proof_global.start_proof sigma id ?pl str goals terminator;
@@ -55,32 +42,20 @@ let cook_this_proof p =
 let cook_proof () =
   cook_this_proof (fst
     (Proof_global.close_proof ~keep_body_ucst_separate:false (fun x -> x)))
-let get_pftreestate () =
-  Proof_global.give_me_the_proof ()
-
-let set_end_tac tac =
-  Proof_global.set_endline_tactic tac
-
-let set_used_variables l =
-  Proof_global.set_used_variables l
-let get_used_variables () =
-  Proof_global.get_used_variables ()
-
-let get_universe_binders () =
-  Proof_global.get_universe_binders ()
 
 exception NoSuchGoal
 let _ = CErrors.register_handler begin function
   | NoSuchGoal -> CErrors.user_err Pp.(str "No such goal.")
   | _ -> raise CErrors.Unhandled
 end
+
 let get_nth_V82_goal i =
   let p = Proof_global.give_me_the_proof () in
   let { it=goals ; sigma = sigma; } = Proof.V82.subgoals p in
   try
           { it=(List.nth goals (i-1)) ; sigma=sigma; }
   with Failure _ -> raise NoSuchGoal
-    
+
 let get_goal_context_gen i =
   let { it=goal ; sigma=sigma; } =  get_nth_V82_goal i in
   (sigma, Refiner.pf_env { it=goal ; sigma=sigma; })
@@ -106,7 +81,7 @@ let get_current_context () =
     (Evd.from_env env, env)
      | NoSuchGoal ->
         (* No more focused goals ? *)
-        let p = get_pftreestate () in
+        let p = Proof_global.give_me_the_proof () in
         let evd = Proof.in_proof p (fun x -> x) in
         (evd, Global.env ())
 
@@ -165,11 +140,11 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
   try
     let status = by tac in
     let _,(const,univs,_) = cook_proof () in
-    delete_current_proof ();
+    Proof_global.discard_current ();
     const, status, fst univs
   with reraise ->
     let reraise = CErrors.push reraise in
-    delete_current_proof ();
+    Proof_global.discard_current ();
     iraise reraise
 
 let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
@@ -257,4 +232,32 @@ let solve_by_implicit_tactic () = match !implicit_tactic with
 | None -> None
 | Some tac -> Some (apply_implicit_tactic tac)
 
+(** Deprecated functions  *)
+let refining = Proof_global.there_are_pending_proofs
+let check_no_pending_proofs = Proof_global.check_no_pending_proof
+
+let get_current_proof_name = Proof_global.get_current_proof_name
+let get_all_proof_names = Proof_global.get_all_proof_names
+
+type lemma_possible_guards = Proof_global.lemma_possible_guards
+type universe_binders = Proof_global.universe_binders
+
+let delete_proof = Proof_global.discard
+let delete_current_proof = Proof_global.discard_current
+let delete_all_proofs = Proof_global.discard_all
+
+let get_pftreestate () =
+  Proof_global.give_me_the_proof ()
+
+let set_end_tac tac =
+  Proof_global.set_endline_tactic tac
+
+let set_used_variables l =
+  Proof_global.set_used_variables l
+
+let get_used_variables () =
+  Proof_global.get_used_variables ()
+
+let get_universe_binders () =
+  Proof_global.get_universe_binders ()
 

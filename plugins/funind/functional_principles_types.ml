@@ -371,12 +371,12 @@ let generate_functional_principle (evd: Evd.evar_map ref)
     begin
       begin
 	try
-	  let id = Pfedit.get_current_proof_name () in
+	  let id = Proof_global.get_current_proof_name () in
 	  let s = Id.to_string id in
 	  let n = String.length "___________princ_________" in
 	  if String.length s >= n
 	  then if String.equal (String.sub s 0 n) "___________princ_________"
-	  then Pfedit.delete_current_proof ()
+	  then Proof_global.discard_current ()
 	  else ()
 	  else ()
 	with e when CErrors.noncritical e -> ()
@@ -524,12 +524,12 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
        begin
 	 begin
 	   try
-	     let id = Pfedit.get_current_proof_name () in
+	     let id = Proof_global.get_current_proof_name () in
 	     let s = Id.to_string id in
 	     let n = String.length "___________princ_________" in
 	     if String.length s >= n
 	     then if String.equal (String.sub s 0 n) "___________princ_________"
-		  then Pfedit.delete_current_proof ()
+		  then Proof_global.discard_current ()
 		  else ()
 	     else ()
 	   with e when CErrors.noncritical e -> ()

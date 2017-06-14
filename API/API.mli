@@ -3465,6 +3465,8 @@ sig
   (** @raise NoCurrentProof when outside proof mode. *)
 
   val discard_all : unit -> unit
+  val discard_current : unit -> unit
+  val get_current_proof_name : unit -> Names.Id.t
 end
 
 module Nametab :
@@ -3940,11 +3942,18 @@ sig
   val solve : ?with_end_tac:unit Proofview.tactic ->
       Vernacexpr.goal_selector -> int option -> unit Proofview.tactic ->
       Proof.proof -> Proof.proof * bool
-  val delete_current_proof : unit -> unit
   val cook_proof :
     unit -> (Names.Id.t * (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * Decl_kinds.goal_kind))
-  val get_current_proof_name : unit -> Names.Id.t
+
   val get_current_context : unit -> Evd.evar_map * Environ.env
+
+  (* Deprecated *)
+  val delete_current_proof : unit -> unit
+  [@@ocaml.deprecated "use Proof_global.discard_current"]
+
+  val get_current_proof_name : unit -> Names.Id.t
+  [@@ocaml.deprecated "use Proof_global.get_current_proof_name"]
+
 end
 
 module Tactics :

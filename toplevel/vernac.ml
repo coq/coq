@@ -285,7 +285,7 @@ let ensure_exists f =
 (* Compile a vernac file *)
 let compile verbosely f =
   let check_pending_proofs () =
-    let pfs = Pfedit.get_all_proof_names () in
+    let pfs = Proof_global.get_all_proof_names () in
     if not (List.is_empty pfs) then vernac_error (str "There are pending proofs")
   in
   match !Flags.compilation_mode with

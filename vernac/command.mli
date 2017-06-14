@@ -15,7 +15,6 @@ open Vernacexpr
 open Constrexpr
 open Decl_kinds
 open Redexpr
-open Pfedit
 
 (** This file is about the interpretation of raw commands into typed
     ones and top-level declaration of the main Gallina objects *)
@@ -151,7 +150,7 @@ val declare_fixpoint :
   locality -> polymorphic ->
   recursive_preentry * lident list option * Evd.evar_universe_context * 
   (Context.Rel.t * Impargs.manual_implicits * int option) list ->
-  lemma_possible_guards -> decl_notation list -> unit
+  Proof_global.lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint : locality -> polymorphic -> 
   recursive_preentry * lident list option * Evd.evar_universe_context * 
