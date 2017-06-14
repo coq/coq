@@ -1,4 +1,3 @@
-open API
 open Pp
 open Util
 open Names

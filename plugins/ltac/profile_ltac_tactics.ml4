@@ -10,7 +10,6 @@
 
 (** Ltac profiling entrypoints *)
 
-open API
 open Profile_ltac
 open Stdarg
 
