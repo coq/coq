@@ -428,7 +428,7 @@ module V82 = struct
       in
       let env = Evd.evar_filtered_env evi in
       let rawc = Constrintern.intern_constr env com in
-      let ltac_vars = Pretyping.empty_lvar in
+      let ltac_vars = Glob_ops.empty_lvar in
       let sigma = Evar_refiner.w_refine (evk, evi) (ltac_vars, rawc) sigma in
       Proofview.Unsafe.tclEVARS sigma
     end in

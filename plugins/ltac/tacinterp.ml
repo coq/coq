@@ -605,10 +605,10 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   let { closure = constrvars ; term } =
     interp_glob_closure ist env sigma ~kind:kind_for_intern ~pattern_mode c in
   let vars = {
-    Pretyping.ltac_constrs = constrvars.typed;
-    Pretyping.ltac_uconstrs = constrvars.untyped;
-    Pretyping.ltac_idents = constrvars.idents;
-    Pretyping.ltac_genargs = ist.lfun;
+    Glob_term.ltac_constrs = constrvars.typed;
+    Glob_term.ltac_uconstrs = constrvars.untyped;
+    Glob_term.ltac_idents = constrvars.idents;
+    Glob_term.ltac_genargs = ist.lfun;
   } in
   (* Jason Gross: To avoid unnecessary modifications to tacinterp, as
       suggested by Arnaud Spiwack, we run push_trace immediately.  We do

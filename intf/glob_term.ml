@@ -95,3 +95,19 @@ type closure = {
 and closed_glob_constr = {
   closure: closure;
   term: glob_constr }
+
+(** Ltac variable maps *)
+type var_map = Pattern.constr_under_binders Id.Map.t
+type uconstr_var_map = closed_glob_constr Id.Map.t
+type unbound_ltac_var_map = Geninterp.Val.t Id.Map.t
+
+type ltac_var_map = {
+  ltac_constrs : var_map;
+  (** Ltac variables bound to constrs *)
+  ltac_uconstrs : uconstr_var_map;
+  (** Ltac variables bound to untyped constrs *)
+  ltac_idents: Id.t Id.Map.t;
+  (** Ltac variables bound to identifiers *)
+  ltac_genargs : unbound_ltac_var_map;
+  (** Ltac variables bound to other kinds of arguments *)
+}

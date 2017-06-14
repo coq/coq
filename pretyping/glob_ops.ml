@@ -504,3 +504,27 @@ let glob_constr_of_closed_cases_pattern = function
       na,glob_constr_of_closed_cases_pattern_aux (CAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
   | _ ->
       raise Not_found
+
+(**********************************************************************)
+(* Interpreting ltac variables *)
+
+open Pp
+open CErrors
+
+let ltac_interp_name { ltac_idents ; ltac_genargs } = function
+  | Anonymous -> Anonymous
+  | Name id as n ->
+      try Name (Id.Map.find id ltac_idents)
+      with Not_found ->
+        if Id.Map.mem id ltac_genargs then
+          user_err (str"Ltac variable"++spc()++ pr_id id ++
+                           spc()++str"is not bound to an identifier."++spc()++
+                           str"It cannot be used in a binder.")
+        else n
+
+let empty_lvar : ltac_var_map = {
+  ltac_constrs = Id.Map.empty;
+  ltac_uconstrs = Id.Map.empty;
+  ltac_idents = Id.Map.empty;
+  ltac_genargs = Id.Map.empty;
+}

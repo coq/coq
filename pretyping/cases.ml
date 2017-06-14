@@ -245,6 +245,7 @@ let push_history_pattern n pci cont =
 
 type 'a pattern_matching_problem =
     { env       : env;
+      lvar      : Glob_term.ltac_var_map;
       evdref    : evar_map ref;
       pred      : constr;
       tomatch   : tomatch_stack;
@@ -346,25 +347,45 @@ let find_tomatch_tycon evdref env loc = function
   | None ->
       empty_tycon,None
 
-let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
+let make_return_predicate_ltac_lvar sigma na tm c lvar =
+  match na, tm.CAst.v with
+  | Name id, (GVar id' | GRef (Globnames.VarRef id', _)) when Id.equal id id' ->
+     if Id.Map.mem id lvar.ltac_genargs then
+       let ltac_genargs = Id.Map.remove id lvar.ltac_genargs in
+       let ltac_idents = match kind sigma c with
+       | Var id' -> Id.Map.add id id' lvar.ltac_idents
+       | _ -> lvar.ltac_idents in
+       { lvar with ltac_genargs; ltac_idents }
+     else lvar
+  | _ -> lvar
+
+let ltac_interp_realnames lvar = function
+  | t, IsInd (ty,ind,realnal) -> t, IsInd (ty,ind,List.map (ltac_interp_name lvar) realnal)
+  | _ as x -> x
+
+let coerce_row typing_fun evdref env lvar pats (tomatch,(na,indopt)) =
   let loc = loc_of_glob_constr tomatch in
   let tycon,realnames = find_tomatch_tycon evdref env loc indopt in
-  let j = typing_fun tycon env evdref tomatch in
+  let j = typing_fun tycon env evdref !lvar tomatch in
   let evd, j = Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) env !evdref j in
   evdref := evd;
   let typ = nf_evar !evdref j.uj_type in
+  lvar := make_return_predicate_ltac_lvar !evdref na tomatch j.uj_val !lvar;
   let t =
     try try_find_ind env !evdref typ realnames
     with Not_found ->
       unify_tomatch_with_patterns evdref env loc typ pats realnames in
   (j.uj_val,t)
 
-let coerce_to_indtype typing_fun evdref env matx tomatchl = 
+let coerce_to_indtype typing_fun evdref env lvar matx tomatchl =
   let pats = List.map (fun r ->  r.patterns) matx in
   let matx' = match matrix_transpose pats with
     | [] -> List.map (fun _ -> []) tomatchl (* no patterns at all *)
     | m -> m in
-  List.map2 (coerce_row typing_fun evdref env) matx' tomatchl
+  let lvar = ref lvar in
+  let tms = List.map2 (coerce_row typing_fun evdref env lvar) matx' tomatchl in
+  let tms = List.map (ltac_interp_realnames !lvar) tms in
+  !lvar,tms
 
 (************************************************************************)
 (* Utils *)
@@ -1392,6 +1413,7 @@ and match_current pb (initial,tomatch) =
             postprocess_dependencies !(pb.evdref) depstocheck
               brvals pb.tomatch pb.pred deps cstrs in
           let brvals = Array.map (fun (sign,body) ->
+            let sign = List.map (map_name (ltac_interp_name pb.lvar)) sign in
             it_mkLambda_or_LetIn body sign) brvals in
 	  let (pred,typ) =
 	    find_predicate pb.caseloc pb.env pb.evdref
@@ -1824,6 +1846,7 @@ let build_inversion_problem loc env sigma tms t =
   let evdref = ref sigma in
   let pb =
     { env       = pb_env;
+      lvar      = empty_lvar;
       evdref    = evdref;
       pred      = (*ty *) mkSort s;
       tomatch   = sub_tms;
@@ -1847,15 +1870,15 @@ let build_initial_predicate arsign pred =
     | _ -> assert false
   in buildrec 0 pred [] (List.rev arsign)
 
-let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
+let extract_arity_signature ?(dolift=true) env0 lvar tomatchl tmsign =
   let lift = if dolift then lift else fun n t -> t in
   let get_one_sign n tm (na,t) =
     match tm with
       | NotInd (bo,typ) ->
 	  (match t with
-	    | None -> (match bo with
+	    | None -> let sign = match bo with
 		       | None -> [LocalAssum (na, lift n typ)]
-		       | Some b -> [LocalDef (na, lift n b, lift n typ)])
+		       | Some b -> [LocalDef (na, lift n b, lift n typ)] in sign,sign
 	    | Some (loc,_) ->
  	    user_err ?loc 
                 (str"Unexpected type annotation for a term of non inductive type."))
@@ -1865,22 +1888,31 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 	  let nrealargs_ctxt = inductive_nrealdecls_env env0 ind in
 	  let arsign = fst (get_arity env0 indf') in
 	  let arsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) arsign in
-	  let realnal =
+	  let realnal, realnal' =
 	    match t with
 	      | Some (loc,(ind',realnal)) ->
 		  if not (eq_ind ind ind') then
 		    user_err ?loc  (str "Wrong inductive type.");
 		  if not (Int.equal nrealargs_ctxt (List.length realnal)) then
 		      anomaly (Pp.str "Ill-formed 'in' clause in cases.");
-		  List.rev realnal
-	      | None -> List.make nrealargs_ctxt Anonymous in
-	  LocalAssum (na, EConstr.of_constr (build_dependent_inductive env0 indf'))
-	  ::(List.map2 RelDecl.set_name realnal arsign) in
+		  let realnal = List.rev realnal in
+                  let realnal' = List.map (ltac_interp_name lvar) realnal in
+                  realnal,realnal'
+	      | None ->
+                  let realnal = List.make nrealargs_ctxt Anonymous in
+                  realnal, realnal in
+          let na' = ltac_interp_name lvar na in
+          let t = EConstr.of_constr (build_dependent_inductive env0 indf') in
+          (* Context with names for typing *)
+          let arsign1 = LocalAssum (na, t) :: List.map2 RelDecl.set_name realnal arsign in
+          (* Context with names for building the term *)
+          let arsign2 = LocalAssum (na', t) :: List.map2 RelDecl.set_name realnal' arsign in
+          arsign1,arsign2 in
   let rec buildrec n = function
     | [],[] -> []
     | (_,tm)::ltm, (_,x)::tmsign ->
 	let l = get_one_sign n tm x in
-	l :: buildrec (n + List.length l) (ltm,tmsign)
+	l :: buildrec (n + List.length (fst l)) (ltm,tmsign)
     | _ -> assert false
   in List.rev (buildrec 0 (tomatchl,tmsign))
 
@@ -1970,7 +2002,7 @@ let noccur_with_meta sigma n m term =
   in
   try (occur_rec n term; true) with LocalOccur -> false
 
-let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
+let prepare_predicate ?loc typing_fun env sigma lvar tomatchs arsign tycon pred =
   let refresh_tycon sigma t =
     (** If we put the typing constraint in the term, it has to be
        refreshed to preserve the invariant that no algebraic universe
@@ -1978,6 +2010,7 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
     refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some true)
 		      env sigma t
   in
+  let typing_arsign,building_arsign = List.split arsign in
   let preds =
     match pred, tycon with
     (* No return clause *)
@@ -1987,7 +2020,7 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
        (* First strategy: we abstract the tycon wrt to the dependencies *)
          let sigma, t = refresh_tycon sigma t in
          let p1 =
-          prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign t in
+          prepare_predicate_from_arsign_tycon env sigma loc tomatchs typing_arsign t in
 	(* Second strategy: we build an "inversion" predicate *)
 	let sigma2,pred2 = build_inversion_problem loc env sigma tomatchs t in
 	(match p1 with
@@ -2006,22 +2039,22 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
         (* First strategy: we build an "inversion" predicate *)
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
 	(* Second strategy: we directly use the evar as a non dependent pred *)
-        let pred2 = lift (List.length (List.flatten arsign)) t in
+        let pred2 = lift (List.length (List.flatten typing_arsign)) t in
 	[sigma1, pred1; sigma, pred2]
     (* Some type annotation *)
     | Some rtntyp, _ ->
       (* We extract the signature of the arity *)
-      let envar = List.fold_right push_rel_context arsign env in
+      let envar = List.fold_right push_rel_context typing_arsign env in
       let sigma, newt = new_sort_variable univ_flexible_alg sigma in
       let evdref = ref sigma in
-      let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref rtntyp in
+      let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref lvar rtntyp in
       let sigma = !evdref in
       let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl]
   in
   List.map
     (fun (sigma,pred) ->
-      let (nal,pred) = build_initial_predicate arsign pred in
+      let (nal,pred) = build_initial_predicate building_arsign pred in
       sigma,nal,pred)
     preds
 
@@ -2441,10 +2474,10 @@ let context_of_arsign l =
     l ([], 0)
   in x
 
-let compile_program_cases ?loc style (typing_function, evdref) tycon env
+let compile_program_cases ?loc style (typing_function, evdref) tycon env lvar
     (predopt, tomatchl, eqns) =
   let typing_fun tycon env = function
-    | Some t ->	typing_function tycon env evdref t
+    | Some t ->	typing_function tycon env evdref lvar t
     | None -> Evarutil.evd_comb0 use_unit_judge evdref in
 
   (* We build the matrix of patterns and right-hand side *)
@@ -2452,14 +2485,15 @@ let compile_program_cases ?loc style (typing_function, evdref) tycon env
 
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
-  let tomatchs = coerce_to_indtype typing_function evdref env matx tomatchl in
+  let predlvar,tomatchs = coerce_to_indtype typing_function evdref env lvar matx tomatchl in
   let tycon = valcon_of_tycon tycon in
   let tomatchs, tomatchs_lets, tycon' = abstract_tomatch env !evdref tomatchs tycon in
   let env = push_rel_context tomatchs_lets env in
   let len = List.length eqns in
   let sign, allnames, signlen, eqs, neqs, args =
     (* The arity signature *)
-    let arsign = extract_arity_signature ~dolift:false env tomatchs tomatchl in
+    let arsign = extract_arity_signature ~dolift:false env predlvar tomatchs tomatchl in
+    let arsign = List.map fst arsign in (* Because no difference between the arity for typing and the arity for building *)
       (* Build the dependent arity signature, the equalities which makes
 	 the first part of the predicate and their instantiations. *)
     let avoid = [] in
@@ -2522,11 +2556,12 @@ let compile_program_cases ?loc style (typing_function, evdref) tycon env
   let initial_pushed = List.map (fun x -> Pushed (true,x)) typs' in
     
   let typing_function tycon env evdref = function
-    | Some t ->	typing_function tycon env evdref t
+    | Some t ->	typing_function tycon env evdref lvar t
     | None -> evd_comb0 use_unit_judge evdref in
 
   let pb =
     { env      = env;
+      lvar     = lvar;
       evdref   = evdref;
       pred     = pred;
       tomatch  = initial_pushed;
@@ -2548,10 +2583,10 @@ let compile_program_cases ?loc style (typing_function, evdref) tycon env
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
 
-let compile_cases ?loc style (typing_fun, evdref) tycon env (predopt, tomatchl, eqns) =
+let compile_cases ?loc style (typing_fun, evdref) tycon env lvar (predopt, tomatchl, eqns) =
   if predopt == None && Flags.is_program_mode () && Program.is_program_cases () then
     compile_program_cases ?loc style (typing_fun, evdref)
-      tycon env (predopt, tomatchl, eqns)
+      tycon env lvar (predopt, tomatchl, eqns)
   else
 
   (* We build the matrix of patterns and right-hand side *)
@@ -2559,15 +2594,15 @@ let compile_cases ?loc style (typing_fun, evdref) tycon env (predopt, tomatchl, 
 
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
-  let tomatchs = coerce_to_indtype typing_fun evdref env matx tomatchl in
+  let predlvar,tomatchs = coerce_to_indtype typing_fun evdref env lvar matx tomatchl in
 
 
 
   (* If an elimination predicate is provided, we check it is compatible
      with the type of arguments to match; if none is provided, we
      build alternative possible predicates *)
-  let arsign = extract_arity_signature env tomatchs tomatchl in
-  let preds = prepare_predicate ?loc typing_fun env !evdref tomatchs arsign tycon predopt in
+  let arsign = extract_arity_signature env predlvar tomatchs tomatchl in
+  let preds = prepare_predicate ?loc typing_fun env !evdref predlvar tomatchs arsign tycon predopt in
 
   let compile_for_one_predicate (sigma,nal,pred) =
     (* We push the initial terms to match and push their alias to rhs' envs *)
@@ -2598,13 +2633,14 @@ let compile_cases ?loc style (typing_fun, evdref) tycon env (predopt, tomatchl, 
 
     (* A typing function that provides with a canonical term for absurd cases*)
     let typing_fun tycon env evdref = function
-    | Some t ->	typing_fun tycon env evdref t
+    | Some t ->	typing_fun tycon env evdref lvar t
     | None -> evd_comb0 use_unit_judge evdref in
 
     let myevdref = ref sigma in
 
     let pb =
       { env       = env;
+        lvar      = lvar;
         evdref    = myevdref;
 	pred      = pred;
 	tomatch   = initial_pushed;

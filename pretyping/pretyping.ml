@@ -42,21 +42,11 @@ open Pretype_errors
 open Glob_term
 open Glob_ops
 open Evarconv
-open Pattern
 open Misctypes
 
 module NamedDecl = Context.Named.Declaration
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
-type var_map = constr_under_binders Id.Map.t
-type uconstr_var_map = Glob_term.closed_glob_constr Id.Map.t
-type unbound_ltac_var_map = Geninterp.Val.t Id.Map.t
-type ltac_var_map = {
-  ltac_constrs : var_map;
-  ltac_uconstrs : uconstr_var_map;
-  ltac_idents: Id.t Id.Map.t;
-  ltac_genargs : unbound_ltac_var_map;
-}
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * EConstr.constr
 
@@ -418,17 +408,6 @@ let check_instance loc subst = function
 let orelse_name name name' = match name with
   | Anonymous -> name'
   | _ -> name
-
-let ltac_interp_name { ltac_idents ; ltac_genargs } = function
-  | Anonymous -> Anonymous
-  | Name id as n ->
-      try Name (Id.Map.find id ltac_idents)
-      with Not_found ->
-        if Id.Map.mem id ltac_genargs then
-          user_err  (str"Ltac variable"++spc()++ pr_id id ++
-                           spc()++str"is not bound to an identifier."++spc()++
-                           str"It cannot be used in a binder.")
-        else n
 
 let ltac_interp_name_env k0 lvar env sigma =
   (* envhd is the initial part of the env when pretype was called first *)
@@ -943,16 +922,20 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  List.map (set_name Anonymous) arsgn
 	else arsgn
     in
-      let psign = LocalAssum (na, build_dependent_inductive env.ExtraEnv.env indf) :: arsgn in
+      let indt = build_dependent_inductive env.ExtraEnv.env indf in
+      let psign = LocalAssum (na, indt) :: arsgn in (* For locating names in [po] *)
+      let predlvar = Cases.make_return_predicate_ltac_lvar !evdref na c cj.uj_val lvar in
+      let psign' = LocalAssum (ltac_interp_name predlvar na, indt) :: arsgn in
+      let psign' = List.map (fun d -> map_rel_decl EConstr.of_constr d) psign' in
+      let psign' = Namegen.name_context env.ExtraEnv.env !evdref psign' in (* For naming abstractions in [po] *)
       let psign = List.map (fun d -> map_rel_decl EConstr.of_constr d) psign in
       let nar = List.length arsgn in
 	  (match po with
 	  | Some p ->
 	    let env_p = push_rel_context !evdref psign env in
-	    let pj = pretype_type empty_valcon env_p evdref lvar p in
+	    let pj = pretype_type empty_valcon env_p evdref predlvar p in
 	    let ccl = nf_evar !evdref pj.utj_val in
-	    let psign = make_arity_signature env.ExtraEnv.env !evdref true indf in (* with names *)
-	    let p = it_mkLambda_or_LetIn ccl psign in
+	    let p = it_mkLambda_or_LetIn ccl psign' in
 	    let inst =
 	      (Array.map_to_list EConstr.of_constr cs.cs_concl_realargs)
 	      @[EConstr.of_constr (build_dependent_constructor cs)] in
@@ -968,7 +951,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 
 	  | None ->
 	    let tycon = lift_tycon cs.cs_nargs tycon in
-	    let fj = pretype tycon env_f evdref lvar d in
+	    let fj = pretype tycon env_f evdref predlvar d in
 	    let ccl = nf_evar !evdref fj.uj_type in
 	    let ccl =
 	      if noccur_between !evdref 1 cs.cs_nargs ccl then
@@ -977,7 +960,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 		error_cant_find_case_type ?loc env.ExtraEnv.env !evdref
 		  cj.uj_val in
 		 (* let ccl = refresh_universes ccl in *)
-	    let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
+	    let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign' in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
 		Typing.check_allowed_sort env.ExtraEnv.env !evdref ind cj.uj_val p;
@@ -1004,14 +987,19 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 	  else arsgn
       in
       let nar = List.length arsgn in
-      let psign = LocalAssum (na, build_dependent_inductive env.ExtraEnv.env indf) :: arsgn in
+      let indt = build_dependent_inductive env.ExtraEnv.env indf in
+      let psign = LocalAssum (na, indt) :: arsgn in (* For locating names in [po] *)
+      let predlvar = Cases.make_return_predicate_ltac_lvar !evdref na c cj.uj_val lvar in
+      let psign' = LocalAssum (ltac_interp_name predlvar na, indt) :: arsgn in
+      let psign' = List.map (fun d -> map_rel_decl EConstr.of_constr d) psign' in
+      let psign' = Namegen.name_context env.ExtraEnv.env !evdref psign' in (* For naming abstractions in [po] *)
       let psign = List.map (fun d -> map_rel_decl EConstr.of_constr d) psign in
       let pred,p = match po with
 	| Some p ->
 	  let env_p = push_rel_context !evdref psign env in
-	  let pj = pretype_type empty_valcon env_p evdref lvar p in
+	  let pj = pretype_type empty_valcon env_p evdref predlvar p in
 	  let ccl = nf_evar !evdref pj.utj_val in
-	  let pred = it_mkLambda_or_LetIn ccl psign in
+	  let pred = it_mkLambda_or_LetIn ccl psign' in
 	  let typ = lift (- nar) (beta_applist !evdref (pred,[cj.uj_val])) in
 	    pred, typ
 	| None ->
@@ -1021,7 +1009,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
               let env = ltac_interp_name_env k0 lvar env !evdref in
               new_type_evar env evdref loc
 	  in
-	    it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
+	    it_mkLambda_or_LetIn (lift (nar+1) p) psign', p in
       let pred = nf_evar !evdref pred in
       let p = nf_evar !evdref p in
       let f cs b =
@@ -1054,8 +1042,8 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : ExtraEnv.t) evdre
 
   | GCases (sty,po,tml,eqns) ->
     Cases.compile_cases ?loc sty
-      ((fun vtyc env evdref -> pretype vtyc (make_env env !evdref) evdref lvar),evdref)
-      tycon env.ExtraEnv.env (* loc *) (po,tml,eqns)
+      ((fun vtyc env evdref -> pretype vtyc (make_env env !evdref) evdref),evdref)
+      tycon env.ExtraEnv.env (* loc *) lvar (po,tml,eqns)
 
   | GCast (c,k) ->
     let cj =
@@ -1197,13 +1185,6 @@ let no_classes_no_fail_inference_flags = {
 
 let all_and_fail_flags = default_inference_flags true
 let all_no_fail_flags = default_inference_flags false
-
-let empty_lvar : ltac_var_map = {
-  ltac_constrs = Id.Map.empty;
-  ltac_uconstrs = Id.Map.empty;
-  ltac_idents = Id.Map.empty;
-  ltac_genargs = Id.Map.empty;
-}
 
 let on_judgment sigma f j =
   let c = mkCast(j.uj_val,DEFAULTcast, j.uj_type) in
