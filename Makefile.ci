@@ -1,8 +1,10 @@
 CI_TARGETS=ci-all \
+    ci-bignums \
     ci-bedrock-facade \
     ci-bedrock-src \
     ci-color \
     ci-compcert \
+    ci-coq-dpdgraph \
     ci-coquelicot \
     ci-cpdt \
     ci-fiat-crypto \

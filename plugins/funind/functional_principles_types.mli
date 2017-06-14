@@ -18,7 +18,7 @@ val generate_functional_principle :
   (* induction principle on rel *)
   types ->
   (* *)
-  sorts array option ->
+  Sorts.t array option ->
   (* Name of the new principle *)
   (Id.t) option ->
   (* the compute functions to use   *)
@@ -28,10 +28,10 @@ val generate_functional_principle :
   (* The tactic to use to make the proof w.r
      the number of params
   *)
-  (EConstr.constr array -> int -> Tacmach.tactic) ->
+  (EConstr.constr array -> int -> Proof_type.tactic) ->
   unit
 
-val compute_new_princ_type_from_rel : constr array -> sorts array ->
+val compute_new_princ_type_from_rel : constr array -> Sorts.t array ->
   types -> types
 
 

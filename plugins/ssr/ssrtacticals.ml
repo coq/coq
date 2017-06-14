@@ -10,7 +10,6 @@
 
 open API
 open Names
-open Constr
 open Termops
 open Tacmach
 open Misctypes
@@ -103,10 +102,10 @@ let endclausestac id_map clseq gl_id cl0 gl =
   | ids, dc' ->
     forced && ids = [] && (not hide_goal || dc' = [] && c_hidden) in
   let rec unmark c = match EConstr.kind (project gl) c with
-  | Var id when hidden_clseq clseq && id = gl_id -> cl0
-  | Prod (Name id, t, c') when List.mem_assoc id id_map ->
+  | Term.Var id when hidden_clseq clseq && id = gl_id -> cl0
+  | Term.Prod (Name id, t, c') when List.mem_assoc id id_map ->
     EConstr.mkProd (Name (orig_id id), unmark t, unmark c')
-  | LetIn (Name id, v, t, c') when List.mem_assoc id id_map ->
+  | Term.LetIn (Name id, v, t, c') when List.mem_assoc id id_map ->
     EConstr.mkLetIn (Name (orig_id id), unmark v, unmark t, unmark c')
   | _ -> EConstr.map (project gl) unmark c in
   let utac hyp =

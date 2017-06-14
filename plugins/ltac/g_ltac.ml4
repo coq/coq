@@ -231,8 +231,8 @@ GEXTEND Gram
       | "multimatch" -> General ] ]
   ;
   input_fun:
-    [ [ "_" -> Anonymous
-      | l = ident -> Name l ] ]
+    [ [ "_" -> Name.Anonymous
+      | l = ident -> Name.Name l ] ]
   ;
   let_clause:
     [ [ id = identref; ":="; te = tactic_expr ->
@@ -399,7 +399,7 @@ let pr_ltac_selector = function
 | SelectNth i -> int i ++ str ":"
 | SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
     str "]" ++ str ":"
-| SelectId id -> str "[" ++ Nameops.pr_id id ++ str "]" ++ str ":"
+| SelectId id -> str "[" ++ Id.print id ++ str "]" ++ str ":"
 | SelectAll -> str "all" ++ str ":"
 
 VERNAC ARGUMENT EXTEND ltac_selector PRINTED BY pr_ltac_selector
@@ -469,14 +469,14 @@ let pr_ltac_production_item = function
   | None -> mt ()
   | Some sep -> str "," ++ spc () ++ quote (str sep)
   in
-  str arg ++ str "(" ++ Nameops.pr_id id ++ sep ++ str ")"
+  str arg ++ str "(" ++ Id.print id ++ sep ++ str ")"
 
 VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY pr_ltac_production_item
 | [ string(s) ] -> [ Tacentries.TacTerm s ]
 | [ ident(nt) "(" ident(p) ltac_production_sep_opt(sep) ")" ] ->
-  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Names.Id.to_string nt, sep), Some p)) ]
+  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Id.to_string nt, sep), Some p)) ]
 | [ ident(nt) ] ->
-  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Names.Id.to_string nt, None), None)) ]
+  [ Tacentries.TacNonTerm (Loc.tag ~loc ((Id.to_string nt, None), None)) ]
 END
 
 VERNAC COMMAND EXTEND VernacTacticNotation
@@ -499,7 +499,7 @@ let pr_ltac_ref = Libnames.pr_reference
 let pr_tacdef_body tacdef_body =
   let id, redef, body =
     match tacdef_body with
-    | TacticDefinition ((_,id), body) -> Nameops.pr_id id, false, body
+    | TacticDefinition ((_,id), body) -> Id.print id, false, body
     | TacticRedefinition (id, body) -> pr_ltac_ref id, true, body
   in
   let idl, body =
@@ -507,8 +507,8 @@ let pr_tacdef_body tacdef_body =
       | Tacexpr.TacFun (idl,b) -> idl,b
       | _ -> [], body in
   id ++
-    prlist (function Anonymous -> str " _"
-      | Name id -> spc () ++ Nameops.pr_id id) idl
+    prlist (function Name.Anonymous -> str " _"
+      | Name.Name id -> spc () ++ Id.print id) idl
   ++ (if redef then str" ::=" else str" :=") ++ brk(1,1)
   ++ Pptactic.pr_raw_tactic body
 

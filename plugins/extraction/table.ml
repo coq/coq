@@ -8,9 +8,9 @@
 
 open API
 open Names
+open ModPath
 open Term
 open Declarations
-open Nameops
 open Namegen
 open Libobject
 open Goptions
@@ -36,14 +36,14 @@ module Refset' = Refset_env
 
 let occur_kn_in_ref kn = function
   | IndRef (kn',_)
-  | ConstructRef ((kn',_),_) -> Names.eq_mind kn kn'
+  | ConstructRef ((kn',_),_) -> MutInd.equal kn kn'
   | ConstRef _ -> false
   | VarRef _ -> assert false
 
 let repr_of_r = function
-  | ConstRef kn -> repr_con kn
+  | ConstRef kn -> Constant.repr3 kn
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> repr_mind kn
+  | ConstructRef ((kn,_),_) -> MutInd.repr3 kn
   | VarRef _ -> assert false
 
 let modpath_of_r r =
@@ -65,7 +65,7 @@ let raw_string_of_modfile = function
   | _ -> assert false
 
 let is_toplevel mp =
-  ModPath.equal mp initial_path || ModPath.equal mp (Lib.current_mp ())
+  ModPath.equal mp ModPath.initial || ModPath.equal mp (Lib.current_mp ())
 
 let at_toplevel mp =
   is_modfile mp || is_toplevel mp
@@ -265,8 +265,8 @@ let safe_basename_of_global r =
       anomaly (Pp.str "Inductive object unknown to extraction and not globally visible.")
   in
   match r with
-    | ConstRef kn -> Label.to_id (con_label kn)
-    | IndRef (kn,0) -> Label.to_id (mind_label kn)
+    | ConstRef kn -> Label.to_id (Constant.label kn)
+    | IndRef (kn,0) -> Label.to_id (MutInd.label kn)
     | IndRef (kn,i) ->
       (try (unsafe_lookup_ind kn).ind_packets.(i).ip_typename
        with Not_found -> last_chance r)
@@ -287,8 +287,8 @@ let safe_pr_long_global r =
   try Printer.pr_global r
   with Not_found -> match r with
     | ConstRef kn ->
-	let mp,_,l = repr_con kn in
-	str ((string_of_mp mp)^"."^(Label.to_string l))
+	let mp,_,l = Constant.repr3 kn in
+	str ((ModPath.to_string mp)^"."^(Label.to_string l))
     | _ -> assert false
 
 let pr_long_mp mp =
@@ -417,7 +417,7 @@ let error_singleton_become_prop id og =
                 str " (or in its mutual block)"
     | None -> mt ()
   in
-  err (str "The informative inductive type " ++ pr_id id ++
+  err (str "The informative inductive type " ++ Id.print id ++
        str " has a Prop instance" ++ loc ++ str "." ++ fnl () ++
        str "This happens when a sort-polymorphic singleton inductive type\n" ++
        str "has logical parameters, such as (I,I) : (True * True) : Prop.\n" ++
@@ -722,7 +722,7 @@ let add_implicits r l =
          let i = List.index Name.equal (Name id) names in
          Int.Set.add i s
        with Not_found ->
-	 err (str "No argument " ++ pr_id id ++ str " for " ++
+	 err (str "No argument " ++ Id.print id ++ str " for " ++
 	      safe_pr_global r)
   in
   let ints = List.fold_left add_arg Int.Set.empty l in
@@ -800,7 +800,7 @@ let extraction_blacklist l =
 (* Printing part *)
 
 let print_extraction_blacklist () =
-  prlist_with_sep fnl pr_id (Id.Set.elements !blacklist_table)
+  prlist_with_sep fnl Id.print (Id.Set.elements !blacklist_table)
 
 (* Reset part *)
 

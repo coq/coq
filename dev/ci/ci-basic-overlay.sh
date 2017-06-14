@@ -28,11 +28,11 @@
 ########################################################################
 # Mathclasses + Corn
 ########################################################################
-: ${math_classes_CI_BRANCH:=v8.6}
-: ${math_classes_CI_GITURL:=https://github.com/math-classes/math-classes.git}
+: ${math_classes_CI_BRANCH:=external-bignums}
+: ${math_classes_CI_GITURL:=https://github.com/letouzey/math-classes.git}
 
-: ${Corn_CI_BRANCH:=v8.6}
-: ${Corn_CI_GITURL:=https://github.com/c-corn/corn.git}
+: ${Corn_CI_BRANCH:=external-bignums}
+: ${Corn_CI_GITURL:=https://github.com/letouzey/corn.git}
 
 ########################################################################
 # Iris
@@ -46,8 +46,8 @@
 ########################################################################
 # HoTT
 ########################################################################
-# Temporal overlay
-: ${HoTT_CI_BRANCH:=mz-8.7}
+# Temporary overlay
+: ${HoTT_CI_BRANCH:=ocaml.4.02.3}
 : ${HoTT_CI_GITURL:=https://github.com/ejgallego/HoTT.git}
 # : ${HoTT_CI_BRANCH:=master}
 # : ${HoTT_CI_GITURL:=https://github.com/HoTT/HoTT.git}
@@ -85,8 +85,8 @@
 ########################################################################
 # fiat_parsers
 ########################################################################
-: ${fiat_parsers_CI_BRANCH:=master}
-: ${fiat_parsers_CI_GITURL:=https://github.com/mit-plv/fiat.git}
+: ${fiat_parsers_CI_BRANCH:=trunk__API}
+: ${fiat_parsers_CI_GITURL:=https://github.com/matejkosik/fiat.git}
 
 ########################################################################
 # fiat_crypto
@@ -97,20 +97,26 @@
 ########################################################################
 # bedrock_src
 ########################################################################
-: ${bedrock_src_CI_BRANCH:=master}
-: ${bedrock_src_CI_GITURL:=https://github.com/mit-plv/bedrock.git}
+: ${bedrock_src_CI_BRANCH:=trunk__API}
+: ${bedrock_src_CI_GITURL:=https://github.com/matejkosik/bedrock.git}
 
 ########################################################################
 # bedrock_facade
 ########################################################################
-: ${bedrock_facade_CI_BRANCH:=master}
-: ${bedrock_facade_CI_GITURL:=https://github.com/mit-plv/bedrock.git}
+: ${bedrock_facade_CI_BRANCH:=trunk__API}
+: ${bedrock_facade_CI_GITURL:=https://github.com/matejkosik/bedrock.git}
 
 ########################################################################
 # formal-topology
 ########################################################################
 : ${formal_topology_CI_BRANCH:=ci}
 : ${formal_topology_CI_GITURL:=https://github.com/bmsherman/topology.git}
+
+########################################################################
+# coq-dpdgraph
+########################################################################
+: ${coq_dpdgraph_CI_BRANCH:=coq-trunk}
+: ${coq_dpdgraph_CI_GITURL:=https://github.com/Karmaki/coq-dpdgraph.git}
 
 ########################################################################
 # CoLoR
@@ -127,3 +133,9 @@
 ########################################################################
 : ${tlc_CI_BRANCH:=master}
 : ${tlc_CI_GITURL:=https://gforge.inria.fr/git/tlc/tlc.git}
+
+########################################################################
+# Bignums
+########################################################################
+: ${bignums_CI_BRANCH:=master}
+: ${bignums_CI_GITURL:=https://github.com/coq/bignums.git}

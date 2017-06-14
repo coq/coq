@@ -50,6 +50,10 @@ Standard Library
   and, consequently, choice of representatives in equivalence classes.
   Various proof-theoretic characterizations of choice over setoids in
   file ChoiceFacts.v.
+- The BigN, BigZ, BigZ libraries are not part anymore of Coq standard
+  library, they are now provided by a separate repository
+    https://github.com/coq/bignums
+  The split has been done just after the Int31 library.
 
 - IZR (Reals) has been changed to produce a compact representation of
   integers. As a consequence, IZR is no longer convertible to INR and
@@ -80,6 +84,15 @@ Tools
   The current version contains code for retro compatibility that prints
   warnings when a deprecated feature is used.  Please upgrade your _CoqProject
   accordingly.
+
+Build Infrastructure
+
+- Note that 'make world' does not build the bytecode binaries anymore.
+  For that, you can use 'make byte' (and 'make install-byte' afterwards).
+  Warning: native and byte compilations should *not* be mixed in the same
+  instance of 'make -j', otherwise both ocamlc and ocamlopt might race for
+  access to the same .cmi files. In short, use "make -j && make -j byte"
+  instead of "make -j world byte".
 
 Changes from V8.6beta1 to V8.6
 ==============================

@@ -66,7 +66,7 @@ let rec decompose_term env sigma t=
     | Construct c ->
 	let (((mind,i_ind),i_con),u)= c in 
 	let u = EInstance.kind sigma u in
-	let canon_mind = mind_of_kn (canonical_mind mind) in
+	let canon_mind = MutInd.make1 (MutInd.canonical mind) in
 	let canon_ind = canon_mind,i_ind in
 	let (oib,_)=Global.lookup_inductive (canon_ind) in
 	let nargs=constructor_nallargs_env env (canon_ind,i_con) in
@@ -76,16 +76,16 @@ let rec decompose_term env sigma t=
     | Ind c -> 
 	let (mind,i_ind),u = c in 
 	let u = EInstance.kind sigma u in
-	let canon_mind = mind_of_kn (canonical_mind mind) in
-	let canon_ind = canon_mind,i_ind in  (Symb (Constr.mkIndU (canon_ind,u)))
+	let canon_mind = MutInd.make1 (MutInd.canonical mind) in
+	let canon_ind = canon_mind,i_ind in  (Symb (Term.mkIndU (canon_ind,u)))
     | Const (c,u) -> 
 	let u = EInstance.kind sigma u in
-	let canon_const = constant_of_kn (canonical_con c) in 
-	  (Symb (Constr.mkConstU (canon_const,u)))
+	let canon_const = Constant.make1 (Constant.canonical c) in 
+	  (Symb (Term.mkConstU (canon_const,u)))
     | Proj (p, c) -> 
-	let canon_const kn = constant_of_kn (canonical_con kn) in 
+	let canon_const kn = Constant.make1 (Constant.canonical kn) in 
 	let p' = Projection.map canon_const p in
-	(Appli (Symb (Constr.mkConst (Projection.constant p')), decompose_term env sigma c))
+	(Appli (Symb (Term.mkConst (Projection.constant p')), decompose_term env sigma c))
     | _ ->
        let t = Termops.strip_outer_cast sigma t in
        if closed0 sigma t then Symb (EConstr.to_constr sigma t) else raise Not_found
@@ -198,7 +198,7 @@ let make_prb gls depth additionnal_terms =
       (fun decl ->
          let id = NamedDecl.get_id decl in
 	 begin
-	   let cid=Constr.mkVar id in
+	   let cid=Term.mkVar id in
 	   match litteral_of_constr env sigma (NamedDecl.get_type decl) with
 	       `Eq (t,a,b) -> add_equality state cid a b
 	     | `Neq (t,a,b) -> add_disequality state (Hyp cid) a b

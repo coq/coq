@@ -55,8 +55,6 @@ QUICK INSTALLATION PROCEDURE.
 1. ./configure
 2. make
 3. make install (you may need superuser rights)
-4. make clean
-
 
 INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 =================================================
@@ -131,10 +129,13 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 
 	make
 
-   to compile Coq in Objective Caml bytecode (and native-code if supported).
+   to compile Coq in the best OCaml mode available (native-code if supported,
+   bytecode otherwise).
 
    This will compile the entire system. This phase can take more or less time,
-   depending on your architecture and is fairly verbose.
+   depending on your architecture and is fairly verbose. On a multi-core machine,
+   it is recommended to compile in parallel, via make -jN where N is your number
+   of cores.
 
 6- You can now install the Coq system. Executables, libraries, manual pages
    and emacs mode are copied in some standard places of your system, defined at
@@ -150,7 +151,19 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
         (setq auto-mode-alist (cons '("\\.v$" . coq-mode) auto-mode-alist))
         (autoload 'coq-mode "gallina" "Major mode for editing Coq vernacular." t)
 
-7- You can now clean all the sources. (You can even erase them.)
+7- Optionally, you could build the bytecode version of Coq via:
+
+        make byte
+
+   and install it via
+
+        make install-byte
+
+  This version is quite slower than the native code version of Coq, but could
+  be helpful for debugging purposes. In particular, coqtop.byte embeds an OCaml
+  toplevel accessible via the Drop command.
+
+8- You can now clean all the sources. (You can even erase them.)
 
 	make clean
 
@@ -182,11 +195,14 @@ THE AVAILABLE COMMANDS.
 	coqtop		The Coq toplevel
 	coqc		The Coq compiler
 
-   Under architecture where ocamlopt is available, there are actually two
-   binaries for the interactive system, coqtop.byte and coqtop (respectively
-   bytecode and native code versions of Coq).  coqtop is a link to coqtop.byte
-   otherwise. coqc also invokes the fastest version of Coq.  Options -opt and
-   -byte to coqtop and coqc selects a particular binary.
+   Under architecture where ocamlopt is available, coqtop is the native code
+   version of Coq. On such architecture, you could additionally request
+   the build of the bytecode version of Coq via 'make byte' and install it via
+   'make install-byte'. This will create  an extra binary named coqtop.byte,
+   that could be used for debugging purpose. If native code isn't available,
+   coqtop.byte is directly built by 'make', and coqtop is a link to coqtop.byte.
+   coqc also invokes the fastest version of Coq. Options -opt and -byte to coqtop
+   and coqc selects a particular binary.
 
     * `coqtop' launches Coq in the interactive mode. By default it loads
       basic logical definitions and tactics from the Init directory.

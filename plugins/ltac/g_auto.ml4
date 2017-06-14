@@ -17,7 +17,6 @@ open Pcoq.Prim
 open Pcoq.Constr
 open Pltac
 open Hints
-open Names
 
 DECLARE PLUGIN "g_auto"
 

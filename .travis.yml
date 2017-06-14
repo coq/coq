@@ -37,10 +37,12 @@ env:
   - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
   - TEST_TARGET="validate"                           TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
+  - TEST_TARGET="ci-bignums"
   - TEST_TARGET="ci-bedrock-src"
   - TEST_TARGET="ci-bedrock-facade"
   - TEST_TARGET="ci-color"
   - TEST_TARGET="ci-compcert"
+  - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
   - TEST_TARGET="ci-coquelicot"
   - TEST_TARGET="ci-geocoq"
   - TEST_TARGET="ci-fiat-crypto"
@@ -62,6 +64,7 @@ env:
 matrix:
 
   allow_failures:
+  - env: TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
   - env: TEST_TARGET="ci-geocoq"
 
   include:

@@ -132,6 +132,7 @@ let mkSTACK = function
   | STACK(0,v0,stk0), stk -> STACK(0,v0,stack_concat stk0 stk)
   | v,stk -> STACK(0,v,stk)
 
+type cbv_infos = { infos : cbv_value infos; sigma : Evd.evar_map }
 
 (* Change: zeta reduction cannot be avoided in CBV *)
 
@@ -189,6 +190,43 @@ let pr_key = function
   | VarKey id -> Names.Id.print id
   | RelKey n -> Pp.(str "REL_" ++ int n)
 
+let rec reify_stack t = function
+  | TOP -> t
+  | APP (args,st) ->
+      reify_stack (mkApp(t,Array.map reify_value args)) st
+  | CASE (ty,br,ci,env,st) ->
+      reify_stack
+        (mkCase (ci, ty, t,br))
+        st
+  | PROJ (p, pinfo, st) ->
+       reify_stack (mkProj (p, t)) st
+
+and reify_value = function (* reduction under binders *)
+  | VAL (n,t) -> lift n t
+  | STACK (0,v,stk) ->
+      reify_stack (reify_value v) stk
+  | STACK (n,v,stk) ->
+      lift n (reify_stack (reify_value v) stk)
+  | CBN(t,env) ->
+    t
+      (* map_constr_with_binders subs_lift (cbv_norm_term) env t *)
+  | LAM (n,ctxt,b,env) ->
+      List.fold_left (fun c (n,t)  -> Term.mkLambda (n, t, c)) b ctxt
+  | FIXP ((lij,(names,lty,bds)),env,args) ->
+      mkApp
+        (mkFix (lij,
+		(names,
+		 lty,
+		 bds)),
+         Array.map reify_value args)
+  | COFIXP ((j,(names,lty,bds)),env,args) ->
+      mkApp
+        (mkCoFix (j,
+		  (names,lty,bds)),
+         Array.map reify_value args)
+  | CONSTR (c,args) ->
+      mkApp(mkConstructU c, Array.map reify_value args)
+
 (* The main recursive functions
  *
  * Go under applications and cases/projections (pushed in the stack), 
@@ -213,12 +251,12 @@ let rec norm_head info env t stack =
   
   | Proj (p, c) -> 
     let p' =
-      if red_set (info_flags info) (fCONST (Projection.constant p)) 
-      	&& red_set (info_flags info) fBETA 
+      if red_set (info_flags info.infos) (fCONST (Projection.constant p)) 
+      	&& red_set (info_flags info.infos) fBETA 
       then Projection.unfold p
       else p
     in 
-    let pinfo = Environ.lookup_projection p (info_env info) in
+    let pinfo = Environ.lookup_projection p (info_env info.infos) in
       norm_head info env c (PROJ (p', pinfo, stack))
 	
   (* constants, axioms
@@ -233,14 +271,16 @@ let rec norm_head info env t stack =
 
   | Var id -> norm_head_ref 0 info env stack (VarKey id)
 
-  | Const sp -> norm_head_ref 0 info env stack (ConstKey sp)
+  | Const sp ->
+      Reductionops.reduction_effect_hook (env_of_infos info.infos) info.sigma t (lazy (reify_stack t stack));
+      norm_head_ref 0 info env stack (ConstKey sp)
 
   | LetIn (_, b, _, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
       (* allow bindings but leave let's in place *)
-      if red_set (info_flags info) fZETA then
+      if red_set (info_flags info.infos) fZETA then
         (* New rule: for Cbv, Delta does not apply to locally bound variables
-           or red_set (info_flags info) fDELTA
+           or red_set (info_flags info.infos) fDELTA
          *)
 	let env' = subs_cons ([|cbv_stack_term info TOP env b|],env) in
         norm_head info env' c stack
@@ -248,7 +288,7 @@ let rec norm_head info env t stack =
 	(CBN(t,env), stack) (* Should we consider a commutative cut ? *)
 
   | Evar ev ->
-      (match evar_value info.i_cache ev with
+      (match evar_value info.infos.i_cache ev with
           Some c -> norm_head info env c stack
         | None -> (VAL(0, t), stack))
 
@@ -265,8 +305,8 @@ let rec norm_head info env t stack =
   | Prod _ -> (CBN(t,env), stack)
 
 and norm_head_ref k info env stack normt =
-  if red_set_ref (info_flags info) normt then
-    match ref_value_cache info normt with
+  if red_set_ref (info_flags info.infos) normt then
+    match ref_value_cache info.infos normt with
       | Some body ->
          if !debug_cbv then Feedback.msg_debug Pp.(str "Unfolding " ++ pr_key normt);
          strip_appl (shift_value k body) stack
@@ -291,7 +331,7 @@ and cbv_stack_term info stack env t =
 and cbv_stack_value info env = function
   (* a lambda meets an application -> BETA *)
   | (LAM (nlams,ctxt,b,env), APP (args, stk))
-      when red_set (info_flags info) fBETA ->
+      when red_set (info_flags info.infos) fBETA ->
     let nargs = Array.length args in
       if nargs == nlams then
           cbv_stack_term info stk (subs_cons(args,env)) b
@@ -305,31 +345,31 @@ and cbv_stack_value info env = function
 
     (* a Fix applied enough -> IOTA *)
     | (FIXP(fix,env,[||]), stk)
-        when fixp_reducible (info_flags info) fix stk ->
+        when fixp_reducible (info_flags info.infos) fix stk ->
         let (envf,redfix) = contract_fixp env fix in
         cbv_stack_term info stk envf redfix
 
     (* constructor guard satisfied or Cofix in a Case -> IOTA *)
     | (COFIXP(cofix,env,[||]), stk)
-        when cofixp_reducible (info_flags info) cofix stk->
+        when cofixp_reducible (info_flags info.infos) cofix stk->
         let (envf,redfix) = contract_cofixp env cofix in
         cbv_stack_term info stk envf redfix
 
     (* constructor in a Case -> IOTA *)
     | (CONSTR(((sp,n),u),[||]), APP(args,CASE(_,br,ci,env,stk)))
-            when red_set (info_flags info) fMATCH ->
+            when red_set (info_flags info.infos) fMATCH ->
 	let cargs =
           Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
         cbv_stack_term info (stack_app cargs stk) env br.(n-1)
 
     (* constructor of arity 0 in a Case -> IOTA *)
     | (CONSTR(((_,n),u),[||]), CASE(_,br,_,env,stk))
-            when red_set (info_flags info) fMATCH ->
+            when red_set (info_flags info.infos) fMATCH ->
                     cbv_stack_term info stk env br.(n-1)
 
     (* constructor in a Projection -> IOTA *)
     | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,pi,stk)))
-        when red_set (info_flags info) fMATCH && Projection.unfolded p ->
+        when red_set (info_flags info.infos) fMATCH && Projection.unfolded p ->
       let arg = args.(pi.Declarations.proj_npars + pi.Declarations.proj_arg) in
 	cbv_stack_value info env (strip_appl arg stk)
 
@@ -337,7 +377,7 @@ and cbv_stack_value info env = function
     | (FIXP(fix,env,[||]), APP(appl,TOP)) -> FIXP(fix,env,appl)
     | (COFIXP(cofix,env,[||]), APP(appl,TOP)) -> COFIXP(cofix,env,appl)
     | (CONSTR(c,[||]), APP(appl,TOP)) -> CONSTR(c,appl)
-      
+
     (* definitely a value *)
     | (head,stk) -> mkSTACK(head, stk)
 
@@ -400,12 +440,11 @@ let cbv_norm infos constr =
   let constr = EConstr.Unsafe.to_constr constr in
   EConstr.of_constr (with_stats (lazy (cbv_norm_term infos (subs_id 0) constr)))
 
-type cbv_infos = cbv_value infos
-
 (* constant bodies are normalized at the first expansion *)
 let create_cbv_infos flgs env sigma =
-  create
-    (fun old_info c -> cbv_stack_term old_info TOP (subs_id 0) c)
+  let infos = create
+    (fun old_info c -> cbv_stack_term { infos = old_info; sigma } TOP (subs_id 0) c)
     flgs
     env
-    (Reductionops.safe_evar_value sigma)
+    (Reductionops.safe_evar_value sigma) in
+  { infos; sigma }

@@ -85,7 +85,7 @@ let pr_int_list_full _prc _prlc _prt l = pr_int_list l
 let pr_occurrences _prc _prlc _prt l =
   match l with
     | ArgArg x -> pr_int_list x
-    | ArgVar (loc, id) -> Nameops.pr_id id
+    | ArgVar (loc, id) -> Id.print id
 
 let occurrences_of = function
   | [] -> NoOccurrences
@@ -201,8 +201,8 @@ let pr_gen_place pr_id = function
   | HypLocation (id,InHypValueOnly) ->
       str "in (Value of " ++ pr_id id ++ str ")"
 
-let pr_loc_place _ _ _ = pr_gen_place (fun (_,id) -> Nameops.pr_id id)
-let pr_place _ _ _ = pr_gen_place Nameops.pr_id
+let pr_loc_place _ _ _ = pr_gen_place (fun (_,id) -> Id.print id)
+let pr_place _ _ _ = pr_gen_place Id.print
 let pr_hloc = pr_loc_place () () ()
 
 let intern_place ist = function
@@ -238,7 +238,7 @@ ARGUMENT EXTEND hloc
 
  END
 
-let pr_rename _ _ _ (n, m) = Nameops.pr_id n ++ str " into " ++ Nameops.pr_id m
+let pr_rename _ _ _ (n, m) = Id.print n ++ str " into " ++ Id.print m
 
 ARGUMENT EXTEND rename
   TYPED AS ident * ident

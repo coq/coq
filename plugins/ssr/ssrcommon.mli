@@ -57,7 +57,7 @@ type 'a tac_a = (goal * 'a) sigma -> (goal * 'a) list sigma
 
 (* Thread around names to be cleared or generalized back, and the speed *)
 type tac_ctx = {
-  tmp_ids : (Id.t * name ref) list;
+  tmp_ids : (Id.t * Name.t ref) list;
   wild_ids : Id.t list;
   (* List of variables to be cleared at the end of the sentence *)
   delayed_clears : Id.t list;
@@ -175,17 +175,17 @@ val pf_abs_evars :
            Proof_type.goal Evd.sigma ->
            evar_map * EConstr.t ->
            int * EConstr.t * Evar.t list *
-           Evd.evar_universe_context
+           UState.t
 val pf_abs_evars2 : (* ssr2 *)
            Proof_type.goal Evd.sigma -> Evar.t list ->
            evar_map * EConstr.t ->
            int * EConstr.t * Evar.t list *
-           Evd.evar_universe_context
+           UState.t
 val pf_abs_cterm :
            Proof_type.goal Evd.sigma -> int -> EConstr.t -> EConstr.t
 
 val pf_merge_uc :
-           Evd.evar_universe_context -> 'a Evd.sigma -> 'a Evd.sigma
+           UState.t -> 'a Evd.sigma -> 'a Evd.sigma
 val pf_merge_uc_of :
            evar_map -> 'a Evd.sigma -> 'a Evd.sigma
 val constr_name : evar_map -> EConstr.t -> Name.t
@@ -196,14 +196,14 @@ val pfe_type_of :
            Proof_type.goal Evd.sigma ->
            EConstr.t -> Proof_type.goal Evd.sigma * EConstr.types
 val pf_abs_prod :
-           Names.name ->
+           Name.t ->
            Proof_type.goal Evd.sigma ->
            EConstr.t ->
            EConstr.t -> Proof_type.goal Evd.sigma * EConstr.types
 val pf_mkprod :
            Proof_type.goal Evd.sigma ->
            EConstr.t ->
-           ?name:Names.name ->
+           ?name:Name.t ->
            EConstr.t -> Proof_type.goal Evd.sigma * EConstr.types
 
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
@@ -229,7 +229,7 @@ val is_tagged : string -> string -> bool
 val has_discharged_tag : string -> bool
 val ssrqid : string -> Libnames.qualid 
 val new_tmp_id :
-  tac_ctx -> (Names.Id.t * Names.name ref) * tac_ctx
+  tac_ctx -> (Names.Id.t * Name.t ref) * tac_ctx
 val mk_anon_id : string -> Proof_type.goal Evd.sigma -> Id.t
 val pf_abs_evars_pirrel :
            Proof_type.goal Evd.sigma ->
@@ -286,7 +286,7 @@ val pf_abs_ssrterm :
            ist ->
            Proof_type.goal Evd.sigma ->
            ssrterm ->
-           evar_map * EConstr.t * Evd.evar_universe_context * int
+           evar_map * EConstr.t * UState.t * int
 
 val pf_interp_ty :
            ?resolve_typeclasses:bool ->
@@ -294,7 +294,7 @@ val pf_interp_ty :
            Proof_type.goal Evd.sigma ->
            Ssrast.ssrtermkind *
            (Glob_term.glob_constr * Constrexpr.constr_expr option) ->
-           int * EConstr.t * EConstr.t * Evd.evar_universe_context
+           int * EConstr.t * EConstr.t * UState.t
 
 val ssr_n_tac : string -> int -> v82tac
 val donetac : int -> v82tac
@@ -362,7 +362,7 @@ val pf_interp_gen_aux :
   (Ssrast.ssrhyp list option * Ssrmatching_plugin.Ssrmatching.occ) *
     Ssrmatching_plugin.Ssrmatching.cpattern ->
   bool * Ssrmatching_plugin.Ssrmatching.pattern * EConstr.t *
-    EConstr.t * Ssrast.ssrhyp list * Evd.evar_universe_context *
+    EConstr.t * Ssrast.ssrhyp list * UState.t *
       Proof_type.goal Evd.sigma
 
 val is_name_in_ipats :
@@ -377,7 +377,7 @@ val mk_profiler : string -> profiler
 
 (** Basic tactics *)
 
-val introid : ?orig:name ref -> Id.t -> v82tac
+val introid : ?orig:Name.t ref -> Id.t -> v82tac
 val intro_anon : v82tac
 val intro_all : v82tac
 

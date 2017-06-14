@@ -17,7 +17,7 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import Znumtheory.
-Require Import BigNumPrelude.
+Require Import Zpow_facts.
 Require Import DoubleType.
 
 Local Open Scope Z_scope.

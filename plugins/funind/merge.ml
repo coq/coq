@@ -893,7 +893,7 @@ let find_Function_infos_safe (id:Id.t): Indfun_common.function_info =
       locate_constant f_ref in
     try find_Function_infos (kn_of_id id)
     with Not_found ->
-      user_err ~hdr:"indfun" (Nameops.pr_id id ++ str " has no functional scheme")
+      user_err ~hdr:"indfun" (Id.print id ++ str " has no functional scheme")
 
 (** [merge id1 id2 args1 args2 id] builds and declares a new inductive
     type called [id], representing the merged graphs of both graphs

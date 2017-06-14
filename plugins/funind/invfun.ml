@@ -218,7 +218,7 @@ let rec generate_fresh_id x avoid i =
    \end{enumerate}
 
 *)
-let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes lemmas_types_infos i : tactic =
+let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes lemmas_types_infos i : Proof_type.tactic =
   fun g ->
     (* first of all we recreate the lemmas types to be used as predicates of the induction principle
        that is~:
@@ -342,7 +342,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       in
       (* observe (str "constructor := " ++ Printer.pr_lconstr_env (pf_env g) app_constructor); *)
       (
-	tclTHENSEQ
+	tclTHENLIST
 	  [
 	    observe_tac("h_intro_patterns ")  (let l = (List.nth intro_pats (pred i)) in 
 					       match l with 
@@ -415,7 +415,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       in
       (params_bindings@lemmas_bindings)
     in
-    tclTHENSEQ
+    tclTHENLIST
       [ 
 	observe_tac "principle" (Proofview.V82.of_tactic (assert_by
 	  (Name principle_id)
@@ -468,7 +468,7 @@ let tauto =
 
 let  rec intros_with_rewrite g =
   observe_tac "intros_with_rewrite" intros_with_rewrite_aux g
-and intros_with_rewrite_aux : tactic =
+and intros_with_rewrite_aux : Proof_type.tactic =
   fun g ->
     let eq_ind = make_eq () in
     let sigma = project g in
@@ -480,16 +480,16 @@ and intros_with_rewrite_aux : tactic =
  		      if Reductionops.is_conv (pf_env g) (project g) args.(1) args.(2)
 		      then
 			let id = pf_get_new_id (Id.of_string "y") g  in
-			tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id); thin [id]; intros_with_rewrite ] g
+			tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id); thin [id]; intros_with_rewrite ] g
 		      else if isVar sigma args.(1) && (Environ.evaluable_named (destVar sigma args.(1)) (pf_env g)) 
-		      then tclTHENSEQ[
+		      then tclTHENLIST[
 			Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar sigma args.(1)))]);
 			tclMAP (fun id -> tclTRY(Proofview.V82.of_tactic (unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar sigma args.(1)))] ((destVar sigma args.(1)),Locus.InHyp) )))
 			  (pf_ids_of_hyps g);
 			intros_with_rewrite
 		      ] g
 		      else if isVar sigma args.(2) && (Environ.evaluable_named (destVar sigma args.(2)) (pf_env g)) 
-		      then tclTHENSEQ[
+		      then tclTHENLIST[
 			Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar sigma args.(2)))]);
 			tclMAP (fun id -> tclTRY(Proofview.V82.of_tactic (unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar sigma args.(2)))] ((destVar sigma args.(2)),Locus.InHyp) )))
 			  (pf_ids_of_hyps g);
@@ -498,7 +498,7 @@ and intros_with_rewrite_aux : tactic =
 		      else if isVar sigma args.(1)
 		      then
 			let id = pf_get_new_id (Id.of_string "y") g  in
-			tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id);
+			tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id);
 				     generalize_dependent_of (destVar sigma args.(1)) id;
 				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar id)));
 				     intros_with_rewrite
@@ -507,7 +507,7 @@ and intros_with_rewrite_aux : tactic =
 		      else if isVar sigma args.(2) 
 		      then 
 			let id = pf_get_new_id (Id.of_string "y") g  in
-			tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id);
+			tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id);
 				     generalize_dependent_of (destVar sigma args.(2)) id;
 				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteRL (mkVar id)));
 				     intros_with_rewrite
@@ -516,7 +516,7 @@ and intros_with_rewrite_aux : tactic =
 		      else
 			begin
 			  let id = pf_get_new_id (Id.of_string "y") g  in
-			  tclTHENSEQ[
+			  tclTHENLIST[
 			    Proofview.V82.of_tactic (Simple.intro id);
 			    tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar id)));
 			    intros_with_rewrite
@@ -525,12 +525,12 @@ and intros_with_rewrite_aux : tactic =
 		  | Ind _ when EConstr.eq_constr sigma t (EConstr.of_constr (Universes.constr_of_global @@ Coqlib.build_coq_False ())) ->
 		      Proofview.V82.of_tactic tauto g
 		  | Case(_,_,v,_) ->
-		      tclTHENSEQ[
+		      tclTHENLIST[
 			Proofview.V82.of_tactic (simplest_case v);
 			intros_with_rewrite
 		      ] g
 		  | LetIn _ ->
-		      tclTHENSEQ[
+		      tclTHENLIST[
 			Proofview.V82.of_tactic (reduce
 			  (Genredexpr.Cbv
 			     {Redops.all_flags
@@ -542,10 +542,10 @@ and intros_with_rewrite_aux : tactic =
 		      ] g
 		  | _ ->
 		      let id = pf_get_new_id (Id.of_string "y") g  in
-		      tclTHENSEQ [ Proofview.V82.of_tactic (Simple.intro id);intros_with_rewrite] g
+		      tclTHENLIST [ Proofview.V82.of_tactic (Simple.intro id);intros_with_rewrite] g
 	      end
 	  | LetIn _ ->
-	      tclTHENSEQ[
+	      tclTHENLIST[
 		Proofview.V82.of_tactic (reduce
 		  (Genredexpr.Cbv
 		     {Redops.all_flags
@@ -562,7 +562,7 @@ let rec reflexivity_with_destruct_cases g =
     try
       match EConstr.kind (project g) (snd (destApp (project g) (pf_concl g))).(2) with
 	| Case(_,_,v,_) ->
-	    tclTHENSEQ[
+	    tclTHENLIST[
 	      Proofview.V82.of_tactic (simplest_case v);
 	      Proofview.V82.of_tactic intros;
 	      observe_tac "reflexivity_with_destruct_cases" reflexivity_with_destruct_cases
@@ -582,7 +582,7 @@ let rec reflexivity_with_destruct_cases g =
 		     if Equality.discriminable (pf_env g) (project g) t1 t2
 		     then Proofview.V82.of_tactic (Equality.discrHyp id) g
 		     else if Equality.injectable (pf_env g) (project g) t1 t2
-		     then tclTHENSEQ [Proofview.V82.of_tactic (Equality.injHyp None id);thin [id];intros_with_rewrite]  g
+		     then tclTHENLIST [Proofview.V82.of_tactic (Equality.injHyp None id);thin [id];intros_with_rewrite]  g
 		     else tclIDTAC g
 		 | _ -> tclIDTAC g
     )
@@ -629,7 +629,7 @@ let rec reflexivity_with_destruct_cases g =
 *)
 
 
-let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
+let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Proof_type.tactic =
   fun g ->
     (* We compute the types of the different mutually recursive lemmas
        in $\zeta$ normal form
@@ -673,7 +673,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
        using [f_equation] if it is recursive (that is the graph is infinite
        or unfold if the graph is finite
     *)
-    let rewrite_tac j ids : tactic =
+    let rewrite_tac j ids : Proof_type.tactic =
       let graph_def = graphs.(j) in
       let infos =
         try find_Function_infos (fst (destConst (project g) funcs.(j)))
@@ -686,7 +686,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  try Option.get (infos).equation_lemma
 	  with Option.IsNone -> anomaly (Pp.str "Cannot find equation lemma.")
 	in
-	tclTHENSEQ[
+	tclTHENLIST[
 	  tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) ids;
 	  Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_lemma));
 	  (* Don't forget to $\zeta$ normlize the term since the principles
@@ -722,7 +722,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  end
       in
       let this_branche_ids = List.nth intro_pats (pred i) in
-      tclTHENSEQ[
+      tclTHENLIST[
 	(* we expand the definition of the function *)
         observe_tac "rewrite_tac" (rewrite_tac this_ind_number this_branche_ids);
 	(* introduce hypothesis with some rewrite *)
@@ -735,7 +735,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     let params_names = fst (List.chop princ_infos.nparams args_names) in
     let open EConstr in
     let params = List.map mkVar params_names in
-    tclTHENSEQ
+    tclTHENLIST
       [ tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) (args_names@[res;hres]);
 	observe_tac "h_generalize"
 	(Proofview.V82.of_tactic (generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]));
@@ -807,7 +807,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
     in
     Array.iteri
       (fun i f_as_constant ->
-	 let f_id = Label.to_id (con_label (fst f_as_constant)) in
+	 let f_id = Label.to_id (Constant.label (fst f_as_constant)) in
 	 (*i The next call to mk_correct_id is valid since we are constructing the lemma
 	     Ensures by: obvious
 	 i*)
@@ -872,7 +872,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
     in
     Array.iteri
       (fun i f_as_constant ->
-	 let f_id = Label.to_id (con_label (fst f_as_constant)) in
+	 let f_id = Label.to_id (Constant.label (fst f_as_constant)) in
 	 (*i The next call to mk_complete_id is valid since we are constructing the lemma
 	     Ensures by: obvious
 	   i*)
@@ -923,7 +923,7 @@ let revert_graph kn post_tac hid g =
 	      | None -> tclIDTAC g
 	      | Some f_complete ->
 		  let f_args,res = Array.chop (Array.length args - 1) args in
-		  tclTHENSEQ
+		  tclTHENLIST
 		    [
 		      Proofview.V82.of_tactic (generalize [applist(mkConst f_complete,(Array.to_list f_args)@[res.(0);mkVar hid])]);
 		      thin [hid];
@@ -953,7 +953,7 @@ let revert_graph kn post_tac hid g =
    \end{enumerate}
 *)
 
-let functional_inversion kn hid fconst f_correct : tactic =
+let functional_inversion kn hid fconst f_correct : Proof_type.tactic =
   fun g ->
     let old_ids = List.fold_right Id.Set.add  (pf_ids_of_hyps g) Id.Set.empty in
     let sigma = project g in
@@ -968,7 +968,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
 		 ((fun hid -> tclIDTAC),f_args,args.(1))
 	      | _ -> (fun hid -> tclFAIL 1 (mt ())),[||],args.(2)
 	  in
-	  tclTHENSEQ[
+	  tclTHENLIST [
 	    pre_tac hid;
 	    Proofview.V82.of_tactic (generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])]);
 	    thin [hid];

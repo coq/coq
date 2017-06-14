@@ -83,7 +83,7 @@ type flags = {fastcomputation : bool}
 (* The [proactive] knowledge contains the mapping [field->entry]. *)
 
 module Proactive =
-  Map.Make (struct type t = field let compare = compare end)
+  Map.Make (struct type t = field let compare = Pervasives.compare end)
 
 type proactive = entry Proactive.t
 

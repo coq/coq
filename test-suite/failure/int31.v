@@ -1,4 +1,4 @@
-Require Import Int31 BigN.
+Require Import Int31 Cyclic31.
 
 Open Scope int31_scope.
 

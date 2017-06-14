@@ -241,6 +241,9 @@ validate:32bit:
     COMPILER: "$COMPILER_32BIT"
     EXTRA_PACKAGES: "gcc-multilib"
 
+ci-bignums:
+  <<: *ci-template
+
 ci-bedrock-src:
   <<: *ci-template
 

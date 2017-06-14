@@ -320,19 +320,25 @@ let treat_coq_file chan =
         List.fold_left (fun accu v -> mark_v_done from accu v) acc strl
       | Declare sl ->
         let declare suff dir s =
-          let base = file_name s dir in
-          let opt = if !option_natdynlk then " " ^ base ^ ".cmxs" else "" in
-          (escape base, suff ^ opt)
+          let base = escape (file_name s dir) in
+          match !option_dynlink with
+          | No -> []
+          | Byte -> [base,suff]
+          | Opt -> [base,".cmxs"]
+          | Both -> [base,suff; base,".cmxs"]
+          | Variable ->
+             if suff=".cmo" then [base,"$(DYNOBJ)"]
+             else [base,"$(DYNLIB)"]
         in
         let decl acc str =
           let s = basename_noext str in
           if not (StrSet.mem s !deja_vu_ml) then
             let () = deja_vu_ml := StrSet.add s !deja_vu_ml in
             match search_mllib_known s with
-            | Some mldir -> (declare ".cma" mldir s) :: acc
+            | Some mldir -> (declare ".cma" mldir s) @ acc
             | None ->
               match search_ml_known s with
-              | Some mldir -> (declare ".cmo" mldir s) :: acc
+              | Some mldir -> (declare ".cmo" mldir s) @ acc
               | None -> acc
           else acc
         in
@@ -449,6 +455,7 @@ let usage () =
   eprintf "  -coqlib dir : set the coq standard library directory\n";
   eprintf "  -suffix s : \n";
   eprintf "  -slash : deprecated, no effect\n";
+  eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed";
   exit 1
 
 let split_period = Str.split (Str.regexp (Str.quote "."))
@@ -476,17 +483,22 @@ let rec parse = function
   | "-slash" :: ll ->
     Printf.eprintf "warning: option -slash has no effect and is deprecated.\n";
     parse ll
+  | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
+  | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
+  | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
+  | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
+  | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
   | ("-h"|"--help"|"-help") :: _ -> usage ()
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
 
 let coqdep () =
   if Array.length Sys.argv < 2 then usage ();
+  if not Coq_config.has_natdynlink then option_dynlink := No;
   parse (List.tl (Array.to_list Sys.argv));
   (* Add current dir with empty logical path if not set by options above. *)
   (try ignore (Coqdep_common.find_dir_logpath (Sys.getcwd()))
    with Not_found -> add_norec_dir_import add_known "." []);
-  if not Coq_config.has_natdynlink then option_natdynlk := false;
   (* NOTE: These directories are searched from last to first *)
   if !option_boot then begin
     add_rec_dir_import add_known "theories" ["Coq"];

@@ -12,7 +12,6 @@ open API
 open Class_tactics
 open Stdarg
 open Tacarg
-open Names
 
 DECLARE PLUGIN "g_class"
 

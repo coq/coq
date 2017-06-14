@@ -13,7 +13,7 @@ open Grammar_API
 open Util
 open Names
 open Evd
-open Constr
+open Term
 open Termops
 open Printer
 open Locusops
@@ -133,7 +133,7 @@ let tac_on_all gl tac =
 
 (* Used to thread data between intro patterns at run time *)
 type tac_ctx = {
-  tmp_ids : (Id.t * name ref) list;
+  tmp_ids : (Id.t * Name.t ref) list;
   wild_ids : Id.t list;
   delayed_clears : Id.t list;
 }
@@ -308,7 +308,7 @@ let is_internal_name s = List.exists (fun p -> p s) !internal_names
 let tmp_tag = "_the_"
 let tmp_post = "_tmp_"
 let mk_tmp_id i =
-  id_of_string (Printf.sprintf "%s%s%s" tmp_tag (CString.ordinal i) tmp_post)
+  Id.of_string (Printf.sprintf "%s%s%s" tmp_tag (CString.ordinal i) tmp_post)
 let new_tmp_id ctx =
   let id = mk_tmp_id (1 + List.length ctx.tmp_ids) in
   let orig = ref Anonymous in
@@ -318,7 +318,7 @@ let new_tmp_id ctx =
 let mk_internal_id s =
   let s' = Printf.sprintf "_%s_" s in
   let s' = String.map (fun c -> if c = ' ' then '_' else c) s' in
-  add_internal_name ((=) s'); id_of_string s'
+  add_internal_name ((=) s'); Id.of_string s'
 
 let same_prefix s t n =
   let rec loop i = i = n || s.[i] = t.[i] && loop (i + 1) in loop 0
@@ -327,7 +327,7 @@ let skip_digits s =
   let n = String.length s in 
   let rec loop i = if i < n && is_digit s.[i] then loop (i + 1) else i in loop
 
-let mk_tagged_id t i = id_of_string (Printf.sprintf "%s%d_" t i)
+let mk_tagged_id t i = Id.of_string (Printf.sprintf "%s%d_" t i)
 let is_tagged t s =
   let n = String.length s - 1 and m = String.length t in
   m < n && s.[n] = '_' && same_prefix s t m && skip_digits s m = n
@@ -341,7 +341,7 @@ let ssr_anon_hyp = "Hyp"
 let wildcard_tag = "_the_"
 let wildcard_post = "_wildcard_"
 let mk_wildcard_id i =
-  id_of_string (Printf.sprintf "%s%s%s" wildcard_tag (CString.ordinal i) wildcard_post)
+  Id.of_string (Printf.sprintf "%s%s%s" wildcard_tag (CString.ordinal i) wildcard_post)
 let has_wildcard_tag s = 
   let n = String.length s in let m = String.length wildcard_tag in
   let m' = String.length wildcard_post in
@@ -357,15 +357,15 @@ let new_wild_id ctx =
 
 let discharged_tag = "_discharged_"
 let mk_discharged_id id =
-  id_of_string (Printf.sprintf "%s%s_" discharged_tag (string_of_id id))
+  Id.of_string (Printf.sprintf "%s%s_" discharged_tag (Id.to_string id))
 let has_discharged_tag s =
   let m = String.length discharged_tag and n = String.length s - 1 in
   m < n && s.[n] = '_' && same_prefix s discharged_tag m
 let _ = add_internal_name has_discharged_tag
-let is_discharged_id id = has_discharged_tag (string_of_id id)
+let is_discharged_id id = has_discharged_tag (Id.to_string id)
 
 let max_suffix m (t, j0 as tj0) id  =
-  let s = string_of_id id in let n = String.length s - 1 in
+  let s = Id.to_string id in let n = String.length s - 1 in
   let dn = String.length t - 1 - n in let i0 = j0 - dn in
   if not (i0 >= m && s.[n] = '_' && same_prefix s t m) then tj0 else
   let rec loop i =
@@ -385,7 +385,7 @@ let mk_anon_id t gl =
     let rec loop i j =
       let d = !s.[i] in if not (is_digit d) then i + 1, j else
       loop (i - 1) (if d = '0' then j else i) in
-    let m, j = loop (n - 1) n in m, (!s, j), id_of_string !s in
+    let m, j = loop (n - 1) n in m, (!s, j), Id.of_string !s in
   let gl_ids = pf_ids_of_hyps gl in
   if not (List.mem id0 gl_ids) then id0 else
   let s, i = List.fold_left (max_suffix m) si0 gl_ids in
@@ -403,7 +403,7 @@ let convert_concl t = Tactics.convert_concl t Term.DEFAULTcast
 
 let rename_hd_prod orig_name_ref gl =
   match EConstr.kind (project gl) (pf_concl gl) with
-  | Constr.Prod(_,src,tgt) ->
+  | Term.Prod(_,src,tgt) ->
       Proofview.V82.of_tactic (convert_concl_no_check (EConstr.mkProd (!orig_name_ref,src,tgt))) gl
   | _ -> CErrors.anomaly (str "gentac creates no product")
 
@@ -602,7 +602,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   let rec loopP evlist c i = function
   | (_, (n, t, _)) :: evl ->
     let t = get evlist (i - 1) t in
-    let n = Name (id_of_string (ssr_anon_hyp ^ string_of_int n)) in 
+    let n = Name (Id.of_string (ssr_anon_hyp ^ string_of_int n)) in 
     loopP evlist (mkProd (n, t, c)) (i - 1) evl
   | [] -> c in
   let rec loop c i = function
@@ -626,13 +626,13 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
 
 let nb_evar_deps = function
   | Name id ->
-    let s = string_of_id id in
+    let s = Id.to_string id in
     if not (is_tagged evar_tag s) then 0 else
     let m = String.length evar_tag in
     (try int_of_string (String.sub s m (String.length s - 1 - m)) with _ -> 0)
   | _ -> 0
 
-let pf_type_id gl t = id_of_string (Namegen.hdchar (pf_env gl) (project gl) t)
+let pf_type_id gl t = Id.of_string (Namegen.hdchar (pf_env gl) (project gl) t)
 let pfe_type_of gl t =
   let sigma, ty = pf_type_of gl t in
   re_sig (sig_it gl) sigma, ty
@@ -691,7 +691,7 @@ let pf_merge_uc_of sigma gl =
 let rec constr_name sigma c = match EConstr.kind sigma c with
   | Var id -> Name id
   | Cast (c', _, _) -> constr_name sigma c'
-  | Const (cn,_) -> Name (Label.to_id (con_label cn))
+  | Const (cn,_) -> Name (Label.to_id (Constant.label cn))
   | App (c', _) -> constr_name sigma c'
   | _ -> Anonymous
 
@@ -703,9 +703,9 @@ let pf_mkprod gl c ?(name=constr_name (project gl) c) cl =
 let pf_abs_prod name gl c cl = pf_mkprod gl c ~name (Termops.subst_term (project gl) c cl)
 
 (** look up a name in the ssreflect internals module *)
-let ssrdirpath = DirPath.make [id_of_string "ssreflect"]
-let ssrqid name = Libnames.make_qualid ssrdirpath (id_of_string name) 
-let ssrtopqid name = Libnames.qualid_of_ident (id_of_string name) 
+let ssrdirpath = DirPath.make [Id.of_string "ssreflect"]
+let ssrqid name = Libnames.make_qualid ssrdirpath (Id.of_string name) 
+let ssrtopqid name = Libnames.qualid_of_ident (Id.of_string name) 
 let locate_reference qid =
   Smartlocate.global_of_extended_global (Nametab.locate_extended qid)
 let mkSsrRef name =
@@ -814,7 +814,7 @@ let ssr_n_tac seed n gl =
   let name = if n = -1 then seed else ("ssr" ^ seed ^ string_of_int n) in
   let fail msg = CErrors.user_err (Pp.str msg) in
   let tacname = 
-    try Nametab.locate_tactic (Libnames.qualid_of_ident (id_of_string name))
+    try Nametab.locate_tactic (Libnames.qualid_of_ident (Id.of_string name))
     with Not_found -> try Nametab.locate_tactic (ssrqid name)
     with Not_found ->
       if n = -1 then fail "The ssreflect library was not loaded"
@@ -1082,7 +1082,7 @@ let introid ?(orig=ref Anonymous) name = tclTHEN (fun gl ->
 let anontac decl gl =
   let id =  match RelDecl.get_name decl with
   | Name id ->
-    if is_discharged_id id then id else mk_anon_id (string_of_id id) gl
+    if is_discharged_id id then id else mk_anon_id (Id.to_string id) gl
   | _ -> mk_anon_id ssr_anon_hyp gl in
   introid id gl
 

@@ -26,7 +26,7 @@ val signature_of_structure : ml_structure -> ml_signature
 
 val mtyp_of_mexpr : ml_module_expr -> ml_module_type
 
-val msid_of_mt : ml_module_type -> module_path
+val msid_of_mt : ml_module_type -> ModPath.t
 
 val get_decl_in_structure : global_reference -> ml_structure -> ml_decl
 
@@ -37,5 +37,5 @@ val get_decl_in_structure : global_reference -> ml_structure -> ml_decl
    optimizations. The first argument is the list of objects we want to appear.
 *)
 
-val optimize_struct : global_reference list * module_path list ->
+val optimize_struct : global_reference list * ModPath.t list ->
   ml_structure -> ml_structure

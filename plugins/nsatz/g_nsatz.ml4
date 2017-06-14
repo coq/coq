@@ -10,7 +10,6 @@
 
 open API
 open Ltac_plugin
-open Names
 
 DECLARE PLUGIN "nsatz_plugin"
 

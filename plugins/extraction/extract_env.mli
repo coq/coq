@@ -21,12 +21,12 @@ val extraction_library : bool -> Id.t -> unit
 (* For debug / external output via coqtop.byte + Drop : *)
 
 val mono_environment :
- global_reference list -> module_path list -> Miniml.ml_structure
+ global_reference list -> ModPath.t list -> Miniml.ml_structure
 
 (* Used by the Relation Extraction plugin *)
 
 val print_one_decl :
-  Miniml.ml_structure -> module_path -> Miniml.ml_decl -> Pp.std_ppcmds
+  Miniml.ml_structure -> ModPath.t -> Miniml.ml_decl -> Pp.std_ppcmds
 
 (* Used by Extraction Compute *)
 

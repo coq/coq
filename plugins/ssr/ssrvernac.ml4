@@ -355,7 +355,7 @@ let coerce_search_pattern_to_sort hpat =
   let coerce hp coe_index =
     let coe = Classops.get_coercion_value coe_index in
     try
-      let coe_ref = reference_of_constr coe in
+      let coe_ref = global_of_constr coe in
       let n_imps = Option.get (Classops.hide_coercion coe_ref) in
       mkPApp (Pattern.PRef coe_ref) n_imps [|hp|]
     with _ ->

@@ -41,10 +41,26 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 # Object and Source files
 ###########################################################################
 
-ifeq ($(HASNATDYNLINK)-$(BEST),true-opt)
-  DEPNATDYN:=
+ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
+ # static link of plugins, do not mention them in .v.d
+ DYNDEP:=-dyndep no
 else
-  DEPNATDYN:=-natdynlink no
+ DYNDEP:=-dyndep var
+endif
+
+# Which coqtop do we use to build .vo file ? The best ;-)
+# Note: $(BEST) could be overridden by the user if a byte build is desired
+# Note: coqdep -dyndep var will use $(DYNOBJ) and $(DYNLIB) extensions
+# for Declare ML Module files.
+
+ifeq ($(BEST),opt)
+COQTOPBEST:=$(COQTOPEXE)
+DYNOBJ:=.cmxs
+DYNLIB:=.cmxs
+else
+COQTOPBEST:=$(COQTOPBYTE)
+DYNOBJ:=.cmo
+DYNLIB:=.cma
 endif
 
 INSTALLBIN:=install
@@ -113,8 +129,8 @@ RTAUTOCMO:=plugins/rtauto/rtauto_plugin.cmo
 NATSYNTAXCMO:=plugins/syntax/nat_syntax_plugin.cmo
 OTHERSYNTAXCMO:=$(addprefix plugins/syntax/, \
         z_syntax_plugin.cmo \
-        numbers_syntax_plugin.cmo \
         r_syntax_plugin.cmo \
+	int31_syntax_plugin.cmo \
 	ascii_syntax_plugin.cmo \
         string_syntax_plugin.cmo )
 DERIVECMO:=plugins/derive/derive_plugin.cmo
@@ -145,14 +161,8 @@ LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)
 # vo files
 ###########################################################################
 
-GENVOFILES := $(GENVFILES:.v=.vo)
-
-THEORIESVO := $(patsubst %.v,%.vo,$(shell find theories -type f -name "*.v")) \
-              $(filter theories/%, $(GENVOFILES))
-
-PLUGINSVO := $(patsubst %.v,%.vo,$(shell find plugins -type f -name "*.v")) \
-             $(filter plugins/%, $(GENVOFILES))
-
+THEORIESVO := $(patsubst %.v,%.vo,$(shell find theories -type f -name "*.v"))
+PLUGINSVO := $(patsubst %.v,%.vo,$(shell find plugins -type f -name "*.v"))
 ALLVO := $(THEORIESVO) $(PLUGINSVO)
 VFILES := $(ALLVO:.vo=.v)
 

@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open API
-open Term
 open EConstr
 open CErrors
 open Util
@@ -58,11 +57,11 @@ end
 
 module OrderedConstr=
 struct
-  type t=Constr.t
-  let compare=constr_ord
+  type t=Term.constr
+  let compare=Term.compare
 end
 
-type h_item = global_reference * (int*Constr.t) option
+type h_item = global_reference * (int*Term.constr) option
 
 module Hitem=
 struct

@@ -201,7 +201,7 @@ let havetac ist
      let assert_is_conv gl =
        try Proofview.V82.of_tactic (convert_concl (EConstr.it_mkProd_or_LetIn concl ctx)) gl
        with _ -> errorstrm (str "Given proof term is not of type " ++
-         pr_econstr (EConstr.mkArrow (EConstr.mkVar (id_of_string "_")) concl)) in
+         pr_econstr (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) concl)) in
      gl, ty, Tacticals.tclTHEN assert_is_conv (Proofview.V82.of_tactic (Tactics.apply t)), id, itac_c
    | FwdHave, false, false ->
      let skols = List.flatten (List.map (function

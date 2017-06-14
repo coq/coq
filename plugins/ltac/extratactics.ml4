@@ -464,8 +464,8 @@ open Evar_tactics
 (* TODO: add support for some test similar to g_constr.name_colon so that
    expressions like "evar (list A)" do not raise a syntax error *)
 TACTIC EXTEND evar
-  [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name id) typ ]
-| [ "evar" constr(typ) ] -> [ let_evar Anonymous typ ]
+  [ "evar" test_lpar_id_colon "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name.Name id) typ ]
+| [ "evar" constr(typ) ] -> [ let_evar Name.Anonymous typ ]
 END
 
 TACTIC EXTEND instantiate
@@ -516,7 +516,7 @@ let cache_transitivity_lemma (_,(left,lem)) =
 
 let subst_transitivity_lemma (subst,(b,ref)) = (b,subst_mps subst ref)
 
-let inTransitivity : bool * Constr.constr -> obj =
+let inTransitivity : bool * Term.constr -> obj =
   declare_object {(default_object "TRANSITIVITY-STEPS") with
     cache_function = cache_transitivity_lemma;
     open_function = (fun i o -> if Int.equal i 1 then cache_transitivity_lemma o);
@@ -684,7 +684,7 @@ let hResolve id c occ t =
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (change_concl (mkLetIn (Anonymous,t_constr,t_constr_type,concl)))
+    (change_concl (mkLetIn (Name.Anonymous,t_constr,t_constr_type,concl)))
   end
 
 let hResolve_auto id c t =

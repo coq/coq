@@ -72,6 +72,8 @@ test-suite/coq-makefile/*/mlihtml
 test-suite/coq-makefile/*/subdir/done
 test-suite/coq-makefile/latex1/all.pdf
 test-suite/coq-makefile/merlin1/.merlin
+test-suite/coq-makefile/plugin-reach-outside-API-and-fail/_CoqProject
+test-suite/coq-makefile/plugin-reach-outside-API-and-succeed-by-bypassing-the-API/_CoqProject
 
 # documentation
 
@@ -140,13 +142,14 @@ plugins/ltac/extraargs.ml
 plugins/ltac/profile_ltac_tactics.ml
 ide/coqide_main.ml
 plugins/ssrmatching/ssrmatching.ml
+plugins/ssr/ssrparser.ml
+plugins/ssr/ssrvernac.ml
 
 # other auto-generated files
 
 kernel/byterun/coq_jumptbl.h
 kernel/copcodes.ml
 tools/tolink.ml
-theories/Numbers/Natural/BigN/NMake_gen.v
 ide/index_urls.txt
 .lia.cache
 checker/names.ml
@@ -176,10 +179,6 @@ user-contrib
 .#*
 test-suite/.lia.cache
 test-suite/.nra.cache
-
-# these files are generated from plugins/micromega/MExtraction.v
-plugins/micromega/micromega.ml
-plugins/micromega/micromega.mli
 
 plugins/ssr/ssrparser.ml
 plugins/ssr/ssrvernac.ml

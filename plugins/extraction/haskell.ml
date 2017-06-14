@@ -13,7 +13,6 @@ open Pp
 open CErrors
 open Util
 open Names
-open Nameops
 open Globnames
 open Table
 open Miniml
@@ -94,7 +93,7 @@ let preamble mod_name comment used_modules usf =
 let pp_abst = function
   | [] -> (mt ())
   | l  -> (str "\\" ++
-             prlist_with_sep (fun () -> (str " ")) pr_id l ++
+             prlist_with_sep (fun () -> (str " ")) Id.print l ++
              str " ->" ++ spc ())
 
 (*s The pretty-printer for haskell syntax *)
@@ -110,7 +109,7 @@ let rec pp_type par vl t =
   let rec pp_rec par = function
     | Tmeta _ | Tvar' _ -> assert false
     | Tvar i ->
-      (try pr_id (List.nth vl (pred i))
+      (try Id.print (List.nth vl (pred i))
        with Failure _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
     | Tglob (IndRef(kn,0),l)
@@ -149,7 +148,7 @@ let rec pp_expr par env args =
         (* Try to survive to the occurrence of a Dummy rel.
            TODO: we should get rid of this hack (cf. #592) *)
         let id = if Id.equal id dummy_name then Id.of_string "__" else id in
-        apply (pr_id id)
+        apply (Id.print id)
     | MLapp (f,args') ->
 	let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f
@@ -160,7 +159,7 @@ let rec pp_expr par env args =
 	apply2 st
     | MLletin (id,a1,a2) ->
 	let i,env' = push_vars [id_of_mlid id] env in
-	let pp_id = pr_id (List.hd i)
+	let pp_id = Id.print (List.hd i)
 	and pp_a1 = pp_expr false env [] a1
 	and pp_a2 = pp_expr (not par && expr_needs_par a2) env' [] a2 in
 	let pp_def =
@@ -224,10 +223,10 @@ and pp_cons_pat par r ppl =
 
 and pp_gen_pat par ids env = function
   | Pcons (r,l) -> pp_cons_pat par r (List.map (pp_gen_pat true ids env) l)
-  | Pusual r -> pp_cons_pat par r (List.map pr_id ids)
+  | Pusual r -> pp_cons_pat par r (List.map Id.print ids)
   | Ptuple l -> pp_boxed_tuple (pp_gen_pat false ids env) l
   | Pwild -> str "_"
-  | Prel n -> pr_id (get_db_name n env)
+  | Prel n -> Id.print (get_db_name n env)
 
 and pp_one_pat env (ids,p,t) =
   let ids',env' = push_vars (List.rev_map id_of_mlid ids) env in
@@ -252,10 +251,10 @@ and pp_fix par env i (ids,bl) args =
     (v 0
        (v 1 (str "let {" ++ fnl () ++
 	     prvect_with_sep (fun () -> str ";" ++ fnl ())
-	       (fun (fi,ti) -> pp_function env (pr_id fi) ti)
+	       (fun (fi,ti) -> pp_function env (Id.print fi) ti)
 	       (Array.map2 (fun a b -> a,b) ids bl) ++
 	     str "}") ++
-        fnl () ++ str "in " ++ pp_apply (pr_id ids.(i)) false args))
+        fnl () ++ str "in " ++ pp_apply (Id.print ids.(i)) false args))
 
 and pp_function env f t =
   let bl,t' = collect_lams t in
@@ -267,19 +266,19 @@ and pp_function env f t =
 (*s Pretty-printing of inductive types declaration. *)
 
 let pp_logical_ind packet =
-  pp_comment (pr_id packet.ip_typename ++ str " : logical inductive") ++
+  pp_comment (Id.print packet.ip_typename ++ str " : logical inductive") ++
   pp_comment (str "with constructors : " ++
-	      prvect_with_sep spc pr_id packet.ip_consnames)
+	      prvect_with_sep spc Id.print packet.ip_consnames)
 
 let pp_singleton kn packet =
   let name = pp_global Type (IndRef (kn,0)) in
   let l = rename_tvars keywords packet.ip_vars in
   hov 2 (str "type " ++ name ++ spc () ++
-	 prlist_with_sep spc pr_id l ++
+	 prlist_with_sep spc Id.print l ++
 	 (if not (List.is_empty l) then str " " else mt ()) ++ str "=" ++ spc () ++
 	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
 	 pp_comment (str "singleton inductive, whose constructor was " ++
-		     pr_id packet.ip_consnames.(0)))
+		     Id.print packet.ip_consnames.(0)))
 
 let pp_one_ind ip pl cv =
   let pl = rename_tvars keywords pl in
@@ -331,7 +330,7 @@ let pp_decl = function
 	    let ids,s = find_type_custom r in
 	    prlist (fun id -> str (id^" ")) ids ++ str "=" ++ spc () ++ str s
 	  with Not_found ->
-	    prlist (fun id -> pr_id id ++ str " ") l ++
+	    prlist (fun id -> Id.print id ++ str " ") l ++
 	    if t == Taxiom then str "= () -- AXIOM TO BE REALIZED" ++ fnl ()
 	    else str "=" ++ spc () ++ pp_type false l t
 	in

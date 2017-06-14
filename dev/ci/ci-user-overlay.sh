@@ -30,3 +30,20 @@ if [ $TRAVIS_PULL_REQUEST == "669" ] || [ $TRAVIS_BRANCH == "ssr-merge" ]; then
     mathcomp_CI_GITURL=https://github.com/maximedenes/math-comp.git
 fi
 
+echo "DEBUG: ci-user-overlay.sh 0"
+if [ $TRAVIS_PULL_REQUEST = "707" ] || [ $TRAVIS_BRANCH == "trunk__API__coq_makefile" ]; then
+    echo "DEBUG: ci-user-overlay.sh 1"
+    bedrock_src_CI_BRANCH=trunk__API
+    bedrock_src_CI_GITURL=https://github.com/matejkosik/bedrock.git
+    bedrock_facade_CI_BRANCH=trunk__API
+    bedrock_facade_CI_GITURL=https://github.com/matejkosik/bedrock.git
+    fiat_parsers_CI_BRANCH=trunk__API
+    fiat_parsers_CI_GITURL=https://github.com/matejkosik/fiat.git
+fi
+
+if [ $TRAVIS_PULL_REQUEST == "498" ] || [ $TRAVIS_BRANCH == "outsource-bignums" ]; then
+    math_classes_CI_BRANCH=external-bignums
+    math_classes_CI_GITURL=https://github.com/letouzey/math-classes.git
+    Corn_CI_BRANCH=external-bignums
+    Corn_CI_GITURL=https://github.com/letouzey/corn.git
+fi

@@ -132,8 +132,8 @@ let coerce_var_to_ident fresh env sigma v =
 let coerce_to_ident_not_fresh env sigma v =
 let g = sigma in
 let id_of_name = function
-  | Names.Anonymous -> Id.of_string "x"
-  | Names.Name x -> x in
+  | Name.Anonymous -> Id.of_string "x"
+  | Name.Name x -> x in
   let v = Value.normalize v in
   let fail () = raise (CannotCoerceTo "an identifier") in
   if has_type v (topwit wit_intro_pattern) then

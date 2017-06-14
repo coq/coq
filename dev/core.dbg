@@ -17,4 +17,6 @@ load_printer vernac.cma
 load_printer stm.cma
 load_printer toplevel.cma
 load_printer highparsing.cma
+load_printer intf.cma
+load_printer API.cma
 load_printer ltac_plugin.cmo

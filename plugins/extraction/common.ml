@@ -10,6 +10,7 @@ open API
 open Pp
 open Util
 open Names
+open ModPath
 open Namegen
 open Nameops
 open Libnames
@@ -45,7 +46,7 @@ let pp_apply2 st par args =
 
 let pr_binding = function
   | [] -> mt ()
-  | l  -> str " " ++ prlist_with_sep (fun () -> str " ") pr_id l
+  | l  -> str " " ++ prlist_with_sep (fun () -> str " ") Id.print l
 
 let pp_tuple_light f = function
   | [] -> mt ()
@@ -274,8 +275,8 @@ let params_ren_add, params_ren_mem =
   seen at this level.
 *)
 
-type visible_layer = { mp : module_path;
-		       params : module_path list;
+type visible_layer = { mp : ModPath.t;
+		       params : ModPath.t list;
 		       mutable content : Label.t KMap.t; }
 
 let pop_visible, push_visible, get_visible =
