@@ -1088,11 +1088,10 @@ sig
                        | MEapply of module_alg_expr * Names.ModPath.t
                        | MEwith of module_alg_expr * with_declaration
 
-  type abstrac_inductive_universes = Declarations.abstrac_inductive_universes =
+  type abstract_inductive_universes = Declarations.abstract_inductive_universes =
     | Monomorphic_ind of Univ.UContext.t
     | Polymorphic_ind of Univ.abstract_universe_context
     | Cumulative_ind of Univ.abstract_cumulativity_info
-
 
   type mutual_inductive_body = Declarations.mutual_inductive_body = {
         mind_packets : one_inductive_body array;
@@ -1103,7 +1102,7 @@ sig
         mind_nparams : int;
         mind_nparams_rec : int;
         mind_params_ctxt : Context.Rel.t;
-        mind_universes : abstrac_inductive_universes;
+        mind_universes : Declarations.abstract_inductive_universes;
         mind_private : bool option;
         mind_typing_flags : Declarations.typing_flags;
       }

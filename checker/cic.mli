@@ -304,7 +304,7 @@ type one_inductive_body = {
     mind_reloc_tbl : reloc_table;
   }
 
-type abstrac_inductive_universes =
+type abstract_inductive_universes =
   | Monomorphic_ind of Univ.universe_context
   | Polymorphic_ind of Univ.abstract_universe_context
   | Cumulative_ind of Univ.abstract_cumulativity_info
@@ -327,7 +327,7 @@ type mutual_inductive_body = {
 
     mind_params_ctxt : rel_context;  (** The context of parameters (includes let-in declaration) *)
 
-    mind_universes : abstrac_inductive_universes; (** Local universe variables and constraints together with subtyping constraints *)
+    mind_universes : abstract_inductive_universes; (** Local universe variables and constraints together with subtyping constraints *)
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
 
