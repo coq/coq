@@ -8,7 +8,6 @@
 
 (* Printers for the ocaml toplevel. *)
 
-open API
 open Util
 open Pp
 open Names
@@ -493,7 +492,6 @@ VERNAC COMMAND EXTEND PrintConstr
 END
 *)
 
-open Grammar_API
 open Genarg
 open Stdarg
 open Egramml

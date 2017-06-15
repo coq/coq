@@ -1,4 +1,3 @@
-open API
 open Format
 open Term
 open Names
