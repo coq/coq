@@ -18,6 +18,7 @@ module Mltop = Mltop
 module Vernacinterp = Vernacinterp
 module Genintern = Genintern
 
+(*
 module Extend =
   struct
     type 'a entry = 'a Extend.entry
@@ -61,3 +62,4 @@ module Extend =
                         | Uentry of 'a
                         | Uentryl of 'a * int
   end
+ *)

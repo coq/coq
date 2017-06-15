@@ -1022,6 +1022,7 @@ sig
     | KInt31 of string * int31_field
 end
 
+(*
 module Declarations :
 sig
   type recarg = Declarations.recarg =
@@ -1121,6 +1122,7 @@ sig
                             | SFBmodule of module_body
                             | SFBmodtype of module_type_body
 end
+ *)
 
 module Environ :
 sig
@@ -1240,6 +1242,7 @@ sig
   val add_module_type : Names.ModPath.t -> Declarations.module_type_body -> Environ.env -> Environ.env
 end
 
+(*
 module Entries :
 sig
   type mutual_inductive_entry = Entries.mutual_inductive_entry
@@ -1279,6 +1282,7 @@ sig
   type 'a subs = 'a Esubst.subs
   val subs_id : int -> 'a subs
 end
+*)
 
 module CClosure :
 sig
@@ -1871,6 +1875,7 @@ sig
   val is_global : global_reference -> Term.constr -> bool
 end
 
+(*
 module Evar_kinds :
 sig
   type obligation_definition_status = Evar_kinds.obligation_definition_status =
@@ -2145,6 +2150,7 @@ sig
   type typeclass_constraint = (Names.Name.t Loc.located * Names.Id.t Loc.located list option) * Decl_kinds.binding_kind * constr_expr
   type constr_pattern_expr = constr_expr
 end
+ *)
 
 module Goptions :
 sig
@@ -2167,6 +2173,7 @@ sig
   val set_bool_option_value : option_name -> bool -> unit
 end
 
+(*
 module Locus :
 sig
   type 'a occurrences_gen = 'a Locus.occurrences_gen =
@@ -2571,6 +2578,7 @@ sig
         (** Ltac variables bound to other kinds of arguments *)
       }
 end
+*)
 
 module Libnames :
 sig
@@ -2915,6 +2923,7 @@ sig
   val matches : Environ.env -> Evd.evar_map -> Pattern.constr_pattern -> EConstr.constr -> Pattern.patvar_map
 end  
 
+(*
 module Tactypes :
 sig
   type glob_constr_and_expr = Glob_term.glob_constr * Constrexpr.constr_expr option
@@ -2927,6 +2936,7 @@ sig
   type intro_pattern_naming = Misctypes.intro_pattern_naming_expr Loc.located
   type or_and_intro_pattern = delayed_open_constr Misctypes.or_and_intro_pattern_expr Loc.located
 end
+ *)
 
 module Pretyping :
 sig
@@ -3243,6 +3253,7 @@ sig
   val global_reference : Names.Id.t -> Globnames.global_reference
 end
 
+(*
 module Notation_term :
 sig
   type scope_name = string
@@ -3275,6 +3286,7 @@ sig
   type interpretation = (Names.Id.t * (subscopes * notation_var_instance_type)) list *
     notation_constr
 end
+ *)
 
 module Notation :
 sig
@@ -3309,6 +3321,7 @@ sig
   val module_is_known : string -> bool
 end
 
+(*
 (* All items in the Proof_type module are deprecated. *)
 module Proof_type :
 sig
@@ -3319,6 +3332,7 @@ sig
 
   type tactic = goal Evd.sigma -> goal list Evd.sigma
 end
+ *)
 
 module Redexpr :
 sig
@@ -3835,6 +3849,7 @@ sig
   val explain_pretype_error : Environ.env -> Evd.evar_map -> Pretype_errors.pretype_error -> Pp.std_ppcmds
 end
 
+(*
 module Extend :
 sig
   type ('self, 'a) symbol = ('self, 'a) Extend.symbol
@@ -3847,6 +3862,7 @@ sig
     | Uentry of 'a
     | Uentryl of 'a * int
 end
+*)
 
 module Pputils :
 sig

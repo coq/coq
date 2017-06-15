@@ -46,17 +46,17 @@ let make_act loc act pil =
   make (List.rev pil)
 
 let make_prod_item = function
-  | ExtTerminal s -> <:expr< Grammar_API.Extend.Atoken (Grammar_API.CLexer.terminal $mlexpr_of_string s$) >>
+  | ExtTerminal s -> <:expr< Extend.Atoken (Grammar_API.CLexer.terminal $mlexpr_of_string s$) >>
   | ExtNonTerminal (g, _) ->
     let base s = <:expr< $lid:s$ >> in
     mlexpr_of_prod_entry_key base g
 
 let rec make_prod = function
-| [] -> <:expr< Grammar_API.Extend.Stop >>
-| item :: prods -> <:expr< Grammar_API.Extend.Next $make_prod prods$ $make_prod_item item$ >>
+| [] -> <:expr< Extend.Stop >>
+| item :: prods -> <:expr< Extend.Next $make_prod prods$ $make_prod_item item$ >>
 
 let make_rule loc (prods,act) =
-  <:expr< Grammar_API.Extend.Rule $make_prod (List.rev prods)$ $make_act loc act prods$ >>
+  <:expr< Extend.Rule $make_prod (List.rev prods)$ $make_act loc act prods$ >>
 
 let is_ident x = function
 | <:expr< $lid:s$ >> -> (s : string) = x
