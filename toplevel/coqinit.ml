@@ -114,9 +114,6 @@ let init_load_path () =
     (* additional ml directories, given with option -I *)
     List.iter Mltop.add_ml_dir (List.rev !ml_includes)
 
-let init_library_roots () =
-  includes := []
-
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
 let init_ocaml_path () =

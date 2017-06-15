@@ -630,7 +630,6 @@ let init_toplevel arglist =
       if (not !Flags.batch_mode || CList.is_empty !compile_list)
          && Global.env_is_initial ()
       then Declaremods.start_library !toplevel_name;
-      init_library_roots ();
       load_vernac_obj ();
       require ();
       (* XXX: This is incorrect in batch mode, as we will initialize
