@@ -856,17 +856,13 @@ let filter_stack_domain env ci k p stack =
     let (_mib, mip) = lookup_mind_specif env ci.ci_ind in
     let branch_ty = mip.mind_nf_lc.(k) in
     let absctx, result_ty = dest_prod_assum env branch_ty in
-    try
-      let _, args = destApp result_ty in
-      let env = push_rel_context absctx env in
-      let n = List.length absctx in
-      let p = lift n p in
-      let nrealargs = mip.mind_nrealargs in
-      let realargs = Array.sub args (Array.length args - nrealargs) nrealargs in
-      env, n, mkApp (p, realargs)
-    with DestKO ->
-      (* The result type is not an application, so there is no argument! *)
-      env, 0, p in
+    let _, args = decompose_appvect result_ty in
+    let env = push_rel_context absctx env in
+    let n = Context.Rel.length absctx in
+    let p = lift n p in
+    let nrealargs = mip.mind_nrealargs in
+    let realargs = Array.sub args (Array.length args - nrealargs) nrealargs in
+    env, n, mkApp (p, realargs) in
   let absctx, ar = dest_lam_assum env p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
