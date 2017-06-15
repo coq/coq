@@ -1287,7 +1287,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "automatic introduction of variables";
       optkey   = ["Automatic";"Introduction"];
       optread  = Flags.is_auto_intros;
@@ -1382,17 +1382,6 @@ let _ =
       optkey   = ["Kernel"; "Term"; "Sharing"];
       optread  = (fun () -> !CClosure.share);
       optwrite = (fun b -> CClosure.share := b) }
-
-(* No more undo limit in the new proof engine.
-   The command still exists for compatibility (e.g. with ProofGeneral) *)
-
-let _ =
-  declare_int_option
-    { optdepr  = true;
-      optname  = "the undo limit (OBSOLETE)";
-      optkey   = ["Undo"];
-      optread  = (fun _ -> None);
-      optwrite = (fun _ -> ()) }
 
 let _ =
   declare_bool_option

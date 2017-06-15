@@ -428,7 +428,7 @@ let automatically_import_coercions = ref false
 open Goptions
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "automatic import of coercions";
       optkey   = ["Automatic";"Coercions";"Import"];
       optread  = (fun () -> !automatically_import_coercions);
@@ -454,15 +454,11 @@ let cache_coercion (_, c) =
   add_coercion_in_graph (xf,is,it)
 
 let load_coercion _ o =
-  if
-    !automatically_import_coercions || Flags.version_less_or_equal Flags.V8_2
-  then
+  if !automatically_import_coercions then
     cache_coercion o
 
 let open_coercion i o =
-  if Int.equal i 1 && not
-    (!automatically_import_coercions || Flags.version_less_or_equal Flags.V8_2)
-  then
+  if Int.equal i 1 && not !automatically_import_coercions then
     cache_coercion o
 
 let subst_coercion (subst, c) =

@@ -66,7 +66,7 @@ let negation_unfolding = ref true
 (* Whether inner iff are unfolded *)
 let iff_unfolding = ref false
 
-let unfold_iff () = !iff_unfolding || Flags.version_less_or_equal Flags.V8_2
+let unfold_iff () = !iff_unfolding
 
 open Goptions
 let _ =
@@ -79,7 +79,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "unfolding of iff in intuition";
       optkey   = ["Intuition";"Iff";"Unfolding"];
       optread  = (fun () -> !iff_unfolding);

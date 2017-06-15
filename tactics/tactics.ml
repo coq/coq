@@ -63,11 +63,10 @@ let dependent_propositions_elimination = ref true
 
 let use_dependent_propositions_elimination () =
   !dependent_propositions_elimination
-  && Flags.version_strictly_greater Flags.V8_2
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "dependent-propositions-elimination tactic";
       optkey   = ["Dependent";"Propositions";"Elimination"];
       optread  = (fun () -> !dependent_propositions_elimination) ;
@@ -141,11 +140,10 @@ let bracketing_last_or_and_intro_pattern = ref true
 
 let use_bracketing_last_or_and_intro_pattern () =
   !bracketing_last_or_and_intro_pattern
-  && Flags.version_strictly_greater Flags.V8_4
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "bracketing last or-and introduction pattern";
       optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
       optread  = (fun () -> !bracketing_last_or_and_intro_pattern);

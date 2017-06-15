@@ -205,9 +205,9 @@ let require () =
 
 let add_compat_require v =
   match v with
-  | Flags.V8_4 -> add_require "Coq.Compat.Coq84"
   | Flags.V8_5 -> add_require "Coq.Compat.Coq85"
-  | _ -> ()
+  | Flags.V8_6 -> add_require "Coq.Compat.Coq86"
+  | Flags.VOld | Flags.Current -> ()
 
 let compile_list = ref ([] : (bool * string) list)
 
@@ -514,7 +514,9 @@ let parse_args arglist =
     |"-async-proofs-delegation-threshold" ->
         Flags.async_proofs_delegation_threshold:= get_float opt (next ())
     |"-worker-id" -> set_worker_id opt (next ())
-    |"-compat" -> let v = get_compat_version (next ()) in Flags.compat_version := v; add_compat_require v
+    |"-compat" ->
+        let v = get_compat_version ~allow_old:false (next ()) in
+        Flags.compat_version := v; add_compat_require v
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())
     |"-dump-glob" -> Dumpglob.dump_into_file (next ()); glob_opt := true
