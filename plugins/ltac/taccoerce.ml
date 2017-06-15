@@ -56,6 +56,15 @@ type t = Val.t
 
 let normalize v = v
 
+let of_ident id = in_gen (topwit wit_ident) id
+
+let to_ident v =
+  let v = normalize v in
+  if has_type v (topwit wit_ident) then
+    let id = out_gen (topwit wit_ident) v in
+    Some id
+  else None
+
 let of_constr c = in_gen (topwit wit_constr) c
 
 let to_constr v =

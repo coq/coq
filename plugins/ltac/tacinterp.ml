@@ -1460,10 +1460,10 @@ and interp_letin ist llc u =
 
 (** [interp_match_success lz ist succ] interprets a single matching success
     (of type {!Tactic_matching.t}). *)
-and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
+and interp_match_success ist { Tactic_matching.subst ; context ; idents ; lhs } =
   let (>>=) = Ftactic.bind in
   let lctxt = Id.Map.map interp_context context in
-  let hyp_subst = Id.Map.map Value.of_constr terms in
+  let hyp_subst = Id.Map.map Value.of_ident idents in
   let lfun = extend_values_with_bindings subst (lctxt +++ hyp_subst +++ ist.lfun) in
   let ist = { ist with lfun } in
   val_interp ist lhs >>= fun v ->
@@ -1531,9 +1531,10 @@ and interp_match_goal ist lz lr lmr =
       let env = Proofview.Goal.env gl in
       let hyps = Proofview.Goal.hyps gl in
       let hyps = if lr then List.rev hyps else hyps in
+      let private_ids = Environ.named_context_private_ids (Environ.named_context_val env) in
       let concl = Proofview.Goal.concl gl in
       let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
-      interp_match_successes lz ist (Tactic_matching.match_goal env sigma hyps concl ilr)
+      interp_match_successes lz ist (Tactic_matching.match_goal env sigma (hyps,private_ids) concl ilr)
     end
 
 (* Interprets extended tactic generic arguments *)

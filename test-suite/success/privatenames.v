@@ -162,3 +162,11 @@ intros.
 remember 0 as x.
 Fail Check Heqx0. (* Heqx0 is not canonical *)
 Abort.
+
+(* Testing "match goal" over hypothesis names *)
+
+Goal True -> True -> True.
+intros.
+match goal with x:_ |- _ => clear x; intro x end.
+Fail Check H.
+Abort.

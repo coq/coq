@@ -35,6 +35,8 @@ sig
   val normalize : t -> t
   (** Eliminated the leading dynamic type casts. *)
 
+  val of_ident : tracked_ident -> t
+  val to_ident : t -> tracked_ident option (* Not using any coercion *)
   val of_constr : constr -> t
   val to_constr : t -> constr option
   val of_uconstr : Glob_term.closed_glob_constr -> t

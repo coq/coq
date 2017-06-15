@@ -19,6 +19,8 @@ val ltac_trace_info : ltac_trace Exninfo.t
 module Value :
 sig
   type t = Geninterp.Val.t
+  val of_ident : tracked_ident -> t
+  val to_ident : t -> tracked_ident option (* Not using any coercion *)
   val of_constr : constr -> t
   val to_constr : t -> constr option
   val of_int : int -> t

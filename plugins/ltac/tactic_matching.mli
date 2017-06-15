@@ -20,7 +20,7 @@
 type 'a t = {
   subst : Constr_matching.bound_ident_map * Pattern.extended_patvar_map ;
   context : EConstr.constr Names.Id.Map.t;
-  terms : EConstr.constr Names.Id.Map.t;
+  idents : Misctypes.tracked_ident Names.Id.Map.t;
   lhs : 'a;
 }
 
@@ -44,7 +44,7 @@ val match_term :
 val match_goal:
   Environ.env ->
   Evd.evar_map ->
-  EConstr.named_context ->
+  EConstr.named_context * Names.Id.Set.t ->
   EConstr.constr ->
   (Tacexpr.binding_bound_vars * Pattern.constr_pattern, Tacexpr.glob_tactic_expr) Tacexpr.match_rule list ->
   Tacexpr.glob_tactic_expr t Proofview.tactic
