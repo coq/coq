@@ -273,6 +273,7 @@ ci-fiat-parsers:
   variables:
     <<: *ci-template-vars
     EXTRA_PACKAGES: "python"
+  allow_failure: true
 
 ci-flocq:
   <<: *ci-template
