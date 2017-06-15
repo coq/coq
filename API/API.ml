@@ -6,6 +6,27 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Mli-only files
+
+Declarations
+Entries
+
+Constrexpr
+Evar_kinds
+Genredexpr
+Locus
+Notation_term
+Tactypes
+Decl_kinds
+Extend
+Glob_term
+Misctypes
+Pattern
+Vernacexpr
+
+Proof_type
+*)
+
 module Ppvernac = Ppvernac
 module Command = Command
 module States = States
@@ -13,13 +34,11 @@ module Kindops = Kindops
 module Coq_config = Coq_config
 module Esubst = Esubst
 module Evar = Evar
-module Constrexpr = Constrexpr
 module Libobject = Libobject
 module Evd = Evd
 module Libnames = Libnames
 module Nameops = Nameops
 module Topfmt = Topfmt
-module Locus = Locus
 module Locusops = Locusops
 module Lemmas = Lemmas
 module Clenv = Clenv
@@ -55,7 +74,6 @@ module Miscprint = Miscprint
 module Genprint = Genprint
 module Ppconstr = Ppconstr
 module Pputils = Pputils
-module Extend = Extend
 module Logic = Logic
 module Himsg = Himsg
 module Tacred = Tacred
@@ -64,9 +82,7 @@ module Indrec = Indrec
 module Glob_ops = Glob_ops
 module Constrexpr_ops = Constrexpr_ops
 module Eqdecide = Eqdecide
-module Genredexpr = Genredexpr
 module Detyping = Detyping
-module Tactypes = Tactypes
 module ExplainErr = ExplainErr
 module Printer = Printer
 module Constrextern = Constrextern
@@ -117,13 +133,7 @@ module Universes = Universes
 module Declare = Declare
 module Refine = Refine
 module Find_subterm = Find_subterm
-module Evar_kinds = Evar_kinds
-module Decl_kinds = Decl_kinds
-module Misctypes = Misctypes
-module Pattern = Pattern
-module Vernacexpr = Vernacexpr
 module Search = Search
-module Notation_term = Notation_term
 module Reductionops = Reductionops
 module Inductiveops = Inductiveops
 module Recordops = Recordops
@@ -137,13 +147,11 @@ module Unification = Unification
 module Typeclasses = Typeclasses
 module Pretype_errors = Pretype_errors
 module Notation = Notation
-module Declarations = Declarations
 module Declareops = Declareops
 module Globnames = Globnames
 module Environ = Environ
 module Term = Term
 module Coqlib = Coqlib
-module Glob_term = Glob_term
 module Context = Context
 module Stdarg = Stdarg
 module Tacmach = Tacmach
@@ -172,44 +180,4 @@ module Prelude =
     type reference = Libnames.reference =
       | Qualid of Libnames.qualid Loc.located
       | Ident of Names.Id.t Loc.located
-  end
-
-(* NOTE: It does not make sense to replace the following "module expression"
-   simply with "module Proof_type = Proof_type" because
-   there is only "kernel/entries.mli";
-   there is no "kernel/entries.ml" file *)
-module Entries =
-  struct
-    type mutual_inductive_entry = Entries.mutual_inductive_entry
-    type inline = int option
-    type 'a proof_output = Constr.constr Univ.in_universe_context_set * 'a
-    type 'a const_entry_body = 'a proof_output Future.computation
-    type 'a definition_entry = 'a Entries.definition_entry =
-                                 { const_entry_body   : 'a const_entry_body;
-                                   const_entry_secctx : Context.Named.t option;
-                                   const_entry_feedback : Stateid.t option;
-                                   const_entry_type        : Term.types option;
-                                   const_entry_polymorphic : bool;
-                                   const_entry_universes   : Univ.universe_context;
-                                   const_entry_opaque      : bool;
-                                   const_entry_inline_code : bool }
-    type parameter_entry = Entries.parameter_entry
-    type projection_entry = Entries.projection_entry
-    type 'a constant_entry = 'a Entries.constant_entry =
-                           | DefinitionEntry of 'a definition_entry
-                           | ParameterEntry of parameter_entry
-                           | ProjectionEntry of projection_entry
-  end
-
-(* NOTE: It does not make sense to replace the following "module expression"
-   simply with "module Proof_type = Proof_type" because
-   there is only "proofs/proof_type.mli";
-   there is no "proofs/proof_type.ml" file *)
-module Proof_type =
-  struct
-    type goal = Goal.goal
-    type tactic = goal Evd.sigma -> goal list Evd.sigma
-    type rule = Proof_type.prim_rule =
-      | Cut of bool * bool * Names.Id.t * Term.types
-      | Refine of Term.constr
   end

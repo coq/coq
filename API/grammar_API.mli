@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*
 module Extend :
 sig
   type 'a entry = 'a Pcoq.Gram.Entry.e
@@ -48,6 +49,7 @@ sig
                       | Uentry of 'a
                       | Uentryl of 'a * int
 end
+ *)
 
 module Genintern :
 sig
@@ -85,7 +87,8 @@ sig
          | EOI
 end
 
-module Pcoq :
+module Pcoq : module type of Pcoq
+(*
 sig
   type gram_universe = Pcoq.gram_universe
   module Gram :
@@ -123,7 +126,7 @@ sig
     val fullyqualid : Names.Id.t list located Gram.Entry.e
     val reference : API.Libnames.reference Gram.Entry.e
     val by_notation : (string * string option) Loc.located Gram.entry
-    val smart_global : API.Libnames.reference API.Misctypes.or_by_notation Gram.Entry.e
+    val smart_global : API.Libnames.reference Misctypes.or_by_notation Gram.Entry.e
     val dirpath : DirPath.t Gram.Entry.e
     val ne_string : string Gram.Entry.e
     val ne_lstring : string located Gram.Entry.e
@@ -141,28 +144,28 @@ sig
   val register_grammar : ('raw, 'glb, 'top) Genarg.genarg_type -> 'raw Gram.Entry.e -> unit
   module Constr :
   sig
-    val sort : API.Misctypes.glob_sort Gram.Entry.e
-    val lconstr : API.Constrexpr.constr_expr Gram.Entry.e
-    val lconstr_pattern : API.Constrexpr.constr_expr Gram.Entry.e
+    val sort : Misctypes.glob_sort Gram.Entry.e
+    val lconstr : Constrexpr.constr_expr Gram.Entry.e
+    val lconstr_pattern : Constrexpr.constr_expr Gram.Entry.e
     val ident : API.Names.Id.t Gram.Entry.e
-    val constr : API.Constrexpr.constr_expr Gram.Entry.e
-    val closed_binder : API.Constrexpr.local_binder_expr list Gram.Entry.e
-    val constr_pattern : API.Constrexpr.constr_expr Gram.Entry.e
+    val constr : Constrexpr.constr_expr Gram.Entry.e
+    val closed_binder : Constrexpr.local_binder_expr list Gram.Entry.e
+    val constr_pattern : Constrexpr.constr_expr Gram.Entry.e
     val global : API.Libnames.reference Gram.Entry.e
-    val binder_constr : API.Constrexpr.constr_expr Gram.Entry.e
-    val operconstr : API.Constrexpr.constr_expr Gram.Entry.e
-    val pattern : API.Constrexpr.cases_pattern_expr Gram.Entry.e
-    val binders : API.Constrexpr.local_binder_expr list Gram.Entry.e
+    val binder_constr : Constrexpr.constr_expr Gram.Entry.e
+    val operconstr : Constrexpr.constr_expr Gram.Entry.e
+    val pattern : Constrexpr.cases_pattern_expr Gram.Entry.e
+    val binders : Constrexpr.local_binder_expr list Gram.Entry.e
   end
   module Vernac_ :
   sig
-    val gallina : API.Vernacexpr.vernac_expr Gram.Entry.e
-    val gallina_ext : API.Vernacexpr.vernac_expr Gram.Entry.e
-    val red_expr : API.Genredexpr.raw_red_expr Gram.Entry.e
-    val noedit_mode : API.Vernacexpr.vernac_expr Gram.Entry.e
-    val command : API.Vernacexpr.vernac_expr Gram.Entry.e
-    val rec_definition : (API.Vernacexpr.fixpoint_expr * API.Vernacexpr.decl_notation list) Gram.Entry.e
-    val vernac : API.Vernacexpr.vernac_expr Gram.Entry.e
+    val gallina : Vernacexpr.vernac_expr Gram.Entry.e
+    val gallina_ext : Vernacexpr.vernac_expr Gram.Entry.e
+    val red_expr : Genredexpr.raw_red_expr Gram.Entry.e
+    val noedit_mode : Vernacexpr.vernac_expr Gram.Entry.e
+    val command : Vernacexpr.vernac_expr Gram.Entry.e
+    val rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Gram.Entry.e
+    val vernac : Vernacexpr.vernac_expr Gram.Entry.e
   end
 
   type extend_rule =
@@ -176,10 +179,10 @@ sig
   val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
   val parse_string : 'a Gram.Entry.e -> string -> 'a
   val (!@) : Ploc.t -> Loc.t
-  val set_command_entry : API.Vernacexpr.vernac_expr Gram.Entry.e -> unit
+  val set_command_entry : Vernacexpr.vernac_expr Gram.Entry.e -> unit
   val to_coqloc : Ploc.t -> Loc.t
 end
-
+*)
 module CLexer :
 sig
   type keyword_state = CLexer.keyword_state
@@ -200,7 +203,7 @@ sig
 
 
   val extend_vernac_command_grammar :
-    API.Vernacexpr.extend_name -> Vernacexpr.vernac_expr Pcoq.Gram.Entry.e option ->
+    Vernacexpr.extend_name -> Vernacexpr.vernac_expr Pcoq.Gram.Entry.e option ->
     Vernacexpr.vernac_expr grammar_prod_item list -> unit
 
   val make_rule :
@@ -218,14 +221,14 @@ module Vernacinterp :
 sig
   type deprecation = bool
   type vernac_command = Genarg.raw_generic_argument list -> unit -> unit
-  val vinterp_add : deprecation -> API.Vernacexpr.extend_name ->
+  val vinterp_add : deprecation -> Vernacexpr.extend_name ->
                     vernac_command -> unit
 end
 
 module G_vernac :
 sig
-  val def_body : API.Vernacexpr.definition_expr Pcoq.Gram.Entry.e
-  val section_subset_expr : API.Vernacexpr.section_subset_expr Pcoq.Gram.Entry.e
+  val def_body : Vernacexpr.definition_expr Pcoq.Gram.Entry.e
+  val section_subset_expr : Vernacexpr.section_subset_expr Pcoq.Gram.Entry.e
   val query_command :  (Vernacexpr.goal_selector option -> Vernacexpr.vernac_expr)
                          Pcoq.Gram.Entry.e
 end
