@@ -847,11 +847,30 @@ let error_illegal_rec_call renv fx (arg_renv,arg) =
 let error_partial_apply renv fx =
   raise (FixGuardError (renv.env,NotEnoughArgumentsForFixCall fx))
 
-let filter_stack_domain env ci p stack =
+(* [k] is the index of the branch *)
+let filter_stack_domain env ci k p stack =
+  let env, n, p =
+    (* Apply [p] to the inductive arguments of the current branch if there is
+       any.
+       [n] is the height of the new context. *)
+    let (_mib, mip) = lookup_mind_specif env ci.ci_ind in
+    let branch_ty = mip.mind_nf_lc.(k) in
+    let absctx, result_ty = dest_prod_assum env branch_ty in
+    try
+      let _, args = destApp result_ty in
+      let env = push_rel_context absctx env in
+      let n = List.length absctx in
+      let p = lift n p in
+      let nrealargs = mip.mind_nrealargs in
+      let realargs = Array.sub args (Array.length args - nrealargs) nrealargs in
+      env, n, mkApp (p, realargs)
+    with DestKO ->
+      (* The result type is not an application, so there is no argument! *)
+      env, 0, p in
   let absctx, ar = dest_lam_assum env p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
-  if noccur_with_meta 1 (Context.Rel.length absctx) ar then stack
+  if noccur_with_meta 1 (Context.Rel.length absctx + n) ar then stack
   else let env = push_rel_context absctx env in
   let rec filter_stack env ar stack =
     let t = whd_all env ar in
@@ -930,8 +949,8 @@ let check_one_fix renv recpos trees def =
             let case_spec = branches_specif renv 
 	      (lazy_subterm_specif renv [] c_0) ci in
 	    let stack' = push_stack_closures renv l stack in
-        let stack' = filter_stack_domain renv.env ci p stack' in
-              Array.iteri (fun k br' -> 
+              Array.iteri (fun k br' ->
+                             let stack' = filter_stack_domain renv.env ci k p stack' in
 			     let stack_br = push_stack_args case_spec.(k) stack' in
 			     check_rec_call renv stack_br br') lrest
 
