@@ -42,6 +42,14 @@ matrix:
   - env: TEST_TARGET="ci-fiat-parsers"
 
   include:
+    # cleanup any old files on mega
+    # if mega doesn't work on PRs consider making it branch only (if possible)
+    - env:
+      - TEST_TARGET="cleanup"
+      script: dev/ci/travis-cleanup.sh
+      install: true
+      stage: cleanup
+
     - env:
       - TEST_TARGET="install"
       - EXTRA_CONF="-coqide opt"
