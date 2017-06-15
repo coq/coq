@@ -95,18 +95,6 @@
 : ${fiat_crypto_CI_GITURL:=https://github.com/letouzey/fiat-crypto.git}
 
 ########################################################################
-# bedrock_src
-########################################################################
-: ${bedrock_src_CI_BRANCH:=master}
-: ${bedrock_src_CI_GITURL:=https://github.com/mit-plv/bedrock.git}
-
-########################################################################
-# bedrock_facade
-########################################################################
-: ${bedrock_facade_CI_BRANCH:=master}
-: ${bedrock_facade_CI_GITURL:=https://github.com/mit-plv/bedrock.git}
-
-########################################################################
 # formal-topology
 ########################################################################
 : ${formal_topology_CI_BRANCH:=ci}

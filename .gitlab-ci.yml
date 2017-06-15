@@ -244,12 +244,6 @@ validate:32bit:
 ci-bignums:
   <<: *ci-template
 
-ci-bedrock-src:
-  <<: *ci-template
-
-ci-bedrock-facade:
-  <<: *ci-template
-
 ci-color:
   <<: *ci-template
   variables:

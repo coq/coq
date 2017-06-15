@@ -33,10 +33,6 @@ fi
 echo "DEBUG: ci-user-overlay.sh 0"
 if [ $TRAVIS_PULL_REQUEST = "707" ] || [ $TRAVIS_BRANCH == "trunk__API__coq_makefile" ]; then
     echo "DEBUG: ci-user-overlay.sh 1"
-    bedrock_src_CI_BRANCH=trunk__API
-    bedrock_src_CI_GITURL=https://github.com/matejkosik/bedrock.git
-    bedrock_facade_CI_BRANCH=trunk__API
-    bedrock_facade_CI_GITURL=https://github.com/matejkosik/bedrock.git
     fiat_parsers_CI_BRANCH=trunk__API
     fiat_parsers_CI_GITURL=https://github.com/matejkosik/fiat.git
 fi
