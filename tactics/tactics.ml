@@ -2788,7 +2788,7 @@ let letin_tac with_eq na isprivate c ty occs =
     let env = Proofview.Goal.env gl in
     let ccl = Proofview.Goal.concl gl in
     let abs = AbstractExact (na,c,ty,occs,true) in
-    let (id,isprivate',_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
+    let ((id,isprivate'),_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
     (* We keep the original term to match but record the potential side-effects
        of unifying universes. *)
     let (sigma, c) = match res with
@@ -2806,7 +2806,7 @@ let letin_pat_tac with_evars with_eq na isprivate c occs =
     let ccl = Proofview.Goal.concl gl in
     let check t = true in
     let abs = AbstractPattern (false,check,na,c,occs,false) in
-    let (id,isprivate',_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
+    let ((id,isprivate'),_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
     let (sigma, c) = match res with
     | None -> finish_evar_resolution ~flags:(tactic_infer_flags with_evars) env sigma c
     | Some res -> res in
@@ -4509,7 +4509,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   let check = check_enough_applied env sigma elim in
   let (sigma', c) = use_bindings env sigma elim false (c0,lbind) t0 in
   let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
-  let (id,_,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
+  let ((id,_),sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
   | None ->
       (* pattern not found *)

@@ -1667,7 +1667,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     | None -> None
     | Some (sigma, c) -> Some (sigma,c)
     in
-    (id,isprivate,sign,depdecls,lastlhyp,ccl,res)
+    ((id,isprivate),sign,depdecls,lastlhyp,ccl,res)
   with
     SubtermUnificationError e ->
       raise (PretypeError (env,sigma,CannotUnifyOccurrences e))
@@ -1690,7 +1690,7 @@ type abstraction_request =
 | AbstractExact of Name.t * constr * types option * clause * bool
 
 type 'r abstraction_result =
-  Names.Id.t * Misctypes.private_flag * named_context_val *
+  Misctypes.tracked_ident * named_context_val *
     named_declaration list * Names.Id.t option *
     types * (evar_map * constr) option
 

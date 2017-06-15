@@ -50,7 +50,7 @@ end
 
 val coerce_to_constr_context : Value.t -> constr
 
-val coerce_var_to_ident : bool -> Environ.env -> Evd.evar_map -> Value.t -> Id.t * Misctypes.private_flag
+val coerce_var_to_ident : bool -> Environ.env -> Evd.evar_map -> Value.t -> tracked_ident
 
 val coerce_to_ident_not_fresh : Environ.env -> Evd.evar_map -> Value.t -> Id.t
 

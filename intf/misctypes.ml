@@ -19,13 +19,16 @@ type patvar = Id.t
 type private_flag = bool (* true = non-canonically generated name *)
 type unstable_flag = bool (* true = not to consider canonically generated even if not alpha-converted *)
 
+type tracked_ident = Id.t * private_flag
+type possibly_stable_ident = Id.t * unstable_flag
+
 type 'constr intro_pattern_expr =
   | IntroForthcoming of bool
   | IntroNaming of intro_pattern_naming_expr
   | IntroAction of 'constr intro_pattern_action_expr
 and intro_pattern_naming_expr =
-  | IntroIdentifier of Id.t * private_flag
-  | IntroFresh of Id.t * unstable_flag
+  | IntroIdentifier of tracked_ident
+  | IntroFresh of possibly_stable_ident
   | IntroAnonymous
 and 'constr intro_pattern_action_expr =
   | IntroWildcard

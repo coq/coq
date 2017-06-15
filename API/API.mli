@@ -1678,14 +1678,16 @@ sig
 
   type unstable_flag = bool
   type private_flag = bool
+  type tracked_ident = Names.Id.t * private_flag
+  type possibly_stable_ident = Names.Id.t * unstable_flag
 
   type 'constr intro_pattern_expr =
     | IntroForthcoming of bool
     | IntroNaming of intro_pattern_naming_expr
     | IntroAction of 'constr intro_pattern_action_expr
   and intro_pattern_naming_expr =
-    | IntroIdentifier of Names.Id.t * Decl_kinds.private_flag
-    | IntroFresh of Names.Id.t * unstable_flag
+    | IntroIdentifier of tracked_ident
+    | IntroFresh of possibly_stable_ident
     | IntroAnonymous
   and 'constr intro_pattern_action_expr =
     | IntroWildcard
@@ -4204,7 +4206,7 @@ sig
   val wit_string : string Genarg.uniform_genarg_type
   val wit_pre_ident : string Genarg.uniform_genarg_type
   val wit_global : (Libnames.reference, Globnames.global_reference Loc.located Misctypes.or_var, Globnames.global_reference) Genarg.genarg_type
-  val wit_ident : (Names.Id.t, Names.Id.t, Names.Id.t * Misctypes.private_flag) Genarg.genarg_type
+  val wit_ident : (Names.Id.t, Names.Id.t, Misctypes.tracked_ident) Genarg.genarg_type
   val wit_integer : int Genarg.uniform_genarg_type
   val wit_sort_family : (Sorts.family, unit, unit) Genarg.genarg_type
   val wit_constr : (Constrexpr.constr_expr, Tactypes.glob_constr_and_expr, EConstr.constr) Genarg.genarg_type
@@ -5219,8 +5221,8 @@ sig
     Misctypes.evars_flag -> Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings -> EConstr.constr Misctypes.with_bindings option -> unit Proofview.tactic
   val general_case_analysis : Misctypes.evars_flag -> Misctypes.clear_flag -> EConstr.constr Misctypes.with_bindings ->  unit Proofview.tactic
   val mutual_fix :
-    Names.Id.t * Misctypes.private_flag -> int -> ((Names.Id.t * Misctypes.private_flag) * int * EConstr.constr) list -> int -> unit Proofview.tactic
-  val mutual_cofix : Names.Id.t * Misctypes.private_flag -> ((Names.Id.t * Misctypes.private_flag) * EConstr.constr) list -> int -> unit Proofview.tactic
+    Misctypes.tracked_ident -> int -> ((Misctypes.tracked_ident) * int * EConstr.constr) list -> int -> unit Proofview.tactic
+  val mutual_cofix : Misctypes.tracked_ident -> ((Misctypes.tracked_ident) * EConstr.constr) list -> int -> unit Proofview.tactic
   val forward   : bool -> unit Proofview.tactic option option ->
                   Tactypes.intro_pattern option -> EConstr.constr -> unit Proofview.tactic
   val generalize_gen : (EConstr.constr Locus.with_occurrences * Names.Name.t) list -> unit Proofview.tactic
@@ -5256,14 +5258,14 @@ sig
   val intros_symmetry : Locus.clause -> unit Proofview.tactic
   val split_with_bindings : Misctypes.evars_flag -> EConstr.constr Misctypes.bindings list -> unit Proofview.tactic
   val intros_until : Misctypes.quantified_hypothesis -> unit Proofview.tactic
-  val intro_move : (Names.Id.t * Misctypes.private_flag) option -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
+  val intro_move : (Misctypes.tracked_ident) option -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
   val move_hyp : Names.Id.t -> Names.Id.t Misctypes.move_location -> unit Proofview.tactic
-  val rename_hyp : (Names.Id.t * (Names.Id.t * Misctypes.private_flag)) list -> unit Proofview.tactic
+  val rename_hyp : (Names.Id.t * (Misctypes.tracked_ident)) list -> unit Proofview.tactic
   val revert : Names.Id.t list -> unit Proofview.tactic
   val simple_induct : Misctypes.quantified_hypothesis -> unit Proofview.tactic
   val simple_destruct : Misctypes.quantified_hypothesis -> unit Proofview.tactic
-  val fix : (Names.Id.t * Misctypes.private_flag) option -> int -> unit Proofview.tactic
-  val cofix : (Names.Id.t * Misctypes.private_flag) option -> unit Proofview.tactic
+  val fix : (Misctypes.tracked_ident) option -> int -> unit Proofview.tactic
+  val cofix : (Misctypes.tracked_ident) option -> unit Proofview.tactic
   val keep : Names.Id.t list -> unit Proofview.tactic
   val clear : Names.Id.t list -> unit Proofview.tactic
   val clear_body : Names.Id.t list -> unit Proofview.tactic
@@ -5574,7 +5576,7 @@ sig
   val typeclasses_eauto : ?only_classes:bool -> ?st:Names.transparent_state -> ?strategy:search_strategy ->
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic
-  val head_of_constr : Names.Id.t * Misctypes.private_flag -> EConstr.constr -> unit Proofview.tactic
+  val head_of_constr : Misctypes.tracked_ident -> EConstr.constr -> unit Proofview.tactic
   val not_evar : EConstr.constr -> unit Proofview.tactic
   val is_ground : EConstr.constr -> unit Proofview.tactic
   val autoapply : EConstr.constr -> Hints.hint_db_name -> unit Proofview.tactic
