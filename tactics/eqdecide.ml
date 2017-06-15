@@ -156,8 +156,9 @@ open Proofview.Notations
 (* spiwack: a PatternMatchingFailure wrapper around [Hipattern]. *)
 
 let match_eqdec sigma c =
+  Proofview.tclENV >>= fun env ->
   try
-    let (eqonleft,_,c1,c2,ty) = match_eqdec sigma c in
+    let (eqonleft,_,c1,c2,ty) = match_eqdec env sigma c in
     let (op,eq1,noteq,eq2) =
       match EConstr.kind sigma c with
       | App (op,[|ty1;ty2|]) ->

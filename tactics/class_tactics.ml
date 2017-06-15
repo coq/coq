@@ -1342,7 +1342,7 @@ module Search = struct
                                             | Some i -> str ", with depth limit " ++ int i));
     tac
 
-  let run_on_evars p evm tac =
+  let run_on_evars p evm tac env =
     match evars_to_goals p evm with
     | None -> None (* This happens only because there's no evar having p *)
     | Some (goals, evm') ->
@@ -1357,7 +1357,7 @@ module Search = struct
        let pv = Proofview.unshelve goals pv in
        try
          let (), pv', (unsafe, shelved, gaveup), _ =
-           Proofview.apply (Global.env ()) tac pv
+           Proofview.apply env tac pv
          in
          if Proofview.finished pv' then
            let evm' = Proofview.return pv' in
@@ -1374,22 +1374,22 @@ module Search = struct
          else raise Not_found
        with Logic_monad.TacticFailure _ -> raise Not_found
 
-  let evars_eauto depth only_classes unique dep st hints p evd =
+  let evars_eauto depth only_classes unique dep st hints p evd env =
     let eauto_tac = eauto_tac ~st ~unique ~only_classes ~depth ~dep:(unique || dep) hints in
-    let res = run_on_evars p evd eauto_tac in
+    let res = run_on_evars p evd eauto_tac env in
     match res with
     | None -> evd
     | Some evd' -> evd'
 
-  let typeclasses_eauto ?depth unique st hints p evd =
-    evars_eauto depth true unique false st hints p evd
+  let typeclasses_eauto ?depth unique st hints p evd env =
+    evars_eauto depth true unique false st hints p evd env
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
 
-  let typeclasses_resolve debug depth unique p evd =
+  let typeclasses_resolve debug depth unique p evd env =
     let db = searchtable_map typeclasses_db in
-    typeclasses_eauto ?depth unique (Hint_db.transparent_state db) [db] p evd
+    typeclasses_eauto ?depth unique (Hint_db.transparent_state db) [db] p evd env
 end
 
 (** Binding to either V85 or Search implementations. *)
@@ -1534,7 +1534,7 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
           if get_typeclasses_legacy_resolution () then
             V85.resolve_all_evars_once debug depth unique p evd
           else
-            Search.typeclasses_resolve debug depth unique p evd
+            Search.typeclasses_resolve debug depth unique p evd env
         in
          if has_undefined p oevd evd' then raise Unresolved;
          docomp evd' comps

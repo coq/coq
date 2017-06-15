@@ -280,10 +280,7 @@ let coq_refl_jm_pattern       =
 
 open Globnames
 
-let is_matching sigma x y = is_matching (Global.env ()) sigma x y
-let matches sigma x y = matches (Global.env ()) sigma x y
-
-let match_with_equation sigma t =
+let match_with_equation env sigma t =
   if not (isApp sigma t) then raise NoEquationFound;
   let (hdapp,args) = destApp sigma t in
   match EConstr.kind sigma hdapp with
@@ -302,11 +299,11 @@ let match_with_equation sigma t =
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
 	if Int.equal nconstr 1 then
-          if is_matching sigma coq_refl_leibniz1_pattern (EConstr.of_constr constr_types.(0)) then
+          if is_matching env sigma coq_refl_leibniz1_pattern (EConstr.of_constr constr_types.(0)) then
 	    None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
-	  else if is_matching sigma coq_refl_leibniz2_pattern (EConstr.of_constr constr_types.(0)) then
+	  else if is_matching env sigma coq_refl_leibniz2_pattern (EConstr.of_constr constr_types.(0)) then
 	    None, hdapp, PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-	  else if is_matching sigma coq_refl_jm_pattern (EConstr.of_constr constr_types.(0)) then
+	  else if is_matching env sigma coq_refl_jm_pattern (EConstr.of_constr constr_types.(0)) then
 	    None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
 	  else raise NoEquationFound
         else raise NoEquationFound
@@ -335,8 +332,8 @@ let is_equality_type sigma t = op2bool (match_with_equality_type sigma t)
 (** X1 -> X2 **)
 let coq_arrow_pattern = mkPattern (mkGArrow (mkGPatVar "X1") (mkGPatVar "X2"))
 
-let match_arrow_pattern sigma t =
-  let result = matches sigma coq_arrow_pattern t in
+let match_arrow_pattern env sigma t =
+  let result = matches env sigma coq_arrow_pattern t in
   match Id.Map.bindings result with
     | [(m1,arg);(m2,mind)] ->
       assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
@@ -349,13 +346,13 @@ let match_with_imp_term sigma c =
 
 let is_imp_term sigma c = op2bool (match_with_imp_term sigma c)
 
-let match_with_nottype sigma t =
+let match_with_nottype env sigma t =
   try
-    let (arg,mind) = match_arrow_pattern sigma t in
+    let (arg,mind) = match_arrow_pattern env sigma t in
     if is_empty_type sigma mind then Some (mind,arg) else None
   with PatternMatchingFailure -> None
 
-let is_nottype sigma t = op2bool (match_with_nottype sigma t)
+let is_nottype env sigma t = op2bool (match_with_nottype env sigma t)
 
 (* Forall *)
 
@@ -481,7 +478,7 @@ let dest_nf_eq gls eqn =
 
 (*** Sigma-types *)
 
-let match_sigma sigma ex =
+let match_sigma env sigma ex =
   match EConstr.kind sigma ex with
   | App (f, [| a; p; car; cdr |]) when Termops.is_global sigma (Lazy.force coq_exist_ref) f -> 
       build_sigma (), (snd (destConstruct sigma f), a, p, car, cdr)
@@ -489,19 +486,19 @@ let match_sigma sigma ex =
     build_sigma_type (), (snd (destConstruct sigma f), a, p, car, cdr)
   | _ -> raise PatternMatchingFailure
     
-let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
-  match_sigma ex
+let find_sigma_data_decompose env ex = (* fails with PatternMatchingFailure *)
+  match_sigma env ex
 
 (* Pattern "(sig ?1 ?2)" *)
 let coq_sig_pattern =
   lazy (mkPattern (mkGAppRef coq_sig_ref [mkGPatVar "X1"; mkGPatVar "X2"]))
 
-let match_sigma sigma t =
-  match Id.Map.bindings (matches sigma (Lazy.force coq_sig_pattern) t) with
+let match_sigma env sigma t =
+  match Id.Map.bindings (matches env sigma (Lazy.force coq_sig_pattern) t) with
     | [(_,a); (_,p)] -> (a,p)
     | _ -> anomaly (Pp.str "Unexpected pattern.")
 
-let is_matching_sigma sigma t = is_matching sigma (Lazy.force coq_sig_pattern) t
+let is_matching_sigma env sigma t = is_matching env sigma (Lazy.force coq_sig_pattern) t
 
 (*** Decidable equalities *)
 
@@ -533,15 +530,15 @@ let coq_eqdec_rev_pattern = coq_eqdec ~sum:coq_or_ref ~rev:true
 let op_or = coq_or_ref
 let op_sum = coq_sumbool_ref
 
-let match_eqdec sigma t =
+let match_eqdec env sigma t =
   let eqonleft,op,subst =
-    try true,op_sum,matches sigma (Lazy.force coq_eqdec_inf_pattern) t
+    try true,op_sum,matches env sigma (Lazy.force coq_eqdec_inf_pattern) t
     with PatternMatchingFailure ->
-    try false,op_sum,matches sigma (Lazy.force coq_eqdec_inf_rev_pattern) t
+    try false,op_sum,matches env sigma (Lazy.force coq_eqdec_inf_rev_pattern) t
     with PatternMatchingFailure ->
-    try true,op_or,matches sigma (Lazy.force coq_eqdec_pattern) t
+    try true,op_or,matches env sigma (Lazy.force coq_eqdec_pattern) t
     with PatternMatchingFailure ->
-        false,op_or,matches sigma (Lazy.force coq_eqdec_rev_pattern) t in
+        false,op_or,matches env sigma (Lazy.force coq_eqdec_rev_pattern) t in
   match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
       eqonleft, Lazy.force op, c1, c2, typ
@@ -551,8 +548,8 @@ let match_eqdec sigma t =
 let coq_not_pattern = lazy (mkPattern (mkGAppRef coq_not_ref [mkGHole]))
 let coq_imp_False_pattern = lazy (mkPattern (mkGArrow mkGHole (mkGRef coq_False_ref)))
 
-let is_matching_not sigma t = is_matching sigma (Lazy.force coq_not_pattern) t
-let is_matching_imp_False sigma t = is_matching sigma (Lazy.force coq_imp_False_pattern) t
+let is_matching_not env sigma t = is_matching env sigma (Lazy.force coq_not_pattern) t
+let is_matching_imp_False env sigma t = is_matching env sigma (Lazy.force coq_imp_False_pattern) t
 
 (* Remark: patterns that have references to the standard library must
    be evaluated lazily (i.e. at the time they are used, not a the time

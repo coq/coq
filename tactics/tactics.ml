@@ -3074,17 +3074,17 @@ let expand_hyp id = Tacticals.New.tclTRY (unfold_body id) <*> clear [id]
 
  *)
 
-let warn_unused_intro_pattern =
+let warn_unused_intro_pattern env =
   CWarnings.create ~name:"unused-intro-pattern" ~category:"tactics"
          (fun names ->
           strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern")
           ++ str": " ++ prlist_with_sep spc 
          (Miscprint.pr_intro_pattern 
-	 (fun c -> Printer.pr_econstr (snd (c (Global.env()) Evd.empty)))) names)
+	 (fun c -> Printer.pr_econstr (snd (c env Evd.empty)))) names)
 
-let check_unused_names names =
+let check_unused_names names env =
   if not (List.is_empty names) then
-    warn_unused_intro_pattern names
+    warn_unused_intro_pattern env names
 
 let intropattern_of_name gl avoid = function
   | Anonymous -> IntroNaming IntroAnonymous
@@ -3204,7 +3204,8 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
         peel_tac ra' dests names thin)
         end
     | [] ->
-        check_unused_names names;
+        Proofview.tclENV >>= fun env ->
+        check_unused_names names env;
         Tacticals.New.tclTHEN (clear_wildcards thin) (tac dests)
   in
   peel_tac ra dests names []
@@ -3272,7 +3273,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             | Var id -> id
             | _ ->
             let type_of = Tacmach.New.pf_unsafe_type_of gl in
-            id_of_name_using_hdchar (Global.env()) sigma (type_of c) Anonymous in
+            id_of_name_using_hdchar env sigma (type_of c) Anonymous in
             let x = fresh_id_in_env avoid id env in
 	    Tacticals.New.tclTHEN
 	      (letin_tac None (Name x) c None allHypsAndConcl)
@@ -4485,7 +4486,7 @@ let induction_gen clear_flag isrec with_evars elim
      declaring the induction argument as a new local variable *)
     let id =
     (* Type not the right one if partially applied but anyway for internal use*)
-      let x = id_of_name_using_hdchar (Global.env()) evd t Anonymous in
+      let x = id_of_name_using_hdchar env evd t Anonymous in
       new_fresh_id [] x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
     pose_induction_arg_then
@@ -4521,8 +4522,9 @@ let induction_gen_l isrec with_evars elim names lc =
                 Proofview.Goal.enter begin fun gl ->
                 let type_of = Tacmach.New.pf_unsafe_type_of gl in
                 let sigma = Tacmach.New.project gl in
+                Proofview.tclENV >>= fun env ->
                 let x =
-		  id_of_name_using_hdchar (Global.env()) sigma (type_of c) Anonymous in
+		  id_of_name_using_hdchar env sigma (type_of c) Anonymous in
 
                 let id = new_fresh_id [] x gl in
 		let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in
@@ -4741,8 +4743,9 @@ let prove_symmetry hdcncl eq_kind =
 	one_constructor 1 NoBindings ])
 
 let match_with_equation sigma c =
+  Proofview.tclENV >>= fun env ->
   try
-    let res = match_with_equation sigma c in
+    let res = match_with_equation env sigma c in
     Proofview.tclUNIT res
   with NoEquationFound ->
     Proofview.tclZERO NoEquationFound
