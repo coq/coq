@@ -60,7 +60,9 @@ sig
   sig
     type t = Univ.Level.t
     val set : t
+    val prop : t
     val pr : t -> Pp.std_ppcmds
+    val to_string : t -> string
   end
 
   module Instance :
@@ -81,6 +83,7 @@ sig
   sig
     type t = Univ.UContext.t
     val empty : t
+    val instance : t -> Instance.t
   end
 
   type universe_context = UContext.t
@@ -103,6 +106,7 @@ sig
   sig
     type t = Univ.Universe.t
     val pr : t -> Pp.std_ppcmds
+    val level : t -> Level.t option
   end
 
   type universe_context_set = ContextSet.t
@@ -138,7 +142,11 @@ sig
   type t = Sorts.t =
          | Prop of contents
          | Type of Univ.Universe.t
+  val is_set : t -> bool
   val is_prop : t -> bool
+  val prop : t
+  val set : t
+  val type1 : t
   val hash : t -> int
 
   type family = Sorts.family = InProp | InSet | InType
@@ -1034,7 +1042,17 @@ sig
                     | Undef of inline
                     | Def of Term.constr Mod_subst.substituted
                     | OpaqueDef of Opaqueproof.opaque
-  type constant_type = Declarations.constant_type
+  type template_arity = Declarations.template_arity = {
+    template_param_levels : Univ.Level.t option list;
+    template_level : Univ.Universe.t;
+  }
+  type ('a, 'b) declaration_arity = ('a,'b) Declarations.declaration_arity =
+    | RegularArity of 'a
+    | TemplateArity of 'b
+
+  type constant_type =
+    (Prelude.types, Context.Rel.t * template_arity) declaration_arity
+
   type constant_universes = Declarations.constant_universes
   type projection_body = Declarations.projection_body = {
         proj_ind : Names.MutInd.t;
@@ -1242,7 +1260,27 @@ end
 
 module Entries :
 sig
-  type mutual_inductive_entry = Entries.mutual_inductive_entry
+  type local_entry = Entries.local_entry =
+    | LocalDefEntry of Term.constr
+    | LocalAssumEntry of Term.constr
+  type one_inductive_entry = {
+    mind_entry_typename : Names.Id.t;
+    mind_entry_arity : Term.constr;
+    mind_entry_template : bool; (* Use template polymorphism *)
+    mind_entry_consnames : Names.Id.t list;
+    mind_entry_lc : Term.constr list }
+  type mutual_inductive_entry = {
+    mind_entry_record : (Names.Id.t option) option; 
+    (** Some (Some id): primitive record with id the binder name of the record
+        in projections.
+        Some None: non-primitive record *)
+    mind_entry_finite : Decl_kinds.recursivity_kind;
+    mind_entry_params : (Names.Id.t * local_entry) list;
+    mind_entry_inds : one_inductive_entry list;
+    mind_entry_polymorphic : bool; 
+    mind_entry_universes : Univ.universe_context;
+    mind_entry_private : bool option;
+  }
   type inline = int option
   type 'a proof_output = Term.constr Univ.in_universe_context_set * 'a
   type 'a const_entry_body = 'a proof_output Future.computation
@@ -2643,7 +2681,7 @@ end
 
 module Universes :
 sig
-  type universe_binders = Universes.universe_binders
+  type universe_binders = (Names.Id.t * Univ.Level.t) list
   type universe_opt_subst = Universes.universe_opt_subst
   val fresh_inductive_instance : Environ.env -> Names.inductive -> Term.pinductive Univ.in_universe_context_set
   val new_Type : Names.DirPath.t -> Term.types
@@ -2778,6 +2816,8 @@ sig
   val clos_whd_flags : CClosure.RedFlags.reds -> reduction_function
   val nf_beta : local_reduction_function
   val nf_betaiota : local_reduction_function
+  val nf_betaiotazeta : local_reduction_function
+  val nf_all : reduction_function
   val splay_prod : Environ.env ->  Evd.evar_map -> EConstr.constr ->
                    (Names.Name.t * EConstr.constr) list * EConstr.constr
   val splay_prod_n : Environ.env ->  Evd.evar_map -> int -> EConstr.constr -> EConstr.rel_context * EConstr.constr
@@ -2843,6 +2883,7 @@ sig
   val dest_ind_family : inductive_family -> Names.inductive Term.puniverses * Term.constr list
   val find_inductive   : Environ.env -> Evd.evar_map -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * Term.constr list
   val type_of_inductive : Environ.env -> Term.pinductive -> Term.types
+  val make_case_info : Environ.env -> Names.inductive -> Term.case_style -> Term.case_info
 end
 
 module Recordops :

@@ -180,7 +180,27 @@ module Prelude =
    there is no "kernel/entries.ml" file *)
 module Entries =
   struct
-    type mutual_inductive_entry = Entries.mutual_inductive_entry
+  type local_entry = Entries.local_entry =
+    | LocalDefEntry of Term.constr
+    | LocalAssumEntry of Term.constr
+  type one_inductive_entry = Entries.one_inductive_entry = {
+    mind_entry_typename : Names.Id.t;
+    mind_entry_arity : Term.constr;
+    mind_entry_template : bool; (* Use template polymorphism *)
+    mind_entry_consnames : Names.Id.t list;
+    mind_entry_lc : Term.constr list }
+  type mutual_inductive_entry = Entries.mutual_inductive_entry = {
+    mind_entry_record : (Names.Id.t option) option; 
+    (** Some (Some id): primitive record with id the binder name of the record
+        in projections.
+        Some None: non-primitive record *)
+    mind_entry_finite : Decl_kinds.recursivity_kind;
+    mind_entry_params : (Names.Id.t * local_entry) list;
+    mind_entry_inds : one_inductive_entry list;
+    mind_entry_polymorphic : bool; 
+    mind_entry_universes : Univ.universe_context;
+    mind_entry_private : bool option;
+  }
     type inline = int option
     type 'a proof_output = Constr.constr Univ.in_universe_context_set * 'a
     type 'a const_entry_body = 'a proof_output Future.computation
