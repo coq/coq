@@ -516,6 +516,27 @@ COND_OPTFLAGS= \
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
 
+## NB: for the moment ocamlopt erases and recreates .cmi if there's no .mli around.
+## This can lead to nasty things with make -j. To avoid that:
+##  1) We make .cmx always depend on .cmi
+##  2) This .cmi will be created from the .mli, or trigger the compilation of the
+##    .cmo if there's no .mli (see rule below about MLWITHOUTMLI)
+##  3) We tell ocamlopt to use the .cmi as the interface source file. With this
+##     hack, everything goes as if there is a .mli, and the .cmi is preserved
+##     and the .cmx is checked with respect to this .cmi
+
+HACKMLI = $(if $(wildcard $<i),,-intf-suffix .cmi)
+
+define diff
+ $(strip $(foreach f, $(1), $(if $(filter $(f),$(2)),,$f)))
+endef
+
+MLWITHOUTMLI := $(call diff, $(MLFILES), $(MLIFILES:.mli=.ml))
+
+$(MLWITHOUTMLI:.ml=.cmx): %.cmx: %.cmi  # for .ml with .mli this is already the case
+
+$(MLWITHOUTMLI:.ml=.cmi): %.cmi: %.cmo
+
 # NB: the *_FORPACK variables are generated in *.mlpack.d by ocamllibdep
 # The only exceptions are the sources of the csdpcert binary.
 # To avoid warnings, we set them manually here:
@@ -526,11 +547,11 @@ plugins/micromega/csdpcert_FORPACK:=
 
 plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $($(@:.cmx=_FORPACK)) -c $<
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -c $<
 
 %.cmx: %.ml
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) -c $<
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) -c $<
 
 %.cmxs: %.cmx
 	$(SHOW)'OCAMLOPT -shared -o $@'
