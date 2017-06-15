@@ -353,12 +353,13 @@ let exact_ise_stack2 env evd f sk1 sk2 =
 let check_leq_inductives evd cumi u u' =
   let u = EConstr.EInstance.kind evd u in
   let u' = EConstr.EInstance.kind evd u' in
-  let ind_instance = 
-    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi) 
+  let length_ind_instance = 
+    Univ.Instance.length
+      (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
   in
   let ind_sbcst =  Univ.ACumulativityInfo.subtyp_context cumi in
-  if not ((Univ.Instance.length ind_instance = Univ.Instance.length u) &&
-          (Univ.Instance.length ind_instance = Univ.Instance.length u')) then
+  if not ((length_ind_instance = Univ.Instance.length u) &&
+          (length_ind_instance = Univ.Instance.length u')) then
      anomaly (Pp.str "Invalid inductive subtyping encountered!")
   else
     begin

@@ -59,3 +59,7 @@ Section subtyping_test.
   Inductive TP2 := tp2 : Type@{i} -> Type@{j} -> TP2.
 
 End subtyping_test.
+
+Record A : Type := { a :> Type; }.
+
+Record B (X : A) : Type := { b : X; }.

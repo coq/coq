@@ -679,12 +679,13 @@ let infer_check_conv_constructors
       infer_check_inductive_instances CONV cumi u1 u2 univs
 
 let check_inductive_instances cv_pb cumi u u' univs =
-  let ind_instance = 
-    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi) 
+  let length_ind_instance = 
+    Univ.Instance.length
+      (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
   in
   let ind_subtypctx = Univ.ACumulativityInfo.subtyp_context cumi in
-  if not ((Univ.Instance.length ind_instance = Univ.Instance.length u) &&
-          (Univ.Instance.length ind_instance = Univ.Instance.length u')) then
+  if not ((length_ind_instance = Univ.Instance.length u) &&
+          (length_ind_instance = Univ.Instance.length u')) then
      anomaly (Pp.str "Invalid inductive subtyping encountered!")
   else
     let comp_cst =
@@ -765,13 +766,14 @@ let infer_convert_instances ~flex u u' (univs,cstrs) =
   in (univs, cstrs')
 
 let infer_inductive_instances cv_pb cumi u u' (univs, cstrs) =
-  let ind_instance = 
-    Univ.AUContext.instance (Univ.ACumulativityInfo.subtyp_context cumi) 
+  let length_ind_instance = 
+    Univ.Instance.length
+      (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
   in
   let ind_subtypctx =  Univ.ACumulativityInfo.subtyp_context cumi in
-  if not ((Univ.Instance.length ind_instance = Univ.Instance.length u) &&
-          (Univ.Instance.length ind_instance = Univ.Instance.length u')) then
-     anomaly (Pp.str "Invalid inductive subtyping encountered!")
+  if not ((length_ind_instance = Univ.Instance.length u) &&
+          (length_ind_instance = Univ.Instance.length u')) then
+    anomaly (Pp.str "Invalid inductive subtyping encountered!")
   else
     let comp_cst =
       let comp_subst = (Univ.Instance.append u u') in

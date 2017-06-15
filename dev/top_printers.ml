@@ -8,7 +8,6 @@
 
 (* Printers for the ocaml toplevel. *)
 
-open API
 open Util
 open Pp
 open Names
