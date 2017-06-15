@@ -74,7 +74,9 @@ let dot = '.' ( space+ | eof)
 rule coq_action = parse
   | "Require" space+
       { require_modifiers None lexbuf }
-  | "Local"? "Declare" space+ "ML" space+ "Module" space+
+  | "Local" space+ "Declare" space+ "ML" space+ "Module" space+
+      { modules [] lexbuf }
+  | "Declare" space+ "ML" space+ "Module" space+
       { modules [] lexbuf }
   | "Load" space+
       { load_file lexbuf }
