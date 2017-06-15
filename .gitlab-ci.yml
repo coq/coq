@@ -1,6 +1,5 @@
 image: ocaml/opam:ubuntu
 
-# this doesn't seem to work
 cache:
   paths:
     - .opamcache
