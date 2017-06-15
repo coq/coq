@@ -17,7 +17,7 @@ val tclSEQAT :
   int Misctypes.or_var *
     (('a * Ltac_plugin.Tacinterp.Value.t option list) *
        Ltac_plugin.Tacinterp.Value.t option) ->
-  Proof_type.tactic
+  Tacmach.tactic
 
 val tclCLAUSES :
   Ltac_plugin.Tacinterp.interp_sign ->
@@ -27,7 +27,7 @@ val tclCLAUSES :
         Ssrmatching_plugin.Ssrmatching.cpattern option)
        option)
     list * Ssrast.ssrclseq ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val hinttac :
            Tacinterp.interp_sign ->
@@ -42,5 +42,5 @@ val ssrdotac :
            Ssrmatching_plugin.Ssrmatching.cpattern option)
           option)
        list * Ssrast.ssrclseq) ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 

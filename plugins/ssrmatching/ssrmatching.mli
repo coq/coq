@@ -3,11 +3,11 @@
 
 open API
 open Grammar_API
+open Goal
 open Genarg
 open Tacexpr
 open Environ
 open Evd
-open Proof_type
 open Term
 
 (** ******** Small Scale Reflection pattern matching facilities ************* *)

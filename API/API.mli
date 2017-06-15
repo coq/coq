@@ -3310,17 +3310,6 @@ sig
   val module_is_known : string -> bool
 end
 
-(* All items in the Proof_type module are deprecated. *)
-module Proof_type :
-sig
-  type goal = Evar.t
-  type rule = Proof_type.prim_rule =
-    | Cut of bool * bool * Names.Id.t * Term.types
-    | Refine of Term.constr
-
-  type tactic = goal Evd.sigma -> goal list Evd.sigma
-end
-
 module Redexpr :
 sig
   type red_expr =
@@ -3332,61 +3321,61 @@ end
 
 module Tacmach :
 sig
-  type tactic = Proof_type.tactic
-  [@@ocaml.deprecated "alias for API.Proof_type.tactic"]
+  type tactic = Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
   type 'a sigma = 'a Evd.sigma
   [@@ocaml.deprecated "alias of API.Evd.sigma"]
 
   val re_sig : 'a -> Evd.evar_map -> 'a Evd.sigma
 
-  val pf_reduction_of_red_expr : Proof_type.goal Evd.sigma -> Redexpr.red_expr -> EConstr.constr -> Evd.evar_map * EConstr.constr
+  val pf_reduction_of_red_expr : Goal.goal Evd.sigma -> Redexpr.red_expr -> EConstr.constr -> Evd.evar_map * EConstr.constr
 
-  val pf_unsafe_type_of : Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.types
+  val pf_unsafe_type_of : Goal.goal Evd.sigma -> EConstr.constr -> EConstr.types
 
-  val pf_get_new_id  : Names.Id.t -> Proof_type.goal Evd.sigma -> Names.Id.t
+  val pf_get_new_id  : Names.Id.t -> Goal.goal Evd.sigma -> Names.Id.t
 
-  val pf_env : Proof_type.goal Evd.sigma -> Environ.env
+  val pf_env : Goal.goal Evd.sigma -> Environ.env
 
-  val pf_concl : Proof_type.goal Evd.sigma -> EConstr.types
+  val pf_concl : Goal.goal Evd.sigma -> EConstr.types
 
-  val pf_apply : (Environ.env -> Evd.evar_map -> 'a) -> Proof_type.goal Evd.sigma -> 'a
+  val pf_apply : (Environ.env -> Evd.evar_map -> 'a) -> Goal.goal Evd.sigma -> 'a
 
-  val pf_get_hyp            : Proof_type.goal Evd.sigma -> Names.Id.t -> EConstr.named_declaration
-  val pf_get_hyp_typ        : Proof_type.goal Evd.sigma -> Names.Id.t -> EConstr.types
-  val project : Proof_type.goal Evd.sigma -> Evd.evar_map
-  val refine : EConstr.constr -> Proof_type.tactic
-  val pf_type_of : Proof_type.goal Evd.sigma -> EConstr.constr -> Evd.evar_map * EConstr.types
+  val pf_get_hyp            : Goal.goal Evd.sigma -> Names.Id.t -> EConstr.named_declaration
+  val pf_get_hyp_typ        : Goal.goal Evd.sigma -> Names.Id.t -> EConstr.types
+  val project : Goal.goal Evd.sigma -> Evd.evar_map
+  val refine : EConstr.constr -> tactic
+  val refine_no_check : EConstr.constr -> tactic
+  val pf_type_of : Goal.goal Evd.sigma -> EConstr.constr -> Evd.evar_map * EConstr.types
 
-  val pf_hyps : Proof_type.goal Evd.sigma -> EConstr.named_context
+  val pf_hyps : Goal.goal Evd.sigma -> EConstr.named_context
 
-  val pf_ids_of_hyps : Proof_type.goal Evd.sigma -> Names.Id.t list
+  val pf_ids_of_hyps : Goal.goal Evd.sigma -> Names.Id.t list
 
-  val pf_reduce_to_atomic_ind : Proof_type.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
+  val pf_reduce_to_atomic_ind : Goal.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
 
-  val pf_reduce_to_quantified_ind : Proof_type.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
+  val pf_reduce_to_quantified_ind : Goal.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
 
   val pf_eapply : (Environ.env -> Evd.evar_map -> 'a -> Evd.evar_map * 'b) -> 
                   Evar.t Evd.sigma -> 'a -> Evar.t Evd.sigma * 'b
 
   val pf_unfoldn : (Locus.occurrences * Names.evaluable_global_reference) list
-                   -> Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
+                   -> Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr
 
-  val pf_reduce : (Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr) -> Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
+  val pf_reduce : (Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr) -> Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr
 
-  val pf_conv_x : Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr -> bool
+  val pf_conv_x : Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr -> bool
 
-  val pf_is_matching : Proof_type.goal Evd.sigma -> Pattern.constr_pattern -> EConstr.constr -> bool
+  val pf_is_matching : Goal.goal Evd.sigma -> Pattern.constr_pattern -> EConstr.constr -> bool
 
-  val pf_hyps_types : Proof_type.goal Evd.sigma -> (Names.Id.t * EConstr.types) list
+  val pf_hyps_types : Goal.goal Evd.sigma -> (Names.Id.t * EConstr.types) list
 
-  val pr_gls    : Proof_type.goal Evd.sigma -> Pp.std_ppcmds
+  val pr_gls    : Goal.goal Evd.sigma -> Pp.std_ppcmds
 
-  val pf_nf_betaiota : Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
+  val pf_nf_betaiota : Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr
 
-  val pf_last_hyp : Proof_type.goal Evd.sigma -> EConstr.named_declaration
+  val pf_last_hyp : Goal.goal Evd.sigma -> EConstr.named_declaration
 
-  val pf_nth_hyp_id : Proof_type.goal Evd.sigma -> int -> Names.Id.t
+  val pf_nth_hyp_id : Goal.goal Evd.sigma -> int -> Names.Id.t
 
   val sig_it : 'a Evd.sigma -> 'a
 
@@ -3395,7 +3384,7 @@ sig
     val pf_apply : (Environ.env -> Evd.evar_map -> 'a) -> 'b Proofview.Goal.t -> 'a
     val project : 'a Proofview.Goal.t -> Evd.evar_map
     val pf_unsafe_type_of : 'a Proofview.Goal.t -> EConstr.constr -> EConstr.types
-    val of_old : (Proof_type.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
+    val of_old : (Goal.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
 
     val pf_env : 'a Proofview.Goal.t -> Environ.env
     val pf_ids_of_hyps : 'a Proofview.Goal.t -> Names.Id.t list
@@ -3516,21 +3505,19 @@ sig
 
   val repackage : Evd.evar_map ref -> 'a -> 'a Evd.sigma
 
-  val refiner : Proof_type.rule -> Proof_type.tactic
-
-  val tclSHOWHYPS : Proof_type.tactic -> Proof_type.tactic
+  val tclSHOWHYPS : Tacmach.tactic -> Tacmach.tactic
   exception FailError of int * Pp.std_ppcmds Lazy.t
 
-  val tclEVARS : Evd.evar_map -> Proof_type.tactic
-  val tclMAP : ('a -> Proof_type.tactic) -> 'a list -> Proof_type.tactic
-  val tclREPEAT : Proof_type.tactic -> Proof_type.tactic
-  val tclORELSE        : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
-  val tclFAIL : int -> Pp.std_ppcmds -> Proof_type.tactic
-  val tclIDTAC : Proof_type.tactic
-  val tclTHEN : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
-  val tclTHENLIST : Proof_type.tactic list -> Proof_type.tactic
-  val tclTRY : Proof_type.tactic -> Proof_type.tactic
-  val tclAT_LEAST_ONCE : Proof_type.tactic -> Proof_type.tactic
+  val tclEVARS : Evd.evar_map -> Tacmach.tactic
+  val tclMAP : ('a -> Tacmach.tactic) -> 'a list -> Tacmach.tactic
+  val tclREPEAT : Tacmach.tactic -> Tacmach.tactic
+  val tclORELSE        : Tacmach.tactic -> Tacmach.tactic -> Tacmach.tactic
+  val tclFAIL : int -> Pp.std_ppcmds -> Tacmach.tactic
+  val tclIDTAC : Tacmach.tactic
+  val tclTHEN : Tacmach.tactic -> Tacmach.tactic -> Tacmach.tactic
+  val tclTHENLIST : Tacmach.tactic list -> Tacmach.tactic
+  val tclTRY : Tacmach.tactic -> Tacmach.tactic
+  val tclAT_LEAST_ONCE : Tacmach.tactic -> Tacmach.tactic
 end
 
 module Termops :
@@ -3668,7 +3655,7 @@ module Printer :
 sig
   val pr_named_context : Environ.env -> Evd.evar_map -> Context.Named.t -> Pp.std_ppcmds
   val pr_rel_context : Environ.env -> Evd.evar_map -> Context.Rel.t -> Pp.std_ppcmds
-  val pr_goal : Proof_type.goal Evd.sigma -> Pp.std_ppcmds
+  val pr_goal : Goal.goal Evd.sigma -> Pp.std_ppcmds
 
   val pr_constr_env : Prelude.env -> Prelude.evar_map -> Term.constr -> Pp.std_ppcmds
   val pr_lconstr_env : Prelude.env -> Prelude.evar_map -> Term.constr -> Pp.std_ppcmds
@@ -4124,7 +4111,7 @@ end
 
 module Tacticals :
 sig
-  open Proof_type
+  open Tacmach
   val tclORELSE        : tactic -> tactic -> tactic
   val tclDO : int -> tactic -> tactic
   val tclIDTAC : tactic
@@ -4132,7 +4119,7 @@ sig
   val tclTHEN : tactic -> tactic -> tactic
   val tclTHENLIST      : tactic list -> tactic
   val pf_constr_of_global :         
-    Globnames.global_reference -> (EConstr.constr -> Proof_type.tactic) -> Proof_type.tactic
+    Globnames.global_reference -> (EConstr.constr -> Tacmach.tactic) -> Tacmach.tactic
   val tclMAP : ('a -> tactic) -> 'a list -> tactic
   val tclTRY           : tactic -> tactic
   val tclCOMPLETE      : tactic -> tactic
@@ -4153,13 +4140,13 @@ sig
   val tclTHENSEQ : tactic list -> tactic
   [@@ocaml.deprecated "alias of API.Tacticals.tclTHENLIST"]
 
-  val nLastDecls : int -> Proof_type.goal Evd.sigma -> EConstr.named_context
+  val nLastDecls : int -> Goal.goal Evd.sigma -> EConstr.named_context
 
   val tclTHEN_i : tactic -> (int -> tactic) -> tactic
 
   val tclPROGRESS : tactic -> tactic
 
-  val elimination_sort_of_goal : Proof_type.goal Evd.sigma -> Sorts.family
+  val elimination_sort_of_goal : Goal.goal Evd.sigma -> Sorts.family
 
   module New :
   sig
@@ -4539,7 +4526,7 @@ sig
   val autounfold_tac : Hints.hint_db_name list option -> Locus.clause -> unit Proofview.tactic
   val autounfold_one : Hints.hint_db_name list -> Locus.hyp_location option -> unit Proofview.tactic
   val eauto_with_bases :
-    ?debug:Hints.debug -> bool * int -> Tactypes.delayed_open_constr list -> Hints.hint_db list -> Proof_type.tactic
+    ?debug:Hints.debug -> bool * int -> Tactypes.delayed_open_constr list -> Hints.hint_db list -> Tacmach.tactic
 end
 
 module Class_tactics :

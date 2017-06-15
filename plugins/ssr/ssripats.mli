@@ -36,10 +36,10 @@ val elim_intro_tac :
   ?ist:Tacinterp.interp_sign ->
   [> `EConstr of 'a * 'b * EConstr.t ] ->
   Ssrast.ssripat option ->
-  Proof_type.tactic ->
+  Tacmach.tactic ->
   bool ->
   Ssrast.ssrhyp list ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 (* "move=> top; tac top; clear top" respecting the speed *)
 val with_top : (EConstr.t -> v82tac) -> tac_ctx tac_a
@@ -51,17 +51,17 @@ val ssrmovetac :
        (((Ssrast.ssrdocc * Ssrmatching.cpattern) list
         list * Ssrast.ssrclear) *
           Ssrast.ssripats)) ->
-  Proof_type.tactic
+  Tacmach.tactic
 
-val movehnftac : Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+val movehnftac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val with_dgens :
   (Ssrast.ssrdocc * Ssrmatching.cpattern) list
    list * Ssrast.ssrclear ->
   ((Ssrast.ssrdocc * Ssrmatching.cpattern) list ->
    Ssrast.ssrdocc * Ssrmatching.cpattern ->
-   Ltac_plugin.Tacinterp.interp_sign -> Proof_type.tactic) ->
-  Ltac_plugin.Tacinterp.interp_sign -> Proof_type.tactic
+   Ltac_plugin.Tacinterp.interp_sign -> Tacmach.tactic) ->
+  Ltac_plugin.Tacinterp.interp_sign -> Tacmach.tactic
 
 val ssrcasetac :
   Ltac_plugin.Tacinterp.interp_sign ->
@@ -69,7 +69,7 @@ val ssrcasetac :
     (Ssrast.ssripat option *
        (((Ssrast.ssrdocc * Ssrmatching.cpattern) list list * Ssrast.ssrclear) *
           Ssrast.ssripats)) ->
-  Proof_type.tactic
+  Tacmach.tactic
 
 val ssrapplytac :
   Tacinterp.interp_sign ->
@@ -79,5 +79,5 @@ val ssrapplytac :
             (Ssrast.ssrtermkind * Tacexpr.glob_constr_and_expr))
            list list * Ssrast.ssrhyps) *
           Ssrast.ssripats)) ->
-  Proof_type.tactic
+  Tacmach.tactic
 

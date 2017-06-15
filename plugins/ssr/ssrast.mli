@@ -145,6 +145,6 @@ type 'a ssrseqarg = ssrindex * ('a ssrhint * 'a option)
 (* OOP : these are general shortcuts *)
 type gist = Tacintern.glob_sign
 type ist = Tacinterp.interp_sign
-type goal = Proof_type.goal 
+type goal = Goal.goal 
 type 'a sigma = 'a Evd.sigma
-type v82tac = Proof_type.tactic
+type v82tac = Tacmach.tactic

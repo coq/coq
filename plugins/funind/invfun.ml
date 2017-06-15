@@ -218,7 +218,7 @@ let rec generate_fresh_id x avoid i =
    \end{enumerate}
 
 *)
-let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes lemmas_types_infos i : Proof_type.tactic =
+let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes lemmas_types_infos i : Tacmach.tactic =
   fun g ->
     (* first of all we recreate the lemmas types to be used as predicates of the induction principle
        that is~:
@@ -468,7 +468,7 @@ let tauto =
 
 let  rec intros_with_rewrite g =
   observe_tac "intros_with_rewrite" intros_with_rewrite_aux g
-and intros_with_rewrite_aux : Proof_type.tactic =
+and intros_with_rewrite_aux : Tacmach.tactic =
   fun g ->
     let eq_ind = make_eq () in
     let sigma = project g in
@@ -629,7 +629,7 @@ let rec reflexivity_with_destruct_cases g =
 *)
 
 
-let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Proof_type.tactic =
+let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tactic =
   fun g ->
     (* We compute the types of the different mutually recursive lemmas
        in $\zeta$ normal form
@@ -673,7 +673,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Proof_type.ta
        using [f_equation] if it is recursive (that is the graph is infinite
        or unfold if the graph is finite
     *)
-    let rewrite_tac j ids : Proof_type.tactic =
+    let rewrite_tac j ids : Tacmach.tactic =
       let graph_def = graphs.(j) in
       let infos =
         try find_Function_infos (fst (destConst (project g) funcs.(j)))
@@ -953,7 +953,7 @@ let revert_graph kn post_tac hid g =
    \end{enumerate}
 *)
 
-let functional_inversion kn hid fconst f_correct : Proof_type.tactic =
+let functional_inversion kn hid fconst f_correct : Tacmach.tactic =
   fun g ->
     let old_ids = List.fold_right Id.Set.add  (pf_ids_of_hyps g) Id.Set.empty in
     let sigma = project g in

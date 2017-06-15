@@ -343,7 +343,7 @@ let error_error names e =
 let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     is_general do_built (fix_rec_l:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) recdefs  interactive_proof
     (continue_proof : int -> Names.Constant.t array -> EConstr.constr array -> int ->
-      Proof_type.tactic) : unit =
+      Tacmach.tactic) : unit =
   let names = List.map (function (((_, name),_),_,_,_,_),_ -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
@@ -446,7 +446,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
-    (_: int) (_:Names.Constant.t array) (_:EConstr.constr array) (_:int) : Proof_type.tactic =
+    (_: int) (_:Names.Constant.t array) (_:EConstr.constr array) (_:int) : Tacmach.tactic =
   Functional_principles_proofs.prove_principle_for_gen
     (f_ref,functional_ref,eq_ref)
     tcc_lemma_ref is_mes  rec_arg_num rec_arg_type relation

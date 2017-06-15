@@ -9,9 +9,9 @@
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
 open API
+open Tacmach
 open Names
 open Environ
-open Proof_type
 open Evd
 open Constrexpr
 open Ssrast
@@ -122,11 +122,11 @@ val intern_term :
     ssrterm -> Glob_term.glob_constr
 
 val pf_intern_term :
-  Tacinterp.interp_sign -> Proof_type.goal Evd.sigma ->
+  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
     ssrterm -> Glob_term.glob_constr
 
 val interp_term :
-  Tacinterp.interp_sign -> Proof_type.goal Evd.sigma ->
+  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
     ssrterm -> evar_map * EConstr.t
 
 val interp_wit :
@@ -136,28 +136,28 @@ val interp_hyp : ist -> goal sigma -> ssrhyp -> evar_map * ssrhyp
 val interp_hyps : ist -> goal sigma -> ssrhyps -> evar_map * ssrhyps
 
 val interp_refine :
-  Tacinterp.interp_sign -> Proof_type.goal Evd.sigma ->
+  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
     Glob_term.glob_constr -> evar_map * (evar_map * EConstr.constr)
 
 val interp_open_constr :
-  Tacinterp.interp_sign -> Proof_type.goal Evd.sigma ->
+  Tacinterp.interp_sign -> Goal.goal Evd.sigma ->
     Tacexpr.glob_constr_and_expr -> evar_map * (evar_map * EConstr.t)
 
 val pf_e_type_of :
-  Proof_type.goal Evd.sigma ->
-  EConstr.constr -> Proof_type.goal Evd.sigma * EConstr.types
+  Goal.goal Evd.sigma ->
+  EConstr.constr -> Goal.goal Evd.sigma * EConstr.types
 
 val splay_open_constr : 
-           Proof_type.goal Evd.sigma ->
+           Goal.goal Evd.sigma ->
            evar_map * EConstr.t ->
            (Names.Name.t * EConstr.t) list * EConstr.t
-val isAppInd : Proof_type.goal Evd.sigma -> EConstr.types -> bool
+val isAppInd : Goal.goal Evd.sigma -> EConstr.types -> bool
 val interp_view_nbimps :
            Tacinterp.interp_sign ->
-           Proof_type.goal Evd.sigma -> Glob_term.glob_constr -> int
+           Goal.goal Evd.sigma -> Glob_term.glob_constr -> int
 val interp_nbargs :
            Tacinterp.interp_sign ->
-           Proof_type.goal Evd.sigma -> Glob_term.glob_constr -> int
+           Goal.goal Evd.sigma -> Glob_term.glob_constr -> int
 
 
 val mk_term : ssrtermkind -> 'b -> ssrtermkind * (Glob_term.glob_constr * 'b option)
@@ -169,20 +169,20 @@ val mk_internal_id : string -> Id.t
 val mk_tagged_id : string -> int -> Id.t
 val mk_evar_name : int -> Name.t
 val ssr_anon_hyp : string
-val pf_type_id :  Proof_type.goal Evd.sigma -> EConstr.types -> Id.t
+val pf_type_id :  Goal.goal Evd.sigma -> EConstr.types -> Id.t
 
 val pf_abs_evars : 
-           Proof_type.goal Evd.sigma ->
+           Goal.goal Evd.sigma ->
            evar_map * EConstr.t ->
            int * EConstr.t * Evar.t list *
            UState.t
 val pf_abs_evars2 : (* ssr2 *)
-           Proof_type.goal Evd.sigma -> Evar.t list ->
+           Goal.goal Evd.sigma -> Evar.t list ->
            evar_map * EConstr.t ->
            int * EConstr.t * Evar.t list *
            UState.t
 val pf_abs_cterm :
-           Proof_type.goal Evd.sigma -> int -> EConstr.t -> EConstr.t
+           Goal.goal Evd.sigma -> int -> EConstr.t -> EConstr.t
 
 val pf_merge_uc :
            UState.t -> 'a Evd.sigma -> 'a Evd.sigma
@@ -190,21 +190,21 @@ val pf_merge_uc_of :
            evar_map -> 'a Evd.sigma -> 'a Evd.sigma
 val constr_name : evar_map -> EConstr.t -> Name.t
 val pf_type_of :
-           Proof_type.goal Evd.sigma ->
-           Term.constr -> Proof_type.goal Evd.sigma * Term.types
+           Goal.goal Evd.sigma ->
+           Term.constr -> Goal.goal Evd.sigma * Term.types
 val pfe_type_of :
-           Proof_type.goal Evd.sigma ->
-           EConstr.t -> Proof_type.goal Evd.sigma * EConstr.types
+           Goal.goal Evd.sigma ->
+           EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 val pf_abs_prod :
            Name.t ->
-           Proof_type.goal Evd.sigma ->
+           Goal.goal Evd.sigma ->
            EConstr.t ->
-           EConstr.t -> Proof_type.goal Evd.sigma * EConstr.types
+           EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 val pf_mkprod :
-           Proof_type.goal Evd.sigma ->
+           Goal.goal Evd.sigma ->
            EConstr.t ->
            ?name:Name.t ->
-           EConstr.t -> Proof_type.goal Evd.sigma * EConstr.types
+           EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
 val mkSsrRef : string -> Globnames.global_reference
@@ -213,15 +213,15 @@ val mkSsrConst :
            env -> evar_map -> evar_map * EConstr.t
 val pf_mkSsrConst :
            string ->
-           Proof_type.goal Evd.sigma ->
-           EConstr.t * Proof_type.goal Evd.sigma
+           Goal.goal Evd.sigma ->
+           EConstr.t * Goal.goal Evd.sigma
 val new_wild_id : tac_ctx -> Names.Id.t * tac_ctx
 
 
 val pf_fresh_global :
            Globnames.global_reference ->
-           Proof_type.goal Evd.sigma ->
-           Term.constr * Proof_type.goal Evd.sigma
+           Goal.goal Evd.sigma ->
+           Term.constr * Goal.goal Evd.sigma
 
 val is_discharged_id : Id.t -> bool
 val mk_discharged_id : Id.t -> Id.t
@@ -230,15 +230,15 @@ val has_discharged_tag : string -> bool
 val ssrqid : string -> Libnames.qualid 
 val new_tmp_id :
   tac_ctx -> (Names.Id.t * Name.t ref) * tac_ctx
-val mk_anon_id : string -> Proof_type.goal Evd.sigma -> Id.t
+val mk_anon_id : string -> Goal.goal Evd.sigma -> Id.t
 val pf_abs_evars_pirrel :
-           Proof_type.goal Evd.sigma ->
+           Goal.goal Evd.sigma ->
            evar_map * Term.constr -> int * Term.constr
-val pf_nbargs : Proof_type.goal Evd.sigma -> EConstr.t -> int
+val pf_nbargs : Goal.goal Evd.sigma -> EConstr.t -> int
 val gen_tmp_ids : 
            ?ist:Geninterp.interp_sign ->
-           (Proof_type.goal * tac_ctx) Evd.sigma ->
-           (Proof_type.goal * tac_ctx) list Evd.sigma
+           (Goal.goal * tac_ctx) Evd.sigma ->
+           (Goal.goal * tac_ctx) list Evd.sigma
 
 val ssrevaltac : Tacinterp.interp_sign -> Tacinterp.Value.t -> Proofview.V82.tac
 
@@ -258,23 +258,23 @@ val ssrautoprop_tac :
 val mkProt :
   EConstr.t ->
   EConstr.t ->
-  Proof_type.goal Evd.sigma ->
-  EConstr.t * Proof_type.goal Evd.sigma
+  Goal.goal Evd.sigma ->
+  EConstr.t * Goal.goal Evd.sigma
 
 val mkEtaApp : EConstr.t -> int -> int -> EConstr.t
 
 val mkRefl :
   EConstr.t ->
   EConstr.t ->
-  Proof_type.goal Evd.sigma -> EConstr.t * Proof_type.goal Evd.sigma
+  Goal.goal Evd.sigma -> EConstr.t * Goal.goal Evd.sigma
 
 val discharge_hyp :
            Id.t * (Id.t * string) ->
-           Proof_type.goal Evd.sigma -> Evar.t list Evd.sigma
+           Goal.goal Evd.sigma -> Evar.t list Evd.sigma
 
 val clear_wilds_and_tmp_and_delayed_ids :
-           (Proof_type.goal * tac_ctx) Evd.sigma ->
-           (Proof_type.goal * tac_ctx) list Evd.sigma
+           (Goal.goal * tac_ctx) Evd.sigma ->
+           (Goal.goal * tac_ctx) list Evd.sigma
 
 val view_error : string -> ssrterm -> 'a
 
@@ -284,14 +284,14 @@ val top_id : Id.t
 val pf_abs_ssrterm :
            ?resolve_typeclasses:bool ->
            ist ->
-           Proof_type.goal Evd.sigma ->
+           Goal.goal Evd.sigma ->
            ssrterm ->
            evar_map * EConstr.t * UState.t * int
 
 val pf_interp_ty :
            ?resolve_typeclasses:bool ->
            Tacinterp.interp_sign ->
-           Proof_type.goal Evd.sigma ->
+           Goal.goal Evd.sigma ->
            Ssrast.ssrtermkind *
            (Glob_term.glob_constr * Constrexpr.constr_expr option) ->
            int * EConstr.t * EConstr.t * UState.t
@@ -309,12 +309,12 @@ exception NotEnoughProducts
 val pf_saturate :
            ?beta:bool ->
            ?bi_types:bool ->
-           Proof_type.goal Evd.sigma ->
+           Goal.goal Evd.sigma ->
            EConstr.constr ->
            ?ty:EConstr.types ->
            int ->
            EConstr.constr * EConstr.types * (int * EConstr.constr) list *
-           Proof_type.goal Evd.sigma
+           Goal.goal Evd.sigma
 val saturate :
            ?beta:bool ->
            ?bi_types:bool ->
@@ -338,32 +338,32 @@ type name_hint = (int * EConstr.types array) option ref
 val gentac : 
   (Geninterp.interp_sign ->
    (Ssrast.ssrdocc) *
-     Ssrmatching_plugin.Ssrmatching.cpattern -> Proof_type.tactic)
+     Ssrmatching_plugin.Ssrmatching.cpattern -> Tacmach.tactic)
 
 val genstac :
   ((Ssrast.ssrhyp list option * Ssrmatching_plugin.Ssrmatching.occ) *
      Ssrmatching_plugin.Ssrmatching.cpattern)
     list * Ssrast.ssrhyp list ->
-  Tacinterp.interp_sign -> Proof_type.tactic
+  Tacinterp.interp_sign -> Tacmach.tactic
 
 val pf_interp_gen :
   Tacinterp.interp_sign ->
-  Proof_type.goal Evd.sigma ->
+  Goal.goal Evd.sigma ->
   bool ->
   (Ssrast.ssrhyp list option * Ssrmatching_plugin.Ssrmatching.occ) *
     Ssrmatching_plugin.Ssrmatching.cpattern ->
   EConstr.t * EConstr.t * Ssrast.ssrhyp list *
-    Proof_type.goal Evd.sigma
+    Goal.goal Evd.sigma
 
 val pf_interp_gen_aux :
   Tacinterp.interp_sign ->
-  Proof_type.goal Evd.sigma ->
+  Goal.goal Evd.sigma ->
   bool ->
   (Ssrast.ssrhyp list option * Ssrmatching_plugin.Ssrmatching.occ) *
     Ssrmatching_plugin.Ssrmatching.cpattern ->
   bool * Ssrmatching_plugin.Ssrmatching.pattern * EConstr.t *
     EConstr.t * Ssrast.ssrhyp list * UState.t *
-      Proof_type.goal Evd.sigma
+      Goal.goal Evd.sigma
 
 val is_name_in_ipats :
            Id.t -> ssripats -> bool
@@ -386,12 +386,12 @@ val interp_clr :
 
 val genclrtac :
   EConstr.constr ->
-  EConstr.constr list -> Ssrast.ssrhyp list -> Proof_type.tactic
+  EConstr.constr list -> Ssrast.ssrhyp list -> Tacmach.tactic
 val cleartac : ssrhyps -> v82tac
 
-val tclMULT : int * ssrmmod -> Proof_type.tactic -> Proof_type.tactic
+val tclMULT : int * ssrmmod -> Tacmach.tactic -> Tacmach.tactic
 
-val unprotecttac : Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+val unprotecttac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val abs_wgen :
   bool ->
@@ -401,8 +401,8 @@ val abs_wgen :
     ((Ssrast.ssrhyp_or_id * string) *
        Ssrmatching_plugin.Ssrmatching.cpattern option)
       option ->
-  Proof_type.goal Evd.sigma * EConstr.t list * EConstr.t ->
-  Proof_type.goal Evd.sigma * EConstr.t list * EConstr.t
+  Goal.goal Evd.sigma * EConstr.t list * EConstr.t ->
+  Goal.goal Evd.sigma * EConstr.t list * EConstr.t
 
 val clr_of_wgen :
   ssrhyps * ((ssrhyp_or_id * 'a) * 'b option) option ->

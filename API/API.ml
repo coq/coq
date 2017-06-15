@@ -200,16 +200,3 @@ module Entries =
                            | ParameterEntry of parameter_entry
                            | ProjectionEntry of projection_entry
   end
-
-(* NOTE: It does not make sense to replace the following "module expression"
-   simply with "module Proof_type = Proof_type" because
-   there is only "proofs/proof_type.mli";
-   there is no "proofs/proof_type.ml" file *)
-module Proof_type =
-  struct
-    type goal = Goal.goal
-    type tactic = goal Evd.sigma -> goal list Evd.sigma
-    type rule = Proof_type.prim_rule =
-      | Cut of bool * bool * Names.Id.t * Term.types
-      | Refine of Term.constr
-  end
