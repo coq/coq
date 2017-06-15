@@ -199,7 +199,7 @@ module Prim :
     val pattern_identref : Id.t located Gram.entry
     val base_ident : Id.t Gram.entry
     val natural : int Gram.entry
-    val bigint : Bigint.bigint Gram.entry
+    val bigint : Constrexpr.raw_natural_number Gram.entry
     val integer : int Gram.entry
     val string : string Gram.entry
     val lstring : string located Gram.entry

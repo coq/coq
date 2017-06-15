@@ -116,7 +116,7 @@ sig
     val pattern_identref : Names.Id.t located Gram.Entry.e
     val base_ident : Names.Id.t Gram.Entry.e
     val natural : int Gram.Entry.e
-    val bigint : Bigint.bigint Gram.Entry.e
+    val bigint : Constrexpr.raw_natural_number Gram.Entry.e
     val integer : int Gram.Entry.e
     val string : string Gram.Entry.e
     val qualid : API.Libnames.qualid located Gram.Entry.e
