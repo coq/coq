@@ -1072,13 +1072,6 @@ module Goal = struct
     end
     end
 
-  exception NotExactlyOneSubgoal
-  let _ = CErrors.register_handler begin function
-  | NotExactlyOneSubgoal ->
-      CErrors.user_err (Pp.str"Not exactly one subgoal.")
-  | _ -> raise CErrors.Unhandled
-  end
-
   let enter_one f =
     let open Proof in
     Comb.get >>= function
@@ -1090,7 +1083,7 @@ module Goal = struct
          let (e, info) = CErrors.push e in
          tclZERO ~info e
       end
-    | _ -> tclZERO NotExactlyOneSubgoal
+    | _ -> assert false (* unsatisfied not-exactly-one-goal precondition *)
 
   let goals =
     Pv.get >>= fun step ->
