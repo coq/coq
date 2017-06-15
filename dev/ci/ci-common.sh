@@ -2,12 +2,7 @@
 
 set -xe
 
-if [ -n "${GITLAB_CI}" ];
-then
-    export COQBIN=`pwd`/install/bin
-else
-    export COQBIN=`pwd`/bin
-fi
+export COQBIN="$CI_INSTALL/bin"
 export PATH="$COQBIN:$PATH"
 
 # Coq's tools need an ending slash :S, we should fix them.

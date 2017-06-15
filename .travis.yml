@@ -33,31 +33,6 @@ env:
   - CAMLP5_VER="6.14"
   - NATIVE_COMP="yes"
   # Main test suites
-  matrix:
-  - TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
-  - TEST_TARGET="validate"                           TW="travis_wait"
-  - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
-  - TEST_TARGET="ci-bignums"
-  - TEST_TARGET="ci-color"
-  - TEST_TARGET="ci-compcert"
-  - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
-  - TEST_TARGET="ci-coquelicot"
-  - TEST_TARGET="ci-geocoq"
-  - TEST_TARGET="ci-fiat-crypto"
-  - TEST_TARGET="ci-fiat-parsers"
-  - TEST_TARGET="ci-flocq"
-  - TEST_TARGET="ci-formal-topology"
-  - TEST_TARGET="ci-hott"
-  - TEST_TARGET="ci-iris-coq"
-  - TEST_TARGET="ci-math-classes"
-  - TEST_TARGET="ci-math-comp"
-  - TEST_TARGET="ci-sf"
-  - TEST_TARGET="ci-unimath"
-  - TEST_TARGET="ci-vst"
-  # Not ready yet for 8.7
-  # - TEST_TARGET="ci-cpdt"
-  # - TEST_TARGET="ci-metacoq"
-  # - TEST_TARGET="ci-tlc"
 
 matrix:
 
@@ -67,16 +42,83 @@ matrix:
   - env: TEST_TARGET="ci-fiat-parsers"
 
   include:
-    # Full Coq test-suite with two compilers
     - env:
-      - TEST_TARGET="test-suite"
-      - EXTRA_CONF="-coqide opt -with-doc yes"
-      - EXTRA_OPAM="lablgtk-extras hevea"
+      - TEST_TARGET="install"
+      - EXTRA_CONF="-coqide opt"
+      - EXTRA_OPAM="lablgtk-extras"
+      script: dev/ci/build.sh
+      stage: build
       addons:
-        apt:
+        apt: &coqide-apt
           sources:
           - avsm
-          packages: &extra-packages
+          packages:
+          - opam
+          - aspcud
+          - libgtk2.0-dev
+          - libgtksourceview2.0-dev
+
+    - env:
+      - TEST_TARGET="install"
+      - COMPILER="4.02.3+32bit"
+      script: dev/ci/build.sh
+      stage: build
+
+    - env:
+      - TEST_TARGET="install"
+      - COMPILER="4.04.1"
+      - CAMLP5_VER="6.17"
+      - EXTRA_CONF="-coqide opt"
+      - EXTRA_OPAM="lablgtk-extras"
+      script: dev/ci/build.sh
+      stage: build
+      addons:
+        apt: *coqide-apt
+
+    - env: TEST_TARGET="test-suite"
+      script: dev/ci/test-suite.sh
+      stage: test
+    - env: TEST_TARGET="test-suite" COMPILER="4.02.3+32bit"
+      script: dev/ci/test-suite.sh
+    - env: TEST_TARGET="test-suite" COMPILER="4.04.1" CAMLP5_VER="6.17"
+      script: dev/ci/test-suite.sh
+
+    - env: TEST_TARGET="validate"                             TW="travis_wait"
+      script: dev/ci/validate.sh
+    - env: TEST_TARGET="validate"   COMPILER="4.02.3+32bit"   TW="travis_wait"
+      script: dev/ci/validate.sh
+
+    - env: TEST_TARGET="ci-bignums"
+    - env: TEST_TARGET="ci-color"
+    - env: TEST_TARGET="ci-compcert"
+    - env: TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
+    - env: TEST_TARGET="ci-coquelicot"
+    - env: TEST_TARGET="ci-geocoq"
+    - env: TEST_TARGET="ci-fiat-crypto"
+    - env: TEST_TARGET="ci-fiat-parsers"
+    - env: TEST_TARGET="ci-flocq"
+    - env: TEST_TARGET="ci-formal-topology"
+    - env: TEST_TARGET="ci-hott"
+    - env: TEST_TARGET="ci-iris-coq"
+    - env: TEST_TARGET="ci-math-classes"
+    - env: TEST_TARGET="ci-math-comp"
+    - env: TEST_TARGET="ci-sf"
+    - env: TEST_TARGET="ci-unimath"
+    - env: TEST_TARGET="ci-vst"
+      # Not ready yet for 8.7
+      # - TEST_TARGET="ci-cpdt"
+      # - TEST_TARGET="ci-metacoq"
+      # - TEST_TARGET="ci-tlc"
+
+    - env:
+      - TEST_TARGET="documentation"
+      - EXTRA_OPAM="hevea"
+      script: dev/ci/documentation.sh
+      addons:
+        apt: &extra-apt
+          sources:
+          - avsm
+          packages:
           - opam
           - aspcud
           - libgtk2.0-dev
@@ -94,47 +136,36 @@ matrix:
           - tipa
 
     - env:
-      - TEST_TARGET="test-suite"
+      - TEST_TARGET="documentation"
       - COMPILER="4.04.1"
       - CAMLP5_VER="6.17"
-      - EXTRA_CONF="-coqide opt -with-doc yes"
-      - EXTRA_OPAM="lablgtk-extras hevea"
+      - EXTRA_OPAM="hevea"
+      script: dev/ci/documentation.sh
       addons:
-        apt:
-          sources:
-          - avsm
-          packages: *extra-packages
+        apt: *extra-apt
 
     # Ocaml warnings with two compilers
     - env:
       - TEST_TARGET="coqocaml"
       - EXTRA_CONF="-coqide opt -warn-error"
-      - EXTRA_OPAM="lablgtk-extras hevea"
+      - EXTRA_OPAM="lablgtk-extras"
       # dummy target
       - BUILD_TARGET="clean"
+      script: dev/ci/warnings.sh
       addons:
-        apt:
-          sources:
-          - avsm
-          packages: &coqide-packages
-          - opam
-          - aspcud
-          - libgtk2.0-dev
-          - libgtksourceview2.0-dev
+        apt: *coqide-apt
 
     - env:
       - TEST_TARGET="coqocaml"
       - COMPILER="4.04.1"
       - CAMLP5_VER="6.17"
       - EXTRA_CONF="-coqide opt -warn-error"
-      - EXTRA_OPAM="lablgtk-extras hevea"
+      - EXTRA_OPAM="lablgtk-extras"
       # dummy target
       - BUILD_TARGET="clean"
+      script: dev/ci/warnings.sh
       addons:
-        apt:
-          sources:
-          - avsm
-          packages: *coqide-packages
+        apt: *coqide-apt
 
     - os: osx
       env:
@@ -142,32 +173,15 @@ matrix:
       - COMPILER="system"
       - CAMLP5_VER="6.17"
       - NATIVE_COMP="no"
+      script: dev/ci/test-suite.sh
       before_install:
       - brew update
       - brew install opam
 
-install:
-- opam init -j ${NJOBS} --compiler=${COMPILER} -n -y
-- eval $(opam config env)
-- opam config list
-- opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${EXTRA_OPAM}
-- opam list
+install: dev/ci/setup.sh
 
 script:
-
-- set -e
-- echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
-- ./configure -local -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
-- echo -en 'travis_fold:end:coq.config\\r'
-
-- echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'
-- make -j ${NJOBS}
-- echo -en 'travis_fold:end:coq.build\\r'
-
-- echo 'Running tests...' && echo -en 'travis_fold:start:coq.test\\r'
-- ${TW} make -j ${NJOBS} ${TEST_TARGET}
-- echo -en 'travis_fold:end:coq.test\\r'
-- set +e
+- ${TW} dev/ci/contrib.sh
 
 # Testing Gitter webhook
 notifications:
