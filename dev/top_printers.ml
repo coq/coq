@@ -494,7 +494,6 @@ VERNAC COMMAND EXTEND PrintConstr
 END
 *)
 
-open Grammar_API
 open Genarg
 open Stdarg
 open Egramml
