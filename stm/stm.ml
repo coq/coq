@@ -2046,7 +2046,8 @@ let collect_proof keep cur hd brkind id =
    | `ASync(_,pua,_,name,_) -> `Sync (name,pua,why) in
  let check_policy rc = if async_policy () then rc else make_sync `Policy rc in
  match cur, (VCS.visit id).step, brkind with
- | (parent, { expr = VernacExactProof _ }), `Fork _, _ ->
+ | (parent, { expr = VernacExactProof _ }), `Fork _, _
+ | (parent, { expr = VernacTime (_, VernacExactProof _) }), `Fork _, _ ->
      `Sync (no_name,None,`Immediate)
  | _, _, { VCS.kind = `Edit _ }  -> check_policy (collect (Some cur) [] id)
  | _ ->
