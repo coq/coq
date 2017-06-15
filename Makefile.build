@@ -237,7 +237,7 @@ endef
 
 # Camlp5 settings
 
-CAMLP4DEPS:=grammar/compat5.cmo grammar/grammar.cma
+CAMLP4DEPS:=grammar/grammar.cma
 CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo)
