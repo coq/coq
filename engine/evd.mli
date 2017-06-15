@@ -526,7 +526,9 @@ val new_sort_variable : ?loc:Loc.t -> ?name:string -> rigid -> evar_map -> evar_
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 
 val universe_rigidity : evar_map -> Univ.Level.t -> rigid
-val make_flexible_variable : evar_map -> bool -> Univ.universe_level -> evar_map
+val make_flexible_variable : evar_map -> algebraic:bool -> Univ.universe_level -> evar_map
+(** See [UState.make_flexible_variable] *)
+
 val is_sort_variable : evar_map -> sorts -> Univ.universe_level option 
 (** [is_sort_variable evm s] returns [Some u] or [None] if [s] is 
     not a local sort variable declared in [evm] *)

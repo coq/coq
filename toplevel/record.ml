@@ -124,7 +124,7 @@ let typecheck_params_and_fields def id pl t ps nots fs =
 	 | Sort s' -> 
 	    (if poly then
                match Evd.is_sort_variable !evars s' with
-	       | Some l -> evars := Evd.make_flexible_variable !evars true l; 
+	       | Some l -> evars := Evd.make_flexible_variable !evars ~algebraic:true l; 
 	                  sred, true
 	       | None -> s, false
              else s, false)

@@ -427,7 +427,7 @@ let make_conclusion_flexible evdref ty poly =
       | Type u -> 
         (match Univ.universe_level u with
         | Some u -> 
-	  evdref := Evd.make_flexible_variable !evdref true u
+	  evdref := Evd.make_flexible_variable !evdref ~algebraic:true u
 	| None -> ())
       | _ -> ()
   else () 

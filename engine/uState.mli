@@ -92,7 +92,14 @@ val emit_side_effects : Safe_typing.private_constants -> t -> t
 
 val new_univ_variable : ?loc:Loc.t -> rigid -> string option -> t -> t * Univ.Level.t
 val add_global_univ : t -> Univ.Level.t -> t
-val make_flexible_variable : t -> bool -> Univ.Level.t -> t
+
+(** [make_flexible_variable g algebraic l]
+
+  Turn the variable [l] flexible, and algebraic if [algebraic] is true
+  and [l] can be. That is if there are no strict upper constraints on
+  [l] and and it does not appear in the instance of any non-algebraic
+  universe. Otherwise the variable is just made flexible. *)
+val make_flexible_variable : t -> algebraic:bool -> Univ.Level.t -> t
 
 val is_sort_variable : t -> Sorts.t -> Univ.Level.t option
 
