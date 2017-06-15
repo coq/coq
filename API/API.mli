@@ -2694,7 +2694,6 @@ module Lib : sig
             | ClosedModule  of library_segment
             | OpenedSection of Libnames.object_prefix * Summary.frozen
             | ClosedSection of library_segment
-            | FrozenState of Summary.frozen
 
    and library_segment = (Libnames.object_name * node) list
 

@@ -27,7 +27,6 @@ type node =
   | ClosedModule  of library_segment
   | OpenedSection of object_prefix * Summary.frozen
   | ClosedSection of library_segment
-  | FrozenState of Summary.frozen
 
 and library_entry = object_name * node
 
@@ -80,7 +79,6 @@ let classify_segment seg =
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
       user_err ~hdr:"Lib.classify_segment"
         (str "there are still opened " ++ str (module_kind ty) ++ str "s")
-    | (_,FrozenState _) :: stk -> clean acc stk
   in
     clean ([],[],[]) (List.rev seg)
 
@@ -253,10 +251,6 @@ let add_anonymous_leaf ?(cache_first = true) obj =
     add_entry oname (Leaf obj);
     cache_object (oname,obj)
   end
-
-let add_frozen_state () =
-  add_anonymous_entry
-    (FrozenState (Summary.freeze_summaries ~marshallable:`No))
 
 (* Modules. *)
 
@@ -544,7 +538,6 @@ let discharge_item ((sp,_ as oname),e) =
   match e with
   | Leaf lobj ->
       Option.map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
-  | FrozenState _ -> None
   | ClosedSection _ | ClosedModule _ -> None
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly (Pp.str "discharge_item.")
@@ -585,8 +578,7 @@ let freeze ~marshallable =
         | n, ClosedModule _ -> Some (n,ClosedModule [])
         | n, OpenedSection (op, _) ->
                Some(n,OpenedSection(op,Summary.empty_frozen))
-        | n, ClosedSection _ -> Some (n,ClosedSection [])
-        | _, FrozenState _ -> None)
+        | n, ClosedSection _ -> Some (n,ClosedSection []))
       !lib_state.lib_stk in
     { !lib_state with lib_stk }
   | _ ->
@@ -596,8 +588,7 @@ let unfreeze st = lib_state := st
 
 let init () =
   unfreeze initial_lib_state;
-  Summary.init_summaries ();
-  add_frozen_state () (* Stores e.g. the keywords declared in g_*.ml4 *)
+  Summary.init_summaries ()
 
 (* Misc *)
 

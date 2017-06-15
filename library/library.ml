@@ -575,7 +575,7 @@ let require_library_from_dirpath modrefl export =
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
     if !Flags.xml_export then List.iter (Hook.get f_xml_require) modrefl;
-  add_frozen_state ()
+  ()
 
 (* the function called by Vernacentries.vernac_import *)
 
