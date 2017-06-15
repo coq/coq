@@ -109,7 +109,7 @@ CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma intf/intf.cma library/librar
 
 TOPLOOPCMA:=stm/proofworkertop.cma stm/tacworkertop.cma stm/queryworkertop.cma
 
-GRAMMARCMA:=grammar/compat5.cmo grammar/grammar.cma
+GRAMMARCMA:=grammar/grammar.cma
 
 # modules known by the toplevel of Coq
 
