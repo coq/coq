@@ -173,6 +173,9 @@ matrix:
       - COMPILER="system"
       - CAMLP5_VER="6.17"
       - NATIVE_COMP="no"
+      # disable mega on osx
+      - MEGANAME=""
+      - MEGAPASS=""
       script: dev/ci/test-suite.sh
       before_install:
       - brew update

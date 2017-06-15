@@ -16,3 +16,5 @@ fold-start "Installing..." "coq.install"
 make install
 cp bin/fake_ide "$CI_INSTALL"/bin
 fold-end "Installation done." "coq.install"
+
+save-artifact-coq

@@ -15,3 +15,7 @@ function fold-end {
 function get-artifact-coq-with-fallback {
     :
 }
+
+function save-artifact-coq {
+    :
+}
