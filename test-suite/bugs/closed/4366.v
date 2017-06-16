@@ -10,6 +10,6 @@ end.
 Goal True.
 Proof.
 pose (v := stupid 24).
-Timeout 2 vm_compute in v.
+Timeout 4 vm_compute in v.
 exact I.
 Qed.
