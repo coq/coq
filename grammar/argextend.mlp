@@ -178,7 +178,7 @@ let declare_vernac_argument loc s pr cl =
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
   let pr_rules = match pr with
-    | None -> <:expr< fun _ _ _ _ -> str $str:"[No printer for "^s^"]"$ >>
+    | None -> <:expr< fun _ _ _ _ -> Pp.str $str:"[No printer for "^s^"]"$ >>
     | Some pr -> <:expr< fun _ _ _ -> $lid:pr$ >> in
   declare_str_items loc
    [ <:str_item<
