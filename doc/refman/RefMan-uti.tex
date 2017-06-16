@@ -98,7 +98,7 @@ Such command generates the following files:
 An optional file {\bf {\tt CoqMakefile.local}} can be provided by the user in order to extend {\tt CoqMakefile}.  In particular one can declare custom actions to be performed before or after the build process. Similarly one can customize the install target or even provide new targets.  Extension points are documented in the {\tt CoqMakefile} file.
 
 The extensions of the files listed in {\tt \_CoqProject} is
-used in order to decide how to build them  In particular:
+used in order to decide how to build them.  In particular:
 
 \begin{itemize}
 \item {\Coq} files must use the \texttt{.v} extension
@@ -120,6 +120,43 @@ This practice is discouraged. The contents of this file, including variable name
 and status of rules shall change in the future.  Users are advised to
 include {\tt Makefile.conf} or call a target of the generated Makefile
 as in {\tt make -f Makefile target} from another Makefile.
+
+One way to get access to all targets of the generated
+\texttt{CoqMakefile} is to have a generic target for invoking unknown
+targets.  For example:
+\begin{verbatim}
+# KNOWNTARGETS will not be passed along to CoqMakefile
+KNOWNTARGETS := CoqMakefile extra-stuff extra-stuff2
+# KNOWNFILES will not get implicit targets from the final rule, and so
+# depending on them won't invoke the submake
+# Warning: These files get declared as PHONY, so any targets depending
+# on them always get rebuilt
+KNOWNFILES   := Makefile _CoqProject
+
+.DEFAULT_GOAL := invoke-coqmakefile
+
+CoqMakefile: Makefile _CoqProject
+	$(COQBIN)coq_makefile -f _CoqProject -o CoqMakefile
+
+invoke-coqmakefile: CoqMakefile
+	$(MAKE) --no-print-directory -f CoqMakefile $(filter-out $(KNOWNTARGETS),$(MAKECMDGOALS))
+
+.PHONY: invoke-coqmakefile $(KNOWNFILES)
+
+####################################################################
+####################################################################
+####################################################################
+####################################################################
+##                      Your targets here                         ##
+####################################################################
+####################################################################
+####################################################################
+####################################################################
+
+# This should be the last rule, to handle any targets not declared above
+%: invoke-coqmakefile
+	@true
+\end{verbatim}
 
 \paragraph{Notes for users of {\tt coq\_makefile} with version $<$ 8.7}
 
