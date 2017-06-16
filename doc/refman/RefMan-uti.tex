@@ -60,7 +60,7 @@ subdirectory of the sources.
 
 The majority of \Coq\ projects are very similar: a collection of {\tt .v}
 files and eventually some {\tt .ml} ones (a \Coq\ plugin).  The main piece
-of metadata needed in order to build the project are the command 
+of metadata needed in order to build the project are the command
 line options to {\tt coqc} (e.g. {\tt -R, -I},
 \SeeAlso Section~\ref{coqoptions}). Collecting the list of files and
 options is the job of the {\tt \_CoqProject} file.
@@ -108,7 +108,7 @@ used in order to decide how to build them.  In particular:
 \end{itemize}
 
 The use of \texttt{.mlpack} files has to be preferred over \texttt{.mllib}
-files, since it results in a ``packed'' plugin: All auxiliary 
+files, since it results in a ``packed'' plugin: All auxiliary
 modules (as {\tt Baz} and {\tt Bazaux}) are hidden inside
 the plugin's ``name space'' ({\tt Qux\_plugin}).
 This reduces the chances of begin unable to load two distinct plugins
@@ -165,7 +165,7 @@ invoke-coqmakefile: CoqMakefile
 	or after the build (like invoking make on a subdirectory) one can
 	hook in {\tt pre-all} and {\tt post-all} extension points
 \item \texttt{-extra-phony} and \texttt{-extra} are deprecated.  To provide
-	additional target ({\tt .PHONY} or not) please use 
+	additional target ({\tt .PHONY} or not) please use
 	{\tt CoqMakefile.local}
 \end{itemize}
 
