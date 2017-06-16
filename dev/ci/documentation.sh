@@ -6,6 +6,8 @@ source dev/ci/exports.sh
 
 get-artifact-coq-with-fallback
 
+fold-start "Building documentation..." "coq.doc"
+
 ./configure -prefix "$CI_INSTALL" ${EXTRA_CONF}
 cp "$CI_INSTALL/lib/coq/tools/coqdoc/coqdoc.sty" .
 
@@ -19,3 +21,5 @@ DOCLIGHTVOFILES=$(find $DOCLIGHTDIRS -name '*.vo' -printf "%p ")
 make doc QUICK=true COQDOC_NOBOOT=true COQTEX="$CI_INSTALL/bin/coq-tex" COQDOC="$CI_INSTALL/bin/coqdoc" VFILES="$DOCVFILES" THEORIESLIGHTVO="$DOCLIGHTVOFILES"
 
 make install-doc
+
+fold-end "Documentation built." "coq.doc"
