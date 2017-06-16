@@ -82,23 +82,47 @@ corresponding GitLab CI variables.
 Travis specific information
 ===========================
 
-Travis rebuilds all of Coq's executables and stdlib for each job. Coq
-is built with `./configure -local`, then used for the job's test.
+Travis by default (and always on pull requests between different
+repositories) will rebuild all of Coq's executables and stdlib for
+each job, installed at prefix "$CI_INSTALL".
+
+You can set your repository to share builds between jobs
+through [mega.nz](https://mega.nz) (using the [megatools](https://megatools.megous.com/) CLI). You will need to
+sign up to Mega (free accounts get 10GB of storage), then in the
+travis settings of your repository add the following secret variables:
+- MEGANAME with the email you used for Mega
+- MEGAPASS with your Mega password
+
+At every build, a job will run to remove all artifacts except those
+from the last few runs. See [dev/ci/travis-cleanup.sh](dev/ci/travis-cleanup.sh) for the
+exact number of old artifacts it retains. It should be at least 2 in
+order to avoid interfering with a parallel build.
+
+Unlike GitLab only the Coq build is uploaded.
+
+Using Mega is not possible for pull requests at this time (except for
+intra repository pull requests), as travis secret variables are not
+available there.
 
 GitLab specific information
 ===========================
 
 GitLab is set up to use the "build artifact" feature to avoid
 rebuilding Coq. In one job, Coq is built with `./configure -prefix
-install` and `make install` is run, then the `install` directory
+coq-install` and `make install` is run, then the `install` directory
 persists to and is used by the next jobs.
+
+As an exception to the above, jobs testing that compilation triggers
+no Ocaml warnings build Coq in parallel with other tests.
 
 Artifacts can also be downloaded from the GitLab repository.
 Currently, available artifacts are:
 - the Coq executables and stdlib, in three copies varying in
   architecture and Ocaml version used to build Coq.
 - the Coq documentation, in two different copies varying in the OCaml
-  version used to build Coq
+  version used to build Coq.
+- if the test suite failed, its logs.
 
-As an exception to the above, jobs testing that compilation triggers
-no Ocaml warnings build Coq in parallel with other tests.
+Artifacts are retained one week then deleted, except for test suite
+logs which are retained indefinitely. You can go to the job's page and
+click a button to keep a specific artifact around longer.
