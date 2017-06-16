@@ -13,4 +13,4 @@ git_checkout ${GeoCoq_CI_BRANCH} ${GeoCoq_CI_GITURL} ${GeoCoq_CI_DIR}
   sed -i.bak '/Elements\/Book_1\.v/d'                Make && \
   sed -i.bak '/Elements\/Book_3\.v/d'                Make && \
   coq_makefile -f Make -o Makefile                        && \
-  make -j ${NJOBS} )
+  make )

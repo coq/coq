@@ -7,6 +7,6 @@ source ${ci_dir}/ci-common.sh
 wget ${sf_CI_TARURL}
 tar xvfz sf.tgz
 
-( cd sf && sed -i.bak 's/(K,N)/((K,N))/' LibTactics.v && make clean && make -j ${NJOBS} )
+( cd sf && sed -i.bak 's/(K,N)/((K,N))/' LibTactics.v && make clean && make )
 
 

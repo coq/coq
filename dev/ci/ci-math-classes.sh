@@ -11,10 +11,10 @@ Corn_CI_DIR=${CI_BUILD_DIR}/corn
 
 git_checkout ${math_classes_CI_BRANCH} ${math_classes_CI_GITURL} ${math_classes_CI_DIR}
 
-( cd ${math_classes_CI_DIR} && make -j ${NJOBS} && make install )
+( cd ${math_classes_CI_DIR} && make && make install )
 
 # Setup Corn
 
 git_checkout ${Corn_CI_BRANCH} ${Corn_CI_GITURL} ${Corn_CI_DIR}
 
-( cd ${Corn_CI_DIR} && make -j ${NJOBS} )
+( cd ${Corn_CI_DIR} && make )

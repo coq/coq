@@ -7,4 +7,4 @@ tlc_CI_DIR=${CI_BUILD_DIR}/tlc
 
 git_checkout ${tlc_CI_BRANCH} ${tlc_CI_GITURL} ${tlc_CI_DIR}
 
-( cd ${tlc_CI_DIR} && make -j ${NJOBS} )
+( cd ${tlc_CI_DIR} && make )
