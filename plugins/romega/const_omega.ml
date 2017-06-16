@@ -7,15 +7,14 @@
  *************************************************************************)
 
 open Names
-open Constr
 
 let module_refl_name = "ReflOmegaCore"
 let module_refl_path = ["Coq"; "romega"; module_refl_name]
 
 type result =
   | Kvar of string
-  | Kapp of string * constr list
-  | Kimp of constr * constr
+  | Kapp of string * EConstr.t list
+  | Kimp of EConstr.t * EConstr.t
   | Kufo
 
 let meaningful_submodule = [ "Z"; "N"; "Pos" ]
@@ -30,9 +29,10 @@ let string_of_global r =
   in
   prefix^(Names.Id.to_string (Nametab.basename_of_global r))
 
-let destructurate t =
-  let c, args = decompose_app t in
-  match Constr.kind c, args with
+let destructurate sigma t =
+  let c, args = EConstr.decompose_app sigma t in
+  let open Constr in
+  match EConstr.kind sigma c, args with
   | Const (sp,_), args ->
      Kapp (string_of_global (Globnames.ConstRef sp), args)
   | Construct (csp,_) , args ->
@@ -45,10 +45,11 @@ let destructurate t =
 
 exception DestConstApp
 
-let dest_const_apply t =
-  let f,args = decompose_app t in
+let dest_const_apply sigma t =
+  let open Constr in
+  let f,args = EConstr.decompose_app sigma t in
   let ref =
-  match Constr.kind f with
+  match EConstr.kind sigma f with
     | Const (sp,_)      -> Globnames.ConstRef sp
     | Construct (csp,_) -> Globnames.ConstructRef csp
     | Ind (isp,_)       -> Globnames.IndRef isp
@@ -66,10 +67,22 @@ let coq_modules =
 let bin_module = [["Coq";"Numbers";"BinNums"]]
 let z_module = [["Coq";"ZArith";"BinInt"]]
 
-let init_constant x = Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Omega" Coqlib.init_modules x
-let constant x = Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Omega" coq_modules x
-let z_constant x = Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Omega" z_module x
-let bin_constant x = Universes.constr_of_global @@ Coqlib.gen_reference_in_modules "Omega" bin_module x
+let init_constant x =
+  EConstr.of_constr @@
+  Universes.constr_of_global @@
+  Coqlib.gen_reference_in_modules "Omega" Coqlib.init_modules x
+let constant x =
+  EConstr.of_constr @@
+  Universes.constr_of_global @@
+  Coqlib.gen_reference_in_modules "Omega" coq_modules x
+let z_constant x =
+  EConstr.of_constr @@
+  Universes.constr_of_global @@
+  Coqlib.gen_reference_in_modules "Omega" z_module x
+let bin_constant x =
+  EConstr.of_constr @@
+  Universes.constr_of_global @@
+  Coqlib.gen_reference_in_modules "Omega" bin_module x
 
 (* Logic *)
 let coq_refl_equal = lazy(init_constant "eq_refl")
@@ -130,62 +143,64 @@ let coq_O = lazy(init_constant "O")
 
 let rec mk_nat = function
   | 0 -> Lazy.force coq_O
-  | n -> mkApp (Lazy.force coq_S, [| mk_nat (n-1) |])
+  | n -> EConstr.mkApp (Lazy.force coq_S, [| mk_nat (n-1) |])
 
 (* Lists *)
 
-let mkListConst c = 
-  let r = 
+let mkListConst c =
+  let r =
     Coqlib.coq_reference "" ["Init";"Datatypes"] c
-  in 
-  let inst = 
-    if Global.is_polymorphic r then fun u -> Univ.Instance.of_array [|u|]
-    else fun _ -> Univ.Instance.empty
   in
-    fun u -> mkConstructU (Globnames.destConstructRef r, inst u)
+  let inst =
+    if Global.is_polymorphic r then
+      fun u -> EConstr.EInstance.make (Univ.Instance.of_array [|u|])
+    else
+      fun _ -> EConstr.EInstance.empty
+  in
+    fun u -> EConstr.mkConstructU (Globnames.destConstructRef r, inst u)
 
-let coq_cons univ typ = mkApp (mkListConst "cons" univ, [|typ|])
-let coq_nil univ typ =  mkApp (mkListConst "nil" univ, [|typ|])
+let coq_cons univ typ = EConstr.mkApp (mkListConst "cons" univ, [|typ|])
+let coq_nil univ typ =  EConstr.mkApp (mkListConst "nil" univ, [|typ|])
 
 let mk_list univ typ l =
   let rec loop = function
     | [] -> coq_nil univ typ
     | (step :: l) ->
-	mkApp (coq_cons univ typ, [| step; loop l |]) in
+       EConstr.mkApp (coq_cons univ typ, [| step; loop l |]) in
   loop l
 
-let mk_plist = 
+let mk_plist =
   let type1lev = Universes.new_univ_level () in
-    fun l -> mk_list type1lev mkProp l
+  fun l -> mk_list type1lev EConstr.mkProp l
 
 let mk_list = mk_list Univ.Level.set
 
 type parse_term =
-  | Tplus of constr * constr
-  | Tmult of constr * constr
-  | Tminus of constr * constr
-  | Topp of constr
-  | Tsucc of constr
+  | Tplus of EConstr.t * EConstr.t
+  | Tmult of EConstr.t * EConstr.t
+  | Tminus of EConstr.t * EConstr.t
+  | Topp of EConstr.t
+  | Tsucc of EConstr.t
   | Tnum of Bigint.bigint
   | Tother
 
 type parse_rel =
-  | Req of constr * constr
-  | Rne of constr * constr
-  | Rlt of constr * constr
-  | Rle of constr * constr
-  | Rgt of constr * constr
-  | Rge of constr * constr
+  | Req of EConstr.t * EConstr.t
+  | Rne of EConstr.t * EConstr.t
+  | Rlt of EConstr.t * EConstr.t
+  | Rle of EConstr.t * EConstr.t
+  | Rgt of EConstr.t * EConstr.t
+  | Rge of EConstr.t * EConstr.t
   | Rtrue
   | Rfalse
-  | Rnot of constr
-  | Ror of constr * constr
-  | Rand of constr * constr
-  | Rimp of constr * constr
-  | Riff of constr * constr
+  | Rnot of EConstr.t
+  | Ror of EConstr.t * EConstr.t
+  | Rand of EConstr.t * EConstr.t
+  | Rimp of EConstr.t * EConstr.t
+  | Riff of EConstr.t * EConstr.t
   | Rother
 
-let parse_logic_rel c = match destructurate c with
+let parse_logic_rel sigma c = match destructurate sigma c with
   | Kapp("True",[]) -> Rtrue
   | Kapp("False",[]) -> Rfalse
   | Kapp("not",[t]) -> Rnot t
@@ -211,29 +226,29 @@ let rec mk_positive n =
   if Bigint.equal n Bigint.one then Lazy.force coq_xH
   else
     let (q,r) = Bigint.euclid n Bigint.two in
-    mkApp
+    EConstr.mkApp
       ((if Bigint.equal r Bigint.zero
         then Lazy.force coq_xO else Lazy.force coq_xI),
        [| mk_positive q |])
 
 let mk_N = function
   | 0 -> Lazy.force coq_N0
-  | n -> mkApp (Lazy.force coq_Npos,
+  | n -> EConstr.mkApp (Lazy.force coq_Npos,
                      [| mk_positive (Bigint.of_int n) |])
 
 module type Int = sig
-  val typ : constr Lazy.t
-  val is_int_typ : Proofview.Goal.t -> constr -> bool
-  val plus : constr Lazy.t
-  val mult : constr Lazy.t
-  val opp : constr Lazy.t
-  val minus : constr Lazy.t
+  val typ : EConstr.t Lazy.t
+  val is_int_typ : Proofview.Goal.t -> EConstr.t -> bool
+  val plus : EConstr.t Lazy.t
+  val mult : EConstr.t Lazy.t
+  val opp : EConstr.t Lazy.t
+  val minus : EConstr.t Lazy.t
 
-  val mk : Bigint.bigint -> constr
-  val parse_term : constr -> parse_term
-  val parse_rel : Proofview.Goal.t -> constr -> parse_rel
+  val mk : Bigint.bigint -> EConstr.t
+  val parse_term : Evd.evar_map -> EConstr.t -> parse_term
+  val parse_rel : Proofview.Goal.t -> EConstr.t -> parse_rel
   (* check whether t is built only with numbers and + * - *)
-  val get_scalar : constr -> Bigint.bigint option
+  val get_scalar : Evd.evar_map -> EConstr.t -> Bigint.bigint option
 end
 
 module Z : Int = struct
@@ -244,9 +259,9 @@ let mult = lazy (z_constant  "Z.mul")
 let opp = lazy (z_constant "Z.opp")
 let minus = lazy (z_constant "Z.sub")
 
-let recognize_pos t =
+let recognize_pos sigma t =
   let rec loop t =
-    let f,l = dest_const_apply t in
+    let f,l = dest_const_apply sigma t in
     match Id.to_string f,l with
     | "xI",[t] -> Bigint.add Bigint.one (Bigint.mult Bigint.two (loop t))
     | "xO",[t] -> Bigint.mult Bigint.two (loop t)
@@ -255,12 +270,12 @@ let recognize_pos t =
   in
   try Some (loop t) with DestConstApp -> None
 
-let recognize_Z t =
+let recognize_Z sigma t =
   try
-    let f,l = dest_const_apply t in
+    let f,l = dest_const_apply sigma t in
     match Id.to_string f,l with
-    | "Zpos",[t] -> recognize_pos t
-    | "Zneg",[t] -> Option.map Bigint.neg (recognize_pos t)
+    | "Zpos",[t] -> recognize_pos sigma t
+    | "Zneg",[t] -> Option.map Bigint.neg (recognize_pos sigma t)
     | "Z0",[] -> Some Bigint.zero
     | _ -> None
   with DestConstApp -> None
@@ -268,14 +283,14 @@ let recognize_Z t =
 let mk_Z n =
   if Bigint.equal n Bigint.zero then Lazy.force coq_Z0
   else if Bigint.is_strictly_pos n then
-    mkApp (Lazy.force coq_Zpos, [| mk_positive n |])
+    EConstr.mkApp (Lazy.force coq_Zpos, [| mk_positive n |])
   else
-    mkApp (Lazy.force coq_Zneg, [| mk_positive (Bigint.neg n) |])
+    EConstr.mkApp (Lazy.force coq_Zneg, [| mk_positive (Bigint.neg n) |])
 
 let mk = mk_Z
 
-let parse_term t =
-  match destructurate t with
+let parse_term sigma t =
+  match destructurate sigma t with
   | Kapp("Z.add",[t1;t2]) -> Tplus (t1,t2)
   | Kapp("Z.sub",[t1;t2]) -> Tminus (t1,t2)
   | Kapp("Z.mul",[t1;t2]) -> Tmult (t1,t2)
@@ -283,35 +298,35 @@ let parse_term t =
   | Kapp("Z.succ",[t]) -> Tsucc t
   | Kapp("Z.pred",[t]) -> Tplus(t, mk_Z (Bigint.neg Bigint.one))
   | Kapp(("Zpos"|"Zneg"|"Z0"),_) ->
-     (match recognize_Z t with Some t -> Tnum t | None -> Tother)
+     (match recognize_Z sigma t with Some t -> Tnum t | None -> Tother)
   | _ -> Tother
 
 let is_int_typ gl t =
-  Tacmach.New.pf_apply Reductionops.is_conv gl
-    (EConstr.of_constr t) (EConstr.of_constr (Lazy.force coq_Z))
+  Tacmach.New.pf_apply Reductionops.is_conv gl t (Lazy.force coq_Z)
 
 let parse_rel gl t =
-  match destructurate t with
+  let sigma = Proofview.Goal.sigma gl in
+  match destructurate sigma t with
   | Kapp("eq",[typ;t1;t2]) when is_int_typ gl typ -> Req (t1,t2)
   | Kapp("Zne",[t1;t2]) -> Rne (t1,t2)
   | Kapp("Z.le",[t1;t2]) -> Rle (t1,t2)
   | Kapp("Z.lt",[t1;t2]) -> Rlt (t1,t2)
   | Kapp("Z.ge",[t1;t2]) -> Rge (t1,t2)
   | Kapp("Z.gt",[t1;t2]) -> Rgt (t1,t2)
-  | _ -> parse_logic_rel t
+  | _ -> parse_logic_rel sigma t
 
-let rec get_scalar t =
-  match destructurate t with
+let rec get_scalar sigma t =
+  match destructurate sigma t with
   | Kapp("Z.add", [t1;t2]) ->
-     Option.lift2 Bigint.add (get_scalar t1) (get_scalar t2)
+     Option.lift2 Bigint.add (get_scalar sigma t1) (get_scalar sigma t2)
   | Kapp ("Z.sub",[t1;t2]) ->
-     Option.lift2 Bigint.sub (get_scalar t1) (get_scalar t2)
+     Option.lift2 Bigint.sub (get_scalar sigma t1) (get_scalar sigma t2)
   | Kapp ("Z.mul",[t1;t2]) ->
-     Option.lift2 Bigint.mult (get_scalar t1) (get_scalar t2)
-  | Kapp("Z.opp", [t]) -> Option.map Bigint.neg (get_scalar t)
-  | Kapp("Z.succ", [t]) -> Option.map Bigint.add_1 (get_scalar t)
-  | Kapp("Z.pred", [t]) -> Option.map Bigint.sub_1 (get_scalar t)
-  | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> recognize_Z t
+     Option.lift2 Bigint.mult (get_scalar sigma t1) (get_scalar sigma t2)
+  | Kapp("Z.opp", [t]) -> Option.map Bigint.neg (get_scalar sigma t)
+  | Kapp("Z.succ", [t]) -> Option.map Bigint.add_1 (get_scalar sigma t)
+  | Kapp("Z.pred", [t]) -> Option.map Bigint.sub_1 (get_scalar sigma t)
+  | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> recognize_Z sigma t
   | _ -> None
 
 end
