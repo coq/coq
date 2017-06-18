@@ -16,25 +16,48 @@ module Coq_config = Coq_config
 (******************************************************************************)
 (* Intf                                                                       *)
 (******************************************************************************)
-module Constrexpr = Constrexpr
-module Locus = Locus
-module Glob_term = Glob_term
-module Extend = Extend
-module Misctypes = Misctypes
-module Decl_kinds = Decl_kinds
-module Vernacexpr = Vernacexpr
-module Notation_term = Notation_term
-module Pattern = Pattern
-module Evar_kinds = Evar_kinds
-module Genredexpr = Genredexpr
-module Tactypes = Tactypes
+module GenMods = struct
+  module rec GMisctypes : module type of struct include Misctypes end = GMisctypes
+  module rec GConstrexpr : module type of struct include Constrexpr end = GConstrexpr
+  module rec GLocus : module type of struct include Locus end = GLocus
+  module rec GGlob_term : module type of struct include Glob_term end = GGlob_term
+  module rec GExtend : module type of struct include Extend end = GExtend
+  module rec GDecl_kinds : module type of struct include Decl_kinds end = GDecl_kinds
+  module rec GVernacexpr : module type of struct include Vernacexpr end = GVernacexpr
+  module rec GNotation_term : module type of struct include Notation_term end = GNotation_term
+  module rec GPattern : module type of struct include Pattern end = GPattern
+  module rec GEvar_kinds : module type of struct include Evar_kinds end = GEvar_kinds
+  module rec GGenredexpr : module type of struct include Genredexpr end = GGenredexpr
+  module rec GTactypes : module type of struct include Tactypes end = GTactypes
+end
+
+module Misctypes = GenMods.GMisctypes
+module Constrexpr = GenMods.GConstrexpr
+module Locus = GenMods.GLocus
+module Glob_term = GenMods.GGlob_term
+module Extend = GenMods.GExtend
+module Decl_kinds = GenMods.GDecl_kinds
+module Vernacexpr = GenMods.GVernacexpr
+module Notation_term = GenMods.GNotation_term
+module Pattern = GenMods.GPattern
+module Evar_kinds = GenMods.GEvar_kinds
+module Genredexpr = GenMods.GGenredexpr
+module Tactypes = GenMods.GTactypes
 
 (******************************************************************************)
 (* Kernel *)
 (******************************************************************************)
 (* "mli" files *)
-module Declarations = Declarations
-module Entries = Entries
+(* module Declarations = Declarations *)
+(* module Entries = Entries *)
+
+module GenKernMods = struct
+  module rec GEntries : module type of struct include Entries end = GEntries
+  module rec GDeclarations : module type of struct include Declarations end = GDeclarations
+end
+
+module Entries = GenKernMods.GEntries
+module Declarations = GenKernMods.GDeclarations
 
 module Names = Names
 (* module Uint31 *)
