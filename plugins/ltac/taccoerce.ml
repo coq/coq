@@ -8,7 +8,8 @@
 
 open Util
 open Names
-open Term
+open Sorts
+open Constr
 open EConstr
 open Pattern
 open Misctypes

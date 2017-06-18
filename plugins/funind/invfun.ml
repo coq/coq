@@ -11,7 +11,7 @@ open Declarations
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open EConstr
 open Vars
 open Pp
@@ -857,7 +857,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	(Indrec.build_mutual_induction_scheme (Global.env ()) !evd
 	   (Array.to_list
 	      (Array.mapi
-		 (fun i _ -> ((kn,i), EInstance.kind !evd u),true,InType)
+		 (fun i _ -> ((kn,i), EInstance.kind !evd u),true,Term.InType)
 		 mib.Declarations.mind_packets
 	      )
 	   )

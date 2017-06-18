@@ -1,7 +1,7 @@
 open Printer
 open CErrors
 open Util
-open Term
+open Constr
 open Vars
 open Namegen
 open Names
@@ -55,7 +55,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 (*   observe (str "princ_infos : " ++ pr_elim_scheme princ_type_info); *)
   let change_predicate_sort i decl =
     let new_sort = sorts.(i) in
-    let args,_ = decompose_prod (EConstr.Unsafe.to_constr (RelDecl.get_type decl)) in
+    let args,_ = Term.decompose_prod (EConstr.Unsafe.to_constr (RelDecl.get_type decl)) in
     let real_args =
       if princ_type_info.indarg_in_concl
       then List.tl args
@@ -81,7 +81,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let is_pte =
     let set = List.fold_right Id.Set.add ptes_vars Id.Set.empty in
     fun t ->
-      match kind_of_term t with
+      match Term.kind_of_term t with
 	| Var id -> Id.Set.mem id set
 	| _ -> false
   in
@@ -101,13 +101,13 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let pre_princ = EConstr.Unsafe.to_constr pre_princ in
   let pre_princ = substl (List.map mkVar ptes_vars) pre_princ in
   let is_dom c =
-    match kind_of_term c with
+    match Term.kind_of_term c with
       | Ind((u,_),_) -> MutInd.equal u rel_as_kn
       | Construct(((u,_),_),_) -> MutInd.equal u rel_as_kn
       | _ -> false
   in
   let get_fun_num c =
-    match kind_of_term c with
+    match Term.kind_of_term c with
       | Ind((_,num),_) -> num
       | Construct(((_,num),_),_) -> num
       | _ -> assert false
@@ -118,9 +118,9 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     observe (str "replacing " ++ pr_lconstr c ++ str " by "  ++ pr_lconstr res);
     res
   in
-  let rec compute_new_princ_type remove env pre_princ : types*(constr list) =
+  let rec compute_new_princ_type remove env pre_princ : types * (Constr.t list) =
     let (new_princ_type,_) as res =
-      match kind_of_term pre_princ with
+      match Term.kind_of_term pre_princ with
 	| Rel n ->
 	    begin
 	      try match Environ.lookup_rel n env with
@@ -134,7 +134,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	    compute_new_princ_type_for_binder  remove mkLambda env x t b
 	| Ind _ | Construct _ when is_dom pre_princ -> raise Toberemoved
 	| App(f,args) when is_dom f ->
-	    let var_to_be_removed = destRel (Array.last args) in
+	    let var_to_be_removed = Term.destRel (Array.last args) in
 	    let num = get_fun_num f in
 	    raise (Toberemoved_with_rel (var_to_be_removed,mk_replacement pre_princ num args))
 	| App(f,args) ->
@@ -149,8 +149,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 		([],[])
 	    in
 	    let new_f,binders_to_remove_from_f = compute_new_princ_type remove env f in
-	    applistc new_f new_args,
-	    list_union_eq eq_constr binders_to_remove_from_f binders_to_remove
+	    Term.applistc new_f new_args,
+	    list_union_eq Constr.equal binders_to_remove_from_f binders_to_remove
 	| LetIn(x,v,t,b) ->
 	    compute_new_princ_type_for_letin remove env x v t b
 	| _ -> pre_princ,[]
@@ -171,13 +171,13 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
 	let new_env = Environ.push_rel (LocalAssum (x,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
-	 if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
-	 then (pop new_b), filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
+	 if List.exists (Constr.equal (mkRel 1)) binders_to_remove_from_b
+	 then (pop new_b), filter_map (Constr.equal (mkRel 1)) pop binders_to_remove_from_b
 	 else
 	   (
 	     bind_fun(new_x,new_t,new_b),
 	     list_union_eq
-	       eq_constr
+	       Constr.equal
 	       binders_to_remove_from_t
 	       (List.map pop binders_to_remove_from_b)
 	   )
@@ -190,7 +190,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| Toberemoved_with_rel (n,c) ->
 (* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
-	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
+	    new_b, list_add_set_eq Constr.equal (mkRel n) (List.map pop binders_to_remove_from_b)
     end
   and compute_new_princ_type_for_letin remove env x v t b =
     begin
@@ -200,14 +200,14 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
 	let new_env = Environ.push_rel (LocalDef (x,v,t)) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
-	if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
-	then (pop new_b),filter_map (eq_constr (mkRel 1)) pop binders_to_remove_from_b
+	if List.exists (Constr.equal (mkRel 1)) binders_to_remove_from_b
+	then (pop new_b),filter_map (Constr.equal (mkRel 1)) pop binders_to_remove_from_b
 	else
 	  (
 	    mkLetIn(new_x,new_v,new_t,new_b),
 	    list_union_eq
-	      eq_constr
-	      (list_union_eq eq_constr binders_to_remove_from_t binders_to_remove_from_v)
+	      Constr.equal
+	      (list_union_eq Constr.equal binders_to_remove_from_t binders_to_remove_from_v)
 	      (List.map pop binders_to_remove_from_b)
 	  )
 
@@ -219,12 +219,12 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	| Toberemoved_with_rel (n,c) ->
 (* 	    observe (str "Decl of "++Ppconstr.Name.print x ++ str " is removed "); *)
 	    let new_b,binders_to_remove_from_b = compute_new_princ_type remove env (substnl [c] n b)  in
-	    new_b, list_add_set_eq eq_constr (mkRel n) (List.map pop binders_to_remove_from_b)
+	    new_b, list_add_set_eq Constr.equal (mkRel n) (List.map pop binders_to_remove_from_b)
     end
   and  compute_new_princ_type_with_acc remove env e (c_acc,to_remove_acc)  =
     let new_e,to_remove_from_e = compute_new_princ_type remove env e
     in
-    new_e::c_acc,list_union_eq eq_constr to_remove_from_e to_remove_acc
+    new_e::c_acc,list_union_eq Constr.equal to_remove_from_e to_remove_acc
   in
 (*   observe (str "Computing new principe from " ++ pr_lconstr_env  env_with_params_and_predicates pre_princ); *)
   let pre_res,_ =
@@ -235,9 +235,9 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       (List.map_i (fun i id -> (id, mkRel i)) 1 ptes_vars)
       (lift (List.length ptes_vars) pre_res)
   in
-  it_mkProd_or_LetIn
-    (it_mkProd_or_LetIn
-       pre_res (List.map (function Context.Named.Declaration.LocalAssum (id,b)   -> LocalAssum (Name (Hashtbl.find tbl id), b)
+  Term.it_mkProd_or_LetIn
+    (Term.it_mkProd_or_LetIn
+       pre_res (List.map (function Context.Named.Declaration.LocalAssum (id,b) -> LocalAssum (Name (Hashtbl.find tbl id), b)
                                  | Context.Named.Declaration.LocalDef (id,t,b) -> LocalDef (Name (Hashtbl.find tbl id), t, b))
           	      new_predicates)
     )
@@ -252,9 +252,9 @@ let change_property_sort evd toSort princ princName =
   let change_sort_in_predicate decl =
     LocalAssum
     (get_name decl,
-     let args,ty = decompose_prod (EConstr.Unsafe.to_constr (get_type decl)) in
-     let s = destSort ty in
-       Global.add_constraints (Univ.enforce_leq (univ_of_sort toSort) (univ_of_sort s) Univ.Constraint.empty);
+     let args,ty = Term.decompose_prod (EConstr.Unsafe.to_constr (get_type decl)) in
+     let s = Term.destSort ty in
+       Global.add_constraints (Univ.enforce_leq (Term.univ_of_sort toSort) (Term.univ_of_sort s) Univ.Constraint.empty);
        Term.compose_prod args (mkSort toSort)
     )
   in
@@ -267,8 +267,8 @@ let change_property_sort evd toSort princ princName =
 	  Array.init nargs
 	    (fun i -> mkRel (nargs - i )))
   in
-  evd,  it_mkLambda_or_LetIn
-    (it_mkLambda_or_LetIn init
+  evd,  Term.it_mkLambda_or_LetIn
+    (Term.it_mkLambda_or_LetIn init
        (List.map change_sort_in_predicate princ_info.predicates)
     )
     (List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) princ_info.params)
@@ -319,7 +319,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 
   let f = funs.(i) in
   let env = Global.env () in    
-  let type_sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd InType in
+  let type_sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd Term.InType in
   let new_sorts =
     match sorts with
       | None -> Array.make (Array.length funs) (type_sort)
@@ -330,7 +330,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       | Some (id) -> id,id
       | None ->
 	  let id_of_f = Label.to_id (Constant.label (fst f)) in
-	  id_of_f,Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
+	  id_of_f,Indrec.make_elimination_ident id_of_f (Term.family_of_sort type_sort)
   in
   let names = ref [new_princ_name] in
   let hook =
@@ -355,8 +355,8 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 	Declare.definition_message name;
 	names := name :: !names
       in
-      register_with_sort InProp;
-      register_with_sort InSet
+      register_with_sort Term.InProp;
+      register_with_sort Term.InSet
   in
   let ((id,(entry,g_kind)),hook) =
     build_functional_principle evd interactive_proof old_princ_type new_sorts funs i
@@ -389,7 +389,7 @@ exception Not_Rec
 
 let get_funs_constant mp dp =
   let get_funs_constant const e : (Names.Constant.t*int) array =
-    match kind_of_term ((strip_lam e)) with
+    match Term.kind_of_term ((Term.strip_lam e)) with
       | Fix((_,(na,_,_))) ->
 	  Array.mapi
 	    (fun i na ->
@@ -424,13 +424,13 @@ let get_funs_constant mp dp =
        to prevent Reset stange thing
     *)
     let l_bodies = List.map find_constant_body (Array.to_list (Array.map fst l_const)) in
-    let l_params,l_fixes = List.split (List.map decompose_lam l_bodies) in
+    let l_params,l_fixes = List.split (List.map Term.decompose_lam l_bodies) in
     (* all the paremeter must be equal*)
     let _check_params =
       let first_params = List.hd l_params  in
       List.iter
 	(fun params ->
-	   if not (List.equal (fun (n1, c1) (n2, c2) -> Name.equal n1 n2 && eq_constr c1 c2) first_params params)
+	   if not (List.equal (fun (n1, c1) (n2, c2) -> Name.equal n1 n2 && Constr.equal c1 c2) first_params params)
 	   then user_err Pp.(str "Not a mutal recursive block")
 	)
 	l_params
@@ -439,7 +439,7 @@ let get_funs_constant mp dp =
     let _check_bodies =
       try
 	let extract_info is_first body =
-	  match kind_of_term body with
+	  match Term.kind_of_term body with
 	    | Fix((idxs,_),(na,ta,ca)) -> (idxs,na,ta,ca)
 	    | _ ->
 		if is_first && Int.equal (List.length l_bodies) 1
@@ -450,7 +450,7 @@ let get_funs_constant mp dp =
 	let check body  = (* Hope this is correct *)
 	  let eq_infos (ia1, na1, ta1, ca1) (ia2, na2, ta2, ca2) =
             Array.equal Int.equal ia1 ia2 && Array.equal Name.equal na1 na2 &&
-            Array.equal eq_constr ta1 ta2 && Array.equal eq_constr ca1 ca2
+            Array.equal Constr.equal ta1 ta2 && Array.equal Constr.equal ca1 ca2
 	  in
 	  if not (eq_infos first_infos (extract_info false body))
 	  then  user_err Pp.(str "Not a mutal recursive block")
@@ -475,7 +475,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
   in
   let this_block_funs_indexes = get_funs_constant funs_mp funs_dp (fst first_fun) in
   let this_block_funs = Array.map (fun (c,_) -> (c,snd first_fun)) this_block_funs_indexes in
-  let prop_sort = InProp in
+  let prop_sort = Term.InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
     List.map
@@ -558,23 +558,23 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
       List.map (compute_new_princ_type_from_rel funs sorts) other_princ_types
     in
     let first_princ_body,first_princ_type = const.const_entry_body, const.const_entry_type in
-    let ctxt,fix = decompose_lam_assum (fst(fst(Future.force first_princ_body))) in (* the principle has for forall ...., fix .*)
-    let (idxs,_),(_,ta,_ as decl) = destFix fix in
+    let ctxt,fix = Term.decompose_lam_assum (fst(fst(Future.force first_princ_body))) in (* the principle has for forall ...., fix .*)
+    let (idxs,_),(_,ta,_ as decl) = Term.destFix fix in
     let other_result =
       List.map (* we can now compute the other principles *)
 	(fun scheme_type ->
 	   incr i;
 	   observe (Printer.pr_lconstr scheme_type);
-	   let type_concl = (strip_prod_assum scheme_type) in
-	   let applied_f = List.hd (List.rev (snd (decompose_app type_concl))) in
-	   let f = fst (decompose_app applied_f) in
+	   let type_concl = (Term.strip_prod_assum scheme_type) in
+	   let applied_f = List.hd (List.rev (snd (Term.decompose_app type_concl))) in
+	   let f = fst (Term.decompose_app applied_f) in
 	   try (* we search the number of the function in the fix block (name of the function) *)
 	     Array.iteri
 	     (fun j t ->
-		let t =  (strip_prod_assum t) in
-		let applied_g = List.hd (List.rev (snd (decompose_app t))) in
-		let g = fst (decompose_app applied_g) in
-		if eq_constr f g
+		let t =  (Term.strip_prod_assum t) in
+		let applied_g = List.hd (List.rev (snd (Term.decompose_app t))) in
+		let g = fst (Term.decompose_app applied_g) in
+		if Constr.equal f g
 		then raise (Found_type j);
 		observe (Printer.pr_lconstr f ++ str " <> " ++
 			   Printer.pr_lconstr g)
@@ -598,7 +598,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Safe_typing.private_con
 	     const
 	 with Found_type i ->
 	   let princ_body =
-	     Termops.it_mkLambda_or_LetIn (mkFix((idxs,i),decl)) ctxt
+	     Termops.it_mkLambda_or_LetIn (Term.mkFix((idxs,i),decl)) ctxt
 	   in
 	   {const with
 	      const_entry_body = 
@@ -624,7 +624,7 @@ let build_scheme fas =
 	    let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
             let _ = evd := evd' in 
 	    let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd (EConstr.of_constr f) in 
-	    (destConst f,sort)
+	    (Term.destConst f,sort)
 	 )
 	 fas
 		   ) in
@@ -654,15 +654,15 @@ let build_case_scheme fa =
     with Not_found ->
       user_err ~hdr:"FunInd.build_case_scheme"
         (str "Cannot find " ++ Libnames.pr_reference f) in
-  let first_fun,u = destConst  funs in
+  let first_fun,u = Term.destConst  funs in
   let funs_mp,funs_dp,_ = Constant.repr3 first_fun in
   let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in
   let this_block_funs_indexes = get_funs_constant funs_mp funs_dp first_fun in
   let this_block_funs = Array.map (fun (c,_) -> (c,u)) this_block_funs_indexes in
-  let prop_sort = InProp in
+  let prop_sort = Term.InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
-    List.assoc_f Constant.equal (fst (destConst funs)) this_block_funs_indexes
+    List.assoc_f Constant.equal (fst (Term.destConst funs)) this_block_funs_indexes
   in
   let (ind, sf) =
 	 let ind = first_fun_kn,funs_indexes in
@@ -692,7 +692,7 @@ let build_case_scheme fa =
       (Some princ_name)
       this_block_funs
       0
-      (prove_princ_for_struct (ref (Evd.from_env (Global.env ()))) false 0 [|fst (destConst funs)|])
+      (prove_princ_for_struct (ref (Evd.from_env (Global.env ()))) false 0 [|fst (Term.destConst funs)|])
   in
   ()
  

@@ -9,7 +9,7 @@
 
 module CVars = Vars
 
-open Term
+open Constr
 open EConstr
 open Vars
 open Namegen
@@ -69,7 +69,7 @@ let declare_fun f_id kind ?(ctx=Univ.UContext.empty) value =
 let defined () = Lemmas.save_proof (Vernacexpr.(Proved (Transparent,None)))
 
 let def_of_const t =
-   match (kind_of_term t) with
+   match (Term.kind_of_term t) with
     Const sp ->
       (try (match constant_opt_value_in (Global.env ()) sp with
              | Some c -> c
@@ -172,7 +172,6 @@ let simpl_iter clause =
 
 (* Others ugly things ... *)
 let (value_f:Term.constr list -> global_reference -> Term.constr) =
-  let open Term in
   fun al fterm ->
     let rev_x_id_l =
       (
@@ -192,7 +191,7 @@ let (value_f:Term.constr list -> global_reference -> Term.constr) =
     let glob_body =
       CAst.make @@
        GCases
-	(RegularStyle,None,
+	(Term.RegularStyle,None,
 	 [CAst.make @@ GApp(CAst.make @@ GRef(fterm,None), List.rev_map (fun x_id -> CAst.make @@ GVar x_id) rev_x_id_l),
 	  (Anonymous,None)],
 	 [Loc.tag ([v_id], [CAst.make @@ PatCstr ((destIndRef (delayed_force coq_sig_ref),1),
@@ -410,7 +409,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
 	    (fun g' -> 
 	      let ty_teq = pf_unsafe_type_of g' (mkVar heq) in
 	      let teq_lhs,teq_rhs =
-		let _,args = try destApp (project g') ty_teq with DestKO -> assert false in
+		let _,args = try destApp (project g') ty_teq with Term.DestKO -> assert false in
 		args.(1),args.(2)
 	      in
 	      let new_b' = Termops.replace_term (project g') teq_lhs teq_rhs new_b in 

@@ -15,7 +15,8 @@ open Util
 open Pp
 open Goptions
 open Names
-open Term
+open Sorts
+open Constr
 open Vars
 open Tacmach
 open Evd
@@ -154,7 +155,7 @@ let rec term_equal t1 t2 =
 open Hashset.Combine
 
 let rec hash_term = function
-  | Symb c -> combine 1 (hash_constr c)
+  | Symb c -> combine 1 (hash c)
   | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
   | Eps i -> combine 3 (Id.hash i)
   | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
@@ -232,7 +233,7 @@ type node =
 module Constrhash = Hashtbl.Make
   (struct type t = constr
 	  let equal = eq_constr_nounivs
-	  let hash = hash_constr
+	  let hash = Constr.hash
    end)
 module Typehash = Constrhash
 
@@ -277,7 +278,7 @@ let dummy_node =
     cpath=min_int;
     constructors=PacMap.empty;
     vertex=Leaf;
-    term=Symb (mkRel min_int)
+    term=Symb (Term.mkRel min_int)
   }
 
 let empty_forest() =
@@ -436,9 +437,9 @@ and make_app l=function
 and applist_proj c l =
   match c with
   | Symb s -> applist_projection s l
-  | _ -> applistc (constr_of_term c) l
+  | _ -> Term.applistc (constr_of_term c) l
 and applist_projection c l =
-  match kind_of_term c with
+  match Term.kind_of_term c with
   | Const c when Environ.is_projection (fst c) (Global.env()) ->
     let p = Projection.make (fst c) false in
     (match l with 
@@ -446,15 +447,15 @@ and applist_projection c l =
       let ty = Typeops.type_of_constant_in (Global.env ()) c in (* FIXME constraints *)
       let pb = Environ.lookup_projection p (Global.env()) in
       let ctx,_ = Term.decompose_prod_n_assum (pb.Declarations.proj_npars + 1) ty in
-	it_mkLambda_or_LetIn (mkProj(p,mkRel 1)) ctx
+	Term.it_mkLambda_or_LetIn (mkProj(p,mkRel 1)) ctx
     | hd :: tl ->
-      applistc (mkProj (p, hd)) tl)
-  | _ -> applistc c l
+      Term.applistc (mkProj (p, hd)) tl)
+  | _ -> Term.applistc c l
 
 let rec canonize_name sigma c =
   let c = EConstr.Unsafe.to_constr c in
   let func c = canonize_name sigma (EConstr.of_constr c) in
-    match kind_of_term c with
+    match Term.kind_of_term c with
       | Const (kn,u) ->
 	  let canon_const = Constant.make1 (Constant.canonical kn) in 
 	    (mkConstU (canon_const,u))
@@ -828,7 +829,7 @@ let complete_one_class state i=
       Partial pac ->
 	let rec app t typ n =
 	  if n<=0 then t else
-	    let _,etyp,rest= destProd typ in
+	    let _,etyp,rest= Term.destProd typ in
 	    let id = new_state_var etyp state in
 		app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
 	let _c = pf_unsafe_type_of state.gls
@@ -837,7 +838,7 @@ let complete_one_class state i=
 	let _args =
 	  List.map (fun i -> constr_of_term (term state.uf  i))
 	    pac.args in
-	let typ = prod_applist _c (List.rev _args) in
+	let typ = Term.prod_applist _c (List.rev _args) in
 	let ct = app (term state.uf i) typ pac.arity in
 	  state.uf.epsilons <- pac :: state.uf.epsilons;
 	  ignore (add_term state ct)

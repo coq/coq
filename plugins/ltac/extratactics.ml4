@@ -286,7 +286,7 @@ END
 (**********************************************************************)
 (* Hint Resolve                                                       *)
 
-open Term
+open Constr
 open EConstr
 open Vars
 open Coqlib

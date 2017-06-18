@@ -12,7 +12,8 @@ open CErrors
 open Util
 open Nameops
 open Namegen
-open Term
+open Sorts
+open Constr
 open EConstr
 open Vars
 open Reduction

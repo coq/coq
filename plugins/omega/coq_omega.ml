@@ -17,7 +17,7 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Term
+open Constr
 open EConstr
 open Tacticals.New
 open Tacmach.New
@@ -581,7 +581,7 @@ let focused_simpl path =
   let open Tacmach.New in
   Proofview.Goal.nf_enter begin fun gl ->
   let newc = context (project gl) (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
-  convert_concl_no_check newc DEFAULTcast
+  convert_concl_no_check newc Term.DEFAULTcast
   end
 
 let focused_simpl path = focused_simpl path
@@ -737,7 +737,7 @@ let simpl_coeffs path_init path_k =
   let n = Pervasives.(-) (List.length path_k) (List.length path_init) in
   let newc = context sigma (fun _ t -> loop n t) (List.rev path_init) (pf_concl gl)
   in
-  convert_concl_no_check newc DEFAULTcast
+  convert_concl_no_check newc Term.DEFAULTcast
   end
 
 let rec shuffle p (t1,t2) =

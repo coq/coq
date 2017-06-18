@@ -9,7 +9,6 @@ Syntax_def
 Smartlocate
 Topconstr
 Reserve
-Impargs
 Implicit_quantifiers
 Constrintern
 Modintern

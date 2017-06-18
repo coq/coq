@@ -104,7 +104,7 @@
 open CErrors
 open Util
 open Names
-open Term
+open Constr
 open EConstr
 open Pattern
 open Patternops
@@ -226,7 +226,7 @@ let compute_rhs env sigma bodyi index_of_f =
 let compute_ivs f cs gl =
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
-  let (cst, u) = try destConst sigma f with DestKO -> i_can't_do_that () in
+  let (cst, u) = try destConst sigma f with Term.DestKO -> i_can't_do_that () in
   let u = EInstance.kind sigma u in
   let body = Environ.constant_value_in (Global.env()) (cst, u) in
   let body = EConstr.of_constr body in
@@ -481,8 +481,8 @@ let quote f lid =
       | _ -> assert false
       in
       match ivs.variable_lhs with
-      | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast
-      | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast
+      | None -> Tactics.convert_concl (mkApp (f, [| p |])) Term.DEFAULTcast
+      | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) Term.DEFAULTcast
     end
   end
 
