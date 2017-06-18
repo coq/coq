@@ -1,8 +1,7 @@
-open API
 open Printer
 open CErrors
 open Util
-open Term
+open Constr
 open EConstr
 open Vars
 open Namegen
@@ -1256,7 +1255,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	try
 	  let pte =
             try destVar (project gl) pte
-            with DestKO -> anomaly (Pp.str "Property is not a variable.")
+            with Term.DestKO -> anomaly (Pp.str "Property is not a variable.")
           in
 	  let fix_info = Id.Map.find  pte ptes_to_fix in
 	  let nb_args = fix_info.nb_realargs in
@@ -1383,7 +1382,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 
 
 (* Proof of principles of general functions *)
-(* let  hrec_id =  Recdef.hrec_id *)
+(* let  hrec_id = Recdef.hrec_id *)
 (* and acc_inv_id = Recdef.acc_inv_id *)
 (* and ltof_ref = Recdef.ltof_ref *)
 (* and acc_rel = Recdef.acc_rel *)

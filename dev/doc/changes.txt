@@ -8,6 +8,16 @@ Coq is compiled with -safe-string enabled and requires plugins to do
 the same. This means that code using `String` in an imperative way
 will fail to compile now. They should switch to `Bytes.t`
 
+* Plugin API *
+
+Coq 8.7 offers a new module overlay containing a proposed plugin API
+in `API/API.ml`; this overlay is enabled by adding the `-open API`
+flag to the OCaml compiler; this happens automatically for
+developments in the `plugin` folder and `coq_makefile`.
+
+However, `coq_makefile` can be instructed not to enable this flag by
+passing `-bypass-API`.
+
 * ML API *
 
 Added two functions for declaring hooks to be executed in reduction

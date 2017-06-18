@@ -12,7 +12,6 @@
 des inéquations et équations sont entiers. En attendant la tactique Field.
 *)
 
-open API
 open Term
 open Tactics
 open Names

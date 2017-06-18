@@ -112,7 +112,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 COQOPTS=$(COQ_XML) $(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
-LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
+LOCALINCLUDES=$(if $(filter plugins/%,$<),-I lib -I API -open API $(addprefix -I plugins/,$(PLUGINDIRS)),$(addprefix -I ,$(SRCDIRS)))
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
@@ -507,6 +507,10 @@ COND_BYTEFLAGS= \
 
 COND_OPTFLAGS= \
  $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) $(OPTFLAGS)
+
+intf/%.cmi: intf/%.mli
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -opaque -c $<
 
 %.cmi: %.mli
 	$(SHOW)'OCAMLC    $<'

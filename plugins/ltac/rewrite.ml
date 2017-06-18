@@ -6,14 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Names
 open Pp
 open CErrors
 open Util
 open Nameops
 open Namegen
-open Term
+open Sorts
+open Constr
 open EConstr
 open Vars
 open Reduction

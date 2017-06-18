@@ -6,10 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Util
 open Names
-open Term
+open Sorts
+open Constr
 open EConstr
 open Pattern
 open Misctypes

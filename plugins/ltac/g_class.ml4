@@ -8,7 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open API
 open Class_tactics
 open Stdarg
 open Tacarg
@@ -92,7 +91,7 @@ END
 
 (** TODO: DEPRECATE *)
 (* A progress test that allows to see if the evars have changed *)
-open Term
+open Constr
 open Proofview.Notations
 
 let rec eq_constr_mod_evars sigma x y =

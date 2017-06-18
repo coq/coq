@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
-
 (** [start_deriving f suchthat lemma] starts a proof of [suchthat]
     (which can contain references to [f]) in the context extended by
     [f:=?x]. When the proof ends, [f] is defined as the value of [?x]

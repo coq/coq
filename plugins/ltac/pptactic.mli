@@ -9,7 +9,6 @@
 (** This module implements pretty-printers for tactic_expr syntactic
     objects and their subcomponents. *)
 
-open API
 open Pp
 open Genarg
 open Geninterp

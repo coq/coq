@@ -8,7 +8,6 @@
 
 (* This file is the interface between the c-c algorithm and Coq *)
 
-open API
 open Evd
 open Names
 open Inductiveops

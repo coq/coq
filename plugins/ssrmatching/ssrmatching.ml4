@@ -8,7 +8,6 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
-open API
 open Grammar_API
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,

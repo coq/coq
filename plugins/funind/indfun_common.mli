@@ -1,4 +1,3 @@
-open API
 open Names
 open Pp
 

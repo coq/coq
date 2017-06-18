@@ -226,6 +226,19 @@ package "stm" (
 
 )
 
+package "API" (
+
+  description = "Coq API"
+  version     = "8.7"
+
+  requires    = "coq.stm"
+  directory   = "API"
+
+  archive(byte)    = "API.cma"
+  archive(native)  = "API.cmxa"
+
+)
+
 package "toplevel" (
 
   description = "Coq Toplevel"
@@ -284,7 +297,7 @@ package "ltac" (
   description = "Coq LTAC Plugin"
   version     = "8.7"
 
-  requires    = "coq.highparsing"
+  requires    = "coq.highparsing,coq.API"
   directory   = "plugins/ltac"
 
   archive(byte)    = "ltac_plugin.cmo"
@@ -292,15 +305,3 @@ package "ltac" (
 
 )
 
-package "API" (
-
-  description = "Coq API"
-  version     = "8.7"
-
-  requires    = "coq.toplevel"
-  directory   = "API"
-
-  archive(byte)    = "API.cma"
-  archive(native)  = "API.cmxa"
-
-)
