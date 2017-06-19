@@ -138,6 +138,7 @@ module Typeclasses = Typeclasses
 module Pretype_errors = Pretype_errors
 module Notation = Notation
 module Declarations = Declarations
+module Univops = Univops
 module Declareops = Declareops
 module Globnames = Globnames
 module Environ = Environ

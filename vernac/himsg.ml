@@ -889,6 +889,10 @@ let explain_not_match_error = function
   | NoTypeConstraintExpected ->
     strbrk "a definition whose type is constrained can only be subtype " ++
     strbrk "of a definition whose type is itself constrained"
+  | CumulativeStatusExpected b ->
+    let status b = if b then str"cumulative" else str"non-cumulative" in
+      str "a " ++ status b ++ str" declaration was expected, but a " ++ 
+	status (not b) ++ str" declaration was found"
   | PolymorphicStatusExpected b ->
     let status b = if b then str"polymorphic" else str"monomorphic" in
       str "a " ++ status b ++ str" declaration was expected, but a " ++ 

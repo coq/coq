@@ -329,7 +329,6 @@ let rec execute env cstr =
         let pj = execute env p in
         let lfj = execute_array env lf in
         judge_of_case env ci (p,pj) (c,cj) lfj
-
     | Fix ((_,i as vni),recdef) ->
         let fix_ty = execute_recdef env recdef i in
         let fix = (vni,recdef) in

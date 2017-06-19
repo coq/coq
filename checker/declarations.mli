@@ -14,6 +14,7 @@ val body_of_constant : constant_body -> constr option
 val constant_has_body : constant_body -> bool
 val is_opaque : constant_body -> bool
 val opaque_univ_context : constant_body -> Univ.ContextSet.t
+val constant_is_polymorphic : constant_body -> bool
 
 (* Mutual inductives *)
 

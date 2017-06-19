@@ -1173,6 +1173,9 @@ let compare_constr_univ sigma f cv_pb t1 t2 =
       Sort s1, Sort s2 -> base_sort_cmp cv_pb (ESorts.kind sigma s1) (ESorts.kind sigma s2)
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
 	f Reduction.CONV t1 t2 && f cv_pb c1 c2
+    | Const (c, u), Const (c', u') -> Constant.equal c c'
+    | Ind (i, _), Ind (i', _) -> eq_ind i i'
+    | Construct (i, _), Construct (i', _) -> eq_constructor i i'
     | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
 
 let constr_cmp sigma cv_pb t1 t2 =

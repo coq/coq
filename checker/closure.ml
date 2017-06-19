@@ -328,6 +328,12 @@ let zshift n s =
     | (_,Zshift(k)::s) -> Zshift(n+k)::s
     | _ -> Zshift(n)::s
 
+let rec stack_args_size = function
+  | Zapp v :: s -> Array.length v + stack_args_size s
+  | Zshift(_)::s -> stack_args_size s
+  | Zupdate(_)::s -> stack_args_size s
+  | _ -> 0
+
 (* Lifting. Preserves sharing (useful only for cell with norm=Red).
    lft_fconstr always create a new cell, while lift_fconstr avoids it
    when the lift is 0. *)

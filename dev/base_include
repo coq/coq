@@ -58,8 +58,6 @@
 
 (* Open main files *)
 
-open API
-open Grammar_API
 open Names
 open Term
 open Vars

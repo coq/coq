@@ -727,7 +727,7 @@ open Decl_kinds
         let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
         return (hov 2 (pr_assumption_token (n > 1) stre ++
                        pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
-      | VernacInductive (p,f,l) ->
+      | VernacInductive (cum, p,f,l) ->
         let pr_constructor (coe,(id,c)) =
           hov 2 (pr_lident id ++ str" " ++
                    (if coe then str":>" else str":") ++
@@ -754,13 +754,19 @@ open Decl_kinds
         in
         let key =
           let (_,_,_,k,_),_ = List.hd l in
-          match k with Record -> "Record" | Structure -> "Structure"
-            | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
-            | Class _ -> "Class" | Variant -> "Variant"
+          let kind =
+            match k with Record -> "Record" | Structure -> "Structure"
+                       | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
+                       | Class _ -> "Class" | Variant -> "Variant"
+          in
+          if p then
+            let cm = if cum then "Cumulative" else "NonCumulative" in
+            cm ^ " " ^ kind
+          else kind
         in
         return (
           hov 1 (pr_oneind key (List.hd l)) ++
-            (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
+          (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
         )
 
       | VernacFixpoint (local, recs) ->

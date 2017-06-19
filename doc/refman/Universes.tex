@@ -131,6 +131,52 @@ producing global universe constraints, one can use the
   polymorphically, not at a single instance.
 \end{itemize}
 
+\asection{{\tt Cumulative, NonCumulative}}
+\comindex{Cumulative}
+\comindex{NonCumulative}
+\optindex{Inductive Cumulativity}
+
+Inductive types, coinductive types, variants and records can be
+declared cumulative using the \texttt{Cumulative}. Alternatively,
+there is an option \texttt{Set Inductive Cumulativity} which when set,
+makes all subsequent inductive definitions cumulative. Consider the examples below.
+\begin{coq_example*}
+Polymorphic Cumulative Inductive list {A : Type} :=
+| nil : list
+| cons : A -> list -> list.
+\end{coq_example*}
+\begin{coq_example}
+Print list.
+\end{coq_example}
+When printing \texttt{list}, the part of the output of the form
+\texttt{$\mathtt{\sim}$@\{i\} <= $\mathtt{\sim}$@\{j\} iff }
+indicates the universe constraints in order to have the subtyping
+$\WTEGLECONV{\mathtt{list@\{i\}} A}{\mathtt{list@\{j\}} B}$
+(for fully applied instances of \texttt{list}) whenever $\WTEGCONV{A}{B}$.
+In the case of \texttt{list} there is no constraint!
+This also means that any two instances of \texttt{list} are convertible:
+$\WTEGCONV{\mathtt{list@\{i\}} A}{\mathtt{list@\{j\}} B}$ whenever $\WTEGCONV{A}{B}$ and
+furthermore their corresponding (when fully applied to convertible arguments) constructors.
+See Chapter~\ref{Cic} for more details on convertibility and subtyping.
+Also notice the subtyping constraints for the \emph{non-cumulative} version of list:
+\begin{coq_example*}
+Polymorphic NonCumulative Inductive list' {A : Type} :=
+| nil' : list'
+| cons' : A -> list' -> list'.
+\end{coq_example*}
+\begin{coq_example}
+Print list'.
+\end{coq_example}
+The following is an example of a record with non-trivial subtyping relation:
+\begin{coq_example*}
+Polymorphic Cumulative Record packType := {pk : Type}.
+\end{coq_example*}
+\begin{coq_example}
+Print packType.
+\end{coq_example}
+Notice that as expected, \texttt{packType@\{i\}} and \texttt{packType@\{j\}} are convertible if and only if \texttt{i $=$ j}.
+
+
 \asection{Global and local universes}
 
 Each universe is declared in a global or local environment before it can

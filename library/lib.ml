@@ -402,7 +402,7 @@ let find_opening_node id =
 type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 
 type variable_context = variable_info list
-type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
+type abstr_info = variable_context * Univ.universe_level_subst * Univ.AUContext.t
 		  
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
@@ -465,9 +465,9 @@ let add_section_replacement f g poly hyps =
     let () = check_same_poly poly vars in
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
-    let subst, ctx = Univ.abstract_universes true ctx in
+    let subst, ctx = Univ.abstract_universes ctx in
     let args = instance_from_variable_context (List.rev sechyps) in
-    sectab := (vars,f (Univ.UContext.instance ctx,args) exps,
+    sectab := (vars,f (Univ.AUContext.instance ctx,args) exps,
 	      g (sechyps,subst,ctx) abs)::sl
 
 let add_section_kn poly kn =

@@ -197,7 +197,7 @@ let warn_projection_no_head_constant =
 (* Intended to always succeed *)
 let compute_canonical_projections warn (con,ind) =
   let env = Global.env () in
-  let ctx = Univ.instantiate_univ_context (Environ.constant_context env con) in
+  let ctx = Environ.constant_context env con in
   let u = Univ.UContext.instance ctx in
   let v = (mkConstU (con,u)) in
   let ctx = Univ.ContextSet.of_context ctx in
@@ -298,8 +298,7 @@ let error_not_structure ref =
 let check_and_decompose_canonical_structure ref =
   let sp = match ref with ConstRef sp -> sp | _ -> error_not_structure ref in
   let env = Global.env () in
-  let ctx = Environ.constant_context env sp in
-  let u = Univ.UContext.instance ctx in
+  let u = Environ.constant_instance env sp in
   let vc = match Environ.constant_opt_value_in env (sp, u) with
     | Some vc -> vc
     | None -> error_not_structure ref in

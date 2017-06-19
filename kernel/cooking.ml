@@ -153,8 +153,7 @@ type inline = bool
 
 type result =
   constant_def * constant_type * projection_body option * 
-    bool * constant_universes * inline
-    * Context.Named.t option
+    constant_universes * inline * Context.Named.t option
 
 let on_body ml hy f = function
   | Undef _ as x -> x
@@ -179,17 +178,21 @@ let cook_constr { Opaqueproof.modlist ; abstract } c =
   abstract_constant_body (expmod c) hyps
 
 let lift_univs cb subst =
-  if cb.const_polymorphic && not (Univ.LMap.is_empty subst) then
-    let inst = Univ.UContext.instance cb.const_universes in
-    let cstrs = Univ.UContext.constraints cb.const_universes in
-    let len = Univ.LMap.cardinal subst in
-    let subst = 
-      Array.fold_left_i (fun i acc v -> Univ.LMap.add (Level.var i) (Level.var (i + len)) acc)
-	subst (Univ.Instance.to_array inst)
-    in
-    let cstrs' = Univ.subst_univs_level_constraints subst cstrs in
-      subst, Univ.UContext.make (inst,cstrs')
-  else subst, cb.const_universes
+  match cb.const_universes with
+  | Monomorphic_const ctx -> subst, (Monomorphic_const ctx)
+  | Polymorphic_const auctx ->  
+    if (Univ.LMap.is_empty subst) then
+      subst, (Polymorphic_const auctx)
+    else
+      let inst = Univ.AUContext.instance auctx in
+      let len = Univ.LMap.cardinal subst in
+      let subst = 
+        Array.fold_left_i 
+          (fun i acc v -> Univ.LMap.add (Level.var i) (Level.var (i + len)) acc)
+	  subst (Univ.Instance.to_array inst)
+      in
+      let auctx' = Univ.subst_univs_level_abstract_universe_context subst auctx in
+      subst, (Polymorphic_const auctx')
 
 let cook_constant ~hcons env { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
@@ -243,15 +246,15 @@ let cook_constant ~hcons env { from = cb; info } =
 	proj_eta = etab, etat;
 	proj_type = ty'; proj_body = c' }
   in
-  let univs = 
-    let abs' = 
-      if cb.const_polymorphic then abs_ctx
-      else instantiate_univ_context abs_ctx
-    in
-      UContext.union abs' univs
+  let univs =
+    match univs with
+    | Monomorphic_const ctx -> 
+      Monomorphic_const (UContext.union (instantiate_univ_context abs_ctx) ctx)
+    | Polymorphic_const auctx -> 
+      Polymorphic_const (AUContext.union abs_ctx auctx)
   in
     (body, typ, Option.map projection cb.const_proj, 
-     cb.const_polymorphic, univs, cb.const_inline_code, 
+     univs, cb.const_inline_code, 
      Some const_hyps)
 
 (* let cook_constant_key = Profile.declare_profile "cook_constant" *)

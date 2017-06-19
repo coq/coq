@@ -121,18 +121,19 @@ let inline_side_effects env body ctx side_eff =
       | OpaqueDef _, `Opaque (b,_) -> (b, true)
       | _ -> assert false
       in
-      if cb.const_polymorphic then
-        (** Inline the term to emulate universe polymorphism *)
-        let data = (Univ.UContext.instance cb.const_universes, b) in
-        let subst = Cmap_env.add c (Inl data) subst in
-        (subst, var, ctx, args)
-      else
+      match cb.const_universes with
+      | Monomorphic_const cnstctx ->
         (** Abstract over the term at the top of the proof *)
         let ty = Typeops.type_of_constant_type env cb.const_type in
         let subst = Cmap_env.add c (Inr var) subst in
-        let univs = Univ.ContextSet.of_context cb.const_universes in
+        let univs = Univ.ContextSet.of_context cnstctx in
         let ctx = Univ.ContextSet.union ctx univs in
         (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
+      | Polymorphic_const auctx ->
+        (** Inline the term to emulate universe polymorphism *)
+        let data = (Univ.AUContext.instance auctx, b) in
+        let subst = Cmap_env.add c (Inl data) subst in
+        (subst, var, ctx, args)
     in
     let (subst, len, ctx, args) = List.fold_left fold (Cmap_env.empty, 1, ctx, []) side_eff in
     (** Third step: inline the definitions *)
@@ -225,16 +226,25 @@ let feedback_completion_typecheck =
   Option.iter (fun state_id ->
       feedback ~id:state_id Feedback.Complete)
 
+let abstract_constant_universes abstract uctx =
+  if not abstract then
+    Univ.empty_level_subst, Monomorphic_const uctx
+  else
+    let sbst, auctx = Univ.abstract_universes uctx in
+    sbst, Polymorphic_const auctx
+
 let infer_declaration ~trust env kn dcl =
   match dcl with
   | ParameterEntry (ctx,poly,(t,uctx),nl) ->
       let env = push_context ~strict:(not poly) uctx env in
       let j = infer env t in
       let abstract = poly && not (Option.is_empty kn) in
-      let usubst, univs = Univ.abstract_universes abstract uctx in
+      let usubst, univs = 
+        abstract_constant_universes abstract uctx
+      in
       let c = Typeops.assumption_of_judgment env j in
       let t = hcons_constr (Vars.subst_univs_level_constr usubst c) in
-	Undef nl, RegularArity t, None, poly, univs, false, ctx
+	Undef nl, RegularArity t, None, univs, false, ctx
 
   (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
       so we delay the typing and hash consing of its body.
@@ -264,9 +274,9 @@ let infer_declaration ~trust env kn dcl =
           feedback_completion_typecheck feedback_id;
           c, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
-      def, RegularArity typ, None, c.const_entry_polymorphic, 
-	c.const_entry_universes,
-	c.const_entry_inline_code, c.const_entry_secctx
+      def, RegularArity typ, None,
+      (Monomorphic_const c.const_entry_universes),
+      c.const_entry_inline_code, c.const_entry_secctx
 
   (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
@@ -279,7 +289,8 @@ let infer_declaration ~trust env kn dcl =
       let env = push_context_set ~strict:(not c.const_entry_polymorphic) ctx env in
       let abstract = c.const_entry_polymorphic && not (Option.is_empty kn) in
       let usubst, univs =
-	Univ.abstract_universes abstract (Univ.ContextSet.to_context ctx) in      
+        abstract_constant_universes abstract (Univ.ContextSet.to_context ctx)
+      in      
       let j = infer env body in
       let typ = match typ with
         | None ->
@@ -298,8 +309,7 @@ let infer_declaration ~trust env kn dcl =
 	else Def (Mod_subst.from_val def) 
       in
 	feedback_completion_typecheck feedback_id;
-	def, typ, None, c.const_entry_polymorphic,
-        univs, c.const_entry_inline_code, c.const_entry_secctx
+	def, typ, None, univs, c.const_entry_inline_code, c.const_entry_secctx
 
   | ProjectionEntry {proj_entry_ind = ind; proj_entry_arg = i} ->
     let mib, _ = Inductive.lookup_mind_specif env (ind,0) in
@@ -311,9 +321,16 @@ let infer_declaration ~trust env kn dcl =
 	else assert false
       | _ -> assert false
     in
+    let univs =
+      match mib.mind_universes with
+      | Monomorphic_ind ctx -> Monomorphic_const ctx
+      | Polymorphic_ind auctx -> Polymorphic_const auctx
+      | Cumulative_ind acumi ->
+        Polymorphic_const (Univ.ACumulativityInfo.univ_context acumi)
+    in
     let term, typ = pb.proj_eta in
       Def (Mod_subst.from_val (hcons_constr term)), RegularArity typ, Some pb,
-      mib.mind_polymorphic, mib.mind_universes, false, None
+      univs, false, None
 
 let global_vars_set_constant_type env = function
   | RegularArity t -> global_vars_set env t
@@ -337,7 +354,7 @@ let record_aux env s_ty s_bo suggested_expr =
 let suggest_proof_using = ref (fun _ _ _ _ _ -> "")
 let set_suggest_proof_using f = suggest_proof_using := f
 
-let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) =
+let build_constant_declaration kn env (def,typ,proj,univs,inline_code,ctx) =
   let check declared inferred =
     let mk_set l = List.fold_right Id.Set.add (List.map NamedDecl.get_id l) Id.Set.empty in
     let inferred_set, declared_set = mk_set inferred, mk_set declared in
@@ -409,9 +426,8 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
               check declared inferred) lc) in
   let tps = 
     let res =
-      let comp_univs = if poly then Some univs else None in
       match proj with
-      | None -> compile_constant_body env comp_univs def
+      | None -> compile_constant_body env univs def
       | Some pb ->
 	(* The compilation of primitive projections is a bit tricky, because
            they refer to themselves (the body of p looks like fun c =>
@@ -425,14 +441,13 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
 	    const_type = typ;
 	    const_proj = proj;
 	    const_body_code = None;
-	    const_polymorphic = poly;
 	    const_universes = univs;
 	    const_inline_code = inline_code;
 	    const_typing_flags = Environ.typing_flags env;
 	    }
 	in
 	let env = add_constant kn cb env in
-	compile_constant_body env comp_univs def
+	compile_constant_body env univs def
     in Option.map Cemitcodes.from_val res
   in
   { const_hyps = hyps;
@@ -440,7 +455,6 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
     const_type = typ;
     const_proj = proj;
     const_body_code = tps;
-    const_polymorphic = poly;
     const_universes = univs;
     const_inline_code = inline_code;
     const_typing_flags = Environ.typing_flags env }
@@ -452,6 +466,12 @@ let translate_constant mb env kn ce =
     (infer_declaration ~trust:mb env (Some kn) ce)
 
 let constant_entry_of_side_effect cb u =
+  let poly, univs =
+    match cb.const_universes with
+    | Monomorphic_const ctx -> false, ctx
+    | Polymorphic_const auctx -> 
+      true, Univ.instantiate_univ_context auctx
+  in
   let pt =
     match cb.const_body, u with
     | OpaqueDef _, `Opaque (b, c) -> b, c
@@ -463,8 +483,8 @@ let constant_entry_of_side_effect cb u =
     const_entry_feedback = None;
     const_entry_type =
       (match cb.const_type with RegularArity t -> Some t | _ -> None);
-    const_entry_polymorphic = cb.const_polymorphic;
-    const_entry_universes = cb.const_universes;
+    const_entry_polymorphic = poly;
+    const_entry_universes = univs;
     const_entry_opaque = Declareops.is_opaque cb;
     const_entry_inline_code = cb.const_inline_code }
 ;;
@@ -508,16 +528,23 @@ let export_side_effects mb env ce =
       let trusted = check_signatures mb signatures in
       let push_seff env = function
         | kn, cb, `Nothing, _ ->
-           let env = Environ.add_constant kn cb env in
-	   if not cb.const_polymorphic then
-	     Environ.push_context ~strict:true cb.const_universes env
-	   else env
-        | kn, cb, `Opaque(_, ctx), _ -> 
-           let env = Environ.add_constant kn cb env in
-	   if not cb.const_polymorphic then
-	     let env = Environ.push_context ~strict:true cb.const_universes env in
-             Environ.push_context_set ~strict:true ctx env
-	   else env in
+          begin
+            let env = Environ.add_constant kn cb env in
+            match cb.const_universes with
+            | Monomorphic_const ctx ->
+              Environ.push_context ~strict:true ctx env
+            | Polymorphic_const _ -> env
+          end
+        | kn, cb, `Opaque(_, ctx), _ ->
+          begin
+            let env = Environ.add_constant kn cb env in
+            match cb.const_universes with
+            | Monomorphic_const cstctx ->
+              let env = Environ.push_context ~strict:true cstctx env in
+              Environ.push_context_set ~strict:true ctx env
+            | Polymorphic_const _ -> env
+          end
+      in
       let rec translate_seff sl seff acc env =
         match sl, seff with
         | _, [] -> List.rev acc, ce
@@ -553,7 +580,7 @@ let translate_recipe env kn r =
   build_constant_declaration kn env (Cooking.cook_constant ~hcons env r)
 
 let translate_local_def mb env id centry =
-  let def,typ,proj,poly,univs,inline_code,ctx =
+  let def,typ,proj,univs,inline_code,ctx =
     infer_declaration ~trust:mb env None (DefinitionEntry centry) in
   let typ = type_of_constant_type env typ in
   if ctx = None && !Flags.compilation_mode = Flags.BuildVo then begin

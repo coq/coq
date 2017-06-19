@@ -142,7 +142,7 @@ let rec classify_vernac e =
         let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> snd id) l) l) in
         VtSideff ids, VtLater    
     | VernacDefinition (_,((_,id),_),DefineBody _) -> VtSideff [id], VtLater
-    | VernacInductive (_,_,l) ->
+    | VernacInductive (_, _,_,l) ->
         let ids = List.map (fun (((_,((_,id),_)),_,_,_,cl),_) -> id :: match cl with
         | Constructors l -> List.map (fun (_,((_,id),_)) -> id) l
         | RecordDecl (oid,l) -> (match oid with Some (_,x) -> [x] | _ -> []) @

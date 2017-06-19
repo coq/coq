@@ -336,15 +336,14 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
   let make_body =
     if poly || now then
       let make_body t (c, eff) =
-        let open Universes in
         let body = c in
 	let typ =
 	  if not (keep_body_ucst_separate || not (Safe_typing.empty_private_constants = eff)) then
 	    nf t
 	  else t
 	in
-        let used_univs_body = Universes.universes_of_constr body in
-        let used_univs_typ = Universes.universes_of_constr typ in
+        let used_univs_body = Univops.universes_of_constr body in
+        let used_univs_typ = Univops.universes_of_constr typ in
         if keep_body_ucst_separate ||
            not (Safe_typing.empty_private_constants = eff) then
           let initunivs = Evd.evar_context_universe_context initial_euctx in
@@ -353,7 +352,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
            * complement the univ constraints of the typ with the ones of
            * the body.  So we keep the two sets distinct. *)
 	  let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-          let ctx_body = restrict_universe_context ctx used_univs in
+          let ctx_body = Univops.restrict_universe_context ctx used_univs in
           (initunivs, typ), ((body, ctx_body), eff)
         else
           let initunivs = Univ.UContext.empty in
@@ -362,7 +361,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
            * constraints in which we merge the ones for the body and the ones
            * for the typ *)
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-          let ctx = restrict_universe_context ctx used_univs in
+          let ctx = Univops.restrict_universe_context ctx used_univs in
           let univs = Univ.ContextSet.to_context ctx in
           (univs, typ), ((body, Univ.ContextSet.empty), eff)
       in 

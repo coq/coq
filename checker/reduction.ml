@@ -117,6 +117,10 @@ let beta_appvect c v =
 (*                         Conversion                               *)
 (********************************************************************)
 
+type conv_pb =
+  | CONV
+  | CUMUL
+
 (* Conversion utility functions *)
 type 'a conversion_function = env -> 'a -> 'a -> unit
 
@@ -152,11 +156,62 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 =
     cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2)
   else raise NotConvertible
 
-(* Convertibility of sorts *)
+let convert_inductive_instances cv_pb cumi u u' univs =
+  let ind_instance =
+      Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi) in
+  let ind_subtypctx =  Univ.ACumulativityInfo.subtyp_context cumi in
+  if not ((Univ.Instance.length ind_instance = Univ.Instance.length u) &&
+          (Univ.Instance.length ind_instance = Univ.Instance.length u')) then
+    anomaly (Pp.str "Invalid inductive subtyping encountered!")
+  else
+    let comp_cst =
+      let comp_subst = (Univ.Instance.append u u') in
+      Univ.UContext.constraints
+      (Univ.subst_instance_context comp_subst ind_subtypctx)
+    in
+    let comp_cst =
+      match cv_pb with
+        CONV ->
+        let comp_cst' =
+          let comp_subst = (Univ.Instance.append u' u) in
+          Univ.UContext.constraints
+            (Univ.subst_instance_context comp_subst ind_subtypctx)
+        in
+        Univ.Constraint.union comp_cst comp_cst'
+      | CUMUL -> comp_cst
+    in
+    if (Univ.check_constraints comp_cst univs) then () else raise NotConvertible
 
-type conv_pb =
-  | CONV
-  | CUMUL
+let convert_inductives
+    cv_pb (mind, ind) u1 sv1 u2 sv2 univs =
+  match mind.mind_universes with
+  | Monomorphic_ind _ | Polymorphic_ind _ -> convert_universes univs u1 u2
+  | Cumulative_ind cumi ->
+    let num_param_arity =
+      mind.mind_nparams + mind.mind_packets.(ind).mind_nrealargs
+    in
+    if not (num_param_arity = sv1 && num_param_arity = sv2) then
+      convert_universes univs u1 u2
+    else
+      convert_inductive_instances cv_pb cumi u1 u2 univs
+
+let convert_constructors
+    (mind, ind, cns) u1 sv1 u2 sv2 univs =
+  match mind.mind_universes with
+  | Monomorphic_ind _ | Polymorphic_ind _ -> convert_universes univs u1 u2
+  | Cumulative_ind cumi ->
+    let num_cnstr_args =
+      let nparamsctxt =
+        mind.mind_nparams + mind.mind_packets.(ind).mind_nrealargs
+      in
+      nparamsctxt + mind.mind_packets.(ind).mind_consnrealargs.(cns - 1)
+    in
+    if not (num_cnstr_args = sv1 && num_cnstr_args = sv2) then
+      convert_universes univs u1 u2
+    else
+      convert_inductive_instances CONV cumi u1 u2 univs
+
+(* Convertibility of sorts *)
 
 let sort_cmp env univ pb s0 s1 =
   match (s0,s1) with
@@ -375,18 +430,37 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
     | (FInd (ind1,u1), FInd (ind2,u2)) ->
-        if mind_equiv_infos infos ind1 ind2
-	then
-	  (let () = convert_universes univ u1 u2 in
-           convert_stacks univ infos lft1 lft2 v1 v2)
-        else raise NotConvertible
+      if mind_equiv_infos infos ind1 ind2 then
+        if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+          begin
+            convert_universes univ u1 u2;
+            convert_stacks univ infos lft1 lft2 v1 v2
+          end
+        else
+          let mind = Environ.lookup_mind (fst ind1) (infos_env infos) in
+          let () =
+            convert_inductives cv_pb (mind, snd ind1) u1 (stack_args_size v1)
+              u2 (stack_args_size v2) univ
+          in
+          convert_stacks univ infos lft1 lft2 v1 v2
+      else raise NotConvertible
 
-     | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
-	 if Int.equal j1 j2 && mind_equiv_infos infos ind1 ind2
-	 then
-	  (let () = convert_universes univ u1 u2 in
-           convert_stacks univ infos lft1 lft2 v1 v2)
-         else raise NotConvertible
+    | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
+      if Int.equal j1 j2 && mind_equiv_infos infos ind1 ind2 then
+        if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+          begin
+            convert_universes univ u1 u2;
+            convert_stacks univ infos lft1 lft2 v1 v2
+          end
+        else
+          let mind = Environ.lookup_mind (fst ind1) (infos_env infos) in
+          let () =
+            convert_constructors
+              (mind, snd ind1, j1) u1 (stack_args_size v1)
+              u2 (stack_args_size v2) univ
+          in
+          convert_stacks univ infos lft1 lft2 v1 v2
+      else raise NotConvertible
 
      (* Eta expansion of records *)
      | (FConstruct ((ind1,j1),u1), _) ->

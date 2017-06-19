@@ -261,6 +261,14 @@ let pr_universe_ctx sigma c =
   else
     mt()
 
+let pr_cumulativity_info sigma cumi =
+  if !Detyping.print_universes 
+  && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
+    fnl()++pr_in_comment (fun uii -> v 0 
+      (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
+  else
+    mt()
+
 (**********************************************************************)
 (* Global references *)
 
@@ -990,6 +998,11 @@ let pr_assumptionset env s =
 
 let xor a b = 
   (a && not b) || (not a && b)
+
+let pr_cumulative poly cum =
+  if poly then
+    if cum then str "Cumulative " else str "NonCumulative "
+  else mt ()
 
 let pr_polymorphic b = 
   let print = xor (Flags.is_universe_polymorphism ()) b in

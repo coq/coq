@@ -101,10 +101,10 @@ val eq_constr_universes_proj : env -> constr -> constr -> bool universe_constrai
 (** Build a fresh instance for a given context, its associated substitution and 
     the instantiated constraints. *)
 
-val fresh_instance_from_context : universe_context -> 
+val fresh_instance_from_context : abstract_universe_context -> 
   universe_instance constrained
 
-val fresh_instance_from : universe_context -> universe_instance option ->
+val fresh_instance_from : abstract_universe_context -> universe_instance option ->
   universe_instance in_universe_context_set
 
 val fresh_sort_in_family : env -> sorts_family -> 
@@ -210,10 +210,6 @@ val unsafe_type_of_global : Globnames.global_reference -> types
 val nf_evars_and_universes_opt_subst : (existential -> constr option) -> 
   universe_opt_subst -> constr -> constr
 
-(** Shrink a universe context to a restricted set of variables *)
-
-val universes_of_constr : constr -> universe_set
-val restrict_universe_context : universe_context_set -> universe_set -> universe_context_set
 val simplify_universe_context : universe_context_set -> 
   universe_context_set * universe_level_subst
 
@@ -227,3 +223,9 @@ val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
 
 val solve_constraints_system : universe option array -> universe array -> universe array ->
   universe array
+
+(** Operations for universe_info_ind *)
+
+(** Given a universe context representing constraints of an inductive
+    this function produces a UInfoInd.t that with the trivial subtyping relation. *)
+val univ_inf_ind_from_universe_context : universe_context -> cumulativity_info

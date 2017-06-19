@@ -336,7 +336,7 @@ type vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *
       inline * (plident list * constr_expr) with_coercion list
-  | VernacInductive of private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of cumulative_inductive_flag * private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       locality option * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of

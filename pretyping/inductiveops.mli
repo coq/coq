@@ -199,3 +199,12 @@ val type_of_inductive_knowing_conclusion :
 
 (********************)
 val control_only_guard : env -> types -> unit
+
+(* inference of subtyping condition for inductive types *)
+(* for debugging purposes only to be removed *)
+val infer_inductive_subtyping_arity_constructor : Environ.env * Evd.evar_map * Univ.Constraint.t ->
+(Term.constr -> Term.constr) ->
+Term.types -> bool -> Context.Rel.t -> Environ.env * Evd.evar_map * Univ.Constraint.t
+
+val infer_inductive_subtyping : Environ.env -> Evd.evar_map -> Entries.mutual_inductive_entry ->
+  Entries.mutual_inductive_entry

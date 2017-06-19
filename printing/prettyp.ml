@@ -502,8 +502,8 @@ let ungeneralized_type_of_constant_type t =
   Typeops.type_of_constant_type (Global.env ()) t
 
 let print_instance sigma cb =
-  if cb.const_polymorphic then
-    pr_universe_instance sigma cb.const_universes
+  if Declareops.constant_is_polymorphic cb then
+    pr_universe_instance sigma (Declareops.constant_polymorphic_context cb)
   else mt()
 				
 let print_constant with_values sep sp =
@@ -511,16 +511,14 @@ let print_constant with_values sep sp =
   let val_0 = Global.body_of_constant_body cb in
   let typ = Declareops.type_of_constant cb in
   let typ = ungeneralized_type_of_constant_type typ in
-  let univs = Univ.instantiate_univ_context 
-    (Global.universes_of_constant_body cb)
-  in
+  let univs = Global.universes_of_constant_body cb in
   let ctx =
     Evd.evar_universe_context_of_binders
       (Universes.universe_binders_of_global (ConstRef sp))
   in
   let env = Global.env () and sigma = Evd.from_ctx ctx in
   let pr_ltype = pr_ltype_env env sigma in
-  hov 0 (pr_polymorphic cb.const_polymorphic ++
+  hov 0 (pr_polymorphic (Declareops.constant_is_polymorphic cb) ++
     match val_0 with
     | None ->
 	str"*** [ " ++

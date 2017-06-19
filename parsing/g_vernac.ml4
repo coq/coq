@@ -162,11 +162,16 @@ GEXTEND Gram
       | IDENT "Let"; id = identref; b = def_body ->
           VernacDefinition ((Some Discharge, Definition), (id, None), b)
       (* Gallina inductive declarations *)
-      | priv = private_token; f = finite_token;
+      | cum = cumulativity_token; priv = private_token; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
 	  let (k,f) = f in
-	  let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
-          VernacInductive (priv,f,indl)
+          let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
+	  let cum =
+	    match cum with
+	      Some b -> b
+	    | None -> Flags.is_inductive_cumulativity ()
+	  in
+          VernacInductive (cum, priv,f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (None, recs)
       | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
@@ -227,12 +232,15 @@ GEXTEND Gram
 	r = universe_level -> (l, ord, r) ] ]
   ;
   finite_token:
-    [ [ "Inductive" -> (Inductive_kw,Finite)
-      | "CoInductive" -> (CoInductive,CoFinite)
-      | "Variant" -> (Variant,BiFinite)
+    [ [ IDENT "Inductive" -> (Inductive_kw,Finite)
+      | IDENT "CoInductive" -> (CoInductive,CoFinite)
+      | IDENT "Variant" -> (Variant,BiFinite)
       | IDENT "Record" -> (Record,BiFinite)
       | IDENT "Structure" -> (Structure,BiFinite)
       | IDENT "Class" -> (Class true,BiFinite) ] ]
+  ;
+  cumulativity_token:
+    [ [ IDENT "Cumulative" -> Some true | IDENT "NonCumulative" -> Some false | -> None ] ]
   ;
   private_token:
     [ [ IDENT "Private" -> true | -> false ] ]

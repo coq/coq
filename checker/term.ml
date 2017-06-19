@@ -227,6 +227,8 @@ let rel_context_nhyps hyps =
   nhyps 0 hyps
 let fold_rel_context f l ~init = List.fold_right f l init
 
+let fold_rel_context_outside f l ~init = List.fold_right f l init
+
 let map_rel_decl f = function
   | LocalAssum (n, typ) as decl ->
      let typ' = f typ in
@@ -414,6 +416,42 @@ let subst_instance_constr subst c =
   if Univ.Instance.is_empty subst then c
   else
     let f u = Univ.subst_instance_instance subst u in
+    let rec aux t =
+      match t with
+      | Const (c, u) ->
+       if Univ.Instance.is_empty u then t
+       else
+          let u' = f u in
+           if u' == u then t
+           else (Const (c, u'))
+      | Ind (i, u) ->
+       if Univ.Instance.is_empty u then t
+       else
+         let u' = f u in
+           if u' == u then t
+           else (Ind (i, u'))
+      | Construct (c, u) ->
+       if Univ.Instance.is_empty u then t
+       else
+          let u' = f u in
+           if u' == u then t
+           else (Construct (c, u'))
+      | Sort (Type u) ->
+         let u' = Univ.subst_instance_universe subst u in
+          if u' == u then t else
+            (Sort (sort_of_univ u'))
+      | _ -> map_constr aux t
+    in
+    aux c
+
+let subst_instance_context s ctx = 
+  if Univ.Instance.is_empty s then ctx
+  else map_rel_context (fun x -> subst_instance_constr s x) ctx
+
+let subst_univs_level_constr subst c =
+  if Univ.is_empty_level_subst subst then c
+  else 
+    let f = Univ.Instance.subst_fn (Univ.subst_univs_level_level subst) in
     let changed = ref false in
     let rec aux t = 
       match t with
@@ -436,14 +474,10 @@ let subst_instance_constr subst c =
 	    if u' == u then t
 	    else (changed := true; Construct (c, u'))
       | Sort (Type u) -> 
-         let u' = Univ.subst_instance_universe subst u in
+         let u' = Univ.subst_univs_level_universe subst u in
 	   if u' == u then t else 
 	     (changed := true; Sort (sort_of_univ u'))
       | _ -> map_constr aux t
     in
     let c' = aux c in
       if !changed then c' else c
-
-let subst_instance_context s ctx = 
-  if Univ.Instance.is_empty s then ctx
-  else map_rel_context (fun x -> subst_instance_constr s x) ctx

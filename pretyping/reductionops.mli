@@ -66,7 +66,6 @@ module Cst_stack : sig
   val pr : t -> Pp.std_ppcmds
 end
 
-
 module Stack : sig
   type 'a app_node
 
