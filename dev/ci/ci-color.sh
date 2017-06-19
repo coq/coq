@@ -7,4 +7,4 @@ Color_CI_DIR=${CI_BUILD_DIR}/color
 
 svn checkout ${Color_CI_SVNURL} ${Color_CI_DIR}
 
-( cd ${Color_CI_DIR} && make -j ${NJOBS} )
+( cd ${Color_CI_DIR} && make )
