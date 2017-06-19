@@ -912,14 +912,14 @@ let unfold_constr = function
    iteration of [find_name] above. As [default_id] checks the sort of
    the type to build hyp names, we maintain an environment to be able
    to type dependent hyps. *)
-let find_intro_names ctxt gl =
+let find_intro_names env sigma ctxt =
   let _, res = List.fold_right
     (fun decl acc ->
       let env,idl = acc in
-      let name = fresh_id idl (default_id env gl.sigma decl) gl in
+      let name = fresh_id_in_env idl (default_id env sigma decl) env in
       let newenv = push_rel decl env in
       (newenv,(name::idl)))
-    ctxt (pf_env gl , []) in
+    ctxt (env, []) in
   List.rev res
 
 let build_intro_tac id dest tac = match dest with

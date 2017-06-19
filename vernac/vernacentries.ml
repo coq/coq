@@ -81,14 +81,16 @@ let show_intro all =
   let pf = Proof_global.give_me_the_proof() in
   let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
   if not (List.is_empty gls) then begin
-    let gl = {Evd.it=List.hd gls ; sigma = sigma; } in
-    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (pf_concl gl)) in
+    let evi = Evd.find sigma (List.hd gls) in
+    let env = Evd.evar_env evi in
+    let concl = EConstr.of_constr (Evd.evar_concl evi) in
+    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma concl) in
     if all then
-      let lid = Tactics.find_intro_names l gl in
+      let lid = Tactics.find_intro_names env sigma l in
       Feedback.msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
     else if not (List.is_empty l) then
       let n = List.last l in
-      Feedback.msg_notice (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
+      Feedback.msg_notice (pr_id (List.hd (Tactics.find_intro_names env sigma [n])))
   end
 
 (** Prepare a "match" template for a given inductive type.
@@ -1839,8 +1841,8 @@ let vernac_check_guard () =
   let message =
     try
       let { Evd.it=gl ; sigma=sigma } = Proof.V82.top_goal pts in
-      Inductiveops.control_only_guard (Goal.V82.env sigma gl)
-	(EConstr.Unsafe.to_constr pfterm);
+      let env = Evd.evar_env (Evd.find sigma gl) in
+      Inductiveops.control_only_guard env (EConstr.to_constr sigma pfterm);
       (str "The condition holds up to here")
     with UserError(_,s) ->
       (str ("Condition violated: ") ++s)

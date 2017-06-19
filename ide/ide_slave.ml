@@ -173,11 +173,12 @@ let concl_next_tac sigma concl =
   ])
 
 let process_goal sigma g =
-  let env = Goal.V82.env sigma g in
+  let evi = Evd.find sigma g in
+  let env = Evd.evar_env evi in
   let min_env = Environ.reset_context env in
   let id = Goal.uid g in
   let ccl =
-    let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
+    let norm_constr = Reductionops.nf_evar sigma (EConstr.of_constr (Evd.evar_concl evi)) in
     pr_goal_concl_style_env env sigma norm_constr
   in
   let process_hyp d (env,l) =
@@ -223,7 +224,8 @@ let hints () =
     match all_goals with
     | [] -> None
     | g :: _ ->
-      let env = Goal.V82.env sigma g in
+      let evi = Evd.find sigma g in
+      let env = Evd.evar_env evi in
       let hint_goal = concl_next_tac sigma g in
       let get_hint_hyp env d accu = hyp_next_tac sigma env d :: accu in
       let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in

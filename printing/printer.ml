@@ -16,7 +16,6 @@ open Globnames
 open Nametab
 open Evd
 open Proof_type
-open Refiner
 open Constrextern
 open Ppconstr
 open Declarations
@@ -478,10 +477,11 @@ let pr_transparent_state (ids, csts) =
 	str"CONSTANTS: " ++ pr_cpred csts ++ fnl ())
 
 (* display complete goal *)
-let default_pr_goal gs =
-  let (g,sigma) = Goal.V82.nf_evar (project gs) (sig_it gs) in
-  let env = Goal.V82.env sigma g in
-  let concl = Goal.V82.concl sigma g in
+let default_pr_goal sigma evk =
+  let evi = Evd.find sigma evk in
+  let evi = Evarutil.nf_evar_info sigma evi in
+  let env = evar_env evi in
+  let concl = EConstr.of_constr (evar_concl evi) in
   let goal =
     pr_context_of env sigma ++ cut () ++
       str "============================" ++ cut ()  ++
@@ -498,17 +498,18 @@ let pr_goal_name sigma g =
   if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g)
   else mt ()
 
-let pr_goal_header nme sigma g =
-  let (g,sigma) = Goal.V82.nf_evar sigma g in
-  str "subgoal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
-  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g) else mt ())  
+let pr_goal_header nme sigma evk =
+  str "subgoal " ++ nme ++ (if should_tag() then pr_goal_tag evk else str"")
+  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma evk) else mt ())  
 
 (* display the conclusion of a goal *)
-let pr_concl n sigma g =
-  let (g,sigma) = Goal.V82.nf_evar sigma g in
-  let env = Goal.V82.env sigma g in
-  let pc = pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g) in
-  let header = pr_goal_header (int n) sigma g in
+let pr_concl n sigma evk =
+  let evi = Evd.find sigma evk in
+  let evi = Evarutil.nf_evar_info sigma evi in
+  let env = evar_env evi in
+  let concl = EConstr.of_constr (evar_concl evi) in
+  let pc = pr_goal_concl_style_env env sigma concl in
+  let header = pr_goal_header (int n) sigma evk in
   header ++ str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
@@ -564,7 +565,7 @@ let pr_ne_evar_set hd tl sigma l =
     mt ()
 
 let pr_selected_subgoal name sigma g =
-  let pg = default_pr_goal { sigma=sigma ; it=g; } in
+  let pg = default_pr_goal sigma g in
   let header = pr_goal_header name sigma g in
   v 0 (header ++ str " is:" ++ cut () ++ pg)
 
@@ -581,12 +582,13 @@ let default_pr_subgoal n sigma =
 
 let pr_internal_existential_key ev = str (string_of_existential ev)
 
-let print_evar_constraints gl sigma =
+let print_evar_constraints sigma evk =
   let pr_env =
-    match gl with
+    match evk with
     | None -> fun e' -> pr_context_of e' sigma
     | Some g ->
-       let env = Goal.V82.env sigma g in fun e' ->
+       let evi = Evd.find sigma g in
+       let env = evar_env evi in fun e' ->
        begin
          if Context.Named.equal Constr.equal (named_context env) (named_context e') then
            if Context.Rel.equal Constr.equal (rel_context env) (rel_context e') then mt ()
@@ -642,7 +644,7 @@ let _ =
       optwrite = (fun v -> should_print_dependent_evars := v) }
 
 let print_dependent_evars gl sigma seeds =
-  let constraints = print_evar_constraints gl sigma in
+  let constraints = print_evar_constraints sigma gl in
   let evars () =
     if !should_print_dependent_evars then
       let evars = Evarutil.gather_dependent_evars sigma seeds in
@@ -712,7 +714,7 @@ let default_pr_subgoals ?(pr_first=true)
   in
   let print_multiple_goals g l =
     if pr_first then
-      default_pr_goal { it = g ; sigma = sigma; }
+      default_pr_goal sigma g
       ++ (if l=[] then mt () else cut ())
       ++ pr_rec 2 l
     else 
@@ -766,7 +768,7 @@ type printer_pr = {
 let default_printer_pr = {
  pr_subgoals = default_pr_subgoals;
  pr_subgoal  = default_pr_subgoal;
- pr_goal     = default_pr_goal;
+ pr_goal     = (fun g -> default_pr_goal g.sigma g.it);
 }
 
 let printer_pr = ref default_printer_pr

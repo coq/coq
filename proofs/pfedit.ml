@@ -53,12 +53,13 @@ let get_nth_V82_goal i =
   let p = Proof_global.give_me_the_proof () in
   let { it=goals ; sigma = sigma; } = Proof.V82.subgoals p in
   try
-          { it=(List.nth goals (i-1)) ; sigma=sigma; }
+    (sigma, List.nth goals (i - 1))
   with Failure _ -> raise NoSuchGoal
 
 let get_goal_context_gen i =
-  let { it=goal ; sigma=sigma; } =  get_nth_V82_goal i in
-  (sigma, Refiner.pf_env { it=goal ; sigma=sigma; })
+  let (sigma, goal) =  get_nth_V82_goal i in
+  let evi = Evd.find sigma goal in
+  (sigma, Evd.evar_env evi)
 
 let get_goal_context i =
   try get_goal_context_gen i
