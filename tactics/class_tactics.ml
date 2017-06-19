@@ -649,8 +649,9 @@ module V85 = struct
     Goal.V82.hyps gls.Evd.sigma (sig_it gls)
 
   let make_autogoal_hints =
-    let cache = ref (true, Environ.empty_named_context_val,
-                     Hint_db.empty full_transparent_state true)
+    let cache = Summary.ref ~name:"make_autogoal_hints_cache"
+        (true, Environ.empty_named_context_val,
+         Hint_db.empty full_transparent_state true)
     in
     fun only_classes ?(st=full_transparent_state) g ->
     let sign = pf_filtered_hyps g in
@@ -979,8 +980,9 @@ module Search = struct
       search_hints : hint_db; }
 
   (** Local hints *)
-  let autogoal_cache = ref (DirPath.empty, true, Context.Named.empty,
-                            Hint_db.empty full_transparent_state true)
+  let autogoal_cache = Summary.ref ~name:"autogoal_cache"
+      (DirPath.empty, true, Context.Named.empty,
+       Hint_db.empty full_transparent_state true)
 
   let make_autogoal_hints only_classes ?(st=full_transparent_state) g =
     let open Proofview in
