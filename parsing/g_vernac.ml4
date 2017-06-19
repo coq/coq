@@ -812,7 +812,7 @@ GEXTEND Gram
       | IDENT "transparent" -> Conv_oracle.transparent ] ]
   ;
   instance_name:
-    [ [ name = pidentref; sup = OPT binders ->
+    [ [ name = ident_decl; sup = OPT binders ->
 	  (let ((loc,id),l) = name in ((loc, Name id),l)),
           (Option.default [] sup)
       | -> ((Loc.tag ~loc:!@loc Anonymous), None), []  ] ]

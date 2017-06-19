@@ -165,7 +165,7 @@ let typecheck_params_and_fields finite def id pl t ps nots fs =
   let newps = List.map (EConstr.to_rel_decl evars) newps in
   let typ = EConstr.to_constr evars typ in
   let ce t = Pretyping.check_evars env0 Evd.empty evars (EConstr.of_constr t) in
-  let univs = Univdecls.check_univ_decl evars decl in
+  let univs = Evd.check_univ_decl evars decl in
     List.iter (iter_constr ce) (List.rev newps);
     List.iter (iter_constr ce) (List.rev newfs);
     univs, typ, template, imps, newps, impls, newfs

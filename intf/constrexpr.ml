@@ -132,10 +132,6 @@ and constr_notation_substitution =
     constr_expr list list * (** for recursive notations *)
     local_binder_expr list list (** for binders subexpressions *)
 
-type typeclass_constraint = (Name.t Loc.located * Id.t Loc.located list option) * binding_kind * constr_expr
-
-and typeclass_context = typeclass_constraint list
-
 type constr_pattern_expr = constr_expr
 
 (** Concrete syntax for modules and module types *)

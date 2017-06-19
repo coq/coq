@@ -6,17 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Vernacexpr
-
+(** Local universe and constraint declarations. *)
 type universe_decl =
-  (lident list, Univ.Constraint.t) gen_universe_decl
-
-val interp_univ_decl : Environ.env -> universe_decl_expr ->
-                       Evd.evar_map * universe_decl
-
-val interp_univ_decl_opt : Environ.env -> universe_decl_expr option ->
-                       Evd.evar_map * universe_decl
+  (Names.Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
 val default_univ_decl : universe_decl
 
-val check_univ_decl : Evd.evar_map -> universe_decl -> Universes.universe_binders * Univ.universe_context
+val interp_univ_decl : Environ.env -> Vernacexpr.universe_decl_expr ->
+                       Evd.evar_map * universe_decl
+
+val interp_univ_decl_opt : Environ.env -> Vernacexpr.universe_decl_expr option ->
+                       Evd.evar_map * universe_decl

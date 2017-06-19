@@ -166,15 +166,9 @@ type option_ref_value =
   | StringRefValue of string
   | QualidRefValue of reference
 
-type ('a, 'b) gen_universe_decl = {
-  univdecl_instance : 'a; (* Declared universes *)
-  univdecl_extensible_instance : bool; (* Can new universes be added *)
-  univdecl_constraints : 'b; (* Declared constraints *)
-  univdecl_extensible_constraints : bool (* Can new constraints be added *) }
-
-type universe_decl_expr = (lident list, glob_constraint list) gen_universe_decl
-
 (** Identifier and optional list of bound universes and constraints. *)
+
+type universe_decl_expr = (Id.t Loc.located list, glob_constraint list) gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
 
@@ -213,6 +207,10 @@ type inductive_expr =
 
 type one_inductive_expr =
   ident_decl * local_binder_expr list * constr_expr option * constructor_expr list
+
+type typeclass_constraint = (Name.t Loc.located * universe_decl_expr option) * binding_kind * constr_expr
+
+and typeclass_context = typeclass_constraint list
 
 type proof_expr =
   ident_decl option * (local_binder_expr list * constr_expr)

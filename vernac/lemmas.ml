@@ -200,13 +200,6 @@ let save ?export_seff id const cstrs pl do_guard (locality,poly,kind) hook =
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
-let default_thm_decl =
-  let open Vernacexpr in
-  { univdecl_instance = [];
-    univdecl_extensible_instance = true;
-    univdecl_constraints = [];
-    univdecl_extensible_constraints = true }
-
 let compute_proof_name locality = function
   | Some ((loc,id),pl) ->
       (* We check existence here: it's a bit late at Qed time *)
@@ -214,12 +207,11 @@ let compute_proof_name locality = function
 	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
       then
         user_err ?loc  (pr_id id ++ str " already exists.");
-      let decl = match pl with None -> default_thm_decl | Some d -> d in
-      id, decl
+      id
   | None ->
-      next_global_ident_away default_thm_id (Proof_global.get_all_proof_names ()), default_thm_decl
+      next_global_ident_away default_thm_id (Proof_global.get_all_proof_names ())
 
-let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,(_,imps))) =
+let save_remaining_recthms (locality,p,kind) norm ctx binders body opaq i (id,(t_i,(_,imps))) =
   let t_i = norm t_i in
   match body with
   | None ->
@@ -227,7 +219,7 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
       | Discharge ->
           let impl = false in (* copy values from Vernacentries *)
           let k = IsAssumption Conjectural in
-          let c = SectionLocalAssum ((t_i,ctx),p,impl) in
+          let c = SectionLocalAssum ((t_i,Univ.ContextSet.of_context ctx),p,impl) in
 	  let _ = declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)
       | Local | Global ->
@@ -237,7 +229,6 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
           | Global -> false
           | Discharge -> assert false
           in
-          let ctx = Univ.ContextSet.to_context ctx in
           let decl = (ParameterEntry (None,p,(t_i,ctx),None), k) in
           let kn = declare_constant id ~local decl in
           (locality,ConstRef kn,imps))
@@ -255,12 +246,11 @@ let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,
       match locality with
       | Discharge ->
           let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
-	    ~univs:(Univ.ContextSet.to_context ctx) body_i in
+	    ~univs:ctx body_i in
 	  let c = SectionLocalDef const in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
           (Discharge,VarRef id,imps)
       | Local | Global ->
-        let ctx = Univ.ContextSet.to_context ctx in
         let local = match locality with
         | Local -> true
         | Global -> false
@@ -374,7 +364,7 @@ let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
-    match List.map (fun ((id,_),(t,_)) -> (id,EConstr.of_constr t)) thms with
+    match List.map (fun (id,(t,_)) -> (id,EConstr.of_constr t)) thms with
     | (id,_)::l -> Tactics.mutual_cofix id l 0
     | _ -> assert false
   else
@@ -382,11 +372,11 @@ let rec_tac_initializer finite guard thms snl =
     let nl = match snl with 
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
-    in match List.map2 (fun ((id,_),(t,_)) n -> (id,n, EConstr.of_constr t)) thms nl with
+    in match List.map2 (fun (id,(t,_)) n -> (id,n, EConstr.of_constr t)) thms nl with
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
-let start_proof_with_initialization kind ctx recguard thms snl hook =
+let start_proof_with_initialization kind ctx decl recguard thms snl hook =
   let intro_tac (_, (_, (ids, _))) =
     Tacticals.New.tclMAP (function
     | Name id -> Tactics.intro_mustbe_force id
@@ -411,7 +401,7 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
       (if Flags.is_auto_intros () then Some (intro_tac (List.hd thms)) else None), [] in
   match thms with
   | [] -> anomaly (Pp.str "No proof to start.")
-  | ((id,pl),(t,(_,imps)))::other_thms ->
+  | (id,(t,(_,imps)))::other_thms ->
       let hook ctx strength ref =
         let ctx = match ctx with
         | None -> Evd.empty_evar_universe_context
@@ -423,18 +413,14 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
             let body,opaq = retrieve_first_recthm ref in
             let subst = Evd.evar_universe_context_subst ctx in
             let norm c = Universes.subst_opt_univs_constr subst c in
-	    let ctx = UState.context_set (*FIXME*) ctx in
+	    let binders, ctx = Evd.check_univ_decl (Evd.from_ctx ctx) decl in
 	    let body = Option.map norm body in
-            List.map_i (save_remaining_recthms kind norm ctx body opaq) 1 other_thms in
+            List.map_i (save_remaining_recthms kind norm ctx binders body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
-      let pl = (* FIXME does not ensure invariant yet *)
-        if pl.Vernacexpr.univdecl_extensible_instance then None
-        else Some pl.Vernacexpr.univdecl_instance
-      in
-      start_proof_univs id ?pl kind ctx (EConstr.of_constr t) ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
+      start_proof_univs id ~pl:decl kind ctx (EConstr.of_constr t) ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
 
 let start_proof_com ?inference_hook kind thms hook =
   let env0 = Global.env () in
@@ -460,8 +446,8 @@ let start_proof_com ?inference_hook kind thms hook =
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
   let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
   let () =
-    if not decl.Vernacexpr.univdecl_extensible_instance then
-       ignore (Evd.universe_context evd ~names:decl.Vernacexpr.univdecl_instance)
+    if not decl.Misctypes.univdecl_extensible_instance then
+       ignore (Evd.universe_context evd ~names:decl.Misctypes.univdecl_instance)
     else ()
   in
   let evd =
@@ -469,7 +455,7 @@ let start_proof_com ?inference_hook kind thms hook =
     else (* We fix the variables to ensure they won't be lowered to Set *)
       Evd.fix_undefined_variables evd
   in
-    start_proof_with_initialization kind evd recguard thms snl hook
+    start_proof_with_initialization kind evd decl recguard thms snl hook
 
 
 (* Saving a proof *)
@@ -518,9 +504,9 @@ let save_proof ?proof = function
                   let ids_def = Environ.global_vars_set env pproof in
                   Some (Environ.keep_hyps env (Idset.union ids_typ ids_def))
               | _ -> None in
-	    let names = Proof_global.get_universe_binders () in
+	    let decl = Proof_global.get_universe_decl () in
             let evd = Evd.from_ctx universes in
-            let binders, ctx = Evd.universe_context ?names evd in
+            let binders, ctx = Evd.check_univ_decl evd decl in
             Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None),
 		     (universes, Some binders))
       in

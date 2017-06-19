@@ -37,7 +37,7 @@ val dump_notation :
   (Constrexpr.notation * Notation.notation_location) Loc.located ->
   Notation_term.scope_name option -> bool -> unit
 val dump_constraint :
-  Constrexpr.typeclass_constraint -> bool -> string -> unit
+  Vernacexpr.typeclass_constraint -> bool -> string -> unit
 
 val dump_string : string -> unit
 

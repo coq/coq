@@ -10,13 +10,13 @@ open Names
 open Nameops
 open CErrors
 open Pp
-open Vernacexpr
 
+(** Local universes and constraints declarations *)
 type universe_decl =
-  (lident list, Univ.Constraint.t) gen_universe_decl
+  (Id.t Loc.located list, Univ.Constraint.t) Misctypes.gen_universe_decl
 
 let default_univ_decl =
-  let open Vernacexpr in
+  let open Misctypes in
   { univdecl_instance = [];
     univdecl_extensible_instance = true;
     univdecl_constraints = Univ.Constraint.empty;
@@ -48,6 +48,7 @@ let interp_univ_constraints env evd cstrs =
   List.fold_left interp (evd,Univ.Constraint.empty) cstrs
 
 let interp_univ_decl env decl = 
+  let open Misctypes in
   let pl = decl.univdecl_instance in
   let evd = Evd.from_ctx (Evd.make_evar_universe_context env (Some pl)) in
   let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
@@ -61,20 +62,3 @@ let interp_univ_decl_opt env l =
   match l with
   | None -> Evd.from_env env, default_univ_decl
   | Some decl -> interp_univ_decl env decl
-
-let check_implication evd cstrs ctx =
-  let uctx = Evd.evar_universe_context evd in
-  let gr = UState.initial_graph uctx in
-  let grext = UGraph.merge_constraints cstrs gr in
-  let cstrs' = Univ.UContext.constraints ctx in
-  if UGraph.check_constraints cstrs' grext then ()
-  else user_err ~hdr:"check_univ_decl"
-                  (str "Universe constraints are not implied by the ones declared.")
-
-let check_univ_decl evd decl = 
-  let pl = if decl.univdecl_extensible_instance then None else Some decl.univdecl_instance in
-  let pl, ctx = Evd.universe_context ?names:pl evd in
-  if not decl.univdecl_extensible_constraints then
-    check_implication evd decl.univdecl_constraints ctx;
-  pl, ctx
-              

@@ -137,3 +137,9 @@ type inversion_kind =
   | SimpleInversion
   | FullInversion
   | FullInversionClear
+
+type ('a, 'b) gen_universe_decl = {
+  univdecl_instance : 'a; (* Declared universes *)
+  univdecl_extensible_instance : bool; (* Can new universes be added *)
+  univdecl_constraints : 'b; (* Declared constraints *)
+  univdecl_extensible_constraints : bool (* Can new constraints be added *) }

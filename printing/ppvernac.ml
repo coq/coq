@@ -37,12 +37,6 @@ open Decl_kinds
     | Some loc -> let (b,_) = Loc.unloc loc in
                   pr_located pr_id @@ Loc.tag ~loc:(Loc.make_loc (b,b + String.length (Id.to_string id))) id
 
-  let pr_plident (lid, l) =
-    pr_lident lid ++
-    (match l with
-     | Some l -> prlist_with_sep spc pr_lident l
-     | None -> mt())
-
   let pr_uconstraint (l, d, r) =
     pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
       pr_glob_level r
@@ -57,6 +51,7 @@ open Decl_kinds
            (if extensible then str"+" else mt())
 
   let pr_universe_decl l =
+    let open Misctypes in
     match l with
     | None -> mt ()
     | Some l ->
@@ -885,7 +880,7 @@ open Decl_kinds
             (if abst then keyword "Declare" ++ spc () else mt ()) ++
               keyword "Instance" ++
               (match instid with
-      	 | (loc, Name id), l -> spc () ++ pr_plident ((loc, id),l) ++ spc () 
+      	 | (loc, Name id), l -> spc () ++ pr_ident_decl ((loc, id),l) ++ spc ()
                | (_, Anonymous), _ -> mt ()) ++
               pr_and_type_binders_arg sup ++
               str":" ++ spc () ++
