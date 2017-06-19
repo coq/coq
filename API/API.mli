@@ -72,6 +72,7 @@ sig
     val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
   end
   type 'a puniverses = 'a * Instance.t
+  val out_punivs : 'a puniverses -> 'a
 
   module Constraint : module type of struct include Univ.Constraint end
 
@@ -1034,7 +1035,16 @@ sig
                     | Undef of inline
                     | Def of Term.constr Mod_subst.substituted
                     | OpaqueDef of Opaqueproof.opaque
-  type constant_type = Declarations.constant_type
+  type template_arity = Declarations.template_arity = {
+    template_param_levels : Univ.Level.t option list;
+    template_level : Univ.Universe.t;
+  }
+
+  type ('a, 'b) declaration_arity = ('a, 'b) Declarations.declaration_arity =
+    | RegularArity of 'a
+    | TemplateArity of 'b
+
+  type constant_type = (Prelude.types, Context.Rel.t * template_arity) declaration_arity
   type constant_universes = Declarations.constant_universes
   type projection_body = Declarations.projection_body = {
         proj_ind : Names.MutInd.t;
@@ -1131,6 +1141,11 @@ sig
       uj_val : 'constr;
       uj_type : 'types
     }
+  type 'types punsafe_type_judgment = 'types Environ.punsafe_type_judgment = {
+    utj_val : 'types;
+    utj_type : Sorts.t }
+
+  type unsafe_type_judgment = Term.types punsafe_type_judgment
   val empty_env : env
   val lookup_mind : Names.MutInd.t -> env -> Declarations.mutual_inductive_body
   val push_rel : Context.Rel.Declaration.t -> env -> env
@@ -1156,6 +1171,7 @@ sig
   val fold_named_context_reverse :
     ('a -> Context.Named.Declaration.t -> 'a) -> init:'a -> env -> 'a
   val evaluable_named  : Names.Id.t -> Environ.env -> bool
+  val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
 end
 
 module UGraph :
@@ -1219,6 +1235,7 @@ end
 
 module Typeops :
 sig
+  val infer_type : Environ.env -> Term.types -> Environ.unsafe_type_judgment
   val type_of_constant_type : Environ.env -> Declarations.constant_type -> Term.types
   val type_of_constant_in : Environ.env -> Term.pconstant -> Term.types
 end
@@ -2647,6 +2664,7 @@ sig
   type universe_opt_subst = Universes.universe_opt_subst
   val fresh_inductive_instance : Environ.env -> Names.inductive -> Term.pinductive Univ.in_universe_context_set
   val new_Type : Names.DirPath.t -> Term.types
+  val type_of_global : Globnames.global_reference -> Term.types Univ.in_universe_context_set
   val unsafe_type_of_global : Globnames.global_reference -> Term.types
   val constr_of_global : Prelude.global_reference -> Term.constr
   val universes_of_constr : Term.constr -> Univ.LSet.t
@@ -3476,6 +3494,7 @@ sig
 
   type ltac_constant = Names.KerName.t
 
+  val global : Libnames.reference -> Globnames.global_reference
   val global_of_path : Libnames.full_path -> Globnames.global_reference
   val shortest_qualid_of_global : Names.Id.Set.t -> Globnames.global_reference -> Libnames.qualid
   val path_of_global : Globnames.global_reference -> Libnames.full_path

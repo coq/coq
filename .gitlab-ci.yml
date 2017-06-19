@@ -253,6 +253,14 @@ ci-color:
 ci-compcert:
   <<: *ci-template
 
+ci-coq-dpdgraph:
+  <<: *ci-template
+  variables:
+    <<: *ci-template-vars
+    EXTRA_OPAM: "ocamlgraph"
+    EXTRA_PACKAGES: "autoconf"
+  allow_failure: true
+
 ci-coquelicot:
   <<: *ci-template
   variables:
