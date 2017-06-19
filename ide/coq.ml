@@ -34,21 +34,6 @@ let short_version () =
   let (ver,date) = get_version_date () in
   Printf.sprintf "The Coq Proof Assistant, version %s (%s)\n" ver date
 
-let version () =
-  let (ver,date) = get_version_date () in
-    Printf.sprintf
-      "The Coq Proof Assistant, version %s (%s)\
-       \nArchitecture %s running %s operating system\
-       \nGtk version is %s\
-       \nThis is %s (%s is the best one for this architecture and OS)\
-       \n"
-      ver date
-      Coq_config.arch Sys.os_type
-      (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
-      (Filename.basename Sys.executable_name)
-      Coq_config.best
-
-
 (** * Initial checks by launching test coqtop processes *)
 
 let rec read_all_lines in_chan =

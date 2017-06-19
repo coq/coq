@@ -154,10 +154,6 @@ val short_version : unit -> string
 (** Return a short phrase identifying coqtop version and date of compilation, as
     given by the [configure] script. *)
 
-val version : unit -> string
-(** More verbose description, including details about libraries and
-    architecture. *)
-
 val filter_coq_opts : string list -> string list
 (** * Launch a test coqtop processes, ask for a correct coqtop if it fails.
     @return the list of arguments that coqtop did not understand
