@@ -371,6 +371,8 @@ let init =
    else begin
      let init_sid = Stm.get_current_state ~doc:(get_doc ()) in
      initialized := true;
+     let (ver,branch) = Coqinit.get_version () in
+     Feedback.msg_info Pp.(str "You are running Coq " ++ str ver ++ str " (" ++ str branch ++ str ")");
      match file with
      | None -> init_sid
      | Some file ->
