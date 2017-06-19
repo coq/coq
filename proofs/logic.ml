@@ -253,7 +253,7 @@ let move_hyp sigma toleft (left,declfrom,right) hto =
             else
 	      user_err ~hdr:"move_hyp" (str "Cannot move " ++ pr_id (NamedDecl.get_id declfrom) ++
 	        Miscprint.pr_move_location pr_id hto ++
-	        str (if toleft then ": it occurs in " else ": it depends on ")
+	        str (if toleft then ": it occurs in the type of " else ": it depends on ")
 	        ++ pr_id hyp ++ str ".")
           else
 	    (d::first, middle)
