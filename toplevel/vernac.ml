@@ -286,7 +286,12 @@ let ensure_exists f =
 let compile verbosely f =
   let check_pending_proofs () =
     let pfs = Proof_global.get_all_proof_names () in
-    if not (List.is_empty pfs) then vernac_error (str "There are pending proofs")
+    if not (List.is_empty pfs) then
+      vernac_error (str "There are pending proofs: "
+                    ++ (pfs
+                        |> List.rev
+                        |> prlist_with_sep pr_comma Names.Id.print)
+                    ++ str ".")
   in
   match !Flags.compilation_mode with
   | BuildVo ->
