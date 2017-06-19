@@ -74,8 +74,6 @@ let parse_args () =
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
-    | ("-v"|"--version") :: _ -> Usage.version 0
-
     | ("-where") :: _ ->
         Envars.set_coqlib ~fail:(fun x -> x);
         print_endline (Envars.coqlib ());
@@ -85,9 +83,6 @@ let parse_args () =
         Envars.set_coqlib ~fail:(fun x -> x);
         Envars.print_config stdout Coq_config.all_src_dirs;
         exit 0
-      
-    | ("-print-version" | "--print-version") :: _ ->
-        Usage.machine_readable_version 0
 
 (* Options for coqtop : a) options with 0 argument *)
 
@@ -101,6 +96,10 @@ let parse_args () =
       |"-stm-debug"
       as o) :: rem ->
 	parse (cfiles,o::args) rem
+
+    | ("-v"|"--version"|"-print-version"|"--print-version" as o) :: rem ->
+       extra_arg_needed := false;
+       parse (cfiles,o::args) rem
 
 (* Options for coqtop : b) options with 1 argument *)
 
