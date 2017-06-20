@@ -1,6 +1,6 @@
 # Coq
 
-[![Coq 8.7~alpha](https://travis-ci.org/coq/coq.svg?branch=trunk)](https://travis-ci.org/coq/coq) [![Gitter](https://badges.gitter.im/coq/coq.svg)](https://gitter.im/coq/coq)
+[![Travis](https://travis-ci.org/coq/coq.svg?branch=trunk)](https://travis-ci.org/coq/coq/builds) [![Gitter](https://badges.gitter.im/coq/coq.svg)](https://gitter.im/coq/coq)
 
 Coq is a formal proof management system. It provides a formal language to write
 mathematical definitions, executable algorithms and theorems together with an
