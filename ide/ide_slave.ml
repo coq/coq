@@ -15,9 +15,8 @@ open Printer
 
 (** Ide_slave : an implementation of [Interface], i.e. mainly an interp
     function and a rewind function. This specialized loop is triggered
-    when the -ideslave option is passed to Coqtop. Currently CoqIDE is
-    the only one using this mode, but we try here to be as generic as
-    possible, so this may change in the future... *)
+    when the -ideslave option is passed to Coqtop. *)
+
 
 (** Signal handling: we postpone ^C during input and output phases,
     but make it directly raise a Sys.Break during evaluation of the request. *)
@@ -93,16 +92,16 @@ let is_undo cmd = match cmd with
   | VernacUndo _ | VernacUndoTo _ -> true
   | _ -> false
 
-(** Check whether a command is forbidden by CoqIDE *)
+(** Check whether a command is forbidden in the IDE *)
 
 let coqide_cmd_checks (loc,ast) =
-  let user_error s = CErrors.user_err_loc (loc, "CoqIde", str s) in
+  let user_error s = CErrors.user_err_loc (loc, "IDE", str s) in
   if is_debug ast then
-    user_error "Debug mode not available within CoqIDE";
+    user_error "Debug mode not available in the IDE";
   if is_known_option ast then
-    Feedback.msg_warning (strbrk"This will not work. Use CoqIDE view menu instead");
+    Feedback.msg_warning (strbrk"Set this option from the IDE menu instead");
   if Vernac.is_navigation_vernac ast || is_undo ast then
-    Feedback.msg_warning (strbrk "Rather use CoqIDE navigation instead");
+    Feedback.msg_warning (strbrk "Use IDE navigation instead");
   if is_query ast then
     Feedback.msg_warning (strbrk "Query commands should not be inserted in scripts")
 
@@ -547,4 +546,4 @@ let () = Coqtop.toploop_init := (fun args ->
 
 let () = Coqtop.toploop_run := loop
 
-let () = Usage.add_to_usage "coqidetop" "  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"
+let () = Usage.add_to_usage "coqidetop" "  --help-XML-protocol    print documentation of the Coq XML protocol\n"
