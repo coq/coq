@@ -3074,17 +3074,17 @@ let expand_hyp id = Tacticals.New.tclTRY (unfold_body id) <*> clear [id]
 
  *)
 
-let warn_unused_intro_pattern env =
+let warn_unused_intro_pattern env sigma =
   CWarnings.create ~name:"unused-intro-pattern" ~category:"tactics"
          (fun names ->
           strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern")
           ++ str": " ++ prlist_with_sep spc 
          (Miscprint.pr_intro_pattern 
-	 (fun c -> Printer.pr_econstr (snd (c env Evd.empty)))) names)
+	 (fun c -> Printer.pr_econstr (snd (c env sigma)))) names)
 
-let check_unused_names names env =
+let check_unused_names env sigma names =
   if not (List.is_empty names) then
-    warn_unused_intro_pattern env names
+    warn_unused_intro_pattern env sigma names
 
 let intropattern_of_name gl avoid = function
   | Anonymous -> IntroNaming IntroAnonymous
@@ -3204,9 +3204,12 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
         peel_tac ra' dests names thin)
         end
     | [] ->
-        Proofview.tclENV >>= fun env ->
-        check_unused_names names env;
+        Proofview.Goal.enter begin fun gl ->
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
+        check_unused_names env sigma names;
         Tacticals.New.tclTHEN (clear_wildcards thin) (tac dests)
+        end
   in
   peel_tac ra dests names []
 
