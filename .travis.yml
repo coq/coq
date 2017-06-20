@@ -156,6 +156,7 @@ install:
 script:
 
 - set -e
+- if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then echo "Fetching the most recent merge of PR ${TRAVIS_PULL_REQUEST} in ${TRAVIS_BRANCH}..." && git fetch origin +refs/pull/${TRAVIS_PULL_REQUEST}/merge && git checkout --detach FETCH_HEAD; fi
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
 - ./configure -local -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'
