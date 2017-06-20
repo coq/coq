@@ -18,7 +18,9 @@ ls "$COQBIN"
 # Where we clone and build external developments
 CI_BUILD_DIR=`pwd`/_build_ci
 
-source ${ci_dir}/ci-user-overlay.sh
+for overlay in ${ci_dir}/user-overlays/*.sh; do
+  source ${overlay}
+done
 source ${ci_dir}/ci-basic-overlay.sh
 
 mathcomp_CI_DIR=${CI_BUILD_DIR}/math-comp
