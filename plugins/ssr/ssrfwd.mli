@@ -36,7 +36,7 @@ val ssrabstract :
 
 val basecuttac :
            string ->
-           EConstr.t -> Proof_type.goal Evd.sigma -> Evar.t list Evd.sigma
+           EConstr.t -> Goal.goal Evd.sigma -> Evar.t list Evd.sigma
 
 val wlogtac :
   Ltac_plugin.Tacinterp.interp_sign ->
@@ -52,7 +52,7 @@ val wlogtac :
   Ltac_plugin.Tacinterp.Value.t Ssrast.ssrhint ->
   bool ->
   [< `Gen of Names.Id.t option option | `NoGen > `NoGen ] ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val sufftac :
   Ssrast.ist ->
@@ -62,5 +62,5 @@ val sufftac :
         (Ssrast.ssrtermkind *
            (Glob_term.glob_constr * Constrexpr.constr_expr option))) *
        (bool * Tacinterp.Value.t option list)) ->
-  Proof_type.tactic
+  Tacmach.tactic
 

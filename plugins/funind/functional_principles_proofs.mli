@@ -4,7 +4,7 @@ open Names
 val prove_princ_for_struct :
   Evd.evar_map ref ->
   bool ->
-  int -> Constant.t array -> EConstr.constr array -> int -> Proof_type.tactic
+  int -> Constant.t array -> EConstr.constr array -> int -> Tacmach.tactic
 
 
 val prove_principle_for_gen :
@@ -14,7 +14,7 @@ val prove_principle_for_gen :
   int -> (* the number of recursive argument *)
   EConstr.types -> (* the type of the recursive argument *)
   EConstr.constr -> (* the wf relation used to prove the function *)
-  Proof_type.tactic
+  Tacmach.tactic
 
 
 (* val is_pte  : rel_declaration -> bool  *)

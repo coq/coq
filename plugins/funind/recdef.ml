@@ -30,7 +30,7 @@ open Nametab
 open Declare
 open Decl_kinds
 open Tacred
-open Proof_type
+open Goal
 open Pfedit
 open Glob_term
 open Pretyping

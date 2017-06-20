@@ -32,23 +32,23 @@ val ssrelim :
   (?ist:Ltac_plugin.Tacinterp.interp_sign ->
    'a ->
    Ssrast.ssripat option ->
-   (Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma) ->
-   bool -> Ssrast.ssrhyp list -> Proof_type.tactic) ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+   (Goal.goal Evd.sigma -> Goal.goal list Evd.sigma) ->
+   bool -> Ssrast.ssrhyp list -> Tacmach.tactic) ->
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val elimtac :
   EConstr.constr ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 val casetac :
   EConstr.constr ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
-val is_injection_case : EConstr.t -> Proof_type.goal Evd.sigma -> bool
+val is_injection_case : EConstr.t -> Goal.goal Evd.sigma -> bool
 val perform_injection :
   EConstr.constr ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val ssrscasetac :
   bool ->
   EConstr.constr ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma

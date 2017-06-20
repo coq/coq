@@ -960,7 +960,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) n t gl =
           | _ -> assert false
       in loop sigma t [] n in
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr t));
-    Refiner.refiner (Proof_type.Refine (EConstr.Unsafe.to_constr t)) gl
+    Tacmach.refine_no_check t gl
 
 let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc gl =
   let rec mkRels = function 1 -> [] | n -> mkRel n :: mkRels (n-1) in

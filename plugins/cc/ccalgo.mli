@@ -129,7 +129,7 @@ val axioms : forest -> (term * term) Constrhash.t
 
 val epsilons : forest -> pa_constructor list
 
-val empty : int -> Proof_type.goal Evd.sigma -> state
+val empty : int -> Goal.goal Evd.sigma -> state
 
 val add_term : state -> term -> int
 

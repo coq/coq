@@ -10,7 +10,7 @@
 
 open API
 
-val apply_top_tac : Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+val apply_top_tac : Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val inner_ssrapplytac :
   Ssrast.ssrterm list ->
@@ -19,4 +19,4 @@ val inner_ssrapplytac :
     list list ->
   Ssrast.ssrhyps ->
   Ssrast.ist ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma

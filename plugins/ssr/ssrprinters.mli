@@ -12,7 +12,7 @@ open API
 open Ssrast
 
 val pp_term :
-  Proof_type.goal Evd.sigma -> EConstr.constr -> Pp.std_ppcmds
+  Goal.goal Evd.sigma -> EConstr.constr -> Pp.std_ppcmds
 
 val pr_spc : unit -> Pp.std_ppcmds
 val pr_bar : unit -> Pp.std_ppcmds

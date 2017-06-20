@@ -80,7 +80,7 @@ let interp_view ist si env sigma gv v rid =
   snd (view_with (if view_nbimps < 0 then [] else viewtab.(0)))
 
 
-let with_view ist ~next si env (gl0 : (Proof_type.goal * tac_ctx) Evd.sigma) c name cl prune (conclude : EConstr.t -> EConstr.t -> tac_ctx tac_a) clr =
+let with_view ist ~next si env (gl0 : (Goal.goal * tac_ctx) Evd.sigma) c name cl prune (conclude : EConstr.t -> EConstr.t -> tac_ctx tac_a) clr =
   let c2r ist x = { ist with lfun =
     Id.Map.add top_id (Value.of_constr x) ist.lfun } in
   let terminate (sigma, c') =
