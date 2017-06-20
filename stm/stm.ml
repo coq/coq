@@ -1672,7 +1672,7 @@ end (* }}} *)
 
 and TacTask : sig
 
-  type output = Constr.constr * Evd.evar_universe_context
+  type output = (Constr.constr * Evd.evar_universe_context) option
   type task = {
     t_state    : Stateid.t;
     t_state_fb : Stateid.t;
@@ -1681,13 +1681,12 @@ and TacTask : sig
     t_goal     : Goal.goal;
     t_kill     : unit -> unit;
     t_name     : string }  
-  exception NoProgress
 
   include AsyncTaskQueue.Task with type task := task
 
 end = struct (* {{{ *)
 
-  type output = Constr.constr * Evd.evar_universe_context
+  type output = (Constr.constr * Evd.evar_universe_context) option
   
   let forward_feedback msg = Hooks.(call forward_feedback msg)
 
@@ -1709,10 +1708,9 @@ end = struct (* {{{ *)
     r_name     : string }
 
   type response =
-    | RespBuiltSubProof of output
+    | RespBuiltSubProof of (Constr.constr * Evd.evar_universe_context)
     | RespError of Pp.std_ppcmds
     | RespNoProgress
-  exception NoProgress
 
   let name = ref "tacworker"
   let extra_env () = [||]
@@ -1734,10 +1732,9 @@ end = struct (* {{{ *)
           
   let use_response _ { t_assign; t_state; t_state_fb; t_kill } resp =
     match resp with
-    | RespBuiltSubProof o -> t_assign (`Val o); `Stay ((),[])
+    | RespBuiltSubProof o -> t_assign (`Val (Some o)); `Stay ((),[])
     | RespNoProgress ->
-        let e = (NoProgress, Exninfo.null) in
-        t_assign (`Exn e);
+        t_assign (`Val None);
         t_kill ();
         `Stay ((),[])
     | RespError msg ->
@@ -1848,8 +1845,8 @@ end = struct (* {{{ *)
           else tclUNIT ()
         else
           let open Notations in
-          try
-            let pt, uc = Future.join f in
+          match Future.join f with
+          | Some (pt, uc) ->
             stm_pperr_endline (fun () -> hov 0 (
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
@@ -1857,7 +1854,7 @@ end = struct (* {{{ *)
             (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
               (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
               Tactics.exact_no_check (EConstr.of_constr pt))
-          with TacTask.NoProgress ->
+          | None ->
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
         end)
       in
