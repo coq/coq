@@ -659,8 +659,7 @@ let restrict evk filter ?candidates ?src evd =
   let evar_info' =
     { evar_info with evar_filter = filter;
       evar_candidates = candidates;
-      evar_source = (match src with None -> evar_info.evar_source | Some src -> src);
-      evar_extra = Store.empty } in
+      evar_source = (match src with None -> evar_info.evar_source | Some src -> src) } in
   let last_mods = match evd.conv_pbs with
   | [] ->  evd.last_mods
   | _ -> Evar.Set.add evk evd.last_mods in
