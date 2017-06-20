@@ -18,12 +18,12 @@ Module Type Int.
 
   Bind Scope Int_scope with t.
 
-  Parameter zero : t.
-  Parameter one : t.
-  Parameter plus : t -> t -> t.
-  Parameter opp : t -> t.
-  Parameter minus : t -> t -> t.
-  Parameter mult : t -> t -> t.
+  Parameter Inline zero : t.
+  Parameter Inline one : t.
+  Parameter Inline plus : t -> t -> t.
+  Parameter Inline opp : t -> t.
+  Parameter Inline minus : t -> t -> t.
+  Parameter Inline mult : t -> t -> t.
 
   Notation "0" := zero : Int_scope.
   Notation "1" := one : Int_scope.
@@ -39,10 +39,10 @@ Module Type Int.
 
   (** Int should also be ordered: *)
 
-  Parameter le : t -> t -> Prop.
-  Parameter lt : t -> t -> Prop.
-  Parameter ge : t -> t -> Prop.
-  Parameter gt : t -> t -> Prop.
+  Parameter Inline le : t -> t -> Prop.
+  Parameter Inline lt : t -> t -> Prop.
+  Parameter Inline ge : t -> t -> Prop.
+  Parameter Inline gt : t -> t -> Prop.
   Notation "x <= y" := (le x y): Int_scope.
   Notation "x < y" := (lt x y) : Int_scope.
   Notation "x >= y" := (ge x y) : Int_scope.
