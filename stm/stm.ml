@@ -2523,11 +2523,12 @@ let process_transaction ?(newtip=Stateid.fresh ())
       | VtQuery (false, route), VtNow ->
         begin
           let query_sid = VCS.cur_tip () in
-          try stm_vernac_interp (VCS.cur_tip ()) x
+          try stm_vernac_interp ~route (VCS.cur_tip ()) x
           with e ->
             let e = CErrors.push e in
             Exninfo.iraise (State.exn_on ~valid:Stateid.dummy query_sid e)
         end; `Ok
+      (* Part of the script commands don't set the query route *)
       | VtQuery (true, _route), w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
