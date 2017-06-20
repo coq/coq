@@ -2520,23 +2520,26 @@ let process_transaction ?(newtip=Stateid.fresh ())
           anomaly(str"classifier: VtBack + VtLater must imply part_of_script.")
 
       (* Query *)
-      | VtQuery (false,(report_id,route)), VtNow ->
-          (try stm_vernac_interp report_id ~route x
-           with e ->
-             let e = CErrors.push e in
-             Exninfo.iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
-      | VtQuery (true,(report_id,_)), w ->
-          assert(Stateid.equal report_id Stateid.dummy);
+      | VtQuery (false, route), VtNow ->
+        begin
+          let query_sid = VCS.cur_tip () in
+          try stm_vernac_interp (VCS.cur_tip ()) x
+          with e ->
+            let e = CErrors.push e in
+            Exninfo.iraise (State.exn_on ~valid:Stateid.dummy query_sid e)
+        end; `Ok
+      | VtQuery (true, _route), w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
             if !Flags.async_proofs_full then `QueryQueue (ref false)
             else if Flags.(!compilation_mode = BuildVio) &&
                     VCS.((get_branch head).kind = `Master) &&
                     may_pierce_opaque x
-                 then `SkipQueue 
+                 then `SkipQueue
             else `MainQueue in
           VCS.commit id (mkTransCmd x [] false queue);
           Backtrack.record (); if w == VtNow then finish (); `Ok
+
       | VtQuery (false,_), VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script.")
 
@@ -2766,7 +2769,7 @@ type focus = {
   tip : Stateid.t
 }
 
-let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
+let query ~at ~route s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
@@ -2779,7 +2782,7 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
     | VtStm (w,_), _ ->
        ignore(process_transaction aast (VtStm (w,false), VtNow))
     | _ ->
-       ignore(process_transaction aast (VtQuery (false,report_with), VtNow)))
+       ignore(process_transaction aast (VtQuery (false, route), VtNow)))
   s
 
 let edit_at id =

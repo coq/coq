@@ -308,14 +308,19 @@ CoqIDE typically sets `force` to `false`.
 
 -------------------------------
 
+### <a name="command-query">**Query(route_id: integer, query: string, stateId: integer)**</a>
 
-### <a name="command-query">**Query(query: string, stateId: integer)**</a>
-In practice, `stateId` is 0, but the effect is to perform the query on the currently-focused state.
+`routeId` can be used to distinguish the result of a particular query,
+`stateId` should be set to the state the query should be run.
+
 ```html
 <call val="Query">
   <pair>
+    <route_id val="${routeId}"/>
+  <pair>
     <string>${query}</string>
     <state_id val="${stateId}"/>
+  </pair>
   </pair>
 </call>
 ```

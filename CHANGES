@@ -100,6 +100,12 @@ Universes
   for inductive definitions and the option "Set Inductive Cumulativity"
   in the reference manual.
 
+XML Protocol
+
+- The `query` call has been modified, now it carries a mandatory
+  "route_id" integer parameter, that associated the result of such
+  query with its generated feedback.
+
 Changes from V8.6beta1 to V8.6
 ==============================
 

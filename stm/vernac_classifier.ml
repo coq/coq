@@ -30,9 +30,7 @@ let string_of_vernac_type = function
       "ProofStep " ^ string_of_parallel parallel ^
         Option.default "" proof_block_detection
   | VtProofMode s -> "ProofMode " ^ s
-  | VtQuery (b,(id,route)) ->
-      "Query " ^ string_of_in_script b ^ " report " ^ Stateid.to_string id ^
-      " route " ^ string_of_int route
+  | VtQuery (b, route) -> "Query " ^ string_of_in_script b ^ " route " ^ string_of_int route
   | VtStm ((VtJoinDocument|VtWait), b) -> "Stm " ^ string_of_in_script b
   | VtStm (VtBack _, b) -> "Stm Back " ^ string_of_in_script b
 
@@ -92,8 +90,7 @@ let rec classify_vernac e =
     | VernacEndProof _ | VernacExactProof _ -> VtQed VtKeep, VtLater
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
-    | VernacCheckMayEval _ ->
-        VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
+    | VernacCheckMayEval _ -> VtQuery (true,Feedback.default_route), VtLater
     (* ProofStep *)
     | VernacProof _ 
     | VernacFocus _ | VernacUnfocus
@@ -213,7 +210,6 @@ let rec classify_vernac e =
       make_polymorphic res
     else res
 
-let classify_as_query =
-  VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
+let classify_as_query = VtQuery (true,Feedback.default_route), VtLater
 let classify_as_sideeff = VtSideff [], VtLater
 let classify_as_proofstep = VtProofStep { parallel = `No; proof_block_detection = None}, VtLater

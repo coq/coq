@@ -247,16 +247,16 @@ let eval_print l coq =
       let to_id, need_unfocus = get_id id in
       after_edit_at (to_id, need_unfocus) (base_eval_call (edit_at to_id) coq)
   | [ Tok(_,"QUERY"); Top []; Tok(_,phrase) ] ->
-      eval_call (query (phrase,tip_id())) coq
+      eval_call (query (0,(phrase,tip_id()))) coq
   | [ Tok(_,"QUERY"); Top [Tok(_,id)]; Tok(_,phrase) ] ->
       let to_id, _ = get_id id in
-      eval_call (query (phrase, to_id)) coq
+      eval_call (query (0,(phrase, to_id))) coq
   | [ Tok(_,"WAIT") ] ->
       let phrase = "Stm Wait." in
-      eval_call (query (phrase,tip_id())) coq
+      eval_call (query (0,(phrase,tip_id()))) coq
   | [ Tok(_,"JOIN") ] ->
       let phrase = "Stm JoinDocument." in
-      eval_call (query (phrase,tip_id())) coq
+      eval_call (query (0,(phrase,tip_id()))) coq
   | [ Tok(_,"ASSERT"); Tok(_,"TIP"); Tok(_,id) ] ->
       let to_id, _ = get_id id in
       if not(Stateid.equal (Document.tip doc) to_id) then error "Wrong tip"

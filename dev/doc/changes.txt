@@ -288,6 +288,10 @@ document type". This allows for a more uniform handling of printing
 
 - The legacy `Interp` call has been turned into a noop.
 
+- The `query` call has been modified, now it carries a mandatory
+  "route_id" integer parameter, that associated the result of such
+  query with its generated feedback.
+
 =========================================
 = CHANGES BETWEEN COQ V8.5 AND COQ V8.6 =
 =========================================

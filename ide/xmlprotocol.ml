@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20150913"
+let protocol_version = "20170413"
 
 type msg_format = Richpp of int | Ppcmds
 let msg_format = ref (Richpp 72)
@@ -94,6 +94,13 @@ let to_stateid = function
   | _ -> raise (Invalid_argument "to_state_id")
 
 let of_stateid i = Element ("state_id",["val",string_of_int (Stateid.to_int i)],[])
+
+let to_routeid = function
+  | Element ("route_id",["val",i],[]) ->
+      let id = int_of_string i in id
+  | _ -> raise (Invalid_argument "to_route_id")
+
+let of_routeid i = Element ("route_id",["val",string_of_int i],[])
 
 let of_box (ppb : Pp.block_type) = let open Pp in match ppb with
   | Pp_hbox   i -> constructor "ppbox" "hbox"   [of_int i]
@@ -269,6 +276,7 @@ module ReifType : sig
   val coq_info_t     : coq_info val_t
   val coq_object_t   : 'a val_t -> 'a coq_object val_t
   val state_id_t     : state_id val_t
+  val route_id_t     : route_id val_t
   val search_cst_t   : search_constraint val_t
 
   val of_value_type : 'a val_t -> 'a -> xml
@@ -304,6 +312,7 @@ end = struct
     | Coq_info : coq_info val_t
     | Coq_object : 'a val_t -> 'a coq_object val_t
     | State_id : state_id val_t
+    | Route_id : route_id val_t
     | Search_cst : search_constraint val_t
 
   type value_type = Value_type : 'a val_t -> value_type
@@ -329,6 +338,7 @@ end = struct
   let coq_info_t     = Coq_info
   let coq_object_t x = Coq_object x
   let state_id_t     = State_id
+  let route_id_t     = Route_id
   let search_cst_t   = Search_cst
 
   let of_value_type (ty : 'a val_t) : 'a -> xml =
@@ -350,6 +360,7 @@ end = struct
       | Pair (t1,t2)  -> (of_pair (convert t1) (convert t2))
       | Union (t1,t2) -> (of_union (convert t1) (convert t2))
       | State_id      -> of_stateid
+      | Route_id      -> of_routeid
       | Search_cst    -> of_search_cst
     in
       convert ty
@@ -373,6 +384,7 @@ end = struct
       | Pair (t1,t2)  -> (to_pair (convert t1) (convert t2))
       | Union (t1,t2) -> (to_union (convert t1) (convert t2))
       | State_id      -> to_stateid
+      | Route_id      -> to_routeid
       | Search_cst    -> to_search_cst
     in
       convert ty
@@ -450,6 +462,7 @@ end = struct
   | Pair (t1,t2)  -> (pr_pair (print t1) (print t2))
   | Union (t1,t2) -> (pr_union (print t1) (print t2))
   | State_id      -> pr_state_id
+  | Route_id      -> pr_int
 
   (* This is to break if a rename/refactoring makes the strings below outdated *)
   type 'a exists = bool
@@ -475,6 +488,7 @@ end = struct
   | Union (t1,t2) -> assert(true : ('a,'b) CSig.union exists);
                      Printf.sprintf "((%s, %s) CSig.union)" (print_val_t t1) (print_val_t t2)
   | State_id      -> assert(true : Stateid.t exists); "Stateid.t"
+  | Route_id      -> assert(true : route_id exists); "route_id"
 
   let print_type = function Value_type ty -> print_val_t ty
 
@@ -506,7 +520,7 @@ open ReifType
 let add_sty_t : add_sty val_t =
   pair_t (pair_t string_t int_t) (pair_t state_id_t bool_t)
 let edit_at_sty_t : edit_at_sty val_t = state_id_t
-let query_sty_t : query_sty val_t = pair_t string_t state_id_t
+let query_sty_t : query_sty val_t = pair_t route_id_t (pair_t string_t state_id_t)
 let goals_sty_t : goals_sty val_t = unit_t
 let evars_sty_t : evars_sty val_t = unit_t
 let hints_sty_t : hints_sty val_t = unit_t
@@ -528,7 +542,7 @@ let add_rty_t : add_rty val_t =
   pair_t state_id_t (pair_t (union_t unit_t state_id_t) string_t)
 let edit_at_rty_t : edit_at_rty val_t =
   union_t unit_t (pair_t state_id_t (pair_t state_id_t state_id_t))
-let query_rty_t : query_rty val_t = string_t
+let query_rty_t : query_rty val_t = unit_t
 let goals_rty_t : goals_rty val_t = option_t goals_t
 let evars_rty_t : evars_rty val_t = option_t (list_t evar_t)
 let hints_rty_t : hints_rty val_t =
