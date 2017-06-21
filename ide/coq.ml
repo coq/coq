@@ -366,7 +366,14 @@ let bind_self_as f =
 (** This launches a fresh handle from its command line arguments. *)
 let spawn_handle args respawner feedback_processor =
   let prog = coqtop_path () in
-  let args = Array.of_list ("--xml_format=Ppcmds" :: "-async-proofs" :: "on" :: "-ideslave" :: args) in
+  let async_default =
+    (* disable async processing by default in Windows *)
+    if List.mem Sys.os_type ["Win32"; "Cygwin"] then
+      "off"
+    else
+      "on"
+  in
+  let args = Array.of_list ("--xml_format=Ppcmds" :: "-async-proofs" :: async_default :: "-ideslave" :: args) in
   let env =
     match !Flags.ideslave_coqtop_flags with
     | None -> None
