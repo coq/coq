@@ -151,7 +151,7 @@ GEXTEND Gram
         l = LIST0
           [ "with"; id = pidentref; bl = binders; ":"; c = lconstr ->
           (Some id,(bl,c)) ] ->
-          VernacStartTheoremProof (thm, (Some id,(bl,c))::l, false)
+          VernacStartTheoremProof (thm, (Some id,(bl,c))::l)
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
       | (kwd,stre) = assumptions_token; nl = inline; bl = assum_list ->

@@ -490,17 +490,13 @@ let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
  		Some (snd (Hook.get f_interp_redexp env evc r)) in
 	do_definition id (local,p,k) pl bl red_option c typ_opt hook)
 
-let vernac_start_proof locality p kind l lettop =
+let vernac_start_proof locality p kind l =
   let local = enforce_locality_exp locality None in
   if Dumpglob.dump () then
     List.iter (fun (id, _) ->
       match id with
 	| Some (lid,_) -> Dumpglob.dump_definition lid false "prf"
 	| None -> ()) l;
-  if not(Proof_global.there_are_pending_proofs ()) then
-    if lettop then
-      user_err ~hdr:"Vernacentries.StartProof"
-	(str "Let declarations can only be used in proof editing mode.");
   start_proof_and_print (local, p, Proof kind) l no_hook
 
 let vernac_end_proof ?proof = function
@@ -1937,7 +1933,7 @@ let interp ?proof ?loc locality poly c =
 
   (* Gallina *)
   | VernacDefinition (k,lid,d) -> vernac_definition locality poly k lid d
-  | VernacStartTheoremProof (k,l,top) -> vernac_start_proof locality poly k l top
+  | VernacStartTheoremProof (k,l) -> vernac_start_proof locality poly k l
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
@@ -2025,7 +2021,7 @@ let interp ?proof ?loc locality poly c =
   | VernacComments l -> if_verbose Feedback.msg_info (str "Comments ok\n")
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t)] false
+  | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t)]
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
   | VernacUnfocused -> vernac_unfocused ()

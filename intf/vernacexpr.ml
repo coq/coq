@@ -331,7 +331,7 @@ type vernac_expr =
   (* Gallina *)
   | VernacDefinition of
       (locality option * definition_object_kind) * plident * definition_expr
-  | VernacStartTheoremProof of theorem_kind * proof_expr list * bool
+  | VernacStartTheoremProof of theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *

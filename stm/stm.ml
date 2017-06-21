@@ -476,7 +476,7 @@ end = struct (* {{{ *)
   let mk_branch_name { expr = x } = Branch.make
     (let rec aux x = match x with
     | VernacDefinition (_,((_,i),_),_) -> Names.string_of_id i
-    | VernacStartTheoremProof (_,[Some ((_,i),_),_],_) -> Names.string_of_id i
+    | VernacStartTheoremProof (_,[Some ((_,i),_),_]) -> Names.string_of_id i
     | VernacTime (_, e)
     | VernacTimeout (_, e) -> aux e
     | _ -> "branch" in aux x)
