@@ -601,12 +601,13 @@ let make_resolve_hyp env sigma ~mode st pri decl =
                else false
   in
   let is_class = iscl env cty in
-  let keep = not mode.only_classes || is_class in
-    if keep then
+  if mode.only_classes && not is_class then []
+  else
       let c = mkVar id in
       let name = PathHints [VarRef id] in
       let hints =
-        if is_class then
+        if mode.only_classes then
+          (* Given the previous test, cty must be a class. *)
           let hints = build_subclasses ~check:false env sigma (VarRef id) empty_hint_info in
             (List.map_append
              (fun (path,info,c) ->
@@ -627,7 +628,6 @@ let make_resolve_hyp env sigma ~mode st pri decl =
          [ make_exact_entry ~name env sigma ~compat:mode.compat pri false
          ; make_apply_entry ~name env sigma (mode.evars,mode.hnf,false) pri false ]
         )
-    else []
 
 let make_hints ~mode g st sign =
   let hintlist =
