@@ -194,7 +194,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
    [hint_pattern] is the hint's desired pattern, it is inferred if not specified
 *)
 
-val make_exact_entry : env -> evar_map -> hint_info -> polymorphic -> ?name:hints_path_atom ->
+val make_exact_entry : env -> evar_map -> ?compat:bool -> hint_info -> polymorphic -> ?name:hints_path_atom ->
   (constr * types * Univ.ContextSet.t) -> hint_entry
 
 (** [make_apply_entry (eapply,hnf,verbose) info (c,cty,ctx))].

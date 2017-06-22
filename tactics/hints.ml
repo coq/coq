@@ -786,7 +786,15 @@ let secvars_of_constr env sigma c =
 let secvars_of_global env gr =
   secvars_of_idset (vars_of_global_reference env gr)
 
-let make_exact_entry env sigma info poly ?(name=PathAny) (c, cty, ctx) =
+let make_exact_entry_compat env sigma info poly ?(name=PathAny) (c, cty, ctx) =
+  let secvars = secvars_of_constr env sigma c in
+  let cty = strip_outer_cast sigma cty in
+  let pri = match info.hint_priority with None -> 0 | Some p -> p in
+  (None, { pri; poly; pat = None; name; db = None; secvars;
+           code = with_uid (Give_exact (c, cty, ctx)); })
+
+let make_exact_entry env sigma ?(compat=false) info poly ?(name=PathAny) (c, cty, ctx) =
+  if compat then make_exact_entry_compat env sigma info poly ~name (c, cty, ctx) else
   let secvars = secvars_of_constr env sigma c in
   let cty = strip_outer_cast sigma cty in
     match EConstr.kind sigma cty with

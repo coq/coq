@@ -158,28 +158,83 @@ let pr_ev evs ev =
 open Auto
 open Unification
 
-let auto_core_unif_flags st freeze = {
-  modulo_conv_on_closed_terms = Some st;
-  use_metas_eagerly_in_conv_on_closed_terms = true;
+type mode =
+  { full_transparent_state : bool
+  ; use_metas_eagerly_in_conv_on_closed_terms : bool
+  ; use_pattern_unification : bool
+  ; no_frozen_evars : bool
+  ; modulo_betaiota : bool
+  ; modulo_eta : bool
+  ; resolve_evars : bool
+  ; only_classes : bool
+  ; count_intros : bool
+  ; hnf : bool
+  ; compat : bool
+  ; evars : bool
+  ; max_cost : int option
+  }
+
+let eauto_compat =
+  { full_transparent_state = true
+  ; use_metas_eagerly_in_conv_on_closed_terms = false
+  ; use_pattern_unification = false
+  ; no_frozen_evars = true
+  ; modulo_betaiota = false
+  ; modulo_eta = true
+  ; resolve_evars = true
+  ; only_classes = false
+  ; count_intros = false
+  ; hnf = true
+  ; compat = true
+  ; evars = true
+  ; max_cost = None
+  }
+
+let normal =
+  { full_transparent_state = false
+  ; use_metas_eagerly_in_conv_on_closed_terms = true
+  ; use_pattern_unification = true
+  ; no_frozen_evars = false
+  ; modulo_betaiota = true
+  ; modulo_eta = false
+  ; resolve_evars = false
+  ; only_classes = false
+  ; count_intros = true
+  ; hnf = false
+  ; compat = false
+  ; evars = true
+  ; max_cost = None
+  }
+
+let only_classes = { normal with only_classes = true }
+
+let auto_core_unif_flags ~mode st freeze =
+  let st' =
+    if mode.full_transparent_state then full_transparent_state else st
+  in
+  {
+  modulo_conv_on_closed_terms = Some st';
+  use_metas_eagerly_in_conv_on_closed_terms =
+    mode.use_metas_eagerly_in_conv_on_closed_terms;
   use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = st;
-  modulo_delta_types = st;
+  modulo_delta_types = st';
   check_applied_meta_types = false;
-  use_pattern_unification = true;
+  use_pattern_unification = mode.use_pattern_unification;
   use_meta_bound_pattern_unification = true;
-  frozen_evars = freeze;
+  frozen_evars = if mode.no_frozen_evars then Evar.Set.empty else freeze;
   restrict_conv_on_strict_subterms = false; (* ? *)
-  modulo_betaiota = true;
-  modulo_eta = false;
-}
+  modulo_betaiota = mode.modulo_betaiota;
+  modulo_eta = mode.modulo_eta;
+  }
 
-let auto_unif_flags freeze st =
-  let fl = auto_core_unif_flags st freeze in
+let auto_unif_flags ~mode freeze st =
+  let fl = auto_core_unif_flags ~mode st freeze in
   { core_unify_flags = fl;
     merge_unify_flags = fl;
     subterm_unify_flags = fl;
     allow_K_in_toplevel_higher_order_unification = false;
-    resolve_evars = false
+    resolve_evars = mode.resolve_evars
 }
 
 let e_give_exact flags poly (c,clenv) =
@@ -331,7 +386,7 @@ let hintmap_of sigma hdc secvars concl =
      else Hint_db.map_existential sigma ~secvars hdc concl db
 
 (** Hack to properly solve dependent evars that are typeclasses *)
-let rec e_trivial_fail_db only_classes db_list local_db secvars =
+let rec e_trivial_fail_db ~mode db_list local_db secvars =
   let open Tacticals.New in
   let open Tacmach.New in
   let trivial_fail =
@@ -342,13 +397,13 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     let d = pf_last_hyp gl in
     let hintl = make_resolve_hyp env sigma d in
     let hints = Hint_db.add_list env sigma hintl local_db in
-      e_trivial_fail_db only_classes db_list hints secvars
-      end
+      e_trivial_fail_db ~mode db_list hints secvars
+    end
   in
   let trivial_resolve =
     Proofview.Goal.enter
     begin fun gl ->
-    let tacs = e_trivial_resolve db_list local_db secvars only_classes
+    let tacs = e_trivial_resolve ~mode db_list local_db secvars
                                  (pf_env gl) (project gl) (pf_concl gl) in
       tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
     end
@@ -359,14 +414,14 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   in
   tclFIRST (List.map tclCOMPLETE tacl)
 
-and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl =
+and e_my_find_search ~mode db_list local_db secvars hdc complete env sigma concl =
   let open Proofview.Notations in
   let prods, concl = EConstr.decompose_prod_assum sigma concl in
   let nprods = List.length prods in
   let freeze =
     try
       match hdc with
-      | Some (hd,_) when only_classes ->
+      | Some (hd,_) when mode.only_classes ->
          let cl = Typeclasses.class_info hd in
          if cl.cl_strict then
            Evarutil.undefined_evars_of_term sigma concl
@@ -379,12 +434,15 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
     List.map_append
       (fun db ->
         let tacs = hint_of_db db in
-        let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
+        let flags = auto_unif_flags ~mode freeze (Hint_db.transparent_state db) in
           List.map (fun x -> (flags, x)) tacs)
       (local_db::db_list)
   in
   let tac_of_hint =
     fun (flags, {pri = b; pat = p; poly = poly; code = t; secvars; name = name}) ->
+    match mode.max_cost with
+    | Some cost when b > cost -> None
+    | _ ->
       let tac = function
         | Res_pf (term,cl) ->
            if get_typeclasses_filtered_unification () then
@@ -400,6 +458,10 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
                Proofview.tclBIND (Proofview.with_shelf tac)
                   (fun (gls, ()) -> shelve_dependencies gls)
         | ERes_pf (term,cl) ->
+           if not mode.evars then
+              Proofview.Goal.enter (fun gl ->
+                  Tacticals.New.tclZEROMSG (str "eres_pf"))
+           else
            if get_typeclasses_filtered_unification () then
              let tac = (with_prods nprods poly (term,cl)
                   (fun gl clenv ->
@@ -423,7 +485,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
       | Res_pf_THEN_trivial_fail (term,cl) ->
          let fst = with_prods nprods poly (term,cl) (unify_e_resolve poly flags) in
          let snd = if complete then Tacticals.New.tclIDTAC
-                   else e_trivial_fail_db only_classes db_list local_db secvars in
+                   else e_trivial_fail_db ~mode db_list local_db secvars in
          Tacticals.New.tclTHEN fst snd
       | Unfold_nth c ->
          Proofview.tclPROGRESS (unfold_in_concl [AllOccurrences,c])
@@ -437,21 +499,23 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
            str " with pattern " ++ Printer.pr_constr_pattern_env env sigma pat
         | _ -> mt ()
       in
-        match repr_hint t with
+      Some
+        begin match repr_hint t with
         | Extern _ -> (tac, b, true, name, lazy (pr_hint env sigma t ++ pp))
         | _ -> (tac, b, false, name, lazy (pr_hint env sigma t ++ pp))
-  in List.map tac_of_hint hintl
+        end
+  in List.map_filter tac_of_hint hintl
 
-and e_trivial_resolve db_list local_db secvars only_classes env sigma concl =
+and e_trivial_resolve ~mode db_list local_db secvars env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
-    e_my_find_search db_list local_db secvars hd true only_classes env sigma concl
+    e_my_find_search ~mode db_list local_db secvars hd true env sigma concl
   with Not_found -> []
 
-let e_possible_resolve db_list local_db secvars only_classes env sigma concl =
+let e_possible_resolve ~mode db_list local_db secvars env sigma concl =
   let hd = try Some (decompose_app_bound sigma concl) with Bound -> None in
   try
-    e_my_find_search db_list local_db secvars hd false only_classes env sigma concl
+    e_my_find_search ~mode db_list local_db secvars hd false env sigma concl
   with Not_found -> []
 
 let cut_of_hints h =
@@ -522,7 +586,7 @@ let evars_to_goals p evm =
   else Some (!goals, evm)
 
 (** Making local hints  *)
-let make_resolve_hyp env sigma st flags only_classes pri decl =
+let make_resolve_hyp env sigma ~mode st pri decl =
   let id = NamedDecl.get_id decl in
   let cty = Evarutil.nf_evar sigma (NamedDecl.get_type decl) in
   let rec iscl env ty =
@@ -537,7 +601,7 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
                else false
   in
   let is_class = iscl env cty in
-  let keep = not only_classes || is_class in
+  let keep = not mode.only_classes || is_class in
     if keep then
       let c = mkVar id in
       let name = PathHints [VarRef id] in
@@ -560,24 +624,24 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
         (hints @ List.map_filter
          (fun f -> try Some (f (c, cty, Univ.ContextSet.empty))
            with Failure _ | UserError _ -> None)
-         [make_exact_entry ~name env sigma pri false;
-          make_apply_entry ~name env sigma flags pri false])
+         [ make_exact_entry ~name env sigma ~compat:mode.compat pri false
+         ; make_apply_entry ~name env sigma (mode.evars,mode.hnf,false) pri false ]
+        )
     else []
 
-let make_hints g st only_classes sign =
+let make_hints ~mode g st sign =
   let hintlist =
     List.fold_left
       (fun hints hyp ->
         let consider =
-          not only_classes ||
+          not mode.only_classes ||
           try let t = hyp |> NamedDecl.get_id |> Global.lookup_named |> NamedDecl.get_type in
               (* Section variable, reindex only if the type changed *)
               not (EConstr.eq_constr (project g) (EConstr.of_constr t) (NamedDecl.get_type hyp))
           with Not_found -> true
         in
         if consider then
-          let hint =
-            pf_apply make_resolve_hyp g st (true,false,false) only_classes empty_hint_info hyp
+          let hint = pf_apply make_resolve_hyp g ~mode st empty_hint_info hyp
           in hint @ hints
         else hints)
       ([]) sign
@@ -588,40 +652,44 @@ module Search = struct
     { search_depth : int list;
       last_tac : Pp.t Lazy.t;
       search_dep : bool;
-      search_only_classes : bool;
       search_cut : hints_path;
-      search_hints : hint_db; }
+      search_hints : hint_db;
+      mode : mode;
+    }
 
   (** Local hints *)
   let autogoal_cache = Summary.ref ~name:"autogoal_cache"
-      (DirPath.empty, true, Context.Named.empty,
+      (DirPath.empty, only_classes, Context.Named.empty,
        Hint_db.empty full_transparent_state true)
 
-  let make_autogoal_hints only_classes ?(st=full_transparent_state) g =
+  let make_autogoal_hints ~(mode:mode) ?(st=full_transparent_state) g =
     let open Proofview in
     let open Tacmach.New in
     let sign = Goal.hyps g in
-    let (dir, onlyc, sign', cached_hints) = !autogoal_cache in
+    let (dir, cached_mode, sign', cached_hints) = !autogoal_cache in
     let cwd = Lib.cwd () in
     let eq c1 c2 = EConstr.eq_constr (project g) c1 c2 in
     if DirPath.equal cwd dir &&
-         (onlyc == only_classes) &&
+         (cached_mode == mode) &&
            Context.Named.equal eq sign sign' &&
              Hint_db.transparent_state cached_hints == st
     then cached_hints
     else
-      let hints = make_hints {it = Goal.goal g; sigma = project g}
-                             st only_classes sign
+      let hints =
+        make_hints ~mode
+                   {it = Goal.goal g; sigma = project g}
+                   st sign
       in
-      autogoal_cache := (cwd, only_classes, sign, hints); hints
+      autogoal_cache := (cwd, mode, sign, hints); hints
 
-  let make_autogoal ?(st=full_transparent_state) only_classes dep cut i g =
-    let hints = make_autogoal_hints only_classes ~st g in
+  let make_autogoal ?(st=full_transparent_state) ~mode dep cut i g =
+    let hints = make_autogoal_hints ~mode ~st g in
     { search_hints = hints;
       search_depth = [i]; last_tac = lazy (str"none");
       search_dep = dep;
-      search_only_classes = only_classes;
-      search_cut = cut }
+      search_cut = cut;
+      mode = mode;
+    }
 
   (** In the proof engine failures are represented as exceptions *)
   exception ReachedLimitEx
@@ -684,7 +752,7 @@ module Search = struct
             else str" without backtracking"));
     let secvars = compute_secvars gl in
     let poss =
-      e_possible_resolve hints info.search_hints secvars info.search_only_classes env sigma concl in
+      e_possible_resolve ~mode:info.mode hints info.search_hints secvars env sigma concl in
     (* If no goal depends on the solution of this one or the
        instances are irrelevant/assumed to be unique, then
        we don't need to backtrack, as long as no evar appears in the goal
@@ -729,15 +797,15 @@ module Search = struct
           if b && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
           then
             let st = Hint_db.transparent_state info.search_hints in
-            make_autogoal_hints info.search_only_classes ~st gl'
+            make_autogoal_hints ~mode:info.mode ~st gl'
           else info.search_hints
         in
         let dep' = info.search_dep || Proofview.unifiable sigma' (Goal.goal gl') gls in
         let info' =
-          { search_depth = succ j :: i :: info.search_depth;
+          { info with
+            search_depth = succ j :: i :: info.search_depth;
             last_tac = pp;
             search_dep = dep';
-            search_only_classes = info.search_only_classes;
             search_hints = hints';
             search_cut = derivs }
         in kont info' end
@@ -763,7 +831,7 @@ module Search = struct
           let filter ev =
             try
               let evi = Evd.find_undefined sigma ev in
-              if info.search_only_classes then
+              if info.mode.only_classes then
                 Some (ev, not (is_class_evar sigma evi))
               else Some (ev, true)
             with Not_found -> None
@@ -840,8 +908,10 @@ module Search = struct
     let sigma = Goal.sigma gl in
     let decl = Tacmach.New.pf_last_hyp gl in
     let hint =
-      make_resolve_hyp env sigma (Hint_db.transparent_state info.search_hints)
-                       (true,false,false) info.search_only_classes empty_hint_info decl in
+      make_resolve_hyp ~mode:info.mode env sigma
+                       (Hint_db.transparent_state info.search_hints)
+                       empty_hint_info decl
+    in
     let ldb = Hint_db.add_list env sigma hint info.search_hints in
     let info' =
       { info with search_hints = ldb; last_tac = lazy (str"intro");
@@ -853,38 +923,41 @@ module Search = struct
      (fun _ -> Proofview.Goal.enter (fun gl -> intro_tac info kont gl))
 
   let rec search_tac hints limit depth =
-    let kont info =
+    let kont depth info =
       Proofview.numgoals >>= fun i ->
       if !typeclasses_debug > 1 then
         Feedback.msg_debug
           (str"calling eauto recursively at depth " ++ int (succ depth)
            ++ str" on " ++ int i ++ str" subgoals");
-      search_tac hints limit (succ depth) info
+      search_tac hints limit depth info
     in
     fun info ->
     if Int.equal depth (succ limit) then Proofview.tclZERO ReachedLimitEx
     else
-      Proofview.tclOR (hints_tac hints info kont)
-                      (fun e -> Proofview.tclOR (intro info kont)
+      Proofview.tclOR (hints_tac hints info (kont (succ depth)))
+                      (fun e ->
+                        let depth =
+                          if info.mode.count_intros then succ depth else depth
+                        in
+                        Proofview.tclOR (intro info (kont (depth)))
                       (fun e' -> let (e, info) = merge_exceptions e e' in
                               Proofview.tclZERO ~info e))
 
-  let search_tac_gl ?st only_classes dep hints depth i sigma gls gl :
+  let search_tac_gl ?st ~mode dep hints depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
     if false (* In 8.6, still allow non-class goals only_classes && not (is_class_type sigma (Goal.concl gl)) *) then
       Tacticals.New.tclZEROMSG (str"Not a subgoal for a class")
     else
       let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
-      let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
+      let info = make_autogoal ?st ~mode dep (cut_of_hints hints) i gl in
       search_tac hints depth 1 info
 
-  let search_tac ?(st=full_transparent_state) only_classes dep hints depth =
+  let search_tac ?(st=full_transparent_state) ~mode dep hints depth =
     let open Proofview in
     let tac sigma gls i =
-      Goal.enter
-        begin fun gl ->
-          search_tac_gl ~st only_classes dep hints depth (succ i) sigma gls gl end
+      Goal.enter (fun gl ->
+          search_tac_gl ~st ~mode dep hints depth (succ i) sigma gls gl)
     in
       Proofview.Unsafe.tclGETGOALS >>= fun gls ->
       let gls = CList.map Proofview.drop_state gls in
@@ -910,10 +983,10 @@ module Search = struct
     in aux 1
 
   let eauto_tac ?(st=full_transparent_state) ?(unique=false)
-                ~only_classes ?strategy ~depth ~dep hints =
+                ~mode ?strategy ~depth ~dep hints =
     let open Proofview in
     let tac =
-      let search = search_tac ~st only_classes dep hints in
+      let search = search_tac ~st ~mode dep hints in
       let dfs =
         match strategy with
         | None -> not (get_typeclasses_iterative_deepening ())
@@ -952,7 +1025,7 @@ module Search = struct
        Feedback.msg_debug (str"Starting resolution with " ++ int i ++
                              str" goal(s) under focus and " ++
                              int (List.length initshelf) ++ str " shelved goal(s)" ++
-                             (if only_classes then str " in only_classes mode" else str " in regular mode") ++
+                             (if mode.only_classes then str " in only_classes mode" else str " in regular mode") ++
                              match depth with None -> str ", unbounded"
                                             | Some i -> str ", with depth limit " ++ int i));
     tac
@@ -989,15 +1062,15 @@ module Search = struct
          else raise Not_found
        with Logic_monad.TacticFailure _ -> raise Not_found
 
-  let evars_eauto env evd depth only_classes unique dep st hints p =
-    let eauto_tac = eauto_tac ~st ~unique ~only_classes ~depth ~dep:(unique || dep) hints in
+  let evars_eauto ~mode env evd depth unique dep st hints p =
+    let eauto_tac = eauto_tac ~st ~unique ~mode ~depth ~dep:(unique || dep) hints in
     let res = run_on_evars env evd p eauto_tac in
     match res with
     | None -> evd
     | Some evd' -> evd'
 
   let typeclasses_eauto env evd ?depth unique st hints p =
-    evars_eauto env evd depth true unique false st hints p
+    evars_eauto ~mode:only_classes env evd depth unique false st hints p
   (** Typeclasses eauto is an eauto which tries to resolve only
       goals of typeclass type, and assumes that the initially selected
       evars in evd are independent of the rest of the evars *)
@@ -1018,7 +1091,32 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state)
   in
   let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
   let depth = match depth with None -> get_typeclasses_depth () | Some l -> Some l in
-  Search.eauto_tac ~st ~only_classes ?strategy ~depth ~dep:true dbs
+  Search.eauto_tac ~st ~mode:{ normal with only_classes } ?strategy ~depth ~dep:true dbs
+
+let eauto ?(strategy=Dfs) ?(evars = true) ?max_cost ~depth lems dbs =
+  let dbs =
+    match dbs with
+    | None -> Hints.current_pure_db ()
+    | Some dbs -> Hints.make_db_list dbs
+  in
+  let depth =
+    Some
+      begin match depth with
+      | None -> !default_search_depth
+      | Some d -> d
+      end
+  in
+  Proofview.Goal.enter (fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Tacmach.New.project gl in
+      let dbs =
+        match lems with
+        | [] -> dbs
+        | _ -> dbs @ [ make_local_hint_db env sigma evars lems ]
+      in
+      Search.eauto_tac ~mode:{ eauto_compat with evars; max_cost }
+        ~strategy ~depth ~dep:true dbs
+      |> Tacticals.New.tclTRY)
 
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,
@@ -1184,7 +1282,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl unique =
   let gls' =
       try
         Proofview.V82.of_tactic
-        (Search.eauto_tac ~st ~only_classes:true ~depth [hints] ~dep:true) gls
+        (Search.eauto_tac ~st ~mode:only_classes ~depth [hints] ~dep:true) gls
       with Refiner.FailError _ -> raise Not_found
   in
   let evd = sig_sig gls' in
@@ -1227,7 +1325,7 @@ let is_ground c =
 let autoapply c i =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
-  let flags = auto_unif_flags Evar.Set.empty
+  let flags = auto_unif_flags ~mode:normal Evar.Set.empty
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
   let cty = Tacmach.New.pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in

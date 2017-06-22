@@ -29,6 +29,11 @@ val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state -> ?strategy
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic
 
+val eauto :
+  ?strategy:search_strategy -> ?evars:bool -> ?max_cost:int ->
+  depth:(Int.t option) -> Tactypes.delayed_open_constr list ->
+  Hints.hint_db_name list option -> unit Proofview.tactic
+
 val head_of_constr : Id.t -> constr -> unit Proofview.tactic
 
 val not_evar : constr -> unit Proofview.tactic
@@ -37,6 +42,7 @@ val is_ground : constr -> unit Proofview.tactic
 
 val autoapply : constr -> Hints.hint_db_name -> unit Proofview.tactic
 
+(*
 module Search : sig
   val eauto_tac :
     ?st:Names.transparent_state ->
@@ -56,3 +62,4 @@ module Search : sig
     (** The list of hint databases to use *)
     unit Proofview.tactic
 end
+*)
