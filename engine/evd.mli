@@ -102,6 +102,9 @@ type evar_info = {
       in the solution *)
   evar_private : Id.Set.t;
   (** Subset of non-canonically or non user-generated variables of the context *)
+  evar_concl_user_names : Id.Set.t;
+  (** List of names of the products of the conclusion provided by user *)
+  (** Typically at the beginning of a proof, or after "assert" *)
   evar_source : Evar_kinds.t located;
   (** Information about the evar. *)
   evar_candidates : constr list option;

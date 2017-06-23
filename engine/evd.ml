@@ -141,6 +141,7 @@ type evar_info = {
   evar_body : evar_body;
   evar_filter : Filter.t;
   evar_private : Id.Set.t;
+  evar_concl_user_names : Id.Set.t;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
@@ -149,6 +150,7 @@ let make_evar hyps ccl = {
   evar_concl = ccl;
   evar_hyps = hyps;
   evar_private = Id.Set.empty;
+  evar_concl_user_names = Id.Set.empty;
   evar_body = Evar_empty;
   evar_filter = Filter.identity;
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;

@@ -36,7 +36,7 @@ val new_evar :
 
 val new_pure_evar :
   named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?store:Store.t ->
+  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?concl_user_names:Id.Set.t -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> evar_map * evar
 

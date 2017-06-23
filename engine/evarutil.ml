@@ -380,7 +380,7 @@ let new_pure_evar_full evd evi =
   let evd = Evd.declare_future_goal evk evd in
   (evd, evk)
 
-let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(private_ids = Id.Set.empty) ?(store = Store.empty)?naming ?(principal=false) typ =
+let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(private_ids = Id.Set.empty) ?(concl_user_names = Id.Set.empty) ?(store = Store.empty)?naming ?(principal=false) typ =
   let typ = EConstr.Unsafe.to_constr typ in
   let candidates = Option.map (fun l -> List.map EConstr.Unsafe.to_constr l) candidates in
   let default_naming = Misctypes.IntroAnonymous in
@@ -399,6 +399,7 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
     evar_body = Evar_empty;
     evar_filter = filter;
     evar_private = private_ids;
+    evar_concl_user_names = concl_user_names;
     evar_source = src;
     evar_candidates = candidates;
     evar_extra = store; }
@@ -414,7 +415,7 @@ let new_evar_instance sign evd typ ?src ?filter ?candidates ?private_ids ?concl_
   let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?private_ids ?store ?naming ?principal typ in
+  let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?private_ids ?concl_user_names ?store ?naming ?principal typ in
   evd, mkEvar (newevk,Array.of_list instance)
 
 let new_evar_from_context sign evd ?src ?filter ?candidates ?(private_ids=Id.Set.empty) ?(concl_user_names=Id.Set.empty) ?store ?naming ?principal typ =
@@ -427,7 +428,7 @@ let new_evar_from_context sign evd ?src ?filter ?candidates ?(private_ids=Id.Set
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar env evd ?src ?filter ?candidates ?(private_ids=Id.Set.empty) ?concl_user_names ?store ?naming ?principal typ =
+let new_evar env evd ?src ?filter ?candidates ?(private_ids=Id.Set.empty) ?(concl_user_names=Id.Set.empty) ?store ?naming ?principal typ =
   let sign,private_ids,typ',instance,subst,vsubst =
     push_rel_context_to_named_context env private_ids evd typ in
   let map c = subst2 subst vsubst c in

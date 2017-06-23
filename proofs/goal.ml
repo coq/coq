@@ -74,6 +74,7 @@ module V82 = struct
 		Evd.evar_concl = concl;
 		Evd.evar_filter = Evd.Filter.identity;
 		Evd.evar_private = private_ids;
+		Evd.evar_concl_user_names = Names.Id.Set.empty;
 		Evd.evar_body = Evd.Evar_empty;
 		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
 		Evd.evar_candidates = None;
