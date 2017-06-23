@@ -35,35 +35,6 @@ let add_warning_in_category ~name ~category =
   in
   Hashtbl.replace categories category (name::ws)
 
-let refine_loc = function
-  | None when not (Loc.is_ghost !current_loc) -> Some !current_loc
-  | loc -> loc
-
-let create ~name ~category ?(default=Enabled) pp =
-  Hashtbl.add warnings name { default; category; status = default };
-  add_warning_in_category ~name ~category;
-  if default <> Disabled then
-    add_warning_in_category ~name ~category:"default";
-  fun ?loc x -> let w = Hashtbl.find warnings name in
-           match w.status with
-           | Disabled -> ()
-           | AsError ->
-              begin match refine_loc loc with
-              | Some loc -> CErrors.user_err_loc (loc,"_",pp x)
-              | None -> CErrors.errorlabstrm "_" (pp x)
-              end
-           | Enabled ->
-              let msg =
-                pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
-                  str category ++ str "]"
-              in
-              let loc = refine_loc loc in
-              Feedback.msg_warning ?loc msg
-
-let warn_unknown_warning =
-  create ~name:"unknown-warning" ~category:"toplevel"
-         (fun name -> strbrk "Unknown warning name: " ++ str name)
-
 let set_warning_status ~name status =
   try
     let w = Hashtbl.find warnings name in 
@@ -118,12 +89,6 @@ let set_status ~name status =
 let split_flags s =
   let reg = Str.regexp "[ ,]+" in Str.split reg s
 
-let check_warning ~silent (_status,name) =
-  is_all_keyword name ||
-  Hashtbl.mem categories name ||
-  Hashtbl.mem warnings name ||
-  (if not silent then warn_unknown_warning name; false)
-
 (** [cut_before_all_rev] removes all flags subsumed by a later occurrence of the
     "all" flag, and reverses the list. *)
 let rec cut_before_all_rev acc = function
@@ -150,10 +115,9 @@ let uniquize_flags_rev flags =
     | [] -> acc
   in aux [] CString.Set.empty flags
 
-(** [normalize_flags] removes unknown or redundant warnings. If [silent] is
-    true, it emits a warning when an unknown warning is met. *)
+(** [normalize_flags] removes redundant warnings. Unknown warnings are kept
+    because they may be declared in a plugin that will be linked later. *)
 let normalize_flags ~silent warnings =
-  let warnings = List.filter (check_warning ~silent) warnings in
   let warnings = cut_before_all_rev warnings in
   uniquize_flags_rev warnings
 
@@ -186,3 +150,35 @@ let parse_flags s =
 
 let set_flags s =
   reset_default_warnings (); let s = parse_flags s in flags := s
+
+let refine_loc = function
+  | None when not (Loc.is_ghost !current_loc) -> Some !current_loc
+  | loc -> loc
+
+(* Adds a warning to the [warnings] and [category] tables. We then reparse the
+   warning flags string, because the warning being created might have been set
+   already. *)
+let create ~name ~category ?(default=Enabled) pp =
+  Hashtbl.replace warnings name { default; category; status = default };
+  add_warning_in_category ~name ~category;
+  if default <> Disabled then
+    add_warning_in_category ~name ~category:"default";
+  (* We re-parse and also re-normalize the flags, because the category of the
+     new warning is now known. *)
+  set_flags !flags;
+  fun ?loc x -> let w = Hashtbl.find warnings name in
+           match w.status with
+           | Disabled -> ()
+           | AsError ->
+              begin match refine_loc loc with
+              | Some loc -> CErrors.user_err_loc (loc,"_",pp x)
+              | None -> CErrors.errorlabstrm "_" (pp x)
+              end
+           | Enabled ->
+              let msg =
+                pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
+                  str category ++ str "]"
+              in
+              let loc = refine_loc loc in
+              Feedback.msg_warning ?loc msg
+
