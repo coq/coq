@@ -28,7 +28,7 @@ open Equality
 open Misctypes
 open Proofview.Notations
 
-DECLARE PLUGIN "extratactics"
+DECLARE PLUGIN "ltac_plugin"
 
 (**********************************************************************)
 (* replace, discriminate, injection, simplify_eq                      *)

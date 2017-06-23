@@ -17,7 +17,7 @@
 open API
 open Eqdecide
 
-DECLARE PLUGIN "g_eqdecide"
+DECLARE PLUGIN "ltac_plugin"
 
 TACTIC EXTEND decide_equality
 | [ "decide" "equality" ] -> [ decideEqualityGoal ]

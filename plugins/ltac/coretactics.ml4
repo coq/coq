@@ -17,7 +17,7 @@ open Stdarg
 open Extraargs
 open Names
 
-DECLARE PLUGIN "coretactics"
+DECLARE PLUGIN "ltac_plugin"
 
 (** Basic tactics *)
 
@@ -324,11 +324,11 @@ let initial_atomic () =
         "fresh", TacArg(Loc.tag @@ TacFreshId [])
       ]
 
-let () = Mltop.declare_cache_obj initial_atomic "coretactics"
+let () = Mltop.declare_cache_obj initial_atomic "ltac_plugin"
 
 (* First-class Ltac access to primitive blocks *)
 
-let initial_name s = { mltac_plugin = "coretactics"; mltac_tactic = s; }
+let initial_name s = { mltac_plugin = "ltac_plugin"; mltac_tactic = s; }
 let initial_entry s = { mltac_name = initial_name s; mltac_index = 0; }
 
 let register_list_tactical name f =
@@ -356,4 +356,4 @@ let initial_tacticals () =
     "solve", TacFun ([Name (idn 0)], TacML (None, (initial_entry "solve", [varn 0])));
   ]
 
-let () = Mltop.declare_cache_obj initial_tacticals "coretactics"
+let () = Mltop.declare_cache_obj initial_tacticals "ltac_plugin"

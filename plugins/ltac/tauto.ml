@@ -13,13 +13,14 @@ open Hipattern
 open Names
 open Geninterp
 open Misctypes
+open Ltac_plugin
 open Tacexpr
 open Tacinterp
 open Util
 open Tacticals.New
 open Proofview.Notations
 
-let tauto_plugin = "tauto"
+let tauto_plugin = "tauto_plugin"
 let () = Mltop.add_known_module tauto_plugin
 
 let assoc_var s ist =

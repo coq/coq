@@ -18,7 +18,7 @@ open Pcoq.Constr
 open Pltac
 open Hints
 
-DECLARE PLUGIN "g_auto"
+DECLARE PLUGIN "ltac_plugin"
 
 (* Hint bases *)
 

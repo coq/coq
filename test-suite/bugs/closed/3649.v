@@ -3,7 +3,6 @@
 (* coqc version trunk (September 2014) compiled on Sep 18 2014 21:0:5 with OCaml 4.01.0
    coqtop version cagnode16:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (07e4438bd758c2ced8caf09a6961ccd77d84e42b) *)
 Declare ML Module "ltac_plugin".
-Declare ML Module "coretactics".
 Set Default Proof Mode "Classic".
 Reserved Notation "x -> y" (at level 99, right associativity, y at level 200).
 Reserved Notation "x = y" (at level 70, no associativity).
@@ -14,7 +13,6 @@ Axiom admit : forall {T}, T.
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Reserved Infix "o" (at level 40, left associativity).
 Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a where "x = y" := (@paths _ x y) : type_scope.
-Ltac constr_eq a b := let test := constr:(@idpath _ _ : a = b) in idtac.
 Global Set Primitive Projections.
 Delimit Scope morphism_scope with morphism.
 Record PreCategory :=

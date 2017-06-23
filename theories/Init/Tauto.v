@@ -2,7 +2,7 @@ Require Import Notations.
 Require Import Datatypes.
 Require Import Logic.
 
-Local Declare ML Module "tauto".
+Declare ML Module "tauto_plugin".
 
 Local Ltac not_dep_intros :=
   repeat match goal with
