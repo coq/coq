@@ -148,6 +148,19 @@ Check IHn2.
 Set Warnings "+generated-names".
 Abort.
 
+Lemma b : forall (b:bool) n, n = 0.
+Proof.
+intro n.
+intros. (* n0 is generated *)
+match goal with |- ?x = 0 => induction x end.
+Fail 2:Check n0.
+Fail 2:Check IHn0.
+Set Warnings "-generated-names".
+2:Check n0.
+2:Check IHn0.
+Set Warnings "+generated-names".
+Abort.
+
 (* Testing remember *)
 
 Lemma c : 0 = 0.

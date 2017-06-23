@@ -3588,7 +3588,7 @@ let make_base n id =
 (* Builds two different names from an optional inductive type and a
    number, also deals with a list of names to avoid. If the inductive
    type is None, then hyprecname is IHi where i is a number. *)
-let make_up_names n ind_opt cname =
+let make_up_names n ind_opt (cname,isprivate) =
   let is_hyp = String.equal (atompart_of_id cname) "H" in
   let base = make_base n cname in
   let ind_prefix = "IH" in
@@ -3600,19 +3600,21 @@ let make_up_names n ind_opt cname =
     else add_prefix ind_prefix cname in
   let hyprecname = make_base n base_ind in
   if Int.equal n 1 (* Only one recursive argument *) || Int.equal n 0 then
-    (fun _ -> (base,false)), (fun _ -> (hyprecname,false)), Id.Set.empty
+    (* a private name is necessary unstable, i.e. not preserving being user-derived *)
+    (fun _ -> (base,isprivate)), (fun _ -> (hyprecname,isprivate)), Id.Set.empty
   else
     let base_string = Id.to_string base in
     let hyprec_string = Id.to_string hyprecname in
-    let mkbase b p = (make_ident base_string (Some p),b) in
-    let mkhyprecname b p = (make_ident hyprec_string (Some p),b) in
+    let mkbase isunstable p = (make_ident base_string (Some p),isunstable) in
+    let mkhyprecname isunstable p = (make_ident hyprec_string (Some p),isunstable) in
     (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
     (* in order to get names such as f1, f2, ... *)
     let avoid =
       Id.Set.add (make_ident hyprec_string None)
       (Id.Set.singleton (make_ident hyprec_string (Some 0))) in
     if not is_hyp then
-      mkbase false, mkhyprecname false,
+      (* a private name is necessary unstable, i.e. not preserving being user-derived *)
+      mkbase isprivate, mkhyprecname isprivate,
       Id.Set.add (make_ident base_string (Some 0)) (Id.Set.add (make_ident base_string None) avoid)
     else
       (fun _ -> (base,true)), mkhyprecname true, avoid
@@ -4180,7 +4182,7 @@ let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
   let scheme = compute_elim_sig evd ~elimc:elimc elimt in
     evd, (compute_scheme_signature evd scheme names_info ind_type_guess, scheme)
 
-let guess_elim isrec dep s hyp0 gl =
+let guess_elim isrec dep s (hyp0,_) gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let (mind, u), _ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
   let evd, elimc =
@@ -4202,7 +4204,7 @@ let guess_elim isrec dep s hyp0 gl =
   let elimt = Tacmach.New.pf_unsafe_type_of gl elimc in
     evd, ((elimc, NoBindings), elimt), mkIndU (mind, u)
 
-let given_elim hyp0 (elimc,lbind as e) gl =
+let given_elim (hyp0,_) (elimc,lbind as e) gl =
   let sigma = Tacmach.New.project gl in
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let ind_type_guess,_ = decompose_app sigma (snd (decompose_prod sigma tmptyp0)) in
@@ -4214,7 +4216,7 @@ type scheme_signature =
 
 type eliminator_source =
   | ElimUsing of (eliminator * EConstr.types) * scheme_signature
-  | ElimOver of bool * Id.t
+  | ElimOver of bool * tracked_ident
 
 let find_induction_type isrec elim hyp0 gl =
   let sigma = Tacmach.New.project gl in
@@ -4359,9 +4361,9 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
   end
 
-let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
+let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,_ as id) inhyps =
   Proofview.Goal.enter begin fun gl ->
-  let elim_info = find_induction_type isrec elim hyp0 (Proofview.Goal.assume gl) in
+  let elim_info = find_induction_type isrec elim id (Proofview.Goal.assume gl) in
   atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
     apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
       (fun elim -> induction_tac with_evars [] [hyp0] elim))
@@ -4390,7 +4392,7 @@ let induction_without_atomization isrec with_evars elim names lid =
   then
     Tacticals.New.tclZEROMSG (msg_not_right_number_induction_arguments scheme)
   else
-  let indvars,lid_params = List.chop nargs_indarg_farg lid in
+  let indvars,lid_params = List.chop nargs_indarg_farg (List.map fst lid) in
   (* terms to patternify we must patternify indarg or farg if present in concl *)
   let realindvars = List.rev (if scheme.farg_in_concl then List.tl indvars else indvars) in
   let lidcstr = List.map mkVar (List.rev indvars) in
@@ -4587,10 +4589,11 @@ let induction_gen clear_flag isrec with_evars elim
        clearable variable of the goal w/o occurrence selection
        and w/o equality kept: no need to generalize *)
     let id = destVar evd c in
+    let isprivate = Id.Set.mem id (named_context_private_ids (Environ.named_context_val env)) in
     Tacticals.New.tclTHEN
       (clear_unselected_context id inhyps cls)
       (induction_with_atomization_of_ind_arg
-         isrec with_evars elim names id inhyps)
+         isrec with_evars elim names (id,isprivate) inhyps)
   else
   (* Otherwise, we look for the pattern, possibly adding missing arguments and
      declaring the induction argument as a new local variable *)
@@ -4602,7 +4605,7 @@ let induction_gen clear_flag isrec with_evars elim
     pose_induction_arg_then
       isrec with_evars info_arg elim id arg t inhyps cls
     (induction_with_atomization_of_ind_arg
-       isrec with_evars elim names id inhyps)
+       isrec with_evars elim names (id,true) inhyps)
   end 
 
 (* Induction on a list of arguments. First make induction arguments
@@ -4621,24 +4624,25 @@ let induction_gen_l isrec with_evars elim names lc =
     match l with
       | [] -> Proofview.tclUNIT ()
       | c::l' ->
-          Proofview.tclEVARMAP >>= fun sigma ->
+          Proofview.Goal.enter begin fun gl ->
+          let sigma = Proofview.Goal.sigma gl in
+          let env = Proofview.Goal.env gl in
 	  match EConstr.kind sigma c with
 	    | Var id when not (mem_named_context_val id (Global.named_context_val ()))
 		&& not with_evars ->
-		let _ = newlc:= id::!newlc in
+                let private_ids = named_context_private_ids (Environ.named_context_val env) in
+                let isprivate = Id.Set.mem id private_ids in
+		let _ = newlc:= (id,isprivate)::!newlc in
 		atomize_list l'
 
 	    | _ ->
-                Proofview.Goal.enter begin fun gl ->
                 let type_of = Tacmach.New.pf_unsafe_type_of gl in
-                let sigma = Tacmach.New.project gl in
-                Proofview.tclENV >>= fun env ->
                 let x =
 		  id_of_name_using_hdchar env sigma (type_of c) Anonymous in
 
                 let id = new_fresh_id Id.Set.empty x gl in
 		let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in
-		let _ = newlc:=id::!newlc in
+		let _ = newlc:=(id,true)::!newlc in
 		Tacticals.New.tclTHEN
 		  (letin_tac None (Name id) true c None allHypsAndConcl)
 		  (atomize_list newl')
