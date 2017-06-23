@@ -159,14 +159,14 @@ let _ =
 
 (** This tactic creates a partial proof realizing the introduction rule, but
     does not check anything. *)
-let unsafe_intro env store decl isprivate b =
+let unsafe_intro env store decl isprivate concl_user_names b =
   Refine.refine ~typecheck:false begin fun sigma ->
     let ctx = named_context_val env in
     let nctx = push_named_context_val decl isprivate ctx in
     let inst = List.map (NamedDecl.get_id %> mkVar) (named_context env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
-    let (sigma, ev) = new_evar_instance nctx sigma nb ~principal:true ~store ninst in
+    let (sigma, ev) = new_evar_instance nctx sigma nb ~concl_user_names ~principal:true ~store ninst in
     (sigma, mkNamedLambda_or_LetIn decl ev)
   end
 
@@ -178,14 +178,17 @@ let introduction ?(check=true) id isprivate =
     let hyps = named_context_val (Proofview.Goal.env gl) in
     let store = Proofview.Goal.extra gl in
     let env = Proofview.Goal.env gl in
+    let concl_user_names = Proofview.Goal.concl_user_names gl in
     let () = if check && mem_named_context_val id hyps then
       user_err ~hdr:"Tactics.introduction"
         (str "Variable " ++ pr_id id ++ str " is already declared.")
     in
     let open Context.Named.Declaration in
     match EConstr.kind sigma concl with
-    | Prod (_, t, b) -> unsafe_intro env store (LocalAssum (id, t)) isprivate b
-    | LetIn (_, c, t, b) -> unsafe_intro env store (LocalDef (id, c, t)) isprivate b
+    | Prod (na, t, b) ->
+       unsafe_intro env store (LocalAssum (id, t)) isprivate (Name.fold_right Id.Set.remove na concl_user_names) b
+    | LetIn (na, c, t, b) ->
+       unsafe_intro env store (LocalDef (id, c, t)) isprivate (Name.fold_right Id.Set.remove na concl_user_names) b
     | _ -> raise (RefinerError IntroNeedsProduct)
   end
 
@@ -441,7 +444,8 @@ let find_name mayrepl decl naming gl = match naming with
       (* this case must be compatible with [find_intro_names] below. *)
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
-      let unstable = match RelDecl.get_name decl with Name _ -> false | _ -> true in
+      let concl_user_names = Proofview.Goal.concl_user_names gl in
+      let unstable = match RelDecl.get_name decl with Name id -> Id.Set.mem id concl_user_names | _ -> true in
       new_fresh_stable_id idl (default_id env sigma decl,unstable) gl
   | NamingBasedOn (id,unstable,idl) -> new_fresh_stable_id idl (id,unstable) gl
   | NamingMustBe ((loc,id),isprivate) ->

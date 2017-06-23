@@ -487,6 +487,7 @@ module Goal : sig
   val env : 'a t -> Environ.env
   val sigma : 'a t -> Evd.evar_map
   val extra : 'a t -> Evd.Store.t
+  val concl_user_names : 'a t -> Names.Id.Set.t
 
   (** [nf_enter t] applies the goal-dependent tactic [t] in each goal
       independently, in the manner of {!tclINDEPENDENT} except that

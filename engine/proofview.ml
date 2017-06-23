@@ -1005,6 +1005,10 @@ let goal_extra evars gl =
   let evi = Evd.find evars gl in
   evi.Evd.evar_extra
 
+let goal_concl_user_names evars gl =
+  let evi = Evd.find evars gl in
+  evi.Evd.evar_concl_user_names
+
 let catchable_exception = function
   | Logic_monad.Exception _ -> false
   | e -> CErrors.noncritical e
@@ -1026,6 +1030,7 @@ module Goal = struct
   let hyps {env} = EConstr.named_context env
   let concl {concl} = concl
   let extra {sigma; self} = goal_extra sigma self
+  let concl_user_names {sigma; self} = goal_concl_user_names sigma self
 
   let gmake_with info env sigma goal = 
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
