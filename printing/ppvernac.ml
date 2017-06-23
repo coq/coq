@@ -698,7 +698,7 @@ open Decl_kinds
               | Some cc -> str" :=" ++ spc() ++ cc))
         )
 
-      | VernacStartTheoremProof (ki,l,_) ->
+      | VernacStartTheoremProof (ki,l) ->
         return (
           hov 1 (pr_statement (pr_thm_token ki) (List.hd l) ++
                    prlist (pr_statement (spc () ++ keyword "with")) (List.tl l))

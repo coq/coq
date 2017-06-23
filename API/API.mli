@@ -2407,7 +2407,7 @@ sig
   | VernacNotationAddFormat of string * string * string
   | VernacDefinition of
       (Decl_kinds.locality option * Decl_kinds.definition_object_kind) * plident * definition_expr
-  | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list * bool
+  | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of Constrexpr.constr_expr
   | VernacAssumption of (Decl_kinds.locality option * Decl_kinds.assumption_object_kind) *

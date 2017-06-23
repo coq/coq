@@ -115,7 +115,7 @@ let rec classify_vernac e =
         VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity,[i]), VtLater
     | VernacDefinition (_,((_,i),_),ProveBody _) ->
         VtStartProof(default_proof_mode (),GuaranteesOpacity,[i]), VtLater
-    | VernacStartTheoremProof (_,l,_) ->
+    | VernacStartTheoremProof (_,l) ->
         let ids = 
           CList.map_filter (function (Some ((_,i),pl), _) -> Some i | _ -> None) l in
         VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
