@@ -12,22 +12,11 @@ open Evd
 open Names
 open Pp
 open Globnames
-open Decl_kinds
-
-(** Forward declaration. *)
-val declare_fix_ref : (?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
-  Safe_typing.private_constants Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference) ref
-
-val declare_definition_ref :
-  (Id.t -> definition_kind ->
-     Safe_typing.private_constants Entries.definition_entry -> Impargs.manual_implicits
-       -> global_reference Lemmas.declaration_hook -> global_reference) ref
 
 (* This is a hack to make it possible for Obligations to craft a Qed
  * behind the scenes.  The fix_exn the Stm attaches to the Future proof
  * is not available here, so we provide a side channel to get it *)
 val stm_get_fix_exn : (unit -> Exninfo.iexn -> Exninfo.iexn) Hook.t
-
 
 val check_evars : env -> evar_map -> unit
 

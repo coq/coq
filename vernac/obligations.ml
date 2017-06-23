@@ -22,9 +22,6 @@ open Util
 
 module NamedDecl = Context.Named.Declaration
 
-let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)
-let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
-
 let get_fix_exn, stm_get_fix_exn = Hook.make ()
 
 let succfix (depth, fixrels) =
@@ -496,14 +493,12 @@ let declare_definition prg =
   in
   let () = progmap_remove prg in
   let cst =
-    !declare_definition_ref prg.prg_name 
-     prg.prg_kind ce prg.prg_implicits
+    DeclareDef.declare_definition prg.prg_name
+     prg.prg_kind ce [] prg.prg_implicits
      (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
   in
   Universes.register_universe_binders cst pl;
   cst
-      
-open Pp
 
 let rec lam_index n t acc =
   match kind_of_term t with
@@ -569,7 +564,7 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let ctx = Evd.evar_context_universe_context first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (!declare_fix_ref ~opaque (local, poly, kind) ctx)
+  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) [] ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter Metasyntax.add_notation_interpretation first.prg_notations;

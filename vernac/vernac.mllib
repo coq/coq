@@ -8,6 +8,7 @@ Metasyntax
 Auto_ind_decl
 Search
 Indschemes
+DeclareDef
 Obligations
 Command
 Classes
