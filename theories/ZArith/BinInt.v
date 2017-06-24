@@ -1671,62 +1671,62 @@ Notation SYM2 lem := (fun n m => eq_sym (lem n m)).
 Notation SYM3 lem := (fun n m p => eq_sym (lem n m p)).
 
 Lemma Zplus_assoc_reverse : forall n m p, n+m+p = n+(m+p).
-Proof (SYM3 Z.add_assoc).
+Proof. exact (SYM3 Z.add_assoc). Qed.
 Lemma Zplus_succ_r_reverse : forall n m, Z.succ (n+m) = n+Z.succ m.
-Proof (SYM2 Z.add_succ_r).
+Proof. exact (SYM2 Z.add_succ_r). Qed.
 Notation Zplus_succ_r := Zplus_succ_r_reverse (only parsing).
 Lemma Zplus_0_r_reverse : forall n, n = n + 0.
-Proof (SYM1 Z.add_0_r).
+Proof. exact (SYM1 Z.add_0_r). Qed.
 Lemma Zplus_eq_compat : forall n m p q, n=m -> p=q -> n+p=m+q.
-Proof (f_equal2 Z.add).
+Proof. exact (f_equal2 Z.add). Qed.
 Lemma Zsucc_pred : forall n, n = Z.succ (Z.pred n).
-Proof (SYM1 Z.succ_pred).
+Proof. exact (SYM1 Z.succ_pred). Qed.
 Lemma Zpred_succ : forall n, n = Z.pred (Z.succ n).
-Proof (SYM1 Z.pred_succ).
+Proof. exact (SYM1 Z.pred_succ). Qed.
 Lemma Zsucc_eq_compat : forall n m, n = m -> Z.succ n = Z.succ m.
-Proof (f_equal Z.succ).
+Proof. exact (f_equal Z.succ). Qed.
 Lemma Zminus_0_l_reverse : forall n, n = n - 0.
-Proof (SYM1 Z.sub_0_r).
+Proof. exact (SYM1 Z.sub_0_r). Qed.
 Lemma Zminus_diag_reverse : forall n, 0 = n-n.
-Proof (SYM1 Z.sub_diag).
+Proof. exact (SYM1 Z.sub_diag). Qed.
 Lemma Zminus_succ_l : forall n m, Z.succ (n - m) = Z.succ n - m.
-Proof (SYM2 Z.sub_succ_l).
+Proof. exact (SYM2 Z.sub_succ_l). Qed.
 Lemma Zplus_minus_eq : forall n m p, n = m + p -> p = n - m.
 Proof. intros. now apply Z.add_move_l. Qed.
 Lemma Zplus_minus : forall n m, n + (m - n) = m.
-Proof (fun n m => eq_trans (Z.add_comm n (m-n)) (Z.sub_add n m)).
+Proof. exact (fun n m => eq_trans (Z.add_comm n (m-n)) (Z.sub_add n m)). Qed.
 Lemma Zminus_plus_simpl_l : forall n m p, p + n - (p + m) = n - m.
-Proof (fun n m p => Z.add_add_simpl_l_l p n m).
+Proof. exact (fun n m p => Z.add_add_simpl_l_l p n m). Qed.
 Lemma Zminus_plus_simpl_l_reverse : forall n m p, n - m = p + n - (p + m).
-Proof (SYM3 Zminus_plus_simpl_l).
+Proof. exact (SYM3 Zminus_plus_simpl_l). Qed.
 Lemma Zminus_plus_simpl_r : forall n m p, n + p - (m + p) = n - m.
-Proof (fun n m p => Z.add_add_simpl_r_r n p m).
+Proof. exact (fun n m p => Z.add_add_simpl_r_r n p m). Qed.
 Lemma Zeq_minus : forall n m, n = m -> n - m = 0.
-Proof (fun n m => proj2 (Z.sub_move_0_r n m)).
+Proof. exact (fun n m => proj2 (Z.sub_move_0_r n m)). Qed.
 Lemma Zminus_eq : forall n m, n - m = 0 -> n = m.
-Proof (fun n m => proj1 (Z.sub_move_0_r n m)).
+Proof. exact (fun n m => proj1 (Z.sub_move_0_r n m)). Qed.
 Lemma Zmult_0_r_reverse : forall n, 0 = n * 0.
-Proof (SYM1 Z.mul_0_r).
+Proof. exact (SYM1 Z.mul_0_r). Qed.
 Lemma Zmult_assoc_reverse : forall n m p, n * m * p = n * (m * p).
-Proof (SYM3 Z.mul_assoc).
+Proof. exact (SYM3 Z.mul_assoc). Qed.
 Lemma Zmult_integral : forall n m, n * m = 0 -> n = 0 \/ m = 0.
-Proof (fun n m => proj1 (Z.mul_eq_0 n m)).
+Proof. exact (fun n m => proj1 (Z.mul_eq_0 n m)). Qed.
 Lemma Zmult_integral_l : forall n m, n <> 0 -> m * n = 0 -> m = 0.
-Proof (fun n m H H' => Z.mul_eq_0_l m n H' H).
+Proof. exact (fun n m H H' => Z.mul_eq_0_l m n H' H). Qed.
 Lemma Zopp_mult_distr_l : forall n m, - (n * m) = - n * m.
-Proof (SYM2 Z.mul_opp_l).
+Proof. exact (SYM2 Z.mul_opp_l). Qed.
 Lemma Zopp_mult_distr_r : forall n m, - (n * m) = n * - m.
-Proof (SYM2 Z.mul_opp_r).
+Proof. exact (SYM2 Z.mul_opp_r). Qed.
 Lemma Zmult_minus_distr_l : forall n m p, p * (n - m) = p * n - p * m.
-Proof (fun n m p => Z.mul_sub_distr_l p n m).
+Proof. exact (fun n m p => Z.mul_sub_distr_l p n m). Qed.
 Lemma Zmult_succ_r_reverse : forall n m, n * m + n = n * Z.succ m.
-Proof (SYM2 Z.mul_succ_r).
+Proof. exact (SYM2 Z.mul_succ_r). Qed.
 Lemma Zmult_succ_l_reverse : forall n m, n * m + m = Z.succ n * m.
-Proof (SYM2 Z.mul_succ_l).
+Proof. exact (SYM2 Z.mul_succ_l). Qed.
 Lemma Zpos_eq : forall p q, p = q -> Z.pos p = Z.pos q.
 Proof. congruence. Qed.
 Lemma Zpos_eq_iff : forall p q, p = q <-> Z.pos p = Z.pos q.
-Proof (fun p q => iff_sym (Pos2Z.inj_iff p q)).
+Proof. exact (fun p q => iff_sym (Pos2Z.inj_iff p q)). Qed.
 
 Hint Immediate Zsucc_pred: zarith.
 

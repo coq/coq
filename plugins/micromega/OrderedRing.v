@@ -178,22 +178,22 @@ Qed.
 (* Relations *)
 
 Theorem Rle_refl : forall n : R, n <= n.
-Proof sor.(SORle_refl).
+Proof. exact sor.(SORle_refl). Qed.
 
 Theorem Rle_antisymm : forall n m : R, n <= m -> m <= n -> n == m.
-Proof sor.(SORle_antisymm).
+Proof. exact sor.(SORle_antisymm). Qed.
 
 Theorem Rle_trans : forall n m p : R, n <= m -> m <= p -> n <= p.
-Proof sor.(SORle_trans).
+Proof. exact sor.(SORle_trans). Qed.
 
 Theorem Rlt_trichotomy : forall n m : R,  n < m \/ n == m \/ m < n.
-Proof sor.(SORlt_trichotomy).
+Proof. exact sor.(SORlt_trichotomy). Qed.
 
 Theorem Rlt_le_neq : forall n m : R, n < m <-> n <= m /\ n ~= m.
-Proof sor.(SORlt_le_neq).
+Proof. exact sor.(SORlt_le_neq). Qed.
 
 Theorem Rneq_0_1 : 0 ~= 1.
-Proof sor.(SORneq_0_1).
+Proof. exact sor.(SORneq_0_1). Qed.
 
 Theorem Req_em : forall n m : R, n == m \/ n ~= m.
 Proof.
@@ -373,7 +373,7 @@ Qed.
 (* Times and order *)
 
 Theorem Rtimes_pos_pos : forall n m : R, 0 < n -> 0 < m -> 0 < n * m.
-Proof sor.(SORtimes_pos_pos).
+Proof. exact sor.(SORtimes_pos_pos). Qed.
 
 Theorem Rtimes_nonneg_nonneg : forall n m : R, 0 <= n -> 0 <= m -> 0 <= n * m.
 Proof.

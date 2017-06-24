@@ -104,7 +104,9 @@ Lemma Zeq_bool_complete : forall x y,
   InitialRing.gen_phiZ 0%R 1%R Rplus Rmult Ropp x =
   InitialRing.gen_phiZ 0%R 1%R Rplus Rmult Ropp y ->
   Zeq_bool x y = true.
-Proof gen_phiZ_complete Rset Rext Rfield Rgen_phiPOS_not_0.
+Proof.
+  exact (gen_phiZ_complete Rset Rext Rfield Rgen_phiPOS_not_0).
+Qed.
 
 Lemma Rdef_pow_add : forall (x:R) (n m:nat), pow x  (n + m) = pow x n * pow x m.
 Proof.
