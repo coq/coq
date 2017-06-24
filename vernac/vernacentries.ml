@@ -503,12 +503,22 @@ let vernac_end_proof ?proof = function
   | Admitted          -> save_proof ?proof Admitted
   | Proved (_,_) as e -> save_proof ?proof e
 
+
+(* This is deprecated *)
+
 let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
   let status = Pfedit.by (Tactics.exact_proof c) in
   save_proof (Vernacexpr.(Proved(Opaque None,None)));
   if not status then Feedback.feedback Feedback.AddedAxiom
+
+let warn_deprecated_exact_proof =
+  CWarnings.create ~name:"deprecated-exact-proof" ~category:"deprecated"
+                   (fun c -> Pp.(
+                      str "This syntax is deprecated. Use \"Proof. exact "
+                      ++ Ppconstr.pr_constr_expr c
+                      ++ str ". Qed.\" instead."))
 
 let vernac_assumption locality poly (local, kind) l nl =
   let local = enforce_locality_exp locality local in
@@ -1935,7 +1945,8 @@ let interp ?proof ?loc locality poly c =
   | VernacDefinition (k,lid,d) -> vernac_definition locality poly k lid d
   | VernacStartTheoremProof (k,l) -> vernac_start_proof locality poly k l
   | VernacEndProof e -> vernac_end_proof ?proof e
-  | VernacExactProof c -> vernac_exact_proof c
+  | VernacExactProof c ->
+     warn_deprecated_exact_proof ?loc c; vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
   | VernacInductive (cum, priv,finite,l) -> vernac_inductive cum poly priv finite l
   | VernacFixpoint (local, l) -> vernac_fixpoint locality poly local l
