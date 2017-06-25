@@ -439,16 +439,66 @@ let find_name mayrepl decl naming gl = match naming with
 (*            Cut rule                                        *)
 (**************************************************************)
 
+let clear_hyps2 env sigma ids sign t cl =
+  try
+    let evdref = ref (Evd.clear_metas sigma) in
+    let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
+    (hyps, t, cl, !evdref)
+  with Evarutil.ClearDependencyError (id,err) ->
+    error_replacing_dependency env sigma id err
+
+let rec get_hyp_after h = function
+  | [] -> error_no_such_hypothesis h
+  | d :: right ->
+      if Id.equal (NamedDecl.get_id d) h then
+	match right with d' ::_ -> MoveBefore (NamedDecl.get_id d') | [] -> MoveFirst
+      else
+       get_hyp_after h right
+
+let internal_cut_gen ?(check=true) dir replace id t =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Tacmach.New.project gl in
+    let concl = Proofview.Goal.concl gl in
+    let store = Proofview.Goal.extra gl in
+    let sign = named_context_val env in
+    let sign',t,concl,sigma =
+      if replace then
+        let nexthyp = get_hyp_after id (named_context_of_val sign) in
+        let sign',t,concl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
+        let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) nexthyp sign' in
+        sign',t,concl,sigma
+      else
+        (if check && mem_named_context_val id sign then
+	   user_err (str "Variable " ++ pr_id id ++ str " is already declared.");
+         push_named_context_val (LocalAssum (id,t)) sign,t,concl,sigma) in
+    let nf_t = nf_betaiota sigma t in
+    Proofview.tclTHEN
+      (Proofview.Unsafe.tclEVARS sigma)
+      (Refine.refine ~typecheck:false begin fun sigma ->
+        let (sigma,ev,ev') =
+          if dir then
+            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma nf_t in
+            let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true ~store concl in
+            (sigma,ev,ev')
+          else
+            let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true ~store concl in
+            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma nf_t in
+            (sigma,ev,ev') in
+        let term = mkLetIn (Name id, ev, t, EConstr.Vars.subst_var id ev') in
+        (sigma, term)
+      end)
+  end
+
+let internal_cut ?(check=true) = internal_cut_gen ~check true
+let internal_cut_rev ?(check=true) = internal_cut_gen ~check false
+
 let assert_before_then_gen b naming t tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
     let id = find_name b (LocalAssum (Anonymous,t)) naming gl in
     Tacticals.New.tclTHENLAST
-      (Proofview.V82.tactic
-         (fun gl ->
-           try Tacmach.internal_cut b id t gl
-           with Evarutil.ClearDependencyError (id,err) ->
-             error_replacing_dependency (pf_env gl) (project gl) id err))
+      (internal_cut b id t)
       (tac id)
   end
 
@@ -463,11 +513,7 @@ let assert_after_then_gen b naming t tac =
   Proofview.Goal.enter begin fun gl ->
     let id = find_name b (LocalAssum (Anonymous,t)) naming gl in
     Tacticals.New.tclTHENFIRST
-      (Proofview.V82.tactic
-         (fun gl ->
-           try Tacmach.internal_cut_rev b id t gl
-           with Evarutil.ClearDependencyError (id,err) ->
-             error_replacing_dependency (pf_env gl) (project gl) id err))
+      (internal_cut_rev b id t)
       (tac id)
   end
 
@@ -3805,11 +3851,12 @@ let compare_upto_variables sigma x y =
   in
   compare x y
 
-let specialize_eqs id gl =
+let specialize_eqs id =
   let open Context.Rel.Declaration in
-  let env = Tacmach.pf_env gl in
-  let ty = Tacmach.pf_get_hyp_typ gl id in
-  let evars = ref (project gl) in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let ty = Tacmach.New.pf_get_hyp_typ id gl in
+  let evars = ref (Proofview.Goal.sigma gl) in
   let unif env evars c1 c2 =
     compare_upto_variables !evars c1 c2 && Evarconv.e_conv env evars c1 c2
   in
@@ -3852,16 +3899,18 @@ let specialize_eqs id gl =
   and acc' = Tacred.whd_simpl env !evars acc' in
   let ty' = Evarutil.nf_evar !evars ty' in
     if worked then
-      tclTHENFIRST (Tacmach.internal_cut true id ty')
-	(Proofview.V82.of_tactic (exact_no_check ((* refresh_universes_strict *) acc'))) gl
-    else tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id) gl
-
+      Tacticals.New.tclTHENFIRST
+        (internal_cut true id ty')
+	(exact_no_check ((* refresh_universes_strict *) acc'))
+    else
+      Tacticals.New.tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id)
+  end
 
 let specialize_eqs id = Proofview.Goal.enter begin fun gl ->
   let msg = str "Specialization not allowed on dependent hypotheses" in
   Proofview.tclOR (clear [id])
     (fun _ -> Tacticals.New.tclZEROMSG msg) >>= fun () ->
-    Proofview.V82.tactic (specialize_eqs id)
+    specialize_eqs id
 end
 
 let occur_rel sigma n c =

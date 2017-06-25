@@ -115,22 +115,12 @@ let pf_matches gl p c           = pf_apply Constr_matching.matches_conv gl p c
 
 let refiner = refiner
 
-let internal_cut_no_check replace id t gl =
-  let t = EConstr.Unsafe.to_constr t in
-  refiner (Cut (true,replace,id,t)) gl
-
-let internal_cut_rev_no_check replace id t gl =
-  let t = EConstr.Unsafe.to_constr t in
-  refiner (Cut (false,replace,id,t)) gl
-
 let refine_no_check c gl =
   let c = EConstr.Unsafe.to_constr c in
   refiner (Refine c) gl
 
 (* Versions with consistency checks *)
 
-let internal_cut b d t = with_check (internal_cut_no_check b d t)
-let internal_cut_rev b d t = with_check (internal_cut_rev_no_check b d t)
 let refine c           = with_check (refine_no_check c)
 
 (* Pretty-printers *)

@@ -845,15 +845,6 @@ let pr_goal_by_uid uid =
 (* Elementary tactics *)
 
 let pr_prim_rule = function
-  | Cut (b,replace,id,t) ->
-     if b then
-       (* TODO: express "replace" *)
-       (str"assert " ++ str"(" ++ pr_id id ++ str":" ++ pr_lconstr t ++ str")")
-     else
-       let cl = if replace then str"clear " ++ pr_id id ++ str"; " else mt() in
-       (str"cut " ++ pr_constr t ++
-        str ";[" ++ cl ++ str"intro " ++ pr_id id ++ str"|idtac]")
-
   | Refine c ->
       (** FIXME *)
       str(if Termops.occur_meta Evd.empty (EConstr.of_constr c) then "refine " else "exact ") ++

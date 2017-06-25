@@ -9,14 +9,12 @@
 (** Legacy proof engine. Do not use in newly written code. *)
 
 open Evd
-open Names
 open Term
 
 (** This module defines the structure of proof tree and the tactic type. So, it
    is used by [Proof_tree] and [Refiner] *)
 
 type prim_rule =
-  | Cut of bool * bool * Id.t * types
   | Refine of constr
 
 (** Nowadays, the only rules we'll consider are the primitive rules *)

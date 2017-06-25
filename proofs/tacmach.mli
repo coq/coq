@@ -84,13 +84,10 @@ val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 (** {6 The most primitive tactics. } *)
 
 val refiner                   : rule -> tactic
-val internal_cut_no_check     : bool -> Id.t -> types -> tactic
 val refine_no_check           : constr -> tactic
 
 (** {6 The most primitive tactics with consistency and type checking } *)
 
-val internal_cut     : bool -> Id.t -> types -> tactic
-val internal_cut_rev : bool -> Id.t -> types -> tactic
 val refine           : constr -> tactic
 
 (** {6 Pretty-printing functions (debug only). } *)
