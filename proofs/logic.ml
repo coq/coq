@@ -282,6 +282,10 @@ let move_hyp_in_named_context sigma hfrom hto sign =
     split_sign hfrom hto (named_context_of_val sign) in
   move_hyp sigma toleft (left,declfrom,right) hto
 
+let insert_decl_in_named_context sigma decl hto sign =
+  let open EConstr in
+  move_hyp sigma false ([],decl,named_context_of_val sign) hto
+
 (**********************************************************************)
 
 
