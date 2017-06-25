@@ -2918,14 +2918,16 @@ sig
 
   val new_evar :
     Environ.env -> Evd.evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
-    ?candidates:EConstr.constr list -> ?private_ids:Names.Id.Set.t -> ?store:Evd.Store.t ->
+    ?candidates:EConstr.constr list -> ?private_ids:Names.Id.Set.t -> ?concl_user_names:Names.Id.Set.t ->
+    ?store:Evd.Store.t ->
     ?naming:Misctypes.intro_pattern_naming_expr ->
     ?principal:bool -> EConstr.types -> Evd.evar_map * EConstr.constr
 
   val new_evar_instance :
     Environ.named_context_val -> Evd.evar_map -> EConstr.types -> 
     ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t -> ?candidates:EConstr.constr list ->
-    ?private_ids:Names.Id.Set.t -> ?store:Evd.Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
+    ?private_ids:Names.Id.Set.t -> ?concl_user_names:Names.Id.Set.t ->
+    ?store:Evd.Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
     ?principal:bool ->
     EConstr.constr list -> Evd.evar_map * EConstr.constr
 
@@ -2940,7 +2942,8 @@ sig
   val undefined_evars_of_term : Evd.evar_map -> EConstr.constr -> Evar.Set.t
   val e_new_evar :
       Environ.env -> Evd.evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Evd.Filter.t ->
-      ?candidates:EConstr.constr list -> ?private_ids:Names.Id.Set.t -> ?store:Evd.Store.t ->
+      ?candidates:EConstr.constr list -> ?private_ids:Names.Id.Set.t -> ?concl_user_names:Names.Id.Set.t -> 
+      ?store:Evd.Store.t ->
       ?naming:Misctypes.intro_pattern_naming_expr ->
       ?principal:bool -> EConstr.types -> EConstr.constr
   val new_type_evar :

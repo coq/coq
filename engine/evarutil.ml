@@ -1,4 +1,3 @@
-
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2017     *)
@@ -411,24 +410,24 @@ let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?ca
   in
   (evd, newevk)
 
-let new_evar_instance sign evd typ ?src ?filter ?candidates ?private_ids ?store ?naming ?principal instance =
+let new_evar_instance sign evd typ ?src ?filter ?candidates ?private_ids ?concl_user_names ?store ?naming ?principal instance =
   let open EConstr in
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
   let (evd, newevk) = new_pure_evar sign evd ?src ?filter ?candidates ?private_ids ?store ?naming ?principal typ in
   evd, mkEvar (newevk,Array.of_list instance)
 
-let new_evar_from_context sign evd ?src ?filter ?candidates ?store ?naming ?principal typ =
+let new_evar_from_context sign evd ?src ?filter ?candidates ?(private_ids=Id.Set.empty) ?(concl_user_names=Id.Set.empty) ?store ?naming ?principal typ =
   let instance = List.map (NamedDecl.get_id %> EConstr.mkVar) (named_context_of_val sign) in
   let instance =
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?principal instance
+  new_evar_instance sign evd typ ?src ?filter ?candidates ~private_ids ~concl_user_names ?store ?naming ?principal instance
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar env evd ?src ?filter ?candidates ?(private_ids=Id.Set.empty) ?store ?naming ?principal typ =
+let new_evar env evd ?src ?filter ?candidates ?(private_ids=Id.Set.empty) ?concl_user_names ?store ?naming ?principal typ =
   let sign,private_ids,typ',instance,subst,vsubst =
     push_rel_context_to_named_context env private_ids evd typ in
   let map c = subst2 subst vsubst c in
@@ -437,7 +436,7 @@ let new_evar env evd ?src ?filter ?candidates ?(private_ids=Id.Set.empty) ?store
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ' ?src ?filter ?candidates ~private_ids ?store ?naming ?principal instance
+  new_evar_instance sign evd typ' ?src ?filter ?candidates ~private_ids ~concl_user_names ?store ?naming ?principal instance
 
 let new_type_evar env evd ?src ?filter ?naming ?principal rigid =
   let (evd', s) = new_sort_variable rigid evd in
@@ -459,8 +458,8 @@ let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
     evdref := evd'; EConstr.mkSort s
 
   (* The same using side-effect *)
-let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?private_ids ?store ?naming ?principal ty =
-  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?private_ids ?store ?naming ?principal ty in
+let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?private_ids ?concl_user_names ?store ?naming ?principal ty =
+  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?private_ids ?concl_user_names ?store ?naming ?principal ty in
   evdref := evd';
   ev
 

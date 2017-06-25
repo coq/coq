@@ -24,13 +24,13 @@ val mk_new_meta : unit -> constr
 
 val new_evar_from_context :
   named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?concl_user_names:Id.Set.t -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> evar_map * EConstr.t
 
 val new_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?store:Store.t ->
+  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?concl_user_names:Id.Set.t -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> evar_map * EConstr.t
 
@@ -45,7 +45,7 @@ val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
 (** the same with side-effects *)
 val e_new_evar :
   env -> evar_map ref -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?store:Store.t ->
+  ?candidates:constr list -> ?private_ids:Id.Set.t -> ?concl_user_names:Id.Set.t -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool -> types -> constr
 
@@ -80,7 +80,7 @@ val e_new_global : evar_map ref -> Globnames.global_reference -> constr
 val new_evar_instance :
  named_context_val -> evar_map -> types -> 
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
-  ?private_ids:Id.Set.t ->
+  ?private_ids:Id.Set.t -> ?concl_user_names:Id.Set.t ->
   ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
   ?principal:bool ->
   constr list -> evar_map * constr
