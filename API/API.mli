@@ -4481,7 +4481,6 @@ sig
                  glob_constr_ltac_closure -> Evd.evar_map -> Evd.evar_map
 end
 
-
 module Proof_type :
 sig
   type prim_rule = Refine of Constr.t

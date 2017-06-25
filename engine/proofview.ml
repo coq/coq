@@ -70,7 +70,8 @@ let dependent_init =
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }
   | TCons (env, sigma, typ, t) ->
-    let (sigma, econstr) = Evarutil.new_evar env sigma ~src ~store typ in
+    let concl_user_names = Termops.quantified_names_of_type sigma typ in
+    let (sigma, econstr) = Evarutil.new_evar env sigma ~src ~store ~concl_user_names typ in
     let (gl, _) = EConstr.destEvar sigma econstr in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let entry = (econstr, typ) :: ret in

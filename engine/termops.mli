@@ -191,6 +191,9 @@ val nb_prod_modulo_zeta : Evd.evar_map -> constr -> int
 (** Get the last arg of a constr intended to be an application *)
 val last_arg : Evd.evar_map -> constr -> constr
 
+(** Get the explicitly named quantifiers or local definitions of a type *)
+val quantified_names_of_type : Evd.evar_map -> types -> Id.Set.t
+
 (** Force the decomposition of a term as an applicative one *)
 val decompose_app_vect : Evd.evar_map -> constr -> constr * constr array
 

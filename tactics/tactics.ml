@@ -445,7 +445,7 @@ let find_name mayrepl decl naming gl = match naming with
       let env = Proofview.Goal.env gl in
       let sigma = Tacmach.New.project gl in
       let concl_user_names = Proofview.Goal.concl_user_names gl in
-      let unstable = match RelDecl.get_name decl with Name id -> Id.Set.mem id concl_user_names | _ -> true in
+      let unstable = match RelDecl.get_name decl with Name id -> not (Id.Set.mem id concl_user_names) | _ -> true in
       new_fresh_stable_id idl (default_id env sigma decl,unstable) gl
   | NamingBasedOn (id,unstable,idl) -> new_fresh_stable_id idl (id,unstable) gl
   | NamingMustBe ((loc,id),isprivate) ->
@@ -503,24 +503,25 @@ let internal_cut_gen ?(check=true) dir replace isprivate id t =
       if replace then
         let nexthyp = get_next_hyp_position id (named_context_of_val sign) in
         let sign',t,concl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
-        let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) nexthyp sign' in
+        let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) isprivate nexthyp sign' in
         sign',t,concl,sigma
       else
         (if check && mem_named_context_val id sign then
 	   user_err (str "Variable " ++ pr_id id ++ str " is already declared.");
          push_named_context_val (LocalAssum (id,t)) isprivate sign,t,concl,sigma) in
+    let concl_user_names = Termops.quantified_names_of_type sigma t in
     let nf_t = nf_betaiota sigma t in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS sigma)
       (Refine.refine ~typecheck:false begin fun sigma ->
         let (sigma,ev,ev') =
           if dir then
-            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma nf_t in
+            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma ~concl_user_names nf_t in
             let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true ~store concl in
             (sigma,ev,ev')
           else
             let (sigma, ev') = Evarutil.new_evar_from_context sign' sigma ~principal:true ~store concl in
-            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma nf_t in
+            let (sigma, ev) = Evarutil.new_evar_from_context sign sigma ~concl_user_names nf_t in
             (sigma,ev,ev') in
         let term = mkLetIn (Name id, ev, t, EConstr.Vars.subst_var id ev') in
         (sigma, term)

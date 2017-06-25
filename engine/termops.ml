@@ -586,6 +586,12 @@ let last_arg sigma c = match EConstr.kind sigma c with
   | App (f,cl) -> Array.last cl
   | _ -> anomaly (Pp.str "last_arg.")
 
+(** Get the explicitly named quantifiers or local definitions of a type *)
+let rec quantified_names_of_type sigma t =
+  match EConstr.kind sigma t with
+  | Prod (na,_,t) | LetIn (na,_,_,t) -> Name.fold_right Id.Set.add na (quantified_names_of_type sigma t)
+  | _ -> Id.Set.empty
+
 (* Get the last arg of an application *)
 let decompose_app_vect sigma c =
   match EConstr.kind sigma c with

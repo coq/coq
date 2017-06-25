@@ -266,9 +266,10 @@ let move_hyp_in_named_context sigma hfrom hto sign =
     split_sign hfrom hto (named_context_of_val sign) in
   move_hyp sigma private_ids toleft (left,declfrom,right) hto
 
-let insert_decl_in_named_context sigma decl hto sign =
+let insert_decl_in_named_context sigma decl isprivate hto sign =
   let open EConstr in
   let private_ids = Environ.named_context_private_ids sign in
+  let private_ids = if isprivate then Id.Set.add (NamedDecl.get_id decl) private_ids else private_ids in
   move_hyp sigma private_ids false ([],decl,named_context_of_val sign) hto
 
 (**********************************************************************)
