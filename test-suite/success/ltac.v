@@ -337,3 +337,14 @@ Goal True.
 evar (0=0).
 Abort.
 
+(* Test location of hypothesis in "symmetry in H". This was broken in
+   8.6 where H, when the oldest hyp, was moved at the place of most
+   recent hypothesis *)
+
+Goal 0=1 -> True -> True.
+intros H H0.
+symmetry in H.
+(* H should be the first hypothesis *)
+match goal with h:_ |- _ => assert (h=h) end. (* h should be H0 *)
+exact (eq_refl H0).
+Abort.

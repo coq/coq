@@ -436,6 +436,30 @@ let find_name mayrepl decl naming gl = match naming with
       id
 
 (**************************************************************)
+(*   Computing position of hypotheses for replacing           *)
+(**************************************************************)
+
+let get_next_hyp_position id =
+  let rec aux = function
+  | [] -> error_no_such_hypothesis id
+  | decl :: right ->
+    if Id.equal (NamedDecl.get_id decl) id then
+      match right with decl::_ -> MoveBefore (NamedDecl.get_id decl) | [] -> MoveFirst
+    else
+      aux right
+  in
+  aux
+
+let get_previous_hyp_position id =
+  let rec aux dest = function
+  | [] -> error_no_such_hypothesis id
+  | decl :: right ->
+      let hyp = NamedDecl.get_id decl in
+      if Id.equal hyp id then dest else aux (MoveAfter hyp) right
+  in
+  aux MoveLast
+
+(**************************************************************)
 (*            Cut rule                                        *)
 (**************************************************************)
 
@@ -447,14 +471,6 @@ let clear_hyps2 env sigma ids sign t cl =
   with Evarutil.ClearDependencyError (id,err) ->
     error_replacing_dependency env sigma id err
 
-let rec get_hyp_after h = function
-  | [] -> error_no_such_hypothesis h
-  | d :: right ->
-      if Id.equal (NamedDecl.get_id d) h then
-	match right with d' ::_ -> MoveBefore (NamedDecl.get_id d') | [] -> MoveFirst
-      else
-       get_hyp_after h right
-
 let internal_cut_gen ?(check=true) dir replace id t =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -464,7 +480,7 @@ let internal_cut_gen ?(check=true) dir replace id t =
     let sign = named_context_val env in
     let sign',t,concl,sigma =
       if replace then
-        let nexthyp = get_hyp_after id (named_context_of_val sign) in
+        let nexthyp = get_next_hyp_position id (named_context_of_val sign) in
         let sign',t,concl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t concl in
         let sign' = insert_decl_in_named_context sigma (LocalAssum (id,t)) nexthyp sign' in
         sign',t,concl,sigma
@@ -1045,29 +1061,10 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
   in
   aux n []
 
-let get_next_hyp_position id gl =
-  let rec aux = function
-  | [] -> raise (RefinerError (NoSuchHyp id))
-  | decl :: right ->
-    if Id.equal (NamedDecl.get_id decl) id then
-      match right with decl::_ -> MoveBefore (NamedDecl.get_id decl) | [] -> MoveLast
-    else
-      aux right
-  in
-  aux (Proofview.Goal.hyps (Proofview.Goal.assume gl))
-
-let get_previous_hyp_position id gl =
-  let rec aux dest = function
-  | [] -> raise (RefinerError (NoSuchHyp id))
-  | decl :: right ->
-      let hyp = NamedDecl.get_id decl in
-      if Id.equal hyp id then dest else aux (MoveAfter hyp) right
-  in
-  aux MoveLast (Proofview.Goal.hyps (Proofview.Goal.assume gl))
-
 let intro_replacing id =
   Proofview.Goal.enter begin fun gl ->
-  let next_hyp = get_next_hyp_position id gl in
+  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+  let next_hyp = get_next_hyp_position id hyps in
   Tacticals.New.tclTHENLIST [
     clear_for_replacing [id];
     introduction id;
@@ -1086,7 +1083,8 @@ let intro_replacing id =
 let intros_possibly_replacing ids =
   let suboptimal = true in
   Proofview.Goal.enter begin fun gl ->
-    let posl = List.map (fun id -> (id, get_next_hyp_position id gl)) ids in
+    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let posl = List.map (fun id -> (id, get_next_hyp_position id hyps)) ids in
     Tacticals.New.tclTHEN
       (Tacticals.New.tclMAP (fun id -> 
 	Tacticals.New.tclTRY (clear_for_replacing [id]))
@@ -1099,7 +1097,8 @@ let intros_possibly_replacing ids =
 (* This version assumes that replacement is actually possible *)
 let intros_replacing ids =
   Proofview.Goal.enter begin fun gl ->
-    let posl = List.map (fun id -> (id, get_next_hyp_position id gl)) ids in
+    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let posl = List.map (fun id -> (id, get_next_hyp_position id hyps)) ids in
     Tacticals.New.tclTHEN
       (clear_for_replacing ids)
       (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
@@ -2624,7 +2623,8 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
   Proofview.Goal.enter begin fun gl ->
   let destopt =
     if with_evars then MoveLast (* evars would depend on the whole context *)
-    else get_previous_hyp_position id gl in
+    else
+      get_previous_hyp_position id (Proofview.Goal.hyps (Proofview.Goal.assume gl)) in
   let naming,ipat_tac =
     prepare_intros_opt with_evars (IntroIdentifier id) destopt ipat in
   let lemmas_target, last_lemma_target =
