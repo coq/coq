@@ -21,6 +21,13 @@ val new_meta : unit -> metavariable
 val mk_new_meta : unit -> constr
 
 (** {6 Creating a fresh evar given their type and context} *)
+
+val new_evar_from_context :
+  named_context_val -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?candidates:constr list -> ?store:Store.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr ->
+  ?principal:bool -> types -> evar_map * EConstr.t
+
 val new_evar :
   env -> evar_map -> ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
