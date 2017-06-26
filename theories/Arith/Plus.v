@@ -166,13 +166,13 @@ Proof.
 Qed.
 
 Lemma n_SSn n : n <> S (S n).
-Proof (succ_plus_discr n 1).
+Proof. exact (succ_plus_discr n 1). Qed.
 
 Lemma n_SSSn n : n <> S (S (S n)).
-Proof (succ_plus_discr n 2).
+Proof. exact (succ_plus_discr n 2). Qed.
 
 Lemma n_SSSSn n : n <> S (S (S (S n))).
-Proof (succ_plus_discr n 3).
+Proof. exact (succ_plus_discr n 3). Qed.
 
 
 (** * Compatibility Hints *)

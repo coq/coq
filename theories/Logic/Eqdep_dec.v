@@ -140,16 +140,16 @@ End EqdepDec.
 
 Theorem eq_proofs_unicity A (eq_dec : forall x y : A, x = y \/ x <> y) (x : A)
 : forall (y:A) (p1 p2:x = y), p1 = p2.
-Proof (@eq_proofs_unicity_on A x (eq_dec x)).
+Proof. exact (@eq_proofs_unicity_on A x (eq_dec x)). Qed.
 
 Theorem K_dec A (eq_dec : forall x y : A, x = y \/ x <> y) (x : A)
 : forall P:x = x -> Prop, P (eq_refl x) -> forall p:x = x, P p.
-Proof (@K_dec_on A x (eq_dec x)).
+Proof. exact (@K_dec_on A x (eq_dec x)). Qed.
 
 Theorem inj_right_pair A (eq_dec : forall x y : A, x = y \/ x <> y) (x : A)
 : forall (P:A -> Prop) (y y':P x),
     ex_intro P x y = ex_intro P x y' -> y = y'.
-Proof (@inj_right_pair_on A x (eq_dec x)).
+Proof. exact (@inj_right_pair_on A x (eq_dec x)). Qed.
 
 Require Import EqdepFacts.
 
@@ -169,7 +169,7 @@ Theorem K_dec_set :
   forall A:Set,
     (forall x y:A, {x = y} + {x <> y}) ->
     forall (x:A) (P:x = x -> Prop), P (eq_refl x) -> forall p:x = x, P p.
-Proof fun A => K_dec_type (A:=A).
+Proof. exact (fun A => K_dec_type (A:=A)). Qed.
 
 (** We deduce the [eq_rect_eq] axiom for (decidable) types *)
 Theorem eq_rect_eq_dec :
@@ -186,13 +186,13 @@ Theorem eq_dep_eq_dec :
   forall A:Type,
     (forall x y:A, {x = y} + {x <> y}) ->
      forall (P:A->Type) (p:A) (x y:P p), eq_dep A P p x p y -> x = y.
-Proof (fun A eq_dec => eq_rect_eq__eq_dep_eq A (eq_rect_eq_dec eq_dec)).
+Proof. exact (fun A eq_dec => eq_rect_eq__eq_dep_eq A (eq_rect_eq_dec eq_dec)). Qed.
 
 Theorem UIP_dec :
   forall (A:Type),
     (forall x y:A, {x = y} + {x <> y}) ->
     forall (x y:A) (p1 p2:x = y), p1 = p2.
-Proof (fun A eq_dec => eq_dep_eq__UIP A (eq_dep_eq_dec eq_dec)).
+Proof. exact (fun A eq_dec => eq_dep_eq__UIP A (eq_dep_eq_dec eq_dec)). Qed.
 
 Unset Implicit Arguments.
 
@@ -219,36 +219,36 @@ Module DecidableEqDep (M:DecidableType).
 
   Lemma eq_rect_eq :
     forall (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
-  Proof eq_rect_eq_dec eq_dec.
+  Proof. exact (eq_rect_eq_dec eq_dec). Qed.
 
   (** Injectivity of Dependent Equality *)
 
   Theorem eq_dep_eq :
     forall (P:U->Type) (p:U) (x y:P p), eq_dep U P p x p y -> x = y.
-  Proof (eq_rect_eq__eq_dep_eq U eq_rect_eq).
+  Proof. exact (eq_rect_eq__eq_dep_eq U eq_rect_eq). Qed.
 
   (** Uniqueness of Identity Proofs (UIP) *)
 
   Lemma UIP : forall (x y:U) (p1 p2:x = y), p1 = p2.
-  Proof (eq_dep_eq__UIP U eq_dep_eq).
+  Proof. exact (eq_dep_eq__UIP U eq_dep_eq). Qed.
 
   (** Uniqueness of Reflexive Identity Proofs *)
 
   Lemma UIP_refl : forall (x:U) (p:x = x), p = eq_refl x.
-  Proof (UIP__UIP_refl U UIP).
+  Proof. exact (UIP__UIP_refl U UIP). Qed.
 
   (** Streicher's axiom K *)
 
   Lemma Streicher_K :
     forall (x:U) (P:x = x -> Prop), P (eq_refl x) -> forall p:x = x, P p.
-  Proof (K_dec_type eq_dec).
+  Proof. exact (K_dec_type eq_dec). Qed.
 
   (** Injectivity of equality on dependent pairs in [Type] *)
 
   Lemma inj_pairT2 :
     forall (P:U -> Type) (p:U) (x y:P p),
       existT P p x = existT P p y -> x = y.
-  Proof eq_dep_eq__inj_pairT2 U eq_dep_eq.
+  Proof. exact (eq_dep_eq__inj_pairT2 U eq_dep_eq). Qed.
 
   (** Proof-irrelevance on subsets of decidable sets *)
 
@@ -288,43 +288,43 @@ Module DecidableEqDepSet (M:DecidableSet).
 
   Lemma eq_rect_eq :
     forall (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
-  Proof eq_rect_eq_dec eq_dec.
+  Proof. exact (eq_rect_eq_dec eq_dec). Qed.
 
   (** Injectivity of Dependent Equality *)
 
   Theorem eq_dep_eq :
     forall (P:U->Type) (p:U) (x y:P p), eq_dep U P p x p y -> x = y.
-  Proof (eq_rect_eq__eq_dep_eq U eq_rect_eq).
+  Proof. exact (eq_rect_eq__eq_dep_eq U eq_rect_eq). Qed.
 
   (** Uniqueness of Identity Proofs (UIP) *)
 
   Lemma UIP : forall (x y:U) (p1 p2:x = y), p1 = p2.
-  Proof (eq_dep_eq__UIP U eq_dep_eq).
+  Proof. exact (eq_dep_eq__UIP U eq_dep_eq). Qed.
 
   (** Uniqueness of Reflexive Identity Proofs *)
 
   Lemma UIP_refl : forall (x:U) (p:x = x), p = eq_refl x.
-  Proof (UIP__UIP_refl U UIP).
+  Proof. exact (UIP__UIP_refl U UIP). Qed.
 
   (** Streicher's axiom K *)
 
   Lemma Streicher_K :
     forall (x:U) (P:x = x -> Prop), P (eq_refl x) -> forall p:x = x, P p.
-  Proof (K_dec_type eq_dec).
+  Proof. exact (K_dec_type eq_dec). Qed.
 
   (** Proof-irrelevance on subsets of decidable sets *)
 
   Lemma inj_pairP2 :
     forall (P:U -> Prop) (x:U) (p q:P x),
       ex_intro P x p = ex_intro P x q -> p = q.
-  Proof N.inj_pairP2.
+  Proof. exact (N.inj_pairP2). Qed.
 
   (** Injectivity of equality on dependent pairs in [Type] *)
 
   Lemma inj_pair2 :
     forall (P:U -> Type) (p:U) (x y:P p),
       existT P p x = existT P p y -> x = y.
-  Proof eq_dep_eq__inj_pair2 U N.eq_dep_eq.
+  Proof. exact (eq_dep_eq__inj_pair2 U N.eq_dep_eq). Qed.
 
   (** Injectivity of equality on dependent pairs with second component
       in [Type] *)

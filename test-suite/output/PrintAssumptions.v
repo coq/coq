@@ -64,11 +64,11 @@ Print Assumptions AddCommExt_Transparent.add_comm_ext.
 
 Lemma add1_comm_ext_opaque :
   (fun x => x + 1) = (fun x => 1 + x).
-Proof (AddCommExt_Opaque.add_comm_ext 1).
+Proof. exact (AddCommExt_Opaque.add_comm_ext 1). Qed.
 
 Lemma add1_comm_ext_transparent :
   (fun x => x + 1) = (fun x => 1 + x).
-Proof (AddCommExt_Transparent.add_comm_ext 1).
+Proof. exact (AddCommExt_Transparent.add_comm_ext 1). Qed.
 
 Print Assumptions add1_comm_ext_opaque.
 (* Should answer: extensionality *)
@@ -90,7 +90,7 @@ End false_positive.
 
 Lemma comm_plus5 : forall x,
   x + 5 = 5 + x.
-Proof (false_positive.add_comm 5).
+Proof. exact (false_positive.add_comm 5). Qed.
 
 Print Assumptions comm_plus5.
 (* Should answer : Closed under the global context *)

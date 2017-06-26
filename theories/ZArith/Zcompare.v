@@ -23,16 +23,16 @@ Local Open Scope Z_scope.
 (** * Comparison on integers *)
 
 Lemma Zcompare_Gt_Lt_antisym : forall n m:Z, (n ?= m) = Gt <-> (m ?= n) = Lt.
-Proof Z.gt_lt_iff.
+Proof. exact (Z.gt_lt_iff). Qed.
 
 Lemma Zcompare_antisym n m : CompOpp (n ?= m) = (m ?= n).
-Proof eq_sym (Z.compare_antisym n m).
+Proof. exact (eq_sym (Z.compare_antisym n m)). Qed.
 
 (** * Transitivity of comparison *)
 
 Lemma Zcompare_Lt_trans :
   forall n m p:Z, (n ?= m) = Lt -> (m ?= p) = Lt -> (n ?= p) = Lt.
-Proof Z.lt_trans.
+Proof. exact (Z.lt_trans). Qed.
 
 Lemma Zcompare_Gt_trans :
   forall n m p:Z, (n ?= m) = Gt -> (m ?= p) = Gt -> (n ?= p) = Gt.
