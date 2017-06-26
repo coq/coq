@@ -7,4 +7,4 @@ fiat_parsers_CI_DIR=${CI_BUILD_DIR}/fiat
 
 git_checkout ${fiat_parsers_CI_BRANCH} ${fiat_parsers_CI_GITURL} ${fiat_parsers_CI_DIR}
 
-( cd ${fiat_parsers_CI_DIR} && make pretty-timed TGTS="parsers parsers-examples fiat-core" )
+( cd ${fiat_parsers_CI_DIR} && make parsers parsers-examples && make fiat-core )
