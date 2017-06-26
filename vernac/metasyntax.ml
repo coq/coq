@@ -615,46 +615,71 @@ let define_keywords = function
 
 let distribute a ll = List.map (fun l -> a @ l) ll
 
-  (* Expand LIST1(t,sep) into the combination of t and t;sep;LIST1(t,sep)
-     as many times as expected in [n] argument *)
-let rec expand_list_rule typ tkl x n i hds ll =
-  if Int.equal i n then
+  (* Expand LIST1(t,sep);sep;t;...;t (with the trailing pattern
+     occurring p times, possibly p=0) into the combination of
+     t;sep;t;...;t;sep;t (p+1 times)
+     t;sep;t;...;t;sep;t;sep;t (p+2 times)
+     ...
+     t;sep;t;...;t;sep;t;...;t;sep;t (p+n times)
+     t;sep;t;...;t;sep;t;...;t;sep;t;LIST1(t,sep) *)
+
+let expand_list_rule typ tkl x n p ll =
+  let camlp4_message_name = Some (add_suffix x ("_"^string_of_int n)) in
+  let main = GramConstrNonTerminal (ETConstr typ, camlp4_message_name) in
+  let tks = List.map (fun x -> GramConstrTerminal x) tkl in
+  let rec aux i hds ll =
+  if i < p then aux (i+1) (main :: tks @ hds) ll
+  else if Int.equal i (p+n) then
     let hds =
-      GramConstrListMark (n,true) :: hds
+      GramConstrListMark (p+n,true,p) :: hds
       @	[GramConstrNonTerminal (ETConstrList (typ,tkl), Some x)] in
     distribute hds ll
   else
-    let camlp4_message_name = Some (add_suffix x ("_"^string_of_int n)) in
-    let main = GramConstrNonTerminal (ETConstr typ, camlp4_message_name) in
-    let tks = List.map (fun x -> GramConstrTerminal x) tkl in
-    distribute (GramConstrListMark (i+1,false) :: hds @ [main]) ll @
-      expand_list_rule typ tkl x n (i+1) (main :: tks @ hds) ll
+    distribute (GramConstrListMark (i+1,false,p) :: hds @ [main]) ll @
+       aux (i+1) (main :: tks @ hds) ll in
+  aux 0 [] ll
+
+let is_constr_typ typ x etyps =
+  match List.assoc x etyps with
+  | ETConstr typ' -> typ = typ'
+  | _ -> false
+
+let include_possible_similar_trailing_pattern typ etyps sl l =
+  let rec aux n = function
+  | Terminal s :: sl, Terminal s'::l' when s = s' -> aux n (sl,l')
+  | [], NonTerminal x ::l' when is_constr_typ typ x etyps -> try_aux n l'
+  | _ -> raise Exit
+  and try_aux n l =
+    try aux (n+1) (sl,l)
+    with Exit -> n,l in
+  try_aux 0 l
 
 let make_production etyps symbols =
-  let prod =
-    List.fold_right
-      (fun t ll -> match t with
-        | NonTerminal m ->
-	    let typ = List.assoc m etyps in
-	    distribute [GramConstrNonTerminal (typ, Some m)] ll
-        | Terminal s ->
-	    distribute [GramConstrTerminal (CLexer.terminal s)] ll
-        | Break _ ->
-            ll
-        | SProdList (x,sl) ->
-            let tkl = List.flatten
-              (List.map (function Terminal s -> [CLexer.terminal s]
-                | Break _ -> []
-                | _ -> anomaly (Pp.str "Found a non terminal token in recursive notation separator.")) sl) in
-	    match List.assoc x etyps with
-            | ETConstr typ -> expand_list_rule typ tkl x 1 0 [] ll
-            | ETBinder o ->
-		distribute
-                  [GramConstrNonTerminal (ETBinderList (o,tkl), Some x)] ll
-            | _ ->
-                user_err Pp.(str "Components of recursive patterns in notation must be terms or binders."))
-      symbols [[]] in
-  List.map define_keywords prod
+  let rec aux = function
+    | [] -> [[]]
+    | NonTerminal m :: l ->
+        let typ = List.assoc m etyps in
+        distribute [GramConstrNonTerminal (typ, Some m)] (aux l)
+    | Terminal s :: l ->
+        distribute [GramConstrTerminal (CLexer.terminal s)] (aux l)
+    | Break _ :: l ->
+        aux l
+    | SProdList (x,sl) :: l ->
+        let tkl = List.flatten
+          (List.map (function Terminal s -> [CLexer.terminal s]
+            | Break _ -> []
+            | _ -> anomaly (Pp.str "Found a non terminal token in recursive notation separator.")) sl) in
+	match List.assoc x etyps with
+        | ETConstr typ ->
+            let p,l' = include_possible_similar_trailing_pattern typ etyps sl l in
+            expand_list_rule typ tkl x 1 p (aux l')
+        | ETBinder o ->
+	    distribute
+              [GramConstrNonTerminal (ETBinderList (o,tkl), Some x)] (aux l)
+        | _ ->
+           user_err Pp.(str "Components of recursive patterns in notation must be terms or binders.") in
+  let prods = aux symbols in
+  List.map define_keywords prods
 
 let rec find_symbols c_current c_next c_last = function
   | [] -> []
