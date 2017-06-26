@@ -883,7 +883,8 @@ statically. For instance, if {\tt f} is a polymorphic function of type
 recognized as an argument to be interpreted in scope {\scope}.
 
 \comindex{Bind Scope}
-More generally, any {\class} (see Chapter~\ref{Coercions-full}) can be
+\label{bindscope}
+More generally, any coercion {\class} (see Chapter~\ref{Coercions-full}) can be
 bound to an interpretation scope. The command to do it is
 \begin{quote}
 {\tt Bind Scope} {\scope} \texttt{with} {\class}
@@ -902,7 +903,7 @@ Open Scope nat_scope. (* Define + on the nat as the default for + *)
 Check (fun x y1 y2 z t => P _ (x + t) ((f _ (y1 + y2) + z))).
 \end{coq_example}
 
-\Rem The scope {\tt type\_scope} has also a local effect on
+\Rem The scopes {\tt type\_scope} and {\tt function\_scope} also have a local effect on
 interpretation. See the next section.
 
 \SeeAlso The command to show the scopes bound to the arguments of a
@@ -912,10 +913,21 @@ function is described in Section~\ref{About}.
 
 The scope {\tt type\_scope} has a special status. It is a primitive
 interpretation scope which is temporarily activated each time a
-subterm of an expression is expected to be a type. This includes goals
-and statements, types of binders, domain and codomain of implication,
-codomain of products, and more generally any type argument of a
-declared or defined constant.
+subterm of an expression is expected to be a type.  It is delimited by
+the key {\tt type}, and bound to the coercion class {\tt Sortclass}. It is also
+used in certain situations where an expression is statically known to
+be a type, including the conclusion and the type of hypotheses within
+an {\tt Ltac} goal match (see Section~\ref{ltac-match-goal})
+the statement of a theorem, the type of
+a definition, the type of a binder, the domain and codomain of
+implication, the codomain of products, and more generally any type
+argument of a declared or defined constant.
+
+\subsection[The {\tt function\_scope} interpretation scope]{The {\tt function\_scope} interpretation scope\index{function\_scope@\texttt{function\_scope}}}
+
+The scope {\tt function\_scope} also has a special status. 
+It is temporarily activated each time the argument of a global reference is
+recognized to be a {\tt Funclass instance}, i.e., of type {\tt forall x:A, B} or {\tt A -> B}.
 
 \subsection{Interpretation scopes used in the standard library of {\Coq}}
 
@@ -925,38 +937,39 @@ commands {\tt Print Scopes} or {\tt Print Scope {\scope}}.
 
 \subsubsection{\tt type\_scope}
 
-This includes infix {\tt *} for product types and infix {\tt +} for
-sum types. It is delimited by key {\tt type}.
+This scope includes infix {\tt *} for product types and infix {\tt +} for
+sum types. It is delimited by key {\tt type}, and bound to the coercion class 
+{\tt Sortclass}, as described at \ref{bindscope}.
 
 \subsubsection{\tt nat\_scope}
 
-This includes the standard arithmetical operators and relations on
+This scope includes the standard arithmetical operators and relations on
 type {\tt nat}. Positive numerals in this scope are mapped to their
 canonical representent built from {\tt O} and {\tt S}. The scope is
-delimited by key {\tt nat}.
+delimited by key {\tt nat}, and bound to the type {\tt nat} (see \ref{bindscope}).
 
 \subsubsection{\tt N\_scope}
 
-This includes the standard arithmetical operators and relations on
+This scope includes the standard arithmetical operators and relations on
 type {\tt N} (binary natural numbers). It is delimited by key {\tt N}
 and comes with an interpretation for numerals as closed term of type {\tt Z}.
 
 \subsubsection{\tt Z\_scope}
 
-This includes the standard arithmetical operators and relations on
+This scope includes the standard arithmetical operators and relations on
 type {\tt Z} (binary integer numbers). It is delimited by key {\tt Z} 
 and comes with an interpretation for numerals as closed term of type {\tt Z}.
 
 \subsubsection{\tt positive\_scope}
 
-This includes the standard arithmetical operators and relations on
+This scope includes the standard arithmetical operators and relations on
 type {\tt positive} (binary strictly positive numbers). It is
 delimited by key {\tt positive} and comes with an interpretation for
 numerals as closed term of type {\tt positive}.
 
 \subsubsection{\tt Q\_scope}
 
-This includes the standard arithmetical operators and relations on
+This scope includes the standard arithmetical operators and relations on
 type {\tt Q} (rational numbers defined as fractions of an integer and
 a strictly positive integer modulo the equality of the
 numerator-denominator cross-product). As for numerals, only $0$ and
@@ -965,13 +978,13 @@ interpretations are $\frac{0}{1}$ and $\frac{1}{1}$ respectively).
 
 \subsubsection{\tt Qc\_scope}
 
-This includes the standard arithmetical operators and relations on the
+This scope includes the standard arithmetical operators and relations on the
 type {\tt Qc} of rational numbers defined as the type of irreducible
 fractions of an integer and a strictly positive integer.
 
 \subsubsection{\tt real\_scope}
 
-This includes the standard arithmetical operators and relations on
+This scope includes the standard arithmetical operators and relations on
 type {\tt R} (axiomatic real numbers). It is delimited by key {\tt R}
 and comes with an interpretation for numerals as term of type {\tt
 R}. The interpretation is based on the binary decomposition.  The
@@ -986,35 +999,40 @@ those of {\tt R}.
 
 \subsubsection{\tt bool\_scope}
 
-This includes notations for the boolean operators. It is
-delimited by key {\tt bool}.
+This scope includes notations for the boolean operators. It is
+delimited by key {\tt bool}, and bound to the type {\tt bool} (see \ref{bindscope}).
 
 \subsubsection{\tt list\_scope}
 
-This includes notations for the list operators. It is
-delimited by key {\tt list}.
+This scope includes notations for the list operators. It is
+delimited by key {\tt list}, and bound to the type {\tt list} (see \ref{bindscope}).
+
+\subsubsection{\tt function\_scope}
+
+This scope is delimited by the key {\tt function}, and bound to the coercion class {\tt Funclass}, 
+as described at \ref{bindscope}.
 
 \subsubsection{\tt core\_scope}
 
-This includes the notation for pairs. It is delimited by key {\tt core}.
+This scope includes the notation for pairs. It is delimited by key {\tt core}.
 
 \subsubsection{\tt string\_scope}
 
-This includes notation for strings as elements of the type {\tt
+This scope includes notation for strings as elements of the type {\tt
 string}.  Special characters and escaping follow {\Coq} conventions
 on strings (see Section~\ref{strings}). Especially, there is no
 convention to visualize non printable characters of a string.  The
 file {\tt String.v} shows an example that contains quotes, a newline
-and a beep (i.e. the ascii character of code 7).
+and a beep (i.e. the ASCII character of code 7).
 
 \subsubsection{\tt char\_scope}
 
-This includes interpretation for all strings of the form
-\verb!"!$c$\verb!"! where $c$ is an ascii character, or of the form
+This scope includes interpretation for all strings of the form
+\verb!"!$c$\verb!"! where $c$ is an ASCII character, or of the form
 \verb!"!$nnn$\verb!"! where $nnn$ is a three-digits number (possibly
 with leading 0's), or of the form \verb!""""!. Their respective
-denotations are the ascii code of $c$, the decimal ascii code $nnn$,
-or the ascii code of the character \verb!"! (i.e. the ascii code
+denotations are the ASCII code of $c$, the decimal ASCII code $nnn$,
+or the ASCII code of the character \verb!"! (i.e. the ASCII code
 34), all of them being represented in the type {\tt ascii}.
 
 \subsection{Displaying informations about scopes}
