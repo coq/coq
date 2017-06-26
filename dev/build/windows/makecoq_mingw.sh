@@ -1002,6 +1002,7 @@ function copy_coq_dlls {
   copy_coq_dll LIBPANGO-1.0-0.DLL
   copy_coq_dll LIBPANGOCAIRO-1.0-0.DLL
   copy_coq_dll LIBPANGOWIN32-1.0-0.DLL
+  copy_coq_dll libpcre-1.dll
   copy_coq_dll LIBPIXMAN-1-0.DLL
   copy_coq_dll LIBPNG16-16.DLL
   copy_coq_dll LIBXML2-2.DLL
@@ -1010,7 +1011,6 @@ function copy_coq_dlls {
   # Depends on if GTK is built from sources  
   if [ "$GTK_FROM_SOURCES" == "Y" ]; then
     copy_coq_dll libiconv-2.dll
-    copy_coq_dll libpcre-1.dll
   else
     copy_coq_dll ICONV.DLL
     copy_coq_dll LIBBZ2-1.DLL
