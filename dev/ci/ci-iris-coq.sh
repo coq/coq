@@ -20,7 +20,7 @@ stdpp_CI_COMMIT=${IRIS_DEP[2]}
 
 git_checkout ${stdpp_CI_BRANCH} ${stdpp_CI_GITURL} ${stdpp_CI_DIR} ${stdpp_CI_COMMIT}
 
-( cd ${stdpp_CI_DIR} && make pretty-timed TGTS="all" && make install )
+( cd ${stdpp_CI_DIR} && make && make install )
 
 # Build iris now
-( cd ${Iris_CI_DIR} && make pretty-timed TGTS="all" )
+( cd ${Iris_CI_DIR} && make )

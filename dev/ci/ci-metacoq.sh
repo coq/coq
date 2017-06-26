@@ -10,10 +10,10 @@ metacoq_CI_DIR=${CI_BUILD_DIR}/MetaCoq
 
 git_checkout ${unicoq_CI_BRANCH} ${unicoq_CI_GITURL} ${unicoq_CI_DIR}
 
-( cd ${unicoq_CI_DIR} && coq_makefile -f Make -o Makefile && make pretty-timed TGTS="all" && make install )
+( cd ${unicoq_CI_DIR} && coq_makefile -f Make -o Makefile && make && make install )
 
 # Setup MetaCoq
 
 git_checkout ${metacoq_CI_BRANCH} ${metacoq_CI_GITURL} ${metacoq_CI_DIR}
 
-( cd ${metacoq_CI_DIR} && coq_makefile -f _CoqProject -o Makefile && make pretty-timed TGTS="all" )
+( cd ${metacoq_CI_DIR} && coq_makefile -f _CoqProject -o Makefile && make )
