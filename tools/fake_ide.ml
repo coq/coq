@@ -293,7 +293,7 @@ let usage () =
 module Coqide = Spawn.Sync(struct end)
 
 let main =
-  Sys.set_signal Sys.sigpipe
+  if Sys.os_type = "Unix" then Sys.set_signal Sys.sigpipe
     (Sys.Signal_handle
        (fun _ -> prerr_endline "Broken Pipe (coqtop died ?)"; exit 1));
   let def_args = ["--xml_format=Ppcmds"; "-ideslave"] in
