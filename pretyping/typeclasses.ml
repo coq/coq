@@ -81,8 +81,8 @@ type instance = {
   is_class: global_reference;
   is_info: Vernacexpr.hint_info_expr;
   (* Sections where the instance should be redeclared,
-     -1 for discard, 0 for none. *)
-  is_global: int;
+     None for discard, Some 0 for none. *)
+  is_global: int option;
   is_poly: bool;
   is_impl: global_reference;
 }
@@ -95,8 +95,8 @@ let hint_priority is = is.is_info.Vernacexpr.hint_priority
 
 let new_instance cl info glob poly impl =
   let global =
-    if glob then Lib.sections_depth ()
-    else -1
+    if glob then Some (Lib.sections_depth ())
+    else None
   in
     { is_class = cl.cl_impl;
       is_info = info ;
@@ -355,22 +355,33 @@ let subst_instance (subst, (action, inst)) = action,
       is_impl = fst (subst_global subst inst.is_impl) }
 
 let discharge_instance (_, (action, inst)) =
-  if inst.is_global <= 0 then None
-  else Some (action,
+  match inst.is_global with
+  | None -> None
+  | Some n ->
+    Some (action,
     { inst with 
-      is_global = pred inst.is_global;
+      is_global = Some (pred n);
       is_class = Lib.discharge_global inst.is_class;
       is_impl = Lib.discharge_global inst.is_impl })
     
 
-let is_local i = Int.equal i.is_global (-1)
+let is_local i = (i.is_global == None)
+
+let is_local_for_hint i =
+  match i.is_global with
+  | None -> true  (* i.e. either no Global keyword not in section, or in section *)
+  | Some n -> n <> 0 (* i.e. in a section, declare the hint as local
+     since discharge is managed by rebuild_instance which calls again
+     add_instance_hint; don't ask hints to take discharge into account
+     itself *)
 
 let add_instance check inst =
   let poly = Global.is_polymorphic inst.is_impl in
-  add_instance_hint (IsGlobal inst.is_impl) [inst.is_impl] (is_local inst) 
+  let local = is_local_for_hint inst in
+  add_instance_hint (IsGlobal inst.is_impl) [inst.is_impl] local
     inst.is_info poly;
   List.iter (fun (path, pri, c) -> add_instance_hint (IsConstr c) path
-    (is_local inst) pri poly)
+    local pri poly)
     (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
        (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_info)
 
@@ -409,6 +420,7 @@ let declare_instance info local glob =
   let info = Option.default {hint_priority = None; hint_pattern = None} info in
     match class_of_constr Evd.empty (EConstr.of_constr ty) with
     | Some (rels, ((tc,_), args) as _cl) ->
+      assert (not (isVarRef glob) || local);
       add_instance (new_instance tc info (not local) (Flags.use_polymorphic_flag ()) glob)
     | None -> ()
 
