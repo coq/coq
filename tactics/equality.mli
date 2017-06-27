@@ -126,4 +126,4 @@ val set_eq_dec_scheme_kind : mutual scheme_kind -> unit
 (* [build_selector env sigma i c t u v] matches on [c] of
    type [t] and returns [u] in branch [i] and [v] on other branches *)
 val build_selector : env -> evar_map -> int -> constr -> types ->
-  constr -> constr -> evar_map * constr
+  constr -> constr -> constr

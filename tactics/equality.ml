@@ -854,7 +854,8 @@ let descend_then env sigma head dirn =
   let IndType (indf,_) =
     try find_rectype env sigma (get_type_of env sigma head)
     with Not_found ->
-      user_err Pp.(str "Cannot project on an inductive type derived from a dependency.") in
+      user_err Pp.(str "Cannot project on an inductive type derived from a dependency.") 
+  in
   let indp,_ = (dest_ind_family indf) in
   let ind, _ = check_privacy env indp in
   let (mib,mip) = lookup_mind_specif env ind in
@@ -876,7 +877,7 @@ let descend_then env sigma head dirn =
         List.map build_branch
           (List.interval 1 (Array.length mip.mind_consnames)) in
       let ci = make_case_info env ind RegularStyle in
-      sigma, Inductiveops.make_case_or_project env sigma indf ci p head (Array.of_list brl)))
+      Inductiveops.make_case_or_project env sigma indf ci p head (Array.of_list brl)))
 
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:
@@ -921,23 +922,20 @@ let build_selector env sigma dirn c ind special default =
   let brl =
     List.map build_branch(List.interval 1 (Array.length mip.mind_consnames)) in
   let ci = make_case_info env ind RegularStyle in
-  sigma, mkCase (ci, p, c, Array.of_list brl)
+  mkCase (ci, p, c, Array.of_list brl)
 
-let build_coq_False sigma = Evarutil.new_global sigma (build_coq_False ())
-let build_coq_True sigma = Evarutil.new_global sigma (build_coq_True ())
-let build_coq_I sigma = Evarutil.new_global sigma (build_coq_I ())
+let build_coq_False () = pf_constr_of_global (build_coq_False ())
+let build_coq_True () = pf_constr_of_global (build_coq_True ())
+let build_coq_I () = pf_constr_of_global (build_coq_I ())
 
-let rec build_discriminator env sigma dirn c = function
+let rec build_discriminator env sigma true_0 false_0 dirn c = function
   | [] ->
       let ind = get_type_of env sigma c in
-      let sigma, true_0 = build_coq_True sigma in
-      let sigma, false_0 = build_coq_False sigma in
       build_selector env sigma dirn c ind true_0 false_0
   | ((sp,cnum),argnum)::l ->
-      let sigma, false_0 = build_coq_False sigma in
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
-      let sigma, subval = build_discriminator cnum_env sigma dirn newc l in
+      let subval = build_discriminator cnum_env sigma true_0 false_0 dirn newc l in
       kont sigma subval (false_0,mkSort (Prop Null))
 
 (* Note: discrimination could be more clever: if some elimination is
@@ -980,14 +978,15 @@ let ind_scheme_of_eq lbeq =
     ConstRef c, eff
 
 
-let discrimination_pf env sigma e (t,t1,t2) discriminator lbeq =
-  let sigma, i           = build_coq_I sigma in
-  let sigma, absurd_term = build_coq_False sigma in
+let discrimination_pf e (t,t1,t2) discriminator lbeq =
+  build_coq_I () >>= fun i ->
+  build_coq_False () >>= fun absurd_term ->
   let eq_elim, eff       = ind_scheme_of_eq lbeq in
-  let sigma, eq_elim = Evd.fresh_global env sigma eq_elim in
-  let eq_elim = EConstr.of_constr eq_elim in
-    sigma, (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term),
-    eff
+  Proofview.tclEFFECTS eff <*>
+    pf_constr_of_global eq_elim >>= fun eq_elim ->
+    Proofview.tclUNIT
+       (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term)
+
 
 let eq_baseid = Id.of_string "e"
 
@@ -1001,19 +1000,22 @@ let apply_on_clause (f,t) clause =
   clenv_fchain ~with_univs:false argmv f_clause clause
 
 let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
+  build_coq_True () >>= fun true_0 ->
+  build_coq_False () >>= fun false_0 ->
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (Context.Named.Declaration.LocalAssum (e,t)) env in
-  let sigma, discriminator =
-    build_discriminator e_env sigma dirn (mkVar e) cpath in
-  let sigma,(pf, absurd_term), eff = 
-    discrimination_pf env sigma e (t,t1,t2) discriminator lbeq in
-  let pf_ty = mkArrow eqn absurd_term in
-  let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
-  let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
-  Proofview.Unsafe.tclEVARS sigma <*>
-  Proofview.tclEFFECTS eff <*>
-  tclTHENS (assert_after Anonymous absurd_term)
-    [onLastHypId gen_absurdity; (Proofview.V82.tactic (Tacmach.refine pf))]
+  try
+    let discriminator =
+      build_discriminator e_env sigma true_0 false_0 dirn (mkVar e) cpath
+    in
+    discrimination_pf e (t,t1,t2) discriminator lbeq >>= fun (pf, absurd_term) ->
+    let pf_ty = mkArrow eqn absurd_term in
+    let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
+    let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
+    tclTHENS (assert_after Anonymous absurd_term)
+      [onLastHypId gen_absurdity; (Proofview.V82.tactic (Tacmach.refine pf))]
+  with
+    UserError _ as ex -> Proofview.tclZERO ex
 
 let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
@@ -1299,7 +1301,7 @@ let rec build_injrec env sigma dflt c = function
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
       let sigma, (subval,tuplety,dfltval) = build_injrec cnum_env sigma dflt newc l in
-      let sigma, res = kont sigma subval (dfltval,tuplety) in
+      let res = kont sigma subval (dfltval,tuplety) in
       sigma, (res, tuplety,dfltval)
     with
 	UserError _ -> failwith "caught"
