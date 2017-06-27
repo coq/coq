@@ -6,6 +6,17 @@ Tactics
 - New tactic "extensionality in H" which applies (possibly dependent)
   functional extensionality in H supposed to be a quantified equality
   until giving a bare equality.
+- New tactic "inversion_sigma" which turns equalities of dependent
+  pairs (e.g., "existT P x p = existT P y q", frequently left over by
+  "inversion" on a dependent type family) into pairs of equalities
+  (e.g., a hypothesis "H : x = y" and a hypothesis of type "rew H in p
+  = q"); these hypotheses can subsequently be simplified using
+  "subst", without ever invoking any kind of axiom asserting
+  uniqueness of identity proofs. If you want to explicitly specify the
+  hypothesis to be inverted, or name the generated hypotheses, you can
+  invoke "induction H as [H1 H2] using eq_sigT_rect".  The tactic also
+  works for "sig", "sigT2", and "sig2", and there are similar
+  "eq_sig*_rect" induction lemmas.
 - Tactic "specialize with ..." now accepts any partial bindings.
   Missing bindings are either solved by unification or left quantified
   in the hypothesis.
