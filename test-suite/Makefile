@@ -294,7 +294,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	    | grep -v "^<W>" \
 	    | sed 's/File "[^"]*"/File "stdin"/' \
 	    > $$tmpoutput; \
-	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
+	  diff -u --strip-trailing-cr $*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -329,7 +329,7 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 		-e 's/\s*[-+]inf\s*//g' \
 		-e 's/^[^a-zA-Z]*//' \
 	       $*.out | sort > $$tmpexpected; \
-	  diff -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
+	  diff  --strip-trailing-cr -b -u $$tmpexpected $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

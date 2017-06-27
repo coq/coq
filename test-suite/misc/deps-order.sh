@@ -4,7 +4,7 @@
 rm -f misc/deps/lib/*.vo misc/deps/client/*.vo
 tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
 $coqdep -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/bar.v 2>&1 | head -n 1 > $tmpoutput
-diff -u misc/deps/deps.out $tmpoutput 2>&1
+diff -u --strip-trailing-cr misc/deps/deps.out $tmpoutput 2>&1
 R=$?
 times
 $coqc -R misc/deps/lib lib misc/deps/lib/foo.v 2>&1
