@@ -643,11 +643,15 @@ let subdirs sds =
       section "Subdirectories.";
     List.iter pr_subdir sds
 
+let capitalize_caml_file_name s =
+ assert (String.length s <> 0 && s.[0] >= 'a' && s.[0] <= 'z');
+ String.make 1 (Char.chr (Char.code s.[0] - 32)) ^ String.sub s 1 (String.length s - 1)
+
 let forpacks l =
   let () = if l <> [] then section "Ad-hoc implicit rules for mlpack." in
   List.iter (fun it ->
     let h = Filename.chop_extension it in
-    let pk = String.capitalize (Filename.basename h) in
+    let pk = capitalize_caml_file_name (Filename.basename h) in
     printf "$(addsuffix .cmx,$(filter $(basename $(MLFILES)),$(%s_MLPACK_DEPENDENCIES))): %%.cmx: %%.ml\n" h;
     printf "\t$(SHOW)'CAMLOPT -c -for-pack %s $<'\n" pk;
     printf "\t$(HIDE)$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $<\n\n" pk;

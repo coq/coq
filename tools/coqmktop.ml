@@ -22,6 +22,10 @@ let split_list =
 
 let (/) = Filename.concat
 
+let capitalize_caml_file_name s =
+  assert (String.length s <> 0 && s.[0] >= 'a' && s.[0] <= 'z');
+  String.make 1 (Char.chr (Char.code s.[0] - 32)) ^ String.sub s 1 (String.length s - 1)
+
 (** Which user files do we support (and propagate to ocamlopt) ?
 *)
 let supported_suffix f = match CUnix.get_extension f with
@@ -39,7 +43,7 @@ let native_suffix f = match CUnix.get_extension f with
 (** Transforms a file name in the corresponding Caml module name.
 *)
 let module_of_file name =
-  String.capitalize
+  capitalize_caml_file_name
     (try Filename.chop_extension name with Invalid_argument _ -> name)
 
 (** Run a command [prog] with arguments [args].
@@ -137,7 +141,7 @@ let core_libs = split_list Tolink.core_libs
 *)
 let files_to_link userfiles =
   let top = if !top then topobjs else [] in
-  let modules = List.map module_of_file (top @ core_objs @ userfiles) in
+  let modules = List.map module_of_file top @ core_objs @ List.map module_of_file userfiles in
   let objs = libobjs @ top @ core_libs in
   let objs' = (if !opt then List.map native_suffix objs else objs) @ userfiles
   in (modules, objs')

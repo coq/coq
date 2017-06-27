@@ -11,18 +11,25 @@
 
   let syntax_error lexbuf =
     raise (Syntax_error (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))
+
+  let capitalize_caml_file_name s =
+    assert (String.length s <> 0 && s.[0] >= 'a' && s.[0] <= 'z');
+    String.make 1 (Char.chr (Char.code s.[0] - 32)) ^ String.sub s 1 (String.length s - 1)
+
+  let uncapitalize_caml_module_name s =
+    assert (String.length s <> 0 && s.[0] >= 'A' && s.[0] <= 'Z');
+    String.make 1 (Char.chr (Char.code s.[0] + 32)) ^ String.sub s 1 (String.length s - 1)
 }
 
 let space = [' ' '\t' '\n' '\r']
-let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255']
-let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let lowercase = ['a'-'z']
+let uppercase = ['A'-'Z']
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
 let caml_up_ident = uppercase identchar*
 let caml_low_ident = lowercase identchar*
 
 rule mllib_list = parse
-  | caml_up_ident { let s = String.uncapitalize (Lexing.lexeme lexbuf)
+  | caml_up_ident { let s = uncapitalize_caml_module_name (Lexing.lexeme lexbuf)
 		in s :: mllib_list lexbuf }
   | "*predef*" { mllib_list lexbuf }
   | space+ { mllib_list lexbuf }
@@ -185,7 +192,7 @@ let mlpack_dependencies () =
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
-       let modname = String.capitalize name in
+       let modname = capitalize_caml_file_name name in
        let deps = traite_fichier_modules fullname ".mlpack" in
        let sdeps = String.concat " " deps in
        let efullname = escape fullname in

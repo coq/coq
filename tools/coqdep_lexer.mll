@@ -39,13 +39,16 @@
 
   let syntax_error lexbuf =
     raise (Syntax_error (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))
+
+  let uncapitalize_caml_module_name s =
+    assert (String.length s <> 0 && s.[0] >= 'A' && s.[0] <= 'Z');
+    String.make 1 (Char.chr (Char.code s.[0] + 32)) ^ String.sub s 1 (String.length s - 1)
 }
 
 let space = [' ' '\t' '\n' '\r']
-let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255']
-let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let lowercase = ['a'-'z']
+let uppercase = ['A'-'Z']
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
 let caml_up_ident = uppercase identchar*
 let caml_low_ident = lowercase identchar*
 
@@ -154,7 +157,7 @@ and caml_action = parse
   | space +
       { caml_action lexbuf }
   | "open" space* (caml_up_ident as id)
-        { Use_module (String.uncapitalize id) }
+        { Use_module (uncapitalize_caml_module_name id) }
   | "module" space+ caml_up_ident
         { caml_action lexbuf }
   | caml_low_ident { caml_action lexbuf }
@@ -321,12 +324,12 @@ and modules mllist = parse
 
 and qual_id ml_module_name = parse
   | '.' [^ '.' '(' '[']
-      { Use_module (String.uncapitalize ml_module_name) }
+      { Use_module (uncapitalize_caml_module_name ml_module_name) }
   | eof { raise Fin_fichier }
   | _ { caml_action lexbuf }
 
 and mllib_list = parse
-  | caml_up_ident { let s = String.uncapitalize (Lexing.lexeme lexbuf)
+  | caml_up_ident { let s = uncapitalize_caml_module_name (Lexing.lexeme lexbuf)
 		in s :: mllib_list lexbuf }
   | "*predef*" { mllib_list lexbuf }
   | space+ { mllib_list lexbuf }
