@@ -98,6 +98,8 @@ let new_instance cl info glob poly impl =
     if glob then Some (Lib.sections_depth ())
     else None
   in
+  if match global with Some n -> n>0 && isVarRef impl | _ -> false then
+    CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.");
     { is_class = cl.cl_impl;
       is_info = info ;
       is_global = global ;
@@ -358,6 +360,7 @@ let discharge_instance (_, (action, inst)) =
   match inst.is_global with
   | None -> None
   | Some n ->
+    assert (not (isVarRef inst.is_impl));
     Some (action,
     { inst with 
       is_global = Some (pred n);
