@@ -106,6 +106,7 @@ doc/stdlib/FullLibrary.coqdoc.tex
 doc/stdlib/html/
 doc/stdlib/index-body.html
 doc/stdlib/index-list.html
+doc/tutorial/Tutorial.v.out
 doc/RecTutorial/RecTutorial.html
 doc/RecTutorial/RecTutorial.ps
 dev/ocamldoc/*.html
