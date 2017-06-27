@@ -85,7 +85,7 @@ let classify_obbl _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacit
 
 let pr_obligation_reference _prc _prlc _prt = function
   | OblNumber i -> Pp.int i
-  | OblName id -> Nameops.pr_id id
+  | OblName id -> Names.Id.print id
 
 open Pcoq.Prim
 
@@ -111,7 +111,7 @@ END
 VERNAC COMMAND EXTEND Solve_Obligation CLASSIFIED AS SIDEFF
 | [ "Solve" "Obligation" obligation_reference(obl) "of" ident(name) "with" tactic(t) ] ->
     [ try_solve_obligation obl (Some name) (Some (Tacinterp.interp t)) ]
-| [ "Solve" "Obligation" obligation_reference(num) "with" tactic(t) ] ->
+| [ "Solve" "Obligation" obligation_reference(obl) "with" tactic(t) ] ->
     [ try_solve_obligation obl None (Some (Tacinterp.interp t)) ]
 END
 

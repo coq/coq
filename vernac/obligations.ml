@@ -205,7 +205,7 @@ let eterm_obligations env name evm fs ?status t ty =
         | Some id -> id
         in
         if exists_name name then
-          user_err ~loc:(fst ev.Evd.evar_source)
+          user_err ?loc:(fst ev.Evd.evar_source)
                    (Nameops.pr_id name ++ str " already exists")
         else (id, (!i, name), ev)) evl
   in
@@ -980,7 +980,7 @@ and obligation (oblname, name, typ) tac =
   let obl = (fst prg.prg_obligations).(num) in
   match obl.obl_body with
     None -> solve_obligation prg num tac
-  | Some r -> error "Obligation already solved"
+  | Some r -> error "Obligation already solved."
 
 and solve_obligation_by_tac prg obls na tac =
   let i = get_obligation_index prg na in
@@ -1079,7 +1079,7 @@ let show_obligations_of_prg ?(msg=true) prg =
   let n = prg.prg_name in
   let obls, rem = prg.prg_obligations in
   let showed = ref 5 in
-  if msg then Feedback.msg_info (int rem ++ str " obligation(s) remaining: ");
+  if msg then Feedback.msg_info (int rem ++ str (String.plural rem " obligation") ++ str " remaining: ");
   let show i x =
     match x.obl_body with
     | None ->

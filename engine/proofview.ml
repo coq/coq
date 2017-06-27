@@ -68,7 +68,7 @@ let merge_typeclass_unresolvable xy =
   let open Evd.Store in
   match xy with
   | One () -> None
-  | Both (x, y) -> Some x
+  | Both ((), ()) -> Some ()
 
 let typeclass_unresolvable = Evd.Store.field merge_typeclass_unresolvable
 
