@@ -66,6 +66,7 @@ STDTIME?=/usr/bin/time -f "$* (user: %U mem: %M ko)"
 
 # Coq binaries
 COQC     ?= "$(COQBIN)coqc"
+COQTOP   ?= "$(COQBIN)coqtop"
 COQCHK   ?= "$(COQBIN)coqchk"
 COQDEP   ?= "$(COQBIN)coqdep"
 GALLINA  ?= "$(COQBIN)gallina"
@@ -177,7 +178,7 @@ ALLSRCFILES := \
 # helpers
 vo_to_obj = $(addsuffix .o,\
   $(filter-out Warning: Error:,\
-  $(shell $(COQBIN)coqtop -q -noinit -batch -quiet -print-mod-uid $(1))))
+  $(shell $(COQTOP) -q -noinit -batch -quiet -print-mod-uid $(1))))
 strip_dotslash = $(patsubst ./%,%,$(1))
 VO = vo
 
@@ -632,14 +633,14 @@ printenv::
 .merlin:
 	$(SHOW)'FILL .merlin'
 	$(HIDE)echo 'FLG -rectypes' > .merlin
-	$(HIDE)echo "B $(COQLIB)" >> .merlin
-	$(HIDE)echo "S $(COQLIB)" >> .merlin
+	$(HIDE)echo 'B $(COQLIB)' >> .merlin
+	$(HIDE)echo 'S $(COQLIB)' >> .merlin
 	$(HIDE)$(foreach d,$(COQ_SRC_SUBDIRS), \
-		echo "B $(COQLIB)$(d)" >> .merlin;)
+		echo 'B $(COQLIB)$(d)' >> .merlin;)
 	$(HIDE)$(foreach d,$(COQ_SRC_SUBDIRS), \
-		echo "S $(COQLIB)$(d)" >> .merlin;)
-	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo "B $(d)" >> .merlin;)
-	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo "S $(d)" >> .merlin;)
+		echo 'S $(COQLIB)$(d)' >> .merlin;)
+	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo 'B $(d)' >> .merlin;)
+	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo 'S $(d)' >> .merlin;)
 	$(HIDE)$(MAKE) merlin-hook -f "$(SELF)"
 .PHONY: merlin
 
