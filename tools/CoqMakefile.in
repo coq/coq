@@ -150,7 +150,7 @@ else
 CAMLP4EXTEND=
 endif
 
-PP:=-pp '$(CAMLP4O) -I $(CAMLLIB) -I $(COQLIB)/grammar compat5.cmo $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'
+PP:=-pp '$(CAMLP4O) -I $(CAMLLIB) -I "$(COQLIB)/grammar" compat5.cmo $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'
 
 COQLIBINSTALL = $(COQLIB)user-contrib
 COQDOCINSTALL = $(DOCDIR)user-contrib
