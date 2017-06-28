@@ -77,6 +77,7 @@ CAMLC       ?= "$(OCAMLFIND)" ocamlc -c -rectypes -thread
 CAMLOPTC    ?= "$(OCAMLFIND)" opt    -c -rectypes -thread
 CAMLLINK    ?= "$(OCAMLFIND)" ocamlc    -rectypes -thread
 CAMLOPTLINK ?= "$(OCAMLFIND)" opt       -rectypes -thread
+CAMLDOC     ?= "$(OCAMLFIND)" ocamldoc  -rectypes
 CAMLDEP     ?= "$(OCAMLFIND)" ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
 
 # DESTDIR is prepended to all installation paths
@@ -306,14 +307,14 @@ html: $(GLOBFILES) $(VFILES)
 		-toc $(COQDOCFLAGS) -html $(GAL) $(COQDOCLIBS) -d html $(VFILES)
 
 mlihtml: $(MLIFILES:.mli=.cmi)
-	$(SHOW)'OCAMLDOC -d $@'
+	$(SHOW)'CAMLDOC -d $@'
 	$(HIDE)mkdir $@ || rm -rf $@/*
-	$(HIDE)"$(OCAMLFIND)" ocamldoc -html -rectypes \
+	$(HIDE)$(CAMLDOC) -html \
 		-d $@ -m A $(CAMLDEBUG) $(CAMLFLAGS) $(MLIFILES)
 
 all-mli.tex: $(MLIFILES:.mli=.cmi)
-	$(SHOW)'OCAMLDOC -latex $@'
-	"$(OCAMLFIND)" ocamldoc -latex -rectypes \
+	$(SHOW)'CAMLDOC -latex $@'
+	$(HIDE)$(CAMLDOC) -latex \
 		-o $@ -m A $(CAMLDEBUG) $(CAMLFLAGS) $(MLIFILES)
 
 gallina: $(GFILES)
