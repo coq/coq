@@ -45,15 +45,13 @@ Section Conjunction.
 
   Variables A B : Prop.
 
-  Theorem proj1 : A /\ B -> A.
-  Proof.
-    destruct 1; trivial.
-  Qed.
+  Definition proj1 (p : A /\ B) : A := match p with
+                                       | conj a b => a
+				       end.
 
-  Theorem proj2 : A /\ B -> B.
-  Proof.
-    destruct 1; trivial.
-  Qed.
+  Definition proj2 (p : A /\ B) : B := match p with
+                                       | conj a b => b
+				       end.
 
 End Conjunction.
 
