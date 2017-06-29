@@ -593,7 +593,7 @@ and rebuild_nal aux bk bl' nal typ =
 	  | na::nal,{ CAst.v = CProdN((na'::nal',bk',nal't)::rest,typ') } ->
 	     if Name.equal (snd na) (snd na') || Name.is_anonymous (snd na')
 	     then
-	       let assum = CLocalAssum([na],bk',nal't) in
+	       let assum = CLocalAssum([na],bk,nal't) in
 	       let new_rest = if nal' = [] then rest else ((nal',bk',nal't)::rest) in 
 	       rebuild_nal
 		 (assum::aux)
@@ -602,7 +602,7 @@ and rebuild_nal aux bk bl' nal typ =
 		 nal
 		 (CAst.make @@ CProdN(new_rest,typ'))
 	     else
-	       let assum = CLocalAssum([na'],bk',nal't) in
+	       let assum = CLocalAssum([na'],bk,nal't) in
 	       let new_rest = if nal' = [] then rest else ((nal',bk',nal't)::rest) in 
 	       rebuild_nal
 		 (assum::aux)
