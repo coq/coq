@@ -622,6 +622,14 @@ Proof.
  apply quot_rem; order.
 Qed.
 
+Lemma rem_quot: forall a b, b~=0 ->
+ a rem b ÷ b == 0.
+Proof.
+ intros a b Hb.
+ rewrite quot_small_iff by assumption.
+ auto using rem_bound_abs.
+Qed.
+
 (** A last inequality: *)
 
 Theorem quot_mul_le:

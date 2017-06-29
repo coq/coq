@@ -650,6 +650,14 @@ Proof.
  apply div_mod; order.
 Qed.
 
+Lemma mod_div: forall a b, b~=0 ->
+ a mod b / b == 0.
+Proof.
+ intros a b Hb.
+ rewrite div_small_iff by assumption.
+ auto using mod_bound_or.
+Qed.
+
 (** A last inequality: *)
 
 Theorem div_mul_le:
