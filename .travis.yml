@@ -110,6 +110,15 @@ matrix:
 
     - os: osx
       env:
+      - TEST_TARGET="test-suite"
+      - COMPILER="4.02.3"
+      - NATIVE_COMP="no"
+      before_install:
+      - brew update
+      - brew install opam
+
+    - os: osx
+      env:
       - TEST_TARGET=""
       - COMPILER="4.02.3"
       - NATIVE_COMP="no"
