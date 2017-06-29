@@ -345,8 +345,12 @@ We may thus complete the proof of \verb:distr_impl: with one composite tactic:
 apply H; [ assumption | apply H0; assumption ].
 \end{coq_example}
 
-It is discouraged, though, to rely on automatically generated names in finished
-proof scripts. And be careful not to abuse \verb:;:.
+You should be aware however that relying on automatically generated names is
+not robust to slight updates to this proof script. Consequently, it is
+discouraged in finished proof scripts. As for the composition of tactics with
+\texttt{:} it may hinder the readability of the proof script and it is also
+harder to see what's going on when replaying the proof because composed
+tactics are evaluated in one go.
 
 Actually, such an easy combination of tactics \verb:intro:, \verb:apply:
 and \verb:assumption: may be found completely automatically by an automatic
@@ -1296,7 +1300,7 @@ Lemma plus_com : forall n m:nat, n + m = m + n.
 Here we have a choice on doing an induction on \verb:n: or on \verb:m:, the
 situation being symmetric. For instance:
 \begin{coq_example}
-induction m; simpl; auto.
+induction m as [ | m IHm ]; simpl; auto.
 \end{coq_example}
 
 Here \verb:auto: succeeded on the base case, thanks to our hint
