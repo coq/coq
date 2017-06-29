@@ -285,11 +285,15 @@ let infer_declaration ~trust env kn dcl =
       let (body, ctx), side_eff = Future.join body in
       let univsctx = c.const_entry_universes in
       let ctx =
-        let orig = Univ.ContextSet.of_context univsctx in
-        let ctx = Univ.ContextSet.diff ctx orig in
-        Univ.ContextSet.to_context ctx in
-      let body, ctx, _ = inline_side_effects env body
-        (Univ.UContext.union univsctx ctx) side_eff in
+        if c.const_entry_polymorphic then
+          (assert(Univ.ContextSet.is_empty ctx); univsctx)
+        else
+          let orig = Univ.ContextSet.of_context univsctx in
+          let ctx = Univ.ContextSet.diff ctx orig in
+          let uctx = Univ.ContextSet.to_context ctx in
+          Univ.UContext.union univsctx uctx
+      in
+      let body, ctx, _ = inline_side_effects env body ctx side_eff in
       let env = push_context ~strict:(not c.const_entry_polymorphic) ctx env in
       let abstract = c.const_entry_polymorphic && not (Option.is_empty kn) in
       let usubst, univs = abstract_constant_universes abstract ctx in
