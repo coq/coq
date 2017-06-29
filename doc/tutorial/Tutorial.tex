@@ -132,25 +132,25 @@ in the current context:
 Check gt.
 \end{coq_example}
 
-which tells us that \verb:gt: is a function expecting two arguments of
-type \verb:nat: in order to build a logical proposition.
+which tells us that \texttt{gt} is a function expecting two arguments of
+type \texttt{nat} in order to build a logical proposition.
 What happens here is similar to what we are used to in a functional
-programming language: we may compose the (specification) type \verb:nat:
-with the (abstract) type \verb:Prop: of logical propositions through the
+programming language: we may compose the (specification) type \texttt{nat}
+with the (abstract) type \texttt{Prop} of logical propositions through the
 arrow function constructor, in order to get a functional type
-\verb:nat->Prop::
+\texttt{nat -> Prop}:
 \begin{coq_example}
 Check (nat -> Prop).
 \end{coq_example}
 which may be composed once more with \verb:nat: in order to obtain the
-type \verb:nat->nat->Prop: of binary relations over natural numbers.
-Actually the type \verb:nat->nat->Prop: is an abbreviation for 
-\verb:nat->(nat->Prop):. 
+type \texttt{nat -> nat -> Prop} of binary relations over natural numbers.
+Actually the type \texttt{nat -> nat -> Prop} is an abbreviation for 
+\texttt{nat -> (nat -> Prop)}.
 
 Functional notions may be composed in the usual way. An expression $f$
 of type $A\ra B$ may be applied to an expression $e$ of type $A$ in order
 to form the expression $(f~e)$ of type $B$. Here we get that
-the expression \verb:(gt n): is well-formed of type \verb:nat->Prop:,
+the expression \verb:(gt n): is well-formed of type \texttt{nat -> Prop},
 and thus that the expression \verb:(gt n O):, which abbreviates
 \verb:((gt n) O):, is a well-formed proposition.
 \begin{coq_example}
@@ -160,11 +160,12 @@ Check gt n O.
 \subsection{Definitions}
 
 The initial prelude contains a few arithmetic definitions:
-\verb:nat: is defined as a mathematical collection (type \verb:Set:), constants
-\verb:O:, \verb:S:, \verb:plus:, are defined as objects of types
-respectively \verb:nat:, \verb:nat->nat:, and \verb:nat->nat->nat:.
+\texttt{nat} is defined as a mathematical collection (type \texttt{Set}),
+constants \texttt{O}, \texttt{S}, \texttt{plus}, are defined as objects of
+types respectively \texttt{nat}, \texttt{nat -> nat}, and \texttt{nat ->
+nat -> nat}.
 You may introduce new definitions, which link a name to a well-typed value.
-For instance, we may introduce the constant \verb:one: as being defined
+For instance, we may introduce the constant \texttt{one} as being defined
 to be equal to the successor of zero:
 \begin{coq_example}
 Definition one := (S O).
@@ -184,17 +185,18 @@ argument \verb:m: of type \verb:nat: in order to build its result as
 \verb:(plus m m)::
 
 \begin{coq_example}
-Definition double (m:nat) := plus m m.
+Definition double (m : nat) := plus m m.
 \end{coq_example}
 This introduces the constant \texttt{double} defined as the
-expression \texttt{fun m:nat => plus m m}.
-The abstraction introduced by \texttt{fun} is explained as follows. The expression
-\verb+fun x:A => e+ is well formed of type \verb+A->B+ in a context
-whenever the expression \verb+e+ is well-formed of type \verb+B+ in 
-the given context to which we add the declaration that \verb+x+
-is of type \verb+A+. Here \verb+x+ is a bound, or dummy variable in
-the expression \verb+fun x:A => e+. For instance we could as well have
-defined \verb:double: as \verb+fun n:nat => (plus n n)+.
+expression \texttt{fun m : nat => plus m m}.
+The abstraction introduced by \texttt{fun} is explained as follows.
+The expression \texttt{fun x : A => e} is well formed of type
+\texttt{A -> B} in a context whenever the expression \texttt{e} is
+well-formed of type \texttt{B} in the given context to which we add the
+declaration that \texttt{x} is of type \texttt{A}. Here \texttt{x} is a
+bound, or dummy variable in the expression \texttt{fun x : A => e}.
+For instance we could as well have defined \texttt{double} as
+\texttt{fun n : nat => (plus n n)}.
 
 Bound (local) variables and free (global) variables may be mixed.
 For instance, we may define the function which adds the constant \verb:n:
@@ -210,11 +212,11 @@ Binding operations are well known for instance in logic, where they
 are called quantifiers.  Thus we may universally quantify a
 proposition such as $m>0$ in order to get a universal proposition
 $\forall m\cdot m>0$. Indeed this operator is available in \Coq, with
-the following syntax: \verb+forall m:nat, gt m O+. Similarly to the
+the following syntax: \texttt{forall m : nat, gt m O}. Similarly to the
 case of the functional abstraction binding, we are obliged to declare
 explicitly the type of the quantified variable. We check:
 \begin{coq_example}
-Check (forall m:nat, gt m 0).
+Check (forall m : nat, gt m 0).
 \end{coq_example}
 
 \begin{coq_eval}
@@ -305,7 +307,7 @@ the current goal is solvable from the current local assumptions:
 assumption.
 \end{coq_example}
 
-The proof is now finished. We are now going to ask to \Coq{}'s kernel
+The proof is now finished. We are now going to ask \Coq{}'s kernel
 to check and save the proof.
 \begin{coq_example}
 Qed.
@@ -343,7 +345,7 @@ We may thus complete the proof of \verb:distr_impl: with one composite tactic:
 apply H; [ assumption | apply H0; assumption ].
 \end{coq_example}
 
-It is discouraged though to rely on automatically generated names in finished
+It is discouraged, though, to rely on automatically generated names in finished
 proof scripts. And be careful not to abuse \verb:;:.
 
 Actually, such an easy combination of tactics \verb:intro:, \verb:apply:
@@ -498,7 +500,7 @@ currently defined in the context:
 Print or_commutative.
 \end{coq_example}
 
-It is not easy to understand the notation for proof terms without a few
+It is not easy to understand the notation for proof terms without some
 explanations. The \texttt{fun} prefix, such as \verb+fun H : A\/B =>+, 
 corresponds
 to \verb:intro H:, whereas a subterm such as 
@@ -610,12 +612,12 @@ function and predicate symbols.
 \subsection{Sections and signatures}
 
 Usually one works in some domain of discourse, over which range the individual 
-variables and function symbols. In \Coq{} we speak in a language with a rich
+variables and function symbols. In \Coq{}, we speak in a language with a rich
 variety of types, so we may mix several domains of discourse, in our 
 multi-sorted language. For the moment, we just do a few exercises, over a 
 domain of discourse \verb:D: axiomatised as a \verb:Set:, and we consider two 
 predicate symbols  \verb:P: and \verb:R: over \verb:D:, of arities 
-respectively 1 and 2.
+1 and 2, respectively.
 
 \begin{coq_eval}
 Reset Initial.
@@ -640,7 +642,8 @@ section to this effect.
 \begin{coq_example}
 Section R_sym_trans.
 Hypothesis R_symmetric : forall x y : D, R x y -> R y x.
-Hypothesis R_transitive : forall x y z : D, R x y -> R y z -> R x z.
+Hypothesis R_transitive :
+    forall x y z : D, R x y -> R y z -> R x z.
 \end{coq_example}
 
 Remark the syntax \verb+forall x : D,+ which stands for universal quantification
@@ -726,8 +729,8 @@ End R_sym_trans.
 All the local hypotheses have been
 discharged in the statement of \verb:refl_if:, which now becomes a general
 theorem in the first-order language declared in section 
-\verb:Predicate_calculus:. In this particular example, the use of section
-\verb:R_sym_trans: has not been really significant, since we could have
+\verb:Predicate_calculus:. In this particular example, section
+\verb:R_sym_trans: has not been really useful, since we could have
 instead stated theorem \verb:refl_if: in its general form, and done 
 basically the same proof, obtaining \verb:R_symmetric: and
 \verb:R_transitive: as local hypotheses by initial \verb:intros: rather
@@ -859,9 +862,10 @@ Finally, the excluded middle hypothesis is discharged only in
 Note that the name \verb:d: has vanished as well from
 the statements of \verb:weird: and \verb:drinker:, 
 since \Coq's pretty-printer replaces
-systematically a quantification such as \verb+forall d:D, E+, where \verb:d:
-does not occur in \verb:E:, by the functional notation \verb:D->E:. 
-Similarly the name \verb:EM: does not appear in \verb:drinker:. 
+systematically a quantification such as \texttt{forall d : D, E},
+where \texttt{d} does not occur in \texttt{E},
+by the functional notation \texttt{D -> E}.
+Similarly the name \texttt{EM} does not appear in \texttt{drinker}.
 
 Actually, universal quantification, implication, 
 as well as function formation, are
@@ -906,10 +910,10 @@ Abort.
 \subsection{Equality}
 
 The basic equality provided in \Coq{} is Leibniz equality, noted infix like
-\verb+x = y+, when \verb:x: and \verb:y: are two expressions of
-type the same Set. The replacement of \verb:x: by \verb:y: in any
-term is effected by a variety of tactics, such as \verb:rewrite:
-and \verb:replace:. 
+\texttt{x = y}, when \texttt{x} and \texttt{y} are two expressions of
+type the same Set. The replacement of \texttt{x} by \texttt{y} in any
+term is effected by a variety of tactics, such as \texttt{rewrite}
+and \texttt{replace}.
 
 Let us give a few examples of equality replacement. Let us assume that
 some arithmetic function \verb:f: is null in zero:
@@ -1228,20 +1232,21 @@ Let us now show how to do proofs by structural induction. We start with easy
 properties of the \verb:plus: function we just defined. Let us first
 show that $n=n+0$.
 \begin{coq_example}
-Lemma plus_n_O : forall n:nat, n = n + 0.
+Lemma plus_n_O : forall n : nat, n = n + 0.
 intro n; elim n.
 \end{coq_example}
 
-What happened was that \verb:elim n:, in order to construct a \verb:Prop:
-(the initial goal) from a \verb:nat: (i.e. \verb:n:), appealed to the
-corresponding induction principle \verb:nat_ind: which we saw was indeed
+What happened was that \texttt{elim n}, in order to construct a \texttt{Prop}
+(the initial goal) from a \texttt{nat} (i.e. \texttt{n}), appealed to the
+corresponding induction principle \texttt{nat\_ind} which we saw was indeed
 exactly Peano's induction scheme. Pattern-matching instantiated the 
-corresponding predicate \verb:P: to \verb|fun n:nat => n = n + 0|, and we get
-as subgoals the corresponding instantiations of the base case \verb:(P O): ,
-and of the inductive step \verb+forall y : nat, P y -> P (S y)+.
-In each case we get an instance of function \verb:plus: in which its second
+corresponding predicate \texttt{P} to \texttt{fun n : nat => n = n + 0},
+and we get as subgoals the corresponding instantiations of the base case
+\texttt{(P O)}, and of the inductive step
+\texttt{forall y : nat, P y -> P (S y)}.
+In each case we get an instance of function \texttt{plus} in which its second
 argument starts with a constructor, and is thus amenable to simplification
-by primitive recursion. The \Coq{} tactic \verb:simpl: can be used for
+by primitive recursion. The \Coq{} tactic \texttt{simpl} can be used for
 this purpose:
 \begin{coq_example}
 simpl.
@@ -1272,7 +1277,7 @@ We now proceed to the similar property concerning the other constructor
 Lemma plus_n_S : forall n m:nat, S (n + m) = n + S m.
 \end{coq_example}
 
-We now go faster, using the tactic \verb:induction: which does the
+We now go faster, using the tactic \verb:induction:, which does the
 necessary \verb:intros: before applying \verb:elim:. Factoring simplification
 and automation in both cases thanks to tactic composition, we prove this
 lemma in one line:
@@ -1317,7 +1322,7 @@ Definition Is_S (n : nat) := match n with
                              end.
 \end{coq_example}
 
-Now we may use the computational power of \verb:Is_S: in order to prove
+Now we may use the computational power of \verb:Is_S: to prove
 trivially that \verb:(Is_S (S n))::
 \begin{coq_example}
 Lemma S_Is_S : forall n:nat, Is_S (S n).
@@ -1541,7 +1546,7 @@ SearchHead le.
 
 The \verb:Search: commands also allows finding the theorems
 containing a given pattern, where \verb:_: can be used in
-place of an arbitrary term. We remark in this example, that \Coq{}
+place of an arbitrary term. Note in passing that \Coq{}
 provides usual infix notations for arithmetic operators.
 
 \begin{coq_example}
