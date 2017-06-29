@@ -33,63 +33,30 @@ proof tools.  For more advanced information, the reader could refer to
 the \Coq{} Reference Manual or the \textit{Coq'Art}, a book by Y.
 Bertot and P. Castéran on practical uses of the \Coq{} system.
 
-Coq can be tested through a REPL (Read-Eval-Print-Loop) called
-\texttt{coqtop} but for actual developments it is preferable to use
-a graphical user interface such as CoqIDE or
-Proof General\footnote{See \url{https://proofgeneral.github.io/}.}.
-
 Instructions on installation procedures, as well as more comprehensive
 documentation, may be found in the standard distribution of \Coq,
 which may be obtained from \Coq{} web site \url{https://coq.inria.fr/}.
+\Coq{} is distributed together with a graphical user interface called
+CoqIDE. Alternative interfaces exist such as
+Proof General\footnote{See \url{https://proofgeneral.github.io/}.}.
 
-The following examples are executed within \texttt{coqtop}.
-All examples preceded by the prompting
-sequence \verb:Coq < : represent user input, terminated by a
-period. 
-
-The following lines usually show \Coq's answer as it appears on the
-users screen. When used from a graphical user interface such as
+In the following examples, lines preceded by the prompt \verb:Coq < :
+represent user input, terminated by a period.
+The following lines usually show \Coq's answer.
+When used from a graphical user interface such as
 CoqIDE, the prompt is not displayed: user input is given in one window
 and \Coq's answers are displayed in a different window.
-
-The sequence of such examples is a valid \Coq{}
-session, unless otherwise specified. This version of the tutorial has
-been prepared on a PC workstation running Linux.  The standard
-invocation of \Coq{} delivers a message such as:
-
-\begin{small}
-\begin{flushleft}
-\begin{verbatim}
-unix:~> coqtop
-Welcome to Coq 8.7 (June 2017)
-
-Coq < 
-\end{verbatim}
-\end{flushleft}
-\end{small}
-
-The first line gives a banner stating the precise version of \Coq{}
-used. You should always return this version number when you report an
-anomaly to our bug-tracking system
-\url{https://coq.inria.fr/bugs/}.
 
 \chapter{Basic Predicate Calculus}
 
 \section{An overview of the specification language Gallina}
 
 A formal development in Gallina consists in a sequence of {\sl declarations}
-and {\sl definitions}. You may also send \Coq{} {\sl commands} which are
-not really part of the formal development, but correspond to information
-requests, or service routine invocations. For instance, the command:
-\begin{verbatim}
-Coq < Quit.
-\end{verbatim}
-terminates the current session.
+and {\sl definitions}.
 
 \subsection{Declarations}
 
-A declaration associates a {\sl name} with 
-a {\sl specification}. 
+A declaration associates a {\sl name} with a {\sl specification}.
 A name corresponds roughly to an identifier in a programming
 language, i.e. to a string of letters, digits, and a few ASCII symbols like
 underscore (\verb"_") and prime (\verb"'"), starting with a letter. 
@@ -249,13 +216,11 @@ explicitly the type of the quantified variable. We check:
 \begin{coq_example}
 Check (forall m:nat, gt m 0).
 \end{coq_example}
-We may revert to the clean state of
-our initial session using the \Coq{} \verb:Reset: command:
-\begin{coq_example}
-Reset Initial.
-\end{coq_example}
+
 \begin{coq_eval}
+Reset Initial.
 Set Printing Width 60.
+Set Printing Compact Contexts.
 \end{coq_eval}
 
 \section{Introduction to the proof engine: Minimal Logic}
@@ -381,32 +346,22 @@ apply H; [ assumption | apply H0; assumption ].
 It is discouraged though to rely on automatically generated names in finished
 proof scripts. And be careful not to abuse \verb:;:.
 
+Actually, such an easy combination of tactics \verb:intro:, \verb:apply:
+and \verb:assumption: may be found completely automatically by an automatic
+tactic, called \verb:auto:, without user guidance:
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example}
+Lemma distr_impl : (A -> B -> C) -> (A -> B) -> A -> C.
+auto.
+\end{coq_example}
+
 Let us now save lemma \verb:distr_impl::
 \begin{coq_example}
 Qed.
 \end{coq_example}
-
-Actually, such an easy combination of tactics \verb:intro:, \verb:apply:
-and \verb:assumption: may be found completely automatically by an automatic
-tactic, called \verb:auto:, without user guidance:
-\begin{coq_example}
-Lemma distr_imp : (A -> B -> C) -> (A -> B) -> A -> C.
-auto.
-\end{coq_example}
-
-This time, we do not save the proof, we just discard it with the \verb:Abort: 
-command:
-
-\begin{coq_example}
-Abort.
-\end{coq_example}
-
-At any point during a proof, we may use \verb:Abort: to exit the proof mode
-and go back to Coq's main loop. We may also use \verb:Restart: to restart
-from scratch the proof of the same lemma. We may also use \verb:Undo: to
-backtrack one step, and more generally \verb:Undo n: to
-backtrack n steps. None of these commands should be left in a finished proof
-document.
 
 \section{Propositional Calculus}
 
@@ -438,8 +393,11 @@ conjunctive goal into the two subgoals:
 split.
 \end{coq_example}
 and the proof is now trivial. Indeed, the whole proof is obtainable as follows:
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 \begin{coq_example}
-Restart.
+Lemma and_commutative : A /\ B -> B /\ A.
 intro H; elim H; auto.
 Qed.
 \end{coq_example}
@@ -486,8 +444,11 @@ clear H.
 The tactic \verb:destruct: combines the effects of \verb:elim:, \verb:intros:,
 and \verb:clear::
 
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 \begin{coq_example}
-Restart.
+Lemma or_commutative : A \/ B -> B \/ A.
 intros H; destruct H.
 \end{coq_example}
 
@@ -521,8 +482,11 @@ such a simple tautology. The reason is that we want to keep
 
 A complete tactic for propositional
 tautologies is indeed available in \Coq{} as the \verb:tauto: tactic.
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 \begin{coq_example}
-Restart.
+Lemma or_commutative : A \/ B -> B \/ A.
 tauto.
 Qed.
 \end{coq_example}
@@ -572,8 +536,10 @@ This may come as a surprise to someone familiar with classical reasoning.
 Peirce's lemma is true in Boolean logic, i.e. it evaluates to \verb:true: for 
 every truth-assignment to \verb:A: and \verb:B:. Indeed the double negation
 of Peirce's law may be proved in \Coq{} using \verb:tauto::
-\begin{coq_example}
+\begin{coq_eval}
 Abort.
+\end{coq_eval}
+\begin{coq_example}
 Lemma NNPeirce : ~ ~ (((A -> B) -> A) -> A).
 tauto.
 Qed.
@@ -651,11 +617,10 @@ domain of discourse \verb:D: axiomatised as a \verb:Set:, and we consider two
 predicate symbols  \verb:P: and \verb:R: over \verb:D:, of arities 
 respectively 1 and 2.
 
-\begin{coq_example}
-Reset Initial.
-\end{coq_example}
 \begin{coq_eval}
+Reset Initial.
 Set Printing Width 60.
+Set Printing Compact Contexts.
 \end{coq_eval}
 
 We start by assuming a domain of
@@ -999,8 +964,12 @@ In case the equality $t=u$ generated by \verb:replace: $u$ \verb:with:
 $t$ is an assumption
 (possibly modulo symmetry), it will be automatically proved and the
 corresponding goal will not appear. For instance:
-\begin{coq_example}
+
+\begin{coq_eval}
 Restart.
+\end{coq_eval}
+\begin{coq_example}
+Lemma L2 : f (f 1) = 0.
 replace (f 1) with (f 0).
 replace (f 0) with 0; trivial.
 Qed.
@@ -1061,9 +1030,12 @@ auto.
 \end{coq_example}
 
 Many variations on \verb:unfold: are provided in \Coq. For instance,
-we may selectively unfold one designated occurrence:
-\begin{coq_example}
+instead of unfolding all occurrences of \verb:subset:, we may want to
+unfold only one designated occurrence:
+\begin{coq_eval}
 Undo 2.
+\end{coq_eval}
+\begin{coq_example}
 unfold subset at 2.
 \end{coq_example}
 
@@ -1101,6 +1073,7 @@ are {\sl transparent}.
 \begin{coq_eval}
 Reset Initial.
 Set Printing Width 60.
+Set Printing Compact Contexts.
 \end{coq_eval}
 
 \section{Data Types as Inductively Defined Mathematical Collections}
@@ -1158,8 +1131,11 @@ right; trivial.
 Indeed, the whole proof can be done with the combination of the
  \verb:destruct:, which combines \verb:intro: and \verb:elim:,
 with good old \verb:auto::
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 \begin{coq_example}
-Restart.
+Lemma duality : forall b:bool, b = true \/ b = false.
 destruct b; auto.
 Qed.
 \end{coq_example}
@@ -1202,6 +1178,8 @@ as such:
 
 \begin{coq_eval}
 Reset Initial.
+Set Printing Width 60.
+Set Printing Compact Contexts.
 \end{coq_eval}
 
 \begin{coq_example}
@@ -1237,15 +1215,11 @@ Fixpoint plus (n m:nat) {struct n} : nat :=
   end.
 \end{coq_example}
 
-For the rest of the session, we shall clean up what we did so far with 
-types \verb:bool: and \verb:nat:, in order to use the initial definitions
-given in \Coq's \verb:Prelude: module, and not to get confusing error
-messages due to our redefinitions. We thus revert to the initial state:
+\begin{coq_eval}
 \begin{coq_example}
 Reset Initial.
-\end{coq_example}
-\begin{coq_eval}
 Set Printing Width 60.
+Set Printing Compact Contexts.
 \end{coq_eval}
 
 \subsection{Simple proofs by induction}
@@ -1382,8 +1356,11 @@ Actually, a specific tactic \verb:discriminate: is provided
 to produce mechanically such proofs, without the need for the user to define
 explicitly the relevant discrimination predicates:
 
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 \begin{coq_example}
-Restart.
+Lemma no_confusion : forall n:nat, 0 <> S n.
 intro n; discriminate.
 Qed.
 \end{coq_example}
@@ -1420,7 +1397,7 @@ Check le_ind.
 Let us show how proofs may be conducted with this principle.
 First we show that $n\le m \Rightarrow n+1\le m+1$:
 \begin{coq_example}
-Lemma le_n_S : forall n m:nat, le n m -> le (S n) (S m).
+Lemma le_n_S : forall n m : nat, le n m -> le (S n) (S m).
 intros n m n_le_m.
 elim n_le_m.
 \end{coq_example}
@@ -1438,9 +1415,12 @@ Now we know that it is a good idea to give the defining clauses as hints,
 so that the proof may proceed with a simple combination of 
 \verb:induction: and \verb:auto:. \verb:Hint Constructors le:
 is just an abbreviation for \verb:Hint Resolve le_n le_S:.
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 \begin{coq_example}
-Restart.
 Hint Constructors le.
+Lemma le_n_S : forall n m : nat, le n m -> le (S n) (S m).
 \end{coq_example}
 
 We have a slight problem however. We want to say ``Do an induction on
@@ -1478,6 +1458,7 @@ Qed.
 \begin{coq_eval}
 Reset Initial.
 Set Printing Width 60.
+Set Printing Compact Contexts.
 \end{coq_eval}
 
 \section{Opening library modules}
@@ -1547,6 +1528,7 @@ known lemmas about both the successor and the less or equal relation, just ask:
 \begin{coq_eval}
 Reset Initial.
 Set Printing Width 60.
+Set Printing Compact Contexts.
 \end{coq_eval}
 \begin{coq_example}
 Search S le.
