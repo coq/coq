@@ -510,6 +510,7 @@ Qed.
 
 Lemma Zmod_div : forall a b, a mod b / b = 0.
 Proof.
+ intros a b.
  zero_or_not b.
  auto using Z.mod_div.
 Qed.
