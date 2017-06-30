@@ -139,8 +139,7 @@ matrix:
     - os: osx
       env:
       - TEST_TARGET="test-suite"
-      - COMPILER="system"
-      - CAMLP5_VER="6.17"
+      - COMPILER="4.02.3"
       - NATIVE_COMP="no"
       before_install:
       - brew update
