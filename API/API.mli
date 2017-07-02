@@ -87,9 +87,29 @@ sig
   type universe_context = UContext.t
   [@@ocaml.deprecated "alias of API.Univ.UContext.t"]
 
-  type abstract_universe_context = Univ.AUContext.t
+  module AUContext :
+  sig
+    type t = Univ.AUContext.t
+  end
+
+  type abstract_universe_context = AUContext.t
+  [@@ocaml.deprecated "alias of API.Univ.AUContext"]
+
+  module CumulativityInfo :
+  sig
+    type t = Univ.CumulativityInfo.t
+  end
+
   type cumulativity_info = Univ.CumulativityInfo.t
+  [@@ocaml.deprecated "alias of API.Univ.CumulativityInfo.t"]
+
+  module ACumulativityInfo :
+  sig
+    type t = Univ.ACumulativityInfo.t
+  end
+
   type abstract_cumulativity_info = Univ.ACumulativityInfo.t
+  [@@ocaml.deprecated "alias of API.Univ.ACumulativityInfo.t"]
 
   module LSet : module type of struct include Univ.LSet end
   module ContextSet : 
@@ -1100,8 +1120,8 @@ sig
 
   type abstract_inductive_universes = Declarations.abstract_inductive_universes =
     | Monomorphic_ind of Univ.UContext.t
-    | Polymorphic_ind of Univ.abstract_universe_context
-    | Cumulative_ind of Univ.abstract_cumulativity_info
+    | Polymorphic_ind of Univ.AUContext.t
+    | Cumulative_ind of Univ.ACumulativityInfo.t
 
   type mutual_inductive_body = Declarations.mutual_inductive_body = {
         mind_packets : one_inductive_body array;
