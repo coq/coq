@@ -106,7 +106,7 @@ let interp_definition pl bl p red_option c ctypopt =
 	let c = EConstr.Unsafe.to_constr c in
         let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
         let body = nf (it_mkLambda_or_LetIn c ctx) in
-	let vars = Universes.universes_of_constr body in
+	let vars = Univops.universes_of_constr body in
 	let evd = Evd.restrict_universe_context !evdref vars in
 	let pl, uctx = Evd.universe_context ?names:pl evd in
  	imps1@(Impargs.lift_implicits nb_args imps2), pl,
@@ -131,8 +131,8 @@ let interp_definition pl bl p red_option c ctypopt =
         in
 	if not (try List.for_all chk imps2 with Not_found -> false)
 	then warn_implicits_in_term ();
-        let vars = Univ.LSet.union (Universes.universes_of_constr body) 
-          (Universes.universes_of_constr typ) in
+        let vars = Univ.LSet.union (Univops.universes_of_constr body) 
+          (Univops.universes_of_constr typ) in
         let ctx = Evd.restrict_universe_context !evdref vars in
 	let pl, uctx = Evd.universe_context ?names:pl ctx in
 	imps1@(Impargs.lift_implicits nb_args impsty), pl,
@@ -144,59 +144,6 @@ let interp_definition pl bl p red_option c ctypopt =
 let check_definition (ce, evd, _, imps) =
   check_evars_are_solved (Global.env ()) evd Evd.empty;
   ce
-
-let warn_local_declaration =
-  CWarnings.create ~name:"local-declaration" ~category:"scope"
-         (fun (id,kind) ->
-          pr_id id ++ strbrk " is declared as a local " ++ str kind)
-
-let get_locality id ~kind = function
-| Discharge ->
-  (** If a Let is defined outside a section, then we consider it as a local definition *)
-   warn_local_declaration (id,kind);
-  true
-| Local -> true
-| Global -> false
-
-let declare_global_definition ident ce local k pl imps =
-  let local = get_locality ident ~kind:"definition" local in
-  let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
-  let gr = ConstRef kn in
-  let () = maybe_declare_manual_implicits false gr imps in
-  let () = Universes.register_universe_binders gr pl in
-  let () = definition_message ident in
-  gr
-
-let declare_definition_hook = ref ignore
-let set_declare_definition_hook = (:=) declare_definition_hook
-let get_declare_definition_hook () = !declare_definition_hook
-
-let warn_definition_not_visible =
-  CWarnings.create ~name:"definition-not-visible" ~category:"implicits"
-         (fun ident ->
-          strbrk "Section definition " ++
-            pr_id ident ++ strbrk " is not visible from current goals")
-
-let declare_definition ident (local, p, k) ce pl imps hook =
-  let fix_exn = Future.fix_exn_of ce.const_entry_body in
-  let () = !declare_definition_hook ce in
-  let r = match local with
-  | Discharge when Lib.sections_are_opened () ->
-    let c = SectionLocalDef ce in
-    let _ = declare_variable ident (Lib.cwd(), c, IsDefinition k) in
-    let () = definition_message ident in
-    let gr = VarRef ident in
-    let () = maybe_declare_manual_implicits false gr imps in
-    let () = if Pfedit.refining () then
-	       warn_definition_not_visible ident
-    in
-    gr
-  | Discharge | Local | Global ->
-    declare_global_definition ident ce local k pl imps in
-  Lemmas.call_hook fix_exn hook local r
-
-let _ = Obligations.declare_definition_ref :=
-       (fun i k c imps hook -> declare_definition i k c [] imps hook)
 
 let do_definition ident k pl bl red_option c ctypopt hook =
   let (ce, evd, pl', imps as def) =
@@ -220,7 +167,7 @@ let do_definition ident k pl bl red_option c ctypopt hook =
 	ignore(Obligations.add_definition
           ident ~term:c cty ctx ?pl ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
-      ignore(declare_definition ident k ce pl' imps
+      ignore(DeclareDef.declare_definition ident k ce pl' imps
         (Lemmas.mk_hook
           (fun l r -> Lemmas.call_hook (fun exn -> exn) hook l r;r)))
 
@@ -233,7 +180,7 @@ match local with
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
   let () =
-    if not !Flags.quiet && Pfedit.refining () then
+    if not !Flags.quiet && Proof_global.there_are_pending_proofs () then
     Feedback.msg_info (str"Variable" ++ spc () ++ pr_id ident ++
     strbrk " is not visible from current goals")
   in
@@ -243,7 +190,7 @@ match local with
   (r,Univ.Instance.empty,true)
 
 | Global | Local | Discharge ->
-  let local = get_locality ident ~kind:"axiom" local in
+  let local = DeclareDef.get_locality ident ~kind:"axiom" local in
   let inl = match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
@@ -329,7 +276,7 @@ let do_assumptions_bound_univs coe kind nl id pl c =
   let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
   let ty = EConstr.Unsafe.to_constr ty in
   let ty = nf ty in
-  let vars = Universes.universes_of_constr ty in
+  let vars = Univops.universes_of_constr ty in
   let evd = Evd.restrict_universe_context !evdref vars in
   let pl, uctx = Evd.universe_context ?names:pl evd in
   let uctx = Univ.ContextSet.of_context uctx in
@@ -573,7 +520,7 @@ let check_param = function
 | CLocalAssum (nas, Generalized _, _) -> ()
 | CLocalPattern _ -> assert false
 
-let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
+let interp_mutual_inductive (paramsl,indl) notations cum poly prv finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
   let env0 = Global.env() in
@@ -649,16 +596,27 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
 	indimpls, List.map (fun impls ->
 	  userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
   in
+  let univs =
+    if poly then
+      if cum then
+        Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context uctx)
+      else Polymorphic_ind_entry uctx
+    else
+      Monomorphic_ind_entry uctx
+  in
   (* Build the mutual inductive entry *)
-  { mind_entry_params = List.map prepare_param ctx_params;
-    mind_entry_record = None;
-    mind_entry_finite = finite;
-    mind_entry_inds = entries;
-    mind_entry_polymorphic = poly;
-    mind_entry_private = if prv then Some false else None;
-    mind_entry_universes = uctx;
-  },
-    pl, impls
+  let mind_ent =
+    { mind_entry_params = List.map prepare_param ctx_params;
+      mind_entry_record = None;
+      mind_entry_finite = finite;
+      mind_entry_inds = entries;
+      mind_entry_private = if prv then Some false else None;
+      mind_entry_universes = univs;
+    }
+  in
+  (if poly && cum then
+      Inductiveops.infer_inductive_subtyping env_ar evd mind_ent
+   else mind_ent), pl, impls
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
@@ -742,10 +700,10 @@ type one_inductive_impls =
   Impargs.manual_explicitation list (* for inds *)*
   Impargs.manual_explicitation list list (* for constrs *)
 
-let do_mutual_inductive indl poly prv finite =
+let do_mutual_inductive indl cum poly prv finite =
   let indl,coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
-  let mie,pl,impls = interp_mutual_inductive indl ntns poly prv finite in
+  let mie,pl,impls = interp_mutual_inductive indl ntns cum poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations mie pl impls);
   (* Declare the possible notations of inductive types *)
@@ -864,13 +822,6 @@ let interp_fix_body env_rec evdref impls (_,ctx) fix ccl =
     it_mkLambda_or_LetIn body ctx) fix.fix_body
 
 let build_fix_type (_,ctx) ccl = EConstr.it_mkProd_or_LetIn ccl ctx
-
-let declare_fix ?(opaque = false) (_,poly,_ as kind) pl ctx f ((def,_),eff) t imps =
-  let ce = definition_entry ~opaque ~types:t ~poly ~univs:ctx ~eff def in
-  declare_definition f kind ce pl imps (Lemmas.mk_hook (fun _ r -> r))
-
-let _ = Obligations.declare_fix_ref :=
-  (fun ?opaque k ctx f d t imps -> declare_fix ?opaque k [] ctx f d t imps)
 
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
@@ -1208,14 +1159,14 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let env = Global.env() in
     let indexes = search_guard env indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
-    let vars = Universes.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
+    let vars = Univops.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     let pl, ctx = Evd.universe_context ?names:pl evd in
-    ignore (List.map4 (declare_fix (local, poly, Fixpoint) pl ctx)
+    ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
@@ -1240,13 +1191,13 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
-    let vars = Universes.universes_of_constr (List.hd fixdecls) in
+    let vars = Univops.universes_of_constr (List.hd fixdecls) in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     let evd = Evd.from_ctx ctx in
     let evd = Evd.restrict_universe_context evd vars in
     let pl, ctx = Evd.universe_context ?names:pl evd in
-    ignore (List.map4 (declare_fix (local, poly, CoFixpoint) pl ctx) 
+    ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx) 
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames

@@ -34,7 +34,7 @@ val add : ontop:Stateid.t -> ?newtip:Stateid.t ->
    throwing away side effects except messages. Feedback will
    be sent with [report_with], which defaults to the dummy state id *)
 val query :
-  at:Stateid.t -> ?report_with:(Stateid.t * Feedback.route_id) -> Pcoq.Gram.coq_parsable -> unit
+  at:Stateid.t -> route:Feedback.route_id -> Pcoq.Gram.coq_parsable -> unit
 
 (* [edit_at id] is issued to change the editing zone.  [`NewTip] is returned if
    the requested id is the new document tip hence the document portion following

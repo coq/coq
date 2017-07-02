@@ -14,6 +14,7 @@
 
 (* Used to generate micromega.ml *)
 
+Require Extraction.
 Require Import ZMicromega.
 Require Import QMicromega.
 Require Import RMicromega.
@@ -48,7 +49,10 @@ Extract Constant Rmult => "( * )".
 Extract Constant Ropp  => "fun x -> - x".
 Extract Constant Rinv   => "fun x -> 1 / x".
 
-Extraction "plugins/micromega/generated_micromega.ml"
+(** We now extract to stdout, see comment in Makefile.build *)
+
+(*Extraction "plugins/micromega/micromega.ml" *)
+Recursive Extraction
   List.map simpl_cone (*map_cone  indexes*)
   denorm Qpower vm_add
   n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.

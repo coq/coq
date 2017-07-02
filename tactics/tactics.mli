@@ -435,8 +435,8 @@ end
 
 module New : sig
 
-  val refine : ?unsafe:bool -> (evar_map -> evar_map * constr) -> unit Proofview.tactic
-  (** [refine ?unsafe c] is [Refine.refine ?unsafe c]
+  val refine : typecheck:bool -> (evar_map -> evar_map * constr) -> unit Proofview.tactic
+  (** [refine ~typecheck c] is [Refine.refine ~typecheck c]
       followed by beta-iota-reduction of the conclusion. *)
 
   val reduce_after_refine : unit Proofview.tactic

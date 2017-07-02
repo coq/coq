@@ -112,6 +112,7 @@ type coq_info = {
 
 type location = (int * int) option (* start and end of the error *)
 type state_id = Stateid.t
+type route_id = Feedback.route_id
 
 (* Obsolete *)
 type edit_id  = int
@@ -154,8 +155,8 @@ type edit_at_rty = (unit, state_id * (state_id * state_id)) union
     has been deprecated in favor of sending the query answers as
     feedback. It will be removed in a future version of the protocol.
 *)
-type query_sty = string * state_id
-type query_rty = string
+type query_sty = route_id * (string * state_id)
+type query_rty = unit
 
 (** Fetching the list of current goals. Return [None] if no proof is in
     progress, [Some gl] otherwise. *)

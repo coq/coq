@@ -228,8 +228,10 @@ let add_constant kn cb env =
   add_constant_key kn cb no_link_info env
 
 let constraints_of cb u =
-  let univs = cb.const_universes in
-    Univ.subst_instance_constraints u (Univ.UContext.constraints univs)
+  match cb.const_universes with
+  | Monomorphic_const _ -> Univ.Constraint.empty
+  | Polymorphic_const ctx -> 
+    Univ.UContext.constraints (Univ.subst_instance_context u ctx)
 
 let map_regular_arity f = function
   | RegularArity a as ar -> 
@@ -240,15 +242,23 @@ let map_regular_arity f = function
 (* constant_type gives the type of a constant *)
 let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
-    if cb.const_polymorphic then
-      let csts = constraints_of cb u in
-	(map_regular_arity (subst_instance_constr u) cb.const_type, csts)
-    else cb.const_type, Univ.Constraint.empty
+  match cb.const_universes with
+  | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
+  | Polymorphic_const ctx -> 
+    let csts = constraints_of cb u in
+    (map_regular_arity (subst_instance_constr u) cb.const_type, csts)
+
+let constant_instance env kn =
+  let cb = lookup_constant kn env in
+  match cb.const_universes with
+  | Monomorphic_const _ -> Univ.Instance.empty
+  | Polymorphic_const ctx -> Univ.AUContext.instance ctx
 
 let constant_context env kn =
   let cb = lookup_constant kn env in
-    if cb.const_polymorphic then cb.const_universes
-    else Univ.UContext.empty
+  match cb.const_universes with
+  | Monomorphic_const _ -> Univ.UContext.empty
+  | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
 
 type const_evaluation_result = NoBody | Opaque | IsProj
 
@@ -259,10 +269,14 @@ let constant_value env (kn,u) =
     if cb.const_proj = None then
       match cb.const_body with
       | Def l_body -> 
-	if cb.const_polymorphic then
-	  let csts = constraints_of cb u in
-	    (subst_instance_constr u (Mod_subst.force_constr l_body), csts)
-	else Mod_subst.force_constr l_body, Univ.Constraint.empty
+        begin
+          match cb.const_universes with
+          | Monomorphic_const _ -> 
+            (Mod_subst.force_constr l_body, Univ.Constraint.empty)
+          | Polymorphic_const _ ->
+	    let csts = constraints_of cb u in
+            (subst_instance_constr u (Mod_subst.force_constr l_body), csts)
+        end
       | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
       | Undef _ -> raise (NotEvaluableConst NoBody)
     else raise (NotEvaluableConst IsProj)
@@ -273,7 +287,7 @@ let constant_opt_value env cst =
 
 let constant_value_and_type env (kn, u) =
   let cb = lookup_constant kn env in
-    if cb.const_polymorphic then
+    if Declareops.constant_is_polymorphic cb then
       let cst = constraints_of cb u in
       let b' = match cb.const_body with
 	| Def l_body -> Some (subst_instance_constr u (Mod_subst.force_constr l_body))
@@ -295,7 +309,7 @@ let constant_value_and_type env (kn, u) =
 (* constant_type gives the type of a constant *)
 let constant_type_in env (kn,u) =
   let cb = lookup_constant kn env in
-    if cb.const_polymorphic then
+    if Declareops.constant_is_polymorphic cb then
       map_regular_arity (subst_instance_constr u) cb.const_type
     else cb.const_type
 
@@ -321,7 +335,7 @@ let evaluable_constant kn env =
     | Undef _ -> false
 
 let polymorphic_constant cst env =
-  (lookup_constant cst env).const_polymorphic
+  Declareops.constant_is_polymorphic (lookup_constant cst env)
 
 let polymorphic_pconstant (cst,u) env =
   if Univ.Instance.is_empty u then false
@@ -353,7 +367,7 @@ let is_projection cst env =
 let lookup_mind = lookup_mind
 
 let polymorphic_ind (mind,i) env =
-  (lookup_mind mind env).mind_polymorphic
+  Declareops.inductive_is_polymorphic (lookup_mind mind env)
 
 let polymorphic_pind (ind,u) env =
   if Univ.Instance.is_empty u then false

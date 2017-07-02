@@ -226,8 +226,8 @@ let isAppInd gl c =
 
 let interp_refine ist gl rc =
   let constrvars = Tacinterp.extract_ltac_constr_values ist (pf_env gl) in
-  let vars = { Pretyping.empty_lvar with
-    Pretyping.ltac_constrs = constrvars; ltac_genargs = ist.Tacinterp.lfun
+  let vars = { Glob_ops.empty_lvar with
+    Glob_term.ltac_constrs = constrvars; ltac_genargs = ist.Tacinterp.lfun
   } in
   let kind = Pretyping.OfType (pf_concl gl) in
   let flags = {
@@ -960,7 +960,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) n t gl =
           | _ -> assert false
       in loop sigma t [] n in
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr t));
-    Refiner.refiner (Proof_type.Refine (EConstr.Unsafe.to_constr t)) gl
+    Tacmach.refine_no_check t gl
 
 let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc gl =
   let rec mkRels = function 1 -> [] | n -> mkRel n :: mkRels (n-1) in

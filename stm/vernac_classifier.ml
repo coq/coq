@@ -30,9 +30,7 @@ let string_of_vernac_type = function
       "ProofStep " ^ string_of_parallel parallel ^
         Option.default "" proof_block_detection
   | VtProofMode s -> "ProofMode " ^ s
-  | VtQuery (b,(id,route)) ->
-      "Query " ^ string_of_in_script b ^ " report " ^ Stateid.to_string id ^
-      " route " ^ string_of_int route
+  | VtQuery (b, route) -> "Query " ^ string_of_in_script b ^ " route " ^ string_of_int route
   | VtStm ((VtJoinDocument|VtWait), b) -> "Stm " ^ string_of_in_script b
   | VtStm (VtBack _, b) -> "Stm Back " ^ string_of_in_script b
 
@@ -92,8 +90,7 @@ let rec classify_vernac e =
     | VernacEndProof _ | VernacExactProof _ -> VtQed VtKeep, VtLater
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
-    | VernacCheckMayEval _ ->
-        VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
+    | VernacCheckMayEval _ -> VtQuery (true,Feedback.default_route), VtLater
     (* ProofStep *)
     | VernacProof _ 
     | VernacFocus _ | VernacUnfocus
@@ -118,7 +115,7 @@ let rec classify_vernac e =
         VtStartProof(default_proof_mode (),Doesn'tGuaranteeOpacity,[i]), VtLater
     | VernacDefinition (_,((_,i),_),ProveBody _) ->
         VtStartProof(default_proof_mode (),GuaranteesOpacity,[i]), VtLater
-    | VernacStartTheoremProof (_,l,_) ->
+    | VernacStartTheoremProof (_,l) ->
         let ids = 
           CList.map_filter (function (Some ((_,i),pl), _) -> Some i | _ -> None) l in
         VtStartProof (default_proof_mode (),GuaranteesOpacity,ids), VtLater
@@ -142,7 +139,7 @@ let rec classify_vernac e =
         let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> snd id) l) l) in
         VtSideff ids, VtLater    
     | VernacDefinition (_,((_,id),_),DefineBody _) -> VtSideff [id], VtLater
-    | VernacInductive (_,_,l) ->
+    | VernacInductive (_, _,_,l) ->
         let ids = List.map (fun (((_,((_,id),_)),_,_,_,cl),_) -> id :: match cl with
         | Constructors l -> List.map (fun (_,((_,id),_)) -> id) l
         | RecordDecl (oid,l) -> (match oid with Some (_,x) -> [x] | _ -> []) @
@@ -213,7 +210,6 @@ let rec classify_vernac e =
       make_polymorphic res
     else res
 
-let classify_as_query =
-  VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
+let classify_as_query = VtQuery (true,Feedback.default_route), VtLater
 let classify_as_sideeff = VtSideff [], VtLater
 let classify_as_proofstep = VtProofStep { parallel = `No; proof_block_detection = None}, VtLater

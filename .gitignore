@@ -12,6 +12,7 @@
 *.log
 *.aux
 *.dvi
+*.pdf
 *.blg
 *.bbl
 *.idx
@@ -33,7 +34,6 @@
 *.tacidx
 *.tacind
 *.v.tex
-*.v.pdf
 *.v.ps
 *.v.html
 *.stamp
@@ -52,6 +52,7 @@ config/Info-*.plist
 dev/ocamldebug-coq
 dev/camlp4.dbg
 plugins/micromega/csdpcert
+plugins/micromega/.micromega.ml.generated
 kernel/byterun/dllcoqrun.so
 coqdoc.sty
 .csdp.cache
@@ -70,7 +71,6 @@ test-suite/coq-makefile/*/theories2
 test-suite/coq-makefile/*/html
 test-suite/coq-makefile/*/mlihtml
 test-suite/coq-makefile/*/subdir/done
-test-suite/coq-makefile/latex1/all.pdf
 test-suite/coq-makefile/merlin1/.merlin
 test-suite/coq-makefile/plugin-reach-outside-API-and-fail/_CoqProject
 test-suite/coq-makefile/plugin-reach-outside-API-and-succeed-by-bypassing-the-API/_CoqProject
@@ -81,12 +81,10 @@ doc/common/version.tex
 doc/faq/html/
 doc/faq/axioms.eps
 doc/faq/axioms.eps_t
-doc/faq/axioms.pdf
 doc/faq/axioms.pdf_t
 doc/faq/axioms.png
 doc/refman/.csdp.cache
 doc/refman/trace
-doc/refman/Reference-Manual.pdf
 doc/refman/Reference-Manual.ps
 doc/refman/Reference-Manual.html
 doc/refman/Reference-Manual.out
@@ -101,19 +99,15 @@ doc/refman/heapsort.ml
 doc/refman/heapsort.mli
 doc/refman/html/
 doc/stdlib/Library.out
-doc/stdlib/Library.pdf
 doc/stdlib/Library.ps
 doc/stdlib/Library.coqdoc.tex
-doc/stdlib/FullLibrary.pdf
 doc/stdlib/FullLibrary.ps
 doc/stdlib/FullLibrary.coqdoc.tex
 doc/stdlib/html/
 doc/stdlib/index-body.html
 doc/stdlib/index-list.html
 doc/RecTutorial/RecTutorial.html
-doc/RecTutorial/RecTutorial.pdf
 doc/RecTutorial/RecTutorial.ps
-dev/doc/naming-conventions.pdf
 dev/ocamldoc/*.html
 dev/ocamldoc/*.css
 

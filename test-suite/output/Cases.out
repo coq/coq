@@ -80,3 +80,49 @@ fun '(D n m p q) => n + m + p + q
      : J -> nat
 The command has indeed failed with message:
 The constructor D (in type J) expects 3 arguments.
+lem1 = 
+fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
+     : forall k : nat * nat, k = k
+lem2 = 
+fun dd : bool => if dd as aa return (aa = aa) then eq_refl else eq_refl
+     : forall k : bool, k = k
+
+Argument scope is [bool_scope]
+lem3 = 
+fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
+     : forall k : nat * nat, k = k
+1 subgoal
+  
+  x : nat
+  n, n0 := match x + 0 with
+           | 0 => 0
+           | S _ => 0
+           end : nat
+  e,
+  e0 := match x + 0 as y return (y = y) with
+        | 0 => eq_refl
+        | S n => eq_refl
+        end : x + 0 = x + 0
+  n1, n2 := match x with
+            | 0 => 0
+            | S _ => 0
+            end : nat
+  e1, e2 := match x return (x = x) with
+            | 0 => eq_refl
+            | S n => eq_refl
+            end : x = x
+  ============================
+  x + 0 = 0
+1 subgoal
+  
+  p : nat
+  a,
+  a0 := match eq_refl as y in (_ = e) return (y = y /\ e = e) with
+        | eq_refl => conj eq_refl eq_refl
+        end : eq_refl = eq_refl /\ p = p
+  a1,
+  a2 := match eq_refl in (_ = e) return (p = p /\ e = e) with
+        | eq_refl => conj eq_refl eq_refl
+        end : p = p /\ p = p
+  ============================
+  eq_refl = eq_refl

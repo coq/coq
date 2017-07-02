@@ -83,3 +83,6 @@ val cases_pattern_of_glob_constr : Name.t -> glob_constr -> cases_pattern
 val glob_constr_of_closed_cases_pattern : cases_pattern -> Name.t * glob_constr
 
 val add_patterns_for_params_remove_local_defs : constructor -> cases_pattern list -> cases_pattern list
+
+val ltac_interp_name : Glob_term.ltac_var_map -> Names.name -> Names.name
+val empty_lvar : Glob_term.ltac_var_map

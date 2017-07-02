@@ -58,8 +58,6 @@
 
 (* Open main files *)
 
-open API
-open Grammar_API
 open Names
 open Term
 open Vars
@@ -233,7 +231,7 @@ let pf_e gl s =
 let _ = Flags.in_debugger := false
 let _ = Flags.in_toplevel := true
 let _ = Constrextern.set_extern_reference
-  (fun loc _ r -> Libnames.Qualid (loc,Nametab.shortest_qualid_of_global Idset.empty r));;
+  (fun ?loc _ r -> Libnames.Qualid (loc,Nametab.shortest_qualid_of_global Idset.empty r));;
 
 open Coqloop
 let go = loop

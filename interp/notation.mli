@@ -74,6 +74,11 @@ type 'a prim_token_interpreter =
 type 'a prim_token_uninterpreter =
     glob_constr list * (glob_constr -> 'a option) * cases_pattern_status
 
+type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
+
+val declare_rawnumeral_interpreter : scope_name -> required_module ->
+  rawnum prim_token_interpreter -> rawnum prim_token_uninterpreter -> unit
+
 val declare_numeral_interpreter : scope_name -> required_module ->
   bigint prim_token_interpreter -> bigint prim_token_uninterpreter -> unit
 

@@ -69,7 +69,7 @@ let add_side_effect env = function
 let add_side_effects env effects =
   List.fold_left (fun env eff -> add_side_effect env eff) env effects
 
-let generic_refine ?(unsafe = true) f gl =
+let generic_refine ~typecheck f gl =
   let gl = Proofview.Goal.assume gl in
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
@@ -91,9 +91,9 @@ let generic_refine ?(unsafe = true) f gl =
   let env = add_side_effects env sideff in
   (** Check that the introduced evars are well-typed *)
   let fold accu ev = typecheck_evar ev env accu in
-  let sigma = if unsafe then sigma else CList.fold_left fold sigma evs in
+  let sigma = if typecheck then CList.fold_left fold sigma evs else sigma in
   (** Check that the refined term is typesafe *)
-  let sigma = if unsafe then sigma else typecheck_proof c concl env sigma in
+  let sigma = if typecheck then typecheck_proof c concl env sigma else sigma in
   (** Check that the goal itself does not appear in the refined term *)
   let self = Proofview.Goal.goal gl in
   let _ =
@@ -132,16 +132,16 @@ let lift c =
   Proofview.tclUNIT c
   end
 
-let make_refine_enter ?unsafe f gl = generic_refine ?unsafe (lift f) gl
+let make_refine_enter ~typecheck f gl = generic_refine ~typecheck (lift f) gl
 
-let refine_one ?(unsafe = true) f =
-  Proofview.Goal.enter_one (make_refine_enter ~unsafe f)
+let refine_one ~typecheck f =
+  Proofview.Goal.enter_one (make_refine_enter ~typecheck f)
 
-let refine ?(unsafe = true) f =
+let refine ~typecheck f =
   let f evd =
     let (evd,c) = f evd in (evd,((), c))
   in
-  Proofview.Goal.enter (make_refine_enter ~unsafe f)
+  Proofview.Goal.enter (make_refine_enter ~typecheck f)
 
 (** Useful definitions *)
 
@@ -153,7 +153,7 @@ let with_type env evd c t =
   in
   evd , j'.Environ.uj_val
 
-let refine_casted ?unsafe f = Proofview.Goal.enter begin fun gl ->
+let refine_casted ~typecheck f = Proofview.Goal.enter begin fun gl ->
   let gl = Proofview.Goal.assume gl in
   let concl = Proofview.Goal.concl gl in
   let env = Proofview.Goal.env gl in
@@ -161,7 +161,7 @@ let refine_casted ?unsafe f = Proofview.Goal.enter begin fun gl ->
     let (h, c) = f h in
     with_type env h c concl
   in
-  refine ?unsafe f
+  refine ~typecheck f
 end
 
 (** {7 solve_constraints}

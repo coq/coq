@@ -15,7 +15,6 @@ open Vernacexpr
 open Constrexpr
 open Decl_kinds
 open Redexpr
-open Pfedit
 
 (** This file is about the interpretation of raw commands into typed
     ones and top-level declaration of the main Gallina objects *)
@@ -24,21 +23,12 @@ val do_universe : polymorphic -> Id.t Loc.located list -> unit
 val do_constraint : polymorphic ->
   (Misctypes.glob_level * Univ.constraint_type * Misctypes.glob_level) list -> unit
 
-(** {6 Hooks for Pcoq} *)
-
-val set_declare_definition_hook : (Safe_typing.private_constants definition_entry -> unit) -> unit
-val get_declare_definition_hook : unit -> (Safe_typing.private_constants definition_entry -> unit)
-
 (** {6 Definitions/Let} *)
 
 val interp_definition :
   lident list option -> local_binder_expr list -> polymorphic -> red_expr option -> constr_expr ->
   constr_expr option -> Safe_typing.private_constants definition_entry * Evd.evar_map * 
       Universes.universe_binders * Impargs.manual_implicits
-
-val declare_definition : Id.t -> definition_kind ->
-  Safe_typing.private_constants definition_entry -> Universes.universe_binders -> Impargs.manual_implicits ->
-    Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
 
 val do_definition : Id.t -> definition_kind -> lident list option ->
   local_binder_expr list -> red_expr option -> constr_expr ->
@@ -91,9 +81,9 @@ type one_inductive_impls =
   Impargs.manual_implicits list (** for constrs *)
 
 val interp_mutual_inductive :
-  structured_inductive_expr -> decl_notation list -> polymorphic ->
-    private_flag -> Decl_kinds.recursivity_kind ->
-    mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
+  structured_inductive_expr -> decl_notation list -> cumulative_inductive_flag ->
+  polymorphic -> private_flag -> Decl_kinds.recursivity_kind ->
+  mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
 
 (** Registering a mutual inductive definition together with its
    associated schemes *)
@@ -105,8 +95,8 @@ val declare_mutual_inductive_with_eliminations :
 (** Entry points for the vernacular commands Inductive and CoInductive *)
 
 val do_mutual_inductive :
-  (one_inductive_expr * decl_notation list) list -> polymorphic -> 
-  private_flag -> Decl_kinds.recursivity_kind -> unit
+  (one_inductive_expr * decl_notation list) list -> cumulative_inductive_flag ->
+  polymorphic -> private_flag -> Decl_kinds.recursivity_kind -> unit
 
 (** {6 Fixpoints and cofixpoints} *)
 
@@ -151,7 +141,7 @@ val declare_fixpoint :
   locality -> polymorphic ->
   recursive_preentry * lident list option * Evd.evar_universe_context * 
   (Context.Rel.t * Impargs.manual_implicits * int option) list ->
-  lemma_possible_guards -> decl_notation list -> unit
+  Proof_global.lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint : locality -> polymorphic -> 
   recursive_preentry * lident list option * Evd.evar_universe_context * 
@@ -171,6 +161,3 @@ val do_cofixpoint :
 (** Utils *)
 
 val check_mutuality : Environ.env -> Evd.evar_map -> bool -> (Id.t * types) list -> unit
-
-val declare_fix : ?opaque:bool -> definition_kind -> Universes.universe_binders -> Univ.universe_context -> Id.t ->
-  Safe_typing.private_constants Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference

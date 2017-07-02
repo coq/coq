@@ -30,7 +30,7 @@ open Nametab
 open Declare
 open Decl_kinds
 open Tacred
-open Proof_type
+open Goal
 open Pfedit
 open Glob_term
 open Pretyping
@@ -1295,7 +1295,7 @@ let is_opaque_constant c =
 
 let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
-  let current_proof_name = get_current_proof_name () in
+  let current_proof_name = Proof_global.get_current_proof_name () in
   let name = match goal_name with
     | Some s -> s
     | None   ->

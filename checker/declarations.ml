@@ -521,6 +521,11 @@ let subst_template_cst_arity sub (ctx,s as arity) =
 
 let subst_arity sub s = subst_decl_arity subst_mps subst_template_cst_arity sub s
 
+let constant_is_polymorphic cb =
+  match cb.const_universes with
+  | Monomorphic_const _ -> false
+  | Polymorphic_const _ -> true
+
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 (* NB: we leave bytecode and native code fields untouched *)
 let subst_const_body sub cb =

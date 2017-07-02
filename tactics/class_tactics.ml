@@ -250,7 +250,7 @@ let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
   let open Clenv in
   let env = Proofview.Goal.env gls in
   let concl = Proofview.Goal.concl gls in
-  Refine.refine ~unsafe:true begin fun sigma ->
+  Refine.refine ~typecheck:false begin fun sigma ->
       let sigma, term, ty =
         if poly then
           let (subst, ctx) = Universes.fresh_universe_context_set_instance ctx in
@@ -527,10 +527,10 @@ let top_sort evm undefs =
   let tosee = ref undefs in
   let rec visit ev evi =
     let evs = Evarutil.undefined_evars_of_evar_info evm evi in
+      tosee := Evar.Map.remove ev !tosee;
       Evar.Set.iter (fun ev ->
         if Evar.Map.mem ev !tosee then
           visit ev (Evar.Map.find ev !tosee)) evs;
-      tosee := Evar.Map.remove ev !tosee;
       l' := ev :: !l';
   in
     while not (Evar.Map.is_empty !tosee) do
@@ -649,8 +649,9 @@ module V85 = struct
     Goal.V82.hyps gls.Evd.sigma (sig_it gls)
 
   let make_autogoal_hints =
-    let cache = ref (true, Environ.empty_named_context_val,
-                     Hint_db.empty full_transparent_state true)
+    let cache = Summary.ref ~name:"make_autogoal_hints_cache"
+        (true, Environ.empty_named_context_val,
+         Hint_db.empty full_transparent_state true)
     in
     fun only_classes ?(st=full_transparent_state) g ->
     let sign = pf_filtered_hyps g in
@@ -979,8 +980,9 @@ module Search = struct
       search_hints : hint_db; }
 
   (** Local hints *)
-  let autogoal_cache = ref (DirPath.empty, true, Context.Named.empty,
-                            Hint_db.empty full_transparent_state true)
+  let autogoal_cache = Summary.ref ~name:"autogoal_cache"
+      (DirPath.empty, true, Context.Named.empty,
+       Hint_db.empty full_transparent_state true)
 
   let make_autogoal_hints only_classes ?(st=full_transparent_state) g =
     let open Proofview in

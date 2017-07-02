@@ -12,7 +12,6 @@
    into elementary ones, insertion of coercions and resolution of
    implicit arguments. *)
 
-open Names
 open Term
 open Environ
 open Evd
@@ -27,23 +26,6 @@ val search_guard :
   ?loc:Loc.t -> env -> int list list -> rec_declaration -> int array
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
-
-type var_map = Pattern.constr_under_binders Id.Map.t
-type uconstr_var_map = Glob_term.closed_glob_constr Id.Map.t
-type unbound_ltac_var_map = Geninterp.Val.t Id.Map.t
-
-type ltac_var_map = {
-  ltac_constrs : var_map;
-  (** Ltac variables bound to constrs *)
-  ltac_uconstrs : uconstr_var_map;
-  (** Ltac variables bound to untyped constrs *)
-  ltac_idents: Id.t Id.Map.t;
-  (** Ltac variables bound to identifiers *)
-  ltac_genargs : unbound_ltac_var_map;
-  (** Ltac variables bound to other kinds of arguments *)
-}
-
-val empty_lvar : ltac_var_map
 
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr

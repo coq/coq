@@ -109,9 +109,9 @@ let edit_at id =
  * as not to break the core protocol for this minor change, but it should
  * be removed in the next version of the protocol.
  *)
-let query (s,id) =
+let query (route, (s,id)) =
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
-  Stm.query ~at:id pa; ""
+  Stm.query ~at:id ~route pa
 
 let annotate phrase =
   let (loc, ast) =
@@ -341,6 +341,7 @@ let about () = {
 }
 
 let handle_exn (e, info) =
+  let (e, info) = ExplainErr.process_vernac_interp_error (e, info) in
   let dummy = Stateid.dummy in
   let loc_of e = match Loc.get_loc e with
     | Some loc -> Some (Loc.unloc loc)

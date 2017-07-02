@@ -95,7 +95,7 @@ let ssrmkabs id gl =
   end in
   Proofview.V82.of_tactic
     (Proofview.tclTHEN
-      (Tactics.New.refine step)
+      (Tactics.New.refine ~typecheck:false step)
       (Proofview.tclFOCUS 1 3 Proofview.shelve)) gl
 
 let ssrmkabstac ids =
@@ -175,10 +175,10 @@ let move_top_with_view ~next c r v =
 
 type block_names = (int * EConstr.types array) option
 
-let (introstac : ?ist:Tacinterp.interp_sign -> ssripats -> Proof_type.tactic),
+let (introstac : ?ist:Tacinterp.interp_sign -> ssripats -> Tacmach.tactic),
     (tclEQINTROS : ?ind:block_names ref -> ?ist:Tacinterp.interp_sign ->
-                     Proof_type.tactic -> Proof_type.tactic -> ssripats ->
-                      Proof_type.tactic)
+                     Tacmach.tactic -> Tacmach.tactic -> ssripats ->
+                      Tacmach.tactic)
 =
 
   let rec ipattac ?ist ~next p : tac_ctx tac_a = fun gl ->

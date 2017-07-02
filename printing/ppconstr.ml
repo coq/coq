@@ -80,7 +80,7 @@ let tag_var = tag Tag.variable
         | Any -> true
 
   let prec_of_prim_token = function
-    | Numeral p -> if Bigint.is_pos_or_zero p then lposint else lnegint
+    | Numeral (_,b) -> if b then lposint else lnegint
     | String _ -> latom
 
   open Notation
@@ -231,7 +231,7 @@ let tag_var = tag Tag.variable
     | ArgVar (loc,s) -> pr_lident (loc,s)
 
   let pr_prim_token = function
-    | Numeral n -> str (Bigint.to_string n)
+    | Numeral (n,s) -> str (if s then n else "-"^n)
     | String s -> qs s
 
   let pr_evar pr id l =

@@ -270,7 +270,7 @@ type state =
      mutable rew_depth:int;
      mutable changed:bool;
      by_type: Int.Set.t Typehash.t;
-     mutable gls:Proof_type.goal Evd.sigma}
+     mutable gls:Goal.goal Evd.sigma}
 
 let dummy_node =
   {

@@ -460,7 +460,7 @@ let raw_inversion inv_kind id status names =
     in
     let refined id =
       let prf = mkApp (mkVar id, args) in
-      Refine.refine (fun h -> (h, prf))
+      Refine.refine ~typecheck:false (fun h -> (h, prf))
     in
     let neqns = List.length realargs in
     let as_mode = names != None in

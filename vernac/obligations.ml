@@ -22,9 +22,6 @@ open Util
 
 module NamedDecl = Context.Named.Declaration
 
-let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)
-let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
-
 let get_fix_exn, stm_get_fix_exn = Hook.make ()
 
 let succfix (depth, fixrels) =
@@ -365,8 +362,8 @@ let get_body obl =
   match obl.obl_body with
   | None -> None
   | Some (DefinedObl c) ->
-    let ctx = Environ.constant_context (Global.env ()) c in
-    let pc = (c, Univ.UContext.instance ctx) in
+    let u = Environ.constant_instance (Global.env ()) c in
+    let pc = (c, u) in
       Some (DefinedObl pc)
   | Some (TermObl c) ->
       Some (TermObl c)
@@ -496,14 +493,12 @@ let declare_definition prg =
   in
   let () = progmap_remove prg in
   let cst =
-    !declare_definition_ref prg.prg_name 
-     prg.prg_kind ce prg.prg_implicits
+    DeclareDef.declare_definition prg.prg_name
+     prg.prg_kind ce [] prg.prg_implicits
      (Lemmas.mk_hook (fun l r -> Lemmas.call_hook fix_exn prg.prg_hook l r prg.prg_ctx; r))
   in
   Universes.register_universe_binders cst pl;
   cst
-      
-open Pp
 
 let rec lam_index n t acc =
   match kind_of_term t with
@@ -569,7 +564,7 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let ctx = Evd.evar_context_universe_context first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (!declare_fix_ref ~opaque (local, poly, kind) ctx)
+  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) [] ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter Metasyntax.add_notation_interpretation first.prg_notations;
@@ -947,7 +942,7 @@ let rec solve_obligation prg num tac =
   let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
   let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator hook in
   let _ = Pfedit.by !default_tactic in
-  Option.iter (fun tac -> Pfedit.set_end_tac tac) tac
+  Option.iter (fun tac -> Proof_global.set_endline_tactic tac) tac
 
 and obligation (user_num, name, typ) tac =
   let num = pred user_num in

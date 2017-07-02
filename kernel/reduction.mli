@@ -36,10 +36,13 @@ type 'a extended_conversion_function =
 type conv_pb = CONV | CUMUL
 
 type 'a universe_compare = 
-  { (* Might raise NotConvertible or UnivInconsistency *)
+  { (* Might raise NotConvertible *)
     compare : env -> conv_pb -> sorts -> sorts -> 'a -> 'a;
-    compare_instances: flex:bool -> 
-		       Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+    compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+    conv_inductives : conv_pb -> (Declarations.mutual_inductive_body * int) -> Univ.Instance.t -> int ->
+      Univ.Instance.t -> int -> 'a -> 'a;
+    conv_constructors : (Declarations.mutual_inductive_body * int * int) ->
+      Univ.Instance.t -> int -> Univ.Instance.t -> int -> 'a -> 'a;
   } 
 
 type 'a universe_state = 'a * 'a universe_compare

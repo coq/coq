@@ -10,6 +10,8 @@
 
     Nota: no check that [int] values aren't generating overflows *)
 
+Require Coq.extraction.Extraction.
+
 Require Import Arith ZArith.
 
 Parameter int : Type.

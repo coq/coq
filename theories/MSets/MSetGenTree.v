@@ -27,7 +27,7 @@
      - min_elt max_elt choose
 *)
 
-Require Import Orders OrdersFacts MSetInterface PeanoNat.
+Require Import FunInd Orders OrdersFacts MSetInterface PeanoNat.
 Local Open Scope list_scope.
 Local Open Scope lazy_bool_scope.
 

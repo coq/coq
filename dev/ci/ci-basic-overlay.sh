@@ -13,8 +13,8 @@
 ########################################################################
 # UniMath
 ########################################################################
-: ${UniMath_CI_BRANCH:=coq_makefile2-fix}
-: ${UniMath_CI_GITURL:=https://github.com/maximedenes/UniMath.git}
+: ${UniMath_CI_BRANCH:=master}
+: ${UniMath_CI_GITURL:=https://github.com/UniMath/UniMath.git}
 
 ########################################################################
 # Unicoq + Metacoq
@@ -73,14 +73,14 @@
 ########################################################################
 # CompCert
 ########################################################################
-: ${CompCert_CI_BRANCH:=master}
-: ${CompCert_CI_GITURL:=https://github.com/AbsInt/CompCert.git}
+: ${CompCert_CI_BRANCH:=less_init_plugins}
+: ${CompCert_CI_GITURL:=https://github.com/letouzey/CompCert.git}
 
 ########################################################################
 # VST
 ########################################################################
-: ${VST_CI_BRANCH:=master}
-: ${VST_CI_GITURL:=https://github.com/PrincetonUniversity/VST.git}
+: ${VST_CI_BRANCH:=less_init_plugins}
+: ${VST_CI_GITURL:=https://github.com/letouzey/VST.git}
 
 ########################################################################
 # fiat_parsers
@@ -91,20 +91,8 @@
 ########################################################################
 # fiat_crypto
 ########################################################################
-: ${fiat_crypto_CI_BRANCH:=master}
-: ${fiat_crypto_CI_GITURL:=https://github.com/mit-plv/fiat-crypto.git}
-
-########################################################################
-# bedrock_src
-########################################################################
-: ${bedrock_src_CI_BRANCH:=trunk__API}
-: ${bedrock_src_CI_GITURL:=https://github.com/matejkosik/bedrock.git}
-
-########################################################################
-# bedrock_facade
-########################################################################
-: ${bedrock_facade_CI_BRANCH:=trunk__API}
-: ${bedrock_facade_CI_GITURL:=https://github.com/matejkosik/bedrock.git}
+: ${fiat_crypto_CI_BRANCH:=less_init_plugins}
+: ${fiat_crypto_CI_GITURL:=https://github.com/letouzey/fiat-crypto.git}
 
 ########################################################################
 # formal-topology

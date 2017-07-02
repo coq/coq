@@ -1,3 +1,5 @@
+Require Coq.extraction.Extraction.
+
 Module Type TRIVIAL.
 Parameter t:Type.
 End TRIVIAL.

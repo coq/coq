@@ -66,22 +66,138 @@ let print_universes = Detyping.print_universes
 (* This suppresses printing of primitive tokens (e.g. numeral) and notations *)
 let print_no_symbol = ref false
 
-(* This tells which notations still not to used if print_no_symbol is true *)
-let print_non_active_notations = ref ([] : interp_rule list)
+(**********************************************************************)
+(* Turning notations and scopes on and off for printing *)
+module IRuleSet = Set.Make(struct
+    type t = interp_rule
+    let compare x y = Pervasives.compare x y
+  end)
+
+let inactive_notations_table =
+  Summary.ref ~name:"inactive_notations_table" (IRuleSet.empty)
+let inactive_scopes_table    =
+  Summary.ref ~name:"inactive_scopes_table" CString.Set.empty
+
+let show_scope scopt =
+  match scopt with
+  | None -> str ""
+  | Some sc -> spc () ++ str "in scope" ++ spc () ++ str sc
+
+let _show_inactive_notations () =
+  begin
+    if CString.Set.is_empty !inactive_scopes_table
+    then
+      Feedback.msg_notice (str "No inactive notation scopes.")
+    else
+      let _ = Feedback.msg_notice (str "Inactive notation scopes:") in
+      CString.Set.iter (fun sc -> Feedback.msg_notice (str "  " ++ str sc))
+        !inactive_scopes_table
+  end;
+  if IRuleSet.is_empty !inactive_notations_table
+  then
+    Feedback.msg_notice (str "No individual inactive notations.")
+  else
+    let _ = Feedback.msg_notice (str "Inactive notations:") in
+    IRuleSet.iter
+      (function
+       | NotationRule (scopt, ntn) ->
+         Feedback.msg_notice (str ntn ++ show_scope scopt)
+       | SynDefRule kn -> Feedback.msg_notice (str (Names.KerName.to_string kn)))
+      !inactive_notations_table
+
+let deactivate_notation nr =
+  match nr with
+  | SynDefRule kn ->
+     (* shouldn't we check wether it is well defined? *)
+     inactive_notations_table := IRuleSet.add nr !inactive_notations_table
+  | NotationRule (scopt, ntn) ->
+     match availability_of_notation (scopt, ntn) (scopt, []) with
+     | None -> user_err ~hdr:"Notation"
+                        (str ntn ++ spc () ++ str "does not exist"
+                         ++ (match scopt with
+                             | None -> spc () ++ str "in the empty scope."
+                             | Some _ -> show_scope scopt ++ str "."))
+     | Some _ ->
+        if IRuleSet.mem nr !inactive_notations_table then
+          Feedback.msg_warning
+            (str "Notation" ++ spc () ++ str ntn ++ spc ()
+             ++ str "is already inactive" ++ show_scope scopt ++ str ".")
+        else inactive_notations_table := IRuleSet.add nr !inactive_notations_table
+
+let reactivate_notation nr =
+  try
+    inactive_notations_table :=
+      IRuleSet.remove nr !inactive_notations_table
+  with Not_found ->
+    match nr with
+    | NotationRule (scopt, ntn) ->
+       Feedback.msg_warning (str "Notation" ++ spc () ++ str ntn ++ spc ()
+                             ++ str "is already active" ++ show_scope scopt ++
+  str ".")
+    | SynDefRule kn ->
+       Feedback.msg_warning
+         (str "Notation" ++ spc () ++ str (Names.KerName.to_string kn)
+          ++ spc () ++ str "is already active.")
+
+
+let deactivate_scope sc =
+  ignore (find_scope sc); (* ensures that the scope exists *)
+  if CString.Set.mem sc !inactive_scopes_table
+  then
+    Feedback.msg_warning (str "Notation Scope" ++ spc () ++ str sc ++ spc ()
+                          ++ str "is already inactive.")
+  else
+    inactive_scopes_table := CString.Set.add sc !inactive_scopes_table
+
+let reactivate_scope sc =
+  try
+    inactive_scopes_table := CString.Set.remove sc !inactive_scopes_table
+  with Not_found ->
+    Feedback.msg_warning (str "Notation Scope" ++ spc () ++ str sc ++ spc ()
+                          ++ str "is already active.")
+
+let is_inactive_rule nr =
+  IRuleSet.mem nr !inactive_notations_table ||
+  match nr with
+    | NotationRule (Some sc, ntn) -> CString.Set.mem sc !inactive_scopes_table
+    | NotationRule (None, ntn) -> false
+    | SynDefRule _ -> false
+
+(* args: notation, scope, activate/deactivate *)
+let toggle_scope_printing ~scope ~activate =
+  if activate then
+    reactivate_scope scope
+  else
+    deactivate_scope scope
+
+let toggle_notation_printing ?scope ~notation ~activate =
+  if activate then
+    reactivate_notation (NotationRule (scope, notation))
+  else
+    deactivate_notation (NotationRule (scope, notation))
 
 (* This governs printing of projections using the dot notation symbols *)
 let print_projections = ref false
 
 let print_meta_as_hole = ref false
 
-let with_arguments f = Flags.with_option print_arguments f
-let with_implicits f = Flags.with_option print_implicits f
-let with_coercions f = Flags.with_option print_coercions f
 let with_universes f = Flags.with_option print_universes f
 let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
 let without_symbols f = Flags.with_option print_no_symbol f
-let without_specific_symbols l f =
-  Flags.with_extra_values print_non_active_notations l f
+
+(* XXX: Where to put this in the library? Util maybe? *)
+let protect_ref r nf f x =
+  let old_ref = !r in
+  r := nf !r;
+  try let res = f x in r := old_ref; res
+  with reraise ->
+    let reraise = Backtrace.add_backtrace reraise in
+    r := old_ref;
+    Exninfo.iraise reraise
+
+let without_specific_symbols l =
+  protect_ref inactive_notations_table
+    (fun tbl -> IRuleSet.(union (of_list l) tbl))
 
 (**********************************************************************)
 (* Control printing of records *)
@@ -239,23 +355,31 @@ let expand_curly_brackets loc mknot ntn l =
 let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
 let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 
+let is_number s =
+  let rec aux i =
+    Int.equal (String.length s) i ||
+    match s.[i] with '0'..'9' -> aux (i+1) | _ -> false
+  in aux 0
+
+let is_zero s =
+  let rec aux i =
+    Int.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
+  in aux 0
+
 let make_notation_gen loc ntn mknot mkprim destprim l =
   if has_curly_brackets ntn
   then expand_curly_brackets loc mknot ntn l
   else match ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
-    | "- _", [Some (Numeral p)] when Bigint.is_strictly_pos p ->
+    | "- _", [Some (Numeral (p,true))] when not (is_zero p) ->
         mknot (loc,ntn,([mknot (loc,"( _ )",l)]))
     | _ ->
 	match decompose_notation_key ntn, l with
-	| [Terminal "-"; Terminal x], [] ->
-	    (try mkprim (loc, Numeral (Bigint.neg (Bigint.of_string x)))
-	     with Failure _ -> mknot (loc,ntn,[]))
-	| [Terminal x], [] ->
-	    (try mkprim (loc, Numeral (Bigint.of_string x))
-	     with Failure _ -> mknot (loc,ntn,[]))
-	| _ ->
-	    mknot (loc,ntn,l)
+	| [Terminal "-"; Terminal x], [] when is_number x ->
+	   mkprim (loc, Numeral (x,false))
+	| [Terminal x], [] when is_number x ->
+	   mkprim (loc, Numeral (x,true))
+	| _ -> mknot (loc,ntn,l)
 
 let make_notation loc ntn (terms,termlists,binders as subst) =
   if not (List.is_empty termlists) || not (List.is_empty binders) then
@@ -390,7 +514,7 @@ and extern_notation_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
-      if List.mem keyrule !print_non_active_notations then raise No_match;
+      if is_inactive_rule keyrule then raise No_match;
       let loc = t.loc in
       match t.v with
 	| PatCstr (cstr,_,na) ->
@@ -406,8 +530,8 @@ let rec extern_notation_ind_pattern allscopes vars ind args = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
-      if List.mem keyrule !print_non_active_notations then raise No_match;
-      apply_notation_to_pattern  (IndRef ind)
+      if is_inactive_rule keyrule then raise No_match;
+      apply_notation_to_pattern (IndRef ind)
 	(match_notation_constr_ind_pattern ind args pat) allscopes vars keyrule
     with
 	No_match -> extern_notation_ind_pattern allscopes vars ind args rules
@@ -877,7 +1001,7 @@ and extern_notation (tmp_scope,scopes as allscopes) vars t = function
   | (keyrule,pat,n as _rule)::rules ->
       let loc = Glob_ops.loc_of_glob_constr t in
       try
-        if List.mem keyrule !print_non_active_notations then raise No_match;
+        if is_inactive_rule keyrule then raise No_match;
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args,argsscopes,argsimpls) = match t.v ,n with
 	  | GApp (f,args), Some n

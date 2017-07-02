@@ -14,7 +14,9 @@ type binding_kind = Explicit | Implicit
 
 type polymorphic = bool
 
-type private_flag = bool 
+type private_flag = bool
+
+type cumulative_inductive_flag = bool
 
 type theorem_kind =
   | Theorem

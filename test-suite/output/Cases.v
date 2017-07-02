@@ -121,3 +121,66 @@ Check fun x => let '(D n m p q) := x in n+m+p+q.
 (* This used to succeed, being interpreted as "let '{{n, m, p}} := ..." *)
 
 Fail Check fun x : J => let '{{n, m, _}} p := x in n + m + p.
+
+(* Test use of idents bound to ltac names in a "match" *)
+
+Lemma lem1 : forall k, k=k :>nat * nat.
+let x := fresh "aa" in
+let y := fresh "bb" in
+let z := fresh "cc" in
+let k := fresh "dd" in
+refine (fun k : nat * nat => match k as x return x = x with (y,z) => eq_refl end).
+Qed.
+Print lem1.
+
+Lemma lem2 : forall k, k=k :> bool.
+let x := fresh "aa" in
+let y := fresh "bb" in
+let z := fresh "cc" in
+let k := fresh "dd" in
+refine (fun k => if k as x return x = x then eq_refl else eq_refl).
+Qed.
+Print lem2.
+
+Lemma lem3 : forall k, k=k :>nat * nat.
+let x := fresh "aa" in
+let y := fresh "bb" in
+let z := fresh "cc" in
+let k := fresh "dd" in
+refine (fun k : nat * nat => let (y,z) as x return x = x := k in eq_refl).
+Qed.
+Print lem3.
+
+Lemma lem4 x : x+0=0.
+match goal with |- ?y = _ => pose (match y with 0 => 0 | S n => 0 end) end.
+match goal with |- ?y = _ => pose (match y as y with 0 => 0 | S n => 0 end) end.
+match goal with |- ?y = _ => pose (match y as y return y=y with 0 => eq_refl | S n => eq_refl end) end.
+match goal with |- ?y = _ => pose (match y return y=y with 0 => eq_refl | S n => eq_refl end) end.
+match goal with |- ?y + _ = _ => pose (match y with 0 => 0 | S n => 0 end) end.
+match goal with |- ?y + _ = _ => pose (match y as y with 0 => 0 | S n => 0 end) end.
+match goal with |- ?y + _ = _ => pose (match y as y return y=y with 0 => eq_refl | S n => eq_refl end) end.
+match goal with |- ?y + _ = _ => pose (match y return y=y with 0 => eq_refl | S n => eq_refl end) end.
+Show.
+
+Lemma lem5 (p:nat) : eq_refl p = eq_refl p.
+let y := fresh "n" in (* Checking that y is hidden *)
+  let z := fresh "e" in (* Checking that z is hidden *)
+  match goal with
+  |- ?y = _ => pose (match y as y in _ = z return y=y /\ z=z with eq_refl => conj eq_refl eq_refl end)
+  end.
+let y := fresh "n" in
+  let z := fresh "e" in
+  match goal with
+  |- ?y = _ => pose (match y in _ = z return y=y /\ z=z with eq_refl => conj eq_refl eq_refl end)
+  end.
+let y := fresh "n" in
+  let z := fresh "e" in
+  match goal with
+  |- eq_refl ?y = _ => pose (match eq_refl y in _ = z return y=y /\ z=z with eq_refl => conj eq_refl eq_refl end)
+  end.
+let p := fresh "p" in
+  let z := fresh "e" in
+  match goal with
+  |- eq_refl ?p = _ => pose (match eq_refl p in _ = z return p=p /\ z=z with eq_refl => conj eq_refl eq_refl end)
+  end.
+Show.

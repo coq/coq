@@ -22,7 +22,6 @@ open Nameops
 open Libnames
 open Globnames
 open Nametab
-open Pfedit
 open Refiner
 open Tacmach.New
 open Tactic_debug
@@ -605,10 +604,10 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   let { closure = constrvars ; term } =
     interp_glob_closure ist env sigma ~kind:kind_for_intern ~pattern_mode c in
   let vars = {
-    Pretyping.ltac_constrs = constrvars.typed;
-    Pretyping.ltac_uconstrs = constrvars.untyped;
-    Pretyping.ltac_idents = constrvars.idents;
-    Pretyping.ltac_genargs = ist.lfun;
+    Glob_term.ltac_constrs = constrvars.typed;
+    Glob_term.ltac_uconstrs = constrvars.untyped;
+    Glob_term.ltac_idents = constrvars.idents;
+    Glob_term.ltac_genargs = ist.lfun;
   } in
   (* Jason Gross: To avoid unnecessary modifications to tacinterp, as
       suggested by Arnaud Spiwack, we run push_trace immediately.  We do
@@ -629,7 +628,7 @@ let interp_gen kind ist pattern_mode flags env sigma c =
 let constr_flags () = {
   use_typeclasses = true;
   solve_unification_constraints = true;
-  use_hook = solve_by_implicit_tactic ();
+  use_hook = Pfedit.solve_by_implicit_tactic ();
   fail_evar = true;
   expand_evars = true }
 
@@ -644,14 +643,14 @@ let interp_type = interp_constr_gen IsType
 let open_constr_use_classes_flags () = {
   use_typeclasses = true;
   solve_unification_constraints = true;
-  use_hook = solve_by_implicit_tactic ();
+  use_hook = Pfedit.solve_by_implicit_tactic ();
   fail_evar = false;
   expand_evars = true }
 
 let open_constr_no_classes_flags () = {
   use_typeclasses = false;
   solve_unification_constraints = true;
-  use_hook = solve_by_implicit_tactic ();
+  use_hook = Pfedit.solve_by_implicit_tactic ();
   fail_evar = false;
   expand_evars = true }
 

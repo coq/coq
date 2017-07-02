@@ -343,7 +343,7 @@ let error_error names e =
 let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     is_general do_built (fix_rec_l:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) recdefs  interactive_proof
     (continue_proof : int -> Names.Constant.t array -> EConstr.constr array -> int ->
-      Proof_type.tactic) : unit =
+      Tacmach.tactic) : unit =
   let names = List.map (function (((_, name),_),_,_,_,_),_ -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
@@ -446,7 +446,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
-    (_: int) (_:Names.Constant.t array) (_:EConstr.constr array) (_:int) : Proof_type.tactic =
+    (_: int) (_:Names.Constant.t array) (_:EConstr.constr array) (_:int) : Tacmach.tactic =
   Functional_principles_proofs.prove_principle_for_gen
     (f_ref,functional_ref,eq_ref)
     tcc_lemma_ref is_mes  rec_arg_num rec_arg_type relation
@@ -576,50 +576,44 @@ let map_option f = function
   | Some v -> Some (f v)
 
 open Constrexpr
-open Topconstr
 
-let make_assoc assoc l1 l2 =
-  let fold assoc a b = match a, b with
-  | (_, Name na), (_, Name id) -> Id.Map.add na id assoc
-  | _, _ -> assoc
-  in
-  List.fold_left2 fold assoc l1 l2
-
-let rec rebuild_bl (aux,assoc) bl typ = 
-	match bl,typ with 
-	  | [], _ -> (List.rev aux,replace_vars_constr_expr assoc typ,assoc)
-	  | (Constrexpr.CLocalAssum(nal,bk,_))::bl',typ ->
-	     rebuild_nal (aux,assoc) bk bl' nal (List.length nal) typ
-	  | (Constrexpr.CLocalDef(na,_,_))::bl',{ CAst.v = Constrexpr.CLetIn(_,nat,ty,typ') } ->
-	    rebuild_bl ((Constrexpr.CLocalDef(na,replace_vars_constr_expr assoc nat,Option.map (replace_vars_constr_expr assoc) ty (* ??? *))::aux),assoc)
+let rec rebuild_bl aux bl typ =
+	match bl,typ with
+	  | [], _ -> List.rev aux,typ
+	  | (CLocalAssum(nal,bk,_))::bl',typ ->
+	     rebuild_nal aux bk bl' nal  typ
+	  | (CLocalDef(na,_,_))::bl',{ CAst.v = CLetIn(_,nat,ty,typ') } ->
+	    rebuild_bl (Constrexpr.CLocalDef(na,nat,ty)::aux)
 	      bl' typ'
 	  | _ -> assert false
-      and rebuild_nal (aux,assoc) bk bl' nal lnal typ = 
-	match nal, typ.CAst.v with 
-	  | [], _ -> rebuild_bl (aux,assoc) bl' typ
-	  | _,CProdN([],typ) -> rebuild_nal (aux,assoc) bk bl' nal lnal typ
-	  | _,CProdN((nal',bk',nal't)::rest,typ') -> 
-	    let lnal' = List.length nal' in 
-	    if lnal' >= lnal 
-	    then 
-	      let old_nal',new_nal' = List.chop lnal nal' in
-	      let nassoc = make_assoc assoc old_nal' nal in
-	      let assum = CLocalAssum(nal,bk,replace_vars_constr_expr assoc nal't) in
-	      rebuild_bl ((assum :: aux), nassoc) bl' 
-		(if List.is_empty new_nal' && List.is_empty rest
-		 then typ'
-		 else CAst.make @@ if List.is_empty new_nal'
-		 then CProdN(rest,typ')
-		 else CProdN(((new_nal',bk',nal't)::rest),typ'))
-	    else 
-	      let captured_nal,non_captured_nal = List.chop lnal' nal in
-	      let nassoc = make_assoc assoc nal' captured_nal in
-	      let assum = CLocalAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't) in
-	      rebuild_nal ((assum :: aux), nassoc)
-		bk bl' non_captured_nal (lnal - lnal') (CAst.make @@ CProdN(rest,typ'))
-	  | _ -> assert false
+and rebuild_nal aux bk bl' nal typ =
+	match nal,typ with 
+	  | _,{ CAst.v = CProdN([],typ) } -> rebuild_nal aux bk bl' nal typ
+	  | [], _ -> rebuild_bl aux bl' typ
+	  | na::nal,{ CAst.v = CProdN((na'::nal',bk',nal't)::rest,typ') } ->
+	     if Name.equal (snd na) (snd na') || Name.is_anonymous (snd na')
+	     then
+	       let assum = CLocalAssum([na],bk,nal't) in
+	       let new_rest = if nal' = [] then rest else ((nal',bk',nal't)::rest) in 
+	       rebuild_nal
+		 (assum::aux)
+		 bk
+		 bl'
+		 nal
+		 (CAst.make @@ CProdN(new_rest,typ'))
+	     else
+	       let assum = CLocalAssum([na'],bk,nal't) in
+	       let new_rest = if nal' = [] then rest else ((nal',bk',nal't)::rest) in 
+	       rebuild_nal
+		 (assum::aux)
+		 bk
+		 bl'
+		 (na::nal)
+		 (CAst.make @@ CProdN(new_rest,typ'))
+	  | _ ->
+	     assert false
 
-let rebuild_bl (aux,assoc) bl typ = rebuild_bl (aux,assoc) bl typ
+let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
 let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) = 
   let fixl,ntns = Command.extract_fixpoint_components false fixpoint_exprl in
@@ -629,7 +623,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   let fixpoint_exprl_with_new_bl = 
     List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 
      
-      let new_bl',new_ret_type,_ = rebuild_bl ([],Id.Map.empty) bl fix_typ in 
+      let new_bl',new_ret_type = rebuild_bl [] bl fix_typ in 
       (((lna,(rec_arg_opt,rec_order),new_bl',new_ret_type,opt_body),notation_list):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
     )
       fixpoint_exprl constr_expr_typel 

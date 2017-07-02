@@ -2,10 +2,10 @@ open API
 
 (* val evaluable_of_global_reference : Libnames.global_reference -> Names.evaluable_global_reference *)
 val tclUSER_if_not_mes : 
-  Proof_type.tactic ->
+  Tacmach.tactic ->
   bool -> 
   Names.Id.t list option -> 
-  Proof_type.tactic
+  Tacmach.tactic
 val recursive_definition :  
 bool ->
            Names.Id.t ->

@@ -51,6 +51,20 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
+let extraction_err ~loc =
+  if not (Mltop.module_is_known "extraction_plugin") then
+    CErrors.user_err ~loc (str "Please do first a Require Extraction.")
+  else
+    (* The right grammar entries should have been loaded.
+       We could only end here in case of syntax error. *)
+    raise (Stream.Error "unexpected end of command")
+
+let funind_err ~loc =
+  if not (Mltop.module_is_known "recdef_plugin") then
+    CErrors.user_err ~loc (str "Please do first a Require Import FunInd.")
+  else
+    raise (Stream.Error "unexpected end of command") (* Same as above... *)
+
 GEXTEND Gram
   GLOBAL: vernac gallina_ext noedit_mode subprf;
   vernac: FIRST
@@ -137,7 +151,7 @@ GEXTEND Gram
         l = LIST0
           [ "with"; id = pidentref; bl = binders; ":"; c = lconstr ->
           (Some id,(bl,c)) ] ->
-          VernacStartTheoremProof (thm, (Some id,(bl,c))::l, false)
+          VernacStartTheoremProof (thm, (Some id,(bl,c))::l)
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
       | (kwd,stre) = assumptions_token; nl = inline; bl = assum_list ->
@@ -148,11 +162,16 @@ GEXTEND Gram
       | IDENT "Let"; id = identref; b = def_body ->
           VernacDefinition ((Some Discharge, Definition), (id, None), b)
       (* Gallina inductive declarations *)
-      | priv = private_token; f = finite_token;
+      | cum = cumulativity_token; priv = private_token; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
 	  let (k,f) = f in
-	  let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
-          VernacInductive (priv,f,indl)
+          let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
+	  let cum =
+	    match cum with
+	      Some b -> b
+	    | None -> Flags.is_inductive_cumulativity ()
+	  in
+          VernacInductive (cum, priv,f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (None, recs)
       | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
@@ -213,12 +232,15 @@ GEXTEND Gram
 	r = universe_level -> (l, ord, r) ] ]
   ;
   finite_token:
-    [ [ "Inductive" -> (Inductive_kw,Finite)
-      | "CoInductive" -> (CoInductive,CoFinite)
-      | "Variant" -> (Variant,BiFinite)
+    [ [ IDENT "Inductive" -> (Inductive_kw,Finite)
+      | IDENT "CoInductive" -> (CoInductive,CoFinite)
+      | IDENT "Variant" -> (Variant,BiFinite)
       | IDENT "Record" -> (Record,BiFinite)
       | IDENT "Structure" -> (Structure,BiFinite)
       | IDENT "Class" -> (Class true,BiFinite) ] ]
+  ;
+  cumulativity_token:
+    [ [ IDENT "Cumulative" -> Some true | IDENT "NonCumulative" -> Some false | -> None ] ]
   ;
   private_token:
     [ [ IDENT "Private" -> true | -> false ] ]
@@ -840,6 +862,22 @@ GEXTEND Gram
 	  VernacAddLoadPath (true, dir, alias)
       | IDENT "DelPath"; dir = ne_string ->
 	  VernacRemoveLoadPath dir
+
+      (* Some plugins are not loaded initially anymore : extraction,
+         and funind. To ease this transition toward a mandatory Require,
+         we hack here the vernac grammar in order to get customized
+         error messages telling what to Require instead of the dreadful
+         "Illegal begin of vernac". Normally, these fake grammar entries
+         are overloaded later by the grammar extensions in these plugins.
+         This code is meant to be removed in a few releases, when this
+         transition is considered finished. *)
+
+      | IDENT "Extraction" -> extraction_err ~loc:!@loc
+      | IDENT "Extract" -> extraction_err ~loc:!@loc
+      | IDENT "Recursive"; IDENT "Extraction" -> extraction_err ~loc:!@loc
+      | IDENT "Separate"; IDENT "Extraction" -> extraction_err ~loc:!@loc
+      | IDENT "Function" -> funind_err ~loc:!@loc
+      | IDENT "Functional" -> funind_err ~loc:!@loc
 
       (* Type-Checking (pas dans le refman) *)
       | "Type"; c = lconstr -> VernacGlobalCheck c

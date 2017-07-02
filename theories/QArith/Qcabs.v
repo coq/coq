@@ -22,7 +22,7 @@ Lemma Qcabs_canon (x : Q) : Qred x = x -> Qred (Qabs x) = Qabs x.
 Proof. intros H; now rewrite (Qred_abs x), H. Qed.
 
 Definition Qcabs (x:Qc) : Qc := {| canon := Qcabs_canon x (canon x) |}.
-Notation "[ q ]" := (Qcabs q) (q at next level, format "[ q ]") : Qc_scope.
+Notation "[ q ]" := (Qcabs q) : Qc_scope.
 
 Ltac Qc_unfolds :=
   unfold Qcabs, Qcminus, Qcopp, Qcplus, Qcmult, Qcle, Q2Qc, this.

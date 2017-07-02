@@ -25,12 +25,12 @@ val mkclr : ssrclear -> ssrdocc
 val nodocc : ssrdocc
 val noclr : ssrdocc
 
-val simpltac : Ssrast.ssrsimpl -> Proof_type.tactic
+val simpltac : Ssrast.ssrsimpl -> Tacmach.tactic
 
 val newssrcongrtac :
   int * Ssrast.ssrterm ->
   Ltac_plugin.Tacinterp.interp_sign ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 
 val mk_rwarg :
@@ -45,7 +45,7 @@ val ssrinstancesofrule :
   Ltac_plugin.Tacinterp.interp_sign ->
   Ssrast.ssrdir ->
   Ssrast.ssrterm ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
 val ssrrewritetac :
   Ltac_plugin.Tacinterp.interp_sign ->
@@ -53,11 +53,11 @@ val ssrrewritetac :
      (((Ssrast.ssrhyps option * Ssrmatching.occ) *
          Ssrmatching.rpattern option) *
         (ssrwkind * Ssrast.ssrterm)))
-           list -> Proof_type.tactic
+           list -> Tacmach.tactic
 
-val ipat_rewrite : ssrocc -> ssrdir -> EConstr.t -> Proof_type.tactic
+val ipat_rewrite : ssrocc -> ssrdir -> EConstr.t -> Tacmach.tactic
 
 val unlocktac :
   Ltac_plugin.Tacinterp.interp_sign ->
   (Ssrmatching.occ * Ssrast.ssrterm) list ->
-  Proof_type.goal Evd.sigma -> Proof_type.goal list Evd.sigma
+  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma

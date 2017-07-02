@@ -19,6 +19,12 @@ be used (abusively) to refer to any of the three.
 %% the one in previous versions of \Coq: there is no more
 %% an explicit toplevel for the language (formerly called \textsc{Fml}). 
 
+Before using any of the commands or options described in this chapter,
+the extraction framework should first be loaded explicitly
+via {\tt Require Extraction}. Note that in earlier versions of Coq, these
+commands and options were directly available without any preliminary
+{\tt Require}.
+
 \asection{Generating ML code}
 \comindex{Extraction}
 \comindex{Recursive Extraction}
@@ -501,6 +507,7 @@ We can now extract this program to \ocaml:
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
+Require Extraction.
 Require Import Euclid Wf_nat.
 Extraction Inline gt_wf_rec lt_wf_rec induction_ltof2.
 Recursive Extraction eucl_dev.

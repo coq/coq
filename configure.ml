@@ -301,33 +301,37 @@ let args_options = Arg.align [
   "-emacslib", arg_string_option Prefs.emacslib,
     "<dir> Where to install emacs files";
   "-emacs", Arg.String (fun s ->
-      printf "Warning: obsolete -emacs option\n";
+      prerr_endline "Warning: -emacs option is deprecated. Use -emacslib instead.";
       Prefs.emacslib := Some s),
-    "<dir> Obsolete: same as -emacslib";
+    "<dir> Deprecated: same as -emacslib";
   "-coqdocdir", arg_string_option Prefs.coqdocdir,
     "<dir> Where to install Coqdoc style files";
   "-ocamlfind", arg_string_option Prefs.ocamlfindcmd,
     "<dir> Specifies the ocamlfind command to use";
   "-lablgtkdir", arg_string_option Prefs.lablgtkdir,
     "<dir> Specifies the path to the Lablgtk library";
-  "-usecamlp5", Arg.Unit (fun () -> ()),
-    "Deprecated";
+  "-usecamlp5", Arg.Unit (fun () ->
+      prerr_endline "Warning: -usecamlp5 option is deprecated. Camlp5 is already a required dependency."),
+    " Deprecated: Camlp5 is a required dependency (Camlp4 is not supported anymore)";
   "-camlp5dir",
     Arg.String (fun s -> Prefs.camlp5dir:=Some s),
     "<dir> Specifies where is the Camlp5 library and tells to use it";
   "-arch", arg_string_option Prefs.arch,
     "<arch> Specifies the architecture";
-  "-opt", Arg.Unit (fun () -> printf "Warning: obsolete -opt option\n"),
-    " Obsolete: native OCaml executables detected automatically";
+  "-opt", Arg.Unit (fun () ->
+      prerr_endline "Warning: -opt option is deprecated. Native OCaml executables are detected automatically."),
+    " Deprecated: native OCaml executables detected automatically";
   "-natdynlink", arg_bool Prefs.natdynlink,
     "(yes|no) Use dynamic loading of native code or not";
   "-coqide", Arg.String (fun s -> Prefs.coqide := Some (get_ide s)),
-    "(opt|byte|no) Specifies whether or not to compile Coqide";
+    "(opt|byte|no) Specifies whether or not to compile CoqIDE";
   "-nomacintegration", Arg.Clear Prefs.macintegration,
-    " Do not try to build coqide mac integration";
+    " Do not try to build CoqIDE MacOS integration";
   "-browser", arg_string_option Prefs.browser,
     "<command> Use <command> to open URL %s";
-  "-nodoc", Arg.Clear Prefs.withdoc,
+  "-nodoc", Arg.Unit (fun () ->
+      prerr_endline "Warning: -nodoc option is deprecated. Use -with-doc no instead.";
+      Prefs.withdoc := false),
     " Deprecated: use -with-doc no instead";
   "-with-doc", arg_bool Prefs.withdoc,
     "(yes|no) Compile the documentation or not";
@@ -335,18 +339,23 @@ let args_options = Arg.align [
     "(yes|no) Use Geoproof binding or not";
   "-byte-only", Arg.Set Prefs.byteonly,
     " Compiles only bytecode version of Coq";
-  "-byteonly", Arg.Set Prefs.byteonly,
-    " Compiles only bytecode version of Coq";
-  "-debug", Arg.Set Prefs.debug,
-    " Deprecated";
+  "-byteonly", Arg.Unit (fun () ->
+      prerr_endline "Warning: -byteonly option is deprecated. Use -byte-only instead.";
+      Prefs.byteonly := true),
+    " Deprecated: use -byte-only instead";
+  "-debug", Arg.Unit (fun () ->
+      prerr_endline "Warning: -debug option is deprecated. Coq is compiled in debug mode by default.";
+      Prefs.debug := true),
+    " Deprecated: Coq is compiled in debug mode by default";
   "-nodebug", Arg.Clear Prefs.debug,
     " Do not add debugging information in the Coq executables";
   "-profile", Arg.Set Prefs.profile,
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Set Prefs.annotate,
     " Dumps ml annotation files while compiling Coq";
-  "-makecmd", Arg.String (fun _ -> printf "Warning: obsolete -makecmd option\n"),
-    "<command> Obsolete: name of GNU Make command";
+  "-makecmd", Arg.String (fun _ ->
+      prerr_endline "Warning: -makecmd option is deprecated and doesn't have any effect."),
+    "<command> Deprecated";
   "-native-compiler", arg_bool Prefs.nativecompiler,
     "(yes|no) Compilation to native code for conversion and normalization";
   "-coqwebsite", Arg.Set_string Prefs.coqwebsite,

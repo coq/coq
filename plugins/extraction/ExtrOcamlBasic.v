@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+Require Coq.extraction.Extraction.
+
 (** Extraction to Ocaml : use of basic Ocaml types *)
 
 Extract Inductive bool => bool [ true false ].

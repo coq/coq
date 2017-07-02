@@ -41,6 +41,8 @@ Notation "g 'o' f" := (compose g f) (at level 40, left associativity) : function
 
 Open Scope function_scope.
 
+Set Printing Universes. Set Printing All.
+
 Inductive paths {A : Type} (a : A) : A -> Type :=
   idpath : paths a a.
 
@@ -156,7 +158,8 @@ Delimit Scope morphism_scope with morphism.
 
 Delimit Scope category_scope with category.
 Delimit Scope object_scope with object.
-
+Set Printing Universes.
+Set Printing All.
 Record PreCategory :=
   Build_PreCategory' {
       object :> Type;
@@ -1069,7 +1072,7 @@ Section Adjunction.
   Variable F : Functor C D.
   Variable G : Functor D C.
 
-  Let Adjunction_Type := 
+ Let Adjunction_Type := 
     Eval simpl in (hom_functor D) o (F^op, 1) <~=~> (hom_functor C) o (1, G).
 
   Record AdjunctionHom :=

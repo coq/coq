@@ -47,7 +47,7 @@ let optimize_non_type_induction_scheme kind dep sort _ ind =
       (nf c', Evd.evar_universe_context sigma), eff
   else
     let mib,mip = Inductive.lookup_mind_specif env ind in
-    let ctx = Declareops.inductive_context mib in
+    let ctx = Declareops.inductive_polymorphic_context mib in
     let u = Univ.UContext.instance ctx in
     let ctxset = Univ.ContextSet.of_context ctx in
     let ectx = Evd.evar_universe_context_of ctxset in
@@ -60,7 +60,7 @@ let build_induction_scheme_in_type dep sort ind =
   let sigma = Evd.from_env env in
   let ctx = 
     let mib,mip = Inductive.lookup_mind_specif env ind in
-      Declareops.inductive_context mib
+      Declareops.inductive_polymorphic_context mib
   in
   let u = Univ.UContext.instance ctx in
   let ctxset = Univ.ContextSet.of_context ctx in
@@ -80,29 +80,29 @@ let rect_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_rect" ~aux:"_rect_from_type"
     (fun _ x -> build_induction_scheme_in_type true InType x, Safe_typing.empty_private_constants)
 
-let ind_scheme_kind_from_type =
-  declare_individual_scheme_object "_ind_nodep"
-  (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InProp)
-
-let ind_scheme_kind_from_prop =
-  declare_individual_scheme_object "_ind" ~aux:"_ind_from_prop"
-  (optimize_non_type_induction_scheme rect_scheme_kind_from_prop false InProp)
-
-let ind_dep_scheme_kind_from_type =
-  declare_individual_scheme_object "_ind" ~aux:"_ind_from_type"
-  (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_type true InProp)
+let rec_scheme_kind_from_type =
+  declare_individual_scheme_object "_rec_nodep" ~aux:"_rec_nodep_from_type"
+  (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InSet)
 
 let rec_scheme_kind_from_prop =
   declare_individual_scheme_object "_rec" ~aux:"_rec_from_prop"
   (optimize_non_type_induction_scheme rect_scheme_kind_from_prop false InSet)
 
-let rec_scheme_kind_from_type =
-  declare_individual_scheme_object "_rec_nodep" ~aux:"_rec_nodep_from_type"
-  (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InSet)
-
 let rec_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_rec" ~aux:"_rec_from_type"
   (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_type true InSet)
+
+let ind_scheme_kind_from_type =
+  declare_individual_scheme_object "_ind_nodep"
+  (optimize_non_type_induction_scheme rec_scheme_kind_from_type false InProp)
+
+let ind_dep_scheme_kind_from_type =
+  declare_individual_scheme_object "_ind" ~aux:"_ind_from_type"
+  (optimize_non_type_induction_scheme rec_dep_scheme_kind_from_type true InProp)
+
+let ind_scheme_kind_from_prop =
+  declare_individual_scheme_object "_ind" ~aux:"_ind_from_prop"
+  (optimize_non_type_induction_scheme rec_scheme_kind_from_prop false InProp)
 
 (* Case analysis *)
 

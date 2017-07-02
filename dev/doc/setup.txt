@@ -12,7 +12,7 @@ How to compile Coq
 
 Getting build dependencies:
 
-  sudo apt-get install make opam git mercurial darcs
+  sudo apt-get install make opam git
   opam init --comp 4.02.3
   # Then follow the advice displayed at the end as how to update your ~/.bashrc and ~/.ocamlinit files.
   
@@ -41,15 +41,13 @@ Building coqtop:
   cd ~/git/coq
   git checkout trunk
   make distclean
-  ./configure -annotate -with-doc no -local -debug -usecamlp5
+  ./configure -annotate -local
   make clean
   make -j4 coqide printers
 
 The "-annotate" option is essential when one wants to use Merlin.
 
 The "-local" option is useful if one wants to run the coqtop and coqide binaries without running make install
-
-The "-debug" option is essential if one wants to use ocamldebug with the coqtop binary.
 
 Then check if
 - bin/coqtop
@@ -60,7 +58,7 @@ behave as expected.
 A note about rlwrap
 -------------------
 
-Running "coqtop" under "rlwrap" is possible, but there is a catch. If you try:
+Running "coqtop" under "rlwrap" is possible, but (on Debian) there is a catch. If you try:
 
   cd ~/git/coq
   rlwrap bin/coqtop

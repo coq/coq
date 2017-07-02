@@ -17,7 +17,6 @@ open Nametab
 open Evd
 open Proof_type
 open Refiner
-open Pfedit
 open Constrextern
 open Ppconstr
 open Declarations
@@ -259,6 +258,14 @@ let pr_universe_ctx sigma c =
   if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
     fnl()++pr_in_comment (fun c -> v 0 
       (Univ.pr_universe_context (Termops.pr_evd_level sigma) c)) c
+  else
+    mt()
+
+let pr_cumulativity_info sigma cumi =
+  if !Detyping.print_universes 
+  && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
+    fnl()++pr_in_comment (fun uii -> v 0 
+      (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
   else
     mt()
 
@@ -812,7 +819,7 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
   end
 
 let pr_nth_open_subgoal n =
-  let pf = get_pftreestate () in
+  let pf = Proof_global.give_me_the_proof () in
   let { it=gls ; sigma=sigma } = Proof.V82.subgoals pf in
   pr_subgoal n sigma gls
 
@@ -991,6 +998,11 @@ let pr_assumptionset env s =
 
 let xor a b = 
   (a && not b) || (not a && b)
+
+let pr_cumulative poly cum =
+  if poly then
+    if cum then str "Cumulative " else str "NonCumulative "
+  else mt ()
 
 let pr_polymorphic b = 
   let print = xor (Flags.is_universe_polymorphism ()) b in

@@ -77,7 +77,7 @@ val raw_print : bool ref
 (* Univ print flag, never set anywere. Maybe should belong to Univ? *)
 val univ_print : bool ref
 
-type compat_version = V8_2 | V8_3 | V8_4 | V8_5 | V8_6 | Current
+type compat_version = VOld | V8_5 | V8_6 | Current
 val compat_version : compat_version ref
 val version_compare : compat_version -> compat_version -> int
 val version_strictly_greater : compat_version -> bool
@@ -118,6 +118,10 @@ val is_universe_polymorphism : unit -> bool
 (** Local universe polymorphism flag. *)
 val make_polymorphic_flag : bool -> unit
 val use_polymorphic_flag : unit -> bool
+
+(** Global inductive cumulativity flag. *)
+val make_inductive_cumulativity : bool -> unit
+val is_inductive_cumulativity : unit -> bool
 
 val warn : bool ref
 val make_warn : bool -> unit

@@ -23,7 +23,6 @@ type node =
   | ClosedModule  of library_segment
   | OpenedSection of Libnames.object_prefix * Summary.frozen
   | ClosedSection of library_segment
-  | FrozenState of Summary.frozen
 
 and library_segment = (Libnames.object_name * node) list
 
@@ -60,8 +59,6 @@ val pull_to_head : Libnames.object_name -> unit
 (** this operation adds all objects with the same name and calls [load_object]
    for each of them *)
 val add_leaves : Names.Id.t -> Libobject.obj list -> Libnames.object_name
-
-val add_frozen_state : unit -> unit
 
 (** {6 ... } *)
 
@@ -123,8 +120,6 @@ val end_modtype :
   Libnames.object_name * Libnames.object_prefix *
     Summary.frozen * library_segment
 
-(** [Lib.add_frozen_state] must be called after each of the above functions *)
-
 (** {6 Compilation units } *)
 
 val start_compilation : Names.DirPath.t -> Names.module_path -> unit
@@ -162,7 +157,7 @@ val xml_close_section : (Names.Id.t -> unit) Hook.t
 (** {6 Section management for discharge } *)
 type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 type variable_context = variable_info list 
-type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
+type abstr_info = variable_context * Univ.universe_level_subst * Univ.AUContext.t
 
 val instance_from_variable_context : variable_context -> Names.Id.t array
 val named_of_variable_context : variable_context -> Context.Named.t

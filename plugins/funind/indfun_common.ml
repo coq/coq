@@ -161,7 +161,7 @@ let save with_clean id const (locality,_,kind) hook =
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
 	(locality, ConstRef kn)
   in
-  if with_clean then  Pfedit.delete_current_proof ();
+  if with_clean then Proof_global.discard_current ();
   CEphemeron.iter_opt hook (fun f -> Lemmas.call_hook fix_exn f l r);
   definition_message id
 
@@ -173,7 +173,7 @@ let cook_proof _ =
 
 let get_proof_clean do_reduce =
   let result = cook_proof do_reduce in
-  Pfedit.delete_current_proof ();
+  Proof_global.discard_current ();
   result
 
 let with_full_print f a =

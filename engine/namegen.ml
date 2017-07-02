@@ -412,13 +412,12 @@ let rename_bound_vars_as_displayed sigma avoid env c =
 
 let h_based_elimination_names = ref false
 
-let use_h_based_elimination_names () =
-  !h_based_elimination_names && Flags.version_strictly_greater Flags.V8_4
+let use_h_based_elimination_names () = !h_based_elimination_names
 
 open Goptions
 
 let _ = declare_bool_option
-	  { optdepr  = false;
+	  { optdepr  = true; (* remove in 8.8 *)
 	    optname  = "use of \"H\"-based proposition names in elimination tactics";
 	    optkey   = ["Standard";"Proposition";"Elimination";"Names"];
 	    optread  = (fun () -> !h_based_elimination_names);

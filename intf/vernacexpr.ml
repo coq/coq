@@ -96,17 +96,13 @@ type locatable =
 
 type showable =
   | ShowGoal of goal_reference
-  | ShowGoalImplicitly of int option
   | ShowProof
-  | ShowNode
   | ShowScript
   | ShowExistentials
   | ShowUniverses
-  | ShowTree
   | ShowProofNames
   | ShowIntros of bool
   | ShowMatch of reference
-  | ShowThesis
 
 type comment =
   | CommentConstr of constr_expr
@@ -335,12 +331,12 @@ type vernac_expr =
   (* Gallina *)
   | VernacDefinition of
       (locality option * definition_object_kind) * plident * definition_expr
-  | VernacStartTheoremProof of theorem_kind * proof_expr list * bool
+  | VernacStartTheoremProof of theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *
       inline * (plident list * constr_expr) with_coercion list
-  | VernacInductive of private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of cumulative_inductive_flag * private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       locality option * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of
@@ -499,10 +495,9 @@ type vernac_type =
   | VtQed of vernac_qed_type
   | VtProofStep of proof_step
   | VtProofMode of string
-  | VtQuery of vernac_part_of_script * report_with
+  | VtQuery of vernac_part_of_script * Feedback.route_id
   | VtStm of vernac_control * vernac_part_of_script
   | VtUnknown
-and report_with = Stateid.t * Feedback.route_id (* feedback on id/route *)
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list

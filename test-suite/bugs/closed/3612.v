@@ -39,7 +39,6 @@ Axiom path_path_sigma : forall {A : Type} (P : A -> Type) (u v : sigT P)
 p = q.
 
 Declare ML Module "ltac_plugin".
-Declare ML Module "coretactics".
 
 Set Default Proof Mode "Classic".
 

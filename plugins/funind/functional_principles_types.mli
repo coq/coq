@@ -28,7 +28,7 @@ val generate_functional_principle :
   (* The tactic to use to make the proof w.r
      the number of params
   *)
-  (EConstr.constr array -> int -> Proof_type.tactic) ->
+  (EConstr.constr array -> int -> Tacmach.tactic) ->
   unit
 
 val compute_new_princ_type_from_rel : constr array -> Sorts.t array ->

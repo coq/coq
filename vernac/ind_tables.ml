@@ -148,7 +148,7 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
-  let const = define mode id c mib.mind_polymorphic ctx in
+  let const = define mode id c (Declareops.inductive_is_polymorphic mib) ctx in
   declare_scheme kind [|ind,const|];
   const, Safe_typing.add_private
      (Safe_typing.private_con_of_scheme ~kind (Global.safe_env()) [ind,const]) eff
@@ -166,7 +166,7 @@ let define_mutual_scheme_base kind suff f mode names mind =
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let consts = Array.map2 (fun id cl -> 
-     define mode id cl mib.mind_polymorphic ctx) ids cl in
+     define mode id cl (Declareops.inductive_is_polymorphic mib) ctx) ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
   consts,

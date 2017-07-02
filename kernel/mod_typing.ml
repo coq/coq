@@ -74,12 +74,13 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	 as long as they have the right type *)
       let uctx = Declareops.universes_of_constant (opaque_tables env) cb in
       let uctx = (* Context of the spec *)
-	if cb.const_polymorphic then
-	  Univ.instantiate_univ_context uctx
-	else uctx
+        match cb.const_universes with
+        | Monomorphic_const _ -> uctx
+        | Polymorphic_const auctx ->
+	  Univ.instantiate_univ_context auctx
       in
       let c', univs, ctx' = 
-	if not cb.const_polymorphic then
+	if not (Declareops.constant_is_polymorphic cb) then
 	  let env' = Environ.push_context ~strict:true uctx env' in
 	  let env' = Environ.push_context ~strict:true ctx env' in
 	  let c',cst = match cb.const_body with
@@ -92,7 +93,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	    | Def cs ->
 	       let c' = Mod_subst.force_constr cs in
 	         c, Reduction.infer_conv env' (Environ.universes env') c c'
-	  in c', ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
+	  in c', Monomorphic_const ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
 	else
 	  let cus, ccst = Univ.UContext.dest uctx in
 	  let newus, cst = Univ.UContext.dest ctx in
@@ -122,21 +123,17 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	  in
 	    if not (Univ.Constraint.is_empty cst) then
 	      error_incorrect_with_constraint lab;
-	    let subst, ctx = Univ.abstract_universes true ctx in
-	      Vars.subst_univs_level_constr subst c, ctx, Univ.ContextSet.empty
+	    let subst, ctx = Univ.abstract_universes ctx in
+	      Vars.subst_univs_level_constr subst c, Polymorphic_const ctx, Univ.ContextSet.empty
       in
       let def = Def (Mod_subst.from_val c') in
 (*      let ctx' = Univ.UContext.make (newus, cst) in *)
-      let univs =
-        if cb.const_polymorphic then Some cb.const_universes
-        else None
-      in
       let cb' =
 	{ cb with
 	  const_body = def;
-          const_universes = ctx ;
+          const_universes = univs ;
 	  const_body_code = Option.map Cemitcodes.from_val
-                              (compile_constant_body env' univs def) }
+                              (compile_constant_body env' cb.const_universes def) }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'
     else

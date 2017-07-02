@@ -968,7 +968,23 @@ struct
       else Level.compare v v'
 end
 
-module Constraint = Set.Make(UConstraintOrd)
+let pr_constraint_type op = 
+  let op_str = match op with
+    | Lt -> " < "
+    | Le -> " <= "
+    | Eq -> " = "
+  in str op_str
+
+module Constraint = 
+struct 
+  module S = Set.Make(UConstraintOrd)
+  include S
+
+  let pr prl c =
+    fold (fun (u1,op,u2) pp_std ->
+      pp_std ++ prl u1 ++ pr_constraint_type op ++
+	prl u2 ++ fnl () )  c (str "")
+end
 
 let empty_constraint = Constraint.empty
 let merge_constraints c g =
@@ -1056,7 +1072,9 @@ module Instance : sig
     val subst_fn : universe_level_subst_fn -> t -> t
     val subst : universe_level_subst -> t -> t
     val pr : t -> Pp.std_ppcmds
-    val check_eq : t check_function 
+    val check_eq : t check_function
+    val length : t -> int
+    val append : t -> t -> t
 end = 
 struct
   type t = Level.t array
@@ -1099,6 +1117,7 @@ struct
 	(* [h] must be positive. *)
 	let h = !accu land 0x3FFFFFFF in
 	  h
+
   end
 
   module HInstance = Hashcons.Make(HInstancestruct)
@@ -1135,6 +1154,10 @@ struct
 	   (Int.equal i (Array.length t1)) || (check_eq_level g t1.(i) t2.(i) && aux (i + 1))
 	 in aux 0)
 
+  let length = Array.length
+
+  let append = Array.append
+  
 end
 
 type universe_instance = Instance.t
@@ -1152,9 +1175,62 @@ struct
   let make x = x
   let instance (univs, cst) = univs
   let constraints (univs, cst) = cst
+
+  let is_empty (univs, cst) = Instance.is_empty univs && Constraint.is_empty cst
+  let pr prl (univs, cst as ctx) =
+    if is_empty ctx then mt() else
+      h 0 (Instance.pr univs ++ str " |= ") ++ h 0 (v 0 (Constraint.pr prl cst))
 end
 
 type universe_context = UContext.t
+
+module AUContext = UContext
+
+type abstract_universe_context = AUContext.t
+
+module CumulativityInfo =
+struct
+  type t = universe_context * universe_context
+
+  let make x =
+    if (Array.length (UContext.instance (snd x))) =
+       (Array.length (UContext.instance (fst x))) * 2 then x
+    else anomaly (Pp.str "Invalid subtyping information encountered!")
+
+  let empty = (UContext.empty, UContext.empty)
+
+  let halve_context ctx =
+    let len = Array.length ctx in
+    let halflen = len / 2 in
+    ((Array.sub ctx 0 halflen), (Array.sub ctx halflen halflen))
+
+  let univ_context (univcst, subtypcst) = univcst
+  let subtyp_context (univcst, subtypcst) = subtypcst
+
+  let create_trivial_subtyping ctx ctx' =
+    CArray.fold_left_i
+      (fun i cst l -> Constraint.add (l, Eq, Array.get ctx' i) cst)
+      Constraint.empty ctx
+
+  let from_universe_context univcst freshunivs =
+    let inst = (UContext.instance univcst) in
+    assert (Array.length freshunivs = Array.length inst);
+    (univcst, UContext.make (Array.append inst freshunivs,
+                             create_trivial_subtyping inst freshunivs))
+
+  let subtyping_other_instance (univcst, subtypcst) =
+    let (_, ctx') = (halve_context (UContext.instance subtypcst)) in ctx'
+  
+  let subtyping_susbst (univcst, subtypcst) =
+    let (ctx, ctx') = (halve_context (UContext.instance subtypcst)) in
+    Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
+
+end
+
+type cumulativity_info = CumulativityInfo.t
+
+module ACumulativityInfo = CumulativityInfo
+type abstract_cumulativity_info = ACumulativityInfo.t
 
 module ContextSet =
 struct
@@ -1165,6 +1241,8 @@ struct
   let make ctx cst = (ctx, cst)
 end
 type universe_context_set = ContextSet.t
+
+
 
 (** Substitutions. *)
 
@@ -1210,7 +1288,10 @@ let subst_instance_constraint s (u,d,v as c) =
 let subst_instance_constraints s csts =
   Constraint.fold 
     (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
-    csts Constraint.empty 
+    csts Constraint.empty
+
+let subst_instance_context inst (inner_inst, inner_constr) =
+  (inner_inst, subst_instance_constraints inst inner_constr)
 
 let make_abstract_instance (ctx, _) = 
   Array.mapi (fun i l -> Level.var i) ctx
@@ -1219,8 +1300,8 @@ let make_abstract_instance (ctx, _) =
 let instantiate_univ_context (ctx, csts) = 
   (ctx, subst_instance_constraints ctx csts)
 
-let instantiate_univ_constraints u (_, csts) = 
-  subst_instance_constraints u csts
+let instantiate_cumulativity_info (ctx, ctx') = 
+  (instantiate_univ_context ctx, instantiate_univ_context ctx')
 
 (** With level to universe substitutions. *)
 type universe_subst_fn = universe_level -> universe
@@ -1261,6 +1342,10 @@ let merge_context_set strict ctx g =
   in merge_constraints (ContextSet.constraints ctx) g
 
 (** Pretty-printing *)
+
+let pr_constraints prl = Constraint.pr prl
+    
+let pr_universe_context = UContext.pr
 
 let pr_arc = function
   | _, Canonical {univ=u; lt=[]; le=[]} ->

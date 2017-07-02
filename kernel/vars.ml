@@ -319,35 +319,33 @@ let subst_instance_constr subst c =
   if Univ.Instance.is_empty subst then c
   else
     let f u = Univ.subst_instance_instance subst u in
-    let changed = ref false in
-    let rec aux t = 
+    let rec aux t =
       match kind t with
-      | Const (c, u) -> 
-	if Univ.Instance.is_empty u then t
-	else 
-          let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; mkConstU (c, u'))
+      | Const (c, u) ->
+       if Univ.Instance.is_empty u then t
+       else
+          let u' = f u in
+           if u' == u then t
+           else (mkConstU (c, u'))
       | Ind (i, u) ->
-	if Univ.Instance.is_empty u then t
-	else 
-	  let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; mkIndU (i, u'))
+       if Univ.Instance.is_empty u then t
+       else
+         let u' = f u in
+           if u' == u then t
+           else (mkIndU (i, u'))
       | Construct (c, u) ->
-	if Univ.Instance.is_empty u then t
-	else 
-          let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; mkConstructU (c, u'))
-      | Sort (Sorts.Type u) -> 
+       if Univ.Instance.is_empty u then t
+       else
+          let u' = f u in
+           if u' == u then t
+           else (mkConstructU (c, u'))
+      | Sort (Sorts.Type u) ->
          let u' = Univ.subst_instance_universe subst u in
-	   if u' == u then t else 
-	     (changed := true; mkSort (Sorts.sort_of_univ u'))
+          if u' == u then t else
+            (mkSort (Sorts.sort_of_univ u'))
       | _ -> Constr.map aux t
     in
-    let c' = aux c in
-      if !changed then c' else c
+    aux c
 
 (* let substkey = Profile.declare_profile "subst_instance_constr";; *)
 (* let subst_instance_constr inst c = Profile.profile2 substkey subst_instance_constr inst c;; *)

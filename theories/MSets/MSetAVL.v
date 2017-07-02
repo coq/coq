@@ -31,7 +31,7 @@
     code after extraction.
 *)
 
-Require Import MSetInterface MSetGenTree BinInt Int.
+Require Import FunInd MSetInterface MSetGenTree BinInt Int.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

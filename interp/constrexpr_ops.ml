@@ -45,8 +45,11 @@ let names_of_local_binders bl =
 (**********************************************************************)
 (* Functions on constr_expr *)
 
+(* Note: redundant Numeral representations such as -0 and +0 (or different
+   numbers of leading zeros) are considered different here. *)
+
 let prim_token_eq t1 t2 = match t1, t2 with
-| Numeral i1, Numeral i2 -> Bigint.equal i1 i2
+| Numeral (n1,s1), Numeral (n2,s2) -> String.equal n1 n2 && s1 == s2
 | String s1, String s2 -> String.equal s1 s2
 | _ -> false
 

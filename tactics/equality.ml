@@ -50,13 +50,12 @@ module NamedDecl = Context.Named.Declaration
 
 let discriminate_introduction = ref true
 
-let discr_do_intro () =
-  !discriminate_introduction && Flags.version_strictly_greater Flags.V8_2
+let discr_do_intro () = !discriminate_introduction
 
 open Goptions
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "automatic introduction of hypotheses by discriminate";
       optkey   = ["Discriminate";"Introduction"];
       optread  = (fun () -> !discriminate_introduction);
@@ -64,13 +63,11 @@ let _ =
 
 let injection_pattern_l2r_order = ref true
 
-let use_injection_pattern_l2r_order () =
-  !injection_pattern_l2r_order
-  && Flags.version_strictly_greater Flags.V8_4
+let use_injection_pattern_l2r_order () = !injection_pattern_l2r_order
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "injection left-to-right pattern order and clear by default when with introduction pattern";
       optkey   = ["Injection";"L2R";"Pattern";"Order"];
       optread  = (fun () -> !injection_pattern_l2r_order) ;
@@ -356,7 +353,6 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
   if (is_global Coqlib.glob_eq hdcncl ||
       (is_global Coqlib.glob_jmeq hdcncl &&
 	 jmeq_same_dom gl ot)) && not dep
-    || Flags.version_less_or_equal Flags.V8_2
   then
     let c = 
       match EConstr.kind sigma hdcncl with 
@@ -1418,7 +1414,7 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
             "" else
             " You can try to use option Set Keep Proof Equalities." in
      tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
-  | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
+  | Inr [([],_,_)] ->
      tclZEROMSG (str"Nothing to inject.")
   | Inr posns ->
       inject_at_positions env sigma l2r u eq_clause posns
@@ -1769,13 +1765,10 @@ type subst_tactic_flags = {
   rewrite_dependent_proof : bool
 }
 
-let default_subst_tactic_flags () =
-  if Flags.version_strictly_greater Flags.V8_2 then
-    { only_leibniz = false; rewrite_dependent_proof = true }
-  else
-    { only_leibniz = true; rewrite_dependent_proof = false }
+let default_subst_tactic_flags =
+  { only_leibniz = false; rewrite_dependent_proof = true }
 
-let subst_all ?(flags=default_subst_tactic_flags ()) () =
+let subst_all ?(flags=default_subst_tactic_flags) () =
 
   if !regular_subst_tactic then
 

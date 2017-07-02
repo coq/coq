@@ -13,13 +13,14 @@ open Hipattern
 open Names
 open Geninterp
 open Misctypes
+open Ltac_plugin
 open Tacexpr
 open Tacinterp
 open Util
 open Tacticals.New
 open Proofview.Notations
 
-let tauto_plugin = "tauto"
+let tauto_plugin = "tauto_plugin"
 let () = Mltop.add_known_module tauto_plugin
 
 let assoc_var s ist =
@@ -66,7 +67,7 @@ let negation_unfolding = ref true
 (* Whether inner iff are unfolded *)
 let iff_unfolding = ref false
 
-let unfold_iff () = !iff_unfolding || Flags.version_less_or_equal Flags.V8_2
+let unfold_iff () = !iff_unfolding
 
 open Goptions
 let _ =
@@ -79,7 +80,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "unfolding of iff in intuition";
       optkey   = ["Intuition";"Iff";"Unfolding"];
       optread  = (fun () -> !iff_unfolding);

@@ -315,6 +315,67 @@ end
 
 type universe_context = UContext.t
 
+module AUContext :
+sig 
+  type t
+
+  val empty : t
+
+  val instance : t -> Instance.t
+                        
+  val size : t -> int
+
+  (** Keeps the order of the instances *)
+  val union : t -> t -> t
+
+end
+
+type abstract_universe_context = AUContext.t
+
+(** Universe info for inductive types: A context of universe levels
+    with universe constraints, representing local universe variables
+    and constraints, together with a context of universe levels with
+    universe constraints, representing conditions for subtyping used
+    for inductive types.
+
+    This data structure maintains the invariant that the context for
+    subtyping constraints is exactly twice as big as the context for
+    universe constraints. *)
+module CumulativityInfo :
+sig
+  type t
+
+  val make : universe_context * universe_context -> t
+
+  val empty : t
+  val is_empty : t -> bool
+
+  val univ_context : t -> universe_context
+  val subtyp_context : t -> universe_context
+
+  (** This function takes a universe context representing constraints
+      of an inductive and a Instance.t of fresh universe names for the
+      subtyping (with the same length as the context in the given
+      universe context) and produces a UInfoInd.t that with the
+      trivial subtyping relation. *)
+  val from_universe_context : universe_context -> universe_instance -> t
+
+  val subtyping_susbst : t -> universe_level_subst
+
+end
+
+type cumulativity_info = CumulativityInfo.t
+
+module ACumulativityInfo :
+sig
+  type t
+
+  val univ_context : t -> abstract_universe_context
+  val subtyp_context : t -> abstract_universe_context
+end
+
+type abstract_cumulativity_info = ACumulativityInfo.t
+
 (** Universe contexts (as sets) *)
 
 module ContextSet :
@@ -365,6 +426,8 @@ val is_empty_level_subst : universe_level_subst -> bool
 val subst_univs_level_level : universe_level_subst -> universe_level -> universe_level
 val subst_univs_level_universe : universe_level_subst -> universe -> universe
 val subst_univs_level_constraints : universe_level_subst -> constraints -> constraints
+val subst_univs_level_abstract_universe_context :
+  universe_level_subst -> abstract_universe_context -> abstract_universe_context
 val subst_univs_level_instance : universe_level_subst -> universe_instance -> universe_instance
 
 (** Level to universe substitutions. *)
@@ -379,23 +442,31 @@ val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
 (** Substitution of instances *)
 val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
 val subst_instance_universe : universe_instance -> universe -> universe
-val subst_instance_constraints : universe_instance -> constraints -> constraints
+val subst_instance_context : universe_instance -> abstract_universe_context -> universe_context
 
 val make_instance_subst : universe_instance -> universe_level_subst
 val make_inverse_instance_subst : universe_instance -> universe_level_subst
 
-val abstract_universes : bool -> universe_context -> universe_level_subst * universe_context
+val abstract_universes : universe_context -> universe_level_subst * abstract_universe_context
+
+val abstract_cumulativity_info : cumulativity_info -> universe_level_subst * abstract_cumulativity_info
+
+val make_abstract_instance : abstract_universe_context -> universe_instance
 
 (** Get the instantiated graph. *)
-val instantiate_univ_context : universe_context -> universe_context
+val instantiate_univ_context : abstract_universe_context -> universe_context
 
-val instantiate_univ_constraints : universe_instance -> universe_context -> constraints
+(** Get the instantiated graphs for both universe constraints and subtyping constraints. *)
+val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_info
 
 (** {6 Pretty-printing of universes. } *)
 
 val pr_constraint_type : constraint_type -> Pp.std_ppcmds
 val pr_constraints : (Level.t -> Pp.std_ppcmds) -> constraints -> Pp.std_ppcmds
 val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> universe_context -> Pp.std_ppcmds
+val pr_cumulativity_info : (Level.t -> Pp.std_ppcmds) -> cumulativity_info -> Pp.std_ppcmds
+val pr_abstract_universe_context : (Level.t -> Pp.std_ppcmds) -> abstract_universe_context -> Pp.std_ppcmds
+val pr_abstract_cumulativity_info : (Level.t -> Pp.std_ppcmds) -> abstract_cumulativity_info -> Pp.std_ppcmds
 val pr_universe_context_set : (Level.t -> Pp.std_ppcmds) -> universe_context_set -> Pp.std_ppcmds
 val explain_universe_inconsistency : (Level.t -> Pp.std_ppcmds) -> 
   univ_inconsistency -> Pp.std_ppcmds
@@ -409,7 +480,10 @@ val hcons_univ : universe -> universe
 val hcons_constraints : constraints -> constraints
 val hcons_universe_set : universe_set -> universe_set
 val hcons_universe_context : universe_context -> universe_context
+val hcons_abstract_universe_context : abstract_universe_context -> abstract_universe_context
 val hcons_universe_context_set : universe_context_set -> universe_context_set 
+val hcons_cumulativity_info : cumulativity_info -> cumulativity_info
+val hcons_abstract_cumulativity_info : abstract_cumulativity_info -> abstract_cumulativity_info
 
 (******)
 
@@ -419,3 +493,6 @@ val eq_levels : universe_level -> universe_level -> bool
 
 (** deprecated: Equality of formal universe expressions. *)
 val equal_universes : universe -> universe -> bool
+
+(** Universes of constraints *)
+val universes_of_constraints : constraints -> universe_set

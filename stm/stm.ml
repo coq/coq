@@ -476,7 +476,7 @@ end = struct (* {{{ *)
   let mk_branch_name { expr = x } = Branch.make
     (let rec aux x = match x with
     | VernacDefinition (_,((_,i),_),_) -> Names.string_of_id i
-    | VernacStartTheoremProof (_,[Some ((_,i),_),_],_) -> Names.string_of_id i
+    | VernacStartTheoremProof (_,[Some ((_,i),_),_]) -> Names.string_of_id i
     | VernacTime (_, e)
     | VernacTimeout (_, e) -> aux e
     | _ -> "branch" in aux x)
@@ -931,7 +931,7 @@ let show_script ?proof () =
   try
     let prf =
       try match proof with
-      | None -> Some (Pfedit.get_current_proof_name ())
+      | None -> Some (Proof_global.get_current_proof_name ())
       | Some (p,_) -> Some (p.Proof_global.id)
       with Proof_global.NoCurrentProof -> None
     in
@@ -1672,7 +1672,7 @@ end (* }}} *)
 
 and TacTask : sig
 
-  type output = Constr.constr * Evd.evar_universe_context
+  type output = (Constr.constr * Evd.evar_universe_context) option
   type task = {
     t_state    : Stateid.t;
     t_state_fb : Stateid.t;
@@ -1681,13 +1681,12 @@ and TacTask : sig
     t_goal     : Goal.goal;
     t_kill     : unit -> unit;
     t_name     : string }  
-  exception NoProgress
 
   include AsyncTaskQueue.Task with type task := task
 
 end = struct (* {{{ *)
 
-  type output = Constr.constr * Evd.evar_universe_context
+  type output = (Constr.constr * Evd.evar_universe_context) option
   
   let forward_feedback msg = Hooks.(call forward_feedback msg)
 
@@ -1709,10 +1708,9 @@ end = struct (* {{{ *)
     r_name     : string }
 
   type response =
-    | RespBuiltSubProof of output
+    | RespBuiltSubProof of (Constr.constr * Evd.evar_universe_context)
     | RespError of Pp.std_ppcmds
     | RespNoProgress
-  exception NoProgress
 
   let name = ref "tacworker"
   let extra_env () = [||]
@@ -1734,10 +1732,9 @@ end = struct (* {{{ *)
           
   let use_response _ { t_assign; t_state; t_state_fb; t_kill } resp =
     match resp with
-    | RespBuiltSubProof o -> t_assign (`Val o); `Stay ((),[])
+    | RespBuiltSubProof o -> t_assign (`Val (Some o)); `Stay ((),[])
     | RespNoProgress ->
-        let e = (NoProgress, Exninfo.null) in
-        t_assign (`Exn e);
+        t_assign (`Val None);
         t_kill ();
         `Stay ((),[])
     | RespError msg ->
@@ -1848,8 +1845,8 @@ end = struct (* {{{ *)
           else tclUNIT ()
         else
           let open Notations in
-          try
-            let pt, uc = Future.join f in
+          match Future.join f with
+          | Some (pt, uc) ->
             stm_pperr_endline (fun () -> hov 0 (
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
@@ -1857,7 +1854,7 @@ end = struct (* {{{ *)
             (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
               (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
               Tactics.exact_no_check (EConstr.of_constr pt))
-          with TacTask.NoProgress ->
+          | None ->
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
         end)
       in
@@ -2046,7 +2043,8 @@ let collect_proof keep cur hd brkind id =
    | `ASync(_,pua,_,name,_) -> `Sync (name,pua,why) in
  let check_policy rc = if async_policy () then rc else make_sync `Policy rc in
  match cur, (VCS.visit id).step, brkind with
- | (parent, { expr = VernacExactProof _ }), `Fork _, _ ->
+ | (parent, { expr = VernacExactProof _ }), `Fork _, _
+ | (parent, { expr = VernacTime (_, VernacExactProof _) }), `Fork _, _ ->
      `Sync (no_name,None,`Immediate)
  | _, _, { VCS.kind = `Edit _ }  -> check_policy (collect (Some cur) [] id)
  | _ ->
@@ -2519,23 +2517,27 @@ let process_transaction ?(newtip=Stateid.fresh ())
           anomaly(str"classifier: VtBack + VtLater must imply part_of_script.")
 
       (* Query *)
-      | VtQuery (false,(report_id,route)), VtNow ->
-          (try stm_vernac_interp report_id ~route x
-           with e ->
-             let e = CErrors.push e in
-             Exninfo.iraise (State.exn_on ~valid:Stateid.dummy report_id e)); `Ok
-      | VtQuery (true,(report_id,_)), w ->
-          assert(Stateid.equal report_id Stateid.dummy);
+      | VtQuery (false, route), VtNow ->
+        begin
+          let query_sid = VCS.cur_tip () in
+          try stm_vernac_interp ~route (VCS.cur_tip ()) x
+          with e ->
+            let e = CErrors.push e in
+            Exninfo.iraise (State.exn_on ~valid:Stateid.dummy query_sid e)
+        end; `Ok
+      (* Part of the script commands don't set the query route *)
+      | VtQuery (true, _route), w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
             if !Flags.async_proofs_full then `QueryQueue (ref false)
             else if Flags.(!compilation_mode = BuildVio) &&
                     VCS.((get_branch head).kind = `Master) &&
                     may_pierce_opaque x
-                 then `SkipQueue 
+                 then `SkipQueue
             else `MainQueue in
           VCS.commit id (mkTransCmd x [] false queue);
           Backtrack.record (); if w == VtNow then finish (); `Ok
+
       | VtQuery (false,_), VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script.")
 
@@ -2765,7 +2767,7 @@ type focus = {
   tip : Stateid.t
 }
 
-let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
+let query ~at ~route s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
@@ -2778,7 +2780,7 @@ let query ~at ?(report_with=(Stateid.dummy,default_route)) s =
     | VtStm (w,_), _ ->
        ignore(process_transaction aast (VtStm (w,false), VtNow))
     | _ ->
-       ignore(process_transaction aast (VtQuery (false,report_with), VtNow)))
+       ignore(process_transaction aast (VtQuery (false, route), VtNow)))
   s
 
 let edit_at id =

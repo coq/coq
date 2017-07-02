@@ -1,7 +1,7 @@
 -R theories test
 -R src test
 -I src
--arg "-compat 8.4"
+-arg "-w default"
 
 src/test_plugin.mlpack
 src/test.ml4

@@ -114,8 +114,8 @@ let instance_hook k info global imps ?hook cst =
 let declare_instance_constant k info global imps ?hook id pl poly evm term termtype =
   let kind = IsDefinition Instance in
   let evm = 
-    let levels = Univ.LSet.union (Universes.universes_of_constr termtype) 
-				 (Universes.universes_of_constr term) in
+    let levels = Univ.LSet.union (Univops.universes_of_constr termtype) 
+				 (Univops.universes_of_constr term) in
     Evd.restrict_universe_context evm levels 
   in
   let pl, uctx = Evd.universe_context ?names:pl evm in
@@ -341,7 +341,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
 		if not (Option.is_empty term) then
                   let init_refine =
                     Tacticals.New.tclTHENLIST [
-                      Refine.refine (fun evm -> (evm,EConstr.of_constr (Option.get term)));
+                      Refine.refine ~typecheck:false (fun evm -> (evm,EConstr.of_constr (Option.get term)));
                       Proofview.Unsafe.tclNEWGOALS gls;
                       Tactics.New.reduce_after_refine;
                     ]
@@ -417,9 +417,11 @@ let context poly l =
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~poly ~univs:ctx ~types:t b in
         let hook = Lemmas.mk_hook (fun _ gr -> gr) in
-        let _ = Command.declare_definition id decl entry [] [] hook in
+        let _ = DeclareDef.declare_definition id decl entry [] [] hook in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
-      let () = uctx := Univ.ContextSet.empty in
 	status && nstatus
-  in List.fold_left fn true (List.rev ctx)
+  in 
+  if Lib.sections_are_opened () then
+    Declare.declare_universe_context poly !uctx;
+  List.fold_left fn true (List.rev ctx)

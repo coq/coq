@@ -25,7 +25,6 @@ open Inductiveops
 open Reductionops
 open Globnames
 open Evd
-open Pfedit
 open Tacred
 open Genredexpr
 open Tacmach.New
@@ -64,11 +63,10 @@ let dependent_propositions_elimination = ref true
 
 let use_dependent_propositions_elimination () =
   !dependent_propositions_elimination
-  && Flags.version_strictly_greater Flags.V8_2
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "dependent-propositions-elimination tactic";
       optkey   = ["Dependent";"Propositions";"Elimination"];
       optread  = (fun () -> !dependent_propositions_elimination) ;
@@ -142,11 +140,10 @@ let bracketing_last_or_and_intro_pattern = ref true
 
 let use_bracketing_last_or_and_intro_pattern () =
   !bracketing_last_or_and_intro_pattern
-  && Flags.version_strictly_greater Flags.V8_4
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "bracketing last or-and introduction pattern";
       optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
       optread  = (fun () -> !bracketing_last_or_and_intro_pattern);
@@ -163,7 +160,7 @@ let _ =
 (** This tactic creates a partial proof realizing the introduction rule, but
     does not check anything. *)
 let unsafe_intro env store decl b =
-  Refine.refine ~unsafe:true begin fun sigma ->
+  Refine.refine ~typecheck:false begin fun sigma ->
     let ctx = named_context_val env in
     let nctx = push_named_context_val decl ctx in
     let inst = List.map (NamedDecl.get_id %> mkVar) (named_context env) in
@@ -200,7 +197,7 @@ let convert_concl ?(check=true) ty k =
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
     let conclty = Proofview.Goal.concl gl in
-    Refine.refine ~unsafe:true begin fun sigma ->
+    Refine.refine ~typecheck:false begin fun sigma ->
       let sigma =
         if check then begin
           ignore (Typing.unsafe_type_of env sigma ty);
@@ -222,7 +219,7 @@ let convert_hyp ?(check=true) d =
     let store = Proofview.Goal.extra gl in
     let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
-    Refine.refine ~unsafe:true begin fun sigma ->
+    Refine.refine ~typecheck:false begin fun sigma ->
       Evarutil.new_evar env sigma ~principal:true ~store ty
     end
   end
@@ -293,7 +290,7 @@ let clear_gen fail = function
     in
     let env = reset_with_named_context hyps env in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
-    (Refine.refine ~unsafe:true begin fun sigma ->
+    (Refine.refine ~typecheck:false begin fun sigma ->
       Evarutil.new_evar env sigma ~principal:true concl
     end)
   end
@@ -323,7 +320,7 @@ let move_hyp id dest =
     let sign = named_context_val env in
     let sign' = move_hyp_in_named_context sigma id dest sign in
     let env = reset_with_named_context sign' env in
-    Refine.refine ~unsafe:true begin fun sigma ->
+    Refine.refine ~typecheck:false begin fun sigma ->
       Evarutil.new_evar env sigma ~principal:true ~store ty
     end
   end
@@ -377,7 +374,7 @@ let rename_hyp repl =
       let nconcl = subst concl in
       let nctx = val_of_named_context nhyps in
       let instance = List.map (NamedDecl.get_id %> mkVar) hyps in
-      Refine.refine ~unsafe:true begin fun sigma ->
+      Refine.refine ~typecheck:false begin fun sigma ->
         Evarutil.new_evar_instance nctx sigma nconcl ~principal:true ~store instance
       end
     end
@@ -527,7 +524,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
     mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
-  Refine.refine begin fun sigma ->
+  Refine.refine ~typecheck:false begin fun sigma ->
     let (sigma, evs) = mk_holes nenv sigma (List.map pi3 all) in
     let ids = List.map pi1 all in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
@@ -543,7 +540,7 @@ end
 let fix ido n = match ido with
   | None ->
     Proofview.Goal.enter begin fun gl ->
-      let name = Pfedit.get_current_proof_name () in
+      let name = Proof_global.get_current_proof_name () in
       let id = new_fresh_id [] name gl in
       mutual_fix id n [] 0
     end
@@ -579,7 +576,7 @@ let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
     mk_sign (push_named_context_val (LocalAssum (f, ar)) sign) oth
   in
   let nenv = reset_with_named_context (mk_sign (named_context_val env) all) env in
-  Refine.refine begin fun sigma ->
+  Refine.refine ~typecheck:false begin fun sigma ->
     let (ids, types) = List.split all in
     let (sigma, evs) = mk_holes nenv sigma types in
     let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
@@ -594,7 +591,7 @@ end
 let cofix ido = match ido with
   | None ->
     Proofview.Goal.enter begin fun gl ->
-      let name = Pfedit.get_current_proof_name () in
+      let name = Proof_global.get_current_proof_name () in
       let id = new_fresh_id [] name gl in
       mutual_cofix id [] 0
     end
@@ -1140,7 +1137,7 @@ let rec intros_move = function
 let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
   Pretyping.solve_unification_constraints = true;
-  Pretyping.use_hook = solve_by_implicit_tactic ();
+  Pretyping.use_hook = Pfedit.solve_by_implicit_tactic ();
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
 
@@ -1225,7 +1222,7 @@ let cut c =
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_of_hyps gl) in
       (** Backward compat: normalize [c]. *)
       let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
-      Refine.refine ~unsafe:true begin fun h ->
+      Refine.refine ~typecheck:false begin fun h ->
         let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
         let (h, x) = Evarutil.new_evar env h c in
         let f = mkLetIn (Name id, x, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
@@ -1666,7 +1663,7 @@ let solve_remaining_apply_goals =
       if Typeclasses.is_class_type evd concl then
         let evd', c' = Typeclasses.resolve_one_typeclass env evd concl in
         Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd')
-        (Refine.refine ~unsafe:true (fun h -> (h,c')))
+        (Refine.refine ~typecheck:false (fun h -> (h,c')))
 	else Proofview.tclUNIT ()
     with Not_found -> Proofview.tclUNIT ()
   else Proofview.tclUNIT ()
@@ -1914,7 +1911,7 @@ let cut_and_apply c =
       | Prod (_,c1,c2) when Vars.noccurn sigma 1 c2 ->
         let concl = Proofview.Goal.concl gl in
         let env = Tacmach.New.pf_env gl in
-        Refine.refine begin fun sigma ->
+        Refine.refine ~typecheck:false begin fun sigma ->
           let typ = mkProd (Anonymous, c2, concl) in
           let (sigma, f) = Evarutil.new_evar env sigma typ in
           let (sigma, x) = Evarutil.new_evar env sigma c1 in
@@ -1934,7 +1931,7 @@ let cut_and_apply c =
 (* let refine_no_check = Profile.profile2 refine_no_checkkey refine_no_check *)
 
 let exact_no_check c =
-  Refine.refine ~unsafe:true (fun h -> (h,c))
+  Refine.refine ~typecheck:false (fun h -> (h,c))
 
 let exact_check c =
   Proofview.Goal.enter begin fun gl ->
@@ -1959,7 +1956,7 @@ let native_cast_no_check c = cast_no_check Term.NATIVEcast c
 let exact_proof c =
   let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
-  Refine.refine begin fun sigma ->
+  Refine.refine ~typecheck:false begin fun sigma ->
     let (c, ctx) = Constrintern.interp_casted_constr (pf_env gl) sigma c (pf_concl gl) in
     let c = EConstr.of_constr c in
     let sigma = Evd.merge_universe_context sigma ctx in
@@ -2076,7 +2073,7 @@ let clear_body ids =
         Tacticals.New.tclZEROMSG msg
     in
     check <*>
-    Refine.refine ~unsafe:true begin fun sigma ->
+    Refine.refine ~typecheck:false begin fun sigma ->
       Evarutil.new_evar env sigma ~principal:true concl
     end
   end
@@ -2128,7 +2125,7 @@ let apply_type newcl args =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let store = Proofview.Goal.extra gl in
-    Refine.refine begin fun sigma ->
+    Refine.refine ~typecheck:false begin fun sigma ->
       let newcl = nf_betaiota sigma newcl (* As in former Logic.refine *) in
       let (sigma, ev) =
         Evarutil.new_evar env sigma ~principal:true ~store newcl in
@@ -2149,7 +2146,7 @@ let bring_hyps hyps =
       let concl = Tacmach.New.pf_concl gl in
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
       let args = Array.of_list (Context.Named.to_instance mkVar hyps) in
-      Refine.refine begin fun sigma ->
+      Refine.refine ~typecheck:false begin fun sigma ->
         let (sigma, ev) =
           Evarutil.new_evar env sigma ~principal:true ~store newcl in
         (sigma, mkApp (ev, args))
@@ -2888,7 +2885,7 @@ let new_generalize_gen_let lconstr =
 	0 lconstr (concl, sigma, [])
     in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-	(Refine.refine begin fun sigma ->
+	(Refine.refine ~typecheck:false begin fun sigma ->
           let (sigma, ev) = Evarutil.new_evar env sigma ~principal:true newcl in
           (sigma, applist (ev, args))
 	 end)
@@ -3598,7 +3595,7 @@ let mk_term_eq homogeneous env sigma ty t ty' t' =
 
 let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
   let open Context.Rel.Declaration in
-  Refine.refine begin fun sigma ->
+  Refine.refine ~typecheck:false begin fun sigma ->
   let eqslen = List.length eqs in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
   let sigma, abshypeq, abshypt =
@@ -4418,7 +4415,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
           (* and destruct has side conditions first *)
           Tacticals.New.tclTHENLAST)
       (Tacticals.New.tclTHENLIST [
-        Refine.refine ~unsafe:true begin fun sigma ->
+        Refine.refine ~typecheck:false begin fun sigma ->
           let b = not with_evars && with_eq != None in
           let (sigma, c) = use_bindings env sigma elim b (c0,lbind) t0 in
           let t = Retyping.get_type_of env sigma c in
@@ -4441,7 +4438,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       let env = reset_with_named_context sign env in
       let tac =
       Tacticals.New.tclTHENLIST [
-        Refine.refine ~unsafe:true begin fun sigma ->
+        Refine.refine ~typecheck:false begin fun sigma ->
           mkletin_goal env sigma store with_eq true (id,lastlhyp,ccl,c) None
         end;
         tac
@@ -5032,11 +5029,11 @@ let name_op_to_name name_op object_kind suffix =
   let default_gk = (Global, false, object_kind) in
   match name_op with
     | Some s ->
-      (try let _, gk, _ = current_proof_statement () in s, gk
+      (try let _, gk, _ = Pfedit.current_proof_statement () in s, gk
        with NoCurrentProof -> s, default_gk)
     | None   ->
       let name, gk =
-	try let name, gk, _ = current_proof_statement () in name, gk
+	try let name, gk, _ = Pfedit.current_proof_statement () in name, gk
 	with NoCurrentProof -> anon_id, default_gk in
       add_suffix name suffix, gk
 
@@ -5101,7 +5098,7 @@ module New = struct
 	     rZeta=false;rDelta=false;rConst=[]})
       {onhyps; concl_occs=AllOccurrences }
 
-  let refine ?unsafe c =
-    Refine.refine ?unsafe c <*>
+  let refine ~typecheck c =
+    Refine.refine ~typecheck c <*>
     reduce_after_refine
 end

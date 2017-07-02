@@ -725,8 +725,11 @@ struct
       pp_std ++ prl u1 ++ pr_constraint_type op ++
 	prl u2 ++ fnl () )  c (str "")
 
+  let universes_of c =
+    fold (fun (u1, op, u2) unvs -> LSet.add u2 (LSet.add u1 unvs)) c LSet.empty
 end
 
+let universes_of_constraints = Constraint.universes_of
 let empty_constraint = Constraint.empty
 let union_constraint = Constraint.union
 let eq_constraint = Constraint.equal
@@ -1028,6 +1031,82 @@ end
 type universe_context = UContext.t
 let hcons_universe_context = UContext.hcons
 
+module AUContext = UContext
+
+type abstract_universe_context = AUContext.t
+let hcons_abstract_universe_context = AUContext.hcons
+
+(** Universe info for cumulative inductive types:
+    A context of universe levels
+    with universe constraints, representing local universe variables
+    and constraints, together with a context of universe levels with
+    universe constraints, representing conditions for subtyping used
+    for inductive types.
+
+    This data structure maintains the invariant that the context for
+    subtyping constraints is exactly twice as big as the context for
+    universe constraints. *)
+module CumulativityInfo =
+struct
+  type t = universe_context * universe_context
+
+  let make x =
+    if (Instance.length (UContext.instance (snd x))) =
+       (Instance.length (UContext.instance (fst x))) * 2 then x
+    else anomaly (Pp.str "Invalid subtyping information encountered!")
+
+  let empty = (UContext.empty, UContext.empty)
+  let is_empty (univcst, subtypcst) = UContext.is_empty univcst && UContext.is_empty subtypcst
+
+  let halve_context ctx =
+    let len = Array.length (Instance.to_array ctx) in
+    let halflen = len / 2 in
+    (Instance.of_array (Array.sub (Instance.to_array ctx) 0 halflen),
+     Instance.of_array (Array.sub (Instance.to_array ctx) halflen halflen))
+
+  let pr prl (univcst, subtypcst) =
+    if UContext.is_empty univcst then mt() else
+      let (ctx, ctx') = halve_context (UContext.instance subtypcst) in
+      (UContext.pr prl univcst) ++ fnl () ++ fnl () ++
+        h 0 (str "~@{" ++ Instance.pr prl ctx ++ str "} <= ~@{" ++ Instance.pr prl ctx' ++ str "} iff ")
+         ++ fnl () ++ h 0 (v 0 (Constraint.pr prl (UContext.constraints subtypcst)))
+
+  let hcons (univcst, subtypcst) =
+    (UContext.hcons univcst, UContext.hcons subtypcst)
+
+  let univ_context (univcst, subtypcst) = univcst
+  let subtyp_context (univcst, subtypcst) = subtypcst
+
+  let create_trivial_subtyping ctx ctx' =
+    CArray.fold_left_i
+      (fun i cst l -> Constraint.add (l, Eq, Array.get ctx' i) cst)
+      Constraint.empty (Instance.to_array ctx)
+
+  (** This function takes a universe context representing constraints
+      of an inductive and a Instance.t of fresh universe names for the
+      subtyping (with the same length as the context in the given
+      universe context) and produces a UInfoInd.t that with the
+      trivial subtyping relation. *)
+  let from_universe_context univcst freshunivs =
+    let inst = (UContext.instance univcst) in
+    assert (Instance.length freshunivs = Instance.length inst);
+    (univcst, UContext.make (Instance.append inst freshunivs,
+                             create_trivial_subtyping inst freshunivs))
+
+  let subtyping_susbst (univcst, subtypcst) = 
+      let (ctx, ctx') = (halve_context (UContext.instance subtypcst))in
+      Array.fold_left2 (fun subst l1 l2 -> LMap.add l1 l2 subst) LMap.empty ctx ctx'
+
+end
+
+type cumulativity_info = CumulativityInfo.t
+let hcons_cumulativity_info = CumulativityInfo.hcons
+
+module ACumulativityInfo = CumulativityInfo
+
+type abstract_cumulativity_info = ACumulativityInfo.t
+let hcons_abstract_cumulativity_info = ACumulativityInfo.hcons
+
 (** A set of universes with universe constraints.
     We linearize the set to a list after typechecking. 
     Beware, representation could change.
@@ -1132,6 +1211,9 @@ let subst_univs_level_constraints subst csts =
     (fun c -> Option.fold_right Constraint.add (subst_univs_level_constraint subst c))
     csts Constraint.empty 
 
+let subst_univs_level_abstract_universe_context subst (inst, csts) =
+  inst, subst_univs_level_constraints subst csts
+
 (** With level to universe substitutions. *)
 type universe_subst_fn = universe_level -> universe
 
@@ -1203,8 +1285,9 @@ let subst_instance_constraints s csts =
 let instantiate_univ_context (ctx, csts) = 
   (ctx, subst_instance_constraints ctx csts)
 
-let instantiate_univ_constraints u (_, csts) = 
-  subst_instance_constraints u csts
+(** Substitute instance inst for ctx in universe constraints and subtyping constraints *)
+let instantiate_cumulativity_info (univcst, subtpcst) = 
+  (instantiate_univ_context univcst, instantiate_univ_context subtpcst)
 
 let make_instance_subst i = 
   let arr = Instance.to_array i in
@@ -1218,22 +1301,34 @@ let make_inverse_instance_subst i =
       LMap.add (Level.var i) l acc)
       LMap.empty arr
 
-let abstract_universes poly ctx =
+let make_abstract_instance (ctx, _) = 
+  Array.mapi (fun i l -> Level.var i) ctx
+
+let abstract_universes ctx =
   let instance = UContext.instance ctx in
-    if poly then
-      let subst = make_instance_subst instance in
-      let cstrs = subst_univs_level_constraints subst 
-	(UContext.constraints ctx)
-      in
-      let ctx = UContext.make (instance, cstrs) in
-	subst, ctx
-    else empty_level_subst, ctx
+  let subst = make_instance_subst instance in
+  let cstrs = subst_univs_level_constraints subst 
+      (UContext.constraints ctx)
+  in
+  let ctx = UContext.make (instance, cstrs) in
+  subst, ctx
+
+let abstract_cumulativity_info (univcst, substcst) = 
+  let instance, univcst = abstract_universes univcst in
+  let _, substcst = abstract_universes substcst in
+  (instance, (univcst, substcst))
 
 (** Pretty-printing *)
 
 let pr_constraints prl = Constraint.pr prl
 
 let pr_universe_context = UContext.pr
+
+let pr_cumulativity_info = CumulativityInfo.pr
+
+let pr_abstract_universe_context = AUContext.pr
+
+let pr_abstract_cumulativity_info = ACumulativityInfo.pr
 
 let pr_universe_context_set = ContextSet.pr
 
@@ -1290,3 +1385,12 @@ let subst_instance_constraints =
     let key = Profile.declare_profile "subst_instance_constraints" in
       Profile.profile2 key subst_instance_constraints
   else subst_instance_constraints
+
+let subst_instance_context = 
+  let subst_instance_context_body inst (inner_inst, inner_constr) =
+    (inner_inst, subst_instance_constraints inst inner_constr)
+  in
+  if Flags.profile then 
+    let key = Profile.declare_profile "subst_instance_constraints" in
+      Profile.profile2 key subst_instance_context_body
+  else subst_instance_context_body

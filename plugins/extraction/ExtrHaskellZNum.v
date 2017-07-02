@@ -6,6 +6,8 @@
  * implements [Num].
  *)
 
+Require Coq.extraction.Extraction.
+
 Require Import ZArith.
 Require Import EqNat.
 

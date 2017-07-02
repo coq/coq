@@ -53,7 +53,7 @@ val coqroot : string
     the order it gets added to the search path. *)
 val coqpath : string list
 
-(** [camlbin ()] is the path to the ocamlfind binary. *)
+(** [camlfind ()] is the path to the ocamlfind binary. *)
 val ocamlfind : unit -> string
 
 (** [camlp4bin ()] is the path to the camlp4 binary. *)

@@ -38,8 +38,6 @@ env:
   - TEST_TARGET="validate"                           TW="travis_wait"
   - TEST_TARGET="validate"   COMPILER="4.02.3+32bit" TW="travis_wait"
   - TEST_TARGET="ci-bignums"
-  - TEST_TARGET="ci-bedrock-src"
-  - TEST_TARGET="ci-bedrock-facade"
   - TEST_TARGET="ci-color"
   - TEST_TARGET="ci-compcert"
   - TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
@@ -66,6 +64,7 @@ matrix:
   allow_failures:
   - env: TEST_TARGET="ci-coq-dpdgraph" EXTRA_OPAM="ocamlgraph"
   - env: TEST_TARGET="ci-geocoq"
+  - env: TEST_TARGET="ci-fiat-parsers"
 
   include:
     # Full Coq test-suite with two compilers
@@ -140,8 +139,7 @@ matrix:
     - os: osx
       env:
       - TEST_TARGET="test-suite"
-      - COMPILER="system"
-      - CAMLP5_VER="6.17"
+      - COMPILER="4.02.3"
       - NATIVE_COMP="no"
       before_install:
       - brew update
@@ -158,7 +156,7 @@ script:
 
 - set -e
 - echo 'Configuring Coq...' && echo -en 'travis_fold:start:coq.config\\r'
-- ./configure -local -usecamlp5 -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
+- ./configure -local -native-compiler ${NATIVE_COMP} ${EXTRA_CONF}
 - echo -en 'travis_fold:end:coq.config\\r'
 
 - echo 'Building Coq...' && echo -en 'travis_fold:start:coq.build\\r'

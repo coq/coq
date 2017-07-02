@@ -786,7 +786,7 @@ let find_appl_head_data c =
     let scopes = find_arguments_scope ref in
       c, impls, scopes, []
   | GApp ({ v = GRef (ref,_) },l)
-      when l != [] && Flags.version_strictly_greater Flags.V8_2 ->
+      when l != [] ->
       let n = List.length l in
       let impls = implicits_of_global ref in 
       let scopes = find_arguments_scope ref in
@@ -1219,6 +1219,11 @@ let alias_of als = match als.alias_ids with
 
 *)
 
+let is_zero s =
+  let rec aux i =
+    Int.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
+  in aux 0
+
 let merge_subst s1 s2 = Id.Map.fold Id.Map.add s1 s2
 
 let product_of_cases_patterns aliases idspl =
@@ -1331,9 +1336,9 @@ let drop_notations_pattern looked_for genv =
         (* but not scopes in expl_pl *)
         let (argscs1,_) = find_remaining_scopes expl_pl pl g in
         CAst.make ?loc @@ RCPatCstr (g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat false scopes) pl, [])
-    | CPatNotation ("- _",([{ CAst.v = CPatPrim(Numeral p) }],[]),[])
-	when Bigint.is_strictly_pos p ->
-      let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc (ensure_kind false loc) (Numeral (Bigint.neg p)) scopes in
+    | CPatNotation ("- _",([{ CAst.v = CPatPrim(Numeral (p,true)) }],[]),[])
+	when not (is_zero p) ->
+      let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc (ensure_kind false loc) (Numeral (p,false)) scopes in
       rcp_of_glob pat
     | CPatNotation ("( _ )",([a],[]),[]) ->
       in_pat top scopes a
@@ -1639,9 +1644,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	CAst.make ?loc @@
 	GLetIn (snd na, inc1, int,
           intern (push_name_env ntnvars (impls_term_list inc1) env na) c2)
-    | CNotation ("- _",([{ CAst.v = CPrim (Numeral p) }],[],[]))
-	when Bigint.is_strictly_pos p ->
-	intern env (CAst.make ?loc @@ CPrim (Numeral (Bigint.neg p)))
+    | CNotation ("- _",([{ CAst.v = CPrim (Numeral (p,true)) }],[],[]))
+         when not (is_zero p) ->
+       intern env (CAst.make ?loc @@ CPrim (Numeral (p,false)))
     | CNotation ("( _ )",([a],[],[])) -> intern env a
     | CNotation (ntn,args) ->
         intern_notation intern env ntnvars loc ntn args

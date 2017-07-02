@@ -138,6 +138,7 @@ module Typeclasses = Typeclasses
 module Pretype_errors = Pretype_errors
 module Notation = Notation
 module Declarations = Declarations
+module Univops = Univops
 module Declareops = Declareops
 module Globnames = Globnames
 module Environ = Environ
@@ -199,17 +200,4 @@ module Entries =
                            | DefinitionEntry of 'a definition_entry
                            | ParameterEntry of parameter_entry
                            | ProjectionEntry of projection_entry
-  end
-
-(* NOTE: It does not make sense to replace the following "module expression"
-   simply with "module Proof_type = Proof_type" because
-   there is only "proofs/proof_type.mli";
-   there is no "proofs/proof_type.ml" file *)
-module Proof_type =
-  struct
-    type goal = Goal.goal
-    type tactic = goal Evd.sigma -> goal list Evd.sigma
-    type rule = Proof_type.prim_rule =
-      | Cut of bool * bool * Names.Id.t * Term.types
-      | Refine of Term.constr
   end

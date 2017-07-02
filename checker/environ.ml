@@ -115,13 +115,15 @@ let add_constant kn cs env =
 	env_constants = new_constants } in
   { env with env_globals = new_globals }
 
-type const_evaluation_result = NoBody | Opaque
+type const_evaluation_result = NoBody | Opaque | IsProj
 
 (* Constant types *)
 
 let constraints_of cb u =
-  let univs = cb.const_universes in
-    Univ.subst_instance_constraints u (Univ.UContext.constraints univs)
+  match cb.const_universes with
+  | Monomorphic_const _ -> Univ.Constraint.empty
+  | Polymorphic_const ctx -> 
+    Univ.UContext.constraints (Univ.subst_instance_context u ctx)
 
 let map_regular_arity f = function
   | RegularArity a as ar -> 
@@ -132,23 +134,28 @@ let map_regular_arity f = function
 (* constant_type gives the type of a constant *)
 let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
-    if cb.const_polymorphic then
-      let csts = constraints_of cb u in
-	(map_regular_arity (subst_instance_constr u) cb.const_type, csts)
-    else cb.const_type, Univ.Constraint.empty
+  match cb.const_universes with
+  | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
+  | Polymorphic_const ctx -> 
+    let csts = constraints_of cb u in
+    (map_regular_arity (subst_instance_constr u) cb.const_type, csts)
 
 exception NotEvaluableConst of const_evaluation_result
 
 let constant_value env (kn,u) =
   let cb = lookup_constant kn env in
+  if cb.const_proj = None then
     match cb.const_body with
     | Def l_body -> 
       let b = force_constr l_body in
-	if cb.const_polymorphic then
-	  subst_instance_constr u (force_constr l_body)
-	else b
+      begin
+        match cb.const_universes with
+        | Monomorphic_const _ -> b
+        | Polymorphic_const _ -> subst_instance_constr u (force_constr l_body)
+      end
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
+  else raise (NotEvaluableConst IsProj)
 
 (* A global const is evaluable if it is defined and not opaque *)
 let evaluable_constant cst env =

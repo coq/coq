@@ -209,7 +209,7 @@ let compute_proof_name locality = function
         user_err ?loc  (pr_id id ++ str " already exists.");
       id, pl
   | None ->
-      next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()), None
+      next_global_ident_away default_thm_id (Proof_global.get_all_proof_names ()), None
 
 let save_remaining_recthms (locality,p,kind) norm ctx body opaq i ((id,pl),(t_i,(_,imps))) =
   let t_i = norm t_i in
@@ -487,7 +487,7 @@ let save_proof ?proof = function
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
             Admitted(id, k, (sec_vars, pi2 k, (typ, ctx), None), universes)
         | None ->
-            let pftree = Pfedit.get_pftreestate () in
+            let pftree = Proof_global.give_me_the_proof () in
             let id, k, typ = Pfedit.current_proof_statement () in
             let typ = EConstr.Unsafe.to_constr typ in
             let universes = Proof.initial_euctx pftree in
@@ -496,7 +496,7 @@ let save_proof ?proof = function
               Proof_global.return_proof ~allow_partial:true () in
             let sec_vars =
               if not !keep_admitted_vars then None
-              else match  Pfedit.get_used_variables(), pproofs with
+              else match Proof_global.get_used_variables(), pproofs with
               | Some _ as x, _ -> x
               | None, (pproof, _) :: _ -> 
                   let env = Global.env () in
@@ -504,7 +504,7 @@ let save_proof ?proof = function
                   let ids_def = Environ.global_vars_set env pproof in
                   Some (Environ.keep_hyps env (Idset.union ids_typ ids_def))
               | _ -> None in
-	    let names = Pfedit.get_universe_binders () in
+	    let names = Proof_global.get_universe_binders () in
             let evd = Evd.from_ctx universes in
             let binders, ctx = Evd.universe_context ?names evd in
             Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None),
@@ -519,7 +519,7 @@ let save_proof ?proof = function
         | Some proof -> proof
       in
       (* if the proof is given explicitly, nothing has to be deleted *)
-      if Option.is_empty proof then Pfedit.delete_current_proof ();
+      if Option.is_empty proof then Proof_global.discard_current ();
       Proof_global.(apply_terminator terminator (Proved (is_opaque,idopt,proof_obj)))
 
 (* Miscellaneous *)

@@ -1,5 +1,7 @@
 (** Extraction of [Z] into Haskell's [Int] *)
 
+Require Coq.extraction.Extraction.
+
 Require Import ZArith.
 Require Import ExtrHaskellZNum.
 

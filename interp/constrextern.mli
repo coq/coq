@@ -59,16 +59,6 @@ val set_extern_reference :
 val get_extern_reference :
   unit -> (?loc:Loc.t -> Id.Set.t -> global_reference -> reference)
 
-(** This governs printing of implicit arguments. If [with_implicits] is
-   on and not [with_arguments] then implicit args are printed prefixed
-   by "!"; if [with_implicits] and [with_arguments] are both on the
-   function and not the arguments is prefixed by "!" *)
-val with_implicits : ('a -> 'b) -> 'a -> 'b
-val with_arguments : ('a -> 'b) -> 'a -> 'b
-
-(** This forces printing of coercions *)
-val with_coercions : ('a -> 'b) -> 'a -> 'b
-
 (** This forces printing universe names of Type\{.\} *)
 val with_universes : ('a -> 'b) -> 'a -> 'b
 
@@ -80,3 +70,13 @@ val without_specific_symbols : interp_rule list -> ('a -> 'b) -> 'a -> 'b
 
 (** This prints metas as anonymous holes *)
 val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b
+
+(** Fine-grained activation and deactivation of notation printing.
+ *)
+val toggle_scope_printing :
+  scope:Notation_term.scope_name -> activate:bool -> unit
+
+val toggle_notation_printing :
+  ?scope:Notation_term.scope_name -> notation:Constrexpr.notation -> activate:bool -> unit
+
+

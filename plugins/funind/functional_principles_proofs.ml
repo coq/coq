@@ -10,7 +10,6 @@ open Names
 open Pp
 open Tacmach
 open Termops
-open Proof_type
 open Tacticals
 open Tactics
 open Indfun_common
@@ -106,7 +105,7 @@ let make_refl_eq constructor type_of_t t  =
 
 type pte_info =
     {
-      proving_tac : (Id.t list -> Proof_type.tactic);
+      proving_tac : (Id.t list -> Tacmach.tactic);
       is_valid : constr -> bool
     }
 

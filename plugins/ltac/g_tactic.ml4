@@ -139,14 +139,16 @@ let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
     end
   | _ -> ElimOnConstr clbind
 
+let mkNumeral n = Numeral (string_of_int (abs n), 0<=n)
+
 let mkTacCase with_evar = function
   | [(clear,ElimOnConstr cl),(None,None),None],None ->
       TacCase (with_evar,(clear,cl))
   (* Reinterpret numbers as a notation for terms *)
   | [(clear,ElimOnAnonHyp n),(None,None),None],None ->
       TacCase (with_evar,
-        (clear,(CAst.make @@ CPrim (Numeral (Bigint.of_int n)),
-	 NoBindings)))
+        (clear,(CAst.make @@ CPrim (mkNumeral n),
+         NoBindings)))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
   | [(clear,ElimOnIdent id),(None,None),None],None ->

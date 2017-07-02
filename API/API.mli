@@ -72,6 +72,7 @@ sig
     val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
   end
   type 'a puniverses = 'a * Instance.t
+  val out_punivs : 'a puniverses -> 'a
 
   module Constraint : module type of struct include Univ.Constraint end
 
@@ -84,7 +85,11 @@ sig
   end
 
   type universe_context = UContext.t
-  [@@ocaml.deprecated "alias of API.Names.UContext.t"]
+  [@@ocaml.deprecated "alias of API.Univ.UContext.t"]
+
+  type abstract_universe_context = Univ.AUContext.t
+  type cumulativity_info = Univ.CumulativityInfo.t
+  type abstract_cumulativity_info = Univ.ACumulativityInfo.t
 
   module LSet : module type of struct include Univ.LSet end
   module ContextSet : 
@@ -1034,7 +1039,16 @@ sig
                     | Undef of inline
                     | Def of Term.constr Mod_subst.substituted
                     | OpaqueDef of Opaqueproof.opaque
-  type constant_type = Declarations.constant_type
+  type template_arity = Declarations.template_arity = {
+    template_param_levels : Univ.Level.t option list;
+    template_level : Univ.Universe.t;
+  }
+
+  type ('a, 'b) declaration_arity = ('a, 'b) Declarations.declaration_arity =
+    | RegularArity of 'a
+    | TemplateArity of 'b
+
+  type constant_type = (Prelude.types, Context.Rel.t * template_arity) declaration_arity
   type constant_universes = Declarations.constant_universes
   type projection_body = Declarations.projection_body = {
         proj_ind : Names.MutInd.t;
@@ -1045,12 +1059,12 @@ sig
         proj_body : Term.constr;
       }
   type typing_flags = Declarations.typing_flags
+
   type constant_body = Declarations.constant_body = {
         const_hyps : Context.Named.t;
         const_body : constant_def;
         const_type : constant_type;
         const_body_code : Cemitcodes.to_patch_substituted option;
-        const_polymorphic : bool;
         const_universes : constant_universes;
         const_proj : projection_body option;
         const_inline_code : bool;
@@ -1083,6 +1097,12 @@ sig
                        | MEident of Names.ModPath.t
                        | MEapply of module_alg_expr * Names.ModPath.t
                        | MEwith of module_alg_expr * with_declaration
+
+  type abstract_inductive_universes = Declarations.abstract_inductive_universes =
+    | Monomorphic_ind of Univ.UContext.t
+    | Polymorphic_ind of Univ.abstract_universe_context
+    | Cumulative_ind of Univ.abstract_cumulativity_info
+
   type mutual_inductive_body = Declarations.mutual_inductive_body = {
         mind_packets : one_inductive_body array;
         mind_record : Declarations.record_body option;
@@ -1092,8 +1112,7 @@ sig
         mind_nparams : int;
         mind_nparams_rec : int;
         mind_params_ctxt : Context.Rel.t;
-        mind_polymorphic : bool;
-        mind_universes : Univ.UContext.t;
+        mind_universes : Declarations.abstract_inductive_universes;
         mind_private : bool option;
         mind_typing_flags : Declarations.typing_flags;
       }
@@ -1122,6 +1141,11 @@ sig
                             | SFBmodtype of module_type_body
 end
 
+module Univops : sig
+  val universes_of_constr : Term.constr -> Univ.LSet.t
+  val restrict_universe_context : Univ.ContextSet.t -> Univ.LSet.t -> Univ.ContextSet.t
+end
+
 module Environ :
 sig
   type env = Prelude.env
@@ -1131,6 +1155,11 @@ sig
       uj_val : 'constr;
       uj_type : 'types
     }
+  type 'types punsafe_type_judgment = 'types Environ.punsafe_type_judgment = {
+    utj_val : 'types;
+    utj_type : Sorts.t }
+
+  type unsafe_type_judgment = Term.types punsafe_type_judgment
   val empty_env : env
   val lookup_mind : Names.MutInd.t -> env -> Declarations.mutual_inductive_body
   val push_rel : Context.Rel.Declaration.t -> env -> env
@@ -1156,6 +1185,7 @@ sig
   val fold_named_context_reverse :
     ('a -> Context.Named.Declaration.t -> 'a) -> init:'a -> env -> 'a
   val evaluable_named  : Names.Id.t -> Environ.env -> bool
+  val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
 end
 
 module UGraph :
@@ -1219,6 +1249,7 @@ end
 
 module Typeops :
 sig
+  val infer_type : Environ.env -> Term.types -> Environ.unsafe_type_judgment
   val type_of_constant_type : Environ.env -> Declarations.constant_type -> Term.types
   val type_of_constant_in : Environ.env -> Term.pconstant -> Term.types
 end
@@ -1900,6 +1931,7 @@ end
 module Decl_kinds :
 sig
   type polymorphic = bool
+  type cumulative_inductive_flag = bool
   type recursivity_kind = Decl_kinds.recursivity_kind =
     | Finite
     | CoFinite
@@ -2055,8 +2087,10 @@ sig
   type explicitation = Constrexpr.explicitation =
                      | ExplByPos of int * Names.Id.t option
                      | ExplByName of Names.Id.t
+  type sign = bool
+  type raw_natural_number = string
   type prim_token = Constrexpr.prim_token =
-                  | Numeral of Bigint.bigint
+                  | Numeral of raw_natural_number * sign
                   | String of string
   type notation = string
   type instance_expr = Misctypes.glob_level list
@@ -2264,10 +2298,9 @@ sig
                    | VtQed of vernac_qed_type
                    | VtProofStep of proof_step
                    | VtProofMode of string
-                   | VtQuery of vernac_part_of_script * report_with
+                   | VtQuery of vernac_part_of_script * Feedback.route_id
                    | VtStm of vernac_control * vernac_part_of_script
                    | VtUnknown
-   and report_with = Stateid.t * Feedback.route_id
    and vernac_qed_type = Vernacexpr.vernac_qed_type =
                        | VtKeep
                          | VtKeepAsAxiom
@@ -2374,12 +2407,12 @@ sig
   | VernacNotationAddFormat of string * string * string
   | VernacDefinition of
       (Decl_kinds.locality option * Decl_kinds.definition_object_kind) * plident * definition_expr
-  | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list * bool
+  | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of Constrexpr.constr_expr
   | VernacAssumption of (Decl_kinds.locality option * Decl_kinds.assumption_object_kind) *
       inline * (plident list * Constrexpr.constr_expr) with_coercion list
-  | VernacInductive of Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of Decl_kinds.cumulative_inductive_flag * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       Decl_kinds.locality option * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of
@@ -2556,6 +2589,20 @@ sig
    and closed_glob_constr = Glob_term.closed_glob_constr = {
        closure: closure;
        term: glob_constr }
+
+  type var_map = Pattern.constr_under_binders Names.Id.Map.t
+  type uconstr_var_map = Glob_term.closed_glob_constr Names.Id.Map.t
+  type unbound_ltac_var_map = Geninterp.Val.t Names.Id.Map.t
+  type ltac_var_map = Glob_term.ltac_var_map = {
+        ltac_constrs : var_map;
+        (** Ltac variables bound to constrs *)
+        ltac_uconstrs : uconstr_var_map;
+        (** Ltac variables bound to untyped constrs *)
+        ltac_idents: Names.Id.t Names.Id.Map.t;
+        (** Ltac variables bound to identifiers *)
+        ltac_genargs : unbound_ltac_var_map;
+        (** Ltac variables bound to other kinds of arguments *)
+      }
 end
 
 module Libnames :
@@ -2631,10 +2678,9 @@ sig
   type universe_opt_subst = Universes.universe_opt_subst
   val fresh_inductive_instance : Environ.env -> Names.inductive -> Term.pinductive Univ.in_universe_context_set
   val new_Type : Names.DirPath.t -> Term.types
+  val type_of_global : Globnames.global_reference -> Term.types Univ.in_universe_context_set
   val unsafe_type_of_global : Globnames.global_reference -> Term.types
   val constr_of_global : Prelude.global_reference -> Term.constr
-  val universes_of_constr : Term.constr -> Univ.LSet.t
-  val restrict_universe_context : Univ.ContextSet.t -> Univ.LSet.t -> Univ.ContextSet.t
   val new_univ_level : Names.DirPath.t -> Univ.Level.t
   val unsafe_constr_of_global : Globnames.global_reference -> Term.constr Univ.in_universe_context
   val new_sort_in_family : Sorts.family -> Sorts.t
@@ -2680,7 +2726,6 @@ module Lib : sig
             | ClosedModule  of library_segment
             | OpenedSection of Libnames.object_prefix * Summary.frozen
             | ClosedSection of library_segment
-            | FrozenState of Summary.frozen
 
    and library_segment = (Libnames.object_name * node) list
 
@@ -2921,10 +2966,6 @@ sig
                          | IsType
                          | WithoutTypeConstraint
 
-  type var_map = Pattern.constr_under_binders Names.Id.Map.t
-  type uconstr_var_map = Glob_term.closed_glob_constr Names.Id.Map.t
-  type unbound_ltac_var_map = Geninterp.Val.t Names.Id.Map.t
-
   type inference_hook = Environ.env -> Evd.evar_map -> Evar.t -> Evd.evar_map * EConstr.constr
   type inference_flags = Pretyping.inference_flags = {
       use_typeclasses : bool;
@@ -2934,22 +2975,11 @@ sig
       expand_evars : bool
     }
 
-  type ltac_var_map = Pretyping.ltac_var_map = {
-        ltac_constrs : var_map;
-        (** Ltac variables bound to constrs *)
-        ltac_uconstrs : uconstr_var_map;
-        (** Ltac variables bound to untyped constrs *)
-        ltac_idents: Names.Id.t Names.Id.Map.t;
-        (** Ltac variables bound to identifiers *)
-        ltac_genargs : unbound_ltac_var_map;
-        (** Ltac variables bound to other kinds of arguments *)
-      }                                                 
   type pure_open_constr = Evd.evar_map * EConstr.constr
-  type glob_constr_ltac_closure = ltac_var_map * Glob_term.glob_constr
+  type glob_constr_ltac_closure = Glob_term.ltac_var_map * Glob_term.glob_constr
 
-  val empty_lvar : ltac_var_map
   val understand_ltac : inference_flags ->
-                        Environ.env -> Evd.evar_map -> ltac_var_map ->
+                        Environ.env -> Evd.evar_map -> Glob_term.ltac_var_map ->
                         typing_constraint -> Glob_term.glob_constr -> pure_open_constr
   val understand_tcc : ?flags:inference_flags -> Environ.env -> Evd.evar_map ->
                        ?expected_type:typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
@@ -2963,11 +2993,11 @@ sig
   val interp_elimination_sort : Misctypes.glob_sort -> Sorts.family
   val register_constr_interp0 :
     ('r, 'g, 't) Genarg.genarg_type ->
-    (unbound_ltac_var_map -> Environ.env -> Evd.evar_map -> EConstr.types -> 'g -> EConstr.constr * Evd.evar_map) -> unit
+    (Glob_term.unbound_ltac_var_map -> Environ.env -> Evd.evar_map -> EConstr.types -> 'g -> EConstr.constr * Evd.evar_map) -> unit
   val all_and_fail_flags : inference_flags
   val ise_pretype_gen :
     inference_flags -> Environ.env -> Evd.evar_map ->
-    ltac_var_map -> typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
+    Glob_term.ltac_var_map -> typing_constraint -> Glob_term.glob_constr -> Evd.evar_map * EConstr.constr
 end
 
 module Evarconv :
@@ -3307,17 +3337,7 @@ sig
   val declare_cache_obj : (unit -> unit) -> string -> unit
   val add_known_plugin : (unit -> unit) -> string -> unit
   val add_known_module : string -> unit
-end
-
-(* All items in the Proof_type module are deprecated. *)
-module Proof_type :
-sig
-  type goal = Evar.t
-  type rule = Proof_type.prim_rule =
-    | Cut of bool * bool * Names.Id.t * Term.types
-    | Refine of Term.constr
-
-  type tactic = goal Evd.sigma -> goal list Evd.sigma
+  val module_is_known : string -> bool
 end
 
 module Redexpr :
@@ -3331,61 +3351,61 @@ end
 
 module Tacmach :
 sig
-  type tactic = Proof_type.tactic
-  [@@ocaml.deprecated "alias for API.Proof_type.tactic"]
+  type tactic = Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
   type 'a sigma = 'a Evd.sigma
   [@@ocaml.deprecated "alias of API.Evd.sigma"]
 
   val re_sig : 'a -> Evd.evar_map -> 'a Evd.sigma
 
-  val pf_reduction_of_red_expr : Proof_type.goal Evd.sigma -> Redexpr.red_expr -> EConstr.constr -> Evd.evar_map * EConstr.constr
+  val pf_reduction_of_red_expr : Goal.goal Evd.sigma -> Redexpr.red_expr -> EConstr.constr -> Evd.evar_map * EConstr.constr
 
-  val pf_unsafe_type_of : Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.types
+  val pf_unsafe_type_of : Goal.goal Evd.sigma -> EConstr.constr -> EConstr.types
 
-  val pf_get_new_id  : Names.Id.t -> Proof_type.goal Evd.sigma -> Names.Id.t
+  val pf_get_new_id  : Names.Id.t -> Goal.goal Evd.sigma -> Names.Id.t
 
-  val pf_env : Proof_type.goal Evd.sigma -> Environ.env
+  val pf_env : Goal.goal Evd.sigma -> Environ.env
 
-  val pf_concl : Proof_type.goal Evd.sigma -> EConstr.types
+  val pf_concl : Goal.goal Evd.sigma -> EConstr.types
 
-  val pf_apply : (Environ.env -> Evd.evar_map -> 'a) -> Proof_type.goal Evd.sigma -> 'a
+  val pf_apply : (Environ.env -> Evd.evar_map -> 'a) -> Goal.goal Evd.sigma -> 'a
 
-  val pf_get_hyp            : Proof_type.goal Evd.sigma -> Names.Id.t -> EConstr.named_declaration
-  val pf_get_hyp_typ        : Proof_type.goal Evd.sigma -> Names.Id.t -> EConstr.types
-  val project : Proof_type.goal Evd.sigma -> Evd.evar_map
-  val refine : EConstr.constr -> Proof_type.tactic
-  val pf_type_of : Proof_type.goal Evd.sigma -> EConstr.constr -> Evd.evar_map * EConstr.types
+  val pf_get_hyp            : Goal.goal Evd.sigma -> Names.Id.t -> EConstr.named_declaration
+  val pf_get_hyp_typ        : Goal.goal Evd.sigma -> Names.Id.t -> EConstr.types
+  val project : Goal.goal Evd.sigma -> Evd.evar_map
+  val refine : EConstr.constr -> tactic
+  val refine_no_check : EConstr.constr -> tactic
+  val pf_type_of : Goal.goal Evd.sigma -> EConstr.constr -> Evd.evar_map * EConstr.types
 
-  val pf_hyps : Proof_type.goal Evd.sigma -> EConstr.named_context
+  val pf_hyps : Goal.goal Evd.sigma -> EConstr.named_context
 
-  val pf_ids_of_hyps : Proof_type.goal Evd.sigma -> Names.Id.t list
+  val pf_ids_of_hyps : Goal.goal Evd.sigma -> Names.Id.t list
 
-  val pf_reduce_to_atomic_ind : Proof_type.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
+  val pf_reduce_to_atomic_ind : Goal.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
 
-  val pf_reduce_to_quantified_ind : Proof_type.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
+  val pf_reduce_to_quantified_ind : Goal.goal Evd.sigma -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * EConstr.types
 
   val pf_eapply : (Environ.env -> Evd.evar_map -> 'a -> Evd.evar_map * 'b) -> 
                   Evar.t Evd.sigma -> 'a -> Evar.t Evd.sigma * 'b
 
   val pf_unfoldn : (Locus.occurrences * Names.evaluable_global_reference) list
-                   -> Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
+                   -> Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr
 
-  val pf_reduce : (Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr) -> Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
+  val pf_reduce : (Environ.env -> Evd.evar_map -> EConstr.constr -> EConstr.constr) -> Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr
 
-  val pf_conv_x : Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr -> bool
+  val pf_conv_x : Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr -> bool
 
-  val pf_is_matching : Proof_type.goal Evd.sigma -> Pattern.constr_pattern -> EConstr.constr -> bool
+  val pf_is_matching : Goal.goal Evd.sigma -> Pattern.constr_pattern -> EConstr.constr -> bool
 
-  val pf_hyps_types : Proof_type.goal Evd.sigma -> (Names.Id.t * EConstr.types) list
+  val pf_hyps_types : Goal.goal Evd.sigma -> (Names.Id.t * EConstr.types) list
 
-  val pr_gls    : Proof_type.goal Evd.sigma -> Pp.std_ppcmds
+  val pr_gls    : Goal.goal Evd.sigma -> Pp.std_ppcmds
 
-  val pf_nf_betaiota : Proof_type.goal Evd.sigma -> EConstr.constr -> EConstr.constr
+  val pf_nf_betaiota : Goal.goal Evd.sigma -> EConstr.constr -> EConstr.constr
 
-  val pf_last_hyp : Proof_type.goal Evd.sigma -> EConstr.named_declaration
+  val pf_last_hyp : Goal.goal Evd.sigma -> EConstr.named_declaration
 
-  val pf_nth_hyp_id : Proof_type.goal Evd.sigma -> int -> Names.Id.t
+  val pf_nth_hyp_id : Goal.goal Evd.sigma -> int -> Names.Id.t
 
   val sig_it : 'a Evd.sigma -> 'a
 
@@ -3394,7 +3414,7 @@ sig
     val pf_apply : (Environ.env -> Evd.evar_map -> 'a) -> 'b Proofview.Goal.t -> 'a
     val project : 'a Proofview.Goal.t -> Evd.evar_map
     val pf_unsafe_type_of : 'a Proofview.Goal.t -> EConstr.constr -> EConstr.types
-    val of_old : (Proof_type.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
+    val of_old : (Goal.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
 
     val pf_env : 'a Proofview.Goal.t -> Environ.env
     val pf_ids_of_hyps : 'a Proofview.Goal.t -> Names.Id.t list
@@ -3465,6 +3485,8 @@ sig
   (** @raise NoCurrentProof when outside proof mode. *)
 
   val discard_all : unit -> unit
+  val discard_current : unit -> unit
+  val get_current_proof_name : unit -> Names.Id.t
 end
 
 module Nametab :
@@ -3473,6 +3495,7 @@ sig
 
   type ltac_constant = Names.KerName.t
 
+  val global : Libnames.reference -> Globnames.global_reference
   val global_of_path : Libnames.full_path -> Globnames.global_reference
   val shortest_qualid_of_global : Names.Id.Set.t -> Globnames.global_reference -> Libnames.qualid
   val path_of_global : Globnames.global_reference -> Libnames.full_path
@@ -3513,21 +3536,19 @@ sig
 
   val repackage : Evd.evar_map ref -> 'a -> 'a Evd.sigma
 
-  val refiner : Proof_type.rule -> Proof_type.tactic
-
-  val tclSHOWHYPS : Proof_type.tactic -> Proof_type.tactic
+  val tclSHOWHYPS : Tacmach.tactic -> Tacmach.tactic
   exception FailError of int * Pp.std_ppcmds Lazy.t
 
-  val tclEVARS : Evd.evar_map -> Proof_type.tactic
-  val tclMAP : ('a -> Proof_type.tactic) -> 'a list -> Proof_type.tactic
-  val tclREPEAT : Proof_type.tactic -> Proof_type.tactic
-  val tclORELSE        : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
-  val tclFAIL : int -> Pp.std_ppcmds -> Proof_type.tactic
-  val tclIDTAC : Proof_type.tactic
-  val tclTHEN : Proof_type.tactic -> Proof_type.tactic -> Proof_type.tactic
-  val tclTHENLIST : Proof_type.tactic list -> Proof_type.tactic
-  val tclTRY : Proof_type.tactic -> Proof_type.tactic
-  val tclAT_LEAST_ONCE : Proof_type.tactic -> Proof_type.tactic
+  val tclEVARS : Evd.evar_map -> Tacmach.tactic
+  val tclMAP : ('a -> Tacmach.tactic) -> 'a list -> Tacmach.tactic
+  val tclREPEAT : Tacmach.tactic -> Tacmach.tactic
+  val tclORELSE        : Tacmach.tactic -> Tacmach.tactic -> Tacmach.tactic
+  val tclFAIL : int -> Pp.std_ppcmds -> Tacmach.tactic
+  val tclIDTAC : Tacmach.tactic
+  val tclTHEN : Tacmach.tactic -> Tacmach.tactic -> Tacmach.tactic
+  val tclTHENLIST : Tacmach.tactic list -> Tacmach.tactic
+  val tclTRY : Tacmach.tactic -> Tacmach.tactic
+  val tclAT_LEAST_ONCE : Tacmach.tactic -> Tacmach.tactic
 end
 
 module Termops :
@@ -3665,7 +3686,7 @@ module Printer :
 sig
   val pr_named_context : Environ.env -> Evd.evar_map -> Context.Named.t -> Pp.std_ppcmds
   val pr_rel_context : Environ.env -> Evd.evar_map -> Context.Rel.t -> Pp.std_ppcmds
-  val pr_goal : Proof_type.goal Evd.sigma -> Pp.std_ppcmds
+  val pr_goal : Goal.goal Evd.sigma -> Pp.std_ppcmds
 
   val pr_constr_env : Prelude.env -> Prelude.evar_map -> Term.constr -> Pp.std_ppcmds
   val pr_lconstr_env : Prelude.env -> Prelude.evar_map -> Term.constr -> Pp.std_ppcmds
@@ -3795,6 +3816,7 @@ sig
   val cases_pattern_of_glob_constr : Names.Name.t -> Glob_term.glob_constr -> Glob_term.cases_pattern
   val map_glob_constr :
     (Glob_term.glob_constr -> Glob_term.glob_constr) -> Glob_term.glob_constr -> Glob_term.glob_constr
+  val empty_lvar : Glob_term.ltac_var_map
 end
 
 module Indrec :
@@ -3939,11 +3961,18 @@ sig
   val solve : ?with_end_tac:unit Proofview.tactic ->
       Vernacexpr.goal_selector -> int option -> unit Proofview.tactic ->
       Proof.proof -> Proof.proof * bool
-  val delete_current_proof : unit -> unit
   val cook_proof :
     unit -> (Names.Id.t * (Safe_typing.private_constants Entries.definition_entry * Proof_global.proof_universes * Decl_kinds.goal_kind))
-  val get_current_proof_name : unit -> Names.Id.t
+
   val get_current_context : unit -> Evd.evar_map * Environ.env
+
+  (* Deprecated *)
+  val delete_current_proof : unit -> unit
+  [@@ocaml.deprecated "use Proof_global.discard_current"]
+
+  val get_current_proof_name : unit -> Names.Id.t
+  [@@ocaml.deprecated "use Proof_global.get_current_proof_name"]
+
 end
 
 module Tactics :
@@ -4100,7 +4129,7 @@ sig
 
   module New :
   sig
-    val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.constr) -> unit Proofview.tactic
+    val refine : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.constr) -> unit Proofview.tactic
     val reduce_after_refine : unit Proofview.tactic
   end
   module Simple :
@@ -4113,7 +4142,7 @@ end
 
 module Tacticals :
 sig
-  open Proof_type
+  open Tacmach
   val tclORELSE        : tactic -> tactic -> tactic
   val tclDO : int -> tactic -> tactic
   val tclIDTAC : tactic
@@ -4121,7 +4150,7 @@ sig
   val tclTHEN : tactic -> tactic -> tactic
   val tclTHENLIST      : tactic list -> tactic
   val pf_constr_of_global :         
-    Globnames.global_reference -> (EConstr.constr -> Proof_type.tactic) -> Proof_type.tactic
+    Globnames.global_reference -> (EConstr.constr -> Tacmach.tactic) -> Tacmach.tactic
   val tclMAP : ('a -> tactic) -> 'a list -> tactic
   val tclTRY           : tactic -> tactic
   val tclCOMPLETE      : tactic -> tactic
@@ -4142,13 +4171,13 @@ sig
   val tclTHENSEQ : tactic list -> tactic
   [@@ocaml.deprecated "alias of API.Tacticals.tclTHENLIST"]
 
-  val nLastDecls : int -> Proof_type.goal Evd.sigma -> EConstr.named_context
+  val nLastDecls : int -> Goal.goal Evd.sigma -> EConstr.named_context
 
   val tclTHEN_i : tactic -> (int -> tactic) -> tactic
 
   val tclPROGRESS : tactic -> tactic
 
-  val elimination_sort_of_goal : Proof_type.goal Evd.sigma -> Sorts.family
+  val elimination_sort_of_goal : Goal.goal Evd.sigma -> Sorts.family
 
   module New :
   sig
@@ -4490,7 +4519,7 @@ end
 
 module Refine :
 sig
-  val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit Proofview.tactic
+  val refine : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit Proofview.tactic
   val solve_constraints : unit Proofview.tactic
 end
 
@@ -4528,7 +4557,7 @@ sig
   val autounfold_tac : Hints.hint_db_name list option -> Locus.clause -> unit Proofview.tactic
   val autounfold_one : Hints.hint_db_name list -> Locus.hyp_location option -> unit Proofview.tactic
   val eauto_with_bases :
-    ?debug:Hints.debug -> bool * int -> Tactypes.delayed_open_constr list -> Hints.hint_db list -> Proof_type.tactic
+    ?debug:Hints.debug -> bool * int -> Tactypes.delayed_open_constr list -> Hints.hint_db list -> Tacmach.tactic
 end
 
 module Class_tactics :
@@ -4727,7 +4756,9 @@ sig
   type one_inductive_impls = Command.one_inductive_impls
 
   val do_mutual_inductive :
-    (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list -> Decl_kinds.polymorphic -> 
+    (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list ->
+    Decl_kinds.cumulative_inductive_flag -> 
+    Decl_kinds.polymorphic -> 
     Decl_kinds.private_flag -> Decl_kinds.recursivity_kind -> unit
 
   val do_definition : Names.Id.t -> Decl_kinds.definition_kind -> Vernacexpr.lident list option ->
@@ -4751,7 +4782,9 @@ sig
     structured_inductive_expr * Libnames.qualid list * Vernacexpr.decl_notation list
 
   val interp_mutual_inductive :
-    structured_inductive_expr -> Vernacexpr.decl_notation list -> Decl_kinds.polymorphic ->
+    structured_inductive_expr -> Vernacexpr.decl_notation list ->
+    Decl_kinds.cumulative_inductive_flag ->
+    Decl_kinds.polymorphic ->
     Decl_kinds.private_flag -> Decl_kinds.recursivity_kind ->
     Entries.mutual_inductive_entry * Universes.universe_binders * one_inductive_impls list
 

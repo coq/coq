@@ -125,6 +125,9 @@ type stack_member =
 and stack = stack_member list
 
 val append_stack : fconstr array -> stack -> stack
+
+val stack_args_size : stack -> int
+    
 val eta_expand_stack : stack -> stack
  
 val eta_expand_ind_stack : env -> inductive -> fconstr -> stack -> 

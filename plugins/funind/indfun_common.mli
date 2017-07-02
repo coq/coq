@@ -105,7 +105,7 @@ exception ToShow of exn
 
 val is_strict_tcc : unit -> bool
 
-val h_intros: Names.Id.t list -> Proof_type.tactic
+val h_intros: Names.Id.t list -> Tacmach.tactic
 val h_id :  Names.Id.t
 val hrec_id :  Names.Id.t
 val acc_inv_id :  EConstr.constr Util.delayed
@@ -114,7 +114,7 @@ val well_founded_ltof : EConstr.constr Util.delayed
 val acc_rel : EConstr.constr Util.delayed
 val well_founded : EConstr.constr Util.delayed
 val evaluable_of_global_reference : Globnames.global_reference -> Names.evaluable_global_reference
-val list_rewrite : bool -> (EConstr.constr*bool) list -> Proof_type.tactic
+val list_rewrite : bool -> (EConstr.constr*bool) list -> Tacmach.tactic
 
 val decompose_lam_n : Evd.evar_map -> int -> EConstr.t ->
   (Names.Name.t * EConstr.t) list * EConstr.t

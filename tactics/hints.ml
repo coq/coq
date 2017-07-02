@@ -29,7 +29,6 @@ open Decl_kinds
 open Pattern
 open Patternops
 open Clenv
-open Pfedit
 open Tacred
 open Printer
 open Vernacexpr
@@ -1307,7 +1306,8 @@ let interp_hints poly =
           List.init (nconstructors ind) 
 	    (fun i -> let c = (ind,i+1) in
 		      let gr = ConstructRef c in
-			empty_hint_info, mib.Declarations.mind_polymorphic, true,
+			empty_hint_info, 
+                        (Declareops.inductive_is_polymorphic mib), true,
 			PathHints [gr], IsGlobRef gr)
       in HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->
@@ -1462,7 +1462,7 @@ let pr_hint_term sigma cl =
 
 (* print all hints that apply to the concl of the current goal *)
 let pr_applicable_hint () =
-  let pts = get_pftreestate () in
+  let pts = Proof_global.give_me_the_proof () in
   let glss = Proof.V82.subgoals pts in
   match glss.Evd.it with
   | [] -> CErrors.user_err Pp.(str "No focused goal.")

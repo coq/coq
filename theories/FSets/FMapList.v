@@ -12,7 +12,7 @@
  [FMapInterface.S] using lists of pairs ordered (increasing) with respect to
  left projection. *)
 
-Require Import FMapInterface.
+Require Import FunInd FMapInterface.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

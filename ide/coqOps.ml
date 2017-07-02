@@ -373,7 +373,8 @@ object(self)
       else messages#add s;
     in
     let query =
-      Coq.query (phrase,sid) in
+      let route_id = 0 in
+      Coq.query (route_id,(phrase,sid)) in
     let next = function
     | Fail (_, _, err) -> display_error err; Coq.return ()
     | Good msg -> Coq.return ()
@@ -841,15 +842,14 @@ object(self)
     in
     let try_phrase phrase stop more =
       let action = log "Sending to coq now" in
-      let query = Coq.query (phrase,Stateid.dummy) in
+      let route_id = 0 in
+      let query = Coq.query (route_id,(phrase,Stateid.dummy)) in
       let next = function
       | Fail (_, l, str) -> (* FIXME: check *)
         display_error (l, str);
         messages#add (Pp.str ("Unsuccessfully tried: "^phrase));
         more
-      | Good msg ->
-        messages#add_string msg;
-        stop Tags.Script.processed
+      | Good () -> stop Tags.Script.processed
       in
       Coq.bind (Coq.seq action query) next
     in

@@ -248,24 +248,13 @@ let sort_eqns = unify_r2l
 
 let global_pattern_unification_flag = ref true
 
-(* Compatibility option introduced and activated in Coq 8.3 whose
-   syntax is now deprecated. *)
-
 open Goptions
-let _ =
-  declare_bool_option
-    { optdepr  = true;
-      optname  = "pattern-unification for existential variables in tactics";
-      optkey   = ["Tactic";"Evars";"Pattern";"Unification"];
-      optread  = (fun () -> !global_pattern_unification_flag);
-      optwrite = (:=) global_pattern_unification_flag }
 
-(* Compatibility option superseding the previous one, introduced and
-   activated in Coq 8.4 *)
+(* Compatibility option introduced and activated in Coq 8.4 *)
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "pattern-unification for existential variables in tactics";
       optkey   = ["Tactic";"Pattern";"Unification"];
       optread  = (fun () -> !global_pattern_unification_flag);
@@ -481,12 +470,10 @@ let set_flags_for_type flags = { flags with
 
 let use_evars_pattern_unification flags =
   !global_pattern_unification_flag && flags.use_pattern_unification
-  && Flags.version_strictly_greater Flags.V8_2
 
 let use_metas_pattern_unification sigma flags nb l =
   !global_pattern_unification_flag && flags.use_pattern_unification
-  || (Flags.version_less_or_equal Flags.V8_3 || 
-      flags.use_meta_bound_pattern_unification) &&
+  || flags.use_meta_bound_pattern_unification &&
      Array.for_all (fun c -> isRel sigma c && destRel sigma c <= nb) l
 
 type key = 
@@ -608,9 +595,6 @@ let constr_cmp pb sigma flags t u =
 let do_reduce ts (env, nb) sigma c =
   Stack.zip sigma (fst (whd_betaiota_deltazeta_for_iota_state
 		  ts env sigma Cst_stack.empty (c, Stack.empty)))
-
-let use_full_betaiota flags =
-  flags.modulo_betaiota && Flags.version_strictly_greater Flags.V8_3
 
 let isAllowedEvar sigma flags c = match EConstr.kind sigma c with
   | Evar (evk,_) -> not (Evar.Set.mem evk flags.frozen_evars)
@@ -949,7 +933,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	  expand curenvnb pb opt substn cM f1 l1 cN f2 l2
 
   and reduce curenvnb pb opt (sigma, metas, evars as substn) cM cN =
-    if use_full_betaiota flags && not (subterm_restriction opt flags) then
+    if flags.modulo_betaiota && not (subterm_restriction opt flags) then
       let cM' = do_reduce flags.modulo_delta curenvnb sigma cM in
 	if not (EConstr.eq_constr sigma cM cM') then
 	  unirec_rec curenvnb pb opt substn cM' cN

@@ -42,14 +42,13 @@ goal holes thanks to the `Refine` module, and in particular to the
 `Refine.refine` primitive.
 
 ```ocaml
-val refine : ?unsafe:bool -> Constr.t Sigma.run -> unit tactic
-(** In [refine ?unsafe t], [t] is a term with holes under some
+val refine : typecheck:bool -> Constr.t Sigma.run -> unit tactic
+(** In [refine typecheck t], [t] is a term with holes under some
     [evar_map] context. The term [t] is used as a partial solution
     for the current goal (refine is a goal-dependent tactic), the
     new holes created by [t] become the new subgoals. Exceptions
     raised during the interpretation of [t] are caught and result in
-    tactic failures. If [unsafe] is [false] (default is [true]) [t] is
-    type-checked beforehand. *)
+    tactic failures. If [typecheck] is [true] [t] is type-checked beforehand. *)
 ```
 
 In a first approximation, we can think of `'a Sigma.run` as

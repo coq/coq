@@ -21,7 +21,6 @@ G_auto
 G_class
 Rewrite
 G_rewrite
-Tauto
 G_eqdecide
 G_tactic
 G_ltac

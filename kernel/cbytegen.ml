@@ -992,8 +992,8 @@ let compile_constant_body fail_on_error env univs = function
       let body = Mod_subst.force_constr sb in
       let instance_size =
         match univs with
-        | None -> 0
-        | Some univ -> Univ.UContext.size univ
+        | Monomorphic_const _ -> 0
+        | Polymorphic_const univ -> Univ.AUContext.size univ
       in
       match kind_of_term body with
 	| Const (kn',u) when is_univ_copy instance_size u ->

@@ -1,7 +1,7 @@
 # Check that both coqdep and coqtop/coqc supports -R
 # Check that both coqdep and coqtop/coqc takes the later -R
 # See bugs 2242, 2337, 2339
-rm -f misc/deps/*/*.vo
+rm -f misc/deps/lib/*.vo misc/deps/client/*.vo
 tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
 $coqdep -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/bar.v 2>&1 | head -n 1 > $tmpoutput
 diff -u misc/deps/deps.out $tmpoutput 2>&1

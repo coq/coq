@@ -64,22 +64,14 @@ GEXTEND Gram
       | IDENT "Show" -> VernacShow (ShowGoal OpenSubgoals)
       | IDENT "Show"; n = natural -> VernacShow (ShowGoal (NthGoal n))
       | IDENT "Show"; id = ident -> VernacShow (ShowGoal (GoalId id))
-      | IDENT "Show"; IDENT "Goal" -> VernacShow (ShowGoal (GoalId (Names.Id.of_string "Goal")))
-      | IDENT "Show"; IDENT "Goal"; n = string ->
-          VernacShow (ShowGoal (GoalUid n))
-      | IDENT "Show"; IDENT "Implicit"; IDENT "Arguments"; n = OPT natural ->
-	  VernacShow (ShowGoalImplicitly n)
-      | IDENT "Show"; IDENT "Node" -> VernacShow ShowNode
       | IDENT "Show"; IDENT "Script" -> VernacShow ShowScript
       | IDENT "Show"; IDENT "Existentials" -> VernacShow ShowExistentials
       | IDENT "Show"; IDENT "Universes" -> VernacShow ShowUniverses
-      | IDENT "Show"; IDENT "Tree" -> VernacShow ShowTree
       | IDENT "Show"; IDENT "Conjectures" -> VernacShow ShowProofNames
       | IDENT "Show"; IDENT "Proof" -> VernacShow ShowProof
       | IDENT "Show"; IDENT "Intro" -> VernacShow (ShowIntros false)
       | IDENT "Show"; IDENT "Intros" -> VernacShow (ShowIntros true)
       | IDENT "Show"; IDENT "Match"; id = reference -> VernacShow (ShowMatch id)
-      | IDENT "Show"; IDENT "Thesis" -> VernacShow ShowThesis
       | IDENT "Guarded" -> VernacCheckGuard
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;

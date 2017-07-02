@@ -22,7 +22,13 @@ type mind_specif = mutual_inductive_body * one_inductive_body
     Raises [Not_found] if the inductive type is not found. *)
 val lookup_mind_specif : env -> inductive -> mind_specif
 
-val inductive_instance : mutual_inductive_body -> Univ.universe_instance
+val inductive_is_polymorphic : mutual_inductive_body -> bool
+
+val inductive_is_cumulative : mutual_inductive_body -> bool
+
+val inductive_polymorphic_instance : mutual_inductive_body -> Univ.universe_instance
+
+val inductive_polymorphic_context : mutual_inductive_body -> Univ.universe_context
 
 val type_of_inductive : env -> mind_specif puniverses -> constr
 

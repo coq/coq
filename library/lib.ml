@@ -27,7 +27,6 @@ type node =
   | ClosedModule  of library_segment
   | OpenedSection of object_prefix * Summary.frozen
   | ClosedSection of library_segment
-  | FrozenState of Summary.frozen
 
 and library_entry = object_name * node
 
@@ -80,7 +79,6 @@ let classify_segment seg =
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
       user_err ~hdr:"Lib.classify_segment"
         (str "there are still opened " ++ str (module_kind ty) ++ str "s")
-    | (_,FrozenState _) :: stk -> clean acc stk
   in
     clean ([],[],[]) (List.rev seg)
 
@@ -254,10 +252,6 @@ let add_anonymous_leaf ?(cache_first = true) obj =
     cache_object (oname,obj)
   end
 
-let add_frozen_state () =
-  add_anonymous_entry
-    (FrozenState (Summary.freeze_summaries ~marshallable:`No))
-
 (* Modules. *)
 
 let is_opening_node = function
@@ -408,7 +402,7 @@ let find_opening_node id =
 type variable_info = Context.Named.Declaration.t * Decl_kinds.binding_kind
 
 type variable_context = variable_info list
-type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
+type abstr_info = variable_context * Univ.universe_level_subst * Univ.AUContext.t
 		  
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
@@ -471,9 +465,9 @@ let add_section_replacement f g poly hyps =
     let () = check_same_poly poly vars in
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
-    let subst, ctx = Univ.abstract_universes true ctx in
+    let subst, ctx = Univ.abstract_universes ctx in
     let args = instance_from_variable_context (List.rev sechyps) in
-    sectab := (vars,f (Univ.UContext.instance ctx,args) exps,
+    sectab := (vars,f (Univ.AUContext.instance ctx,args) exps,
 	      g (sechyps,subst,ctx) abs)::sl
 
 let add_section_kn poly kn =
@@ -544,7 +538,6 @@ let discharge_item ((sp,_ as oname),e) =
   match e with
   | Leaf lobj ->
       Option.map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
-  | FrozenState _ -> None
   | ClosedSection _ | ClosedModule _ -> None
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly (Pp.str "discharge_item.")
@@ -585,8 +578,7 @@ let freeze ~marshallable =
         | n, ClosedModule _ -> Some (n,ClosedModule [])
         | n, OpenedSection (op, _) ->
                Some(n,OpenedSection(op,Summary.empty_frozen))
-        | n, ClosedSection _ -> Some (n,ClosedSection [])
-        | _, FrozenState _ -> None)
+        | n, ClosedSection _ -> Some (n,ClosedSection []))
       !lib_state.lib_stk in
     { !lib_state with lib_stk }
   | _ ->
@@ -596,8 +588,7 @@ let unfreeze st = lib_state := st
 
 let init () =
   unfreeze initial_lib_state;
-  Summary.init_summaries ();
-  add_frozen_state () (* Stores e.g. the keywords declared in g_*.ml4 *)
+  Summary.init_summaries ()
 
 (* Misc *)
 

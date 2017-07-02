@@ -1,4 +1,6 @@
 
+Require Import Coq.funind.FunInd.
+
 Definition iszero (n : nat) : bool :=
   match n with
   | O => true

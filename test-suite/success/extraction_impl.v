@@ -4,6 +4,8 @@
 (** NB: we should someday check the produced code instead of
     simply running the commands. *)
 
+Require Coq.extraction.Extraction.
+
 (** Bug #4243, part 1 *)
 
 Inductive dnat : nat -> Type :=

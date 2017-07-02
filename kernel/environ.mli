@@ -161,6 +161,9 @@ val constant_value_and_type : env -> constant puniverses ->
 (** The universe context associated to the constant, empty if not 
     polymorphic *)
 val constant_context : env -> constant -> Univ.universe_context
+(** The universe isntance associated to the constant, empty if not 
+    polymorphic *)
+val constant_instance : env -> constant -> Univ.universe_instance
 
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 
@@ -256,7 +259,7 @@ type unsafe_type_judgment = types punsafe_type_judgment
 
 (** {6 Compilation of global declaration } *)
 
-val compile_constant_body : env -> constant_universes option -> constant_def -> Cemitcodes.body_code option
+val compile_constant_body : env -> constant_universes -> constant_def -> Cemitcodes.body_code option
 
 exception Hyp_not_found
 
