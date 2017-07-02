@@ -26,3 +26,8 @@ type rule = prim_rule
 type goal = Goal.goal
 
 type tactic = goal sigma -> goal list sigma
+(** @deprecated: Please use "Tacmach.tactic" type instead.
+
+    We keep this definition only for "technical reasons".
+    If one tries to get rid of it, Ocaml compiler complains
+    about "circular dependency" between "Refiner" and "Tacmach" modules. *)
