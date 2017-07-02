@@ -32,3 +32,26 @@
 
     Until we find the answer to those questions (for each and every alias)
     we will continue to regard aliases as noise and thus remove/deprecate them.
+
+2 : Each API element is an alias of some original concept that exists in the Coq codebase.
+    In the other words, no API element is an alias of an alias.
+
+    MOTIVATION
+
+    If we want to maintain property #1, then whenever we are about to add something to the API,
+    we need to decide whether the same concept is or is not already present in the API (under some name).
+
+    In general, this decision procedure has linear complexity (wrt. the size of the API).
+    If we stick to property #2, this decision procedure has constant complexity (wrt. the size of the API);
+
+    Property thus #2 makes it feasible to maintain property #1.
+
+    NOTE
+
+    In case of types which are tuples and products, we are still in trouble.
+    In order to be sure that we are not adding another alias for an existing original type
+    that is already present in the API, we still have to check the whole API/API.mli file.
+
+    EXCEPTIONS
+    - In concord with the note attached to "Proof_type.tactic",
+      instead of exposing "Proof_type.tactic", we expose "Tacmach.tactic".
