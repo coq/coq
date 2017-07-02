@@ -6,3 +6,29 @@
     are present if and only if are needed for implementing Coq plugins.
 
 1 : Individual API elements are not aliased.
+
+    That is, if API provides some module/type/value,
+    it provides it once and only once.
+
+    MOTIVATION:
+
+    Ocaml programming language enables us to define aliases of:
+    - modules
+    - types
+    - values
+    That is, it enables us to give multiple names to one and the same concept.
+
+    Canonic code-bases, e.g.:
+    - Ocaml standard library
+    - Ocaml Batteries
+    - Core
+    rarely use this mechanism.
+
+    It is curious that Coq codebase uses this mechanism so heavily
+    which makes one wonder:
+    - What is the point of all those aliases?
+    - Is this mechanism used as a workaround for some problem? Which one?
+    - Cannot the problem itself be solved, rather than working around it?
+
+    Until we find the answer to those questions (for each and every alias)
+    we will continue to regard aliases as noise and thus remove/deprecate them.
