@@ -39,10 +39,6 @@ val constant_is_polymorphic : constant_body -> bool
 val body_of_constant :
   Opaqueproof.opaquetab -> constant_body -> Term.constr option
 val type_of_constant : constant_body -> constant_type
-val constraints_of_constant :
-  Opaqueproof.opaquetab -> constant_body -> Univ.constraints
-val universes_of_constant :
-  Opaqueproof.opaquetab -> constant_body -> Univ.universe_context
 
 (** Return the universe context, in case the definition is polymorphic, otherwise
     the context is empty. *)

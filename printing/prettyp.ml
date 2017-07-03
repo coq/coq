@@ -511,7 +511,25 @@ let print_constant with_values sep sp =
   let val_0 = Global.body_of_constant_body cb in
   let typ = Declareops.type_of_constant cb in
   let typ = ungeneralized_type_of_constant_type typ in
-  let univs = Global.universes_of_constant_body cb in
+  let univs =
+    let otab = Global.opaque_tables () in
+    match cb.const_body with
+    | Undef _ | Def _ ->
+      begin
+        match cb.const_universes with
+        | Monomorphic_const ctx -> ctx
+        | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
+      end
+    | OpaqueDef o ->
+      let body_uctxs = Opaqueproof.force_constraints otab o in
+      match cb.const_universes with
+      | Monomorphic_const ctx ->
+        let uctxs = Univ.ContextSet.of_context ctx in
+        Univ.ContextSet.to_context (Univ.ContextSet.union body_uctxs uctxs)
+      | Polymorphic_const ctx ->
+        assert(Univ.ContextSet.is_empty body_uctxs);
+        Univ.instantiate_univ_context ctx
+  in
   let ctx =
     Evd.evar_universe_context_of_binders
       (Universes.universe_binders_of_global (ConstRef sp))
