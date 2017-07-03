@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open API
-open Grammar_API
 open Pattern
 open Pp
 open Genredexpr

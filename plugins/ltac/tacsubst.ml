@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open API
-open Grammar_API
 open Util
 open Tacexpr
 open Mod_subst

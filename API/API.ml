@@ -77,7 +77,6 @@ module Refiner = Refiner
 module Ppextend = Ppextend
 module Nametab = Nametab
 module Vernacentries = Vernacentries
-module Mltop = Mltop
 module Goal = Goal
 module Proof_global = Proof_global
 module Proof = Proof
@@ -201,3 +200,17 @@ module Entries =
                            | ParameterEntry of parameter_entry
                            | ProjectionEntry of projection_entry
   end
+
+(* -------------------------------------------------------------------------------- *)
+
+module G_proofs = G_proofs
+module Metasyntax = Metasyntax
+module Egramcoq = Egramcoq
+module G_vernac = G_vernac
+module Pcoq = Pcoq
+module Tok = Tok
+module CLexer = CLexer
+module Egramml = Egramml
+module Mltop = Mltop
+module Vernacinterp = Vernacinterp
+module Genintern = Genintern

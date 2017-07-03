@@ -9,7 +9,6 @@
 (** Ltac toplevel command entries. *)
 
 open API
-open Grammar_API
 open Vernacexpr
 open Tacexpr
 

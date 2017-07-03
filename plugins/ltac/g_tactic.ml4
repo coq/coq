@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open API
-open Grammar_API
 open Pp
 open CErrors
 open Util
