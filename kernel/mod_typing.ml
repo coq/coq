@@ -72,16 +72,13 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
       (* In the spirit of subtyping.check_constant, we accept
          any implementations of parameters and opaques terms,
 	 as long as they have the right type *)
-      let uctx = Declareops.universes_of_constant (opaque_tables env) cb in
-      let uctx = (* Context of the spec *)
+      let c', univs, ctx' =
         match cb.const_universes with
-        | Monomorphic_const _ -> uctx
-        | Polymorphic_const auctx ->
-	  Univ.instantiate_univ_context auctx
-      in
-      let c', univs, ctx' = 
-	if not (Declareops.constant_is_polymorphic cb) then
-	  let env' = Environ.push_context ~strict:true uctx env' in
+        | Monomorphic_const _ ->
+          (** We do not add the deferred constraints of the body in the
+              environment, because they do not appear in the type of the
+              definition. Any inconsistency will be raised at a later stage
+              when joining the environment. *)
 	  let env' = Environ.push_context ~strict:true ctx env' in
 	  let c',cst = match cb.const_body with
 	    | Undef _ | OpaqueDef _ ->
@@ -94,7 +91,8 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	       let c' = Mod_subst.force_constr cs in
 	         c, Reduction.infer_conv env' (Environ.universes env') c c'
 	  in c', Monomorphic_const ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
-	else
+        | Polymorphic_const uctx ->
+          let uctx = Univ.instantiate_univ_context uctx in
 	  let cus, ccst = Univ.UContext.dest uctx in
 	  let newus, cst = Univ.UContext.dest ctx in
 	  let () =
