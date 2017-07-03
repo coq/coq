@@ -67,37 +67,6 @@ let type_of_constant cb =
       if t' == t then x else RegularArity t'
   | TemplateArity _ as x -> x
 
-let constraints_of_constant otab cb =
-  match cb.const_universes with
-  | Polymorphic_const ctx -> 
-    Univ.UContext.constraints (Univ.instantiate_univ_context ctx)
-  | Monomorphic_const ctx -> 
-    Univ.Constraint.union 
-      (Univ.UContext.constraints ctx)
-      (match cb.const_body with
-       | Undef _ -> Univ.empty_constraint
-       | Def c -> Univ.empty_constraint
-       | OpaqueDef o ->
-         Univ.ContextSet.constraints (Opaqueproof.force_constraints otab o))
-
-let universes_of_constant otab cb = 
-  match cb.const_body with
-  | Undef _ | Def _ ->
-    begin
-      match cb.const_universes with
-      | Monomorphic_const ctx -> ctx
-      | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
-    end
-  | OpaqueDef o -> 
-    let body_uctxs = Opaqueproof.force_constraints otab o in
-    match cb.const_universes with
-    | Monomorphic_const ctx ->
-      let uctxs = Univ.ContextSet.of_context ctx in
-      Univ.ContextSet.to_context (Univ.ContextSet.union body_uctxs uctxs)
-    | Polymorphic_const ctx ->
-      assert(Univ.ContextSet.is_empty body_uctxs);
-      Univ.instantiate_univ_context ctx
-
 let universes_of_polymorphic_constant otab cb = 
   match cb.const_universes with
   | Monomorphic_const _ -> Univ.UContext.empty

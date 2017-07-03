@@ -124,10 +124,6 @@ let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 let opaque_tables () = Environ.opaque_tables (env ())
 let body_of_constant_body cb = Declareops.body_of_constant (opaque_tables ()) cb
 let body_of_constant cst = body_of_constant_body (lookup_constant cst)
-let constraints_of_constant_body cb =
-  Declareops.constraints_of_constant (opaque_tables ()) cb
-let universes_of_constant_body cb =
-  Declareops.universes_of_constant (opaque_tables ()) cb
 
 (** Operations on kernel names *)
 
