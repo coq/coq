@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 (*i camlp4deps: "grammar/grammar.cma" i*)
-open Grammar_API
+
 open Ltac_plugin
 open Util
 open Pp
