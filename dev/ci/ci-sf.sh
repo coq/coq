@@ -9,6 +9,6 @@ tar xvfz sf.tgz
 
 sed -i.bak '15i From Coq Require Extraction.' sf/Extraction.v
 
-( cd sf && sed -i.bak 's/(K,N)/((K,N))/' LibTactics.v && make clean && make -j ${NJOBS} )
+( cd sf && sed -i.bak 's/(K,N)/((K,N))/' LibTactics.v && make clean && make )
 
 

@@ -124,7 +124,7 @@ let typecheck_params_and_fields finite def id pl t ps nots fs =
             let s' = EConstr.ESorts.kind !evars s' in
 	    (if poly then
                match Evd.is_sort_variable !evars s' with
-	       | Some l -> evars := Evd.make_flexible_variable !evars true l; 
+	       | Some l -> evars := Evd.make_flexible_variable !evars ~algebraic:true l; 
 	                  s, s', true
 	       | None -> s, s', false
              else s, s', false)

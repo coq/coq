@@ -364,6 +364,8 @@ let args_options = Arg.align [
     " Force OCaml version";
   "-warn-error", Arg.Set Prefs.warn_error,
     " Make OCaml warnings into errors";
+  "-camldir", Arg.String (fun _ -> ()),
+    "<dir> Specifies path to 'ocaml' for running configure script";
 ]
 
 let parse_args () =

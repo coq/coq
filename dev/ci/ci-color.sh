@@ -32,4 +32,4 @@ sed -i -e "21i From Coq Require Import FunInd." ${Color_CI_DIR}/Util/List/ListUt
 sed -i -e "17i From Coq Require Import FunInd." ${Color_CI_DIR}/Util/Multiset/MultisetOrder.v
 sed -i -e "13i From Coq Require Import FunInd." ${Color_CI_DIR}/Util/Set/SetUtil.v
 
-( cd ${Color_CI_DIR} && make -j ${NJOBS} )
+( cd ${Color_CI_DIR} && make )

@@ -1,3 +1,12 @@
+(C) 2016 Intel Deutschland GmbH
+Author: Michael Soegtrop
+
+Released to the public by Intel under the
+GNU Lesser General Public License Version 2.1 or later
+See https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+This license also applies to all files in the patches_coq subfolder.
+
 ==================== Purpose / Goal ====================
 
 The main purpose of these scripts is to build Coq for Windows in a reproducible
@@ -286,9 +295,16 @@ Default value: <folder of MakeCoq_MinGW.bat>\source_cache
 
 The version of Coq to download and compile.
 
-Possible values: 8.4pl6, 8.5pl2, 8.5pl3, git-v8.6 
-                 Others might work, but are untested.
+Possible values: 8.4pl6, 8.5pl2, 8.5pl3, 8.6
+                 (download from https://coq.inria.fr/distrib/V$COQ_VERSION/files/coq-<version>.tar.gz)
+                 Others versions might work, but are untested.
                  8.4 is only tested in mode=absoloute
+                 
+                 git-v8.6, git-trunk
+                 (download from https://github.com/coq/coq/archive/<version without git->.zip)
+                 
+                 /cygdrive/....
+                 Use local folder. The sources are archived as coq-local.tar.gz
 
 Default value: 8.5pl3
 
@@ -322,6 +338,8 @@ Possible values: 1..N.
 
 ==================== TODO ====================
 
+- Check for spaces in destination paths
+- Check for = signs in all paths (DOS commands don't work with pathes with = in it, possibly even when quoted)
 - Installer doesn't remove OCAMLLIB environment variables (it is in the script, but doesn't seem to work)
 - CoqIDE doesn't find theme files
 - Finish / test mingw_in_Cygwin mode (coqide doesn't start, coqc slow cause of scanning complete share folder)

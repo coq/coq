@@ -148,7 +148,7 @@ val interp_notation_as_global_reference : ?loc:Loc.t -> (global_reference -> boo
 
 (** Checks for already existing notations *)
 val exists_notation_in_scope : scope_name option -> notation ->
-      interpretation -> bool
+      bool -> interpretation -> bool
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :

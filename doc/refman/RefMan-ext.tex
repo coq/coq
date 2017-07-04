@@ -38,21 +38,19 @@ construction allows defining ``signatures''.
 \end{figure}
 
 \noindent In the expression
-
-\smallskip
-{\tt Record} {\ident} {\params} \texttt{:} 
-   {\sort} := {\ident$_0$} \verb+{+
- {\ident$_1$} \binders$_1$ \texttt{:} {\term$_1$}; 
-              \dots
-  {\ident$_n$} \binders$_n$ \texttt{:} {\term$_n$} \verb+}+.
-\smallskip
- 
+\begin{quote}
+{\tt Record {\ident} {\params} : {\sort} := {\ident$_0$} \{ \\
+  {\ident$_1$} \binders$_1$ : {\term$_1$} ; ... ; \\
+  {\ident$_n$} \binders$_n$ : {\term$_n$} \}.}
+\end{quote}
 \noindent the identifier {\ident} is the name of the defined record
 and {\sort} is its type. The identifier {\ident$_0$} is the name of
 its constructor. If {\ident$_0$} is omitted, the default name {\tt
-Build\_{\ident}} is used. If {\sort} is omitted, the default sort is ``{\Type}''.
-The identifiers {\ident$_1$}, ..,
-{\ident$_n$} are the names of fields and {\tt forall} \binders$_1${\tt ,} {\term$_1$}, ..., {\tt forall} \binders$_n${\tt ,} {\term$_n$}
+Build\_{\ident}} is used.
+If {\sort} is omitted, the default sort is {\Type}.
+The identifiers {\ident$_1$}, \dots, {\ident$_n$} are the names of
+fields and {\tt forall {\binders$_1$}, {\term$_1$}}, \dots,
+{\tt forall {\binders$_n$}, {\term$_n$}}
 their respective types. Remark that the type of {\ident$_i$} may
 depend on the previous {\ident$_j$} (for $j<i$). Thus the order of the
 fields is important. Finally, {\params} are the parameters of the
@@ -82,26 +80,15 @@ Record Rat : Set := mkRat
     forall x y z:nat, (x * y) = top /\ (x * z) = bottom -> x = 1}.
 \end{coq_example}
 
-Remark here that the field
-\verb+Rat_cond+ depends on the field \verb+bottom+. 
-
-%Let us now see the work done by the {\tt Record} macro.
-%First the macro generates an inductive definition
-%with just one constructor:
-%
-%\medskip
-%\noindent
-%{\tt Inductive {\ident} \zeroone{\binders} : {\sort} := \\
-%\mbox{}\hspace{0.4cm} {\ident$_0$} : forall ({\ident$_1$}:{\term$_1$}) .. 
-%({\ident$_n$}:{\term$_n$}), {\ident} {\rm\sl params}.}
-%\medskip
+Remark here that the field \verb+Rat_bottom_cond+ depends
+on the field \verb+bottom+ and \verb+Rat_irred_cond+ depends
+on both \verb+top+ and \verb+bottom+.
 
 Let us now see the work done by the {\tt Record} macro.  First the
 macro generates a variant type definition with just one constructor:
 \begin{quote}
-{\tt Variant {\ident} {\params} :{\sort} :=} \\
-\qquad {\tt
-  {\ident$_0$} ({\ident$_1$}:{\term$_1$}) .. ({\ident$_n$}:{\term$_n$}).}
+{\tt Variant {\ident} {\params} : {\sort} := \\
+  {\ident$_0$} ({\ident$_1$} : {\term$_1$}) ... ({\ident$_n$} : {\term$_n$}).}
 \end{quote}
 To build an object of type {\ident}, one should provide the
 constructor {\ident$_0$} with $n$ terms filling the fields of
@@ -109,28 +96,9 @@ the record.
 
 As an example, let us define the rational $1/2$:
 \begin{coq_example*}
-Require Import Arith.
 Theorem one_two_irred :
  forall x y z:nat, x * y = 1 /\ x * z = 2 -> x = 1.
-\end{coq_example*}
-\begin{coq_eval}
-Lemma mult_m_n_eq_m_1 : forall m n:nat, m * n = 1 -> m = 1.
-destruct m; trivial.
-intros; apply f_equal with (f := S).
-destruct m; trivial.
-destruct n; simpl in H.
- rewrite <- mult_n_O in H.
-   discriminate.
- rewrite <- plus_n_Sm in H.
-   discriminate.
-Qed.
-
-intros x y z [H1 H2].
- apply mult_m_n_eq_m_1 with (n := y); trivial.
-\end{coq_eval}
-\ldots
-\begin{coq_example*}
-Qed.
+Admitted.
 \end{coq_example*}
 \begin{coq_example}
 Definition half := mkRat true 1 2 (O_S 1) one_two_irred.
@@ -139,32 +107,132 @@ Definition half := mkRat true 1 2 (O_S 1) one_two_irred.
 Check half.
 \end{coq_example}
 
+\begin{figure}[t]
+\begin{centerframe}
+\begin{tabular}{lcl}
+{\term} & ++= &
+         \verb!{|! \zeroone{\nelist{\fielddef}{;}} \verb!|}! \\
+  & & \\
+{\fielddef} & ::= & {\name} \zeroone{\binders} := {\term} \\
+\end{tabular}
+\end{centerframe}
+\caption{Syntax for constructing elements of a \texttt{Record} using named fields}
+\label{fig:fieldsyntax}
+\end{figure}
+
+Alternatively, the following syntax allows creating objects by using named fields, as
+shown on Figure~\ref{fig:fieldsyntax}. The
+fields do not have to be in any particular order, nor do they have to be all
+present if the missing ones can be inferred or prompted for (see
+Section~\ref{Program}).
+
+\begin{coq_example}
+Definition half' :=
+  {| sign := true;
+     Rat_bottom_cond := O_S 1;
+     Rat_irred_cond := one_two_irred |}.
+\end{coq_example}
+
+This syntax can be disabled globally for printing by
+\begin{quote}
+{\tt Unset Printing Records.}
+\optindex{Printing Records}
+\end{quote}
+For a given type, one can override this using either
+\begin{quote}
+{\tt Add Printing Record {\ident}.}
+\end{quote}
+to get record syntax or
+\begin{quote}
+{\tt Add Printing Constructor {\ident}.}
+\end{quote}
+to get constructor syntax.
+
+This syntax can also be used for pattern matching.
+
+\begin{coq_example}
+Eval compute in (
+  match half with
+  | {| sign := true; top := n |} => n
+  | _ => 0
+  end).
+\end{coq_example}
+
 The macro generates also, when it is possible, the projection
 functions for destructuring an object of type {\ident}.  These
-projection functions have the same name that the corresponding
+projection functions are given the names of the corresponding
 fields. If a field is named ``\verb=_='' then no projection is built
-for it.  In our example:
+for it. In our example:
+
+\begin{coq_example}
+Eval compute in top half.
+Eval compute in bottom half.
+Eval compute in Rat_bottom_cond half.
+\end{coq_example}
+
+An alternative syntax for projections based on a dot notation is
+available:
 
 \begin{coq_example}
 Eval compute in half.(top).
-Eval compute in half.(bottom).
-Eval compute in half.(Rat_bottom_cond).
 \end{coq_example}
+
+It can be activated for printing with the command
+\optindex{Printing Projections}
+\begin{quote}
+{\tt Set Printing Projections.}
+\end{quote}
+
+\begin{coq_example}
+Set Printing Projections.
+Check top half.
+\end{coq_example}
+
+The corresponding grammar rules are given in Figure~\ref{fig:projsyntax}.
+When {\qualid} denotes a projection, the syntax {\tt
+  {\term}.({\qualid})} is equivalent to {\qualid~\term}, the syntax
+{\term}{\tt .(}{\qualid}~{\termarg}$_1$ {\ldots} {\termarg}$_n${\tt )} to
+{\qualid~{\termarg}$_1$ {\ldots} {\termarg}$_n$~\term}, and the syntax
+{\term}{\tt .(@}{\qualid}~{\term}$_1$~\ldots~{\term}$_n${\tt )} to
+{@\qualid~{\term}$_1$ {\ldots} {\term}$_n$~\term}. In each case, {\term}
+is the object projected and the other arguments are the parameters of
+the inductive type.
+
+\begin{figure}[t]
+\begin{centerframe}
+\begin{tabular}{lcl}
+{\term} & ++= & {\term} {\tt .(} {\qualid} {\tt )}\\
+ & $|$ & {\term} {\tt .(} {\qualid} \nelist{\termarg}{} {\tt )}\\
+ & $|$ & {\term} {\tt .(} {@}{\qualid} \nelist{\term}{} {\tt )}
+\end{tabular}
+\end{centerframe}
+\caption{Syntax for \texttt{Record} projections}
+\label{fig:projsyntax}
+\end{figure}
+
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
 
-Records defined  with the {\tt Record}  keyword are not  allowed to be
-recursive (references  to the record's name  in the type  of its field
-raises an  error). To define recursive  records, one can  use the {\tt
-  Inductive} and {\tt CoInductive} keywords, resulting in an inductive
-or  co-inductive record.  A  \emph{caveat}, however,  is that  records
+\begin{Remarks}
+
+\item Records defined with the {\tt Record} keyword are not allowed to be
+recursive (references to the record's name in the type of its field
+raises an  error). To define recursive records, one can use the {\tt
+Inductive} and {\tt CoInductive} keywords, resulting in an inductive
+or co-inductive record.
+A \emph{caveat}, however, is that records
 cannot appear in mutually inductive (or co-inductive) definitions.
-Induction schemes are automatically generated for inductive records.
+
+\item Induction schemes are automatically generated for inductive records.
 Automatic generation of induction schemes for non-recursive records
 defined with the {\tt Record} keyword can be activated with the
 {\tt Nonrecursive Elimination Schemes} option
 (see~\ref{set-nonrecursive-elimination-schemes}).
+
+\item {\tt Structure} is a synonym of the keyword {\tt Record}.
+
+\end{Remarks}
 
 \begin{Warnings}
 \item {\tt {\ident$_i$} cannot be defined.}
@@ -202,101 +270,6 @@ defined with the {\tt Record} keyword can be activated with the
 
 \SeeAlso Coercions and records in Section~\ref{Coercions-and-records}
 of the chapter devoted to coercions.
-
-\Rem {\tt Structure} is a synonym of the keyword {\tt Record}.
-
-\Rem Creation of an object of record type can be done by calling {\ident$_0$}
-and passing arguments in the correct order.
-
-\begin{coq_example}
-Record point := { x : nat; y : nat }.
-Definition a := Build_point 5 3.
-\end{coq_example}
-
-\begin{figure}[t]
-\begin{centerframe}
-\begin{tabular}{lcl}
-{\term} & ++= &
-         \verb!{|! \zeroone{\nelist{\fielddef}{;}} \verb!|}! \\
-  & & \\
-{\fielddef} & ::= & {\name} \zeroone{\binders} := {\term} \\
-\end{tabular}
-\end{centerframe}
-\caption{Syntax for constructing elements of a \texttt{Record} using named fields}
-\label{fig:fieldsyntax}
-\end{figure}
-
-A syntax is available for creating objects by using named fields, as
-shown on Figure~\ref{fig:fieldsyntax}. The
-fields do not have to be in any particular order, nor do they have to be all
-present if the missing ones can be inferred or prompted for (see
-Section~\ref{Program}).
-
-\begin{coq_example}
-Definition b := {| x := 5; y := 3 |}.
-Definition c := {| y := 3; x := 5 |}.
-\end{coq_example}
-
-This syntax can be disabled globally for printing by
-\begin{quote}
-{\tt Unset Printing Records.}
-\optindex{Printing Records}
-\end{quote}
-For a given type, one can override this using either
-\begin{quote}
-{\tt Add Printing Record {\ident}.}
-\end{quote}
-to get record syntax or
-\begin{quote}
-{\tt Add Printing Constructor {\ident}.}
-\end{quote}
-to get constructor syntax.
-
-This syntax can also be used for pattern matching.
-
-\begin{coq_example}
-Eval compute in (
-  match b with
-  | {| y := S n |} => n
-  | _ => 0
-  end).
-\end{coq_example}
-
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
-
-\Rem A syntax for projections based on a dot notation is
-available. The command to activate it is
-\optindex{Printing Projections}
-\begin{quote}
-{\tt Set Printing Projections.}
-\end{quote}
-
-\begin{figure}[t]
-\begin{centerframe}
-\begin{tabular}{lcl}
-{\term} & ++= & {\term} {\tt .(} {\qualid} {\tt )}\\
- & $|$ & {\term} {\tt .(} {\qualid} \nelist{\termarg}{} {\tt )}\\
- & $|$ & {\term} {\tt .(} {@}{\qualid} \nelist{\term}{} {\tt )}
-\end{tabular}
-\end{centerframe}
-\caption{Syntax for \texttt{Record} projections}
-\label{fig:projsyntax}
-\end{figure}
-
-The corresponding grammar rules are given Figure~\ref{fig:projsyntax}.
-When {\qualid} denotes a projection, the syntax {\tt
-  {\term}.({\qualid})} is equivalent to {\qualid~\term}, the syntax
-{\term}{\tt .(}{\qualid}~{\termarg}$_1$ {\ldots} {\termarg}$_n${\tt )} to
-{\qualid~{\termarg}$_1$ {\ldots} {\termarg}$_n$~\term}, and the syntax
-{\term}{\tt .(@}{\qualid}~{\term}$_1$~\ldots~{\term}$_n${\tt )} to
-{@\qualid~{\term}$_1$ {\ldots} {\term}$_n$~\term}. In each case, {\term}
-is the object projected and the other arguments are the parameters of
-the inductive type.
-
-To deactivate the printing of projections, use 
-{\tt Unset Printing Projections}.
 
 \subsection{Primitive Projections}
 \optindex{Primitive Projections}
@@ -2010,6 +1983,11 @@ Check (fun x y => _) 0 1.
 \begin{coq_eval}
 Unset Printing Existential Instances.
 \end{coq_eval}
+
+Existential variables can be named by the user upon creation using
+the syntax {\tt ?[\ident]}. This is useful when the existential
+variable needs to be explicitly handled later in the script (e.g.
+with a named-goal selector, see~\ref{ltac:selector}).
 
 \subsection{Explicit displaying of existential instances for pretty-printing
 \label{SetPrintingExistentialInstances}

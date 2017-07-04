@@ -407,11 +407,15 @@ let opposite_tabs =
 let background_color =
   new preference ~name:["background_color"] ~init:"cornsilk" ~repr:Repr.(string)
 
+let attach_tag (pref : string preference) (tag : GText.tag) f =
+  tag#set_property (f pref#get);
+  pref#connect#changed ~callback:(fun c -> tag#set_property (f c))
+
 let attach_bg (pref : string preference) (tag : GText.tag) =
-  pref#connect#changed ~callback:(fun c -> tag#set_property (`BACKGROUND c))
+  attach_tag pref tag (fun c -> `BACKGROUND c)
 
 let attach_fg (pref : string preference) (tag : GText.tag) =
-  pref#connect#changed ~callback:(fun c -> tag#set_property (`FOREGROUND c))
+  attach_tag pref tag (fun c -> `FOREGROUND c)
 
 let processing_color =
   new preference ~name:["processing_color"] ~init:"light blue" ~repr:Repr.(string)

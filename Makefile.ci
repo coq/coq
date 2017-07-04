@@ -24,4 +24,4 @@ CI_TARGETS=ci-all \
 
 # Generic rule, we use make to easy travis integraton with mixed rules
 $(CI_TARGETS): ci-%:
-	./dev/ci/ci-$*.sh
+	+./dev/ci/ci-$*.sh

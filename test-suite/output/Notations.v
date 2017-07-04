@@ -1,3 +1,14 @@
+(* Bug 5568, don't warn for notations in repeated module import *)
+
+Module foo.
+Notation compose := (fun g f => g f).
+Notation "g & f" := (compose g f) (at level 10).
+End foo.
+
+Import foo.
+Import foo.
+Import foo.
+
 (**********************************************************************)
 (* Notations for if and let (submitted by Roland Zumkeller)           *)
 

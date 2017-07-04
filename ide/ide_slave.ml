@@ -20,9 +20,8 @@ module CompactedDecl = Context.Compacted.Declaration
 
 (** Ide_slave : an implementation of [Interface], i.e. mainly an interp
     function and a rewind function. This specialized loop is triggered
-    when the -ideslave option is passed to Coqtop. Currently CoqIDE is
-    the only one using this mode, but we try here to be as generic as
-    possible, so this may change in the future... *)
+    when the -ideslave option is passed to Coqtop. *)
+
 
 (** Signal handling: we postpone ^C during input and output phases,
     but make it directly raise a Sys.Break during evaluation of the request. *)
@@ -65,7 +64,7 @@ let is_known_option cmd = match cmd with
 (** Check whether a command is forbidden in the IDE *)
 
 let ide_cmd_checks ~id (loc,ast) =
-  let user_error s = CErrors.user_err ?loc ~hdr:"CoqIde" (str s) in
+  let user_error s = CErrors.user_err ?loc ~hdr:"IDE" (str s) in
   let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
   if is_debug ast then
     user_error "Debug mode not available in the IDE";
@@ -509,4 +508,4 @@ let () = Coqtop.toploop_run := loop
 
 let () = Usage.add_to_usage "coqidetop"
 "  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
-\n  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"
+\n  --help-XML-protocol    print documentation of the Coq XML protocol\n"

@@ -70,7 +70,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 	       else t
 	    | UnivFlexible alg ->
 	       if onlyalg && alg then
-	         (evdref := Evd.make_flexible_variable !evdref false l; t)
+	         (evdref := Evd.make_flexible_variable !evdref ~algebraic:false l; t)
 	       else t))
       | Prop Pos when refreshset && not direction ->
        (* Cannot make a universe "lower" than "Set",

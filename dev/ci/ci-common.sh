@@ -68,7 +68,7 @@ install_ssreflect()
     sed -i.bak '/field/d'       Make && \
     sed -i.bak '/fingroup/d'    Make && \
     sed -i.bak '/algebra/d'     Make && \
-    make Makefile.coq && make -f Makefile.coq -j ${NJOBS} all && make install )
+    make Makefile.coq && make -f Makefile.coq all && make install )
 
   echo -en 'travis_fold:end:ssr.install\\r'
 

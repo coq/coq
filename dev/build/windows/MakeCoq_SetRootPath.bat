@@ -1,3 +1,14 @@
+REM ========== COPYRIGHT/COPYLEFT ==========
+
+REM (C) 2016 Intel Deutschland GmbH
+REM Author: Michael Soegtrop
+
+REM Released to the public by Intel under the
+REM GNU Lesser General Public License Version 2.1 or later
+REM See https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+REM ========== CHOOSE A SENSIBLE ROOT PATH ==========
+
 @ ECHO OFF
 
 REM Figure out a root path for coq and cygwin

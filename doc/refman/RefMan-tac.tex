@@ -1515,23 +1515,33 @@ The {\tt evar} tactic creates a new local definition named \ident\ with
 type \term\ in the context. The body of this binding is a fresh
 existential variable.
 
-\subsection{\tt instantiate ( {\num} := {\term} )}
+\subsection{\tt instantiate ( {\ident} := {\term} )}
 \tacindex{instantiate}
 \label{instantiate}
 
 The {\tt instantiate} tactic refines (see Section~\ref{refine})
-an existential variable
-with the term \term. The \num\  argument is the position of the
-existential variable from right to left in the conclusion. This cannot be
-the number of the existential variable since this number is different
-in every session.
+an existential variable {\ident} with the term {\term}.
+It is equivalent to {\tt only [\ident]: refine \term} (preferred alternative).
 
-When you are referring to hypotheses which you did not name
+\begin{Remarks}
+\item To be able to refer to an existential variable by name, the
+user must have given the name explicitly (see~\ref{ExistentialVariables}).
+
+\item When you are referring to hypotheses which you did not name
 explicitly, be aware that Coq may make a different decision on how to
 name the variable in the current goal and in the context of the
 existential variable. This can lead to surprising behaviors.
+\end{Remarks}
 
 \begin{Variants}
+
+  \item {\tt instantiate ( {\num} := {\term} )}
+  This variant allows to refer to an existential variable which was not
+  named by the user. The {\num} argument is the position of the
+  existential variable from right to left in the goal.
+  Because this variant is not robust to slight changes in the goal,
+  its use is strongly discouraged.
+
   \item {\tt instantiate ( {\num} := {\term} ) in \ident}
 
   \item {\tt instantiate ( {\num} := {\term} ) in ( Value of {\ident} )}

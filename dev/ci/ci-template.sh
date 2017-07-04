@@ -9,4 +9,4 @@ Template_CI_DIR=${CI_BUILD_DIR}/Template
 
 git_checkout ${Template_CI_BRANCH} ${Template_CI_GITURL} ${Template_CI_DIR}
 
-( cd ${Template_CI_DIR} && make -j ${NJOBS} )
+( cd ${Template_CI_DIR} && make )
