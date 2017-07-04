@@ -696,3 +696,35 @@ let structure_for_compute c =
   let struc = optimize_struct (refs,[]) (mono_environment refs []) in
   let flatstruc = List.map snd (List.flatten (List.map snd struc)) in
   flatstruc, ast, mlt
+
+(* For the test-suite :
+   extraction to a temporary file + run ocamlc on it *)
+
+let compile f =
+  try
+    let args = ["ocamlc";"-I";Filename.dirname f;"-c";f^"i";f] in
+    let res = CUnix.sys_command (Envars.ocamlfind ()) args in
+    match res with
+    | Unix.WEXITED 0 -> ()
+    | Unix.WEXITED n | Unix.WSIGNALED n | Unix.WSTOPPED n ->
+       CErrors.user_err
+         Pp.(str "Compilation of file " ++ str f ++
+             str " failed with exit code " ++ int n)
+  with Unix.Unix_error (e,_,_) ->
+    CErrors.user_err
+      Pp.(str "Compilation of file " ++ str f ++
+          str " failed with error " ++ str (Unix.error_message e))
+
+let remove f =
+  if Sys.file_exists f then Sys.remove f
+
+let extract_and_compile l =
+  if lang () != Ocaml then
+    CErrors.user_err (Pp.str "This command only works with OCaml extraction");
+  let f = Filename.temp_file "testextraction" ".ml" in
+  let () = full_extraction (Some f) l in
+  let () = compile f in
+  let () = remove f; remove (f^"i") in
+  let base = Filename.chop_suffix f ".ml" in
+  let () = remove (base^".cmo"); remove (base^".cmi") in
+  Feedback.msg_notice (str "Extracted code successfully compiled")
