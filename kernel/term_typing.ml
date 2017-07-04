@@ -251,8 +251,8 @@ let infer_declaration ~trust env kn dcl =
       delay even in the polymorphic case.  *)
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
-		       const_entry_polymorphic = false} as c) ->
-      let env = push_context ~strict:true c.const_entry_universes env in
+		       const_entry_universes = Monomorphic_const_entry univs } as c) ->
+      let env = push_context ~strict:true univs env in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
@@ -271,7 +271,7 @@ let infer_declaration ~trust env kn dcl =
           c, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
       def, RegularArity typ, None,
-      (Monomorphic_const c.const_entry_universes),
+      (Monomorphic_const univs),
       c.const_entry_inline_code, c.const_entry_secctx
 
   (** Other definitions have to be processed immediately. *)
@@ -279,18 +279,22 @@ let infer_declaration ~trust env kn dcl =
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let (body, ctx), side_eff = Future.join body in
-      let univsctx = Univ.ContextSet.of_context c.const_entry_universes in
+      let poly, univs = match c.const_entry_universes with
+      | Monomorphic_const_entry univs -> false, univs
+      | Polymorphic_const_entry univs -> true, univs
+      in
+      let univsctx = Univ.ContextSet.of_context univs in
       let body, ctx, _ = inline_side_effects env body
         (Univ.ContextSet.union univsctx ctx) side_eff in
-      let env = push_context_set ~strict:(not c.const_entry_polymorphic) ctx env in
-      let abstract = c.const_entry_polymorphic && not (Option.is_empty kn) in
+      let env = push_context_set ~strict:(not poly) ctx env in
+      let abstract = poly && not (Option.is_empty kn) in
       let usubst, univs =
         abstract_constant_universes abstract (Univ.ContextSet.to_context ctx)
       in      
       let j = infer env body in
       let typ = match typ with
         | None ->
-           if not c.const_entry_polymorphic then (* Old-style polymorphism *)
+           if not poly then (* Old-style polymorphism *)
              make_polymorphic_if_constant_for_ind env j
            else RegularArity (Vars.subst_univs_level_constr usubst j.uj_type)
         | Some t ->
@@ -461,11 +465,12 @@ let translate_constant mb env kn ce =
     (infer_declaration ~trust:mb env (Some kn) ce)
 
 let constant_entry_of_side_effect cb u =
-  let poly, univs =
+  let univs =
     match cb.const_universes with
-    | Monomorphic_const ctx -> false, ctx
+    | Monomorphic_const uctx ->
+      Monomorphic_const_entry uctx
     | Polymorphic_const auctx -> 
-      true, Univ.AUContext.repr auctx
+      Polymorphic_const_entry (Univ.AUContext.repr auctx)
   in
   let pt =
     match cb.const_body, u with
@@ -478,7 +483,6 @@ let constant_entry_of_side_effect cb u =
     const_entry_feedback = None;
     const_entry_type =
       (match cb.const_type with RegularArity t -> Some t | _ -> None);
-    const_entry_polymorphic = poly;
     const_entry_universes = univs;
     const_entry_opaque = Declareops.is_opaque cb;
     const_entry_inline_code = cb.const_inline_code }
@@ -592,6 +596,10 @@ let translate_local_def mb env id centry =
            env ids_def ids_typ context_ids in
        record_aux env ids_typ ids_def expr
   end;
+  let univs = match univs with
+  | Monomorphic_const ctx -> ctx
+  | Polymorphic_const _ -> assert false
+  in
   def, typ, univs
 
 (* Insertion of inductive types. *)

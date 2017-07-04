@@ -636,12 +636,12 @@ let declare_obligation prg obl body ty uctx =
 	  shrink_body body ty else [], body, ty, [||]
       in
       let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
+      let univs = if poly then Polymorphic_const_entry uctx else Monomorphic_const_entry uctx in
       let ce =
         { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
 	  const_entry_type = ty;
-	  const_entry_polymorphic = poly;
-	  const_entry_universes = uctx;
+	  const_entry_universes = univs;
 	  const_entry_opaque = opaque;
           const_entry_inline_code = false;
           const_entry_feedback = None;

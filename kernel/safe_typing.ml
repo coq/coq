@@ -382,12 +382,12 @@ let safe_push_named d env =
 
 
 let push_named_def (id,de) senv =
-  let c,typ,univs = 
-    match Term_typing.translate_local_def senv.revstruct senv.env id de with
-    | c, typ, Monomorphic_const ctx -> c, typ, ctx
-    | _, _, Polymorphic_const _ -> assert false
+  let open Entries in
+  let c,typ,univs = Term_typing.translate_local_def senv.revstruct senv.env id de in
+  let poly = match de.Entries.const_entry_universes with
+  | Monomorphic_const_entry _ -> false
+  | Polymorphic_const_entry _ -> true
   in
-  let poly = de.Entries.const_entry_polymorphic in
   let univs = Univ.ContextSet.of_context univs in
   let c, univs = match c with
     | Def c -> Mod_subst.force_constr c, univs

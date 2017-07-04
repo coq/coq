@@ -1345,6 +1345,9 @@ sig
   type inline = int option
   type 'a proof_output = Constr.t Univ.in_universe_context_set * 'a
   type 'a const_entry_body = 'a proof_output Future.computation
+  type constant_universes_entry =
+    | Monomorphic_const_entry of Univ.universe_context
+    | Polymorphic_const_entry of Univ.universe_context
   type 'a definition_entry =
                                { const_entry_body   : 'a const_entry_body;
                                  (* List of section variables *)
@@ -1352,8 +1355,7 @@ sig
                                  (* State id on which the completion of type checking is reported *)
                                  const_entry_feedback    : Stateid.t option;
                                  const_entry_type        : Constr.types option;
-                                 const_entry_polymorphic : bool;
-                                 const_entry_universes   : Univ.UContext.t;
+                                 const_entry_universes   : constant_universes_entry;
                                  const_entry_opaque      : bool;
                                  const_entry_inline_code : bool }
   type parameter_entry = Context.Named.t option * bool * Constr.types Univ.in_universe_context * inline

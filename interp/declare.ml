@@ -63,8 +63,12 @@ let cache_variable ((sp,_),o) =
 	impl, true, poly, ctx
     | SectionLocalDef (de) ->
       let univs = Global.push_named_def (id,de) in
+      let poly = match de.const_entry_universes with
+      | Monomorphic_const_entry _ -> false
+      | Polymorphic_const_entry _ -> true
+      in
       Explicit, de.const_entry_opaque,
-      de.const_entry_polymorphic, univs in
+      poly, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl poly ctx;
   Dischargedhypsmap.set_discharged_hyps sp [];
@@ -237,22 +241,29 @@ let declare_constant_common id cst =
 
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Safe_typing.empty_private_constants) body =
+  let univs =
+    if poly then Polymorphic_const_entry univs
+    else Monomorphic_const_entry univs
+  in
   { const_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
-    const_entry_polymorphic = poly;
     const_entry_universes = univs;
     const_entry_opaque = opaque;
     const_entry_feedback = None;
     const_entry_inline_code = inline}
 
 let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
+  let is_poly de = match de.const_entry_universes with
+  | Monomorphic_const_entry _ -> false
+  | Polymorphic_const_entry _ -> true
+  in
   let export = (* We deal with side effects *)
     match cd with
     | DefinitionEntry de when
         export_seff ||
         not de.const_entry_opaque ||
-        de.const_entry_polymorphic ->
+        is_poly de ->
           let bo = de.const_entry_body in
           let _, seff = Future.force bo in
           Safe_typing.empty_private_constants <> seff

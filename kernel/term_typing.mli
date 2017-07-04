@@ -15,7 +15,7 @@ open Entries
 type side_effects
 
 val translate_local_def : structure_body -> env -> Id.t -> side_effects definition_entry ->
-  constant_def * types * constant_universes
+  constant_def * types * Univ.universe_context
 
 val translate_local_assum : env -> types -> types
 
