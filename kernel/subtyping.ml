@@ -358,40 +358,17 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 	      let c2 = Mod_subst.force_constr lc2 in
 	      check_conv NotConvertibleBodyField cst poly u infer_conv env' c1 c2))
    | IndType ((kn,i),mind1) ->
-       ignore (CErrors.user_err Pp.(str @@
+       CErrors.user_err Pp.(str @@
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by an inductive type. Hint: you can rename the " ^
        "inductive type and give a definition to map the old name to the new " ^
-       "name."));
-      let () = assert (List.is_empty mind1.mind_hyps && List.is_empty cb2.const_hyps) in
-      if Declareops.constant_has_body cb2 then error DefinitionFieldExpected;
-      let u1 = inductive_polymorphic_instance mind1 in
-      let arity1,cst1 = constrained_type_of_inductive env 
-	((mind1,mind1.mind_packets.(i)),u1) in
-      let cst2 = assert false in
-(*       let cst2 = *)
-(*         Declareops.constraints_of_constant (Environ.opaque_tables env) cb2 in  *)
-      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
-      let cst = Constraint.union cst (Constraint.union cst1 cst2) in
-      let error = NotConvertibleTypeField (env, arity1, typ2) in
-       check_conv error cst false Univ.Instance.empty infer_conv_leq env arity1 typ2
-   | IndConstr (((kn,i),j) as cstr,mind1) ->
-      ignore (CErrors.user_err Pp.(str @@
+       "name.")
+   | IndConstr (((kn,i),j),mind1) ->
+      CErrors.user_err Pp.(str @@
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by a constructor. Hint: you can rename the " ^
        "constructor and give a definition to map the old name to the new " ^
-       "name."));
-      let () = assert (List.is_empty mind1.mind_hyps && List.is_empty cb2.const_hyps) in
-      if Declareops.constant_has_body cb2 then error DefinitionFieldExpected;
-      let u1 = inductive_polymorphic_instance mind1 in
-      let ty1,cst1 = constrained_type_of_constructor (cstr,u1) (mind1,mind1.mind_packets.(i)) in
-      let cst2 = assert false in
-(*       let cst2 = *)
-(*         Declareops.constraints_of_constant (Environ.opaque_tables env) cb2 in *)
-      let ty2 = Typeops.type_of_constant_type env cb2.const_type in
-      let cst = Constraint.union cst (Constraint.union cst1 cst2) in
-      let error = NotConvertibleTypeField (env, ty1, ty2) in
-       check_conv error cst false Univ.Instance.empty infer_conv env ty1 ty2
+       "name.")
 
 let rec check_modules cst env msb1 msb2 subst1 subst2 =
   let mty1 = module_type_of_module msb1 in
