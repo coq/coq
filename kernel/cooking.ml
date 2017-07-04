@@ -151,9 +151,14 @@ let abstract_constant_body =
 type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
 type inline = bool
 
-type result =
-  constant_def * constant_type * projection_body option * 
-    constant_universes * inline * Context.Named.t option
+type result = {
+  cook_body : constant_def;
+  cook_type : constant_type;
+  cook_proj : projection_body option;
+  cook_universes : constant_universes;
+  cook_inline : inline;
+  cook_context : Context.Named.t option;
+}
 
 let on_body ml hy f = function
   | Undef _ as x -> x
@@ -254,9 +259,14 @@ let cook_constant ~hcons env { from = cb; info } =
     | Polymorphic_const auctx -> 
       Polymorphic_const (AUContext.union abs_ctx auctx)
   in
-    (body, typ, Option.map projection cb.const_proj, 
-     univs, cb.const_inline_code, 
-     Some const_hyps)
+  {
+    cook_body = body;
+    cook_type = typ;
+    cook_proj = Option.map projection cb.const_proj;
+    cook_universes = univs;
+    cook_inline = cb.const_inline_code;
+    cook_context = Some const_hyps;
+  }
 
 (* let cook_constant_key = Profile.declare_profile "cook_constant" *)
 (* let cook_constant = Profile.profile2 cook_constant_key cook_constant *)

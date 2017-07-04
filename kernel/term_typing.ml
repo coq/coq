@@ -243,7 +243,14 @@ let infer_declaration ~trust env kn dcl =
       in
       let c = Typeops.assumption_of_judgment env j in
       let t = hcons_constr (Vars.subst_univs_level_constr usubst c) in
-	Undef nl, RegularArity t, None, univs, false, ctx
+      {
+        Cooking.cook_body = Undef nl;
+        cook_type = RegularArity t;
+        cook_proj = None;
+        cook_universes = univs;
+        cook_inline = false;
+        cook_context = ctx;
+      }
 
   (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
       so we delay the typing and hash consing of its body.
@@ -270,9 +277,14 @@ let infer_declaration ~trust env kn dcl =
           feedback_completion_typecheck feedback_id;
           c, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
-      def, RegularArity typ, None,
-      (Monomorphic_const univs),
-      c.const_entry_inline_code, c.const_entry_secctx
+      {
+        Cooking.cook_body = def;
+        cook_type = RegularArity typ;
+        cook_proj = None;
+        cook_universes = Monomorphic_const univs;
+        cook_inline = c.const_entry_inline_code;
+        cook_context = c.const_entry_secctx;
+      }
 
   (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
@@ -308,7 +320,14 @@ let infer_declaration ~trust env kn dcl =
 	else Def (Mod_subst.from_val def) 
       in
 	feedback_completion_typecheck feedback_id;
-	def, typ, None, univs, c.const_entry_inline_code, c.const_entry_secctx
+      {
+        Cooking.cook_body = def;
+        cook_type = typ;
+        cook_proj = None;
+        cook_universes = univs;
+        cook_inline = c.const_entry_inline_code;
+        cook_context = c.const_entry_secctx;
+      }
 
   | ProjectionEntry {proj_entry_ind = ind; proj_entry_arg = i} ->
     let mib, _ = Inductive.lookup_mind_specif env (ind,0) in
@@ -328,8 +347,14 @@ let infer_declaration ~trust env kn dcl =
         Polymorphic_const (Univ.ACumulativityInfo.univ_context acumi)
     in
     let term, typ = pb.proj_eta in
-      Def (Mod_subst.from_val (hcons_constr term)), RegularArity typ, Some pb,
-      univs, false, None
+    {
+      Cooking.cook_body = Def (Mod_subst.from_val (hcons_constr term));
+      cook_type = RegularArity typ;
+      cook_proj = Some pb;
+      cook_universes = univs;
+      cook_inline = false;
+      cook_context = None;
+    }
 
 let global_vars_set_constant_type env = function
   | RegularArity t -> global_vars_set env t
@@ -353,7 +378,9 @@ let record_aux env s_ty s_bo suggested_expr =
 let suggest_proof_using = ref (fun _ _ _ _ _ -> "")
 let set_suggest_proof_using f = suggest_proof_using := f
 
-let build_constant_declaration kn env (def,typ,proj,univs,inline_code,ctx) =
+let build_constant_declaration kn env result =
+  let open Cooking in
+  let typ = result.cook_type in
   let check declared inferred =
     let mk_set l = List.fold_right Id.Set.add (List.map NamedDecl.get_id l) Id.Set.empty in
     let inferred_set, declared_set = mk_set inferred, mk_set declared in
@@ -380,7 +407,8 @@ let build_constant_declaration kn env (def,typ,proj,univs,inline_code,ctx) =
   (* We try to postpone the computation of used section variables *)
   let hyps, def =
     let context_ids = List.map NamedDecl.get_id (named_context env) in
-    match ctx with
+    let def = result.cook_body in
+    match result.cook_context with
     | None when not (List.is_empty context_ids) -> 
         (* No declared section vars, and non-empty section context:
            we must look at the body NOW, if any *)
@@ -423,9 +451,10 @@ let build_constant_declaration kn env (def,typ,proj,univs,inline_code,ctx) =
               let ids_def = global_vars_set env c in
               let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
               check declared inferred) lc) in
+  let univs = result.cook_universes in
   let tps = 
     let res =
-      match proj with
+      match result.cook_proj with
       | None -> compile_constant_body env univs def
       | Some pb ->
 	(* The compilation of primitive projections is a bit tricky, because
@@ -438,10 +467,10 @@ let build_constant_declaration kn env (def,typ,proj,univs,inline_code,ctx) =
 	  { const_hyps = hyps;
 	    const_body = def;
 	    const_type = typ;
-	    const_proj = proj;
+	    const_proj = result.cook_proj;
 	    const_body_code = None;
 	    const_universes = univs;
-	    const_inline_code = inline_code;
+	    const_inline_code = result.cook_inline;
 	    const_typing_flags = Environ.typing_flags env;
 	    }
 	in
@@ -452,10 +481,10 @@ let build_constant_declaration kn env (def,typ,proj,univs,inline_code,ctx) =
   { const_hyps = hyps;
     const_body = def;
     const_type = typ;
-    const_proj = proj;
+    const_proj = result.cook_proj;
     const_body_code = tps;
     const_universes = univs;
-    const_inline_code = inline_code;
+    const_inline_code = result.cook_inline;
     const_typing_flags = Environ.typing_flags env }
 
 (*s Global and local constant declaration. *)
@@ -579,11 +608,11 @@ let translate_recipe env kn r =
   build_constant_declaration kn env (Cooking.cook_constant ~hcons env r)
 
 let translate_local_def mb env id centry =
-  let def,typ,proj,univs,inline_code,ctx =
-    infer_declaration ~trust:mb env None (DefinitionEntry centry) in
-  let typ = type_of_constant_type env typ in
-  if ctx = None && !Flags.compilation_mode = Flags.BuildVo then begin
-    match def with
+  let open Cooking in
+  let decl = infer_declaration ~trust:mb env None (DefinitionEntry centry) in
+  let typ = type_of_constant_type env decl.cook_type in
+  if Option.is_empty decl.cook_context && !Flags.compilation_mode = Flags.BuildVo then begin
+    match decl.cook_body with
     | Undef _ -> ()
     | Def _ -> ()
     | OpaqueDef lc ->
@@ -596,11 +625,11 @@ let translate_local_def mb env id centry =
            env ids_def ids_typ context_ids in
        record_aux env ids_typ ids_def expr
   end;
-  let univs = match univs with
+  let univs = match decl.cook_universes with
   | Monomorphic_const ctx -> ctx
   | Polymorphic_const _ -> assert false
   in
-  def, typ, univs
+  decl.cook_body, typ, univs
 
 (* Insertion of inductive types. *)
 
