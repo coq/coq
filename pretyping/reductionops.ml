@@ -29,7 +29,7 @@ exception Elimconst
 
 let refolding_in_reduction = ref false
 let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
+  Goptions.optdepr = true; (* remove in 8.8 *)
   Goptions.optname =
     "Perform refolding of fixpoints/constants like cbn during reductions";
   Goptions.optkey = ["Refolding";"Reduction"];

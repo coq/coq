@@ -350,7 +350,7 @@ let get_shrink_obligations () = !shrink_obligations
 
 let _ =
   declare_bool_option
-    { optdepr  = true;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "Shrinking of Program obligations";
       optkey   = ["Shrink";"Obligations"];
       optread  = get_shrink_obligations;
