@@ -41,10 +41,12 @@ val std_logger   : ?pre_hdr:Pp.std_ppcmds -> Feedback.level -> Pp.std_ppcmds -> 
 val emacs_logger : ?pre_hdr:Pp.std_ppcmds -> Feedback.level -> Pp.std_ppcmds -> unit
 
 (** Color output *)
-val init_color_output : unit -> unit
 val clear_styles : unit -> unit
 val parse_color_config : string -> unit
 val dump_tags : unit -> (string * Terminal.style) list
+
+(** Initialization of interpretation of tags *)
+val init_terminal_output : color:bool -> unit
 
 (** Error printing *)
 (* To be deprecated when we can fully move to feedback-based error
