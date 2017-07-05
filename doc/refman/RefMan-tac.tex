@@ -352,7 +352,7 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 
   The tactic {\tt eapply} behaves like {\tt apply} but it does not fail
   when no instantiations are deducible for some variables in the
-  premises. Rather, it turns these variables into 
+  premises. Rather, it turns these variables into
   existential variables which are variables still to instantiate (see
   Section~\ref{evars}). The instantiation is intended to be found
   later in the proof.
@@ -1411,7 +1411,7 @@ in the list of subgoals remaining to prove.
       quantifications or non-dependent implications) are instantiated
       by concrete terms coming either from arguments \term$_1$
       $\ldots$ \term$_n$ or from a bindings list (see
-      Section~\ref{Binding-list} for more about bindings lists). 
+      Section~\ref{Binding-list} for more about bindings lists).
       In the first form the application to \term$_1$ {\ldots}
       \term$_n$ can be partial. The first form is equivalent to
       {\tt assert ({\ident} := {\ident} {\term$_1$} \dots\ \term$_n$)}.
@@ -2604,6 +2604,21 @@ Abort.
   This tactic behaves as generalizing \ident$_1$\dots\ \ident$_n$,
   then doing \texttt{inversion {\ident} using \ident$'$}.
 
+\item \tacindex{inversion\_sigma} \texttt{inversion\_sigma}
+
+  This tactic turns equalities of dependent pairs (e.g.,
+  \texttt{existT P x p = existT P y q}, frequently left over by
+  \texttt{inversion} on a dependent type family) into pairs of
+  equalities (e.g., a hypothesis \texttt{H : x = y} and a hypothesis
+  of type \texttt{rew H in p = q}); these hypotheses can subsequently
+  be simplified using \texttt{subst}, without ever invoking any kind
+  of axiom asserting uniqueness of identity proofs.  If you want to
+  explicitly specify the hypothesis to be inverted, or name the
+  generated hypotheses, you can invoke \texttt{induction H as [H1 H2]
+    using eq\_sigT\_rect}.  This tactic also works for \texttt{sig},
+  \texttt{sigT2}, and \texttt{sig2}, and there are similar
+  \texttt{eq\_sig\emph{*}\_rect} induction lemmas.
+
 \end{Variants}
 
 \firstexample
@@ -2697,6 +2712,64 @@ dependent inversion_clear H.
 
 Note that \texttt{H} has been substituted by \texttt{(LeS n m0 l)} and
 \texttt{m} by \texttt{(S m0)}.
+
+\example{Using \texorpdfstring{\texttt{inversion\_sigma}}{inversion\_sigma}}
+
+Let us consider the following inductive type of length-indexed lists,
+and a lemma about inverting equality of \texttt{cons}:
+
+\begin{coq_eval}
+Reset Initial.
+Set Printing Compact Contexts.
+\end{coq_eval}
+
+\begin{coq_example*}
+Require Coq.Logic.Eqdep_dec.
+
+Inductive vec A : nat -> Type :=
+| nil : vec A O
+| cons {n} (x : A) (xs : vec A n) : vec A (S n).
+
+Lemma invert_cons : forall A n x xs y ys,
+    @cons A n x xs = @cons A n y ys
+    -> xs = ys.
+Proof.
+\end{coq_example*}
+
+\begin{coq_example}
+intros A n x xs y ys H.
+\end{coq_example}
+
+After performing \texttt{inversion}, we are left with an equality of
+\texttt{existT}s:
+
+\begin{coq_example}
+inversion H.
+\end{coq_example}
+
+We can turn this equality into a usable form with
+\texttt{inversion\_sigma}:
+
+\begin{coq_example}
+inversion_sigma.
+\end{coq_example}
+
+To finish cleaning up the proof, we will need to use the fact that
+that all proofs of \texttt{n = n} for \texttt{n} a \texttt{nat} are
+\texttt{eq\_refl}:
+
+\begin{coq_example}
+let H := match goal with H : n = n |- _ => H end in
+pose proof (Eqdep_dec.UIP_refl_nat _ H); subst H.
+simpl in *.
+\end{coq_example}
+
+Finally, we can finish the proof:
+
+\begin{coq_example}
+assumption.
+Qed.
+\end{coq_example}
 
 \subsection{\tt fix {\ident} {\num}}
 \tacindex{fix}
@@ -2998,7 +3071,7 @@ activated, {\tt subst} also deals with the following corner cases:
 
 \item The presence of a recursive equation which without the option
   would be a cause of failure of {\tt subst}.
-  
+
 \item A context with cyclic dependencies as with hypotheses {\tt
   \ident$_1$ = f~\ident$_2$} and {\tt \ident$_2$ = g~\ident$_1$} which
   without the option would be a cause of failure of {\tt subst}.
@@ -3293,7 +3366,7 @@ a sort of strong normalization with two key differences:
 \begin{itemize}
 \item They unfold a constant if and only if it leads to a
   $\iota$-reduction, i.e. reducing a match or unfolding a fixpoint.
-\item While reducing a constant unfolding to (co)fixpoints, 
+\item While reducing a constant unfolding to (co)fixpoints,
   the tactics use the name of the
   constant the (co)fixpoint comes from instead of the (co)fixpoint
   definition in recursive calls.
@@ -4024,7 +4097,7 @@ Abort.
   & & e * & \text{ Kleene star } \\
   & & \texttt{emp} & \text{ empty } \\
   & & \texttt{eps} & \text{ epsilon } \\
-  & & \texttt{(} e \texttt{)} & 
+  & & \texttt{(} e \texttt{)} &
 \end{array}\]
 
 The \texttt{emp} regexp does not match any search path while
@@ -5188,7 +5261,7 @@ Reset Initial.
 
 \subsection[\tt swap \num$_1$ \num$_2$]{\tt swap \num$_1$ \num$_2$\tacindex{swap}}
 
-This tactic switches the position of the goals of indices $\num_1$ and $\num_2$. If either $\num_1$ or $\num_2$ is negative then goals are counted from the end of the focused goal list. Goals are indexed from $1$, there is no goal with position $0$. 
+This tactic switches the position of the goals of indices $\num_1$ and $\num_2$. If either $\num_1$ or $\num_2$ is negative then goals are counted from the end of the focused goal list. Goals are indexed from $1$, there is no goal with position $0$.
 
 \Example
 \begin{coq_example*}
