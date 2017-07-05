@@ -181,7 +181,7 @@ module Make (E : EqType) =
     let sz = Weak.length bucket in
     let rec loop i =
       if i >= sz then ifnotfound index
-      else if h = hashes.(i) then begin
+      else if Int.equal h hashes.(i) then begin
         match Weak.get bucket i with
         | Some v when E.eq v d -> v
         | _ -> loop (i + 1)
