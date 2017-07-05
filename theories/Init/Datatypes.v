@@ -336,7 +336,7 @@ Proof. intros. apply CompareSpec2Type; assumption. Defined.
 
 (** [identity A a] is the family of datatypes on [A] whose sole non-empty
     member is the singleton datatype [identity A a a] whose
-    sole inhabitant is denoted [refl_identity A a] *)
+    sole inhabitant is denoted [identity_refl A a] *)
 
 Inductive identity (A:Type) (a:A) : A -> Type :=
   identity_refl : identity a a.
