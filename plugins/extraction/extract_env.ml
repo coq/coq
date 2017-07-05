@@ -175,26 +175,32 @@ let factor_fix env l cb msb =
     (hack proposed by Elie)
 *)
 
-let expand_mexpr env mp me =
+let expand_mexpr env mpo me =
   let inl = Some (Flags.get_inline_level()) in
-  Mod_typing.translate_mse env (Some mp) inl me
+  Mod_typing.translate_mse env mpo inl me
 
-(** Ad-hoc update of environment, inspired by [Mod_type.check_with_aux_def].
-    To check with Elie. *)
-
-let rec mp_of_mexpr = function
-  | MEident mp -> mp
-  | MEwith (seb,_) -> mp_of_mexpr seb
-  | _ -> assert false
+let expand_modtype env mp me =
+  let inl = Some (Flags.get_inline_level()) in
+  Mod_typing.translate_modtype env mp inl ([],me)
 
 let no_delta = Mod_subst.empty_delta_resolver
 
-let env_for_mtb_with_def env mp me idl =
+let flatten_modtype env mp me_alg struc_opt =
+  match struc_opt with
+  | Some me -> me, no_delta
+  | None ->
+     let mtb = expand_modtype env mp me_alg in
+     mtb.mod_type, mtb.mod_delta
+
+(** Ad-hoc update of environment, inspired by [Mod_typing.check_with_aux_def].
+*)
+
+let env_for_mtb_with_def env mp me reso idl =
   let struc = Modops.destr_nofunctor me in
   let l = Label.of_id (List.hd idl) in
   let spot = function (l',SFBconst _) -> Label.equal l l' | _ -> false in
   let before = fst (List.split_when spot struc) in
-  Modops.add_structure mp before no_delta env
+  Modops.add_structure mp before reso env
 
 let make_cst resolver mp l =
   Mod_subst.constant_of_delta_kn resolver (KerName.make2 mp l)
@@ -234,20 +240,24 @@ let rec extract_structure_spec env mp reso = function
    [extract_mexpression_spec] should come from a [mod_type_alg] field.
    This way, any encountered [MEident] should be a true module type. *)
 
-and extract_mexpr_spec env mp1 (me_struct,me_alg) = match me_alg with
+and extract_mexpr_spec env mp1 (me_struct_o,me_alg) = match me_alg with
   | MEident mp -> Visit.add_mp_all mp; MTident mp
   | MEwith(me',WithDef(idl,(c,ctx)))->
-      let env' = env_for_mtb_with_def env (mp_of_mexpr me') me_struct idl in
-      let mt = extract_mexpr_spec env mp1 (me_struct,me') in
+      let me_struct,delta = flatten_modtype env mp1 me' me_struct_o in
+      let env' = env_for_mtb_with_def env mp1 me_struct delta idl in
+      let mt = extract_mexpr_spec env mp1 (None,me') in
       (match extract_with_type env' c with (* cb may contain some kn *)
 	 | None -> mt
-	 | Some (vl,typ) -> MTwith(mt,ML_With_type(idl,vl,typ)))
+	 | Some (vl,typ) ->
+            type_iter_references Visit.add_ref typ;
+            MTwith(mt,ML_With_type(idl,vl,typ)))
   | MEwith(me',WithMod(idl,mp))->
       Visit.add_mp_all mp;
-      MTwith(extract_mexpr_spec env mp1 (me_struct,me'), ML_With_module(idl,mp))
+      MTwith(extract_mexpr_spec env mp1 (None,me'), ML_With_module(idl,mp))
   | MEapply _ ->
      (* No higher-order module type in OCaml : we use the expanded version *)
-     extract_msignature_spec env mp1 no_delta (*TODO*) me_struct
+     let me_struct,delta = flatten_modtype env mp1 me_alg me_struct_o in
+     extract_msignature_spec env mp1 delta me_struct
 
 and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
   | MoreFunctor (mbid, mtb, me_alg') ->
@@ -258,8 +268,8 @@ and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
       let mp = MPbound mbid in
       let env' = Modops.add_module_type mp mtb env in
       MTfunsig (mbid, extract_mbody_spec env mp mtb,
-		extract_mexpression_spec env' mp1 (me_struct',me_alg'))
-  | NoFunctor m -> extract_mexpr_spec env mp1 (me_struct,m)
+                extract_mexpression_spec env' mp1 (me_struct',me_alg'))
+  | NoFunctor m -> extract_mexpr_spec env mp1 (Some me_struct,m)
 
 and extract_msignature_spec env mp1 reso = function
   | NoFunctor struc ->
@@ -335,7 +345,7 @@ and extract_mexpr env mp = function
       (* In Haskell/Scheme, we expand everything.
          For now, we also extract everything, dead code will be removed later
          (see [Modutil.optimize_struct]. *)
-      let sign,_,delta,_ = expand_mexpr env mp me in
+      let sign,_,delta,_ = expand_mexpr env (Some mp) me in
       extract_msignature env mp delta ~all:true sign
   | MEident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;

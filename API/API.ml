@@ -201,4 +201,9 @@ module Entries =
                            | DefinitionEntry of 'a definition_entry
                            | ParameterEntry of parameter_entry
                            | ProjectionEntry of projection_entry
+    type module_struct_entry = Declarations.module_alg_expr
+    type module_params_entry =
+      (Names.MBId.t * module_struct_entry) list
+    type module_type_entry = module_params_entry * module_struct_entry
+
   end
