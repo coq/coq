@@ -13,7 +13,7 @@ described in Section~\ref{scopes}.
 were present for a while in {\Coq} are no longer available from {\Coq}
 version 8.0. The underlying AST structure is also no longer available.
 The functionalities of the command {\tt Syntactic Definition} are
-still available, see Section~\ref{Abbreviations}.
+still available; see Section~\ref{Abbreviations}.
 
 \section[Notations]{Notations\label{Notation}
 \comindex{Notation}}
@@ -35,8 +35,8 @@ The expression \texttt{(and A B)} is the abbreviated term and the
 string \verb="A /\ B"= (called a {\em notation}) tells how it is 
 symbolically written.
 
-A notation is always surrounded by double quotes (excepted when the
-abbreviation is a single identifier, see \ref{Abbreviations}). The
+A notation is always surrounded by double quotes (except when the
+abbreviation is a single identifier; see \ref{Abbreviations}). The
 notation is composed of {\em tokens} separated by spaces.  Identifiers
 in the string (such as \texttt{A} and \texttt{B}) are the {\em
 parameters} of the notation. They must occur at least once each in the
@@ -68,7 +68,7 @@ declaration of the notation.
 \subsection[Precedences and associativity]{Precedences and associativity\index{Precedences}
 \index{Associativity}}
 
-Mixing different symbolic notations in a same text may cause serious
+Mixing different symbolic notations in the same text may cause serious
 parsing ambiguity. To deal with the ambiguity of notations, {\Coq}
 uses precedence levels ranging from 0 to 100 (plus one extra level
 numbered 200) and associativity rules.
@@ -88,8 +88,8 @@ precedence level to each notation, knowing that a lower level binds
 more than a higher level.  Hence the level for disjunction must be
 higher than the level for conjunction.
 
-Since connectives are the less tight articulation points of a text, it
-is reasonable to choose levels not so far from the higher level which
+Since connectives are not tight articulation points of a text, it
+is reasonable to choose levels not so far from the highest level which
 is 100, for example 85 for disjunction and 80 for
 conjunction\footnote{which are the levels effectively chosen in the
 current implementation of {\Coq}}.
@@ -102,10 +102,10 @@ even consider that the expression is not well-formed and that
 parentheses are mandatory (this is a ``no associativity'')\footnote{
 {\Coq} accepts notations declared as no associative but the parser on
 which {\Coq} is built, namely {\camlpppp}, currently does not implement the
-no-associativity and replace it by a left associativity; hence it is
+no-associativity and replaces it by a left associativity; hence it is
 the same for {\Coq}: no-associativity is in fact left associativity}.
 We don't know of a special convention of the associativity of
-disjunction and conjunction, let's apply for instance a right
+disjunction and conjunction, so let's apply for instance a right
 associativity (which is the choice of {\Coq}).
 
 Precedence levels and associativity rules of notations have to be
@@ -701,11 +701,11 @@ Notation}.
 % Introduction
 
 An {\em interpretation scope} is a set of notations for terms with
-their interpretation. Interpretation scopes provides with a weak,
-purely syntactical form of notations overloading: a same notation, for
-instance the infix symbol \verb=+= can be used to denote distinct
-definitions of an additive operator. Depending on which interpretation
-scopes is currently open, the interpretation is different.
+their interpretation. Interpretation scopes provide a weak,
+purely syntactical form of notation overloading: the same notation, for
+instance the infix symbol \verb=+=, can be used to denote distinct
+definitions of the additive operator. Depending on which interpretation
+scope is currently open, the interpretation is different.
 Interpretation scopes can include an interpretation for
 numerals and strings. However, this is only made possible at the
 {\ocaml} level.
