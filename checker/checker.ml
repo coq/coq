@@ -47,7 +47,7 @@ let path_of_string s =
 
 let ( / ) = Filename.concat
 
-let get_version_date () =
+let get_version () =
   try
     let ch = open_in (Envars.coqlib () / "revision") in
     let ver = input_line ch in
@@ -57,7 +57,7 @@ let get_version_date () =
   with _ -> (Coq_config.version,Coq_config.date)
 
 let print_header () =
-  let (ver,rev) = (get_version_date ()) in
+  let (ver,rev) = (get_version ()) in
   Printf.printf "Welcome to Chicken %s (%s)\n" ver rev;
   flush stdout
 
@@ -163,9 +163,11 @@ let compile_files () =
     ~check:(List.rev !compile_list)
 
 let version () =
-  Printf.printf "The Coq Proof Checker, version %s (%s)\n"
-    Coq_config.version Coq_config.date;
-  Printf.printf "compiled on %s\n" Coq_config.compile_date;
+  Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err (Pp.str msg));
+  let (version,branch) = get_version () in
+  Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
+    version branch;
+  Printf.printf "compiled on %s with OCaml %s\n" Coq_config.compile_date Coq_config.caml_version;
   exit 0
 
 (* print the usage of coqtop (or coqc) on channel co *)
