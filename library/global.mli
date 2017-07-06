@@ -91,10 +91,6 @@ val mind_of_delta_kn : kernel_name -> mutual_inductive
 val opaque_tables : unit -> Opaqueproof.opaquetab
 val body_of_constant : constant -> Term.constr option
 val body_of_constant_body : Declarations.constant_body -> Term.constr option
-val constraints_of_constant_body :
-  Declarations.constant_body -> Univ.constraints
-val universes_of_constant_body :
-  Declarations.constant_body -> Univ.universe_context
 
 (** Global universe name <-> level mapping *)
 type universe_names = 
