@@ -44,6 +44,9 @@ val subst : t -> Universes.universe_opt_subst
 val ugraph : t -> UGraph.t
 (** The current graph extended with the local constraints *)
 
+val initial_graph : t -> UGraph.t
+(** The initial graph with just the declarations of new universes. *)
+
 val algebraics : t -> Univ.LSet.t
 (** The subset of unification variables that can be instantiated with algebraic
     universes as they appear in inferred types only. *)

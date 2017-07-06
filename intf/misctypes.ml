@@ -53,6 +53,7 @@ type level_info = Name.t Loc.located option
 
 type glob_sort = sort_info glob_sort_gen
 type glob_level = level_info glob_sort_gen
+type glob_constraint = glob_level * Univ.constraint_type * glob_level
 
 (** A synonym of [Evar.t], also defined in Term *)
 
@@ -136,3 +137,9 @@ type inversion_kind =
   | SimpleInversion
   | FullInversion
   | FullInversionClear
+
+type ('a, 'b) gen_universe_decl = {
+  univdecl_instance : 'a; (* Declared universes *)
+  univdecl_extensible_instance : bool; (* Can new universes be added *)
+  univdecl_constraints : 'b; (* Declared constraints *)
+  univdecl_extensible_constraints : bool (* Can new constraints be added *) }

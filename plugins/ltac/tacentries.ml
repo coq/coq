@@ -218,7 +218,6 @@ let interp_prod_item = function
       assert (String.equal s "tactic");
       begin match Tacarg.wit_tactic with
       | ExtraArg tag -> ArgT.Any tag
-      | _ -> assert false
       end
     in
     let symbol = interp_entry_name interp symbol in
