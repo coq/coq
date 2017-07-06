@@ -1,6 +1,5 @@
 image: ocaml/opam:ubuntu
 
-# this doesn't seem to work
 cache:
   paths:
     - .opamcache
@@ -29,21 +28,7 @@ variables:
 
 
 before_script:
-  - ls # figure out if artifacts are around
-  - printenv
-#  - if [ "$COMPILER" = "$COMPILER_32BIT" ]; then sudo dpkg --add-architecture i386; fi
-  - if [ -n "${EXTRA_PACKAGES}" ]; then sudo apt-get update -qq && sudo apt-get install -y -qq ${EXTRA_PACKAGES}; fi
-
-  # setup cache
-  - if [ ! "(" -d .opamcache ")" ]; then mv ~/.opam .opamcache; else mv ~/.opam ~/.opam-old; fi
-  - ln -s $(readlink -f .opamcache) ~/.opam
-
-  - opam switch ${COMPILER}
-  - eval $(opam config env)
-  - opam config list
-  - opam install -j ${NJOBS} -y camlp5.${CAMLP5_VER} ocamlfind ${EXTRA_OPAM}
-  - rm -rf ~/.opam/log/
-  - opam list
+  - dev/ci/setup.sh
 
 # TODO figure out how to build doc for installed coq
 .build-template: &build-template
@@ -51,28 +36,13 @@ before_script:
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
-      - install
+      - coq-install
       - config/Makefile
     expire_in: 1 week
-  script:
-    - set -e
-
-    - echo 'start:coq.config'
-    - ./configure -prefix "$(pwd)/install" ${EXTRA_CONF}
-    - echo 'end:coq.config'
-
-    - echo 'start:coq.build'
-    - make -j ${NJOBS}
-    - echo 'end:coq:build'
-
-    - echo 'start:coq.install'
-    - make install
-    - cp bin/fake_ide install/bin/
-    - echo 'end:coq.install'
-
-    - set +e
+  script: dev/ci/build.sh
   variables: &build-variables
-    EXTRA_CONF: "-native-compiler yes -coqide opt"
+    NATIVE_COMP: "yes"
+    EXTRA_CONF: "-coqide opt"
     EXTRA_PACKAGES: "$COQIDE_PACKAGES"
     EXTRA_OPAM: "$COQIDE_OPAM"
 
@@ -80,30 +50,16 @@ before_script:
   # keep warnings in test stage so we can test things even when warnings occur
   stage: test
   dependencies: []
-  script:
-    - set -e
-
-    - echo 'start:coq.config'
-    - ./configure -local ${EXTRA_CONF}
-    - echo 'end:coq.config'
-
-    - echo 'start:coq.build'
-    - make -j ${NJOBS} coqocaml
-    - echo 'end:coq:build'
-
-    - set +e
+  script: dev/ci/warnings.sh
   variables: &warnings-variables
-    EXTRA_CONF: "-native-compiler yes -coqide opt"
+    NATIVE_COMP: "yes"
+    EXTRA_CONF: "-coqide opt"
     EXTRA_PACKAGES: "$COQIDE_PACKAGES"
     EXTRA_OPAM: "$COQIDE_OPAM"
 
 .test-suite-template: &test-suite-template
   stage: test
-  script:
-    - cd test-suite
-    - make clean
-    # careful with the ending /
-    - make -j ${NJOBS} BIN=$(readlink -f ../install/bin)/ LIB=$(readlink -f ../install/lib/coq)/ all
+  script: dev/ci/test-suite.sh
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
@@ -112,43 +68,20 @@ before_script:
 
 .validate-template: &validate-template
   stage: test
-  script:
-    - cd install
-    - find lib/coq/ -name '*.vo' -print0 > vofiles
-    - for regexp in 's/.vo//' 's:lib/coq/plugins:Coq:' 's:lib/coq/theories:Coq:' 's:/:.:g'; do sed -z -i "$regexp" vofiles; done
-    - xargs -0 --arg-file=vofiles bin/coqchk -boot -silent -o -m -coqlib lib/coq/
+  script: dev/ci/validate.sh
 
 .documentation-template: &documentation-template
   stage: test
-  script:
-    - ./configure -prefix "$(pwd)/install" ${EXTRA_CONF}
-    - cp install/lib/coq/tools/coqdoc/coqdoc.sty .
-
-    - INSTALLDIR=$(readlink -f install)
-    - LIB="$INSTALLDIR/lib/coq"
-    # WTF using a newline makes make sigsev
-    # see https://gitlab.com/SkySkimmer/coq/builds/17313312
-    - DOCVFILES=$(find "$LIB/" -name '*.v' -printf "%p ")
-    - DOCLIGHTDIRS="$LIB/theories/Init/ $LIB/theories/Logic/ $LIB/theories/Unicode/ $LIB/theories/Arith/"
-    - DOCLIGHTVOFILES=$(find $DOCLIGHTDIRS -name '*.vo' -printf "%p ")
-
-    - make doc QUICK=true COQDOC_NOBOOT=true COQTEX="$INSTALLDIR/bin/coq-tex" COQDOC="$INSTALLDIR/bin/coqdoc" VFILES="$DOCVFILES" THEORIESLIGHTVO="$DOCLIGHTVOFILES"
-
-    - make install-doc
+  script: dev/ci/documentation.sh
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
-      - install/share/doc
+      - coq-install/share/doc
     expire_in: 1 week
 
 .ci-template: &ci-template
   stage: test
-  script:
-    - set -e
-    - echo 'start:coq.test'
-    - make -f Makefile.ci -j ${NJOBS} ${TEST_TARGET}
-    - echo 'end:coq.test'
-    - set +e
+  script: dev/ci/contrib.sh
   dependencies:
     - build
   variables: &ci-template-vars
@@ -161,7 +94,7 @@ build:
 build:32bit:
   <<: *build-template
   variables:
-    EXTRA_CONF: "-native-compiler yes"
+    NATIVE_COMP: "yes"
     EXTRA_PACKAGES: "gcc-multilib"
     COMPILER: "$COMPILER_32BIT"
 
@@ -281,6 +214,7 @@ ci-fiat-parsers:
   variables:
     <<: *ci-template-vars
     EXTRA_PACKAGES: "python"
+  allow_failure: true
 
 ci-flocq:
   <<: *ci-template
