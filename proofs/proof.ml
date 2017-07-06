@@ -410,34 +410,4 @@ module V82 = struct
       raise UnfinishedProof
     else
       { p with proofview = Proofview.V82.grab p.proofview }
-
-
-  (* Main component of vernac command Existential *)
-  let instantiate_evar n com pr =
-    let tac =
-      Proofview.tclBIND Proofview.tclEVARMAP begin fun sigma ->
-      let (evk, evi) =
-        let evl = Evarutil.non_instantiated sigma in
-        let evl = Evar.Map.bindings evl in
-        if (n <= 0) then
-          CErrors.user_err Pp.(str "incorrect existential variable index")
-        else if CList.length evl < n then
-          CErrors.user_err Pp.(str "not so many uninstantiated existential variables")
-        else
-          CList.nth evl (n-1)
-      in
-      let env = Evd.evar_filtered_env evi in
-      let rawc = Constrintern.intern_constr env com in
-      let ltac_vars = Glob_ops.empty_lvar in
-      let sigma = Evar_refiner.w_refine (evk, evi) (ltac_vars, rawc) sigma in
-      Proofview.Unsafe.tclEVARS sigma
-    end in
-    let ((), proofview, _, _) = Proofview.apply (Global.env ()) tac pr.proofview in
-    let shelf =
-      List.filter begin fun g ->
-        Evd.is_undefined (Proofview.return proofview) g
-      end pr.shelf
-    in
-    { pr with proofview ; shelf }
-
 end

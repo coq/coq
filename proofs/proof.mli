@@ -200,6 +200,4 @@ module V82 : sig
      Raises [UnfinishedProof] if there are still unsolved goals. *)
   val grab_evars : proof -> proof
 
-  (* Implements the Existential command *)
-  val instantiate_evar : int -> Constrexpr.constr_expr -> proof -> proof
 end

@@ -393,10 +393,10 @@ Qed.
    the subsequent "assumption" failed. *)
 
 Goal exists f:nat->nat, forall x y, x = y -> f x = f y.
-intros; eexists; intros.
+intros; eexists ?[f]; intros.
 simple eapply (@f_equal nat).
 assumption.
-Existential 1 := fun x => x.
+[f]: exact (fun x => x). (* Adapted after the removal of Existential *)
 Qed.
 
 (* The following worked in 8.2 but was not accepted from r12229 to
@@ -405,9 +405,9 @@ Qed.
    assumption. *)
 
 Goal exists f:nat->nat, forall x y, x = y -> f x = f y.
-intros; eexists; intros.
+intros; eexists ?[f]; intros.
 eauto.
-Existential 1 := fun x => x.
+[f]: exact (fun x => x). (* Adapted after the removal of Existential *)
 Qed.
 
 (* The following was accepted before r12612 but is still not accepted in r12658
