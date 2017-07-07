@@ -81,3 +81,20 @@ Section NCListLift.
   Fail Definition LiftNCL {A} : NCList@{i} A -> NCList@{j} A := fun x => x.
 
 End NCListLift.
+
+Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
+
+Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
+  := forall f g : (forall a, B a),
+    (forall x, eq@{e} (f x) (g x))
+    -> eq@{e} f g.
+
+Section down.
+  Universes a b e e'.
+  Constraint e' < e.
+  Lemma funext_down {A B}
+    : @funext_type@{a b e} A B -> @funext_type@{a b e'} A B.
+  Proof.
+    intros H f g Hfg. exact (H f g Hfg).
+  Defined.
+End down.
