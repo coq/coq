@@ -69,3 +69,15 @@ End subtyping_test.
 Record A : Type := { a :> Type; }.
 
 Record B (X : A) : Type := { b : X; }.
+
+NonCumulative Inductive NCList (A: Type)
+  := ncnil | nccons : A -> NCList A -> NCList A.
+
+Section NCListLift.
+  Universe i j.
+
+  Constraint i < j.
+
+  Fail Definition LiftNCL {A} : NCList@{i} A -> NCList@{j} A := fun x => x.
+
+End NCListLift.
