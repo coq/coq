@@ -189,9 +189,14 @@ let cs_pattern_of_constr t =
 
 let warn_projection_no_head_constant =
   CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
-         (fun (t,con_pp,proji_sp_pp) ->
+         (fun (sign,env,t,con,proji_sp) ->
+          let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
+          let env = Termops.push_rels_assum sign env in
+          let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con) in
+          let proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
+          let term_pp = Termops.print_constr_env env Evd.empty (EConstr.of_constr t) in
           strbrk "Projection value has no head constant: "
-          ++ Termops.print_constr (EConstr.of_constr t) ++ strbrk " in canonical instance "  
+          ++ term_pp ++ strbrk " in canonical instance "
           ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it.")
 
 (* Intended to always succeed *)
@@ -202,9 +207,9 @@ let compute_canonical_projections warn (con,ind) =
   let v = (mkConstU (con,u)) in
   let ctx = Univ.ContextSet.of_context ctx in
   let c = Environ.constant_value_in env (con,u) in
-  let lt,t = Reductionops.splay_lam env Evd.empty (EConstr.of_constr c) in
+  let sign,t = Reductionops.splay_lam env Evd.empty (EConstr.of_constr c) in
   let t = EConstr.Unsafe.to_constr t in
-  let lt = List.rev_map (snd %> EConstr.Unsafe.to_constr) lt in
+  let lt = List.rev_map (snd %> EConstr.Unsafe.to_constr) sign in
   let args = snd (decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
     lookup_structure ind in
@@ -221,9 +226,7 @@ let compute_canonical_projections warn (con,ind) =
 		   let patt, n , args = cs_pattern_of_constr t in
 		     ((ConstRef proji_sp, patt, t, n, args) :: l)
 		 with Not_found ->
-                     let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con)
-                      and proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
-                     if warn then warn_projection_no_head_constant (t,con_pp,proji_sp_pp);
+                   if warn then warn_projection_no_head_constant (sign,env,t,con,proji_sp);
                    l
 	       end
 	   | _ -> l)
