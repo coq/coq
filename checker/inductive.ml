@@ -66,13 +66,6 @@ let inductive_is_cumulative mib =
   | Polymorphic_ind ctx -> false
   | Cumulative_ind cumi -> true
 
-let inductive_polymorphic_instance mib =
-  match mib.mind_universes with
-  | Monomorphic_ind _ -> Univ.Instance.empty
-  | Polymorphic_ind ctx -> Univ.AUContext.instance ctx
-  | Cumulative_ind cumi -> 
-    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi)
-
 let inductive_polymorphic_context mib =
   match mib.mind_universes with
   | Monomorphic_ind _ -> Univ.UContext.empty

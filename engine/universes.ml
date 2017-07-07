@@ -282,8 +282,8 @@ let new_Type dp = mkType (new_univ dp)
 let new_Type_sort dp = Type (new_univ dp)
 
 let fresh_universe_instance ctx =
-  Instance.subst_fn (fun _ -> new_univ_level (Global.current_dirpath ())) 
-    (AUContext.instance ctx)
+  let init _ = new_univ_level (Global.current_dirpath ()) in
+  Instance.of_array (Array.init (AUContext.size ctx) init)
 
 let fresh_instance_from_context ctx =
   let inst = fresh_universe_instance ctx in
@@ -292,18 +292,17 @@ let fresh_instance_from_context ctx =
 
 let fresh_instance ctx =
   let ctx' = ref LSet.empty in
-  let inst = 
-    Instance.subst_fn (fun v -> 
-      let u = new_univ_level (Global.current_dirpath ()) in
-	ctx' := LSet.add u !ctx'; u) 
-      (AUContext.instance ctx)
+  let init _ =
+    let u = new_univ_level (Global.current_dirpath ()) in
+    ctx' := LSet.add u !ctx'; u
+  in
+  let inst = Instance.of_array (Array.init (AUContext.size ctx) init)
   in !ctx', inst
 
 let existing_instance ctx inst = 
   let () = 
-    let a1 = Instance.to_array inst 
-    and a2 = Instance.to_array (AUContext.instance ctx) in
-    let len1 = Array.length a1 and len2 = Array.length a2 in 
+    let len1 = Array.length (Instance.to_array inst)
+    and len2 = AUContext.size ctx in
       if not (len1 == len2) then
 	CErrors.user_err ~hdr:"Universes"
 	  (str "Polymorphic constant expected " ++ int len2 ++ 

@@ -1861,10 +1861,10 @@ and compile_named env sigma univ auxdefs id =
 let compile_constant env sigma prefix ~interactive con cb =
   match cb.const_proj with
   | None ->
-     let u =
+     let no_univs =
        match cb.const_universes with
-       | Monomorphic_const _ -> Univ.Instance.empty
-       | Polymorphic_const ctx -> Univ.AUContext.instance ctx
+       | Monomorphic_const _ -> true
+       | Polymorphic_const ctx -> Int.equal (Univ.AUContext.size ctx) 0
      in
     begin match cb.const_body with
     | Def t ->
@@ -1879,7 +1879,7 @@ let compile_constant env sigma prefix ~interactive con cb =
       in
       let l = con_label con in
       let auxdefs,code =
-	if Univ.Instance.is_empty u then compile_with_fv env sigma None [] (Some l) code
+	if no_univs then compile_with_fv env sigma None [] (Some l) code
 	else
 	  let univ = fresh_univ () in
 	  let (auxdefs,code) = compile_with_fv env sigma (Some univ) [] (Some l) code in
@@ -1894,7 +1894,7 @@ let compile_constant env sigma prefix ~interactive con cb =
     | _ -> 
         let i = push_symbol (SymbConst con) in
 	let args =
-	  if Univ.Instance.is_empty u then [|get_const_code i; MLarray [||]|]
+	  if no_univs then [|get_const_code i; MLarray [||]|]
 	  else [|get_const_code i|]
 	in
 	(*

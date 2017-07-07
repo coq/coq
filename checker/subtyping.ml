@@ -309,27 +309,17 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
 		let c2 = force_constr lc2 in
 		check_conv conv env c1 c2))
       | IndType ((kn,i),mind1) ->
-	  ignore (CErrors.user_err (Pp.str (
+        CErrors.user_err (Pp.str (
 		    "The kernel does not recognize yet that a parameter can be " ^
 		      "instantiated by an inductive type. Hint: you can rename the " ^
 		      "inductive type and give a definition to map the old name to the new " ^
-		      "name.")));
-      if constant_has_body cb2 then error () ;
-      let u = inductive_polymorphic_instance mind1 in
-      let arity1 = type_of_inductive env ((mind1,mind1.mind_packets.(i)),u) in
-      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
-       check_conv conv_leq env arity1 typ2
-   | IndConstr (((kn,i),j) as cstr,mind1) ->
-      ignore (CErrors.user_err (Pp.str (
+		      "name."))
+   | IndConstr (((kn,i),j),mind1) ->
+      CErrors.user_err (Pp.str (
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by a constructor. Hint: you can rename the " ^
        "constructor and give a definition to map the old name to the new " ^
-       "name.")));
-      if constant_has_body cb2 then error () ;
-      let u1 = inductive_polymorphic_instance mind1 in
-      let ty1 = type_of_constructor (cstr,u1) (mind1,mind1.mind_packets.(i)) in
-      let ty2 = Typeops.type_of_constant_type env cb2.const_type in
-       check_conv conv env ty1 ty2
+       "name."))
 
 let rec check_modules  env msb1 msb2 subst1 subst2 =
   let mty1 = module_type_of_module None msb1 in

@@ -680,8 +680,7 @@ let infer_check_conv_constructors
 
 let check_inductive_instances cv_pb cumi u u' univs =
   let length_ind_instance = 
-    Univ.Instance.length
-      (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
+    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
   in
   let ind_subtypctx = Univ.ACumulativityInfo.subtyp_context cumi in
   if not ((length_ind_instance = Univ.Instance.length u) &&
@@ -767,8 +766,7 @@ let infer_convert_instances ~flex u u' (univs,cstrs) =
 
 let infer_inductive_instances cv_pb cumi u u' (univs, cstrs) =
   let length_ind_instance = 
-    Univ.Instance.length
-      (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
+    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
   in
   let ind_subtypctx =  Univ.ACumulativityInfo.subtyp_context cumi in
   if not ((length_ind_instance = Univ.Instance.length u) &&

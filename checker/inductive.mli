@@ -26,8 +26,6 @@ val inductive_is_polymorphic : mutual_inductive_body -> bool
 
 val inductive_is_cumulative : mutual_inductive_body -> bool
 
-val inductive_polymorphic_instance : mutual_inductive_body -> Univ.universe_instance
-
 val inductive_polymorphic_context : mutual_inductive_body -> Univ.universe_context
 
 val type_of_inductive : env -> mind_specif puniverses -> constr

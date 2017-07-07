@@ -1175,6 +1175,7 @@ struct
   let make x = x
   let instance (univs, cst) = univs
   let constraints (univs, cst) = cst
+  let size (univs, _) = Instance.length univs
 
   let is_empty (univs, cst) = Instance.is_empty univs && Constraint.is_empty cst
   let pr prl (univs, cst as ctx) =

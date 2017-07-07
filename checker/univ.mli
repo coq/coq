@@ -209,6 +209,7 @@ sig
   type t
 
   val instance : t -> Instance.t
+  val size : t -> int
 
 end
 
