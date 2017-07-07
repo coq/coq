@@ -1,3 +1,9 @@
+Polymorphic Cumulative Inductive T1 := t1 : T1.
+Fail Monomorphic Cumulative Inductive T2 := t2 : T2.
+
+Polymorphic Cumulative Record R1 := { r1 : T1 }.
+Fail Monomorphic Cumulative Inductive R2 := {r2 : T1}.
+
 Set Universe Polymorphism.
 Set Inductive Cumulativity.
 Set Printing Universes.

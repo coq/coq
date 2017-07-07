@@ -522,7 +522,12 @@ let vernac_assumption locality poly (local, kind) l nl =
   let status = do_assumptions kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
+let check_cumulativity_polymorphism_flag cum poly =
+  if cum && not poly then 
+    user_err Pp.(str "Monomorphic cumulative inductive types/records are not supported. ")
+
 let vernac_record cum k poly finite struc binders sort nameopt cfs =
+  check_cumulativity_polymorphism_flag cum poly;
   let const = match nameopt with
     | None -> add_prefix "Build_" (snd (fst (snd struc)))
     | Some (_,id as lid) ->
@@ -540,6 +545,7 @@ let vernac_record cum k poly finite struc binders sort nameopt cfs =
     indicates whether the type is inductive, co-inductive or
     neither. *)
 let vernac_inductive cum poly lo finite indl =
+  check_cumulativity_polymorphism_flag cum poly;
   if Dumpglob.dump () then
     List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
