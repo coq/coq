@@ -139,7 +139,7 @@ producing global universe constraints, one can use the
 Inductive types, coinductive types, variants and records can be
 declared cumulative using the \texttt{Cumulative}. Alternatively,
 there is an option \texttt{Set Inductive Cumulativity} which when set,
-makes all subsequent inductive definitions cumulative.  When set
+makes all subsequent inductive definitions cumulative.  When set,
 inductive types and the like can be enforced to be
 \emph{non-cumulative} using the \texttt{NonCumulative} prefix. Consider the examples below.
 \begin{coq_example*}
@@ -180,7 +180,7 @@ Notice that as expected, \texttt{packType@\{i\}} and \texttt{packType@\{j\}} are
 
 Cumulative inductive types, coninductive types, variants and records
 only make sense when they are universe polymorphic. Therefore, an
-error is issued whenever the user inputs such monomorphic and
+error is issued whenever the user inputs such a monomorphic and
 cumulative type. Notice that this also implies that when the option
 \texttt{Set Inductive Cumulativity} is set any subsequent inductive
 declaration should be polymorphic, e.g., by setting \texttt{Set
@@ -196,6 +196,29 @@ Fail Inductive Unit := unit.
 \end{coq_example}
 \begin{coq_example}
 NonCumulative Inductive Unit := unit.
+\end{coq_example}
+
+\subsection*{An example of a proof using cumulativity}
+
+\begin{coq_example}
+Set Universe Polymorphism.
+Set Inductive Cumulativity.
+
+Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
+
+Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
+  := forall f g : (forall a, B a),
+    (forall x, eq@{e} (f x) (g x))
+    -> eq@{e} f g.
+
+Section down.
+  Universes a b e e'.
+  Constraint e' < e.
+  Lemma funext_down {A B}
+    (H : @funext_type@{a b e} A B) : @funext_type@{a b e'} A B.
+  Proof.
+    exact H.
+  Defined.
 \end{coq_example}
 
 \asection{Global and local universes}
