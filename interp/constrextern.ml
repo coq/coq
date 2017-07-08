@@ -383,7 +383,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
     try
       if !Flags.in_debugger || !Flags.raw_print || !print_no_symbol then raise No_match;
       extern_notation_pattern scopes vars pat
-	(uninterp_cases_pattern_notations pat)
+        (uninterp_cases_pattern_notations scopes pat)
     with No_match ->
       lift (fun ?loc -> function
 	| PatVar (Name id) -> CPatAtom (Some (Ident (loc,id)))
@@ -514,7 +514,7 @@ let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
       try
 	if !Flags.raw_print || !print_no_symbol then raise No_match;
 	extern_notation_ind_pattern scopes vars ind args
-	  (uninterp_ind_pattern_notations ind)
+          (uninterp_ind_pattern_notations scopes ind)
     with No_match ->
       let c = extern_reference vars (IndRef ind) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
@@ -734,7 +734,7 @@ let rec extern inctx scopes vars r =
   try
     let r'' = flatten_application r' in
     if !Flags.raw_print || !print_no_symbol then raise No_match;
-    extern_notation scopes vars r'' (uninterp_notations r'')
+    extern_notation scopes vars r'' (uninterp_notations scopes r'')
   with No_match -> lift (fun ?loc -> function
   | GRef (ref,us) ->
       extern_global (select_stronger_impargs (implicits_of_global ref))

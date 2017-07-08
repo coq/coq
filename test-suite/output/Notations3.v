@@ -59,7 +59,7 @@ Check fun f => CURRYINVLEFT (x:nat) (y:bool), f.
 (* Notations with variables bound both as a term and as a binder      *)
 (* This is #4592 *)
 
-Notation "{# x | P }" := (ex2 (fun y => x = y) (fun x => P)).
+Notation "{# x | P }" := (ex2 (fun y => x = y) (fun x => P)) : type_scope.
 Check forall n:nat, {# n | 1 > n}.
 
 Parameter foo : forall {T}(x : T)(P : T -> Prop), Prop.
@@ -197,7 +197,59 @@ Check !!! (x y:nat), True.
 
 (* Allow level for leftmost nonterminal when printing-only, BZ#5739 *)
 
-Notation "* x" := (id x) (only printing, at level 15, format "* x").
-Notation "x . y" := (x + y) (only printing, at level 20, x at level 14, left associativity, format "x . y").
+Section S2.
+Notation "* x" := (id x) (only printing, at level 15, format "* x") : nat_scope.
+Notation "x . y" := (x + y) (only printing, at level 20, x at level 14, left associativity, format "x . y") : nat_scope.
 Check (((id 1) + 2) + 3).
 Check (id (1 + 2)).
+End S2.
+
+(* Test printing of notations guided by scope *)
+
+Module A.
+
+Delimit Scope line_scope with line.
+Notation "{ }" := nil (format "{ }") : line_scope.
+Notation "{ x }" := (cons x nil) : line_scope.
+Notation "{ x ; y ; .. ; z }" :=  (cons x (cons y .. (cons z nil) ..)) : line_scope.
+Notation "[ ]" := nil (format "[ ]") : matx_scope.
+Notation "[ l ]" := (cons l%line nil) : matx_scope.
+Notation "[ l ; l' ; .. ; l'' ]" :=  (cons l%line (cons l'%line .. (cons l''%line nil) ..))
+  (format "[ '[v' l ; '/' l' ; '/' .. ; '/' l'' ']' ]") : matx_scope.
+
+Open Scope matx_scope.
+Check [[0;0]].
+Check [[1;2;3];[4;5;6];[7;8;9]].
+
+End A.
+
+(* Example by Beta Ziliani *)
+
+Require Import Lists.List.
+
+Module B.
+
+Import ListNotations.
+
+Delimit Scope pattern_scope with pattern.
+Delimit Scope patterns_scope with patterns.
+
+Notation "a => b" := (a, b) (at level 201) : pattern_scope.
+Notation "'with' p1 | .. | pn 'end'" :=
+  ((cons p1%pattern (.. (cons pn%pattern nil) ..)))
+    (at level 91, p1 at level 210, pn at level 210) : patterns_scope.
+
+Definition mymatch (n:nat) (l : list (nat * nat)) := tt.
+Arguments mymatch _ _%patterns.
+Notation "'mmatch' n ls" := (mymatch n ls) (at level 0).
+
+Close Scope patterns_scope.
+Close Scope pattern_scope.
+
+Definition amatch := mmatch 0 with 0 => 1 | 1 => 2 end.
+Print amatch. (* Good: amatch = mmatch 0 (with 0 => 1| 1 => 2 end) *)
+
+Definition alist := [0;1;2].
+Print alist.
+
+End B.
