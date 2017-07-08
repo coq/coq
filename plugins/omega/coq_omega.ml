@@ -466,12 +466,14 @@ let destructurate_prop sigma t =
     | Prod (Name _,_,_),[] -> CErrors.user_err Pp.(str "Omega: Not a quantifier-free goal")
     | _ -> Kufo
 
-let destructurate_type sigma t =
-  let eq_constr c1 c2 = eq_constr sigma c1 c2 in
-  let c, args = decompose_app sigma t in
+let nf = Tacred.simpl
+
+let destructurate_type env sigma t =
+  let is_conv = Reductionops.is_conv env sigma in
+  let c, args = decompose_app sigma (nf env sigma t) in
   match EConstr.kind sigma c, args with
-    | _, [] when eq_constr c (Lazy.force coq_Z) -> Kapp (Z,args)
-    | _, [] when eq_constr c (Lazy.force coq_nat) -> Kapp (Nat,args)
+    | _, [] when is_conv c (Lazy.force coq_Z) -> Kapp (Z,args)
+    | _, [] when is_conv c (Lazy.force coq_nat) -> Kapp (Nat,args)
     | _ -> Kufo
 
 let destructurate_term sigma t =
@@ -1459,17 +1461,13 @@ let normalize_equation sigma id flag theorem pos t t1 t2 (tactic,defs) =
   else
     (tactic,defs)
 
-let pf_nf gl c = Tacmach.New.pf_apply Tacred.simpl gl c
-
-let destructure_omega gl tac_def (id,c) =
-  let open Tacmach.New in
-  let sigma = project gl in
+let destructure_omega env sigma tac_def (id,c) =
   if String.equal (atompart_of_id id) "State" then
     tac_def
   else
     try match destructurate_prop sigma c with
       | Kapp(Eq,[typ;t1;t2])
-	when begin match destructurate_type sigma (pf_nf gl typ) with Kapp(Z,[]) -> true | _ -> false end ->
+        when begin match destructurate_type env sigma typ with Kapp(Z,[]) -> true | _ -> false end ->
 	  let t = mk_plus t1 (mk_inv t2) in
 	  normalize_equation sigma
 	    id EQUA (Lazy.force coq_Zegal_left) 2 t t1 t2 tac_def
@@ -1507,7 +1505,7 @@ let coq_omega =
   Proofview.Goal.enter begin fun gl ->
   clear_constr_tables ();
   let hyps_types = Tacmach.New.pf_hyps_types gl in
-  let destructure_omega = destructure_omega gl in
+  let destructure_omega = Tacmach.New.pf_apply destructure_omega gl in
   let tactic_normalisation, system =
     List.fold_left destructure_omega ([],[]) hyps_types in
   let prelude,sys =
@@ -1727,27 +1725,26 @@ let not_binop = function
 
 exception Undecidable
 
-let rec decidability gl t =
-  let open Tacmach.New in
-  match destructurate_prop (project gl) t with
+let rec decidability env sigma t =
+  match destructurate_prop sigma t with
     | Kapp(Or,[t1;t2]) ->
 	mkApp (Lazy.force coq_dec_or, [| t1; t2;
-		  decidability gl t1; decidability gl t2 |])
+                  decidability env sigma t1; decidability env sigma t2 |])
     | Kapp(And,[t1;t2]) ->
 	mkApp (Lazy.force coq_dec_and, [| t1; t2;
-		  decidability gl t1; decidability gl t2 |])
+                  decidability env sigma t1; decidability env sigma t2 |])
     | Kapp(Iff,[t1;t2]) ->
 	mkApp (Lazy.force coq_dec_iff, [| t1; t2;
-		  decidability gl t1; decidability gl t2 |])
+                  decidability env sigma t1; decidability env sigma t2 |])
     | Kimp(t1,t2) ->
         (* This is the only situation where it's not obvious that [t]
 	   is in Prop. The recursive call on [t2] will ensure that. *)
         mkApp (Lazy.force coq_dec_imp,
-		 [| t1; t2; decidability gl t1; decidability gl t2 |])
+                 [| t1; t2; decidability env sigma t1; decidability env sigma t2 |])
     | Kapp(Not,[t1]) ->
-        mkApp (Lazy.force coq_dec_not, [| t1; decidability gl t1 |])
+        mkApp (Lazy.force coq_dec_not, [| t1; decidability env sigma t1 |])
     | Kapp(Eq,[typ;t1;t2]) ->
-	begin match destructurate_type (project gl) (pf_nf gl typ) with
+        begin match destructurate_type env sigma typ with
           | Kapp(Z,[]) ->  mkApp (Lazy.force coq_dec_eq, [| t1;t2 |])
           | Kapp(Nat,[]) ->  mkApp (Lazy.force coq_dec_eq_nat, [| t1;t2 |])
           | _ -> raise Undecidable
@@ -1784,15 +1781,16 @@ let onClearedName2 id tac =
 let destructure_hyps =
   Proofview.Goal.enter begin fun gl ->
   let type_of = Tacmach.New.pf_unsafe_type_of gl in
-  let decidability = decidability gl in
-  let pf_nf = pf_nf gl in
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let decidability = decidability env sigma in
   let rec loop = function
     | [] -> (tclTHEN nat_inject coq_omega)
     | LocalDef (i,body,typ) :: lit when !letin_flag ->
        Proofview.tclEVARMAP >>= fun sigma ->
        begin
          try
-           match destructurate_type sigma (pf_nf typ) with
+           match destructurate_type env sigma typ with
            | Kapp(Nat,_) | Kapp(Z,_) ->
               let hid = fresh_id Id.Set.empty (add_suffix i "_eqn") gl in
               let hty = mk_gen_eq typ (mkVar i) body in
@@ -1895,7 +1893,7 @@ let destructure_hyps =
 		   with Not_found -> loop lit)
 	      | Kapp(Eq,[typ;t1;t2]) ->
                   if !old_style_flag then begin
-		    match destructurate_type sigma (pf_nf typ) with
+                    match destructurate_type env sigma typ with
 		    | Kapp(Nat,_) ->
                         tclTHENLIST [
 			  (simplest_elim
@@ -1912,7 +1910,7 @@ let destructure_hyps =
                         ]
 		    | _ -> loop lit
                   end else begin
-		    match destructurate_type sigma (pf_nf typ) with
+                    match destructurate_type env sigma typ with
 		    | Kapp(Nat,_) ->
                         (tclTHEN
 			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
@@ -1940,7 +1938,9 @@ let destructure_hyps =
 let destructure_goal =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    let decidability = decidability gl in
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let decidability = decidability env sigma in
     let rec loop t =
       Proofview.tclEVARMAP >>= fun sigma ->
       let prop () = Proofview.tclUNIT (destructurate_prop sigma t) in
