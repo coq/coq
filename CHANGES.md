@@ -148,6 +148,11 @@ Notations
   that will do it automatically, using the output of coqc. The script
   contains documentation on its usage in a comment at the top.
 
+- When several notations are available for the same expression,
+  priority is given to latest notations defined in the scopes being
+  opened, in order, rather than to the latest notations defined
+  independently of whether they are in an opened scope or not.
+
 Tactics
 
 - Added toplevel goal selector `!` which expects a single focused goal.
