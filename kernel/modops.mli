@@ -108,7 +108,7 @@ type signature_mismatch_error =
   | IncompatibleInstances
   | IncompatibleUniverses of Univ.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
-  | IncompatibleConstraints of Univ.constraints
+  | IncompatibleConstraints of Univ.AUContext.t
 
 type module_typing_error =
   | SignatureMismatch of

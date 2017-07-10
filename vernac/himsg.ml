@@ -909,6 +909,7 @@ let explain_not_match_error = function
       quote (Printer.safe_pr_lconstr_env env Evd.empty t2)
   | IncompatibleConstraints cst ->
     str " the expected (polymorphic) constraints do not imply " ++
+      let cst = Univ.UContext.constraints (Univ.instantiate_univ_context cst) in
       quote (Univ.pr_constraints (Termops.pr_evd_level Evd.empty) cst)
 
 let explain_signature_mismatch l spec why =
