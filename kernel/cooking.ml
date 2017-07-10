@@ -250,7 +250,7 @@ let cook_constant ~hcons env { from = cb; info } =
   let univs =
     match univs with
     | Monomorphic_const ctx -> 
-      Monomorphic_const (UContext.union (instantiate_univ_context abs_ctx) ctx)
+      assert (AUContext.is_empty abs_ctx); univs
     | Polymorphic_const auctx -> 
       Polymorphic_const (AUContext.union abs_ctx auctx)
   in
