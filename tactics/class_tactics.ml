@@ -1144,7 +1144,7 @@ module Search = struct
         let res =
           if j = 0 then tclUNIT ()
           else tclDISPATCH
-                 (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j))))
+                 (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j'))))
         in
         let finish nestedshelf sigma =
           let filter ev =
