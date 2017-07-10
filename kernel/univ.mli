@@ -319,11 +319,15 @@ module AUContext :
 sig 
   type t
 
+  val repr : t -> UContext.t
+  (** [repr ctx] is [(Var(0), ... Var(n-1) |= cstr] where [n] is the length of
+      the context and [cstr] the abstracted constraints. *)
+
   val empty : t
   val is_empty : t -> bool
 
   val instance : t -> Instance.t
-                        
+
   val size : t -> int
 
   (** Keeps the order of the instances *)

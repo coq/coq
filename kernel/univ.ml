@@ -1060,6 +1060,9 @@ module AUContext =
 struct
   include UContext
 
+  let repr (inst, cst) =
+    (Array.mapi (fun i l -> Level.var i) inst, cst)
+
   let instantiate inst (u, cst) =
     assert (Array.length u = Array.length inst);
     subst_instance_constraints inst cst
