@@ -329,6 +329,9 @@ sig
   (** Keeps the order of the instances *)
   val union : t -> t -> t
 
+  val instantiate : Instance.t -> t -> Constraint.t
+  (** Generate the set of instantiated constraints **)
+
 end
 
 type abstract_universe_context = AUContext.t
@@ -443,7 +446,6 @@ val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
 (** Substitution of instances *)
 val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
 val subst_instance_universe : universe_instance -> universe -> universe
-val subst_instance_context : universe_instance -> abstract_universe_context -> universe_context
 
 val make_instance_subst : universe_instance -> universe_level_subst
 val make_inverse_instance_subst : universe_instance -> universe_level_subst

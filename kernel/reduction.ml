@@ -689,16 +689,14 @@ let check_inductive_instances cv_pb cumi u u' univs =
   else
     let comp_cst =
       let comp_subst = (Univ.Instance.append u u') in
-      Univ.UContext.constraints
-        (Univ.subst_instance_context comp_subst ind_subtypctx)
+      Univ.AUContext.instantiate comp_subst ind_subtypctx
     in
     let comp_cst =
       match cv_pb with
         CONV -> 
         let comp_cst' = 
           let comp_subst = (Univ.Instance.append u' u) in
-          Univ.UContext.constraints 
-            (Univ.subst_instance_context comp_subst ind_subtypctx) 
+          Univ.AUContext.instantiate comp_subst ind_subtypctx
         in
         Univ.Constraint.union comp_cst comp_cst'
       | CUMUL -> comp_cst
@@ -775,16 +773,15 @@ let infer_inductive_instances cv_pb cumi u u' (univs, cstrs) =
   else
     let comp_cst =
       let comp_subst = (Univ.Instance.append u u') in
-      Univ.UContext.constraints
-        (Univ.subst_instance_context comp_subst ind_subtypctx)
+      Univ.AUContext.instantiate comp_subst ind_subtypctx
     in
     let comp_cst =
       match cv_pb with
         CONV -> 
         let comp_cst' = 
           let comp_subst = (Univ.Instance.append u' u) in
-          Univ.UContext.constraints
-            (Univ.subst_instance_context comp_subst ind_subtypctx) in
+          Univ.AUContext.instantiate comp_subst ind_subtypctx
+        in
         Univ.Constraint.union comp_cst comp_cst'
       | CUMUL -> comp_cst
     in

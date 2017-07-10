@@ -122,8 +122,7 @@ type const_evaluation_result = NoBody | Opaque | IsProj
 let constraints_of cb u =
   match cb.const_universes with
   | Monomorphic_const _ -> Univ.Constraint.empty
-  | Polymorphic_const ctx -> 
-    Univ.UContext.constraints (Univ.subst_instance_context u ctx)
+  | Polymorphic_const ctx -> Univ.AUContext.instantiate u ctx
 
 let map_regular_arity f = function
   | RegularArity a as ar -> 

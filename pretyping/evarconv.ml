@@ -363,9 +363,7 @@ let check_leq_inductives evd cumi u u' =
   else
     begin
      let comp_subst = (Univ.Instance.append u u') in
-     let comp_cst = 
-       Univ.UContext.constraints (Univ.subst_instance_context comp_subst ind_sbcst)
-     in
+     let comp_cst =  Univ.AUContext.instantiate comp_subst ind_sbcst in
      Evd.add_constraints evd comp_cst
     end
 

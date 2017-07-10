@@ -211,6 +211,8 @@ sig
   val instance : t -> Instance.t
   val size : t -> int
 
+  val instantiate : Instance.t -> t -> Constraint.t
+
 end
 
 type abstract_universe_context = AUContext.t
@@ -277,7 +279,6 @@ val subst_univs_universe : universe_subst_fn -> universe -> universe
 (** Substitution of instances *)
 val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
 val subst_instance_universe : universe_instance -> universe -> universe
-val subst_instance_context : universe_instance -> abstract_universe_context -> universe_context
 
 (* val make_instance_subst : universe_instance -> universe_level_subst *)
 (* val make_inverse_instance_subst : universe_instance -> universe_level_subst *)

@@ -287,7 +287,7 @@ let fresh_universe_instance ctx =
 
 let fresh_instance_from_context ctx =
   let inst = fresh_universe_instance ctx in
-  let constraints = UContext.constraints (subst_instance_context inst ctx) in
+  let constraints = AUContext.instantiate inst ctx in
     inst, constraints
 
 let fresh_instance ctx =
@@ -316,7 +316,7 @@ let fresh_instance_from ctx inst =
     | Some inst -> existing_instance ctx inst
     | None -> fresh_instance ctx 
   in
-  let constraints = UContext.constraints (subst_instance_context inst ctx) in
+  let constraints = AUContext.instantiate inst ctx in
     inst, (ctx', constraints)
 
 let unsafe_instance_from ctx =

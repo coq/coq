@@ -988,6 +988,31 @@ let enforce_eq_instances x y =
 		 (Pp.str " instances of different lengths."));
     CArray.fold_right2 enforce_eq_level ax ay
 
+let subst_instance_level s l =
+  match l.Level.data with
+  | Level.Var n -> s.(n) 
+  | _ -> l
+
+let subst_instance_instance s i = 
+  Array.smartmap (fun l -> subst_instance_level s l) i
+
+let subst_instance_universe s u =
+  let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in
+  let u' = Universe.smartmap f u in
+    if u == u' then u
+    else Universe.sort u'
+
+let subst_instance_constraint s (u,d,v as c) =
+  let u' = subst_instance_level s u in
+  let v' = subst_instance_level s v in
+    if u' == u && v' == v then c
+    else (u',d,v')
+
+let subst_instance_constraints s csts =
+  Constraint.fold 
+    (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
+    csts Constraint.empty 
+
 type universe_instance = Instance.t
 
 type 'a puniverses = 'a * Instance.t
@@ -1031,7 +1056,15 @@ end
 type universe_context = UContext.t
 let hcons_universe_context = UContext.hcons
 
-module AUContext = UContext
+module AUContext =
+struct
+  include UContext
+
+  let instantiate inst (u, cst) =
+    assert (Array.length u = Array.length inst);
+    subst_instance_constraints inst cst
+
+end
 
 type abstract_universe_context = AUContext.t
 let hcons_abstract_universe_context = AUContext.hcons
@@ -1256,31 +1289,6 @@ let subst_univs_constraints subst csts =
     (fun c cstrs -> subst_univs_constraint subst c cstrs)
     csts Constraint.empty 
 
-let subst_instance_level s l =
-  match l.Level.data with
-  | Level.Var n -> s.(n) 
-  | _ -> l
-
-let subst_instance_instance s i = 
-  Array.smartmap (fun l -> subst_instance_level s l) i
-
-let subst_instance_universe s u =
-  let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in
-  let u' = Universe.smartmap f u in
-    if u == u' then u
-    else Universe.sort u'
-
-let subst_instance_constraint s (u,d,v as c) =
-  let u' = subst_instance_level s u in
-  let v' = subst_instance_level s v in
-    if u' == u && v' == v then c
-    else (u',d,v')
-
-let subst_instance_constraints s csts =
-  Constraint.fold 
-    (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
-    csts Constraint.empty 
-
 (** Substitute instance inst for ctx in csts *)
 let instantiate_univ_context (ctx, csts) = 
   (ctx, subst_instance_constraints ctx csts)
@@ -1378,19 +1386,3 @@ let explain_universe_inconsistency prl (o,u,v,p) =
 let compare_levels = Level.compare
 let eq_levels = Level.equal
 let equal_universes = Universe.equal
-
-
-let subst_instance_constraints = 
-  if Flags.profile then 
-    let key = Profile.declare_profile "subst_instance_constraints" in
-      Profile.profile2 key subst_instance_constraints
-  else subst_instance_constraints
-
-let subst_instance_context = 
-  let subst_instance_context_body inst (inner_inst, inner_constr) =
-    (inner_inst, subst_instance_constraints inst inner_constr)
-  in
-  if Flags.profile then 
-    let key = Profile.declare_profile "subst_instance_constraints" in
-      Profile.profile2 key subst_instance_context_body
-  else subst_instance_context_body
