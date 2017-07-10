@@ -1435,8 +1435,8 @@ sig
 
   (** This value defines the refinement of a given {i evar} *)
   type evar_body = Evd.evar_body =
-              | Evar_empty (** given {i evar} was not yet refined *)
-              | Evar_defined of Term.constr (** given {i var} was refined to the indicated term *)
+    | Evar_empty (** given {i evar} was not yet refined *)
+    | Evar_defined of Term.constr (** given {i var} was refined to the indicated term *)
 
   (** all the information we have concerning some {i evar} *)
   type evar_info = Evd.evar_info =
@@ -1464,71 +1464,75 @@ sig
   type evar_map = Prelude.evar_map
   type open_constr = evar_map * Term.constr
 
-                          
-    type 'a freelisted = 'a Evd.freelisted = {
-          rebus : 'a;
-          freemetas : Evd.Metaset.t
-        }
-    type instance_status = Evd.instance_status
-    type clbinding = Evd.clbinding =
-      | Cltyp of Names.Name.t * Term.constr freelisted
-      | Clval of Names.Name.t * (Term.constr freelisted * instance_status) * Term.constr freelisted
-    val empty : evar_map
-    val from_env : Environ.env -> evar_map
-    val find : evar_map -> Evar.t -> evar_info
-    val find_undefined : evar_map -> Prelude.evar -> evar_info
-    val is_defined : evar_map -> Evar.t -> bool
-    val mem : evar_map -> Evar.t -> bool
-    val add : evar_map -> Evar.t -> evar_info -> evar_map
-    val evar_universe_context : evar_map -> UState.t
-    val set_universe_context : evar_map -> UState.t -> evar_map
-    val universes : evar_map -> UGraph.t
-    val define : Evar.t -> Term.constr -> evar_map -> evar_map
-    val fold : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
-    val evar_key : Names.Id.t -> evar_map -> Evar.t
+  type 'a freelisted = 'a Evd.freelisted =
+    {
+      rebus : 'a;
+      freemetas : Evd.Metaset.t
+    }
 
-    val create_evar_defs : evar_map -> evar_map
+  type instance_status = Evd.instance_status
 
-    val meta_declare : Prelude.metavariable -> Term.types -> ?name:Names.Name.t -> evar_map -> evar_map
+  type clbinding = Evd.clbinding =
+    | Cltyp of Names.Name.t * Term.constr freelisted
+    | Clval of Names.Name.t * (Term.constr freelisted * instance_status) * Term.constr freelisted
 
-    val clear_metas : evar_map -> evar_map
+  val empty : evar_map
+  val from_env : Environ.env -> evar_map
+  val find : evar_map -> Evar.t -> evar_info
+  val find_undefined : evar_map -> Prelude.evar -> evar_info
+  val is_defined : evar_map -> Evar.t -> bool
+  val mem : evar_map -> Evar.t -> bool
+  val add : evar_map -> Evar.t -> evar_info -> evar_map
+  val evar_universe_context : evar_map -> UState.t
+  val set_universe_context : evar_map -> UState.t -> evar_map
+  val universes : evar_map -> UGraph.t
+  val define : Evar.t -> Term.constr -> evar_map -> evar_map
+  val fold : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+  val evar_key : Names.Id.t -> evar_map -> Evar.t
 
-    (** Allocates a new evar that represents a {i sort}. *)
-    val new_sort_variable : ?loc:Loc.t -> ?name:string -> UState.rigid -> evar_map -> evar_map * Sorts.t
+  val create_evar_defs : evar_map -> evar_map
 
-    val remove : evar_map -> Evar.t -> evar_map
-    val fresh_global : ?loc:Loc.t -> ?rigid:UState.rigid -> ?names:Univ.Instance.t -> Environ.env ->
-                       evar_map -> Prelude.global_reference -> evar_map * Term.constr
-    val evar_filtered_context : evar_info -> Context.Named.t
-    val fresh_inductive_instance : ?loc:Loc.t -> Environ.env -> evar_map -> Names.inductive -> evar_map * Term.pinductive
-    val fold_undefined : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+  val meta_declare : Prelude.metavariable -> Term.types -> ?name:Names.Name.t -> evar_map -> evar_map
 
-    val universe_context_set : evar_map -> Univ.ContextSet.t
-    val evar_ident : Prelude.evar -> evar_map -> Names.Id.t option
-    val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
-    val universe_context : ?names:(Names.Id.t Loc.located) list -> evar_map ->
-                           (Names.Id.t * Univ.Level.t) list * Univ.UContext.t
-    val nf_constraints : evar_map -> evar_map
-    val from_ctx : UState.t -> evar_map
+  val clear_metas : evar_map -> evar_map
 
-    val meta_list : evar_map -> (Prelude.metavariable * clbinding) list
+  (** Allocates a new evar that represents a {i sort}. *)
+  val new_sort_variable : ?loc:Loc.t -> ?name:string -> UState.rigid -> evar_map -> evar_map * Sorts.t
 
-    val meta_defined : evar_map -> Prelude.metavariable -> bool
+  val remove : evar_map -> Evar.t -> evar_map
+  val fresh_global : ?loc:Loc.t -> ?rigid:UState.rigid -> ?names:Univ.Instance.t -> Environ.env ->
+                     evar_map -> Prelude.global_reference -> evar_map * Term.constr
+  val evar_filtered_context : evar_info -> Context.Named.t
+  val fresh_inductive_instance : ?loc:Loc.t -> Environ.env -> evar_map -> Names.inductive -> evar_map * Term.pinductive
+  val fold_undefined : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 
-    val meta_name : evar_map -> Prelude.metavariable -> Names.Name.t
+  val universe_context_set : evar_map -> Univ.ContextSet.t
+  val evar_ident : Prelude.evar -> evar_map -> Names.Id.t option
+  val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
+  val universe_context : ?names:(Names.Id.t Loc.located) list -> evar_map ->
+                         (Names.Id.t * Univ.Level.t) list * Univ.UContext.t
+  val nf_constraints : evar_map -> evar_map
+  val from_ctx : UState.t -> evar_map
 
-    module MonadR :
+  val meta_list : evar_map -> (Prelude.metavariable * clbinding) list
+
+  val meta_defined : evar_map -> Prelude.metavariable -> bool
+
+  val meta_name : evar_map -> Prelude.metavariable -> Names.Name.t
+
+  module MonadR :
+  sig
+    module List :
     sig
-      module List :
-      sig
-        val map_right : ('a -> evar_map -> evar_map * 'b) -> 'a list -> evar_map -> evar_map * 'b list
-      end
+      val map_right : ('a -> evar_map -> evar_map * 'b) -> 'a list -> evar_map -> evar_map * 'b list
     end
+  end
 
-  type 'a sigma = 'a Evd.sigma = {
-        it : 'a ;
-        sigma : evar_map
-      }
+  type 'a sigma = 'a Evd.sigma =
+    {
+      it : 'a ;
+      sigma : evar_map
+    }
 
   val sig_sig : 'a sigma -> evar_map
 
@@ -1543,8 +1547,8 @@ sig
   val merge_universe_context : evar_map -> UState.t -> evar_map
 
   type unsolvability_explanation = Evd.unsolvability_explanation =
-                                 | SeveralInstancesFound of int
-    
+    | SeveralInstancesFound of int
+
   module Metaset : module type of struct include Evd.Metaset end
                                   with type elt = Prelude.metavariable
 
