@@ -1959,14 +1959,14 @@ let param_name = Name (id_of_string "params")
 let arg_name = Name (id_of_string "arg")
 
 let compile_mind prefix ~interactive mb mind stack =
-  let u = Declareops.inductive_polymorphic_instance mb in
+  let u = Declareops.inductive_polymorphic_context mb in
   let f i stack ob =
     let gtype = Gtype((mind, i), Array.map snd ob.mind_reloc_tbl) in
     let j = push_symbol (SymbInd (mind,i)) in
     let name = Gind ("", (mind, i)) in
     let accu =
       let args =
-	if Univ.Instance.is_empty u then
+	if Int.equal (Univ.AUContext.size u) 0 then
 	  [|get_ind_code j; MLarray [||]|]
 	else [|get_ind_code j|]
       in

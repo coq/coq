@@ -66,13 +66,6 @@ let inductive_is_cumulative mib =
   | Polymorphic_ind ctx -> false
   | Cumulative_ind cumi -> true
 
-let inductive_polymorphic_context mib =
-  match mib.mind_universes with
-  | Monomorphic_ind _ -> Univ.UContext.empty
-  | Polymorphic_ind ctx -> Univ.instantiate_univ_context ctx
-  | Cumulative_ind cumi -> 
-    Univ.instantiate_univ_context (Univ.ACumulativityInfo.univ_context cumi)
-
 (************************************************************************)
 
 (* Build the substitution that replaces Rels by the appropriate *)

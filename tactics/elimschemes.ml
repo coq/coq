@@ -48,7 +48,8 @@ let optimize_non_type_induction_scheme kind dep sort _ ind =
   else
     let mib,mip = Inductive.lookup_mind_specif env ind in
     let ctx = Declareops.inductive_polymorphic_context mib in
-    let u = Univ.UContext.instance ctx in
+    let u = Univ.AUContext.instance ctx in
+    let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
     let ctxset = Univ.ContextSet.of_context ctx in
     let ectx = Evd.evar_universe_context_of ctxset in
     let sigma = Evd.merge_universe_context sigma ectx in
@@ -62,7 +63,8 @@ let build_induction_scheme_in_type dep sort ind =
     let mib,mip = Inductive.lookup_mind_specif env ind in
       Declareops.inductive_polymorphic_context mib
   in
-  let u = Univ.UContext.instance ctx in
+  let u = Univ.AUContext.instance ctx in
+  let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
   let ctxset = Univ.ContextSet.of_context ctx in
   let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context_of ctxset) in
   let sigma, c = build_induction_scheme env sigma (ind,u) dep sort in

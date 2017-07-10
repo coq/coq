@@ -141,7 +141,7 @@ val type_of_global_unsafe : Globnames.global_reference -> Constr.types
     [Evarutil.new_global] and [Retyping.get_type_of]. *)
 
 (** Returns the universe context of the global reference (whatever its polymorphic status is). *)
-val universes_of_global : Globnames.global_reference -> Univ.universe_context
+val universes_of_global : Globnames.global_reference -> Univ.abstract_universe_context
 
 (** {6 Retroknowledge } *)
 

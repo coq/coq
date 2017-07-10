@@ -78,6 +78,8 @@ let print_ref reduce ref =
       in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
+  let inst = Univ.AUContext.instance univs in
+  let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
   let env = Global.env () in
   let bl = Universes.universe_binders_of_global ref in
   let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
@@ -503,7 +505,10 @@ let ungeneralized_type_of_constant_type t =
 
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
-    pr_universe_instance sigma (Declareops.constant_polymorphic_context cb)
+    let univs = Declareops.constant_polymorphic_context cb in
+    let inst = Univ.AUContext.instance univs in
+    let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
+    pr_universe_instance sigma univs
   else mt()
 				
 let print_constant with_values sep sp =

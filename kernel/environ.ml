@@ -247,17 +247,11 @@ let constant_type env (kn,u) =
     let csts = constraints_of cb u in
     (map_regular_arity (subst_instance_constr u) cb.const_type, csts)
 
-let constant_instance env kn =
-  let cb = lookup_constant kn env in
-  match cb.const_universes with
-  | Monomorphic_const _ -> Univ.Instance.empty
-  | Polymorphic_const ctx -> Univ.AUContext.instance ctx
-
 let constant_context env kn =
   let cb = lookup_constant kn env in
   match cb.const_universes with
-  | Monomorphic_const _ -> Univ.UContext.empty
-  | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
+  | Monomorphic_const _ -> Univ.AUContext.empty
+  | Polymorphic_const ctx -> ctx
 
 type const_evaluation_result = NoBody | Opaque | IsProj
 
