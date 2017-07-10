@@ -642,10 +642,9 @@ sig
                  | NATIVEcast
                  | DEFAULTcast
                  | REVERTcast
-  type 'a puniverses = 'a Univ.puniverses
-  type pconstant = Names.Constant.t puniverses
-  type pinductive = Names.inductive puniverses
-  type pconstructor = Names.constructor puniverses
+  type pconstant = Names.Constant.t Univ.puniverses
+  type pinductive = Names.inductive Univ.puniverses
+  type pconstructor = Names.constructor Univ.puniverses
   type case_style = Term.case_style =
                   | LetStyle
                   | IfStyle
@@ -716,7 +715,7 @@ sig
   val mkProj : Names.Projection.t * constr -> constr
   val mkInd : Names.inductive -> constr
   val mkConstruct : Names.constructor -> constr
-  val mkConstructU : Names.constructor puniverses -> constr
+  val mkConstructU : Names.constructor Univ.puniverses -> constr
   val mkConstructUi : (pinductive * int) -> constr
   val mkCase : case_info * constr * constr * constr array -> constr
   val mkFix : fixpoint -> constr
@@ -743,7 +742,7 @@ sig
   val destLetIn : constr -> Names.Name.t * constr * types * constr
   val destEvar : constr -> existential
   val destRel : constr -> int
-  val destConst : constr -> Names.Constant.t puniverses
+  val destConst : constr -> Names.Constant.t Univ.puniverses
   val destCast : constr -> constr * cast_kind * constr
   val destLambda : constr -> Names.Name.t * types * constr
 
@@ -800,7 +799,7 @@ sig
   val constr_ord : constr -> constr -> int
   [@@ocaml.deprecated "alias of API.Term.compare"]
 
-  val destInd : constr -> Names.inductive puniverses
+  val destInd : constr -> Names.inductive Univ.puniverses
   val univ_of_sort : Sorts.t -> Univ.Universe.t
 
   val strip_lam : constr -> constr
@@ -2890,7 +2889,7 @@ sig
   val nconstructors : Names.inductive -> int
   val find_rectype : Environ.env -> Evd.evar_map -> EConstr.types -> inductive_type
   val get_constructors : Environ.env -> inductive_family -> constructor_summary array
-  val dest_ind_family : inductive_family -> Names.inductive Term.puniverses * Term.constr list
+  val dest_ind_family : inductive_family -> Names.inductive Univ.puniverses * Term.constr list
   val find_inductive   : Environ.env -> Evd.evar_map -> EConstr.types -> (Names.inductive * EConstr.EInstance.t) * Term.constr list
   val type_of_inductive : Environ.env -> Term.pinductive -> Term.types
 end
