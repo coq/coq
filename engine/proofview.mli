@@ -498,7 +498,7 @@ module Goal : sig
   val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
 
   (** Like {!enter}, but assumes exactly one goal under focus, raising *)
-  (** an error otherwise. *)
+  (** a fatal error otherwise. *)
   val enter_one : ([ `LZ ] t -> 'a tactic) -> 'a tactic
 
   (** Recover the list of current goals under focus, without evar-normalization.

@@ -101,7 +101,7 @@ DEPENDENCIES := \
 ###########################################################################
 
 # Default timing command
-STDTIME=/usr/bin/time -f "$* (user: %U mem: %M ko)"
+STDTIME=/usr/bin/time -f "$* (real: %e, user: %U, sys: %S, mem: %M ko)"
 
 TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 
@@ -275,7 +275,7 @@ grammar/grammar.cma : $(GRAMCMO)
 	@touch grammar/test.mlp
 	$(HIDE)$(GRAMC) -pp '$(CAMLP4O) -I $(MYCAMLP4LIB) $^ -impl' -impl grammar/test.mlp -o grammar/test
 	@rm -f grammar/test.* grammar/test
-	$(SHOW)'OCAMLC -a $@'   
+	$(SHOW)'OCAMLC -a $@'
 	$(HIDE)$(GRAMC) $^ -linkall -a -o $@
 
 ## Support of Camlp5 and Camlp5
@@ -307,7 +307,7 @@ coqbyte: $(COQTOPBYTE) $(CHICKENBYTE)
 
 ifeq ($(BEST),opt)
 $(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs)
-	$(SHOW)'COQMKTOP -o $@'	
+	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) $(LINKMETADATA) -o $@
 	$(STRIP) $@
 	$(CODESIGN) $@
@@ -317,7 +317,7 @@ $(COQTOPEXE): $(COQTOPBYTE)
 endif
 
 $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA)
-	$(SHOW)'COQMKTOP -o $@'	
+	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@
 
 # coqmktop
@@ -667,7 +667,7 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 %:
 	@echo "Error: no rule to make target $@ (or missing .PHONY)" && false
 
-# For emacs: 
-# Local Variables: 
-# mode: makefile 
+# For emacs:
+# Local Variables:
+# mode: makefile
 # End:
