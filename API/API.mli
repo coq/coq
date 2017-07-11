@@ -68,7 +68,6 @@ sig
     type t = Univ.Instance.t
     val empty : t
     val of_array : Level.t array -> t
-    val to_array : t -> Level.t array
     val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
   end
   type 'a puniverses = 'a * Instance.t
@@ -159,7 +158,6 @@ sig
     val equal : t -> t -> bool
     val to_id : t -> Names.Id.t
     val repr : t -> int * Names.Id.t * Names.DirPath.t    
-    val debug_to_string : t -> string
   end
 
   type evaluable_global_reference = Names.evaluable_global_reference =
@@ -205,7 +203,6 @@ sig
     val hash : t -> int
     val initial : t
     val to_string : t -> string
-    val debug_to_string : t -> string
   end
 
   module KerName :
@@ -378,19 +375,13 @@ sig
   val make_con : ModPath.t -> DirPath.t -> Label.t -> Constant.t
   [@@ocaml.deprecated "alias of API.Names.Constant.make3"]
 
-  val debug_pr_con : Constant.t -> Pp.std_ppcmds
 
-  val debug_pr_mind : MutInd.t -> Pp.std_ppcmds
 
   val pr_con : Constant.t -> Pp.std_ppcmds
 
-  val string_of_con : Constant.t -> string
 
-  val string_of_mind : MutInd.t -> string
 
-  val debug_string_of_mind : MutInd.t -> string
 
-  val debug_string_of_con : Constant.t -> string
 
   module Idset : module type of struct include Id.Set end
 end
@@ -588,14 +579,6 @@ sig
       Outermost declarations are processed first. *)
     val fold_outside : (('c, 't) Declaration.pt -> 'a -> 'a) -> ('c, 't) pt -> init:'a -> 'a
 
-    (** Return the set of all identifiers bound in a given named-context. *)
-    val to_vars : ('c, 't) pt -> Names.Id.Set.t
-
-    (** [to_instance Ω] builds an instance [args] such
-      that [Ω ⊢ args:Ω] where [Ω] is a named-context and with the local
-      definitions of [Ω] skipped. Example: for [id1:T,id2:=c,id3:U], it
-      gives [Var id1, Var id3]. All [idj] are supposed distinct. *)
-    val to_instance : (Names.Id.t -> 'r) -> ('c, 't) pt -> 'r list
   end
 end
 
@@ -902,7 +885,6 @@ sig
 
     val to_named_decl : (constr, types) Context.Named.Declaration.pt -> (Prelude.constr, Prelude.types) Context.Named.Declaration.pt
 
-    val to_instance : EInstance.t -> Univ.Instance.t
   end
 
   module Vars :
@@ -977,8 +959,6 @@ sig
   val subst_mps : substitution -> Term.constr -> Term.constr
   val subst_constant : substitution -> Names.Constant.t -> Names.Constant.t
   val subst_ind : substitution -> Names.inductive -> Names.inductive
-  val debug_pr_subst : substitution -> Pp.std_ppcmds
-  val debug_pr_delta : delta_resolver -> Pp.std_ppcmds
 end
 
 module Retroknowledge :
@@ -1172,7 +1152,6 @@ sig
   val opaque_tables : env -> Opaqueproof.opaquetab
   val is_projection : Names.Constant.t -> env -> bool
   val lookup_projection : Names.Projection.t -> env -> Declarations.projection_body
-  val named_context_of_val : named_context_val -> Context.Named.t
   val push_named : Context.Named.Declaration.t -> env -> env
   val named_context : env -> Context.Named.t
   val named_context_val : env -> named_context_val
@@ -1258,7 +1237,6 @@ module Opaqueproof :
 sig
   type opaquetab = Opaqueproof.opaquetab
   type opaque = Opaqueproof.opaque
-  val empty_opaquetab : opaquetab
   val force_proof : opaquetab -> opaque -> Term.constr
 end
 
@@ -1360,12 +1338,10 @@ sig
 
   val create_clos_infos : ?evars:(Term.existential -> Term.constr option) -> RedFlags.reds -> Environ.env -> clos_infos
 
-  val whd_val : clos_infos -> fconstr -> Term.constr
 
   val inject : Term.constr -> fconstr
 
   val kl : clos_infos -> fconstr -> Term.constr
-  val term_of_fconstr : fconstr -> Term.constr
 end
 
 module Type_errors :
@@ -2198,7 +2174,6 @@ sig
                              int option option_sig -> int option write_function
   val declare_string_option: ?preprocess:(string -> string) ->
                              string option_sig -> string write_function
-  val set_bool_option_value : option_name -> bool -> unit
 end
 
 module Locus :
@@ -3667,9 +3642,6 @@ sig
   val without_symbols : ('a -> 'b) -> 'a -> 'b
   val print_universes : bool ref
   val extern_type : bool -> Environ.env -> Evd.evar_map -> Term.types -> Constrexpr.constr_expr
-  val with_universes : ('a -> 'b) -> 'a -> 'b
-  val set_extern_reference :
-    (?loc:Loc.t -> Names.Id.Set.t -> Globnames.global_reference -> Libnames.reference) -> unit
 end
 
 module Patternops :
@@ -3784,7 +3756,6 @@ sig
   val print_evar_arguments : bool ref
   val detype : ?lax:bool -> bool -> Names.Id.t list -> Environ.env -> Evd.evar_map -> EConstr.constr -> Glob_term.glob_constr
   val subst_glob_constr : Mod_subst.substitution -> Glob_term.glob_constr -> Glob_term.glob_constr
-  val set_detype_anonymous : (?loc:Loc.t -> int -> Glob_term.glob_constr) -> unit
 end
 
 module Constrexpr_ops :
@@ -4634,7 +4605,6 @@ end
 
 module Topfmt :
 sig
-  val std_ft : Format.formatter ref
   val with_output_to : out_channel -> Format.formatter
   val get_margin : unit -> int option
 end
@@ -4654,7 +4624,6 @@ sig
   val add_suffix : Names.Id.t -> string -> Names.Id.t
   val increment_subscript : Names.Id.t -> Names.Id.t
   val make_ident : string -> int option -> Names.Id.t
-  val out_name : Names.Name.t -> Names.Id.t
   val pr_lab : Names.Label.t -> Pp.std_ppcmds
   module Name :
   sig
