@@ -469,7 +469,7 @@ let constant_entry_of_side_effect cb u =
     match cb.const_universes with
     | Monomorphic_const ctx -> false, ctx
     | Polymorphic_const auctx -> 
-      true, Univ.instantiate_univ_context auctx
+      true, Univ.AUContext.repr auctx
   in
   let pt =
     match cb.const_body, u with
