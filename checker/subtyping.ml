@@ -81,6 +81,14 @@ let check_conv_error error f env a1 a2 =
   with
       NotConvertible -> error ()
 
+let check_polymorphic_instance error env auctx1 auctx2 =
+  if not (Univ.AUContext.size auctx1 == Univ.AUContext.size auctx2) then
+    error ()
+  else if not (Univ.check_subtype (Environ.universes env) auctx2 auctx1) then
+    error ()
+  else
+    Environ.push_context ~strict:false (Univ.AUContext.repr auctx2) env
+
 (* for now we do not allow reorderings *)
 let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2= 
   let kn = MutInd.make2 mp1 l in
@@ -93,19 +101,17 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   in
   let mib2 = subst_mind subst2 mib2 in
   let check eq f = if not (eq (f mib1) (f mib2)) then error () in
-  let u =
-    let process inst inst' =
-      if Univ.Instance.equal inst inst' then inst else error ()
-    in
+  let env, u =
     match mib1.mind_universes, mib2.mind_universes with
-    | Monomorphic_ind _, Monomorphic_ind _ -> Univ.Instance.empty
+    | Monomorphic_ind _, Monomorphic_ind _ -> env, Univ.Instance.empty
     | Polymorphic_ind auctx, Polymorphic_ind auctx' ->
-      process
-        (Univ.AUContext.instance auctx) (Univ.AUContext.instance auctx')
+      let env = check_polymorphic_instance error env auctx auctx' in
+      env, Univ.make_abstract_instance auctx'
     | Cumulative_ind cumi, Cumulative_ind cumi' ->
-      process
-        (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
-        (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi'))
+      let auctx = Univ.ACumulativityInfo.univ_context cumi in
+      let auctx' = Univ.ACumulativityInfo.univ_context cumi' in
+      let env = check_polymorphic_instance error env auctx auctx' in
+      env, Univ.make_abstract_instance auctx'
     | _ -> error ()
   in
   let eq_projection_body p1 p2 =
@@ -118,7 +124,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     check (eq_constr) (fun x -> snd x.proj_eta);
     check (eq_constr) (fun x -> x.proj_body); true
   in
-  let check_inductive_type env t1 t2 =
+  let check_inductive_type t1 t2 =
 
     (* Due to template polymorphism, the conclusions of
        t1 and t2, if in Type, are generated as the least upper bounds
@@ -170,8 +176,8 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
       (* nparams done *)
       (* params_ctxt done because part of the inductive types *)
       (* Don't check the sort of the type if polymorphic *)
-      check_inductive_type env
-        (type_of_inductive env ((mib1,p1),u)) (type_of_inductive env ((mib2,p2),u))
+      check_inductive_type
+        (type_of_inductive env ((mib1,p1), u)) (type_of_inductive env ((mib2,p2),u))
   in
   let check_cons_types i p1 p2 =
     Array.iter2 (check_conv conv env)

@@ -1216,6 +1216,9 @@ module AUContext =
 struct
   include UContext
 
+  let repr (inst, cst) =
+    (Array.mapi (fun i l -> Level.var i) inst, cst)
+
   let instantiate inst (u, cst) =
     assert (Array.length u = Array.length inst);
     subst_instance_constraints inst cst
@@ -1278,7 +1281,17 @@ struct
 end
 type universe_context_set = ContextSet.t
 
+(** Instance subtyping *)
 
+let check_subtype univs ctxT ctx =
+  if AUContext.size ctx == AUContext.size ctx then
+    let (inst, cst) = AUContext.repr ctx in
+    let cstT = UContext.constraints (AUContext.repr ctxT) in
+    let push accu v = add_universe v false accu in
+    let univs = Array.fold_left push univs inst in
+    let univs = merge_constraints cstT univs in
+    check_constraints cst univs
+  else false
 
 (** Substitutions. *)
 

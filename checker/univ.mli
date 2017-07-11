@@ -212,6 +212,7 @@ sig
   val size : t -> int
 
   val instantiate : Instance.t -> t -> Constraint.t
+  val repr : t -> UContext.t
 
 end
 
@@ -289,7 +290,10 @@ val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_i
 
 (** Build the relative instance corresponding to the context *)
 val make_abstract_instance : abstract_universe_context -> universe_instance
-									    
+
+(** Check instance subtyping *)
+val check_subtype : universes -> AUContext.t -> AUContext.t -> bool
+
 (** {6 Pretty-printing of universes. } *)
 
 val pr_constraint_type : constraint_type -> Pp.std_ppcmds
