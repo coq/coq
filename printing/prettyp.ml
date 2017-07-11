@@ -557,9 +557,10 @@ let print_constant with_values sep sp =
 	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
 	Printer.pr_universe_ctx sigma univs
-    | _ ->
+    | Some (c, ctx) ->
+        let c = Vars.subst_instance_constr (Univ.AUContext.instance ctx) c in
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
-	(if with_values then print_typed_body env sigma (val_0,typ) else pr_ltype typ)++
+	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
         Printer.pr_universe_ctx sigma univs)
 
 let gallina_print_constant_with_infos sp =

@@ -126,9 +126,8 @@ let opaque_tables () = Environ.opaque_tables (env ())
 let instantiate cb c =
   let open Declarations in
   match cb.const_universes with
-  | Monomorphic_const _ -> c
-  | Polymorphic_const ctx ->
-     Vars.subst_instance_constr (Univ.AUContext.instance ctx) c
+  | Monomorphic_const _ -> c, Univ.AUContext.empty
+  | Polymorphic_const ctx -> c, ctx
 
 let body_of_constant_body cb =
   let open Declarations in

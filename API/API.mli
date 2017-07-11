@@ -2716,8 +2716,8 @@ sig
   val type_of_global_unsafe : Globnames.global_reference -> Term.types
 
   val current_dirpath : unit -> Names.DirPath.t
-  val body_of_constant_body : Declarations.constant_body -> Term.constr option
-  val body_of_constant : Names.Constant.t -> Term.constr option
+  val body_of_constant_body : Declarations.constant_body -> (Term.constr * Univ.AUContext.t) option
+  val body_of_constant : Names.Constant.t -> (Term.constr * Univ.AUContext.t) option
   val add_constraints : Univ.Constraint.t -> unit
 end
 
