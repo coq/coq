@@ -265,16 +265,10 @@ let warn_non_primitive_record =
 let declare_projections indsp ?(kind=StructureComponent) binder_name coers fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
-  let u = Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib) in
-  let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let poly = Declareops.inductive_is_polymorphic mib in
-  let ctx =
-    match mib.mind_universes with
-    | Monomorphic_ind ctx -> ctx
-    | Polymorphic_ind auctx -> Univ.instantiate_univ_context auctx
-    | Cumulative_ind cumi -> 
-      Univ.instantiate_univ_context (Univ.ACumulativityInfo.univ_context cumi)
-  in
+  let ctx = Univ.AUContext.repr (Declareops.inductive_polymorphic_context mib) in
+  let u = Univ.UContext.instance ctx in
+  let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let indu = indsp, u in
   let r = mkIndU (indsp,u) in
   let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
@@ -334,8 +328,7 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 		    const_entry_secctx = None;
 		    const_entry_type = Some projtyp;
 		    const_entry_polymorphic = poly;
-		    const_entry_universes =
-		      if poly then ctx else Univ.UContext.empty;
+		    const_entry_universes = ctx;
 		    const_entry_opaque = false;
 		    const_entry_inline_code = false;
 		    const_entry_feedback = None } in
@@ -431,6 +424,12 @@ let declare_structure finite univs id idbuild paramimpls params arity template
   let kn = Command.declare_mutual_inductive_with_eliminations mie [] [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
+  let fields =
+    if poly then
+      let subst, _ = Univ.abstract_universes ctx in
+      Context.Rel.map (fun c -> Vars.subst_univs_level_constr subst c) fields
+    else fields
+  in
   let kinds,sp_projs = declare_projections rsp ~kind binder_name coers fieldimpls fields in
   let build = ConstructRef cstr in
   let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
