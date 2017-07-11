@@ -84,6 +84,11 @@ sig
     val empty : t
   end
 
+  module AUContext :
+  sig
+    type t = Univ.AUContext.t
+  end
+
   type universe_context = UContext.t
   [@@ocaml.deprecated "alias of API.Univ.UContext.t"]
 
@@ -2884,7 +2889,7 @@ sig
                   | Default_cs
   type obj_typ = Recordops.obj_typ = {
         o_DEF : Term.constr;
-        o_CTX : Univ.ContextSet.t;
+        o_CTX : Univ.AUContext.t;
         o_INJ : int option;      (** position of trivial argument *)
         o_TABS : Term.constr list;    (** ordered *)
         o_TPARAMS : Term.constr list; (** ordered *)

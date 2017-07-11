@@ -134,7 +134,7 @@ let find_projection = function
 
 type obj_typ = {
   o_DEF : constr;
-  o_CTX : Univ.ContextSet.t;
+  o_CTX : Univ.AUContext.t;
   o_INJ : int option;      (* position of trivial argument if any *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)
@@ -203,10 +203,8 @@ let warn_projection_no_head_constant =
 let compute_canonical_projections warn (con,ind) =
   let env = Global.env () in
   let ctx = Environ.constant_context env con in
-  let u = Univ.AUContext.instance ctx in
-  let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
+  let u = Univ.make_abstract_instance ctx in
   let v = (mkConstU (con,u)) in
-  let ctx = Univ.ContextSet.of_context ctx in
   let c = Environ.constant_value_in env (con,u) in
   let sign,t = Reductionops.splay_lam env Evd.empty (EConstr.of_constr c) in
   let t = EConstr.Unsafe.to_constr t in
@@ -302,7 +300,7 @@ let error_not_structure ref =
 let check_and_decompose_canonical_structure ref =
   let sp = match ref with ConstRef sp -> sp | _ -> error_not_structure ref in
   let env = Global.env () in
-  let u = Univ.AUContext.instance (Environ.constant_context env sp) in
+  let u = Univ.make_abstract_instance (Environ.constant_context env sp) in
   let vc = match Environ.constant_opt_value_in env (sp, u) with
     | Some vc -> vc
     | None -> error_not_structure ref in
