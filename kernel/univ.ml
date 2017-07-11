@@ -1031,7 +1031,14 @@ end
 type universe_context = UContext.t
 let hcons_universe_context = UContext.hcons
 
-module AUContext = UContext
+module AUContext =
+struct
+  include UContext
+
+  let repr (inst, cst) =
+    (Array.mapi (fun i l -> Level.var i) inst, cst)
+
+end
 
 type abstract_universe_context = AUContext.t
 let hcons_abstract_universe_context = AUContext.hcons
