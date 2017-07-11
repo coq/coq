@@ -122,7 +122,22 @@ let lookup_modtype kn = lookup_modtype kn (env())
 let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
 let opaque_tables () = Environ.opaque_tables (env ())
-let body_of_constant_body cb = Declareops.body_of_constant (opaque_tables ()) cb
+
+let instantiate cb c =
+  let open Declarations in
+  match cb.const_universes with
+  | Monomorphic_const _ -> c
+  | Polymorphic_const ctx ->
+     Vars.subst_instance_constr (Univ.AUContext.instance ctx) c
+
+let body_of_constant_body cb =
+  let open Declarations in
+  let otab = opaque_tables () in
+  match cb.const_body with
+  | Undef _ -> None
+  | Def c -> Some (instantiate cb (Mod_subst.force_constr c))
+  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof otab o))
+
 let body_of_constant cst = body_of_constant_body (lookup_constant cst)
 
 (** Operations on kernel names *)

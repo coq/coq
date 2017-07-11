@@ -326,6 +326,7 @@ sig
   val empty : t
   val is_empty : t -> bool
 
+  (** Don't use. *)
   val instance : t -> Instance.t
 
   val size : t -> int
@@ -460,10 +461,10 @@ val abstract_cumulativity_info : cumulativity_info -> universe_level_subst * abs
 
 val make_abstract_instance : abstract_universe_context -> universe_instance
 
-(** Get the instantiated graph. *)
+(** Don't use. *)
 val instantiate_univ_context : abstract_universe_context -> universe_context
 
-(** Get the instantiated graphs for both universe constraints and subtyping constraints. *)
+(** Don't use. *)
 val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_info
 
 (** {6 Pretty-printing of universes. } *)

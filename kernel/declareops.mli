@@ -32,13 +32,6 @@ val constant_polymorphic_context : constant_body -> abstract_universe_context
 (** Is the constant polymorphic? *)
 val constant_is_polymorphic : constant_body -> bool
 
-(** Accessing const_body, forcing access to opaque proof term if needed.
-    Only use this function if you know what you're doing. *)
-
-val body_of_constant :
-  Opaqueproof.opaquetab -> constant_body -> Term.constr option
-val type_of_constant : constant_body -> constant_type
-
 (** Return the universe context, in case the definition is polymorphic, otherwise
     the context is empty. *)
 

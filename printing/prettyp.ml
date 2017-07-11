@@ -514,7 +514,16 @@ let print_instance sigma cb =
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
-  let typ = Declareops.type_of_constant cb in
+  let typ = match cb.const_type with
+  | RegularArity t as x ->
+    begin match cb.const_universes with
+    | Monomorphic_const _ -> x
+    | Polymorphic_const univs ->
+      let inst = Univ.AUContext.instance univs in
+      RegularArity (Vars.subst_instance_constr inst t)
+    end
+  | TemplateArity _ as x -> x
+  in
   let typ = ungeneralized_type_of_constant_type typ in
   let univs =
     let otab = Global.opaque_tables () in

@@ -44,28 +44,10 @@ let hcons_template_arity ar =
 
 (** {6 Constants } *)
 
-let instantiate cb c =
-  match cb.const_universes with
-  | Monomorphic_const _ -> c
-  | Polymorphic_const ctx -> 
-     Vars.subst_instance_constr (Univ.AUContext.instance ctx) c
-
 let constant_is_polymorphic cb =
   match cb.const_universes with
   | Monomorphic_const _ -> false
   | Polymorphic_const _ -> true
-
-let body_of_constant otab cb = match cb.const_body with
-  | Undef _ -> None
-  | Def c -> Some (instantiate cb (force_constr c))
-  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof otab o))
-
-let type_of_constant cb =
-  match cb.const_type with
-  | RegularArity t as x -> 
-    let t' = instantiate cb t in
-      if t' == t then x else RegularArity t'
-  | TemplateArity _ as x -> x
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
