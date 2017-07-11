@@ -164,7 +164,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     let ctx'' = ctx' @ ctx in
     let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) !evars (EConstr.of_constr c) in
     let u = EConstr.EInstance.kind !evars u in
-    let cl, u = Typeclasses.typeclass_univ_instance (k, u) in
+    let cl = Typeclasses.typeclass_univ_instance (k, u) in
     let _, args = 
       List.fold_right (fun decl (args, args') ->
 	match decl with

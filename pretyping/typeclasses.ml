@@ -57,6 +57,9 @@ type direction = Forward | Backward
 
 (* This module defines type-classes *)
 type typeclass = {
+  (* Universe quantification *)
+  cl_univs : Univ.AUContext.t;
+
   (* The class implementation *)
   cl_impl : global_reference;
 
@@ -111,23 +114,11 @@ let new_instance cl info glob poly impl =
 let classes : typeclasses ref = Summary.ref Refmap.empty ~name:"classes"
 let instances : instances ref = Summary.ref Refmap.empty ~name:"instances"
 
-let typeclass_univ_instance (cl,u') =
-  let subst = 
-    let u = 
-      match cl.cl_impl with
-      | ConstRef c -> 
-        let cb = Global.lookup_constant c in
-        Univ.AUContext.instance (Declareops.constant_polymorphic_context cb)
-      | IndRef c ->
-         let mib,oib = Global.lookup_inductive c in
-         Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
-      | _ -> Univ.Instance.empty
-    in Array.fold_left2 (fun subst u u' -> Univ.LMap.add u u' subst) 
-      Univ.LMap.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')
-  in
-  let subst_ctx = Context.Rel.map (subst_univs_level_constr subst) in
-    { cl with cl_context = fst cl.cl_context, subst_ctx (snd cl.cl_context);
-      cl_props = subst_ctx cl.cl_props}, u'
+let typeclass_univ_instance (cl, u) =
+  assert (Univ.AUContext.size cl.cl_univs == Univ.Instance.length u);
+  let subst_ctx c = Context.Rel.map (subst_instance_constr u) c in
+    { cl with cl_context = on_snd subst_ctx cl.cl_context;
+      cl_props = subst_ctx cl.cl_props}
 
 let class_info c =
   try Refmap.find c !classes
@@ -185,12 +176,27 @@ let subst_class (subst,cl) =
     do_subst_ctx ctx in
   let do_subst_projs projs = List.smartmap (fun (x, y, z) -> 
     (x, y, Option.smartmap do_subst_con z)) projs in
-  { cl_impl = do_subst_gr cl.cl_impl;
+  { cl_univs = cl.cl_univs;
+    cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_context cl.cl_context;
     cl_props = do_subst_ctx cl.cl_props;
     cl_projs = do_subst_projs cl.cl_projs;
     cl_strict = cl.cl_strict;
     cl_unique = cl.cl_unique }
+
+(** FIXME: share this with Cooking somewhere in a nicely packed API *)
+let lift_abstract_context subst abs_ctx auctx =
+  let open Univ in
+  let len = LMap.cardinal subst in
+  let rec gen_subst i acc =
+    if i < 0 then acc
+    else
+      let acc = LMap.add (Level.var i) (Level.var (i + len)) acc in
+      gen_subst (pred i) acc
+  in
+  let subst = gen_subst (AUContext.size auctx - 1) subst in
+  let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
+  subst, AUContext.union abs_ctx auctx
 
 let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
@@ -199,15 +205,14 @@ let discharge_class (_,cl) =
         let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
 	(decl' :: ctx', NamedDecl.get_id decl :: subst)
     ) ctx ([], []) in
-  let discharge_rel_context subst n rel =
+  let discharge_rel_context (subst, usubst) n rel =
     let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
-    let ctx, _ =
-      List.fold_right
-	(fun decl (ctx, k) ->
-	   RelDecl.map_constr (substn_vars k subst) decl :: ctx, succ k
-	)
-	rel ([], n)
-    in ctx
+    let fold decl (ctx, k) =
+      let map c = subst_univs_level_constr usubst (substn_vars k subst c) in
+      RelDecl.map_constr map decl :: ctx, succ k
+    in
+    let ctx, _ = List.fold_right fold rel ([], n) in
+    ctx
   in
   let abs_context cl =
     match cl.cl_impl with
@@ -229,10 +234,12 @@ let discharge_class (_,cl) =
   if cl_impl' == cl.cl_impl then cl else
     let ctx, usubst, uctx = abs_context cl in
     let ctx, subst = rel_of_variable_context ctx in
-    let context = discharge_context ctx subst cl.cl_context in
-    let props = discharge_rel_context subst (succ (List.length (fst cl.cl_context))) cl.cl_props in
+    let usubst, cl_univs' = lift_abstract_context usubst uctx cl.cl_univs in
+    let context = discharge_context ctx (subst, usubst) cl.cl_context in
+    let props = discharge_rel_context (subst, usubst) (succ (List.length (fst cl.cl_context))) cl.cl_props in
     let discharge_proj (x, y, z) = x, y, Option.smartmap Lib.discharge_con z in
-      { cl_impl = cl_impl';
+      { cl_univs = cl_univs';
+        cl_impl = cl_impl';
 	cl_context = context;
 	cl_props = props;
 	cl_projs = List.smartmap discharge_proj cl.cl_projs;

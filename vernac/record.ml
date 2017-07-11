@@ -517,8 +517,18 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
       | None -> None)
       params, params
   in
+  let univs, ctx_context, fields =
+    if poly then
+      let usubst, auctx = Univ.abstract_universes ctx in
+      let map c = Vars.subst_univs_level_constr usubst c in
+      let fields = Context.Rel.map map fields in
+      let ctx_context = on_snd (fun d -> Context.Rel.map map d) ctx_context in
+      auctx, ctx_context, fields
+    else Univ.AUContext.empty, ctx_context, fields
+  in
   let k =
-    { cl_impl = impl;
+    { cl_univs = univs;
+      cl_impl = impl;
       cl_strict = !typeclasses_strict;
       cl_unique = !typeclasses_unique;
       cl_context = ctx_context;
@@ -529,10 +539,11 @@ let declare_class finite def cum poly ctx id idbuild paramimpls params arity
 
 
 let add_constant_class cst =
-  let ty = Universes.unsafe_type_of_global (ConstRef cst) in
+  let ty, univs = Global.type_of_global_in_context (Global.env ()) (ConstRef cst) in
   let ctx, arity = decompose_prod_assum ty in
   let tc = 
-    { cl_impl = ConstRef cst;
+    { cl_univs = univs;
+      cl_impl = ConstRef cst;
       cl_context = (List.map (const None) ctx, ctx);
       cl_props = [LocalAssum (Anonymous, arity)];
       cl_projs = [];
@@ -546,12 +557,13 @@ let add_inductive_class ind =
   let mind, oneind = Global.lookup_inductive ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
-    let inst = Univ.AUContext.instance (Declareops.inductive_polymorphic_context mind) in
-    let ty = Inductive.type_of_inductive
-      (push_rel_context ctx (Global.env ()))
-      ((mind,oneind),inst)
-    in
-      { cl_impl = IndRef ind;
+    let univs = Declareops.inductive_polymorphic_context mind in
+    let env = push_context ~strict:false (Univ.AUContext.repr univs) (Global.env ()) in
+    let env = push_rel_context ctx env in
+    let inst = Univ.make_abstract_instance univs in
+    let ty = Inductive.type_of_inductive env ((mind, oneind), inst) in
+      { cl_univs = univs;
+        cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;
 	cl_props = [LocalAssum (Anonymous, ty)];
 	cl_projs = [];

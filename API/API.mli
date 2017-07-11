@@ -3048,6 +3048,7 @@ end
 module Typeclasses :
 sig
   type typeclass = Typeclasses.typeclass = {
+    cl_univs : Univ.AUContext.t;
     cl_impl : Globnames.global_reference;
     cl_context : (Globnames.global_reference * bool) option list * Context.Rel.t;
     cl_props : Context.Rel.t;
