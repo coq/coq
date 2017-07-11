@@ -279,8 +279,10 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
         Nameops.add_suffix _id ("_subinstance_" ^ string_of_int !i))
   in
   let ty, ctx = Global.type_of_global_in_context env glob in
+  let inst, ctx = Universes.fresh_instance_from ctx None in
+  let ty = Vars.subst_instance_constr inst ty in
   let ty = EConstr.of_constr ty in
-  let sigma = Evd.merge_context_set Evd.univ_rigid sigma (Univ.ContextSet.of_context ctx) in
+  let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
   let rec aux pri c ty path =
       match class_of_constr sigma ty with
       | None -> []
@@ -317,7 +319,7 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
 	    hints @ (path', info, body) :: rest
 	in List.fold_left declare_proj [] projs 
   in
-  let term = Universes.constr_of_global_univ (glob,Univ.UContext.instance ctx) in
+  let term = Universes.constr_of_global_univ (glob, inst) in
     (*FIXME subclasses should now get substituted for each particular instance of
       the polymorphic superclass *)
     aux pri term ty [glob]
