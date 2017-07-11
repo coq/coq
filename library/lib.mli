@@ -183,3 +183,5 @@ val discharge_kn :  Names.mutual_inductive -> Names.mutual_inductive
 val discharge_con : Names.constant -> Names.constant
 val discharge_global : Globnames.global_reference -> Globnames.global_reference
 val discharge_inductive : Names.inductive -> Names.inductive
+val discharge_abstract_universe_context :
+  abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t

@@ -184,20 +184,6 @@ let subst_class (subst,cl) =
     cl_strict = cl.cl_strict;
     cl_unique = cl.cl_unique }
 
-(** FIXME: share this with Cooking somewhere in a nicely packed API *)
-let lift_abstract_context subst abs_ctx auctx =
-  let open Univ in
-  let len = LMap.cardinal subst in
-  let rec gen_subst i acc =
-    if i < 0 then acc
-    else
-      let acc = LMap.add (Level.var i) (Level.var (i + len)) acc in
-      gen_subst (pred i) acc
-  in
-  let subst = gen_subst (AUContext.size auctx - 1) subst in
-  let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
-  subst, AUContext.union abs_ctx auctx
-
 let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
   let rel_of_variable_context ctx = List.fold_right
@@ -232,9 +218,9 @@ let discharge_class (_,cl) =
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
   if cl_impl' == cl.cl_impl then cl else
-    let ctx, usubst, uctx = abs_context cl in
+    let ctx, _, _ as info = abs_context cl in
     let ctx, subst = rel_of_variable_context ctx in
-    let usubst, cl_univs' = lift_abstract_context usubst uctx cl.cl_univs in
+    let usubst, cl_univs' = Lib.discharge_abstract_universe_context info cl.cl_univs in
     let context = discharge_context ctx (subst, usubst) cl.cl_context in
     let props = discharge_rel_context (subst, usubst) (succ (List.length (fst cl.cl_context))) cl.cl_props in
     let discharge_proj (x, y, z) = x, y, Option.smartmap Lib.discharge_con z in

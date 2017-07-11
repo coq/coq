@@ -645,3 +645,16 @@ let discharge_con cst =
 
 let discharge_inductive (kn,i) =
   (discharge_kn kn,i)
+
+let discharge_abstract_universe_context (_, subst, abs_ctx) auctx =
+  let open Univ in
+  let len = LMap.cardinal subst in
+  let rec gen_subst i acc =
+    if i < 0 then acc
+    else
+      let acc = LMap.add (Level.var i) (Level.var (i + len)) acc in
+      gen_subst (pred i) acc
+  in
+  let subst = gen_subst (AUContext.size auctx - 1) subst in
+  let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
+  subst, AUContext.union abs_ctx auctx

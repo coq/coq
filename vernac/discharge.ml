@@ -77,42 +77,36 @@ let refresh_polymorphic_type_of_inductive (_,mip) =
     let ctx = List.rev mip.mind_arity_ctxt in
       mkArity (List.rev ctx, Type ar.template_level), true
 
-let process_inductive (sechyps,abs_ctx) modlist mib =
+let process_inductive (sechyps,_,_ as info) modlist mib =
+  let sechyps = Lib.named_of_variable_context sechyps in
   let nparams = mib.mind_nparams in
-  let subst, univs =
+  let subst, ind_univs =
     match mib.mind_universes with
-    | Monomorphic_ind ctx -> Univ.Instance.empty, ctx
+    | Monomorphic_ind ctx -> Univ.empty_level_subst, Monomorphic_ind_entry ctx
     | Polymorphic_ind auctx ->
-      Univ.AUContext.instance auctx, Univ.instantiate_univ_context auctx
+      let subst, auctx = Lib.discharge_abstract_universe_context info auctx in
+      let auctx = Univ.AUContext.repr auctx in
+      subst, Polymorphic_ind_entry auctx
     | Cumulative_ind cumi ->
       let auctx = Univ.ACumulativityInfo.univ_context cumi in
-      Univ.AUContext.instance auctx, Univ.instantiate_univ_context auctx
+      let subst, auctx = Lib.discharge_abstract_universe_context info auctx in
+      let auctx = Univ.AUContext.repr auctx in
+      subst, Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context auctx)
   in
+  let discharge c = Vars.subst_univs_level_constr subst (expmod_constr modlist c) in
   let inds =
     Array.map_to_list
       (fun mip ->
 	let ty, template = refresh_polymorphic_type_of_inductive (mib,mip) in
-	let arity = expmod_constr modlist ty in
-	let arity = Vars.subst_instance_constr subst arity in
-	let lc = Array.map 
-	  (fun c -> Vars.subst_instance_constr subst (expmod_constr modlist c))
-	  mip.mind_user_lc 
-	in
+        let arity = discharge ty in
+        let lc = Array.map discharge mip.mind_user_lc  in
 	  (mip.mind_typename,
 	   arity, template,
 	   Array.to_list mip.mind_consnames,
 	   Array.to_list lc))
       mib.mind_packets in
-  let sechyps' = Context.Named.map (expmod_constr modlist) sechyps in
+  let sechyps' = Context.Named.map discharge sechyps in
   let (params',inds') = abstract_inductive sechyps' nparams inds in
-  let abs_ctx = Univ.instantiate_univ_context abs_ctx in
-  let univs = Univ.UContext.union abs_ctx univs in
-  let ind_univs =
-    match mib.mind_universes with
-    | Monomorphic_ind _ -> Monomorphic_ind_entry univs
-    | Polymorphic_ind _ -> Polymorphic_ind_entry univs
-    | Cumulative_ind _ ->
-      Cumulative_ind_entry (Universes.univ_inf_ind_from_universe_context univs) in
   let record = match mib.mind_record with
     | Some (Some (id, _, _)) -> Some (Some id)
     | Some None -> Some None

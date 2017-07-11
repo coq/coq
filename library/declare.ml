@@ -333,9 +333,9 @@ let discharge_inductive ((sp,kn),(dhyps,mie)) =
   let mind = Global.mind_of_delta_kn kn in
   let mie = Global.lookup_mind mind in
   let repl = replacement_context () in
-  let sechyps,usubst,uctx = section_segment_of_mutual_inductive mind in
+  let sechyps, _, _ as info = section_segment_of_mutual_inductive mind in
   Some (discharged_hyps kn sechyps,
-        Discharge.process_inductive (named_of_variable_context sechyps,uctx) repl mie)
+        Discharge.process_inductive info repl mie)
 
 let dummy_one_inductive_entry mie = {
   mind_entry_typename = mie.mind_entry_typename;
