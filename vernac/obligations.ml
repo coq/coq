@@ -285,7 +285,7 @@ type obligation =
   { obl_name : Id.t;
     obl_type : types;
     obl_location : Evar_kinds.t Loc.located;
-    obl_body : constant obligation_body option;
+    obl_body : pconstant obligation_body option;
     obl_status : bool * Evar_kinds.obligation_definition_status;
     obl_deps : Int.Set.t;
     obl_tac : unit Proofview.tactic option;
@@ -358,18 +358,8 @@ let _ =
 
 let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
-let get_body obl =
-  match obl.obl_body with
-  | None -> None
-  | Some (DefinedObl c) ->
-    let u = Univ.AUContext.instance (Environ.constant_context (Global.env ()) c) in
-    let pc = (c, u) in
-      Some (DefinedObl pc)
-  | Some (TermObl c) ->
-      Some (TermObl c)
-
 let get_obligation_body expand obl =
-  match get_body obl with
+  match obl.obl_body with
   | None -> None
   | Some c ->
      if expand && snd obl.obl_status == Evar_kinds.Expand then
@@ -664,7 +654,7 @@ let declare_obligation prg obl body ty uctx =
 	definition_message obl.obl_name;
 	true, { obl with obl_body =
 	    if poly then
-	      Some (DefinedObl constant)
+	      Some (DefinedObl (constant, Univ.UContext.instance uctx))
 	    else
 	      Some (TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (mkConst constant, args)) ctx)) }
 
@@ -892,20 +882,22 @@ let obligation_hook prg obl num auto ctx' _ gr =
        if not transparent then err_not_transp ()
     | _ -> ()
 in
-  let obl = { obl with obl_body = Some (DefinedObl cst) } in
-  let () = if transparent then add_hint true prg cst in
-  let obls = Array.copy obls in
-  let _ = obls.(num) <- obl in
   let ctx' = match ctx' with None -> prg.prg_ctx | Some ctx' -> ctx' in
-  let ctx' =
+  let inst, ctx' =
     if not (pi2 prg.prg_kind) (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
       let evd = Evd.from_env (Global.env ()) in
       let ctx' = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx')) in
-        Evd.evar_universe_context ctx'
-    else ctx'
+      Univ.Instance.empty, Evd.evar_universe_context ctx'
+    else
+      let (_, uctx) = UState.universe_context ctx' in
+      Univ.UContext.instance uctx, ctx'
   in
+  let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
+  let () = if transparent then add_hint true prg cst in
+  let obls = Array.copy obls in
+  let _ = obls.(num) <- obl in
   let prg = { prg with prg_ctx = ctx' } in
   let () =
     try ignore (update_obls prg obls (pred rem))
@@ -1132,7 +1124,7 @@ let admit_prog prg =
               (ParameterEntry (None,false,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;
-              obls.(i) <- { x with obl_body = Some (DefinedObl kn) }
+              obls.(i) <- { x with obl_body = Some (DefinedObl (kn, Univ.Instance.empty)) }
         | Some _ -> ())
       obls;
     ignore(update_obls prg obls 0)
