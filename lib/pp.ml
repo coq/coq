@@ -220,23 +220,25 @@ let prlist pr l = Ppcmd_glue (List.map pr l)
    if a strict behavior is needed, use [prlist_strict] instead.
    evaluation is done from left to right. *)
 
-let prlist_sep_lastsep no_empty sep lastsep elem =
-  let rec start = function
-    |[] -> mt ()
-    |[e] -> elem e
-    |h::t -> let e = elem h in
-        if no_empty && ismt e then start t else
-          let rec aux = function
-            |[] -> mt ()
-            |h::t ->
-               let e = elem h and r = aux t in
-                 if no_empty && ismt e then r else
-                   if ismt r
-                   then let s = lastsep () in s ++ e
-                   else let s = sep () in s ++ e ++ r
-          in let r = aux t in e ++ r
-  in start
-
+let prlist_sep_lastsep no_empty sep_thunk lastsep_thunk elem l =
+  let sep = sep_thunk () in
+  let lastsep = lastsep_thunk () in
+  let elems = List.map elem l in
+  let filtered_elems =
+    if no_empty then
+      List.filter (fun e -> not (ismt e)) elems
+    else
+      elems
+  in
+  let rec insert_seps es =
+    match es with
+    | []     -> mt ()
+    | [e]    -> e
+    | h::[e] -> h ++ lastsep ++ e
+    | h::t   -> h ++ sep ++ insert_seps t
+  in
+  insert_seps filtered_elems
+  
 let prlist_strict pr l = prlist_sep_lastsep true mt mt pr l
 (* [prlist_with_sep sep pr [a ; ... ; c]] outputs
    [pr a ++ sep() ++ ... ++ sep() ++ pr c] *)
