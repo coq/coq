@@ -798,9 +798,11 @@ let print_opaque_name qid =
     | IndRef (sp,_) ->
         print_inductive sp
     | ConstructRef cstr as gr ->
-        let open EConstr in
-	let ty = Universes.unsafe_type_of_global gr in
+	let ty, ctx = Global.type_of_global_in_context env gr in
+	let inst = Univ.AUContext.instance ctx in
+	let ty = Vars.subst_instance_constr inst ty in
 	let ty = EConstr.of_constr ty in
+        let open EConstr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
         env |> lookup_named id |> NamedDecl.set_id id |> print_named_decl

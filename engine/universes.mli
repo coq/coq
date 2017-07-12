@@ -189,21 +189,10 @@ val constr_of_global : Globnames.global_reference -> constr
 (** ** DEPRECATED ** synonym of [constr_of_global] *)
 val constr_of_reference : Globnames.global_reference -> constr
 
-(** [unsafe_constr_of_global gr] turns [gr] into a constr, works on polymorphic
-    references by taking the original universe instance that is not recorded 
-    anywhere. The constraints are forgotten as well. DO NOT USE in new code. *)
-val unsafe_constr_of_global : Globnames.global_reference -> constr in_universe_context
-
 (** Returns the type of the global reference, by creating a fresh instance of polymorphic 
     references and computing their instantiated universe context. (side-effect on the
     universe counter, use with care). *)
 val type_of_global : Globnames.global_reference -> types in_universe_context_set
-
-(** [unsafe_type_of_global gr] returns [gr]'s type, works on polymorphic
-    references by taking the original universe instance that is not recorded 
-    anywhere. The constraints are forgotten as well. 
-    USE with care. *)
-val unsafe_type_of_global : Globnames.global_reference -> types
 
 (** Full universes substitutions into terms *)
 

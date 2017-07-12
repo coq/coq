@@ -122,6 +122,13 @@ val is_polymorphic : Globnames.global_reference -> bool
 val is_template_polymorphic : Globnames.global_reference -> bool
 val is_type_in_type : Globnames.global_reference -> bool
 
+val constr_of_global_in_context : Environ.env ->
+  Globnames.global_reference -> Constr.types * Univ.AUContext.t
+(** Returns the type of the constant in its local universe
+    context. The type should not be used without pushing it's universe
+    context in the environmnent of usage. For non-universe-polymorphic
+    constants, it does not matter. *)
+
 val type_of_global_in_context : Environ.env -> 
   Globnames.global_reference -> Constr.types * Univ.AUContext.t
 (** Returns the type of the constant in its local universe

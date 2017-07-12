@@ -319,9 +319,6 @@ let fresh_instance_from ctx inst =
   let constraints = AUContext.instantiate inst ctx in
     inst, (ctx', constraints)
 
-let unsafe_instance_from ctx =
-  (Univ.AUContext.instance ctx, Univ.instantiate_univ_context ctx)
-    
 (** Fresh universe polymorphic construction *)
 
 let fresh_constant_instance env c inst =
@@ -358,34 +355,6 @@ let fresh_constructor_instance env (ind,i) inst =
     let inst, ctx = fresh_instance_from (ACumulativityInfo.univ_context acumi) inst in
     (((ind,i),inst), ctx)
 
-let unsafe_constant_instance env c =
-  let cb = lookup_constant c env in
-  match cb.Declarations.const_universes with
-  | Declarations.Monomorphic_const _ ->
-    ((c,Instance.empty), UContext.empty)
-  | Declarations.Polymorphic_const auctx ->
-    let inst, ctx = unsafe_instance_from auctx in ((c, inst), ctx)
-
-let unsafe_inductive_instance env ind = 
-  let mib, mip = Inductive.lookup_mind_specif env ind in
-  match mib.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ -> ((ind,Instance.empty), UContext.empty)
-  | Declarations.Polymorphic_ind auctx ->
-    let inst, ctx = unsafe_instance_from auctx in ((ind,inst), ctx)
-  | Declarations.Cumulative_ind acumi ->
-    let inst, ctx = unsafe_instance_from (ACumulativityInfo.univ_context acumi) in
-    ((ind,inst), ctx)
-
-let unsafe_constructor_instance env (ind,i) = 
-  let mib, mip = Inductive.lookup_mind_specif env ind in
-  match mib.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ -> (((ind, i),Instance.empty), UContext.empty)
-  | Declarations.Polymorphic_ind auctx ->
-    let inst, ctx = unsafe_instance_from auctx in (((ind, i),inst), ctx)
-  | Declarations.Cumulative_ind acumi ->
-    let inst, ctx = unsafe_instance_from (ACumulativityInfo.univ_context acumi) in
-    (((ind, i),inst), ctx)
-
 open Globnames
 
 let fresh_global_instance ?names env gr =
@@ -410,19 +379,6 @@ let fresh_inductive_instance env sp =
 let fresh_constructor_instance env sp = 
   fresh_constructor_instance env sp None
 
-let unsafe_global_instance env gr =
-  match gr with
-  | VarRef id -> mkVar id, UContext.empty
-  | ConstRef sp -> 
-     let c, ctx = unsafe_constant_instance env sp in
-       mkConstU c, ctx
-  | ConstructRef sp ->
-     let c, ctx = unsafe_constructor_instance env sp in
-       mkConstructU c, ctx
-  | IndRef sp -> 
-     let c, ctx = unsafe_inductive_instance env sp in
-       mkIndU c, ctx
-
 let constr_of_global gr =
   let c, ctx = fresh_global_instance (Global.env ()) gr in
     if not (Univ.ContextSet.is_empty ctx) then
@@ -436,9 +392,6 @@ let constr_of_global gr =
     else c
 
 let constr_of_reference = constr_of_global
-
-let unsafe_constr_of_global gr =
-  unsafe_global_instance (Global.env ()) gr
 
 let constr_of_global_univ (gr,u) =
   match gr with
@@ -512,25 +465,6 @@ let type_of_reference env r =
      end
 
 let type_of_global t = type_of_reference (Global.env ()) t
-
-let unsafe_type_of_reference env r =
-  match r with
-  | VarRef id -> Environ.named_type id env
-  | ConstRef c ->
-     let cb = Environ.lookup_constant c env in
-       Typeops.type_of_constant_type env cb.const_type
-
-  | IndRef ind ->
-     let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
-     let (_, inst), _ = unsafe_inductive_instance env ind in
-       Inductive.type_of_inductive env (specif, inst)
-
-  | ConstructRef (ind, _ as cstr) ->
-     let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
-     let (_, inst), _ = unsafe_inductive_instance env ind in
-       Inductive.type_of_constructor (cstr,inst) specif
-
-let unsafe_type_of_global t = unsafe_type_of_reference (Global.env ()) t
 
 let fresh_sort_in_family env = function
   | InProp -> prop_sort, ContextSet.empty

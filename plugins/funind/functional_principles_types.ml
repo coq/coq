@@ -651,7 +651,7 @@ let build_case_scheme fa =
 (*   in  *)
   let funs =
     let (_,f,_) = fa in
-    try fst (Universes.unsafe_constr_of_global (Smartlocate.global_with_alias f))
+    try fst (Global.constr_of_global_in_context (Global.env ()) (Smartlocate.global_with_alias f))
     with Not_found ->
       user_err ~hdr:"FunInd.build_case_scheme"
         (str "Cannot find " ++ Libnames.pr_reference f) in

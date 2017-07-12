@@ -337,7 +337,8 @@ let coerce_search_pattern_to_sort hpat =
     Pattern.PApp (fp, args') in
   let hr, na = splay_search_pattern 0 hpat in
   let dc, ht =
-    Reductionops.splay_prod env sigma (EConstr.of_constr (Universes.unsafe_type_of_global hr)) in
+    let hr, _ = Global.type_of_global_in_context (Global.env ()) hr (** FIXME *) in
+    Reductionops.splay_prod env sigma (EConstr.of_constr hr) in
   let np = List.length dc in
   if np < na then CErrors.user_err (Pp.str "too many arguments in head search pattern") else
   let hpat' = if np = na then hpat else mkPApp hpat (np - na) [||] in

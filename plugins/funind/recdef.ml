@@ -90,7 +90,7 @@ let type_of_const sigma t =
     |_ -> assert false
 
 let constr_of_global x = 
-  fst (Universes.unsafe_constr_of_global x)
+  fst (Global.constr_of_global_in_context (Global.env ()) x)
 
 let constant sl s = constr_of_global (find_reference sl s)
 

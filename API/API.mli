@@ -2684,10 +2684,8 @@ sig
   val fresh_inductive_instance : Environ.env -> Names.inductive -> Term.pinductive Univ.in_universe_context_set
   val new_Type : Names.DirPath.t -> Term.types
   val type_of_global : Globnames.global_reference -> Term.types Univ.in_universe_context_set
-  val unsafe_type_of_global : Globnames.global_reference -> Term.types
   val constr_of_global : Prelude.global_reference -> Term.constr
   val new_univ_level : Names.DirPath.t -> Univ.Level.t
-  val unsafe_constr_of_global : Globnames.global_reference -> Term.constr Univ.in_universe_context
   val new_sort_in_family : Sorts.family -> Sorts.t
   val pr_with_global_universes : Univ.Level.t -> Pp.std_ppcmds
   val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
@@ -2713,6 +2711,8 @@ sig
   val env_of_context : Environ.named_context_val -> Environ.env
   val is_polymorphic : Globnames.global_reference -> bool
 
+  val constr_of_global_in_context : Environ.env -> Globnames.global_reference -> Constr.t * Univ.AUContext.t
+  val type_of_global_in_context : Environ.env -> Globnames.global_reference -> Constr.t * Univ.AUContext.t
   val type_of_global_unsafe : Globnames.global_reference -> Term.types
 
   val current_dirpath : unit -> Names.DirPath.t

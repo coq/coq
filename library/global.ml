@@ -191,6 +191,25 @@ let type_of_global_unsafe r =
     let inst = Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib) in
     Inductive.type_of_constructor (cstr,inst) specif
 
+let constr_of_global_in_context env r =
+  let open Constr in
+  match r with
+  | VarRef id -> mkVar id, Univ.AUContext.empty
+  | ConstRef c ->
+    let cb = Environ.lookup_constant c env in
+    let univs = Declareops.constant_polymorphic_context cb in
+    mkConstU (c, Univ.make_abstract_instance univs), univs
+  | IndRef ind ->
+    let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
+    let univs = Declareops.inductive_polymorphic_context mib in
+    mkIndU (ind, Univ.make_abstract_instance univs), univs
+  | ConstructRef cstr ->
+    let (mib,oib as specif) =
+      Inductive.lookup_mind_specif env (inductive_of_constructor cstr)
+    in
+    let univs = Declareops.inductive_polymorphic_context mib in
+    mkConstructU (cstr, Univ.make_abstract_instance univs), univs
+
 let type_of_global_in_context env r = 
   match r with
   | VarRef id -> Environ.named_type id env, Univ.AUContext.empty

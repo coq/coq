@@ -5004,7 +5004,9 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   in
   let cst = Impargs.with_implicit_protection cst () in
   (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
-  let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
+  let lem, ctx = Global.constr_of_global_in_context (Global.env ()) (ConstRef cst) in
+  let inst = Univ.AUContext.instance ctx in
+  let lem = CVars.subst_instance_constr inst lem in
   let lem = EConstr.of_constr lem in
   let evd = Evd.set_universe_context evd ectx in
   let open Safe_typing in
