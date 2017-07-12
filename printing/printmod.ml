@@ -110,6 +110,17 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
     str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ str " :=") ++
   brk(0,2) ++ print_constructors envpar sigma mip.mind_consnames cstrtypes
 
+let instantiate_cumulativity_info cumi =
+  let open Univ in
+  let univs = ACumulativityInfo.univ_context cumi in
+  let subtyp = ACumulativityInfo.subtyp_context cumi in
+  let expose ctx =
+    let inst = AUContext.instance ctx in
+    let cst = AUContext.instantiate inst ctx in
+    UContext.make (inst, cst)
+  in
+  CumulativityInfo.make (expose univs, expose subtyp)
+
 let print_mutual_inductive env mind mib =
   let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))
   in
@@ -133,7 +144,7 @@ let print_mutual_inductive env mind mib =
          | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
          | Cumulative_ind cumi ->
            Printer.pr_cumulativity_info
-             sigma (Univ.instantiate_cumulativity_info cumi))
+             sigma (instantiate_cumulativity_info cumi))
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -191,7 +202,7 @@ let print_record env mind mib =
     | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
     | Cumulative_ind cumi ->
       Printer.pr_cumulativity_info
-        sigma (Univ.instantiate_cumulativity_info cumi)
+        sigma (instantiate_cumulativity_info cumi)
   )
 
 let pr_mutual_inductive_body env mind mib =

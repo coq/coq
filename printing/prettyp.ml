@@ -532,7 +532,9 @@ let print_constant with_values sep sp =
       begin
         match cb.const_universes with
         | Monomorphic_const ctx -> ctx
-        | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
+        | Polymorphic_const ctx ->
+          let inst = Univ.AUContext.instance ctx in
+          Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx)
       end
     | OpaqueDef o ->
       let body_uctxs = Opaqueproof.force_constraints otab o in
@@ -542,7 +544,8 @@ let print_constant with_values sep sp =
         Univ.ContextSet.to_context (Univ.ContextSet.union body_uctxs uctxs)
       | Polymorphic_const ctx ->
         assert(Univ.ContextSet.is_empty body_uctxs);
-        Univ.instantiate_univ_context ctx
+        let inst = Univ.AUContext.instance ctx in
+        Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx)
   in
   let ctx =
     Evd.evar_universe_context_of_binders
