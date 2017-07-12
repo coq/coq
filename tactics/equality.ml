@@ -1004,18 +1004,20 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
   build_coq_False () >>= fun false_0 ->
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (Context.Named.Declaration.LocalAssum (e,t)) env in
-  try
-    let discriminator =
-      build_discriminator e_env sigma true_0 false_0 dirn (mkVar e) cpath
-    in
+  let discriminator =
+    try
+      Proofview.tclUNIT
+        (build_discriminator e_env sigma true_0 false_0 dirn (mkVar e) cpath)
+    with
+      UserError _ as ex -> Proofview.tclZERO ex
+  in
+    discriminator >>= fun discriminator ->
     discrimination_pf e (t,t1,t2) discriminator lbeq >>= fun (pf, absurd_term) ->
     let pf_ty = mkArrow eqn absurd_term in
     let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
     let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
     tclTHENS (assert_after Anonymous absurd_term)
       [onLastHypId gen_absurdity; (Proofview.V82.tactic (Tacmach.refine pf))]
-  with
-    UserError _ as ex -> Proofview.tclZERO ex
 
 let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
