@@ -5003,11 +5003,19 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
     Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl
   in
   let cst = Impargs.with_implicit_protection cst () in
-  (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
-  let lem, ctx = Global.constr_of_global_in_context (Global.env ()) (ConstRef cst) in
-  let inst = Univ.AUContext.instance ctx in
-  let lem = CVars.subst_instance_constr inst lem in
-  let lem = EConstr.of_constr lem in
+  let lem =
+    if const.Entries.const_entry_polymorphic then
+      let uctx = Univ.ContextSet.of_context const.Entries.const_entry_universes in
+      (** Hack: the kernel may generate definitions whose universe variables are
+          not the same as requested in the entry because of constraints delayed
+          in the body, even in polymorphic mode. We mimick what it does for now
+          in hope it is fixed at some point. *)
+      let (_, body_uctx), _ = Future.force const.Entries.const_entry_body in
+      let uctx = Univ.ContextSet.to_context (Univ.ContextSet.union uctx body_uctx) in
+      let u = Univ.UContext.instance uctx in
+      mkConstU (cst, EInstance.make u)
+    else mkConst cst
+  in
   let evd = Evd.set_universe_context evd ectx in
   let open Safe_typing in
   let eff = private_con_of_con (Global.safe_env ()) cst in
