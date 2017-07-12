@@ -98,6 +98,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
             if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
               error_incorrect_with_constraint lab
           in
+          (** Terms are compared in a context with De Bruijn universe indices *)
 	  let env' = Environ.push_context ~strict:false (Univ.AUContext.repr uctx) env in
 	  let cst = match cb.const_body with
 	    | Undef _ | OpaqueDef _ ->
