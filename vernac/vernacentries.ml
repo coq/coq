@@ -986,7 +986,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
 
   let sr = smart_global reference in
   let inf_names =
-    let ty = Global.type_of_global_unsafe sr in
+    let ty, _ = Global.type_of_global_in_context (Global.env ()) sr in
     Impargs.compute_implicits_names (Global.env ()) ty
   in
   let prev_names =

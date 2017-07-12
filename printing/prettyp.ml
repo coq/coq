@@ -70,7 +70,8 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 let print_basename sp = pr_global (ConstRef sp)
 
 let print_ref reduce ref =
-  let typ = Global.type_of_global_unsafe ref in
+  let typ, ctx = Global.type_of_global_in_context (Global.env ()) ref in
+  let typ = Vars.subst_instance_constr (Univ.AUContext.instance ctx) typ in
   let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
@@ -137,7 +138,7 @@ let print_renames_list prefix l =
     hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map Name.print l))]
 
 let need_expansion impl ref =
-  let typ = Global.type_of_global_unsafe ref in
+  let typ, _ = Global.type_of_global_in_context (Global.env ()) ref in
   let ctx = prod_assum typ in
   let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&

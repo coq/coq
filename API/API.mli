@@ -2713,7 +2713,6 @@ sig
 
   val constr_of_global_in_context : Environ.env -> Globnames.global_reference -> Constr.t * Univ.AUContext.t
   val type_of_global_in_context : Environ.env -> Globnames.global_reference -> Constr.t * Univ.AUContext.t
-  val type_of_global_unsafe : Globnames.global_reference -> Term.types
 
   val current_dirpath : unit -> Names.DirPath.t
   val body_of_constant_body : Declarations.constant_body -> (Term.constr * Univ.AUContext.t) option

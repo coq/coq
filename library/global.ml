@@ -173,24 +173,6 @@ open Globnames
 (** Build a fresh instance for a given context, its associated substitution and 
     the instantiated constraints. *)
 
-let type_of_global_unsafe r = 
-  let env = env() in
-  match r with
-  | VarRef id -> Environ.named_type id env
-  | ConstRef c -> 
-    let cb = Environ.lookup_constant c env in 
-    let inst = Univ.AUContext.instance (Declareops.constant_polymorphic_context cb) in
-    let ty = Typeops.type_of_constant_type env cb.Declarations.const_type in
-    Vars.subst_instance_constr inst ty
-  | IndRef ind ->
-    let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
-    let inst = Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib) in
-    Inductive.type_of_inductive env (specif, inst)
-  | ConstructRef cstr ->
-    let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
-    let inst = Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib) in
-    Inductive.type_of_constructor (cstr,inst) specif
-
 let constr_of_global_in_context env r =
   let open Constr in
   match r with

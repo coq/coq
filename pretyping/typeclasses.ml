@@ -400,7 +400,7 @@ let remove_instance i =
   remove_instance_hint i.is_impl
 
 let declare_instance info local glob =
-  let ty = Global.type_of_global_unsafe glob in
+  let ty, _ = Global.type_of_global_in_context (Global.env ()) glob in
   let info = Option.default {hint_priority = None; hint_pattern = None} info in
     match class_of_constr Evd.empty (EConstr.of_constr ty) with
     | Some (rels, ((tc,_), args) as _cl) ->

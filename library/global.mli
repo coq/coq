@@ -136,17 +136,6 @@ val type_of_global_in_context : Environ.env ->
     context in the environmnent of usage. For non-universe-polymorphic
     constants, it does not matter. *)
 
-val type_of_global_unsafe : Globnames.global_reference -> Constr.types 
-(** Returns the type of the constant, forgetting its universe context if
-    it is polymorphic, use with care: for polymorphic constants, the
-    type cannot be used to produce a term used by the kernel.  For safe
-    handling of polymorphic global references, one should look at a
-    particular instantiation of the reference, in some particular
-    universe context (part of an [env] or [evar_map]), see
-    e.g. [type_of_constant_in]. If you want to create a fresh instance
-    of the reference and get its type look at [Evd.fresh_global] or
-    [Evarutil.new_global] and [Retyping.get_type_of]. *)
-
 (** Returns the universe context of the global reference (whatever its polymorphic status is). *)
 val universes_of_global : Globnames.global_reference -> Univ.abstract_universe_context
 

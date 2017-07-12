@@ -105,7 +105,7 @@ let mkFullInd (ind,u) n =
     else mkIndU (ind,u)
 
 let check_bool_is_defined () =
-  try let _ = Global.type_of_global_unsafe Coqlib.glob_bool in ()
+  try let _ = Global.type_of_global_in_context (Global.env ()) Coqlib.glob_bool in ()
   with e when CErrors.noncritical e -> raise (UndefinedCst "bool")
 
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")

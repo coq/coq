@@ -937,7 +937,7 @@ let make_extern pri pat tacast =
 
 let make_mode ref m = 
   let open Term in
-  let ty = Global.type_of_global_unsafe ref in
+  let ty, _ = Global.type_of_global_in_context (Global.env ()) ref in
   let ctx, t = decompose_prod ty in
   let n = List.length ctx in
   let m' = Array.of_list m in

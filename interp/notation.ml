@@ -718,13 +718,13 @@ let rebuild_arguments_scope (req,r,n,l,_) =
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
-        let scs,cls = compute_arguments_scope_full (fst(Universes.type_of_global r)(*FIXME?*)) in
+        let scs,cls = compute_arguments_scope_full (fst(Global.type_of_global_in_context (Global.env ()) r)(*FIXME?*)) in
 	(req,r,List.length scs,scs,cls)
     | ArgsScopeManual ->
 	(* Add to the manually given scopes the one found automatically
            for the extra parameters of the section. Discard the classes
            of the manually given scopes to avoid further re-computations. *)
-        let l',cls = compute_arguments_scope_full (Global.type_of_global_unsafe r) in
+        let l',cls = compute_arguments_scope_full (fst (Global.type_of_global_in_context (Global.env ()) r)) in
 	let l1 = List.firstn n l' in
         let cls1 = List.firstn n cls in
 	(req,r,0,l1@l,cls1)
@@ -768,7 +768,7 @@ let find_arguments_scope r =
   with Not_found -> []
 
 let declare_ref_arguments_scope ref =
-  let t = Global.type_of_global_unsafe ref in
+  let t, _ = Global.type_of_global_in_context (Global.env ()) ref in
   let (scs,cls as o) = compute_arguments_scope_full t in
   declare_arguments_scope_gen ArgsScopeAuto ref (List.length scs) o
 
