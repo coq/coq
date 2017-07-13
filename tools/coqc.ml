@@ -86,7 +86,7 @@ let parse_args () =
         Envars.print_config stdout Coq_config.all_src_dirs;
         exit 0
       
-    |"--print-version" :: _ ->
+    | ("-print-version" | "--print-version") :: _ ->
         Usage.machine_readable_version 0
 
 (* Options for coqtop : a) options with 0 argument *)
