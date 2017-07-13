@@ -298,7 +298,8 @@ let main =
        (fun _ -> prerr_endline "Broken Pipe (coqtop died ?)"; exit 1));
   let def_args = ["--xml_format=Ppcmds"; "-ideslave"] in
   let coqtop_name, coqtop_args, input_file = match Sys.argv with
-    | [| _; f |] -> "coqtop", Array.of_list def_args, f
+    | [| _; f |] -> (if Sys.os_type = "Unix" then "coqtop" else "coqtop.exe"),
+                    Array.of_list def_args, f
     | [| _; f; ct |] ->
         let ct = Str.split (Str.regexp " ") ct in
         List.hd ct, Array.of_list (def_args @ List.tl ct), f
