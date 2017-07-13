@@ -19,7 +19,7 @@ Proof.
   omega.
 Qed.
 
-Require Import ZArith.
+Require Import ZArith ROmega.
 
 Open Scope Z_scope.
 
@@ -32,4 +32,6 @@ Theorem Zle_not_eq_lt : forall n m,
 Proof.
   intros.
   omega.
+  Undo.
+  romega.
 Qed.

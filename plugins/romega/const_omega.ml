@@ -198,6 +198,7 @@ let parse_logic_rel c = match destructurate c with
 
 (* Binary numbers *)
 
+let coq_Z = lazy (bin_constant "Z")
 let coq_xH = lazy (bin_constant "xH")
 let coq_xO = lazy (bin_constant "xO")
 let coq_xI = lazy (bin_constant "xI")
@@ -238,7 +239,7 @@ end
 
 module Z : Int = struct
 
-let typ = lazy (bin_constant "Z")
+let typ = coq_Z
 let plus = lazy (z_constant "Z.add")
 let mult = lazy (z_constant  "Z.mul")
 let opp = lazy (z_constant "Z.opp")
@@ -286,14 +287,9 @@ let parse_term t =
      (match recognize_Z t with Some t -> Tnum t | None -> Tother)
   | _ -> Tother
 
-let pf_nf gl c =
-  EConstr.Unsafe.to_constr
-    (Tacmach.New.pf_apply Tacred.simpl gl (EConstr.of_constr c))
-
 let is_int_typ gl t =
-  match destructurate (pf_nf gl t) with
-  | Kapp("Z",[]) -> true
-  | _ -> false
+  Tacmach.New.pf_apply Reductionops.is_conv gl
+    (EConstr.of_constr t) (EConstr.of_constr (Lazy.force coq_Z))
 
 let parse_rel gl t =
   match destructurate t with
