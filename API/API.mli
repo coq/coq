@@ -4669,8 +4669,6 @@ sig
   val constant_has_body : Declarations.constant_body -> bool
   val is_opaque : Declarations.constant_body -> bool
   val eq_recarg : Declarations.recarg -> Declarations.recarg -> bool
-  val body_of_constant :
-    Opaqueproof.opaquetab -> Declarations.constant_body -> Term.constr option
 end
 
 module Constr :

@@ -92,37 +92,29 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	         c, Reduction.infer_conv env' (Environ.universes env') c c'
 	  in c', Monomorphic_const ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
         | Polymorphic_const uctx ->
-          let uctx = Univ.instantiate_univ_context uctx in
-	  let cus, ccst = Univ.UContext.dest uctx in
-	  let newus, cst = Univ.UContext.dest ctx in
-	  let () =
-	    if not (Univ.Instance.length cus == Univ.Instance.length newus) then
-	      error_incorrect_with_constraint lab
-	  in
-	  let inst = Univ.Instance.append cus newus in
-	  let csti = Univ.enforce_eq_instances cus newus cst in
-	  let csta = Univ.Constraint.union csti ccst in
-	  let env' = Environ.push_context ~strict:false (Univ.UContext.make (inst, csta)) env in
-	  let () = if not (UGraph.check_constraints cst (Environ.universes env')) then
-		     error_incorrect_with_constraint lab
-	  in
+          let subst, ctx = Univ.abstract_universes ctx in
+          let c = Vars.subst_univs_level_constr subst c in
+          let () =
+            if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
+              error_incorrect_with_constraint lab
+          in
+          (** Terms are compared in a context with De Bruijn universe indices *)
+	  let env' = Environ.push_context ~strict:false (Univ.AUContext.repr uctx) env in
 	  let cst = match cb.const_body with
 	    | Undef _ | OpaqueDef _ ->
 	      let j = Typeops.infer env' c in
 	      let typ = Typeops.type_of_constant_type env' cb.const_type in
-	      let typ = Vars.subst_instance_constr cus typ in
 	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
 						j.uj_type typ in
 	      cst'
 	    | Def cs ->
-	       let c' = Vars.subst_instance_constr cus (Mod_subst.force_constr cs) in
+	       let c' = Mod_subst.force_constr cs in
 	       let cst' = Reduction.infer_conv env' (Environ.universes env') c c' in
 	        cst'
 	  in
 	    if not (Univ.Constraint.is_empty cst) then
 	      error_incorrect_with_constraint lab;
-	    let subst, ctx = Univ.abstract_universes ctx in
-	      Vars.subst_univs_level_constr subst c, Polymorphic_const ctx, Univ.ContextSet.empty
+            c, Polymorphic_const ctx, Univ.ContextSet.empty
       in
       let def = Def (Mod_subst.from_val c') in
 (*      let ctx' = Univ.UContext.make (newus, cst) in *)

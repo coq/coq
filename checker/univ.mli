@@ -209,6 +209,10 @@ sig
   type t
 
   val instance : t -> Instance.t
+  val size : t -> int
+
+  val instantiate : Instance.t -> t -> Constraint.t
+  val repr : t -> UContext.t
 
 end
 
@@ -276,7 +280,6 @@ val subst_univs_universe : universe_subst_fn -> universe -> universe
 (** Substitution of instances *)
 val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
 val subst_instance_universe : universe_instance -> universe -> universe
-val subst_instance_context : universe_instance -> abstract_universe_context -> universe_context
 
 (* val make_instance_subst : universe_instance -> universe_level_subst *)
 (* val make_inverse_instance_subst : universe_instance -> universe_level_subst *)
@@ -287,7 +290,10 @@ val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_i
 
 (** Build the relative instance corresponding to the context *)
 val make_abstract_instance : abstract_universe_context -> universe_instance
-									    
+
+(** Check instance subtyping *)
+val check_subtype : universes -> AUContext.t -> AUContext.t -> bool
+
 (** {6 Pretty-printing of universes. } *)
 
 val pr_constraint_type : constraint_type -> Pp.std_ppcmds

@@ -131,8 +131,7 @@ let inline_side_effects env body ctx side_eff =
         (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
       | Polymorphic_const auctx ->
         (** Inline the term to emulate universe polymorphism *)
-        let data = (Univ.AUContext.instance auctx, b) in
-        let subst = Cmap_env.add c (Inl data) subst in
+        let subst = Cmap_env.add c (Inl b) subst in
         (subst, var, ctx, args)
     in
     let (subst, len, ctx, args) = List.fold_left fold (Cmap_env.empty, 1, ctx, []) side_eff in
@@ -142,7 +141,7 @@ let inline_side_effects env body ctx side_eff =
       let data = try Some (Cmap_env.find c subst) with Not_found -> None in
       begin match data with
       | None -> t
-      | Some (Inl (inst, b)) ->
+      | Some (Inl b) ->
         (** [b] is closed but may refer to other constants *)
         subst_const i k (Vars.subst_instance_constr u b)
       | Some (Inr n) ->
@@ -470,7 +469,7 @@ let constant_entry_of_side_effect cb u =
     match cb.const_universes with
     | Monomorphic_const ctx -> false, ctx
     | Polymorphic_const auctx -> 
-      true, Univ.instantiate_univ_context auctx
+      true, Univ.AUContext.repr auctx
   in
   let pt =
     match cb.const_body, u with

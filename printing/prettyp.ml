@@ -78,6 +78,8 @@ let print_ref reduce ref =
       in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
   let univs = Global.universes_of_global ref in
+  let inst = Univ.AUContext.instance univs in
+  let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
   let env = Global.env () in
   let bl = Universes.universe_binders_of_global ref in
   let sigma = Evd.from_ctx (Evd.evar_universe_context_of_binders bl) in
@@ -503,13 +505,25 @@ let ungeneralized_type_of_constant_type t =
 
 let print_instance sigma cb =
   if Declareops.constant_is_polymorphic cb then
-    pr_universe_instance sigma (Declareops.constant_polymorphic_context cb)
+    let univs = Declareops.constant_polymorphic_context cb in
+    let inst = Univ.AUContext.instance univs in
+    let univs = Univ.UContext.make (inst, Univ.AUContext.instantiate inst univs) in
+    pr_universe_instance sigma univs
   else mt()
 				
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
-  let typ = Declareops.type_of_constant cb in
+  let typ = match cb.const_type with
+  | RegularArity t as x ->
+    begin match cb.const_universes with
+    | Monomorphic_const _ -> x
+    | Polymorphic_const univs ->
+      let inst = Univ.AUContext.instance univs in
+      RegularArity (Vars.subst_instance_constr inst t)
+    end
+  | TemplateArity _ as x -> x
+  in
   let typ = ungeneralized_type_of_constant_type typ in
   let univs =
     let otab = Global.opaque_tables () in

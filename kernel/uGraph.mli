@@ -53,6 +53,10 @@ val check_constraints : constraints -> universes -> bool
 val check_eq_instances : Instance.t check_function
 (** Check equality of instances w.r.t. a universe graph *)
 
+val check_subtype : AUContext.t check_function
+(** [check_subtype univ ctx1 ctx2] checks whether [ctx2] is an instance of
+    [ctx1]. *)
+
 (** {6 Pretty-printing of universes. } *)
 
 val pr_universes : (Level.t -> Pp.std_ppcmds) -> universes -> Pp.std_ppcmds

@@ -8,10 +8,8 @@
 
 open Term
 open Univ
-open Declarations
 
 (** Shrink a universe context to a restricted set of variables *)
 
 val universes_of_constr : constr -> universe_set
-val universes_of_inductive : mutual_inductive_body -> universe_set
 val restrict_universe_context : universe_context_set -> universe_set -> universe_context_set

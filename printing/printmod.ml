@@ -89,7 +89,7 @@ let build_ind_type env mip =
 
 let print_one_inductive env sigma mib ((_,i) as ind) =
   let u = if Declareops.inductive_is_polymorphic mib then 
-      Declareops.inductive_polymorphic_instance mib
+      Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
     else Univ.Instance.empty in
   let mip = mib.mind_packets.(i) in
   let params = Inductive.inductive_paramdecls (mib,u) in
@@ -100,7 +100,9 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
   let envpar = push_rel_context params env in
   let inst =
     if Declareops.inductive_is_polymorphic mib then
-      Printer.pr_universe_instance sigma (Declareops.inductive_polymorphic_context mib)
+      let ctx = Declareops.inductive_polymorphic_context mib in
+      let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
+      Printer.pr_universe_instance sigma ctx
     else mt ()
   in
   hov 0 (
@@ -149,7 +151,7 @@ let get_fields =
 let print_record env mind mib =
   let u = 
     if Declareops.inductive_is_polymorphic mib then 
-      Declareops.inductive_polymorphic_instance mib
+      Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
     else Univ.Instance.empty 
   in
   let mip = mib.mind_packets.(0) in
@@ -292,11 +294,13 @@ let print_body is_impl env mp (l,body) =
     | SFBmodule _ -> keyword "Module" ++ spc () ++ name
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name
     | SFBconst cb ->
+       let ctx = Declareops.constant_polymorphic_context cb in
        let u =
 	 if Declareops.constant_is_polymorphic cb then
-            Declareops.constant_polymorphic_instance cb
+            Univ.AUContext.instance ctx
 	 else Univ.Instance.empty
        in
+       let ctx = Univ.UContext.make (u, Univ.AUContext.instantiate u ctx) in
        let sigma = Evd.empty in
       (match cb.const_body with
 	| Def _ -> def "Definition" ++ spc ()
@@ -316,8 +320,7 @@ let print_body is_impl env mp (l,body) =
 		       Printer.pr_lconstr_env env sigma
 			  (Vars.subst_instance_constr u (Mod_subst.force_constr l)))
 	      | _ -> mt ()) ++ str "." ++
-	    Printer.pr_universe_ctx sigma 
-              (Declareops.constant_polymorphic_context cb))
+	    Printer.pr_universe_ctx sigma ctx)
     | SFBmind mib ->
       try
 	let env = Option.get env in

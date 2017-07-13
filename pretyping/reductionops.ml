@@ -1362,25 +1362,23 @@ let sigma_compare_instances ~flex i0 i1 sigma =
 	raise Reduction.NotConvertible
 
 let sigma_check_inductive_instances cv_pb uinfind u u' sigma =
-  let ind_instance = 
-    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context uinfind) 
+  let len_instance =
+    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context uinfind)
   in
   let ind_sbctx =  Univ.ACumulativityInfo.subtyp_context uinfind  in
-  if not ((Univ.Instance.length ind_instance = Univ.Instance.length u) &&
-          (Univ.Instance.length ind_instance = Univ.Instance.length u')) then
+  if not ((len_instance = Univ.Instance.length u) &&
+          (len_instance = Univ.Instance.length u')) then
      anomaly (Pp.str "Invalid inductive subtyping encountered!")
   else
     let comp_cst =
       let comp_subst = (Univ.Instance.append u u') in
-      Univ.UContext.constraints (Univ.subst_instance_context comp_subst ind_sbctx)
+      Univ.AUContext.instantiate comp_subst ind_sbctx
     in
     let comp_cst =
       match cv_pb with
         Reduction.CONV -> 
         let comp_subst = (Univ.Instance.append u' u) in
-        let comp_cst' = 
-          Univ.UContext.constraints(Univ.subst_instance_context comp_subst ind_sbctx)
-        in
+        let comp_cst' = Univ.AUContext.instantiate comp_subst ind_sbctx in
         Univ.Constraint.union comp_cst comp_cst'
       | Reduction.CUMUL -> comp_cst
     in

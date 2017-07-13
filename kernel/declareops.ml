@@ -44,47 +44,19 @@ let hcons_template_arity ar =
 
 (** {6 Constants } *)
 
-let instantiate cb c =
-  match cb.const_universes with
-  | Monomorphic_const _ -> c
-  | Polymorphic_const ctx -> 
-     Vars.subst_instance_constr (Univ.AUContext.instance ctx) c
-
 let constant_is_polymorphic cb =
   match cb.const_universes with
   | Monomorphic_const _ -> false
   | Polymorphic_const _ -> true
 
-let body_of_constant otab cb = match cb.const_body with
-  | Undef _ -> None
-  | Def c -> Some (instantiate cb (force_constr c))
-  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof otab o))
-
-let type_of_constant cb =
-  match cb.const_type with
-  | RegularArity t as x -> 
-    let t' = instantiate cb t in
-      if t' == t then x else RegularArity t'
-  | TemplateArity _ as x -> x
-
-let universes_of_polymorphic_constant otab cb = 
-  match cb.const_universes with
-  | Monomorphic_const _ -> Univ.UContext.empty
-  | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
-
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
   | Def _ | OpaqueDef _ -> true
 
-let constant_polymorphic_instance cb =
-  match cb.const_universes with
-  | Monomorphic_const _ -> Univ.Instance.empty
-  | Polymorphic_const ctx -> Univ.AUContext.instance ctx
-
 let constant_polymorphic_context cb =
   match cb.const_universes with
-  | Monomorphic_const _ -> Univ.UContext.empty
-  | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
+  | Monomorphic_const _ -> Univ.AUContext.empty
+  | Polymorphic_const ctx -> ctx
 
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
@@ -268,19 +240,11 @@ let subst_mind_body sub mib =
     mind_typing_flags = mib.mind_typing_flags;
   }
 
-let inductive_polymorphic_instance mib =
-  match mib.mind_universes with
-  | Monomorphic_ind _ -> Univ.Instance.empty
-  | Polymorphic_ind ctx -> Univ.AUContext.instance ctx
-  | Cumulative_ind cumi -> 
-    Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi)
-
 let inductive_polymorphic_context mib =
   match mib.mind_universes with
-  | Monomorphic_ind _ -> Univ.UContext.empty
-  | Polymorphic_ind ctx -> Univ.instantiate_univ_context ctx
-  | Cumulative_ind cumi -> 
-    Univ.instantiate_univ_context (Univ.ACumulativityInfo.univ_context cumi)
+  | Monomorphic_ind _ -> Univ.AUContext.empty
+  | Polymorphic_ind ctx -> ctx
+  | Cumulative_ind cumi -> Univ.ACumulativityInfo.univ_context cumi
 
 let inductive_is_polymorphic mib =
   match mib.mind_universes with

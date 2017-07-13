@@ -117,10 +117,10 @@ let typeclass_univ_instance (cl,u') =
       match cl.cl_impl with
       | ConstRef c -> 
         let cb = Global.lookup_constant c in
-        Declareops.constant_polymorphic_instance cb
+        Univ.AUContext.instance (Declareops.constant_polymorphic_context cb)
       | IndRef c ->
          let mib,oib = Global.lookup_inductive c in
-         Declareops.inductive_polymorphic_instance mib
+         Univ.AUContext.instance (Declareops.inductive_polymorphic_context mib)
       | _ -> Univ.Instance.empty
     in Array.fold_left2 (fun subst u u' -> Univ.LMap.add u u' subst) 
       Univ.LMap.empty (Univ.Instance.to_array u) (Univ.Instance.to_array u')

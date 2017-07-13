@@ -319,14 +319,23 @@ module AUContext :
 sig 
   type t
 
-  val empty : t
+  val repr : t -> UContext.t
+  (** [repr ctx] is [(Var(0), ... Var(n-1) |= cstr] where [n] is the length of
+      the context and [cstr] the abstracted constraints. *)
 
+  val empty : t
+  val is_empty : t -> bool
+
+  (** Don't use. *)
   val instance : t -> Instance.t
-                        
+
   val size : t -> int
 
   (** Keeps the order of the instances *)
   val union : t -> t -> t
+
+  val instantiate : Instance.t -> t -> Constraint.t
+  (** Generate the set of instantiated constraints **)
 
 end
 
@@ -442,7 +451,6 @@ val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
 (** Substitution of instances *)
 val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
 val subst_instance_universe : universe_instance -> universe -> universe
-val subst_instance_context : universe_instance -> abstract_universe_context -> universe_context
 
 val make_instance_subst : universe_instance -> universe_level_subst
 val make_inverse_instance_subst : universe_instance -> universe_level_subst
@@ -453,10 +461,10 @@ val abstract_cumulativity_info : cumulativity_info -> universe_level_subst * abs
 
 val make_abstract_instance : abstract_universe_context -> universe_instance
 
-(** Get the instantiated graph. *)
+(** Don't use. *)
 val instantiate_univ_context : abstract_universe_context -> universe_context
 
-(** Get the instantiated graphs for both universe constraints and subtyping constraints. *)
+(** Don't use. *)
 val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_info
 
 (** {6 Pretty-printing of universes. } *)

@@ -184,13 +184,14 @@ let lift_univs cb subst =
     if (Univ.LMap.is_empty subst) then
       subst, (Polymorphic_const auctx)
     else
-      let inst = Univ.AUContext.instance auctx in
       let len = Univ.LMap.cardinal subst in
-      let subst = 
-        Array.fold_left_i 
-          (fun i acc v -> Univ.LMap.add (Level.var i) (Level.var (i + len)) acc)
-	  subst (Univ.Instance.to_array inst)
+      let rec gen_subst i acc =
+        if i < 0 then acc
+        else
+          let acc = Univ.LMap.add (Level.var i) (Level.var (i + len)) acc in
+          gen_subst (pred i) acc
       in
+      let subst = gen_subst (Univ.AUContext.size auctx - 1) subst in
       let auctx' = Univ.subst_univs_level_abstract_universe_context subst auctx in
       subst, (Polymorphic_const auctx')
 
@@ -249,7 +250,7 @@ let cook_constant ~hcons env { from = cb; info } =
   let univs =
     match univs with
     | Monomorphic_const ctx -> 
-      Monomorphic_const (UContext.union (instantiate_univ_context abs_ctx) ctx)
+      assert (AUContext.is_empty abs_ctx); univs
     | Polymorphic_const auctx -> 
       Polymorphic_const (AUContext.union abs_ctx auctx)
   in

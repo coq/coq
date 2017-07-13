@@ -961,13 +961,10 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
 			   && pkt.mind_consnrealargs.(0) > 0 ->
       (** The elimination criterion ensures that all projections can be defined. *)
       let u =
-        let process auctx = 
-          subst_univs_level_instance substunivs (Univ.AUContext.instance auctx)
-        in
         match aiu with
         | Monomorphic_ind _ -> Univ.Instance.empty
-        | Polymorphic_ind auctx -> process auctx
-        | Cumulative_ind acumi -> process (Univ.ACumulativityInfo.univ_context acumi)
+        | Polymorphic_ind auctx -> Univ.make_abstract_instance auctx
+        | Cumulative_ind acumi -> Univ.make_abstract_instance (Univ.ACumulativityInfo.univ_context acumi)
       in
       let indsp = ((kn, 0), u) in
       let rctx, indty = decompose_prod_assum (subst1 (mkIndU indsp) pkt.mind_nf_lc.(0)) in

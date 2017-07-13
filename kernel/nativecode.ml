@@ -1861,10 +1861,10 @@ and compile_named env sigma univ auxdefs id =
 let compile_constant env sigma prefix ~interactive con cb =
   match cb.const_proj with
   | None ->
-     let u =
+     let no_univs =
        match cb.const_universes with
-       | Monomorphic_const _ -> Univ.Instance.empty
-       | Polymorphic_const ctx -> Univ.AUContext.instance ctx
+       | Monomorphic_const _ -> true
+       | Polymorphic_const ctx -> Int.equal (Univ.AUContext.size ctx) 0
      in
     begin match cb.const_body with
     | Def t ->
@@ -1879,7 +1879,7 @@ let compile_constant env sigma prefix ~interactive con cb =
       in
       let l = con_label con in
       let auxdefs,code =
-	if Univ.Instance.is_empty u then compile_with_fv env sigma None [] (Some l) code
+	if no_univs then compile_with_fv env sigma None [] (Some l) code
 	else
 	  let univ = fresh_univ () in
 	  let (auxdefs,code) = compile_with_fv env sigma (Some univ) [] (Some l) code in
@@ -1894,7 +1894,7 @@ let compile_constant env sigma prefix ~interactive con cb =
     | _ -> 
         let i = push_symbol (SymbConst con) in
 	let args =
-	  if Univ.Instance.is_empty u then [|get_const_code i; MLarray [||]|]
+	  if no_univs then [|get_const_code i; MLarray [||]|]
 	  else [|get_const_code i|]
 	in
 	(*
@@ -1959,14 +1959,14 @@ let param_name = Name (id_of_string "params")
 let arg_name = Name (id_of_string "arg")
 
 let compile_mind prefix ~interactive mb mind stack =
-  let u = Declareops.inductive_polymorphic_instance mb in
+  let u = Declareops.inductive_polymorphic_context mb in
   let f i stack ob =
     let gtype = Gtype((mind, i), Array.map snd ob.mind_reloc_tbl) in
     let j = push_symbol (SymbInd (mind,i)) in
     let name = Gind ("", (mind, i)) in
     let accu =
       let args =
-	if Univ.Instance.is_empty u then
+	if Int.equal (Univ.AUContext.size u) 0 then
 	  [|get_ind_code j; MLarray [||]|]
 	else [|get_ind_code j|]
       in

@@ -353,9 +353,8 @@ let exact_ise_stack2 env evd f sk1 sk2 =
 let check_leq_inductives evd cumi u u' =
   let u = EConstr.EInstance.kind evd u in
   let u' = EConstr.EInstance.kind evd u' in
-  let length_ind_instance = 
-    Univ.Instance.length
-      (Univ.AUContext.instance (Univ.ACumulativityInfo.univ_context cumi))
+  let length_ind_instance =
+    Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
   in
   let ind_sbcst =  Univ.ACumulativityInfo.subtyp_context cumi in
   if not ((length_ind_instance = Univ.Instance.length u) &&
@@ -364,9 +363,7 @@ let check_leq_inductives evd cumi u u' =
   else
     begin
      let comp_subst = (Univ.Instance.append u u') in
-     let comp_cst = 
-       Univ.UContext.constraints (Univ.subst_instance_context comp_subst ind_sbcst)
-     in
+     let comp_cst =  Univ.AUContext.instantiate comp_subst ind_sbcst in
      Evd.add_constraints evd comp_cst
     end
 

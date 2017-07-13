@@ -362,7 +362,7 @@ let get_body obl =
   match obl.obl_body with
   | None -> None
   | Some (DefinedObl c) ->
-    let u = Environ.constant_instance (Global.env ()) c in
+    let u = Univ.AUContext.instance (Environ.constant_context (Global.env ()) c) in
     let pc = (c, u) in
       Some (DefinedObl pc)
   | Some (TermObl c) ->

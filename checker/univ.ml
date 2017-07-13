@@ -1160,6 +1160,33 @@ struct
   
 end
 
+(** Substitute instance inst for ctx in csts *)
+
+let subst_instance_level s l =
+  match l.Level.data with
+  | Level.Var n -> s.(n) 
+  | _ -> l
+
+let subst_instance_instance s i = 
+  Array.smartmap (fun l -> subst_instance_level s l) i
+
+let subst_instance_universe s u =
+  let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in
+  let u' = Universe.smartmap f u in
+    if u == u' then u
+    else Universe.sort u'
+
+let subst_instance_constraint s (u,d,v as c) =
+  let u' = subst_instance_level s u in
+  let v' = subst_instance_level s v in
+    if u' == u && v' == v then c
+    else (u',d,v')
+
+let subst_instance_constraints s csts =
+  Constraint.fold 
+    (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
+    csts Constraint.empty
+
 type universe_instance = Instance.t
 
 type 'a puniverses = 'a * Instance.t
@@ -1175,6 +1202,7 @@ struct
   let make x = x
   let instance (univs, cst) = univs
   let constraints (univs, cst) = cst
+  let size (univs, _) = Instance.length univs
 
   let is_empty (univs, cst) = Instance.is_empty univs && Constraint.is_empty cst
   let pr prl (univs, cst as ctx) =
@@ -1184,7 +1212,18 @@ end
 
 type universe_context = UContext.t
 
-module AUContext = UContext
+module AUContext =
+struct
+  include UContext
+
+  let repr (inst, cst) =
+    (Array.mapi (fun i l -> Level.var i) inst, cst)
+
+  let instantiate inst (u, cst) =
+    assert (Array.length u = Array.length inst);
+    subst_instance_constraints inst cst
+
+end
 
 type abstract_universe_context = AUContext.t
 
@@ -1242,7 +1281,17 @@ struct
 end
 type universe_context_set = ContextSet.t
 
+(** Instance subtyping *)
 
+let check_subtype univs ctxT ctx =
+  if AUContext.size ctx == AUContext.size ctx then
+    let (inst, cst) = AUContext.repr ctx in
+    let cstT = UContext.constraints (AUContext.repr ctxT) in
+    let push accu v = add_universe v false accu in
+    let univs = Array.fold_left push univs inst in
+    let univs = merge_constraints cstT univs in
+    check_constraints cst univs
+  else false
 
 (** Substitutions. *)
 
@@ -1262,36 +1311,6 @@ let subst_univs_level_universe subst u =
   let u' = Universe.smartmap f u in
     if u == u' then u
     else Universe.sort u'
-
-(** Substitute instance inst for ctx in csts *)
-
-let subst_instance_level s l =
-  match l.Level.data with
-  | Level.Var n -> s.(n) 
-  | _ -> l
-
-let subst_instance_instance s i = 
-  Array.smartmap (fun l -> subst_instance_level s l) i
-
-let subst_instance_universe s u =
-  let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in
-  let u' = Universe.smartmap f u in
-    if u == u' then u
-    else Universe.sort u'
-
-let subst_instance_constraint s (u,d,v as c) =
-  let u' = subst_instance_level s u in
-  let v' = subst_instance_level s v in
-    if u' == u && v' == v then c
-    else (u',d,v')
-
-let subst_instance_constraints s csts =
-  Constraint.fold 
-    (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
-    csts Constraint.empty
-
-let subst_instance_context inst (inner_inst, inner_constr) =
-  (inner_inst, subst_instance_constraints inst inner_constr)
 
 let make_abstract_instance (ctx, _) = 
   Array.mapi (fun i l -> Level.var i) ctx

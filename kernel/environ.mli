@@ -160,10 +160,7 @@ val constant_value_and_type : env -> constant puniverses ->
   constr option * constant_type * Univ.constraints
 (** The universe context associated to the constant, empty if not 
     polymorphic *)
-val constant_context : env -> constant -> Univ.universe_context
-(** The universe isntance associated to the constant, empty if not 
-    polymorphic *)
-val constant_instance : env -> constant -> Univ.universe_instance
+val constant_context : env -> constant -> Univ.abstract_universe_context
 
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 
