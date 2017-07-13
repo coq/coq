@@ -30,7 +30,7 @@ let path_of_dirpath dir =
     | l::dir ->
         {dirpath=List.map Id.to_string dir;basename=Id.to_string l}
 let pr_dirlist dp =
-  prlist_with_sep (fun _ -> str".") str (List.rev dp)
+  prlist_with_sep (str ".") str (List.rev dp)
 let pr_path sp =
   match sp.dirpath with
       [] -> str sp.basename

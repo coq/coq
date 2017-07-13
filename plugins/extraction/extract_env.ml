@@ -494,7 +494,7 @@ let get_comment () =
   if String.is_empty s then None
   else
     let split_comment = Str.split (Str.regexp "[ \t\n]+") s in
-    Some (prlist_with_sep spc str split_comment)
+    Some (prlist_with_sep (spc ()) str split_comment)
 
 let print_structure_to_file (fn,si,mo) dry struc =
   Buffer.clear buf;

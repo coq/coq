@@ -422,7 +422,7 @@ let fixpoint_message indexes l =
       (match indexes with
 	 | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
 	 | _ -> mt ())
-  | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
+  | l -> hov 0 (prlist_with_sep (pr_comma ()) pr_id l ++
 		  spc () ++ str "are recursively defined" ++
 		  match indexes with
 		    | Some a -> spc () ++ str "(decreasing respectively on " ++
@@ -434,7 +434,7 @@ let cofixpoint_message l =
   Flags.if_verbose Feedback.msg_info (match l with
   | [] -> anomaly (Pp.str "No corecursive definition.")
   | [id] -> pr_id id ++ str " is corecursively defined"
-  | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
+  | l -> hov 0 (prlist_with_sep (pr_comma ()) pr_id l ++
                     spc () ++ str "are corecursively defined"))
 
 let recursive_message isfix i l =

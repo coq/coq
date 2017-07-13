@@ -54,7 +54,7 @@ let gallina_print_modtype = print_modtype
 
 let print_closed_sections = ref false
 
-let pr_infos_list l = v 0 (prlist_with_sep cut (fun x -> x) l)
+let pr_infos_list l = v 0 (prlist_with_sep (cut ()) (fun x -> x) l)
 
 let with_line_skip l = if List.is_empty l then mt() else fnl() ++ fnl () ++ pr_infos_list l
 
@@ -98,7 +98,7 @@ let print_impargs_by_name max = function
   | impls ->
      let n = List.length impls in
      [hov 0 (str (String.plural n "Argument") ++ spc() ++
-      prlist_with_sep pr_comma pr_impl_name impls ++ spc() ++
+      prlist_with_sep (pr_comma ()) pr_impl_name impls ++ spc() ++
       str (String.conjugate_verb_to_be n) ++ str" implicit" ++
       (if max then strbrk " and maximally inserted" else mt()))]
 
@@ -117,14 +117,14 @@ let print_impargs_list prefix l =
 	List.map (fun pp -> add_colon prefix ++ pp)
 	  (print_one_impargs_list imps)
     | Some (n1,n2) ->
-       [v 2 (prlist_with_sep cut (fun x -> x)
+       [v 2 (prlist_with_sep (cut ()) (fun x -> x)
 	 [(if ismt prefix then str "When" else prefix ++ str ", when") ++
 	   str " applied to " ++
 	   (if Int.equal n1 n2 then int_or_no n2 else
 	    if Int.equal n1 0 then str "no more than " ++ int n2
 	    else int n1 ++ str " to " ++ int_or_no n2) ++
 	    str (String.plural n2 " argument") ++ str ":";
-          v 0 (prlist_with_sep cut (fun x -> x)
+          v 0 (prlist_with_sep (cut ()) (fun x -> x)
 	    (if List.exists is_status_implicit imps
 	    then print_one_impargs_list imps
 	    else [str "No implicit arguments"]))])]) l)
@@ -132,7 +132,7 @@ let print_impargs_list prefix l =
 let print_renames_list prefix l =
   if List.is_empty l then [] else
   [add_colon prefix ++ str "Arguments are renamed to " ++
-    hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map Name.print l))]
+    hv 2 (prlist_with_sep (pr_comma ()) (fun x -> x) (List.map Name.print l))]
 
 let need_expansion impl ref =
   let typ = Global.type_of_global_unsafe ref in
@@ -420,7 +420,7 @@ let print_located_qualid name flags ref =
 	else
 	  str "No " ++ str name ++ str " of suffix" ++ spc () ++ pr_qualid qid
     | l ->
-	prlist_with_sep fnl
+	prlist_with_sep (fnl ())
 	(fun (o,oqid) ->
 	  hov 2 (pr_located_qualid o ++
 	  (if not (qualid_eq oqid qid) then
@@ -819,14 +819,14 @@ let print_class i =
 
 let print_path ((i,j),p) =
   hov 2 (
-    str"[" ++ hov 0 (prlist_with_sep pr_semicolon print_coercion_value p) ++
+    str"[" ++ hov 0 (prlist_with_sep (pr_semicolon ()) print_coercion_value p) ++
     str"] : ") ++
   print_class i ++ str" >-> " ++ print_class j
 
 let _ = Classops.install_path_printer print_path
 
 let print_graph () =
-  prlist_with_sep fnl print_path (inheritance_graph())
+  prlist_with_sep (fnl ()) print_path (inheritance_graph())
 
 let print_classes () =
   pr_sequence pr_class (classes())
@@ -855,7 +855,7 @@ let print_path_between cls clt =
   print_path ((i,j),p)
 
 let print_canonical_projections () =
-  prlist_with_sep fnl
+  prlist_with_sep (fnl ())
     (fun ((r1,r2),o) -> pr_cs_pattern r2 ++
     str " <- " ++
     pr_global r1 ++ str " ( " ++ pr_lconstr o.o_DEF ++ str " )")
@@ -873,7 +873,7 @@ let pr_typeclass env t =
 
 let print_typeclasses () =
   let env = Global.env () in
-    prlist_with_sep fnl (pr_typeclass env) (typeclasses ())
+    prlist_with_sep (fnl ()) (pr_typeclass env) (typeclasses ())
 
 let pr_instance env i =
   (*   gallina_print_constant_with_infos i.is_impl *)
@@ -887,9 +887,9 @@ let pr_instance env i =
 let print_all_instances () =
   let env = Global.env () in
   let inst = all_instances () in
-    prlist_with_sep fnl (pr_instance env) inst
+    prlist_with_sep (fnl ()) (pr_instance env) inst
 
 let print_instances r =
   let env = Global.env () in
   let inst = instances r in
-    prlist_with_sep fnl (pr_instance env) inst
+    prlist_with_sep (fnl ()) (pr_instance env) inst

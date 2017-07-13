@@ -306,7 +306,7 @@ let warn_extraction_axiom_to_realize =
          (fun axioms ->
           let s = if Int.equal (List.length axioms) 1 then "axiom" else "axioms" in
           strbrk ("The following "^s^" must be realized in the extracted code:")
-                   ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global axioms)
+                   ++ hov 1 (spc () ++ prlist_with_sep (spc ()) safe_pr_global axioms)
                    ++ str "." ++ fnl ())
 
 let warn_extraction_logical_axiom =
@@ -316,7 +316,7 @@ let warn_extraction_logical_axiom =
             if Int.equal (List.length axioms) 1 then "axiom was" else "axioms were"
           in
           (strbrk ("The following logical "^s^" encountered:") ++
-             hov 1 (spc () ++ prlist_with_sep spc safe_pr_global axioms ++ str ".\n")
+             hov 1 (spc () ++ prlist_with_sep (spc ()) safe_pr_global axioms ++ str ".\n")
            ++ strbrk "Having invalid logical axiom in the environment when extracting"
            ++ spc () ++ strbrk "may lead to incorrect or non-terminating ML terms." ++
              fnl ()))
@@ -346,7 +346,7 @@ let warn_extraction_opaque_as_axiom =
 let warning_opaques accessed =
   let opaques = Refset'.elements !opaques in
   if not (List.is_empty opaques) then
-    let lst = hov 1 (spc () ++ prlist_with_sep spc safe_pr_global opaques) in
+    let lst = hov 1 (spc () ++ prlist_with_sep (spc ()) safe_pr_global opaques) in
     if accessed then warn_extraction_opaque_accessed lst
     else warn_extraction_opaque_as_axiom lst
 
@@ -800,7 +800,7 @@ let extraction_blacklist l =
 (* Printing part *)
 
 let print_extraction_blacklist () =
-  prlist_with_sep fnl Id.print (Id.Set.elements !blacklist_table)
+  prlist_with_sep (fnl ()) Id.print (Id.Set.elements !blacklist_table)
 
 (* Reset part *)
 

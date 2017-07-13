@@ -259,7 +259,7 @@ module Cst_stack = struct
   let pr l =
     let open Pp in
     let p_c c = Termops.print_constr c in
-    prlist_with_sep pr_semicolon
+    prlist_with_sep (pr_semicolon ())
       (fun (c,params,args) ->
 	hov 1 (str"(" ++ p_c c ++ str ")" ++ spc () ++ pr_sequence p_c params ++ spc () ++ str "(args:" ++
 		 pr_sequence (fun (i,el) -> prvect_with_sep spc p_c (Array.sub el i (Array.length el - i))) args ++
@@ -365,13 +365,13 @@ struct
     | Cst (mem,curr,remains,params,cst_l) ->
       str "ZCst(" ++ pr_cst_member pr_c mem ++ pr_comma () ++ int curr
       ++ pr_comma () ++
-	prlist_with_sep pr_semicolon int remains ++
+	prlist_with_sep (pr_semicolon ()) int remains ++
 	pr_comma () ++ pr pr_c params ++ str ")"
     | Shift i -> str "ZShift(" ++ int i ++ str ")"
     | Update t -> str "ZUpdate(" ++ pr_c t ++ str ")"
   and pr pr_c l =
     let open Pp in
-    prlist_with_sep pr_semicolon (fun x -> hov 1 (pr_member pr_c x)) l
+    prlist_with_sep (pr_semicolon ()) (fun x -> hov 1 (pr_member pr_c x)) l
 
   and pr_cst_member pr_c c =
     let open Pp in

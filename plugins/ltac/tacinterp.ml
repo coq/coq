@@ -102,7 +102,7 @@ let pr_generic arg =
     str"<" ++ Val.pr tag ++ str ":(" ++ Pptactic.pr_value Pptactic.ltop arg ++ str ")>"
 let pr_appl h vs =
   Pptactic.pr_ltac_constant  h ++ spc () ++
-  Pp.prlist_with_sep spc pr_generic vs
+  Pp.prlist_with_sep (spc ()) pr_generic vs
 let rec name_with_list appl t =
   match appl with
   | [] -> t
@@ -253,7 +253,7 @@ let pr_value env v =
 
 let pr_closure env ist body =
   let pp_body = Pptactic.pr_glob_tactic env body in
-  let pr_sep () = fnl () in
+  let pr_sep = fnl () in
   let pr_iarg (id, arg) =
     let arg = pr_argument_type arg in
     hov 0 (Id.print id ++ spc () ++ str ":" ++ spc () ++ arg)
@@ -861,7 +861,7 @@ let rec message_of_value v =
   else match Value.to_list v with
   | Some l ->
     Ftactic.List.map message_of_value l >>= fun l ->
-    Ftactic.return (prlist_with_sep spc (fun x -> x) l)
+    Ftactic.return (prlist_with_sep (spc ()) (fun x -> x) l)
   | None ->
     let tag = pr_argument_type v in
     Ftactic.return (str "<" ++ tag ++ str ">") (** TODO *)
@@ -878,7 +878,7 @@ let interp_message_token ist = function
 let interp_message ist l =
   let open Ftactic in
   Ftactic.List.map (interp_message_token ist) l >>= fun l ->
-  Ftactic.return (prlist_with_sep spc (fun x -> x) l)
+  Ftactic.return (prlist_with_sep (spc ()) (fun x -> x) l)
 
 let rec interp_intro_pattern ist env sigma = function
   | loc, IntroAction pat ->

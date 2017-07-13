@@ -27,7 +27,7 @@ type occurrence_error =
 let explain_invalid_occurrence l =
   let l = List.sort_uniquize Int.compare l in
   str ("Invalid occurrence " ^ String.plural (List.length l) "number" ^": ")
-  ++ prlist_with_sep spc int l ++ str "."
+  ++ prlist_with_sep (spc ()) int l ++ str "."
 
 let explain_incorrect_in_value_occurrence id =
   pr_id id ++ str " has no value."

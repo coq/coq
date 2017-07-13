@@ -354,7 +354,7 @@ let pr_info f_info =
 
 let pr_table tb =
   let l = Cmap_env.fold (fun k v acc -> v::acc) tb [] in
-  Pp.prlist_with_sep fnl pr_info l
+  Pp.prlist_with_sep (fnl ()) pr_info l
 
 let in_Function : function_info -> Libobject.obj =
   Libobject.declare_object

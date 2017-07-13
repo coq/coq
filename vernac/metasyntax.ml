@@ -399,7 +399,7 @@ let check_open_binder isopen sl m =
   if isopen && not (List.is_empty sl) then
     user_err  (str "as " ++ pr_id m ++
       str " is a non-closed binder, no such \"" ++
-      prlist_with_sep spc pr_token sl
+      prlist_with_sep (spc ()) pr_token sl
       ++ strbrk "\" is allowed to occur.")
 
 (* Heuristics for building default printing rules *)
@@ -689,7 +689,7 @@ let pr_arg_level from = function
 
 let pr_level ntn (from,args) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
-  prlist_with_sep pr_comma (pr_arg_level from) args
+  prlist_with_sep (pr_comma ()) (pr_arg_level from) args
 
 let error_incompatible_level ntn oldprec prec =
   user_err 

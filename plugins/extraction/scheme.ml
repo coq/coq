@@ -49,7 +49,7 @@ let pp_abst st = function
   | [] -> assert false
   | [id] -> paren (str "lambda " ++ paren (pr_id id) ++ spc () ++ st)
   | l -> paren
-	(str "lambdas " ++ paren (prlist_with_sep spc pr_id l) ++ spc () ++ st)
+	(str "lambdas " ++ paren (prlist_with_sep (spc ()) pr_id l) ++ spc () ++ st)
 
 let pp_apply st _ = function
   | [] -> st
@@ -94,7 +94,7 @@ let rec pp_expr env args =
 	  str "`" ++
 	  paren (pp_global Cons r ++
 		 (if List.is_empty args' then mt () else spc ()) ++
-		 prlist_with_sep spc (pp_cons_args env) args')
+		 prlist_with_sep (spc ()) (pp_cons_args env) args')
 	in
 	if is_coinductive r then paren (str "delay " ++ st) else st
     | MLtuple _ -> user_err Pp.(str "Cannot handle tuples in Scheme yet.")
@@ -133,7 +133,7 @@ and pp_cons_args env = function
   | MLcons (_,r,args) when is_coinductive r ->
       paren (pp_global Cons r ++
 	     (if List.is_empty args then mt () else spc ()) ++
-	     prlist_with_sep spc (pp_cons_args env) args)
+	     prlist_with_sep (spc ()) (pp_cons_args env) args)
   | e -> str "," ++ pp_expr env [] e
 
 and pp_one_pat env (ids,p,t) =
@@ -145,7 +145,7 @@ and pp_one_pat env (ids,p,t) =
   let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
   let args =
     if List.is_empty ids then mt ()
-    else (str " " ++ prlist_with_sep spc pr_id (List.rev ids))
+    else (str " " ++ prlist_with_sep (spc ()) pr_id (List.rev ids))
   in
   (pp_global Cons r ++ args), (pp_expr env' [] t)
 

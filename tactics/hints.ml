@@ -1479,7 +1479,7 @@ let pr_hint_db db =
   let pr_mode = prvect_with_sep spc pp_hint_mode in
   let pr_modes l = 
     if List.is_empty l then mt ()
-    else str" (modes " ++ prlist_with_sep pr_comma pr_mode l ++ str")"
+    else str" (modes " ++ prlist_with_sep (pr_comma ()) pr_mode l ++ str")"
   in
   let content =
     let fold head modes hintlist accu =

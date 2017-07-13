@@ -1127,11 +1127,11 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	)
     in
     observe (str "full_params := " ++
-	       prlist_with_sep spc (RelDecl.get_name %> Nameops.Name.get_id %> Ppconstr.pr_id)
+	       prlist_with_sep (spc ()) (RelDecl.get_name %> Nameops.Name.get_id %> Ppconstr.pr_id)
 	       full_params
 	    );
     observe (str "princ_params := " ++
-	       prlist_with_sep spc (RelDecl.get_name %> Nameops.Name.get_id %> Ppconstr.pr_id)
+	       prlist_with_sep (spc ()) (RelDecl.get_name %> Nameops.Name.get_id %> Ppconstr.pr_id)
 	       princ_params
 	    );
     observe (str "fbody_with_full_params := " ++
@@ -1308,8 +1308,8 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 			 dyn_infos)
 		     in
 (* 		     observe (str "branches := " ++ *)
-(* 				prlist_with_sep spc (fun decl -> Ppconstr.pr_id (id_of_decl decl)) princ_info.branches ++  fnl () ++ *)
-(* 			   str "args := " ++ prlist_with_sep spc Ppconstr.pr_id  args_id *)
+(* 				prlist_with_sep (spc ()) (fun decl -> Ppconstr.pr_id (id_of_decl decl)) princ_info.branches ++  fnl () ++ *)
+(* 			   str "args := " ++ prlist_with_sep (spc ()) Ppconstr.pr_id  args_id *)
 
 (* 			   ); *)
 		     (* observe_tac "instancing" *) (instanciate_hyps_with_args prove_tac
@@ -1682,11 +1682,11 @@ let prove_principle_for_gen
 	 let pte_info =
 	   { proving_tac =
 	       (fun eqs ->
-(* 		  msgnl (str "tcc_list := "++ prlist_with_sep spc Ppconstr.pr_id  !tcc_list); *)
-(* 		  msgnl (str "princ_info.args := "++ prlist_with_sep spc Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.Name.get_id na)) princ_info.args)); *)
-(* 		  msgnl (str "princ_info.params := "++ prlist_with_sep spc Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.Name.get_id na)) princ_info.params)); *)
+(* 		  msgnl (str "tcc_list := "++ prlist_with_sep (spc ()) Ppconstr.pr_id  !tcc_list); *)
+(* 		  msgnl (str "princ_info.args := "++ prlist_with_sep (spc ()) Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.Name.get_id na)) princ_info.args)); *)
+(* 		  msgnl (str "princ_info.params := "++ prlist_with_sep (spc ()) Ppconstr.pr_id  (List.map  (fun (na,_,_) -> (Nameops.Name.get_id na)) princ_info.params)); *)
 (* 		  msgnl (str "acc_rec_arg_id := "++  Ppconstr.pr_id acc_rec_arg_id); *)
-(* 		  msgnl (str "eqs := "++ prlist_with_sep spc Ppconstr.pr_id  eqs); *)
+(* 		  msgnl (str "eqs := "++ prlist_with_sep (spc ()) Ppconstr.pr_id  eqs); *)
 
 		  (* observe_tac "new_prove_with_tcc"  *)
 		    (new_prove_with_tcc

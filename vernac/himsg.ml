@@ -338,7 +338,7 @@ let explain_unification_error env sigma p1 p2 = function
      match aux p1 p2 e with
      | [] -> mt ()
      | l -> spc () ++ str "(" ++
-            prlist_with_sep pr_semicolon (fun x -> x) l ++ str ")"
+            prlist_with_sep (pr_semicolon ()) (fun x -> x) l ++ str ")"
 
 let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env sigma in
@@ -1059,7 +1059,7 @@ let explain_refiner_bad_type arg ty conclty =
 let explain_refiner_unresolved_bindings l =
   str "Unable to find an instance for the " ++
   str (String.plural (List.length l) "variable") ++ spc () ++
-  prlist_with_sep pr_comma Name.print l ++ str"."
+  prlist_with_sep (pr_comma ()) Name.print l ++ str"."
 
 let explain_refiner_cannot_apply t harg =
   str "In refiner, a term of type" ++ brk(1,1) ++
@@ -1153,7 +1153,7 @@ let error_same_names_constructors id =
 let error_same_names_overlap idl =
   strbrk "The following names are used both as type names and constructor " ++
   str "names:" ++ spc () ++
-  prlist_with_sep pr_comma pr_id idl ++ str "."
+  prlist_with_sep (pr_comma ()) pr_id idl ++ str "."
 
 let error_not_an_arity env c =
   str "The type" ++ spc () ++ pr_lconstr_env env Evd.empty c ++ spc () ++
@@ -1256,7 +1256,7 @@ let explain_unused_clause env pats =
 let explain_non_exhaustive env pats =
   str "Non exhaustive pattern-matching: no clause found for " ++
   str (String.plural (List.length pats) "pattern") ++
-  spc () ++ hov 0 (prlist_with_sep pr_comma pr_cases_pattern pats)
+  spc () ++ hov 0 (prlist_with_sep (pr_comma ()) pr_cases_pattern pats)
 
 let explain_cannot_infer_predicate env sigma typs =
   let inj c = EConstr.to_constr sigma c in
@@ -1267,7 +1267,7 @@ let explain_cannot_infer_predicate env sigma typs =
     str "For " ++ pr_lconstr_env env sigma cstr ++ str ": " ++ pr_lconstr_env env sigma typ
   in
   str "Unable to unify the types found in the branches:" ++
-  spc () ++ hov 0 (prlist_with_sep fnl pr_branch typs)
+  spc () ++ hov 0 (prlist_with_sep (fnl ()) pr_branch typs)
 
 let explain_pattern_matching_error env sigma = function
   | BadPattern (c,t) ->

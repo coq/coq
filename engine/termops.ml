@@ -37,7 +37,7 @@ let pr_fix pr_constr ((t,i),(lna,tl,bl)) =
   let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
   hov 1
       (str"fix " ++ int i ++ spc() ++  str"{" ++
-         v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
+         v 0 (prlist_with_sep (spc ()) (fun (na,i,ty,bd) ->
            Name.print na ++ str"/" ++ int i ++ str":" ++ pr_constr ty ++
 	   cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
@@ -69,10 +69,10 @@ let rec pr_constr c = match kind_of_term c with
        pr_constr c)
   | App (c,l) ->  hov 1
       (str"(" ++ pr_constr c ++ spc() ++
-       prlist_with_sep spc pr_constr (Array.to_list l) ++ str")")
+       prlist_with_sep (spc ()) pr_constr (Array.to_list l) ++ str")")
   | Evar (e,l) -> hov 1
       (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
-       prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
+       prlist_with_sep (spc ()) pr_constr (Array.to_list l) ++str"}")
   | Const (c,u) -> str"Cst(" ++ pr_puniverses (pr_con c) u ++ str")"
   | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (pr_mind sp ++ str"," ++ int i) u ++ str")"
   | Construct (((sp,i),j),u) ->
@@ -81,14 +81,14 @@ let rec pr_constr c = match kind_of_term c with
   | Case (ci,p,c,bl) -> v 0
       (hv 0 (str"<"++pr_constr p++str">"++ cut() ++ str"Case " ++
              pr_constr c ++ str"of") ++ cut() ++
-       prlist_with_sep (fun _ -> brk(1,2)) pr_constr (Array.to_list bl) ++
+       prlist_with_sep (brk (1,2)) pr_constr (Array.to_list bl) ++
       cut() ++ str"end")
   | Fix f -> pr_fix pr_constr f
   | CoFix(i,(lna,tl,bl)) ->
       let fixl = Array.mapi (fun i na -> (na,tl.(i),bl.(i))) lna in
       hov 1
         (str"cofix " ++ int i ++ spc() ++  str"{" ++
-         v 0 (prlist_with_sep spc (fun (na,ty,bd) ->
+         v 0 (prlist_with_sep (spc ()) (fun (na,ty,bd) ->
            Name.print na ++ str":" ++ pr_constr ty ++
            cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
@@ -216,7 +216,7 @@ let pr_evar_info evi =
       | None -> List.map (fun c -> (c, true)) (evar_context evi)
       | Some filter -> List.combine (evar_context evi) filter
       in
-      prlist_with_sep spc pr_decl (List.rev decls)
+      prlist_with_sep (spc ()) pr_decl (List.rev decls)
     with Invalid_argument _ -> str "Ill-formed filtered context" in
   let pty = print_constr evi.evar_concl in
   let pb =
@@ -228,7 +228,7 @@ let pr_evar_info evi =
     match evi.evar_body, evi.evar_candidates with
       | Evar_empty, Some l ->
            spc () ++ str "{" ++
-           prlist_with_sep (fun () -> str "|") print_constr l ++ str "}"
+           prlist_with_sep (str "|") print_constr l ++ str "}"
       | _ ->
           mt ()
   in
@@ -333,7 +333,7 @@ let pr_evar_constraints sigma pbs =
             | Reduction.CUMUL -> "<=") ++
       spc () ++ print_constr_env env Evd.empty (EConstr.of_constr t2)
   in
-  prlist_with_sep fnl pr_evconstr pbs
+  prlist_with_sep (fnl ()) pr_evconstr pbs
 
 let pr_evar_map_gen with_univs pr_evars sigma =
   let uvs = Evd.evar_universe_context sigma in
@@ -361,7 +361,7 @@ let pr_evar_list sigma l =
        then str " {" ++  pr_existential_key sigma ev ++ str "}"
        else mt ()))
   in
-  h 0 (prlist_with_sep fnl pr l)
+  h 0 (prlist_with_sep (fnl ()) pr l)
 
 let pr_evar_by_depth depth sigma = match depth with
 | None ->

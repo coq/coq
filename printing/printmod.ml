@@ -78,7 +78,7 @@ let print_params env sigma params =
 
 let print_constructors envpar sigma names types =
   let pc =
-    prlist_with_sep (fun () -> brk(1,0) ++ str "| ")
+    prlist_with_sep (brk (1,0) ++ str "| ")
       (fun (id,c) -> pr_id id ++ str " : " ++ Printer.pr_lconstr_env envpar sigma c)
       (Array.to_list (Array.map2 (fun n t -> (n,t)) names types))
   in
@@ -125,7 +125,7 @@ let print_mutual_inductive env mind mib =
            (Declareops.inductive_is_polymorphic mib) 
            (Declareops.inductive_is_cumulative mib) ++
          def keyword ++ spc () ++
-         prlist_with_sep (fun () -> fnl () ++ str"  with ")
+         prlist_with_sep (fnl () ++ str "  with ")
            (print_one_inductive env sigma mib) inds ++
          match mib.mind_universes with
          | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
@@ -181,7 +181,7 @@ let print_record env mind mib =
       str ":= " ++ pr_id mip.mind_consnames.(0)) ++
     brk(1,2) ++
     hv 2 (str "{ " ++
-      prlist_with_sep (fun () -> str ";" ++ brk(2,0))
+      prlist_with_sep (str ";" ++ brk (2,0))
         (fun (id,b,c) ->
           pr_id id ++ str (if b then " : " else " := ") ++
           Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }" ++
@@ -333,7 +333,7 @@ let print_body is_impl env mp (l,body) =
 	keyword ++ spc () ++ name)
 
 let print_struct is_impl env mp struc =
-  prlist_with_sep spc (print_body is_impl env mp) struc
+  prlist_with_sep (spc ()) (print_body is_impl env mp) struc
 
 let print_structure is_type env mp locals struc =
   let env' = Option.map
@@ -356,7 +356,7 @@ let rec print_typ_expr env mp locals mty =
       let fapp = List.hd lapp in
       let mapp = List.tl lapp in
       hov 3 (str"(" ++ (print_kn locals fapp) ++ spc () ++
-		 prlist_with_sep spc (print_modpath locals) mapp ++ str")")
+		 prlist_with_sep (spc ()) (print_modpath locals) mapp ++ str")")
   | MEwith(me,WithDef(idl,(c, _)))->
       let env' = None in (* TODO: build a proper environment if env <> None *)
       let s = String.concat "." (List.map Id.to_string idl) in
@@ -374,7 +374,7 @@ let print_mod_expr env mp locals = function
   | MEapply _ as me ->
       let lapp = flatten_app me [] in
       hov 3
-        (str"(" ++ prlist_with_sep spc (print_modpath locals) lapp ++ str")")
+        (str"(" ++ prlist_with_sep (spc ()) (print_modpath locals) lapp ++ str")")
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
 let rec print_functor fty fatom is_type env mp locals = function

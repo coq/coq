@@ -91,7 +91,7 @@ let warn_ambiguous_file_name =
   CWarnings.create ~name:"ambiguous-file-name" ~category:"filesystem"
     (fun (filename,l,f) -> str filename ++ str " has been found in" ++ spc () ++
                 hov 0 (str "[ " ++
-                         hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
+                         hv 0 (prlist_with_sep (str " " ++ pr_semicolon())
                                                (fun (lpe,_) -> str lpe) l)
                        ++ str " ];") ++ fnl () ++
                 str "loading " ++ str f)

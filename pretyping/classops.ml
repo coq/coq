@@ -332,7 +332,7 @@ let print_path x = !path_printer x
 
 let message_ambig l =
   (str"Ambiguous paths:" ++ spc () ++
-   prlist_with_sep fnl (fun ijp -> print_path ijp) l)
+   prlist_with_sep (fnl ()) (fun ijp -> print_path ijp) l)
 
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
                          coercion,source,target *)

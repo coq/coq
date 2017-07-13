@@ -40,7 +40,7 @@ open Decl_kinds
   let pr_plident (lid, l) =
     pr_lident lid ++
     (match l with
-     | Some l -> prlist_with_sep spc pr_lident l
+     | Some l -> prlist_with_sep (spc ()) pr_lident l
      | None -> mt())
     
   let string_of_fqid fqid =
@@ -74,8 +74,8 @@ open Decl_kinds
 
   let pr_gen t = Pputils.pr_raw_generic (Global.env ()) t
 
-  let sep = fun _ -> spc()
-  let sep_v2 = fun _ -> str"," ++ spc()
+  let sep = spc ()
+  let sep_v2 = str "," ++ spc()
 
   let pr_set_entry_type = function
     | ETName -> str"ident"
@@ -112,7 +112,7 @@ open Decl_kinds
       | SearchPattern c -> keyword "SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
       | SearchRewrite c -> keyword "SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
       | SearchAbout sl ->
-	 keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
+	 keyword "Search" ++ spc() ++ prlist_with_sep (spc ()) pr_search_about sl ++ pr_in_out_modules b
 
   let pr_locality local = if local then keyword "Local" else keyword "Global"
 
@@ -128,7 +128,7 @@ open Decl_kinds
     | StringRefValue s -> qs s
 
   let pr_printoption table b =
-    prlist_with_sep spc str table ++
+    prlist_with_sep (spc ()) str table ++
       pr_opt (prlist_with_sep sep pr_option_ref_value) b
 
   let pr_set_option a b =
@@ -182,10 +182,10 @@ open Decl_kinds
           keyword "Mode"
           ++ spc ()
           ++ pr_reference m ++ spc() ++
-            prlist_with_sep spc pr_hint_mode l
+            prlist_with_sep (spc ()) pr_hint_mode l
         | HintsConstructors c ->
           keyword "Constructors"
-          ++ spc() ++ prlist_with_sep spc pr_reference c
+          ++ spc() ++ prlist_with_sep (spc ()) pr_reference c
         | HintsExtern (n,c,tac) ->
           let pat = match c with None -> mt () | Some pat -> pr_pat pat in
           keyword "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
@@ -246,7 +246,7 @@ open Decl_kinds
     let m = pr_module_ast true pr_c mty in
     spc() ++
       hov 1 (str"(" ++ pr_require_token export ++
-               prlist_with_sep spc pr_lident idl ++ str":" ++ m ++ str")")
+               prlist_with_sep (spc ()) pr_lident idl ++ str":" ++ m ++ str")")
 
   let pr_module_binders l pr_c =
     prlist_strict (pr_module_vardecls pr_c) l
@@ -339,7 +339,7 @@ open Decl_kinds
     match factorize l with
       | [p] -> pr_params pr_c p
       | l ->
-        prlist_with_sep spc
+        prlist_with_sep (spc ())
           (fun p -> hov 1 (str "(" ++ pr_params pr_c p ++ str ")")) l
 
 (*
@@ -374,7 +374,7 @@ open Decl_kinds
   let pr_univs pl =
     match pl with
     | None -> mt ()
-    | Some pl -> str"@{" ++ prlist_with_sep spc pr_lident pl ++ str"}"
+    | Some pl -> str"@{" ++ prlist_with_sep (spc ()) pr_lident pl ++ str"}"
 
   let pr_rec_definition ((((loc,id),pl),ro,bl,type_,def),ntn) =
     let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
@@ -424,7 +424,7 @@ open Decl_kinds
 
   let pr_record_decl b c fs =
     pr_opt pr_lident c ++ (if c = None then str"{" else str" {") ++
-      hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
+      hv 0 (prlist_with_sep (pr_semicolon ()) pr_record_field fs ++ str"}")
 
   let pr_printable = function
     | PrintFullContext ->
@@ -627,7 +627,7 @@ open Decl_kinds
       | VernacBindScope (sc,cll) ->
         return (
           keyword "Bind Scope" ++ spc () ++ str sc ++
-            spc() ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_class_rawexpr cll
+            spc() ++ keyword "with" ++ spc () ++ prlist_with_sep (spc ()) pr_class_rawexpr cll
         )
       | VernacArgumentsScope (q,scl) ->
         let pr_opt_scope = function
@@ -714,7 +714,7 @@ open Decl_kinds
               | Opaque None -> keyword "Qed"
               | Opaque (Some l) ->
                   keyword "Qed" ++ spc() ++ str"export" ++
-                    prlist_with_sep (fun () -> str", ") pr_lident l)
+                    prlist_with_sep (str ", ") pr_lident l)
           | Some id -> (if opac <> Transparent then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
       )
       | VernacExactProof c ->
@@ -724,7 +724,7 @@ open Decl_kinds
         let pr_params (c, (xl, t)) =
           hov 2 (prlist_with_sep sep pr_plident xl ++ spc() ++
             (if c then str":>" else str":" ++ spc() ++ pr_lconstr_expr t)) in
-        let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
+        let assumptions = prlist_with_sep (spc ()) (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
         return (hov 2 (pr_assumption_token (n > 1) stre ++
                        pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
       | VernacInductive (cum, p,f,l) ->
@@ -739,7 +739,7 @@ open Decl_kinds
             let fst_sep = match l with [_] -> "   " | _ -> " | " in
             pr_com_at (begin_of_inductive l) ++
               fnl() ++ str fst_sep ++
-              prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l
+              prlist_with_sep (fnl () ++ str" | ") pr_constructor l
           | RecordDecl (c,fs) ->
             pr_record_decl b c fs
         in
@@ -777,7 +777,7 @@ open Decl_kinds
         in
         return (
           hov 0 (str local ++ keyword "Fixpoint" ++ spc () ++
-                   prlist_with_sep (fun _ -> fnl () ++ keyword "with"
+                   prlist_with_sep (fnl () ++ keyword "with"
                      ++ spc ()) pr_rec_definition recs)
         )
 
@@ -795,23 +795,23 @@ open Decl_kinds
         in
         return (
           hov 0 (local ++ keyword "CoFixpoint" ++ spc() ++
-                   prlist_with_sep (fun _ -> fnl() ++ keyword "with" ++ spc ()) pr_onecorec corecs)
+                   prlist_with_sep (fnl () ++ keyword "with" ++ spc ()) pr_onecorec corecs)
         )
       | VernacScheme l ->
         return (
           hov 2 (keyword "Scheme" ++ spc() ++
-                   prlist_with_sep (fun _ -> fnl() ++ keyword "with" ++ spc ()) pr_onescheme l)
+                   prlist_with_sep (fnl () ++ keyword "with" ++ spc ()) pr_onescheme l)
         )
       | VernacCombinedScheme (id, l) ->
         return (
           hov 2 (keyword "Combined Scheme" ++ spc() ++
                    pr_lident id ++ spc() ++ keyword "from" ++ spc() ++
-                   prlist_with_sep (fun _ -> fnl() ++ str", ") pr_lident l)
+                   prlist_with_sep (fnl () ++ str", ") pr_lident l)
         )
       | VernacUniverse v ->
         return (
           hov 2 (keyword "Universe" ++ spc () ++
-                   prlist_with_sep (fun _ -> str",") pr_lident v)
+                   prlist_with_sep (str ",") pr_lident v)
         )
       | VernacConstraint v ->
         let pr_uconstraint (l, d, r) =
@@ -820,7 +820,7 @@ open Decl_kinds
         in
         return (
           hov 2 (keyword "Constraint" ++ spc () ++
-                   prlist_with_sep (fun _ -> str",") pr_uconstraint v)
+                   prlist_with_sep (str ",") pr_uconstraint v)
         )
 
       (* Gallina extensions *)
@@ -897,7 +897,7 @@ open Decl_kinds
          return (
           hov 1 (keyword "Existing" ++ spc () ++
                    keyword(String.plural (List.length insts) "Instance") ++
-                 spc () ++ prlist_with_sep (fun () -> str", ") pr_inst insts)
+                 spc () ++ prlist_with_sep (str ", ") pr_inst insts)
         )
 
       | VernacDeclareClass id ->
@@ -913,7 +913,7 @@ open Decl_kinds
                    pr_lident m ++ b ++
                    pr_of_module_type pr_lconstr tys ++
                    (if List.is_empty bd then mt () else str ":= ") ++
-                   prlist_with_sep (fun () -> str " <+")
+                   prlist_with_sep (str " <+")
                    (pr_module_ast_inl true pr_lconstr) bd)
         )
       | VernacDeclareModule (export,id,bl,m1) ->
@@ -930,13 +930,13 @@ open Decl_kinds
           hov 2 (keyword "Module Type " ++ pr_lident id ++ b ++
                    prlist_strict (fun m -> str " <:" ++ pr_mt m) tyl ++
                    (if List.is_empty m then mt () else str ":= ") ++
-                   prlist_with_sep (fun () -> str " <+ ") pr_mt m)
+                   prlist_with_sep (str " <+ ") pr_mt m)
         )
       | VernacInclude (mexprs) ->
         let pr_m = pr_module_ast_inl false pr_lconstr in
         return (
           hov 2 (keyword "Include" ++ spc() ++
-                   prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
+                   prlist_with_sep (str " <+ ") pr_m mexprs)
         )
       (* Solving *)
       | VernacSolveExistential (i,c) ->
@@ -978,7 +978,7 @@ open Decl_kinds
       | VernacRemoveHints (dbnames, ids) ->
         return (
           hov 1 (keyword "Remove Hints" ++ spc () ++
-                   prlist_with_sep spc (fun r -> pr_id (coerce_reference_to_id r)) ids ++
+                   prlist_with_sep (spc ()) (fun r -> pr_id (coerce_reference_to_id r)) ids ++
                    pr_opt_hintbases dbnames)
         )
       | VernacHints (_, dbnames,h) ->
@@ -987,7 +987,7 @@ open Decl_kinds
         return (
           hov 2
             (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
-               prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
+               prlist_with_sep (spc ()) pr_id ids ++ str":=" ++ pr_constrarg c ++
                pr_syntax_modifiers
                (match compat with
                 | None -> []
@@ -1002,7 +1002,7 @@ open Decl_kinds
         return (
           hov 1 (keyword "Implicit Arguments" ++ spc () ++
                    spc() ++ pr_smart_global q ++ spc() ++
-                   prlist_with_sep spc (fun imps ->
+                   prlist_with_sep (spc ()) (fun imps ->
                      str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
                    impls)
         )
@@ -1037,7 +1037,7 @@ open Decl_kinds
                   prlist (fun l -> str"," ++ print_implicits l) more_implicits
                 else (mt ()) ++
                 (if not (List.is_empty mods) then str" : " else str"") ++
-                  prlist_with_sep (fun () -> str", " ++ spc()) (function
+                  prlist_with_sep ( str ", " ++ spc()) (function
                     | `ReductionDontExposeCase -> keyword "simpl nomatch"
                     | `ReductionNeverUnfold -> keyword "simpl never"
                     | `DefaultImplicits -> keyword "default implicits"
@@ -1063,7 +1063,7 @@ open Decl_kinds
                 | Some [] -> str "s all"
                 | Some idl ->
                   str (if List.length idl > 1 then "s " else " ") ++
-                    prlist_with_sep spc pr_lident idl)
+                    prlist_with_sep (spc ()) pr_lident idl)
           ))
       | VernacSetOpacity(k,l) when Conv_oracle.is_transparent k ->
         return (

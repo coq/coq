@@ -174,7 +174,7 @@ ARGUMENT EXTEND ssrhoi_id TYPED AS ssrhoirep PRINTED BY pr_ssrhoi
 END
 
 
-let pr_hyps = pr_list pr_spc pr_hyp
+let pr_hyps = pr_list (pr_spc ()) pr_hyp
 let pr_ssrhyps _ _ _ = pr_hyps
 
 ARGUMENT EXTEND ssrhyps TYPED AS ssrhyp list PRINTED BY pr_ssrhyps
@@ -482,7 +482,7 @@ END
 
 (* Views *)
 
-let pr_view = pr_list mt (fun c -> str "/" ++ pr_term c)
+let pr_view = pr_list (mt ()) (fun c -> str "/" ++ pr_term c)
 
 let pr_ssrview _ _ _ = pr_view
 
@@ -546,11 +546,11 @@ let rec pr_ipat p =
   | IPatAnon One -> str "?"
   | IPatView v -> pr_view v
   | IPatNoop -> str "-"
-  | IPatNewHidden l -> str "[:" ++ pr_list spc pr_id l ++ str "]"
+  | IPatNewHidden l -> str "[:" ++ pr_list (spc ()) pr_id l ++ str "]"
 (* TODO  | IPatAnon Temporary -> str "+" *)
 
-and pr_iorpat iorpat = pr_list pr_bar pr_ipats iorpat
-and pr_ipats ipats = pr_list spc pr_ipat ipats
+and pr_iorpat iorpat = pr_list (pr_bar ()) pr_ipats iorpat
+and pr_ipats ipats = pr_list (spc ()) pr_ipat ipats
 
 let wit_ssripatrep = add_genarg "ssripatrep" pr_ipat
 
@@ -952,7 +952,7 @@ let pr_clseq = function
   | InAllHyps       -> str "* |-"
 
 let wit_ssrclseq = add_genarg "ssrclseq" pr_clseq
-let pr_clausehyps = pr_list pr_spc pr_wgen
+let pr_clausehyps = pr_list (pr_spc ()) pr_wgen
 let pr_ssrclausehyps _ _ _ = pr_clausehyps
 
 ARGUMENT EXTEND ssrclausehyps 
@@ -995,7 +995,7 @@ let pr_binder prl = function
   | Bvar x ->
     pr_name x
   | Bdecl (xs, t) ->
-    str "(" ++ pr_list pr_spc pr_name xs ++ str " : " ++ prl t ++ str ")"
+    str "(" ++ pr_list (pr_spc ()) pr_name xs ++ str " : " ++ prl t ++ str ")"
   | Bdef (x, None, v) ->
     str "(" ++ pr_name x ++ str " := " ++ prl v ++ str ")"
   | Bdef (x, Some t, v) ->
@@ -1127,7 +1127,7 @@ let pr_gen_fwd prval prc prlc fk (bs, c) =
   | FwdHint (s,_), _ ->  prc (s ^ "(* typeof *)")
   | FwdHave, [Bcast t] -> str ":" ++ spc () ++ prlc t ++ prc " :="
   | _, [] -> prc " :="
-  | _, _ -> spc () ++ pr_list spc (pr_binder prlc) bs ++ prc " :="
+  | _, _ -> spc () ++ pr_list (spc ()) (pr_binder prlc) bs ++ prc " :="
 
 let pr_fwd_guarded prval prval' = function
 | (fk, h), (_, (_, Some c)) ->
@@ -1703,7 +1703,7 @@ let has_occ ((_, occ), _) = occ <> None
 let gens_sep = function [], [] -> mt | _ -> spc
 
 let pr_dgens pr_gen (gensl, clr) =
-  let prgens s gens = str s ++ pr_list spc pr_gen gens in
+  let prgens s gens = str s ++ pr_list (spc ()) pr_gen gens in
   let prdeps deps = prgens ": " deps ++ spc () ++ str "/" in
   match gensl with
   | [deps; []] -> prdeps deps ++ pr_clear pr_spc clr
@@ -2107,7 +2107,7 @@ END
 
 (* type ssrrwargs = ssrrwarg list *)
 
-let pr_ssrrwargs _ _ _ rwargs = pr_list spc pr_rwarg rwargs
+let pr_ssrrwargs _ _ _ rwargs = pr_list (spc ()) pr_rwarg rwargs
 
 ARGUMENT EXTEND ssrrwargs TYPED AS ssrrwarg list PRINTED BY pr_ssrrwargs
   | [ "YouShouldNotTypeThis" ] -> [ anomaly "Grammar placeholder match" ]
@@ -2155,7 +2155,7 @@ ARGUMENT EXTEND ssrunlockarg TYPED AS ssrocc * ssrterm
   | [  ssrterm(t) ] -> [ None, t ]
 END
 
-let pr_ssrunlockargs _ _ _ args = pr_list spc pr_unlockarg args
+let pr_ssrunlockargs _ _ _ args = pr_list (spc ()) pr_unlockarg args
 
 ARGUMENT EXTEND ssrunlockargs TYPED AS ssrunlockarg list
   PRINTED BY pr_ssrunlockargs
@@ -2261,7 +2261,7 @@ END
 (* type ssrwlogfwd = ssrwgen list * ssrfwd *)
 
 let pr_ssrwlogfwd _ _ _ (gens, t) =
-  str ":" ++ pr_list mt pr_wgen gens ++ spc() ++ pr_fwd t
+  str ":" ++ pr_list (mt ()) pr_wgen gens ++ spc() ++ pr_fwd t
 
 ARGUMENT EXTEND ssrwlogfwd TYPED AS ssrwgen list * ssrfwd
                          PRINTED BY pr_ssrwlogfwd

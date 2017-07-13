@@ -330,7 +330,7 @@ let minductive_message warn = function
   | []  -> user_err Pp.(str "No inductive definition.")
   | [x] -> (pr_id x ++ str " is defined" ++ 
 	    if warn then str " as a non-primitive record" else mt())
-  | l   -> hov 0  (prlist_with_sep pr_comma pr_id l ++
+  | l   -> hov 0  (prlist_with_sep (pr_comma ()) pr_id l ++
 		     spc () ++ str "are defined")
 
 let check_all_names_different indl =

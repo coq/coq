@@ -113,7 +113,7 @@ let suggest_Proof_using name env vars ids_typ context_ids =
     let wrap ppcmds =
       if parens && S.cardinal s > 1 then str "(" ++ ppcmds ++ str ")"
       else ppcmds in
-    wrap (prlist_with_sep (fun _ -> str" ") Id.print (S.elements s)) in
+    wrap (prlist_with_sep (str " ") Id.print (S.elements s)) in
   let used = S.union vars ids_typ in
   let needed = minimize_hyps env (remove_ids_and_lets env used ids_typ) in
   let all_needed = really_needed env needed in
@@ -136,8 +136,8 @@ let suggest_Proof_using name env vars ids_typ context_ids =
     str"The proof of "++ str name ++ spc() ++
     str "should start with one of the following commands:"++spc()++
     v 0 (
-    prlist_with_sep cut (fun x->str"Proof using " ++x++ str". ") !valid_exprs));
-  string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs)
+    prlist_with_sep (cut ()) (fun x->str"Proof using " ++x++ str". ") !valid_exprs));
+  string_of_ppcmds (prlist_with_sep (str ";") (fun x->x) !valid_exprs)
 ;;
 
 let value = ref false

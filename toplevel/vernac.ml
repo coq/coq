@@ -290,7 +290,7 @@ let compile verbosely f =
       vernac_error (str "There are pending proofs: "
                     ++ (pfs
                         |> List.rev
-                        |> prlist_with_sep pr_comma Names.Id.print)
+                        |> prlist_with_sep (pr_comma ()) Names.Id.print)
                     ++ str ".")
   in
   match !Flags.compilation_mode with

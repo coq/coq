@@ -375,7 +375,7 @@ let unshelve p =
 let pr_proof p =
   let p = map_structured_proof p (fun _sigma g -> g) in
   Pp.(
-    let pr_goal_list = prlist_with_sep spc Goal.pr_goal in
+    let pr_goal_list = prlist_with_sep (spc ()) Goal.pr_goal in
     let rec aux acc = function
       | [] -> acc
       | (before,after)::stack ->

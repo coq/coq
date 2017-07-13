@@ -507,7 +507,7 @@ let print_ltacs () =
     let pr_ltac_fun_arg n = spc () ++ Name.print n in
     hov 2 (pr_qualid qid ++ prlist pr_ltac_fun_arg l)
   in
-  Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)
+  Feedback.msg_notice (prlist_with_sep (fnl ()) pr_entry entries)
 
 (** Grammar *)
 

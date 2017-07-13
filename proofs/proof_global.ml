@@ -676,7 +676,7 @@ let pr_goal_selector = function
   | Vernacexpr.SelectNth i -> int i
   | Vernacexpr.SelectList l ->
      str "["
-     ++ prlist_with_sep pr_comma pr_range_selector l
+     ++ prlist_with_sep (pr_comma ()) pr_range_selector l
      ++ str "]"
   | Vernacexpr.SelectId id -> Id.print id
 

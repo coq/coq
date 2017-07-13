@@ -36,7 +36,7 @@ let pp_par par st = if par then str "(" ++ st ++ str ")" else st
 
 let pp_apply st par args = match args with
   | [] -> st
-  | _  -> hov 2 (pp_par par (st ++ spc () ++ prlist_with_sep spc identity args))
+  | _  -> hov 2 (pp_par par (st ++ spc () ++ prlist_with_sep (spc ()) identity args))
 
 (** Same as [pp_apply], but with also protection of the head by parenthesis *)
 
@@ -46,23 +46,23 @@ let pp_apply2 st par args =
 
 let pr_binding = function
   | [] -> mt ()
-  | l  -> str " " ++ prlist_with_sep (fun () -> str " ") Id.print l
+  | l  -> str " " ++ prlist_with_sep (str " ") Id.print l
 
 let pp_tuple_light f = function
   | [] -> mt ()
   | [x] -> f true x
   | l ->
-      pp_par true (prlist_with_sep (fun () -> str "," ++ spc ()) (f false) l)
+      pp_par true (prlist_with_sep (str "," ++ spc ()) (f false) l)
 
 let pp_tuple f = function
   | [] -> mt ()
   | [x] -> f x
-  | l -> pp_par true (prlist_with_sep (fun () -> str "," ++ spc ()) f l)
+  | l -> pp_par true (prlist_with_sep (str "," ++ spc ()) f l)
 
 let pp_boxed_tuple f = function
   | [] -> mt ()
   | [x] -> f x
-  | l -> pp_par true (hov 0 (prlist_with_sep (fun () -> str "," ++ spc ()) f l))
+  | l -> pp_par true (hov 0 (prlist_with_sep (str "," ++ spc ()) f l))
 
 (** By default, in module Format, you can do horizontal placing of blocks
     even if they include newlines, as long as the number of chars in the

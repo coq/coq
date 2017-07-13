@@ -28,7 +28,7 @@ let json_dict_one (k, v) =
 
 let json_dict_open l =
   str ("{") ++ fnl () ++
-  str ("  ") ++ hov 0 (prlist_with_sep pr_comma json_dict_one l)
+  str ("  ") ++ hov 0 (prlist_with_sep (pr_comma ()) json_dict_one l)
 
 let json_dict l =
   json_dict_open l ++ fnl () ++
@@ -36,7 +36,7 @@ let json_dict l =
 
 let json_list l =
   str ("[") ++ fnl () ++
-  str ("  ") ++ hov 0 (prlist_with_sep pr_comma (fun x -> x) l) ++ fnl () ++
+  str ("  ") ++ hov 0 (prlist_with_sep (pr_comma ()) (fun x -> x) l) ++ fnl () ++
   str ("]")
 
 let json_listarr a =
@@ -251,13 +251,13 @@ and pp_module_expr = function
 let pp_struct mls =
   let pp_sel (mp,sel) =
     push_visible mp [];
-    let p = prlist_with_sep pr_comma identity
+    let p = prlist_with_sep (pr_comma ()) identity
       (List.concat (List.map pp_structure_elem sel)) in
     pop_visible (); p
   in
   str "," ++ fnl () ++
   str "  " ++ qs "declarations" ++ str ": [" ++ fnl () ++
-  str "    " ++ hov 0 (prlist_with_sep pr_comma pp_sel mls) ++ fnl () ++
+  str "    " ++ hov 0 (prlist_with_sep (pr_comma ()) pp_sel mls) ++ fnl () ++
   str "  ]" ++ fnl () ++
   str "}" ++ fnl ()
 

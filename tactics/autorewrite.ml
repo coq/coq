@@ -75,7 +75,7 @@ let find_matches bas pat =
 
 let print_rewrite_hintdb bas =
   (str "Database " ++ str bas ++ fnl () ++
-	   prlist_with_sep fnl
+	   prlist_with_sep (fnl ())
 	   (fun h ->
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
 	       Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++

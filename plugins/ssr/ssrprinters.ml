@@ -67,8 +67,8 @@ let pr_term (k, c) = pr_guarded (guard_term k) pr_glob_constr_and_expr c
 let pr_hyp (SsrHyp (_, id)) = Id.print id
 
 let pr_occ = function
-  | Some (true, occ) -> str "{-" ++ pr_list pr_spc int occ ++ str "}"
-  | Some (false, occ) -> str "{+" ++ pr_list pr_spc int occ ++ str "}"
+  | Some (true, occ) -> str "{-" ++ pr_list (pr_spc ()) int occ ++ str "}"
+  | Some (false, occ) -> str "{+" ++ pr_list (pr_spc ()) int occ ++ str "}"
   | None -> str "{}"
 
 (* 0 cost pp function. Active only if Debug Ssreflect is Set *)

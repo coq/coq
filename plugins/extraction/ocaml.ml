@@ -29,7 +29,7 @@ let pp_tvar id = str ("'" ^ Id.to_string id)
 let pp_abst = function
   | [] -> mt ()
   | l  ->
-      str "fun " ++ prlist_with_sep (fun () -> str " ") Id.print l ++
+      str "fun " ++ prlist_with_sep (str " ") Id.print l ++
       str " ->" ++ spc ()
 
 let pp_parameters l =
@@ -313,7 +313,7 @@ and pp_record_proj par env typ t pv args =
 
 and pp_record_pat (fields, args) =
    str "{ " ++
-   prlist_with_sep (fun () -> str ";" ++ spc ())
+   prlist_with_sep (str ";" ++ spc ())
      (fun (f,a) -> f ++ str " =" ++ spc () ++ a)
      (List.combine fields args) ++
    str " }"
@@ -444,7 +444,7 @@ let pp_one_ind prefix ip_equiv pl name cnames ctyps =
     hov 3 (str "| " ++ cnames.(i) ++
 	   (if List.is_empty typs then mt () else str " of ") ++
 	   prlist_with_sep
-	    (fun () -> spc () ++ str "* ") (pp_type true pl) typs)
+	    (spc () ++ str "* ") (pp_type true pl) typs)
   in
   pp_parameters pl ++ str prefix ++ name ++
   pp_equiv pl name ip_equiv ++ str " =" ++
@@ -474,7 +474,7 @@ let pp_record kn fields ip_equiv packet =
   let pl = rename_tvars keywords packet.ip_vars in
   str "type " ++ pp_parameters pl ++ name ++
   pp_equiv pl name ip_equiv ++ str " = { "++
-  hov 0 (prlist_with_sep (fun () -> str ";" ++ spc ())
+  hov 0 (prlist_with_sep (str ";" ++ spc ())
 	   (fun (p,t) -> p ++ str " : " ++ pp_type true pl t) l)
   ++ str " }"
 
@@ -628,7 +628,7 @@ and pp_module_type params = function
       str "sig" ++ fnl () ++
       (if List.is_empty l then mt ()
        else
-         v 1 (str " " ++ prlist_with_sep cut2 identity l) ++ fnl ())
+         v 1 (str " " ++ prlist_with_sep (cut2 ()) identity l) ++ fnl ())
       ++ str "end"
   | MTwith(mt,ML_With_type(idl,vl,typ)) ->
       let ids = pp_parameters (rename_tvars keywords vl) in
@@ -706,7 +706,7 @@ and pp_module_expr params = function
       str "struct" ++ fnl () ++
       (if List.is_empty l then mt ()
        else
-         v 1 (str " " ++ prlist_with_sep cut2 identity l) ++ fnl ())
+         v 1 (str " " ++ prlist_with_sep (cut2 ()) identity l) ++ fnl ())
       ++ str "end"
 
 let rec prlist_sep_nonempty sep f = function

@@ -130,7 +130,7 @@ and constr_proof uf i ipac=
       
 and path_proof uf i l=
   debug (fun () -> str "path_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ str "{" ++
-	   (prlist_with_sep (fun () -> str ",") (fun ((_,j),_) -> int j) l) ++ str "}");
+	   (prlist_with_sep (str ",") (fun ((_,j),_) -> int j) l) ++ str "}");
   match l with
   | [] -> prefl (term uf i)
   | x::q->ptrans (path_proof uf (snd (fst x)) q) (edge_proof uf x)

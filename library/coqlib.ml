@@ -52,14 +52,14 @@ let gen_reference_in_modules locstr dirs s =
     | [] ->
 	anomaly ~label:locstr (str "cannot find " ++ str s ++
 	str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-	prlist_with_sep pr_comma pr_dirpath dirs ++ str ".")
+	prlist_with_sep (pr_comma ()) pr_dirpath dirs ++ str ".")
     | l ->
       anomaly ~label:locstr
 	(str "ambiguous name " ++ str s ++ str " can represent " ++
-	   prlist_with_sep pr_comma
+	   prlist_with_sep (pr_comma ())
 	   (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
 	   str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-	   prlist_with_sep pr_comma pr_dirpath dirs ++ str ".")
+	   prlist_with_sep (pr_comma ()) pr_dirpath dirs ++ str ".")
 
 (* For tactics/commands requiring vernacular libraries *)
 
