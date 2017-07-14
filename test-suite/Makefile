@@ -33,6 +33,7 @@ BIN := $(shell cd ..; pwd)/bin/
 coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -batch -test-mode -R prerequisite TestSuite
 coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
 coqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
+coqdoc := $(BIN)coqdoc
 coqtopbyte := $(BIN)coqtop.byte
 
 coqtopload := $(coqtop) -top Top -async-proofs-cache force -load-vernac-source
@@ -85,7 +86,8 @@ COMPLEXITY := $(if $(bogomips),complexity)
 BUGS := bugs/opened bugs/closed
 
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
-  output-modulo-time interactive micromega $(COMPLEXITY) modules stm
+  output-modulo-time interactive micromega $(COMPLEXITY) modules stm \
+  coqdoc
 
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coq-makefile
@@ -153,6 +155,7 @@ summary:
 	  $(call summary_dir, "VI tests", vio); \
 	  $(call summary_dir, "Coqchk tests", coqchk); \
 	  $(call summary_dir, "Coq makefile", coq-makefile); \
+	  $(call summary_dir, "Coqdoc tests", coqdoc); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
@@ -456,6 +459,8 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	  fi; \
 	} > "$@"
 
+# vio compilation
+
 vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 
 %.vio.log:%.v
@@ -473,6 +478,8 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 	  fi; \
 	} > "$@"
 
+# coqchk
+
 coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 
 %.chk.log:%.v
@@ -488,6 +495,8 @@ coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
 	    echo "    $<...Error!"; \
 	  fi; \
 	} > "$@"
+
+# coq_makefile
 
 coq-makefile: $(patsubst %/run.sh,%.log,$(wildcard coq-makefile/*/run.sh))
 
@@ -505,3 +514,27 @@ coq-makefile/%.log : coq-makefile/%/run.sh
 	    echo "    $<...Error!"; \
 	  fi; \
 	) > "$@"
+
+# coqdoc
+
+coqdoc: $(patsubst %.sh,%.log,$(wildcard coqdoc/*.sh))
+
+$(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PREREQUISITELOG)
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  $(coqc) -R coqdoc Coqdoc $* 2>&1; \
+	  cd coqdoc; \
+	  f=`basename $*`; \
+	  $(coqdoc) -R . Coqdoc -coqlib http://coq.inria.fr/stdlib --html $$f.v; \
+	  $(coqdoc) -R . Coqdoc -coqlib http://coq.inria.fr/stdlib --latex $$f.v; \
+	  diff -u $$f.html.out Coqdoc.$$f.html 2>&1; R=$$?; times; \
+	  grep -v "^%%" Coqdoc.$$f.tex | diff -u $$f.tex.out - 2>&1; S=$$?; times; \
+	  if [ $$R = 0 -a $$S = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (unexpected output)"; \
+	  fi; \
+	} > "$@"

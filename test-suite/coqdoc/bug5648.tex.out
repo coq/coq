@@ -1,0 +1,57 @@
+\documentclass[12pt]{report}
+\usepackage[]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fullpage}
+\usepackage{coqdoc}
+\usepackage{amsmath,amssymb}
+\usepackage{url}
+\begin{document}
+\coqlibrary{Coqdoc.bug5648}{Library }{Coqdoc.bug5648}
+
+\begin{coqdoccode}
+\coqdocnoindent
+\coqdockw{Lemma} \coqdef{Coqdoc.bug5648.a}{a}{\coqdoclemma{a}} : \coqexternalref{True}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocinductive{True}}.\coqdoceol
+\coqdocnoindent
+\coqdockw{Proof}.\coqdoceol
+\coqdocnoindent
+\coqdoctac{auto}.\coqdoceol
+\coqdocnoindent
+\coqdockw{Qed}.\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\coqdockw{Variant} \coqdef{Coqdoc.bug5648.t}{t}{\coqdocinductive{t}} :=\coqdoceol
+\coqdocnoindent
+\ensuremath{|} \coqdef{Coqdoc.bug5648.A}{A}{\coqdocconstructor{A}} \ensuremath{|} \coqdef{Coqdoc.bug5648.Add}{Add}{\coqdocconstructor{Add}} \ensuremath{|} \coqdef{Coqdoc.bug5648.G}{G}{\coqdocconstructor{G}} \ensuremath{|} \coqdef{Coqdoc.bug5648.Goal}{Goal}{\coqdocconstructor{Goal}} \ensuremath{|} \coqdef{Coqdoc.bug5648.L}{L}{\coqdocconstructor{L}} \ensuremath{|} \coqdef{Coqdoc.bug5648.Lemma}{Lemma}{\coqdocconstructor{Lemma}} \ensuremath{|} \coqdef{Coqdoc.bug5648.P}{P}{\coqdocconstructor{P}} \ensuremath{|} \coqdef{Coqdoc.bug5648.Proof}{Proof}{\coqdocconstructor{Proof}} .\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\coqdockw{Definition} \coqdef{Coqdoc.bug5648.d}{d}{\coqdocdefinition{d}} \coqdocvar{x} :=\coqdoceol
+\coqdocindent{1.00em}
+\coqdockw{match} \coqdocvariable{x} \coqdockw{with}\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqref{Coqdoc.bug5648.A}{\coqdocconstructor{A}} \ensuremath{\Rightarrow} 0\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqref{Coqdoc.bug5648.Add}{\coqdocconstructor{Add}} \ensuremath{\Rightarrow} 1\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqref{Coqdoc.bug5648.G}{\coqdocconstructor{G}} \ensuremath{\Rightarrow} 2\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqref{Coqdoc.bug5648.Goal}{\coqdocconstructor{Goal}} \ensuremath{\Rightarrow} 3\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqref{Coqdoc.bug5648.L}{\coqdocconstructor{L}} \ensuremath{\Rightarrow} 4\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqref{Coqdoc.bug5648.Lemma}{\coqdocconstructor{Lemma}} \ensuremath{\Rightarrow} 5\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqref{Coqdoc.bug5648.P}{\coqdocconstructor{P}} \ensuremath{\Rightarrow} 6\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqref{Coqdoc.bug5648.Proof}{\coqdocconstructor{Proof}} \ensuremath{\Rightarrow} 7\coqdoceol
+\coqdocindent{1.00em}
+\coqdockw{end}.\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\coqdockw{Ltac} \coqdockw{Next} := \coqdocvar{easy}.\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\coqdockw{Lemma} \coqdef{Coqdoc.bug5648.yes}{yes}{\coqdoclemma{yes}} : \coqexternalref{True}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocinductive{True}}.\coqdoceol
+\coqdocnoindent
+\coqdockw{Proof}. \coqdockw{Next}. \coqdockw{Qed}.\coqdoceol
+\end{coqdoccode}
+\end{document}
