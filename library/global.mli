@@ -89,8 +89,15 @@ val constant_of_delta_kn : kernel_name -> constant
 val mind_of_delta_kn : kernel_name -> mutual_inductive
 
 val opaque_tables : unit -> Opaqueproof.opaquetab
+
 val body_of_constant : constant -> (Term.constr * Univ.AUContext.t) option
+(** Returns the body of the constant if it has any, and the polymorphic context
+    it lives in. For monomorphic constant, the latter is empty, and for
+    polymorphic constants, the term contains De Bruijn universe variables that
+    need to be instantiated. *)
+
 val body_of_constant_body : Declarations.constant_body -> (Term.constr * Univ.AUContext.t) option
+(** Same as {!body_of_constant} but on {!Declarations.constant_body}. *)
 
 (** Global universe name <-> level mapping *)
 type universe_names = 
