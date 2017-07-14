@@ -60,6 +60,19 @@ let typ_of env sigma c =
 
 open Goptions
 
+let dependent_propositions_induction = ref true
+
+let use_dependent_propositions_induction () =
+  !dependent_propositions_induction && Flags.version_strictly_greater Flags.V8_7
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "dependent-propositions-elimination tactic";
+      optkey   = ["Dependent";"Propositions";"Induction"];
+      optread  = (fun () -> !dependent_propositions_induction) ;
+      optwrite = (fun b -> dependent_propositions_induction := b) }
+
 let clear_hyp_by_default = ref false
 
 let use_clear_hyp_by_default () = !clear_hyp_by_default
@@ -1449,8 +1462,8 @@ let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations
 
 let find_ind_eliminator dep (ind,_ as indu) s gl =
   let indsort = Inductive.inductive_sort_family (snd (Global.lookup_inductive ind)) in
-  if dep = Some true && indsort == Sorts.InProp then
-    let evd,c = Tacmach.New.pf_apply (fun env sigma -> build_induction_scheme env sigma indu true) gl s in
+  if use_dependent_propositions_induction () && dep = Some true && indsort == Sorts.InProp then
+    let evd, c = Tacmach.New.pf_apply (fun env sigma -> build_induction_scheme env sigma indu true) gl s in
     evd, EConstr.of_constr c
   else
     let gr = lookup_eliminator ind s in
