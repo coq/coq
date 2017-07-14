@@ -59,6 +59,18 @@ let typ_of env sigma c =
 
 open Goptions
 
+let dependent_propositions_induction = ref true
+
+let use_dependent_propositions_induction () =
+  !dependent_propositions_induction
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optkey   = ["Dependent";"Propositions";"Induction"];
+      optread  = (fun () -> !dependent_propositions_induction) ;
+      optwrite = (fun b -> dependent_propositions_induction := b) }
+
 let clear_hyp_by_default = ref false
 
 let use_clear_hyp_by_default () = !clear_hyp_by_default
@@ -1675,7 +1687,7 @@ let is_nonrec env mind = (Environ.lookup_mind (fst mind) env).mind_finite == Dec
 
 let find_ind_eliminator env sigma dep (ind,_ as indu) s =
   let indsort = Inductive.inductive_sort_family (snd (Global.lookup_inductive ind)) in
-  if dep = Some true && indsort == Sorts.InProp then
+  if use_dependent_propositions_induction () && dep = Some true && indsort == Sorts.InProp then
     let sigma, c = build_induction_scheme env sigma indu true s in
     sigma, EConstr.of_constr c
   else
