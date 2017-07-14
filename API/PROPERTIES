@@ -33,6 +33,11 @@
     Until we find the answer to those questions (for each and every alias)
     we will continue to regard aliases as noise and thus remove/deprecate them.
 
+    CONSEQUENCE
+
+    "Constr" module does not appear in the API because whatever it provides
+    is also provided by "Term" (which is already present in the API).
+
 2 : Each API element is an alias of some original concept that exists in the Coq codebase.
     In the other words, no API element is an alias of an alias.
 
