@@ -1,5 +1,5 @@
 =========================================
-= CHANGES BETWEEN COQ V8.6 AND COQ V8.8 =
+= CHANGES BETWEEN COQ V8.7 AND COQ V8.8 =
 =========================================
 
 * ML API *
