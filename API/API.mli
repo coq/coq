@@ -4395,10 +4395,9 @@ sig
     val iter : (Globnames.global_reference option ->
                 Vernacexpr.hint_mode array list -> full_hint list -> unit) -> t -> unit
   end
-  type hint_db = Hint_db.t
 
   val add_hints : Vernacexpr.locality_flag -> hint_db_name list -> hints_entry -> unit
-  val searchtable_map : hint_db_name -> hint_db
+  val searchtable_map : hint_db_name -> Hint_db.t
   val pp_hints_path_atom : ('a -> Pp.std_ppcmds) -> 'a hints_path_atom_gen -> Pp.std_ppcmds
   val pp_hints_path_gen : ('a -> Pp.std_ppcmds) -> 'a hints_path_gen -> Pp.std_ppcmds
   val glob_hints_path_atom :
@@ -4577,7 +4576,7 @@ sig
   val autounfold_tac : Hints.hint_db_name list option -> Locus.clause -> unit Proofview.tactic
   val autounfold_one : Hints.hint_db_name list -> Locus.hyp_location option -> unit Proofview.tactic
   val eauto_with_bases :
-    ?debug:Hints.debug -> bool * int -> Tactypes.delayed_open_constr list -> Hints.hint_db list -> Tacmach.tactic
+    ?debug:Hints.debug -> bool * int -> Tactypes.delayed_open_constr list -> Hints.Hint_db.t list -> Tacmach.tactic
 end
 
 module Class_tactics :
