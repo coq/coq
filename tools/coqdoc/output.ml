@@ -693,25 +693,21 @@ module Html = struct
     printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
 
   let ident s loc =
-    if is_keyword s then begin
-      printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
-    end else begin
-      try
-        match loc with
-        | None -> raise Not_found
-        | Some loc ->
-            reference (translate s) (Index.find (get_module false) loc)
-      with Not_found ->
-	if is_tactic s then
-	  printf "<span class=\"id\" title=\"tactic\">%s</span>" (translate s)
-	else
-	  if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
-	  then
-	    try reference (translate s) (Index.find_string (get_module false) s)
-	    with _ -> Tokens.output_tagged_ident_string s
-	  else
-	    Tokens.output_tagged_ident_string s
-    end
+    try
+      match loc with
+      | None -> raise Not_found
+      | Some loc ->
+         reference (translate s) (Index.find (get_module false) loc)
+    with Not_found ->
+      if is_tactic s then
+	printf "<span class=\"id\" title=\"tactic\">%s</span>" (translate s)
+      else if is_keyword s then
+        printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
+      else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *) then
+	try reference (translate s) (Index.find_string (get_module false) s)
+	with Not_found -> Tokens.output_tagged_ident_string s
+      else
+	Tokens.output_tagged_ident_string s
 
   let proofbox () = printf "<font size=-2>&#9744;</font>"
 
