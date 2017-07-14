@@ -94,13 +94,16 @@ val push_named_def :
 
 (** Insertion of global axioms or definitions *)
 
+type 'a effect_entry =
+| EffectEntry : bool -> private_constants effect_entry (* bool: export private constants *)
+| PureEntry : unit effect_entry
+
 type global_declaration =
-                  (* bool: export private constants *)
-  | ConstantEntry of bool * private_constants Entries.constant_entry
+  | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
-  constant * private_constants Entries.constant_entry * private_constant_role
+  constant * unit Entries.constant_entry * private_constant_role
 
 (** returns the main constant plus a list of auxiliary constants (empty
     unless one requires the side effects to be exported) *)

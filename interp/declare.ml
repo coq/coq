@@ -184,7 +184,7 @@ let discharge_constant ((sp, kn), obj) =
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = 
   ConstantEntry
-    (false, ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None))
+    (PureEntry, ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None))
 
 let dummy_constant cst = {
   cst_decl = dummy_constant_entry;
@@ -220,7 +220,7 @@ let declare_constant_common id cst =
   List.iter (fun (c,ce,role) ->
       (* handling of private_constants just exported *)
       let o = inConstant {
-        cst_decl = ConstantEntry (false, ce);
+        cst_decl = ConstantEntry (PureEntry, ce);
         cst_hyps = [] ;
         cst_kind = IsProof Theorem;
         cst_locl = false;
@@ -270,7 +270,7 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
     | _ -> false
   in
   let cst = {
-    cst_decl = ConstantEntry (export,cd);
+    cst_decl = ConstantEntry (EffectEntry export,cd);
     cst_hyps = [] ;
     cst_kind = kind;
     cst_locl = local;

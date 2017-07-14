@@ -383,7 +383,8 @@ let safe_push_named d env =
 
 let push_named_def (id,de) senv =
   let open Entries in
-  let c,typ,univs = Term_typing.translate_local_def senv.revstruct senv.env id de in
+  let trust = Term_typing.SideEffects senv.revstruct in
+  let c,typ,univs = Term_typing.translate_local_def trust senv.env id de in
   let poly = match de.Entries.const_entry_universes with
   | Monomorphic_const_entry _ -> false
   | Polymorphic_const_entry _ -> true
@@ -492,12 +493,17 @@ let add_field ((l,sfb) as field) gn senv =
 let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
 (** Insertion of constants and parameters in environment *)
+type 'a effect_entry =
+| EffectEntry : bool -> private_constants effect_entry
+| PureEntry : unit effect_entry
+
 type global_declaration =
-  | ConstantEntry of bool * private_constants Entries.constant_entry
+                  (* bool: export private constants *)
+  | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
-  constant * private_constants Entries.constant_entry * private_constant_role
+  constant * unit Entries.constant_entry * private_constant_role
 
 let add_constant_aux no_section senv (kn, cb) =
   let l = pi3 (Constant.repr3 kn) in
@@ -526,10 +532,10 @@ let add_constant dir l decl senv =
   let no_section = DirPath.is_empty dir in
   let seff_to_export, decl =
     match decl with
-    | ConstantEntry (true, ce) ->
+    | ConstantEntry (EffectEntry true, ce) ->
         let exports, ce =
           Term_typing.export_side_effects senv.revstruct senv.env ce in
-        exports, ConstantEntry (false, ce)
+        exports, ConstantEntry (PureEntry, ce)
     | _ -> [], decl
   in
   let senv =
@@ -538,8 +544,10 @@ let add_constant dir l decl senv =
   let senv =
     let cb = 
       match decl with
-      | ConstantEntry (export_seff,ce) ->
-        Term_typing.translate_constant senv.revstruct senv.env kn ce
+      | ConstantEntry (EffectEntry _, ce) ->
+        Term_typing.translate_constant (Term_typing.SideEffects senv.revstruct) senv.env kn ce
+      | ConstantEntry (PureEntry, ce) ->
+        Term_typing.translate_constant Term_typing.Pure senv.env kn ce
       | GlobalRecipe r ->
         let cb = Term_typing.translate_recipe senv.env kn r in
         if no_section then Declareops.hcons_const_body cb else cb in

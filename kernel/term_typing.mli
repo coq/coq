@@ -14,7 +14,11 @@ open Entries
 
 type side_effects
 
-val translate_local_def : structure_body -> env -> Id.t -> side_effects definition_entry ->
+type _ trust =
+| Pure : unit trust
+| SideEffects : structure_body -> side_effects trust
+
+val translate_local_def : 'a trust -> env -> Id.t -> 'a definition_entry ->
   constant_def * types * Univ.universe_context
 
 val translate_local_assum : env -> types -> types
@@ -43,7 +47,7 @@ val uniq_seff : side_effects -> side_effect list
 val equal_eff : side_effect -> side_effect -> bool
 
 val translate_constant :
-  structure_body -> env -> constant -> side_effects constant_entry ->
+  'a trust -> env -> constant -> 'a constant_entry ->
     constant_body
 
 type side_effect_role =
@@ -51,7 +55,7 @@ type side_effect_role =
   | Schema of inductive * string
 
 type exported_side_effect = 
-  constant * constant_body * side_effects constant_entry * side_effect_role
+  constant * constant_body * unit constant_entry * side_effect_role
   
 (* Given a constant entry containing side effects it exports them (either
  * by re-checking them or trusting them).  Returns the constant bodies to
@@ -59,10 +63,10 @@ type exported_side_effect =
  * needs to be translated as usual after this step. *)
 val export_side_effects :
   structure_body -> env -> side_effects constant_entry ->
-    exported_side_effect list * side_effects constant_entry
+    exported_side_effect list * unit constant_entry
 
 val constant_entry_of_side_effect :
-  constant_body -> seff_env -> side_effects constant_entry
+  constant_body -> seff_env -> unit constant_entry
 
 val translate_mind :
   env -> mutual_inductive -> mutual_inductive_entry -> mutual_inductive_body
@@ -71,8 +75,8 @@ val translate_recipe : env -> constant -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : trust:structure_body -> env -> constant option -> 
-  side_effects constant_entry -> Cooking.result
+val infer_declaration : trust:'a trust -> env -> constant option -> 
+  'a constant_entry -> Cooking.result
 
 val build_constant_declaration :
   constant -> env -> Cooking.result -> constant_body

@@ -77,6 +77,10 @@ end
 
 type side_effects = SideEffects.t
 
+type _ trust =
+| Pure : unit trust
+| SideEffects : structure_body -> side_effects trust
+
 let uniq_seff_rev = SideEffects.repr
 let uniq_seff l = List.rev (SideEffects.repr l)
 
@@ -232,7 +236,7 @@ let abstract_constant_universes abstract uctx =
     let sbst, auctx = Univ.abstract_universes uctx in
     sbst, Polymorphic_const auctx
 
-let infer_declaration ~trust env kn dcl =
+let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry) =
   match dcl with
   | ParameterEntry (ctx,poly,(t,uctx),nl) ->
       let env = push_context ~strict:(not poly) uctx env in
@@ -264,15 +268,22 @@ let infer_declaration ~trust env kn dcl =
       let tyj = infer_type env typ in
       let proofterm =
         Future.chain ~pure:true body (fun ((body,uctx),side_eff) ->
-          let body, uctx, signatures =
-            inline_side_effects env body uctx side_eff in
-          let valid_signatures = check_signatures trust signatures in
-	  let env = push_context_set uctx env in
-          let j =
+          let j, uctx = match trust with
+          | Pure ->
+            let env = push_context_set uctx env in
+            let j = infer env body in
+            let _ = judge_of_cast env j DEFAULTcast tyj in
+            j, uctx
+          | SideEffects trust ->
+            let (body, uctx, signatures) = inline_side_effects env body uctx side_eff in
+            let valid_signatures = check_signatures trust signatures in
+            let env = push_context_set uctx env in
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
             let j = infer env body in
-            unzip ectx j in
-          let _ = judge_of_cast env j DEFAULTcast tyj in
+            let j = unzip ectx j in
+            let _ = judge_of_cast env j DEFAULTcast tyj in
+            j, uctx
+          in
           let c = hcons_constr j.uj_val in
           feedback_completion_typecheck feedback_id;
           c, uctx) in
@@ -296,8 +307,11 @@ let infer_declaration ~trust env kn dcl =
       | Polymorphic_const_entry univs -> true, univs
       in
       let univsctx = Univ.ContextSet.of_context univs in
-      let body, ctx, _ = inline_side_effects env body
-        (Univ.ContextSet.union univsctx ctx) side_eff in
+      let ctx = Univ.ContextSet.union univsctx ctx in
+      let body, ctx, _ = match trust with
+      | Pure -> body, ctx, []
+      | SideEffects _ -> inline_side_effects env body ctx side_eff
+      in
       let env = push_context_set ~strict:(not poly) ctx env in
       let abstract = poly && not (Option.is_empty kn) in
       let usubst, univs =
@@ -507,7 +521,7 @@ let constant_entry_of_side_effect cb u =
     | Def b, `Nothing -> Mod_subst.force_constr b, Univ.ContextSet.empty
     | _ -> assert false in
   DefinitionEntry {
-    const_entry_body = Future.from_val (pt, empty_seff);
+    const_entry_body = Future.from_val (pt, ());
     const_entry_secctx = None;
     const_entry_feedback = None;
     const_entry_type =
@@ -530,17 +544,18 @@ type side_effect_role =
   | Schema of inductive * string
 
 type exported_side_effect = 
-  constant * constant_body * side_effects constant_entry * side_effect_role
+  constant * constant_body * unit constant_entry * side_effect_role
 
 let export_side_effects mb env ce =
   match ce with
-  | ParameterEntry _ | ProjectionEntry _ -> [], ce
+  | ParameterEntry e -> [], ParameterEntry e
+  | ProjectionEntry e -> [], ProjectionEntry e
   | DefinitionEntry c ->
       let { const_entry_body = body } = c in
       let _, eff = Future.force body in
       let ce = DefinitionEntry { c with
         const_entry_body = Future.chain ~pure:true body
-          (fun (b_ctx, _) -> b_ctx, empty_seff) } in
+          (fun (b_ctx, _) -> b_ctx, ()) } in
       let not_exists (c,_,_,_) =
         try ignore(Environ.lookup_constant c env); false
         with Not_found -> true in 
@@ -580,7 +595,7 @@ let export_side_effects mb env ce =
            let env, cbs =
              List.fold_left (fun (env,cbs) (kn, ocb, u, r) ->
                let ce = constant_entry_of_side_effect ocb u in
-               let cb = translate_constant mb env kn ce in
+               let cb = translate_constant Pure env kn ce in
                (push_seff env (kn, cb,`Nothing, Subproof),(kn,cb,ce,r) :: cbs)) 
              (env,[]) cbs in
            translate_seff sl rest (cbs @ acc) env
