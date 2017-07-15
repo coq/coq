@@ -573,7 +573,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   rewrite Empty_Node.
   intros (H,(H0,H1)).
   subst; simpl.
-  rewrite IHt0_1; simpl; auto.
+  rewrite IHm1; simpl; auto.
   Qed.
 
   Lemma is_empty_2 : is_empty m = true -> Empty m.

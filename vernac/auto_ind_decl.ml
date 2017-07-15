@@ -81,18 +81,18 @@ let sumbool () = UnivGen.constr_of_global (Coqlib.build_coq_sumbool ())
 
 let andb = fun _ -> UnivGen.constr_of_global (Coqlib.build_bool_type()).Coqlib.andb
 
-let induct_on c = induction dep_prop_elim_flag false None c None None
+let induct_on c = induction dep_prop_elim_flag secvar_clear_compat_flag false None c None None
 
-let destruct_on c = destruct dep_prop_elim_flag false None c None None
+let destruct_on c = destruct dep_prop_elim_flag secvar_clear_compat_flag false None c None None
 
 let destruct_on_using c id =
-  destruct dep_prop_elim_flag false None c
-    (Some (CAst.make  @@ IntroOrPattern [[CAst.make  @@ IntroNaming IntroAnonymous];
+  destruct dep_prop_elim_flag secvar_clear_compat_flag false None c
+    (Some (CAst.make @@ IntroOrPattern [[CAst.make @@ IntroNaming IntroAnonymous];
                [CAst.make @@ IntroNaming (IntroIdentifier id)]]))
     None
 
 let destruct_on_as c l =
-  destruct dep_prop_elim_flag false None c (Some (CAst.make l)) None
+  destruct dep_prop_elim_flag secvar_clear_compat_flag false None c (Some (CAst.make l)) None
 
 let inj_flags = Some {
     Equality.keep_proof_equalities = true; (* necessary *)

@@ -1715,7 +1715,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (name_atomic ~env
           (TacInductionDestruct(isrec,ev,(lp,el)))
-            (Tactics.induction_destruct None isrec ev (l,el)))
+            (Tactics.induction_destruct None None isrec ev (l,el)))
       end
 
   (* Conversion *)

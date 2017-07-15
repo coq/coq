@@ -130,6 +130,28 @@ let _ =
       optread  = (fun () -> !bracketing_last_or_and_intro_pattern);
       optwrite = (fun b -> bracketing_last_or_and_intro_pattern := b) }
 
+(* The following tells destruct/induction to not make a difference
+   between section variables and other variables wrt clearing *)
+
+type secvar_clear_flag = bool
+
+let no_secvar_clear_compat_flag = Some false
+let secvar_clear_compat_flag = Some true
+
+let induction_destruct_clearing_section_variables_compat = ref false
+
+let use_induction_destruct_clearing_section_variables_compat = function
+  | None -> !induction_destruct_clearing_section_variables_compat && Flags.version_strictly_greater Flags.V8_6
+  | Some flag -> flag
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "destruct/induction clearing section variables compatibility";
+      optkey   = ["Section";"Variables";"Clearing";"Compat"];
+      optread  = (fun () -> !induction_destruct_clearing_section_variables_compat) ;
+      optwrite = (fun b -> induction_destruct_clearing_section_variables_compat := b) }
+
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -4496,7 +4518,7 @@ let has_generic_occurrences_but_goal cls id env sigma ccl =
   (* TODO: whd_evar of goal *)
   (cls.concl_occs != NoOccurrences || not (occur_var env sigma id ccl))
 
-let induction_gen dep_prop_flag clear_flag isrec with_evars elim
+let induction_gen dep_prop_flag secvar_clear_flag clear_flag isrec with_evars elim
     ((_pending,(c,lbind)),(eqname,names) as arg) cls =
   let inhyps = match cls with
   | Some {onhyps=Some hyps} -> List.map (fun ((_,id),_) -> id) hyps
@@ -4508,7 +4530,9 @@ let induction_gen dep_prop_flag clear_flag isrec with_evars elim
   let cls = Option.default allHypsAndConcl cls in
   let t = typ_of env evd c in
   let is_arg_pure_hyp =
-    isVar evd c && not (mem_named_context_val (destVar evd c) (Global.named_context_val ()))
+    isVar evd c
+    && not (use_induction_destruct_clearing_section_variables_compat secvar_clear_flag
+            && mem_named_context_val (destVar evd c) (Global.named_context_val ()))
     && lbind == NoBindings && not with_evars && Option.is_empty eqname
     && clear_flag == None
     && has_generic_occurrences_but_goal cls (destVar evd c) env evd ccl in
@@ -4588,7 +4612,7 @@ let induction_gen_l isrec with_evars elim names lc =
    principles).
    TODO: really unify induction with one and induction with several
    args *)
-let induction_destruct dep_prop_flag isrec with_evars (lc,elim) =
+let induction_destruct dep_prop_flag secvar_clear_flag isrec with_evars (lc,elim) =
   match lc with
   | [] -> assert false (* ensured by syntax, but if called inside caml? *)
   | [c,(eqname,names as allnames),cls] ->
@@ -4608,7 +4632,7 @@ let induction_destruct dep_prop_flag isrec with_evars (lc,elim) =
     | _ ->
       (* standard induction *)
       onOpenInductionArg env sigma
-      (fun clear_flag c -> induction_gen dep_prop_flag clear_flag isrec with_evars elim (c,allnames) cls) c
+      (fun clear_flag c -> induction_gen dep_prop_flag secvar_clear_flag clear_flag isrec with_evars elim (c,allnames) cls) c
     end
   | _ ->
     Proofview.Goal.enter begin fun gl ->
@@ -4625,13 +4649,13 @@ let induction_destruct dep_prop_flag isrec with_evars (lc,elim) =
       (* TODO *)
       Tacticals.New.tclTHEN
         (onOpenInductionArg env sigma (fun clear_flag a ->
-          induction_gen dep_prop_flag clear_flag isrec with_evars None (a,b) cl) a)
+          induction_gen dep_prop_flag secvar_clear_flag clear_flag isrec with_evars None (a,b) cl) a)
         (Tacticals.New.tclMAP (fun (a,b,cl) ->
           Proofview.Goal.enter begin fun gl ->
           let env = Proofview.Goal.env gl in
           let sigma = Tacmach.New.project gl in
           onOpenInductionArg env sigma (fun clear_flag a ->
-            induction_gen dep_prop_flag clear_flag false with_evars None (a,b) cl) a
+            induction_gen dep_prop_flag secvar_clear_flag clear_flag false with_evars None (a,b) cl) a
           end) l)
     | Some elim ->
       (* Several induction hyps with induction scheme *)
@@ -4653,12 +4677,12 @@ let induction_destruct dep_prop_flag isrec with_evars (lc,elim) =
       induction_gen_l isrec with_evars elim names newlc
     end
 
-let induction dep_prop_flag ev clr c l e =
-  induction_gen dep_prop_flag clr true ev e
+let induction dep_prop_flag secvar_clear_flag ev clr c l e =
+  induction_gen dep_prop_flag secvar_clear_flag clr true ev e
     ((Evd.empty,(c,NoBindings)),(None,l)) None
 
-let destruct dep_prop_flag ev clr c l e =
-  induction_gen dep_prop_flag clr false ev e
+let destruct dep_prop_flag secvar_clear_flag ev clr c l e =
+  induction_gen dep_prop_flag secvar_clear_flag clr false ev e
     ((Evd.empty,(c,NoBindings)),(None,l)) None
 
 (*

@@ -29,7 +29,8 @@ let is_rec_info sigma scheme_info =
 
 let choose_dest_or_ind scheme_info args =
   Proofview.tclBIND Proofview.tclEVARMAP (fun sigma ->
-  Tactics.induction_destruct Tactics.no_dep_prop_elim_flag (is_rec_info sigma scheme_info) false args)
+  Tactics.induction_destruct Tactics.no_dep_prop_elim_flag Tactics.no_secvar_clear_compat_flag
+                             (is_rec_info sigma scheme_info) false args)
 
 let functional_induction with_clean c princl pat =
   let res =

@@ -292,13 +292,17 @@ type dep_prop_elim_flag = bool
 val no_dep_prop_elim_flag : dep_prop_elim_flag option
 val dep_prop_elim_flag : dep_prop_elim_flag option
 
+type secvar_clear_flag = bool
+val no_secvar_clear_compat_flag : secvar_clear_flag option
+val secvar_clear_compat_flag : secvar_clear_flag option
+
 val default_elim  : dep_prop_elim_flag option ->
   evars_flag -> clear_flag -> constr with_bindings -> unit Proofview.tactic
 val simplest_elim : constr -> unit Proofview.tactic
 val elim : dep_prop_elim_flag option ->
   evars_flag -> clear_flag -> constr with_bindings -> constr with_bindings option -> unit Proofview.tactic
 
-val induction : dep_prop_elim_flag option ->
+val induction : dep_prop_elim_flag option -> secvar_clear_flag option ->
   evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
   constr with_bindings option -> unit Proofview.tactic
 
@@ -307,14 +311,16 @@ val induction : dep_prop_elim_flag option ->
 val general_case_analysis : evars_flag -> clear_flag -> constr with_bindings ->  unit Proofview.tactic
 val simplest_case         : constr -> unit Proofview.tactic
 
-val destruct : dep_prop_elim_flag option -> evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
+val destruct : dep_prop_elim_flag option -> secvar_clear_flag option ->
+  evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
   constr with_bindings option -> unit Proofview.tactic
 
 (** {6 Generic case analysis / induction tactics. } *)
 
 (** Implements user-level "destruct" and "induction" *)
 
-val induction_destruct : dep_prop_elim_flag option -> rec_flag -> evars_flag ->
+val induction_destruct : dep_prop_elim_flag option -> secvar_clear_flag option ->
+  rec_flag -> evars_flag ->
   (delayed_open_constr_with_bindings destruction_arg
    * (intro_pattern_naming option * or_and_intro_pattern option)
    * clause option) list *
