@@ -736,7 +736,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
 	(Proofview.V82.of_tactic (generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]));
 	Proofview.V82.of_tactic (Simple.intro graph_principle_id);
 	observe_tac "" (tclTHEN_i
-	  (observe_tac "elim" (Proofview.V82.of_tactic (elim false None (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings)))))
+          (observe_tac "elim" (Proofview.V82.of_tactic (elim no_dep_prop_elim_flag false None (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings)))))
 	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
       ]
       g

@@ -60,10 +60,20 @@ let typ_of env sigma c =
 
 open Goptions
 
+type dep_prop_elim_flag = bool
+
+let no_dep_prop_elim_flag = Some false
+let dep_prop_elim_flag = Some true
+
 let dependent_propositions_induction = ref true
 
-let use_dependent_propositions_induction () =
-  !dependent_propositions_induction && Flags.version_strictly_greater Flags.V8_7
+let use_dependent_propositions_case_analysis = function
+  | None -> true
+  | Some dep_prop -> dep_prop
+
+let use_dependent_propositions_induction = function
+  | None -> !dependent_propositions_induction && Flags.version_strictly_greater Flags.V8_6
+  | Some dep_prop -> dep_prop
 
 let _ =
   declare_bool_option
@@ -1460,16 +1470,16 @@ exception IsNonrec
 
 let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations.BiFinite
 
-let find_ind_eliminator dep (ind,_ as indu) s gl =
+let find_ind_eliminator dep_prop_flag dep (ind,_ as indu) s gl =
   let indsort = Inductive.inductive_sort_family (snd (Global.lookup_inductive ind)) in
-  if use_dependent_propositions_induction () && dep = Some true && indsort == Sorts.InProp then
+  if use_dependent_propositions_induction dep_prop_flag && dep = Some true && indsort == Sorts.InProp then
     let evd, c = Tacmach.New.pf_apply (fun env sigma -> build_induction_scheme env sigma indu true) gl s in
     evd, EConstr.of_constr c
   else
     let gr = lookup_eliminator ind s in
     Tacmach.New.pf_apply Evd.fresh_global gl gr
 
-let find_eliminator c gl =
+let find_eliminator dep_prop_flag c gl =
   let dep =
     (* This is approximative, maybe there are evars, not using conversion *)
     let concl = Proofview.Goal.concl gl in
@@ -1477,14 +1487,14 @@ let find_eliminator c gl =
   let ((ind,u as indu),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_unsafe_type_of gl c) in
   if is_nonrec ind then raise IsNonrec;
   let u = EInstance.kind (Tacmach.New.project gl) u in
-  let evd, c = find_ind_eliminator (Some dep) (ind,u) (Tacticals.New.elimination_sort_of_goal gl) gl in
+  let evd, c = find_ind_eliminator dep_prop_flag (Some dep) (ind,u) (Tacticals.New.elimination_sort_of_goal gl) gl in
     evd, {elimindex = None; elimbody = (c,NoBindings);
           elimrename = Some (true, constructors_nrealdecls ind)}
 
-let default_elim with_evars clear_flag (c,_ as cx) =
+let default_elim dep_prop_flag with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
     (Proofview.Goal.enter begin fun gl ->
-      let sigma, elim = find_eliminator c gl in
+      let sigma, elim = find_eliminator dep_prop_flag c gl in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (general_elim with_evars clear_flag cx elim)
     end)
@@ -1496,24 +1506,24 @@ let default_elim with_evars clear_flag (c,_ as cx) =
       | e -> Proofview.tclZERO ~info e
     end
 
-let elim_in_context with_evars clear_flag c = function
+let elim_in_context dep_prop_flag with_evars clear_flag c = function
   | Some elim ->
       general_elim with_evars clear_flag c
         {elimindex = Some (-1); elimbody = elim; elimrename = None}
-  | None -> default_elim with_evars clear_flag c
+  | None -> default_elim dep_prop_flag with_evars clear_flag c
 
-let elim with_evars clear_flag (c,lbindc as cx) elim =
+let elim dep_prop_flag with_evars clear_flag (c,lbindc as cx) elim =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma c with
     | Var id when lbindc == NoBindings ->
 	Tacticals.New.tclTHEN (try_intros_until_id_check id)
-	  (elim_in_context with_evars clear_flag cx elim)
+          (elim_in_context dep_prop_flag with_evars clear_flag cx elim)
     | _ ->
-	elim_in_context with_evars clear_flag cx elim
+        elim_in_context dep_prop_flag with_evars clear_flag cx elim
 
 (* The simplest elimination tactic, with no substitutions at all. *)
 
-let simplest_elim c = default_elim false None (c,NoBindings)
+let simplest_elim c = default_elim no_dep_prop_elim_flag false None (c,NoBindings)
 
 (* Elimination in hypothesis *)
 (* Typically, elimclause := (eq_ind ?x ?P ?H ?y ?Heq : ?P ?y)
@@ -4099,16 +4109,17 @@ let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
   let scheme = compute_elim_sig evd ~elimc:elimc elimt in
     evd, (compute_scheme_signature evd scheme names_info ind_type_guess, scheme)
 
-let guess_elim isrec dep s hyp0 gl =
+let guess_elim dep_prop_flag isrec dep s hyp0 gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let (mind, u), _ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
   let evd, elimc =
     let u = EInstance.kind (Tacmach.New.project gl) u in
-    if isrec && not (is_nonrec mind) then find_ind_eliminator dep (mind,u) s gl
+    if isrec && not (is_nonrec mind) then find_ind_eliminator dep_prop_flag dep (mind,u) s gl
     else
       let env = Tacmach.New.pf_env gl in
       let sigma = Tacmach.New.project gl in
-      if dep = Some true then
+      if use_dependent_propositions_case_analysis dep_prop_flag && dep = Some true
+      then
         let (sigma, ind) = build_case_analysis_scheme env sigma (mind, u) true s in
         let ind = EConstr.of_constr ind in
         (sigma, ind)
@@ -4134,13 +4145,13 @@ type eliminator_source =
   | ElimUsing of (eliminator * EConstr.types) * scheme_signature
   | ElimOver of bool * Id.t
 
-let find_induction_type isrec elim hyp0 gl =
+let find_induction_type dep_prop_flag isrec elim hyp0 gl =
   let sigma = Tacmach.New.project gl in
   let scheme,elim =
     match elim with
     | None ->
        let sort = Tacticals.New.elimination_sort_of_goal gl in
-       let _, (elimc,elimt),_ = guess_elim isrec None sort hyp0 gl in
+       let _, (elimc,elimt),_ = guess_elim dep_prop_flag isrec None sort hyp0 gl in
         let scheme = compute_elim_sig sigma ~elimc elimt in
         (* We drop the scheme waiting to know if it is dependent *)
         scheme, ElimOver (isrec,hyp0)
@@ -4169,12 +4180,12 @@ let is_functional_induction elimc gl =
 (* Wait the last moment to guess the eliminator so as to know if we
    need a dependent one or not *)
 
-let get_eliminator elim dep s gl =
+let get_eliminator dep_prop_flag elim dep s gl =
   match elim with
   | ElimUsing (elim,indsign) ->
       Tacmach.New.project gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc,elimt),_ as elims = guess_elim isrec (Some dep) s id gl in
+      let evd, (elimc,elimt),_ as elims = guess_elim dep_prop_flag isrec (Some dep) s id gl in
       let _, (l, s) = compute_elim_signature elims id in
       let branchlengthes = List.map (fun d -> assert (RelDecl.is_local_assum d); pi1 (decompose_prod_letin (Tacmach.New.project gl) (RelDecl.get_type d)))
                                     (List.rev s.branches)
@@ -4240,7 +4251,7 @@ let induction_tac with_evars params indvars elim =
    hypotheses from the context, replacing the main hypothesis on which
    induction applies with the induction hypotheses *)
 
-let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_tac =
+let apply_induction_in_context dep_prop_flag with_evars hyp0 inhyps elim indvars names induct_tac =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
@@ -4253,7 +4264,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     let deps_cstr =
       List.fold_left
         (fun a decl -> if NamedDecl.is_local_assum decl then (mkVar (NamedDecl.get_id decl))::a else a) [] deps in
-    let (sigma, isrec, elim, indsign) = get_eliminator elim dep s gl in
+    let (sigma, isrec, elim, indsign) = get_eliminator dep_prop_flag elim dep s gl in
     let branchletsigns =
       let f (_,is_not_let,_,_) = is_not_let in
       Array.map (fun (_,l) -> List.map f l) indsign in
@@ -4276,11 +4287,11 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
   end
 
-let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
+let induction_with_atomization_of_ind_arg dep_prop_flag isrec with_evars elim names hyp0 inhyps =
   Proofview.Goal.enter begin fun gl ->
-  let elim_info = find_induction_type isrec elim hyp0 gl in
+  let elim_info = find_induction_type dep_prop_flag isrec elim hyp0 gl in
   atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
-    apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
+    apply_induction_in_context dep_prop_flag with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
       (fun elim -> induction_tac with_evars [] [hyp0] elim))
   end
 
@@ -4298,7 +4309,7 @@ let msg_not_right_number_induction_arguments scheme =
    main induction argument. On the other hand, all args and params
    must be given, so we help a bit the unifier by making the "pattern"
    by hand before calling induction_tac *)
-let induction_without_atomization isrec with_evars elim names lid =
+let induction_without_atomization dep_prop_flag isrec with_evars elim names lid =
   Proofview.Goal.enter begin fun gl ->
   let sigma, (indsign,scheme) = get_elim_signature elim (List.hd lid) gl in
   let nargs_indarg_farg =
@@ -4329,7 +4340,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     induction_tac with_evars params realindvars elim;
   ] in
   let elim = ElimUsing (({elimindex = Some (-1); elimbody = Option.get scheme.elimc; elimrename = None}, scheme.elimt), indsign) in
-  apply_induction_in_context with_evars None [] elim indvars names induct_tac
+  apply_induction_in_context dep_prop_flag with_evars None [] elim indvars names induct_tac
   end
 
 (* assume that no occurrences are selected *)
@@ -4485,7 +4496,7 @@ let has_generic_occurrences_but_goal cls id env sigma ccl =
   (* TODO: whd_evar of goal *)
   (cls.concl_occs != NoOccurrences || not (occur_var env sigma id ccl))
 
-let induction_gen clear_flag isrec with_evars elim
+let induction_gen dep_prop_flag clear_flag isrec with_evars elim
     ((_pending,(c,lbind)),(eqname,names) as arg) cls =
   let inhyps = match cls with
   | Some {onhyps=Some hyps} -> List.map (fun ((_,id),_) -> id) hyps
@@ -4511,7 +4522,7 @@ let induction_gen clear_flag isrec with_evars elim
     let id = destVar evd c in
     Tacticals.New.tclTHEN
       (clear_unselected_context id inhyps cls)
-      (induction_with_atomization_of_ind_arg
+      (induction_with_atomization_of_ind_arg dep_prop_flag
          isrec with_evars elim names id inhyps)
   else
   (* Otherwise, we look for the pattern, possibly adding missing arguments and
@@ -4523,7 +4534,7 @@ let induction_gen clear_flag isrec with_evars elim
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
     pose_induction_arg_then
       isrec with_evars info_arg elim id arg t inhyps cls
-    (induction_with_atomization_of_ind_arg
+    (induction_with_atomization_of_ind_arg dep_prop_flag
        isrec with_evars elim names id)
   end 
 
@@ -4569,7 +4580,7 @@ let induction_gen_l isrec with_evars elim names lc =
     [
       (atomize_list lc);
       (Proofview.tclUNIT () >>= fun () -> (* ensure newlc has been computed *)
-	induction_without_atomization isrec with_evars elim names !newlc)
+        induction_without_atomization no_dep_prop_elim_flag isrec with_evars elim names !newlc)
     ]
 
 (* Induction either over a term, over a quantified premisse, or over
@@ -4577,7 +4588,7 @@ let induction_gen_l isrec with_evars elim names lc =
    principles).
    TODO: really unify induction with one and induction with several
    args *)
-let induction_destruct isrec with_evars (lc,elim) =
+let induction_destruct dep_prop_flag isrec with_evars (lc,elim) =
   match lc with
   | [] -> assert false (* ensured by syntax, but if called inside caml? *)
   | [c,(eqname,names as allnames),cls] ->
@@ -4597,7 +4608,7 @@ let induction_destruct isrec with_evars (lc,elim) =
     | _ ->
       (* standard induction *)
       onOpenInductionArg env sigma
-      (fun clear_flag c -> induction_gen clear_flag isrec with_evars elim (c,allnames) cls) c
+      (fun clear_flag c -> induction_gen dep_prop_flag clear_flag isrec with_evars elim (c,allnames) cls) c
     end
   | _ ->
     Proofview.Goal.enter begin fun gl ->
@@ -4614,13 +4625,13 @@ let induction_destruct isrec with_evars (lc,elim) =
       (* TODO *)
       Tacticals.New.tclTHEN
         (onOpenInductionArg env sigma (fun clear_flag a ->
-          induction_gen clear_flag isrec with_evars None (a,b) cl) a)
+          induction_gen dep_prop_flag clear_flag isrec with_evars None (a,b) cl) a)
         (Tacticals.New.tclMAP (fun (a,b,cl) ->
           Proofview.Goal.enter begin fun gl ->
           let env = Proofview.Goal.env gl in
           let sigma = Tacmach.New.project gl in
           onOpenInductionArg env sigma (fun clear_flag a ->
-            induction_gen clear_flag false with_evars None (a,b) cl) a
+            induction_gen dep_prop_flag clear_flag false with_evars None (a,b) cl) a
           end) l)
     | Some elim ->
       (* Several induction hyps with induction scheme *)
@@ -4642,12 +4653,12 @@ let induction_destruct isrec with_evars (lc,elim) =
       induction_gen_l isrec with_evars elim names newlc
     end
 
-let induction ev clr c l e =
-  induction_gen clr true ev e
+let induction dep_prop_flag ev clr c l e =
+  induction_gen dep_prop_flag clr true ev e
     ((Evd.empty,(c,NoBindings)),(None,l)) None
 
-let destruct ev clr c l e =
-  induction_gen clr false ev e
+let destruct dep_prop_flag ev clr c l e =
+  induction_gen dep_prop_flag clr false ev e
     ((Evd.empty,(c,NoBindings)),(None,l)) None
 
 (*
@@ -4674,7 +4685,7 @@ let elim_type t =
   Proofview.Goal.enter begin fun gl ->
   let ((ind,u),t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
   let u = EInstance.kind (Tacmach.New.project gl) u in
-  let evd, elimc = find_ind_eliminator None (ind,u) (Tacticals.New.elimination_sort_of_goal gl) gl in
+  let evd, elimc = find_ind_eliminator None None (ind,u) (Tacticals.New.elimination_sort_of_goal gl) gl in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type elimc t)
   end
 
@@ -5115,7 +5126,7 @@ module Simple = struct
     apply_with_bindings_gen false false [None,(CAst.make (c,NoBindings))]
   let eapply c =
     apply_with_bindings_gen false true [None,(CAst.make (c,NoBindings))]
-  let elim c   = elim false None (c,NoBindings) None
+  let elim c   = elim no_dep_prop_elim_flag false None (c,NoBindings) None
   let case   c = general_case_analysis false None (c,NoBindings)
 
   let apply_in id c =
