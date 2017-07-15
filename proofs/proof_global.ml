@@ -265,7 +265,7 @@ let start_dependent_proof id ?pl str goals terminator =
 let get_used_variables () = (cur_pstate ()).section_vars
 let get_universe_binders () = (cur_pstate ()).universe_binders
 
-let proof_using_auto_clear = ref false
+let proof_using_auto_clear = ref true
 let _ = Goptions.declare_bool_option
     { Goptions.optdepr  = false;
       Goptions.optname  = "Proof using Clear Unused";
