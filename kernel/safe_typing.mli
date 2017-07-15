@@ -95,7 +95,7 @@ val push_named_def :
 (** Insertion of global axioms or definitions *)
 
 type 'a effect_entry =
-| EffectEntry : bool -> private_constants effect_entry (* bool: export private constants *)
+| EffectEntry : private_constants effect_entry
 | PureEntry : unit effect_entry
 
 type global_declaration =
@@ -105,11 +105,15 @@ type global_declaration =
 type exported_private_constant = 
   constant * unit Entries.constant_entry * private_constant_role
 
+val export_private_constants : in_section:bool ->
+  private_constants Entries.constant_entry ->
+  (unit Entries.constant_entry * exported_private_constant list) safe_transformer
+
 (** returns the main constant plus a list of auxiliary constants (empty
     unless one requires the side effects to be exported) *)
 val add_constant :
   DirPath.t -> Label.t -> global_declaration ->
-    (constant * exported_private_constant list) safe_transformer
+    constant safe_transformer
 
 (** Adding an inductive type *)
 

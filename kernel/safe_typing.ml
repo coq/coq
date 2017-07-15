@@ -494,11 +494,10 @@ let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
 (** Insertion of constants and parameters in environment *)
 type 'a effect_entry =
-| EffectEntry : bool -> private_constants effect_entry
+| EffectEntry : private_constants effect_entry
 | PureEntry : unit effect_entry
 
 type global_declaration =
-                  (* bool: export private constants *)
   | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
   | GlobalRecipe of Cooking.recipe
 
@@ -527,24 +526,21 @@ let add_constant_aux no_section senv (kn, cb) =
   in
   senv''
 
+let export_private_constants ~in_section ce senv =
+  let exported, ce = Term_typing.export_side_effects senv.revstruct senv.env ce in
+  let bodies = List.map (fun (kn, cb, _, _) -> (kn, cb)) exported in
+  let exported = List.map (fun (kn, _, ce, r) -> (kn, ce, r)) exported in
+  let no_section = not in_section in
+  let senv = List.fold_left (add_constant_aux no_section) senv bodies in
+  (ce, exported), senv
+
 let add_constant dir l decl senv =
   let kn = make_con senv.modpath dir l in
   let no_section = DirPath.is_empty dir in
-  let seff_to_export, decl =
-    match decl with
-    | ConstantEntry (EffectEntry true, ce) ->
-        let exports, ce =
-          Term_typing.export_side_effects senv.revstruct senv.env ce in
-        exports, ConstantEntry (PureEntry, ce)
-    | _ -> [], decl
-  in
-  let senv =
-    List.fold_left (add_constant_aux no_section) senv
-      (List.map (fun (kn,cb,_,_) -> kn, cb) seff_to_export) in
   let senv =
     let cb = 
       match decl with
-      | ConstantEntry (EffectEntry _, ce) ->
+      | ConstantEntry (EffectEntry, ce) ->
         Term_typing.translate_constant (Term_typing.SideEffects senv.revstruct) senv.env kn ce
       | ConstantEntry (PureEntry, ce) ->
         Term_typing.translate_constant Term_typing.Pure senv.env kn ce
@@ -552,7 +548,7 @@ let add_constant dir l decl senv =
         let cb = Term_typing.translate_recipe senv.env kn r in
         if no_section then Declareops.hcons_const_body cb else cb in
     add_constant_aux no_section senv (kn, cb) in
-  (kn, List.map (fun (kn,_,ce,r) -> kn, ce, r) seff_to_export), senv
+  kn, senv
 
 (** Insertion of inductive types *)
 
