@@ -102,11 +102,12 @@ let declare_variable id obj =
 (** Declaration of constants and parameters *)
 
 type constant_obj = {
-  cst_decl : global_declaration;
+  cst_decl : global_declaration option;
+  (** [None] when the declaration is a side-effect and has already been defined
+      in the global environment. *)
   cst_hyps : Dischargedhypsmap.discharged_hyps;
   cst_kind : logical_kind;
   cst_locl : bool;
-  cst_was_seff : bool;
 }
 
 type constant_declaration = Safe_typing.private_constants constant_entry * logical_kind
@@ -146,13 +147,14 @@ let cache_constant ((sp,kn), obj) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
   let kn' =
-    if obj.cst_was_seff then begin
+    match obj.cst_decl with
+    | None ->
       if Global.exists_objlabel (Label.of_id (basename sp))
       then constant_of_kn kn
       else CErrors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp) ++ str".")
-    end else
+    | Some decl ->
       let () = check_exists sp in
-      Global.add_constant dir id obj.cst_decl
+      Global.add_constant dir id decl
   in
   assert (eq_constant kn' (constant_of_kn kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
@@ -174,19 +176,14 @@ let discharge_constant ((sp, kn), obj) =
   let new_hyps = (discharged_hyps kn hyps) @ obj.cst_hyps in
   let abstract = (named_of_variable_context hyps, subst, uctx) in
   let new_decl = GlobalRecipe{ from; info = { Opaqueproof.modlist; abstract}} in
-  Some { obj with cst_was_seff = false; cst_hyps = new_hyps; cst_decl = new_decl; }
+  Some { obj with cst_hyps = new_hyps; cst_decl = Some new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_constant_entry = 
-  ConstantEntry
-    (PureEntry, ParameterEntry (None,false,(mkProp,Univ.UContext.empty),None))
-
 let dummy_constant cst = {
-  cst_decl = dummy_constant_entry;
+  cst_decl = None;
   cst_hyps = [];
   cst_kind = cst.cst_kind;
   cst_locl = cst.cst_locl;
-  cst_was_seff = false;
 }
 
 let classify_constant cst = Substitute (dummy_constant cst)
@@ -249,13 +246,12 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
       export, ConstantEntry (PureEntry, cd)
     | _ -> [], ConstantEntry (EffectEntry, cd)
   in
-  let iter_eff (c, cd, role) =
+  let iter_eff (c, role) =
     let o = inConstant {
-      cst_decl = ConstantEntry (PureEntry, cd);
+      cst_decl = None;
       cst_hyps = [] ;
       cst_kind = IsProof Theorem;
       cst_locl = false;
-      cst_was_seff = true
     } in
     let id = Label.to_id (pi3 (Constant.repr3 c)) in
     ignore(add_leaf id o);
@@ -267,11 +263,10 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
   in
   let () = List.iter iter_eff export in
   let cst = {
-    cst_decl = decl;
+    cst_decl = Some decl;
     cst_hyps = [] ;
     cst_kind = kind;
     cst_locl = local;
-    cst_was_seff = false;
   } in
   let kn = declare_constant_common id cst in
   let () = if_xml (Hook.get f_xml_declare_constant) (internal, kn) in

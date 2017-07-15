@@ -502,7 +502,7 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
-  constant * unit Entries.constant_entry * private_constant_role
+  constant * private_constant_role
 
 let add_constant_aux no_section senv (kn, cb) =
   let l = pi3 (Constant.repr3 kn) in
@@ -528,8 +528,8 @@ let add_constant_aux no_section senv (kn, cb) =
 
 let export_private_constants ~in_section ce senv =
   let exported, ce = Term_typing.export_side_effects senv.revstruct senv.env ce in
-  let bodies = List.map (fun (kn, cb, _, _) -> (kn, cb)) exported in
-  let exported = List.map (fun (kn, _, ce, r) -> (kn, ce, r)) exported in
+  let bodies = List.map (fun (kn, cb, _) -> (kn, cb)) exported in
+  let exported = List.map (fun (kn, _, r) -> (kn, r)) exported in
   let no_section = not in_section in
   let senv = List.fold_left (add_constant_aux no_section) senv bodies in
   (ce, exported), senv

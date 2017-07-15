@@ -544,7 +544,7 @@ type side_effect_role =
   | Schema of inductive * string
 
 type exported_side_effect = 
-  constant * constant_body * unit constant_entry * side_effect_role
+  constant * constant_body * side_effect_role
 
 let export_side_effects mb env ce =
   match ce with
@@ -596,7 +596,7 @@ let export_side_effects mb env ce =
              List.fold_left (fun (env,cbs) (kn, ocb, u, r) ->
                let ce = constant_entry_of_side_effect ocb u in
                let cb = translate_constant Pure env kn ce in
-               (push_seff env (kn, cb,`Nothing, Subproof),(kn,cb,ce,r) :: cbs)) 
+               (push_seff env (kn, cb,`Nothing, Subproof),(kn,cb,r) :: cbs)) 
              (env,[]) cbs in
            translate_seff sl rest (cbs @ acc) env
         | Some sl, cbs :: rest ->
@@ -604,7 +604,7 @@ let export_side_effects mb env ce =
            let cbs = List.map turn_direct cbs in
            let env = List.fold_left push_seff env cbs in
            let ecbs = List.map (fun (kn,cb,u,r) ->
-             kn, cb, constant_entry_of_side_effect cb u, r) cbs in
+             kn, cb, r) cbs in
            translate_seff (Some (sl-cbs_len)) rest (ecbs @ acc) env
      in
        translate_seff trusted seff [] env

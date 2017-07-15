@@ -103,7 +103,7 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
-  constant * unit Entries.constant_entry * private_constant_role
+  constant * private_constant_role
 
 val export_private_constants : in_section:bool ->
   private_constants Entries.constant_entry ->

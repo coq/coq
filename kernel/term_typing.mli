@@ -55,7 +55,7 @@ type side_effect_role =
   | Schema of inductive * string
 
 type exported_side_effect = 
-  constant * constant_body * unit constant_entry * side_effect_role
+  constant * constant_body * side_effect_role
   
 (* Given a constant entry containing side effects it exports them (either
  * by re-checking them or trusting them).  Returns the constant bodies to
@@ -64,9 +64,6 @@ type exported_side_effect =
 val export_side_effects :
   structure_body -> env -> side_effects constant_entry ->
     exported_side_effect list * unit constant_entry
-
-val constant_entry_of_side_effect :
-  constant_body -> seff_env -> unit constant_entry
 
 val translate_mind :
   env -> mutual_inductive -> mutual_inductive_entry -> mutual_inductive_body
