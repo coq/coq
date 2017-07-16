@@ -6,8 +6,4 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.6 *)
-Require Export Coq.Compat.Coq87.
-
-Require Export Coq.extraction.Extraction.
-Require Export Coq.funind.FunInd.
+(** Compatibility file for making Coq act similar to Coq v8.7 *)
