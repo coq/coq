@@ -522,7 +522,7 @@ type clear_dependency_error =
 | OccurHypInSimpleClause of Id.t option
 | EvarTypingBreak of existential
 
-exception ClearDependencyError of Id.t * clear_dependency_error
+exception ClearDependencyError of Id.t * clear_dependency_error * Globnames.global_reference option
 
 exception Depends of Id.t
 
@@ -533,13 +533,13 @@ let rec check_and_clear_in_constr env evdref err ids global c =
      is a section variable *)
     match kind c with
       | Var id' ->
-      if Id.Set.mem id' ids then raise (ClearDependencyError (id', err)) else c
+      if Id.Set.mem id' ids then raise (ClearDependencyError (id', err, None)) else c
 
       | ( Const _ | Ind _ | Construct _ ) ->
         let () = if global then
           let check id' =
             if Id.Set.mem id' ids then
-              raise (ClearDependencyError (id',err))
+              raise (ClearDependencyError (id',err,Some (Globnames.global_of_constr c)))
           in
           Id.Set.iter check (Environ.vars_of_global env c)
         in
@@ -587,8 +587,8 @@ let rec check_and_clear_in_constr env evdref err ids global c =
                 let global = Id.Set.exists is_section_variable nids in
                 let concl = EConstr.Unsafe.to_constr (evar_concl evi) in
                 check_and_clear_in_constr env evdref (EvarTypingBreak ev) nids global concl
-	      with ClearDependencyError (rid,err) ->
-		raise (ClearDependencyError (Id.Map.find rid rids,err)) in
+              with ClearDependencyError (rid,err,where) ->
+                raise (ClearDependencyError (Id.Map.find rid rids,err,where)) in
 
             if Id.Map.is_empty rids then c
             else

@@ -198,32 +198,40 @@ end
 let convert x y = convert_gen Reduction.CONV x y
 let convert_leq x y = convert_gen Reduction.CUMUL x y
 
-let clear_dependency_msg env sigma id = function
+let clear_in_global_msg = function
+  | None -> mt ()
+  | Some ref -> str " implicitly in " ++ Printer.pr_global ref
+
+let clear_dependency_msg env sigma id err inglobal =
+  let pp = clear_in_global_msg inglobal in
+  match err with
   | Evarutil.OccurHypInSimpleClause None ->
-      Id.print id ++ str " is used in conclusion."
+      Id.print id ++ str " is used" ++ pp ++ str " in conclusion."
   | Evarutil.OccurHypInSimpleClause (Some id') ->
-      Id.print id ++ strbrk " is used in hypothesis " ++ Id.print id' ++ str"."
+      Id.print id ++ strbrk " is used" ++ pp ++ str " in hypothesis " ++ Id.print id' ++ str"."
   | Evarutil.EvarTypingBreak ev ->
       str "Cannot remove " ++ Id.print id ++
       strbrk " without breaking the typing of " ++
       Printer.pr_existential env sigma ev ++ str"."
 
-let error_clear_dependency env sigma id err =
-  user_err  (clear_dependency_msg env sigma id err)
+let error_clear_dependency env sigma id err inglobal =
+  user_err (clear_dependency_msg env sigma id err inglobal)
 
-let replacing_dependency_msg env sigma id = function
+let replacing_dependency_msg env sigma id err inglobal =
+  let pp = clear_in_global_msg inglobal in
+  match err with
   | Evarutil.OccurHypInSimpleClause None ->
-      str "Cannot change " ++ Id.print id ++ str ", it is used in conclusion."
+      str "Cannot change " ++ Id.print id ++ str ", it is used" ++ pp ++ str " in conclusion."
   | Evarutil.OccurHypInSimpleClause (Some id') ->
       str "Cannot change " ++ Id.print id ++
-      strbrk ", it is used in hypothesis " ++ Id.print id' ++ str"."
+      strbrk ", it is used" ++ pp ++ str " in hypothesis " ++ Id.print id' ++ str"."
   | Evarutil.EvarTypingBreak ev ->
       str "Cannot change " ++ Id.print id ++
       strbrk " without breaking the typing of " ++
       Printer.pr_existential env sigma ev ++ str"."
 
-let error_replacing_dependency env sigma id err =
-  user_err  (replacing_dependency_msg env sigma id err)
+let error_replacing_dependency env sigma id err inglobal =
+  user_err (replacing_dependency_msg env sigma id err inglobal)
 
 (* This tactic enables the user to remove hypotheses from the signature.
  * Some care is taken to prevent him from removing variables that are
@@ -242,7 +250,7 @@ let clear_gen fail = function
     let evdref = ref sigma in
     let (hyps, concl) =
       try clear_hyps_in_evi env evdref (named_context_val env) concl ids
-      with Evarutil.ClearDependencyError (id,err) -> fail env sigma id err
+      with Evarutil.ClearDependencyError (id,err,inglobal) -> fail env sigma id err inglobal
     in
     let env = reset_with_named_context hyps env in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
@@ -426,8 +434,8 @@ let clear_hyps2 env sigma ids sign t cl =
     let evdref = ref (Evd.clear_metas sigma) in
     let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
     (hyps, t, cl, !evdref)
-  with Evarutil.ClearDependencyError (id,err) ->
-    error_replacing_dependency env sigma id err
+  with Evarutil.ClearDependencyError (id,err,inglobal) ->
+    error_replacing_dependency env sigma id err inglobal
 
 let internal_cut_gen ?(check=true) dir replace id t =
   Proofview.Goal.enter begin fun gl ->
@@ -3007,8 +3015,24 @@ let unfold_body x =
   end
   end
 
+let warn_cannot_remove_as_expected =
+  CWarnings.create ~name:"cannot-remove-as-expected" ~category:"tactics"
+         (fun (id,inglobal) ->
+           let pp = match inglobal with
+             | None -> mt ()
+             | Some ref -> str ", it is used implicitly in " ++ Printer.pr_global ref in
+           str "Cannot remove " ++ Id.print id ++ pp ++ str ".")
+
+let clear_for_destruct ids =
+  Proofview.tclORELSE
+    (clear_gen (fun env sigma id err inglobal -> raise (ClearDependencyError (id,err,inglobal))) ids)
+    (function
+     | ClearDependencyError (id,err,inglobal),_ -> warn_cannot_remove_as_expected (id,inglobal); Proofview.tclUNIT ()
+     | e -> iraise e)
+
 (* Either unfold and clear if defined or simply clear if not a definition *)
-let expand_hyp id = Tacticals.New.tclTRY (unfold_body id) <*> clear [id]
+let expand_hyp id =
+  Tacticals.New.tclTRY (unfold_body id) <*> clear_for_destruct [id]
 
 (*****************************)
 (* High-level induction      *)
