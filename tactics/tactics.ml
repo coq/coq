@@ -5087,12 +5087,7 @@ module New = struct
   open Locus
 
   let reduce_after_refine =
-    let onhyps =
-      (** We reduced everywhere in the hyps before 8.6 *)
-      if Flags.version_compare !Flags.compat_version Flags.V8_5 == 0
-      then None
-      else Some []
-    in
+    let onhyps = Some [] in
     reduce
       (Lazy {rBeta=true;rMatch=true;rFix=true;rCofix=true;
 	     rZeta=false;rDelta=false;rConst=[]})

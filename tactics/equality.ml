@@ -75,9 +75,7 @@ let _ =
 
 let injection_in_context = ref false
 
-let use_injection_in_context () =
-  !injection_in_context
-  && Flags.version_strictly_greater Flags.V8_5
+let use_injection_in_context () = !injection_in_context
 
 let _ =
   declare_bool_option
