@@ -14,7 +14,7 @@ Inductive Dummy : nat -> Set :=
 
 Definition Bug : Dummy (2*n).
 Proof.
-induction n.
+induction n as [|n0].
  simpl ; apply Dummy0.
  replace (2 * S n0) with (2*n0 + 2) ; auto with arith.
   apply DummyApp.

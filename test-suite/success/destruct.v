@@ -284,7 +284,7 @@ Section S1.
 Variables x y : Type.
 Variable H : x = y.
 Goal True.
-destruct H. (* Was not working in 8.4 *)
+destruct (H). (* Was not working in 8.4 *)
 (* Now check that H statement has itself be subject of the rewriting *)
 change (x=x) in H.
 Abort.

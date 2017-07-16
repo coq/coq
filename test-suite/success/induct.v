@@ -111,7 +111,7 @@ Variables x : nat.
 Definition cond := x = x.
 Goal cond -> x = 0.
 intros H.
-induction x as [|n IHn].
+induction (x) as [|n IHn].
 2:change (n = 0) in IHn. (* We don't want a generalization over cond *)
 Abort.
 End S3.
