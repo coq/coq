@@ -705,20 +705,20 @@ when the {\tt FunInd} library has been loaded via {\tt Require Import FunInd}:
 This command can be seen as a generalization of {\tt Fixpoint}.  It is actually
 a wrapper for several ways of defining a function \emph{and other useful
   related objects}, namely: an induction principle that reflects the
-recursive structure of the function (see \ref{FunInduction}), and its
+recursive structure of the function (see \ref{FunInduction}) and its
 fixpoint equality.
  The meaning of this
 declaration is to define a function {\it ident}, similarly to {\tt
   Fixpoint}. Like in {\tt Fixpoint}, the decreasing argument must be
-given (unless the function is not recursive), but it must not
-necessary be \emph{structurally} decreasing. The point of the {\tt
+given (unless the function is not recursive), but it might not
+necessarily be \emph{structurally} decreasing. The point of the {\tt
   \{\}} annotation is to name the decreasing argument \emph{and} to
 describe which kind of decreasing criteria must be used to ensure
 termination of recursive calls.
 
-The {\tt Function} construction enjoys also the {\tt with} extension
+The {\tt Function} construction also enjoys the {\tt with} extension
 to define mutually recursive definitions. However, this feature does
-not work for non structural recursive functions. % VRAI??
+not work for non structurally recursive functions. % VRAI??
 
 See the documentation of {\tt functional induction}
 (see Section~\ref{FunInduction}) and {\tt Functional Scheme}
@@ -749,7 +749,7 @@ Function plus (n m : nat) {struct n} : nat :=
 \end{coq_example*}
 
 \paragraph[Limitations]{Limitations\label{sec:Function-limitations}}
-\term$_0$ must be build as a \emph{pure pattern-matching tree}
+\term$_0$ must be built as a \emph{pure pattern-matching tree}
 (\texttt{match...with}) with applications only \emph{at the end} of
 each branch.  
 
@@ -776,7 +776,7 @@ For now dependent cases are not treated for non structurally terminating functio
 
   The generation of the graph relation \texttt{(R\_\ident)} used to
   compute the induction scheme of \ident\ raised a typing error. Only
-  the ident is defined, the induction scheme will not be generated.
+  the ident is defined; the induction scheme will not be generated.
 
   This error happens generally when:
 
@@ -848,14 +848,14 @@ the following:
       being the decreasing argument and \term$_1$ being a function
       from type of \ident$_0$ to \texttt{nat} for which value on the
       decreasing argument decreases (for the {\tt lt} order on {\tt
-      nat}) at each recursive call of \term$_0$, parameters of the
+      nat}) at each recursive call of \term$_0$. Parameters of the
       function are bound in  \term$_0$;
 \item {\tt \{wf} \term$_1$ \ident$_0${\tt\}} with \ident$_0$ being
       the decreasing argument and \term$_1$ an ordering relation on
       the type of \ident$_0$ (i.e. of type T$_{\ident_0}$
       $\to$ T$_{\ident_0}$ $\to$ {\tt Prop}) for which
       the decreasing argument decreases at each recursive call of
-      \term$_0$. The order must be well founded. parameters of the
+      \term$_0$. The order must be well founded. Parameters of the
       function are bound in  \term$_0$.
 \end{itemize} 
 
