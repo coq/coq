@@ -265,11 +265,8 @@ let infer_declaration ~trust env kn dcl =
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
             let j = infer env body in
             unzip ectx j in
-	  let subst = Univ.LMap.empty in
           let _ = judge_of_cast env j DEFAULTcast tyj in
-          assert (eq_constr typ tyj.utj_val);
           let c = hcons_constr j.uj_val in
-          let _typ = RegularArity (Vars.subst_univs_level_constr subst typ) in
           feedback_completion_typecheck feedback_id;
           c, uctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
@@ -299,7 +296,6 @@ let infer_declaration ~trust env kn dcl =
         | Some t ->
            let tj = infer_type env t in
            let _ = judge_of_cast env j DEFAULTcast tj in
-           assert (eq_constr t tj.utj_val);
            RegularArity (Vars.subst_univs_level_constr usubst t)
       in
       let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
