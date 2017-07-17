@@ -851,7 +851,7 @@ let make_graph (f_ref:global_reference) =
   in
   (match Global.body_of_constant_body c_body with
      | None -> error "Cannot build a graph over an axiom!"
-     | Some body ->
+     | Some (body, _) ->
 	 let env = Global.env () in
 	 let sigma = Evd.from_env env in
 	 let extern_body,extern_type =

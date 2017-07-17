@@ -1576,8 +1576,10 @@ end = struct (* {{{ *)
         let uc =
           Option.get
             (Opaqueproof.get_constraints (Global.opaque_tables ()) o) in
+        (** We only manipulate monomorphic terms here. *)
+        let map (c, ctx) = assert (Univ.AUContext.is_empty ctx); c in
         let pr =
-          Future.from_val (Option.get (Global.body_of_constant_body c)) in
+          Future.from_val (map (Option.get (Global.body_of_constant_body c))) in
         let uc =
           Future.chain
             ~pure:true uc Univ.hcons_universe_context_set in

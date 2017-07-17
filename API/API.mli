@@ -84,6 +84,11 @@ sig
     val empty : t
   end
 
+  module AUContext :
+  sig
+    type t = Univ.AUContext.t
+  end
+
   type universe_context = UContext.t
   [@@ocaml.deprecated "alias of API.Univ.UContext.t"]
 
@@ -2679,10 +2684,8 @@ sig
   val fresh_inductive_instance : Environ.env -> Names.inductive -> Term.pinductive Univ.in_universe_context_set
   val new_Type : Names.DirPath.t -> Term.types
   val type_of_global : Globnames.global_reference -> Term.types Univ.in_universe_context_set
-  val unsafe_type_of_global : Globnames.global_reference -> Term.types
   val constr_of_global : Prelude.global_reference -> Term.constr
   val new_univ_level : Names.DirPath.t -> Univ.Level.t
-  val unsafe_constr_of_global : Globnames.global_reference -> Term.constr Univ.in_universe_context
   val new_sort_in_family : Sorts.family -> Sorts.t
   val pr_with_global_universes : Univ.Level.t -> Pp.std_ppcmds
   val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
@@ -2708,11 +2711,12 @@ sig
   val env_of_context : Environ.named_context_val -> Environ.env
   val is_polymorphic : Globnames.global_reference -> bool
 
-  val type_of_global_unsafe : Globnames.global_reference -> Term.types
+  val constr_of_global_in_context : Environ.env -> Globnames.global_reference -> Constr.t * Univ.AUContext.t
+  val type_of_global_in_context : Environ.env -> Globnames.global_reference -> Constr.t * Univ.AUContext.t
 
   val current_dirpath : unit -> Names.DirPath.t
-  val body_of_constant_body : Declarations.constant_body -> Term.constr option
-  val body_of_constant : Names.Constant.t -> Term.constr option
+  val body_of_constant_body : Declarations.constant_body -> (Term.constr * Univ.AUContext.t) option
+  val body_of_constant : Names.Constant.t -> (Term.constr * Univ.AUContext.t) option
   val add_constraints : Univ.Constraint.t -> unit
 end
 
@@ -2884,7 +2888,7 @@ sig
                   | Default_cs
   type obj_typ = Recordops.obj_typ = {
         o_DEF : Term.constr;
-        o_CTX : Univ.ContextSet.t;
+        o_CTX : Univ.AUContext.t;
         o_INJ : int option;      (** position of trivial argument *)
         o_TABS : Term.constr list;    (** ordered *)
         o_TPARAMS : Term.constr list; (** ordered *)
@@ -3043,6 +3047,7 @@ end
 module Typeclasses :
 sig
   type typeclass = Typeclasses.typeclass = {
+    cl_univs : Univ.AUContext.t;
     cl_impl : Globnames.global_reference;
     cl_context : (Globnames.global_reference * bool) option list * Context.Rel.t;
     cl_props : Context.Rel.t;

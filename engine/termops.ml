@@ -906,7 +906,7 @@ let collect_vars sigma c =
   aux Id.Set.empty c
 
 let vars_of_global_reference env gr =
-  let c, _ = Universes.unsafe_constr_of_global gr in
+  let c, _ = Global.constr_of_global_in_context env gr in
   vars_of_global (Global.env ()) c
 
 (* Tests whether [m] is a subterm of [t]:

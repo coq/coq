@@ -205,7 +205,8 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
       | None -> raise Not_found
       | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
-  let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
+  let u, ctx' = Universes.fresh_instance_from ctx None in
+  let subst = Univ.make_inverse_instance_subst u in
   let c = EConstr.of_constr c in
   let c' = subst_univs_level_constr subst c in
   let t' = EConstr.of_constr t' in

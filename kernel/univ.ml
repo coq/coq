@@ -1292,14 +1292,6 @@ let subst_univs_constraints subst csts =
     (fun c cstrs -> subst_univs_constraint subst c cstrs)
     csts Constraint.empty 
 
-(** Substitute instance inst for ctx in csts *)
-let instantiate_univ_context (ctx, csts) = 
-  (ctx, subst_instance_constraints ctx csts)
-
-(** Substitute instance inst for ctx in universe constraints and subtyping constraints *)
-let instantiate_cumulativity_info (univcst, subtpcst) = 
-  (instantiate_univ_context univcst, instantiate_univ_context subtpcst)
-
 let make_instance_subst i = 
   let arr = Instance.to_array i in
     Array.fold_left_i (fun i acc l ->

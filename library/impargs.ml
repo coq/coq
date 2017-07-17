@@ -431,12 +431,13 @@ let compute_mib_implicits flags manual kn =
       (Array.mapi  (* No need to lift, arities contain no de Bruijn *)
         (fun i mip ->
 	  (** No need to care about constraints here *)
-	  Context.Rel.Declaration.LocalAssum (Name mip.mind_typename, Global.type_of_global_unsafe (IndRef (kn,i))))
+	  let ty, _ = Global.type_of_global_in_context env (IndRef (kn,i)) in
+	  Context.Rel.Declaration.LocalAssum (Name mip.mind_typename, ty))
         mib.mind_packets) in
   let env_ar = push_rel_context ar env in
   let imps_one_inductive i mip =
     let ind = (kn,i) in
-    let ar = Global.type_of_global_unsafe (IndRef ind) in
+    let ar, _ = Global.type_of_global_in_context env (IndRef ind) in
     ((IndRef ind,compute_semi_auto_implicits env flags manual ar),
      Array.mapi (fun j c ->
        (ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar flags manual c))
@@ -674,7 +675,7 @@ let projection_implicits env p impls =
 let declare_manual_implicits local ref ?enriching l =
   let flags = !implicit_args in
   let env = Global.env () in
-  let t = Global.type_of_global_unsafe ref in
+  let t, _ = Global.type_of_global_in_context (Global.env ()) ref in
   let enriching = Option.default flags.auto enriching in
   let isrigid,autoimpls = compute_auto_implicits env flags enriching t in
   let l' = match l with

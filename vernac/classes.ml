@@ -68,7 +68,7 @@ let _ =
 let existing_instance glob g info =
   let c = global g in
   let info = Option.default Hints.empty_hint_info info in
-  let instance = Global.type_of_global_unsafe c in
+  let instance, _ = Global.type_of_global_in_context (Global.env ()) c in
   let _, r = decompose_prod_assum instance in
     match class_of_constr Evd.empty (EConstr.of_constr r) with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob
@@ -164,7 +164,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) p
     let ctx'' = ctx' @ ctx in
     let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) !evars (EConstr.of_constr c) in
     let u = EConstr.EInstance.kind !evars u in
-    let cl, u = Typeclasses.typeclass_univ_instance (k, u) in
+    let cl = Typeclasses.typeclass_univ_instance (k, u) in
     let _, args = 
       List.fold_right (fun decl (args, args') ->
 	match decl with

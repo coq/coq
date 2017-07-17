@@ -132,7 +132,7 @@ let compute_head = function
    in
      (match body with
      | None -> RigidHead (RigidParameter cst)
-     | Some c -> kind_of_head env c)
+     | Some (c, _) -> kind_of_head env c)
 | EvalVarRef id ->
     (match Global.lookup_named id with
      | LocalDef (_,c,_) when not (Decls.variable_opacity id) ->

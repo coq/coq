@@ -957,7 +957,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
 (*   observe (str "rec_args_num := " ++ str (string_of_int (rec_args_num + 1) )); *)
   let f_def = Global.lookup_constant (fst (destConst evd f)) in
   let eq_lhs = mkApp(f,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i))) in
-  let f_body = Option.get (Global.body_of_constant_body f_def) in
+  let (f_body, _) = Option.get (Global.body_of_constant_body f_def) in
   let f_body = EConstr.of_constr f_body in
   let params,f_body_with_params = decompose_lam_n evd nb_params f_body in
   let (_,num),(_,_,bodies) = destFix evd f_body_with_params in
@@ -1091,7 +1091,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
     in
     let get_body const =
       match Global.body_of_constant const with
-	| Some body ->
+	| Some (body, _) ->
 	     Tacred.cbv_norm_flags
 	       (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 	       (Global.env ())

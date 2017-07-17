@@ -445,9 +445,10 @@ let error_MPfile_as_mod mp b =
 	    "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
 
 let argnames_of_global r =
-  let typ = Global.type_of_global_unsafe r in
+  let env = Global.env () in
+  let typ, _ = Global.type_of_global_in_context env r in
   let rels,_ =
-    decompose_prod (Reduction.whd_all (Global.env ()) typ) in
+    decompose_prod (Reduction.whd_all env typ) in
   List.rev_map fst rels
 
 let msg_of_implicit = function
@@ -878,7 +879,7 @@ let extract_constant_inline inline r ids s =
   match g with
     | ConstRef kn ->
 	let env = Global.env () in
-	let typ = Global.type_of_global_unsafe (ConstRef kn) in
+	let typ, _ = Global.type_of_global_in_context env (ConstRef kn) in
 	let typ = Reduction.whd_all env typ in
 	if Reduction.is_arity env typ
 	  then begin

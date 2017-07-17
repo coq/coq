@@ -511,8 +511,8 @@ let pretype_global ?loc rigid env evd gr us =
     match us with
     | None -> evd, None
     | Some l -> 
-       let _, ctx = Universes.unsafe_constr_of_global gr in
-       let len = Univ.UContext.size ctx in
+       let _, ctx = Global.constr_of_global_in_context env.ExtraEnv.env gr in
+       let len = Univ.AUContext.size ctx in
        interp_instance ?loc evd ~len l
   in
   let (sigma, c) = Evd.fresh_global ?loc ~rigid ?names:instance env.ExtraEnv.env evd gr in

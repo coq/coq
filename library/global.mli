@@ -89,8 +89,15 @@ val constant_of_delta_kn : kernel_name -> constant
 val mind_of_delta_kn : kernel_name -> mutual_inductive
 
 val opaque_tables : unit -> Opaqueproof.opaquetab
-val body_of_constant : constant -> Term.constr option
-val body_of_constant_body : Declarations.constant_body -> Term.constr option
+
+val body_of_constant : constant -> (Term.constr * Univ.AUContext.t) option
+(** Returns the body of the constant if it has any, and the polymorphic context
+    it lives in. For monomorphic constant, the latter is empty, and for
+    polymorphic constants, the term contains De Bruijn universe variables that
+    need to be instantiated. *)
+
+val body_of_constant_body : Declarations.constant_body -> (Term.constr * Univ.AUContext.t) option
+(** Same as {!body_of_constant} but on {!Declarations.constant_body}. *)
 
 (** Global universe name <-> level mapping *)
 type universe_names = 
@@ -122,23 +129,19 @@ val is_polymorphic : Globnames.global_reference -> bool
 val is_template_polymorphic : Globnames.global_reference -> bool
 val is_type_in_type : Globnames.global_reference -> bool
 
-val type_of_global_in_context : Environ.env -> 
-  Globnames.global_reference -> Constr.types Univ.in_universe_context
-(** Returns the type of the constant in its global or local universe
+val constr_of_global_in_context : Environ.env ->
+  Globnames.global_reference -> Constr.types * Univ.AUContext.t
+(** Returns the type of the constant in its local universe
     context. The type should not be used without pushing it's universe
     context in the environmnent of usage. For non-universe-polymorphic
     constants, it does not matter. *)
 
-val type_of_global_unsafe : Globnames.global_reference -> Constr.types 
-(** Returns the type of the constant, forgetting its universe context if
-    it is polymorphic, use with care: for polymorphic constants, the
-    type cannot be used to produce a term used by the kernel.  For safe
-    handling of polymorphic global references, one should look at a
-    particular instantiation of the reference, in some particular
-    universe context (part of an [env] or [evar_map]), see
-    e.g. [type_of_constant_in]. If you want to create a fresh instance
-    of the reference and get its type look at [Evd.fresh_global] or
-    [Evarutil.new_global] and [Retyping.get_type_of]. *)
+val type_of_global_in_context : Environ.env -> 
+  Globnames.global_reference -> Constr.types * Univ.AUContext.t
+(** Returns the type of the constant in its local universe
+    context. The type should not be used without pushing it's universe
+    context in the environmnent of usage. For non-universe-polymorphic
+    constants, it does not matter. *)
 
 (** Returns the universe context of the global reference (whatever its polymorphic status is). *)
 val universes_of_global : Globnames.global_reference -> Univ.abstract_universe_context

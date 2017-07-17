@@ -1,4 +1,24 @@
 =========================================
+= CHANGES BETWEEN COQ V8.7 AND COQ V8.8 =
+=========================================
+
+* ML API *
+
+We removed the following functions:
+
+- Universes.unsafe_constr_of_global: use Global.constr_of_global_in_context
+  instead. The returned term contains De Bruijn universe variables. If you don't
+  depend on universes being instantiated, simply drop the context.
+- Universes.unsafe_type_of_global: same as above with
+  Global.type_of_global_in_context
+
+We changed the type of the following functions:
+
+- Global.body_of_constant_body: now also returns the abstract universe context.
+  The returned term contains De Bruijn universe variables.
+- Global.body_of_constant: same as above.
+
+=========================================
 = CHANGES BETWEEN COQ V8.6 AND COQ V8.7 =
 =========================================
 

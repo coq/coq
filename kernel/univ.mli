@@ -461,12 +461,6 @@ val abstract_cumulativity_info : cumulativity_info -> universe_level_subst * abs
 
 val make_abstract_instance : abstract_universe_context -> universe_instance
 
-(** Don't use. *)
-val instantiate_univ_context : abstract_universe_context -> universe_context
-
-(** Don't use. *)
-val instantiate_cumulativity_info : abstract_cumulativity_info -> cumulativity_info
-
 (** {6 Pretty-printing of universes. } *)
 
 val pr_constraint_type : constraint_type -> Pp.std_ppcmds

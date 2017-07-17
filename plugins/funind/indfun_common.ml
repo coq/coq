@@ -342,7 +342,7 @@ let pr_info f_info =
   str "function_constant_type := " ++
   (try
      Printer.pr_lconstr
-       (Global.type_of_global_unsafe (ConstRef f_info.function_constant))
+       (fst (Global.type_of_global_in_context (Global.env ()) (ConstRef f_info.function_constant)))
    with e when CErrors.noncritical e -> mt ()) ++ fnl () ++
   str "equation_lemma := " ++ pr_ocst f_info.equation_lemma ++ fnl () ++
   str "completeness_lemma :=" ++ pr_ocst f_info.completeness_lemma ++ fnl () ++

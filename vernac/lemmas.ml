@@ -44,12 +44,15 @@ let call_hook fix_exn hook l c =
 
 (* Support for mutually proved theorems *)
 
-let retrieve_first_recthm = function
+let retrieve_first_recthm uctx = function
   | VarRef id ->
       (NamedDecl.get_value (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
       let cb = Global.lookup_constant cst in
-      (Global.body_of_constant_body cb, is_opaque cb)
+      let (_, uctx) = UState.universe_context uctx in
+      let inst = Univ.UContext.instance uctx in
+      let map (c, ctx) = Vars.subst_instance_constr inst c in
+      (Option.map map (Global.body_of_constant_body cb), is_opaque cb)
   | _ -> assert false
 
 let adjust_guardness_conditions const = function
@@ -412,7 +415,7 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
         let other_thms_data =
           if List.is_empty other_thms then [] else
             (* there are several theorems defined mutually *)
-            let body,opaq = retrieve_first_recthm ref in
+            let body,opaq = retrieve_first_recthm ctx ref in
             let subst = Evd.evar_universe_context_subst ctx in
             let norm c = Universes.subst_opt_univs_constr subst c in
 	    let ctx = UState.context_set (*FIXME*) ctx in

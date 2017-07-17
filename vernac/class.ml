@@ -62,7 +62,9 @@ let explain_coercion_error g = function
 (* Verifications pour l'ajout d'une classe *)
 
 let check_reference_arity ref =
-  if not (Reductionops.is_arity (Global.env()) Evd.empty (EConstr.of_constr (Global.type_of_global_unsafe ref))) (** FIXME *) then
+  let env = Global.env () in
+  let c, _ = Global.type_of_global_in_context env ref in
+  if not (Reductionops.is_arity env Evd.empty (EConstr.of_constr c)) (** FIXME *) then
     raise (CoercionError (NotAClass ref))
 
 let check_arity = function
@@ -252,7 +254,7 @@ let warn_uniform_inheritance =
 
 let add_new_coercion_core coef stre poly source target isid =
   check_source source;
-  let t = Global.type_of_global_unsafe coef in
+  let t, _ = Global.type_of_global_in_context (Global.env ()) coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
   let tg,lp = prods_of t in
   let llp = List.length lp in

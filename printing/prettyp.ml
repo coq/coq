@@ -70,7 +70,8 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 let print_basename sp = pr_global (ConstRef sp)
 
 let print_ref reduce ref =
-  let typ = Global.type_of_global_unsafe ref in
+  let typ, ctx = Global.type_of_global_in_context (Global.env ()) ref in
+  let typ = Vars.subst_instance_constr (Univ.AUContext.instance ctx) typ in
   let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
@@ -137,7 +138,7 @@ let print_renames_list prefix l =
     hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map Name.print l))]
 
 let need_expansion impl ref =
-  let typ = Global.type_of_global_unsafe ref in
+  let typ, _ = Global.type_of_global_in_context (Global.env ()) ref in
   let ctx = prod_assum typ in
   let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
@@ -532,7 +533,9 @@ let print_constant with_values sep sp =
       begin
         match cb.const_universes with
         | Monomorphic_const ctx -> ctx
-        | Polymorphic_const ctx -> Univ.instantiate_univ_context ctx
+        | Polymorphic_const ctx ->
+          let inst = Univ.AUContext.instance ctx in
+          Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx)
       end
     | OpaqueDef o ->
       let body_uctxs = Opaqueproof.force_constraints otab o in
@@ -542,7 +545,8 @@ let print_constant with_values sep sp =
         Univ.ContextSet.to_context (Univ.ContextSet.union body_uctxs uctxs)
       | Polymorphic_const ctx ->
         assert(Univ.ContextSet.is_empty body_uctxs);
-        Univ.instantiate_univ_context ctx
+        let inst = Univ.AUContext.instance ctx in
+        Univ.UContext.make (inst, Univ.AUContext.instantiate inst ctx)
   in
   let ctx =
     Evd.evar_universe_context_of_binders
@@ -557,9 +561,10 @@ let print_constant with_values sep sp =
 	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
 	Printer.pr_universe_ctx sigma univs
-    | _ ->
+    | Some (c, ctx) ->
+        let c = Vars.subst_instance_constr (Univ.AUContext.instance ctx) c in
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
-	(if with_values then print_typed_body env sigma (val_0,typ) else pr_ltype typ)++
+	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
         Printer.pr_universe_ctx sigma univs)
 
 let gallina_print_constant_with_infos sp =
@@ -797,9 +802,11 @@ let print_opaque_name qid =
     | IndRef (sp,_) ->
         print_inductive sp
     | ConstructRef cstr as gr ->
-        let open EConstr in
-	let ty = Universes.unsafe_type_of_global gr in
+	let ty, ctx = Global.type_of_global_in_context env gr in
+	let inst = Univ.AUContext.instance ctx in
+	let ty = Vars.subst_instance_constr inst ty in
 	let ty = EConstr.of_constr ty in
+        let open EConstr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
         env |> lookup_named id |> NamedDecl.set_id id |> print_named_decl

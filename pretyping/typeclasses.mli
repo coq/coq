@@ -16,6 +16,10 @@ type direction = Forward | Backward
 
 (** This module defines type-classes *)
 type typeclass = {
+  (** The toplevel universe quantification in which the typeclass lives. In
+      particular, [cl_props] and [cl_context] are quantified over it. *)
+  cl_univs : Univ.AUContext.t;
+
   (** The class implementation: a record parameterized by the context with defs in it or a definition if
      the class is a singleton. This acts as the class' global identifier. *)
   cl_impl : global_reference;
@@ -64,7 +68,7 @@ val class_info : global_reference -> typeclass (** raises a UserError if not a c
 val dest_class_app : env -> evar_map -> EConstr.constr -> (typeclass * EConstr.EInstance.t) * constr list
 
 (** Get the instantiated typeclass structure for a given universe instance. *)
-val typeclass_univ_instance : typeclass puniverses -> typeclass puniverses
+val typeclass_univ_instance : typeclass puniverses -> typeclass
 
 (** Just return None if not a class *)
 val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option

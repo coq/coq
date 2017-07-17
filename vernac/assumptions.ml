@@ -187,7 +187,7 @@ let rec traverse current ctx accu t = match kind_of_term t with
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)
 | Const (kn, _) ->
-  let body () = Global.body_of_constant_body (lookup_constant kn) in
+  let body () = Option.map fst (Global.body_of_constant_body (lookup_constant kn)) in
   traverse_object accu body (ConstRef kn)
 | Ind ((mind, _) as ind, _) ->
   traverse_inductive accu mind (IndRef ind)
@@ -200,7 +200,7 @@ let rec traverse current ctx accu t = match kind_of_term t with
     | Lambda(_,_,oty), Const (kn, _)
       when Vars.noccurn 1 oty &&
       not (Declareops.constant_has_body (lookup_constant kn)) ->
-        let body () = Global.body_of_constant_body (lookup_constant kn) in
+        let body () = Option.map fst (Global.body_of_constant_body (lookup_constant kn)) in
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
     | _ ->
