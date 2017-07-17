@@ -118,7 +118,7 @@ let makefile_template =
   let template = "/tools/CoqMakefile.in" in
   Coq_config.coqlib ^ template
 
-let quote s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
+let quote s = if String.contains s ' ' then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file args project =
   let s = read_whole_file makefile_template in
