@@ -184,10 +184,6 @@ endif
 
 PP:=-pp '$(CAMLP4O) -I $(CAMLLIB) -I "$(COQLIB)/grammar" compat5.cmo $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'
 
-COQLIBINSTALL = $(COQLIB)user-contrib
-COQDOCINSTALL = $(DOCDIR)user-contrib
-COQTOPINSTALL = $(COQLIB)toploop
-
 ifneq (,$(TIMING))
 TIMING_ARG=-time
 ifeq (after,$(TIMING))
@@ -207,6 +203,12 @@ endif
 ifneq "$(DSTROOT)" ""
 DESTDIR := $(DSTROOT)
 endif
+
+concat_path = $(if $(1),$(1)/$(subst $(COQMF_WINDRIVE),/,$(2)),$(2))
+
+COQLIBINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)user-contrib)
+COQDOCINSTALL = $(call concat_path,$(DESTDIR),$(DOCDIR)user-contrib)
+COQTOPINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)toploop)
 
 # Files #######################################################################
 #
@@ -444,9 +446,9 @@ install: install-extra
 	 if [ "$$?" != "0" -o -z "$$df" ]; then\
 	   echo SKIP "$$f" since it has no logical path;\
 	 else\
-	   install -d "$(DESTDIR)$(COQLIBINSTALL)/$$df" &&\
-	   install -m 0644 "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df" &&\
-	   echo INSTALL "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df";\
+	   install -d "$(COQLIBINSTALL)/$$df" &&\
+	   install -m 0644 "$$f" "$(COQLIBINSTALL)/$$df" &&\
+	   echo INSTALL "$$f" "$(COQLIBINSTALL)/$$df";\
 	 fi;\
 	done
 install-extra::
@@ -459,24 +461,24 @@ install-byte:
 	 if [ "$$?" != "0" -o -z "$$df" ]; then\
 	   echo SKIP "$$f" since it has no logical path;\
 	 else\
-	   install -d "$(DESTDIR)$(COQLIBINSTALL)/$$df" &&\
-	   install -m 0644 "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df" &&\
-	   echo INSTALL "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df";\
+	   install -d "$(COQLIBINSTALL)/$$df" &&\
+	   install -m 0644 "$$f" "$(COQLIBINSTALL)/$$df" &&\
+	   echo INSTALL "$$f" "$(COQLIBINSTALL)/$$df";\
 	 fi;\
 	done
 
 install-doc:: html mlihtml
 	@# Extension point
-	$(HIDE)install -d "$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/html"
+	$(HIDE)install -d "$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/html"
 	$(HIDE)for i in html/*; do \
-	 dest="$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/$$i";\
+	 dest="$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/$$i";\
 	 install -m 0644 "$$i" "$$dest";\
 	 echo INSTALL "$$i" "$$dest";\
 	done
 	$(HIDE)install -d \
-		"$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/mlihtml"
+		"$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/mlihtml"
 	$(HIDE)for i in mlihtml/*; do \
-	 dest="$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/$$i";\
+	 dest="$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/$$i";\
 	 install -m 0644 "$$i" "$$dest";\
 	 echo INSTALL "$$i" "$$dest";\
 	done
@@ -486,20 +488,20 @@ uninstall::
 	@# Extension point
 	$(HIDE)for f in $(FILESTOINSTALL); do \
 	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`" &&\
-	 instf="$(DESTDIR)$(COQLIBINSTALL)/$$df/`basename $$f`" &&\
+	 instf="$(COQLIBINSTALL)/$$df/`basename $$f`" &&\
 	 rm -f "$$instf" &&\
 	 echo RM "$$instf" &&\
-	 (rmdir "$(DESTDIR)$(COQLIBINSTALL)/$$df/" || true); \
+	 (rmdir "$(call concat_path,,$(COQLIBINSTALL)/$$df/)" || true); \
 	done
 .PHONY: uninstall
 
 uninstall-doc::
 	@# Extension point
-	$(SHOW)'RM $(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/html'
-	$(HIDE)rm -rf "$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/html"
-	$(SHOW)'RM $(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/mlihtml'
-	$(HIDE)rm -rf "$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/mlihtml"
-	$(HIDE) rmdir "$(DESTDIR)$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/" || true
+	$(SHOW)'RM $(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/html'
+	$(HIDE)rm -rf "$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/html"
+	$(SHOW)'RM $(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/mlihtml'
+	$(HIDE)rm -rf "$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/mlihtml"
+	$(HIDE) rmdir "$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/" || true
 .PHONY: uninstall-doc
 
 # Cleaning ####################################################################
