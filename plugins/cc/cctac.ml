@@ -455,7 +455,7 @@ let cc_tactic depth additionnal_terms =
 		 begin
 		   str "\"congruence with (" ++
 		     prlist_with_sep
-		     (fun () -> str ")" ++ spc () ++ str "(")
+		     (str ")" ++ spc () ++ str "(")
 		     pr_missing
 		     terms_to_complete ++
 		     str ")\","

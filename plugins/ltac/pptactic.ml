@@ -284,7 +284,7 @@ type 'a extra_genarg_printer =
   | Extend.Ulist1sep (s, sep) | Extend.Ulist0sep (s, sep) ->
     begin match get_list arg with
     | None -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
-    | Some l -> prlist_with_sep (fun () -> str sep) (pr_any_arg prtac s) l
+    | Some l -> prlist_with_sep (str sep) (pr_any_arg prtac s) l
     end
   | Extend.Uopt s ->
     begin match get_opt arg with
@@ -416,7 +416,7 @@ type 'a extra_genarg_printer =
 
   let pr_simple_hyp_clause pr_id = function
     | [] -> mt ()
-    | l -> pr_in (spc () ++ prlist_with_sep spc pr_id l)
+    | l -> pr_in (spc () ++ prlist_with_sep (spc ()) pr_id l)
 
   let pr_in_hyp_as prc pr_id = function
     | None -> mt ()
@@ -428,10 +428,10 @@ type 'a extra_genarg_printer =
     | { onhyps=None; concl_occs=occs } ->
       (pr_with_occurrences (fun () -> str "*") (occs,()))
     | { onhyps=Some l; concl_occs=NoOccurrences } ->
-      prlist_with_sep (fun () -> str ", ") (pr_hyp_location pr_id) l
+      prlist_with_sep (str ", ") (pr_hyp_location pr_id) l
     | { onhyps=Some l; concl_occs=occs } ->
       let pr_occs = pr_with_occurrences (fun () -> str" |- *") (occs,()) in
-      (prlist_with_sep (fun () -> str", ") (pr_hyp_location pr_id) l ++ pr_occs)
+      (prlist_with_sep (str ", ") (pr_hyp_location pr_id) l ++ pr_occs)
 
   let pr_clauses default_is_concl pr_id = function
     | { onhyps=Some []; concl_occs=occs }
@@ -449,7 +449,7 @@ type 'a extra_genarg_printer =
         | _ -> pr_with_occurrences (fun () -> str" |- *") (occs,())
       in
       pr_in
-        (prlist_with_sep (fun () -> str",")
+        (prlist_with_sep (str ",")
            (fun id -> spc () ++ pr_hyp_location pr_id id) l ++ pr_occs)
 
   let pr_orient b = if b then mt () else str "<- "
@@ -480,7 +480,7 @@ type 'a extra_genarg_printer =
 
   let pr_goal_selector = function
     | SelectNth i -> int i ++ str ":"
-    | SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
+    | SelectList l -> str "[" ++ prlist_with_sep (str ", ") pr_range_selector l ++
         str "]" ++ str ":"
     | SelectId id -> str "[" ++ Id.print id ++ str "]" ++ str ":"
     | SelectAll -> str "all" ++ str ":"
@@ -512,14 +512,14 @@ type 'a extra_genarg_printer =
         spc () ++ str "=>" ++ brk (1,4) ++ pr t
     (*
       | Pat (rl,mp,t) ->
-      hv 0 (prlist_with_sep pr_comma (pr_match_hyps pr_pat) rl ++
+      hv 0 (prlist_with_sep (pr_comma ()) (pr_match_hyps pr_pat) rl ++
       (if rl <> [] then spc () else mt ()) ++
       hov 0 (str "|-" ++ spc () ++ pr_match_pattern pr_pat mp ++ spc () ++
       str "=>" ++ brk (1,4) ++ pr t))
     *)
     | Pat (rl,mp,t) ->
       hov 0 (
-        hv 0 (prlist_with_sep pr_comma (pr_match_hyps pr_pat) rl) ++
+        hv 0 (prlist_with_sep (pr_comma ()) (pr_match_hyps pr_pat) rl) ++
           (if not (List.is_empty rl) then spc () else mt ()) ++
           hov 0 (
             str "|-" ++ spc () ++ pr_match_pattern pr_pat mp ++ spc () ++
@@ -541,12 +541,12 @@ type 'a extra_genarg_printer =
 
   let pr_seq_body pr tl =
     hv 0 (str "[ " ++
-            prlist_with_sep (fun () -> spc () ++ str "| ") pr tl ++
+            prlist_with_sep (spc () ++ str "| ") pr tl ++
             str " ]")
 
   let pr_dispatch pr tl =
     hv 0 (str "[>" ++
-            prlist_with_sep (fun () -> spc () ++ str "| ") pr tl ++
+            prlist_with_sep (spc () ++ str "| ") pr tl ++
             str " ]")
 
   let pr_opt_tactic pr = function
@@ -575,7 +575,7 @@ type 'a extra_genarg_printer =
 
   let pr_auto_using prc = function
     | [] -> mt ()
-    | l -> hov 2 (keyword "using" ++ spc () ++ prlist_with_sep pr_comma prc l)
+    | l -> hov 2 (keyword "using" ++ spc () ++ prlist_with_sep (pr_comma ()) prc l)
 
   let pr_then () = str ";"
 
@@ -640,9 +640,9 @@ type 'a extra_genarg_printer =
 
       let pr_binder_fix (nal,t) =
         (*  match t with
-            | CHole _ -> spc() ++ prlist_with_sep spc (pr_lname) nal
+            | CHole _ -> spc() ++ prlist_with_sep (spc ()) (pr_lname) nal
             | _ ->*)
-        let s = prlist_with_sep spc pr_lname nal ++ str ":" ++ pr.pr_lconstr t in
+        let s = prlist_with_sep (spc ()) pr_lname nal ++ str ":" ++ pr.pr_lconstr t in
         spc() ++ hov 1 (str"(" ++ s ++ str")") in
 
       let pr_fix_tac (id,n,c) =
@@ -699,12 +699,12 @@ type 'a extra_genarg_printer =
           pr_atom0 t
         | TacIntroPattern (ev,(_::_ as p)) ->
            hov 1 (primitive (if ev then "eintros" else "intros") ++ spc () ++
-                    prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p)
+                    prlist_with_sep (spc ()) (Miscprint.pr_intro_pattern pr.pr_dconstr) p)
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (
             (if a then mt() else primitive "simple ") ++
               primitive (with_evars ev "apply") ++ spc () ++
-              prlist_with_sep pr_comma pr_with_bindings_arg cb ++
+              prlist_with_sep (pr_comma ()) pr_with_bindings_arg cb ++
               pr_non_empty_arg (pr_in_hyp_as pr.pr_dconstr pr.pr_name) inhyp
           )
         | TacElim (ev,cb,cbo) ->
@@ -717,11 +717,11 @@ type 'a extra_genarg_printer =
         | TacMutualFix (id,n,l) ->
           hov 1 (
             primitive "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc()
-            ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_fix_tac l)
+            ++ keyword "with" ++ spc () ++ prlist_with_sep (spc ()) pr_fix_tac l)
         | TacMutualCofix (id,l) ->
           hov 1 (
             primitive "cofix" ++ spc () ++ pr_id id ++ spc()
-            ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_cofix_tac l
+            ++ keyword "with" ++ spc () ++ prlist_with_sep (spc ()) pr_cofix_tac l
           )
         | TacAssert (ev,b,Some tac,ipat,c) ->
           hov 1 (
@@ -737,7 +737,7 @@ type 'a extra_genarg_printer =
         | TacGeneralize l ->
           hov 1 (
             primitive "generalize" ++ spc ()
-            ++ prlist_with_sep pr_comma (fun (cl,na) ->
+            ++ prlist_with_sep (pr_comma ()) (fun (cl,na) ->
               pr_with_occurrences pr.pr_constr cl ++ pr_as_name na)
               l
           )
@@ -766,7 +766,7 @@ type 'a extra_genarg_printer =
           hov 1 (
             primitive (with_evars ev (if isrec then "induction" else "destruct"))
             ++ spc ()
-            ++ prlist_with_sep pr_comma (fun (h,ids,cl) ->
+            ++ prlist_with_sep (pr_comma ()) (fun (h,ids,cl) ->
               pr_destruction_arg pr.pr_dconstr pr.pr_dconstr h ++
                 pr_non_empty_arg (pr_with_induction_names pr.pr_dconstr) ids ++
                 pr_opt (pr_clauses None pr.pr_name) cl) l ++
@@ -797,7 +797,7 @@ type 'a extra_genarg_printer =
           hov 1 (
             primitive (with_evars ev "rewrite") ++ spc ()
             ++ prlist_with_sep
-              (fun () -> str ","++spc())
+              (str "," ++ spc ())
               (fun (b,m,c) ->
                 pr_orient b ++ pr_multi m ++
                   pr_with_bindings_arg_full pr.pr_dconstr pr.pr_dconstr c)
@@ -1009,7 +1009,7 @@ type 'a extra_genarg_printer =
             | TacArg(_,TacCall(loc,(f,l))) ->
               pr_with_comments ?loc (hov 1 (
                 pr.pr_reference f ++ spc ()
-                ++ prlist_with_sep spc pr_tacarg l)),
+                ++ prlist_with_sep (spc ()) pr_tacarg l)),
               lcall
             | TacArg (_,a) ->
               pr_tacarg a, latom

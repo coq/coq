@@ -58,7 +58,7 @@ let show_proof () =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   let p = Proof_global.give_me_the_proof () in
   let pprf = Proof.partial_proof p in
-  Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_econstr pprf)
+  Feedback.msg_notice (Pp.prlist_with_sep (Pp.fnl ()) Printer.pr_econstr pprf)
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
@@ -85,7 +85,7 @@ let show_intro all =
     let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (pf_concl gl)) in
     if all then
       let lid = Tactics.find_intro_names l gl in
-      Feedback.msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
+      Feedback.msg_notice (hov 0 (prlist_with_sep (spc ()) pr_id lid))
     else if not (List.is_empty l) then
       let n = List.last l in
       Feedback.msg_notice (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
@@ -146,10 +146,10 @@ let show_match id =
     with Not_found -> user_err Pp.(str "Unknown inductive type.")
   in
   let pr_branch l =
-    str "| " ++ hov 1 (prlist_with_sep spc str l) ++ str " =>"
+    str "| " ++ hov 1 (prlist_with_sep (spc ()) str l) ++ str " =>"
   in
   Feedback.msg_notice (v 1 (str "match # with" ++ fnl () ++
-	    prlist_with_sep fnl pr_branch patterns ++ fnl () ++ str "end" ++ fnl ()))
+	    prlist_with_sep (fnl ()) pr_branch patterns ++ fnl () ++ str "end" ++ fnl ()))
 
 (* "Print" commands *)
 
@@ -167,7 +167,7 @@ let print_loadpath dir =
     List.filter filter l
   in
   str "Logical Path / Physical path:" ++ fnl () ++
-    prlist_with_sep fnl print_path_entry l
+    prlist_with_sep (fnl ()) print_path_entry l
 
 let print_modules () =
   let opened = Library.opened_libraries ()
@@ -248,7 +248,7 @@ let print_namespace ns =
     in
     snd (Util.List.chop n (List.rev (list_of_modulepath mp)))
   in
-  let print_list pr l = prlist_with_sep (fun () -> str".") pr l in
+  let print_list pr l = prlist_with_sep (str ".") pr l in
   let print_kn kn =
     (* spiwack: I'm ignoring the dirpath, is that bad? *)
     let (mp,_,lbl) = Names.repr_kn kn in
@@ -296,12 +296,12 @@ let print_strategy r =
     let var_msg =
       if List.is_empty var_lvl then mt ()
       else str "Variable strategies" ++ fnl () ++
-        hov 0 (prlist_with_sep fnl pr_strategy var_lvl) ++ fnl ()
+        hov 0 (prlist_with_sep (fnl ()) pr_strategy var_lvl) ++ fnl ()
     in
     let cst_msg =
       if List.is_empty cst_lvl then mt ()
       else str "Constant strategies" ++ fnl () ++
-        hov 0 (prlist_with_sep fnl pr_strategy cst_lvl)
+        hov 0 (prlist_with_sep (fnl ()) pr_strategy cst_lvl)
     in
     Feedback.msg_notice (var_msg ++ cst_msg)
   | Some r ->
@@ -1002,12 +1002,12 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
   let err_extra_args names =
     user_err ~hdr:"vernac_declare_arguments"
                  (strbrk "Extra arguments: " ++
-                    prlist_with_sep pr_comma Name.print names ++ str ".")
+                    prlist_with_sep (pr_comma ()) Name.print names ++ str ".")
   in
   let err_missing_args names =
     user_err ~hdr:"vernac_declare_arguments"
                  (strbrk "The following arguments are not declared: " ++
-                    prlist_with_sep pr_comma Name.print names ++ str ".")
+                    prlist_with_sep (pr_comma ()) Name.print names ++ str ".")
   in
 
   let rec check_extra_args extra_args =
@@ -1099,7 +1099,7 @@ let vernac_arguments locality reference args more_implicits nargs_for_red flags 
     List.duplicates Name.equal (List.filter ((!=) Anonymous) names)
   in
   if not (List.is_empty duplicate_names) then begin
-    let duplicates = prlist_with_sep pr_comma Name.print duplicate_names in
+    let duplicates = prlist_with_sep (pr_comma ()) Name.print duplicate_names in
     user_err (strbrk "Some argument names are duplicated: " ++ duplicates)
   end;
 

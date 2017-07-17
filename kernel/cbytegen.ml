@@ -934,7 +934,7 @@ let dump_bytecodes init code fvs =
      pp_bytecodes init ++ fnl () ++
      pp_bytecodes code ++ fnl () ++
      str "fv = " ++
-     prlist_with_sep (fun () -> str "; ") pp_fv_elem fvs ++
+     prlist_with_sep (str "; ") pp_fv_elem fvs ++
      fnl ())
 
 let compile fail_on_error ?universes:(universes=0) env c =

@@ -260,7 +260,7 @@ let pr_info_atom (d,pp) =
 
 let pr_info_trace = function
   | (Info,_,{contents=(d,Some pp)::l}) ->
-      Feedback.msg_info (prlist_with_sep fnl pr_info_atom (cleanup_info_trace d [(d,pp)] l))
+      Feedback.msg_info (prlist_with_sep (fnl ()) pr_info_atom (cleanup_info_trace d [(d,pp)] l))
   | _ -> ()
 
 let pr_info_nop = function

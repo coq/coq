@@ -321,7 +321,7 @@ let pr_compacted_decl env sigma decl =
        let pb = if isCast c then surround pb else pb in
        ids, (str" := " ++ pb ++ cut ()), typ
   in
-  let pids = prlist_with_sep pr_comma pr_id ids in
+  let pids = prlist_with_sep (pr_comma ()) pr_id ids in
   let pt = pr_ltype_env env sigma typ in
   let ptyp = (str" : " ++ pt) in
   hov 0 (pids ++ pbody ++ ptyp)
@@ -353,7 +353,7 @@ let pr_rel_decl env sigma decl =
 let pr_named_context_of env sigma =
   let make_decl_list env d pps = pr_named_decl env sigma d :: pps in
   let psl = List.rev (fold_named_context make_decl_list env ~init:[]) in
-  hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
+  hv 0 (prlist_with_sep (ws 2) (fun x -> x) psl)
 
 let pr_var_list_decl env sigma decl =
   hov 0 (pr_compacted_decl env sigma decl)
@@ -463,7 +463,7 @@ let pr_context_of env sigma = match !print_hyps_limit with
 (* display goal parts (Proof mode) *)
 
 let pr_predicate pr_elt (b, elts) =
-  let pr_elts = prlist_with_sep spc pr_elt elts in
+  let pr_elts = prlist_with_sep (spc ()) pr_elt elts in
     if b then
       str"all" ++
 	(if List.is_empty elts then mt () else str" except: " ++ pr_elts)
@@ -522,14 +522,14 @@ let pr_evgl_sign sigma evi =
   let ids = List.rev_map NamedDecl.get_id l in
   let warn =
     if List.is_empty ids then mt () else
-      (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
+      (str "(" ++ prlist_with_sep (pr_comma ()) pr_id ids ++ str " cannot be used)")
   in
   let pc = pr_lconstr_env env sigma evi.evar_concl in
   let candidates =
     match evi.evar_body, evi.evar_candidates with
     | Evar_empty, Some l ->
        spc () ++ str "= {" ++
-         prlist_with_sep (fun () -> str "|") (pr_lconstr_env env sigma) l ++ str "}"
+         prlist_with_sep (str "|") (pr_lconstr_env env sigma) l ++ str "}"
     | _ ->
        mt ()
   in
@@ -621,7 +621,7 @@ let print_evar_constraints gl sigma =
     let _, cstrs = Evd.extract_all_conv_pbs sigma in
     if List.is_empty cstrs then mt ()
     else fnl () ++ str (String.plural (List.length cstrs) "unification constraint")
-         ++ str":" ++ fnl () ++ hov 0 (prlist_with_sep fnl pr_evconstr cstrs)
+         ++ str":" ++ fnl () ++ hov 0 (prlist_with_sep (fnl ()) pr_evconstr cstrs)
   in
   let candidates, ppcandidates = Evd.fold_undefined pr_candidate sigma (0,mt ()) in
   constraints ++
@@ -954,7 +954,7 @@ let pr_assumptionset env s =
       | Axiom (axiom,l) ->
         let ax = pr_axiom env axiom typ ++
           cut() ++
-          prlist_with_sep cut (fun (lbl, ctx, ty) ->
+          prlist_with_sep (cut ()) (fun (lbl, ctx, ty) ->
             str " used in " ++ pr_label lbl ++
             str " to prove:" ++ safe_pr_ltype_relctx (ctx,ty))
           l in
@@ -984,7 +984,7 @@ let pr_assumptionset env s =
     | l ->
       let section =
         title ++ fnl () ++
-        v 0 (prlist_with_sep fnl (fun s -> s) l) in
+        v 0 (prlist_with_sep (fnl ()) (fun s -> s) l) in
       Some section
     in
     let assums = [
@@ -994,7 +994,7 @@ let pr_assumptionset env s =
       opt_list (str "Opaque constants:") opaque;
       opt_list (str "Theory:") theory;
     ] in
-    prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
+    prlist_with_sep (fnl ()) (fun x -> x) (Option.List.flatten assums)
 
 let xor a b = 
   (a && not b) || (not a && b)

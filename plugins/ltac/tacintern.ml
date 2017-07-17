@@ -734,7 +734,7 @@ let print_ltac id =
   let redefined = match mods with
   | [] -> mt ()
   | mods ->
-    let redef = prlist_with_sep fnl pr_qualid mods in
+    let redef = prlist_with_sep (fnl ()) pr_qualid mods in
     fnl () ++ str "Redefined by:" ++ fnl () ++ redef
   in
   let l,t = split_ltac_fun tac.Tacenv.tac_body in

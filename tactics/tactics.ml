@@ -3078,7 +3078,7 @@ let warn_unused_intro_pattern =
   CWarnings.create ~name:"unused-intro-pattern" ~category:"tactics"
          (fun names ->
           strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern")
-          ++ str": " ++ prlist_with_sep spc 
+          ++ str": " ++ prlist_with_sep (spc ())
          (Miscprint.pr_intro_pattern 
 	 (fun c -> Printer.pr_econstr (snd (c (Global.env()) Evd.empty)))) names)
 

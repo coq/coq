@@ -1073,7 +1073,7 @@ let thin id sigma goal =
     sigma
 
 let pr_ist { lfun= lfun } =
-  prlist_with_sep spc
+  prlist_with_sep (spc ())
     (fun (id, Geninterp.Val.Dyn(ty,_)) ->
         pr_id id ++ str":" ++ Geninterp.Val.pr ty) (Id.Map.bindings lfun)
 

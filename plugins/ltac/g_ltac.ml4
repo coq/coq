@@ -397,7 +397,7 @@ let pr_range_selector (i, j) =
 
 let pr_ltac_selector = function
 | SelectNth i -> int i ++ str ":"
-| SelectList l -> str "[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
+| SelectList l -> str "[" ++ prlist_with_sep (str ", ") pr_range_selector l ++
     str "]" ++ str ":"
 | SelectId id -> str "[" ++ Id.print id ++ str "]" ++ str ":"
 | SelectAll -> str "all" ++ str ":"

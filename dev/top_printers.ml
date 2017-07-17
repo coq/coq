@@ -76,11 +76,11 @@ let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
 let ppbigint n = pp (str (Bigint.to_string n));;
 
-let prset pr l = str "[" ++ hov 0 (prlist_with_sep spc pr l) ++ str "]"
+let prset pr l = str "[" ++ hov 0 (prlist_with_sep (spc ()) pr l) ++ str "]"
 let ppintset l = pp (prset int (Int.Set.elements l))
 let ppidset l = pp (prset Id.print (Id.Set.elements l))
 
-let prset' pr l = str "[" ++ hov 0 (prlist_with_sep pr_comma pr l) ++ str "]"
+let prset' pr l = str "[" ++ hov 0 (prlist_with_sep (pr_comma ()) pr l) ++ str "]"
 
 let pridmap pr l =
   let pr (id,b) = Id.print id ++ str "=>" ++ pr id b in
@@ -100,7 +100,7 @@ let prididmap = pridmap (fun _ -> Id.print)
 let ppididmap = ppidmap (fun _ -> Id.print)
 
 let prconstrunderbindersidmap = pridmap (fun _ (l,c) ->
-  hov 1 (str"[" ++  prlist_with_sep spc Id.print l ++ str"]")
+  hov 1 (str"[" ++  prlist_with_sep (spc ()) Id.print l ++ str"]")
   ++ str "," ++ spc () ++ Termops.print_constr c)
 
 let ppconstrunderbindersidmap l = pp (prconstrunderbindersidmap l)
@@ -161,12 +161,12 @@ let ppmetas metas = pp(Termops.pr_metaset metas)
 let ppevm evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print (Some 2) evd)
 let ppevmall evd = pp(Termops.pr_evar_map ~with_univs:!Flags.univ_print None evd)
 let pr_existentialset evars =
-  prlist_with_sep spc pr_evar (Evar.Set.elements evars)
+  prlist_with_sep (spc ()) pr_evar (Evar.Set.elements evars)
 let ppexistentialset evars =
   pp (pr_existentialset evars)
 let ppexistentialfilter filter = match Evd.Filter.repr filter with
 | None -> pp (Pp.str "ø")
-| Some f -> pp (prlist_with_sep spc bool f)
+| Some f -> pp (prlist_with_sep (spc ()) bool f)
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoalgoal gl = pp(Goal.pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)
@@ -188,7 +188,7 @@ let pppftreestate p = pp(print_pftreestate p)
 
 (* let pr_glls glls = *)
 (*   hov 0 (pr_evar_defs (sig_sig glls) ++ fnl () ++ *)
-(*          prlist_with_sep fnl db_pr_goal (sig_it glls)) *)
+(*          prlist_with_sep (fnl ()) db_pr_goal (sig_it glls)) *)
 
 (* let ppsigmagoal g = pp(pr_goal (sig_it g)) *)
 (* let prgls gls = pp(pr_gls gls) *)

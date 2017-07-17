@@ -42,7 +42,7 @@ let pr_ax csts =
   if axs = [] then
     str "Axioms: <none>"
   else
-    hv 2 (str "Axioms:" ++ fnl() ++ prlist_with_sep fnl Indtypes.prcon axs)
+    hv 2 (str "Axioms:" ++ fnl() ++ prlist_with_sep (fnl ()) Indtypes.prcon axs)
 
 let print_context env =
   if !output_context then begin

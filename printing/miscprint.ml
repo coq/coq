@@ -26,7 +26,7 @@ and pr_intro_pattern_action prc = function
   | IntroWildcard -> str "_"
   | IntroOrAndPattern pll -> pr_or_and_intro_pattern prc pll
   | IntroInjection pl ->
-      str "[=" ++ hv 0 (prlist_with_sep spc (pr_intro_pattern prc) pl) ++
+      str "[=" ++ hv 0 (prlist_with_sep (spc ()) (pr_intro_pattern prc) pl) ++
       str "]"
   | IntroApplyOn ((_,c),pat) -> pr_intro_pattern prc pat ++ str "%" ++ prc c
   | IntroRewrite true -> str "->"
@@ -34,10 +34,10 @@ and pr_intro_pattern_action prc = function
 
 and pr_or_and_intro_pattern prc = function
   | IntroAndPattern pl ->
-      str "(" ++ hv 0 (prlist_with_sep pr_comma (pr_intro_pattern prc) pl) ++ str ")"
+      str "(" ++ hv 0 (prlist_with_sep (pr_comma ()) (pr_intro_pattern prc) pl) ++ str ")"
   | IntroOrPattern pll ->
       str "[" ++
-      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc (pr_intro_pattern prc)) pll)
+      hv 0 (prlist_with_sep (pr_bar ()) (prlist_with_sep (spc ()) (pr_intro_pattern prc)) pll)
       ++ str "]"
 
 (** Printing of [move_location] *)
@@ -64,9 +64,9 @@ let pr_bindings prc prlc = function
 
 let pr_bindings_no_with prc prlc = function
   | ImplicitBindings l ->
-    brk (0,1) ++ prlist_with_sep spc prc l
+    brk (0,1) ++ prlist_with_sep (spc ()) prc l
   | ExplicitBindings l ->
-    brk (0,1) ++ prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
+    brk (0,1) ++ prlist_with_sep (spc ()) (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
   | NoBindings -> mt ()
 
 let pr_with_bindings prc prlc (c,bl) =

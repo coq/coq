@@ -93,7 +93,7 @@ let preamble mod_name comment used_modules usf =
 let pp_abst = function
   | [] -> (mt ())
   | l  -> (str "\\" ++
-             prlist_with_sep (fun () -> (str " ")) Id.print l ++
+             prlist_with_sep (str " ") Id.print l ++
              str " ->" ++ spc ())
 
 (*s The pretty-printer for haskell syntax *)
@@ -118,7 +118,7 @@ let rec pp_type par vl t =
     | Tglob (r,l) ->
 	  pp_par par
 	    (pp_global Type r ++ spc () ++
-	     prlist_with_sep spc (pp_type true vl) l)
+	     prlist_with_sep (spc ()) (pp_type true vl) l)
     | Tarr (t1,t2) ->
 	pp_par par
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
@@ -179,7 +179,7 @@ let rec pp_expr par env args =
 	    pp_par par (pp_global Cons r ++ spc () ++ pp_expr true env [] a)
 	  | _ ->
 	    pp_par par (pp_global Cons r ++ spc () ++
-			prlist_with_sep spc (pp_expr true env []) a)
+			prlist_with_sep (spc ()) (pp_expr true env []) a)
 	end
     | MLtuple l ->
         assert (List.is_empty args);
@@ -219,7 +219,7 @@ let rec pp_expr par env args =
 
 and pp_cons_pat par r ppl =
   pp_par par
-    (pp_global Cons r ++ space_if (not (List.is_empty ppl)) ++ prlist_with_sep spc identity ppl)
+    (pp_global Cons r ++ space_if (not (List.is_empty ppl)) ++ prlist_with_sep (spc ()) identity ppl)
 
 and pp_gen_pat par ids env = function
   | Pcons (r,l) -> pp_cons_pat par r (List.map (pp_gen_pat true ids env) l)
@@ -274,7 +274,7 @@ let pp_singleton kn packet =
   let name = pp_global Type (IndRef (kn,0)) in
   let l = rename_tvars keywords packet.ip_vars in
   hov 2 (str "type " ++ name ++ spc () ++
-	 prlist_with_sep spc Id.print l ++
+	 prlist_with_sep (spc ()) Id.print l ++
 	 (if not (List.is_empty l) then str " " else mt ()) ++ str "=" ++ spc () ++
 	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
 	 pp_comment (str "singleton inductive, whose constructor was " ++
@@ -288,7 +288,7 @@ let pp_one_ind ip pl cv =
        | [] -> (mt ())
        | _  -> (str " " ++
       	       	prlist_with_sep
-		  (fun () -> (str " ")) (pp_type true pl) l))
+		  (str " ") (pp_type true pl) l))
   in
   str (if Array.is_empty cv then "type " else "data ") ++
   pp_global Type (IndRef ip) ++

@@ -153,7 +153,7 @@ let pr_key pr_global = function
   | KRel -> str"Rel"
 
 let pr_keyset pr_global v = 
-  prlist_with_sep spc (pr_key pr_global) (Keyset.elements v)
+  prlist_with_sep (spc ()) (pr_key pr_global) (Keyset.elements v)
 
 let pr_mapping pr_global k v = 
   pr_key pr_global k ++ str" <-> " ++ pr_keyset pr_global v

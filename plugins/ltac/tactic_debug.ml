@@ -368,7 +368,7 @@ let explain_ltac_call_trace last trace loc =
       quote (Printer.pr_glob_constr_env (Global.env()) c) ++
         (if not (Id.Map.is_empty vars) then
           strbrk " (with " ++
-            prlist_with_sep pr_comma
+            prlist_with_sep (pr_comma ())
             (fun (id,c) ->
                 Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
             (List.rev (Id.Map.bindings vars)) ++ str ")"

@@ -260,7 +260,7 @@ let pr_scope_stack = function
   | [] -> str "the empty scope stack"
   | [a] -> str "scope " ++ str a
   | l -> str "scope stack " ++
-      str "[" ++ prlist_with_sep pr_comma str l ++ str "]"
+      str "[" ++ prlist_with_sep (pr_comma ()) str l ++ str "]"
 
 let error_inconsistent_scope ?loc id scopes1 scopes2 =
   user_err ?loc ~hdr:"set_var_scope"

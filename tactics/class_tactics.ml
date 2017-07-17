@@ -337,7 +337,7 @@ let matches_pattern concl pat =
  *)
 
 let pr_gls sigma gls =
-  prlist_with_sep spc
+  prlist_with_sep (spc ())
    (fun ev -> int (Evar.repr ev) ++ spc () ++ pr_ev sigma ev) gls
 
 (** Ensure the dependent subgoals are shelved after an apply/eapply. *)
@@ -494,16 +494,15 @@ let catchable = function
   | Refiner.FailError _ -> true
   | e -> Logic.catchable_exception e
 
-(* alternate separators in debug search path output *)
-let debug_seps = [| "." ; "-" |]
-let next_sep seps = 
-  let num_seps = Array.length seps in
-  let sep_index = ref 0 in
-  fun () ->
-    let sep = seps.(!sep_index) in
-    sep_index := (!sep_index + 1) mod num_seps;
-    str sep
-let pr_depth l = prlist_with_sep (next_sep debug_seps) int (List.rev l)
+let pr_depth l = 
+  let rec fmt elts =
+    match elts with
+    | [] -> []
+    | [n] -> [string_of_int n]
+    | n1::n2::rest ->
+       (string_of_int n1 ^ "." ^ string_of_int n2) :: fmt rest
+  in
+  prlist_with_sep (str "-") str (fmt (List.rev l))
 
 let is_Prop env sigma concl =
   let ty = Retyping.get_type_of env sigma concl in
@@ -1159,7 +1158,7 @@ module Search = struct
           (if !typeclasses_debug > 1 then
              let prunsolved (ev, _) =
                int (Evar.repr ev) ++ spc () ++ pr_ev sigma ev in
-             let unsolved = prlist_with_sep spc prunsolved remaining in
+             let unsolved = prlist_with_sep (spc ()) prunsolved remaining in
              Feedback.msg_debug
                (pr_depth (i :: info.search_depth) ++
                   str": after " ++ Lazy.force pp ++ str" finished, " ++
@@ -1174,9 +1173,9 @@ module Search = struct
             if !typeclasses_debug > 1 && not (List.is_empty shelved && List.is_empty goals) then
               Feedback.msg_debug
                 (str"Adding shelved subgoals to the search: " ++
-                 prlist_with_sep spc (pr_ev sigma) goals ++
+                 prlist_with_sep (spc ()) (pr_ev sigma) goals ++
 		 str" while shelving " ++
-		 prlist_with_sep spc (pr_ev sigma) shelved);
+		 prlist_with_sep (spc ()) (pr_ev sigma) shelved);
             shelve_goals shelved <*>
               (if List.is_empty goals then tclUNIT ()
                else

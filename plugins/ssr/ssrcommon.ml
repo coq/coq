@@ -564,7 +564,7 @@ let pf_abs_evars_pirrel gl (sigma, c0) =
   let evlist = put [] c0 in
   if evlist = [] then 0, c0 else
   let pr_constr t = Printer.pr_econstr (Reductionops.nf_beta (project gl) (EConstr.of_constr t)) in
-  pp(lazy(str"evlist=" ++ pr_list (fun () -> str";")
+  pp(lazy(str"evlist=" ++ pr_list (str ";")
     (fun (k,_) -> str(Evd.string_of_existential k)) evlist));
   let evplist = 
     let depev = List.fold_left (fun evs (_,(_,t,_)) -> 

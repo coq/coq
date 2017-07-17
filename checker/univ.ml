@@ -414,7 +414,7 @@ struct
     | Cons (u, _, Nil) -> Expr.pr u
     | _ -> 
       str "max(" ++ hov 0
-	(prlist_with_sep pr_comma Expr.pr (to_list l)) ++
+	(prlist_with_sep (pr_comma ()) Expr.pr (to_list l)) ++
         str ")"
 
   let level l = match l with

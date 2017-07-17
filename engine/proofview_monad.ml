@@ -125,7 +125,7 @@ module Info = struct
     match brs with
     | [br] -> pr_forest br
     | _ ->
-        let sep () = spc()++str"|"++spc() in
+        let sep = spc()++str"|"++spc() in
         let branches = prlist_with_sep sep pr_forest brs in
         str"[>"++spc()++branches++spc()++str"]"
   and pr_forest = function

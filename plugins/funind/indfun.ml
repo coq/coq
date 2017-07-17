@@ -318,10 +318,10 @@ let warning_error names e =
   in
   match e with
     | Building_graph e ->
-       let names = prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names in
+       let names = prlist_with_sep (str "," ++ spc ()) Ppconstr.pr_id names in
        warn_cannot_define_graph (names,e_explain e)
     | Defining_principle e ->
-       let names = prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names in
+       let names = prlist_with_sep (str "," ++ spc ()) Ppconstr.pr_id names in
        warn_cannot_define_principle (names,e_explain e)
     | _ -> raise e
 
@@ -336,7 +336,7 @@ let error_error names e =
     | Building_graph e ->
 	user_err 
 	  (str "Cannot define graph(s) for " ++
-	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
+	     h 1 (prlist_with_sep (str "," ++ spc ()) Ppconstr.pr_id names) ++
 	     e_explain e)
     | _ -> raise e
 

@@ -347,7 +347,7 @@ module LMap = struct
       ext empty
 
   let pr f m =
-    h 0 (prlist_with_sep fnl (fun (u, v) ->
+    h 0 (prlist_with_sep (fnl ()) (fun (u, v) ->
       Level.pr u ++ f v) (bindings m))
 end
 
@@ -355,7 +355,7 @@ module LSet = struct
   include LMap.Set
 
   let pr prl s =
-    str"{" ++ prlist_with_sep spc prl (elements s) ++ str"}"
+    str"{" ++ prlist_with_sep (spc ()) prl (elements s) ++ str"}"
 
   let of_array l =
     Array.fold_left (fun acc x -> add x acc) empty l
@@ -552,14 +552,14 @@ struct
     | Cons (u, _, Nil) -> Expr.pr u
     | _ -> 
       str "max(" ++ hov 0
-	(prlist_with_sep pr_comma Expr.pr (to_list l)) ++
+	(prlist_with_sep (pr_comma ()) Expr.pr (to_list l)) ++
         str ")"
 
   let pr_with f l = match l with
     | Cons (u, _, Nil) -> Expr.pr_with f u
     | _ -> 
       str "max(" ++ hov 0
-	(prlist_with_sep pr_comma (Expr.pr_with f) (to_list l)) ++
+	(prlist_with_sep (pr_comma ()) (Expr.pr_with f) (to_list l)) ++
         str ")"
 
   let is_level l = match l with

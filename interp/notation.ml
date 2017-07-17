@@ -837,7 +837,7 @@ let pr_scope_classes sc =
   | _ :: ll ->
     let opt_s = match ll with [] -> mt () | _ -> str "es" in
     hov 0 (str "Bound to class" ++ opt_s ++
-      spc() ++ prlist_with_sep spc pr_scope_class l) ++ fnl()
+      spc() ++ prlist_with_sep (spc ()) pr_scope_class l) ++ fnl()
 
 let pr_notation_info prglob ntn c =
   str "\"" ++ str ntn ++ str "\" := " ++

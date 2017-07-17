@@ -44,11 +44,11 @@ let pr_ring_mod = function
   | Ring_kind Abstract ->  str "abstract"
   | Ring_kind (Morphism morph) -> str "morphism" ++ pr_arg pr_constr_expr morph
   | Const_tac (CstTac cst_tac) -> str "constants" ++ spc () ++ str "[" ++ pr_raw_tactic cst_tac ++ str "]"
-  | Const_tac (Closed l) -> str "closed" ++ spc () ++ str "[" ++ prlist_with_sep spc pr_reference l ++ str "]"
+  | Const_tac (Closed l) -> str "closed" ++ spc () ++ str "[" ++ prlist_with_sep (spc ()) pr_reference l ++ str "]"
   | Pre_tac t -> str "preprocess" ++ spc () ++ str "[" ++ pr_raw_tactic t ++ str "]"
   | Post_tac t -> str "postprocess" ++ spc () ++ str "[" ++ pr_raw_tactic t ++ str "]"
   | Setoid(sth,ext) -> str "setoid" ++ pr_arg pr_constr_expr sth ++ pr_arg pr_constr_expr ext
-  | Pow_spec(Closed l,spec) -> str "power_tac" ++ pr_arg pr_constr_expr spec ++ spc () ++ str "[" ++ prlist_with_sep spc pr_reference l ++ str "]"
+  | Pow_spec(Closed l,spec) -> str "power_tac" ++ pr_arg pr_constr_expr spec ++ spc () ++ str "[" ++ prlist_with_sep (spc ()) pr_reference l ++ str "]"
   | Pow_spec(CstTac cst_tac,spec) -> str "power_tac" ++ pr_arg pr_constr_expr spec ++ spc () ++ str "[" ++ pr_raw_tactic cst_tac ++ str "]"
   | Sign_spec t -> str "sign" ++ pr_arg pr_constr_expr t
   | Div_spec t -> str "div" ++ pr_arg pr_constr_expr t
@@ -71,7 +71,7 @@ VERNAC ARGUMENT EXTEND ring_mod
   | [ "div" constr(div_spec) ] -> [ Div_spec div_spec ]
 END
 
-let pr_ring_mods l = surround (prlist_with_sep pr_comma pr_ring_mod l)
+let pr_ring_mods l = surround (prlist_with_sep (pr_comma ()) pr_ring_mod l)
 
 VERNAC ARGUMENT EXTEND ring_mods
   PRINTED BY pr_ring_mods
@@ -106,7 +106,7 @@ VERNAC ARGUMENT EXTEND field_mod
   | [ "completeness" constr(inj) ] -> [ Inject inj ]
 END
 
-let pr_field_mods l = surround (prlist_with_sep pr_comma pr_field_mod l)
+let pr_field_mods l = surround (prlist_with_sep (pr_comma ()) pr_field_mod l)
 
 VERNAC ARGUMENT EXTEND field_mods
   PRINTED BY pr_field_mods

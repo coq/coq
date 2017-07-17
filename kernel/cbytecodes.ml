@@ -231,16 +231,16 @@ let rec pp_instr i =
       h 1 (str "closurerec " ++
 	     int fv ++ str ", " ++ int init ++
 	     str " types = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+	     prlist_with_sep (spc ()) pp_lbl (Array.to_list lblt) ++
 	     str " bodies = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+	     prlist_with_sep (spc ()) pp_lbl (Array.to_list lblb))
   | Kclosurecofix (fv,init,lblt,lblb) ->
       h 1 (str "closurecofix " ++
 	     int fv ++ str ", " ++ int init ++
 	     str " types = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+	     prlist_with_sep (spc ()) pp_lbl (Array.to_list lblt) ++
 	     str " bodies = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+	     prlist_with_sep (spc ()) pp_lbl (Array.to_list lblb))
   | Kgetglobal idu -> str "getglobal " ++ pr_con idu
   | Kconst sc ->
       str "const " ++ pp_struct_const sc
@@ -252,9 +252,9 @@ let rec pp_instr i =
 	pp_lbl lbls ++ str ", " ++ int sz
   | Kswitch(lblc,lblb) ->
       h 1 (str "switch " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblc) ++
+	     prlist_with_sep (spc ()) pp_lbl (Array.to_list lblc) ++
 	     str " | " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+	     prlist_with_sep (spc ()) pp_lbl (Array.to_list lblb))
   | Kpushfields n -> str "pushfields " ++ int n
   | Kfield n -> str "field " ++ int n
   | Ksetfield n -> str "set field" ++ int n

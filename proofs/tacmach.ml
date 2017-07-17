@@ -150,7 +150,7 @@ let pr_gls gls =
 
 let pr_glls glls =
   hov 0 (pr_evar_map (Some 2) (sig_sig glls) ++ fnl () ++
-         prlist_with_sep fnl (db_pr_goal (project glls)) (sig_it glls))
+         prlist_with_sep (fnl ()) (db_pr_goal (project glls)) (sig_it glls))
 
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New = struct

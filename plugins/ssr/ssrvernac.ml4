@@ -218,7 +218,7 @@ let interp_search_notation ?loc tag okey =
   let pr_ntn ntn = str "(" ++ str ntn ++ str ")" in
   let pr_and_list pr = function
     | [x] -> pr x
-    | x :: lx -> pr_list pr_comma pr lx ++ pr_comma () ++ str "and " ++ pr x
+    | x :: lx -> pr_list (pr_comma ()) pr lx ++ pr_comma () ++ str "and " ++ pr x
     | [] -> mt () in
   let pr_sc sc = str (if sc = "" then "independently" else sc) in
   let pr_scs = function
@@ -309,7 +309,7 @@ END
 
 let pr_ssr_search_arg _ _ _ =
   let pr_item (b, p) = str (if b then "-" else "") ++ pr_search_item p in
-  pr_list spc pr_item
+  pr_list (spc ()) pr_item
 
 ARGUMENT EXTEND ssr_search_arg TYPED AS (bool * ssr_searchitem) list
   PRINTED BY pr_ssr_search_arg
@@ -409,7 +409,7 @@ let pr_modloc (b, m) = if b then str "-" ++ pr_reference m else pr_reference m
 let wit_ssrmodloc = add_genarg "ssrmodloc" pr_modloc
 
 let pr_ssr_modlocs _ _ _ ml =
-  if ml = [] then str "" else spc () ++ str "in " ++ pr_list spc pr_modloc ml
+  if ml = [] then str "" else spc () ++ str "in " ++ pr_list (spc ()) pr_modloc ml
 
 ARGUMENT EXTEND ssr_modlocs TYPED AS ssrmodloc list PRINTED BY pr_ssr_modlocs
   | [ ] -> [ [] ]
@@ -517,7 +517,7 @@ END
 
 let print_view_hints i =
   let pp_viewname = str "Hint View" ++ pr_viewpos i ++ str " " in
-  let pp_hints = pr_list spc pr_rawhintref Ssrview.viewtab.(i) in
+  let pp_hints = pr_list (spc ()) pr_rawhintref Ssrview.viewtab.(i) in
   Feedback.msg_info  (pp_viewname ++ hov 0 pp_hints ++ Pp.cut ())
 
 VERNAC COMMAND EXTEND PrintView CLASSIFIED AS QUERY

@@ -103,7 +103,7 @@ let tag_var = tag Tag.variable
         return unp pp1 pp2
       | UnpListMetaVar (_, prec, sl) as unp :: l ->
         let cl = pop envlist in
-        let pp1 = prlist_with_sep (fun () -> aux sl) (pr (n,prec)) cl in
+        let pp1 = prlist_with_sep (aux sl) (pr (n,prec)) cl in
         let pp2 = aux l in
         return unp pp1 pp2
       | UnpBinderListMetaVar (_, isopen, sl) as unp :: l ->
@@ -152,7 +152,7 @@ let tag_var = tag Tag.variable
   let pr_univ l =
     match l with
       | [_,x] -> Name.print x
-      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") (fun x -> Name.print (snd x)) l ++ str")"
+      | l -> str"max(" ++ prlist_with_sep (str ",") (fun x -> Name.print (snd x)) l ++ str")"
 
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
@@ -195,7 +195,7 @@ let tag_var = tag Tag.variable
         | None -> tag_type (str "Type"))
 
   let pr_universe_instance l =
-    pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_glob_sort_instance)) l
+    pr_opt_no_spc (pr_univ_annot (prlist_with_sep (spc ()) pr_glob_sort_instance)) l
 
   let pr_reference = function
   | Qualid (_, qid) -> pr_qualid qid
@@ -241,7 +241,7 @@ let tag_var = tag Tag.variable
           | [] -> mt()
           | l ->
             let f (id,c) = pr_id id ++ str ":=" ++ pr ltop c in
-            str"@{" ++ hov 0 (prlist_with_sep pr_semicolon f (List.rev l)) ++ str"}"))
+            str"@{" ++ hov 0 (prlist_with_sep (pr_semicolon ()) f (List.rev l)) ++ str"}"))
 
   let las = lapp
   let lpator = 100
@@ -253,7 +253,7 @@ let tag_var = tag Tag.variable
         let pp (c, p) =
           pr_reference c ++ spc() ++ str ":=" ++ pr_patt spc (lpatrec, Any) p
         in
-        str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}", lpatrec
+        str "{| " ++ prlist_with_sep (pr_semicolon ()) pp l ++ str " |}", lpatrec
 
       | CPatAlias (p, id) ->
         pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
@@ -278,7 +278,7 @@ let tag_var = tag Tag.variable
         pr_reference r, latom
 
       | CPatOr pl ->
-        hov 0 (prlist_with_sep pr_bar (pr_patt spc (lpator,L)) pl), lpator
+        hov 0 (prlist_with_sep (pr_bar ()) (pr_patt spc (lpator,L)) pl), lpator
 
       | CPatNotation ("( _ )",([p],[]),[]) ->
         pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
@@ -307,7 +307,7 @@ let tag_var = tag Tag.variable
     spc() ++ hov 4
       (pr_with_comments ?loc
          (str "| " ++
-            hov 0 (prlist_with_sep pr_bar (prlist_with_sep sep_v (pr_patt ltop)) pl
+            hov 0 (prlist_with_sep (pr_bar ()) (prlist_with_sep (sep_v ()) (pr_patt ltop)) pl
                    ++ str " =>") ++
             pr_sep_com spc (pr ltop) rhs))
 
@@ -350,10 +350,10 @@ let tag_var = tag Tag.variable
       | Default b ->
         match t with
           | { CAst.v = CHole (_,Misctypes.IntroAnonymous,_) } ->
-            let s = prlist_with_sep spc pr_lname nal in
+            let s = prlist_with_sep (spc ()) pr_lname nal in
             hov 1 (surround_implicit b s)
           | _ ->
-            let s = prlist_with_sep spc pr_lname nal ++ str " : " ++ pr t in
+            let s = prlist_with_sep (spc ()) pr_lname nal ++ str " : " ++ pr t in
             hov 1 (if many then surround_impl b s else surround_implicit b s)
 
   let pr_binder_among_many pr_c = function
@@ -372,7 +372,7 @@ let tag_var = tag Tag.variable
           str "'" ++ surround (p ++ spc () ++ str ":" ++ ws 1 ++ pr_c ty)
 
   let pr_undelimited_binders sep pr_c =
-    prlist_with_sep sep (pr_binder_among_many pr_c)
+    prlist_with_sep (sep ()) (pr_binder_among_many pr_c)
 
   let pr_delimited_binders kw sep pr_c bl =
     let n = begin_of_binders bl in
@@ -488,7 +488,7 @@ let tag_var = tag Tag.variable
     | [] -> anomaly (Pp.str "(co)fixpoint with no definition.")
     | [d1] -> pr_decl false d1
     | dl ->
-      prlist_with_sep (fun () -> fnl() ++ keyword "with" ++ spc ())
+      prlist_with_sep (fnl () ++ keyword "with" ++ spc ())
         (pr_decl true) dl ++
         fnl() ++ keyword "for" ++ spc () ++ pr_id id
 
@@ -532,7 +532,7 @@ let tag_var = tag Tag.variable
 
   let pr_record_body_gen pr l =
     spc () ++
-    prlist_with_sep pr_semicolon
+    prlist_with_sep (pr_semicolon ())
       (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr ltop c)) l
 
   let pr_forall n = keyword "forall" ++ pr_com_at n ++ spc ()
@@ -658,7 +658,7 @@ let tag_var = tag Tag.variable
           v 0
             (hv 0 (keyword "match" ++ brk (1,2) ++
                      hov 0 (
-                       prlist_with_sep sep_v
+                       prlist_with_sep (sep_v ())
                          (pr_case_item (pr_dangling_with_for mt pr)) c
                        ++ pr_case_type (pr_dangling_with_for mt pr) rtntypopt) ++
                      spc () ++ keyword "with") ++
@@ -671,7 +671,7 @@ let tag_var = tag Tag.variable
           hv 0 (
             hov 2 (keyword "let" ++ spc () ++
               hov 1 (str "(" ++
-                       prlist_with_sep sep_v pr_lname nal ++
+                       prlist_with_sep (sep_v ()) pr_lname nal ++
                        str ")" ++
                        pr_simple_return_type (pr mt) na po ++ str " :=") ++
                        pr spc ltop c
