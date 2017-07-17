@@ -199,8 +199,7 @@ let type_of_global_in_context env r =
   | ConstRef c -> 
     let cb = Environ.lookup_constant c env in 
     let univs = Declareops.constant_polymorphic_context cb in
-    let env = Environ.push_context ~strict:false (Univ.AUContext.repr univs) env in
-    Typeops.type_of_constant_type env cb.Declarations.const_type, univs
+    cb.Declarations.const_type, univs
   | IndRef ind ->
     let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
     let univs = Declareops.inductive_polymorphic_context mib in
@@ -255,7 +254,7 @@ let is_template_polymorphic r =
   let env = env() in 
   match r with
   | VarRef id -> false
-  | ConstRef c -> Environ.template_polymorphic_constant c env
+  | ConstRef c -> false
   | IndRef ind -> Environ.template_polymorphic_ind ind env
   | ConstructRef cstr -> Environ.template_polymorphic_ind (inductive_of_constructor cstr) env
 

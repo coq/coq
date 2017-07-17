@@ -515,12 +515,6 @@ let subst_rel_declaration sub =
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
-let subst_template_cst_arity sub (ctx,s as arity) =
-  let ctx' = subst_rel_context sub ctx in
-    if ctx==ctx' then arity else (ctx',s)
-
-let subst_arity sub s = subst_decl_arity subst_mps subst_template_cst_arity sub s
-
 let constant_is_polymorphic cb =
   match cb.const_universes with
   | Monomorphic_const _ -> false
@@ -531,7 +525,7 @@ let constant_is_polymorphic cb =
 let subst_const_body sub cb =
  { cb with
     const_body = subst_constant_def sub cb.const_body;
-    const_type = subst_arity sub cb.const_type }
+    const_type = subst_mps sub cb.const_type }
 
 
 let subst_regular_ind_arity sub s =

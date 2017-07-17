@@ -83,7 +83,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	  let c',cst = match cb.const_body with
 	    | Undef _ | OpaqueDef _ ->
 	      let j = Typeops.infer env' c in
-	      let typ = Typeops.type_of_constant_type env' cb.const_type in
+	      let typ = cb.const_type in
 	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
 						j.uj_type typ in
 	      j.uj_val, cst'
@@ -103,7 +103,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	  let cst = match cb.const_body with
 	    | Undef _ | OpaqueDef _ ->
 	      let j = Typeops.infer env' c in
-	      let typ = Typeops.type_of_constant_type env' cb.const_type in
+	      let typ = cb.const_type in
 	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
 						j.uj_type typ in
 	      cst'

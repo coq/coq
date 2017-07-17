@@ -311,10 +311,7 @@ let traverse current t =
 (** Hopefully bullet-proof function to recover the type of a constant. It just
     ignores all the universe stuff. There are many issues that can arise when
     considering terms out of any valid environment, so use with caution. *)
-let type_of_constant cb = match cb.Declarations.const_type with
-| Declarations.RegularArity ty -> ty
-| Declarations.TemplateArity (ctx, arity) ->
-  Term.mkArity (ctx, Sorts.sort_of_univ arity.Declarations.template_level)
+let type_of_constant cb = cb.Declarations.const_type
 
 let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   let (idts, knst) = st in

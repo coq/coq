@@ -192,11 +192,6 @@ let retype ?(polyprop=true) sigma =
 	EConstr.of_constr (try Inductive.type_of_inductive_knowing_parameters
 	       ~polyprop env (mip, u) argtyps
 	 with Reduction.NotArity -> retype_error NotAnArity)
-    | Const (cst, u) ->
-        let u = EInstance.kind sigma u in
-	EConstr.of_constr (try Typeops.type_of_constant_knowing_parameters_in env (cst, u) argtyps
-	 with Reduction.NotArity -> retype_error NotAnArity)
-    | Var id -> type_of_var env id
     | Construct (cstr, u) ->
       let u = EInstance.kind sigma u in
       EConstr.of_constr (type_of_constructor env (cstr, u))
@@ -220,7 +215,7 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
     | Const (cst, u) ->
         let t = constant_type_in env (cst, EInstance.kind sigma u) in
         (* TODO *)
-          sigma, EConstr.of_constr (Typeops.type_of_constant_type_knowing_parameters env t [||])
+          sigma, EConstr.of_constr t
     | Var id -> sigma, type_of_var env id
     | Construct (cstr, u) -> sigma, EConstr.of_constr (type_of_constructor env (cstr, EInstance.kind sigma u))
     | _ -> assert false

@@ -232,12 +232,6 @@ let constraints_of cb u =
   | Monomorphic_const _ -> Univ.Constraint.empty
   | Polymorphic_const ctx -> Univ.AUContext.instantiate u ctx
 
-let map_regular_arity f = function
-  | RegularArity a as ar -> 
-    let a' = f a in 
-      if a' == a then ar else RegularArity a'
-  | TemplateArity _ -> assert false
-
 (* constant_type gives the type of a constant *)
 let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
@@ -245,7 +239,7 @@ let constant_type env (kn,u) =
   | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
   | Polymorphic_const ctx -> 
     let csts = constraints_of cb u in
-    (map_regular_arity (subst_instance_constr u) cb.const_type, csts)
+    (subst_instance_constr u cb.const_type, csts)
 
 let constant_context env kn =
   let cb = lookup_constant kn env in
@@ -287,7 +281,7 @@ let constant_value_and_type env (kn, u) =
 	| OpaqueDef _ -> None
 	| Undef _ -> None
       in
-	b', map_regular_arity (subst_instance_constr u) cb.const_type, cst
+	b', subst_instance_constr u cb.const_type, cst
     else 
       let b' = match cb.const_body with
 	| Def l_body -> Some (Mod_subst.force_constr l_body)
@@ -303,7 +297,7 @@ let constant_value_and_type env (kn, u) =
 let constant_type_in env (kn,u) =
   let cb = lookup_constant kn env in
     if Declareops.constant_is_polymorphic cb then
-      map_regular_arity (subst_instance_constr u) cb.const_type
+      subst_instance_constr u cb.const_type
     else cb.const_type
 
 let constant_value_in env (kn,u) =
@@ -336,15 +330,6 @@ let polymorphic_pconstant (cst,u) env =
 
 let type_in_type_constant cst env =
   not (lookup_constant cst env).const_typing_flags.check_universes
-
-let template_polymorphic_constant cst env =
-  match (lookup_constant cst env).const_type with 
-  | TemplateArity _ -> true
-  | RegularArity _ -> false
-
-let template_polymorphic_pconstant (cst,u) env =
-  if not (Univ.Instance.is_empty u) then false
-  else template_polymorphic_constant cst env
 
 let lookup_projection cst env =
   match (lookup_constant (Projection.constant cst) env).const_proj with 

@@ -18,6 +18,3 @@ val infer_type : env -> constr      -> sorts
 val check_ctxt : env -> rel_context -> env
 val check_polymorphic_arity :
   env -> rel_context -> template_arity -> unit
-
-val type_of_constant_type : env -> constant_type -> constr
-

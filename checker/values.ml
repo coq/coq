@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 67309b04a86b247431fd3e580ecbb50d  checker/cic.mli
+MD5 c802f941f368bedd96e931cda0559d67  checker/cic.mli
 
 *)
 
@@ -201,9 +201,6 @@ let v_engagement = v_impredicative_set
 let v_pol_arity =
   v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ|]
 
-let v_cst_type =
-  v_sum "constant_type" 0 [|[|v_constr|]; [|v_pair v_rctxt v_pol_arity|]|]
-
 let v_cst_def =
   v_sum "constant_def" 0
     [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]|]
@@ -222,7 +219,7 @@ let v_const_univs = v_sum "constant_universes" 0 [|[|v_context|]; [|v_abs_contex
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_cst_def;
-    v_cst_type;
+    v_constr;
     Any;
     v_const_univs;
     Opt v_projbody;

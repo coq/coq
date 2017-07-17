@@ -35,15 +35,11 @@ let check_constant_declaration env kn cb =
       push_context ~strict:false ctx env
   in
   let envty, ty = 
-    match cb.const_type with
-      RegularArity ty ->
-        let ty', cu = refresh_arity ty in
-        let envty = push_context_set cu env' in
-        let _ = infer_type envty ty' in envty, ty
-    | TemplateArity(ctxt,par) ->
-        let _ = check_ctxt env' ctxt in
-        check_polymorphic_arity env' ctxt par;
-	env', it_mkProd_or_LetIn (Sort(Type par.template_level)) ctxt 
+    let ty = cb.const_type in
+    let ty', cu = refresh_arity ty in
+    let envty = push_context_set cu env' in
+    let _ = infer_type envty ty' in
+    envty, ty
   in
   let () = 
     match body_of_constant cb with

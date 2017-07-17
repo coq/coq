@@ -323,7 +323,7 @@ let print_body is_impl env mp (l,body) =
 	    str " :" ++ spc () ++
 	    hov 0 (Printer.pr_ltype_env env sigma
 		(Vars.subst_instance_constr u
-   		  (Typeops.type_of_constant_type env cb.const_type))) ++
+   		  cb.const_type)) ++
 	    (match cb.const_body with
 	      | Def l when is_impl ->
 		spc () ++
