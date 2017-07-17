@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-#set -x
-set -e
-
 . ../template/init.sh
 
 coq_makefile -f _CoqProject -o Makefile
@@ -10,7 +7,7 @@ make
 make html mlihtml
 make install DSTROOT="$PWD/tmp"
 #make debug
-(cd `find tmp -name user-contrib`; find .) | sort > actual
+(cd `find tmp -name user-contrib` && find .) | sort > actual
 sort > desired <<EOT
 .
 ./test

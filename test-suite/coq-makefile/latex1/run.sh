@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-#set -x
-set -e
-
 if which pdflatex; then
 
 . ../template/init.sh
