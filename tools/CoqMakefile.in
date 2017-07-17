@@ -87,6 +87,9 @@ COQDEP   ?= "$(COQBIN)coqdep"
 GALLINA  ?= "$(COQBIN)gallina"
 COQDOC   ?= "$(COQBIN)coqdoc"
 COQMKTOP ?= "$(COQBIN)coqmktop"
+COQMKFILE ?= "$(COQBIN)coq_makefile"
+
+# Timing scripts
 COQMAKE_ONE_TIME_FILE ?= "$(COQLIB)/tools/make-one-time-file.py"
 COQMAKE_BOTH_TIME_FILES ?= "$(COQLIB)/tools/make-both-time-files.py"
 COQMAKE_BOTH_SINGLE_TIMING_FILES ?= "$(COQLIB)/tools/make-both-single-timing-files.py"
@@ -437,12 +440,12 @@ beautify: $(BEAUTYFILES)
 
 install: install-extra
 	$(HIDE)for f in $(FILESTOINSTALL); do\
-	 df="`$(COQMF_MAKEFILE) -destination-of "$$f" $(COQLIBS)`";\
-	 if [ -z "$$df" ]; then\
+	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`";\
+	 if [ "$$?" != "0" -o -z "$$df" ]; then\
 	   echo SKIP "$$f" since it has no logical path;\
 	 else\
-	   install -d "$(DESTDIR)$(COQLIBINSTALL)/$$df"; \
-	   install -m 0644 "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df"; \
+	   install -d "$(DESTDIR)$(COQLIBINSTALL)/$$df" &&\
+	   install -m 0644 "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df" &&\
 	   echo INSTALL "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df";\
 	 fi;\
 	done
@@ -452,12 +455,12 @@ install-extra::
 
 install-byte:
 	$(HIDE)for f in $(BYTEFILESTOINSTALL); do\
-	 df="`$(COQMF_MAKEFILE) -destination-of "$$f" $(COQLIBS)`";\
-	 if [ -z "$$df" ]; then\
+	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`";\
+	 if [ "$$?" != "0" -o -z "$$df" ]; then\
 	   echo SKIP "$$f" since it has no logical path;\
 	 else\
-	   install -d "$(DESTDIR)$(COQLIBINSTALL)/$$df"; \
-	   install -m 0644 "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df"; \
+	   install -d "$(DESTDIR)$(COQLIBINSTALL)/$$df" &&\
+	   install -m 0644 "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df" &&\
 	   echo INSTALL "$$f" "$(DESTDIR)$(COQLIBINSTALL)/$$df";\
 	 fi;\
 	done
@@ -482,11 +485,11 @@ install-doc:: html mlihtml
 uninstall::
 	@# Extension point
 	$(HIDE)for f in $(FILESTOINSTALL); do \
-	 df="`$(COQMF_MAKEFILE) -destination-of "$$f" $(COQLIBS)`";\
-	 instf="$(DESTDIR)$(COQLIBINSTALL)/$$df/`basename $$f`"; \
-	 rm -f "$$instf";\
-	 echo RM "$$instf"; \
-	 rmdir "$(DESTDIR)$(COQLIBINSTALL)/$$df/" || true; \
+	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`" &&\
+	 instf="$(DESTDIR)$(COQLIBINSTALL)/$$df/`basename $$f`" &&\
+	 rm -f "$$instf" &&\
+	 echo RM "$$instf" &&\
+	 (rmdir "$(DESTDIR)$(COQLIBINSTALL)/$$df/" || true); \
 	done
 .PHONY: uninstall
 
