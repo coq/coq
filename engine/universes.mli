@@ -199,9 +199,6 @@ val type_of_global : Globnames.global_reference -> types in_universe_context_set
 val nf_evars_and_universes_opt_subst : (existential -> constr option) -> 
   universe_opt_subst -> constr -> constr
 
-val simplify_universe_context : universe_context_set -> 
-  universe_context_set * universe_level_subst
-
 val refresh_constraints : UGraph.t -> universe_context_set -> universe_context_set * UGraph.t
 
 (** Pretty-printing *)

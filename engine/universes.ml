@@ -948,34 +948,6 @@ let normalize_context_set ctx us algs =
 (* let normalize_conkey = Profile.declare_profile "normalize_context_set" *)
 (* let normalize_context_set a b c = Profile.profile3 normalize_conkey normalize_context_set a b c *)
 
-let simplify_universe_context (univs,csts) =
-  let uf = UF.create () in
-  let noneqs =
-    Constraint.fold (fun (l,d,r) noneqs ->
-      if d == Eq && (LSet.mem l univs || LSet.mem r univs) then 
-	(UF.union l r uf; noneqs)
-      else Constraint.add (l,d,r) noneqs)
-      csts Constraint.empty
-  in
-  let partition = UF.partition uf in
-  let flex x = LSet.mem x univs in
-  let subst, univs', csts' = List.fold_left (fun (subst, univs, cstrs) s -> 
-    let canon, (global, rigid, flexible) = choose_canonical univs flex LSet.empty s in
-    (* Add equalities for globals which can't be merged anymore. *)
-    let cstrs = LSet.fold (fun g cst -> 
-      Constraint.add (canon, Univ.Eq, g) cst) (LSet.union global rigid)
-      cstrs 
-    in
-    let subst = LSet.fold (fun f -> LMap.add f canon)
-      flexible subst
-    in (subst, LSet.diff univs flexible, cstrs))
-    (LMap.empty, univs, noneqs) partition
-  in
-  (* Noneqs is now in canonical form w.r.t. equality constraints, 
-     and contains only inequality constraints. *)
-  let csts' = subst_univs_level_constraints subst csts' in
-    (univs', csts'), subst
-
 let is_trivial_leq (l,d,r) =
   Univ.Level.is_prop l && (d == Univ.Le || (d == Univ.Lt && Univ.Level.is_set r))
 
