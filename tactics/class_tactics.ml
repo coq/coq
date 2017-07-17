@@ -1425,18 +1425,20 @@ let deps_of_constraints cstrs evm p =
     Intpart.union_set (Evar.Set.union evx evy) p)
     cstrs
 
-let evar_dependencies evm p =
+let evar_dependencies pred evm p =
   Evd.fold_undefined
     (fun ev evi _ ->
-      let evars = Evar.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
-      in Intpart.union_set evars p)
+      if Typeclasses.is_resolvable evi && pred evm ev evi then
+        let evars = Evar.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
+        in Intpart.union_set evars p
+      else ())
     evm ()
 
 (** [split_evars] returns groups of undefined evars according to dependencies *)
 
-let split_evars evm =
+let split_evars pred evm =
   let p = Intpart.create () in
-  evar_dependencies evm p;
+  evar_dependencies pred evm p;
   deps_of_constraints (snd (extract_all_conv_pbs evm)) evm p;
   Intpart.partition p
 
@@ -1521,7 +1523,7 @@ exception Unresolved
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
 let resolve_all_evars debug depth unique env p oevd do_split fail =
-  let split = if do_split then split_evars oevd else [Evar.Set.empty] in
+  let split = if do_split then split_evars p oevd else [Evar.Set.empty] in
   let in_comp comp ev = if do_split then Evar.Set.mem ev comp else true
   in
   let rec docomp evd = function
