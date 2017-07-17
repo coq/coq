@@ -4,6 +4,7 @@
 
 mv src/test_plugin.mlpack src/test_plugin.mllib
 coq_makefile -f _CoqProject -o Makefile
+cat Makefile.conf
 make
 make html mlihtml
 make install DSTROOT="$PWD/tmp"
