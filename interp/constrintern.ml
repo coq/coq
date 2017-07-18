@@ -664,11 +664,11 @@ let instantiate_notation_constr loc intern ntnvars subst infos c =
     | NProd (Name id, NHole _, c') when option_mem_assoc id binderopt ->
         let a,letins = snd (Option.get binderopt) in
         let e = make_letins letins (aux subst' infos c') in
-        let (loc,(na,bk,t)) = a in
+        let (_loc,(na,bk,t)) = a in
         CAst.make ?loc @@ GProd (na,bk,t,e)
     | NLambda (Name id,NHole _,c') when option_mem_assoc id binderopt ->
         let a,letins = snd (Option.get binderopt) in
-        let (loc,(na,bk,t)) = a in
+        let (_loc,(na,bk,t)) = a in
         CAst.make ?loc @@ GLambda (na,bk,t,make_letins letins (aux subst' infos c'))
     (* Two special cases to keep binder name synchronous with BinderType *)
     | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
