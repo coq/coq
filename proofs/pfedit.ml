@@ -157,10 +157,9 @@ let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
     if side_eff then Safe_typing.inline_private_constants_in_definition_entry env ce
     else { ce with
       const_entry_body = Future.chain ~pure:true ce.const_entry_body
-        (fun (pt, _) -> pt, Safe_typing.empty_private_constants) } in
-  let (cb, ctx), se = Future.force ce.const_entry_body in
+        (fun (pt, _) -> pt, ()) } in
+  let (cb, ctx), () = Future.force ce.const_entry_body in
   let univs' = Evd.merge_context_set Evd.univ_rigid (Evd.from_ctx univs) ctx in
-  assert(Safe_typing.empty_private_constants = se);
   cb, status, Evd.evar_universe_context univs'
 
 let refine_by_tactic env sigma ty tac =

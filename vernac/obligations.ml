@@ -818,8 +818,7 @@ let solve_by_tac name evi t poly ctx =
     id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
   let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
-  let body, eff = Future.force entry.const_entry_body in
-  assert(Safe_typing.empty_private_constants = eff);
+  let body, () = Future.force entry.const_entry_body in
   let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
   Inductiveops.control_only_guard (Global.env ()) (fst body);
   (fst body), entry.const_entry_type, Evd.evar_universe_context ctx'
@@ -836,8 +835,7 @@ let obligation_terminator name num guard hook auto pf =
       let env = Global.env () in
       let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
       let ty = entry.Entries.const_entry_type in
-      let (body, cstr), eff = Future.force entry.Entries.const_entry_body in
-      assert(Safe_typing.empty_private_constants = eff);
+      let (body, cstr), () = Future.force entry.Entries.const_entry_body in
       let sigma = Evd.from_ctx (fst uctx) in
       let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
       Inductiveops.control_only_guard (Global.env ()) body;

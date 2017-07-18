@@ -654,7 +654,7 @@ let inline_entry_side_effects env ce = { ce with
   const_entry_body = Future.chain ~pure:true
     ce.const_entry_body (fun ((body, ctx), side_eff) ->
       let body, ctx',_ = inline_side_effects env body ctx side_eff in
-      (body, ctx'), empty_seff);
+      (body, ctx'), ());
 }
 
 let inline_side_effects env body side_eff =

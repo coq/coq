@@ -30,7 +30,7 @@ val inline_side_effects : env -> constr -> side_effects -> constr
     redexes. *)
 
 val inline_entry_side_effects :
-  env -> side_effects definition_entry -> side_effects definition_entry
+  env -> side_effects definition_entry -> unit definition_entry
 (** Same as {!inline_side_effects} but applied to entries. Only modifies the
     {!Entries.const_entry_body} field. It is meant to get a term out of a not
     yet type checked proof. *)

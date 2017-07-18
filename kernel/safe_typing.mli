@@ -67,7 +67,7 @@ val mk_pure_proof : Constr.constr -> private_constants Entries.proof_output
 val inline_private_constants_in_constr :
   Environ.env -> Constr.constr -> private_constants -> Constr.constr
 val inline_private_constants_in_definition_entry :
-  Environ.env -> private_constants Entries.definition_entry -> private_constants Entries.definition_entry
+  Environ.env -> private_constants Entries.definition_entry -> unit Entries.definition_entry
 
 val universes_of_private : private_constants -> Univ.universe_context_set list
 
