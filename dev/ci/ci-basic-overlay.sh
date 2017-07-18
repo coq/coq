@@ -79,8 +79,8 @@
 ########################################################################
 # VST
 ########################################################################
-: ${VST_CI_BRANCH:=less_init_plugins}
-: ${VST_CI_GITURL:=https://github.com/letouzey/VST.git}
+: ${VST_CI_BRANCH:=master}
+: ${VST_CI_GITURL:=https://github.com/Zimmi48/VST.git}
 
 ########################################################################
 # fiat_parsers
