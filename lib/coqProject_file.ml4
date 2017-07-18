@@ -73,9 +73,6 @@ let rec post_canonize f =
     if dir = Filename.current_dir_name then f else post_canonize dir
   else f
 
-(* Avoid Sys.is_directory raise an exception (if the file does not exists) *)
-let is_directory f = Sys.file_exists f && Sys.is_directory f
-
 (********************* parser *******************************************)
 
 exception Parsing_error of string
@@ -105,6 +102,15 @@ let parse f =
   close_in c;
   res
 ;;
+
+(* Copy from minisys.ml, since we don't see that file here *)
+let exists_dir dir =
+  let rec strip_trailing_slash dir =
+    let len = String.length dir in
+    if len > 0 && (dir.[len-1] = '/' || dir.[len-1] = '\\')
+    then strip_trailing_slash (String.sub dir 0 (len-1)) else dir in
+  try Sys.is_directory (strip_trailing_slash dir) with Sys_error _ -> false
+
 
 let process_cmd_line orig_dir proj args =
   let orig_dir = (* avoids turning foo.v in ./foo.v *)
@@ -173,7 +179,7 @@ let process_cmd_line orig_dir proj args =
   | f :: r ->
       let f = CUnix.correct_path f orig_dir in
       let proj =
-        if is_directory f then { proj with subdirs = proj.subdirs @ [f] }
+        if exists_dir f then { proj with subdirs = proj.subdirs @ [f] }
         else match CUnix.get_extension f with
         | ".v" -> { proj with v_files = proj.v_files @ [f] }
         | ".ml" -> { proj with ml_files = proj.ml_files @ [f] }
