@@ -40,13 +40,6 @@
 &nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#P"><span class="id" title="constructor">P</span></a> =&gt; 6<br/>
 &nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Proof"><span class="id" title="constructor">Proof</span></a> =&gt; 7<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
-
-<br/>
-<span class="id" title="keyword">Ltac</span> <span class="id" title="keyword">Next</span> := <span class="id" title="var">easy</span>.<br/>
-
-<br/>
-<span class="id" title="keyword">Lemma</span> <a name="yes"><span class="id" title="lemma">yes</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Logic.html#True"><span class="id" title="inductive">True</span></a>.<br/>
-<span class="id" title="keyword">Proof</span>. <span class="id" title="keyword">Next</span>. <span class="id" title="keyword">Qed</span>.<br/>
 </div>
 </div>
 

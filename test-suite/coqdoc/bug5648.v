@@ -17,8 +17,3 @@ Definition d x :=
   | P => 6
   | Proof => 7
   end.
-
-Ltac Next := easy.
-
-Lemma yes : True.
-Proof. Next. Qed.
