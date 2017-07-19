@@ -1,9 +1,8 @@
 Require Import TestSuite.admit.
 Require Import Coq.Classes.Morphisms Coq.Classes.RelationClasses Coq.Program.Program Coq.Setoids.Setoid.
-
 Global Set Implicit Arguments.
 
-Hint Extern 0 => apply reflexivity : typeclass_instances.
+Hint Extern 0 => simple apply reflexivity : typeclass_instances.
 
 Inductive Comp : Type -> Type :=
 | Pick : forall A, (A -> Prop) -> Comp A.
