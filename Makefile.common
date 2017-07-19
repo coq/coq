@@ -6,6 +6,8 @@
 #         #       GNU Lesser General Public License Version 2.1       #
 #######################################################################
 
+SHELL = /usr/bin/env bash
+
 -include config/Makefile
 
 ###########################################################################
