@@ -79,6 +79,7 @@ module Nametab = Nametab
 module Vernacentries = Vernacentries
 module Mltop = Mltop
 module Goal = Goal
+module Proof_bullet = Proof_bullet
 module Proof_global = Proof_global
 module Proof = Proof
 module Smartlocate = Smartlocate

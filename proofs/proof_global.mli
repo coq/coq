@@ -121,52 +121,6 @@ val get_used_variables : unit -> Context.Named.t option
 
 val get_universe_binders : unit -> universe_binders option
 
-(**********************************************************)
-(*                                                        *)
-(*                                 Bullets                *)
-(*                                                        *)
-(**********************************************************)
-
-module Bullet : sig
-  type t = Vernacexpr.bullet
-
-  (** A [behavior] is the data of a put function which
-      is called when a bullet prefixes a tactic, a suggest function
-      suggesting the right bullet to use on a given proof, together
-      with a name to identify the behavior. *)
-  type behavior = {
-    name : string;
-    put : Proof.proof -> t -> Proof.proof;
-    suggest: Proof.proof -> Pp.std_ppcmds
-  }
-
-  (** A registered behavior can then be accessed in Coq
-      through the command [Set Bullet Behavior "name"].
-
-      Two modes are registered originally:
-      * "Strict Subproofs":
-        - If this bullet follows another one of its kind, defocuses then focuses
-          (which fails if the focused subproof is not complete).
-        - If it is the first bullet of its kind, then focuses a new subproof.
-      * "None": bullets don't do anything *)
-  val register_behavior : behavior -> unit
-
-  (** Handles focusing/defocusing with bullets:
-       *)
-  val put : Proof.proof -> t -> Proof.proof
-  val suggest : Proof.proof -> Pp.std_ppcmds
-end
-
-
-(**********************************************************)
-(*                                                        *)
-(*                     Default goal selector              *)
-(*                                                        *)
-(**********************************************************)
-
-val pr_goal_selector : Vernacexpr.goal_selector -> Pp.std_ppcmds
-val get_default_goal_selector : unit -> Vernacexpr.goal_selector
-
 module V82 : sig
   val get_current_initial_conclusions : unit -> Names.Id.t *(EConstr.types list *
   Decl_kinds.goal_kind)

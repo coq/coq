@@ -1811,9 +1811,9 @@ let vernac_end_subproof () =
   Proof_global.simple_with_current_proof (fun _ p ->
     Proof.unfocus subproof_kind p ())
 
-let vernac_bullet (bullet:Proof_global.Bullet.t) =
+let vernac_bullet (bullet : Proof_bullet.t) =
   Proof_global.simple_with_current_proof (fun _ p ->
-    Proof_global.Bullet.put p bullet)
+    Proof_bullet.put p bullet)
 
 let vernac_show = let open Feedback in function
   | ShowScript -> assert false  (* Only the stm knows the script *)

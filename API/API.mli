@@ -3449,6 +3449,11 @@ sig
   end
 end
 
+module Proof_bullet :
+sig
+  val get_default_goal_selector : unit -> Vernacexpr.goal_selector
+end
+
 module Proof_global :
 sig
   type proof_mode = Proof_global.proof_mode = {
@@ -3483,7 +3488,6 @@ sig
     (unit Proofview.tactic -> Proof.proof -> Proof.proof) -> unit
   val compact_the_proof : unit -> unit
   val register_proof_mode : proof_mode -> unit
-  val get_default_goal_selector : unit -> Vernacexpr.goal_selector
 
   exception NoCurrentProof
   val give_me_the_proof : unit -> Proof.proof
