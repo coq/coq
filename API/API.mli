@@ -3920,12 +3920,6 @@ sig
   val map_cast_type : ('a -> 'b) -> 'a Misctypes.cast_type -> 'b Misctypes.cast_type
 end
 
-module Stateid :
-sig
-  type t = Stateid.t
-  module Self : module type of struct include Stateid.Self end
-end
-
 module Stm :
 sig
   type state = Stm.state
