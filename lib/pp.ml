@@ -153,7 +153,7 @@ let rec pr_com ft s =
     | None -> ()
 
 (* pretty printing functions *)
-let pp_with ft =
+let pp_with ft pp =
   let cpp_open_box = function
     | Pp_hbox n   -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n
@@ -175,7 +175,7 @@ let pp_with ft =
                                  pp_cmd s;
                                  pp_close_tag ft ()
   in
-  try pp_cmd
+  try pp_cmd pp
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
     let () = Format.pp_print_flush ft () in
