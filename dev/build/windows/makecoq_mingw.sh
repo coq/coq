@@ -1134,7 +1134,7 @@ function make_coq {
     if [[ $COQ_VERSION == 8.4* ]] ; then
       log1 make
     else
-      log1 make $MAKE_OPT
+      make $MAKE_OPT
     fi
     
     if [ "$INSTALLMODE" == "relocatable" ]; then
