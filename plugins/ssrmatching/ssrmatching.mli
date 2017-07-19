@@ -2,7 +2,6 @@
 (* Distributed under the terms of CeCILL-B.                                  *)
 
 open API
-open Grammar_API
 open Goal
 open Genarg
 open Tacexpr

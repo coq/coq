@@ -9,7 +9,7 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open API
-open Grammar_API.Pcoq.Prim
+open Pcoq.Prim
 
 DECLARE PLUGIN "extraction_plugin"
 

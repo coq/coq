@@ -9,7 +9,6 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open API
-open Grammar_API
 open Pp
 open Genarg
 open Stdarg
