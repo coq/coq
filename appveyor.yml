@@ -8,18 +8,24 @@ image:
 - Visual Studio 2017
 
 environment:
-  CYGROOT: C:\cygwin64
   CYGMIRROR: http://ftp.inf.tu-dresden.de/software/windows/cygwin32
-  CYGCACHE: C:\cygwin64\var\cache\setup
-  opam_url: https://github.com/fdopen/opam-repository-mingw/releases/download/0.0.0.1/opam64.tar.xz
-
-install:
-- cmd: '%CYGROOT%\setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s
-  %CYGMIRROR% -P rsync -P patch -P diffutils -P make -P unzip -P m4 -P findutils -P time'
-- cmd: '%CYGROOT%/bin/bash -l %APPVEYOR_BUILD_FOLDER%/dev/build/windows/appveyor.sh'
+  matrix:
+  - USEOPAM: true
+    ARCH: 64
+  - USEOPAM: false
+    ARCH: 32
+  - USEOPAM: false
+    ARCH: 64
 
 build_script:
-- cmd: '%CYGROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && ./configure -local && make"'
+- cmd: 'call %APPVEYOR_BUILD_FOLDER%\dev\ci\appveyor.bat'
 
-test_script:
-- cmd: '%CYGROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make byte && make -C test-suite all INTERACTIVE= && make validate"'
+test: off
+
+artifacts:
+  - path: 'dev\nsis\*.exe'
+    name: installer
+
+  - path: 'coq-opensource-archive-*.zip'
+    name: opensource-archive
+
