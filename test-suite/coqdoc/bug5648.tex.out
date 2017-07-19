@@ -45,13 +45,5 @@
 \ensuremath{|} \coqref{Coqdoc.bug5648.Proof}{\coqdocconstructor{Proof}} \ensuremath{\Rightarrow} 7\coqdoceol
 \coqdocindent{1.00em}
 \coqdockw{end}.\coqdoceol
-\coqdocemptyline
-\coqdocnoindent
-\coqdockw{Ltac} \coqdockw{Next} := \coqdocvar{easy}.\coqdoceol
-\coqdocemptyline
-\coqdocnoindent
-\coqdockw{Lemma} \coqdef{Coqdoc.bug5648.yes}{yes}{\coqdoclemma{yes}} : \coqexternalref{True}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocinductive{True}}.\coqdoceol
-\coqdocnoindent
-\coqdockw{Proof}. \coqdockw{Next}. \coqdockw{Qed}.\coqdoceol
 \end{coqdoccode}
 \end{document}
