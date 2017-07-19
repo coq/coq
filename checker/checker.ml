@@ -366,10 +366,46 @@ let parse_args argv =
 (* To prevent from doing the initialization twice *)
 let initialized = ref false
 
+(* XXX: At some point we need to either port the checker to use the
+   feedback system or to remove its use completely. *)
+let init_feedback_listener () =
+  let open Format in
+  let pp_lvl fmt lvl = let open Feedback in match lvl with
+    | Error   -> fprintf fmt "Error: "
+    | Info    -> fprintf fmt "Info: "
+    | Debug   -> fprintf fmt "Debug: "
+    | Warning -> fprintf fmt "Warning: "
+    | Notice  -> fprintf fmt ""
+  in
+  let pp_loc fmt loc = let open Loc in match loc with
+    | None     -> fprintf fmt ""
+    | Some loc ->
+      fprintf fmt "File \"%s\", line %d, characters %d-%d:@\n"
+        loc.fname loc.line_nb (loc.bp-loc.bol_pos) (loc.ep-loc.bol_pos) in
+  let checker_feed (fb : Feedback.feedback) = let open Feedback in
+  match fb.contents with
+  | Processed   -> ()
+  | Incomplete  -> ()
+  | Complete    -> ()
+  | ProcessingIn _ -> ()
+  | InProgress _ -> ()
+  | WorkerStatus (_,_) -> ()
+  | AddedAxiom  -> ()
+  | GlobRef (_,_,_,_,_) -> ()
+  | GlobDef (_,_,_,_) -> ()
+  | FileDependency (_,_) -> ()
+  | FileLoaded (_,_) -> ()
+  | Custom (_,_,_) -> ()
+  (* Re-enable when we switch back to feedback-based error printing *)
+  | Message (lvl,loc,msg) ->
+    Format.eprintf "@[%a@]%a@[%a@]\n%!" pp_loc loc pp_lvl lvl Pp.pp_with msg
+  in ignore(Feedback.add_feeder checker_feed)
+
 let init_with_argv argv =
   if not !initialized then begin
     initialized := true;
     Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
+    init_feedback_listener ();
     try
       parse_args argv;
       if !Flags.debug then Printexc.record_backtrace true;
