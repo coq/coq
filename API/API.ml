@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module Conv_oracle = Conv_oracle
+module Cbytecodes = Cbytecodes
+module Cemitcodes = Cemitcodes
 module Ppvernac = Ppvernac
 module Command = Command
 module States = States
@@ -151,10 +154,18 @@ module Tacmach = Tacmach
 module Proofview = Proofview
 module Evarutil = Evarutil
 module EConstr = EConstr
+module Store = Store
 
 module Prelude =
   struct
-    type global_reference = Globnames.global_reference
+    type mut_ind = Names.MutInd.t
+    type constant = Names.Constant.t
+    type inductive = mut_ind * int
+    type global_reference = Globnames.global_reference =
+                          | VarRef of Names.variable
+                          | ConstRef of Names.constant
+                          | IndRef of inductive
+                          | ConstructRef of Names.constructor
     type metavariable = int
     type meta_value_map = (metavariable * Constr.constr) list
     type named_context_val = Environ.named_context_val
@@ -173,6 +184,50 @@ module Prelude =
     type reference = Libnames.reference =
       | Qualid of Libnames.qualid Loc.located
       | Ident of Names.Id.t Loc.located
+    type tok = Tok.t =
+      | KEYWORD of string
+      | PATTERNIDENT of string
+      | IDENT of string
+      | FIELD of string
+      | INT of string
+      | STRING of string
+      | LEFTQMARK
+      | BULLET of string
+      | EOI
+  
+    type genintern_store = Genintern.Store.t
+    type 'a pcoq_gram_entry = 'a Pcoq.Gram.Entry.e
+    type qualid = Libnames.qualid
+
+    type obligation_definition_status = Evar_kinds.obligation_definition_status =
+                                      | Define of bool
+                                      | Expand
+
+    type matching_var_kind = Evar_kinds.matching_var_kind =
+                           | FirstOrderPatVar of Names.Id.t
+                           | SecondOrderPatVar of Names.Id.t
+
+    type evar_kinds = Evar_kinds.t =
+                    | ImplicitArg of Globnames.global_reference * (int * Names.Id.t option)
+                                     * bool (** Force inference *)
+                    | BinderType of Names.Name.t
+                    | NamedHole of Names.Id.t (* coming from some ?[id] syntax *)
+                    | QuestionMark of obligation_definition_status * Names.Name.t
+                    | CasesType of bool (* true = a subterm of the type *)
+                    | InternalHole
+                    | TomatchTypeParameter of Names.inductive * int
+                    | GoalEvar
+                    | ImpossibleCase
+                    | MatchingVar of matching_var_kind
+                    | VarInstance of Names.Id.t
+                    | SubEvar of evar
+
+    type universes_constraints = Universes.Constraints.t
+    type id = Names.Id.t
+    type constructor = inductive * int
+    type name = Names.Name.t =
+              | Anonymous
+              | Name of id
   end
 
 (* NOTE: It does not make sense to replace the following "module expression"
