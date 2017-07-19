@@ -3,7 +3,7 @@
 Module Long.
   Require Import Coq.Classes.RelationClasses.
 
-  Hint Extern 0 => apply reflexivity : typeclass_instances.
+  Hint Extern 0 => simple apply reflexivity : typeclass_instances.
   Hint Extern 1 => symmetry.
 
   Lemma foo : exists m' : Type, True.
