@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open API
 open Context.Named.Declaration
 
 let map_const_entry_body (f:Term.constr->Term.constr) (x:Safe_typing.private_constants Entries.const_entry_body)
