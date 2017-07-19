@@ -1,0 +1,16 @@
+Makefile:69: warning: undefined variable '*'
+Makefile:204: warning: undefined variable 'DSTROOT'
+COQDEP Fast.v
+COQDEP Slow.v
+Makefile:69: warning: undefined variable '*'
+Makefile:204: warning: undefined variable 'DSTROOT'
+Makefile:69: warning: undefined variable '*'
+Makefile:204: warning: undefined variable 'DSTROOT'
+Makefile:69: warning: undefined variable '*'
+Makefile:204: warning: undefined variable 'DSTROOT'
+COQC Slow.v
+Slow (real: 0.40, user: 0.35, sys: 0.04, mem: 394968 ko)
+COQC Fast.v
+Fast (real: 0.04, user: 0.03, sys: 0.00, mem: 46564 ko)
+Makefile:69: warning: undefined variable '*'
+Makefile:204: warning: undefined variable 'DSTROOT'

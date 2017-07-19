@@ -95,6 +95,11 @@ Tools
   The current version contains code for retro compatibility that prints
   warnings when a deprecated feature is used.  Please upgrade your _CoqProject
   accordingly.
+  * Additionally, coq_makefile-made Makefiles now support experimental timing
+    targets `pretty-timed`, `pretty-timed-before`, `pretty-timed-after`,
+    `print-pretty-timed-diff`, `print-pretty-single-time-diff`,
+    `all.timing.diff`, and the variable `TIMING=1` (or `TIMING=before` or
+    `TIMING=after`); see the documentation for more details.
 
 Build Infrastructure
 
