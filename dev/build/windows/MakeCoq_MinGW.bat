@@ -344,6 +344,9 @@ IF EXIST "%CYGWIN_INSTALLDIR_WFMT%\etc\setup\installed.db" (
 IF NOT "%CYGWIN_QUIET%" == "Y" (
   SET RUNSETUP=Y
 )
+IF "%COQREGTESTING%" == "Y" (
+  SET RUNSETUP=Y
+)
 
 IF "%RUNSETUP%"=="Y" (
   %SETUP% ^
