@@ -274,9 +274,9 @@ let infer_declaration (type a) ~(trust : a trust) env kn (dcl : a constant_entry
             let j = infer env body in
             let _ = judge_of_cast env j DEFAULTcast tyj in
             j, uctx
-          | SideEffects trust ->
+          | SideEffects mb ->
             let (body, uctx, signatures) = inline_side_effects env body uctx side_eff in
-            let valid_signatures = check_signatures trust signatures in
+            let valid_signatures = check_signatures mb signatures in
             let env = push_context_set uctx env in
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
             let j = infer env body in
