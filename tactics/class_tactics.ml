@@ -92,7 +92,7 @@ open Goptions
 
 let _ =
   declare_bool_option
-    { optdepr  = true;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "do typeclass search modulo eta conversion";
       optkey   = ["Typeclasses";"Modulo";"Eta"];
       optread  = get_typeclasses_modulo_eta;
@@ -125,7 +125,7 @@ let _ =
 
 let _ =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "compat";
       optkey   = ["Typeclasses";"Legacy";"Resolution"];
       optread  = get_typeclasses_legacy_resolution;

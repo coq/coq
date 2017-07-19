@@ -80,15 +80,15 @@ let _ =
       optread  = (fun () -> !Flags.tactic_context_compat) ;
       optwrite = (fun b -> Flags.tactic_context_compat := b) }
 
-let apply_solve_class_goals = ref (false)
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = true;
-  Goptions.optname =
-    "Perform typeclass resolution on apply-generated subgoals.";
-  Goptions.optkey = ["Typeclass";"Resolution";"After";"Apply"];
-  Goptions.optread = (fun () -> !apply_solve_class_goals);
-  Goptions.optwrite = (fun a -> apply_solve_class_goals:=a);
-}
+let apply_solve_class_goals = ref false
+
+let _ =
+  declare_bool_option
+    { optdepr = true; (* remove in 8.8 *)
+      optname = "Perform typeclass resolution on apply-generated subgoals.";
+      optkey = ["Typeclass";"Resolution";"After";"Apply"];
+      optread = (fun () -> !apply_solve_class_goals);
+      optwrite = (fun a -> apply_solve_class_goals := a); }
 
 let clear_hyp_by_default = ref false
 
@@ -124,7 +124,7 @@ let shrink_abstract = ref true
 
 let _ =
   declare_bool_option
-    { optdepr  = true;
+    { optdepr  = true; (* remove in 8.8 *)
       optname  = "shrinking of abstracted proofs";
       optkey   = ["Shrink"; "Abstract"];
       optread  = (fun () -> !shrink_abstract) ;
@@ -143,7 +143,7 @@ let use_bracketing_last_or_and_intro_pattern () =
 
 let _ =
   declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
+    { optdepr  = false;
       optname  = "bracketing last or-and introduction pattern";
       optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
       optread  = (fun () -> !bracketing_last_or_and_intro_pattern);
