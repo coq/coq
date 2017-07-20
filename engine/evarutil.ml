@@ -740,6 +740,13 @@ let undefined_evars_of_named_context evd nc =
     nc
     ~init:Evar.Set.empty
 
+let undefined_evars_of_econstr_named_context evd nc =
+  Context.Named.fold_outside
+    (NamedDecl.fold_constr (fun c s -> Evar.Set.union s
+      (undefined_evars_of_term evd c)))
+    nc
+    ~init:Evar.Set.empty
+
 let undefined_evars_of_evar_info evd evi =
   Evar.Set.union (undefined_evars_of_term evd evi.evar_concl)
     (Evar.Set.union

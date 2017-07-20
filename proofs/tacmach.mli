@@ -139,4 +139,5 @@ module New : sig
 
   val pf_nf_evar : Proofview.Goal.t -> constr -> constr
 
+  val pf_undefined_evars : Proofview.Goal.t -> Evar.Set.t
 end

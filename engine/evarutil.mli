@@ -132,6 +132,7 @@ val advance : evar_map -> Evar.t -> Evar.t option
 
 val undefined_evars_of_term : evar_map -> constr -> Evar.Set.t
 val undefined_evars_of_named_context : evar_map -> Context.Named.t -> Evar.Set.t
+val undefined_evars_of_econstr_named_context : evar_map -> EConstr.named_context -> Evar.Set.t
 val undefined_evars_of_evar_info : evar_map -> evar_info -> Evar.Set.t
 
 type undefined_evars_cache
