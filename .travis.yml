@@ -95,8 +95,8 @@ matrix:
 
     - env:
       - TEST_TARGET="test-suite"
-      - COMPILER="4.04.1"
-      - CAMLP5_VER="6.17"
+      - COMPILER="4.05.0"
+      - CAMLP5_VER="7.01"
       - EXTRA_CONF="-coqide opt -with-doc yes"
       - EXTRA_OPAM="lablgtk-extras hevea"
       addons:
@@ -124,8 +124,8 @@ matrix:
 
     - env:
       - TEST_TARGET="coqocaml"
-      - COMPILER="4.04.1"
-      - CAMLP5_VER="6.17"
+      - COMPILER="4.05.0"
+      - CAMLP5_VER="7.01"
       - EXTRA_CONF="-coqide opt -warn-error"
       - EXTRA_OPAM="lablgtk-extras hevea"
       # dummy target

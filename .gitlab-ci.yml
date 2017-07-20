@@ -18,8 +18,8 @@ variables:
   # some useful values
   COMPILER_32BIT: "4.02.3+32bit"
 
-  COMPILER_BLEEDING_EDGE: "4.04.1"
-  CAMLP5_VER_BLEEDING_EDGE: "6.17"
+  COMPILER_BLEEDING_EDGE: "4.05.0"
+  CAMLP5_VER_BLEEDING_EDGE: "7.01"
 
   TEST_PACKAGES: "time python"
 
