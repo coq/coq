@@ -25,7 +25,7 @@ type proofview
    new nearly identical function everytime. Hence the generic name. *)
 (* In this version: returns the list of focused goals together with
    the [evar_map] context. *)
-val proofview : proofview -> Goal.goal list * Evd.evar_map
+val proofview : proofview -> Evd.evar list * Evd.evar_map
 
 
 (** {6 Starting and querying a proof view} *)
@@ -88,7 +88,7 @@ type focus_context
    new nearly identical function everytime. Hence the generic name. *)
 (* In this version: the goals in the context, as a "zipper" (the first
    list is in reversed order). *)
-val focus_context : focus_context -> Goal.goal list * Goal.goal list
+val focus_context : focus_context -> Evd.evar list * Evd.evar list
 
 (** [focus i j] focuses a proofview on the goals from index [i] to
     index [j] (inclusive, goals are indexed from [1]). I.e. goals
@@ -148,7 +148,7 @@ type +'a tactic
     {!Logic_monad.TacticFailure}*)
 val apply : Environ.env -> 'a tactic -> proofview -> 'a
                                                    * proofview
-                                                   * (bool*Goal.goal list*Goal.goal list)
+                                                   * (bool*Evd.evar list*Evd.evar list)
                                                    * Proofview_monad.Info.tree
 
 (** {7 Monadic primitives} *)
@@ -304,12 +304,12 @@ val shelve : unit tactic
 (** Shelves the given list of goals, which might include some that are
     under focus and some that aren't. All the goals are placed on the
     shelf for later use (or being solved by side-effects). *)
-val shelve_goals : Goal.goal list -> unit tactic
+val shelve_goals : Evd.evar list -> unit tactic
 
 (** [unifiable sigma g l] checks whether [g] appears in another
     subgoal of [l]. The list [l] may contain [g], but it does not
     affect the result. Used by [shelve_unifiable]. *)
-val unifiable : Evd.evar_map -> Goal.goal -> Goal.goal list -> bool
+val unifiable : Evd.evar_map -> Evd.evar -> Evd.evar list -> bool
 
 (** Shelves the unifiable goals under focus, i.e. the goals which
     appear in other goals under focus (the unfocused goals are not
@@ -322,15 +322,15 @@ val guard_no_unifiable : Names.Name.t list option tactic
 
 (** [unshelve l p] adds all the goals in [l] at the end of the focused
     goals of p *)
-val unshelve : Goal.goal list -> proofview -> proofview
+val unshelve : Evd.evar list -> proofview -> proofview
 
 (** [depends_on g1 g2 sigma] checks if g1 occurs in the type/ctx of g2 *)
-val depends_on : Evd.evar_map -> Goal.goal -> Goal.goal -> bool
+val depends_on : Evd.evar_map -> Evd.evar -> Evd.evar -> bool
 
 (** [with_shelf tac] executes [tac] and returns its result together with
     the set of goals shelved by [tac]. The current shelf is unchanged
     and the returned list contains only unsolved goals. *)
-val with_shelf : 'a tactic -> (Goal.goal list * 'a) tactic
+val with_shelf : 'a tactic -> (Evd.evar list * 'a) tactic
 
 (** If [n] is positive, [cycle n] puts the [n] first goal last. If [n]
     is negative, then it puts the [n] last goals first.*)
@@ -416,14 +416,14 @@ module Unsafe : sig
   (** [tclNEWGOALS gls] adds the goals [gls] to the ones currently
       being proved, appending them to the list of focused goals. If a
       goal is already solved, it is not added. *)
-  val tclNEWGOALS : Goal.goal list -> unit tactic
+  val tclNEWGOALS : Evd.evar list -> unit tactic
 
   (** [tclSETGOALS gls] sets goals [gls] as the goals being under focus. If a
       goal is already solved, it is not set. *)
-  val tclSETGOALS : Goal.goal list -> unit tactic
+  val tclSETGOALS : Evd.evar list -> unit tactic
 
   (** [tclGETGOALS] returns the list of goals under focus. *)
-  val tclGETGOALS : Goal.goal list tactic
+  val tclGETGOALS : Evd.evar list tactic
 
   (** Sets the evar universe context. *)
   val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> unit tactic
