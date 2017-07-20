@@ -95,7 +95,7 @@ val refine           : constr -> tactic
 val pr_gls    : goal sigma -> Pp.t
 val pr_glls   : goal list sigma -> Pp.t
 
-(* Variants of [Tacmach] functions built with the new proof engine *)
+(** Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig
   val pf_apply : (env -> evar_map -> 'a) -> Proofview.Goal.t -> 'a
   val pf_global : Id.t -> Proofview.Goal.t -> GlobRef.t
@@ -139,4 +139,6 @@ module New : sig
 
   val pf_nf_evar : Proofview.Goal.t -> constr -> constr
 
+  (** Gathers the undefined evars of the given goal. *)
+  val pf_undefined_evars : Proofview.Goal.t -> Evar.Set.t
 end

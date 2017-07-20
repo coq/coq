@@ -227,4 +227,9 @@ module New = struct
 
   let pf_nf_evar gl t = nf_evar (project gl) t
 
+  let pf_undefined_evars gl =
+    let sigma = Proofview.Goal.sigma gl in
+    let ev = Proofview.Goal.goal gl in
+    let evi = Evd.find sigma ev in
+      Evarutil.filtered_undefined_evars_of_evar_info sigma evi
 end
