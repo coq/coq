@@ -611,6 +611,7 @@ let parse_args arglist =
   with any -> fatal_error any
 
 let init_toplevel arglist =
+  Profile.init_profile ();
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   let init_feeder = Feedback.add_feeder coqtop_init_feed in
