@@ -410,7 +410,8 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
             try exact integral_domain_one_zero;
             try exact integral_domain_minus_one_zero
           || (solve [simpl; unfold R2, equality, eq_notation, addition, add_notation,
-                     one, one_notation, multiplication, mul_notation, zero, zero_notation;
+                            one, one_notation, multiplication, mul_notation, zero, zero_notation,
+                            opposite, opp_notation;
                      discrR || omega]) 
           || ((*simpl*) idtac) || idtac "could not prove discrimination result"
         ]
